@@ -53,7 +53,7 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "logical_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical",
+    importpath = "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir",
     proto = ":logical_pl_proto",
     visibility = ["//visibility:public"],
     deps = [

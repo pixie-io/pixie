@@ -12,7 +12,7 @@ import (
 	math_bits "math/bits"
 	proto1 "pixielabs.ai/pixielabs/src/common/base/proto"
 	proto2 "pixielabs.ai/pixielabs/src/common/uuid/proto"
-	logical "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
+	ir "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir"
 	reflect "reflect"
 	strings "strings"
 )
@@ -29,8 +29,8 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type ProbeInfo struct {
-	ProbeID string           `protobuf:"bytes,1,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
-	Program *logical.Program `protobuf:"bytes,2,opt,name=program,proto3" json:"program,omitempty"`
+	ProbeID string      `protobuf:"bytes,1,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
+	Program *ir.Program `protobuf:"bytes,2,opt,name=program,proto3" json:"program,omitempty"`
 }
 
 func (m *ProbeInfo) Reset()      { *m = ProbeInfo{} }
@@ -72,7 +72,7 @@ func (m *ProbeInfo) GetProbeID() string {
 	return ""
 }
 
-func (m *ProbeInfo) GetProgram() *logical.Program {
+func (m *ProbeInfo) GetProgram() *ir.Program {
 	if m != nil {
 		return m.Program
 	}
@@ -450,7 +450,7 @@ func (this *ProbeInfo) String() string {
 	}
 	s := strings.Join([]string{`&ProbeInfo{`,
 		`ProbeID:` + fmt.Sprintf("%v", this.ProbeID) + `,`,
-		`Program:` + strings.Replace(fmt.Sprintf("%v", this.Program), "Program", "logical.Program", 1) + `,`,
+		`Program:` + strings.Replace(fmt.Sprintf("%v", this.Program), "Program", "ir.Program", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -567,7 +567,7 @@ func (m *ProbeInfo) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Program == nil {
-				m.Program = &logical.Program{}
+				m.Program = &ir.Program{}
 			}
 			if err := m.Program.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

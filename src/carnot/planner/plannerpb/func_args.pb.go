@@ -12,7 +12,7 @@ import (
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	proto2 "pixielabs.ai/pixielabs/src/common/base/proto"
 	proto1 "pixielabs.ai/pixielabs/src/shared/types/proto"
-	logical "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
+	ir "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir"
 	reflect "reflect"
 	strings "strings"
 )
@@ -402,8 +402,8 @@ func (m *CompileMutationsRequest) GetQueryStr() string {
 }
 
 type CompileMutationsResponse struct {
-	Status *proto2.Status   `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
-	Trace  *logical.Program `protobuf:"bytes,2,opt,name=trace,proto3" json:"trace,omitempty"`
+	Status *proto2.Status `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	Trace  *ir.Program    `protobuf:"bytes,2,opt,name=trace,proto3" json:"trace,omitempty"`
 }
 
 func (m *CompileMutationsResponse) Reset()      { *m = CompileMutationsResponse{} }
@@ -445,7 +445,7 @@ func (m *CompileMutationsResponse) GetStatus() *proto2.Status {
 	return nil
 }
 
-func (m *CompileMutationsResponse) GetTrace() *logical.Program {
+func (m *CompileMutationsResponse) GetTrace() *ir.Program {
 	if m != nil {
 		return m.Trace
 	}
@@ -1483,7 +1483,7 @@ func (this *CompileMutationsResponse) String() string {
 	}
 	s := strings.Join([]string{`&CompileMutationsResponse{`,
 		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto2.Status", 1) + `,`,
-		`Trace:` + strings.Replace(fmt.Sprintf("%v", this.Trace), "Program", "logical.Program", 1) + `,`,
+		`Trace:` + strings.Replace(fmt.Sprintf("%v", this.Trace), "Program", "ir.Program", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2466,7 +2466,7 @@ func (m *CompileMutationsResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Trace == nil {
-				m.Trace = &logical.Program{}
+				m.Trace = &ir.Program{}
 			}
 			if err := m.Trace.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

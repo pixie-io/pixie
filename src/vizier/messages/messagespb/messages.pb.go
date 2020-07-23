@@ -15,7 +15,7 @@ import (
 	proto2 "pixielabs.ai/pixielabs/src/common/base/proto"
 	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	logical "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
+	ir "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	reflect "reflect"
 	strings "strings"
@@ -900,8 +900,8 @@ func (m *ExecuteQueryRequest) GetAnalyze() bool {
 }
 
 type RegisterProbeRequest struct {
-	Program *logical.Program `protobuf:"bytes,1,opt,name=program,proto3" json:"program,omitempty"`
-	ProbeID string           `protobuf:"bytes,2,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
+	Program *ir.Program `protobuf:"bytes,1,opt,name=program,proto3" json:"program,omitempty"`
+	ProbeID string      `protobuf:"bytes,2,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
 }
 
 func (m *RegisterProbeRequest) Reset()      { *m = RegisterProbeRequest{} }
@@ -936,7 +936,7 @@ func (m *RegisterProbeRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RegisterProbeRequest proto.InternalMessageInfo
 
-func (m *RegisterProbeRequest) GetProgram() *logical.Program {
+func (m *RegisterProbeRequest) GetProgram() *ir.Program {
 	if m != nil {
 		return m.Program
 	}
@@ -3981,7 +3981,7 @@ func (this *RegisterProbeRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&RegisterProbeRequest{`,
-		`Program:` + strings.Replace(fmt.Sprintf("%v", this.Program), "Program", "logical.Program", 1) + `,`,
+		`Program:` + strings.Replace(fmt.Sprintf("%v", this.Program), "Program", "ir.Program", 1) + `,`,
 		`ProbeID:` + fmt.Sprintf("%v", this.ProbeID) + `,`,
 		`}`,
 	}, "")
@@ -5983,7 +5983,7 @@ func (m *RegisterProbeRequest) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Program == nil {
-				m.Program = &logical.Program{}
+				m.Program = &ir.Program{}
 			}
 			if err := m.Program.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
