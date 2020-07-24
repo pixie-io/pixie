@@ -329,7 +329,7 @@ pxtrace.UpsertTracePoint('http_return',
                          "5m")
 )pxl";
 
-constexpr char kExpectedPxlTracePb[] = R"pxl(
+constexpr char kExpectedTracePb[] = R"proto(
 binary_spec {
   upid {
     asid: 306070887 pid: 3902477011 ts_ns: 11841725277501915136
@@ -369,9 +369,9 @@ name: "http_return"
 ttl {
   seconds: 300
 }
-)pxl";
+)proto";
 
-TEST_F(PlannerExportTest, compile_mutations) {
+TEST_F(PlannerExportTest, compile_probe_def) {
   planner_ = MakePlanner();
   auto logical_planner_state = testutils::CreateTwoPEMsOneKelvinPlannerState();
   int result_len;
@@ -384,7 +384,41 @@ TEST_F(PlannerExportTest, compile_mutations) {
   ASSERT_TRUE(mutations_response_pb.ParseFromString(interface_result.ConsumeValueOrDie()));
   ASSERT_OK(mutations_response_pb.status());
   ASSERT_EQ(mutations_response_pb.mutations().size(), 1);
-  EXPECT_THAT(mutations_response_pb.mutations()[0].trace(), EqualsProto(kExpectedPxlTracePb));
+  EXPECT_THAT(mutations_response_pb.mutations()[0].trace(), EqualsProto(kExpectedTracePb));
+}
+
+constexpr char kExpectedDeleteTracepointsPxl[] = R"pxl(
+import pxtrace
+pxtrace.DeleteTracepoint('http_probe')
+pxtrace.DeleteTracepoint('cool_func')
+)pxl";
+constexpr char kExpectedDeleteTracepointsMutationPb[] = R"proto(
+status{}
+mutations {
+  delete_tracepoint {
+    name: "http_probe"
+  }
+}
+mutations {
+  delete_tracepoint {
+    name: "cool_func"
+  }
+}
+)proto";
+
+TEST_F(PlannerExportTest, compile_delete_tracepoint) {
+  planner_ = MakePlanner();
+  auto logical_planner_state = testutils::CreateTwoPEMsOneKelvinPlannerState();
+  int result_len;
+  auto interface_result = PlannerCompileMutationsGoStr(
+      planner_, logical_planner_state.DebugString(),
+      MakeCompileMutationsRequest(kExpectedDeleteTracepointsPxl).DebugString(), &result_len);
+
+  ASSERT_OK(interface_result);
+  plannerpb::CompileMutationsResponse mutations_response_pb;
+  ASSERT_TRUE(mutations_response_pb.ParseFromString(interface_result.ConsumeValueOrDie()));
+  ASSERT_OK(mutations_response_pb.status());
+  EXPECT_THAT(mutations_response_pb, EqualsProto(kExpectedDeleteTracepointsMutationPb));
 }
 
 }  // namespace planner

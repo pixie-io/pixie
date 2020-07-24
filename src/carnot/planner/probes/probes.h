@@ -5,6 +5,7 @@
 
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/objects/funcobject.h"
+#include "src/carnot/planner/plannerpb/func_args.pb.h"
 #include "src/common/uuid/uuid.h"
 #include "src/shared/metadata/base_types.h"
 #include "src/stirling/dynamic_tracing/ir/logical.pb.h"
@@ -217,13 +218,24 @@ class DynamicTraceIR {
    * @param pb the protobuf object to write to.
    * @return Status
    */
-  Status ToProto(stirling::dynamic_tracing::ir::logical::Program* pb);
+  Status ToProto(plannerpb::CompileMutationsResponse* pb);
 
   /**
    * @brief Stops recording changes to the current_probe_ and removes it from the current_probe_
    * position.
    */
   void EndProbe();
+
+  /**
+   * @brief Deletes the tracepoint passed in.
+   *
+   * @param tracepoint_to_delete
+   */
+  void DeleteTracepoint(const std::string& tracepoint_to_delete) {
+    tracepoints_to_delete_.push_back(tracepoint_to_delete);
+  }
+
+  const std::vector<std::string>& TracepointsToDelete() { return tracepoints_to_delete_; }
 
   ProbeIR* current_probe() { return current_probe_.get(); }
 
@@ -232,6 +244,8 @@ class DynamicTraceIR {
   absl::flat_hash_map<md::UPID, std::unique_ptr<TracingProgram>> upid_to_program_map_;
   std::vector<std::shared_ptr<ProbeIR>> probes_pool_;
   std::shared_ptr<ProbeIR> current_probe_;
+
+  std::vector<std::string> tracepoints_to_delete_;
 };
 
 }  // namespace compiler

@@ -18,6 +18,7 @@ pl_cc_library(
     hdrs = ["probes.h"],
     deps = [
         "//src/common/uuid:cc_library",
+        "//src/carnot/planner/plannerpb:func_args_pl_cc_proto",
         "//src/stirling/dynamic_tracing/ir:logical_pl_cc_proto",
         "//src/carnot/planner/objects:cc_library",
     ],

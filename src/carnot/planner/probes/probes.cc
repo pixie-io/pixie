@@ -176,7 +176,7 @@ Status TracingProgram::ToProto(stirling::dynamic_tracing::ir::logical::Program* 
   return Status::OK();
 }
 
-Status DynamicTraceIR::ToProto(stirling::dynamic_tracing::ir::logical::Program* pb) {
+Status DynamicTraceIR::ToProto(plannerpb::CompileMutationsResponse* pb) {
   if (binary_to_program_map_.size() > 1 || upid_to_program_map_.size() > 1 ||
       (binary_to_program_map_.size() && upid_to_program_map_.size())) {
     return error::InvalidArgument(
@@ -185,8 +185,7 @@ Status DynamicTraceIR::ToProto(stirling::dynamic_tracing::ir::logical::Program* 
   }
 
   for (const auto& [upid, program] : upid_to_program_map_) {
-    // TODO(philkuz) switch over when we have container message.
-    auto program_pb = pb;
+    auto program_pb = pb->add_mutations()->mutable_trace();
     PL_RETURN_IF_ERROR(program->ToProto(program_pb));
     auto binary_spec = program_pb->mutable_binary_spec();
     auto upid_pb = binary_spec->mutable_upid();
@@ -197,8 +196,7 @@ Status DynamicTraceIR::ToProto(stirling::dynamic_tracing::ir::logical::Program* 
 
   // TODO(oazizi/philkuz) add container message for Program.
   for (const auto& [binary, program] : binary_to_program_map_) {
-    // TODO(philkuz) switch over when we have container message.
-    auto program_pb = pb;
+    auto program_pb = pb->add_mutations()->mutable_trace();
     PL_RETURN_IF_ERROR(program.ToProto(program_pb));
     auto binary_spec = program_pb->mutable_binary_spec();
     binary_spec->set_path(binary);

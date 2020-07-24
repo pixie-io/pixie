@@ -28,6 +28,12 @@ class UpsertHandler {
                                     const ParsedArgs& args, ASTVisitor* visitor);
 };
 
+class DeleteTracepointHandler {
+ public:
+  static StatusOr<QLObjectPtr> Eval(DynamicTraceIR* probes, const pypa::AstPtr& ast,
+                                    const ParsedArgs& args, ASTVisitor* visitor);
+};
+
 class ReturnHandler {
  public:
   static StatusOr<QLObjectPtr> Eval(DynamicTraceIR* probes, const pypa::AstPtr& ast,
@@ -106,6 +112,16 @@ Status TraceModule::Init() {
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
   AddMethod(kUpsertTraceID, upsert_fn);
+
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> delete_fn,
+      FuncObject::Create(kDeleteTracepointID, {"name"}, {},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(DeleteTracepointHandler::Eval, probes_, std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+  AddMethod(kDeleteTracepointID, delete_fn);
 
   return Status::OK();
 }
@@ -275,6 +291,14 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(DynamicTraceIR* probes, const pypa::As
   PL_RETURN_IF_ERROR(
       WrapAstError(ast, trace_program->AddProbe(probe_ir.get(), probe_name, output_name)));
 
+  return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(ast, visitor));
+}
+
+StatusOr<QLObjectPtr> DeleteTracepointHandler::Eval(DynamicTraceIR* probes, const pypa::AstPtr& ast,
+                                                    const ParsedArgs& args, ASTVisitor* visitor) {
+  PL_ASSIGN_OR_RETURN(auto probe_name_ir, GetArgAs<StringIR>(args, "name"));
+  const std::string& probe_name = probe_name_ir->str();
+  probes->DeleteTracepoint(probe_name);
   return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(ast, visitor));
 }
 

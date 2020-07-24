@@ -64,8 +64,9 @@ int main(int argc, char** argv) {
   }
 
   auto probe = pl::carnot::planner::compiler::CompileProbeScript(query).ConsumeValueOrDie();
-  pl::stirling::dynamic_tracing::ir::logical::Program probe_pb;
+  pl::carnot::planner::plannerpb::CompileMutationsResponse probe_pb;
   PL_CHECK_OK(probe->ToProto(&probe_pb));
-  PL_CHECK_OK(pl::WriteFileFromString(output_file, probe_pb.DebugString()));
+  CHECK_EQ(probe_pb.mutations_size(), 1);
+  PL_CHECK_OK(pl::WriteFileFromString(output_file, probe_pb.mutations()[0].trace().DebugString()));
   return 0;
 }

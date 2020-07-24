@@ -7,6 +7,7 @@ namespace carnot {
 namespace planner {
 namespace compiler {
 using ::testing::ContainsRegex;
+using ::testing::UnorderedElementsAre;
 
 class ProbeCompilerTest : public ASTVisitorTest {
  protected:
@@ -90,9 +91,10 @@ ttl {
 
 TEST_F(ProbeCompilerTest, parse_single_probe) {
   ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(kSingleProbePxl));
-  stirling::dynamic_tracing::ir::logical::Program prog_pb;
-  EXPECT_OK(probe_ir->ToProto(&prog_pb));
-  EXPECT_THAT(prog_pb, testing::proto::EqualsProto(kSingleProbeProgramPb));
+  plannerpb::CompileMutationsResponse pb;
+  EXPECT_OK(probe_ir->ToProto(&pb));
+  ASSERT_EQ(pb.mutations_size(), 1);
+  EXPECT_THAT(pb.mutations()[0].trace(), testing::proto::EqualsProto(kSingleProbeProgramPb));
 }
 
 constexpr char kMultipleProbePxl[] = R"pxl(
@@ -187,9 +189,10 @@ ttl {
 // TODO(philkuz) need to support multiple probe programs.
 TEST_F(ProbeCompilerTest, DISABLED_parse_multiple_probes) {
   ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(kMultipleProbePxl));
-  stirling::dynamic_tracing::ir::logical::Program prog_pb;
-  EXPECT_OK(probe_ir->ToProto(&prog_pb));
-  EXPECT_THAT(prog_pb, testing::proto::EqualsProto(kMultipleProbeProgramPb));
+  plannerpb::CompileMutationsResponse pb;
+  EXPECT_OK(probe_ir->ToProto(&pb));
+  ASSERT_EQ(pb.mutations_size(), 1);
+  EXPECT_THAT(pb.mutations()[0].trace(), testing::proto::EqualsProto(kMultipleProbeProgramPb));
 }
 
 constexpr char kMultipleBinariesInOneScript[] = R"pxl(
@@ -269,10 +272,9 @@ def probe_func():
 TEST_F(ProbeCompilerTest, probe_definition_no_upsert) {
   // Test to make sure a probe definition doesn't add a probe.
   ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(kProbeDefNoUpsertPxl));
-  stirling::dynamic_tracing::ir::logical::Program prog_pb;
-  EXPECT_OK(probe_ir->ToProto(&prog_pb));
-  // Should equal the empty proto -> nothing was specified.
-  EXPECT_THAT(prog_pb, testing::proto::EqualsProto(""));
+  plannerpb::CompileMutationsResponse pb;
+  EXPECT_OK(probe_ir->ToProto(&pb));
+  ASSERT_EQ(pb.mutations_size(), 0);
 }
 
 constexpr char kProbeTemplate[] = R"pxl(
@@ -349,6 +351,19 @@ TEST_F(ProbeCompilerTest, probe_definition_wrong_return_values) {
   probe_ir_or_s = CompileProbeScript(absl::Substitute(kProbeTemplate, kBadOutputColumnValue));
   ASSERT_NOT_OK(probe_ir_or_s);
   EXPECT_THAT(probe_ir_or_s.status(), HasCompilerError("Expected tracing variable, got String"));
+}
+
+TEST_F(ProbeCompilerTest, delete_tracepoint) {
+  ASSERT_OK_AND_ASSIGN(
+      auto probe_ir, CompileProbeScript("import pxtrace\npxtrace.DeleteTracepoint('http_return')"));
+  EXPECT_THAT(probe_ir->TracepointsToDelete(), UnorderedElementsAre("http_return"));
+
+  ASSERT_OK_AND_ASSIGN(probe_ir,
+                       CompileProbeScript("import "
+                                          "pxtrace\npxtrace.DeleteTracepoint('http_return')"
+                                          "\npxtrace.DeleteTracepoint('cool_http_func')"));
+  EXPECT_THAT(probe_ir->TracepointsToDelete(),
+              UnorderedElementsAre("http_return", "cool_http_func"));
 }
 
 }  // namespace compiler
