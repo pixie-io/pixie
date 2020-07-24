@@ -60,7 +60,6 @@ stirlingpb::InfoClass InfoClassManager::ToProto() const {
   table_schema_proto->MergeFrom(schema_.ToProto());
 
   // Add all the other fields for the proto.
-  info_class_proto.set_name(std::string(name()));
   info_class_proto.set_id(id_);
   info_class_proto.set_subscribed(subscribed_);
   info_class_proto.set_sampling_period_millis(sampling_period_.count());

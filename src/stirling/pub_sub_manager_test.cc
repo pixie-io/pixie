@@ -23,7 +23,6 @@ using types::PatternType;
 using types::SemanticType;
 
 const char* kInfoClass0 = R"(
-  name: "cpu"
   schema {
     name: "cpu"
     elements {
@@ -55,7 +54,6 @@ const char* kInfoClass0 = R"(
 )";
 
 const char* kInfoClass1 = R"(
-  name: "my_table"
   schema {
     name: "my_table"
     elements {

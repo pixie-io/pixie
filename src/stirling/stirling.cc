@@ -112,7 +112,7 @@ stirlingpb::Subscribe SubscribeToInfoClass(const stirlingpb::Publish& publish_pr
   for (const auto& info_class : publish_proto.published_info_classes()) {
     auto sub_info_class = subscribe_proto.add_subscribed_info_classes();
     sub_info_class->CopyFrom(info_class);
-    if (sub_info_class->name() == name) {
+    if (sub_info_class->schema().name() == name) {
       sub_info_class->set_subscribed(true);
     }
   }
@@ -129,9 +129,10 @@ class StirlingImpl final : public Stirling {
   // symmetric with Stop().
   Status Init();
 
-  int64_t RegisterDynamicTrace(
+  uint64_t RegisterTracepoint(
       std::unique_ptr<dynamic_tracing::ir::logical::Program> program) override;
-  StatusOr<stirlingpb::Publish> GetDynamicTraceInfo(uint64_t trace_id) override;
+  StatusOr<stirlingpb::Publish> GetTracepointInfo(uint64_t trace_id) override;
+  Status RemoveTracepoint(uint64_t trace_id) override;
   void GetPublishProto(stirlingpb::Publish* publish_pb) override;
   Status SetSubscription(const stirlingpb::Subscribe& subscribe_proto) override;
   void RegisterDataPushCallback(DataPushCallback f) override { data_push_callback_ = f; }
@@ -333,7 +334,7 @@ void StirlingImpl::DeployDynamicTraceConnector(
 #undef ASSIGN_OR_RETURN
 }
 
-int64_t StirlingImpl::RegisterDynamicTrace(
+uint64_t StirlingImpl::RegisterTracepoint(
     std::unique_ptr<dynamic_tracing::ir::logical::Program> program) {
   int64_t trace_id = dynamic_trace_index_++;
 
@@ -351,9 +352,7 @@ int64_t StirlingImpl::RegisterDynamicTrace(
   return trace_id;
 }
 
-#undef ASSIGN_OR_RETURN
-
-StatusOr<stirlingpb::Publish> StirlingImpl::GetDynamicTraceInfo(uint64_t trace_id) {
+StatusOr<stirlingpb::Publish> StirlingImpl::GetTracepointInfo(uint64_t trace_id) {
   absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
 
   auto iter = dynamic_trace_status_map_.find(trace_id);
@@ -371,6 +370,12 @@ StatusOr<stirlingpb::Publish> StirlingImpl::GetDynamicTraceInfo(uint64_t trace_i
   }
 
   return s;
+}
+
+Status StirlingImpl::RemoveTracepoint(uint64_t trace_id) {
+  // TODO(oazizi): Implement tracepoint removal.
+  PL_UNUSED(trace_id);
+  return Status::OK();
 }
 
 void StirlingImpl::GetPublishProto(stirlingpb::Publish* publish_pb) {

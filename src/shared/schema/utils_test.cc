@@ -13,11 +13,13 @@ TEST(ConvertSubscribeProtoToRelationInfo, test_for_basic_subscription) {
   Subscribe subscribe_pb;
   // First info class with two columns.
   auto* info_class = subscribe_pb.add_subscribed_info_classes();
-  info_class->set_name("rel1");
   info_class->set_id(0);
   info_class->set_subscribed(false);
 
-  auto* elem0 = info_class->mutable_schema()->add_elements();
+  auto* schema = info_class->mutable_schema();
+  schema->set_name("rel1");
+
+  auto* elem0 = schema->add_elements();
   elem0->set_type(types::INT64);
   elem0->set_name("col1");
 
@@ -27,10 +29,13 @@ TEST(ConvertSubscribeProtoToRelationInfo, test_for_basic_subscription) {
 
   // Second relation with one column.
   info_class = subscribe_pb.add_subscribed_info_classes();
-  info_class->set_name("rel2");
   info_class->set_id(1);
   info_class->set_subscribed(false);
-  elem0 = info_class->mutable_schema()->add_elements();
+
+  schema = info_class->mutable_schema();
+  schema->set_name("rel2");
+
+  elem0 = schema->add_elements();
   elem0->set_type(types::INT64);
   elem0->set_name("col1_2");
 
@@ -70,27 +75,32 @@ TEST(ConvertSubscribeProtoToRelationInfo, test_for_tablets_subscription) {
   Subscribe subscribe_pb;
   // First info class with two columns.
   auto* info_class = subscribe_pb.add_subscribed_info_classes();
-  info_class->set_name("rel1");
   info_class->set_id(0);
   info_class->set_subscribed(false);
 
-  auto* elem0 = info_class->mutable_schema()->add_elements();
+  auto* schema = info_class->mutable_schema();
+  schema->set_name("rel1");
+
+  auto* elem0 = schema->add_elements();
   elem0->set_type(types::INT64);
   elem0->set_name("col1");
 
-  auto* elem1 = info_class->mutable_schema()->add_elements();
+  auto* elem1 = schema->add_elements();
   elem1->set_type(types::STRING);
   elem1->set_name("col2");
 
-  info_class->mutable_schema()->set_tabletization_key(1);
-  info_class->mutable_schema()->set_tabletized(true);
+  schema->set_tabletization_key(1);
+  schema->set_tabletized(true);
 
   // Second relation with one column.
   info_class = subscribe_pb.add_subscribed_info_classes();
-  info_class->set_name("rel2");
   info_class->set_id(1);
   info_class->set_subscribed(false);
-  elem0 = info_class->mutable_schema()->add_elements();
+
+  schema = info_class->mutable_schema();
+  schema->set_name("rel2");
+
+  elem0 = schema->add_elements();
   elem0->set_type(types::INT64);
   elem0->set_name("col1_2");
 

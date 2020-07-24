@@ -107,17 +107,17 @@ TEST(DynamicTraceSource, dynamic_trace_source) {
       absl::Substitute(kProgramSpec, pl::testing::BazelBinTestFilePath(kBinaryPath).string());
   auto trace_program = std::make_unique<dynamic_tracing::ir::logical::Program>();
   ASSERT_TRUE(google::protobuf::TextFormat::ParseFromString(program_str, trace_program.get()));
-  int64_t trace_id = stirling->RegisterDynamicTrace(std::move(trace_program));
+  int64_t trace_id = stirling->RegisterTracepoint(std::move(trace_program));
 
   // Wait for the probe to deploy.
   StatusOr<stirlingpb::Publish> s;
   do {
-    s = stirling->GetDynamicTraceInfo(trace_id);
+    s = stirling->GetTracepointInfo(trace_id);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   } while (!s.ok() && s.code() == pl::statuspb::Code::RESOURCE_UNAVAILABLE);
 
   // OK state should persist.
-  ASSERT_OK_AND_ASSIGN(stirlingpb::Publish trace_pub, stirling->GetDynamicTraceInfo(trace_id));
+  ASSERT_OK_AND_ASSIGN(stirlingpb::Publish trace_pub, stirling->GetTracepointInfo(trace_id));
 
   ASSERT_OK(stirling->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(trace_pub)));
 

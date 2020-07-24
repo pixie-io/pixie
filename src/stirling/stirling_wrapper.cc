@@ -72,12 +72,12 @@ void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
   const pl::stirling::stirlingpb::InfoClass& table_info = *(iter->second);
 
   // Only output enabled tables (lookup by name).
-  if (std::find(g_table_print_enables.begin(), g_table_print_enables.end(), table_info.name()) ==
-      g_table_print_enables.end()) {
+  if (std::find(g_table_print_enables.begin(), g_table_print_enables.end(),
+                table_info.schema().name()) == g_table_print_enables.end()) {
     return;
   }
 
-  PrintRecordBatch(table_info.name(), table_info.schema(), *record_batch);
+  PrintRecordBatch(table_info.schema().name(), table_info.schema(), *record_batch);
 }
 
 void SignalHandler(int signum) {
@@ -107,12 +107,12 @@ StatusOr<Publish> DeployTrace(Stirling* stirling) {
     g_table_print_enables.push_back(o.name());
   }
 
-  int64_t trace_id = stirling->RegisterDynamicTrace(std::move(trace_program));
+  int64_t trace_id = stirling->RegisterTracepoint(std::move(trace_program));
 
   StatusOr<Publish> s;
   do {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    s = stirling->GetDynamicTraceInfo(trace_id);
+    s = stirling->GetTracepointInfo(trace_id);
   } while (!s.ok() && s.code() == pl::statuspb::Code::RESOURCE_UNAVAILABLE);
 
   return s;

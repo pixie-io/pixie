@@ -82,13 +82,18 @@ class Stirling : public NotCopyable {
   /**
    * Registers probes defined inside a tracing program.
    */
-  virtual int64_t RegisterDynamicTrace(
+  virtual uint64_t RegisterTracepoint(
       std::unique_ptr<dynamic_tracing::ir::logical::Program> program) = 0;
 
   /**
    * Returns the status of the probe registration for the trace identified by the input ID.
    */
-  virtual StatusOr<stirlingpb::Publish> GetDynamicTraceInfo(uint64_t trace_id) = 0;
+  virtual StatusOr<stirlingpb::Publish> GetTracepointInfo(uint64_t trace_id) = 0;
+
+  /**
+   * Remove a dynamically created tracepoint.
+   */
+  virtual Status RemoveTracepoint(uint64_t trace_id) = 0;
 
   /**
    * Populate the Publish Proto object. Agent calls this function to get the Publish

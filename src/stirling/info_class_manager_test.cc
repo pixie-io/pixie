@@ -21,7 +21,7 @@ TEST(InfoClassInfoSchemaTest, infoclass_mgr_proto_getters_test) {
   stirlingpb::InfoClass info_class_pb;
   info_class_pb = info_class_mgr.ToProto();
   EXPECT_EQ(SeqGenConnector::kSeq0Table.elements().size(), info_class_pb.schema().elements_size());
-  EXPECT_EQ(SeqGenConnector::kSeq0Table.name(), info_class_pb.name());
+  EXPECT_EQ(SeqGenConnector::kSeq0Table.name(), info_class_pb.schema().name());
   EXPECT_EQ(0, info_class_pb.id());
 
   info_class_mgr.SetSubscription(true);

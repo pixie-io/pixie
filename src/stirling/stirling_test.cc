@@ -147,7 +147,7 @@ class StirlingTest : public ::testing::Test {
     // Create reference model
     for (const auto& info_class : publish_proto_.published_info_classes()) {
       const uint64_t id = info_class.id();
-      const std::string& name = info_class.name();
+      const std::string& name = info_class.schema().name();
       if (name[name.length() - 1] == '0') {
         // Table 0 is a simple (non-tabletized) table with multiple columns.
         // Here we append checkers that mimics the sequences from kSeq0Table from

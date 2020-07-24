@@ -35,10 +35,9 @@ message TableSchema {
 // Elements such as user%, system%, io%, that are collected together in the same
 // BPF program.
 message InfoClass {
-  string name = 1;
-  // Unique identifier to be used for an Arrow Table in both data collector and agent.
-  // This id will be assigned by the data collector's config block when creating a Publish
-  // message.
+  reserved 1; // Formerly name, but the schema has the name.
+  // Unique identifier of the info class; used for Stirling to PEM communications.
+  // This id is assigned by the data collector's config block when creating a Publish message.
   uint64 id = 2;
   TableSchema schema = 3;
   bool subscribed = 4;

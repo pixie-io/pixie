@@ -41,7 +41,7 @@ class StirlingBPFTest : public ::testing::Test {
   StatusOr<stirlingpb::Publish> WaitForStatus(uint64_t trace_id) {
     StatusOr<stirlingpb::Publish> s;
     do {
-      s = stirling_->GetDynamicTraceInfo(trace_id);
+      s = stirling_->GetTracepointInfo(trace_id);
       std::this_thread::sleep_for(std::chrono::seconds(1));
     } while (!s.ok() && s.code() == pl::statuspb::Code::RESOURCE_UNAVAILABLE);
 
@@ -104,7 +104,7 @@ TEST_F(StirlingBPFTest, DynamicTraceAPI) {
   StatusOr<stirlingpb::Publish> s;
 
   // Checking status of non-existent trace should return NOT_FOUND.
-  s = stirling_->GetDynamicTraceInfo(/* trace_id */ 1);
+  s = stirling_->GetTracepointInfo(/* trace_id */ 1);
   EXPECT_EQ(s.code(), pl::statuspb::Code::NOT_FOUND);
 
   // Checking status of existent trace should return OK.
@@ -144,17 +144,17 @@ probes {
 
   auto trace_program = Prepare(kProgram, path);
 
-  uint64_t trace_id = stirling_->RegisterDynamicTrace(std::move(trace_program));
+  uint64_t trace_id = stirling_->RegisterTracepoint(std::move(trace_program));
 
   // Immediately after registering, state should be pending.
   // TODO(oazizi): How can we make sure this is not flaky?
-  s = stirling_->GetDynamicTraceInfo(trace_id);
+  s = stirling_->GetTracepointInfo(trace_id);
   EXPECT_EQ(s.code(), pl::statuspb::Code::RESOURCE_UNAVAILABLE) << s.ToString();
 
   // Should deploy.
   ASSERT_OK(WaitForStatus(trace_id));
 
-  // TODO(oazizi): Expand test when RegisterDynamicTrace produces other states.
+  // TODO(oazizi): Expand test when RegisterTracepoint produces other states.
 }
 
 TEST_F(StirlingBPFTest, string_test) {
@@ -199,7 +199,7 @@ probes {
 )";
 
   auto trace_program = Prepare(kProgram, path);
-  uint64_t trace_id = stirling_->RegisterDynamicTrace(std::move(trace_program));
+  uint64_t trace_id = stirling_->RegisterTracepoint(std::move(trace_program));
 
   // Should deploy.
   ASSERT_OK_AND_ASSIGN(stirlingpb::Publish publication, WaitForStatus(trace_id));
