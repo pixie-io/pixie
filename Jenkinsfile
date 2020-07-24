@@ -428,6 +428,12 @@ def sendSlackNotification() {
   }
 }
 
+def sendCloudReleaseSlackNotification(String profile) {
+  if (currentBuild.result != 'SUCCESS') {
+    slackSend color: '#00FF00', message: "${profile} Cloud deployed - ${env.BUILD_TAG} -- URL: ${env.BUILD_URL}."
+  }
+}
+
 def postBuildActions = {
   if (isPhabricatorTriggeredBuild()) {
     codeReviewPostBuild()
@@ -863,6 +869,9 @@ def deployWithSkaffold(String profile, String namespace, String skaffoldFile) {
                     serverUrl: K8S_PROD_CLUSTER, namespace: namespace]) {
         sh "skaffold build -q -o '{{json .}}' -p ${profile} -f ${skaffoldFile} --cache-artifacts=false > manifest.json"
         sh "skaffold deploy -p ${profile} --build-artifacts=manifest.json -f ${skaffoldFile}"
+        dir ('src/pxl_scripts') {
+          sh "make update_${profile}_bundle"
+        }
       }
     }
   }
@@ -886,7 +895,7 @@ def buildScriptForCloudStagingRelease = {
       echo "Stacktrace:"
       err.printStackTrace()
     }
-
+    sendCloudReleaseSlackNotification("Staging")
     postBuildActions()
   }
 }
@@ -909,7 +918,7 @@ def buildScriptForCloudProdRelease = {
       echo "Stacktrace:"
       err.printStackTrace()
     }
-
+    sendCloudReleaseSlackNotification("Prod")
     postBuildActions()
   }
 }
