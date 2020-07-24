@@ -67,31 +67,31 @@ TEST(DynamicDataTableSchemaTest, generate) {
   name: "out_table_value_t"
   fields {
     name: "tgid__"
-    type { scalar: INT32 }
+    type: INT32
   }
   fields {
     name: "tgid_start_time__"
-    type { scalar: UINT64 }
+    type: UINT64
   }
   fields {
     name: "goid__"
-    type { scalar: INT64 }
+    type: INT64
   }
   fields {
     name: "ktime_ns__"
-    type { scalar: UINT64 }
+    type: UINT64
   }
   fields {
     name: "arg0"
-    type { scalar: INT }
+    type: INT
   }
   fields {
     name: "arg1"
-    type { scalar: BOOL }
+    type: BOOL
   }
   fields {
     name: "arg2"
-    type { scalar: BOOL }
+    type: BOOL
   }
 )";
 

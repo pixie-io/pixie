@@ -17,9 +17,7 @@ message Struct {
 
   message Field {
     string name = 1;
-    // TODO(yzhao): This could be changed to ScalarType, as now we dont have any use of nested
-    // struct type field.
-    shared.VariableType type = 2;
+    shared.ScalarType type = 2;
   }
 
   repeated Field fields = 2;

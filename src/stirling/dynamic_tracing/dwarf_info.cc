@@ -497,7 +497,7 @@ Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
 
     auto* var = output_probe->add_vars()->mutable_member_var();
     var->set_name(value_id);
-    var->set_type(field.type().scalar());
+    var->set_type(field.type());
     var->set_struct_base(map_var_name);
     var->set_is_struct_base_pointer(true);
     var->set_field(field.name());
@@ -524,7 +524,7 @@ Status Dwarvifier::GenerateMapValueStruct(const ir::logical::MapStashAction& sta
           "GenerateMapValueStruct [map_name=$0]: Reference to unknown variable: $1",
           stash_action_in.map_name(), f);
     }
-    struct_field->mutable_type()->set_scalar(iter->second->type());
+    struct_field->set_type(iter->second->type());
   }
 
   structs_[struct_type_name] = struct_decl;
@@ -601,7 +601,7 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
                              output_action_in.output_name(), f);
     }
 
-    struct_field->mutable_type()->set_scalar(iter->second->type());
+    struct_field->set_type(iter->second->type());
   }
 
   auto output_iter = outputs_.find(output_action_in.output_name());
@@ -632,7 +632,7 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
       return error::Internal("GenerateOutputStruct [output=$0]: Reference to unknown variable $1",
                              output_action_in.output_name(), var_name);
     }
-    struct_field->mutable_type()->set_scalar(iter->second->type());
+    struct_field->set_type(iter->second->type());
   }
 
   structs_[struct_type_name] = struct_decl;

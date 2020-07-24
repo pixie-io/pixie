@@ -140,9 +140,8 @@ StatusOr<std::string> GenVariableType(const VariableType& var_type) {
   GCC_SWITCH_RETURN;
 }
 
-StatusOr<std::string> GenField(const Struct::Field& field) {
-  PL_ASSIGN_OR_RETURN(std::string type_code, GenVariableType(field.type()));
-  return absl::Substitute("$0 $1;", type_code, field.name());
+std::string GenField(const Struct::Field& field) {
+  return absl::Substitute("$0 $1;", GenScalarType(field.type()), field.name());
 }
 
 }  // namespace
@@ -153,9 +152,7 @@ StatusOr<std::vector<std::string>> GenStruct(const Struct& st, int member_indent
   code_lines.push_back(absl::Substitute("struct $0 {", st.name()));
 
   for (const auto& field : st.fields()) {
-    PL_ASSIGN_OR_RETURN(std::string field_code, GenField(field));
-
-    code_lines.push_back(absl::StrCat(std::string(member_indent_size, ' '), field_code));
+    code_lines.push_back(absl::StrCat(std::string(member_indent_size, ' '), GenField(field)));
   }
 
   // TODO(yzhao): Consider only add this attribute to structs that are for perf buffer output.

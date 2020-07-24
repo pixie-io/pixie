@@ -193,7 +193,7 @@ Status AppendRecord(const Struct& st, uint32_t asid, std::string_view buf, DataT
 
   // Skip the first 2 fields which are tgid & tgid_start_time, which are combined into upid.
   for (int i = 2, col_idx = 1; i < st.fields_size(); ++i, ++col_idx) {
-    PL_RETURN_IF_ERROR(FillColumn(&struct_decoder, &r, col_idx, st.fields(i).type().scalar()));
+    PL_RETURN_IF_ERROR(FillColumn(&struct_decoder, &r, col_idx, st.fields(i).type()));
   }
 
   return Status::OK();

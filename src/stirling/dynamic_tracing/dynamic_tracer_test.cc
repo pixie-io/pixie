@@ -88,51 +88,35 @@ TEST(DynamicTracerTest, Compile) {
                                       name: "probe_output_value_t"
                                       fields {
                                         name: "tgid__"
-                                        type {
-                                          scalar: INT32
-                                        }
+                                        type: INT32
                                       }
                                       fields {
                                         name: "tgid_start_time__"
-                                        type {
-                                          scalar: UINT64
-                                        }
+                                        type: UINT64
                                       }
                                       fields {
                                         name: "ktime_ns__"
-                                        type {
-                                          scalar: UINT64
-                                        }
+                                        type: UINT64
                                       }
                                       fields {
                                         name: "goid__"
-                                        type {
-                                          scalar: INT64
-                                        }
+                                        type: INT64
                                       }
                                       fields {
                                         name: "f1"
-                                        type {
-                                          scalar: INT
-                                        }
+                                        type: INT
                                       }
                                       fields {
                                         name: "f2"
-                                        type {
-                                          scalar: INT
-                                        }
+                                        type: INT
                                       }
                                       fields {
                                         name: "f3"
-                                        type {
-                                          scalar: INT
-                                        }
+                                        type: INT
                                       }
                                       fields {
                                         name: "f4"
-                                        type {
-                                          scalar: INT
-                                        }
+                                        type: INT
                                       }
                                       )proto"));
 }

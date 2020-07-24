@@ -33,29 +33,24 @@ TEST(GenStructTest, Output) {
 
   field = st.add_fields();
   field->set_name("i32");
-  field->mutable_type()->set_scalar(ScalarType::INT32);
+  field->set_type(ScalarType::INT32);
 
   field = st.add_fields();
   field->set_name("i64");
-  field->mutable_type()->set_scalar(ScalarType::INT64);
+  field->set_type(ScalarType::INT64);
 
   field = st.add_fields();
   field->set_name("double_val");
-  field->mutable_type()->set_scalar(ScalarType::DOUBLE);
+  field->set_type(ScalarType::DOUBLE);
 
   field = st.add_fields();
   field->set_name("msg");
-  field->mutable_type()->set_scalar(ScalarType::VOID_POINTER);
+  field->set_type(ScalarType::VOID_POINTER);
 
-  field = st.add_fields();
-  field->set_name("attr");
-  field->mutable_type()->set_struct_type("attr_t");
-
-  ASSERT_OK_AND_THAT(
-      GenStruct(st, /*indent_size*/ 4),
-      ElementsAre("struct socket_data_event_t {", "    int32_t i32;", "    int64_t i64;",
-                  "    double double_val;", "    void* msg;", "    struct attr_t attr;",
-                  "} __attribute__((packed, aligned(1)));"));
+  ASSERT_OK_AND_THAT(GenStruct(st, /*indent_size*/ 4),
+                     ElementsAre("struct socket_data_event_t {", "    int32_t i32;",
+                                 "    int64_t i64;", "    double double_val;", "    void* msg;",
+                                 "} __attribute__((packed, aligned(1)));"));
 }
 
 TEST(GenVariableTest, Register) {
@@ -127,11 +122,11 @@ TEST(GenStructVariableTest, Variables) {
 
   field = st.add_fields();
   field->set_name("i32");
-  field->mutable_type()->set_scalar(ScalarType::INT32);
+  field->set_type(ScalarType::INT32);
 
   field = st.add_fields();
   field->set_name("i64");
-  field->mutable_type()->set_scalar(ScalarType::INT64);
+  field->set_type(ScalarType::INT64);
 
   StructVariable st_var;
 
@@ -185,7 +180,7 @@ TEST(GenProgramTest, SpecsAndCode) {
                                          name: "socket_data_event_t"
                                          fields {
                                            name: "i32"
-                                           type { scalar: INT32 }
+                                           type: INT32
                                          }
                                        }
                                        outputs {

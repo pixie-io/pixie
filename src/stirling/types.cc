@@ -68,9 +68,9 @@ StatusOr<std::unique_ptr<DynamicDataTableSchema>> DynamicDataTableSchema::Create
 
     types::DataType data_type;
 
-    auto iter = kTypeMap.find(field.type().scalar());
+    auto iter = kTypeMap.find(field.type());
     if (iter == kTypeMap.end()) {
-      LOG(DFATAL) << absl::Substitute("Unrecognized base type: $0", field.type().scalar());
+      LOG(DFATAL) << absl::Substitute("Unrecognized base type: $0", field.type());
       data_type = types::DataType::DATA_TYPE_UNKNOWN;
     } else {
       data_type = iter->second;
