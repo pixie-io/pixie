@@ -10,6 +10,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/types"
 	"pixielabs.ai/pixielabs/src/utils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
+	metadata_servicepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
@@ -69,8 +70,9 @@ type AgentManager interface {
 	HandleUpdate(*UpdateMessage)
 
 	// GetAgentUpdates returns all of the updates that have occurred for agents since
-	// the last invocation of GetAgentUpdates.
-	GetAgentUpdates() ([]*agentpb.Agent, map[uuid.UUID]*messagespb.AgentDataInfo, []uuid.UUID, error)
+	// the last invocation of GetAgentUpdates. if readInitialState is set to true, it
+	// reads out the entire current state first.
+	GetAgentUpdates(readFullState bool) ([]*agentpb.Agent, []*metadata_servicepb.AgentTableMetadata, []uuid.UUID, error)
 }
 
 // UpdatedAgentsList holds a list of agent IDs that have been updated or deleted recently.
@@ -545,34 +547,68 @@ func (m *AgentManagerImpl) GetMetadataUpdates(hostname *HostnameIPPair) ([]*meta
 }
 
 // GetAgentUpdates returns the latest agent status since the last call to GetAgentUpdates().
-func (m *AgentManagerImpl) GetAgentUpdates() ([]*agentpb.Agent, map[uuid.UUID]*messagespb.AgentDataInfo, []uuid.UUID, error) {
+// When readInitialState is set to true, the full agent state is read out.
+// Afterwards, the changes to the agent state are read.
+// It is assumed that there will only be one subscriber to the agent updates because calls to this
+// function will reset the state across the agent manager.
+// This should be okay because only the query broker needs to subscribe to these state changes for now,
+// but it will need to be scaled if we have multiple query brokers talking to a single metadata service.
+func (m *AgentManagerImpl) GetAgentUpdates(readInitialState bool) ([]*agentpb.Agent,
+	[]*metadata_servicepb.AgentTableMetadata,
+	[]uuid.UUID, error) {
 	m.updatedAgentsMutex.Lock()
 	defer m.updatedAgentsMutex.Unlock()
 
 	var updatedAgents []*agentpb.Agent
-	var updatedAgentsDataInfo = make(map[uuid.UUID]*messagespb.AgentDataInfo)
+	var updatedAgentsTableMetadata []*metadata_servicepb.AgentTableMetadata
 	var deletedAgents []uuid.UUID
+	var err error
 
-	for updatedAgentID := range m.updatedAgents.updated {
-		log.Errorf("%+v", updatedAgentID)
-		agent, err := m.mds.GetAgent(updatedAgentID)
+	if !readInitialState {
+		for updatedAgentID := range m.updatedAgents.updated {
+			log.Errorf("%+v", updatedAgentID)
+			agent, err := m.mds.GetAgent(updatedAgentID)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			updatedAgents = append(updatedAgents, agent)
+		}
+		// Change this below to extract agent-specific schema as well when that exists.
+		for agentID := range m.updatedAgents.updatedDataInfo {
+			agentDataInfo, err := m.mds.GetAgentDataInfo(agentID)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			updatedAgentsTableMetadata = append(updatedAgentsTableMetadata, &metadata_servicepb.AgentTableMetadata{
+				AgentID:  utils.ProtoFromUUID(&agentID),
+				DataInfo: agentDataInfo,
+				// Change this below to extract agent-specific schema as well when that exists.
+				Schema: nil,
+			})
+		}
+		for deletedAgentID := range m.updatedAgents.deleted {
+			deletedAgents = append(deletedAgents, deletedAgentID)
+		}
+	} else {
+		updatedAgents, err = m.mds.GetAgents()
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		updatedAgents = append(updatedAgents, agent)
-	}
-	for updatedAgentDataInfoID := range m.updatedAgents.updatedDataInfo {
-		agentDataInfo, err := m.mds.GetAgentDataInfo(updatedAgentDataInfoID)
+		updatedAgentsDataInfo, err := m.mds.GetAgentsDataInfo()
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		updatedAgentsDataInfo[updatedAgentDataInfoID] = agentDataInfo
-	}
-	for deletedAgentID := range m.updatedAgents.deleted {
-		deletedAgents = append(deletedAgents, deletedAgentID)
+		for agentID, agentDataInfo := range updatedAgentsDataInfo {
+			updatedAgentsTableMetadata = append(updatedAgentsTableMetadata, &metadata_servicepb.AgentTableMetadata{
+				AgentID:  utils.ProtoFromUUID(&agentID),
+				DataInfo: agentDataInfo,
+				// Change this below to extract agent-specific schema as well when that exists.
+				Schema: nil,
+			})
+		}
 	}
 
 	// Reset the state now that we have popped off the latest updates.
 	m.updatedAgents = EmptyUpdatedAgentsList()
-	return updatedAgents, updatedAgentsDataInfo, deletedAgents, nil
+	return updatedAgents, updatedAgentsTableMetadata, deletedAgents, nil
 }

@@ -10,6 +10,7 @@ import (
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
+	metadatapb0 "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	reflect "reflect"
 )
@@ -182,16 +183,16 @@ func (mr *MockAgentManagerMockRecorder) HandleUpdate(arg0 interface{}) *gomock.C
 }
 
 // GetAgentUpdates mocks base method
-func (m *MockAgentManager) GetAgentUpdates() ([]*agentpb.Agent, map[go_uuid.UUID]*messagespb.AgentDataInfo, []go_uuid.UUID, error) {
-	ret := m.ctrl.Call(m, "GetAgentUpdates")
+func (m *MockAgentManager) GetAgentUpdates(readFullState bool) ([]*agentpb.Agent, []*metadatapb0.AgentTableMetadata, []go_uuid.UUID, error) {
+	ret := m.ctrl.Call(m, "GetAgentUpdates", readFullState)
 	ret0, _ := ret[0].([]*agentpb.Agent)
-	ret1, _ := ret[1].(map[go_uuid.UUID]*messagespb.AgentDataInfo)
+	ret1, _ := ret[1].([]*metadatapb0.AgentTableMetadata)
 	ret2, _ := ret[2].([]go_uuid.UUID)
 	ret3, _ := ret[3].(error)
 	return ret0, ret1, ret2, ret3
 }
 
 // GetAgentUpdates indicates an expected call of GetAgentUpdates
-func (mr *MockAgentManagerMockRecorder) GetAgentUpdates() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentUpdates", reflect.TypeOf((*MockAgentManager)(nil).GetAgentUpdates))
+func (mr *MockAgentManagerMockRecorder) GetAgentUpdates(readFullState interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentUpdates", reflect.TypeOf((*MockAgentManager)(nil).GetAgentUpdates), readFullState)
 }

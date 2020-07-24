@@ -786,6 +786,25 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	agUUID3, err := uuid.FromString(testutils.NewAgentUUID)
 	assert.Nil(t, err)
 
+	// Read the initial agent state.
+	agents, agentsTableInfo, deletedAgents, err := agtMgr.GetAgentUpdates(true)
+	assert.Nil(t, err)
+	assert.NotNil(t, agents)
+	assert.Nil(t, agentsTableInfo)
+	assert.Nil(t, deletedAgents)
+
+	// get initial agents
+	assert.Equal(t, 3, len(agents))
+	uuids := make(map[uuid.UUID]bool)
+	for _, agent := range agents {
+		assert.NotNil(t, agent.Info.AgentID)
+		uuid := utils.UUIDFromProtoOrNil(agent.Info.AgentID)
+		uuids[uuid] = true
+	}
+	assert.True(t, uuids[agUUID0])
+	assert.True(t, uuids[agUUID1])
+	assert.True(t, uuids[agUUID2])
+
 	newAgentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
@@ -832,10 +851,10 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	agtMgr.ApplyAgentUpdate(&agentUpdate)
 
 	// Check results of first call to GetAgentUpdates.
-	agents, agentsDataInfo, deletedAgents, err := agtMgr.GetAgentUpdates()
+	agents, agentsTableInfo, deletedAgents, err = agtMgr.GetAgentUpdates(false)
 	assert.Nil(t, err)
 	assert.NotNil(t, agents)
-	assert.NotNil(t, agentsDataInfo)
+	assert.NotNil(t, agentsTableInfo)
 	assert.Nil(t, deletedAgents)
 
 	// agents array
@@ -844,8 +863,10 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	assert.Equal(t, utils.ProtoFromUUID(&agUUID3), agents[0].Info.AgentID)
 
 	// agents data info
-	assert.Equal(t, 1, len(agentsDataInfo))
-	assert.Equal(t, oldAgentDataInfo, agentsDataInfo[agUUID2])
+	assert.Equal(t, 1, len(agentsTableInfo))
+	assert.Equal(t, utils.ProtoFromUUID(&agUUID2), agentsTableInfo[0].AgentID)
+	assert.Equal(t, oldAgentDataInfo, agentsTableInfo[0].DataInfo)
+	assert.Nil(t, agentsTableInfo[0].Schema)
 
 	// Update the heartbeat of an agent.
 	err = agtMgr.UpdateHeartbeat(agUUID2)
@@ -866,10 +887,10 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Check results of second call to GetAgentUpdates.
-	agents, agentsDataInfo, deletedAgents, err = agtMgr.GetAgentUpdates()
+	agents, agentsTableInfo, deletedAgents, err = agtMgr.GetAgentUpdates(false)
 	assert.Nil(t, err)
 	assert.NotNil(t, agents)
-	assert.NotNil(t, agentsDataInfo)
+	assert.Nil(t, agentsTableInfo)
 	assert.NotNil(t, deletedAgents)
 
 	// agents array
@@ -879,21 +900,12 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	assert.Equal(t, 1, len(agents))
 	assert.Equal(t, int64(testutils.ClockNowNS), agents[0].LastHeartbeatNS)
 
-	// agents data info
-	assert.Equal(t, 0, len(agentsDataInfo))
-
 	// deleted agents array
 	assert.Equal(t, 2, len(deletedAgents))
-	hasUUID0 := false
-	hasUUID1 := false
+	deletedUUIDs := make(map[uuid.UUID]bool)
 	for _, agUUID := range deletedAgents {
-		if agUUID == agUUID0 {
-			hasUUID0 = true
-		}
-		if agUUID == agUUID1 {
-			hasUUID1 = true
-		}
+		deletedUUIDs[agUUID] = true
 	}
-	assert.True(t, hasUUID0)
-	assert.True(t, hasUUID1)
+	assert.True(t, deletedUUIDs[agUUID0])
+	assert.True(t, deletedUUIDs[agUUID1])
 }

@@ -14,6 +14,7 @@ go_library(
         "//src/shared/types:go_default_library",
         "//src/vizier/messages/messagespb:messages_pl_go_proto",
         "//src/vizier/services/metadata/controllers:go_default_library",
+        "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
         "//src/vizier/services/metadata/storepb:store_pl_go_proto",
         "//src/vizier/services/shared/agentpb:agent_pl_go_proto",
         "@com_github_golang_mock//gomock:go_default_library",
