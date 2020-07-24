@@ -76,6 +76,41 @@ class PodNameToPodIDUDF : public ScalarUDF {
   }
 };
 
+class PodIDToNamespaceUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue pod_id) {
+    auto md = GetMetadataState(ctx);
+
+    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info != nullptr) {
+      return pod_info->ns();
+    }
+
+    return "";
+  }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {
+        udf::ExplicitRule::Create<PodIDToNamespaceUDF>(types::ST_NAMESPACE_NAME, {types::ST_NONE})};
+  }
+};
+
+class PodNameToNamespaceUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext*, StringValue pod_name) {
+    // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
+    std::vector<std::string_view> name_parts = absl::StrSplit(pod_name, "/");
+    if (name_parts.size() != 2) {
+      return "";
+    }
+    return std::string(name_parts[0]);
+  }
+
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<PodNameToNamespaceUDF>(types::ST_NAMESPACE_NAME,
+                                                             {types::ST_NONE})};
+  }
+};
+
 class UPIDToContainerIDUDF : public ScalarUDF {
  public:
   StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {

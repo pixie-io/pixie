@@ -423,6 +423,20 @@ TEST_F(MetadataOpsTest, upid_to_pod_status) {
   EXPECT_EQ(std::string(udf.Exec(function_ctx.get(), upid2)), "Failed");
 }
 
+TEST_F(MetadataOpsTest, pod_id_to_namespace_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto udf_tester = pl::carnot::udf::UDFTester<PodIDToNamespaceUDF>(std::move(function_ctx));
+  udf_tester.ForInput("1_uid").Expect("pl");
+  udf_tester.ForInput("2_uid").Expect("pl");
+}
+
+TEST_F(MetadataOpsTest, pod_name_to_namespace_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto udf_tester = pl::carnot::udf::UDFTester<PodNameToNamespaceUDF>(std::move(function_ctx));
+  udf_tester.ForInput("pl/running_pod").Expect("pl");
+  udf_tester.ForInput("px-sock-shop/terminating_pod").Expect("px-sock-shop");
+}
+
 }  // namespace metadata
 }  // namespace funcs
 }  // namespace carnot
