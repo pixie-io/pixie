@@ -26,10 +26,10 @@ Status PEMManager::PostRegisterHook() {
   PL_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kExecuteQueryRequest,
                                             execute_query_handler));
 
-  probe_manager_ =
-      std::make_shared<ProbeManager>(dispatcher_.get(), info(), nats_connector(), stirling_.get());
-  PL_RETURN_IF_ERROR(
-      RegisterMessageHandler(messages::VizierMessage::MsgCase::kTracepointMessage, probe_manager_));
+  tracepoint_manager_ = std::make_shared<TracepointManager>(dispatcher_.get(), info(),
+                                                            nats_connector(), stirling_.get());
+  PL_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kTracepointMessage,
+                                            tracepoint_manager_));
   return Status::OK();
 }
 

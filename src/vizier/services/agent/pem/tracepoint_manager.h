@@ -10,16 +10,16 @@ namespace vizier {
 namespace agent {
 
 /**
- * ProbeManager handles the lifecycles management of dynamic probes.
+ * TracepointManager handles the lifecycles management of dynamic probes.
  *
  * This includes tracking all existing probes, listening for new probes from
  * the incoming message stream and replying to status requests.
  */
-class ProbeManager : public Manager::MessageHandler {
+class TracepointManager : public Manager::MessageHandler {
  public:
-  ProbeManager() = delete;
-  ProbeManager(pl::event::Dispatcher* dispatcher, Info* agent_info,
-               Manager::VizierNATSConnector* nats_conn, stirling::Stirling* stirling);
+  TracepointManager() = delete;
+  TracepointManager(pl::event::Dispatcher* dispatcher, Info* agent_info,
+                    Manager::VizierNATSConnector* nats_conn, stirling::Stirling* stirling);
 
   Status HandleMessage(std::unique_ptr<messages::VizierMessage> msg) override;
 
