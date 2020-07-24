@@ -150,7 +150,7 @@ const AgentsTable = () => {
     }
     let mounted = true;
     const fetchAgentStatus = () => {
-      client.executeScript(AGENT_STATUS_SCRIPT, []).then((results) => {
+      client.executeScript(AGENT_STATUS_SCRIPT, [], false).then((results) => {
         if (!mounted) {
           return;
         }

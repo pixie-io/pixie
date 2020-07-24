@@ -6,7 +6,7 @@ import {
   LIVE_VIEW_VIS_SPEC_KEY, useSessionStorage,
 } from 'common/storage';
 import ClientContext from 'common/vizier-grpc-client-context';
-import { VizierQueryError } from 'common/errors';
+import { VizierQueryError, GRPCStatusCode } from 'common/errors';
 import { VizierQueryFunc } from 'common/vizier-grpc-client';
 
 import * as React from 'react';
@@ -29,6 +29,12 @@ import {
 import { DataDrawerContext } from './data-drawer-context';
 import { ResultsContext } from './results-context';
 import { LayoutContext } from './layout-context';
+
+// If the pxl script contains any of the following strings, it contains a mutation.
+const pxlMutations = [
+  'from pxtrace',
+  'import pxtrace',
+];
 
 export interface ExecuteArguments {
   pxl: string;
@@ -241,6 +247,20 @@ const ScriptContextProvider = (props) => {
     urlParams.commitAll(scriptId, '', nonEntityArgs);
   };
 
+  const executeScriptUntilMutationCompletion = (
+    execArgs: ExecuteArguments,
+    funcs: VizierQueryFunc[],
+    mutation: boolean) => (
+    client.executeScript(execArgs.pxl, funcs, mutation).then(async (queryResults) => {
+      // If the results are from a mutation, we should wait and retry if the mutation is still pending.
+      if (queryResults.mutationInfo && queryResults.mutationInfo.getStatus().getCode() === GRPCStatusCode.Unavailable) {
+        // Wait 5s before executing again.
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        return executeScriptUntilMutationCompletion(execArgs, funcs, mutation);
+      }
+      return queryResults;
+    }));
+
   const execute = (execArgs: ExecuteArguments) => {
     if (loading) {
       showSnackbar({
@@ -263,6 +283,11 @@ const ScriptContextProvider = (props) => {
     let errMsg: string;
     let queryId: string;
 
+    const mutation = pxlMutations.some((mutationStr) => {
+      const re = new RegExp(`^${mutationStr}`, 'gm');
+      return execArgs.pxl.match(re);
+    });
+
     if (!execArgs.skipURLUpdate) {
       commitURL(execArgs.liveViewPage, execArgs.id, execArgs.args);
     }
@@ -282,7 +307,7 @@ const ScriptContextProvider = (props) => {
         reject(error);
       }
     })
-      .then((funcs: VizierQueryFunc[]) => client.executeScript(execArgs.pxl, funcs))
+      .then((funcs: VizierQueryFunc[]) => executeScriptUntilMutationCompletion(execArgs, funcs, mutation))
       .then((queryResults) => {
         const newTables = {};
         ({ queryId } = queryResults);

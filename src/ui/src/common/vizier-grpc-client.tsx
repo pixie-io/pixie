@@ -3,7 +3,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
 import {
   ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation,
-  RowBatchData, Status,
+  RowBatchData, Status, MutationInfo,
 } from 'types/generated/vizier_pb';
 import { VizierServiceClient } from 'types/generated/VizierServiceClientPb';
 import noop from 'utils/noop';
@@ -32,6 +32,7 @@ export interface VizierQueryResult {
   tables: Table[];
   status?: Status;
   executionStats?: QueryExecutionStats;
+  mutationInfo?: MutationInfo;
 }
 
 export interface VizierQueryArg {
@@ -105,14 +106,14 @@ export class VizierGRPCClient {
 
   // Use a generator to produce the VizierQueryFunc to remove the dependency on vis.tsx.
   // funcsGenerator should correspond to getQueryFuncs in vis.tsx.
-  executeScript(script: string, funcs: VizierQueryFunc[]): Promise<VizierQueryResult> {
+  executeScript(script: string, funcs: VizierQueryFunc[], mutation: boolean): Promise<VizierQueryResult> {
     const headers = {
       ...(this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` }),
     };
     return new Promise((resolve, reject) => {
       let req: ExecuteScriptRequest;
       try {
-        req = this.buildRequest(script, funcs);
+        req = this.buildRequest(script, funcs, mutation);
       } catch (err) {
         reject(err);
         return;
@@ -154,6 +155,8 @@ export class VizierGRPCClient {
           tablesMap.set(id, {
             relation, id, name, data: [],
           });
+        } else if (resp.hasMutationInfo()) {
+          results.mutationInfo = resp.getMutationInfo();
         } else if (resp.hasData()) {
           const data = resp.getData();
           if (data.hasBatch()) {
@@ -199,11 +202,13 @@ export class VizierGRPCClient {
     });
   }
 
-  private buildRequest(script: string, funcs: VizierQueryFunc[]): ExecuteScriptRequest {
+  private buildRequest(script: string, funcs: VizierQueryFunc[], mutation: boolean): ExecuteScriptRequest {
     const req = new ExecuteScriptRequest();
     const errors = [];
+
     req.setClusterId(this.clusterID);
     req.setQueryStr(script);
+    req.setMutation(mutation);
     funcs.forEach((input: VizierQueryFunc) => {
       const execFuncPb = new ExecuteScriptRequest.FuncToExecute();
       execFuncPb.setFuncName(input.name);

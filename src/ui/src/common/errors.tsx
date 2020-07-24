@@ -5,6 +5,25 @@ import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 export type VizierQueryErrorType = 'script' | 'vis' | 'execution' | 'server';
 
+export enum GRPCStatusCode {
+  OK = 0,
+  Cancelled,
+  Unknown,
+  InvalidArgument,
+  DeadlineExceeded,
+  NotFound,
+  AlreadyExists,
+  PermissionDenied,
+  ResourceExhausted,
+  FailedPrecondition,
+  Aborted,
+  OutOfRange,
+  Unimplemented,
+  Internal,
+  Unavailable,
+  DataLoss,
+}
+
 function getUserFacingMessage(errType: VizierQueryErrorType): string {
   switch (errType) {
     case 'vis':
