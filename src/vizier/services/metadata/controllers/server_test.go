@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
+	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	bloomfilterpb "pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
 	k8smetadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	sharedmetadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
@@ -376,15 +377,24 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 
 	mockTracepointStore.
 		EXPECT().
-		GetTracepoint("test_tracepoint").
+		GetTracepointWithName("test_tracepoint").
 		Return(nil, nil)
 
+	var tpID uuid.UUID
 	mockTracepointStore.
 		EXPECT().
 		UpsertTracepoint(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(tracepointID string, tracepointInfo *storepb.TracepointInfo) error {
+		DoAndReturn(func(tracepointID uuid.UUID, tracepointInfo *storepb.TracepointInfo) error {
 			assert.Equal(t, program, tracepointInfo.Program)
-			assert.Equal(t, "test_tracepoint", tracepointInfo.TracepointID)
+			tpID = tracepointID
+			assert.Equal(t, "test_tracepoint", tracepointInfo.TracepointName)
+			return nil
+		})
+	mockTracepointStore.
+		EXPECT().
+		SetTracepointWithName("test_tracepoint", gomock.Any()).
+		DoAndReturn(func(tpName string, id uuid.UUID) error {
+			assert.Equal(t, tpID, id)
 			return nil
 		})
 
@@ -408,7 +418,7 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 	assert.NotNil(t, resp)
 	assert.Nil(t, err)
 
-	assert.Equal(t, "test_tracepoint", resp.TracepointID)
+	assert.Equal(t, tpID, utils.UUIDFromProtoOrNil(resp.TracepointID))
 	assert.Equal(t, statuspb.OK, resp.Status.ErrCode)
 }
 
@@ -431,9 +441,16 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 		},
 	}
 
+	oldTPID := uuid.NewV4()
+
 	mockTracepointStore.
 		EXPECT().
-		GetTracepoint("test_tracepoint").
+		GetTracepointWithName("test_tracepoint").
+		Return(&oldTPID, nil)
+
+	mockTracepointStore.
+		EXPECT().
+		GetTracepoint(oldTPID).
 		Return(&storepb.TracepointInfo{
 			Program: &logicalpb.Program{
 				Outputs: []*irpb.Output{
@@ -465,7 +482,7 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 	assert.NotNil(t, resp)
 	assert.Nil(t, err)
 
-	assert.Equal(t, "test_tracepoint", resp.TracepointID)
+	assert.Equal(t, utils.ProtoFromUUID(&oldTPID), resp.TracepointID)
 	assert.Equal(t, statuspb.ALREADY_EXISTS, resp.Status.ErrCode)
 }
 
@@ -560,20 +577,21 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 
 			tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
+			tID := uuid.NewV4()
 			if !test.tracepointExists {
 				mockTracepointStore.
 					EXPECT().
-					GetTracepoint("test_tracepoint").
+					GetTracepoint(tID).
 					Return(nil, nil)
 			} else {
 				mockTracepointStore.
 					EXPECT().
-					GetTracepoint("test_tracepoint").
-					Return(&storepb.TracepointInfo{TracepointID: "test_tracepoint"}, nil)
+					GetTracepoint(tID).
+					Return(&storepb.TracepointInfo{TracepointID: utils.ProtoFromUUID(&tID), ExpectedState: statuspb.RUNNING_STATE}, nil)
 
 				mockTracepointStore.
 					EXPECT().
-					GetTracepointStates("test_tracepoint").
+					GetTracepointStates(tID).
 					Return(test.agentStates, nil)
 			}
 
@@ -587,16 +605,18 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 
 			s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, mockMds, clock)
 			req := metadatapb.GetTracepointInfoRequest{
-				TracepointIDs: []string{"test_tracepoint"},
+				TracepointIDs: []*uuidpb.UUID{utils.ProtoFromUUID(&tID)},
 			}
 
 			resp, err := s.GetTracepointInfo(context.Background(), &req)
 			assert.Nil(t, err)
 			assert.Equal(t, 1, len(resp.Tracepoints))
-			assert.Equal(t, "test_tracepoint", resp.Tracepoints[0].TracepointID)
+			assert.Equal(t, utils.ProtoFromUUID(&tID), resp.Tracepoints[0].TracepointID)
 			assert.Equal(t, test.expectedState, resp.Tracepoints[0].State)
 			assert.Equal(t, test.expectedStatus, resp.Tracepoints[0].Status)
-			assert.Equal(t, test.expectedStatus, resp.Tracepoints[0].Status)
+			if test.tracepointExists {
+				assert.Equal(t, statuspb.RUNNING_STATE, resp.Tracepoints[0].ExpectedState)
+			}
 		})
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
@@ -204,9 +205,11 @@ func (a *AgentTopicListener) onAgentRegisterRequest(m *messages.RegisterAgentReq
 		agentIDs := []uuid.UUID{agentID}
 
 		for _, tracepoint := range tracepoints {
-			err = a.tracepointManager.RegisterTracepoint(agentIDs, tracepoint.TracepointID, tracepoint.Program)
-			if err != nil {
-				log.WithError(err).Error("Failed to send RegisterTracepoint request")
+			if tracepoint.ExpectedState != statuspb.TERMINATED_STATE {
+				err = a.tracepointManager.RegisterTracepoint(agentIDs, utils.UUIDFromProtoOrNil(tracepoint.TracepointID), tracepoint.Program)
+				if err != nil {
+					log.WithError(err).Error("Failed to send RegisterTracepoint request")
+				}
 			}
 		}
 	}()

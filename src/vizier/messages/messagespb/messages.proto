@@ -120,12 +120,12 @@ message ExecuteQueryRequest {
 // The request to register tracepoints on a PEM.
 message RegisterTracepointRequest {
   pl.stirling.dynamic_tracing.ir.logical.Program program = 1;
-  string tracepoint_id = 2 [ (gogoproto.customname) = "TracepointID" ];
+  uuidpb.UUID tracepoint_id = 2 [ (gogoproto.customname) = "TracepointID" ];
 }
 
 // An update message sent when a tracepoint's status changes.
 message TracepointInfoUpdate {
-  string tracepoint_id = 1 [ (gogoproto.customname) = "TracepointID" ];
+  uuidpb.UUID tracepoint_id = 1 [ (gogoproto.customname) = "TracepointID" ];
   // The state of the tracepoint.
   pl.statuspb.LifeCycleState state = 2;
   // The status of the tracepoint, specified if the state of the tracepoint is not healthy.
@@ -135,5 +135,5 @@ message TracepointInfoUpdate {
 }
 
 message RemoveTracepointRequest {
-    string tracepoint_id = 1 [ (gogoproto.customname) = "TracepointID" ];
+    uuidpb.UUID tracepoint_id = 1 [ (gogoproto.customname) = "TracepointID" ];
 }

@@ -14,6 +14,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
+	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/types"
@@ -225,20 +226,24 @@ func getNodeKey(n *metadatapb.Node) string {
 	return path.Join(getNodesKey(), n.Metadata.UID)
 }
 
+func getTracepointWithNameKey(tracepointName string) string {
+	return path.Join("/", "tracepointName", tracepointName)
+}
+
 func getTracepointsKey() string {
 	return path.Join("/", "tracepoint") + "/"
 }
 
-func getTracepointKey(tracepointID string) string {
-	return path.Join("/", "tracepoint", tracepointID)
+func getTracepointKey(tracepointID uuid.UUID) string {
+	return path.Join("/", "tracepoint", tracepointID.String())
 }
 
-func getTracepointStatesKey(tracepointID string) string {
-	return path.Join("/", "tracepointStates", tracepointID) + "/"
+func getTracepointStatesKey(tracepointID uuid.UUID) string {
+	return path.Join("/", "tracepointStates", tracepointID.String()) + "/"
 }
 
-func getTracepointStateKey(tracepointID string, agentID uuid.UUID) string {
-	return path.Join("/", "tracepointStates", tracepointID, agentID.String())
+func getTracepointStateKey(tracepointID uuid.UUID, agentID uuid.UUID) string {
+	return path.Join("/", "tracepointStates", tracepointID.String(), agentID.String())
 }
 
 /* =============== Agent Operations ============== */
@@ -1191,8 +1196,39 @@ func (mds *KVMetadataStore) GetSubscriberResourceVersion(sub string) (string, er
 
 /* =============== Tracepoint Operations ============== */
 
+// GetTracepointWithName gets which tracepoint is associated with the given name.
+func (mds *KVMetadataStore) GetTracepointWithName(tracepointName string) (*uuid.UUID, error) {
+	resp, err := mds.cache.Get(getTracepointWithNameKey(tracepointName))
+	if err != nil {
+		return nil, err
+	}
+	if resp == nil {
+		return nil, nil
+	}
+
+	uuidPB := &uuidpb.UUID{}
+	err = proto.Unmarshal(resp, uuidPB)
+	if err != nil {
+		return nil, err
+	}
+	id := utils.UUIDFromProtoOrNil(uuidPB)
+	return &id, nil
+}
+
+// SetTracepointWithName associates the tracepoint with the given name with the one with the provided ID.
+func (mds *KVMetadataStore) SetTracepointWithName(tracepointName string, tracepointID uuid.UUID) error {
+	tracepointIDpb := utils.ProtoFromUUID(&tracepointID)
+	val, err := tracepointIDpb.Marshal()
+	if err != nil {
+		return err
+	}
+
+	mds.cache.Set(getTracepointWithNameKey(tracepointName), string(val))
+	return nil
+}
+
 // UpsertTracepoint updates or creates a new tracepoint entry in the store.
-func (mds *KVMetadataStore) UpsertTracepoint(tracepointID string, tracepointInfo *storepb.TracepointInfo) error {
+func (mds *KVMetadataStore) UpsertTracepoint(tracepointID uuid.UUID, tracepointInfo *storepb.TracepointInfo) error {
 	val, err := tracepointInfo.Marshal()
 	if err != nil {
 		return err
@@ -1203,7 +1239,7 @@ func (mds *KVMetadataStore) UpsertTracepoint(tracepointID string, tracepointInfo
 }
 
 // GetTracepoint gets the tracepoint info from the store, if it exists.
-func (mds *KVMetadataStore) GetTracepoint(tracepointID string) (*storepb.TracepointInfo, error) {
+func (mds *KVMetadataStore) GetTracepoint(tracepointID uuid.UUID) (*storepb.TracepointInfo, error) {
 	resp, err := mds.cache.Get(getTracepointKey(tracepointID))
 	if err != nil {
 		return nil, err
@@ -1243,12 +1279,14 @@ func (mds *KVMetadataStore) UpdateTracepointState(state *storepb.AgentTracepoint
 		return err
 	}
 
-	mds.cache.Set(getTracepointStateKey(state.TracepointID, utils.UUIDFromProtoOrNil(state.AgentID)), string(val))
+	tpID := utils.UUIDFromProtoOrNil(state.TracepointID)
+
+	mds.cache.Set(getTracepointStateKey(tpID, utils.UUIDFromProtoOrNil(state.AgentID)), string(val))
 	return nil
 }
 
 // GetTracepointStates gets all the agentTracepoint states for the given tracepoint.
-func (mds *KVMetadataStore) GetTracepointStates(tracepointID string) ([]*storepb.AgentTracepointStatus, error) {
+func (mds *KVMetadataStore) GetTracepointStates(tracepointID uuid.UUID) ([]*storepb.AgentTracepointStatus, error) {
 	_, vals, err := mds.cache.GetWithPrefix(getTracepointStatesKey(tracepointID))
 	if err != nil {
 		return nil, err

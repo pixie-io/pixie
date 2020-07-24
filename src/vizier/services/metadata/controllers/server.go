@@ -171,7 +171,7 @@ func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.Registe
 	}
 	if err == ErrTracepointAlreadyExists {
 		return &metadatapb.RegisterTracepointResponse{
-			TracepointID: req.TracepointName,
+			TracepointID: utils.ProtoFromUUID(tracepointID),
 			Status: &statuspb.Status{
 				ErrCode: statuspb.ALREADY_EXISTS,
 			},
@@ -189,13 +189,13 @@ func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.Registe
 	}
 
 	// Register tracepoint on all agents.
-	err = s.tracepointManager.RegisterTracepoint(agentIDs, tracepointID, req.Program)
+	err = s.tracepointManager.RegisterTracepoint(agentIDs, *tracepointID, req.Program)
 	if err != nil {
 		return nil, err
 	}
 
 	resp := &metadatapb.RegisterTracepointResponse{
-		TracepointID: tracepointID,
+		TracepointID: utils.ProtoFromUUID(tracepointID),
 		Status: &statuspb.Status{
 			ErrCode: statuspb.OK,
 		},
@@ -209,7 +209,8 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 	tracepointState := make([]*metadatapb.GetTracepointInfoResponse_TracepointState, len(req.TracepointIDs))
 
 	for i, tracepointID := range req.TracepointIDs {
-		tracepoint, err := s.tracepointManager.GetTracepointInfo(tracepointID)
+		tUUID := utils.UUIDFromProtoOrNil(tracepointID)
+		tracepoint, err := s.tracepointManager.GetTracepointInfo(tUUID)
 		if err != nil {
 			return nil, err
 		}
@@ -224,7 +225,7 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 			continue
 		}
 
-		tracepointStates, err := s.tracepointManager.GetTracepointStates(tracepointID)
+		tracepointStates, err := s.tracepointManager.GetTracepointStates(tUUID)
 		if err != nil {
 			return nil, err
 		}
@@ -232,9 +233,11 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 		state, status := getTracepointStateFromAgentTracepointStates(tracepointStates)
 
 		tracepointState[i] = &metadatapb.GetTracepointInfoResponse_TracepointState{
-			TracepointID: tracepointID,
-			State:        state,
-			Status:       status,
+			TracepointID:   tracepointID,
+			State:          state,
+			Status:         status,
+			TracepointName: tracepoint.TracepointName,
+			ExpectedState:  tracepoint.ExpectedState,
 		}
 	}
 

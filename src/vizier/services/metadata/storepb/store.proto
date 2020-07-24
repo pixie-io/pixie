@@ -14,9 +14,14 @@ option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb
 
 // Information about the status of a specific tracepoint.
 message TracepointInfo {
-  string tracepoint_id = 1 [ (gogoproto.customname) = "TracepointID" ];
+  uuidpb.UUID tracepoint_id = 1 [ (gogoproto.customname) = "TracepointID" ];
   // The tracepoint program.
   pl.stirling.dynamic_tracing.ir.logical.Program program = 2;
+  // The name of the tracepoint, not unique.
+  string tracepoint_name = 3;
+  // The desired state of the tracepoint, either running or terminated. The actual
+  // state of the tracepoint is derived by the states of the individual agent tracepoints.
+  pl.statuspb.LifeCycleState expected_state = 4;
 }
 
 // The agent's registration status for a particular tracepoint.
@@ -25,6 +30,6 @@ message AgentTracepointStatus {
   pl.statuspb.LifeCycleState state = 1;
   // The status of the tracepoint, specified if the state of the tracepoint is not healthy.
   pl.statuspb.Status status = 2;
-  string tracepoint_id = 3 [ (gogoproto.customname) = "TracepointID" ];
+  uuidpb.UUID tracepoint_id = 3 [ (gogoproto.customname) = "TracepointID" ];
   uuidpb.UUID agent_id = 4 [ (gogoproto.customname) = "AgentID" ];
 }

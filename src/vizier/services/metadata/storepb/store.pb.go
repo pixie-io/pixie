@@ -10,8 +10,8 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	proto1 "pixielabs.ai/pixielabs/src/common/base/proto"
-	proto2 "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	proto2 "pixielabs.ai/pixielabs/src/common/base/proto"
+	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	ir "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir"
 	reflect "reflect"
 	strings "strings"
@@ -29,8 +29,10 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type TracepointInfo struct {
-	TracepointID string      `protobuf:"bytes,1,opt,name=tracepoint_id,json=tracepointId,proto3" json:"tracepoint_id,omitempty"`
-	Program      *ir.Program `protobuf:"bytes,2,opt,name=program,proto3" json:"program,omitempty"`
+	TracepointID   *proto1.UUID          `protobuf:"bytes,1,opt,name=tracepoint_id,json=tracepointId,proto3" json:"tracepoint_id,omitempty"`
+	Program        *ir.Program           `protobuf:"bytes,2,opt,name=program,proto3" json:"program,omitempty"`
+	TracepointName string                `protobuf:"bytes,3,opt,name=tracepoint_name,json=tracepointName,proto3" json:"tracepoint_name,omitempty"`
+	ExpectedState  proto2.LifeCycleState `protobuf:"varint,4,opt,name=expected_state,json=expectedState,proto3,enum=pl.statuspb.LifeCycleState" json:"expected_state,omitempty"`
 }
 
 func (m *TracepointInfo) Reset()      { *m = TracepointInfo{} }
@@ -65,11 +67,11 @@ func (m *TracepointInfo) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_TracepointInfo proto.InternalMessageInfo
 
-func (m *TracepointInfo) GetTracepointID() string {
+func (m *TracepointInfo) GetTracepointID() *proto1.UUID {
 	if m != nil {
 		return m.TracepointID
 	}
-	return ""
+	return nil
 }
 
 func (m *TracepointInfo) GetProgram() *ir.Program {
@@ -79,11 +81,25 @@ func (m *TracepointInfo) GetProgram() *ir.Program {
 	return nil
 }
 
+func (m *TracepointInfo) GetTracepointName() string {
+	if m != nil {
+		return m.TracepointName
+	}
+	return ""
+}
+
+func (m *TracepointInfo) GetExpectedState() proto2.LifeCycleState {
+	if m != nil {
+		return m.ExpectedState
+	}
+	return proto2.UNKNOWN_STATE
+}
+
 type AgentTracepointStatus struct {
-	State        proto1.LifeCycleState `protobuf:"varint,1,opt,name=state,proto3,enum=pl.statuspb.LifeCycleState" json:"state,omitempty"`
-	Status       *proto1.Status        `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
-	TracepointID string                `protobuf:"bytes,3,opt,name=tracepoint_id,json=tracepointId,proto3" json:"tracepoint_id,omitempty"`
-	AgentID      *proto2.UUID          `protobuf:"bytes,4,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	State        proto2.LifeCycleState `protobuf:"varint,1,opt,name=state,proto3,enum=pl.statuspb.LifeCycleState" json:"state,omitempty"`
+	Status       *proto2.Status        `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	TracepointID *proto1.UUID          `protobuf:"bytes,3,opt,name=tracepoint_id,json=tracepointId,proto3" json:"tracepoint_id,omitempty"`
+	AgentID      *proto1.UUID          `protobuf:"bytes,4,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
 }
 
 func (m *AgentTracepointStatus) Reset()      { *m = AgentTracepointStatus{} }
@@ -118,28 +134,28 @@ func (m *AgentTracepointStatus) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_AgentTracepointStatus proto.InternalMessageInfo
 
-func (m *AgentTracepointStatus) GetState() proto1.LifeCycleState {
+func (m *AgentTracepointStatus) GetState() proto2.LifeCycleState {
 	if m != nil {
 		return m.State
 	}
-	return proto1.UNKNOWN_STATE
+	return proto2.UNKNOWN_STATE
 }
 
-func (m *AgentTracepointStatus) GetStatus() *proto1.Status {
+func (m *AgentTracepointStatus) GetStatus() *proto2.Status {
 	if m != nil {
 		return m.Status
 	}
 	return nil
 }
 
-func (m *AgentTracepointStatus) GetTracepointID() string {
+func (m *AgentTracepointStatus) GetTracepointID() *proto1.UUID {
 	if m != nil {
 		return m.TracepointID
 	}
-	return ""
+	return nil
 }
 
-func (m *AgentTracepointStatus) GetAgentID() *proto2.UUID {
+func (m *AgentTracepointStatus) GetAgentID() *proto1.UUID {
 	if m != nil {
 		return m.AgentID
 	}
@@ -156,36 +172,39 @@ func init() {
 }
 
 var fileDescriptor_27ea71ea705227d1 = []byte{
-	// 455 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x92, 0x3f, 0x6f, 0xd4, 0x30,
-	0x18, 0xc6, 0x63, 0xfe, 0xb4, 0x90, 0x96, 0x82, 0x82, 0x90, 0xaa, 0x56, 0x72, 0x4f, 0x37, 0x55,
-	0x42, 0xd8, 0x50, 0x84, 0x18, 0x98, 0xb8, 0xde, 0x12, 0x89, 0x01, 0x05, 0xba, 0xb0, 0x54, 0x8e,
-	0xe3, 0x0b, 0xaf, 0x94, 0xc4, 0x96, 0xed, 0x54, 0x1c, 0x13, 0x1f, 0x01, 0xf1, 0x29, 0xf8, 0x28,
-	0x8c, 0x37, 0x76, 0xaa, 0x38, 0xdf, 0x00, 0x63, 0x3f, 0x02, 0x72, 0x9c, 0xb4, 0x05, 0x96, 0x4e,
-	0xf6, 0x9b, 0xfc, 0x9e, 0xf7, 0x79, 0xde, 0x57, 0x8e, 0x9f, 0x1a, 0xcd, 0xe9, 0x09, 0x7c, 0x06,
-	0xa1, 0xa9, 0x11, 0xfa, 0x04, 0xb8, 0x30, 0xb4, 0x16, 0x96, 0x15, 0xcc, 0x32, 0x6a, 0xac, 0xd4,
-	0x42, 0xe5, 0xe1, 0x24, 0x4a, 0x4b, 0x2b, 0x93, 0x5d, 0x55, 0x91, 0x20, 0x20, 0x83, 0x80, 0x0c,
-	0x82, 0x9d, 0xb1, 0x6f, 0xc7, 0x65, 0x5d, 0xcb, 0x86, 0xe6, 0xcc, 0x08, 0xda, 0x69, 0xa8, 0xb1,
-	0xcc, 0xb6, 0x26, 0x34, 0xd8, 0x79, 0x52, 0x82, 0xfd, 0xd8, 0xe6, 0x84, 0xcb, 0x9a, 0x96, 0xb2,
-	0x94, 0x81, 0xc9, 0xdb, 0x59, 0x57, 0x05, 0x81, 0xbf, 0x0d, 0xb8, 0x6f, 0x69, 0x2c, 0xe8, 0x0a,
-	0x9a, 0x92, 0x16, 0xf3, 0x86, 0xd5, 0xc0, 0x8f, 0xad, 0x66, 0xdc, 0xd7, 0xa0, 0x69, 0x25, 0x4b,
-	0xe0, 0xac, 0xea, 0xf1, 0xd1, 0x95, 0x04, 0x6d, 0x0b, 0x45, 0x9f, 0xc0, 0x5f, 0x03, 0x31, 0xfe,
-	0x86, 0xe2, 0xad, 0xf7, 0x9a, 0x71, 0xa1, 0x24, 0x34, 0x36, 0x6d, 0x66, 0x32, 0x79, 0x11, 0xdf,
-	0xb3, 0x17, 0x5f, 0x8e, 0xa1, 0xd8, 0x46, 0x23, 0xb4, 0x7f, 0x77, 0xf2, 0xc0, 0x9d, 0xed, 0x6d,
-	0x5e, 0x41, 0xa7, 0xd9, 0xe6, 0x25, 0x96, 0x16, 0x49, 0x1a, 0xaf, 0x2b, 0x2d, 0x4b, 0xcd, 0xea,
-	0xed, 0x1b, 0x23, 0xb4, 0xbf, 0x71, 0x40, 0x89, 0xaa, 0xc8, 0x90, 0x95, 0xfc, 0x93, 0x95, 0x80,
-	0x26, 0x43, 0xd6, 0xb7, 0x41, 0x96, 0x0d, 0xfa, 0xf1, 0x2f, 0x14, 0x3f, 0x7a, 0x5d, 0x8a, 0xc6,
-	0x5e, 0xda, 0xbd, 0xeb, 0x96, 0x96, 0x3c, 0x8b, 0x6f, 0xfb, 0xf5, 0x89, 0x2e, 0xd3, 0xd6, 0xc1,
-	0x6e, 0xb0, 0xf0, 0xbf, 0x54, 0x4e, 0xde, 0xc0, 0x4c, 0x1c, 0xce, 0x79, 0x25, 0x3c, 0x2c, 0xb2,
-	0x40, 0x26, 0x8f, 0xe3, 0xb5, 0x40, 0xf4, 0xb1, 0x1e, 0xfe, 0xa5, 0x09, 0x7d, 0xb3, 0x1e, 0xf9,
-	0x7f, 0xf6, 0x9b, 0xd7, 0x9a, 0xfd, 0x65, 0x7c, 0x87, 0xf9, 0xbc, 0x5e, 0x71, 0xab, 0x73, 0xb9,
-	0xef, 0x5d, 0xfc, 0x9e, 0x55, 0x4e, 0x8e, 0x8e, 0xd2, 0xe9, 0x64, 0xc3, 0x9d, 0xed, 0xad, 0x77,
-	0x43, 0xa5, 0xd3, 0x6c, 0xbd, 0xa3, 0xd3, 0x62, 0x32, 0x5f, 0x2c, 0x71, 0x74, 0xba, 0xc4, 0xd1,
-	0xf9, 0x12, 0xa3, 0x2f, 0x0e, 0xa3, 0xef, 0x0e, 0xa3, 0x1f, 0x0e, 0xa3, 0x85, 0xc3, 0xe8, 0xa7,
-	0xc3, 0xe8, 0xb7, 0xc3, 0xd1, 0xb9, 0xc3, 0xe8, 0xeb, 0x0a, 0x47, 0x8b, 0x15, 0x8e, 0x4e, 0x57,
-	0x38, 0xfa, 0x70, 0xa8, 0xe0, 0x13, 0x88, 0x8a, 0xe5, 0x86, 0x30, 0xa0, 0x17, 0x05, 0xbd, 0xce,
-	0xf3, 0x7d, 0xd5, 0x9f, 0xf9, 0x5a, 0xf7, 0x00, 0x9e, 0xff, 0x09, 0x00, 0x00, 0xff, 0xff, 0x37,
-	0xe7, 0xb5, 0x02, 0xf5, 0x02, 0x00, 0x00,
+	// 499 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x93, 0x4f, 0x6f, 0xd3, 0x3e,
+	0x1c, 0xc6, 0xe3, 0x6d, 0xbf, 0xf5, 0x87, 0xb7, 0x75, 0x28, 0x08, 0xa9, 0xda, 0x24, 0xaf, 0xea,
+	0x85, 0x4a, 0x08, 0x1b, 0xc6, 0x81, 0x03, 0x27, 0xba, 0x0a, 0x29, 0x12, 0x42, 0x28, 0x63, 0x17,
+	0x2e, 0x95, 0xe3, 0xb8, 0xc1, 0x52, 0x12, 0x5b, 0x8e, 0x33, 0xad, 0x9c, 0x78, 0x09, 0x7b, 0x19,
+	0xbc, 0x14, 0x8e, 0x3d, 0xee, 0x34, 0xd1, 0xf4, 0xc2, 0x71, 0x47, 0x8e, 0xc8, 0x71, 0xb2, 0x96,
+	0x3f, 0x12, 0x88, 0x93, 0xfd, 0xb5, 0x9e, 0xcf, 0xd3, 0xe7, 0xfb, 0xa8, 0x81, 0x8f, 0x0b, 0xcd,
+	0xc8, 0xb9, 0xf8, 0x20, 0xb8, 0x26, 0x05, 0xd7, 0xe7, 0x82, 0xf1, 0x82, 0x64, 0xdc, 0xd0, 0x98,
+	0x1a, 0x4a, 0x0a, 0x23, 0x35, 0x57, 0x91, 0x3b, 0xb1, 0xd2, 0xd2, 0x48, 0xff, 0x50, 0xa5, 0xd8,
+	0x01, 0xb8, 0x05, 0x70, 0x0b, 0x1c, 0x0c, 0xac, 0x1d, 0x93, 0x59, 0x26, 0x73, 0x12, 0xd1, 0x82,
+	0x93, 0x9a, 0x21, 0x85, 0xa1, 0xa6, 0x2c, 0x9c, 0xc1, 0xc1, 0xa3, 0x44, 0x98, 0xf7, 0x65, 0x84,
+	0x99, 0xcc, 0x48, 0x22, 0x13, 0xe9, 0x34, 0x51, 0x39, 0xad, 0x27, 0x07, 0xd8, 0x5b, 0x2b, 0xb7,
+	0x96, 0x85, 0x11, 0x3a, 0x15, 0x79, 0x42, 0xe2, 0x59, 0x4e, 0x33, 0xc1, 0x26, 0x46, 0x53, 0x66,
+	0x67, 0xa1, 0x49, 0x2a, 0x13, 0xc1, 0x68, 0xda, 0xc8, 0xfb, 0x6b, 0x09, 0xca, 0x52, 0xc4, 0x4d,
+	0x02, 0x7b, 0x75, 0x8a, 0xc1, 0xe5, 0x06, 0xec, 0xbe, 0xd5, 0x94, 0x71, 0x25, 0x45, 0x6e, 0x82,
+	0x7c, 0x2a, 0xfd, 0x97, 0x70, 0xcf, 0xdc, 0xbe, 0x4c, 0x44, 0xdc, 0x03, 0x7d, 0x30, 0xdc, 0x39,
+	0xde, 0xc7, 0x2a, 0xc5, 0x96, 0x54, 0x11, 0x3e, 0x3b, 0x0b, 0xc6, 0xa3, 0xbb, 0xd5, 0xf5, 0xd1,
+	0xee, 0x1a, 0x3b, 0x0e, 0x77, 0x57, 0x5c, 0x10, 0xfb, 0x01, 0xec, 0x28, 0x2d, 0x13, 0x4d, 0xb3,
+	0xde, 0x46, 0xed, 0x40, 0xac, 0x43, 0x1b, 0x1e, 0xff, 0x14, 0x1e, 0x0b, 0x8d, 0xdb, 0xf0, 0x6f,
+	0x1c, 0x16, 0xb6, 0xbc, 0xff, 0x00, 0xee, 0xaf, 0x45, 0xca, 0x69, 0xc6, 0x7b, 0x9b, 0x7d, 0x30,
+	0xbc, 0x13, 0x76, 0x57, 0xcf, 0xaf, 0x69, 0xc6, 0xfd, 0x11, 0xec, 0xf2, 0x0b, 0xc5, 0x99, 0xe1,
+	0xf1, 0xc4, 0xf6, 0xcc, 0x7b, 0x5b, 0x7d, 0x30, 0xec, 0x1e, 0x1f, 0xba, 0x9f, 0xb6, 0xc5, 0xab,
+	0x08, 0xbf, 0x12, 0x53, 0x7e, 0x32, 0x63, 0x29, 0x3f, 0xb5, 0x92, 0x70, 0xaf, 0x45, 0xea, 0x71,
+	0xf0, 0x0d, 0xc0, 0xfb, 0x2f, 0x12, 0x9e, 0x9b, 0xd5, 0x6e, 0xa7, 0x35, 0xe9, 0x3f, 0x81, 0xff,
+	0x39, 0x53, 0xf0, 0x67, 0x53, 0xa7, 0xf4, 0x1f, 0xc2, 0x6d, 0xa7, 0x68, 0x3a, 0xb8, 0xf7, 0x03,
+	0xe3, 0x7c, 0xc3, 0x46, 0xf2, 0x6b, 0xf3, 0x9b, 0xff, 0xd6, 0xfc, 0x33, 0xf8, 0x3f, 0xb5, 0x0b,
+	0x58, 0x8b, 0xad, 0xdf, 0x5b, 0xec, 0x54, 0xd7, 0x47, 0x9d, 0x7a, 0xcb, 0x60, 0x1c, 0x76, 0x6a,
+	0x75, 0x10, 0x8f, 0x66, 0xf3, 0x05, 0xf2, 0xae, 0x16, 0xc8, 0xbb, 0x59, 0x20, 0xf0, 0xb1, 0x42,
+	0xe0, 0x53, 0x85, 0xc0, 0xe7, 0x0a, 0x81, 0x79, 0x85, 0xc0, 0x97, 0x0a, 0x81, 0xaf, 0x15, 0xf2,
+	0x6e, 0x2a, 0x04, 0x2e, 0x97, 0xc8, 0x9b, 0x2f, 0x91, 0x77, 0xb5, 0x44, 0xde, 0xbb, 0x13, 0x25,
+	0x2e, 0x04, 0x4f, 0x69, 0x54, 0x60, 0x2a, 0xc8, 0xed, 0x40, 0xfe, 0xe6, 0x6b, 0x7a, 0xde, 0x9c,
+	0xd1, 0x76, 0xfd, 0x7f, 0x7c, 0xfa, 0x3d, 0x00, 0x00, 0xff, 0xff, 0x7a, 0x7e, 0x87, 0x82, 0x84,
+	0x03, 0x00, 0x00,
 }
 
 func (this *TracepointInfo) Equal(that interface{}) bool {
@@ -207,10 +226,16 @@ func (this *TracepointInfo) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.TracepointID != that1.TracepointID {
+	if !this.TracepointID.Equal(that1.TracepointID) {
 		return false
 	}
 	if !this.Program.Equal(that1.Program) {
+		return false
+	}
+	if this.TracepointName != that1.TracepointName {
+		return false
+	}
+	if this.ExpectedState != that1.ExpectedState {
 		return false
 	}
 	return true
@@ -240,7 +265,7 @@ func (this *AgentTracepointStatus) Equal(that interface{}) bool {
 	if !this.Status.Equal(that1.Status) {
 		return false
 	}
-	if this.TracepointID != that1.TracepointID {
+	if !this.TracepointID.Equal(that1.TracepointID) {
 		return false
 	}
 	if !this.AgentID.Equal(that1.AgentID) {
@@ -252,12 +277,16 @@ func (this *TracepointInfo) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 8)
 	s = append(s, "&storepb.TracepointInfo{")
-	s = append(s, "TracepointID: "+fmt.Sprintf("%#v", this.TracepointID)+",\n")
+	if this.TracepointID != nil {
+		s = append(s, "TracepointID: "+fmt.Sprintf("%#v", this.TracepointID)+",\n")
+	}
 	if this.Program != nil {
 		s = append(s, "Program: "+fmt.Sprintf("%#v", this.Program)+",\n")
 	}
+	s = append(s, "TracepointName: "+fmt.Sprintf("%#v", this.TracepointName)+",\n")
+	s = append(s, "ExpectedState: "+fmt.Sprintf("%#v", this.ExpectedState)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -271,7 +300,9 @@ func (this *AgentTracepointStatus) GoString() string {
 	if this.Status != nil {
 		s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
 	}
-	s = append(s, "TracepointID: "+fmt.Sprintf("%#v", this.TracepointID)+",\n")
+	if this.TracepointID != nil {
+		s = append(s, "TracepointID: "+fmt.Sprintf("%#v", this.TracepointID)+",\n")
+	}
 	if this.AgentID != nil {
 		s = append(s, "AgentID: "+fmt.Sprintf("%#v", this.AgentID)+",\n")
 	}
@@ -306,6 +337,18 @@ func (m *TracepointInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.ExpectedState != 0 {
+		i = encodeVarintStore(dAtA, i, uint64(m.ExpectedState))
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.TracepointName) > 0 {
+		i -= len(m.TracepointName)
+		copy(dAtA[i:], m.TracepointName)
+		i = encodeVarintStore(dAtA, i, uint64(len(m.TracepointName)))
+		i--
+		dAtA[i] = 0x1a
+	}
 	if m.Program != nil {
 		{
 			size, err := m.Program.MarshalToSizedBuffer(dAtA[:i])
@@ -318,10 +361,15 @@ func (m *TracepointInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.TracepointID) > 0 {
-		i -= len(m.TracepointID)
-		copy(dAtA[i:], m.TracepointID)
-		i = encodeVarintStore(dAtA, i, uint64(len(m.TracepointID)))
+	if m.TracepointID != nil {
+		{
+			size, err := m.TracepointID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintStore(dAtA, i, uint64(size))
+		}
 		i--
 		dAtA[i] = 0xa
 	}
@@ -360,10 +408,15 @@ func (m *AgentTracepointStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x22
 	}
-	if len(m.TracepointID) > 0 {
-		i -= len(m.TracepointID)
-		copy(dAtA[i:], m.TracepointID)
-		i = encodeVarintStore(dAtA, i, uint64(len(m.TracepointID)))
+	if m.TracepointID != nil {
+		{
+			size, err := m.TracepointID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintStore(dAtA, i, uint64(size))
+		}
 		i--
 		dAtA[i] = 0x1a
 	}
@@ -404,13 +457,20 @@ func (m *TracepointInfo) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.TracepointID)
-	if l > 0 {
+	if m.TracepointID != nil {
+		l = m.TracepointID.Size()
 		n += 1 + l + sovStore(uint64(l))
 	}
 	if m.Program != nil {
 		l = m.Program.Size()
 		n += 1 + l + sovStore(uint64(l))
+	}
+	l = len(m.TracepointName)
+	if l > 0 {
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.ExpectedState != 0 {
+		n += 1 + sovStore(uint64(m.ExpectedState))
 	}
 	return n
 }
@@ -428,8 +488,8 @@ func (m *AgentTracepointStatus) Size() (n int) {
 		l = m.Status.Size()
 		n += 1 + l + sovStore(uint64(l))
 	}
-	l = len(m.TracepointID)
-	if l > 0 {
+	if m.TracepointID != nil {
+		l = m.TracepointID.Size()
 		n += 1 + l + sovStore(uint64(l))
 	}
 	if m.AgentID != nil {
@@ -450,8 +510,10 @@ func (this *TracepointInfo) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&TracepointInfo{`,
-		`TracepointID:` + fmt.Sprintf("%v", this.TracepointID) + `,`,
+		`TracepointID:` + strings.Replace(fmt.Sprintf("%v", this.TracepointID), "UUID", "proto1.UUID", 1) + `,`,
 		`Program:` + strings.Replace(fmt.Sprintf("%v", this.Program), "Program", "ir.Program", 1) + `,`,
+		`TracepointName:` + fmt.Sprintf("%v", this.TracepointName) + `,`,
+		`ExpectedState:` + fmt.Sprintf("%v", this.ExpectedState) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -462,9 +524,9 @@ func (this *AgentTracepointStatus) String() string {
 	}
 	s := strings.Join([]string{`&AgentTracepointStatus{`,
 		`State:` + fmt.Sprintf("%v", this.State) + `,`,
-		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto1.Status", 1) + `,`,
-		`TracepointID:` + fmt.Sprintf("%v", this.TracepointID) + `,`,
-		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto2.UUID", 1) + `,`,
+		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto2.Status", 1) + `,`,
+		`TracepointID:` + strings.Replace(fmt.Sprintf("%v", this.TracepointID), "UUID", "proto1.UUID", 1) + `,`,
+		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto1.UUID", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -510,7 +572,7 @@ func (m *TracepointInfo) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field TracepointID", wireType)
 			}
-			var stringLen uint64
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowStore
@@ -520,23 +582,27 @@ func (m *TracepointInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
+			if msglen < 0 {
 				return ErrInvalidLengthStore
 			}
-			postIndex := iNdEx + intStringLen
+			postIndex := iNdEx + msglen
 			if postIndex < 0 {
 				return ErrInvalidLengthStore
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.TracepointID = string(dAtA[iNdEx:postIndex])
+			if m.TracepointID == nil {
+				m.TracepointID = &proto1.UUID{}
+			}
+			if err := m.TracepointID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -574,6 +640,57 @@ func (m *TracepointInfo) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TracepointName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthStore
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TracepointName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExpectedState", wireType)
+			}
+			m.ExpectedState = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ExpectedState |= proto2.LifeCycleState(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipStore(dAtA[iNdEx:])
@@ -641,7 +758,7 @@ func (m *AgentTracepointStatus) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.State |= proto1.LifeCycleState(b&0x7F) << shift
+				m.State |= proto2.LifeCycleState(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -676,7 +793,7 @@ func (m *AgentTracepointStatus) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Status == nil {
-				m.Status = &proto1.Status{}
+				m.Status = &proto2.Status{}
 			}
 			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -686,7 +803,7 @@ func (m *AgentTracepointStatus) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field TracepointID", wireType)
 			}
-			var stringLen uint64
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowStore
@@ -696,23 +813,27 @@ func (m *AgentTracepointStatus) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
+			if msglen < 0 {
 				return ErrInvalidLengthStore
 			}
-			postIndex := iNdEx + intStringLen
+			postIndex := iNdEx + msglen
 			if postIndex < 0 {
 				return ErrInvalidLengthStore
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.TracepointID = string(dAtA[iNdEx:postIndex])
+			if m.TracepointID == nil {
+				m.TracepointID = &proto1.UUID{}
+			}
+			if err := m.TracepointID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -744,7 +865,7 @@ func (m *AgentTracepointStatus) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.AgentID == nil {
-				m.AgentID = &proto2.UUID{}
+				m.AgentID = &proto1.UUID{}
 			}
 			if err := m.AgentID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

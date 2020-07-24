@@ -640,11 +640,12 @@ func TestAgentTracepointInfoUpdate(t *testing.T) {
 	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
 	agentID := uuid.NewV4()
+	tpID := uuid.NewV4()
 
 	mockTracepointStore.
 		EXPECT().
 		UpdateTracepointState(&storepb.AgentTracepointStatus{
-			TracepointID: "test_proto",
+			TracepointID: utils.ProtoFromUUID(&tpID),
 			AgentID:      utils.ProtoFromUUID(&agentID),
 			State:        statuspb.RUNNING_STATE,
 		}).
@@ -655,7 +656,7 @@ func TestAgentTracepointInfoUpdate(t *testing.T) {
 			TracepointMessage: &messages.TracepointMessage{
 				Msg: &messages.TracepointMessage_TracepointInfoUpdate{
 					TracepointInfoUpdate: &messages.TracepointInfoUpdate{
-						TracepointID: "test_proto",
+						TracepointID: utils.ProtoFromUUID(&tpID),
 						AgentID:      utils.ProtoFromUUID(&agentID),
 						State:        statuspb.RUNNING_STATE,
 					},

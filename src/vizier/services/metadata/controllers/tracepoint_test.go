@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
-	// uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	logicalpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir"
 	irpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical/shared"
 	"pixielabs.ai/pixielabs/src/utils"
@@ -28,6 +27,7 @@ func TestCreateTracepoint(t *testing.T) {
 		originalTracepoint *logicalpb.Program
 		newTracepoint      *logicalpb.Program
 		expectedError      bool
+		expectOldUpdated   bool
 	}{
 		{
 			name:               "new_tracepoint",
@@ -104,7 +104,32 @@ func TestCreateTracepoint(t *testing.T) {
 					},
 				},
 			},
-			expectedError: false,
+			expectedError: true,
+		},
+		{
+			name: "existing tracepoint, not exactly same",
+			originalTracepoint: &logicalpb.Program{
+				Outputs: []*irpb.Output{
+					&irpb.Output{
+						Name:   "table1",
+						Fields: []string{"abc", "def"},
+					},
+				},
+				Probes: []*logicalpb.Probe{
+					&logicalpb.Probe{Name: "test"},
+				},
+			},
+			newTracepoint: &logicalpb.Program{
+				Outputs: []*irpb.Output{
+
+					&irpb.Output{
+						Name:   "table1",
+						Fields: []string{"abc", "def"},
+					},
+				},
+			},
+			expectedError:    false,
+			expectOldUpdated: true,
 		},
 	}
 
@@ -115,37 +140,69 @@ func TestCreateTracepoint(t *testing.T) {
 			defer ctrl.Finish()
 			mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
+			origID := uuid.NewV4()
+
 			if test.originalTracepoint == nil {
 				mockTracepointStore.
 					EXPECT().
-					GetTracepoint("test_tracepoint").
+					GetTracepointWithName("test_tracepoint").
 					Return(nil, nil)
 			} else {
 				mockTracepointStore.
 					EXPECT().
-					GetTracepoint("test_tracepoint").
+					GetTracepointWithName("test_tracepoint").
+					Return(&origID, nil)
+				mockTracepointStore.
+					EXPECT().
+					GetTracepoint(origID).
 					Return(&storepb.TracepointInfo{
 						Program: test.originalTracepoint,
 					}, nil)
 			}
 
-			if !test.expectedError {
+			var newID uuid.UUID
+
+			if test.expectOldUpdated {
 				mockTracepointStore.
 					EXPECT().
-					UpsertTracepoint("test_tracepoint", &storepb.TracepointInfo{
-						Program:      test.newTracepoint,
-						TracepointID: "test_tracepoint",
+					UpsertTracepoint(origID, &storepb.TracepointInfo{
+						Program:       test.originalTracepoint,
+						ExpectedState: statuspb.TERMINATED_STATE,
 					}).
 					Return(nil)
 			}
 
+			if !test.expectedError {
+				mockTracepointStore.
+					EXPECT().
+					UpsertTracepoint(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(id uuid.UUID, tpInfo *storepb.TracepointInfo) error {
+						newID = id
+						assert.Equal(t, &storepb.TracepointInfo{
+							Program:        test.newTracepoint,
+							TracepointName: "test_tracepoint",
+							TracepointID:   utils.ProtoFromUUID(&id),
+							ExpectedState:  statuspb.RUNNING_STATE,
+						}, tpInfo)
+						return nil
+					})
+
+				mockTracepointStore.
+					EXPECT().
+					SetTracepointWithName("test_tracepoint", gomock.Any()).
+					DoAndReturn(func(name string, id uuid.UUID) error {
+						assert.Equal(t, newID, id)
+						return nil
+					})
+			}
+
 			tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
-			tracepointName, err := tracepointMgr.CreateTracepoint("test_tracepoint", test.newTracepoint)
+			actualTpID, err := tracepointMgr.CreateTracepoint("test_tracepoint", test.newTracepoint)
 			if test.expectedError {
 				assert.Equal(t, controllers.ErrTracepointAlreadyExists, err)
 			} else {
 				assert.Nil(t, err)
-				assert.Equal(t, "test_tracepoint", tracepointName)
+				assert.Equal(t, &newID, actualTpID)
 			}
 		})
 	}
@@ -159,12 +216,14 @@ func TestGetTracepoints(t *testing.T) {
 
 	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
+	tID1 := uuid.NewV4()
+	tID2 := uuid.NewV4()
 	expectedTracepointInfo := []*storepb.TracepointInfo{
 		&storepb.TracepointInfo{
-			TracepointID: "test_tracepoint",
+			TracepointID: utils.ProtoFromUUID(&tID1),
 		},
 		&storepb.TracepointInfo{
-			TracepointID: "some_tracepoint",
+			TracepointID: utils.ProtoFromUUID(&tID2),
 		},
 	}
 
@@ -184,18 +243,19 @@ func TestGetTracepointInfo(t *testing.T) {
 	defer ctrl.Finish()
 	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
+	tID1 := uuid.NewV4()
 	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
 	expectedTracepointInfo := &storepb.TracepointInfo{
-		TracepointID: "test_tracepoint",
+		TracepointID: utils.ProtoFromUUID(&tID1),
 	}
 
 	mockTracepointStore.
 		EXPECT().
-		GetTracepoint("test_tracepoint").
+		GetTracepoint(tID1).
 		Return(expectedTracepointInfo, nil)
 
-	tracepoints, err := tracepointMgr.GetTracepointInfo("test_tracepoint")
+	tracepoints, err := tracepointMgr.GetTracepointInfo(tID1)
 	assert.Nil(t, err)
 	assert.Equal(t, expectedTracepointInfo, tracepoints)
 }
@@ -209,25 +269,26 @@ func TestGetTracepointStates(t *testing.T) {
 	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
 	agentUUID1 := uuid.NewV4()
+	tID1 := uuid.NewV4()
 	expectedTracepointStatus1 := &storepb.AgentTracepointStatus{
-		TracepointID: "test_tracepoint",
+		TracepointID: utils.ProtoFromUUID(&tID1),
 		AgentID:      utils.ProtoFromUUID(&agentUUID1),
 		State:        statuspb.RUNNING_STATE,
 	}
 
 	agentUUID2 := uuid.NewV4()
 	expectedTracepointStatus2 := &storepb.AgentTracepointStatus{
-		TracepointID: "test_tracepoint",
+		TracepointID: utils.ProtoFromUUID(&tID1),
 		AgentID:      utils.ProtoFromUUID(&agentUUID2),
 		State:        statuspb.PENDING_STATE,
 	}
 
 	mockTracepointStore.
 		EXPECT().
-		GetTracepointStates("test_tracepoint").
+		GetTracepointStates(tID1).
 		Return([]*storepb.AgentTracepointStatus{expectedTracepointStatus1, expectedTracepointStatus2}, nil)
 
-	tracepoints, err := tracepointMgr.GetTracepointStates("test_tracepoint")
+	tracepoints, err := tracepointMgr.GetTracepointStates(tID1)
 	assert.Nil(t, err)
 	assert.Equal(t, expectedTracepointStatus1, tracepoints[0])
 	assert.Equal(t, expectedTracepointStatus2, tracepoints[1])
@@ -249,7 +310,7 @@ func TestRegisterTracepoint(t *testing.T) {
 	tracepointMgr := controllers.NewTracepointManager(nc, mockTracepointStore)
 
 	agentUUID := uuid.NewV4()
-	tracepointID := "test_tracepoint"
+	tracepointID := uuid.NewV4()
 	program := &logicalpb.Program{
 		Probes: []*logicalpb.Probe{
 			&logicalpb.Probe{
@@ -269,7 +330,7 @@ func TestRegisterTracepoint(t *testing.T) {
 		proto.Unmarshal(msg.Data, vzMsg)
 		req := vzMsg.GetTracepointMessage().GetRegisterTracepointRequest()
 		assert.NotNil(t, req)
-		assert.Equal(t, "test_tracepoint", req.TracepointID)
+		assert.Equal(t, utils.ProtoFromUUID(&tracepointID), req.TracepointID)
 		assert.Equal(t, program, req.Program)
 		wg.Done()
 	})
@@ -290,8 +351,9 @@ func TestUpdateAgentTracepointStatus(t *testing.T) {
 	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
 	agentUUID1 := uuid.NewV4()
+	tpID := uuid.NewV4()
 	expectedTracepointState := &storepb.AgentTracepointStatus{
-		TracepointID: "test_tracepoint",
+		TracepointID: utils.ProtoFromUUID(&tpID),
 		AgentID:      utils.ProtoFromUUID(&agentUUID1),
 		State:        statuspb.RUNNING_STATE,
 	}
@@ -301,5 +363,5 @@ func TestUpdateAgentTracepointStatus(t *testing.T) {
 		UpdateTracepointState(expectedTracepointState).
 		Return(nil)
 
-	tracepointMgr.UpdateAgentTracepointStatus("test_tracepoint", utils.ProtoFromUUID(&agentUUID1), statuspb.RUNNING_STATE, nil)
+	tracepointMgr.UpdateAgentTracepointStatus(utils.ProtoFromUUID(&tpID), utils.ProtoFromUUID(&agentUUID1), statuspb.RUNNING_STATE, nil)
 }

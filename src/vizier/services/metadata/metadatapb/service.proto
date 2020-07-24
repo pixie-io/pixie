@@ -10,6 +10,7 @@ import "src/vizier/messages/messagespb/messages.proto";
 import "src/vizier/services/shared/agentpb/agent.proto";
 import "src/stirling/dynamic_tracing/ir/logical.proto";
 import "src/common/base/proto/status.proto";
+import "google/protobuf/duration.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb;metadatapb";
 
@@ -100,6 +101,8 @@ message RegisterTracepointRequest {
   pl.stirling.dynamic_tracing.ir.logical.Program program = 1;
   // The user-specified name for the tracepoint.
   string tracepoint_name = 2;
+  // The TTL, in seconds, for how long we want the tracepoint to live.
+  google.protobuf.Duration ttl = 3 [ (gogoproto.customname) = "TTL" ];
 }
 
 // The response to a RegisterTracepointRequest.
@@ -107,23 +110,27 @@ message RegisterTracepointResponse {
   // Status of whether the tracepoint registration request was initiated with/without errors.
   pl.statuspb.Status status = 1;
   // The ID of the tracepoint. This should be the user-specified name for the tracepoint.
-  string tracepoint_id = 2 [ (gogoproto.customname) = "TracepointID" ];
+  uuidpb.UUID tracepoint_id = 2 [ (gogoproto.customname) = "TracepointID" ];
 }
 
-// The request to check the status for a tracepoint with the given IDs.
+// The request to check the status for a tracepoint with the given names.
 message GetTracepointInfoRequest {
-  repeated string tracepoint_ids = 1 [ (gogoproto.customname) = "TracepointIDs" ];
+  repeated uuidpb.UUID tracepoint_ids = 1 [ (gogoproto.customname) = "TracepointIDs" ];
 }
 
 // The status of whether the tracepoint has successfully registered or not.
 message GetTracepointInfoResponse {
     message TracepointState {
         // The tracepoint ID.
-        string tracepoint_id = 1 [ (gogoproto.customname) = "TracepointID" ];
+        uuidpb.UUID tracepoint_id = 1 [ (gogoproto.customname) = "TracepointID" ];
         // The state of the tracepoint.
         pl.statuspb.LifeCycleState state = 2;
         // The status of the tracepoint, specified if the state of the tracepoint is not healthy.
         pl.statuspb.Status status = 3;
+        string tracepoint_name = 4;
+        // The desired state for the tracepoint. This can be used to determine whether
+        // the tracepoint is just starting up or in the process of terminating.
+        pl.statuspb.LifeCycleState expected_state = 5;
     }
     // List of tracepoint states.
     repeated TracepointState tracepoints = 1;
@@ -133,7 +140,7 @@ message GetTracepointInfoResponse {
 // initiated via request as well.
 message RemoveTracepointRequest {
     // The ID of the tracepoint to remove.
-    string tracepoint_id = 1 [ (gogoproto.customname) = "TracepointID" ];
+    uuidpb.UUID tracepoint_id = 1 [ (gogoproto.customname) = "TracepointID" ];
 }
 
 // The response to the tracepoint removal.
