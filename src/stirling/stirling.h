@@ -4,6 +4,8 @@
 #include <string>
 #include <unordered_map>
 
+#include <sole.hpp>
+
 #include "src/common/base/base.h"
 #include "src/stirling/dynamic_tracing/ir/logical.pb.h"
 #include "src/stirling/proto/stirling.pb.h"
@@ -82,18 +84,18 @@ class Stirling : public NotCopyable {
   /**
    * Registers probes defined inside a tracing program.
    */
-  virtual uint64_t RegisterTracepoint(
-      std::unique_ptr<dynamic_tracing::ir::logical::Program> program) = 0;
+  virtual void RegisterTracepoint(
+      sole::uuid trace_id, std::unique_ptr<dynamic_tracing::ir::logical::Program> program) = 0;
 
   /**
    * Returns the status of the probe registration for the trace identified by the input ID.
    */
-  virtual StatusOr<stirlingpb::Publish> GetTracepointInfo(uint64_t trace_id) = 0;
+  virtual StatusOr<stirlingpb::Publish> GetTracepointInfo(sole::uuid trace_id) = 0;
 
   /**
    * Remove a dynamically created tracepoint.
    */
-  virtual Status RemoveTracepoint(uint64_t trace_id) = 0;
+  virtual Status RemoveTracepoint(sole::uuid trace_id) = 0;
 
   /**
    * Populate the Publish Proto object. Agent calls this function to get the Publish

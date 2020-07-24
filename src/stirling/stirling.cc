@@ -129,10 +129,10 @@ class StirlingImpl final : public Stirling {
   // symmetric with Stop().
   Status Init();
 
-  uint64_t RegisterTracepoint(
-      std::unique_ptr<dynamic_tracing::ir::logical::Program> program) override;
-  StatusOr<stirlingpb::Publish> GetTracepointInfo(uint64_t trace_id) override;
-  Status RemoveTracepoint(uint64_t trace_id) override;
+  void RegisterTracepoint(sole::uuid uuid,
+                          std::unique_ptr<dynamic_tracing::ir::logical::Program> program) override;
+  StatusOr<stirlingpb::Publish> GetTracepointInfo(sole::uuid trace_id) override;
+  Status RemoveTracepoint(sole::uuid trace_id) override;
   void GetPublishProto(stirlingpb::Publish* publish_pb) override;
   Status SetSubscription(const stirlingpb::Subscribe& subscribe_proto) override;
   void RegisterDataPushCallback(DataPushCallback f) override { data_push_callback_ = f; }
@@ -155,7 +155,7 @@ class StirlingImpl final : public Stirling {
   Status AddSource(std::unique_ptr<SourceConnector> source);
 
   // Creates and deploys dynamic tracing source.
-  void DeployDynamicTraceConnector(int64_t trace_id,
+  void DeployDynamicTraceConnector(sole::uuid trace_id,
                                    std::unique_ptr<dynamic_tracing::ir::logical::Program> program);
 
   // Main run implementation.
@@ -192,11 +192,8 @@ class StirlingImpl final : public Stirling {
   AgentMetadataCallback agent_metadata_callback_ = nullptr;
   AgentMetadataType agent_metadata_;
 
-  // The index can be assigned to the next registered probe.
-  int64_t dynamic_trace_index_ = 0;
-
   absl::base_internal::SpinLock dynamic_trace_status_map_lock_;
-  absl::flat_hash_map<int64_t, StatusOr<stirlingpb::Publish>> dynamic_trace_status_map_
+  absl::flat_hash_map<sole::uuid, StatusOr<stirlingpb::Publish>> dynamic_trace_status_map_
       ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
 };
 
@@ -277,7 +274,7 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
 }
 
 void StirlingImpl::DeployDynamicTraceConnector(
-    int64_t trace_id, std::unique_ptr<dynamic_tracing::ir::logical::Program> program) {
+    sole::uuid trace_id, std::unique_ptr<dynamic_tracing::ir::logical::Program> program) {
 #define RETURN_ERROR(s)                                                        \
   {                                                                            \
     Status ___s___ = s;                                                        \
@@ -334,10 +331,8 @@ void StirlingImpl::DeployDynamicTraceConnector(
 #undef ASSIGN_OR_RETURN
 }
 
-uint64_t StirlingImpl::RegisterTracepoint(
-    std::unique_ptr<dynamic_tracing::ir::logical::Program> program) {
-  int64_t trace_id = dynamic_trace_index_++;
-
+void StirlingImpl::RegisterTracepoint(
+    sole::uuid trace_id, std::unique_ptr<dynamic_tracing::ir::logical::Program> program) {
   // Initialize the status of this trace to pending.
   {
     absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
@@ -348,11 +343,9 @@ uint64_t StirlingImpl::RegisterTracepoint(
   auto t =
       std::thread(&StirlingImpl::DeployDynamicTraceConnector, this, trace_id, std::move(program));
   t.detach();
-
-  return trace_id;
 }
 
-StatusOr<stirlingpb::Publish> StirlingImpl::GetTracepointInfo(uint64_t trace_id) {
+StatusOr<stirlingpb::Publish> StirlingImpl::GetTracepointInfo(sole::uuid trace_id) {
   absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
 
   auto iter = dynamic_trace_status_map_.find(trace_id);
@@ -361,18 +354,10 @@ StatusOr<stirlingpb::Publish> StirlingImpl::GetTracepointInfo(uint64_t trace_id)
   }
 
   StatusOr<stirlingpb::Publish> s = iter->second;
-
-  // Destructive read of tracer state on errors, so that we don't leak the map.
-  // Only error that is excluded is RESOURCE_UNAVAILABLE, because that means
-  // the final state is not known and the caller should retry.
-  if (!s.ok() && s.code() != pl::statuspb::Code::RESOURCE_UNAVAILABLE) {
-    dynamic_trace_status_map_.erase(iter);
-  }
-
   return s;
 }
 
-Status StirlingImpl::RemoveTracepoint(uint64_t trace_id) {
+Status StirlingImpl::RemoveTracepoint(sole::uuid trace_id) {
   // TODO(oazizi): Implement tracepoint removal.
   PL_UNUSED(trace_id);
   return Status::OK();

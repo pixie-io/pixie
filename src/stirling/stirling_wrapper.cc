@@ -107,7 +107,9 @@ StatusOr<Publish> DeployTrace(Stirling* stirling) {
     g_table_print_enables.push_back(o.name());
   }
 
-  int64_t trace_id = stirling->RegisterTracepoint(std::move(trace_program));
+  sole::uuid trace_id = sole::uuid4();
+
+  stirling->RegisterTracepoint(trace_id, std::move(trace_program));
 
   StatusOr<Publish> s;
   do {
