@@ -604,14 +604,33 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
     struct_field->mutable_type()->set_scalar(iter->second->type());
   }
 
-  for (const auto& f : output_action_in.variable_name()) {
-    auto* struct_field = struct_decl->add_fields();
-    struct_field->set_name(f);
+  auto output_iter = outputs_.find(output_action_in.output_name());
 
-    auto iter = vars_map_.find(f);
+  if (output_iter == outputs_.end()) {
+    return error::InvalidArgument("Output '$0' was not defined", output_action_in.output_name());
+  }
+
+  const ir::physical::PerfBufferOutput* output = output_iter->second;
+
+  if (output->fields_size() != output_action_in.variable_name_size()) {
+    return error::InvalidArgument(
+        "OutputAction to '$0' writes $1 variables, but the Output has $2 fields",
+        output_action_in.output_name(), output_action_in.variable_name_size(),
+        output->fields_size());
+  }
+
+  for (int i = 0; i < output_action_in.variable_name_size(); ++i) {
+    auto* struct_field = struct_decl->add_fields();
+
+    // Set the field name to the name in the Output.
+    struct_field->set_name(output->fields(i));
+
+    const std::string& var_name = output_action_in.variable_name(i);
+
+    auto iter = vars_map_.find(var_name);
     if (iter == vars_map_.end()) {
       return error::Internal("GenerateOutputStruct [output=$0]: Reference to unknown variable $1",
-                             output_action_in.output_name(), f);
+                             output_action_in.output_name(), var_name);
     }
     struct_field->mutable_type()->set_scalar(iter->second->type());
   }
@@ -659,15 +678,19 @@ Status Dwarvifier::ProcessOutputAction(const ir::logical::OutputAction& output_a
   struct_var->set_type(struct_type_name);
   struct_var->set_name(variable_name);
 
+  // The Struct generated in above step is always the last element.
+  const ir::physical::Struct& output_struct = *output_program->structs().rbegin();
+  int struct_field_index = 0;
+
   for (const auto& f : implicit_columns_) {
     auto* fa = struct_var->add_field_assignments();
-    fa->set_field_name(GetImplicitColumnName(f));
+    fa->set_field_name(output_struct.fields(struct_field_index++).name());
     fa->set_variable_name(f);
   }
 
   for (const auto& f : output_action_in.variable_name()) {
     auto* fa = struct_var->add_field_assignments();
-    fa->set_field_name(f);
+    fa->set_field_name(output_struct.fields(struct_field_index++).name());
     fa->set_variable_name(f);
   }
 

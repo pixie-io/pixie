@@ -111,25 +111,25 @@ TEST(DynamicTracerTest, Compile) {
                                         }
                                       }
                                       fields {
-                                        name: "arg0"
+                                        name: "f1"
                                         type {
                                           scalar: INT
                                         }
                                       }
                                       fields {
-                                        name: "arg1"
+                                        name: "f2"
                                         type {
                                           scalar: INT
                                         }
                                       }
                                       fields {
-                                        name: "arg2"
+                                        name: "f3"
                                         type {
                                           scalar: INT
                                         }
                                       }
                                       fields {
-                                        name: "retval0"
+                                        name: "f4"
                                         type {
                                           scalar: INT
                                         }
