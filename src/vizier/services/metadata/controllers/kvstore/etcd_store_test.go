@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/stretchr/testify/assert"
@@ -274,6 +275,37 @@ func TestEtcdStore_GetWithRange(t *testing.T) {
 	assert.Equal(t, []byte("hola"), vals[0])
 	assert.Equal(t, "/3", keys[1])
 	assert.Equal(t, []byte("ciao"), vals[1])
+}
+
+func TestEtcd_Watcher(t *testing.T) {
+	e := kvstore.NewEtcdStore(etcdClient)
+
+	eventCh, quitCh := e.WatchKeyEvents("/")
+	defer func() {
+		quitCh <- true
+	}()
+
+	setArr := []kvstore.TTLKeyValue{
+		kvstore.TTLKeyValue{
+			Key:    "/def",
+			Value:  []byte("5678"),
+			Expire: true,
+			TTL:    5,
+		},
+	}
+
+	_ = e.SetAll(setArr)
+
+	for {
+		select {
+		case event := <-eventCh:
+			assert.Equal(t, kvstore.EventTypePut, event.EventType)
+			assert.Equal(t, "/def", event.Key)
+			return
+		case <-time.After(2 * time.Second):
+			t.Fatal("Timed out waiting for etcd event")
+		}
+	}
 }
 
 func TestMain(m *testing.M) {

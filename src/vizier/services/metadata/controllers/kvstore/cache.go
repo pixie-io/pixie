@@ -15,6 +15,22 @@ import (
 // before terminating.
 const CacheFlushMaxRetries int64 = 5
 
+// EventType is an action that can occur to a key.
+type EventType int
+
+const (
+	// EventTypeDelete is when a key is deleted.
+	EventTypeDelete EventType = iota
+	// EventTypePut is when a key is put into the store.
+	EventTypePut
+)
+
+// KeyEvent is an event associated with a key in the key value store.
+type KeyEvent struct {
+	EventType EventType
+	Key       string
+}
+
 // KeyValueStore is a key value store which supports getting and setting multiple values.
 type KeyValueStore interface {
 	Get(string) ([]byte, error)
@@ -23,6 +39,7 @@ type KeyValueStore interface {
 	GetWithRange(string, string) ([]string, [][]byte, error)
 	GetAll([]string) ([][]byte, error)
 	DeleteWithPrefix(string) error
+	WatchKeyEvents(string) (chan KeyEvent, chan bool)
 }
 
 type entry struct {
@@ -336,4 +353,9 @@ func (c *Cache) Clear() {
 	defer c.cacheMu.Unlock()
 
 	c.cacheMap = make(map[string]entry)
+}
+
+// WatchKeyEvents watches key events in the underlying datastore.
+func (c *Cache) WatchKeyEvents(prefix string) (chan KeyEvent, chan bool) {
+	return c.datastore.WatchKeyEvents(prefix)
 }

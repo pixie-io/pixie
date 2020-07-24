@@ -110,3 +110,16 @@ func (m *MockKeyValueStore) DeleteWithPrefix(arg0 string) error {
 func (mr *MockKeyValueStoreMockRecorder) DeleteWithPrefix(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteWithPrefix", reflect.TypeOf((*MockKeyValueStore)(nil).DeleteWithPrefix), arg0)
 }
+
+// WatchKeyEvents mocks base method
+func (m *MockKeyValueStore) WatchKeyEvents(arg0 string) (chan kvstore.KeyEvent, chan bool) {
+	ret := m.ctrl.Call(m, "WatchKeyEvents", arg0)
+	ret0, _ := ret[0].(chan kvstore.KeyEvent)
+	ret1, _ := ret[1].(chan bool)
+	return ret0, ret1
+}
+
+// WatchKeyEvents indicates an expected call of WatchKeyEvents
+func (mr *MockKeyValueStoreMockRecorder) WatchKeyEvents(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchKeyEvents", reflect.TypeOf((*MockKeyValueStore)(nil).WatchKeyEvents), arg0)
+}

@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	v3 "github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/mvcc/mvccpb"
 	etcdutils "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 )
 
@@ -119,4 +120,33 @@ func (e *EtcdStore) GetWithRange(from string, to string) ([]string, [][]byte, er
 	}
 
 	return keys, values, nil
+}
+
+// WatchKeyEvents watches any events that occur to the keys starting with the given prefix.
+func (e *EtcdStore) WatchKeyEvents(prefix string) (chan KeyEvent, chan bool) {
+	eventCh := make(chan KeyEvent, 1000)
+
+	ch := e.client.Watch(context.Background(), prefix, v3.WithPrefix())
+	quitCh := make(chan bool)
+
+	go func() {
+		defer close(eventCh)
+		defer close(quitCh)
+		for {
+			select {
+			case <-quitCh:
+				return
+			case resp := <-ch:
+				for _, ev := range resp.Events {
+					eType := EventTypeDelete
+					if ev.Type == mvccpb.PUT {
+						eType = EventTypePut
+					}
+					eventCh <- KeyEvent{EventType: eType, Key: string(ev.Kv.Key)}
+				}
+			}
+		}
+	}()
+
+	return eventCh, quitCh
 }
