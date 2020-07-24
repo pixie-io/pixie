@@ -40,7 +40,7 @@ StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(std::string_view obj_
       MemoryBuffer::getFileOrSTDIN(std::string(obj_filename));
   ec = buff_or_err.getError();
   if (ec) {
-    return error::Internal(ec.message());
+    return error::Internal("DwarfReader $0: $1", ec.message(), obj_filename);
   }
 
   std::unique_ptr<MemoryBuffer> buffer = std::move(buff_or_err.get());
@@ -48,7 +48,7 @@ StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(std::string_view obj_
       llvm::object::createBinary(*buffer);
   ec = errorToErrorCode(bin_or_err.takeError());
   if (ec) {
-    return error::Internal(ec.message());
+    return error::Internal("DwarfReader $0: $1", ec.message(), obj_filename);
   }
 
   auto* obj_file = llvm::dyn_cast<llvm::object::ObjectFile>(bin_or_err->get());
