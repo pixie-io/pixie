@@ -70,7 +70,7 @@ Status GRPCRouter::RecordStats(const sole::uuid& query_id,
   absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);
   auto it = query_node_map_.find(query_id);
   if (it == query_node_map_.end()) {
-    return error::Internal("No query ID $0 found in the GRPCRouter");
+    return error::Internal("No query ID $0 found in the GRPCRouter", query_id.str());
   }
   auto tracker = &it->second;
   for (const auto& agent : resp->agent_execution_stats()) {
