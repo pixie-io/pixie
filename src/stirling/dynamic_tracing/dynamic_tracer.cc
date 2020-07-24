@@ -86,6 +86,8 @@ StatusOr<BCCProgram> CompileProgram(const ir::logical::Program& input_program) {
       return error::InvalidArgument("Must specify path or upid");
   }
 
+  LOG(INFO) << absl::Substitute("Tracepoint binary: $0", intermediate_program.binary_spec().path());
+
   PL_ASSIGN_OR_RETURN(ir::physical::Program physical_program, AddDwarves(intermediate_program));
 
   BCCProgram bcc_program;
