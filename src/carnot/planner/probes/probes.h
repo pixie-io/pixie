@@ -20,6 +20,8 @@ class ProbeOutput {
   ProbeOutput(const std::string& output_name, const std::vector<std::string>& col_names,
               const std::vector<std::string>& var_names)
       : output_name_(output_name), col_names_(col_names), var_names_(var_names) {}
+  ProbeOutput(const std::vector<std::string>& col_names, const std::vector<std::string>& var_names)
+      : col_names_(col_names), var_names_(var_names) {}
   /**
    * @brief Returns the schema as a string. Just joins column_names together. If two outputActions
    * write to the same columns w/ the same schemas, they can still disagree on type which will be
@@ -32,6 +34,8 @@ class ProbeOutput {
   Status ToActionProto(stirling::dynamic_tracing::ir::logical::OutputAction* pb);
   Status ToOutputProto(stirling::dynamic_tracing::ir::shared::Output* pb);
   const std::string& name() const { return output_name_; }
+
+  void set_name(const std::string& output_name) { output_name_ = output_name; }
 
  private:
   // Output name is the name of the output to write.
@@ -121,12 +125,14 @@ class ProbeIR {
    * @brief Create a New Output definition with the given col_names and var_names. For now we only
    * support one output.
    *
-   * @param output_name
    * @param col_names
    * @param var_names
    */
-  void CreateNewOutput(const std::string& output_name, const std::vector<std::string>& col_names,
+  void CreateNewOutput(const std::vector<std::string>& col_names,
                        const std::vector<std::string>& var_names);
+
+  void SetOutputName(const std::string& output_name);
+
   std::shared_ptr<ProbeOutput> output() const { return output_; }
   stirling::dynamic_tracing::ir::shared::BinarySpec::Language language() const { return language_; }
 
@@ -141,6 +147,8 @@ class ProbeIR {
 
 class TracingProgram {
  public:
+  TracingProgram(const std::string& trace_name, int64_t ttl_ns)
+      : name_(trace_name), ttl_ns_(ttl_ns) {}
   /**
    * @brief Converts Program to the proto representation.
    *
@@ -152,14 +160,16 @@ class TracingProgram {
   /**
    * @brief Add a Probe to the current program being traced.
    *
-   * @param name
    * @param probe_ir
-   * @param ttl_ns
+   * @param probe_name
+   * @param output_name the name of the touput table for the probe.
    * @return Status
    */
-  Status AddProbe(const std::string& name, ProbeIR* probe_ir, int64_t ttl_ns);
+  Status AddProbe(ProbeIR* probe_ir, const std::string& probe_name, const std::string& output_name);
 
  private:
+  std::string name_;
+  int64_t ttl_ns_;
   std::string binary_path_;
   std::vector<stirling::dynamic_tracing::ir::logical::Probe> probes_;
   std::vector<stirling::dynamic_tracing::ir::shared::Output> outputs_;
@@ -180,29 +190,15 @@ class DynamicTraceIR {
       const std::string& function_name);
 
   /**
-   * @brief Upserts a probe definition into a program, as defined by the pod_name and binary_path.
+   * @brief Create a TraceProgram for the DynamicTraceIR w/ the specified UPID.
    *
-   * @param probe_ir the probe to upsert
-   * @param probe_name the name ot give the probe
-   * @param pod_name the name of the pod to trace on
-   * @param binary_path the path of the binary in the pod?
-   * @return Status
+   * @param program_name
+   * @param upid
+   * @param ttl_ns
+   * @return StatusOr<TracingProgram*>
    */
-  Status UpsertProbe(std::shared_ptr<ProbeIR> probe_ir, const std::string& probe_name,
-                     const std::string& pod_name, const std::string& container_name,
-                     const std::string& binary_path, int64_t ttl_ns);
-
-  /**
-   * @brief Upserts a probe definition into a program defined by the UPID>
-   *
-   * @param probe_ir the probe to upsert
-   * @param probe_name the name ot give the probe
-   * @param upid the upid definition
-   * @param ttl_ns the duration of the live probe
-   * @return Status
-   */
-  Status UpsertUPIDProbe(std::shared_ptr<ProbeIR> probe_ir, const std::string& probe_name,
-                         const md::UPID& upid, int64_t ttl_ns);
+  StatusOr<TracingProgram*> CreateTraceProgram(const std::string& program_name,
+                                               const md::UPID& upid, int64_t ttl_ns);
 
   /**
    * @brief Get the CurrentProbe or return an error. Nice shorthand to support a clean error
@@ -233,7 +229,7 @@ class DynamicTraceIR {
 
  private:
   absl::flat_hash_map<std::string, TracingProgram> binary_to_program_map_;
-  absl::flat_hash_map<md::UPID, TracingProgram> upid_to_program_map_;
+  absl::flat_hash_map<md::UPID, std::unique_ptr<TracingProgram>> upid_to_program_map_;
   std::vector<std::shared_ptr<ProbeIR>> probes_pool_;
   std::shared_ptr<ProbeIR> current_probe_;
 };

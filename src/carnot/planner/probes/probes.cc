@@ -1,5 +1,7 @@
 #include "src/carnot/planner/probes/probes.h"
 
+#include <utility>
+
 namespace pl {
 namespace carnot {
 namespace planner {
@@ -50,10 +52,16 @@ Status ProbeOutput::ToOutputProto(stirling::dynamic_tracing::ir::shared::Output*
   return Status::OK();
 }
 
-void ProbeIR::CreateNewOutput(const std::string& output_name,
-                              const std::vector<std::string>& col_names,
+void ProbeIR::SetOutputName(const std::string& output_name) {
+  if (!output_) {
+    return;
+  }
+  output_->set_name(output_name);
+}
+
+void ProbeIR::CreateNewOutput(const std::vector<std::string>& col_names,
                               const std::vector<std::string>& var_names) {
-  output_ = std::make_shared<ProbeOutput>(output_name, col_names, var_names);
+  output_ = std::make_shared<ProbeOutput>(col_names, var_names);
 }
 
 void ProbeIR::AddArgument(const std::string& id, const std::string& expr) {
@@ -80,9 +88,8 @@ std::shared_ptr<ProbeIR> DynamicTraceIR::StartProbe(
   return probe_ir;
 }
 
-Status DynamicTraceIR::UpsertUPIDProbe(std::shared_ptr<ProbeIR> probe_ir,
-                                       const std::string& probe_name, const md::UPID& upid,
-                                       int64_t ttl_ns) {
+StatusOr<TracingProgram*> DynamicTraceIR::CreateTraceProgram(const std::string& trace_point_name,
+                                                             const md::UPID& upid, int64_t ttl_ns) {
   if (!binary_to_program_map_.empty()) {
     return error::InvalidArgument(
         "Probes for multiple processes not supported. Separate out into different scripts");
@@ -92,27 +99,16 @@ Status DynamicTraceIR::UpsertUPIDProbe(std::shared_ptr<ProbeIR> probe_ir,
     return error::InvalidArgument(
         "Probes for multiple processes not supported. Separate out into different scripts");
   }
-  return upid_to_program_map_[upid].AddProbe(probe_name, probe_ir.get(), ttl_ns);
+
+  std::unique_ptr<TracingProgram> program =
+      std::make_unique<TracingProgram>(trace_point_name, ttl_ns);
+  TracingProgram* raw = program.get();
+  upid_to_program_map_[upid] = std::move(program);
+  return raw;
 }
 
-Status DynamicTraceIR::UpsertProbe(std::shared_ptr<ProbeIR> probe_ir, const std::string& probe_name,
-                                   const std::string& pod_name, const std::string& container_name,
-                                   const std::string& binary_path, int64_t ttl_ns) {
-  if (!upid_to_program_map_.empty()) {
-    return error::InvalidArgument(
-        "Probes for multiple processes not supported. Separate out into different scripts");
-  }
-  if (!binary_to_program_map_.empty() && !binary_to_program_map_.contains(binary_path)) {
-    return error::InvalidArgument(
-        "Probes for multiple processes not supported. Separate out into different scripts");
-  }
-  // TODO(philkuz/oazizi) add support for these.
-  PL_UNUSED(pod_name);
-  PL_UNUSED(container_name);
-  return binary_to_program_map_[binary_path].AddProbe(probe_name, probe_ir.get(), ttl_ns);
-}
-
-Status TracingProgram::AddProbe(const std::string& name, ProbeIR* probe_ir, int64_t ttl_ns) {
+Status TracingProgram::AddProbe(ProbeIR* probe_ir, const std::string& probe_name,
+                                const std::string& output_name) {
   if (probes_.size()) {
     if (probe_ir->language() != language_) {
       return error::InvalidArgument(
@@ -123,21 +119,21 @@ Status TracingProgram::AddProbe(const std::string& name, ProbeIR* probe_ir, int6
   } else {
     language_ = probe_ir->language();
   }
+  probe_ir->SetOutputName(output_name);
+
   stirling::dynamic_tracing::ir::logical::Probe probe_pb;
   PL_CHECK_OK(probe_ir->ToProto(&probe_pb));
-  probe_pb.set_name(name);
-  probe_pb.set_ttl_ns(ttl_ns);
-  // probe_pb.set_ttl(ttl_ns);
+  probe_pb.set_name(probe_name);
   probes_.push_back(probe_pb);
 
   auto output = probe_ir->output();
   if (!output) {
     return Status::OK();
   }
-
   // Upsert the output definition.
   stirling::dynamic_tracing::ir::shared::Output output_pb;
   PL_RETURN_IF_ERROR(output->ToOutputProto(&output_pb));
+
   // If the output name is missing, then we need to add it.
   if (!output_map_.contains(output->name())) {
     outputs_.push_back(output_pb);
@@ -172,6 +168,11 @@ Status TracingProgram::ToProto(stirling::dynamic_tracing::ir::logical::Program* 
   for (const auto& output : outputs_) {
     (*pb->add_outputs()) = output;
   }
+  pb->set_name(name_);
+
+  auto one_sec = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(1));
+  pb->mutable_ttl()->set_seconds(ttl_ns_ / one_sec.count());
+  pb->mutable_ttl()->set_nanos(ttl_ns_ % one_sec.count());
   return Status::OK();
 }
 
@@ -186,7 +187,7 @@ Status DynamicTraceIR::ToProto(stirling::dynamic_tracing::ir::logical::Program* 
   for (const auto& [upid, program] : upid_to_program_map_) {
     // TODO(philkuz) switch over when we have container message.
     auto program_pb = pb;
-    PL_RETURN_IF_ERROR(program.ToProto(program_pb));
+    PL_RETURN_IF_ERROR(program->ToProto(program_pb));
     auto binary_spec = program_pb->mutable_binary_spec();
     auto upid_pb = binary_spec->mutable_upid();
     upid_pb->set_asid(upid.asid());

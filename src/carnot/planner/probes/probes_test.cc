@@ -35,14 +35,15 @@ import px
 @pxtrace.goprobe("MyFunc")
 def probe_func():
     id = pxtrace.ArgExpr('id')
-    return "http_return_table", [{'id': id},
+    return [{'id': id},
             {'err': pxtrace.RetExpr('$0.a')},
             {'latency': pxtrace.FunctionLatency()}]
 
-pxtrace.UpsertTrace('http_return',
-                    probe_func,
-                    px.uint128("123e4567-e89b-12d3-a456-426655440000"),
-                    "5m")
+pxtrace.UpsertTracePoint('http_return',
+                         'http_return_table',
+                         probe_func,
+                         px.uint128("123e4567-e89b-12d3-a456-426655440000"),
+                         "5m")
 )pxl";
 
 constexpr char kSingleProbeProgramPb[] = R"pxl(
@@ -59,7 +60,7 @@ outputs {
   fields: "latency"
 }
 probes {
-  name: "http_return0"
+  name: "http_return"
   trace_point {
     symbol: "MyFunc"
   }
@@ -80,7 +81,10 @@ probes {
     variable_name: "ret0"
     variable_name: "lat0"
   }
-  ttl_ns: 300000000000
+}
+name: "http_return"
+ttl {
+  seconds: 300
 }
 )pxl";
 
@@ -107,11 +111,12 @@ def http_func_probe():
     return "http_table", [{'req_body': pxtrace.ArgExpr('req_body')},
             {'resp_body': pxtrace.ArgExpr('req_status')}]
 
-
-pxtrace.UpsertTrace('myfunc',
-                    [cool_func_probe, http_func_probe],
+# NOTE: syntax not supported yet.
+pxtrace.UpsertTracePoints('myfunc',
                     px.uint128("123e4567-e89b-12d3-a456-426655440000"),
                     "5m")
+                    .AddProbe("cool_func_table", cool_func_probe)
+                    .AddProbe("http_table", http_func_probe)
 )pxl";
 
 constexpr char kMultipleProbeProgramPb[] = R"pxl(
@@ -154,7 +159,6 @@ probes {
     variable_name: "ret0"
     variable_name: "lat0"
   }
-  ttl_ns: 300000000000
 }
 probes {
   name: "myfunc1"
@@ -174,11 +178,14 @@ probes {
     variable_name: "arg0"
     variable_name: "arg1"
   }
-  ttl_ns: 300000000000
+}
+ttl {
+  seconds: 300
 }
 )pxl";
 
-TEST_F(ProbeCompilerTest, parse_multiple_probes) {
+// TODO(philkuz) need to support multiple probe programs.
+TEST_F(ProbeCompilerTest, DISABLED_parse_multiple_probes) {
   ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(kMultipleProbePxl));
   stirling::dynamic_tracing::ir::logical::Program prog_pb;
   EXPECT_OK(probe_ir->ToProto(&prog_pb));
@@ -191,23 +198,25 @@ import px
 
 @pxtrace.goprobe("MyFunc")
 def cool_func_probe():
-    return "cool_func_table", [{'id': pxtrace.ArgExpr('id')},
+    return [{'id': pxtrace.ArgExpr('id')},
             {'err': pxtrace.RetExpr('$0.a')},
             {'latency': pxtrace.FunctionLatency()}]
 
 
 @pxtrace.goprobe("HTTPFunc")
 def http_func_probe():
-    return "http_table", [{'req_body': pxtrace.ArgExpr('req_body')},
+    return [{'req_body': pxtrace.ArgExpr('req_body')},
             {'resp_body': pxtrace.ArgExpr('req_status')}]
 
 
-pxtrace.UpsertTrace('cool_func',
+pxtrace.UpsertTracePoint('cool_func',
+                    'cool_func_table',
                     cool_func_probe,
                     px.uint128("123e4567-e89b-12d3-a456-426655440000"),
                     "5m")
 
-pxtrace.UpsertTrace('http_return_value',
+pxtrace.UpsertTracePoint('http_return_value',
+                    'http_table',
                     http_func_probe,
                     px.uint128("7654e321-e89b-12d3-a456-426655440000"),
                     "5m")
@@ -230,7 +239,8 @@ import px
 def no_return_value_probe():
     id = pxtrace.ArgExpr('id')
 
-pxtrace.UpsertTrace('my_http_return_value',
+pxtrace.UpsertTracePoint('my_http_return_value',
+                    'no_ret_val',
                     no_return_value_probe,
                     px.uint128("7654e321-e89b-12d3-a456-426655440000"),
                     "5m")
@@ -251,7 +261,7 @@ import px
 
 @pxtrace.goprobe("MyFunc")
 def probe_func():
-    return "cool_func", [{'id': pxtrace.ArgExpr('id')},
+    return [{'id': pxtrace.ArgExpr('id')},
             {'err': pxtrace.RetExpr('$0.a')},
             {'latency': pxtrace.FunctionLatency()}]
 )pxl";
@@ -271,22 +281,17 @@ import px
 
 $0
 
-pxtrace.UpsertTrace('p1',
+pxtrace.UpsertTracePoint('p1',
+                    'tablename',
                     probe_func,
                     px.uint128("7654e321-e89b-12d3-a456-426655440000"),
                     "5m")
 )pxl";
 
-constexpr char kMissingOutputName[] = R"pxl(
+constexpr char kOldTableNameSpecification[] = R"pxl(
 @pxtrace.goprobe("MyFunc")
 def probe_func():
-    return [{'id': pxtrace.ArgExpr('id')}]
-)pxl";
-
-constexpr char kNoColumnSpecification[] = R"pxl(
-@pxtrace.goprobe("MyFunc")
-def probe_func():
-    return 'tablename', 'where a table def should be'
+    return 'tablename', [{'id': pxtrace.ArgExpr('id')}]
 )pxl";
 
 constexpr char kNoCollectionReturnValue[] = R"pxl(
@@ -298,46 +303,36 @@ def probe_func():
 constexpr char kBadOutputColumnFormat[] = R"pxl(
 @pxtrace.goprobe("MyFunc")
 def probe_func():
-    # should be a dict
-    return 'tablename', [pxtrace.ArgExpr('id')]
+    # should be a dict not a tracing variable
+    return [pxtrace.ArgExpr('id')]
 )pxl";
 
 constexpr char kBadOutputColumnKey[] = R"pxl(
 @pxtrace.goprobe("MyFunc")
 def probe_func():
-    # should be a dict
-    return 'tablename', [{pxtrace.ArgExpr('id'): "id"}]
+    # key is invalid.
+    return [{pxtrace.ArgExpr('id'): pxtrace.ArgExpr('id')}]
 )pxl";
 
 constexpr char kBadOutputColumnValue[] = R"pxl(
 @pxtrace.goprobe("MyFunc")
 def probe_func():
-    # should be a dict
-    return 'tablename', [{"id": "id"}]
+    # value should be a probe value.
+    return [{"id": "id"}]
 )pxl";
 
 TEST_F(ProbeCompilerTest, probe_definition_wrong_return_values) {
   // Test to make sure a probe definition doesn't add a probe.
-  auto probe_ir_or_s = CompileProbeScript(absl::Substitute(kProbeTemplate, kMissingOutputName));
+  auto probe_ir_or_s =
+      CompileProbeScript(absl::Substitute(kProbeTemplate, kOldTableNameSpecification));
   ASSERT_NOT_OK(probe_ir_or_s);
-  // TODO(philkuz) (PP-2043) add AST to objects that don't have nodes.
-  // EXPECT_THAT(
-  //     probe_ir_or_s.status(),
-  //     HasCompilerError("Expected return value to be Collection of length 2, got 1 elements"));
-  EXPECT_THAT(probe_ir_or_s.status().msg(),
-              ContainsRegex("Expected return value to be Collection of length 2, got 1 elements"));
+  EXPECT_THAT(probe_ir_or_s.status(), HasCompilerError("Expected Dict, got String"));
 
-  probe_ir_or_s = CompileProbeScript(absl::Substitute(kProbeTemplate, kNoColumnSpecification));
+  probe_ir_or_s = CompileProbeScript(absl::Substitute(kProbeTemplate, kNoCollectionReturnValue));
   ASSERT_NOT_OK(probe_ir_or_s);
   EXPECT_THAT(probe_ir_or_s.status(),
               HasCompilerError(
                   "Unable to parse probe output definition. Expected Collection, received String"));
-
-  probe_ir_or_s = CompileProbeScript(absl::Substitute(kProbeTemplate, kNoCollectionReturnValue));
-  ASSERT_NOT_OK(probe_ir_or_s);
-  EXPECT_THAT(
-      probe_ir_or_s.status(),
-      HasCompilerError("Unable to parse probe return value. Expected Collection, received String"));
 
   probe_ir_or_s = CompileProbeScript(absl::Substitute(kProbeTemplate, kBadOutputColumnFormat));
   ASSERT_NOT_OK(probe_ir_or_s);

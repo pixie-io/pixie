@@ -318,14 +318,15 @@ import px
 @pxtrace.goprobe("MyFunc")
 def probe_func():
     id = pxtrace.ArgExpr('id')
-    return "http_return_table", [{'id': id},
+    return [{'id': id},
             {'err': pxtrace.RetExpr('$0.a')},
             {'latency': pxtrace.FunctionLatency()}]
 
-pxtrace.UpsertTrace('http_return',
-                    probe_func,
-                    px.uint128("123e4567-e89b-12d3-a456-426655440000"),
-                    "5m")
+pxtrace.UpsertTracePoint('http_return',
+                         "http_return_table",
+                         probe_func,
+                         px.uint128("123e4567-e89b-12d3-a456-426655440000"),
+                         "5m")
 )pxl";
 
 constexpr char kExpectedPxlTracePb[] = R"pxl(
@@ -342,7 +343,7 @@ outputs {
   fields: "latency"
 }
 probes {
-  name: "http_return0"
+  name: "http_return"
   trace_point {
     symbol: "MyFunc"
   }
@@ -363,7 +364,10 @@ probes {
     variable_name: "ret0"
     variable_name: "lat0"
   }
-  ttl_ns: 300000000000
+}
+name: "http_return"
+ttl {
+  seconds: 300
 }
 )pxl";
 

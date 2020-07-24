@@ -78,7 +78,7 @@ class TraceModule : public QLObject {
   inline static constexpr char kArgumentId[] = "ArgExpr";
   inline static constexpr char kRetExprId[] = "RetExpr";
   inline static constexpr char kFunctionLatencyId[] = "FunctionLatency";
-  inline static constexpr char kUpsertTraceID[] = "UpsertTrace";
+  inline static constexpr char kUpsertTraceID[] = "UpsertTracePoint";
   inline static constexpr char kGoProbeTraceDefinition[] = "goprobe";
 
  protected:

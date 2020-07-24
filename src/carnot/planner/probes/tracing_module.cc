@@ -96,7 +96,7 @@ Status TraceModule::Init() {
 
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> upsert_fn,
-      FuncObject::Create(kUpsertTraceID, {"name", "probe_fn", "upid", "ttl"}, {},
+      FuncObject::Create(kUpsertTraceID, {"name", "table_name", "probe_fn", "upid", "ttl"}, {},
                          // TODO(philkuz/zasgar) uncomment definition when pod based upsert works.
                          // FuncObject::Create(kUpsertTracingVariable, {"name", "probe_fn",
                          // "pod_name", "binary", "ttl"}, {},
@@ -149,8 +149,7 @@ std::string ObjectName(const QLObjectPtr& ptr) {
   return std::string(absl::StripPrefix(magic_enum::enum_name(ptr->type()), "k"));
 }
 
-Status ParseColumns(ProbeIR* probe, const std::string& output_name,
-                    CollectionObject* column_object) {
+Status ParseColumns(ProbeIR* probe, CollectionObject* column_object) {
   std::vector<std::string> col_names;
   std::vector<std::string> var_names;
   for (const auto& item : column_object->items()) {
@@ -174,7 +173,7 @@ Status ParseColumns(ProbeIR* probe, const std::string& output_name,
       var_names.push_back(probe->id());
     }
   }
-  probe->CreateNewOutput(output_name, col_names, var_names);
+  probe->CreateNewOutput(col_names, var_names);
   return Status::OK();
 }
 
@@ -186,28 +185,12 @@ Status ParseOutput(ProbeIR* probe, const QLObjectPtr& probe_output) {
   }
   if (!CollectionObject::IsCollection(probe_output)) {
     return probe_output->CreateError(
-        "Unable to parse probe return value. Expected Collection, received $0",
+        "Unable to parse probe output definition. Expected Collection, received $0",
         ObjectName(probe_output));
   }
+  auto columns = static_cast<CollectionObject*>(probe_output.get());
 
-  // Setup an output action.
-  auto collection = static_cast<CollectionObject*>(probe_output.get());
-
-  if (collection->items().size() != 2) {
-    return collection->CreateError(
-        "Expected return value to be Collection of length 2, got $0 elements",
-        collection->items().size());
-  }
-  PL_ASSIGN_OR_RETURN(auto table_name_ir, GetArgAs<StringIR>(collection->items()[0], "table_name"));
-
-  if (!CollectionObject::IsCollection(collection->items()[1])) {
-    return collection->items()[1]->CreateError(
-        "Unable to parse probe output definition. Expected Collection, received $0",
-        ObjectName(collection->items()[1]));
-  }
-  auto columns = static_cast<CollectionObject*>(collection->items()[1].get());
-
-  return ParseColumns(probe, table_name_ir->str(), columns);
+  return ParseColumns(probe, columns);
 }
 
 StatusOr<QLObjectPtr> ProbeHandler::Wrapper(
@@ -264,6 +247,7 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(DynamicTraceIR* probes, const pypa::As
   DCHECK(probes);
 
   PL_ASSIGN_OR_RETURN(auto probe_name_ir, GetArgAs<StringIR>(args, "name"));
+  PL_ASSIGN_OR_RETURN(auto output_name_ir, GetArgAs<StringIR>(args, "table_name"));
   PL_ASSIGN_OR_RETURN(UInt128IR * upid_ir, GetArgAs<UInt128IR>(args, "upid"));
   // TODO(philkuz) support pod_name
   // PL_ASSIGN_OR_RETURN(auto pod_name_ir, GetArgAs<StringIR>(args, "pod_name"));
@@ -271,6 +255,7 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(DynamicTraceIR* probes, const pypa::As
   PL_ASSIGN_OR_RETURN(auto ttl_ir, GetArgAs<StringIR>(args, "ttl"));
 
   const std::string& probe_name = probe_name_ir->str();
+  const std::string& output_name = output_name_ir->str();
   md::UPID upid(upid_ir->val());
   PL_ASSIGN_OR_RETURN(int64_t ttl_ns, StringToTimeInt(ttl_ir->str()));
 
@@ -279,15 +264,16 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(DynamicTraceIR* probes, const pypa::As
   // const auto& container_name = pod_name_ir->str();
   // const auto& binary_name = binary_name_ir->str();
 
-  for (const auto& [idx, probe_obj] : Enumerate(ObjectAsCollection(args.GetArg("probe_fn")))) {
-    PL_ASSIGN_OR_RETURN(auto probe_fn, GetCallMethod(ast, probe_obj));
-    PL_ASSIGN_OR_RETURN(auto probe, probe_fn->Call({}, ast));
-    CHECK(ProbeObject::IsProbe(probe));
-    auto probe_ir = std::static_pointer_cast<ProbeObject>(probe)->probe();
-    PL_RETURN_IF_ERROR(
-        WrapAstError(ast, probes->UpsertUPIDProbe(
-                              probe_ir, absl::Substitute("$0$1", probe_name, idx), upid, ttl_ns)));
-  }
+  auto trace_program_or_s = probes->CreateTraceProgram(probe_name, upid, ttl_ns);
+  PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
+  auto trace_program = trace_program_or_s.ConsumeValueOrDie();
+
+  PL_ASSIGN_OR_RETURN(auto probe_fn, GetCallMethod(ast, args.GetArg("probe_fn")));
+  PL_ASSIGN_OR_RETURN(auto probe, probe_fn->Call({}, ast));
+  CHECK(ProbeObject::IsProbe(probe));
+  auto probe_ir = std::static_pointer_cast<ProbeObject>(probe)->probe();
+  PL_RETURN_IF_ERROR(
+      WrapAstError(ast, trace_program->AddProbe(probe_ir.get(), probe_name, output_name)));
 
   return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(ast, visitor));
 }

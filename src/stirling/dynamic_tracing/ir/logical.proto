@@ -1,8 +1,12 @@
 syntax = "proto3";
 
-package pl.stirling.dynamic_tracing.ir.logical;
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/duration.proto";
 
 import "src/stirling/dynamic_tracing/ir/shared.proto";
+
+package pl.stirling.dynamic_tracing.ir.logical;
+
 
 message Constant {
   // Name must be unique in the scope of a Probe.
@@ -23,7 +27,8 @@ message Argument {
   // For example, "foo" refers to an argument named "foo".
   // And "foo.bar" refers to the "bar" field of argument named "foo".
   //
-  // NOTE: This should only be a accessor expression started with the name of an argument.
+  // NOTE: This should only be a accessor expression started with the name of an
+  // argument.
   string expr = 2;
 }
 
@@ -32,12 +37,13 @@ message ReturnValue {
   string id = 1;
 
   // The expression describes how to access this value.
-  // The expression is in the form of `$<return value index>.<field>.<field>`. For example,
+  // The expression is in the form of `$<return value index>.<field>.<field>`.
+  // For example,
   // `$0.i32`, which is the first return value's field `i32` field.
   //
-  // The index to this return value. This is only meaningful for languages that support multiple
-  // return values, like Go. Note that Golang index all return values along with the input arguments
-  // (excluding the receiver).
+  // The index to this return value. This is only meaningful for languages that
+  // support multiple return values, like Go. Note that Golang index all return
+  // values along with the input arguments (excluding the receiver).
   string expr = 2;
 }
 
@@ -50,9 +56,7 @@ message MapValue {
   repeated string value_ids = 3;
 }
 
-message FunctionLatency {
-  string id = 1;
-}
+message FunctionLatency { string id = 1; }
 
 message MapStashAction {
   string map_name = 1;
@@ -80,7 +84,8 @@ message Probe {
   // Where to attach this probe.
   shared.TracePoint trace_point = 2;
 
-  // This is only used by intermediate IR to implement if condition that compares with a constant.
+  // This is only used by intermediate IR to implement if condition that
+  // compares with a constant.
   repeated Constant consts = 3;
 
   // Input arguments of a function.
@@ -97,27 +102,32 @@ message Probe {
 
   // Inserts key and value into a map.
   //
-  // The variable to be inserted into the map must be one of the above args, ret_vals, and function_latency.
+  // The variable to be inserted into the map must be one of the above args,
+  // ret_vals, and function_latency.
   repeated MapStashAction map_stash_actions = 8;
 
   // Writes a value to the output table.
   //
-  // The variable to be inserted into the output table must be one of the above args, ret_vals, and function_latency.
+  // The variable to be inserted into the output table must be one of the above
+  // args, ret_vals, and function_latency.
   repeated OutputAction output_actions = 9;
 
   // Used for debugging to print variable defined above.
   repeated shared.Printk printks = 10;
-
-  // The liveness time of the probe, represented in ns. After this time, the
-  // probe will be deleted.
-  uint64 ttl_ns = 11;
 }
 
 // A logical program.
 // Represents a fully logical program, or one in intermediate state.
-// Example: The simplest logical program will have only a single probe (no outputs, no maps),
-// which will then get transformed into a program with multiple probes, maps and outputs.
+// Example: The simplest logical program will have only a single probe (no
+// outputs, no maps), which will then get transformed into a program with
+// multiple probes, maps and outputs.
 message Program {
+  // The name of the Tracepoint Program .
+  string name = 5;
+  // The liveness time of the tracepoint, represented in ns. After this time,
+  // the tracepoint will be deleted.
+  google.protobuf.Duration ttl = 6 [ (gogoproto.customname) = "TTL" ];
+
   shared.BinarySpec binary_spec = 1;
 
   // The programs outputs to a table.
