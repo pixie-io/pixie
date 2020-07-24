@@ -89,7 +89,7 @@ message AgentUpdatesResponse {
   // For all agents that have had updated metadata since the previous message in this stream,
   // this field contains their latest state. Contains a maximum of 100 agents in this list,
   // any additional agents should be sent in another response message in this stream.
-  repeated AgentMetadata agent_metadata_updates = 2;
+  repeated pl.vizier.services.shared.agent.Agent agent_updates = 2;
   // For all agents that have had updated table metadata since the previous message in this
   // stream, this field contains their latest state. Contains a maximum of 100 agents in this list,
   // any additional agents should be sent in another response message in this stream.

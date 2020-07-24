@@ -40,19 +40,6 @@ message SchemaResponse {
   repeated SchemaByAgent schema_by_agent = 1;
 }
 
-message AgentInfoRequest {}
-
-message AgentInfoResponse {
-  // Contains AgentMetadata for each of the agents currently registered with
-  // Vizier.
-  repeated AgentMetadata info = 1;
-}
-
-message AgentMetadata {
-  pl.vizier.services.shared.agent.Agent agent = 1;
-  pl.vizier.services.shared.agent.AgentStatus status = 2;
-}
-
 // TODO(zasgar/michelle): We should change this after we add the compute nodes.
 // For now, we plan to just return the QueryResponse from each agent on the
 // message bus and have the broker merge the results together.

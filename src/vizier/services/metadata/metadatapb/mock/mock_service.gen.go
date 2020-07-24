@@ -8,6 +8,7 @@ import (
 	context "context"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
+	metadata "google.golang.org/grpc/metadata"
 	metadatapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	reflect "reflect"
 )
@@ -107,6 +108,133 @@ func (mr *MockMetadataServiceClientMockRecorder) GetAgentTableMetadata(ctx, in i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentTableMetadata", reflect.TypeOf((*MockMetadataServiceClient)(nil).GetAgentTableMetadata), varargs...)
 }
 
+// GetAgentUpdates mocks base method
+func (m *MockMetadataServiceClient) GetAgentUpdates(ctx context.Context, in *metadatapb.AgentUpdatesRequest, opts ...grpc.CallOption) (metadatapb.MetadataService_GetAgentUpdatesClient, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetAgentUpdates", varargs...)
+	ret0, _ := ret[0].(metadatapb.MetadataService_GetAgentUpdatesClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgentUpdates indicates an expected call of GetAgentUpdates
+func (mr *MockMetadataServiceClientMockRecorder) GetAgentUpdates(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentUpdates", reflect.TypeOf((*MockMetadataServiceClient)(nil).GetAgentUpdates), varargs...)
+}
+
+// MockMetadataService_GetAgentUpdatesClient is a mock of MetadataService_GetAgentUpdatesClient interface
+type MockMetadataService_GetAgentUpdatesClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockMetadataService_GetAgentUpdatesClientMockRecorder
+}
+
+// MockMetadataService_GetAgentUpdatesClientMockRecorder is the mock recorder for MockMetadataService_GetAgentUpdatesClient
+type MockMetadataService_GetAgentUpdatesClientMockRecorder struct {
+	mock *MockMetadataService_GetAgentUpdatesClient
+}
+
+// NewMockMetadataService_GetAgentUpdatesClient creates a new mock instance
+func NewMockMetadataService_GetAgentUpdatesClient(ctrl *gomock.Controller) *MockMetadataService_GetAgentUpdatesClient {
+	mock := &MockMetadataService_GetAgentUpdatesClient{ctrl: ctrl}
+	mock.recorder = &MockMetadataService_GetAgentUpdatesClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockMetadataService_GetAgentUpdatesClient) EXPECT() *MockMetadataService_GetAgentUpdatesClientMockRecorder {
+	return m.recorder
+}
+
+// Recv mocks base method
+func (m *MockMetadataService_GetAgentUpdatesClient) Recv() (*metadatapb.AgentUpdatesResponse, error) {
+	ret := m.ctrl.Call(m, "Recv")
+	ret0, _ := ret[0].(*metadatapb.AgentUpdatesResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Recv indicates an expected call of Recv
+func (mr *MockMetadataService_GetAgentUpdatesClientMockRecorder) Recv() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recv", reflect.TypeOf((*MockMetadataService_GetAgentUpdatesClient)(nil).Recv))
+}
+
+// Header mocks base method
+func (m *MockMetadataService_GetAgentUpdatesClient) Header() (metadata.MD, error) {
+	ret := m.ctrl.Call(m, "Header")
+	ret0, _ := ret[0].(metadata.MD)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Header indicates an expected call of Header
+func (mr *MockMetadataService_GetAgentUpdatesClientMockRecorder) Header() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Header", reflect.TypeOf((*MockMetadataService_GetAgentUpdatesClient)(nil).Header))
+}
+
+// Trailer mocks base method
+func (m *MockMetadataService_GetAgentUpdatesClient) Trailer() metadata.MD {
+	ret := m.ctrl.Call(m, "Trailer")
+	ret0, _ := ret[0].(metadata.MD)
+	return ret0
+}
+
+// Trailer indicates an expected call of Trailer
+func (mr *MockMetadataService_GetAgentUpdatesClientMockRecorder) Trailer() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Trailer", reflect.TypeOf((*MockMetadataService_GetAgentUpdatesClient)(nil).Trailer))
+}
+
+// CloseSend mocks base method
+func (m *MockMetadataService_GetAgentUpdatesClient) CloseSend() error {
+	ret := m.ctrl.Call(m, "CloseSend")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CloseSend indicates an expected call of CloseSend
+func (mr *MockMetadataService_GetAgentUpdatesClientMockRecorder) CloseSend() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseSend", reflect.TypeOf((*MockMetadataService_GetAgentUpdatesClient)(nil).CloseSend))
+}
+
+// Context mocks base method
+func (m *MockMetadataService_GetAgentUpdatesClient) Context() context.Context {
+	ret := m.ctrl.Call(m, "Context")
+	ret0, _ := ret[0].(context.Context)
+	return ret0
+}
+
+// Context indicates an expected call of Context
+func (mr *MockMetadataService_GetAgentUpdatesClientMockRecorder) Context() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockMetadataService_GetAgentUpdatesClient)(nil).Context))
+}
+
+// SendMsg mocks base method
+func (m_2 *MockMetadataService_GetAgentUpdatesClient) SendMsg(m interface{}) error {
+	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendMsg indicates an expected call of SendMsg
+func (mr *MockMetadataService_GetAgentUpdatesClientMockRecorder) SendMsg(m interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockMetadataService_GetAgentUpdatesClient)(nil).SendMsg), m)
+}
+
+// RecvMsg mocks base method
+func (m_2 *MockMetadataService_GetAgentUpdatesClient) RecvMsg(m interface{}) error {
+	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RecvMsg indicates an expected call of RecvMsg
+func (mr *MockMetadataService_GetAgentUpdatesClientMockRecorder) RecvMsg(m interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockMetadataService_GetAgentUpdatesClient)(nil).RecvMsg), m)
+}
+
 // MockMetadataServiceServer is a mock of MetadataServiceServer interface
 type MockMetadataServiceServer struct {
 	ctrl     *gomock.Controller
@@ -180,6 +308,123 @@ func (m *MockMetadataServiceServer) GetAgentTableMetadata(arg0 context.Context, 
 // GetAgentTableMetadata indicates an expected call of GetAgentTableMetadata
 func (mr *MockMetadataServiceServerMockRecorder) GetAgentTableMetadata(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentTableMetadata", reflect.TypeOf((*MockMetadataServiceServer)(nil).GetAgentTableMetadata), arg0, arg1)
+}
+
+// GetAgentUpdates mocks base method
+func (m *MockMetadataServiceServer) GetAgentUpdates(arg0 *metadatapb.AgentUpdatesRequest, arg1 metadatapb.MetadataService_GetAgentUpdatesServer) error {
+	ret := m.ctrl.Call(m, "GetAgentUpdates", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// GetAgentUpdates indicates an expected call of GetAgentUpdates
+func (mr *MockMetadataServiceServerMockRecorder) GetAgentUpdates(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentUpdates", reflect.TypeOf((*MockMetadataServiceServer)(nil).GetAgentUpdates), arg0, arg1)
+}
+
+// MockMetadataService_GetAgentUpdatesServer is a mock of MetadataService_GetAgentUpdatesServer interface
+type MockMetadataService_GetAgentUpdatesServer struct {
+	ctrl     *gomock.Controller
+	recorder *MockMetadataService_GetAgentUpdatesServerMockRecorder
+}
+
+// MockMetadataService_GetAgentUpdatesServerMockRecorder is the mock recorder for MockMetadataService_GetAgentUpdatesServer
+type MockMetadataService_GetAgentUpdatesServerMockRecorder struct {
+	mock *MockMetadataService_GetAgentUpdatesServer
+}
+
+// NewMockMetadataService_GetAgentUpdatesServer creates a new mock instance
+func NewMockMetadataService_GetAgentUpdatesServer(ctrl *gomock.Controller) *MockMetadataService_GetAgentUpdatesServer {
+	mock := &MockMetadataService_GetAgentUpdatesServer{ctrl: ctrl}
+	mock.recorder = &MockMetadataService_GetAgentUpdatesServerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockMetadataService_GetAgentUpdatesServer) EXPECT() *MockMetadataService_GetAgentUpdatesServerMockRecorder {
+	return m.recorder
+}
+
+// Send mocks base method
+func (m *MockMetadataService_GetAgentUpdatesServer) Send(arg0 *metadatapb.AgentUpdatesResponse) error {
+	ret := m.ctrl.Call(m, "Send", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Send indicates an expected call of Send
+func (mr *MockMetadataService_GetAgentUpdatesServerMockRecorder) Send(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockMetadataService_GetAgentUpdatesServer)(nil).Send), arg0)
+}
+
+// SetHeader mocks base method
+func (m *MockMetadataService_GetAgentUpdatesServer) SetHeader(arg0 metadata.MD) error {
+	ret := m.ctrl.Call(m, "SetHeader", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetHeader indicates an expected call of SetHeader
+func (mr *MockMetadataService_GetAgentUpdatesServerMockRecorder) SetHeader(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHeader", reflect.TypeOf((*MockMetadataService_GetAgentUpdatesServer)(nil).SetHeader), arg0)
+}
+
+// SendHeader mocks base method
+func (m *MockMetadataService_GetAgentUpdatesServer) SendHeader(arg0 metadata.MD) error {
+	ret := m.ctrl.Call(m, "SendHeader", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendHeader indicates an expected call of SendHeader
+func (mr *MockMetadataService_GetAgentUpdatesServerMockRecorder) SendHeader(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendHeader", reflect.TypeOf((*MockMetadataService_GetAgentUpdatesServer)(nil).SendHeader), arg0)
+}
+
+// SetTrailer mocks base method
+func (m *MockMetadataService_GetAgentUpdatesServer) SetTrailer(arg0 metadata.MD) {
+	m.ctrl.Call(m, "SetTrailer", arg0)
+}
+
+// SetTrailer indicates an expected call of SetTrailer
+func (mr *MockMetadataService_GetAgentUpdatesServerMockRecorder) SetTrailer(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTrailer", reflect.TypeOf((*MockMetadataService_GetAgentUpdatesServer)(nil).SetTrailer), arg0)
+}
+
+// Context mocks base method
+func (m *MockMetadataService_GetAgentUpdatesServer) Context() context.Context {
+	ret := m.ctrl.Call(m, "Context")
+	ret0, _ := ret[0].(context.Context)
+	return ret0
+}
+
+// Context indicates an expected call of Context
+func (mr *MockMetadataService_GetAgentUpdatesServerMockRecorder) Context() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockMetadataService_GetAgentUpdatesServer)(nil).Context))
+}
+
+// SendMsg mocks base method
+func (m_2 *MockMetadataService_GetAgentUpdatesServer) SendMsg(m interface{}) error {
+	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendMsg indicates an expected call of SendMsg
+func (mr *MockMetadataService_GetAgentUpdatesServerMockRecorder) SendMsg(m interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockMetadataService_GetAgentUpdatesServer)(nil).SendMsg), m)
+}
+
+// RecvMsg mocks base method
+func (m_2 *MockMetadataService_GetAgentUpdatesServer) RecvMsg(m interface{}) error {
+	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RecvMsg indicates an expected call of RecvMsg
+func (mr *MockMetadataService_GetAgentUpdatesServerMockRecorder) RecvMsg(m interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockMetadataService_GetAgentUpdatesServer)(nil).RecvMsg), m)
 }
 
 // MockMetadataTracepointServiceClient is a mock of MetadataTracepointServiceClient interface
