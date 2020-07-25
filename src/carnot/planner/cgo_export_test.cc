@@ -383,7 +383,8 @@ TEST_F(PlannerExportTest, compile_mutations) {
   plannerpb::CompileMutationsResponse mutations_response_pb;
   ASSERT_TRUE(mutations_response_pb.ParseFromString(interface_result.ConsumeValueOrDie()));
   ASSERT_OK(mutations_response_pb.status());
-  EXPECT_THAT(mutations_response_pb.trace(), EqualsProto(kExpectedPxlTracePb));
+  ASSERT_EQ(mutations_response_pb.mutations().size(), 1);
+  EXPECT_THAT(mutations_response_pb.mutations()[0].trace(), EqualsProto(kExpectedPxlTracePb));
 }
 
 }  // namespace planner

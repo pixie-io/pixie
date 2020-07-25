@@ -401,15 +401,143 @@ func (m *CompileMutationsRequest) GetQueryStr() string {
 	return ""
 }
 
+type DeleteTracepoint struct {
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (m *DeleteTracepoint) Reset()      { *m = DeleteTracepoint{} }
+func (*DeleteTracepoint) ProtoMessage() {}
+func (*DeleteTracepoint) Descriptor() ([]byte, []int) {
+	return fileDescriptor_382d495688ef31c6, []int{4}
+}
+func (m *DeleteTracepoint) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DeleteTracepoint) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DeleteTracepoint.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DeleteTracepoint) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteTracepoint.Merge(m, src)
+}
+func (m *DeleteTracepoint) XXX_Size() int {
+	return m.Size()
+}
+func (m *DeleteTracepoint) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteTracepoint.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteTracepoint proto.InternalMessageInfo
+
+func (m *DeleteTracepoint) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+type CompileMutation struct {
+	// Types that are valid to be assigned to Mutation:
+	//	*CompileMutation_Trace
+	//	*CompileMutation_DeleteTracepoint
+	Mutation isCompileMutation_Mutation `protobuf_oneof:"mutation"`
+}
+
+func (m *CompileMutation) Reset()      { *m = CompileMutation{} }
+func (*CompileMutation) ProtoMessage() {}
+func (*CompileMutation) Descriptor() ([]byte, []int) {
+	return fileDescriptor_382d495688ef31c6, []int{5}
+}
+func (m *CompileMutation) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *CompileMutation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_CompileMutation.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *CompileMutation) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CompileMutation.Merge(m, src)
+}
+func (m *CompileMutation) XXX_Size() int {
+	return m.Size()
+}
+func (m *CompileMutation) XXX_DiscardUnknown() {
+	xxx_messageInfo_CompileMutation.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CompileMutation proto.InternalMessageInfo
+
+type isCompileMutation_Mutation interface {
+	isCompileMutation_Mutation()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type CompileMutation_Trace struct {
+	Trace *ir.Program `protobuf:"bytes,2,opt,name=trace,proto3,oneof" json:"trace,omitempty"`
+}
+type CompileMutation_DeleteTracepoint struct {
+	DeleteTracepoint *DeleteTracepoint `protobuf:"bytes,3,opt,name=delete_tracepoint,json=deleteTracepoint,proto3,oneof" json:"delete_tracepoint,omitempty"`
+}
+
+func (*CompileMutation_Trace) isCompileMutation_Mutation()            {}
+func (*CompileMutation_DeleteTracepoint) isCompileMutation_Mutation() {}
+
+func (m *CompileMutation) GetMutation() isCompileMutation_Mutation {
+	if m != nil {
+		return m.Mutation
+	}
+	return nil
+}
+
+func (m *CompileMutation) GetTrace() *ir.Program {
+	if x, ok := m.GetMutation().(*CompileMutation_Trace); ok {
+		return x.Trace
+	}
+	return nil
+}
+
+func (m *CompileMutation) GetDeleteTracepoint() *DeleteTracepoint {
+	if x, ok := m.GetMutation().(*CompileMutation_DeleteTracepoint); ok {
+		return x.DeleteTracepoint
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*CompileMutation) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*CompileMutation_Trace)(nil),
+		(*CompileMutation_DeleteTracepoint)(nil),
+	}
+}
+
 type CompileMutationsResponse struct {
-	Status *proto2.Status `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
-	Trace  *ir.Program    `protobuf:"bytes,2,opt,name=trace,proto3" json:"trace,omitempty"`
+	Status    *proto2.Status     `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	Mutations []*CompileMutation `protobuf:"bytes,2,rep,name=mutations,proto3" json:"mutations,omitempty"`
 }
 
 func (m *CompileMutationsResponse) Reset()      { *m = CompileMutationsResponse{} }
 func (*CompileMutationsResponse) ProtoMessage() {}
 func (*CompileMutationsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_382d495688ef31c6, []int{4}
+	return fileDescriptor_382d495688ef31c6, []int{6}
 }
 func (m *CompileMutationsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -445,9 +573,9 @@ func (m *CompileMutationsResponse) GetStatus() *proto2.Status {
 	return nil
 }
 
-func (m *CompileMutationsResponse) GetTrace() *ir.Program {
+func (m *CompileMutationsResponse) GetMutations() []*CompileMutation {
 	if m != nil {
-		return m.Trace
+		return m.Mutations
 	}
 	return nil
 }
@@ -460,6 +588,8 @@ func init() {
 	proto.RegisterType((*QueryFlagsSpec_Flag)(nil), "pl.carnot.planner.plannerpb.QueryFlagsSpec.Flag")
 	proto.RegisterType((*GetAvailableFlagsResult)(nil), "pl.carnot.planner.plannerpb.GetAvailableFlagsResult")
 	proto.RegisterType((*CompileMutationsRequest)(nil), "pl.carnot.planner.plannerpb.CompileMutationsRequest")
+	proto.RegisterType((*DeleteTracepoint)(nil), "pl.carnot.planner.plannerpb.DeleteTracepoint")
+	proto.RegisterType((*CompileMutation)(nil), "pl.carnot.planner.plannerpb.CompileMutation")
 	proto.RegisterType((*CompileMutationsResponse)(nil), "pl.carnot.planner.plannerpb.CompileMutationsResponse")
 }
 
@@ -468,51 +598,56 @@ func init() {
 }
 
 var fileDescriptor_382d495688ef31c6 = []byte{
-	// 700 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x54, 0xcd, 0x6e, 0x13, 0x3b,
-	0x14, 0x8e, 0xf3, 0x53, 0x25, 0x4e, 0x5b, 0xdd, 0xeb, 0x5e, 0xdd, 0x8e, 0x52, 0x18, 0x45, 0x59,
-	0x55, 0x2a, 0x78, 0x50, 0x40, 0xb0, 0x60, 0x01, 0x2d, 0xb4, 0x48, 0x08, 0x50, 0x99, 0x54, 0x5d,
-	0xb0, 0x19, 0x9d, 0x4c, 0x9c, 0x30, 0xd2, 0xfc, 0xb8, 0xb6, 0xa7, 0x6a, 0x76, 0x3c, 0x01, 0x62,
-	0xc1, 0x43, 0xf0, 0x28, 0xb0, 0xeb, 0xb2, 0x4b, 0x9a, 0x6e, 0x58, 0xa1, 0x4a, 0x3c, 0x00, 0xc8,
-	0xf6, 0x24, 0x84, 0x22, 0x51, 0x60, 0x35, 0xe7, 0xe7, 0xfb, 0x3e, 0x7d, 0xe7, 0xd8, 0x63, 0x7c,
-	0x4d, 0x8a, 0xd0, 0x0b, 0x41, 0xa4, 0x99, 0xf2, 0x78, 0x0c, 0x69, 0xca, 0xc4, 0xf4, 0xcb, 0xfb,
-	0xde, 0x30, 0x4f, 0xc3, 0x00, 0xc4, 0x48, 0x52, 0x2e, 0x32, 0x95, 0x91, 0x35, 0x1e, 0x53, 0x0b,
-	0xa6, 0x05, 0x88, 0xce, 0xc0, 0xad, 0x8e, 0x91, 0xca, 0x92, 0x24, 0x4b, 0xbd, 0x3e, 0x48, 0xe6,
-	0x19, 0x8e, 0x27, 0x15, 0xa8, 0xbc, 0x10, 0xb0, 0x18, 0xf9, 0x12, 0x04, 0x1b, 0x78, 0x6a, 0xcc,
-	0x99, 0x2c, 0x40, 0x26, 0x2e, 0x30, 0x57, 0x2e, 0x58, 0xe2, 0x7d, 0xf3, 0x29, 0xba, 0xd7, 0x8d,
-	0x82, 0x8a, 0x44, 0x1c, 0xa5, 0x23, 0x6f, 0x30, 0x4e, 0x21, 0x89, 0xc2, 0x40, 0x09, 0x08, 0x75,
-	0x1e, 0x09, 0x2f, 0xce, 0x46, 0x51, 0x08, 0xb1, 0x85, 0x77, 0xbe, 0x96, 0xf1, 0xe2, 0xf3, 0x9c,
-	0x89, 0xb1, 0xcf, 0x0e, 0x72, 0x26, 0x15, 0x59, 0xc3, 0x8d, 0x03, 0x9d, 0x07, 0x52, 0x09, 0x07,
-	0xb5, 0xd1, 0x7a, 0xc3, 0xaf, 0x9b, 0x42, 0x4f, 0x09, 0xb2, 0x8f, 0x31, 0x3b, 0x62, 0x61, 0xa0,
-	0xe7, 0x96, 0x4e, 0xa5, 0x5d, 0x59, 0x6f, 0x76, 0xef, 0xd0, 0x5f, 0x0c, 0x4d, 0xe7, 0xb5, 0xe9,
-	0x4e, 0x9e, 0x86, 0x7b, 0xd9, 0xf6, 0x11, 0x0b, 0x73, 0xc5, 0xfc, 0x86, 0x96, 0xd2, 0x25, 0xd9,
-	0xfa, 0x82, 0xf0, 0xd2, 0x0f, 0x4d, 0x6d, 0xc3, 0x2c, 0x37, 0x85, 0x84, 0x4d, 0x6d, 0xe8, 0xc2,
-	0x33, 0x48, 0x18, 0x09, 0x30, 0x06, 0x31, 0x0a, 0x0e, 0x21, 0xce, 0x99, 0x74, 0xca, 0xc6, 0xc6,
-	0xfd, 0xbf, 0xb4, 0x41, 0x37, 0xc5, 0x68, 0x5f, 0x0b, 0xf9, 0x0d, 0x28, 0x22, 0x49, 0x28, 0x5e,
-	0xc9, 0x72, 0xc5, 0x73, 0x15, 0x28, 0xe8, 0xc7, 0x2c, 0xe0, 0x82, 0x0d, 0xa3, 0x23, 0xa7, 0x62,
-	0x7c, 0xfc, 0x6b, 0x5b, 0x7b, 0xba, 0xb3, 0x6b, 0x1a, 0xad, 0x5b, 0xb8, 0x3e, 0x95, 0x21, 0x04,
-	0x57, 0xe7, 0x4c, 0x9b, 0x98, 0xfc, 0x87, 0x6b, 0xc6, 0xac, 0x53, 0x36, 0x45, 0x9b, 0x3c, 0xae,
-	0xd6, 0xcb, 0xff, 0x54, 0x3a, 0x1f, 0xca, 0x78, 0xd9, 0xd8, 0xdb, 0x89, 0x61, 0x24, 0x7b, 0x9c,
-	0x85, 0x64, 0x07, 0xd7, 0x86, 0x3a, 0x71, 0x90, 0x19, 0xed, 0xc6, 0xe5, 0xa3, 0xcd, 0xb8, 0x54,
-	0x47, 0xbe, 0xa5, 0xb7, 0x3e, 0x23, 0x5c, 0xd5, 0x39, 0xf1, 0x70, 0x63, 0x00, 0x0a, 0x02, 0x7d,
-	0x8d, 0x8c, 0xb1, 0xe5, 0x2e, 0xd1, 0xa2, 0xf6, 0x5a, 0x3d, 0x04, 0x05, 0x7b, 0x63, 0xce, 0xfc,
-	0xfa, 0xa0, 0x88, 0xc8, 0x5d, 0xbc, 0x24, 0x59, 0x02, 0xa9, 0xd2, 0x77, 0x47, 0x93, 0xca, 0x86,
-	0xf4, 0xff, 0x77, 0x52, 0xaf, 0x68, 0x1b, 0xe2, 0xa2, 0x9c, 0xcb, 0x66, 0x1b, 0xa8, 0xcc, 0x6d,
-	0xa0, 0x8d, 0x9b, 0x03, 0x26, 0x43, 0x11, 0x71, 0x15, 0x65, 0xa9, 0x53, 0x35, 0xad, 0xf9, 0x12,
-	0xd9, 0xc2, 0x4b, 0x03, 0x36, 0x84, 0x3c, 0x56, 0xf6, 0x60, 0x9d, 0x5a, 0x1b, 0xad, 0x37, 0xbb,
-	0x57, 0x2f, 0x0c, 0xcf, 0xfb, 0xb4, 0x17, 0x42, 0x0c, 0xc2, 0x1e, 0xda, 0x62, 0xc1, 0x31, 0x59,
-	0xe7, 0x2d, 0xc2, 0xab, 0x8f, 0x98, 0xda, 0x3c, 0x84, 0x28, 0xd6, 0xc7, 0x63, 0xd6, 0xe2, 0x33,
-	0x99, 0xc7, 0x8a, 0x3c, 0xc1, 0x4d, 0x7b, 0xb1, 0xa7, 0xab, 0xd5, 0xea, 0x1b, 0x7f, 0xb0, 0x5a,
-	0x1f, 0x1f, 0xcc, 0x72, 0xb2, 0x81, 0x17, 0xec, 0x8f, 0x6b, 0x36, 0xd3, 0xec, 0xae, 0x68, 0x21,
-	0x5b, 0xd1, 0x0e, 0x4d, 0xe0, 0x17, 0x90, 0xce, 0x6d, 0xbc, 0xfa, 0x20, 0x4b, 0x78, 0x14, 0xb3,
-	0xa7, 0xb9, 0x02, 0x3d, 0xad, 0xfc, 0x9d, 0xdf, 0xad, 0xf3, 0x1a, 0x61, 0xe7, 0x67, 0xa2, 0xe4,
-	0x59, 0x2a, 0xd9, 0x9c, 0x03, 0x74, 0xa9, 0x03, 0xb2, 0x8d, 0x6b, 0xfa, 0x09, 0x60, 0x85, 0x5b,
-	0xcf, 0x62, 0xed, 0x23, 0x41, 0x2f, 0x3c, 0x12, 0x34, 0x12, 0x74, 0xfa, 0x48, 0xec, 0x8a, 0x6c,
-	0x24, 0x20, 0xf1, 0x2d, 0x7b, 0xeb, 0xde, 0xf1, 0xa9, 0x5b, 0x3a, 0x39, 0x75, 0x4b, 0xe7, 0xa7,
-	0x2e, 0x7a, 0x35, 0x71, 0xd1, 0xbb, 0x89, 0x8b, 0xde, 0x4f, 0x5c, 0x74, 0x3c, 0x71, 0xd1, 0xc7,
-	0x89, 0x8b, 0x3e, 0x4d, 0xdc, 0xd2, 0xf9, 0xc4, 0x45, 0x6f, 0xce, 0xdc, 0xd2, 0xf1, 0x99, 0x5b,
-	0x3a, 0x39, 0x73, 0x4b, 0x2f, 0x1a, 0xb3, 0x8d, 0xf6, 0x17, 0xcc, 0xab, 0x73, 0xf3, 0x5b, 0x00,
-	0x00, 0x00, 0xff, 0xff, 0x7c, 0xdb, 0x76, 0xb2, 0x57, 0x05, 0x00, 0x00,
+	// 779 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x54, 0x4d, 0x6f, 0xe3, 0x44,
+	0x18, 0xf6, 0xe4, 0xa3, 0x4a, 0xde, 0xb4, 0xa5, 0x9d, 0x22, 0x6a, 0xa5, 0x60, 0x45, 0x3e, 0xa0,
+	0x4a, 0x6d, 0x6d, 0x14, 0x10, 0x1c, 0x38, 0x40, 0x4b, 0x69, 0xab, 0x0a, 0x50, 0x71, 0xa2, 0x1e,
+	0x10, 0x92, 0x35, 0xb1, 0x27, 0xc1, 0x92, 0xbf, 0x3a, 0x33, 0xae, 0x9a, 0x1b, 0x3f, 0x01, 0x09,
+	0x7e, 0x04, 0x3f, 0x84, 0x03, 0xdc, 0x7a, 0xec, 0x91, 0xa6, 0x17, 0x4e, 0xa8, 0xd2, 0xfe, 0x80,
+	0x5d, 0xcd, 0x8c, 0x93, 0x66, 0xb3, 0xab, 0x76, 0x77, 0x4f, 0x7e, 0x3f, 0x1f, 0x3f, 0xef, 0x33,
+	0x33, 0x2f, 0xec, 0x72, 0x16, 0xb8, 0x01, 0x61, 0x69, 0x26, 0xdc, 0x3c, 0x26, 0x69, 0x4a, 0xd9,
+	0xf4, 0x9b, 0x0f, 0xdc, 0x61, 0x91, 0x06, 0x3e, 0x61, 0x23, 0xee, 0xe4, 0x2c, 0x13, 0x19, 0xde,
+	0xca, 0x63, 0x47, 0x17, 0x3b, 0x65, 0x91, 0x33, 0x2b, 0x6e, 0xdb, 0x0a, 0x2a, 0x4b, 0x92, 0x2c,
+	0x75, 0x07, 0x84, 0x53, 0x57, 0xf5, 0xb8, 0x5c, 0x10, 0x51, 0x94, 0x00, 0xba, 0x86, 0xff, 0x42,
+	0x18, 0x0d, 0x5d, 0x31, 0xce, 0x29, 0x2f, 0x8b, 0x94, 0x5d, 0xd6, 0x7c, 0xb8, 0x40, 0x29, 0x1f,
+	0xa8, 0x4f, 0x99, 0xdd, 0x53, 0x08, 0x22, 0x62, 0x71, 0x94, 0x8e, 0xdc, 0x70, 0x9c, 0x92, 0x24,
+	0x0a, 0x7c, 0xc1, 0x48, 0x20, 0xfd, 0x88, 0xb9, 0x71, 0x36, 0x8a, 0x02, 0x12, 0xeb, 0x72, 0xfb,
+	0x79, 0x05, 0x96, 0x7f, 0x2c, 0x28, 0x1b, 0x7b, 0xf4, 0xa2, 0xa0, 0x5c, 0xe0, 0x2d, 0x68, 0x5e,
+	0x48, 0xdf, 0xe7, 0x82, 0x99, 0xa8, 0x83, 0xb6, 0x9b, 0x5e, 0x43, 0x05, 0x7a, 0x82, 0xe1, 0x73,
+	0x00, 0x7a, 0x45, 0x03, 0x5f, 0xce, 0xcd, 0xcd, 0x6a, 0xa7, 0xba, 0xdd, 0xea, 0x7e, 0xe1, 0x3c,
+	0x32, 0xb4, 0x33, 0x8f, 0xed, 0x1c, 0x15, 0x69, 0xd0, 0xcf, 0xbe, 0xbd, 0xa2, 0x41, 0x21, 0xa8,
+	0xd7, 0x94, 0x50, 0x32, 0xc4, 0xdb, 0xcf, 0x10, 0xac, 0xbc, 0x94, 0x94, 0x34, 0x94, 0xb8, 0x29,
+	0x49, 0xe8, 0x94, 0x86, 0x0c, 0xfc, 0x40, 0x12, 0x8a, 0x7d, 0x00, 0xc2, 0x46, 0xfe, 0x25, 0x89,
+	0x0b, 0xca, 0xcd, 0x8a, 0xa2, 0xf1, 0xf5, 0x3b, 0xd2, 0x70, 0xf6, 0xd9, 0xe8, 0x5c, 0x02, 0x79,
+	0x4d, 0x52, 0x5a, 0x1c, 0x3b, 0xb0, 0x91, 0x15, 0x22, 0x2f, 0x84, 0x2f, 0xc8, 0x20, 0xa6, 0x7e,
+	0xce, 0xe8, 0x30, 0xba, 0x32, 0xab, 0x8a, 0xc7, 0xba, 0x4e, 0xf5, 0x65, 0xe6, 0x4c, 0x25, 0xda,
+	0x9f, 0x41, 0x63, 0x0a, 0x83, 0x31, 0xd4, 0xe6, 0x48, 0x2b, 0x1b, 0xbf, 0x0f, 0x75, 0x45, 0xd6,
+	0xac, 0xa8, 0xa0, 0x76, 0x4e, 0x6b, 0x8d, 0xca, 0x5a, 0xd5, 0xfe, 0xa7, 0x02, 0xab, 0x8a, 0xde,
+	0x51, 0x4c, 0x46, 0xbc, 0x97, 0xd3, 0x00, 0x1f, 0x41, 0x7d, 0x28, 0x1d, 0x13, 0xa9, 0xd1, 0x3e,
+	0x79, 0x7a, 0xb4, 0x59, 0xaf, 0x23, 0x2d, 0x4f, 0xb7, 0xb7, 0xff, 0x47, 0x50, 0x93, 0x3e, 0x76,
+	0xa1, 0x19, 0x12, 0x41, 0x7c, 0x79, 0x8d, 0x14, 0xb1, 0xd5, 0x2e, 0x96, 0xa0, 0xfa, 0x5a, 0x1d,
+	0x12, 0x41, 0xfa, 0xe3, 0x9c, 0x7a, 0x8d, 0xb0, 0xb4, 0xf0, 0x97, 0xb0, 0xc2, 0x69, 0x42, 0x52,
+	0x21, 0xef, 0x8e, 0x6c, 0xaa, 0xa8, 0xa6, 0x0f, 0x1e, 0x9a, 0x7a, 0x65, 0x5a, 0x35, 0x2e, 0xf3,
+	0x39, 0x6f, 0xa6, 0x40, 0x75, 0x4e, 0x81, 0x0e, 0xb4, 0x42, 0xca, 0x03, 0x16, 0xe5, 0x22, 0xca,
+	0x52, 0xb3, 0xa6, 0x52, 0xf3, 0x21, 0x7c, 0x00, 0x2b, 0x21, 0x1d, 0x92, 0x22, 0x16, 0xfa, 0x60,
+	0xcd, 0x7a, 0x07, 0x6d, 0xb7, 0xba, 0x1f, 0x2d, 0x0c, 0x9f, 0x0f, 0x9c, 0x5e, 0x40, 0x62, 0xc2,
+	0xf4, 0xa1, 0x2d, 0x97, 0x3d, 0xca, 0xb3, 0xff, 0x40, 0xb0, 0x79, 0x4c, 0xc5, 0xfe, 0x25, 0x89,
+	0x62, 0x79, 0x3c, 0x4a, 0x16, 0x8f, 0xf2, 0x22, 0x16, 0xf8, 0x3b, 0x68, 0xe9, 0x8b, 0x3d, 0x95,
+	0x56, 0xa2, 0xef, 0xbc, 0x85, 0xb4, 0x1e, 0x5c, 0xcc, 0x7c, 0xbc, 0x03, 0x4b, 0xfa, 0xe1, 0x2a,
+	0x65, 0x5a, 0xdd, 0x0d, 0x09, 0xa4, 0x23, 0x92, 0xa1, 0x32, 0xbc, 0xb2, 0xc4, 0xfe, 0x1c, 0x36,
+	0xbf, 0xc9, 0x92, 0x3c, 0x8a, 0xe9, 0xf7, 0x85, 0x20, 0x72, 0x5a, 0xfe, 0x26, 0xcf, 0xcd, 0xfe,
+	0x18, 0xd6, 0x0e, 0x69, 0x4c, 0x05, 0xed, 0x33, 0x12, 0xd0, 0x3c, 0x8b, 0x52, 0xf1, 0xba, 0xeb,
+	0x65, 0xff, 0x85, 0xe0, 0xbd, 0x85, 0x1f, 0xe0, 0x63, 0xa8, 0xcb, 0x47, 0x4f, 0x4b, 0x7e, 0xae,
+	0xe6, 0xa7, 0xd7, 0x82, 0xb3, 0xb0, 0x16, 0x9c, 0x88, 0x39, 0xd3, 0xb5, 0x70, 0xc6, 0xb2, 0x11,
+	0x23, 0xc9, 0x89, 0xe1, 0xe9, 0x7e, 0xfc, 0x33, 0xac, 0x87, 0x8a, 0x84, 0xaa, 0xd6, 0x2c, 0xd4,
+	0xd1, 0xb6, 0xba, 0x7b, 0x8f, 0xaa, 0xb7, 0x48, 0xfd, 0xc4, 0xf0, 0xd6, 0xc2, 0x85, 0xd8, 0x01,
+	0x40, 0x23, 0x29, 0x29, 0xdb, 0xbf, 0x23, 0x30, 0x5f, 0xd5, 0x89, 0xe7, 0x59, 0xca, 0xe9, 0x9c,
+	0xe0, 0xe8, 0x49, 0xc1, 0xf1, 0x29, 0x34, 0xa7, 0xa8, 0xd3, 0xfd, 0xb0, 0xfb, 0x28, 0xd7, 0x85,
+	0xdf, 0x7a, 0x0f, 0xed, 0x07, 0x5f, 0x5d, 0xdf, 0x5a, 0xc6, 0xcd, 0xad, 0x65, 0xdc, 0xdf, 0x5a,
+	0xe8, 0xd7, 0x89, 0x85, 0xfe, 0x9c, 0x58, 0xe8, 0xef, 0x89, 0x85, 0xae, 0x27, 0x16, 0xfa, 0x77,
+	0x62, 0xa1, 0xff, 0x26, 0x96, 0x71, 0x3f, 0xb1, 0xd0, 0x6f, 0x77, 0x96, 0x71, 0x7d, 0x67, 0x19,
+	0x37, 0x77, 0x96, 0xf1, 0x53, 0x73, 0x86, 0x3d, 0x58, 0x52, 0x9b, 0xf6, 0xd3, 0x17, 0x01, 0x00,
+	0x00, 0xff, 0xff, 0x5a, 0x90, 0x9f, 0x0a, 0x4b, 0x06, 0x00, 0x00,
 }
 
 func (this *QueryRequest) Equal(that interface{}) bool {
@@ -725,6 +860,108 @@ func (this *CompileMutationsRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *DeleteTracepoint) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DeleteTracepoint)
+	if !ok {
+		that2, ok := that.(DeleteTracepoint)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	return true
+}
+func (this *CompileMutation) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*CompileMutation)
+	if !ok {
+		that2, ok := that.(CompileMutation)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if that1.Mutation == nil {
+		if this.Mutation != nil {
+			return false
+		}
+	} else if this.Mutation == nil {
+		return false
+	} else if !this.Mutation.Equal(that1.Mutation) {
+		return false
+	}
+	return true
+}
+func (this *CompileMutation_Trace) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*CompileMutation_Trace)
+	if !ok {
+		that2, ok := that.(CompileMutation_Trace)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Trace.Equal(that1.Trace) {
+		return false
+	}
+	return true
+}
+func (this *CompileMutation_DeleteTracepoint) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*CompileMutation_DeleteTracepoint)
+	if !ok {
+		that2, ok := that.(CompileMutation_DeleteTracepoint)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.DeleteTracepoint.Equal(that1.DeleteTracepoint) {
+		return false
+	}
+	return true
+}
 func (this *CompileMutationsResponse) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -747,8 +984,13 @@ func (this *CompileMutationsResponse) Equal(that interface{}) bool {
 	if !this.Status.Equal(that1.Status) {
 		return false
 	}
-	if !this.Trace.Equal(that1.Trace) {
+	if len(this.Mutations) != len(that1.Mutations) {
 		return false
+	}
+	for i := range this.Mutations {
+		if !this.Mutations[i].Equal(that1.Mutations[i]) {
+			return false
+		}
 	}
 	return true
 }
@@ -843,6 +1085,44 @@ func (this *CompileMutationsRequest) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *DeleteTracepoint) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&plannerpb.DeleteTracepoint{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CompileMutation) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&plannerpb.CompileMutation{")
+	if this.Mutation != nil {
+		s = append(s, "Mutation: "+fmt.Sprintf("%#v", this.Mutation)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CompileMutation_Trace) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&plannerpb.CompileMutation_Trace{` +
+		`Trace:` + fmt.Sprintf("%#v", this.Trace) + `}`}, ", ")
+	return s
+}
+func (this *CompileMutation_DeleteTracepoint) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&plannerpb.CompileMutation_DeleteTracepoint{` +
+		`DeleteTracepoint:` + fmt.Sprintf("%#v", this.DeleteTracepoint) + `}`}, ", ")
+	return s
+}
 func (this *CompileMutationsResponse) GoString() string {
 	if this == nil {
 		return "nil"
@@ -852,8 +1132,8 @@ func (this *CompileMutationsResponse) GoString() string {
 	if this.Status != nil {
 		s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
 	}
-	if this.Trace != nil {
-		s = append(s, "Trace: "+fmt.Sprintf("%#v", this.Trace)+",\n")
+	if this.Mutations != nil {
+		s = append(s, "Mutations: "+fmt.Sprintf("%#v", this.Mutations)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -1171,6 +1451,110 @@ func (m *CompileMutationsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	return len(dAtA) - i, nil
 }
 
+func (m *DeleteTracepoint) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DeleteTracepoint) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DeleteTracepoint) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintFuncArgs(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *CompileMutation) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CompileMutation) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CompileMutation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Mutation != nil {
+		{
+			size := m.Mutation.Size()
+			i -= size
+			if _, err := m.Mutation.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *CompileMutation_Trace) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CompileMutation_Trace) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Trace != nil {
+		{
+			size, err := m.Trace.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintFuncArgs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	return len(dAtA) - i, nil
+}
+func (m *CompileMutation_DeleteTracepoint) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CompileMutation_DeleteTracepoint) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.DeleteTracepoint != nil {
+		{
+			size, err := m.DeleteTracepoint.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintFuncArgs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	return len(dAtA) - i, nil
+}
 func (m *CompileMutationsResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1191,17 +1575,19 @@ func (m *CompileMutationsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error
 	_ = i
 	var l int
 	_ = l
-	if m.Trace != nil {
-		{
-			size, err := m.Trace.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
+	if len(m.Mutations) > 0 {
+		for iNdEx := len(m.Mutations) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Mutations[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintFuncArgs(dAtA, i, uint64(size))
 			}
-			i -= size
-			i = encodeVarintFuncArgs(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x12
 		}
-		i--
-		dAtA[i] = 0x12
 	}
 	if m.Status != nil {
 		{
@@ -1360,6 +1746,55 @@ func (m *CompileMutationsRequest) Size() (n int) {
 	return n
 }
 
+func (m *DeleteTracepoint) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovFuncArgs(uint64(l))
+	}
+	return n
+}
+
+func (m *CompileMutation) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Mutation != nil {
+		n += m.Mutation.Size()
+	}
+	return n
+}
+
+func (m *CompileMutation_Trace) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Trace != nil {
+		l = m.Trace.Size()
+		n += 1 + l + sovFuncArgs(uint64(l))
+	}
+	return n
+}
+func (m *CompileMutation_DeleteTracepoint) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.DeleteTracepoint != nil {
+		l = m.DeleteTracepoint.Size()
+		n += 1 + l + sovFuncArgs(uint64(l))
+	}
+	return n
+}
 func (m *CompileMutationsResponse) Size() (n int) {
 	if m == nil {
 		return 0
@@ -1370,9 +1805,11 @@ func (m *CompileMutationsResponse) Size() (n int) {
 		l = m.Status.Size()
 		n += 1 + l + sovFuncArgs(uint64(l))
 	}
-	if m.Trace != nil {
-		l = m.Trace.Size()
-		n += 1 + l + sovFuncArgs(uint64(l))
+	if len(m.Mutations) > 0 {
+		for _, e := range m.Mutations {
+			l = e.Size()
+			n += 1 + l + sovFuncArgs(uint64(l))
+		}
 	}
 	return n
 }
@@ -1477,13 +1914,58 @@ func (this *CompileMutationsRequest) String() string {
 	}, "")
 	return s
 }
+func (this *DeleteTracepoint) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeleteTracepoint{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CompileMutation) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CompileMutation{`,
+		`Mutation:` + fmt.Sprintf("%v", this.Mutation) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CompileMutation_Trace) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CompileMutation_Trace{`,
+		`Trace:` + strings.Replace(fmt.Sprintf("%v", this.Trace), "Program", "ir.Program", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CompileMutation_DeleteTracepoint) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CompileMutation_DeleteTracepoint{`,
+		`DeleteTracepoint:` + strings.Replace(fmt.Sprintf("%v", this.DeleteTracepoint), "DeleteTracepoint", "DeleteTracepoint", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *CompileMutationsResponse) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForMutations := "[]*CompileMutation{"
+	for _, f := range this.Mutations {
+		repeatedStringForMutations += strings.Replace(f.String(), "CompileMutation", "CompileMutation", 1) + ","
+	}
+	repeatedStringForMutations += "}"
 	s := strings.Join([]string{`&CompileMutationsResponse{`,
 		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto2.Status", 1) + `,`,
-		`Trace:` + strings.Replace(fmt.Sprintf("%v", this.Trace), "Program", "ir.Program", 1) + `,`,
+		`Mutations:` + repeatedStringForMutations + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2371,6 +2853,214 @@ func (m *CompileMutationsRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *DeleteTracepoint) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowFuncArgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteTracepoint: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteTracepoint: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFuncArgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipFuncArgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CompileMutation) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowFuncArgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CompileMutation: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CompileMutation: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Trace", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFuncArgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &ir.Program{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Mutation = &CompileMutation_Trace{v}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeleteTracepoint", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFuncArgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &DeleteTracepoint{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Mutation = &CompileMutation_DeleteTracepoint{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipFuncArgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *CompileMutationsResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -2438,7 +3128,7 @@ func (m *CompileMutationsResponse) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Trace", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Mutations", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -2465,10 +3155,8 @@ func (m *CompileMutationsResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Trace == nil {
-				m.Trace = &ir.Program{}
-			}
-			if err := m.Trace.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.Mutations = append(m.Mutations, &CompileMutation{})
+			if err := m.Mutations[len(m.Mutations)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

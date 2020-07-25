@@ -153,7 +153,7 @@ char* PlannerCompileMutations(PlannerPtr planner_ptr, const char* planner_state_
   WrapStatus(&mutations_response_pb, dynamic_trace_or_s.status());
 
   PLANNER_RETURN_IF_ERROR(CompileMutationsResponse, resultLen,
-                          trace->ToProto(mutations_response_pb.mutable_trace()));
+                          trace->ToProto(mutations_response_pb.add_mutations()->mutable_trace()));
 
   // Serialize the tracing program into bytes.
   return PrepareResult(&mutations_response_pb, resultLen);

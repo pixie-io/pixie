@@ -83,13 +83,33 @@ message CompileMutationsRequest {
   string query_str = 1;
 }
 
+// DeleteTracepoint is a mutation that deletes a tracepoint running on Vizier.
+message DeleteTracepoint {
+  // The name of the Tracepoint to delete.
+  string name = 1;
+}
+
+// The definition of a mutation to perfom on Vizier. Mutatons include operations
+// that add and delete tables to the database.
+message CompileMutation {
+  oneof mutation {
+    // Trace contains the compiled Dynamic Trace definition passed in by the
+    // request.
+    stirling.dynamic_tracing.ir.logical.Program trace = 2;
+
+    // Mutation that deletes a tracepoint.
+    DeleteTracepoint delete_tracepoint = 3;
+  }
+}
+
 // CompileMutationsResponse holds the mutations compiled by the planner.
 message CompileMutationsResponse {
   // The Status of the Mutation Compilation Request. Holds an error with debug
   // information if the originating request had a bug, otherwise will be set to
   // OK.
   pl.statuspb.Status status = 1;
-  // Trace contains the compiled Dynamic Trace definition passed in by the
-  // request.
-  stirling.dynamic_tracing.ir.logical.Program trace = 2;
+
+  // The set of mutations to run on the Vizier.
+  repeated CompileMutation mutations = 2;
+
 }

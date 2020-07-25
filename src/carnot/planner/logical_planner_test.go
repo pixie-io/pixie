@@ -492,5 +492,7 @@ func TestPlanner_CompileRequest(t *testing.T) {
 		t.FailNow()
 	}
 
-	assert.Equal(t, &expectedDynamicTracePb, compileMutationResponse.Trace)
+	assert.Equal(t, 1, len(compileMutationResponse.Mutations))
+
+	assert.Equal(t, &expectedDynamicTracePb, compileMutationResponse.Mutations[0].GetTrace())
 }
