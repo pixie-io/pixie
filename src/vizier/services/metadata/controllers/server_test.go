@@ -18,8 +18,7 @@ import (
 	k8smetadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	sharedmetadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
-	logicalpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir"
-	irpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical/shared"
+	logicalpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
 	utils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
@@ -440,8 +439,8 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
 	program := &logicalpb.Program{
-		Outputs: []*irpb.Output{
-			&irpb.Output{
+		Outputs: []*logicalpb.Output{
+			&logicalpb.Output{
 				Name:   "table1",
 				Fields: []string{"abc", "def"},
 			},
@@ -460,8 +459,8 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 		GetTracepoint(oldTPID).
 		Return(&storepb.TracepointInfo{
 			Program: &logicalpb.Program{
-				Outputs: []*irpb.Output{
-					&irpb.Output{
+				Outputs: []*logicalpb.Output{
+					&logicalpb.Output{
 						Name:   "table1",
 						Fields: []string{"def"},
 					},

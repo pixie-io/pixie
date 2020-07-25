@@ -11,8 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
-	logicalpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir"
-	irpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical/shared"
+	logicalpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
@@ -33,8 +32,8 @@ func TestCreateTracepoint(t *testing.T) {
 			name:               "new_tracepoint",
 			originalTracepoint: nil,
 			newTracepoint: &logicalpb.Program{
-				Outputs: []*irpb.Output{
-					&irpb.Output{
+				Outputs: []*logicalpb.Output{
+					&logicalpb.Output{
 						Name:   "table1",
 						Fields: []string{"abc", "def"},
 					},
@@ -45,16 +44,16 @@ func TestCreateTracepoint(t *testing.T) {
 		{
 			name: "existing tracepoint, no field match",
 			originalTracepoint: &logicalpb.Program{
-				Outputs: []*irpb.Output{
-					&irpb.Output{
+				Outputs: []*logicalpb.Output{
+					&logicalpb.Output{
 						Name:   "table1",
 						Fields: []string{"abc"},
 					},
 				},
 			},
 			newTracepoint: &logicalpb.Program{
-				Outputs: []*irpb.Output{
-					&irpb.Output{
+				Outputs: []*logicalpb.Output{
+					&logicalpb.Output{
 						Name:   "table1",
 						Fields: []string{"abc", "def"},
 					},
@@ -65,20 +64,20 @@ func TestCreateTracepoint(t *testing.T) {
 		{
 			name: "existing tracepoint, no output match",
 			originalTracepoint: &logicalpb.Program{
-				Outputs: []*irpb.Output{
-					&irpb.Output{
+				Outputs: []*logicalpb.Output{
+					&logicalpb.Output{
 						Name:   "table2",
 						Fields: []string{"abc"},
 					},
-					&irpb.Output{
+					&logicalpb.Output{
 						Name:   "table1",
 						Fields: []string{"abc", "def"},
 					},
 				},
 			},
 			newTracepoint: &logicalpb.Program{
-				Outputs: []*irpb.Output{
-					&irpb.Output{
+				Outputs: []*logicalpb.Output{
+					&logicalpb.Output{
 						Name:   "table1",
 						Fields: []string{"abc", "def"},
 					},
@@ -89,16 +88,16 @@ func TestCreateTracepoint(t *testing.T) {
 		{
 			name: "existing tracepoint, match",
 			originalTracepoint: &logicalpb.Program{
-				Outputs: []*irpb.Output{
-					&irpb.Output{
+				Outputs: []*logicalpb.Output{
+					&logicalpb.Output{
 						Name:   "table1",
 						Fields: []string{"abc", "def"},
 					},
 				},
 			},
 			newTracepoint: &logicalpb.Program{
-				Outputs: []*irpb.Output{
-					&irpb.Output{
+				Outputs: []*logicalpb.Output{
+					&logicalpb.Output{
 						Name:   "table1",
 						Fields: []string{"abc", "def"},
 					},
@@ -109,8 +108,8 @@ func TestCreateTracepoint(t *testing.T) {
 		{
 			name: "existing tracepoint, not exactly same",
 			originalTracepoint: &logicalpb.Program{
-				Outputs: []*irpb.Output{
-					&irpb.Output{
+				Outputs: []*logicalpb.Output{
+					&logicalpb.Output{
 						Name:   "table1",
 						Fields: []string{"abc", "def"},
 					},
@@ -120,9 +119,9 @@ func TestCreateTracepoint(t *testing.T) {
 				},
 			},
 			newTracepoint: &logicalpb.Program{
-				Outputs: []*irpb.Output{
+				Outputs: []*logicalpb.Output{
 
-					&irpb.Output{
+					&logicalpb.Output{
 						Name:   "table1",
 						Fields: []string{"abc", "def"},
 					},

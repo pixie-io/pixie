@@ -9,7 +9,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/scriptspb"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
-	logical "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir"
+	logical "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"

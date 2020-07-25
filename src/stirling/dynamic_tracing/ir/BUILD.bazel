@@ -19,7 +19,7 @@ pl_cc_proto_library(
 pl_go_proto_library(
     name = "shared_pl_go_proto",
     proto = ":shared_pl_proto",
-    importpath = "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical/shared",
+    importpath = "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/shared",
     deps = [
         "//src/shared/types/proto:types_pl_go_proto",
     ],
@@ -45,6 +45,16 @@ pl_cc_proto_library(
     visibility = ["//visibility:public"],
 )
 
+pl_go_proto_library(
+    name = "logical_pl_go_proto",
+    importpath = "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical",
+    proto = ":logical_pl_proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":shared_pl_go_proto",
+    ],
+)
+
 pl_proto_library(
     name = "physical_pl_proto",
     srcs = ["physical.proto"],
@@ -57,12 +67,3 @@ pl_cc_proto_library(
     deps = [":shared_pl_cc_proto"],
 )
 
-pl_go_proto_library(
-    name = "logical_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir",
-    proto = ":logical_pl_proto",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":shared_pl_go_proto",
-    ],
-)

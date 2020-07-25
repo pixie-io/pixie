@@ -33,7 +33,7 @@ class ProbeOutput {
   // std::string_view Schema() const { return absl::StrJoin(col_names_, ","); }
 
   Status ToActionProto(stirling::dynamic_tracing::ir::logical::OutputAction* pb);
-  Status ToOutputProto(stirling::dynamic_tracing::ir::shared::Output* pb);
+  Status ToOutputProto(stirling::dynamic_tracing::ir::logical::Output* pb);
   const std::string& name() const { return output_name_; }
 
   void set_name(const std::string& output_name) { output_name_ = output_name; }
@@ -173,8 +173,8 @@ class TracingProgram {
   int64_t ttl_ns_;
   std::string binary_path_;
   std::vector<stirling::dynamic_tracing::ir::logical::Probe> probes_;
-  std::vector<stirling::dynamic_tracing::ir::shared::Output> outputs_;
-  absl::flat_hash_map<std::string, stirling::dynamic_tracing::ir::shared::Output*> output_map_;
+  std::vector<stirling::dynamic_tracing::ir::logical::Output> outputs_;
+  absl::flat_hash_map<std::string, stirling::dynamic_tracing::ir::logical::Output*> output_map_;
   stirling::dynamic_tracing::ir::shared::BinarySpec::Language language_;
 };
 

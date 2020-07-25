@@ -53,13 +53,13 @@ void CreateEntryProbe(const ir::shared::BinarySpec::Language& language,
   }
 }
 
-Status CheckOutputAction(const std::map<std::string_view, ir::shared::Output*>& outputs,
+Status CheckOutputAction(const std::map<std::string_view, ir::logical::Output*>& outputs,
                          const ir::logical::OutputAction& output_action) {
   auto iter = outputs.find(output_action.output_name());
   if (iter == outputs.end()) {
     return error::Internal("Reference to unknown output $0", output_action.output_name());
   }
-  const ir::shared::Output& output = *iter->second;
+  const ir::logical::Output& output = *iter->second;
 
   if (output_action.variable_name_size() != output.fields_size()) {
     return error::Internal("Output action size $0 does not match Output definition size $1",
@@ -71,7 +71,7 @@ Status CheckOutputAction(const std::map<std::string_view, ir::shared::Output*>& 
 
 Status CreateReturnProbe(const ir::shared::BinarySpec::Language& language,
                          const ir::logical::Probe& input_probe,
-                         const std::map<std::string_view, ir::shared::Output*>& outputs,
+                         const std::map<std::string_view, ir::logical::Output*>& outputs,
                          ir::logical::Program* out) {
   auto* return_probe = out->add_probes();
   return_probe->set_name(input_probe.name() + "_return");
@@ -109,7 +109,7 @@ Status CreateReturnProbe(const ir::shared::BinarySpec::Language& language,
 
 Status TransformLogicalProbe(const ir::shared::BinarySpec::Language& language,
                              const ir::logical::Probe& input_probe,
-                             const std::map<std::string_view, ir::shared::Output*>& outputs,
+                             const std::map<std::string_view, ir::logical::Output*>& outputs,
                              ir::logical::Program* out) {
   // A logical probe is allowed to implicitly access arguments and return values.
   // Here we expand this out to be explicit. We break the logical probe into:
@@ -128,7 +128,7 @@ Status TransformLogicalProbe(const ir::shared::BinarySpec::Language& language,
 StatusOr<ir::logical::Program> TransformLogicalProgram(const ir::logical::Program& input_program) {
   ir::logical::Program out;
 
-  std::map<std::string_view, ir::shared::Output*> outputs;
+  std::map<std::string_view, ir::logical::Output*> outputs;
 
   // Copy the binary path.
   out.mutable_binary_spec()->CopyFrom(input_program.binary_spec());

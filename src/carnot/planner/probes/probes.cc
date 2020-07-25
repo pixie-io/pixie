@@ -44,7 +44,7 @@ Status ProbeOutput::ToActionProto(stirling::dynamic_tracing::ir::logical::Output
   return Status::OK();
 }
 
-Status ProbeOutput::ToOutputProto(stirling::dynamic_tracing::ir::shared::Output* pb) {
+Status ProbeOutput::ToOutputProto(stirling::dynamic_tracing::ir::logical::Output* pb) {
   pb->set_name(output_name_);
   for (const auto& col : col_names_) {
     pb->add_fields(col);
@@ -131,7 +131,7 @@ Status TracingProgram::AddProbe(ProbeIR* probe_ir, const std::string& probe_name
     return Status::OK();
   }
   // Upsert the output definition.
-  stirling::dynamic_tracing::ir::shared::Output output_pb;
+  stirling::dynamic_tracing::ir::logical::Output output_pb;
   PL_RETURN_IF_ERROR(output->ToOutputProto(&output_pb));
 
   // If the output name is missing, then we need to add it.

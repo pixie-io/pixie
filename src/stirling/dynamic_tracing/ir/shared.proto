@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package pl.stirling.dynamic_tracing.ir.shared;
 
+option go_package = "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/shared";
+
 // Describes where to attach a probe.
 message TracePoint {
   string symbol = 1;
@@ -106,14 +108,6 @@ message Map {
   // TODO(yzhao): Remove the following 2 lines and create PerfBuffer in physical.proto with them.
   VariableType key_type = 2; // Exclusive to physical IR.
   VariableType value_type = 3; // Exclusive to physical IR.
-}
-
-// Describes the structure of the data Output.
-// Corresponds to px.Output().
-message Output {
-  string name = 1;
-
-  repeated string fields = 2;
 }
 
 // Describes a condition to be checked.

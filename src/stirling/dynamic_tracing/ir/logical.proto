@@ -3,6 +3,8 @@ syntax = "proto3";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
 
+option go_package = "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical";
+
 import "src/stirling/dynamic_tracing/ir/shared.proto";
 
 package pl.stirling.dynamic_tracing.ir.logical;
@@ -70,6 +72,14 @@ message MapStashAction {
   shared.Condition cond = 4;
 }
 
+// Describes the structure of the data Output.
+// Corresponds to px.Output().
+message Output {
+  string name = 1;
+
+  repeated string fields = 2;
+}
+
 message OutputAction {
   string output_name = 1;
 
@@ -130,11 +140,11 @@ message Program {
 
   shared.BinarySpec binary_spec = 1;
 
-  // The programs outputs to a table.
-  repeated shared.Output outputs = 2;
-
   // Maps holding shared state across probes.
-  repeated shared.Map maps = 3;
+  repeated shared.Map maps = 2;
+
+  // The programs outputs to a table.
+  repeated Output outputs = 3;
 
   // All the probes of the program.
   repeated Probe probes = 4;
