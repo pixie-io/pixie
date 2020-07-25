@@ -3,11 +3,12 @@ import { WidgetDisplay } from 'containers/live/vis';
 
 import { data as visData, Network } from 'vis-network/standalone';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
-import { toEntityPathname, toSingleEntityPage } from 'components/live-widgets/utils/live-view-params';
+import { toEntityURL, toSingleEntityPage } from 'components/live-widgets/utils/live-view-params';
 import ClusterContext from 'common/cluster-context';
 import { SemanticType } from 'types/generated/vizier_pb';
 import Button from '@material-ui/core/Button';
 import { useHistory } from 'react-router-dom';
+import { Arguments } from 'utils/args-utils';
 import { formatFloat64Data } from 'utils/format-data';
 import {
   getColorForErrorRate,
@@ -36,6 +37,7 @@ export interface RequestGraphDisplay extends WidgetDisplay {
 interface RequestGraphProps {
   display: RequestGraphDisplay;
   data: any[];
+  propagatedArgs?: Arguments;
 }
 
 const useStyles = makeStyles(() => createStyles({
@@ -225,7 +227,7 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
     if (params.nodes.length > 0) {
       const semType = !clusteredMode ? SemanticType.ST_POD_NAME : SemanticType.ST_SERVICE_NAME;
       const page = toSingleEntityPage(params.nodes[0], semType, selectedClusterName);
-      const pathname = toEntityPathname(page);
+      const pathname = toEntityURL(page, props.propagatedArgs);
       history.push(pathname);
     }
   }, [history, selectedClusterName, clusteredMode]);

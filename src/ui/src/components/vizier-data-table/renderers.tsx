@@ -10,6 +10,7 @@ import QuantilesBoxWhisker, {
   SelectedPercentile,
 } from 'components/quantiles-box-whisker/quantiles-box-whisker';
 import { DataType, Relation, SemanticType } from 'types/generated/vizier_pb';
+import { Arguments } from 'utils/args-utils';
 import {
   getDataRenderer, looksLikeAlertCol, looksLikeCPUCol, looksLikeLatencyCol,
 } from 'utils/format-data';
@@ -83,7 +84,7 @@ export function quantilesRenderer(display: ColumnDisplayInfo,
 
 const statusRenderer = (st: SemanticType) => (v: string) => toStatusIndicator(v, st);
 
-const serviceRendererFuncGen = (clusterName: string) => (v) => {
+const serviceRendererFuncGen = (clusterName: string, propagatedArgs?: Arguments) => (v) => {
   try {
     // Hack to handle cases like "['pl/service1', 'pl/service2']" which show up for pods that are part of 2 services.
     const parsedArray = JSON.parse(v);
@@ -94,7 +95,12 @@ const serviceRendererFuncGen = (clusterName: string) => (v) => {
               parsedArray.map((entity, i) => (
                 <span key={i}>
                   {i > 0 && ', '}
-                  <EntityLink entity={entity} semanticType={SemanticType.ST_SERVICE_NAME} clusterName={clusterName} />
+                  <EntityLink
+                    entity={entity}
+                    semanticType={SemanticType.ST_SERVICE_NAME}
+                    clusterName={clusterName}
+                    propagatedParams={propagatedArgs}
+                  />
                 </span>
               ))
             }
@@ -107,12 +113,17 @@ const serviceRendererFuncGen = (clusterName: string) => (v) => {
   return <EntityLink entity={v} semanticType={SemanticType.ST_SERVICE_NAME} clusterName={clusterName} />;
 };
 
-const entityRenderer = (st: SemanticType, clusterName: string) => {
+const entityRenderer = (st: SemanticType, clusterName: string, propagatedArgs?: Arguments) => {
   if (st === SemanticType.ST_SERVICE_NAME) {
-    return serviceRendererFuncGen(clusterName);
+    return serviceRendererFuncGen(clusterName, propagatedArgs);
   }
   const entity = (v) => (
-    <EntityLink entity={v} semanticType={st} clusterName={clusterName} />
+    <EntityLink
+      entity={v}
+      semanticType={st}
+      clusterName={clusterName}
+      propagatedParams={propagatedArgs}
+    />
   );
   return entity;
 };
@@ -122,14 +133,14 @@ const CPUDataWrapper = (data: any) => <CPUData data={data} />;
 const AlertDataWrapper = (data: any) => <AlertData data={data} />;
 
 export const prettyCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (ColumnDisplayInfo) => void,
-  clusterName: string, rows: any[]) => {
+  clusterName: string, rows: any[], propagatedArgs?: Arguments) => {
   const dt = display.type;
   const st = display.semanticType;
   const name = display.columnName;
   const renderer = getDataRenderer(dt);
 
   if (isEntityType(st)) {
-    return entityRenderer(st, clusterName);
+    return entityRenderer(st, clusterName, propagatedArgs);
   }
 
   if (st === SemanticType.ST_QUANTILES) {
@@ -171,9 +182,9 @@ export const prettyCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (C
 };
 
 export const vizierCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (ColumnDisplayInfo) => void,
-  prettyRender: boolean, clusterName: string, rows: any[]) => {
+  prettyRender: boolean, clusterName: string, rows: any[], propagatedArgs?: Arguments) => {
   if (prettyRender) {
-    return prettyCellRenderer(display, updateDisplay, clusterName, rows);
+    return prettyCellRenderer(display, updateDisplay, clusterName, rows, propagatedArgs);
   }
   return getDataRenderer(display.type);
 };

@@ -8,6 +8,7 @@ import {
   WithStyles,
 } from '@material-ui/core';
 import { IndexRange } from 'react-virtualized';
+import { Arguments } from 'utils/args-utils';
 import { VizierDataTable } from '../../vizier-data-table/vizier-data-table';
 import { JSONData } from '../../format-data/format-data';
 
@@ -37,9 +38,10 @@ const styles = ({ spacing }: Theme) => createStyles({
 
 export interface QueryResultTableProps extends WithStyles<typeof styles> {
   data: Table;
+  propagatedArgs: Arguments;
 }
 
-const QueryResultTableBare = (({ data, classes }: QueryResultTableProps) => {
+const QueryResultTableBare = (({ data, classes, propagatedArgs }: QueryResultTableProps) => {
   const { selectedClusterName } = React.useContext(ClusterContext);
   const ExpandedRowRenderer = (rowData: any) => (
     <JSONData
@@ -78,6 +80,7 @@ const QueryResultTableBare = (({ data, classes }: QueryResultTableProps) => {
           onRowsRendered={(info: IndexRange) => {
             setCount(info.stopIndex - info.startIndex + 1);
           }}
+          propagatedArgs={propagatedArgs}
         />
       </div>
       <div className={classes.tableSummary}>

@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import {
   createStyles, Theme, withStyles, WithStyles,
 } from '@material-ui/core';
+import { Arguments } from 'utils/args-utils';
 import { SemanticType } from '../../../types/generated/vizier_pb';
-import { toEntityPathname, toSingleEntityPage } from './live-view-params';
+import { toEntityURL, toSingleEntityPage } from './live-view-params';
 
 const styles = ({ palette }: Theme) => createStyles({
   root: {
@@ -22,15 +23,16 @@ export interface EntityLinkProps extends WithStyles<typeof styles>{
   entity: string;
   semanticType: SemanticType;
   clusterName: string;
+  propagatedParams?: Arguments;
 }
 
 const EntityLinkPlain = ({
-  entity, semanticType, clusterName, classes,
+  entity, semanticType, clusterName, classes, propagatedParams,
 }: EntityLinkProps) => {
   const page = toSingleEntityPage(entity, semanticType, clusterName);
-  const pathname = toEntityPathname(page);
+  const path = toEntityURL(page, propagatedParams);
   return (
-    <Link to={pathname} className={classes.root}>{entity}</Link>
+    <Link to={path} className={classes.root}>{entity}</Link>
   );
 };
 

@@ -9,6 +9,7 @@ import noop from 'utils/noop';
 import { dataFromProto } from 'utils/result-data-utils';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import { IndexRange } from 'react-virtualized';
+import { Arguments } from 'utils/args-utils';
 import { ColumnDisplayInfo, displayInfoFromColumn, titleFromInfo } from './column-display-info';
 import { parseRows } from './parsers';
 import { vizierCellRenderer } from './renderers';
@@ -58,6 +59,7 @@ interface VizierDataTableProps {
   clusterName?: string;
   onRowSelectionChanged?: (row: any) => void;
   onRowsRendered?: (range: IndexRange) => void;
+  propagatedArgs?: Arguments;
 }
 
 export const VizierDataTable = (props: VizierDataTableProps) => {
@@ -66,6 +68,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
     clusterName = null,
     onRowSelectionChanged = noop,
     onRowsRendered = () => {},
+    propagatedArgs = null,
   } = props;
   const [rows, setRows] = React.useState([]);
   const [selectedRow, setSelectedRow] = React.useState(-1);
@@ -111,7 +114,8 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
         dataKey: displayInfo.columnName,
         label: titleFromInfo(displayInfo),
         align: DataAlignmentMap.get(displayInfo.type) || 'start',
-        cellRenderer: vizierCellRenderer(displayInfo, updateColumnDisplay, prettyRender, clusterName, rows),
+        cellRenderer: vizierCellRenderer(displayInfo, updateColumnDisplay, prettyRender,
+          clusterName, rows, propagatedArgs),
       };
       if (hasWidthOverride(displayInfo.semanticType, displayInfo.type)) {
         colProps.width = getWidthOverride(displayInfo.semanticType, displayInfo.type);

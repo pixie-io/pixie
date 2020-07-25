@@ -125,7 +125,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 }));
 
 const WidgetDisplay = ({
-  display, table, tableName, widgetName,
+  display, table, tableName, widgetName, propagatedArgs,
 }) => {
   const classes = useStyles();
 
@@ -142,7 +142,7 @@ const WidgetDisplay = ({
     return (
       <>
         <div className={classes.widgetTitle}>{widgetName}</div>
-        <QueryResultTable data={table} />
+        <QueryResultTable data={table} propagatedArgs={propagatedArgs} />
       </>
     );
   }
@@ -150,11 +150,24 @@ const WidgetDisplay = ({
   const parsedTable = dataFromProto(table.relation, table.data);
 
   if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
-    return <GraphWidget display={display as GraphDisplay} data={parsedTable} relation={table.relation} />;
+    return (
+      <GraphWidget
+        display={display as GraphDisplay}
+        data={parsedTable}
+        relation={table.relation}
+        propagatedArgs={propagatedArgs}
+      />
+    );
   }
 
   if (display[DISPLAY_TYPE_KEY] === REQUEST_GRAPH_DISPLAY_TYPE) {
-    return <RequestGraphWidget display={display as RequestGraphDisplay} data={parsedTable} />;
+    return (
+      <RequestGraphWidget
+        display={display as RequestGraphDisplay}
+        data={parsedTable}
+        propagatedArgs={propagatedArgs}
+      />
+    );
   }
 
   try {
@@ -213,7 +226,7 @@ const Canvas = (props: CanvasProps) => {
   const classes = useStyles();
   const theme = useTheme();
   const { tables, loading, error } = React.useContext(ResultsContext);
-  const { vis, setVis } = React.useContext(ScriptContext);
+  const { args, vis, setVis } = React.useContext(ScriptContext);
   const { isMobile } = React.useContext(LayoutContext);
   const { setTimeseriesDomain } = React.useContext(TimeSeriesContext);
 
@@ -224,6 +237,16 @@ const Canvas = (props: CanvasProps) => {
   if (props.parentRef.current && !defaultHeight) {
     setDefaultHeight(props.parentRef.current.getBoundingClientRect().height);
   }
+
+  // These are that we want to propagate to any downstream links in the data table
+  // to other live views, such as start time.
+  const propagatedArgs = React.useMemo(() => {
+    if (args.start_time) {
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      return { start_time: args.start_time };
+    }
+    return null;
+  }, [args]);
 
   React.useEffect(() => {
     const handler = (event) => {
@@ -296,6 +319,7 @@ const Canvas = (props: CanvasProps) => {
             table={table}
             tableName={tableName}
             widgetName={widgetName}
+            propagatedArgs={propagatedArgs}
           />
         </div>,
       );
@@ -328,7 +352,7 @@ const Canvas = (props: CanvasProps) => {
           Object.entries(tables).map(([tableName, table]) => (
             <div key={tableName} className={className}>
               <div className={classes.widgetTitle}>{tableName}</div>
-              <QueryResultTable data={table} />
+              <QueryResultTable data={table} propagatedArgs={propagatedArgs} />
             </div>
           ))
         }

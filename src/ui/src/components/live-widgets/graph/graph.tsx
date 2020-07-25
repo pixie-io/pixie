@@ -6,11 +6,12 @@ import * as React from 'react';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 import { useHistory } from 'react-router';
 import ClusterContext from 'common/cluster-context';
+import { Arguments } from 'utils/args-utils';
 import { DataType, Relation, SemanticType } from '../../../types/generated/vizier_pb';
 import {
   GRAPH_OPTIONS as graphOpts, semTypeToShapeConfig,
 } from './graph-options';
-import { toEntityPathname, toSingleEntityPage } from '../utils/live-view-params';
+import { toEntityURL, toSingleEntityPage } from '../utils/live-view-params';
 
 interface ColInfo {
   type: DataType;
@@ -33,6 +34,7 @@ interface GraphWidgetProps {
   display: GraphDisplay;
   data: any[];
   relation: Relation;
+  propagatedArgs?: Arguments;
 }
 
 const colInfoFromName = (relation: Relation, name: string): ColInfo => {
@@ -60,7 +62,12 @@ export const GraphWidget = (props: GraphWidgetProps) => {
     const fromColInfo = colInfoFromName(relation, display.adjacencyList.fromColumn);
     if (toColInfo && fromColInfo) {
       return (
-        <Graph data={data} toCol={toColInfo} fromCol={fromColInfo} />
+        <Graph
+          data={data}
+          toCol={toColInfo}
+          fromCol={fromColInfo}
+          propagatedArgs={props.propagatedArgs}
+        />
       );
     }
   }
@@ -72,6 +79,7 @@ interface GraphProps {
   data?: any[];
   toCol?: ColInfo;
   fromCol?: ColInfo;
+  propagatedArgs?: Arguments;
 }
 
 const useStyles = makeStyles(() => createStyles({
@@ -99,11 +107,12 @@ interface GraphData {
   nodes: visData.DataSet<Node>;
   edges: visData.DataSet<Edge>;
   idToSemType: {[ key: string ]: SemanticType};
+  propagatedArgs?: Arguments;
 }
 
 export const Graph = (props: GraphProps) => {
   const {
-    dot, toCol, fromCol, data,
+    dot, toCol, fromCol, data, propagatedArgs,
   } = props;
 
   // TODO(zasgar/michelle/nserrino): Remove the context information from here and elsewhere.
@@ -123,7 +132,7 @@ export const Graph = (props: GraphProps) => {
         || semType === SemanticType.ST_POD_NAME
         || semType === SemanticType.ST_NAMESPACE_NAME) {
         const page = toSingleEntityPage(nodeID, semType, selectedClusterName);
-        const pathname = toEntityPathname(page);
+        const pathname = toEntityURL(page, propagatedArgs);
         history.push(pathname);
       }
     }

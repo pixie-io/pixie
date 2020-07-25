@@ -1,3 +1,4 @@
+import * as QueryString from 'query-string';
 import { matchPath } from 'react-router';
 
 import { SemanticType } from 'types/generated/vizier_pb';
@@ -288,6 +289,20 @@ export function toEntityPathname(entity: EntityPage): string {
     default:
       return `/live/clusters/${encodedCluster}/script`;
   }
+}
+
+export function toEntityURL(entity: EntityPage, propagatedArgs?: Arguments): string {
+  // Don't propagate args for a non entity page because we don't know whether those view share
+  // args with the entity pages (for now, start_time).
+  if (entity.page === LiveViewPage.Default) {
+    return toEntityPathname(entity);
+  }
+  const pathname = toEntityPathname(entity);
+  let queryString = '';
+  if (propagatedArgs) {
+    queryString = QueryString.stringify(propagatedArgs);
+  }
+  return queryString ? `${pathname}?${queryString}` : pathname;
 }
 
 export function toSingleEntityPage(entityName: string, semanticType: SemanticType, clusterName: string): EntityPage {
