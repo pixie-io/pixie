@@ -62,11 +62,11 @@ metadata_by_agent {
 	data_info {
 		metadata_info {
 			metadata_fields: CONTAINER_ID
-			metadata_fields: SERVICE_NAME			
+			metadata_fields: SERVICE_NAME
 			xxhash64_bloom_filter {
 				num_hashes: 2
 				data: "1234"
-			}			
+			}
 		}
 	}
 }
@@ -129,8 +129,11 @@ schema: {
 }
 distributed_state: {
 	carnot_info: {
-    	query_broker_address: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-    	has_data_store: true
+		query_broker_address: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+		agent_id {
+			data:  "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+		}
+		has_data_store: true
 		processes_data: true
 		asid: 123
 		metadata_info {
@@ -140,8 +143,19 @@ distributed_state: {
 				num_hashes: 2
 				data: "1234"
 			}
-		}	
-  	}
+		}
+	}
+	schema_info {
+		name: "perf_and_http"
+		relation: {
+				columns: {
+					column_name: "_time"
+				}
+		}
+		agent_list {
+			data: "21285cdd1de94ab1ae6a0ba08c8c676c"
+		}
+	}
 }
 plan_options: {
 	explain: false

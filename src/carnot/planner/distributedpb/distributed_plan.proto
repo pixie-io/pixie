@@ -68,10 +68,25 @@ message TableInfo {
   repeated string tablets = 3;
 }
 
+// SchemaInfo maps the available schemas in Vizier to the agents that can
+// actually use them. We use inverted mapping to save space, especially on large
+// clusters where we might have many entries for CarnotInfo::TableInfo.
+message SchemaInfo {
+  // The name of the table.
+  string name = 1;
+  // The relation for the table.
+  pl.table_store.schemapb.Relation relation = 2;
+  // The list of agents that hold this schema.
+  repeated uuidpb.UUID agent_list = 3;
+}
+
 // The Distributed state of the distributed Carnot instances.
 message DistributedState {
   // Info about all available Carnot instances in Vizier.
   repeated CarnotInfo carnot_info = 1;
+  // Schemas definitions and which agents hold tables corresponding to those
+  // schemas.
+  repeated SchemaInfo schema_info = 2;
 }
 
 // The Distributed Plan message that describes the graph of the plans

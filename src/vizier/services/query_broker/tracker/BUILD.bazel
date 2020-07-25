@@ -10,6 +10,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
+        "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/services/utils:go_default_library",
         "//src/table_store/proto:schema_pl_go_proto",
         "//src/utils:go_default_library",
