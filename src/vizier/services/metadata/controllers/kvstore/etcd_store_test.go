@@ -238,6 +238,30 @@ func TestEtcdStore_DeleteWithPrefix(t *testing.T) {
 	assert.Equal(t, 1, len(kv.Kvs))
 }
 
+func TestEtcdStore_Delete(t *testing.T) {
+	_, err := etcdClient.Delete(context.Background(), "", clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal("Failed to clear etcd data.")
+	}
+
+	// Add items into etcd that we can get.
+	_, err = etcdClient.Put(context.Background(), "/abcd", "hello")
+	if err != nil {
+		t.Fatal("Could not put value into etcd from etcd")
+	}
+
+	e := kvstore.NewEtcdStore(etcdClient)
+	err = e.Delete("/abcd")
+	assert.Nil(t, err)
+
+	kv, err := etcdClient.Get(context.Background(), "/abcd")
+	if err != nil {
+		t.Fatal("Could not get value from etcd")
+	}
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(kv.Kvs))
+}
+
 func TestEtcdStore_GetWithRange(t *testing.T) {
 	_, err := etcdClient.Delete(context.Background(), "", clientv3.WithPrefix())
 	if err != nil {

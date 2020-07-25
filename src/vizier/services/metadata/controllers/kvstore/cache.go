@@ -40,6 +40,7 @@ type KeyValueStore interface {
 	GetAll([]string) ([][]byte, error)
 	DeleteWithPrefix(string) error
 	WatchKeyEvents(string) (chan KeyEvent, chan bool)
+	Delete(string) error
 }
 
 type entry struct {
@@ -153,6 +154,36 @@ func (c *Cache) SetWithTTL(key string, value string, ttl time.Duration) {
 		Value:     []byte(value),
 		ExpiresAt: c.clock.Now().Add(ttl),
 	}
+}
+
+// UncachedSetWithTTL sets the key directly in the underlying datastore with the given TTL.
+func (c *Cache) UncachedSetWithTTL(key string, value string, ttl time.Duration) error {
+	c.dsMu.Lock()
+	defer c.dsMu.Unlock()
+
+	entries := []TTLKeyValue{
+		TTLKeyValue{key, []byte(value), true, int64(ttl.Seconds())},
+	}
+	return c.datastore.SetAll(entries)
+}
+
+// UncachedSet sets the key directly in the underlying datastore with no TTL.
+func (c *Cache) UncachedSet(key string, value string) error {
+	c.dsMu.Lock()
+	defer c.dsMu.Unlock()
+
+	entries := []TTLKeyValue{
+		TTLKeyValue{key, []byte(value), false, 0},
+	}
+	return c.datastore.SetAll(entries)
+}
+
+// UncachedDelete deletes the key directly in the underlying datastore.
+func (c *Cache) UncachedDelete(key string) error {
+	c.dsMu.Lock()
+	defer c.dsMu.Unlock()
+
+	return c.datastore.Delete(key)
 }
 
 // Set puts the given key and value in the cache, which is later flushed to the backing datastore.

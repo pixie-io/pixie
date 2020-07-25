@@ -104,6 +104,12 @@ func (e *EtcdStore) DeleteWithPrefix(prefix string) error {
 	return err
 }
 
+// Delete deletes the key from the store.
+func (e *EtcdStore) Delete(key string) error {
+	_, err := e.client.Delete(context.Background(), key)
+	return err
+}
+
 // GetWithRange gets all the keys and values within the given range.
 func (e *EtcdStore) GetWithRange(from string, to string) ([]string, [][]byte, error) {
 	resp, err := e.client.Get(context.Background(), from, v3.WithRange(to))

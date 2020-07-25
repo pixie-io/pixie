@@ -384,6 +384,57 @@ func TestCache_DeleteAll(t *testing.T) {
 	assert.Equal(t, []byte("xyz"), val)
 }
 
+func TestCache_UncachedDelete(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mockDs.
+		EXPECT().
+		Delete("key").
+		Return(nil)
+
+	err := c.UncachedDelete("key")
+	assert.Nil(t, err)
+}
+
+func TestCache_UncachedSet(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mockDs.
+		EXPECT().
+		SetAll([]kvstore.TTLKeyValue{kvstore.TTLKeyValue{"key", []byte("value"), false, 0}}).
+		Return(nil)
+
+	err := c.UncachedSet("key", "value")
+	assert.Nil(t, err)
+}
+
+func TestCache_UncachedSetWithTTL(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mockDs.
+		EXPECT().
+		SetAll([]kvstore.TTLKeyValue{kvstore.TTLKeyValue{"key", []byte("value"), true, 1}}).
+		Return(nil)
+
+	err := c.UncachedSetWithTTL("key", "value", 1*time.Second)
+	assert.Nil(t, err)
+}
+
 func TestCache_DeleteWithPrefix(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

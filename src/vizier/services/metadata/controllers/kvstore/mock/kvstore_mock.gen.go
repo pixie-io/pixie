@@ -123,3 +123,15 @@ func (m *MockKeyValueStore) WatchKeyEvents(arg0 string) (chan kvstore.KeyEvent, 
 func (mr *MockKeyValueStoreMockRecorder) WatchKeyEvents(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchKeyEvents", reflect.TypeOf((*MockKeyValueStore)(nil).WatchKeyEvents), arg0)
 }
+
+// Delete mocks base method
+func (m *MockKeyValueStore) Delete(arg0 string) error {
+	ret := m.ctrl.Call(m, "Delete", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete
+func (mr *MockKeyValueStoreMockRecorder) Delete(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockKeyValueStore)(nil).Delete), arg0)
+}
