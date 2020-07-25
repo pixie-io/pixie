@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	gogotypes "github.com/gogo/protobuf/types"
+	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -85,6 +86,14 @@ func VizierQueryRequestToPlannerQueryRequest(vpb *vizierpb.ExecuteScriptRequest)
 	}, nil
 }
 
+// ErrToVizierResponse converts an error to an externally-facing Vizier response message
+func ErrToVizierResponse(id uuid.UUID, err error) *vizierpb.ExecuteScriptResponse {
+	return &vizierpb.ExecuteScriptResponse{
+		QueryID: id.String(),
+		Status:  ErrToVizierStatus(err),
+	}
+}
+
 // ErrToVizierStatus converts an error to an externally-facing Vizier status.
 func ErrToVizierStatus(err error) *vizierpb.Status {
 	s, ok := status.FromError(err)
@@ -101,13 +110,21 @@ func ErrToVizierStatus(err error) *vizierpb.Status {
 	}
 }
 
+// StatusToVizierResponse converts an error to an externally-facing Vizier response message
+func StatusToVizierResponse(id uuid.UUID, s *statuspb.Status) *vizierpb.ExecuteScriptResponse {
+	return &vizierpb.ExecuteScriptResponse{
+		QueryID: id.String(),
+		Status:  StatusToVizierStatus(s),
+	}
+}
+
 // StatusToVizierStatus converts an internal status to an externally-facing Vizier status.
-func StatusToVizierStatus(s *statuspb.Status) (*vizierpb.Status, error) {
+func StatusToVizierStatus(s *statuspb.Status) *vizierpb.Status {
 	return &vizierpb.Status{
 		Code:         int32(statusCodeToGRPCCode[s.ErrCode]),
 		Message:      s.Msg,
 		ErrorDetails: getErrorsFromStatusContext(s.Context),
-	}, nil
+	}
 }
 
 func getErrorsFromStatusContext(ctx *gogotypes.Any) []*vizierpb.ErrorDetails {

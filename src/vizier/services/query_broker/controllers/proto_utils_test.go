@@ -176,8 +176,7 @@ func TestStatusToVizierStatus(t *testing.T) {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
-	s, err := controllers.StatusToVizierStatus(sv)
-	assert.Nil(t, err)
+	s := controllers.StatusToVizierStatus(sv)
 	assert.Equal(t, "this is a message", s.Message)
 	assert.Equal(t, int32(16), s.Code)
 }
@@ -211,8 +210,7 @@ func TestCompilerErrorStatusToVizierStatus(t *testing.T) {
 		Context: compilerEGAny,
 	}
 
-	s, err := controllers.StatusToVizierStatus(sv)
-	assert.Nil(t, err)
+	s := controllers.StatusToVizierStatus(sv)
 	assert.Equal(t, 2, len(s.ErrorDetails))
 	assert.Equal(t, uint64(1), s.ErrorDetails[0].GetCompilerError().Line)
 	assert.Equal(t, uint64(2), s.ErrorDetails[0].GetCompilerError().Column)

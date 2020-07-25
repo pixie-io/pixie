@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -11,13 +10,11 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 
@@ -73,6 +70,8 @@ type Server struct {
 	hcMux    sync.Mutex
 	hcStatus error
 	hcTime   time.Time
+
+	udfInfo udfspb.UDFInfo
 }
 
 // NewServer creates GRPC handlers.
@@ -85,12 +84,19 @@ func newServer(env querybrokerenv.QueryBrokerEnv,
 	natsConn *nats.Conn,
 	newExecutor func(*nats.Conn, uuid.UUID) Executor) (*Server, error) {
 
+	var udfInfo udfspb.UDFInfo
+	if err := loadUDFInfo(&udfInfo); err != nil {
+		return nil, err
+	}
+
 	return &Server{
 		env:           env,
 		agentsTracker: agentsTracker,
 		natsConn:      natsConn,
 		newExecutor:   newExecutor,
 		executors:     make(map[uuid.UUID]Executor),
+
+		udfInfo: udfInfo,
 	}, nil
 }
 
@@ -120,12 +126,6 @@ func failedStatusQueryResponse(queryID uuid.UUID, status *statuspb.Status) *quer
 // ExecuteQueryWithPlanner executes a query with the provided planner.
 func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.QueryRequest, queryID uuid.UUID, planner Planner, planOpts *planpb.PlanOptions) (*queryresultspb.QueryResult, *statuspb.Status, error) {
 	ctx = context.WithValue(ctx, execStartKey, time.Now())
-	aCtx, err := authcontext.FromContext(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", aCtx.AuthToken))
-
 	info := s.agentsTracker.GetAgentInfo()
 	plannerState := &distributedpb.LogicalPlannerState{
 		Schema:           info.Schema(),
@@ -240,8 +240,8 @@ func loadUDFInfo(udfInfoPb *udfspb.UDFInfo) error {
 	return nil
 }
 
-// ExecuteQuery executes a query on multiple agents and compute node.
-func (s *Server) ExecuteQuery(ctx context.Context, req *plannerpb.QueryRequest) (*querybrokerpb.VizierQueryResponse, error) {
+// executeQuery executes query. This is an internal function to be deprecated soon.
+func (s *Server) executeScript(ctx context.Context, req *plannerpb.QueryRequest) (*querybrokerpb.VizierQueryResponse, error) {
 	// TODO(philkuz) we should move the query id into the api so we can track how queries propagate through the system.
 	queryID := uuid.NewV4()
 
@@ -258,12 +258,7 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *plannerpb.QueryRequest) 
 		}, nil
 	}
 	planOpts := flags.GetPlanOptions()
-
-	var udfInfo udfspb.UDFInfo
-	if err := loadUDFInfo(&udfInfo); err != nil {
-		return nil, err
-	}
-	planner := logicalplanner.New(&udfInfo)
+	planner := logicalplanner.New(&s.udfInfo)
 	defer planner.Free()
 
 	qr, status, err := s.ExecuteQueryWithPlanner(ctx, req, queryID, planner, planOpts)
@@ -313,7 +308,7 @@ func (s *Server) checkHealth(ctx context.Context) (bool, error) {
 	req := plannerpb.QueryRequest{
 		QueryStr: checkVersionScript,
 	}
-	resp, err := s.ExecuteQuery(ctx, &req)
+	resp, err := s.executeScript(ctx, &req)
 	if err != nil {
 		return true, err
 	}
@@ -399,43 +394,19 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 
 	flags, err := ParseQueryFlags(convertedReq.QueryStr)
 	if err != nil {
-		resp := &vizierpb.ExecuteScriptResponse{
-			QueryID: queryID.String(),
-			Status:  ErrToVizierStatus(err),
-		}
-
-		return srv.Send(resp)
+		return srv.Send(ErrToVizierResponse(queryID, err))
 	}
+
 	planOpts := flags.GetPlanOptions()
-
-	var udfInfo udfspb.UDFInfo
-	if err := loadUDFInfo(&udfInfo); err != nil {
-		return err
-	}
-	planner := logicalplanner.New(&udfInfo)
+	planner := logicalplanner.New(&s.udfInfo)
 	defer planner.Free()
-
-	aCtx, err := authcontext.FromContext(ctx)
-	if err != nil {
-		return err
-	}
-
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", aCtx.AuthToken))
 
 	qr, status, err := s.ExecuteQueryWithPlanner(ctx, convertedReq, queryID, planner, planOpts)
 	if err != nil {
-		return err
+		return srv.Send(ErrToVizierResponse(queryID, err))
 	}
 	if status != nil {
-		convStatus, err := StatusToVizierStatus(status)
-		if err != nil {
-			return err
-		}
-		resp := &vizierpb.ExecuteScriptResponse{
-			QueryID: queryID.String(),
-			Status:  convStatus,
-		}
-		return srv.Send(resp)
+		return srv.Send(StatusToVizierResponse(queryID, status))
 	}
 	if qr == nil {
 		resp := &vizierpb.ExecuteScriptResponse{
@@ -445,7 +416,6 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 				Code:    int32(codes.DeadlineExceeded),
 			},
 		}
-
 		return srv.Send(resp)
 	}
 
