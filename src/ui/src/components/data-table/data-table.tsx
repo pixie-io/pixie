@@ -277,6 +277,20 @@ const InternalDataTable = ({
     }
   }, [onSort]);
 
+  React.useEffect(() => {
+    let sortKey;
+    for (let i = 0; i < columns.length; ++i) {
+      // Don't use an empty label which may be a gutter column.
+      if (columns[i].label) {
+        sortKey = columns[i].dataKey;
+        break;
+      }
+    }
+    if (sortKey) {
+      onSortWrapper({ sortBy: sortKey, sortDirection: SortDirection.ASC });
+    }
+  }, [columns, onSortWrapper]);
+
   const onRowClickWrapper = React.useCallback(({ index }) => {
     if (expandable) {
       setExpandedRowstate((state) => {
