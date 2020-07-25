@@ -199,13 +199,17 @@ probes {
 
 )";
 
+  stirlingpb::Publish publication;
+  stirling_->GetPublishProto(&publication);
+  int original_num_info_classes = publication.published_info_classes_size();
+
   auto trace_program = Prepare(kProgram, path);
 
   sole::uuid trace_id = sole::uuid4();
   stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
 
   // Should deploy.
-  ASSERT_OK_AND_ASSIGN(stirlingpb::Publish publication, WaitForStatus(trace_id));
+  ASSERT_OK_AND_ASSIGN(publication, WaitForStatus(trace_id));
 
   // Check the incremental publication change.
   ASSERT_EQ(publication.published_info_classes_size(), 1);
@@ -221,9 +225,24 @@ probes {
   // Run Stirling data collector.
   ASSERT_OK(stirling_->RunAsThread());
 
+  // Wait to capture some data.
   while (record_batches_.empty()) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
+
+  // Full publication should show one more info class while tracepoint is active.
+  publication = {};
+  stirling_->GetPublishProto(&publication);
+  EXPECT_EQ(publication.published_info_classes_size(), original_num_info_classes + 1);
+
+  ASSERT_OK(stirling_->RemoveTracepoint(trace_id));
+
+  // After removal, full publication go back to the original count.
+  publication = {};
+  stirling_->GetPublishProto(&publication);
+  EXPECT_EQ(publication.published_info_classes_size(), original_num_info_classes);
+
+  EXPECT_EQ(stirling_->GetTracepointInfo(trace_id).code(), pl::statuspb::Code::NOT_FOUND);
 
   stirling_->Stop();
 

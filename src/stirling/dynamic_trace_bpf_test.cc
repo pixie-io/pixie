@@ -82,7 +82,8 @@ class GoHTTPDynamicTraceTest : public ::testing::Test,
 
     data_table_ = std::make_unique<DataTable>(table_schema_->Get());
 
-    ASSERT_OK_AND_ASSIGN(connector_, DynamicTraceConnector::Create(logical_program_));
+    ASSERT_OK_AND_ASSIGN(connector_,
+                         DynamicTraceConnector::Create("my_dynamic_source", logical_program_));
 
     ASSERT_OK(connector_->Init());
 

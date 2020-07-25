@@ -154,6 +154,9 @@ class StirlingImpl final : public Stirling {
   // Adds a source to Stirling, and updates all state accordingly.
   Status AddSource(std::unique_ptr<SourceConnector> source);
 
+  // Removes a source and all its info classes from stirling.
+  Status RemoveSource(std::string_view source_name);
+
   // Creates and deploys dynamic tracing source.
   void DeployDynamicTraceConnector(sole::uuid trace_id,
                                    std::unique_ptr<dynamic_tracing::ir::logical::Program> program);
@@ -195,6 +198,8 @@ class StirlingImpl final : public Stirling {
   absl::base_internal::SpinLock dynamic_trace_status_map_lock_;
   absl::flat_hash_map<sole::uuid, StatusOr<stirlingpb::Publish>> dynamic_trace_status_map_
       ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
+
+  static inline const std::string kDynTraceSourcePrefix = "dyntrace-";
 };
 
 StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
@@ -273,6 +278,34 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
   return Status::OK();
 }
 
+// TODO(oazizi): Consider a data structure more friendly to erase().
+Status StirlingImpl::RemoveSource(std::string_view source_name) {
+  absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
+
+  // Find the source.
+  auto source_iter = std::find_if(sources_.begin(), sources_.end(),
+                                  [&source_name](const std::unique_ptr<SourceConnector>& s) {
+                                    return s->source_name() == source_name;
+                                  });
+  if (source_iter == sources_.end()) {
+    return error::Internal("RemoveSource(): could not find source with name=$0", source_name);
+  }
+  std::unique_ptr<SourceConnector>& source = *source_iter;
+
+  // Remove all info class managers that point back to the source.
+  info_class_mgrs_.erase(std::remove_if(info_class_mgrs_.begin(), info_class_mgrs_.end(),
+                                        [&source](std::unique_ptr<InfoClassManager>& mgr) {
+                                          return mgr->source() == source.get();
+                                        }),
+                         info_class_mgrs_.end());
+
+  // Now perform the removal.
+  PL_RETURN_IF_ERROR(source->Stop());
+  sources_.erase(source_iter);
+
+  return Status::OK();
+}
+
 void StirlingImpl::DeployDynamicTraceConnector(
     sole::uuid trace_id, std::unique_ptr<dynamic_tracing::ir::logical::Program> program) {
 #define RETURN_ERROR(s)                                                        \
@@ -302,8 +335,9 @@ void StirlingImpl::DeployDynamicTraceConnector(
 
   // Try creating the DynamicTraceConnector--which compiles BCC code.
   // On failure, set status and exit.
-  ASSIGN_OR_RETURN_ERROR(std::unique_ptr<SourceConnector> source,
-                         DynamicTraceConnector::Create(*program));
+  ASSIGN_OR_RETURN_ERROR(
+      std::unique_ptr<SourceConnector> source,
+      DynamicTraceConnector::Create(kDynTraceSourcePrefix + trace_id.str(), *program));
 
   LOG(INFO) << absl::Substitute("DynamicTrace: Program compiled to BCC code in $0 ms.",
                                 timer.ElapsedTime_us() / 1000.0);
@@ -350,7 +384,7 @@ StatusOr<stirlingpb::Publish> StirlingImpl::GetTracepointInfo(sole::uuid trace_i
 
   auto iter = dynamic_trace_status_map_.find(trace_id);
   if (iter == dynamic_trace_status_map_.end()) {
-    return error::NotFound("");
+    return error::NotFound("Tracepoint $0 not found.", trace_id.str());
   }
 
   StatusOr<stirlingpb::Publish> s = iter->second;
@@ -358,8 +392,19 @@ StatusOr<stirlingpb::Publish> StirlingImpl::GetTracepointInfo(sole::uuid trace_i
 }
 
 Status StirlingImpl::RemoveTracepoint(sole::uuid trace_id) {
-  // TODO(oazizi): Implement tracepoint removal.
-  PL_UNUSED(trace_id);
+  // Remove from map.
+  {
+    absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
+    auto iter = dynamic_trace_status_map_.find(trace_id);
+    if (iter == dynamic_trace_status_map_.end()) {
+      return error::NotFound("Tracepoint $0 not found.", trace_id.str());
+    }
+    dynamic_trace_status_map_.erase(iter);
+  }
+
+  // And actually remove from stirling.
+  PL_RETURN_IF_ERROR(RemoveSource(kDynTraceSourcePrefix + trace_id.str()));
+
   return Status::OK();
 }
 
