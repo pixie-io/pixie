@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <absl/container/flat_hash_map.h>
+#include <sole.hpp>
 #include "src/carnot/planner/distributed/distributed_plan.h"
 #include "src/carnot/planner/rules/rule_executor.h"
 #include "src/carnot/planner/rules/rules.h"
@@ -20,6 +21,7 @@ struct RuleTraits<distributed::DistributedPlan> {
 namespace distributed {
 using DistributedRule = BaseRule<distributed::DistributedPlan>;
 using DistributedRuleBatch = BaseRuleBatch<DistributedRule>;
+using SchemaMap = absl::flat_hash_map<std::string, absl::flat_hash_set<sole::uuid>>;
 /**
  * @brief This class supports running an IR graph rule (independently) over each IR graph of a
  * DistributedPlan. This is distinct from other DistributedRules, which may modify the
@@ -47,8 +49,7 @@ class DistributedIRRule : public DistributedRule {
 
 class PruneUnavailableSourcesRule : public Rule {
  public:
-  explicit PruneUnavailableSourcesRule(distributedpb::CarnotInfo carnot_info)
-      : Rule(nullptr), carnot_info_(carnot_info) {}
+  PruneUnavailableSourcesRule(distributedpb::CarnotInfo carnot_info, const SchemaMap& schema_map);
   StatusOr<bool> Apply(IRNode* node) override;
 
  private:
@@ -60,11 +61,15 @@ class PruneUnavailableSourcesRule : public Rule {
   bool UDTFMatchesFilters(UDTFSourceIR* source, const distributedpb::CarnotInfo& carnot_info);
 
   bool AgentSupportsMemorySources();
+  bool AgentHasTable(std::string table_name);
 
   bool IsKelvin(const distributedpb::CarnotInfo& carnot_info);
   bool IsPEM(const distributedpb::CarnotInfo& carnot_info);
 
   distributedpb::CarnotInfo carnot_info_;
+
+  SchemaMap schema_map_;
+  sole::uuid agent_id_;
 };
 
 /**
@@ -74,10 +79,13 @@ class PruneUnavailableSourcesRule : public Rule {
  */
 class DistributedPruneUnavailableSourcesRule : public DistributedRule {
  public:
-  DistributedPruneUnavailableSourcesRule() : DistributedRule(nullptr) {}
+  explicit DistributedPruneUnavailableSourcesRule(const SchemaMap& schema_map)
+      : DistributedRule(nullptr), schema_map_(schema_map) {}
 
  protected:
   StatusOr<bool> Apply(distributed::CarnotInstance* node) override;
+
+  SchemaMap schema_map_;
 };
 
 /**
@@ -91,6 +99,13 @@ class PruneEmptyPlansRule : public DistributedRule {
  protected:
   StatusOr<bool> Apply(distributed::CarnotInstance* node) override;
 };
+/**
+ * @brief LoadSchemaMap loads the schema map from a distributed state.
+ *
+ * @param distributed_state
+ * @return StatusOr<SchemaMap>
+ */
+StatusOr<SchemaMap> LoadSchemaMap(const distributedpb::DistributedState& distributed_state);
 
 }  // namespace distributed
 }  // namespace planner

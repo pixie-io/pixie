@@ -28,18 +28,53 @@ using testutils::kThreePEMsOneKelvinDistributedState;
 constexpr char kOnePEMOneKelvinDistributedState[] = R"proto(
 carnot_info {
   query_broker_address: "pem"
+  agent_id {
+    data: "00000001-0000-0000-0000-000000000001"
+  }
   has_grpc_server: false
   has_data_store: true
   processes_data: true
   accepts_remote_sources: false
+  table_info {
+    table: "table"
+  }
 }
 carnot_info {
   query_broker_address: "kelvin"
+  agent_id {
+    data: "00000001-0000-0000-0000-000000000002"
+  }
   grpc_address: "1111"
   has_grpc_server: true
   has_data_store: false
   processes_data: true
   accepts_remote_sources: true
+}
+schema_info {
+  name: "table"
+  relation {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "cpu_cycles"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_NONE
+    }
+  }
+  agent_list {
+    data: "00000001-0000-0000-0000-000000000001"
+  }
+  agent_list {
+    data: "00000001-0000-0000-0000-000000000002"
+  }
 }
 )proto";
 

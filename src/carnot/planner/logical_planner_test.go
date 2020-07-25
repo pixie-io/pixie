@@ -45,35 +45,74 @@ schema {
   }
 }
 distributed_state {
-  carnot_info {
-    query_broker_address: "agent1"
-    has_data_store: true
-    processes_data: true
-    table_info {
-      table: "table1"
-      tabletization_key: "upid"
-      tablets: "1"
-      tablets: "2"
-    }
-  }
-  carnot_info {
-    query_broker_address: "agent2"
-    has_data_store: true
-    processes_data: true
-    table_info {
-      table: "table1"
-      tabletization_key: "upid"
-      tablets: "3"
-      tablets: "4"
-    }
+	carnot_info {
+		query_broker_address: "pem1"
+		agent_id {
+			data: "00000001-0000-0000-0000-000000000001"
+		}
+		has_grpc_server: false
+		has_data_store: true
+		processes_data: true
+		accepts_remote_sources: false
+		asid: 123
+		table_info {
+			table: "table"
+		}
 	}
-	carnot_info{
+	carnot_info {
+		query_broker_address: "pem2"
+		agent_id {
+			data: "00000001-0000-0000-0000-000000000002"
+		}
+		has_grpc_server: false
+		has_data_store: true
+		processes_data: true
+		accepts_remote_sources: false
+		asid: 789
+		table_info {
+			table: "table"
+		}
+	}
+	carnot_info {
 		query_broker_address: "kelvin"
+		agent_id {
+			data: "00000001-0000-0000-0000-000000000004"
+		}
 		grpc_address: "1111"
 		has_grpc_server: true
 		has_data_store: false
 		processes_data: true
 		accepts_remote_sources: true
+		asid: 456
+	}
+	schema_info {
+		name: "table1"
+		relation {
+			columns {
+				column_name: "time_"
+				column_type: TIME64NS
+				column_semantic_type: ST_NONE
+			}
+			columns {
+				column_name: "cpu_cycles"
+				column_type: INT64
+				column_semantic_type: ST_NONE
+			}
+			columns {
+				column_name: "upid"
+				column_type: UINT128
+				column_semantic_type: ST_NONE
+			}
+		}
+		agent_list {
+			data: "00000001-0000-0000-0000-000000000001"
+		}
+		agent_list {
+			data: "00000001-0000-0000-0000-000000000002"
+		}
+		agent_list {
+			data: "00000001-0000-0000-0000-000000000003"
+		}
 	}
 }`
 
@@ -124,40 +163,29 @@ func TestPlanner_Simple(t *testing.T) {
 	}
 
 	assert.Equal(t, 3, len(planPB.Dag.GetNodes()))
-	agent1Plan := planPB.QbAddressToPlan["agent1"]
-	agent1MemSrc1 := agent1Plan.Nodes[0].Nodes[0].Op.GetMemSourceOp()
-	agent1MemSrc2 := agent1Plan.Nodes[0].Nodes[1].Op.GetMemSourceOp()
-	if !assert.NotNil(t, agent1MemSrc1) {
-		t.FailNow()
-	}
-	if !assert.NotNil(t, agent1MemSrc2) {
+	pem1Plan := planPB.QbAddressToPlan["pem1"]
+	pem1MemSrc1 := pem1Plan.Nodes[0].Nodes[0].Op.GetMemSourceOp()
+	if !assert.NotNil(t, pem1MemSrc1) {
 		t.FailNow()
 	}
 
-	assert.ElementsMatch(t, []string{agent1MemSrc1.Tablet, agent1MemSrc2.Tablet}, []string{"1", "2"})
-
-	agent2Plan := planPB.QbAddressToPlan["agent2"]
-	agent2MemSrc1 := agent2Plan.Nodes[0].Nodes[0].Op.GetMemSourceOp()
-	agent2MemSrc2 := agent2Plan.Nodes[0].Nodes[1].Op.GetMemSourceOp()
-	if !assert.NotNil(t, agent2MemSrc1) {
+	pem2Plan := planPB.QbAddressToPlan["pem2"]
+	pem2MemSrc1 := pem2Plan.Nodes[0].Nodes[0].Op.GetMemSourceOp()
+	if !assert.NotNil(t, pem2MemSrc1) {
 		t.FailNow()
 	}
-	if !assert.NotNil(t, agent2MemSrc2) {
+	pem1GRPCSink := pem1Plan.Nodes[0].Nodes[len(pem1Plan.Nodes[0].Nodes)-1].Op.GetGRPCSinkOp()
+	if !assert.NotNil(t, pem1GRPCSink) {
 		t.FailNow()
 	}
-	assert.ElementsMatch(t, []string{agent2MemSrc1.Tablet, agent2MemSrc2.Tablet}, []string{"3", "4"})
-	agent1GRPCSink := agent1Plan.Nodes[0].Nodes[len(agent1Plan.Nodes[0].Nodes)-1].Op.GetGRPCSinkOp()
-	if !assert.NotNil(t, agent1GRPCSink) {
+	assert.Equal(t, pem1GRPCSink.Address, "1111")
+	assert.Equal(t, pem1GRPCSink.DestinationId, kelvinGRPCSourceParentNode2.Id)
+	pem2GRPCSink := pem2Plan.Nodes[0].Nodes[len(pem2Plan.Nodes[0].Nodes)-1].Op.GetGRPCSinkOp()
+	if !assert.NotNil(t, pem2GRPCSink) {
 		t.FailNow()
 	}
-	assert.Equal(t, agent1GRPCSink.Address, "1111")
-	assert.Equal(t, agent1GRPCSink.DestinationId, kelvinGRPCSourceParentNode2.Id)
-	agent2GRPCSink := agent2Plan.Nodes[0].Nodes[len(agent2Plan.Nodes[0].Nodes)-1].Op.GetGRPCSinkOp()
-	if !assert.NotNil(t, agent2GRPCSink) {
-		t.FailNow()
-	}
-	assert.Equal(t, agent2GRPCSink.Address, "1111")
-	assert.Equal(t, agent2GRPCSink.DestinationId, kelvinGRPCSourceParentNode1.Id)
+	assert.Equal(t, pem2GRPCSink.Address, "1111")
+	assert.Equal(t, pem2GRPCSink.DestinationId, kelvinGRPCSourceParentNode1.Id)
 }
 
 func TestPlanner_MissingTable(t *testing.T) {

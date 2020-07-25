@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include <absl/strings/str_replace.h>
 #include <absl/strings/substitute.h>
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/plan_fragment.h"
@@ -347,8 +348,21 @@ table_store::schemapb::Schema LoadSchemaPb(std::string_view schema_str) {
 distributedpb::LogicalPlannerState LoadLogicalPlannerStatePB(
     const std::string& distributed_state_str, table_store::schemapb::Schema schema) {
   distributedpb::LogicalPlannerState logical_planner_state_pb;
-  *(logical_planner_state_pb.mutable_distributed_state()) =
-      LoadDistributedStatePb(distributed_state_str);
+  auto distributed_info = logical_planner_state_pb.mutable_distributed_state();
+  *distributed_info = LoadDistributedStatePb(distributed_state_str);
+  std::vector<uuidpb::UUID> agent_list;
+  for (int64_t i = 0; i < distributed_info->carnot_info_size(); ++i) {
+    agent_list.push_back(distributed_info->carnot_info(i).agent_id());
+  }
+
+  for (const auto& [name, relation] : schema.relation_map()) {
+    auto* schema_info = distributed_info->add_schema_info();
+    schema_info->set_name(name);
+    *(schema_info->mutable_relation()) = relation;
+    for (const auto& agent_id : agent_list) {
+      (*schema_info->add_agent_list()) = agent_id;
+    }
+  }
   *(logical_planner_state_pb.mutable_schema()) = schema;
   return logical_planner_state_pb;
 }
@@ -443,14 +457,12 @@ std::string TwoPEMsOneKelvinDistributedState() {
 
 std::string FourPEMsOneKelvinDistributedState() {
   std::string table_name = "table1";
-  std::string tabletization_key = "upid";
-  std::string table_info1 = MakeTableInfoStr(table_name, tabletization_key, {"1", "2"});
-  std::string table_info2 = MakeTableInfoStr(table_name, tabletization_key, {"3", "4"});
+  std::string table_info = "";
   return MakeDistributedState(
-      {MakePEMCarnotInfo("pem1", "00000001-0000-0000-0000-000000000001", 123, {table_info1}),
-       MakePEMCarnotInfo("pem2", "00000001-0000-0000-0000-000000000002", 456, {table_info2}),
-       MakePEMCarnotInfo("pem3", "00000001-0000-0000-0000-000000000003", 000, {table_info2}),
-       MakePEMCarnotInfo("pem4", "00000001-0000-0000-0000-000000000004", 111, {table_info2}),
+      {MakePEMCarnotInfo("pem1", "00000001-0000-0000-0000-000000000001", 123, {table_info}),
+       MakePEMCarnotInfo("pem2", "00000001-0000-0000-0000-000000000002", 456, {table_info}),
+       MakePEMCarnotInfo("pem3", "00000001-0000-0000-0000-000000000003", 000, {table_info}),
+       MakePEMCarnotInfo("pem4", "00000001-0000-0000-0000-000000000004", 111, {table_info}),
        MakeKelvinCarnotInfo("kelvin", "00000001-0000-0000-0000-000000000003", "1111", 789)});
 }
 
@@ -462,7 +474,8 @@ distributedpb::LogicalPlannerState CreateTwoPEMsOneKelvinPlannerState(const std:
 distributedpb::LogicalPlannerState CreateTwoPEMsOneKelvinPlannerState(
     table_store::schemapb::Schema schema) {
   auto distributed_state_proto = TwoPEMsOneKelvinDistributedState();
-  return LoadLogicalPlannerStatePB(distributed_state_proto, schema);
+  auto logical_state = LoadLogicalPlannerStatePB(distributed_state_proto, schema);
+  return logical_state;
 }
 
 distributedpb::LogicalPlannerState CreateFourPEMsOneKelvinPlannerState(
@@ -992,36 +1005,86 @@ dag {
 constexpr char kThreePEMsOneKelvinDistributedState[] = R"proto(
 carnot_info {
   query_broker_address: "pem1"
+  agent_id {
+    data: "00000001-0000-0000-0000-000000000001"
+  }
   has_grpc_server: false
   has_data_store: true
   processes_data: true
   accepts_remote_sources: false
   asid: 123
+  table_info {
+    table: "table"
+  }
 }
 carnot_info {
   query_broker_address: "pem2"
+  agent_id {
+    data: "00000001-0000-0000-0000-000000000002"
+  }
   has_grpc_server: false
   has_data_store: true
   processes_data: true
   accepts_remote_sources: false
   asid: 789
+  table_info {
+    table: "table"
+  }
 }
 carnot_info {
   query_broker_address: "pem3"
+  agent_id {
+    data: "00000001-0000-0000-0000-000000000003"
+  }
   has_grpc_server: false
   has_data_store: true
   processes_data: true
   accepts_remote_sources: false
   asid: 111
+  table_info {
+    table: "table"
+  }
 }
 carnot_info {
   query_broker_address: "kelvin"
+  agent_id {
+    data: "00000001-0000-0000-0000-000000000004"
+  }
   grpc_address: "1111"
   has_grpc_server: true
   has_data_store: false
   processes_data: true
   accepts_remote_sources: true
   asid: 456
+}
+schema_info {
+  name: "table"
+  relation {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "cpu_cycles"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_NONE
+    }
+  }
+  agent_list {
+    data: "00000001-0000-0000-0000-000000000001"
+  }
+  agent_list {
+    data: "00000001-0000-0000-0000-000000000002"
+  }
+  agent_list {
+    data: "00000001-0000-0000-0000-000000000003"
+  }
 }
 )proto";
 

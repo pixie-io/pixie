@@ -19,9 +19,10 @@ namespace distributed {
  */
 class DistributedAnalyzer : public RuleExecutor<DistributedPlan> {
  public:
-  static StatusOr<std::unique_ptr<DistributedAnalyzer>> Create() {
+  static StatusOr<std::unique_ptr<DistributedAnalyzer>> Create(
+      const distributedpb::DistributedState& distributed_state) {
     std::unique_ptr<DistributedAnalyzer> analyzer(new DistributedAnalyzer());
-    PL_RETURN_IF_ERROR(analyzer->Init());
+    PL_RETURN_IF_ERROR(analyzer->Init(distributed_state));
     return analyzer;
   }
 
@@ -34,7 +35,7 @@ class DistributedAnalyzer : public RuleExecutor<DistributedPlan> {
 
   void CreateSourcePruneBatch() {
     DistributedRuleBatch* source_prune_batch = CreateRuleBatch<TryUntilMax>("SourcePruneBatch", 2);
-    source_prune_batch->AddRule<DistributedPruneUnavailableSourcesRule>();
+    source_prune_batch->AddRule<DistributedPruneUnavailableSourcesRule>(agent_schema_map_);
   }
 
   void CreatePlanPruneBatch() {
@@ -50,13 +51,16 @@ class DistributedAnalyzer : public RuleExecutor<DistributedPlan> {
     stitcher_batch->AddRule<DistributedIRRule<GRPCSourceGroupConversionRule>>();
   }
 
-  Status Init() {
+  Status Init(const distributedpb::DistributedState& distributed_state) {
+    PL_ASSIGN_OR_RETURN(agent_schema_map_, LoadSchemaMap(distributed_state));
     CreateTabletizerBatch();
     CreateSourcePruneBatch();
     CreatePlanPruneBatch();
     CreateStitcherBatch();
     return Status::OK();
   }
+
+  SchemaMap agent_schema_map_;
 };
 
 }  // namespace distributed

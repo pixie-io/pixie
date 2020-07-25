@@ -7,6 +7,12 @@ namespace carnot {
 namespace planner {
 namespace distributed {
 
+PruneUnavailableSourcesRule::PruneUnavailableSourcesRule(distributedpb::CarnotInfo carnot_info,
+                                                         const SchemaMap& schema_map)
+    : Rule(nullptr), carnot_info_(carnot_info), schema_map_(schema_map) {
+  agent_id_ = ParseUUID(carnot_info_.agent_id()).ConsumeValueOrDie();
+}
+
 StatusOr<bool> PruneUnavailableSourcesRule::Apply(IRNode* node) {
   if (Match(node, SourceOperator())) {
     return RemoveSourceIfNotNecessary(static_cast<OperatorIR*>(node));
@@ -35,12 +41,25 @@ StatusOr<bool> PruneUnavailableSourcesRule::MaybePruneMemorySource(MemorySourceI
     PL_RETURN_IF_ERROR(DeleteSourceAndChildren(mem_src));
     return true;
   }
+
+  if (!AgentHasTable(mem_src->table_name())) {
+    PL_RETURN_IF_ERROR(DeleteSourceAndChildren(mem_src));
+    return true;
+  }
   return false;
 }
 
 bool PruneUnavailableSourcesRule::AgentSupportsMemorySources() {
   return carnot_info_.has_data_store() && !carnot_info_.has_grpc_server() &&
          carnot_info_.processes_data();
+}
+
+bool PruneUnavailableSourcesRule::AgentHasTable(std::string table_name) {
+  if (!schema_map_.contains(table_name)) {
+    return false;
+  }
+  auto schema_iter = schema_map_.find(table_name);
+  return schema_iter != schema_map_.end() && schema_iter->second.contains(agent_id_);
 }
 
 StatusOr<bool> PruneUnavailableSourcesRule::MaybePruneUDTFSource(UDTFSourceIR* udtf_src) {
@@ -132,7 +151,7 @@ bool PruneUnavailableSourcesRule::UDTFMatchesFilters(UDTFSourceIR* source,
 
 StatusOr<bool> DistributedPruneUnavailableSourcesRule::Apply(
     distributed::CarnotInstance* carnot_instance) {
-  PruneUnavailableSourcesRule rule(carnot_instance->carnot_info());
+  PruneUnavailableSourcesRule rule(carnot_instance->carnot_info(), schema_map_);
   return rule.Execute(carnot_instance->plan());
 }
 
@@ -142,6 +161,19 @@ StatusOr<bool> PruneEmptyPlansRule::Apply(distributed::CarnotInstance* node) {
   }
   PL_RETURN_IF_ERROR(node->distributed_plan()->DeleteNode(node->id()));
   return true;
+}
+
+StatusOr<SchemaMap> LoadSchemaMap(const distributedpb::DistributedState& distributed_state) {
+  SchemaMap agent_schema_map;
+  for (const auto& schema : distributed_state.schema_info()) {
+    absl::flat_hash_set<sole::uuid> agent_ids;
+    for (const auto& uid_pb : schema.agent_list()) {
+      PL_ASSIGN_OR_RETURN(sole::uuid uuid, ParseUUID(uid_pb));
+      agent_ids.insert(uuid);
+    }
+    agent_schema_map[schema.name()] = agent_ids;
+  }
+  return agent_schema_map;
 }
 
 }  // namespace distributed

@@ -31,7 +31,7 @@ StatusOr<std::unique_ptr<DistributedPlan>> DistributedPlanner::Plan(
                       coordinator->Coordinate(logical_plan));
 
   PL_ASSIGN_OR_RETURN(std::unique_ptr<distributed::DistributedAnalyzer> analyzer,
-                      distributed::DistributedAnalyzer::Create());
+                      distributed::DistributedAnalyzer::Create(distributed_state));
   PL_RETURN_IF_ERROR(analyzer->Execute(distributed_plan.get()));
   return distributed_plan;
 }

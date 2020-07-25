@@ -66,7 +66,8 @@ TEST_F(DistributedAnalyzerTest, UDTFOnlyOnPEMsDoesntRunOnKelvin) {
   ASSERT_EQ(kelvin_plan->FindNodesOfType(IRNodeType::kUDTFSource).size(), 1);
 
   // Run the analyzer (what we are actually testing.)
-  auto distributed_analyzer = DistributedAnalyzer::Create().ConsumeValueOrDie();
+  auto distributed_analyzer =
+      DistributedAnalyzer::Create(logical_state_.distributed_state()).ConsumeValueOrDie();
   ASSERT_OK(distributed_analyzer->Execute(physical_plan.get()));
 
   // Analyzer should:
@@ -131,7 +132,8 @@ TEST_F(DistributedAnalyzerTest, UDTFOnKelvinOnlyOnKelvin) {
   ASSERT_EQ(kelvin_plan->FindNodesOfType(IRNodeType::kUDTFSource).size(), 1);
 
   // Run the analyzer (what we are actually testing).
-  auto distributed_analyzer = DistributedAnalyzer::Create().ConsumeValueOrDie();
+  auto distributed_analyzer =
+      DistributedAnalyzer::Create(logical_state_.distributed_state()).ConsumeValueOrDie();
   ASSERT_OK(distributed_analyzer->Execute(physical_plan.get()));
 
   // Analyzer should:
@@ -215,7 +217,8 @@ TEST_F(DistributedAnalyzerTest, UDTFOnKelvinJoinWithUDTFOnPEM) {
   ASSERT_EQ(kelvin_grpc_sinks.size(), 2);
 
   // Run the analyzer (what we are actually testing).
-  auto distributed_analyzer = DistributedAnalyzer::Create().ConsumeValueOrDie();
+  auto distributed_analyzer =
+      DistributedAnalyzer::Create(logical_state_.distributed_state()).ConsumeValueOrDie();
   ASSERT_OK(distributed_analyzer->Execute(physical_plan.get()));
 
   // Analyzer should:

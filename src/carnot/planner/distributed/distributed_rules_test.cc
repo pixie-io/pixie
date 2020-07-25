@@ -68,7 +68,7 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnKelvinFiltersOutPEMPlan) {
   auto grpc_sink1_id = grpc_sink1->id();
 
   // Sub-plan 2 should not be affected.
-  auto mem_src = MakeMemSource();
+  auto mem_src = MakeMemSource("http_events");
   auto grpc_sink2 = MakeGRPCSink(mem_src, 456);
   auto mem_src_id = mem_src->id();
   auto grpc_sink2_id = grpc_sink2->id();
@@ -76,7 +76,10 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnKelvinFiltersOutPEMPlan) {
   // We want to grab a PEM.
   auto carnot_info = logical_state_.distributed_state().carnot_info()[0];
   ASSERT_TRUE(IsPEM(carnot_info));
-  PruneUnavailableSourcesRule rule(carnot_info);
+
+  ASSERT_OK_AND_ASSIGN(auto schema_map, LoadSchemaMap(logical_state_.distributed_state()));
+  PruneUnavailableSourcesRule rule(carnot_info, schema_map);
+
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
   ASSERT_TRUE(rule_or_s.ConsumeValueOrDie());
@@ -123,7 +126,8 @@ TEST_F(PruneUnavailableSourcesRuleTest, DISABLED_UDTFOnKelvinShouldBeRemovedIfOt
   // Should be a kelvin.
   ASSERT_TRUE(!IsPEM(carnot_info));
 
-  PruneUnavailableSourcesRule rule(carnot_info);
+  ASSERT_OK_AND_ASSIGN(auto schema_map, LoadSchemaMap(logical_state_.distributed_state()));
+  PruneUnavailableSourcesRule rule(carnot_info, schema_map);
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
   ASSERT_TRUE(rule_or_s.ConsumeValueOrDie());
@@ -148,7 +152,8 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnKelvinKeepsAllKelvinNodes) {
   auto carnot_info = logical_state_.distributed_state().carnot_info()[2];
   // Should be a kelvin.
   ASSERT_TRUE(!IsPEM(carnot_info));
-  PruneUnavailableSourcesRule rule(carnot_info);
+  ASSERT_OK_AND_ASSIGN(auto schema_map, LoadSchemaMap(logical_state_.distributed_state()));
+  PruneUnavailableSourcesRule rule(carnot_info, schema_map);
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
   ASSERT_FALSE(rule_or_s.ConsumeValueOrDie());
@@ -180,7 +185,8 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnPEMsRemovesKelvin) {
 
   auto kelvin_info = logical_state_.distributed_state().carnot_info()[2];
   ASSERT_FALSE(IsPEM(kelvin_info));
-  PruneUnavailableSourcesRule rule(kelvin_info);
+  ASSERT_OK_AND_ASSIGN(auto schema_map, LoadSchemaMap(logical_state_.distributed_state()));
+  PruneUnavailableSourcesRule rule(kelvin_info, schema_map);
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
   ASSERT_TRUE(rule_or_s.ConsumeValueOrDie());
@@ -211,7 +217,7 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnPEMsKeepsPEM) {
   auto grpc_sink1_id = grpc_sink1->id();
 
   // Sub-plan 2 should not be affected.
-  auto mem_src = MakeMemSource();
+  auto mem_src = MakeMemSource("http_events");
   auto grpc_sink2 = MakeGRPCSink(mem_src, 456);
   auto mem_src_id = mem_src->id();
   auto grpc_sink2_id = grpc_sink2->id();
@@ -221,7 +227,8 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnPEMsKeepsPEM) {
   pem_info.set_asid(upid.asid());
   ASSERT_TRUE(IsPEM(pem_info));
 
-  PruneUnavailableSourcesRule rule(pem_info);
+  ASSERT_OK_AND_ASSIGN(auto schema_map, LoadSchemaMap(logical_state_.distributed_state()));
+  PruneUnavailableSourcesRule rule(pem_info, schema_map);
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
   // Should not change anything.
@@ -249,7 +256,7 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnAllAgentsKeepsPEM) {
   auto grpc_sink1_id = grpc_sink1->id();
 
   // Sub-plan 2 should not be deleted.
-  auto mem_src = MakeMemSource();
+  auto mem_src = MakeMemSource("http_events");
   auto grpc_sink2 = MakeGRPCSink(mem_src, 456);
   auto mem_src_id = mem_src->id();
   auto grpc_sink2_id = grpc_sink2->id();
@@ -258,7 +265,8 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnAllAgentsKeepsPEM) {
   auto pem_info = logical_state_.distributed_state().carnot_info()[0];
   ASSERT_TRUE(IsPEM(pem_info));
 
-  PruneUnavailableSourcesRule rule(pem_info);
+  ASSERT_OK_AND_ASSIGN(auto schema_map, LoadSchemaMap(logical_state_.distributed_state()));
+  PruneUnavailableSourcesRule rule(pem_info, schema_map);
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
   ASSERT_FALSE(rule_or_s.ConsumeValueOrDie());
@@ -295,7 +303,7 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnAllAgentsKeepsAllKelvinNodes) {
   auto carnot_info = logical_state_.distributed_state().carnot_info()[2];
   // Should be a kelvin.
   ASSERT_TRUE(!IsPEM(carnot_info));
-  PruneUnavailableSourcesRule rule(carnot_info);
+  PruneUnavailableSourcesRule rule(carnot_info, {});
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
   ASSERT_FALSE(rule_or_s.ConsumeValueOrDie());
@@ -334,7 +342,7 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnAllAgentsFilterOnAgentUIDKeepAgent
 
   // Should be a kelvin.
   ASSERT_TRUE(!IsPEM(carnot_info));
-  PruneUnavailableSourcesRule rule(carnot_info);
+  PruneUnavailableSourcesRule rule(carnot_info, {});
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
   ASSERT_FALSE(rule_or_s.ConsumeValueOrDie());
@@ -374,7 +382,7 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnAllAgentsFilterOutNonMatchingAgent
 
   // Should be a PEM.
   ASSERT_TRUE(IsPEM(carnot_info));
-  PruneUnavailableSourcesRule rule(carnot_info);
+  PruneUnavailableSourcesRule rule(carnot_info, {});
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
   ASSERT_TRUE(rule_or_s.ConsumeValueOrDie());
@@ -410,7 +418,7 @@ TEST_F(DistributedPruneUnavailableSourcesRuleTest, AllAgentsUDTFFiltersNoOne) {
   auto kelvin_sources = kelvin_instance->plan()->FindNodesOfType(IRNodeType::kUDTFSource);
   EXPECT_EQ(kelvin_sources.size(), 1);
 
-  DistributedPruneUnavailableSourcesRule rule;
+  DistributedPruneUnavailableSourcesRule rule({});
   auto result_or_s = rule.Execute(plan.get());
   ASSERT_OK(result_or_s);
   ASSERT_FALSE(result_or_s.ConsumeValueOrDie());
@@ -444,7 +452,7 @@ TEST_F(DistributedPruneUnavailableSourcesRuleTest, OneKelvinUDTFFiltersOutPEMsUD
   auto kelvin_sources = kelvin_instance->plan()->FindNodesOfType(IRNodeType::kUDTFSource);
   EXPECT_EQ(kelvin_sources.size(), 1);
 
-  DistributedPruneUnavailableSourcesRule rule;
+  DistributedPruneUnavailableSourcesRule rule({});
   auto result_or_s = rule.Execute(plan.get());
   ASSERT_OK(result_or_s);
   ASSERT_TRUE(result_or_s.ConsumeValueOrDie());
