@@ -1,6 +1,6 @@
 <p align="center">
 
-  [![Pixie!](./assets/readme_banner_v6.svg)](https://pixielabs.ai)
+  [![Pixie!](./assets/readme_banner_v7.png)](https://pixielabs.ai)
 
 </p>
 
