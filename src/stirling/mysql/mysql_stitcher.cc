@@ -69,8 +69,6 @@ DequeView<Packet> GetRespView(const std::deque<Packet>& req_packets,
 
 StatusOr<ParseState> ProcessPackets(const Packet& req_packet, DequeView<Packet> resp_packets_view,
                                     State* state, Record* entry) {
-  StatusOr<ParseState> s;
-
   char command_byte = req_packet.msg[0];
   Command command = DecodeCommand(command_byte);
 

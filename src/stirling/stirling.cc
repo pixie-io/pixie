@@ -308,12 +308,18 @@ Status StirlingImpl::RemoveSource(std::string_view source_name) {
 
 void StirlingImpl::DeployDynamicTraceConnector(
     sole::uuid trace_id, std::unique_ptr<dynamic_tracing::ir::logical::Program> program) {
+  // Returns, but updates the status map in a concurrent-safe way before doing so.
+  // Also converts all statuses to Internal so they don't conflict with the formal
+  // codes used on the API (e.g. NotFound or ResourceUnavailable).
+  // Since these errors come from a myriad of places, there would be no way to make sure
+  // an error from an underlying library doesn't produce NotFound, ResourceUnavailable
+  // or some future code that we plan to reserve.
 #define RETURN_ERROR(s)                                                        \
   {                                                                            \
-    Status ___s___ = s;                                                        \
+    Status ret_status(pl::statuspb::Code::INTERNAL, s.msg());                  \
     absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_); \
-    dynamic_trace_status_map_[trace_id] = ___s___;                             \
-    LOG(INFO) << ___s___.ToString();                                           \
+    dynamic_trace_status_map_[trace_id] = ret_status;                          \
+    LOG(INFO) << ret_status.ToString();                                        \
     return;                                                                    \
   }
 
