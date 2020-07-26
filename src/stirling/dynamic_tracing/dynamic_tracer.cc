@@ -5,11 +5,14 @@
 #include <utility>
 #include <vector>
 
+#include "src/common/system/system.h"
+
 #include "src/stirling/bpf_tools/utils.h"
 #include "src/stirling/dynamic_tracing/code_gen.h"
 #include "src/stirling/dynamic_tracing/dwarf_info.h"
 #include "src/stirling/dynamic_tracing/probe_transformer.h"
 #include "src/stirling/obj_tools/elf_tools.h"
+#include "src/stirling/obj_tools/obj_tools.h"
 #include "src/stirling/obj_tools/proc_path_tools.h"
 
 namespace pl {
@@ -76,9 +79,12 @@ StatusOr<BCCProgram> CompileProgram(const ir::logical::Program& input_program) {
       break;
     case ir::shared::BinarySpec::TargetOneofCase::kUpid: {
       pid = intermediate_program.binary_spec().upid().pid();
+
+      PL_ASSIGN_OR_RETURN(std::filesystem::path binary_path, obj_tools::GetActiveBinary(pid));
+
       // TODO(yzhao): Here the upid's PID start time is not verified, just looks for the pid.
       // We might need to add such check in the future.
-      PL_ASSIGN_OR_RETURN(std::filesystem::path binary_path, obj_tools::ResolveProcExe(pid));
+
       intermediate_program.mutable_binary_spec()->set_path(binary_path.string());
       break;
     }

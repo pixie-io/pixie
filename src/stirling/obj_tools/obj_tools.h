@@ -12,10 +12,15 @@ namespace stirling {
 namespace obj_tools {
 
 /**
- * Returns a path to the executable of the process specified by proc_pid.
+ * Returns a path to the executable of the process specified by the pid.
  */
-pl::StatusOr<std::filesystem::path> GetActiveBinary(std::filesystem::path host_path,
-                                                    std::filesystem::path proc_pid);
+pl::StatusOr<std::filesystem::path> GetActiveBinary(uint32_t pid);
+
+/**
+ * Returns a path to the executable of the process specified by proc_pid (e.g. /proc/34323).
+ */
+pl::StatusOr<std::filesystem::path> GetActiveBinary(const std::filesystem::path& host_path,
+                                                    const std::filesystem::path& proc_pid);
 
 // Note: GetActiveBinararies may seem unused, but is still used by code in experimental,
 // so double-check before trying to remove.

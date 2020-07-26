@@ -25,10 +25,14 @@ TEST(GetActiveBinariesTest, CaptureTestBinary) {
       << "Should see the test process itself";
 }
 
-TEST(GetActiveBinaryTest, CaptureTestBinary) {
-  auto binary_or =
-      GetActiveBinary(/*host_path*/ {}, std::filesystem::path("/proc") / std::to_string(getpid()));
-  EXPECT_OK_AND_THAT(binary_or, EndsWith("src/stirling/obj_tools/obj_tools_test"));
+TEST(GetActiveBinaryTest, CaptureTestBinaryByPath) {
+  std::filesystem::path pid_path = std::filesystem::path("/proc") / std::to_string(getpid());
+  EXPECT_OK_AND_THAT(GetActiveBinary(/*host_path*/ {}, pid_path),
+                     EndsWith("src/stirling/obj_tools/obj_tools_test"));
+}
+
+TEST(GetActiveBinaryTest, CaptureTestBinaryByPID) {
+  EXPECT_OK_AND_THAT(GetActiveBinary(getpid()), EndsWith("src/stirling/obj_tools/obj_tools_test"));
 }
 
 }  // namespace obj_tools

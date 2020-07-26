@@ -657,14 +657,11 @@ namespace {
 std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
     const absl::flat_hash_set<md::UPID>& upids) {
   // Convert to a map of binaries, with the upids that are instances of that binary.
-  std::filesystem::path proc_path = system::Config::GetInstance().proc_path();
-  std::filesystem::path host_path = system::Config::GetInstance().host_path();
   std::map<std::string, std::vector<int32_t>> new_pids;
 
   // Consider new UPIDs only.
   for (const auto& upid : upids) {
-    std::filesystem::path pid_path = proc_path / std::to_string(upid.pid());
-    auto host_exe_or = GetActiveBinary(host_path, pid_path);
+    auto host_exe_or = GetActiveBinary(upid.pid());
     if (!host_exe_or.ok()) {
       continue;
     }

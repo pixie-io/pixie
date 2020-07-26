@@ -13,8 +13,15 @@ namespace pl {
 namespace stirling {
 namespace obj_tools {
 
-pl::StatusOr<std::filesystem::path> GetActiveBinary(std::filesystem::path host_path,
-                                                    std::filesystem::path proc_pid) {
+pl::StatusOr<std::filesystem::path> GetActiveBinary(uint32_t pid) {
+  std::filesystem::path host_path = system::Config::GetInstance().host_path();
+  std::filesystem::path proc_path = system::Config::GetInstance().proc_path();
+  std::filesystem::path pid_path = proc_path / std::to_string(pid);
+  return GetActiveBinary(host_path, pid_path);
+}
+
+pl::StatusOr<std::filesystem::path> GetActiveBinary(const std::filesystem::path& host_path,
+                                                    const std::filesystem::path& proc_pid) {
   PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, ResolveProcExe(proc_pid));
 
   // If we're running in a container, convert exe to be relative to our host mount.
