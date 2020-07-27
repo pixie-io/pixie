@@ -104,8 +104,8 @@ message DistributedPlan {
 // Plan. This message is used by the query broker to send to the logical
 // planner.
 message LogicalPlannerState {
-  // The schema of the tables, assumed to be consistent across the system.
-  pl.table_store.schemapb.Schema schema = 1;
+  // Previously used to store a global schema for the agents.
+  reserved 1;
   // The distributed state of all Carnot instances in the system.
   DistributedState distributed_state = 2;
   // The query options for how the plans should be executed.

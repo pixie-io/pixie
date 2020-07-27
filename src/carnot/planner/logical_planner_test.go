@@ -22,28 +22,6 @@ import (
 )
 
 const plannerStatePBStr = `
-schema {
-  relation_map {
-    key: "table1"
-    value {
-      columns {
-        column_name: "time_"
-        column_type: TIME64NS
-      	column_semantic_type: ST_NONE
-      }
-      columns {
-        column_name: "cpu_cycles"
-        column_type: INT64
-      	column_semantic_type: ST_NONE
-      }
-      columns {
-        column_name: "upid"
-        column_type: UINT128
-      	column_semantic_type: ST_NONE
-      }
-    }
-  }
-}
 distributed_state {
 	carnot_info {
 		query_broker_address: "pem1"

@@ -363,7 +363,6 @@ distributedpb::LogicalPlannerState LoadLogicalPlannerStatePB(
       (*schema_info->add_agent_list()) = agent_id;
     }
   }
-  *(logical_planner_state_pb.mutable_schema()) = schema;
   return logical_planner_state_pb;
 }
 
@@ -1179,7 +1178,7 @@ class DistributedRulesTest : public OperatorTests {
 
     ASSERT_OK(registry_info_->Init(udf_info));
     compiler_state_ = std::make_unique<planner::CompilerState>(
-        MakeRelationMap(logical_state_.schema()), registry_info_.get(), 1234);
+        MakeRelationMap(LoadSchemaPb(kHttpEventsSchema)), registry_info_.get(), 1234);
   }
 
   std::unique_ptr<RelationMap> MakeRelationMap(const pl::table_store::schemapb::Schema& schema_pb) {
