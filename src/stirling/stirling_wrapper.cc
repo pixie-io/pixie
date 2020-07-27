@@ -22,6 +22,8 @@
 #include "src/stirling/mysql_table.h"
 #include "src/stirling/pgsql_table.h"
 
+#include "src/carnot/planner/probes/tracepoint_generator.h"
+
 using pl::StatusOr;
 
 using pl::stirling::IndexPublication;
@@ -95,12 +97,10 @@ void SignalHandler(int signum) {
 StatusOr<Publish> DeployTrace(Stirling* stirling) {
   PL_ASSIGN_OR_RETURN(std::string trace_program_str, pl::ReadFileToString(FLAGS_trace));
 
-  auto trace_program = std::make_unique<DynamicTracingProgram>();
-  bool success =
-      google::protobuf::TextFormat::ParseFromString(trace_program_str, trace_program.get());
-  if (!success) {
-    return pl::error::Internal("Unable to parse trace file");
-  }
+  PL_ASSIGN_OR_RETURN(DynamicTracingProgram compiled_tracepoint,
+                      pl::carnot::planner::compiler::CompileTracepoint(trace_program_str));
+  LOG(INFO) << compiled_tracepoint.DebugString();
+  auto trace_program = std::make_unique<DynamicTracingProgram>(std::move(compiled_tracepoint));
 
   // Automatically enable printing of this table.
   for (const auto& o : trace_program->outputs()) {
