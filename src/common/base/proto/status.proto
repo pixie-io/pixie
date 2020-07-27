@@ -32,6 +32,8 @@ enum Code {
   RESOURCE_UNAVAILABLE = 11;
   // Syscall errors.
   SYSTEM = 12;
+  // A precondition of the API failed. Might have succeeded otherwise.
+  FAILED_PRECONDITION = 13;
   // Use default instead of specifying all entries here. Otherwise, code might get
   // hard to maintain.
   DO_NOT_USE_ = 100;

@@ -162,6 +162,9 @@ class StirlingImpl final : public Stirling {
   void DeployDynamicTraceConnector(sole::uuid trace_id,
                                    std::unique_ptr<dynamic_tracing::ir::logical::Program> program);
 
+  // Destroys a dynamic tracing source created by DeployDynamicTraceConnector.
+  void DestroyDynamicTraceConnector(sole::uuid trace_id);
+
   // Main run implementation.
   void RunCore();
 
@@ -332,14 +335,12 @@ Status ResolveUPID(dynamic_tracing::ir::logical::Program* program) {
   return Status::OK();
 }
 
-void StirlingImpl::DeployDynamicTraceConnector(
-    sole::uuid trace_id, std::unique_ptr<dynamic_tracing::ir::logical::Program> program) {
-  // Returns, but updates the status map in a concurrent-safe way before doing so.
-  // Also converts all statuses to Internal so they don't conflict with the formal
-  // codes used on the API (e.g. NotFound or ResourceUnavailable).
-  // Since these errors come from a myriad of places, there would be no way to make sure
-  // an error from an underlying library doesn't produce NotFound, ResourceUnavailable
-  // or some future code that we plan to reserve.
+// Returns, but updates the status map in a concurrent-safe way before doing so.
+// Also converts all statuses to Internal so they don't conflict with the formal
+// codes used on the API (e.g. NotFound or ResourceUnavailable).
+// Since these errors come from a myriad of places, there would be no way to make sure
+// an error from an underlying library doesn't produce NotFound, ResourceUnavailable
+// or some future code that we plan to reserve.
 #define RETURN_ERROR(s)                                                        \
   {                                                                            \
     Status ret_status(pl::statuspb::Code::INTERNAL, s.msg());                  \
@@ -355,6 +356,8 @@ void StirlingImpl::DeployDynamicTraceConnector(
     RETURN_ERROR(s);       \
   }
 
+void StirlingImpl::DeployDynamicTraceConnector(
+    sole::uuid trace_id, std::unique_ptr<dynamic_tracing::ir::logical::Program> program) {
   if (program->outputs_size() == 0) {
     RETURN_ERROR(error::Internal("Dynamic trace must define output tables."));
   }
@@ -371,14 +374,14 @@ void StirlingImpl::DeployDynamicTraceConnector(
       std::unique_ptr<SourceConnector> source,
       DynamicTraceConnector::Create(kDynTraceSourcePrefix + trace_id.str(), *program));
 
-  LOG(INFO) << absl::Substitute("DynamicTrace: Program compiled to BCC code in $0 ms.",
-                                timer.ElapsedTime_us() / 1000.0);
+  LOG(INFO) << absl::Substitute("DynamicTrace [$0]: Program compiled to BCC code in $1 ms.",
+                                trace_id.str(), timer.ElapsedTime_us() / 1000.0);
 
   timer.Start();
   // Next, try adding the source (this actually tries to deploy BPF code).
   // On failure, set status and exit, but do this outside the lock for efficiency reasons.
   RETURN_IF_ERROR(AddSource(std::move(source)));
-  LOG(INFO) << absl::Substitute("DynamicTrace: Deployed BCC code in $0 ms.",
+  LOG(INFO) << absl::Substitute("DynamicTrace [$0]: Deployed BCC code in $1 ms.", trace_id.str(),
                                 timer.ElapsedTime_us() / 1000.0);
 
   stirlingpb::Publish publication;
@@ -391,11 +394,28 @@ void StirlingImpl::DeployDynamicTraceConnector(
 
   absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
   dynamic_trace_status_map_[trace_id] = publication;
+}
+
+void StirlingImpl::DestroyDynamicTraceConnector(sole::uuid trace_id) {
+  auto timer = ElapsedTimer();
+  timer.Start();
+
+  // Remove from stirling.
+  RETURN_IF_ERROR(RemoveSource(kDynTraceSourcePrefix + trace_id.str()));
+
+  LOG(INFO) << absl::Substitute("DynamicTrace [$0]: Removed tracepoint $1 ms.", trace_id.str(),
+                                timer.ElapsedTime_us() / 1000.0);
+
+  // Remove from map.
+  {
+    absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
+    dynamic_trace_status_map_.erase(trace_id);
+  }
+}
 
 #undef RETURN_ERROR
 #undef RETURN_IF_ERROR
 #undef ASSIGN_OR_RETURN
-}
 
 void StirlingImpl::RegisterTracepoint(
     sole::uuid trace_id, std::unique_ptr<dynamic_tracing::ir::logical::Program> program) {
@@ -407,7 +427,7 @@ void StirlingImpl::RegisterTracepoint(
   if (!s.ok()) {
     LOG(ERROR) << s.ToString();
     absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
-    dynamic_trace_status_map_[trace_id] = error::NotFound("Target binary/UPID not found");
+    dynamic_trace_status_map_[trace_id] = error::FailedPrecondition("Target binary/UPID not found");
     return;
   }
 
@@ -436,18 +456,14 @@ StatusOr<stirlingpb::Publish> StirlingImpl::GetTracepointInfo(sole::uuid trace_i
 }
 
 Status StirlingImpl::RemoveTracepoint(sole::uuid trace_id) {
-  // Remove from map.
+  // Change the status of this trace to pending while we delete it.
   {
     absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
-    auto iter = dynamic_trace_status_map_.find(trace_id);
-    if (iter == dynamic_trace_status_map_.end()) {
-      return error::NotFound("Tracepoint $0 not found.", trace_id.str());
-    }
-    dynamic_trace_status_map_.erase(iter);
+    dynamic_trace_status_map_[trace_id] = error::ResourceUnavailable("Probe removal in progress.");
   }
 
-  // And actually remove from stirling.
-  PL_RETURN_IF_ERROR(RemoveSource(kDynTraceSourcePrefix + trace_id.str()));
+  auto t = std::thread(&StirlingImpl::DestroyDynamicTraceConnector, this, trace_id);
+  t.detach();
 
   return Status::OK();
 }

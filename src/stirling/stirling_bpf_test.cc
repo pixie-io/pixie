@@ -200,7 +200,7 @@ probes {
   stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
 
   s = WaitForStatus(trace_id);
-  EXPECT_EQ(s.code(), pl::statuspb::Code::NOT_FOUND);
+  EXPECT_EQ(s.code(), pl::statuspb::Code::FAILED_PRECONDITION);
 }
 
 TEST_F(StirlingBPFTest, DynamicTraceMissingSymbol) {
@@ -373,12 +373,13 @@ probes {
 
   ASSERT_OK(stirling_->RemoveTracepoint(trace_id));
 
-  // After removal, full publication go back to the original count.
+  // Should get removed.
+  EXPECT_EQ(WaitForStatus(trace_id).code(), pl::statuspb::Code::NOT_FOUND);
+
+  // After removal, full publication should go back to the original count.
   publication = {};
   stirling_->GetPublishProto(&publication);
   EXPECT_EQ(publication.published_info_classes_size(), original_num_info_classes);
-
-  EXPECT_EQ(stirling_->GetTracepointInfo(trace_id).code(), pl::statuspb::Code::NOT_FOUND);
 
   stirling_->Stop();
 
