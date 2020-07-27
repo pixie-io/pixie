@@ -18,6 +18,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/types"
 	"pixielabs.ai/pixielabs/src/utils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
+	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
@@ -35,7 +36,7 @@ type MetadataStore interface {
 	GetAgentsDataInfo() (map[uuid.UUID]*messagespb.AgentDataInfo, error)
 	GetAgentDataInfo(agentID uuid.UUID) (*messagespb.AgentDataInfo, error)
 	GetAgentsForHostnamePairs(*[]*HostnameIPPair) ([]string, error)
-	GetComputedSchemas() ([]*metadatapb.SchemaInfo, error)
+	GetComputedSchemas() ([]*storepb.TableInfo, error)
 	GetContainers() ([]*metadatapb.ContainerInfo, error)
 	GetEndpoints() ([]*metadatapb.Endpoints, error)
 	GetHostnameIPPairFromPodName(string, string) (*HostnameIPPair, error)
@@ -61,7 +62,7 @@ type MetadataStore interface {
 	UpdateNode(*metadatapb.Node, bool) error
 	UpdatePod(*metadatapb.Pod, bool) error
 	UpdateProcesses(processes []*metadatapb.ProcessInfo) error
-	UpdateSchemas(agentID uuid.UUID, schemas []*metadatapb.SchemaInfo) error
+	UpdateSchemas(agentID uuid.UUID, schemas []*storepb.TableInfo) error
 	UpdateService(*metadatapb.Service, bool) error
 	UpdateSubscriberResourceVersion(string, string) error
 }

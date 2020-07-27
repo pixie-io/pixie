@@ -12,6 +12,7 @@ import (
 	math_bits "math/bits"
 	proto2 "pixielabs.ai/pixielabs/src/common/base/proto"
 	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	proto3 "pixielabs.ai/pixielabs/src/shared/types/proto"
 	logical "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
 	reflect "reflect"
 	strings "strings"
@@ -162,9 +163,213 @@ func (m *AgentTracepointStatus) GetAgentID() *proto1.UUID {
 	return nil
 }
 
+type TableInfo struct {
+	Name             string                  `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	StartTimestampNS int64                   `protobuf:"varint,2,opt,name=start_timestamp_ns,json=startTimestampNs,proto3" json:"start_timestamp_ns,omitempty"`
+	StopTimestampNS  int64                   `protobuf:"varint,3,opt,name=stop_timestamp_ns,json=stopTimestampNs,proto3" json:"stop_timestamp_ns,omitempty"`
+	Columns          []*TableInfo_ColumnInfo `protobuf:"bytes,4,rep,name=columns,proto3" json:"columns,omitempty"`
+	Tabletized       bool                    `protobuf:"varint,5,opt,name=tabletized,proto3" json:"tabletized,omitempty"`
+	TabletizationKey string                  `protobuf:"bytes,6,opt,name=tabletization_key,json=tabletizationKey,proto3" json:"tabletization_key,omitempty"`
+}
+
+func (m *TableInfo) Reset()      { *m = TableInfo{} }
+func (*TableInfo) ProtoMessage() {}
+func (*TableInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_27ea71ea705227d1, []int{2}
+}
+func (m *TableInfo) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *TableInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_TableInfo.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *TableInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TableInfo.Merge(m, src)
+}
+func (m *TableInfo) XXX_Size() int {
+	return m.Size()
+}
+func (m *TableInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_TableInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TableInfo proto.InternalMessageInfo
+
+func (m *TableInfo) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *TableInfo) GetStartTimestampNS() int64 {
+	if m != nil {
+		return m.StartTimestampNS
+	}
+	return 0
+}
+
+func (m *TableInfo) GetStopTimestampNS() int64 {
+	if m != nil {
+		return m.StopTimestampNS
+	}
+	return 0
+}
+
+func (m *TableInfo) GetColumns() []*TableInfo_ColumnInfo {
+	if m != nil {
+		return m.Columns
+	}
+	return nil
+}
+
+func (m *TableInfo) GetTabletized() bool {
+	if m != nil {
+		return m.Tabletized
+	}
+	return false
+}
+
+func (m *TableInfo) GetTabletizationKey() string {
+	if m != nil {
+		return m.TabletizationKey
+	}
+	return ""
+}
+
+type TableInfo_ColumnInfo struct {
+	Name         string              `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	DataType     proto3.DataType     `protobuf:"varint,2,opt,name=data_type,json=dataType,proto3,enum=pl.types.DataType" json:"data_type,omitempty"`
+	PatternType  proto3.PatternType  `protobuf:"varint,3,opt,name=pattern_type,json=patternType,proto3,enum=pl.types.PatternType" json:"pattern_type,omitempty"`
+	Desc         string              `protobuf:"bytes,4,opt,name=desc,proto3" json:"desc,omitempty"`
+	SemanticType proto3.SemanticType `protobuf:"varint,5,opt,name=semantic_type,json=semanticType,proto3,enum=pl.types.SemanticType" json:"semantic_type,omitempty"`
+}
+
+func (m *TableInfo_ColumnInfo) Reset()      { *m = TableInfo_ColumnInfo{} }
+func (*TableInfo_ColumnInfo) ProtoMessage() {}
+func (*TableInfo_ColumnInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_27ea71ea705227d1, []int{2, 0}
+}
+func (m *TableInfo_ColumnInfo) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *TableInfo_ColumnInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_TableInfo_ColumnInfo.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *TableInfo_ColumnInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TableInfo_ColumnInfo.Merge(m, src)
+}
+func (m *TableInfo_ColumnInfo) XXX_Size() int {
+	return m.Size()
+}
+func (m *TableInfo_ColumnInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_TableInfo_ColumnInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TableInfo_ColumnInfo proto.InternalMessageInfo
+
+func (m *TableInfo_ColumnInfo) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *TableInfo_ColumnInfo) GetDataType() proto3.DataType {
+	if m != nil {
+		return m.DataType
+	}
+	return proto3.DATA_TYPE_UNKNOWN
+}
+
+func (m *TableInfo_ColumnInfo) GetPatternType() proto3.PatternType {
+	if m != nil {
+		return m.PatternType
+	}
+	return proto3.UNSPECIFIED
+}
+
+func (m *TableInfo_ColumnInfo) GetDesc() string {
+	if m != nil {
+		return m.Desc
+	}
+	return ""
+}
+
+func (m *TableInfo_ColumnInfo) GetSemanticType() proto3.SemanticType {
+	if m != nil {
+		return m.SemanticType
+	}
+	return proto3.ST_UNSPECIFIED
+}
+
+type ComputedSchema struct {
+	Tables []*TableInfo `protobuf:"bytes,1,rep,name=tables,proto3" json:"tables,omitempty"`
+}
+
+func (m *ComputedSchema) Reset()      { *m = ComputedSchema{} }
+func (*ComputedSchema) ProtoMessage() {}
+func (*ComputedSchema) Descriptor() ([]byte, []int) {
+	return fileDescriptor_27ea71ea705227d1, []int{3}
+}
+func (m *ComputedSchema) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ComputedSchema) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ComputedSchema.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ComputedSchema) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ComputedSchema.Merge(m, src)
+}
+func (m *ComputedSchema) XXX_Size() int {
+	return m.Size()
+}
+func (m *ComputedSchema) XXX_DiscardUnknown() {
+	xxx_messageInfo_ComputedSchema.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ComputedSchema proto.InternalMessageInfo
+
+func (m *ComputedSchema) GetTables() []*TableInfo {
+	if m != nil {
+		return m.Tables
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*TracepointInfo)(nil), "pl.vizier.services.metadata.TracepointInfo")
 	proto.RegisterType((*AgentTracepointStatus)(nil), "pl.vizier.services.metadata.AgentTracepointStatus")
+	proto.RegisterType((*TableInfo)(nil), "pl.vizier.services.metadata.TableInfo")
+	proto.RegisterType((*TableInfo_ColumnInfo)(nil), "pl.vizier.services.metadata.TableInfo.ColumnInfo")
+	proto.RegisterType((*ComputedSchema)(nil), "pl.vizier.services.metadata.ComputedSchema")
 }
 
 func init() {
@@ -172,39 +377,57 @@ func init() {
 }
 
 var fileDescriptor_27ea71ea705227d1 = []byte{
-	// 499 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x93, 0x4f, 0x6f, 0xd3, 0x3e,
-	0x1c, 0xc6, 0xe3, 0x6d, 0xbf, 0xf5, 0x87, 0xb7, 0x75, 0x28, 0x08, 0xa9, 0xda, 0x24, 0xaf, 0xea,
-	0x85, 0x4a, 0x08, 0x1b, 0xc6, 0x81, 0x03, 0x27, 0xba, 0x0a, 0x29, 0x12, 0x42, 0x28, 0x63, 0x17,
-	0x2e, 0x95, 0xe3, 0xb8, 0xc1, 0x52, 0x12, 0x5b, 0x8e, 0x33, 0xad, 0x9c, 0x78, 0x09, 0x7b, 0x19,
-	0xbc, 0x14, 0x8e, 0x3d, 0xee, 0x34, 0xd1, 0xf4, 0xc2, 0x71, 0x47, 0x8e, 0xc8, 0x71, 0xb2, 0x96,
-	0x3f, 0x12, 0x88, 0x93, 0xfd, 0xb5, 0x9e, 0xcf, 0xd3, 0xe7, 0xfb, 0xa8, 0x81, 0x8f, 0x0b, 0xcd,
-	0xc8, 0xb9, 0xf8, 0x20, 0xb8, 0x26, 0x05, 0xd7, 0xe7, 0x82, 0xf1, 0x82, 0x64, 0xdc, 0xd0, 0x98,
-	0x1a, 0x4a, 0x0a, 0x23, 0x35, 0x57, 0x91, 0x3b, 0xb1, 0xd2, 0xd2, 0x48, 0xff, 0x50, 0xa5, 0xd8,
-	0x01, 0xb8, 0x05, 0x70, 0x0b, 0x1c, 0x0c, 0xac, 0x1d, 0x93, 0x59, 0x26, 0x73, 0x12, 0xd1, 0x82,
-	0x93, 0x9a, 0x21, 0x85, 0xa1, 0xa6, 0x2c, 0x9c, 0xc1, 0xc1, 0xa3, 0x44, 0x98, 0xf7, 0x65, 0x84,
-	0x99, 0xcc, 0x48, 0x22, 0x13, 0xe9, 0x34, 0x51, 0x39, 0xad, 0x27, 0x07, 0xd8, 0x5b, 0x2b, 0xb7,
-	0x96, 0x85, 0x11, 0x3a, 0x15, 0x79, 0x42, 0xe2, 0x59, 0x4e, 0x33, 0xc1, 0x26, 0x46, 0x53, 0x66,
-	0x67, 0xa1, 0x49, 0x2a, 0x13, 0xc1, 0x68, 0xda, 0xc8, 0xfb, 0x6b, 0x09, 0xca, 0x52, 0xc4, 0x4d,
-	0x02, 0x7b, 0x75, 0x8a, 0xc1, 0xe5, 0x06, 0xec, 0xbe, 0xd5, 0x94, 0x71, 0x25, 0x45, 0x6e, 0x82,
-	0x7c, 0x2a, 0xfd, 0x97, 0x70, 0xcf, 0xdc, 0xbe, 0x4c, 0x44, 0xdc, 0x03, 0x7d, 0x30, 0xdc, 0x39,
-	0xde, 0xc7, 0x2a, 0xc5, 0x96, 0x54, 0x11, 0x3e, 0x3b, 0x0b, 0xc6, 0xa3, 0xbb, 0xd5, 0xf5, 0xd1,
-	0xee, 0x1a, 0x3b, 0x0e, 0x77, 0x57, 0x5c, 0x10, 0xfb, 0x01, 0xec, 0x28, 0x2d, 0x13, 0x4d, 0xb3,
-	0xde, 0x46, 0xed, 0x40, 0xac, 0x43, 0x1b, 0x1e, 0xff, 0x14, 0x1e, 0x0b, 0x8d, 0xdb, 0xf0, 0x6f,
-	0x1c, 0x16, 0xb6, 0xbc, 0xff, 0x00, 0xee, 0xaf, 0x45, 0xca, 0x69, 0xc6, 0x7b, 0x9b, 0x7d, 0x30,
-	0xbc, 0x13, 0x76, 0x57, 0xcf, 0xaf, 0x69, 0xc6, 0xfd, 0x11, 0xec, 0xf2, 0x0b, 0xc5, 0x99, 0xe1,
-	0xf1, 0xc4, 0xf6, 0xcc, 0x7b, 0x5b, 0x7d, 0x30, 0xec, 0x1e, 0x1f, 0xba, 0x9f, 0xb6, 0xc5, 0xab,
-	0x08, 0xbf, 0x12, 0x53, 0x7e, 0x32, 0x63, 0x29, 0x3f, 0xb5, 0x92, 0x70, 0xaf, 0x45, 0xea, 0x71,
-	0xf0, 0x0d, 0xc0, 0xfb, 0x2f, 0x12, 0x9e, 0x9b, 0xd5, 0x6e, 0xa7, 0x35, 0xe9, 0x3f, 0x81, 0xff,
-	0x39, 0x53, 0xf0, 0x67, 0x53, 0xa7, 0xf4, 0x1f, 0xc2, 0x6d, 0xa7, 0x68, 0x3a, 0xb8, 0xf7, 0x03,
-	0xe3, 0x7c, 0xc3, 0x46, 0xf2, 0x6b, 0xf3, 0x9b, 0xff, 0xd6, 0xfc, 0x33, 0xf8, 0x3f, 0xb5, 0x0b,
-	0x58, 0x8b, 0xad, 0xdf, 0x5b, 0xec, 0x54, 0xd7, 0x47, 0x9d, 0x7a, 0xcb, 0x60, 0x1c, 0x76, 0x6a,
-	0x75, 0x10, 0x8f, 0x66, 0xf3, 0x05, 0xf2, 0xae, 0x16, 0xc8, 0xbb, 0x59, 0x20, 0xf0, 0xb1, 0x42,
-	0xe0, 0x53, 0x85, 0xc0, 0xe7, 0x0a, 0x81, 0x79, 0x85, 0xc0, 0x97, 0x0a, 0x81, 0xaf, 0x15, 0xf2,
-	0x6e, 0x2a, 0x04, 0x2e, 0x97, 0xc8, 0x9b, 0x2f, 0x91, 0x77, 0xb5, 0x44, 0xde, 0xbb, 0x13, 0x25,
-	0x2e, 0x04, 0x4f, 0x69, 0x54, 0x60, 0x2a, 0xc8, 0xed, 0x40, 0xfe, 0xe6, 0x6b, 0x7a, 0xde, 0x9c,
-	0xd1, 0x76, 0xfd, 0x7f, 0x7c, 0xfa, 0x3d, 0x00, 0x00, 0xff, 0xff, 0x7a, 0x7e, 0x87, 0x82, 0x84,
-	0x03, 0x00, 0x00,
+	// 792 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x54, 0x4f, 0x8f, 0x1b, 0x35,
+	0x14, 0x8f, 0x9b, 0x6c, 0xb2, 0x71, 0xb2, 0x49, 0xea, 0x52, 0x34, 0xda, 0x4a, 0x93, 0x28, 0x07,
+	0x88, 0x54, 0xe1, 0xa1, 0xe1, 0x00, 0x52, 0x25, 0x10, 0x49, 0x84, 0x14, 0x15, 0x55, 0xab, 0x49,
+	0x7a, 0xe1, 0x12, 0x79, 0x66, 0xbc, 0x59, 0x8b, 0x99, 0xb1, 0x35, 0x76, 0xaa, 0xa6, 0x27, 0x3e,
+	0x42, 0xbf, 0x00, 0x77, 0x3e, 0x0a, 0xc7, 0x3d, 0xf6, 0x80, 0x22, 0x76, 0xf6, 0xc2, 0xb1, 0x47,
+	0x8e, 0xc8, 0xf6, 0xcc, 0x26, 0x81, 0x0a, 0x2a, 0x4e, 0xf3, 0xfe, 0xfc, 0x7e, 0x3f, 0xbf, 0xf7,
+	0x3c, 0xcf, 0xf0, 0x73, 0x99, 0x85, 0xde, 0x4b, 0xf6, 0x9a, 0xd1, 0xcc, 0x93, 0x34, 0x7b, 0xc9,
+	0x42, 0x2a, 0xbd, 0x84, 0x2a, 0x12, 0x11, 0x45, 0x3c, 0xa9, 0x78, 0x46, 0x45, 0x60, 0xbf, 0x58,
+	0x64, 0x5c, 0x71, 0xf4, 0x48, 0xc4, 0xd8, 0x12, 0x70, 0x49, 0xc0, 0x25, 0xe1, 0x7c, 0xa8, 0xe5,
+	0x42, 0x9e, 0x24, 0x3c, 0xf5, 0x02, 0x22, 0xa9, 0x67, 0x38, 0x9e, 0x54, 0x44, 0x6d, 0xa4, 0x15,
+	0x38, 0xff, 0x6c, 0xcd, 0xd4, 0xd5, 0x26, 0xc0, 0x21, 0x4f, 0xbc, 0x35, 0x5f, 0x73, 0x8b, 0x09,
+	0x36, 0x97, 0xc6, 0xb3, 0x04, 0x6d, 0x95, 0x70, 0x2d, 0x29, 0x15, 0xcb, 0x62, 0x96, 0xae, 0xbd,
+	0x68, 0x9b, 0x92, 0x84, 0x85, 0x2b, 0x95, 0x91, 0x50, 0xfb, 0x2c, 0xf3, 0x62, 0xbe, 0x66, 0x21,
+	0x89, 0x0b, 0xf8, 0xe0, 0xa0, 0x82, 0xcd, 0x86, 0x45, 0x45, 0x05, 0xda, 0x2c, 0x10, 0xa6, 0x46,
+	0x79, 0x45, 0x32, 0x1a, 0x79, 0x6a, 0x2b, 0xa8, 0x2c, 0x20, 0xc6, 0xb6, 0x98, 0xe1, 0x9b, 0x7b,
+	0xb0, 0xb3, 0xcc, 0x48, 0x48, 0x05, 0x67, 0xa9, 0x9a, 0xa7, 0x97, 0x1c, 0x7d, 0x07, 0xcf, 0xd4,
+	0x5d, 0x64, 0xc5, 0x22, 0x07, 0x0c, 0xc0, 0xa8, 0x35, 0xee, 0x62, 0x11, 0x63, 0xad, 0x2e, 0x02,
+	0xfc, 0xe2, 0xc5, 0x7c, 0x36, 0xe9, 0xe5, 0xbb, 0x7e, 0xfb, 0x80, 0x3b, 0xf3, 0xdb, 0x7b, 0xde,
+	0x3c, 0x42, 0x73, 0xd8, 0x10, 0x19, 0x5f, 0x67, 0x24, 0x71, 0xee, 0x19, 0x05, 0x4f, 0x2b, 0x94,
+	0x0d, 0xe2, 0xbf, 0x35, 0x88, 0x59, 0x86, 0xcb, 0x06, 0x2f, 0x2c, 0xcd, 0x2f, 0xf9, 0xe8, 0x53,
+	0xd8, 0x3d, 0x28, 0x29, 0x25, 0x09, 0x75, 0xaa, 0x03, 0x30, 0x6a, 0xfa, 0x9d, 0x7d, 0xf8, 0x39,
+	0x49, 0x28, 0x9a, 0xc0, 0x0e, 0x7d, 0x25, 0x68, 0xa8, 0x68, 0xb4, 0xd2, 0x77, 0x41, 0x9d, 0xda,
+	0x00, 0x8c, 0x3a, 0xe3, 0x47, 0xf6, 0x68, 0x7d, 0x39, 0x22, 0xc0, 0xdf, 0xb3, 0x4b, 0x3a, 0xdd,
+	0x86, 0x31, 0x5d, 0x68, 0x88, 0x7f, 0x56, 0x52, 0x8c, 0x3b, 0xfc, 0x13, 0xc0, 0x87, 0xdf, 0xae,
+	0x69, 0xaa, 0xf6, 0xbd, 0x2d, 0x0c, 0x13, 0x3d, 0x81, 0x27, 0x56, 0x14, 0xfc, 0xb7, 0xa8, 0x45,
+	0xa2, 0xc7, 0xb0, 0x6e, 0x11, 0xc5, 0x0c, 0x1e, 0x1c, 0x71, 0xac, 0xae, 0x5f, 0x40, 0xfe, 0x39,
+	0xf9, 0xea, 0xff, 0x9b, 0xfc, 0x97, 0xf0, 0x94, 0xe8, 0x06, 0xb4, 0x44, 0xed, 0xfd, 0x12, 0xad,
+	0x7c, 0xd7, 0x6f, 0x98, 0x2e, 0xe7, 0x33, 0xbf, 0x61, 0xd0, 0xf3, 0x68, 0xf8, 0x73, 0x0d, 0x36,
+	0x97, 0x24, 0x88, 0xa9, 0xf9, 0x11, 0x10, 0xac, 0x99, 0x51, 0x03, 0x33, 0x6a, 0x63, 0xa3, 0x09,
+	0x44, 0x52, 0x91, 0x4c, 0xad, 0x14, 0x4b, 0xa8, 0x54, 0x24, 0x11, 0xab, 0xd4, 0xf6, 0x56, 0x9d,
+	0x7c, 0x94, 0xef, 0xfa, 0xbd, 0x85, 0xce, 0x2e, 0xcb, 0xe4, 0xf3, 0x85, 0xdf, 0x93, 0xc7, 0x11,
+	0x89, 0xbe, 0x81, 0xf7, 0xa5, 0xe2, 0xe2, 0x58, 0xa2, 0x6a, 0x24, 0x1e, 0xe4, 0xbb, 0x7e, 0x77,
+	0xa1, 0xb8, 0x38, 0x54, 0xe8, 0xca, 0xa3, 0x80, 0x44, 0xcf, 0x60, 0x23, 0xe4, 0xf1, 0x26, 0x49,
+	0xa5, 0x53, 0x1b, 0x54, 0x47, 0xad, 0xf1, 0x13, 0xfc, 0x2f, 0xbb, 0x8a, 0xef, 0x3a, 0xc2, 0x53,
+	0xc3, 0xd2, 0xa6, 0x5f, 0x2a, 0x20, 0x17, 0x42, 0xa5, 0x01, 0x8a, 0xbd, 0xa6, 0x91, 0x73, 0x32,
+	0x00, 0xa3, 0x53, 0xff, 0x20, 0x82, 0x1e, 0xc3, 0xfb, 0xa5, 0x47, 0x14, 0xe3, 0xe9, 0xea, 0x47,
+	0xba, 0x75, 0xea, 0x66, 0x24, 0xbd, 0xa3, 0xc4, 0x33, 0xba, 0x3d, 0xff, 0x0d, 0x40, 0xb8, 0x3f,
+	0xe4, 0xbd, 0x13, 0xf4, 0x60, 0x53, 0x57, 0xb5, 0xd2, 0x5b, 0x68, 0x06, 0xd7, 0x19, 0x23, 0x5d,
+	0xbe, 0xdd, 0xca, 0x19, 0x51, 0x64, 0xb9, 0x15, 0xd4, 0x3f, 0x8d, 0x0a, 0x0b, 0x7d, 0x05, 0xdb,
+	0x82, 0x28, 0x45, 0xb3, 0xd4, 0x72, 0xaa, 0x86, 0xf3, 0x70, 0xcf, 0xb9, 0xb0, 0x59, 0x43, 0x6b,
+	0x89, 0xbd, 0xa3, 0x8f, 0x8f, 0xa8, 0x0c, 0xcd, 0x3f, 0xd0, 0xf4, 0x8d, 0x8d, 0x9e, 0xc2, 0x33,
+	0x49, 0x13, 0x92, 0x2a, 0xbd, 0x7a, 0x5a, 0xee, 0xc4, 0xc8, 0x7d, 0xbc, 0x97, 0x5b, 0x14, 0x69,
+	0xa3, 0xd7, 0x96, 0x07, 0xde, 0xf0, 0x02, 0x76, 0xa6, 0x3c, 0x11, 0x1b, 0xbd, 0x2b, 0xe1, 0x15,
+	0x4d, 0x08, 0xfa, 0x1a, 0xd6, 0xcd, 0x10, 0xa4, 0x03, 0xcc, 0x4d, 0x7c, 0xf2, 0x61, 0x37, 0xe1,
+	0x17, 0xac, 0xc9, 0xf6, 0xfa, 0xc6, 0xad, 0xbc, 0xbd, 0x71, 0x2b, 0xef, 0x6e, 0x5c, 0xf0, 0x53,
+	0xee, 0x82, 0x5f, 0x72, 0x17, 0xfc, 0x9a, 0xbb, 0xe0, 0x3a, 0x77, 0xc1, 0xef, 0xb9, 0x0b, 0xfe,
+	0xc8, 0xdd, 0xca, 0xbb, 0xdc, 0x05, 0x6f, 0x6e, 0xdd, 0xca, 0xf5, 0xad, 0x5b, 0x79, 0x7b, 0xeb,
+	0x56, 0x7e, 0x98, 0x0a, 0xf6, 0x8a, 0xd1, 0x98, 0x04, 0x12, 0x13, 0xe6, 0xdd, 0x39, 0xde, 0x87,
+	0xbc, 0xf1, 0x4f, 0x8b, 0x6f, 0x50, 0x37, 0x2f, 0xe0, 0x17, 0x7f, 0x05, 0x00, 0x00, 0xff, 0xff,
+	0x32, 0x44, 0x52, 0x71, 0x1a, 0x06, 0x00, 0x00,
 }
 
 func (this *TracepointInfo) Equal(that interface{}) bool {
@@ -273,6 +496,115 @@ func (this *AgentTracepointStatus) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *TableInfo) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*TableInfo)
+	if !ok {
+		that2, ok := that.(TableInfo)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.StartTimestampNS != that1.StartTimestampNS {
+		return false
+	}
+	if this.StopTimestampNS != that1.StopTimestampNS {
+		return false
+	}
+	if len(this.Columns) != len(that1.Columns) {
+		return false
+	}
+	for i := range this.Columns {
+		if !this.Columns[i].Equal(that1.Columns[i]) {
+			return false
+		}
+	}
+	if this.Tabletized != that1.Tabletized {
+		return false
+	}
+	if this.TabletizationKey != that1.TabletizationKey {
+		return false
+	}
+	return true
+}
+func (this *TableInfo_ColumnInfo) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*TableInfo_ColumnInfo)
+	if !ok {
+		that2, ok := that.(TableInfo_ColumnInfo)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.DataType != that1.DataType {
+		return false
+	}
+	if this.PatternType != that1.PatternType {
+		return false
+	}
+	if this.Desc != that1.Desc {
+		return false
+	}
+	if this.SemanticType != that1.SemanticType {
+		return false
+	}
+	return true
+}
+func (this *ComputedSchema) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ComputedSchema)
+	if !ok {
+		that2, ok := that.(ComputedSchema)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Tables) != len(that1.Tables) {
+		return false
+	}
+	for i := range this.Tables {
+		if !this.Tables[i].Equal(that1.Tables[i]) {
+			return false
+		}
+	}
+	return true
+}
 func (this *TracepointInfo) GoString() string {
 	if this == nil {
 		return "nil"
@@ -305,6 +637,49 @@ func (this *AgentTracepointStatus) GoString() string {
 	}
 	if this.AgentID != nil {
 		s = append(s, "AgentID: "+fmt.Sprintf("%#v", this.AgentID)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *TableInfo) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 10)
+	s = append(s, "&storepb.TableInfo{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "StartTimestampNS: "+fmt.Sprintf("%#v", this.StartTimestampNS)+",\n")
+	s = append(s, "StopTimestampNS: "+fmt.Sprintf("%#v", this.StopTimestampNS)+",\n")
+	if this.Columns != nil {
+		s = append(s, "Columns: "+fmt.Sprintf("%#v", this.Columns)+",\n")
+	}
+	s = append(s, "Tabletized: "+fmt.Sprintf("%#v", this.Tabletized)+",\n")
+	s = append(s, "TabletizationKey: "+fmt.Sprintf("%#v", this.TabletizationKey)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *TableInfo_ColumnInfo) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 9)
+	s = append(s, "&storepb.TableInfo_ColumnInfo{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "DataType: "+fmt.Sprintf("%#v", this.DataType)+",\n")
+	s = append(s, "PatternType: "+fmt.Sprintf("%#v", this.PatternType)+",\n")
+	s = append(s, "Desc: "+fmt.Sprintf("%#v", this.Desc)+",\n")
+	s = append(s, "SemanticType: "+fmt.Sprintf("%#v", this.SemanticType)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ComputedSchema) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&storepb.ComputedSchema{")
+	if this.Tables != nil {
+		s = append(s, "Tables: "+fmt.Sprintf("%#v", this.Tables)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -440,6 +815,166 @@ func (m *AgentTracepointStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *TableInfo) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *TableInfo) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *TableInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.TabletizationKey) > 0 {
+		i -= len(m.TabletizationKey)
+		copy(dAtA[i:], m.TabletizationKey)
+		i = encodeVarintStore(dAtA, i, uint64(len(m.TabletizationKey)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if m.Tabletized {
+		i--
+		if m.Tabletized {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x28
+	}
+	if len(m.Columns) > 0 {
+		for iNdEx := len(m.Columns) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Columns[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintStore(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if m.StopTimestampNS != 0 {
+		i = encodeVarintStore(dAtA, i, uint64(m.StopTimestampNS))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.StartTimestampNS != 0 {
+		i = encodeVarintStore(dAtA, i, uint64(m.StartTimestampNS))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintStore(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *TableInfo_ColumnInfo) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *TableInfo_ColumnInfo) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *TableInfo_ColumnInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.SemanticType != 0 {
+		i = encodeVarintStore(dAtA, i, uint64(m.SemanticType))
+		i--
+		dAtA[i] = 0x28
+	}
+	if len(m.Desc) > 0 {
+		i -= len(m.Desc)
+		copy(dAtA[i:], m.Desc)
+		i = encodeVarintStore(dAtA, i, uint64(len(m.Desc)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.PatternType != 0 {
+		i = encodeVarintStore(dAtA, i, uint64(m.PatternType))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.DataType != 0 {
+		i = encodeVarintStore(dAtA, i, uint64(m.DataType))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintStore(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ComputedSchema) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ComputedSchema) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ComputedSchema) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Tables) > 0 {
+		for iNdEx := len(m.Tables) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Tables[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintStore(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintStore(dAtA []byte, offset int, v uint64) int {
 	offset -= sovStore(v)
 	base := offset
@@ -499,6 +1034,79 @@ func (m *AgentTracepointStatus) Size() (n int) {
 	return n
 }
 
+func (m *TableInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.StartTimestampNS != 0 {
+		n += 1 + sovStore(uint64(m.StartTimestampNS))
+	}
+	if m.StopTimestampNS != 0 {
+		n += 1 + sovStore(uint64(m.StopTimestampNS))
+	}
+	if len(m.Columns) > 0 {
+		for _, e := range m.Columns {
+			l = e.Size()
+			n += 1 + l + sovStore(uint64(l))
+		}
+	}
+	if m.Tabletized {
+		n += 2
+	}
+	l = len(m.TabletizationKey)
+	if l > 0 {
+		n += 1 + l + sovStore(uint64(l))
+	}
+	return n
+}
+
+func (m *TableInfo_ColumnInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.DataType != 0 {
+		n += 1 + sovStore(uint64(m.DataType))
+	}
+	if m.PatternType != 0 {
+		n += 1 + sovStore(uint64(m.PatternType))
+	}
+	l = len(m.Desc)
+	if l > 0 {
+		n += 1 + l + sovStore(uint64(l))
+	}
+	if m.SemanticType != 0 {
+		n += 1 + sovStore(uint64(m.SemanticType))
+	}
+	return n
+}
+
+func (m *ComputedSchema) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Tables) > 0 {
+		for _, e := range m.Tables {
+			l = e.Size()
+			n += 1 + l + sovStore(uint64(l))
+		}
+	}
+	return n
+}
+
 func sovStore(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
@@ -527,6 +1135,55 @@ func (this *AgentTracepointStatus) String() string {
 		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto2.Status", 1) + `,`,
 		`TracepointID:` + strings.Replace(fmt.Sprintf("%v", this.TracepointID), "UUID", "proto1.UUID", 1) + `,`,
 		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto1.UUID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *TableInfo) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForColumns := "[]*TableInfo_ColumnInfo{"
+	for _, f := range this.Columns {
+		repeatedStringForColumns += strings.Replace(fmt.Sprintf("%v", f), "TableInfo_ColumnInfo", "TableInfo_ColumnInfo", 1) + ","
+	}
+	repeatedStringForColumns += "}"
+	s := strings.Join([]string{`&TableInfo{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`StartTimestampNS:` + fmt.Sprintf("%v", this.StartTimestampNS) + `,`,
+		`StopTimestampNS:` + fmt.Sprintf("%v", this.StopTimestampNS) + `,`,
+		`Columns:` + repeatedStringForColumns + `,`,
+		`Tabletized:` + fmt.Sprintf("%v", this.Tabletized) + `,`,
+		`TabletizationKey:` + fmt.Sprintf("%v", this.TabletizationKey) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *TableInfo_ColumnInfo) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&TableInfo_ColumnInfo{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`DataType:` + fmt.Sprintf("%v", this.DataType) + `,`,
+		`PatternType:` + fmt.Sprintf("%v", this.PatternType) + `,`,
+		`Desc:` + fmt.Sprintf("%v", this.Desc) + `,`,
+		`SemanticType:` + fmt.Sprintf("%v", this.SemanticType) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ComputedSchema) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForTables := "[]*TableInfo{"
+	for _, f := range this.Tables {
+		repeatedStringForTables += strings.Replace(f.String(), "TableInfo", "TableInfo", 1) + ","
+	}
+	repeatedStringForTables += "}"
+	s := strings.Join([]string{`&ComputedSchema{`,
+		`Tables:` + repeatedStringForTables + `,`,
 		`}`,
 	}, "")
 	return s
@@ -868,6 +1525,476 @@ func (m *AgentTracepointStatus) Unmarshal(dAtA []byte) error {
 				m.AgentID = &proto1.UUID{}
 			}
 			if err := m.AgentID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *TableInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: TableInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: TableInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthStore
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StartTimestampNS", wireType)
+			}
+			m.StartTimestampNS = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.StartTimestampNS |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StopTimestampNS", wireType)
+			}
+			m.StopTimestampNS = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.StopTimestampNS |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Columns", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthStore
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Columns = append(m.Columns, &TableInfo_ColumnInfo{})
+			if err := m.Columns[len(m.Columns)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Tabletized", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Tabletized = bool(v != 0)
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TabletizationKey", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthStore
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TabletizationKey = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *TableInfo_ColumnInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ColumnInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ColumnInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthStore
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DataType", wireType)
+			}
+			m.DataType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.DataType |= proto3.DataType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PatternType", wireType)
+			}
+			m.PatternType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.PatternType |= proto3.PatternType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Desc", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthStore
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Desc = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SemanticType", wireType)
+			}
+			m.SemanticType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SemanticType |= proto3.SemanticType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStore(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthStore
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ComputedSchema) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStore
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ComputedSchema: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ComputedSchema: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Tables", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthStore
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Tables = append(m.Tables, &TableInfo{})
+			if err := m.Tables[len(m.Tables)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

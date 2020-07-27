@@ -512,8 +512,8 @@ func (mds *KVMetadataStore) GetASID() (uint32, error) {
 /* =============== Schema Operations ============== */
 
 // UpdateSchemas updates the given schemas in the metadata store.
-func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*metadatapb.SchemaInfo) error {
-	computedSchemaPb := metadatapb.ComputedSchema{
+func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.TableInfo) error {
+	computedSchemaPb := storepb.ComputedSchema{
 		Tables: schemas,
 	}
 	computedSchema, err := computedSchemaPb.Marshal()
@@ -538,7 +538,7 @@ func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*metadata
 }
 
 // GetComputedSchemas gets all computed schemas in the metadata store.
-func (mds *KVMetadataStore) GetComputedSchemas() ([]*metadatapb.SchemaInfo, error) {
+func (mds *KVMetadataStore) GetComputedSchemas() ([]*storepb.TableInfo, error) {
 	cSchemas, err := mds.cache.Get(getComputedSchemasKey())
 	if err != nil {
 		return nil, err
@@ -547,7 +547,7 @@ func (mds *KVMetadataStore) GetComputedSchemas() ([]*metadatapb.SchemaInfo, erro
 		return nil, fmt.Errorf("Could not find any computed schemas")
 	}
 
-	computedSchemaPb := &metadatapb.ComputedSchema{}
+	computedSchemaPb := &storepb.ComputedSchema{}
 	err = proto.Unmarshal(cSchemas, computedSchemaPb)
 	if err != nil {
 		return nil, err

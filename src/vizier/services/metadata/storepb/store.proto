@@ -6,6 +6,7 @@ import "src/common/base/proto/status.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/stirling/dynamic_tracing/ir/logical.proto";
 import "src/common/uuid/proto/uuid.proto";
+import "src/shared/types/proto/types.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb;storepb";
 
@@ -32,4 +33,43 @@ message AgentTracepointStatus {
   pl.statuspb.Status status = 2;
   uuidpb.UUID tracepoint_id = 3 [ (gogoproto.customname) = "TracepointID" ];
   uuidpb.UUID agent_id = 4 [ (gogoproto.customname) = "AgentID" ];
+}
+
+// TableInfo contains info about the table in Vizier.
+message TableInfo {
+  // Name of the table.
+  string name = 1;
+
+  // TODO need to move this information to a different message, no need to couple it with ColumnInfo.
+  // Maybe in DataInfo?
+  // The server unix time in nanoseconds when the schema was available.
+  int64 start_timestamp_ns = 2 [
+                  (gogoproto.customname) = "StartTimestampNS"
+                  ];
+
+  // The unix time in nanoseconds when the schema stopped being available. It will be 0 if there is no stop time.
+  int64 stop_timestamp_ns = 3 [
+                  (gogoproto.customname) = "StopTimestampNS"
+                  ];
+
+  message ColumnInfo {
+    string name = 1;
+    pl.types.DataType data_type = 2;
+    pl.types.PatternType pattern_type = 3;
+    // The description of this column.
+    string desc = 4;
+    pl.types.SemanticType semantic_type = 5;
+  }
+  // The column info of the schema.
+  repeated ColumnInfo columns = 4;
+  // Whether the table referenced by this schema is tabletized.
+  bool tabletized = 5;
+  // The tabletization key of this schema.
+  string tabletization_key = 6;
+}
+
+
+// ComputedSchema describes the schema available on Vizier.
+message ComputedSchema {
+  repeated TableInfo tables = 1;
 }

@@ -15,7 +15,6 @@ import (
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	bloomfilterpb "pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
-	k8smetadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	sharedmetadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	logicalpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
@@ -153,36 +152,36 @@ func TestGetSchemas(t *testing.T) {
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 
-	schemaInfos := make([]*k8smetadatapb.SchemaInfo, 2)
+	schemaInfos := make([]*storepb.TableInfo, 2)
 
-	schema1Cols := make([]*k8smetadatapb.SchemaInfo_ColumnInfo, 3)
-	schema1Cols[0] = &k8smetadatapb.SchemaInfo_ColumnInfo{
+	schema1Cols := make([]*storepb.TableInfo_ColumnInfo, 3)
+	schema1Cols[0] = &storepb.TableInfo_ColumnInfo{
 		Name:     "t1Col1",
 		DataType: 2,
 	}
-	schema1Cols[1] = &k8smetadatapb.SchemaInfo_ColumnInfo{
+	schema1Cols[1] = &storepb.TableInfo_ColumnInfo{
 		Name:     "t1Col2",
 		DataType: 1,
 	}
-	schema1Cols[2] = &k8smetadatapb.SchemaInfo_ColumnInfo{
+	schema1Cols[2] = &storepb.TableInfo_ColumnInfo{
 		Name:     "t1Col3",
 		DataType: 3,
 	}
-	schemaInfos[0] = &k8smetadatapb.SchemaInfo{
+	schemaInfos[0] = &storepb.TableInfo{
 		Name:    "table1",
 		Columns: schema1Cols,
 	}
 
-	schema2Cols := make([]*k8smetadatapb.SchemaInfo_ColumnInfo, 2)
-	schema2Cols[0] = &k8smetadatapb.SchemaInfo_ColumnInfo{
+	schema2Cols := make([]*storepb.TableInfo_ColumnInfo, 2)
+	schema2Cols[0] = &storepb.TableInfo_ColumnInfo{
 		Name:     "t2Col1",
 		DataType: 1,
 	}
-	schema2Cols[1] = &k8smetadatapb.SchemaInfo_ColumnInfo{
+	schema2Cols[1] = &storepb.TableInfo_ColumnInfo{
 		Name:     "t2Col2",
 		DataType: 3,
 	}
-	schemaInfos[1] = &k8smetadatapb.SchemaInfo{
+	schemaInfos[1] = &storepb.TableInfo{
 		Name:    "table2",
 		Columns: schema2Cols,
 	}
@@ -262,11 +261,11 @@ func TestGetAgentTableMetadata(t *testing.T) {
 	agent2ID, err := uuid.FromString("21285cdd-1de9-4ab1-ae6a-0ba08c8c676c")
 	require.Nil(t, err)
 
-	schemaInfos := []*k8smetadatapb.SchemaInfo{
-		&k8smetadatapb.SchemaInfo{
+	schemaInfos := []*storepb.TableInfo{
+		&storepb.TableInfo{
 			Name: "table1",
-			Columns: []*k8smetadatapb.SchemaInfo_ColumnInfo{
-				&k8smetadatapb.SchemaInfo_ColumnInfo{
+			Columns: []*storepb.TableInfo_ColumnInfo{
+				&storepb.TableInfo_ColumnInfo{
 					Name:     "t1Col1",
 					DataType: 1,
 				},

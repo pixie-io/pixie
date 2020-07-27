@@ -436,43 +436,6 @@ message ProcessInfo {
                   ];
 }
 
-// TODO(michelle/philkuz/zasgar) rename SchemaInfo because this refers more to a single relation.
-// SchemaInfo contains info for a schema that is available on an agent or agents.
-message SchemaInfo {
-  // Name of the table.
-  string name = 1;
-
-  // The server unix time in nanoseconds when the schema was available.
-  int64 start_timestamp_ns = 2 [
-                  (gogoproto.customname) = "StartTimestampNS"
-                  ];
-
-  // The unix time in nanoseconds when the schema stopped being available. It will be 0 if there is no stop time.
-  int64 stop_timestamp_ns = 3 [
-                  (gogoproto.customname) = "StopTimestampNS"
-                  ];
-
-  message ColumnInfo {
-    string name = 1;
-    pl.types.DataType data_type = 2;
-    pl.types.PatternType pattern_type = 3;
-    // The description of this column.
-    string desc = 4;
-    pl.types.SemanticType semantic_type = 5;
-  }
-  // The column info of the schema.
-  repeated ColumnInfo columns = 4;
-  // Whether the table referenced by this schema is tabletized.
-  bool tabletized = 5;
-  // The tabletization key of this schema.
-  string tabletization_key = 6;
-}
-
-message ComputedSchema {
-  repeated SchemaInfo tables = 1;
-}
-
-
 // PodUpdate contains updated information about a Pod on K8s.
 message PodUpdate {
   // The UID is a unique identifier in both space and time.

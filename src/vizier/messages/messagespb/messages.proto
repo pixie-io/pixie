@@ -8,6 +8,7 @@ import "src/carnot/planpb/plan.proto";
 import "src/common/uuid/proto/uuid.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
 import "src/vizier/services/shared/agentpb/agent.proto";
+import "src/vizier/services/metadata/storepb/store.proto";
 import "src/stirling/dynamic_tracing/ir/logical.proto";
 import "src/common/base/proto/status.proto";
 
@@ -65,8 +66,8 @@ message AgentDataInfo {
 }
 
 message AgentUpdateInfo {
-    // TODO(zasgar/michelle): Delete and cleanup.
-    repeated pl.shared.k8s.metadatapb.SchemaInfo schema = 2;
+    // Schema holds information about tables on the agent.
+    repeated pl.vizier.services.metadata.TableInfo schema = 2;
     // TODO(zasgar/michelle): Delete this.
     repeated pl.shared.k8s.metadatapb.ProcessInfo process = 3;
 

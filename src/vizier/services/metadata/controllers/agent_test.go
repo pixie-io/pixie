@@ -20,8 +20,9 @@ import (
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore/mock"
+	mock_kvstore "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
+	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
@@ -74,11 +75,11 @@ func createAgentInMDS(t *testing.T, agentID string, mds controllers.MetadataStor
 	err = mds.CreateAgent(agUUID, info)
 
 	// Add schema info.
-	schema := new(k8s_metadatapb.SchemaInfo)
+	schema := new(storepb.TableInfo)
 	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-	err = mds.UpdateSchemas(agUUID, []*k8s_metadatapb.SchemaInfo{schema})
+	err = mds.UpdateSchemas(agUUID, []*storepb.TableInfo{schema})
 	if err != nil {
 		t.Fatalf("Could not add schema for agent")
 	}
@@ -405,9 +406,9 @@ func TestAddToUpdateQueue(t *testing.T) {
 		t.Fatal("Could not parse UUID from string.")
 	}
 
-	schemas := make([]*k8s_metadatapb.SchemaInfo, 1)
+	schemas := make([]*storepb.TableInfo, 1)
 
-	schema1 := new(k8s_metadatapb.SchemaInfo)
+	schema1 := new(storepb.TableInfo)
 	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -500,9 +501,9 @@ func TestAgentQueueTerminatedProcesses(t *testing.T) {
 		t.Fatal("Could not parse UUID from string.")
 	}
 
-	schemas := make([]*k8s_metadatapb.SchemaInfo, 1)
+	schemas := make([]*storepb.TableInfo, 1)
 
-	schema1 := new(k8s_metadatapb.SchemaInfo)
+	schema1 := new(storepb.TableInfo)
 	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -842,7 +843,7 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	// Update data info on agent #2.
 	agentUpdate := controllers.AgentUpdate{
 		UpdateInfo: &messagespb.AgentUpdateInfo{
-			Schema:         []*k8s_metadatapb.SchemaInfo{},
+			Schema:         []*storepb.TableInfo{},
 			ProcessCreated: []*k8s_metadatapb.ProcessCreated{},
 			Data:           oldAgentDataInfo,
 		},
@@ -875,7 +876,7 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	// Update the data info on an agent that we are about to expire.
 	badAgentUpdate := controllers.AgentUpdate{
 		UpdateInfo: &messagespb.AgentUpdateInfo{
-			Schema:         []*k8s_metadatapb.SchemaInfo{},
+			Schema:         []*storepb.TableInfo{},
 			ProcessCreated: []*k8s_metadatapb.ProcessCreated{},
 			Data:           oldAgentDataInfo,
 		},

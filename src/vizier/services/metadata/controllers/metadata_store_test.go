@@ -21,7 +21,7 @@ import (
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore/mock"
+	mock_kvstore "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
@@ -44,7 +44,7 @@ func createAgent(t *testing.T, c *kvstore.Cache, agentID string, agentPb string)
 	}
 
 	// Add schema info.
-	schema := new(k8s_metadatapb.SchemaInfo)
+	schema := new(storepb.TableInfo)
 	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -403,9 +403,9 @@ func TestKVMetadataStore_UpdateSchemas(t *testing.T) {
 		t.Fatal("Could not parse UUID from string.")
 	}
 
-	schemas := make([]*k8s_metadatapb.SchemaInfo, 1)
+	schemas := make([]*storepb.TableInfo, 1)
 
-	schema1 := new(k8s_metadatapb.SchemaInfo)
+	schema1 := new(storepb.TableInfo)
 	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -417,14 +417,14 @@ func TestKVMetadataStore_UpdateSchemas(t *testing.T) {
 	savedSchema, err := c.Get("/agents/" + testutils.NewAgentUUID + "/schema/a_table")
 	assert.Nil(t, err)
 	assert.NotNil(t, savedSchema)
-	schemaPb := &k8s_metadatapb.SchemaInfo{}
+	schemaPb := &storepb.TableInfo{}
 	proto.Unmarshal(savedSchema, schemaPb)
 	assert.Equal(t, "a_table", schemaPb.Name)
 
 	cSchema, err := c.Get("/computedSchema")
 	assert.Nil(t, err)
 	assert.NotNil(t, cSchema)
-	computedPb := &k8s_metadatapb.ComputedSchema{}
+	computedPb := &storepb.ComputedSchema{}
 	proto.Unmarshal(cSchema, computedPb)
 	assert.Equal(t, 1, len(computedPb.Tables))
 	assert.Equal(t, "a_table", computedPb.Tables[0].Name)
@@ -442,18 +442,18 @@ func TestKVMetadataStore_GetComputedSchemas(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create schemas.
-	c1 := &k8s_metadatapb.SchemaInfo{
+	c1 := &storepb.TableInfo{
 		Name:             "table1",
 		StartTimestampNS: 4,
 	}
 
-	c2 := &k8s_metadatapb.SchemaInfo{
+	c2 := &storepb.TableInfo{
 		Name:             "table2",
 		StartTimestampNS: 5,
 	}
 
-	computedSchema := &k8s_metadatapb.ComputedSchema{
-		Tables: []*k8s_metadatapb.SchemaInfo{
+	computedSchema := &storepb.ComputedSchema{
+		Tables: []*storepb.TableInfo{
 			c1, c2,
 		},
 	}

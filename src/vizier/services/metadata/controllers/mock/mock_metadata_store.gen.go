@@ -11,6 +11,7 @@ import (
 	types "pixielabs.ai/pixielabs/src/shared/types"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
+	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	reflect "reflect"
 )
@@ -166,9 +167,9 @@ func (mr *MockMetadataStoreMockRecorder) GetAgentsForHostnamePairs(arg0 interfac
 }
 
 // GetComputedSchemas mocks base method
-func (m *MockMetadataStore) GetComputedSchemas() ([]*metadatapb.SchemaInfo, error) {
+func (m *MockMetadataStore) GetComputedSchemas() ([]*storepb.TableInfo, error) {
 	ret := m.ctrl.Call(m, "GetComputedSchemas")
-	ret0, _ := ret[0].([]*metadatapb.SchemaInfo)
+	ret0, _ := ret[0].([]*storepb.TableInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -493,7 +494,7 @@ func (mr *MockMetadataStoreMockRecorder) UpdateProcesses(processes interface{}) 
 }
 
 // UpdateSchemas mocks base method
-func (m *MockMetadataStore) UpdateSchemas(agentID go_uuid.UUID, schemas []*metadatapb.SchemaInfo) error {
+func (m *MockMetadataStore) UpdateSchemas(agentID go_uuid.UUID, schemas []*storepb.TableInfo) error {
 	ret := m.ctrl.Call(m, "UpdateSchemas", agentID, schemas)
 	ret0, _ := ret[0].(error)
 	return ret0
