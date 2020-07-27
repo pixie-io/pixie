@@ -408,9 +408,14 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 
 	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, mockMds, clock)
 
+	reqs := []*metadatapb.RegisterTracepointRequest_TracepointRequest{
+		&metadatapb.RegisterTracepointRequest_TracepointRequest{
+			Program:        program,
+			TracepointName: "test_tracepoint",
+		},
+	}
 	req := metadatapb.RegisterTracepointRequest{
-		Program:        program,
-		TracepointName: "test_tracepoint",
+		Requests: reqs,
 	}
 
 	resp, err := s.RegisterTracepoint(context.Background(), &req)
@@ -418,7 +423,9 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 	assert.NotNil(t, resp)
 	assert.Nil(t, err)
 
-	assert.Equal(t, tpID, utils.UUIDFromProtoOrNil(resp.TracepointID))
+	assert.Equal(t, 1, len(resp.Tracepoints))
+	assert.Equal(t, tpID, utils.UUIDFromProtoOrNil(resp.Tracepoints[0].TracepointID))
+	assert.Equal(t, statuspb.OK, resp.Tracepoints[0].Status.ErrCode)
 	assert.Equal(t, statuspb.OK, resp.Status.ErrCode)
 }
 
@@ -472,9 +479,14 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 
 	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, mockMds, clock)
 
+	reqs := []*metadatapb.RegisterTracepointRequest_TracepointRequest{
+		&metadatapb.RegisterTracepointRequest_TracepointRequest{
+			Program:        program,
+			TracepointName: "test_tracepoint",
+		},
+	}
 	req := metadatapb.RegisterTracepointRequest{
-		Program:        program,
-		TracepointName: "test_tracepoint",
+		Requests: reqs,
 	}
 
 	resp, err := s.RegisterTracepoint(context.Background(), &req)
@@ -482,8 +494,9 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 	assert.NotNil(t, resp)
 	assert.Nil(t, err)
 
-	assert.Equal(t, utils.ProtoFromUUID(&oldTPID), resp.TracepointID)
-	assert.Equal(t, statuspb.ALREADY_EXISTS, resp.Status.ErrCode)
+	assert.Equal(t, 1, len(resp.Tracepoints))
+	assert.Equal(t, utils.ProtoFromUUID(&oldTPID), resp.Tracepoints[0].TracepointID)
+	assert.Equal(t, statuspb.ALREADY_EXISTS, resp.Tracepoints[0].Status.ErrCode)
 }
 
 func Test_Server_GetTracepointInfo(t *testing.T) {

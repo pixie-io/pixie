@@ -164,38 +164,55 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 
 // RegisterTracepoint is a request to register the tracepoints specified in the Program on all agents.
 func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.RegisterTracepointRequest) (*metadatapb.RegisterTracepointResponse, error) {
+	// TODO(michelle): Some additional work will need to be done
+	// in order to transactionalize the creation of multiple tracepoints. The current behavior is temporary just
+	// so we can get the updated protos out.
+	responses := make([]*metadatapb.RegisterTracepointResponse_TracepointStatus, len(req.Requests))
+
 	// Create tracepoint.
-	tracepointID, err := s.tracepointManager.CreateTracepoint(req.TracepointName, req.Program)
-	if err != nil && err != ErrTracepointAlreadyExists {
-		return nil, err
-	}
-	if err == ErrTracepointAlreadyExists {
-		return &metadatapb.RegisterTracepointResponse{
+	for i, tp := range req.Requests {
+		tracepointID, err := s.tracepointManager.CreateTracepoint(tp.TracepointName, tp.Program)
+		if err != nil && err != ErrTracepointAlreadyExists {
+			return nil, err
+		}
+		if err == ErrTracepointAlreadyExists {
+			responses[i] = &metadatapb.RegisterTracepointResponse_TracepointStatus{
+				TracepointID: utils.ProtoFromUUID(tracepointID),
+				Status: &statuspb.Status{
+					ErrCode: statuspb.ALREADY_EXISTS,
+				},
+				TracepointName: tp.TracepointName,
+			}
+			continue
+		}
+
+		responses[i] = &metadatapb.RegisterTracepointResponse_TracepointStatus{
 			TracepointID: utils.ProtoFromUUID(tracepointID),
 			Status: &statuspb.Status{
-				ErrCode: statuspb.ALREADY_EXISTS,
+				ErrCode: statuspb.OK,
 			},
-		}, nil
-	}
+			TracepointName: tp.TracepointName,
+		}
 
-	// Get all agents currently running.
-	agents, err := s.agentManager.GetActiveAgents()
-	if err != nil {
-		return nil, err
-	}
-	agentIDs := make([]uuid.UUID, len(agents))
-	for i, agent := range agents {
-		agentIDs[i] = utils.UUIDFromProtoOrNil(agent.Info.AgentID)
-	}
+		// Get all agents currently running.
+		agents, err := s.agentManager.GetActiveAgents()
+		if err != nil {
+			return nil, err
+		}
+		agentIDs := make([]uuid.UUID, len(agents))
+		for i, agent := range agents {
+			agentIDs[i] = utils.UUIDFromProtoOrNil(agent.Info.AgentID)
+		}
 
-	// Register tracepoint on all agents.
-	err = s.tracepointManager.RegisterTracepoint(agentIDs, *tracepointID, req.Program)
-	if err != nil {
-		return nil, err
+		// Register tracepoint on all agents.
+		err = s.tracepointManager.RegisterTracepoint(agentIDs, *tracepointID, tp.Program)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	resp := &metadatapb.RegisterTracepointResponse{
-		TracepointID: utils.ProtoFromUUID(tracepointID),
+		Tracepoints: responses,
 		Status: &statuspb.Status{
 			ErrCode: statuspb.OK,
 		},

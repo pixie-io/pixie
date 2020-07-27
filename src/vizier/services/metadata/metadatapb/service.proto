@@ -98,23 +98,32 @@ message AgentUpdatesResponse {
 
 // The request to register tracepoints on all PEMs.
 message RegisterTracepointRequest {
-  pl.stirling.dynamic_tracing.ir.logical.Program program = 1;
-  // The user-specified name for the tracepoint.
-  string tracepoint_name = 2;
-  // The TTL, in seconds, for how long we want the tracepoint to live.
-  google.protobuf.Duration ttl = 3 [ (gogoproto.customname) = "TTL" ];
+    message TracepointRequest {
+      pl.stirling.dynamic_tracing.ir.logical.Program program = 1;
+      // The user-specified name for the tracepoint.
+      string tracepoint_name = 2;
+      // The TTL, in seconds, for how long we want the tracepoint to live.
+      google.protobuf.Duration ttl = 3 [ (gogoproto.customname) = "TTL" ];
+    }
+    repeated TracepointRequest requests = 1;
 }
 
 // The response to a RegisterTracepointRequest.
 message RegisterTracepointResponse {
-  // Status of whether the tracepoint registration request was initiated with/without errors.
-  pl.statuspb.Status status = 1;
-  // The ID of the tracepoint. This should be the user-specified name for the tracepoint.
-  uuidpb.UUID tracepoint_id = 2 [ (gogoproto.customname) = "TracepointID" ];
+  message TracepointStatus {
+      pl.statuspb.Status status = 1;
+      // The ID of the tracepoint. This should be the user-specified name for the tracepoint.
+      uuidpb.UUID tracepoint_id = 2 [ (gogoproto.customname) = "TracepointID" ];
+      string tracepoint_name = 3;
+  }
+  repeated TracepointStatus tracepoints = 1;
+  // Overall status of whether tracepoint registration requests were initiated with/without errors.
+  pl.statuspb.Status status = 2;
 }
 
 // The request to check the status for a tracepoint with the given names.
 message GetTracepointInfoRequest {
+  // The tracepoint IDs to get the info for. If empty, fetches the info for all known tracepoints.
   repeated uuidpb.UUID tracepoint_ids = 1 [ (gogoproto.customname) = "TracepointIDs" ];
 }
 
