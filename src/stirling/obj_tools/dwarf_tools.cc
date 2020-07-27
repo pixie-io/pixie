@@ -316,7 +316,8 @@ StatusOr<std::string> GetTypeName(const DWARFDie& die) {
 StatusOr<bool> IsGolangRetArg(const DWARFDie& die) {
   LLVM_ASSIGN_OR_RETURN(DWARFFormValue & attr, die.find(llvm::dwarf::DW_AT_variable_parameter),
                         "Found member, but could not find DW_AT_variable_parameter attribute.");
-  LLVM_ASSIGN_OR_RETURN(uint64_t val, attr.getAsUnsignedConstant(), "Could not extract offset.");
+  LLVM_ASSIGN_OR_RETURN(uint64_t val, attr.getAsUnsignedConstant(),
+                        "Could not read attribute value.");
 
   return (val == 0x01);
 }

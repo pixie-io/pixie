@@ -13,6 +13,6 @@ cd ${PIXIE_ROOT}
 cd ${PIXIE_ROOT}/demos/client_server_apps/go_https/client
 go build https_client.go
 cd ${PIXIE_ROOT}
-./demos/client_server_apps/go_https/server/https_client
+./demos/client_server_apps/go_https/client/https_client
 ```
 

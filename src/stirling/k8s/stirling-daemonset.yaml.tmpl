@@ -47,6 +47,7 @@ spec:
         - name: PL_HOST_PATH
           value: "/host"
       hostNetwork: true
+      hostPID: true
       dnsPolicy: ClusterFirstWithHostNet
       terminationGracePeriodSeconds: 30
       volumes:
