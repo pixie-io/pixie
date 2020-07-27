@@ -28,7 +28,6 @@ StatusOr<std::unique_ptr<RelationMap>> MakeRelationMapFromDistributedState(
   for (const auto& schema_info : state_pb.schema_info()) {
     pl::table_store::schema::Relation rel;
     PL_RETURN_IF_ERROR(rel.FromProto(&schema_info.relation()));
-    LOG(INFO) << schema_info.name() << rel.DebugString();
     rel_map->emplace(schema_info.name(), rel);
   }
 
