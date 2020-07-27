@@ -13,8 +13,10 @@ namespace obj_tools {
 
 /**
  * Returns a path to the executable of the process specified by the pid.
+ * If the start_time is provided, then it is used to confirm that the correct pid is used.
  */
-pl::StatusOr<std::filesystem::path> GetActiveBinary(uint32_t pid);
+pl::StatusOr<std::filesystem::path> GetActiveBinary(uint32_t pid,
+                                                    std::optional<int64_t> start_time = {});
 
 /**
  * Returns a path to the executable of the process specified by proc_pid (e.g. /proc/34323).

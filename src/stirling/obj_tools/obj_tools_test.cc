@@ -1,5 +1,6 @@
 #include "src/stirling/obj_tools/obj_tools.h"
 
+#include "src/common/system/proc_parser.h"
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
 
@@ -32,7 +33,13 @@ TEST(GetActiveBinaryTest, CaptureTestBinaryByPath) {
 }
 
 TEST(GetActiveBinaryTest, CaptureTestBinaryByPID) {
+  std::filesystem::path pid_path = std::filesystem::path("/proc") / std::to_string(getpid());
   EXPECT_OK_AND_THAT(GetActiveBinary(getpid()), EndsWith("src/stirling/obj_tools/obj_tools_test"));
+
+  int64_t start_time = system::GetPIDStartTimeTicks(pid_path);
+  EXPECT_OK_AND_THAT(GetActiveBinary(getpid(), start_time),
+                     EndsWith("src/stirling/obj_tools/obj_tools_test"));
+  EXPECT_NOT_OK(GetActiveBinary(getpid(), start_time + 1));
 }
 
 }  // namespace obj_tools

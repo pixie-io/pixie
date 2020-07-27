@@ -158,6 +158,143 @@ probes {
   // TODO(oazizi): Expand test when RegisterTracepoint produces other states.
 }
 
+TEST_F(StirlingBPFTest, DynamicTraceNonExistentBinary) {
+  StatusOr<stirlingpb::Publish> s;
+
+  sole::uuid trace_id = sole::uuid4();
+
+  constexpr std::string_view kProgram = R"(
+binary_spec {
+  path: "$0"
+  language: CPP
+}
+outputs {
+  name: "output_table"
+  fields: "a"
+  fields: "b"
+}
+probes {
+  name: "probe0"
+  trace_point {
+    symbol: "CanYouFindThis"
+    type: LOGICAL
+  }
+  args {
+    id: "a"
+    expr: "a"
+  }
+  args {
+    id: "b"
+    expr: "b"
+  }
+  output_actions {
+    output_name: "output_table"
+    variable_name: "a"
+    variable_name: "b"
+  }
+}
+)";
+
+  std::string path = "ThisIsNotARealBinary";
+  auto trace_program = Prepare(kProgram, path);
+  stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
+
+  s = WaitForStatus(trace_id);
+  EXPECT_EQ(s.code(), pl::statuspb::Code::NOT_FOUND);
+}
+
+TEST_F(StirlingBPFTest, DynamicTraceMissingSymbol) {
+  StatusOr<stirlingpb::Publish> s;
+
+  sole::uuid trace_id = sole::uuid4();
+
+  constexpr std::string_view kProgram = R"(
+binary_spec {
+  path: "$0"
+  language: CPP
+}
+outputs {
+  name: "output_table"
+  fields: "a"
+  fields: "b"
+}
+probes {
+  name: "probe0"
+  trace_point {
+    symbol: "GoodLuckFindingThis"
+    type: LOGICAL
+  }
+  args {
+    id: "a"
+    expr: "a"
+  }
+  args {
+    id: "b"
+    expr: "b"
+  }
+  output_actions {
+    output_name: "output_table"
+    variable_name: "a"
+    variable_name: "b"
+  }
+}
+)";
+
+  std::string path =
+      pl::testing::TestFilePath("src/stirling/obj_tools/testdata/prebuilt_dummy_exe");
+  auto trace_program = Prepare(kProgram, path);
+  stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
+
+  s = WaitForStatus(trace_id);
+  EXPECT_EQ(s.code(), pl::statuspb::Code::INTERNAL);
+}
+
+TEST_F(StirlingBPFTest, DynamicTraceInvalidReference) {
+  StatusOr<stirlingpb::Publish> s;
+
+  sole::uuid trace_id = sole::uuid4();
+
+  constexpr std::string_view kProgram = R"(
+binary_spec {
+  path: "$0"
+  language: CPP
+}
+outputs {
+  name: "output_table"
+  fields: "a"
+  fields: "b"
+}
+probes {
+  name: "probe0"
+  trace_point {
+    symbol: "CanYouFindThis"
+    type: LOGICAL
+  }
+  args {
+    id: "a"
+    expr: "a"
+  }
+  args {
+    id: "b"
+    expr: "b"
+  }
+  output_actions {
+    output_name: "output_table"
+    variable_name: "c"
+    variable_name: "d"
+  }
+}
+)";
+
+  std::string path =
+      pl::testing::TestFilePath("src/stirling/obj_tools/testdata/prebuilt_dummy_exe");
+  auto trace_program = Prepare(kProgram, path);
+  stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
+
+  s = WaitForStatus(trace_id);
+  EXPECT_EQ(s.code(), pl::statuspb::Code::INTERNAL);
+}
+
 TEST_F(StirlingBPFTest, string_test) {
   // Run tracing target.
   SubProcess process;
@@ -196,7 +333,6 @@ probes {
     variable_name: "name"
   }
 }
-
 )";
 
   stirlingpb::Publish publication;

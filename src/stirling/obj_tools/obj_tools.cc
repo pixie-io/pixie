@@ -13,15 +13,25 @@ namespace pl {
 namespace stirling {
 namespace obj_tools {
 
-pl::StatusOr<std::filesystem::path> GetActiveBinary(uint32_t pid) {
+StatusOr<std::filesystem::path> GetActiveBinary(uint32_t pid, std::optional<int64_t> start_time) {
   std::filesystem::path host_path = system::Config::GetInstance().host_path();
   std::filesystem::path proc_path = system::Config::GetInstance().proc_path();
   std::filesystem::path pid_path = proc_path / std::to_string(pid);
+  if (start_time.has_value()) {
+    int64_t pid_start_time = system::GetPIDStartTimeTicks(pid_path);
+    if (start_time.value() != pid_start_time) {
+      return error::NotFound(
+          "This is not the pid you are looking for... "
+          "Start time does not match (specification: $0 vs system: $1).",
+          start_time.value(), pid_start_time);
+    }
+  }
+
   return GetActiveBinary(host_path, pid_path);
 }
 
-pl::StatusOr<std::filesystem::path> GetActiveBinary(const std::filesystem::path& host_path,
-                                                    const std::filesystem::path& proc_pid) {
+StatusOr<std::filesystem::path> GetActiveBinary(const std::filesystem::path& host_path,
+                                                const std::filesystem::path& proc_pid) {
   PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, ResolveProcExe(proc_pid));
 
   // If we're running in a container, convert exe to be relative to our host mount.

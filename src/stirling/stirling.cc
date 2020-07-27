@@ -17,6 +17,7 @@
 
 #include "src/stirling/bpf_tools/probe_cleaner.h"
 #include "src/stirling/data_table.h"
+#include "src/stirling/obj_tools/obj_tools.h"
 #include "src/stirling/proto/stirling.pb.h"
 #include "src/stirling/pub_sub_manager.h"
 #include "src/stirling/source_connector.h"
@@ -306,6 +307,31 @@ Status StirlingImpl::RemoveSource(std::string_view source_name) {
   return Status::OK();
 }
 
+Status ResolveUPID(dynamic_tracing::ir::logical::Program* program) {
+  // Expect the outside caller keeps UPID, and specify them in UProbeSpec. Here upid and path are
+  // specified alternatively, and upid will be replaced by binary path.
+  if (program->binary_spec().target_oneof_case() ==
+      dynamic_tracing::ir::shared::BinarySpec::TargetOneofCase::kUpid) {
+    uint32_t pid = program->binary_spec().upid().pid();
+
+    std::optional<int64_t> start_time;
+    if (program->binary_spec().upid().ts_ns() != 0) {
+      start_time = program->binary_spec().upid().ts_ns();
+    }
+
+    PL_ASSIGN_OR_RETURN(std::filesystem::path binary_path,
+                        obj_tools::GetActiveBinary(pid, start_time));
+
+    program->mutable_binary_spec()->set_path(binary_path.string());
+  }
+
+  if (!fs::Exists(program->binary_spec().path()).ok()) {
+    return error::Internal("Binary $0 not found.", program->binary_spec().path());
+  }
+
+  return Status::OK();
+}
+
 void StirlingImpl::DeployDynamicTraceConnector(
     sole::uuid trace_id, std::unique_ptr<dynamic_tracing::ir::logical::Program> program) {
   // Returns, but updates the status map in a concurrent-safe way before doing so.
@@ -373,6 +399,18 @@ void StirlingImpl::DeployDynamicTraceConnector(
 
 void StirlingImpl::RegisterTracepoint(
     sole::uuid trace_id, std::unique_ptr<dynamic_tracing::ir::logical::Program> program) {
+  // Temporary: Check if the target exists on this PEM, otherwise return NotFound.
+  // TODO(oazizi): Need to think of a better way of doing this.
+  //               Need to differentiate errors caused by the binary not being on the host vs
+  //               other errors. Also should consider races with binary creation/deletion.
+  Status s = ResolveUPID(program.get());
+  if (!s.ok()) {
+    LOG(ERROR) << s.ToString();
+    absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
+    dynamic_trace_status_map_[trace_id] = error::NotFound("Target binary/UPID not found");
+    return;
+  }
+
   // Initialize the status of this trace to pending.
   {
     absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
