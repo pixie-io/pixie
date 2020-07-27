@@ -199,7 +199,7 @@ class StirlingImpl final : public Stirling {
   absl::flat_hash_map<sole::uuid, StatusOr<stirlingpb::Publish>> dynamic_trace_status_map_
       ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
 
-  static inline const std::string kDynTraceSourcePrefix = "dyntrace-";
+  static inline const std::string kDynTraceSourcePrefix = "DT_";
 };
 
 StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
