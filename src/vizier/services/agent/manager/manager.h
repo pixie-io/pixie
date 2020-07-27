@@ -68,6 +68,8 @@ class Manager : public pl::NotCopyable {
   using MsgCase = messages::VizierMessage::MsgCase;
   using MDSService = services::metadata::MetadataService;
   using MDSServiceSPtr = std::shared_ptr<Manager::MDSService::Stub>;
+  using MDTPService = services::metadata::MetadataTracepointService;
+  using MDTPServiceSPtr = std::shared_ptr<Manager::MDTPService::Stub>;
 
   Manager() = delete;
   virtual ~Manager() = default;
@@ -120,6 +122,9 @@ class Manager : public pl::NotCopyable {
                                                                          std::string_view nats_url);
 
   static MDSServiceSPtr CreateDefaultMDSStub(
+      std::string_view mds_addr, std::shared_ptr<grpc::ChannelCredentials> channel_creds);
+
+  static MDTPServiceSPtr CreateDefaultMDTPStub(
       std::string_view mds_addr, std::shared_ptr<grpc::ChannelCredentials> channel_creds);
 
   // ************************************************************

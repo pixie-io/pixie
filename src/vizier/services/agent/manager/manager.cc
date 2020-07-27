@@ -57,6 +57,7 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
       // this.
       func_context_(
           this, mds_url.size() == 0 ? nullptr : CreateDefaultMDSStub(mds_url, grpc_channel_creds_),
+          mds_url.size() == 0 ? nullptr : CreateDefaultMDTPStub(mds_url, grpc_channel_creds_),
           table_store_) {
   // Register Vizier specific and carnot builtin functions.
 
@@ -304,6 +305,13 @@ Manager::MDSServiceSPtr Manager::CreateDefaultMDSStub(
   // We need to move the channel here since gRPC mocking is done by the stub.
   auto chan = grpc::CreateChannel(std::string(mds_addr), channel_creds);
   return std::make_shared<Manager::MDSService::Stub>(chan);
+}
+
+Manager::MDTPServiceSPtr Manager::CreateDefaultMDTPStub(
+    std::string_view mds_addr, std::shared_ptr<grpc::ChannelCredentials> channel_creds) {
+  // We need to move the channel here since gRPC mocking is done by the stub.
+  auto chan = grpc::CreateChannel(std::string(mds_addr), channel_creds);
+  return std::make_shared<Manager::MDTPService::Stub>(chan);
 }
 
 Manager::MessageHandler::MessageHandler(Dispatcher* dispatcher, Info* agent_info,

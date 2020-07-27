@@ -26,6 +26,9 @@ void RegisterFuncsOrDie(const VizierFuncFactoryContext& ctx, carnot::udf::Regist
                                                                                   registry);
   registry->RegisterFactoryOrDie<GetUDTFList, UDTFWithRegistryFactory<GetUDTFList>>("GetUDTFList",
                                                                                     registry);
+
+  registry->RegisterFactoryOrDie<GetTracepointStatus, UDTFWithMDTPFactory<GetTracepointStatus>>(
+      "GetTracepointStatus", ctx);
 }
 
 }  // namespace md

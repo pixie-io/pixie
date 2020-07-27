@@ -22,12 +22,17 @@ namespace funcs {
 class VizierFuncFactoryContext : public NotCopyable {
  public:
   using MDSStub = services::metadata::MetadataService::Stub;
+  using MDTPStub = services::metadata::MetadataTracepointService::Stub;
 
   VizierFuncFactoryContext() = default;
   VizierFuncFactoryContext(const agent::Manager* agent_manager,
                            const std::shared_ptr<MDSStub>& mds_stub,
+                           const std::shared_ptr<MDTPStub>& mdtp_stub,
                            std::shared_ptr<::pl::table_store::TableStore> table_store)
-      : agent_manager_(agent_manager), mds_stub_(mds_stub), table_store_(table_store) {}
+      : agent_manager_(agent_manager),
+        mds_stub_(mds_stub),
+        mdtp_stub_(mdtp_stub),
+        table_store_(table_store) {}
   virtual ~VizierFuncFactoryContext() = default;
 
   const agent::Manager* agent_manager() const {
@@ -40,11 +45,17 @@ class VizierFuncFactoryContext : public NotCopyable {
     return mds_stub_;
   }
 
+  std::shared_ptr<MDTPStub> mdtp_stub() const {
+    CHECK(mdtp_stub_ != nullptr);
+    return mdtp_stub_;
+  }
+
   ::pl::table_store::TableStore* table_store() const { return table_store_.get(); }
 
  private:
   const agent::Manager* agent_manager_ = nullptr;
   std::shared_ptr<MDSStub> mds_stub_ = nullptr;
+  std::shared_ptr<MDTPStub> mdtp_stub_ = nullptr;
   std::shared_ptr<::pl::table_store::TableStore> table_store_ = nullptr;
 };
 

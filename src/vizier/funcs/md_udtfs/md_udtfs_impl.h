@@ -47,6 +47,20 @@ class UDTFWithMDFactory : public carnot::udf::UDTFFactory {
 };
 
 template <typename TUDTF>
+class UDTFWithMDTPFactory : public carnot::udf::UDTFFactory {
+ public:
+  UDTFWithMDTPFactory() = delete;
+  explicit UDTFWithMDTPFactory(const VizierFuncFactoryContext& ctx) : ctx_(ctx) {}
+
+  std::unique_ptr<carnot::udf::AnyUDTF> Make() override {
+    return std::make_unique<TUDTF>(ctx_.mdtp_stub());
+  }
+
+ private:
+  const VizierFuncFactoryContext& ctx_;
+};
+
+template <typename TUDTF>
 class UDTFWithRegistryFactory : public carnot::udf::UDTFFactory {
  public:
   UDTFWithRegistryFactory() = delete;
@@ -508,6 +522,115 @@ class GetDebugTableInfo final : public carnot::udf::UDTF<GetDebugTableInfo> {
   int current_idx_ = 0;
   std::vector<uint64_t> table_ids_;
 };
+
+/**
+ * This UDTF fetches information about tracepoints from MDS.
+ */
+class GetTracepointStatus final : public carnot::udf::UDTF<GetTracepointStatus> {
+ public:
+  using MDTPStub = vizier::services::metadata::MetadataTracepointService::Stub;
+  using TracepointResponse = vizier::services::metadata::GetTracepointInfoResponse;
+  GetTracepointStatus() = delete;
+  explicit GetTracepointStatus(std::shared_ptr<MDTPStub> stub) : idx_(0), stub_(stub) {}
+
+  static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ONE_KELVIN; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(ColInfo("tracepoint_id", types::DataType::UINT128, types::PatternType::GENERAL,
+                             "The id of the tracepoint"),
+                     ColInfo("name", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The name of the tracepoint"),
+                     ColInfo("state", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The status of the tracepoint"),
+                     ColInfo("status", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The status message if not healthy"),
+                     ColInfo("output_tables", types::DataType::STRING, types::PatternType::GENERAL,
+                             "A list of tables output by the tracepoint"));
+    // TODO(zasgar): Add in the create time, and TTL in here after we add those attributes to the
+    // GetTracepointInfo RPC call in MDS.
+  }
+
+  Status Init(FunctionContext*) {
+    pl::vizier::services::metadata::GetTracepointInfoRequest req;
+    resp_ = std::make_unique<pl::vizier::services::metadata::GetTracepointInfoResponse>();
+
+    grpc::ClientContext ctx;
+    ContextWithServiceAuth(&ctx);
+    auto s = stub_->GetTracepointInfo(&ctx, req, resp_.get());
+    if (!s.ok()) {
+      return error::Internal("Failed to make RPC call to GetTracepointStatus: $0",
+                             s.error_message());
+    }
+    return Status::OK();
+  }
+
+  bool NextRecord(FunctionContext*, RecordWriter* rw) {
+    if (resp_->tracepoints_size() == 0) {
+      return false;
+    }
+    const auto& tracepoint_info = resp_->tracepoints(idx_);
+
+    auto u_or_s = ParseUUID(tracepoint_info.tracepoint_id());
+    sole::uuid u;
+    if (u_or_s.ok()) {
+      u = u_or_s.ConsumeValueOrDie();
+    }
+
+    auto actual = tracepoint_info.state();
+    auto expected = tracepoint_info.expected_state();
+    std::string state;
+
+    switch (actual) {
+      case statuspb::PENDING_STATE: {
+        state = "pending";
+        break;
+      }
+      case statuspb::RUNNING_STATE: {
+        state = "running";
+        break;
+      }
+      case statuspb::FAILED_STATE: {
+        state = "failed";
+        break;
+      }
+      case statuspb::TERMINATED_STATE: {
+        if (actual != expected) {
+          state = "terminating";
+        } else {
+          state = "terminated";
+        }
+        break;
+      }
+      default:
+        state = "unknown";
+    }
+
+    rapidjson::Document tables;
+    tables.SetArray();
+    for (const auto& table : tracepoint_info.schema_names()) {
+      tables.PushBack(internal::StringRef(table), tables.GetAllocator());
+    }
+
+    rapidjson::StringBuffer tables_sb;
+    rapidjson::Writer<rapidjson::StringBuffer> tables_writer(tables_sb);
+    tables.Accept(tables_writer);
+
+    rw->Append<IndexOf("tracepoint_id")>(absl::MakeUint128(u.ab, u.cd));
+    rw->Append<IndexOf("name")>(tracepoint_info.tracepoint_name());
+    rw->Append<IndexOf("state")>(state);
+    rw->Append<IndexOf("status")>(tracepoint_info.status().msg());
+    rw->Append<IndexOf("output_tables")>(tables_sb.GetString());
+
+    ++idx_;
+    return idx_ < resp_->tracepoints_size();
+  }
+
+ private:
+  int idx_ = 0;
+  std::unique_ptr<pl::vizier::services::metadata::GetTracepointInfoResponse> resp_;
+  std::shared_ptr<MDTPStub> stub_;
+};
+
 }  // namespace md
 }  // namespace funcs
 }  // namespace vizier
