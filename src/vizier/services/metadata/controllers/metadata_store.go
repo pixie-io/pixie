@@ -1272,6 +1272,31 @@ func (mds *KVMetadataStore) GetTracepoints() ([]*storepb.TracepointInfo, error) 
 	return tracepoints, nil
 }
 
+// GetTracepointsForIDs gets all of the tracepoints with the given ids.
+func (mds *KVMetadataStore) GetTracepointsForIDs(ids []uuid.UUID) ([]*storepb.TracepointInfo, error) {
+	keys := make([]string, len(ids))
+	for i, id := range ids {
+		keys[i] = getTracepointKey(id)
+	}
+
+	vals, err := mds.cache.GetAll(keys)
+	if err != nil {
+		return nil, err
+	}
+
+	tracepoints := make([]*storepb.TracepointInfo, len(vals))
+	for i, val := range vals {
+		if val == nil {
+			tracepoints[i] = nil
+			continue
+		}
+		pb := &storepb.TracepointInfo{}
+		proto.Unmarshal(val, pb)
+		tracepoints[i] = pb
+	}
+	return tracepoints, nil
+}
+
 // UpdateTracepointState updates the agent tracepoint state in the store.
 func (mds *KVMetadataStore) UpdateTracepointState(state *storepb.AgentTracepointStatus) error {
 	val, err := state.Marshal()

@@ -223,17 +223,29 @@ func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.Registe
 
 // GetTracepointInfo is a request to check the status for the given tracepoint.
 func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTracepointInfoRequest) (*metadatapb.GetTracepointInfoResponse, error) {
-	tracepointState := make([]*metadatapb.GetTracepointInfoResponse_TracepointState, len(req.TracepointIDs))
-
-	for i, tracepointID := range req.TracepointIDs {
-		tUUID := utils.UUIDFromProtoOrNil(tracepointID)
-		tracepoint, err := s.tracepointManager.GetTracepointInfo(tUUID)
-		if err != nil {
-			return nil, err
+	var tracepointInfos []*storepb.TracepointInfo
+	var err error
+	if len(req.TracepointIDs) > 0 {
+		ids := make([]uuid.UUID, len(req.TracepointIDs))
+		for i, tracepointID := range req.TracepointIDs {
+			ids[i] = utils.UUIDFromProtoOrNil(tracepointID)
 		}
+
+		tracepointInfos, err = s.tracepointManager.GetTracepointsForIDs(ids)
+	} else {
+		tracepointInfos, err = s.tracepointManager.GetAllTracepoints()
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	tracepointState := make([]*metadatapb.GetTracepointInfoResponse_TracepointState, len(tracepointInfos))
+
+	for i, tracepoint := range tracepointInfos {
 		if tracepoint == nil { // Tracepoint does not exist.
 			tracepointState[i] = &metadatapb.GetTracepointInfoResponse_TracepointState{
-				TracepointID: tracepointID,
+				TracepointID: req.TracepointIDs[i],
 				State:        statuspb.UNKNOWN_STATE,
 				Status: &statuspb.Status{
 					ErrCode: statuspb.NOT_FOUND,
@@ -241,6 +253,7 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 			}
 			continue
 		}
+		tUUID := utils.UUIDFromProtoOrNil(tracepoint.TracepointID)
 
 		tracepointStates, err := s.tracepointManager.GetTracepointStates(tUUID)
 		if err != nil {
@@ -250,7 +263,7 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 		state, status := getTracepointStateFromAgentTracepointStates(tracepointStates)
 
 		tracepointState[i] = &metadatapb.GetTracepointInfoResponse_TracepointState{
-			TracepointID:   tracepointID,
+			TracepointID:   tracepoint.TracepointID,
 			State:          state,
 			Status:         status,
 			TracepointName: tracepoint.TracepointName,

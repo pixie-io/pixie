@@ -121,3 +121,16 @@ func (m *MockTracepointStore) GetTracepointWithName(arg0 string) (*go_uuid.UUID,
 func (mr *MockTracepointStoreMockRecorder) GetTracepointWithName(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTracepointWithName", reflect.TypeOf((*MockTracepointStore)(nil).GetTracepointWithName), arg0)
 }
+
+// GetTracepointsForIDs mocks base method
+func (m *MockTracepointStore) GetTracepointsForIDs(arg0 []go_uuid.UUID) ([]*storepb.TracepointInfo, error) {
+	ret := m.ctrl.Call(m, "GetTracepointsForIDs", arg0)
+	ret0, _ := ret[0].([]*storepb.TracepointInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTracepointsForIDs indicates an expected call of GetTracepointsForIDs
+func (mr *MockTracepointStoreMockRecorder) GetTracepointsForIDs(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTracepointsForIDs", reflect.TypeOf((*MockTracepointStore)(nil).GetTracepointsForIDs), arg0)
+}

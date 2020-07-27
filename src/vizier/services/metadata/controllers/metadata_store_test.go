@@ -1993,6 +1993,59 @@ func TestKVMetadataStore_GetTracepoints(t *testing.T) {
 	assert.Equal(t, s2.TracepointID, tracepoints[1].TracepointID)
 }
 
+func TestKVMetadataStore_GetTracepointsForIDs(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		GetAll([]string{
+			"/tracepoint/8ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			"/tracepoint/8ba7b810-9dad-11d1-80b4-00c04fd430c9",
+			"/tracepoint/8ba7b810-9dad-11d1-80b4-00c04fd430c7",
+		}).
+		Return(nil, nil).
+		Times(1)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	// Create tracepoints.
+	s1ID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	s1 := &storepb.TracepointInfo{
+		TracepointID: utils.ProtoFromUUID(&s1ID),
+	}
+	s1Text, err := s1.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal tracepoint pb")
+	}
+
+	s2ID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c9")
+	s2 := &storepb.TracepointInfo{
+		TracepointID: utils.ProtoFromUUID(&s2ID),
+	}
+	s2Text, err := s2.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal tracepoint pb")
+	}
+
+	s3ID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c7")
+
+	c.Set("/tracepoint/"+s1ID.String(), string(s1Text))
+	c.Set("/tracepoint/"+s2ID.String(), string(s2Text))
+
+	tracepoints, err := mds.GetTracepointsForIDs([]uuid.UUID{s1ID, s2ID, s3ID})
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(tracepoints))
+
+	assert.Equal(t, s1.TracepointID, tracepoints[0].TracepointID)
+	assert.Equal(t, s2.TracepointID, tracepoints[1].TracepointID)
+	assert.Nil(t, tracepoints[2])
+}
+
 func TestKVMetadataStore_UpdateTracepointState(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

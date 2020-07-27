@@ -31,6 +31,7 @@ type TracepointStore interface {
 	GetTracepointStates(uuid.UUID) ([]*storepb.AgentTracepointStatus, error)
 	SetTracepointWithName(string, uuid.UUID) error
 	GetTracepointWithName(string) (*uuid.UUID, error)
+	GetTracepointsForIDs([]uuid.UUID) ([]*storepb.TracepointInfo, error)
 }
 
 // TracepointManager manages the tracepoints deployed in the cluster.
@@ -173,4 +174,9 @@ func (m *TracepointManager) GetTracepointInfo(tracepointID uuid.UUID) (*storepb.
 // GetTracepointStates gets all the known agent states for the given tracepoint.
 func (m *TracepointManager) GetTracepointStates(tracepointID uuid.UUID) ([]*storepb.AgentTracepointStatus, error) {
 	return m.mds.GetTracepointStates(tracepointID)
+}
+
+// GetTracepointsForIDs gets all the tracepoint infos for the given ids.
+func (m *TracepointManager) GetTracepointsForIDs(ids []uuid.UUID) ([]*storepb.TracepointInfo, error) {
+	return m.mds.GetTracepointsForIDs(ids)
 }

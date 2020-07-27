@@ -505,6 +505,7 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 		expectedStatus   *statuspb.Status
 		agentStates      []*storepb.AgentTracepointStatus
 		tracepointExists bool
+		expectAll        bool
 	}{
 		{
 			name:           "healthy tracepoint",
@@ -576,6 +577,21 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			},
 			tracepointExists: true,
 		},
+		{
+			name:           "all tracepoints",
+			expectedState:  statuspb.PENDING_STATE,
+			expectedStatus: nil,
+			agentStates: []*storepb.AgentTracepointStatus{
+				&storepb.AgentTracepointStatus{
+					State: statuspb.FAILED_STATE,
+				},
+				&storepb.AgentTracepointStatus{
+					State: statuspb.PENDING_STATE,
+				},
+			},
+			tracepointExists: true,
+			expectAll:        true,
+		},
 	}
 
 	for _, test := range tests {
@@ -593,13 +609,20 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			if !test.tracepointExists {
 				mockTracepointStore.
 					EXPECT().
-					GetTracepoint(tID).
-					Return(nil, nil)
+					GetTracepointsForIDs([]uuid.UUID{tID}).
+					Return([]*storepb.TracepointInfo{nil}, nil)
 			} else {
-				mockTracepointStore.
-					EXPECT().
-					GetTracepoint(tID).
-					Return(&storepb.TracepointInfo{TracepointID: utils.ProtoFromUUID(&tID), ExpectedState: statuspb.RUNNING_STATE}, nil)
+				if test.expectAll {
+					mockTracepointStore.
+						EXPECT().
+						GetTracepoints().
+						Return([]*storepb.TracepointInfo{&storepb.TracepointInfo{TracepointID: utils.ProtoFromUUID(&tID), ExpectedState: statuspb.RUNNING_STATE}}, nil)
+				} else {
+					mockTracepointStore.
+						EXPECT().
+						GetTracepointsForIDs([]uuid.UUID{tID}).
+						Return([]*storepb.TracepointInfo{&storepb.TracepointInfo{TracepointID: utils.ProtoFromUUID(&tID), ExpectedState: statuspb.RUNNING_STATE}}, nil)
+				}
 
 				mockTracepointStore.
 					EXPECT().
@@ -618,6 +641,11 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, mockMds, clock)
 			req := metadatapb.GetTracepointInfoRequest{
 				TracepointIDs: []*uuidpb.UUID{utils.ProtoFromUUID(&tID)},
+			}
+			if test.expectAll {
+				req = metadatapb.GetTracepointInfoRequest{
+					TracepointIDs: []*uuidpb.UUID{},
+				}
 			}
 
 			resp, err := s.GetTracepointInfo(context.Background(), &req)
