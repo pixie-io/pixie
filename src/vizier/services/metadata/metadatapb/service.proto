@@ -148,8 +148,8 @@ message GetTracepointInfoResponse {
 // The request to evict a tracepoint. This will normally happen via the tracepoint's TTL, but can be
 // initiated via request as well.
 message RemoveTracepointRequest {
-    // The ID of the tracepoint to remove.
-    uuidpb.UUID tracepoint_id = 1 [ (gogoproto.customname) = "TracepointID" ];
+    // The name of the tracepoint to remove.
+    repeated string tracepoint_names = 1;
 }
 
 // The response to the tracepoint removal.

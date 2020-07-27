@@ -12,7 +12,7 @@ import (
 	math_bits "math/bits"
 	proto2 "pixielabs.ai/pixielabs/src/common/base/proto"
 	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
-	ir "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir"
+	logical "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
 	reflect "reflect"
 	strings "strings"
 )
@@ -30,7 +30,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type TracepointInfo struct {
 	TracepointID   *proto1.UUID          `protobuf:"bytes,1,opt,name=tracepoint_id,json=tracepointId,proto3" json:"tracepoint_id,omitempty"`
-	Program        *ir.Program           `protobuf:"bytes,2,opt,name=program,proto3" json:"program,omitempty"`
+	Program        *logical.Program      `protobuf:"bytes,2,opt,name=program,proto3" json:"program,omitempty"`
 	TracepointName string                `protobuf:"bytes,3,opt,name=tracepoint_name,json=tracepointName,proto3" json:"tracepoint_name,omitempty"`
 	ExpectedState  proto2.LifeCycleState `protobuf:"varint,4,opt,name=expected_state,json=expectedState,proto3,enum=pl.statuspb.LifeCycleState" json:"expected_state,omitempty"`
 }
@@ -74,7 +74,7 @@ func (m *TracepointInfo) GetTracepointID() *proto1.UUID {
 	return nil
 }
 
-func (m *TracepointInfo) GetProgram() *ir.Program {
+func (m *TracepointInfo) GetProgram() *logical.Program {
 	if m != nil {
 		return m.Program
 	}
@@ -511,7 +511,7 @@ func (this *TracepointInfo) String() string {
 	}
 	s := strings.Join([]string{`&TracepointInfo{`,
 		`TracepointID:` + strings.Replace(fmt.Sprintf("%v", this.TracepointID), "UUID", "proto1.UUID", 1) + `,`,
-		`Program:` + strings.Replace(fmt.Sprintf("%v", this.Program), "Program", "ir.Program", 1) + `,`,
+		`Program:` + strings.Replace(fmt.Sprintf("%v", this.Program), "Program", "logical.Program", 1) + `,`,
 		`TracepointName:` + fmt.Sprintf("%v", this.TracepointName) + `,`,
 		`ExpectedState:` + fmt.Sprintf("%v", this.ExpectedState) + `,`,
 		`}`,
@@ -634,7 +634,7 @@ func (m *TracepointInfo) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Program == nil {
-				m.Program = &ir.Program{}
+				m.Program = &logical.Program{}
 			}
 			if err := m.Program.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

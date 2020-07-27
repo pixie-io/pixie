@@ -15,7 +15,7 @@ import (
 	proto2 "pixielabs.ai/pixielabs/src/common/base/proto"
 	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	ir "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir"
+	logical "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	reflect "reflect"
 	strings "strings"
@@ -900,8 +900,8 @@ func (m *ExecuteQueryRequest) GetAnalyze() bool {
 }
 
 type RegisterTracepointRequest struct {
-	Program      *ir.Program  `protobuf:"bytes,1,opt,name=program,proto3" json:"program,omitempty"`
-	TracepointID *proto1.UUID `protobuf:"bytes,2,opt,name=tracepoint_id,json=tracepointId,proto3" json:"tracepoint_id,omitempty"`
+	Program      *logical.Program `protobuf:"bytes,1,opt,name=program,proto3" json:"program,omitempty"`
+	TracepointID *proto1.UUID     `protobuf:"bytes,2,opt,name=tracepoint_id,json=tracepointId,proto3" json:"tracepoint_id,omitempty"`
 }
 
 func (m *RegisterTracepointRequest) Reset()      { *m = RegisterTracepointRequest{} }
@@ -936,7 +936,7 @@ func (m *RegisterTracepointRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RegisterTracepointRequest proto.InternalMessageInfo
 
-func (m *RegisterTracepointRequest) GetProgram() *ir.Program {
+func (m *RegisterTracepointRequest) GetProgram() *logical.Program {
 	if m != nil {
 		return m.Program
 	}
@@ -4004,7 +4004,7 @@ func (this *RegisterTracepointRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&RegisterTracepointRequest{`,
-		`Program:` + strings.Replace(fmt.Sprintf("%v", this.Program), "Program", "ir.Program", 1) + `,`,
+		`Program:` + strings.Replace(fmt.Sprintf("%v", this.Program), "Program", "logical.Program", 1) + `,`,
 		`TracepointID:` + strings.Replace(fmt.Sprintf("%v", this.TracepointID), "UUID", "proto1.UUID", 1) + `,`,
 		`}`,
 	}, "")
@@ -6006,7 +6006,7 @@ func (m *RegisterTracepointRequest) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Program == nil {
-				m.Program = &ir.Program{}
+				m.Program = &logical.Program{}
 			}
 			if err := m.Program.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

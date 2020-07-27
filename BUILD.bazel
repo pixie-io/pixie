@@ -66,7 +66,7 @@ gazelle(
 # Make gazelle resolve CGO libraries correctly.
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/planner/compiler_error_context //src/carnot/planner/compiler_error_context:go_default_library
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/planner //src/carnot/planner:go_default_library
-# gazelle:resolve go pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir //src/stirling/dynamic_tracing/ir:logical_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical //src/stirling/dynamic_tracing/ir:logical_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical/shared //src/stirling/dynamic_tracing/ir:shared_pl_go_proto
 
 # gazelle:resolve go pixielabs.ai/pixielabs/third_party/kuberesolver //third_party:kuberesolver_library

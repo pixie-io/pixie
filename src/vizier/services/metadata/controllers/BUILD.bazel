@@ -25,8 +25,6 @@ go_library(
         "//src/shared/k8s:go_default_library",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
         "//src/shared/types:go_default_library",
-        # make //:gazelle will remove this label. Because there are multiple .proto files under
-        # src/stirling/dynamic_tracing/ir, which confuses gazelle.
         "//src/stirling/dynamic_tracing/ir:logical_pl_go_proto",
         "//src/table_store/proto:schema_pl_go_proto",
         "//src/utils:go_default_library",
@@ -83,10 +81,7 @@ go_test(
         "//src/shared/metadatapb:metadata_pl_go_proto",
         "//src/shared/types:go_default_library",
         "//src/shared/types/proto:types_pl_go_proto",
-        # make //:gazelle will remove this label. Because there are multiple .proto files under
-        # src/stirling/dynamic_tracing/ir, which confuses gazelle.
         "//src/stirling/dynamic_tracing/ir:logical_pl_go_proto",
-        "//src/stirling/dynamic_tracing/ir:shared_pl_go_proto",
         "//src/utils:go_default_library",
         "//src/utils/testingutils:go_default_library",
         "//src/vizier/messages/messagespb:messages_pl_go_proto",

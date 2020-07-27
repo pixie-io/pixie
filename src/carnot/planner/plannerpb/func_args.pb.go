@@ -12,7 +12,7 @@ import (
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	proto2 "pixielabs.ai/pixielabs/src/common/base/proto"
 	proto1 "pixielabs.ai/pixielabs/src/shared/types/proto"
-	ir "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir"
+	logical "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
 	reflect "reflect"
 	strings "strings"
 )
@@ -491,7 +491,7 @@ type isCompileMutation_Mutation interface {
 }
 
 type CompileMutation_Trace struct {
-	Trace *ir.Program `protobuf:"bytes,2,opt,name=trace,proto3,oneof" json:"trace,omitempty"`
+	Trace *logical.Program `protobuf:"bytes,2,opt,name=trace,proto3,oneof" json:"trace,omitempty"`
 }
 type CompileMutation_DeleteTracepoint struct {
 	DeleteTracepoint *DeleteTracepoint `protobuf:"bytes,3,opt,name=delete_tracepoint,json=deleteTracepoint,proto3,oneof" json:"delete_tracepoint,omitempty"`
@@ -507,7 +507,7 @@ func (m *CompileMutation) GetMutation() isCompileMutation_Mutation {
 	return nil
 }
 
-func (m *CompileMutation) GetTrace() *ir.Program {
+func (m *CompileMutation) GetTrace() *logical.Program {
 	if x, ok := m.GetMutation().(*CompileMutation_Trace); ok {
 		return x.Trace
 	}
@@ -1939,7 +1939,7 @@ func (this *CompileMutation_Trace) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&CompileMutation_Trace{`,
-		`Trace:` + strings.Replace(fmt.Sprintf("%v", this.Trace), "Program", "ir.Program", 1) + `,`,
+		`Trace:` + strings.Replace(fmt.Sprintf("%v", this.Trace), "Program", "logical.Program", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2996,7 +2996,7 @@ func (m *CompileMutation) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &ir.Program{}
+			v := &logical.Program{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
