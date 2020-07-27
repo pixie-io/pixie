@@ -140,6 +140,7 @@ message GetTracepointInfoResponse {
         // The desired state for the tracepoint. This can be used to determine whether
         // the tracepoint is just starting up or in the process of terminating.
         pl.statuspb.LifeCycleState expected_state = 5;
+        repeated string schema_names = 6;
     }
     // List of tracepoint states.
     repeated TracepointState tracepoints = 1;

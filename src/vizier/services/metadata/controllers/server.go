@@ -262,12 +262,18 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 
 		state, status := getTracepointStateFromAgentTracepointStates(tracepointStates)
 
+		schemas := make([]string, len(tracepoint.Program.Outputs))
+		for i, o := range tracepoint.Program.Outputs {
+			schemas[i] = o.Name
+		}
+
 		tracepointState[i] = &metadatapb.GetTracepointInfoResponse_TracepointState{
 			TracepointID:   tracepoint.TracepointID,
 			State:          state,
 			Status:         status,
 			TracepointName: tracepoint.TracepointName,
 			ExpectedState:  tracepoint.ExpectedState,
+			SchemaNames:    schemas,
 		}
 	}
 

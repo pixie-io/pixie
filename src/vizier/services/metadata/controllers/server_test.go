@@ -605,6 +605,19 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 
 			tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
+			program := &logicalpb.Program{
+				Outputs: []*logicalpb.Output{
+					&logicalpb.Output{
+						Name:   "table1",
+						Fields: []string{"abc", "def"},
+					},
+					&logicalpb.Output{
+						Name:   "test",
+						Fields: []string{"test1", "test2"},
+					},
+				},
+			}
+
 			tID := uuid.NewV4()
 			if !test.tracepointExists {
 				mockTracepointStore.
@@ -616,12 +629,12 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 					mockTracepointStore.
 						EXPECT().
 						GetTracepoints().
-						Return([]*storepb.TracepointInfo{&storepb.TracepointInfo{TracepointID: utils.ProtoFromUUID(&tID), ExpectedState: statuspb.RUNNING_STATE}}, nil)
+						Return([]*storepb.TracepointInfo{&storepb.TracepointInfo{TracepointID: utils.ProtoFromUUID(&tID), Program: program, ExpectedState: statuspb.RUNNING_STATE}}, nil)
 				} else {
 					mockTracepointStore.
 						EXPECT().
 						GetTracepointsForIDs([]uuid.UUID{tID}).
-						Return([]*storepb.TracepointInfo{&storepb.TracepointInfo{TracepointID: utils.ProtoFromUUID(&tID), ExpectedState: statuspb.RUNNING_STATE}}, nil)
+						Return([]*storepb.TracepointInfo{&storepb.TracepointInfo{TracepointID: utils.ProtoFromUUID(&tID), Program: program, ExpectedState: statuspb.RUNNING_STATE}}, nil)
 				}
 
 				mockTracepointStore.
@@ -656,6 +669,7 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			assert.Equal(t, test.expectedStatus, resp.Tracepoints[0].Status)
 			if test.tracepointExists {
 				assert.Equal(t, statuspb.RUNNING_STATE, resp.Tracepoints[0].ExpectedState)
+				assert.Equal(t, []string{"table1", "test"}, resp.Tracepoints[0].SchemaNames)
 			}
 		})
 	}
