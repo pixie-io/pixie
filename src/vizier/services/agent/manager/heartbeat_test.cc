@@ -99,7 +99,9 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
     std::vector<RelationInfo> relation_info_vec({relation_info0, relation_info1});
     // Pass relation info to the manager.
     relation_info_manager_ = std::make_unique<RelationInfoManager>();
-    EXPECT_OK(relation_info_manager_->UpdateRelationInfo(relation_info_vec));
+    for (const auto& relation_info : relation_info_vec) {
+      EXPECT_OK(relation_info_manager_->AddRelationInfo(relation_info));
+    }
 
     agent_info_ = agent::Info{};
     agent_info_.capabilities.set_collects_data(true);

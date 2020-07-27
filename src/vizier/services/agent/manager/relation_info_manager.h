@@ -1,5 +1,9 @@
 #pragma once
+#include <string>
 #include <vector>
+
+#include <absl/base/internal/spinlock.h>
+#include <absl/container/btree_map.h>
 
 #include "src/shared/schema/utils.h"
 #include "src/vizier/messages/messagespb/messages.pb.h"
@@ -14,22 +18,36 @@ namespace agent {
 class RelationInfoManager {
  public:
   /**
-   * @brief Receives an updated record of relation info for the agent.
+   * @brief Adds the relation info to the agent state. Conflicting relation will
+   * will be rejected with error.
    *
-   * @param relation_info_vec: the new relation info vector for the agent.
-   * @return Status: Error if relation info vector is malformed.
+   * @param relation_info: The new relation to add.
+   * @return Status: Error if relation is a conflict.
    */
-  Status UpdateRelationInfo(const std::vector<RelationInfo>& relation_info_vec);
+  Status AddRelationInfo(RelationInfo relation_info);
+
+  /**
+   * Checks to see if a relation with the given name exists.
+   * @param name The name of the relation.
+   * @return true if it exists.
+   */
+  bool HasRelation(std::string_view name) const;
 
   /**
    * @brief Adds schema updates to the update_info message.
    *
+   * Updates the has_update state.
+   *
    * @param update_info: the message that should receive the updated schema info.
    */
-  void AddSchemaToUpdateInfo(messages::AgentUpdateInfo* update_info);
+  void AddSchemaToUpdateInfo(messages::AgentUpdateInfo* update_info) const;
+
+  bool has_updates() const { return has_updates_; }
 
  private:
-  std::vector<RelationInfo> relation_info_;
+  mutable std::atomic<bool> has_updates_ = false;
+  mutable absl::base_internal::SpinLock relation_info_map_lock_;
+  absl::btree_map<std::string, RelationInfo> relation_info_map_ GUARDED_BY(relation_info_map_lock_);
 };
 
 }  // namespace agent

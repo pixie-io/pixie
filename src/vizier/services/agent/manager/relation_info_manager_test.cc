@@ -3,6 +3,7 @@
 #include <google/protobuf/util/message_differencer.h>
 #include <gtest/gtest.h>
 #include <memory>
+#include <utility>
 
 #include "src/vizier/services/agent/manager/relation_info_manager.h"
 
@@ -59,14 +60,13 @@ TEST_F(RelationInfoManagerTest, test_update) {
   // Relation info with no tabletization.
   Relation relation1({types::TIME64NS, types::FLOAT64}, {"time_", "gauge"});
   RelationInfo relation_info1("relation1", /* id */ 1, relation1);
-  std::vector<RelationInfo> relation_info_vec({relation_info0, relation_info1});
-  // Pass relation info to the manager.
-  EXPECT_OK(relation_info_manager_->UpdateRelationInfo(relation_info_vec));
+
+  EXPECT_OK(relation_info_manager_->AddRelationInfo(std::move(relation_info0)));
+  EXPECT_OK(relation_info_manager_->AddRelationInfo(std::move(relation_info1)));
 
   // Check to see that the agent info is as expected.
   messages::AgentUpdateInfo update_info;
   relation_info_manager_->AddSchemaToUpdateInfo(&update_info);
-  LOG(INFO) << update_info.DebugString();
   EXPECT_THAT(update_info, EqualsProto(kAgentUpdateInfoSchemaNoTablets));
 }
 
@@ -115,14 +115,22 @@ TEST_F(RelationInfoManagerTest, test_tabletization_keys) {
   Relation relation1({types::TIME64NS, types::UINT128, types::INT64}, {"time_", "upid", "count"});
   RelationInfo relation_info1("relation1", /* id */ 1, /* tabletization_key_idx */ 1, relation1);
 
-  std::vector<RelationInfo> relation_info_vec({relation_info0, relation_info1});
+  EXPECT_FALSE(relation_info_manager_->has_updates());
+
   // Pass relation info to the manager.
-  EXPECT_OK(relation_info_manager_->UpdateRelationInfo(relation_info_vec));
+  EXPECT_OK(relation_info_manager_->AddRelationInfo(std::move(relation_info0)));
+  EXPECT_TRUE(relation_info_manager_->has_updates());
+
+  messages::AgentUpdateInfo update_info0;
+  relation_info_manager_->AddSchemaToUpdateInfo(&update_info0);
+  EXPECT_FALSE(relation_info_manager_->has_updates());
+
+  EXPECT_OK(relation_info_manager_->AddRelationInfo(std::move(relation_info1)));
+  EXPECT_TRUE(relation_info_manager_->has_updates());
 
   // Check to see that the agent info is as expected.
   messages::AgentUpdateInfo update_info;
   relation_info_manager_->AddSchemaToUpdateInfo(&update_info);
-  LOG(INFO) << update_info.DebugString();
   EXPECT_THAT(update_info, EqualsProto(kAgentUpdateInfoSchemaHasTablets));
 }
 

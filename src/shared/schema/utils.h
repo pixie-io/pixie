@@ -12,6 +12,7 @@ namespace pl {
  * A relation and accompanying information such as names and ids.
  */
 struct RelationInfo {
+  RelationInfo() {}
   RelationInfo(std::string name, uint64_t id, table_store::schema::Relation relation)
       : name(std::move(name)), id(id), tabletized(false), relation(std::move(relation)) {}
 
@@ -22,6 +23,7 @@ struct RelationInfo {
         tabletized(true),
         tabletization_key_idx(tabletization_key_idx),
         relation(std::move(relation)) {}
+
   std::string name;
   uint64_t id;
   bool tabletized;

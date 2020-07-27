@@ -46,7 +46,6 @@ Status PEMManager::InitSchemas() {
 
   // This should eventually be done by subscribe requests.
   auto relation_info_vec = ConvertSubscribePBToRelationInfo(subscribe_pb);
-  PL_RETURN_IF_ERROR(relation_info_manager()->UpdateRelationInfo(relation_info_vec));
   for (const auto& relation_info : relation_info_vec) {
     if (relation_info.name == "http_events") {
       // Make http_events hold 512Mi. This is a hack and will be removed once we have proactive
@@ -59,6 +58,7 @@ Status PEMManager::InitSchemas() {
           table_store()->AddTable(relation_info.id, relation_info.name,
                                   table_store::Table::Create(relation_info.relation)));
     }
+    PL_RETURN_IF_ERROR(relation_info_manager()->AddRelationInfo(relation_info));
   }
   return Status::OK();
 }
