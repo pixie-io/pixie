@@ -322,7 +322,7 @@ def probe_func():
             {'err': pxtrace.RetExpr('$0.a')},
             {'latency': pxtrace.FunctionLatency()}]
 
-pxtrace.UpsertTracePoint('http_return',
+pxtrace.UpsertTracepoint('http_return',
                          "http_return_table",
                          probe_func,
                          px.uint128("123e4567-e89b-12d3-a456-426655440000"),

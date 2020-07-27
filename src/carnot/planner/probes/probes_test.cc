@@ -40,7 +40,7 @@ def probe_func():
             {'err': pxtrace.RetExpr('$0.a')},
             {'latency': pxtrace.FunctionLatency()}]
 
-pxtrace.UpsertTracePoint('http_return',
+pxtrace.UpsertTracepoint('http_return',
                          'http_return_table',
                          probe_func,
                          px.uint128("123e4567-e89b-12d3-a456-426655440000"),
@@ -114,7 +114,7 @@ def http_func_probe():
             {'resp_body': pxtrace.ArgExpr('req_status')}]
 
 # NOTE: syntax not supported yet.
-pxtrace.UpsertTracePoints('myfunc',
+pxtrace.UpsertTracepoints('myfunc',
                     px.uint128("123e4567-e89b-12d3-a456-426655440000"),
                     "5m")
                     .AddProbe("cool_func_table", cool_func_probe)
@@ -212,13 +212,13 @@ def http_func_probe():
             {'resp_body': pxtrace.ArgExpr('req_status')}]
 
 
-pxtrace.UpsertTracePoint('cool_func',
+pxtrace.UpsertTracepoint('cool_func',
                     'cool_func_table',
                     cool_func_probe,
                     px.uint128("123e4567-e89b-12d3-a456-426655440000"),
                     "5m")
 
-pxtrace.UpsertTracePoint('http_return_value',
+pxtrace.UpsertTracepoint('http_return_value',
                     'http_table',
                     http_func_probe,
                     px.uint128("7654e321-e89b-12d3-a456-426655440000"),
@@ -242,7 +242,7 @@ import px
 def no_return_value_probe():
     id = pxtrace.ArgExpr('id')
 
-pxtrace.UpsertTracePoint('my_http_return_value',
+pxtrace.UpsertTracepoint('my_http_return_value',
                     'no_ret_val',
                     no_return_value_probe,
                     px.uint128("7654e321-e89b-12d3-a456-426655440000"),
@@ -283,7 +283,7 @@ import px
 
 $0
 
-pxtrace.UpsertTracePoint('p1',
+pxtrace.UpsertTracepoint('p1',
                     'tablename',
                     probe_func,
                     px.uint128("7654e321-e89b-12d3-a456-426655440000"),
