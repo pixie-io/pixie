@@ -12,7 +12,7 @@ namespace planner {
 
 using table_store::schemapb::Schema;
 
-StatusOr<std::unique_ptr<RelationMap>> LogicalPlanner::MakeRelationMap(const Schema& schema_pb) {
+StatusOr<std::unique_ptr<RelationMap>> MakeRelationMapFromSchema(const Schema& schema_pb) {
   auto rel_map = std::make_unique<RelationMap>();
   for (auto& relation_pair : schema_pb.relation_map()) {
     pl::table_store::schema::Relation rel;
@@ -22,11 +22,24 @@ StatusOr<std::unique_ptr<RelationMap>> LogicalPlanner::MakeRelationMap(const Sch
 
   return rel_map;
 }
+StatusOr<std::unique_ptr<RelationMap>> MakeRelationMapFromDistributedState(
+    const distributedpb::DistributedState& state_pb) {
+  auto rel_map = std::make_unique<RelationMap>();
+  for (const auto& schema_info : state_pb.schema_info()) {
+    pl::table_store::schema::Relation rel;
+    PL_RETURN_IF_ERROR(rel.FromProto(&schema_info.relation()));
+    LOG(INFO) << schema_info.name() << rel.DebugString();
+    rel_map->emplace(schema_info.name(), rel);
+  }
 
-StatusOr<std::unique_ptr<CompilerState>> LogicalPlanner::CreateCompilerState(
-    const Schema& schema, RegistryInfo* registry_info, int64_t max_output_rows_per_table) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<RelationMap> rel_map, MakeRelationMap(schema));
+  return rel_map;
+}
 
+StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
+    const distributedpb::LogicalPlannerState& logical_state, RegistryInfo* registry_info,
+    int64_t max_output_rows_per_table) {
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<RelationMap> rel_map,
+                      MakeRelationMapFromDistributedState(logical_state.distributed_state()));
   // Create a CompilerState obj using the relation map and grabbing the current time.
 
   return std::make_unique<planner::CompilerState>(std::move(rel_map), registry_info,
@@ -56,7 +69,7 @@ StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
   auto ms = logical_state.plan_options().max_output_rows_per_table();
   VLOG(1) << "Max output rows: " << ms;
   PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
-                      CreateCompilerState(logical_state.schema(), registry_info.get(), ms));
+                      CreateCompilerState(logical_state, registry_info.get(), ms));
 
   std::vector<plannerpb::QueryRequest::FuncToExecute> exec_funcs(query_request.exec_funcs().begin(),
                                                                  query_request.exec_funcs().end());
@@ -76,7 +89,7 @@ StatusOr<std::unique_ptr<compiler::DynamicTraceIR>> LogicalPlanner::CompileTrace
   auto ms = logical_state.plan_options().max_output_rows_per_table();
   VLOG(1) << "Max output rows: " << ms;
   PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
-                      CreateCompilerState(logical_state.schema(), registry_info.get(), ms));
+                      CreateCompilerState(logical_state, registry_info.get(), ms));
   return compiler_.CompileTrace(mutations_req.query_str(), compiler_state.get());
 }
 

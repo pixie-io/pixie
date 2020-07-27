@@ -70,13 +70,6 @@ class LogicalPlanner : public NotCopyable {
   LogicalPlanner() {}
 
  private:
-  StatusOr<std::unique_ptr<RelationMap>> MakeRelationMap(
-      const table_store::schemapb::Schema& schema_pb);
-
-  StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
-      const table_store::schemapb::Schema& schema, RegistryInfo* registry_info,
-      int64_t max_output_rows_per_table);
-
   compiler::Compiler compiler_;
   std::unique_ptr<distributed::Planner> distributed_planner_;
   std::unique_ptr<planner::RegistryInfo> registry_info_;
