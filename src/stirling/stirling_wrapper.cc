@@ -56,7 +56,7 @@ std::vector<std::string> g_table_print_enables = {
 // Put this in global space, so we can kill it in the signal handler.
 Stirling* g_stirling = nullptr;
 pl::ProcessStatsMonitor* g_process_stats_monitor = nullptr;
-absl::flat_hash_map<uint64_t, const ::pl::stirling::stirlingpb::InfoClass*> g_table_info_map;
+absl::flat_hash_map<uint64_t, ::pl::stirling::stirlingpb::InfoClass> g_table_info_map;
 absl::base_internal::SpinLock g_callback_state_lock;
 
 void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
@@ -69,7 +69,7 @@ void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
     LOG(DFATAL) << absl::Substitute("Encountered unknown table id $0", table_id);
     return;
   }
-  const pl::stirling::stirlingpb::InfoClass& table_info = *(iter->second);
+  const pl::stirling::stirlingpb::InfoClass& table_info = iter->second;
 
   // Only output enabled tables (lookup by name).
   if (std::find(g_table_print_enables.begin(), g_table_print_enables.end(),

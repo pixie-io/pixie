@@ -47,9 +47,9 @@ class PubSubManager {
  * Utility function to index a publish message by ID, for quick access.
  */
 inline void IndexPublication(const stirlingpb::Publish& pub,
-                             absl::flat_hash_map<uint64_t, const stirlingpb::InfoClass*>* map) {
+                             absl::flat_hash_map<uint64_t, stirlingpb::InfoClass>* map) {
   for (const auto& info_class : pub.published_info_classes()) {
-    (*map)[info_class.id()] = &info_class;
+    (*map)[info_class.id()] = info_class;
   }
 }
 
