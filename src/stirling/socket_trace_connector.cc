@@ -1290,7 +1290,8 @@ void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTa
 
   auto& agg_stats = connection_stats_.mutable_agg_stats();
 
-  for (auto iter = agg_stats.begin(); iter != agg_stats.end(); ++iter) {
+  auto iter = agg_stats.begin();
+  while (iter != agg_stats.end()) {
     const auto& key = iter->first;
     const auto& stats = iter->second;
 
@@ -1298,7 +1299,8 @@ void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTa
     if (!upids.contains(current_upid)) {
       // TODO(yzhao): It makes sense to push out one last record for the final state of the exited
       // UPID.
-      agg_stats.erase(iter);
+      // NOTE: absl doesn't support iter = agg_stats.erase(iter), so must use this style.
+      agg_stats.erase(iter++);
       continue;
     }
 
@@ -1325,6 +1327,8 @@ void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTa
 #ifndef NDEBUG
     r.Append<idx::kPxInfo>("");
 #endif
+
+    ++iter;
   }
 }
 
