@@ -3,8 +3,10 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/gogo/protobuf/types"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -30,14 +32,16 @@ type Server struct {
 	mds               MetadataStore
 }
 
-// NewServerWithClock creates a new server with a clock.
-func NewServerWithClock(env metadataenv.MetadataEnv, agtMgr AgentManager, tracepointManager *TracepointManager, mds MetadataStore, clock utils.Clock) (*Server, error) {
+// NewServerWithClock creates a new server with a clock and the ability to configure the chunk size and
+// update period of the GetAgentUpdates handler.
+func NewServerWithClock(env metadataenv.MetadataEnv, agtMgr AgentManager, tracepointManager *TracepointManager,
+	mds MetadataStore, clock utils.Clock) (*Server, error) {
 	return &Server{
 		env:               env,
 		agentManager:      agtMgr,
-		tracepointManager: tracepointManager,
 		clock:             clock,
 		mds:               mds,
+		tracepointManager: tracepointManager,
 	}, nil
 }
 
@@ -157,8 +161,78 @@ func (s *Server) GetAgentTableMetadata(ctx context.Context, req *metadatapb.Agen
 }
 
 // GetAgentUpdates streams agent updates to the requestor periodically as they come in.
+// It first sends the complete initial agent state in the beginning of the request, and then deltas after that.
+// Note that as it is currently designed, it can only handle one stream at a time (to a single metadata server).
+// That is because the agent manager tracks the deltas in the state in a single object, rather than per request.
 func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metadatapb.MetadataService_GetAgentUpdatesServer) error {
-	// TODO(nserrino): PP-2057 fill this in.
+	// First read the entire initial state of the agents first, then stream updates after that.
+	readInitialState := true
+	if req.MaxUpdatesPerResponse == 0 {
+		return status.Error(codes.InvalidArgument, "Max updates per agent should be specified in AgentUpdatesRequest")
+	}
+	agentChunkSize := int(req.MaxUpdatesPerResponse)
+	if req.MaxUpdateInterval == nil {
+		return status.Error(codes.InvalidArgument, "Max update interval should be specified in AgentUpdatesRequest")
+	}
+	agentUpdatePeriod, err := types.DurationFromProto(req.MaxUpdateInterval)
+	if err != nil {
+		return status.Error(codes.Internal, fmt.Sprintf("Failed to parse duration: %+v", err))
+	}
+
+	for {
+		agents, agentTableMetadatas, deletedAgents, err := s.agentManager.GetAgentUpdates(readInitialState)
+
+		if err != nil {
+			return err
+		}
+		if readInitialState {
+			readInitialState = false
+		}
+
+		currentIdx := 0
+		finishedAgents := len(agents) == 0
+		finishedAgentTableMD := len(agentTableMetadatas) == 0
+		finishedDeleted := len(deletedAgents) == 0
+
+		// Chunk up the data so we don't overwhelm the query broker with a lot of data at once.
+		for !(finishedAgents && finishedAgentTableMD && finishedDeleted) {
+			select {
+			case <-srv.Context().Done():
+				return nil
+			default:
+				response := &metadatapb.AgentUpdatesResponse{}
+
+				for idx := currentIdx; idx < currentIdx+agentChunkSize; idx++ {
+					if idx < len(agents) {
+						response.AgentUpdates = append(response.AgentUpdates, agents[idx])
+					} else {
+						finishedAgents = true
+					}
+					if idx < len(agentTableMetadatas) {
+						response.AgentTableMetadataUpdates = append(response.AgentTableMetadataUpdates,
+							agentTableMetadatas[idx])
+					} else {
+						finishedAgentTableMD = true
+					}
+					if idx < len(deletedAgents) {
+						response.DeletedAgents = append(response.DeletedAgents,
+							utils.ProtoFromUUID(&deletedAgents[idx]))
+					} else {
+						finishedDeleted = true
+					}
+				}
+
+				currentIdx += agentChunkSize
+
+				err := srv.Send(response)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		time.Sleep(agentUpdatePeriod)
+	}
+
 	return nil
 }
 

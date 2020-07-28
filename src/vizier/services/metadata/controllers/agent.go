@@ -566,7 +566,6 @@ func (m *AgentManagerImpl) GetAgentUpdates(readInitialState bool) ([]*agentpb.Ag
 
 	if !readInitialState {
 		for updatedAgentID := range m.updatedAgents.updated {
-			log.Errorf("%+v", updatedAgentID)
 			agent, err := m.mds.GetAgent(updatedAgentID)
 			if err != nil {
 				return nil, nil, nil, err

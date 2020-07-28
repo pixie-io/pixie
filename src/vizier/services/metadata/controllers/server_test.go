@@ -3,12 +3,21 @@ package controllers_test
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net"
+	"sync"
 	"testing"
 	"time"
 
+	"google.golang.org/grpc"
+	grpc_metadata "google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/test/bufconn"
+
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
@@ -16,6 +25,8 @@ import (
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	bloomfilterpb "pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
 	sharedmetadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
+	"pixielabs.ai/pixielabs/src/shared/services"
+	env2 "pixielabs.ai/pixielabs/src/shared/services/env"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	logicalpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
 	utils "pixielabs.ai/pixielabs/src/utils"
@@ -672,4 +683,275 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			}
 		})
 	}
+}
+
+func createDialer(lis *bufconn.Listener) func(string, time.Duration) (net.Conn, error) {
+	return func(str string, duration time.Duration) (conn net.Conn, e error) {
+		return lis.Dial()
+	}
+}
+
+func TestGetAgentUpdates(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+
+	agent1IDStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+	u1, err := uuid.FromString(agent1IDStr)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+	u1pb := utils.ProtoFromUUID(&u1)
+
+	agent2IDStr := "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+	u2, err := uuid.FromString(agent2IDStr)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+	u2pb := utils.ProtoFromUUID(&u2)
+
+	agent3IDStr := "61123ced-1de9-4ab1-ae6a-0ba08c8c676c"
+	u3, err := uuid.FromString(agent3IDStr)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+	u3pb := utils.ProtoFromUUID(&u3)
+
+	initialAgents := []*agentpb.Agent{
+		&agentpb.Agent{
+			LastHeartbeatNS: 10,
+			CreateTimeNS:    5,
+			Info: &agentpb.AgentInfo{
+				AgentID: u1pb,
+				HostInfo: &agentpb.HostInfo{
+					Hostname: "test_host",
+					HostIP:   "127.0.0.1",
+				},
+			},
+			ASID: 123,
+		},
+		&agentpb.Agent{
+			LastHeartbeatNS: 20,
+			CreateTimeNS:    0,
+			Info: &agentpb.AgentInfo{
+				AgentID: u2pb,
+				HostInfo: &agentpb.HostInfo{
+					Hostname: "another_host",
+					HostIP:   "127.0.0.1",
+				},
+			},
+			ASID: 456,
+		},
+		&agentpb.Agent{
+			LastHeartbeatNS: 30,
+			CreateTimeNS:    0,
+			Info: &agentpb.AgentInfo{
+				AgentID: u3pb,
+				HostInfo: &agentpb.HostInfo{
+					Hostname: "yet another_host",
+					HostIP:   "127.0.0.1",
+				},
+			},
+			ASID: 789,
+		},
+	}
+
+	initialMDs := []*metadatapb.AgentTableMetadata{
+		&metadatapb.AgentTableMetadata{
+			AgentID: u2pb,
+			DataInfo: &messagespb.AgentDataInfo{
+				MetadataInfo: &distributedpb.MetadataInfo{
+					MetadataFields: []sharedmetadatapb.MetadataType{
+						sharedmetadatapb.CONTAINER_ID,
+						sharedmetadatapb.POD_NAME,
+					},
+					Filter: &distributedpb.MetadataInfo_XXHash64BloomFilter{
+						XXHash64BloomFilter: &bloomfilterpb.XXHash64BloomFilter{
+							Data:      []byte("1234"),
+							NumHashes: 4,
+						},
+					},
+				},
+			},
+		},
+		&metadatapb.AgentTableMetadata{
+			AgentID: u1pb,
+			DataInfo: &messagespb.AgentDataInfo{
+				MetadataInfo: &distributedpb.MetadataInfo{
+					MetadataFields: []sharedmetadatapb.MetadataType{
+						sharedmetadatapb.CONTAINER_ID,
+						sharedmetadatapb.POD_NAME,
+					},
+					Filter: &distributedpb.MetadataInfo_XXHash64BloomFilter{
+						XXHash64BloomFilter: &bloomfilterpb.XXHash64BloomFilter{
+							Data:      []byte("5678"),
+							NumHashes: 3,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Initial state (2 messages)
+	mockAgtMgr.
+		EXPECT().
+		GetAgentUpdates(true).
+		Return(initialAgents, initialMDs, []uuid.UUID{}, nil)
+
+	// Empty state (0 messages)
+	mockAgtMgr.
+		EXPECT().
+		GetAgentUpdates(false).
+		Return(nil, nil, nil, nil)
+
+	//  Delete agent (1 message)
+	mockAgtMgr.
+		EXPECT().
+		GetAgentUpdates(false).
+		Return(nil, nil, []uuid.UUID{u1}, nil)
+
+	// Recreate message (1 message)
+	mockAgtMgr.
+		EXPECT().
+		GetAgentUpdates(false).
+		Return([]*agentpb.Agent{initialAgents[0]}, nil, nil, nil)
+
+	// Empty state (0 messages)
+	mockAgtMgr.
+		EXPECT().
+		GetAgentUpdates(false).
+		Return(nil, nil, nil, nil).
+		AnyTimes()
+
+	// Set up server.
+	mdEnv, err := metadataenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	clock := testingutils.NewTestClock(time.Unix(0, 70))
+	server, err := controllers.NewServerWithClock(mdEnv, mockAgtMgr, nil, mockMds, clock)
+
+	env := env2.New()
+	s := services.CreateGRPCServer(env, &services.GRPCServerOptions{})
+	metadatapb.RegisterMetadataServiceServer(s, server)
+	lis := bufconn.Listen(1024 * 1024)
+
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			t.Fatalf("Server exited with error: %v\n", err)
+		}
+	}()
+
+	ctx := context.Background()
+	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithDialer(createDialer(lis)), grpc.WithInsecure())
+	if err != nil {
+		t.Fatalf("Failed to dial bufnet: %v", err)
+	}
+	defer conn.Close()
+
+	client := metadatapb.NewMetadataServiceClient(conn)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	var resps []*metadatapb.AgentUpdatesResponse
+	var readErr error
+
+	errCh := make(chan error)
+	msgCh := make(chan *metadatapb.AgentUpdatesResponse)
+	msgCount := 0
+	expectedMsgs := 4
+
+	go func() {
+		validTestToken := testingutils.GenerateTestJWTToken(t, viper.GetString("jwt_signing_key"))
+		ctx = grpc_metadata.AppendToOutgoingContext(ctx, "authorization",
+			fmt.Sprintf("bearer %s", validTestToken))
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		resp, err := client.GetAgentUpdates(ctx, &metadatapb.AgentUpdatesRequest{
+			MaxUpdateInterval: &types.Duration{
+				Seconds: 0,
+				Nanos:   10 * 1000 * 1000, // 10 ms
+			},
+			MaxUpdatesPerResponse: 2,
+		})
+		assert.NotNil(t, resp)
+		assert.Nil(t, err)
+
+		defer func() {
+			close(errCh)
+			close(msgCh)
+		}()
+
+		for {
+			msg, err := resp.Recv()
+			if err != nil {
+				errCh <- err
+				return
+			}
+			msgCh <- msg
+			msgCount++
+			if msgCount >= expectedMsgs {
+				return
+			}
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		timeout := time.NewTimer(5 * time.Second)
+		for {
+			select {
+			case <-timeout.C:
+				t.Fatal("timeout")
+			case err := <-errCh:
+				readErr = err
+				return
+			case msg := <-msgCh:
+				resps = append(resps, msg)
+				if len(resps) >= expectedMsgs {
+					return
+				}
+			}
+		}
+	}()
+	wg.Wait()
+	assert.Nil(t, readErr)
+	assert.Equal(t, len(resps), expectedMsgs)
+
+	// Check first message
+	r0 := resps[0]
+	assert.Equal(t, len(r0.AgentUpdates), 2)
+	assert.Equal(t, r0.AgentUpdates[0], initialAgents[0])
+	assert.Equal(t, r0.AgentUpdates[1], initialAgents[1])
+	assert.Equal(t, len(r0.AgentTableMetadataUpdates), 2)
+	assert.Equal(t, r0.AgentTableMetadataUpdates[0], initialMDs[0])
+	assert.Equal(t, r0.AgentTableMetadataUpdates[1], initialMDs[1])
+	assert.Equal(t, len(r0.DeletedAgents), 0)
+
+	// Check second message
+	r1 := resps[1]
+	assert.Equal(t, len(r1.AgentUpdates), 1)
+	assert.Equal(t, r1.AgentUpdates[0], initialAgents[2])
+	assert.Equal(t, len(r1.AgentTableMetadataUpdates), 0)
+	assert.Equal(t, len(r1.DeletedAgents), 0)
+
+	// Check third message
+	r2 := resps[2]
+	assert.Equal(t, len(r2.AgentUpdates), 0)
+	assert.Equal(t, len(r2.AgentTableMetadataUpdates), 0)
+	assert.Equal(t, len(r2.DeletedAgents), 1)
+	assert.Equal(t, r2.DeletedAgents[0], u1pb)
+
+	// Check fourth message
+	r3 := resps[3]
+	assert.Equal(t, len(r3.AgentUpdates), 1)
+	assert.Equal(t, r3.AgentUpdates[0], initialAgents[0])
+	assert.Equal(t, len(r3.AgentTableMetadataUpdates), 0)
+	assert.Equal(t, len(r3.DeletedAgents), 0)
 }

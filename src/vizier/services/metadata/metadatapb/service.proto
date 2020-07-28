@@ -81,7 +81,15 @@ message AgentTableMetadataResponse {
   repeated AgentTableMetadata metadata_by_agent = 1;
 }
 
-message AgentUpdatesRequest {}
+message AgentUpdatesRequest {
+  // The maximum amount of time to wait between updates.
+  // Note that since a given update may be streamed across multiple AgentUpdatesResponses,
+  // it's possible that the duration between responses will be less than `update_interval`.
+  google.protobuf.Duration max_update_interval = 1;
+  // The max number of updates to put in a given response. Specifically, the max lengths of the
+  // deleted_agents, agent_updates, and agent_table_metadata_updates arrays (individually).
+  int32 max_updates_per_response = 2;
+}
 
 message AgentUpdatesResponse {
   // List of agents that have been deleted.
