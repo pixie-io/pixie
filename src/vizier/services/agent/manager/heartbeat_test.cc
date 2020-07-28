@@ -223,6 +223,35 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatMetadata) {
   EXPECT_FALSE(hb->update_info().data().has_metadata_info());
 }
 
+TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatRelationUpdates) {
+  dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
+  EXPECT_EQ(1, nats_conn_->published_msgs_.size());
+  auto hb = nats_conn_->published_msgs_[0].mutable_heartbeat();
+  EXPECT_EQ(0, hb->sequence_number());
+  EXPECT_THAT(*hb->mutable_update_info(), Partially(EqualsProto(kAgentUpdateInfoSchemaNoTablets)));
+
+  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 4000));
+  dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
+
+  auto hb_ack = std::make_unique<messages::VizierMessage>();
+  auto hb_ack_msg = hb_ack->mutable_heartbeat_ack();
+  hb_ack_msg->set_sequence_number(0);
+
+  auto s = heartbeat_handler_->HandleMessage(std::move(hb_ack));
+  Relation relation2({types::TIME64NS, types::FLOAT64}, {"time_", "gauge"});
+  RelationInfo relation_info2("relation2", /* id */ 1, relation2);
+  s = relation_info_manager_->AddRelationInfo(relation_info2);
+
+  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 5000 + 1));
+  dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
+
+  EXPECT_EQ(3, nats_conn_->published_msgs_.size());
+  hb = nats_conn_->published_msgs_[2].mutable_heartbeat();
+  EXPECT_EQ(1, hb->sequence_number());
+  // Since relation info was updated it should publish the entire schema again.
+  EXPECT_EQ(3, hb->mutable_update_info()->schema().size());
+}
+
 }  // namespace agent
 }  // namespace vizier
 }  // namespace pl
