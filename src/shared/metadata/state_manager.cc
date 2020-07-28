@@ -236,6 +236,7 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
       cgroups_active_upids.emplace(md->asid(), pid, proc_parser.GetPIDStartTimeTicks(pid));
     }
 
+    std::vector<UPID> upids_to_deactivate;
     for (const auto& upid : cinfo->active_upids()) {
       auto it = cgroups_active_upids.find(upid);
       if (it != cgroups_active_upids.end()) {
@@ -244,7 +245,7 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
       } else {
         // It does not exist in the new set, but does in the old. Which means that the PID has died.
         // We mark the time of death as current and mark the PID as inactive.
-        cinfo->DeactivateUPID(upid);
+        upids_to_deactivate.emplace_back(upid);
         md->MarkUPIDAsStopped(upid, ts);
 
         // Push deletion events to the queue.
@@ -252,7 +253,9 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
         pid_updates->enqueue(std::move(pid_status_event));
       }
     }
-
+    for (const auto& upid : upids_to_deactivate) {
+      cinfo->DeactivateUPID(upid);
+    }
     // The pids left over in the cgroups upids are new processes.
     for (const auto& upid : cgroups_active_upids) {
       auto pid_info = std::make_unique<PIDInfo>(upid, proc_parser.GetPIDCmdline(upid.pid()), cid);
