@@ -36,6 +36,22 @@ def containers(start_time: str, pod: px.Pod):
     return df
 
 
+def processes(start_time: str, pod: px.Pod):
+    ''' A list of processes in `pod`.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @pod: The name of the pod to filter on.
+
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df = df[df.ctx['pod'] == pod]
+    df.cmd = df.ctx['cmdline']
+    df.pid = df.ctx['pid']
+    df = df.groupby(['pid', 'cmd', 'upid']).agg()
+    return df
+
+
 def resource_timeseries(start_time: str, pod: px.Pod):
     ''' Compute the resource usage as a timeseries for `pod`.
 

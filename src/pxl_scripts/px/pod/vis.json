@@ -222,6 +222,31 @@
       }
     },
     {
+      "name": "Process List",
+      "func": {
+        "name": "processes",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      },
+      "position": {
+        "x": 8,
+        "y": 6,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
       "name": "Bytes Read and Written",
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
