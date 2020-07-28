@@ -26,8 +26,9 @@ Status PEMManager::PostRegisterHook() {
   PL_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kExecuteQueryRequest,
                                             execute_query_handler));
 
-  tracepoint_manager_ = std::make_shared<TracepointManager>(dispatcher_.get(), info(),
-                                                            nats_connector(), stirling_.get());
+  tracepoint_manager_ =
+      std::make_shared<TracepointManager>(dispatcher_.get(), info(), nats_connector(),
+                                          stirling_.get(), table_store(), relation_info_manager());
   PL_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kTracepointMessage,
                                             tracepoint_manager_));
   return Status::OK();
