@@ -72,4 +72,9 @@ message TableInfo {
 // ComputedSchema describes the schema available on Vizier.
 message ComputedSchema {
   repeated TableInfo tables = 1;
+  message AgentIDs {
+    repeated uuidpb.UUID agent_id = 1 [ (gogoproto.customname) = "AgentID" ];
+  }
+  map<string, AgentIDs> table_name_to_agent_ids = 2
+      [ (gogoproto.customname) = "TableNameToAgentIDs" ];
 }

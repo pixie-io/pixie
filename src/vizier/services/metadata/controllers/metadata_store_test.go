@@ -130,6 +130,13 @@ func TestKVMetadataStore_DeleteAgent(t *testing.T) {
 		EXPECT().
 		DeleteWithPrefix("/agentDataInfo/" + testutils.ExistingAgentUUID).
 		Return(nil)
+
+		// DeleteAgent calls UpdateSchemas(uuid, {}) which calles Get("/computedSchema")
+	mockDs.
+		EXPECT().
+		Get("/computedSchema").
+		Return(nil, nil)
+
 	mockDs.
 		EXPECT().
 		Get("/agent/"+testutils.NewAgentUUID).
@@ -387,10 +394,14 @@ func TestKVMetadataStore_GetASID(t *testing.T) {
 	assert.Equal(t, uint32(3), id3)
 }
 
-func TestKVMetadataStore_UpdateSchemas(t *testing.T) {
+func TestKVMetadataStore_UpdateSchemasBasic(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		Get("/computedSchema").
+		Return(nil, nil)
 
 	clock := testingutils.NewTestClock(time.Unix(2, 0))
 	c := kvstore.NewCacheWithClock(mockDs, clock)
@@ -428,6 +439,126 @@ func TestKVMetadataStore_UpdateSchemas(t *testing.T) {
 	proto.Unmarshal(cSchema, computedPb)
 	assert.Equal(t, 1, len(computedPb.Tables))
 	assert.Equal(t, "a_table", computedPb.Tables[0].Name)
+
+	agentIDs, hasTableName := computedPb.TableNameToAgentIDs["a_table"]
+	assert.True(t, hasTableName)
+	assert.Equal(t, 1, len(agentIDs.AgentID))
+	uuidPb := utils.ProtoFromUUID(&u)
+	assert.Equal(t, agentIDs.AgentID[0], uuidPb)
+}
+
+func getTableNames(computedSchemaPb *storepb.ComputedSchema) []string {
+	names := make([]string, len(computedSchemaPb.Tables))
+	for i, schema := range computedSchemaPb.Tables {
+		names[i] = schema.Name
+	}
+	return names
+}
+
+func TestKVMetadataStore_UpdateSchemasComplex(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		Get("/computedSchema").
+		Return(nil, nil)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	schema1 := new(storepb.TableInfo)
+	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	schema2 := new(storepb.TableInfo)
+	if err := proto.UnmarshalText(testutils.SchemaInfo2PB, schema2); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	schema3 := new(storepb.TableInfo)
+	if err := proto.UnmarshalText(testutils.SchemaInfo3PB, schema3); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	agent1u, err := uuid.FromString(testutils.NewAgentUUID)
+	if err != nil {
+		t.Fatal("Could not parse UUID from string.")
+	}
+
+	agent2u, err := uuid.FromString(testutils.ExistingAgentUUID)
+	if err != nil {
+		t.Fatal("Could not parse UUID from string.")
+	}
+
+	agent1schemas := make([]*storepb.TableInfo, 2)
+	agent1schemas[0] = schema1
+	agent1schemas[1] = schema2
+
+	agent2schemas := make([]*storepb.TableInfo, 2)
+	agent2schemas[0] = schema2
+	agent2schemas[1] = schema3
+
+	// Here we test that updateSchemas creates a computedSchema that merges all three schemas,
+	// but assigns to each agent accordingly.
+	err = mds.UpdateSchemas(agent1u, agent1schemas)
+	assert.Nil(t, err)
+
+	err = mds.UpdateSchemas(agent2u, agent2schemas)
+	assert.Nil(t, err)
+
+	cSchema, err := c.Get("/computedSchema")
+	assert.Nil(t, err)
+	assert.NotNil(t, cSchema)
+	computedPb := &storepb.ComputedSchema{}
+	proto.Unmarshal(cSchema, computedPb)
+
+	if !assert.ElementsMatch(t,
+		[]string{"a_table", "b_table", "c_table"},
+		getTableNames(computedPb)) {
+		t.Fatal("Does not match expected tables")
+	}
+
+	agent1uuid := utils.ProtoFromUUID(&agent1u)
+	agent2uuid := utils.ProtoFromUUID(&agent2u)
+
+	aTableAgents := computedPb.TableNameToAgentIDs["a_table"]
+	assert.ElementsMatch(t, aTableAgents.AgentID, []*uuidpb.UUID{agent1uuid})
+
+	bTableAgents := computedPb.TableNameToAgentIDs["b_table"]
+	assert.ElementsMatch(t, bTableAgents.AgentID, []*uuidpb.UUID{agent1uuid, agent2uuid})
+
+	cTableAgents := computedPb.TableNameToAgentIDs["c_table"]
+	assert.ElementsMatch(t, cTableAgents.AgentID, []*uuidpb.UUID{agent2uuid})
+
+	// Now we want to delete all schemas for agent 2.
+	err = mds.UpdateSchemas(agent2u, []*storepb.TableInfo{})
+	assert.Nil(t, err)
+
+	// Get the computedSchema again.
+	cSchema, err = c.Get("/computedSchema")
+	assert.Nil(t, err)
+	assert.NotNil(t, cSchema)
+	computedPb = &storepb.ComputedSchema{}
+	proto.Unmarshal(cSchema, computedPb)
+
+	// We expect c_table to be deleted because no agents exist on it.
+	if !assert.ElementsMatch(t,
+		[]string{"a_table", "b_table"},
+		getTableNames(computedPb)) {
+		t.Fatal("Does not match expected tables")
+	}
+
+	aTableAgents = computedPb.TableNameToAgentIDs["a_table"]
+	assert.ElementsMatch(t, aTableAgents.AgentID, []*uuidpb.UUID{agent1uuid})
+
+	// Should drop agent2 from the list.
+	bTableAgents = computedPb.TableNameToAgentIDs["b_table"]
+	assert.ElementsMatch(t, bTableAgents.AgentID, []*uuidpb.UUID{agent1uuid})
 }
 
 func TestKVMetadataStore_GetComputedSchemas(t *testing.T) {

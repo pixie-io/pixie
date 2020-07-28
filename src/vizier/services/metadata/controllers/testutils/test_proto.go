@@ -241,6 +241,34 @@ columns {
 }
 `
 
+// SchemaInfo2PB is the protobuf for another schema info.
+var SchemaInfo2PB = `
+name: "b_table"
+start_timestamp_ns: 2
+columns {
+  name: "column_3"
+  data_type: 3
+}
+columns {
+  name: "column_4"
+  data_type: 5
+}
+`
+
+// SchemaInfo3PB is the protobuf for another schema info.
+var SchemaInfo3PB = `
+name: "c_table"
+start_timestamp_ns: 2
+columns {
+  name: "column_5"
+  data_type: 1
+}
+columns {
+  name: "column_6"
+  data_type: 2
+}
+`
+
 // RegisterAgentRequest
 
 // RegisterAgentRequestPB is the protobuf for a register agent request.

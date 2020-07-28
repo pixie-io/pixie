@@ -357,6 +357,12 @@ func (mds *KVMetadataStore) DeleteAgent(agentID uuid.UUID) error {
 
 	mds.cache.DeleteAll(delKeys)
 
+	// Deletes from the computedSchema
+	err = mds.UpdateSchemas(agentID, []*storepb.TableInfo{})
+	if err != nil {
+		return err
+	}
+
 	err = mds.cache.DeleteWithPrefix(getAgentDataInfoKey(agentID))
 	if err != nil {
 		return err
@@ -511,40 +517,15 @@ func (mds *KVMetadataStore) GetASID() (uint32, error) {
 
 /* =============== Schema Operations ============== */
 
-// UpdateSchemas updates the given schemas in the metadata store.
-func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.TableInfo) error {
-	computedSchemaPb := storepb.ComputedSchema{
-		Tables: schemas,
-	}
-	computedSchema, err := computedSchemaPb.Marshal()
-	if err != nil {
-		log.WithError(err).Error("Could not computed schema update message.")
-		return err
-	}
+var errNoComputedSchemas = errors.New("Could not find any computed schemas")
 
-	for _, schemaPb := range schemas {
-		schema, err := schemaPb.Marshal()
-		if err != nil {
-			log.WithError(err).Error("Could not marshall schema update message.")
-			continue
-		}
-		mds.cache.Set(getAgentSchemaKey(agentID, schemaPb.Name), string(schema))
-	}
-	// TODO(michelle): PL-695 This currently assumes that if a schema is available on one agent,
-	// then it is available on all agents. This should be updated so that we handle situations where that is not the case.
-	mds.cache.Set(getComputedSchemasKey(), string(computedSchema))
-
-	return nil
-}
-
-// GetComputedSchemas gets all computed schemas in the metadata store.
-func (mds *KVMetadataStore) GetComputedSchemas() ([]*storepb.TableInfo, error) {
+func (mds *KVMetadataStore) getComputedSchemas() (*storepb.ComputedSchema, error) {
 	cSchemas, err := mds.cache.Get(getComputedSchemasKey())
 	if err != nil {
 		return nil, err
 	}
 	if cSchemas == nil {
-		return nil, fmt.Errorf("Could not find any computed schemas")
+		return nil, errNoComputedSchemas
 	}
 
 	computedSchemaPb := &storepb.ComputedSchema{}
@@ -553,6 +534,172 @@ func (mds *KVMetadataStore) GetComputedSchemas() ([]*storepb.TableInfo, error) {
 		return nil, err
 	}
 
+	return computedSchemaPb, nil
+}
+
+func deleteTableFromComputed(computedSchemaPb *storepb.ComputedSchema, tableName string) error {
+	idx := -1
+	for i, schemaPb := range computedSchemaPb.Tables {
+		if schemaPb.Name == tableName {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		return fmt.Errorf("schema name not found, cannot delete")
+	}
+
+	// Set the ith element equal to last element.
+	computedSchemaPb.Tables[idx] = computedSchemaPb.Tables[len(computedSchemaPb.Tables)-1]
+	// Truncate last element away.
+	computedSchemaPb.Tables = computedSchemaPb.Tables[:len(computedSchemaPb.Tables)-1]
+	delete(computedSchemaPb.TableNameToAgentIDs, tableName)
+	return nil
+}
+
+func deleteAgentFromComputed(computedSchemaPb *storepb.ComputedSchema, tableName string, agentIDPb *uuidpb.UUID) error {
+	agents := computedSchemaPb.TableNameToAgentIDs[tableName]
+	// If the number of agents is 1, delete the schema period.
+	if len(agents.AgentID) == 1 {
+		// A check to make sure the only element is the agent to delete. ideally would be a DCHECK.
+		if !agents.AgentID[0].Equal(agentIDPb) {
+			return fmt.Errorf("Agent marked for deletion not found in list of agents for %s", agentIDPb, tableName)
+		}
+		return deleteTableFromComputed(computedSchemaPb, tableName)
+	}
+
+	// If there are more than 1 agents then we delete the agents from the list.
+	idx := -1
+	for i, a := range agents.AgentID {
+		if a.Equal(agentIDPb) {
+			idx = i
+			break
+		}
+	}
+
+	if idx < 0 {
+		return fmt.Errorf("Agent %v marked for deletion not found in list of agents for %s", agentIDPb, tableName)
+	}
+
+	// Set the ith element equal to last element.
+	agents.AgentID[idx] = agents.AgentID[len(agents.AgentID)-1]
+	// Truncate last element away.
+	agents.AgentID = agents.AgentID[:len(agents.AgentID)-1]
+	computedSchemaPb.TableNameToAgentIDs[tableName] = agents
+	return nil
+}
+
+func initializeComputedSchema(computedSchemaPb *storepb.ComputedSchema) *storepb.ComputedSchema {
+	if computedSchemaPb == nil {
+		computedSchemaPb = &storepb.ComputedSchema{}
+	}
+	if computedSchemaPb.Tables == nil {
+		computedSchemaPb.Tables = make([]*storepb.TableInfo, 0)
+	}
+	if computedSchemaPb.TableNameToAgentIDs == nil {
+		computedSchemaPb.TableNameToAgentIDs = make(map[string]*storepb.ComputedSchema_AgentIDs)
+	}
+	return computedSchemaPb
+}
+
+// UpdateSchemas updates the given schemas in the metadata store.
+func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.TableInfo) error {
+	computedSchemaPb, err := mds.getComputedSchemas()
+	// If there are no computed schemas, that means we have yet to set one.
+	if err == errNoComputedSchemas {
+		// Reset error as this is not actually an error.
+		err = nil
+	}
+
+	// Other errors are still errors.
+	if err != nil {
+		log.WithError(err).Error("Could not get old schema.")
+		return err
+	}
+
+	computedSchemaPb = initializeComputedSchema(computedSchemaPb)
+
+	agentIDPb := utils.ProtoFromUUID(&agentID)
+	// Tracker for tables that were potentially deleted in the agent. We first track all the tables
+	// agent previously had, then compare to the tables it currently has. Any entry that's false here
+	// will have the entry deleted.
+	previousAgentTableTracker := make(map[string]bool)
+
+	// Add the list of tables that the agent currently belongs to.
+	for name, agents := range computedSchemaPb.TableNameToAgentIDs {
+		for _, a := range agents.AgentID {
+			if a.Equal(agentIDPb) {
+				previousAgentTableTracker[name] = false
+				break
+			}
+		}
+	}
+
+	for _, schemaPb := range schemas {
+		schema, err := schemaPb.Marshal()
+		if err != nil {
+			log.WithError(err).Error("Could not marshal schema update message.")
+			continue
+		}
+		// TODO(philkuz/michelle/nserrino) figure out if this is used, reverse map should replace it.
+		// Set the (agentID, schema) pair
+		mds.cache.Set(getAgentSchemaKey(agentID, schemaPb.Name), string(schema))
+
+		_, agentHasTable := previousAgentTableTracker[schemaPb.Name]
+		if agentHasTable {
+			// If it's in the new schema, we don't need to do anything, so we mark this true.
+			previousAgentTableTracker[schemaPb.Name] = true
+			continue
+		}
+		// We haven't seen the agent w/ this schema. That means two cases
+		// 1. The table exists in Vizier but agent is not associated.
+		// 2. The table does not exist in Vizier yet, so we need to add it.
+
+		agents, tableExists := computedSchemaPb.TableNameToAgentIDs[schemaPb.Name]
+
+		// Case 1 tableExists, but agent needs to be associated.
+		if tableExists {
+			agents.AgentID = append(agents.AgentID, agentIDPb)
+			continue
+		}
+
+		// Case 2 table does not exist, must add it to the list of schemas and
+		// create a map entry.
+		computedSchemaPb.Tables = append(computedSchemaPb.Tables, schemaPb)
+		computedSchemaPb.TableNameToAgentIDs[schemaPb.Name] = &storepb.ComputedSchema_AgentIDs{
+			AgentID: []*uuidpb.UUID{agentIDPb},
+		}
+	}
+
+	// Now find any tables that might have been deleted from an Agent.
+	for tableName, agentHasTable := range previousAgentTableTracker {
+		if agentHasTable {
+			continue
+		}
+		err := deleteAgentFromComputed(computedSchemaPb, tableName, agentIDPb)
+		if err != nil {
+			log.WithError(err).Errorf("Could not delete table to agent mapping %s -> %v", tableName, agentID)
+			return err
+		}
+	}
+
+	computedSchema, err := computedSchemaPb.Marshal()
+	if err != nil {
+		log.WithError(err).Error("Could not marshal computed schema update message.")
+		return err
+	}
+
+	mds.cache.Set(getComputedSchemasKey(), string(computedSchema))
+
+	return nil
+}
+
+// GetComputedSchemas gets all computed schemas in the metadata store.
+func (mds *KVMetadataStore) GetComputedSchemas() ([]*storepb.TableInfo, error) {
+	computedSchemaPb, err := mds.getComputedSchemas()
+	if err != nil {
+		return nil, err
+	}
 	return computedSchemaPb.Tables, nil
 }
 
