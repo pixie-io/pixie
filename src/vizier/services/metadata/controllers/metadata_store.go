@@ -519,9 +519,8 @@ func (mds *KVMetadataStore) GetASID() (uint32, error) {
 
 var errNoComputedSchemas = errors.New("Could not find any computed schemas")
 
-// GetCombinedComputedSchema returns the raw CombinedComputedSchema.
-// TODO(philkuz) deprecate GetComputedSchema() and replace it with this.
-func (mds *KVMetadataStore) GetCombinedComputedSchema() (*storepb.ComputedSchema, error) {
+// GetComputedSchema returns the raw CombinedComputedSchema.
+func (mds *KVMetadataStore) GetComputedSchema() (*storepb.ComputedSchema, error) {
 	cSchemas, err := mds.cache.Get(getComputedSchemasKey())
 	if err != nil {
 		return nil, err
@@ -606,7 +605,7 @@ func initializeComputedSchema(computedSchemaPb *storepb.ComputedSchema) *storepb
 
 // UpdateSchemas updates the given schemas in the metadata store.
 func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.TableInfo) error {
-	computedSchemaPb, err := mds.GetCombinedComputedSchema()
+	computedSchemaPb, err := mds.GetComputedSchema()
 	// If there are no computed schemas, that means we have yet to set one.
 	if err == errNoComputedSchemas {
 		// Reset error as this is not actually an error.
@@ -619,14 +618,15 @@ func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.
 		return err
 	}
 
+	// Make sure the computedSchema is non-nil and fields are non-nil.
 	computedSchemaPb = initializeComputedSchema(computedSchemaPb)
 
-	agentIDPb := utils.ProtoFromUUID(&agentID)
 	// Tracker for tables that were potentially deleted in the agent. We first track all the tables
 	// agent previously had, then compare to the tables it currently has. Any entry that's false here
 	// will have the entry deleted.
 	previousAgentTableTracker := make(map[string]bool)
 
+	agentIDPb := utils.ProtoFromUUID(&agentID)
 	// Add the list of tables that the agent currently belongs to.
 	for name, agents := range computedSchemaPb.TableNameToAgentIDs {
 		for _, a := range agents.AgentID {
@@ -694,15 +694,6 @@ func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.
 	mds.cache.Set(getComputedSchemasKey(), string(computedSchema))
 
 	return nil
-}
-
-// GetComputedSchemas gets all computed schemas in the metadata store.
-func (mds *KVMetadataStore) GetComputedSchemas() ([]*storepb.TableInfo, error) {
-	computedSchemaPb, err := mds.GetCombinedComputedSchema()
-	if err != nil {
-		return nil, err
-	}
-	return computedSchemaPb.Tables, nil
 }
 
 /* =============== Process Operations ============== */

@@ -110,7 +110,7 @@ func convertToSchemaInfo(computedSchema *storepb.ComputedSchema) ([]*distributed
 
 // GetSchemas returns the schemas in the system.
 func (s *Server) GetSchemas(ctx context.Context, req *metadatapb.SchemaRequest) (*metadatapb.SchemaResponse, error) {
-	computedSchema, err := s.mds.GetCombinedComputedSchema()
+	computedSchema, err := s.mds.GetComputedSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func (s *Server) GetAgentInfo(ctx context.Context, req *metadatapb.AgentInfoRequ
 // GetAgentTableMetadata returns table metadata for each agent. We currently assume that all agents
 // have the same schema, but this code will need to be updated when that assumption no longer holds true.
 func (s *Server) GetAgentTableMetadata(ctx context.Context, req *metadatapb.AgentTableMetadataRequest) (*metadatapb.AgentTableMetadataResponse, error) {
-	computedSchema, err := s.mds.GetCombinedComputedSchema()
+	computedSchema, err := s.mds.GetComputedSchema()
 	if err != nil {
 		return nil, err
 	}

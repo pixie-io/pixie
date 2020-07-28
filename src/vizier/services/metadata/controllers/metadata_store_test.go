@@ -561,7 +561,7 @@ func TestKVMetadataStore_UpdateSchemasComplex(t *testing.T) {
 	assert.ElementsMatch(t, bTableAgents.AgentID, []*uuidpb.UUID{agent1uuid})
 }
 
-func TestKVMetadataStore_GetComputedSchemas(t *testing.T) {
+func TestKVMetadataStore_GetComputedSchema(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
@@ -596,7 +596,7 @@ func TestKVMetadataStore_GetComputedSchemas(t *testing.T) {
 
 	c.Set("/computedSchema", string(computedSchemaText))
 
-	outComputedSchemas, err := mds.GetCombinedComputedSchema()
+	outComputedSchemas, err := mds.GetComputedSchema()
 
 	schemas := outComputedSchemas.Tables
 

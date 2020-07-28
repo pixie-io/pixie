@@ -199,7 +199,7 @@ func TestGetSchemas(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		GetCombinedComputedSchema().
+		GetComputedSchema().
 		Return(&storepb.ComputedSchema{Tables: schemaInfos}, nil)
 
 	// Set up server.
@@ -294,7 +294,7 @@ func TestGetAgentTableMetadata(t *testing.T) {
 	}
 	mockMds.
 		EXPECT().
-		GetCombinedComputedSchema().
+		GetComputedSchema().
 		Return(&storepb.ComputedSchema{
 			Tables:              schemaInfos,
 			TableNameToAgentIDs: schemaMap,
