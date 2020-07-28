@@ -53,6 +53,9 @@ class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapp
   Status StopImpl() override { return Status::OK(); }
 
  private:
+  Status AppendRecord(const ::pl::stirling::dynamic_tracing::ir::physical::Struct& st,
+                      uint32_t asid, std::string_view buf, DataTable* data_table);
+
   // Describes the output table column types.
   std::unique_ptr<DynamicDataTableSchema> table_schema_;
 

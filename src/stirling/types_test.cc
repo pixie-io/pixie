@@ -66,19 +66,19 @@ TEST(DynamicDataTableSchemaTest, generate) {
   constexpr std::string_view kOutputStruct = R"(
   name: "out_table_value_t"
   fields {
-    name: "tgid__"
+    name: "tgid_"
     type: INT32
   }
   fields {
-    name: "tgid_start_time__"
+    name: "tgid_start_time_"
     type: UINT64
   }
   fields {
-    name: "goid__"
+    name: "goid_"
     type: INT64
   }
   fields {
-    name: "ktime_ns__"
+    name: "time_"
     type: UINT64
   }
   fields {
@@ -110,8 +110,11 @@ TEST(DynamicDataTableSchemaTest, generate) {
   EXPECT_EQ(table_schema.tabletized(), false);
   EXPECT_EQ(table_schema.ColIndex("upid"), 0);
   EXPECT_EQ(table_schema.ColIndex("arg2"), 5);
-  EXPECT_EQ(table_schema.elements()[1].name(), "goid__");
+  EXPECT_EQ(table_schema.elements()[1].name(), "goid_");
   EXPECT_EQ(table_schema.elements()[5].name(), "arg2");
+
+  // There's a hack to convert any column with name "time_" to TIME64NS. Check that.
+  EXPECT_EQ(table_schema.elements()[table_schema.ColIndex("time_")].type(), types::TIME64NS);
 }
 
 }  // namespace stirling

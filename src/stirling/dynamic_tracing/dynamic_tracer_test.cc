@@ -87,19 +87,19 @@ TEST(DynamicTracerTest, Compile) {
                                       R"proto(
                                       name: "probe_output_value_t"
                                       fields {
-                                        name: "tgid__"
+                                        name: "tgid_"
                                         type: INT32
                                       }
                                       fields {
-                                        name: "tgid_start_time__"
+                                        name: "tgid_start_time_"
                                         type: UINT64
                                       }
                                       fields {
-                                        name: "ktime_ns__"
+                                        name: "time_"
                                         type: UINT64
                                       }
                                       fields {
-                                        name: "goid__"
+                                        name: "goid_"
                                         type: INT64
                                       }
                                       fields {

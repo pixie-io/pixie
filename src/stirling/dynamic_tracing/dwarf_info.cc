@@ -18,12 +18,17 @@ using dwarf_tools::VarType;
 
 namespace {
 
-constexpr char kSPVarName[] = "sp";
-constexpr char kTGIDVarName[] = "tgid";
-constexpr char kTGIDPIDVarName[] = "tgid_pid";
-constexpr char kTGIDStartTimeVarName[] = "tgid_start_time";
-constexpr char kGOIDVarName[] = "goid";
-constexpr char kKTimeVarName[] = "ktime_ns";
+// Special variables all end with an underscore to minimize chance of conflict with user variables.
+// User variables that end with underscore are not allowed (this is not yet enforced).
+constexpr char kSPVarName[] = "sp_";
+constexpr char kTGIDVarName[] = "tgid_";
+constexpr char kTGIDPIDVarName[] = "tgid_pid_";
+constexpr char kTGIDStartTimeVarName[] = "tgid_start_time_";
+constexpr char kGOIDVarName[] = "goid_";
+constexpr char kKTimeVarName[] = "time_";
+
+// WARNING: Do not change the name of kKTimeVarName above, as it is a name implicitly used by the
+//          query engine as the time column.
 
 StatusOr<std::string> BPFHelperVariableName(ir::shared::BPFHelper builtin) {
   static const absl::flat_hash_map<ir::shared::BPFHelper, std::string_view> kBuiltinVarNames = {
@@ -580,8 +585,6 @@ Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_a
   return Status::OK();
 }
 
-std::string GetImplicitColumnName(std::string_view name) { return absl::StrCat(name, "__"); }
-
 Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_action_in,
                                         const std::string& struct_type_name,
                                         ir::physical::Program* output_program) {
@@ -592,8 +595,7 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
 
   for (const auto& f : implicit_columns_) {
     auto* struct_field = struct_decl->add_fields();
-    // Add a suffix to avoid any potential name conflicts.
-    struct_field->set_name(GetImplicitColumnName(f));
+    struct_field->set_name(f);
 
     auto iter = vars_map_.find(f);
     if (iter == vars_map_.end()) {

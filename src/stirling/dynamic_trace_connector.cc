@@ -179,27 +179,36 @@ Status FillColumn(StructDecoder* struct_decoder, DataTable::DynamicRecordBuilder
   return Status::OK();
 }
 
-Status AppendRecord(const Struct& st, uint32_t asid, std::string_view buf, DataTable* data_table) {
+}  // namespace
+
+Status DynamicTraceConnector::AppendRecord(const Struct& st, uint32_t asid, std::string_view buf,
+                                           DataTable* data_table) {
   StructDecoder struct_decoder(buf);
   DataTable::DynamicRecordBuilder r(data_table);
 
-  // TODO(yzhao): Come up more principled approach to process upid, such that explicit checks
-  // can be applied to avoid these fields being misused.
+  // TODO(yzhao): Come up more principled approach to process upid and ktime, such that explicit
+  // checks can be applied to avoid these fields being misused. Today this code is brittle because
+  // it is implicitly linked to the order generated in dwarf_info.cc.
   PL_ASSIGN_OR_RETURN(uint32_t tgid, struct_decoder.ExtractField<uint32_t>());
   PL_ASSIGN_OR_RETURN(uint64_t tgid_start_time, struct_decoder.ExtractField<uint64_t>());
+  PL_ASSIGN_OR_RETURN(uint64_t ktime_ns, struct_decoder.ExtractField<uint64_t>());
+
+  int col_idx = 0;
 
   md::UPID upid(asid, tgid, tgid_start_time);
-  r.Append(0, types::UInt128Value(upid.value()));
+  r.Append(col_idx++, types::UInt128Value(upid.value()));
 
-  // Skip the first 2 fields which are tgid & tgid_start_time, which are combined into upid.
-  for (int i = 2, col_idx = 1; i < st.fields_size(); ++i, ++col_idx) {
-    PL_RETURN_IF_ERROR(FillColumn(&struct_decoder, &r, col_idx, st.fields(i).type()));
+  int64_t time = ktime_ns + ClockRealTimeOffset();
+  r.Append(col_idx++, types::Time64NSValue(time));
+
+  // Skip the first 3 fields which are tgid & tgid_start_time, which are combined into upid,
+  // and also time.
+  for (int i = 3; i < st.fields_size(); ++i) {
+    PL_RETURN_IF_ERROR(FillColumn(&struct_decoder, &r, col_idx++, st.fields(i).type()));
   }
 
   return Status::OK();
 }
-
-}  // namespace
 
 void DynamicTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
                                              DataTable* data_table) {

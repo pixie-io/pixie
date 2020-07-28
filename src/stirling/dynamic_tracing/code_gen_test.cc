@@ -278,7 +278,7 @@ TEST(GenProgramTest, SpecsAndCode) {
       "static __inline int64_t pl_goid() {",
       "uint64_t current_pid_tgid = bpf_get_current_pid_tgid();",
       "const struct pid_goid_map_value_t* goid_ptr = pid_goid_map.lookup(&current_pid_tgid);",
-      "return (goid_ptr == NULL) ? -1 : goid_ptr->goid_;",
+      "return (goid_ptr == NULL) ? -1 : goid_ptr->goid;",
       "}",
       "BPF_PERF_OUTPUT(data_events);",
       "BPF_PERF_OUTPUT(data_events2);",

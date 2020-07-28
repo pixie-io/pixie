@@ -36,7 +36,7 @@ ir::logical::Probe GenGOIDProbe() {
   constant->set_constant("2");
 
   auto* goid_arg = probe.add_args();
-  goid_arg->set_id("goid_");
+  goid_arg->set_id("goid");
   goid_arg->set_expr("gp.goid");
 
   auto* newval_arg = probe.add_args();
@@ -47,8 +47,7 @@ ir::logical::Probe GenGOIDProbe() {
 
   map_stash_action->set_map_name("pid_goid_map");
   map_stash_action->set_key(ir::shared::BPFHelper::TGID_PID);
-  // TODO(yzhao): goid_ avoids conflict with the "goid" special variable.
-  map_stash_action->add_value_variable_name("goid_");
+  map_stash_action->add_value_variable_name("goid");
   map_stash_action->mutable_cond()->set_op(ir::shared::Condition::EQUAL);
   map_stash_action->mutable_cond()->add_vars("newval");
   map_stash_action->mutable_cond()->add_vars("kGRunningState");

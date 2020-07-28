@@ -62,42 +62,42 @@ probes {
   }
   vars {
     scalar_var {
-      name: "sp"
+      name: "sp_"
       type: VOID_POINTER
       reg: SP
     }
   }
   vars {
     scalar_var {
-      name: "tgid"
+      name: "tgid_"
       type: INT32
       builtin: TGID
     }
   }
   vars {
     scalar_var {
-      name: "tgid_pid"
+      name: "tgid_pid_"
       type: UINT64
       builtin: TGID_PID
     }
   }
   vars {
     scalar_var {
-      name: "tgid_start_time"
+      name: "tgid_start_time_"
       type: UINT64
       builtin: TGID_START_TIME
     }
   }
   vars {
     scalar_var {
-      name: "ktime_ns"
+      name: "time_"
       type: UINT64
       builtin: KTIME
     }
   }
   vars {
     scalar_var {
-      name: "goid"
+      name: "goid_"
       type: INT64
       builtin: GOID
     }
@@ -107,7 +107,7 @@ probes {
       name: "arg0"
       type: INT
       memory {
-        base: "sp"
+        base: "sp_"
         offset: 8
       }
     }
@@ -117,7 +117,7 @@ probes {
       name: "arg1"
       type: INT
       memory {
-        base: "sp"
+        base: "sp_"
         offset: 24
       }
     }
@@ -127,7 +127,7 @@ probes {
       name: "arg2"
       type: INT
       memory {
-        base: "sp"
+        base: "sp_"
         offset: 32
       }
     }
@@ -137,7 +137,7 @@ probes {
       name: "arg3"
       type: BOOL
       memory {
-        base: "sp"
+        base: "sp_"
         offset: 16
       }
     }
@@ -147,7 +147,7 @@ probes {
       name: "arg4"
       type: BOOL
       memory {
-        base: "sp"
+        base: "sp_"
         offset: 17
       }
     }
@@ -157,7 +157,7 @@ probes {
       name: "arg5"
       type: BOOL
       memory {
-        base: "sp"
+        base: "sp_"
         offset: 20
       }
     }
@@ -198,42 +198,42 @@ probes {
   }
   vars {
     scalar_var {
-      name: "sp"
+      name: "sp_"
       type: VOID_POINTER
       reg: SP
     }
   }
   vars {
     scalar_var {
-      name: "tgid"
+      name: "tgid_"
       type: INT32
       builtin: TGID
     }
   }
   vars {
     scalar_var {
-      name: "tgid_pid"
+      name: "tgid_pid_"
       type: UINT64
       builtin: TGID_PID
     }
   }
   vars {
     scalar_var {
-      name: "tgid_start_time"
+      name: "tgid_start_time_"
       type: UINT64
       builtin: TGID_START_TIME
     }
   }
   vars {
     scalar_var {
-      name: "ktime_ns"
+      name: "time_"
       type: UINT64
       builtin: KTIME
     }
   }
   vars {
     scalar_var {
-      name: "goid"
+      name: "goid_"
       type: INT64
       builtin: GOID
     }
@@ -243,7 +243,7 @@ probes {
       name: "retval0"
       type: INT
       memory {
-        base: "sp"
+        base: "sp_"
         offset: 48
       }
     }
@@ -253,7 +253,7 @@ probes {
       name: "retval1"
       type: BOOL
       memory {
-        base: "sp"
+        base: "sp_"
         offset: 57
       }
     }
@@ -294,42 +294,42 @@ probes {
   }
   vars {
     scalar_var {
-      name: "sp"
+      name: "sp_"
       type: VOID_POINTER
       reg: SP
     }
   }
   vars {
     scalar_var {
-      name: "tgid"
+      name: "tgid_"
       type: INT32
       builtin: TGID
     }
   }
   vars {
     scalar_var {
-      name: "tgid_pid"
+      name: "tgid_pid_"
       type: UINT64
       builtin: TGID_PID
     }
   }
   vars {
     scalar_var {
-      name: "tgid_start_time"
+      name: "tgid_start_time_"
       type: UINT64
       builtin: TGID_START_TIME
     }
   }
   vars {
     scalar_var {
-      name: "ktime_ns"
+      name: "time_"
       type: UINT64
       builtin: KTIME
     }
   }
   vars {
     scalar_var {
-      name: "goid"
+      name: "goid_"
       type: INT64
       builtin: GOID
     }
@@ -339,7 +339,7 @@ probes {
       name: "arg0_D_Ptr_X_"
       type: VOID_POINTER
       memory {
-        base: "sp"
+        base: "sp_"
         offset: 16
       }
     }
@@ -368,7 +368,7 @@ probes {
       name: "arg1_D_Ptr_X_"
       type: VOID_POINTER
       memory {
-        base: "sp"
+        base: "sp_"
         offset: 16
       }
     }
@@ -474,19 +474,19 @@ structs {
 structs {
   name: "out_table_value_t"
   fields {
-    name: "tgid__"
+    name: "tgid_"
     type: INT32
   }
   fields {
-    name: "tgid_start_time__"
+    name: "tgid_start_time_"
     type: UINT64
   }
   fields {
-    name: "ktime_ns__"
+    name: "time_"
     type: UINT64
   }
   fields {
-    name: "goid__"
+    name: "goid_"
     type: INT64
   }
   fields {
@@ -505,19 +505,19 @@ structs {
 structs {
   name: "out_table2_value_t"
   fields {
-    name: "tgid__"
+    name: "tgid_"
     type: INT32
   }
   fields {
-    name: "tgid_start_time__"
+    name: "tgid_start_time_"
     type: UINT64
   }
   fields {
-    name: "ktime_ns__"
+    name: "time_"
     type: UINT64
   }
   fields {
-    name: "goid__"
+    name: "goid_"
     type: INT64
   }
   fields {
@@ -558,42 +558,42 @@ probes {
   }
   vars {
     scalar_var {
-      name: "sp"
+      name: "sp_"
       type: VOID_POINTER
       reg: SP
     }
   }
   vars {
     scalar_var {
-      name: "tgid"
+      name: "tgid_"
       type: INT32
       builtin: TGID
     }
   }
   vars {
     scalar_var {
-      name: "tgid_pid"
+      name: "tgid_pid_"
       type: UINT64
       builtin: TGID_PID
     }
   }
   vars {
     scalar_var {
-      name: "tgid_start_time"
+      name: "tgid_start_time_"
       type: UINT64
       builtin: TGID_START_TIME
     }
   }
   vars {
     scalar_var {
-      name: "ktime_ns"
+      name: "time_"
       type: UINT64
       builtin: KTIME
     }
   }
   vars {
     scalar_var {
-      name: "goid"
+      name: "goid_"
       type: INT64
       builtin: GOID
     }
@@ -603,7 +603,7 @@ probes {
       name: "arg0"
       type: INT
       memory {
-        base: "sp"
+        base: "sp_"
         offset: 8
       }
     }
@@ -613,7 +613,7 @@ probes {
       name: "arg1"
       type: BOOL
       memory {
-        base: "sp"
+        base: "sp_"
         offset: 16
       }
     }
@@ -623,7 +623,7 @@ probes {
       name: "arg2"
       type: BOOL
       memory {
-        base: "sp"
+        base: "sp_"
         offset: 17
       }
     }
@@ -647,20 +647,20 @@ probes {
       name: "out_table_value"
       type: "out_table_value_t"
       field_assignments {
-        field_name: "tgid__"
-        variable_name: "tgid"
+        field_name: "tgid_"
+        variable_name: "tgid_"
       }
       field_assignments {
-        field_name: "tgid_start_time__"
-        variable_name: "tgid_start_time"
+        field_name: "tgid_start_time_"
+        variable_name: "tgid_start_time_"
       }
       field_assignments {
-        field_name: "ktime_ns__"
-        variable_name: "ktime_ns"
+        field_name: "time_"
+        variable_name: "time_"
       }
       field_assignments {
-        field_name: "goid__"
-        variable_name: "goid"
+        field_name: "goid_"
+        variable_name: "goid_"
       }
       field_assignments {
         field_name: "arg0"
@@ -678,7 +678,7 @@ probes {
   }
   map_stash_actions {
     map_name: "my_stash"
-    key_variable_name: "goid"
+    key_variable_name: "goid_"
     value_variable_name: "my_stash_value"
     cond {
     }
@@ -695,42 +695,42 @@ probes {
   }
   vars {
     scalar_var {
-      name: "sp"
+      name: "sp_"
       type: VOID_POINTER
       reg: SP
     }
   }
   vars {
     scalar_var {
-      name: "tgid"
+      name: "tgid_"
       type: INT32
       builtin: TGID
     }
   }
   vars {
     scalar_var {
-      name: "tgid_pid"
+      name: "tgid_pid_"
       type: UINT64
       builtin: TGID_PID
     }
   }
   vars {
     scalar_var {
-      name: "tgid_start_time"
+      name: "tgid_start_time_"
       type: UINT64
       builtin: TGID_START_TIME
     }
   }
   vars {
     scalar_var {
-      name: "ktime_ns"
+      name: "time_"
       type: UINT64
       builtin: KTIME
     }
   }
   vars {
     scalar_var {
-      name: "goid"
+      name: "goid_"
       type: INT64
       builtin: GOID
     }
@@ -740,7 +740,7 @@ probes {
       name: "my_stash_ptr"
       type: "my_stash_value_t"
       map_name: "my_stash"
-      key_variable_name: "goid"
+      key_variable_name: "goid_"
     }
   }
   vars {
@@ -766,20 +766,20 @@ probes {
       name: "out_table2_value"
       type: "out_table2_value_t"
       field_assignments {
-        field_name: "tgid__"
-        variable_name: "tgid"
+        field_name: "tgid_"
+        variable_name: "tgid_"
       }
       field_assignments {
-        field_name: "tgid_start_time__"
-        variable_name: "tgid_start_time"
+        field_name: "tgid_start_time_"
+        variable_name: "tgid_start_time_"
       }
       field_assignments {
-        field_name: "ktime_ns__"
-        variable_name: "ktime_ns"
+        field_name: "time_"
+        variable_name: "time_"
       }
       field_assignments {
-        field_name: "goid__"
-        variable_name: "goid"
+        field_name: "goid_"
+        variable_name: "goid_"
       }
       field_assignments {
         field_name: "arg0"

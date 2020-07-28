@@ -76,6 +76,11 @@ StatusOr<std::unique_ptr<DynamicDataTableSchema>> DynamicDataTableSchema::Create
       data_type = iter->second;
     }
 
+    // TODO(oazizi): This is hacky. Fix.
+    if (field.name() == "time_") {
+      data_type = types::DataType::TIME64NS;
+    }
+
     // TODO(oazizi): See if we need to find a way to define SemanticTypes and PatternTypes.
     elements.emplace_back(field.name(), field.name(), data_type, types::SemanticType::ST_NONE,
                           types::PatternType::UNSPECIFIED);

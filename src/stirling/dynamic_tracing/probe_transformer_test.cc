@@ -115,7 +115,7 @@ probes {
     constant: "2"
   }
   args {
-    id: "goid_"
+    id: "goid"
     expr: "gp.goid"
   }
   args {
@@ -125,7 +125,7 @@ probes {
   map_stash_actions {
     map_name: "pid_goid_map"
     key: TGID_PID
-    value_variable_name: "goid_"
+    value_variable_name: "goid"
     cond {
       op: EQUAL
       vars: "newval"
