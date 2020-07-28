@@ -11,6 +11,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	metadata_servicepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
+	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
@@ -72,22 +73,20 @@ type AgentManager interface {
 	// GetAgentUpdates returns all of the updates that have occurred for agents since
 	// the last invocation of GetAgentUpdates. if readInitialState is set to true, it
 	// reads out the entire current state first.
-	GetAgentUpdates(readFullState bool) ([]*agentpb.Agent, []*metadata_servicepb.AgentTableMetadata, []uuid.UUID, error)
+	GetAgentUpdates(readFullState bool) ([]*metadata_servicepb.AgentUpdate, *storepb.ComputedSchema, error)
 }
 
-// UpdatedAgentsList holds a list of agent IDs that have been updated or deleted recently.
-type UpdatedAgentsList struct {
-	deleted         map[uuid.UUID]bool
-	updated         map[uuid.UUID]bool
-	updatedDataInfo map[uuid.UUID]bool
+// AgentUpdateTracker stores the updates (in order) for agents for GetAgentUpdates.
+type AgentUpdateTracker struct {
+	updates       []*metadata_servicepb.AgentUpdate
+	schemaUpdated bool
 }
 
-// EmptyUpdatedAgentsList creates an empty list of the agents that have been updated recently.
-func EmptyUpdatedAgentsList() UpdatedAgentsList {
-	return UpdatedAgentsList{
-		deleted:         make(map[uuid.UUID]bool),
-		updated:         make(map[uuid.UUID]bool),
-		updatedDataInfo: make(map[uuid.UUID]bool),
+// EmptyAgentUpdateTracker creates an AgentUpdateTracker in the default state.
+func EmptyAgentUpdateTracker() AgentUpdateTracker {
+	return AgentUpdateTracker{
+		updates:       []*metadata_servicepb.AgentUpdate{},
+		schemaUpdated: false,
 	}
 }
 
@@ -99,7 +98,7 @@ type AgentManagerImpl struct {
 	agentQueues        map[string]AgentQueue
 	queueMu            sync.Mutex
 	updatedAgentsMutex sync.Mutex
-	updatedAgents      UpdatedAgentsList
+	updatedAgents      AgentUpdateTracker
 }
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
@@ -111,7 +110,7 @@ func NewAgentManagerWithClock(mds MetadataStore, clock utils.Clock) *AgentManage
 		mds:           mds,
 		updateCh:      c,
 		agentQueues:   make(map[string]AgentQueue),
-		updatedAgents: EmptyUpdatedAgentsList(),
+		updatedAgents: EmptyAgentUpdateTracker(),
 	}
 
 	go agentManager.processAgentUpdates()
@@ -134,6 +133,82 @@ func (m *AgentManagerImpl) processAgentUpdates() {
 	}
 }
 
+// A helper function for all cases where we call m.mds.UpdateSchemas
+// This should be called instead of m.mds.UpdateSchemas in order to make sure that the agent
+// schema update is tracked in the our agent state change tracker (updatedAgents).
+func (m *AgentManagerImpl) updateAgentSchemaWrapper(agentID uuid.UUID, schema []*storepb.TableInfo) error {
+	m.updatedAgentsMutex.Lock()
+	defer m.updatedAgentsMutex.Unlock()
+
+	m.updatedAgents.schemaUpdated = true
+	return m.mds.UpdateSchemas(agentID, schema)
+}
+
+// A helper function for all cases where we call m.mds.DeleteAgent.
+// This should be called instead of mds.DeleteAgent in order to make sure that the agent
+// deletion is tracked in the our agent state change tracker (updatedAgents).
+func (m *AgentManagerImpl) deleteAgentWrapper(agentID uuid.UUID) error {
+	m.updatedAgentsMutex.Lock()
+	defer m.updatedAgentsMutex.Unlock()
+
+	// Track the deletion of this agent for the agent updates list.
+	m.updatedAgents.updates = append(m.updatedAgents.updates, &metadata_servicepb.AgentUpdate{
+		AgentID: utils.ProtoFromUUID(&agentID),
+		Update: &metadata_servicepb.AgentUpdate_Deleted{
+			Deleted: true,
+		},
+	})
+	return m.mds.DeleteAgent(agentID)
+}
+
+// A helper function for all cases where we call m.mds.CreateAgent.
+// This should be called instead of mds.CreateAgent in order to make sure that the agent
+// creation is tracked in the our agent state change tracker (updatedAgents).
+func (m *AgentManagerImpl) createAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.Agent) error {
+	m.updatedAgentsMutex.Lock()
+	defer m.updatedAgentsMutex.Unlock()
+
+	m.updatedAgents.updates = append(m.updatedAgents.updates, &metadata_servicepb.AgentUpdate{
+		AgentID: utils.ProtoFromUUID(&agentID),
+		Update: &metadata_servicepb.AgentUpdate_Agent{
+			Agent: agentInfo,
+		},
+	})
+	return m.mds.CreateAgent(agentID, agentInfo)
+}
+
+// A helper function for all cases where we call m.mds.CreateAgent.
+// This should be called instead of mds.CreateAgent in order to make sure that the agent
+// update is tracked in the our agent state change tracker (updatedAgents).
+func (m *AgentManagerImpl) updateAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.Agent) error {
+	m.updatedAgentsMutex.Lock()
+	defer m.updatedAgentsMutex.Unlock()
+
+	m.updatedAgents.updates = append(m.updatedAgents.updates, &metadata_servicepb.AgentUpdate{
+		AgentID: utils.ProtoFromUUID(&agentID),
+		Update: &metadata_servicepb.AgentUpdate_Agent{
+			Agent: agentInfo,
+		},
+	})
+	return m.mds.UpdateAgent(agentID, agentInfo)
+}
+
+// A helper function for all cases where we call m.mds.UpdateAgentDataInfo.
+// This should be called instead of mds.UpdateAgentDataInfo in order to make sure that the agent
+// update is tracked in the our agent state change tracker (updatedAgents).
+func (m *AgentManagerImpl) updateAgentDataInfoWrapper(agentID uuid.UUID, agentDataInfo *messagespb.AgentDataInfo) error {
+	m.updatedAgentsMutex.Lock()
+	defer m.updatedAgentsMutex.Unlock()
+
+	m.updatedAgents.updates = append(m.updatedAgents.updates, &metadata_servicepb.AgentUpdate{
+		AgentID: utils.ProtoFromUUID(&agentID),
+		Update: &metadata_servicepb.AgentUpdate_DataInfo{
+			DataInfo: agentDataInfo,
+		},
+	})
+	return m.mds.UpdateAgentDataInfo(agentID, agentDataInfo)
+}
+
 // ApplyAgentUpdate updates the metadata store with the information from the agent update.
 func (m *AgentManagerImpl) ApplyAgentUpdate(update *AgentUpdate) error {
 	err := m.handleCreatedProcesses(update.UpdateInfo.ProcessCreated)
@@ -154,7 +229,7 @@ func (m *AgentManagerImpl) ApplyAgentUpdate(update *AgentUpdate) error {
 	if !update.UpdateInfo.DoesUpdateSchema {
 		return nil
 	}
-	return m.mds.UpdateSchemas(update.AgentID, update.UpdateInfo.Schema)
+	return m.updateAgentSchemaWrapper(update.AgentID, update.UpdateInfo.Schema)
 }
 
 func (m *AgentManagerImpl) handleCreatedProcesses(processes []*metadatapb.ProcessCreated) error {
@@ -202,58 +277,6 @@ func (m *AgentManagerImpl) handleTerminatedProcesses(processes []*metadatapb.Pro
 	}
 
 	return m.mds.UpdateProcesses(updatedProcesses)
-}
-
-// A helper function for all cases where we call m.mds.DeleteAgent.
-// This should be called instead of mds.DeleteAgent in order to make sure that the agent
-// deletion is tracked in the our agent state change tracker (updatedAgents).
-func (m *AgentManagerImpl) deleteAgentWrapper(agentID uuid.UUID) error {
-	m.updatedAgentsMutex.Lock()
-	defer m.updatedAgentsMutex.Unlock()
-
-	// Track the deletion of this agent for the agent updates list.
-	m.updatedAgents.deleted[agentID] = true
-	// If we delete a recently updated agent, remove it from the updates list.
-	if _, present := m.updatedAgents.updated[agentID]; present {
-		delete(m.updatedAgents.updated, agentID)
-	}
-	if _, present := m.updatedAgents.updatedDataInfo[agentID]; present {
-		delete(m.updatedAgents.updatedDataInfo, agentID)
-	}
-	return m.mds.DeleteAgent(agentID)
-}
-
-// A helper function for all cases where we call m.mds.CreateAgent.
-// This should be called instead of mds.CreateAgent in order to make sure that the agent
-// creation is tracked in the our agent state change tracker (updatedAgents).
-func (m *AgentManagerImpl) createAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.Agent) error {
-	m.updatedAgentsMutex.Lock()
-	defer m.updatedAgentsMutex.Unlock()
-
-	m.updatedAgents.updated[agentID] = true
-	return m.mds.CreateAgent(agentID, agentInfo)
-}
-
-// A helper function for all cases where we call m.mds.CreateAgent.
-// This should be called instead of mds.CreateAgent in order to make sure that the agent
-// update is tracked in the our agent state change tracker (updatedAgents).
-func (m *AgentManagerImpl) updateAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.Agent) error {
-	m.updatedAgentsMutex.Lock()
-	defer m.updatedAgentsMutex.Unlock()
-
-	m.updatedAgents.updated[agentID] = true
-	return m.mds.UpdateAgent(agentID, agentInfo)
-}
-
-// A helper function for all cases where we call m.mds.UpdateAgentDataInfo.
-// This should be called instead of mds.UpdateAgentDataInfo in order to make sure that the agent
-// update is tracked in the our agent state change tracker (updatedAgents).
-func (m *AgentManagerImpl) updateAgentDataInfoWrapper(agentID uuid.UUID, agentDataInfo *messagespb.AgentDataInfo) error {
-	m.updatedAgentsMutex.Lock()
-	defer m.updatedAgentsMutex.Unlock()
-
-	m.updatedAgents.updatedDataInfo[agentID] = true
-	return m.mds.UpdateAgentDataInfo(agentID, agentDataInfo)
 }
 
 // AddToUpdateQueue adds the container/schema update to a queue for updates to the metadata store.
@@ -553,61 +576,52 @@ func (m *AgentManagerImpl) GetMetadataUpdates(hostname *HostnameIPPair) ([]*meta
 // function will reset the state across the agent manager.
 // This should be okay because only the query broker needs to subscribe to these state changes for now,
 // but it will need to be scaled if we have multiple query brokers talking to a single metadata service.
-func (m *AgentManagerImpl) GetAgentUpdates(readInitialState bool) ([]*agentpb.Agent,
-	[]*metadata_servicepb.AgentTableMetadata,
-	[]uuid.UUID, error) {
+func (m *AgentManagerImpl) GetAgentUpdates(readInitialState bool) ([]*metadata_servicepb.AgentUpdate,
+	*storepb.ComputedSchema, error) {
 	m.updatedAgentsMutex.Lock()
 	defer m.updatedAgentsMutex.Unlock()
 
-	var updatedAgents []*agentpb.Agent
-	var updatedAgentsTableMetadata []*metadata_servicepb.AgentTableMetadata
-	var deletedAgents []uuid.UUID
+	var agentUpdates []*metadata_servicepb.AgentUpdate
+	var computedSchema *storepb.ComputedSchema
 	var err error
 
-	if !readInitialState {
-		for updatedAgentID := range m.updatedAgents.updated {
-			agent, err := m.mds.GetAgent(updatedAgentID)
-			if err != nil {
-				return nil, nil, nil, err
-			}
-			updatedAgents = append(updatedAgents, agent)
-		}
-		// Change this below to extract agent-specific schema as well when that exists.
-		for agentID := range m.updatedAgents.updatedDataInfo {
-			agentDataInfo, err := m.mds.GetAgentDataInfo(agentID)
-			if err != nil {
-				return nil, nil, nil, err
-			}
-			updatedAgentsTableMetadata = append(updatedAgentsTableMetadata, &metadata_servicepb.AgentTableMetadata{
-				AgentID:  utils.ProtoFromUUID(&agentID),
-				DataInfo: agentDataInfo,
-				// Change this below to extract agent-specific schema as well when that exists.
-				Schema: nil,
-			})
-		}
-		for deletedAgentID := range m.updatedAgents.deleted {
-			deletedAgents = append(deletedAgents, deletedAgentID)
-		}
-	} else {
-		updatedAgents, err = m.mds.GetAgents()
+	if readInitialState || m.updatedAgents.schemaUpdated {
+		computedSchema, err = m.mds.GetComputedSchema()
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
+		}
+	}
+
+	if !readInitialState {
+		agentUpdates = m.updatedAgents.updates
+	} else {
+		updatedAgents, err := m.mds.GetAgents()
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, agentInfo := range updatedAgents {
+			agentUpdates = append(agentUpdates, &metadata_servicepb.AgentUpdate{
+				AgentID: agentInfo.Info.AgentID,
+				Update: &metadata_servicepb.AgentUpdate_Agent{
+					Agent: agentInfo,
+				},
+			})
 		}
 		updatedAgentsDataInfo, err := m.mds.GetAgentsDataInfo()
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
 		for agentID, agentDataInfo := range updatedAgentsDataInfo {
-			updatedAgentsTableMetadata = append(updatedAgentsTableMetadata, &metadata_servicepb.AgentTableMetadata{
-				AgentID:  utils.ProtoFromUUID(&agentID),
-				DataInfo: agentDataInfo,
-				// Change this below to extract agent-specific schema as well when that exists.
-				Schema: nil,
+			agentUpdates = append(agentUpdates, &metadata_servicepb.AgentUpdate{
+				AgentID: utils.ProtoFromUUID(&agentID),
+				Update: &metadata_servicepb.AgentUpdate_DataInfo{
+					DataInfo: agentDataInfo,
+				},
 			})
 		}
 	}
 
 	// Reset the state now that we have popped off the latest updates.
-	m.updatedAgents = EmptyUpdatedAgentsList()
-	return updatedAgents, updatedAgentsTableMetadata, deletedAgents, nil
+	m.updatedAgents = EmptyAgentUpdateTracker()
+	return agentUpdates, computedSchema, nil
 }

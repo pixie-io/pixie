@@ -788,23 +788,18 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Read the initial agent state.
-	agents, agentsTableInfo, deletedAgents, err := agtMgr.GetAgentUpdates(true)
+	updates, schema, err := agtMgr.GetAgentUpdates(true)
 	assert.Nil(t, err)
-	assert.NotNil(t, agents)
-	assert.Nil(t, agentsTableInfo)
-	assert.Nil(t, deletedAgents)
-
-	// get initial agents
-	assert.Equal(t, 3, len(agents))
-	uuids := make(map[uuid.UUID]bool)
-	for _, agent := range agents {
-		assert.NotNil(t, agent.Info.AgentID)
-		uuid := utils.UUIDFromProtoOrNil(agent.Info.AgentID)
-		uuids[uuid] = true
-	}
-	assert.True(t, uuids[agUUID0])
-	assert.True(t, uuids[agUUID1])
-	assert.True(t, uuids[agUUID2])
+	assert.Equal(t, 3, len(updates))
+	assert.Equal(t, agUUID0, utils.UUIDFromProtoOrNil(updates[0].AgentID))
+	assert.NotNil(t, updates[0].GetAgent())
+	assert.Equal(t, agUUID2, utils.UUIDFromProtoOrNil(updates[1].AgentID))
+	assert.NotNil(t, updates[1].GetAgent())
+	assert.Equal(t, agUUID1, utils.UUIDFromProtoOrNil(updates[2].AgentID))
+	assert.NotNil(t, updates[2].GetAgent())
+	assert.Equal(t, 1, len(schema.Tables))
+	assert.Equal(t, 1, len(schema.TableNameToAgentIDs))
+	assert.Equal(t, 3, len(schema.TableNameToAgentIDs["a_table"].AgentID))
 
 	newAgentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -817,8 +812,6 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 				CollectsData: true,
 			},
 		},
-		LastHeartbeatNS: 3,
-		CreateTimeNS:    4,
 	}
 
 	oldAgentDataInfo := &messagespb.AgentDataInfo{
@@ -840,73 +833,50 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	_, err = agtMgr.RegisterAgent(newAgentInfo)
 	assert.Equal(t, nil, err)
 
+	schema2 := new(storepb.TableInfo)
+	if err := proto.UnmarshalText(testutils.SchemaInfo2PB, schema2); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
 	// Update data info on agent #2.
 	agentUpdate := controllers.AgentUpdate{
 		UpdateInfo: &messagespb.AgentUpdateInfo{
-			Schema:         []*storepb.TableInfo{},
-			ProcessCreated: []*k8s_metadatapb.ProcessCreated{},
-			Data:           oldAgentDataInfo,
+			Schema:           []*storepb.TableInfo{schema2},
+			ProcessCreated:   []*k8s_metadatapb.ProcessCreated{},
+			Data:             oldAgentDataInfo,
+			DoesUpdateSchema: true,
 		},
 		AgentID: agUUID2,
 	}
 	agtMgr.ApplyAgentUpdate(&agentUpdate)
 
 	// Check results of first call to GetAgentUpdates.
-	agents, agentsTableInfo, deletedAgents, err = agtMgr.GetAgentUpdates(false)
+	updates, schema, err = agtMgr.GetAgentUpdates(false)
 	assert.Nil(t, err)
-	assert.NotNil(t, agents)
-	assert.NotNil(t, agentsTableInfo)
-	assert.Nil(t, deletedAgents)
-
-	// agents array
-	assert.Equal(t, 1, len(agents))
-	assert.NotNil(t, agents[0].Info.AgentID)
-	assert.Equal(t, utils.ProtoFromUUID(&agUUID3), agents[0].Info.AgentID)
-
-	// agents data info
-	assert.Equal(t, 1, len(agentsTableInfo))
-	assert.Equal(t, utils.ProtoFromUUID(&agUUID2), agentsTableInfo[0].AgentID)
-	assert.Equal(t, oldAgentDataInfo, agentsTableInfo[0].DataInfo)
-	assert.Nil(t, agentsTableInfo[0].Schema)
+	assert.Equal(t, 2, len(updates))
+	assert.Equal(t, agUUID3, utils.UUIDFromProtoOrNil(updates[0].AgentID))
+	assert.Equal(t, newAgentInfo.Info, updates[0].GetAgent().Info)
+	assert.Equal(t, agUUID2, utils.UUIDFromProtoOrNil(updates[1].AgentID))
+	assert.Equal(t, oldAgentDataInfo, updates[1].GetDataInfo())
+	assert.Equal(t, 2, len(schema.Tables))
 
 	// Update the heartbeat of an agent.
 	err = agtMgr.UpdateHeartbeat(agUUID2)
 	assert.Nil(t, err)
 
-	// Update the data info on an agent that we are about to expire.
-	badAgentUpdate := controllers.AgentUpdate{
-		UpdateInfo: &messagespb.AgentUpdateInfo{
-			Schema:         []*storepb.TableInfo{},
-			ProcessCreated: []*k8s_metadatapb.ProcessCreated{},
-			Data:           oldAgentDataInfo,
-		},
-		AgentID: agUUID1,
-	}
-	agtMgr.ApplyAgentUpdate(&badAgentUpdate)
 	// Now expire it
 	err = agtMgr.UpdateAgentState()
 	assert.Nil(t, err)
 
 	// Check results of second call to GetAgentUpdates.
-	agents, agentsTableInfo, deletedAgents, err = agtMgr.GetAgentUpdates(false)
+	updates, schema, err = agtMgr.GetAgentUpdates(false)
 	assert.Nil(t, err)
-	assert.NotNil(t, agents)
-	assert.Nil(t, agentsTableInfo)
-	assert.NotNil(t, deletedAgents)
-
-	// agents array
-	ag2Info := &agentpb.Agent{}
-	err = proto.UnmarshalText(testutils.ExistingAgentInfo, ag2Info)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(agents))
-	assert.Equal(t, int64(testutils.ClockNowNS), agents[0].LastHeartbeatNS)
-
-	// deleted agents array
-	assert.Equal(t, 2, len(deletedAgents))
-	deletedUUIDs := make(map[uuid.UUID]bool)
-	for _, agUUID := range deletedAgents {
-		deletedUUIDs[agUUID] = true
-	}
-	assert.True(t, deletedUUIDs[agUUID0])
-	assert.True(t, deletedUUIDs[agUUID1])
+	assert.Nil(t, schema)
+	assert.Equal(t, 3, len(updates))
+	assert.Equal(t, agUUID2, utils.UUIDFromProtoOrNil(updates[0].AgentID))
+	assert.NotNil(t, updates[0].GetAgent())
+	assert.Equal(t, agUUID0, utils.UUIDFromProtoOrNil(updates[1].AgentID))
+	assert.True(t, updates[1].GetDeleted())
+	assert.Equal(t, agUUID1, utils.UUIDFromProtoOrNil(updates[2].AgentID))
+	assert.True(t, updates[2].GetDeleted())
 }

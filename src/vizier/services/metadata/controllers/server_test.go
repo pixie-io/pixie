@@ -41,6 +41,43 @@ import (
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
+func testTableInfos() []*storepb.TableInfo {
+	tableInfos := make([]*storepb.TableInfo, 2)
+
+	schema1Cols := make([]*storepb.TableInfo_ColumnInfo, 3)
+	schema1Cols[0] = &storepb.TableInfo_ColumnInfo{
+		Name:     "t1Col1",
+		DataType: 2,
+	}
+	schema1Cols[1] = &storepb.TableInfo_ColumnInfo{
+		Name:     "t1Col2",
+		DataType: 1,
+	}
+	schema1Cols[2] = &storepb.TableInfo_ColumnInfo{
+		Name:     "t1Col3",
+		DataType: 3,
+	}
+	tableInfos[0] = &storepb.TableInfo{
+		Name:    "table1",
+		Columns: schema1Cols,
+	}
+
+	schema2Cols := make([]*storepb.TableInfo_ColumnInfo, 2)
+	schema2Cols[0] = &storepb.TableInfo_ColumnInfo{
+		Name:     "t2Col1",
+		DataType: 1,
+	}
+	schema2Cols[1] = &storepb.TableInfo_ColumnInfo{
+		Name:     "t2Col2",
+		DataType: 3,
+	}
+	tableInfos[1] = &storepb.TableInfo{
+		Name:    "table2",
+		Columns: schema2Cols,
+	}
+	return tableInfos
+}
+
 func TestGetAgentInfo(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)
@@ -163,44 +200,12 @@ func TestGetSchemas(t *testing.T) {
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 
-	schemaInfos := make([]*storepb.TableInfo, 2)
-
-	schema1Cols := make([]*storepb.TableInfo_ColumnInfo, 3)
-	schema1Cols[0] = &storepb.TableInfo_ColumnInfo{
-		Name:     "t1Col1",
-		DataType: 2,
-	}
-	schema1Cols[1] = &storepb.TableInfo_ColumnInfo{
-		Name:     "t1Col2",
-		DataType: 1,
-	}
-	schema1Cols[2] = &storepb.TableInfo_ColumnInfo{
-		Name:     "t1Col3",
-		DataType: 3,
-	}
-	schemaInfos[0] = &storepb.TableInfo{
-		Name:    "table1",
-		Columns: schema1Cols,
-	}
-
-	schema2Cols := make([]*storepb.TableInfo_ColumnInfo, 2)
-	schema2Cols[0] = &storepb.TableInfo_ColumnInfo{
-		Name:     "t2Col1",
-		DataType: 1,
-	}
-	schema2Cols[1] = &storepb.TableInfo_ColumnInfo{
-		Name:     "t2Col2",
-		DataType: 3,
-	}
-	schemaInfos[1] = &storepb.TableInfo{
-		Name:    "table2",
-		Columns: schema2Cols,
-	}
+	tableInfos := testTableInfos()
 
 	mockMds.
 		EXPECT().
 		GetComputedSchema().
-		Return(&storepb.ComputedSchema{Tables: schemaInfos}, nil)
+		Return(&storepb.ComputedSchema{Tables: tableInfos}, nil)
 
 	// Set up server.
 	env, err := metadataenv.New()
@@ -732,78 +737,70 @@ func TestGetAgentUpdates(t *testing.T) {
 	}
 	u3pb := utils.ProtoFromUUID(&u3)
 
-	initialAgents := []*agentpb.Agent{
-		&agentpb.Agent{
-			LastHeartbeatNS: 10,
-			CreateTimeNS:    5,
-			Info: &agentpb.AgentInfo{
-				AgentID: u1pb,
-				HostInfo: &agentpb.HostInfo{
-					Hostname: "test_host",
-					HostIP:   "127.0.0.1",
+	updates1 := []*metadatapb.AgentUpdate{
+		&metadatapb.AgentUpdate{
+			AgentID: u1pb,
+			Update: &metadatapb.AgentUpdate_Agent{
+				Agent: &agentpb.Agent{
+					LastHeartbeatNS: 10,
+					CreateTimeNS:    5,
+					Info: &agentpb.AgentInfo{
+						AgentID: u1pb,
+						HostInfo: &agentpb.HostInfo{
+							Hostname: "test_host",
+							HostIP:   "127.0.0.1",
+						},
+					},
+					ASID: 123,
 				},
 			},
-			ASID: 123,
 		},
-		&agentpb.Agent{
-			LastHeartbeatNS: 20,
-			CreateTimeNS:    0,
-			Info: &agentpb.AgentInfo{
-				AgentID: u2pb,
-				HostInfo: &agentpb.HostInfo{
-					Hostname: "another_host",
-					HostIP:   "127.0.0.1",
+		&metadatapb.AgentUpdate{
+			AgentID: u2pb,
+			Update: &metadatapb.AgentUpdate_Agent{
+				Agent: &agentpb.Agent{
+					LastHeartbeatNS: 20,
+					CreateTimeNS:    0,
+					Info: &agentpb.AgentInfo{
+						AgentID: u2pb,
+						HostInfo: &agentpb.HostInfo{
+							Hostname: "another_host",
+							HostIP:   "127.0.0.1",
+						},
+					},
+					ASID: 456,
 				},
 			},
-			ASID: 456,
 		},
-		&agentpb.Agent{
-			LastHeartbeatNS: 30,
-			CreateTimeNS:    0,
-			Info: &agentpb.AgentInfo{
-				AgentID: u3pb,
-				HostInfo: &agentpb.HostInfo{
-					Hostname: "yet another_host",
-					HostIP:   "127.0.0.1",
+		&metadatapb.AgentUpdate{
+			AgentID: u1pb,
+			Update: &metadatapb.AgentUpdate_DataInfo{
+				DataInfo: &messagespb.AgentDataInfo{
+					MetadataInfo: &distributedpb.MetadataInfo{
+						MetadataFields: []sharedmetadatapb.MetadataType{
+							sharedmetadatapb.CONTAINER_ID,
+							sharedmetadatapb.POD_NAME,
+						},
+						Filter: &distributedpb.MetadataInfo_XXHash64BloomFilter{
+							XXHash64BloomFilter: &bloomfilterpb.XXHash64BloomFilter{
+								Data:      []byte("5678"),
+								NumHashes: 3,
+							},
+						},
+					},
 				},
 			},
-			ASID: 789,
 		},
 	}
 
-	initialMDs := []*metadatapb.AgentTableMetadata{
-		&metadatapb.AgentTableMetadata{
-			AgentID: u2pb,
-			DataInfo: &messagespb.AgentDataInfo{
-				MetadataInfo: &distributedpb.MetadataInfo{
-					MetadataFields: []sharedmetadatapb.MetadataType{
-						sharedmetadatapb.CONTAINER_ID,
-						sharedmetadatapb.POD_NAME,
-					},
-					Filter: &distributedpb.MetadataInfo_XXHash64BloomFilter{
-						XXHash64BloomFilter: &bloomfilterpb.XXHash64BloomFilter{
-							Data:      []byte("1234"),
-							NumHashes: 4,
-						},
-					},
-				},
+	computedSchema1 := &storepb.ComputedSchema{
+		Tables: testTableInfos(),
+		TableNameToAgentIDs: map[string]*storepb.ComputedSchema_AgentIDs{
+			"table1": &storepb.ComputedSchema_AgentIDs{
+				AgentID: []*uuidpb.UUID{u1pb, u2pb},
 			},
-		},
-		&metadatapb.AgentTableMetadata{
-			AgentID: u1pb,
-			DataInfo: &messagespb.AgentDataInfo{
-				MetadataInfo: &distributedpb.MetadataInfo{
-					MetadataFields: []sharedmetadatapb.MetadataType{
-						sharedmetadatapb.CONTAINER_ID,
-						sharedmetadatapb.POD_NAME,
-					},
-					Filter: &distributedpb.MetadataInfo_XXHash64BloomFilter{
-						XXHash64BloomFilter: &bloomfilterpb.XXHash64BloomFilter{
-							Data:      []byte("5678"),
-							NumHashes: 3,
-						},
-					},
-				},
+			"table2": &storepb.ComputedSchema_AgentIDs{
+				AgentID: []*uuidpb.UUID{u1pb},
 			},
 		},
 	}
@@ -812,31 +809,49 @@ func TestGetAgentUpdates(t *testing.T) {
 	mockAgtMgr.
 		EXPECT().
 		GetAgentUpdates(true).
-		Return(initialAgents, initialMDs, []uuid.UUID{}, nil)
+		Return(updates1, computedSchema1, nil)
 
 	// Empty state (0 messages)
 	mockAgtMgr.
 		EXPECT().
 		GetAgentUpdates(false).
-		Return(nil, nil, nil, nil)
+		Return(nil, nil, nil)
 
-	//  Delete agent (1 message)
+	computedSchema2 := &storepb.ComputedSchema{
+		Tables: []*storepb.TableInfo{computedSchema1.Tables[0]},
+		TableNameToAgentIDs: map[string]*storepb.ComputedSchema_AgentIDs{
+			"table1": &storepb.ComputedSchema_AgentIDs{
+				AgentID: []*uuidpb.UUID{u2pb},
+			},
+		},
+	}
+
+	// Schema update (1 message)
 	mockAgtMgr.
 		EXPECT().
 		GetAgentUpdates(false).
-		Return(nil, nil, []uuid.UUID{u1}, nil)
+		Return(nil, computedSchema2, nil)
 
-	// Recreate message (1 message)
+	updates2 := []*metadatapb.AgentUpdate{
+		&metadatapb.AgentUpdate{
+			AgentID: u3pb,
+			Update: &metadatapb.AgentUpdate_Deleted{
+				Deleted: true,
+			},
+		},
+	}
+
+	// Agent updates (1 message)
 	mockAgtMgr.
 		EXPECT().
 		GetAgentUpdates(false).
-		Return([]*agentpb.Agent{initialAgents[0]}, nil, nil, nil)
+		Return(updates2, nil, nil)
 
 	// Empty state (0 messages)
 	mockAgtMgr.
 		EXPECT().
 		GetAgentUpdates(false).
-		Return(nil, nil, nil, nil).
+		Return(nil, nil, nil).
 		AnyTimes()
 
 	// Set up server.
@@ -877,7 +892,7 @@ func TestGetAgentUpdates(t *testing.T) {
 	errCh := make(chan error)
 	msgCh := make(chan *metadatapb.AgentUpdatesResponse)
 	msgCount := 0
-	expectedMsgs := 4
+	expectedMsgs := 5
 
 	go func() {
 		validTestToken := testingutils.GenerateTestJWTToken(t, viper.GetString("jwt_signing_key"))
@@ -939,32 +954,45 @@ func TestGetAgentUpdates(t *testing.T) {
 
 	// Check first message
 	r0 := resps[0]
-	assert.Equal(t, len(r0.AgentUpdates), 2)
-	assert.Equal(t, r0.AgentUpdates[0], initialAgents[0])
-	assert.Equal(t, r0.AgentUpdates[1], initialAgents[1])
-	assert.Equal(t, len(r0.AgentTableMetadataUpdates), 2)
-	assert.Equal(t, r0.AgentTableMetadataUpdates[0], initialMDs[0])
-	assert.Equal(t, r0.AgentTableMetadataUpdates[1], initialMDs[1])
-	assert.Equal(t, len(r0.DeletedAgents), 0)
+	// Check schemas
+	assert.Equal(t, 2, len(r0.AgentSchemas))
+	assert.Equal(t, "table1", r0.AgentSchemas[0].Name)
+	assert.Equal(t, 3, len(r0.AgentSchemas[0].Relation.Columns))
+	assert.Equal(t, 2, len(r0.AgentSchemas[0].AgentList))
+	assert.Equal(t, u1pb, r0.AgentSchemas[0].AgentList[0])
+	assert.Equal(t, u2pb, r0.AgentSchemas[0].AgentList[1])
+	assert.Equal(t, "table2", r0.AgentSchemas[1].Name)
+	assert.Equal(t, 2, len(r0.AgentSchemas[1].Relation.Columns))
+	assert.Equal(t, 1, len(r0.AgentSchemas[1].AgentList))
+	assert.Equal(t, u1pb, r0.AgentSchemas[1].AgentList[0])
+	// Check updates
+	assert.Equal(t, 2, len(r0.AgentUpdates))
+	assert.Equal(t, updates1[0], r0.AgentUpdates[0])
+	assert.Equal(t, updates1[1], r0.AgentUpdates[1])
 
 	// Check second message
 	r1 := resps[1]
-	assert.Equal(t, len(r1.AgentUpdates), 1)
-	assert.Equal(t, r1.AgentUpdates[0], initialAgents[2])
-	assert.Equal(t, len(r1.AgentTableMetadataUpdates), 0)
-	assert.Equal(t, len(r1.DeletedAgents), 0)
+	assert.Nil(t, r1.AgentSchemas)
+	assert.Equal(t, 1, len(r1.AgentUpdates))
+	assert.Equal(t, updates1[2], r1.AgentUpdates[0])
+
+	// Check empty message
+	r2 := resps[2]
+	assert.Nil(t, r2.AgentUpdates)
+	assert.Nil(t, r2.AgentSchemas)
 
 	// Check third message
-	r2 := resps[2]
-	assert.Equal(t, len(r2.AgentUpdates), 0)
-	assert.Equal(t, len(r2.AgentTableMetadataUpdates), 0)
-	assert.Equal(t, len(r2.DeletedAgents), 1)
-	assert.Equal(t, r2.DeletedAgents[0], u1pb)
+	r3 := resps[3]
+	assert.Nil(t, r3.AgentUpdates)
+	assert.Equal(t, 1, len(r3.AgentSchemas))
+	assert.Equal(t, "table1", r3.AgentSchemas[0].Name)
+	assert.Equal(t, 3, len(r3.AgentSchemas[0].Relation.Columns))
+	assert.Equal(t, 1, len(r3.AgentSchemas[0].AgentList))
+	assert.Equal(t, u2pb, r3.AgentSchemas[0].AgentList[0])
 
 	// Check fourth message
-	r3 := resps[3]
-	assert.Equal(t, len(r3.AgentUpdates), 1)
-	assert.Equal(t, r3.AgentUpdates[0], initialAgents[0])
-	assert.Equal(t, len(r3.AgentTableMetadataUpdates), 0)
-	assert.Equal(t, len(r3.DeletedAgents), 0)
+	r4 := resps[4]
+	assert.Nil(t, r4.AgentSchemas)
+	assert.Equal(t, 1, len(r4.AgentUpdates))
+	assert.Equal(t, updates2[0], r4.AgentUpdates[0])
 }

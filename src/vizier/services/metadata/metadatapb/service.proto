@@ -23,6 +23,9 @@ service MetadataService {
   rpc GetSchemaByAgent(SchemaByAgentRequest) returns (SchemaByAgentResponse) {}
   rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse) {}
   rpc GetAgentTableMetadata(AgentTableMetadataRequest) returns (AgentTableMetadataResponse) {}
+  // An endpoint which is responsible for streaming the state of the agents.
+  // It first sends the full initial state of the agents, and then it sends state updates
+  // after that point.
   rpc GetAgentUpdates(AgentUpdatesRequest) returns (stream AgentUpdatesResponse) {}
 }
 
@@ -88,22 +91,28 @@ message AgentUpdatesRequest {
   // Note that since a given update may be streamed across multiple AgentUpdatesResponses,
   // it's possible that the duration between responses will be less than `update_interval`.
   google.protobuf.Duration max_update_interval = 1;
-  // The max number of updates to put in a given response. Specifically, the max lengths of the
-  // deleted_agents, agent_updates, and agent_table_metadata_updates arrays (individually).
+  // The max number of agent updates per response.
   int32 max_updates_per_response = 2;
 }
 
+// AgentUpdate contains an update about a particular agent.
+message AgentUpdate {
+  uuidpb.UUID agent_id = 1 [ (gogoproto.customname) = "AgentID" ];
+  oneof update {
+    // True if the agent has been deleted.
+    bool deleted = 2;
+    // Updates to the agent's basic information.
+    pl.vizier.services.shared.agent.Agent agent = 3;
+    // Updates to the agent's table data info.
+    pl.vizier.messages.AgentDataInfo data_info = 4;
+  }
+}
+
 message AgentUpdatesResponse {
-  // List of agents that have been deleted.
-  repeated uuidpb.UUID deleted_agents = 1;
-  // For all agents that have had updated metadata since the previous message in this stream,
-  // this field contains their latest state. Contains a maximum of 100 agents in this list,
-  // any additional agents should be sent in another response message in this stream.
-  repeated pl.vizier.services.shared.agent.Agent agent_updates = 2;
-  // For all agents that have had updated table metadata since the previous message in this
-  // stream, this field contains their latest state. Contains a maximum of 100 agents in this list,
-  // any additional agents should be sent in another response message in this stream.
-  repeated AgentTableMetadata agent_table_metadata_updates = 3;
+  // A list of agent updates, in the order in which they occurred.
+  repeated AgentUpdate agent_updates = 1;
+  // The latest version of the agent schemas, if they have changed since the last message.
+  repeated pl.carnot.planner.distributedpb.SchemaInfo agent_schemas = 2;
 }
 
 // The request to register tracepoints on all PEMs.

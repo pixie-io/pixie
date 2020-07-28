@@ -219,7 +219,7 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 	}
 
 	for {
-		agents, agentTableMetadatas, deletedAgents, err := s.agentManager.GetAgentUpdates(readInitialState)
+		updates, newComputedSchema, err := s.agentManager.GetAgentUpdates(readInitialState)
 
 		if err != nil {
 			return err
@@ -229,46 +229,49 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 		}
 
 		currentIdx := 0
-		finishedAgents := len(agents) == 0
-		finishedAgentTableMD := len(agentTableMetadatas) == 0
-		finishedDeleted := len(deletedAgents) == 0
+		finishedUpdates := len(updates) == 0
+		finishedSchema := newComputedSchema == nil
 
-		// Chunk up the data so we don't overwhelm the query broker with a lot of data at once.
-		for !(finishedAgents && finishedAgentTableMD && finishedDeleted) {
-			select {
-			case <-srv.Context().Done():
-				return nil
-			default:
-				response := &metadatapb.AgentUpdatesResponse{}
-
-				for idx := currentIdx; idx < currentIdx+agentChunkSize; idx++ {
-					if idx < len(agents) {
-						response.AgentUpdates = append(response.AgentUpdates, agents[idx])
-					} else {
-						finishedAgents = true
+		if finishedSchema && finishedUpdates {
+			// Send an empty update after the duration has passed if we have no new information.
+			err := srv.Send(&metadatapb.AgentUpdatesResponse{})
+			if err != nil {
+				return err
+			}
+		} else {
+			// Chunk up the data so we don't overwhelm the query broker with a lot of data at once.
+			for !(finishedUpdates && finishedSchema) {
+				select {
+				case <-srv.Context().Done():
+					return nil
+				default:
+					response := &metadatapb.AgentUpdatesResponse{}
+					if !finishedSchema {
+						schemas, err := convertToSchemaInfo(newComputedSchema)
+						if err != nil {
+							return err
+						}
+						response.AgentSchemas = schemas
+						finishedSchema = true
 					}
-					if idx < len(agentTableMetadatas) {
-						response.AgentTableMetadataUpdates = append(response.AgentTableMetadataUpdates,
-							agentTableMetadatas[idx])
-					} else {
-						finishedAgentTableMD = true
-					}
-					if idx < len(deletedAgents) {
-						response.DeletedAgents = append(response.DeletedAgents,
-							utils.ProtoFromUUID(&deletedAgents[idx]))
-					} else {
-						finishedDeleted = true
-					}
-				}
 
-				currentIdx += agentChunkSize
+					for idx := currentIdx; idx < currentIdx+agentChunkSize; idx++ {
+						if idx < len(updates) {
+							response.AgentUpdates = append(response.AgentUpdates, updates[idx])
+						} else {
+							finishedUpdates = true
+						}
+					}
 
-				err := srv.Send(response)
-				if err != nil {
-					return err
+					currentIdx += agentChunkSize
+					err := srv.Send(response)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
+
 		time.Sleep(agentUpdatePeriod)
 	}
 

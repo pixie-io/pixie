@@ -11,6 +11,7 @@ import (
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	metadatapb0 "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
+	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	reflect "reflect"
 )
@@ -183,13 +184,12 @@ func (mr *MockAgentManagerMockRecorder) HandleUpdate(arg0 interface{}) *gomock.C
 }
 
 // GetAgentUpdates mocks base method
-func (m *MockAgentManager) GetAgentUpdates(readFullState bool) ([]*agentpb.Agent, []*metadatapb0.AgentTableMetadata, []go_uuid.UUID, error) {
+func (m *MockAgentManager) GetAgentUpdates(readFullState bool) ([]*metadatapb0.AgentUpdate, *storepb.ComputedSchema, error) {
 	ret := m.ctrl.Call(m, "GetAgentUpdates", readFullState)
-	ret0, _ := ret[0].([]*agentpb.Agent)
-	ret1, _ := ret[1].([]*metadatapb0.AgentTableMetadata)
-	ret2, _ := ret[2].([]go_uuid.UUID)
-	ret3, _ := ret[3].(error)
-	return ret0, ret1, ret2, ret3
+	ret0, _ := ret[0].([]*metadatapb0.AgentUpdate)
+	ret1, _ := ret[1].(*storepb.ComputedSchema)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetAgentUpdates indicates an expected call of GetAgentUpdates
