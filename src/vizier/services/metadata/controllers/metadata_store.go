@@ -125,15 +125,6 @@ func getKelvinAgentKey(agentID uuid.UUID) string {
 	return path.Join("/", "kelvin", agentID.String())
 }
 
-// GetAgentSchemasKey gets all schemas belonging to an agent.
-func getAgentSchemasKey(agentID uuid.UUID) string {
-	return path.Join("/", "agents", agentID.String(), "schema")
-}
-
-func getAgentSchemaKey(agentID uuid.UUID, schemaName string) string {
-	return path.Join(getAgentSchemasKey(agentID), schemaName)
-}
-
 func getAgentDataInfoPrefix() string {
 	return path.Join("/", "agentDataInfo")
 }
@@ -363,11 +354,7 @@ func (mds *KVMetadataStore) DeleteAgent(agentID uuid.UUID) error {
 		return err
 	}
 
-	err = mds.cache.DeleteWithPrefix(getAgentDataInfoKey(agentID))
-	if err != nil {
-		return err
-	}
-	return mds.cache.DeleteWithPrefix(getAgentSchemasKey(agentID))
+	return mds.cache.DeleteWithPrefix(getAgentDataInfoKey(agentID))
 }
 
 // CreateAgent creates a new agent.
@@ -638,15 +625,6 @@ func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.
 	}
 
 	for _, schemaPb := range schemas {
-		schema, err := schemaPb.Marshal()
-		if err != nil {
-			log.WithError(err).Error("Could not marshal schema update message.")
-			continue
-		}
-		// TODO(philkuz/michelle/nserrino) figure out if this is used, reverse map should replace it.
-		// Set the (agentID, schema) pair
-		mds.cache.Set(getAgentSchemaKey(agentID, schemaPb.Name), string(schema))
-
 		_, agentHasTable := previousAgentTableTracker[schemaPb.Name]
 		if agentHasTable {
 			// If it's in the new schema, we don't need to do anything, so we mark this true.

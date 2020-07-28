@@ -124,10 +124,6 @@ func TestKVMetadataStore_DeleteAgent(t *testing.T) {
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
 	mockDs.
 		EXPECT().
-		DeleteWithPrefix("/agents/" + testutils.ExistingAgentUUID + "/schema").
-		Return(nil)
-	mockDs.
-		EXPECT().
 		DeleteWithPrefix("/agentDataInfo/" + testutils.ExistingAgentUUID).
 		Return(nil)
 
@@ -424,13 +420,6 @@ func TestKVMetadataStore_UpdateSchemasBasic(t *testing.T) {
 
 	err = mds.UpdateSchemas(u, schemas)
 	assert.Nil(t, err)
-
-	savedSchema, err := c.Get("/agents/" + testutils.NewAgentUUID + "/schema/a_table")
-	assert.Nil(t, err)
-	assert.NotNil(t, savedSchema)
-	schemaPb := &storepb.TableInfo{}
-	proto.Unmarshal(savedSchema, schemaPb)
-	assert.Equal(t, "a_table", schemaPb.Name)
 
 	cSchema, err := c.Get("/computedSchema")
 	assert.Nil(t, err)
