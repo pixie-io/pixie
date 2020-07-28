@@ -172,10 +172,6 @@ func (s *Server) GetAgentTableMetadata(ctx context.Context, req *metadatapb.Agen
 		return nil, err
 	}
 
-	respSchemaPb, err := convertToRelationMap(computedSchema)
-	if err != nil {
-		return nil, err
-	}
 	dataInfos, err := s.mds.GetAgentsDataInfo()
 	if err != nil {
 		return nil, err
@@ -185,9 +181,7 @@ func (s *Server) GetAgentTableMetadata(ctx context.Context, req *metadatapb.Agen
 	var agentsMetadata []*metadatapb.AgentTableMetadata
 	for agentID, dataInfo := range dataInfos {
 		a := &metadatapb.AgentTableMetadata{
-			AgentID: utils.ProtoFromUUID(&agentID),
-			// TODO(philkuz) delete this when we remove the need for schema / we deprecate GetAgentTableMetadata.
-			Schema:   respSchemaPb,
+			AgentID:  utils.ProtoFromUUID(&agentID),
 			DataInfo: dataInfo,
 		}
 		agentsMetadata = append(agentsMetadata, a)

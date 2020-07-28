@@ -128,7 +128,6 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 	ctx = context.WithValue(ctx, execStartKey, time.Now())
 	info := s.agentsTracker.GetAgentInfo()
 	plannerState := &distributedpb.LogicalPlannerState{
-		Schema:           info.Schema(),
 		DistributedState: info.DistributedState(),
 		PlanOptions:      planOpts,
 	}

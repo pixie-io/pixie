@@ -9,7 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 	utils2 "pixielabs.ai/pixielabs/src/shared/services/utils"
-	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 )
 
@@ -108,24 +107,7 @@ func (a *Agents) refreshState() {
 		return
 	}
 
-	var schema *schemapb.Schema
-	// We currently assume the schema is shared across all agents.
-	// In the unusual case where there are no agents, we can still run Kelvin-only
-	// queries, so in that case we call out for the schemas directly.
-	if len(mdsAgentTableMetadataResp.MetadataByAgent) > 0 {
-		schema = mdsAgentTableMetadataResp.MetadataByAgent[0].Schema
-	} else {
-		// Get the table schema that is presumably shared across agents.
-		mdsSchemaReq := &metadatapb.SchemaRequest{}
-		mdsSchemaResp, err := a.mdsClient.GetSchemas(ctx, mdsSchemaReq)
-		if err != nil {
-			handleError(err)
-			return
-		}
-		schema = mdsSchemaResp.Schema
-	}
-
-	agentsInfo, err := NewAgentsInfo(schema, agentInfosResp, mdsAgentTableMetadataResp)
+	agentsInfo, err := NewAgentsInfo(agentInfosResp, mdsAgentTableMetadataResp)
 	if err != nil {
 		handleError(err)
 		return

@@ -357,12 +357,6 @@ func TestGetAgentTableMetadata(t *testing.T) {
 	for _, agentMetadata := range resp.MetadataByAgent {
 		id := utils.UUIDFromProtoOrNil(agentMetadata.AgentID)
 		dataInfoMap[id] = agentMetadata.DataInfo
-
-		// check the schema
-		assert.Equal(t, 1, len(agentMetadata.Schema.RelationMap))
-		assert.Equal(t, 1, len(agentMetadata.Schema.RelationMap["table1"].Columns))
-		assert.Equal(t, "t1Col1", agentMetadata.Schema.RelationMap["table1"].Columns[0].ColumnName)
-		assert.Equal(t, typespb.BOOLEAN, agentMetadata.Schema.RelationMap["table1"].Columns[0].ColumnType)
 	}
 
 	assert.Equal(t, len(dataInfoMap), 2)

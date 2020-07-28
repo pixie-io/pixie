@@ -7,17 +7,15 @@ import (
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 )
 
 // AgentsInfo tracks information about the distributed state of the system.
 type AgentsInfo struct {
-	ds     *distributedpb.DistributedState
-	schema *schemapb.Schema
+	ds *distributedpb.DistributedState
 }
 
 // NewAgentsInfo creates a new agent info.
-func NewAgentsInfo(schema *schemapb.Schema, agentInfos *metadatapb.AgentInfoResponse, agentTableMetadataResp *metadatapb.AgentTableMetadataResponse) (*AgentsInfo, error) {
+func NewAgentsInfo(agentInfos *metadatapb.AgentInfoResponse, agentTableMetadataResp *metadatapb.AgentTableMetadataResponse) (*AgentsInfo, error) {
 	var agentTableMetadata = make(map[uuid.UUID]*distributedpb.MetadataInfo)
 	for _, md := range agentTableMetadataResp.MetadataByAgent {
 		if md.DataInfo != nil && md.DataInfo.MetadataInfo != nil {
@@ -56,22 +54,16 @@ func NewAgentsInfo(schema *schemapb.Schema, agentInfos *metadatapb.AgentInfoResp
 	}
 
 	return &AgentsInfo{
-		&distributedpb.DistributedState{
+		ds: &distributedpb.DistributedState{
 			CarnotInfo: carnotInfoList,
 			SchemaInfo: agentTableMetadataResp.SchemaInfo,
 		},
-		schema,
 	}, nil
 }
 
 // DistributedState returns the current distributed state. Will return nil if not existent.
 func (a AgentsInfo) DistributedState() *distributedpb.DistributedState {
 	return a.ds
-}
-
-// Schema returns the current Schema. Returns nil if not existent.
-func (a AgentsInfo) Schema() *schemapb.Schema {
-	return a.schema
 }
 
 func makeAgentCarnotInfo(agentID uuid.UUID, asid uint32, agentMetadata *distributedpb.MetadataInfo) *distributedpb.CarnotInfo {

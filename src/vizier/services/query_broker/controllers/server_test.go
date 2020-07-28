@@ -97,16 +97,6 @@ schema {
 `
 
 const multipleAgentDistributedState = `
-schema: {
-	relation_map: {
-		key: "perf_and_http"
-    	value: {
-      		columns: {
-        		column_name: "_time"
-      		}
-    	}
-  	}
-}
 distributed_state: {
 	carnot_info: {
     	query_broker_address: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
@@ -128,16 +118,6 @@ plan_options: {
 `
 
 const singleAgentDistributedState = `
-schema: {
-	relation_map: {
-    	key: "perf_and_http"
-    	value: {
-      		columns: {
-        		column_name: "_time"
-      		}
-    	}
-  	}
-}
 distributed_state: {
 	carnot_info: {
 		query_broker_address: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
@@ -470,9 +450,7 @@ func TestPlannerErrorResult(t *testing.T) {
 		return mc
 	}
 
-	agentsInfo, err := tracker.NewAgentsInfo(
-		getAgentTableMetadataPB.MetadataByAgent[0].Schema,
-		getAgentsPB, getAgentTableMetadataPB)
+	agentsInfo, err := tracker.NewAgentsInfo(getAgentsPB, getAgentTableMetadataPB)
 	assert.Nil(t, err)
 	at := fakeAgentsTracker{
 		agentsInfo: agentsInfo,
@@ -549,7 +527,6 @@ func TestErrorInStatusResult(t *testing.T) {
 	}
 
 	agentsInfo, err := tracker.NewAgentsInfo(
-		getAgentTableMetadataPB.MetadataByAgent[0].Schema,
 		getAgentsPB, getAgentTableMetadataPB)
 	assert.Nil(t, err)
 	at := fakeAgentsTracker{
