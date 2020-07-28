@@ -32,6 +32,9 @@ Status MemorySourceNode::OpenImpl(ExecState* exec_state) {
   table_ = exec_state->table_store()->GetTable(plan_node_->TableName(), plan_node_->Tablet());
   DCHECK(table_ != nullptr);
 
+  if (table_ == nullptr) {
+    return error::NotFound("Table '$0' not found", plan_node_->TableName());
+  }
   // Determine number of chunks at Open() time
   // because Stirling may be pushing to the table
   num_batches_ = table_->NumBatches();
