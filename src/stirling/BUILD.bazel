@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test", "pl_cc_test_library")
 load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
@@ -11,6 +11,7 @@ pl_cc_library(
         exclude = [
             "**/*_test.cc",
             "stirling_wrapper.cc",
+            "stirling_mock.h",
         ],
     ),
     hdrs = glob(
@@ -53,6 +54,12 @@ pl_cc_library(
         ],
         "//conditions:default": [],
     }),
+)
+
+pl_cc_test_library(
+    name = "stirling_mock",
+    srcs = ["stirling_mock.h"],
+    deps = [":cc_library"],
 )
 
 pl_cc_binary(

@@ -35,3 +35,11 @@ inline void ClearUUID(sole::uuid* uuid) {
 }
 
 }  // namespace pl
+
+// Allow UUID to be logged.
+namespace sole {
+inline std::ostream& operator<<(std::ostream& os, const uuid& id) {
+  os << id.str();
+  return os;
+}
+}  // namespace sole

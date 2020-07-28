@@ -162,5 +162,13 @@ class Stirling : public NotCopyable {
   virtual void Stop() = 0;
 };
 
+namespace stirlingpb {
+// This enables the GMOCK matcher to print out the Publish proto.
+inline std::ostream& operator<<(std::ostream& os, const Publish& pub) {
+  os << pub.DebugString();
+  return os;
+}  // namespace stirlingpb
+
+}  // namespace stirlingpb
 }  // namespace stirling
 }  // namespace pl
