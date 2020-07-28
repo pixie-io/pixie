@@ -37,6 +37,7 @@ type MetadataStore interface {
 	GetAgentDataInfo(agentID uuid.UUID) (*messagespb.AgentDataInfo, error)
 	GetAgentsForHostnamePairs(*[]*HostnameIPPair) ([]string, error)
 	GetComputedSchemas() ([]*storepb.TableInfo, error)
+	GetCombinedComputedSchema() (*storepb.ComputedSchema, error)
 	GetContainers() ([]*metadatapb.ContainerInfo, error)
 	GetEndpoints() ([]*metadatapb.Endpoints, error)
 	GetHostnameIPPairFromPodName(string, string) (*HostnameIPPair, error)

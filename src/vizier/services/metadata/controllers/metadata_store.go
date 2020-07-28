@@ -519,7 +519,9 @@ func (mds *KVMetadataStore) GetASID() (uint32, error) {
 
 var errNoComputedSchemas = errors.New("Could not find any computed schemas")
 
-func (mds *KVMetadataStore) getComputedSchemas() (*storepb.ComputedSchema, error) {
+// GetCombinedComputedSchema returns the raw CombinedComputedSchema.
+// TODO(philkuz) deprecate GetComputedSchema() and replace it with this.
+func (mds *KVMetadataStore) GetCombinedComputedSchema() (*storepb.ComputedSchema, error) {
 	cSchemas, err := mds.cache.Get(getComputedSchemasKey())
 	if err != nil {
 		return nil, err
@@ -604,7 +606,7 @@ func initializeComputedSchema(computedSchemaPb *storepb.ComputedSchema) *storepb
 
 // UpdateSchemas updates the given schemas in the metadata store.
 func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.TableInfo) error {
-	computedSchemaPb, err := mds.getComputedSchemas()
+	computedSchemaPb, err := mds.GetCombinedComputedSchema()
 	// If there are no computed schemas, that means we have yet to set one.
 	if err == errNoComputedSchemas {
 		// Reset error as this is not actually an error.
@@ -696,7 +698,7 @@ func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.
 
 // GetComputedSchemas gets all computed schemas in the metadata store.
 func (mds *KVMetadataStore) GetComputedSchemas() ([]*storepb.TableInfo, error) {
-	computedSchemaPb, err := mds.getComputedSchemas()
+	computedSchemaPb, err := mds.GetCombinedComputedSchema()
 	if err != nil {
 		return nil, err
 	}

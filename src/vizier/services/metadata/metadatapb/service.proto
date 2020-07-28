@@ -79,6 +79,8 @@ message AgentTableMetadata {
 
 message AgentTableMetadataResponse {
   repeated AgentTableMetadata metadata_by_agent = 1;
+  pl.carnot.planner.distributedpb.CarnotInfo carnot_info = 3;
+  repeated pl.carnot.planner.distributedpb.SchemaInfo schema_info = 4;
 }
 
 message AgentUpdatesRequest {

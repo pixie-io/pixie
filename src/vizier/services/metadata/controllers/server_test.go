@@ -199,8 +199,8 @@ func TestGetSchemas(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		GetComputedSchemas().
-		Return(schemaInfos, nil)
+		GetCombinedComputedSchema().
+		Return(&storepb.ComputedSchema{Tables: schemaInfos}, nil)
 
 	// Set up server.
 	env, err := metadataenv.New()
@@ -283,10 +283,22 @@ func TestGetAgentTableMetadata(t *testing.T) {
 			},
 		},
 	}
+
+	schemaMap := make(map[string]*storepb.ComputedSchema_AgentIDs)
+	agentIDList := []*uuidpb.UUID{
+		utils.ProtoFromUUID(&agent1ID),
+		utils.ProtoFromUUID(&agent2ID),
+	}
+	schemaMap["table1"] = &storepb.ComputedSchema_AgentIDs{
+		AgentID: agentIDList,
+	}
 	mockMds.
 		EXPECT().
-		GetComputedSchemas().
-		Return(schemaInfos, nil)
+		GetCombinedComputedSchema().
+		Return(&storepb.ComputedSchema{
+			Tables:              schemaInfos,
+			TableNameToAgentIDs: schemaMap,
+		}, nil)
 
 	expectedDataInfos := map[uuid.UUID]*messagespb.AgentDataInfo{}
 	expectedDataInfos[agent1ID] = &messagespb.AgentDataInfo{
@@ -356,6 +368,13 @@ func TestGetAgentTableMetadata(t *testing.T) {
 	assert.Equal(t, len(dataInfoMap), 2)
 	assert.Equal(t, dataInfoMap[agent1ID], expectedDataInfos[agent1ID])
 	assert.Equal(t, dataInfoMap[agent2ID], expectedDataInfos[agent2ID])
+
+	assert.Equal(t, 1, len(resp.SchemaInfo))
+	assert.Equal(t, "table1", resp.SchemaInfo[0].Name)
+	assert.Equal(t, "t1Col1", resp.SchemaInfo[0].Relation.Columns[0].ColumnName)
+	assert.Equal(t, typespb.BOOLEAN, resp.SchemaInfo[0].Relation.Columns[0].ColumnType)
+
+	assert.ElementsMatch(t, resp.SchemaInfo[0].AgentList, agentIDList)
 }
 
 func Test_Server_RegisterTracepoint(t *testing.T) {

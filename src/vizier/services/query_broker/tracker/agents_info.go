@@ -2,7 +2,6 @@ package tracker
 
 import (
 	uuid "github.com/satori/go.uuid"
-	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
@@ -20,7 +19,6 @@ type AgentsInfo struct {
 // NewAgentsInfo creates a new agent info.
 func NewAgentsInfo(schema *schemapb.Schema, agentInfos *metadatapb.AgentInfoResponse, agentTableMetadataResp *metadatapb.AgentTableMetadataResponse) (*AgentsInfo, error) {
 	var agentTableMetadata = make(map[uuid.UUID]*distributedpb.MetadataInfo)
-	var schemaInfoMap = make(map[string]*distributedpb.SchemaInfo)
 	for _, md := range agentTableMetadataResp.MetadataByAgent {
 		if md.DataInfo != nil && md.DataInfo.MetadataInfo != nil {
 			agentUUID, err := utils.UUIDFromProto(md.AgentID)
@@ -28,24 +26,6 @@ func NewAgentsInfo(schema *schemapb.Schema, agentInfos *metadatapb.AgentInfoResp
 				return nil, err
 			}
 			agentTableMetadata[agentUUID] = md.DataInfo.MetadataInfo
-			// Add the Schema.
-			if md.Schema == nil {
-				continue
-			}
-			for tableName, relation := range md.Schema.RelationMap {
-				if elm, ok := schemaInfoMap[tableName]; ok {
-					// TODO(philkuz) should we check that the schema is the same?
-					elm.AgentList = append(elm.AgentList, md.AgentID)
-					schemaInfoMap[tableName] = elm
-				} else {
-					schemaInfoMap[tableName] = &distributedpb.SchemaInfo{
-						Name:      tableName,
-						Relation:  relation,
-						AgentList: []*uuidpb.UUID{md.AgentID},
-					}
-				}
-			}
-
 		}
 	}
 
@@ -75,15 +55,10 @@ func NewAgentsInfo(schema *schemapb.Schema, agentInfos *metadatapb.AgentInfoResp
 		carnotInfoList = append(carnotInfoList, makeKelvinCarnotInfo(kelvinID, kelvinGRPCAddress, kelvin.ASID))
 	}
 
-	schemaInfoArray := make([]*distributedpb.SchemaInfo, 0)
-	for _, schemaInfo := range schemaInfoMap {
-		schemaInfoArray = append(schemaInfoArray, schemaInfo)
-	}
-
 	return &AgentsInfo{
 		&distributedpb.DistributedState{
 			CarnotInfo: carnotInfoList,
-			SchemaInfo: schemaInfoArray,
+			SchemaInfo: agentTableMetadataResp.SchemaInfo,
 		},
 		schema,
 	}, nil

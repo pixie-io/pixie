@@ -19,6 +19,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",
         "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",

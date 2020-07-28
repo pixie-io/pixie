@@ -596,7 +596,10 @@ func TestKVMetadataStore_GetComputedSchemas(t *testing.T) {
 
 	c.Set("/computedSchema", string(computedSchemaText))
 
-	schemas, err := mds.GetComputedSchemas()
+	outComputedSchemas, err := mds.GetCombinedComputedSchema()
+
+	schemas := outComputedSchemas.Tables
+
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(schemas))
 

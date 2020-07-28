@@ -10,6 +10,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
@@ -51,11 +52,8 @@ func NewServer(env metadataenv.MetadataEnv, agtMgr AgentManager, tracepointManag
 	return NewServerWithClock(env, agtMgr, tracepointManager, mds, clock)
 }
 
-func (s *Server) getSchemas() (*schemapb.Schema, error) {
-	schemas, err := s.mds.GetComputedSchemas()
-	if err != nil {
-		return nil, err
-	}
+func convertToRelationMap(computedSchema *storepb.ComputedSchema) (*schemapb.Schema, error) {
+	schemas := computedSchema.Tables
 	respSchemaPb := &schemapb.Schema{}
 	respSchemaPb.RelationMap = make(map[string]*schemapb.Relation)
 
@@ -78,9 +76,45 @@ func (s *Server) getSchemas() (*schemapb.Schema, error) {
 	return respSchemaPb, nil
 }
 
+func convertToSchemaInfo(computedSchema *storepb.ComputedSchema) ([]*distributedpb.SchemaInfo, error) {
+	schemaInfo := make([]*distributedpb.SchemaInfo, len(computedSchema.Tables))
+
+	for idx, schema := range computedSchema.Tables {
+		columnPbs := make([]*schemapb.Relation_ColumnInfo, len(schema.Columns))
+		for j, column := range schema.Columns {
+			columnPbs[j] = &schemapb.Relation_ColumnInfo{
+				ColumnName:         column.Name,
+				ColumnType:         column.DataType,
+				ColumnDesc:         column.Desc,
+				ColumnSemanticType: column.SemanticType,
+			}
+		}
+		schemaPb := &schemapb.Relation{
+			Columns: columnPbs,
+		}
+
+		agentIDs, ok := computedSchema.TableNameToAgentIDs[schema.Name]
+		if !ok {
+			return nil, fmt.Errorf("Can't find agentIDs for schema %s", schema.Name)
+		}
+
+		schemaInfo[idx] = &distributedpb.SchemaInfo{
+			Name:      schema.Name,
+			Relation:  schemaPb,
+			AgentList: agentIDs.AgentID,
+		}
+	}
+
+	return schemaInfo, nil
+}
+
 // GetSchemas returns the schemas in the system.
 func (s *Server) GetSchemas(ctx context.Context, req *metadatapb.SchemaRequest) (*metadatapb.SchemaResponse, error) {
-	respSchemaPb, err := s.getSchemas()
+	computedSchema, err := s.mds.GetCombinedComputedSchema()
+	if err != nil {
+		return nil, err
+	}
+	respSchemaPb, err := convertToRelationMap(computedSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +167,12 @@ func (s *Server) GetAgentInfo(ctx context.Context, req *metadatapb.AgentInfoRequ
 // GetAgentTableMetadata returns table metadata for each agent. We currently assume that all agents
 // have the same schema, but this code will need to be updated when that assumption no longer holds true.
 func (s *Server) GetAgentTableMetadata(ctx context.Context, req *metadatapb.AgentTableMetadataRequest) (*metadatapb.AgentTableMetadataResponse, error) {
-	respSchemaPb, err := s.getSchemas()
+	computedSchema, err := s.mds.GetCombinedComputedSchema()
+	if err != nil {
+		return nil, err
+	}
+
+	respSchemaPb, err := convertToRelationMap(computedSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -146,15 +185,21 @@ func (s *Server) GetAgentTableMetadata(ctx context.Context, req *metadatapb.Agen
 	var agentsMetadata []*metadatapb.AgentTableMetadata
 	for agentID, dataInfo := range dataInfos {
 		a := &metadatapb.AgentTableMetadata{
-			AgentID:  utils.ProtoFromUUID(&agentID),
+			AgentID: utils.ProtoFromUUID(&agentID),
+			// TODO(philkuz) delete this when we remove the need for schema / we deprecate GetAgentTableMetadata.
 			Schema:   respSchemaPb,
 			DataInfo: dataInfo,
 		}
 		agentsMetadata = append(agentsMetadata, a)
 	}
+	schemaInfo, err := convertToSchemaInfo(computedSchema)
+	if err != nil {
+		return nil, err
+	}
 
 	resp := metadatapb.AgentTableMetadataResponse{
 		MetadataByAgent: agentsMetadata,
+		SchemaInfo:      schemaInfo,
 	}
 
 	return &resp, nil
