@@ -1,4 +1,4 @@
-package controllers
+package controllers_test
 
 import (
 	"context"
@@ -16,6 +16,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
+	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 	mock_controllers "pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
@@ -370,56 +371,6 @@ func (f *fakeAgentsTracker) GetAgentInfo() *tracker.AgentsInfo {
 	return f.agentsInfo
 }
 
-func TestReceiveAgentQueryResult(t *testing.T) {
-	// Start NATS.
-	port, cleanup := testingutils.StartNATS(t)
-	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
-
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	m := mock_controllers.NewMockExecutor(ctrl)
-
-	req := new(querybrokerpb.AgentQueryResultRequest)
-	if err := proto.UnmarshalText(kelvinResponse, req); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	m.
-		EXPECT().
-		AddResult(req)
-
-	// Set up server.
-	env, err := querybrokerenv.New()
-	if err != nil {
-		t.Fatal("Failed to create api environment.")
-	}
-
-	s, err := NewServer(env, nil, nc)
-	if err != nil {
-		t.Fatal("Creating server failed.")
-	}
-
-	queryUUID, err := uuid.FromString(queryIDStr)
-	if err != nil {
-		t.Fatal("Could not parse UUID.")
-	}
-
-	// Add mock executor as an executor.
-	s.executors[queryUUID] = m
-
-	expectedResp := &querybrokerpb.AgentQueryResultResponse{}
-
-	resp, err := s.ReceiveAgentQueryResult(context.Background(), req)
-	assert.Equal(t, expectedResp, resp)
-}
-
 // TestPlannerErrorResult makes sure that compiler error handling is done well.
 func TestPlannerErrorResult(t *testing.T) {
 	// Start NATS.
@@ -445,7 +396,7 @@ func TestPlannerErrorResult(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID) Executor {
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID) controllers.Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)
 		return mc
 	}
@@ -484,7 +435,7 @@ func TestPlannerErrorResult(t *testing.T) {
 		Plan(plannerStatePB, queryRequest).
 		Return(badPlannerResultPB, nil)
 
-	s, err := newServer(env, &at, nc, createExecutorMock)
+	s, err := controllers.NewServerWithExecutor(env, &at, nil, nc, createExecutorMock)
 	queryID := uuid.NewV4()
 	auth := authcontext.New()
 	ctx := authcontext.NewContext(context.Background(), auth)
@@ -532,7 +483,7 @@ func TestErrorInStatusResult(t *testing.T) {
 	at := fakeAgentsTracker{
 		agentsInfo: agentsInfo,
 	}
-	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID) Executor {
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID) controllers.Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)
 		return mc
 	}
@@ -567,7 +518,7 @@ func TestErrorInStatusResult(t *testing.T) {
 		Plan(plannerStatePB, queryRequest).
 		Return(badPlannerResultPB, nil)
 
-	s, err := newServer(env, &at, nc, createExecutorMock)
+	s, err := controllers.NewServerWithExecutor(env, &at, nil, nc, createExecutorMock)
 
 	queryID := uuid.NewV4()
 	auth := authcontext.New()

@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
@@ -71,16 +72,19 @@ type Server struct {
 	hcStatus error
 	hcTime   time.Time
 
+	mdtp    metadatapb.MetadataTracepointServiceClient
 	udfInfo udfspb.UDFInfo
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker, natsConn *nats.Conn) (*Server, error) {
-	return newServer(env, agentsTracker, natsConn, NewQueryExecutor)
+func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker, mds metadatapb.MetadataTracepointServiceClient, natsConn *nats.Conn) (*Server, error) {
+	return NewServerWithExecutor(env, agentsTracker, mds, natsConn, NewQueryExecutor)
 }
 
-func newServer(env querybrokerenv.QueryBrokerEnv,
+// NewServerWithExecutor is NewServer with an functor for executor.
+func NewServerWithExecutor(env querybrokerenv.QueryBrokerEnv,
 	agentsTracker AgentsTracker,
+	mds metadatapb.MetadataTracepointServiceClient,
 	natsConn *nats.Conn,
 	newExecutor func(*nats.Conn, uuid.UUID) Executor) (*Server, error) {
 
@@ -96,6 +100,7 @@ func newServer(env querybrokerenv.QueryBrokerEnv,
 		newExecutor:   newExecutor,
 		executors:     make(map[uuid.UUID]Executor),
 
+		mdtp:    mds,
 		udfInfo: udfInfo,
 	}, nil
 }
@@ -126,7 +131,11 @@ func failedStatusQueryResponse(queryID uuid.UUID, status *statuspb.Status) *quer
 // ExecuteQueryWithPlanner executes a query with the provided planner.
 func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.QueryRequest, queryID uuid.UUID, planner Planner, planOpts *planpb.PlanOptions) (*queryresultspb.QueryResult, *statuspb.Status, error) {
 	ctx = context.WithValue(ctx, execStartKey, time.Now())
+
 	info := s.agentsTracker.GetAgentInfo()
+	if info == nil {
+		return nil, nil, status.Error(codes.Unavailable, "not ready yet")
+	}
 	plannerState := &distributedpb.LogicalPlannerState{
 		DistributedState: info.DistributedState(),
 		PlanOptions:      planOpts,
@@ -385,13 +394,7 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 	// TODO(philkuz) we should move the query id into the api so we can track how queries propagate through the system.
 	queryID := uuid.NewV4()
 
-	// Convert request to a format expected by the planner.
-	convertedReq, err := VizierQueryRequestToPlannerQueryRequest(req)
-	if err != nil {
-		return err
-	}
-
-	flags, err := ParseQueryFlags(convertedReq.QueryStr)
+	flags, err := ParseQueryFlags(req.QueryStr)
 	if err != nil {
 		return srv.Send(ErrToVizierResponse(queryID, err))
 	}
@@ -399,6 +402,36 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 	planOpts := flags.GetPlanOptions()
 	planner := logicalplanner.New(&s.udfInfo)
 	defer planner.Free()
+
+	if req.Mutation {
+		mutationExec := NewMutationExecutor(planner, s.mdtp, s.agentsTracker)
+
+		status, err := mutationExec.Execute(ctx, req, planOpts)
+		if err != nil {
+			return srv.Send(ErrToVizierResponse(queryID, err))
+		}
+		if status != nil {
+			return srv.Send(StatusToVizierResponse(queryID, status))
+		}
+		mutationInfo, err := mutationExec.MutationInfo(ctx)
+		if err != nil {
+			return srv.Send(ErrToVizierResponse(queryID, err))
+		}
+		err = srv.Send(&vizierpb.ExecuteScriptResponse{
+			QueryID:      queryID.String(),
+			MutationInfo: mutationInfo,
+		})
+
+		if mutationInfo.Status.Code != int32(codes.OK) || err != nil {
+			return srv.Send(ErrToVizierResponse(queryID, err))
+		}
+	}
+
+	// Convert request to a format expected by the planner.
+	convertedReq, err := VizierQueryRequestToPlannerQueryRequest(req)
+	if err != nil {
+		return err
+	}
 
 	qr, status, err := s.ExecuteQueryWithPlanner(ctx, convertedReq, queryID, planner, planOpts)
 	if err != nil {

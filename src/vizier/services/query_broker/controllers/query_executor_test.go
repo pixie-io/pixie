@@ -1,4 +1,4 @@
-package controllers
+package controllers_test
 
 import (
 	"fmt"
@@ -14,6 +14,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
+	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )
 
@@ -68,7 +69,7 @@ func TestExecuteQuery(t *testing.T) {
 		agentUUIDs = append(agentUUIDs, u)
 	}
 
-	e := NewQueryExecutor(nc, queryUUID)
+	e := controllers.NewQueryExecutor(nc, queryUUID)
 
 	// Subscribe to each agent channel.
 	sub1, err := nc.SubscribeSync(fmt.Sprintf("/agent/%s", agentUUIDStrs[0]))
@@ -133,7 +134,7 @@ func TestWaitForCompletion(t *testing.T) {
 		t.Fatal("Could not parse UUID.")
 	}
 
-	e := NewQueryExecutor(nc, queryUUID)
+	e := controllers.NewQueryExecutor(nc, queryUUID)
 
 	// Add agent results.
 	res := new(querybrokerpb.AgentQueryResultRequest)
@@ -162,7 +163,7 @@ func TestWaitForCompletionTimeout(t *testing.T) {
 		t.Fatal("Could not parse UUID.")
 	}
 
-	e := NewQueryExecutor(nc, queryUUID)
+	e := controllers.NewQueryExecutor(nc, queryUUID)
 
 	queryResult, err := e.WaitForCompletion()
 	assert.Nil(t, queryResult)

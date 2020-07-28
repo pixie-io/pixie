@@ -63,6 +63,26 @@ var statusCodeToGRPCCode = map[statuspb.Code]codes.Code{
 	statuspb.SYSTEM:               codes.Internal,
 }
 
+var lifeCycleStateToVizierLifeCycleStateMap = map[statuspb.LifeCycleState]vizierpb.LifeCycleState{
+	statuspb.UNKNOWN_STATE:    vizierpb.UNKNOWN_STATE,
+	statuspb.PENDING_STATE:    vizierpb.PENDING_STATE,
+	statuspb.RUNNING_STATE:    vizierpb.RUNNING_STATE,
+	statuspb.TERMINATED_STATE: vizierpb.TERMINATED_STATE,
+	statuspb.FAILED_STATE:     vizierpb.FAILED_STATE,
+}
+
+func convertLifeCycleStateToVizierLifeCycleState(state statuspb.LifeCycleState) vizierpb.LifeCycleState {
+	if val, ok := lifeCycleStateToVizierLifeCycleStateMap[state]; ok {
+		return val
+	}
+	return vizierpb.UNKNOWN_STATE
+}
+
+// VizierQueryRequestToPlannerMutationRequest maps request to mutation.
+func VizierQueryRequestToPlannerMutationRequest(vpb *vizierpb.ExecuteScriptRequest) (*plannerpb.CompileMutationsRequest, error) {
+	return &plannerpb.CompileMutationsRequest{QueryStr: vpb.QueryStr}, nil
+}
+
 // VizierQueryRequestToPlannerQueryRequest converts a externally-facing query request to an internal representation.
 func VizierQueryRequestToPlannerQueryRequest(vpb *vizierpb.ExecuteScriptRequest) (*plannerpb.QueryRequest, error) {
 	funcs := make([]*plannerpb.QueryRequest_FuncToExecute, len(vpb.ExecFuncs))
