@@ -19,11 +19,6 @@ final class FileCheckerTest {
         # Note that this check is only enforced after first check-in.
         # The initial check-in is not enforced, because generating a pb.go is optional.
 
-        # Check that $fileToCheck exists.
-        $existRes = new ArcanistUnitTestResult();
-
-        $existRes->setName($fileToCheck . ' exists, if needed');
-
         if (in_array($fileToCheck, $this->files) && file_exists($this->project_root . '/' . $fileToCheck)) {   
             $updatedRes = new ArcanistUnitTestResult();
             $updatedRes->setName($fileToCheck . ' is older than the ' . $fileExt . ' file from which it was generated');
@@ -35,10 +30,13 @@ final class FileCheckerTest {
             }
             $res[] = $updatedRes;
         } else if (file_exists($this->project_root . '/' . $fileToCheck)) {
+            # Check that $fileToCheck exists.
+            $existRes = new ArcanistUnitTestResult();
+            $existRes->setName($fileToCheck . ' exists');
             $existRes->setResult(ArcanistUnitTestResult::RESULT_FAIL);
             $existRes->setUserData($fileToCheck . ' has not been added to the diff.');
+            $res[] = $existRes;
         }
-        $res[] = $existRes;
         
         return $res;
     }
