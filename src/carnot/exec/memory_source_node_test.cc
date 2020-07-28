@@ -315,7 +315,7 @@ TEST_F(MemorySourceNodeTabletDeathTest, missing_tablet_fails) {
   EXPECT_OK(exec_node_->Init(*plan_node_, output_rd, std::vector<RowDescriptor>({})));
   EXPECT_OK(exec_node_->Prepare(exec_state_.get()));
 
-  EXPECT_DEATH(EXPECT_OK(exec_node_->Open(exec_state_.get())), "");
+  EXPECT_DEBUG_DEATH(EXPECT_NOT_OK(exec_node_->Open(exec_state_.get())), "");
 }
 
 }  // namespace exec
