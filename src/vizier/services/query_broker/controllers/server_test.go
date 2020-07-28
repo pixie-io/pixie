@@ -70,6 +70,17 @@ metadata_by_agent {
 		}
 	}
 }
+schema_info {
+	name: "perf_and_http"
+	relation: {
+			columns: {
+				column_name: "_time"
+			}
+	}
+	agent_list {
+		data: "21285cdd1de94ab1ae6a0ba08c8c676c"
+	}
+}
 `
 
 const getSchemaResponse = `
@@ -431,7 +442,6 @@ func TestReceiveAgentQueryResult(t *testing.T) {
 
 // TestPlannerErrorResult makes sure that compiler error handling is done well.
 func TestPlannerErrorResult(t *testing.T) {
-	t.Skip("skipping to unblock")
 	// Start NATS.
 	port, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
@@ -515,7 +525,6 @@ func TestPlannerErrorResult(t *testing.T) {
 }
 
 func TestErrorInStatusResult(t *testing.T) {
-	t.Skip("skipping to unblock")
 	// Start NATS.
 	port, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
