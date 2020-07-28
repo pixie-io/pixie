@@ -239,8 +239,9 @@ message QueryData {
 }
 
 message ExecuteScriptResponse {
-  // The Status of the query. Empty status implies that execution was successful/is currently
-  // running.
+  // The Status for executing the query. Empty status implies that execution was successful/is currently
+  // running/the mutation is still not ready. An non-empty status may indicate a compiler error,
+  // execution error, timeout, etc.
   Status status = 1;
   // The id for the query. UUID encoded as string.
   string query_id = 2 [ (gogoproto.customname) = "QueryID" ];
@@ -250,17 +251,25 @@ message ExecuteScriptResponse {
     QueryMetadata meta_data = 4;
   }
 
-  MutationInfo mutation_info = 5; // The status of the mutation, only populated if the request was a mutation.
+  // The status of the mutation, only populated if the request was a mutation.
+  MutationInfo mutation_info = 5;
 }
 
 // Status information for a muation.
 message MutationInfo {
   message MutationState {
-    string id = 1; // ID of resource created/updated by the mutation.
-    LifeCycleState state = 2; // State of resource created/updated by the mutation.
+    // ID of resource created/updated by the mutation.
+    string id = 1 [ (gogoproto.customname) = "ID" ];
+    // State of resource created/updated by the mutation.
+    LifeCycleState state = 2;
+    // The name of the resource created/updated by the mutation.
+    string name = 3;
   }
-  Status status = 1; // The status of the mutation.
-  repeated MutationState states = 2; // The states of the resources created/updated by the mutation.
+  // The overall status of the mutation. An UNAVAILABLE status means that the querybroker is still
+  // waiting for some mutations to complete before the query can actually be executed.
+  Status status = 1;
+  // The states of the resources created/updated by the mutation.
+  repeated MutationState states = 2;
 }
 
 message HealthCheckRequest {

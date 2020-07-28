@@ -699,6 +699,9 @@ export namespace MutationInfo {
     getState(): LifeCycleState;
     setState(value: LifeCycleState): void;
 
+    getName(): string;
+    setName(value: string): void;
+
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): MutationState.AsObject;
     static toObject(includeInstance: boolean, msg: MutationState): MutationState.AsObject;
@@ -711,6 +714,7 @@ export namespace MutationInfo {
     export type AsObject = {
       id: string,
       state: LifeCycleState,
+      name: string,
     }
   }
 

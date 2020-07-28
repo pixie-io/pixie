@@ -5789,7 +5789,8 @@ proto.pl.api.vizierpb.MutationInfo.MutationState.prototype.toObject = function(o
 proto.pl.api.vizierpb.MutationInfo.MutationState.toObject = function(includeInstance, msg) {
   var f, obj = {
     id: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    state: jspb.Message.getFieldWithDefault(msg, 2, 0)
+    state: jspb.Message.getFieldWithDefault(msg, 2, 0),
+    name: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -5834,6 +5835,10 @@ proto.pl.api.vizierpb.MutationInfo.MutationState.deserializeBinaryFromReader = f
       var value = /** @type {!proto.pl.api.vizierpb.LifeCycleState} */ (reader.readEnum());
       msg.setState(value);
       break;
+    case 3:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setName(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -5877,6 +5882,13 @@ proto.pl.api.vizierpb.MutationInfo.MutationState.serializeBinaryToWriter = funct
       f
     );
   }
+  f = message.getName();
+  if (f.length > 0) {
+    writer.writeString(
+      3,
+      f
+    );
+  }
 };
 
 
@@ -5913,6 +5925,24 @@ proto.pl.api.vizierpb.MutationInfo.MutationState.prototype.getState = function()
  */
 proto.pl.api.vizierpb.MutationInfo.MutationState.prototype.setState = function(value) {
   return jspb.Message.setProto3EnumField(this, 2, value);
+};
+
+
+/**
+ * optional string name = 3;
+ * @return {string}
+ */
+proto.pl.api.vizierpb.MutationInfo.MutationState.prototype.getName = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.pl.api.vizierpb.MutationInfo.MutationState} returns this
+ */
+proto.pl.api.vizierpb.MutationInfo.MutationState.prototype.setName = function(value) {
+  return jspb.Message.setProto3StringField(this, 3, value);
 };
 
 
