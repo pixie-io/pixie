@@ -193,13 +193,64 @@ StatusOr<DWARFDie> DwarfReader::GetMatchingDIE(std::string_view name,
 
 namespace {
 
+struct SimpleBlock {
+  llvm::dwarf::LocationAtom code;
+  int64_t operand;
+};
+
+StatusOr<SimpleBlock> DecodeSimpleBlock(const llvm::ArrayRef<uint8_t>& block) {
+  // Don't ask me why address size is 0. Just copied it from LLVM examples.
+  llvm::DataExtractor data(
+      llvm::StringRef(reinterpret_cast<const char*>(block.data()), block.size()),
+      /* isLittleEndian */ true, /* AddressSize */ 0);
+  llvm::DWARFExpression expr(data, llvm::DWARFExpression::Operation::Dwarf4, kAddressSize);
+
+  auto iter = expr.begin();
+  auto& operation = *iter;
+  ++iter;
+  if (iter != expr.end()) {
+    return error::Internal("Operation include more than one component. Not yet supported.");
+  }
+
+  SimpleBlock decoded_block;
+
+  decoded_block.code = static_cast<llvm::dwarf::LocationAtom>(operation.getCode());
+  decoded_block.operand = operation.getRawOperand(0);
+  VLOG(1) << absl::Substitute("Decoded block: code=$0 operand=$1",
+                              magic_enum::enum_name(decoded_block.code), decoded_block.operand);
+
+  return decoded_block;
+}
+
 StatusOr<uint64_t> GetMemberOffset(const DWARFDie& die) {
   DCHECK(die.getTag() == llvm::dwarf::DW_TAG_member);
 
+  const char* die_short_name = die.getName(llvm::DINameKind::ShortName);
+
   LLVM_ASSIGN_OR_RETURN(DWARFFormValue & attr, die.find(llvm::dwarf::DW_AT_data_member_location),
                         "Found member, but could not find data_member_location attribute.");
-  LLVM_ASSIGN_OR_RETURN(uint64_t offset, attr.getAsUnsignedConstant(), "Could not extract offset.");
 
+  // We've run into a case where the offset is encoded as a block instead of a constant.
+  // See section 7.5.5 of the spec: http://dwarfstd.org/doc/DWARF5.pdf
+  // Or use llvm-dwarfdump on testdata/sockshop_payments_service to see an example.
+  // This handles that case as long as the block is simple (which is what we've seen in practice).
+  if (attr.getForm() == llvm::dwarf::DW_FORM_block1) {
+    LLVM_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> offset_block, attr.getAsBlock(),
+                          "Could not extract block.");
+
+    PL_ASSIGN_OR_RETURN(SimpleBlock decoded_offset_block, DecodeSimpleBlock(offset_block));
+
+    if (decoded_offset_block.code == llvm::dwarf::LocationAtom::DW_OP_plus_uconst) {
+      return decoded_offset_block.operand;
+    }
+
+    return error::Internal("Unsupported operand: $0",
+                           magic_enum::enum_name(decoded_offset_block.code));
+  }
+
+  LLVM_ASSIGN_OR_RETURN(
+      uint64_t offset, attr.getAsUnsignedConstant(),
+      absl::Substitute("Could not extract offset for member $0.", die_short_name));
   return offset;
 }
 
@@ -379,32 +430,20 @@ StatusOr<int64_t> DwarfReader::GetArgumentStackPointerOffset(std::string_view fu
         return error::Internal("Unexpected Form: $0", magic_enum::enum_name(loc_attr.getForm()));
       }
 
-      LLVM_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> loc, loc_attr.getAsBlock(),
+      LLVM_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> loc_block, loc_attr.getAsBlock(),
                             "Could not extract location.");
 
-      llvm::DataExtractor data(
-          llvm::StringRef(reinterpret_cast<const char*>(loc.data()), loc.size()), true, 0);
-      llvm::DWARFExpression expr(data, llvm::DWARFExpression::Operation::Dwarf4, kAddressSize);
+      PL_ASSIGN_OR_RETURN(SimpleBlock decoded_loc_block, DecodeSimpleBlock(loc_block));
 
-      auto iter = expr.begin();
-      auto& operation = *iter;
-      ++iter;
-      if (iter != expr.end()) {
-        return error::Internal("Operation include more than one component. Not yet supported.");
+      if (decoded_loc_block.code == llvm::dwarf::LocationAtom::DW_OP_fbreg) {
+        return decoded_loc_block.operand;
       }
-
-      auto code = static_cast<llvm::dwarf::LocationAtom>(operation.getCode());
-      int64_t operand = operation.getRawOperand(0);
-      VLOG(1) << absl::Substitute("code=$0 operand=$1", magic_enum::enum_name(code), operand);
-
-      if (code == llvm::dwarf::LocationAtom::DW_OP_fbreg) {
-        return operand;
-      }
-      if (code == llvm::dwarf::LocationAtom::DW_OP_call_frame_cfa) {
+      if (decoded_loc_block.code == llvm::dwarf::LocationAtom::DW_OP_call_frame_cfa) {
         return 0;
       }
 
-      return error::Internal("Unsupported operand: $0", magic_enum::enum_name(code));
+      return error::Internal("Unsupported operand: $0",
+                             magic_enum::enum_name(decoded_loc_block.code));
     }
   }
   return error::Internal("Could not find argument.");

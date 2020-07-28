@@ -42,7 +42,7 @@ filegroup(
 
 filegroup(
     name = "prebuilt_exe",
-    srcs = ["prebuilt_dummy_exe"],
+    srcs = ["prebuilt_dummy_exe", "sockshop_payments_service"],
 )
 
 #------------------------------------------------------------------------------

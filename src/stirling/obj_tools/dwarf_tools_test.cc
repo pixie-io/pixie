@@ -8,6 +8,8 @@ constexpr std::string_view kDummyGoBinary =
 constexpr std::string_view kGoGRPCServer =
     "demos/client_server_apps/go_grpc_tls_pl/server/server_/server";
 constexpr std::string_view kCppBinary = "src/stirling/obj_tools/testdata/prebuilt_dummy_exe";
+constexpr std::string_view kGoBinaryUnconventional =
+    "src/stirling/obj_tools/testdata/sockshop_payments_service";
 
 namespace pl {
 namespace stirling {
@@ -29,10 +31,12 @@ class DwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam> {
   DwarfReaderTest()
       : kCppBinaryPath(pl::testing::TestFilePath(kCppBinary)),
         kGoBinaryPath(pl::testing::TestFilePath(kDummyGoBinary)),
-        kGoServerBinaryPath(pl::testing::TestFilePath(kGoGRPCServer)) {}
+        kGoServerBinaryPath(pl::testing::TestFilePath(kGoGRPCServer)),
+        kGoBinaryUnconventionalPath(pl::testing::TestFilePath(kGoBinaryUnconventional)) {}
   const std::string kCppBinaryPath;
   const std::string kGoBinaryPath;
   const std::string kGoServerBinaryPath;
+  const std::string kGoBinaryUnconventionalPath;
 };
 
 TEST_F(DwarfReaderTest, NonExistentPath) {
@@ -69,6 +73,15 @@ TEST_P(DwarfReaderTest, GetStructMemberOffset) {
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "a"), 0);
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "b"), 4);
   EXPECT_NOT_OK(dwarf_reader->GetStructMemberOffset("PairStruct", "bogus"));
+}
+
+// Inspired from a real life case.
+TEST_P(DwarfReaderTest, GetStructMemberOffsetUnconventional) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(kGoBinaryUnconventionalPath, p.index));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("runtime.g", "goid"), 192);
 }
 
 TEST_P(DwarfReaderTest, CppArgumentTypeByteSize) {
