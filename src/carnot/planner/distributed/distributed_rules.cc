@@ -9,7 +9,9 @@ namespace distributed {
 
 PruneUnavailableSourcesRule::PruneUnavailableSourcesRule(distributedpb::CarnotInfo carnot_info,
                                                          const SchemaMap& schema_map)
-    : Rule(nullptr), carnot_info_(carnot_info), schema_map_(schema_map) {
+    : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false),
+      carnot_info_(carnot_info),
+      schema_map_(schema_map) {
   agent_id_ = ParseUUID(carnot_info_.agent_id()).ConsumeValueOrDie();
 }
 

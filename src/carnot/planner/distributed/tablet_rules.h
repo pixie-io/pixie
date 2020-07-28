@@ -23,7 +23,8 @@ namespace distributed {
 class TabletSourceConversionRule : public Rule {
  public:
   explicit TabletSourceConversionRule(const distributedpb::CarnotInfo& carnot_info)
-      : Rule(nullptr), carnot_info_(carnot_info) {}
+      : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false),
+        carnot_info_(carnot_info) {}
 
  private:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -38,7 +39,8 @@ class TabletSourceConversionRule : public Rule {
  */
 class MemorySourceTabletRule : public Rule {
  public:
-  MemorySourceTabletRule() : Rule(nullptr) {}
+  MemorySourceTabletRule()
+      : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  private:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -81,7 +83,8 @@ class Tabletizer {
 
 class DistributedTabletizerRule : public DistributedRule {
  public:
-  DistributedTabletizerRule() : DistributedRule(nullptr) {}
+  DistributedTabletizerRule()
+      : DistributedRule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(distributed::CarnotInstance* node) override {

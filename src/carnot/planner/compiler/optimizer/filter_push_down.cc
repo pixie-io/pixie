@@ -124,7 +124,8 @@ StatusOr<bool> FilterPushdownRule::Apply(IRNode* ir_node) {
   while (OperatorIR* next_parent = NextFilterLocation(current_node, &column_name_mapping)) {
     current_node = next_parent;
   }
-
+  // If the current_node is filter, that means we could not find a better filter location and will
+  // not change.
   if (current_node == filter) {
     return false;
   }

@@ -28,20 +28,31 @@ template <typename TPlan>
 class BaseRule {
  public:
   BaseRule() = delete;
-  explicit BaseRule(CompilerState* compiler_state) : BaseRule(compiler_state, false) {}
-  BaseRule(CompilerState* compiler_state, bool reverse_topological_execution)
+  BaseRule(CompilerState* compiler_state, bool use_topo, bool reverse_topological_execution)
       : compiler_state_(compiler_state),
+        use_topo_(use_topo),
         reverse_topological_execution_(reverse_topological_execution) {}
 
   virtual ~BaseRule() = default;
 
   virtual StatusOr<bool> Execute(TPlan* graph) {
+    bool any_changed = false;
+    if (!use_topo_) {
+      PL_ASSIGN_OR_RETURN(any_changed, ExecuteUnsorted(graph));
+    } else {
+      PL_ASSIGN_OR_RETURN(any_changed, ExecuteTopologicalSorted(graph));
+    }
+    PL_RETURN_IF_ERROR(EmptyDeleteQueue(graph));
+    return any_changed;
+  }
+
+ protected:
+  StatusOr<bool> ExecuteTopologicalSorted(TPlan* graph) {
+    bool any_changed = false;
     std::vector<int64_t> topo_graph = graph->dag().TopologicalSort();
     if (reverse_topological_execution_) {
       std::reverse(topo_graph.begin(), topo_graph.end());
     }
-
-    bool any_changed = false;
     for (int64_t node_i : topo_graph) {
       // The node may have been deleted by a prior call to Apply on a parent or child node.
       if (!graph->HasNode(node_i)) {
@@ -50,11 +61,25 @@ class BaseRule {
       PL_ASSIGN_OR_RETURN(bool node_is_changed, Apply(graph->Get(node_i)));
       any_changed = any_changed || node_is_changed;
     }
-    PL_RETURN_IF_ERROR(EmptyDeleteQueue(graph));
     return any_changed;
   }
 
- protected:
+  StatusOr<bool> ExecuteUnsorted(TPlan* graph) {
+    bool any_changed = false;
+    // We need to copy over nodes because the Apply() might add nodes which can affect traversal,
+    // causing nodes to be skipped.
+    auto nodes = graph->dag().nodes();
+    for (int64_t node_i : nodes) {
+      // The node may have been deleted by a prior call to Apply on a parent or child node.
+      if (!graph->HasNode(node_i)) {
+        continue;
+      }
+      PL_ASSIGN_OR_RETURN(bool node_is_changed, Apply(graph->Get(node_i)));
+      any_changed = any_changed || node_is_changed;
+    }
+    return any_changed;
+  }
+
   /**
    * @brief Applies the rule to a node.
    * Should include a check for type and should return true if it changes the node.
@@ -79,6 +104,7 @@ class BaseRule {
   // The queue containing nodes to delete.
   std::queue<int64_t> node_delete_q;
   CompilerState* compiler_state_;
+  bool use_topo_;
   bool reverse_topological_execution_;
 };
 
@@ -93,7 +119,8 @@ class DataTypeRule : public Rule {
    */
 
  public:
-  explicit DataTypeRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+  explicit DataTypeRule(CompilerState* compiler_state)
+      : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
   /**
    * @brief Evaluates the datatype of column from the type data in the relation. Errors out if the
@@ -121,7 +148,8 @@ class DataTypeRule : public Rule {
 
 class SourceRelationRule : public Rule {
  public:
-  explicit SourceRelationRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+  explicit SourceRelationRule(CompilerState* compiler_state)
+      : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
   StatusOr<bool> Apply(IRNode* ir_node) override;
 
@@ -142,7 +170,8 @@ class OperatorRelationRule : public Rule {
    * @brief OperatorRelationRule sets up relations for non-source operators.
    */
  public:
-  explicit OperatorRelationRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+  explicit OperatorRelationRule(CompilerState* compiler_state)
+      : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
   StatusOr<bool> Apply(IRNode* ir_node) override;
 
@@ -167,8 +196,9 @@ class OperatorRelationRule : public Rule {
    * 3. Duplicated column names will be suffixed with the Join's suffix labels
    * - If the duplicated column names are not unique after the suffixing, then it errors out.
    * - This is actually slightly different behavior than in Pandas but I don't think we can
-   * replicate the resulting ability to index two columns at once. It's probably better to error out
-   * than allow it. Proof that this is a feature: https://github.com/pandas-dev/pandas/pull/10639
+   * replicate the resulting ability to index two columns at once. It's probably better to error
+   * out than allow it. Proof that this is a feature:
+   * https://github.com/pandas-dev/pandas/pull/10639
    * 4. Will update the Join so that output columns are set _and have data type resolved_.
    *
    *
@@ -178,8 +208,8 @@ class OperatorRelationRule : public Rule {
   Status SetJoinOutputColumns(JoinIR* join_op) const;
 
   /**
-   * @brief Create a Output Column IR nodes vector from the relations. Simply just copy the columns
-   * from the parents.
+   * @brief Create a Output Column IR nodes vector from the relations. Simply just copy the
+   * columns from the parents.
    *
    * @param join_node the join node to error on in case of issues.
    * @param left_relation the left dataframe's relation.
@@ -231,7 +261,7 @@ class OperatorCompileTimeExpressionRule : public Rule {
    */
  public:
   explicit OperatorCompileTimeExpressionRule(CompilerState* compiler_state)
-      : Rule(compiler_state) {}
+      : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -251,13 +281,14 @@ class ConvertStringTimesRule : public Rule {
    * provide an ergonomic way to specify times in a memory source without disrupting the more
    * general constant-folding code in OperatorCompileTimeExpressionRule.
    * TODO(nserrino/philkuz): figure out if users will want to pass strings in as expressions
-   * to memory sources or rolling operators that should NOT be converted to a time, and remove this
-   * rule if so.
+   * to memory sources or rolling operators that should NOT be converted to a time, and remove
+   * this rule if so.
    *
    */
  public:
   inline static constexpr char kAbsTimeFormat[] = "%E4Y-%m-%d %H:%M:%E*S %z";
-  explicit ConvertStringTimesRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+  explicit ConvertStringTimesRule(CompilerState* compiler_state)
+      : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -272,13 +303,14 @@ class ConvertStringTimesRule : public Rule {
 
 class SetMemSourceNsTimesRule : public Rule {
   /**
-   * @brief SetMemSourceNsTimesRule is a simple rule to take the time expressions on memory sources
-   * (which should have already been evaluated to an Int by previous rules) and sets the nanosecond
-   * field that is used downstream.
+   * @brief SetMemSourceNsTimesRule is a simple rule to take the time expressions on memory
+   * sources (which should have already been evaluated to an Int by previous rules) and sets the
+   * nanosecond field that is used downstream.
    *
    */
  public:
-  SetMemSourceNsTimesRule() : Rule(nullptr) {}
+  SetMemSourceNsTimesRule()
+      : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -290,7 +322,8 @@ class VerifyFilterExpressionRule : public Rule {
    *
    */
  public:
-  explicit VerifyFilterExpressionRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+  explicit VerifyFilterExpressionRule(CompilerState* compiler_state)
+      : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -301,7 +334,8 @@ class DropToMapOperatorRule : public Rule {
    * @brief Takes a DropIR and converts it to the corresponding Map IR.
    */
  public:
-  explicit DropToMapOperatorRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+  explicit DropToMapOperatorRule(CompilerState* compiler_state)
+      : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -316,7 +350,8 @@ class SetupJoinTypeRule : public Rule {
    *
    */
  public:
-  SetupJoinTypeRule() : Rule(nullptr) {}
+  SetupJoinTypeRule()
+      : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -334,14 +369,15 @@ class SetupJoinTypeRule : public Rule {
  * follows a groupby and then copies the groups of the groupby into the group acceptor.
  *
  * This rule is not responsible for removing groupbys that satisfy this condition - instead
- * RemoveGroupByRule handles this. There are cases where a groupby might be used by multiple aggs so
- * we can't remove them from the graph.
+ * RemoveGroupByRule handles this. There are cases where a groupby might be used by multiple aggs
+ * so we can't remove them from the graph.
  *
  */
 class MergeGroupByIntoGroupAcceptorRule : public Rule {
  public:
   explicit MergeGroupByIntoGroupAcceptorRule(IRNodeType group_acceptor_type)
-      : Rule(nullptr), group_acceptor_type_(group_acceptor_type) {}
+      : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false),
+        group_acceptor_type_(group_acceptor_type) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -365,7 +401,8 @@ class MergeGroupByIntoGroupAcceptorRule : public Rule {
  */
 class RemoveGroupByRule : public Rule {
  public:
-  RemoveGroupByRule() : Rule(nullptr) {}
+  RemoveGroupByRule()
+      : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -381,7 +418,8 @@ class RemoveGroupByRule : public Rule {
  */
 class UniqueSinkNameRule : public Rule {
  public:
-  UniqueSinkNameRule() : Rule(nullptr) {}
+  UniqueSinkNameRule()
+      : Rule(nullptr, /*use_topo*/ true, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -397,7 +435,8 @@ class UniqueSinkNameRule : public Rule {
  */
 class CombineConsecutiveMapsRule : public Rule {
  public:
-  CombineConsecutiveMapsRule() : Rule(nullptr) {}
+  CombineConsecutiveMapsRule()
+      : Rule(nullptr, /*use_topo*/ true, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -413,7 +452,8 @@ class CombineConsecutiveMapsRule : public Rule {
  */
 class NestedBlockingAggFnCheckRule : public Rule {
  public:
-  NestedBlockingAggFnCheckRule() : Rule(nullptr) {}
+  NestedBlockingAggFnCheckRule()
+      : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -422,7 +462,8 @@ class NestedBlockingAggFnCheckRule : public Rule {
 
 class PruneUnusedColumnsRule : public Rule {
  public:
-  PruneUnusedColumnsRule() : Rule(nullptr, /*reverse_topological_execution*/ true) {}
+  PruneUnusedColumnsRule()
+      : Rule(nullptr, /*use_topo*/ true, /*reverse_topological_execution*/ true) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -438,7 +479,8 @@ class PruneUnusedColumnsRule : public Rule {
  */
 class CleanUpStrayIRNodesRule : public Rule {
  public:
-  CleanUpStrayIRNodesRule() : Rule(nullptr) {}
+  CleanUpStrayIRNodesRule()
+      : Rule(nullptr, /*use_topo*/ true, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -455,7 +497,8 @@ class CleanUpStrayIRNodesRule : public Rule {
  */
 class PruneUnconnectedOperatorsRule : public Rule {
  public:
-  PruneUnconnectedOperatorsRule() : Rule(nullptr, /*reverse_topological_execution*/ true) {}
+  PruneUnconnectedOperatorsRule()
+      : Rule(nullptr, /*use_topo*/ true, /*reverse_topological_execution*/ true) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -472,7 +515,8 @@ class PruneUnconnectedOperatorsRule : public Rule {
  */
 class ResolveWindowSizeRollingRule : public Rule {
  public:
-  ResolveWindowSizeRollingRule() : Rule(nullptr) {}
+  ResolveWindowSizeRollingRule()
+      : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -487,7 +531,8 @@ class ResolveWindowSizeRollingRule : public Rule {
  */
 class AddLimitToMemorySinkRule : public Rule {
  public:
-  explicit AddLimitToMemorySinkRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+  explicit AddLimitToMemorySinkRule(CompilerState* compiler_state)
+      : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -499,15 +544,16 @@ class AddLimitToMemorySinkRule : public Rule {
  * assigned to be the value of a new column, that new column should have receive the same
  * annotations as the integer that created it.
  *
- * TODO(nserrino): Possibly move this rule to the distributed_analyzer, in the event that the unions
- * and GRPCSources that are generated in the distributed planner need to be given annotations as
- * well. For now, all of the nodes downstream of the union/grpc sources should be annotated in those
- * distributed plans from this rules in the single node analyzer.
+ * TODO(nserrino): Possibly move this rule to the distributed_analyzer, in the event that the
+ * unions and GRPCSources that are generated in the distributed planner need to be given
+ * annotations as well. For now, all of the nodes downstream of the union/grpc sources should be
+ * annotated in those distributed plans from this rules in the single node analyzer.
  *
  */
 class PropagateExpressionAnnotationsRule : public Rule {
  public:
-  PropagateExpressionAnnotationsRule() : Rule(nullptr) {}
+  PropagateExpressionAnnotationsRule()
+      : Rule(nullptr, /*use_topo*/ true, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* node) override;
@@ -529,7 +575,8 @@ class ResolveMetadataPropertyRule : public Rule {
 
  public:
   explicit ResolveMetadataPropertyRule(CompilerState* compiler_state, MetadataHandler* md_handler)
-      : Rule(compiler_state), md_handler_(md_handler) {}
+      : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false),
+        md_handler_(md_handler) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -543,7 +590,8 @@ class ConvertMetadataRule : public Rule {
    * @brief Converts the MetadataIR into the expression that generates it.
    */
  public:
-  explicit ConvertMetadataRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+  explicit ConvertMetadataRule(CompilerState* compiler_state)
+      : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -563,7 +611,8 @@ class ResolveTypesRule : public Rule {
    * already been converted into funcs.
    */
  public:
-  explicit ResolveTypesRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+  explicit ResolveTypesRule(CompilerState* compiler_state)
+      : Rule(compiler_state, /*use_topo*/ true, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;

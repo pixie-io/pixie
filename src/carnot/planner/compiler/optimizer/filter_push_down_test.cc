@@ -253,7 +253,8 @@ TEST_F(FilterPushDownTest, two_filters_same_cols) {
   FilterPushdownRule rule;
   auto result = rule.Execute(graph.get());
   ASSERT_OK(result);
-  EXPECT_TRUE(result.ValueOrDie());
+  EXPECT_TRUE(result.ConsumeValueOrDie());
+
   EXPECT_THAT(sink->parents(), ElementsAre(map3));
   EXPECT_THAT(map3->parents(), ElementsAre(map2));
   EXPECT_THAT(map2->parents(), ElementsAre(filter1));

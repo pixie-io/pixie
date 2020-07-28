@@ -369,7 +369,7 @@ class IR {
   template <typename Matcher>
   std::vector<IRNode*> FindNodesThatMatch(Matcher matcher) const {
     std::vector<IRNode*> nodes;
-    for (int64_t i : dag().TopologicalSort()) {
+    for (int64_t i : dag().nodes()) {
       if (Match(Get(i), matcher)) {
         nodes.push_back(Get(i));
       }

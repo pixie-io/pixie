@@ -32,7 +32,8 @@ struct MatchingSet {
  */
 class MergeNodesRule : public Rule {
  public:
-  explicit MergeNodesRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+  explicit MergeNodesRule(CompilerState* compiler_state)
+      : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
   /**
    * @brief The entry method that merges nodes within the graph together.

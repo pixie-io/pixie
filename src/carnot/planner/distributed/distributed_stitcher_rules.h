@@ -24,7 +24,8 @@ using distributedpb::CarnotInfo;
 class SetSourceGroupGRPCAddressRule : public Rule {
  public:
   explicit SetSourceGroupGRPCAddressRule(const std::string& grpc_address)
-      : Rule(nullptr), grpc_address_(grpc_address) {}
+      : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false),
+        grpc_address_(grpc_address) {}
 
  private:
   StatusOr<bool> Apply(IRNode* node) override;
@@ -37,7 +38,8 @@ class SetSourceGroupGRPCAddressRule : public Rule {
  */
 class DistributedSetSourceGroupGRPCAddressRule : public DistributedRule {
  public:
-  DistributedSetSourceGroupGRPCAddressRule() : DistributedRule(nullptr) {}
+  DistributedSetSourceGroupGRPCAddressRule()
+      : DistributedRule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(CarnotInstance* carnot_instance) override {
@@ -52,7 +54,8 @@ class DistributedSetSourceGroupGRPCAddressRule : public DistributedRule {
  */
 class AssociateDistributedPlanEdgesRule : public DistributedRule {
  public:
-  AssociateDistributedPlanEdgesRule() : DistributedRule(nullptr) {}
+  AssociateDistributedPlanEdgesRule()
+      : DistributedRule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(CarnotInstance* from_carnot_instance) override;

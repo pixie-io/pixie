@@ -1478,7 +1478,7 @@ TEST_F(OperatorTests, union_duplicate_parents) {
   std::vector<IRNode*> maps = graph->FindNodesOfType(IRNodeType::kMap);
   ASSERT_EQ(maps.size(), 2);
 
-  EXPECT_THAT(union_op->parents(), ElementsAre(mem_src2, mem_src1, maps[0], maps[1]));
+  EXPECT_THAT(union_op->parents(), UnorderedElementsAre(mem_src2, mem_src1, maps[0], maps[1]));
 }
 constexpr char kOpenNetworkConnsUDTFSourceSpecPb[] = R"proto(
 name: "OpenNetworkConnections"

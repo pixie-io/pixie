@@ -34,7 +34,10 @@ using SchemaMap = absl::flat_hash_map<std::string, absl::flat_hash_set<sole::uui
 template <typename TRule>
 class DistributedIRRule : public DistributedRule {
  public:
-  DistributedIRRule() : DistributedRule(nullptr) { subrule_ = std::make_unique<TRule>(); }
+  DistributedIRRule()
+      : DistributedRule(nullptr, /*use_topo*/ true, /*reverse_topological_execution*/ false) {
+    subrule_ = std::make_unique<TRule>();
+  }
 
   // Used for testing.
   TRule* subrule() { return subrule_.get(); }
@@ -80,7 +83,8 @@ class PruneUnavailableSourcesRule : public Rule {
 class DistributedPruneUnavailableSourcesRule : public DistributedRule {
  public:
   explicit DistributedPruneUnavailableSourcesRule(const SchemaMap& schema_map)
-      : DistributedRule(nullptr), schema_map_(schema_map) {}
+      : DistributedRule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false),
+        schema_map_(schema_map) {}
 
  protected:
   StatusOr<bool> Apply(distributed::CarnotInstance* node) override;
@@ -94,7 +98,8 @@ class DistributedPruneUnavailableSourcesRule : public DistributedRule {
  */
 class PruneEmptyPlansRule : public DistributedRule {
  public:
-  PruneEmptyPlansRule() : DistributedRule(nullptr) {}
+  PruneEmptyPlansRule()
+      : DistributedRule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(distributed::CarnotInstance* node) override;

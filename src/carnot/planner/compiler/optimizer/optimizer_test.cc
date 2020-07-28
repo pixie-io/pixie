@@ -613,30 +613,6 @@ TEST_F(OptimizerTest, self_union) {
   EXPECT_EQ(mem_src->Children()[0], mem_src->Children()[2]->Children()[0]);
 }
 
-TEST_F(OptimizerTest, assign_udf_func_ids_consolidated_maps) {
-  std::string chain_operators = absl::StrJoin(
-      {"import px",
-       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
-       "start_time=0, end_time=10)",
-       "queryDF['cpu_sub'] = queryDF['cpu0'] - queryDF['cpu1']",
-       "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
-       "queryDF['cpu_sum2'] = queryDF['cpu2'] + queryDF['cpu1']",
-       "df = queryDF[['cpu_sum2', 'cpu_sum', 'cpu_sub']]", "px.display(df, 'cpu_out')"},
-      "\n");
-  auto ir_graph_status = CompileGraph(chain_operators);
-  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
-  ASSERT_OK(Analyze(ir_graph));
-  ASSERT_OK(Optimize(ir_graph));
-
-  std::vector<IRNode*> map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
-  ASSERT_EQ(map_nodes.size(), 2);
-  auto map_node = static_cast<MapIR*>(map_nodes[0]);
-
-  EXPECT_EQ(0, static_cast<FuncIR*>(map_node->col_exprs()[3].node)->func_id());
-  EXPECT_EQ(1, static_cast<FuncIR*>(map_node->col_exprs()[4].node)->func_id());
-  EXPECT_EQ(1, static_cast<FuncIR*>(map_node->col_exprs()[5].node)->func_id());
-}
-
 constexpr char kInnerJoinFollowedByMapQuery[] = R"pxl(
 import px
 src1 = px.DataFrame(table='cpu', select=['upid', 'cpu0','cpu1'])
@@ -671,25 +647,32 @@ TEST_F(OptimizerTest, prune_unused_columns) {
   ASSERT_EQ("cpu", left_src->table_name());
   EXPECT_THAT(left_src->column_names(), ElementsAre("upid"));
 
-  // Check map nodes
-  auto map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
-  ASSERT_EQ(3, map_nodes.size());
-
+  ASSERT_EQ(join->Children().size(), 1);
+  ASSERT_MATCH(join->Children()[0], Map());
   // TODO(nserrino): PL-1344 Maps 1 and 3 are no-ops after this column pruning,
   // we should have a rule for detecting that and cleaning them up.
-  auto map1 = static_cast<MapIR*>(map_nodes[0])->relation();
-  EXPECT_THAT(map1.col_names(), ElementsAre("bytes_in"));
+  auto map1 = static_cast<MapIR*>(join->Children()[0]);
+  EXPECT_THAT(map1->relation().col_names(), ElementsAre("bytes_in"));
 
-  auto map2 = static_cast<MapIR*>(map_nodes[1])->relation();
-  EXPECT_THAT(map2.col_names(), ElementsAre("mb_in"));
+  ASSERT_EQ(map1->Children().size(), 1);
+  ASSERT_MATCH(map1->Children()[0], Map());
+  auto map2 = static_cast<MapIR*>(map1->Children()[0]);
+  EXPECT_THAT(map2->relation().col_names(), ElementsAre("mb_in"));
 
-  auto map3 = static_cast<MapIR*>(map_nodes[2])->relation();
-  EXPECT_THAT(map3.col_names(), ElementsAre("mb_in"));
+  ASSERT_EQ(map2->Children().size(), 1);
+  ASSERT_MATCH(map2->Children()[0], Map());
+  auto map3 = static_cast<MapIR*>(map2->Children()[0]);
+  EXPECT_THAT(map3->relation().col_names(), ElementsAre("mb_in"));
+
+  ASSERT_EQ(map3->Children().size(), 1);
+  ASSERT_MATCH(map3->Children()[0], Limit());
+  auto limit = static_cast<MemorySinkIR*>(map3->Children()[0]);
+  EXPECT_THAT(limit->relation().col_names(), ElementsAre("mb_in"));
 
   // Check sink node
-  auto sink_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySink);
-  ASSERT_EQ(1, sink_nodes.size());
-  auto sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  ASSERT_EQ(limit->Children().size(), 1);
+  ASSERT_MATCH(limit->Children()[0], MemorySink());
+  auto sink = static_cast<MemorySinkIR*>(limit->Children()[0]);
   EXPECT_THAT(sink->relation().col_names(), ElementsAre("mb_in"));
 }
 

@@ -420,27 +420,37 @@ TEST_F(CoordinatorTest, prune_agents_multiparent) {
     plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
   }
 
-  auto agent1_sinks = plan_by_qb_addr["pem1"]->FindNodesThatMatch(GRPCSink());
-  EXPECT_EQ(2, agent1_sinks.size());
-  auto agent1_sink0_parents = static_cast<OperatorIR*>(agent1_sinks[0])->parents();
-  EXPECT_EQ(1, agent1_sink0_parents.size());
-  EXPECT_MATCH(agent1_sink0_parents[0], MemorySource());
-  auto agent1_sink1_parents = static_cast<OperatorIR*>(agent1_sinks[1])->parents();
-  EXPECT_EQ(1, agent1_sink1_parents.size());
-  EXPECT_MATCH(agent1_sink1_parents[0],
+  auto pem1_sinks = plan_by_qb_addr["pem1"]->FindNodesThatMatch(GRPCSink());
+  ASSERT_EQ(2, pem1_sinks.size());
+
+  auto pem1_src_sink = static_cast<OperatorIR*>(pem1_sinks[0]);
+  auto pem1_filter_sink = static_cast<OperatorIR*>(pem1_sinks[1]);
+  ASSERT_EQ(1, pem1_filter_sink->parents().size());
+  ASSERT_EQ(1, pem1_src_sink->parents().size());
+
+  // FindNodesThatMatch doesn't guarantee ordering, so this reorders the GRPC sinks if they don't
+  // match.
+  if (!Match(pem1_src_sink->parents()[0], MemorySource())) {
+    auto tmp = pem1_src_sink;
+    pem1_src_sink = pem1_filter_sink;
+    pem1_filter_sink = tmp;
+  }
+
+  EXPECT_MATCH(pem1_src_sink->parents()[0], MemorySource());
+  EXPECT_MATCH(pem1_filter_sink->parents()[0],
                Filter(Equals(MetadataExpression(MetadataType::POD_ID), String("agent1_pod"))));
 
-  auto agent2_sinks = plan_by_qb_addr["pem2"]->FindNodesThatMatch(GRPCSink());
-  EXPECT_EQ(1, agent2_sinks.size());
-  auto agent2_sink_parents = static_cast<OperatorIR*>(agent2_sinks[0])->parents();
-  EXPECT_EQ(1, agent2_sink_parents.size());
-  EXPECT_MATCH(agent2_sink_parents[0], MemorySource());
+  auto pem2_sinks = plan_by_qb_addr["pem2"]->FindNodesThatMatch(GRPCSink());
+  EXPECT_EQ(1, pem2_sinks.size());
+  auto pem2_sink_parents = static_cast<OperatorIR*>(pem2_sinks[0])->parents();
+  EXPECT_EQ(1, pem2_sink_parents.size());
+  EXPECT_MATCH(pem2_sink_parents[0], MemorySource());
 
-  auto agent3_sinks = plan_by_qb_addr["pem3"]->FindNodesThatMatch(GRPCSink());
-  EXPECT_EQ(1, agent3_sinks.size());
-  auto agent3_sink_parents = static_cast<OperatorIR*>(agent3_sinks[0])->parents();
-  EXPECT_EQ(1, agent3_sink_parents.size());
-  EXPECT_MATCH(agent3_sink_parents[0], MemorySource());
+  auto pem3_sinks = plan_by_qb_addr["pem3"]->FindNodesThatMatch(GRPCSink());
+  EXPECT_EQ(1, pem3_sinks.size());
+  auto pem3_sink_parents = static_cast<OperatorIR*>(pem3_sinks[0])->parents();
+  EXPECT_EQ(1, pem3_sink_parents.size());
+  EXPECT_MATCH(pem3_sink_parents[0], MemorySource());
 
   EXPECT_EQ(2, plan_by_qb_addr["kelvin"]->FindNodesThatMatch(GRPCSourceGroup()).size());
 }
@@ -472,15 +482,25 @@ TEST_F(CoordinatorTest, prune_agents_multichild) {
   EXPECT_EQ(1, agent1_sink_parents.size());
   EXPECT_MATCH(agent1_sink_parents[0], MemorySource());
 
-  auto agent2_sinks = plan_by_qb_addr["pem2"]->FindNodesThatMatch(GRPCSink());
-  EXPECT_EQ(2, agent2_sinks.size());
-  auto agent2_sink0_parents = static_cast<OperatorIR*>(agent2_sinks[0])->parents();
-  EXPECT_EQ(1, agent2_sink0_parents.size());
-  EXPECT_MATCH(agent2_sink0_parents[0], MemorySource());
-  auto agent2_sink1_parents = static_cast<OperatorIR*>(agent2_sinks[1])->parents();
-  EXPECT_EQ(1, agent2_sink1_parents.size());
-  EXPECT_MATCH(agent2_sink1_parents[0], Filter(Equals(MetadataExpression(MetadataType::SERVICE_ID),
-                                                      String("agent2_service"))));
+  auto pem2_sinks = plan_by_qb_addr["pem2"]->FindNodesThatMatch(GRPCSink());
+  ASSERT_EQ(2, pem2_sinks.size());
+
+  auto pem2_src_sink = static_cast<OperatorIR*>(pem2_sinks[0]);
+  auto pem2_filter_sink = static_cast<OperatorIR*>(pem2_sinks[1]);
+  ASSERT_EQ(1, pem2_filter_sink->parents().size());
+  ASSERT_EQ(1, pem2_src_sink->parents().size());
+
+  // FindNodesThatMatch doesn't guarantee ordering, so this should realign to our expectations.
+  if (!Match(pem2_src_sink->parents()[0], MemorySource())) {
+    auto tmp = pem2_src_sink;
+    pem2_src_sink = pem2_filter_sink;
+    pem2_filter_sink = tmp;
+  }
+
+  EXPECT_MATCH(pem2_src_sink->parents()[0], MemorySource());
+  EXPECT_MATCH(
+      pem2_filter_sink->parents()[0],
+      Filter(Equals(MetadataExpression(MetadataType::SERVICE_ID), String("agent2_service"))));
 
   auto agent3_sinks = plan_by_qb_addr["pem3"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(1, agent3_sinks.size());

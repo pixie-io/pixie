@@ -18,7 +18,8 @@ class GRPCSourceGroupConversionRule : public Rule {
    */
 
  public:
-  GRPCSourceGroupConversionRule() : Rule(nullptr) {}
+  GRPCSourceGroupConversionRule()
+      : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;

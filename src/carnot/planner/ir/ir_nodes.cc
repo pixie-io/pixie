@@ -105,10 +105,8 @@ std::string IR::OperatorsDebugString() {
 
 std::vector<OperatorIR*> IR::GetSources() const {
   std::vector<OperatorIR*> operators;
-  for (int64_t i : dag().TopologicalSort()) {
-    if (Match(Get(i), SourceOperator())) {
-      operators.push_back(static_cast<OperatorIR*>(Get(i)));
-    }
+  for (auto* node : FindNodesThatMatch(SourceOperator())) {
+    operators.push_back(static_cast<OperatorIR*>(node));
   }
   return operators;
 }
@@ -1499,7 +1497,7 @@ Status IR::Keep(const absl::flat_hash_set<int64_t>& ids_to_keep) {
 
 std::vector<IRNode*> IR::FindNodesOfType(IRNodeType type) const {
   std::vector<IRNode*> nodes;
-  for (auto& i : dag().TopologicalSort()) {
+  for (int64_t i : dag().nodes()) {
     IRNode* node = Get(i);
     if (node->type() == type) {
       nodes.push_back(node);

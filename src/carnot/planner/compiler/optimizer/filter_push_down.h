@@ -24,7 +24,8 @@ namespace compiler {
  */
 class FilterPushdownRule : public Rule {
  public:
-  FilterPushdownRule() : Rule(nullptr) {}
+  FilterPushdownRule()
+      : Rule(nullptr, /*use_topo*/ true, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode*) override;

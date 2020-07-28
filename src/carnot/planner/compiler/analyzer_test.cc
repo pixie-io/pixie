@@ -25,6 +25,7 @@ using ::testing::ContainsRegex;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::Not;
+using ::testing::UnorderedElementsAre;
 
 class AnalyzerTest : public ASTVisitorTest {
  protected:
@@ -237,6 +238,16 @@ TEST_F(AnalyzerTest, test_relation_results) {
   // Map relation should be contain cpu0, cpu1, and cpu_sum.
   std::vector<IRNode*> map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
   EXPECT_EQ(map_nodes.size(), 2);
+  std::vector<Relation> map_relations = {static_cast<MapIR*>(map_nodes[0])->relation(),
+                                         static_cast<MapIR*>(map_nodes[1])->relation()};
+
+  Relation sum_relation({types::UINT128, types::FLOAT64, types::FLOAT64, types::FLOAT64,
+                         types::INT64, types::FLOAT64},
+                        {"upid", "cpu0", "cpu1", "cpu2", "agent_id", "cpu_sum"});
+  Relation drop_relation({types::FLOAT64, types::FLOAT64, types::FLOAT64},
+                         {"cpu0", "cpu1", "cpu_sum"});
+
+  EXPECT_THAT(map_relations, UnorderedElementsAre(sum_relation, drop_relation));
 
   // Agg should be a new relation with one column.
   std::vector<IRNode*> agg_nodes = ir_graph->FindNodesOfType(IRNodeType::kBlockingAgg);
@@ -248,13 +259,14 @@ TEST_F(AnalyzerTest, test_relation_results) {
   test_agg_relation.AddColumn(types::FLOAT64, "cpu0");
   EXPECT_THAT(agg_node->relation(), UnorderedRelationMatches(test_agg_relation));
 
-  // Sink should have the same relation as before and be equivalent to its parent.
-  std::vector<IRNode*> sink_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySink);
-  EXPECT_EQ(sink_nodes.size(), 2);
-  auto sink_node = static_cast<MemorySinkIR*>(sink_nodes[1]);
+  EXPECT_EQ(agg_node->Children().size(), 1);
+  ASSERT_MATCH(agg_node->Children()[0], Limit(10000));
+  auto limit = static_cast<LimitIR*>(agg_node->Children()[0]);
+  EXPECT_THAT(limit->relation(), UnorderedRelationMatches(test_agg_relation));
+  ASSERT_MATCH(limit->Children()[0], MemorySink());
+  auto sink_node = static_cast<MemorySinkIR*>(limit->Children()[0]);
   EXPECT_THAT(sink_node->relation(), UnorderedRelationMatches(test_agg_relation));
-  EXPECT_EQ(sink_node->relation(), sink_node->parents()[0]->relation());
-}  // namespace compiler
+}
 
 // Make sure the compiler exits when calling columns that aren't explicitly called.
 TEST_F(AnalyzerTest, test_relation_fails) {
@@ -264,6 +276,7 @@ TEST_F(AnalyzerTest, test_relation_fails) {
        "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], start_time=0, "
        "end_time=10)",
        "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']", "queryDF = queryDF[['cpu_sum']]",
+       // Trying to group by cpu0 which was dropped.
        "df = queryDF.groupby('cpu0').agg(cpu_count=('cpu1', px.count),",
        "cpu_mean=('cpu1', px.mean))", "px.display(df, 'cpu_out')"},
       "\n");
@@ -276,13 +289,7 @@ TEST_F(AnalyzerTest, test_relation_fails) {
   auto handle_status = HandleRelation(ir_graph);
   ASSERT_NOT_OK(handle_status);
 
-  // Map should result just be the cpu_sum column.
-  std::vector<IRNode*> map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
-  EXPECT_EQ(map_nodes.size(), 2);
-  auto map_node = static_cast<MapIR*>(map_nodes[1]);
-  table_store::schema::Relation test_map_relation;
-  test_map_relation.AddColumn(types::FLOAT64, "cpu_sum");
-  EXPECT_EQ(map_node->relation(), test_map_relation);
+  EXPECT_THAT(handle_status, HasCompilerError("Column 'cpu[0-9]' not found in parent dataframe"));
 }
 
 TEST_F(AnalyzerTest, test_relation_multi_col_agg) {
@@ -504,11 +511,30 @@ TEST_F(AnalyzerTest, assign_udf_func_ids_consolidated_maps) {
 
   std::vector<IRNode*> map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
   EXPECT_EQ(map_nodes.size(), 2);
-  auto map_node = static_cast<MapIR*>(map_nodes[0]);
+  auto drop_node = static_cast<MapIR*>(map_nodes[0]);
+  auto arithmetic_node = static_cast<MapIR*>(map_nodes[1]);
+  // Drop node must be map with 3 expressions, otherwise we reassign.
+  if (drop_node->col_exprs().size() != 3) {
+    auto tmp_node = arithmetic_node;
+    arithmetic_node = drop_node;
+    drop_node = tmp_node;
+  }
 
-  EXPECT_EQ(0, static_cast<FuncIR*>(map_node->col_exprs()[3].node)->func_id());
-  EXPECT_EQ(1, static_cast<FuncIR*>(map_node->col_exprs()[4].node)->func_id());
-  EXPECT_EQ(1, static_cast<FuncIR*>(map_node->col_exprs()[5].node)->func_id());
+  ASSERT_EQ(arithmetic_node->relation(),
+            Relation({types::FLOAT64, types::FLOAT64, types::FLOAT64, types::FLOAT64,
+                      types::FLOAT64, types::FLOAT64},
+                     {"cpu0", "cpu1", "cpu2", "cpu_sub", "cpu_sum", "cpu_sum2"}));
+
+  ASSERT_EQ(arithmetic_node->col_exprs().size(), 6);
+
+  auto cpu_sub_func_id = static_cast<FuncIR*>(arithmetic_node->col_exprs()[3].node)->func_id();
+  auto cpu_sum_func_id = static_cast<FuncIR*>(arithmetic_node->col_exprs()[4].node)->func_id();
+  auto cpu_sum2_func_id = static_cast<FuncIR*>(arithmetic_node->col_exprs()[5].node)->func_id();
+
+  // Both should be addition functions with the same ID.
+  EXPECT_EQ(cpu_sum_func_id, cpu_sum2_func_id);
+  EXPECT_NE(cpu_sum_func_id, cpu_sub_func_id);
+  EXPECT_THAT(std::vector<int64_t>({cpu_sum_func_id, cpu_sub_func_id}), UnorderedElementsAre(0, 1));
 }
 
 TEST_F(AnalyzerTest, assign_uda_func_ids) {
@@ -531,10 +557,10 @@ TEST_F(AnalyzerTest, assign_uda_func_ids) {
   EXPECT_EQ(agg_nodes.size(), 1);
   auto agg_node = static_cast<BlockingAggIR*>(agg_nodes[0]);
 
-  auto func_node = static_cast<FuncIR*>(agg_node->aggregate_expressions()[0].node);
-  EXPECT_EQ(0, func_node->func_id());
-  func_node = static_cast<FuncIR*>(agg_node->aggregate_expressions()[1].node);
-  EXPECT_EQ(1, func_node->func_id());
+  auto func_node1 = static_cast<FuncIR*>(agg_node->aggregate_expressions()[0].node);
+  auto func_node2 = static_cast<FuncIR*>(agg_node->aggregate_expressions()[1].node);
+  EXPECT_THAT(std::vector<int64_t>({func_node1->func_id(), func_node2->func_id()}),
+              UnorderedElementsAre(0, 1));
 }
 
 TEST_F(AnalyzerTest, select_all) {
@@ -857,17 +883,15 @@ TEST_F(AnalyzerTest, add_limit) {
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   ASSERT_OK(HandleRelation(ir_graph));
 
-  std::vector<IRNode*> limit_nodes = ir_graph->FindNodesOfType(IRNodeType::kLimit);
-  EXPECT_EQ(limit_nodes.size(), 2);
   std::vector<IRNode*> src_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
   EXPECT_EQ(src_nodes.size(), 2);
 
-  auto limit0 = static_cast<LimitIR*>(limit_nodes[0]);
-  auto limit1 = static_cast<LimitIR*>(limit_nodes[1]);
-  EXPECT_THAT(limit0->parents(), ElementsAre(src_nodes[0]));
-  EXPECT_THAT(limit1->parents(), ElementsAre(src_nodes[1]));
-  EXPECT_EQ(10000, limit0->limit_value());
-  EXPECT_EQ(10000, limit1->limit_value());
+  for (const auto& [idx, uncast_src] : Enumerate(src_nodes)) {
+    auto src = static_cast<MemorySourceIR*>(uncast_src);
+    SCOPED_TRACE(absl::Substitute("src idx $0-> $1", idx, src->DebugString()));
+    ASSERT_EQ(src->Children().size(), 1);
+    EXPECT_MATCH(src->Children()[0], Limit(10000));
+  }
 }
 
 constexpr char kAggQueryAnnotations[] = R"query(

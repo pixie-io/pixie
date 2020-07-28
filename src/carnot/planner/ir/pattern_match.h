@@ -1042,6 +1042,23 @@ struct DataOfType : public ParentMatch {
   types::DataType type_;
 };
 
+struct LimitValueMatch : public ParentMatch {
+  explicit LimitValueMatch(int64_t limit_value)
+      : ParentMatch(IRNodeType::kLimit), value_(limit_value) {}
+
+  bool Match(const IRNode* node) const override {
+    if (!Limit().Match(node)) {
+      return false;
+    }
+    auto limit = static_cast<const LimitIR*>(node);
+    return limit->limit_value() == value_;
+  }
+
+  int64_t value_;
+};
+
+inline LimitValueMatch Limit(int64_t limit_value) { return LimitValueMatch(limit_value); }
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl

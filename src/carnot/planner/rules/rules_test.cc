@@ -127,6 +127,8 @@ TEST_F(DataTypeRuleTest, map_function) {
   EXPECT_FALSE(func->IsDataTypeEvaluated());
   EXPECT_FALSE(col->IsDataTypeEvaluated());
 
+  EXPECT_NOT_MATCH(func, UnresolvedRTFuncMatchAllArgs(ResolvedExpression()));
+
   // Expect the data_rule to change something.
   DataTypeRule data_rule(compiler_state_.get());
   auto result = data_rule.Execute(graph.get());
@@ -689,18 +691,16 @@ TEST_F(OperatorRelationTest, propogate_test) {
   EXPECT_FALSE(filter->IsRelationInit());
   EXPECT_FALSE(limit->IsRelationInit());
   OperatorRelationRule op_rel_rule(compiler_state_.get());
-  auto result = op_rel_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ValueOrDie());
+  bool did_change = false;
+  do {
+    auto result = op_rel_rule.Execute(graph.get());
+    ASSERT_OK(result);
+    did_change = result.ConsumeValueOrDie();
+  } while (did_change);
 
   // Because limit comes after filter, it can actually evaluate in a single run.
   EXPECT_TRUE(filter->IsRelationInit());
   EXPECT_TRUE(limit->IsRelationInit());
-
-  // Should not have any work left.
-  result = op_rel_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_FALSE(result.ValueOrDie());
 }
 
 TEST_F(OperatorRelationTest, mem_sink_with_columns_test) {
@@ -1514,6 +1514,11 @@ TEST_F(RulesTest, MergeGroupByAggRule_MultipleAggsOneGroupBy) {
       MakeBlockingAgg(group_by, {}, {{"latency_mean", MakeMeanFunc(MakeColumn("latency", 0))}});
   MakeMemSink(agg2, "");
 
+  LOG(INFO) << "agg1=" << agg1->DebugString();
+  LOG(INFO) << "agg2=" << agg2->DebugString();
+
+  EXPECT_EQ(graph->FindNodesThatMatch(BlockingAgg()).size(), 2);
+
   EXPECT_THAT(agg1->parents(), ElementsAre(group_by));
   EXPECT_EQ(agg1->groups().size(), 0);
   EXPECT_THAT(agg2->parents(), ElementsAre(group_by));
@@ -1521,7 +1526,7 @@ TEST_F(RulesTest, MergeGroupByAggRule_MultipleAggsOneGroupBy) {
 
   MergeGroupByIntoGroupAcceptorRule rule(IRNodeType::kBlockingAgg);
   auto result = rule.Execute(graph.get());
-  EXPECT_OK(result);
+  ASSERT_OK(result);
   EXPECT_TRUE(result.ConsumeValueOrDie());
 
   EXPECT_THAT(agg1->parents(), ElementsAre(mem_source));
@@ -2425,9 +2430,14 @@ TEST_F(RulesTest, PropagateExpressionAnnotationsRule_join) {
   EXPECT_TRUE(result.ValueOrDie());
   // Use this to set output columns, this rule will run before PropagateExpressionAnnotationsRule.
   OperatorRelationRule op_rel_rule(compiler_state_.get());
-  result = op_rel_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  ASSERT_TRUE(result.ValueOrDie());
+  // Loop to make sure we fully execute the relation rule. Necessary because Map not guaranteed to
+  // be seen by rule before Join.
+  bool did_change = true;
+  while (did_change) {
+    result = op_rel_rule.Execute(graph.get());
+    ASSERT_OK(result);
+    did_change = result.ValueOrDie();
+  }
 
   auto default_annotations = ExpressionIR::Annotations();
 
@@ -2519,11 +2529,14 @@ TEST_F(RulesTest, PropagateExpressionAnnotationsRule_union) {
   auto result = data_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
-  // Use this to set output columns, this rule will run before PropagateExpressionAnnotationsRule.
   OperatorRelationRule op_rel_rule(compiler_state_.get());
-  result = op_rel_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  ASSERT_TRUE(result.ValueOrDie());
+  // Use this to set output columns, this rule will run before PropagateExpressionAnnotationsRule.
+  bool did_change = true;
+  do {
+    result = op_rel_rule.Execute(graph.get());
+    ASSERT_OK(result);
+    did_change = result.ConsumeValueOrDie();
+  } while (did_change);
 
   PropagateExpressionAnnotationsRule rule;
   result = rule.Execute(graph.get());
