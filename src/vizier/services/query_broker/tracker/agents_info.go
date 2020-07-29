@@ -1,68 +1,114 @@
 package tracker
 
 import (
+	"fmt"
+
 	uuid "github.com/satori/go.uuid"
-	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
-	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
+	"pixielabs.ai/pixielabs/src/utils"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 )
 
 // AgentsInfo tracks information about the distributed state of the system.
-type AgentsInfo struct {
+type AgentsInfo interface {
+	ClearState()
+	UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate, schemaInfos []*distributedpb.SchemaInfo) error
+	DistributedState() *distributedpb.DistributedState
+}
+
+// AgentsInfoImpl implements AgentsInfo to track information about the distributed state of the system.
+type AgentsInfoImpl struct {
 	ds *distributedpb.DistributedState
 }
 
-// NewAgentsInfo creates a new agent info.
-func NewAgentsInfo(agentInfos *metadatapb.AgentInfoResponse, agentTableMetadataResp *metadatapb.AgentTableMetadataResponse) (*AgentsInfo, error) {
-	var agentTableMetadata = make(map[uuid.UUID]*distributedpb.MetadataInfo)
-	for _, md := range agentTableMetadataResp.MetadataByAgent {
-		if md.DataInfo != nil && md.DataInfo.MetadataInfo != nil {
-			agentUUID, err := utils.UUIDFromProto(md.AgentID)
-			if err != nil {
-				return nil, err
-			}
-			agentTableMetadata[agentUUID] = md.DataInfo.MetadataInfo
-		}
-	}
-
-	var kelvinList []*agentpb.Agent
-	var pemList []*agentpb.Agent
-
-	for _, m := range agentInfos.Info {
-		if m.Agent.Info.Capabilities == nil || m.Agent.Info.Capabilities.CollectsData {
-			pemList = append(pemList, m.Agent)
-		} else {
-			kelvinList = append(kelvinList, m.Agent)
-		}
-	}
-	carnotInfoList := make([]*distributedpb.CarnotInfo, 0)
-	for _, pem := range pemList {
-		pemID := utils.UUIDFromProtoOrNil(pem.Info.AgentID)
-		var agentMetadata *distributedpb.MetadataInfo
-		if md, found := agentTableMetadata[pemID]; found {
-			agentMetadata = md
-		}
-		carnotInfoList = append(carnotInfoList, makeAgentCarnotInfo(pemID, pem.ASID, agentMetadata))
-	}
-
-	for _, kelvin := range kelvinList {
-		kelvinID := utils.UUIDFromProtoOrNil(kelvin.Info.AgentID)
-		kelvinGRPCAddress := kelvin.Info.IPAddress
-		carnotInfoList = append(carnotInfoList, makeKelvinCarnotInfo(kelvinID, kelvinGRPCAddress, kelvin.ASID))
-	}
-
-	return &AgentsInfo{
-		ds: &distributedpb.DistributedState{
-			CarnotInfo: carnotInfoList,
-			SchemaInfo: agentTableMetadataResp.SchemaInfo,
+// NewAgentsInfo creates an empty agents info.
+func NewAgentsInfo() AgentsInfo {
+	return &AgentsInfoImpl{
+		&distributedpb.DistributedState{
+			SchemaInfo: []*distributedpb.SchemaInfo{},
+			CarnotInfo: []*distributedpb.CarnotInfo{},
 		},
-	}, nil
+	}
+}
+
+// NewTestAgentsInfo creates an agents info from a passed in distributed state.
+func NewTestAgentsInfo(ds *distributedpb.DistributedState) AgentsInfo {
+	return &AgentsInfoImpl{
+		ds,
+	}
+}
+
+// ClearState clears the agents info state.
+func (a *AgentsInfoImpl) ClearState() {
+	a.ds = &distributedpb.DistributedState{
+		SchemaInfo: []*distributedpb.SchemaInfo{},
+		CarnotInfo: []*distributedpb.CarnotInfo{},
+	}
+}
+
+// UpdateAgentsInfo creates a new agent info.
+func (a *AgentsInfoImpl) UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate, schemaInfos []*distributedpb.SchemaInfo) error {
+	if len(schemaInfos) > 0 {
+		a.ds.SchemaInfo = schemaInfos
+	}
+	carnotInfoMap := make(map[uuid.UUID]*distributedpb.CarnotInfo)
+	for _, carnotInfo := range a.ds.CarnotInfo {
+		agentUUID, err := utils.UUIDFromProto(carnotInfo.AgentID)
+		if err != nil {
+			return err
+		}
+		carnotInfoMap[agentUUID] = carnotInfo
+	}
+
+	for _, agentUpdate := range agentUpdates {
+		agentUUID, err := utils.UUIDFromProto(agentUpdate.AgentID)
+		if err != nil {
+			return err
+		}
+		// case 1: agent info update
+		agent := agentUpdate.GetAgent()
+		if agent != nil {
+			if agent.Info.Capabilities == nil || agent.Info.Capabilities.CollectsData {
+				var metadataInfo *distributedpb.MetadataInfo
+				if carnotInfo, present := carnotInfoMap[agentUUID]; present {
+					metadataInfo = carnotInfo.MetadataInfo
+				}
+				// this is a PEM
+				carnotInfoMap[agentUUID] = makeAgentCarnotInfo(agentUUID, agent.ASID, metadataInfo)
+			} else {
+				// this is a Kelvin
+				kelvinGRPCAddress := agent.Info.IPAddress
+				carnotInfoMap[agentUUID] = makeKelvinCarnotInfo(agentUUID, kelvinGRPCAddress, agent.ASID)
+			}
+		}
+		// case 2: agent data info update
+		dataInfo := agentUpdate.GetDataInfo()
+		if dataInfo != nil {
+			carnotInfo, present := carnotInfoMap[agentUUID]
+			if !present || carnotInfo == nil {
+				return fmt.Errorf("Could not update agent table metadata of unknown agent %+v", agentUUID)
+			}
+			if dataInfo.MetadataInfo != nil {
+				carnotInfo.MetadataInfo = dataInfo.MetadataInfo
+			}
+		}
+		// case 3: agent deleted
+		if agentUpdate.GetDeleted() {
+			delete(carnotInfoMap, agentUUID)
+		}
+	}
+
+	// reset the array and recreate.
+	a.ds.CarnotInfo = []*distributedpb.CarnotInfo{}
+	for _, carnotInfo := range carnotInfoMap {
+		a.ds.CarnotInfo = append(a.ds.CarnotInfo, carnotInfo)
+	}
+	return nil
 }
 
 // DistributedState returns the current distributed state. Will return nil if not existent.
-func (a AgentsInfo) DistributedState() *distributedpb.DistributedState {
+func (a *AgentsInfoImpl) DistributedState() *distributedpb.DistributedState {
 	return a.ds
 }
 

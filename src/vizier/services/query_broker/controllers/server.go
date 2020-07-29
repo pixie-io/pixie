@@ -55,7 +55,7 @@ type Executor interface {
 
 // AgentsTracker is the interface for the background agent information tracker.
 type AgentsTracker interface {
-	GetAgentInfo() *tracker.AgentsInfo
+	GetAgentInfo() tracker.AgentsInfo
 }
 
 // Server defines an gRPC server type.

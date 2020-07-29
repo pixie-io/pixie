@@ -15,7 +15,6 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 	mock_controllers "pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
@@ -364,10 +363,10 @@ errors {
 }`
 
 type fakeAgentsTracker struct {
-	agentsInfo *tracker.AgentsInfo
+	agentsInfo tracker.AgentsInfo
 }
 
-func (f *fakeAgentsTracker) GetAgentInfo() *tracker.AgentsInfo {
+func (f *fakeAgentsTracker) GetAgentInfo() tracker.AgentsInfo {
 	return f.agentsInfo
 }
 
@@ -386,23 +385,18 @@ func TestPlannerErrorResult(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	getAgentsPB := new(metadatapb.AgentInfoResponse)
-	if err := proto.UnmarshalText(getAgentsResponse, getAgentsPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	getAgentTableMetadataPB := new(metadatapb.AgentTableMetadataResponse)
-	if err := proto.UnmarshalText(getAgentTableMetadataResponse, getAgentTableMetadataPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
 	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID) controllers.Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)
 		return mc
 	}
 
-	agentsInfo, err := tracker.NewAgentsInfo(getAgentsPB, getAgentTableMetadataPB)
-	assert.Nil(t, err)
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	agentsInfo := tracker.NewTestAgentsInfo(plannerStatePB.DistributedState)
+
 	at := fakeAgentsTracker{
 		agentsInfo: agentsInfo,
 	}
@@ -419,11 +413,6 @@ func TestPlannerErrorResult(t *testing.T) {
 
 	compilerErrorGroupPB := new(compilerpb.CompilerErrorGroup)
 	if err := proto.UnmarshalText(compilerErrorGroupTxt, compilerErrorGroupPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -467,19 +456,12 @@ func TestErrorInStatusResult(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	getAgentsPB := new(metadatapb.AgentInfoResponse)
-	if err := proto.UnmarshalText(getAgentsResponse, getAgentsPB); err != nil {
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	getAgentTableMetadataPB := new(metadatapb.AgentTableMetadataResponse)
-	if err := proto.UnmarshalText(getAgentTableMetadataResponse, getAgentTableMetadataPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	agentsInfo, err := tracker.NewAgentsInfo(
-		getAgentsPB, getAgentTableMetadataPB)
-	assert.Nil(t, err)
+	agentsInfo := tracker.NewTestAgentsInfo(plannerStatePB.DistributedState)
 	at := fakeAgentsTracker{
 		agentsInfo: agentsInfo,
 	}
@@ -492,12 +474,6 @@ func TestErrorInStatusResult(t *testing.T) {
 	env, err := querybrokerenv.New()
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
-	}
-
-	// The state passes in multiple agents.
-	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
 	if !assert.Equal(t, 1, len(plannerStatePB.DistributedState.CarnotInfo)) {

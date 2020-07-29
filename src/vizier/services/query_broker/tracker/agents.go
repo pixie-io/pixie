@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gogo/protobuf/types"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 	utils2 "pixielabs.ai/pixielabs/src/shared/services/utils"
@@ -13,8 +14,8 @@ import (
 )
 
 const (
-	agentMetadataRefreshInterval = 5 * time.Second
-	agentMetadataRequestTimeout  = 2 * time.Second
+	updateIntervalSeconds = 5
+	maxUpdatesPerResponse = 100
 )
 
 // Agents tracks the current state of running agent in the system.
@@ -27,16 +28,22 @@ type Agents struct {
 	done chan bool
 	wg   sync.WaitGroup
 
-	agentsInfo   *AgentsInfo
+	agentsInfo   AgentsInfo
 	agentsInfoMu sync.Mutex
 }
 
 // NewAgents creates a new agent tracker.
 func NewAgents(mdsClient metadatapb.MetadataServiceClient, signingKey string) *Agents {
+	return NewAgentsWithInfo(mdsClient, signingKey, NewAgentsInfo())
+}
+
+// NewAgentsWithInfo creates an agent tracker with the AgentsInfo passed in.
+func NewAgentsWithInfo(mdsClient metadatapb.MetadataServiceClient, signingKey string, agentsInfo AgentsInfo) *Agents {
 	return &Agents{
 		mdsClient:  mdsClient,
 		signingKey: signingKey,
 		done:       make(chan bool),
+		agentsInfo: agentsInfo,
 	}
 }
 
@@ -44,46 +51,81 @@ func NewAgents(mdsClient metadatapb.MetadataServiceClient, signingKey string) *A
 func (a *Agents) Start() {
 	log.Trace("Starting Agent Tracker.")
 	a.wg.Add(1)
-	go a.runLoop()
+	defer a.wg.Done()
+
+	doneCalled := false
+	var err error
+
+	go func() {
+		for !doneCalled {
+			// Retry stream when errors are encountered.
+			doneCalled, err = a.runLoop()
+			if doneCalled {
+				return
+			}
+			// If we encounter an error, wait 5 seconds then try again.
+			time.Sleep(5 * time.Second)
+		}
+	}()
 }
 
 // Stop stops the background loop of the agent tracker.
 func (a *Agents) Stop() {
 	log.Trace("Stopping Agent Tracker.")
-	close(a.done)
+	a.done <- true
 	a.wg.Wait()
+	close(a.done)
 }
 
 // GetAgentInfo returns the current agent info.
-func (a *Agents) GetAgentInfo() *AgentsInfo {
+func (a *Agents) GetAgentInfo() AgentsInfo {
 	a.agentsInfoMu.Lock()
 	defer a.agentsInfoMu.Unlock()
 	return a.agentsInfo
 }
 
-func (a *Agents) runLoop() {
-	defer a.wg.Done()
-	t := time.NewTicker(agentMetadataRefreshInterval)
-	defer t.Stop()
-	a.refreshState()
+func (a *Agents) runLoop() (bool, error) {
+	respCh, cancel, err := a.streamUpdates()
+	if err != nil {
+		return false, err
+	}
+	defer cancel()
 	for {
 		select {
 		case <-a.done:
-			return
-		case <-t.C:
-			a.refreshState()
+			return true, nil
+		case msg := <-respCh:
+			if msg.Err != nil {
+				return false, msg.Err
+			}
+			err = a.updateState(msg.Update, msg.ClearPrevState)
+			if err != nil {
+				return false, err
+			}
 		}
 	}
 }
 
-func (a *Agents) refreshState() {
-	log.Trace("Refreshing agent tracker state.")
-	handleError := func(err error) {
-		log.WithError(err).Error("Failed to check metadata state")
-		a.agentsInfoMu.Lock()
-		defer a.agentsInfoMu.Unlock()
-		a.agentsInfo = nil
+func (a *Agents) updateState(update *metadatapb.AgentUpdatesResponse, clearCurrentState bool) error {
+	a.agentsInfoMu.Lock()
+	defer a.agentsInfoMu.Unlock()
+	if clearCurrentState {
+		a.agentsInfo.ClearState()
 	}
+	return a.agentsInfo.UpdateAgentsInfo(update.AgentUpdates, update.AgentSchemas)
+}
+
+type updateOrError struct {
+	Update *metadatapb.AgentUpdatesResponse
+	Err    error
+	// GetAgentUpdates first reads the full initial state and then sends only updates after that.
+	// As a result, on the first message we need to clear our current agent state to get rid of
+	// stale agent information.
+	ClearPrevState bool
+}
+
+func (a *Agents) streamUpdates() (chan (updateOrError), func(), error) {
+	log.Trace("Streaming agent state.")
 
 	claims := utils2.GenerateJWTForService("metadata_tracker")
 	token, _ := utils2.SignJWTClaims(claims, a.signingKey)
@@ -91,29 +133,47 @@ func (a *Agents) refreshState() {
 	ctx := context.Background()
 	ctx = metadata.AppendToOutgoingContext(context.Background(), "authorization",
 		fmt.Sprintf("bearer %s", token))
-	ctx, cancel := context.WithTimeout(ctx, agentMetadataRequestTimeout)
-	defer cancel()
+	ctx, cancel := context.WithCancel(ctx)
 
-	agentInfosReq := &metadatapb.AgentInfoRequest{}
-	agentInfosResp, err := a.mdsClient.GetAgentInfo(ctx, agentInfosReq)
+	req := &metadatapb.AgentUpdatesRequest{
+		MaxUpdateInterval: &types.Duration{
+			Seconds: updateIntervalSeconds,
+		},
+		MaxUpdatesPerResponse: maxUpdatesPerResponse,
+	}
+	resp, err := a.mdsClient.GetAgentUpdates(ctx, req)
 	if err != nil {
-		handleError(err)
-		return
+		return nil, cancel, err
 	}
 
-	mdsAgentTableMetadataResp, err := a.mdsClient.GetAgentTableMetadata(ctx, &metadatapb.AgentTableMetadataRequest{})
-	if err != nil {
-		handleError(err)
-		return
-	}
+	results := make(chan updateOrError)
+	firstMsg := true
+	go func() {
+		for {
+			select {
+			case <-a.done:
+				return
+			case <-resp.Context().Done():
+				return
+			case <-ctx.Done():
+				return
+			default:
+				msg, err := resp.Recv()
+				results <- updateOrError{
+					Err:            err,
+					Update:         msg,
+					ClearPrevState: firstMsg,
+				}
+				if firstMsg {
+					firstMsg = false
+				}
+				if err != nil || msg == nil {
+					close(results)
+					return
+				}
+			}
+		}
+	}()
 
-	agentsInfo, err := NewAgentsInfo(agentInfosResp, mdsAgentTableMetadataResp)
-	if err != nil {
-		handleError(err)
-		return
-	}
-
-	a.agentsInfoMu.Lock()
-	defer a.agentsInfoMu.Unlock()
-	a.agentsInfo = agentsInfo
+	return results, cancel, err
 }

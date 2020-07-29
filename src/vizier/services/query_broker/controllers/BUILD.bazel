@@ -73,7 +73,6 @@ go_test(
         "//src/utils:go_default_library",
         "//src/utils/testingutils:go_default_library",
         "//src/vizier/messages/messagespb:messages_pl_go_proto",
-        "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
         "//src/vizier/services/query_broker/controllers/mock:go_default_library",
         "//src/vizier/services/query_broker/querybrokerenv:go_default_library",
         "//src/vizier/services/query_broker/querybrokerpb:service_pl_go_proto",
