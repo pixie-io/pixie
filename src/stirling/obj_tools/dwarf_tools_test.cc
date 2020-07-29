@@ -160,6 +160,19 @@ TEST_P(DwarfReaderTest, CppFunctionArgInfo) {
                            Pair("x", ArgInfo{{8, VarType::kPointer, "PairStruct"}})));
 }
 
+TEST_P(DwarfReaderTest, CppFunctionRetValInfo) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(kCppBinaryPath, p.index));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetFunctionRetValInfo("CanYouFindThis"),
+                   (RetValInfo{VarType::kBaseType, "int"}));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetFunctionRetValInfo("SomeFunction"),
+                   (RetValInfo{VarType::kStruct, "PairStruct"}));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetFunctionRetValInfo("SomeFunctionWithPointerArgs"),
+                   (RetValInfo{VarType::kVoid, ""}));
+}
+
 std::ostream& operator<<(std::ostream& os, const ArgInfo& arg_info) {
   os << arg_info.ToString();
   return os;

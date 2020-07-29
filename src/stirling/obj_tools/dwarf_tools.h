@@ -20,6 +20,7 @@ namespace dwarf_tools {
 
 enum class VarType {
   kUnspecified = 0,
+  kVoid,
   kBaseType,
   kPointer,
   kStruct,
@@ -49,6 +50,11 @@ struct ArgInfo : public VarInfo {
   }
 };
 
+struct RetValInfo {
+  VarType type = VarType::kUnspecified;
+  std::string type_name = "";
+};
+
 inline bool operator==(const VarInfo& a, const VarInfo& b) {
   return a.offset == b.offset && a.type == b.type && a.type_name == b.type_name;
 }
@@ -56,6 +62,10 @@ inline bool operator==(const VarInfo& a, const VarInfo& b) {
 inline bool operator==(const ArgInfo& a, const ArgInfo& b) {
   return a.offset == b.offset && a.type == b.type && a.type_name == b.type_name &&
          a.retarg == b.retarg;
+}
+
+inline bool operator==(const RetValInfo& a, const RetValInfo& b) {
+  return a.type == b.type && a.type_name == b.type_name;
 }
 
 class DwarfReader {
@@ -138,6 +148,12 @@ class DwarfReader {
    */
   StatusOr<std::map<std::string, ArgInfo>> GetFunctionArgInfo(
       std::string_view function_symbol_name);
+
+  /**
+   * Returns information on the return value of a function. This works for C/C++.
+   * Note that Golang return variables are treated as arguments to the function.
+   */
+  StatusOr<RetValInfo> GetFunctionRetValInfo(std::string_view function_symbol_name);
 
   bool IsValid() { return dwarf_context_->getNumCompileUnits() != 0; }
 

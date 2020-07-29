@@ -495,6 +495,24 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
   return arg_info;
 }
 
+StatusOr<RetValInfo> DwarfReader::GetFunctionRetValInfo(std::string_view function_symbol_name) {
+  PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
+                      GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
+
+  if (!function_die.find(llvm::dwarf::DW_AT_type).hasValue()) {
+    // No return type means the function has a void return type.
+    return RetValInfo{.type = VarType::kVoid, .type_name = ""};
+  }
+
+  RetValInfo ret_val_info;
+
+  PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(function_die));
+  PL_ASSIGN_OR_RETURN(ret_val_info.type, GetType(type_die));
+  PL_ASSIGN_OR_RETURN(ret_val_info.type_name, GetTypeName(type_die));
+
+  return ret_val_info;
+}
+
 }  // namespace dwarf_tools
 }  // namespace stirling
 }  // namespace pl
