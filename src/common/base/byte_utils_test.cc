@@ -36,18 +36,18 @@ TEST(UtilsTest, TestReverseArrayBytes) {
 TEST(UtilsTest, TestReverseTypeBytes) {
   {
     int32_t x = 0x01020304;
-    int32_t y = ReverseBytes(x);
+    int32_t y = ReverseBytes(&x);
     EXPECT_EQ(y, 0x04030201);
   }
   {
     int32_t x = 0x01020384;
-    int32_t y = ReverseBytes(x);
+    int32_t y = ReverseBytes(&x);
     EXPECT_EQ(y, 0x84030201);
     EXPECT_EQ(y, -0x7bfcfdff);
   }
   {
     int64_t x = 0x01020384;
-    int64_t y = ReverseBytes(x);
+    int64_t y = ReverseBytes(&x);
     EXPECT_EQ(y, 0x8403020100000000);
     EXPECT_EQ(y, -0x7bfcfdff00000000);
   }
@@ -61,14 +61,14 @@ TEST(UtilsTest, TestReverseBytesInvertability) {
   for (int i = 0; i < 100000; ++i) {
     {
       int32_t x = uniform_uint32_dist(rng);
-      int32_t y = ReverseBytes(x);
-      EXPECT_EQ(ReverseBytes(y), x);
+      int32_t y = ReverseBytes(&x);
+      EXPECT_EQ(ReverseBytes(&y), x);
     }
 
     {
       double x = uniform_double_dist(rng);
-      double y = ReverseBytes(x);
-      EXPECT_EQ(ReverseBytes(y), x);
+      double y = ReverseBytes(&x);
+      EXPECT_EQ(ReverseBytes(&y), x);
     }
   }
 }
@@ -102,14 +102,14 @@ TEST(UtilsTest, TestLEndianBytesToFloat) {
 }
 
 TEST(UtilsTest, TestLEndianBytesToFloatUnAligned) {
-  std::string float_bytes = ConstString("\x33\x33\x23\x41");
-  std::string double_bytes = ConstString("\x66\x66\x66\x66\x66\x66\x24\x40");
+  std::string_view unaligned_float_bytes = ConstStringView("\x00\x33\x33\x23\x41");
+  unaligned_float_bytes.remove_prefix(1);
 
-  std::string unaligned_float_bytes = ConstString("\x00") + float_bytes;
-  std::string unaligned_double_bytes = ConstString("\x00") + double_bytes;
+  std::string_view unaligned_double_bytes = ConstStringView("\x00\x66\x66\x66\x66\x66\x66\x24\x40");
+  unaligned_double_bytes.remove_prefix(1);
 
-  EXPECT_FLOAT_EQ(LEndianBytesToFloat<float>(unaligned_float_bytes.substr(1)), 10.2f);
-  EXPECT_DOUBLE_EQ(LEndianBytesToFloat<double>(unaligned_double_bytes.substr(1)), 10.2);
+  EXPECT_FLOAT_EQ(LEndianBytesToFloat<float>(unaligned_float_bytes), 10.2f);
+  EXPECT_DOUBLE_EQ(LEndianBytesToFloat<double>(unaligned_double_bytes), 10.2);
 }
 
 TEST(UtilsTest, TestIntToLEndianBytes) {
@@ -186,14 +186,14 @@ TEST(UtilsTest, TestBEndianBytesToFloat) {
 }
 
 TEST(UtilsTest, TestBEndianBytesToFloatUnAligned) {
-  std::string float_bytes = ConstString("\x41\x23\x33\x33");
-  std::string double_bytes = ConstString("\x40\x24\x66\x66\x66\x66\x66\x66");
+  std::string_view unaligned_float_bytes = ConstStringView("\x00\x41\x23\x33\x33");
+  unaligned_float_bytes.remove_prefix(1);
 
-  std::string unaligned_float_bytes = ConstString("\x00") + float_bytes;
-  std::string unaligned_double_bytes = ConstString("\x00") + double_bytes;
+  std::string_view unaligned_double_bytes = ConstStringView("\x00\x40\x24\x66\x66\x66\x66\x66\x66");
+  unaligned_double_bytes.remove_prefix(1);
 
-  EXPECT_FLOAT_EQ(BEndianBytesToFloat<float>(unaligned_float_bytes.substr(1)), 10.2f);
-  EXPECT_DOUBLE_EQ(BEndianBytesToFloat<double>(unaligned_double_bytes.substr(1)), 10.2);
+  EXPECT_FLOAT_EQ(BEndianBytesToFloat<float>(unaligned_float_bytes), 10.2f);
+  EXPECT_DOUBLE_EQ(BEndianBytesToFloat<double>(unaligned_double_bytes), 10.2);
 }
 
 }  // namespace utils

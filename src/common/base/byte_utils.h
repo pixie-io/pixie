@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include <string>
 #include <utility>
 
@@ -12,23 +13,23 @@ using u8string = std::basic_string<uint8_t>;
 using u8string_view = std::basic_string_view<uint8_t>;
 
 template <size_t N>
-void ReverseBytes(uint8_t* x, uint8_t* y) {
+void ReverseBytes(const uint8_t* x, uint8_t* y) {
   for (size_t k = 0; k < N; k++) {
     y[k] = x[N - k - 1];
   }
 }
 
 template <typename TCharType, size_t N>
-void ReverseBytes(TCharType (&x)[N], TCharType (&y)[N]) {
-  uint8_t* x_bytes = reinterpret_cast<uint8_t*>(x);
+void ReverseBytes(const TCharType (&x)[N], TCharType (&y)[N]) {
+  const uint8_t* x_bytes = reinterpret_cast<const uint8_t*>(x);
   uint8_t* y_bytes = reinterpret_cast<uint8_t*>(y);
   ReverseBytes<N>(x_bytes, y_bytes);
 }
 
 template <typename T>
-T ReverseBytes(T x) {
+T ReverseBytes(const T* x) {
   T y;
-  uint8_t* x_bytes = reinterpret_cast<uint8_t*>(&x);
+  const uint8_t* x_bytes = reinterpret_cast<const uint8_t*>(x);
   uint8_t* y_bytes = reinterpret_cast<uint8_t*>(&y);
   ReverseBytes<sizeof(T)>(x_bytes, y_bytes);
   return y;
@@ -71,7 +72,9 @@ TFloatType LEndianBytesToFloat(std::string_view buf) {
   // Source buffer must have enough bytes.
   DCHECK_GE(buf.size(), sizeof(TFloatType));
 
-  return *reinterpret_cast<const TFloatType*>(buf.data());
+  TFloatType val;
+  std::memcpy(&val, buf.data(), sizeof(TFloatType));
+  return val;
 }
 
 /**
@@ -126,8 +129,10 @@ TFloatType BEndianBytesToFloat(std::string_view buf) {
   // Source buffer must have enough bytes.
   DCHECK_GE(buf.size(), sizeof(TFloatType));
 
-  TFloatType val = *reinterpret_cast<const TFloatType*>(buf.data());
-  return ReverseBytes<TFloatType>(val);
+  // Note that unlike LEndianBytesToFloat, we don't use memcpy to align the data.
+  // That is because ReverseBytes will naturally cause the alignment to occur when it copies bytes.
+  const TFloatType* ptr = reinterpret_cast<const TFloatType*>(buf.data());
+  return ReverseBytes<TFloatType>(ptr);
 }
 
 }  // namespace utils
