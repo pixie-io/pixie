@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 
+#include <absl/container/flat_hash_map.h>
+
 #include "src/stirling/obj_tools/dwarf_tools.h"
 
 namespace pl {
@@ -26,6 +28,7 @@ constexpr char kTGIDPIDVarName[] = "tgid_pid_";
 constexpr char kTGIDStartTimeVarName[] = "tgid_start_time_";
 constexpr char kGOIDVarName[] = "goid_";
 constexpr char kKTimeVarName[] = "time_";
+constexpr char kStartKTimeNSVarName[] = "start_ktime_ns";
 
 // WARNING: Do not change the name of kKTimeVarName above, as it is a name implicitly used by the
 //          query engine as the time column.
@@ -82,6 +85,8 @@ class Dwarvifier {
   Status ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
                            ir::physical::Probe* output_probe);
   Status ProcessMapVal(const ir::logical::MapValue& map_val, ir::physical::Probe* output_probe);
+  Status ProcessFunctionLatency(const ir::shared::FunctionLatency& latency,
+                                ir::physical::Probe* output_probe);
   Status ProcessStashAction(const ir::logical::MapStashAction& stash_action,
                             ir::physical::Probe* output_probe,
                             ir::physical::Program* output_program);
@@ -107,8 +112,11 @@ class Dwarvifier {
   std::map<std::string, ir::physical::Struct*> structs_;
 
   std::unique_ptr<dwarf_tools::DwarfReader> dwarf_reader_;
+
   std::map<std::string, dwarf_tools::ArgInfo> args_map_;
-  std::map<std::string, ir::physical::ScalarVariable*> vars_map_;
+
+  // All defined ScalarVariable.
+  absl::flat_hash_map<std::string, ir::shared::ScalarType> scalar_var_types_;
 
   // Dwarf and BCC have an 8 byte difference in where they believe the SP is.
   // This adjustment factor accounts for that difference.
@@ -227,7 +235,8 @@ ir::physical::ScalarVariable* Dwarvifier::AddVariable(ir::physical::Probe* probe
   var->set_name(name);
   var->set_type(type);
 
-  vars_map_[name] = var;
+  scalar_var_types_[name] = type;
+
   return var;
 }
 
@@ -235,6 +244,9 @@ Status Dwarvifier::GenerateProbe(const ir::logical::Probe input_probe,
                                  ir::physical::Program* output_program) {
   PL_ASSIGN_OR_RETURN(args_map_,
                       dwarf_reader_->GetFunctionArgInfo(input_probe.trace_point().symbol()));
+
+  scalar_var_types_.clear();
+
   PL_RETURN_IF_ERROR(ProcessProbe(input_probe, output_program));
   return Status::OK();
 }
@@ -263,6 +275,15 @@ Status Dwarvifier::ProcessTracepoint(const ir::shared::TracePoint& trace_point,
   return Status::OK();
 }
 
+namespace {
+
+bool IsFunctionLatecySpecified(const ir::logical::Probe& probe) {
+  return probe.function_latency_oneof_case() ==
+         ir::logical::Probe::FunctionLatencyOneofCase::kFunctionLatency;
+}
+
+}  // namespace
+
 Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
                                 ir::physical::Program* output_program) {
   auto* p = output_program->add_probes();
@@ -286,6 +307,10 @@ Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
 
   for (const auto& map_val : input_probe.map_vals()) {
     PL_RETURN_IF_ERROR(ProcessMapVal(map_val, p));
+  }
+
+  if (IsFunctionLatecySpecified(input_probe)) {
+    PL_RETURN_IF_ERROR(ProcessFunctionLatency(input_probe.function_latency(), p));
   }
 
   for (const auto& stash_action : input_probe.map_stash_actions()) {
@@ -415,6 +440,7 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name,
   // This is important so that references in the original probe are maintained.
 
   auto* var = AddVariable(output_probe, std::string(var_name), pb_type);
+
   var->mutable_memory()->set_base(base);
   var->mutable_memory()->set_offset(offset);
 
@@ -506,7 +532,33 @@ Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
     var->set_struct_base(map_var_name);
     var->set_is_struct_base_pointer(true);
     var->set_field(field.name());
+
+    scalar_var_types_[value_id] = field.type();
   }
+
+  return Status::OK();
+}
+
+Status Dwarvifier::ProcessFunctionLatency(const ir::shared::FunctionLatency& function_latency,
+                                          ir::physical::Probe* output_probe) {
+  auto* var = output_probe->add_vars()->mutable_scalar_var();
+
+  const auto& var_name = function_latency.id();
+
+  var->set_name(var_name);
+  var->set_type(ir::shared::ScalarType::INT64);
+
+  auto* expr = var->mutable_binary_expr();
+
+  expr->set_op(ir::physical::ScalarVariable::BinaryExpression::SUB);
+  expr->set_lhs(kKTimeVarName);
+  expr->set_rhs(kStartKTimeNSVarName);
+
+  scalar_var_types_[var_name] = ir::shared::ScalarType::INT64;
+
+  output_probe->mutable_function_latency()->CopyFrom(function_latency);
+
+  // TODO(yzhao): Add more checks.
 
   return Status::OK();
 }
@@ -523,13 +575,13 @@ Status Dwarvifier::GenerateMapValueStruct(const ir::logical::MapStashAction& sta
     auto* struct_field = struct_decl->add_fields();
     struct_field->set_name(f);
 
-    auto iter = vars_map_.find(f);
-    if (iter == vars_map_.end()) {
+    auto iter = scalar_var_types_.find(f);
+    if (iter == scalar_var_types_.end()) {
       return error::Internal(
           "GenerateMapValueStruct [map_name=$0]: Reference to unknown variable: $1",
           stash_action_in.map_name(), f);
     }
-    struct_field->set_type(iter->second->type());
+    struct_field->set_type(iter->second);
   }
 
   structs_[struct_type_name] = struct_decl;
@@ -597,13 +649,13 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
     auto* struct_field = struct_decl->add_fields();
     struct_field->set_name(f);
 
-    auto iter = vars_map_.find(f);
-    if (iter == vars_map_.end()) {
+    auto iter = scalar_var_types_.find(f);
+    if (iter == scalar_var_types_.end()) {
       return error::Internal("GenerateOutputStruct [output=$0]: Reference to unknown variable $1",
                              output_action_in.output_name(), f);
     }
 
-    struct_field->set_type(iter->second->type());
+    struct_field->set_type(iter->second);
   }
 
   auto output_iter = outputs_.find(output_action_in.output_name());
@@ -629,12 +681,12 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
 
     const std::string& var_name = output_action_in.variable_name(i);
 
-    auto iter = vars_map_.find(var_name);
-    if (iter == vars_map_.end()) {
+    auto iter = scalar_var_types_.find(var_name);
+    if (iter == scalar_var_types_.end()) {
       return error::Internal("GenerateOutputStruct [output=$0]: Reference to unknown variable $1",
                              output_action_in.output_name(), var_name);
     }
-    struct_field->set_type(iter->second->type());
+    struct_field->set_type(iter->second);
   }
 
   structs_[struct_type_name] = struct_decl;

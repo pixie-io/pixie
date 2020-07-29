@@ -245,6 +245,20 @@ std::string GenConstant(const ScalarVariable& var) {
                           var.constant());
 }
 
+std::string_view GenOp(ScalarVariable::BinaryExpression::Op op) {
+  static absl::flat_hash_map<ScalarVariable::BinaryExpression::Op, std::string_view> kOpTxts = {
+      {ScalarVariable::BinaryExpression::SUB, "-"},
+  };
+  DCHECK(kOpTxts.contains(op));
+  return kOpTxts[op];
+}
+
+std::string GenBinaryExpression(const ScalarVariable& var) {
+  const auto& expr = var.binary_expr();
+  return absl::Substitute("$0 $1 = $2 $3 $4;", GenScalarType(var.type()), var.name(), expr.lhs(),
+                          GenOp(expr.op()), expr.rhs());
+}
+
 }  // namespace
 
 StatusOr<std::vector<std::string>> GenScalarVariable(
@@ -266,6 +280,11 @@ StatusOr<std::vector<std::string>> GenScalarVariable(
       }
     case ScalarVariable::AddressOneofCase::kConstant: {
       std::vector<std::string> code_lines = {GenConstant(var)};
+      return code_lines;
+    }
+    case ScalarVariable::AddressOneofCase::kBinaryExpr: {
+      // TODO(yzhao): Check lhs rhs were defined.
+      std::vector<std::string> code_lines = {GenBinaryExpression(var)};
       return code_lines;
     }
     case ScalarVariable::AddressOneofCase::ADDRESS_ONEOF_NOT_SET:

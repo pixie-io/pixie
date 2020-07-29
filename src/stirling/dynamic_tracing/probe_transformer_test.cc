@@ -28,6 +28,7 @@ outputs {
   fields: "arg5"
   fields: "retval0"
   fields: "retval1"
+  fields: "latency"
 }
 probes {
   name: "probe0"
@@ -67,6 +68,7 @@ probes {
     id: "retval1"
     expr: "$$7"
   }
+  function_latency { id: "fn_latency" }
   output_actions {
     output_name: "probe0_table"
     variable_name: "arg0"
@@ -77,6 +79,7 @@ probes {
     variable_name: "arg5"
     variable_name: "retval0"
     variable_name: "retval1"
+    variable_name: "fn_latency"
   }
 }
 )";
@@ -85,6 +88,12 @@ constexpr std::string_view kTransformedProgram = R"proto(
 binary_spec {
   path: "$0"
   language: GOLANG
+}
+maps {
+  name: "pid_goid_map"
+}
+maps {
+  name: "probe0_argstash"
 }
 outputs {
   name: "probe0_table"
@@ -96,12 +105,7 @@ outputs {
   fields: "arg5"
   fields: "retval0"
   fields: "retval1"
-}
-maps {
-  name: "pid_goid_map"
-}
-maps {
-  name: "probe0_argstash"
+  fields: "latency"
 }
 probes {
   name: "probe_entry_runtime_casgstatus"
@@ -172,6 +176,7 @@ probes {
     value_variable_name: "arg3"
     value_variable_name: "arg4"
     value_variable_name: "arg5"
+    value_variable_name: "time_"
   }
 }
 probes {
@@ -180,6 +185,7 @@ probes {
     symbol: "main.MixedArgTypes"
     type: RETURN
   }
+  function_latency { id: "fn_latency" }
   map_vals {
     map_name: "probe0_argstash"
     key: GOID
@@ -189,6 +195,7 @@ probes {
     value_ids: "arg3"
     value_ids: "arg4"
     value_ids: "arg5"
+    value_ids: "start_ktime_ns"
   }
   ret_vals {
     id: "retval0"
@@ -208,6 +215,7 @@ probes {
     variable_name: "arg5"
     variable_name: "retval0"
     variable_name: "retval1"
+    variable_name: "fn_latency"
   }
 }
 )proto";

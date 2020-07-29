@@ -5,10 +5,13 @@
 #include <utility>
 
 #include "src/stirling/dynamic_tracing/goid.h"
+#include "src/stirling/dynamic_tracing/types.h"
 
 namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
+
+constexpr char kStartKTimeNSVarName[] = "start_ktime_ns";
 
 void CreateMap(const ir::logical::Probe& input_probe, ir::logical::Program* out) {
   if (input_probe.args().empty()) {
@@ -28,6 +31,15 @@ ir::shared::BPFHelper GetLanguageThreadID(const ir::shared::BinarySpec::Language
   }
 }
 
+namespace {
+
+bool IsFunctionLatecySpecified(const ir::logical::Probe& probe) {
+  return probe.function_latency_oneof_case() ==
+         ir::logical::Probe::FunctionLatencyOneofCase::kFunctionLatency;
+}
+
+}  // namespace
+
 void CreateEntryProbe(const ir::shared::BinarySpec::Language& language,
                       const ir::logical::Probe& input_probe, ir::logical::Program* out) {
   auto* entry_probe = out->add_probes();
@@ -43,12 +55,19 @@ void CreateEntryProbe(const ir::shared::BinarySpec::Language& language,
 
   // Generate argument stash.
   // For now, always stash all arguments.
-  if (input_probe.args_size() > 0) {
+  if (input_probe.args_size() > 0 || IsFunctionLatecySpecified(input_probe)) {
     auto* stash_action = entry_probe->add_map_stash_actions();
+
     stash_action->set_map_name(input_probe.name() + "_argstash");
     stash_action->set_key(GetLanguageThreadID(language));
+
     for (const auto& in_arg : input_probe.args()) {
       stash_action->add_value_variable_name(in_arg.id());
+    }
+
+    if (IsFunctionLatecySpecified(input_probe)) {
+      // Insert the entry time into map, which will be unstashed in the return probe.
+      stash_action->add_value_variable_name("time_");
     }
   }
 }
@@ -78,12 +97,23 @@ Status CreateReturnProbe(const ir::shared::BinarySpec::Language& language,
   return_probe->mutable_trace_point()->CopyFrom(input_probe.trace_point());
   return_probe->mutable_trace_point()->set_type(ir::shared::TracePoint::RETURN);
 
-  if (input_probe.args_size() > 0) {
+  if (input_probe.args_size() > 0 || IsFunctionLatecySpecified(input_probe)) {
     auto* map_val = return_probe->add_map_vals();
+
     map_val->set_map_name(input_probe.name() + "_argstash");
     map_val->set_key(GetLanguageThreadID(language));
+
     for (const auto& in_arg : input_probe.args()) {
       map_val->add_value_ids(in_arg.id());
+    }
+
+    // The order must be consistent with the MapStashAction.
+    if (IsFunctionLatecySpecified(input_probe)) {
+      // This refers to the value stashed in the entry probe.
+      //
+      // TODO(yzhao): We should add Variable into intermediate IR, and let the logical ->
+      // intermediate translation produces the special variables.
+      map_val->add_value_ids(kStartKTimeNSVarName);
     }
   }
 
@@ -91,6 +121,11 @@ Status CreateReturnProbe(const ir::shared::BinarySpec::Language& language,
   for (const auto& in_ret_val : input_probe.ret_vals()) {
     auto* out_ret_val = return_probe->add_ret_vals();
     out_ret_val->CopyFrom(in_ret_val);
+  }
+
+  if (IsFunctionLatecySpecified(input_probe)) {
+    // Function latency is left for coge_gen.cc to process.
+    return_probe->mutable_function_latency()->CopyFrom(input_probe.function_latency());
   }
 
   // Generate output action.

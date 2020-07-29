@@ -135,3 +135,7 @@ message Printk {
     string scalar = 2;
   }
 }
+
+// Indicates a variable named 'id' should be generated, and represents the latency from function
+// entry to return.
+message FunctionLatency { string id = 1; }

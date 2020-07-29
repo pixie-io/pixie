@@ -44,6 +44,21 @@ message ScalarVariable {
     uint32 offset = 2;
   }
 
+  // Describes a variable that is calculated from 2 other previously-defined variables.
+  message BinaryExpression {
+    enum Op {
+      // TODO(yzhao): Today only support subtraction for function latency calculated.
+      SUB = 0;
+    }
+
+    Op op = 1;
+
+    string lhs = 2;
+    string rhs = 3;
+  }
+
+  // TODO(yzhao): address_oneof probably should be renamed to expr, which indicates that it
+  // describes how to compute this variable.
   oneof address_oneof {
     // Address is stored in a register.
     // NOTE: 'reg' is used to avoid name collision with C++ keyword 'register'.
@@ -57,6 +72,9 @@ message ScalarVariable {
 
     // This is directly assigned to the variable.
     string constant = 6;
+
+    // Calculated from another 2 variables.
+    BinaryExpression binary_expr = 7;
   }
 }
 
@@ -164,6 +182,11 @@ message Probe {
 
   // All variables defined inside this probe.
   repeated Variable vars = 3;
+
+  // Latency of a function.
+  oneof function_latency_oneof {
+    shared.FunctionLatency function_latency = 8;
+  }
 
   // Inserts key and value into a map.
   //

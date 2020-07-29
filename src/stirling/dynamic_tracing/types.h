@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+// This depends on LLVM, which has conflicting symbols with ElfReader.
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/dynamic_tracing/ir/physical.pb.h"
 

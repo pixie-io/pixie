@@ -24,7 +24,9 @@ using ::pl::stirling::testing::ColWrapperSizeIs;
 using ::pl::stirling::testing::FindRecordsMatchingPID;
 using ::testing::Each;
 using ::testing::Ge;
+using ::testing::Gt;
 using ::testing::SizeIs;
+using ::testing::StrEq;
 
 using LogicalProgram = ::pl::stirling::dynamic_tracing::ir::logical::Program;
 
@@ -119,6 +121,7 @@ outputs {
   name: "probe_WriteDataPadded_table"
   fields: "stream_id"
   fields: "end_stream"
+  fields: "latency"
 }
 probes: {
   name: "probe_WriteDataPadded"
@@ -134,10 +137,12 @@ probes: {
     id: "end_stream"
     expr: "endStream"
   }
+  function_latency { id: "latency" }
   output_actions {
     output_name: "probe_WriteDataPadded_table"
     variable_name: "stream_id"
     variable_name: "end_stream"
+    variable_name: "latency"
   }
 }
 )";
@@ -168,6 +173,7 @@ TEST_P(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
   InitTestFixturesAndRunTestProgram(GetParam(), kGRPCTraceProgram);
 
   ASSERT_THAT(bcc_program_.uprobe_specs, SizeIs(6));
+
   ASSERT_FALSE(tablets_.empty());
 
   {
@@ -178,9 +184,13 @@ TEST_P(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
 
     constexpr size_t kStreamIDIdx = 3;
     constexpr size_t kEndStreamIdx = 4;
+    constexpr size_t kLatencyIdx = 5;
 
     EXPECT_EQ(records[kStreamIDIdx]->Get<types::Int64Value>(0).val, 1);
     EXPECT_EQ(records[kEndStreamIdx]->Get<types::BoolValue>(0).val, false);
+    // 1000 is not particularly meaningful, it just states that we have a roughly correct
+    // value.
+    EXPECT_THAT(records[kLatencyIdx]->Get<types::Int64Value>(0).val, Gt(1000));
   }
 }
 
@@ -188,6 +198,7 @@ TEST_P(GoHTTPDynamicTraceTest, TraceReturnValue) {
   InitTestFixturesAndRunTestProgram(GetParam(), kReturnValueTraceProgram);
 
   ASSERT_THAT(bcc_program_.uprobe_specs, SizeIs(4));
+
   ASSERT_FALSE(tablets_.empty());
 
   {

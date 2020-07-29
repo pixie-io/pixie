@@ -58,8 +58,6 @@ message MapValue {
   repeated string value_ids = 3;
 }
 
-message FunctionLatency { string id = 1; }
-
 message MapStashAction {
   string map_name = 1;
 
@@ -105,10 +103,20 @@ message Probe {
   repeated ReturnValue ret_vals = 5;
 
   // Map variables to unstash.
+  // TODO(yzhao/oazizi): This is only used in return probes. One possible restructuring would be
+  // to create intermediate IR with entry & return probes (the down side is excessive copying
+  // between logical and intermediate IRs, because they share most fields).
+  // Additionally, if we were to not have function_latency in physical IR, then a new message
+  // is needed inside intermediate IR, but not appropriate in logical IR, to model binary
+  // expression.
+  // The reason not to split the logical and intermediate IRs is that they really are the same spec.
+  // The logical IR just uses some short-hand which the ProbeTransformer makes explicit.
   repeated MapValue map_vals = 6;
 
   // Latency of a function.
-  FunctionLatency function_latency = 7;
+  oneof function_latency_oneof {
+    shared.FunctionLatency function_latency = 7;
+  }
 
   // Inserts key and value into a map.
   //

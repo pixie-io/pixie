@@ -27,6 +27,7 @@ outputs {
   fields: "f2"
   fields: "f3"
   fields: "f4"
+  fields: "latency"
 }
 probes: {
   name: "probe0"
@@ -50,12 +51,14 @@ probes: {
     id: "retval0"
     expr: "$$6"
   }
+  function_latency { id: "latency" }
   output_actions {
     output_name: "probe_output"
     variable_name: "arg0"
     variable_name: "arg1"
     variable_name: "arg2"
     variable_name: "retval0"
+    variable_name: "latency"
   }
 }
 )";
@@ -117,6 +120,10 @@ TEST(DynamicTracerTest, Compile) {
                                       fields {
                                         name: "f4"
                                         type: INT
+                                      }
+                                      fields {
+                                        name: "latency"
+                                        type: INT64
                                       }
                                       )proto"));
 }
