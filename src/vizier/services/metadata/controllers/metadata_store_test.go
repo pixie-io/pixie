@@ -2293,7 +2293,7 @@ func TestKVMetadataStore_SetTracepointWithName(t *testing.T) {
 	assert.Equal(t, tpID, utils.UUIDFromProtoOrNil(savedTracepointPb))
 }
 
-func TestKVMetadataStore_GetTracepointWithName(t *testing.T) {
+func TestKVMetadataStore_GetTracepointsWithNames(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
@@ -2309,13 +2309,20 @@ func TestKVMetadataStore_GetTracepointWithName(t *testing.T) {
 	val, err := tracepointIDpb.Marshal()
 	assert.Nil(t, err)
 
-	c.Set("/tracepointName/test", string(val))
+	tpID2 := uuid.NewV4()
+	tracepointIDpb2 := utils.ProtoFromUUID(&tpID2)
+	val2, err := tracepointIDpb2.Marshal()
+	assert.Nil(t, err)
 
-	tracepoint, err := mds.GetTracepointWithName("test")
+	c.Set("/tracepointName/test", string(val))
+	c.Set("/tracepointName/test2", string(val2))
+
+	tracepoint, err := mds.GetTracepointsWithNames([]string{"test", "test2"})
 	assert.Nil(t, err)
 	assert.NotNil(t, tracepoint)
 
-	assert.Equal(t, tpID, *tracepoint)
+	assert.Equal(t, tpID, *tracepoint[0])
+	assert.Equal(t, tpID2, *tracepoint[1])
 }
 
 func TestKVMetadataStore_DeleteTracepoint(t *testing.T) {
@@ -2344,6 +2351,43 @@ func TestKVMetadataStore_DeleteTracepoint(t *testing.T) {
 	val, err := c.Get("/tracepoint/" + tpID.String())
 	assert.Nil(t, err)
 	assert.Equal(t, []byte{}, val)
+}
+
+func TestKVMetadataStore_DeleteTracepointTTLs(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	tpID := uuid.NewV4()
+	tpID2 := uuid.NewV4()
+
+	mockDs.
+		EXPECT().
+		SetAll([]kvstore.TTLKeyValue{
+			kvstore.TTLKeyValue{
+				Expire: true,
+				TTL:    0,
+				Value:  []byte{},
+				Key:    "/tracepointTTL/" + tpID.String(),
+			},
+			kvstore.TTLKeyValue{
+				Expire: true,
+				TTL:    0,
+				Value:  []byte{},
+				Key:    "/tracepointTTL/" + tpID2.String(),
+			},
+		}).
+		Return(nil).
+		Times(1)
+
+	err = mds.DeleteTracepointTTLs([]uuid.UUID{tpID, tpID2})
+	assert.Nil(t, err)
 }
 
 func TestKVMetadataStore_WatchTracepointTTLs(t *testing.T) {

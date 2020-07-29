@@ -186,6 +186,24 @@ func (c *Cache) UncachedDelete(key string) error {
 	return c.datastore.Delete(key)
 }
 
+// UncachedDeleteAll does a transactionalized delete of all of the given keys directly in the underlying datastore.
+func (c *Cache) UncachedDeleteAll(keys []string) error {
+	c.dsMu.Lock()
+	defer c.dsMu.Unlock()
+
+	ttlKeys := make([]TTLKeyValue, len(keys))
+	for i, key := range keys {
+		ttlKeys[i] = TTLKeyValue{
+			Expire: true,
+			TTL:    0,
+			Value:  []byte{},
+			Key:    key,
+		}
+	}
+
+	return c.datastore.SetAll(ttlKeys)
+}
+
 // Set puts the given key and value in the cache, which is later flushed to the backing datastore.
 func (c *Cache) Set(key string, value string) {
 	c.cacheMu.Lock()

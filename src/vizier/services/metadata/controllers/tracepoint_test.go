@@ -175,13 +175,13 @@ func TestCreateTracepoint(t *testing.T) {
 			if test.originalTracepoint == nil {
 				mockTracepointStore.
 					EXPECT().
-					GetTracepointWithName("test_tracepoint").
-					Return(nil, nil)
+					GetTracepointsWithNames([]string{"test_tracepoint"}).
+					Return([]*uuid.UUID{nil}, nil)
 			} else {
 				mockTracepointStore.
 					EXPECT().
-					GetTracepointWithName("test_tracepoint").
-					Return(&origID, nil)
+					GetTracepointsWithNames([]string{"test_tracepoint"}).
+					Return([]*uuid.UUID{&origID}, nil)
 				mockTracepointStore.
 					EXPECT().
 					GetTracepoint(origID).
@@ -196,7 +196,7 @@ func TestCreateTracepoint(t *testing.T) {
 			if test.expectOldUpdated {
 				mockTracepointStore.
 					EXPECT().
-					DeleteTracepointTTL(origID).
+					DeleteTracepointTTLs([]uuid.UUID{origID}).
 					Return(nil)
 			}
 
@@ -532,5 +532,32 @@ func TestUpdateAgentTracepointStatus_SyncTracepoints(t *testing.T) {
 		Return(nil)
 
 	err := tracepointMgr.SyncTracepoints()
+	assert.Nil(t, err)
+}
+
+func TestUpdateAgentTracepointStatus_RemoveTracepoints(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
+
+	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
+
+	tpID1 := uuid.NewV4()
+	tpID2 := uuid.NewV4()
+
+	mockTracepointStore.
+		EXPECT().
+		GetTracepointsWithNames([]string{"test1", "test2"}).
+		Return([]*uuid.UUID{
+			&tpID1, &tpID2,
+		}, nil)
+
+	mockTracepointStore.
+		EXPECT().
+		DeleteTracepointTTLs([]uuid.UUID{tpID1, tpID2}).
+		Return(nil)
+
+	err := tracepointMgr.RemoveTracepoints([]string{"test1", "test2"})
 	assert.Nil(t, err)
 }

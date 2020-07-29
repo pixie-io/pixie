@@ -404,8 +404,8 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 
 	mockTracepointStore.
 		EXPECT().
-		GetTracepointWithName("test_tracepoint").
-		Return(nil, nil)
+		GetTracepointsWithNames([]string{"test_tracepoint"}).
+		Return([]*uuid.UUID{nil}, nil)
 
 	var tpID uuid.UUID
 	mockTracepointStore.
@@ -488,8 +488,8 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 
 	mockTracepointStore.
 		EXPECT().
-		GetTracepointWithName("test_tracepoint").
-		Return(&oldTPID, nil)
+		GetTracepointsWithNames([]string{"test_tracepoint"}).
+		Return([]*uuid.UUID{&oldTPID}, nil)
 
 	mockTracepointStore.
 		EXPECT().
@@ -713,6 +713,53 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_Server_RemoveTracepoint(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
+
+	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
+
+	tpID1 := uuid.NewV4()
+	tpID2 := uuid.NewV4()
+
+	mockTracepointStore.
+		EXPECT().
+		GetTracepointsWithNames([]string{"test1", "test2"}).
+		Return([]*uuid.UUID{
+			&tpID1, &tpID2,
+		}, nil)
+
+	mockTracepointStore.
+		EXPECT().
+		DeleteTracepointTTLs([]uuid.UUID{tpID1, tpID2}).
+		Return(nil)
+
+	// Set up server.
+	env, err := metadataenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	clock := testingutils.NewTestClock(time.Unix(0, 70))
+
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, mockMds, clock)
+
+	req := metadatapb.RemoveTracepointRequest{
+		Names: []string{"test1", "test2"},
+	}
+
+	resp, err := s.RemoveTracepoint(context.Background(), &req)
+
+	assert.NotNil(t, resp)
+	assert.Nil(t, err)
+
+	assert.Equal(t, statuspb.OK, resp.Status.ErrCode)
 }
 
 func createDialer(lis *bufconn.Listener) func(string, time.Duration) (net.Conn, error) {

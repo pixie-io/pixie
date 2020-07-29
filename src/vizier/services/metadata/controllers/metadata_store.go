@@ -1332,22 +1332,31 @@ func (mds *KVMetadataStore) GetSubscriberResourceVersion(sub string) (string, er
 /* =============== Tracepoint Operations ============== */
 
 // GetTracepointWithName gets which tracepoint is associated with the given name.
-func (mds *KVMetadataStore) GetTracepointWithName(tracepointName string) (*uuid.UUID, error) {
-	resp, err := mds.cache.Get(getTracepointWithNameKey(tracepointName))
-	if err != nil {
-		return nil, err
-	}
-	if resp == nil {
-		return nil, nil
+func (mds *KVMetadataStore) GetTracepointsWithNames(tracepointNames []string) ([]*uuid.UUID, error) {
+	keys := make([]string, len(tracepointNames))
+	for i, n := range tracepointNames {
+		keys[i] = getTracepointWithNameKey(n)
 	}
 
-	uuidPB := &uuidpb.UUID{}
-	err = proto.Unmarshal(resp, uuidPB)
+	resp, err := mds.cache.GetAll(keys)
 	if err != nil {
 		return nil, err
 	}
-	id := utils.UUIDFromProtoOrNil(uuidPB)
-	return &id, nil
+
+	ids := make([]*uuid.UUID, len(keys))
+	for i, r := range resp {
+		if r != nil {
+			uuidPB := &uuidpb.UUID{}
+			err = proto.Unmarshal(r, uuidPB)
+			if err != nil {
+				return nil, err
+			}
+			id := utils.UUIDFromProtoOrNil(uuidPB)
+			ids[i] = &id
+		}
+	}
+
+	return ids, nil
 }
 
 // SetTracepointWithName associates the tracepoint with the given name with the one with the provided ID.
@@ -1474,10 +1483,15 @@ func (mds *KVMetadataStore) SetTracepointTTL(tracepointID uuid.UUID, ttl time.Du
 	return mds.cache.UncachedSetWithTTL(getTracepointTTLKey(tracepointID), "", ttl)
 }
 
-// DeleteTracepointTTL deletes the key in the datastore for the tracepoint's TTL. This means that
-// the tracepoint should be terminated before its TTL.
-func (mds *KVMetadataStore) DeleteTracepointTTL(tracepointID uuid.UUID) error {
-	return mds.cache.UncachedDelete(getTracepointTTLKey(tracepointID))
+// DeleteTracepointTTLs deletes the key in the datastore for the given tracepoint TTLs.
+// This is done as a single transaction, so if any deletes fail, they all fail.
+func (mds *KVMetadataStore) DeleteTracepointTTLs(ids []uuid.UUID) error {
+	keys := make([]string, len(ids))
+	for i, id := range ids {
+		keys[i] = getTracepointTTLKey(id)
+	}
+
+	return mds.cache.UncachedDeleteAll(keys)
 }
 
 // GetTracepointTTLs gets the tracepoints which still have existing TTLs.

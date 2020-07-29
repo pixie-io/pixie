@@ -3,6 +3,7 @@ package controllers
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -32,10 +33,10 @@ type TracepointStore interface {
 	UpdateTracepointState(*storepb.AgentTracepointStatus) error
 	GetTracepointStates(uuid.UUID) ([]*storepb.AgentTracepointStatus, error)
 	SetTracepointWithName(string, uuid.UUID) error
-	GetTracepointWithName(string) (*uuid.UUID, error)
+	GetTracepointsWithNames([]string) ([]*uuid.UUID, error)
 	GetTracepointsForIDs([]uuid.UUID) ([]*storepb.TracepointInfo, error)
 	SetTracepointTTL(uuid.UUID, time.Duration) error
-	DeleteTracepointTTL(uuid.UUID) error
+	DeleteTracepointTTLs([]uuid.UUID) error
 	WatchTracepointTTLs() (chan uuid.UUID, chan bool)
 	GetAgents() ([]*agentpb.Agent, error)
 	DeleteTracepoint(uuid.UUID) error
@@ -174,10 +175,15 @@ func (m *TracepointManager) deleteTracepoint(id uuid.UUID) error {
 // CreateTracepoint creates and stores info about the given tracepoint.
 func (m *TracepointManager) CreateTracepoint(tracepointName string, program *logicalpb.Program, ttl time.Duration) (*uuid.UUID, error) {
 	// Check to see if a tracepoint with the matching name already exists.
-	prevTracepointID, err := m.mds.GetTracepointWithName(tracepointName)
+	resp, err := m.mds.GetTracepointsWithNames([]string{tracepointName})
 	if err != nil {
 		return nil, err
 	}
+
+	if len(resp) != 1 {
+		return nil, errors.New("Could not fetch tracepoint")
+	}
+	prevTracepointID := resp[0]
 
 	if prevTracepointID != nil { // Existing tracepoint already exists.
 		prevTracepoint, err := m.mds.GetTracepoint(*prevTracepointID)
@@ -206,7 +212,7 @@ func (m *TracepointManager) CreateTracepoint(tracepointName string, program *log
 			}
 
 			// Trigger termination of the old tracepoint.
-			err = m.mds.DeleteTracepointTTL(*prevTracepointID)
+			err = m.mds.DeleteTracepointTTLs([]uuid.UUID{*prevTracepointID})
 			if err != nil {
 				return nil, err
 			}
@@ -311,4 +317,23 @@ func (m *TracepointManager) GetTracepointStates(tracepointID uuid.UUID) ([]*stor
 // GetTracepointsForIDs gets all the tracepoint infos for the given ids.
 func (m *TracepointManager) GetTracepointsForIDs(ids []uuid.UUID) ([]*storepb.TracepointInfo, error) {
 	return m.mds.GetTracepointsForIDs(ids)
+}
+
+// RemoveTracepoints starts the termination process for the tracepoints with the given names.
+func (m *TracepointManager) RemoveTracepoints(names []string) error {
+	tpIDs, err := m.mds.GetTracepointsWithNames(names)
+	if err != nil {
+		return err
+	}
+
+	ids := make([]uuid.UUID, len(tpIDs))
+
+	for i, id := range tpIDs {
+		if id == nil {
+			return fmt.Errorf("Could not find tracepoint for given name: %s", names[i])
+		}
+		ids[i] = *id
+	}
+
+	return m.mds.DeleteTracepointTTLs(ids)
 }

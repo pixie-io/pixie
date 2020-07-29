@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -445,5 +444,14 @@ func getTracepointStateFromAgentTracepointStates(agentStates []*storepb.AgentTra
 
 // RemoveTracepoint is a request to evict the given tracepoint on all agents.
 func (s *Server) RemoveTracepoint(ctx context.Context, req *metadatapb.RemoveTracepointRequest) (*metadatapb.RemoveTracepointResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	err := s.tracepointManager.RemoveTracepoints(req.Names)
+	if err != nil {
+		return nil, err
+	}
+
+	return &metadatapb.RemoveTracepointResponse{
+		Status: &statuspb.Status{
+			ErrCode: statuspb.OK,
+		},
+	}, nil
 }
