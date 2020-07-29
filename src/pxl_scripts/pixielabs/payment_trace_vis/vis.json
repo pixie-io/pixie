@@ -1,0 +1,118 @@
+{
+  "variables": [
+    {
+      "name": "start",
+      "type": "PX_STRING",
+      "description": "The relative start time of the window. Current time is assumed to be now",
+      "defaultValue": "-5m"
+    },
+    {
+      "name": "window_s",
+      "type": "PX_INT",
+      "description": "The relative start time of the window. Current time is assumed to be now",
+      "defaultValue": "10"
+    },
+    {
+      "name": "bin_size",
+      "type": "PX_INT",
+      "description": "The bin size to use for the histogram",
+      "defaultValue": "10"
+    }
+  ],
+  "globalFuncs": [],
+  "widgets": [
+    {
+      "name": "Trace",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "authorise_amount_time_series",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "window_s",
+            "variable": "window_s"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "amount",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Average Amount"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Amount Histogram",
+      "position": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "amount_histogram",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "bin_size",
+            "variable": "bin_size"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.BarChart",
+        "bar": {
+          "value": "count",
+          "label": "amount"
+        },
+        "xAxis": {
+          "label": "Amount"
+        },
+        "yAxis": {
+          "label": "# of function calls"
+        }
+      }
+    },
+    {
+      "name": "Raw data",
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "raw_table",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    }
+  ]
+}

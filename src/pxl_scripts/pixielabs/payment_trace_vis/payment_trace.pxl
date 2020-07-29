@@ -1,0 +1,80 @@
+''' Service stats LET and local svc map
+
+This live view calculates the latency, error rate, and throughput
+of a Service and also summarizes the incoming and outgoing traffic
+for a svc.
+
+Notes:
+* Setting svc is not exclusive matching at the moment. IE
+  if you have two svcs 'a' and 'a-db', setting `svc = 'a'`
+  will still match `a-db`
+'''
+import pxtrace
+import px
+
+# ----------------------------------------------------------------
+# Visualization Variables - No need to edit for basic configuration.
+# ----------------------------------------------------------------
+# K8s object is the abstraction to group on.
+# Options are ['pod', 'service'].
+k8s_object = 'service'
+# Window in seconds within which to aggregate metrics.
+window_s = 10
+# Column naem used to split data into separate time series.
+# k8s_object column is renamed to this and is used in
+# visualization spec.
+split_series_name = 'k8s'
+# The bin size to use for the latency histogram.
+latency_bin_size_ms = 50
+# ----------------------------------------------------------------
+
+payment_process_upid = "00000008-0000-31cb-0000-00000000ab84"
+
+
+@pxtrace.goprobe("github.com/microservices-demo/payment.(*service).Authorise")
+def probe_func():
+    amount = pxtrace.ArgExpr("amount")
+    return [{'amount': amount}]
+
+
+pxtrace.UpsertTracepoint('http_return_tracepoint',
+                         'http_return_data25',
+                         probe_func,
+                         px.uint128(payment_process_upid),
+                         "5m")
+
+
+def authorise_amount_time_series(start: str, window_s: int):
+    """
+    Takes the amount data traced from Authorize and outputs
+    a smoothed time series.
+
+    Args:
+    @start: The first timestamp of data to load
+    @window_s: the length of window in seconds to smooth data over
+
+    Returns: Dataframe of Authroize data, aggregate over `window_s` second windows.
+    """
+    df = raw_table(start)
+    df.time_ = px.bin(df.time_, px.seconds(window_s))
+    df = df.groupby(['time_']).agg(amount=('amount', px.mean))
+    return df
+
+
+def amount_histogram(start: str, bin_size: int):
+    """ Returns the histogram of amount sizes as traced fromthe Authorise endpoint.
+
+    Args:
+    @start: The first timestamp of data to load
+    @window_s: The bin size to use for calculating the histogram of the amount column
+
+    Returns: Dataframe
+    """
+    df = raw_table(start)
+    df.amount = px.bin(df.amount, bin_size)
+    df = df.groupby(['amount']).agg(count=('amount', px.count))
+    return df
+
+
+def raw_table(start: str):
+    return px.DataFrame(table='http_return_data', start_time=start)
