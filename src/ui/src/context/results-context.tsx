@@ -1,6 +1,6 @@
 import { Table } from 'common/vizier-grpc-client';
 import * as React from 'react';
-import { QueryExecutionStats } from 'types/generated/vizier_pb';
+import { QueryExecutionStats, MutationInfo } from 'types/generated/vizier_pb';
 
 import { SetStateFunc } from './common';
 
@@ -12,6 +12,7 @@ interface Results {
   error?: Error;
   tables: Tables;
   stats?: QueryExecutionStats;
+  mutationInfo?: MutationInfo;
 }
 
 interface ResultsContextProps extends Results {

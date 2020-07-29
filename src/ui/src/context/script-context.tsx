@@ -259,8 +259,13 @@ const ScriptContextProvider = (props) => {
     numTries: number) => (
     client.executeScript(execArgs.pxl, funcs, mutation).then(async (queryResults) => {
       // If the results are from a mutation, we should wait and retry if the mutation is still pending.
+      if (numTries <= 0) {
+        setResults({ tables: {}, error: new VizierQueryError('execution', 'Deploying tracepoints failed') });
+        return null;
+      }
       if (queryResults.mutationInfo && queryResults.mutationInfo.getStatus().getCode() === GRPCStatusCode.Unavailable) {
         // Wait 5s before executing again.
+        setResults({ tables: {}, mutationInfo: queryResults.mutationInfo });
         await new Promise((resolve) => setTimeout(resolve, mutationRetryMs));
         return executeScriptUntilMutationCompletion(execArgs, funcs, mutation, numTries - 1);
       }
@@ -317,12 +322,14 @@ const ScriptContextProvider = (props) => {
         execArgs, funcs, mutation, maxMutationRetryMs / mutationRetryMs),
       )
       .then((queryResults) => {
-        const newTables = {};
-        ({ queryId } = queryResults);
-        for (const table of queryResults.tables) {
-          newTables[table.name] = table;
+        if (queryResults) {
+          const newTables = {};
+          ({ queryId } = queryResults);
+          for (const table of queryResults.tables) {
+            newTables[table.name] = table;
+          }
+          setResults({ tables: newTables, stats: queryResults.executionStats });
         }
-        setResults({ tables: newTables, stats: queryResults.executionStats });
       }).catch((error) => {
         if (Array.isArray(error) && error.length) {
           error = error[0];

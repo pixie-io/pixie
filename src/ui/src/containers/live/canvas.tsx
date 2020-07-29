@@ -19,6 +19,7 @@ import {
 } from '@material-ui/core/styles';
 
 import Vega from 'components/live-widgets/vega/vega';
+import MutationModal from './mutation-modal';
 import { LayoutContext } from '../../context/layout-context';
 import { ResultsContext } from '../../context/results-context';
 import { ScriptContext } from '../../context/script-context';
@@ -225,7 +226,9 @@ interface CanvasProps {
 const Canvas = (props: CanvasProps) => {
   const classes = useStyles();
   const theme = useTheme();
-  const { tables, loading, error } = React.useContext(ResultsContext);
+  const {
+    tables, loading, error, mutationInfo,
+  } = React.useContext(ResultsContext);
   const { args, vis, setVis } = React.useContext(ScriptContext);
   const { isMobile } = React.useContext(LayoutContext);
   const { setTimeseriesDomain } = React.useContext(TimeSeriesContext);
@@ -329,7 +332,10 @@ const Canvas = (props: CanvasProps) => {
 
   if (loading && charts.length === 0) {
     return (
-      <div className='center-content'><Spinner /></div>
+      <>
+        {loading && mutationInfo && <MutationModal mutationInfo={mutationInfo} /> }
+        <div className='center-content'><Spinner /></div>
+      </>
     );
   }
 
@@ -375,6 +381,7 @@ const Canvas = (props: CanvasProps) => {
   }
   return (
     <>
+      {loading && mutationInfo && <MutationModal mutationInfo={mutationInfo} /> }
       { error
         && <ErrorDisplay classes={classes} error={error} setOpen={setErrorOpen} open={errorOpen} /> }
       {displayGrid}
