@@ -206,7 +206,7 @@ func (a *AgentTopicListener) onAgentRegisterRequest(m *messages.RegisterAgentReq
 
 		for _, tracepoint := range tracepoints {
 			if tracepoint.ExpectedState != statuspb.TERMINATED_STATE {
-				err = a.tracepointManager.RegisterTracepoint(agentIDs, utils.UUIDFromProtoOrNil(tracepoint.TracepointID), tracepoint.Program)
+				err = a.tracepointManager.RegisterTracepoint(agentIDs, utils.UUIDFromProtoOrNil(tracepoint.ID), tracepoint.Program)
 				if err != nil {
 					log.WithError(err).Error("Failed to send RegisterTracepoint request")
 				}
@@ -244,7 +244,7 @@ func (a *AgentTopicListener) onAgentTracepointMessage(pbMessage *messages.Tracep
 }
 
 func (a *AgentTopicListener) onAgentTracepointInfoUpdate(m *messages.TracepointInfoUpdate) {
-	err := a.tracepointManager.UpdateAgentTracepointStatus(m.TracepointID, m.AgentID, m.State, m.Status)
+	err := a.tracepointManager.UpdateAgentTracepointStatus(m.ID, m.AgentID, m.State, m.Status)
 	if err != nil {
 		log.WithError(err).Error("Could not update agent tracepoint status")
 	}

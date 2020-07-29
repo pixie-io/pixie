@@ -70,7 +70,7 @@ func (m *TracepointManager) SyncTracepoints() error {
 	// Make a map so we can determine which tracepoints don't have a TTL.
 	tpMap := make(map[uuid.UUID]bool)
 	for _, tp := range tps {
-		tpMap[utils.UUIDFromProtoOrNil(tp.TracepointID)] = false
+		tpMap[utils.UUIDFromProtoOrNil(tp.ID)] = false
 	}
 
 	for _, tp := range ttls {
@@ -137,7 +137,7 @@ func (m *TracepointManager) terminateTracepoint(id uuid.UUID) error {
 			TracepointMessage: &messages.TracepointMessage{
 				Msg: &messages.TracepointMessage_RemoveTracepointRequest{
 					RemoveTracepointRequest: &messages.RemoveTracepointRequest{
-						TracepointID: utils.ProtoFromUUID(&id),
+						ID: utils.ProtoFromUUID(&id),
 					},
 				},
 			},
@@ -212,10 +212,10 @@ func (m *TracepointManager) CreateTracepoint(tracepointName string, program *log
 
 	tpID := uuid.NewV4()
 	newTracepoint := &storepb.TracepointInfo{
-		TracepointID:   utils.ProtoFromUUID(&tpID),
-		Program:        program,
-		TracepointName: tracepointName,
-		ExpectedState:  statuspb.RUNNING_STATE,
+		ID:            utils.ProtoFromUUID(&tpID),
+		Program:       program,
+		Name:          tracepointName,
+		ExpectedState: statuspb.RUNNING_STATE,
 	}
 	err = m.mds.UpsertTracepoint(tpID, newTracepoint)
 	if err != nil {
@@ -253,10 +253,10 @@ func (m *TracepointManager) UpdateAgentTracepointStatus(tracepointID *uuidpb.UUI
 	}
 
 	tracepointState := &storepb.AgentTracepointStatus{
-		State:        state,
-		Status:       status,
-		TracepointID: tracepointID,
-		AgentID:      agentID,
+		State:   state,
+		Status:  status,
+		ID:      tracepointID,
+		AgentID: agentID,
 	}
 
 	return m.mds.UpdateTracepointState(tracepointState)
@@ -269,8 +269,8 @@ func (m *TracepointManager) RegisterTracepoint(agentIDs []uuid.UUID, tracepointI
 			TracepointMessage: &messages.TracepointMessage{
 				Msg: &messages.TracepointMessage_RegisterTracepointRequest{
 					RegisterTracepointRequest: &messages.RegisterTracepointRequest{
-						Program:      program,
-						TracepointID: utils.ProtoFromUUID(&tracepointID),
+						Program: program,
+						ID:      utils.ProtoFromUUID(&tracepointID),
 					},
 				},
 			},

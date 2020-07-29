@@ -88,7 +88,7 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScr
 		Requests: make([]*metadatapb.RegisterTracepointRequest_TracepointRequest, 0),
 	}
 	deleteTracepointsReq := &metadatapb.RemoveTracepointRequest{
-		TracepointNames: make([]string, 0),
+		Names: make([]string, 0),
 	}
 
 	outputTablesMap := make(map[string]bool, 0)
@@ -101,9 +101,9 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScr
 				name := mut.Trace.Name
 				registerTracepointsReq.Requests = append(registerTracepointsReq.Requests,
 					&metadatapb.RegisterTracepointRequest_TracepointRequest{
-						Program:        mut.Trace,
-						TracepointName: mut.Trace.Name,
-						TTL:            mut.Trace.TTL,
+						Program: mut.Trace,
+						Name:    mut.Trace.Name,
+						TTL:     mut.Trace.TTL,
 					})
 
 				if _, ok := m.activeTracepoints[name]; ok {
@@ -121,7 +121,7 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScr
 			}
 		case *plannerpb.CompileMutation_DeleteTracepoint:
 			{
-				deleteTracepointsReq.TracepointNames = append(deleteTracepointsReq.TracepointNames, mut.DeleteTracepoint.Name)
+				deleteTracepointsReq.Names = append(deleteTracepointsReq.Names, mut.DeleteTracepoint.Name)
 			}
 		}
 	}
@@ -142,14 +142,14 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScr
 		for _, tp := range resp.Tracepoints {
 			log.
 				WithField("status", tp.Status.GoString()).
-				WithField("name", tp.TracepointName).
+				WithField("name", tp.Name).
 				Info("Trace point Install status")
-			id := utils.UUIDFromProtoOrNil(tp.TracepointID)
-			m.activeTracepoints[tp.TracepointName].ID = id
-			m.activeTracepoints[tp.TracepointName].Status = tp.Status
+			id := utils.UUIDFromProtoOrNil(tp.ID)
+			m.activeTracepoints[tp.Name].ID = id
+			m.activeTracepoints[tp.Name].Status = tp.Status
 		}
 	}
-	if len(deleteTracepointsReq.TracepointNames) > 0 {
+	if len(deleteTracepointsReq.Names) > 0 {
 		delResp, err := m.mdtp.RemoveTracepoint(ctx, deleteTracepointsReq)
 		if err != nil {
 			return nil, ErrTracepointDeletionFailed
@@ -158,7 +158,7 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScr
 			return delResp.Status, ErrTracepointDeletionFailed
 		}
 		// Remove the tracepoints we considered deleted.
-		for _, tpName := range deleteTracepointsReq.TracepointNames {
+		for _, tpName := range deleteTracepointsReq.Names {
 			if _, ok := m.activeTracepoints[tpName]; ok {
 				delete(m.activeTracepoints, tpName)
 			}
@@ -175,10 +175,10 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScr
 // MutationInfo returns the summarized mutation information.
 func (m *MutationExecutor) MutationInfo(ctx context.Context) (*vizierpb.MutationInfo, error) {
 	req := &metadatapb.GetTracepointInfoRequest{
-		TracepointIDs: make([]*uuidpb.UUID, 0),
+		IDs: make([]*uuidpb.UUID, 0),
 	}
 	for _, tp := range m.activeTracepoints {
-		req.TracepointIDs = append(req.TracepointIDs, utils.ProtoFromUUID(&tp.ID))
+		req.IDs = append(req.IDs, utils.ProtoFromUUID(&tp.ID))
 	}
 	aCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
@@ -198,7 +198,7 @@ func (m *MutationExecutor) MutationInfo(ctx context.Context) (*vizierpb.Mutation
 	ready := true
 	for idx, tp := range resp.Tracepoints {
 		mutationInfo.States[idx] = &vizierpb.MutationInfo_MutationState{
-			ID:    utils.UUIDFromProtoOrNil(tp.TracepointID).String(),
+			ID:    utils.UUIDFromProtoOrNil(tp.ID).String(),
 			State: convertLifeCycleStateToVizierLifeCycleState(tp.State),
 		}
 		if tp.State != statuspb.RUNNING_STATE {

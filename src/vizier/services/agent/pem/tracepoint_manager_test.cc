@@ -114,7 +114,7 @@ TEST_F(TracepointManagerTest, CreateTracepoint) {
   auto msg = std::make_unique<pl::vizier::messages::VizierMessage>();
   auto* tracepoint_req = msg->mutable_tracepoint_message()->mutable_register_tracepoint_request();
   sole::uuid tracepoint_id = sole::uuid4();
-  ToProto(tracepoint_id, tracepoint_req->mutable_tracepoint_id());
+  ToProto(tracepoint_id, tracepoint_req->mutable_id());
   auto* program = tracepoint_req->mutable_program();
   program->set_name("test_tracepoint");
 
@@ -153,7 +153,7 @@ TEST_F(TracepointManagerTest, CreateTracepointFailed) {
   auto msg = std::make_unique<pl::vizier::messages::VizierMessage>();
   auto* tracepoint_req = msg->mutable_tracepoint_message()->mutable_register_tracepoint_request();
   sole::uuid tracepoint_id = sole::uuid4();
-  ToProto(tracepoint_id, tracepoint_req->mutable_tracepoint_id());
+  ToProto(tracepoint_id, tracepoint_req->mutable_id());
   auto* program = tracepoint_req->mutable_program();
   program->set_name("test_tracepoint");
 
@@ -187,7 +187,7 @@ TEST_F(TracepointManagerTest, CreateTracepointPreconditionFailed) {
   auto msg = std::make_unique<pl::vizier::messages::VizierMessage>();
   auto* tracepoint_req = msg->mutable_tracepoint_message()->mutable_register_tracepoint_request();
   sole::uuid tracepoint_id = sole::uuid4();
-  ToProto(tracepoint_id, tracepoint_req->mutable_tracepoint_id());
+  ToProto(tracepoint_id, tracepoint_req->mutable_id());
   auto* program = tracepoint_req->mutable_program();
   program->set_name("test_tracepoint");
 

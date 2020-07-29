@@ -140,7 +140,7 @@ func TestKVMetadataStore_DeleteAgent(t *testing.T) {
 		Get("/agent/"+testutils.NewAgentUUID).
 		Return(nil, nil)
 
-	tp := &storepb.TracepointInfo{TracepointID: utils.ProtoFromUUID(&tpID)}
+	tp := &storepb.TracepointInfo{ID: utils.ProtoFromUUID(&tpID)}
 	s, err := tp.Marshal()
 	if err != nil {
 		t.Fatal("Unable to marshal tracepoint pb.")
@@ -2045,7 +2045,7 @@ func TestKVMetadataStore_UpsertTracepoint(t *testing.T) {
 	tpID := uuid.NewV4()
 	// Create tracepoints.
 	s1 := &storepb.TracepointInfo{
-		TracepointID: utils.ProtoFromUUID(&tpID),
+		ID: utils.ProtoFromUUID(&tpID),
 	}
 
 	err = mds.UpsertTracepoint(tpID, s1)
@@ -2072,7 +2072,7 @@ func TestKVMetadataStore_GetTracepoint(t *testing.T) {
 	tpID := uuid.NewV4()
 	// Create tracepoints.
 	s1 := &storepb.TracepointInfo{
-		TracepointID: utils.ProtoFromUUID(&tpID),
+		ID: utils.ProtoFromUUID(&tpID),
 	}
 	s1Text, err := s1.Marshal()
 	if err != nil {
@@ -2085,7 +2085,7 @@ func TestKVMetadataStore_GetTracepoint(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, tracepoint)
 
-	assert.Equal(t, s1.TracepointID, tracepoint.TracepointID)
+	assert.Equal(t, s1.ID, tracepoint.ID)
 }
 
 func TestKVMetadataStore_GetTracepoints(t *testing.T) {
@@ -2107,7 +2107,7 @@ func TestKVMetadataStore_GetTracepoints(t *testing.T) {
 	// Create tracepoints.
 	s1ID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	s1 := &storepb.TracepointInfo{
-		TracepointID: utils.ProtoFromUUID(&s1ID),
+		ID: utils.ProtoFromUUID(&s1ID),
 	}
 	s1Text, err := s1.Marshal()
 	if err != nil {
@@ -2116,7 +2116,7 @@ func TestKVMetadataStore_GetTracepoints(t *testing.T) {
 
 	s2ID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c9")
 	s2 := &storepb.TracepointInfo{
-		TracepointID: utils.ProtoFromUUID(&s2ID),
+		ID: utils.ProtoFromUUID(&s2ID),
 	}
 	s2Text, err := s2.Marshal()
 	if err != nil {
@@ -2130,8 +2130,8 @@ func TestKVMetadataStore_GetTracepoints(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(tracepoints))
 
-	assert.Equal(t, s1.TracepointID, tracepoints[0].TracepointID)
-	assert.Equal(t, s2.TracepointID, tracepoints[1].TracepointID)
+	assert.Equal(t, s1.ID, tracepoints[0].ID)
+	assert.Equal(t, s2.ID, tracepoints[1].ID)
 }
 
 func TestKVMetadataStore_GetTracepointsForIDs(t *testing.T) {
@@ -2157,7 +2157,7 @@ func TestKVMetadataStore_GetTracepointsForIDs(t *testing.T) {
 	// Create tracepoints.
 	s1ID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	s1 := &storepb.TracepointInfo{
-		TracepointID: utils.ProtoFromUUID(&s1ID),
+		ID: utils.ProtoFromUUID(&s1ID),
 	}
 	s1Text, err := s1.Marshal()
 	if err != nil {
@@ -2166,7 +2166,7 @@ func TestKVMetadataStore_GetTracepointsForIDs(t *testing.T) {
 
 	s2ID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c9")
 	s2 := &storepb.TracepointInfo{
-		TracepointID: utils.ProtoFromUUID(&s2ID),
+		ID: utils.ProtoFromUUID(&s2ID),
 	}
 	s2Text, err := s2.Marshal()
 	if err != nil {
@@ -2182,8 +2182,8 @@ func TestKVMetadataStore_GetTracepointsForIDs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(tracepoints))
 
-	assert.Equal(t, s1.TracepointID, tracepoints[0].TracepointID)
-	assert.Equal(t, s2.TracepointID, tracepoints[1].TracepointID)
+	assert.Equal(t, s1.ID, tracepoints[0].ID)
+	assert.Equal(t, s2.ID, tracepoints[1].ID)
 	assert.Nil(t, tracepoints[2])
 }
 
@@ -2202,9 +2202,9 @@ func TestKVMetadataStore_UpdateTracepointState(t *testing.T) {
 	tpID := uuid.NewV4()
 	// Create tracepoint state
 	s1 := &storepb.AgentTracepointStatus{
-		TracepointID: utils.ProtoFromUUID(&tpID),
-		AgentID:      utils.ProtoFromUUID(&agentID),
-		State:        statuspb.RUNNING_STATE,
+		ID:      utils.ProtoFromUUID(&tpID),
+		AgentID: utils.ProtoFromUUID(&agentID),
+		State:   statuspb.RUNNING_STATE,
 	}
 
 	err = mds.UpdateTracepointState(s1)
@@ -2240,9 +2240,9 @@ func TestKVMetadataStore_GetTracepointStates(t *testing.T) {
 
 	// Create tracepoints.
 	s1 := &storepb.AgentTracepointStatus{
-		TracepointID: utils.ProtoFromUUID(&tpID),
-		AgentID:      utils.ProtoFromUUID(&agentID1),
-		State:        statuspb.RUNNING_STATE,
+		ID:      utils.ProtoFromUUID(&tpID),
+		AgentID: utils.ProtoFromUUID(&agentID1),
+		State:   statuspb.RUNNING_STATE,
 	}
 	s1Text, err := s1.Marshal()
 	if err != nil {
@@ -2250,9 +2250,9 @@ func TestKVMetadataStore_GetTracepointStates(t *testing.T) {
 	}
 
 	s2 := &storepb.AgentTracepointStatus{
-		TracepointID: utils.ProtoFromUUID(&tpID),
-		AgentID:      utils.ProtoFromUUID(&agentID2),
-		State:        statuspb.PENDING_STATE,
+		ID:      utils.ProtoFromUUID(&tpID),
+		AgentID: utils.ProtoFromUUID(&agentID2),
+		State:   statuspb.PENDING_STATE,
 	}
 	s2Text, err := s2.Marshal()
 	if err != nil {

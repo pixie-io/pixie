@@ -18,7 +18,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
+	mock_controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
@@ -645,9 +645,9 @@ func TestAgentTracepointInfoUpdate(t *testing.T) {
 	mockTracepointStore.
 		EXPECT().
 		UpdateTracepointState(&storepb.AgentTracepointStatus{
-			TracepointID: utils.ProtoFromUUID(&tpID),
-			AgentID:      utils.ProtoFromUUID(&agentID),
-			State:        statuspb.RUNNING_STATE,
+			ID:      utils.ProtoFromUUID(&tpID),
+			AgentID: utils.ProtoFromUUID(&agentID),
+			State:   statuspb.RUNNING_STATE,
 		}).
 		Return(nil)
 
@@ -656,9 +656,9 @@ func TestAgentTracepointInfoUpdate(t *testing.T) {
 			TracepointMessage: &messages.TracepointMessage{
 				Msg: &messages.TracepointMessage_TracepointInfoUpdate{
 					TracepointInfoUpdate: &messages.TracepointInfoUpdate{
-						TracepointID: utils.ProtoFromUUID(&tpID),
-						AgentID:      utils.ProtoFromUUID(&agentID),
-						State:        statuspb.RUNNING_STATE,
+						ID:      utils.ProtoFromUUID(&tpID),
+						AgentID: utils.ProtoFromUUID(&agentID),
+						State:   statuspb.RUNNING_STATE,
 					},
 				},
 			},

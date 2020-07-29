@@ -360,7 +360,7 @@ func (mds *KVMetadataStore) DeleteAgent(agentID uuid.UUID) error {
 		return err
 	}
 	for _, tp := range tps {
-		delKeys = append(delKeys, getTracepointStateKey(utils.UUIDFromProtoOrNil(tp.TracepointID), agentID))
+		delKeys = append(delKeys, getTracepointStateKey(utils.UUIDFromProtoOrNil(tp.ID), agentID))
 	}
 
 	mds.cache.DeleteAll(delKeys)
@@ -1446,7 +1446,7 @@ func (mds *KVMetadataStore) UpdateTracepointState(state *storepb.AgentTracepoint
 		return err
 	}
 
-	tpID := utils.UUIDFromProtoOrNil(state.TracepointID)
+	tpID := utils.UUIDFromProtoOrNil(state.ID)
 
 	mds.cache.Set(getTracepointStateKey(tpID, utils.UUIDFromProtoOrNil(state.AgentID)), string(val))
 	return nil

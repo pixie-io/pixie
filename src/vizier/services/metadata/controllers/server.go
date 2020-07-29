@@ -291,27 +291,27 @@ func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.Registe
 		if err != nil {
 			return nil, err
 		}
-		tracepointID, err := s.tracepointManager.CreateTracepoint(tp.TracepointName, tp.Program, ttl)
+		tracepointID, err := s.tracepointManager.CreateTracepoint(tp.Name, tp.Program, ttl)
 		if err != nil && err != ErrTracepointAlreadyExists {
 			return nil, err
 		}
 		if err == ErrTracepointAlreadyExists {
 			responses[i] = &metadatapb.RegisterTracepointResponse_TracepointStatus{
-				TracepointID: utils.ProtoFromUUID(tracepointID),
+				ID: utils.ProtoFromUUID(tracepointID),
 				Status: &statuspb.Status{
 					ErrCode: statuspb.ALREADY_EXISTS,
 				},
-				TracepointName: tp.TracepointName,
+				Name: tp.Name,
 			}
 			continue
 		}
 
 		responses[i] = &metadatapb.RegisterTracepointResponse_TracepointStatus{
-			TracepointID: utils.ProtoFromUUID(tracepointID),
+			ID: utils.ProtoFromUUID(tracepointID),
 			Status: &statuspb.Status{
 				ErrCode: statuspb.OK,
 			},
-			TracepointName: tp.TracepointName,
+			Name: tp.Name,
 		}
 
 		// Get all agents currently running.
@@ -345,10 +345,10 @@ func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.Registe
 func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTracepointInfoRequest) (*metadatapb.GetTracepointInfoResponse, error) {
 	var tracepointInfos []*storepb.TracepointInfo
 	var err error
-	if len(req.TracepointIDs) > 0 {
-		ids := make([]uuid.UUID, len(req.TracepointIDs))
-		for i, tracepointID := range req.TracepointIDs {
-			ids[i] = utils.UUIDFromProtoOrNil(tracepointID)
+	if len(req.IDs) > 0 {
+		ids := make([]uuid.UUID, len(req.IDs))
+		for i, id := range req.IDs {
+			ids[i] = utils.UUIDFromProtoOrNil(id)
 		}
 
 		tracepointInfos, err = s.tracepointManager.GetTracepointsForIDs(ids)
@@ -365,15 +365,15 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 	for i, tracepoint := range tracepointInfos {
 		if tracepoint == nil { // Tracepoint does not exist.
 			tracepointState[i] = &metadatapb.GetTracepointInfoResponse_TracepointState{
-				TracepointID: req.TracepointIDs[i],
-				State:        statuspb.UNKNOWN_STATE,
+				ID:    req.IDs[i],
+				State: statuspb.UNKNOWN_STATE,
 				Status: &statuspb.Status{
 					ErrCode: statuspb.NOT_FOUND,
 				},
 			}
 			continue
 		}
-		tUUID := utils.UUIDFromProtoOrNil(tracepoint.TracepointID)
+		tUUID := utils.UUIDFromProtoOrNil(tracepoint.ID)
 
 		tracepointStates, err := s.tracepointManager.GetTracepointStates(tUUID)
 		if err != nil {
@@ -388,12 +388,12 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 		}
 
 		tracepointState[i] = &metadatapb.GetTracepointInfoResponse_TracepointState{
-			TracepointID:   tracepoint.TracepointID,
-			State:          state,
-			Status:         status,
-			TracepointName: tracepoint.TracepointName,
-			ExpectedState:  tracepoint.ExpectedState,
-			SchemaNames:    schemas,
+			ID:            tracepoint.ID,
+			State:         state,
+			Status:        status,
+			Name:          tracepoint.Name,
+			ExpectedState: tracepoint.ExpectedState,
+			SchemaNames:   schemas,
 		}
 	}
 

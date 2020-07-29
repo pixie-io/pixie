@@ -414,7 +414,7 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 		DoAndReturn(func(tracepointID uuid.UUID, tracepointInfo *storepb.TracepointInfo) error {
 			assert.Equal(t, program, tracepointInfo.Program)
 			tpID = tracepointID
-			assert.Equal(t, "test_tracepoint", tracepointInfo.TracepointName)
+			assert.Equal(t, "test_tracepoint", tracepointInfo.Name)
 			return nil
 		})
 	mockTracepointStore.
@@ -443,8 +443,8 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 
 	reqs := []*metadatapb.RegisterTracepointRequest_TracepointRequest{
 		&metadatapb.RegisterTracepointRequest_TracepointRequest{
-			Program:        program,
-			TracepointName: "test_tracepoint",
+			Program: program,
+			Name:    "test_tracepoint",
 			TTL: &types.Duration{
 				Seconds: 5,
 			},
@@ -460,7 +460,7 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, 1, len(resp.Tracepoints))
-	assert.Equal(t, tpID, utils.UUIDFromProtoOrNil(resp.Tracepoints[0].TracepointID))
+	assert.Equal(t, tpID, utils.UUIDFromProtoOrNil(resp.Tracepoints[0].ID))
 	assert.Equal(t, statuspb.OK, resp.Tracepoints[0].Status.ErrCode)
 	assert.Equal(t, statuspb.OK, resp.Status.ErrCode)
 }
@@ -517,8 +517,8 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 
 	reqs := []*metadatapb.RegisterTracepointRequest_TracepointRequest{
 		&metadatapb.RegisterTracepointRequest_TracepointRequest{
-			Program:        program,
-			TracepointName: "test_tracepoint",
+			Program: program,
+			Name:    "test_tracepoint",
 			TTL: &types.Duration{
 				Seconds: 5,
 			},
@@ -534,7 +534,7 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, 1, len(resp.Tracepoints))
-	assert.Equal(t, utils.ProtoFromUUID(&oldTPID), resp.Tracepoints[0].TracepointID)
+	assert.Equal(t, utils.ProtoFromUUID(&oldTPID), resp.Tracepoints[0].ID)
 	assert.Equal(t, statuspb.ALREADY_EXISTS, resp.Tracepoints[0].Status.ErrCode)
 }
 
@@ -669,12 +669,12 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 					mockTracepointStore.
 						EXPECT().
 						GetTracepoints().
-						Return([]*storepb.TracepointInfo{&storepb.TracepointInfo{TracepointID: utils.ProtoFromUUID(&tID), Program: program, ExpectedState: statuspb.RUNNING_STATE}}, nil)
+						Return([]*storepb.TracepointInfo{&storepb.TracepointInfo{ID: utils.ProtoFromUUID(&tID), Program: program, ExpectedState: statuspb.RUNNING_STATE}}, nil)
 				} else {
 					mockTracepointStore.
 						EXPECT().
 						GetTracepointsForIDs([]uuid.UUID{tID}).
-						Return([]*storepb.TracepointInfo{&storepb.TracepointInfo{TracepointID: utils.ProtoFromUUID(&tID), Program: program, ExpectedState: statuspb.RUNNING_STATE}}, nil)
+						Return([]*storepb.TracepointInfo{&storepb.TracepointInfo{ID: utils.ProtoFromUUID(&tID), Program: program, ExpectedState: statuspb.RUNNING_STATE}}, nil)
 				}
 
 				mockTracepointStore.
@@ -693,18 +693,18 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 
 			s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, mockMds, clock)
 			req := metadatapb.GetTracepointInfoRequest{
-				TracepointIDs: []*uuidpb.UUID{utils.ProtoFromUUID(&tID)},
+				IDs: []*uuidpb.UUID{utils.ProtoFromUUID(&tID)},
 			}
 			if test.expectAll {
 				req = metadatapb.GetTracepointInfoRequest{
-					TracepointIDs: []*uuidpb.UUID{},
+					IDs: []*uuidpb.UUID{},
 				}
 			}
 
 			resp, err := s.GetTracepointInfo(context.Background(), &req)
 			assert.Nil(t, err)
 			assert.Equal(t, 1, len(resp.Tracepoints))
-			assert.Equal(t, utils.ProtoFromUUID(&tID), resp.Tracepoints[0].TracepointID)
+			assert.Equal(t, utils.ProtoFromUUID(&tID), resp.Tracepoints[0].ID)
 			assert.Equal(t, test.expectedState, resp.Tracepoints[0].State)
 			assert.Equal(t, test.expectedStatus, resp.Tracepoints[0].Status)
 			if test.tracepointExists {

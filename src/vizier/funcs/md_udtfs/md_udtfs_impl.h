@@ -570,7 +570,7 @@ class GetTracepointStatus final : public carnot::udf::UDTF<GetTracepointStatus> 
     }
     const auto& tracepoint_info = resp_->tracepoints(idx_);
 
-    auto u_or_s = ParseUUID(tracepoint_info.tracepoint_id());
+    auto u_or_s = ParseUUID(tracepoint_info.id());
     sole::uuid u;
     if (u_or_s.ok()) {
       u = u_or_s.ConsumeValueOrDie();
@@ -616,7 +616,7 @@ class GetTracepointStatus final : public carnot::udf::UDTF<GetTracepointStatus> 
     tables.Accept(tables_writer);
 
     rw->Append<IndexOf("tracepoint_id")>(absl::MakeUint128(u.ab, u.cd));
-    rw->Append<IndexOf("name")>(tracepoint_info.tracepoint_name());
+    rw->Append<IndexOf("name")>(tracepoint_info.name());
     rw->Append<IndexOf("state")>(state);
     rw->Append<IndexOf("status")>(tracepoint_info.status().msg());
     rw->Append<IndexOf("output_tables")>(tables_sb.GetString());

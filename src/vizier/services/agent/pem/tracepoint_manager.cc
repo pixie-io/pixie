@@ -55,7 +55,7 @@ Status TracepointManager::HandleMessage(std::unique_ptr<messages::VizierMessage>
 Status TracepointManager::HandleRegisterTracepointRequest(
     const messages::RegisterTracepointRequest& req) {
   const std::string& name = req.program().name();
-  PL_ASSIGN_OR_RETURN(auto id, ParseUUID(req.tracepoint_id()));
+  PL_ASSIGN_OR_RETURN(auto id, ParseUUID(req.id()));
   auto program_copy =
       std::make_unique<stirling::dynamic_tracing::ir::logical::Program>(req.program());
 
@@ -77,7 +77,7 @@ Status TracepointManager::HandleRegisterTracepointRequest(
 
 Status TracepointManager::HandleRemoveTracepointRequest(
     const messages::RemoveTracepointRequest& req) {
-  PL_ASSIGN_OR_RETURN(auto id, ParseUUID(req.tracepoint_id()));
+  PL_ASSIGN_OR_RETURN(auto id, ParseUUID(req.id()));
   std::lock_guard<std::mutex> lock(mu_);
 
   auto it = tracepoints_.find(id);
@@ -176,7 +176,7 @@ void TracepointManager::Monitor() {
     auto tracepoint_msg = msg.mutable_tracepoint_message();
     auto update_msg = tracepoint_msg->mutable_tracepoint_info_update();
     ToProto(agent_info()->agent_id, update_msg->mutable_agent_id());
-    ToProto(id, update_msg->mutable_tracepoint_id());
+    ToProto(id, update_msg->mutable_id());
     update_msg->set_state(tracepoint.current_state);
     probe_status.ToProto(update_msg->mutable_status());
     auto s = nats_conn_->Publish(msg);
