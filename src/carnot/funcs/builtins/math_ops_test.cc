@@ -365,6 +365,12 @@ TEST(MathOps, int_int_bin_test) {
   udf_tester.ForInput(11, 2).Expect(10);
 }
 
+TEST(MathOps, int_float_bin_test) {
+  auto udf_tester =
+      udf::UDFTester<BinUDF<types::Int64Value, types::Float64Value, types::Int64Value>>();
+  udf_tester.ForInput(11.5, 2).Expect(10);
+}
+
 TEST(MathOps, int_time_bin_test) {
   auto udf_tester =
       udf::UDFTester<BinUDF<types::Int64Value, types::Int64Value, types::Time64NSValue>>();

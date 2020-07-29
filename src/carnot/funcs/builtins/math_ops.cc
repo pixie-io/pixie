@@ -146,6 +146,7 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
       "bin");
   registry->RegisterOrDie<BinUDF<types::Time64NSValue, types::Time64NSValue, types::Time64NSValue>>(
       "bin");
+  registry->RegisterOrDie<BinUDF<types::Int64Value, types::Float64Value, types::Int64Value>>("bin");
 
   // Round
   registry->RegisterOrDie<RoundUDF>("round");

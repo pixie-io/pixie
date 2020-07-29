@@ -147,6 +147,15 @@ class BinUDF : public udf::ScalarUDF {
   TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val - (b1.val % b2.val); }
 };
 
+// Special instantitization to handle float to int conversion
+template <typename TReturn, typename TArg2>
+class BinUDF<TReturn, types::Float64Value, TArg2> : public udf::ScalarUDF {
+ public:
+  TReturn Exec(FunctionContext*, Float64Value b1, Int64Value b2) {
+    return static_cast<int64_t>(b1.val) - (static_cast<int64_t>(b1.val) % b2.val);
+  }
+};
+
 // TODO(philkuz, nserrino) Move decimal places to be a constructor arg after PL-1048 is done.
 class RoundUDF : public udf::ScalarUDF {
  public:
