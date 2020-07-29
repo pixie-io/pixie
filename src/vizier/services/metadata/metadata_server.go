@@ -147,6 +147,13 @@ func main() {
 
 	// Initialize tracepoint handler.
 	tracepointMgr := controllers.NewTracepointManager(nc, mds)
+	err = tracepointMgr.SyncTracepoints()
+	if err != nil {
+		log.WithError(err).Error("Could not sync tracepoints upon startup")
+	}
+	tpQuitCh := make(chan bool)
+	defer func() { tpQuitCh <- true }()
+	go tracepointMgr.WatchTTLs(tpQuitCh)
 
 	agtMgr := controllers.NewAgentManager(mds)
 	keepAlive := true

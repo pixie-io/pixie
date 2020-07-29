@@ -3,6 +3,7 @@ package controllers_test
 import (
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
@@ -18,6 +19,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	mock_controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 func TestCreateTracepoint(t *testing.T) {
@@ -164,10 +166,7 @@ func TestCreateTracepoint(t *testing.T) {
 			if test.expectOldUpdated {
 				mockTracepointStore.
 					EXPECT().
-					UpsertTracepoint(origID, &storepb.TracepointInfo{
-						Program:       test.originalTracepoint,
-						ExpectedState: statuspb.TERMINATED_STATE,
-					}).
+					DeleteTracepointTTL(origID).
 					Return(nil)
 			}
 
@@ -193,10 +192,18 @@ func TestCreateTracepoint(t *testing.T) {
 						assert.Equal(t, newID, id)
 						return nil
 					})
+
+				mockTracepointStore.
+					EXPECT().
+					SetTracepointTTL(gomock.Any(), time.Second*5).
+					DoAndReturn(func(id uuid.UUID, ttl time.Duration) error {
+						assert.Equal(t, newID, id)
+						return nil
+					})
 			}
 
 			tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
-			actualTpID, err := tracepointMgr.CreateTracepoint("test_tracepoint", test.newTracepoint)
+			actualTpID, err := tracepointMgr.CreateTracepoint("test_tracepoint", test.newTracepoint, time.Second*5)
 			if test.expectedError {
 				assert.Equal(t, controllers.ErrTracepointAlreadyExists, err)
 			} else {
@@ -363,4 +370,137 @@ func TestUpdateAgentTracepointStatus(t *testing.T) {
 		Return(nil)
 
 	tracepointMgr.UpdateAgentTracepointStatus(utils.ProtoFromUUID(&tpID), utils.ProtoFromUUID(&agentUUID1), statuspb.RUNNING_STATE, nil)
+}
+
+func TestUpdateAgentTracepointStatus_Terminated(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
+
+	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
+
+	agentUUID1 := uuid.NewV4()
+	tpID := uuid.NewV4()
+	agentUUID2 := uuid.NewV4()
+
+	mockTracepointStore.
+		EXPECT().
+		GetTracepointStates(tpID).
+		Return([]*storepb.AgentTracepointStatus{
+			&storepb.AgentTracepointStatus{AgentID: utils.ProtoFromUUID(&agentUUID1), State: statuspb.TERMINATED_STATE},
+			&storepb.AgentTracepointStatus{AgentID: utils.ProtoFromUUID(&agentUUID2), State: statuspb.RUNNING_STATE},
+		}, nil)
+
+	mockTracepointStore.
+		EXPECT().
+		DeleteTracepoint(tpID).
+		Return(nil)
+
+	tracepointMgr.UpdateAgentTracepointStatus(utils.ProtoFromUUID(&tpID), utils.ProtoFromUUID(&agentUUID2), statuspb.TERMINATED_STATE, nil)
+}
+
+func TestWatchTTLs(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
+
+	natsPort, natsCleanup := testingutils.StartNATS(t)
+	nc, err := nats.Connect(testingutils.GetNATSURL(natsPort))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer natsCleanup()
+
+	tracepointMgr := controllers.NewTracepointManager(nc, mockTracepointStore)
+
+	watcherQuitCh := make(chan bool, 1)
+	fakeEvCh := make(chan uuid.UUID, 2)
+	quitCh := make(chan bool, 1)
+	defer func() { watcherQuitCh <- true }()
+
+	tpID1 := uuid.NewV4()
+	agentID := uuid.NewV4()
+
+	mockTracepointStore.
+		EXPECT().
+		WatchTracepointTTLs().
+		Return(fakeEvCh, quitCh)
+
+	mockTracepointStore.
+		EXPECT().
+		GetTracepoint(tpID1).
+		Return(&storepb.TracepointInfo{ExpectedState: statuspb.RUNNING_STATE}, nil)
+
+	mockTracepointStore.
+		EXPECT().
+		UpsertTracepoint(tpID1, &storepb.TracepointInfo{ExpectedState: statuspb.TERMINATED_STATE}).
+		Return(nil)
+
+	mockTracepointStore.
+		EXPECT().
+		GetAgents().
+		Return([]*agentpb.Agent{&agentpb.Agent{Info: &agentpb.AgentInfo{AgentID: utils.ProtoFromUUID(&agentID)}}}, nil)
+
+	go func() {
+		fakeEvCh <- tpID1
+	}()
+
+	go tracepointMgr.WatchTTLs(watcherQuitCh)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	mdSub, err := nc.Subscribe("/agent/"+agentID.String(), func(msg *nats.Msg) {
+		vzMsg := &messages.VizierMessage{}
+		proto.Unmarshal(msg.Data, vzMsg)
+		req := vzMsg.GetTracepointMessage().GetRemoveTracepointRequest()
+		assert.NotNil(t, req)
+		assert.Equal(t, utils.ProtoFromUUID(&tpID1), req.TracepointID)
+		wg.Done()
+	})
+	assert.Nil(t, err)
+	defer mdSub.Unsubscribe()
+
+	defer wg.Wait()
+}
+
+func TestUpdateAgentTracepointStatus_SyncTracepoints(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
+
+	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
+
+	tpID1 := uuid.NewV4()
+	tpID2 := uuid.NewV4()
+
+	mockTracepointStore.
+		EXPECT().
+		GetTracepointTTLs().
+		Return([]uuid.UUID{
+			tpID1,
+		}, nil)
+
+	mockTracepointStore.
+		EXPECT().
+		GetTracepoints().
+		Return([]*storepb.TracepointInfo{
+			&storepb.TracepointInfo{
+				TracepointID: utils.ProtoFromUUID(&tpID1),
+			},
+			&storepb.TracepointInfo{
+				TracepointID: utils.ProtoFromUUID(&tpID2),
+			},
+		}, nil)
+
+	mockTracepointStore.
+		EXPECT().
+		DeleteTracepoint(tpID2).
+		Return(nil)
+
+	err := tracepointMgr.SyncTracepoints()
+	assert.Nil(t, err)
 }

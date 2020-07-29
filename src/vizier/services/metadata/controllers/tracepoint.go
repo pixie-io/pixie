@@ -3,6 +3,7 @@ package controllers
 import (
 	"bytes"
 	"errors"
+	"time"
 
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
@@ -14,6 +15,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 var (
@@ -32,6 +34,12 @@ type TracepointStore interface {
 	SetTracepointWithName(string, uuid.UUID) error
 	GetTracepointWithName(string) (*uuid.UUID, error)
 	GetTracepointsForIDs([]uuid.UUID) ([]*storepb.TracepointInfo, error)
+	SetTracepointTTL(uuid.UUID, time.Duration) error
+	DeleteTracepointTTL(uuid.UUID) error
+	WatchTracepointTTLs() (chan uuid.UUID, chan bool)
+	GetAgents() ([]*agentpb.Agent, error)
+	DeleteTracepoint(uuid.UUID) error
+	GetTracepointTTLs() ([]uuid.UUID, error)
 }
 
 // TracepointManager manages the tracepoints deployed in the cluster.
@@ -47,6 +55,40 @@ func NewTracepointManager(conn *nats.Conn, mds TracepointStore) *TracepointManag
 	}
 }
 
+// SyncTracepoints deletes any tracpeoints that should have been terminated when MDS was not running.
+func (m *TracepointManager) SyncTracepoints() error {
+	tps, err := m.mds.GetTracepoints()
+	if err != nil {
+		return err
+	}
+
+	ttls, err := m.mds.GetTracepointTTLs()
+	if err != nil {
+		return err
+	}
+
+	// Make a map so we can determine which tracepoints don't have a TTL.
+	tpMap := make(map[uuid.UUID]bool)
+	for _, tp := range tps {
+		tpMap[utils.UUIDFromProtoOrNil(tp.TracepointID)] = false
+	}
+
+	for _, tp := range ttls {
+		tpMap[tp] = true
+	}
+
+	for k, v := range tpMap {
+		if v == false {
+			err = m.deleteTracepoint(k)
+			if err != nil {
+				log.WithField("id", k).WithError(err).Error("Error deleting tracepoint during sync")
+			}
+		}
+	}
+
+	return nil
+}
+
 func comparePrograms(p1 *logicalpb.Program, p2 *logicalpb.Program) bool {
 	val1, err := p1.Marshal()
 	if err != nil {
@@ -59,8 +101,78 @@ func comparePrograms(p1 *logicalpb.Program, p2 *logicalpb.Program) bool {
 	return bytes.Equal(val1, val2)
 }
 
+// WatchTTLs watches the tracepoint TTLs and terminates the associated tracepoint.
+func (m *TracepointManager) WatchTTLs(watcherQuitCh chan bool) {
+	deletedTracepoints, quitCh := m.mds.WatchTracepointTTLs()
+	defer func() { quitCh <- true }()
+	for {
+		select {
+		case <-watcherQuitCh:
+			return
+		case tpID := <-deletedTracepoints:
+			err := m.terminateTracepoint(tpID)
+			if err != nil {
+				log.WithError(err).Error("Could not delete tracepoint")
+			}
+		}
+	}
+}
+
+func (m *TracepointManager) terminateTracepoint(id uuid.UUID) error {
+	// Update state in datastore to terminated.
+	tp, err := m.mds.GetTracepoint(id)
+	if err != nil {
+		return err
+	}
+
+	tp.ExpectedState = statuspb.TERMINATED_STATE
+	err = m.mds.UpsertTracepoint(id, tp)
+	if err != nil {
+		return err
+	}
+
+	// Send termination messages to PEMs.
+	tracepointReq := messages.VizierMessage{
+		Msg: &messages.VizierMessage_TracepointMessage{
+			TracepointMessage: &messages.TracepointMessage{
+				Msg: &messages.TracepointMessage_RemoveTracepointRequest{
+					RemoveTracepointRequest: &messages.RemoveTracepointRequest{
+						TracepointID: utils.ProtoFromUUID(&id),
+					},
+				},
+			},
+		},
+	}
+	msg, err := tracepointReq.Marshal()
+	if err != nil {
+		return err
+	}
+
+	agents, err := m.mds.GetAgents()
+	if err != nil {
+		return err
+	}
+
+	// Send request to all agents.
+	for _, a := range agents {
+		topic := GetAgentTopicFromUUID(utils.UUIDFromProtoOrNil(a.Info.AgentID))
+
+		err := m.conn.Publish(topic, msg)
+		if err != nil {
+			log.WithError(err).Error("Could not send RemoveTracepointRequest.")
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (m *TracepointManager) deleteTracepoint(id uuid.UUID) error {
+	return m.mds.DeleteTracepoint(id)
+}
+
 // CreateTracepoint creates and stores info about the given tracepoint.
-func (m *TracepointManager) CreateTracepoint(tracepointName string, program *logicalpb.Program) (*uuid.UUID, error) {
+func (m *TracepointManager) CreateTracepoint(tracepointName string, program *logicalpb.Program, ttl time.Duration) (*uuid.UUID, error) {
 	// Check to see if a tracepoint with the matching name already exists.
 	prevTracepointID, err := m.mds.GetTracepointWithName(tracepointName)
 	if err != nil {
@@ -90,11 +202,8 @@ func (m *TracepointManager) CreateTracepoint(tracepointName string, program *log
 				return prevTracepointID, ErrTracepointAlreadyExists
 			}
 
-			// We should delete the old tracepoint.
-			// TODO(michelle): We should also send termination requests to the PEMS.
-			// To do this, we can set an expired TTL, when that logic is setup.
-			prevTracepoint.ExpectedState = statuspb.TERMINATED_STATE
-			err = m.mds.UpsertTracepoint(*prevTracepointID, prevTracepoint)
+			// Trigger termination of the old tracepoint.
+			err = m.mds.DeleteTracepointTTL(*prevTracepointID)
 			if err != nil {
 				return nil, err
 			}
@@ -112,6 +221,7 @@ func (m *TracepointManager) CreateTracepoint(tracepointName string, program *log
 	if err != nil {
 		return nil, err
 	}
+	err = m.mds.SetTracepointTTL(tpID, ttl)
 	err = m.mds.SetTracepointWithName(tracepointName, tpID)
 	return &tpID, nil
 }
@@ -123,6 +233,25 @@ func (m *TracepointManager) GetAllTracepoints() ([]*storepb.TracepointInfo, erro
 
 // UpdateAgentTracepointStatus updates the tracepoint info with the new agent tracepoint status.
 func (m *TracepointManager) UpdateAgentTracepointStatus(tracepointID *uuidpb.UUID, agentID *uuidpb.UUID, state statuspb.LifeCycleState, status *statuspb.Status) error {
+	if state == statuspb.TERMINATED_STATE { // If all agent tracepoint statuses are now terminated, we can finally delete the tracepoint from the datastore.
+		tID := utils.UUIDFromProtoOrNil(tracepointID)
+		states, err := m.GetTracepointStates(tID)
+		if err != nil {
+			return err
+		}
+		allTerminated := true
+		for _, s := range states {
+			if s.State != statuspb.TERMINATED_STATE && !s.AgentID.Equal(agentID) {
+				allTerminated = false
+				break
+			}
+		}
+
+		if allTerminated {
+			return m.deleteTracepoint(tID)
+		}
+	}
+
 	tracepointState := &storepb.AgentTracepointStatus{
 		State:        state,
 		Status:       status,

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gogo/protobuf/types"
+	types "github.com/gogo/protobuf/types"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -287,7 +287,11 @@ func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.Registe
 
 	// Create tracepoint.
 	for i, tp := range req.Requests {
-		tracepointID, err := s.tracepointManager.CreateTracepoint(tp.TracepointName, tp.Program)
+		ttl, err := types.DurationFromProto(tp.TTL)
+		if err != nil {
+			return nil, err
+		}
+		tracepointID, err := s.tracepointManager.CreateTracepoint(tp.TracepointName, tp.Program, ttl)
 		if err != nil && err != ErrTracepointAlreadyExists {
 			return nil, err
 		}

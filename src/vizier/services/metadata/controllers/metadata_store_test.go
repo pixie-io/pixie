@@ -2317,3 +2317,103 @@ func TestKVMetadataStore_GetTracepointWithName(t *testing.T) {
 
 	assert.Equal(t, tpID, *tracepoint)
 }
+
+func TestKVMetadataStore_DeleteTracepoint(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	tpID := uuid.NewV4()
+
+	mockDs.
+		EXPECT().
+		DeleteWithPrefix("/tracepointStates/" + tpID.String() + "/").
+		Times(1)
+
+	c.Set("/tracepoint/"+tpID.String(), "test")
+
+	err = mds.DeleteTracepoint(tpID)
+	assert.Nil(t, err)
+
+	val, err := c.Get("/tracepoint/" + tpID.String())
+	assert.Nil(t, err)
+	assert.Equal(t, []byte{}, val)
+}
+
+func TestKVMetadataStore_WatchTracepointTTLs(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	fakeEvCh := make(chan kvstore.KeyEvent, 2)
+	quitCh := make(chan bool, 1)
+	defer func() { quitCh <- true }()
+	mockDs.
+		EXPECT().
+		WatchKeyEvents("/tracepointTTL/").
+		Return(fakeEvCh, quitCh)
+
+	tpID1 := uuid.NewV4()
+	tpID2 := uuid.NewV4()
+
+	go func() {
+		fakeEvCh <- kvstore.KeyEvent{EventType: kvstore.EventTypePut, Key: "/tracepointTTL/" + tpID1.String()}
+		fakeEvCh <- kvstore.KeyEvent{EventType: kvstore.EventTypeDelete, Key: "/tracepointTTL/" + tpID2.String()}
+	}()
+
+	idCh, _ := mds.WatchTracepointTTLs()
+
+	for {
+		select {
+		case id := <-idCh:
+			assert.Equal(t, tpID2, id)
+			return
+		case <-time.After(2 * time.Second):
+			t.Fatal("Timed out waiting for TTL deletion event")
+		}
+	}
+}
+
+func TestKVMetadataStore_GetTracepointTTLs(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		GetWithPrefix("/tracepointTTL/").
+		Return(nil, nil, nil).
+		Times(1)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	// Create tracepoints.
+	s1ID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	s2ID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c9")
+
+	c.Set("/tracepointTTL/"+s1ID.String(), "")
+	c.Set("/tracepointTTL/"+s2ID.String(), "")
+	c.Set("/tracepointTTL/invalid", "")
+
+	tracepoints, err := mds.GetTracepointTTLs()
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(tracepoints))
+
+	assert.Equal(t, s1ID, tracepoints[0])
+	assert.Equal(t, s2ID, tracepoints[1])
+}

@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
+	types "github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
@@ -424,7 +424,13 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 			assert.Equal(t, tpID, id)
 			return nil
 		})
-
+	mockTracepointStore.
+		EXPECT().
+		SetTracepointTTL(gomock.Any(), time.Second*5).
+		DoAndReturn(func(id uuid.UUID, ttl time.Duration) error {
+			assert.Equal(t, tpID, id)
+			return nil
+		})
 	// Set up server.
 	env, err := metadataenv.New()
 	if err != nil {
@@ -439,6 +445,9 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 		&metadatapb.RegisterTracepointRequest_TracepointRequest{
 			Program:        program,
 			TracepointName: "test_tracepoint",
+			TTL: &types.Duration{
+				Seconds: 5,
+			},
 		},
 	}
 	req := metadatapb.RegisterTracepointRequest{
@@ -510,6 +519,9 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 		&metadatapb.RegisterTracepointRequest_TracepointRequest{
 			Program:        program,
 			TracepointName: "test_tracepoint",
+			TTL: &types.Duration{
+				Seconds: 5,
+			},
 		},
 	}
 	req := metadatapb.RegisterTracepointRequest{

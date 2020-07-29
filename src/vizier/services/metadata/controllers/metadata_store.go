@@ -237,6 +237,14 @@ func getTracepointStateKey(tracepointID uuid.UUID, agentID uuid.UUID) string {
 	return path.Join("/", "tracepointStates", tracepointID.String(), agentID.String())
 }
 
+func getTracepointTTLKey(tracepointID uuid.UUID) string {
+	return path.Join("/", "tracepointTTL", tracepointID.String())
+}
+
+func getTracepointTTLKeys() string {
+	return path.Join("/", "tracepointTTL") + "/"
+}
+
 /* =============== Agent Operations ============== */
 
 // GetAgent gets the agent info for the agent with the given id.
@@ -1365,6 +1373,13 @@ func (mds *KVMetadataStore) UpsertTracepoint(tracepointID uuid.UUID, tracepointI
 	return nil
 }
 
+// DeleteTracepoint deletes the tracepoint from the store.
+func (mds *KVMetadataStore) DeleteTracepoint(tracepointID uuid.UUID) error {
+	mds.cache.DeleteAll([]string{getTracepointKey(tracepointID)})
+
+	return mds.cache.DeleteWithPrefix(getTracepointStatesKey(tracepointID))
+}
+
 // GetTracepoint gets the tracepoint info from the store, if it exists.
 func (mds *KVMetadataStore) GetTracepoint(tracepointID uuid.UUID) (*storepb.TracepointInfo, error) {
 	resp, err := mds.cache.Get(getTracepointKey(tracepointID))
@@ -1451,4 +1466,66 @@ func (mds *KVMetadataStore) GetTracepointStates(tracepointID uuid.UUID) ([]*stor
 		tracepoints[i] = pb
 	}
 	return tracepoints, nil
+}
+
+// SetTracepointTTL creates a key in the datastore with the given TTL. This represents the amount of time
+// that the given tracepoint should be persisted before terminating.
+func (mds *KVMetadataStore) SetTracepointTTL(tracepointID uuid.UUID, ttl time.Duration) error {
+	return mds.cache.UncachedSetWithTTL(getTracepointTTLKey(tracepointID), "", ttl)
+}
+
+// DeleteTracepointTTL deletes the key in the datastore for the tracepoint's TTL. This means that
+// the tracepoint should be terminated before its TTL.
+func (mds *KVMetadataStore) DeleteTracepointTTL(tracepointID uuid.UUID) error {
+	return mds.cache.UncachedDelete(getTracepointTTLKey(tracepointID))
+}
+
+// GetTracepointTTLs gets the tracepoints which still have existing TTLs.
+func (mds *KVMetadataStore) GetTracepointTTLs() ([]uuid.UUID, error) {
+	keys, _, err := mds.cache.GetWithPrefix(getTracepointTTLKeys())
+	if err != nil {
+		return nil, err
+	}
+
+	ids := make([]uuid.UUID, 0)
+	for _, k := range keys {
+		keyParts := strings.Split(k, "/")
+		if len(keyParts) == 3 {
+			id, err := uuid.FromString(keyParts[2])
+			if err == nil {
+				ids = append(ids, id)
+			}
+		}
+	}
+
+	return ids, nil
+}
+
+// WatchTracepointTTLs watches the tracepoint TTL keys for any deletions.
+func (mds *KVMetadataStore) WatchTracepointTTLs() (chan uuid.UUID, chan bool) {
+	deletionCh := make(chan uuid.UUID, 1000)
+	ch, quitCh := mds.cache.WatchKeyEvents(getTracepointTTLKeys())
+	go func() {
+		defer close(deletionCh)
+		for {
+			select {
+			case event, ok := <-ch:
+				if !ok { // Channel closed.
+					return
+				}
+				if event.EventType == kvstore.EventTypeDelete {
+					// Parse the key.
+					keyParts := strings.Split(event.Key, "/")
+					if len(keyParts) == 3 {
+						id, err := uuid.FromString(keyParts[2])
+						if err == nil {
+							deletionCh <- id
+						}
+					}
+				}
+			}
+		}
+	}()
+
+	return deletionCh, quitCh
 }
