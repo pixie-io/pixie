@@ -8,7 +8,7 @@
 #include "src/carnot/planner/plannerpb/func_args.pb.h"
 #include "src/common/uuid/uuid.h"
 #include "src/shared/metadata/base_types.h"
-#include "src/stirling/dynamic_tracing/ir/logical.pb.h"
+#include "src/stirling/dynamic_tracing/ir/logicalpb/logical.pb.h"
 
 namespace pl {
 namespace carnot {

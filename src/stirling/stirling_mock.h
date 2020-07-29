@@ -5,7 +5,7 @@
 #include <sole.hpp>
 
 #include "src/common/uuid/uuid.h"
-#include "src/stirling/dynamic_tracing/ir/logical.pb.h"
+#include "src/stirling/dynamic_tracing/ir/logicalpb/logical.pb.h"
 #include "src/stirling/proto/stirling.pb.h"
 #include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"

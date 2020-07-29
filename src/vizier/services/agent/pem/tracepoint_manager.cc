@@ -2,7 +2,7 @@
 #include <utility>
 
 #include "src/common/base/base.h"
-#include "src/stirling/dynamic_tracing/ir/logical.pb.h"
+#include "src/stirling/dynamic_tracing/ir/logicalpb/logical.pb.h"
 #include "src/vizier/services/agent/pem/tracepoint_manager.h"
 
 namespace pl {

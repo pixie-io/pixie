@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package pl.stirling.dynamic_tracing.ir.physical;
 
-import "src/stirling/dynamic_tracing/ir/shared.proto";
+import "src/stirling/dynamic_tracing/ir/sharedpb/shared.proto";
 
 // TODO(yzhao): It seems we might need to encode other registers in addition to SP, for example,
 // X86 calling convention uses registers as function argument addresses.

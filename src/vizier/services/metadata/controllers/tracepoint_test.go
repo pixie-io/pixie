@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
-	logicalpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
+	logicalpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logicalpb"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"

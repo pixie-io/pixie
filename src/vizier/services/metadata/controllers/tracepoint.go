@@ -10,7 +10,7 @@ import (
 
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
-	logicalpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
+	logicalpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logicalpb"
 	"pixielabs.ai/pixielabs/src/utils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"

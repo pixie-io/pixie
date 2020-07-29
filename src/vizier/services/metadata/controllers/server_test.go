@@ -28,7 +28,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services"
 	env2 "pixielabs.ai/pixielabs/src/shared/services/env"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
-	logicalpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
+	logicalpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logicalpb"
 	utils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"

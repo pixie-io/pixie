@@ -7,7 +7,7 @@
 
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
-#include "src/stirling/dynamic_tracing/ir/physical.pb.h"
+#include "src/stirling/dynamic_tracing/ir/physicalpb/physical.pb.h"
 
 namespace pl {
 namespace stirling {

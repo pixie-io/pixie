@@ -1,8 +1,8 @@
 #pragma once
 
 #include "src/common/base/base.h"
-#include "src/stirling/dynamic_tracing/ir/logical.pb.h"
-#include "src/stirling/dynamic_tracing/ir/physical.pb.h"
+#include "src/stirling/dynamic_tracing/ir/logicalpb/logical.pb.h"
+#include "src/stirling/dynamic_tracing/ir/physicalpb/physical.pb.h"
 
 namespace pl {
 namespace stirling {

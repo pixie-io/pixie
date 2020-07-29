@@ -103,7 +103,7 @@ go_test(
         "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
         "//src/carnot/planner/plannerpb:func_args_pl_go_proto",
-        "//src/stirling/dynamic_tracing/ir:logical_pl_go_proto",
+        "//src/stirling/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",
         "//src/carnot/planpb:plan_pl_go_proto",
         "//src/carnot/udfspb:udfs_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",
