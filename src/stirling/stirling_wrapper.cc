@@ -94,13 +94,56 @@ void SignalHandler(int signum) {
   exit(signum);
 }
 
-StatusOr<Publish> DeployTrace(Stirling* stirling) {
-  PL_ASSIGN_OR_RETURN(std::string trace_program_str, pl::ReadFileToString(FLAGS_trace));
+enum class TracepointFormat { kUnknown, kIR, kPXL };
 
-  PL_ASSIGN_OR_RETURN(DynamicTracingProgram compiled_tracepoint,
-                      pl::carnot::planner::compiler::CompileTracepoint(trace_program_str));
-  LOG(INFO) << compiled_tracepoint.DebugString();
-  auto trace_program = std::make_unique<DynamicTracingProgram>(std::move(compiled_tracepoint));
+struct TraceProgram {
+  std::string text;
+  TracepointFormat format = TracepointFormat::kUnknown;
+};
+
+// Get dynamic tracing program from either flags or enviornment variable.
+std::optional<TraceProgram> GetTraceProgram() {
+  std::string env_tracepoint(gflags::StringFromEnv("STIRLING_AUTO_TRACE", ""));
+
+  if (!env_tracepoint.empty() && !FLAGS_trace.empty()) {
+    LOG(WARNING)
+        << "Trace specified through flags and environment variable. Flags take precedence.";
+  }
+
+  if (!FLAGS_trace.empty()) {
+    TraceProgram trace_program;
+    trace_program.format =
+        (absl::EndsWith(FLAGS_trace, ".pxl")) ? TracepointFormat::kPXL : TracepointFormat::kIR;
+    PL_ASSIGN_OR_EXIT(trace_program.text, pl::ReadFileToString(FLAGS_trace));
+    return trace_program;
+  }
+
+  if (!env_tracepoint.empty()) {
+    TraceProgram trace_program;
+    trace_program.format = TracepointFormat::kPXL;
+    trace_program.text = std::move(env_tracepoint);
+    return trace_program;
+  }
+
+  return std::nullopt;
+}
+
+StatusOr<Publish> DeployTrace(Stirling* stirling, TraceProgram trace_program_str) {
+  std::unique_ptr<DynamicTracingProgram> trace_program;
+
+  if (trace_program_str.format == TracepointFormat::kPXL) {
+    PL_ASSIGN_OR_RETURN(DynamicTracingProgram compiled_tracepoint,
+                        pl::carnot::planner::compiler::CompileTracepoint(trace_program_str.text));
+    LOG(INFO) << compiled_tracepoint.DebugString();
+    trace_program = std::make_unique<DynamicTracingProgram>(std::move(compiled_tracepoint));
+  } else {
+    trace_program = std::make_unique<DynamicTracingProgram>();
+    bool success =
+        google::protobuf::TextFormat::ParseFromString(trace_program_str.text, trace_program.get());
+    if (!success) {
+      return pl::error::Internal("Unable to parse trace file");
+    }
+  }
 
   // Automatically enable printing of this table.
   for (const auto& o : trace_program->outputs()) {
@@ -176,22 +219,34 @@ int main(int argc, char** argv) {
   // Run Data Collector.
   std::thread run_thread = std::thread(&Stirling::Run, stirling.get());
 
-  if (!FLAGS_trace.empty()) {
+  std::optional<TraceProgram> trace_program = GetTraceProgram();
+
+  if (trace_program.has_value()) {
+    LOG(INFO) << "Received trace spec:\n" << trace_program.value().text;
+
     // Dynamic traces are sources that are enabled while Stirling is running.
     // Deploy after a brief delay to emulate how it would be used in a PEM environment.
     // Could also consider removing this altogether.
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
-    PL_ASSIGN_OR_EXIT(Publish trace_pub, DeployTrace(stirling.get()));
-    {
-      absl::base_internal::SpinLockHolder lock(&g_callback_state_lock);
-      IndexPublication(trace_pub, &g_table_info_map);
+    StatusOr<Publish> trace_pub_status = DeployTrace(stirling.get(), trace_program.value());
+    if (!trace_pub_status.ok()) {
+      LOG(ERROR) << "Failed to deploy dynamic trace:\n"
+                 << trace_pub_status.status().ToProto().DebugString();
+    } else {
+      LOG(INFO) << "Successfully deployed dynamic trace!";
+
+      // Get the publication, and add it to the index so it can be printed by
+      // StirlingWrapperCallback.
+      Publish& trace_pub = trace_pub_status.ValueOrDie();
+      {
+        absl::base_internal::SpinLockHolder lock(&g_callback_state_lock);
+        IndexPublication(trace_pub, &g_table_info_map);
+      }
+
+      // Update the subscription to enable the new trace.
+      PL_CHECK_OK(stirling->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(trace_pub)));
     }
-
-    LOG(INFO) << "Successfully deployed dynamic trace!";
-
-    // Update the subscription to enable the new trace.
-    PL_CHECK_OK(stirling->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(trace_pub)));
   }
 
   if (FLAGS_timeout_secs > 0) {
