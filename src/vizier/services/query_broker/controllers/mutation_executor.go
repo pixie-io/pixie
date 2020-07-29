@@ -128,22 +128,20 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScr
 
 	if len(registerTracepointsReq.Requests) > 0 {
 		resp, err := m.mdtp.RegisterTracepoint(ctx, registerTracepointsReq)
-		log.WithField("resp", resp.GoString()).
-			WithField("err", err).
-			Info("Register Tracepoint")
 		if err != nil {
+			log.WithError(err).
+				Errorf("Failed to register tracepoints")
 			return nil, ErrTracepointRegistrationFailed
 		}
 		if resp.Status != nil && resp.Status.ErrCode != statuspb.OK {
+			log.WithField("status", resp.Status.String()).
+				Errorf("Failed to register tracepoints with bad status")
+
 			return resp.Status, ErrTracepointRegistrationFailed
 		}
 
 		// Update the internal stat of the tracepoints.
 		for _, tp := range resp.Tracepoints {
-			log.
-				WithField("status", tp.Status.GoString()).
-				WithField("name", tp.Name).
-				Info("Trace point Install status")
 			id := utils.UUIDFromProtoOrNil(tp.ID)
 			m.activeTracepoints[tp.Name].ID = id
 			m.activeTracepoints[tp.Name].Status = tp.Status
@@ -152,9 +150,13 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScr
 	if len(deleteTracepointsReq.Names) > 0 {
 		delResp, err := m.mdtp.RemoveTracepoint(ctx, deleteTracepointsReq)
 		if err != nil {
+			log.WithError(err).
+				Errorf("Failed to delete tracepoints")
 			return nil, ErrTracepointDeletionFailed
 		}
 		if delResp.Status != nil && delResp.Status.ErrCode != statuspb.OK {
+			log.WithField("status", delResp.Status.String()).
+				Errorf("Failed to delete tracepoints with bad status")
 			return delResp.Status, ErrTracepointDeletionFailed
 		}
 		// Remove the tracepoints we considered deleted.
