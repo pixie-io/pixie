@@ -11,7 +11,8 @@
         "h": 6
       },
       "func": {
-        "name": "tracepoint_schema"
+        "name": "tracepoint_schema",
+        "args": []
       },
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.Table"
@@ -26,7 +27,8 @@
         "h": 6
       },
       "func": {
-        "name": "tracepoint_info"
+        "name": "tracepoint_info",
+        "args": []
       },
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.Table"

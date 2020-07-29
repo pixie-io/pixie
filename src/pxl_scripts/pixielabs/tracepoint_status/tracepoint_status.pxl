@@ -6,4 +6,4 @@ def tracepoint_schema():
 
 
 def tracepoint_info():
-    return px.GetTracePointInfo()
+    return px.GetTracepointStatus()
