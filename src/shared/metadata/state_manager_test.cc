@@ -352,5 +352,42 @@ TEST_F(AgentMetadataStateTest, insert_into_filter) {
                           "SERVICE_NAME=pl/service1"));
 }
 
+TEST_F(AgentMetadataStateTest, cidr_test) {
+  AgentMetadataStateManager mgr("test_host", /*asid*/ 0, /*id*/ sole::uuid4(),
+                                /*collects_data*/ true, pl::system::Config::GetInstance(),
+                                &md_filter_);
+
+  EXPECT_OK(mgr.PerformMetadataStateUpdate());
+  // Should not be updated yet.
+  EXPECT_EQ(0, mgr.CurrentAgentMetadataState()->k8s_metadata_state().pod_cidrs().size());
+  EXPECT_FALSE(mgr.CurrentAgentMetadataState()->k8s_metadata_state().service_cidr().has_value());
+
+  CIDRBlock pod_cidr0;
+  CIDRBlock pod_cidr1;
+  CIDRBlock svc_cidr;
+
+  ASSERT_OK(ParseCIDRBlock("1.2.3.4/10", &pod_cidr0));
+  ASSERT_OK(ParseCIDRBlock("16.17.18.19/10", &pod_cidr1));
+  ASSERT_OK(ParseCIDRBlock("1.2.3.7/10", &svc_cidr));
+
+  mgr.SetPodCIDR(std::vector<CIDRBlock>{pod_cidr0, pod_cidr1});
+  mgr.SetServiceCIDR(svc_cidr);
+
+  // Should not be updated yet.
+  EXPECT_EQ(0, mgr.CurrentAgentMetadataState()->k8s_metadata_state().pod_cidrs().size());
+  EXPECT_FALSE(mgr.CurrentAgentMetadataState()->k8s_metadata_state().service_cidr().has_value());
+
+  // Cause an update.
+  EXPECT_OK(mgr.PerformMetadataStateUpdate());
+  auto md_state = mgr.CurrentAgentMetadataState();
+  const auto& k8s_state = md_state->k8s_metadata_state();
+
+  auto md_pod_cidrs = k8s_state.pod_cidrs();
+  EXPECT_THAT(md_pod_cidrs, ElementsAre(pod_cidr0, pod_cidr1));
+  auto md_svc_cidr = k8s_state.service_cidr();
+  EXPECT_TRUE(md_svc_cidr.has_value());
+  EXPECT_EQ(svc_cidr, md_svc_cidr.value());
+}
+
 }  // namespace md
 }  // namespace pl

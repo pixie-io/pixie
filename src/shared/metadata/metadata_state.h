@@ -79,7 +79,7 @@ class K8sMetadataState : NotCopyable {
   using NamespacesByNameMap = PodsByNameMap;
   using PodsByPodIpMap = absl::flat_hash_map<std::string, UID>;
 
-  void set_service_cidr(const CIDRBlock& cidr) {
+  void set_service_cidr(CIDRBlock cidr) {
     if (!service_cidr_.has_value() || service_cidr_.value() != cidr) {
       LOG(INFO) << absl::Substitute("Service CIDR updated to $0", ToString(cidr));
     }

@@ -48,7 +48,8 @@ Status AgentMetadataStateManager::PerformMetadataStateUpdate() {
    *   3. For each container pull the pid information. Diff this with the existing pids and update.
    *   4. Send diff of pids to the outgoing update Q.
    *   5. Set current update time and increment the epoch.
-   *   5. Replace the current agent_metdata_state_ ptr.
+   *   6. Update pod/service CIDR information if it has changed.
+   *   7. Replace the current agent_metdata_state_ ptr.
    */
   uint64_t epoch_id = 0;
   std::shared_ptr<AgentMetadataState> shadow_state;
@@ -77,6 +78,19 @@ Status AgentMetadataStateManager::PerformMetadataStateUpdate() {
     // Update PID information.
     PL_RETURN_IF_ERROR(
         ProcessPIDUpdates(ts, proc_parser_, shadow_state.get(), md_reader_.get(), &pid_updates_));
+  }
+
+  // Update the pod/service CIDRs if they have been updated.
+  {
+    absl::base_internal::SpinLockHolder lock(&cidr_lock_);
+    if (service_cidr_.has_value()) {
+      shadow_state->k8s_metadata_state()->set_service_cidr(std::move(service_cidr_.value()));
+      service_cidr_.reset();
+    }
+    if (pod_cidrs_.has_value()) {
+      shadow_state->k8s_metadata_state()->set_pod_cidrs(std::move(pod_cidrs_.value()));
+      pod_cidrs_.reset();
+    }
   }
 
   // Increment epoch and update ts.

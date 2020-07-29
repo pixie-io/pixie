@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -93,12 +94,14 @@ class AgentMetadataStateManager {
    */
   std::unique_ptr<PIDStatusEvent> GetNextPIDStatusEvent();
 
-  void SetServiceCIDR(const CIDRBlock& cidr) {
-    agent_metadata_state_->k8s_metadata_state()->set_service_cidr(cidr);
+  void SetServiceCIDR(CIDRBlock cidr) {
+    absl::base_internal::SpinLockHolder lock(&cidr_lock_);
+    service_cidr_ = std::move(cidr);
   }
 
   void SetPodCIDR(std::vector<CIDRBlock> cidrs) {
-    agent_metadata_state_->k8s_metadata_state()->set_pod_cidrs(std::move(cidrs));
+    absl::base_internal::SpinLockHolder lock(&cidr_lock_);
+    pod_cidrs_ = std::move(cidrs);
   }
 
   static Status ApplyK8sUpdates(
@@ -129,7 +132,10 @@ class AgentMetadataStateManager {
   system::ProcParser proc_parser_;
 
   std::unique_ptr<CGroupMetadataReader> md_reader_;
-  std::shared_ptr<AgentMetadataState> agent_metadata_state_;
+  // The metadata state stored here is immutable so that we can easily share a read only
+  // copy across threads. The pointer is atomically updated in PerformMetadataStateUpdate(),
+  // which is responsible for applying the queued updates.
+  std::shared_ptr<const AgentMetadataState> agent_metadata_state_;
   absl::base_internal::SpinLock agent_metadata_state_lock_;
   bool collects_data_;
 
@@ -137,6 +143,10 @@ class AgentMetadataStateManager {
 
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> incoming_k8s_updates_;
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>> pid_updates_;
+
+  absl::base_internal::SpinLock cidr_lock_;
+  std::optional<CIDRBlock> service_cidr_;
+  std::optional<std::vector<CIDRBlock>> pod_cidrs_;
 
   AgentMetadataFilter* metadata_filter_;
 
