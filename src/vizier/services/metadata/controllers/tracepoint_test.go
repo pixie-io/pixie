@@ -24,11 +24,12 @@ import (
 
 func TestCreateTracepoint(t *testing.T) {
 	tests := []struct {
-		name               string
-		originalTracepoint *logicalpb.Program
-		newTracepoint      *logicalpb.Program
-		expectedError      bool
-		expectOldUpdated   bool
+		name                    string
+		originalTracepoint      *logicalpb.Program
+		originalTracepointState statuspb.LifeCycleState
+		newTracepoint           *logicalpb.Program
+		expectedError           bool
+		expectOldUpdated        bool
 	}{
 		{
 			name:               "new_tracepoint",
@@ -53,6 +54,7 @@ func TestCreateTracepoint(t *testing.T) {
 					},
 				},
 			},
+			originalTracepointState: statuspb.RUNNING_STATE,
 			newTracepoint: &logicalpb.Program{
 				Outputs: []*logicalpb.Output{
 					&logicalpb.Output{
@@ -77,6 +79,7 @@ func TestCreateTracepoint(t *testing.T) {
 					},
 				},
 			},
+			originalTracepointState: statuspb.RUNNING_STATE,
 			newTracepoint: &logicalpb.Program{
 				Outputs: []*logicalpb.Output{
 					&logicalpb.Output{
@@ -97,6 +100,7 @@ func TestCreateTracepoint(t *testing.T) {
 					},
 				},
 			},
+			originalTracepointState: statuspb.RUNNING_STATE,
 			newTracepoint: &logicalpb.Program{
 				Outputs: []*logicalpb.Output{
 					&logicalpb.Output{
@@ -108,7 +112,8 @@ func TestCreateTracepoint(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			name: "existing tracepoint, not exactly same",
+			name:                    "existing tracepoint, not exactly same",
+			originalTracepointState: statuspb.RUNNING_STATE,
 			originalTracepoint: &logicalpb.Program{
 				Outputs: []*logicalpb.Output{
 					&logicalpb.Output{
@@ -131,6 +136,30 @@ func TestCreateTracepoint(t *testing.T) {
 			},
 			expectedError:    false,
 			expectOldUpdated: true,
+		},
+		{
+			name:                    "existing terminated tracepoint",
+			originalTracepointState: statuspb.TERMINATED_STATE,
+			originalTracepoint: &logicalpb.Program{
+				Outputs: []*logicalpb.Output{
+					&logicalpb.Output{
+						Name:   "table1",
+						Fields: []string{"abc", "def"},
+					},
+				},
+				Probes: []*logicalpb.Probe{
+					&logicalpb.Probe{Name: "test"},
+				},
+			},
+			newTracepoint: &logicalpb.Program{
+				Outputs: []*logicalpb.Output{
+					&logicalpb.Output{
+						Name:   "table1",
+						Fields: []string{"abc", "def"},
+					},
+				},
+			},
+			expectedError: false,
 		},
 	}
 
@@ -157,7 +186,8 @@ func TestCreateTracepoint(t *testing.T) {
 					EXPECT().
 					GetTracepoint(origID).
 					Return(&storepb.TracepointInfo{
-						Program: test.originalTracepoint,
+						ExpectedState: test.originalTracepointState,
+						Program:       test.originalTracepoint,
 					}, nil)
 			}
 

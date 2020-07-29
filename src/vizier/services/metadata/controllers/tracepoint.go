@@ -181,7 +181,10 @@ func (m *TracepointManager) CreateTracepoint(tracepointName string, program *log
 
 	if prevTracepointID != nil { // Existing tracepoint already exists.
 		prevTracepoint, err := m.mds.GetTracepoint(*prevTracepointID)
-		if err == nil && prevTracepoint != nil {
+		if err != nil {
+			return nil, err
+		}
+		if prevTracepoint != nil && prevTracepoint.ExpectedState != statuspb.TERMINATED_STATE {
 
 			//  We can replace it if the outputs are the same.
 			if len(prevTracepoint.Program.Outputs) != len(program.Outputs) {
