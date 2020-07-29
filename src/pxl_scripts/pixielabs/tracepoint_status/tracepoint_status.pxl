@@ -1,0 +1,9 @@
+import px
+
+
+def tracepoint_schema():
+    return px.GetSchemas()
+
+
+def tracepoint_info():
+    return px.GetTracePointInfo()

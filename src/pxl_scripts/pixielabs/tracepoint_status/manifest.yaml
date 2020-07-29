@@ -1,0 +1,5 @@
+---
+short: Tracepoint debugging information
+long: >
+  Returns information about tracepoints running on the
+  cluster.

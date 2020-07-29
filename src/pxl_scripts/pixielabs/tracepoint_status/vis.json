@@ -1,0 +1,36 @@
+{
+  "variables": [],
+  "globalFuncs": [],
+  "widgets": [
+    {
+      "name": "Schema",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 6
+      },
+      "func": {
+        "name": "tracepoint_schema"
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    },
+    {
+      "name": "Tracepoint Status",
+      "position": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 6
+      },
+      "func": {
+        "name": "tracepoint_info"
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    }
+  ]
+}
