@@ -36,6 +36,11 @@ const pxlMutations = [
   'import pxtrace',
 ];
 
+// The amount of time we should wait in between mutation retries, in ms.
+const mutationRetryMs = 5000; // 5s.
+// The maximum amount of time we should retry the mutation.
+const maxMutationRetryMs = 30000; // 30s.
+
 export interface ExecuteArguments {
   pxl: string;
   vis: Vis;
@@ -250,13 +255,14 @@ const ScriptContextProvider = (props) => {
   const executeScriptUntilMutationCompletion = (
     execArgs: ExecuteArguments,
     funcs: VizierQueryFunc[],
-    mutation: boolean) => (
+    mutation: boolean,
+    numTries: number) => (
     client.executeScript(execArgs.pxl, funcs, mutation).then(async (queryResults) => {
       // If the results are from a mutation, we should wait and retry if the mutation is still pending.
       if (queryResults.mutationInfo && queryResults.mutationInfo.getStatus().getCode() === GRPCStatusCode.Unavailable) {
         // Wait 5s before executing again.
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-        return executeScriptUntilMutationCompletion(execArgs, funcs, mutation);
+        await new Promise((resolve) => setTimeout(resolve, mutationRetryMs));
+        return executeScriptUntilMutationCompletion(execArgs, funcs, mutation, numTries - 1);
       }
       return queryResults;
     }));
@@ -307,7 +313,9 @@ const ScriptContextProvider = (props) => {
         reject(error);
       }
     })
-      .then((funcs: VizierQueryFunc[]) => executeScriptUntilMutationCompletion(execArgs, funcs, mutation))
+      .then((funcs: VizierQueryFunc[]) => executeScriptUntilMutationCompletion(
+        execArgs, funcs, mutation, maxMutationRetryMs / mutationRetryMs),
+      )
       .then((queryResults) => {
         const newTables = {};
         ({ queryId } = queryResults);
