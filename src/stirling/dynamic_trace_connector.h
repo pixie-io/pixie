@@ -21,6 +21,8 @@ class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapp
     PL_ASSIGN_OR_RETURN(dynamic_tracing::BCCProgram bcc_program,
                         dynamic_tracing::CompileProgram(program));
 
+    LOG(INFO) << "BCCProgram:\n" << bcc_program.ToString();
+
     if (bcc_program.perf_buffer_specs.size() != 1) {
       return error::Internal("Only a single output table is allowed for now.");
     }
