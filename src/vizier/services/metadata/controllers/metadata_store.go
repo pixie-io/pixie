@@ -346,6 +346,15 @@ func (mds *KVMetadataStore) DeleteAgent(agentID uuid.UUID) error {
 		delKeys = append(delKeys, getKelvinAgentKey(agentID))
 	}
 
+	// Delete agent tracepoint states.
+	tps, err := mds.GetTracepoints()
+	if err != nil {
+		return err
+	}
+	for _, tp := range tps {
+		delKeys = append(delKeys, getTracepointStateKey(utils.UUIDFromProtoOrNil(tp.TracepointID), agentID))
+	}
+
 	mds.cache.DeleteAll(delKeys)
 
 	// Deletes from the computedSchema

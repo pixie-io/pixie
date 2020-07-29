@@ -122,6 +122,8 @@ func TestKVMetadataStore_DeleteAgent(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	tpID := uuid.NewV4()
 	mockDs.
 		EXPECT().
 		DeleteWithPrefix("/agentDataInfo/" + testutils.ExistingAgentUUID).
@@ -138,6 +140,17 @@ func TestKVMetadataStore_DeleteAgent(t *testing.T) {
 		Get("/agent/"+testutils.NewAgentUUID).
 		Return(nil, nil)
 
+	tp := &storepb.TracepointInfo{TracepointID: utils.ProtoFromUUID(&tpID)}
+	s, err := tp.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal tracepoint pb.")
+	}
+
+	mockDs.
+		EXPECT().
+		GetWithPrefix("/tracepoint/").
+		Return([]string{"/tracepoint/" + tpID.String()}, [][]byte{s}, nil)
+
 	clock := testingutils.NewTestClock(time.Unix(2, 0))
 	c := kvstore.NewCacheWithClock(mockDs, clock)
 
@@ -149,6 +162,9 @@ func TestKVMetadataStore_DeleteAgent(t *testing.T) {
 	existingAgUUID, err := uuid.FromString(testutils.ExistingAgentUUID)
 	assert.Nil(t, err)
 
+	// Add tracepoint state.
+	c.Set("/tracepointStates/"+tpID.String()+"/"+testutils.ExistingAgentUUID, "test")
+
 	// Delete existing PEM.
 	err = mds.DeleteAgent(existingAgUUID)
 	assert.Nil(t, err)
@@ -156,6 +172,8 @@ func TestKVMetadataStore_DeleteAgent(t *testing.T) {
 	assert.Equal(t, []byte(""), hostnameVal)
 	agentVal, _ := c.Get("/agent/" + testutils.ExistingAgentUUID)
 	assert.Equal(t, []byte(""), agentVal)
+	tpState, _ := c.Get("/tracepointStates/" + tpID.String() + "/" + testutils.ExistingAgentUUID)
+	assert.Equal(t, []byte(""), tpState)
 
 	// Delete non-existent agent.
 	newAgUUID, err := uuid.FromString(testutils.NewAgentUUID)
