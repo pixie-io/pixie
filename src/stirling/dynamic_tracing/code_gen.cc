@@ -172,6 +172,9 @@ std::string GenRegister(const ScalarVariable& var) {
     case Register::SP:
       return absl::Substitute("$0 $1 = ($0)PT_REGS_SP(ctx);", GenScalarType(var.type()),
                               var.name());
+    case Register::RC:
+      return absl::Substitute("$0 $1 = ($0)PT_REGS_RC(ctx);", GenScalarType(var.type()),
+                              var.name());
     case Register::Register_INT_MIN_SENTINEL_DO_NOT_USE_:
     case Register::Register_INT_MAX_SENTINEL_DO_NOT_USE_:
       PB_ENUM_SENTINEL_SWITCH_CLAUSE;

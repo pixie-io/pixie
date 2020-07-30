@@ -4,10 +4,10 @@ package pl.stirling.dynamic_tracing.ir.physical;
 
 import "src/stirling/dynamic_tracing/ir/sharedpb/shared.proto";
 
-// TODO(yzhao): It seems we might need to encode other registers in addition to SP, for example,
-// X86 calling convention uses registers as function argument addresses.
 enum Register {
   SP = 0;
+  // Return value or pointer for C/C++ calling convention.
+  RC = 1;
 }
 
 // Describes a C struct. This is directly converted to a C struct in BCC code.

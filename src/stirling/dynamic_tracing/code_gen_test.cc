@@ -57,11 +57,24 @@ TEST(GenVariableTest, Register) {
   ScalarVariable var;
 
   var.set_name("var");
+
   var.set_type(ScalarType::VOID_POINTER);
   var.set_reg(Register::SP);
 
   ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::BinarySpec_Language_GOLANG),
                      ElementsAre("void* var = (void*)PT_REGS_SP(ctx);"));
+
+  var.set_type(ScalarType::INT);
+  var.set_reg(Register::RC);
+
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::BinarySpec_Language_CPP),
+                     ElementsAre("int var = (int)PT_REGS_RC(ctx);"));
+
+  var.set_type(ScalarType::VOID_POINTER);
+  var.set_reg(Register::RC);
+
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::BinarySpec_Language_CPP),
+                     ElementsAre("void* var = (void*)PT_REGS_RC(ctx);"));
 }
 
 TEST(GenVariableTest, MemoryVariable) {
@@ -245,6 +258,13 @@ TEST(GenProgramTest, SpecsAndCode) {
                                              builtin: TGID
                                            }
                                          }
+                                         vars {
+                                           scalar_var {
+                                             name: "retval"
+                                             type: INT
+                                             reg: RC
+                                           }
+                                         }
                                          map_delete_actions {
                                            map_name: "test"
                                            key_variable_name: "key"
@@ -321,10 +341,10 @@ TEST(GenProgramTest, SpecsAndCode) {
       "}",
       "int probe_return(struct pt_regs* ctx) {",
       "uint32_t key = bpf_get_current_pid_tgid() >> 32;",
+      "int retval = (int)PT_REGS_RC(ctx);",
       "test.delete(&key);",
       "return 0;",
-      "}",
-  };
+      "}"};
 
   std::string expected_code = absl::StrJoin(expected_code_lines, "\n");
   EXPECT_EQ(bcc_code, expected_code);
