@@ -503,10 +503,6 @@ function addLegendInteractivityEncodings(mark: Mark, ts: Timeseries, interactivi
   extendMarkEncoding(mark, 'update', {
     opacity: [
       {
-        value: SELECTED_LINE_OPACITY,
-        test: `${LEGEND_HOVER_SIGNAL} && (${interactivitySelector} === ${LEGEND_HOVER_SIGNAL})`,
-      },
-      {
         value: UNSELECTED_LINE_OPACITY,
         test:
           `${LEGEND_SELECT_SIGNAL}.length !== 0 && indexof(${LEGEND_SELECT_SIGNAL}, ${interactivitySelector}) === -1`,

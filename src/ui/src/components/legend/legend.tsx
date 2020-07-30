@@ -171,11 +171,18 @@ const Legend = React.memo((props: LegendProps) => {
     rightPadding = totalPadding / 2;
   }
 
+  let dataEntries: LegendEntry[];
+  if (interactState.selectedSeries.length > 0) {
+    dataEntries = data.entries.filter((entry) => _.includes(interactState.selectedSeries, entry.key));
+  } else {
+    dataEntries = data.entries;
+  }
+
   const entriesPerPage = numGrids * NUM_ROWS;
-  const maxPages = Math.ceil(data.entries.length / entriesPerPage);
+  const maxPages = Math.ceil(dataEntries.length / entriesPerPage);
   const pageEntriesStart = currentPage * entriesPerPage;
-  const pageEntriesEnd = Math.min((currentPage + 1) * entriesPerPage, data.entries.length);
-  let entries = data.entries.slice(pageEntriesStart, pageEntriesEnd);
+  const pageEntriesEnd = Math.min((currentPage + 1) * entriesPerPage, dataEntries.length);
+  let entries = dataEntries.slice(pageEntriesStart, pageEntriesEnd);
   entries = toRowMajorOrder(entries, numGrids, NUM_ROWS);
 
   let index = 0;
