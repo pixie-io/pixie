@@ -66,6 +66,7 @@ const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypeToCType = {
     {ScalarType::DOUBLE, "double"},
 
     {ScalarType::STRING, "struct string"},
+    {ScalarType::BYTE_ARRAY, "struct byte_array"},
 };
 // clang-format on
 
@@ -217,6 +218,46 @@ StatusOr<std::vector<std::string>> GenStringMemoryVariable(
   }
 }
 
+// TODO(oazizi): Consolidate with GenStringMemoryVariable?
+StatusOr<std::vector<std::string>> GenByteArrayMemoryVariable(
+    const ScalarVariable& var, const ir::shared::BinarySpec::Language& language) {
+  std::vector<std::string> code_lines;
+
+  // TODO(oazizi): Move string variable into a BPF map so that the size can be increased.
+  switch (language) {
+    case ir::shared::BinarySpec_Language_GOLANG:
+      code_lines.push_back(absl::Substitute("void* $0_ptr__;", var.name()));
+      code_lines.push_back(absl::Substitute("bpf_probe_read(&$0_ptr__, sizeof(void*), $1 + $2);",
+                                            var.name(), var.memory().base(),
+                                            var.memory().offset()));
+
+      code_lines.push_back(absl::Substitute("uint64_t $0_len__;", var.name()));
+      code_lines.push_back(absl::Substitute("bpf_probe_read(&$0_len__, sizeof(uint64_t), $1 + $2);",
+                                            var.name(), var.memory().base(),
+                                            var.memory().offset() + sizeof(uint8_t*)));
+
+      code_lines.push_back(absl::Substitute(
+          "$0_len__ = ($0_len__ > MAX_BYTE_ARRAY_LEN) ? MAX_BYTE_ARRAY_LEN : $0_len__;",
+          var.name()));
+      code_lines.push_back(absl::Substitute(
+          "$0_len__ = $0_len__ & MAX_BYTE_ARRAY_MASK; // Keep verifier happy.", var.name()));
+
+      code_lines.push_back(absl::Substitute("$0 $1 = {};", GenScalarType(var.type()), var.name()));
+      code_lines.push_back(absl::Substitute("$0.len = $0_len__;", var.name()));
+
+      code_lines.push_back(
+          "// Read one extra byte to avoid passing a size of 0 to bpf_probe_read(), which causes "
+          "BPF verifier issues on kernel 4.14.");
+      code_lines.push_back(
+          absl::Substitute("bpf_probe_read($0.buf, $0.len + 1, $0_ptr__);", var.name()));
+
+      return code_lines;
+    default:
+      return error::Internal("Strings are not yet supported for this language ($0)",
+                             magic_enum::enum_name(language));
+  }
+}
+
 std::vector<std::string> GenMemoryVariable(const ScalarVariable& var) {
   std::vector<std::string> code_lines;
   code_lines.push_back(absl::Substitute("$0 $1;", GenScalarType(var.type()), var.name()));
@@ -275,6 +316,8 @@ StatusOr<std::vector<std::string>> GenScalarVariable(
     case ScalarVariable::AddressOneofCase::kMemory:
       if (var.type() == ir::shared::ScalarType::STRING) {
         return GenStringMemoryVariable(var, language);
+      } else if (var.type() == ir::shared::ScalarType::BYTE_ARRAY) {
+        return GenByteArrayMemoryVariable(var, language);
       } else {
         return GenMemoryVariable(var);
       }
@@ -635,9 +678,24 @@ std::vector<std::string> GenStringType() {
   };
 }
 
+std::vector<std::string> GenByteArrayType() {
+  return {
+      absl::Substitute("#define MAX_BYTE_ARRAY_LEN ($0-sizeof(int64_t)-1)", kStructStringSize),
+      absl::Substitute("#define MAX_BYTE_ARRAY_MASK ($0-1)", kStructStringSize),
+      "struct byte_array {",
+      "  uint64_t len;",
+      "  uint8_t buf[MAX_BYTE_ARRAY_LEN];",
+      "  // To keep 4.14 kernel verifier happy, we copy an extra byte.",
+      "  // Keep a dummy character to absorb this garbage.",
+      "  char dummy;",
+      "};",
+  };
+}
+
 std::vector<std::string> GenTypes() {
   std::vector<std::string> code_lines;
   MoveBackStrVec(GenStringType(), &code_lines);
+  MoveBackStrVec(GenByteArrayType(), &code_lines);
   return code_lines;
 }
 

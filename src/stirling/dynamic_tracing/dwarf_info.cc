@@ -210,8 +210,13 @@ StatusOr<ir::shared::ScalarType> Dwarvifier::VarTypeToProtoScalarType(const VarT
     case VarType::kPointer:
       return ir::shared::ScalarType::VOID_POINTER;
     case VarType::kStruct:
-      if (language_ == ir::shared::BinarySpec_Language_GOLANG && name == "string") {
-        return ir::shared::ScalarType::STRING;
+      if (language_ == ir::shared::BinarySpec_Language_GOLANG) {
+        if (name == "string") {
+          return ir::shared::ScalarType::STRING;
+        }
+        if (name == "[]uint8" || name == "[]byte") {
+          return ir::shared::ScalarType::BYTE_ARRAY;
+        }
       }
       return error::Internal("Unhandled type: $0 (name=$1)", magic_enum::enum_name(type), name);
     default:

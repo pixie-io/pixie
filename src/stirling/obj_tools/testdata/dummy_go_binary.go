@@ -8,6 +8,7 @@ import (
 	"math"
 	"math/rand"
 	"time"
+	"encoding/hex"
 )
 
 type Vertex struct {
@@ -80,6 +81,14 @@ func SaySomethingTo(something string, name string) string {
 	return something + ", " + name
 }
 
+func Uint8ArrayToHex(uuid []uint8) string {
+	return hex.EncodeToString(uuid)
+}
+
+func BytesToHex(uuid []byte) string {
+	return hex.EncodeToString(uuid)
+}
+
 func main() {
 	for true {
 		v := Vertex{3, 4}
@@ -101,6 +110,12 @@ func main() {
 		d := PointerWrapperWrapperWrapper{1, &c, 2, 3}
 		fmt.Println(PointerWrapperWrapperWrapperFunc(d))
 		fmt.Println(SaySomethingTo("Hello", "pixienaut"));
+
+		id0 := []uint8{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+		fmt.Println(Uint8ArrayToHex(id0))
+
+		id1 := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+        fmt.Println(BytesToHex(id1))
 
 		time.Sleep(time.Second)
 	}

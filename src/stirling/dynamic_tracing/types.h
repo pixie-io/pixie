@@ -13,6 +13,10 @@ namespace dynamic_tracing {
 
 constexpr size_t kStructStringSize = 64;
 
+// Want this to be large enough to capture a UUID (16 bytes).
+// Since there are other members in the struct, bump this up to 32.
+constexpr size_t kStructByteArraySize = 32;
+
 struct BCCProgram {
   struct PerfBufferSpec {
     std::string name;

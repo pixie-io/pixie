@@ -16,7 +16,7 @@ constexpr std::string_view kBinaryPath =
 namespace pl {
 namespace stirling {
 
-class StirlingBPFTest : public ::testing::Test {
+class StirlingBPFTest : public ::testing::TestWithParam<std::string> {
  protected:
   void SetUp() override {
     std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
@@ -355,8 +355,9 @@ probes {
   ASSERT_OK(stirling_->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(publication)));
 
   // Get field indexes for the two columns we want.
-  int name_field_idx = FindFieldIndex(info_class.schema(), "name").value();
-  int something_field_idx = FindFieldIndex(info_class.schema(), "something").value();
+  ASSERT_HAS_VALUE_AND_ASSIGN(int name_field_idx, FindFieldIndex(info_class.schema(), "name"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int something_field_idx,
+                              FindFieldIndex(info_class.schema(), "something"));
 
   // Run Stirling data collector.
   ASSERT_OK(stirling_->RunAsThread());
@@ -387,6 +388,98 @@ probes {
   EXPECT_EQ(rb[something_field_idx]->Get<types::StringValue>(0), "Hello");
   EXPECT_EQ(rb[name_field_idx]->Get<types::StringValue>(0), "pixienaut");
 }
+
+TEST_P(StirlingBPFTest, byte_array) {
+  auto function_symbol = GetParam();
+
+  // Run tracing target.
+  SubProcess process;
+
+  std::string path = pl::testing::BazelBinTestFilePath(kBinaryPath);
+  ASSERT_OK(fs::Exists(path));
+  ASSERT_OK(process.Start({path}));
+
+  constexpr std::string_view kProgram = R"(
+binary_spec {
+  path: "$0"
+  language: GOLANG
+}
+outputs {
+  name: "output_table"
+  fields: "uuid"
+}
+probes {
+  name: "probe0"
+  trace_point {
+    symbol: "$0"
+    type: LOGICAL
+  }
+  args {
+    id: "arg0"
+    expr: "uuid"
+  }
+  output_actions {
+    output_name: "output_table"
+    variable_name: "arg0"
+  }
+}
+)";
+
+  stirlingpb::Publish publication;
+  stirling_->GetPublishProto(&publication);
+  int original_num_info_classes = publication.published_info_classes_size();
+
+  auto trace_program = Prepare(kProgram, path);
+  trace_program->mutable_probes(0)->mutable_trace_point()->mutable_symbol()->assign(
+      function_symbol);
+
+  sole::uuid trace_id = sole::uuid4();
+  stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
+
+  // Should deploy.
+  ASSERT_OK_AND_ASSIGN(publication, WaitForStatus(trace_id));
+
+  // Check the incremental publication change.
+  ASSERT_EQ(publication.published_info_classes_size(), 1);
+  const auto& info_class = publication.published_info_classes(0);
+
+  // Subscribe to the new info class.
+  ASSERT_OK(stirling_->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(publication)));
+
+  // Get field indexes for the two columns we want.
+  ASSERT_HAS_VALUE_AND_ASSIGN(int uuid_field_idx, FindFieldIndex(info_class.schema(), "uuid"));
+
+  // Run Stirling data collector.
+  ASSERT_OK(stirling_->RunAsThread());
+
+  // Wait to capture some data.
+  while (record_batches_.empty()) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
+
+  // Full publication should show one more info class while tracepoint is active.
+  publication = {};
+  stirling_->GetPublishProto(&publication);
+  EXPECT_EQ(publication.published_info_classes_size(), original_num_info_classes + 1);
+
+  ASSERT_OK(stirling_->RemoveTracepoint(trace_id));
+
+  // Should get removed.
+  EXPECT_EQ(WaitForStatus(trace_id).code(), pl::statuspb::Code::NOT_FOUND);
+
+  // After removal, full publication should go back to the original count.
+  publication = {};
+  stirling_->GetPublishProto(&publication);
+  EXPECT_EQ(publication.published_info_classes_size(), original_num_info_classes);
+
+  stirling_->Stop();
+
+  types::ColumnWrapperRecordBatch& rb = *record_batches_[0];
+  EXPECT_EQ(rb[uuid_field_idx]->Get<types::StringValue>(0), "000102030405060708090A0B0C0D0E0F");
+}
+
+INSTANTIATE_TEST_SUITE_P(DwarfInfoTestSuite, StirlingBPFTest,
+                         ::testing::Values("main.BytesToHex", "main.Uint8ArrayToHex"));
 
 }  // namespace stirling
 }  // namespace pl

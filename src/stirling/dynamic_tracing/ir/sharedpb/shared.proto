@@ -90,6 +90,7 @@ enum ScalarType {
   VOID_POINTER = 100;
 
   STRING = 200;
+  BYTE_ARRAY = 201;
 }
 
 // Wraps an oneof field which can be either scalar or struct.

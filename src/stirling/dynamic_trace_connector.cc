@@ -93,6 +93,29 @@ class StructDecoder {
     return s;
   }
 
+  StatusOr<std::string> ExtractByteArrayAsHex() {
+    // NOTE: This implementation must match "struct byte_array" defined in code_gen.cc.
+    // A copy is provided here for reference:
+    //
+    // #define MAX_BYTE_ARRAY_LEN (kStructStringSize-sizeof(int64_t)-1)
+    // struct byte_array {
+    //   uint64_t len;
+    //   uint8_t buf[MAX_BYTE_ARRAY_LEN];
+    //   // To keep 4.14 kernel verifier happy we copy an extra byte.
+    //   // Keep a dummy character to absorb this garbage.
+    //   char dummy;
+    // };
+    //
+    // TODO(oazizi): Find a better way to keep these in sync.
+    PL_ASSIGN_OR_RETURN(size_t len, ExtractField<size_t>());
+    std::basic_string<uint8_t> bytes;
+    bytes.resize(len);
+    std::memcpy(bytes.data(), buf_.data(), len);
+    buf_.remove_prefix(dynamic_tracing::kStructByteArraySize - sizeof(size_t));
+
+    return BytesToString<bytes_format::HexCompact>(CreateStringView<char>(bytes));
+  }
+
  private:
   std::string_view buf_;
 };
@@ -164,6 +187,11 @@ Status FillColumn(StructDecoder* struct_decoder, DataTable::DynamicRecordBuilder
     }
     case ScalarType::STRING: {
       PL_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractString());
+      r->Append(col_idx++, types::StringValue(val));
+      break;
+    }
+    case ScalarType::BYTE_ARRAY: {
+      PL_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractByteArrayAsHex());
       r->Append(col_idx++, types::StringValue(val));
       break;
     }
