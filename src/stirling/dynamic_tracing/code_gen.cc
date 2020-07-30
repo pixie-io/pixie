@@ -680,8 +680,8 @@ std::vector<std::string> GenStringType() {
 
 std::vector<std::string> GenByteArrayType() {
   return {
-      absl::Substitute("#define MAX_BYTE_ARRAY_LEN ($0-sizeof(int64_t)-1)", kStructStringSize),
-      absl::Substitute("#define MAX_BYTE_ARRAY_MASK ($0-1)", kStructStringSize),
+      absl::Substitute("#define MAX_BYTE_ARRAY_LEN ($0-sizeof(int64_t)-1)", kStructByteArraySize),
+      absl::Substitute("#define MAX_BYTE_ARRAY_MASK ($0-1)", kStructByteArraySize),
       "struct byte_array {",
       "  uint64_t len;",
       "  uint8_t buf[MAX_BYTE_ARRAY_LEN];",
