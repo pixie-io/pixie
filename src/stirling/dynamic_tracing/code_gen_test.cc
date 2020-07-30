@@ -232,6 +232,24 @@ TEST(GenProgramTest, SpecsAndCode) {
                                          }
                                          printks { scalar: "var" }
                                        }
+                                       probes {
+                                         name: "probe_return"
+                                         trace_point {
+                                           symbol: "target_symbol"
+                                           type: RETURN
+                                         }
+                                         vars {
+                                           scalar_var {
+                                             name: "key"
+                                             type: UINT32
+                                             builtin: TGID
+                                           }
+                                         }
+                                         map_delete_actions {
+                                           map_name: "test"
+                                           key_variable_name: "key"
+                                         }
+                                       }
                                        )proto";
 
   ir::physical::Program program;
@@ -299,6 +317,11 @@ TEST(GenProgramTest, SpecsAndCode) {
       "test.update(&key, &var);",
       "data_events.perf_submit(ctx, &st_var, sizeof(st_var));",
       R"(bpf_trace_printk("var: %d\n", var);)",
+      "return 0;",
+      "}",
+      "int probe_return(struct pt_regs* ctx) {",
+      "uint32_t key = bpf_get_current_pid_tgid() >> 32;",
+      "test.delete(&key);",
       "return 0;",
       "}",
   };

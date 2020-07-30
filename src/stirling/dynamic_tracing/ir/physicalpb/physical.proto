@@ -172,6 +172,13 @@ message OutputAction {
   string variable_name = 2;
 }
 
+message MapDeleteAction {
+  string map_name = 1;
+
+  // The builtin to generate the key value.
+  string key_variable_name = 2;
+}
+
 // Corresponds to a logical probe.
 message Probe {
   // The name of the BCC probe function.
@@ -192,6 +199,9 @@ message Probe {
   //
   // The variable to be inserted into the map must be one of the above vars.
   repeated MapStashAction map_stash_actions = 5;
+
+  // Deletes a BPF map entry.
+  repeated MapDeleteAction map_delete_actions = 9;
 
   // Writes a value to perf buffer.
   repeated OutputAction output_actions = 6;

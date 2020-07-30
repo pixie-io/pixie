@@ -18,6 +18,7 @@ namespace dynamic_tracing {
 
 using ::pl::stirling::bpf_tools::BPFProbeAttachType;
 using ::pl::stirling::bpf_tools::UProbeSpec;
+using ::pl::stirling::dynamic_tracing::ir::physical::MapDeleteAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::MemberVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::OutputAction;
@@ -403,6 +404,10 @@ StatusOr<std::vector<std::string>> GenMapStashAction(const MapStashAction& actio
   return GenCondition(action.cond(), std::move(update_code_line));
 }
 
+std::string GenMapDeleteAction(const MapDeleteAction& action) {
+  return absl::Substitute("$0.delete(&$1);", action.map_name(), action.key_variable_name());
+}
+
 std::string GenOutput(const PerfBufferOutput& output) {
   return absl::Substitute("BPF_PERF_OUTPUT($0);", output.name());
 }
@@ -483,12 +488,21 @@ std::vector<std::string> GenMemberVariable(const ir::physical::MemberVariable& v
                            var.struct_base(), var.field())};
 }
 
-Status CheckVarName(absl::flat_hash_set<std::string_view>* var_names, std::string_view var_name,
-                    std::string_view var_desc) {
+Status CreateVarName(absl::flat_hash_set<std::string_view>* var_names, std::string_view var_name,
+                     std::string_view var_desc) {
   if (var_names->contains(var_name)) {
     return error::InvalidArgument("$0 '$1' was already defined", var_desc, var_name);
   }
   var_names->insert(var_name);
+  return Status::OK();
+}
+
+Status CheckVarExists(absl::flat_hash_set<std::string_view>* var_names, std::string_view var_name,
+                      std::string_view context) {
+  if (!var_names->contains(var_name)) {
+    return error::InvalidArgument("variable name '$0' was not defined [context = $1]", var_name,
+                                  context);
+  }
   return Status::OK();
 }
 
@@ -510,34 +524,32 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
   for (const auto& var : probe.vars()) {
     switch (var.var_oneof_case()) {
       case Variable::VarOneofCase::kScalarVar: {
-        PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.scalar_var().name(), "ScalarVariable"));
+        PL_RETURN_IF_ERROR(CreateVarName(&var_names, var.scalar_var().name(), "ScalarVariable"));
         scalar_vars[var.scalar_var().name()] = &var.scalar_var();
         MOVE_BACK_STR_VEC(GenScalarVariable(var.scalar_var(), program_.binary_spec().language()),
                           &code_lines);
         break;
       }
       case Variable::VarOneofCase::kMapVar: {
-        PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.map_var().name(), "MapVariable"));
+        PL_RETURN_IF_ERROR(CreateVarName(&var_names, var.map_var().name(), "MapVariable"));
         code_lines.push_back(GenMapVariable(var.map_var()));
         break;
       }
       case Variable::VarOneofCase::kMemberVar: {
-        PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.member_var().name(), "MemberVariable"));
+        PL_RETURN_IF_ERROR(CreateVarName(&var_names, var.member_var().name(), "MemberVariable"));
         member_vars[var.member_var().name()] = &var.member_var();
         MoveBackStrVec(GenMemberVariable(var.member_var()), &code_lines);
         break;
       }
       case Variable::VarOneofCase::kStructVar: {
-        PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.struct_var().name(), "MapVariable"));
+        PL_RETURN_IF_ERROR(CreateVarName(&var_names, var.struct_var().name(), "MapVariable"));
 
         const auto& st_var = var.struct_var();
 
         for (const auto& fa : st_var.field_assignments()) {
-          if (!var_names.contains(fa.variable_name())) {
-            return error::InvalidArgument(
-                "Variable '$0' assigned to StructVariable '$1' was not defined", fa.variable_name(),
-                st_var.name());
-          }
+          PL_RETURN_IF_ERROR(CheckVarExists(
+              &var_names, fa.variable_name(),
+              absl::Substitute("StructVariable '$0' field assignment", st_var.name())));
           // TODO(yzhao): Check variable types as well.
         }
 
@@ -556,25 +568,23 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
   }
 
   for (const auto& action : probe.map_stash_actions()) {
-    if (!var_names.contains(action.key_variable_name())) {
-      return error::InvalidArgument(
-          "variable name '$0' as the key pushed to BPF map '$1' was not defined",
-          action.key_variable_name(), action.map_name());
-    }
-    if (!var_names.contains(action.value_variable_name())) {
-      return error::InvalidArgument(
-          "variable name '$0' as the value pushed to BPF map '$1' was not defined",
-          action.value_variable_name(), action.map_name());
-    }
+    PL_RETURN_IF_ERROR(CheckVarExists(&var_names, action.key_variable_name(),
+                                      absl::Substitute("BPF map '$0' key", action.map_name())));
+    PL_RETURN_IF_ERROR(CheckVarExists(&var_names, action.value_variable_name(),
+                                      absl::Substitute("BPF map '$0' value", action.map_name())));
     MOVE_BACK_STR_VEC(GenMapStashAction(action), &code_lines);
   }
 
+  for (const auto& action : probe.map_delete_actions()) {
+    PL_RETURN_IF_ERROR(CheckVarExists(&var_names, action.key_variable_name(),
+                                      absl::Substitute("BPF map '$0' key", action.map_name())));
+    code_lines.push_back(GenMapDeleteAction(action));
+  }
+
   for (const auto& action : probe.output_actions()) {
-    if (!var_names.contains(action.variable_name())) {
-      return error::InvalidArgument(
-          "variable name '$0' submitted to perf buffer '$1' was not defined",
-          action.variable_name(), action.perf_buffer_name());
-    }
+    PL_RETURN_IF_ERROR(
+        CheckVarExists(&var_names, action.variable_name(),
+                       absl::Substitute("Perf buffer '$0'", action.perf_buffer_name())));
     code_lines.push_back(GenOutputAction(action));
   }
 
