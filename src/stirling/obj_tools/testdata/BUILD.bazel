@@ -9,7 +9,8 @@ cc_binary(
         # Disables optimization which in turn disables inlining.
         "-O0",
         # Produces dwarf information.
-        "-g"],
+        "-g",
+    ],
     # This tells the linker to include a build-id, which is useful for locating external debug symbols.
     linkopts = [
         "-Wl,--build-id",
@@ -31,7 +32,10 @@ gcflags_no_opt_no_inline = [
 
 go_library(
     name = "go_default_library",
-    srcs = ["dummy_go_binary.go"],
+    srcs = [
+        "dummy_exe_fixture.h",
+        "dummy_go_binary.go",
+    ],
     gc_goopts = gcflags_no_opt_no_inline,
     importpath = "pixielabs.ai/pixielabs/src/stirling/obj_tools/testdata",
 )

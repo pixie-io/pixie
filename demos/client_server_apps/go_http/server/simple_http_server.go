@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -25,8 +26,8 @@ func init() {
 	res := burnCyclesE(cyclesToTest)
 	d := time.Now().Sub(startTime)
 	iterationsPerMs := float64(cyclesToTest) / (float64(d.Nanoseconds()) / 1.0e6)
-	mIterationsPerMs = iterationsPerMs / 1.0e6
-	fmt.Printf("MIterations/Ms: %.2f, e=%.2f\n", mIterationsPerMs, res)
+	mIterationsPerMs = iterationsPerMs
+	fmt.Printf("MIterations/Ms: %.2f, e=%.2f\n", mIterationsPerMs/1.0e6, res)
 
 }
 
@@ -55,6 +56,24 @@ func min(x, y int64) int64 {
 		return x
 	}
 	return y
+}
+
+func fakeLoad(w *http.ResponseWriter, latency float64, mIters, respSize int64) float64 {
+	// add some jitters
+	// latency = rand.NormFloat64()*latency/10 + latency
+	if latency > 0 {
+		burnCyclesE(int64(mIterationsPerMs * latency))
+	}
+	burnCyclesE(mIters)
+
+	bytesSent := int64(0)
+	maxCachedSize := int64(len(cachedRespData))
+	for bytesSent < respSize {
+		bytesToWrite := min(respSize, maxCachedSize)
+		fmt.Fprint(*w, cachedRespData[bytesToWrite])
+		bytesSent += bytesToWrite
+	}
+	return latency
 }
 
 func main() {
@@ -86,10 +105,9 @@ func main() {
 	// miters: Run millions of iterations of compute for computing e. Mutually exclusive with latency.
 	// response_size: The response size in bytes (must be less than 4096).
 	http.HandleFunc("/bm", func(w http.ResponseWriter, r *http.Request) {
+		count++
 		// The default latency in ms.
 		latency := 0.0
-		// The default response size in bytes.
-		var respSize int64 = 10
 		var err error
 
 		latencyArg, ok := r.URL.Query()["latency"]
@@ -101,7 +119,7 @@ func main() {
 		}
 
 		mItersArg, ok := r.URL.Query()["miters"]
-		mIters := int64(0)
+		var mIters int64 = 0
 		if ok {
 			mItersMultipler, err := strconv.ParseFloat(mItersArg[0], 64)
 			if err != nil {
@@ -111,6 +129,8 @@ func main() {
 		}
 
 		respSizeArg, ok := r.URL.Query()["response_size"]
+		// The default response size in bytes.
+		var respSize int64 = 10
 		if ok {
 			respSize, err = strconv.ParseInt(respSizeArg[0], 10, 64)
 			if err != nil {
@@ -118,19 +138,12 @@ func main() {
 			}
 		}
 
-		if latency > 0 {
-			burnCyclesE(int64(mIterationsPerMs * latency))
-		}
-		burnCyclesE(mIters)
-
-		bytesSent := int64(0)
-		maxCachedSize := int64(len(cachedRespData))
-		for bytesSent < respSize {
-			bytesToWrite := min(respSize, maxCachedSize)
-			fmt.Fprint(w, cachedRespData[bytesToWrite])
-			bytesSent += bytesToWrite
-		}
+		fakeLoad(&w, latency, mIters, respSize)
+	})
+	http.HandleFunc("/count", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "count %d", count)
+		fmt.Println("asked for count", count)
 	})
 
-	http.ListenAndServe(":9090", nil)
+	log.Fatal(http.ListenAndServe(":9090", nil))
 }

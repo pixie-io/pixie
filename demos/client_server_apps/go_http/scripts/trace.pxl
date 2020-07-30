@@ -1,0 +1,21 @@
+import pxtrace
+import px
+
+checkout_upid = "00000014-0028-5d86-0000-000070cfdde1"
+
+
+@pxtrace.goprobe('main.fakeLoad')
+def probe_func():
+    return [{'latency': pxtrace.FunctionLatency()},
+            {'latency_arg': pxtrace.ArgExpr('latency')}]
+
+
+table = 'fakeLoad'
+pxtrace.UpsertTracepoint(table,
+                         table,
+                         probe_func,
+                         px.uint128(checkout_upid),
+                         '5m')
+
+px.display(px.DataFrame(table))
+px.display(px.GetTracepointStatus())
