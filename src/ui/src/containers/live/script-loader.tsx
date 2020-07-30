@@ -2,6 +2,7 @@ import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
 import { argsForVis } from 'utils/args-utils';
 import urlParams from 'utils/url-params';
+import { ContainsMutation } from 'utils/pxl';
 
 import { ScriptContext } from 'context/script-context';
 import { ResultsContext } from 'context/results-context';
@@ -77,7 +78,9 @@ export function ScriptLoader() {
         };
         clearResults();
         setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
-        ref.current.execute(execArgs);
+        if (!ContainsMutation(execArgs.pxl)) {
+          ref.current.execute(execArgs);
+        }
         setLoadState((state) => {
           if (state !== 'unloaded') {
             return state;

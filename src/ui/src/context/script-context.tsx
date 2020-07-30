@@ -8,6 +8,7 @@ import {
 import ClientContext from 'common/vizier-grpc-client-context';
 import { VizierQueryError, GRPCStatusCode } from 'common/errors';
 import { VizierQueryFunc } from 'common/vizier-grpc-client';
+import { ContainsMutation } from 'utils/pxl';
 
 import * as React from 'react';
 import { withRouter } from 'react-router';
@@ -29,12 +30,6 @@ import {
 import { DataDrawerContext } from './data-drawer-context';
 import { ResultsContext } from './results-context';
 import { LayoutContext } from './layout-context';
-
-// If the pxl script contains any of the following strings, it contains a mutation.
-const pxlMutations = [
-  'from pxtrace',
-  'import pxtrace',
-];
 
 // The amount of time we should wait in between mutation retries, in ms.
 const mutationRetryMs = 5000; // 5s.
@@ -308,10 +303,7 @@ const ScriptContextProvider = (props) => {
     let errMsg: string;
     let queryId: string;
 
-    const mutation = pxlMutations.some((mutationStr) => {
-      const re = new RegExp(`^${mutationStr}`, 'gm');
-      return execArgs.pxl.match(re);
-    });
+    const mutation = ContainsMutation(execArgs.pxl);
 
     if (!execArgs.skipURLUpdate) {
       commitURL(execArgs.liveViewPage, execArgs.id, execArgs.args);
