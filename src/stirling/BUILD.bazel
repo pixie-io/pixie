@@ -265,10 +265,6 @@ pl_cc_test(
     name = "http_trace_bpf_test",
     timeout = "moderate",
     srcs = ["http_trace_bpf_test.cc"],
-    data = [
-        "//src/stirling/http/testing/go_http_client",
-        "//src/stirling/http/testing/go_http_server",
-    ],
     # This test sometimes times out.
     flaky = True,
     tags = ["requires_bpf"],
@@ -276,6 +272,7 @@ pl_cc_test(
         ":cc_library",
         "//src/common/exec:cc_library",
         "//src/stirling/testing:cc_library",
+        "//src/stirling/http/testing:go_http_fixture",
     ],
 )
 
