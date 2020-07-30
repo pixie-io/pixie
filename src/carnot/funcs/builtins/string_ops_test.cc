@@ -59,6 +59,14 @@ TEST(StringOps, basic_string_strip_prefix) {
   udf_tester.ForInput("sock-shop/carts123", "sock-shop/carts").Expect("sock-shop/carts");
 }
 
+TEST(StringOps, HexToASCII) {
+  auto udf_tester = udf::UDFTester<HexToASCII>();
+  udf_tester.ForInput("36623330303663622d393632612d343030302d616235652d333636383564616634383030")
+      .Expect("6b3006cb-962a-4000-ab5e-36685daf4800");
+  // Missing last nibble.
+  udf_tester.ForInput("333").Expect("");
+}
+
 }  // namespace builtins
 }  // namespace carnot
 }  // namespace pl

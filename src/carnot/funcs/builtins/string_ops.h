@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <string>
 #include "src/carnot/udf/registry.h"
+#include "src/common/base/utils.h"
 #include "src/shared/types/types.h"
 
 namespace pl {
@@ -69,7 +70,20 @@ class StripPrefixUDF : public udf::ScalarUDF {
   }
 };
 
+class HexToASCII : public udf::ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext*, StringValue h) {
+    std::string result;
+    auto s_or_res = AsciiHexToBytes<std::string>(h);
+    if (s_or_res.ok()) {
+      return s_or_res.ConsumeValueOrDie();
+    }
+    return "";
+  }
+};
+
 void RegisterStringOpsOrDie(udf::Registry* registry);
+
 }  // namespace builtins
 }  // namespace carnot
 }  // namespace pl
