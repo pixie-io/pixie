@@ -608,7 +608,7 @@ class PodNameToPodStatusUDF : public ScalarUDF {
 
   static udf::InfRuleVec SemanticInferenceRules() {
     return {
-        udf::ExplicitRule::Create<PodNameToPodStatusUDF>(types::ST_POD_PHASE, {types::ST_NONE})};
+        udf::ExplicitRule::Create<PodNameToPodStatusUDF>(types::ST_POD_STATUS, {types::ST_NONE})};
   }
 };
 
@@ -699,7 +699,7 @@ class ContainerIDToContainerStatusUDF : public ScalarUDF {
   }
 
   static udf::InfRuleVec SemanticInferenceRules() {
-    return {udf::ExplicitRule::Create<ContainerIDToContainerStatusUDF>(types::ST_CONTAINER_STATE,
+    return {udf::ExplicitRule::Create<ContainerIDToContainerStatusUDF>(types::ST_CONTAINER_STATUS,
                                                                        {types::ST_NONE})};
   }
 };
@@ -719,7 +719,7 @@ class UPIDToPodStatusUDF : public ScalarUDF {
   }
 
   static udf::InfRuleVec SemanticInferenceRules() {
-    return {udf::ExplicitRule::Create<UPIDToPodStatusUDF>(types::ST_POD_PHASE, {types::ST_NONE})};
+    return {udf::ExplicitRule::Create<UPIDToPodStatusUDF>(types::ST_POD_STATUS, {types::ST_NONE})};
   }
 };
 
