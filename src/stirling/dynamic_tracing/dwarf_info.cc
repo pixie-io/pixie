@@ -90,6 +90,8 @@ class Dwarvifier {
   Status ProcessStashAction(const ir::logical::MapStashAction& stash_action,
                             ir::physical::Probe* output_probe,
                             ir::physical::Program* output_program);
+  Status ProcessDeleteAction(const ir::logical::MapDeleteAction& stash_action,
+                             ir::physical::Probe* output_probe);
   Status ProcessOutputAction(const ir::logical::OutputAction& output_action,
                              ir::physical::Probe* output_probe,
                              ir::physical::Program* output_program);
@@ -320,6 +322,10 @@ Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
 
   for (const auto& stash_action : input_probe.map_stash_actions()) {
     PL_RETURN_IF_ERROR(ProcessStashAction(stash_action, p, output_program));
+  }
+
+  for (const auto& delete_action : input_probe.map_delete_actions()) {
+    PL_RETURN_IF_ERROR(ProcessDeleteAction(delete_action, p));
   }
 
   for (const auto& output_action : input_probe.output_actions()) {
@@ -638,6 +644,17 @@ Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_a
   stash_action_out->set_key_variable_name(key_var_name);
   stash_action_out->set_value_variable_name(variable_name);
   stash_action_out->mutable_cond()->CopyFrom(stash_action_in.cond());
+
+  return Status::OK();
+}
+
+Status Dwarvifier::ProcessDeleteAction(const ir::logical::MapDeleteAction& delete_action_in,
+                                       ir::physical::Probe* output_probe) {
+  auto* delete_action_out = output_probe->add_map_delete_actions();
+  delete_action_out->set_map_name(delete_action_in.map_name());
+
+  PL_ASSIGN_OR_RETURN(std::string key_var_name, BPFHelperVariableName(delete_action_in.key()));
+  delete_action_out->set_key_variable_name(key_var_name);
 
   return Status::OK();
 }

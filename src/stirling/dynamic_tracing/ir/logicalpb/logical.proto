@@ -70,6 +70,12 @@ message MapStashAction {
   shared.Condition cond = 4;
 }
 
+message MapDeleteAction {
+  string map_name = 1;
+
+  shared.BPFHelper key = 2;
+}
+
 // Describes the structure of the data Output.
 // Corresponds to px.Output().
 message Output {
@@ -123,6 +129,9 @@ message Probe {
   // The variable to be inserted into the map must be one of the above args,
   // ret_vals, and function_latency.
   repeated MapStashAction map_stash_actions = 8;
+
+  // Deletes a map entry, by key.
+  repeated MapDeleteAction map_delete_actions = 11;
 
   // Writes a value to the output table.
   //

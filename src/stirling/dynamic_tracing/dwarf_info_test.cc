@@ -447,6 +447,10 @@ probes: {
     value_ids: "arg0"
     value_ids: "arg1"
   }
+  map_delete_actions {
+    map_name: "my_stash"
+    key: GOID
+  }
   output_actions {
     output_name: "out_table2"
     variable_name: "arg0"
@@ -790,6 +794,10 @@ probes {
         variable_name: "arg1"
       }
     }
+  }
+  map_delete_actions {
+    map_name: "my_stash"
+    key_variable_name: "goid_"
   }
   output_actions {
     perf_buffer_name: "out_table2"

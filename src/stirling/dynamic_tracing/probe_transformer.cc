@@ -56,9 +56,10 @@ void CreateEntryProbe(const ir::shared::BinarySpec::Language& language,
   // Generate argument stash.
   // For now, always stash all arguments.
   if (input_probe.args_size() > 0 || IsFunctionLatecySpecified(input_probe)) {
-    auto* stash_action = entry_probe->add_map_stash_actions();
+    std::string map_name = input_probe.name() + "_argstash";
 
-    stash_action->set_map_name(input_probe.name() + "_argstash");
+    auto* stash_action = entry_probe->add_map_stash_actions();
+    stash_action->set_map_name(map_name);
     stash_action->set_key(GetLanguageThreadID(language));
 
     for (const auto& in_arg : input_probe.args()) {
@@ -98,9 +99,10 @@ Status CreateReturnProbe(const ir::shared::BinarySpec::Language& language,
   return_probe->mutable_trace_point()->set_type(ir::shared::TracePoint::RETURN);
 
   if (input_probe.args_size() > 0 || IsFunctionLatecySpecified(input_probe)) {
-    auto* map_val = return_probe->add_map_vals();
+    std::string map_name = input_probe.name() + "_argstash";
 
-    map_val->set_map_name(input_probe.name() + "_argstash");
+    auto* map_val = return_probe->add_map_vals();
+    map_val->set_map_name(map_name);
     map_val->set_key(GetLanguageThreadID(language));
 
     for (const auto& in_arg : input_probe.args()) {
@@ -115,6 +117,10 @@ Status CreateReturnProbe(const ir::shared::BinarySpec::Language& language,
       // intermediate translation produces the special variables.
       map_val->add_value_ids(kStartKTimeNSVarName);
     }
+
+    auto* map_delete_action = return_probe->add_map_delete_actions();
+    map_delete_action->set_map_name(map_name);
+    map_delete_action->set_key(GetLanguageThreadID(language));
   }
 
   // Generate return values.

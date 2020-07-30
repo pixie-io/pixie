@@ -217,6 +217,10 @@ probes {
     variable_name: "retval1"
     variable_name: "fn_latency"
   }
+  map_delete_actions {
+    map_name: "probe0_argstash"
+    key: GOID
+  }
 }
 )proto";
 
