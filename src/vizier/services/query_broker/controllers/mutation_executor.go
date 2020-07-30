@@ -202,6 +202,7 @@ func (m *MutationExecutor) MutationInfo(ctx context.Context) (*vizierpb.Mutation
 		mutationInfo.States[idx] = &vizierpb.MutationInfo_MutationState{
 			ID:    utils.UUIDFromProtoOrNil(tp.ID).String(),
 			State: convertLifeCycleStateToVizierLifeCycleState(tp.State),
+			Name:  tp.Name,
 		}
 		if tp.State != statuspb.RUNNING_STATE {
 			ready = false

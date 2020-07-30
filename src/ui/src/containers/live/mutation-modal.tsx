@@ -22,13 +22,14 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
     zIndex: 1,
   },
   mutationCard: {
-    width: '50%',
+    width: '40%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'column',
     padding: spacing(2),
-    transform: 'translate(50%, 20vh)',
+    paddingBottom: spacing(3),
+    transform: 'translate(65%, 20vh)',
   },
   cardHeader: {
     ...typography.h6,
@@ -49,6 +50,9 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
   spinner: {
     width: spacing(5),
     height: spacing(5),
+  },
+  states: {
+    paddingBottom: spacing(2),
   },
 });
 
@@ -76,18 +80,20 @@ const MutationModal = ({ classes, mutationInfo }: MutationModalProps) => (
         Deploying Tracepoints
       </div>
       <img className={classes.image} src={moonwalkerSVG} />
-      <div>
+      <div className={classes.states}>
         {
           mutationInfo.getStatesList().map((mutation) => (
             <ListItem className={classes.mutation} key={mutation.getId()}>
               <ListItemIcon className={classes.icon}>
                 <MutationState state={mutation.getState()} classes={classes} />
               </ListItemIcon>
-              <ListItemText>{mutation.getId()}</ListItemText>
+              <ListItemText>{mutation.getName()}</ListItemText>
             </ListItem>
           ))
         }
       </div>
+      { mutationInfo.getStatus().getMessage().includes('Schema')
+        ? 'Waiting for schema to initialize...' : '' }
     </Card>
   </Modal>
 );
