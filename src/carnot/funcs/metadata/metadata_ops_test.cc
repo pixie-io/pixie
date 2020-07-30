@@ -459,6 +459,13 @@ TEST_F(MetadataOpsTest, pod_name_to_namespace_test) {
   udf_tester.ForInput("px-sock-shop/terminating_pod").Expect("px-sock-shop");
 }
 
+TEST_F(MetadataOpsTest, service_name_to_namespace_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto udf_tester = pl::carnot::udf::UDFTester<ServiceNameToNamespaceUDF>(std::move(function_ctx));
+  udf_tester.ForInput("pl/orders").Expect("pl");
+  udf_tester.ForInput("").Expect("");
+}
+
 }  // namespace metadata
 }  // namespace funcs
 }  // namespace carnot

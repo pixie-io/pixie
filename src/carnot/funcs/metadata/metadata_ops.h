@@ -266,6 +266,26 @@ class ServiceNameToServiceIDUDF : public ScalarUDF {
 };
 
 /**
+ * @brief Returns the namespace for a service.
+ */
+class ServiceNameToNamespaceUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext*, StringValue service_name) {
+    // This UDF expects the service name to be in the format of "<ns>/<svc-name>".
+    std::vector<std::string_view> name_parts = absl::StrSplit(service_name, "/");
+    if (name_parts.size() != 2) {
+      return "";
+    }
+    return std::string(name_parts[0]);
+  }
+
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<ServiceNameToNamespaceUDF>(types::ST_NAMESPACE_NAME,
+                                                                 {types::ST_NONE})};
+  }
+};
+
+/**
  * @brief Returns the service ids for services that are currently running.
  */
 class UPIDToServiceIDUDF : public ScalarUDF {
