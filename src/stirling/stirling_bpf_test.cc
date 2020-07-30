@@ -16,7 +16,12 @@ constexpr std::string_view kBinaryPath =
 namespace pl {
 namespace stirling {
 
-class StirlingBPFTest : public ::testing::TestWithParam<std::string> {
+struct TestParam {
+  std::string function_symbol;
+  std::string value;
+};
+
+class StirlingBPFTest : public ::testing::TestWithParam<TestParam> {
  protected:
   void SetUp() override {
     std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
@@ -390,7 +395,7 @@ probes {
 }
 
 TEST_P(StirlingBPFTest, byte_array) {
-  auto function_symbol = GetParam();
+  auto params = GetParam();
 
   // Run tracing target.
   SubProcess process;
@@ -407,6 +412,7 @@ binary_spec {
 outputs {
   name: "output_table"
   fields: "uuid"
+  fields: "name"
 }
 probes {
   name: "probe0"
@@ -418,9 +424,14 @@ probes {
     id: "arg0"
     expr: "uuid"
   }
+  args {
+    id: "arg1"
+    expr: "name"
+  }
   output_actions {
     output_name: "output_table"
     variable_name: "arg0"
+    variable_name: "arg1"
   }
 }
 )";
@@ -431,7 +442,7 @@ probes {
 
   auto trace_program = Prepare(kProgram, path);
   trace_program->mutable_probes(0)->mutable_trace_point()->mutable_symbol()->assign(
-      function_symbol);
+      params.function_symbol);
 
   sole::uuid trace_id = sole::uuid4();
   stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
@@ -448,6 +459,7 @@ probes {
 
   // Get field indexes for the two columns we want.
   ASSERT_HAS_VALUE_AND_ASSIGN(int uuid_field_idx, FindFieldIndex(info_class.schema(), "uuid"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int name_field_idx, FindFieldIndex(info_class.schema(), "name"));
 
   // Run Stirling data collector.
   ASSERT_OK(stirling_->RunAsThread());
@@ -476,10 +488,12 @@ probes {
 
   types::ColumnWrapperRecordBatch& rb = *record_batches_[0];
   EXPECT_EQ(rb[uuid_field_idx]->Get<types::StringValue>(0), "000102030405060708090A0B0C0D0E0F");
+  EXPECT_EQ(rb[name_field_idx]->Get<types::StringValue>(0), params.value);
 }
 
 INSTANTIATE_TEST_SUITE_P(DwarfInfoTestSuite, StirlingBPFTest,
-                         ::testing::Values("main.BytesToHex", "main.Uint8ArrayToHex"));
+                         ::testing::Values(TestParam{"main.BytesToHex", "Bytes"},
+                                           TestParam{"main.Uint8ArrayToHex", "Uint8"}));
 
 }  // namespace stirling
 }  // namespace pl

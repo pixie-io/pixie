@@ -81,12 +81,12 @@ func SaySomethingTo(something string, name string) string {
 	return something + ", " + name
 }
 
-func Uint8ArrayToHex(uuid []uint8) string {
+func Uint8ArrayToHex(uuid []uint8, name string) string {
 	return hex.EncodeToString(uuid)
 }
 
-func BytesToHex(uuid []byte) string {
-	return hex.EncodeToString(uuid)
+func BytesToHex(uuid []byte, name string) string {
+	return name + "_" + hex.EncodeToString(uuid)
 }
 
 func main() {
@@ -111,11 +111,13 @@ func main() {
 		fmt.Println(PointerWrapperWrapperWrapperFunc(d))
 		fmt.Println(SaySomethingTo("Hello", "pixienaut"));
 
+		// Note: second argument must be the function symbol name,
+		//       just to simplify stirling_bpf_test.
 		id0 := []uint8{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
-		fmt.Println(Uint8ArrayToHex(id0))
+		fmt.Println(Uint8ArrayToHex(id0, "Uint8"))
 
 		id1 := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
-        fmt.Println(BytesToHex(id1))
+		fmt.Println(BytesToHex(id1, "Bytes"))
 
 		time.Sleep(time.Second)
 	}
