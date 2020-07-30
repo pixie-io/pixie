@@ -61,6 +61,9 @@ interface ScriptContextProps {
   setVis: SetStateFunc<Vis>;
   setVisJSON: SetStateFunc<string>;
 
+  setCancelExecution: SetStateFunc<() => void>;
+  cancelExecution: () => void;
+
   pxlEditorText: string;
   visEditorText: string;
   setVisEditorText: SetStateFunc<string>;
@@ -127,6 +130,8 @@ const ScriptContextProvider = (props) => {
   const [liveViewPage, setLiveViewPage] = React.useState<LiveViewPage>(entity.page);
   const [visEditorText, setVisEditorText] = React.useState<string>();
   const [pxlEditorText, setPxlEditorText] = React.useState<string>();
+
+  const [cancelExecution, setCancelExecution] = React.useState<() => void>();
 
   // Args that are not part of an entity.
   const [args, setArgs] = useSessionStorage<Arguments | null>(LIVE_VIEW_SCRIPT_ARGS_KEY, entity.params);
@@ -266,7 +271,16 @@ const ScriptContextProvider = (props) => {
       if (queryResults.mutationInfo && queryResults.mutationInfo.getStatus().getCode() === GRPCStatusCode.Unavailable) {
         // Wait 5s before executing again.
         setResults({ tables: {}, mutationInfo: queryResults.mutationInfo });
-        await new Promise((resolve) => setTimeout(resolve, mutationRetryMs));
+        await Promise.race([
+          new Promise((resolve) => setTimeout(resolve, mutationRetryMs)),
+          new Promise((resolve) => {
+            const cancel = () => (() => {
+              numTries = 0;
+              resolve();
+            });
+            setCancelExecution(cancel);
+          }),
+        ]);
         return executeScriptUntilMutationCompletion(execArgs, funcs, mutation, numTries - 1);
       }
       return queryResults;
@@ -414,6 +428,8 @@ const ScriptContextProvider = (props) => {
         setScript,
         execute,
         saveEditorAndExecute,
+        cancelExecution,
+        setCancelExecution,
       }}
     >
       {props.children}

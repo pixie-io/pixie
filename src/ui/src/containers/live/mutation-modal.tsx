@@ -1,6 +1,7 @@
 import * as React from 'react';
 import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
+import Button from '@material-ui/core/Button';
 
 import {
   createStyles, Theme, withStyles, WithStyles,
@@ -11,6 +12,7 @@ import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 import { CircularProgress } from '@material-ui/core';
+import { ScriptContext } from '../../context/script-context';
 
 import * as moonwalkerSVG from '../../../assets/images/moonwalker.svg';
 
@@ -73,29 +75,36 @@ const MutationState = (props) => {
   return <CircularProgress size={18} />;
 };
 
-const MutationModal = ({ classes, mutationInfo }: MutationModalProps) => (
-  <Modal open>
-    <Card className={classes.mutationCard}>
-      <div className={classes.cardHeader}>
-        Deploying Tracepoints
-      </div>
-      <img className={classes.image} src={moonwalkerSVG} />
-      <div className={classes.states}>
-        {
-          mutationInfo.getStatesList().map((mutation) => (
-            <ListItem className={classes.mutation} key={mutation.getId()}>
-              <ListItemIcon className={classes.icon}>
-                <MutationState state={mutation.getState()} classes={classes} />
-              </ListItemIcon>
-              <ListItemText>{mutation.getName()}</ListItemText>
-            </ListItem>
-          ))
-        }
-      </div>
-      { mutationInfo.getStatus().getMessage().includes('Schema')
-        ? 'Waiting for schema to initialize...' : '' }
-    </Card>
-  </Modal>
-);
+const MutationModal = ({ classes, mutationInfo }: MutationModalProps) => {
+  const { cancelExecution } = React.useContext(ScriptContext);
+
+  return (
+    <Modal open>
+      <Card className={classes.mutationCard}>
+        <div className={classes.cardHeader}>
+          Deploying Tracepoints
+        </div>
+        <img className={classes.image} src={moonwalkerSVG} />
+        <div className={classes.states}>
+          {
+            mutationInfo.getStatesList().map((mutation) => (
+              <ListItem className={classes.mutation} key={mutation.getId()}>
+                <ListItemIcon className={classes.icon}>
+                  <MutationState state={mutation.getState()} classes={classes} />
+                </ListItemIcon>
+                <ListItemText>{mutation.getName()}</ListItemText>
+              </ListItem>
+            ))
+          }
+        </div>
+        { mutationInfo.getStatus().getMessage().includes('Schema')
+          ? 'Waiting for schema to initialize...' : '' }
+        <Button onClick={cancelExecution}>
+          Cancel
+        </Button>
+      </Card>
+    </Modal>
+  );
+};
 
 export default withStyles(styles)(MutationModal);
