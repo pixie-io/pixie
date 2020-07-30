@@ -136,6 +136,11 @@ void TracepointManager::Monitor() {
       }
     }
 
+    if (current_state != statuspb::RUNNING_STATE &&
+        tracepoint.expected_state == statuspb::TERMINATED_STATE) {
+      current_state = statuspb::TERMINATED_STATE;
+    }
+
     if (current_state == tracepoint.current_state) {
       // No state transition, nothing to do.
       continue;
