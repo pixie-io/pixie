@@ -24,10 +24,26 @@
         "x": 6,
         "y": 0,
         "w": 6,
-        "h": 6
+        "h": 3
       },
       "func": {
         "name": "tracepoint_info",
+        "args": []
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    },
+    {
+      "name": "Running tracepoints",
+      "position": {
+        "x": 6,
+        "y": 3,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "running_tracepoints",
         "args": []
       },
       "displaySpec": {
