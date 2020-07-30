@@ -17,6 +17,7 @@ import { parseVis } from 'containers/live/vis';
 import { EntityType, pxTypetoEntityType } from 'containers/new-command-input/autocomplete-utils';
 import { StatusCell } from 'components/status/status';
 import { clusterStatusGroup } from 'containers/admin/utils';
+import { ContainsMutation } from 'utils/pxl';
 
 const LIST_CLUSTERS = gql`
 {
@@ -176,7 +177,9 @@ const LiveViewBreadcrumbs = ({ classes }) => {
         vis,
       };
       setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
-      execute(execArgs);
+      if (!ContainsMutation(execArgs.pxl)) {
+        execute(execArgs);
+      }
     },
   });
 
