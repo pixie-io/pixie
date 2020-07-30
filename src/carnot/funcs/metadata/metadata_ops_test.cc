@@ -1,3 +1,5 @@
+#include <rapidjson/document.h>
+
 #include <memory>
 #include <numeric>
 #include <type_traits>
@@ -338,41 +340,49 @@ TEST_F(MetadataOpsTest, pod_name_to_start_time) {
 
 TEST_F(MetadataOpsTest, pod_name_to_pod_status) {
   PodNameToPodStatusUDF status_udf;
-  PodNameToPodStatusMessageUDF msg_udf;
-  PodNameToPodStatusReasonUDF reason_udf;
 
   updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedPodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
                                                                &md_filter_, updates_.get()));
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
   // 1_uid is the Pod id for the currently running pod.
-  EXPECT_EQ(status_udf.Exec(function_ctx.get(), "pl/running_pod"), "Running");
-  EXPECT_EQ(status_udf.Exec(function_ctx.get(), "pl/terminating_pod"), "Failed");
+  auto running_res = status_udf.Exec(function_ctx.get(), "pl/running_pod");
+  auto failed_res = status_udf.Exec(function_ctx.get(), "pl/terminating_pod");
 
-  EXPECT_EQ(msg_udf.Exec(function_ctx.get(), "pl/running_pod"), "Running message");
-  EXPECT_EQ(msg_udf.Exec(function_ctx.get(), "pl/terminating_pod"), "Failed message terminated");
+  rapidjson::Document running;
+  running.Parse(running_res.data());
+  EXPECT_EQ("Running", std::string(running["phase"].GetString()));
+  EXPECT_EQ("Running message", std::string(running["message"].GetString()));
+  EXPECT_EQ("Running reason", std::string(running["reason"].GetString()));
 
-  EXPECT_EQ(reason_udf.Exec(function_ctx.get(), "pl/running_pod"), "Running reason");
-  EXPECT_EQ(reason_udf.Exec(function_ctx.get(), "pl/terminating_pod"), "Failed reason terminated");
+  rapidjson::Document failed;
+  failed.Parse(failed_res.data());
+  EXPECT_EQ("Failed", std::string(failed["phase"].GetString()));
+  EXPECT_EQ("Failed message terminated", std::string(failed["message"].GetString()));
+  EXPECT_EQ("Failed reason terminated", std::string(failed["reason"].GetString()));
 }
 
 TEST_F(MetadataOpsTest, container_id_to_container_status) {
   ContainerIDToContainerStatusUDF status_udf;
-  ContainerIDToContainerStatusMessageUDF msg_udf;
-  ContainerIDToContainerStatusReasonUDF reason_udf;
 
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
                                                                &md_filter_, updates_.get()));
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
-  // 1_uid is the Pod id for the currently running pod.
-  EXPECT_EQ(status_udf.Exec(function_ctx.get(), "pod1_container_1"), "Running");
-  EXPECT_EQ(status_udf.Exec(function_ctx.get(), "pod2_container_1"), "Terminated");
 
-  EXPECT_EQ(msg_udf.Exec(function_ctx.get(), "pod1_container_1"), "Running message");
-  EXPECT_EQ(msg_udf.Exec(function_ctx.get(), "pod2_container_1"), "Terminating message pending");
+  auto running_res = status_udf.Exec(function_ctx.get(), "pod1_container_1");
+  auto terminating_res = status_udf.Exec(function_ctx.get(), "pod2_container_1");
 
-  EXPECT_EQ(reason_udf.Exec(function_ctx.get(), "pod1_container_1"), "Running reason");
-  EXPECT_EQ(reason_udf.Exec(function_ctx.get(), "pod2_container_1"), "Terminating reason pending");
+  rapidjson::Document running;
+  running.Parse(running_res.data());
+  EXPECT_EQ("Running", std::string(running["state"].GetString()));
+  EXPECT_EQ("Running message", std::string(running["message"].GetString()));
+  EXPECT_EQ("Running reason", std::string(running["reason"].GetString()));
+
+  rapidjson::Document terminating;
+  terminating.Parse(terminating_res.data());
+  EXPECT_EQ("Terminated", std::string(terminating["state"].GetString()));
+  EXPECT_EQ("Terminating message pending", std::string(terminating["message"].GetString()));
+  EXPECT_EQ("Terminating reason pending", std::string(terminating["reason"].GetString()));
 }
 
 TEST_F(MetadataOpsTest, upid_to_cmdline) {
@@ -418,9 +428,21 @@ TEST_F(MetadataOpsTest, upid_to_pod_status) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
   // 1_uid is the Pod id for the currently running pod.
   auto upid1 = types::UInt128Value(528280977975, 89101);
-  EXPECT_EQ(udf.Exec(function_ctx.get(), upid1), "Running");
+  auto running_res = udf.Exec(function_ctx.get(), upid1);
   auto upid2 = types::UInt128Value(528280977975, 468);
-  EXPECT_EQ(std::string(udf.Exec(function_ctx.get(), upid2)), "Failed");
+  auto failed_res = std::string(udf.Exec(function_ctx.get(), upid2));
+
+  rapidjson::Document running;
+  running.Parse(running_res.data());
+  EXPECT_EQ("Running", std::string(running["phase"].GetString()));
+  EXPECT_EQ("Running message", std::string(running["message"].GetString()));
+  EXPECT_EQ("Running reason", std::string(running["reason"].GetString()));
+
+  rapidjson::Document failed;
+  failed.Parse(failed_res.data());
+  EXPECT_EQ("Failed", std::string(failed["phase"].GetString()));
+  EXPECT_EQ("Failed message terminated", std::string(failed["message"].GetString()));
+  EXPECT_EQ("Failed reason terminated", std::string(failed["reason"].GetString()));
 }
 
 TEST_F(MetadataOpsTest, pod_id_to_namespace_test) {

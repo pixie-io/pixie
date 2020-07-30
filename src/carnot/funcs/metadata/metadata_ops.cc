@@ -16,8 +16,6 @@ void RegisterMetadataOpsOrDie(pl::carnot::udf::Registry* registry) {
    *****************************************/
   registry->RegisterOrDie<ASIDUDF>("asid");
   registry->RegisterOrDie<ContainerIDToContainerStatusUDF>("container_id_to_status");
-  registry->RegisterOrDie<ContainerIDToContainerStatusMessageUDF>("container_id_to_status_message");
-  registry->RegisterOrDie<ContainerIDToContainerStatusReasonUDF>("container_id_to_status_reason");
   registry->RegisterOrDie<PodIPToPodIDUDF>("ip_to_pod_id");
   registry->RegisterOrDie<PodIDToPodNameUDF>("pod_id_to_pod_name");
   registry->RegisterOrDie<PodIDToNamespaceUDF>("pod_id_to_namespace");
@@ -31,8 +29,6 @@ void RegisterMetadataOpsOrDie(pl::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<PodNameToServiceIDUDF>("pod_name_to_service_id");
   registry->RegisterOrDie<PodNameToPodStartTimeUDF>("pod_name_to_start_time");
   registry->RegisterOrDie<PodNameToPodStatusUDF>("pod_name_to_status");
-  registry->RegisterOrDie<PodNameToPodStatusMessageUDF>("pod_name_to_status_message");
-  registry->RegisterOrDie<PodNameToPodStatusReasonUDF>("pod_name_to_status_reason");
   registry->RegisterOrDie<ServiceIDToServiceNameUDF>("service_id_to_service_name");
   registry->RegisterOrDie<ServiceNameToServiceIDUDF>("service_name_to_service_id");
   registry->RegisterOrDie<UPIDToASIDUDF>("upid_to_asid");

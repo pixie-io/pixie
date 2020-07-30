@@ -1,5 +1,6 @@
 #pragma once
 
+#include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <string>
@@ -17,6 +18,12 @@ namespace funcs {
 namespace metadata {
 
 using ScalarUDF = pl::carnot::udf::ScalarUDF;
+
+namespace internal {
+inline rapidjson::GenericStringRef<char> StringRef(std::string_view s) {
+  return rapidjson::GenericStringRef<char>(s.data(), s.size());
+}
+}  // namespace internal
 
 inline const pl::md::AgentMetadataState* GetMetadataState(pl::carnot::udf::FunctionContext* ctx) {
   DCHECK(ctx != nullptr);
@@ -547,11 +554,8 @@ class PodNameToPodStartTimeUDF : public ScalarUDF {
   }
 };
 
-inline std::string PodInfoToPodStatus(const pl::md::PodInfo* pod_info) {
-  if (pod_info == nullptr) {
-    return "";
-  }
-  switch (pod_info->phase()) {
+inline std::string PodPhaseToString(const pl::md::PodPhase& pod_phase) {
+  switch (pod_phase) {
     case md::PodPhase::kRunning:
       return "Running";
     case md::PodPhase::kPending:
@@ -566,6 +570,26 @@ inline std::string PodInfoToPodStatus(const pl::md::PodInfo* pod_info) {
   }
 }
 
+inline types::StringValue PodInfoToPodStatus(const pl::md::PodInfo* pod_info) {
+  std::string phase = "";
+  std::string msg = "";
+  std::string reason = "";
+  if (pod_info != nullptr) {
+    phase = PodPhaseToString(pod_info->phase());
+    msg = pod_info->phase_message();
+    reason = pod_info->phase_reason();
+  }
+  rapidjson::Document d;
+  d.SetObject();
+  d.AddMember("phase", internal::StringRef(phase), d.GetAllocator());
+  d.AddMember("message", internal::StringRef(msg), d.GetAllocator());
+  d.AddMember("reason", internal::StringRef(reason), d.GetAllocator());
+  rapidjson::StringBuffer sb;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+  d.Accept(writer);
+  return sb.GetString();
+}
+
 class PodNameToPodStatusUDF : public ScalarUDF {
  public:
   /**
@@ -578,8 +602,10 @@ class PodNameToPodStatusUDF : public ScalarUDF {
   StringValue Exec(FunctionContext* ctx, StringValue pod_name) {
     auto md = GetMetadataState(ctx);
     StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
-    return PodInfoToPodStatus(md->k8s_metadata_state().PodInfoByID(pod_id));
+    auto pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    return PodInfoToPodStatus(pod_info);
   }
+
   static udf::InfRuleVec SemanticInferenceRules() {
     return {
         udf::ExplicitRule::Create<PodNameToPodStatusUDF>(types::ST_POD_PHASE, {types::ST_NONE})};
@@ -626,11 +652,8 @@ class PodNameToPodStatusReasonUDF : public ScalarUDF {
   }
 };
 
-inline std::string ContainerInfoToContainerStatus(const pl::md::ContainerInfo* container_info) {
-  if (container_info == nullptr) {
-    return "";
-  }
-  switch (container_info->state()) {
+inline std::string ContainerStateToString(const pl::md::ContainerState& container_state) {
+  switch (container_state) {
     case md::ContainerState::kRunning:
       return "Running";
     case md::ContainerState::kWaiting:
@@ -655,50 +678,29 @@ class ContainerIDToContainerStatusUDF : public ScalarUDF {
   StringValue Exec(FunctionContext* ctx, StringValue container_id) {
     auto md = GetMetadataState(ctx);
     auto container_info = md->k8s_metadata_state().ContainerInfoByID(container_id);
-    return ContainerInfoToContainerStatus(container_info);
+
+    std::string state = "";
+    std::string msg = "";
+    std::string reason = "";
+    if (container_info != nullptr) {
+      state = ContainerStateToString(container_info->state());
+      msg = container_info->state_message();
+      reason = container_info->state_reason();
+    }
+    rapidjson::Document d;
+    d.SetObject();
+    d.AddMember("state", internal::StringRef(state), d.GetAllocator());
+    d.AddMember("message", internal::StringRef(msg), d.GetAllocator());
+    d.AddMember("reason", internal::StringRef(reason), d.GetAllocator());
+    rapidjson::StringBuffer sb;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+    d.Accept(writer);
+    return sb.GetString();
   }
 
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::ExplicitRule::Create<ContainerIDToContainerStatusUDF>(types::ST_CONTAINER_STATE,
                                                                        {types::ST_NONE})};
-  }
-};
-
-class ContainerIDToContainerStatusMessageUDF : public ScalarUDF {
- public:
-  /**
-   * @brief Gets the Container status message for a passed in container.
-   *
-   * @param ctx: the function context
-   * @param container_id: the Value containing a container id.
-   * @return StringValue: the status message of the container.
-   */
-  StringValue Exec(FunctionContext* ctx, StringValue container_id) {
-    auto md = GetMetadataState(ctx);
-    auto container_info = md->k8s_metadata_state().ContainerInfoByID(container_id);
-    if (container_info == nullptr) {
-      return "";
-    }
-    return container_info->state_message();
-  }
-};
-
-class ContainerIDToContainerStatusReasonUDF : public ScalarUDF {
- public:
-  /**
-   * @brief Gets the Container status reason for a passed in container.
-   *
-   * @param ctx: the function context
-   * @param container_id: the Value containing a container id.
-   * @return StringValue: the status reason of the container.
-   */
-  StringValue Exec(FunctionContext* ctx, StringValue container_id) {
-    auto md = GetMetadataState(ctx);
-    auto container_info = md->k8s_metadata_state().ContainerInfoByID(container_id);
-    if (container_info == nullptr) {
-      return "";
-    }
-    return container_info->state_reason();
   }
 };
 
@@ -717,8 +719,7 @@ class UPIDToPodStatusUDF : public ScalarUDF {
   }
 
   static udf::InfRuleVec SemanticInferenceRules() {
-    return {
-        udf::ExplicitRule::Create<PodNameToPodStatusUDF>(types::ST_POD_PHASE, {types::ST_NONE})};
+    return {udf::ExplicitRule::Create<UPIDToPodStatusUDF>(types::ST_POD_PHASE, {types::ST_NONE})};
   }
 };
 
