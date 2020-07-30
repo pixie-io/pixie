@@ -1,17 +1,5 @@
 import { SemanticType } from 'types/generated/vizier_pb';
-import { parseQuantile, parseRows } from './parsers';
-
-describe('parseQuantile', () => {
-  it('correctly parses a quantile', () => {
-    expect(parseQuantile('{"p10": 123, "p50": 345, "p90": 456, "p99": 789}'))
-      .toStrictEqual({ p50: 345, p90: 456, p99: 789 });
-  });
-
-  it('returns null for a non-quantile', () => {
-    expect(parseQuantile('px-sock-shop'))
-      .toStrictEqual(null);
-  });
-});
+import { parseRows } from './parsers';
 
 describe('parseRows', () => {
   it('correctly parses a row with quantiles', () => {
@@ -27,6 +15,36 @@ describe('parseRows', () => {
       .toStrictEqual([
         { quantileCol: { p50: 345, p90: 456, p99: 789 }, nonQuantileCol: '6' },
         { quantileCol: { p50: 789, p90: 1010, p99: 2000 }, nonQuantileCol: '5' },
+      ]);
+  });
+
+  it('correctly parses a row with pod statuses', () => {
+    const semanticTypes = new Map([
+      ['status', SemanticType.ST_POD_STATUS],
+    ]);
+
+    expect(parseRows(semanticTypes, [
+      { status: '{"phase": "RUNNING", "reason": "foo", "message": "bar"}' },
+      { status: 'notcorrect' },
+    ]))
+      .toStrictEqual([
+        { status: { phase: 'RUNNING', reason: 'foo', message: 'bar' } },
+        { status: null },
+      ]);
+  });
+
+  it('correctly parses a row with container statuses', () => {
+    const semanticTypes = new Map([
+      ['status', SemanticType.ST_CONTAINER_STATUS],
+    ]);
+
+    expect(parseRows(semanticTypes, [
+      { status: '{"state": "RUNNING", "reason": "foo", "message": "bar"}' },
+      { status: 'notcorrect' },
+    ]))
+      .toStrictEqual([
+        { status: { state: 'RUNNING', reason: 'foo', message: 'bar' } },
+        { status: null },
       ]);
   });
 
