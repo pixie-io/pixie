@@ -2,6 +2,7 @@ import * as React from 'react';
 import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 import Button from '@material-ui/core/Button';
+import Grid from '@material-ui/core/Grid';
 
 import {
   createStyles, Theme, withStyles, WithStyles,
@@ -37,10 +38,11 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
     ...typography.h6,
     color: palette.foreground.two,
     paddingBottom: spacing(2),
+    display: 'flex',
+    justifyContent: 'center',
   },
   image: {
-    width: spacing(30),
-    paddingBottom: spacing(3),
+    width: spacing(16),
   },
   icon: {
     minWidth: spacing(4),
@@ -49,12 +51,31 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
     paddingTop: 0,
     paddingBottom: 0,
   },
+  schema: {
+    paddingTop: spacing(1),
+    paddingBottom: spacing(1),
+    justifyContent: 'center',
+  },
   spinner: {
     width: spacing(5),
     height: spacing(5),
   },
   states: {
     paddingBottom: spacing(2),
+  },
+  leftStates: {
+    '& > li': {
+      paddingLeft: spacing(5),
+    },
+  },
+  cancelButton: {
+    display: 'flex',
+    flexDirection: 'row-reverse',
+    alignSelf: 'flex-end',
+    paddingBottom: spacing(1),
+  },
+  schemaText: {
+    flex: 'none',
   },
 });
 
@@ -81,27 +102,58 @@ const MutationModal = ({ classes, mutationInfo }: MutationModalProps) => {
   return (
     <Modal open>
       <Card className={classes.mutationCard}>
-        <div className={classes.cardHeader}>
-          Deploying Tracepoints
-        </div>
-        <img className={classes.image} src={moonwalkerSVG} />
-        <div className={classes.states}>
-          {
-            mutationInfo.getStatesList().map((mutation) => (
-              <ListItem className={classes.mutation} key={mutation.getId()}>
-                <ListItemIcon className={classes.icon}>
-                  <MutationState state={mutation.getState()} classes={classes} />
-                </ListItemIcon>
-                <ListItemText>{mutation.getName()}</ListItemText>
-              </ListItem>
-            ))
-          }
-        </div>
-        { mutationInfo.getStatus().getMessage().includes('Schema')
-          ? 'Waiting for schema to initialize...' : '' }
-        <Button onClick={cancelExecution}>
-          Cancel
-        </Button>
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <div className={classes.cardHeader}>
+              Deploying Tracepoints
+            </div>
+          </Grid>
+          <Grid item xs={6} className={classes.leftStates}>
+            {
+               mutationInfo.getStatesList().slice(0, Math.ceil(mutationInfo.getStatesList().length)).map((mutation) => (
+                 <ListItem className={classes.mutation} key={mutation.getId()}>
+                   <ListItemIcon className={classes.icon}>
+                     <MutationState state={mutation.getState()} classes={classes} />
+                   </ListItemIcon>
+                   <ListItemText>{mutation.getName()}</ListItemText>
+                 </ListItem>
+               ))
+            }
+          </Grid>
+          <Grid item xs={6}>
+            {
+              mutationInfo.getStatesList().slice(Math.ceil(mutationInfo.getStatesList().length)).map((mutation) => (
+                <ListItem className={classes.mutation} key={mutation.getId()}>
+                  <ListItemIcon className={classes.icon}>
+                    <MutationState state={mutation.getState()} classes={classes} />
+                  </ListItemIcon>
+                  <ListItemText>{mutation.getName()}</ListItemText>
+                </ListItem>
+              ))
+            }
+          </Grid>
+          <Grid item xs={12}>
+            {
+              (true || mutationInfo.getStatus().getMessage().includes('Schema'))
+              && (
+                <ListItem className={classes.schema} key='schema'>
+                  <ListItemIcon className={classes.icon}>
+                    <MutationState state={LifeCycleState.PENDING_STATE} classes={classes} />
+                  </ListItemIcon>
+                  <ListItemText className={classes.schemaText}>Prepare schema</ListItemText>
+                </ListItem>
+              )
+            }
+          </Grid>
+          <Grid item xs={6}>
+            <img className={classes.image} src={moonwalkerSVG} />
+          </Grid>
+          <Grid item xs={6} className={classes.cancelButton}>
+            <Button onClick={cancelExecution}>
+              Cancel
+            </Button>
+          </Grid>
+        </Grid>
       </Card>
     </Modal>
   );
