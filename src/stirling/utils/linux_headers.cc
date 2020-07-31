@@ -128,7 +128,7 @@ Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
 
 StatusOr<std::filesystem::path> FindKernelConfig() {
   PL_ASSIGN_OR_RETURN(std::string uname, GetUname());
-  const std::filesystem::path kHost = system::Config::GetInstance().host_path();
+  const std::filesystem::path& kHost = system::Config::GetInstance().host_path();
 
   std::filesystem::path boot_kconfig = absl::StrCat("/boot/config-", uname);
   std::filesystem::path host_boot_kconfig = fs::JoinPath({&kHost, &boot_kconfig});

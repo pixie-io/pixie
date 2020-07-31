@@ -18,6 +18,7 @@ using ResourceUpdate = pl::shared::k8s::metadatapb::ResourceUpdate;
 using ::testing::ElementsAre;
 using ::testing::Pair;
 using ::testing::Return;
+using ::testing::ReturnRef;
 using ::testing::UnorderedElementsAre;
 
 constexpr char kUpdate0_0Pbtxt[] = R"(
@@ -305,13 +306,14 @@ TEST_F(AgentMetadataStateTest, pid_created) {
   FakePIDData md_reader;
   LOG(INFO) << metadata_state_.DebugString();
 
+  std::filesystem::path proc_path = testing::TestFilePath("src/shared/metadata/testdata/proc");
+
   system::MockConfig sysconfig;
   EXPECT_CALL(sysconfig, ClockRealTimeOffset()).WillRepeatedly(Return(128));
   EXPECT_CALL(sysconfig, HasConfig()).WillRepeatedly(Return(true));
   EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
   EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
-  EXPECT_CALL(sysconfig, proc_path())
-      .WillRepeatedly(Return(testing::TestFilePath("src/shared/metadata/testdata/proc")));
+  EXPECT_CALL(sysconfig, proc_path()).WillRepeatedly(ReturnRef(proc_path));
   system::ProcParser proc_parser(sysconfig);
   EXPECT_OK(AgentMetadataStateManager::ProcessPIDUpdates(1000, proc_parser, &metadata_state_,
                                                          &md_reader, &events));

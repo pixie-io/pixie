@@ -41,7 +41,7 @@ StatusOr<std::filesystem::path> ResolveHsperfDataPath(pid_t pid) {
   for (const fs::PathSplit& path_split : fs::EnumerateParentPaths(hsperf_data_path)) {
     auto resolved_mount_path_or = proc_parser.ResolveMountPoint(pid, path_split.parent);
     if (resolved_mount_path_or.ok()) {
-      const std::filesystem::path host_path = system::Config::GetInstance().host_path();
+      const std::filesystem::path& host_path = system::Config::GetInstance().host_path();
       return fs::JoinPath({&host_path, &resolved_mount_path_or.ValueOrDie(), &path_split.child});
     }
   }

@@ -16,7 +16,7 @@ namespace obj_tools {
 //
 // Example #2: container with an overlay on / (as discovered through /proc/pid/mounts)
 //   ResolveProcessRootDir():   /var/lib/docker/overlay2/402fe2...be0/merged
-pl::StatusOr<std::filesystem::path> ResolveProcessRootDir(std::filesystem::path proc_pid) {
+pl::StatusOr<std::filesystem::path> ResolveProcessRootDir(const std::filesystem::path& proc_pid) {
   std::filesystem::path mounts = proc_pid / "mounts";
   PL_ASSIGN_OR_RETURN(std::string mounts_content, pl::ReadFileToString(mounts));
 
@@ -75,8 +75,8 @@ pl::StatusOr<std::filesystem::path> GetOverlayMergedDir(std::string_view mount_o
 // Example #2: container with an overlay on /
 //   ResolveProcessPath("/proc/123", "/app/server") ->
 //   /var/lib/docker/overlay2/402fe2...be0/merged/app/server
-pl::StatusOr<std::filesystem::path> ResolveProcessPath(std::filesystem::path proc_pid,
-                                                       std::filesystem::path path) {
+pl::StatusOr<std::filesystem::path> ResolveProcessPath(const std::filesystem::path& proc_pid,
+                                                       const std::filesystem::path& path) {
   PL_ASSIGN_OR_RETURN(std::filesystem::path process_root_dir, ResolveProcessRootDir(proc_pid));
 
   // Warning: must use JoinPath, because we are dealing with two absolute paths.
@@ -85,7 +85,7 @@ pl::StatusOr<std::filesystem::path> ResolveProcessPath(std::filesystem::path pro
   return host_path;
 }
 
-pl::StatusOr<std::filesystem::path> ResolveProcExe(std::filesystem::path proc_pid) {
+pl::StatusOr<std::filesystem::path> ResolveProcExe(const std::filesystem::path& proc_pid) {
   PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, fs::ReadSymlink(proc_pid / "exe"));
   if (proc_exe.empty() || proc_exe == "/") {
     // Not sure what causes this, but sometimes get symlinks that point to "/".

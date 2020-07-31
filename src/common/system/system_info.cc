@@ -27,7 +27,7 @@ void LogSystemInfo() {
 
   // Log /etc/*-release (e.g. /etc/lsb-release, /etc/os-release).
   std::filesystem::path etc_path("/etc");
-  std::filesystem::path host_path(sysconfig.host_path());
+  const std::filesystem::path& host_path = sysconfig.host_path();
   auto host_etc_path = fs::JoinPath({&host_path, &etc_path});
   for (auto& p : std::filesystem::directory_iterator(host_etc_path)) {
     if (absl::EndsWith(p.path().string(), "-release")) {

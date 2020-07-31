@@ -19,7 +19,12 @@ DEFINE_string(host_path, gflags::StringFromEnv("PL_HOST_PATH", ""),
 
 class ConfigImpl final : public Config {
  public:
-  ConfigImpl() { InitClockRealTimeOffset(); }
+  ConfigImpl()
+      : host_path_(FLAGS_host_path),
+        sysfs_path_(FLAGS_sysfs_path),
+        proc_path_(absl::StrCat(FLAGS_host_path, "/proc")) {
+    InitClockRealTimeOffset();
+  }
 
   bool HasConfig() const override { return true; }
 
@@ -29,16 +34,17 @@ class ConfigImpl final : public Config {
 
   uint64_t ClockRealTimeOffset() const override { return real_time_offset_; }
 
-  std::filesystem::path sysfs_path() const override { return FLAGS_sysfs_path; }
+  const std::filesystem::path& sysfs_path() const override { return sysfs_path_; }
 
-  std::filesystem::path host_path() const override { return FLAGS_host_path; }
+  const std::filesystem::path& host_path() const override { return host_path_; }
 
-  std::filesystem::path proc_path() const override {
-    return absl::StrCat(FLAGS_host_path, "/proc");
-  }
+  const std::filesystem::path& proc_path() const override { return proc_path_; }
 
  private:
   uint64_t real_time_offset_ = 0;
+  const std::filesystem::path host_path_;
+  const std::filesystem::path sysfs_path_;
+  const std::filesystem::path proc_path_;
 
   // Utility function to convert time as recorded by in monotonic clock (aka steady_clock)
   // to real time (aka system_clock).

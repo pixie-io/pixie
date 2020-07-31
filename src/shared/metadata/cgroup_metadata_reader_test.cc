@@ -15,6 +15,7 @@ namespace md {
 constexpr char kTestDataBasePath[] = "src/shared/metadata";
 
 using ::testing::Return;
+using ::testing::ReturnRef;
 
 namespace {
 std::string GetPathToTestDataFile(const std::string& fname) {
@@ -26,13 +27,16 @@ class CGroupMetadataReaderTest : public ::testing::Test {
  protected:
   void SetupMetadataReader(system::MockConfig* sysconfig, const std::string& proc_path,
                            const std::string& sysfs_path) {
+    proc_path_ = GetPathToTestDataFile(proc_path);
+    sysfs_path_ = GetPathToTestDataFile(sysfs_path);
+
     EXPECT_CALL(*sysconfig, HasConfig()).WillRepeatedly(Return(true));
     EXPECT_CALL(*sysconfig, PageSize()).WillRepeatedly(Return(4096));
     EXPECT_CALL(*sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
     EXPECT_CALL(*sysconfig, ClockRealTimeOffset()).WillRepeatedly(Return(128));
 
-    EXPECT_CALL(*sysconfig, proc_path()).WillRepeatedly(Return(GetPathToTestDataFile(proc_path)));
-    EXPECT_CALL(*sysconfig, sysfs_path()).WillRepeatedly(Return(GetPathToTestDataFile(sysfs_path)));
+    EXPECT_CALL(*sysconfig, proc_path()).WillRepeatedly(ReturnRef(proc_path_));
+    EXPECT_CALL(*sysconfig, sysfs_path()).WillRepeatedly(ReturnRef(sysfs_path_));
   }
 
   void SetUp() {
@@ -49,6 +53,8 @@ class CGroupMetadataReaderTest : public ::testing::Test {
   }
 
   std::unique_ptr<CGroupMetadataReader> md_reader_;
+  std::filesystem::path proc_path_;
+  std::filesystem::path sysfs_path_;
 };
 
 TEST_F(CGroupMetadataReaderTest, read_pid_list) {

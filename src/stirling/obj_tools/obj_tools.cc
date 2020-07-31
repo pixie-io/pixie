@@ -14,8 +14,8 @@ namespace stirling {
 namespace obj_tools {
 
 StatusOr<std::filesystem::path> GetActiveBinary(uint32_t pid, std::optional<int64_t> start_time) {
-  std::filesystem::path host_path = system::Config::GetInstance().host_path();
-  std::filesystem::path proc_path = system::Config::GetInstance().proc_path();
+  const std::filesystem::path& host_path = system::Config::GetInstance().host_path();
+  const std::filesystem::path& proc_path = system::Config::GetInstance().proc_path();
   std::filesystem::path pid_path = proc_path / std::to_string(pid);
   if (start_time.has_value()) {
     int64_t pid_start_time = system::GetPIDStartTimeTicks(pid_path);

@@ -24,6 +24,7 @@ using ::pl::testing::proto::EqualsProto;
 using ::pl::testing::proto::Partially;
 using shared::metadatapb::MetadataType;
 using ::testing::Return;
+using ::testing::ReturnRef;
 using ::testing::UnorderedElementsAreArray;
 
 const char* kAgentUpdateInfoSchemaNoTablets = R"proto(
@@ -83,6 +84,8 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
     auto sys_config = system::MockConfig();
     EXPECT_CALL(sys_config, KernelTicksPerSecond()).WillRepeatedly(::testing::Return(10000000));
     EXPECT_CALL(sys_config, HasConfig()).WillRepeatedly(Return(true));
+    EXPECT_CALL(sys_config, proc_path()).WillRepeatedly(ReturnRef(proc_path_));
+    EXPECT_CALL(sys_config, sysfs_path()).WillRepeatedly(ReturnRef(sysfs_path_));
 
     md_filter_ = md::AgentMetadataFilter::Create(
                      100, 0.01, md::AgentMetadataStateManager::MetadataFilterEntities())
@@ -122,6 +125,8 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
   std::unique_ptr<FakeNATSConnector<pl::vizier::messages::VizierMessage>> nats_conn_;
   agent::Info agent_info_;
   std::unique_ptr<md::AgentMetadataFilter> md_filter_;
+  std::filesystem::path proc_path_;
+  std::filesystem::path sysfs_path_;
 };
 
 TEST_F(HeartbeatMessageHandlerTest, InitialHeartbeatTimeout) {

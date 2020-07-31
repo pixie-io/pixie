@@ -97,7 +97,7 @@ StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
   for (const fs::PathSplit& path_split : fs::EnumerateParentPaths(etc_passwd_path)) {
     auto passwd_path_or = parser.ResolveMountPoint(pid, path_split.parent);
     if (passwd_path_or.ok()) {
-      const std::filesystem::path host_path = system::Config::GetInstance().host_path();
+      const std::filesystem::path& host_path = system::Config::GetInstance().host_path();
       passwd_path = fs::JoinPath({&host_path, &passwd_path_or.ValueOrDie(), &path_split.child});
       break;
     }

@@ -17,6 +17,7 @@ namespace system {
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::testing::Return;
+using ::testing::ReturnRef;
 using ::testing::UnorderedElementsAre;
 
 constexpr char kTestDataBasePath[] = "src/common/system";
@@ -29,6 +30,8 @@ std::string GetPathToTestDataFile(std::string_view fname) {
 
 class ProcParserTest : public ::testing::Test {
  protected:
+  ProcParserTest() : proc_path_(GetPathToTestDataFile("testdata/proc")) {}
+
   void SetUp() override {
     system::MockConfig sysconfig;
 
@@ -36,12 +39,12 @@ class ProcParserTest : public ::testing::Test {
     EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
     EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
     EXPECT_CALL(sysconfig, ClockRealTimeOffset()).WillRepeatedly(Return(128));
-    EXPECT_CALL(sysconfig, proc_path())
-        .WillRepeatedly(Return(GetPathToTestDataFile("testdata/proc")));
+    EXPECT_CALL(sysconfig, proc_path()).WillRepeatedly(ReturnRef(proc_path_));
     parser_ = std::make_unique<ProcParser>(sysconfig);
     bytes_per_page_ = sysconfig.PageSize();
   }
 
+  std::filesystem::path proc_path_;
   std::unique_ptr<ProcParser> parser_;
   int bytes_per_page_ = 0;
 };

@@ -41,28 +41,25 @@ class Config : public NotCopyable {
   virtual int64_t KernelTicksPerSecond() const = 0;
 
   /**
-   * @brief If recording nsecs in your bt file, this function can be used to find the offset for
+   * If recording nsecs in your bt file, this function can be used to find the offset for
    * convert the result into realtime.
    */
   virtual uint64_t ClockRealTimeOffset() const = 0;
 
   /**
    * Get the sysfs path.
-   * @return string the sysfs path.
    */
-  virtual std::filesystem::path sysfs_path() const = 0;
+  virtual const std::filesystem::path& sysfs_path() const = 0;
 
   /**
    * Get the host root path.
-   * @return string the host root path.
    */
-  virtual std::filesystem::path host_path() const = 0;
+  virtual const std::filesystem::path& host_path() const = 0;
 
   /**
    * Get the proc path.
-   * @return string the proc path.
    */
-  virtual std::filesystem::path proc_path() const = 0;
+  virtual const std::filesystem::path& proc_path() const = 0;
 
  protected:
   Config() {}

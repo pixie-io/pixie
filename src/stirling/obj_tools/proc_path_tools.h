@@ -42,7 +42,7 @@ namespace obj_tools {
  * @param proc_pid Process for which the root directory is desired.
  * @return The host-resolved path.
  */
-pl::StatusOr<std::filesystem::path> ResolveProcessRootDir(std::filesystem::path proc_pid);
+pl::StatusOr<std::filesystem::path> ResolveProcessRootDir(const std::filesystem::path& proc_pid);
 
 /**
  * Given a pid, and path within the context of that pid, returns the host-resolved
@@ -67,14 +67,14 @@ pl::StatusOr<std::filesystem::path> ResolveProcessRootDir(std::filesystem::path 
  * @param proc_pid Process for which the root directory is desired.
  * @return The host-resolved path.
  */
-pl::StatusOr<std::filesystem::path> ResolveProcessPath(std::filesystem::path proc_pid,
-                                                       std::filesystem::path path);
+pl::StatusOr<std::filesystem::path> ResolveProcessPath(const std::filesystem::path& proc_pid,
+                                                       const std::filesystem::path& path);
 
 /**
- * ResolveProcExe takes a /proc/<pid> directory and a potentially empty host path, and resolves the
- * binary path for that process.  It accounts for any overlay filesystems to resolve the exe to its
- * actual location.  This is important for exe files in containers, where the file is actually
- * located on the host at some other location.
+ * ResolveProcExe takes a /proc/<pid> directory, and resolves the binary path for that process.
+ * It accounts for any overlay filesystems to resolve the exe to its actual location.
+ * This is important for exe files in containers, where the file is actually located on the host
+ * at some other location.
  *
  * NOTE: Today this function is not robust and looks for a very specific pattern.
  * IT IS NOT PRODUCTION READY.
@@ -83,7 +83,7 @@ pl::StatusOr<std::filesystem::path> ResolveProcessPath(std::filesystem::path pro
  * @return The resolved path. Either the original exe symlink if no overlay fs was found, or the
  * path to the host location if an overlay was found.
  */
-pl::StatusOr<std::filesystem::path> ResolveProcExe(std::filesystem::path proc_pid);
+pl::StatusOr<std::filesystem::path> ResolveProcExe(const std::filesystem::path& proc_pid);
 pl::StatusOr<std::filesystem::path> ResolveProcExe(pid_t pid);
 
 /**
