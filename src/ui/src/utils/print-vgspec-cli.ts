@@ -133,19 +133,11 @@ function printSpec(display: ChartDisplay) {
 
   // Remove everything that uses custom extensions to vega so that the spec works out of the box in
   // the online vega editor.
-  (spec as any).signals = (spec as any).signals.filter((signal) => !signal.name.includes('ts_domain_value'));
-  if ((spec as any).scales) {
-    for (const scale of (spec as any).scales) {
-      if (scale.name === 'x' && scale.domainRaw) {
-        delete scale.domainRaw;
-      }
-    }
-  }
   if ((spec as any).axes) {
     for (const axis of (spec as any).axes) {
       if (axis.scale === 'x' && axis.encode && axis.encode.labels && axis.encode.labels.update
-          && axis.encode.labels.update.text && axis.encode.labels.update.text.signal
-          && axis.encode.labels.update.text.signal.includes('pxTimeFormat')) {
+        && axis.encode.labels.update.text && axis.encode.labels.update.text.signal
+        && axis.encode.labels.update.text.signal.includes('pxTimeFormat')) {
         // TODO(james): figure out how to get the x axis labels to show something reasonable without
         // pxTimeFormat.
         axis.encode.labels.update.text.signal = '';
@@ -161,7 +153,7 @@ const input = {
   '@type': TIMESERIES_CHART_TYPE,
   timeseries: [{
     value: 'bytesPerSecond',
-    mode: 'MODE_AREA',
+    mode: 'MODE_LINE',
     series: 'service',
     stackBySeries: true,
   }],

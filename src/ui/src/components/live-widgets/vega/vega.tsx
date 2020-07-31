@@ -115,70 +115,66 @@ const Vega = React.memo((props: VegaProps) => {
     };
   }, [currentView]);
 
-  const signalListeners = React.useMemo(() => {
-    if (!currentView) {
-      return {};
-    }
-    return {
-      // Add listener for internal tooltip signal.
-      // This internal signal is null, unless the chart is active, so this listener only updates the global
-      // hover time context, if this is the active chart.
-      [INTERNAL_HOVER_SIGNAL]: (name, value) => {
-        if (value && value.time_) {
-          setHoverTime(value.time_);
-        }
-      },
+  const signalListeners = React.useMemo(() => ({
+    // Add listener for internal tooltip signal.
+    // This internal signal is null, unless the chart is active, so this listener only updates the global
+    // hover time context, if this is the active chart.
+    [INTERNAL_HOVER_SIGNAL]: (name, value) => {
+      if (value && value.time_) {
+        setHoverTime(value.time_);
+      }
+    },
 
-      [INTERNAL_TS_DOMAIN_SIGNAL]: (name, value) => {
-        if (!value || value.length !== 2) {
-          return;
-        }
-        const newDomain: [number, number] = [value[0].getTime(), value[1].getTime()];
-        setTSDomain((oldDomain) => {
-          if (!oldDomain || oldDomain.length !== 2) {
-            return newDomain;
-          }
-          const merged: [number, number] = [Math.min(oldDomain[0], newDomain[0]), Math.max(oldDomain[1], newDomain[1])];
-          if (merged[0] === oldDomain[0] && merged[1] === oldDomain[1]) {
-            return oldDomain;
-          }
-          return merged;
-        });
-      },
+    [INTERNAL_TS_DOMAIN_SIGNAL]: (name, value) => {
+      if (!value || value.length !== 2) {
+        return;
+      }
+      const newDomain: [number, number] = [value[0], value[1]];
 
-      // Add signal listener for width, because the origin changes when width changes.
-      width: widthListener,
-      // Add signal listener for the merged hover signal. This listener updates the values in the legend.
-      [HOVER_SIGNAL]: hoverListener,
-      [REVERSE_HOVER_SIGNAL]: (name, value) => {
-        if (!value) {
-          setLegendInteractState((state) => ({ ...state, hoveredSeries: '' }));
-          return;
+      setTSDomain((oldDomain) => {
+        if (!oldDomain || oldDomain.length !== 2 || !oldDomain[0] || !oldDomain[1]) {
+          return newDomain;
         }
-        setLegendInteractState((state) => ({
-          ...state,
-          hoveredSeries: value,
-        }));
-      },
-      [REVERSE_SELECT_SIGNAL]: (name, value) => {
-        if (!value) {
-          return;
+        const merged: [number, number] = [Math.min(oldDomain[0], newDomain[0]), Math.max(oldDomain[1], newDomain[1])];
+        if (merged[0] === oldDomain[0] && merged[1] === oldDomain[1]) {
+          return oldDomain;
         }
-        setLegendInteractState((state) => {
-          if (_.includes(state.selectedSeries, value)) {
-            return { ...state, selectedSeries: state.selectedSeries.filter((s) => s !== value) };
-          }
-          return { ...state, selectedSeries: [...state.selectedSeries, value] };
-        });
-      },
-      [REVERSE_UNSELECT_SIGNAL]: (name, value) => {
-        if (!value) {
-          return;
+        return merged;
+      });
+    },
+
+    // Add signal listener for width, because the origin changes when width changes.
+    width: widthListener,
+    // Add signal listener for the merged hover signal. This listener updates the values in the legend.
+    [HOVER_SIGNAL]: hoverListener,
+    [REVERSE_HOVER_SIGNAL]: (name, value) => {
+      if (!value) {
+        setLegendInteractState((state) => ({ ...state, hoveredSeries: '' }));
+        return;
+      }
+      setLegendInteractState((state) => ({
+        ...state,
+        hoveredSeries: value,
+      }));
+    },
+    [REVERSE_SELECT_SIGNAL]: (name, value) => {
+      if (!value) {
+        return;
+      }
+      setLegendInteractState((state) => {
+        if (_.includes(state.selectedSeries, value)) {
+          return { ...state, selectedSeries: state.selectedSeries.filter((s) => s !== value) };
         }
-        setLegendInteractState((state) => ({ ...state, selectedSeries: [] }));
-      },
-    };
-  }, [currentView, hoverListener, setHoverTime, setLegendInteractState, setTSDomain, widthListener]);
+        return { ...state, selectedSeries: [...state.selectedSeries, value] };
+      });
+    },
+    [REVERSE_UNSELECT_SIGNAL]: (name, value) => {
+      if (!value) {
+        return;
+      }
+      setLegendInteractState((state) => ({ ...state, selectedSeries: [] }));
+    },
+  }), [hoverListener, setHoverTime, setLegendInteractState, setTSDomain, widthListener]);
 
   const onNewView = React.useCallback((view: View) => {
     // Disable default tooltip handling in vega.

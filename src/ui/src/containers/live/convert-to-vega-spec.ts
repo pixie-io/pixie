@@ -405,17 +405,7 @@ function addHoverSelectSignals(spec: VgSpec): ReverseSignals {
   return { reverseHoverSignal, reverseSelectSignal, reverseUnselectSignal };
 }
 
-function addTimeseriesDomainSignals(spec: VgSpec, scaleName: string): Signal {
-  // Add signal to determine hover time value for current chart.
-  addSignal(spec, {
-    name: INTERNAL_TS_DOMAIN_SIGNAL,
-    on: [
-      {
-        events: { scale: scaleName },
-        update: `domain('${scaleName}')`,
-      },
-    ],
-  });
+function addTimeseriesDomainSignals(spec: VgSpec): Signal {
   // Add signal for hover value from external chart.
   addSignal(spec, { name: EXTERNAL_TS_DOMAIN_SIGNAL, value: null });
   // Add signal for hover value that merges internal, and external hover values, with priority to internal.
@@ -423,10 +413,16 @@ function addTimeseriesDomainSignals(spec: VgSpec, scaleName: string): Signal {
     name: TS_DOMAIN_SIGNAL,
     on: [
       {
-        events: [{ signal: INTERNAL_TS_DOMAIN_SIGNAL }, { signal: EXTERNAL_TS_DOMAIN_SIGNAL }],
-        update: `combineInternalExternal(${INTERNAL_TS_DOMAIN_SIGNAL}, ${EXTERNAL_TS_DOMAIN_SIGNAL})`,
+        events: [
+          { signal: INTERNAL_TS_DOMAIN_SIGNAL },
+          { signal: EXTERNAL_TS_DOMAIN_SIGNAL },
+        ],
+        update:
+          `${EXTERNAL_TS_DOMAIN_SIGNAL} && ${EXTERNAL_TS_DOMAIN_SIGNAL}.length === 2`
+          + ` ? ${EXTERNAL_TS_DOMAIN_SIGNAL} : ${INTERNAL_TS_DOMAIN_SIGNAL}`,
       },
     ],
+    init: INTERNAL_TS_DOMAIN_SIGNAL,
   });
 }
 
@@ -523,26 +519,14 @@ function addLegendInteractivityEncodings(mark: Mark, ts: Timeseries, interactivi
 
 function createTSScales(
   spec: VgSpec,
-  transformedDataSrc: Data,
   tsDomainSignal: Signal,
   yDomainSignal: Signal,
-  timeseries: Timeseries[],
-  dupXScaleName: string): { xScale: Scale; yScale: Scale; colorScale: Scale } {
+): { xScale: Scale; yScale: Scale; colorScale: Scale } {
   const xScale = addScale(spec, {
     name: 'x',
     type: 'time',
-    domain: {
-      data: transformedDataSrc.name,
-      field: TIME_FIELD,
-    },
+    domain: { signal: tsDomainSignal.name },
     range: [0, { signal: 'width' }],
-    domainRaw: { signal: tsDomainSignal.name },
-  });
-  // Duplicates the Xscale so that when we update the time domain to match other charts we don't create a feedback loop.
-  addScale(spec, {
-    ...xScale,
-    name: dupXScaleName,
-    domainRaw: undefined,
   });
   const yScale = addScale(spec, {
     name: 'y',
@@ -628,9 +612,13 @@ function createExtentSignalsAndTransforms(data: string, valueFields: string[]): 
   valueFields.forEach((v) => {
     const signalName = `${data}_${v}_extent`;
     names.push(signalName);
-    transforms.push({ type: 'extent', field: v, signal: signalName });
+    transforms.push(createExtentTransform(v, signalName));
   });
   return { names, transforms };
+}
+
+function createExtentTransform(field: string, signalName: string): Transforms {
+  return { type: 'extent', signal: signalName, field };
 }
 
 function createYDomainSignal(extentSignalNames: string[],
@@ -707,6 +695,8 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
       TRANSFORMED_DATA_SOURCE_NAME, [stackedValueStart, stackedValueEnd]);
   }
 
+  const tsExtentTransform = createExtentTransform(TIME_FIELD, INTERNAL_TS_DOMAIN_SIGNAL);
+
   const { names: extentSignalNames, transforms: extentTransforms } = domainExtents;
   const transformedDataSrc = addDataSource(spec, {
     name: TRANSFORMED_DATA_SOURCE_NAME,
@@ -716,6 +706,7 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
       ...trimFirstAndLastTimestepTransform(TIME_FIELD),
       ...stackTransforms,
       ...extentTransforms,
+      tsExtentTransform,
     ],
   });
 
@@ -730,13 +721,12 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
   // Create signals.
   addWidthHeightSignals(spec);
   const reverseSignals = addHoverSelectSignals(spec);
-  const dupXScaleName = '_x_signal';
-  const tsDomainSignal = addTimeseriesDomainSignals(spec, dupXScaleName);
+  const tsDomainSignal = addTimeseriesDomainSignals(spec);
   const yDomainSignal = addYDomainSignal(spec, extentSignalNames, DOMAIN_MIN_UPPER_VALUE);
 
   // Create scales/axes.
   const { xScale, yScale, colorScale } = createTSScales(
-    spec, transformedDataSrc, tsDomainSignal, yDomainSignal, display.timeseries, dupXScaleName);
+    spec, tsDomainSignal, yDomainSignal);
   createTSAxes(spec, xScale, yScale, display);
 
   // Create marks for ts lines.
