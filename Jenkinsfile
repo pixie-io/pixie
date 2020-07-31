@@ -777,7 +777,6 @@ def  buildScriptForCLIRelease = {
           dockerStep('', devDockerImageExtrasWithTag) {
             sh './ci/cli_build_release.sh'
             stash name: 'ci_scripts_signing', includes: 'ci/**'
-            sh 'ls bazel-bin/src/utils/pixie_cli/darwin_amd64_pure/px_darwin'
             stash name: "versions", includes: "src/utils/artifacts/artifact_db_updater/VERSIONS.json"
 
           }

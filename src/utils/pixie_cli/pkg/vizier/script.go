@@ -42,6 +42,7 @@ func (t *taskWrapper) Run() error {
 func RunScriptAndOutputResults(ctx context.Context, conns []*Connector, execScript *script.ExecutableScript, format string) error {
 	tw, err := runScript(ctx, conns, execScript, format)
 	if err == nil { // Script ran successfully.
+		tw.Finish()
 		return nil
 	}
 

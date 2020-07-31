@@ -16,14 +16,14 @@ echo "The release tag is: ${release_tag}"
 bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
       --repo_path "${repo_path}" --artifact_name cli --versions_file "${versions_file}"
 
-bazel build -c opt --stamp //src/utils/pixie_cli:px_darwin
+bazel build -c opt --build_event_text_file=/tmp/darwin_build --stamp //src/utils/pixie_cli:px_darwin
 
 bazel build -c opt --stamp //src/utils/pixie_cli:px
 
 write_artifacts_to_gcs() {
     output_path=$1
-    mac_binary=bazel-bin/src/utils/pixie_cli/darwin_amd64_pure/px_darwin
-    linux_binary=bazel-bin/src/utils/pixie_cli/linux_amd64/px
+    mac_binary=$(grep -oP -m 1 '(?<=pl\/).*px_darwin(?=\")' /tmp/darwin_build)
+    linux_binary=bazel-bin/src/utils/pixie_cli/px_/px
     copy_artifact_to_gcs "$output_path" "$mac_binary" "cli_darwin_amd64_unsigned"
     copy_artifact_to_gcs "$output_path" "$linux_binary" "cli_linux_amd64"
 }
