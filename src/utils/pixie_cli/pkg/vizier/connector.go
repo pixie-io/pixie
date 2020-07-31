@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 	"time"
 
@@ -180,6 +181,11 @@ func getFuncsToExecute(script *script.ExecutableScript) ([]*pl_api_vizierpb.Exec
 	return execFuncs, nil
 }
 
+func containsMutation(script *script.ExecutableScript) bool {
+	r := regexp.MustCompile(`(?m:^(from pxtrace|import pxtrace)$)`)
+	return len(r.FindAllStringSubmatch(script.ScriptString, -1)) > 0
+}
+
 // ExecuteScriptStream execute a vizier query as a stream.
 func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.ExecutableScript) (chan *VizierExecData, error) {
 	scriptStr := strings.TrimSpace(script.ScriptString)
@@ -196,6 +202,7 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 		QueryStr:  scriptStr,
 		ClusterID: c.id.String(),
 		ExecFuncs: execFuncs,
+		Mutation:  containsMutation(script),
 	}
 
 	if c.passthroughEnabled {

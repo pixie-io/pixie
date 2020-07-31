@@ -2,24 +2,153 @@ package vizier
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
+	"time"
 
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc/codes"
 	"gopkg.in/segmentio/analytics-go.v3"
 
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
+	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
+
+type taskWrapper struct {
+	name string
+	run  func() error
+}
+
+func newTaskWrapper(name string, run func() error) *taskWrapper {
+	return &taskWrapper{
+		name,
+		run,
+	}
+}
+
+func (t *taskWrapper) Name() string {
+	return t.name
+}
+
+func (t *taskWrapper) Run() error {
+	return t.run()
+}
 
 // RunScriptAndOutputResults runs the specified script on vizier and outputs based on format string.
 func RunScriptAndOutputResults(ctx context.Context, conns []*Connector, execScript *script.ExecutableScript, format string) error {
-	resp, err := RunScript(ctx, conns, execScript)
-	if err != nil {
+	tw, err := runScript(ctx, conns, execScript, format)
+	if err == nil { // Script ran successfully.
+		return nil
+	}
+
+	if tw == nil {
 		return err
 	}
+
+	// Check if there is a pending mutation.
+	mutationInfo, _ := tw.MutationInfo()
+	if mutationInfo == nil || (mutationInfo.Status.Code != int32(codes.Unavailable)) {
+		// There is no mutation in the script, or the mutation is complete.
+		tw.Finish()
+		return err
+	}
+
+	// Retry the mutation and use a jobrunner to show state.
+	taskChs := make([]chan pl_api_vizierpb.LifeCycleState, len(mutationInfo.States))
+	tasks := make([]utils.Task, len(mutationInfo.States))
+	for i, mutation := range mutationInfo.States {
+		tasks[i] = newTaskWrapper(fmt.Sprintf("Deploying %s", mutation.Name), func() error {
+			for {
+				select {
+				case s, ok := <-taskChs[i]:
+					if !ok || s == pl_api_vizierpb.FAILED_STATE {
+						return errors.New("Could not deploy tracepoint")
+					}
+					if s == pl_api_vizierpb.RUNNING_STATE {
+						return nil
+					}
+				}
+			}
+		})
+		taskChs[i] = make(chan pl_api_vizierpb.LifeCycleState, 10)
+	}
+
+	schemaCh := make(chan bool, 10)
+	tasks = append(tasks, newTaskWrapper("Preparing schema", func() error {
+		for {
+			select {
+			case s, ok := <-schemaCh:
+				if !ok {
+					return errors.New("Could not prepare schema")
+				}
+				if s {
+					return nil
+				}
+			}
+		}
+	}))
+
+	vzJr := utils.NewParallelTaskRunner(tasks)
+
+	// Run retries.
+	go func() {
+		defer func() {
+			for _, ch := range taskChs {
+				close(ch)
+			}
+			close(schemaCh)
+		}()
+
+		tries := 5
+		for tries > 0 {
+			tw, err = runScript(ctx, conns, execScript, format)
+			if err == nil {
+				schemaCh <- true
+				break
+			}
+			if tw == nil {
+				break
+			}
+
+			// Check if there is a pending mutation.
+			mutationInfo, _ = tw.MutationInfo()
+			if mutationInfo == nil || (mutationInfo.Status.Code != int32(codes.Unavailable)) {
+				schemaCh <- true
+				break
+			}
+
+			// Update channels with new mutation state.
+			for i, s := range mutationInfo.States {
+				taskChs[i] <- s.State
+			}
+			schemaCh <- mutationInfo.Status.Code != int32(codes.Unavailable)
+
+			time.Sleep(time.Second * 5)
+
+			tries--
+		}
+	}()
+
+	vzJr.RunAndMonitor()
+	if tw != nil {
+		tw.Finish()
+	}
+	return err
+}
+
+func runScript(ctx context.Context, conns []*Connector, execScript *script.ExecutableScript, format string) (*VizierStreamOutputAdapter, error) {
+	resp, err := RunScript(ctx, conns, execScript)
+	if err != nil {
+		return nil, err
+	}
+
 	tw := NewVizierStreamOutputAdapter(ctx, resp, format)
-	return tw.Finish()
+	err = tw.WaitForCompletion()
+	return tw, err
 }
 
 // RunScript runs the script and return the data channel

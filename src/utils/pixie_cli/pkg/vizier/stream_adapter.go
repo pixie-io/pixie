@@ -47,6 +47,7 @@ type VizierStreamOutputAdapter struct {
 	wg                  sync.WaitGroup
 	enableFormat        bool
 	format              string
+	mutationInfo        *pl_api_vizierpb.MutationInfo
 
 	// This is used to track table/ID -> names across multiple clusters.
 	tabledIDToName map[string]string
@@ -118,12 +119,29 @@ func (v *VizierStreamOutputAdapter) Finish() error {
 	return nil
 }
 
+// WaitForCompletion waits for the stream to complete, but does not flush the data.
+func (v *VizierStreamOutputAdapter) WaitForCompletion() error {
+	v.wg.Wait()
+	if v.err != nil {
+		return v.err
+	}
+	return nil
+}
+
 // ExecStats returns the reported execution stats. This function is only valid with format = inmemory and after Finish.
 func (v *VizierStreamOutputAdapter) ExecStats() (*pl_api_vizierpb.QueryExecutionStats, error) {
 	if v.execStats == nil {
 		return nil, fmt.Errorf("ExecStats not found")
 	}
 	return v.execStats, nil
+}
+
+// MutationInfo returns the mutation info. This function is only valid after Finish.
+func (v *VizierStreamOutputAdapter) MutationInfo() (*pl_api_vizierpb.MutationInfo, error) {
+	if v.mutationInfo == nil {
+		return nil, fmt.Errorf("MutationInfo not found")
+	}
+	return v.mutationInfo, nil
 }
 
 // Views gets all the accumulated views. This function is only valid with format = inmemory and after Finish.
@@ -182,10 +200,17 @@ func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream cha
 				v.err = v.parseError(ctx, msg.Resp.Status)
 				return
 			}
+
+			if msg.Resp.MutationInfo != nil {
+				v.handleMutationInfo(ctx, msg.Resp.MutationInfo)
+				continue
+			}
+
 			if msg.Resp.Result == nil {
 				v.err = newScriptExecutionError(CodeUnknown, "Got empty response")
 				return
 			}
+
 			v.totalBytes += msg.Resp.Size()
 			var err error
 			switch res := msg.Resp.Result.(type) {
@@ -307,6 +332,10 @@ func (v *VizierStreamOutputAdapter) getFormattedValue(tableInfo *TableInfo, colI
 func (v *VizierStreamOutputAdapter) handleExecutionStats(ctx context.Context, es *pl_api_vizierpb.QueryExecutionStats) error {
 	v.execStats = es
 	return nil
+}
+
+func (v *VizierStreamOutputAdapter) handleMutationInfo(ctx context.Context, mi *pl_api_vizierpb.MutationInfo) {
+	v.mutationInfo = mi
 }
 
 func (v *VizierStreamOutputAdapter) handleData(ctx context.Context, cid string, d *pl_api_vizierpb.ExecuteScriptResponse_Data) error {
