@@ -36,6 +36,7 @@ rules:
   - etcd.database.coreos.com
   - batch
   - nats.io
+  - policy
   resources:
   - clusterroles
   - clusterrolebindings
@@ -56,4 +57,5 @@ rules:
   - cronjobs
   - jobs
   - natsclusters
+  - podsecuritypolicies
   verbs: ["*"]

@@ -102,7 +102,7 @@ func ApplyYAML(clientset *kubernetes.Clientset, config *rest.Config, namespace s
 		nsRes := res.Namespace(namespace)
 
 		createRes := nsRes
-		if k8sRes.Resource == "namespaces" || k8sRes.Resource == "configmap" || k8sRes.Resource == "clusterrolebindings" || k8sRes.Resource == "clusterroles" {
+		if k8sRes.Resource == "podsecuritypolicies" || k8sRes.Resource == "namespaces" || k8sRes.Resource == "configmap" || k8sRes.Resource == "clusterrolebindings" || k8sRes.Resource == "clusterroles" {
 			createRes = res
 		}
 
