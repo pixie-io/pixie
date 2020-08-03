@@ -24,7 +24,6 @@ namespace pl {
 namespace stirling {
 
 using ::pl::fs::Exists;
-using ::pl::stirling::obj_tools::ResolveProcessPath;
 using ::pl::utils::LEndianBytesToInt;
 
 namespace {

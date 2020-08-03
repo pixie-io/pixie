@@ -31,6 +31,11 @@ TEST(ObjToolsContainerTest, ResolveFunctions) {
   EXPECT_THAT(proc_exe, StartsWith("/var/lib/docker/overlay2/"));
   EXPECT_THAT(proc_exe, EndsWith("/merged/usr/local/bin/python3.7"));
 
+  ASSERT_OK_AND_ASSIGN(std::filesystem::path pid_binary,
+                       GetPIDBinaryOnHost(container.process_pid()));
+  EXPECT_THAT(pid_binary, StartsWith("/var/lib/docker/overlay2/"));
+  EXPECT_THAT(pid_binary, EndsWith("/merged/usr/local/bin/python3.7"));
+
   // Stop the container (even though destructor will also take care of this).
   container.Stop();
 }
@@ -41,15 +46,15 @@ TEST(ObjToolsContainerTest, ResolveFunctions) {
 TEST(ObjToolsNonContainerTest, DISABLED_ResolveFunctions) {
   std::filesystem::path proc_pid = "/proc/self";
 
-  ASSERT_OK_AND_ASSIGN(std::filesystem::path root_dir, ResolveProcessRootDir(proc_pid));
-  EXPECT_EQ(root_dir, "");
+  EXPECT_OK_AND_THAT(ResolveProcessRootDir(proc_pid), "");
 
-  ASSERT_OK_AND_ASSIGN(std::filesystem::path process_path,
-                       ResolveProcessPath(proc_pid, "/app/foo"));
-  EXPECT_EQ(process_path, "/app/foo");
+  EXPECT_OK_AND_THAT(ResolveProcessPath(proc_pid, "/app/foo"), "/app/foo");
 
-  ASSERT_OK_AND_ASSIGN(std::filesystem::path proc_exe, ResolveProcExe(proc_pid));
-  EXPECT_THAT(proc_exe, EndsWith("src/stirling/obj_tools/proc_path_tools_test"));
+  EXPECT_OK_AND_THAT(ResolveProcExe(proc_pid),
+                     EndsWith("src/stirling/obj_tools/proc_path_tools_test"));
+
+  EXPECT_OK_AND_THAT(GetPIDBinaryOnHost(getpid()),
+                     EndsWith("src/stirling/obj_tools/proc_path_tools_test"));
 }
 
 }  // namespace obj_tools

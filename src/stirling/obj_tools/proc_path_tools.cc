@@ -5,6 +5,7 @@
 
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/config.h"
+#include "src/common/system/proc_parser.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 
 namespace pl {
@@ -98,8 +99,31 @@ pl::StatusOr<std::filesystem::path> ResolveProcExe(const std::filesystem::path& 
   return ResolveProcessPath(proc_pid, proc_exe);
 }
 
-pl::StatusOr<std::filesystem::path> ResolveProcExe(pid_t pid) {
-  return ResolveProcExe(system::Config::GetInstance().proc_path() / std::to_string(pid));
+pl::StatusOr<std::filesystem::path> GetPIDBinaryOnHost(uint32_t pid,
+                                                       std::optional<int64_t> start_time) {
+  const std::filesystem::path& host_path = system::Config::GetInstance().host_path();
+  const std::filesystem::path& proc_path = system::Config::GetInstance().proc_path();
+
+  std::filesystem::path pid_path = proc_path / std::to_string(pid);
+
+  if (start_time.has_value()) {
+    int64_t pid_start_time = system::GetPIDStartTimeTicks(pid_path);
+    if (start_time.value() != pid_start_time) {
+      return error::NotFound(
+          "This is not the pid you are looking for... "
+          "Start time does not match (specification: $0 vs system: $1).",
+          start_time.value(), pid_start_time);
+    }
+  }
+
+  PL_ASSIGN_OR_RETURN(std::filesystem::path pid_exe_path, ResolveProcExe(pid_path));
+
+  // If we're running in a container, convert exe to be relative to our host mount.
+  // Note that we mount host '/' to '/host' inside container.
+  // Warning: must use JoinPath, because we are dealing with two absolute paths.
+  std::filesystem::path path_on_host = fs::JoinPath({&host_path, &pid_exe_path});
+  PL_RETURN_IF_ERROR(fs::Exists(path_on_host));
+  return path_on_host;
 }
 
 }  // namespace obj_tools

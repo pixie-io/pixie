@@ -30,7 +30,6 @@
 #include "src/stirling/http2/http2.h"
 #include "src/stirling/mysql/mysql_parse.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
-#include "src/stirling/obj_tools/obj_tools.h"
 #include "src/stirling/obj_tools/proc_path_tools.h"
 #include "src/stirling/proto/sock_event.pb.h"
 #include "src/stirling/socket_trace_connector.h"
@@ -84,7 +83,7 @@ using ::pl::stirling::dwarf_tools::DwarfReader;
 using ::pl::stirling::elf_tools::ElfReader;
 using ::pl::stirling::grpc::ParsePB;
 using ::pl::stirling::http2::HTTP2Message;
-using ::pl::stirling::obj_tools::GetActiveBinary;
+using ::pl::stirling::obj_tools::GetPIDBinaryOnHost;
 using ::pl::stirling::obj_tools::ResolveProcessPath;
 using ::pl::stirling::utils::ToJSONString;
 
@@ -659,12 +658,8 @@ std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
 
   // Consider new UPIDs only.
   for (const auto& upid : upids) {
-    auto host_exe_or = GetActiveBinary(upid.pid());
-    if (!host_exe_or.ok()) {
-      continue;
-    }
-    std::filesystem::path host_exe = host_exe_or.ConsumeValueOrDie();
-    new_pids[host_exe.string()].push_back(upid.pid());
+    PL_ASSIGN_OR(auto host_exe_path, GetPIDBinaryOnHost(upid.pid()), continue);
+    new_pids[host_exe_path.string()].push_back(upid.pid());
   }
 
   LOG_FIRST_N(INFO, 1) << absl::Substitute("New PIDs count = $0", new_pids.size());

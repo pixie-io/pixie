@@ -57,18 +57,6 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "obj_tools_test",
-    srcs = ["obj_tools_test.cc"],
-    data = [
-        "//src/stirling/http2/testing/go_grpc_client",
-    ],
-    deps = [
-        ":cc_library",
-        "//src/common/exec:cc_library",
-    ],
-)
-
-pl_cc_test(
     name = "proc_path_tools_test",
     # Set timeout to moderate because this test downloads a container image.
     timeout = "moderate",

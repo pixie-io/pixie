@@ -17,7 +17,7 @@
 
 #include "src/stirling/bpf_tools/probe_cleaner.h"
 #include "src/stirling/data_table.h"
-#include "src/stirling/obj_tools/obj_tools.h"
+#include "src/stirling/obj_tools/proc_path_tools.h"
 #include "src/stirling/proto/stirling.pb.h"
 #include "src/stirling/pub_sub_manager.h"
 #include "src/stirling/source_connector.h"
@@ -323,7 +323,7 @@ Status ResolveUPID(dynamic_tracing::ir::logical::Program* program) {
     }
 
     PL_ASSIGN_OR_RETURN(std::filesystem::path binary_path,
-                        obj_tools::GetActiveBinary(pid, start_time));
+                        obj_tools::GetPIDBinaryOnHost(pid, start_time));
 
     program->mutable_binary_spec()->set_path(binary_path.string());
   }

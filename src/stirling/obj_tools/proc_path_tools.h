@@ -45,6 +45,14 @@ namespace obj_tools {
 pl::StatusOr<std::filesystem::path> ResolveProcessRootDir(const std::filesystem::path& proc_pid);
 
 /**
+ * Returns the OverlayFS' merged base directory.
+ *
+ * @param mount_options The options part of a mount entry, which is read from /proc/[pid]/mounts or
+ * /proc/[pid]/mountinfo.
+ */
+pl::StatusOr<std::filesystem::path> GetOverlayMergedDir(std::string_view mount_options);
+
+/**
  * Given a pid, and path within the context of that pid, returns the host-resolved
  * path, accounting for an overlay filesystems.
  *
@@ -84,15 +92,18 @@ pl::StatusOr<std::filesystem::path> ResolveProcessPath(const std::filesystem::pa
  * path to the host location if an overlay was found.
  */
 pl::StatusOr<std::filesystem::path> ResolveProcExe(const std::filesystem::path& proc_pid);
-pl::StatusOr<std::filesystem::path> ResolveProcExe(pid_t pid);
+
+//--------------------------------------------------------
+// The following function break the mold, because it depends on system::Config.
+//--------------------------------------------------------
 
 /**
- * Returns the OverlayFS' merged base directory.
- *
- * @param mount_options The options part of a mount entry, which is read from /proc/[pid]/mounts or
- * /proc/[pid]/mountinfo.
+ * Returns the path to the executable of the process specified by the pid.
+ * Uses system::Config to find proc_path, and prepends the host path.
+ * Returns an error if the resolved file path is not valid.
  */
-pl::StatusOr<std::filesystem::path> GetOverlayMergedDir(std::string_view mount_options);
+pl::StatusOr<std::filesystem::path> GetPIDBinaryOnHost(
+    uint32_t pid, std::optional<int64_t> start_time = std::nullopt);
 
 }  // namespace obj_tools
 }  // namespace stirling
