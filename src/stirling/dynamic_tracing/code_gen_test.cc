@@ -14,7 +14,7 @@ namespace dynamic_tracing {
 
 using ::google::protobuf::TextFormat;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
-using ::pl::stirling::dynamic_tracing::ir::physical::OutputAction;
+using ::pl::stirling::dynamic_tracing::ir::physical::PerfBufferOutputAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::Register;
 using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::Struct;
@@ -172,15 +172,6 @@ TEST(GenMapStashActionTest, StashMap) {
 
   ASSERT_OK_AND_THAT(GenMapStashAction(action),
                      ElementsAre("if (foo == bar) {", "test.update(&foo, &bar);", "}"));
-}
-
-TEST(GenOutputActionTest, Variables) {
-  OutputAction action;
-
-  action.set_perf_buffer_name("test");
-  action.set_variable_name("foo");
-
-  EXPECT_THAT(GenOutputAction(action), StrEq("test.perf_submit(ctx, &foo, sizeof(foo));"));
 }
 
 TEST(GenProgramTest, SpecsAndCode) {

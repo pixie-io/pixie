@@ -21,8 +21,8 @@ using ::pl::stirling::bpf_tools::UProbeSpec;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapDeleteAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::MemberVariable;
-using ::pl::stirling::dynamic_tracing::ir::physical::OutputAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::PerfBufferOutput;
+using ::pl::stirling::dynamic_tracing::ir::physical::PerfBufferOutputAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::Probe;
 using ::pl::stirling::dynamic_tracing::ir::physical::Program;
 using ::pl::stirling::dynamic_tracing::ir::physical::Register;
@@ -411,16 +411,16 @@ std::string GenMapDeleteAction(const MapDeleteAction& action) {
   return absl::Substitute("$0.delete(&$1);", action.map_name(), action.key_variable_name());
 }
 
-std::string GenOutput(const PerfBufferOutput& output) {
+std::string GenPerfBufferOutput(const PerfBufferOutput& output) {
   return absl::Substitute("BPF_PERF_OUTPUT($0);", output.name());
 }
 
-std::string GenOutputAction(const OutputAction& action) {
+namespace {
+
+std::string GenPerfBufferOutputAction(const PerfBufferOutputAction& action) {
   return absl::Substitute("$0.perf_submit(ctx, &$1, sizeof($1));", action.perf_buffer_name(),
                           action.variable_name());
 }
-
-namespace {
 
 StatusOr<std::string> GenScalarVarPrintk(
     const absl::flat_hash_map<std::string_view, const ScalarVariable*>& scalar_vars,
@@ -476,7 +476,7 @@ std::string GenMapVariable(const ir::physical::MapVariable& map_var) {
                           map_var.map_name(), map_var.key_variable_name());
 }
 
-std::vector<std::string> GenMemberVariable(const ir::physical::MemberVariable& var) {
+std::vector<std::string> GenMemberVariable(const MemberVariable& var) {
   if (var.is_struct_base_pointer()) {
     // TODO(yzhao): We should set a correct default value here. Two options:
     // * Set global default based on the type.
@@ -588,7 +588,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
     PL_RETURN_IF_ERROR(
         CheckVarExists(&var_names, action.variable_name(),
                        absl::Substitute("Perf buffer '$0'", action.perf_buffer_name())));
-    code_lines.push_back(GenOutputAction(action));
+    code_lines.push_back(GenPerfBufferOutputAction(action));
   }
 
   for (const auto& printk : probe.printks()) {
@@ -745,7 +745,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateCodeLines() {
   }
 
   for (const auto& output : program_.outputs()) {
-    code_lines.push_back(GenOutput(output));
+    code_lines.push_back(GenPerfBufferOutput(output));
   }
 
   for (const auto& probe : program_.probes()) {
