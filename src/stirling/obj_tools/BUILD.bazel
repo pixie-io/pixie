@@ -31,13 +31,13 @@ pl_cc_test(
     name = "elf_tools_test",
     srcs = ["elf_tools_test.cc"],
     data = [
-        "//src/stirling/obj_tools/testdata:dummy_exe",
         "//src/stirling/obj_tools/testdata:dummy_go_binary",
         "//src/stirling/obj_tools/testdata:prebuilt_exe",
         "//src/stirling/obj_tools/testdata:stripped_exe",
     ],
     deps = [
         ":cc_library",
+        "//src/stirling/obj_tools/testdata:dummy_exe_fixture",
         "//src/common/exec:cc_library",
     ],
 )

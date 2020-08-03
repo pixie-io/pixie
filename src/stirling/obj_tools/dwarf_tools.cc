@@ -182,7 +182,7 @@ StatusOr<DWARFDie> DwarfReader::GetMatchingDIE(std::string_view name,
                                                std::optional<llvm::dwarf::Tag> type) {
   PL_ASSIGN_OR_RETURN(std::vector<DWARFDie> dies, GetMatchingDIEs(name, type));
   if (dies.empty()) {
-    return error::Internal("Could not locate symbol name.");
+    return error::Internal("Could not locate symbol name=$0", name);
   }
   if (dies.size() > 1) {
     return error::Internal("Found too many DIE matches.");

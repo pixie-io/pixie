@@ -1,6 +1,8 @@
 // This executable is only for testing purposes.
 // We use it to see if we can find the function symbols and debug information.
 
+#include <iostream>
+
 struct PairStruct {
   int a;
   int b;
@@ -14,6 +16,24 @@ PairStruct SomeFunction(PairStruct x, PairStruct y) { return PairStruct{x.a+y.a,
 void SomeFunctionWithPointerArgs(int* a, PairStruct* x) { x->a = *a; a++; }
 }
 
+namespace pl {
+namespace testing {
+
+class Foo {
+ public:
+  int Bar(int i) const {
+    return i * i;
+  }
+};
+
+}  // namespace testing
+}  // namespace pl
+
 int main() {
-  return CanYouFindThis(3, 4);
+  CanYouFindThis(3, 4);
+
+  pl::testing::Foo foo;
+  std::cout << foo.Bar(3) << std::endl;
+
+  return 0;
 }

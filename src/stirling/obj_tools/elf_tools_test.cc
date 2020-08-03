@@ -3,16 +3,17 @@
 #include "src/common/exec/exec.h"
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
+#include "src/stirling/obj_tools/testdata/dummy_exe_fixture.h"
 
 namespace pl {
 namespace stirling {
 namespace elf_tools {
 
-// Path to self, since this is the object file that contains the CanYouFindThis() function above.
-const std::string_view kBinary = "src/stirling/obj_tools/testdata/dummy_exe";
+const DummyExeFixture kDummyExeFixture;
 
 using ::pl::stirling::elf_tools::ElfReader;
 using ::pl::stirling::elf_tools::SymbolMatchType;
+using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::Field;
 using ::testing::IsEmpty;
@@ -26,22 +27,25 @@ TEST(ElfReaderTest, NonExistentPath) {
 auto SymbolNameIs(const std::string& n) { return Field(&ElfReader::SymbolInfo::name, n); }
 
 TEST(ElfReaderTest, ListSymbolsAnyMatch) {
-  const std::string path = pl::testing::BazelBinTestFilePath(kBinary);
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
+                       ElfReader::Create(kDummyExeFixture.Path()));
 
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
-
+  // GCC opt build produces a special symbol _GLOBAL_sub_I_CanYouFindThis, which appears to be
+  // setting up C runtime, as CanYouFindThis is declared with "extern C". This results into multiple
+  // symbols returned by ListFuncSymbols().
+  //
+  // This also applies to other places below.
   EXPECT_THAT(elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kSubstr),
-              ElementsAre(SymbolNameIs("CanYouFindThis")));
+              Contains(SymbolNameIs("CanYouFindThis")));
   EXPECT_THAT(elf_reader->ListFuncSymbols("YouFind", SymbolMatchType::kSubstr),
-              ElementsAre(SymbolNameIs("CanYouFindThis")));
+              Contains(SymbolNameIs("CanYouFindThis")));
   EXPECT_THAT(elf_reader->ListFuncSymbols("FindThis", SymbolMatchType::kSubstr),
-              ElementsAre(SymbolNameIs("CanYouFindThis")));
+              Contains(SymbolNameIs("CanYouFindThis")));
 }
 
 TEST(ElfReaderTest, ListSymbolsExactMatch) {
-  const std::string path = pl::testing::TestFilePath(kBinary);
-
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
+                       ElfReader::Create(kDummyExeFixture.Path()));
 
   EXPECT_THAT(elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kExact),
               ElementsAre(SymbolNameIs("CanYouFindThis")));
@@ -50,20 +54,19 @@ TEST(ElfReaderTest, ListSymbolsExactMatch) {
 }
 
 TEST(ElfReaderTest, ListSymbolsSuffixMatch) {
-  const std::string path = pl::testing::TestFilePath(kBinary);
-
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
+                       ElfReader::Create(kDummyExeFixture.Path()));
 
   EXPECT_THAT(elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kSuffix),
-              ElementsAre(SymbolNameIs("CanYouFindThis")));
+              Contains(SymbolNameIs("CanYouFindThis")));
   EXPECT_THAT(elf_reader->ListFuncSymbols("YouFind", SymbolMatchType::kSuffix), IsEmpty());
   EXPECT_THAT(elf_reader->ListFuncSymbols("FindThis", SymbolMatchType::kSuffix),
-              ElementsAre(SymbolNameIs("CanYouFindThis")));
+              Contains(SymbolNameIs("CanYouFindThis")));
 }
 
 #ifdef __linux__
 TEST(ElfReaderTest, SymbolAddress) {
-  const std::string path = pl::testing::TestFilePath(kBinary);
+  const std::string path = kDummyExeFixture.Path().string();
   const std::string_view symbol = "CanYouFindThis";
 
   // Extract the address from nm as the gold standard.

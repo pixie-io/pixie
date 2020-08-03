@@ -37,7 +37,9 @@ pl_cc_binary(
 pl_cc_test(
     name = "bcc_wrapper_test",
     srcs = ["bcc_wrapper_test.cc"],
-    data = ["//src/stirling/obj_tools/testdata:dummy_exe"],
     tags = ["requires_bpf"],
-    deps = [":cc_library"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/obj_tools/testdata:dummy_exe_fixture",
+    ],
 )

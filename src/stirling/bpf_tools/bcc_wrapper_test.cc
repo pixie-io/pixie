@@ -4,6 +4,7 @@
 
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/testing.h"
+#include "src/stirling/obj_tools/testdata/dummy_exe_fixture.h"
 
 namespace pl {
 namespace stirling {
@@ -14,7 +15,7 @@ using ::pl::testing::TempDir;
 
 class BCCWraperTest : public ::testing::Test {
  protected:
-  static constexpr char kDummyExePath[] = "src/stirling/obj_tools/testdata/dummy_exe";
+  inline static const elf_tools::DummyExeFixture kDummyExeFixture;
   static constexpr char kSymbol[] = "CanYouFindThis";
   static constexpr char kBCC[] = R"BCC(
       int foo(struct pt_regs* ctx) {
@@ -26,7 +27,7 @@ class BCCWraperTest : public ::testing::Test {
     ASSERT_OK(bcc_wrapper_.InitBPFProgram(kBCC));
     // Copy to temp directory so we can remove it to simulate non-existent file.
     dummy_exe_path_ = temp_dir_.path() / "dummy_exe";
-    ASSERT_OK(fs::Copy(BazelBinTestFilePath(kDummyExePath), dummy_exe_path_));
+    ASSERT_OK(fs::Copy(kDummyExeFixture.Path(), dummy_exe_path_));
   }
 
   BCCWrapper bcc_wrapper_;

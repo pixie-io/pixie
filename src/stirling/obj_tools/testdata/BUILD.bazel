@@ -5,13 +5,22 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 cc_binary(
     name = "dummy_exe",
     srcs = ["dummy_exe.cc"],
-    # This binary is only meant to be used to search for symbols,
-    # So turn off all optimizations when building it.
-    copts = ["-O0"],
+    copts = [
+        # Disables optimization which in turn disables inlining.
+        "-O0",
+        # Produces dwarf information.
+        "-g"],
     # This tells the linker to include a build-id, which is useful for locating external debug symbols.
     linkopts = [
         "-Wl,--build-id",
     ],
+)
+
+cc_library(
+    name = "dummy_exe_fixture",
+    hdrs = ["dummy_exe_fixture.h"],
+    data = [":dummy_exe"],
+    deps = ["//src/common/exec:cc_library"],
 )
 
 # To force no optimizations and no inlining, we need to pass -N -l

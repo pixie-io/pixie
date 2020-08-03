@@ -5,6 +5,7 @@
 #include "src/common/exec/subprocess.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/dynamic_trace_connector.h"
+#include "src/stirling/obj_tools/testdata/dummy_exe_fixture.h"
 #include "src/stirling/stirling.h"
 #include "src/stirling/testing/testing.h"
 #include "src/stirling/types.h"
@@ -65,9 +66,6 @@ class GoHTTPDynamicTraceTest : public ::testing::Test,
   void InitTestFixturesAndRunTestProgram(TargetKind target_kind, const std::string& text_pb) {
     CHECK(TextFormat::ParseFromString(text_pb, &logical_program_));
 
-    logical_program_.mutable_binary_spec()->set_language(
-        dynamic_tracing::ir::shared::BinarySpec::GOLANG);
-
     switch (target_kind) {
       case TargetKind::kBinaryPath:
         logical_program_.mutable_binary_spec()->set_path(server_path_);
@@ -117,6 +115,7 @@ class GoHTTPDynamicTraceTest : public ::testing::Test,
 };
 
 constexpr char kGRPCTraceProgram[] = R"(
+binary_spec { language: GOLANG }
 outputs {
   name: "probe_WriteDataPadded_table"
   fields: "stream_id"
@@ -148,6 +147,7 @@ probes: {
 )";
 
 constexpr char kReturnValueTraceProgram[] = R"(
+binary_spec { language: GOLANG }
 outputs {
   name: "probe_readFrameHeader"
   fields: "frame_header_valid"
@@ -215,6 +215,80 @@ TEST_P(GoHTTPDynamicTraceTest, TraceReturnValue) {
 
 INSTANTIATE_TEST_SUITE_P(VaryingTracePrograms, GoHTTPDynamicTraceTest,
                          ::testing::Values(TargetKind::kBinaryPath, TargetKind::kPID));
+
+class CPPDynamicTraceTest : public ::testing::Test {
+ protected:
+  Status InitTestFixturesAndRunTestProgram(const std::string& text_pb) {
+    CHECK(TextFormat::ParseFromString(text_pb, &logical_program_));
+
+    logical_program_.mutable_binary_spec()->set_path(dummy_exe_fixture_.Path());
+
+    PL_ASSIGN_OR_RETURN(bcc_program_, dynamic_tracing::CompileProgram(logical_program_));
+
+    if (bcc_program_.perf_buffer_specs.empty()) {
+      return error::InvalidArgument("BCCProgram does not define perf buffer.");
+    }
+
+    PL_ASSIGN_OR_RETURN(table_schema_,
+                        DynamicDataTableSchema::Create(bcc_program_.perf_buffer_specs.front()));
+
+    data_table_ = std::make_unique<DataTable>(table_schema_->Get());
+
+    PL_ASSIGN_OR_RETURN(connector_,
+                        DynamicTraceConnector::Create("my_dynamic_source", logical_program_));
+
+    PL_RETURN_IF_ERROR(connector_->Init());
+
+    ctx_ = std::make_unique<StandaloneContext>();
+
+    PL_CHECK_OK(dummy_exe_fixture_.Run());
+
+    connector_->TransferData(ctx_.get(), /*table_num*/ 0, data_table_.get());
+
+    tablets_ = data_table_->ConsumeRecords();
+
+    return Status::OK();
+  }
+
+  // Need debug build to include the dwarf info.
+  elf_tools::DummyExeFixture dummy_exe_fixture_;
+
+  LogicalProgram logical_program_;
+  dynamic_tracing::BCCProgram bcc_program_;
+  std::unique_ptr<DynamicDataTableSchema> table_schema_;
+  std::unique_ptr<DataTable> data_table_;
+  std::unique_ptr<SourceConnector> connector_;
+  std::unique_ptr<StandaloneContext> ctx_;
+  std::vector<TaggedRecordBatch> tablets_;
+};
+
+constexpr char kDummyExeTraceProgram[] = R"(
+binary_spec { language: CPP }
+outputs {
+  name: "foo_bar_output"
+  fields: "arg"
+}
+probes: {
+  name: "probe_foo_bar"
+  trace_point: {
+    symbol: "pl::testing::Foo::Bar"
+    type: LOGICAL
+  }
+  args {
+    id: "foo_bar_arg"
+    expr: "i"
+  }
+  output_actions {
+    output_name: "foo_bar_output"
+    variable_name: "foo_bar_arg"
+  }
+}
+)";
+
+TEST_F(CPPDynamicTraceTest, DISABLED_TraceDummyExe) {
+  // TODO(yzhao): This does not work yet.
+  ASSERT_OK(InitTestFixturesAndRunTestProgram(kDummyExeTraceProgram));
+}
 
 }  // namespace stirling
 }  // namespace pl
