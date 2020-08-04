@@ -45,7 +45,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-const DataDrawer = (props) => {
+const DataDrawer = ({ open, activeTab, setActiveTab }) => {
   const classes = useStyles();
   const { loading, tables } = React.useContext(ResultsContext);
 
@@ -54,11 +54,19 @@ const DataDrawer = (props) => {
     content: <VizierDataTableWithDetails table={tables[tableName]} />,
   })), [tables]);
 
+  // If the selected table is not in the new result set, show the first table.
+  if (open && tabs.length) {
+    const selectedTable = tabs.find((t) => t.title === activeTab);
+    if (!selectedTable) {
+      setActiveTab(tabs[0].title);
+    }
+  }
+
   return (
     <div className={classes.drawerRoot}>
       {
         loading
-          ? (props.open ? <div className={classes.spinner}><Spinner /></div> : null)
+          ? (open ? <div className={classes.spinner}><Spinner /></div> : null)
           : (
             <>
               {
@@ -66,13 +74,13 @@ const DataDrawer = (props) => {
                   <LazyPanel
                     key={tab.title}
                     className={classes.content}
-                    show={props.open && props.activeTab === tab.title}
+                    show={open && activeTab === tab.title}
                   >
                     {tab.content}
                   </LazyPanel>
                 ))
               }
-              <LazyPanel className={classes.content} show={props.open && props.activeTab === 'stats'}>
+              <LazyPanel className={classes.content} show={open && activeTab === 'stats'}>
                 <ExecutionStats />
               </LazyPanel>
             </>
@@ -97,7 +105,7 @@ export const DataDrawerSplitPanel = (props) => {
         opened={dataDrawerOpen}
         toggle={toggleDrawerOpen}
         activeTab={activeTab}
-        setActiveTab={(tab: string) => setActiveTab(tab)}
+        setActiveTab={setActiveTab}
       />
     </div>
   );
@@ -113,6 +121,7 @@ export const DataDrawerSplitPanel = (props) => {
       <DataDrawer
         open={dataDrawerOpen}
         activeTab={activeTab}
+        setActiveTab={setActiveTab}
       />
     </ResizableDrawer>
   );
