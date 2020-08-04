@@ -429,8 +429,10 @@ def sendSlackNotification() {
 }
 
 def sendCloudReleaseSlackNotification(String profile) {
-  if (currentBuild.result != 'SUCCESS') {
+  if (currentBuild.result == 'SUCCESS') {
     slackSend color: '#00FF00', message: "${profile} Cloud deployed - ${env.BUILD_TAG} -- URL: ${env.BUILD_URL}."
+  } else {
+    slackSend color: '#FF0000', message: "${profile} Cloud deployed FAILED - ${env.BUILD_TAG} -- URL: ${env.BUILD_URL}."    
   }
 }
 
