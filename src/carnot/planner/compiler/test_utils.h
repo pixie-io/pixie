@@ -859,7 +859,7 @@ class ASTVisitorTest : public OperatorTests {
     cpu_relation.AddColumn(types::FLOAT64, "cpu0");
     cpu_relation.AddColumn(types::FLOAT64, "cpu1");
     cpu_relation.AddColumn(types::FLOAT64, "cpu2");
-    cpu_relation.AddColumn(types::UINT128, MetadataProperty::kUniquePIDColumn);
+    cpu_relation.AddColumn(types::UINT128, "upid");
     cpu_relation.AddColumn(types::INT64, "agent_id");
     relation_map_->emplace("cpu", cpu_relation);
 
@@ -870,7 +870,7 @@ class ASTVisitorTest : public OperatorTests {
     non_float_relation.AddColumn(types::BOOLEAN, "bool_col");
     relation_map_->emplace("non_float_table", non_float_relation);
 
-    network_relation.AddColumn(types::UINT128, MetadataProperty::kUniquePIDColumn);
+    network_relation.AddColumn(types::UINT128, "upid");
     network_relation.AddColumn(types::INT64, "bytes_in");
     network_relation.AddColumn(types::INT64, "bytes_out");
     network_relation.AddColumn(types::INT64, "agent_id");
@@ -878,7 +878,7 @@ class ASTVisitorTest : public OperatorTests {
 
     Relation http_events_relation;
     http_events_relation.AddColumn(types::TIME64NS, "time_");
-    http_events_relation.AddColumn(types::UINT128, MetadataProperty::kUniquePIDColumn);
+    http_events_relation.AddColumn(types::UINT128, "upid");
     http_events_relation.AddColumn(types::STRING, "remote_addr");
     http_events_relation.AddColumn(types::INT64, "remote_port");
     http_events_relation.AddColumn(types::INT64, "http_major_version");

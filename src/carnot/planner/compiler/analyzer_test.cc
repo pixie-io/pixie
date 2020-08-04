@@ -646,7 +646,7 @@ TEST_F(AnalyzerTest, copy_metadata_key_and_og_column) {
        "opDF = queryDF.groupby(['$0', 'service']).agg(mean_cpu =('cpu0', px.mean))",
        "opDF = opDF[opDF.ctx['service']=='pl/service-name']", "px.display(opDF, 'out')"},
       "\n");
-  valid_query = absl::Substitute(valid_query, MetadataProperty::kUniquePIDColumn);
+  valid_query = absl::Substitute(valid_query, "upid");
   auto ir_graph_status = CompileGraph(valid_query);
   ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();

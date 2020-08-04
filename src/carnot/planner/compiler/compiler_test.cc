@@ -69,7 +69,7 @@ class CompilerTest : public ::testing::Test {
                                       types::UINT128},
                                      {"count", "cpu0", "cpu1", "cpu2", "upid"}));
     cgroups_relation_ =
-        Relation({types::TIME64NS, types::STRING, types::STRING}, {"time_", "qos", "_attr_pod_id"});
+        Relation({types::TIME64NS, types::STRING, types::STRING}, {"time_", "qos", "pod_id"});
 
     rel_map->emplace("cgroups", cgroups_relation_);
 
@@ -78,8 +78,7 @@ class CompilerTest : public ::testing::Test {
 
                               {"time_", "upid", "http_resp_status", "http_resp_latency_ns"}));
     rel_map->emplace("network", Relation({types::UINT128, types::INT64, types::INT64, types::INT64},
-                                         {MetadataProperty::kUniquePIDColumn, "bytes_in",
-                                          "bytes_out", "agent_id"}));
+                                         {"upid", "bytes_in", "bytes_out", "agent_id"}));
     rel_map->emplace("process_stats",
                      Relation({types::TIME64NS, types::UINT128, types::INT64, types::INT64,
                                types::INT64, types::INT64, types::INT64, types::INT64, types::INT64,
@@ -89,7 +88,7 @@ class CompilerTest : public ::testing::Test {
                                "rchar_bytes", "wchar_bytes", "read_bytes", "write_bytes"}));
     Relation http_events_relation;
     http_events_relation.AddColumn(types::TIME64NS, "time_");
-    http_events_relation.AddColumn(types::UINT128, MetadataProperty::kUniquePIDColumn);
+    http_events_relation.AddColumn(types::UINT128, "upid");
     http_events_relation.AddColumn(types::STRING, "remote_addr");
     http_events_relation.AddColumn(types::INT64, "remote_port");
     http_events_relation.AddColumn(types::INT64, "http_major_version");

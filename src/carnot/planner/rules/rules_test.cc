@@ -1260,12 +1260,6 @@ class CheckRelationRule : public RulesTest {
 
   MapIR* MakeMap(OperatorIR* parent) { return MakeMap(parent, "map_fn"); }
 
-  table_store::schema::Relation ViolatingRelation() {
-    auto relation = mem_src->relation();
-    relation.AddColumn(types::DataType::STRING,
-                       absl::Substitute("$0_pod_name", MetadataProperty::kMetadataColumnPrefix));
-    return relation;
-  }
   table_store::schema::Relation PassingRelation() { return mem_src->relation(); }
 
   MemorySourceIR* mem_src;
@@ -2638,11 +2632,10 @@ TEST_F(RulesTest, ConvertMetadataRuleTest_multichild) {
   auto converted_md = static_cast<FuncIR*>(filter->filter_expr())->args()[0];
   EXPECT_MATCH(converted_md, Func());
   auto converted_md_func = static_cast<FuncIR*>(converted_md);
-  EXPECT_EQ(absl::Substitute("$0_to_$1", MetadataProperty::kUniquePIDColumn, metadata_name),
-            converted_md_func->func_name());
+  EXPECT_EQ(absl::Substitute("upid_to_$0", metadata_name), converted_md_func->func_name());
   EXPECT_EQ(1, converted_md_func->args().size());
   auto input_col = converted_md_func->args()[0];
-  EXPECT_MATCH(input_col, ColumnNode(MetadataProperty::kUniquePIDColumn));
+  EXPECT_MATCH(input_col, ColumnNode("upid"));
 
   EXPECT_MATCH(converted_md, ResolvedExpression());
   EXPECT_MATCH(input_col, ResolvedExpression());

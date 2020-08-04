@@ -632,17 +632,12 @@ class MetadataProperty : public NotCopyable {
   virtual std::string ExplainFormat() const = 0;
 
   /**
-   * @brief Returns the Carnot column-name as a string.
-   */
-  inline std::string GetColumnRepr() const { return FormatMetadataColumn(name_); }
-
-  /**
    * @brief Returns the key columns formatted as metadata columns.
    */
   std::vector<std::string> GetKeyColumnReprs() const {
     std::vector<std::string> columns;
     for (const auto& c : key_columns_) {
-      columns.push_back(FormatMetadataColumn(c));
+      columns.push_back(GetMetadataString(c));
     }
     return columns;
   }
@@ -666,7 +661,7 @@ class MetadataProperty : public NotCopyable {
           "Key column $0 invalid for metadata value $1. Expected one of [$2].", key, name_,
           absl::StrJoin(key_columns_, ","));
     }
-    return absl::Substitute("$1_to_$0", name_, ExtractMetadataFromColumnName(key));
+    return absl::Substitute("$1_to_$0", name_, key);
   }
 
   // Getters.
@@ -674,45 +669,11 @@ class MetadataProperty : public NotCopyable {
   inline shared::metadatapb::MetadataType metadata_type() const { return metadata_type_; }
   inline types::DataType column_type() const { return column_type_; }
 
-  /**
-   * @brief Return a string that adds the Metadata column prefix to the passed in argument.
-   * TODO(nserrino): Remove this when _attr gets deprecated.
-   */
-  inline static std::string FormatMetadataColumn(const std::string_view col_name) {
-    return absl::Substitute("$0$1", kMetadataColumnPrefix, col_name);
-  }
   inline static std::string GetMetadataString(shared::metadatapb::MetadataType metadata_type) {
-    if (metadata_type == shared::metadatapb::MetadataType::UPID) {
-      return kUniquePIDColumn;
-    }
     std::string name = shared::metadatapb::MetadataType_Name(metadata_type);
     absl::AsciiStrToLower(&name);
     return name;
   }
-  inline static std::string FormatMetadataColumn(shared::metadatapb::MetadataType metadata_type) {
-    if (metadata_type == shared::metadatapb::MetadataType::UPID) {
-      return kUniquePIDColumn;
-    }
-    return FormatMetadataColumn(GetMetadataString(metadata_type));
-  }
-
-  /**
-   * @brief Strips the Metadata prefix from a given Carnot, column-name representation.
-   * If you pass in a column without the prefix, it _does not_ throw an error.
-   * @param column_name
-   */
-  inline static std::string ExtractMetadataFromColumnName(const std::string_view column_name) {
-    return std::string(absl::StripPrefix(column_name, kMetadataColumnPrefix));
-  }
-
-  /**
-   * @brief The metadata prefix for columns in Carnot.
-   */
-  inline static const char kMetadataColumnPrefix[] = "_attr_";
-  /**
-   * @brief The string representation of the unique pid column.
-   */
-  inline static constexpr char kUniquePIDColumn[] = "upid";
 
  protected:
   MetadataProperty(shared::metadatapb::MetadataType metadata_type, types::DataType column_type,
