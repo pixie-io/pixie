@@ -207,6 +207,8 @@ Status EquijoinNode::HashRowBatch(const table_store::schema::RowBatch& rb) {
       PL_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
 #undef TYPE_CASE
     }
+    // Keep track of the number of rows that the build buffer matches for each key.
+    build_buffer_rows_[rt]++;
 
     if (current == nullptr) {
       std::swap(build_wrappers_chunk_[row_idx], current);
@@ -307,14 +309,13 @@ Status EquijoinNode::FlushChunkedRows(ExecState* exec_state) {
 Status EquijoinNode::MatchBuildValuesAndFlush(ExecState* exec_state,
                                               std::vector<types::SharedColumnWrapper>* wrapper,
                                               std::shared_ptr<RowBatch> probe_rb,
-                                              int64_t probe_rb_row) {
-  int64_t bb_rows = wrapper->at(0)->Size();
-  int64_t bb_rows_left = bb_rows;
+                                              int64_t probe_rb_row, int64_t matching_bb_rows) {
+  int64_t bb_rows_left = matching_bb_rows;
 
   while (bb_rows_left > 0) {
     auto available = output_rows_per_batch_ - (column_builders_[0]->length() + queued_rows_);
     auto chunk_rows = std::min(bb_rows_left, available);
-    OutputChunk c{probe_rb, wrapper, chunk_rows, bb_rows - bb_rows_left, probe_rb_row};
+    OutputChunk c{probe_rb, wrapper, chunk_rows, matching_bb_rows - bb_rows_left, probe_rb_row};
     chunks_.emplace_back(c);
     queued_rows_ += chunk_rows;
     bb_rows_left -= chunk_rows;
@@ -364,8 +365,9 @@ Status EquijoinNode::DoProbe(ExecState* exec_state, const table_store::schema::R
       continue;
     }
 
-    PL_RETURN_IF_ERROR(
-        MatchBuildValuesAndFlush(exec_state, probe_wrappers_chunk_[row_idx], rb_ptr, row_idx));
+    PL_RETURN_IF_ERROR(MatchBuildValuesAndFlush(exec_state, probe_wrappers_chunk_[row_idx], rb_ptr,
+                                                row_idx,
+                                                build_buffer_rows_[join_keys_chunk_[row_idx]]));
   }
 
   if (probe_eos_ && queued_rows_ > 0) {
@@ -380,7 +382,8 @@ Status EquijoinNode::EmitUnmatchedBuildRows(ExecState* exec_state) {
     if (probed_keys_.find(it->first) != probed_keys_.end()) {
       continue;
     }
-    PL_RETURN_IF_ERROR(MatchBuildValuesAndFlush(exec_state, it->second, nullptr, 0));
+    PL_RETURN_IF_ERROR(MatchBuildValuesAndFlush(exec_state, it->second, nullptr, 0,
+                                                build_buffer_rows_[it->first]));
   }
 
   if (queued_rows_ > 0) {

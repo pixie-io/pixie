@@ -301,6 +301,147 @@ TEST_F(JoinNodeTest, unordered_full_outer_join) {
       .Close();
 }
 
+TEST_F(JoinNodeTest, unordered_no_left_columns) {
+  // All batches from build first
+  // Left table input: [left_0:String, left_1:Int64]
+  // Right table input: [right_0:Int64, right_1:String]
+  // Output table: [left_1:Int, right_1:String, right_0:Int64]
+  // Full outer join on left_0=right_1
+  const char* proto = R"(
+  type: FULL_OUTER
+  equality_conditions {
+    left_column_index: 0
+    right_column_index: 1
+  }
+  output_columns: {
+    parent_index: 1
+    column_index: 1
+  }
+  output_columns: {
+    parent_index: 1
+    column_index: 0
+  }
+  column_names: "right_1"
+  column_names: "right_0"
+  rows_per_batch: 5
+)";
+
+  // Left
+  RowDescriptor input_rd_0({types::DataType::TIME64NS, types::DataType::INT64});
+  // Right
+  RowDescriptor input_rd_1({types::DataType::INT64, types::DataType::TIME64NS});
+  // Left[1], Right[1], Right[0]
+  RowDescriptor output_rd({types::DataType::TIME64NS, types::DataType::INT64});
+
+  auto plan_node = PlanNodeFromPbtxt(proto);
+  auto tester = exec::ExecNodeTester<EquijoinNode, plan::JoinOperator>(
+      *plan_node, output_rd, {input_rd_0, input_rd_1}, exec_state_.get());
+
+  tester
+      // Build table
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 5, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Time64NSValue>({101, 200, 101, 200, 101})
+                       .AddColumn<types::Int64Value>({1, 2, 3, 4, 5})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 5, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Time64NSValue>({200, 200, 200, 300, 300})
+                       .AddColumn<types::Int64Value>({6, 8, 10, 12, 14})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 2, /*eow*/ true, /*eos*/ true)
+                       .AddColumn<types::Time64NSValue>({400, 500})
+                       .AddColumn<types::Int64Value>({16, 18})
+                       .get(),
+                   0, 0)
+      // Probe table
+      .ConsumeNext(RowBatchBuilder(input_rd_1, 3, true, true)
+                       .AddColumn<types::Int64Value>({-10, -20, -30})
+                       .AddColumn<types::Time64NSValue>({110, 120, 101})
+                       .get(),
+                   1, 3)
+      // Some matched rows, some unmatched
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 5, false, false)
+                          .AddColumn<types::Time64NSValue>({110, 120, 101, 101, 101})
+                          .AddColumn<types::Int64Value>({-10, -20, -30, -30, -30})
+                          .get(),
+                      true)
+      // Emit unmatched build buffer rows (outputted over 2 batches with a random order)
+      .ExpectRowBatchesData(RowBatchBuilder(output_rd, 9, true, true)
+                                .AddColumn<types::Time64NSValue>({0, 0, 0, 0, 0, 0, 0, 0, 0})
+                                .AddColumn<types::Int64Value>({0, 0, 0, 0, 0, 0, 0, 0, 0})
+                                .get(),
+                            2)
+      .Close();
+}
+
+TEST_F(JoinNodeTest, unordered_no_right_columns) {
+  // All batches from build first
+  // Left table input: [left_0:String, left_1:Int64]
+  // Right table input: [right_0:Int64, right_1:String]
+  // Output table: [left_1:Int, right_1:String, right_0:Int64]
+  // Full outer join on left_0=right_1
+  const char* proto = R"(
+  type: FULL_OUTER
+  equality_conditions {
+    left_column_index: 0
+    right_column_index: 1
+  }
+  output_columns: {
+    parent_index: 0
+    column_index: 1
+  }
+  column_names: "left_1"
+  rows_per_batch: 5
+)";
+
+  // Left
+  RowDescriptor input_rd_0({types::DataType::TIME64NS, types::DataType::INT64});
+  // Right
+  RowDescriptor input_rd_1({types::DataType::INT64, types::DataType::TIME64NS});
+  // Left[1], Right[1], Right[0]
+  RowDescriptor output_rd({types::DataType::INT64});
+
+  auto plan_node = PlanNodeFromPbtxt(proto);
+  auto tester = exec::ExecNodeTester<EquijoinNode, plan::JoinOperator>(
+      *plan_node, output_rd, {input_rd_0, input_rd_1}, exec_state_.get());
+
+  tester
+      // Build table
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 5, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Time64NSValue>({101, 200, 101, 200, 101})
+                       .AddColumn<types::Int64Value>({1, 2, 3, 4, 5})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 5, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Time64NSValue>({200, 200, 200, 300, 300})
+                       .AddColumn<types::Int64Value>({6, 8, 10, 12, 14})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 2, /*eow*/ true, /*eos*/ true)
+                       .AddColumn<types::Time64NSValue>({400, 500})
+                       .AddColumn<types::Int64Value>({16, 18})
+                       .get(),
+                   0, 0)
+      // Probe table
+      .ConsumeNext(RowBatchBuilder(input_rd_1, 3, true, true)
+                       .AddColumn<types::Int64Value>({-10, -20, -30})
+                       .AddColumn<types::Time64NSValue>({110, 120, 101})
+                       .get(),
+                   1, 3)
+      // Some matched rows, some unmatched
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 5, false, false)
+                          .AddColumn<types::Int64Value>({0, 0, 1, 3, 5})
+                          .get(),
+                      true)
+      // Emit unmatched build buffer rows (outputted over 2 batches with a random order)
+      .ExpectRowBatchesData(RowBatchBuilder(output_rd, 9, true, true)
+                                .AddColumn<types::Int64Value>({2, 4, 6, 8, 10, 12, 14, 16, 18})
+                                .get(),
+                            2)
+      .Close();
+}
+
 TEST_F(JoinNodeTest, unordered_no_matches) {
   // Left table input: [left_0:String, left_1:Int64]
   // Right table input: [right_0:Int64, right_1:String]

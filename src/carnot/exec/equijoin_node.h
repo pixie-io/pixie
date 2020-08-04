@@ -65,7 +65,7 @@ class EquijoinNode : public ProcessingNode {
   Status MatchBuildValuesAndFlush(ExecState* exec_state,
                                   std::vector<types::SharedColumnWrapper>* wrapper,
                                   std::shared_ptr<table_store::schema::RowBatch> probe_rb,
-                                  int64_t probe_rb_row);
+                                  int64_t probe_rb_row_idx, int64_t matching_bb_rows);
   Status EmitUnmatchedBuildRows(ExecState* exec_state);
   Status NextOutputBatch(ExecState* exec_state);
   Status ConsumeBuildBatch(ExecState* exec_state, const table_store::schema::RowBatch& rb);
@@ -113,11 +113,21 @@ class EquijoinNode : public ProcessingNode {
   // Manages the RowTuples containing the keys for the join.
   ObjectPool key_values_pool_;
   ObjectPool column_values_pool_;
-  std::vector<RowTuple*> join_keys_chunk_;
-  std::vector<std::vector<types::SharedColumnWrapper>*> build_wrappers_chunk_;
-  std::vector<std::vector<types::SharedColumnWrapper>*> probe_wrappers_chunk_;
 
+  // Chunk of data to use when extracting join keys.
+  std::vector<RowTuple*> join_keys_chunk_;
+  // Chunk of data to use when performing the build stage of the join.
+  std::vector<std::vector<types::SharedColumnWrapper>*> build_wrappers_chunk_;
+
+  // Chunk of data to use when performing the probe stage of the join.
+  // This will store build table data from `build_buffer_`.
+  std::vector<std::vector<types::SharedColumnWrapper>*> probe_wrappers_chunk_;
   AbslRowTupleHashMap<std::vector<types::SharedColumnWrapper>*> build_buffer_;
+  // Store the number of rows that match a given set of keys for the build buffer.
+  // This is necessary to store in addition to the values in `build_buffer_` in
+  // the event that no columns from the build side are emitted.
+  AbslRowTupleHashMap<int64_t> build_buffer_rows_;
+
   // For joins where the build_buffer_ needs to emit any non-probed rows at the end of the join,
   // keep track of which ones they were.
   AbslRowTupleHashSet probed_keys_;
