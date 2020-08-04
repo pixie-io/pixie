@@ -318,6 +318,77 @@ export namespace BarChart {
 
 }
 
+export class HistogramChart extends jspb.Message {
+  getHistogram(): HistogramChart.Histogram | undefined;
+  setHistogram(value?: HistogramChart.Histogram): void;
+  hasHistogram(): boolean;
+  clearHistogram(): void;
+
+  getTitle(): string;
+  setTitle(value: string): void;
+
+  getXAxis(): Axis | undefined;
+  setXAxis(value?: Axis): void;
+  hasXAxis(): boolean;
+  clearXAxis(): void;
+
+  getYAxis(): Axis | undefined;
+  setYAxis(value?: Axis): void;
+  hasYAxis(): boolean;
+  clearYAxis(): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): HistogramChart.AsObject;
+  static toObject(includeInstance: boolean, msg: HistogramChart): HistogramChart.AsObject;
+  static serializeBinaryToWriter(message: HistogramChart, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): HistogramChart;
+  static deserializeBinaryFromReader(message: HistogramChart, reader: jspb.BinaryReader): HistogramChart;
+}
+
+export namespace HistogramChart {
+  export type AsObject = {
+    histogram?: HistogramChart.Histogram.AsObject,
+    title: string,
+    xAxis?: Axis.AsObject,
+    yAxis?: Axis.AsObject,
+  }
+
+  export class Histogram extends jspb.Message {
+    getValue(): string;
+    setValue(value: string): void;
+
+    getMaxbins(): number;
+    setMaxbins(value: number): void;
+
+    getMinstep(): number;
+    setMinstep(value: number): void;
+
+    getHorizontal(): boolean;
+    setHorizontal(value: boolean): void;
+
+    getPrebinCount(): string;
+    setPrebinCount(value: string): void;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): Histogram.AsObject;
+    static toObject(includeInstance: boolean, msg: Histogram): Histogram.AsObject;
+    static serializeBinaryToWriter(message: Histogram, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): Histogram;
+    static deserializeBinaryFromReader(message: Histogram, reader: jspb.BinaryReader): Histogram;
+  }
+
+  export namespace Histogram {
+    export type AsObject = {
+      value: string,
+      maxbins: number,
+      minstep: number,
+      horizontal: boolean,
+      prebinCount: string,
+    }
+  }
+
+}
+
 export class TimeseriesChart extends jspb.Message {
   getTimeseriesList(): Array<TimeseriesChart.Timeseries>;
   setTimeseriesList(value: Array<TimeseriesChart.Timeseries>): void;

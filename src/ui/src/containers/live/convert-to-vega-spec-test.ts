@@ -539,9 +539,37 @@ describe('simple bar', () => {
       type: 'rect',
       encode: expect.objectContaining({
         update: expect.objectContaining({
+          y: { scale: 'y', field: labelFieldName },
+          x: { scale: 'x', value: 0 },
+          x2: { scale: 'x', field: valueFieldName },
+          height: { scale: 'y', band: 1 },
+        }),
+      }),
+      style: 'bar',
+    })]));
+  });
+});
+
+describe('simple veritcal bar', () => {
+  const valueFieldName = 'num_errors';
+  const labelFieldName = 'service';
+  const input = {
+    '@type': 'pixielabs.ai/pl.vispb.BarChart',
+    bar: {
+      label: labelFieldName,
+      value: valueFieldName,
+      horizontal: false,
+    },
+  };
+  const { spec } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME);
+  it('produces expected mark for bars', () => {
+    expect(spec.marks).toEqual(expect.arrayContaining([expect.objectContaining({
+      type: 'rect',
+      encode: expect.objectContaining({
+        update: expect.objectContaining({
           x: { scale: 'x', field: labelFieldName },
-          y: { scale: 'y', field: valueFieldName },
-          y2: { scale: 'y', value: 0 },
+          y: { scale: 'y', value: 0 },
+          y2: { scale: 'y', field: valueFieldName },
           width: { scale: 'x', band: 1 },
         }),
       }),
@@ -568,11 +596,11 @@ describe('bar with stackby', () => {
       type: 'rect',
       encode: expect.objectContaining({
         update: expect.objectContaining({
-          x: { scale: 'x', field: labelFieldName },
-          y: { scale: 'y', field: `sum_${valueFieldName}_end` },
-          y2: { scale: 'y', field: `sum_${valueFieldName}_start` },
+          y: { scale: 'y', field: labelFieldName },
+          x2: { scale: 'x', field: `sum_${valueFieldName}_end` },
+          x: { scale: 'x', field: `sum_${valueFieldName}_start` },
           fill: { scale: 'color', field: stackByFieldName },
-          width: { scale: 'x', band: 1 },
+          height: { scale: 'y', band: 1 },
         }),
       }),
       style: 'bar',
@@ -606,10 +634,10 @@ describe('grouped bar', () => {
         expect.objectContaining({
           encode: expect.objectContaining({
             update: expect.objectContaining({
-              x: { scale: 'x', field: labelFieldName },
-              y: { scale: 'y', field: valueFieldName },
-              y2: { scale: 'y', value: 0 },
-              width: { scale: 'x', band: 1 },
+              y: { scale: 'y', field: labelFieldName },
+              x2: { scale: 'x', field: valueFieldName },
+              x: { scale: 'x', value: 0 },
+              height: { scale: 'y', band: 1 },
             }),
           }),
           style: 'bar',
@@ -652,10 +680,10 @@ describe('grouped bar with stackby', () => {
       marks: expect.arrayContaining([expect.objectContaining({
         encode: expect.objectContaining({
           update: expect.objectContaining({
-            x: { scale: 'x', field: labelFieldName },
-            y: { scale: 'y', field: `sum_${valueFieldName}_end` },
-            y2: { scale: 'y', field: `sum_${valueFieldName}_start` },
-            width: { scale: 'x', band: 1 },
+            x: { scale: 'x', field: `sum_${valueFieldName}_start` },
+            x2: { scale: 'x', field: `sum_${valueFieldName}_end` },
+            y: { scale: 'y', field: labelFieldName },
+            height: { scale: 'y', band: 1 },
           }),
         }),
         style: 'bar',
@@ -667,6 +695,106 @@ describe('grouped bar with stackby', () => {
       bounds: 'full',
       align: 'all',
     }));
+  });
+});
+
+// TODO need support for prebinned data vs not binned.
+describe('simple prebinned histogram', () => {
+  const prebinFieldName = 'count';
+  const binFieldName = 'latency_ms';
+  const maxbins = 10;
+  const minstep = 1;
+  const input = {
+    '@type': 'pixielabs.ai/pl.vispb.HistogramChart',
+    histogram: {
+      value: binFieldName,
+      prebinCount: prebinFieldName,
+      maxbins,
+      minstep,
+    },
+  };
+
+  const binName = `bin_${binFieldName}`;
+  const extentSignal = `${binName}_extent`;
+  const binSignal = `${binName}_bins`;
+  const binStart = binName;
+  const binEnd = `${binName}_end`;
+  const valueFieldCount = `${binFieldName}_count`;
+
+  const { spec } = convertWidgetDisplayToVegaSpec(
+    input,
+    'mysource',
+    DARK_THEME,
+  );
+  it('produces expected mark for bars', () => {
+    expect(spec.marks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          encode: expect.objectContaining({
+            update: expect.objectContaining({
+              x: { scale: 'x', field: binStart },
+              x2: { scale: 'x', field: binEnd },
+              y: { scale: 'y', value: 0 },
+              y2: { scale: 'y', field: valueFieldCount },
+            }),
+          }),
+          from: { data: 'transformed_data' },
+          name: 'bar-mark',
+          style: 'bar',
+          type: 'rect',
+        }),
+      ]),
+    );
+  });
+
+  it('produces expected scales', () => {
+    expect(spec.scales).toEqual(
+      expect.arrayContaining([
+        {
+          type: 'linear',
+          bins: { signal: binSignal },
+          name: 'x',
+          domain: { signal: `[${binSignal}.start, ${binSignal}.stop]` },
+          range: [0, { signal: 'width' }],
+        },
+      ]),
+    );
+  });
+
+  it('has binning transforms', () => {
+    expect(spec.data).toEqual(
+      expect.arrayContaining([
+        {
+          name: TRANSFORMED_DATA_SOURCE_NAME,
+          source: expect.any(String),
+          transform: expect.arrayContaining([
+            {
+              type: 'extent',
+              field: binFieldName,
+              signal: extentSignal,
+            },
+            {
+              type: 'bin',
+              field: binFieldName,
+              as: [binStart, binEnd],
+              signal: binSignal,
+              extent: {
+                signal: extentSignal,
+              },
+              maxbins,
+              minstep,
+            },
+            {
+              type: 'aggregate',
+              groupby: [binStart, binEnd],
+              ops: ['sum'],
+              fields: [prebinFieldName],
+              as: [valueFieldCount],
+            },
+          ]),
+        },
+      ]),
+    );
   });
 });
 

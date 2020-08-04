@@ -170,6 +170,68 @@ message BarChart {
   Axis y_axis = 4;
 }
 
+// HistogramChart The visual spec for a histogram chart. Support histograms
+// generated from prebinned data and data that needs to be binned.
+//
+// To prebin, store the binned histogram counts in "prebinCount" the field with the
+// left side of each bin stored in the "value". We also recommend you put the bin
+// step size parameter used as minstep to prevent artifacts.
+//
+// For example: to plot latency values that are prebinned with a step size of 50, you would
+// use the following specification:
+//
+// HistogramChart {
+//   Histogram {
+//     value: "latency_ms",
+//     prebinCount: "latency_count",
+//     minstep: 50
+//   }
+// }
+message HistogramChart {
+  // Histogram contains the logical specification of the Histogram chart.
+  message Histogram {
+    // Value denotes the field to plot. If prebin_field is not set, the value
+    // field will be binned according to the minstep and maxbins parameters.
+    // If prebin_field is set, `value` wil represent the bin values which
+    // will be resampled.
+    string value = 1;
+    // The maximum bins to display the data. Default is 10 bins.
+    int64 maxbins = 2;
+    // The minimum size of bins in the same units as `value`. Default is 0 units.
+    double minstep = 3;
+    // Whether the histogram should be horizontal or not.
+    bool horizontal = 4;
+    // (Optional) Field that contains prebinned counts for each element of `value`.
+    // If set, the bins will be resampled according to maxbins and minstep. We
+    // recommend setting minstep to be 2x the minstep (or step) parameter used to
+    // prebin. This guarantees that you won't undersample the bins.
+
+    // NOTE:
+    // Pre-binning is an optimization can yield in inaccurate results.
+    //
+    // For example given values [49, 39, 105, 145]
+    // A pre-bin with param 50 yields {[bin), count} tuples
+    // [{[0, 50), 2}, {[100, 150), 2}]
+    // Binned with minstep of 105 will use the left endpoint of the bin, yielding the
+    // following tuple, falsely stating that the original data had 0-values
+    // between 105 and 210:
+    // [{[0, 105), 4}, {[105, 210), 0}]
+    //
+    // You can increase your accuracy by choosing smaller pre-bin step size.
+    // although in most cases, small versions of the above error shouldn't significantly
+    // affect the usefulness of the histogram.
+    //
+    string prebin_count = 5;
+  }
+  Histogram histogram = 1;
+  // title is the title string for the chart.
+  string title = 2;
+  // x_axis defines configuration for the x axis of the chart.
+  Axis x_axis = 3;
+  // y_axis defines configuration for the y axis of the chart.
+  Axis y_axis = 4;
+}
+
 // TimeseriesChart the visual spec for a timeseries chart. There is variety in the possible visual
 // style for these charts, but they always occur over time. They automatically use the time_ column
 // of the input table(s) as the x-axis.

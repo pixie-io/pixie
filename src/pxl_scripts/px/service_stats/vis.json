@@ -188,10 +188,12 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.BarChart",
-        "bar": {
-          "value": "count",
-          "label": "request_latency_ms"
+        "@type": "pixielabs.ai/pl.vispb.HistogramChart",
+        "histogram": {
+          "value": "request_latency_ms",
+          "prebinCount": "count",
+          "maxbins": 10,
+          "minstep": 50.0
         },
         "xAxis": {
           "label": "Request Latency (ms)"

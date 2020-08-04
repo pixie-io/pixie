@@ -7,6 +7,7 @@ import {
   ChartDisplay,
   convertWidgetDisplayToVegaSpec,
   TIMESERIES_CHART_TYPE,
+  HISTOGRAM_CHART_TYPE,
 } from 'containers/live/convert-to-vega-spec';
 import { DISPLAY_TYPE_KEY } from 'containers/live/vis';
 
@@ -106,6 +107,201 @@ const barData = [
   },
 ];
 
+const histogramData = [
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 150,
+    count: 28,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 500,
+    count: 3,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 100,
+    count: 68,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 7050,
+    count: 1,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 1000,
+    count: 99,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 2150,
+    count: 1,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 3000,
+    count: 16,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 1050,
+    count: 32,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 5050,
+    count: 7,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 50,
+    count: 168,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 0,
+    count: 1402,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 1100,
+    count: 17,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 900,
+    count: 1,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 5000,
+    count: 14,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 1950,
+    count: 1,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 400,
+    count: 4,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 800,
+    count: 3,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 3100,
+    count: 5,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 550,
+    count: 4,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 3050,
+    count: 13,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 950,
+    count: 2,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 450,
+    count: 2,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 250,
+    count: 11,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 200,
+    count: 8,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 7100,
+    count: 6,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 1150,
+    count: 3,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 300,
+    count: 7,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 700,
+    count: 2,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 750,
+    count: 3,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 350,
+    count: 7,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 3150,
+    count: 1,
+  },
+  {
+    _tableName_: 'output',
+    _clusterID_: '8eb3f3cc-eb20-44c8-b5ac-c17d07dc46e0',
+    requestLatencyMS: 1300,
+    count: 1,
+  },
+];
+
 function printSpec(display: ChartDisplay) {
   const sourceName = 'mysource';
   const { spec, error } = convertWidgetDisplayToVegaSpec(display, sourceName, DARK_THEME);
@@ -117,11 +313,13 @@ function printSpec(display: ChartDisplay) {
 
   if (display[DISPLAY_TYPE_KEY] === BAR_CHART_TYPE) {
     data = barData;
+  } else if (display[DISPLAY_TYPE_KEY] === HISTOGRAM_CHART_TYPE) {
+    data = histogramData;
   } else if (display[DISPLAY_TYPE_KEY] === TIMESERIES_CHART_TYPE) {
     data = timeseriesData;
   } else {
     console.log(
-      `This tool only supports bar and timeseries charts, not ${display[DISPLAY_TYPE_KEY]}`);
+      `This tool only supports bar,timeseries, or histogram charts, not ${display[DISPLAY_TYPE_KEY]}`);
     return;
   }
 
@@ -150,14 +348,25 @@ function printSpec(display: ChartDisplay) {
 
 // Example input, replace with what you want to print the spec for.
 const input = {
-  '@type': TIMESERIES_CHART_TYPE,
-  timeseries: [{
-    value: 'bytesPerSecond',
-    mode: 'MODE_LINE',
-    series: 'service',
-    stackBySeries: true,
-  }],
+  '@type': HISTOGRAM_CHART_TYPE,
+  histogram: {
+    value: 'requestLatencyMS',
+    prebinCount: 'count',
+    maxbins: 20,
+    horizontal: true,
+  },
 };
+
+// const input = {
+//   '@type': BAR_CHART_TYPE,
+//   bar: {
+//     value: 'numErrors',
+//     label: 'service',
+//     stackBy: 'endpoint',
+//     horizontal: true,
+//     groupBy: 'cluster',
+//   },
+// };
 
 printSpec(input);
 

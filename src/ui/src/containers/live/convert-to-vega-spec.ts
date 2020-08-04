@@ -19,7 +19,7 @@ import {
   TrailEncodeEntry,
   Transforms,
   AreaMark,
-  ScaleMultiFieldsRef,
+  ScaleData,
 } from 'vega';
 import { vegaLite, VisualizationSpec } from 'vega-embed';
 import { TopLevelSpec as VlSpec } from 'vega-lite';
@@ -28,12 +28,14 @@ import { DISPLAY_TYPE_KEY, WidgetDisplay } from './vis';
 
 addPxTimeFormatExpression();
 
-export const BAR_CHART_TYPE = 'pixielabs.ai/pl.vispb.BarChart';
 const VEGA_CHART_TYPE = 'pixielabs.ai/pl.vispb.VegaChart';
 const VEGA_LITE_V4 = 'https://vega.github.io/schema/vega-lite/v4.json';
 const VEGA_V5 = 'https://vega.github.io/schema/vega/v5.json';
 const VEGA_SCHEMA = '$schema';
 export const TIMESERIES_CHART_TYPE = 'pixielabs.ai/pl.vispb.TimeseriesChart';
+export const BAR_CHART_TYPE = 'pixielabs.ai/pl.vispb.BarChart';
+export const HISTOGRAM_CHART_TYPE = 'pixielabs.ai/pl.vispb.HistogramChart';
+
 export const COLOR_SCALE = 'color';
 const HOVER_LINE_COLOR = '#4dffd4';
 const HOVER_TIME_COLOR = '#121212';
@@ -92,6 +94,18 @@ interface BarDisplay extends WidgetDisplay, DisplayWithLabels {
   readonly bar: Bar;
 }
 
+interface Histogram {
+  readonly value: string;
+  readonly maxbins?: number;
+  readonly minstep?: number;
+  readonly horizontal?: boolean;
+  readonly prebinCount: string;
+}
+
+interface HistogramDisplay extends WidgetDisplay, DisplayWithLabels {
+  readonly histogram: Histogram;
+}
+
 interface VegaDisplay extends WidgetDisplay {
   readonly spec: string;
 }
@@ -106,12 +120,14 @@ export interface VegaSpecWithProps {
   error?: Error;
 }
 
-export type ChartDisplay = TimeseriesDisplay | BarDisplay | VegaDisplay;
+export type ChartDisplay = TimeseriesDisplay | BarDisplay | VegaDisplay | HistogramDisplay;
 
 function convertWidgetDisplayToSpecWithErrors(display: ChartDisplay, source: string): VegaSpecWithProps {
   switch (display[DISPLAY_TYPE_KEY]) {
     case BAR_CHART_TYPE:
       return convertToBarChart(display as BarDisplay, source);
+    case HISTOGRAM_CHART_TYPE:
+      return convertToHistogramChart(display as HistogramDisplay, source);
     case TIMESERIES_CHART_TYPE:
       return convertToTimeseriesChart(display as TimeseriesDisplay, source);
     case VEGA_CHART_TYPE:
@@ -947,130 +963,155 @@ function addGridLayoutMarksForGroupedBars(
   return { groupForValueAxis, groupForLabelAxis };
 }
 
-function addBarHoverSignal(spec: VgSpec, bar: Bar, barMarkName: string, groupTest: string, stackTest: string): Signal {
+function addBarHoverSignal(
+  spec: VgSpec,
+  label: string,
+  barMarkName: string,
+  groupTest: string,
+  stackTest: string,
+): Signal {
   return addSignal(spec, {
     name: 'hovered_bar',
     on: [
       {
-        events: [{
-          source: 'view',
-          type: 'mouseover',
-          markname: barMarkName,
-        }],
-        update: `datum && {label: datum["${bar.label}"], group: ${groupTest}, stack: ${stackTest}}`,
+        events: [
+          {
+            source: 'view',
+            type: 'mouseover',
+            markname: barMarkName,
+          },
+        ],
+        update: `datum && {label: datum["${label}"], group: ${groupTest}, stack: ${stackTest}}`,
       },
       {
-        events: [{
-          source: 'view',
-          type: 'mouseout',
-          markname: barMarkName,
-        }],
+        events: [
+          {
+            source: 'view',
+            type: 'mouseout',
+            markname: barMarkName,
+          },
+        ],
         update: 'null',
       },
     ],
   });
 }
 
-function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithProps {
-  if (!display.bar) {
-    throw new Error('BarChart must have an entry for property bar');
-  }
-  if (!display.bar.value) {
-    throw new Error('BarChart property bar must have an entry for property value');
-  }
-  if (!display.bar.label) {
-    throw new Error('BarChart property bar must have an entry for property label');
-  }
+// Scale object used to hold a stripped down version of
+// information necessary for BarChartProps.
+interface InternalScale {
+  domain: ScaleData | SignalRef;
+  type: 'band' | 'linear';
+  bins?: SignalRef;
+  paddingInner?: number;
+}
 
-  const spec = { ...BASE_SPEC, style: 'cell' };
-  if (!display.bar.groupBy) {
+// Property struct for Vega BarCharts.
+interface BarChartProps {
+  barStart: string;
+  barEnd?: string;
+  groupBy?: string;
+  stackBy?: string;
+  horizontal: boolean;
+  value: string;
+  transformedDataSrc: Data;
+  labelScale: InternalScale;
+  display: DisplayWithLabels;
+}
+
+// The internal function to render barCharts.
+function barChartInternal(chart: BarChartProps, spec: VgSpec): VegaSpecWithProps {
+  if (!chart.groupBy) {
     addAutosize(spec);
   }
 
-  // Add data and transforms.
-  const baseDataSrc = addDataSource(spec, { name: source });
-  const transformedDataSrc = addDataSource(spec, {
-    name: TRANSFORMED_DATA_SOURCE_NAME, source: baseDataSrc.name, transform: [],
-  });
-  let valueField = display.bar.value;
+  let valueField = chart.value;
   let valueStartField = '';
   let valueEndField = valueField;
-  if (display.bar.stackBy) {
-    valueField = `sum_${display.bar.value}`;
+  if (chart.stackBy) {
+    valueField = `sum_${chart.value}`;
     valueStartField = `${valueField}_start`;
     valueEndField = `${valueField}_end`;
-    const extraGroupBy = (display.bar.groupBy) ? [display.bar.groupBy] : [];
-    extendDataTransforms(transformedDataSrc, [
+    const extraGroupBy = [chart.barStart];
+    if (chart.barEnd) {
+      extraGroupBy.push(chart.barEnd);
+    }
+    if (chart.groupBy) {
+      extraGroupBy.push(chart.groupBy);
+    }
+    extendDataTransforms(chart.transformedDataSrc, [
       {
         type: 'aggregate',
-        groupby: [display.bar.label, display.bar.stackBy, ...extraGroupBy],
+        groupby: [chart.stackBy, ...extraGroupBy],
         ops: ['sum'],
-        fields: [display.bar.value],
+        fields: [chart.value],
         as: [valueField],
       },
       {
         type: 'stack',
-        groupby: [display.bar.label, ...extraGroupBy],
+        groupby: [...extraGroupBy],
         field: valueField,
-        sort: { field: [display.bar.stackBy], order: ['descending'] },
+        sort: { field: [chart.stackBy], order: ['descending'] },
         as: [valueStartField, valueEndField],
         offset: 'zero',
       },
     ]);
   }
   let columnDomainData: Data;
-  if (display.bar.groupBy) {
+  if (chart.groupBy) {
     columnDomainData = addDataSource(spec, {
       name: 'column-domain',
-      source: transformedDataSrc.name,
+      source: chart.transformedDataSrc.name,
       transform: [
         {
           type: 'aggregate',
-          groupby: [display.bar.groupBy],
+          groupby: [chart.groupBy],
         },
       ],
     });
   }
 
+  const horizontalBars = chart.horizontal;
   // Add signals.
   addWidthHeightSignals(spec);
-  const widthName = (display.bar.groupBy) ? 'child_width' : 'width';
-  const heightName = (display.bar.groupBy) ? 'child_height' : 'height';
-  if (display.bar.groupBy) {
+  const widthName = (chart.groupBy) ? 'child_width' : 'width';
+  const heightName = (chart.groupBy) ? 'child_height' : 'height';
+  if (chart.groupBy) {
     const groupScale = addScale(spec, {
       name: 'group-scale',
       type: 'band',
       domain: {
-        data: transformedDataSrc.name,
-        field: display.bar.groupBy,
+        data: chart.transformedDataSrc.name,
+        field: chart.groupBy,
         sort: true,
       },
-      range: (display.bar.horizontal) ? 'height' : 'width',
+      range: (horizontalBars) ? 'height' : 'width',
     });
-    addChildWidthHeightSignals(spec, widthName, heightName, display.bar.horizontal, groupScale.name);
+    addChildWidthHeightSignals(spec, widthName, heightName, horizontalBars, groupScale.name);
   }
+  const barMarkName = 'bar-mark';
+  const groupTest = (datum: string) => ((chart.groupBy) ? `${datum}["${chart.groupBy}"]` : 'null');
+  const stackTest = (datum: string) => ((chart.stackBy) ? `${datum}["${chart.stackBy}"]` : 'null');
+  const hoverSignal = addBarHoverSignal(spec, chart.barStart, barMarkName, groupTest('datum'), stackTest('datum'));
+  const isHovered = (datum: string) => `${hoverSignal.name}.label === ${datum}["${chart.barStart}"] && `
+    + `${hoverSignal.name}.group === ${groupTest(datum)} && `
+    + `${hoverSignal.name}.stack === ${stackTest(datum)}`;
 
   // Add scales.
   const labelScale = addScale(spec, {
-    name: (display.bar.horizontal) ? 'y' : 'x',
-    type: 'band',
-    domain: {
-      data: transformedDataSrc.name,
-      field: display.bar.label,
-      sort: true,
-    },
-    range: (display.bar.horizontal) ? [{ signal: heightName }, 0] : [0, { signal: widthName }],
-    paddingInner: BAR_PADDING,
+    name: (horizontalBars) ? 'y' : 'x',
+    range: (horizontalBars) ? [{ signal: heightName }, 0] : [0, { signal: widthName }],
+    ...chart.labelScale,
   });
 
   const valueScale = addScale(spec, {
-    name: (display.bar.horizontal) ? 'x' : 'y',
+    name: (horizontalBars) ? 'x' : 'y',
     type: 'linear',
     domain: {
-      data: transformedDataSrc.name,
+      data: chart.transformedDataSrc.name,
       fields: (valueStartField) ? [valueStartField, valueEndField] : [valueField],
     },
-    range: (display.bar.horizontal) ? [0, { signal: widthName }] : [{ signal: heightName }, 0],
+    range: (horizontalBars) ? [0, { signal: widthName }] : [{ signal: heightName }, 0],
     nice: true,
     zero: true,
   });
@@ -1079,23 +1120,23 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
     name: 'color',
     type: 'ordinal',
     range: 'category',
-    domain: (!display.bar.stackBy) ? [valueField] : {
-      data: transformedDataSrc.name,
-      field: display.bar.stackBy,
+    domain: (!chart.stackBy) ? [valueField] : {
+      data: chart.transformedDataSrc.name,
+      field: chart.stackBy,
       sort: true,
     },
   });
 
   // Add marks.
   let group: VgSpec | GroupMark = spec;
-  let dataName = transformedDataSrc.name;
+  let dataName = chart.transformedDataSrc.name;
   let groupForValueAxis: VgSpec | GroupMark = spec;
   let groupForLabelAxis: VgSpec | GroupMark = spec;
-  if (display.bar.groupBy) {
+  if (chart.groupBy) {
     // We use vega's grid layout functionality to plot grouped bars.
     ({ groupForValueAxis, groupForLabelAxis } = addGridLayoutMarksForGroupedBars(
-      spec, display.bar.groupBy, display.bar.label, columnDomainData, display.bar.horizontal, widthName, heightName));
-    addGridLayout(spec, columnDomainData, display.bar.horizontal);
+      spec, chart.groupBy, chart.barStart, columnDomainData, horizontalBars, widthName, heightName));
+    addGridLayout(spec, columnDomainData, horizontalBars);
     dataName = 'facetedData';
     group = addMark(spec, {
       name: 'barGroup',
@@ -1104,12 +1145,12 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
       from: {
         facet: {
           name: dataName,
-          data: transformedDataSrc.name,
-          groupby: [display.bar.groupBy],
+          data: chart.transformedDataSrc.name,
+          groupby: [chart.groupBy],
         },
       },
       sort: {
-        field: [`datum["${display.bar.groupBy}"]`],
+        field: [`datum["${chart.groupBy}"]`],
         order: ['ascending'],
       },
       encode: {
@@ -1125,7 +1166,7 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
       axes: [
         {
           scale: valueScale.name,
-          orient: (display.bar.horizontal) ? 'bottom' : 'left',
+          orient: (horizontalBars) ? 'bottom' : 'left',
           grid: true,
           gridScale: labelScale.name,
           tickCount: { signal: `ceil(${heightName}/${PX_BETWEEN_Y_TICKS})` },
@@ -1137,13 +1178,6 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
     }) as GroupMark;
   }
 
-  const barMarkName = 'bar-mark';
-  const groupTest = (datum: string) => ((display.bar.groupBy) ? `${datum}["${display.bar.groupBy}"]` : 'null');
-  const stackTest = (datum: string) => ((display.bar.stackBy) ? `${datum}["${display.bar.stackBy}"]` : 'null');
-  const hoverSignal = addBarHoverSignal(spec, display.bar, barMarkName, groupTest('datum'), stackTest('datum'));
-  const isHovered = (datum: string) => `${hoverSignal.name}.label === ${datum}["${display.bar.label}"] && `
-    + `${hoverSignal.name}.group === ${groupTest(datum)} && `
-    + `${hoverSignal.name}.stack === ${stackTest(datum)}`;
   const barMark = addMark(group, {
     name: barMarkName,
     type: 'rect',
@@ -1155,7 +1189,7 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
       update: {
         fill: {
           scale: colorScale.name,
-          ...((display.bar.stackBy) ? { field: display.bar.stackBy } : { value: valueField }),
+          ...((chart.stackBy) ? { field: chart.stackBy } : { value: valueField }),
         },
         opacity: [
           { test: `!${hoverSignal.name}`, value: SELECTED_BAR_OPACITY },
@@ -1168,45 +1202,34 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
       },
     },
   });
-  if (display.bar.horizontal) {
-    extendMarkEncoding(barMark, 'update', {
-      x: {
-        scale: valueScale.name,
-        ...((valueStartField) ? { field: valueStartField } : { value: 0 }),
-      },
-      x2: {
-        scale: valueScale.name,
-        field: valueEndField,
-      },
-      y: {
-        scale: labelScale.name,
-        field: display.bar.label,
-      },
-      height: {
-        scale: labelScale.name,
-        band: 1,
-      },
-    });
-  } else {
-    extendMarkEncoding(barMark, 'update', {
-      x: {
-        scale: labelScale.name,
-        field: display.bar.label,
-      },
-      y: {
-        scale: valueScale.name,
-        field: valueEndField,
-      },
-      y2: {
-        scale: valueScale.name,
-        ...((valueStartField) ? { field: valueStartField } : { value: 0 }),
-      },
-      width: {
-        scale: labelScale.name,
-        band: 1,
-      },
-    });
+
+  let barWidthEncodingKey = (horizontalBars) ? 'height' : 'width';
+  let barWidthEncodingValue: any = { scale: labelScale.name, band: 1 };
+  if (chart.barEnd) {
+    barWidthEncodingKey = (horizontalBars) ? 'y2' : 'x2';
+    barWidthEncodingValue = { scale: labelScale.name, field: chart.barEnd };
   }
+
+  extendMarkEncoding(barMark, 'update', {
+    // Bottom of the bar. If there's no "startField", then just 0.
+    [(horizontalBars) ? 'x' : 'y']: {
+      scale: valueScale.name,
+      ...((valueStartField) ? { field: valueStartField } : { value: 0 }),
+    },
+    // Top of the bar.
+    [(horizontalBars) ? 'x2' : 'y2']: {
+      scale: valueScale.name,
+      field: valueEndField,
+    },
+    // The label of the bar.
+    [(horizontalBars) ? 'y' : 'x']: {
+      scale: labelScale.name,
+      field: chart.barStart,
+    },
+    // The width of the bar.
+    [barWidthEncodingKey]: barWidthEncodingValue,
+  });
+
   addMark(group, {
     name: 'bar-value-text',
     type: 'text',
@@ -1216,8 +1239,8 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
     },
     encode: {
       enter: {
-        text: { field: `datum["${display.bar.value}"]` },
-        ...((display.bar.horizontal)
+        text: { field: `datum["${valueField}"]` },
+        ...((horizontalBars)
           ? {
             x: { field: 'x2', offset: BAR_TEXT_OFFSET },
             y: { field: 'y', offset: { field: 'height', mult: 0.5 } },
@@ -1240,16 +1263,16 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
     },
   });
 
-  const xHasGrid = !display.bar.groupBy && !!display.bar.horizontal;
-  const yHasGrid = !display.bar.groupBy && !display.bar.horizontal;
+  const xHasGrid = !chart.groupBy && !!horizontalBars;
+  const yHasGrid = !chart.groupBy && !horizontalBars;
 
-  const xAxis = addAxis((display.bar.horizontal) ? groupForValueAxis : groupForLabelAxis, {
-    scale: (display.bar.horizontal) ? valueScale.name : labelScale.name,
+  const xAxis = addAxis((horizontalBars) ? groupForValueAxis : groupForLabelAxis, {
+    scale: (horizontalBars) ? valueScale.name : labelScale.name,
     orient: 'bottom',
     grid: xHasGrid,
     gridScale: (xHasGrid) ? labelScale.name : null,
-    labelAlign: (display.bar.horizontal) ? 'center' : 'right',
-    labelAngle: (display.bar.horizontal) ? 0 : 270,
+    labelAlign: (horizontalBars) ? 'center' : 'right',
+    labelAngle: (horizontalBars) ? 0 : 270,
     labelBaseline: 'middle',
     labelOverlap: true,
     labelSeparation: 3,
@@ -1258,8 +1281,8 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
       signal: `ceil(${widthName}/${PX_BETWEEN_Y_TICKS})`,
     },
   });
-  const yAxis = addAxis((display.bar.horizontal) ? groupForLabelAxis : groupForValueAxis, {
-    scale: (display.bar.horizontal) ? labelScale.name : valueScale.name,
+  const yAxis = addAxis((horizontalBars) ? groupForLabelAxis : groupForValueAxis, {
+    scale: (horizontalBars) ? labelScale.name : valueScale.name,
     orient: 'left',
     grid: yHasGrid,
     gridScale: yHasGrid ? labelScale.name : null,
@@ -1269,13 +1292,13 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
       signal: `ceil(${heightName}/${PX_BETWEEN_Y_TICKS})`,
     },
   });
-  addLabelsToAxes(xAxis, yAxis, display);
+  addLabelsToAxes(xAxis, yAxis, chart.display);
 
-  if (display.bar.stackBy) {
+  if (chart.stackBy) {
     addLegend(spec, {
       fill: colorScale.name,
       symbolType: 'square',
-      title: display.bar.stackBy,
+      title: chart.stackBy,
       encode: {
         symbols: {
           update: {
@@ -1288,8 +1311,8 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
     });
   }
 
-  if (display.title) {
-    addTitle(spec, display.title);
+  if (chart.display.title) {
+    addTitle(spec, chart.display.title);
   }
 
   return {
@@ -1297,6 +1320,121 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
     hasLegend: false,
     legendColumnName: '',
   };
+}
+
+function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithProps {
+  if (!display.bar) {
+    throw new Error('BarChart must have an entry for property bar');
+  }
+  if (!display.bar.value) {
+    throw new Error('BarChart property bar must have an entry for property value');
+  }
+  if (!display.bar.label) {
+    throw new Error('BarChart property bar must have an entry for property label');
+  }
+
+  const spec = { ...BASE_SPEC, style: 'cell' };
+  // Add data and transforms.
+  const baseDataSrc = addDataSource(spec, { name: source });
+  const transformedDataSrc = addDataSource(spec, {
+    name: TRANSFORMED_DATA_SOURCE_NAME, source: baseDataSrc.name, transform: [],
+  });
+  // Horizontal should be default.
+  const horizontalBars = (display.bar.horizontal === undefined) ? true : display.bar.horizontal;
+
+  return barChartInternal({
+    barStart: display.bar.label,
+    horizontal: horizontalBars,
+    value: display.bar.value,
+    transformedDataSrc,
+    groupBy: display.bar.groupBy,
+    stackBy: display.bar.stackBy,
+    labelScale: {
+      domain: {
+        data: transformedDataSrc.name,
+        field: display.bar.label,
+        sort: true,
+      },
+      paddingInner: BAR_PADDING,
+      type: 'band',
+    },
+    display,
+  }, spec);
+}
+
+function convertToHistogramChart(display: HistogramDisplay, source: string): VegaSpecWithProps {
+  if (!display.histogram) {
+    throw new Error('HistogramChart must have an entry for property histogram');
+  }
+  if (!display.histogram.value) {
+    throw new Error('HistogramChart property histogram must have an entry for property value');
+  }
+  // TODO(philkuz) support non-prebinned histograms.
+  if (!display.histogram.prebinCount) {
+    throw new Error('HistogramChart property histogram must have an entry for the prebinField');
+  }
+
+  const spec = { ...BASE_SPEC, style: 'cell' };
+
+  // Add data and transforms.
+  const baseDataSrc = addDataSource(spec, { name: source });
+  const transformedDataSrc = addDataSource(spec, {
+    name: TRANSFORMED_DATA_SOURCE_NAME, source: baseDataSrc.name, transform: [],
+  });
+
+  const binName = `bin_${display.histogram.value}`;
+  const extentSignal = `${binName}_extent`;
+  const binSignal = `${binName}_bins`;
+  const binStart = binName;
+  const binEnd = `${binName}_end`;
+  const countField = `${display.histogram.value}_count`;
+
+  const DEFAULT_MAX_BINS = 10;
+  const DEFAULT_MIN_STEP = 0.0;
+  // Groups which to aggregate by, will include groupby and stackby if we add those to histogram.
+  const groups: string[] = [];
+  // Setup histograms.
+  extendDataTransforms(transformedDataSrc, [
+    {
+      type: 'extent',
+      field: display.histogram.value,
+      signal: extentSignal,
+    },
+    {
+      type: 'bin',
+      field: display.histogram.value,
+      as: [binStart, binEnd],
+      signal: binSignal,
+      extent: {
+        signal: extentSignal,
+      },
+      maxbins: display.histogram.maxbins || DEFAULT_MAX_BINS,
+      minstep: display.histogram.minstep || DEFAULT_MIN_STEP,
+    },
+    {
+      type: 'aggregate',
+      groupby: [binStart, binEnd, ...groups],
+      ops: ['sum'],
+      fields: [display.histogram.prebinCount],
+      as: [countField],
+    },
+  ]);
+
+  return barChartInternal({
+    barStart: binStart,
+    barEnd: binEnd,
+    horizontal: display.histogram.horizontal,
+    value: countField,
+    transformedDataSrc,
+    labelScale: {
+      domain: {
+        signal: `[${binSignal}.start, ${binSignal}.stop]`,
+      },
+      type: 'linear',
+      bins: { signal: binSignal },
+    },
+    display,
+  }, spec);
 }
 
 function convertToVegaChart(display: VegaDisplay): VegaSpecWithProps {
