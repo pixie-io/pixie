@@ -286,7 +286,7 @@ const InternalDataTable = ({
         break;
       }
     }
-    if (sortKey) {
+    if (sortKey && !sortState.dataKey) {
       onSortWrapper({ sortBy: sortKey, sortDirection: SortDirection.ASC });
     }
   }, [columns, onSortWrapper]);
