@@ -9,9 +9,7 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
-	proto2 "pixielabs.ai/pixielabs/src/common/base/proto"
-	proto1 "pixielabs.ai/pixielabs/src/shared/types/proto"
+	proto1 "pixielabs.ai/pixielabs/src/common/base/proto"
 	logicalpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logicalpb"
 	reflect "reflect"
 	strings "strings"
@@ -28,15 +26,125 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+type FuncToExecute struct {
+	FuncName          string                    `protobuf:"bytes,1,opt,name=func_name,json=funcName,proto3" json:"func_name,omitempty"`
+	ArgValues         []*FuncToExecute_ArgValue `protobuf:"bytes,2,rep,name=arg_values,json=argValues,proto3" json:"arg_values,omitempty"`
+	OutputTablePrefix string                    `protobuf:"bytes,3,opt,name=output_table_prefix,json=outputTablePrefix,proto3" json:"output_table_prefix,omitempty"`
+}
+
+func (m *FuncToExecute) Reset()      { *m = FuncToExecute{} }
+func (*FuncToExecute) ProtoMessage() {}
+func (*FuncToExecute) Descriptor() ([]byte, []int) {
+	return fileDescriptor_382d495688ef31c6, []int{0}
+}
+func (m *FuncToExecute) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *FuncToExecute) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_FuncToExecute.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *FuncToExecute) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FuncToExecute.Merge(m, src)
+}
+func (m *FuncToExecute) XXX_Size() int {
+	return m.Size()
+}
+func (m *FuncToExecute) XXX_DiscardUnknown() {
+	xxx_messageInfo_FuncToExecute.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FuncToExecute proto.InternalMessageInfo
+
+func (m *FuncToExecute) GetFuncName() string {
+	if m != nil {
+		return m.FuncName
+	}
+	return ""
+}
+
+func (m *FuncToExecute) GetArgValues() []*FuncToExecute_ArgValue {
+	if m != nil {
+		return m.ArgValues
+	}
+	return nil
+}
+
+func (m *FuncToExecute) GetOutputTablePrefix() string {
+	if m != nil {
+		return m.OutputTablePrefix
+	}
+	return ""
+}
+
+type FuncToExecute_ArgValue struct {
+	Name  string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (m *FuncToExecute_ArgValue) Reset()      { *m = FuncToExecute_ArgValue{} }
+func (*FuncToExecute_ArgValue) ProtoMessage() {}
+func (*FuncToExecute_ArgValue) Descriptor() ([]byte, []int) {
+	return fileDescriptor_382d495688ef31c6, []int{0, 0}
+}
+func (m *FuncToExecute_ArgValue) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *FuncToExecute_ArgValue) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_FuncToExecute_ArgValue.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *FuncToExecute_ArgValue) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FuncToExecute_ArgValue.Merge(m, src)
+}
+func (m *FuncToExecute_ArgValue) XXX_Size() int {
+	return m.Size()
+}
+func (m *FuncToExecute_ArgValue) XXX_DiscardUnknown() {
+	xxx_messageInfo_FuncToExecute_ArgValue.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FuncToExecute_ArgValue proto.InternalMessageInfo
+
+func (m *FuncToExecute_ArgValue) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *FuncToExecute_ArgValue) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
+
 type QueryRequest struct {
-	QueryStr  string                        `protobuf:"bytes,1,opt,name=query_str,json=queryStr,proto3" json:"query_str,omitempty"`
-	ExecFuncs []*QueryRequest_FuncToExecute `protobuf:"bytes,3,rep,name=exec_funcs,json=execFuncs,proto3" json:"exec_funcs,omitempty"`
+	QueryStr  string           `protobuf:"bytes,1,opt,name=query_str,json=queryStr,proto3" json:"query_str,omitempty"`
+	ExecFuncs []*FuncToExecute `protobuf:"bytes,3,rep,name=exec_funcs,json=execFuncs,proto3" json:"exec_funcs,omitempty"`
 }
 
 func (m *QueryRequest) Reset()      { *m = QueryRequest{} }
 func (*QueryRequest) ProtoMessage() {}
 func (*QueryRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_382d495688ef31c6, []int{0}
+	return fileDescriptor_382d495688ef31c6, []int{1}
 }
 func (m *QueryRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -72,300 +180,22 @@ func (m *QueryRequest) GetQueryStr() string {
 	return ""
 }
 
-func (m *QueryRequest) GetExecFuncs() []*QueryRequest_FuncToExecute {
+func (m *QueryRequest) GetExecFuncs() []*FuncToExecute {
 	if m != nil {
 		return m.ExecFuncs
 	}
 	return nil
 }
 
-type QueryRequest_FuncToExecute struct {
-	FuncName          string                                 `protobuf:"bytes,1,opt,name=func_name,json=funcName,proto3" json:"func_name,omitempty"`
-	ArgValues         []*QueryRequest_FuncToExecute_ArgValue `protobuf:"bytes,2,rep,name=arg_values,json=argValues,proto3" json:"arg_values,omitempty"`
-	OutputTablePrefix string                                 `protobuf:"bytes,3,opt,name=output_table_prefix,json=outputTablePrefix,proto3" json:"output_table_prefix,omitempty"`
-}
-
-func (m *QueryRequest_FuncToExecute) Reset()      { *m = QueryRequest_FuncToExecute{} }
-func (*QueryRequest_FuncToExecute) ProtoMessage() {}
-func (*QueryRequest_FuncToExecute) Descriptor() ([]byte, []int) {
-	return fileDescriptor_382d495688ef31c6, []int{0, 0}
-}
-func (m *QueryRequest_FuncToExecute) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryRequest_FuncToExecute) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryRequest_FuncToExecute.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryRequest_FuncToExecute) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryRequest_FuncToExecute.Merge(m, src)
-}
-func (m *QueryRequest_FuncToExecute) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryRequest_FuncToExecute) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryRequest_FuncToExecute.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryRequest_FuncToExecute proto.InternalMessageInfo
-
-func (m *QueryRequest_FuncToExecute) GetFuncName() string {
-	if m != nil {
-		return m.FuncName
-	}
-	return ""
-}
-
-func (m *QueryRequest_FuncToExecute) GetArgValues() []*QueryRequest_FuncToExecute_ArgValue {
-	if m != nil {
-		return m.ArgValues
-	}
-	return nil
-}
-
-func (m *QueryRequest_FuncToExecute) GetOutputTablePrefix() string {
-	if m != nil {
-		return m.OutputTablePrefix
-	}
-	return ""
-}
-
-type QueryRequest_FuncToExecute_ArgValue struct {
-	Name  string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
-}
-
-func (m *QueryRequest_FuncToExecute_ArgValue) Reset()      { *m = QueryRequest_FuncToExecute_ArgValue{} }
-func (*QueryRequest_FuncToExecute_ArgValue) ProtoMessage() {}
-func (*QueryRequest_FuncToExecute_ArgValue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_382d495688ef31c6, []int{0, 0, 0}
-}
-func (m *QueryRequest_FuncToExecute_ArgValue) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryRequest_FuncToExecute_ArgValue) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryRequest_FuncToExecute_ArgValue.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryRequest_FuncToExecute_ArgValue) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryRequest_FuncToExecute_ArgValue.Merge(m, src)
-}
-func (m *QueryRequest_FuncToExecute_ArgValue) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryRequest_FuncToExecute_ArgValue) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryRequest_FuncToExecute_ArgValue.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryRequest_FuncToExecute_ArgValue proto.InternalMessageInfo
-
-func (m *QueryRequest_FuncToExecute_ArgValue) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
-func (m *QueryRequest_FuncToExecute_ArgValue) GetValue() string {
-	if m != nil {
-		return m.Value
-	}
-	return ""
-}
-
-type QueryFlagsSpec struct {
-	Flags []*QueryFlagsSpec_Flag `protobuf:"bytes,1,rep,name=flags,proto3" json:"flags,omitempty"`
-}
-
-func (m *QueryFlagsSpec) Reset()      { *m = QueryFlagsSpec{} }
-func (*QueryFlagsSpec) ProtoMessage() {}
-func (*QueryFlagsSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_382d495688ef31c6, []int{1}
-}
-func (m *QueryFlagsSpec) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryFlagsSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryFlagsSpec.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryFlagsSpec) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryFlagsSpec.Merge(m, src)
-}
-func (m *QueryFlagsSpec) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryFlagsSpec) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryFlagsSpec.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryFlagsSpec proto.InternalMessageInfo
-
-func (m *QueryFlagsSpec) GetFlags() []*QueryFlagsSpec_Flag {
-	if m != nil {
-		return m.Flags
-	}
-	return nil
-}
-
-type QueryFlagsSpec_Flag struct {
-	DataType     proto1.DataType     `protobuf:"varint,1,opt,name=data_type,json=dataType,proto3,enum=pl.types.DataType" json:"data_type,omitempty"`
-	SemanticType proto1.SemanticType `protobuf:"varint,2,opt,name=semantic_type,json=semanticType,proto3,enum=pl.types.SemanticType" json:"semantic_type,omitempty"`
-	Name         string              `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	Description  string              `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
-	DefaultValue *planpb.ScalarValue `protobuf:"bytes,5,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
-}
-
-func (m *QueryFlagsSpec_Flag) Reset()      { *m = QueryFlagsSpec_Flag{} }
-func (*QueryFlagsSpec_Flag) ProtoMessage() {}
-func (*QueryFlagsSpec_Flag) Descriptor() ([]byte, []int) {
-	return fileDescriptor_382d495688ef31c6, []int{1, 0}
-}
-func (m *QueryFlagsSpec_Flag) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryFlagsSpec_Flag) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryFlagsSpec_Flag.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryFlagsSpec_Flag) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryFlagsSpec_Flag.Merge(m, src)
-}
-func (m *QueryFlagsSpec_Flag) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryFlagsSpec_Flag) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryFlagsSpec_Flag.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryFlagsSpec_Flag proto.InternalMessageInfo
-
-func (m *QueryFlagsSpec_Flag) GetDataType() proto1.DataType {
-	if m != nil {
-		return m.DataType
-	}
-	return proto1.DATA_TYPE_UNKNOWN
-}
-
-func (m *QueryFlagsSpec_Flag) GetSemanticType() proto1.SemanticType {
-	if m != nil {
-		return m.SemanticType
-	}
-	return proto1.ST_UNSPECIFIED
-}
-
-func (m *QueryFlagsSpec_Flag) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
-func (m *QueryFlagsSpec_Flag) GetDescription() string {
-	if m != nil {
-		return m.Description
-	}
-	return ""
-}
-
-func (m *QueryFlagsSpec_Flag) GetDefaultValue() *planpb.ScalarValue {
-	if m != nil {
-		return m.DefaultValue
-	}
-	return nil
-}
-
-type GetAvailableFlagsResult struct {
-	QueryFlags *QueryFlagsSpec `protobuf:"bytes,1,opt,name=query_flags,json=queryFlags,proto3" json:"query_flags,omitempty"`
-	Status     *proto2.Status  `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
-}
-
-func (m *GetAvailableFlagsResult) Reset()      { *m = GetAvailableFlagsResult{} }
-func (*GetAvailableFlagsResult) ProtoMessage() {}
-func (*GetAvailableFlagsResult) Descriptor() ([]byte, []int) {
-	return fileDescriptor_382d495688ef31c6, []int{2}
-}
-func (m *GetAvailableFlagsResult) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *GetAvailableFlagsResult) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GetAvailableFlagsResult.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *GetAvailableFlagsResult) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetAvailableFlagsResult.Merge(m, src)
-}
-func (m *GetAvailableFlagsResult) XXX_Size() int {
-	return m.Size()
-}
-func (m *GetAvailableFlagsResult) XXX_DiscardUnknown() {
-	xxx_messageInfo_GetAvailableFlagsResult.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_GetAvailableFlagsResult proto.InternalMessageInfo
-
-func (m *GetAvailableFlagsResult) GetQueryFlags() *QueryFlagsSpec {
-	if m != nil {
-		return m.QueryFlags
-	}
-	return nil
-}
-
-func (m *GetAvailableFlagsResult) GetStatus() *proto2.Status {
-	if m != nil {
-		return m.Status
-	}
-	return nil
-}
-
 type CompileMutationsRequest struct {
-	QueryStr string `protobuf:"bytes,1,opt,name=query_str,json=queryStr,proto3" json:"query_str,omitempty"`
+	QueryStr  string           `protobuf:"bytes,1,opt,name=query_str,json=queryStr,proto3" json:"query_str,omitempty"`
+	ExecFuncs []*FuncToExecute `protobuf:"bytes,3,rep,name=exec_funcs,json=execFuncs,proto3" json:"exec_funcs,omitempty"`
 }
 
 func (m *CompileMutationsRequest) Reset()      { *m = CompileMutationsRequest{} }
 func (*CompileMutationsRequest) ProtoMessage() {}
 func (*CompileMutationsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_382d495688ef31c6, []int{3}
+	return fileDescriptor_382d495688ef31c6, []int{2}
 }
 func (m *CompileMutationsRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -401,6 +231,13 @@ func (m *CompileMutationsRequest) GetQueryStr() string {
 	return ""
 }
 
+func (m *CompileMutationsRequest) GetExecFuncs() []*FuncToExecute {
+	if m != nil {
+		return m.ExecFuncs
+	}
+	return nil
+}
+
 type DeleteTracepoint struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
@@ -408,7 +245,7 @@ type DeleteTracepoint struct {
 func (m *DeleteTracepoint) Reset()      { *m = DeleteTracepoint{} }
 func (*DeleteTracepoint) ProtoMessage() {}
 func (*DeleteTracepoint) Descriptor() ([]byte, []int) {
-	return fileDescriptor_382d495688ef31c6, []int{4}
+	return fileDescriptor_382d495688ef31c6, []int{3}
 }
 func (m *DeleteTracepoint) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -454,7 +291,7 @@ type CompileMutation struct {
 func (m *CompileMutation) Reset()      { *m = CompileMutation{} }
 func (*CompileMutation) ProtoMessage() {}
 func (*CompileMutation) Descriptor() ([]byte, []int) {
-	return fileDescriptor_382d495688ef31c6, []int{5}
+	return fileDescriptor_382d495688ef31c6, []int{4}
 }
 func (m *CompileMutation) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -530,14 +367,14 @@ func (*CompileMutation) XXX_OneofWrappers() []interface{} {
 }
 
 type CompileMutationsResponse struct {
-	Status    *proto2.Status     `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	Status    *proto1.Status     `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
 	Mutations []*CompileMutation `protobuf:"bytes,2,rep,name=mutations,proto3" json:"mutations,omitempty"`
 }
 
 func (m *CompileMutationsResponse) Reset()      { *m = CompileMutationsResponse{} }
 func (*CompileMutationsResponse) ProtoMessage() {}
 func (*CompileMutationsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_382d495688ef31c6, []int{6}
+	return fileDescriptor_382d495688ef31c6, []int{5}
 }
 func (m *CompileMutationsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -566,7 +403,7 @@ func (m *CompileMutationsResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CompileMutationsResponse proto.InternalMessageInfo
 
-func (m *CompileMutationsResponse) GetStatus() *proto2.Status {
+func (m *CompileMutationsResponse) GetStatus() *proto1.Status {
 	if m != nil {
 		return m.Status
 	}
@@ -581,12 +418,9 @@ func (m *CompileMutationsResponse) GetMutations() []*CompileMutation {
 }
 
 func init() {
+	proto.RegisterType((*FuncToExecute)(nil), "pl.carnot.planner.plannerpb.FuncToExecute")
+	proto.RegisterType((*FuncToExecute_ArgValue)(nil), "pl.carnot.planner.plannerpb.FuncToExecute.ArgValue")
 	proto.RegisterType((*QueryRequest)(nil), "pl.carnot.planner.plannerpb.QueryRequest")
-	proto.RegisterType((*QueryRequest_FuncToExecute)(nil), "pl.carnot.planner.plannerpb.QueryRequest.FuncToExecute")
-	proto.RegisterType((*QueryRequest_FuncToExecute_ArgValue)(nil), "pl.carnot.planner.plannerpb.QueryRequest.FuncToExecute.ArgValue")
-	proto.RegisterType((*QueryFlagsSpec)(nil), "pl.carnot.planner.plannerpb.QueryFlagsSpec")
-	proto.RegisterType((*QueryFlagsSpec_Flag)(nil), "pl.carnot.planner.plannerpb.QueryFlagsSpec.Flag")
-	proto.RegisterType((*GetAvailableFlagsResult)(nil), "pl.carnot.planner.plannerpb.GetAvailableFlagsResult")
 	proto.RegisterType((*CompileMutationsRequest)(nil), "pl.carnot.planner.plannerpb.CompileMutationsRequest")
 	proto.RegisterType((*DeleteTracepoint)(nil), "pl.carnot.planner.plannerpb.DeleteTracepoint")
 	proto.RegisterType((*CompileMutation)(nil), "pl.carnot.planner.plannerpb.CompileMutation")
@@ -598,58 +432,107 @@ func init() {
 }
 
 var fileDescriptor_382d495688ef31c6 = []byte{
-	// 781 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x54, 0x4d, 0x6f, 0xe3, 0x44,
-	0x18, 0xf6, 0xe4, 0x63, 0x95, 0xbc, 0x69, 0x97, 0xee, 0x2c, 0x62, 0xad, 0x2c, 0x58, 0x91, 0x0f,
-	0xa8, 0xd2, 0x2e, 0x36, 0x0a, 0x88, 0x1e, 0x38, 0x40, 0x4b, 0x69, 0xab, 0x0a, 0x50, 0x71, 0xa2,
-	0x1e, 0x10, 0x92, 0x35, 0xb1, 0x27, 0xc1, 0x92, 0x3f, 0xa6, 0x33, 0xe3, 0xaa, 0xb9, 0xf1, 0x13,
-	0x90, 0xe0, 0x47, 0xf0, 0x43, 0x38, 0xc0, 0xad, 0xc7, 0x1e, 0x69, 0x7a, 0xe1, 0x84, 0x2a, 0xf1,
-	0x03, 0x40, 0x33, 0x63, 0xa7, 0x21, 0xa0, 0x16, 0xf6, 0xe4, 0xf7, 0xeb, 0x79, 0xfc, 0xcc, 0x33,
-	0x1f, 0xf0, 0x52, 0xf0, 0xc8, 0x8f, 0x08, 0xcf, 0x0b, 0xe9, 0xb3, 0x94, 0xe4, 0x39, 0xe5, 0xf5,
-	0x97, 0x4d, 0xfc, 0x69, 0x99, 0x47, 0x21, 0xe1, 0x33, 0xe1, 0x31, 0x5e, 0xc8, 0x02, 0x3f, 0x67,
-	0xa9, 0x67, 0x86, 0xbd, 0x6a, 0xc8, 0x5b, 0x0e, 0xf7, 0x5d, 0x4d, 0x55, 0x64, 0x59, 0x91, 0xfb,
-	0x13, 0x22, 0xa8, 0xaf, 0x31, 0xbe, 0x90, 0x44, 0x96, 0x15, 0x81, 0x99, 0x11, 0xdf, 0x10, 0x4e,
-	0x63, 0x5f, 0xce, 0x19, 0x15, 0xd5, 0x90, 0x8e, 0xab, 0x99, 0x37, 0xd7, 0x24, 0xb1, 0x89, 0xfe,
-	0x54, 0xdd, 0x1d, 0xcd, 0x20, 0x13, 0x9e, 0x26, 0xf9, 0xcc, 0x8f, 0xe7, 0x39, 0xc9, 0x92, 0x28,
-	0x94, 0x9c, 0x44, 0x2a, 0x4f, 0xb8, 0x9f, 0x16, 0xb3, 0x24, 0x22, 0x29, 0x9b, 0xd4, 0x91, 0x01,
-	0xba, 0x7f, 0x36, 0x60, 0xe3, 0xcb, 0x92, 0xf2, 0x79, 0x40, 0xcf, 0x4a, 0x2a, 0x24, 0x7e, 0x0e,
-	0xdd, 0x33, 0x95, 0x87, 0x42, 0x72, 0x1b, 0x0d, 0xd0, 0x76, 0x37, 0xe8, 0xe8, 0xc2, 0x48, 0x72,
-	0x7c, 0x0a, 0x40, 0x2f, 0x68, 0x14, 0x2a, 0x07, 0x84, 0xdd, 0x1c, 0x34, 0xb7, 0x7b, 0xc3, 0x1d,
-	0xef, 0x9e, 0xe5, 0x7b, 0xab, 0xdc, 0xde, 0x41, 0x99, 0x47, 0xe3, 0xe2, 0xd3, 0x0b, 0x1a, 0x95,
-	0x92, 0x06, 0x5d, 0x45, 0xa5, 0x4a, 0xa2, 0xff, 0x07, 0x82, 0xcd, 0xbf, 0x35, 0x95, 0x0c, 0x6d,
-	0x73, 0x4e, 0x32, 0x5a, 0xcb, 0x50, 0x85, 0x2f, 0x48, 0x46, 0x71, 0x08, 0x40, 0xf8, 0x2c, 0x3c,
-	0x27, 0x69, 0x49, 0x85, 0xdd, 0xd0, 0x32, 0x3e, 0x7e, 0x45, 0x19, 0xde, 0x2e, 0x9f, 0x9d, 0x2a,
-	0xa2, 0xa0, 0x4b, 0xaa, 0x48, 0x60, 0x0f, 0x9e, 0x16, 0xa5, 0x64, 0xa5, 0x0c, 0x25, 0x99, 0xa4,
-	0x34, 0x64, 0x9c, 0x4e, 0x93, 0x0b, 0xbb, 0xa9, 0x75, 0x3c, 0x31, 0xad, 0xb1, 0xea, 0x9c, 0xe8,
-	0x46, 0xff, 0x7d, 0xe8, 0xd4, 0x34, 0x18, 0x43, 0x6b, 0x45, 0xb4, 0x8e, 0xf1, 0xeb, 0xd0, 0xd6,
-	0x62, 0xed, 0x86, 0x2e, 0x9a, 0xe4, 0xb8, 0xd5, 0x69, 0x6c, 0x35, 0xdd, 0x5f, 0x1a, 0xf0, 0x58,
-	0xcb, 0x3b, 0x48, 0xc9, 0x4c, 0x8c, 0x18, 0x8d, 0xf0, 0x01, 0xb4, 0xa7, 0x2a, 0xb1, 0x91, 0x5e,
-	0xda, 0xbb, 0x0f, 0x2f, 0x6d, 0x89, 0xf5, 0x54, 0x14, 0x18, 0x78, 0xff, 0x77, 0x04, 0x2d, 0x95,
-	0x63, 0x1f, 0xba, 0x31, 0x91, 0x24, 0x54, 0x07, 0x4a, 0x0b, 0x7b, 0x3c, 0xc4, 0x8a, 0xd4, 0x1c,
-	0xb0, 0x7d, 0x22, 0xc9, 0x78, 0xce, 0x68, 0xd0, 0x89, 0xab, 0x08, 0x7f, 0x08, 0x9b, 0x82, 0x66,
-	0x24, 0x97, 0xea, 0x14, 0x29, 0x50, 0x43, 0x83, 0xde, 0xb8, 0x03, 0x8d, 0xaa, 0xb6, 0x06, 0x6e,
-	0x88, 0x95, 0x6c, 0xe9, 0x40, 0x73, 0xc5, 0x81, 0x01, 0xf4, 0x62, 0x2a, 0x22, 0x9e, 0x30, 0x99,
-	0x14, 0xb9, 0xdd, 0xd2, 0xad, 0xd5, 0x12, 0xde, 0x83, 0xcd, 0x98, 0x4e, 0x49, 0x99, 0x4a, 0xb3,
-	0xb1, 0x76, 0x7b, 0x80, 0xb6, 0x7b, 0xc3, 0xb7, 0xd6, 0x16, 0xcf, 0x26, 0xde, 0x28, 0x22, 0x29,
-	0xe1, 0x66, 0xd3, 0x36, 0x2a, 0x8c, 0xce, 0xdc, 0x1f, 0x10, 0x3c, 0x3b, 0xa4, 0x72, 0xf7, 0x9c,
-	0x24, 0xa9, 0xda, 0x1e, 0x6d, 0x4b, 0x40, 0x45, 0x99, 0x4a, 0xfc, 0x19, 0xf4, 0xcc, 0xc1, 0xae,
-	0xad, 0x55, 0xec, 0x2f, 0xfe, 0x87, 0xb5, 0x01, 0x9c, 0x2d, 0x73, 0xfc, 0x02, 0x1e, 0x99, 0x2b,
-	0xac, 0x9d, 0xe9, 0x0d, 0x9f, 0x2a, 0x22, 0x53, 0x51, 0x0a, 0x75, 0x10, 0x54, 0x23, 0xee, 0x07,
-	0xf0, 0xec, 0x93, 0x22, 0x63, 0x49, 0x4a, 0x3f, 0x2f, 0x25, 0x51, 0xab, 0x15, 0xff, 0xe5, 0xba,
-	0xb9, 0x6f, 0xc3, 0xd6, 0x3e, 0x4d, 0xa9, 0xa4, 0x63, 0x4e, 0x22, 0xca, 0x8a, 0x24, 0x97, 0xff,
-	0x76, 0xbc, 0xdc, 0x9f, 0x10, 0xbc, 0xb6, 0xf6, 0x03, 0x7c, 0x08, 0x6d, 0x75, 0xfd, 0x69, 0xa5,
-	0xcf, 0x37, 0xfa, 0xcc, 0x03, 0xe1, 0xad, 0x3d, 0x10, 0x5e, 0xc2, 0xbd, 0xfa, 0x59, 0x38, 0xe1,
-	0xc5, 0x8c, 0x93, 0xec, 0xc8, 0x0a, 0x0c, 0x1e, 0x7f, 0x0d, 0x4f, 0x62, 0x2d, 0x42, 0x4f, 0x1b,
-	0x15, 0x7a, 0x6b, 0x7b, 0xc3, 0x77, 0xee, 0x75, 0x6f, 0x5d, 0xfa, 0x91, 0x15, 0x6c, 0xc5, 0x6b,
-	0xb5, 0x3d, 0x80, 0x4e, 0x56, 0x49, 0x76, 0xbf, 0x47, 0x60, 0xff, 0xd3, 0x27, 0xc1, 0x8a, 0x5c,
-	0xd0, 0x15, 0xc3, 0xd1, 0x83, 0x86, 0xe3, 0x63, 0xe8, 0xd6, 0xac, 0xf5, 0xfb, 0xf0, 0xf2, 0x5e,
-	0xad, 0x6b, 0xbf, 0x0d, 0xee, 0xe0, 0x7b, 0x1f, 0x5d, 0x5e, 0x3b, 0xd6, 0xd5, 0xb5, 0x63, 0xdd,
-	0x5e, 0x3b, 0xe8, 0xdb, 0x85, 0x83, 0x7e, 0x5c, 0x38, 0xe8, 0xe7, 0x85, 0x83, 0x2e, 0x17, 0x0e,
-	0xfa, 0x75, 0xe1, 0xa0, 0xdf, 0x16, 0x8e, 0x75, 0xbb, 0x70, 0xd0, 0x77, 0x37, 0x8e, 0x75, 0x79,
-	0xe3, 0x58, 0x57, 0x37, 0x8e, 0xf5, 0x55, 0x77, 0xc9, 0x3d, 0x79, 0xa4, 0x5f, 0xda, 0xf7, 0xfe,
-	0x0a, 0x00, 0x00, 0xff, 0xff, 0x0b, 0xbd, 0x69, 0x1f, 0x55, 0x06, 0x00, 0x00,
+	// 569 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x93, 0x4f, 0x6b, 0xd4, 0x4e,
+	0x18, 0xc7, 0x33, 0xdd, 0xb6, 0x6c, 0x66, 0x7f, 0x3f, 0x6c, 0xa7, 0x82, 0xa1, 0x85, 0xa1, 0xe4,
+	0x20, 0x45, 0xeb, 0x04, 0xb6, 0x82, 0x47, 0xb1, 0xfe, 0xab, 0x05, 0xa5, 0xa6, 0x8b, 0x07, 0x11,
+	0xc2, 0x24, 0x3b, 0x0d, 0x81, 0x64, 0x26, 0x9d, 0x99, 0xc8, 0x16, 0x3c, 0xe8, 0x3b, 0x10, 0x7c,
+	0x13, 0xbe, 0x10, 0x0f, 0x1e, 0xf7, 0xd8, 0xa3, 0x9b, 0x05, 0xf1, 0xd8, 0x97, 0x20, 0x33, 0xd9,
+	0x54, 0x5d, 0x65, 0xf1, 0xe4, 0x29, 0xcf, 0x3c, 0xf3, 0x3c, 0xdf, 0xf9, 0x7c, 0x27, 0xcf, 0xc0,
+	0x5d, 0x25, 0x93, 0x20, 0xa1, 0x92, 0x0b, 0x1d, 0x94, 0x39, 0xe5, 0x9c, 0xc9, 0xf6, 0x5b, 0xc6,
+	0xc1, 0x49, 0xc5, 0x93, 0x88, 0xca, 0x54, 0x91, 0x52, 0x0a, 0x2d, 0xd0, 0x56, 0x99, 0x93, 0xa6,
+	0x98, 0xcc, 0x8a, 0xc8, 0x65, 0xf1, 0xa6, 0x6f, 0xa5, 0x44, 0x51, 0x08, 0x1e, 0xc4, 0x54, 0xb1,
+	0xc0, 0xf6, 0x04, 0x4a, 0x53, 0x5d, 0xcd, 0x04, 0x36, 0xef, 0x98, 0x1a, 0xa5, 0x33, 0x99, 0x67,
+	0x3c, 0x0d, 0x86, 0x67, 0x9c, 0x16, 0x59, 0x12, 0x69, 0x49, 0x13, 0xb3, 0xce, 0x64, 0x90, 0x8b,
+	0x34, 0x4b, 0x68, 0x5e, 0xc6, 0x6d, 0xd4, 0x34, 0xfa, 0x5f, 0x01, 0xfc, 0xff, 0x51, 0xc5, 0x93,
+	0x81, 0x78, 0x38, 0x62, 0x49, 0xa5, 0x19, 0xda, 0x82, 0xae, 0xc5, 0xe3, 0xb4, 0x60, 0x1e, 0xd8,
+	0x06, 0x3b, 0x6e, 0xd8, 0x35, 0x89, 0x67, 0xb4, 0x60, 0x28, 0x84, 0x90, 0xca, 0x34, 0x7a, 0x4d,
+	0xf3, 0x8a, 0x29, 0x6f, 0x69, 0xbb, 0xb3, 0xd3, 0xeb, 0xef, 0x91, 0x05, 0xf4, 0xe4, 0x17, 0x71,
+	0x72, 0x4f, 0xa6, 0x2f, 0x4c, 0x6f, 0xe8, 0xd2, 0x59, 0xa4, 0x10, 0x81, 0x1b, 0xa2, 0xd2, 0x65,
+	0xa5, 0x23, 0x4d, 0xe3, 0x9c, 0x45, 0xa5, 0x64, 0x27, 0xd9, 0xc8, 0xeb, 0xd8, 0xa3, 0xd7, 0x9b,
+	0xad, 0x81, 0xd9, 0x39, 0xb2, 0x1b, 0x9b, 0xb7, 0x61, 0xb7, 0x95, 0x41, 0x08, 0x2e, 0xff, 0xc4,
+	0x69, 0x63, 0x74, 0x15, 0xae, 0x58, 0x3e, 0x6f, 0xc9, 0x26, 0x9b, 0x85, 0xff, 0x06, 0xfe, 0xf7,
+	0xbc, 0x62, 0xf2, 0x2c, 0x64, 0xa7, 0x15, 0x53, 0xda, 0xd8, 0x3c, 0x35, 0xeb, 0x48, 0x69, 0xd9,
+	0xda, 0xb4, 0x89, 0x63, 0x2d, 0xd1, 0x13, 0x08, 0xd9, 0x88, 0x25, 0x91, 0xf1, 0xad, 0xbc, 0x8e,
+	0xb5, 0x79, 0xe3, 0xef, 0x6d, 0x86, 0xae, 0xe9, 0x36, 0x29, 0x75, 0xb8, 0xdc, 0x5d, 0x5a, 0xeb,
+	0xf8, 0xef, 0x00, 0xbc, 0x76, 0x5f, 0x14, 0x65, 0x96, 0xb3, 0xa7, 0x95, 0xa6, 0x3a, 0x13, 0x5c,
+	0xfd, 0x63, 0x12, 0xff, 0x3a, 0x5c, 0x7b, 0xc0, 0x72, 0xa6, 0xd9, 0x40, 0xd2, 0x84, 0x95, 0x22,
+	0xe3, 0xfa, 0x4f, 0xf7, 0xe7, 0x7f, 0x02, 0xf0, 0xca, 0x1c, 0x2b, 0x7a, 0x0c, 0x57, 0xcc, 0x30,
+	0x35, 0x77, 0xda, 0xeb, 0x07, 0x86, 0xa0, 0x1d, 0x37, 0x32, 0x37, 0x6e, 0x24, 0x93, 0xa4, 0x1d,
+	0xb2, 0x23, 0x29, 0x52, 0x49, 0x8b, 0x03, 0x27, 0x6c, 0xfa, 0xd1, 0x2b, 0xb8, 0x3e, 0xb4, 0x10,
+	0xb6, 0xba, 0xa1, 0xb0, 0xbf, 0xba, 0xd7, 0xbf, 0xb5, 0xd0, 0xd6, 0x3c, 0xfa, 0x81, 0x13, 0xae,
+	0x0d, 0xe7, 0x72, 0xfb, 0x10, 0x76, 0x8b, 0x19, 0xb2, 0xff, 0x01, 0x40, 0xef, 0xf7, 0x2b, 0x57,
+	0xa5, 0xe0, 0x8a, 0xa1, 0x9b, 0x70, 0xb5, 0x79, 0x3f, 0xd6, 0x79, 0xaf, 0xbf, 0xd1, 0x18, 0x32,
+	0x99, 0x32, 0x26, 0xc7, 0x36, 0x08, 0x67, 0x25, 0xe8, 0x10, 0xba, 0xad, 0x6a, 0x3b, 0xf3, 0xbb,
+	0x0b, 0x59, 0xe7, 0x8e, 0x0d, 0x7f, 0xb4, 0xef, 0xdf, 0x1d, 0x4f, 0xb0, 0x73, 0x3e, 0xc1, 0xce,
+	0xc5, 0x04, 0x83, 0xb7, 0x35, 0x06, 0x1f, 0x6b, 0x0c, 0x3e, 0xd7, 0x18, 0x8c, 0x6b, 0x0c, 0xbe,
+	0xd4, 0x18, 0x7c, 0xab, 0xb1, 0x73, 0x51, 0x63, 0xf0, 0x7e, 0x8a, 0x9d, 0xf1, 0x14, 0x3b, 0xe7,
+	0x53, 0xec, 0xbc, 0x74, 0x2f, 0xb5, 0xe3, 0x55, 0xfb, 0x6e, 0xf7, 0xbe, 0x07, 0x00, 0x00, 0xff,
+	0xff, 0xff, 0xff, 0x16, 0x71, 0x61, 0x04, 0x00, 0x00,
 }
 
+func (this *FuncToExecute) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*FuncToExecute)
+	if !ok {
+		that2, ok := that.(FuncToExecute)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.FuncName != that1.FuncName {
+		return false
+	}
+	if len(this.ArgValues) != len(that1.ArgValues) {
+		return false
+	}
+	for i := range this.ArgValues {
+		if !this.ArgValues[i].Equal(that1.ArgValues[i]) {
+			return false
+		}
+	}
+	if this.OutputTablePrefix != that1.OutputTablePrefix {
+		return false
+	}
+	return true
+}
+func (this *FuncToExecute_ArgValue) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*FuncToExecute_ArgValue)
+	if !ok {
+		that2, ok := that.(FuncToExecute_ArgValue)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.Value != that1.Value {
+		return false
+	}
+	return true
+}
 func (this *QueryRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -682,160 +565,6 @@ func (this *QueryRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *QueryRequest_FuncToExecute) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*QueryRequest_FuncToExecute)
-	if !ok {
-		that2, ok := that.(QueryRequest_FuncToExecute)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.FuncName != that1.FuncName {
-		return false
-	}
-	if len(this.ArgValues) != len(that1.ArgValues) {
-		return false
-	}
-	for i := range this.ArgValues {
-		if !this.ArgValues[i].Equal(that1.ArgValues[i]) {
-			return false
-		}
-	}
-	if this.OutputTablePrefix != that1.OutputTablePrefix {
-		return false
-	}
-	return true
-}
-func (this *QueryRequest_FuncToExecute_ArgValue) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*QueryRequest_FuncToExecute_ArgValue)
-	if !ok {
-		that2, ok := that.(QueryRequest_FuncToExecute_ArgValue)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Name != that1.Name {
-		return false
-	}
-	if this.Value != that1.Value {
-		return false
-	}
-	return true
-}
-func (this *QueryFlagsSpec) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*QueryFlagsSpec)
-	if !ok {
-		that2, ok := that.(QueryFlagsSpec)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if len(this.Flags) != len(that1.Flags) {
-		return false
-	}
-	for i := range this.Flags {
-		if !this.Flags[i].Equal(that1.Flags[i]) {
-			return false
-		}
-	}
-	return true
-}
-func (this *QueryFlagsSpec_Flag) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*QueryFlagsSpec_Flag)
-	if !ok {
-		that2, ok := that.(QueryFlagsSpec_Flag)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.DataType != that1.DataType {
-		return false
-	}
-	if this.SemanticType != that1.SemanticType {
-		return false
-	}
-	if this.Name != that1.Name {
-		return false
-	}
-	if this.Description != that1.Description {
-		return false
-	}
-	if !this.DefaultValue.Equal(that1.DefaultValue) {
-		return false
-	}
-	return true
-}
-func (this *GetAvailableFlagsResult) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*GetAvailableFlagsResult)
-	if !ok {
-		that2, ok := that.(GetAvailableFlagsResult)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.QueryFlags.Equal(that1.QueryFlags) {
-		return false
-	}
-	if !this.Status.Equal(that1.Status) {
-		return false
-	}
-	return true
-}
 func (this *CompileMutationsRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -857,6 +586,14 @@ func (this *CompileMutationsRequest) Equal(that interface{}) bool {
 	}
 	if this.QueryStr != that1.QueryStr {
 		return false
+	}
+	if len(this.ExecFuncs) != len(that1.ExecFuncs) {
+		return false
+	}
+	for i := range this.ExecFuncs {
+		if !this.ExecFuncs[i].Equal(that1.ExecFuncs[i]) {
+			return false
+		}
 	}
 	return true
 }
@@ -994,6 +731,31 @@ func (this *CompileMutationsResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *FuncToExecute) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&plannerpb.FuncToExecute{")
+	s = append(s, "FuncName: "+fmt.Sprintf("%#v", this.FuncName)+",\n")
+	if this.ArgValues != nil {
+		s = append(s, "ArgValues: "+fmt.Sprintf("%#v", this.ArgValues)+",\n")
+	}
+	s = append(s, "OutputTablePrefix: "+fmt.Sprintf("%#v", this.OutputTablePrefix)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *FuncToExecute_ArgValue) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&plannerpb.FuncToExecute_ArgValue{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "Value: "+fmt.Sprintf("%#v", this.Value)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *QueryRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1007,81 +769,16 @@ func (this *QueryRequest) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *QueryRequest_FuncToExecute) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 7)
-	s = append(s, "&plannerpb.QueryRequest_FuncToExecute{")
-	s = append(s, "FuncName: "+fmt.Sprintf("%#v", this.FuncName)+",\n")
-	if this.ArgValues != nil {
-		s = append(s, "ArgValues: "+fmt.Sprintf("%#v", this.ArgValues)+",\n")
-	}
-	s = append(s, "OutputTablePrefix: "+fmt.Sprintf("%#v", this.OutputTablePrefix)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *QueryRequest_FuncToExecute_ArgValue) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&plannerpb.QueryRequest_FuncToExecute_ArgValue{")
-	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
-	s = append(s, "Value: "+fmt.Sprintf("%#v", this.Value)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *QueryFlagsSpec) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 5)
-	s = append(s, "&plannerpb.QueryFlagsSpec{")
-	if this.Flags != nil {
-		s = append(s, "Flags: "+fmt.Sprintf("%#v", this.Flags)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *QueryFlagsSpec_Flag) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 9)
-	s = append(s, "&plannerpb.QueryFlagsSpec_Flag{")
-	s = append(s, "DataType: "+fmt.Sprintf("%#v", this.DataType)+",\n")
-	s = append(s, "SemanticType: "+fmt.Sprintf("%#v", this.SemanticType)+",\n")
-	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
-	s = append(s, "Description: "+fmt.Sprintf("%#v", this.Description)+",\n")
-	if this.DefaultValue != nil {
-		s = append(s, "DefaultValue: "+fmt.Sprintf("%#v", this.DefaultValue)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *GetAvailableFlagsResult) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&plannerpb.GetAvailableFlagsResult{")
-	if this.QueryFlags != nil {
-		s = append(s, "QueryFlags: "+fmt.Sprintf("%#v", this.QueryFlags)+",\n")
-	}
-	if this.Status != nil {
-		s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
 func (this *CompileMutationsRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 5)
+	s := make([]string, 0, 6)
 	s = append(s, "&plannerpb.CompileMutationsRequest{")
 	s = append(s, "QueryStr: "+fmt.Sprintf("%#v", this.QueryStr)+",\n")
+	if this.ExecFuncs != nil {
+		s = append(s, "ExecFuncs: "+fmt.Sprintf("%#v", this.ExecFuncs)+",\n")
+	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1146,6 +843,94 @@ func valueToGoStringFuncArgs(v interface{}, typ string) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("func(v %v) *%v { return &v } ( %#v )", typ, typ, pv)
 }
+func (m *FuncToExecute) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *FuncToExecute) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *FuncToExecute) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.OutputTablePrefix) > 0 {
+		i -= len(m.OutputTablePrefix)
+		copy(dAtA[i:], m.OutputTablePrefix)
+		i = encodeVarintFuncArgs(dAtA, i, uint64(len(m.OutputTablePrefix)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.ArgValues) > 0 {
+		for iNdEx := len(m.ArgValues) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ArgValues[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintFuncArgs(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.FuncName) > 0 {
+		i -= len(m.FuncName)
+		copy(dAtA[i:], m.FuncName)
+		i = encodeVarintFuncArgs(dAtA, i, uint64(len(m.FuncName)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *FuncToExecute_ArgValue) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *FuncToExecute_ArgValue) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *FuncToExecute_ArgValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Value) > 0 {
+		i -= len(m.Value)
+		copy(dAtA[i:], m.Value)
+		i = encodeVarintFuncArgs(dAtA, i, uint64(len(m.Value)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintFuncArgs(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *QueryRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1190,237 +975,6 @@ func (m *QueryRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryRequest_FuncToExecute) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryRequest_FuncToExecute) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryRequest_FuncToExecute) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.OutputTablePrefix) > 0 {
-		i -= len(m.OutputTablePrefix)
-		copy(dAtA[i:], m.OutputTablePrefix)
-		i = encodeVarintFuncArgs(dAtA, i, uint64(len(m.OutputTablePrefix)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.ArgValues) > 0 {
-		for iNdEx := len(m.ArgValues) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.ArgValues[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintFuncArgs(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-		}
-	}
-	if len(m.FuncName) > 0 {
-		i -= len(m.FuncName)
-		copy(dAtA[i:], m.FuncName)
-		i = encodeVarintFuncArgs(dAtA, i, uint64(len(m.FuncName)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryRequest_FuncToExecute_ArgValue) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryRequest_FuncToExecute_ArgValue) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryRequest_FuncToExecute_ArgValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Value) > 0 {
-		i -= len(m.Value)
-		copy(dAtA[i:], m.Value)
-		i = encodeVarintFuncArgs(dAtA, i, uint64(len(m.Value)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintFuncArgs(dAtA, i, uint64(len(m.Name)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryFlagsSpec) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryFlagsSpec) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryFlagsSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Flags) > 0 {
-		for iNdEx := len(m.Flags) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Flags[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintFuncArgs(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryFlagsSpec_Flag) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryFlagsSpec_Flag) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryFlagsSpec_Flag) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.DefaultValue != nil {
-		{
-			size, err := m.DefaultValue.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintFuncArgs(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.Description) > 0 {
-		i -= len(m.Description)
-		copy(dAtA[i:], m.Description)
-		i = encodeVarintFuncArgs(dAtA, i, uint64(len(m.Description)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintFuncArgs(dAtA, i, uint64(len(m.Name)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.SemanticType != 0 {
-		i = encodeVarintFuncArgs(dAtA, i, uint64(m.SemanticType))
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.DataType != 0 {
-		i = encodeVarintFuncArgs(dAtA, i, uint64(m.DataType))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *GetAvailableFlagsResult) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *GetAvailableFlagsResult) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *GetAvailableFlagsResult) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Status != nil {
-		{
-			size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintFuncArgs(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.QueryFlags != nil {
-		{
-			size, err := m.QueryFlags.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintFuncArgs(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
 func (m *CompileMutationsRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1441,6 +995,20 @@ func (m *CompileMutationsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	_ = i
 	var l int
 	_ = l
+	if len(m.ExecFuncs) > 0 {
+		for iNdEx := len(m.ExecFuncs) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ExecFuncs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintFuncArgs(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
 	if len(m.QueryStr) > 0 {
 		i -= len(m.QueryStr)
 		copy(dAtA[i:], m.QueryStr)
@@ -1615,26 +1183,7 @@ func encodeVarintFuncArgs(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *QueryRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.QueryStr)
-	if l > 0 {
-		n += 1 + l + sovFuncArgs(uint64(l))
-	}
-	if len(m.ExecFuncs) > 0 {
-		for _, e := range m.ExecFuncs {
-			l = e.Size()
-			n += 1 + l + sovFuncArgs(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *QueryRequest_FuncToExecute) Size() (n int) {
+func (m *FuncToExecute) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1657,7 +1206,7 @@ func (m *QueryRequest_FuncToExecute) Size() (n int) {
 	return n
 }
 
-func (m *QueryRequest_FuncToExecute_ArgValue) Size() (n int) {
+func (m *FuncToExecute_ArgValue) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1674,61 +1223,21 @@ func (m *QueryRequest_FuncToExecute_ArgValue) Size() (n int) {
 	return n
 }
 
-func (m *QueryFlagsSpec) Size() (n int) {
+func (m *QueryRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if len(m.Flags) > 0 {
-		for _, e := range m.Flags {
+	l = len(m.QueryStr)
+	if l > 0 {
+		n += 1 + l + sovFuncArgs(uint64(l))
+	}
+	if len(m.ExecFuncs) > 0 {
+		for _, e := range m.ExecFuncs {
 			l = e.Size()
 			n += 1 + l + sovFuncArgs(uint64(l))
 		}
-	}
-	return n
-}
-
-func (m *QueryFlagsSpec_Flag) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.DataType != 0 {
-		n += 1 + sovFuncArgs(uint64(m.DataType))
-	}
-	if m.SemanticType != 0 {
-		n += 1 + sovFuncArgs(uint64(m.SemanticType))
-	}
-	l = len(m.Name)
-	if l > 0 {
-		n += 1 + l + sovFuncArgs(uint64(l))
-	}
-	l = len(m.Description)
-	if l > 0 {
-		n += 1 + l + sovFuncArgs(uint64(l))
-	}
-	if m.DefaultValue != nil {
-		l = m.DefaultValue.Size()
-		n += 1 + l + sovFuncArgs(uint64(l))
-	}
-	return n
-}
-
-func (m *GetAvailableFlagsResult) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.QueryFlags != nil {
-		l = m.QueryFlags.Size()
-		n += 1 + l + sovFuncArgs(uint64(l))
-	}
-	if m.Status != nil {
-		l = m.Status.Size()
-		n += 1 + l + sovFuncArgs(uint64(l))
 	}
 	return n
 }
@@ -1742,6 +1251,12 @@ func (m *CompileMutationsRequest) Size() (n int) {
 	l = len(m.QueryStr)
 	if l > 0 {
 		n += 1 + l + sovFuncArgs(uint64(l))
+	}
+	if len(m.ExecFuncs) > 0 {
+		for _, e := range m.ExecFuncs {
+			l = e.Size()
+			n += 1 + l + sovFuncArgs(uint64(l))
+		}
 	}
 	return n
 }
@@ -1820,13 +1335,41 @@ func sovFuncArgs(x uint64) (n int) {
 func sozFuncArgs(x uint64) (n int) {
 	return sovFuncArgs(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
+func (this *FuncToExecute) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForArgValues := "[]*FuncToExecute_ArgValue{"
+	for _, f := range this.ArgValues {
+		repeatedStringForArgValues += strings.Replace(fmt.Sprintf("%v", f), "FuncToExecute_ArgValue", "FuncToExecute_ArgValue", 1) + ","
+	}
+	repeatedStringForArgValues += "}"
+	s := strings.Join([]string{`&FuncToExecute{`,
+		`FuncName:` + fmt.Sprintf("%v", this.FuncName) + `,`,
+		`ArgValues:` + repeatedStringForArgValues + `,`,
+		`OutputTablePrefix:` + fmt.Sprintf("%v", this.OutputTablePrefix) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *FuncToExecute_ArgValue) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&FuncToExecute_ArgValue{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *QueryRequest) String() string {
 	if this == nil {
 		return "nil"
 	}
-	repeatedStringForExecFuncs := "[]*QueryRequest_FuncToExecute{"
+	repeatedStringForExecFuncs := "[]*FuncToExecute{"
 	for _, f := range this.ExecFuncs {
-		repeatedStringForExecFuncs += strings.Replace(fmt.Sprintf("%v", f), "QueryRequest_FuncToExecute", "QueryRequest_FuncToExecute", 1) + ","
+		repeatedStringForExecFuncs += strings.Replace(f.String(), "FuncToExecute", "FuncToExecute", 1) + ","
 	}
 	repeatedStringForExecFuncs += "}"
 	s := strings.Join([]string{`&QueryRequest{`,
@@ -1836,80 +1379,18 @@ func (this *QueryRequest) String() string {
 	}, "")
 	return s
 }
-func (this *QueryRequest_FuncToExecute) String() string {
-	if this == nil {
-		return "nil"
-	}
-	repeatedStringForArgValues := "[]*QueryRequest_FuncToExecute_ArgValue{"
-	for _, f := range this.ArgValues {
-		repeatedStringForArgValues += strings.Replace(fmt.Sprintf("%v", f), "QueryRequest_FuncToExecute_ArgValue", "QueryRequest_FuncToExecute_ArgValue", 1) + ","
-	}
-	repeatedStringForArgValues += "}"
-	s := strings.Join([]string{`&QueryRequest_FuncToExecute{`,
-		`FuncName:` + fmt.Sprintf("%v", this.FuncName) + `,`,
-		`ArgValues:` + repeatedStringForArgValues + `,`,
-		`OutputTablePrefix:` + fmt.Sprintf("%v", this.OutputTablePrefix) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *QueryRequest_FuncToExecute_ArgValue) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&QueryRequest_FuncToExecute_ArgValue{`,
-		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *QueryFlagsSpec) String() string {
-	if this == nil {
-		return "nil"
-	}
-	repeatedStringForFlags := "[]*QueryFlagsSpec_Flag{"
-	for _, f := range this.Flags {
-		repeatedStringForFlags += strings.Replace(fmt.Sprintf("%v", f), "QueryFlagsSpec_Flag", "QueryFlagsSpec_Flag", 1) + ","
-	}
-	repeatedStringForFlags += "}"
-	s := strings.Join([]string{`&QueryFlagsSpec{`,
-		`Flags:` + repeatedStringForFlags + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *QueryFlagsSpec_Flag) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&QueryFlagsSpec_Flag{`,
-		`DataType:` + fmt.Sprintf("%v", this.DataType) + `,`,
-		`SemanticType:` + fmt.Sprintf("%v", this.SemanticType) + `,`,
-		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`Description:` + fmt.Sprintf("%v", this.Description) + `,`,
-		`DefaultValue:` + strings.Replace(fmt.Sprintf("%v", this.DefaultValue), "ScalarValue", "planpb.ScalarValue", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *GetAvailableFlagsResult) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&GetAvailableFlagsResult{`,
-		`QueryFlags:` + strings.Replace(this.QueryFlags.String(), "QueryFlagsSpec", "QueryFlagsSpec", 1) + `,`,
-		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto2.Status", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
 func (this *CompileMutationsRequest) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForExecFuncs := "[]*FuncToExecute{"
+	for _, f := range this.ExecFuncs {
+		repeatedStringForExecFuncs += strings.Replace(f.String(), "FuncToExecute", "FuncToExecute", 1) + ","
+	}
+	repeatedStringForExecFuncs += "}"
 	s := strings.Join([]string{`&CompileMutationsRequest{`,
 		`QueryStr:` + fmt.Sprintf("%v", this.QueryStr) + `,`,
+		`ExecFuncs:` + repeatedStringForExecFuncs + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1964,7 +1445,7 @@ func (this *CompileMutationsResponse) String() string {
 	}
 	repeatedStringForMutations += "}"
 	s := strings.Join([]string{`&CompileMutationsResponse{`,
-		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto2.Status", 1) + `,`,
+		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto1.Status", 1) + `,`,
 		`Mutations:` + repeatedStringForMutations + `,`,
 		`}`,
 	}, "")
@@ -1978,126 +1459,7 @@ func valueToStringFuncArgs(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *QueryRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowFuncArgs
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field QueryStr", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowFuncArgs
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.QueryStr = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ExecFuncs", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowFuncArgs
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ExecFuncs = append(m.ExecFuncs, &QueryRequest_FuncToExecute{})
-			if err := m.ExecFuncs[len(m.ExecFuncs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipFuncArgs(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryRequest_FuncToExecute) Unmarshal(dAtA []byte) error {
+func (m *FuncToExecute) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2187,7 +1549,7 @@ func (m *QueryRequest_FuncToExecute) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ArgValues = append(m.ArgValues, &QueryRequest_FuncToExecute_ArgValue{})
+			m.ArgValues = append(m.ArgValues, &FuncToExecute_ArgValue{})
 			if err := m.ArgValues[len(m.ArgValues)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -2248,7 +1610,7 @@ func (m *QueryRequest_FuncToExecute) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryRequest_FuncToExecute_ArgValue) Unmarshal(dAtA []byte) error {
+func (m *FuncToExecute_ArgValue) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2365,7 +1727,7 @@ func (m *QueryRequest_FuncToExecute_ArgValue) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryFlagsSpec) Unmarshal(dAtA []byte) error {
+func (m *QueryRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2388,17 +1750,17 @@ func (m *QueryFlagsSpec) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryFlagsSpec: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryFlagsSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Flags", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field QueryStr", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowFuncArgs
@@ -2408,184 +1770,27 @@ func (m *QueryFlagsSpec) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthFuncArgs
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthFuncArgs
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Flags = append(m.Flags, &QueryFlagsSpec_Flag{})
-			if err := m.Flags[len(m.Flags)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			m.QueryStr = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipFuncArgs(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryFlagsSpec_Flag) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowFuncArgs
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Flag: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Flag: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DataType", wireType)
-			}
-			m.DataType = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowFuncArgs
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.DataType |= proto1.DataType(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SemanticType", wireType)
-			}
-			m.SemanticType = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowFuncArgs
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.SemanticType |= proto1.SemanticType(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowFuncArgs
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Name = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Description", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowFuncArgs
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Description = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DefaultValue", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ExecFuncs", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -2612,135 +1817,8 @@ func (m *QueryFlagsSpec_Flag) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.DefaultValue == nil {
-				m.DefaultValue = &planpb.ScalarValue{}
-			}
-			if err := m.DefaultValue.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipFuncArgs(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *GetAvailableFlagsResult) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowFuncArgs
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: GetAvailableFlagsResult: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GetAvailableFlagsResult: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field QueryFlags", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowFuncArgs
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.QueryFlags == nil {
-				m.QueryFlags = &QueryFlagsSpec{}
-			}
-			if err := m.QueryFlags.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowFuncArgs
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthFuncArgs
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Status == nil {
-				m.Status = &proto2.Status{}
-			}
-			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.ExecFuncs = append(m.ExecFuncs, &FuncToExecute{})
+			if err := m.ExecFuncs[len(m.ExecFuncs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2828,6 +1906,40 @@ func (m *CompileMutationsRequest) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.QueryStr = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExecFuncs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFuncArgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthFuncArgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ExecFuncs = append(m.ExecFuncs, &FuncToExecute{})
+			if err := m.ExecFuncs[len(m.ExecFuncs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -3120,7 +2232,7 @@ func (m *CompileMutationsResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Status == nil {
-				m.Status = &proto2.Status{}
+				m.Status = &proto1.Status{}
 			}
 			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

@@ -422,6 +422,123 @@ TEST_F(LogicalPlannerTest, PlanWithExecFuncs) {
   auto plan = plan_or_s.ConsumeValueOrDie();
   EXPECT_OK(plan->ToProto());
 }
+
+constexpr char kSingleProbePxl[] = R"pxl(
+import pxtrace
+import px
+
+@pxtrace.goprobe("MyFunc")
+def probe_func():
+    id = pxtrace.ArgExpr('id')
+    return [{'id': id},
+            {'err': pxtrace.RetExpr('$0.a')},
+            {'latency': pxtrace.FunctionLatency()}]
+
+pxtrace.UpsertTracepoint('http_return',
+                         'http_return_table',
+                         probe_func,
+                         px.uint128("123e4567-e89b-12d3-a456-426655440000"),
+                         "5m")
+)pxl";
+
+constexpr char kSingleProbeProgramPb[] = R"pxl(
+binary_spec {
+  upid {
+    asid: 306070887 pid: 3902477011 ts_ns: 11841725277501915136
+  }
+  language: GOLANG
+}
+outputs {
+  name: "http_return_table"
+  fields: "id"
+  fields: "err"
+  fields: "latency"
+}
+probes {
+  name: "http_return"
+  trace_point {
+    symbol: "MyFunc"
+  }
+  args {
+    id: "arg0"
+    expr: "id"
+  }
+  ret_vals {
+    id: "ret0"
+    expr: "$0.a"
+  }
+  function_latency {
+    id: "lat0"
+  }
+  output_actions {
+    output_name: "http_return_table"
+    variable_name: "arg0"
+    variable_name: "ret0"
+    variable_name: "lat0"
+  }
+}
+name: "http_return"
+ttl {
+  seconds: 300
+}
+)pxl";
+
+TEST_F(LogicalPlannerTest, CompileTrace) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  plannerpb::CompileMutationsRequest req;
+  req.set_query_str(kSingleProbePxl);
+  auto trace_ir_or_s = planner->CompileTrace(
+      testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema), req);
+  ASSERT_OK(trace_ir_or_s);
+  auto trace_ir = trace_ir_or_s.ConsumeValueOrDie();
+  plannerpb::CompileMutationsResponse resp;
+  ASSERT_OK(trace_ir->ToProto(&resp));
+  ASSERT_EQ(resp.mutations_size(), 1);
+  EXPECT_THAT(resp.mutations()[0].trace(), testing::proto::EqualsProto(kSingleProbeProgramPb));
+}
+
+constexpr char kSingleProbeInFuncPxl[] = R"pxl(
+import pxtrace
+import px
+
+@pxtrace.goprobe("MyFunc")
+def probe_func():
+    id = pxtrace.ArgExpr('id')
+    return [{'id': id},
+            {'err': pxtrace.RetExpr('$0.a')},
+            {'latency': pxtrace.FunctionLatency()}]
+
+def probe_table(upid: str):
+  pxtrace.UpsertTracepoint('http_return',
+                           'http_return_table',
+                           probe_func,
+                           px.uint128(upid),
+                           '5m')
+  return px.DataFrame('http_return_table')
+
+)pxl";
+
+TEST_F(LogicalPlannerTest, CompileTraceWithExecFuncs) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  plannerpb::CompileMutationsRequest req;
+  req.set_query_str(kSingleProbeInFuncPxl);
+  auto func_to_execute = req.add_exec_funcs();
+  func_to_execute->set_func_name("probe_table");
+  func_to_execute->set_output_table_prefix("output");
+  auto duration = func_to_execute->add_arg_values();
+  duration->set_name("upid");
+  duration->set_value("123e4567-e89b-12d3-a456-426655440000");
+
+  auto trace_ir_or_s = planner->CompileTrace(
+      testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema), req);
+  ASSERT_OK(trace_ir_or_s);
+  auto trace_ir = trace_ir_or_s.ConsumeValueOrDie();
+  plannerpb::CompileMutationsResponse resp;
+  ASSERT_OK(trace_ir->ToProto(&resp));
+  ASSERT_EQ(resp.mutations_size(), 1);
+  EXPECT_THAT(resp.mutations()[0].trace(), testing::proto::EqualsProto(kSingleProbeProgramPb));
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl

@@ -1,13 +1,41 @@
 syntax = "proto3";
 
 import "src/common/base/proto/status.proto";
-import "src/shared/types/proto/types.proto";
-import "src/carnot/planpb/plan.proto";
 import "src/stirling/dynamic_tracing/ir/logicalpb/logical.proto";
 
 package pl.carnot.planner.plannerpb;
 
 option go_package = "plannerpb";
+
+// FuncToExecute specifies the name and arguments of a function to execute.
+message FuncToExecute {
+  // Name of function to execute.
+  string func_name = 1;
+
+  message ArgValue {
+    // name of the argument.
+    string name = 1;
+    // value of the argument as a string.
+    // Compiler will attempt to parse the string as the type expected.
+    // eg. a value of "1" for a function expecting an int would parse to 1,
+    // but the same value for a function expecting a string would parse to "1".
+    // In the future, we could also support parsing of expressions here, but
+    // this would require doing something along the lines of "'string literal'" for string.
+    string value = 2;
+  }
+  // arg_values are the arguments to the function. If arg_values do not match
+  // the signature of the function, then the ExecuteScriptResponse will return
+  // an error stating this issue. Arg_values will not match if
+  //   1. arg_values misses any parameters to `func_name`
+  //   2. arg_values adds parameters to `func_name`.
+  //   3. the value in arg_value doesn't parse to the expected type.
+  repeated ArgValue arg_values = 2;
+  // output_table_prefix is the prefix of the name of the table that is returned in the response.
+  // If the function returns a dataframe, then the table name will be `format("%s", output_table_prefix)`.
+  // If the function returns a list of dataframes (even if the list is of length 1), then the table names will be
+  // `format("%s[%d]", output_table_prefix, index)`.
+  string output_table_prefix = 3;
+}
 
 // QueryRequest is the body of the request made to the planner.
 message QueryRequest {
@@ -17,63 +45,10 @@ message QueryRequest {
   // old arg_values have been deprecated.
   reserved 2;
 
-  // FuncToExecute specifies the name and arguments of a function to execute.
-  message FuncToExecute {
-    // Name of function to execute.
-    string func_name = 1;
-
-    message ArgValue {
-      // name of the argument.
-      string name = 1;
-      // value of the argument as a string.
-      // Compiler will attempt to parse the string as the type expected.
-      // eg. a value of "1" for a function expecting an int would parse to 1,
-      // but the same value for a function expecting a string would parse to "1".
-      // In the future, we could also support parsing of expressions here, but
-      // this would require doing something along the lines of "'string literal'" for string.
-      string value = 2;
-    }
-    // arg_values are the arguments to the function. If arg_values do not match
-    // the signature of the function, then the ExecuteScriptResponse will return
-    // an error stating this issue. Arg_values will not match if
-    //   1. arg_values misses any parameters to `func_name`
-    //   2. arg_values adds parameters to `func_name`.
-    //   3. the value in arg_value doesn't parse to the expected type.
-    repeated ArgValue arg_values = 2;
-    // output_table_prefix is the prefix of the name of the table that is returned in the response.
-    // If the function returns a dataframe, then the table name will be `format("%s", output_table_prefix)`.
-    // If the function returns a list of dataframes (even if the list is of length 1), then the table names will be
-    // `format("%s[%d]", output_table_prefix, index)`.
-    string output_table_prefix = 3;
-  }
   // exec_funcs is a list of functions to execute.
   // If any functions specified cannot be found the planner will return a compiler error.
   repeated FuncToExecute exec_funcs = 3;
   // TODO(zasgar): Add proto query.
-}
-
-// QueryFlagsSpec specifies the flags that are defined within a query.
-message QueryFlagsSpec {
-  message Flag {
-    // The data type that this flag accepts
-    types.DataType data_type = 1;
-    // The semantic type that this flag accepts
-    types.SemanticType semantic_type = 2;
-    // The name of the flag.
-    string name = 3;
-    // The description of what this flag does.
-    string description = 4;
-    // The optional default value assigned to this flag.
-    pl.carnot.planpb.ScalarValue default_value = 5;
-  }
-  repeated Flag flags = 1;
-}
-
-message GetAvailableFlagsResult {
-  // The spec for the flags that the given query accepts
-  QueryFlagsSpec query_flags = 1;
-  // The status from the compiler
-  pl.statuspb.Status status = 2;
 }
 
 // CompileMutationRequest represents any request that compiles to a mutation of
@@ -81,6 +56,10 @@ message GetAvailableFlagsResult {
 message CompileMutationsRequest {
   // The pxl script to run that compiles into a mutation
   string query_str = 1;
+
+  // exec_funcs is a list of functions to execute.
+  // If any functions specified cannot be found the planner will return a compiler error.
+  repeated FuncToExecute exec_funcs = 3;
 }
 
 // DeleteTracepoint is a mutation that deletes a tracepoint running on Vizier.

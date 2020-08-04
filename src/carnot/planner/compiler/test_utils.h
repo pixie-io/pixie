@@ -905,8 +905,7 @@ class ASTVisitorTest : public OperatorTests {
   }
 
   StatusOr<std::shared_ptr<IR>> CompileGraph(
-      const std::string& query,
-      const std::vector<plannerpb::QueryRequest::FuncToExecute>& exec_funcs,
+      const std::string& query, const std::vector<plannerpb::FuncToExecute>& exec_funcs,
       const absl::flat_hash_map<std::string, std::string>& module_name_to_pxl = {}) {
     Parser parser;
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));

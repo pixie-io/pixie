@@ -100,19 +100,27 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
 }
 
 StatusOr<std::unique_ptr<DynamicTraceIR>> Compiler::CompileTrace(const std::string& query,
-                                                                 CompilerState* compiler_state) {
+                                                                 CompilerState* compiler_state,
+                                                                 const ExecFuncs& exec_funcs) {
   Parser parser;
   PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
 
   IR ir;
+  bool func_based_exec = exec_funcs.size() > 0;
+  absl::flat_hash_set<std::string> reserved_names;
+  for (const auto& func : exec_funcs) {
+    reserved_names.insert(func.output_table_prefix());
+  }
   std::unique_ptr<DynamicTraceIR> dynamic_trace = std::make_unique<DynamicTraceIR>();
   ModuleHandler module_handler;
-  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(&ir, dynamic_trace.get(),
-                                                              compiler_state, &module_handler,
-                                                              /* func_based_exec */ false,
-                                                              /*reserved_names*/ {}));
+  PL_ASSIGN_OR_RETURN(auto ast_walker,
+                      ASTVisitorImpl::Create(&ir, dynamic_trace.get(), compiler_state,
+                                             &module_handler, func_based_exec, reserved_names));
 
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+  if (func_based_exec) {
+    PL_RETURN_IF_ERROR(ast_walker->ProcessExecFuncs(exec_funcs));
+  }
   return dynamic_trace;
 }
 

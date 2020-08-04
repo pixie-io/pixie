@@ -11,7 +11,14 @@ using ::testing::UnorderedElementsAre;
 
 class ProbeCompilerTest : public ASTVisitorTest {
  protected:
-  StatusOr<std::shared_ptr<compiler::DynamicTraceIR>> CompileProbeScript(std::string_view query) {
+  StatusOr<std::shared_ptr<compiler::DynamicTraceIR>> CompileProbeScript(
+      std::string_view query, const ExecFuncs& exec_funcs = {}) {
+    absl::flat_hash_set<std::string> reserved_names;
+    for (const auto& func : exec_funcs) {
+      reserved_names.insert(func.output_table_prefix());
+    }
+    auto func_based_exec = exec_funcs.size() > 0;
+
     Parser parser;
     PL_ASSIGN_OR_RETURN(auto ast, parser.Parse(query));
 
@@ -22,9 +29,12 @@ class ProbeCompilerTest : public ASTVisitorTest {
     ModuleHandler module_handler;
     PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
                                              ir.get(), probe_ir.get(), compiler_state_.get(),
-                                             &module_handler, false, {}, {}));
+                                             &module_handler, func_based_exec, reserved_names, {}));
 
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+    if (func_based_exec) {
+      PL_RETURN_IF_ERROR(ast_walker->ProcessExecFuncs(exec_funcs));
+    }
     return probe_ir;
   }
 };
@@ -45,6 +55,26 @@ pxtrace.UpsertTracepoint('http_return',
                          probe_func,
                          px.uint128("123e4567-e89b-12d3-a456-426655440000"),
                          "5m")
+)pxl";
+
+constexpr char kSingleProbeInFuncPxl[] = R"pxl(
+import pxtrace
+import px
+
+@pxtrace.goprobe("MyFunc")
+def probe_func():
+    id = pxtrace.ArgExpr('id')
+    return [{'id': id},
+            {'err': pxtrace.RetExpr('$0.a')},
+            {'latency': pxtrace.FunctionLatency()}]
+
+def probe_table(upid: str):
+  pxtrace.UpsertTracepoint('http_return',
+                           'http_return_table',
+                           probe_func,
+                           px.uint128(upid),
+                           '5m')
+  return px.DataFrame('http_return_table')
 )pxl";
 
 constexpr char kSingleProbeProgramPb[] = R"pxl(
@@ -91,6 +121,23 @@ ttl {
 
 TEST_F(ProbeCompilerTest, parse_single_probe) {
   ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(kSingleProbePxl));
+  plannerpb::CompileMutationsResponse pb;
+  EXPECT_OK(probe_ir->ToProto(&pb));
+  ASSERT_EQ(pb.mutations_size(), 1);
+  EXPECT_THAT(pb.mutations()[0].trace(), testing::proto::EqualsProto(kSingleProbeProgramPb));
+}
+
+TEST_F(ProbeCompilerTest, parse_single_probe_in_func) {
+  FuncToExecute func_to_execute;
+  func_to_execute.set_func_name("probe_table");
+  func_to_execute.set_output_table_prefix("output");
+  auto duration = func_to_execute.add_arg_values();
+  duration->set_name("upid");
+  duration->set_value("123e4567-e89b-12d3-a456-426655440000");
+
+  ExecFuncs exec_funcs{func_to_execute};
+
+  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(kSingleProbeInFuncPxl, exec_funcs));
   plannerpb::CompileMutationsResponse pb;
   EXPECT_OK(probe_ir->ToProto(&pb));
   ASSERT_EQ(pb.mutations_size(), 1);

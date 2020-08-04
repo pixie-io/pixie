@@ -80,31 +80,38 @@ func convertLifeCycleStateToVizierLifeCycleState(state statuspb.LifeCycleState) 
 	return vizierpb.UNKNOWN_STATE
 }
 
-// VizierQueryRequestToPlannerMutationRequest maps request to mutation.
-func VizierQueryRequestToPlannerMutationRequest(vpb *vizierpb.ExecuteScriptRequest) (*plannerpb.CompileMutationsRequest, error) {
-	return &plannerpb.CompileMutationsRequest{QueryStr: vpb.QueryStr}, nil
-}
-
-// VizierQueryRequestToPlannerQueryRequest converts a externally-facing query request to an internal representation.
-func VizierQueryRequestToPlannerQueryRequest(vpb *vizierpb.ExecuteScriptRequest) (*plannerpb.QueryRequest, error) {
-	funcs := make([]*plannerpb.QueryRequest_FuncToExecute, len(vpb.ExecFuncs))
-	for i, f := range vpb.ExecFuncs {
-		args := make([]*plannerpb.QueryRequest_FuncToExecute_ArgValue, len(f.ArgValues))
+func convertExecFuncs(inputFuncs []*vizierpb.ExecuteScriptRequest_FuncToExecute) []*plannerpb.FuncToExecute {
+	funcs := make([]*plannerpb.FuncToExecute, len(inputFuncs))
+	for i, f := range inputFuncs {
+		args := make([]*plannerpb.FuncToExecute_ArgValue, len(f.ArgValues))
 		for j, arg := range f.ArgValues {
-			args[j] = &plannerpb.QueryRequest_FuncToExecute_ArgValue{
+			args[j] = &plannerpb.FuncToExecute_ArgValue{
 				Name:  arg.Name,
 				Value: arg.Value,
 			}
 		}
-		funcs[i] = &plannerpb.QueryRequest_FuncToExecute{
+		funcs[i] = &plannerpb.FuncToExecute{
 			FuncName:          f.FuncName,
 			ArgValues:         args,
 			OutputTablePrefix: f.OutputTablePrefix,
 		}
 	}
+	return funcs
+}
+
+// VizierQueryRequestToPlannerMutationRequest maps request to mutation.
+func VizierQueryRequestToPlannerMutationRequest(vpb *vizierpb.ExecuteScriptRequest) (*plannerpb.CompileMutationsRequest, error) {
+	return &plannerpb.CompileMutationsRequest{
+		QueryStr:  vpb.QueryStr,
+		ExecFuncs: convertExecFuncs(vpb.ExecFuncs),
+	}, nil
+}
+
+// VizierQueryRequestToPlannerQueryRequest converts a externally-facing query request to an internal representation.
+func VizierQueryRequestToPlannerQueryRequest(vpb *vizierpb.ExecuteScriptRequest) (*plannerpb.QueryRequest, error) {
 	return &plannerpb.QueryRequest{
 		QueryStr:  vpb.QueryStr,
-		ExecFuncs: funcs,
+		ExecFuncs: convertExecFuncs(vpb.ExecFuncs),
 	}, nil
 }
 

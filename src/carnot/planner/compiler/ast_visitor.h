@@ -29,7 +29,7 @@ namespace carnot {
 namespace planner {
 namespace compiler {
 
-using FuncToExecute = plannerpb::QueryRequest::FuncToExecute;
+using FuncToExecute = plannerpb::FuncToExecute;
 using ExecFuncs = std::vector<FuncToExecute>;
 using ArgValues = std::vector<FuncToExecute::ArgValue>;
 using ModuleHandler = absl::flat_hash_map<std::string, QLObjectPtr>;

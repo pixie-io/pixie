@@ -81,8 +81,7 @@ class ASTVisitor {
    *
    * @return Status
    */
-  virtual Status ProcessExecFuncs(
-      const std::vector<plannerpb::QueryRequest::FuncToExecute>& exec_funcs) = 0;
+  virtual Status ProcessExecFuncs(const std::vector<plannerpb::FuncToExecute>& exec_funcs) = 0;
 
   /**
    * @brief Creates a child of this visitor specifically for use to parse modules.
