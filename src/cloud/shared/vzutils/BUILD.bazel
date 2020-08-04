@@ -1,0 +1,13 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["vzwatcher.go"],
+    importpath = "pixielabs.ai/pixielabs/src/cloud/shared/vzutils",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
+        "@com_github_nats_io_nats_go//:go_default_library",
+        "@com_github_satori_go_uuid//:go_default_library",
+    ],
+)
