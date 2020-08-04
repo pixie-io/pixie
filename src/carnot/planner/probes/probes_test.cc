@@ -242,43 +242,110 @@ TEST_F(ProbeCompilerTest, DISABLED_parse_multiple_probes) {
   EXPECT_THAT(pb.mutations()[0].trace(), testing::proto::EqualsProto(kMultipleProbeProgramPb));
 }
 
-constexpr char kMultipleBinariesInOneScript[] = R"pxl(
+constexpr char kHTTPBodyTracepointPb[] = R"pxl(
+binary_spec {
+  upid {
+    asid: 1985274657 pid: 3902477011 ts_ns: 11841725277501915136
+  }
+  language: GOLANG
+}
+outputs {
+  name: "http_body_table"
+  fields: "req_body"
+  fields: "resp_body"
+}
+probes {
+  name: "http_body"
+  trace_point {
+    symbol: "HTTPFunc"
+  }
+  args {
+    id: "arg0"
+    expr: "req_body"
+  }
+  args {
+    id: "arg1"
+    expr: "resp_body"
+  }
+  output_actions {
+    output_name: "http_body_table"
+    variable_name: "arg0"
+    variable_name: "arg1"
+  }
+}
+name: "http_body"
+ttl {
+  seconds: 300
+}
+)pxl";
+
+constexpr char kMultipleUpsertsInOneScriptTpl[] = R"pxl(
 import pxtrace
 import px
 
 @pxtrace.goprobe("MyFunc")
-def cool_func_probe():
-    return [{'id': pxtrace.ArgExpr('id')},
-            {'err': pxtrace.RetExpr('$0.a')},
+def probe_func():
+    id = pxtrace.ArgExpr('id')
+    return [{'id': id},
+            {'err': pxtrace.RetExpr('$$0.a')},
             {'latency': pxtrace.FunctionLatency()}]
 
 
+pxtrace.UpsertTracepoint('http_return',
+                         'http_return_table',
+                         probe_func,
+                         px.uint128("$0"),
+                         "5m")
+
+
 @pxtrace.goprobe("HTTPFunc")
-def http_func_probe():
+def http_body_probe():
     return [{'req_body': pxtrace.ArgExpr('req_body')},
-            {'resp_body': pxtrace.ArgExpr('req_status')}]
+            {'resp_body': pxtrace.ArgExpr('resp_body')}]
 
 
-pxtrace.UpsertTracepoint('cool_func',
-                    'cool_func_table',
-                    cool_func_probe,
-                    px.uint128("123e4567-e89b-12d3-a456-426655440000"),
-                    "5m")
+pxtrace.UpsertTracepoint('http_body',
+                         'http_body_table',
+                         http_body_probe,
+                         px.uint128("$1"),
+                         "5m")
 
-pxtrace.UpsertTracepoint('http_return_value',
-                    'http_table',
-                    http_func_probe,
-                    px.uint128("7654e321-e89b-12d3-a456-426655440000"),
-                    "5m")
 )pxl";
 
-TEST_F(ProbeCompilerTest, probes_with_multiple_binaries_fails) {
+inline std::string WrapTraceMessage(std::string_view program) {
+  return absl::Substitute("trace { $0 } ", program);
+}
+
+TEST_F(ProbeCompilerTest, probes_with_multiple_binaries) {
   // Test to make sure a probe definition doesn't add a probe.
-  auto probe_ir_or_s = CompileProbeScript(kMultipleBinariesInOneScript);
+  ASSERT_OK_AND_ASSIGN(
+      auto probe_ir, CompileProbeScript(absl::Substitute(kMultipleUpsertsInOneScriptTpl,
+                                                         "123e4567-e89b-12d3-a456-426655440000",
+                                                         "7654e321-e89b-12d3-a456-426655440000")));
+  plannerpb::CompileMutationsResponse pb;
+  ASSERT_OK(probe_ir->ToProto(&pb));
+  auto returnPb = pb.mutations()[0].trace();
+  auto bodyPb = pb.mutations()[1].trace();
+  if (returnPb.name() == "http_body") {
+    auto tmp = bodyPb;
+    bodyPb = returnPb;
+    returnPb = tmp;
+  }
+
+  EXPECT_THAT(returnPb, testing::proto::EqualsProto(kSingleProbeProgramPb));
+  EXPECT_THAT(bodyPb, testing::proto::EqualsProto(kHTTPBodyTracepointPb));
+}
+
+TEST_F(ProbeCompilerTest, probes_with_same_binary_fails) {
+  // Test that makes sure we fail if we UpsertTracepoint > 1 time w/ same UPID then we fail.
+  // The plan is to add another API endpoint.
+  auto probe_ir_or_s = CompileProbeScript(absl::Substitute(kMultipleUpsertsInOneScriptTpl,
+                                                           "123e4567-e89b-12d3-a456-426655440000",
+                                                           "123e4567-e89b-12d3-a456-426655440000"));
   ASSERT_NOT_OK(probe_ir_or_s);
   EXPECT_THAT(probe_ir_or_s.status(),
-              HasCompilerError("Probes for multiple processes not supported. Separate out "
-                               "into different scripts"));
+              HasCompilerError(
+                  "Cannot UpsertTracepoint on the same binary. Use UpsertTracepoints instead"));
 }
 
 constexpr char kProbeNoReturn[] = R"pxl(

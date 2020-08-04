@@ -90,16 +90,10 @@ std::shared_ptr<ProbeIR> DynamicTraceIR::StartProbe(
 
 StatusOr<TracingProgram*> DynamicTraceIR::CreateTraceProgram(const std::string& trace_point_name,
                                                              const md::UPID& upid, int64_t ttl_ns) {
-  if (!binary_to_program_map_.empty()) {
+  if (!upid_to_program_map_.empty() && upid_to_program_map_.contains(upid)) {
     return error::InvalidArgument(
-        "Probes for multiple processes not supported. Separate out into different scripts");
+        "Cannot UpsertTracepoint on the same binary. Use UpsertTracepoints instead.");
   }
-
-  if (!upid_to_program_map_.empty() && !upid_to_program_map_.contains(upid)) {
-    return error::InvalidArgument(
-        "Probes for multiple processes not supported. Separate out into different scripts");
-  }
-
   std::unique_ptr<TracingProgram> program =
       std::make_unique<TracingProgram>(trace_point_name, ttl_ns);
   TracingProgram* raw = program.get();
@@ -177,13 +171,6 @@ Status TracingProgram::ToProto(stirling::dynamic_tracing::ir::logical::Program* 
 }
 
 Status DynamicTraceIR::ToProto(plannerpb::CompileMutationsResponse* pb) {
-  if (binary_to_program_map_.size() > 1 || upid_to_program_map_.size() > 1 ||
-      (binary_to_program_map_.size() && upid_to_program_map_.size())) {
-    return error::InvalidArgument(
-        "Probe Builder has found multiple binaries in the Probe definitions, which is currently "
-        "not supported.");
-  }
-
   for (const auto& [upid, program] : upid_to_program_map_) {
     auto program_pb = pb->add_mutations()->mutable_trace();
     PL_RETURN_IF_ERROR(program->ToProto(program_pb));
@@ -194,7 +181,6 @@ Status DynamicTraceIR::ToProto(plannerpb::CompileMutationsResponse* pb) {
     upid_pb->set_ts_ns(upid.start_ts());
   }
 
-  // TODO(oazizi/philkuz) add container message for Program.
   for (const auto& [binary, program] : binary_to_program_map_) {
     auto program_pb = pb->add_mutations()->mutable_trace();
     PL_RETURN_IF_ERROR(program.ToProto(program_pb));
