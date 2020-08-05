@@ -68,7 +68,7 @@ const JSONBase = React.memo<JSONDataProps>((props) => {
   if (Array.isArray(data)) {
     return (
       <span className={classes.base}>
-        {'[ '}
+        {'[\u00A0'}
         {props.multiline ? <br /> : null}
         {
           data.map((val, idx) => (
@@ -77,12 +77,12 @@ const JSONBase = React.memo<JSONDataProps>((props) => {
               style={{ marginLeft: multiline ? (indentation + 1) * JSON_INDENT_PX : 0 }}
             >
               <JSONData data={val} multiline={multiline} indentation={indentation + 1} />
-              {idx !== Object.keys(data).length - 1 ? ', ' : ''}
+              {idx !== Object.keys(data).length - 1 ? ',\u00A0' : ''}
               {multiline ? <br /> : null}
             </span>
           ))
         }
-        <span style={{ marginLeft: multiline ? indentation * JSON_INDENT_PX : 0 }}>{' ]'}</span>
+        <span style={{ marginLeft: multiline ? indentation * JSON_INDENT_PX : 0 }}>{'\u00A0]'}</span>
       </span>
     );
   }
@@ -90,7 +90,7 @@ const JSONBase = React.memo<JSONDataProps>((props) => {
   if (typeof data === 'object' && data !== null) {
     return (
       <span className={classes.base}>
-        {'{ '}
+        {'{\u00A0'}
         {props.multiline ? <br /> : null}
         {
           Object.keys(data).map((key, idx) => (
@@ -98,14 +98,16 @@ const JSONBase = React.memo<JSONDataProps>((props) => {
               key={`${key}-${indentation}`}
               style={{ marginLeft: props.multiline ? (indentation + 1) * JSON_INDENT_PX : 0 }}
             >
-              <span className={classes.jsonKey}>{`${key}: `}</span>
+              <span className={classes.jsonKey}>
+                {`${key}:\u00A0`}
+              </span>
               <JSONData data={data[key]} multiline={props.multiline} indentation={indentation + 1} />
-              {idx !== Object.keys(data).length - 1 ? ', ' : ''}
+              {idx !== Object.keys(data).length - 1 ? ',\u00A0' : ''}
               {props.multiline ? <br /> : null}
             </span>
           ))
         }
-        <span style={{ marginLeft: multiline ? indentation * JSON_INDENT_PX : 0 }}>{' }'}</span>
+        <span style={{ marginLeft: multiline ? indentation * JSON_INDENT_PX : 0 }}>{'\u00A0}'}</span>
       </span>
     );
   }

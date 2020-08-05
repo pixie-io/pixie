@@ -74,7 +74,8 @@ describe('<JSONData/> test', () => {
       />,
     );
 
-    expect(wrapper.text()).toEqual('{ testString: a, testNum: 10, testNull: null, testJSON: { hello: world } }');
+    expect(wrapper.text()).toEqual('{\u00A0testString:\u00A0a,\u00A0testNum:\u00A010,'
+      + '\u00A0testNull:\u00A0null,\u00A0testJSON:\u00A0{\u00A0hello:\u00A0world\u00A0}\u00A0}');
     const base = wrapper.find('span').at(0);
     expect(base.prop('className')).toEqual(classes.base);
     const topLevelJSONContents = base.children();
@@ -107,7 +108,8 @@ describe('<JSONData/> test', () => {
       />,
     );
 
-    expect(wrapper.text()).toEqual('{ testString: a, testNum: 10, testNull: null, testJSON: { hello: world } }');
+    expect(wrapper.text()).toEqual('{\u00A0testString:\u00A0a,\u00A0testNum:\u00A010,\u00A0testNull:\u00A0'
+      + 'null,\u00A0testJSON:\u00A0{\u00A0hello:\u00A0world\u00A0}\u00A0}');
     const base = wrapper.find('span').at(0);
     expect(base.prop('className')).toEqual(classes.base);
     const topLevelJSONContents = base.children();
@@ -136,7 +138,7 @@ describe('<JSONData/> test', () => {
       />,
     );
 
-    expect(wrapper.text()).toEqual('[ some text, some other text ]');
+    expect(wrapper.text()).toEqual('[\u00A0some text,\u00A0some other text\u00A0]');
     expect(wrapper.find('br')).toHaveLength(0);
   });
 
@@ -151,7 +153,8 @@ describe('<JSONData/> test', () => {
       />,
     );
 
-    expect(wrapper.text()).toEqual('[ { a: 1, b: { c: foo } }, { a: 3, b: null } ]');
+    expect(wrapper.text()).toEqual('[\u00A0{\u00A0a:\u00A01,\u00A0b:\u00A0{\u00A0c:\u00A0foo\u00A0}\u00A0},'
+      + '\u00A0{\u00A0a:\u00A03,\u00A0b:\u00A0null\u00A0}\u00A0]');
     expect(wrapper.find('br')).toHaveLength(11);
   });
 });
