@@ -1,0 +1,45 @@
+import pxtrace
+import px
+
+md_upid = "00000005-001b-eb29-0000-000070d53464"
+table_name = 'hb7'
+tp_name = table_name
+
+
+@pxtrace.goprobe("pixielabs.ai/pixielabs/src/vizier/services/metadata/"
+                 "controllers.(*MessageBusController).sendMessage")
+def probe_func():
+    return [{'latency': pxtrace.FunctionLatency()}]
+
+
+pxtrace.UpsertTracepoint(tp_name,
+                         table_name,
+                         probe_func,
+                         px.uint128(md_upid),
+                         "5m")
+
+
+def raw_table():
+    return px.DataFrame(table_name)
+
+
+def prep_table(table: str):
+    df = px.DataFrame(table)
+    df.latency_ms = df.latency / 100000.0
+    return df
+
+
+def latency_quantiles_overall():
+    df = prep_table(table_name)
+    df = df.agg(latency_quantiles=('latency_ms', px.quantiles))
+    return df
+
+
+def latency_quantiles_time_series():
+    df = prep_table(table_name)
+    df.time_ = px.bin(df.time_, px.seconds(10))
+    df = df.groupby('time_').agg(latency_quantiles=('latency_ms', px.quantiles))
+    df.latency_p50 = px.pluck_float64(df.latency_quantiles, 'p50')
+    df.latency_p90 = px.pluck_float64(df.latency_quantiles, 'p90')
+    df.latency_p99 = px.pluck_float64(df.latency_quantiles, 'p99')
+    return df

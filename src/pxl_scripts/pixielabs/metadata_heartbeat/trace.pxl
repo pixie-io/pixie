@@ -1,0 +1,64 @@
+import pxtrace
+import px
+
+
+md_process_upid = "0000000f-001f-54c9-0000-0000004cdb55"
+table_name = 'hb1'
+tp_name = table_name
+
+
+@pxtrace.goprobe("pixielabs.ai/pixielabs/src/vizier/services/metadata/"
+                 "controllers.(*AgentTopicListener).onAgentHeartBeat")
+def probe_func():
+    return [{'id': pxtrace.ArgExpr("m.AgentID.Data")},
+            {'seq': pxtrace.ArgExpr("m.SequenceNumber")},
+            {'latency': pxtrace.FunctionLatency()}]
+
+
+pxtrace.UpsertTracepoint(tp_name,
+                         table_name,
+                         probe_func,
+                         px.uint128(md_process_upid),
+                         "30m")
+
+
+def pods_in_namespace(namespace: px.Namespace, start: str):
+    df = px.DataFrame('process_stats', start_time=start)
+    df.namespace = df.ctx['namespace']
+    df = df[df['namespace'] == namespace]
+    df.pod = df.ctx['pod']
+    df.time_ = px.bin(df.time_, px.seconds(10))
+    # Get the unique pods
+    df = df.groupby(['time_', 'pod', 'namespace']).agg()
+    # Count the pods.
+    df = df.groupby(['time_', 'namespace']).agg(pod_count=('pod', px.count))
+    return df
+
+
+def prep_table(table: str, start: str):
+    df = px.DataFrame(table, start_time=start)
+    df.latency_ms = df.latency / 1000.0 / 1000.0
+    df.id = px.hex_to_ascii(df.id)
+    df = df.drop('latency')
+    return df
+
+
+def raw_table(start: str):
+    return prep_table(start)
+
+
+def latency_quantiles_overall(start: str):
+    df = prep_table(table_name, start)
+    df.pem_id = df.id
+    df = df.groupby('pem_id').agg(latency_quantiles=('latency_ms', px.quantiles))
+    return df
+
+
+def latency_quantiles_time_series(start: str):
+    df = prep_table(table_name, start)
+    df.time_ = px.bin(df.time_, px.seconds(10))
+    df = df.groupby(['time_', 'id']).agg(latency_quantiles=('latency_ms', px.quantiles))
+    df.latency_p50 = px.pluck_float64(df.latency_quantiles, 'p50')
+    df.latency_p90 = px.pluck_float64(df.latency_quantiles, 'p90')
+    df.latency_p99 = px.pluck_float64(df.latency_quantiles, 'p99')
+    return df

@@ -1,0 +1,5 @@
+---
+short: ETCD Get tracing
+long: >
+  Traces the ETCD Get function.
+org_name: pixielabs.ai

@@ -1,0 +1,78 @@
+{
+  "variables": [],
+  "globalFuncs": [
+    {
+      "outputName": "latencyTS",
+      "func": {
+        "name": "latency_quantiles_time_series",
+        "args": []
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Timeseries",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 3
+      },
+      "globalFuncOutputName": "latencyTS",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p50",
+            "mode": "MODE_LINE"
+          },
+          {
+            "value": "latency_p90",
+            "mode": "MODE_LINE"
+          },
+          {
+            "value": "latency_p99",
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "milliseconds"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Latency Overall",
+      "position": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "latency_quantiles_overall",
+        "args": []
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    },
+    {
+      "name": "Raw data",
+      "position": {
+        "x": 0,
+        "y": 6,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "raw_table",
+        "args": []
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    }
+  ]
+}

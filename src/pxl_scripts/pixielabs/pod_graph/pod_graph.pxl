@@ -1,0 +1,14 @@
+import px
+
+
+def pods_over_time(namespace: px.Namespace, start: str):
+    df = px.DataFrame('process_stats', start_time=start)
+    df.namespace = df.ctx['namespace']
+    df = df[df['namespace'] == namespace]
+    df.pod = df.ctx['pod']
+    df.time_ = px.bin(df.time_, px.seconds(10))
+    # Get the unique pods
+    df = df.groupby(['time_', 'pod', 'namespace']).agg()
+    # Count the pods.
+    df = df.groupby(['time_', 'namespace']).agg(pod_count=('pod', px.count))
+    return df

@@ -1,5 +1,5 @@
 ---
-short: Basic service SLAs.
+short: Trace sockshop paymment
 long: >
-  Gets service latency, error rate and throughput.
-  Visualize them in three separate time series charts.
+  Traces sockshop payments
+org_name: pixielabs.ai

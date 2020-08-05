@@ -3,3 +3,4 @@ short: Tracepoint debugging information
 long: >
   Returns information about tracepoints running on the
   cluster.
+org_name: pixielabs.ai
