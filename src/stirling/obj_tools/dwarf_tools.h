@@ -176,6 +176,14 @@ class DwarfReader {
   absl::flat_hash_map<llvm::dwarf::Tag, absl::flat_hash_map<std::string, llvm::DWARFDie>> die_map_;
 };
 
+// Returns the DW_AT_name attribute of the input DIE. Returns an empty string if attribute does not
+// exist, or for any errors.
+std::string_view GetShortName(const llvm::DWARFDie& die);
+
+// Returns the DW_AT_linkage_name attribute of the input DIE. Returns an empty string if attribute
+// does not exist, or for any errors.
+std::string_view GetLinkageName(const llvm::DWARFDie& die);
+
 }  // namespace dwarf_tools
 }  // namespace stirling
 }  // namespace pl

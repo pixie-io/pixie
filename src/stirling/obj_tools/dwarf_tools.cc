@@ -115,6 +115,7 @@ namespace {
 bool IsIndexedType(llvm::dwarf::Tag tag) {
   switch (tag) {
     // To index more DW_TAG types, simply add the type here.
+    case llvm::dwarf::DW_TAG_class_type:
     case llvm::dwarf::DW_TAG_structure_type:
     case llvm::dwarf::DW_TAG_subprogram:
       return true;
@@ -122,29 +123,57 @@ bool IsIndexedType(llvm::dwarf::Tag tag) {
       return false;
   }
 }
+
+bool IsNamespace(llvm::dwarf::Tag tag) { return tag == llvm::dwarf::DW_TAG_namespace; }
+
 }  // namespace
 
 void DwarfReader::IndexDIEs() {
   DWARFContext::unit_iterator_range CUs = dwarf_context_->normal_units();
 
+  absl::flat_hash_map<const llvm::DWARFDebugInfoEntry*, std::string> dwarf_entry_names;
+
   for (const auto& CU : CUs) {
     for (const auto& Entry : CU->dies()) {
       DWARFDie die = {CU.get(), &Entry};
+
+      auto name = std::string(GetShortName(die));
+
+      if (name.empty()) {
+        continue;
+      }
+
       llvm::dwarf::Tag tag = die.getTag();
 
-      if (IsIndexedType(tag)) {
-        const char* die_short_name = die.getName(llvm::DINameKind::ShortName);
-        if (die_short_name != nullptr) {
+      if (IsIndexedType(tag) ||
+          // Namespace entry is processed here so that the name components can be generated.
+          IsNamespace(tag)) {
+        llvm::DWARFDie parent_die = die.getParent();
+
+        if (parent_die.isValid()) {
+          const llvm::DWARFDebugInfoEntry* entry = parent_die.getDebugInfoEntry();
+
+          if (entry != nullptr) {
+            auto iter = dwarf_entry_names.find(entry);
+            if (iter != dwarf_entry_names.end()) {
+              std::string_view parent_name = iter->second;
+              name = absl::StrCat(parent_name, "::", name);
+            }
+          }
+          dwarf_entry_names[die.getDebugInfoEntry()] = name;
+        }
+
+        if (IsIndexedType(tag)) {
           auto& die_type_map = die_map_[tag];
 
           // TODO(oazizi): What's the right way to deal with duplicate names?
           // Only appears to happen with structs like the following:
           //  ThreadStart, _IO_FILE, _IO_marker, G, in6_addr
           // So probably okay for now. But need to be wary of this.
-          if (die_type_map.find(die_short_name) != die_type_map.end()) {
-            VLOG(1) << "Duplicate name: " << die_short_name;
+          if (die_type_map.find(name) != die_type_map.end()) {
+            VLOG(1) << "Duplicate name: " << name;
           }
-          die_type_map[die_short_name] = die;
+          die_type_map[name] = die;
         }
       }
     }
@@ -509,6 +538,23 @@ StatusOr<RetValInfo> DwarfReader::GetFunctionRetValInfo(std::string_view functio
   PL_ASSIGN_OR_RETURN(ret_val_info.type_name, GetTypeName(type_die));
 
   return ret_val_info;
+}
+
+std::string_view GetShortName(const DWARFDie& die) {
+  const char* short_name = die.getName(llvm::DINameKind::ShortName);
+  if (short_name != nullptr) {
+    return std::string_view(short_name);
+  }
+  return {};
+}
+
+std::string_view GetLinkageName(const DWARFDie& die) {
+  llvm::Optional<const char*> name_opt =
+      llvm::dwarf::toString(die.find(llvm::dwarf::DW_AT_linkage_name));
+  if (name_opt.hasValue() && name_opt.getValue() != nullptr) {
+    return std::string_view(name_opt.getValue());
+  }
+  return {};
 }
 
 }  // namespace dwarf_tools

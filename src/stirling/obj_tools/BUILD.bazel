@@ -48,6 +48,7 @@ pl_cc_test(
     data = [
         "//demos/client_server_apps/go_grpc_tls_pl/server",
         "//src/stirling/obj_tools/testdata:dummy_go_binary",
+        "//src/stirling/obj_tools/testdata:dummy_exe_fixture",
         "//src/stirling/obj_tools/testdata:prebuilt_exe",
     ],
     deps = [

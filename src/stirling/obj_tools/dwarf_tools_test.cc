@@ -7,7 +7,9 @@ constexpr std::string_view kDummyGoBinary =
     "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary";
 constexpr std::string_view kGoGRPCServer =
     "demos/client_server_apps/go_grpc_tls_pl/server/server_/server";
-constexpr std::string_view kCppBinary = "src/stirling/obj_tools/testdata/prebuilt_dummy_exe";
+constexpr std::string_view kPrebuiltCppBinary =
+    "src/stirling/obj_tools/testdata/prebuilt_dummy_exe";
+constexpr std::string_view kCppBinary = "src/stirling/obj_tools/testdata/dummy_exe";
 constexpr std::string_view kGoBinaryUnconventional =
     "src/stirling/obj_tools/testdata/sockshop_payments_service";
 
@@ -30,10 +32,13 @@ class DwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam> {
  protected:
   DwarfReaderTest()
       : kCppBinaryPath(pl::testing::TestFilePath(kCppBinary)),
+        kPrebuiltCppBinaryPath(pl::testing::TestFilePath(kPrebuiltCppBinary)),
         kGoBinaryPath(pl::testing::TestFilePath(kDummyGoBinary)),
         kGoServerBinaryPath(pl::testing::TestFilePath(kGoGRPCServer)),
         kGoBinaryUnconventionalPath(pl::testing::TestFilePath(kGoBinaryUnconventional)) {}
+
   const std::string kCppBinaryPath;
+  const std::string kPrebuiltCppBinaryPath;
   const std::string kGoBinaryPath;
   const std::string kGoServerBinaryPath;
   const std::string kGoBinaryUnconventionalPath;
@@ -49,8 +54,11 @@ TEST_F(DwarfReaderTest, GetMatchingDIEs) {
                        DwarfReader::Create(kCppBinaryPath));
 
   std::vector<llvm::DWARFDie> dies;
+  ASSERT_OK_AND_ASSIGN(dies, dwarf_reader->GetMatchingDIEs("foo"));
+  ASSERT_THAT(dies, SizeIs(1));
+  EXPECT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_variable);
 
-  EXPECT_OK_AND_THAT(dwarf_reader->GetMatchingDIEs("foo"), IsEmpty());
+  EXPECT_OK_AND_THAT(dwarf_reader->GetMatchingDIEs("non-existent-name"), IsEmpty());
 
   ASSERT_OK_AND_ASSIGN(dies, dwarf_reader->GetMatchingDIEs("PairStruct"));
   ASSERT_THAT(dies, SizeIs(1));
@@ -58,6 +66,13 @@ TEST_F(DwarfReaderTest, GetMatchingDIEs) {
 
   EXPECT_OK_AND_THAT(dwarf_reader->GetMatchingDIEs("PairStruct", llvm::dwarf::DW_TAG_member),
                      IsEmpty());
+
+  ASSERT_OK_AND_ASSIGN(
+      dies, dwarf_reader->GetMatchingDIEs("pl::testing::Foo::Bar", llvm::dwarf::DW_TAG_subprogram));
+  ASSERT_THAT(dies, SizeIs(1));
+  EXPECT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_subprogram);
+  EXPECT_EQ(GetShortName(dies[0]), "Bar");
+  EXPECT_EQ(GetLinkageName(dies[0]), "_ZNK2pl7testing3Foo3BarEi");
 
   ASSERT_OK_AND_ASSIGN(
       dies, dwarf_reader->GetMatchingDIEs("PairStruct", llvm::dwarf::DW_TAG_structure_type));
@@ -111,7 +126,8 @@ TEST_P(DwarfReaderTest, GolangArgumentTypeByteSize) {
 TEST_P(DwarfReaderTest, CppArgumentStackPointerOffset) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kCppBinaryPath, p.index));
+                       // GCC build requires prebuilt binary.
+                       DwarfReader::Create(kPrebuiltCppBinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("SomeFunction", "x"), -32);
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("SomeFunction", "y"), -64);
@@ -163,7 +179,7 @@ TEST_P(DwarfReaderTest, CppFunctionArgInfo) {
 TEST_P(DwarfReaderTest, CppFunctionRetValInfo) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kCppBinaryPath, p.index));
+                       DwarfReader::Create(kPrebuiltCppBinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetFunctionRetValInfo("CanYouFindThis"),
                    (RetValInfo{VarType::kBaseType, "int"}));
