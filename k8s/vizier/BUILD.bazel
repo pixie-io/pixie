@@ -18,39 +18,83 @@ VIZIER_IMAGE_MAP = {
 }
 
 generate_vizier_yamls(
-    name = "vizier_prod",
+    name = "private_vizier_prod",
     srcs = glob(["**/*.yaml"]),
-    out = "vizier_prod.yaml",
+    out = "private_vizier_prod.yaml",
     image_map = VIZIER_IMAGE_MAP,
+    public = False,
+)
+
+generate_vizier_yamls(
+    name = "public_vizier_prod",
+    srcs = glob(["**/*.yaml"]),
+    out = "public_vizier_prod.yaml",
+    image_map = VIZIER_IMAGE_MAP,
+    public = True,
 )
 
 generate_vizier_bootstrap_yamls(
-    name = "vizier_bootstrap_prod",
+    name = "public_vizier_bootstrap_prod",
     srcs = glob(["**/*.yaml"]),
-    out = "vizier_bootstrap_prod.yaml",
+    out = "public_vizier_bootstrap_prod.yaml",
     image_map = VIZIER_IMAGE_MAP,
+    public = True,
+)
+
+generate_vizier_bootstrap_yamls(
+    name = "private_vizier_bootstrap_prod",
+    srcs = glob(["**/*.yaml"]),
+    out = "private_vizier_bootstrap_prod.yaml",
+    image_map = VIZIER_IMAGE_MAP,
+    public = False,
 )
 
 container_bundle(
-    name = "vizier_images_bundle",
-    images = image_map_with_bundle_version(VIZIER_IMAGE_MAP),
+    name = "private_vizier_images_bundle",
+    images = image_map_with_bundle_version(VIZIER_IMAGE_MAP, False),
+)
+
+container_bundle(
+    name = "public_vizier_images_bundle",
+    images = image_map_with_bundle_version(VIZIER_IMAGE_MAP, True),
 )
 
 container_push(
     name = "vizier_images_push",
-    bundle = ":vizier_images_bundle",
+    bundle = select({
+        ":public": ":public_vizier_images_bundle",
+        "//conditions:default": ":private_vizier_images_bundle",
+    }),
     format = "Docker",
+)
+
+config_setting(
+    name = "public",
+    values = {"define": "public=True"},
 )
 
 pkg_tar(
     name = "vizier_yamls",
-    srcs = [
-        "//k8s/vizier:vizier_bootstrap_prod.yaml",
-        "//k8s/vizier:vizier_prod.yaml",
-        "//k8s/vizier_deps:etcd_prod",
-        "//k8s/vizier_deps:nats_prod",
-        "//k8s/vizier_deps:etcd_operator_prod",
-    ],
+    remap_paths = {
+        "/vizier/private_vizier_bootstrap_prod.yaml": "vizier/vizier_bootstrap_prod.yaml",
+        "/vizier/public_vizier_bootstrap_prod.yaml": "vizier/vizier_bootstrap_prod.yaml",
+        "/vizier/private_vizier_prod.yaml": "vizier/vizier_prod.yaml",
+        "/vizier/public_vizier_prod.yaml": "vizier/vizier_prod.yaml",
+    },
+    srcs =
+        select({
+            "//conditions:default": ["//k8s/vizier:private_vizier_bootstrap_prod.yaml"],
+            ":public": ["//k8s/vizier:public_vizier_bootstrap_prod.yaml"],
+        }) +
+        select({
+            "//conditions:default": ["//k8s/vizier:private_vizier_prod.yaml"],
+            ":public": ["//k8s/vizier:public_vizier_prod.yaml"],
+        }) +
+        [
+            "//k8s/vizier_deps:etcd_prod",
+            "//k8s/vizier_deps:nats_prod",
+            "//k8s/vizier_deps:etcd_operator_prod",
+        ],
     package_dir = "/yamls",
     strip_prefix = "/k8s",
 )

@@ -1,16 +1,25 @@
-def image_map_with_bundle_version(image_map):
+private_registry = "gcr.io/pl-dev-infra"
+public_registry = "gcr.io/pixie-prod"
+
+def image_map_with_bundle_version(image_map, public):
     with_version = {}
 
     for k, v in image_map.items():
-        k_with_version = "{0}:{1}".format(k, "$(BUNDLE_VERSION)")
+        image_tag = k
+        if public:
+            image_tag = image_tag.replace(private_registry, public_registry)
+        k_with_version = "{0}:{1}".format(image_tag, "$(BUNDLE_VERSION)")
         with_version[k_with_version] = v
 
     return with_version
 
-def generate_vizier_yamls(name, srcs, out, image_map, **kwargs):
+def generate_vizier_yamls(name, srcs, out, image_map, public, **kwargs):
     kustomize_edits = []
     for k in image_map.keys():
-        kustomize_edits.append("kustomize edit set image {0}={1}:{2}".format(k, k, "$(BUNDLE_VERSION)"))
+        image_path = k
+        if public:
+            image_path = image_path.replace(private_registry, public_registry)
+        kustomize_edits.append("kustomize edit set image {0}={1}:{2}".format(k, image_path, "$(BUNDLE_VERSION)"))
 
     merged_edits = "\n".join(kustomize_edits)
     native.genrule(
@@ -30,10 +39,13 @@ def generate_vizier_yamls(name, srcs, out, image_map, **kwargs):
         """.format(merged_edits),
     )
 
-def generate_vizier_bootstrap_yamls(name, srcs, out, image_map, **kwargs):
+def generate_vizier_bootstrap_yamls(name, srcs, out, image_map, public, **kwargs):
     kustomize_edits = []
     for k in image_map.keys():
-        kustomize_edits.append("kustomize edit set image {0}={1}:{2}".format(k, k, "$(BUNDLE_VERSION)"))
+        image_path = k
+        if public:
+            image_path = image_path.replace(private_registry, public_registry)
+        kustomize_edits.append("kustomize edit set image {0}={1}:{2}".format(k, image_path, "$(BUNDLE_VERSION)"))
 
     merged_edits = "\n".join(kustomize_edits)
     native.genrule(
