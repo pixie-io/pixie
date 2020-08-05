@@ -692,6 +692,19 @@ inline FuncAllArgsMatch<ArgMatcherType, FuncIR::Opcode::logand> AndFnMatchAll(
   return FuncAllArgsMatch<ArgMatcherType, FuncIR::Opcode::logand>(arg_matcher);
 }
 
+struct PartialUDAMatch : public ParentMatch {
+  PartialUDAMatch() : ParentMatch(IRNodeType::kFunc) {}
+  bool Match(const IRNode* node) const override {
+    if (!Func().Match(node)) {
+      return false;
+    }
+    const FuncIR* func = static_cast<const FuncIR*>(node);
+    return func->SupportsPartial();
+  }
+};
+
+inline PartialUDAMatch PartialUDA() { return PartialUDAMatch(); }
+
 /**
  * @brief Match any node that is an expression.
  */

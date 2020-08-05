@@ -55,8 +55,9 @@ TEST_F(PartialOpMgrTest, agg_test) {
   count_col->ResolveColumnType(types::INT64);
   auto service_col = MakeColumn("service", 0);
   service_col->ResolveColumnType(types::STRING);
-  auto agg = MakeBlockingAgg(mem_src, {count_col, service_col},
-                             {{"mean", MakeMeanFunc(MakeColumn("count", 0))}});
+  auto mean_func = MakeMeanFunc(MakeColumn("count", 0));
+  mean_func->SetSupportsPartial(true);
+  auto agg = MakeBlockingAgg(mem_src, {count_col, service_col}, {{"mean", mean_func}});
   Relation agg_relation({types::INT64, types::STRING, types::FLOAT64},
                         {"count", "service", "mean"});
   ASSERT_OK(agg->SetRelation(agg_relation));
@@ -97,6 +98,35 @@ TEST_F(PartialOpMgrTest, agg_test) {
                                               {"count", "service", "serialized_expressions"}));
 
   EXPECT_EQ(merge_agg->relation(), agg_relation);
+}
+
+// This tests aggs with functions that can't partial. We don't partial the agg if that's the case.
+TEST_F(PartialOpMgrTest, agg_where_fn_cant_partial) {
+  auto mem_src = MakeMemSource(MakeRelation());
+  auto count_col = MakeColumn("count", 0);
+  count_col->ResolveColumnType(types::INT64);
+  auto service_col = MakeColumn("service", 0);
+  service_col->ResolveColumnType(types::STRING);
+  // One function is partial
+  auto mean_func = MakeMeanFunc(MakeColumn("count", 0));
+  mean_func->SetSupportsPartial(false);
+  // Even though one is partial, the entire agg cannot be converted.
+  auto mean_func2 = MakeMeanFunc(MakeColumn("count", 0));
+  mean_func2->SetSupportsPartial(true);
+  auto agg = MakeBlockingAgg(mem_src, {count_col, service_col},
+                             {{"mean", mean_func}, {"mean2", mean_func2}});
+  Relation agg_relation({types::INT64, types::STRING, types::FLOAT64, types::FLOAT64},
+                        {"count", "service", "mean", "mean2"});
+  ASSERT_OK(agg->SetRelation(agg_relation));
+  MakeMemSink(agg, "out");
+
+  // Pre-checks to make sure things work.
+  EXPECT_MATCH(agg, FullAgg());
+  EXPECT_NOT_MATCH(agg, FinalizeAgg());
+  EXPECT_NOT_MATCH(agg, PartialAgg());
+
+  AggOperatorMgr mgr;
+  EXPECT_FALSE(mgr.Matches(agg));
 }
 }  // namespace distributed
 }  // namespace planner

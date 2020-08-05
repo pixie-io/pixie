@@ -1076,6 +1076,9 @@ class FuncIR : public ExpressionIR {
 
   Status ResolveType(CompilerState* compiler_state, const std::vector<TypePtr>& parent_types);
 
+  bool SupportsPartial() const { return supports_partial_; }
+  void SetSupportsPartial(bool can_partial) { supports_partial_ = can_partial; }
+
  private:
   std::string func_prefix_ = kPLFuncPrefix;
   Op op_;
@@ -1085,6 +1088,7 @@ class FuncIR : public ExpressionIR {
   int64_t func_id_ = 0;
   types::DataType evaluated_data_type_ = types::DataType::DATA_TYPE_UNKNOWN;
   bool is_data_type_evaluated_ = false;
+  bool supports_partial_ = false;
 };
 
 /**

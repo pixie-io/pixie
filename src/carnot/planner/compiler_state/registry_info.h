@@ -109,6 +109,8 @@ class RegistryInfo {
                                            std::vector<types::DataType> update_arg_types);
   StatusOr<types::DataType> GetUDFDataType(std::string name,
                                            std::vector<types::DataType> exec_arg_types);
+  StatusOr<bool> DoesUDASupportPartial(std::string name,
+                                       std::vector<types::DataType> update_arg_types);
 
   StatusOr<UDFExecType> GetUDFExecType(std::string_view name);
   absl::flat_hash_set<std::string> func_names() const;
@@ -140,6 +142,8 @@ class RegistryInfo {
 
   std::map<RegistryKey, types::DataType> udf_map_;
   std::map<RegistryKey, types::DataType> uda_map_;
+  // Allocated as a separate map because this is a temporary solution.
+  std::map<RegistryKey, bool> uda_supports_partial_map_;
   // Union of udf and uda names.
   absl::flat_hash_map<std::string, UDFExecType> funcs_;
   // The vector containing udtfs.

@@ -57,9 +57,12 @@ StatusOr<bool> DataTypeRule::EvaluateFunc(CompilerState* compiler_state, FuncIR*
       PL_ASSIGN_OR_RETURN(
           types::DataType data_type,
           compiler_state->registry_info()->GetUDADataType(func->func_name(), children_data_types));
+      PL_ASSIGN_OR_RETURN(bool can_partial, compiler_state->registry_info()->DoesUDASupportPartial(
+                                                func->func_name(), children_data_types));
       func->set_func_id(
           compiler_state->GetUDAID(RegistryKey(func->func_name(), children_data_types)));
       func->SetOutputDataType(data_type);
+      func->SetSupportsPartial(can_partial);
       break;
     }
     default: {

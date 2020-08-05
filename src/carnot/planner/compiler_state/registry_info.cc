@@ -50,6 +50,7 @@ Status RegistryInfo::Init(const udfspb::UDFInfo& info) {
     }
     auto key = RegistryKey(uda.name(), arg_types);
     uda_map_[key] = uda.finalize_type();
+    uda_supports_partial_map_[key] = uda.supports_partial();
     // Add uda to funcs_.
     if (funcs_.contains(uda.name())) {
       PL_ASSIGN_OR_RETURN(auto type, GetUDFExecType(uda.name()));
@@ -106,6 +107,16 @@ StatusOr<types::DataType> RegistryInfo::GetUDADataType(
     std::string name, std::vector<types::DataType> update_arg_types) {
   auto uda = uda_map_.find(RegistryKey(name, update_arg_types));
   if (uda == uda_map_.end()) {
+    return error::InvalidArgument("Could not find UDA '$0' with update arg types [$1].", name,
+                                  absl::StrJoin(update_arg_types, ","));
+  }
+  return uda->second;
+}
+
+StatusOr<bool> RegistryInfo::DoesUDASupportPartial(std::string name,
+                                                   std::vector<types::DataType> update_arg_types) {
+  auto uda = uda_supports_partial_map_.find(RegistryKey(name, update_arg_types));
+  if (uda == uda_supports_partial_map_.end()) {
     return error::InvalidArgument("Could not find UDA '$0' with update arg types [$1].", name,
                                   absl::StrJoin(update_arg_types, ","));
   }

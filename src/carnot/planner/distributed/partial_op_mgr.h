@@ -68,7 +68,18 @@ class LimitOperatorMgr : public PartialOperatorMgr {
  */
 class AggOperatorMgr : public PartialOperatorMgr {
  public:
-  bool Matches(OperatorIR* op) const override { return Match(op, BlockingAgg()); }
+  bool Matches(OperatorIR* op) const override {
+    if (!Match(op, BlockingAgg())) {
+      return false;
+    }
+    BlockingAggIR* agg = static_cast<BlockingAggIR*>(op);
+    for (const auto& col_expr : agg->aggregate_expressions()) {
+      if (!Match(col_expr.node, PartialUDA())) {
+        return false;
+      }
+    }
+    return true;
+  }
   StatusOr<OperatorIR*> CreatePrepareOperator(IR* plan, OperatorIR* op) const override;
   StatusOr<OperatorIR*> CreateMergeOperator(IR* plan, OperatorIR* new_parent,
                                             OperatorIR* op) const override;

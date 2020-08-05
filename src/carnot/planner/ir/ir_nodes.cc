@@ -1196,6 +1196,7 @@ Status FuncIR::CopyFromNodeImpl(const IRNode* node,
   func_id_ = func->func_id_;
   evaluated_data_type_ = func->evaluated_data_type_;
   is_data_type_evaluated_ = func->is_data_type_evaluated_;
+  supports_partial_ = func->supports_partial_;
 
   for (const ExpressionIR* arg : func->args_) {
     // auto id = arg->id();

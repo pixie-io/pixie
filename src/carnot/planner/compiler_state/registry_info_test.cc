@@ -18,6 +18,12 @@ udas {
   name: "uda1"
   update_arg_types: INT64
   finalize_type: INT64
+  supports_partial: true
+}
+udas {
+  name: "uda2"
+  update_arg_types: INT64
+  finalize_type: INT64
 }
 scalar_udfs {
   name: "add"
@@ -81,7 +87,9 @@ TEST(RegistryInfo, basic) {
 
   EXPECT_EQ(types::INT64, info.GetUDADataType("uda1", std::vector<types::DataType>({types::INT64}))
                               .ConsumeValueOrDie());
-  EXPECT_NOT_OK(info.GetUDADataType("uda2", std::vector<types::DataType>({types::INT64})));
+  EXPECT_EQ(types::INT64, info.GetUDADataType("uda2", std::vector<types::DataType>({types::INT64}))
+                              .ConsumeValueOrDie());
+  EXPECT_NOT_OK(info.GetUDADataType("uda3", std::vector<types::DataType>({types::INT64})));
   EXPECT_EQ(
       types::INT64,
       info.GetUDFDataType("scalar1", std::vector<types::DataType>({types::BOOLEAN, types::INT64}))
@@ -94,7 +102,7 @@ TEST(RegistryInfo, basic) {
       info.GetUDFDataType("add", std::vector<types::DataType>({types::FLOAT64, types::FLOAT64}))
           .ConsumeValueOrDie());
 
-  EXPECT_THAT(info.func_names(), UnorderedElementsAre("uda1", "add", "scalar1"));
+  EXPECT_THAT(info.func_names(), UnorderedElementsAre("uda1", "uda2", "add", "scalar1"));
 
   ASSERT_EQ(info.udtfs().size(), 1);
   EXPECT_EQ(info.udtfs()[0].name(), "OpenNetworkConnections");
@@ -121,6 +129,19 @@ TEST(RegistryInfo, semantic_types) {
   EXPECT_OK_AND_PTR_VAL_EQ(
       info.ResolveUDFType("uda1", {ValueType::Create(types::INT64, types::ST_UPID)}),
       ValueType::Create(types::INT64, types::ST_NONE));
+}
+
+TEST(RegistryInfo, supports_partial) {
+  auto info = RegistryInfo();
+  udfspb::UDFInfo info_pb;
+  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
+  EXPECT_OK(info.Init(info_pb));
+
+  EXPECT_OK_AND_EQ(info.DoesUDASupportPartial("uda1", std::vector<types::DataType>({types::INT64})),
+                   true);
+
+  EXPECT_OK_AND_EQ(info.DoesUDASupportPartial("uda2", std::vector<types::DataType>({types::INT64})),
+                   false);
 }
 
 TEST(SemanticRuleRegistry, semantic_lookup) {

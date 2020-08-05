@@ -108,8 +108,9 @@ TEST_F(SplitterTest, partial_agg_test) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto count_col = MakeColumn("count", 0);
   count_col->ResolveColumnType(types::INT64);
-  auto agg =
-      MakeBlockingAgg(mem_src, {count_col}, {{"mean", MakeMeanFunc(MakeColumn("count", 0))}});
+  auto mean_func = MakeMeanFunc(MakeColumn("count", 0));
+  mean_func->SetSupportsPartial(true);
+  auto agg = MakeBlockingAgg(mem_src, {count_col}, {{"mean", mean_func}});
 
   table_store::schema::Relation relation({types::INT64, types::FLOAT64}, {"count", "mean"});
   ASSERT_OK(agg->SetRelation(relation));
