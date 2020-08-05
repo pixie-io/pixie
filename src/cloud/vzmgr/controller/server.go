@@ -448,41 +448,57 @@ func (s *Server) GetVizierConnectionInfo(ctx context.Context, req *uuidpb.UUID) 
 // GetViziersByShard returns the list of connected Viziers for a given shardID.
 func (s *Server) GetViziersByShard(ctx context.Context, req *vzmgrpb.GetViziersByShardRequest) (*vzmgrpb.GetViziersByShardResponse, error) {
 	// TODO(zasgar/michelle/philkuz): This end point needs to be protected based on service info. We don't want everyone to be able to access it.
-	if len(req.ShardID) != 2 {
+	if len(req.FromShardID) != 2 || len(req.ToShardID) != 2 {
 		return nil, status.Error(codes.InvalidArgument, "ShardID must be two hex digits")
 	}
-	if _, err := hex.DecodeString(req.ShardID); err != nil {
+	if _, err := hex.DecodeString(req.FromShardID); err != nil {
 		return nil, status.Error(codes.InvalidArgument, "ShardID must be two hex digits")
 	}
-	shardID := strings.ToLower(req.ShardID)
+	if _, err := hex.DecodeString(req.ToShardID); err != nil {
+		return nil, status.Error(codes.InvalidArgument, "ShardID must be two hex digits")
+	}
+	toShardID := strings.ToLower(req.ToShardID)
+	fromShardID := strings.ToLower(req.FromShardID)
+
+	if fromShardID > toShardID {
+		return nil, status.Error(codes.InvalidArgument, "FromShardID must be less than or equal to ToShardID")
+	}
 
 	query := `
-    SELECT vizier_cluster.id, vizier_cluster.org_id
-    FROM vizier_cluster,vizier_cluster_info
+    SELECT vizier_cluster.id, vizier_cluster.org_id, vizier_cluster.cluster_uid, vizier_index_state.resource_version
+    FROM vizier_cluster, vizier_cluster_info, vizier_index_state
     WHERE vizier_cluster_info.vizier_cluster_id=vizier_cluster.id
+    	  AND vizier_cluster_info.vizier_cluster_id=vizier_index_state.cluster_id
+    	  AND vizier_index_state.cluster_id=vizier_cluster.id
           AND vizier_cluster_info.status != 'DISCONNECTED'
-          AND substring(vizier_cluster.id::text, 35)=$1;`
+          AND substring(vizier_cluster.id::text, 35)>=$1
+          AND substring(vizier_cluster.id::text, 35)<=$2;`
 
-	rows, err := s.db.Queryx(query, shardID)
+	rows, err := s.db.Queryx(query, fromShardID, toShardID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	type Result struct {
-		VizierID uuid.UUID `db:"id"`
-		OrgID    uuid.UUID `db:"org_id"`
+		VizierID        uuid.UUID `db:"id"`
+		OrgID           uuid.UUID `db:"org_id"`
+		ResourceVersion string    `db:"resource_version"`
+		K8sUID          string    `db:"cluster_uid"`
 	}
 	results := make([]*vzmgrpb.GetViziersByShardResponse_VizierInfo, 0)
 	for rows.Next() {
 		var result Result
 		err = rows.StructScan(&result)
 		if err != nil {
+
 			return nil, status.Error(codes.Internal, "failed to read vizier info")
 		}
 		results = append(results, &vzmgrpb.GetViziersByShardResponse_VizierInfo{
-			VizierID: utils.ProtoFromUUID(&result.VizierID),
-			OrgID:    utils.ProtoFromUUID(&result.OrgID),
+			VizierID:        utils.ProtoFromUUID(&result.VizierID),
+			OrgID:           utils.ProtoFromUUID(&result.OrgID),
+			ResourceVersion: result.ResourceVersion,
+			K8sUID:          result.K8sUID,
 		})
 	}
 

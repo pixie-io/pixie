@@ -75,7 +75,7 @@ var testPodStatuses controller.PodStatuses = map[string]*cvmsgspb.PodStatus{
 
 func loadTestData(t *testing.T, db *sqlx.DB) {
 	insertCluster := `INSERT INTO vizier_cluster(org_id, id, project_name, cluster_uid, cluster_version, cluster_name) VALUES ($1, $2, $3, $4, $5, $6)`
-	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440000", testProjectName, "", "", "unknown_cluster")
+	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440000", testProjectName, "k8sID", "", "unknown_cluster")
 	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", testProjectName, "cUID", "cVers", "healthy_cluster")
 	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440002", testProjectName, "", "", "unhealthy_cluster")
 	db.MustExec(insertCluster, testAuthOrgID, testDisconnectedClusterEmptyUID, testProjectName, "", "", "disconnected_cluster")
@@ -106,8 +106,12 @@ func loadTestData(t *testing.T, db *sqlx.DB) {
 		false, "", "{}", 4, 2)
 
 	db.MustExec(`UPDATE vizier_cluster SET cluster_name=NULL WHERE id=$1`, testDisconnectedClusterEmptyUID)
+
 	insertVizierIndexQuery := `INSERT INTO vizier_index_state(cluster_id, resource_version) VALUES($1, $2)`
 	db.MustExec(insertVizierIndexQuery, "123e4567-e89b-12d3-a456-426655440001", "1234")
+	db.MustExec(insertVizierIndexQuery, "123e4567-e89b-12d3-a456-426655440000", "1")
+	db.MustExec(insertVizierIndexQuery, "323e4567-e89b-12d3-a456-426655440003", "2")
+	db.MustExec(insertVizierIndexQuery, "223e4567-e89b-12d3-a456-426655440003", "5")
 }
 
 func CreateTestContext() context.Context {
@@ -894,7 +898,8 @@ func TestServer_GetViziersByShard(t *testing.T) {
 		name string
 
 		// Inputs:
-		shardID string
+		toShardID   string
+		fromShardID string
 
 		// Outputs:
 		expectGRPCError error
@@ -902,47 +907,92 @@ func TestServer_GetViziersByShard(t *testing.T) {
 	}{
 		{
 			name:            "Bad shardID",
-			shardID:         "gf",
+			toShardID:       "gf",
+			fromShardID:     "ff",
 			expectGRPCError: status.Error(codes.InvalidArgument, "bad arg"),
 		},
 		{
 			name:            "Bad shardID (valid hex, too large)",
-			shardID:         "fff",
+			toShardID:       "fff",
+			fromShardID:     "ff",
 			expectGRPCError: status.Error(codes.InvalidArgument, "bad arg"),
 		},
 		{
 			name:            "Bad shardID (valid hex, too small)",
-			shardID:         "f",
+			toShardID:       "f",
+			fromShardID:     "ff",
 			expectGRPCError: status.Error(codes.InvalidArgument, "bad arg"),
 		},
 		{
-			name:    "Single vizier response",
-			shardID: "00",
-
+			name:            "Bad shardID (misordered)",
+			toShardID:       "aa",
+			fromShardID:     "ff",
+			expectGRPCError: status.Error(codes.InvalidArgument, "bad arg"),
+		},
+		{
+			name:            "Single vizier response",
+			toShardID:       "00",
+			fromShardID:     "00",
 			expectGRPCError: nil,
 			expectResponse: &vzmgrpb.GetViziersByShardResponse{
 				Viziers: []*vzmgrpb.GetViziersByShardResponse_VizierInfo{
 					{
-						VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
-						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+						VizierID:        utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+						OrgID:           utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+						ResourceVersion: "1",
+						K8sUID:          "k8sID",
 					},
 				},
 			},
 		},
 		{
-			name:    "Multi vizier response",
-			shardID: "03",
-
+			name:            "Multi vizier response",
+			toShardID:       "03",
+			fromShardID:     "03",
 			expectGRPCError: nil,
 			expectResponse: &vzmgrpb.GetViziersByShardResponse{
 				Viziers: []*vzmgrpb.GetViziersByShardResponse_VizierInfo{
 					{
-						VizierID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440003"),
-						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+						VizierID:        utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440003"),
+						OrgID:           utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+						ResourceVersion: "2",
 					},
 					{
-						VizierID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
-						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+						VizierID:        utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
+						OrgID:           utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+						ResourceVersion: "5",
+					},
+				},
+			},
+		},
+		{
+			name:            "Multi range response",
+			toShardID:       "03",
+			fromShardID:     "00",
+			expectGRPCError: nil,
+			expectResponse: &vzmgrpb.GetViziersByShardResponse{
+				Viziers: []*vzmgrpb.GetViziersByShardResponse_VizierInfo{
+					{
+						VizierID:        utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+						OrgID:           utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+						ResourceVersion: "1",
+						K8sUID:          "k8sID",
+					},
+					{
+						VizierID:        utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+						OrgID:           utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+						ResourceVersion: "1234",
+						K8sUID:          "cUID",
+					},
+					{
+						VizierID:        utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440003"),
+						OrgID:           utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+						ResourceVersion: "2",
+					},
+					{
+						VizierID:        utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
+						OrgID:           utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+						ResourceVersion: "5",
 					},
 				},
 			},
@@ -951,7 +1001,7 @@ func TestServer_GetViziersByShard(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			req := &vzmgrpb.GetViziersByShardRequest{ShardID: test.shardID}
+			req := &vzmgrpb.GetViziersByShardRequest{ToShardID: test.toShardID, FromShardID: test.fromShardID}
 			resp, err := s.GetViziersByShard(context.Background(), req)
 
 			if test.expectGRPCError != nil {

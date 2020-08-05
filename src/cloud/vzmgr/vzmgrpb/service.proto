@@ -35,9 +35,17 @@ message GetViziersByOrgResponse {
                                        (gogoproto.customname) = "VizierIDs"
                                       ];
 }
+
+// GetViziersByShardRequest gets all connected viziers within the given shard range.
 message GetViziersByShardRequest {
-    string shard_id = 1 [
-                        (gogoproto.customname) = "ShardID"
+    // The beginning of the range of Vizier shards to fetch, inclusive.
+    string from_shard_id = 1 [
+                        (gogoproto.customname) = "FromShardID"
+                        ];
+    // The ending of the range of Vizier shards to fetch, also inclusive. To fetch
+    // viziers for a single shard, the FromShardID and ToShardID should be the same.
+    string to_shard_id = 2 [
+                        (gogoproto.customname) = "ToShardID"
                         ];
 }
 
@@ -49,6 +57,10 @@ message GetViziersByShardResponse {
                                   ];
         uuidpb.UUID org_id = 2 [
                                (gogoproto.customname) = "OrgID"
+                               ];
+        string resource_version = 3;
+        string k8s_uid = 4 [
+                                (gogoproto.customname) = "K8sUID"
                                ];
     }
     repeated VizierInfo viziers = 1;
