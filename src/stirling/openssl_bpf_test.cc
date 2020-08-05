@@ -40,15 +40,14 @@ using ::testing::UnorderedElementsAre;
 class NginxContainer : public ContainerRunner {
  public:
   NginxContainer()
-      : ContainerRunner(BazelBinTestFilePath(kNginxBazelTar), kNginxInstanceNamePrefix,
-                        kNginxReadyMessage) {}
+      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
 
  private:
   // Image is a modified nginx image created through bazel rules, and stored as a tar file.
   // It is not pushed to any repo.
-  static constexpr std::string_view kNginxBazelTar = "src/stirling/testing/ssl/nginx_ssl_image.tar";
-  static constexpr std::string_view kNginxInstanceNamePrefix = "nginx";
-  static constexpr std::string_view kNginxReadyMessage = "";
+  static constexpr std::string_view kBazelImageTar = "src/stirling/testing/ssl/nginx_ssl_image.tar";
+  static constexpr std::string_view kInstanceNamePrefix = "nginx";
+  static constexpr std::string_view kReadyMessage = "";
 };
 
 class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false> {

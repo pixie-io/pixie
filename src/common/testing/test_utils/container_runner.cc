@@ -31,6 +31,17 @@ ContainerRunner::ContainerRunner(std::filesystem::path image_tar,
   image_ = image_line;
 }
 
+ContainerRunner::~ContainerRunner() {
+  Stop();
+
+  std::string docker_rm_cmd = absl::StrCat("docker rm ", container_name_);
+  StatusOr<std::string> s = pl::Exec(docker_rm_cmd);
+  if (!s.ok()) {
+    // Failing to remove the container will just result in a leak of containers.
+    LOG(ERROR) << s.ToString();
+  }
+}
+
 StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::string>& options) {
   // Now run the container.
   // Run with timeout, as a backup in case we don't clean things up properly.
@@ -42,7 +53,6 @@ StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::s
   docker_run_cmd.push_back(std::to_string(timeout));
   docker_run_cmd.push_back("docker");
   docker_run_cmd.push_back("run");
-  docker_run_cmd.push_back("--rm");
   docker_run_cmd.push_back("--pid=host");
   for (const auto& flag : options) {
     docker_run_cmd.push_back(flag);
@@ -58,34 +68,47 @@ StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::s
   // But keep count of the attempts, because we don't want to poll infinitely.
   int attempts_remaining = timeout;
 
+  std::string container_status;
+
   // Wait for container's server to be running.
   for (; attempts_remaining > 0; --attempts_remaining) {
     sleep(kSleepSeconds);
 
-    // Get the pid of process within the container.
     PL_ASSIGN_OR_RETURN(
-        std::string pid_str,
-        pl::Exec(absl::Substitute("docker inspect -f '{{.State.Pid}}' $0", container_name_)));
-    LOG(INFO) << absl::Substitute("Container process PID: $0", pid_str);
+        container_status,
+        pl::Exec(absl::Substitute("docker inspect -f '{{.State.Status}}' $0", container_name_)));
+    absl::StripAsciiWhitespace(&container_status);
+    VLOG(1) << absl::Substitute("Container status: $0", container_status);
 
-    if (absl::SimpleAtoi(pid_str, &process_pid_) && process_pid_ != 0) {
+    // Status should be one of: created, restarting, running, removing, paused, exited, dead.
+    if (container_status == "running" || container_status == "exited" ||
+        container_status == "dead") {
       break;
     }
-    process_pid_ = -1;
 
     // Delay before trying again.
     LOG(INFO) << absl::Substitute(
         "Container not yet running, will try again ($0 attempts remaining).", attempts_remaining);
-
-    // TODO(oazizi): Check if container execution has failed, and abort early.
   }
 
-  if (process_pid_ == -1) {
+  if (container_status != "running" && container_status != "exited") {
     std::string container_out;
     PL_RETURN_IF_ERROR(container_.Stdout(&container_out));
     return error::Internal("Container failed to start. Container output:\n$0", container_out);
   }
-  DCHECK_GT(attempts_remaining, 0);
+
+  // Get the PID of process within the container.
+  // Note that this like won't work for short-lived containers.
+  PL_ASSIGN_OR_RETURN(
+      std::string pid_str,
+      pl::Exec(absl::Substitute("docker inspect -f '{{.State.Pid}}' $0", container_name_)));
+
+  if (!absl::SimpleAtoi(pid_str, &process_pid_) || process_pid_ == 0) {
+    LOG(WARNING) << "Could not obtain process PID. Container may have terminated before PID could "
+                    "be sampled.";
+    process_pid_ = -1;
+  }
+  LOG(INFO) << absl::Substitute("Container process PID: $0", process_pid_);
 
   LOG(INFO) << absl::StrCat("Waiting for log message: ", ready_message_);
 

@@ -38,7 +38,7 @@ class ContainerRunner {
   ContainerRunner(std::filesystem::path image_tar, std::string_view instance_name_prefix,
                   std::string_view ready_message);
 
-  ~ContainerRunner() { Stop(); }
+  ~ContainerRunner();
 
   /**
    * Run the container created by the constructor.
@@ -61,6 +61,8 @@ class ContainerRunner {
 
   /**
    * The PID of the process within the container.
+   * Note that short-lived containers may return -1,
+   * as there may not have been enough time to grab the PID after running.
    */
   int process_pid() { return process_pid_; }
 

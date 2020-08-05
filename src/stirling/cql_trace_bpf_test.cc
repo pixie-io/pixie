@@ -36,13 +36,12 @@ using ::testing::UnorderedElementsAre;
 
 class CassandraContainer : public ContainerRunner {
  public:
-  CassandraContainer()
-      : ContainerRunner(kCassandraImage, kCassandraInstanceNamePrefix, kCassandraReadyMessage) {}
+  CassandraContainer() : ContainerRunner(kImage, kInstanceNamePrefix, kReadyMessage) {}
 
  private:
-  static constexpr std::string_view kCassandraImage = "datastax/dse-server:6.7.7";
-  static constexpr std::string_view kCassandraInstanceNamePrefix = "dse_server";
-  static constexpr std::string_view kCassandraReadyMessage = "DSE startup complete.";
+  static constexpr std::string_view kImage = "datastax/dse-server:6.7.7";
+  static constexpr std::string_view kInstanceNamePrefix = "dse_server";
+  static constexpr std::string_view kReadyMessage = "DSE startup complete.";
 };
 
 // CQLTraceTest runs with both server and client-side tracing enabled.

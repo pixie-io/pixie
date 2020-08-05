@@ -104,11 +104,12 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
     // Run the server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    // Note that this step will make an access to docker hub to  download the HTTPandra image.
+    // Note that this step will make an access to docker hub to download the HTTP image.
     PL_CHECK_OK(server_.Run(60, {}));
 
     FLAGS_stirling_enable_parsing_protobufs = true;
   }
+
   ~HTTP2TraceTest() {
     client_.Stop();
     server_.Stop();
@@ -118,7 +119,6 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
   GRPCClientContainer client_;
 };
 
-// TODO(oazizi/yzhao): This test appears broken with clang-10. Please Fix.
 TEST_F(HTTP2TraceTest, Basic) {
   // Run the client in the network of the server, so they can connect to each other.
   PL_CHECK_OK(
