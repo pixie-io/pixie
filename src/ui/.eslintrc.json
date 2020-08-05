@@ -69,8 +69,18 @@
       ],
       "rules": {
         "import/extensions": 0,
+        "no-mixed-operators": [
+            "error",
+            {
+                "groups": [
+                    ["&", "|", "^", "~", "<<", ">>", ">>>"],
+                    ["==", "!=", "===", "!==", ">", ">=", "<", "<="],
+                    ["&&", "||"],
+                    ["in", "instanceof"]
+                ]
+            }
+        ],
         "no-restricted-syntax": 0,
-        "no-mixed-operators": 0,
         "no-continue": 0,
         "no-plusplus": 0,
         "consistent-return": 0,

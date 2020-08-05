@@ -238,6 +238,7 @@ export const AuthCallbackPage = () => {
     return renderLoadingMessage();
   };
 
+  const loading = !config || config.loading;
   return (
     <>
       <BasePage>
@@ -249,8 +250,8 @@ export const AuthCallbackPage = () => {
           alignItems='center'
         >
           <Grid item>
-            { !config || config.loading && renderLoadingMessage() }
-            { config && !config.loading && (config.err ? renderError() : renderMessage())}
+            { loading && renderLoadingMessage() }
+            { !loading && (config.err ? renderError() : renderMessage())}
           </Grid>
         </Grid>
       </BasePage>

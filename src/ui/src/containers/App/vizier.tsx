@@ -124,7 +124,8 @@ export default function WithClusterBanner() {
     selectedClusterPrettyName: cluster?.prettyClusterName,
     setCluster: setClusterId,
     setClusterByName: (name: string) => {
-      const newClusterId = name && clusters.find((c) => c.clusterName === name)?.id || clusterId;
+      const foundId = name && clusters.find((c) => c.clusterName === name)?.id;
+      const newClusterId = foundId || clusterId;
       setClusterId(newClusterId);
     },
   }), [clusterId, setClusterId, clusters, cluster?.clusterName]);
