@@ -65,26 +65,27 @@ const DataDrawer = ({ open, activeTab, setActiveTab }) => {
   return (
     <div className={classes.drawerRoot}>
       {
-        loading
-          ? (open ? <div className={classes.spinner}><Spinner /></div> : null)
-          : (
-            <>
-              {
-                tabs.map((tab) => (
-                  <LazyPanel
-                    key={tab.title}
-                    className={classes.content}
-                    show={open && activeTab === tab.title}
-                  >
-                    {tab.content}
-                  </LazyPanel>
-                ))
-              }
-              <LazyPanel className={classes.content} show={open && activeTab === 'stats'}>
-                <ExecutionStats />
-              </LazyPanel>
-            </>
-          )
+        (loading && open) && <div className={classes.spinner}><Spinner /></div>
+      }
+      {
+        !loading && (
+          <>
+            {
+              tabs.map((tab) => (
+                <LazyPanel
+                  key={tab.title}
+                  className={classes.content}
+                  show={open && activeTab === tab.title}
+                >
+                  {tab.content}
+                </LazyPanel>
+              ))
+            }
+            <LazyPanel className={classes.content} show={open && activeTab === 'stats'}>
+              <ExecutionStats />
+            </LazyPanel>
+          </>
+        )
       }
     </div>
   );

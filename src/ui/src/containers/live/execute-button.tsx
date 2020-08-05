@@ -25,8 +25,17 @@ const ExecuteScriptButtonBare = ({ classes }: ExecuteScriptButtonProps) => {
   const { loading } = React.useContext(ResultsContext);
   const { saveEditorAndExecute } = React.useContext(ScriptContext);
 
+  let tooltipTitle;
+  if (loading) {
+    tooltipTitle = 'Executing';
+  } else if (!healthy) {
+    tooltipTitle = 'Cluster Disconnected';
+  } else {
+    tooltipTitle = 'Execute script';
+  }
+
   return (
-    <Tooltip title={loading ? 'Executing' : !healthy ? 'Cluster Disconnected' : 'Execute script'}>
+    <Tooltip title={tooltipTitle}>
       <div>
         <Button
           variant='contained'
