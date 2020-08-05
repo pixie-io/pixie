@@ -117,30 +117,30 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
     onChange(newStr, newCursorPos, 'SELECT', null);
   }, [itemsMap, cursorPos, tsInfo, onChange]);
 
-  const handleBackspace = React.useCallback((cursorPos) => {
-    const [newStr, newCursorPos] = tsInfo.handleBackspace(cursorPos);
+  const handleBackspace = React.useCallback((pos) => {
+    const [newStr, newCursorPos] = tsInfo.handleBackspace(pos);
     return onChange(newStr, newCursorPos, 'EDIT', null);
   }, [tsInfo, onChange]);
 
-  const handleLeftKey = React.useCallback((cursorPos) => {
-    const activeTab = tsInfo.getActiveTab(cursorPos);
+  const handleLeftKey = React.useCallback((pos) => {
+    const activeTab = tsInfo.getActiveTab(pos);
     const tabBoundaries = tsInfo.getTabBoundaries();
-    if (cursorPos - 1 >= tabBoundaries[activeTab][0]) {
+    if (pos - 1 >= tabBoundaries[activeTab][0]) {
       // Cursor is still within the current tabstop.
-      setCursorPos(cursorPos - 1);
+      setCursorPos(pos - 1);
     } else if (activeTab !== 0) {
       // Cursor should move to the previous tabstop.
       setCursorPos(tabBoundaries[activeTab - 1][1] - 1);
     }
   }, [tsInfo]);
 
-  const handleRightKey = React.useCallback((cursorPos) => {
-    const activeTab = tsInfo.getActiveTab(cursorPos);
+  const handleRightKey = React.useCallback((pos) => {
+    const activeTab = tsInfo.getActiveTab(pos);
     const tabBoundaries = tsInfo.getTabBoundaries();
 
-    if (cursorPos + 1 < tabBoundaries[activeTab][1]) {
+    if (pos + 1 < tabBoundaries[activeTab][1]) {
       // Cursor is still within the current tabstop.
-      setCursorPos(cursorPos + 1);
+      setCursorPos(pos + 1);
     } else if (activeTab !== tabStops.length - 1) {
       // Cursor should move to the next tabstop.
       setCursorPos(tabBoundaries[activeTab + 1][0]);
@@ -176,23 +176,23 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
     }
   };
 
-  const onChangeHandler = React.useCallback((input: string, cursorPos: number) => {
+  const onChangeHandler = React.useCallback((input: string, pos: number) => {
     setTyping(true);
     clearTimeout(timer);
     const newTimer = setTimeout(() => {
       setTyping(false);
       // This is only triggered if the user has stopped typing for a while.
-      onChange(input, cursorPos, 'EDIT', null);
+      onChange(input, pos, 'EDIT', null);
     }, TYPING_WAIT_INTERVAL_MS);
     setTimer(newTimer);
 
     if (typing) {
       // If the user is actively typing, we should update the tabstops ourselves instead of making an API call to do so.
-      onChange(input, cursorPos, 'EDIT', tsInfo.handleChange(input, cursorPos));
+      onChange(input, pos, 'EDIT', tsInfo.handleChange(input, pos));
       return;
     }
 
-    onChange(input, cursorPos, 'EDIT', null);
+    onChange(input, pos, 'EDIT', null);
   }, [onChange, tsInfo, typing, timer]);
 
   return (

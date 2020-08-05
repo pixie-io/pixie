@@ -59,14 +59,14 @@ export function useLocalStorage<T>(key: StorageKey, initialValue?: T):
 // (on first load).
 export function useSessionStorage<T>(key: StorageKey, initialValue?: T):
 [T, React.Dispatch<React.SetStateAction<T>>] {
-  const setItem = (key: string, value: string) => {
-    localStorage.setItem(key, value);
-    sessionStorage.setItem(key, value);
+  const setItem = (itemKey: string, value: string) => {
+    localStorage.setItem(itemKey, value);
+    sessionStorage.setItem(itemKey, value);
   };
-  const getItem = (key: string): string => {
-    const value = sessionStorage.getItem(key);
+  const getItem = (itemKey: string): string => {
+    const value = sessionStorage.getItem(itemKey);
     if (value === null) {
-      return localStorage.getItem(key);
+      return localStorage.getItem(itemKey);
     }
     return value;
   };

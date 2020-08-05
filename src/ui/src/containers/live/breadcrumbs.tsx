@@ -160,21 +160,23 @@ const LiveViewBreadcrumbs = ({ classes }) => {
       if (!input) {
         return scriptIds.map((scriptId) => ({ value: scriptId }));
       }
-      return scriptIds.filter((id) => id.indexOf(input) >= 0).map((scriptId) => ({ value: scriptId }));
+      return scriptIds
+        .filter((scriptId) => scriptId.indexOf(input) >= 0)
+        .map((scriptId) => ({ value: scriptId }));
     },
     onSelect: (newVal) => {
       const script = scripts.get(newVal);
-      const vis = parseVis(script.vis);
+      const selectedVis = parseVis(script.vis);
       const execArgs = {
         liveViewPage: entityPageForScriptId(newVal),
         pxl: script.code,
         id: newVal,
-        args: argsForVis(vis, {
+        args: argsForVis(selectedVis, {
           // Grab the namespace if it exists on a service or pod argument.
           namespace: optionallyGetNamespace(args),
           ...args,
         }),
-        vis,
+        vis: selectedVis,
       };
       setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
       if (!ContainsMutation(execArgs.pxl)) {

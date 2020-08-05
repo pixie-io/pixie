@@ -342,12 +342,12 @@ const Canvas = (props: CanvasProps) => {
   let displayGrid = null;
 
   if (charts.length === 0) {
-    const { layout, numCols, rowHeight } = addTableLayout(Object.keys(tables), defaultLayout, isMobile, defaultHeight);
+    const tableLayout = addTableLayout(Object.keys(tables), defaultLayout, isMobile, defaultHeight);
     displayGrid = (
       <Grid
-        layout={layout}
-        rowHeight={rowHeight - theme.spacing(5)}
-        cols={numCols}
+        layout={tableLayout.layout}
+        rowHeight={tableLayout.rowHeight - theme.spacing(5)}
+        cols={tableLayout.numCols}
         className={clsx(classes.grid, errorOpen && error && classes.blur)}
         onLayoutChange={updateDefaultLayout}
         isDraggable={props.editable}

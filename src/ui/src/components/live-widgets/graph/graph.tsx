@@ -143,8 +143,8 @@ export const Graph = (props: GraphProps) => {
   // Load the graph.
   React.useEffect(() => {
     if (dot) {
-      const data = parseDOTNetwork(dot);
-      setGraph(data);
+      const dotData = parseDOTNetwork(dot);
+      setGraph(dotData);
       return;
     }
 

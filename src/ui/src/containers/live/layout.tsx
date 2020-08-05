@@ -67,8 +67,8 @@ export function addLayout(visSpec: Vis): Vis {
       const positions = defaultWidgetPositions(visSpec.widgets.length);
       return {
         ...visSpec,
-        widgets: visSpec.widgets.map((widget, i) => ({
-          ...widget,
+        widgets: visSpec.widgets.map((curWidget, i) => ({
+          ...curWidget,
           position: positions[i],
         })),
       };

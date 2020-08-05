@@ -244,10 +244,10 @@ const ScriptContextProvider = (props) => {
   };
 
   // Logic to commit the URL to the history.
-  const commitURL = (liveViewPage: LiveViewPage, id: string, args: Arguments) => {
+  const commitURL = (page: LiveViewPage, urlId: string, urlArgs: Arguments) => {
     // Only show the script as a query arg when we are not on an entity page.
-    const scriptId = liveViewPage === LiveViewPage.Default ? (id || '') : '';
-    const nonEntityArgs = getNonEntityParams(liveViewPage, args);
+    const scriptId = page === LiveViewPage.Default ? (urlId || '') : '';
+    const nonEntityArgs = getNonEntityParams(page, urlArgs);
     urlParams.commitAll(scriptId, '', nonEntityArgs);
   };
 

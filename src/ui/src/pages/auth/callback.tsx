@@ -59,8 +59,8 @@ export const AuthCallbackPage = () => {
 
   React.useEffect(() => {
     const setErr = (errType: ErrorType, errMsg: string) => {
-      setConfig((config) => ({
-        ...config,
+      setConfig((c) => ({
+        ...c,
         err: {
           errorType: errType,
           errMessage: errMsg,
@@ -175,8 +175,8 @@ export const AuthCallbackPage = () => {
             }
         }
 
-        setConfig((config) => ({
-          ...config,
+        setConfig((c) => ({
+          ...c,
           loading: false,
         }));
       };

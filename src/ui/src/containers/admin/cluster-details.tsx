@@ -215,14 +215,12 @@ const formatPodStatus = ({
   message,
   reason,
   statusGroup: podStatusGroup(status),
-  containers: containers.map(({
-    name, state, message, reason,
-  }) => ({
-    name,
-    state,
-    message,
-    reason,
-    statusGroup: containerStatusGroup(state),
+  containers: containers.map((container) => ({
+    name: container.name,
+    state: container.state,
+    message: container.message,
+    reason: container.reason,
+    statusGroup: containerStatusGroup(container.state),
   })),
 });
 
@@ -278,32 +276,30 @@ const ExpandablePodRow = withStyles((theme: Theme) => ({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {containers.map(({
-                    name, state, message, reason, statusGroup,
-                  }) => (
+                  {containers.map((container) => (
                     // Fragment shorthand syntax does not support key, which is needed to prevent
                     // the console error where a key is not present in a list element.
                     // eslint-disable-next-line react/jsx-fragments
-                    <React.Fragment key={name}>
+                    <React.Fragment key={container.name}>
                       <TableRow key={`${name}-info`}>
-                        <AdminTooltip title={state}>
+                        <AdminTooltip title={container.state}>
                           <StyledSmallLeftTableCell>
-                            <StatusCell statusGroup={statusGroup} />
+                            <StatusCell statusGroup={container.statusGroup} />
                           </StyledSmallLeftTableCell>
                         </AdminTooltip>
-                        <StyledSmallRightTableCell>{name}</StyledSmallRightTableCell>
+                        <StyledSmallRightTableCell>{container.name}</StyledSmallRightTableCell>
                       </TableRow>
                       <TableRow key={`${name}-details`}>
                         <TableCell style={{ border: 0 }} colSpan={2}>
                           <div className={classes.messageAndReason}>
                             Container message:
                             {' '}
-                            {message || none}
+                            {container.message || none}
                           </div>
                           <div className={classes.messageAndReason}>
                             Container reason:
                             {' '}
-                            {reason || none}
+                            {container.reason || none}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -324,7 +320,7 @@ const ControlPlanePodsTable = ({ selectedClusterName }) => {
   if (loading) {
     return <div>Loading</div>;
   }
-  const cluster = data?.clusters.find((cluster) => cluster.clusterName === selectedClusterName);
+  const cluster = data?.clusters.find((c) => c.clusterName === selectedClusterName);
   if (!cluster) {
     return (
       <div>

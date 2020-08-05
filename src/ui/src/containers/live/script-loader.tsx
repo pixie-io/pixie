@@ -49,12 +49,15 @@ export function ScriptLoader() {
   React.useEffect(() => {
     // TODO(nserrino): refactor this legacy code to reduce duplication with ScriptContext.
     // (matchLiveViewEntity et al).
-    const subscription = urlParams.onChange.subscribe(({ scriptId, pathname, args }) => {
+    const subscription = urlParams.onChange.subscribe((urlInfo) => {
+      const { pathname } = urlInfo;
+      const urlArgs = urlInfo.args;
+      const urlScriptId = urlInfo.scriptId;
       scriptPromise.then((scripts) => {
         const entity = matchLiveViewEntity(pathname);
-        const id = entity.page === LiveViewPage.Default ? scriptId : LiveViewPageScriptIds.get(entity.page);
+        const selectedId = entity.page === LiveViewPage.Default ? urlScriptId : LiveViewPageScriptIds.get(entity.page);
 
-        if (!scripts.has(id)) {
+        if (!scripts.has(selectedId)) {
           setLoadState((state) => {
             if (state !== 'unloaded') {
               return state;
@@ -64,16 +67,15 @@ export function ScriptLoader() {
           return;
         }
 
-        const { vis, code } = scripts.get(id);
-
-        const parsedVis = parseVis(vis);
-        const parsedArgs = argsForVis(parsedVis, { ...args, ...entity.params }, id);
+        const script = scripts.get(selectedId);
+        const parsedVis = parseVis(script.vis);
+        const parsedArgs = argsForVis(parsedVis, { ...urlArgs, ...entity.params }, selectedId);
         const execArgs = {
           liveViewPage: entity.page,
-          pxl: code,
+          pxl: script.code,
           vis: parsedVis,
           args: parsedArgs,
-          id,
+          id: selectedId,
           skipURLUpdate: true,
         };
         clearResults();
