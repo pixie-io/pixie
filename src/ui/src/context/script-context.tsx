@@ -331,9 +331,9 @@ const ScriptContextProvider = (props) => {
         if (queryResults) {
           const newTables = {};
           ({ queryId } = queryResults);
-          for (const table of queryResults.tables) {
+          queryResults.tables.forEach((table) => {
             newTables[table.name] = table;
-          }
+          });
           setResults({ tables: newTables, stats: queryResults.executionStats });
         }
       }).catch((e) => {

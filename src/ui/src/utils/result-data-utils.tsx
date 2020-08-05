@@ -60,7 +60,7 @@ export function dataFromProto(
 
   const colRelations = relation.getColumnsList();
 
-  for (const batch of data) {
+  data.forEach((batch) => {
     const rows = [];
     for (let i = 0; i < batch.getNumRows(); i++) {
       rows.push({});
@@ -73,6 +73,6 @@ export function dataFromProto(
       });
     });
     results.push(...rows);
-  }
+  });
   return results;
 }

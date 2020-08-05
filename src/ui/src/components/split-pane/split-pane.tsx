@@ -61,9 +61,9 @@ export const SplitContainer = (props: React.PropsWithChildren<SplitContainerProp
   const initialSizes = React.useMemo(() => {
     if (props.initialSizes && props.initialSizes.length === children.length) {
       let sum = 0;
-      for (const size of props.initialSizes) {
+      props.initialSizes.forEach((size) => {
         sum += size;
-      }
+      });
       if (Math.round(sum) === 100) {
         return props.initialSizes;
       }

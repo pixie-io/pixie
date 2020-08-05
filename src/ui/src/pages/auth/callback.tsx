@@ -14,14 +14,13 @@ const redirectPost = (url, data) => {
   document.body.appendChild(form);
   form.method = 'post';
   form.action = url;
-  // eslint-disable-next-line guard-for-in
-  for (const name in data) {
+  Object.entries(data).forEach(([name, val]: [string, string]) => {
     const input = document.createElement('input');
     input.type = 'hidden';
     input.name = name;
-    input.value = data[name];
+    input.value = val;
     form.appendChild(input);
-  }
+  });
   form.submit();
 };
 

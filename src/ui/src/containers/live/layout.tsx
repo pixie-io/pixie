@@ -62,14 +62,15 @@ function mobileWidgetPositions(numWidgets: number) {
 
 // addLayout is only called in the non-mobile case.
 export function addLayout(visSpec: Vis): Vis {
-  for (const widget of visSpec.widgets) {
+  for (let i = 0; i < visSpec.widgets.length; ++i) {
+    const widget = visSpec.widgets[i];
     if (!widget.position) {
       const positions = defaultWidgetPositions(visSpec.widgets.length);
       return {
         ...visSpec,
-        widgets: visSpec.widgets.map((curWidget, i) => ({
+        widgets: visSpec.widgets.map((curWidget, j) => ({
           ...curWidget,
-          position: positions[i],
+          position: positions[j],
         })),
       };
     }

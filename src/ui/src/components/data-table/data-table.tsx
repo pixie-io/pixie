@@ -239,10 +239,9 @@ const InternalDataTable = ({
     });
 
     const ratio: {[dataKey: string]: number} = {};
-    // eslint-disable-next-line guard-for-in
-    for (const colsWidthKey in colsWidth) {
+    Object.keys(colsWidth).forEach((colsWidthKey) => {
       ratio[colsWidthKey] = colsWidth[colsWidthKey] / totalWidth;
-    }
+    });
     return ratio;
   }, [columns, rowGetter, rowCount]);
 

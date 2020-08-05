@@ -30,9 +30,9 @@ export function GetPxScripts(orgName: string): Promise<Script[]> {
     url: bundlePath,
   }).then((response) => {
     const scripts = [];
-    for (const [id, s] of Object.entries(response.data.scripts as ScriptJSON[])) {
+    Object.entries(response.data.scripts as ScriptJSON[]).forEach(([id, s]) => {
       if (s.orgName && orgName !== s.orgName) {
-        continue;
+        return;
       }
       scripts.push({
         id,
@@ -42,7 +42,7 @@ export function GetPxScripts(orgName: string): Promise<Script[]> {
         description: s.LongDoc,
         hidden: s.hidden,
       });
-    }
+    });
     return scripts;
   });
 }

@@ -82,9 +82,9 @@ const LiveViewShortcuts = (props: LiveViewShortcutsProps) => {
   const keyMap: KeyMap = React.useMemo(getKeyMap, []);
   const actionSequences = React.useMemo(() => {
     const map = {};
-    for (const key of Object.keys(keyMap)) {
+    Object.keys(keyMap).forEach((key) => {
       map[key] = keyMap[key].sequence;
-    }
+    });
     return map;
   }, [keyMap]);
 
@@ -96,9 +96,9 @@ const LiveViewShortcuts = (props: LiveViewShortcutsProps) => {
     const wrappedHandlers = {
       'show-help': toggleOpenHelp,
     };
-    for (const action of Object.keys(props.handlers)) {
+    Object.keys(props.handlers).forEach((action) => {
       wrappedHandlers[action] = handlerWrapper(props.handlers[action]);
-    }
+    });
     return wrappedHandlers;
   }, [props.handlers, toggleOpenHelp]);
 
@@ -172,10 +172,10 @@ const LiveViewShortcutsHelp = (props: LiveViewShortcutsHelpProps) => {
     let sequence: React.ReactNode;
     if (Array.isArray(shortcut.displaySequence)) {
       const keys = [];
-      for (const key of shortcut.displaySequence) {
+      shortcut.displaySequence.forEach((key) => {
         keys.push(makeKey(key));
         keys.push('+');
-      }
+      });
       keys.pop();
       sequence = keys;
     } else {

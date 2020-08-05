@@ -92,16 +92,16 @@ const minMaxTimes = (hoverData: ValidHoverDatum[]): { minTime: number; maxTime: 
 
 const keyAvgs = (hoverData: ValidHoverDatum[]): { [key: string]: number } => {
   const keyedAvgState: { [key: string]: { sum: number; n: number } } = {};
-  for (const datum of hoverData) {
-    for (const [key, val] of Object.entries(datum)) {
-      if (key === 'time') { continue; }
+  hoverData.forEach((datum) => {
+    Object.entries(datum).forEach(([key, val]) => {
+      if (key === 'time') { return; }
       if (!keyedAvgState[key]) {
         keyedAvgState[key] = { sum: 0.0, n: 0 };
       }
       keyedAvgState[key].sum += val;
       keyedAvgState[key].n += 1;
-    }
-  }
+    });
+  });
   return _.mapValues(keyedAvgState, (state: { sum: number; n: number }) => {
     if (state.n === 0) {
       return 0.0;
@@ -112,12 +112,12 @@ const keyAvgs = (hoverData: ValidHoverDatum[]): { [key: string]: number } => {
 
 const buildTimeHashMap = (hoverData: ValidHoverDatum[], sortBy: (key: string) => number): TimeHashMap => {
   const timeHashMap: TimeHashMap = {};
-  for (const datum of hoverData) {
+  hoverData.forEach((datum) => {
     const rest: UnformattedLegendEntry[] = Object.entries(datum).map((entry) => ({ key: entry[0], val: entry[1] }))
       .filter((item) => item.key !== 'time' && item.key !== 'sum');
     const sortedRest = _.sortBy(rest, (item) => sortBy(item.key));
     timeHashMap[datum.time] = sortedRest;
-  }
+  });
   return timeHashMap;
 };
 
@@ -134,12 +134,12 @@ export const buildHoverDataCache = (hoverData): HoverDataCache => {
     const hoverDatum: ValidHoverDatum = {
       time: time_,
     };
-    for (const [key, val] of Object.entries(rest)) {
+    Object.entries(rest).forEach(([key, val]) => {
       if (!isNumber(val)) {
-        continue;
+        return;
       }
       hoverDatum[key] = val;
-    }
+    });
     return hoverDatum;
   }).filter((datum) => datum);
 

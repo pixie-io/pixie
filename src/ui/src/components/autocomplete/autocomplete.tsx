@@ -79,7 +79,8 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
   React.useEffect(() => {
     getCompletions(inputValue).then((cmpls) => {
       setCompletions(cmpls);
-      for (const completion of cmpls) {
+      for (let i = 0; i < cmpls.length; ++i) {
+        const completion = cmpls[i];
         const cmpl = completion as CompletionItem;
         if (cmpl.title && cmpl.id) {
           setActiveItem(cmpl.id);

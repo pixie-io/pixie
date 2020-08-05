@@ -35,15 +35,16 @@ export function argsForVis(vis: Vis, args: Arguments, scriptId?: string): Argume
   if (!vis) {
     return {};
   }
+  let inArgs = args;
   if (!args) {
-    args = {};
+    inArgs = {};
   }
   for (const variable of vis.variables) {
-    const val = args[variable.name] != null ? args[variable.name] : variable.defaultValue;
+    const val = inArgs[variable.name] != null ? inArgs[variable.name] : variable.defaultValue;
     outArgs[variable.name] = val;
   }
-  if (args.script) {
-    outArgs.script = args.script;
+  if (inArgs.script) {
+    outArgs.script = inArgs.script;
   }
   if (scriptId) {
     outArgs.script = scriptId;

@@ -86,7 +86,8 @@ const Completions: React.FC<CompletionsProps> = (props) => {
   const classes = useStyles();
 
   const description = (() => {
-    for (const item of items) {
+    for (let i = 0; i < items.length; ++i) {
+      const item = items[i];
       if (item.type === 'item' && item.id === activeItem) {
         return item.description || null;
       }
@@ -161,7 +162,8 @@ const CompletionInternal = (props: CompletionProps) => {
   const parts = [];
   const ref = React.createRef<HTMLDivElement>();
   let remainingIdx = 0;
-  for (const start of highlights) {
+
+  highlights.forEach((start) => {
     const prev = title.substring(remainingIdx, start);
     if (prev) {
       parts.push(<span key={`title-${remainingIdx}`}>{prev}</span>);
@@ -171,7 +173,7 @@ const CompletionInternal = (props: CompletionProps) => {
       parts.push(<span key={`title-${start}`} className={classes.highlight}>{highlight}</span>);
     }
     remainingIdx = start + 1;
-  }
+  });
   if (remainingIdx < title.length) {
     parts.push(
       <span key={`title-${remainingIdx}`}>

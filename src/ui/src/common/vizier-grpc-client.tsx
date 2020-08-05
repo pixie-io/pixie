@@ -213,16 +213,16 @@ export class VizierGRPCClient {
       const execFuncPb = new ExecuteScriptRequest.FuncToExecute();
       execFuncPb.setFuncName(input.name);
       execFuncPb.setOutputTablePrefix(input.outputTablePrefix);
-      for (const arg of input.args) {
+      input.args.forEach((arg) => {
         const argValPb = new ExecuteScriptRequest.FuncToExecute.ArgValue();
         argValPb.setName(arg.name);
         if (typeof arg.value !== 'string') {
           errors.push(new VizierQueryError('vis', `No value provided for arg ${arg.name}.`));
-          continue;
+          return;
         }
         argValPb.setValue(arg.value);
         execFuncPb.addArgValues(argValPb);
-      }
+      });
       req.addExecFuncs(execFuncPb);
     });
 
