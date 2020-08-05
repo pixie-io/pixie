@@ -239,6 +239,14 @@ class UDATraits {
    */
   static constexpr bool HasInit() { return has_udf_init_fn<T>::value; }
 
+  /**
+   * @brief Whether this UDA supports a partial aggregate representation
+   * TODO(zasgar) figure out how UDA says it supports partial.
+   * @return true
+   * @return false
+   */
+  static constexpr bool SupportsPartial() { return false; }
+
  private:
   /**
    * Static asserts to validate that the UDA is well formed.

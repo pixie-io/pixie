@@ -13,11 +13,13 @@ message UDASpec {
   string name = 1;
   // Will be an empty list if there is no init function.
   repeated pl.types.DataType init_arg_types = 2;
-  // The argument types of the update function. UDAs are allowed to overload based on
-  // these types.
+  // The argument types of the update function. UDAs are allowed to overload
+  // based on these types.
   repeated pl.types.DataType update_arg_types = 3;
   // The argument types of the finalize return.
   pl.types.DataType finalize_type = 4;
+  // Whether the UDA function can be run as part of a partial aggregate.
+  bool supports_partial = 5;
 }
 
 // ScalarUDFSpec stores the specification of a single UDF.
@@ -69,7 +71,8 @@ message UDTFSourceSpec {
 
   // Name of the UDTFSource.
   string name = 1;
-  // The types of the arguments of the UDTFSource. Must be the same length as arg_names.
+  // The types of the arguments of the UDTFSource. Must be the same length as
+  // arg_names.
   repeated Arg args = 2;
   // Which agents the table function should execute on.
   UDTFSourceExecutor executor = 3;
@@ -85,13 +88,15 @@ enum UDFExecType {
 message SemanticInferenceRule {
   string name = 1;
   UDFExecType udf_exec_type = 2;
-  // Note that for all arg types (init, update or exec), ST_NONE will match any semantic type.
+  // Note that for all arg types (init, update or exec), ST_NONE will match any
+  // semantic type.
   repeated pl.types.SemanticType init_arg_types = 3;
   // If this applies to a UDA then this will only have update_arg_types.
   // If it applies to a UDF then this will only have exec_arg_types.
   repeated pl.types.SemanticType update_arg_types = 4;
   repeated pl.types.SemanticType exec_arg_types = 5;
 
-  // This might turn into a repeated or something in the future, if we support non-scalar udfs/udas.
+  // This might turn into a repeated or something in the future, if we support
+  // non-scalar udfs/udas.
   pl.types.SemanticType output_type = 6;
 }

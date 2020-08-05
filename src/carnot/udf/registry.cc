@@ -55,6 +55,7 @@ void Registry::ToProto(const UDADefinition& def, udfspb::UDASpec* spec) {
   *spec->mutable_update_arg_types() = {update_argument.begin(), update_argument.end()};
   spec->set_finalize_type(def.finalize_return_type());
   spec->set_name(def.name());
+  spec->set_supports_partial(def.supports_partial());
 }
 
 namespace {

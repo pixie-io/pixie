@@ -154,6 +154,8 @@ class UDADefinition : public UDFDefinition {
     merge_fn_ = UDAWrapper<T>::Merge;
     finalize_arrow_fn_ = UDAWrapper<T>::FinalizeArrow;
     finalize_value_fn = UDAWrapper<T>::FinalizeValue;
+
+    supports_partial_ = UDAWrapper<T>::SupportsPartial;
     return Status::OK();
   }
 
@@ -163,6 +165,8 @@ class UDADefinition : public UDFDefinition {
 
   const std::vector<types::DataType>& update_arguments() const { return update_arguments_; }
   types::DataType finalize_return_type() const { return finalize_return_type_; }
+
+  bool supports_partial() const { return supports_partial_; }
 
   std::unique_ptr<UDA> Make() { return make_fn_(); }
 
@@ -186,6 +190,7 @@ class UDADefinition : public UDFDefinition {
  private:
   std::vector<types::DataType> update_arguments_;
   types::DataType finalize_return_type_;
+  bool supports_partial_;
 
   std::function<std::unique_ptr<UDA>()> make_fn_;
   std::function<Status(UDA* uda, FunctionContext* ctx,

@@ -249,6 +249,7 @@ Status UpdateWrapperArrow(TUDA* uda, FunctionContext* ctx, size_t count,
 template <typename TUDA>
 struct UDAWrapper {
   static constexpr types::DataType return_type = UDATraits<TUDA>::FinalizeReturnType();
+  static constexpr bool SupportsPartial = UDATraits<TUDA>::SupportsPartial();
 
   /**
    * Create a new UDA.
