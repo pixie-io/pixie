@@ -156,7 +156,7 @@ StatusOr<std::vector<DWARFDie>> DwarfReader::GetMatchingDIEs(std::string_view na
   DCHECK(dwarf_context_ != nullptr);
   std::vector<DWARFDie> dies;
 
-  // Special case for types that are indexed (currently only struct types);
+  // Special case for types that are indexed.
   if (type.has_value() && !die_map_.empty()) {
     llvm::dwarf::Tag tag = type.value();
     if (IsIndexedType(tag)) {
@@ -173,7 +173,6 @@ StatusOr<std::vector<DWARFDie>> DwarfReader::GetMatchingDIEs(std::string_view na
 
   // When there is no index, fall-back to manual search.
   PL_RETURN_IF_ERROR(GetMatchingDIEs(dwarf_context_->normal_units(), name, type, &dies));
-  // TODO(oazizi): Might want to consider dwarf_context_->dwo_units() as well.
 
   return dies;
 }
@@ -382,7 +381,6 @@ StatusOr<VarInfo> DwarfReader::GetStructMemberInfo(std::string_view struct_name,
   PL_ASSIGN_OR_RETURN(const DWARFDie& struct_die,
                       GetMatchingDIE(struct_name, llvm::dwarf::DW_TAG_structure_type));
 
-  // TODO(oazizi): This pattern repeats. Create a helper function to find the child.
   for (const auto& die : struct_die.children()) {
     if ((die.getTag() == llvm::dwarf::DW_TAG_member) &&
         (die.getName(llvm::DINameKind::ShortName) == member_name)) {

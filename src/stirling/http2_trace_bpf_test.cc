@@ -207,5 +207,157 @@ TEST_F(HTTP2TraceTest, Basic) {
   }
 }
 
+class ProductCatalogService : public ContainerRunner {
+ public:
+  ProductCatalogService() : ContainerRunner(kImage, kInstanceNamePrefix, kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kImage =
+      "gcr.io/google-samples/microservices-demo/productcatalogservice:v0.2.0";
+  static constexpr std::string_view kInstanceNamePrefix = "pcs";
+  static constexpr std::string_view kReadyMessage = "starting grpc server";
+};
+
+class ProductCatalogClient : public ContainerRunner {
+ public:
+  ProductCatalogClient()
+      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "demos/applications/hipster_shop/productcatalogservice_client/"
+      "productcatalogservice_client_image.tar";
+  static constexpr std::string_view kInstanceNamePrefix = "pcc";
+  static constexpr std::string_view kReadyMessage = "";
+};
+
+class ProductCatalogServiceTraceTest
+    : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {
+ protected:
+  ProductCatalogServiceTraceTest() {
+    // Run the server.
+    // The container runner will make sure it is in the ready state before unblocking.
+    // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
+    // Note that this step will make an access to docker hub to  download the HTTP image.
+    PL_CHECK_OK(server_.Run(60, {}));
+
+    FLAGS_stirling_enable_parsing_protobufs = true;
+  }
+
+  ~ProductCatalogServiceTraceTest() {
+    server_.Stop();
+    client_.Stop();
+  }
+
+  ProductCatalogService server_;
+  ProductCatalogClient client_;
+};
+
+TEST_F(ProductCatalogServiceTraceTest, Basic) {
+  // Run the client in the network of the server, so they can connect to each other.
+  PL_CHECK_OK(
+      client_.Run(10, {absl::Substitute("--network=container:$0", server_.container_name())}));
+  client_.Wait();
+
+  // We do not expect this sleep to be required, but it appears to be necessary for Jenkins.
+  sleep(3);
+
+  // Grab the data from Stirling.
+  DataTable data_table(kHTTPTable);
+  source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  ASSERT_FALSE(tablets.empty());
+  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+
+  {
+    const std::vector<size_t> target_record_indices =
+        FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, server_.process_pid());
+
+    // For Debug:
+    for (const auto& idx : target_record_indices) {
+      uint32_t pid = record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(idx).High64();
+      std::string req_path = record_batch[kHTTPReqPathIdx]->Get<types::StringValue>(idx);
+      std::string req_method = record_batch[kHTTPReqMethodIdx]->Get<types::StringValue>(idx);
+      std::string req_body = record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(idx);
+
+      int resp_status = record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(idx).val;
+      std::string resp_message = record_batch[kHTTPRespMessageIdx]->Get<types::StringValue>(idx);
+      std::string resp_body = record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(idx);
+      LOG(INFO) << absl::Substitute("$0 $1 $2 $3 $4 $5 $6", pid, req_method, req_path, req_body,
+                                    resp_status, resp_message, resp_body);
+    }
+
+    std::vector<http::Record> records = ToRecordVector(record_batch, target_record_indices);
+
+    EXPECT_EQ(records.size(), 3);
+
+    http::Record expected_record1 = {};
+    expected_record1.req.req_path = "/hipstershop.ProductCatalogService/ListProducts";
+    expected_record1.req.req_method = "POST";
+    expected_record1.req.body = R"()";
+    expected_record1.resp.resp_status = 200;
+    expected_record1.resp.resp_message = "OK";
+    expected_record1.resp.body = R"(products {
+  id: "OLJCESPC7Z"
+  name: "Vintage Typewriter"
+  description: "This typewriter looks good in your living room."
+  picture: "/static/img/products/typewriter.jpg"
+  price_usd {
+    currency_code: "USD"
+    units: 67
+    nanos: 990000000
+  }
+  categories: "vintage"
+}
+products {
+  id: "66VCHSJNUP"
+  name: "Vintage Camera Lens"
+  description: "You won\'t have a camera to use it and it probably doesn\'t work anyway."
+  picture: "/static/img/products/camera-lens.jpg"
+  price_usd {
+    currency_code: "U... [TRUNCATED])";
+
+    http::Record expected_record2 = {};
+    expected_record2.req.req_path = "/hipstershop.ProductCatalogService/GetProduct";
+    expected_record2.req.req_method = "POST";
+    expected_record2.req.body = R"(id: "OLJCESPC7Z")";
+    expected_record2.resp.resp_status = 200;
+    expected_record2.resp.resp_message = "OK";
+    expected_record2.resp.body = R"(id: "OLJCESPC7Z"
+name: "Vintage Typewriter"
+description: "This typewriter looks good in your living room."
+picture: "/static/img/products/typewriter.jpg"
+price_usd {
+  currency_code: "USD"
+  units: 67
+  nanos: 990000000
+}
+categories: "vintage")";
+
+    http::Record expected_record3 = {};
+    expected_record3.req.req_path = "/hipstershop.ProductCatalogService/SearchProducts";
+    expected_record3.req.req_method = "POST";
+    expected_record3.req.body = R"(query: "typewriter")";
+    expected_record3.resp.resp_status = 200;
+    expected_record3.resp.resp_message = "OK";
+    expected_record3.resp.body = R"(results {
+  id: "OLJCESPC7Z"
+  name: "Vintage Typewriter"
+  description: "This typewriter looks good in your living room."
+  picture: "/static/img/products/typewriter.jpg"
+  price_usd {
+    currency_code: "USD"
+    units: 67
+    nanos: 990000000
+  }
+  categories: "vintage"
+})";
+
+    EXPECT_THAT(records, Contains(EqHTTPRecord(expected_record1)));
+    EXPECT_THAT(records, Contains(EqHTTPRecord(expected_record2)));
+    EXPECT_THAT(records, Contains(EqHTTPRecord(expected_record3)));
+  }
+}
+
 }  // namespace stirling
 }  // namespace pl

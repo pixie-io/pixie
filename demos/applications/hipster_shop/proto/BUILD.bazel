@@ -1,5 +1,5 @@
 # gazelle:ignore
-package(default_visibility = ["//demos/applications/hipster_shop:__pkg__"])
+package(default_visibility = ["//visibility:public"])
 
 load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
 

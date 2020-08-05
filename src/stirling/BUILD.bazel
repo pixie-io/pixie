@@ -169,8 +169,8 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
-        "//src/stirling/testing:cc_library",
         "//src/stirling/obj_tools/testdata:dummy_exe_fixture",
+        "//src/stirling/testing:cc_library",
     ],
 )
 
@@ -272,8 +272,8 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
-        "//src/stirling/testing:cc_library",
         "//src/stirling/http/testing:go_http_fixture",
+        "//src/stirling/testing:cc_library",
     ],
 )
 
@@ -389,8 +389,10 @@ pl_cc_test(
 
 pl_cc_test(
     name = "http2_trace_bpf_test",
+    timeout = "moderate",
     srcs = ["http2_trace_bpf_test.cc"],
     data = [
+        "//demos/applications/hipster_shop/productcatalogservice_client:productcatalogservice_client_image.tar",
         "//demos/client_server_apps/go_grpc_tls_pl/client:client_image.tar",
         "//demos/client_server_apps/go_grpc_tls_pl/server:server_image.tar",
     ],

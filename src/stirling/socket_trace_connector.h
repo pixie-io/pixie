@@ -282,8 +282,10 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   Status UpdateHTTP2SymAddrs(
       std::string_view binary, elf_tools::ElfReader* elf_reader, const std::vector<int32_t>& pids,
       ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map);
-  Status UpdateHTTP2TypeAddrs(elf_tools::ElfReader* elf_reader, struct conn_symaddrs_t* symaddrs);
-  Status UpdateHTTP2DebugSymbols(std::string_view binary, struct conn_symaddrs_t* symaddrs);
+  Status UpdateHTTP2TypeAddrs(elf_tools::ElfReader* elf_reader, std::string_view vendor_prefix,
+                              struct conn_symaddrs_t* symaddrs);
+  Status UpdateHTTP2DebugSymbols(std::string_view binary, std::string_view vendor_prefix,
+                                 struct conn_symaddrs_t* symaddrs);
 
   StatusOr<int> AttachUProbeTmpl(const ArrayView<bpf_tools::UProbeTmpl>& probe_tmpls,
                                  const std::string& binary, elf_tools::ElfReader* elf_reader);

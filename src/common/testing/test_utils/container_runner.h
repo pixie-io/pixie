@@ -64,7 +64,12 @@ class ContainerRunner {
    * Note that short-lived containers may return -1,
    * as there may not have been enough time to grab the PID after running.
    */
-  int process_pid() { return process_pid_; }
+  int process_pid() {
+    // If this ever returns -1, then the caller is either using it incorrectly,
+    // or a race has occurred in obtaining the PID. Either way, DCHECK so we can track it down.
+    DCHECK_NE(process_pid_, -1);
+    return process_pid_;
+  }
 
   /**
    * Instance name of the container.

@@ -206,7 +206,7 @@ std::optional<int64_t> ElfReader::SymbolAddress(std::string_view symbol) {
       return symbol_infos.front().address;
     }
   }
-  return {};
+  return std::nullopt;
 }
 
 namespace {
