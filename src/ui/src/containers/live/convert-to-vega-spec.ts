@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
+/* eslint-disable no-param-reassign */
 import { Theme } from '@material-ui/core/styles';
 import { addPxTimeFormatExpression } from 'components/live-widgets/vega/timeseries-axis';
 import * as _ from 'lodash';
@@ -46,6 +47,7 @@ const LINE_WIDTH = 1.0;
 const HIGHLIGHTED_LINE_WIDTH = 3.0;
 const SELECTED_LINE_OPACITY = 1.0;
 const UNSELECTED_LINE_OPACITY = 0.2;
+const AREA_MARK_OPACITY = 0.4;
 const AXIS_HEIGHT = 25;
 // Padding between bars, specified as fraction of step size.
 const BAR_PADDING = 0.5;
@@ -822,7 +824,10 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
     if (timeseries.series) {
       extendMarkEncoding(lineMark, 'update', {
         stroke: { scale: colorScale.name, field: timeseries.series },
-        ...((markType === 'area') ? { fill: { scale: colorScale.name, field: timeseries.series } } : {}),
+        ...((markType === 'area') ? {
+          fill: { scale: colorScale.name, field: timeseries.series },
+          fillOpacity: { value: AREA_MARK_OPACITY },
+        } : {}),
       });
     } else {
       extendMarkEncoding(lineMark, 'update', {
