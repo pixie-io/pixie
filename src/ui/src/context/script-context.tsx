@@ -27,7 +27,6 @@ import {
   LiveViewPageScriptIds, matchLiveViewEntity, toEntityPathname,
 } from '../components/live-widgets/utils/live-view-params';
 
-import { DataDrawerContext } from './data-drawer-context';
 import { ResultsContext } from './results-context';
 import { LayoutContext } from './layout-context';
 
@@ -117,7 +116,6 @@ const ScriptContextProvider = (props) => {
   const { selectedClusterName, setClusterByName, selectedClusterPrettyName } = React.useContext(ClusterContext);
   const { client, healthy } = React.useContext(ClientContext);
   const { setResults, setLoading, loading } = React.useContext(ResultsContext);
-  const { openDrawerTab } = React.useContext(DataDrawerContext);
   const { editorPanelOpen } = React.useContext(LayoutContext);
   const showSnackbar = useSnackbar();
 

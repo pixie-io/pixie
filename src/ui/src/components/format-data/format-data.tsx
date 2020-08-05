@@ -1,5 +1,4 @@
 import * as React from 'react';
-import clsx from 'clsx';
 import { createStyles, Theme, withStyles } from '@material-ui/core/styles';
 import { formatBoolData, formatFloat64Data } from 'utils/format-data';
 import { GaugeLevel, getCPULevel, getLatencyLevel } from 'utils/metric-thresholds';

@@ -4,7 +4,7 @@ import {
 } from 'components/data-table';
 import { JSONData } from 'components/format-data/format-data';
 import * as React from 'react';
-import { DataType, Relation, SemanticType } from 'types/generated/vizier_pb';
+import { DataType, SemanticType } from 'types/generated/vizier_pb';
 import noop from 'utils/noop';
 import { dataFromProto } from 'utils/result-data-utils';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';

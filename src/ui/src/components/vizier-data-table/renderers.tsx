@@ -9,7 +9,7 @@ import {
 import QuantilesBoxWhisker, {
   SelectedPercentile,
 } from 'components/quantiles-box-whisker/quantiles-box-whisker';
-import { DataType, Relation, SemanticType } from 'types/generated/vizier_pb';
+import { DataType, SemanticType } from 'types/generated/vizier_pb';
 import { Arguments } from 'utils/args-utils';
 import {
   getDataRenderer, looksLikeAlertCol, looksLikeCPUCol, looksLikeLatencyCol,

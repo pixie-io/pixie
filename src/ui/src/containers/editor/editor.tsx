@@ -1,13 +1,10 @@
-import clsx from 'clsx';
 import { CodeEditor } from 'components/code-editor';
 import LazyPanel from 'components/lazy-panel';
 import * as React from 'react';
-import Split from 'react-split';
-import { triggerResize } from 'utils/resize';
 import ResizableDrawer from 'components/drawer/resizable-drawer';
 
 import {
-  createStyles, makeStyles, Theme, useTheme, withStyles,
+  createStyles, makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
@@ -169,13 +166,7 @@ const LiveViewEditor = () => {
 };
 
 export const EditorSplitPanel = (props) => {
-  const classes = useStyles();
-  const {
-    editorPanelOpen,
-    editorSplitsSizes,
-    setEditorPanelOpen,
-    setEditorSplitSizes,
-  } = React.useContext(LayoutContext);
+  const { editorPanelOpen } = React.useContext(LayoutContext);
 
   return (
     <ResizableDrawer

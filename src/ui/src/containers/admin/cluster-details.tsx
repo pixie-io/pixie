@@ -5,7 +5,6 @@ import ClientContext, {
 } from 'common/vizier-grpc-client-context';
 import PixieBreadcrumbs from 'components/breadcrumbs/breadcrumbs';
 import { StatusCell, StatusGroup } from 'components/status/status';
-import ProfileMenu from 'containers/profile-menu/profile-menu';
 import { distanceInWords } from 'date-fns';
 import gql from 'graphql-tag';
 import { useHistory, useParams } from 'react-router';
@@ -14,9 +13,7 @@ import { dataFromProto } from 'utils/result-data-utils';
 
 import { useQuery } from '@apollo/react-hooks';
 
-import {
-  createStyles, makeStyles, Theme, withStyles,
-} from '@material-ui/core/styles';
+import { Theme, withStyles } from '@material-ui/core/styles';
 import Breadcrumbs from '@material-ui/core/Breadcrumbs';
 import IconButton from '@material-ui/core/IconButton';
 import Table from '@material-ui/core/Table';

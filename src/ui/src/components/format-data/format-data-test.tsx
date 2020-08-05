@@ -1,6 +1,4 @@
-import { MuiThemeProvider } from '@material-ui/core';
 import { getClasses } from '@material-ui/core/test-utils';
-import { DARK_THEME } from 'common/mui-theme';
 import { mount } from 'enzyme';
 import * as React from 'react';
 import { AlertData, JSONData, LatencyData } from './format-data';
