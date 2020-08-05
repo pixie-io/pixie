@@ -137,11 +137,12 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
   };
 
   const onRowSelect = React.useCallback((rowIndex) => {
+    let newRowIndex = rowIndex;
     if (rowIndex === selectedRow) {
-      rowIndex = -1;
+      newRowIndex = -1;
     }
-    setSelectedRow(rowIndex);
-    onRowSelectionChanged(rows[rowIndex]);
+    setSelectedRow(newRowIndex);
+    onRowSelectionChanged(rows[newRowIndex]);
   }, [rows, selectedRow, onRowSelectionChanged]);
 
   if (rows.length === 0) {

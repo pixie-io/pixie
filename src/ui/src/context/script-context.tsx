@@ -212,11 +212,12 @@ const ScriptContextProvider = (props) => {
   // Note that this function does not update args, so it should only be called
   // when variables will not be modified (such as for layouts).
   const setVis = (newVis: Vis) => {
+    let visToSet = newVis;
     if (!newVis) {
-      newVis = emptyVis();
+      visToSet = emptyVis();
     }
-    setVisJSONBase(toJSON(newVis));
-    setVisBase(newVis);
+    setVisJSONBase(toJSON(visToSet));
+    setVisBase(visToSet);
   };
 
   const setVisDebounce = React.useRef(debounce((newJSON: string) => {
@@ -258,8 +259,9 @@ const ScriptContextProvider = (props) => {
     mutation: boolean,
     numTries: number) => (
     client.executeScript(execArgs.pxl, funcs, mutation).then(async (queryResults) => {
+      let triesLeft = numTries;
       // If the results are from a mutation, we should wait and retry if the mutation is still pending.
-      if (numTries <= 0) {
+      if (triesLeft <= 0) {
         setResults({ tables: {}, error: new VizierQueryError('execution', 'Deploying tracepoints failed') });
         return null;
       }
@@ -270,13 +272,13 @@ const ScriptContextProvider = (props) => {
           new Promise((resolve) => setTimeout(resolve, mutationRetryMs)),
           new Promise((resolve) => {
             const cancel = () => (() => {
-              numTries = 0;
+              triesLeft = 0;
               resolve();
             });
             setCancelExecution(cancel);
           }),
         ]);
-        return executeScriptUntilMutationCompletion(execArgs, funcs, mutation, numTries - 1);
+        return executeScriptUntilMutationCompletion(execArgs, funcs, mutation, triesLeft - 1);
       }
       return queryResults;
     }));
@@ -336,7 +338,8 @@ const ScriptContextProvider = (props) => {
           }
           setResults({ tables: newTables, stats: queryResults.executionStats });
         }
-      }).catch((error) => {
+      }).catch((e) => {
+        let error = e;
         if (Array.isArray(error) && error.length) {
           error = error[0];
         }

@@ -137,11 +137,12 @@ export function getQueryFuncs(vis: Vis, variableValues: { [key: string]: string 
     ...variableValues,
   };
 
+  let visGlobalFuncs = vis.globalFuncs;
   if (!vis.globalFuncs) {
-    vis.globalFuncs = [];
+    visGlobalFuncs = [];
   }
 
-  const globalFuncs = vis.globalFuncs.map((globalFunc) => ({
+  const globalFuncs = visGlobalFuncs.map((globalFunc) => ({
     name: globalFunc.func.name,
     // There shouldn't be any confusion over this name, outputName is a required field
     // and should be validated before reaching this point.
