@@ -83,7 +83,6 @@
         "no-restricted-syntax": 0,
         "no-continue": 0,
         "no-plusplus": 0,
-        "consistent-return": 0,
         "function-paren-newline": 0,
         "react/jsx-props-no-spreading": 0,
         "react/destructuring-assignment": 0,

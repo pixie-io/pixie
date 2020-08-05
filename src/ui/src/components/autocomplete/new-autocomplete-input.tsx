@@ -188,14 +188,9 @@ const Caret: React.FC<{ active: boolean }> = ({ active }) => {
   const [visible, setVisible] = React.useState(true);
   React.useEffect(() => {
     if (!active) { return; }
-
-    const intervalSub = setInterval(() => {
+    setInterval(() => {
       setVisible((show) => !show);
     }, BLINK_INTERVAL);
-
-    return () => {
-      clearInterval(intervalSub);
-    };
   }, [active]);
   return (
     <div className={clsx(classes.caret, active && visible && 'visible')}>&nbsp;</div>);

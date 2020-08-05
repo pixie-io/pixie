@@ -68,7 +68,7 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
     if (updatedTabStops !== null) {
       setTabStops(updatedTabStops);
       setIsValid(false);
-      return;
+      return null;
     }
 
     return client.query({

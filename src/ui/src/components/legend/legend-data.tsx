@@ -144,7 +144,7 @@ export const buildHoverDataCache = (hoverData): HoverDataCache => {
   }).filter((datum) => datum);
 
   if (validEntries.length === 0) {
-    return;
+    return null;
   }
 
   const { minTime, maxTime } = minMaxTimes(validEntries);

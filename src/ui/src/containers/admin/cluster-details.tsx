@@ -145,12 +145,8 @@ const AgentsTable = () => {
     if (!client) {
       return;
     }
-    let mounted = true;
     const fetchAgentStatus = () => {
       client.executeScript(AGENT_STATUS_SCRIPT, [], false).then((results) => {
-        if (!mounted) {
-          return;
-        }
         if (results.tables.length !== 1) {
           if (results.status) {
             setState({ ...state, error: results.status.getMessage() });
@@ -160,18 +156,10 @@ const AgentsTable = () => {
         const data = dataFromProto(results.tables[0].relation, results.tables[0].data);
         setState({ data });
       }).catch((error) => {
-        if (!mounted) {
-          return;
-        }
         setState({ ...state, error: error?.message });
       });
     };
     fetchAgentStatus();
-    const interval = setInterval(fetchAgentStatus, AGENTS_POLL_INTERVAL);
-    return () => {
-      clearInterval(interval);
-      mounted = false;
-    };
   }, [client, state]);
 
   if (state.error) {
