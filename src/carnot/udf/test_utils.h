@@ -125,6 +125,15 @@ class UDATester {
     return *this;
   }
 
+  types::StringValue Serialize() { return uda_.Serialize(/*ctx*/ nullptr); }
+
+  Status Deserialize(const types::StringValue& data) {
+    TUDA other;
+    PL_RETURN_IF_ERROR(other.Deserialize(/*ctx*/ nullptr, data));
+    uda_.Merge(nullptr, other);
+    return Status::OK();
+  }
+
  private:
   TUDA uda_;
 };

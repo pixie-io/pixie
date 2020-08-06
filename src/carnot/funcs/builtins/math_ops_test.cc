@@ -6,6 +6,7 @@
 #include "src/carnot/funcs/builtins/math_ops.h"
 #include "src/carnot/udf/test_utils.h"
 #include "src/common/base/base.h"
+#include "src/common/base/test_utils.h"
 
 namespace pl {
 namespace carnot {
@@ -550,6 +551,16 @@ TEST(MathOps, merge_count_test) {
   uda_tester.Merge(other_uda_tester).Expect(9);
 }
 
+// TODO(michelle): We should make UDA tester automatically check Merge and Partial aggregates if
+// more than one input is given. Since our UDAs are arithmetic the ordering should not matter.
+TEST(MathOps, partial_count_test) {
+  auto uda_tester = udf::UDATester<CountUDA<types::Int64Value>>();
+  uda_tester.ForInput(3).ForInput(6).ForInput(10).ForInput(5).ForInput(2);
+  auto uda_tester2 = udf::UDATester<CountUDA<types::Int64Value>>();
+
+  EXPECT_OK(uda_tester2.Deserialize(uda_tester.Serialize()));
+  uda_tester2.Expect(5);
+}
 }  // namespace builtins
 }  // namespace carnot
 }  // namespace pl

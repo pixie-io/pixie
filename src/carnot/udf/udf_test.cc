@@ -112,6 +112,8 @@ class UDAWithBadFinalize2 : UDA {
   types::Int64Value Finalize() { return 0; }
 };
 
+TEST(UDA, no_partial) { EXPECT_FALSE(UDATraits<UDA1>::SupportsPartial()); }
+
 TEST(UDA, bad_merge_fn) {
   EXPECT_TRUE((false == IsValidMergeFn(&UDAWithBadMerge1::Merge)));
   EXPECT_TRUE((false == IsValidMergeFn(&UDAWithBadMerge2::Merge)));
@@ -136,6 +138,40 @@ TEST(UDA, valid_uda) {
   EXPECT_THAT(UDATraits<UDA1WithInit>::UpdateArgumentTypes(),
               ElementsAre(types::DataType::INT64, types::DataType::FLOAT64));
 }
+
+class UDAWithBadSerDes : UDA {
+ public:
+  Status Init(FunctionContext*) { return Status::OK(); }
+  void Update(FunctionContext*, types::Int64Value) {}
+  void Merge(FunctionContext*, const UDAWithBadSerDes&) {}
+  types::Int64Value Finalize(FunctionContext*) { return 0; }
+
+  Status Serialize() { return Status::OK(); }
+  Status Deserialize() { return Status::OK(); }
+};
+
+TEST(UDA, bad_serialize_fn) { EXPECT_FALSE(IsValidSerializeFn(&UDAWithBadSerDes::Serialize)); }
+
+TEST(UDA, bad_deserialize_fn) {
+  EXPECT_FALSE(IsValidDeserializeFn(&UDAWithBadSerDes::Deserialize));
+}
+
+class UDAWithSerdes : UDA {
+ public:
+  Status Init(FunctionContext*) { return Status::OK(); }
+  void Update(FunctionContext*, types::Int64Value) {}
+  void Merge(FunctionContext*, const UDAWithSerdes&) {}
+  types::Int64Value Finalize(FunctionContext*) { return 0; }
+
+  StringValue Serialize(FunctionContext*) { return StringValue(); }
+  Status Deserialize(FunctionContext*, const StringValue&) { return Status::OK(); }
+};
+
+TEST(UDA, serialize_fn) { EXPECT_TRUE(IsValidSerializeFn(&UDAWithSerdes::Serialize)); }
+
+TEST(UDA, deserialize_fn) { EXPECT_TRUE(IsValidDeserializeFn(&UDAWithSerdes::Deserialize)); }
+
+TEST(UDA, serdes_uda_traits) { EXPECT_TRUE(UDATraits<UDAWithSerdes>::SupportsPartial()); }
 
 TEST(BoolValue, value_tests) {
   // Test constructor init.

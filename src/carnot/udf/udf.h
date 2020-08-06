@@ -76,6 +76,10 @@ class ScalarUDF : public AnyUDF {
  * It may optionally implement:
  *     Status Init(FunctionContext *ctx, InitArgs...) {}
  *
+ * To support partial aggregation to UDAs must also implement:
+ *     StringValue Serialize(FunctionContext*) {}
+ *     Status DeSerialize(FunctionContext*, const StringValue& data) {}
+ *
  * All argument types must me valid UDFValueTypes.
  */
 class UDA : public AnyUDA {
@@ -84,7 +88,6 @@ class UDA : public AnyUDA {
 };
 
 // SFINAE test for init fn.
-// TODO(zasgar): We really want to also test the argument/return types.
 template <typename T, typename = void>
 struct has_udf_init_fn : std::false_type {};
 
@@ -224,6 +227,55 @@ static constexpr bool IsValidFinalizeFn(ReturnType (TUDA::*)(FunctionContext*)) 
 }
 
 /**
+ * Checks to see if a valid looking Serialize Function exists.
+ */
+template <typename ReturnType, typename TUDA, typename... Types>
+static constexpr bool IsValidSerializeFn(ReturnType (TUDA::*)(Types...)) {
+  return false;
+}
+
+template <typename TUDA>
+static constexpr bool IsValidSerializeFn(types::StringValue (TUDA::*)(FunctionContext*)) {
+  return true;
+}
+
+/**
+ * Checks to see if a valid looking Deserialize Function exists.
+ */
+template <typename ReturnType, typename TUDA, typename... Types>
+static constexpr bool IsValidDeserializeFn(ReturnType (TUDA::*)(Types...)) {
+  return false;
+}
+
+template <typename TUDA>
+static constexpr bool IsValidDeserializeFn(Status (TUDA::*)(FunctionContext*,
+                                                            const types::StringValue&)) {
+  return true;
+}
+
+// SFINAE test for serialize fn.
+template <typename T, typename = void>
+struct has_uda_serialize_fn : std::false_type {};
+
+template <typename T>
+struct has_uda_serialize_fn<T, std::void_t<decltype(&T::Serialize)>> : std::true_type {
+  static_assert(IsValidSerializeFn(&T::Serialize),
+                "If a serialize function exists it must have the form: StringValue "
+                "Serialize(FunctionContext*)");
+};
+
+// SFINAE test for deserialize fn.
+template <typename T, typename = void>
+struct has_uda_deserialize_fn : std::false_type {};
+
+template <typename T>
+struct has_uda_deserialize_fn<T, std::void_t<decltype(&T::Deserialize)>> : std::true_type {
+  static_assert(IsValidDeserializeFn(&T::Deserialize),
+                "If an Deseriazlie functions exists it must have the form: Status "
+                "Deserialize(FunctionContext*, const StringValue&)");
+};
+
+/**
  * ScalarUDFTraits allows access to compile time traits of a given UDA.
  * @tparam T A class that derives from UDA.
  */
@@ -241,11 +293,12 @@ class UDATraits {
 
   /**
    * @brief Whether this UDA supports a partial aggregate representation
-   * TODO(zasgar) figure out how UDA says it supports partial.
    * @return true
    * @return false
    */
-  static constexpr bool SupportsPartial() { return false; }
+  static constexpr bool SupportsPartial() {
+    return has_uda_serialize_fn<T>() && has_uda_deserialize_fn<T>();
+  }
 
  private:
   /**

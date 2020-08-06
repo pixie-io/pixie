@@ -253,6 +253,15 @@ class CountUDA : public udf::UDA {
   void Merge(FunctionContext*, const CountUDA& other) { count_ += other.count_; }
   Int64Value Finalize(FunctionContext*) { return count_; }
 
+  StringValue Serialize(FunctionContext*) {
+    return StringValue(reinterpret_cast<char*>(&count_), sizeof(count_));
+  }
+
+  Status Deserialize(FunctionContext*, const StringValue& data) {
+    count_ = *reinterpret_cast<const uint64_t*>(data.data());
+    return Status::OK();
+  }
+
  protected:
   uint64_t count_ = 0;
 };
