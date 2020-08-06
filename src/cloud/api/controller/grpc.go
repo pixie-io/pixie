@@ -454,7 +454,7 @@ func (a *AutocompleteServer) Autocomplete(ctx context.Context, req *cloudapipb.A
 		return nil, err
 	}
 
-	fmtString, executable, suggestions, err := autocomplete.Autocomplete(req.Input, int(req.CursorPos), req.Action, a.Suggester, orgID)
+	fmtString, executable, suggestions, err := autocomplete.Autocomplete(req.Input, int(req.CursorPos), req.Action, a.Suggester, orgID, req.ClusterUID)
 	if err != nil {
 		return nil, err
 	}
@@ -489,6 +489,7 @@ func (a *AutocompleteServer) AutocompleteField(ctx context.Context, req *cloudap
 			Input:        req.Input,
 			AllowedKinds: []cloudapipb.AutocompleteEntityKind{req.FieldType},
 			AllowedArgs:  allowedArgs,
+			ClusterUID:   req.ClusterUID,
 		},
 	}
 	suggestions, err := a.Suggester.GetSuggestions(suggestionReq)

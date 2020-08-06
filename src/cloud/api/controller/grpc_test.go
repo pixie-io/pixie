@@ -461,12 +461,14 @@ func TestAutocompleteService_Autocomplete(t *testing.T) {
 		[]*autocomplete.SuggestionRequest{
 			&autocomplete.SuggestionRequest{
 				OrgID:        orgID,
+				ClusterUID:   "test",
 				Input:        "px/svc_info",
 				AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE, cloudapipb.AEK_SCRIPT},
 				AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 			},
 			&autocomplete.SuggestionRequest{
 				OrgID:        orgID,
+				ClusterUID:   "test",
 				Input:        "pl/test",
 				AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE, cloudapipb.AEK_SCRIPT},
 				AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -515,9 +517,10 @@ func TestAutocompleteService_Autocomplete(t *testing.T) {
 	}
 
 	resp, err := autocompleteServer.Autocomplete(ctx, &cloudapipb.AutocompleteRequest{
-		Input:     "px/svc_info pl/test",
-		CursorPos: 0,
-		Action:    cloudapipb.AAT_EDIT,
+		Input:      "px/svc_info pl/test",
+		CursorPos:  0,
+		Action:     cloudapipb.AAT_EDIT,
+		ClusterUID: "test",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
@@ -540,6 +543,7 @@ func TestAutocompleteService_AutocompleteField(t *testing.T) {
 		[]*autocomplete.SuggestionRequest{
 			&autocomplete.SuggestionRequest{
 				OrgID:        orgID,
+				ClusterUID:   "test",
 				Input:        "px/svc_info",
 				AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
 				AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -575,8 +579,9 @@ func TestAutocompleteService_AutocompleteField(t *testing.T) {
 	}
 
 	resp, err := autocompleteServer.AutocompleteField(ctx, &cloudapipb.AutocompleteFieldRequest{
-		Input:     "px/svc_info",
-		FieldType: cloudapipb.AEK_SVC,
+		Input:      "px/svc_info",
+		FieldType:  cloudapipb.AEK_SVC,
+		ClusterUID: "test",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)

@@ -30,6 +30,7 @@ var mdEntities = []md.EsMDEntity{
 	},
 	md.EsMDEntity{
 		OrgID:              org1.String(),
+		ClusterUID:         "test",
 		UID:                "svc2",
 		Name:               "testService",
 		NS:                 "anotherNS",
@@ -266,6 +267,31 @@ func TestGetSuggestions(t *testing.T) {
 						&autocomplete.Suggestion{
 							Name: "anotherNS/test-Pod",
 							Kind: cloudapipb.AEK_POD,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "cluster UID",
+			reqs: []*autocomplete.SuggestionRequest{
+				&autocomplete.SuggestionRequest{
+					Input:      "test",
+					ClusterUID: "test",
+					OrgID:      org1,
+					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
+						cloudapipb.AEK_SVC, cloudapipb.AEK_POD,
+					},
+					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+				},
+			},
+			expectedResults: []*autocomplete.SuggestionResult{
+				&autocomplete.SuggestionResult{
+					ExactMatch: false,
+					Suggestions: []*autocomplete.Suggestion{
+						&autocomplete.Suggestion{
+							Name: "anotherNS/testService",
+							Kind: cloudapipb.AEK_SVC,
 						},
 					},
 				},

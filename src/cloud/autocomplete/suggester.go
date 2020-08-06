@@ -45,6 +45,7 @@ func NewElasticSuggester(client *elastic.Client, mdIndex string, scriptIndex str
 // SuggestionRequest is a request for autocomplete suggestions.
 type SuggestionRequest struct {
 	OrgID        uuid.UUID
+	ClusterUID   string
 	Input        string
 	AllowedKinds []cloudapipb.AutocompleteEntityKind
 	AllowedArgs  []cloudapipb.AutocompleteEntityKind
@@ -97,7 +98,7 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 	for _, r := range reqs {
 		ms.Add(elastic.NewSearchRequest().
 			Highlight(highlight).
-			Query(e.getQueryForRequest(r.OrgID, r.Input, r.AllowedKinds, r.AllowedArgs)))
+			Query(e.getQueryForRequest(r.OrgID, r.ClusterUID, r.Input, r.AllowedKinds, r.AllowedArgs)))
 	}
 
 	resp, err := ms.Do(context.Background())
@@ -215,16 +216,16 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 	return resps, nil
 }
 
-func (e *ElasticSuggester) getQueryForRequest(orgID uuid.UUID, input string, allowedKinds []cloudapipb.AutocompleteEntityKind, allowedArgs []cloudapipb.AutocompleteEntityKind) *elastic.BoolQuery {
+func (e *ElasticSuggester) getQueryForRequest(orgID uuid.UUID, clusterUID string, input string, allowedKinds []cloudapipb.AutocompleteEntityKind, allowedArgs []cloudapipb.AutocompleteEntityKind) *elastic.BoolQuery {
 	q := elastic.NewBoolQuery()
 
-	q.Should(e.getMDEntityQuery(orgID, input, allowedKinds))
+	q.Should(e.getMDEntityQuery(orgID, clusterUID, input, allowedKinds))
 
 	// TODO(michelle): Add script query here once that is ready: q.Should(e.getScriptQuery(orgID, input, allowedArgs))
 	return q
 }
 
-func (e *ElasticSuggester) getMDEntityQuery(orgID uuid.UUID, input string, allowedKinds []cloudapipb.AutocompleteEntityKind) *elastic.BoolQuery {
+func (e *ElasticSuggester) getMDEntityQuery(orgID uuid.UUID, clusterUID string, input string, allowedKinds []cloudapipb.AutocompleteEntityKind) *elastic.BoolQuery {
 	entityQuery := elastic.NewBoolQuery()
 	entityQuery.Must(elastic.NewTermQuery("_index", e.mdIndexName))
 
@@ -242,6 +243,10 @@ func (e *ElasticSuggester) getMDEntityQuery(orgID uuid.UUID, input string, allow
 	// Only search for entities in org.
 	entityQuery.Must(elastic.NewTermQuery("orgID", orgID.String()))
 
+	if clusterUID != "" {
+		entityQuery.Must(elastic.NewTermQuery("clusterUID", clusterUID))
+	}
+
 	// Only search for allowed kinds.
 	kindsQuery := elastic.NewBoolQuery()
 	for _, k := range allowedKinds {
@@ -252,7 +257,7 @@ func (e *ElasticSuggester) getMDEntityQuery(orgID uuid.UUID, input string, allow
 	return entityQuery
 }
 
-func (e *ElasticSuggester) getScriptQuery(orgID uuid.UUID, input string, allowedArgs []cloudapipb.AutocompleteEntityKind) *elastic.BoolQuery {
+func (e *ElasticSuggester) getScriptQuery(orgID uuid.UUID, clusterUID string, input string, allowedArgs []cloudapipb.AutocompleteEntityKind) *elastic.BoolQuery {
 	// TODO(michelle): Handle scripts once we get a better idea of what the index looks like.
 	scriptQuery := elastic.NewBoolQuery()
 	scriptQuery.Must(elastic.NewTermQuery("_index", "scripts"))

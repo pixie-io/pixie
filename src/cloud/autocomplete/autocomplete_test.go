@@ -29,6 +29,7 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "px/svc_info",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -37,6 +38,7 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "pl/test",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -93,6 +95,7 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "px/svc_info",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -101,6 +104,7 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "pl/test",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -162,6 +166,7 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "px/svc_info",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -170,6 +175,7 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "pl/test",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -226,6 +232,7 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "px/svc_info",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -234,6 +241,7 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "pl/test",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -290,12 +298,14 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "px/svc_info",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE, cloudapipb.AEK_SCRIPT},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD},
 					},
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "pl/test",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD},
@@ -349,6 +359,7 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "px/svc_info",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -357,6 +368,7 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "pl/test",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -413,6 +425,7 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "px/svc_info",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -421,12 +434,14 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "pl/test",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 					},
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "test",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -499,6 +514,7 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "px/svc_info",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -507,12 +523,14 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "pl/test",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 					},
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -584,6 +602,7 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "px/svc_info",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -592,12 +611,14 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 					},
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -669,6 +690,7 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "px/svc_info",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -677,12 +699,14 @@ func TestParseIntoCommand(t *testing.T) {
 				[]*autocomplete.SuggestionRequest{
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "pl/test",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 					},
 					&autocomplete.SuggestionRequest{
 						OrgID:        orgID,
+						ClusterUID:   "test",
 						Input:        "test",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
@@ -761,7 +785,7 @@ func TestParseIntoCommand(t *testing.T) {
 				}).
 				Times(len(test.requests))
 
-			cmd, err := autocomplete.ParseIntoCommand(test.input, s, orgID)
+			cmd, err := autocomplete.ParseIntoCommand(test.input, s, orgID, "test")
 			assert.Nil(t, err)
 			assert.NotNil(t, cmd)
 
