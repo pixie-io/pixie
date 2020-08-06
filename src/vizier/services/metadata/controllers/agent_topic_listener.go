@@ -206,7 +206,7 @@ func (a *AgentTopicListener) onAgentRegisterRequest(m *messages.RegisterAgentReq
 
 		for _, tracepoint := range tracepoints {
 			if tracepoint.ExpectedState != statuspb.TERMINATED_STATE {
-				err = a.tracepointManager.RegisterTracepoint(agentIDs, utils.UUIDFromProtoOrNil(tracepoint.ID), tracepoint.Program)
+				err = a.tracepointManager.RegisterTracepoint(agentIDs, utils.UUIDFromProtoOrNil(tracepoint.ID), tracepoint.Tracepoint)
 				if err != nil {
 					log.WithError(err).Error("Failed to send RegisterTracepoint request")
 				}

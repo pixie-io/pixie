@@ -74,7 +74,7 @@ message CompileMutation {
   oneof mutation {
     // Trace contains the compiled Dynamic Trace definition passed in by the
     // request.
-    stirling.dynamic_tracing.ir.logical.Program trace = 2;
+    stirling.dynamic_tracing.ir.logical.TracepointDeployment trace = 2;
 
     // Mutation that deletes a tracepoint.
     DeleteTracepoint delete_tracepoint = 3;

@@ -66,7 +66,7 @@ probes: {
 TEST(DynamicTracerTest, Compile) {
   std::string input_program_str = absl::Substitute(
       kLogicalProgramSpec, pl::testing::BazelBinTestFilePath(kBinaryPath).string());
-  ir::logical::Program input_program;
+  ir::logical::TracepointDeployment input_program;
   ASSERT_TRUE(TextFormat::ParseFromString(input_program_str, &input_program));
 
   ASSERT_OK_AND_ASSIGN(BCCProgram bcc_program, CompileProgram(input_program));

@@ -29,7 +29,7 @@ using ::testing::Gt;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
-using LogicalProgram = ::pl::stirling::dynamic_tracing::ir::logical::Program;
+using LogicalProgram = ::pl::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
 
 enum class TargetKind {
   kBinaryPath,

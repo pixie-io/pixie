@@ -1329,7 +1329,7 @@ func (mds *KVMetadataStore) GetSubscriberResourceVersion(sub string) (string, er
 	return string(resp), nil
 }
 
-/* =============== Tracepoint Operations ============== */
+/* =============== TracepointDeployment Operations ============== */
 
 // GetTracepointWithName gets which tracepoint is associated with the given name.
 func (mds *KVMetadataStore) GetTracepointsWithNames(tracepointNames []string) ([]*uuid.UUID, error) {

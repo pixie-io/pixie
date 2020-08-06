@@ -80,7 +80,7 @@ void ProbeIR::AddReturnValue(const std::string& id, const std::string& expr) {
 }
 
 std::shared_ptr<ProbeIR> DynamicTraceIR::StartProbe(
-    stirling::dynamic_tracing::ir::shared::BinarySpec::Language language,
+    stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language,
     const std::string& function_name) {
   auto probe_ir = std::make_shared<ProbeIR>(language, function_name);
   probes_pool_.push_back(probe_ir);
@@ -107,8 +107,9 @@ Status TracingProgram::AddProbe(ProbeIR* probe_ir, const std::string& probe_name
     if (probe_ir->language() != language_) {
       return error::InvalidArgument(
           "Cannot add '$1' tracer to '$0' tracing program. Multiple languages not supported.",
-          stirling::dynamic_tracing::ir::shared::BinarySpec_Language_Name(language_),
-          stirling::dynamic_tracing::ir::shared::BinarySpec_Language_Name(probe_ir->language()));
+          stirling::dynamic_tracing::ir::shared::DeploymentSpec_Language_Name(language_),
+          stirling::dynamic_tracing::ir::shared::DeploymentSpec_Language_Name(
+              probe_ir->language()));
     }
   } else {
     language_ = probe_ir->language();
@@ -152,7 +153,8 @@ StatusOr<ProbeIR*> DynamicTraceIR::GetCurrentProbeOrError(const pypa::AstPtr& as
   return current_probe_.get();
 }
 
-Status TracingProgram::ToProto(stirling::dynamic_tracing::ir::logical::Program* pb) const {
+Status TracingProgram::ToProto(
+    stirling::dynamic_tracing::ir::logical::TracepointDeployment* pb) const {
   auto binary_spec = pb->mutable_binary_spec();
   // TODO(philkuz/oazizi) need to pass in from query.
   binary_spec->set_language(language_);

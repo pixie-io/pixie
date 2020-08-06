@@ -15,7 +15,7 @@ namespace carnot {
 namespace planner {
 namespace compiler {
 
-StatusOr<stirling::dynamic_tracing::ir::logical::Program> CompileTracepoint(
+StatusOr<stirling::dynamic_tracing::ir::logical::TracepointDeployment> CompileTracepoint(
     std::string_view query) {
   // Create a dummy compiler state; it doesn't affect the tracepoint compilation.
   // TODO(oazizi): Try inserting nullptr for registry_info.

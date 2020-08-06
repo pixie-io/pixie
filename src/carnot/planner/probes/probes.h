@@ -49,7 +49,7 @@ class ProbeOutput {
 
 class ProbeIR {
  public:
-  ProbeIR(stirling::dynamic_tracing::ir::shared::BinarySpec::Language language,
+  ProbeIR(stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language,
           const std::string& function_name)
       : language_(language), symbol_(function_name) {}
 
@@ -135,10 +135,12 @@ class ProbeIR {
   void SetOutputName(const std::string& output_name);
 
   std::shared_ptr<ProbeOutput> output() const { return output_; }
-  stirling::dynamic_tracing::ir::shared::BinarySpec::Language language() const { return language_; }
+  stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language() const {
+    return language_;
+  }
 
  private:
-  stirling::dynamic_tracing::ir::shared::BinarySpec::Language language_;
+  stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language_;
   std::string symbol_;
   std::string latency_col_id_;
   std::vector<stirling::dynamic_tracing::ir::logical::Argument> args_;
@@ -156,7 +158,7 @@ class TracingProgram {
    * @param pb
    * @return Status errors if they happen.
    */
-  Status ToProto(stirling::dynamic_tracing::ir::logical::Program* pb) const;
+  Status ToProto(stirling::dynamic_tracing::ir::logical::TracepointDeployment* pb) const;
 
   /**
    * @brief Add a Probe to the current program being traced.
@@ -175,7 +177,7 @@ class TracingProgram {
   std::vector<stirling::dynamic_tracing::ir::logical::Probe> probes_;
   std::vector<stirling::dynamic_tracing::ir::logical::Output> outputs_;
   absl::flat_hash_map<std::string, stirling::dynamic_tracing::ir::logical::Output*> output_map_;
-  stirling::dynamic_tracing::ir::shared::BinarySpec::Language language_;
+  stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language_;
 };
 
 class DynamicTraceIR {
@@ -187,7 +189,7 @@ class DynamicTraceIR {
    * @return std::shared_ptr<ProbeIR>
    */
   std::shared_ptr<ProbeIR> StartProbe(
-      stirling::dynamic_tracing::ir::shared::BinarySpec::Language language,
+      stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language,
       const std::string& function_name);
 
   /**

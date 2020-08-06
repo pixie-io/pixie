@@ -185,12 +185,12 @@ std::string GenRegister(const ScalarVariable& var) {
 // TODO(yzhao/oazizi): Consider making this a member variable to avoid passing language directly.
 //                     Currently deferring this because it will break the tests.
 StatusOr<std::vector<std::string>> GenStringMemoryVariable(
-    const ScalarVariable& var, const ir::shared::BinarySpec::Language& language) {
+    const ScalarVariable& var, const ir::shared::DeploymentSpec::Language& language) {
   std::vector<std::string> code_lines;
 
   // TODO(oazizi): Move string variable into a BPF map so that the size can be increased.
   switch (language) {
-    case ir::shared::BinarySpec_Language_GOLANG:
+    case ir::shared::DeploymentSpec_Language_GOLANG:
       code_lines.push_back(absl::Substitute("void* $0_ptr__;", var.name()));
       code_lines.push_back(absl::Substitute("bpf_probe_read(&$0_ptr__, sizeof(void*), $1 + $2);",
                                             var.name(), var.memory().base(),
@@ -224,12 +224,12 @@ StatusOr<std::vector<std::string>> GenStringMemoryVariable(
 
 // TODO(oazizi): Consolidate with GenStringMemoryVariable?
 StatusOr<std::vector<std::string>> GenByteArrayMemoryVariable(
-    const ScalarVariable& var, const ir::shared::BinarySpec::Language& language) {
+    const ScalarVariable& var, const ir::shared::DeploymentSpec::Language& language) {
   std::vector<std::string> code_lines;
 
   // TODO(oazizi): Move string variable into a BPF map so that the size can be increased.
   switch (language) {
-    case ir::shared::BinarySpec_Language_GOLANG:
+    case ir::shared::DeploymentSpec_Language_GOLANG:
       code_lines.push_back(absl::Substitute("void* $0_ptr__;", var.name()));
       code_lines.push_back(absl::Substitute("bpf_probe_read(&$0_ptr__, sizeof(void*), $1 + $2);",
                                             var.name(), var.memory().base(),
@@ -307,7 +307,7 @@ std::string GenBinaryExpression(const ScalarVariable& var) {
 }  // namespace
 
 StatusOr<std::vector<std::string>> GenScalarVariable(
-    const ScalarVariable& var, const ir::shared::BinarySpec::Language& language) {
+    const ScalarVariable& var, const ir::shared::DeploymentSpec::Language& language) {
   switch (var.address_oneof_case()) {
     case ScalarVariable::AddressOneofCase::kReg: {
       std::vector<std::string> code_lines = {GenRegister(var)};
@@ -739,7 +739,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateCodeLines() {
     MOVE_BACK_STR_VEC(GenMap(map), &code_lines);
   }
 
-  if (program_.binary_spec().language() == ir::shared::BinarySpec_Language_GOLANG) {
+  if (program_.binary_spec().language() == ir::shared::DeploymentSpec_Language_GOLANG) {
     // goid() accesses BPF map.
     MoveBackStrVec(GenGOID(), &code_lines);
   }

@@ -105,7 +105,7 @@ TEST(DynamicTraceSource, dynamic_trace_source) {
 
   std::string program_str =
       absl::Substitute(kProgramSpec, pl::testing::BazelBinTestFilePath(kBinaryPath).string());
-  auto trace_program = std::make_unique<dynamic_tracing::ir::logical::Program>();
+  auto trace_program = std::make_unique<dynamic_tracing::ir::logical::TracepointDeployment>();
   ASSERT_TRUE(google::protobuf::TextFormat::ParseFromString(program_str, trace_program.get()));
   sole::uuid trace_id = sole::uuid4();
   stirling->RegisterTracepoint(trace_id, std::move(trace_program));

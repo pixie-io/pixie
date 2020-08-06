@@ -101,9 +101,9 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScr
 				name := mut.Trace.Name
 				registerTracepointsReq.Requests = append(registerTracepointsReq.Requests,
 					&metadatapb.RegisterTracepointRequest_TracepointRequest{
-						Program: mut.Trace,
-						Name:    mut.Trace.Name,
-						TTL:     mut.Trace.TTL,
+						TracepointDeployment: mut.Trace,
+						Name:                 mut.Trace.Name,
+						TTL:                  mut.Trace.TTL,
 					})
 
 				if _, ok := m.activeTracepoints[name]; ok {

@@ -64,7 +64,7 @@ class Dwarvifier {
   Dwarvifier(const std::map<std::string, ir::shared::Map*>& maps,
              const std::map<std::string, ir::physical::PerfBufferOutput*>& outputs)
       : maps_(maps), outputs_(outputs) {}
-  Status Setup(const ir::shared::BinarySpec& binary_spec);
+  Status Setup(const ir::shared::DeploymentSpec& binary_spec);
   Status GenerateProbe(const ir::logical::Probe input_probe, ir::physical::Program* output_program);
 
  private:
@@ -124,7 +124,7 @@ class Dwarvifier {
   // This adjustment factor accounts for that difference.
   static constexpr int32_t kSPOffset = 8;
 
-  ir::shared::BinarySpec::Language language_;
+  ir::shared::DeploymentSpec::Language language_;
   std::vector<std::string> implicit_columns_;
 
   // We use these values as we build temporary variables for expressions.
@@ -142,7 +142,7 @@ std::string StructTypeName(const std::string& obj_name) {
 }
 
 // AddDwarves is the main entry point.
-StatusOr<ir::physical::Program> AddDwarves(const ir::logical::Program& input_program) {
+StatusOr<ir::physical::Program> AddDwarves(const ir::logical::TracepointDeployment& input_program) {
   // Index globals for quick lookups.
   std::map<std::string, ir::shared::Map*> maps;
   std::map<std::string, ir::physical::PerfBufferOutput*> outputs;
@@ -212,7 +212,7 @@ StatusOr<ir::shared::ScalarType> Dwarvifier::VarTypeToProtoScalarType(const VarT
     case VarType::kPointer:
       return ir::shared::ScalarType::VOID_POINTER;
     case VarType::kStruct:
-      if (language_ == ir::shared::BinarySpec_Language_GOLANG) {
+      if (language_ == ir::shared::DeploymentSpec_Language_GOLANG) {
         if (name == "string") {
           return ir::shared::ScalarType::STRING;
         }
@@ -258,7 +258,7 @@ Status Dwarvifier::GenerateProbe(const ir::logical::Probe input_probe,
   return Status::OK();
 }
 
-Status Dwarvifier::Setup(const ir::shared::BinarySpec& binary_spec) {
+Status Dwarvifier::Setup(const ir::shared::DeploymentSpec& binary_spec) {
   using dwarf_tools::DwarfReader;
 
   PL_ASSIGN_OR_RETURN(dwarf_reader_, DwarfReader::Create(binary_spec.path()));
@@ -266,7 +266,7 @@ Status Dwarvifier::Setup(const ir::shared::BinarySpec& binary_spec) {
   language_ = binary_spec.language();
 
   implicit_columns_ = {kTGIDVarName, kTGIDStartTimeVarName, kKTimeVarName};
-  if (language_ == ir::shared::BinarySpec_Language_GOLANG) {
+  if (language_ == ir::shared::DeploymentSpec_Language_GOLANG) {
     implicit_columns_.push_back(kGOIDVarName);
   }
 
@@ -365,7 +365,7 @@ Status Dwarvifier::ProcessSpecialVariables(ir::physical::Probe* output_probe) {
   ktime_var->set_builtin(ir::shared::BPFHelper::KTIME);
 
   // Add goid variable (if this is a go binary).
-  if (language_ == ir::shared::BinarySpec_Language_GOLANG) {
+  if (language_ == ir::shared::DeploymentSpec_Language_GOLANG) {
     auto* goid_var = AddVariable(output_probe, kGOIDVarName, ir::shared::ScalarType::INT64);
     goid_var->set_builtin(ir::shared::BPFHelper::GOID);
   }

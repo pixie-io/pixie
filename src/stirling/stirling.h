@@ -85,7 +85,8 @@ class Stirling : public NotCopyable {
    * Registers probes defined inside a tracing program.
    */
   virtual void RegisterTracepoint(
-      sole::uuid trace_id, std::unique_ptr<dynamic_tracing::ir::logical::Program> program) = 0;
+      sole::uuid trace_id,
+      std::unique_ptr<dynamic_tracing::ir::logical::TracepointDeployment> program) = 0;
 
   /**
    * Returns the status of the probe registration for the trace identified by the input ID.

@@ -13,7 +13,7 @@ namespace dynamic_tracing {
 
 constexpr char kStartKTimeNSVarName[] = "start_ktime_ns";
 
-void CreateMap(const ir::logical::Probe& input_probe, ir::logical::Program* out) {
+void CreateMap(const ir::logical::Probe& input_probe, ir::logical::TracepointDeployment* out) {
   if (input_probe.args().empty()) {
     return;
   }
@@ -21,9 +21,9 @@ void CreateMap(const ir::logical::Probe& input_probe, ir::logical::Program* out)
   stash_map->set_name(input_probe.name() + "_argstash");
 }
 
-ir::shared::BPFHelper GetLanguageThreadID(const ir::shared::BinarySpec::Language& language) {
+ir::shared::BPFHelper GetLanguageThreadID(const ir::shared::DeploymentSpec::Language& language) {
   switch (language) {
-    case ir::shared::BinarySpec_Language_GOLANG:
+    case ir::shared::DeploymentSpec_Language_GOLANG:
       return ir::shared::BPFHelper::GOID;
     default:
       // Default (e.g. C/C++): assume no special runtime.
@@ -40,8 +40,9 @@ bool IsFunctionLatecySpecified(const ir::logical::Probe& probe) {
 
 }  // namespace
 
-void CreateEntryProbe(const ir::shared::BinarySpec::Language& language,
-                      const ir::logical::Probe& input_probe, ir::logical::Program* out) {
+void CreateEntryProbe(const ir::shared::DeploymentSpec::Language& language,
+                      const ir::logical::Probe& input_probe,
+                      ir::logical::TracepointDeployment* out) {
   auto* entry_probe = out->add_probes();
   entry_probe->mutable_trace_point()->CopyFrom(input_probe.trace_point());
   entry_probe->mutable_trace_point()->set_type(ir::shared::TracePoint::ENTRY);
@@ -89,10 +90,10 @@ Status CheckOutputAction(const std::map<std::string_view, ir::logical::Output*>&
   return Status::OK();
 }
 
-Status CreateReturnProbe(const ir::shared::BinarySpec::Language& language,
+Status CreateReturnProbe(const ir::shared::DeploymentSpec::Language& language,
                          const ir::logical::Probe& input_probe,
                          const std::map<std::string_view, ir::logical::Output*>& outputs,
-                         ir::logical::Program* out) {
+                         ir::logical::TracepointDeployment* out) {
   auto* return_probe = out->add_probes();
   return_probe->set_name(input_probe.name() + "_return");
   return_probe->mutable_trace_point()->CopyFrom(input_probe.trace_point());
@@ -148,10 +149,10 @@ Status CreateReturnProbe(const ir::shared::BinarySpec::Language& language,
   return Status::OK();
 }
 
-Status TransformLogicalProbe(const ir::shared::BinarySpec::Language& language,
+Status TransformLogicalProbe(const ir::shared::DeploymentSpec::Language& language,
                              const ir::logical::Probe& input_probe,
                              const std::map<std::string_view, ir::logical::Output*>& outputs,
-                             ir::logical::Program* out) {
+                             ir::logical::TracepointDeployment* out) {
   // A logical probe is allowed to implicitly access arguments and return values.
   // Here we expand this out to be explicit. We break the logical probe into:
   // 1) An entry probe - to grab any potential arguments.
@@ -166,8 +167,9 @@ Status TransformLogicalProbe(const ir::shared::BinarySpec::Language& language,
   return Status::OK();
 }
 
-StatusOr<ir::logical::Program> TransformLogicalProgram(const ir::logical::Program& input_program) {
-  ir::logical::Program out;
+StatusOr<ir::logical::TracepointDeployment> TransformLogicalProgram(
+    const ir::logical::TracepointDeployment& input_program) {
+  ir::logical::TracepointDeployment out;
 
   std::map<std::string_view, ir::logical::Output*> outputs;
 
@@ -188,7 +190,7 @@ StatusOr<ir::logical::Program> TransformLogicalProgram(const ir::logical::Progra
   }
 
   if (!input_program.probes().empty()) {
-    if (input_program.binary_spec().language() == ir::shared::BinarySpec_Language_GOLANG) {
+    if (input_program.binary_spec().language() == ir::shared::DeploymentSpec_Language_GOLANG) {
       out.add_maps()->CopyFrom(GenGOIDMap());
       out.add_probes()->CopyFrom(GenGOIDProbe());
     }

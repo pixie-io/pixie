@@ -25,16 +25,16 @@ import (
 func TestCreateTracepoint(t *testing.T) {
 	tests := []struct {
 		name                    string
-		originalTracepoint      *logicalpb.Program
+		originalTracepoint      *logicalpb.TracepointDeployment
 		originalTracepointState statuspb.LifeCycleState
-		newTracepoint           *logicalpb.Program
+		newTracepoint           *logicalpb.TracepointDeployment
 		expectedError           bool
 		expectOldUpdated        bool
 	}{
 		{
 			name:               "new_tracepoint",
 			originalTracepoint: nil,
-			newTracepoint: &logicalpb.Program{
+			newTracepoint: &logicalpb.TracepointDeployment{
 				Outputs: []*logicalpb.Output{
 					&logicalpb.Output{
 						Name:   "table1",
@@ -46,7 +46,7 @@ func TestCreateTracepoint(t *testing.T) {
 		},
 		{
 			name: "existing tracepoint, no field match",
-			originalTracepoint: &logicalpb.Program{
+			originalTracepoint: &logicalpb.TracepointDeployment{
 				Outputs: []*logicalpb.Output{
 					&logicalpb.Output{
 						Name:   "table1",
@@ -55,7 +55,7 @@ func TestCreateTracepoint(t *testing.T) {
 				},
 			},
 			originalTracepointState: statuspb.RUNNING_STATE,
-			newTracepoint: &logicalpb.Program{
+			newTracepoint: &logicalpb.TracepointDeployment{
 				Outputs: []*logicalpb.Output{
 					&logicalpb.Output{
 						Name:   "table1",
@@ -67,7 +67,7 @@ func TestCreateTracepoint(t *testing.T) {
 		},
 		{
 			name: "existing tracepoint, no output match",
-			originalTracepoint: &logicalpb.Program{
+			originalTracepoint: &logicalpb.TracepointDeployment{
 				Outputs: []*logicalpb.Output{
 					&logicalpb.Output{
 						Name:   "table2",
@@ -80,7 +80,7 @@ func TestCreateTracepoint(t *testing.T) {
 				},
 			},
 			originalTracepointState: statuspb.RUNNING_STATE,
-			newTracepoint: &logicalpb.Program{
+			newTracepoint: &logicalpb.TracepointDeployment{
 				Outputs: []*logicalpb.Output{
 					&logicalpb.Output{
 						Name:   "table1",
@@ -92,7 +92,7 @@ func TestCreateTracepoint(t *testing.T) {
 		},
 		{
 			name: "existing tracepoint, match",
-			originalTracepoint: &logicalpb.Program{
+			originalTracepoint: &logicalpb.TracepointDeployment{
 				Outputs: []*logicalpb.Output{
 					&logicalpb.Output{
 						Name:   "table1",
@@ -101,7 +101,7 @@ func TestCreateTracepoint(t *testing.T) {
 				},
 			},
 			originalTracepointState: statuspb.RUNNING_STATE,
-			newTracepoint: &logicalpb.Program{
+			newTracepoint: &logicalpb.TracepointDeployment{
 				Outputs: []*logicalpb.Output{
 					&logicalpb.Output{
 						Name:   "table1",
@@ -114,7 +114,7 @@ func TestCreateTracepoint(t *testing.T) {
 		{
 			name:                    "existing tracepoint, not exactly same",
 			originalTracepointState: statuspb.RUNNING_STATE,
-			originalTracepoint: &logicalpb.Program{
+			originalTracepoint: &logicalpb.TracepointDeployment{
 				Outputs: []*logicalpb.Output{
 					&logicalpb.Output{
 						Name:   "table1",
@@ -125,7 +125,7 @@ func TestCreateTracepoint(t *testing.T) {
 					&logicalpb.Probe{Name: "test"},
 				},
 			},
-			newTracepoint: &logicalpb.Program{
+			newTracepoint: &logicalpb.TracepointDeployment{
 				Outputs: []*logicalpb.Output{
 
 					&logicalpb.Output{
@@ -140,7 +140,7 @@ func TestCreateTracepoint(t *testing.T) {
 		{
 			name:                    "existing terminated tracepoint",
 			originalTracepointState: statuspb.TERMINATED_STATE,
-			originalTracepoint: &logicalpb.Program{
+			originalTracepoint: &logicalpb.TracepointDeployment{
 				Outputs: []*logicalpb.Output{
 					&logicalpb.Output{
 						Name:   "table1",
@@ -151,7 +151,7 @@ func TestCreateTracepoint(t *testing.T) {
 					&logicalpb.Probe{Name: "test"},
 				},
 			},
-			newTracepoint: &logicalpb.Program{
+			newTracepoint: &logicalpb.TracepointDeployment{
 				Outputs: []*logicalpb.Output{
 					&logicalpb.Output{
 						Name:   "table1",
@@ -187,7 +187,7 @@ func TestCreateTracepoint(t *testing.T) {
 					GetTracepoint(origID).
 					Return(&storepb.TracepointInfo{
 						ExpectedState: test.originalTracepointState,
-						Program:       test.originalTracepoint,
+						Tracepoint:    test.originalTracepoint,
 					}, nil)
 			}
 
@@ -207,7 +207,7 @@ func TestCreateTracepoint(t *testing.T) {
 					DoAndReturn(func(id uuid.UUID, tpInfo *storepb.TracepointInfo) error {
 						newID = id
 						assert.Equal(t, &storepb.TracepointInfo{
-							Program:       test.newTracepoint,
+							Tracepoint:    test.newTracepoint,
 							Name:          "test_tracepoint",
 							ID:            utils.ProtoFromUUID(&id),
 							ExpectedState: statuspb.RUNNING_STATE,
@@ -347,7 +347,7 @@ func TestRegisterTracepoint(t *testing.T) {
 
 	agentUUID := uuid.NewV4()
 	tracepointID := uuid.NewV4()
-	program := &logicalpb.Program{
+	program := &logicalpb.TracepointDeployment{
 		Probes: []*logicalpb.Probe{
 			&logicalpb.Probe{
 				Name: "test",
@@ -367,7 +367,7 @@ func TestRegisterTracepoint(t *testing.T) {
 		req := vzMsg.GetTracepointMessage().GetRegisterTracepointRequest()
 		assert.NotNil(t, req)
 		assert.Equal(t, utils.ProtoFromUUID(&tracepointID), req.ID)
-		assert.Equal(t, program, req.Program)
+		assert.Equal(t, program, req.TracepointDeployment)
 		wg.Done()
 	})
 	assert.Nil(t, err)

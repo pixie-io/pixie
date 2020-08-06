@@ -14,7 +14,7 @@ namespace dynamic_tracing {
  * Transforms any logical probes inside a program into entry and return probes.
  * Also automatically adds any required supporting maps and implicit outputs.
  */
-StatusOr<BCCProgram> CompileProgram(const ir::logical::Program& input_program);
+StatusOr<BCCProgram> CompileProgram(const ir::logical::TracepointDeployment& input_program);
 
 }  // namespace dynamic_tracing
 }  // namespace stirling

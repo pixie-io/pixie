@@ -491,7 +491,7 @@ func TestPlanner_CompileRequest(t *testing.T) {
 		log.Infof("%v", status)
 	}
 
-	var expectedDynamicTracePb logical.Program
+	var expectedDynamicTracePb logical.TracepointDeployment
 
 	if err = proto.UnmarshalText(expectedDynamicTraceStr, &expectedDynamicTracePb); err != nil {
 		log.Fatalf("Failed to unmarshal expected proto", err)

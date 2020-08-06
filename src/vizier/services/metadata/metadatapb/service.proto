@@ -118,7 +118,7 @@ message AgentUpdatesResponse {
 // The request to register tracepoints on all PEMs.
 message RegisterTracepointRequest {
     message TracepointRequest {
-      pl.stirling.dynamic_tracing.ir.logical.Program program = 1;
+      pl.stirling.dynamic_tracing.ir.logical.TracepointDeployment tracepoint_deployment = 1;
       // The user-specified name for the tracepoint.
       string name = 2;
       // The TTL, in seconds, for how long we want the tracepoint to live.

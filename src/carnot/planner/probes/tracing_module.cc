@@ -63,7 +63,7 @@ Status TraceModule::Init() {
           /* has_variable_len_args */ false,
           /* has_variable_len_kwargs */ false,
           std::bind(ProbeHandler::Probe, probes_,
-                    stirling::dynamic_tracing::ir::shared::BinarySpec::GOLANG,
+                    stirling::dynamic_tracing::ir::shared::DeploymentSpec::GOLANG,
                     std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
 
@@ -127,8 +127,9 @@ Status TraceModule::Init() {
 }
 
 StatusOr<QLObjectPtr> ProbeHandler::Probe(
-    DynamicTraceIR* probes, stirling::dynamic_tracing::ir::shared::BinarySpec::Language language,
-    const pypa::AstPtr&, const ParsedArgs& args, ASTVisitor* visitor) {
+    DynamicTraceIR* probes,
+    stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language, const pypa::AstPtr&,
+    const ParsedArgs& args, ASTVisitor* visitor) {
   DCHECK(probes);
   PL_ASSIGN_OR_RETURN(StringIR * function_name_ir, GetArgAs<StringIR>(args, "fn_name"));
 
@@ -142,7 +143,8 @@ StatusOr<QLObjectPtr> ProbeHandler::Probe(
 }
 
 StatusOr<QLObjectPtr> ProbeHandler::Decorator(
-    DynamicTraceIR* probes, stirling::dynamic_tracing::ir::shared::BinarySpec::Language language,
+    DynamicTraceIR* probes,
+    stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language,
     const std::string& function_name, const pypa::AstPtr& ast, const ParsedArgs& args,
     ASTVisitor* visitor) {
   auto fn = args.GetArg("fn");
@@ -210,7 +212,8 @@ Status ParseOutput(ProbeIR* probe, const QLObjectPtr& probe_output) {
 }
 
 StatusOr<QLObjectPtr> ProbeHandler::Wrapper(
-    DynamicTraceIR* probes, stirling::dynamic_tracing::ir::shared::BinarySpec::Language language,
+    DynamicTraceIR* probes,
+    stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language,
     const std::string& function_name, const std::shared_ptr<FuncObject> wrapped_func,
     const pypa::AstPtr& ast, const ParsedArgs&, ASTVisitor* visitor) {
   if (probes->current_probe() != nullptr) {

@@ -115,13 +115,12 @@ TEST_F(TracepointManagerTest, CreateTracepoint) {
   auto* tracepoint_req = msg->mutable_tracepoint_message()->mutable_register_tracepoint_request();
   sole::uuid tracepoint_id = sole::uuid4();
   ToProto(tracepoint_id, tracepoint_req->mutable_id());
-  auto* program = tracepoint_req->mutable_program();
-  program->set_name("test_tracepoint");
+  auto* tracepoint = tracepoint_req->mutable_tracepoint_deployment();
+  tracepoint->set_name("test_tracepoint");
 
-  EXPECT_CALL(
-      stirling_,
-      RegisterTracepoint(tracepoint_id,
-                         ::testing::Pointee(testing::proto::EqualsProto(program->DebugString()))));
+  EXPECT_CALL(stirling_,
+              RegisterTracepoint(tracepoint_id, ::testing::Pointee(testing::proto::EqualsProto(
+                                                    tracepoint->DebugString()))));
   EXPECT_OK(tracepoint_manager_->HandleMessage(std::move(msg)));
 
   EXPECT_CALL(stirling_, GetTracepointInfo(tracepoint_id))
@@ -154,13 +153,12 @@ TEST_F(TracepointManagerTest, CreateTracepointFailed) {
   auto* tracepoint_req = msg->mutable_tracepoint_message()->mutable_register_tracepoint_request();
   sole::uuid tracepoint_id = sole::uuid4();
   ToProto(tracepoint_id, tracepoint_req->mutable_id());
-  auto* program = tracepoint_req->mutable_program();
-  program->set_name("test_tracepoint");
+  auto* tracepoint = tracepoint_req->mutable_tracepoint_deployment();
+  tracepoint->set_name("test_tracepoint");
 
-  EXPECT_CALL(
-      stirling_,
-      RegisterTracepoint(tracepoint_id,
-                         ::testing::Pointee(testing::proto::EqualsProto(program->DebugString()))));
+  EXPECT_CALL(stirling_,
+              RegisterTracepoint(tracepoint_id, ::testing::Pointee(testing::proto::EqualsProto(
+                                                    tracepoint->DebugString()))));
   EXPECT_OK(tracepoint_manager_->HandleMessage(std::move(msg)));
 
   EXPECT_CALL(stirling_, GetTracepointInfo(tracepoint_id))
@@ -188,13 +186,12 @@ TEST_F(TracepointManagerTest, CreateTracepointPreconditionFailed) {
   auto* tracepoint_req = msg->mutable_tracepoint_message()->mutable_register_tracepoint_request();
   sole::uuid tracepoint_id = sole::uuid4();
   ToProto(tracepoint_id, tracepoint_req->mutable_id());
-  auto* program = tracepoint_req->mutable_program();
-  program->set_name("test_tracepoint");
+  auto* tracepoint = tracepoint_req->mutable_tracepoint_deployment();
+  tracepoint->set_name("test_tracepoint");
 
-  EXPECT_CALL(
-      stirling_,
-      RegisterTracepoint(tracepoint_id,
-                         ::testing::Pointee(testing::proto::EqualsProto(program->DebugString()))));
+  EXPECT_CALL(stirling_,
+              RegisterTracepoint(tracepoint_id, ::testing::Pointee(testing::proto::EqualsProto(
+                                                    tracepoint->DebugString()))));
   EXPECT_OK(tracepoint_manager_->HandleMessage(std::move(msg)));
 
   EXPECT_CALL(stirling_, GetTracepointInfo(tracepoint_id))

@@ -54,10 +54,11 @@ Status TracepointManager::HandleMessage(std::unique_ptr<messages::VizierMessage>
 
 Status TracepointManager::HandleRegisterTracepointRequest(
     const messages::RegisterTracepointRequest& req) {
-  const std::string& name = req.program().name();
+  const std::string& name = req.tracepoint_deployment().name();
   PL_ASSIGN_OR_RETURN(auto id, ParseUUID(req.id()));
   auto program_copy =
-      std::make_unique<stirling::dynamic_tracing::ir::logical::Program>(req.program());
+      std::make_unique<stirling::dynamic_tracing::ir::logical::TracepointDeployment>(
+          req.tracepoint_deployment());
 
   TracepointInfo info;
   info.name = name;

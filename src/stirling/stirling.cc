@@ -130,8 +130,9 @@ class StirlingImpl final : public Stirling {
   // symmetric with Stop().
   Status Init();
 
-  void RegisterTracepoint(sole::uuid uuid,
-                          std::unique_ptr<dynamic_tracing::ir::logical::Program> program) override;
+  void RegisterTracepoint(
+      sole::uuid uuid,
+      std::unique_ptr<dynamic_tracing::ir::logical::TracepointDeployment> program) override;
   StatusOr<stirlingpb::Publish> GetTracepointInfo(sole::uuid trace_id) override;
   Status RemoveTracepoint(sole::uuid trace_id) override;
   void GetPublishProto(stirlingpb::Publish* publish_pb) override;
@@ -159,8 +160,9 @@ class StirlingImpl final : public Stirling {
   Status RemoveSource(std::string_view source_name);
 
   // Creates and deploys dynamic tracing source.
-  void DeployDynamicTraceConnector(sole::uuid trace_id,
-                                   std::unique_ptr<dynamic_tracing::ir::logical::Program> program);
+  void DeployDynamicTraceConnector(
+      sole::uuid trace_id,
+      std::unique_ptr<dynamic_tracing::ir::logical::TracepointDeployment> program);
 
   // Destroys a dynamic tracing source created by DeployDynamicTraceConnector.
   void DestroyDynamicTraceConnector(sole::uuid trace_id);
@@ -310,11 +312,11 @@ Status StirlingImpl::RemoveSource(std::string_view source_name) {
   return Status::OK();
 }
 
-Status ResolveUPID(dynamic_tracing::ir::logical::Program* program) {
+Status ResolveUPID(dynamic_tracing::ir::logical::TracepointDeployment* program) {
   // Expect the outside caller keeps UPID, and specify them in UProbeSpec. Here upid and path are
   // specified alternatively, and upid will be replaced by binary path.
   if (program->binary_spec().target_oneof_case() ==
-      dynamic_tracing::ir::shared::BinarySpec::TargetOneofCase::kUpid) {
+      dynamic_tracing::ir::shared::DeploymentSpec::TargetOneofCase::kUpid) {
     uint32_t pid = program->binary_spec().upid().pid();
 
     std::optional<int64_t> start_time;
@@ -357,7 +359,8 @@ Status ResolveUPID(dynamic_tracing::ir::logical::Program* program) {
   }
 
 void StirlingImpl::DeployDynamicTraceConnector(
-    sole::uuid trace_id, std::unique_ptr<dynamic_tracing::ir::logical::Program> program) {
+    sole::uuid trace_id,
+    std::unique_ptr<dynamic_tracing::ir::logical::TracepointDeployment> program) {
   if (program->outputs_size() == 0) {
     RETURN_ERROR(error::Internal("Dynamic trace must define output tables."));
   }
@@ -418,7 +421,8 @@ void StirlingImpl::DestroyDynamicTraceConnector(sole::uuid trace_id) {
 #undef ASSIGN_OR_RETURN
 
 void StirlingImpl::RegisterTracepoint(
-    sole::uuid trace_id, std::unique_ptr<dynamic_tracing::ir::logical::Program> program) {
+    sole::uuid trace_id,
+    std::unique_ptr<dynamic_tracing::ir::logical::TracepointDeployment> program) {
   // Temporary: Check if the target exists on this PEM, otherwise return NotFound.
   // TODO(oazizi): Need to think of a better way of doing this.
   //               Need to differentiate errors caused by the binary not being on the host vs

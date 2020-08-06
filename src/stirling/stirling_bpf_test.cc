@@ -53,10 +53,10 @@ class StirlingBPFTest : public ::testing::TestWithParam<TestParam> {
     return s;
   }
 
-  std::unique_ptr<dynamic_tracing::ir::logical::Program> Prepare(std::string_view program,
-                                                                 std::string_view path) {
+  std::unique_ptr<dynamic_tracing::ir::logical::TracepointDeployment> Prepare(
+      std::string_view program, std::string_view path) {
     std::string input_program_str = absl::Substitute(program, path);
-    auto trace_program = std::make_unique<dynamic_tracing::ir::logical::Program>();
+    auto trace_program = std::make_unique<dynamic_tracing::ir::logical::TracepointDeployment>();
     CHECK(google::protobuf::TextFormat::ParseFromString(input_program_str, trace_program.get()));
     return trace_program;
   }

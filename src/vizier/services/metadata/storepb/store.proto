@@ -16,8 +16,8 @@ option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb
 // Information about the status of a specific tracepoint.
 message TracepointInfo {
   uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
-  // The tracepoint program.
-  pl.stirling.dynamic_tracing.ir.logical.Program program = 2;
+  // The tracepoint deployment.
+  pl.stirling.dynamic_tracing.ir.logical.TracepointDeployment tracepoint = 2;
   // The name of the tracepoint, not unique.
   string name = 3;
   // The desired state of the tracepoint, either running or terminated. The actual

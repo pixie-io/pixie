@@ -37,7 +37,7 @@ message UPID {
   uint64 ts_ns = 3;
 }
 
-message BinarySpec {
+message DeploymentSpec {
   oneof target_oneof {
     // The path of the executable file.
     string path = 1;

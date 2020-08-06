@@ -23,7 +23,7 @@ using ::pl::stirling::bpf_tools::UProbeSpec;
 
 namespace {
 
-StatusOr<std::vector<UProbeSpec>> GetUProbeSpec(const ir::shared::BinarySpec& binary_spec,
+StatusOr<std::vector<UProbeSpec>> GetUProbeSpec(const ir::shared::DeploymentSpec& binary_spec,
                                                 const ir::physical::Probe& probe,
                                                 elf_tools::ElfReader* elf_reader) {
   UProbeSpec spec;
@@ -37,7 +37,7 @@ StatusOr<std::vector<UProbeSpec>> GetUProbeSpec(const ir::shared::BinarySpec& bi
                          : BPFProbeAttachType::kReturn;
   spec.probe_fn = probe.name();
 
-  if (binary_spec.language() == ir::shared::BinarySpec::GOLANG &&
+  if (binary_spec.language() == ir::shared::DeploymentSpec::GOLANG &&
       probe.trace_point().type() == ir::shared::TracePoint::RETURN) {
     return bpf_tools::TransformGolangReturnProbe(spec, elf_reader);
   }
@@ -64,8 +64,8 @@ StatusOr<BCCProgram::PerfBufferSpec> GetPerfBufferSpec(
 
 }  // namespace
 
-StatusOr<BCCProgram> CompileProgram(const ir::logical::Program& input_program) {
-  PL_ASSIGN_OR_RETURN(ir::logical::Program intermediate_program,
+StatusOr<BCCProgram> CompileProgram(const ir::logical::TracepointDeployment& input_program) {
+  PL_ASSIGN_OR_RETURN(ir::logical::TracepointDeployment intermediate_program,
                       TransformLogicalProgram(input_program));
 
   pid_t pid = UProbeSpec::kDefaultPID;
@@ -73,10 +73,10 @@ StatusOr<BCCProgram> CompileProgram(const ir::logical::Program& input_program) {
   // Expect the outside caller keeps UPID, and specify them in UProbeSpec. Here upid and path are
   // specified alternatively, and upid will be replaced by binary path.
   switch (intermediate_program.binary_spec().target_oneof_case()) {
-    case ir::shared::BinarySpec::TargetOneofCase::kPath:
+    case ir::shared::DeploymentSpec::TargetOneofCase::kPath:
       // Ignored, no need to resolve binary path.
       break;
-    case ir::shared::BinarySpec::TargetOneofCase::kUpid: {
+    case ir::shared::DeploymentSpec::TargetOneofCase::kUpid: {
       pid = intermediate_program.binary_spec().upid().pid();
 
       PL_ASSIGN_OR_RETURN(std::filesystem::path host_binary_path,
@@ -88,7 +88,7 @@ StatusOr<BCCProgram> CompileProgram(const ir::logical::Program& input_program) {
       intermediate_program.mutable_binary_spec()->set_path(host_binary_path.string());
       break;
     }
-    case ir::shared::BinarySpec::TargetOneofCase::TARGET_ONEOF_NOT_SET:
+    case ir::shared::DeploymentSpec::TargetOneofCase::TARGET_ONEOF_NOT_SET:
       return error::InvalidArgument("Must specify path or upid");
   }
 
@@ -102,7 +102,7 @@ StatusOr<BCCProgram> CompileProgram(const ir::logical::Program& input_program) {
 
   std::unique_ptr<elf_tools::ElfReader> elf_reader;
 
-  if (physical_program.binary_spec().language() == ir::shared::BinarySpec::GOLANG) {
+  if (physical_program.binary_spec().language() == ir::shared::DeploymentSpec::GOLANG) {
     PL_ASSIGN_OR_RETURN(elf_reader,
                         elf_tools::ElfReader::Create(physical_program.binary_spec().path()));
   }

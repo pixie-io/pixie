@@ -240,7 +240,7 @@ TEST_P(ProbeGenTest, Transform) {
   ProbeGenTestParam p = GetParam();
 
   std::string input_program_str = absl::Substitute(p.input, binary_path_);
-  ir::logical::Program input_program;
+  ir::logical::TracepointDeployment input_program;
   ASSERT_TRUE(TextFormat::ParseFromString(input_program_str, &input_program));
 
   std::string expected_output = absl::Substitute(p.expected_output, binary_path_);
@@ -254,12 +254,12 @@ INSTANTIATE_TEST_SUITE_P(ProbeGenTestSuite, ProbeGenTest,
 
 TEST_F(ProbeGenTest, ErrorCases) {
   std::string input_program_str = absl::Substitute(kLogicalProgram, binary_path_);
-  ir::logical::Program input_program;
+  ir::logical::TracepointDeployment input_program;
   ASSERT_TRUE(TextFormat::ParseFromString(input_program_str, &input_program));
 
   {
     // Output must be specified if an OutputAction exists.
-    ir::logical::Program p = input_program;
+    ir::logical::TracepointDeployment p = input_program;
     p.mutable_outputs()->Clear();
     ASSERT_NOT_OK(TransformLogicalProgram(p));
   }

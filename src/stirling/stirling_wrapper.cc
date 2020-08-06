@@ -33,7 +33,7 @@ using pl::stirling::SourceRegistrySpecifier;
 using pl::stirling::Stirling;
 using pl::stirling::stirlingpb::Publish;
 using pl::stirling::stirlingpb::Subscribe;
-using DynamicTracingProgram = pl::stirling::dynamic_tracing::ir::logical::Program;
+using DynamicTracingProgram = pl::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
 
 using pl::types::ColumnWrapperRecordBatch;
 using pl::types::TabletID;

@@ -131,14 +131,17 @@ class ProbeHandler {
    * @return StatusOr<QLObjectPtr>
    */
   static StatusOr<QLObjectPtr> Probe(
-      DynamicTraceIR* probes, stirling::dynamic_tracing::ir::shared::BinarySpec::Language language,
+      DynamicTraceIR* probes,
+      stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language,
       const pypa::AstPtr& ast, const ParsedArgs& args, ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> Decorator(
-      DynamicTraceIR* probes, stirling::dynamic_tracing::ir::shared::BinarySpec::Language language,
+      DynamicTraceIR* probes,
+      stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language,
       const std::string& function_name, const pypa::AstPtr& ast, const ParsedArgs& args,
       ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> Wrapper(
-      DynamicTraceIR* probes, stirling::dynamic_tracing::ir::shared::BinarySpec::Language language,
+      DynamicTraceIR* probes,
+      stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language,
       const std::string& function_name, const std::shared_ptr<FuncObject> func_obj,
       const pypa::AstPtr& ast, const ParsedArgs& args, ASTVisitor* visitor);
 };

@@ -220,7 +220,7 @@ message PerfBufferOutput {
 
 // This describes a complete BPF program.
 message Program {
-  shared.BinarySpec binary_spec = 1;
+  shared.DeploymentSpec binary_spec = 1;
 
   // Describes the global structs.
   repeated Struct structs = 2;

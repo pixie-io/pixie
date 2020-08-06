@@ -22,7 +22,7 @@ import (
 var (
 	// ErrTracepointAlreadyExists is produced if a tracepoint already exists with the given name
 	// and does not have a matching schema.
-	ErrTracepointAlreadyExists = errors.New("Tracepoint already exists")
+	ErrTracepointAlreadyExists = errors.New("TracepointDeployment already exists")
 )
 
 // TracepointStore is a datastore which can store, update, and retrieve information about tracepoints.
@@ -90,7 +90,7 @@ func (m *TracepointManager) SyncTracepoints() error {
 	return nil
 }
 
-func comparePrograms(p1 *logicalpb.Program, p2 *logicalpb.Program) bool {
+func comparePrograms(p1 *logicalpb.TracepointDeployment, p2 *logicalpb.TracepointDeployment) bool {
 	val1, err := p1.Marshal()
 	if err != nil {
 		return false
@@ -173,7 +173,7 @@ func (m *TracepointManager) deleteTracepoint(id uuid.UUID) error {
 }
 
 // CreateTracepoint creates and stores info about the given tracepoint.
-func (m *TracepointManager) CreateTracepoint(tracepointName string, program *logicalpb.Program, ttl time.Duration) (*uuid.UUID, error) {
+func (m *TracepointManager) CreateTracepoint(tracepointName string, tracepointDeployment *logicalpb.TracepointDeployment, ttl time.Duration) (*uuid.UUID, error) {
 	// Check to see if a tracepoint with the matching name already exists.
 	resp, err := m.mds.GetTracepointsWithNames([]string{tracepointName})
 	if err != nil {
@@ -193,21 +193,21 @@ func (m *TracepointManager) CreateTracepoint(tracepointName string, program *log
 		if prevTracepoint != nil && prevTracepoint.ExpectedState != statuspb.TERMINATED_STATE {
 
 			//  We can replace it if the outputs are the same.
-			if len(prevTracepoint.Program.Outputs) != len(program.Outputs) {
+			if len(prevTracepoint.Tracepoint.Outputs) != len(tracepointDeployment.Outputs) {
 				return prevTracepointID, ErrTracepointAlreadyExists
 			}
-			for i, output := range prevTracepoint.Program.Outputs {
-				if len(output.Fields) != len(program.Outputs[i].Fields) {
+			for i, output := range prevTracepoint.Tracepoint.Outputs {
+				if len(output.Fields) != len(tracepointDeployment.Outputs[i].Fields) {
 					return prevTracepointID, ErrTracepointAlreadyExists
 				}
 				for j, field := range output.Fields {
-					if field != program.Outputs[i].Fields[j] {
+					if field != tracepointDeployment.Outputs[i].Fields[j] {
 						return prevTracepointID, ErrTracepointAlreadyExists
 					}
 				}
 			}
 			// Check if the tracepoints are exactly the same.
-			if comparePrograms(program, prevTracepoint.Program) {
+			if comparePrograms(tracepointDeployment, prevTracepoint.Tracepoint) {
 				return prevTracepointID, ErrTracepointAlreadyExists
 			}
 
@@ -222,7 +222,7 @@ func (m *TracepointManager) CreateTracepoint(tracepointName string, program *log
 	tpID := uuid.NewV4()
 	newTracepoint := &storepb.TracepointInfo{
 		ID:            utils.ProtoFromUUID(&tpID),
-		Program:       program,
+		Tracepoint:    tracepointDeployment,
 		Name:          tracepointName,
 		ExpectedState: statuspb.RUNNING_STATE,
 	}
@@ -272,14 +272,14 @@ func (m *TracepointManager) UpdateAgentTracepointStatus(tracepointID *uuidpb.UUI
 }
 
 // RegisterTracepoint sends requests to the given agents to register the specified tracepoint.
-func (m *TracepointManager) RegisterTracepoint(agentIDs []uuid.UUID, tracepointID uuid.UUID, program *logicalpb.Program) error {
+func (m *TracepointManager) RegisterTracepoint(agentIDs []uuid.UUID, tracepointID uuid.UUID, tracepointDeployment *logicalpb.TracepointDeployment) error {
 	tracepointReq := messages.VizierMessage{
 		Msg: &messages.VizierMessage_TracepointMessage{
 			TracepointMessage: &messages.TracepointMessage{
 				Msg: &messages.TracepointMessage_RegisterTracepointRequest{
 					RegisterTracepointRequest: &messages.RegisterTracepointRequest{
-						Program: program,
-						ID:      utils.ProtoFromUUID(&tracepointID),
+						TracepointDeployment: tracepointDeployment,
+						ID:                   utils.ProtoFromUUID(&tracepointID),
 					},
 				},
 			},

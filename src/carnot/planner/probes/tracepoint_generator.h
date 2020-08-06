@@ -12,7 +12,8 @@ namespace compiler {
 /**
  * Take a tracepoint specification in PXL format, and compiles it to a logical tracepoint Program.
  */
-StatusOr<stirling::dynamic_tracing::ir::logical::Program> CompileTracepoint(std::string_view query);
+StatusOr<stirling::dynamic_tracing::ir::logical::TracepointDeployment> CompileTracepoint(
+    std::string_view query);
 
 }  // namespace compiler
 }  // namespace planner

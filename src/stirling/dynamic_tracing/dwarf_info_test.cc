@@ -822,7 +822,7 @@ TEST_P(DwarfInfoTest, Transform) {
   DwarfInfoTestParam p = GetParam();
 
   std::string input_str = absl::Substitute(p.input, binary_path_);
-  ir::logical::Program input_program;
+  ir::logical::TracepointDeployment input_program;
   ASSERT_TRUE(TextFormat::ParseFromString(std::string(input_str), &input_program));
 
   std::string expected_output_str = absl::Substitute(p.expected_output, binary_path_);

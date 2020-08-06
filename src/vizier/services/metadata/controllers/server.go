@@ -277,7 +277,7 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 	return nil
 }
 
-// RegisterTracepoint is a request to register the tracepoints specified in the Program on all agents.
+// RegisterTracepoint is a request to register the tracepoints specified in the TracepointDeployment on all agents.
 func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.RegisterTracepointRequest) (*metadatapb.RegisterTracepointResponse, error) {
 	// TODO(michelle): Some additional work will need to be done
 	// in order to transactionalize the creation of multiple tracepoints. The current behavior is temporary just
@@ -290,7 +290,7 @@ func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.Registe
 		if err != nil {
 			return nil, err
 		}
-		tracepointID, err := s.tracepointManager.CreateTracepoint(tp.Name, tp.Program, ttl)
+		tracepointID, err := s.tracepointManager.CreateTracepoint(tp.Name, tp.TracepointDeployment, ttl)
 		if err != nil && err != ErrTracepointAlreadyExists {
 			return nil, err
 		}
@@ -324,7 +324,7 @@ func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.Registe
 		}
 
 		// Register tracepoint on all agents.
-		err = s.tracepointManager.RegisterTracepoint(agentIDs, *tracepointID, tp.Program)
+		err = s.tracepointManager.RegisterTracepoint(agentIDs, *tracepointID, tp.TracepointDeployment)
 		if err != nil {
 			return nil, err
 		}
@@ -362,7 +362,7 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 	tracepointState := make([]*metadatapb.GetTracepointInfoResponse_TracepointState, len(tracepointInfos))
 
 	for i, tracepoint := range tracepointInfos {
-		if tracepoint == nil { // Tracepoint does not exist.
+		if tracepoint == nil { // TracepointDeployment does not exist.
 			tracepointState[i] = &metadatapb.GetTracepointInfoResponse_TracepointState{
 				ID:    req.IDs[i],
 				State: statuspb.UNKNOWN_STATE,
@@ -381,8 +381,8 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 
 		state, status := getTracepointStateFromAgentTracepointStates(tracepointStates)
 
-		schemas := make([]string, len(tracepoint.Program.Outputs))
-		for i, o := range tracepoint.Program.Outputs {
+		schemas := make([]string, len(tracepoint.Tracepoint.Outputs))
+		for i, o := range tracepoint.Tracepoint.Outputs {
 			schemas[i] = o.Name
 		}
 

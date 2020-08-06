@@ -148,14 +148,14 @@ message Probe {
 // Example: The simplest logical program will have only a single probe (no
 // outputs, no maps), which will then get transformed into a program with
 // multiple probes, maps and outputs.
-message Program {
+message TracepointDeployment {
   // The name of the Tracepoint Program .
   string name = 5;
   // The liveness time of the tracepoint, represented in ns. After this time,
   // the tracepoint will be deleted.
   google.protobuf.Duration ttl = 6 [ (gogoproto.customname) = "TTL" ];
 
-  shared.BinarySpec binary_spec = 1;
+  shared.DeploymentSpec binary_spec = 1;
 
   // Maps holding shared state across probes.
   repeated shared.Map maps = 2;
