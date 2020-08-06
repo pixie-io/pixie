@@ -1,4 +1,4 @@
-#include "src/stirling/dynamic_tracing/dwarf_info.h"
+#include "src/stirling/dynamic_tracing/dwarvifier.h"
 
 #include <map>
 #include <memory>

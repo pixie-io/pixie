@@ -9,7 +9,7 @@
 
 #include "src/stirling/bpf_tools/utils.h"
 #include "src/stirling/dynamic_tracing/code_gen.h"
-#include "src/stirling/dynamic_tracing/dwarf_info.h"
+#include "src/stirling/dynamic_tracing/dwarvifier.h"
 #include "src/stirling/dynamic_tracing/probe_transformer.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 #include "src/stirling/obj_tools/proc_path_tools.h"

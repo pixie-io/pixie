@@ -3,7 +3,7 @@
 #include <filesystem>
 
 #include "src/common/base/base.h"
-#include "src/stirling/dynamic_tracing/dwarf_info.h"
+#include "src/stirling/dynamic_tracing/dwarvifier.h"
 #include "src/stirling/dynamic_tracing/ir/logicalpb/logical.pb.h"
 #include "src/stirling/dynamic_tracing/ir/physicalpb/physical.pb.h"
 

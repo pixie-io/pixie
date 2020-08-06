@@ -37,8 +37,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "dwarf_info_test",
-    srcs = ["dwarf_info_test.cc"],
+    name = "dwarvifier_test",
+    srcs = ["dwarvifier_test.cc"],
     data = [
         "//src/stirling/obj_tools/testdata:dummy_go_binary",
     ],

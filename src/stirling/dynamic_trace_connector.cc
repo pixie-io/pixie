@@ -216,7 +216,7 @@ Status DynamicTraceConnector::AppendRecord(const Struct& st, uint32_t asid, std:
 
   // TODO(yzhao): Come up more principled approach to process upid and ktime, such that explicit
   // checks can be applied to avoid these fields being misused. Today this code is brittle because
-  // it is implicitly linked to the order generated in dwarf_info.cc.
+  // it is implicitly linked to the order generated in dwarvifier.cc.
   PL_ASSIGN_OR_RETURN(uint32_t tgid, struct_decoder.ExtractField<uint32_t>());
   PL_ASSIGN_OR_RETURN(uint64_t tgid_start_time, struct_decoder.ExtractField<uint64_t>());
   PL_ASSIGN_OR_RETURN(uint64_t ktime_ns, struct_decoder.ExtractField<uint64_t>());

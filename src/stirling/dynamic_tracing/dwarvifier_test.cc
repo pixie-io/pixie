@@ -1,7 +1,7 @@
 #include <string>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/dynamic_tracing/dwarf_info.h"
+#include "src/stirling/dynamic_tracing/dwarvifier.h"
 
 constexpr std::string_view kBinaryPath =
     "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary";
