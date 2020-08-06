@@ -83,18 +83,19 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
   // Case 1: Content-Length
   const auto content_length_iter = result->headers.find(kContentLength);
   if (content_length_iter != result->headers.end()) {
-    const int len = std::stoi(content_length_iter->second);
-    if (len < 0) {
-      LOG(ERROR) << "HTTP message has a negative Content-Length: " << len;
+    size_t len;
+    if (!absl::SimpleAtoi(content_length_iter->second, &len)) {
+      LOG(ERROR) << absl::Substitute("Unable to parse Content-Length: $0",
+                                     content_length_iter->second);
       return ParseState::kInvalid;
     }
 
-    if (buf->size() < static_cast<size_t>(len)) {
+    if (buf->size() < len) {
       return ParseState::kNeedsMoreData;
     }
 
     result->body = buf->substr(0, len);
-    buf->remove_prefix(std::min(static_cast<size_t>(len), buf->size()));
+    buf->remove_prefix(std::min(len, buf->size()));
     return ParseState::kSuccess;
   }
 
