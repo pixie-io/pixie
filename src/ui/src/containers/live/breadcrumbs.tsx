@@ -31,8 +31,8 @@ const LIST_CLUSTERS = gql`
 `;
 
 const AUTOCOMPLETE_FIELD_QUERY = gql`
-query getCompletions($input: String, $kind: AutocompleteEntityKind) {
-  autocompleteField(input: $input, fieldType: $kind) {
+query getCompletions($input: String, $kind: AutocompleteEntityKind, $clusterUID: String) {
+  autocompleteField(input: $input, fieldType: $kind, clusterUID: $clusterUID) {
     name
     description
     matchedIndexes
@@ -67,7 +67,7 @@ const styles = (({ palette, spacing }: Theme) => createStyles({
 
 const LiveViewBreadcrumbs = ({ classes }) => {
   const { loading, data } = useQuery(LIST_CLUSTERS);
-  const { selectedCluster, setCluster } = React.useContext(ClusterContext);
+  const { selectedCluster, setCluster, selectedClusterUID } = React.useContext(ClusterContext);
   const { scripts } = React.useContext(ScriptsContext);
 
   const {
@@ -81,9 +81,10 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     variables: {
       input: newInput,
       kind,
+      clusterUID: selectedClusterUID,
     },
   })
-  ), [client]);
+  ), [client, selectedClusterUID]);
 
   const scriptIds = React.useMemo(() => [...scripts.keys()], [scripts]);
 

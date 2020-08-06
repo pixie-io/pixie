@@ -6,6 +6,7 @@ import * as React from 'react';
 import { argsForVis } from 'utils/args-utils';
 import gql from 'graphql-tag';
 import { useApolloClient } from '@apollo/react-hooks';
+import ClusterContext from 'common/cluster-context';
 
 import { createStyles, makeStyles } from '@material-ui/core';
 import Card from '@material-ui/core/Card';
@@ -18,8 +19,8 @@ import { entityPageForScriptId } from '../../components/live-widgets/utils/live-
 import { parseVis } from '../live/vis';
 
 const AUTOCOMPLETE_QUERY = gql`
-query autocomplete($input: String, $cursor: Int, $action: AutocompleteActionType) {
-  autocomplete(input: $input, cursorPos: $cursor, action: $action) {
+query autocomplete($input: String, $cursor: Int, $action: AutocompleteActionType, $clusterUID: String) {
+  autocomplete(input: $input, cursorPos: $cursor, action: $action, clusterUID: $clusterUID) {
     formattedInput
     isExecutable
     tabSuggestions {
@@ -59,6 +60,7 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
   const [tabStops, setTabStops] = React.useState<Array<TabStop>>([]);
   const [tabSuggestions, setTabSuggestions] = React.useState<Array<TabSuggestion>>([]);
   const [isValid, setIsValid] = React.useState(false);
+  const { selectedClusterUID } = React.useContext(ClusterContext);
 
   const { execute } = React.useContext(ScriptContext);
   const { scripts } = React.useContext(ScriptsContext);
@@ -78,6 +80,7 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
         input,
         cursor,
         action: action === 'SELECT' ? 'AAT_SELECT' : 'AAT_EDIT',
+        clusterUID: selectedClusterUID,
       },
     }).then(({ data }) => {
       setIsValid(data.autocomplete.isExecutable);
@@ -100,7 +103,7 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
       });
       setTabSuggestions(completions);
     });
-  }, [client]);
+  }, [client, selectedClusterUID]);
 
   const onSubmit = React.useCallback(() => {
     if (isValid) {
