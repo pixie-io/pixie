@@ -41,6 +41,14 @@ class GRPCRouter final : public carnotpb::KelvinService::Service {
                                   ::pl::carnotpb::RowBatchResponse* response) override;
 
   /**
+   * TransferResultChunk implements the RPC method.
+   */
+  ::grpc::Status TransferResultChunk(
+      ::grpc::ServerContext* context,
+      ::grpc::ServerReader<::pl::carnotpb::TransferResultChunkRequest>* reader,
+      ::pl::carnotpb::TransferResultChunkResponse* response) override;
+
+  /**
    * @brief Done implements the RPC method to control sending over misc. messages after execution is
    * done. Currently used to send over exec stats.
    *

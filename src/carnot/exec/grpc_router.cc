@@ -53,6 +53,16 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
   return ::grpc::Status::OK;
 }
 
+::grpc::Status GRPCRouter::TransferResultChunk(
+    ::grpc::ServerContext* context,
+    ::grpc::ServerReader<::pl::carnotpb::TransferResultChunkRequest>* reader,
+    ::pl::carnotpb::TransferResultChunkResponse* response) {
+  PL_UNUSED(context);
+  PL_UNUSED(reader);
+  response->set_success(false);
+  return ::grpc::Status(grpc::StatusCode::INTERNAL, "TransferResultChunk is unimplemented");
+}
+
 ::grpc::Status GRPCRouter::Done(::grpc::ServerContext*, const ::pl::carnotpb::DoneRequest* req,
                                 ::pl::carnotpb::DoneResponse* resp) {
   auto query_id = pl::ParseUUID(req->query_id()).ConsumeValueOrDie();

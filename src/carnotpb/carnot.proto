@@ -30,6 +30,49 @@ message RowBatchResponse {
   string message = 2;
 }
 
+message TransferResultChunkRequest {
+  // This field represents the address that the row batch should be sent to.
+  string address = 1;
+  // The ID of the remote query ID on the address that should receive this
+  // RowBatch.
+  uuidpb.UUID query_id = 2 [ (gogoproto.customname) = "QueryID" ];
+
+  oneof destination {
+    // When the TransferResultChunkRequest is being sent to another Carnot instance, 'grpc_source_id'
+    // identifies the source node within the query that should receive this RowBatch.
+    uint64 grpc_source_id = 3;
+    // If this result chunk is being sent to a non-Carnot instance such as the querybroker,
+    // this field denotes the name of the table that it belongs to.
+    string table_name = 4;
+  }
+
+  // Execution and timing info for a given query. These are sent once per agent for a batch query
+  // and periodically per agent for a streaming query.
+  message ExecutionAndTimingInfo {
+    // Timing info across the entire query, sent by the top-level agent in the plan.
+    pl.carnot.queryresultspb.QueryTimingInfo timing_info = 1;
+    // Execution info across the entire query, sent by the top-level agent in the plan.
+    pl.carnot.queryresultspb.QueryExecutionStats execution_stats = 2;
+    // Agent-specific execution stats, sent by every agent in the plan.
+    repeated pl.carnot.queryresultspb.AgentExecutionStats agent_execution_stats = 3;
+  }
+
+  oneof result {
+    // TODO(nserrino): Fix this to flat buffers/feather for better performance.
+    pl.table_store.schemapb.RowBatchData row_batch = 5;
+    // Execution information about the query.
+    ExecutionAndTimingInfo execution_and_timing_info = 6;
+  }
+}
+
+message TransferResultChunkResponse {
+  // This field indicates whether or not the transfer of the stream of ResultChunks
+  // completed successfully.
+  bool success = 1;
+  // This field has any error message, if applicable.
+  string message = 2;
+}
+
 message DoneRequest {
   // The ID of the remote query ID that this corresponds to.
   uuidpb.UUID query_id = 1 [ (gogoproto.customname) = "QueryID" ];
@@ -47,8 +90,11 @@ message DoneResponse {
 
 service KelvinService {
   // Transfer a RowBatch from an agent or Kelvin node to the current Kelvin
-  // node.
+  // node. TODO(nserrino) Deprecate and replace with TransferResultChunk.
   rpc TransferRowBatch(stream RowBatchRequest) returns (RowBatchResponse) {}
+  // Transfer a result chunk (which could be eithr data or metadata) for a given query, to another
+  // Carnot instance or to an external sink.
+  rpc TransferResultChunk(stream TransferResultChunkRequest) returns (TransferResultChunkResponse) {}
   // Message that handles Done state for an agent's message in query.
   rpc Done(DoneRequest) returns (DoneResponse) {}
 }
