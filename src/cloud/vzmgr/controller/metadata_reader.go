@@ -38,6 +38,7 @@ const indexerMetadataTopic = "MetadataIndex"
 type VizierState struct {
 	id              uuid.UUID // The Vizier's ID.
 	resourceVersion string    // The Vizier's last applied resource version.
+	k8sUID          string    // The Vizier's K8s UID.
 
 	liveSub stan.Subscription // The subcription for the live metadata updates.
 	liveCh  chan *stan.Msg
@@ -96,7 +97,7 @@ func (m *MetadataReader) listenForViziers() {
 			vzID := utils.UUIDFromProtoOrNil(vcMsg.VizierID)
 			log.WithField("VizierID", vzID.String()).Info("Listening to metadata updates for Vizier")
 
-			err = m.StartVizierUpdates(vzID, vcMsg.ResourceVersion)
+			err = m.StartVizierUpdates(vzID, vcMsg.ResourceVersion, vcMsg.K8sUID)
 			if err != nil {
 				log.WithError(err).WithField("VizierID", vzID.String()).Error("Could not start listening to updates from Vizier")
 			}
@@ -119,10 +120,17 @@ func (m *MetadataReader) loadState() error {
 }
 
 func (m *MetadataReader) listenToConnectedViziers() error {
-	query := `SELECT vizier_cluster_id, resource_version from vizier_cluster_info AS c INNER JOIN vizier_index_state AS i ON c.vizier_cluster_id = i.cluster_id WHERE c.status != 'UNKNOWN' AND c.status != 'DISCONNECTED'`
+	query := `SELECT vizier_cluster.id, vizier_cluster.cluster_uid, vizier_index_state.resource_version
+	    FROM vizier_cluster, vizier_cluster_info, vizier_index_state
+	    WHERE vizier_cluster_info.vizier_cluster_id=vizier_cluster.id
+	    	  AND vizier_cluster_info.vizier_cluster_id=vizier_index_state.cluster_id
+	    	  AND vizier_index_state.cluster_id=vizier_cluster.id
+	          AND vizier_cluster_info.status != 'DISCONNECTED'
+	          AND vizier_cluster_info.status != 'UNKNOWN'`
 	var val struct {
-		ID              uuid.UUID `db:"vizier_cluster_id"`
+		VizierID        uuid.UUID `db:"id"`
 		ResourceVersion string    `db:"resource_version"`
+		K8sUID          string    `db:"cluster_uid"`
 	}
 
 	rows, err := m.db.Queryx(query)
@@ -135,7 +143,7 @@ func (m *MetadataReader) listenToConnectedViziers() error {
 		if err != nil {
 			return err
 		}
-		err = m.StartVizierUpdates(val.ID, val.ResourceVersion)
+		err = m.StartVizierUpdates(val.VizierID, val.ResourceVersion, val.K8sUID)
 		if err != nil {
 			return err
 		}
@@ -145,21 +153,23 @@ func (m *MetadataReader) listenToConnectedViziers() error {
 }
 
 // StartVizierUpdates starts listening to the metadata update channel for a given vizier.
-func (m *MetadataReader) StartVizierUpdates(id uuid.UUID, rv string) error {
+func (m *MetadataReader) StartVizierUpdates(id uuid.UUID, rv string, k8sUID string) error {
 	// TODO(michelle): We currently don't have to signal when a Vizier has disconnected. When we have that
 	// functionality, we should clean up the Vizier map and stop its STAN subscriptions.
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if _, ok := m.viziers[id]; ok {
+	if val, ok := m.viziers[id]; ok {
 		log.WithField("vizier_id", id.String()).Info("Already listening to metadata updates from Vizier")
+		val.k8sUID = k8sUID // Update the K8s uid, in case it has changed with the newly connected Vizier.
 		return nil
 	}
 
 	vzState := VizierState{
 		id:              id,
 		resourceVersion: rv,
+		k8sUID:          k8sUID,
 		liveCh:          make(chan *stan.Msg),
 		quitCh:          make(chan bool),
 	}
@@ -376,9 +386,9 @@ func (m *MetadataReader) applyMetadataUpdates(vzState *VizierState, updates []*m
 			return err
 		}
 
-		log.WithField("topic", indexerMetadataTopic).WithField("rv", u.ResourceVersion).Info("Publishing metadata update to indexer")
+		log.WithField("topic", fmt.Sprintf("%s.%s", indexerMetadataTopic, vzState.k8sUID)).WithField("rv", u.ResourceVersion).Info("Publishing metadata update to indexer")
 
-		err = m.sc.Publish(indexerMetadataTopic, b)
+		err = m.sc.Publish(fmt.Sprintf("%s.%s", indexerMetadataTopic, vzState.k8sUID), b)
 		if err != nil {
 			return err
 		}

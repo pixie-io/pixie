@@ -158,7 +158,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			// Set up initial DB state.
 			insertIdxStateQuery := `INSERT INTO vizier_index_state(cluster_id, resource_version) VALUES ($1, $2)`
 			db.MustExec(insertIdxStateQuery, vzID, test.startingRV)
-			insertClusterQuery := `INSERT INTO vizier_cluster(id, org_id) VALUES ($1, $2)`
+			insertClusterQuery := `INSERT INTO vizier_cluster(id, org_id, cluster_uid) VALUES ($1, $2, 'test')`
 			db.MustExec(insertClusterQuery, vzID, orgID)
 			insertClusterInfoQuery := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status) VALUES ($1, $2)`
 			db.MustExec(insertClusterInfoQuery, vzID, test.vizierStatus)
@@ -174,7 +174,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			defer stanCleanup()
 
 			idxCh := make(chan *stan.Msg)
-			indexerSub, err := sc.Subscribe("MetadataIndex", func(msg *stan.Msg) {
+			indexerSub, err := sc.Subscribe("MetadataIndex.test", func(msg *stan.Msg) {
 				idxCh <- msg
 			})
 			defer indexerSub.Unsubscribe()
