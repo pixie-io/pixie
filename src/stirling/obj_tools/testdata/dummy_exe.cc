@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-struct PairStruct {
+struct ABCStruct {
   int a;
   int b;
   int c;
@@ -12,8 +12,8 @@ struct PairStruct {
 // Using extern C to avoid name mangling (which just keeps the test a bit more readable).
 extern "C" {
 int CanYouFindThis(int a, int b) { return a + b; }
-PairStruct SomeFunction(PairStruct x, PairStruct y) { return PairStruct{x.a+y.a, x.b+y.b, x.c+y.c}; }
-void SomeFunctionWithPointerArgs(int* a, PairStruct* x) { x->a = *a; a++; }
+ABCStruct SomeFunction(ABCStruct x, ABCStruct y) { return ABCStruct{x.a+y.a, x.b+y.b, x.c+y.c}; }
+void SomeFunctionWithPointerArgs(int* a, ABCStruct* x) { x->a = *a; a++; }
 }
 
 namespace pl {

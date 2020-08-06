@@ -124,8 +124,8 @@ TEST(ElfReaderTest, FuncByteCode) {
     const auto& symbol_info = symbol_infos.front();
     // The byte code can be examined with:
     // objdump -d src/stirling/obj_tools/testdata/prebuilt_dummy_exe | grep CanYouFindThis -A 20
-    // 0x201101 is the address of the 'c3' opcode.
-    ASSERT_OK_AND_THAT(elf_reader->FuncRetInstAddrs(symbol_info), ElementsAre(0x201101));
+    // 0x201101 is the address of the 'c3' (retq) opcode.
+    ASSERT_OK_AND_THAT(elf_reader->FuncRetInstAddrs(symbol_info), ElementsAre(0x4011e1));
   }
   {
     const std::string stripped_bin =

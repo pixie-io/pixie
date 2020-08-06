@@ -60,11 +60,11 @@ TEST_F(DwarfReaderTest, GetMatchingDIEs) {
 
   EXPECT_OK_AND_THAT(dwarf_reader->GetMatchingDIEs("non-existent-name"), IsEmpty());
 
-  ASSERT_OK_AND_ASSIGN(dies, dwarf_reader->GetMatchingDIEs("PairStruct"));
+  ASSERT_OK_AND_ASSIGN(dies, dwarf_reader->GetMatchingDIEs("ABCStruct"));
   ASSERT_THAT(dies, SizeIs(1));
   EXPECT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_structure_type);
 
-  EXPECT_OK_AND_THAT(dwarf_reader->GetMatchingDIEs("PairStruct", llvm::dwarf::DW_TAG_member),
+  EXPECT_OK_AND_THAT(dwarf_reader->GetMatchingDIEs("ABCStruct", llvm::dwarf::DW_TAG_member),
                      IsEmpty());
 
   ASSERT_OK_AND_ASSIGN(
@@ -75,7 +75,7 @@ TEST_F(DwarfReaderTest, GetMatchingDIEs) {
   EXPECT_EQ(GetLinkageName(dies[0]), "_ZNK2pl7testing3Foo3BarEi");
 
   ASSERT_OK_AND_ASSIGN(
-      dies, dwarf_reader->GetMatchingDIEs("PairStruct", llvm::dwarf::DW_TAG_structure_type));
+      dies, dwarf_reader->GetMatchingDIEs("ABCStruct", llvm::dwarf::DW_TAG_structure_type));
   ASSERT_THAT(dies, SizeIs(1));
   ASSERT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_structure_type);
 }
@@ -85,9 +85,9 @@ TEST_P(DwarfReaderTest, GetStructMemberOffset) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        DwarfReader::Create(kCppBinaryPath, p.index));
 
-  EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "a"), 0);
-  EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "b"), 4);
-  EXPECT_NOT_OK(dwarf_reader->GetStructMemberOffset("PairStruct", "bogus"));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("ABCStruct", "a"), 0);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("ABCStruct", "b"), 4);
+  EXPECT_NOT_OK(dwarf_reader->GetStructMemberOffset("ABCStruct", "bogus"));
 }
 
 // Inspired from a real life case.
@@ -166,14 +166,12 @@ TEST_P(DwarfReaderTest, CppFunctionArgInfo) {
   EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("CanYouFindThis"),
                      UnorderedElementsAre(Pair("a", ArgInfo{{0, VarType::kBaseType, "int"}}),
                                           Pair("b", ArgInfo{{4, VarType::kBaseType, "int"}})));
-  EXPECT_OK_AND_THAT(
-      dwarf_reader->GetFunctionArgInfo("SomeFunction"),
-      UnorderedElementsAre(Pair("x", ArgInfo{{0, VarType::kStruct, "PairStruct"}}),
-                           Pair("y", ArgInfo{{12, VarType::kStruct, "PairStruct"}})));
-  EXPECT_OK_AND_THAT(
-      dwarf_reader->GetFunctionArgInfo("SomeFunctionWithPointerArgs"),
-      UnorderedElementsAre(Pair("a", ArgInfo{{0, VarType::kPointer, "int"}}),
-                           Pair("x", ArgInfo{{8, VarType::kPointer, "PairStruct"}})));
+  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("SomeFunction"),
+                     UnorderedElementsAre(Pair("x", ArgInfo{{0, VarType::kStruct, "ABCStruct"}}),
+                                          Pair("y", ArgInfo{{12, VarType::kStruct, "ABCStruct"}})));
+  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("SomeFunctionWithPointerArgs"),
+                     UnorderedElementsAre(Pair("a", ArgInfo{{0, VarType::kPointer, "int"}}),
+                                          Pair("x", ArgInfo{{8, VarType::kPointer, "ABCStruct"}})));
 }
 
 TEST_P(DwarfReaderTest, CppFunctionRetValInfo) {
@@ -184,7 +182,7 @@ TEST_P(DwarfReaderTest, CppFunctionRetValInfo) {
   EXPECT_OK_AND_EQ(dwarf_reader->GetFunctionRetValInfo("CanYouFindThis"),
                    (RetValInfo{VarType::kBaseType, "int"}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetFunctionRetValInfo("SomeFunction"),
-                   (RetValInfo{VarType::kStruct, "PairStruct"}));
+                   (RetValInfo{VarType::kStruct, "ABCStruct"}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetFunctionRetValInfo("SomeFunctionWithPointerArgs"),
                    (RetValInfo{VarType::kVoid, ""}));
 }
