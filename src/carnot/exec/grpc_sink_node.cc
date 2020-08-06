@@ -49,8 +49,8 @@ Status GRPCSinkNode::CloseWriter() {
   writer_->WritesDone();
   auto s = writer_->Finish();
   if (!s.ok()) {
-    return error::Internal(absl::Substitute(
-        "GRPCSink node: Error calling Finish on stream, message: $0", s.error_message()));
+    LOG(ERROR) << absl::Substitute("GRPCSink node: Error calling Finish on stream, message: $0",
+                                   s.error_message());
   }
   return Status::OK();
 }
