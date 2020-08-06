@@ -22,6 +22,7 @@ export const LIST_CLUSTERS = gql`
     clusterName
     prettyClusterName
     status
+    clusterUID
     vizierConfig {
       passthroughEnabled
     }
@@ -122,6 +123,7 @@ export default function WithClusterBanner() {
     selectedCluster: clusterId,
     selectedClusterName: cluster?.clusterName,
     selectedClusterPrettyName: cluster?.prettyClusterName,
+    selectedClusterUID: cluster?.clusterUID,
     setCluster: setClusterId,
     setClusterByName: (name: string) => {
       const foundId = name && clusters.find((c) => c.clusterName === name)?.id;
