@@ -274,6 +274,7 @@ export interface QueryToAutocompleteArgs {
   input?: string;
   cursorPos?: number;
   action?: GQLAutocompleteActionType;
+  clusterUID?: string;
 }
 export interface QueryToAutocompleteResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToAutocompleteArgs, context: any, info: GraphQLResolveInfo): TResult;
@@ -283,6 +284,7 @@ export interface QueryToAutocompleteFieldArgs {
   input?: string;
   fieldType?: GQLAutocompleteEntityKind;
   requiredArgTypes?: Array<GQLAutocompleteEntityKind | null>;
+  clusterUID?: string;
 }
 export interface QueryToAutocompleteFieldResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToAutocompleteFieldArgs, context: any, info: GraphQLResolveInfo): TResult;

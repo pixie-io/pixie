@@ -481,6 +481,10 @@ message AutocompleteRequest {
   int64 cursor_pos = 2;
   // The action is the user's action the user took to trigger the autocomplete request.
   AutocompleteActionType action = 3;
+  // The cluster UID of the currently selected Vizier that we should be autocompleting for.
+  string cluster_uid = 4 [
+                            (gogoproto.customname) = "ClusterUID"
+                            ];
 }
 
 message TabSuggestion {
@@ -524,6 +528,10 @@ message AutocompleteFieldRequest {
   AutocompleteEntityKind field_type = 2;
   // If autocompleting a script field, these are arg types which the script must take.
   repeated AutocompleteEntityKind required_arg_types = 3;
+  // The cluster UID of the currently selected Vizier that we should be autocompleting for.
+  string cluster_uid = 4 [
+                            (gogoproto.customname) = "ClusterUID"
+                            ];
 }
 
 message AutocompleteFieldResponse{

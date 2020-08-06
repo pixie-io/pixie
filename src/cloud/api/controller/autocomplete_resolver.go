@@ -42,10 +42,16 @@ func (q *QueryResolver) AutocompleteField(ctx context.Context, args *autocomplet
 		return nil, errors.New("field type required")
 	}
 
+	clusterUID := ""
+	if args.ClusterUID != nil {
+		clusterUID = *(args.ClusterUID)
+	}
+
 	res, err := grpcAPI.AutocompleteField(ctx, &cloudapipb.AutocompleteFieldRequest{
 		Input:            *args.Input,
 		FieldType:        kindToProtoMap[*args.FieldType],
 		RequiredArgTypes: allowedArgs,
+		ClusterUID:       clusterUID,
 	})
 	if err != nil {
 		return nil, err
@@ -72,11 +78,17 @@ func (q *QueryResolver) AutocompleteField(ctx context.Context, args *autocomplet
 
 // Autocomplete responds to an autocomplete request.
 func (q *QueryResolver) Autocomplete(ctx context.Context, args *autocompleteArgs) (*AutocompleteResolver, error) {
+	clusterUID := ""
+	if args.ClusterUID != nil {
+		clusterUID = *(args.ClusterUID)
+	}
+
 	grpcAPI := q.Env.AutocompleteServer
 	res, err := grpcAPI.Autocomplete(ctx, &cloudapipb.AutocompleteRequest{
-		Input:     *args.Input,
-		CursorPos: int64(*args.CursorPos),
-		Action:    actionToProtoMap[*args.Action],
+		Input:      *args.Input,
+		CursorPos:  int64(*args.CursorPos),
+		Action:     actionToProtoMap[*args.Action],
+		ClusterUID: clusterUID,
 	})
 	if err != nil {
 		return nil, err
@@ -119,12 +131,14 @@ type autocompleteFieldArgs struct {
 	Input            *string
 	FieldType        *string
 	RequiredArgTypes *[]*string
+	ClusterUID       *string
 }
 
 type autocompleteArgs struct {
-	Input     *string
-	CursorPos *int32
-	Action    *string
+	Input      *string
+	CursorPos  *int32
+	Action     *string
+	ClusterUID *string
 }
 
 // AutocompleteResolver is the resolver for an autocomplete response.

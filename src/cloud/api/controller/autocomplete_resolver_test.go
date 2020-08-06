@@ -109,6 +109,7 @@ func TestAutocompleteField(t *testing.T) {
 		Input:            "px/svc_info",
 		FieldType:        cloudapipb.AEK_SVC,
 		RequiredArgTypes: []cloudapipb.AutocompleteEntityKind{},
+		ClusterUID:       "test",
 	}).
 		Return(&cloudapipb.AutocompleteFieldResponse{
 			Suggestions: []*cloudapipb.AutocompleteSuggestion{
@@ -134,7 +135,7 @@ func TestAutocompleteField(t *testing.T) {
 			Context: ctx,
 			Query: `
 				query {
-					autocompleteField(input: "px/svc_info", fieldType: AEK_SVC) {
+					autocompleteField(input: "px/svc_info", fieldType: AEK_SVC, clusterUID: "test") {
 						kind 
 						name 
 						description
