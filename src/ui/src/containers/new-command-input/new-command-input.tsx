@@ -12,7 +12,7 @@ import { createStyles, makeStyles } from '@material-ui/core';
 import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 
-import { ScriptContext } from 'context/script-context';
+import { ScriptContext, ExecuteArguments } from 'context/script-context';
 import { ParseFormatStringToTabStops } from './autocomplete-parser';
 import { entityTypeToString } from './autocomplete-utils';
 import { entityPageForScriptId } from '../../components/live-widgets/utils/live-view-params';
@@ -62,7 +62,7 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
   const [isValid, setIsValid] = React.useState(false);
   const { selectedClusterUID } = React.useContext(ClusterContext);
 
-  const { execute } = React.useContext(ScriptContext);
+  const { execute, setScript } = React.useContext(ScriptContext);
   const { scripts } = React.useContext(ScriptsContext);
 
   const client = useApolloClient();
@@ -116,14 +116,17 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
             args[ts.Label] = ts.Value;
           }
         });
-
-        execute({
+        const execArgs: ExecuteArguments = {
           liveViewPage: entityPageForScriptId(script.id),
           pxl: script.code,
           vis,
           id: script.id,
           args: argsForVis(vis, args),
-        });
+        };
+
+        setTabStops([]);
+        setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
+        execute(execArgs);
         onClose();
       }
     }
