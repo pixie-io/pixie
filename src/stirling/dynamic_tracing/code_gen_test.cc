@@ -61,19 +61,19 @@ TEST(GenVariableTest, Register) {
   var.set_type(ScalarType::VOID_POINTER);
   var.set_reg(Register::SP);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::DeploymentSpec_Language_GOLANG),
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::GOLANG),
                      ElementsAre("void* var = (void*)PT_REGS_SP(ctx);"));
 
   var.set_type(ScalarType::INT);
   var.set_reg(Register::RC);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::DeploymentSpec_Language_CPP),
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::CPP),
                      ElementsAre("int var = (int)PT_REGS_RC(ctx);"));
 
   var.set_type(ScalarType::VOID_POINTER);
   var.set_reg(Register::RC);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::DeploymentSpec_Language_CPP),
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::CPP),
                      ElementsAre("void* var = (void*)PT_REGS_RC(ctx);"));
 }
 
@@ -89,7 +89,7 @@ TEST(GenVariableTest, MemoryVariable) {
   mem_var->set_offset(123);
 
   ASSERT_OK_AND_THAT(
-      GenScalarVariable(var, ir::shared::DeploymentSpec_Language_GOLANG),
+      GenScalarVariable(var, ir::shared::Language::GOLANG),
       ElementsAre("int32_t var;", "bpf_probe_read(&var, sizeof(int32_t), sp + 123);"));
 }
 
@@ -101,28 +101,28 @@ TEST(GenVariableTest, Builtin) {
 
   var.set_builtin(BPFHelper::GOID);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::DeploymentSpec_Language_GOLANG),
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::GOLANG),
                      ElementsAre("void* var = pl_goid();"));
 
   var.set_builtin(BPFHelper::TGID);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::DeploymentSpec_Language_GOLANG),
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::GOLANG),
                      ElementsAre("void* var = bpf_get_current_pid_tgid() >> 32;"));
 
   var.set_builtin(BPFHelper::TGID_PID);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::DeploymentSpec_Language_GOLANG),
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::GOLANG),
                      ElementsAre("void* var = bpf_get_current_pid_tgid();"));
 
   var.set_builtin(BPFHelper::KTIME);
   var.set_type(ScalarType::UINT64);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::DeploymentSpec_Language_GOLANG),
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::GOLANG),
                      ElementsAre("uint64_t var = bpf_ktime_get_ns();"));
 
   var.set_builtin(BPFHelper::TGID_START_TIME);
   var.set_type(ScalarType::UINT64);
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::DeploymentSpec_Language_GOLANG),
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::GOLANG),
                      ElementsAre("uint64_t var = pl_tgid_start_time();"));
 }
 
@@ -176,10 +176,10 @@ TEST(GenMapStashActionTest, StashMap) {
 
 TEST(GenProgramTest, SpecsAndCode) {
   const std::string program_protobuf = R"proto(
-                                       binary_spec {
+                                       deployment_spec {
                                          path: "target_binary_path"
-                                         language: GOLANG
                                        }
+                                       language: GOLANG
                                        structs {
                                          name: "socket_data_event_t"
                                          fields {
@@ -266,7 +266,7 @@ TEST(GenProgramTest, SpecsAndCode) {
   ir::physical::Program program;
 
   ASSERT_TRUE(TextFormat::ParseFromString(program_protobuf, &program));
-  program.mutable_binary_spec()->set_path(pl::testing::BazelBinTestFilePath(kBinaryPath));
+  program.mutable_deployment_spec()->set_path(pl::testing::BazelBinTestFilePath(kBinaryPath));
 
   ASSERT_OK_AND_ASSIGN(const std::string bcc_code, GenProgram(program));
 

@@ -109,8 +109,10 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScr
 				if _, ok := m.activeTracepoints[name]; ok {
 					return nil, fmt.Errorf("tracepoint with name '%s', already used", name)
 				}
-				for _, out := range mut.Trace.Outputs {
-					outputTablesMap[out.Name] = true
+				for _, tracepoint := range mut.Trace.Tracepoints {
+					for _, out := range tracepoint.Program.Outputs {
+						outputTablesMap[out.Name] = true
+					}
 				}
 
 				m.activeTracepoints[name] = &TracepointInfo{

@@ -43,9 +43,9 @@ class Compiler {
    * @param exec_funcs list of funcs to execute.
    * @return the IR for the dynamic trace.
    */
-  StatusOr<std::unique_ptr<DynamicTraceIR>> CompileTrace(const std::string& query,
-                                                         CompilerState* compiler_state,
-                                                         const ExecFuncs& exec_funcs);
+  StatusOr<std::unique_ptr<MutationsIR>> CompileTrace(const std::string& query,
+                                                      CompilerState* compiler_state,
+                                                      const ExecFuncs& exec_funcs);
   StatusOr<shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec(const std::string& query,
                                                                 CompilerState* compiler_state);
   StatusOr<pl::shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo(const std::string& query,

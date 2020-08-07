@@ -68,10 +68,10 @@ class GoHTTPDynamicTraceTest : public ::testing::Test,
 
     switch (target_kind) {
       case TargetKind::kBinaryPath:
-        logical_program_.mutable_binary_spec()->set_path(server_path_);
+        logical_program_.mutable_deployment_spec()->set_path(server_path_);
         break;
       case TargetKind::kPID:
-        logical_program_.mutable_binary_spec()->mutable_upid()->set_pid(s_.child_pid());
+        logical_program_.mutable_deployment_spec()->mutable_upid()->set_pid(s_.child_pid());
         break;
     }
 
@@ -115,56 +115,64 @@ class GoHTTPDynamicTraceTest : public ::testing::Test,
 };
 
 constexpr char kGRPCTraceProgram[] = R"(
-binary_spec { language: GOLANG }
-outputs {
-  name: "probe_WriteDataPadded_table"
-  fields: "stream_id"
-  fields: "end_stream"
-  fields: "latency"
-}
-probes: {
-  name: "probe_WriteDataPadded"
-  trace_point: {
-    symbol: "golang.org/x/net/http2.(*Framer).WriteDataPadded"
-    type: LOGICAL
-  }
-  args {
-    id: "stream_id"
-    expr: "streamID"
-  }
-  args {
-    id: "end_stream"
-    expr: "endStream"
-  }
-  function_latency { id: "latency" }
-  output_actions {
-    output_name: "probe_WriteDataPadded_table"
-    variable_name: "stream_id"
-    variable_name: "end_stream"
-    variable_name: "latency"
+tracepoints {
+  program {
+    language: GOLANG
+    outputs {
+      name: "probe_WriteDataPadded_table"
+      fields: "stream_id"
+      fields: "end_stream"
+      fields: "latency"
+    }
+    probes: {
+      name: "probe_WriteDataPadded"
+      trace_point: {
+        symbol: "golang.org/x/net/http2.(*Framer).WriteDataPadded"
+        type: LOGICAL
+      }
+      args {
+        id: "stream_id"
+        expr: "streamID"
+      }
+      args {
+        id: "end_stream"
+        expr: "endStream"
+      }
+      function_latency { id: "latency" }
+      output_actions {
+        output_name: "probe_WriteDataPadded_table"
+        variable_name: "stream_id"
+        variable_name: "end_stream"
+        variable_name: "latency"
+      }
+    }
   }
 }
 )";
 
 constexpr char kReturnValueTraceProgram[] = R"(
-binary_spec { language: GOLANG }
-outputs {
-  name: "probe_readFrameHeader"
-  fields: "frame_header_valid"
-}
-probes: {
-  name: "probe_StreamEnded"
-  trace_point: {
-    symbol: "golang.org/x/net/http2.readFrameHeader"
-    type: LOGICAL
-  }
-  ret_vals {
-    id: "frame_header_valid"
-    expr: "$2.valid"
-  }
-  output_actions {
-    output_name: "probe_readFrameHeader"
-    variable_name: "frame_header_valid"
+tracepoints {
+  program {
+    language: GOLANG
+    outputs {
+      name: "probe_readFrameHeader"
+      fields: "frame_header_valid"
+    }
+    probes: {
+      name: "probe_StreamEnded"
+      trace_point: {
+        symbol: "golang.org/x/net/http2.readFrameHeader"
+        type: LOGICAL
+      }
+      ret_vals {
+        id: "frame_header_valid"
+        expr: "$2.valid"
+      }
+      output_actions {
+        output_name: "probe_readFrameHeader"
+        variable_name: "frame_header_valid"
+      }
+    }
   }
 }
 )";
@@ -221,7 +229,7 @@ class CPPDynamicTraceTest : public ::testing::Test {
   Status InitTestFixturesAndRunTestProgram(const std::string& text_pb) {
     CHECK(TextFormat::ParseFromString(text_pb, &logical_program_));
 
-    logical_program_.mutable_binary_spec()->set_path(dummy_exe_fixture_.Path());
+    logical_program_.mutable_deployment_spec()->set_path(dummy_exe_fixture_.Path());
 
     PL_ASSIGN_OR_RETURN(bcc_program_, dynamic_tracing::CompileProgram(logical_program_));
 
@@ -263,24 +271,28 @@ class CPPDynamicTraceTest : public ::testing::Test {
 };
 
 constexpr char kDummyExeTraceProgram[] = R"(
-binary_spec { language: CPP }
-outputs {
-  name: "foo_bar_output"
-  fields: "arg"
-}
-probes: {
-  name: "probe_foo_bar"
-  trace_point: {
-    symbol: "pl::testing::Foo::Bar"
-    type: LOGICAL
-  }
-  args {
-    id: "foo_bar_arg"
-    expr: "i"
-  }
-  output_actions {
-    output_name: "foo_bar_output"
-    variable_name: "foo_bar_arg"
+tracepoints {
+  program {
+    language: CPP
+    outputs {
+      name: "foo_bar_output"
+      fields: "arg"
+    }
+    probes: {
+      name: "probe_foo_bar"
+      trace_point: {
+        symbol: "pl::testing::Foo::Bar"
+        type: LOGICAL
+      }
+      args {
+        id: "foo_bar_arg"
+        expr: "i"
+      }
+      output_actions {
+        output_name: "foo_bar_output"
+        variable_name: "foo_bar_arg"
+      }
+    }
   }
 }
 )";

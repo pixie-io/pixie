@@ -7,31 +7,37 @@ namespace carnot {
 namespace planner {
 namespace compiler {
 
-Status ProbeIR::ToProto(stirling::dynamic_tracing::ir::logical::Probe* pb) {
-  auto* trace_point_pb = pb->mutable_trace_point();
+Status TracepointIR::ToProto(stirling::dynamic_tracing::ir::logical::TracepointSpec* pb,
+                             const std::string& probe_name) {
+  auto* probe_pb = pb->add_probes();
+  probe_pb->set_name(probe_name);
+  auto* trace_point_pb = probe_pb->mutable_trace_point();
   trace_point_pb->set_symbol(symbol_);
   trace_point_pb->set_type(stirling::dynamic_tracing::ir::shared::TracePoint::LOGICAL);
 
   for (const auto& arg : args_) {
-    *pb->add_args() = arg;
+    *probe_pb->add_args() = arg;
   }
 
   for (const auto& retval : ret_vals_) {
-    *pb->add_ret_vals() = retval;
+    *probe_pb->add_ret_vals() = retval;
   }
 
   if (HasLatencyCol()) {
-    pb->mutable_function_latency()->set_id(latency_col_id_);
+    probe_pb->mutable_function_latency()->set_id(latency_col_id_);
   }
+
+  pb->set_language(language_);
 
   // TODO(philkuz) implement map methods.
   // for (const auto& map_stash : map_stash_actions_) {
-  // (*pb->add_map_stash_actions()) = map_stash;
+  // (*probe_pb->add_map_stash_actions()) = map_stash;
   // }
 
   // Probes don't necessarily have an output. IE if our probe just writes to a map.
   if (output_) {
-    PL_RETURN_IF_ERROR(output_->ToActionProto(pb->add_output_actions()));
+    PL_RETURN_IF_ERROR(output_->ToActionProto(probe_pb->add_output_actions()));
+    PL_RETURN_IF_ERROR(output_->ToOutputProto(pb->add_outputs()));
   }
   return Status::OK();
 }
@@ -52,26 +58,26 @@ Status ProbeOutput::ToOutputProto(stirling::dynamic_tracing::ir::logical::Output
   return Status::OK();
 }
 
-void ProbeIR::SetOutputName(const std::string& output_name) {
+void TracepointIR::SetOutputName(const std::string& output_name) {
   if (!output_) {
     return;
   }
   output_->set_name(output_name);
 }
 
-void ProbeIR::CreateNewOutput(const std::vector<std::string>& col_names,
-                              const std::vector<std::string>& var_names) {
+void TracepointIR::CreateNewOutput(const std::vector<std::string>& col_names,
+                                   const std::vector<std::string>& var_names) {
   output_ = std::make_shared<ProbeOutput>(col_names, var_names);
 }
 
-void ProbeIR::AddArgument(const std::string& id, const std::string& expr) {
+void TracepointIR::AddArgument(const std::string& id, const std::string& expr) {
   stirling::dynamic_tracing::ir::logical::Argument arg;
   arg.set_id(id);
   arg.set_expr(expr);
   args_.push_back(arg);
 }
 
-void ProbeIR::AddReturnValue(const std::string& id, const std::string& expr) {
+void TracepointIR::AddReturnValue(const std::string& id, const std::string& expr) {
   stirling::dynamic_tracing::ir::logical::ReturnValue ret;
   ret.set_id(id);
   // TODO(philkuz/oazizi) The expression needs to be in the form "$<index>.<field>.<...>".
@@ -79,49 +85,48 @@ void ProbeIR::AddReturnValue(const std::string& id, const std::string& expr) {
   ret_vals_.push_back(ret);
 }
 
-std::shared_ptr<ProbeIR> DynamicTraceIR::StartProbe(
-    stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language,
-    const std::string& function_name) {
-  auto probe_ir = std::make_shared<ProbeIR>(language, function_name);
-  probes_pool_.push_back(probe_ir);
-  current_probe_ = probe_ir;
-  return probe_ir;
+std::shared_ptr<TracepointIR> MutationsIR::StartProbe(
+    stirling::dynamic_tracing::ir::shared::Language language, const std::string& function_name) {
+  auto tracepoint_ir = std::make_shared<TracepointIR>(language, function_name);
+  probes_pool_.push_back(tracepoint_ir);
+  current_tracepoint_ = tracepoint_ir;
+  return tracepoint_ir;
 }
 
-StatusOr<TracingProgram*> DynamicTraceIR::CreateTraceProgram(const std::string& trace_point_name,
-                                                             const md::UPID& upid, int64_t ttl_ns) {
+StatusOr<TracepointDeployment*> MutationsIR::CreateTracepointDeployment(
+    const std::string& trace_point_name, const md::UPID& upid, int64_t ttl_ns) {
   if (!upid_to_program_map_.empty() && upid_to_program_map_.contains(upid)) {
     return error::InvalidArgument(
         "Cannot UpsertTracepoint on the same binary. Use UpsertTracepoints instead.");
   }
-  std::unique_ptr<TracingProgram> program =
-      std::make_unique<TracingProgram>(trace_point_name, ttl_ns);
-  TracingProgram* raw = program.get();
+  std::unique_ptr<TracepointDeployment> program =
+      std::make_unique<TracepointDeployment>(trace_point_name, ttl_ns);
+  TracepointDeployment* raw = program.get();
   upid_to_program_map_[upid] = std::move(program);
   return raw;
 }
 
-Status TracingProgram::AddProbe(ProbeIR* probe_ir, const std::string& probe_name,
-                                const std::string& output_name) {
-  if (probes_.size()) {
-    if (probe_ir->language() != language_) {
+Status TracepointDeployment::AddTracepoint(TracepointIR* tracepoint_ir,
+                                           const std::string& probe_name,
+                                           const std::string& output_name) {
+  if (tracepoints_.size()) {
+    if (tracepoint_ir->language() != language_) {
       return error::InvalidArgument(
           "Cannot add '$1' tracer to '$0' tracing program. Multiple languages not supported.",
-          stirling::dynamic_tracing::ir::shared::DeploymentSpec_Language_Name(language_),
-          stirling::dynamic_tracing::ir::shared::DeploymentSpec_Language_Name(
-              probe_ir->language()));
+          stirling::dynamic_tracing::ir::shared::Language_Name(language_),
+          stirling::dynamic_tracing::ir::shared::Language_Name(tracepoint_ir->language()));
     }
   } else {
-    language_ = probe_ir->language();
+    language_ = tracepoint_ir->language();
   }
-  probe_ir->SetOutputName(output_name);
+  tracepoint_ir->SetOutputName(output_name);
 
-  stirling::dynamic_tracing::ir::logical::Probe probe_pb;
-  PL_CHECK_OK(probe_ir->ToProto(&probe_pb));
-  probe_pb.set_name(probe_name);
-  probes_.push_back(probe_pb);
+  stirling::dynamic_tracing::ir::logical::TracepointDeployment::Tracepoint tracepoint_pb;
+  PL_CHECK_OK(tracepoint_ir->ToProto(tracepoint_pb.mutable_program(), probe_name));
+  tracepoint_pb.set_output_name(output_name);
+  tracepoints_.push_back(tracepoint_pb);
 
-  auto output = probe_ir->output();
+  auto output = tracepoint_ir->output();
   if (!output) {
     return Status::OK();
   }
@@ -146,23 +151,17 @@ Status TracingProgram::AddProbe(ProbeIR* probe_ir, const std::string& probe_name
   return Status::OK();
 }
 
-StatusOr<ProbeIR*> DynamicTraceIR::GetCurrentProbeOrError(const pypa::AstPtr& ast) {
-  if (current_probe_.get() == nullptr) {
+StatusOr<TracepointIR*> MutationsIR::GetCurrentProbeOrError(const pypa::AstPtr& ast) {
+  if (current_tracepoint_.get() == nullptr) {
     return CreateAstError(ast, "Missing current probe");
   }
-  return current_probe_.get();
+  return current_tracepoint_.get();
 }
 
-Status TracingProgram::ToProto(
+Status TracepointDeployment::ToProto(
     stirling::dynamic_tracing::ir::logical::TracepointDeployment* pb) const {
-  auto binary_spec = pb->mutable_binary_spec();
-  // TODO(philkuz/oazizi) need to pass in from query.
-  binary_spec->set_language(language_);
-  for (const auto& probe : probes_) {
-    (*pb->add_probes()) = probe;
-  }
-  for (const auto& output : outputs_) {
-    (*pb->add_outputs()) = output;
+  for (const auto& tracepoint : tracepoints_) {
+    (*pb->add_tracepoints()) = tracepoint;
   }
   pb->set_name(name_);
 
@@ -172,27 +171,32 @@ Status TracingProgram::ToProto(
   return Status::OK();
 }
 
-Status DynamicTraceIR::ToProto(plannerpb::CompileMutationsResponse* pb) {
+Status MutationsIR::ToProto(plannerpb::CompileMutationsResponse* pb) {
   for (const auto& [upid, program] : upid_to_program_map_) {
     auto program_pb = pb->add_mutations()->mutable_trace();
     PL_RETURN_IF_ERROR(program->ToProto(program_pb));
-    auto binary_spec = program_pb->mutable_binary_spec();
-    auto upid_pb = binary_spec->mutable_upid();
+    auto deployment_spec = program_pb->mutable_deployment_spec();
+    auto upid_pb = deployment_spec->mutable_upid();
     upid_pb->set_asid(upid.asid());
     upid_pb->set_pid(upid.pid());
     upid_pb->set_ts_ns(upid.start_ts());
   }
 
-  for (const auto& [binary, program] : binary_to_program_map_) {
-    auto program_pb = pb->add_mutations()->mutable_trace();
-    PL_RETURN_IF_ERROR(program.ToProto(program_pb));
-    auto binary_spec = program_pb->mutable_binary_spec();
-    binary_spec->set_path(binary);
+  // for (const auto& [binary, program] : binary_to_program_map_) {
+  //   auto program_pb = pb->add_mutations()->mutable_trace();
+  //   PL_RETURN_IF_ERROR(program.ToProto(program_pb));
+  //   auto binary_spec = program_pb->mutable_binary_spec();
+  //   binary_spec->set_path(binary);
+  // }
+
+  for (const auto& trace_point_to_delete : TracepointsToDelete()) {
+    pb->add_mutations()->mutable_delete_tracepoint()->set_name(trace_point_to_delete);
   }
+
   return Status::OK();
 }
 
-void DynamicTraceIR::EndProbe() { current_probe_ = nullptr; }
+void MutationsIR::EndProbe() { current_tracepoint_ = nullptr; }
 
 }  // namespace compiler
 }  // namespace planner

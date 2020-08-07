@@ -41,7 +41,7 @@ class LogicalPlanner : public NotCopyable {
       const distributedpb::LogicalPlannerState& logical_state,
       const plannerpb::QueryRequest& query);
 
-  StatusOr<std::unique_ptr<compiler::DynamicTraceIR>> CompileTrace(
+  StatusOr<std::unique_ptr<compiler::MutationsIR>> CompileTrace(
       const distributedpb::LogicalPlannerState& logical_state,
       const plannerpb::CompileMutationsRequest& mutations_req);
 

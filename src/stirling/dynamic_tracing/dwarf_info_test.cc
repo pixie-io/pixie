@@ -14,47 +14,51 @@ using ::google::protobuf::TextFormat;
 using ::pl::testing::proto::EqualsProto;
 
 constexpr std::string_view kEntryProbeIn = R"(
-binary_spec {
+deployment_spec {
   path: "$0"
-  language: GOLANG
 }
-probes: {
-  trace_point: {
-    symbol: "main.MixedArgTypes"
-    type: ENTRY
-  }
-  args {
-    id: "arg0"
-    expr: "i1"
-  }
-  args {
-    id: "arg1"
-    expr: "i2"
-  }
-  args {
-    id: "arg2"
-    expr: "i3"
-  }
-  args {
-    id: "arg3"
-    expr: "b1"
-  }
-  args {
-    id: "arg4"
-    expr: "b2.B0"
-  }
-  args {
-    id: "arg5"
-    expr: "b2.B3"
+tracepoints {
+  program {
+    language: GOLANG
+    probes {
+      trace_point: {
+        symbol: "main.MixedArgTypes"
+        type: ENTRY
+      }
+      args {
+        id: "arg0"
+        expr: "i1"
+      }
+      args {
+        id: "arg1"
+        expr: "i2"
+      }
+      args {
+        id: "arg2"
+        expr: "i3"
+      }
+      args {
+        id: "arg3"
+        expr: "b1"
+      }
+      args {
+        id: "arg4"
+        expr: "b2.B0"
+      }
+      args {
+        id: "arg5"
+        expr: "b2.B3"
+      }
+    }
   }
 }
 )";
 
 constexpr std::string_view kEntryProbeOut = R"(
-binary_spec {
+deployment_spec {
   path: "$0"
-  language: GOLANG
 }
+language: GOLANG
 probes {
   trace_point {
     symbol: "main.MixedArgTypes"
@@ -166,31 +170,35 @@ probes {
 )";
 
 constexpr std::string_view kReturnProbeIn = R"(
-binary_spec {
+deployment_spec {
   path: "$0"
-  language: GOLANG
 }
-probes: {
-  trace_point: {
-    symbol: "main.MixedArgTypes"
-    type: RETURN
-  }
-  ret_vals {
-    id: "retval0"
-    expr: "$$6"
-  }
-  ret_vals {
-    id: "retval1"
-    expr: "$$7.B1"
+tracepoints {
+  program {
+    language: GOLANG
+    probes {
+      trace_point: {
+        symbol: "main.MixedArgTypes"
+        type: RETURN
+      }
+      ret_vals {
+        id: "retval0"
+        expr: "$$6"
+      }
+      ret_vals {
+        id: "retval1"
+        expr: "$$7.B1"
+      }
+    }
   }
 }
 )";
 
 constexpr std::string_view kReturnProbeOut = R"(
-binary_spec {
+deployment_spec {
   path: "$0"
-  language: GOLANG
 }
+language: GOLANG
 probes {
   trace_point {
     symbol: "main.MixedArgTypes"
@@ -262,31 +270,35 @@ probes {
 )";
 
 constexpr std::string_view kNestedArgProbeIn = R"(
-binary_spec {
+deployment_spec {
   path: "$0"
-  language: GOLANG
 }
-probes: {
-  trace_point: {
-    symbol: "main.PointerWrapperWrapperWrapperFunc"
-    type: ENTRY
-  }
-  args {
-    id: "arg0"
-    expr: "p.Ptr.Val.Ptr"
-  }
-  args {
-    id: "arg1"
-    expr: "p.Ptr.Val.V0"
+tracepoints {
+  program {
+    language: GOLANG
+    probes {
+      trace_point: {
+        symbol: "main.PointerWrapperWrapperWrapperFunc"
+        type: ENTRY
+      }
+      args {
+        id: "arg0"
+        expr: "p.Ptr.Val.Ptr"
+      }
+      args {
+        id: "arg1"
+        expr: "p.Ptr.Val.V0"
+      }
+    }
   }
 }
 )";
 
 constexpr std::string_view kNestedArgProbeOut = R"(
-binary_spec {
+deployment_spec {
   path: "$0"
-  language: GOLANG
 }
+language: GOLANG
 probes {
   trace_point {
     symbol: "main.PointerWrapperWrapperWrapperFunc"
@@ -387,83 +399,87 @@ probes {
 )";
 
 constexpr std::string_view kActionProbeIn = R"(
-binary_spec {
+deployment_spec {
   path: "$0"
-  language: GOLANG
 }
-maps {
-  name: "my_stash"
-}
-outputs {
-  name: "out_table"
-  fields: "arg0"
-  fields: "arg1"
-  fields: "arg2"
-}
-outputs {
-  name: "out_table2"
-  fields: "arg0"
-  fields: "arg1"
-}
-probes: {
-  trace_point: {
-    symbol: "main.MixedArgTypes"
-    type: ENTRY
-  }
-  args {
-    id: "arg0"
-    expr: "i1"
-  }
-  args {
-    id: "arg1"
-    expr: "b1"
-  }
-  args {
-    id: "arg2"
-    expr: "b2.B0"
-  }
-  map_stash_actions {
-    map_name: "my_stash"
-    key: GOID
-    value_variable_name: "arg0"
-    value_variable_name: "arg1"
-    cond {}
-  }
-  output_actions {
-    output_name: "out_table"
-    variable_name: "arg0"
-    variable_name: "arg1"
-    variable_name: "arg2"
-  }
-}
-probes: {
-  trace_point: {
-    symbol: "main.MixedArgTypes"
-    type: RETURN
-  }
-  map_vals {
-    map_name: "my_stash"
-    key: GOID
-    value_ids: "arg0"
-    value_ids: "arg1"
-  }
-  map_delete_actions {
-    map_name: "my_stash"
-    key: GOID
-  }
-  output_actions {
-    output_name: "out_table2"
-    variable_name: "arg0"
-    variable_name: "arg1"
+tracepoints {
+  program {
+    language: GOLANG
+    maps {
+      name: "my_stash"
+    }
+    outputs {
+      name: "out_table"
+      fields: "arg0"
+      fields: "arg1"
+      fields: "arg2"
+    }
+    outputs {
+      name: "out_table2"
+      fields: "arg0"
+      fields: "arg1"
+    }
+    probes: {
+      trace_point: {
+        symbol: "main.MixedArgTypes"
+        type: ENTRY
+      }
+      args {
+        id: "arg0"
+        expr: "i1"
+      }
+      args {
+        id: "arg1"
+        expr: "b1"
+      }
+      args {
+        id: "arg2"
+        expr: "b2.B0"
+      }
+      map_stash_actions {
+        map_name: "my_stash"
+        key: GOID
+        value_variable_name: "arg0"
+        value_variable_name: "arg1"
+        cond {}
+      }
+      output_actions {
+        output_name: "out_table"
+        variable_name: "arg0"
+        variable_name: "arg1"
+        variable_name: "arg2"
+      }
+    }
+    probes: {
+      trace_point: {
+        symbol: "main.MixedArgTypes"
+        type: RETURN
+      }
+      map_vals {
+        map_name: "my_stash"
+        key: GOID
+        value_ids: "arg0"
+        value_ids: "arg1"
+      }
+      map_delete_actions {
+        map_name: "my_stash"
+        key: GOID
+      }
+      output_actions {
+        output_name: "out_table2"
+        variable_name: "arg0"
+        variable_name: "arg1"
+      }
+    }
   }
 }
 )";
 
 constexpr std::string_view kActionProbeOut = R"(
-binary_spec {
+deployment_spec {
   path: "$0"
-  language: GOLANG
 }
+language: GOLANG
 structs {
   name: "my_stash_value_t"
   fields {

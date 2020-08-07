@@ -14,212 +14,220 @@ using ::google::protobuf::TextFormat;
 using ::pl::testing::proto::EqualsProto;
 
 constexpr std::string_view kLogicalProgram = R"(
-binary_spec {
+deployment_spec {
   path: "$0"
-  language: GOLANG
 }
-outputs {
-  name: "probe0_table"
-  fields: "arg0"
-  fields: "arg1"
-  fields: "arg2"
-  fields: "arg3"
-  fields: "arg4"
-  fields: "arg5"
-  fields: "retval0"
-  fields: "retval1"
-  fields: "latency"
-}
-probes {
-  name: "probe0"
-  trace_point {
-    symbol: "main.MixedArgTypes"
-    type: LOGICAL
-  }
-  args {
-    id: "arg0"
-    expr: "i1"
-  }
-  args {
-    id: "arg1"
-    expr: "i2"
-  }
-  args {
-    id: "arg2"
-    expr: "i3"
-  }
-  args {
-    id: "arg3"
-    expr: "b1"
-  }
-  args {
-    id: "arg4"
-    expr: "b2.B0"
-  }
-  args {
-    id: "arg5"
-    expr: "b2.B3"
-  }
-  ret_vals {
-    id: "retval0"
-    expr: "$$6"
-  }
-  ret_vals {
-    id: "retval1"
-    expr: "$$7"
-  }
-  function_latency { id: "fn_latency" }
-  output_actions {
-    output_name: "probe0_table"
-    variable_name: "arg0"
-    variable_name: "arg1"
-    variable_name: "arg2"
-    variable_name: "arg3"
-    variable_name: "arg4"
-    variable_name: "arg5"
-    variable_name: "retval0"
-    variable_name: "retval1"
-    variable_name: "fn_latency"
+tracepoints {
+  program {
+    language: GOLANG
+    outputs {
+      name: "probe0_table"
+      fields: "arg0"
+      fields: "arg1"
+      fields: "arg2"
+      fields: "arg3"
+      fields: "arg4"
+      fields: "arg5"
+      fields: "retval0"
+      fields: "retval1"
+      fields: "latency"
+    }
+    probes {
+      name: "probe0"
+      trace_point {
+        symbol: "main.MixedArgTypes"
+        type: LOGICAL
+      }
+      args {
+        id: "arg0"
+        expr: "i1"
+      }
+      args {
+        id: "arg1"
+        expr: "i2"
+      }
+      args {
+        id: "arg2"
+        expr: "i3"
+      }
+      args {
+        id: "arg3"
+        expr: "b1"
+      }
+      args {
+        id: "arg4"
+        expr: "b2.B0"
+      }
+      args {
+        id: "arg5"
+        expr: "b2.B3"
+      }
+      ret_vals {
+        id: "retval0"
+        expr: "$$6"
+      }
+      ret_vals {
+        id: "retval1"
+        expr: "$$7"
+      }
+      function_latency { id: "fn_latency" }
+      output_actions {
+        output_name: "probe0_table"
+        variable_name: "arg0"
+        variable_name: "arg1"
+        variable_name: "arg2"
+        variable_name: "arg3"
+        variable_name: "arg4"
+        variable_name: "arg5"
+        variable_name: "retval0"
+        variable_name: "retval1"
+        variable_name: "fn_latency"
+      }
+    }
   }
 }
 )";
 
 constexpr std::string_view kTransformedProgram = R"proto(
-binary_spec {
+deployment_spec {
   path: "$0"
-  language: GOLANG
 }
-maps {
-  name: "pid_goid_map"
-}
-maps {
-  name: "probe0_argstash"
-}
-outputs {
-  name: "probe0_table"
-  fields: "arg0"
-  fields: "arg1"
-  fields: "arg2"
-  fields: "arg3"
-  fields: "arg4"
-  fields: "arg5"
-  fields: "retval0"
-  fields: "retval1"
-  fields: "latency"
-}
-probes {
-  name: "probe_entry_runtime_casgstatus"
-  trace_point {
-    symbol: "runtime.casgstatus"
-    type: ENTRY
-  }
-  consts {
-    name: "kGRunningState"
-    type: INT64
-    constant: "2"
-  }
-  args {
-    id: "goid"
-    expr: "gp.goid"
-  }
-  args {
-    id: "newval"
-    expr: "newval"
-  }
-  map_stash_actions {
-    map_name: "pid_goid_map"
-    key: TGID_PID
-    value_variable_name: "goid"
-    cond {
-      op: EQUAL
-      vars: "newval"
-      vars: "kGRunningState"
+tracepoints {
+  program {
+    language: GOLANG
+    maps {
+      name: "pid_goid_map"
     }
-  }
-}
-probes {
-  name: "probe0_entry"
-  trace_point {
-    symbol: "main.MixedArgTypes"
-    type: ENTRY
-  }
-  args {
-    id: "arg0"
-    expr: "i1"
-  }
-  args {
-    id: "arg1"
-    expr: "i2"
-  }
-  args {
-    id: "arg2"
-    expr: "i3"
-  }
-  args {
-    id: "arg3"
-    expr: "b1"
-  }
-  args {
-    id: "arg4"
-    expr: "b2.B0"
-  }
-  args {
-    id: "arg5"
-    expr: "b2.B3"
-  }
-  map_stash_actions {
-    map_name: "probe0_argstash"
-    key: GOID
-    value_variable_name: "arg0"
-    value_variable_name: "arg1"
-    value_variable_name: "arg2"
-    value_variable_name: "arg3"
-    value_variable_name: "arg4"
-    value_variable_name: "arg5"
-    value_variable_name: "time_"
-  }
-}
-probes {
-  name: "probe0_return"
-  trace_point {
-    symbol: "main.MixedArgTypes"
-    type: RETURN
-  }
-  function_latency { id: "fn_latency" }
-  map_vals {
-    map_name: "probe0_argstash"
-    key: GOID
-    value_ids: "arg0"
-    value_ids: "arg1"
-    value_ids: "arg2"
-    value_ids: "arg3"
-    value_ids: "arg4"
-    value_ids: "arg5"
-    value_ids: "start_ktime_ns"
-  }
-  ret_vals {
-    id: "retval0"
-    expr: "$$6"
-  }
-  ret_vals {
-    id: "retval1"
-    expr: "$$7"
-  }
-  output_actions {
-    output_name: "probe0_table"
-    variable_name: "arg0"
-    variable_name: "arg1"
-    variable_name: "arg2"
-    variable_name: "arg3"
-    variable_name: "arg4"
-    variable_name: "arg5"
-    variable_name: "retval0"
-    variable_name: "retval1"
-    variable_name: "fn_latency"
-  }
-  map_delete_actions {
-    map_name: "probe0_argstash"
-    key: GOID
+    maps {
+      name: "probe0_argstash"
+    }
+    outputs {
+      name: "probe0_table"
+      fields: "arg0"
+      fields: "arg1"
+      fields: "arg2"
+      fields: "arg3"
+      fields: "arg4"
+      fields: "arg5"
+      fields: "retval0"
+      fields: "retval1"
+      fields: "latency"
+    }
+    probes {
+      name: "probe_entry_runtime_casgstatus"
+      trace_point {
+        symbol: "runtime.casgstatus"
+        type: ENTRY
+      }
+      consts {
+        name: "kGRunningState"
+        type: INT64
+        constant: "2"
+      }
+      args {
+        id: "goid"
+        expr: "gp.goid"
+      }
+      args {
+        id: "newval"
+        expr: "newval"
+      }
+      map_stash_actions {
+        map_name: "pid_goid_map"
+        key: TGID_PID
+        value_variable_name: "goid"
+        cond {
+          op: EQUAL
+          vars: "newval"
+          vars: "kGRunningState"
+        }
+      }
+    }
+    probes {
+      name: "probe0_entry"
+      trace_point {
+        symbol: "main.MixedArgTypes"
+        type: ENTRY
+      }
+      args {
+        id: "arg0"
+        expr: "i1"
+      }
+      args {
+        id: "arg1"
+        expr: "i2"
+      }
+      args {
+        id: "arg2"
+        expr: "i3"
+      }
+      args {
+        id: "arg3"
+        expr: "b1"
+      }
+      args {
+        id: "arg4"
+        expr: "b2.B0"
+      }
+      args {
+        id: "arg5"
+        expr: "b2.B3"
+      }
+      map_stash_actions {
+        map_name: "probe0_argstash"
+        key: GOID
+        value_variable_name: "arg0"
+        value_variable_name: "arg1"
+        value_variable_name: "arg2"
+        value_variable_name: "arg3"
+        value_variable_name: "arg4"
+        value_variable_name: "arg5"
+        value_variable_name: "time_"
+      }
+    }
+    probes {
+      name: "probe0_return"
+      trace_point {
+        symbol: "main.MixedArgTypes"
+        type: RETURN
+      }
+      function_latency { id: "fn_latency" }
+      map_vals {
+        map_name: "probe0_argstash"
+        key: GOID
+        value_ids: "arg0"
+        value_ids: "arg1"
+        value_ids: "arg2"
+        value_ids: "arg3"
+        value_ids: "arg4"
+        value_ids: "arg5"
+        value_ids: "start_ktime_ns"
+      }
+      ret_vals {
+        id: "retval0"
+        expr: "$$6"
+      }
+      ret_vals {
+        id: "retval1"
+        expr: "$$7"
+      }
+      output_actions {
+        output_name: "probe0_table"
+        variable_name: "arg0"
+        variable_name: "arg1"
+        variable_name: "arg2"
+        variable_name: "arg3"
+        variable_name: "arg4"
+        variable_name: "arg5"
+        variable_name: "retval0"
+        variable_name: "retval1"
+        variable_name: "fn_latency"
+      }
+      map_delete_actions {
+        map_name: "probe0_argstash"
+        key: GOID
+      }
+    }
   }
 }
 )proto";
@@ -260,7 +268,7 @@ TEST_F(ProbeGenTest, ErrorCases) {
   {
     // Output must be specified if an OutputAction exists.
     ir::logical::TracepointDeployment p = input_program;
-    p.mutable_outputs()->Clear();
+    p.mutable_tracepoints(0)->mutable_program()->mutable_outputs()->Clear();
     ASSERT_NOT_OK(TransformLogicalProgram(p));
   }
 

@@ -36,7 +36,7 @@ StatusOr<FuncIR::Op> ASTVisitorImpl::GetUnaryOp(const std::string& python_op,
 }
 
 StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
-    IR* graph, DynamicTraceIR* dynamic_trace, CompilerState* compiler_state,
+    IR* graph, MutationsIR* dynamic_trace, CompilerState* compiler_state,
     ModuleHandler* module_handler, bool func_based_exec,
     const absl::flat_hash_set<std::string>& reserved_names,
     const absl::flat_hash_map<std::string, std::string>& module_map) {

@@ -64,7 +64,7 @@ class ASTExpressionTest : public ::testing::Test {
   std::shared_ptr<CompilerState> compiler_state_;
   int64_t time_now_ = 1552607213931245000;
   ModuleHandler module_handler_;
-  DynamicTraceIR dynamic_trace_;
+  MutationsIR dynamic_trace_;
 };
 
 TEST_F(ASTExpressionTest, String) {

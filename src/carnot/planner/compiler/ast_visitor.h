@@ -65,7 +65,7 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
    */
   static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(
-      IR* graph, DynamicTraceIR* dynamic_trace, CompilerState* compiler_state,
+      IR* graph, MutationsIR* dynamic_trace, CompilerState* compiler_state,
       ModuleHandler* module_handler, bool func_based_exec = false,
       const absl::flat_hash_set<std::string>& reserved_names = {},
       const absl::flat_hash_map<std::string, std::string>& module_map = {});
@@ -153,7 +153,7 @@ class ASTVisitorImpl : public ASTVisitor {
    *
    * @param ir_graph
    */
-  ASTVisitorImpl(IR* ir_graph, DynamicTraceIR* dynamic_trace, CompilerState* compiler_state,
+  ASTVisitorImpl(IR* ir_graph, MutationsIR* dynamic_trace, CompilerState* compiler_state,
                  std::shared_ptr<VarTable> var_table, bool func_based_exec,
                  const absl::flat_hash_set<std::string>& reserved_names,
                  ModuleHandler* module_handler)
@@ -567,7 +567,7 @@ class ASTVisitorImpl : public ASTVisitor {
   // modules.
   ModuleHandler* module_handler_;
   // The Probe definition builder.
-  DynamicTraceIR* dynamic_trace_;
+  MutationsIR* dynamic_trace_;
 };
 
 }  // namespace compiler

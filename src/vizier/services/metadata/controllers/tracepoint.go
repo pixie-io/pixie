@@ -90,7 +90,7 @@ func (m *TracepointManager) SyncTracepoints() error {
 	return nil
 }
 
-func comparePrograms(p1 *logicalpb.TracepointDeployment, p2 *logicalpb.TracepointDeployment) bool {
+func comparePrograms(p1 *logicalpb.TracepointSpec, p2 *logicalpb.TracepointSpec) bool {
 	val1, err := p1.Marshal()
 	if err != nil {
 		return false
@@ -193,21 +193,35 @@ func (m *TracepointManager) CreateTracepoint(tracepointName string, tracepointDe
 		if prevTracepoint != nil && prevTracepoint.ExpectedState != statuspb.TERMINATED_STATE {
 
 			//  We can replace it if the outputs are the same.
-			if len(prevTracepoint.Tracepoint.Outputs) != len(tracepointDeployment.Outputs) {
+			if len(prevTracepoint.Tracepoint.Tracepoints) != len(tracepointDeployment.Tracepoints) {
 				return prevTracepointID, ErrTracepointAlreadyExists
 			}
-			for i, output := range prevTracepoint.Tracepoint.Outputs {
-				if len(output.Fields) != len(tracepointDeployment.Outputs[i].Fields) {
+			for i, tracepoint := range prevTracepoint.Tracepoint.Tracepoints {
+				if len(tracepoint.Program.Outputs) != len(tracepointDeployment.Tracepoints[i].Program.Outputs) {
 					return prevTracepointID, ErrTracepointAlreadyExists
 				}
-				for j, field := range output.Fields {
-					if field != tracepointDeployment.Outputs[i].Fields[j] {
+
+				for j, output := range tracepoint.Program.Outputs {
+					if len(output.Fields) != len(tracepointDeployment.Tracepoints[i].Program.Outputs[j].Fields) {
 						return prevTracepointID, ErrTracepointAlreadyExists
+					}
+					for k, field := range output.Fields {
+						if field != tracepointDeployment.Tracepoints[i].Program.Outputs[j].Fields[k] {
+							return prevTracepointID, ErrTracepointAlreadyExists
+						}
 					}
 				}
 			}
 			// Check if the tracepoints are exactly the same.
-			if comparePrograms(tracepointDeployment, prevTracepoint.Tracepoint) {
+			allTpsSame := true
+			for i := range prevTracepoint.Tracepoint.Tracepoints {
+				if !comparePrograms(tracepointDeployment.Tracepoints[i].Program, prevTracepoint.Tracepoint.Tracepoints[i].Program) {
+					allTpsSame = false
+					break
+				}
+			}
+
+			if allTpsSame {
 				return prevTracepointID, ErrTracepointAlreadyExists
 			}
 

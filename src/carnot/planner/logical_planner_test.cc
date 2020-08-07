@@ -442,44 +442,49 @@ pxtrace.UpsertTracepoint('http_return',
 )pxl";
 
 constexpr char kSingleProbeProgramPb[] = R"pxl(
-binary_spec {
-  upid {
-    asid: 306070887 pid: 3902477011 ts_ns: 11841725277501915136
-  }
-  language: GOLANG
-}
-outputs {
-  name: "http_return_table"
-  fields: "id"
-  fields: "err"
-  fields: "latency"
-}
-probes {
-  name: "http_return"
-  trace_point {
-    symbol: "MyFunc"
-  }
-  args {
-    id: "arg0"
-    expr: "id"
-  }
-  ret_vals {
-    id: "ret0"
-    expr: "$0.a"
-  }
-  function_latency {
-    id: "lat0"
-  }
-  output_actions {
-    output_name: "http_return_table"
-    variable_name: "arg0"
-    variable_name: "ret0"
-    variable_name: "lat0"
-  }
-}
 name: "http_return"
 ttl {
   seconds: 300
+}
+deployment_spec {
+  upid {
+    asid: 306070887 pid: 3902477011 ts_ns: 11841725277501915136
+  }
+}
+tracepoints {
+  output_name: "http_return_table"
+  program {
+    language: GOLANG
+    outputs {
+      name: "http_return_table"
+      fields: "id"
+      fields: "err"
+      fields: "latency"
+    }
+    probes {
+      name: "http_return"
+      trace_point {
+        symbol: "MyFunc"
+      }
+      args {
+        id: "arg0"
+        expr: "id"
+      }
+      ret_vals {
+        id: "ret0"
+        expr: "$0.a"
+      }
+      function_latency {
+        id: "lat0"
+      }
+      output_actions {
+        output_name: "http_return_table"
+        variable_name: "arg0"
+        variable_name: "ret0"
+        variable_name: "lat0"
+      }
+    }
+  }
 }
 )pxl";
 

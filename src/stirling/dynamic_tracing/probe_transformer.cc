@@ -5,15 +5,18 @@
 #include <utility>
 
 #include "src/stirling/dynamic_tracing/goid.h"
+#include "src/stirling/dynamic_tracing/ir/sharedpb/shared.pb.h"
 #include "src/stirling/dynamic_tracing/types.h"
 
 namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
 
+// TODO(yzhao): Add using declaration of Language, such that it needn't repeat.
+
 constexpr char kStartKTimeNSVarName[] = "start_ktime_ns";
 
-void CreateMap(const ir::logical::Probe& input_probe, ir::logical::TracepointDeployment* out) {
+void CreateMap(const ir::logical::Probe& input_probe, ir::logical::TracepointSpec* out) {
   if (input_probe.args().empty()) {
     return;
   }
@@ -21,9 +24,9 @@ void CreateMap(const ir::logical::Probe& input_probe, ir::logical::TracepointDep
   stash_map->set_name(input_probe.name() + "_argstash");
 }
 
-ir::shared::BPFHelper GetLanguageThreadID(const ir::shared::DeploymentSpec::Language& language) {
+ir::shared::BPFHelper GetLanguageThreadID(const ir::shared::Language& language) {
   switch (language) {
-    case ir::shared::DeploymentSpec_Language_GOLANG:
+    case ir::shared::GOLANG:
       return ir::shared::BPFHelper::GOID;
     default:
       // Default (e.g. C/C++): assume no special runtime.
@@ -40,9 +43,8 @@ bool IsFunctionLatecySpecified(const ir::logical::Probe& probe) {
 
 }  // namespace
 
-void CreateEntryProbe(const ir::shared::DeploymentSpec::Language& language,
-                      const ir::logical::Probe& input_probe,
-                      ir::logical::TracepointDeployment* out) {
+void CreateEntryProbe(const ir::shared::Language& language, const ir::logical::Probe& input_probe,
+                      ir::logical::TracepointSpec* out) {
   auto* entry_probe = out->add_probes();
   entry_probe->mutable_trace_point()->CopyFrom(input_probe.trace_point());
   entry_probe->mutable_trace_point()->set_type(ir::shared::TracePoint::ENTRY);
@@ -90,10 +92,10 @@ Status CheckOutputAction(const std::map<std::string_view, ir::logical::Output*>&
   return Status::OK();
 }
 
-Status CreateReturnProbe(const ir::shared::DeploymentSpec::Language& language,
+Status CreateReturnProbe(const ir::shared::Language& language,
                          const ir::logical::Probe& input_probe,
                          const std::map<std::string_view, ir::logical::Output*>& outputs,
-                         ir::logical::TracepointDeployment* out) {
+                         ir::logical::TracepointSpec* out) {
   auto* return_probe = out->add_probes();
   return_probe->set_name(input_probe.name() + "_return");
   return_probe->mutable_trace_point()->CopyFrom(input_probe.trace_point());
@@ -149,10 +151,10 @@ Status CreateReturnProbe(const ir::shared::DeploymentSpec::Language& language,
   return Status::OK();
 }
 
-Status TransformLogicalProbe(const ir::shared::DeploymentSpec::Language& language,
+Status TransformLogicalProbe(const ir::shared::Language& language,
                              const ir::logical::Probe& input_probe,
                              const std::map<std::string_view, ir::logical::Output*>& outputs,
-                             ir::logical::TracepointDeployment* out) {
+                             ir::logical::TracepointSpec* out) {
   // A logical probe is allowed to implicitly access arguments and return values.
   // Here we expand this out to be explicit. We break the logical probe into:
   // 1) An entry probe - to grab any potential arguments.
@@ -160,6 +162,7 @@ Status TransformLogicalProbe(const ir::shared::DeploymentSpec::Language& languag
   // 3) A map - to stash the arguments and transfer them to the return probe.
   // TODO(oazizi): An optimization could be to determine whether both entry and return probes
   //               are required. When not required, one probe and the stash map can be avoided.
+  out->set_language(language);
   CreateMap(input_probe, out);
   CreateEntryProbe(language, input_probe, out);
   PL_RETURN_IF_ERROR(CreateReturnProbe(language, input_probe, outputs, out));
@@ -174,35 +177,49 @@ StatusOr<ir::logical::TracepointDeployment> TransformLogicalProgram(
   std::map<std::string_view, ir::logical::Output*> outputs;
 
   // Copy the binary path.
-  out.mutable_binary_spec()->CopyFrom(input_program.binary_spec());
+  out.mutable_deployment_spec()->CopyFrom(input_program.deployment_spec());
 
-  // Copy all explicitly declared output buffers.
-  for (const auto& o : input_program.outputs()) {
-    auto* output = out.add_outputs();
-    output->CopyFrom(o);
-    outputs[output->name()] = output;
-  }
+  // For each input Tracepoint, generate probes that needed for producing data between entry and
+  // return of the target function.
+  for (const auto& input_tracepoint : input_program.tracepoints()) {
+    auto* out_tracepoint = out.add_tracepoints();
 
-  // Copy all explicitly declared maps.
-  for (const auto& m : input_program.maps()) {
-    auto* map = out.add_maps();
-    map->CopyFrom(m);
-  }
+    out_tracepoint->set_output_name(input_tracepoint.output_name());
 
-  if (!input_program.probes().empty()) {
-    if (input_program.binary_spec().language() == ir::shared::DeploymentSpec_Language_GOLANG) {
-      out.add_maps()->CopyFrom(GenGOIDMap());
-      out.add_probes()->CopyFrom(GenGOIDProbe());
+    const auto& input_tracepoint_spec = input_tracepoint.program();
+    auto* out_tracepoint_spec = out_tracepoint->mutable_program();
+
+    out_tracepoint_spec->set_language(input_tracepoint.program().language());
+
+    // Copy all explicitly declared output buffers.
+    for (const auto& o : input_tracepoint_spec.outputs()) {
+      auto* output = out_tracepoint_spec->add_outputs();
+      output->CopyFrom(o);
+      outputs[output->name()] = output;
     }
-  }
 
-  for (const auto& p : input_program.probes()) {
-    if (p.trace_point().type() == ir::shared::TracePoint::LOGICAL) {
-      PL_RETURN_IF_ERROR(
-          TransformLogicalProbe(input_program.binary_spec().language(), p, outputs, &out));
-    } else {
-      auto* probe = out.add_probes();
-      probe->CopyFrom(p);
+    // Copy all explicitly declared maps.
+    for (const auto& m : input_tracepoint_spec.maps()) {
+      auto* map = out_tracepoint_spec->add_maps();
+      map->CopyFrom(m);
+    }
+
+    if (!input_tracepoint_spec.probes().empty()) {
+      if (input_tracepoint_spec.language() == ir::shared::GOLANG) {
+        out_tracepoint_spec->add_maps()->CopyFrom(GenGOIDMap());
+        out_tracepoint_spec->add_probes()->CopyFrom(GenGOIDProbe());
+      }
+    }
+
+    for (const auto& p : input_tracepoint_spec.probes()) {
+      // TODO(yzhao): Turn this into a DCHECK() with the same condition, and remove else branch.
+      if (p.trace_point().type() == ir::shared::TracePoint::LOGICAL) {
+        PL_RETURN_IF_ERROR(TransformLogicalProbe(input_tracepoint_spec.language(), p, outputs,
+                                                 out_tracepoint_spec));
+      } else {
+        auto* probe = out_tracepoint_spec->add_probes();
+        probe->CopyFrom(p);
+      }
     }
   }
 

@@ -66,7 +66,7 @@ StatusOr<shared::scriptspb::FuncArgsSpec> Compiler::GetMainFuncArgsSpec(
 
   std::shared_ptr<IR> ir = std::make_shared<IR>();
   ModuleHandler module_handler;
-  DynamicTraceIR dynamic_trace;
+  MutationsIR dynamic_trace;
   PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
                                                               compiler_state, &module_handler));
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
@@ -86,7 +86,7 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
   for (const auto& func : exec_funcs) {
     reserved_names.insert(func.output_table_prefix());
   }
-  DynamicTraceIR dynamic_trace;
+  MutationsIR dynamic_trace;
   ModuleHandler module_handler;
   PL_ASSIGN_OR_RETURN(auto ast_walker,
                       ASTVisitorImpl::Create(ir.get(), &dynamic_trace, compiler_state,
@@ -99,9 +99,9 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
   return ir;
 }
 
-StatusOr<std::unique_ptr<DynamicTraceIR>> Compiler::CompileTrace(const std::string& query,
-                                                                 CompilerState* compiler_state,
-                                                                 const ExecFuncs& exec_funcs) {
+StatusOr<std::unique_ptr<MutationsIR>> Compiler::CompileTrace(const std::string& query,
+                                                              CompilerState* compiler_state,
+                                                              const ExecFuncs& exec_funcs) {
   Parser parser;
   PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
 
@@ -111,7 +111,7 @@ StatusOr<std::unique_ptr<DynamicTraceIR>> Compiler::CompileTrace(const std::stri
   for (const auto& func : exec_funcs) {
     reserved_names.insert(func.output_table_prefix());
   }
-  std::unique_ptr<DynamicTraceIR> dynamic_trace = std::make_unique<DynamicTraceIR>();
+  std::unique_ptr<MutationsIR> dynamic_trace = std::make_unique<MutationsIR>();
   ModuleHandler module_handler;
   PL_ASSIGN_OR_RETURN(auto ast_walker,
                       ASTVisitorImpl::Create(&ir, dynamic_trace.get(), compiler_state,
@@ -131,7 +131,7 @@ StatusOr<pl::shared::scriptspb::VisFuncsInfo> Compiler::GetVisFuncsInfo(
 
   std::shared_ptr<IR> ir = std::make_shared<IR>();
   ModuleHandler module_handler;
-  DynamicTraceIR dynamic_trace;
+  MutationsIR dynamic_trace;
   PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
                                                               compiler_state, &module_handler));
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));

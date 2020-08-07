@@ -35,10 +35,17 @@ func TestCreateTracepoint(t *testing.T) {
 			name:               "new_tracepoint",
 			originalTracepoint: nil,
 			newTracepoint: &logicalpb.TracepointDeployment{
-				Outputs: []*logicalpb.Output{
-					&logicalpb.Output{
-						Name:   "table1",
-						Fields: []string{"abc", "def"},
+				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+					&logicalpb.TracepointDeployment_Tracepoint{
+						OutputName: "table1",
+						Program: &logicalpb.TracepointSpec{
+							Outputs: []*logicalpb.Output{
+								&logicalpb.Output{
+									Name:   "table1",
+									Fields: []string{"abc", "def"},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -47,19 +54,33 @@ func TestCreateTracepoint(t *testing.T) {
 		{
 			name: "existing tracepoint, no field match",
 			originalTracepoint: &logicalpb.TracepointDeployment{
-				Outputs: []*logicalpb.Output{
-					&logicalpb.Output{
-						Name:   "table1",
-						Fields: []string{"abc"},
+				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+					&logicalpb.TracepointDeployment_Tracepoint{
+						OutputName: "table1",
+						Program: &logicalpb.TracepointSpec{
+							Outputs: []*logicalpb.Output{
+								&logicalpb.Output{
+									Name:   "table1",
+									Fields: []string{"abc"},
+								},
+							},
+						},
 					},
 				},
 			},
 			originalTracepointState: statuspb.RUNNING_STATE,
 			newTracepoint: &logicalpb.TracepointDeployment{
-				Outputs: []*logicalpb.Output{
-					&logicalpb.Output{
-						Name:   "table1",
-						Fields: []string{"abc", "def"},
+				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+					&logicalpb.TracepointDeployment_Tracepoint{
+						OutputName: "table1",
+						Program: &logicalpb.TracepointSpec{
+							Outputs: []*logicalpb.Output{
+								&logicalpb.Output{
+									Name:   "table1",
+									Fields: []string{"abc", "def"},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -68,23 +89,44 @@ func TestCreateTracepoint(t *testing.T) {
 		{
 			name: "existing tracepoint, no output match",
 			originalTracepoint: &logicalpb.TracepointDeployment{
-				Outputs: []*logicalpb.Output{
-					&logicalpb.Output{
-						Name:   "table2",
-						Fields: []string{"abc"},
+				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+					&logicalpb.TracepointDeployment_Tracepoint{
+						OutputName: "table2",
+						Program: &logicalpb.TracepointSpec{
+							Outputs: []*logicalpb.Output{
+								&logicalpb.Output{
+									Name:   "table2",
+									Fields: []string{"abc"},
+								},
+							},
+						},
 					},
-					&logicalpb.Output{
-						Name:   "table1",
-						Fields: []string{"abc", "def"},
+					&logicalpb.TracepointDeployment_Tracepoint{
+						OutputName: "table1",
+						Program: &logicalpb.TracepointSpec{
+							Outputs: []*logicalpb.Output{
+								&logicalpb.Output{
+									Name:   "table1",
+									Fields: []string{"abc", "def"},
+								},
+							},
+						},
 					},
 				},
 			},
 			originalTracepointState: statuspb.RUNNING_STATE,
 			newTracepoint: &logicalpb.TracepointDeployment{
-				Outputs: []*logicalpb.Output{
-					&logicalpb.Output{
-						Name:   "table1",
-						Fields: []string{"abc", "def"},
+				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+					&logicalpb.TracepointDeployment_Tracepoint{
+						OutputName: "table1",
+						Program: &logicalpb.TracepointSpec{
+							Outputs: []*logicalpb.Output{
+								&logicalpb.Output{
+									Name:   "table1",
+									Fields: []string{"abc", "def"},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -93,19 +135,33 @@ func TestCreateTracepoint(t *testing.T) {
 		{
 			name: "existing tracepoint, match",
 			originalTracepoint: &logicalpb.TracepointDeployment{
-				Outputs: []*logicalpb.Output{
-					&logicalpb.Output{
-						Name:   "table1",
-						Fields: []string{"abc", "def"},
+				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+					&logicalpb.TracepointDeployment_Tracepoint{
+						OutputName: "table1",
+						Program: &logicalpb.TracepointSpec{
+							Outputs: []*logicalpb.Output{
+								&logicalpb.Output{
+									Name:   "table1",
+									Fields: []string{"abc", "def"},
+								},
+							},
+						},
 					},
 				},
 			},
 			originalTracepointState: statuspb.RUNNING_STATE,
 			newTracepoint: &logicalpb.TracepointDeployment{
-				Outputs: []*logicalpb.Output{
-					&logicalpb.Output{
-						Name:   "table1",
-						Fields: []string{"abc", "def"},
+				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+					&logicalpb.TracepointDeployment_Tracepoint{
+						OutputName: "table1",
+						Program: &logicalpb.TracepointSpec{
+							Outputs: []*logicalpb.Output{
+								&logicalpb.Output{
+									Name:   "table1",
+									Fields: []string{"abc", "def"},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -115,22 +171,35 @@ func TestCreateTracepoint(t *testing.T) {
 			name:                    "existing tracepoint, not exactly same",
 			originalTracepointState: statuspb.RUNNING_STATE,
 			originalTracepoint: &logicalpb.TracepointDeployment{
-				Outputs: []*logicalpb.Output{
-					&logicalpb.Output{
-						Name:   "table1",
-						Fields: []string{"abc", "def"},
+				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+					&logicalpb.TracepointDeployment_Tracepoint{
+						OutputName: "table1",
+						Program: &logicalpb.TracepointSpec{
+							Outputs: []*logicalpb.Output{
+								&logicalpb.Output{
+									Name:   "table1",
+									Fields: []string{"abc", "def"},
+								},
+							},
+							Probes: []*logicalpb.Probe{
+								&logicalpb.Probe{Name: "test"},
+							},
+						},
 					},
-				},
-				Probes: []*logicalpb.Probe{
-					&logicalpb.Probe{Name: "test"},
 				},
 			},
 			newTracepoint: &logicalpb.TracepointDeployment{
-				Outputs: []*logicalpb.Output{
-
-					&logicalpb.Output{
-						Name:   "table1",
-						Fields: []string{"abc", "def"},
+				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+					&logicalpb.TracepointDeployment_Tracepoint{
+						OutputName: "table1",
+						Program: &logicalpb.TracepointSpec{
+							Outputs: []*logicalpb.Output{
+								&logicalpb.Output{
+									Name:   "table1",
+									Fields: []string{"abc", "def"},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -141,21 +210,35 @@ func TestCreateTracepoint(t *testing.T) {
 			name:                    "existing terminated tracepoint",
 			originalTracepointState: statuspb.TERMINATED_STATE,
 			originalTracepoint: &logicalpb.TracepointDeployment{
-				Outputs: []*logicalpb.Output{
-					&logicalpb.Output{
-						Name:   "table1",
-						Fields: []string{"abc", "def"},
+				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+					&logicalpb.TracepointDeployment_Tracepoint{
+						OutputName: "table1",
+						Program: &logicalpb.TracepointSpec{
+							Outputs: []*logicalpb.Output{
+								&logicalpb.Output{
+									Name:   "table1",
+									Fields: []string{"abc", "def"},
+								},
+							},
+							Probes: []*logicalpb.Probe{
+								&logicalpb.Probe{Name: "test"},
+							},
+						},
 					},
-				},
-				Probes: []*logicalpb.Probe{
-					&logicalpb.Probe{Name: "test"},
 				},
 			},
 			newTracepoint: &logicalpb.TracepointDeployment{
-				Outputs: []*logicalpb.Output{
-					&logicalpb.Output{
-						Name:   "table1",
-						Fields: []string{"abc", "def"},
+				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+					&logicalpb.TracepointDeployment_Tracepoint{
+						OutputName: "table1",
+						Program: &logicalpb.TracepointSpec{
+							Outputs: []*logicalpb.Output{
+								&logicalpb.Output{
+									Name:   "table1",
+									Fields: []string{"abc", "def"},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -348,12 +431,12 @@ func TestRegisterTracepoint(t *testing.T) {
 	agentUUID := uuid.NewV4()
 	tracepointID := uuid.NewV4()
 	program := &logicalpb.TracepointDeployment{
-		Probes: []*logicalpb.Probe{
-			&logicalpb.Probe{
-				Name: "test",
+		Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+			&logicalpb.TracepointDeployment_Tracepoint{
+				OutputName: "test",
 			},
-			&logicalpb.Probe{
-				Name: "anotherTracepoint",
+			&logicalpb.TracepointDeployment_Tracepoint{
+				OutputName: "anotherTracepoint",
 			},
 		},
 	}

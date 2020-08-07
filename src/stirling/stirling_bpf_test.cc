@@ -118,33 +118,37 @@ TEST_F(StirlingBPFTest, DynamicTraceAPI) {
   std::string path =
       pl::testing::TestFilePath("src/stirling/obj_tools/testdata/prebuilt_dummy_exe");
   constexpr std::string_view kProgram = R"(
-binary_spec {
+deployment_spec {
   path: "$0"
-  language: CPP
 }
-outputs {
-  name: "output_table"
-  fields: "a"
-  fields: "b"
-}
-probes {
-  name: "probe0"
-  trace_point {
-    symbol: "CanYouFindThis"
-    type: LOGICAL
-  }
-  args {
-    id: "a"
-    expr: "a"
-  }
-  args {
-    id: "b"
-    expr: "b"
-  }
-  output_actions {
-    output_name: "output_table"
-    variable_name: "a"
-    variable_name: "b"
+tracepoints {
+  program {
+    language: CPP
+    outputs {
+      name: "output_table"
+      fields: "a"
+      fields: "b"
+    }
+    probes {
+      name: "probe0"
+      trace_point {
+        symbol: "CanYouFindThis"
+        type: LOGICAL
+      }
+      args {
+        id: "a"
+        expr: "a"
+      }
+      args {
+        id: "b"
+        expr: "b"
+      }
+      output_actions {
+        output_name: "output_table"
+        variable_name: "a"
+        variable_name: "b"
+      }
+    }
   }
 }
 )";
@@ -169,33 +173,37 @@ TEST_F(StirlingBPFTest, DynamicTraceNonExistentBinary) {
   sole::uuid trace_id = sole::uuid4();
 
   constexpr std::string_view kProgram = R"(
-binary_spec {
+deployment_spec {
   path: "$0"
-  language: CPP
 }
-outputs {
-  name: "output_table"
-  fields: "a"
-  fields: "b"
-}
-probes {
-  name: "probe0"
-  trace_point {
-    symbol: "CanYouFindThis"
-    type: LOGICAL
-  }
-  args {
-    id: "a"
-    expr: "a"
-  }
-  args {
-    id: "b"
-    expr: "b"
-  }
-  output_actions {
-    output_name: "output_table"
-    variable_name: "a"
-    variable_name: "b"
+tracepoints {
+  program {
+    language: CPP
+    outputs {
+      name: "output_table"
+      fields: "a"
+      fields: "b"
+    }
+    probes {
+      name: "probe0"
+      trace_point {
+        symbol: "CanYouFindThis"
+        type: LOGICAL
+      }
+      args {
+        id: "a"
+        expr: "a"
+      }
+      args {
+        id: "b"
+        expr: "b"
+      }
+      output_actions {
+        output_name: "output_table"
+        variable_name: "a"
+        variable_name: "b"
+      }
+    }
   }
 }
 )";
@@ -214,33 +222,37 @@ TEST_F(StirlingBPFTest, DynamicTraceMissingSymbol) {
   sole::uuid trace_id = sole::uuid4();
 
   constexpr std::string_view kProgram = R"(
-binary_spec {
+deployment_spec {
   path: "$0"
-  language: CPP
 }
-outputs {
-  name: "output_table"
-  fields: "a"
-  fields: "b"
-}
-probes {
-  name: "probe0"
-  trace_point {
-    symbol: "GoodLuckFindingThis"
-    type: LOGICAL
-  }
-  args {
-    id: "a"
-    expr: "a"
-  }
-  args {
-    id: "b"
-    expr: "b"
-  }
-  output_actions {
-    output_name: "output_table"
-    variable_name: "a"
-    variable_name: "b"
+tracepoints {
+  program {
+    language: CPP
+    outputs {
+      name: "output_table"
+      fields: "a"
+      fields: "b"
+    }
+    probes {
+      name: "probe0"
+      trace_point {
+        symbol: "GoodLuckFindingThis"
+        type: LOGICAL
+      }
+      args {
+        id: "a"
+        expr: "a"
+      }
+      args {
+        id: "b"
+        expr: "b"
+      }
+      output_actions {
+        output_name: "output_table"
+        variable_name: "a"
+        variable_name: "b"
+      }
+    }
   }
 }
 )";
@@ -260,33 +272,37 @@ TEST_F(StirlingBPFTest, DynamicTraceInvalidReference) {
   sole::uuid trace_id = sole::uuid4();
 
   constexpr std::string_view kProgram = R"(
-binary_spec {
+deployment_spec {
   path: "$0"
-  language: CPP
 }
-outputs {
-  name: "output_table"
-  fields: "a"
-  fields: "b"
-}
-probes {
-  name: "probe0"
-  trace_point {
-    symbol: "CanYouFindThis"
-    type: LOGICAL
-  }
-  args {
-    id: "a"
-    expr: "a"
-  }
-  args {
-    id: "b"
-    expr: "b"
-  }
-  output_actions {
-    output_name: "output_table"
-    variable_name: "c"
-    variable_name: "d"
+tracepoints {
+  program {
+    language: CPP
+    outputs {
+      name: "output_table"
+      fields: "a"
+      fields: "b"
+    }
+    probes {
+      name: "probe0"
+      trace_point {
+        symbol: "CanYouFindThis"
+        type: LOGICAL
+      }
+      args {
+        id: "a"
+        expr: "a"
+      }
+      args {
+        id: "b"
+        expr: "b"
+      }
+      output_actions {
+        output_name: "output_table"
+        variable_name: "c"
+        variable_name: "d"
+      }
+    }
   }
 }
 )";
@@ -309,33 +325,37 @@ TEST_F(StirlingBPFTest, string_test) {
   ASSERT_OK(process.Start({path}));
 
   constexpr std::string_view kProgram = R"(
-binary_spec {
+deployment_spec {
   path: "$0"
-  language: GOLANG
 }
-outputs {
-  name: "output_table"
-  fields: "something"
-  fields: "name"
-}
-probes {
-  name: "probe0"
-  trace_point {
-    symbol: "main.SaySomethingTo"
-    type: LOGICAL
-  }
-  args {
-    id: "name"
-    expr: "name"
-  }
-  args {
-    id: "something"
-    expr: "something"
-  }
-  output_actions {
-    output_name: "output_table"
-    variable_name: "something"
-    variable_name: "name"
+tracepoints {
+  program {
+    language: GOLANG
+    outputs {
+      name: "output_table"
+      fields: "something"
+      fields: "name"
+    }
+    probes {
+      name: "probe0"
+      trace_point {
+        symbol: "main.SaySomethingTo"
+        type: LOGICAL
+      }
+      args {
+        id: "name"
+        expr: "name"
+      }
+      args {
+        id: "something"
+        expr: "something"
+      }
+      output_actions {
+        output_name: "output_table"
+        variable_name: "something"
+        variable_name: "name"
+      }
+    }
   }
 }
 )";
@@ -405,33 +425,37 @@ TEST_P(StirlingBPFTest, byte_array) {
   ASSERT_OK(process.Start({path}));
 
   constexpr std::string_view kProgram = R"(
-binary_spec {
+deployment_spec {
   path: "$0"
-  language: GOLANG
 }
-outputs {
-  name: "output_table"
-  fields: "uuid"
-  fields: "name"
-}
-probes {
-  name: "probe0"
-  trace_point {
-    symbol: "$0"
-    type: LOGICAL
-  }
-  args {
-    id: "arg0"
-    expr: "uuid"
-  }
-  args {
-    id: "arg1"
-    expr: "name"
-  }
-  output_actions {
-    output_name: "output_table"
-    variable_name: "arg0"
-    variable_name: "arg1"
+tracepoints {
+  program {
+    language: GOLANG
+    outputs {
+      name: "output_table"
+      fields: "uuid"
+      fields: "name"
+    }
+    probes {
+      name: "probe0"
+      trace_point {
+        symbol: "$0"
+        type: LOGICAL
+      }
+      args {
+        id: "arg0"
+        expr: "uuid"
+      }
+      args {
+        id: "arg1"
+        expr: "name"
+      }
+      output_actions {
+        output_name: "output_table"
+        variable_name: "arg0"
+        variable_name: "arg1"
+      }
+    }
   }
 }
 )";
@@ -441,8 +465,11 @@ probes {
   int original_num_info_classes = publication.published_info_classes_size();
 
   auto trace_program = Prepare(kProgram, path);
-  trace_program->mutable_probes(0)->mutable_trace_point()->mutable_symbol()->assign(
-      params.function_symbol);
+  trace_program->mutable_tracepoints(0)
+      ->mutable_program()
+      ->mutable_probes(0)
+      ->mutable_trace_point()
+      ->set_symbol(params.function_symbol);
 
   sole::uuid trace_id = sole::uuid4();
   stirling_->RegisterTracepoint(trace_id, std::move(trace_program));

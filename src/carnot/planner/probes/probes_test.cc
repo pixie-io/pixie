@@ -11,7 +11,7 @@ using ::testing::UnorderedElementsAre;
 
 class ProbeCompilerTest : public ASTVisitorTest {
  protected:
-  StatusOr<std::shared_ptr<compiler::DynamicTraceIR>> CompileProbeScript(
+  StatusOr<std::shared_ptr<compiler::MutationsIR>> CompileProbeScript(
       std::string_view query, const ExecFuncs& exec_funcs = {}) {
     absl::flat_hash_set<std::string> reserved_names;
     for (const auto& func : exec_funcs) {
@@ -23,8 +23,7 @@ class ProbeCompilerTest : public ASTVisitorTest {
     PL_ASSIGN_OR_RETURN(auto ast, parser.Parse(query));
 
     std::shared_ptr<IR> ir = std::make_shared<IR>();
-    std::shared_ptr<compiler::DynamicTraceIR> probe_ir =
-        std::make_shared<compiler::DynamicTraceIR>();
+    std::shared_ptr<compiler::MutationsIR> probe_ir = std::make_shared<compiler::MutationsIR>();
 
     ModuleHandler module_handler;
     PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
@@ -78,44 +77,49 @@ def probe_table(upid: str):
 )pxl";
 
 constexpr char kSingleProbeProgramPb[] = R"pxl(
-binary_spec {
-  upid {
-    asid: 306070887 pid: 3902477011 ts_ns: 11841725277501915136
-  }
-  language: GOLANG
-}
-outputs {
-  name: "http_return_table"
-  fields: "id"
-  fields: "err"
-  fields: "latency"
-}
-probes {
-  name: "http_return"
-  trace_point {
-    symbol: "MyFunc"
-  }
-  args {
-    id: "arg0"
-    expr: "id"
-  }
-  ret_vals {
-    id: "ret0"
-    expr: "$0.a"
-  }
-  function_latency {
-    id: "lat0"
-  }
-  output_actions {
-    output_name: "http_return_table"
-    variable_name: "arg0"
-    variable_name: "ret0"
-    variable_name: "lat0"
-  }
-}
 name: "http_return"
 ttl {
   seconds: 300
+}
+deployment_spec {
+  upid {
+    asid: 306070887 pid: 3902477011 ts_ns: 11841725277501915136
+  }
+}
+tracepoints {
+  output_name: "http_return_table"
+  program {
+    language: GOLANG
+    outputs {
+      name: "http_return_table"
+      fields: "id"
+      fields: "err"
+      fields: "latency"
+    }
+    probes {
+      name: "http_return"
+      trace_point {
+        symbol: "MyFunc"
+      }
+      args {
+        id: "arg0"
+        expr: "id"
+      }
+      ret_vals {
+        id: "ret0"
+        expr: "$0.a"
+      }
+      function_latency {
+        id: "lat0"
+      }
+      output_actions {
+        output_name: "http_return_table"
+        variable_name: "arg0"
+        variable_name: "ret0"
+        variable_name: "lat0"
+      }
+    }
+  }
 }
 )pxl";
 
@@ -164,72 +168,77 @@ def http_func_probe():
 pxtrace.UpsertTracepoints('myfunc',
                     px.uint128("123e4567-e89b-12d3-a456-426655440000"),
                     "5m")
-                    .AddProbe("cool_func_table", cool_func_probe)
-                    .AddProbe("http_table", http_func_probe)
+                    .AddTracepoint("cool_func_table", cool_func_probe)
+                    .AddTracepoint("http_table", http_func_probe)
 )pxl";
 
 constexpr char kMultipleProbeProgramPb[] = R"pxl(
-binary_spec {
+ttl {
+  seconds: 300
+}
+deployment_spec {
   upid {
     asid: 306070887 pid: 3902477011 ts_ns: 11841725277501915136
   }
-  language: GOLANG
 }
-outputs {
-  name: "cool_func_table"
-  fields: "id"
-  fields: "err"
-  fields: "latency"
-}
-outputs {
-  name: "http_table"
-  fields: "req_body"
-  fields: "resp_body"
-}
-probes {
-  name: "myfunc0"
-  trace_point {
-    symbol: "MyFunc"
+tracepoints {
+  output_name: "cool_func_table"
+  program {
+    language: GOLANG
+    outputs {
+      name: "cool_func_table"
+      fields: "id"
+      fields: "err"
+      fields: "latency"
+    }
+    outputs {
+      name: "http_table"
+      fields: "req_body"
+      fields: "resp_body"
+    }
+    probes {
+      name: "myfunc0"
+      trace_point {
+        symbol: "MyFunc"
+      }
+      args {
+        id: "arg0"
+        expr: "id"
+      }
+      ret_vals {
+        id: "ret0"
+        expr: "$0.a"
+      }
+      function_latency {
+        id: "lat0"
+      }
+      output_actions {
+        output_name: "cool_func_table"
+        variable_name: "arg0"
+        variable_name: "ret0"
+        variable_name: "lat0"
+      }
+    }
+    probes {
+      name: "myfunc1"
+      trace_point {
+        symbol: "HTTPFunc"
+      }
+      args {
+        id: "arg0"
+        expr: "req_body"
+      }
+      args {
+        id: "arg1"
+        expr: "req_status"
+      }
+      output_actions {
+        output_name: "http_table"
+        variable_name: "arg0"
+        variable_name: "arg1"
+      }
+    }
   }
-  args {
-    id: "arg0"
-    expr: "id"
-  }
-  ret_vals {
-    id: "ret0"
-    expr: "$0.a"
-  }
-  function_latency {
-    id: "lat0"
-  }
-  output_actions {
-    output_name: "cool_func_table"
-    variable_name: "arg0"
-    variable_name: "ret0"
-    variable_name: "lat0"
-  }
-}
-probes {
-  name: "myfunc1"
-  trace_point {
-    symbol: "HTTPFunc"
-  }
-  args {
-    id: "arg0"
-    expr: "req_body"
-  }
-  args {
-    id: "arg1"
-    expr: "req_status"
-  }
-  output_actions {
-    output_name: "http_table"
-    variable_name: "arg0"
-    variable_name: "arg1"
-  }
-}
-ttl {
-  seconds: 300
 }
 )pxl";
 
@@ -243,39 +252,44 @@ TEST_F(ProbeCompilerTest, DISABLED_parse_multiple_probes) {
 }
 
 constexpr char kHTTPBodyTracepointPb[] = R"pxl(
-binary_spec {
-  upid {
-    asid: 1985274657 pid: 3902477011 ts_ns: 11841725277501915136
-  }
-  language: GOLANG
-}
-outputs {
-  name: "http_body_table"
-  fields: "req_body"
-  fields: "resp_body"
-}
-probes {
-  name: "http_body"
-  trace_point {
-    symbol: "HTTPFunc"
-  }
-  args {
-    id: "arg0"
-    expr: "req_body"
-  }
-  args {
-    id: "arg1"
-    expr: "resp_body"
-  }
-  output_actions {
-    output_name: "http_body_table"
-    variable_name: "arg0"
-    variable_name: "arg1"
-  }
-}
 name: "http_body"
 ttl {
   seconds: 300
+}
+deployment_spec {
+  upid {
+    asid: 1985274657 pid: 3902477011 ts_ns: 11841725277501915136
+  }
+}
+tracepoints{
+  output_name: "http_body_table"
+  program {
+    language: GOLANG
+    outputs {
+      name: "http_body_table"
+      fields: "req_body"
+      fields: "resp_body"
+    }
+    probes {
+      name: "http_body"
+      trace_point {
+        symbol: "HTTPFunc"
+      }
+      args {
+        id: "arg0"
+        expr: "req_body"
+      }
+      args {
+        id: "arg1"
+        expr: "resp_body"
+      }
+      output_actions {
+        output_name: "http_body_table"
+        variable_name: "arg0"
+        variable_name: "arg1"
+      }
+    }
+  }
 }
 )pxl";
 

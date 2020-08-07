@@ -94,7 +94,7 @@ class DefaultArgumentsTest : public OperatorTests {
   std::unique_ptr<RegistryInfo> info_;
   std::shared_ptr<PixieModule> module_;
   ModuleHandler module_handler_;
-  DynamicTraceIR dynamic_trace_;
+  MutationsIR dynamic_trace_;
 };
 
 // This test is the unit to make sure we can get all of the defaults of any method for any object

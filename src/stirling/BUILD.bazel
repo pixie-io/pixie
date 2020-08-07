@@ -149,16 +149,6 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "dynamic_trace_connector_test",
-    srcs = ["dynamic_trace_connector_test.cc"],
-    data = [
-        "//src/stirling/obj_tools/testdata:dummy_go_binary",
-    ],
-    tags = ["requires_bpf"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
     name = "dynamic_trace_bpf_test",
     srcs = ["dynamic_trace_bpf_test.cc"],
     data = [

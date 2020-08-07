@@ -64,7 +64,7 @@ class Dwarvifier {
   Dwarvifier(const std::map<std::string, ir::shared::Map*>& maps,
              const std::map<std::string, ir::physical::PerfBufferOutput*>& outputs)
       : maps_(maps), outputs_(outputs) {}
-  Status Setup(const ir::shared::DeploymentSpec& binary_spec);
+  Status Setup(const ir::shared::DeploymentSpec& deployment_spec, ir::shared::Language language);
   Status GenerateProbe(const ir::logical::Probe input_probe, ir::physical::Program* output_program);
 
  private:
@@ -124,7 +124,7 @@ class Dwarvifier {
   // This adjustment factor accounts for that difference.
   static constexpr int32_t kSPOffset = 8;
 
-  ir::shared::DeploymentSpec::Language language_;
+  ir::shared::Language language_;
   std::vector<std::string> implicit_columns_;
 
   // We use these values as we build temporary variables for expressions.
@@ -142,39 +142,50 @@ std::string StructTypeName(const std::string& obj_name) {
 }
 
 // AddDwarves is the main entry point.
-StatusOr<ir::physical::Program> AddDwarves(const ir::logical::TracepointDeployment& input_program) {
+StatusOr<ir::physical::Program> AddDwarves(const ir::logical::TracepointDeployment& input) {
+  if (input.tracepoints_size() != 1) {
+    return error::InvalidArgument("Right now only support exactly 1 Tracepoint, got '$0'",
+                                  input.tracepoints_size());
+  }
+
   // Index globals for quick lookups.
   std::map<std::string, ir::shared::Map*> maps;
   std::map<std::string, ir::physical::PerfBufferOutput*> outputs;
 
   ir::physical::Program output_program;
 
-  output_program.mutable_binary_spec()->CopyFrom(input_program.binary_spec());
+  output_program.mutable_deployment_spec()->CopyFrom(input.deployment_spec());
+  output_program.set_language(input.tracepoints(0).program().language());
 
-  // Copy all maps.
-  for (const auto& map : input_program.maps()) {
-    auto* m = output_program.add_maps();
-    m->CopyFrom(map);
-    maps[m->name()] = m;
-  }
+  // For each input Tracepoint, populates additional variables to chase from predefined registers.
+  for (const auto& input_tracepoint : input.tracepoints()) {
+    const auto& input_program = input_tracepoint.program();
 
-  // Copy all outputs.
-  for (const auto& output : input_program.outputs()) {
-    auto* o = output_program.add_outputs();
+    // Copy all maps.
+    for (const auto& map : input_program.maps()) {
+      auto* m = output_program.add_maps();
+      m->CopyFrom(map);
+      maps[m->name()] = m;
+    }
 
-    o->set_name(output.name());
-    o->mutable_fields()->CopyFrom(output.fields());
-    // Also insert the name of the struct that holds the output variables.
-    o->set_struct_type(StructTypeName(output.name()));
+    // Copy all outputs.
+    for (const auto& output : input_program.outputs()) {
+      auto* o = output_program.add_outputs();
 
-    outputs[o->name()] = o;
-  }
+      o->set_name(output.name());
+      o->mutable_fields()->CopyFrom(output.fields());
+      // Also insert the name of the struct that holds the output variables.
+      o->set_struct_type(StructTypeName(output.name()));
 
-  // Transform probes.
-  Dwarvifier dwarvifier(maps, outputs);
-  PL_RETURN_IF_ERROR(dwarvifier.Setup(input_program.binary_spec()));
-  for (const auto& probe : input_program.probes()) {
-    PL_RETURN_IF_ERROR(dwarvifier.GenerateProbe(probe, &output_program));
+      outputs[o->name()] = o;
+    }
+
+    // Transform probes.
+    Dwarvifier dwarvifier(maps, outputs);
+    PL_RETURN_IF_ERROR(dwarvifier.Setup(input.deployment_spec(), input_program.language()));
+    for (const auto& probe : input_program.probes()) {
+      PL_RETURN_IF_ERROR(dwarvifier.GenerateProbe(probe, &output_program));
+    }
   }
 
   return output_program;
@@ -212,7 +223,7 @@ StatusOr<ir::shared::ScalarType> Dwarvifier::VarTypeToProtoScalarType(const VarT
     case VarType::kPointer:
       return ir::shared::ScalarType::VOID_POINTER;
     case VarType::kStruct:
-      if (language_ == ir::shared::DeploymentSpec_Language_GOLANG) {
+      if (language_ == ir::shared::Language::GOLANG) {
         if (name == "string") {
           return ir::shared::ScalarType::STRING;
         }
@@ -258,15 +269,16 @@ Status Dwarvifier::GenerateProbe(const ir::logical::Probe input_probe,
   return Status::OK();
 }
 
-Status Dwarvifier::Setup(const ir::shared::DeploymentSpec& binary_spec) {
+Status Dwarvifier::Setup(const ir::shared::DeploymentSpec& deployment_spec,
+                         ir::shared::Language language) {
   using dwarf_tools::DwarfReader;
 
-  PL_ASSIGN_OR_RETURN(dwarf_reader_, DwarfReader::Create(binary_spec.path()));
+  PL_ASSIGN_OR_RETURN(dwarf_reader_, DwarfReader::Create(deployment_spec.path()));
 
-  language_ = binary_spec.language();
+  language_ = language;
 
   implicit_columns_ = {kTGIDVarName, kTGIDStartTimeVarName, kKTimeVarName};
-  if (language_ == ir::shared::DeploymentSpec_Language_GOLANG) {
+  if (language_ == ir::shared::Language::GOLANG) {
     implicit_columns_.push_back(kGOIDVarName);
   }
 
@@ -365,7 +377,7 @@ Status Dwarvifier::ProcessSpecialVariables(ir::physical::Probe* output_probe) {
   ktime_var->set_builtin(ir::shared::BPFHelper::KTIME);
 
   // Add goid variable (if this is a go binary).
-  if (language_ == ir::shared::DeploymentSpec_Language_GOLANG) {
+  if (language_ == ir::shared::Language::GOLANG) {
     auto* goid_var = AddVariable(output_probe, kGOIDVarName, ir::shared::ScalarType::INT64);
     goid_var->set_builtin(ir::shared::BPFHelper::GOID);
   }

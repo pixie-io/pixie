@@ -315,23 +315,23 @@ Status StirlingImpl::RemoveSource(std::string_view source_name) {
 Status ResolveUPID(dynamic_tracing::ir::logical::TracepointDeployment* program) {
   // Expect the outside caller keeps UPID, and specify them in UProbeSpec. Here upid and path are
   // specified alternatively, and upid will be replaced by binary path.
-  if (program->binary_spec().target_oneof_case() ==
+  if (program->deployment_spec().target_oneof_case() ==
       dynamic_tracing::ir::shared::DeploymentSpec::TargetOneofCase::kUpid) {
-    uint32_t pid = program->binary_spec().upid().pid();
+    uint32_t pid = program->deployment_spec().upid().pid();
 
     std::optional<int64_t> start_time;
-    if (program->binary_spec().upid().ts_ns() != 0) {
-      start_time = program->binary_spec().upid().ts_ns();
+    if (program->deployment_spec().upid().ts_ns() != 0) {
+      start_time = program->deployment_spec().upid().ts_ns();
     }
 
     PL_ASSIGN_OR_RETURN(std::filesystem::path binary_path,
                         obj_tools::GetPIDBinaryOnHost(pid, start_time));
 
-    program->mutable_binary_spec()->set_path(binary_path.string());
+    program->mutable_deployment_spec()->set_path(binary_path.string());
   }
 
-  if (!fs::Exists(program->binary_spec().path()).ok()) {
-    return error::Internal("Binary $0 not found.", program->binary_spec().path());
+  if (!fs::Exists(program->deployment_spec().path()).ok()) {
+    return error::Internal("Binary $0 not found.", program->deployment_spec().path());
   }
 
   return Status::OK();
@@ -361,11 +361,11 @@ Status ResolveUPID(dynamic_tracing::ir::logical::TracepointDeployment* program) 
 void StirlingImpl::DeployDynamicTraceConnector(
     sole::uuid trace_id,
     std::unique_ptr<dynamic_tracing::ir::logical::TracepointDeployment> program) {
-  if (program->outputs_size() == 0) {
-    RETURN_ERROR(error::Internal("Dynamic trace must define output tables."));
+  if (program->tracepoints_size() == 0) {
+    RETURN_ERROR(error::Internal("Dynamic trace must define at least one Tracepoint."));
   }
-  if (program->outputs_size() > 1) {
-    RETURN_ERROR(error::Internal("Only one output table is currently supported."));
+  if (program->tracepoints_size() > 1) {
+    RETURN_ERROR(error::Internal("Only one Trancepoint is currently supported."));
   }
 
   auto timer = ElapsedTimer();
@@ -390,7 +390,7 @@ void StirlingImpl::DeployDynamicTraceConnector(
   stirlingpb::Publish publication;
   {
     absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
-    for (const auto& output : program->outputs()) {
+    for (const auto& output : program->tracepoints(0).program().outputs()) {
       config_->PopulatePublishProto(&publication, info_class_mgrs_, output.name());
     }
   }

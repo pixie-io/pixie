@@ -23,12 +23,13 @@ using ::pl::stirling::bpf_tools::UProbeSpec;
 
 namespace {
 
-StatusOr<std::vector<UProbeSpec>> GetUProbeSpec(const ir::shared::DeploymentSpec& binary_spec,
+StatusOr<std::vector<UProbeSpec>> GetUProbeSpec(std::string_view binary_path,
+                                                ir::shared::Language language,
                                                 const ir::physical::Probe& probe,
                                                 elf_tools::ElfReader* elf_reader) {
   UProbeSpec spec;
 
-  spec.binary_path = binary_spec.path();
+  spec.binary_path = binary_path;
   spec.symbol = probe.trace_point().symbol();
   DCHECK(probe.trace_point().type() == ir::shared::TracePoint::ENTRY ||
          probe.trace_point().type() == ir::shared::TracePoint::RETURN);
@@ -37,7 +38,7 @@ StatusOr<std::vector<UProbeSpec>> GetUProbeSpec(const ir::shared::DeploymentSpec
                          : BPFProbeAttachType::kReturn;
   spec.probe_fn = probe.name();
 
-  if (binary_spec.language() == ir::shared::DeploymentSpec::GOLANG &&
+  if (language == ir::shared::Language::GOLANG &&
       probe.trace_point().type() == ir::shared::TracePoint::RETURN) {
     return bpf_tools::TransformGolangReturnProbe(spec, elf_reader);
   }
@@ -65,6 +66,13 @@ StatusOr<BCCProgram::PerfBufferSpec> GetPerfBufferSpec(
 }  // namespace
 
 StatusOr<BCCProgram> CompileProgram(const ir::logical::TracepointDeployment& input_program) {
+  if (input_program.tracepoints_size() != 1) {
+    return error::InvalidArgument("Right now only support exactly 1 Tracepoint, got '$0'",
+                                  input_program.tracepoints_size());
+  }
+
+  ir::shared::Language language = input_program.tracepoints(0).program().language();
+
   PL_ASSIGN_OR_RETURN(ir::logical::TracepointDeployment intermediate_program,
                       TransformLogicalProgram(input_program));
 
@@ -72,12 +80,12 @@ StatusOr<BCCProgram> CompileProgram(const ir::logical::TracepointDeployment& inp
 
   // Expect the outside caller keeps UPID, and specify them in UProbeSpec. Here upid and path are
   // specified alternatively, and upid will be replaced by binary path.
-  switch (intermediate_program.binary_spec().target_oneof_case()) {
+  switch (intermediate_program.deployment_spec().target_oneof_case()) {
     case ir::shared::DeploymentSpec::TargetOneofCase::kPath:
       // Ignored, no need to resolve binary path.
       break;
     case ir::shared::DeploymentSpec::TargetOneofCase::kUpid: {
-      pid = intermediate_program.binary_spec().upid().pid();
+      pid = intermediate_program.deployment_spec().upid().pid();
 
       PL_ASSIGN_OR_RETURN(std::filesystem::path host_binary_path,
                           obj_tools::GetPIDBinaryOnHost(pid));
@@ -85,14 +93,15 @@ StatusOr<BCCProgram> CompileProgram(const ir::logical::TracepointDeployment& inp
       // TODO(yzhao): Here the upid's PID start time is not verified, just looks for the pid.
       // We might need to add such check in the future.
 
-      intermediate_program.mutable_binary_spec()->set_path(host_binary_path.string());
+      intermediate_program.mutable_deployment_spec()->set_path(host_binary_path.string());
       break;
     }
     case ir::shared::DeploymentSpec::TargetOneofCase::TARGET_ONEOF_NOT_SET:
       return error::InvalidArgument("Must specify path or upid");
   }
 
-  LOG(INFO) << absl::Substitute("Tracepoint binary: $0", intermediate_program.binary_spec().path());
+  LOG(INFO) << absl::Substitute("Tracepoint binary: $0",
+                                intermediate_program.deployment_spec().path());
 
   PL_ASSIGN_OR_RETURN(ir::physical::Program physical_program, AddDwarves(intermediate_program));
 
@@ -101,15 +110,15 @@ StatusOr<BCCProgram> CompileProgram(const ir::logical::TracepointDeployment& inp
   PL_ASSIGN_OR_RETURN(bcc_program.code, GenProgram(physical_program));
 
   std::unique_ptr<elf_tools::ElfReader> elf_reader;
+  const auto& binary_path = physical_program.deployment_spec().path();
 
-  if (physical_program.binary_spec().language() == ir::shared::DeploymentSpec::GOLANG) {
-    PL_ASSIGN_OR_RETURN(elf_reader,
-                        elf_tools::ElfReader::Create(physical_program.binary_spec().path()));
+  if (language == ir::shared::Language::GOLANG) {
+    PL_ASSIGN_OR_RETURN(elf_reader, elf_tools::ElfReader::Create(binary_path));
   }
 
   for (const auto& probe : physical_program.probes()) {
     PL_ASSIGN_OR_RETURN(std::vector<UProbeSpec> specs,
-                        GetUProbeSpec(physical_program.binary_spec(), probe, elf_reader.get()));
+                        GetUProbeSpec(binary_path, language, probe, elf_reader.get()));
     for (auto& spec : specs) {
       bcc_program.uprobe_specs.push_back(std::move(spec));
     }

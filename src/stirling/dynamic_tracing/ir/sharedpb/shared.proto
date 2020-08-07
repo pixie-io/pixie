@@ -4,6 +4,14 @@ package pl.stirling.dynamic_tracing.ir.shared;
 
 option go_package = "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/sharedpb";
 
+enum Language {
+  // Automatically infer the language (default).
+  AUTO = 0;
+  C = 1;
+  CPP = 2;
+  GOLANG = 3;
+}
+
 // Describes where to attach a probe.
 message TracePoint {
   string symbol = 1;
@@ -37,7 +45,10 @@ message UPID {
   uint64 ts_ns = 3;
 }
 
+// TODO(yzhao): This replaces BinarySpec.
+// Describes the target of attaching a Tracepoint.
 message DeploymentSpec {
+  // TODO(yzhao): Remove this field, replaced by path_regexp, selector_oneof, and selected_upids.
   oneof target_oneof {
     // The path of the executable file.
     string path = 1;
@@ -46,17 +57,24 @@ message DeploymentSpec {
     UPID upid = 3;
   }
 
-  enum Language {
-    // Automatically infer the language (default).
-    AUTO = 0;
-    C = 1;
-    CPP = 2;
-    GOLANG = 3;
+  // Processes with exe path that matches this pattern are the target of this deployment.
+  // The exe path is the one recorded in the process's exe path as seen inside the container,
+  // not the one resolved through overlay FS.
+  string path_regexp = 4;
+
+  // Selector is used to select the target processes. All selected processes are subject to
+  // filtering with path_regexp.
+  oneof selector_oneof {
+      // All processes running inside the pod are target processes.
+      string pod_name = 5;
+
+      // A specific upid.
+      // TODO(yzhao): Rename to upid, after removing target_oneof.
+      UPID upid1 = 6;
   }
 
-  // The language in which the binary was written.
-  // For now, must manually specify the language, so please avoid AUTO.
-  Language language = 2;
+  // The finalized process list for attachment. PEM/Stirling only uses this field.
+  repeated UPID selected_upids = 7;
 }
 
 // All enum values must be consecutive, as they are used as array index in codegen.

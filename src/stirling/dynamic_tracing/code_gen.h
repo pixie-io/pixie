@@ -7,6 +7,7 @@
 
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
+#include "src/stirling/dynamic_tracing/ir/logicalpb/logical.pb.h"
 #include "src/stirling/dynamic_tracing/ir/physicalpb/physical.pb.h"
 
 namespace pl {
@@ -22,8 +23,8 @@ StatusOr<std::vector<std::string>> GenStruct(const ir::physical::Struct& st,
 
 // Returns the definition of the input ScalarVariable.
 // TODO(yzhao): This probably need to handle indentation.
-StatusOr<std::vector<std::string>> GenScalarVariable(
-    const ir::physical::ScalarVariable& var, const ir::shared::DeploymentSpec::Language& language);
+StatusOr<std::vector<std::string>> GenScalarVariable(const ir::physical::ScalarVariable& var,
+                                                     const ir::shared::Language& language);
 
 // Returns the definition of the input StructVariable, with assignments of all fields.
 StatusOr<std::vector<std::string>> GenStructVariable(const ir::physical::Struct& st,

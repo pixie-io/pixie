@@ -47,10 +47,10 @@ class ProbeOutput {
   std::vector<std::string> var_names_;
 };
 
-class ProbeIR {
+class TracepointIR {
  public:
-  ProbeIR(stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language,
-          const std::string& function_name)
+  TracepointIR(stirling::dynamic_tracing::ir::shared::Language language,
+               const std::string& function_name)
       : language_(language), symbol_(function_name) {}
 
   /**
@@ -59,7 +59,8 @@ class ProbeIR {
    * @param pb
    * @return Any error that occured during serialization.
    */
-  Status ToProto(stirling::dynamic_tracing::ir::logical::Probe* pb);
+  Status ToProto(stirling::dynamic_tracing::ir::logical::TracepointSpec* pb,
+                 const std::string& name);
 
   /**
    * @return true a latency column has been defined for the probe
@@ -135,12 +136,10 @@ class ProbeIR {
   void SetOutputName(const std::string& output_name);
 
   std::shared_ptr<ProbeOutput> output() const { return output_; }
-  stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language() const {
-    return language_;
-  }
+  stirling::dynamic_tracing::ir::shared::Language language() const { return language_; }
 
  private:
-  stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language_;
+  stirling::dynamic_tracing::ir::shared::Language language_;
   std::string symbol_;
   std::string latency_col_id_;
   std::vector<stirling::dynamic_tracing::ir::logical::Argument> args_;
@@ -148,9 +147,9 @@ class ProbeIR {
   std::shared_ptr<ProbeOutput> output_ = nullptr;
 };
 
-class TracingProgram {
+class TracepointDeployment {
  public:
-  TracingProgram(const std::string& trace_name, int64_t ttl_ns)
+  TracepointDeployment(const std::string& trace_name, int64_t ttl_ns)
       : name_(trace_name), ttl_ns_(ttl_ns) {}
   /**
    * @brief Converts Program to the proto representation.
@@ -168,49 +167,51 @@ class TracingProgram {
    * @param output_name the name of the touput table for the probe.
    * @return Status
    */
-  Status AddProbe(ProbeIR* probe_ir, const std::string& probe_name, const std::string& output_name);
+  Status AddTracepoint(TracepointIR* probe_ir, const std::string& probe_name,
+                       const std::string& output_name);
 
  private:
   std::string name_;
   int64_t ttl_ns_;
   std::string binary_path_;
   std::vector<stirling::dynamic_tracing::ir::logical::Probe> probes_;
+  std::vector<stirling::dynamic_tracing::ir::logical::TracepointDeployment::Tracepoint>
+      tracepoints_;
   std::vector<stirling::dynamic_tracing::ir::logical::Output> outputs_;
   absl::flat_hash_map<std::string, stirling::dynamic_tracing::ir::logical::Output*> output_map_;
-  stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language_;
+  stirling::dynamic_tracing::ir::shared::Language language_;
 };
 
-class DynamicTraceIR {
+class MutationsIR {
  public:
   /**
    * @brief Creates a new probe definition and stores it in the current_probe() of the Builder.
    *
    * @param function_name
-   * @return std::shared_ptr<ProbeIR>
+   * @return std::shared_ptr<TracepointIR>
    */
-  std::shared_ptr<ProbeIR> StartProbe(
-      stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language,
-      const std::string& function_name);
+  std::shared_ptr<TracepointIR> StartProbe(stirling::dynamic_tracing::ir::shared::Language language,
+                                           const std::string& function_name);
 
   /**
-   * @brief Create a TraceProgram for the DynamicTraceIR w/ the specified UPID.
+   * @brief Create a TraceProgram for the MutationsIR w/ the specified UPID.
    *
    * @param program_name
    * @param upid
    * @param ttl_ns
-   * @return StatusOr<TracingProgram*>
+   * @return StatusOr<TracepointDeployment*>
    */
-  StatusOr<TracingProgram*> CreateTraceProgram(const std::string& program_name,
-                                               const md::UPID& upid, int64_t ttl_ns);
+  StatusOr<TracepointDeployment*> CreateTracepointDeployment(const std::string& tracepoint_name,
+                                                             const md::UPID& upid, int64_t ttl_ns);
 
   /**
    * @brief Get the CurrentProbe or return an error. Nice shorthand to support a clean error
    * message that points to the write position in the code.
    *
    * @param ast the ast object to use as a pointer to the line of code.
-   * @return StatusOr<ProbeIR*> the current probe or an error if it doesn't exist.
+   * @return StatusOr<TracepointIR*> the current probe or an error if it doesn't exist.
    */
-  StatusOr<ProbeIR*> GetCurrentProbeOrError(const pypa::AstPtr& ast);
+  StatusOr<TracepointIR*> GetCurrentProbeOrError(const pypa::AstPtr& ast);
 
   /**
    * @brief Converts the Probe definitions into the proto definition that can be used by the
@@ -223,8 +224,8 @@ class DynamicTraceIR {
   Status ToProto(plannerpb::CompileMutationsResponse* pb);
 
   /**
-   * @brief Stops recording changes to the current_probe_ and removes it from the current_probe_
-   * position.
+   * @brief Stops recording changes to the current_tracepoint_ and removes it from the
+   * current_tracepoint_ position.
    */
   void EndProbe();
 
@@ -239,13 +240,13 @@ class DynamicTraceIR {
 
   const std::vector<std::string>& TracepointsToDelete() { return tracepoints_to_delete_; }
 
-  ProbeIR* current_probe() { return current_probe_.get(); }
+  TracepointIR* current_probe() { return current_tracepoint_.get(); }
 
  private:
-  absl::flat_hash_map<std::string, TracingProgram> binary_to_program_map_;
-  absl::flat_hash_map<md::UPID, std::unique_ptr<TracingProgram>> upid_to_program_map_;
-  std::vector<std::shared_ptr<ProbeIR>> probes_pool_;
-  std::shared_ptr<ProbeIR> current_probe_;
+  absl::flat_hash_map<std::string, TracepointDeployment> binary_to_program_map_;
+  absl::flat_hash_map<md::UPID, std::unique_ptr<TracepointDeployment>> upid_to_program_map_;
+  std::vector<std::shared_ptr<TracepointIR>> probes_pool_;
+  std::shared_ptr<TracepointIR> current_tracepoint_;
 
   std::vector<std::string> tracepoints_to_delete_;
 };

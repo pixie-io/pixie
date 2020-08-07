@@ -30,7 +30,7 @@ StatusOr<stirling::dynamic_tracing::ir::logical::TracepointDeployment> CompileTr
   PL_ASSIGN_OR_RETURN(auto ast, parser.Parse(query));
 
   IR ir;
-  compiler::DynamicTraceIR probe_ir;
+  compiler::MutationsIR probe_ir;
   ModuleHandler module_handler;
 
   PL_ASSIGN_OR_RETURN(auto ast_walker,

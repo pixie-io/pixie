@@ -33,7 +33,8 @@ using pl::stirling::SourceRegistrySpecifier;
 using pl::stirling::Stirling;
 using pl::stirling::stirlingpb::Publish;
 using pl::stirling::stirlingpb::Subscribe;
-using DynamicTracingProgram = pl::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
+using DynamicTracepointDeployment =
+    pl::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
 
 using pl::types::ColumnWrapperRecordBatch;
 using pl::types::TabletID;
@@ -129,15 +130,15 @@ std::optional<TraceProgram> GetTraceProgram() {
 }
 
 StatusOr<Publish> DeployTrace(Stirling* stirling, TraceProgram trace_program_str) {
-  std::unique_ptr<DynamicTracingProgram> trace_program;
+  std::unique_ptr<DynamicTracepointDeployment> trace_program;
 
   if (trace_program_str.format == TracepointFormat::kPXL) {
-    PL_ASSIGN_OR_RETURN(DynamicTracingProgram compiled_tracepoint,
+    PL_ASSIGN_OR_RETURN(DynamicTracepointDeployment compiled_tracepoint,
                         pl::carnot::planner::compiler::CompileTracepoint(trace_program_str.text));
     LOG(INFO) << compiled_tracepoint.DebugString();
-    trace_program = std::make_unique<DynamicTracingProgram>(std::move(compiled_tracepoint));
+    trace_program = std::make_unique<DynamicTracepointDeployment>(std::move(compiled_tracepoint));
   } else {
-    trace_program = std::make_unique<DynamicTracingProgram>();
+    trace_program = std::make_unique<DynamicTracepointDeployment>();
     bool success =
         google::protobuf::TextFormat::ParseFromString(trace_program_str.text, trace_program.get());
     if (!success) {
@@ -146,8 +147,10 @@ StatusOr<Publish> DeployTrace(Stirling* stirling, TraceProgram trace_program_str
   }
 
   // Automatically enable printing of this table.
-  for (const auto& o : trace_program->outputs()) {
-    g_table_print_enables.push_back(o.name());
+  for (const auto& tracepoint : trace_program->tracepoints()) {
+    for (const auto& o : tracepoint.program().outputs()) {
+      g_table_print_enables.push_back(o.name());
+    }
   }
 
   sole::uuid trace_id = sole::uuid4();

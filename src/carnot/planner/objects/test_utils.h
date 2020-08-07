@@ -149,7 +149,7 @@ class QLObjectTest : public OperatorTests {
   std::shared_ptr<RegistryInfo> info = nullptr;
   std::shared_ptr<ASTVisitor> ast_visitor = nullptr;
   ModuleHandler module_handler;
-  DynamicTraceIR dynamic_trace_;
+  MutationsIR dynamic_trace_;
 };
 
 StatusOr<QLObjectPtr> NoneObjectFunc(const pypa::AstPtr&, const ParsedArgs&, ASTVisitor* visitor) {

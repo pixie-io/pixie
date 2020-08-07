@@ -282,7 +282,7 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   auto compiler_state =
       std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);
   compiler::ModuleHandler module_handler;
-  compiler::DynamicTraceIR dynamic_trace;
+  compiler::MutationsIR dynamic_trace;
   PL_ASSIGN_OR_RETURN(auto ast_walker,
                       compiler::ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
                                                        compiler_state.get(), &module_handler));
@@ -918,7 +918,7 @@ class ASTVisitorTest : public OperatorTests {
     }
 
     compiler::ModuleHandler module_handler;
-    compiler::DynamicTraceIR probe_ir;
+    compiler::MutationsIR probe_ir;
     PL_ASSIGN_OR_RETURN(auto ast_walker,
                         compiler::ASTVisitorImpl::Create(ir.get(), &probe_ir, compiler_state_.get(),
                                                          &module_handler, func_based_exec,
@@ -936,7 +936,7 @@ class ASTVisitorTest : public OperatorTests {
     PL_ASSIGN_OR_RETURN(auto ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
     compiler::ModuleHandler module_handler;
-    compiler::DynamicTraceIR dynamic_trace;
+    compiler::MutationsIR dynamic_trace;
     PL_ASSIGN_OR_RETURN(auto ast_walker,
                         compiler::ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
                                                          compiler_state_.get(), &module_handler));
@@ -949,7 +949,7 @@ class ASTVisitorTest : public OperatorTests {
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
     compiler::ModuleHandler module_handler;
-    compiler::DynamicTraceIR dynamic_trace;
+    compiler::MutationsIR dynamic_trace;
     PL_ASSIGN_OR_RETURN(auto ast_walker,
                         compiler::ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
                                                          compiler_state_.get(), &module_handler));
@@ -964,7 +964,7 @@ class ASTVisitorTest : public OperatorTests {
     std::shared_ptr<IR> ir = std::make_shared<IR>();
     compiler::ModuleHandler module_handler;
 
-    compiler::DynamicTraceIR dynamic_trace;
+    compiler::MutationsIR dynamic_trace;
     PL_ASSIGN_OR_RETURN(auto ast_walker,
                         compiler::ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
                                                          compiler_state_.get(), &module_handler));

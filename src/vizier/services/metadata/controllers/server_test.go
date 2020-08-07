@@ -387,12 +387,28 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
 	program := &logicalpb.TracepointDeployment{
-		Probes: []*logicalpb.Probe{
-			&logicalpb.Probe{
-				Name: "test",
+		Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+			&logicalpb.TracepointDeployment_Tracepoint{
+				OutputName: "test",
+				Program: &logicalpb.TracepointSpec{
+					Outputs: []*logicalpb.Output{
+						&logicalpb.Output{
+							Name:   "test",
+							Fields: []string{"def"},
+						},
+					},
+				},
 			},
-			&logicalpb.Probe{
-				Name: "anotherTracepoint",
+			&logicalpb.TracepointDeployment_Tracepoint{
+				OutputName: "anotherTracepoint",
+				Program: &logicalpb.TracepointSpec{
+					Outputs: []*logicalpb.Output{
+						&logicalpb.Output{
+							Name:   "anotherTracepoint",
+							Fields: []string{"def"},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -476,10 +492,17 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
 	program := &logicalpb.TracepointDeployment{
-		Outputs: []*logicalpb.Output{
-			&logicalpb.Output{
-				Name:   "table1",
-				Fields: []string{"abc", "def"},
+		Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+			&logicalpb.TracepointDeployment_Tracepoint{
+				OutputName: "table1",
+				Program: &logicalpb.TracepointSpec{
+					Outputs: []*logicalpb.Output{
+						&logicalpb.Output{
+							Name:   "table1",
+							Fields: []string{"def", "abcd"},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -496,10 +519,17 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 		GetTracepoint(oldTPID).
 		Return(&storepb.TracepointInfo{
 			Tracepoint: &logicalpb.TracepointDeployment{
-				Outputs: []*logicalpb.Output{
-					&logicalpb.Output{
-						Name:   "table1",
-						Fields: []string{"def"},
+				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+					&logicalpb.TracepointDeployment_Tracepoint{
+						OutputName: "table1",
+						Program: &logicalpb.TracepointSpec{
+							Outputs: []*logicalpb.Output{
+								&logicalpb.Output{
+									Name:   "table1",
+									Fields: []string{"def"},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -646,14 +676,12 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
 			program := &logicalpb.TracepointDeployment{
-				Outputs: []*logicalpb.Output{
-					&logicalpb.Output{
-						Name:   "table1",
-						Fields: []string{"abc", "def"},
+				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+					&logicalpb.TracepointDeployment_Tracepoint{
+						OutputName: "table1",
 					},
-					&logicalpb.Output{
-						Name:   "test",
-						Fields: []string{"test1", "test2"},
+					&logicalpb.TracepointDeployment_Tracepoint{
+						OutputName: "test",
 					},
 				},
 			}

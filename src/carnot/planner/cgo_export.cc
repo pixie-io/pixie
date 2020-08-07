@@ -145,7 +145,7 @@ char* PlannerCompileMutations(PlannerPtr planner_ptr, const char* planner_state_
   if (!dynamic_trace_or_s.ok()) {
     return ExitEarly<CompileMutationsResponse>(dynamic_trace_or_s.status(), resultLen);
   }
-  std::unique_ptr<pl::carnot::planner::compiler::DynamicTraceIR> trace =
+  std::unique_ptr<pl::carnot::planner::compiler::MutationsIR> trace =
       dynamic_trace_or_s.ConsumeValueOrDie();
 
   // If the response is ok, then we can go ahead and set this up.
@@ -154,9 +154,6 @@ char* PlannerCompileMutations(PlannerPtr planner_ptr, const char* planner_state_
 
   PLANNER_RETURN_IF_ERROR(CompileMutationsResponse, resultLen,
                           trace->ToProto(&mutations_response_pb));
-  for (const auto& trace_point : trace->TracepointsToDelete()) {
-    mutations_response_pb.add_mutations()->mutable_delete_tracepoint()->set_name(trace_point);
-  }
 
   // Serialize the tracing program into bytes.
   return PrepareResult(&mutations_response_pb, resultLen);

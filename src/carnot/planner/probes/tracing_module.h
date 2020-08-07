@@ -50,16 +50,16 @@ class ProbeObject : public QLObject {
   };
 
   static StatusOr<std::shared_ptr<ProbeObject>> Create(ASTVisitor* visitor,
-                                                       const std::shared_ptr<ProbeIR>& probe);
+                                                       const std::shared_ptr<TracepointIR>& probe);
 
   static bool IsProbe(const QLObjectPtr& ptr) { return ptr->type() == ProbeObjectType.type(); }
-  std::shared_ptr<ProbeIR> probe() const { return probe_; }
+  std::shared_ptr<TracepointIR> probe() const { return probe_; }
 
  private:
-  ProbeObject(ASTVisitor* visitor, const std::shared_ptr<ProbeIR>& probe)
+  ProbeObject(ASTVisitor* visitor, const std::shared_ptr<TracepointIR>& probe)
       : QLObject(ProbeObjectType, visitor), probe_(probe) {}
 
-  std::shared_ptr<ProbeIR> probe_;
+  std::shared_ptr<TracepointIR> probe_;
 };
 
 class TraceModule : public QLObject {
@@ -68,7 +68,7 @@ class TraceModule : public QLObject {
       /* name */ "pxtrace",
       /* type */ QLObjectType::kTraceModule,
   };
-  static StatusOr<std::shared_ptr<TraceModule>> Create(DynamicTraceIR* probes,
+  static StatusOr<std::shared_ptr<TraceModule>> Create(MutationsIR* mutations_ir,
                                                        ASTVisitor* ast_visitor);
 
   // Constant for the modules.
@@ -83,12 +83,12 @@ class TraceModule : public QLObject {
   inline static constexpr char kGoProbeTraceDefinition[] = "goprobe";
 
  protected:
-  explicit TraceModule(DynamicTraceIR* probes, ASTVisitor* ast_visitor)
-      : QLObject(TraceModuleType, ast_visitor), probes_(probes) {}
+  explicit TraceModule(MutationsIR* mutations_ir, ASTVisitor* ast_visitor)
+      : QLObject(TraceModuleType, ast_visitor), mutations_ir_(mutations_ir) {}
   Status Init();
 
  private:
-  DynamicTraceIR* probes_;
+  MutationsIR* mutations_ir_;
 };
 
 class ProbeHandler {
@@ -124,26 +124,26 @@ class ProbeHandler {
    *
    * Whenever the decorator around a func, wrapper() replaces func() as the
    *
-   * @param probes
+   * @param mutations_ir
    * @param ast
    * @param args
    * @param visitor
    * @return StatusOr<QLObjectPtr>
    */
-  static StatusOr<QLObjectPtr> Probe(
-      DynamicTraceIR* probes,
-      stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language,
-      const pypa::AstPtr& ast, const ParsedArgs& args, ASTVisitor* visitor);
-  static StatusOr<QLObjectPtr> Decorator(
-      DynamicTraceIR* probes,
-      stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language,
-      const std::string& function_name, const pypa::AstPtr& ast, const ParsedArgs& args,
-      ASTVisitor* visitor);
-  static StatusOr<QLObjectPtr> Wrapper(
-      DynamicTraceIR* probes,
-      stirling::dynamic_tracing::ir::shared::DeploymentSpec::Language language,
-      const std::string& function_name, const std::shared_ptr<FuncObject> func_obj,
-      const pypa::AstPtr& ast, const ParsedArgs& args, ASTVisitor* visitor);
+  static StatusOr<QLObjectPtr> Probe(MutationsIR* mutations_ir,
+                                     stirling::dynamic_tracing::ir::shared::Language language,
+                                     const pypa::AstPtr& ast, const ParsedArgs& args,
+                                     ASTVisitor* visitor);
+  static StatusOr<QLObjectPtr> Decorator(MutationsIR* mutations_ir,
+                                         stirling::dynamic_tracing::ir::shared::Language language,
+                                         const std::string& function_name, const pypa::AstPtr& ast,
+                                         const ParsedArgs& args, ASTVisitor* visitor);
+  static StatusOr<QLObjectPtr> Wrapper(MutationsIR* mutations_ir,
+                                       stirling::dynamic_tracing::ir::shared::Language language,
+                                       const std::string& function_name,
+                                       const std::shared_ptr<FuncObject> func_obj,
+                                       const pypa::AstPtr& ast, const ParsedArgs& args,
+                                       ASTVisitor* visitor);
 };
 
 /**
@@ -152,7 +152,7 @@ class ProbeHandler {
  */
 class ArgumentHandler {
  public:
-  static StatusOr<QLObjectPtr> Eval(DynamicTraceIR* probes, const pypa::AstPtr& ast,
+  static StatusOr<QLObjectPtr> Eval(MutationsIR* mutations_ir, const pypa::AstPtr& ast,
                                     const ParsedArgs& args, ASTVisitor* visitor);
 };
 

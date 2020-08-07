@@ -17,48 +17,52 @@ using ::testing::Field;
 using ::testing::SizeIs;
 
 constexpr std::string_view kLogicalProgramSpec = R"(
-binary_spec {
+deployment_spec {
   path: "$0"
-  language: GOLANG
 }
-outputs {
-  name: "probe_output"
-  fields: "f1"
-  fields: "f2"
-  fields: "f3"
-  fields: "f4"
-  fields: "latency"
-}
-probes: {
-  name: "probe0"
-  trace_point: {
-    symbol: "main.MixedArgTypes"
-    type: LOGICAL
-  }
-  args {
-    id: "arg0"
-    expr: "i1"
-  }
-    args {
-    id: "arg1"
-    expr: "i2"
-  }
-  args {
-    id: "arg2"
-    expr: "i3"
-  }
-  ret_vals {
-    id: "retval0"
-    expr: "$$6"
-  }
-  function_latency { id: "latency" }
-  output_actions {
-    output_name: "probe_output"
-    variable_name: "arg0"
-    variable_name: "arg1"
-    variable_name: "arg2"
-    variable_name: "retval0"
-    variable_name: "latency"
+tracepoints {
+  program {
+    language: GOLANG
+    outputs {
+      name: "probe_output"
+      fields: "f1"
+      fields: "f2"
+      fields: "f3"
+      fields: "f4"
+      fields: "latency"
+    }
+    probes: {
+      name: "probe0"
+      trace_point: {
+        symbol: "main.MixedArgTypes"
+        type: LOGICAL
+      }
+      args {
+        id: "arg0"
+        expr: "i1"
+      }
+        args {
+        id: "arg1"
+        expr: "i2"
+      }
+      args {
+        id: "arg2"
+        expr: "i3"
+      }
+      ret_vals {
+        id: "retval0"
+        expr: "$$6"
+      }
+      function_latency { id: "latency" }
+      output_actions {
+        output_name: "probe_output"
+        variable_name: "arg0"
+        variable_name: "arg1"
+        variable_name: "arg2"
+        variable_name: "retval0"
+        variable_name: "latency"
+      }
+    }
   }
 }
 )";

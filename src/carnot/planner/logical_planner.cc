@@ -80,7 +80,7 @@ StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
                                     single_node_plan.get());
 }
 
-StatusOr<std::unique_ptr<compiler::DynamicTraceIR>> LogicalPlanner::CompileTrace(
+StatusOr<std::unique_ptr<compiler::MutationsIR>> LogicalPlanner::CompileTrace(
     const distributedpb::LogicalPlannerState& logical_state,
     const plannerpb::CompileMutationsRequest& mutations_req) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<RegistryInfo> registry_info, udfexporter::ExportUDFInfo());

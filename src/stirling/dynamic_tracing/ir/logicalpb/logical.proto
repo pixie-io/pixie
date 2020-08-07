@@ -143,26 +143,49 @@ message Probe {
   repeated shared.Printk printks = 10;
 }
 
+// TODO(yzhao): This is equivalent to Program.
+message TracepointSpec {
+  // The language in which the binary was written.
+  // For now, must manually specify the language, so please avoid AUTO.
+  shared.Language language = 1;
+
+  // Maps holding shared state across probes.
+  repeated shared.Map maps = 2;
+
+  // The programs outputs to a table.
+  // TODO(yzhao): Remove repeated.
+  repeated Output outputs = 3;
+
+  // All the probes of the program.
+  // When used as the logical IR, this must be exactly 1 probe.
+  // When used as the intermediate IR, this can be multiple probes.
+  repeated Probe probes = 4;
+}
+
 // A logical program.
 // Represents a fully logical program, or one in intermediate state.
 // Example: The simplest logical program will have only a single probe (no
 // outputs, no maps), which will then get transformed into a program with
 // multiple probes, maps and outputs.
 message TracepointDeployment {
-  // The name of the Tracepoint Program .
-  string name = 5;
+  // The name of this deployment. Used to identify this operation.
+  string name = 1;
+
   // The liveness time of the tracepoint, represented in ns. After this time,
   // the tracepoint will be deleted.
-  google.protobuf.Duration ttl = 6 [ (gogoproto.customname) = "TTL" ];
+  google.protobuf.Duration ttl = 2 [ (gogoproto.customname) = "TTL" ];
 
-  shared.DeploymentSpec binary_spec = 1;
+  // The target processes of this deployment.
+  shared.DeploymentSpec deployment_spec = 3;
 
-  // Maps holding shared state across probes.
-  repeated shared.Map maps = 2;
+  // Describes a Tracepoint with a configurable output (table) name.
+  message Tracepoint {
+    // The name of the table to hold the output data.
+    string output_name = 1;
 
-  // The programs outputs to a table.
-  repeated Output outputs = 3;
+    // The actual logical operations performed by this Tracepoint.
+    TracepointSpec program = 2;
+  }
 
-  // All the probes of the program.
-  repeated Probe probes = 4;
+  repeated Tracepoint tracepoints = 4;
 }

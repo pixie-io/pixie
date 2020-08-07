@@ -619,19 +619,84 @@ func (*Probe) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+type TracepointSpec struct {
+	Language sharedpb.Language `protobuf:"varint,1,opt,name=language,proto3,enum=pl.stirling.dynamic_tracing.ir.shared.Language" json:"language,omitempty"`
+	Maps     []*sharedpb.Map   `protobuf:"bytes,2,rep,name=maps,proto3" json:"maps,omitempty"`
+	Outputs  []*Output         `protobuf:"bytes,3,rep,name=outputs,proto3" json:"outputs,omitempty"`
+	Probes   []*Probe          `protobuf:"bytes,4,rep,name=probes,proto3" json:"probes,omitempty"`
+}
+
+func (m *TracepointSpec) Reset()      { *m = TracepointSpec{} }
+func (*TracepointSpec) ProtoMessage() {}
+func (*TracepointSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5d736283bfb1d17d, []int{9}
+}
+func (m *TracepointSpec) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *TracepointSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_TracepointSpec.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *TracepointSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TracepointSpec.Merge(m, src)
+}
+func (m *TracepointSpec) XXX_Size() int {
+	return m.Size()
+}
+func (m *TracepointSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_TracepointSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TracepointSpec proto.InternalMessageInfo
+
+func (m *TracepointSpec) GetLanguage() sharedpb.Language {
+	if m != nil {
+		return m.Language
+	}
+	return sharedpb.AUTO
+}
+
+func (m *TracepointSpec) GetMaps() []*sharedpb.Map {
+	if m != nil {
+		return m.Maps
+	}
+	return nil
+}
+
+func (m *TracepointSpec) GetOutputs() []*Output {
+	if m != nil {
+		return m.Outputs
+	}
+	return nil
+}
+
+func (m *TracepointSpec) GetProbes() []*Probe {
+	if m != nil {
+		return m.Probes
+	}
+	return nil
+}
+
 type TracepointDeployment struct {
-	Name       string                   `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
-	TTL        *types.Duration          `protobuf:"bytes,6,opt,name=ttl,proto3" json:"ttl,omitempty"`
-	BinarySpec *sharedpb.DeploymentSpec `protobuf:"bytes,1,opt,name=binary_spec,json=binarySpec,proto3" json:"binary_spec,omitempty"`
-	Maps       []*sharedpb.Map          `protobuf:"bytes,2,rep,name=maps,proto3" json:"maps,omitempty"`
-	Outputs    []*Output                `protobuf:"bytes,3,rep,name=outputs,proto3" json:"outputs,omitempty"`
-	Probes     []*Probe                 `protobuf:"bytes,4,rep,name=probes,proto3" json:"probes,omitempty"`
+	Name           string                             `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	TTL            *types.Duration                    `protobuf:"bytes,2,opt,name=ttl,proto3" json:"ttl,omitempty"`
+	DeploymentSpec *sharedpb.DeploymentSpec           `protobuf:"bytes,3,opt,name=deployment_spec,json=deploymentSpec,proto3" json:"deployment_spec,omitempty"`
+	Tracepoints    []*TracepointDeployment_Tracepoint `protobuf:"bytes,4,rep,name=tracepoints,proto3" json:"tracepoints,omitempty"`
 }
 
 func (m *TracepointDeployment) Reset()      { *m = TracepointDeployment{} }
 func (*TracepointDeployment) ProtoMessage() {}
 func (*TracepointDeployment) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5d736283bfb1d17d, []int{9}
+	return fileDescriptor_5d736283bfb1d17d, []int{10}
 }
 func (m *TracepointDeployment) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -674,30 +739,67 @@ func (m *TracepointDeployment) GetTTL() *types.Duration {
 	return nil
 }
 
-func (m *TracepointDeployment) GetBinarySpec() *sharedpb.DeploymentSpec {
+func (m *TracepointDeployment) GetDeploymentSpec() *sharedpb.DeploymentSpec {
 	if m != nil {
-		return m.BinarySpec
+		return m.DeploymentSpec
 	}
 	return nil
 }
 
-func (m *TracepointDeployment) GetMaps() []*sharedpb.Map {
+func (m *TracepointDeployment) GetTracepoints() []*TracepointDeployment_Tracepoint {
 	if m != nil {
-		return m.Maps
+		return m.Tracepoints
 	}
 	return nil
 }
 
-func (m *TracepointDeployment) GetOutputs() []*Output {
-	if m != nil {
-		return m.Outputs
-	}
-	return nil
+type TracepointDeployment_Tracepoint struct {
+	OutputName string          `protobuf:"bytes,1,opt,name=output_name,json=outputName,proto3" json:"output_name,omitempty"`
+	Program    *TracepointSpec `protobuf:"bytes,2,opt,name=program,proto3" json:"program,omitempty"`
 }
 
-func (m *TracepointDeployment) GetProbes() []*Probe {
+func (m *TracepointDeployment_Tracepoint) Reset()      { *m = TracepointDeployment_Tracepoint{} }
+func (*TracepointDeployment_Tracepoint) ProtoMessage() {}
+func (*TracepointDeployment_Tracepoint) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5d736283bfb1d17d, []int{10, 0}
+}
+func (m *TracepointDeployment_Tracepoint) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *TracepointDeployment_Tracepoint) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_TracepointDeployment_Tracepoint.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *TracepointDeployment_Tracepoint) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TracepointDeployment_Tracepoint.Merge(m, src)
+}
+func (m *TracepointDeployment_Tracepoint) XXX_Size() int {
+	return m.Size()
+}
+func (m *TracepointDeployment_Tracepoint) XXX_DiscardUnknown() {
+	xxx_messageInfo_TracepointDeployment_Tracepoint.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TracepointDeployment_Tracepoint proto.InternalMessageInfo
+
+func (m *TracepointDeployment_Tracepoint) GetOutputName() string {
 	if m != nil {
-		return m.Probes
+		return m.OutputName
+	}
+	return ""
+}
+
+func (m *TracepointDeployment_Tracepoint) GetProgram() *TracepointSpec {
+	if m != nil {
+		return m.Program
 	}
 	return nil
 }
@@ -712,7 +814,9 @@ func init() {
 	proto.RegisterType((*Output)(nil), "pl.stirling.dynamic_tracing.ir.logical.Output")
 	proto.RegisterType((*OutputAction)(nil), "pl.stirling.dynamic_tracing.ir.logical.OutputAction")
 	proto.RegisterType((*Probe)(nil), "pl.stirling.dynamic_tracing.ir.logical.Probe")
+	proto.RegisterType((*TracepointSpec)(nil), "pl.stirling.dynamic_tracing.ir.logical.TracepointSpec")
 	proto.RegisterType((*TracepointDeployment)(nil), "pl.stirling.dynamic_tracing.ir.logical.TracepointDeployment")
+	proto.RegisterType((*TracepointDeployment_Tracepoint)(nil), "pl.stirling.dynamic_tracing.ir.logical.TracepointDeployment.Tracepoint")
 }
 
 func init() {
@@ -720,65 +824,70 @@ func init() {
 }
 
 var fileDescriptor_5d736283bfb1d17d = []byte{
-	// 927 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x56, 0x41, 0x6f, 0xdb, 0x36,
-	0x14, 0xb6, 0x62, 0xc7, 0x76, 0x9e, 0xdb, 0xa4, 0xe5, 0x86, 0x42, 0xcd, 0x00, 0x35, 0xf0, 0x80,
-	0x21, 0x18, 0x10, 0x79, 0x4d, 0xd3, 0xf6, 0x36, 0xac, 0x6e, 0xda, 0x65, 0x58, 0xd3, 0x05, 0x8c,
-	0x91, 0xc3, 0x76, 0x30, 0x28, 0x89, 0x76, 0x88, 0xca, 0x22, 0x41, 0xd2, 0x46, 0x7d, 0xdb, 0x2e,
-	0x03, 0x06, 0xec, 0xb0, 0x9f, 0xb1, 0x9f, 0xb2, 0x63, 0x8e, 0x3d, 0x0d, 0x8b, 0x83, 0x01, 0x3b,
-	0xf6, 0x27, 0x0c, 0x7a, 0x92, 0x52, 0xa5, 0x08, 0x50, 0xf9, 0xb0, 0xdd, 0xde, 0x23, 0xf5, 0xbd,
-	0xf7, 0x3d, 0x3e, 0x7e, 0x8f, 0x82, 0xc7, 0x46, 0x87, 0x3d, 0x63, 0x85, 0x8e, 0x45, 0x32, 0xee,
-	0x45, 0xf3, 0x84, 0x4d, 0x44, 0x38, 0xb4, 0x9a, 0x85, 0xa9, 0x2f, 0x74, 0x2f, 0x96, 0x63, 0x11,
-	0xb2, 0x58, 0x05, 0x85, 0xe5, 0x2b, 0x2d, 0xad, 0x24, 0x9f, 0xa9, 0xd8, 0x2f, 0x70, 0xfe, 0x7b,
-	0x38, 0x5f, 0x68, 0x3f, 0xff, 0x7a, 0x73, 0x67, 0x2c, 0xec, 0xe9, 0x34, 0xf0, 0x43, 0x39, 0xe9,
-	0x8d, 0xe5, 0x58, 0xf6, 0x10, 0x1e, 0x4c, 0x47, 0xe8, 0xa1, 0x83, 0x56, 0x16, 0x76, 0xd3, 0x1b,
-	0x4b, 0x39, 0x8e, 0xf9, 0xbb, 0xaf, 0xa2, 0xa9, 0x66, 0x56, 0xc8, 0x24, 0xdf, 0x7f, 0xf8, 0x21,
-	0xbe, 0xe6, 0x94, 0x69, 0x1e, 0xa9, 0x20, 0x37, 0x32, 0x58, 0xf7, 0x27, 0x07, 0xda, 0x4f, 0x65,
-	0x62, 0x2c, 0x4b, 0x2c, 0x21, 0xd0, 0x48, 0xd8, 0x84, 0xbb, 0xce, 0x96, 0xb3, 0xbd, 0x46, 0xd1,
-	0x26, 0xcf, 0xa0, 0x61, 0xe7, 0x8a, 0xbb, 0x2b, 0x5b, 0xce, 0xf6, 0xfa, 0xee, 0x7d, 0xff, 0x03,
-	0xd5, 0xe5, 0xc1, 0x8f, 0x43, 0x16, 0x33, 0x3d, 0x98, 0x2b, 0x4e, 0x11, 0x4e, 0x36, 0xa1, 0x1d,
-	0xe6, 0x69, 0xdc, 0x3a, 0x86, 0xbf, 0xf4, 0xbb, 0x3e, 0xb4, 0x9f, 0xe8, 0xf1, 0x74, 0xc2, 0x13,
-	0x4b, 0xd6, 0x61, 0x45, 0x44, 0x39, 0x81, 0x15, 0x11, 0xa5, 0x94, 0xf8, 0x6b, 0xa5, 0x31, 0xfd,
-	0x1a, 0x45, 0xbb, 0x7b, 0x1f, 0x3a, 0x94, 0xdb, 0xa9, 0x4e, 0x4e, 0x58, 0x3c, 0xe5, 0x95, 0x20,
-	0x3f, 0x3b, 0xd0, 0x3e, 0x64, 0x2a, 0x03, 0xdc, 0x85, 0xf6, 0x84, 0xa9, 0x61, 0xa9, 0xd4, 0xd6,
-	0x84, 0xa9, 0x97, 0x69, 0xb5, 0x7d, 0xa8, 0xbf, 0xe2, 0xf3, 0xbc, 0xd8, 0x2f, 0x2a, 0x16, 0xdb,
-	0x3f, 0x7a, 0x7e, 0xc0, 0x63, 0xc5, 0x35, 0x4d, 0xc1, 0xe4, 0x13, 0x58, 0x9b, 0xa5, 0x79, 0x86,
-	0x22, 0x32, 0x6e, 0x7d, 0xab, 0x9e, 0xd6, 0x8a, 0x0b, 0xdf, 0x44, 0xa6, 0xfb, 0xb7, 0x03, 0xeb,
-	0x87, 0x4c, 0x1d, 0x5b, 0x66, 0x4e, 0x9f, 0x84, 0x69, 0xff, 0xfe, 0x6b, 0x3a, 0x3e, 0x7c, 0x94,
-	0xd1, 0x99, 0x31, 0x2d, 0x58, 0x10, 0xf3, 0x2c, 0x53, 0x46, 0xec, 0x36, 0x6e, 0x9d, 0xe4, 0x3b,
-	0x98, 0x73, 0x1f, 0x1a, 0xa1, 0x4c, 0x22, 0xb7, 0xb1, 0xe5, 0x6c, 0x77, 0x2a, 0x27, 0x7d, 0x2a,
-	0x93, 0x48, 0xa4, 0xe5, 0x50, 0x44, 0x77, 0x15, 0x6c, 0x1c, 0x32, 0xb5, 0xcf, 0x63, 0x6e, 0xf9,
-	0xff, 0x52, 0x67, 0x77, 0x0f, 0x9a, 0xdf, 0x4d, 0xad, 0x9a, 0x5e, 0x7f, 0x8d, 0xef, 0x40, 0x73,
-	0x24, 0x78, 0x1c, 0x19, 0x77, 0x05, 0x0b, 0xcf, 0xbd, 0xee, 0x00, 0x6e, 0x64, 0xa8, 0x9c, 0xe4,
-	0x3d, 0xe8, 0x48, 0xf4, 0xcb, 0x3c, 0x21, 0x5b, 0x42, 0xaa, 0x9f, 0xc2, 0xcd, 0xeb, 0x0e, 0xf2,
-	0xc6, 0xac, 0x74, 0x86, 0xdd, 0x5f, 0x5b, 0xb0, 0x7a, 0xa4, 0x65, 0xc0, 0xaf, 0xe5, 0x42, 0xa1,
-	0x93, 0x56, 0xc3, 0x87, 0x4a, 0x8a, 0xc4, 0x62, 0xd5, 0x9d, 0xca, 0xca, 0x1a, 0xa4, 0xc8, 0xa3,
-	0x14, 0x48, 0xc1, 0x5e, 0xda, 0xe4, 0x00, 0x9a, 0xa8, 0xa7, 0xec, 0xc6, 0x55, 0xe8, 0x5b, 0x31,
-	0xb4, 0x0a, 0xf1, 0xd3, 0x1c, 0x9f, 0xf6, 0x9f, 0xe9, 0xb1, 0x71, 0x1b, 0xcb, 0xc5, 0x29, 0x14,
-	0x4c, 0x11, 0x4d, 0x5e, 0x42, 0x5b, 0x73, 0x3b, 0x9c, 0xb1, 0xd8, 0xb8, 0xab, 0x18, 0xe9, 0x41,
-	0xd5, 0x48, 0x25, 0x6d, 0xd3, 0x96, 0xe6, 0xf6, 0x84, 0xc5, 0x86, 0x7c, 0x9b, 0x5d, 0x1e, 0x8c,
-	0xd7, 0x5c, 0x8e, 0x59, 0xa1, 0x7b, 0xbc, 0x6e, 0x18, 0x2c, 0x84, 0x5b, 0xa3, 0x69, 0x82, 0x0d,
-	0x1f, 0xc6, 0xcc, 0xf2, 0x24, 0x9c, 0xbb, 0x2d, 0xec, 0xc2, 0xa3, 0x8a, 0x5d, 0x78, 0x9e, 0xc3,
-	0x5f, 0x64, 0xe8, 0x83, 0x1a, 0xdd, 0x18, 0x5d, 0x5d, 0x22, 0x01, 0xdc, 0x4e, 0x19, 0x9b, 0x54,
-	0xe9, 0x43, 0x86, 0x5b, 0xc6, 0x6d, 0x23, 0xf5, 0x47, 0x4b, 0x50, 0x2f, 0x4d, 0x0a, 0xba, 0x31,
-	0xb9, 0xe2, 0x1b, 0xc2, 0x81, 0xa4, 0x39, 0x22, 0x94, 0xd9, 0x65, 0x92, 0x0e, 0x26, 0x79, 0xbc,
-	0x44, 0x92, 0xb2, 0x4e, 0xe9, 0xad, 0xc9, 0xd5, 0x05, 0x43, 0x7e, 0x80, 0xf5, 0x5c, 0x14, 0x45,
-	0x8a, 0x35, 0x4c, 0xb1, 0x57, 0x35, 0x45, 0x59, 0x62, 0xf4, 0xa6, 0x2c, 0x79, 0x86, 0x7c, 0x0d,
-	0x2d, 0xa5, 0x45, 0x62, 0x5f, 0x19, 0x17, 0x30, 0xea, 0x4e, 0xc5, 0x1e, 0x1c, 0x21, 0x8a, 0x16,
-	0xe8, 0xbe, 0x0b, 0x77, 0xde, 0xef, 0xea, 0x50, 0x26, 0x5c, 0x8e, 0xba, 0xbf, 0xd4, 0xe1, 0x63,
-	0xd4, 0x0d, 0x0a, 0x6e, 0x9f, 0xab, 0x58, 0xce, 0xf1, 0xb5, 0x29, 0xd4, 0xb9, 0x5a, 0x52, 0xe7,
-	0x1e, 0xd4, 0xad, 0x8d, 0xdd, 0x26, 0xde, 0x87, 0xbb, 0x7e, 0xf6, 0xec, 0xfa, 0xc5, 0xb3, 0xeb,
-	0xef, 0xe7, 0xcf, 0x6e, 0xbf, 0xb5, 0xf8, 0xf3, 0x5e, 0x7d, 0x30, 0x78, 0x41, 0xd3, 0xcf, 0xc9,
-	0x09, 0x74, 0x02, 0x91, 0x30, 0x3d, 0x1f, 0x1a, 0xc5, 0x43, 0x94, 0x7b, 0x67, 0xf7, 0x61, 0xc5,
-	0x4a, 0xde, 0x31, 0x3a, 0x56, 0x3c, 0xa4, 0x90, 0x45, 0x4a, 0x6d, 0xf2, 0x25, 0x34, 0x26, 0x4c,
-	0x65, 0x53, 0xab, 0xb3, 0xfb, 0x79, 0xc5, 0x80, 0x87, 0x4c, 0x51, 0xc4, 0x91, 0x03, 0x68, 0x65,
-	0xc7, 0x5d, 0x0c, 0x06, 0x7f, 0xb9, 0x9e, 0xd1, 0x02, 0x4e, 0x9e, 0x41, 0x53, 0xa5, 0x23, 0xad,
-	0x98, 0x0c, 0x3b, 0x55, 0x03, 0xe1, 0x20, 0xa4, 0x39, 0xb8, 0x3f, 0x3b, 0x3b, 0xf7, 0x6a, 0x6f,
-	0xce, 0xbd, 0xda, 0xdb, 0x73, 0xcf, 0xf9, 0x71, 0xe1, 0x39, 0xbf, 0x2f, 0x3c, 0xe7, 0x8f, 0x85,
-	0xe7, 0x9c, 0x2d, 0x3c, 0xe7, 0xaf, 0x85, 0xe7, 0xfc, 0xb3, 0xf0, 0x6a, 0x6f, 0x17, 0x9e, 0xf3,
-	0xdb, 0x85, 0x57, 0x3b, 0xbb, 0xf0, 0x6a, 0x6f, 0x2e, 0xbc, 0xda, 0xf7, 0x5f, 0x29, 0xf1, 0x5a,
-	0xf0, 0x98, 0x05, 0xc6, 0x67, 0xa2, 0x77, 0xe9, 0xf4, 0x2a, 0xff, 0xa4, 0x05, 0x4d, 0xec, 0xe0,
-	0x83, 0x7f, 0x03, 0x00, 0x00, 0xff, 0xff, 0x66, 0x22, 0x5e, 0x38, 0xd8, 0x09, 0x00, 0x00,
+	// 996 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x56, 0x41, 0x6f, 0x1b, 0x45,
+	0x14, 0xf6, 0xc6, 0xae, 0xed, 0x3c, 0xb7, 0x4e, 0x3b, 0xa0, 0x6a, 0x1b, 0xa4, 0x6d, 0x64, 0x24,
+	0x54, 0x21, 0x65, 0x4d, 0xd3, 0x34, 0xbd, 0x21, 0x9a, 0xa6, 0x6d, 0x10, 0x49, 0x89, 0x26, 0x51,
+	0x0e, 0x20, 0x61, 0x8d, 0x77, 0x27, 0x9b, 0x51, 0xd7, 0x3b, 0xa3, 0xd9, 0x71, 0x54, 0x9f, 0x80,
+	0x0b, 0x27, 0x0e, 0xfc, 0x0c, 0x0e, 0x88, 0xdf, 0xc1, 0x31, 0xc7, 0x9e, 0x10, 0x71, 0x84, 0xc4,
+	0xb1, 0x3f, 0x01, 0xcd, 0xdb, 0x5d, 0x67, 0x53, 0x45, 0xca, 0xfa, 0x00, 0xb7, 0x79, 0x33, 0xfb,
+	0xbd, 0xf7, 0xbd, 0xf7, 0xe6, 0x7b, 0x3b, 0xf0, 0x24, 0xd5, 0x41, 0x3f, 0x35, 0x42, 0xc7, 0x22,
+	0x89, 0xfa, 0xe1, 0x24, 0x61, 0x23, 0x11, 0x0c, 0x8c, 0x66, 0x81, 0xb5, 0x85, 0xee, 0xc7, 0x32,
+	0x12, 0x01, 0x8b, 0xd5, 0xb0, 0x58, 0xf9, 0x4a, 0x4b, 0x23, 0xc9, 0x27, 0x2a, 0xf6, 0x0b, 0x9c,
+	0xff, 0x1e, 0xce, 0x17, 0xda, 0xcf, 0xbf, 0x5e, 0x5e, 0x8d, 0x84, 0x39, 0x1e, 0x0f, 0xfd, 0x40,
+	0x8e, 0xfa, 0x91, 0x8c, 0x64, 0x1f, 0xe1, 0xc3, 0xf1, 0x11, 0x5a, 0x68, 0xe0, 0x2a, 0x73, 0xbb,
+	0xec, 0x45, 0x52, 0x46, 0x31, 0xbf, 0xf8, 0x2a, 0x1c, 0x6b, 0x66, 0x84, 0x4c, 0xf2, 0xf3, 0xc7,
+	0xd7, 0xf1, 0x4d, 0x8f, 0x99, 0xe6, 0xa1, 0x1a, 0xe6, 0x8b, 0x0c, 0xd6, 0xfb, 0xd1, 0x81, 0xf6,
+	0x33, 0x99, 0xa4, 0x86, 0x25, 0x86, 0x10, 0x68, 0x24, 0x6c, 0xc4, 0x5d, 0x67, 0xc5, 0x79, 0xb0,
+	0x48, 0x71, 0x4d, 0x9e, 0x43, 0xc3, 0x4c, 0x14, 0x77, 0x17, 0x56, 0x9c, 0x07, 0xdd, 0xb5, 0x87,
+	0xfe, 0x35, 0xd9, 0xe5, 0xce, 0xf7, 0x03, 0x16, 0x33, 0x7d, 0x30, 0x51, 0x9c, 0x22, 0x9c, 0x2c,
+	0x43, 0x3b, 0xc8, 0xc3, 0xb8, 0x75, 0x74, 0x3f, 0xb3, 0x7b, 0x3e, 0xb4, 0x9f, 0xea, 0x68, 0x3c,
+	0xe2, 0x89, 0x21, 0x5d, 0x58, 0x10, 0x61, 0x4e, 0x60, 0x41, 0x84, 0x96, 0x12, 0x7f, 0xa3, 0x34,
+	0x86, 0x5f, 0xa4, 0xb8, 0xee, 0x3d, 0x84, 0x0e, 0xe5, 0x66, 0xac, 0x93, 0x43, 0x16, 0x8f, 0x79,
+	0x25, 0xc8, 0x4f, 0x0e, 0xb4, 0x77, 0x99, 0xca, 0x00, 0xf7, 0xa0, 0x3d, 0x62, 0x6a, 0x50, 0x4a,
+	0xb5, 0x35, 0x62, 0xea, 0x95, 0xcd, 0x76, 0x13, 0xea, 0xaf, 0xf9, 0x24, 0x4f, 0xf6, 0xb3, 0x8a,
+	0xc9, 0x6e, 0xee, 0xbd, 0xd8, 0xe6, 0xb1, 0xe2, 0x9a, 0x5a, 0x30, 0xf9, 0x08, 0x16, 0x4f, 0x6c,
+	0x9c, 0x81, 0x08, 0x53, 0xb7, 0xbe, 0x52, 0xb7, 0xb9, 0xe2, 0xc6, 0x97, 0x61, 0xda, 0xfb, 0xdb,
+	0x81, 0xee, 0x2e, 0x53, 0xfb, 0x86, 0xa5, 0xc7, 0x4f, 0x03, 0xdb, 0xbf, 0xff, 0x9a, 0x8e, 0x0f,
+	0x1f, 0x64, 0x74, 0x4e, 0x98, 0x16, 0x6c, 0x18, 0xf3, 0x2c, 0x52, 0x46, 0xec, 0x0e, 0x1e, 0x1d,
+	0xe6, 0x27, 0x18, 0x73, 0x0b, 0x1a, 0x81, 0x4c, 0x42, 0xb7, 0xb1, 0xe2, 0x3c, 0xe8, 0x54, 0x0e,
+	0xfa, 0x4c, 0x26, 0xa1, 0xb0, 0xe9, 0x50, 0x44, 0xf7, 0x14, 0x2c, 0xed, 0x32, 0xb5, 0xc5, 0x63,
+	0x6e, 0xf8, 0xff, 0x92, 0x67, 0x6f, 0x1d, 0x9a, 0x5f, 0x8f, 0x8d, 0x1a, 0x5f, 0x7d, 0x8d, 0xef,
+	0x42, 0xf3, 0x48, 0xf0, 0x38, 0x4c, 0xdd, 0x05, 0x4c, 0x3c, 0xb7, 0x7a, 0x07, 0x70, 0x33, 0x43,
+	0xe5, 0x24, 0xef, 0x43, 0x47, 0xa2, 0x5d, 0xe6, 0x09, 0xd9, 0x16, 0x52, 0xfd, 0x18, 0x6e, 0x5d,
+	0x55, 0xc8, 0x9b, 0x27, 0xa5, 0x1a, 0xf6, 0x7e, 0x6e, 0xc1, 0x8d, 0x3d, 0x2d, 0x87, 0xfc, 0x4a,
+	0x2e, 0x14, 0x3a, 0x36, 0x1b, 0x3e, 0x50, 0x52, 0x24, 0x06, 0xb3, 0xee, 0x54, 0x56, 0xd6, 0x81,
+	0x45, 0xee, 0x59, 0x20, 0x05, 0x33, 0x5b, 0x93, 0x6d, 0x68, 0xa2, 0x9e, 0xb2, 0x1b, 0x57, 0xa1,
+	0x6f, 0xc5, 0xd0, 0x2a, 0xc4, 0x4f, 0x73, 0xbc, 0xed, 0x3f, 0xd3, 0x51, 0xea, 0x36, 0xe6, 0xf3,
+	0x53, 0x28, 0x98, 0x22, 0x9a, 0xbc, 0x82, 0xb6, 0xe6, 0x66, 0x70, 0xc2, 0xe2, 0xd4, 0xbd, 0x81,
+	0x9e, 0x1e, 0x55, 0xf5, 0x54, 0xd2, 0x36, 0x6d, 0x69, 0x6e, 0x0e, 0x59, 0x9c, 0x92, 0xaf, 0xb2,
+	0xcb, 0x83, 0xfe, 0x9a, 0xf3, 0x31, 0x2b, 0x74, 0x8f, 0xd7, 0x0d, 0x9d, 0x05, 0x70, 0xfb, 0x68,
+	0x9c, 0x60, 0xc3, 0x07, 0x31, 0x33, 0x3c, 0x09, 0x26, 0x6e, 0x0b, 0xbb, 0xb0, 0x51, 0xb1, 0x0b,
+	0x2f, 0x72, 0xf8, 0x4e, 0x86, 0xde, 0xae, 0xd1, 0xa5, 0xa3, 0xcb, 0x5b, 0x64, 0x08, 0x77, 0x2c,
+	0xe3, 0xd4, 0x2a, 0x7d, 0xc0, 0xf0, 0x28, 0x75, 0xdb, 0x48, 0x7d, 0x63, 0x0e, 0xea, 0xa5, 0x49,
+	0x41, 0x97, 0x46, 0x97, 0xec, 0x94, 0x70, 0x20, 0x36, 0x46, 0x88, 0x32, 0x9b, 0x05, 0xe9, 0x60,
+	0x90, 0x27, 0x73, 0x04, 0x29, 0xeb, 0x94, 0xde, 0x1e, 0x5d, 0xde, 0x48, 0xc9, 0xb7, 0xd0, 0xcd,
+	0x45, 0x51, 0x84, 0x58, 0xc4, 0x10, 0xeb, 0x55, 0x43, 0x94, 0x25, 0x46, 0x6f, 0xc9, 0x92, 0x95,
+	0x92, 0x97, 0xd0, 0x52, 0x5a, 0x24, 0xe6, 0x75, 0xea, 0x02, 0x7a, 0x5d, 0xad, 0xd8, 0x83, 0x3d,
+	0x44, 0xd1, 0x02, 0xbd, 0xe9, 0xc2, 0xdd, 0xf7, 0xbb, 0x3a, 0x90, 0x09, 0x97, 0x47, 0xbd, 0xdf,
+	0x17, 0xa0, 0x8b, 0xba, 0x41, 0xc1, 0xed, 0x2b, 0x1e, 0xd8, 0xfb, 0x14, 0xb3, 0x24, 0x1a, 0xb3,
+	0x28, 0xd3, 0x66, 0x77, 0xad, 0x5f, 0x31, 0xec, 0x4e, 0x0e, 0xa3, 0x33, 0x07, 0xe4, 0x73, 0x68,
+	0x8c, 0x98, 0xca, 0x46, 0x4b, 0x67, 0xed, 0xd3, 0x8a, 0x8e, 0x76, 0x99, 0xa2, 0x88, 0x23, 0xdb,
+	0xd0, 0xca, 0x6a, 0x52, 0xa8, 0xd7, 0x9f, 0xaf, 0xb0, 0xb4, 0x80, 0x93, 0xe7, 0xd0, 0x54, 0x76,
+	0xee, 0x14, 0xf2, 0x5d, 0xad, 0xea, 0x08, 0xa7, 0x15, 0xcd, 0xc1, 0xbd, 0xdf, 0xea, 0xf0, 0xe1,
+	0x45, 0xc1, 0xb6, 0xb8, 0x8a, 0xe5, 0x04, 0x7f, 0xcf, 0x57, 0x8d, 0xb3, 0x75, 0xa8, 0x1b, 0x13,
+	0xe7, 0x63, 0xec, 0x9e, 0x9f, 0xbd, 0x53, 0xfc, 0xe2, 0x9d, 0xe2, 0x6f, 0xe5, 0xef, 0x94, 0xcd,
+	0xd6, 0xf4, 0xcf, 0xfb, 0xf5, 0x83, 0x83, 0x1d, 0x6a, 0x3f, 0x27, 0xdf, 0xc1, 0x52, 0x38, 0xf3,
+	0x3b, 0x48, 0x15, 0x0f, 0xf0, 0x5d, 0xd0, 0x59, 0x7b, 0x5c, 0xb1, 0x7c, 0x17, 0xac, 0x6c, 0x43,
+	0x69, 0x37, 0xbc, 0x64, 0x13, 0x91, 0x0f, 0x59, 0xcc, 0xa0, 0x28, 0xc7, 0xcb, 0xaa, 0xe5, 0xb8,
+	0x2a, 0xf9, 0xd2, 0x26, 0x2d, 0xfb, 0x5e, 0xfe, 0x1e, 0xe0, 0xe2, 0xe8, 0xfa, 0x3f, 0xc8, 0x9e,
+	0xbd, 0xf0, 0x32, 0xd2, 0x6c, 0x94, 0xd7, 0x6c, 0x63, 0x7e, 0x56, 0x98, 0x72, 0xe1, 0x66, 0xf3,
+	0xe4, 0xf4, 0xcc, 0xab, 0xbd, 0x3d, 0xf3, 0x6a, 0xef, 0xce, 0x3c, 0xe7, 0x87, 0xa9, 0xe7, 0xfc,
+	0x3a, 0xf5, 0x9c, 0x3f, 0xa6, 0x9e, 0x73, 0x3a, 0xf5, 0x9c, 0xbf, 0xa6, 0x9e, 0xf3, 0xcf, 0xd4,
+	0xab, 0xbd, 0x9b, 0x7a, 0xce, 0x2f, 0xe7, 0x5e, 0xed, 0xf4, 0xdc, 0xab, 0xbd, 0x3d, 0xf7, 0x6a,
+	0xdf, 0x7c, 0xa1, 0xc4, 0x1b, 0xc1, 0x63, 0x36, 0x4c, 0x7d, 0x26, 0xfa, 0x33, 0xa3, 0x5f, 0xf9,
+	0xe1, 0x3b, 0x6c, 0x62, 0x93, 0x1f, 0xfd, 0x1b, 0x00, 0x00, 0xff, 0xff, 0xc1, 0xc9, 0x60, 0x7a,
+	0x2c, 0x0b, 0x00, 0x00,
 }
 
 func (this *Constant) Equal(that interface{}) bool {
@@ -1153,14 +1262,14 @@ func (this *Probe_FunctionLatency) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *TracepointDeployment) Equal(that interface{}) bool {
+func (this *TracepointSpec) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*TracepointDeployment)
+	that1, ok := that.(*TracepointSpec)
 	if !ok {
-		that2, ok := that.(TracepointDeployment)
+		that2, ok := that.(TracepointSpec)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1172,13 +1281,7 @@ func (this *TracepointDeployment) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Name != that1.Name {
-		return false
-	}
-	if !this.TTL.Equal(that1.TTL) {
-		return false
-	}
-	if !this.BinarySpec.Equal(that1.BinarySpec) {
+	if this.Language != that1.Language {
 		return false
 	}
 	if len(this.Maps) != len(that1.Maps) {
@@ -1204,6 +1307,71 @@ func (this *TracepointDeployment) Equal(that interface{}) bool {
 		if !this.Probes[i].Equal(that1.Probes[i]) {
 			return false
 		}
+	}
+	return true
+}
+func (this *TracepointDeployment) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*TracepointDeployment)
+	if !ok {
+		that2, ok := that.(TracepointDeployment)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if !this.TTL.Equal(that1.TTL) {
+		return false
+	}
+	if !this.DeploymentSpec.Equal(that1.DeploymentSpec) {
+		return false
+	}
+	if len(this.Tracepoints) != len(that1.Tracepoints) {
+		return false
+	}
+	for i := range this.Tracepoints {
+		if !this.Tracepoints[i].Equal(that1.Tracepoints[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *TracepointDeployment_Tracepoint) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*TracepointDeployment_Tracepoint)
+	if !ok {
+		that2, ok := that.(TracepointDeployment_Tracepoint)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.OutputName != that1.OutputName {
+		return false
+	}
+	if !this.Program.Equal(that1.Program) {
+		return false
 	}
 	return true
 }
@@ -1349,19 +1517,13 @@ func (this *Probe_FunctionLatency) GoString() string {
 		`FunctionLatency:` + fmt.Sprintf("%#v", this.FunctionLatency) + `}`}, ", ")
 	return s
 }
-func (this *TracepointDeployment) GoString() string {
+func (this *TracepointSpec) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 10)
-	s = append(s, "&logicalpb.TracepointDeployment{")
-	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
-	if this.TTL != nil {
-		s = append(s, "TTL: "+fmt.Sprintf("%#v", this.TTL)+",\n")
-	}
-	if this.BinarySpec != nil {
-		s = append(s, "BinarySpec: "+fmt.Sprintf("%#v", this.BinarySpec)+",\n")
-	}
+	s := make([]string, 0, 8)
+	s = append(s, "&logicalpb.TracepointSpec{")
+	s = append(s, "Language: "+fmt.Sprintf("%#v", this.Language)+",\n")
 	if this.Maps != nil {
 		s = append(s, "Maps: "+fmt.Sprintf("%#v", this.Maps)+",\n")
 	}
@@ -1370,6 +1532,38 @@ func (this *TracepointDeployment) GoString() string {
 	}
 	if this.Probes != nil {
 		s = append(s, "Probes: "+fmt.Sprintf("%#v", this.Probes)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *TracepointDeployment) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&logicalpb.TracepointDeployment{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	if this.TTL != nil {
+		s = append(s, "TTL: "+fmt.Sprintf("%#v", this.TTL)+",\n")
+	}
+	if this.DeploymentSpec != nil {
+		s = append(s, "DeploymentSpec: "+fmt.Sprintf("%#v", this.DeploymentSpec)+",\n")
+	}
+	if this.Tracepoints != nil {
+		s = append(s, "Tracepoints: "+fmt.Sprintf("%#v", this.Tracepoints)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *TracepointDeployment_Tracepoint) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&logicalpb.TracepointDeployment_Tracepoint{")
+	s = append(s, "OutputName: "+fmt.Sprintf("%#v", this.OutputName)+",\n")
+	if this.Program != nil {
+		s = append(s, "Program: "+fmt.Sprintf("%#v", this.Program)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -1895,7 +2089,7 @@ func (m *Probe_FunctionLatency) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	return len(dAtA) - i, nil
 }
-func (m *TracepointDeployment) Marshal() (dAtA []byte, err error) {
+func (m *TracepointSpec) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1905,35 +2099,16 @@ func (m *TracepointDeployment) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *TracepointDeployment) MarshalTo(dAtA []byte) (int, error) {
+func (m *TracepointSpec) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *TracepointDeployment) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *TracepointSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.TTL != nil {
-		{
-			size, err := m.TTL.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintLogical(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x32
-	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintLogical(dAtA, i, uint64(len(m.Name)))
-		i--
-		dAtA[i] = 0x2a
-	}
 	if len(m.Probes) > 0 {
 		for iNdEx := len(m.Probes) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -1976,15 +2151,118 @@ func (m *TracepointDeployment) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x12
 		}
 	}
-	if m.BinarySpec != nil {
+	if m.Language != 0 {
+		i = encodeVarintLogical(dAtA, i, uint64(m.Language))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *TracepointDeployment) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *TracepointDeployment) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *TracepointDeployment) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Tracepoints) > 0 {
+		for iNdEx := len(m.Tracepoints) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Tracepoints[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintLogical(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if m.DeploymentSpec != nil {
 		{
-			size, err := m.BinarySpec.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.DeploymentSpec.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
 			i -= size
 			i = encodeVarintLogical(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.TTL != nil {
+		{
+			size, err := m.TTL.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintLogical(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintLogical(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *TracepointDeployment_Tracepoint) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *TracepointDeployment_Tracepoint) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *TracepointDeployment_Tracepoint) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Program != nil {
+		{
+			size, err := m.Program.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintLogical(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.OutputName) > 0 {
+		i -= len(m.OutputName)
+		copy(dAtA[i:], m.OutputName)
+		i = encodeVarintLogical(dAtA, i, uint64(len(m.OutputName)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -2238,15 +2516,14 @@ func (m *Probe_FunctionLatency) Size() (n int) {
 	}
 	return n
 }
-func (m *TracepointDeployment) Size() (n int) {
+func (m *TracepointSpec) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.BinarySpec != nil {
-		l = m.BinarySpec.Size()
-		n += 1 + l + sovLogical(uint64(l))
+	if m.Language != 0 {
+		n += 1 + sovLogical(uint64(m.Language))
 	}
 	if len(m.Maps) > 0 {
 		for _, e := range m.Maps {
@@ -2266,12 +2543,48 @@ func (m *TracepointDeployment) Size() (n int) {
 			n += 1 + l + sovLogical(uint64(l))
 		}
 	}
+	return n
+}
+
+func (m *TracepointDeployment) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
 	l = len(m.Name)
 	if l > 0 {
 		n += 1 + l + sovLogical(uint64(l))
 	}
 	if m.TTL != nil {
 		l = m.TTL.Size()
+		n += 1 + l + sovLogical(uint64(l))
+	}
+	if m.DeploymentSpec != nil {
+		l = m.DeploymentSpec.Size()
+		n += 1 + l + sovLogical(uint64(l))
+	}
+	if len(m.Tracepoints) > 0 {
+		for _, e := range m.Tracepoints {
+			l = e.Size()
+			n += 1 + l + sovLogical(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *TracepointDeployment_Tracepoint) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.OutputName)
+	if l > 0 {
+		n += 1 + l + sovLogical(uint64(l))
+	}
+	if m.Program != nil {
+		l = m.Program.Size()
 		n += 1 + l + sovLogical(uint64(l))
 	}
 	return n
@@ -2445,7 +2758,7 @@ func (this *Probe_FunctionLatency) String() string {
 	}, "")
 	return s
 }
-func (this *TracepointDeployment) String() string {
+func (this *TracepointSpec) String() string {
 	if this == nil {
 		return "nil"
 	}
@@ -2464,13 +2777,40 @@ func (this *TracepointDeployment) String() string {
 		repeatedStringForProbes += strings.Replace(f.String(), "Probe", "Probe", 1) + ","
 	}
 	repeatedStringForProbes += "}"
-	s := strings.Join([]string{`&TracepointDeployment{`,
-		`BinarySpec:` + strings.Replace(fmt.Sprintf("%v", this.BinarySpec), "DeploymentSpec", "sharedpb.DeploymentSpec", 1) + `,`,
+	s := strings.Join([]string{`&TracepointSpec{`,
+		`Language:` + fmt.Sprintf("%v", this.Language) + `,`,
 		`Maps:` + repeatedStringForMaps + `,`,
 		`Outputs:` + repeatedStringForOutputs + `,`,
 		`Probes:` + repeatedStringForProbes + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *TracepointDeployment) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForTracepoints := "[]*TracepointDeployment_Tracepoint{"
+	for _, f := range this.Tracepoints {
+		repeatedStringForTracepoints += strings.Replace(fmt.Sprintf("%v", f), "TracepointDeployment_Tracepoint", "TracepointDeployment_Tracepoint", 1) + ","
+	}
+	repeatedStringForTracepoints += "}"
+	s := strings.Join([]string{`&TracepointDeployment{`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`TTL:` + strings.Replace(fmt.Sprintf("%v", this.TTL), "Duration", "types.Duration", 1) + `,`,
+		`DeploymentSpec:` + strings.Replace(fmt.Sprintf("%v", this.DeploymentSpec), "DeploymentSpec", "sharedpb.DeploymentSpec", 1) + `,`,
+		`Tracepoints:` + repeatedStringForTracepoints + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *TracepointDeployment_Tracepoint) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&TracepointDeployment_Tracepoint{`,
+		`OutputName:` + fmt.Sprintf("%v", this.OutputName) + `,`,
+		`Program:` + strings.Replace(this.Program.String(), "TracepointSpec", "TracepointSpec", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3927,7 +4267,7 @@ func (m *Probe) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *TracepointDeployment) Unmarshal(dAtA []byte) error {
+func (m *TracepointSpec) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -3950,17 +4290,17 @@ func (m *TracepointDeployment) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: TracepointDeployment: wiretype end group for non-group")
+			return fmt.Errorf("proto: TracepointSpec: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: TracepointDeployment: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: TracepointSpec: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BinarySpec", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Language", wireType)
 			}
-			var msglen int
+			m.Language = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowLogical
@@ -3970,28 +4310,11 @@ func (m *TracepointDeployment) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				m.Language |= sharedpb.Language(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
-				return ErrInvalidLengthLogical
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthLogical
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.BinarySpec == nil {
-				m.BinarySpec = &sharedpb.DeploymentSpec{}
-			}
-			if err := m.BinarySpec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Maps", wireType)
@@ -4094,7 +4417,60 @@ func (m *TracepointDeployment) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 5:
+		default:
+			iNdEx = preIndex
+			skippy, err := skipLogical(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthLogical
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthLogical
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *TracepointDeployment) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowLogical
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: TracepointDeployment: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: TracepointDeployment: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
 			}
@@ -4126,7 +4502,7 @@ func (m *TracepointDeployment) Unmarshal(dAtA []byte) error {
 			}
 			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 6:
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field TTL", wireType)
 			}
@@ -4159,6 +4535,197 @@ func (m *TracepointDeployment) Unmarshal(dAtA []byte) error {
 				m.TTL = &types.Duration{}
 			}
 			if err := m.TTL.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeploymentSpec", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLogical
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthLogical
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthLogical
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DeploymentSpec == nil {
+				m.DeploymentSpec = &sharedpb.DeploymentSpec{}
+			}
+			if err := m.DeploymentSpec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Tracepoints", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLogical
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthLogical
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthLogical
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Tracepoints = append(m.Tracepoints, &TracepointDeployment_Tracepoint{})
+			if err := m.Tracepoints[len(m.Tracepoints)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipLogical(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthLogical
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthLogical
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *TracepointDeployment_Tracepoint) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowLogical
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Tracepoint: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Tracepoint: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OutputName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLogical
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthLogical
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthLogical
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OutputName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Program", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLogical
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthLogical
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthLogical
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Program == nil {
+				m.Program = &TracepointSpec{}
+			}
+			if err := m.Program.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
