@@ -142,6 +142,10 @@ tracepoints {
         id: "b"
         expr: "b"
       }
+      ret_vals {
+        id: "retval0"
+        expr: "$$0"
+      }
       output_actions {
         output_name: "output_table"
         variable_name: "a"
@@ -518,6 +522,115 @@ tracepoints {
 INSTANTIATE_TEST_SUITE_P(DwarfInfoTestSuite, StirlingBPFTest,
                          ::testing::Values(TestParam{"main.BytesToHex", "Bytes"},
                                            TestParam{"main.Uint8ArrayToHex", "Uint8"}));
+
+TEST_F(StirlingBPFTest, CPPTracing) {
+  // Run tracing target.
+  SubProcess process;
+
+  std::string path = pl::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe");
+  ASSERT_OK(fs::Exists(path));
+  ASSERT_OK(process.Start({path}));
+
+  constexpr std::string_view kProgram = R"(
+deployment_spec {
+  path: "$0"
+}
+tracepoints {
+  program {
+    language: CPP
+    outputs {
+      name: "output_table"
+      fields: "a"
+      fields: "b"
+      fields: "sum"
+    }
+    probes {
+      name: "probe0"
+      trace_point {
+        symbol: "CanYouFindThis"
+        type: LOGICAL
+      }
+      args {
+        id: "arg0"
+        expr: "a"
+      }
+      args {
+        id: "arg1"
+        expr: "b"
+      }
+      ret_vals {
+        id: "retval0"
+        expr: "$$0"
+      }
+      output_actions {
+        output_name: "output_table"
+        variable_name: "arg0"
+        variable_name: "arg1"
+        variable_name: "retval0"
+      }
+    }
+  }
+}
+)";
+
+  stirlingpb::Publish publication;
+  stirling_->GetPublishProto(&publication);
+  int original_num_info_classes = publication.published_info_classes_size();
+
+  auto trace_program = Prepare(kProgram, path);
+
+  sole::uuid trace_id = sole::uuid4();
+  stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
+
+  // Should deploy.
+  ASSERT_OK_AND_ASSIGN(publication, WaitForStatus(trace_id));
+
+  // Check the incremental publication change.
+  ASSERT_EQ(publication.published_info_classes_size(), 1);
+  const auto& info_class = publication.published_info_classes(0);
+
+  // Subscribe to the new info class.
+  ASSERT_OK(stirling_->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(publication)));
+
+  // Get field indexes for the two columns we want.
+  ASSERT_HAS_VALUE_AND_ASSIGN(int a_field_idx, FindFieldIndex(info_class.schema(), "a"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int b_field_idx, FindFieldIndex(info_class.schema(), "b"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int sum_field_idx, FindFieldIndex(info_class.schema(), "sum"));
+
+  // Run Stirling data collector.
+  ASSERT_OK(stirling_->RunAsThread());
+
+  // Wait to capture some data.
+  while (record_batches_.empty()) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
+
+  // Full publication should show one more info class while tracepoint is active.
+  publication = {};
+  stirling_->GetPublishProto(&publication);
+  EXPECT_EQ(publication.published_info_classes_size(), original_num_info_classes + 1);
+
+  ASSERT_OK(stirling_->RemoveTracepoint(trace_id));
+
+  // Should get removed.
+  EXPECT_EQ(WaitForStatus(trace_id).code(), pl::statuspb::Code::NOT_FOUND);
+
+  // After removal, full publication should go back to the original count.
+  publication = {};
+  stirling_->GetPublishProto(&publication);
+  EXPECT_EQ(publication.published_info_classes_size(), original_num_info_classes);
+
+  stirling_->Stop();
+
+  types::ColumnWrapperRecordBatch& rb = *record_batches_[0];
+  EXPECT_EQ(rb[sum_field_idx]->Get<types::Int64Value>(0).val, 7);
+
+  // TODO(oazizi): Function argument tracing appears to be broken. Fix it.
+  //  EXPECT_EQ(rb[a_field_idx]->Get<types::Int64Value>(0).val, 3);
+  //  EXPECT_EQ(rb[b_field_idx]->Get<types::Int64Value>(0).val, 4);
+  PL_UNUSED(a_field_idx);
+  PL_UNUSED(b_field_idx);
+}
 
 }  // namespace stirling
 }  // namespace pl

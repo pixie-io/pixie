@@ -29,6 +29,7 @@ constexpr char kTGIDStartTimeVarName[] = "tgid_start_time_";
 constexpr char kGOIDVarName[] = "goid_";
 constexpr char kKTimeVarName[] = "time_";
 constexpr char kStartKTimeNSVarName[] = "start_ktime_ns";
+constexpr char kRCVarName[] = "rc_";
 
 // WARNING: Do not change the name of kKTimeVarName above, as it is a name implicitly used by the
 //          query engine as the time column.
@@ -71,13 +72,16 @@ class Dwarvifier {
   Status ProcessProbe(const ir::logical::Probe& input_probe, ir::physical::Program* output_program);
   Status ProcessTracepoint(const ir::shared::TracePoint& trace_point,
                            ir::physical::Probe* output_probe);
-  Status ProcessSpecialVariables(ir::physical::Probe* output_probe);
-  Status ProcessConst(const ir::logical::Constant& constant, ir::physical::Probe* output_probe);
+  Status AddSpecialVariables(ir::physical::Probe* output_probe);
+  Status AddStandardVariables(ir::physical::Probe* output_probe);
+  Status AddRetProbeVariables(ir::physical::Probe* output_probe);
+  Status ProcessConstants(const ir::logical::Constant& constant, ir::physical::Probe* output_probe);
 
   // The input components describes a sequence of field of nesting structures. The first component
   // is the name of an input argument of a function, or an expression to describe the index of an
   // return value of the function.
-  Status ProcessVarExpr(const std::string& var_name,
+  Status ProcessVarExpr(const std::string& var_name, const ArgInfo* arg_info,
+                        const std::string& base_var,
                         const std::vector<std::string_view>& components,
                         ir::physical::Probe* output_probe);
 
@@ -116,6 +120,7 @@ class Dwarvifier {
   std::unique_ptr<dwarf_tools::DwarfReader> dwarf_reader_;
 
   std::map<std::string, dwarf_tools::ArgInfo> args_map_;
+  dwarf_tools::RetValInfo retval_info_;
 
   // All defined ScalarVariable.
   absl::flat_hash_map<std::string, ir::shared::ScalarType> scalar_var_types_;
@@ -300,6 +305,8 @@ Status Dwarvifier::GenerateProbe(const ir::logical::Probe input_probe,
                                  ir::physical::Program* output_program) {
   PL_ASSIGN_OR_RETURN(args_map_,
                       dwarf_reader_->GetFunctionArgInfo(input_probe.trace_point().symbol()));
+  PL_ASSIGN_OR_RETURN(retval_info_,
+                      dwarf_reader_->GetFunctionRetValInfo(input_probe.trace_point().symbol()));
 
   scalar_var_types_.clear();
 
@@ -348,10 +355,10 @@ Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
   p->set_name(input_probe.name());
 
   PL_RETURN_IF_ERROR(ProcessTracepoint(input_probe.trace_point(), p));
-  PL_RETURN_IF_ERROR(ProcessSpecialVariables(p));
+  PL_RETURN_IF_ERROR(AddSpecialVariables(p));
 
   for (auto& constant : input_probe.consts()) {
-    PL_RETURN_IF_ERROR(ProcessConst(constant, p));
+    PL_RETURN_IF_ERROR(ProcessConstants(constant, p));
   }
 
   for (const auto& arg : input_probe.args()) {
@@ -389,10 +396,20 @@ Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
   return Status::OK();
 }
 
+Status Dwarvifier::AddSpecialVariables(ir::physical::Probe* output_probe) {
+  PL_RETURN_IF_ERROR(AddStandardVariables(output_probe));
+
+  if (output_probe->trace_point().type() == ir::shared::TracePoint::RETURN) {
+    PL_RETURN_IF_ERROR(AddRetProbeVariables(output_probe));
+  }
+
+  return Status::OK();
+}
+
 // TODO(oazizi): Could selectively generate some of these variables, when they are not required.
 //               For example, if latency is not required, then there is no need for ktime.
 //               For now, include them all for simplicity.
-Status Dwarvifier::ProcessSpecialVariables(ir::physical::Probe* output_probe) {
+Status Dwarvifier::AddStandardVariables(ir::physical::Probe* output_probe) {
   // Add SP variable.
   auto* sp_var = AddVariable(output_probe, kSPVarName, ir::shared::VOID_POINTER);
   sp_var->set_reg(ir::physical::Register::SP);
@@ -423,8 +440,18 @@ Status Dwarvifier::ProcessSpecialVariables(ir::physical::Probe* output_probe) {
   return Status::OK();
 }
 
-Status Dwarvifier::ProcessConst(const ir::logical::Constant& constant,
-                                ir::physical::Probe* output_probe) {
+Status Dwarvifier::AddRetProbeVariables(ir::physical::Probe* output_probe) {
+  // Add return value variable for convenience.
+  if ((language_ == ir::shared::C || language_ == ir::shared::CPP)) {
+    auto* rc_var = AddVariable(output_probe, kRCVarName, ir::shared::VOID_POINTER);
+    rc_var->set_reg(ir::physical::Register::RC);
+  }
+
+  return Status::OK();
+}
+
+Status Dwarvifier::ProcessConstants(const ir::logical::Constant& constant,
+                                    ir::physical::Probe* output_probe) {
   auto* var = output_probe->add_vars()->mutable_scalar_var();
 
   var->set_name(constant.name());
@@ -434,17 +461,15 @@ Status Dwarvifier::ProcessConst(const ir::logical::Constant& constant,
   return Status::OK();
 }
 
-Status Dwarvifier::ProcessVarExpr(const std::string& var_name,
+Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo* arg_info,
+                                  const std::string& base_var,
                                   const std::vector<std::string_view>& components,
                                   ir::physical::Probe* output_probe) {
-  PL_ASSIGN_OR_RETURN(const ArgInfo* arg_info, GetArgInfo(args_map_, components.front()));
-  DCHECK(arg_info != nullptr);
-
   VarType type = arg_info->type;
   std::string type_name = std::move(arg_info->type_name);
   int offset = kSPOffset + arg_info->offset;
-  std::string base = kSPVarName;
-  std::string name = std::string(var_name);
+  std::string base = base_var;
+  std::string name = var_name;
 
   // Note that we start processing at element [1], not [0], which was used to set the starting
   // state in the lines above.
@@ -516,7 +541,10 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
 
   std::vector<std::string_view> components = absl::StrSplit(arg.expr(), ".");
 
-  return ProcessVarExpr(arg.id(), components, output_probe);
+  PL_ASSIGN_OR_RETURN(const ArgInfo* arg_info, GetArgInfo(args_map_, components.front()));
+  DCHECK(arg_info != nullptr);
+
+  return ProcessVarExpr(arg.id(), arg_info, kSPVarName, components, output_probe);
 }
 
 Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
@@ -534,21 +562,73 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
         "ReturnValue '$0' expression invalid, first component must be `$$<index>`", ret_val.expr());
   }
 
-  // TODO(oazizi): Support named return variables.
-  // Golang automatically names return variables ~r0, ~r1, etc.
-  // However, it should be noted that the indexing includes function arguments.
-  // For example Foo(a int, b int) (int, int) would have ~r2 and ~r3 as return variables.
-  // One additional nuance is that the receiver, although an argument for dwarf purposes,
-  // is not counted in the indexing.
-  // For now, we throw the burden of finding the index to the user,
-  // so if they want the first return argument above, they would have to specify and index of 2.
-  // TODO(oazizi): Make indexing of return value based on number of return arguments only.
-  std::string ret_val_name = absl::StrCat("~r", std::to_string(index));
+  switch (language_) {
+    case ir::shared::GOLANG: {
+      // TODO(oazizi): Support named return variables.
+      // Golang automatically names return variables ~r0, ~r1, etc.
+      // However, it should be noted that the indexing includes function arguments.
+      // For example Foo(a int, b int) (int, int) would have ~r2 and ~r3 as return variables.
+      // One additional nuance is that the receiver, although an argument for dwarf purposes,
+      // is not counted in the indexing.
+      // For now, we throw the burden of finding the index to the user,
+      // so if they want the first return argument above, they would have to specify and index of 2.
+      // TODO(oazizi): Make indexing of return value based on number of return arguments only.
+      std::string ret_val_name = absl::StrCat("~r", std::to_string(index));
 
-  // Reset the first component.
-  components.front() = ret_val_name;
+      // Reset the first component.
+      components.front() = ret_val_name;
 
-  return ProcessVarExpr(ret_val.id(), components, output_probe);
+      // Golang return values are really arguments located on the stack, so get the arg info.
+      PL_ASSIGN_OR_RETURN(const ArgInfo* arg_info, GetArgInfo(args_map_, components.front()));
+      DCHECK(arg_info != nullptr);
+
+      return ProcessVarExpr(ret_val.id(), arg_info, kSPVarName, components, output_probe);
+    }
+    case ir::shared::CPP:
+    case ir::shared::C: {
+      if (index != 0) {
+        return error::Internal("C/C++ only supports a single return value [index=$0].", index);
+      }
+
+      switch (retval_info_.type) {
+        case VarType::kBaseType: {
+          // When the return value is a simple base type, the return value is passed directly
+          // through a register that is accessed via PT_REGS_RC.
+          PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type,
+                              VarTypeToProtoScalarType(retval_info_.type, retval_info_.type_name));
+
+          auto* rc_var = AddVariable(output_probe, ret_val.id(), pb_type);
+          rc_var->set_reg(ir::physical::Register::RC);
+
+          return Status::OK();
+        }
+        case VarType::kPointer: {
+          // When the return value is not a simple base type, the return value is a pointer to the
+          // struct. That pointer is accessed via PT_REGS_RC.
+
+          // TODO(oazizi): Finish this code and create a test.
+
+          ArgInfo retval;
+          retval.type_name = retval_info_.type_name;
+          retval.type = retval_info_.type;
+          retval.offset = 0;
+
+          return ProcessVarExpr(ret_val.id(), &retval, kRCVarName, components, output_probe);
+        }
+        case VarType::kVoid: {
+          return error::Internal(
+              "Attempting to process return variable for function with void return.",
+              output_probe->trace_point().symbol());
+        }
+        default: {
+          return error::Internal("Unexpected var type:", magic_enum::enum_name(retval_info_.type));
+        }
+      }
+    }
+    default:
+      return error::Internal("Return expressions not yet supported for lanuage=$0",
+                             magic_enum::enum_name(language_));
+  }
 }
 
 Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
