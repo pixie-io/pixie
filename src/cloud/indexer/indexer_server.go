@@ -14,6 +14,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
+	"pixielabs.ai/pixielabs/src/cloud/indexer/controllers"
+	"pixielabs.ai/pixielabs/src/cloud/indexer/md"
+	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
@@ -26,6 +30,21 @@ func init() {
 	pflag.String("es_ca_cert", "/es-certs/tls.crt", "The CA cert for elastic")
 	pflag.String("es_user", "elastic", "The user for elastic")
 	pflag.String("es_passwd", "elastic", "The password for elastic")
+	pflag.String("vzmgr_service", "kubernetes:///vzmgr-service.plc:51800", "The profile service url (load balancer/list is ok)")
+}
+
+func newVZMgrClient() (vzmgrpb.VZMgrServiceClient, error) {
+	dialOpts, err := services.GetGRPCClientDialOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	vzmgrChannel, err := grpc.Dial(viper.GetString("vzmgr_service"), dialOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return vzmgrpb.NewVZMgrServiceClient(vzmgrChannel), nil
 }
 
 func createStanNatsConnection(clientID string) (nc *nats.Conn, sc stan.Conn, err error) {
@@ -94,13 +113,33 @@ func main() {
 	s := services.NewPLServer(env.New(), mux)
 	nc, sc, err := createStanNatsConnection(uuid.NewV4().String())
 	if err != nil {
-		log.WithError(err).Error("Could not connect to NATS/Stan")
+		log.WithError(err).Fatal("Could not connect to NATS/Stan")
 	}
 
+	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
+		log.WithError(err).
+			WithField("sub", subscription.Subject).
+			Error("Got nats error")
+	})
+
 	es := mustConnectElastic()
-	_ = es
-	_ = nc
-	_ = sc
+	err = md.InitializeMapping(es)
+	if err != nil {
+		log.WithError(err).Fatal("Could not intialize elastic mapping")
+	}
+
+	vzmgrClient, err := newVZMgrClient()
+	if err != nil {
+		log.WithError(err).Fatal("Could not connect to vzmgr")
+	}
+
+	indexer, err := controllers.NewIndexer(nc, vzmgrClient, sc, es, "00", "ff")
+	if err != nil {
+		log.WithError(err).Fatal("Could not start indexer")
+	}
+
+	defer indexer.Stop()
+
 	s.Start()
 	s.StopOnInterrupt()
 }
