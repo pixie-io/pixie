@@ -12,8 +12,70 @@ enum Language {
   GOLANG = 3;
 }
 
+// All enum values must be consecutive, as they are used as array index in codegen.
+enum BPFHelper {
+  GOID = 0;
+  TGID = 1;
+  TGID_PID = 2;
+  TGID_START_TIME = 3;
+
+  // Return the kernel time in nanoseconds.
+  KTIME = 4;
+}
+
+enum ScalarType {
+  UNKNOWN = 0;
+
+  BOOL = 1;
+  INT = 2;
+  INT8 = 3;
+  INT16 = 4;
+  INT32 = 5;
+  INT64 = 6;
+  UINT = 7;
+  UINT8 = 8;
+  UINT16 = 9;
+  UINT32 = 10;
+  UINT64 = 11;
+  FLOAT = 12;
+  DOUBLE = 13;
+
+  VOID_POINTER = 100;
+
+  STRING = 200;
+  BYTE_ARRAY = 201;
+}
+
 // Describes where to attach a probe.
 message TracePoint {
+  message Function {
+    // The name of the function. The format varies between languages.
+    // In C++, it includes the fully qualified name of the function, including namespaces.
+    // For example:
+    // namespace pl {
+    //   struct Foo {
+    //     void Bar(int i) { ... }
+    //     template <typename T> void Bar(T t) { ... }
+    //   };
+    // }  // namespace pl
+    //
+    // pl::Foo::Bar points to the only member function of struct Foo.
+    string name = 1;
+
+    // The types of the parameters.
+    // This only applies to C++ (or any languages that support function overloading).
+    // Use string to represent the type, instead of ScalarType, for greater flexibility to describe
+    // scalar types and composite types.
+    //
+    // Use the example above, these types are described in the function signature:
+    // pl::Foo::Bar(int)
+    repeated string param_types = 2;
+  }
+
+  // Describes the target function to attach a Tracepoint.
+  Function function = 3;
+
+  // TODO(yzhao): Remove this field.
   string symbol = 1;
 
   enum Type {
@@ -75,40 +137,6 @@ message DeploymentSpec {
 
   // The finalized process list for attachment. PEM/Stirling only uses this field.
   repeated UPID selected_upids = 7;
-}
-
-// All enum values must be consecutive, as they are used as array index in codegen.
-enum BPFHelper {
-  GOID = 0;
-  TGID = 1;
-  TGID_PID = 2;
-  TGID_START_TIME = 3;
-
-  // Return the kernel time in nanoseconds.
-  KTIME = 4;
-}
-
-enum ScalarType {
-  UNKNOWN = 0;
-
-  BOOL = 1;
-  INT = 2;
-  INT8 = 3;
-  INT16 = 4;
-  INT32 = 5;
-  INT64 = 6;
-  UINT = 7;
-  UINT8 = 8;
-  UINT16 = 9;
-  UINT32 = 10;
-  UINT64 = 11;
-  FLOAT = 12;
-  DOUBLE = 13;
-
-  VOID_POINTER = 100;
-
-  STRING = 200;
-  BYTE_ARRAY = 201;
 }
 
 // Wraps an oneof field which can be either scalar or struct.
