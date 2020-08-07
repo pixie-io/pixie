@@ -4,10 +4,29 @@ package pl.stirling.dynamic_tracing.ir.physical;
 
 import "src/stirling/dynamic_tracing/ir/sharedpb/shared.proto";
 
+// The register field is used to read registers involved in function argument and return tracing.
+// For Golang, arguments and return values are passed through the stack, so only SP is relevant.
+// For C/C++ with a System V AMD64 ABI calling convention, the other registers are used to pass
+// certain arguments and return values. For details see:
+//   https://en.wikipedia.org/wiki/X86_calling_conventions#System_V_AMD64_ABI
 enum Register {
+  // Stack pointer.
   SP = 0;
-  // Return value or pointer for C/C++ calling convention.
-  RC = 1;
+
+  // Return value for C/C++ System V AMD64 ABI calling convention.
+  // For simple types that fit in a register, RC directly holds the value.
+  // For simple types that require two registers, RC holds the first half; second half in RC2.
+  // For other types, RC holds a pointer to the output struct.
+  RC = 100;
+  RC2 = 101;
+
+  // Simple function arguments for C/C++ System V AMD64 ABI.
+  PARM1 = 200;
+  PARM2 = 201;
+  PARM3 = 202;
+  PARM4 = 203;
+  PARM5 = 204;
+  PARM6 = 205;
 }
 
 // Describes a C struct. This is directly converted to a C struct in BCC code.

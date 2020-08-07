@@ -168,18 +168,25 @@ StatusOr<std::vector<std::string>> GenStruct(const Struct& st, int member_indent
 namespace {
 
 std::string GenRegister(const ScalarVariable& var) {
-  switch (var.reg()) {
-    case Register::SP:
-      return absl::Substitute("$0 $1 = ($0)PT_REGS_SP(ctx);", GenScalarType(var.type()),
-                              var.name());
-    case Register::RC:
-      return absl::Substitute("$0 $1 = ($0)PT_REGS_RC(ctx);", GenScalarType(var.type()),
-                              var.name());
-    case Register::Register_INT_MIN_SENTINEL_DO_NOT_USE_:
-    case Register::Register_INT_MAX_SENTINEL_DO_NOT_USE_:
-      PB_ENUM_SENTINEL_SWITCH_CLAUSE;
-  }
-  GCC_SWITCH_RETURN;
+  static const absl::flat_hash_map<Register, std::string_view> kRegisters = {
+      {Register::SP, "PT_REGS_SP(ctx)"},
+      // Note that in the System V AMD64 ABI,
+      // a simple return value is held in PT_REGS_RC (rax).
+      // If the return value requires an additional register of storage,
+      // the second half is held in rdx.
+      {Register::RC, "PT_REGS_RC(ctx)"},
+      {Register::RC2, "ctx->rdx"},
+      {Register::PARM1, "PT_REGS_PARM1(ctx)"},
+      {Register::PARM2, "PT_REGS_PARM2(ctx)"},
+      {Register::PARM3, "PT_REGS_PARM3(ctx)"},
+      {Register::PARM4, "PT_REGS_PARM4(ctx)"},
+      {Register::PARM5, "PT_REGS_PARM5(ctx)"},
+      {Register::PARM6, "ctx->r9"},
+  };
+
+  auto iter = kRegisters.find(var.reg());
+  DCHECK(iter != kRegisters.end());
+  return absl::Substitute("$0 $1 = ($0)$2;", GenScalarType(var.type()), var.name(), iter->second);
 }
 
 // TODO(yzhao/oazizi): Consider making this a member variable to avoid passing language directly.
