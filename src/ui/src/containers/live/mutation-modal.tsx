@@ -54,7 +54,7 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
   schema: {
     paddingTop: spacing(1),
     paddingBottom: spacing(1),
-    justifyContent: 'center',
+    paddingLeft: spacing(5),
   },
   spinner: {
     width: spacing(5),
