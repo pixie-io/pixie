@@ -193,29 +193,67 @@ StatusOr<ir::physical::Program> AddDwarves(const ir::logical::TracepointDeployme
 
 // Map to convert Go Base types to ScalarType.
 // clang-format off
-const std::map<std::string_view, ir::shared::ScalarType> kGoTypesMap = {
-        {"bool", ir::shared::ScalarType::BOOL},
-        {"int", ir::shared::ScalarType::INT},
-        {"int8", ir::shared::ScalarType::INT8},
-        {"int16", ir::shared::ScalarType::INT16},
-        {"int32", ir::shared::ScalarType::INT32},
-        {"int64", ir::shared::ScalarType::INT64},
-        {"uint", ir::shared::ScalarType::UINT},
-        {"uint8", ir::shared::ScalarType::UINT8},
-        {"uint16", ir::shared::ScalarType::UINT16},
-        {"uint32", ir::shared::ScalarType::UINT32},
-        {"uint64", ir::shared::ScalarType::UINT64},
+const absl::flat_hash_map<std::string_view, ir::shared::ScalarType> kGoTypesMap = {
+        {"bool",    ir::shared::ScalarType::BOOL},
+        {"int",     ir::shared::ScalarType::INT},
+        {"int8",    ir::shared::ScalarType::INT8},
+        {"int16",   ir::shared::ScalarType::INT16},
+        {"int32",   ir::shared::ScalarType::INT32},
+        {"int64",   ir::shared::ScalarType::INT64},
+        {"uint",    ir::shared::ScalarType::UINT},
+        {"uint8",   ir::shared::ScalarType::UINT8},
+        {"uint16",  ir::shared::ScalarType::UINT16},
+        {"uint32",  ir::shared::ScalarType::UINT32},
+        {"uint64",  ir::shared::ScalarType::UINT64},
         {"float32", ir::shared::ScalarType::FLOAT},
         {"float64", ir::shared::ScalarType::DOUBLE},
 };
+
+// TODO(oazizi): Keep building this map out.
+// Reference: https://en.cppreference.com/w/cpp/language/types
+const absl::flat_hash_map<std::string_view, ir::shared::ScalarType> kCPPTypesMap = {
+        {"bool",                   ir::shared::ScalarType::BOOL},
+
+        {"short",                  ir::shared::ScalarType::SHORT},
+        {"unsigned short",         ir::shared::ScalarType::USHORT},
+        {"int",                    ir::shared::ScalarType::INT},
+        {"unsigned int",           ir::shared::ScalarType::UINT},
+        {"long int",               ir::shared::ScalarType::LONG},
+        {"long unsigned int",      ir::shared::ScalarType::ULONG},
+        {"long long int",          ir::shared::ScalarType::LONGLONG},
+        {"long long unsigned int", ir::shared::ScalarType::ULONGLONG},
+
+        {"char",                   ir::shared::ScalarType::CHAR},
+        {"signed char",            ir::shared::ScalarType::CHAR},
+        {"unsigned char",          ir::shared::ScalarType::UCHAR},
+
+        {"double",                 ir::shared::ScalarType::DOUBLE},
+        {"float",                  ir::shared::ScalarType::FLOAT},
+};
+
+const absl::flat_hash_map<std::string_view, ir::shared::ScalarType> kEmptyTypesMap = {};
 // clang-format on
+
+const absl::flat_hash_map<std::string_view, ir::shared::ScalarType>& GetTypesMap(
+    ir::shared::Language language) {
+  switch (language) {
+    case ir::shared::Language::GOLANG:
+      return kGoTypesMap;
+    case ir::shared::Language::C:
+    case ir::shared::Language::CPP:
+      return kCPPTypesMap;
+    default:
+      return kEmptyTypesMap;
+  }
+}
 
 StatusOr<ir::shared::ScalarType> Dwarvifier::VarTypeToProtoScalarType(const VarType& type,
                                                                       std::string_view name) {
   switch (type) {
     case VarType::kBaseType: {
-      auto iter = kGoTypesMap.find(name);
-      if (iter == kGoTypesMap.end()) {
+      auto& types_map = GetTypesMap(language_);
+      auto iter = types_map.find(name);
+      if (iter == types_map.end()) {
         return error::Internal("Unrecognized base type: $0", name);
       }
       return iter->second;

@@ -23,27 +23,51 @@ enum BPFHelper {
   KTIME = 4;
 }
 
+// This scalar type encompasses basic types across all supported languages.
+// For Golang, refer to: https://golang.org/pkg/go/types/#pkg-variables
+// For C++, refer to: https://en.cppreference.com/w/cpp/language/types
 enum ScalarType {
   UNKNOWN = 0;
 
-  BOOL = 1;
-  INT = 2;
-  INT8 = 3;
-  INT16 = 4;
-  INT32 = 5;
-  INT64 = 6;
-  UINT = 7;
-  UINT8 = 8;
-  UINT16 = 9;
-  UINT32 = 10;
-  UINT64 = 11;
-  FLOAT = 12;
-  DOUBLE = 13;
+  // Boolean.
+  BOOL = 100;
 
-  VOID_POINTER = 100;
+  // Integer types (relative definitions).
+  // The widths of these types may change depending on the hardware.
+  // Note that C++ absolute width types (e.g. uint32_t) map to these types,
+  // with the mapping recorded in the DWARF information.
+  SHORT = 200;
+  USHORT = 201;
+  INT = 202;
+  UINT = 203;
+  LONG = 204;
+  ULONG = 205;
+  LONGLONG = 206;
+  ULONGLONG = 207;
 
-  STRING = 200;
-  BYTE_ARRAY = 201;
+  // Integer types (absolute widths).
+  // Used by Golang only (see note about C++ above).
+  INT8 = 300;
+  INT16 = 301;
+  INT32 = 302;
+  INT64 = 303;
+  UINT8 = 304;
+  UINT16 = 305;
+  UINT32 = 306;
+  UINT64 = 307;
+
+  // Character types.
+  CHAR = 400;
+  UCHAR = 401;
+
+  // Floating point types.
+  FLOAT = 500;
+  DOUBLE = 501;
+
+  VOID_POINTER = 900;
+
+  STRING = 1000;
+  BYTE_ARRAY = 1001;
 }
 
 // Describes where to attach a probe.

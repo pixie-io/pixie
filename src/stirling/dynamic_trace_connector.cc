@@ -122,69 +122,68 @@ class StructDecoder {
 
 Status FillColumn(StructDecoder* struct_decoder, DataTable::DynamicRecordBuilder* r, size_t col_idx,
                   ScalarType type) {
-#define WRITE_COLUMN(field_type, column_type)                                      \
-  PL_ASSIGN_OR_RETURN(field_type val, struct_decoder->ExtractField<field_type>()); \
-  r->Append(col_idx++, column_type(val));
+#define WRITE_COLUMN(field_type, column_type)                                        \
+  {                                                                                  \
+    PL_ASSIGN_OR_RETURN(field_type val, struct_decoder->ExtractField<field_type>()); \
+    r->Append(col_idx++, column_type(val));                                          \
+    break;                                                                           \
+  }
 
   // TODO(yzhao): Right now only support scalar types. We should replace type with ScalarType
   // in Struct::Field.
   switch (type) {
-    case ScalarType::BOOL: {
+    case ScalarType::BOOL:
       WRITE_COLUMN(bool, types::BoolValue);
-      break;
-    }
-    case ScalarType::INT: {
+    case ScalarType::INT:
       WRITE_COLUMN(int, types::Int64Value);
-      break;
-    }
-    case ScalarType::INT8: {
+    case ScalarType::INT8:
       WRITE_COLUMN(int8_t, types::Int64Value);
-      break;
-    }
-    case ScalarType::INT16: {
+    case ScalarType::INT16:
       WRITE_COLUMN(int16_t, types::Int64Value);
-      break;
-    }
-    case ScalarType::INT32: {
+    case ScalarType::INT32:
       WRITE_COLUMN(int32_t, types::Int64Value);
-      break;
-    }
-    case ScalarType::INT64: {
+    case ScalarType::INT64:
       WRITE_COLUMN(int64_t, types::Int64Value);
-      break;
-    }
-    case ScalarType::UINT: {
+    case ScalarType::UINT:
       WRITE_COLUMN(unsigned int, types::Int64Value);
-      break;
-    }
-    case ScalarType::UINT8: {
+    case ScalarType::UINT8:
       WRITE_COLUMN(uint8_t, types::Int64Value);
-      break;
-    }
-    case ScalarType::UINT16: {
+    case ScalarType::UINT16:
       WRITE_COLUMN(uint16_t, types::Int64Value);
-      break;
-    }
-    case ScalarType::UINT32: {
+    case ScalarType::UINT32:
       WRITE_COLUMN(uint32_t, types::Int64Value);
-      break;
-    }
-    case ScalarType::UINT64: {
+    case ScalarType::UINT64:
       WRITE_COLUMN(uint64_t, types::Int64Value);
-      break;
-    }
-    case ScalarType::FLOAT: {
+
+    case ScalarType::SHORT:
+      // NOLINTNEXTLINE(runtime/int)
+      WRITE_COLUMN(short, types::Int64Value);
+    case ScalarType::USHORT:
+      // NOLINTNEXTLINE(runtime/int)
+      WRITE_COLUMN(unsigned short, types::Int64Value);
+    case ScalarType::LONG:
+      // NOLINTNEXTLINE(runtime/int)
+      WRITE_COLUMN(long, types::Int64Value);
+    case ScalarType::ULONG:
+      // NOLINTNEXTLINE(runtime/int)
+      WRITE_COLUMN(unsigned long, types::Int64Value);
+    case ScalarType::LONGLONG:
+      // NOLINTNEXTLINE(runtime/int)
+      WRITE_COLUMN(long long, types::Int64Value);
+    case ScalarType::ULONGLONG:
+      // NOLINTNEXTLINE(runtime/int)
+      WRITE_COLUMN(unsigned long long, types::Int64Value);
+    case ScalarType::CHAR:
+      WRITE_COLUMN(char, types::Int64Value);
+    case ScalarType::UCHAR:
+      WRITE_COLUMN(unsigned char, types::Int64Value);
+
+    case ScalarType::FLOAT:
       WRITE_COLUMN(float, types::Float64Value);
-      break;
-    }
-    case ScalarType::DOUBLE: {
+    case ScalarType::DOUBLE:
       WRITE_COLUMN(double, types::Float64Value);
-      break;
-    }
-    case ScalarType::VOID_POINTER: {
+    case ScalarType::VOID_POINTER:
       WRITE_COLUMN(uint64_t, types::Int64Value);
-      break;
-    }
     case ScalarType::STRING: {
       PL_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractString());
       r->Append(col_idx++, types::StringValue(val));
