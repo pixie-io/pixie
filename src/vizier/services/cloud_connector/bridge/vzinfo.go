@@ -271,6 +271,19 @@ func (v *K8sVizierInfo) GetK8sState() (map[string]*cvmsgspb.PodStatus, int32, in
 
 // ParseJobYAML parses the yaml string into a k8s job and applies the image tag and env subtitutions.
 func (v *K8sVizierInfo) ParseJobYAML(yamlStr string, imageTag map[string]string, envSubtitutions map[string]string) (*batchv1.Job, error) {
+	// Get the image tag path from the running cloud-connector pod.
+	podsList, err := v.clientset.CoreV1().Pods(plNamespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: "name=vizier-cloud-connector",
+	})
+	if err != nil {
+		return nil, err
+	}
+	currImgTag := ""
+	if len(podsList.Items) > 0 && len(podsList.Items[0].Spec.Containers) > 0 {
+		tag := podsList.Items[0].Spec.Containers[0].Image
+		currImgTag = tag[:strings.Index(tag, "/vizier/")]
+	}
+
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode([]byte(yamlStr), nil, nil)
 	if err != nil {
@@ -286,7 +299,11 @@ func (v *K8sVizierInfo) ParseJobYAML(yamlStr string, imageTag map[string]string,
 	for i, c := range job.Spec.Template.Spec.Containers {
 		if val, ok := imageTag[c.Name]; ok {
 			imgTag := strings.Split(job.Spec.Template.Spec.Containers[i].Image, ":")
-			job.Spec.Template.Spec.Containers[i].Image = imgTag[0] + ":" + val
+			imgPath := imgTag[0]
+			if currImgTag != "" {
+				imgPath = currImgTag + imgPath[strings.Index(imgPath, "/vizier/"):]
+			}
+			job.Spec.Template.Spec.Containers[i].Image = imgPath + ":" + val
 		}
 		for j, e := range c.Env {
 			if val, ok := envSubtitutions[e.Name]; ok {
