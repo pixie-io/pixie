@@ -157,13 +157,13 @@ func TestPlanner_Simple(t *testing.T) {
 		t.FailNow()
 	}
 	assert.Equal(t, pem1GRPCSink.Address, "1111")
-	assert.Equal(t, pem1GRPCSink.DestinationId, kelvinGRPCSourceParentNode2.Id)
+	assert.Equal(t, pem1GRPCSink.GetGRPCSourceID(), kelvinGRPCSourceParentNode2.Id)
 	pem2GRPCSink := pem2Plan.Nodes[0].Nodes[len(pem2Plan.Nodes[0].Nodes)-1].Op.GetGRPCSinkOp()
 	if !assert.NotNil(t, pem2GRPCSink) {
 		t.FailNow()
 	}
 	assert.Equal(t, pem2GRPCSink.Address, "1111")
-	assert.Equal(t, pem2GRPCSink.DestinationId, kelvinGRPCSourceParentNode1.Id)
+	assert.Equal(t, pem2GRPCSink.GetGRPCSourceID(), kelvinGRPCSourceParentNode1.Id)
 }
 
 func TestPlanner_MissingTable(t *testing.T) {

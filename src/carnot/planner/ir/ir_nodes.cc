@@ -1415,7 +1415,7 @@ Status GRPCSinkIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_grpc_sink_op();
   op->set_op_type(planpb::GRPC_SINK_OPERATOR);
   pb->set_address(destination_address());
-  pb->set_destination_id(destination_id());
+  pb->set_grpc_source_id(destination_id());
   return Status::OK();
 }
 

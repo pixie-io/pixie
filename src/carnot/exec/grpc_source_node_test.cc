@@ -56,7 +56,7 @@ TEST_F(GRPCSourceNodeTest, basic) {
                   .AddColumn<types::Int64Value>(data)
                   .get();
 
-    auto rb_wrapper = std::make_unique<carnotpb::RowBatchRequest>();
+    auto rb_wrapper = std::make_unique<carnotpb::TransferResultChunkRequest>();
     EXPECT_OK(rb.ToProto(rb_wrapper->mutable_row_batch()));
     EXPECT_TRUE(tester.node()->EnqueueRowBatch(std::move(rb_wrapper)).ok());
 

@@ -24,11 +24,11 @@ using grpc::ServerBuilder;
 class FakeGRPCRouter final : public carnotpb::KelvinService::Service {
  public:
   /**
-   * TransferRowBatch implements the RPC method.
+   * TransferResultChunk implements the RPC method.
    */
-  ::grpc::Status TransferRowBatch(::grpc::ServerContext*,
-                                  ::grpc::ServerReader<::pl::carnotpb::RowBatchRequest>*,
-                                  ::pl::carnotpb::RowBatchResponse*) override {
+  ::grpc::Status TransferResultChunk(
+      ::grpc::ServerContext*, ::grpc::ServerReader<::pl::carnotpb::TransferResultChunkRequest>*,
+      ::pl::carnotpb::TransferResultChunkResponse*) override {
     return ::grpc::Status::OK;
   }
 };
@@ -44,14 +44,14 @@ class ChanCacheTest : public ::testing::Test {
     server_ = builder.BuildAndStart();
   }
 
-  void RunRPC(carnotpb::KelvinService::Stub* stub) { RunTransferRowBatch(stub); }
+  void RunRPC(carnotpb::KelvinService::Stub* stub) { RunTransferResultChunk(stub); }
 
-  void RunTransferRowBatch(carnotpb::KelvinService::Stub* stub) {
+  void RunTransferResultChunk(carnotpb::KelvinService::Stub* stub) {
     grpc::ClientContext context;
-    carnotpb::RowBatchRequest request;
-    carnotpb::RowBatchResponse response;
+    carnotpb::TransferResultChunkRequest request;
+    carnotpb::TransferResultChunkResponse response;
 
-    auto writer = stub->TransferRowBatch(&context, &response);
+    auto writer = stub->TransferResultChunk(&context, &response);
     writer->Write(request);
     writer->WritesDone();
     auto s = writer->Finish();

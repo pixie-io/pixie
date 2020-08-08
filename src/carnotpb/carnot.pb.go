@@ -32,129 +32,11 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type RowBatchRequest struct {
-	Address       string               `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	QueryID       *proto1.UUID         `protobuf:"bytes,2,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty"`
-	DestinationId uint64               `protobuf:"varint,3,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
-	RowBatch      *proto2.RowBatchData `protobuf:"bytes,4,opt,name=row_batch,json=rowBatch,proto3" json:"row_batch,omitempty"`
-}
-
-func (m *RowBatchRequest) Reset()      { *m = RowBatchRequest{} }
-func (*RowBatchRequest) ProtoMessage() {}
-func (*RowBatchRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9054907422204f4e, []int{0}
-}
-func (m *RowBatchRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *RowBatchRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_RowBatchRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *RowBatchRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RowBatchRequest.Merge(m, src)
-}
-func (m *RowBatchRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *RowBatchRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_RowBatchRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RowBatchRequest proto.InternalMessageInfo
-
-func (m *RowBatchRequest) GetAddress() string {
-	if m != nil {
-		return m.Address
-	}
-	return ""
-}
-
-func (m *RowBatchRequest) GetQueryID() *proto1.UUID {
-	if m != nil {
-		return m.QueryID
-	}
-	return nil
-}
-
-func (m *RowBatchRequest) GetDestinationId() uint64 {
-	if m != nil {
-		return m.DestinationId
-	}
-	return 0
-}
-
-func (m *RowBatchRequest) GetRowBatch() *proto2.RowBatchData {
-	if m != nil {
-		return m.RowBatch
-	}
-	return nil
-}
-
-type RowBatchResponse struct {
-	Success bool   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message string `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-}
-
-func (m *RowBatchResponse) Reset()      { *m = RowBatchResponse{} }
-func (*RowBatchResponse) ProtoMessage() {}
-func (*RowBatchResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9054907422204f4e, []int{1}
-}
-func (m *RowBatchResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *RowBatchResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_RowBatchResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *RowBatchResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RowBatchResponse.Merge(m, src)
-}
-func (m *RowBatchResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *RowBatchResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_RowBatchResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RowBatchResponse proto.InternalMessageInfo
-
-func (m *RowBatchResponse) GetSuccess() bool {
-	if m != nil {
-		return m.Success
-	}
-	return false
-}
-
-func (m *RowBatchResponse) GetMessage() string {
-	if m != nil {
-		return m.Message
-	}
-	return ""
-}
-
 type TransferResultChunkRequest struct {
 	Address string       `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	QueryID *proto1.UUID `protobuf:"bytes,2,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty"`
 	// Types that are valid to be assigned to Destination:
-	//	*TransferResultChunkRequest_GrpcSourceId
+	//	*TransferResultChunkRequest_GRPCSourceID
 	//	*TransferResultChunkRequest_TableName
 	Destination isTransferResultChunkRequest_Destination `protobuf_oneof:"destination"`
 	// Types that are valid to be assigned to Result:
@@ -166,7 +48,7 @@ type TransferResultChunkRequest struct {
 func (m *TransferResultChunkRequest) Reset()      { *m = TransferResultChunkRequest{} }
 func (*TransferResultChunkRequest) ProtoMessage() {}
 func (*TransferResultChunkRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9054907422204f4e, []int{2}
+	return fileDescriptor_9054907422204f4e, []int{0}
 }
 func (m *TransferResultChunkRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -208,8 +90,8 @@ type isTransferResultChunkRequest_Result interface {
 	Size() int
 }
 
-type TransferResultChunkRequest_GrpcSourceId struct {
-	GrpcSourceId uint64 `protobuf:"varint,3,opt,name=grpc_source_id,json=grpcSourceId,proto3,oneof" json:"grpc_source_id,omitempty"`
+type TransferResultChunkRequest_GRPCSourceID struct {
+	GRPCSourceID uint64 `protobuf:"varint,3,opt,name=grpc_source_id,json=grpcSourceId,proto3,oneof" json:"grpc_source_id,omitempty"`
 }
 type TransferResultChunkRequest_TableName struct {
 	TableName string `protobuf:"bytes,4,opt,name=table_name,json=tableName,proto3,oneof" json:"table_name,omitempty"`
@@ -221,7 +103,7 @@ type TransferResultChunkRequest_ExecutionAndTimingInfo_ struct {
 	ExecutionAndTimingInfo *TransferResultChunkRequest_ExecutionAndTimingInfo `protobuf:"bytes,6,opt,name=execution_and_timing_info,json=executionAndTimingInfo,proto3,oneof" json:"execution_and_timing_info,omitempty"`
 }
 
-func (*TransferResultChunkRequest_GrpcSourceId) isTransferResultChunkRequest_Destination()       {}
+func (*TransferResultChunkRequest_GRPCSourceID) isTransferResultChunkRequest_Destination()       {}
 func (*TransferResultChunkRequest_TableName) isTransferResultChunkRequest_Destination()          {}
 func (*TransferResultChunkRequest_RowBatch) isTransferResultChunkRequest_Result()                {}
 func (*TransferResultChunkRequest_ExecutionAndTimingInfo_) isTransferResultChunkRequest_Result() {}
@@ -253,9 +135,9 @@ func (m *TransferResultChunkRequest) GetQueryID() *proto1.UUID {
 	return nil
 }
 
-func (m *TransferResultChunkRequest) GetGrpcSourceId() uint64 {
-	if x, ok := m.GetDestination().(*TransferResultChunkRequest_GrpcSourceId); ok {
-		return x.GrpcSourceId
+func (m *TransferResultChunkRequest) GetGRPCSourceID() uint64 {
+	if x, ok := m.GetDestination().(*TransferResultChunkRequest_GRPCSourceID); ok {
+		return x.GRPCSourceID
 	}
 	return 0
 }
@@ -284,7 +166,7 @@ func (m *TransferResultChunkRequest) GetExecutionAndTimingInfo() *TransferResult
 // XXX_OneofWrappers is for the internal use of the proto package.
 func (*TransferResultChunkRequest) XXX_OneofWrappers() []interface{} {
 	return []interface{}{
-		(*TransferResultChunkRequest_GrpcSourceId)(nil),
+		(*TransferResultChunkRequest_GRPCSourceID)(nil),
 		(*TransferResultChunkRequest_TableName)(nil),
 		(*TransferResultChunkRequest_RowBatch)(nil),
 		(*TransferResultChunkRequest_ExecutionAndTimingInfo_)(nil),
@@ -302,7 +184,7 @@ func (m *TransferResultChunkRequest_ExecutionAndTimingInfo) Reset() {
 }
 func (*TransferResultChunkRequest_ExecutionAndTimingInfo) ProtoMessage() {}
 func (*TransferResultChunkRequest_ExecutionAndTimingInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9054907422204f4e, []int{2, 0}
+	return fileDescriptor_9054907422204f4e, []int{0, 0}
 }
 func (m *TransferResultChunkRequest_ExecutionAndTimingInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -360,7 +242,7 @@ type TransferResultChunkResponse struct {
 func (m *TransferResultChunkResponse) Reset()      { *m = TransferResultChunkResponse{} }
 func (*TransferResultChunkResponse) ProtoMessage() {}
 func (*TransferResultChunkResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9054907422204f4e, []int{3}
+	return fileDescriptor_9054907422204f4e, []int{1}
 }
 func (m *TransferResultChunkResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -412,7 +294,7 @@ type DoneRequest struct {
 func (m *DoneRequest) Reset()      { *m = DoneRequest{} }
 func (*DoneRequest) ProtoMessage() {}
 func (*DoneRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9054907422204f4e, []int{4}
+	return fileDescriptor_9054907422204f4e, []int{2}
 }
 func (m *DoneRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -470,7 +352,7 @@ type DoneResponse struct {
 func (m *DoneResponse) Reset()      { *m = DoneResponse{} }
 func (*DoneResponse) ProtoMessage() {}
 func (*DoneResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9054907422204f4e, []int{5}
+	return fileDescriptor_9054907422204f4e, []int{3}
 }
 func (m *DoneResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -514,8 +396,6 @@ func (m *DoneResponse) GetMessage() string {
 }
 
 func init() {
-	proto.RegisterType((*RowBatchRequest)(nil), "pl.carnotpb.RowBatchRequest")
-	proto.RegisterType((*RowBatchResponse)(nil), "pl.carnotpb.RowBatchResponse")
 	proto.RegisterType((*TransferResultChunkRequest)(nil), "pl.carnotpb.TransferResultChunkRequest")
 	proto.RegisterType((*TransferResultChunkRequest_ExecutionAndTimingInfo)(nil), "pl.carnotpb.TransferResultChunkRequest.ExecutionAndTimingInfo")
 	proto.RegisterType((*TransferResultChunkResponse)(nil), "pl.carnotpb.TransferResultChunkResponse")
@@ -526,116 +406,53 @@ func init() {
 func init() { proto.RegisterFile("src/carnotpb/carnot.proto", fileDescriptor_9054907422204f4e) }
 
 var fileDescriptor_9054907422204f4e = []byte{
-	// 744 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x55, 0xcf, 0x6e, 0xd3, 0x4c,
-	0x10, 0xf7, 0xf6, 0x6f, 0xb2, 0xe9, 0x3f, 0xb9, 0xfa, 0xaa, 0x34, 0xdf, 0xf7, 0xb9, 0x51, 0xa4,
-	0x42, 0x38, 0xd4, 0x91, 0xca, 0xa1, 0x27, 0x2a, 0x35, 0x04, 0x94, 0x80, 0x84, 0xd4, 0x4d, 0xcb,
-	0x81, 0x4b, 0xb4, 0xb6, 0x37, 0x89, 0x45, 0xbc, 0xeb, 0xee, 0xae, 0x5b, 0x10, 0x17, 0x1e, 0x01,
-	0x9e, 0x80, 0x2b, 0x4f, 0xc0, 0x33, 0x70, 0xa3, 0xc7, 0x9e, 0x10, 0x75, 0x2f, 0x1c, 0xfb, 0x08,
-	0xc8, 0xeb, 0xb8, 0x76, 0x4a, 0x4a, 0x29, 0x08, 0x6e, 0x9e, 0x99, 0xdf, 0xfc, 0x76, 0xe6, 0x37,
-	0x33, 0x09, 0x5c, 0x15, 0xdc, 0xae, 0xd9, 0x98, 0x53, 0x26, 0x7d, 0x6b, 0xf8, 0x61, 0xfa, 0x9c,
-	0x49, 0xa6, 0x17, 0xfc, 0x81, 0x99, 0x44, 0x4a, 0x1b, 0x3d, 0x57, 0xf6, 0x03, 0xcb, 0xb4, 0x99,
-	0x57, 0xeb, 0xb1, 0x1e, 0xab, 0x29, 0x8c, 0x15, 0x74, 0x95, 0xa5, 0x0c, 0xf5, 0x15, 0xe7, 0x96,
-	0xca, 0x8a, 0x96, 0x79, 0x1e, 0xa3, 0xb5, 0x20, 0x70, 0x9d, 0x18, 0xae, 0x3e, 0x87, 0x88, 0x4a,
-	0x84, 0x90, 0xd8, 0x1a, 0x90, 0x8e, 0x90, 0x8c, 0x93, 0x21, 0x42, 0xd8, 0x7d, 0xe2, 0xe1, 0x21,
-	0x66, 0x23, 0x2d, 0xae, 0x76, 0x10, 0x10, 0xfe, 0x92, 0x13, 0x11, 0x0c, 0xa4, 0xf0, 0xad, 0xd8,
-	0xec, 0x0c, 0xed, 0x18, 0x5e, 0xf9, 0x04, 0xe0, 0x22, 0x62, 0x47, 0x75, 0x2c, 0xed, 0x3e, 0x22,
-	0x07, 0x01, 0x11, 0x52, 0x2f, 0xc2, 0x59, 0xec, 0x38, 0x9c, 0x08, 0x51, 0x04, 0x65, 0x50, 0xcd,
-	0xa3, 0xc4, 0xd4, 0xb7, 0x60, 0x2e, 0x26, 0x71, 0x9d, 0xe2, 0x44, 0x19, 0x54, 0x0b, 0x9b, 0x8b,
-	0xa6, 0x3f, 0x30, 0xa3, 0x12, 0x7d, 0xcb, 0xdc, 0xdf, 0x6f, 0x35, 0xea, 0x85, 0xf0, 0xf3, 0xda,
-	0xec, 0x6e, 0x04, 0x6a, 0x35, 0xd0, 0xac, 0x42, 0xb7, 0x1c, 0x7d, 0x1d, 0x2e, 0x38, 0x44, 0x48,
-	0x97, 0x62, 0xe9, 0x32, 0x1a, 0xa5, 0x4f, 0x96, 0x41, 0x75, 0x0a, 0xcd, 0x67, 0xbc, 0x2d, 0x47,
-	0xaf, 0xc3, 0x3c, 0x67, 0x47, 0x1d, 0x2b, 0xaa, 0xa6, 0x38, 0xa5, 0x1e, 0x58, 0x8f, 0x1e, 0xc8,
-	0xf4, 0x6c, 0xc6, 0xdd, 0xfa, 0x96, 0x99, 0x94, 0xdd, 0xc0, 0x12, 0xa3, 0x1c, 0x1f, 0x5a, 0x95,
-	0x87, 0x70, 0x29, 0x6d, 0x48, 0xf8, 0x8c, 0x0a, 0x12, 0x75, 0x24, 0x02, 0xdb, 0x4e, 0x3a, 0xca,
-	0xa1, 0xc4, 0x8c, 0x22, 0x1e, 0x11, 0x02, 0xf7, 0x88, 0x6a, 0x28, 0x8f, 0x12, 0xb3, 0xf2, 0x61,
-	0x1a, 0x96, 0xf6, 0x38, 0xa6, 0xa2, 0x4b, 0x38, 0x52, 0x9a, 0xdd, 0xef, 0x07, 0xf4, 0xf9, 0x1f,
-	0x14, 0xe9, 0x16, 0x5c, 0xe8, 0x71, 0xdf, 0xee, 0x08, 0x16, 0x70, 0x9b, 0x5c, 0x88, 0xd4, 0xd4,
-	0xd0, 0x5c, 0xe4, 0x6f, 0x2b, 0x77, 0xcb, 0xd1, 0xd7, 0x20, 0x8c, 0x05, 0xa1, 0xd8, 0x23, 0x4a,
-	0xa6, 0x7c, 0x53, 0x43, 0x79, 0xe5, 0x7b, 0x82, 0x3d, 0xa2, 0x37, 0xb2, 0x32, 0x4e, 0xdf, 0x40,
-	0xc6, 0x26, 0x48, 0x85, 0xd4, 0x5f, 0xc1, 0x55, 0xf2, 0x82, 0xd8, 0x81, 0x9a, 0x18, 0xa6, 0x4e,
-	0x47, 0xba, 0x9e, 0x4b, 0x7b, 0x1d, 0x97, 0x76, 0x59, 0x71, 0x46, 0xb1, 0x6e, 0x9b, 0x99, 0x7d,
-	0x37, 0xaf, 0x56, 0xcb, 0x7c, 0x90, 0x10, 0xed, 0x50, 0x67, 0x4f, 0xd1, 0xb4, 0x68, 0x97, 0x35,
-	0x01, 0x5a, 0x21, 0x63, 0x23, 0xa5, 0x77, 0x13, 0x70, 0x65, 0x7c, 0x92, 0xfe, 0x08, 0x16, 0xb2,
-	0x95, 0x00, 0x55, 0xc9, 0x9d, 0xb4, 0x12, 0x73, 0x74, 0xed, 0x4d, 0xa5, 0x73, 0x9a, 0x8f, 0xa0,
-	0x4c, 0xb9, 0x9e, 0xc2, 0xc5, 0xb4, 0x47, 0x21, 0xb1, 0x14, 0xc3, 0x91, 0x6d, 0x5c, 0xc3, 0x77,
-	0x51, 0x5b, 0x3b, 0x4a, 0x42, 0x0b, 0x64, 0xc4, 0xd6, 0x31, 0xfc, 0x07, 0xf7, 0x08, 0x95, 0x9d,
-	0xcb, 0xec, 0x93, 0xe5, 0xc9, 0x1f, 0xb3, 0xef, 0x44, 0x69, 0x97, 0xd8, 0x97, 0xf1, 0xf7, 0xce,
-	0xfa, 0x3c, 0x2c, 0x64, 0x8e, 0xa7, 0x9e, 0x83, 0x33, 0x31, 0x49, 0x65, 0x17, 0xfe, 0x3b, 0x76,
-	0x12, 0xbf, 0x71, 0x0b, 0x21, 0x80, 0x85, 0x06, 0xa3, 0x24, 0x59, 0xfe, 0xec, 0x8a, 0x83, 0x9b,
-	0xac, 0xf8, 0x16, 0xcc, 0xc5, 0xba, 0x5c, 0x73, 0x1b, 0x4a, 0x85, 0x28, 0x51, 0xa1, 0x5b, 0xce,
-	0x5f, 0x10, 0xb4, 0x52, 0x87, 0x73, 0x71, 0x8f, 0xbf, 0x2e, 0xd4, 0xe6, 0xdb, 0x09, 0x38, 0xff,
-	0x98, 0x0c, 0x0e, 0x5d, 0xda, 0x26, 0xfc, 0xd0, 0xb5, 0x89, 0xde, 0x86, 0x4b, 0x17, 0xd3, 0x48,
-	0x2e, 0xeb, 0xbf, 0x91, 0xb3, 0xb9, 0xf4, 0xf3, 0x5b, 0xfa, 0xff, 0x8a, 0x68, 0x5c, 0x56, 0x45,
-	0xab, 0x02, 0x7d, 0x00, 0x97, 0xc7, 0x8c, 0x58, 0xbf, 0xfd, 0x93, 0xe7, 0x58, 0xaa, 0x5e, 0x0f,
-	0xcc, 0xbc, 0x76, 0x0f, 0x4e, 0x45, 0xc2, 0xe8, 0xc5, 0x91, 0xac, 0xcc, 0x3e, 0x94, 0x56, 0xc7,
-	0x44, 0x12, 0x82, 0xfa, 0xf6, 0xf1, 0xa9, 0xa1, 0x9d, 0x9c, 0x1a, 0xda, 0xf9, 0xa9, 0x01, 0x5e,
-	0x87, 0x06, 0x78, 0x1f, 0x1a, 0xe0, 0x63, 0x68, 0x80, 0xe3, 0xd0, 0x00, 0x5f, 0x42, 0x03, 0x7c,
-	0x0d, 0x0d, 0xed, 0x3c, 0x34, 0xc0, 0x9b, 0x33, 0x43, 0x3b, 0x3e, 0x33, 0xb4, 0x93, 0x33, 0x43,
-	0x7b, 0x96, 0x4b, 0xe8, 0xac, 0x19, 0xf5, 0x4f, 0x75, 0xf7, 0x5b, 0x00, 0x00, 0x00, 0xff, 0xff,
-	0x52, 0x73, 0x9a, 0x27, 0x77, 0x07, 0x00, 0x00,
+	// 694 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x54, 0xcd, 0x6e, 0xd3, 0x4a,
+	0x18, 0xf5, 0xf4, 0x37, 0x99, 0xf4, 0xe7, 0xca, 0xd5, 0xad, 0xd2, 0x5c, 0xc9, 0x8d, 0x22, 0x5d,
+	0xdd, 0xdc, 0x45, 0x1d, 0xa9, 0x2c, 0xca, 0x86, 0x4a, 0x4d, 0x83, 0x48, 0x40, 0x42, 0x74, 0xda,
+	0xb2, 0x60, 0x63, 0x8d, 0xed, 0x89, 0x63, 0x11, 0xcf, 0xb8, 0x33, 0xe3, 0x16, 0xc4, 0x86, 0x47,
+	0xe0, 0x0d, 0xd8, 0xf2, 0x10, 0x3c, 0x40, 0x97, 0x5d, 0x76, 0x55, 0x51, 0x77, 0xc3, 0xb2, 0x8f,
+	0x80, 0x66, 0x6c, 0x93, 0xb4, 0x04, 0x0a, 0x2c, 0xd8, 0xf9, 0xcc, 0x77, 0xbe, 0xa3, 0x33, 0xe7,
+	0xfb, 0xc6, 0x70, 0x4d, 0x70, 0xaf, 0xe5, 0x61, 0x4e, 0x99, 0x8c, 0xdd, 0xfc, 0xc3, 0x8e, 0x39,
+	0x93, 0xcc, 0xac, 0xc4, 0x43, 0xbb, 0xa8, 0xd4, 0x36, 0x82, 0x50, 0x0e, 0x12, 0xd7, 0xf6, 0x58,
+	0xd4, 0x0a, 0x58, 0xc0, 0x5a, 0x9a, 0xe3, 0x26, 0x7d, 0x8d, 0x34, 0xd0, 0x5f, 0x59, 0x6f, 0xad,
+	0xae, 0x65, 0x59, 0x14, 0x31, 0xda, 0x4a, 0x92, 0xd0, 0xcf, 0xe8, 0xfa, 0x33, 0x67, 0x34, 0x14,
+	0x43, 0x62, 0x77, 0x48, 0x1c, 0x21, 0x19, 0x27, 0x39, 0x43, 0x78, 0x03, 0x12, 0xe1, 0x9c, 0xb3,
+	0x31, 0x32, 0xd7, 0x3a, 0x4a, 0x08, 0x7f, 0xcd, 0x89, 0x48, 0x86, 0x52, 0xc4, 0x6e, 0x06, 0x9d,
+	0x1c, 0x67, 0xf4, 0xc6, 0xe9, 0x2c, 0xac, 0x1d, 0x70, 0x4c, 0x45, 0x9f, 0x70, 0xa4, 0x2b, 0xbb,
+	0x83, 0x84, 0xbe, 0x44, 0xe4, 0x28, 0x21, 0x42, 0x9a, 0x55, 0x38, 0x8f, 0x7d, 0x9f, 0x13, 0x21,
+	0xaa, 0xa0, 0x0e, 0x9a, 0x65, 0x54, 0x40, 0x73, 0x0b, 0x96, 0x32, 0xbd, 0xd0, 0xaf, 0x4e, 0xd5,
+	0x41, 0xb3, 0xb2, 0xb9, 0x6c, 0xc7, 0x43, 0x5b, 0xb9, 0x8d, 0x5d, 0xfb, 0xf0, 0xb0, 0xd7, 0x69,
+	0x57, 0xd2, 0x8b, 0xf5, 0xf9, 0x3d, 0x45, 0xea, 0x75, 0xd0, 0xbc, 0x66, 0xf7, 0x7c, 0xf3, 0x3e,
+	0x5c, 0x0a, 0x78, 0xec, 0x39, 0x82, 0x25, 0xdc, 0x23, 0xaa, 0x7d, 0xba, 0x0e, 0x9a, 0x33, 0xed,
+	0xbf, 0xd2, 0x8b, 0xf5, 0x85, 0x47, 0xe8, 0xd9, 0xee, 0xbe, 0x2e, 0xf4, 0x3a, 0x5d, 0x03, 0x2d,
+	0x28, 0x66, 0x8e, 0x7d, 0x73, 0x1d, 0xc2, 0xec, 0xf2, 0x14, 0x47, 0xa4, 0x3a, 0xa3, 0xfc, 0x74,
+	0x0d, 0x54, 0xd6, 0x67, 0x4f, 0x71, 0x44, 0xcc, 0x0e, 0x2c, 0x73, 0x76, 0xe2, 0xb8, 0x58, 0x7a,
+	0x83, 0xea, 0xac, 0x36, 0xf5, 0xaf, 0x32, 0x35, 0x16, 0x99, 0x9d, 0x85, 0x15, 0xbb, 0x36, 0x62,
+	0x27, 0x6d, 0x45, 0xec, 0x60, 0x89, 0xbb, 0x00, 0x95, 0x78, 0x8e, 0xcd, 0x37, 0x70, 0x8d, 0xbc,
+	0x22, 0x5e, 0x22, 0x43, 0x46, 0x1d, 0x4c, 0x7d, 0x47, 0x86, 0x51, 0x48, 0x03, 0x27, 0xa4, 0x7d,
+	0x56, 0x9d, 0xd3, 0xaa, 0xdb, 0xf6, 0xd8, 0x9c, 0xed, 0xef, 0xe7, 0x67, 0x3f, 0x2c, 0x84, 0x76,
+	0xa8, 0x7f, 0xa0, 0x65, 0x7a, 0xb4, 0xcf, 0xba, 0x00, 0xad, 0x92, 0x89, 0x95, 0xda, 0xfb, 0x29,
+	0xb8, 0x3a, 0xb9, 0xc9, 0x7c, 0x0c, 0x2b, 0xe3, 0x4e, 0x80, 0x76, 0xf2, 0xff, 0xc8, 0x89, 0x7d,
+	0x73, 0xdc, 0xb6, 0x4e, 0x7e, 0xd4, 0x8f, 0xa0, 0x1c, 0x69, 0x3d, 0x87, 0xcb, 0xa3, 0x3b, 0x0a,
+	0x89, 0xa5, 0xc8, 0x87, 0xb8, 0x71, 0x87, 0xde, 0x57, 0x6f, 0xfb, 0xaa, 0x09, 0x2d, 0x91, 0x1b,
+	0xd8, 0xc4, 0xf0, 0x6f, 0x1c, 0x10, 0x2a, 0x9d, 0xdb, 0xea, 0xd3, 0xf5, 0xe9, 0x1f, 0xab, 0xef,
+	0xa8, 0xb6, 0x5b, 0xea, 0x2b, 0xf8, 0xdb, 0xc3, 0xf6, 0x22, 0xac, 0xf8, 0x44, 0xc8, 0x90, 0x62,
+	0x75, 0xd6, 0x2e, 0xc1, 0xb9, 0x4c, 0xa4, 0xb1, 0x07, 0xff, 0x99, 0x38, 0x09, 0x11, 0x33, 0x2a,
+	0x88, 0x5a, 0x65, 0x91, 0x78, 0x5e, 0xb1, 0xca, 0x25, 0x54, 0x40, 0x55, 0x89, 0x88, 0x10, 0x38,
+	0x20, 0x3a, 0x84, 0x32, 0x2a, 0x60, 0x23, 0x05, 0xb0, 0xd2, 0x61, 0x94, 0x14, 0xcf, 0x61, 0x7c,
+	0xe9, 0xc1, 0xaf, 0x2c, 0xfd, 0x16, 0x2c, 0x65, 0xb9, 0xdc, 0xf1, 0x5a, 0x74, 0x0a, 0xaa, 0x51,
+	0xb3, 0x7b, 0xfe, 0x1f, 0x08, 0xb4, 0xd1, 0x86, 0x0b, 0xd9, 0x1d, 0x7f, 0x3f, 0xa8, 0xcd, 0x8f,
+	0x00, 0x2e, 0x3e, 0x21, 0xc3, 0xe3, 0x90, 0xee, 0x13, 0x7e, 0x1c, 0x7a, 0xc4, 0x1c, 0xc2, 0x95,
+	0x09, 0xd3, 0x30, 0xff, 0xfb, 0xc9, 0x97, 0x53, 0x6b, 0xde, 0x4d, 0xcc, 0xfc, 0x36, 0x8c, 0x26,
+	0x30, 0x1f, 0xc0, 0x19, 0x75, 0x07, 0xb3, 0x7a, 0xa3, 0x6b, 0x6c, 0x74, 0xb5, 0xb5, 0x09, 0x95,
+	0x42, 0xa0, 0xbd, 0x7d, 0x76, 0x69, 0x19, 0xe7, 0x97, 0x96, 0x71, 0x7d, 0x69, 0x81, 0xb7, 0xa9,
+	0x05, 0x3e, 0xa4, 0x16, 0x38, 0x4d, 0x2d, 0x70, 0x96, 0x5a, 0xe0, 0x53, 0x6a, 0x81, 0xcf, 0xa9,
+	0x65, 0x5c, 0xa7, 0x16, 0x78, 0x77, 0x65, 0x19, 0x67, 0x57, 0x96, 0x71, 0x7e, 0x65, 0x19, 0x2f,
+	0x4a, 0x85, 0x9c, 0x3b, 0xa7, 0x7f, 0xa6, 0xf7, 0xbe, 0x04, 0x00, 0x00, 0xff, 0xff, 0xf1, 0xe9,
+	0x1d, 0xeb, 0x1a, 0x06, 0x00, 0x00,
 }
 
-func (this *RowBatchRequest) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*RowBatchRequest)
-	if !ok {
-		that2, ok := that.(RowBatchRequest)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Address != that1.Address {
-		return false
-	}
-	if !this.QueryID.Equal(that1.QueryID) {
-		return false
-	}
-	if this.DestinationId != that1.DestinationId {
-		return false
-	}
-	if !this.RowBatch.Equal(that1.RowBatch) {
-		return false
-	}
-	return true
-}
-func (this *RowBatchResponse) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*RowBatchResponse)
-	if !ok {
-		that2, ok := that.(RowBatchResponse)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Success != that1.Success {
-		return false
-	}
-	if this.Message != that1.Message {
-		return false
-	}
-	return true
-}
 func (this *TransferResultChunkRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -681,14 +498,14 @@ func (this *TransferResultChunkRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *TransferResultChunkRequest_GrpcSourceId) Equal(that interface{}) bool {
+func (this *TransferResultChunkRequest_GRPCSourceID) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*TransferResultChunkRequest_GrpcSourceId)
+	that1, ok := that.(*TransferResultChunkRequest_GRPCSourceID)
 	if !ok {
-		that2, ok := that.(TransferResultChunkRequest_GrpcSourceId)
+		that2, ok := that.(TransferResultChunkRequest_GRPCSourceID)
 		if ok {
 			that1 = &that2
 		} else {
@@ -700,7 +517,7 @@ func (this *TransferResultChunkRequest_GrpcSourceId) Equal(that interface{}) boo
 	} else if this == nil {
 		return false
 	}
-	if this.GrpcSourceId != that1.GrpcSourceId {
+	if this.GRPCSourceID != that1.GRPCSourceID {
 		return false
 	}
 	return true
@@ -901,34 +718,6 @@ func (this *DoneResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *RowBatchRequest) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 8)
-	s = append(s, "&carnotpb.RowBatchRequest{")
-	s = append(s, "Address: "+fmt.Sprintf("%#v", this.Address)+",\n")
-	if this.QueryID != nil {
-		s = append(s, "QueryID: "+fmt.Sprintf("%#v", this.QueryID)+",\n")
-	}
-	s = append(s, "DestinationId: "+fmt.Sprintf("%#v", this.DestinationId)+",\n")
-	if this.RowBatch != nil {
-		s = append(s, "RowBatch: "+fmt.Sprintf("%#v", this.RowBatch)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *RowBatchResponse) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&carnotpb.RowBatchResponse{")
-	s = append(s, "Success: "+fmt.Sprintf("%#v", this.Success)+",\n")
-	s = append(s, "Message: "+fmt.Sprintf("%#v", this.Message)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
 func (this *TransferResultChunkRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -948,12 +737,12 @@ func (this *TransferResultChunkRequest) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *TransferResultChunkRequest_GrpcSourceId) GoString() string {
+func (this *TransferResultChunkRequest_GRPCSourceID) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&carnotpb.TransferResultChunkRequest_GrpcSourceId{` +
-		`GrpcSourceId:` + fmt.Sprintf("%#v", this.GrpcSourceId) + `}`}, ", ")
+	s := strings.Join([]string{`&carnotpb.TransferResultChunkRequest_GRPCSourceID{` +
+		`GRPCSourceID:` + fmt.Sprintf("%#v", this.GRPCSourceID) + `}`}, ", ")
 	return s
 }
 func (this *TransferResultChunkRequest_TableName) GoString() string {
@@ -1059,7 +848,6 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type KelvinServiceClient interface {
-	TransferRowBatch(ctx context.Context, opts ...grpc.CallOption) (KelvinService_TransferRowBatchClient, error)
 	TransferResultChunk(ctx context.Context, opts ...grpc.CallOption) (KelvinService_TransferResultChunkClient, error)
 	Done(ctx context.Context, in *DoneRequest, opts ...grpc.CallOption) (*DoneResponse, error)
 }
@@ -1072,42 +860,8 @@ func NewKelvinServiceClient(cc *grpc.ClientConn) KelvinServiceClient {
 	return &kelvinServiceClient{cc}
 }
 
-func (c *kelvinServiceClient) TransferRowBatch(ctx context.Context, opts ...grpc.CallOption) (KelvinService_TransferRowBatchClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_KelvinService_serviceDesc.Streams[0], "/pl.carnotpb.KelvinService/TransferRowBatch", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &kelvinServiceTransferRowBatchClient{stream}
-	return x, nil
-}
-
-type KelvinService_TransferRowBatchClient interface {
-	Send(*RowBatchRequest) error
-	CloseAndRecv() (*RowBatchResponse, error)
-	grpc.ClientStream
-}
-
-type kelvinServiceTransferRowBatchClient struct {
-	grpc.ClientStream
-}
-
-func (x *kelvinServiceTransferRowBatchClient) Send(m *RowBatchRequest) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *kelvinServiceTransferRowBatchClient) CloseAndRecv() (*RowBatchResponse, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	m := new(RowBatchResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 func (c *kelvinServiceClient) TransferResultChunk(ctx context.Context, opts ...grpc.CallOption) (KelvinService_TransferResultChunkClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_KelvinService_serviceDesc.Streams[1], "/pl.carnotpb.KelvinService/TransferResultChunk", opts...)
+	stream, err := c.cc.NewStream(ctx, &_KelvinService_serviceDesc.Streams[0], "/pl.carnotpb.KelvinService/TransferResultChunk", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1151,7 +905,6 @@ func (c *kelvinServiceClient) Done(ctx context.Context, in *DoneRequest, opts ..
 
 // KelvinServiceServer is the server API for KelvinService service.
 type KelvinServiceServer interface {
-	TransferRowBatch(KelvinService_TransferRowBatchServer) error
 	TransferResultChunk(KelvinService_TransferResultChunkServer) error
 	Done(context.Context, *DoneRequest) (*DoneResponse, error)
 }
@@ -1160,9 +913,6 @@ type KelvinServiceServer interface {
 type UnimplementedKelvinServiceServer struct {
 }
 
-func (*UnimplementedKelvinServiceServer) TransferRowBatch(srv KelvinService_TransferRowBatchServer) error {
-	return status.Errorf(codes.Unimplemented, "method TransferRowBatch not implemented")
-}
 func (*UnimplementedKelvinServiceServer) TransferResultChunk(srv KelvinService_TransferResultChunkServer) error {
 	return status.Errorf(codes.Unimplemented, "method TransferResultChunk not implemented")
 }
@@ -1172,32 +922,6 @@ func (*UnimplementedKelvinServiceServer) Done(ctx context.Context, req *DoneRequ
 
 func RegisterKelvinServiceServer(s *grpc.Server, srv KelvinServiceServer) {
 	s.RegisterService(&_KelvinService_serviceDesc, srv)
-}
-
-func _KelvinService_TransferRowBatch_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(KelvinServiceServer).TransferRowBatch(&kelvinServiceTransferRowBatchServer{stream})
-}
-
-type KelvinService_TransferRowBatchServer interface {
-	SendAndClose(*RowBatchResponse) error
-	Recv() (*RowBatchRequest, error)
-	grpc.ServerStream
-}
-
-type kelvinServiceTransferRowBatchServer struct {
-	grpc.ServerStream
-}
-
-func (x *kelvinServiceTransferRowBatchServer) SendAndClose(m *RowBatchResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *kelvinServiceTransferRowBatchServer) Recv() (*RowBatchRequest, error) {
-	m := new(RowBatchRequest)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
 }
 
 func _KelvinService_TransferResultChunk_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -1255,116 +979,12 @@ var _KelvinService_serviceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "TransferRowBatch",
-			Handler:       _KelvinService_TransferRowBatch_Handler,
-			ClientStreams: true,
-		},
-		{
 			StreamName:    "TransferResultChunk",
 			Handler:       _KelvinService_TransferResultChunk_Handler,
 			ClientStreams: true,
 		},
 	},
 	Metadata: "src/carnotpb/carnot.proto",
-}
-
-func (m *RowBatchRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *RowBatchRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *RowBatchRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.RowBatch != nil {
-		{
-			size, err := m.RowBatch.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintCarnot(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.DestinationId != 0 {
-		i = encodeVarintCarnot(dAtA, i, uint64(m.DestinationId))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.QueryID != nil {
-		{
-			size, err := m.QueryID.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintCarnot(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Address) > 0 {
-		i -= len(m.Address)
-		copy(dAtA[i:], m.Address)
-		i = encodeVarintCarnot(dAtA, i, uint64(len(m.Address)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *RowBatchResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *RowBatchResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *RowBatchResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Message) > 0 {
-		i -= len(m.Message)
-		copy(dAtA[i:], m.Message)
-		i = encodeVarintCarnot(dAtA, i, uint64(len(m.Message)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Success {
-		i--
-		if m.Success {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
 }
 
 func (m *TransferResultChunkRequest) Marshal() (dAtA []byte, err error) {
@@ -1427,14 +1047,14 @@ func (m *TransferResultChunkRequest) MarshalToSizedBuffer(dAtA []byte) (int, err
 	return len(dAtA) - i, nil
 }
 
-func (m *TransferResultChunkRequest_GrpcSourceId) MarshalTo(dAtA []byte) (int, error) {
+func (m *TransferResultChunkRequest_GRPCSourceID) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *TransferResultChunkRequest_GrpcSourceId) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *TransferResultChunkRequest_GRPCSourceID) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
-	i = encodeVarintCarnot(dAtA, i, uint64(m.GrpcSourceId))
+	i = encodeVarintCarnot(dAtA, i, uint64(m.GRPCSourceID))
 	i--
 	dAtA[i] = 0x18
 	return len(dAtA) - i, nil
@@ -1708,46 +1328,6 @@ func encodeVarintCarnot(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *RowBatchRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Address)
-	if l > 0 {
-		n += 1 + l + sovCarnot(uint64(l))
-	}
-	if m.QueryID != nil {
-		l = m.QueryID.Size()
-		n += 1 + l + sovCarnot(uint64(l))
-	}
-	if m.DestinationId != 0 {
-		n += 1 + sovCarnot(uint64(m.DestinationId))
-	}
-	if m.RowBatch != nil {
-		l = m.RowBatch.Size()
-		n += 1 + l + sovCarnot(uint64(l))
-	}
-	return n
-}
-
-func (m *RowBatchResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Success {
-		n += 2
-	}
-	l = len(m.Message)
-	if l > 0 {
-		n += 1 + l + sovCarnot(uint64(l))
-	}
-	return n
-}
-
 func (m *TransferResultChunkRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -1771,13 +1351,13 @@ func (m *TransferResultChunkRequest) Size() (n int) {
 	return n
 }
 
-func (m *TransferResultChunkRequest_GrpcSourceId) Size() (n int) {
+func (m *TransferResultChunkRequest_GRPCSourceID) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	n += 1 + sovCarnot(uint64(m.GrpcSourceId))
+	n += 1 + sovCarnot(uint64(m.GRPCSourceID))
 	return n
 }
 func (m *TransferResultChunkRequest_TableName) Size() (n int) {
@@ -1898,30 +1478,6 @@ func sovCarnot(x uint64) (n int) {
 func sozCarnot(x uint64) (n int) {
 	return sovCarnot(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (this *RowBatchRequest) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&RowBatchRequest{`,
-		`Address:` + fmt.Sprintf("%v", this.Address) + `,`,
-		`QueryID:` + strings.Replace(fmt.Sprintf("%v", this.QueryID), "UUID", "proto1.UUID", 1) + `,`,
-		`DestinationId:` + fmt.Sprintf("%v", this.DestinationId) + `,`,
-		`RowBatch:` + strings.Replace(fmt.Sprintf("%v", this.RowBatch), "RowBatchData", "proto2.RowBatchData", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *RowBatchResponse) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&RowBatchResponse{`,
-		`Success:` + fmt.Sprintf("%v", this.Success) + `,`,
-		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
-		`}`,
-	}, "")
-	return s
-}
 func (this *TransferResultChunkRequest) String() string {
 	if this == nil {
 		return "nil"
@@ -1935,12 +1491,12 @@ func (this *TransferResultChunkRequest) String() string {
 	}, "")
 	return s
 }
-func (this *TransferResultChunkRequest_GrpcSourceId) String() string {
+func (this *TransferResultChunkRequest_GRPCSourceID) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&TransferResultChunkRequest_GrpcSourceId{`,
-		`GrpcSourceId:` + fmt.Sprintf("%v", this.GrpcSourceId) + `,`,
+	s := strings.Join([]string{`&TransferResultChunkRequest_GRPCSourceID{`,
+		`GRPCSourceID:` + fmt.Sprintf("%v", this.GRPCSourceID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2038,287 +1594,6 @@ func valueToStringCarnot(v interface{}) string {
 	}
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
-}
-func (m *RowBatchRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowCarnot
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: RowBatchRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: RowBatchRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Address", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCarnot
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Address = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field QueryID", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCarnot
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.QueryID == nil {
-				m.QueryID = &proto1.UUID{}
-			}
-			if err := m.QueryID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DestinationId", wireType)
-			}
-			m.DestinationId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCarnot
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.DestinationId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RowBatch", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCarnot
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.RowBatch == nil {
-				m.RowBatch = &proto2.RowBatchData{}
-			}
-			if err := m.RowBatch.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipCarnot(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *RowBatchResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowCarnot
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: RowBatchResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: RowBatchResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCarnot
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Success = bool(v != 0)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCarnot
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Message = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipCarnot(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
 }
 func (m *TransferResultChunkRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -2419,7 +1694,7 @@ func (m *TransferResultChunkRequest) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field GrpcSourceId", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field GRPCSourceID", wireType)
 			}
 			var v uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2436,7 +1711,7 @@ func (m *TransferResultChunkRequest) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			m.Destination = &TransferResultChunkRequest_GrpcSourceId{v}
+			m.Destination = &TransferResultChunkRequest_GRPCSourceID{v}
 		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field TableName", wireType)

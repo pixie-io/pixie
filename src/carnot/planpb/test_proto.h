@@ -241,7 +241,7 @@ constexpr char kGRPCSourceOperator1[] = R"(
 
 constexpr char kGRPCSinkOperator1[] = R"(
 address: "localhost:1234"
-destination_id: 0
+grpc_source_id: 0
 )";
 
 constexpr char kMapOperator1[] = R"(

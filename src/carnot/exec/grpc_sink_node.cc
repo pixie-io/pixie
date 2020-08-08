@@ -18,9 +18,14 @@ using table_store::schema::RowBatch;
 using table_store::schema::RowDescriptor;
 
 std::string GRPCSinkNode::DebugStringImpl() {
-  return absl::Substitute("Exec::GRPCSinkNode: {address: $0, destination_id: $1, output: $2}",
-                          plan_node_->address(), plan_node_->destination_id(),
-                          input_descriptor_->DebugString());
+  std::string destination;
+  if (plan_node_->has_table_name()) {
+    destination = absl::Substitute("table_name: $0", plan_node_->table_name());
+  } else if (plan_node_->has_grpc_source_id()) {
+    destination = absl::Substitute("source_id: $0", plan_node_->grpc_source_id());
+  }
+  return absl::Substitute("Exec::GRPCSinkNode: {address: $0, $1, output: $2}",
+                          plan_node_->address(), destination, input_descriptor_->DebugString());
 }
 
 Status GRPCSinkNode::InitImpl(const plan::Operator& plan_node) {
@@ -70,13 +75,20 @@ Status GRPCSinkNode::CloseImpl(ExecState*) {
 
 Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t) {
   if (writer_ == nullptr) {
-    writer_ = stub_->TransferRowBatch(&context_, &response_);
+    writer_ = stub_->TransferResultChunk(&context_, &response_);
   }
 
-  carnotpb::RowBatchRequest req;
+  carnotpb::TransferResultChunkRequest req;
   // Set the metadata for the RowBatch (where it should go).
   req.set_address(plan_node_->address());
-  req.set_destination_id(plan_node_->destination_id());
+  if (plan_node_->has_grpc_source_id()) {
+    req.set_grpc_source_id(plan_node_->grpc_source_id());
+  } else if (plan_node_->has_table_name()) {
+    req.set_table_name(plan_node_->table_name());
+  } else {
+    return error::Internal("GRPCSink has neither source ID nor table name set.");
+  }
+
   ToProto(exec_state->query_id(), req.mutable_query_id());
   // Serialize the RowBatch.
   PL_RETURN_IF_ERROR(rb.ToProto(req.mutable_row_batch()));

@@ -289,7 +289,13 @@ StatusOr<table_store::schema::Relation> GRPCSourceOperator::OutputRelation(
  */
 
 std::string GRPCSinkOperator::DebugString() const {
-  return absl::Substitute("Op:GRPCSink($0, $1)", address(), destination_id());
+  std::string destination;
+  if (has_table_name()) {
+    destination = absl::Substitute("table_name=$0", table_name());
+  } else if (has_grpc_source_id()) {
+    destination = absl::Substitute("source_id=$0", grpc_source_id());
+  }
+  return absl::Substitute("Op:GRPCSink($0, $1)", address(), destination);
 }
 
 Status GRPCSinkOperator::Init(const planpb::GRPCSinkOperator& pb) {

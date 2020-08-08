@@ -1,7 +1,7 @@
 #include "src/carnot/plan/operators.h"
 
-#include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
@@ -121,6 +121,11 @@ TEST_F(OperatorTest, from_proto_grpc_sink) {
   EXPECT_EQ(1, sink_op->id());
   EXPECT_TRUE(sink_op->is_initialized());
   EXPECT_EQ(planpb::OperatorType::GRPC_SINK_OPERATOR, sink_op->op_type());
+
+  const auto* sink_plan_node = static_cast<const plan::GRPCSinkOperator*>(sink_op.get());
+  EXPECT_TRUE(sink_plan_node->has_grpc_source_id());
+  EXPECT_FALSE(sink_plan_node->has_table_name());
+  EXPECT_EQ(0, sink_plan_node->grpc_source_id());
 }
 
 TEST_F(OperatorTest, from_proto_blocking_agg) {

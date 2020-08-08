@@ -757,7 +757,7 @@ constexpr char kExpectedPlanTwoPEMOneKelvin[] = R"proto(
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
             address: "1111"
-            destination_id: 12
+            grpc_source_id: 12
           }
         }
       }
@@ -861,7 +861,7 @@ qb_address_to_plan {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
             address: "1111"
-            destination_id: 11
+            grpc_source_id: 11
           }
         }
       }

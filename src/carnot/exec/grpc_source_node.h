@@ -26,7 +26,7 @@ class GRPCSourceNode : public SourceNode {
  public:
   GRPCSourceNode() = default;
   bool NextBatchReady() override;
-  virtual Status EnqueueRowBatch(std::unique_ptr<carnotpb::RowBatchRequest> row_batch);
+  virtual Status EnqueueRowBatch(std::unique_ptr<carnotpb::TransferResultChunkRequest> row_batch);
 
  protected:
   std::string DebugStringImpl() override;
@@ -40,7 +40,8 @@ class GRPCSourceNode : public SourceNode {
   Status PopRowBatch();
 
   std::unique_ptr<table_store::schema::RowBatch> rb_;
-  moodycamel::BlockingConcurrentQueue<std::unique_ptr<carnotpb::RowBatchRequest>> row_batch_queue_;
+  moodycamel::BlockingConcurrentQueue<std::unique_ptr<carnotpb::TransferResultChunkRequest>>
+      row_batch_queue_;
 
   std::unique_ptr<plan::GRPCSourceOperator> plan_node_;
 };

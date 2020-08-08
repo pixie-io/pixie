@@ -130,7 +130,7 @@ func getQueryPlanAsDotString(distributedPlan *distributedpb.DistributedPlan, pla
 		for _, node := range queryFragment.Nodes {
 			if node.Op.OpType == planpb.GRPC_SINK_OPERATOR {
 				fromNodeName := graphNodeName(agentIDStr, node.Id)
-				dest := node.Op.GetGRPCSinkOp().DestinationId
+				dest := node.Op.GetGRPCSinkOp().GetGRPCSourceID()
 				// Look up the children of the current agent and find all the valid destinations.
 				dagID := distributedPlan.QbAddressToDagId[agentID.String()]
 				for _, childID := range distChildrenList[dagID] {

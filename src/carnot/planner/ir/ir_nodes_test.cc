@@ -978,7 +978,7 @@ constexpr char kExpectedGRPCSinkPb[] = R"proto(
   op_type: GRPC_SINK_OPERATOR
   grpc_sink_op {
     address: "$0"
-    destination_id: $1
+    grpc_source_id: $1
   }
 )proto";
 

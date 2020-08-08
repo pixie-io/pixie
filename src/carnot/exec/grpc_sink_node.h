@@ -39,10 +39,10 @@ class GRPCSinkNode : public SinkNode {
   bool sent_eos_ = false;
 
   grpc::ClientContext context_;
-  carnotpb::RowBatchResponse response_;
+  carnotpb::TransferResultChunkResponse response_;
 
   carnotpb::KelvinService::StubInterface* stub_;
-  std::unique_ptr<grpc::ClientWriterInterface<carnotpb::RowBatchRequest>> writer_;
+  std::unique_ptr<grpc::ClientWriterInterface<carnotpb::TransferResultChunkRequest>> writer_;
 
   std::unique_ptr<plan::GRPCSinkOperator> plan_node_;
   std::unique_ptr<table_store::schema::RowDescriptor> input_descriptor_;

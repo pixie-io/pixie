@@ -17,10 +17,10 @@ namespace carnot {
 namespace exec {
 
 Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
-                                   std::unique_ptr<carnotpb::RowBatchRequest> req) {
+                                   std::unique_ptr<carnotpb::TransferResultChunkRequest> req) {
   absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);
   auto& query_map = query_node_map_[query_id];
-  SourceNodeTracker& snt = query_map.source_node_trackers[req->destination_id()];
+  SourceNodeTracker& snt = query_map.source_node_trackers[req->grpc_source_id()];
   absl::base_internal::SpinLockHolder snt_lock(&snt.node_lock);
   // It's possible that we see row batches before we have gotten information about the query. To
   // solve this race, We store a backlog of all the pending batches.
@@ -33,34 +33,23 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
   return Status::OK();
 }
 
-::grpc::Status GRPCRouter::TransferRowBatch(
-    ::grpc::ServerContext* context, ::grpc::ServerReader<::pl::carnotpb::RowBatchRequest>* reader,
-    ::pl::carnotpb::RowBatchResponse* response) {
-  PL_UNUSED(context);
-  auto rb = std::make_unique<carnotpb::RowBatchRequest>();
-  while (reader->Read(rb.get())) {
-    auto query_id = pl::ParseUUID(rb->query_id()).ConsumeValueOrDie();
-
-    auto s = EnqueueRowBatch(query_id, std::move(rb));
-    if (!s.ok()) {
-      return ::grpc::Status(grpc::StatusCode::INTERNAL, "failed to enqueue batch");
-    }
-
-    rb = std::make_unique<carnotpb::RowBatchRequest>();
-  }
-
-  response->set_success(true);
-  return ::grpc::Status::OK;
-}
-
 ::grpc::Status GRPCRouter::TransferResultChunk(
     ::grpc::ServerContext* context,
     ::grpc::ServerReader<::pl::carnotpb::TransferResultChunkRequest>* reader,
     ::pl::carnotpb::TransferResultChunkResponse* response) {
   PL_UNUSED(context);
-  PL_UNUSED(reader);
-  response->set_success(false);
-  return ::grpc::Status(grpc::StatusCode::INTERNAL, "TransferResultChunk is unimplemented");
+  auto rb = std::make_unique<carnotpb::TransferResultChunkRequest>();
+  while (reader->Read(rb.get())) {
+    auto query_id = pl::ParseUUID(rb->query_id()).ConsumeValueOrDie();
+    auto s = EnqueueRowBatch(query_id, std::move(rb));
+    if (!s.ok()) {
+      return ::grpc::Status(grpc::StatusCode::INTERNAL, "failed to enqueue batch");
+    }
+    rb = std::make_unique<carnotpb::TransferResultChunkRequest>();
+  }
+
+  response->set_success(true);
+  return ::grpc::Status::OK;
 }
 
 ::grpc::Status GRPCRouter::Done(::grpc::ServerContext*, const ::pl::carnotpb::DoneRequest* req,

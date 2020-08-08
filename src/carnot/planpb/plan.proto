@@ -162,8 +162,18 @@ message GRPCSourceOperator {
 message GRPCSinkOperator {
   // The address of the GRPC service.
   string address = 1;
+
+  // Originally used for `destination_id` field, now renamed to `grpc_source_id`.
+  reserved 2;
   // GRPCSinkOperator refers to its corresponding GRPCSourceOperator to each other via its DAG ID.
-  uint64 destination_id = 2;
+  oneof destination {
+    // The ID of the GRPC Source node that will receive the RowBatch, when the sink's RowBatches
+    // are being sent to another Carnot instance.
+    uint64 grpc_source_id = 3 [ (gogoproto.customname) = "GRPCSourceID" ];
+    // The name of the table that row batches from this sink belong to, when the sink's RowBatches
+    // are being sent to a non-Carnot address, such as the query broker.
+    string table_name = 4;
+  }
 }
 
 // Performs map operation.

@@ -37,7 +37,8 @@ Status GRPCSourceNode::GenerateNextImpl(ExecState* exec_state) {
   return Status::OK();
 }
 
-Status GRPCSourceNode::EnqueueRowBatch(std::unique_ptr<carnotpb::RowBatchRequest> row_batch) {
+Status GRPCSourceNode::EnqueueRowBatch(
+    std::unique_ptr<carnotpb::TransferResultChunkRequest> row_batch) {
   if (!row_batch_queue_.enqueue(std::move(row_batch))) {
     return error::Internal("Failed to enqueue RowBatch");
   }
@@ -46,7 +47,7 @@ Status GRPCSourceNode::EnqueueRowBatch(std::unique_ptr<carnotpb::RowBatchRequest
 
 Status GRPCSourceNode::PopRowBatch() {
   DCHECK(NextBatchReady());
-  std::unique_ptr<carnotpb::RowBatchRequest> rb_request;
+  std::unique_ptr<carnotpb::TransferResultChunkRequest> rb_request;
   bool got_one = row_batch_queue_.try_dequeue(rb_request);
   if (!got_one) {
     return error::Internal(

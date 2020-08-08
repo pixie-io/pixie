@@ -70,13 +70,13 @@ class GRPCRouterTest : public ::testing::Test {
 
 class FakeGRPCSourceNode : public pl::carnot::exec::GRPCSourceNode {
  public:
-  Status EnqueueRowBatch(std::unique_ptr<pl::carnotpb::RowBatchRequest> row_batch) {
+  Status EnqueueRowBatch(std::unique_ptr<pl::carnotpb::TransferResultChunkRequest> row_batch) {
     row_batches.emplace_back(std::move(row_batch));
 
     return Status::OK();
   }
 
-  std::vector<std::unique_ptr<pl::carnotpb::RowBatchRequest>> row_batches;
+  std::vector<std::unique_ptr<pl::carnotpb::TransferResultChunkRequest>> row_batches;
 };
 
 TEST_F(GRPCRouterTest, no_node_router_test) {
@@ -89,27 +89,27 @@ TEST_F(GRPCRouterTest, no_node_router_test) {
   auto rb1 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
                  .AddColumn<types::Int64Value>({1, 2})
                  .get();
-  auto rb_req1 = carnotpb::RowBatchRequest();
+  carnotpb::TransferResultChunkRequest rb_req1;
   EXPECT_OK(rb1.ToProto(rb_req1.mutable_row_batch()));
   rb_req1.set_address(hostname);
-  rb_req1.set_destination_id(grpc_source_node_id);
+  rb_req1.set_grpc_source_id(grpc_source_node_id);
   auto query_id = rb_req1.mutable_query_id();
   query_id->set_data(query_id_str);
 
   auto rb2 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
                  .AddColumn<types::Int64Value>({4, 6})
                  .get();
-  auto rb_req2 = carnotpb::RowBatchRequest();
+  carnotpb::TransferResultChunkRequest rb_req2;
   EXPECT_OK(rb2.ToProto(rb_req2.mutable_row_batch()));
   rb_req2.set_address(hostname);
-  rb_req2.set_destination_id(grpc_source_node_id);
+  rb_req2.set_grpc_source_id(grpc_source_node_id);
   query_id = rb_req2.mutable_query_id();
   query_id->set_data(query_id_str);
 
   // Send row batches to GRPC router.
-  ::pl::carnotpb::RowBatchResponse response;
+  carnotpb::TransferResultChunkResponse response;
   grpc::ClientContext context;
-  auto writer = stub_->TransferRowBatch(&context, &response);
+  auto writer = stub_->TransferResultChunk(&context, &response);
   writer->Write(rb_req1);
   writer->Write(rb_req2);
   writer->WritesDone();
@@ -156,27 +156,27 @@ TEST_F(GRPCRouterTest, basic_router_test) {
   auto rb1 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
                  .AddColumn<types::Int64Value>({1, 2})
                  .get();
-  auto rb_req1 = carnotpb::RowBatchRequest();
+  carnotpb::TransferResultChunkRequest rb_req1;
   EXPECT_OK(rb1.ToProto(rb_req1.mutable_row_batch()));
   rb_req1.set_address(hostname);
-  rb_req1.set_destination_id(grpc_source_node_id);
+  rb_req1.set_grpc_source_id(grpc_source_node_id);
   auto query_id = rb_req1.mutable_query_id();
   query_id->set_data(query_id_str);
 
   auto rb2 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
                  .AddColumn<types::Int64Value>({4, 6})
                  .get();
-  auto rb_req2 = carnotpb::RowBatchRequest();
+  carnotpb::TransferResultChunkRequest rb_req2;
   EXPECT_OK(rb2.ToProto(rb_req2.mutable_row_batch()));
   rb_req2.set_address(hostname);
-  rb_req2.set_destination_id(grpc_source_node_id);
+  rb_req2.set_grpc_source_id(grpc_source_node_id);
   query_id = rb_req2.mutable_query_id();
   query_id->set_data(query_id_str);
 
   // Send row batches to GRPC router.
-  ::pl::carnotpb::RowBatchResponse response;
+  pl::carnotpb::TransferResultChunkResponse response;
   grpc::ClientContext context;
-  auto writer = stub_->TransferRowBatch(&context, &response);
+  auto writer = stub_->TransferResultChunk(&context, &response);
   writer->Write(rb_req1);
   writer->Write(rb_req2);
   writer->WritesDone();
@@ -217,17 +217,17 @@ TEST_F(GRPCRouterTest, router_and_done_test) {
   auto rb1 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
                  .AddColumn<types::Int64Value>({1, 2})
                  .get();
-  auto rb_req1 = carnotpb::RowBatchRequest();
+  carnotpb::TransferResultChunkRequest rb_req1;
   EXPECT_OK(rb1.ToProto(rb_req1.mutable_row_batch()));
   rb_req1.set_address(hostname);
-  rb_req1.set_destination_id(grpc_source_node_id);
+  rb_req1.set_grpc_source_id(grpc_source_node_id);
   auto query_id = rb_req1.mutable_query_id();
   query_id->set_data(query_id_str);
 
   // Send row batches to GRPC router.
-  ::pl::carnotpb::RowBatchResponse response;
+  pl::carnotpb::TransferResultChunkResponse response;
   grpc::ClientContext context;
-  auto writer = stub_->TransferRowBatch(&context, &response);
+  auto writer = stub_->TransferResultChunk(&context, &response);
   writer->Write(rb_req1);
   writer->WritesDone();
   writer->Finish();
@@ -337,9 +337,9 @@ TEST_F(GRPCRouterTest, threaded_router_test) {
   ASSERT_OK(mock_child.Open(exec_state.get()));
   ASSERT_OK(mock_child.Prepare(exec_state.get()));
 
-  ::pl::carnotpb::RowBatchResponse response;
+  pl::carnotpb::TransferResultChunkResponse response;
   grpc::ClientContext context;
-  auto writer = stub_->TransferRowBatch(&context, &response);
+  auto writer = stub_->TransferResultChunk(&context, &response);
 
   // Start up thread that enqueues row batches.
   std::thread write_thread([&] {
@@ -349,10 +349,10 @@ TEST_F(GRPCRouterTest, threaded_router_test) {
                         idx,
                     })
                     .get();
-      auto rb_req = carnotpb::RowBatchRequest();
+      carnotpb::TransferResultChunkRequest rb_req;
       EXPECT_OK(rb.ToProto(rb_req.mutable_row_batch()));
       rb_req.set_address(hostname);
-      rb_req.set_destination_id(0);
+      rb_req.set_grpc_source_id(0);
       auto query_id = rb_req.mutable_query_id();
       query_id->set_data(query_id_str);
       writer->Write(rb_req);

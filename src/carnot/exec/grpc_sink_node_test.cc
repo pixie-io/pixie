@@ -22,8 +22,8 @@ namespace exec {
 
 using carnotpb::KelvinService;
 using carnotpb::MockKelvinServiceStub;
-using carnotpb::RowBatchRequest;
-using carnotpb::RowBatchResponse;
+using carnotpb::TransferResultChunkRequest;
+using carnotpb::TransferResultChunkResponse;
 using table_store::schema::RowBatch;
 using table_store::schema::RowDescriptor;
 using ::testing::_;
@@ -68,13 +68,13 @@ TEST_F(GRPCSinkNodeTest, basic) {
   auto tester = exec::ExecNodeTester<GRPCSinkNode, plan::GRPCSinkOperator>(
       *plan_node, output_rd, {input_rd}, exec_state_.get());
 
-  RowBatchResponse resp;
+  TransferResultChunkResponse resp;
   resp.set_success(true);
 
-  std::vector<RowBatchRequest> actual_protos(3);
-  std::vector<RowBatchRequest> expected_protos(3);
+  std::vector<TransferResultChunkRequest> actual_protos(3);
+  std::vector<TransferResultChunkRequest> expected_protos(3);
 
-  auto writer = new grpc::testing::MockClientWriter<RowBatchRequest>();
+  auto writer = new grpc::testing::MockClientWriter<TransferResultChunkRequest>();
 
   EXPECT_CALL(*writer, Write(_, _))
       .Times(3)
@@ -84,7 +84,7 @@ TEST_F(GRPCSinkNodeTest, basic) {
 
   EXPECT_CALL(*writer, WritesDone());
   EXPECT_CALL(*writer, Finish()).WillOnce(Return(grpc::Status::OK));
-  EXPECT_CALL(*mock_, TransferRowBatchRaw(_, _))
+  EXPECT_CALL(*mock_, TransferResultChunkRaw(_, _))
       .WillOnce(DoAll(SetArgPointee<1>(resp), Return(writer)));
 
   for (auto i = 0; i < 3; ++i) {
@@ -93,9 +93,9 @@ TEST_F(GRPCSinkNodeTest, basic) {
                   .AddColumn<types::Int64Value>(data)
                   .get();
 
-    RowBatchRequest expected_proto;
+    TransferResultChunkRequest expected_proto;
     expected_proto.set_address(plan_node->address());
-    expected_proto.set_destination_id(plan_node->destination_id());
+    expected_proto.set_grpc_source_id(plan_node->grpc_source_id());
     ToProto(exec_state_->query_id(), expected_proto.mutable_query_id());
     EXPECT_OK(rb.ToProto(expected_proto.mutable_row_batch()));
     expected_protos[i] = expected_proto;

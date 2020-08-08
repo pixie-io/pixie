@@ -34,13 +34,6 @@ class GRPCSourceNode;
 class GRPCRouter final : public carnotpb::KelvinService::Service {
  public:
   /**
-   * TransferRowBatch implements the RPC method.
-   */
-  ::grpc::Status TransferRowBatch(::grpc::ServerContext* context,
-                                  ::grpc::ServerReader<::pl::carnotpb::RowBatchRequest>* reader,
-                                  ::pl::carnotpb::RowBatchResponse* response) override;
-
-  /**
    * TransferResultChunk implements the RPC method.
    */
   ::grpc::Status TransferResultChunk(
@@ -99,7 +92,8 @@ class GRPCRouter final : public carnotpb::KelvinService::Service {
   Status RecordStats(const sole::uuid& query_id, const ::pl::carnotpb::DoneRequest* req);
 
  private:
-  Status EnqueueRowBatch(sole::uuid query_id, std::unique_ptr<carnotpb::RowBatchRequest> req);
+  Status EnqueueRowBatch(sole::uuid query_id,
+                         std::unique_ptr<carnotpb::TransferResultChunkRequest> req);
 
   /**
    * SourceNodeTracker is responsible for tracking a single source node and the backlog of messages
@@ -108,7 +102,7 @@ class GRPCRouter final : public carnotpb::KelvinService::Service {
   struct SourceNodeTracker {
     SourceNodeTracker() = default;
     GRPCSourceNode* source_node GUARDED_BY(node_lock) = nullptr;
-    std::vector<std::unique_ptr<::pl::carnotpb::RowBatchRequest>> response_backlog
+    std::vector<std::unique_ptr<::pl::carnotpb::TransferResultChunkRequest>> response_backlog
         GUARDED_BY(node_lock);
     absl::base_internal::SpinLock node_lock;
   };
