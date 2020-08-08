@@ -41,12 +41,12 @@ class Carnot : public NotCopyable {
   static StatusOr<std::unique_ptr<Carnot>> Create(
       const sole::uuid& agent_id, std::unique_ptr<udf::Registry> func_registry,
       std::shared_ptr<table_store::TableStore> table_store,
-      const exec::KelvinStubGenerator& stub_generator, int grpc_server_port,
+      const exec::ResultSinkStubGenerator& stub_generator, int grpc_server_port,
       std::shared_ptr<grpc::ServerCredentials> grpc_server_creds);
 
   static StatusOr<std::unique_ptr<Carnot>> Create(
       const sole::uuid& agent_id, std::shared_ptr<table_store::TableStore> table_store,
-      const exec::KelvinStubGenerator& stub_generator, int grpc_server_port = 0,
+      const exec::ResultSinkStubGenerator& stub_generator, int grpc_server_port = 0,
       std::shared_ptr<grpc::ServerCredentials> grpc_server_creds = nullptr);
 
   using AgentMetadataCallbackFunc = std::function<std::shared_ptr<const md::AgentMetadataState>()>;

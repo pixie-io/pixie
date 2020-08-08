@@ -20,8 +20,8 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
-using carnotpb::KelvinService;
-using carnotpb::MockKelvinServiceStub;
+using carnotpb::MockResultSinkServiceStub;
+using carnotpb::ResultSinkService;
 using carnotpb::TransferResultChunkRequest;
 using carnotpb::TransferResultChunkResponse;
 using table_store::schema::RowBatch;
@@ -39,8 +39,8 @@ class GRPCSinkNodeTest : public ::testing::Test {
     auto table_store = std::make_shared<table_store::TableStore>();
     exec_state_ = std::make_unique<ExecState>(
         func_registry_.get(), table_store,
-        [this](const std::string&) -> std::unique_ptr<KelvinService::StubInterface> {
-          auto s = std::make_unique<MockKelvinServiceStub>();
+        [this](const std::string&) -> std::unique_ptr<ResultSinkService::StubInterface> {
+          auto s = std::make_unique<MockResultSinkServiceStub>();
           mock_ = s.get();
           return s;
         },
@@ -53,7 +53,7 @@ class GRPCSinkNodeTest : public ::testing::Test {
  protected:
   std::unique_ptr<ExecState> exec_state_;
   std::unique_ptr<udf::Registry> func_registry_;
-  MockKelvinServiceStub* mock_;
+  MockResultSinkServiceStub* mock_;
 };
 
 TEST_F(GRPCSinkNodeTest, basic) {

@@ -44,7 +44,7 @@ px.display(df, '$0')
 )pxl";
 
 std::unique_ptr<Carnot> SetUpCarnot(std::shared_ptr<table_store::TableStore> table_store) {
-  auto carnot_or_s = Carnot::Create(sole::uuid4(), table_store, exec::MockKelvinStubGenerator);
+  auto carnot_or_s = Carnot::Create(sole::uuid4(), table_store, exec::MockResultSinkStubGenerator);
   if (!carnot_or_s.ok()) {
     LOG(FATAL) << "Failed to initialize Carnot.";
   }

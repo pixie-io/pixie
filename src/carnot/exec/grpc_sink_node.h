@@ -41,7 +41,7 @@ class GRPCSinkNode : public SinkNode {
   grpc::ClientContext context_;
   carnotpb::TransferResultChunkResponse response_;
 
-  carnotpb::KelvinService::StubInterface* stub_;
+  carnotpb::ResultSinkService::StubInterface* stub_;
   std::unique_ptr<grpc::ClientWriterInterface<carnotpb::TransferResultChunkRequest>> writer_;
 
   std::unique_ptr<plan::GRPCSinkOperator> plan_node_;

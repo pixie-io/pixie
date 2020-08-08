@@ -25,7 +25,7 @@ class CarnotTest : public ::testing::Test {
   void SetUp() override {
     Test::SetUp();
     table_store_ = std::make_shared<table_store::TableStore>();
-    carnot_ = Carnot::Create(sole::uuid4(), table_store_, exec::MockKelvinStubGenerator)
+    carnot_ = Carnot::Create(sole::uuid4(), table_store_, exec::MockResultSinkStubGenerator)
                   .ConsumeValueOrDie();
     auto table = CarnotTestUtils::TestTable();
     table_store_->AddTable("test_table", table);

@@ -67,10 +67,11 @@ message DoneResponse {
   string message = 2;
 }
 
-service KelvinService {
+service ResultSinkService {
   // Transfer a result chunk (which could be eithr data or metadata) for a given query, to another
   // Carnot instance or to an external sink.
   rpc TransferResultChunk(stream TransferResultChunkRequest) returns (TransferResultChunkResponse) {}
   // Message that handles Done state for an agent's message in query.
+  // TOOD(nserrino): Deprecate and remove.
   rpc Done(DoneRequest) returns (DoneResponse) {}
 }

@@ -31,7 +31,7 @@ class GRPCSourceNode;
  * GRPCRouter tracks incoming Kelvin connections and routes them to the appropriate Carnot source
  * node.
  */
-class GRPCRouter final : public carnotpb::KelvinService::Service {
+class GRPCRouter final : public carnotpb::ResultSinkService::Service {
  public:
   /**
    * TransferResultChunk implements the RPC method.

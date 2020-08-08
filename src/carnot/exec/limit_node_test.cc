@@ -35,7 +35,7 @@ class LimitNodeTest : public ::testing::Test {
     auto table_store = std::make_shared<table_store::TableStore>();
 
     exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
-                                              MockKelvinStubGenerator, sole::uuid4());
+                                              MockResultSinkStubGenerator, sole::uuid4());
   }
 
  protected:

@@ -22,9 +22,9 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
-const KelvinStubGenerator MockKelvinStubGenerator =
-    [](const std::string&) -> std::unique_ptr<carnotpb::KelvinService::StubInterface> {
-  return std::make_unique<carnotpb::MockKelvinServiceStub>();
+const ResultSinkStubGenerator MockResultSinkStubGenerator =
+    [](const std::string&) -> std::unique_ptr<carnotpb::ResultSinkService::StubInterface> {
+  return std::make_unique<carnotpb::MockResultSinkServiceStub>();
 };
 
 table_store::schema::RowBatch ConcatRowBatches(

@@ -23,8 +23,9 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
-using KelvinStubGenerator = std::function<std::unique_ptr<carnotpb::KelvinService::StubInterface>(
-    const std::string& address)>;
+using ResultSinkStubGenerator =
+    std::function<std::unique_ptr<carnotpb::ResultSinkService::StubInterface>(
+        const std::string& address)>;
 
 /**
  * ExecState manages the execution state for a single query. A new one will
@@ -38,7 +39,7 @@ class ExecState {
   ExecState() = delete;
   explicit ExecState(udf::Registry* func_registry,
                      std::shared_ptr<table_store::TableStore> table_store,
-                     const KelvinStubGenerator& stub_generator, const sole::uuid& query_id,
+                     const ResultSinkStubGenerator& stub_generator, const sole::uuid& query_id,
                      GRPCRouter* grpc_router = nullptr)
       : func_registry_(func_registry),
         table_store_(std::move(table_store)),
@@ -75,16 +76,19 @@ class ExecState {
     return Status::OK();
   }
 
-  // This function returns a stub to the Kelvin GRPC Service.
-  carnotpb::KelvinService::StubInterface* KelvinServiceStub(const std::string& remote_address) {
-    if (kelvin_stub_map_.contains(remote_address)) {
-      return kelvin_stub_map_[remote_address];
+  // This function returns a stub to a service that is responsible for receiving results.
+  // Currently, it will either be a Kelvin instance or a query broker.
+  carnotpb::ResultSinkService::StubInterface* ResultSinkServiceStub(
+      const std::string& remote_address) {
+    if (result_sink_stub_map_.contains(remote_address)) {
+      return result_sink_stub_map_[remote_address];
     }
-    std::unique_ptr<carnotpb::KelvinService::StubInterface> stub_ = stub_generator_(remote_address);
-    carnotpb::KelvinService::StubInterface* raw = stub_.get();
-    kelvin_stub_map_[remote_address] = raw;
+    std::unique_ptr<carnotpb::ResultSinkService::StubInterface> stub_ =
+        stub_generator_(remote_address);
+    carnotpb::ResultSinkService::StubInterface* raw = stub_.get();
+    result_sink_stub_map_[remote_address] = raw;
     // Push to the pool.
-    kelvin_stubs_pool_.push_back(std::move(stub_));
+    result_sink_stubs_pool_.push_back(std::move(stub_));
     return raw;
   }
 
@@ -128,16 +132,16 @@ class ExecState {
 
   GRPCRouter* grpc_router() { return grpc_router_; }
 
-  const absl::flat_hash_map<std::string, carnotpb::KelvinService::StubInterface*>& OutgoingServers()
-      const {
-    return kelvin_stub_map_;
+  const absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*>&
+  OutgoingServers() const {
+    return result_sink_stub_map_;
   }
 
  private:
   udf::Registry* func_registry_;
   std::shared_ptr<table_store::TableStore> table_store_;
   std::shared_ptr<const md::AgentMetadataState> metadata_state_;
-  const KelvinStubGenerator stub_generator_;
+  const ResultSinkStubGenerator stub_generator_;
   std::map<int64_t, udf::ScalarUDFDefinition*> id_to_scalar_udf_map_;
   std::map<int64_t, udf::UDADefinition*> id_to_uda_map_;
   const sole::uuid query_id_;
@@ -147,9 +151,10 @@ class ExecState {
   bool current_source_set_ = false;
   std::map<int64_t, bool> source_id_to_keep_running_map_;
 
-  std::vector<std::unique_ptr<carnotpb::KelvinService::StubInterface>> kelvin_stubs_pool_;
+  std::vector<std::unique_ptr<carnotpb::ResultSinkService::StubInterface>> result_sink_stubs_pool_;
   // Mapping of remote address to stub that serves that address.
-  absl::flat_hash_map<std::string, carnotpb::KelvinService::StubInterface*> kelvin_stub_map_;
+  absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*>
+      result_sink_stub_map_;
 };
 
 }  // namespace exec

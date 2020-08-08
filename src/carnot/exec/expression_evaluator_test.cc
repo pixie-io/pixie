@@ -82,7 +82,7 @@ class ScalarExpressionTest : public ::testing::TestWithParam<ScalarExpressionEva
 
     EXPECT_TRUE(func_registry_->Register<AddUDF>("add").ok());
     exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
-                                              MockKelvinStubGenerator, sole::uuid4());
+                                              MockResultSinkStubGenerator, sole::uuid4());
     EXPECT_OK(exec_state_->AddScalarUDF(
         0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::INT64})));
 

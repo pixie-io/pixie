@@ -51,12 +51,12 @@ class CarnotImpl final : public Carnot {
    * @return a status of whether initialization was successful.
    */
   Status Init(const sole::uuid& agent_id, std::shared_ptr<table_store::TableStore> table_store,
-              const exec::KelvinStubGenerator& stub_generator, int grpc_server_port = 0,
+              const exec::ResultSinkStubGenerator& stub_generator, int grpc_server_port = 0,
               std::shared_ptr<grpc::ServerCredentials> grpc_server_creds = nullptr);
 
   Status Init(const sole::uuid& agent_id, std::unique_ptr<udf::Registry> func_registry,
               std::shared_ptr<table_store::TableStore> table_store,
-              const exec::KelvinStubGenerator& stub_generator, int grpc_server_port = 0,
+              const exec::ResultSinkStubGenerator& stub_generator, int grpc_server_port = 0,
               std::shared_ptr<grpc::ServerCredentials> grpc_server_creds = nullptr);
 
   StatusOr<CarnotQueryResult> ExecuteQuery(const std::string& query, const sole::uuid& query_id,
@@ -123,7 +123,7 @@ class CarnotImpl final : public Carnot {
 
 Status CarnotImpl::Init(const sole::uuid& agent_id, std::unique_ptr<udf::Registry> func_registry,
                         std::shared_ptr<table_store::TableStore> table_store,
-                        const exec::KelvinStubGenerator& stub_generator, int grpc_server_port,
+                        const exec::ResultSinkStubGenerator& stub_generator, int grpc_server_port,
                         std::shared_ptr<grpc::ServerCredentials> grpc_server_creds) {
   agent_id_ = agent_id;
   grpc_server_creds_ = grpc_server_creds;
@@ -260,7 +260,7 @@ void CarnotImpl::GRPCServerFunc() {
 
 Status SendDoneToOutgoingConns(
     const sole::uuid& agent_id, const sole::uuid& query_id,
-    const absl::flat_hash_map<std::string, carnotpb::KelvinService::StubInterface*>&
+    const absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*>&
         outgoing_servers,
     const std::vector<queryresultspb::AgentExecutionStats>& all_agent_stats) {
   // Only run this if there are outgoing_servers.
@@ -410,7 +410,7 @@ CarnotImpl::~CarnotImpl() {
 StatusOr<std::unique_ptr<Carnot>> Carnot::Create(
     const sole::uuid& agent_id, std::unique_ptr<udf::Registry> func_registry,
     std::shared_ptr<table_store::TableStore> table_store,
-    const exec::KelvinStubGenerator& stub_generator, int grpc_server_port,
+    const exec::ResultSinkStubGenerator& stub_generator, int grpc_server_port,
     std::shared_ptr<grpc::ServerCredentials> grpc_server_creds) {
   std::unique_ptr<Carnot> carnot_impl(new CarnotImpl());
   PL_RETURN_IF_ERROR(static_cast<CarnotImpl*>(carnot_impl.get())
@@ -421,7 +421,7 @@ StatusOr<std::unique_ptr<Carnot>> Carnot::Create(
 
 StatusOr<std::unique_ptr<Carnot>> Carnot::Create(
     const sole::uuid& agent_id, std::shared_ptr<table_store::TableStore> table_store,
-    const exec::KelvinStubGenerator& stub_generator, int grpc_server_port,
+    const exec::ResultSinkStubGenerator& stub_generator, int grpc_server_port,
     std::shared_ptr<grpc::ServerCredentials> grpc_server_creds) {
   auto func_registry = std::make_unique<pl::carnot::udf::Registry>("default_registry");
   pl::carnot::funcs::RegisterFuncsOrDie(func_registry.get());

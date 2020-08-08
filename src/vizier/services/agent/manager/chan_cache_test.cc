@@ -21,7 +21,7 @@ using grpc::InsecureServerCredentials;
 using grpc::Server;
 using grpc::ServerBuilder;
 
-class FakeGRPCRouter final : public carnotpb::KelvinService::Service {
+class FakeGRPCRouter final : public carnotpb::ResultSinkService::Service {
  public:
   /**
    * TransferResultChunk implements the RPC method.
@@ -44,9 +44,9 @@ class ChanCacheTest : public ::testing::Test {
     server_ = builder.BuildAndStart();
   }
 
-  void RunRPC(carnotpb::KelvinService::Stub* stub) { RunTransferResultChunk(stub); }
+  void RunRPC(carnotpb::ResultSinkService::Stub* stub) { RunTransferResultChunk(stub); }
 
-  void RunTransferResultChunk(carnotpb::KelvinService::Stub* stub) {
+  void RunTransferResultChunk(carnotpb::ResultSinkService::Stub* stub) {
     grpc::ClientContext context;
     carnotpb::TransferResultChunkRequest request;
     carnotpb::TransferResultChunkResponse response;
@@ -64,9 +64,9 @@ class ChanCacheTest : public ::testing::Test {
 
   std::string GetServerAddress() { return absl::Substitute("$0:$1", hostname, port_); }
 
-  std::unique_ptr<carnotpb::KelvinService::Stub> BuildStub(
+  std::unique_ptr<carnotpb::ResultSinkService::Stub> BuildStub(
       const std::shared_ptr<Channel>& channel) {
-    return carnotpb::KelvinService::NewStub(channel);
+    return carnotpb::ResultSinkService::NewStub(channel);
   }
 
   std::unique_ptr<FakeGRPCRouter> service_;

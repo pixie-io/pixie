@@ -43,7 +43,7 @@ Status GRPCSinkNode::InitImpl(const plan::Operator& plan_node) {
 Status GRPCSinkNode::PrepareImpl(ExecState*) { return Status::OK(); }
 
 Status GRPCSinkNode::OpenImpl(ExecState* exec_state) {
-  stub_ = exec_state->KelvinServiceStub(plan_node_->address());
+  stub_ = exec_state->ResultSinkServiceStub(plan_node_->address());
   return Status::OK();
 }
 

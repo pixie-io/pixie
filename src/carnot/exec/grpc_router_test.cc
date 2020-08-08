@@ -56,12 +56,12 @@ class GRPCRouterTest : public ::testing::Test {
   void ResetStub() {
     std::shared_ptr<Channel> channel =
         grpc::CreateChannel(GetServerAddress(), InsecureChannelCredentials());
-    stub_ = carnotpb::KelvinService::NewStub(channel);
+    stub_ = carnotpb::ResultSinkService::NewStub(channel);
   }
 
   std::string GetServerAddress() { return absl::Substitute("$0:$1", hostname, port_); }
 
-  std::unique_ptr<carnotpb::KelvinService::Stub> stub_;
+  std::unique_ptr<carnotpb::ResultSinkService::Stub> stub_;
   std::unique_ptr<Server> server_;
   std::string hostname = "0.0.0.0";
   int port_ = 0;
@@ -314,7 +314,7 @@ TEST_F(GRPCRouterTest, threaded_router_test) {
   auto func_registry_ = std::make_unique<udf::Registry>("test_registry");
   auto table_store = std::make_shared<table_store::TableStore>();
   auto exec_state = std::make_unique<ExecState>(func_registry_.get(), table_store,
-                                                MockKelvinStubGenerator, sole::uuid4());
+                                                MockResultSinkStubGenerator, sole::uuid4());
 
   MockExecNode mock_child;
 

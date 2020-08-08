@@ -233,7 +233,7 @@ int main(int argc, char* argv[]) {
   auto table_store = std::make_shared<pl::table_store::TableStore>();
   auto carnot_or_s = pl::carnot::Carnot::Create(
       sole::uuid4(), table_store,
-      [](const std::string&) -> std::unique_ptr<pl::carnotpb::KelvinService::StubInterface> {
+      [](const std::string&) -> std::unique_ptr<pl::carnotpb::ResultSinkService::StubInterface> {
         return nullptr;
       });
   if (!carnot_or_s.ok()) {
