@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: px-demo-gotracing
+---
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: gotracing
+  namespace: px-demo-gotracing
+spec:
+  selector:
+    matchLabels:
+      app: gotracing
+  template:
+    metadata:
+      labels:
+        app: gotracing
+    spec:
+      containers:
+      - name: app
+        image: gcr.io/pixie-prod/pixie-prod-artifacts/demos/simple-gotracing-example:latest
+        ports:
+        - containerPort: 9090
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gotracing-svc
+  annotations:
+    cloud.google.com/load-balancer-type: "internal"
+  namespace: px-demo-gotracing
+spec:
+  type: LoadBalancer
+  selector:
+    app: gotracing
+  ports:
+  - port: 9090
