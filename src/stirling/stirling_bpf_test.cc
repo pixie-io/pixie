@@ -115,8 +115,7 @@ TEST_F(StirlingBPFTest, DynamicTraceAPI) {
   EXPECT_EQ(s.code(), pl::statuspb::Code::NOT_FOUND);
 
   // Checking status of existent trace should return OK.
-  std::string path =
-      pl::testing::TestFilePath("src/stirling/obj_tools/testdata/prebuilt_dummy_exe");
+  std::string path = pl::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe");
   constexpr std::string_view kProgram = R"(
 deployment_spec {
   path: "$0"
@@ -257,8 +256,7 @@ tracepoints {
 }
 )";
 
-  std::string path =
-      pl::testing::TestFilePath("src/stirling/obj_tools/testdata/prebuilt_dummy_exe");
+  std::string path = pl::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe");
   auto trace_program = Prepare(kProgram, path);
   stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
 
@@ -307,8 +305,7 @@ tracepoints {
 }
 )";
 
-  std::string path =
-      pl::testing::TestFilePath("src/stirling/obj_tools/testdata/prebuilt_dummy_exe");
+  std::string path = pl::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe");
   auto trace_program = Prepare(kProgram, path);
   stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
 

@@ -13,7 +13,6 @@ const DummyExeFixture kDummyExeFixture;
 
 using ::pl::stirling::elf_tools::ElfReader;
 using ::pl::stirling::elf_tools::SymbolMatchType;
-using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::Field;
 using ::testing::IsEmpty;
@@ -30,17 +29,12 @@ TEST(ElfReaderTest, ListSymbolsAnyMatch) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
                        ElfReader::Create(kDummyExeFixture.Path()));
 
-  // GCC opt build produces a special symbol _GLOBAL_sub_I_CanYouFindThis, which appears to be
-  // setting up C runtime, as CanYouFindThis is declared with "extern C". This results into multiple
-  // symbols returned by ListFuncSymbols().
-  //
-  // This also applies to other places below.
   EXPECT_THAT(elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kSubstr),
-              Contains(SymbolNameIs("CanYouFindThis")));
+              ElementsAre(SymbolNameIs("CanYouFindThis")));
   EXPECT_THAT(elf_reader->ListFuncSymbols("YouFind", SymbolMatchType::kSubstr),
-              Contains(SymbolNameIs("CanYouFindThis")));
+              ElementsAre(SymbolNameIs("CanYouFindThis")));
   EXPECT_THAT(elf_reader->ListFuncSymbols("FindThis", SymbolMatchType::kSubstr),
-              Contains(SymbolNameIs("CanYouFindThis")));
+              ElementsAre(SymbolNameIs("CanYouFindThis")));
 }
 
 TEST(ElfReaderTest, ListSymbolsExactMatch) {
@@ -58,10 +52,10 @@ TEST(ElfReaderTest, ListSymbolsSuffixMatch) {
                        ElfReader::Create(kDummyExeFixture.Path()));
 
   EXPECT_THAT(elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kSuffix),
-              Contains(SymbolNameIs("CanYouFindThis")));
+              ElementsAre(SymbolNameIs("CanYouFindThis")));
   EXPECT_THAT(elf_reader->ListFuncSymbols("YouFind", SymbolMatchType::kSuffix), IsEmpty());
   EXPECT_THAT(elf_reader->ListFuncSymbols("FindThis", SymbolMatchType::kSuffix),
-              Contains(SymbolNameIs("CanYouFindThis")));
+              ElementsAre(SymbolNameIs("CanYouFindThis")));
 }
 
 #ifdef __linux__
