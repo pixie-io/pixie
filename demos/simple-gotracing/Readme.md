@@ -4,7 +4,7 @@ This is a simple demo showing the ability of Pixie to add dynamic tracepoints in
 Go binaries. This capability allows debugging Go binaries in production without the need
 to the source code and recompile with addition log statements.
 
-A simple view of this functionality is show in this image:
+A simple overview of this functionality is show here:
 
 ![Dynamic Logs](./dynamic_logs.png)
 
