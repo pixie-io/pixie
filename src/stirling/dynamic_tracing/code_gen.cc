@@ -53,16 +53,28 @@ namespace {
 const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypeToCType = {
     {ScalarType::VOID_POINTER, "void*"},
     {ScalarType::BOOL, "bool"},
+
+    {ScalarType::SHORT, "short int"},
+    {ScalarType::USHORT, "unsigned short int"},
     {ScalarType::INT, "int"},
+    {ScalarType::UINT, "unsigned int"},
+    {ScalarType::LONG, "long"},
+    {ScalarType::ULONG, "unsigned long"},
+    {ScalarType::LONGLONG, "long long"},
+    {ScalarType::ULONGLONG, "unsigned long long"},
+
     {ScalarType::INT8, "int8_t"},
     {ScalarType::INT16, "int16_t"},
     {ScalarType::INT32, "int32_t"},
     {ScalarType::INT64, "int64_t"},
-    {ScalarType::UINT, "uint"},
     {ScalarType::UINT8, "uint8_t"},
     {ScalarType::UINT16, "uint16_t"},
     {ScalarType::UINT32, "uint32_t"},
     {ScalarType::UINT64, "uint64_t"},
+
+    {ScalarType::CHAR, "char"},
+    {ScalarType::UCHAR, "uchar"},
+
     {ScalarType::FLOAT, "float"},
     {ScalarType::DOUBLE, "double"},
 
@@ -74,19 +86,32 @@ const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypeToCType = {
 StatusOr<std::string_view> GetPrintFormatCode(ScalarType scalar_type) {
   static const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypePrintfFormatCode = {
       {ScalarType::BOOL, "d"},
+
+      {ScalarType::SHORT, "d"},
+      {ScalarType::USHORT, "u"},
       {ScalarType::INT, "d"},
+      {ScalarType::UINT, "u"},
+      {ScalarType::LONG, "ld"},
+      {ScalarType::ULONG, "lu"},
+      {ScalarType::LONGLONG, "lld"},
+      {ScalarType::ULONGLONG, "llu"},
+
       {ScalarType::INT8, "d"},
       {ScalarType::INT16, "d"},
       {ScalarType::INT32, "d"},
       {ScalarType::INT64, "ld"},
-      {ScalarType::UINT, "d"},
-      {ScalarType::UINT8, "d"},
-      {ScalarType::UINT16, "d"},
-      {ScalarType::UINT32, "d"},
-      {ScalarType::UINT64, "ld"},
+      {ScalarType::UINT8, "u"},
+      {ScalarType::UINT16, "u"},
+      {ScalarType::UINT32, "u"},
+      {ScalarType::UINT64, "lu"},
+
+      {ScalarType::CHAR, "c"},
+      {ScalarType::UCHAR, "u"},
+
       // BPF does not support %f or %lf, use llx to show hex representation.
       {ScalarType::FLOAT, "lx"},
       {ScalarType::DOUBLE, "llx"},
+
       {ScalarType::VOID_POINTER, "llx"},
   };
 
@@ -122,8 +147,7 @@ class BCCCodeGenerator {
 std::string_view GenScalarType(ScalarType type) {
   auto iter = kScalarTypeToCType.find(type);
   if (iter == kScalarTypeToCType.end()) {
-    LOG(DFATAL) << absl::Substitute("Mapping to C-type not present for $0",
-                                    magic_enum::enum_name(type));
+    LOG(DFATAL) << absl::Substitute("Mapping to C-type not present for $0", type);
     // Should never get here, but return "int" just in case.
     return "int";
   }

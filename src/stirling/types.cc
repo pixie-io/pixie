@@ -39,16 +39,25 @@ StatusOr<std::unique_ptr<DynamicDataTableSchema>> DynamicDataTableSchema::Create
   // clang-format off
   static const std::map<ScalarType, types::DataType> kTypeMap = {
           {ScalarType::BOOL, types::DataType::BOOLEAN},
+
+          {ScalarType::SHORT, types::DataType::INT64},
+          {ScalarType::USHORT, types::DataType::INT64},
           {ScalarType::INT, types::DataType::INT64},
+          {ScalarType::UINT, types::DataType::INT64},
+          {ScalarType::LONG, types::DataType::INT64},
+          {ScalarType::ULONG, types::DataType::INT64},
+          {ScalarType::LONGLONG, types::DataType::INT64},
+          {ScalarType::ULONGLONG, types::DataType::INT64},
+
           {ScalarType::INT8, types::DataType::INT64},
           {ScalarType::INT16, types::DataType::INT64},
           {ScalarType::INT32, types::DataType::INT64},
           {ScalarType::INT64, types::DataType::INT64},
-          {ScalarType::UINT, types::DataType::INT64},
           {ScalarType::UINT8, types::DataType::INT64},
           {ScalarType::UINT16, types::DataType::INT64},
           {ScalarType::UINT32, types::DataType::INT64},
           {ScalarType::UINT64, types::DataType::INT64},
+
           {ScalarType::FLOAT, types::DataType::FLOAT64},
           {ScalarType::DOUBLE, types::DataType::FLOAT64},
 

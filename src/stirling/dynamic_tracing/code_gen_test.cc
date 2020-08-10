@@ -79,13 +79,13 @@ TEST(GenVariableTest, Register) {
   var.set_type(ScalarType::INT64);
   var.set_reg(Register::RC2);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::DeploymentSpec_Language_CPP),
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::CPP),
                      ElementsAre("int64_t var = (int64_t)ctx->rdx;"));
 
   var.set_type(ScalarType::INT64);
   var.set_reg(Register::PARM3);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::DeploymentSpec_Language_CPP),
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::CPP),
                      ElementsAre("int64_t var = (int64_t)PT_REGS_PARM3(ctx);"));
 }
 
