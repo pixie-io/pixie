@@ -9,6 +9,9 @@ metadata:
   name: gotracing
   namespace: px-demo-gotracing
 spec:
+  selector:
+    matchLabels:
+      app: gotracing
   template:
     metadata:
       labels:

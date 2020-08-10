@@ -112,4 +112,4 @@ docker image by running:
 docker build . -t <image name>
 ```
 
-Edit the image name in `k8s_manifest.yaml` to correspond to you new image and redeploy. 
+Edit the image name in `k8s_manifest.yaml` to correspond to you new image and redeploy.
