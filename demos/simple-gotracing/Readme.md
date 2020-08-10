@@ -14,7 +14,7 @@ you to dynamically capture function arguments, latency, etc., without this slow
 process. 
 
 ## Pre-reqs
-Pixie needs to be installed on your K8s cluster. If it is not already installed then
+Pixie (>= v0.4.0) needs to be installed on your K8s cluster. If it is not already installed then
 please consult our [docs](https://docs.pixielabs.ai/).
 
 You also need to clone the `pixie` repo to get the relevant files.
@@ -35,24 +35,21 @@ namespace px-demo-gotracing. The source of this application is in app.go. To dep
 We are going to dynamic trace the `computeE` function in app.go to get started. This is a simple function
 that tried to approximate the value of [eulers number](https://en.wikipedia.org/wiki/E_(mathematical_constant)) by
 using a taylor series. The number of iterations of the expansion is specified by the `iters` query param to the HTTP handler. 
-To see how this works we can get the external service address by running the following to get the external IP of the service:
+To see how this works we can connect to the service by forwarding the appropriate port:
 
 ```
-# kubectl -n px-demo-gotracing get services -o wide
-
-NAME            TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE   SELECTOR
-gotracing-svc   LoadBalancer   10.137.11.73   10.32.0.34    9090:31248/TCP   85m   app=gotracing
+kubectl port-forward service/gotracing-svc -n px-demo-gotracing 9090
 ```
 
 We can use `curl` to quickly access the api. The number of iterations is the query parameter `iters`.
 ```
-# curl http://10.32.0.34:9090/e
+# curl http://localhost:9090/e
 e = 2.7183
 
-# curl http://10.32.0.34:9090/e\?iters\=2
+# curl http://localhost:9090/e\?iters\=2
 e = 2.0000
 
-# curl http://10.32.0.34:9090/e\?iters\=200
+# curl http://localhost:9090/e\?iters\=200
 e = 2.7183
 ```
  
