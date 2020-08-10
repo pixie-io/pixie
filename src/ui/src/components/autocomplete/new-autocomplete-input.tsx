@@ -146,15 +146,18 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   let displayText = '';
   value.forEach((v, index) => {
     const valueClassName = v.type === 'value' ? '' : classes.inputKey;
-    if (cursorPos >= displayText.length && cursorPos <= displayText.length + v.value.length) {
+    if (cursorPos > displayText.length && cursorPos <= displayText.length + v.value.length) {
       // The cursor should be displayed in this field.
       // We need to split this field into two spans so we can add the cursor in between.
       const fieldCursor = cursorPos - displayText.length;
-      fieldSpans.push(<span key={`${index}-1`} className={valueClassName}>{v.value.substring(0, fieldCursor)}</span>);
-      fieldSpans.push(<Caret key={`${index}-2`} active={focused} />);
-      fieldSpans.push(<span key={`${index}-caret`} className={valueClassName}>{v.value.substring(fieldCursor)}</span>);
+      const fspan1 = v.value.substring(0, fieldCursor);
+      const fspan2 = v.value.substring(fieldCursor);
+
+      fieldSpans.push(<span key={`${index}-1`} className={valueClassName}>{fspan1 === ' ' ? '\u00A0' : fspan1}</span>);
+      fieldSpans.push(<Caret key={`${index}-caret`} active={focused} />);
+      fieldSpans.push(<span key={`${index}-2`} className={valueClassName}>{fspan2 === ' ' ? '\u00A0' : fspan2}</span>);
     } else {
-      fieldSpans.push(<span key={index} className={valueClassName}>{v.value}</span>);
+      fieldSpans.push(<span key={index} className={valueClassName}>{v.value === ' ' ? '\u00A0' : v.value}</span>);
     }
     displayText += v.value;
   });
