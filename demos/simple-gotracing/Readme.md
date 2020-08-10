@@ -15,7 +15,7 @@ process.
 
 ## Pre-reqs
 Pixie (>= v0.4.0) needs to be installed on your K8s cluster. If it is not already installed then
-please consult our [docs](https://docs.pixielabs.ai/). 
+please consult our [docs](https://docs.pixielabs.ai/).
 
 You also need to clone the `pixie` repo to get the relevant files.
 
