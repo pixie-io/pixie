@@ -20,8 +20,8 @@ please consult our [docs](https://docs.pixielabs.ai/).
 You also need to clone the `pixie` repo to get the relevant files.
 
 ```
-git clone https://github.com/pixie-labs/pixie.git
-cd pixie/demos/simple-gotracing
+# git clone https://github.com/pixie-labs/pixie.git
+# cd pixie/demos/simple-gotracing
 ```
 
 ## Running the demo
