@@ -2,7 +2,7 @@
 
 This is a simple demo showing the ability of Pixie to add dynamic tracepoints into
 Go binaries. This capability allows debugging Go binaries in production without the need
-to the source code and recompile with addition log statements.
+to instrument the source code with additional log statements, recompile, and redeploy.
 
 A simple overview of this functionality is show here:
 
@@ -15,10 +15,17 @@ process.
 
 ## Pre-reqs
 Pixie needs to be installed on your K8s cluster. If it is not already installed then
-please consult our [docs](http://https://docs.pixielabs.ai/).
+please consult our [docs](https://docs.pixielabs.ai/).
+
+You also need to clone the `pixie` repo to get the relevant files.
+
+```
+git clone https://github.com/pixie-labs/pixie.git
+cd pixie/demos/simple-gotracing
+```
 
 ## Running the demo
-The demo is completely self-contained and will install a simple a go application under the
+The demo is completely self-contained and will install a simple Go application under the
 namespace px-demo-gotracing. The source of this application is in app.go. To deploy this application run:
 
 ```
