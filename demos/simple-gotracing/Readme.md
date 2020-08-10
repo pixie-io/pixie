@@ -66,10 +66,15 @@ is globally unique in the entire cluster. In future versions of Pixie we will ma
 easily get the `UPID` by running the follow script:
 
 ```
-# TODO() GET UPID Script
+# px run px/upids -- --namespace px-demo-gotracing
+
+[0000]  INFO Pixie CLI
+Table ID: UPIDs
+  CLUSTERID                             POD                                           CONTAINER  UPID                                  CMDLINE  POD CREATE TIME
+  f890689b-299c-43fd-8d2a-b0c528a58393  px-demo-gotracing/gotracing-7cdd66f89d-khnss  app        00000003-0023-9267-0000-000008e60831  ./main   2020-08-09T20:39:34-07:00
 ```  
 
-We can then edit the `upid` variable in the `capture_args.pxl` script with this value from above.
+The relevant `UPID` is in the fourth column. Edit the `upid` variable in the `capture_args.pxl` script with this value.
 
 ```
 [130] % px run -f capture_args.pxl

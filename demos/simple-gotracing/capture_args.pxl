@@ -5,8 +5,9 @@ import px
 
 # The UPID of the simple-gotracing-example server. You can
 # get the value of this by running:
-# TODO():
-upid = '00000003-0024-844a-0000-000008caa618'
+# px run px/upids -- --namespace px-demo-gotracing
+# The relevant UPID will be in the fourth column.
+upid = '00000003-0023-9267-0000-000008e60831'
 
 # This is the basic trace function. Every function call of
 # `main.computeE` is traced and the values are recorded into
