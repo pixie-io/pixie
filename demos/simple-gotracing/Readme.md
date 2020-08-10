@@ -6,7 +6,7 @@ to instrument the source code with additional log statements, recompile, and red
 
 A simple overview of this functionality is show here:
 
-![Dynamic Logs](./dynamic_logs.png)
+![Dynamic Logs](./dynamic_logs.svg)
 
 In a legacy systems a modify, compile, deploy cycle is required to get visibility into the binary
 if the appropriate log lines are missing. Pixie allows
