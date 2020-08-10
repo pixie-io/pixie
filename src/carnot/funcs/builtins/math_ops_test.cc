@@ -453,7 +453,7 @@ TEST(MathOps, merge_mean_uda_test) {
   auto other_uda_tester = udf::UDATester<MeanUDA<types::Int64Value>>();
   other_uda_tester.ForInput(1).ForInput(4).ForInput(5).ForInput(2).ForInput(8);
 
-  uda_tester.Merge(other_uda_tester).Expect(expected_mean);
+  uda_tester.Merge(&other_uda_tester).Expect(expected_mean);
 }
 
 TEST(MathOps, basic_float64_sum_uda_test) {
@@ -495,7 +495,7 @@ TEST(MathOps, merge_sum_test) {
   auto other_uda_tester = udf::UDATester<SumUDA<types::Int64Value>>();
   other_uda_tester.ForInput(1).ForInput(4).ForInput(5).ForInput(2).ForInput(8);
 
-  uda_tester.Merge(other_uda_tester).Expect(expected_sum);
+  uda_tester.Merge(&other_uda_tester).Expect(expected_sum);
 }
 
 TEST(MathOps, basic_int64_max_uda_test) {
@@ -511,10 +511,10 @@ TEST(MathOps, merge_max_test) {
   auto other_uda_tester = udf::UDATester<MaxUDA<types::Int64Value>>();
   other_uda_tester.ForInput(1).ForInput(4).ForInput(5).ForInput(2).ForInput(11);
 
-  uda_tester.Merge(other_uda_tester).Expect(11);
+  uda_tester.Merge(&other_uda_tester).Expect(11);
 
   auto another_uda_tester = udf::UDATester<MaxUDA<types::Int64Value>>();
-  another_uda_tester.Merge(uda_tester).Expect(11);
+  another_uda_tester.Merge(&uda_tester).Expect(11);
 }
 
 TEST(MathOps, basic_int64_min_uda_test) {
@@ -530,10 +530,10 @@ TEST(MathOps, merge_min_test) {
   auto other_uda_tester = udf::UDATester<MinUDA<types::Int64Value>>();
   other_uda_tester.ForInput(1).ForInput(4).ForInput(5).ForInput(2).ForInput(11);
 
-  uda_tester.Merge(other_uda_tester).Expect(1);
+  uda_tester.Merge(&other_uda_tester).Expect(1);
 
   auto another_uda_tester = udf::UDATester<MinUDA<types::Int64Value>>();
-  another_uda_tester.Merge(uda_tester).Expect(1);
+  another_uda_tester.Merge(&uda_tester).Expect(1);
 }
 
 TEST(MathOps, basic_int64_count_uda_test) {
@@ -548,18 +548,14 @@ TEST(MathOps, merge_count_test) {
   auto other_uda_tester = udf::UDATester<CountUDA<types::Int64Value>>();
   other_uda_tester.ForInput(1).ForInput(4).ForInput(5).ForInput(2);
 
-  uda_tester.Merge(other_uda_tester).Expect(9);
+  uda_tester.Merge(&other_uda_tester).Expect(9);
 }
 
 // TODO(michelle): We should make UDA tester automatically check Merge and Partial aggregates if
 // more than one input is given. Since our UDAs are arithmetic the ordering should not matter.
 TEST(MathOps, partial_count_test) {
   auto uda_tester = udf::UDATester<CountUDA<types::Int64Value>>();
-  uda_tester.ForInput(3).ForInput(6).ForInput(10).ForInput(5).ForInput(2);
-  auto uda_tester2 = udf::UDATester<CountUDA<types::Int64Value>>();
-
-  EXPECT_OK(uda_tester2.Deserialize(uda_tester.Serialize()));
-  uda_tester2.Expect(5);
+  uda_tester.ForInput(3).ForInput(6).ForInput(10).ForInput(5).ForInput(2).Expect(5);
 }
 }  // namespace builtins
 }  // namespace carnot

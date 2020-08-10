@@ -1,10 +1,13 @@
 #pragma once
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <iostream>
 #include <memory>
+#include <random>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <absl/strings/str_format.h>
 #include "src/carnot/udf/udf.h"
@@ -89,6 +92,9 @@ class UDATester {
   static constexpr auto uda_data_type = UDATraits<TUDA>::FinalizeReturnType();
 
  public:
+  UDATester(UDATester const&) = delete;
+  UDATester& operator=(UDATester const&) = delete;
+  UDATester() = default;
   /*
    * Add the given arguments to the UDAs inputs.
    * Arguments must be of a type that can usually be passed into the UDA's Update function,
@@ -98,6 +104,10 @@ class UDATester {
   UDATester& ForInput(Args... args) {
     uda_.Update(nullptr, args...);
 
+    std::unique_ptr<TUDA> merge_uda = std::make_unique<TUDA>();
+    merge_uda->Update(nullptr, args...);
+    merge_udas_.emplace_back(std::move(merge_uda));
+
     return *this;
   }
 
@@ -106,6 +116,22 @@ class UDATester {
    */
   UDATester& Expect(typename types::DataTypeTraits<uda_data_type>::value_type arg) {
     internal::ExpectEquality(uda_.Finalize(nullptr), arg);
+
+    if constexpr (UDATraits<TUDA>::SupportsPartial()) {
+      // Verify the serialization/deserialization works.
+      TUDA other;
+      auto s = (other.Deserialize(/*ctx*/ nullptr, uda_.Serialize(/*ctx*/ nullptr)));
+      internal::ExpectEquality(other.Finalize(nullptr), arg);
+    }
+
+    // Test merge.
+    auto rng = std::default_random_engine{};
+    std::shuffle(std::begin(merge_udas_), std::end(merge_udas_), rng);
+    for (size_t i = 1; i < merge_udas_.size(); i++) {
+      merge_udas_[0]->Merge(nullptr, *merge_udas_[i]);
+    }
+    internal::ExpectEquality(merge_udas_[0]->Finalize(nullptr), arg);
+
     return *this;
   }
 
@@ -120,8 +146,10 @@ class UDATester {
   /*
    * Merge the UDA from the given UDATester with this UDA.
    */
-  UDATester& Merge(UDATester other) {
-    uda_.Merge(nullptr, other.uda_);
+  UDATester& Merge(UDATester* other) {
+    uda_.Merge(nullptr, other->uda_);
+
+    merge_udas_.emplace_back(std::make_unique<TUDA>(other->uda_));
     return *this;
   }
 
@@ -136,6 +164,10 @@ class UDATester {
 
  private:
   TUDA uda_;
+
+  // Vector of UDAs, created for each ForInput call, for testing merge.
+  // std::vector<std::unique_ptr<TUDA>> merge_udas_;
+  std::vector<std::unique_ptr<TUDA>> merge_udas_;
 };
 
 }  // namespace udf
