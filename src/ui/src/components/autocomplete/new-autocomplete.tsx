@@ -72,8 +72,6 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
   const [activeCompletions, setActiveCompletions] = React.useState([]);
   const [activeItem, setActiveItem] = React.useState<CompletionId>('');
 
-  // State responsible for tracking whether the user is actively typing. This is used for debouncing.
-  const [typing, setTyping] = React.useState(false);
   const [timer, setTimer] = React.useState(null);
 
   // Parse tabstops to get boundary and input info.
@@ -177,23 +175,15 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
   };
 
   const onChangeHandler = React.useCallback((input: string, pos: number) => {
-    setTyping(true);
     clearTimeout(timer);
     const newTimer = setTimeout(() => {
-      setTyping(false);
       // This is only triggered if the user has stopped typing for a while.
       onChange(input, pos, 'EDIT', null);
     }, TYPING_WAIT_INTERVAL_MS);
     setTimer(newTimer);
 
-    if (typing) {
-      // If the user is actively typing, we should update the tabstops ourselves instead of making an API call to do so.
-      onChange(input, pos, 'EDIT', tsInfo.handleChange(input, pos));
-      return;
-    }
-
-    onChange(input, pos, 'EDIT', null);
-  }, [onChange, tsInfo, typing, timer]);
+    onChange(input, pos, 'EDIT', tsInfo.handleChange(input, pos));
+  }, [onChange, tsInfo, timer]);
 
   return (
     <div className={clsx(classes.root, className)}>
