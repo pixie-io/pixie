@@ -1,18 +1,35 @@
-import px
-import pxtrace
+# -*- mode: python; -*-
 
-# The UPID of the simple-gotracing-example server.
+import pxtrace
+import px
+
+# The UPID of the simple-gotracing-example server. You can
+# get the value of this by running:
+# TODO():
 upid = '00000003-0024-844a-0000-000008caa618'
 
+# This is the basic trace function. Every function call of
+# `main.computeE` is traced and the values are recorded into
+# a table as specified by the return value.
 @pxtrace.goprobe("main.computeE")
 def probe_func():
-    return [{'iterations': pxtrace.ArgExpr("iterations")}]
+    return [{
+        'iterations': pxtrace.ArgExpr("iterations"),
+        'latency': pxtrace.FunctionLatency(),
+    }]
 
-
+# This is the function that actually installs the tracepoint.
+# The arguments are:
+#    Tracepoint name.
+#    Output table name.
+#    Name of the probe function.
+#    The UPID.
+#    The TTL of the tracepoint. It is updated each time the script is run.
 pxtrace.UpsertTracepoint('compute_e_data',
                          'compute_e_data',
                          probe_func,
                          px.uint128(upid),
                          "5m")
 
+# This just writes the output into a table.
 px.display(px.DataFrame(table='compute_e_data'))
