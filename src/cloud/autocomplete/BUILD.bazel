@@ -14,6 +14,7 @@ go_library(
     deps = [
         "//src/cloud/autocomplete/ebnf:go_default_library",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
+        "//src/cloud/indexer/md:go_default_library",
         "//src/utils/pixie_cli/pkg/script:go_default_library",
         "@com_github_olivere_elastic_v7//:go_default_library",
         "@com_github_sahilm_fuzzy//:go_default_library",
@@ -31,6 +32,7 @@ go_test(
     deps = [
         "//src/cloud/autocomplete/mock:go_default_library",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
+        "//src/cloud/indexer/md:go_default_library",
         "//src/utils/testingutils:go_default_library",
         "@com_github_golang_mock//gomock:go_default_library",
         "@com_github_olivere_elastic_v7//:go_default_library",

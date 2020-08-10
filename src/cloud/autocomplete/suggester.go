@@ -10,6 +10,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	"pixielabs.ai/pixielabs/src/cloud/indexer/md"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 )
 
@@ -20,25 +21,6 @@ type ElasticSuggester struct {
 	scriptIndexName string
 	// This is temporary, and will be removed once we start indexing scripts.
 	br *script.BundleManager
-}
-
-// EsMDEntity is information about metadata entities, stored in Elastic.
-// This is copied from the indexer. When the indexer is checked in, we should consider
-// putting this in a shared directory.
-type EsMDEntity struct {
-	OrgID string `json:"orgID"`
-	UID   string `json:"uid"`
-	Name  string `json:"name"`
-	NS    string `json:"ns"`
-	Kind  string `json:"kind"`
-
-	TimeStartedNS int64 `json:"timeStartedNS"`
-	TimeStoppedNS int64 `json:"timeStoppedNS"`
-
-	RelatedEntityNames []string `json:"relatedEntityNames"`
-
-	ResourceVersion string `json:"resourceVersion"`
-	Test            string `json:"test"`
 }
 
 var protoToElasticLabelMap = map[cloudapipb.AutocompleteEntityKind]string{
@@ -199,7 +181,7 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 		// Convert elastic entity into a suggestion object.
 		results := make([]*Suggestion, 0)
 		for _, h := range r.Hits.Hits {
-			res := &EsMDEntity{}
+			res := &md.EsMDEntity{}
 			err = json.Unmarshal(h.Source, res)
 			if err != nil {
 				return nil, err

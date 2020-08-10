@@ -11,95 +11,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	"pixielabs.ai/pixielabs/src/cloud/indexer/md"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
 var org1 uuid.UUID = uuid.NewV4()
 
-// We should consider making these indices a shared file between this test and the indexer service.
-const mdIndexMapping = `
-{
-    "settings":{
-      "number_of_shards":1,
-      "number_of_replicas":0,
-        "analysis": {
-          "filter": {
-            "autocomplete_filter": {
-              "type": "edge_ngram",
-              "min_gram": 1,
-              "max_gram": 20
-            },
-            "dont_split_on_numerics" : {
-              "type" : "word_delimiter",
-              "preserve_original": true,
-              "generate_number_parts" : false
-            }
-          },
-          "tokenizer": {
-            "my_tokenizer": {
-              "type": "pattern",
-              "pattern": "-"
-            },
-            "ngram_tokenizer": {
-              "type": "edge_ngram",
-              "min_gram": 1,
-              "max_gram": 20,
-              "token_chars": [] 
-            }
-          },
-          "analyzer": {
-            "autocomplete": {
-              "type": "custom",
-              "tokenizer": "ngram_tokenizer",
-              "filter": [
-                "lowercase"
-              ]
-            },
-            "myAnalyzer" : {
-              "type" : "custom",
-              "tokenizer" : "whitespace",
-              "filter" : [ "dont_split_on_numerics" ]
-            }
-          }
-        }
-    },
-  "mappings":{
-    "properties":{
-    "orgID":{
-      "type":"text", "analyzer": "myAnalyzer"
-    },
-    "uid":{
-      "type":"text"
-    },
-    "name":{
-      "type":"text",
-        "analyzer": "autocomplete"
-    },
-    "ns":{
-      "type":"text", "analyzer": "myAnalyzer"
-    },
-    "kind":{
-      "type":"text"
-    },
-    "timeStartedNS":{
-      "type":"long"
-    },
-    "timeStoppedNS":{
-      "type":"long"
-    },
-    "relatedEntityNames":{
-      "type":"text"
-    },
-    "ResourceVersion":{
-      "type":"text"
-    }
-    }
-  }
-}
-`
-
-var mdEntities = []autocomplete.EsMDEntity{
-	autocomplete.EsMDEntity{
+var mdEntities = []md.EsMDEntity{
+	md.EsMDEntity{
 		OrgID:              org1.String(),
 		UID:                "svc1",
 		Name:               "testService",
@@ -109,7 +28,7 @@ var mdEntities = []autocomplete.EsMDEntity{
 		TimeStoppedNS:      0,
 		RelatedEntityNames: []string{},
 	},
-	autocomplete.EsMDEntity{
+	md.EsMDEntity{
 		OrgID:              org1.String(),
 		UID:                "svc2",
 		Name:               "testService",
@@ -119,7 +38,7 @@ var mdEntities = []autocomplete.EsMDEntity{
 		TimeStoppedNS:      0,
 		RelatedEntityNames: []string{},
 	},
-	autocomplete.EsMDEntity{
+	md.EsMDEntity{
 		OrgID:              org1.String(),
 		UID:                "pod1",
 		Name:               "test-Pod",
@@ -129,7 +48,7 @@ var mdEntities = []autocomplete.EsMDEntity{
 		TimeStoppedNS:      0,
 		RelatedEntityNames: []string{},
 	},
-	autocomplete.EsMDEntity{
+	md.EsMDEntity{
 		OrgID:              org1.String(),
 		UID:                "ns1",
 		Name:               "testNamespace",
@@ -139,7 +58,7 @@ var mdEntities = []autocomplete.EsMDEntity{
 		TimeStoppedNS:      0,
 		RelatedEntityNames: []string{},
 	},
-	autocomplete.EsMDEntity{
+	md.EsMDEntity{
 		OrgID:              org1.String(),
 		UID:                "svc3",
 		Name:               "abcd",
@@ -158,7 +77,7 @@ func TestMain(m *testing.M) {
 	elasticClient = es
 
 	// Set up elastic indexes.
-	_, err := es.CreateIndex("md_entities").Body(mdIndexMapping).Do(context.Background())
+	_, err := es.CreateIndex("md_entities").Body(md.IndexMapping).Do(context.Background())
 	if err != nil {
 		panic(err)
 	}
@@ -176,7 +95,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func insertIntoIndex(index string, id string, e autocomplete.EsMDEntity) error {
+func insertIntoIndex(index string, id string, e md.EsMDEntity) error {
 	_, err := elasticClient.Index().
 		Index(index).
 		Id(id).
@@ -277,6 +196,30 @@ func TestGetSuggestions(t *testing.T) {
 			reqs: []*autocomplete.SuggestionRequest{
 				&autocomplete.SuggestionRequest{
 					Input: "t-Po",
+					OrgID: org1,
+					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
+						cloudapipb.AEK_POD,
+					},
+					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+				},
+			},
+			expectedResults: []*autocomplete.SuggestionResult{
+				&autocomplete.SuggestionResult{
+					ExactMatch: false,
+					Suggestions: []*autocomplete.Suggestion{
+						&autocomplete.Suggestion{
+							Name: "anotherNS/test-Pod",
+							Kind: cloudapipb.AEK_POD,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "middle of name",
+			reqs: []*autocomplete.SuggestionRequest{
+				&autocomplete.SuggestionRequest{
+					Input: "Po",
 					OrgID: org1,
 					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
 						cloudapipb.AEK_POD,
