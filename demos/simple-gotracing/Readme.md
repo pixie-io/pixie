@@ -73,7 +73,7 @@ Table ID: output
   CLUSTERID    UPID  TIME   GOID   ITERATIONS
 ```
 
-The result data will be empty since no requires are capture. Let's run the curl commands we have above and see what happens:
+The result data will be empty since no requests have been made yet. Let's run the curl commands we have above and see what happens:
 
 ```
 # px run -f capture_args.pxl
