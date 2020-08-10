@@ -74,7 +74,12 @@ Table ID: UPIDs
   f890689b-299c-43fd-8d2a-b0c528a58393  px-demo-gotracing/gotracing-7cdd66f89d-khnss  app        00000003-0023-9267-0000-000008e60831  ./main   2020-08-09T20:39:34-07:00
 ```  
 
-The relevant `UPID` is in the fourth column. Edit the `upid` variable in the `capture_args.pxl` script with this value.
+The relevant `UPID` is in the fourth column. Edit the `upid` variable in the `capture_args.pxl` script with this value. Alternatively, you can run the following
+shell command that will do the substitution for you:
+
+```
+# sed -i'.orig' "s/replace-me-with-upid/$(px run -o json px/upids -- --namespace px-demo-gotracing  | jq -r '.upid' | head -n 1)/g" capture_args.pxl
+```
 
 ```
 [130] % px run -f capture_args.pxl
