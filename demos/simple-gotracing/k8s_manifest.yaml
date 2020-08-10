@@ -9,9 +9,6 @@ metadata:
   name: gotracing
   namespace: px-demo-gotracing
 spec:
-  selector:
-    matchLabels:
-      app: gotracing
   template:
     metadata:
       labels:
@@ -19,6 +16,7 @@ spec:
     spec:
       containers:
       - name: app
+        # NOTE: If you create a new image this line needs to be updated:
         image: gcr.io/pixie-prod/pixie-prod-artifacts/demos/simple-gotracing-example:latest
         ports:
         - containerPort: 9090
