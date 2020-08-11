@@ -129,6 +129,7 @@
     "image-webpack-loader": "^6.0.0",
     "immutable-tuple": "^0.4.8",
     "keycharm": "^0.3.0",
+    "launchdarkly-react-client-sdk": "^2.20.0",
     "license-checker": "^25.0.1",
     "lodash": "^4.17.15",
     "mini-css-extract-plugin": "^0.9.0",

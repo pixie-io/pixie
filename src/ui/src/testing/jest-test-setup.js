@@ -20,7 +20,7 @@ const analyticsMock = (() => ({
 }))();
 
 const mockPixieFlags = {
-  AUTH0_DOMAIN: '', AUTH0_CLIENT_ID: '', DOMAIN_NAME: '', SEGMENT_UI_WRITE_KEY: '',
+  AUTH0_DOMAIN: '', AUTH0_CLIENT_ID: '', DOMAIN_NAME: '', SEGMENT_UI_WRITE_KEY: '', LD_CLIENT_ID: '',
 };
 
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });

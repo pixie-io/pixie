@@ -30,6 +30,7 @@ patchesStrategicMerge:
 - cloud_ingress_ip.yaml
 - dns_config.yaml
 - log_collector_config.yaml
+- ld_config.yaml
 patches:
 - path: db_sidecar.yaml
   target:

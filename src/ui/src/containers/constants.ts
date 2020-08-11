@@ -5,6 +5,7 @@ declare global {
       AUTH0_CLIENT_ID: string;
       DOMAIN_NAME: string;
       SEGMENT_UI_WRITE_KEY: string;
+      LD_CLIENT_ID: string;
     };
   }
 }
@@ -17,3 +18,5 @@ export const { AUTH0_CLIENT_ID } = window.__PIXIE_FLAGS__;
 export const { DOMAIN_NAME } = window.__PIXIE_FLAGS__;
 // eslint-disable-next-line no-underscore-dangle
 export const { SEGMENT_UI_WRITE_KEY } = window.__PIXIE_FLAGS__;
+// eslint-disable-next-line no-underscore-dangle
+export const { LD_CLIENT_ID } = window.__PIXIE_FLAGS__;

@@ -32,6 +32,8 @@ spec:
             name: pl-auth0-config
         - configMapRef:
             name: pl-domain-config
+        - configMapRef:
+            name: pl-ld-config
         env:
         - name: PL_JWT_SIGNING_KEY
           valueFrom:

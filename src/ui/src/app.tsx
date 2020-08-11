@@ -4,6 +4,7 @@ import { DARK_THEME } from 'common/mui-theme';
 import { SnackbarProvider } from 'components/snackbar/snackbar';
 import VersionInfo from 'components/version-info/version-info';
 import Vizier from 'containers/App/vizier';
+import { LD_CLIENT_ID } from 'containers/constants';
 import {
   Redirect, Route, Router, Switch,
 } from 'react-router-dom';
@@ -18,6 +19,7 @@ import {
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { CssBaseline } from '@material-ui/core';
+import { withLDProvider } from 'launchdarkly-react-client-sdk';
 import { CloudClientContext } from './context/app-context';
 import { AuthRouter } from './pages/auth/auth';
 import 'typeface-roboto';
@@ -131,7 +133,9 @@ const styles = () => createStyles({
   },
 });
 
-const StyledApp = withStyles(styles)(App);
+const StyledApp = withLDProvider({
+  clientSideID: LD_CLIENT_ID,
+})(withStyles(styles)(App));
 
 ReactDOM.render(
   <ThemeProvider theme={DARK_THEME}>

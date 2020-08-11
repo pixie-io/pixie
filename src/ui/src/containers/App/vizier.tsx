@@ -11,7 +11,7 @@ import { Redirect, Route, Switch } from 'react-router-dom';
 
 import { useQuery } from '@apollo/react-hooks';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
-
+import { useLDClient } from 'launchdarkly-react-client-sdk';
 import { DeployInstructions } from './deploy-instructions';
 import { selectCluster } from './cluster-info';
 
@@ -116,6 +116,9 @@ export default function WithClusterBanner() {
 
   const [clusterId, setClusterId] = storage.useSessionStorage(storage.CLUSTER_ID_KEY, '');
   const { loading, error, data } = useQuery(LIST_CLUSTERS, { pollInterval: 2500, fetchPolicy: 'network-only' });
+  const userQuery = useQuery(GET_USER, { fetchPolicy: 'network-only' });
+  const ldClient = useLDClient();
+
   const clusters = data?.clusters || [];
   const cluster = (clusterId && clusters.find((c) => c.id === clusterId)) || selectCluster(clusters);
 
@@ -132,9 +135,9 @@ export default function WithClusterBanner() {
     },
   }), [clusterId, setClusterId, clusters, cluster?.clusterName]);
 
-  if (loading) { return <div>Loading...</div>; }
+  if (loading || userQuery.loading) { return <div>Loading...</div>; }
 
-  const errMsg = error?.message;
+  const errMsg = error?.message || userQuery.error?.message;
   if (errMsg) {
     // This is an error with pixie cloud, it is probably not relevant to the user.
     // Show a generic error message instead.
@@ -148,6 +151,14 @@ export default function WithClusterBanner() {
       setClusterId(cluster.id);
     }
   }
+
+  ldClient.identify({
+    key: userQuery.data.user.email,
+    email: userQuery.data.user.email,
+    custom: {
+      orgName: userQuery.data.user.orgName,
+    },
+  });
 
   return (
     <ClusterContext.Provider value={context}>

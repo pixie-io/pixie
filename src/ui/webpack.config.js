@@ -239,6 +239,11 @@ module.exports = (env) => {
   const auth0YamlReq = execSync(`cat ${authYamlPath}`);
   const auth0YAML = YAML.parse(auth0YamlReq.toString());
 
+  // Get LDClientID.
+  const ldYamlPath = join(topLevelDir, 'k8s', 'cloud', environment, 'ld_config.yaml').replace(/\//g, '\\/');
+  const ldYamlReq = execSync(`cat ${ldYamlPath}`);
+  const ldYAML = YAML.parse(ldYamlReq.toString());
+
   // Get domain name.
   const domainYamlPath = join(topLevelDir, 'k8s', 'cloud', environment, 'domain_config.yaml').replace(/\//g, '\\/');
   const domainYamlReq = execSync(`cat ${domainYamlPath}`);
@@ -255,6 +260,7 @@ module.exports = (env) => {
         __CONFIG_AUTH0_CLIENT_ID__: auth0YAML.data.PL_AUTH0_CLIENT_ID,
         __CONFIG_DOMAIN_NAME__: domainYAML.data.PL_DOMAIN_NAME,
         __SEGMENT_ANALYTICS_JS_DOMAIN__: `segment.${domainYAML.data.PL_DOMAIN_NAME}`,
+        __CONFIG_LD_CLIENT_ID__: ldYAML.data.PL_LD_CLIENT_ID,
       },
     }),
   );

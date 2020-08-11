@@ -33,6 +33,7 @@ patchesStrategicMerge:
 - dns_config.yaml
 - scriptmgr_config.yaml
 - log_collector_config.yaml
+- ld_config.yaml
 patches:
 - path: db_sidecar.yaml
   target:
