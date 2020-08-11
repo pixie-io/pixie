@@ -723,13 +723,16 @@ Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* e
 
 Status BlockingAggIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_agg_op();
-
-  for (const auto& agg_expr : aggregate_expressions_) {
-    auto expr = pb->add_values();
-    PL_RETURN_IF_ERROR(EvaluateAggregateExpression(expr, *agg_expr.node));
-    pb->add_value_names(agg_expr.name);
+  if (finalize_results_ && !partial_agg_) {
+    (*pb->mutable_values()) = pre_split_proto_.values();
+    (*pb->mutable_value_names()) = pre_split_proto_.value_names();
+  } else {
+    for (const auto& agg_expr : aggregate_expressions_) {
+      auto expr = pb->add_values();
+      PL_RETURN_IF_ERROR(EvaluateAggregateExpression(expr, *agg_expr.node));
+      pb->add_value_names(agg_expr.name);
+    }
   }
-
   for (ColumnIR* group : groups()) {
     auto group_pb = pb->add_groups();
     PL_RETURN_IF_ERROR(group->ToProto(group_pb));
@@ -879,8 +882,8 @@ Status ColumnIR::Init(const std::string& col_name, int64_t parent_idx) {
 StatusOr<int64_t> ColumnIR::GetColumnIndex() const {
   PL_ASSIGN_OR_RETURN(auto op, ReferencedOperator());
   if (!op->relation().HasColumn(col_name())) {
-    return CreateIRNodeError("Column '$0' does not exist in relation $1", col_name(),
-                             op->relation().DebugString());
+    return DExitOrIRNodeError("Column '$0' does not exist in relation $1", col_name(),
+                              op->relation().DebugString());
   }
   return op->relation().GetColumnIndex(col_name());
 }
@@ -1309,6 +1312,7 @@ Status BlockingAggIR::CopyFromNodeImpl(
 
   finalize_results_ = blocking_agg->finalize_results_;
   partial_agg_ = blocking_agg->partial_agg_;
+  pre_split_proto_ = blocking_agg->pre_split_proto_;
 
   return Status::OK();
 }

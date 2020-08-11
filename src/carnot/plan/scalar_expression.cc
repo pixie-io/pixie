@@ -313,14 +313,13 @@ std::vector<const Column*> AggregateExpression::ColumnDeps() {
 }
 
 StatusOr<types::DataType> AggregateExpression::OutputDataType(
-    const PlanState& state, const table_store::schema::Schema& input_schema) const {
+    const PlanState& state, const table_store::schema::Schema&) const {
   // The output data type of a function is based on the computed types of the args
   // followed by the looking up the function in the registry and getting the output
   // data type of the function.
   std::vector<types::DataType> child_args;
-  child_args.reserve(arg_deps_.size());
-  for (const auto& arg : arg_deps_) {
-    child_args.push_back(arg->OutputDataType(state, input_schema).ValueOrDie());
+  for (const auto& arg_type : args_types_) {
+    child_args.push_back(arg_type);
   }
   PL_ASSIGN_OR_RETURN(auto s, state.func_registry()->GetUDADefinition(name_, child_args));
   return s->finalize_return_type();

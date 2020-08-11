@@ -62,6 +62,7 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
     if (!s.ok()) {
       LOG(ERROR) << absl::Substitute("Query failed, reason: $0, query: $1", s.ToString(),
                                      req_.query_str());
+      LOG(ERROR) << req_.plan().DebugString();
     }
 
     if (agent_info_->capabilities.collects_data()) {

@@ -32,7 +32,7 @@ std::unique_ptr<Operator> CreateOperator(int64_t id, const TProto& pb) {
   auto s = op->Init(pb);
   // On init failure, return null;
   if (!s.ok()) {
-    LOG(ERROR) << "Failed to initialize operator";
+    LOG(ERROR) << "Failed to initialize operator with err: " << s.msg();
     return nullptr;
   }
   return op;
@@ -228,10 +228,17 @@ StatusOr<table_store::schema::Relation> AggregateOperator::OutputRelation(
     output_relation.AddColumn(input_relation.GetColumnType(col_idx), pb_.group_names(idx));
   }
 
+  // If this node is a partial aggregate we output a simple schema where the last column has
+  // serialized aggregates.
+  // TODO(philkuz) need the column name and maybe type from somewhere else.
+  if (pb_.partial_agg() && !pb_.finalize_results()) {
+    output_relation.AddColumn(types::STRING, "serialized_expressions");
+    return output_relation;
+  }
+
   for (const auto& [i, value] : Enumerate(values_)) {
-    auto s = value->OutputDataType(state, schema);
-    PL_RETURN_IF_ERROR(s);
-    output_relation.AddColumn(s.ConsumeValueOrDie(), pb_.value_names(i));
+    PL_ASSIGN_OR_RETURN(auto dt, value->OutputDataType(state, schema));
+    output_relation.AddColumn(dt, pb_.value_names(i));
   }
   return output_relation;
 }

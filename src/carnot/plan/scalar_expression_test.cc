@@ -340,8 +340,8 @@ args {
     int64_value: 36
   }
 }
-args_data_types: INT64
-args_data_types: INT64
+args_data_types: FLOAT64
+args_data_types: FLOAT64
 args_data_types: INT64
 )";
 

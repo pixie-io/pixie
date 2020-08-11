@@ -409,6 +409,53 @@ TEST(ToProto, agg_ir) {
   EXPECT_THAT(pb, EqualsProto(kExpectedAggPb));
 }
 
+TEST(ToProto, agg_ir_with_presplit_proto) {
+  auto ast = MakeTestAstPtr();
+  auto graph = std::make_shared<IR>();
+  auto mem_src = graph
+                     ->CreateNode<MemorySourceIR>(
+                         ast, "source", std::vector<std::string>{"col1", "group1", "column"})
+                     .ValueOrDie();
+  table_store::schema::Relation rel({types::INT64, types::INT64, types::INT64},
+                                    {"col1", "group1", "column"});
+  EXPECT_OK(mem_src->SetRelation(rel));
+  auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
+  auto col = graph->CreateNode<ColumnIR>(ast, "column", /*parent_op_idx*/ 0).ValueOrDie();
+  col->ResolveColumnType(types::INT64);
+
+  auto agg_func = graph
+                      ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "mean"},
+                                           std::vector<ExpressionIR*>{constant, col})
+                      .ValueOrDie();
+
+  auto group1 = graph->CreateNode<ColumnIR>(ast, "group1", /*parent_op_idx*/ 0).ValueOrDie();
+  group1->ResolveColumnType(types::INT64);
+
+  auto agg = graph
+                 ->CreateNode<BlockingAggIR>(ast, mem_src, std::vector<ColumnIR*>{group1},
+                                             ColExpressionVector{{"mean", agg_func}})
+                 .ValueOrDie();
+
+  planpb::Operator pb;
+  ASSERT_OK(agg->ToProto(&pb));
+
+  EXPECT_THAT(pb, EqualsProto(kExpectedAggPb));
+
+  ASSERT_OK_AND_ASSIGN(BlockingAggIR * cloned_agg, graph->CopyNode(agg));
+  ASSERT_OK(cloned_agg->CopyParentsFrom(agg));
+  cloned_agg->SetPreSplitProto(pb.agg_op());
+
+  cloned_agg->SetPartialAgg(false);
+
+  planpb::Operator cloned_pb;
+  ASSERT_OK(cloned_agg->ToProto(&cloned_pb));
+  // Should fail without partial agg set true.
+  EXPECT_THAT(cloned_pb, Not(EqualsProto(kExpectedAggPb)));
+  // Quick swap of the partial_agg value.
+  cloned_pb.mutable_agg_op()->set_partial_agg(true);
+  EXPECT_THAT(cloned_pb, EqualsProto(kExpectedAggPb));
+}
+
 constexpr char kExpectedLimitPb[] = R"(
   op_type: LIMIT_OPERATOR
   limit_op {

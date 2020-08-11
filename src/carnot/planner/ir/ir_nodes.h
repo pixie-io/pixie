@@ -1504,6 +1504,9 @@ class BlockingAggIR : public GroupAcceptorIR {
 
   bool partial_agg() const { return partial_agg_; }
   bool finalize_results() const { return finalize_results_; }
+  void SetPreSplitProto(const planpb::AggregateOperator& pre_split_proto) {
+    pre_split_proto_ = pre_split_proto;
+  }
 
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
@@ -1516,6 +1519,7 @@ class BlockingAggIR : public GroupAcceptorIR {
   bool partial_agg_ = true;
   // Whether this finalizes the result of a partial aggregate.
   bool finalize_results_ = true;
+  planpb::AggregateOperator pre_split_proto_;
 };
 
 class GroupByIR : public OperatorIR {

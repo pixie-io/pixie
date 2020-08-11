@@ -543,6 +543,38 @@ TEST_F(LogicalPlannerTest, CompileTraceWithExecFuncs) {
   ASSERT_EQ(resp.mutations_size(), 1);
   EXPECT_THAT(resp.mutations()[0].trace(), testing::proto::EqualsProto(kSingleProbeProgramPb));
 }
+constexpr char kBrokenFunc1234[] = R"pxl(
+''' HTTP Data Tracer
+This script traces all HTTP/HTTP2 data on the cluster for a specified amount of time.
+An optional filter prints only those traces that include the specified service name.
+'''
+import px
+# ----------------------------------------------------------------
+# Script variables
+# ----------------------------------------------------------------
+service_matcher = ''
+start_time = '-30s'
+max_num_records = 100
+# ----------------------------------------------------------------
+# Implementation
+# ----------------------------------------------------------------
+df = px.DataFrame(table='http_events', select=['time_', 'upid', 'remote_addr', 'remote_port',
+                                               'http_req_method', 'http_req_path',
+                                               'http_resp_status', 'http_resp_message',
+                                               'http_resp_body',
+                                               'http_resp_latency_ns'], start_time=start_time)
+df2 = df.agg(c=('http_resp_body', px.count))
+px.display(df2)
+)pxl";
+TEST_F(LogicalPlannerTest, partial_agg) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  auto plan_or_s =
+      planner->Plan(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+                    MakeQueryRequest(kBrokenFunc1234));
+  EXPECT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_OK(plan->ToProto());
+}
 
 }  // namespace planner
 }  // namespace carnot

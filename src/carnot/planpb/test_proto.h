@@ -171,6 +171,7 @@ values {
       bool_value: false
     }
   }
+  args_data_types: BOOLEAN
 }
 groups {
   node: 0

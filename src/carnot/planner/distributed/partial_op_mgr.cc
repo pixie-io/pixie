@@ -59,6 +59,10 @@ StatusOr<OperatorIR*> AggOperatorMgr::CreateMergeOperator(IR* plan, OperatorIR* 
   BlockingAggIR* agg = static_cast<BlockingAggIR*>(op);
   PL_ASSIGN_OR_RETURN(BlockingAggIR * new_agg, plan->CopyNode(agg));
   PL_RETURN_IF_ERROR(new_agg->AddParent(new_parent));
+  planpb::Operator pb;
+  PL_RETURN_IF_ERROR(agg->ToProto(&pb));
+  new_agg->SetPreSplitProto(pb.agg_op());
+
   new_agg->SetPartialAgg(false);
   new_agg->SetFinalizeResults(true);
   DCHECK(Match(new_agg, FinalizeAgg()));

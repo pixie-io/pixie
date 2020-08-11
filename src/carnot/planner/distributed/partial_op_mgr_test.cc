@@ -50,7 +50,9 @@ TEST_F(PartialOpMgrTest, limit_test) {
 }
 
 TEST_F(PartialOpMgrTest, agg_test) {
-  auto mem_src = MakeMemSource(MakeRelation());
+  auto relation = MakeRelation();
+  relation.AddColumn(types::STRING, "service");
+  auto mem_src = MakeMemSource(relation);
   auto count_col = MakeColumn("count", 0);
   count_col->ResolveColumnType(types::INT64);
   auto service_col = MakeColumn("service", 0);
