@@ -184,6 +184,9 @@ std::string_view GetShortName(const llvm::DWARFDie& die);
 // does not exist, or for any errors.
 std::string_view GetLinkageName(const llvm::DWARFDie& die);
 
+// Returns the text representation of the input DIE.
+std::string Dump(const llvm::DWARFDie& die);
+
 }  // namespace dwarf_tools
 }  // namespace stirling
 }  // namespace pl

@@ -7,16 +7,6 @@
 
 #include "src/stirling/obj_tools/init.h"
 
-#define LLVM_ASSIGN_OR_RETURN_IMPL(var, tmpvar, expr, err) \
-  auto tmpvar = expr;                                      \
-  if (!tmpvar.hasValue()) {                                \
-    return error::Internal(err);                           \
-  }                                                        \
-  var = tmpvar.getValue();
-
-#define LLVM_ASSIGN_OR_RETURN(var, expr, err) \
-  LLVM_ASSIGN_OR_RETURN_IMPL(var, PL_CONCAT_NAME(__t__, __COUNTER__), expr, err)
-
 namespace pl {
 namespace stirling {
 namespace dwarf_tools {
@@ -24,6 +14,77 @@ namespace dwarf_tools {
 using llvm::DWARFContext;
 using llvm::DWARFDie;
 using llvm::DWARFFormValue;
+
+namespace {
+
+// Returns a StatusOr that holds the llvm_opt's value, or an error Status with the input message.
+template <typename TValueType>
+StatusOr<TValueType> AdaptLLVMOptional(llvm::Optional<TValueType>&& llvm_opt,
+                                       std::string_view msg) {
+  if (!llvm_opt.hasValue()) {
+    return error::Internal(msg);
+  }
+  return llvm_opt.getValue();
+}
+
+StatusOr<DWARFDie> GetTypeDie(const DWARFDie& die) {
+  DWARFDie type_die = die;
+  do {
+    PL_ASSIGN_OR_RETURN(
+        const DWARFFormValue& type_attr,
+        AdaptLLVMOptional(type_die.find(llvm::dwarf::DW_AT_type), "Could not find DW_AT_type."));
+
+    type_die = die.getAttributeValueAsReferencedDie(type_attr);
+  } while (type_die.getTag() == llvm::dwarf::DW_TAG_typedef);
+
+  return type_die;
+}
+
+StatusOr<std::string> GetTypeName(const DWARFDie& die) {
+  DCHECK(die.isValid());
+
+  switch (die.getTag()) {
+    case llvm::dwarf::DW_TAG_subroutine_type:
+      return std::string("func");
+    case llvm::dwarf::DW_TAG_pointer_type: {
+      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+      return std::string(GetShortName(type_die));
+    }
+    case llvm::dwarf::DW_TAG_base_type:
+    case llvm::dwarf::DW_TAG_structure_type:
+      return std::string(GetShortName(die));
+    default:
+      return error::Internal(
+          absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
+  }
+}
+
+}  // namespace
+
+std::string_view GetShortName(const DWARFDie& die) {
+  const char* short_name = die.getName(llvm::DINameKind::ShortName);
+  if (short_name != nullptr) {
+    return std::string_view(short_name);
+  }
+  return {};
+}
+
+std::string_view GetLinkageName(const DWARFDie& die) {
+  llvm::Optional<const char*> name_opt =
+      llvm::dwarf::toString(die.find(llvm::dwarf::DW_AT_linkage_name));
+  if (name_opt.hasValue() && name_opt.getValue() != nullptr) {
+    return std::string_view(name_opt.getValue());
+  }
+  return {};
+}
+
+std::string Dump(const llvm::DWARFDie& die) {
+  std::string buf;
+  llvm::raw_string_ostream rso(buf);
+  die.dump(rso);
+  rso.flush();
+  return buf;
+}
 
 // TODO(oazizi): This will break on 32-bit binaries.
 // Use ELF to get the correct value.
@@ -112,6 +173,7 @@ Status DwarfReader::GetMatchingDIEs(DWARFContext::unit_iterator_range CUs, std::
 }
 
 namespace {
+
 bool IsIndexedType(llvm::dwarf::Tag tag) {
   switch (tag) {
     // To index more DW_TAG types, simply add the type here.
@@ -255,16 +317,18 @@ StatusOr<uint64_t> GetMemberOffset(const DWARFDie& die) {
 
   const char* die_short_name = die.getName(llvm::DINameKind::ShortName);
 
-  LLVM_ASSIGN_OR_RETURN(DWARFFormValue & attr, die.find(llvm::dwarf::DW_AT_data_member_location),
-                        "Found member, but could not find data_member_location attribute.");
+  PL_ASSIGN_OR_RETURN(
+      const DWARFFormValue& attr,
+      AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_data_member_location),
+                        "Found member, but could not find data_member_location attribute."));
 
   // We've run into a case where the offset is encoded as a block instead of a constant.
   // See section 7.5.5 of the spec: http://dwarfstd.org/doc/DWARF5.pdf
   // Or use llvm-dwarfdump on testdata/sockshop_payments_service to see an example.
   // This handles that case as long as the block is simple (which is what we've seen in practice).
   if (attr.getForm() == llvm::dwarf::DW_FORM_block1) {
-    LLVM_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> offset_block, attr.getAsBlock(),
-                          "Could not extract block.");
+    PL_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> offset_block,
+                        AdaptLLVMOptional(attr.getAsBlock(), "Could not extract block."));
 
     PL_ASSIGN_OR_RETURN(SimpleBlock decoded_offset_block, DecodeSimpleBlock(offset_block));
 
@@ -276,33 +340,23 @@ StatusOr<uint64_t> GetMemberOffset(const DWARFDie& die) {
                            magic_enum::enum_name(decoded_offset_block.code));
   }
 
-  LLVM_ASSIGN_OR_RETURN(
-      uint64_t offset, attr.getAsUnsignedConstant(),
-      absl::Substitute("Could not extract offset for member $0.", die_short_name));
+  PL_ASSIGN_OR_RETURN(uint64_t offset,
+                      AdaptLLVMOptional(attr.getAsUnsignedConstant(),
+                                        absl::Substitute("Could not extract offset for member $0.",
+                                                         die_short_name)));
   return offset;
-}
-
-StatusOr<DWARFDie> GetTypeDie(const DWARFDie& die) {
-  DWARFDie type_die = die;
-  do {
-    LLVM_ASSIGN_OR_RETURN(DWARFFormValue & type_attr, type_die.find(llvm::dwarf::DW_AT_type),
-                          "Could not find DW_AT_type.");
-
-    type_die = die.getAttributeValueAsReferencedDie(type_attr);
-  } while (type_die.getTag() == llvm::dwarf::DW_TAG_typedef);
-
-  return type_die;
 }
 
 StatusOr<uint64_t> GetBaseOrStructTypeByteSize(const DWARFDie& die) {
   DCHECK((die.getTag() == llvm::dwarf::DW_TAG_base_type) ||
          (die.getTag() == llvm::dwarf::DW_TAG_structure_type));
 
-  LLVM_ASSIGN_OR_RETURN(DWARFFormValue & byte_size_attr, die.find(llvm::dwarf::DW_AT_byte_size),
-                        "Could not find DW_AT_byte_size.");
+  PL_ASSIGN_OR_RETURN(
+      const DWARFFormValue& byte_size_attr,
+      AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_byte_size), "Could not find DW_AT_byte_size."));
 
-  LLVM_ASSIGN_OR_RETURN(uint64_t byte_size, byte_size_attr.getAsUnsignedConstant(),
-                        "Could not extract byte_size.");
+  PL_ASSIGN_OR_RETURN(uint64_t byte_size, AdaptLLVMOptional(byte_size_attr.getAsUnsignedConstant(),
+                                                            "Could not extract byte_size."));
 
   return byte_size;
 }
@@ -367,25 +421,6 @@ StatusOr<VarType> GetType(const DWARFDie& die) {
   }
 }
 
-StatusOr<std::string> GetTypeName(const DWARFDie& die) {
-  DCHECK(die.isValid());
-
-  switch (die.getTag()) {
-    case llvm::dwarf::DW_TAG_subroutine_type:
-      return std::string("func");
-    case llvm::dwarf::DW_TAG_pointer_type: {
-      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-      return std::string(type_die.getName(llvm::DINameKind::ShortName));
-    }
-    case llvm::dwarf::DW_TAG_base_type:
-    case llvm::dwarf::DW_TAG_structure_type:
-      return std::string(die.getName(llvm::DINameKind::ShortName));
-    default:
-      return error::Internal(
-          absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
-  }
-}
-
 // This function calls out any die with DW_AT_variable_parameter == 0x1 to be a return value..
 // The documentation on how Golang sets this field is sparse, so not sure if this is the
 // right flag to look at.
@@ -393,10 +428,12 @@ StatusOr<std::string> GetTypeName(const DWARFDie& die) {
 // also be completely wrong.
 // TODO(oazizi): Find a better way to determine return values.
 StatusOr<bool> IsGolangRetArg(const DWARFDie& die) {
-  LLVM_ASSIGN_OR_RETURN(DWARFFormValue & attr, die.find(llvm::dwarf::DW_AT_variable_parameter),
-                        "Found member, but could not find DW_AT_variable_parameter attribute.");
-  LLVM_ASSIGN_OR_RETURN(uint64_t val, attr.getAsUnsignedConstant(),
-                        "Could not read attribute value.");
+  PL_ASSIGN_OR_RETURN(
+      const DWARFFormValue& attr,
+      AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_variable_parameter),
+                        "Found member, but could not find DW_AT_variable_parameter attribute."));
+  PL_ASSIGN_OR_RETURN(uint64_t val, AdaptLLVMOptional(attr.getAsUnsignedConstant(),
+                                                      "Could not read attribute value."));
 
   return (val == 0x01);
 }
@@ -449,16 +486,18 @@ StatusOr<int64_t> DwarfReader::GetArgumentStackPointerOffset(std::string_view fu
   for (const auto& die : function_die.children()) {
     if ((die.getTag() == llvm::dwarf::DW_TAG_formal_parameter) &&
         (die.getName(llvm::DINameKind::ShortName) == arg_name)) {
-      LLVM_ASSIGN_OR_RETURN(DWARFFormValue & loc_attr, die.find(llvm::dwarf::DW_AT_location),
-                            "Could not find DW_AT_location for function argument.");
+      PL_ASSIGN_OR_RETURN(
+          const DWARFFormValue& loc_attr,
+          AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_location),
+                            "Could not find DW_AT_location for function argument."));
 
       if (!loc_attr.isFormClass(DWARFFormValue::FC_Block) &&
           !loc_attr.isFormClass(DWARFFormValue::FC_Exprloc)) {
         return error::Internal("Unexpected Form: $0", magic_enum::enum_name(loc_attr.getForm()));
       }
 
-      LLVM_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> loc_block, loc_attr.getAsBlock(),
-                            "Could not extract location.");
+      PL_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> loc_block,
+                          AdaptLLVMOptional(loc_attr.getAsBlock(), "Could not extract location."));
 
       PL_ASSIGN_OR_RETURN(SimpleBlock decoded_loc_block, DecodeSimpleBlock(loc_block));
 
@@ -538,23 +577,6 @@ StatusOr<RetValInfo> DwarfReader::GetFunctionRetValInfo(std::string_view functio
   PL_ASSIGN_OR_RETURN(ret_val_info.type_name, GetTypeName(type_die));
 
   return ret_val_info;
-}
-
-std::string_view GetShortName(const DWARFDie& die) {
-  const char* short_name = die.getName(llvm::DINameKind::ShortName);
-  if (short_name != nullptr) {
-    return std::string_view(short_name);
-  }
-  return {};
-}
-
-std::string_view GetLinkageName(const DWARFDie& die) {
-  llvm::Optional<const char*> name_opt =
-      llvm::dwarf::toString(die.find(llvm::dwarf::DW_AT_linkage_name));
-  if (name_opt.hasValue() && name_opt.getValue() != nullptr) {
-    return std::string_view(name_opt.getValue());
-  }
-  return {};
 }
 
 }  // namespace dwarf_tools
