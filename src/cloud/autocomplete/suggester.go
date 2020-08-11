@@ -140,6 +140,16 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 			for _, t := range reqs[i].AllowedKinds {
 				if t == cloudapipb.AEK_SCRIPT { // Script is an allowed type for this tabstop, so we should find matching scripts.
 					matches := fuzzy.Find(reqs[i].Input, scripts)
+
+					if reqs[i].Input == "" { // The input is empty, so none of the scripts will match using the fuzzy search.
+						matches = make([]fuzzy.Match, len(scripts))
+						for i, s := range scripts {
+							matches[i] = fuzzy.Match{
+								Str:            s,
+								MatchedIndexes: make([]int, 0),
+							}
+						}
+					}
 					for _, m := range matches {
 						script := e.br.MustGetScript(m.Str)
 						scriptArgs := scriptArgMap[m.Str]
