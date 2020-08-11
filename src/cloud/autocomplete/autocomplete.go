@@ -70,7 +70,7 @@ func Autocomplete(input string, cursorPos int, action cloudapipb.AutocompleteAct
 		return "", false, nil, err
 	}
 
-	fmtOutput, suggestions := cmd.ToFormatString(action)
+	fmtOutput, suggestions := cmd.ToFormatString(action, s, orgID, clusterUID)
 
 	return fmtOutput, cmd.Executable, suggestions, nil
 }
@@ -385,7 +385,7 @@ func parseRunCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID
 }
 
 // ToFormatString converts a command to a formatted string with tab indexes, such as: ${1:run} ${2: px/svc_info}
-func (cmd *Command) ToFormatString(action cloudapipb.AutocompleteActionType) (formattedInput string, suggestions []*cloudapipb.TabSuggestion) {
+func (cmd *Command) ToFormatString(action cloudapipb.AutocompleteActionType, s Suggester, orgID uuid.UUID, clusterUID string) (formattedInput string, suggestions []*cloudapipb.TabSuggestion) {
 	curTabStop, nextInvalidTabStop, invalidTabs := cmd.processTabStops()
 
 	// Move the cursor according to the action that was taken.
@@ -405,6 +405,25 @@ func (cmd *Command) ToFormatString(action cloudapipb.AutocompleteActionType) (fo
 			})
 			curTabStop++
 			invalidTabs[curTabStop] = true
+
+			// Get suggestions for empty tabstop.
+			// First get a list of the arg types that the autocompleted script should take.
+			knownTypes := make(map[cloudapipb.AutocompleteEntityKind]bool)
+			for _, t := range cmd.TabStops {
+				if t.Kind != cloudapipb.AEK_UNKNOWN && t.Kind != cloudapipb.AEK_SCRIPT {
+					knownTypes[t.Kind] = true
+				}
+			}
+			scriptTypes := make([]cloudapipb.AutocompleteEntityKind, 0)
+			for k := range knownTypes {
+				scriptTypes = append(scriptTypes, k)
+			}
+			res, err := s.GetSuggestions([]*SuggestionRequest{&SuggestionRequest{orgID, clusterUID, "",
+				[]cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE, cloudapipb.AEK_SCRIPT},
+				scriptTypes}})
+			if err == nil {
+				cmd.TabStops[curTabStop].Suggestions = res[0].Suggestions
+			}
 		} else {
 			// Move the cursor to the next invalid tabstop.
 			cmd.TabStops[curTabStop].Value = strings.Replace(cmd.TabStops[curTabStop].Value, CursorMarker, "", 1)

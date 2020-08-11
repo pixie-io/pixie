@@ -802,11 +802,13 @@ func TestParseIntoCommand(t *testing.T) {
 
 func TestToFormatString(t *testing.T) {
 	tests := []struct {
-		name                string
-		cmd                 *autocomplete.Command
-		action              cloudapipb.AutocompleteActionType
-		expectedStr         string
-		expectedSuggestions []*cloudapipb.TabSuggestion
+		name                  string
+		cmd                   *autocomplete.Command
+		action                cloudapipb.AutocompleteActionType
+		expectedStr           string
+		expectedSuggestions   []*cloudapipb.TabSuggestion
+		callSuggester         bool
+		suggestionScriptTypes []cloudapipb.AutocompleteEntityKind
 	}{
 		{
 			name: "edit",
@@ -1088,8 +1090,12 @@ func TestToFormatString(t *testing.T) {
 				},
 				Executable: false,
 			},
-			action:      cloudapipb.AAT_SELECT,
-			expectedStr: "${1:run} ${2:svc:pl/} ${3:svc:pl/frontend} ${4:$0}",
+			suggestionScriptTypes: []cloudapipb.AutocompleteEntityKind{
+				cloudapipb.AEK_SVC,
+			},
+			callSuggester: true,
+			action:        cloudapipb.AAT_SELECT,
+			expectedStr:   "${1:run} ${2:svc:pl/} ${3:svc:pl/frontend} ${4:$0}",
 			expectedSuggestions: []*cloudapipb.TabSuggestion{
 				&cloudapipb.TabSuggestion{
 					TabIndex:              1,
@@ -1115,7 +1121,13 @@ func TestToFormatString(t *testing.T) {
 				&cloudapipb.TabSuggestion{
 					TabIndex:              4,
 					ExecutableAfterSelect: false,
-					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
+					Suggestions: []*cloudapipb.AutocompleteSuggestion{
+						&cloudapipb.AutocompleteSuggestion{
+							Kind:        cloudapipb.AEK_POD,
+							Name:        "pl/test",
+							Description: "default pod",
+						},
+					},
 				},
 			},
 		},
@@ -1237,7 +1249,34 @@ func TestToFormatString(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			output, suggestions := test.cmd.ToFormatString(test.action)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			s := mock_autocomplete.NewMockSuggester(ctrl)
+
+			orgID := uuid.NewV4()
+
+			if test.callSuggester {
+				s.EXPECT().
+					GetSuggestions([]*autocomplete.SuggestionRequest{
+						&autocomplete.SuggestionRequest{
+							orgID, "test", "",
+							[]cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE, cloudapipb.AEK_SCRIPT},
+							test.suggestionScriptTypes,
+						},
+					}).Return([]*autocomplete.SuggestionResult{
+					&autocomplete.SuggestionResult{
+						Suggestions: []*autocomplete.Suggestion{
+							&autocomplete.Suggestion{
+								Name: "pl/test",
+								Kind: cloudapipb.AEK_POD,
+								Desc: "default pod",
+							},
+						},
+					},
+				}, nil)
+			}
+
+			output, suggestions := test.cmd.ToFormatString(test.action, s, orgID, "test")
 			assert.Equal(t, test.expectedStr, output)
 			assert.ElementsMatch(t, test.expectedSuggestions, suggestions)
 		})
