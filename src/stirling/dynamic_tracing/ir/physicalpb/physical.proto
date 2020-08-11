@@ -13,12 +13,17 @@ enum Register {
   // Stack pointer.
   SP = 0;
 
-  // Return value for C/C++ System V AMD64 ABI calling convention.
-  // For simple types that fit in a register, RC directly holds the value.
-  // For simple types that require two registers, RC holds the first half; second half in RC2.
-  // For other types, RC holds a pointer to the output struct.
+  // Direct return value of the System V ABI calling convention.
+  // Useful when the return value is already a pointer to the data,
+  // which happens whenever the return value is > 16B in size,
+  // since the compiler will use a hidden parameter, and return a pointer to the data.
   RC = 100;
-  RC2 = 101;
+
+  // Pointer to the return value of the System V ABI calling convention.
+  // Useful when the return value is 16B or less in size.
+  // This will copy the register contents onto the BPF stack and provide a pointer
+  // to the data.
+  RC_PTR = 101;
 
   // Simple function arguments for C/C++ System V AMD64 ABI.
   PARM1 = 200;

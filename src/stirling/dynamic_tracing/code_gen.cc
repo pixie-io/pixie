@@ -192,25 +192,42 @@ StatusOr<std::vector<std::string>> GenStruct(const Struct& st, int member_indent
 namespace {
 
 std::string GenRegister(const ScalarVariable& var) {
-  static const absl::flat_hash_map<Register, std::string_view> kRegisters = {
-      {Register::SP, "PT_REGS_SP(ctx)"},
-      // Note that in the System V AMD64 ABI,
-      // a simple return value is held in PT_REGS_RC (rax).
-      // If the return value requires an additional register of storage,
-      // the second half is held in rdx.
-      {Register::RC, "PT_REGS_RC(ctx)"},
-      {Register::RC2, "ctx->rdx"},
-      {Register::PARM1, "PT_REGS_PARM1(ctx)"},
-      {Register::PARM2, "PT_REGS_PARM2(ctx)"},
-      {Register::PARM3, "PT_REGS_PARM3(ctx)"},
-      {Register::PARM4, "PT_REGS_PARM4(ctx)"},
-      {Register::PARM5, "PT_REGS_PARM5(ctx)"},
-      {Register::PARM6, "ctx->r9"},
-  };
+  std::string_view type = GenScalarType(var.type());
 
-  auto iter = kRegisters.find(var.reg());
-  DCHECK(iter != kRegisters.end());
-  return absl::Substitute("$0 $1 = ($0)$2;", GenScalarType(var.type()), var.name(), iter->second);
+  switch (var.reg()) {
+    case Register::SP:
+      return absl::Substitute("$0 $1 = ($0)PT_REGS_SP(ctx);", type, var.name());
+    case Register::RC:
+      return absl::Substitute("$0 $1 = ($0)PT_REGS_RC(ctx);", type, var.name());
+    case Register::RC_PTR:
+      // Note that in the System V AMD64 ABI,
+      // a return value less than 16B in size is held in registers.
+      // The first half is stored in rax (PT_REGS_RC), while the second half (if needed),
+      // is stored in rdx (PT_REGS_PARM3).
+      // We use the PT_REGS format for improved portability.
+      // Copy the register values onto the BPF stack and return a pointer to the return value.
+      return absl::Substitute(
+          "uint64_t rc___[2];"
+          "rc___[0] = PT_REGS_RC(ctx);"
+          "rc___[1] = PT_REGS_PARM3(ctx);"
+          "void* $0 = &rc___;",
+          var.name());
+    case Register::PARM1:
+      return absl::Substitute("$0 $1 = ($0)PT_REGS_PARM1(ctx);", type, var.name());
+    case Register::PARM2:
+      return absl::Substitute("$0 $1 = ($0)PT_REGS_PARM2(ctx);", type, var.name());
+    case Register::PARM3:
+      return absl::Substitute("$0 $1 = ($0)PT_REGS_PARM3(ctx);", type, var.name());
+    case Register::PARM4:
+      return absl::Substitute("$0 $1 = ($0)PT_REGS_PARM4(ctx);", type, var.name());
+    case Register::PARM5:
+      return absl::Substitute("$0 $1 = ($0)PT_REGS_PARM5(ctx);", type, var.name());
+    case Register::PARM6:
+      return absl::Substitute("$0 $1 = ($0)ctx->r9;", type, var.name());
+    default:
+      LOG(DFATAL) << absl::Substitute("Unsupported type: $0", type);
+      return "";
+  }
 }
 
 // TODO(yzhao/oazizi): Consider making this a member variable to avoid passing language directly.

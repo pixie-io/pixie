@@ -4,17 +4,27 @@
 #include <unistd.h>
 #include <iostream>
 
-struct ABCStruct {
-  int a;
-  int b;
-  int c;
+struct ABCStruct32 {
+  int32_t a;
+  int32_t b;
+  int32_t c;
+};
+
+struct ABCStruct64 {
+  int64_t a;
+  int64_t b;
+  int64_t c;
 };
 
 // Using extern C to avoid name mangling (which just keeps the test a bit more readable).
 extern "C" {
 int CanYouFindThis(int a, int b) { return a + b; }
-ABCStruct SomeFunction(ABCStruct x, ABCStruct y) { return ABCStruct{x.a+y.a, x.b+y.b, x.c+y.c}; }
-void SomeFunctionWithPointerArgs(int* a, ABCStruct* x) { x->a = *a; a++; }
+
+ABCStruct32 ABCSum32(ABCStruct32 x, ABCStruct32 y) { return ABCStruct32{x.a+y.a, x.b+y.b, x.c+y.c}; }
+
+ABCStruct64 ABCSum64(ABCStruct64 x, ABCStruct64 y) { return ABCStruct64{x.a+y.a, x.b+y.b, x.c+y.c}; }
+
+void SomeFunctionWithPointerArgs(int* a, ABCStruct32* x) { x->a = *a; a++; }
 }
 
 namespace pl {
@@ -31,12 +41,15 @@ class Foo {
 }  // namespace pl
 
 int main() {
-  for (int i=0; true; ++i) {
+  while (true) {
     int sum = CanYouFindThis(3, 4);
     std::cout << sum << std::endl;
 
-    ABCStruct struct_sum = SomeFunction(ABCStruct{1, 2, 3}, ABCStruct{4, 5, 6});
-    std::cout << struct_sum.a << std::endl;
+    ABCStruct32 abc_struct_32_sum = ABCSum32(ABCStruct32{1, 2, 3}, ABCStruct32{4, 5, 6});
+    std::cout << abc_struct_32_sum.a << std::endl;
+
+    ABCStruct64 abc_struct_64_sum = ABCSum64(ABCStruct64{1, 2, 3}, ABCStruct64{4, 5, 6});
+    std::cout << abc_struct_64_sum.a << std::endl;
 
     pl::testing::Foo foo;
     std::cout << foo.Bar(3) << std::endl;

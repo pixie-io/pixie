@@ -16,12 +16,7 @@ constexpr std::string_view kBinaryPath =
 namespace pl {
 namespace stirling {
 
-struct TestParam {
-  std::string function_symbol;
-  std::string value;
-};
-
-class StirlingBPFTest : public ::testing::TestWithParam<TestParam> {
+class StirlingBPFTest : public ::testing::Test {
  protected:
   void SetUp() override {
     std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
@@ -200,6 +195,10 @@ tracepoints {
       args {
         id: "b"
         expr: "b"
+      }
+      ret_vals {
+        id: "retval0"
+        expr: "$$0"
       }
       output_actions {
         output_name: "output_table"
@@ -415,7 +414,15 @@ tracepoints {
   EXPECT_EQ(rb[name_field_idx]->Get<types::StringValue>(0), "pixienaut");
 }
 
-TEST_P(StirlingBPFTest, byte_array) {
+struct TestParam {
+  std::string function_symbol;
+  std::string value;
+};
+
+class StirlingBPFTestWithTestParam : public StirlingBPFTest,
+                                     public ::testing::WithParamInterface<TestParam> {};
+
+TEST_P(StirlingBPFTestWithTestParam, byte_array) {
   auto params = GetParam();
 
   // Run tracing target.
@@ -440,7 +447,7 @@ tracepoints {
     probes {
       name: "probe0"
       trace_point {
-        symbol: "$0"
+        symbol: ""
         type: LOGICAL
       }
       args {
@@ -519,7 +526,7 @@ tracepoints {
   EXPECT_EQ(rb[name_field_idx]->Get<types::StringValue>(0), params.value);
 }
 
-INSTANTIATE_TEST_SUITE_P(DwarfInfoTestSuite, StirlingBPFTest,
+INSTANTIATE_TEST_SUITE_P(DwarfInfoTestSuite, StirlingBPFTestWithTestParam,
                          ::testing::Values(TestParam{"main.BytesToHex", "Bytes"},
                                            TestParam{"main.Uint8ArrayToHex", "Uint8"}));
 
@@ -631,6 +638,108 @@ tracepoints {
   PL_UNUSED(a_field_idx);
   PL_UNUSED(b_field_idx);
 }
+
+class StirlingBPFTestWithFnSymbolParameter : public StirlingBPFTest,
+                                             public ::testing::WithParamInterface<std::string> {};
+
+TEST_P(StirlingBPFTestWithFnSymbolParameter, CPPTracingStructs) {
+  auto params = GetParam();
+
+  // Run tracing target.
+  SubProcess process;
+
+  std::string path = pl::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe");
+  ASSERT_OK(fs::Exists(path));
+  ASSERT_OK(process.Start({path}));
+
+  constexpr std::string_view kProgram = R"(
+deployment_spec {
+  path: "$0"
+}
+tracepoints {
+  program {
+    language: CPP
+    outputs {
+      name: "output_table"
+      fields: "x"
+      fields: "y"
+      fields: "sum"
+    }
+    probes {
+      name: "probe0"
+      trace_point {
+        symbol: "ABCSum64"
+        type: LOGICAL
+      }
+      args {
+        id: "arg0"
+        expr: "x.a"
+      }
+      args {
+        id: "arg1"
+        expr: "y.a"
+      }
+      ret_vals {
+        id: "retval0"
+        expr: "$$0.a"
+      }
+      output_actions {
+        output_name: "output_table"
+        variable_name: "arg0"
+        variable_name: "arg1"
+        variable_name: "retval0"
+      }
+    }
+  }
+}
+)";
+
+  stirlingpb::Publish publication;
+  stirling_->GetPublishProto(&publication);
+
+  auto trace_program = Prepare(kProgram, path);
+
+  sole::uuid trace_id = sole::uuid4();
+  stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
+
+  // Should deploy.
+  ASSERT_OK_AND_ASSIGN(publication, WaitForStatus(trace_id));
+
+  // Check the incremental publication change.
+  ASSERT_EQ(publication.published_info_classes_size(), 1);
+  const auto& info_class = publication.published_info_classes(0);
+
+  // Subscribe to the new info class.
+  ASSERT_OK(stirling_->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(publication)));
+
+  // Run Stirling data collector.
+  ASSERT_OK(stirling_->RunAsThread());
+
+  // Wait to capture some data.
+  while (record_batches_.empty()) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
+
+  ASSERT_OK(stirling_->RemoveTracepoint(trace_id));
+
+  // Should get removed.
+  EXPECT_EQ(WaitForStatus(trace_id).code(), pl::statuspb::Code::NOT_FOUND);
+
+  stirling_->Stop();
+
+  // Get field indexes for the two columns we want.
+  //  ASSERT_HAS_VALUE_AND_ASSIGN(int x_field_idx, FindFieldIndex(info_class.schema(), "x"));
+  //  ASSERT_HAS_VALUE_AND_ASSIGN(int y_field_idx, FindFieldIndex(info_class.schema(), "y"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int sum_field_idx, FindFieldIndex(info_class.schema(), "sum"));
+
+  types::ColumnWrapperRecordBatch& rb = *record_batches_[0];
+  //  EXPECT_EQ(rb[x_field_idx]->Get<types::Int64Value>(0).val, 1);
+  //  EXPECT_EQ(rb[y_field_idx]->Get<types::Int64Value>(0).val, 4);
+  EXPECT_EQ(rb[sum_field_idx]->Get<types::Int64Value>(0).val, 5);
+}
+
+INSTANTIATE_TEST_SUITE_P(DwarfInfoTestSuite, StirlingBPFTestWithFnSymbolParameter,
+                         ::testing::Values("ABCSum32", "ABCSum64"));
 
 }  // namespace stirling
 }  // namespace pl

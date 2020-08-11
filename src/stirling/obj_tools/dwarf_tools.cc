@@ -299,7 +299,7 @@ StatusOr<SimpleBlock> DecodeSimpleBlock(const llvm::ArrayRef<uint8_t>& block) {
   auto& operation = *iter;
   ++iter;
   if (iter != expr.end()) {
-    return error::Internal("Operation include more than one component. Not yet supported.");
+    return error::Internal("Operation includes more than one component. Not yet supported.");
   }
 
   SimpleBlock decoded_block;
@@ -567,7 +567,7 @@ StatusOr<RetValInfo> DwarfReader::GetFunctionRetValInfo(std::string_view functio
 
   if (!function_die.find(llvm::dwarf::DW_AT_type).hasValue()) {
     // No return type means the function has a void return type.
-    return RetValInfo{.type = VarType::kVoid, .type_name = ""};
+    return RetValInfo{.type = VarType::kVoid, .type_name = "", .byte_size = 0};
   }
 
   RetValInfo ret_val_info;
@@ -575,6 +575,7 @@ StatusOr<RetValInfo> DwarfReader::GetFunctionRetValInfo(std::string_view functio
   PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(function_die));
   PL_ASSIGN_OR_RETURN(ret_val_info.type, GetType(type_die));
   PL_ASSIGN_OR_RETURN(ret_val_info.type_name, GetTypeName(type_die));
+  PL_ASSIGN_OR_RETURN(ret_val_info.byte_size, GetTypeByteSize(type_die));
 
   return ret_val_info;
 }

@@ -30,6 +30,7 @@ constexpr char kGOIDVarName[] = "goid_";
 constexpr char kKTimeVarName[] = "time_";
 constexpr char kStartKTimeNSVarName[] = "start_ktime_ns";
 constexpr char kRCVarName[] = "rc_";
+constexpr char kRCPtrVarName[] = "rc__";
 
 // WARNING: Do not change the name of kKTimeVarName above, as it is a name implicitly used by the
 //          query engine as the time column.
@@ -80,7 +81,7 @@ class Dwarvifier {
   // The input components describes a sequence of field of nesting structures. The first component
   // is the name of an input argument of a function, or an expression to describe the index of an
   // return value of the function.
-  Status ProcessVarExpr(const std::string& var_name, const ArgInfo* arg_info,
+  Status ProcessVarExpr(const std::string& var_name, const ArgInfo& arg_info,
                         const std::string& base_var,
                         const std::vector<std::string_view>& components,
                         ir::physical::Probe* output_probe);
@@ -124,10 +125,6 @@ class Dwarvifier {
 
   // All defined ScalarVariable.
   absl::flat_hash_map<std::string, ir::shared::ScalarType> scalar_var_types_;
-
-  // Dwarf and BCC have an 8 byte difference in where they believe the SP is.
-  // This adjustment factor accounts for that difference.
-  static constexpr int32_t kSPOffset = 8;
 
   ir::shared::Language language_;
   std::vector<std::string> implicit_columns_;
@@ -280,13 +277,20 @@ StatusOr<ir::shared::ScalarType> Dwarvifier::VarTypeToProtoScalarType(const VarT
   }
 }
 
-StatusOr<const ArgInfo*> GetArgInfo(const std::map<std::string, ArgInfo>& args_map,
-                                    std::string_view arg_name) {
+StatusOr<ArgInfo> GetArgInfo(const std::map<std::string, ArgInfo>& args_map,
+                             std::string_view arg_name) {
   auto args_map_iter = args_map.find(std::string(arg_name));
   if (args_map_iter == args_map.end()) {
     return error::Internal("Could not find argument $0", arg_name);
   }
-  return &args_map_iter->second;
+  ArgInfo retval = args_map_iter->second;
+
+  // The offset of an argument of the stack starts at 8.
+  // This is because the last thing on the stack on a function call is the return address.
+  constexpr int32_t kSPOffset = 8;
+  retval.offset += kSPOffset;
+
+  return retval;
 }
 
 ir::physical::ScalarVariable* Dwarvifier::AddVariable(ir::physical::Probe* probe,
@@ -445,6 +449,9 @@ Status Dwarvifier::AddRetProbeVariables(ir::physical::Probe* output_probe) {
   if ((language_ == ir::shared::C || language_ == ir::shared::CPP)) {
     auto* rc_var = AddVariable(output_probe, kRCVarName, ir::shared::VOID_POINTER);
     rc_var->set_reg(ir::physical::Register::RC);
+
+    auto* rc_ptr_var = AddVariable(output_probe, kRCPtrVarName, ir::shared::VOID_POINTER);
+    rc_ptr_var->set_reg(ir::physical::Register::RC_PTR);
   }
 
   return Status::OK();
@@ -461,13 +468,13 @@ Status Dwarvifier::ProcessConstants(const ir::logical::Constant& constant,
   return Status::OK();
 }
 
-Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo* arg_info,
+Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& arg_info,
                                   const std::string& base_var,
                                   const std::vector<std::string_view>& components,
                                   ir::physical::Probe* output_probe) {
-  VarType type = arg_info->type;
-  std::string type_name = std::move(arg_info->type_name);
-  int offset = kSPOffset + arg_info->offset;
+  VarType type = arg_info.type;
+  std::string type_name = arg_info.type_name;
+  int offset = arg_info.offset;
   std::string base = base_var;
   std::string name = var_name;
 
@@ -541,8 +548,7 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
 
   std::vector<std::string_view> components = absl::StrSplit(arg.expr(), ".");
 
-  PL_ASSIGN_OR_RETURN(const ArgInfo* arg_info, GetArgInfo(args_map_, components.front()));
-  DCHECK(arg_info != nullptr);
+  PL_ASSIGN_OR_RETURN(ArgInfo arg_info, GetArgInfo(args_map_, components.front()));
 
   return ProcessVarExpr(arg.id(), arg_info, kSPVarName, components, output_probe);
 }
@@ -579,8 +585,7 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
       components.front() = ret_val_name;
 
       // Golang return values are really arguments located on the stack, so get the arg info.
-      PL_ASSIGN_OR_RETURN(const ArgInfo* arg_info, GetArgInfo(args_map_, components.front()));
-      DCHECK(arg_info != nullptr);
+      PL_ASSIGN_OR_RETURN(ArgInfo arg_info, GetArgInfo(args_map_, components.front()));
 
       return ProcessVarExpr(ret_val.id(), arg_info, kSPVarName, components, output_probe);
     }
@@ -590,40 +595,39 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
         return error::Internal("C/C++ only supports a single return value [index=$0].", index);
       }
 
-      switch (retval_info_.type) {
-        case VarType::kBaseType: {
-          // When the return value is a simple base type, the return value is passed directly
-          // through a register that is accessed via PT_REGS_RC.
-          PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type,
-                              VarTypeToProtoScalarType(retval_info_.type, retval_info_.type_name));
-
-          auto* rc_var = AddVariable(output_probe, ret_val.id(), pb_type);
-          rc_var->set_reg(ir::physical::Register::RC);
-
-          return Status::OK();
-        }
-        case VarType::kPointer: {
-          // When the return value is not a simple base type, the return value is a pointer to the
-          // struct. That pointer is accessed via PT_REGS_RC.
-
-          // TODO(oazizi): Finish this code and create a test.
-
-          ArgInfo retval;
-          retval.type_name = retval_info_.type_name;
-          retval.type = retval_info_.type;
-          retval.offset = 0;
-
-          return ProcessVarExpr(ret_val.id(), &retval, kRCVarName, components, output_probe);
-        }
-        case VarType::kVoid: {
-          return error::Internal(
-              "Attempting to process return variable for function with void return.",
-              output_probe->trace_point().symbol());
-        }
-        default: {
-          return error::Internal("Unexpected var type:", magic_enum::enum_name(retval_info_.type));
-        }
+      if (retval_info_.type == VarType::kVoid) {
+        return error::Internal(
+            "Attempting to process return variable for function with void return. Symbol=$0",
+            output_probe->trace_point().symbol());
       }
+
+      DCHECK(retval_info_.type == VarType::kStruct || retval_info_.type == VarType::kBaseType);
+
+      std::string base_var;
+
+      // The maximum size of a return value (in bytes) that will be returned directly through
+      // registers, according to the System V ABI calling convention.
+      // This is equivalent to two registers on a 64-bit machine.
+      // Useful reference: https://wiki.osdev.org/System_V_ABI
+      constexpr int kRegReturnBytesThreshold = 16;
+
+      if (retval_info_.byte_size <= kRegReturnBytesThreshold) {
+        // When the return value is small enough, the return value is passed directly
+        // through a register that is accessed via PT_REGS_RC.
+        // Copy the value onto the BPF stack, and set a pointer to it.
+        base_var = kRCPtrVarName;
+      } else {
+        // When the return value doesn't fit in a register, the return value is a pointer to the
+        // struct. That pointer is accessed via PT_REGS_RC.
+        base_var = kRCVarName;
+      }
+
+      ArgInfo retval;
+      retval.type_name = retval_info_.type_name;
+      retval.type = retval_info_.type;
+      retval.offset = 0;
+
+      return ProcessVarExpr(ret_val.id(), retval, base_var, components, output_probe);
     }
     default:
       return error::Internal("Return expressions not yet supported for lanuage=$0",

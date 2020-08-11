@@ -77,10 +77,13 @@ TEST(GenVariableTest, Register) {
                      ElementsAre("void* var = (void*)PT_REGS_RC(ctx);"));
 
   var.set_type(ScalarType::INT64);
-  var.set_reg(Register::RC2);
+  var.set_reg(Register::RC_PTR);
 
   ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::CPP),
-                     ElementsAre("int64_t var = (int64_t)ctx->rdx;"));
+                     ElementsAre("uint64_t rc___[2];"
+                                 "rc___[0] = PT_REGS_RC(ctx);"
+                                 "rc___[1] = PT_REGS_PARM3(ctx);"
+                                 "void* var = &rc___;"));
 
   var.set_type(ScalarType::INT64);
   var.set_reg(Register::PARM3);

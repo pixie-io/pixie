@@ -46,13 +46,19 @@ struct ArgInfo : public VarInfo {
   bool retarg = false;
 
   std::string ToString() const {
-    return absl::Substitute("retarg=$0 $1", retarg, VarInfo::ToString());
+    return absl::Substitute("$0 retarg=$1 ", VarInfo::ToString(), retarg);
   }
 };
 
 struct RetValInfo {
   VarType type = VarType::kUnspecified;
   std::string type_name = "";
+  size_t byte_size = 0;
+
+  std::string ToString() const {
+    return absl::Substitute("type=$0 type_name=$1 byte_size=$2", magic_enum::enum_name(type),
+                            type_name, byte_size);
+  }
 };
 
 inline bool operator==(const VarInfo& a, const VarInfo& b) {
@@ -65,7 +71,22 @@ inline bool operator==(const ArgInfo& a, const ArgInfo& b) {
 }
 
 inline bool operator==(const RetValInfo& a, const RetValInfo& b) {
-  return a.type == b.type && a.type_name == b.type_name;
+  return a.type == b.type && a.type_name == b.type_name && a.byte_size == b.byte_size;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const VarInfo& var_info) {
+  os << var_info.ToString();
+  return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const ArgInfo& arg_info) {
+  os << arg_info.ToString();
+  return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const RetValInfo& ret_val_info) {
+  os << ret_val_info.ToString();
+  return os;
 }
 
 class DwarfReader {

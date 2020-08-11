@@ -150,6 +150,7 @@ pl_cc_test(
 
 pl_cc_test(
     name = "dynamic_trace_bpf_test",
+    timeout = "moderate",
     srcs = ["dynamic_trace_bpf_test.cc"],
     data = [
         "//src/stirling/http2/testing/go_grpc_client",
