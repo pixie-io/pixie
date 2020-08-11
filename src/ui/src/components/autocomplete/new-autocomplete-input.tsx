@@ -53,6 +53,14 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   hint: {
     opacity: 0.2,
   },
+  valid: {
+    border: theme.palette.success.light,
+    borderStyle: 'solid',
+  },
+  invalid: {
+    border: theme.palette.error.main,
+    borderStyle: 'solid',
+  },
 }));
 
 export interface AutocompleteField {
@@ -71,6 +79,7 @@ interface AutocompleteInputProps {
   // parentClass of this change.
   setCursor: (val: number) => void;
   placeholder?: string; // The text to show if the input box is empty.
+  isValid: boolean;
 }
 
 export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
@@ -82,6 +91,7 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   prefix = null,
   placeholder = '',
   value,
+  isValid,
 }) => {
   const classes = useStyles();
   const [focused, setFocused] = React.useState<boolean>(true);
@@ -163,7 +173,7 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   });
 
   return (
-    <div className={clsx(classes.root, className)} onClick={focusInput}>
+    <div className={clsx(classes.root, className, isValid ? classes.valid : classes.invalid)} onClick={focusInput}>
       {prefix && <div className={classes.prefix}>{prefix}</div>}
       <div className={classes.fixedInput}>
         <div className={classes.inputValue}>

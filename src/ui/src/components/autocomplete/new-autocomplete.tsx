@@ -55,6 +55,7 @@ interface NewAutoCompleteProps {
   prefix?: React.ReactNode;
   className?: string;
   placeholder?: string;
+  isValid: boolean;
 }
 
 export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
@@ -64,6 +65,7 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
   completions,
   prefix,
   className,
+  isValid,
   placeholder = '',
 }) => {
   const classes = useStyles();
@@ -196,6 +198,7 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
         value={tsInfo.getInput()}
         prefix={prefix}
         placeholder={placeholder}
+        isValid={isValid}
       />
       <Completions
         className={classes.completions}

@@ -149,6 +149,7 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
           completions={tabSuggestions}
           tabStops={tabStops}
           placeholder='Pixie Command'
+          isValid={isValid}
           prefix={<PixieCommandIcon />}
         />
       </Card>

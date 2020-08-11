@@ -174,6 +174,7 @@ storiesOf('AutoComplete', module)
         setCursor={(pos) => {
           setCursor(pos);
         }}
+        isValid={false}
         cursorPos={cursor}
         value={
           [{
@@ -193,6 +194,7 @@ storiesOf('AutoComplete', module)
   })
   .add('new autocomplete component', () => (
     <NewAutocomplete
+      isValid={false}
       onSubmit={() => {}}
       // eslint-disable-next-line
       onChange={(input, cursor, action, updatedTabStops) => { }}

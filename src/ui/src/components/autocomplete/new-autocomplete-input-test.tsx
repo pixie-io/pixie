@@ -13,6 +13,7 @@ describe('<AutcompleteInput/> test', () => {
         setCursor={noop}
         cursorPos={8}
         placeholder='test'
+        isValid={false}
         value={
           [{
             type: 'key',
@@ -41,6 +42,7 @@ describe('<AutcompleteInput/> test', () => {
         cursorPos={0}
         placeholder='test'
         value={[]}
+        isValid={false}
       />,
     );
     expect(wrapper.find('span')).toHaveLength(1);
