@@ -178,9 +178,16 @@ class DwarfReader {
 
   bool IsValid() { return dwarf_context_->getNumCompileUnits() != 0; }
 
+  const std::optional<llvm::dwarf::SourceLanguage>& source_language() const {
+    return source_language_;
+  }
+
  private:
   DwarfReader(std::unique_ptr<llvm::MemoryBuffer> buffer,
               std::unique_ptr<llvm::DWARFContext> dwarf_context);
+
+  // Detects the source language of the dwarf content being read.
+  void DetectSourceLanguage();
 
   // Builds an index for certain commonly used DIE types (e.g. structs and functions).
   // When making multiple DwarfReader calls, this speeds up the process at the cost of some memory.
@@ -189,6 +196,9 @@ class DwarfReader {
   static Status GetMatchingDIEs(llvm::DWARFContext::unit_iterator_range CUs, std::string_view name,
                                 std::optional<llvm::dwarf::Tag> tag,
                                 std::vector<llvm::DWARFDie>* dies_out);
+
+  // Records the source language of the DWARF information.
+  std::optional<llvm::dwarf::SourceLanguage> source_language_;
 
   std::unique_ptr<llvm::MemoryBuffer> memory_buffer_;
   std::unique_ptr<llvm::DWARFContext> dwarf_context_;

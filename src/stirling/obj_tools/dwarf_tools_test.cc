@@ -45,6 +45,14 @@ TEST_F(DwarfReaderTest, NonExistentPath) {
   ASSERT_NOT_OK(s);
 }
 
+TEST_F(DwarfReaderTest, IndexDIEs) {
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(kCppBinaryPath, /*index*/ true));
+  ASSERT_TRUE(dwarf_reader->source_language());
+  // We use C++17, but the dwarf shows 14.
+  EXPECT_EQ(dwarf_reader->source_language().value(), llvm::dwarf::DW_LANG_C_plus_plus_14);
+}
+
 TEST_F(DwarfReaderTest, GetMatchingDIEs) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        DwarfReader::Create(kCppBinaryPath));

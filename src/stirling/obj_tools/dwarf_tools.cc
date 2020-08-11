@@ -119,7 +119,10 @@ StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(std::string_view obj_
 
   auto dwarf_reader = std::unique_ptr<DwarfReader>(
       new DwarfReader(std::move(buffer), DWARFContext::create(*obj_file)));
+
   if (index) {
+    // Source language determines whether or not to index overloaded functions.
+    dwarf_reader->DetectSourceLanguage();
     dwarf_reader->IndexDIEs();
   }
 
@@ -153,6 +156,28 @@ bool IsMatchingDIE(std::string_view name, std::optional<llvm::dwarf::Tag> tag,
   // const char* die_linkage_name = die.getName(llvm::DINameKind::LinkageName);
 
   return (die_short_name && name == die_short_name);
+}
+
+StatusOr<uint64_t> GetUnsignedAttribute(const llvm::DWARFDie& die, llvm::dwarf::Attribute attr) {
+  PL_ASSIGN_OR_RETURN(
+      const DWARFFormValue& type_attr,
+      AdaptLLVMOptional(die.find(attr), absl::Substitute("Could not find attribute '$0'",
+                                                         magic_enum::enum_name(attr))));
+  auto attr_opt = type_attr.getAsUnsignedConstant();
+  if (attr_opt.hasValue()) {
+    return attr_opt.getValue();
+  }
+  return error::InvalidArgument("Attribute '$0' does not appear to be unsigned",
+                                magic_enum::enum_name(attr));
+}
+
+StatusOr<llvm::dwarf::SourceLanguage> GetSourceLanguage(const DWARFDie& compile_unit_die) {
+  if (compile_unit_die.getTag() != llvm::dwarf::DW_TAG_compile_unit) {
+    return error::InvalidArgument("Input tag is not DW_TAG_compile_unit");
+  }
+  PL_ASSIGN_OR_RETURN(uint64_t lang_enum,
+                      GetUnsignedAttribute(compile_unit_die, llvm::dwarf::DW_AT_language));
+  return static_cast<llvm::dwarf::SourceLanguage>(lang_enum);
 }
 
 }  // namespace
@@ -189,6 +214,17 @@ bool IsIndexedType(llvm::dwarf::Tag tag) {
 bool IsNamespace(llvm::dwarf::Tag tag) { return tag == llvm::dwarf::DW_TAG_namespace; }
 
 }  // namespace
+
+void DwarfReader::DetectSourceLanguage() {
+  DWARFContext::unit_iterator_range CUs = dwarf_context_->compile_units();
+  for (const auto& CU : CUs) {
+    auto lang_or = GetSourceLanguage(CU->getUnitDIE());
+    if (lang_or.ok()) {
+      source_language_ = lang_or.ValueOrDie();
+      return;
+    }
+  }
+}
 
 void DwarfReader::IndexDIEs() {
   DWARFContext::unit_iterator_range CUs = dwarf_context_->normal_units();
