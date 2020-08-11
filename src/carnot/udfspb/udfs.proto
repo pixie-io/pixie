@@ -100,3 +100,56 @@ message SemanticInferenceRule {
   // non-scalar udfs/udas.
   pl.types.SemanticType output_type = 6;
 }
+
+// IdentDoc is a documentation for a single identifier (argument or return value).
+message IdentDoc {
+  string ident = 1;
+  string desc = 2;
+  types.DataType type = 3;
+}
+
+// Documentation specific to a scalar UDF.
+message ScalarDoc {
+  // Documentation for a list of args.
+  repeated IdentDoc args = 1;
+  // Documentation for the return value.
+  IdentDoc retval = 2;
+}
+
+// Example documentation.
+message ExampleDoc {
+  // The value in markdown format.
+  string value = 1;
+}
+
+// Documentation specific to a UDA.
+message UDADoc {
+  // To be filled in.
+}
+
+// Doc is documentation of single UDF.
+message Doc {
+  // Name is the full name. For example: add:(INT64,INT64):FLOAT64.
+  // Corresponds to a UDF that takes in two INT64s and returns a FLOAT64.
+  string name = 1;
+  // The short description.
+  string  brief = 2;
+  // The long form description if it exists.
+  string desc = 3;
+  // A list of examples, if any.
+  repeated ExampleDoc examples = 4;
+
+  // Specific documentation for each type of UDF that we support.
+  oneof u {
+    // Docs for a scalar UDF.
+    ScalarDoc scalar_udf_doc = 5;
+    // Docs for a UDA.
+    UDADoc uda_doc = 6;
+  }
+}
+
+// Docs is the container message holding all the UDF documentation.
+message Docs {
+  // List of UDFs and their corresponding docs.
+  repeated Doc udf = 1;
+}

@@ -511,6 +511,354 @@ func (m *SemanticInferenceRule) GetOutputType() proto1.SemanticType {
 	return proto1.ST_UNSPECIFIED
 }
 
+type IdentDoc struct {
+	Ident string          `protobuf:"bytes,1,opt,name=ident,proto3" json:"ident,omitempty"`
+	Desc  string          `protobuf:"bytes,2,opt,name=desc,proto3" json:"desc,omitempty"`
+	Type  proto1.DataType `protobuf:"varint,3,opt,name=type,proto3,enum=pl.types.DataType" json:"type,omitempty"`
+}
+
+func (m *IdentDoc) Reset()      { *m = IdentDoc{} }
+func (*IdentDoc) ProtoMessage() {}
+func (*IdentDoc) Descriptor() ([]byte, []int) {
+	return fileDescriptor_870a8b723557d52e, []int{5}
+}
+func (m *IdentDoc) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *IdentDoc) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_IdentDoc.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *IdentDoc) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_IdentDoc.Merge(m, src)
+}
+func (m *IdentDoc) XXX_Size() int {
+	return m.Size()
+}
+func (m *IdentDoc) XXX_DiscardUnknown() {
+	xxx_messageInfo_IdentDoc.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_IdentDoc proto.InternalMessageInfo
+
+func (m *IdentDoc) GetIdent() string {
+	if m != nil {
+		return m.Ident
+	}
+	return ""
+}
+
+func (m *IdentDoc) GetDesc() string {
+	if m != nil {
+		return m.Desc
+	}
+	return ""
+}
+
+func (m *IdentDoc) GetType() proto1.DataType {
+	if m != nil {
+		return m.Type
+	}
+	return proto1.DATA_TYPE_UNKNOWN
+}
+
+type ScalarDoc struct {
+	Args   []*IdentDoc `protobuf:"bytes,1,rep,name=args,proto3" json:"args,omitempty"`
+	Retval *IdentDoc   `protobuf:"bytes,2,opt,name=retval,proto3" json:"retval,omitempty"`
+}
+
+func (m *ScalarDoc) Reset()      { *m = ScalarDoc{} }
+func (*ScalarDoc) ProtoMessage() {}
+func (*ScalarDoc) Descriptor() ([]byte, []int) {
+	return fileDescriptor_870a8b723557d52e, []int{6}
+}
+func (m *ScalarDoc) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ScalarDoc) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ScalarDoc.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ScalarDoc) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ScalarDoc.Merge(m, src)
+}
+func (m *ScalarDoc) XXX_Size() int {
+	return m.Size()
+}
+func (m *ScalarDoc) XXX_DiscardUnknown() {
+	xxx_messageInfo_ScalarDoc.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ScalarDoc proto.InternalMessageInfo
+
+func (m *ScalarDoc) GetArgs() []*IdentDoc {
+	if m != nil {
+		return m.Args
+	}
+	return nil
+}
+
+func (m *ScalarDoc) GetRetval() *IdentDoc {
+	if m != nil {
+		return m.Retval
+	}
+	return nil
+}
+
+type ExampleDoc struct {
+	Value string `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (m *ExampleDoc) Reset()      { *m = ExampleDoc{} }
+func (*ExampleDoc) ProtoMessage() {}
+func (*ExampleDoc) Descriptor() ([]byte, []int) {
+	return fileDescriptor_870a8b723557d52e, []int{7}
+}
+func (m *ExampleDoc) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ExampleDoc) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ExampleDoc.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ExampleDoc) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ExampleDoc.Merge(m, src)
+}
+func (m *ExampleDoc) XXX_Size() int {
+	return m.Size()
+}
+func (m *ExampleDoc) XXX_DiscardUnknown() {
+	xxx_messageInfo_ExampleDoc.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ExampleDoc proto.InternalMessageInfo
+
+func (m *ExampleDoc) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
+
+type UDADoc struct {
+}
+
+func (m *UDADoc) Reset()      { *m = UDADoc{} }
+func (*UDADoc) ProtoMessage() {}
+func (*UDADoc) Descriptor() ([]byte, []int) {
+	return fileDescriptor_870a8b723557d52e, []int{8}
+}
+func (m *UDADoc) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UDADoc) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UDADoc.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UDADoc) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UDADoc.Merge(m, src)
+}
+func (m *UDADoc) XXX_Size() int {
+	return m.Size()
+}
+func (m *UDADoc) XXX_DiscardUnknown() {
+	xxx_messageInfo_UDADoc.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UDADoc proto.InternalMessageInfo
+
+type Doc struct {
+	Name     string        `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Brief    string        `protobuf:"bytes,2,opt,name=brief,proto3" json:"brief,omitempty"`
+	Desc     string        `protobuf:"bytes,3,opt,name=desc,proto3" json:"desc,omitempty"`
+	Examples []*ExampleDoc `protobuf:"bytes,4,rep,name=examples,proto3" json:"examples,omitempty"`
+	// Types that are valid to be assigned to U:
+	//	*Doc_ScalarUdfDoc
+	//	*Doc_UdaDoc
+	U isDoc_U `protobuf_oneof:"u"`
+}
+
+func (m *Doc) Reset()      { *m = Doc{} }
+func (*Doc) ProtoMessage() {}
+func (*Doc) Descriptor() ([]byte, []int) {
+	return fileDescriptor_870a8b723557d52e, []int{9}
+}
+func (m *Doc) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Doc) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Doc.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Doc) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Doc.Merge(m, src)
+}
+func (m *Doc) XXX_Size() int {
+	return m.Size()
+}
+func (m *Doc) XXX_DiscardUnknown() {
+	xxx_messageInfo_Doc.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Doc proto.InternalMessageInfo
+
+type isDoc_U interface {
+	isDoc_U()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type Doc_ScalarUdfDoc struct {
+	ScalarUdfDoc *ScalarDoc `protobuf:"bytes,5,opt,name=scalar_udf_doc,json=scalarUdfDoc,proto3,oneof" json:"scalar_udf_doc,omitempty"`
+}
+type Doc_UdaDoc struct {
+	UdaDoc *UDADoc `protobuf:"bytes,6,opt,name=uda_doc,json=udaDoc,proto3,oneof" json:"uda_doc,omitempty"`
+}
+
+func (*Doc_ScalarUdfDoc) isDoc_U() {}
+func (*Doc_UdaDoc) isDoc_U()       {}
+
+func (m *Doc) GetU() isDoc_U {
+	if m != nil {
+		return m.U
+	}
+	return nil
+}
+
+func (m *Doc) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Doc) GetBrief() string {
+	if m != nil {
+		return m.Brief
+	}
+	return ""
+}
+
+func (m *Doc) GetDesc() string {
+	if m != nil {
+		return m.Desc
+	}
+	return ""
+}
+
+func (m *Doc) GetExamples() []*ExampleDoc {
+	if m != nil {
+		return m.Examples
+	}
+	return nil
+}
+
+func (m *Doc) GetScalarUdfDoc() *ScalarDoc {
+	if x, ok := m.GetU().(*Doc_ScalarUdfDoc); ok {
+		return x.ScalarUdfDoc
+	}
+	return nil
+}
+
+func (m *Doc) GetUdaDoc() *UDADoc {
+	if x, ok := m.GetU().(*Doc_UdaDoc); ok {
+		return x.UdaDoc
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Doc) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*Doc_ScalarUdfDoc)(nil),
+		(*Doc_UdaDoc)(nil),
+	}
+}
+
+type Docs struct {
+	Udf []*Doc `protobuf:"bytes,1,rep,name=udf,proto3" json:"udf,omitempty"`
+}
+
+func (m *Docs) Reset()      { *m = Docs{} }
+func (*Docs) ProtoMessage() {}
+func (*Docs) Descriptor() ([]byte, []int) {
+	return fileDescriptor_870a8b723557d52e, []int{10}
+}
+func (m *Docs) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Docs) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Docs.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Docs) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Docs.Merge(m, src)
+}
+func (m *Docs) XXX_Size() int {
+	return m.Size()
+}
+func (m *Docs) XXX_DiscardUnknown() {
+	xxx_messageInfo_Docs.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Docs proto.InternalMessageInfo
+
+func (m *Docs) GetUdf() []*Doc {
+	if m != nil {
+		return m.Udf
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterEnum("pl.carnot.udfspb.UDTFSourceExecutor", UDTFSourceExecutor_name, UDTFSourceExecutor_value)
 	proto.RegisterEnum("pl.carnot.udfspb.UDFExecType", UDFExecType_name, UDFExecType_value)
@@ -520,65 +868,84 @@ func init() {
 	proto.RegisterType((*UDTFSourceSpec)(nil), "pl.carnot.udfspb.UDTFSourceSpec")
 	proto.RegisterType((*UDTFSourceSpec_Arg)(nil), "pl.carnot.udfspb.UDTFSourceSpec.Arg")
 	proto.RegisterType((*SemanticInferenceRule)(nil), "pl.carnot.udfspb.SemanticInferenceRule")
+	proto.RegisterType((*IdentDoc)(nil), "pl.carnot.udfspb.IdentDoc")
+	proto.RegisterType((*ScalarDoc)(nil), "pl.carnot.udfspb.ScalarDoc")
+	proto.RegisterType((*ExampleDoc)(nil), "pl.carnot.udfspb.ExampleDoc")
+	proto.RegisterType((*UDADoc)(nil), "pl.carnot.udfspb.UDADoc")
+	proto.RegisterType((*Doc)(nil), "pl.carnot.udfspb.Doc")
+	proto.RegisterType((*Docs)(nil), "pl.carnot.udfspb.Docs")
 }
 
 func init() { proto.RegisterFile("src/carnot/udfspb/udfs.proto", fileDescriptor_870a8b723557d52e) }
 
 var fileDescriptor_870a8b723557d52e = []byte{
-	// 847 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x55, 0xcf, 0x8f, 0xdb, 0x44,
-	0x14, 0xce, 0x24, 0xd9, 0x1f, 0x3c, 0x27, 0xa9, 0x99, 0x42, 0x15, 0x2a, 0x6a, 0x42, 0x84, 0x60,
-	0xa9, 0x54, 0xaf, 0x94, 0x4a, 0xb4, 0x12, 0x8b, 0xb4, 0xde, 0xc6, 0x41, 0x11, 0xcb, 0xb2, 0xb2,
-	0x37, 0x45, 0xe2, 0x62, 0x4d, 0xec, 0x71, 0x1a, 0xc9, 0x6b, 0x5b, 0xe3, 0x19, 0x44, 0x39, 0x71,
-	0xe7, 0xc2, 0x9f, 0x51, 0x89, 0x7f, 0x04, 0x24, 0x0e, 0x7b, 0xec, 0x91, 0xcd, 0x0a, 0x89, 0x63,
-	0xaf, 0xdc, 0x90, 0x67, 0xec, 0x34, 0xe9, 0x26, 0x59, 0x2e, 0x9c, 0x32, 0xf3, 0xe6, 0xfb, 0xfc,
-	0xe6, 0x7b, 0xdf, 0x7b, 0x13, 0x78, 0x3f, 0x63, 0xfe, 0xbe, 0x4f, 0x58, 0x9c, 0xf0, 0x7d, 0x11,
-	0x84, 0x59, 0x3a, 0x96, 0x3f, 0x66, 0xca, 0x12, 0x9e, 0x60, 0x3d, 0x8d, 0x4c, 0x75, 0x68, 0xaa,
-	0xc3, 0xbb, 0xdd, 0x1c, 0x9f, 0x3d, 0x23, 0x8c, 0x06, 0xfb, 0xfc, 0x79, 0x4a, 0xb3, 0x7d, 0x89,
-	0x54, 0x6b, 0xc5, 0x52, 0x18, 0x4e, 0xc6, 0x11, 0xf5, 0x32, 0x9e, 0x30, 0x5a, 0x40, 0x32, 0xff,
-	0x19, 0x3d, 0x27, 0x05, 0x66, 0x31, 0x6f, 0x1a, 0x91, 0x38, 0x1d, 0xcb, 0x1f, 0x75, 0xda, 0xfd,
-	0x07, 0xc1, 0xce, 0xa8, 0x6f, 0xb9, 0x29, 0xf5, 0x31, 0x86, 0x7a, 0x4c, 0xce, 0x69, 0x1b, 0x75,
-	0xd0, 0xde, 0x5b, 0x8e, 0x5c, 0xe3, 0xc7, 0xd0, 0x9a, 0xc6, 0x53, 0xee, 0x11, 0x36, 0xf1, 0x64,
-	0xe6, 0x76, 0xb5, 0x53, 0xdb, 0x6b, 0xf5, 0xb0, 0x99, 0x46, 0xa6, 0xba, 0x4a, 0x9f, 0x70, 0x72,
-	0xf6, 0x3c, 0xa5, 0x4e, 0x23, 0x47, 0x5a, 0x6c, 0x92, 0x6f, 0x32, 0x7c, 0x00, 0xba, 0x48, 0x03,
-	0xc2, 0xe9, 0x02, 0xb7, 0xb6, 0x96, 0xdb, 0x52, 0xd8, 0x39, 0xfb, 0x11, 0x34, 0xc3, 0x69, 0x4c,
-	0xa2, 0xe9, 0x8f, 0x54, 0x72, 0xdb, 0xf5, 0x0e, 0x5a, 0x97, 0xb6, 0x04, 0xe6, 0x3b, 0xfc, 0x29,
-	0xe8, 0x99, 0x48, 0xd3, 0x84, 0xf1, 0xcc, 0x4b, 0x09, 0xe3, 0x53, 0x12, 0xb5, 0xb7, 0x3a, 0x68,
-	0x6f, 0xd7, 0xb9, 0x55, 0xc6, 0x4f, 0x55, 0xb8, 0xfb, 0x07, 0x82, 0xa6, 0xeb, 0x93, 0x88, 0xb0,
-	0x51, 0x7f, 0xf0, 0x3f, 0x54, 0xe0, 0x31, 0xb4, 0xe8, 0x0f, 0xd4, 0xff, 0x4f, 0xfa, 0x1b, 0x39,
-	0x72, 0xce, 0x7c, 0x08, 0x1a, 0xa3, 0x5c, 0xb0, 0xf8, 0x26, 0xed, 0xa0, 0x60, 0xf9, 0xba, 0xfb,
-	0x73, 0x35, 0xb7, 0x72, 0x30, 0x8c, 0xc3, 0x04, 0x3f, 0x80, 0xba, 0x08, 0x48, 0xd6, 0x46, 0x9d,
-	0xda, 0x9e, 0xd6, 0x7b, 0xcf, 0x7c, 0xb3, 0xbb, 0xcc, 0xc2, 0x73, 0x47, 0xc2, 0xf0, 0x21, 0x68,
-	0x99, 0x2c, 0x84, 0x97, 0x1f, 0x4b, 0x81, 0x5a, 0xef, 0x83, 0xeb, 0xac, 0xa5, 0x6a, 0x39, 0xa0,
-	0x38, 0xa3, 0x20, 0xcc, 0xf0, 0x67, 0xb0, 0x25, 0x02, 0x1e, 0x2a, 0x89, 0x5a, 0xaf, 0xb3, 0x2a,
-	0xe3, 0xd9, 0xc0, 0x4d, 0x04, 0xf3, 0xa9, 0x24, 0x2b, 0x38, 0xfe, 0x16, 0x6e, 0x67, 0xf4, 0x9c,
-	0xc4, 0x7c, 0xea, 0x4b, 0xad, 0x1e, 0x13, 0x11, 0xcd, 0xda, 0x75, 0xf9, 0x95, 0x4f, 0x56, 0xdc,
-	0xa0, 0x00, 0x0f, 0xe3, 0x90, 0x32, 0x1a, 0xfb, 0xd4, 0x11, 0x11, 0x75, 0xde, 0x2e, 0xbf, 0x21,
-	0x8b, 0x92, 0x7f, 0xa1, 0xfb, 0x6b, 0x0d, 0x5a, 0xcb, 0x29, 0xd7, 0xb8, 0x5b, 0x27, 0x6c, 0x52,
-	0x4a, 0xfe, 0xe8, 0xa6, 0x6b, 0x9b, 0x16, 0x9b, 0x38, 0x92, 0x81, 0x0f, 0x61, 0x37, 0xf7, 0x4c,
-	0xf0, 0x84, 0xb5, 0x6b, 0xd2, 0xa0, 0x8d, 0x6c, 0xbb, 0xc0, 0x3a, 0x73, 0x16, 0xfe, 0x02, 0x76,
-	0x19, 0x8d, 0x08, 0x9f, 0x26, 0xb1, 0xb4, 0x58, 0xeb, 0x7d, 0x28, 0x2d, 0x7e, 0x3d, 0xcf, 0xa6,
-	0x9a, 0xe4, 0x74, 0x6c, 0x3a, 0x05, 0xd0, 0x99, 0x53, 0xee, 0xfe, 0x8e, 0xa0, 0x66, 0xb1, 0xc9,
-	0x4a, 0x59, 0x0f, 0x60, 0xb7, 0xec, 0xba, 0x76, 0x75, 0x6d, 0xf7, 0xec, 0x10, 0xd5, 0x70, 0xf8,
-	0x73, 0x68, 0x2e, 0xb9, 0x50, 0x08, 0xba, 0xf3, 0x9a, 0xe3, 0x2e, 0x16, 0xb8, 0xb1, 0x58, 0x6e,
-	0x7c, 0x04, 0xcd, 0x80, 0x86, 0x44, 0x44, 0xdc, 0xfb, 0x9e, 0x44, 0x82, 0x16, 0x5a, 0xee, 0x2d,
-	0x54, 0x43, 0xbd, 0x3b, 0x45, 0xfb, 0x3c, 0xcd, 0x41, 0x4e, 0xa3, 0xe0, 0xc8, 0x5d, 0xf7, 0xaf,
-	0x2a, 0xbc, 0xbb, 0xd2, 0xda, 0x95, 0xea, 0x2c, 0x68, 0x8a, 0x20, 0xf4, 0xe4, 0x70, 0x2d, 0x48,
-	0xbc, 0xb7, 0xaa, 0xfe, 0x83, 0xbc, 0xf0, 0xf2, 0xd6, 0x9a, 0x08, 0xc2, 0x72, 0x83, 0x0f, 0xae,
-	0x4d, 0xb5, 0x9a, 0xcd, 0xb5, 0x92, 0x97, 0x26, 0xfb, 0x70, 0xc5, 0xdb, 0x56, 0xdf, 0xc8, 0x7f,
-	0xf3, 0x7d, 0x3b, 0xb8, 0xf6, 0x36, 0x6c, 0x6d, 0xce, 0xbf, 0xf4, 0x3e, 0x3c, 0x02, 0x2d, 0x11,
-	0x3c, 0x15, 0x5c, 0xc9, 0xdf, 0xde, 0xe8, 0x16, 0x28, 0x68, 0xbe, 0xbe, 0xff, 0x02, 0x01, 0xbe,
-	0xde, 0x93, 0xf8, 0x1d, 0xd0, 0xf3, 0xa8, 0x37, 0x3a, 0x71, 0x4f, 0xed, 0x27, 0xc3, 0xc1, 0xd0,
-	0xee, 0xeb, 0x15, 0x7c, 0x1b, 0x6e, 0xc9, 0xa8, 0x75, 0x7c, 0xec, 0x59, 0x5f, 0xda, 0x27, 0x67,
-	0xae, 0x8e, 0xb0, 0x0e, 0x8d, 0x79, 0xf0, 0xd4, 0xfe, 0x5a, 0xaf, 0x2e, 0xc1, 0xbe, 0xb2, 0x8f,
-	0x9f, 0x0e, 0x4f, 0xf4, 0xda, 0x3c, 0xe8, 0x8e, 0x8e, 0x5c, 0xfb, 0x4c, 0x22, 0xeb, 0xf8, 0x8e,
-	0x4a, 0x5e, 0x06, 0x0b, 0xf0, 0xd6, 0x1c, 0xfc, 0xcd, 0x89, 0x5d, 0x06, 0xb7, 0xef, 0x7f, 0x0c,
-	0xda, 0x82, 0x7b, 0xb8, 0x05, 0xe0, 0x3e, 0xb1, 0x8e, 0x2d, 0xc7, 0x1b, 0xf5, 0x07, 0x7a, 0x05,
-	0xef, 0x40, 0x6d, 0xd4, 0xb7, 0x74, 0x74, 0x74, 0x70, 0x71, 0x69, 0x54, 0x5e, 0x5e, 0x1a, 0x95,
-	0x57, 0x97, 0x06, 0xfa, 0x69, 0x66, 0xa0, 0x17, 0x33, 0x03, 0xfd, 0x36, 0x33, 0xd0, 0xc5, 0xcc,
-	0x40, 0x7f, 0xce, 0x0c, 0xf4, 0xf7, 0xcc, 0xa8, 0xbc, 0x9a, 0x19, 0xe8, 0x97, 0x2b, 0xa3, 0x72,
-	0x71, 0x65, 0x54, 0x5e, 0x5e, 0x19, 0x95, 0xef, 0xb6, 0x55, 0x83, 0x8c, 0xb7, 0xe5, 0xdf, 0xe0,
-	0xc3, 0x7f, 0x03, 0x00, 0x00, 0xff, 0xff, 0xd1, 0xbe, 0x26, 0xc0, 0x9e, 0x07, 0x00, 0x00,
+	// 1054 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x56, 0xcf, 0x6b, 0x1b, 0x47,
+	0x14, 0xd6, 0x7a, 0x25, 0x59, 0x7e, 0x92, 0x95, 0xed, 0xc4, 0x09, 0xaa, 0x9b, 0x6c, 0xd5, 0xa5,
+	0x24, 0x6e, 0x20, 0x6b, 0x90, 0xa1, 0x31, 0xd4, 0x05, 0xaf, 0xbd, 0x52, 0x2b, 0xea, 0xba, 0x66,
+	0x65, 0xa5, 0x50, 0x0a, 0xcb, 0x68, 0x77, 0xd6, 0x11, 0xac, 0x77, 0x97, 0xd9, 0x9d, 0x90, 0xf4,
+	0xd4, 0x7b, 0x2f, 0xfd, 0x33, 0x02, 0xfd, 0x47, 0x5a, 0xe8, 0xc1, 0xc7, 0x1c, 0x6b, 0x99, 0x42,
+	0x8f, 0xb9, 0x16, 0x7a, 0x28, 0x33, 0xb3, 0x92, 0xa5, 0x48, 0x72, 0x7a, 0xe9, 0x49, 0x33, 0x6f,
+	0xbe, 0x6f, 0xdf, 0xfb, 0xde, 0x2f, 0x1b, 0xee, 0xa5, 0xd4, 0xdb, 0xf6, 0x30, 0x8d, 0xe2, 0x6c,
+	0x9b, 0xf9, 0x41, 0x9a, 0x0c, 0xc4, 0x8f, 0x99, 0xd0, 0x38, 0x8b, 0x91, 0x96, 0x84, 0xa6, 0x7c,
+	0x34, 0xe5, 0xe3, 0xa6, 0xc1, 0xf1, 0xe9, 0x33, 0x4c, 0x89, 0xbf, 0x9d, 0xbd, 0x4c, 0x48, 0xba,
+	0x2d, 0x90, 0xf2, 0x2c, 0x59, 0x12, 0x93, 0xe1, 0x41, 0x48, 0xdc, 0x34, 0x8b, 0x29, 0xc9, 0x21,
+	0xa9, 0xf7, 0x8c, 0x9c, 0xe3, 0x1c, 0x33, 0xed, 0x37, 0x09, 0x71, 0x94, 0x0c, 0xc4, 0x8f, 0x7c,
+	0x35, 0xfe, 0x56, 0x60, 0xb5, 0x6f, 0x5b, 0xbd, 0x84, 0x78, 0x08, 0x41, 0x31, 0xc2, 0xe7, 0xa4,
+	0xa1, 0x34, 0x95, 0xad, 0x35, 0x47, 0x9c, 0xd1, 0x2e, 0xd4, 0x87, 0xd1, 0x30, 0x73, 0x31, 0x3d,
+	0x73, 0x85, 0xe7, 0xc6, 0x4a, 0x53, 0xdd, 0xaa, 0xb7, 0x90, 0x99, 0x84, 0xa6, 0x0c, 0xc5, 0xc6,
+	0x19, 0x3e, 0x7d, 0x99, 0x10, 0xa7, 0xc6, 0x91, 0x16, 0x3d, 0xe3, 0x97, 0x14, 0xed, 0x81, 0xc6,
+	0x12, 0x1f, 0x67, 0x64, 0x8a, 0xab, 0x2e, 0xe5, 0xd6, 0x25, 0x76, 0xc2, 0x7e, 0x02, 0xeb, 0xc1,
+	0x30, 0xc2, 0xe1, 0xf0, 0x07, 0x22, 0xb8, 0x8d, 0x62, 0x53, 0x59, 0xe6, 0x76, 0x0c, 0xe4, 0x37,
+	0xf4, 0x09, 0x68, 0x29, 0x4b, 0x92, 0x98, 0x66, 0xa9, 0x9b, 0x60, 0x9a, 0x0d, 0x71, 0xd8, 0x28,
+	0x35, 0x95, 0xad, 0x8a, 0x73, 0x6b, 0x6c, 0x3f, 0x91, 0x66, 0xe3, 0x77, 0x05, 0xd6, 0x7b, 0x1e,
+	0x0e, 0x31, 0xed, 0xdb, 0x9d, 0xff, 0x21, 0x03, 0xbb, 0x50, 0x27, 0x2f, 0x88, 0xf7, 0x9f, 0xf4,
+	0xd7, 0x38, 0x72, 0xc2, 0xdc, 0x81, 0x2a, 0x25, 0x19, 0xa3, 0xd1, 0xbb, 0xb4, 0x83, 0x84, 0xf1,
+	0xb3, 0xf1, 0xd3, 0x0a, 0x2f, 0x65, 0xa7, 0x1b, 0x05, 0x31, 0x7a, 0x0c, 0x45, 0xe6, 0xe3, 0xb4,
+	0xa1, 0x34, 0xd5, 0xad, 0x6a, 0xeb, 0x7d, 0xf3, 0xed, 0xee, 0x32, 0xf3, 0x9a, 0x3b, 0x02, 0x86,
+	0xf6, 0xa1, 0x9a, 0x8a, 0x44, 0xb8, 0xfc, 0x59, 0x08, 0xac, 0xb6, 0x3e, 0x9c, 0x67, 0xcd, 0x64,
+	0xcb, 0x01, 0xc9, 0xe9, 0xfb, 0x41, 0x8a, 0x3e, 0x85, 0x12, 0xf3, 0xb3, 0x40, 0x4a, 0xac, 0xb6,
+	0x9a, 0x8b, 0x3c, 0x9e, 0x76, 0x7a, 0x31, 0xa3, 0x1e, 0x11, 0x64, 0x09, 0x47, 0xdf, 0xc2, 0xed,
+	0x94, 0x9c, 0xe3, 0x28, 0x1b, 0x7a, 0x42, 0xab, 0x4b, 0x59, 0x48, 0xd2, 0x46, 0x51, 0x7c, 0xe5,
+	0xe1, 0x82, 0x08, 0x72, 0x70, 0x37, 0x0a, 0x08, 0x25, 0x91, 0x47, 0x1c, 0x16, 0x12, 0xe7, 0xbd,
+	0xf1, 0x37, 0x44, 0x52, 0xf8, 0x17, 0x8c, 0x5f, 0x54, 0xa8, 0xcf, 0xba, 0x5c, 0x52, 0xdd, 0x22,
+	0xa6, 0x67, 0x63, 0xc9, 0x1f, 0xbf, 0x2b, 0x6c, 0xd3, 0xa2, 0x67, 0x8e, 0x60, 0xa0, 0x7d, 0xa8,
+	0xf0, 0x9a, 0xb1, 0x2c, 0xa6, 0x0d, 0x55, 0x14, 0xe8, 0x46, 0x76, 0x3b, 0xc7, 0x3a, 0x13, 0x16,
+	0xfa, 0x1c, 0x2a, 0x94, 0x84, 0x38, 0x1b, 0xc6, 0x91, 0x28, 0x71, 0xb5, 0xf5, 0x91, 0x28, 0xf1,
+	0xf5, 0x3c, 0x9b, 0x72, 0x92, 0x93, 0x81, 0xe9, 0xe4, 0x40, 0x67, 0x42, 0xd9, 0xfc, 0x4d, 0x01,
+	0xd5, 0xa2, 0x67, 0x0b, 0x65, 0x3d, 0x86, 0xca, 0xb8, 0xeb, 0x1a, 0x2b, 0x4b, 0xbb, 0x67, 0x15,
+	0xcb, 0x86, 0x43, 0x9f, 0xc1, 0xfa, 0x4c, 0x15, 0x72, 0x41, 0x77, 0xaf, 0x39, 0xbd, 0xe9, 0x04,
+	0xd7, 0xa6, 0xd3, 0x8d, 0x0e, 0x60, 0xdd, 0x27, 0x01, 0x66, 0x61, 0xe6, 0x3e, 0xc7, 0x21, 0x23,
+	0xb9, 0x96, 0xfb, 0x53, 0xd9, 0x90, 0x7b, 0x27, 0x6f, 0x9f, 0xa7, 0x1c, 0xe4, 0xd4, 0x72, 0x8e,
+	0xb8, 0x19, 0x7f, 0xae, 0xc0, 0x9d, 0x85, 0xa5, 0x5d, 0xa8, 0xce, 0x82, 0x75, 0xe6, 0x07, 0xae,
+	0x18, 0xae, 0x29, 0x89, 0xf7, 0x17, 0xe5, 0xbf, 0xc3, 0x13, 0x2f, 0xa2, 0xae, 0x32, 0x3f, 0x18,
+	0x5f, 0xd0, 0xde, 0xdc, 0x54, 0xcb, 0xd9, 0x5c, 0x2a, 0x79, 0x66, 0xb2, 0xf7, 0x17, 0xec, 0xb6,
+	0xe2, 0x8d, 0xfc, 0xb7, 0xf7, 0xdb, 0xde, 0xdc, 0x6e, 0x28, 0xdd, 0xec, 0x7f, 0x66, 0x3f, 0x3c,
+	0x81, 0x6a, 0xcc, 0xb2, 0x84, 0x65, 0x52, 0x7e, 0xf9, 0xc6, 0x6a, 0x81, 0x84, 0x8a, 0x1d, 0xf1,
+	0x3d, 0x54, 0xba, 0x3e, 0x89, 0x32, 0x3b, 0xf6, 0xd0, 0x06, 0x94, 0x86, 0xfc, 0x9c, 0xa7, 0x56,
+	0x5e, 0x78, 0xbe, 0x7d, 0x92, 0x7a, 0x22, 0xa5, 0x6b, 0x8e, 0x38, 0xa3, 0x07, 0x50, 0x9c, 0xea,
+	0x8a, 0x45, 0x9d, 0x24, 0xde, 0x8d, 0x18, 0xd6, 0x64, 0x89, 0xf9, 0xe7, 0xcd, 0x7c, 0xb2, 0xe4,
+	0x0a, 0xda, 0x9c, 0xaf, 0xcd, 0x38, 0x90, 0x7c, 0x9e, 0x5a, 0x50, 0xa6, 0x24, 0x7b, 0x8e, 0x43,
+	0xe1, 0xfa, 0x66, 0x46, 0x8e, 0x34, 0x0c, 0x80, 0xf6, 0x0b, 0x7c, 0x9e, 0x84, 0x24, 0x17, 0x24,
+	0x1b, 0x30, 0x17, 0x24, 0x2e, 0x46, 0x05, 0xca, 0x7d, 0xdb, 0xb2, 0x63, 0xcf, 0xf8, 0x47, 0x01,
+	0x95, 0xe3, 0x16, 0xb5, 0xd4, 0x06, 0x94, 0x06, 0x74, 0x48, 0x82, 0x5c, 0xb7, 0xbc, 0x4c, 0x92,
+	0xa1, 0x4e, 0x25, 0x63, 0x97, 0xcf, 0xbd, 0xf0, 0x39, 0x5e, 0x53, 0xf7, 0xe6, 0x23, 0xbd, 0x8e,
+	0xca, 0x99, 0xa0, 0xd1, 0x21, 0xd4, 0xaf, 0xb7, 0xac, 0xeb, 0xc7, 0x9e, 0xf8, 0xc3, 0x54, 0x6d,
+	0x7d, 0xb0, 0x6c, 0xd1, 0xda, 0xb1, 0xf7, 0x65, 0xc1, 0xa9, 0x4d, 0xd6, 0x2c, 0x0f, 0x7e, 0x07,
+	0x56, 0x99, 0x8f, 0x05, 0xbb, 0x2c, 0xd8, 0x8d, 0x85, 0xcb, 0x5d, 0x52, 0xcb, 0xcc, 0xc7, 0x76,
+	0xec, 0x1d, 0xa8, 0xa0, 0x30, 0x63, 0x1b, 0x8a, 0x76, 0xec, 0xa5, 0xe8, 0x21, 0xa8, 0xcc, 0x0f,
+	0xf2, 0xba, 0xdc, 0x99, 0x67, 0xf3, 0xa0, 0x39, 0xe2, 0xd1, 0x2b, 0x05, 0xd0, 0xfc, 0x02, 0x43,
+	0x1b, 0xa0, 0x71, 0xab, 0xdb, 0x3f, 0xee, 0x9d, 0xb4, 0x0f, 0xbb, 0x9d, 0x6e, 0xdb, 0xd6, 0x0a,
+	0xe8, 0x36, 0xdc, 0x12, 0x56, 0xeb, 0xe8, 0xc8, 0xb5, 0xbe, 0x68, 0x1f, 0x9f, 0xf6, 0x34, 0x05,
+	0x69, 0x50, 0x9b, 0x18, 0x4f, 0xda, 0x5f, 0x6b, 0x2b, 0x33, 0xb0, 0xaf, 0xda, 0x47, 0x4f, 0xbb,
+	0xc7, 0x9a, 0x3a, 0x31, 0xf6, 0xfa, 0x07, 0xbd, 0xf6, 0xa9, 0x40, 0x16, 0xd1, 0x5d, 0xe9, 0x7c,
+	0x6c, 0xcc, 0xc1, 0xa5, 0x09, 0xf8, 0x9b, 0xe3, 0xf6, 0xd8, 0x58, 0x7e, 0xf4, 0x00, 0xaa, 0x53,
+	0xa3, 0x8e, 0xea, 0x00, 0xbd, 0x43, 0xeb, 0xc8, 0x72, 0xdc, 0xbe, 0xdd, 0xd1, 0x0a, 0x68, 0x15,
+	0xd4, 0xbe, 0x6d, 0x69, 0xca, 0xc1, 0xde, 0xc5, 0xa5, 0x5e, 0x78, 0x7d, 0xa9, 0x17, 0xde, 0x5c,
+	0xea, 0xca, 0x8f, 0x23, 0x5d, 0x79, 0x35, 0xd2, 0x95, 0x5f, 0x47, 0xba, 0x72, 0x31, 0xd2, 0x95,
+	0x3f, 0x46, 0xba, 0xf2, 0xd7, 0x48, 0x2f, 0xbc, 0x19, 0xe9, 0xca, 0xcf, 0x57, 0x7a, 0xe1, 0xe2,
+	0x4a, 0x2f, 0xbc, 0xbe, 0xd2, 0x0b, 0xdf, 0x95, 0x65, 0x66, 0x06, 0x65, 0xf1, 0x3f, 0xd3, 0xce,
+	0xbf, 0x01, 0x00, 0x00, 0xff, 0xff, 0x81, 0x3b, 0x2b, 0xbe, 0xcb, 0x09, 0x00, 0x00,
 }
 
 func (x UDTFSourceExecutor) String() string {
@@ -862,6 +1229,237 @@ func (this *SemanticInferenceRule) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *IdentDoc) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*IdentDoc)
+	if !ok {
+		that2, ok := that.(IdentDoc)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Ident != that1.Ident {
+		return false
+	}
+	if this.Desc != that1.Desc {
+		return false
+	}
+	if this.Type != that1.Type {
+		return false
+	}
+	return true
+}
+func (this *ScalarDoc) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ScalarDoc)
+	if !ok {
+		that2, ok := that.(ScalarDoc)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Args) != len(that1.Args) {
+		return false
+	}
+	for i := range this.Args {
+		if !this.Args[i].Equal(that1.Args[i]) {
+			return false
+		}
+	}
+	if !this.Retval.Equal(that1.Retval) {
+		return false
+	}
+	return true
+}
+func (this *ExampleDoc) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ExampleDoc)
+	if !ok {
+		that2, ok := that.(ExampleDoc)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Value != that1.Value {
+		return false
+	}
+	return true
+}
+func (this *UDADoc) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*UDADoc)
+	if !ok {
+		that2, ok := that.(UDADoc)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *Doc) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Doc)
+	if !ok {
+		that2, ok := that.(Doc)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.Brief != that1.Brief {
+		return false
+	}
+	if this.Desc != that1.Desc {
+		return false
+	}
+	if len(this.Examples) != len(that1.Examples) {
+		return false
+	}
+	for i := range this.Examples {
+		if !this.Examples[i].Equal(that1.Examples[i]) {
+			return false
+		}
+	}
+	if that1.U == nil {
+		if this.U != nil {
+			return false
+		}
+	} else if this.U == nil {
+		return false
+	} else if !this.U.Equal(that1.U) {
+		return false
+	}
+	return true
+}
+func (this *Doc_ScalarUdfDoc) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Doc_ScalarUdfDoc)
+	if !ok {
+		that2, ok := that.(Doc_ScalarUdfDoc)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ScalarUdfDoc.Equal(that1.ScalarUdfDoc) {
+		return false
+	}
+	return true
+}
+func (this *Doc_UdaDoc) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Doc_UdaDoc)
+	if !ok {
+		that2, ok := that.(Doc_UdaDoc)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.UdaDoc.Equal(that1.UdaDoc) {
+		return false
+	}
+	return true
+}
+func (this *Docs) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Docs)
+	if !ok {
+		that2, ok := that.(Docs)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Udf) != len(that1.Udf) {
+		return false
+	}
+	for i := range this.Udf {
+		if !this.Udf[i].Equal(that1.Udf[i]) {
+			return false
+		}
+	}
+	return true
+}
 func (this *UDASpec) GoString() string {
 	if this == nil {
 		return "nil"
@@ -954,6 +1552,98 @@ func (this *SemanticInferenceRule) GoString() string {
 	s = append(s, "UpdateArgTypes: "+fmt.Sprintf("%#v", this.UpdateArgTypes)+",\n")
 	s = append(s, "ExecArgTypes: "+fmt.Sprintf("%#v", this.ExecArgTypes)+",\n")
 	s = append(s, "OutputType: "+fmt.Sprintf("%#v", this.OutputType)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *IdentDoc) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&udfspb.IdentDoc{")
+	s = append(s, "Ident: "+fmt.Sprintf("%#v", this.Ident)+",\n")
+	s = append(s, "Desc: "+fmt.Sprintf("%#v", this.Desc)+",\n")
+	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ScalarDoc) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&udfspb.ScalarDoc{")
+	if this.Args != nil {
+		s = append(s, "Args: "+fmt.Sprintf("%#v", this.Args)+",\n")
+	}
+	if this.Retval != nil {
+		s = append(s, "Retval: "+fmt.Sprintf("%#v", this.Retval)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ExampleDoc) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&udfspb.ExampleDoc{")
+	s = append(s, "Value: "+fmt.Sprintf("%#v", this.Value)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *UDADoc) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&udfspb.UDADoc{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *Doc) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 10)
+	s = append(s, "&udfspb.Doc{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "Brief: "+fmt.Sprintf("%#v", this.Brief)+",\n")
+	s = append(s, "Desc: "+fmt.Sprintf("%#v", this.Desc)+",\n")
+	if this.Examples != nil {
+		s = append(s, "Examples: "+fmt.Sprintf("%#v", this.Examples)+",\n")
+	}
+	if this.U != nil {
+		s = append(s, "U: "+fmt.Sprintf("%#v", this.U)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *Doc_ScalarUdfDoc) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&udfspb.Doc_ScalarUdfDoc{` +
+		`ScalarUdfDoc:` + fmt.Sprintf("%#v", this.ScalarUdfDoc) + `}`}, ", ")
+	return s
+}
+func (this *Doc_UdaDoc) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&udfspb.Doc_UdaDoc{` +
+		`UdaDoc:` + fmt.Sprintf("%#v", this.UdaDoc) + `}`}, ", ")
+	return s
+}
+func (this *Docs) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&udfspb.Docs{")
+	if this.Udf != nil {
+		s = append(s, "Udf: "+fmt.Sprintf("%#v", this.Udf)+",\n")
+	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1403,6 +2093,296 @@ func (m *SemanticInferenceRule) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *IdentDoc) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *IdentDoc) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *IdentDoc) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Type != 0 {
+		i = encodeVarintUdfs(dAtA, i, uint64(m.Type))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.Desc) > 0 {
+		i -= len(m.Desc)
+		copy(dAtA[i:], m.Desc)
+		i = encodeVarintUdfs(dAtA, i, uint64(len(m.Desc)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Ident) > 0 {
+		i -= len(m.Ident)
+		copy(dAtA[i:], m.Ident)
+		i = encodeVarintUdfs(dAtA, i, uint64(len(m.Ident)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ScalarDoc) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ScalarDoc) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ScalarDoc) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Retval != nil {
+		{
+			size, err := m.Retval.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintUdfs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Args) > 0 {
+		for iNdEx := len(m.Args) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Args[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintUdfs(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ExampleDoc) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ExampleDoc) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ExampleDoc) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Value) > 0 {
+		i -= len(m.Value)
+		copy(dAtA[i:], m.Value)
+		i = encodeVarintUdfs(dAtA, i, uint64(len(m.Value)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *UDADoc) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UDADoc) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UDADoc) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *Doc) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Doc) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Doc) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.U != nil {
+		{
+			size := m.U.Size()
+			i -= size
+			if _, err := m.U.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	if len(m.Examples) > 0 {
+		for iNdEx := len(m.Examples) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Examples[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintUdfs(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if len(m.Desc) > 0 {
+		i -= len(m.Desc)
+		copy(dAtA[i:], m.Desc)
+		i = encodeVarintUdfs(dAtA, i, uint64(len(m.Desc)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Brief) > 0 {
+		i -= len(m.Brief)
+		copy(dAtA[i:], m.Brief)
+		i = encodeVarintUdfs(dAtA, i, uint64(len(m.Brief)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintUdfs(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *Doc_ScalarUdfDoc) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Doc_ScalarUdfDoc) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.ScalarUdfDoc != nil {
+		{
+			size, err := m.ScalarUdfDoc.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintUdfs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2a
+	}
+	return len(dAtA) - i, nil
+}
+func (m *Doc_UdaDoc) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Doc_UdaDoc) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.UdaDoc != nil {
+		{
+			size, err := m.UdaDoc.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintUdfs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x32
+	}
+	return len(dAtA) - i, nil
+}
+func (m *Docs) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Docs) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Docs) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Udf) > 0 {
+		for iNdEx := len(m.Udf) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Udf[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintUdfs(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintUdfs(dAtA []byte, offset int, v uint64) int {
 	offset -= sovUdfs(v)
 	base := offset
@@ -1599,6 +2579,136 @@ func (m *SemanticInferenceRule) Size() (n int) {
 	return n
 }
 
+func (m *IdentDoc) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Ident)
+	if l > 0 {
+		n += 1 + l + sovUdfs(uint64(l))
+	}
+	l = len(m.Desc)
+	if l > 0 {
+		n += 1 + l + sovUdfs(uint64(l))
+	}
+	if m.Type != 0 {
+		n += 1 + sovUdfs(uint64(m.Type))
+	}
+	return n
+}
+
+func (m *ScalarDoc) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Args) > 0 {
+		for _, e := range m.Args {
+			l = e.Size()
+			n += 1 + l + sovUdfs(uint64(l))
+		}
+	}
+	if m.Retval != nil {
+		l = m.Retval.Size()
+		n += 1 + l + sovUdfs(uint64(l))
+	}
+	return n
+}
+
+func (m *ExampleDoc) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Value)
+	if l > 0 {
+		n += 1 + l + sovUdfs(uint64(l))
+	}
+	return n
+}
+
+func (m *UDADoc) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *Doc) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovUdfs(uint64(l))
+	}
+	l = len(m.Brief)
+	if l > 0 {
+		n += 1 + l + sovUdfs(uint64(l))
+	}
+	l = len(m.Desc)
+	if l > 0 {
+		n += 1 + l + sovUdfs(uint64(l))
+	}
+	if len(m.Examples) > 0 {
+		for _, e := range m.Examples {
+			l = e.Size()
+			n += 1 + l + sovUdfs(uint64(l))
+		}
+	}
+	if m.U != nil {
+		n += m.U.Size()
+	}
+	return n
+}
+
+func (m *Doc_ScalarUdfDoc) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ScalarUdfDoc != nil {
+		l = m.ScalarUdfDoc.Size()
+		n += 1 + l + sovUdfs(uint64(l))
+	}
+	return n
+}
+func (m *Doc_UdaDoc) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.UdaDoc != nil {
+		l = m.UdaDoc.Size()
+		n += 1 + l + sovUdfs(uint64(l))
+	}
+	return n
+}
+func (m *Docs) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Udf) > 0 {
+		for _, e := range m.Udf {
+			l = e.Size()
+			n += 1 + l + sovUdfs(uint64(l))
+		}
+	}
+	return n
+}
+
 func sovUdfs(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
@@ -1707,6 +2817,107 @@ func (this *SemanticInferenceRule) String() string {
 		`UpdateArgTypes:` + fmt.Sprintf("%v", this.UpdateArgTypes) + `,`,
 		`ExecArgTypes:` + fmt.Sprintf("%v", this.ExecArgTypes) + `,`,
 		`OutputType:` + fmt.Sprintf("%v", this.OutputType) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *IdentDoc) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&IdentDoc{`,
+		`Ident:` + fmt.Sprintf("%v", this.Ident) + `,`,
+		`Desc:` + fmt.Sprintf("%v", this.Desc) + `,`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ScalarDoc) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForArgs := "[]*IdentDoc{"
+	for _, f := range this.Args {
+		repeatedStringForArgs += strings.Replace(f.String(), "IdentDoc", "IdentDoc", 1) + ","
+	}
+	repeatedStringForArgs += "}"
+	s := strings.Join([]string{`&ScalarDoc{`,
+		`Args:` + repeatedStringForArgs + `,`,
+		`Retval:` + strings.Replace(this.Retval.String(), "IdentDoc", "IdentDoc", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ExampleDoc) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ExampleDoc{`,
+		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *UDADoc) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&UDADoc{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Doc) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForExamples := "[]*ExampleDoc{"
+	for _, f := range this.Examples {
+		repeatedStringForExamples += strings.Replace(f.String(), "ExampleDoc", "ExampleDoc", 1) + ","
+	}
+	repeatedStringForExamples += "}"
+	s := strings.Join([]string{`&Doc{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Brief:` + fmt.Sprintf("%v", this.Brief) + `,`,
+		`Desc:` + fmt.Sprintf("%v", this.Desc) + `,`,
+		`Examples:` + repeatedStringForExamples + `,`,
+		`U:` + fmt.Sprintf("%v", this.U) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Doc_ScalarUdfDoc) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Doc_ScalarUdfDoc{`,
+		`ScalarUdfDoc:` + strings.Replace(fmt.Sprintf("%v", this.ScalarUdfDoc), "ScalarDoc", "ScalarDoc", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Doc_UdaDoc) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Doc_UdaDoc{`,
+		`UdaDoc:` + strings.Replace(fmt.Sprintf("%v", this.UdaDoc), "UDADoc", "UDADoc", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Docs) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForUdf := "[]*Doc{"
+	for _, f := range this.Udf {
+		repeatedStringForUdf += strings.Replace(f.String(), "Doc", "Doc", 1) + ","
+	}
+	repeatedStringForUdf += "}"
+	s := strings.Join([]string{`&Docs{`,
+		`Udf:` + repeatedStringForUdf + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3051,6 +4262,743 @@ func (m *SemanticInferenceRule) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipUdfs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *IdentDoc) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowUdfs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: IdentDoc: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: IdentDoc: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ident", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Ident = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Desc", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Desc = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			m.Type = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Type |= proto1.DataType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipUdfs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ScalarDoc) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowUdfs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ScalarDoc: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ScalarDoc: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Args", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Args = append(m.Args, &IdentDoc{})
+			if err := m.Args[len(m.Args)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Retval", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Retval == nil {
+				m.Retval = &IdentDoc{}
+			}
+			if err := m.Retval.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipUdfs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ExampleDoc) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowUdfs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ExampleDoc: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ExampleDoc: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Value = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipUdfs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UDADoc) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowUdfs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UDADoc: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UDADoc: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipUdfs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Doc) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowUdfs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Doc: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Doc: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Brief", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Brief = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Desc", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Desc = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Examples", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Examples = append(m.Examples, &ExampleDoc{})
+			if err := m.Examples[len(m.Examples)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScalarUdfDoc", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &ScalarDoc{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.U = &Doc_ScalarUdfDoc{v}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UdaDoc", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &UDADoc{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.U = &Doc_UdaDoc{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipUdfs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Docs) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowUdfs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Docs: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Docs: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Udf", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Udf = append(m.Udf, &Doc{})
+			if err := m.Udf[len(m.Udf)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipUdfs(dAtA[iNdEx:])
