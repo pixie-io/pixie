@@ -16,20 +16,32 @@ message TransferResultChunkRequest {
   // RowBatch.
   uuidpb.UUID query_id = 2 [ (gogoproto.customname) = "QueryID" ];
 
-  oneof destination {
-    // When the TransferResultChunkRequest is being sent to another Carnot instance, 'grpc_source_id'
-    // identifies the source node within the query that should receive this RowBatch.
-    uint64 grpc_source_id = 3 [ (gogoproto.customname) = "GRPCSourceID" ];
-    // If this result chunk is being sent to a non-Carnot instance such as the querybroker,
-    // this field denotes the name of the table that it belongs to.
-    string table_name = 4;
+  // Previously used for grpc_source_id and table_name before they were grouped under
+  // the RowBatchResult message.
+  reserved 3;
+  reserved 4;
+
+  // A RowBatch produced by the query, either an intermediate or final result.
+  message ResultRowBatch {
+    // The row batch data.
+    // TODO(nserrino): Fix this to flat buffers/feather for better performance.
+    pl.table_store.schemapb.RowBatchData row_batch = 1;
+
+    oneof destination {
+      // When the TransferResultChunkRequest is being sent to another Carnot instance, 'grpc_source_id'
+      // identifies the source node within the query that should receive this RowBatch.
+      uint64 grpc_source_id = 2 [ (gogoproto.customname) = "GRPCSourceID" ];
+      // If this result chunk is being sent to a non-Carnot instance such as the querybroker,
+      // this field denotes the name of the table that it belongs to.
+      string table_name = 3;
+    }
   }
 
   // Execution and timing info for a given query. These are sent once per agent for a batch query
   // and periodically per agent for a streaming query.
-  message ExecutionAndTimingInfo {
-    // Timing info across the entire query, sent by the top-level agent in the plan.
-    pl.carnot.queryresultspb.QueryTimingInfo timing_info = 1;
+  message QueryExecutionAndTimingInfo {
+    // Previously used for query timing info, which is part of QueryExecutionStats here.
+    reserved 1;
     // Execution info across the entire query, sent by the top-level agent in the plan.
     pl.carnot.queryresultspb.QueryExecutionStats execution_stats = 2;
     // Agent-specific execution stats, sent by every agent in the plan.
@@ -37,10 +49,12 @@ message TransferResultChunkRequest {
   }
 
   oneof result {
-    // TODO(nserrino): Fix this to flat buffers/feather for better performance.
-    pl.table_store.schemapb.RowBatchData row_batch = 5;
+    // A row batch (including its destination).
+    ResultRowBatch row_batch_result = 5;
     // Execution information about the query.
-    ExecutionAndTimingInfo execution_and_timing_info = 6;
+    QueryExecutionAndTimingInfo execution_and_timing_info = 6;
+    // The schema of the results.
+    pl.table_store.schemapb.Schema schema = 7;
   }
 }
 

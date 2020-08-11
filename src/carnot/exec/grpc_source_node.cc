@@ -54,8 +54,13 @@ Status GRPCSourceNode::PopRowBatch() {
         "Called GRPCSourceNode::OptionallyPopRowBatch but there was no available row batch in the "
         "queue.");
   }
+  if (!rb_request->has_row_batch_result()) {
+    return error::Internal(
+        "GRPCSourceNode::PopRowBatch expected TransferResultChunkRequest to have RowBatch "
+        "message.");
+  }
 
-  PL_ASSIGN_OR_RETURN(rb_, RowBatch::FromProto(rb_request->row_batch()));
+  PL_ASSIGN_OR_RETURN(rb_, RowBatch::FromProto(rb_request->row_batch_result().row_batch()));
   return Status::OK();
 }
 

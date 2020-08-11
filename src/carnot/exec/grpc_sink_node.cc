@@ -81,17 +81,18 @@ Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, 
   carnotpb::TransferResultChunkRequest req;
   // Set the metadata for the RowBatch (where it should go).
   req.set_address(plan_node_->address());
+
   if (plan_node_->has_grpc_source_id()) {
-    req.set_grpc_source_id(plan_node_->grpc_source_id());
+    req.mutable_row_batch_result()->set_grpc_source_id(plan_node_->grpc_source_id());
   } else if (plan_node_->has_table_name()) {
-    req.set_table_name(plan_node_->table_name());
+    req.mutable_row_batch_result()->set_table_name(plan_node_->table_name());
   } else {
     return error::Internal("GRPCSink has neither source ID nor table name set.");
   }
 
   ToProto(exec_state->query_id(), req.mutable_query_id());
   // Serialize the RowBatch.
-  PL_RETURN_IF_ERROR(rb.ToProto(req.mutable_row_batch()));
+  PL_RETURN_IF_ERROR(rb.ToProto(req.mutable_row_batch_result()->mutable_row_batch()));
 
   writer_->Write(req);
   if (!rb.eos()) {

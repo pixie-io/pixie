@@ -20,7 +20,16 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
                                    std::unique_ptr<carnotpb::TransferResultChunkRequest> req) {
   absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);
   auto& query_map = query_node_map_[query_id];
-  SourceNodeTracker& snt = query_map.source_node_trackers[req->grpc_source_id()];
+
+  if (!req->has_row_batch_result() ||
+      req->row_batch_result().destination_case() !=
+          carnotpb::TransferResultChunkRequest_ResultRowBatch::DestinationCase::kGrpcSourceId) {
+    return error::Internal(
+        "GRPCRouter::EnqueueRowBatch expected TransferResultChunkRequest to contain a row batch "
+        "with a GPRC source ID.");
+  }
+
+  SourceNodeTracker& snt = query_map.source_node_trackers[req->row_batch_result().grpc_source_id()];
   absl::base_internal::SpinLockHolder snt_lock(&snt.node_lock);
   // It's possible that we see row batches before we have gotten information about the query. To
   // solve this race, We store a backlog of all the pending batches.

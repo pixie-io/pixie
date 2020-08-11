@@ -95,9 +95,9 @@ TEST_F(GRPCSinkNodeTest, basic) {
 
     TransferResultChunkRequest expected_proto;
     expected_proto.set_address(plan_node->address());
-    expected_proto.set_grpc_source_id(plan_node->grpc_source_id());
+    expected_proto.mutable_row_batch_result()->set_grpc_source_id(plan_node->grpc_source_id());
     ToProto(exec_state_->query_id(), expected_proto.mutable_query_id());
-    EXPECT_OK(rb.ToProto(expected_proto.mutable_row_batch()));
+    EXPECT_OK(rb.ToProto(expected_proto.mutable_row_batch_result()->mutable_row_batch()));
     expected_protos[i] = expected_proto;
     tester.ConsumeNext(rb, 5, 0);
   }
