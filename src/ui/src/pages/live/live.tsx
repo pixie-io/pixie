@@ -32,6 +32,7 @@ import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -116,6 +117,7 @@ const StyledListItemIcon = withStyles(({ spacing }: Theme) => createStyles({
 
 const LiveView = () => {
   const classes = useStyles();
+  const { newAutoComplete } = useFlags();
 
   const { pxl, id, saveEditorAndExecute } = React.useContext(ScriptContext);
   const { loading } = React.useContext(VizierGRPCClientContext);
@@ -217,7 +219,7 @@ const LiveView = () => {
                   </div>
                 </EditorSplitPanel>
               </DataDrawerSplitPanel>
-              { localStorage.getItem('px-new-autocomplete') === 'true'
+              { newAutoComplete
                 ? <NewCommandInput open={commandOpen} onClose={toggleCommandOpen} />
                 : <CommandInput open={commandOpen} onClose={toggleCommandOpen} /> }
             </>
