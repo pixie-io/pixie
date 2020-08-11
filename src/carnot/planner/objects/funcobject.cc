@@ -150,13 +150,6 @@ StatusOr<std::shared_ptr<FuncObject>> GetCallMethod(const pypa::AstPtr& ast, QLO
   return func_object_or_s.ConsumeValueOrDie();
 }
 
-Status FuncObject::AddDocString(QLObjectPtr doc_string) {
-  PL_RETURN_IF_ERROR(AssignAttribute("__doc__", doc_string));
-  DCHECK(doc_string->HasNode());
-  DCHECK_EQ(doc_string->node()->type(), IRNodeType::kString);
-  doc_string_ = static_cast<StringIR*>(doc_string->node())->str();
-  return Status::OK();
-}
 
 Status FuncObject::ResolveArgAnnotationsToTypes(
     const absl::flat_hash_map<std::string, QLObjectPtr> arg_annotation_objs) {

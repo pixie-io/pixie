@@ -163,10 +163,6 @@ class FuncObject : public QLObject {
 
   VisSpec* vis_spec() const { return vis_spec_.get(); }
 
-  Status AddDocString(QLObjectPtr doc_string);
-
-  const std::string& doc_string() const { return doc_string_; }
-
   Status ResolveArgAnnotationsToTypes(
       const absl::flat_hash_map<std::string, QLObjectPtr> arg_annotation_objs);
 
@@ -192,9 +188,6 @@ class FuncObject : public QLObject {
   std::string name_;
   // The visualization spec of this function if it has one.
   std::unique_ptr<VisSpec> vis_spec_ = nullptr;
-
-  // The doc string of this function.
-  std::string doc_string_;
 
   std::vector<std::string> arguments_;
   absl::flat_hash_map<std::string, DefaultType> defaults_;

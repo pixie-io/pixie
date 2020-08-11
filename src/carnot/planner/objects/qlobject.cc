@@ -47,6 +47,14 @@ StatusOr<QLObjectPtr> QLObject::FromIRNode(IRNode* node, ASTVisitor* ast_visitor
   }
 }
 
+Status QLObject::SetDocString(QLObjectPtr doc_string) {
+  PL_RETURN_IF_ERROR(AssignAttribute(kDocStringAttributeName, doc_string));
+  DCHECK(doc_string->HasNode());
+  DCHECK_EQ(doc_string->node()->type(), IRNodeType::kString);
+  doc_string_ = static_cast<StringIR*>(doc_string->node())->str();
+  return Status::OK();
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
