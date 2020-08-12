@@ -148,7 +148,7 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["stirling_dt_bpf_test.cc"],
     data = [
-        "//src/stirling/obj_tools/testdata:dummy_exe",
+        "//src/stirling/obj_tools/testdata:dummy_cc_binary",
         "//src/stirling/obj_tools/testdata:dummy_go_binary",
     ],
     flaky = True,

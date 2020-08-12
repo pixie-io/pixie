@@ -5,7 +5,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 # We build dummy_exe with clang++ regardless of the bazel config.
 # This is test data, so we want deterministic debug symbols.
 genrule(
-    name = "dummy_exe",
+    name = "dummy_cc_binary",
     srcs = ["dummy_exe.cc"],
     outs = ["dummy_exe"],
     # -O0: Disables optimization which in turn disables inlining.
@@ -18,7 +18,7 @@ genrule(
 cc_library(
     name = "dummy_exe_fixture",
     hdrs = ["dummy_exe_fixture.h"],
-    data = [":dummy_exe"],
+    data = [":dummy_cc_binary"],
     deps = ["//src/common/exec:cc_library"],
 )
 
