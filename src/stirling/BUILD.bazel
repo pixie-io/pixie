@@ -136,6 +136,17 @@ pl_cc_test(
     name = "stirling_bpf_test",
     timeout = "moderate",
     srcs = ["stirling_bpf_test.cc"],
+    flaky = True,
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "stirling_dt_bpf_test",
+    timeout = "moderate",
+    srcs = ["stirling_dt_bpf_test.cc"],
     data = [
         "//src/stirling/obj_tools/testdata:dummy_exe",
         "//src/stirling/obj_tools/testdata:dummy_go_binary",
