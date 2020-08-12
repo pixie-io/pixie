@@ -184,9 +184,9 @@ class GRPCSinkOperator : public Operator {
   int64_t grpc_source_id() const { return pb_.grpc_source_id(); }
 
   bool has_table_name() const {
-    return pb_.destination_case() == planpb::GRPCSinkOperator::kTableName;
+    return pb_.destination_case() == planpb::GRPCSinkOperator::kOutputTable;
   }
-  std::string table_name() const { return pb_.table_name(); }
+  std::string table_name() const { return pb_.output_table().table_name(); }
 
  private:
   planpb::GRPCSinkOperator pb_;

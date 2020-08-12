@@ -53,8 +53,6 @@ message TransferResultChunkRequest {
     ResultRowBatch row_batch_result = 5;
     // Execution information about the query.
     QueryExecutionAndTimingInfo execution_and_timing_info = 6;
-    // The schema of the results.
-    pl.table_store.schemapb.Schema schema = 7;
   }
 }
 

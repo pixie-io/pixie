@@ -13,6 +13,7 @@ import (
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	"pixielabs.ai/pixielabs/src/carnotpb"
+	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
@@ -193,7 +194,25 @@ func TestWaitForCompletionStreaming(t *testing.T) {
 	}
 	agentIDpb := utils.ProtoFromUUID(&agentUUID)
 
-	e := controllers.NewQueryExecutor(nc, queryUUID)
+	relation1 := &schemapb.Relation{
+		Columns: []*schemapb.Relation_ColumnInfo{
+			&schemapb.Relation_ColumnInfo{
+				ColumnName: "foo",
+			},
+		},
+	}
+	relation2 := &schemapb.Relation{
+		Columns: []*schemapb.Relation_ColumnInfo{
+			&schemapb.Relation_ColumnInfo{
+				ColumnName: "bar",
+			},
+		},
+	}
+	resultSchema := map[string]*schemapb.Relation{
+		"table1": relation1,
+		"table2": relation2,
+	}
+	e := controllers.NewQueryExecutorWithExpectedSchema(nc, queryUUID, resultSchema)
 
 	// Add agent results.
 	res := new(querybrokerpb.AgentQueryResultRequest)
@@ -215,32 +234,6 @@ func TestWaitForCompletionStreaming(t *testing.T) {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
-	relation1 := &schemapb.Relation{
-		Columns: []*schemapb.Relation_ColumnInfo{
-			&schemapb.Relation_ColumnInfo{
-				ColumnName: "foo",
-			},
-		},
-	}
-	relation2 := &schemapb.Relation{
-		Columns: []*schemapb.Relation_ColumnInfo{
-			&schemapb.Relation_ColumnInfo{
-				ColumnName: "bar",
-			},
-		},
-	}
-	schemaMsg := &carnotpb.TransferResultChunkRequest{
-		Address: "foo",
-		QueryID: queryIDpb,
-		Result: &carnotpb.TransferResultChunkRequest_Schema{
-			Schema: &schemapb.Schema{
-				RelationMap: map[string]*schemapb.Relation{
-					"table1": relation1,
-					"table2": relation2,
-				},
-			},
-		},
-	}
 	table1Msg := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
 		QueryID: queryIDpb,
@@ -304,8 +297,6 @@ func TestWaitForCompletionStreaming(t *testing.T) {
 		},
 	}
 
-	err = e.AddStreamedResult(schemaMsg)
-	assert.Nil(t, err, err)
 	err = e.AddStreamedResult(table1Msg)
 	assert.Nil(t, err, err)
 	err = e.AddStreamedResult(table1EOSMsg)
@@ -335,4 +326,57 @@ func TestWaitForCompletionStreaming(t *testing.T) {
 	assert.Equal(t, relation2, tables["table2"].Relation)
 	assert.Equal(t, 2, len(tables["table1"].RowBatches))
 	assert.Equal(t, 1, len(tables["table2"].RowBatches))
+}
+
+func TestOutputSchemaFromPlan(t *testing.T) {
+	agentUUIDStrs := [2]string{
+		agent1ID,
+		agent2ID,
+	}
+
+	agentUUIDs := make([]uuid.UUID, 0)
+	for _, uid := range agentUUIDStrs {
+		u, err := uuid.FromString(uid)
+		if err != nil {
+			t.Fatal(err)
+		}
+		agentUUIDs = append(agentUUIDs, u)
+	}
+
+	// Plan 1 is a valid, populated plan
+	plannerResultPB := &distributedpb.LogicalPlannerResult{}
+	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
+		t.Fatal("Could not unmarshal protobuf text for planner result.")
+	}
+
+	planPB1 := plannerResultPB.Plan.QbAddressToPlan[agent1ID]
+	// Plan 2 is an empty plan.
+	planPB2 := plannerResultPB.Plan.QbAddressToPlan[agent2ID]
+
+	planMap := make(map[uuid.UUID]*planpb.Plan)
+	planMap[agentUUIDs[0]] = planPB1
+	planMap[agentUUIDs[1]] = planPB2
+
+	output := controllers.OutputSchemaFromPlan(planMap)
+	assert.Equal(t, 1, len(output))
+	assert.NotNil(t, output["out"])
+	assert.Equal(t, 3, len(output["out"].Columns))
+
+	assert.Equal(t, &schemapb.Relation_ColumnInfo{
+		ColumnName:         "time_",
+		ColumnType:         typespb.TIME64NS,
+		ColumnSemanticType: typespb.ST_NONE,
+	}, output["out"].Columns[0])
+
+	assert.Equal(t, &schemapb.Relation_ColumnInfo{
+		ColumnName:         "cpu_cycles",
+		ColumnType:         typespb.INT64,
+		ColumnSemanticType: typespb.ST_NONE,
+	}, output["out"].Columns[1])
+
+	assert.Equal(t, &schemapb.Relation_ColumnInfo{
+		ColumnName:         "upid",
+		ColumnType:         typespb.UINT128,
+		ColumnSemanticType: typespb.ST_UPID,
+	}, output["out"].Columns[2])
 }

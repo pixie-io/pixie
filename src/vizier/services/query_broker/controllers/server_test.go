@@ -295,7 +295,7 @@ plan: {
 							column_types: TIME64NS
 							column_types: INT64
 							column_types: UINT128
-							tablet: "1"
+							tablet: "1"							
 						}
 					}
 				}
@@ -310,6 +310,9 @@ plan: {
 							column_names: "time_"
 							column_names: "cpu_cycles"
 							column_names: "upid"
+							column_semantic_types: ST_NONE
+							column_semantic_types: ST_NONE
+							column_semantic_types: ST_UPID							
 						}
 					}
 				}

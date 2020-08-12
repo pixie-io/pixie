@@ -42,12 +42,18 @@ type QueryExecutor struct {
 
 // NewQueryExecutor creates a Query Executor for a specific query.
 func NewQueryExecutor(natsConn *nats.Conn, queryID uuid.UUID) Executor {
+	return NewQueryExecutorWithExpectedSchema(natsConn, queryID, nil)
+}
+
+// NewQueryExecutorWithExpectedSchema creates a Query Executor for a specific query and output schema.
+func NewQueryExecutorWithExpectedSchema(natsConn *nats.Conn, queryID uuid.UUID, resultSchema map[string]*schemapb.Relation) Executor {
 	return &QueryExecutor{
 		queryID:    queryID,
 		conn:       natsConn,
 		done:       make(chan bool, 1),
 		gotEOS:     make(map[string]bool),
 		rowBatches: make(map[string][]*schemapb.RowBatchData),
+		schema:     resultSchema,
 	}
 }
 
@@ -97,6 +103,55 @@ func AddQueryPlanToResult(queryResult *queryresultspb.QueryResult, plan *distrib
 	return nil
 }
 
+// OutputSchemaFromPlan takes in a plan map and returns the relations for all of the final output
+// tables in the plan map.
+func OutputSchemaFromPlan(planMap map[uuid.UUID]*planpb.Plan) map[string]*schemapb.Relation {
+	outputRelations := make(map[string]*schemapb.Relation)
+
+	for _, plan := range planMap {
+		if plan == nil {
+			continue
+		}
+		for _, fragment := range plan.Nodes {
+			for _, node := range fragment.Nodes {
+				if node.Op.OpType == planpb.MEMORY_SINK_OPERATOR {
+					memSink := node.Op.GetMemSinkOp()
+					relation := &schemapb.Relation{
+						Columns: []*schemapb.Relation_ColumnInfo{},
+					}
+					for i, colName := range memSink.ColumnNames {
+						relation.Columns = append(relation.Columns, &schemapb.Relation_ColumnInfo{
+							ColumnName:         colName,
+							ColumnType:         memSink.ColumnTypes[i],
+							ColumnSemanticType: memSink.ColumnSemanticTypes[i],
+						})
+					}
+					outputRelations[memSink.Name] = relation
+				}
+				if node.Op.OpType == planpb.GRPC_SINK_OPERATOR {
+					grpcSink := node.Op.GetGRPCSinkOp()
+					outputTableInfo := grpcSink.GetOutputTable()
+					if outputTableInfo == nil {
+						continue
+					}
+					relation := &schemapb.Relation{
+						Columns: []*schemapb.Relation_ColumnInfo{},
+					}
+					for i, colName := range outputTableInfo.ColumnNames {
+						relation.Columns = append(relation.Columns, &schemapb.Relation_ColumnInfo{
+							ColumnName:         colName,
+							ColumnType:         outputTableInfo.ColumnTypes[i],
+							ColumnSemanticType: outputTableInfo.ColumnSemanticTypes[i],
+						})
+					}
+					outputRelations[outputTableInfo.TableName] = relation
+				}
+			}
+		}
+	}
+	return outputRelations
+}
+
 // ExecuteQuery executes a query by sending query fragments to relevant agents.
 func (e *QueryExecutor) ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan, analyze bool) error {
 	queryIDPB := utils.ProtoFromUUID(&e.queryID)
@@ -106,6 +161,10 @@ func (e *QueryExecutor) ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan, analyze
 	// Broadcast query to all the agents in parallel.
 	var wg sync.WaitGroup
 	wg.Add(len(planMap))
+
+	// Set the expected output schema for the case where we are receiving results via TransferResultChunk.
+	// This logic will be removed when the batch API, ReceiveAgentQueryResult, is deprecated.
+	e.schema = OutputSchemaFromPlan(planMap)
 
 	broadcastToAgent := func(agentID uuid.UUID, logicalPlan *planpb.Plan) {
 		defer wg.Done()
@@ -263,9 +322,6 @@ func (e *QueryExecutor) AddStreamedResult(res *carnotpb.TransferResultChunkReque
 			msgQueryID.String(), e.queryID.String())
 	}
 
-	if schema := res.GetSchema(); schema != nil {
-		e.schema = schema.RelationMap
-	}
 	if execStats := res.GetExecutionAndTimingInfo(); execStats != nil {
 		e.executionStats = execStats.ExecutionStats
 		e.agentExecutionStats = execStats.AgentExecutionStats
