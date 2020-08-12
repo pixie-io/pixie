@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"io"
 	"sync"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
+	"pixielabs.ai/pixielabs/src/carnotpb"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 
@@ -72,18 +74,20 @@ type Server struct {
 	hcStatus error
 	hcTime   time.Time
 
-	mdtp    metadatapb.MetadataTracepointServiceClient
-	udfInfo udfspb.UDFInfo
+	mdtp            metadatapb.MetadataTracepointServiceClient
+	udfInfo         udfspb.UDFInfo
+	resultForwarder QueryResultForwarder
 }
 
 // NewServer creates GRPC handlers.
 func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker, mds metadatapb.MetadataTracepointServiceClient, natsConn *nats.Conn) (*Server, error) {
-	return NewServerWithExecutor(env, agentsTracker, mds, natsConn, NewQueryExecutor)
+	return NewServerWithExecutor(env, agentsTracker, NewQueryResultForwarder(), mds, natsConn, NewQueryExecutor)
 }
 
 // NewServerWithExecutor is NewServer with an functor for executor.
 func NewServerWithExecutor(env querybrokerenv.QueryBrokerEnv,
 	agentsTracker AgentsTracker,
+	resultForwarder QueryResultForwarder,
 	mds metadatapb.MetadataTracepointServiceClient,
 	natsConn *nats.Conn,
 	newExecutor func(*nats.Conn, uuid.UUID) Executor) (*Server, error) {
@@ -94,11 +98,13 @@ func NewServerWithExecutor(env querybrokerenv.QueryBrokerEnv,
 	}
 
 	return &Server{
-		env:           env,
-		agentsTracker: agentsTracker,
-		natsConn:      natsConn,
-		newExecutor:   newExecutor,
-		executors:     make(map[uuid.UUID]Executor),
+		env:             env,
+		agentsTracker:   agentsTracker,
+		resultForwarder: resultForwarder,
+
+		natsConn:    natsConn,
+		newExecutor: newExecutor,
+		executors:   make(map[uuid.UUID]Executor),
 
 		mdtp:    mds,
 		udfInfo: udfInfo,
@@ -510,4 +516,69 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 		},
 	}
 	return srv.Send(resp)
+}
+
+// TransferResultChunk implements the API that allows the query broker receive streamed results
+// from Carnot instances.
+func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResultChunkServer) error {
+	var queryID uuid.UUID
+
+	defer func() {
+		if queryID != uuid.Nil {
+			// Stop the client stream, if it still exists in the result forwarder.
+			// It may have already been cancelled before this point.
+			s.resultForwarder.OptionallyCancelClientStream(queryID)
+		}
+	}()
+
+	sendAndClose := func(success bool, message string) error {
+		return srv.SendAndClose(&carnotpb.TransferResultChunkResponse{
+			Success: success,
+			Message: message,
+		})
+	}
+
+	for {
+		select {
+		case <-srv.Context().Done():
+			return sendAndClose(true, "")
+		default:
+			msg, err := srv.Recv()
+			// Stream closed from server side.
+			if err != nil && err == io.EOF {
+				return sendAndClose(true, "")
+			}
+			if err != nil {
+				return status.Errorf(codes.Internal, "Error reading TransferResultChunk stream: %+v", err)
+			}
+
+			qid, err := utils.UUIDFromProto(msg.QueryID)
+			if err != nil {
+				return status.Error(codes.InvalidArgument, err.Error())
+			}
+
+			if queryID == uuid.Nil {
+				queryID = qid
+			}
+			if queryID != qid {
+				return status.Errorf(codes.Internal,
+					"Received results from multiple queries in the same TransferResultChunk stream: %s and %s",
+					queryID, qid)
+			}
+
+			err = s.resultForwarder.ForwardQueryResult(msg)
+			// If the result wasn't forwarded, the client stream may have be cancelled.
+			// This should not cause TransferResultChunk to return an error, we just include in the response
+			// that the latest result chunk was not forwarded.
+			if err != nil {
+				log.WithError(err).Infof("Could not forward result message for query %s")
+				return sendAndClose(false, err.Error())
+			}
+		}
+	}
+}
+
+// Done is a legacy API on ResultSinkService that will be deprecated.
+func (s *Server) Done(ctx context.Context, req *carnotpb.DoneRequest) (*carnotpb.DoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Done not implemented")
 }

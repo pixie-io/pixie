@@ -3,13 +3,13 @@ package tracker_test
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
 
 	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	utils "pixielabs.ai/pixielabs/src/utils"
+	testingutils "pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	mock_metadatapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
@@ -33,29 +33,6 @@ func (a *fakeAgentsInfo) UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate
 	if len(agentUpdates) > 0 || len(schemaInfos) > 0 {
 		a.wg.Done()
 	}
-	return nil
-}
-
-type mockContext struct{}
-
-// Deadline returns the deadline for the mock context.
-func (ctx mockContext) Deadline() (deadline time.Time, ok bool) {
-	return deadline, ok
-}
-
-// Done returns the done channel for the mock context.
-func (ctx mockContext) Done() <-chan struct{} {
-	ch := make(chan struct{})
-	return ch
-}
-
-// Err returns the error for the mock context.
-func (ctx mockContext) Err() error {
-	return nil
-}
-
-// Value returns the value for the mock context.
-func (ctx mockContext) Value(key interface{}) interface{} {
 	return nil
 }
 
@@ -108,7 +85,7 @@ func TestAgentsInfo_GetAgentInfo(t *testing.T) {
 		AgentSchemas: testSchema,
 	}
 
-	mockResp.EXPECT().Context().Return(&mockContext{}).AnyTimes()
+	mockResp.EXPECT().Context().Return(&testingutils.MockContext{}).AnyTimes()
 	mockResp.EXPECT().Recv().Return(msg1, nil)
 	mockResp.EXPECT().Recv().Return(msg2, nil)
 	mockResp.EXPECT().Recv().Return(&metadatapb.AgentUpdatesResponse{}, nil).AnyTimes()

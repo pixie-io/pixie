@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+
+	"pixielabs.ai/pixielabs/src/carnotpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
@@ -121,6 +123,7 @@ func main() {
 		httpmiddleware.WithBearerAuthMiddleware(env, mux), maxMsgSize)
 	querybrokerpb.RegisterQueryBrokerServiceServer(s.GRPCServer(), server)
 	vizierpb.RegisterVizierServiceServer(s.GRPCServer(), server)
+	carnotpb.RegisterResultSinkServiceServer(s.GRPCServer(), server)
 
 	// For the passthrough proxy we create a GRPC client to the current server. It appears really
 	// hard to emulate the streaming GRPC connection and this helps keep the API straightforward.

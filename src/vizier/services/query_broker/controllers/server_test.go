@@ -2,6 +2,8 @@ package controllers_test
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
@@ -9,11 +11,19 @@ import (
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
+	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
+	"pixielabs.ai/pixielabs/src/carnotpb"
+	mock_carnotpb "pixielabs.ai/pixielabs/src/carnotpb/mock"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
+	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
+	pbutils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 	mock_controllers "pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers/mock"
@@ -424,7 +434,7 @@ func TestPlannerErrorResult(t *testing.T) {
 		Plan(plannerStatePB, queryRequest).
 		Return(badPlannerResultPB, nil)
 
-	s, err := controllers.NewServerWithExecutor(env, &at, nil, nc, createExecutorMock)
+	s, err := controllers.NewServerWithExecutor(env, &at, controllers.NewQueryResultForwarder(), nil, nc, createExecutorMock)
 	queryID := uuid.NewV4()
 	auth := authcontext.New()
 	ctx := authcontext.NewContext(context.Background(), auth)
@@ -494,7 +504,7 @@ func TestErrorInStatusResult(t *testing.T) {
 		Plan(plannerStatePB, queryRequest).
 		Return(badPlannerResultPB, nil)
 
-	s, err := controllers.NewServerWithExecutor(env, &at, nil, nc, createExecutorMock)
+	s, err := controllers.NewServerWithExecutor(env, &at, controllers.NewQueryResultForwarder(), nil, nc, createExecutorMock)
 
 	queryID := uuid.NewV4()
 	auth := authcontext.New()
@@ -505,4 +515,265 @@ func TestErrorInStatusResult(t *testing.T) {
 		t.Fatal("Error while executing query.")
 	}
 	assert.Equal(t, status, badPlannerResultPB.Status)
+}
+
+type fakeResultForwarder struct {
+	ClientStreamClosed bool
+	ReceivedResults    []*carnotpb.TransferResultChunkRequest
+}
+
+// ForwardQueryResult forwards the agent result to the client result stream.
+func (f *fakeResultForwarder) ForwardQueryResult(msg *carnotpb.TransferResultChunkRequest) error {
+	if f.ClientStreamClosed {
+		return fmt.Errorf("Client stream for query has been closed")
+	}
+	f.ReceivedResults = append(f.ReceivedResults, msg)
+	return nil
+}
+
+// CloseQueryResultStream closes both the client and agent side streams if either side terminates.
+func (f *fakeResultForwarder) OptionallyCancelClientStream(queryID uuid.UUID) error {
+	f.ClientStreamClosed = true
+	return nil
+}
+
+func TestTransferResultChunk_AgentStreamComplete(t *testing.T) {
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	if !assert.Equal(t, 1, len(plannerStatePB.DistributedState.CarnotInfo)) {
+		t.FailNow()
+	}
+	agentsInfo := tracker.NewTestAgentsInfo(plannerStatePB.DistributedState)
+	at := fakeAgentsTracker{
+		agentsInfo: agentsInfo,
+	}
+	rf := fakeResultForwarder{}
+
+	// Set up server.
+	env, err := querybrokerenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	s, err := controllers.NewServerWithExecutor(env, &at, &rf, nil, nc, controllers.NewQueryExecutor)
+	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
+
+	sv := new(schemapb.RowBatchData)
+	if err := proto.UnmarshalText(rowBatchPb, sv); err != nil {
+		t.Fatalf("Cannot unmarshal proto %v", err)
+	}
+
+	queryID := uuid.NewV4()
+	queryIDpb := pbutils.ProtoFromUUID(&queryID)
+
+	msg1 := &carnotpb.TransferResultChunkRequest{
+		Address: "foo",
+		QueryID: queryIDpb,
+		Result: &carnotpb.TransferResultChunkRequest_RowBatchResult{
+			RowBatchResult: &carnotpb.TransferResultChunkRequest_ResultRowBatch{
+				RowBatch: sv,
+				Destination: &carnotpb.TransferResultChunkRequest_ResultRowBatch_TableName{
+					TableName: "output_table_1",
+				},
+			},
+		},
+	}
+	msg2 := &carnotpb.TransferResultChunkRequest{
+		Address: "foo",
+		QueryID: queryIDpb,
+		Result: &carnotpb.TransferResultChunkRequest_ExecutionAndTimingInfo{
+			ExecutionAndTimingInfo: &carnotpb.TransferResultChunkRequest_QueryExecutionAndTimingInfo{
+				ExecutionStats: &queryresultspb.QueryExecutionStats{
+					Timing: &queryresultspb.QueryTimingInfo{
+						ExecutionTimeNs:   5010,
+						CompilationTimeNs: 350,
+					},
+					BytesProcessed:   4521,
+					RecordsProcessed: 4,
+				},
+			},
+		},
+	}
+
+	srv.EXPECT().Context().Return(&testingutils.MockContext{}).AnyTimes()
+	srv.EXPECT().Recv().Return(msg1, nil)
+	srv.EXPECT().Recv().Return(msg2, nil)
+	srv.EXPECT().Recv().Return(nil, io.EOF)
+	srv.EXPECT().SendAndClose(&carnotpb.TransferResultChunkResponse{
+		Success: true,
+		Message: "",
+	}).Return(nil)
+
+	assert.False(t, rf.ClientStreamClosed)
+	assert.Equal(t, 0, len(rf.ReceivedResults))
+
+	err = s.TransferResultChunk(srv)
+	if !assert.Nil(t, err) {
+		t.Fatal("Error while transferring result chunk", err)
+	}
+
+	assert.True(t, rf.ClientStreamClosed)
+	assert.Equal(t, 2, len(rf.ReceivedResults))
+	assert.Equal(t, msg1, rf.ReceivedResults[0])
+	assert.Equal(t, msg2, rf.ReceivedResults[1])
+}
+
+func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	if !assert.Equal(t, 1, len(plannerStatePB.DistributedState.CarnotInfo)) {
+		t.FailNow()
+	}
+	agentsInfo := tracker.NewTestAgentsInfo(plannerStatePB.DistributedState)
+	at := fakeAgentsTracker{
+		agentsInfo: agentsInfo,
+	}
+	rf := fakeResultForwarder{}
+
+	// Set up server.
+	env, err := querybrokerenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	s, err := controllers.NewServerWithExecutor(env, &at, &rf, nil, nc, controllers.NewQueryExecutor)
+	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
+
+	sv := new(schemapb.RowBatchData)
+	if err := proto.UnmarshalText(rowBatchPb, sv); err != nil {
+		t.Fatalf("Cannot unmarshal proto %v", err)
+	}
+
+	queryID := uuid.NewV4()
+	queryIDpb := pbutils.ProtoFromUUID(&queryID)
+
+	msg1 := &carnotpb.TransferResultChunkRequest{
+		Address: "foo",
+		QueryID: queryIDpb,
+		Result: &carnotpb.TransferResultChunkRequest_RowBatchResult{
+			RowBatchResult: &carnotpb.TransferResultChunkRequest_ResultRowBatch{
+				RowBatch: sv,
+				Destination: &carnotpb.TransferResultChunkRequest_ResultRowBatch_TableName{
+					TableName: "output_table_1",
+				},
+			},
+		},
+	}
+
+	srv.EXPECT().Context().Return(&testingutils.MockContext{}).AnyTimes()
+	srv.EXPECT().Recv().Return(msg1, nil)
+	srv.EXPECT().Recv().Return(nil, fmt.Errorf("Agent error"))
+
+	assert.False(t, rf.ClientStreamClosed)
+	assert.Equal(t, 0, len(rf.ReceivedResults))
+
+	err = s.TransferResultChunk(srv)
+	assert.NotNil(t, err)
+
+	res, ok := status.FromError(err)
+	require.True(t, ok)
+	assert.Equal(t, codes.Internal, res.Code())
+
+	assert.True(t, rf.ClientStreamClosed)
+	assert.Equal(t, 1, len(rf.ReceivedResults))
+	assert.Equal(t, msg1, rf.ReceivedResults[0])
+}
+
+func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	if !assert.Equal(t, 1, len(plannerStatePB.DistributedState.CarnotInfo)) {
+		t.FailNow()
+	}
+	agentsInfo := tracker.NewTestAgentsInfo(plannerStatePB.DistributedState)
+	at := fakeAgentsTracker{
+		agentsInfo: agentsInfo,
+	}
+	rf := fakeResultForwarder{
+		ClientStreamClosed: true,
+	}
+
+	// Set up server.
+	env, err := querybrokerenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	s, err := controllers.NewServerWithExecutor(env, &at, &rf, nil, nc, controllers.NewQueryExecutor)
+	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
+
+	sv := new(schemapb.RowBatchData)
+	if err := proto.UnmarshalText(rowBatchPb, sv); err != nil {
+		t.Fatalf("Cannot unmarshal proto %v", err)
+	}
+
+	queryID := uuid.NewV4()
+	queryIDpb := pbutils.ProtoFromUUID(&queryID)
+
+	msg1 := &carnotpb.TransferResultChunkRequest{
+		Address: "foo",
+		QueryID: queryIDpb,
+		Result: &carnotpb.TransferResultChunkRequest_RowBatchResult{
+			RowBatchResult: &carnotpb.TransferResultChunkRequest_ResultRowBatch{
+				RowBatch: sv,
+				Destination: &carnotpb.TransferResultChunkRequest_ResultRowBatch_TableName{
+					TableName: "output_table_1",
+				},
+			},
+		},
+	}
+
+	srv.EXPECT().Context().Return(&testingutils.MockContext{}).AnyTimes()
+	srv.EXPECT().Recv().Return(msg1, nil)
+	srv.EXPECT().SendAndClose(&carnotpb.TransferResultChunkResponse{
+		Success: false,
+		Message: "Client stream for query has been closed",
+	}).Return(nil)
+
+	assert.Equal(t, 0, len(rf.ReceivedResults))
+
+	err = s.TransferResultChunk(srv)
+	assert.Nil(t, err)
+
+	assert.True(t, rf.ClientStreamClosed)
+	assert.Equal(t, 0, len(rf.ReceivedResults))
 }

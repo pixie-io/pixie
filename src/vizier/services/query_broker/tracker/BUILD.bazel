@@ -34,6 +34,7 @@ go_test(
         "//src/shared/metadatapb:metadata_pl_go_proto",
         "//src/table_store/proto:schema_pl_go_proto",
         "//src/utils:go_default_library",
+        "//src/utils/testingutils:go_default_library",
         "//src/vizier/messages/messagespb:messages_pl_go_proto",
         "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
         "//src/vizier/services/metadata/metadatapb/mock:go_default_library",

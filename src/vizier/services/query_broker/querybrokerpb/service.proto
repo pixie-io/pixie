@@ -16,6 +16,7 @@ service QueryBrokerService {
    */
   // This is an incoming request from the agents, containing results for a
   // query.
+  // TODO(nserrino): Deprecate this API.
   rpc ReceiveAgentQueryResult(AgentQueryResultRequest)
       returns (AgentQueryResultResponse) {}
 }
