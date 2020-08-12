@@ -9,8 +9,8 @@ excludes:
 - bazel-testlogs
 - docs
 - src/ui
-# Exclude stirling IR, since it is not a public proto.
-- src/stirling/dynamic_tracing/ir
+# Exclude stirling's dynamic tracing physical IR, since it is not a public proto.
+- src/stirling/dynamic_tracing/ir/physicalpb
 protoc:
   version: 3.8.0
   includes:
