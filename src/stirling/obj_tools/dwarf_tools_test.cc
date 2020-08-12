@@ -127,35 +127,42 @@ TEST_P(DwarfReaderTest, GolangArgumentTypeByteSize) {
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("main.Vertex.Abs", "v"), 16);
 }
 
-TEST_P(DwarfReaderTest, CppArgumentStackPointerOffset) {
+TEST_P(DwarfReaderTest, CppArgumentLocation) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        DwarfReader::Create(kCppBinaryPath, p.index));
 
-  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("ABCSum32", "x"), -32);
-  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("ABCSum32", "y"), -64);
-  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("CanYouFindThis", "a"), -4);
-  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("CanYouFindThis", "b"), -8);
-  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("SomeFunctionWithPointerArgs", "a"),
-                   -8);
-  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("SomeFunctionWithPointerArgs", "x"),
-                   -16);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("ABCSum32", "x"),
+                   (ArgLocation{.type = LocationType::kRegister, .offset = 32}));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("ABCSum32", "y"),
+                   (ArgLocation{.type = LocationType::kRegister, .offset = 64}));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("CanYouFindThis", "a"),
+                   (ArgLocation{.type = LocationType::kRegister, .offset = 4}));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("CanYouFindThis", "b"),
+                   (ArgLocation{.type = LocationType::kRegister, .offset = 8}));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("SomeFunctionWithPointerArgs", "a"),
+                   (ArgLocation{.type = LocationType::kRegister, .offset = 8}));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("SomeFunctionWithPointerArgs", "x"),
+                   (ArgLocation{.type = LocationType::kRegister, .offset = 16}));
 }
 
-TEST_P(DwarfReaderTest, GolangArgumentStackPointerOffset) {
+TEST_P(DwarfReaderTest, GolangArgumentLocation) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        DwarfReader::Create(kGoBinaryPath, p.index));
 
-  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("main.(*Vertex).Scale", "v"), 0);
-  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("main.(*Vertex).Scale", "f"), 8);
-  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("main.(*Vertex).CrossScale", "v"),
-                   0);
-  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("main.(*Vertex).CrossScale", "v2"),
-                   8);
-  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("main.(*Vertex).CrossScale", "f"),
-                   24);
-  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("main.Vertex.Abs", "v"), 0);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).Scale", "v"),
+                   (ArgLocation{.type = LocationType::kStack, .offset = 0}));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).Scale", "f"),
+                   (ArgLocation{.type = LocationType::kStack, .offset = 8}));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).CrossScale", "v"),
+                   (ArgLocation{.type = LocationType::kStack, .offset = 0}));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).CrossScale", "v2"),
+                   (ArgLocation{.type = LocationType::kStack, .offset = 8}));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).CrossScale", "f"),
+                   (ArgLocation{.type = LocationType::kStack, .offset = 24}));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.Vertex.Abs", "v"),
+                   (ArgLocation{.type = LocationType::kStack, .offset = 0}));
 }
 
 // Note the differences here and the results in CppArgumentStackPointerOffset.
@@ -260,9 +267,9 @@ TEST_P(DwarfReaderTest, GoFunctionArgLocationConsistency) {
 
   // Finally, run a consistency check between the two methods.
   for (auto& [arg_name, arg_info] : function_arg_locations) {
-    ASSERT_OK_AND_ASSIGN(uint64_t offset, dwarf_reader->GetArgumentStackPointerOffset(
-                                              "main.MixedArgTypes", arg_name));
-    EXPECT_EQ(offset, arg_info.offset)
+    ASSERT_OK_AND_ASSIGN(ArgLocation location,
+                         dwarf_reader->GetArgumentLocation("main.MixedArgTypes", arg_name));
+    EXPECT_EQ(location.offset, arg_info.offset)
         << absl::Substitute("Argument $0 failed consistency check", arg_name);
   }
 }

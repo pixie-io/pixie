@@ -514,8 +514,8 @@ StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view functio
   return error::Internal("Could not find argument.");
 }
 
-StatusOr<int64_t> DwarfReader::GetArgumentStackPointerOffset(std::string_view function_symbol_name,
-                                                             std::string_view arg_name) {
+StatusOr<ArgLocation> DwarfReader::GetArgumentLocation(std::string_view function_symbol_name,
+                                                       std::string_view arg_name) {
   PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
                       GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
 
@@ -538,10 +538,19 @@ StatusOr<int64_t> DwarfReader::GetArgumentStackPointerOffset(std::string_view fu
       PL_ASSIGN_OR_RETURN(SimpleBlock decoded_loc_block, DecodeSimpleBlock(loc_block));
 
       if (decoded_loc_block.code == llvm::dwarf::LocationAtom::DW_OP_fbreg) {
-        return decoded_loc_block.operand;
+        if (decoded_loc_block.operand >= 0) {
+          return ArgLocation{.type = LocationType::kStack, .offset = decoded_loc_block.operand};
+        } else {
+          return ArgLocation{.type = LocationType::kRegister,
+                             .offset = -1 * decoded_loc_block.operand};
+        }
       }
+
+      // DW_OP_call_frame_cfa is observed in golang dwarf symbols.
+      // This logic is probably not right, but appears to work for now.
+      // TODO(oazizi): Study call_frame_cfa blocks.
       if (decoded_loc_block.code == llvm::dwarf::LocationAtom::DW_OP_call_frame_cfa) {
-        return 0;
+        return ArgLocation{.type = LocationType::kStack, .offset = 0};
       }
 
       return error::Internal("Unsupported operand: $0",

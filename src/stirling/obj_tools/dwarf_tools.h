@@ -18,6 +18,10 @@ namespace pl {
 namespace stirling {
 namespace dwarf_tools {
 
+//-----------------------------------------------------------------------------
+// Types
+//-----------------------------------------------------------------------------
+
 enum class VarType {
   kUnspecified = 0,
   kVoid,
@@ -61,6 +65,23 @@ struct RetValInfo {
   }
 };
 
+// Identifies where an argument is located when tracing a function entry:
+// in memory (kStack), or in registers (kRegister).
+enum class LocationType {
+  kUnknown,
+  kStack,
+  kRegister,
+};
+
+struct ArgLocation {
+  LocationType type = LocationType::kUnknown;
+  int64_t offset = 0;
+
+  std::string ToString() const {
+    return absl::Substitute("type=$0 offset=$1", magic_enum::enum_name(type), offset);
+  }
+};
+
 inline bool operator==(const VarInfo& a, const VarInfo& b) {
   return a.offset == b.offset && a.type == b.type && a.type_name == b.type_name;
 }
@@ -72,6 +93,10 @@ inline bool operator==(const ArgInfo& a, const ArgInfo& b) {
 
 inline bool operator==(const RetValInfo& a, const RetValInfo& b) {
   return a.type == b.type && a.type_name == b.type_name && a.byte_size == b.byte_size;
+}
+
+inline bool operator==(const ArgLocation& a, const ArgLocation& b) {
+  return a.type == b.type && a.offset == b.offset;
 }
 
 inline std::ostream& operator<<(std::ostream& os, const VarInfo& var_info) {
@@ -88,6 +113,15 @@ inline std::ostream& operator<<(std::ostream& os, const RetValInfo& ret_val_info
   os << ret_val_info.ToString();
   return os;
 }
+
+inline std::ostream& operator<<(std::ostream& os, const ArgLocation& x) {
+  os << x.ToString();
+  return os;
+}
+
+//-----------------------------------------------------------------------------
+// DwarfReader
+//-----------------------------------------------------------------------------
 
 class DwarfReader {
  public:
@@ -154,14 +188,14 @@ class DwarfReader {
    * NOTE: This function currently uses the DW_AT_location. It is NOT yet robust,
    * and may fail for certain functions. Compare this function to GetFunctionArgInfo().
    */
-  StatusOr<int64_t> GetArgumentStackPointerOffset(std::string_view function_symbol_name,
-                                                  std::string_view arg_name);
+  StatusOr<ArgLocation> GetArgumentLocation(std::string_view function_symbol_name,
+                                            std::string_view arg_name);
 
   /**
    * Returns information on the arguments of a function, including location and type.
    *
    * NOTE: Currently, the method used by this function to determine the argument offset
-   * differs from the method used by GetArgumentStackPointerOffset(), which uses the DW_AT_location
+   * differs from the method used by GetArgumentLocation(), which uses the DW_AT_location
    * attribute. This function infers the location based on type sizes, and an implicit understanding
    * of the calling convention.
    * It is currently more robust for our uses cases, but eventually we should use the DW_AT_location
@@ -206,6 +240,10 @@ class DwarfReader {
   // Nested map: [tag][symbol_name] -> DWARFDie
   absl::flat_hash_map<llvm::dwarf::Tag, absl::flat_hash_map<std::string, llvm::DWARFDie>> die_map_;
 };
+
+//-----------------------------------------------------------------------------
+// DWARFDie Functions (made public for test use only)
+//-----------------------------------------------------------------------------
 
 // Returns the DW_AT_name attribute of the input DIE. Returns an empty string if attribute does not
 // exist, or for any errors.
