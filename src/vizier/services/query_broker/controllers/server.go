@@ -53,6 +53,7 @@ type Executor interface {
 	WaitForCompletion() (*queryresultspb.QueryResult, error)
 	AddResult(res *querybrokerpb.AgentQueryResultRequest)
 	GetQueryID() uuid.UUID
+	AddStreamedResult(res *carnotpb.TransferResultChunkRequest) error
 }
 
 // AgentsTracker is the interface for the background agent information tracker.
@@ -81,7 +82,7 @@ type Server struct {
 
 // NewServer creates GRPC handlers.
 func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker, mds metadatapb.MetadataTracepointServiceClient, natsConn *nats.Conn) (*Server, error) {
-	return NewServerWithExecutor(env, agentsTracker, NewQueryResultForwarder(), mds, natsConn, NewQueryExecutor)
+	return NewServerWithExecutor(env, agentsTracker /* queryResultForwarder*/, nil, mds, natsConn, NewQueryExecutor)
 }
 
 // NewServerWithExecutor is NewServer with an functor for executor.
@@ -97,7 +98,7 @@ func NewServerWithExecutor(env querybrokerenv.QueryBrokerEnv,
 		return nil, err
 	}
 
-	return &Server{
+	s := &Server{
 		env:             env,
 		agentsTracker:   agentsTracker,
 		resultForwarder: resultForwarder,
@@ -108,7 +109,13 @@ func NewServerWithExecutor(env querybrokerenv.QueryBrokerEnv,
 
 		mdtp:    mds,
 		udfInfo: udfInfo,
-	}, nil
+	}
+	// TODO(nserrino): update this logic when batch Kelvin API is deprecated and s.executors
+	// gets subsumed by s.resultForwarder.
+	if s.resultForwarder == nil {
+		s.resultForwarder = NewQueryResultForwarder(s.executors)
+	}
+	return s, nil
 }
 
 func (s *Server) trackExecutorForQuery(executor Executor) {
@@ -571,7 +578,7 @@ func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResu
 			// This should not cause TransferResultChunk to return an error, we just include in the response
 			// that the latest result chunk was not forwarded.
 			if err != nil {
-				log.WithError(err).Infof("Could not forward result message for query %s")
+				log.WithError(err).Infof("Could not forward result message for query %s", queryID)
 				return sendAndClose(false, err.Error())
 			}
 		}

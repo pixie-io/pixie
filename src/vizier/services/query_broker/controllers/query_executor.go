@@ -12,6 +12,7 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
+	"pixielabs.ai/pixielabs/src/carnotpb"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/table_store/proto/types"
@@ -25,20 +26,28 @@ import (
 type QueryExecutor struct {
 	queryID     uuid.UUID
 	queryResult *queryresultspb.QueryResult
-	// extraTables are tables get added to results as sidecars. For example, things like query plan.
-	extraTables []*schemapb.Table
 	conn        *nats.Conn
 	mux         sync.Mutex
 	done        chan bool
+
+	// temporary variables used to support the streaming TransferResultChunk API
+	// simultaneously with ReceiveAgentQueryResult. TODO(nserrino): Remove and refactor when
+	// Kelvin has fully moved to the TransferResultChunk API.
+	schema              map[string]*schemapb.Relation
+	rowBatches          map[string][]*schemapb.RowBatchData
+	gotEOS              map[string]bool
+	executionStats      *queryresultspb.QueryExecutionStats
+	agentExecutionStats []*queryresultspb.AgentExecutionStats
 }
 
 // NewQueryExecutor creates a Query Executor for a specific query.
 func NewQueryExecutor(natsConn *nats.Conn, queryID uuid.UUID) Executor {
 	return &QueryExecutor{
-		queryID:     queryID,
-		conn:        natsConn,
-		extraTables: make([]*schemapb.Table, 0),
-		done:        make(chan bool, 1),
+		queryID:    queryID,
+		conn:       natsConn,
+		done:       make(chan bool, 1),
+		gotEOS:     make(map[string]bool),
+		rowBatches: make(map[string][]*schemapb.RowBatchData),
 	}
 }
 
@@ -182,9 +191,96 @@ func (e *QueryExecutor) AddResult(res *querybrokerpb.AgentQueryResultRequest) {
 		return
 	}
 	e.queryResult = res.Result.QueryResult
-	if len(e.extraTables) > 0 {
-		e.queryResult.Tables = append(e.queryResult.Tables, e.extraTables...)
-	}
 	// In the current implementation we just need to wait for the Kelvin node to respond.
 	e.done <- true
+}
+
+// Temorary glue code used to signal WaitForCompletion() that the results from the new streaming
+// API, TransferResultChunk, have all arrived successfully.
+func (e *QueryExecutor) signalDoneIfStreamingComplete() {
+	if e.schema == nil {
+		return
+	}
+	if e.executionStats == nil {
+		return
+	}
+	if e.agentExecutionStats == nil {
+		return
+	}
+	if len(e.gotEOS) < len(e.schema) {
+		return
+	}
+
+	allEOS := true
+	for tableName := range e.schema {
+		if eos, present := e.gotEOS[tableName]; !eos || !present {
+			allEOS = false
+			break
+		}
+	}
+	// If all of the tables have sent their EOS message, and we have received all of the metadata
+	// for the query, then we can signal `done` to WaitForCompletion().
+	if allEOS {
+		e.buildStreamedResult()
+		e.done <- true
+	}
+}
+
+// When we got all of our results from TransferResultChunk, build the QueryResult message
+// from their contents. TODO(nserrino): Remove and refactor when batch API is deprecated.
+func (e *QueryExecutor) buildStreamedResult() {
+	var tables []*schemapb.Table
+	for tableName, relation := range e.schema {
+		table := &schemapb.Table{
+			Name:     tableName,
+			Relation: relation,
+		}
+		if rowBatches, present := e.rowBatches[tableName]; present {
+			table.RowBatches = rowBatches
+		}
+		tables = append(tables, table)
+	}
+
+	e.queryResult = &queryresultspb.QueryResult{
+		Tables:              tables,
+		TimingInfo:          e.executionStats.Timing,
+		ExecutionStats:      e.executionStats,
+		AgentExecutionStats: e.agentExecutionStats,
+	}
+}
+
+// AddStreamedResult adds a streamed result from an agent to the list of results to be returned.
+// TODO(nserrino): This is temporary glue code as we move Kelvin from a batch API to a streaming
+// API. Remove this and centralize result handling logic in query_result_forwarder when the transition
+// to streaming is complete on Kelvin.
+func (e *QueryExecutor) AddStreamedResult(res *carnotpb.TransferResultChunkRequest) error {
+	e.mux.Lock()
+	defer e.mux.Unlock()
+
+	msgQueryID := utils.UUIDFromProtoOrNil(res.QueryID)
+	if msgQueryID != e.queryID {
+		return fmt.Errorf("Error in AddStreamedResult: msg query ID %s doesn't match executor ID %s",
+			msgQueryID.String(), e.queryID.String())
+	}
+
+	if schema := res.GetSchema(); schema != nil {
+		e.schema = schema.RelationMap
+	}
+	if execStats := res.GetExecutionAndTimingInfo(); execStats != nil {
+		e.executionStats = execStats.ExecutionStats
+		e.agentExecutionStats = execStats.AgentExecutionStats
+	}
+	if rbResult := res.GetRowBatchResult(); rbResult != nil {
+		tableName := rbResult.GetTableName()
+		if tableName == "" {
+			return fmt.Errorf("Error in AddStreamedResult: ResultRowBatch does not contain table name")
+		}
+		e.rowBatches[tableName] = append(e.rowBatches[tableName], rbResult.GetRowBatch())
+		if rbResult.GetRowBatch().Eos {
+			e.gotEOS[tableName] = true
+		}
+	}
+
+	e.signalDoneIfStreamingComplete()
+	return nil
 }

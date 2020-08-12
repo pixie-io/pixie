@@ -1,11 +1,12 @@
 package controllers
 
 import (
+	"fmt"
+
 	uuid "github.com/satori/go.uuid"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"pixielabs.ai/pixielabs/src/carnotpb"
+	"pixielabs.ai/pixielabs/src/utils"
 )
 
 // QueryResultForwarder is responsible for receiving query results from agents
@@ -22,19 +23,33 @@ type QueryResultForwarder interface {
 }
 
 // QueryResultForwarderImpl implements the QueryResultForwarder interface.
-type QueryResultForwarderImpl struct{}
+type QueryResultForwarderImpl struct {
+	// TODO(nserrino): Remove this reference when the batch API ReceiveAgentQueryResult
+	// is deprecated in Kelvin and the query broker. QueryResultForwarderImpl will deal with
+	// the client streams directly, rather than the Executors.
+	executors map[uuid.UUID]Executor
+}
 
 // NewQueryResultForwarder creates a new QueryResultForwarder.
-func NewQueryResultForwarder() QueryResultForwarder {
-	return &QueryResultForwarderImpl{}
+func NewQueryResultForwarder(queryExecutors map[uuid.UUID]Executor) QueryResultForwarder {
+	return &QueryResultForwarderImpl{
+		executors: queryExecutors,
+	}
 }
 
 // ForwardQueryResult forwards the agent result to the client result stream.
 func (f *QueryResultForwarderImpl) ForwardQueryResult(msg *carnotpb.TransferResultChunkRequest) error {
-	return status.Errorf(codes.Unimplemented, "method ForwardQueryResult not implemented")
+	msgQueryID := utils.UUIDFromProtoOrNil(msg.QueryID)
+	if executor, present := f.executors[msgQueryID]; present {
+		return executor.AddStreamedResult(msg)
+	}
+	return fmt.Errorf("Error in QueryResultForwarder: No query with ID %d found in executor map",
+		msgQueryID.String())
 }
 
 // OptionallyCancelClientStream closes the client-side stream for the given queryID, if it still exists.
 func (f *QueryResultForwarderImpl) OptionallyCancelClientStream(queryID uuid.UUID) error {
-	return status.Errorf(codes.Unimplemented, "method CloseQueryResultStream not implemented")
+	// TODO(nserrino): Fill this in after the batch ReceiveAgentQueryResult API is deprecated
+	// and querybroker/agent move fully to the streaming API.
+	return nil
 }

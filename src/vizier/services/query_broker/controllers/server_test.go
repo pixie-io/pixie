@@ -434,7 +434,7 @@ func TestPlannerErrorResult(t *testing.T) {
 		Plan(plannerStatePB, queryRequest).
 		Return(badPlannerResultPB, nil)
 
-	s, err := controllers.NewServerWithExecutor(env, &at, controllers.NewQueryResultForwarder(), nil, nc, createExecutorMock)
+	s, err := controllers.NewServerWithExecutor(env, &at, nil, nil, nc, createExecutorMock)
 	queryID := uuid.NewV4()
 	auth := authcontext.New()
 	ctx := authcontext.NewContext(context.Background(), auth)
@@ -504,7 +504,7 @@ func TestErrorInStatusResult(t *testing.T) {
 		Plan(plannerStatePB, queryRequest).
 		Return(badPlannerResultPB, nil)
 
-	s, err := controllers.NewServerWithExecutor(env, &at, controllers.NewQueryResultForwarder(), nil, nc, createExecutorMock)
+	s, err := controllers.NewServerWithExecutor(env, &at, nil, nil, nc, createExecutorMock)
 
 	queryID := uuid.NewV4()
 	auth := authcontext.New()

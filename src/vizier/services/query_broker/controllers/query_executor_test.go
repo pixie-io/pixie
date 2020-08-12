@@ -11,6 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
+	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
+	"pixielabs.ai/pixielabs/src/carnotpb"
+	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
@@ -167,4 +170,169 @@ func TestWaitForCompletionTimeout(t *testing.T) {
 
 	queryResult, err := e.WaitForCompletion()
 	assert.Nil(t, queryResult)
+}
+
+func TestWaitForCompletionStreaming(t *testing.T) {
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	queryUUID, err := uuid.FromString(queryIDStr)
+	if err != nil {
+		t.Fatal("Could not parse UUID.")
+	}
+	queryIDpb := utils.ProtoFromUUID(&queryUUID)
+
+	agentUUID, err := uuid.FromString(agent1ID)
+	if err != nil {
+		t.Fatal("Could not parse UUID.")
+	}
+	agentIDpb := utils.ProtoFromUUID(&agentUUID)
+
+	e := controllers.NewQueryExecutor(nc, queryUUID)
+
+	// Add agent results.
+	res := new(querybrokerpb.AgentQueryResultRequest)
+	if err := proto.UnmarshalText(kelvinResponse, res); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	t1rb := new(schemapb.RowBatchData)
+	if err := proto.UnmarshalText(rowBatchPb, t1rb); err != nil {
+		t.Fatalf("Cannot unmarshal proto %v", err)
+	}
+	t1rb.Eos = false
+	t1rbEOS := new(schemapb.RowBatchData)
+	if err := proto.UnmarshalText(rowBatchPb, t1rbEOS); err != nil {
+		t.Fatalf("Cannot unmarshal proto %v", err)
+	}
+	t2rbEOS := new(schemapb.RowBatchData)
+	if err := proto.UnmarshalText(rowBatchPb, t2rbEOS); err != nil {
+		t.Fatalf("Cannot unmarshal proto %v", err)
+	}
+
+	relation1 := &schemapb.Relation{
+		Columns: []*schemapb.Relation_ColumnInfo{
+			&schemapb.Relation_ColumnInfo{
+				ColumnName: "foo",
+			},
+		},
+	}
+	relation2 := &schemapb.Relation{
+		Columns: []*schemapb.Relation_ColumnInfo{
+			&schemapb.Relation_ColumnInfo{
+				ColumnName: "bar",
+			},
+		},
+	}
+	schemaMsg := &carnotpb.TransferResultChunkRequest{
+		Address: "foo",
+		QueryID: queryIDpb,
+		Result: &carnotpb.TransferResultChunkRequest_Schema{
+			Schema: &schemapb.Schema{
+				RelationMap: map[string]*schemapb.Relation{
+					"table1": relation1,
+					"table2": relation2,
+				},
+			},
+		},
+	}
+	table1Msg := &carnotpb.TransferResultChunkRequest{
+		Address: "foo",
+		QueryID: queryIDpb,
+		Result: &carnotpb.TransferResultChunkRequest_RowBatchResult{
+			RowBatchResult: &carnotpb.TransferResultChunkRequest_ResultRowBatch{
+				RowBatch: t1rb,
+				Destination: &carnotpb.TransferResultChunkRequest_ResultRowBatch_TableName{
+					TableName: "table1",
+				},
+			},
+		},
+	}
+	table1EOSMsg := &carnotpb.TransferResultChunkRequest{
+		Address: "foo",
+		QueryID: queryIDpb,
+		Result: &carnotpb.TransferResultChunkRequest_RowBatchResult{
+			RowBatchResult: &carnotpb.TransferResultChunkRequest_ResultRowBatch{
+				RowBatch: t1rbEOS,
+				Destination: &carnotpb.TransferResultChunkRequest_ResultRowBatch_TableName{
+					TableName: "table1",
+				},
+			},
+		},
+	}
+	table2EOSMsg := &carnotpb.TransferResultChunkRequest{
+		Address: "foo",
+		QueryID: queryIDpb,
+		Result: &carnotpb.TransferResultChunkRequest_RowBatchResult{
+			RowBatchResult: &carnotpb.TransferResultChunkRequest_ResultRowBatch{
+				RowBatch: t2rbEOS,
+				Destination: &carnotpb.TransferResultChunkRequest_ResultRowBatch_TableName{
+					TableName: "table2",
+				},
+			},
+		},
+	}
+	execStats := &queryresultspb.QueryExecutionStats{
+		Timing: &queryresultspb.QueryTimingInfo{
+			ExecutionTimeNs:   5010,
+			CompilationTimeNs: 350,
+		},
+		BytesProcessed:   4521,
+		RecordsProcessed: 4,
+	}
+	agentStats := []*queryresultspb.AgentExecutionStats{
+		&queryresultspb.AgentExecutionStats{
+			AgentID:          agentIDpb,
+			ExecutionTimeNs:  50,
+			BytesProcessed:   4521,
+			RecordsProcessed: 4,
+		},
+	}
+	execStatsMsg := &carnotpb.TransferResultChunkRequest{
+		Address: "foo",
+		QueryID: queryIDpb,
+		Result: &carnotpb.TransferResultChunkRequest_ExecutionAndTimingInfo{
+			ExecutionAndTimingInfo: &carnotpb.TransferResultChunkRequest_QueryExecutionAndTimingInfo{
+				ExecutionStats:      execStats,
+				AgentExecutionStats: agentStats,
+			},
+		},
+	}
+
+	err = e.AddStreamedResult(schemaMsg)
+	assert.Nil(t, err, err)
+	err = e.AddStreamedResult(table1Msg)
+	assert.Nil(t, err, err)
+	err = e.AddStreamedResult(table1EOSMsg)
+	assert.Nil(t, err, err)
+	err = e.AddStreamedResult(table2EOSMsg)
+	assert.Nil(t, err, err)
+	err = e.AddStreamedResult(execStatsMsg)
+	assert.Nil(t, err, err)
+
+	// Make sure that WaitForCompletion returns with correct number of results.
+	allRes, err := e.WaitForCompletion()
+	assert.Nil(t, err)
+	assert.NotNil(t, allRes)
+
+	assert.Equal(t, execStats.Timing, allRes.TimingInfo)
+	assert.Equal(t, execStats, allRes.ExecutionStats)
+	assert.Equal(t, agentStats, allRes.AgentExecutionStats)
+
+	assert.Equal(t, 2, len(allRes.Tables))
+	tables := make(map[string]*schemapb.Table)
+	tables[allRes.Tables[0].Name] = allRes.Tables[0]
+	tables[allRes.Tables[1].Name] = allRes.Tables[1]
+
+	assert.NotNil(t, tables["table1"])
+	assert.NotNil(t, tables["table2"])
+	assert.Equal(t, relation1, tables["table1"].Relation)
+	assert.Equal(t, relation2, tables["table2"].Relation)
+	assert.Equal(t, 2, len(tables["table1"].RowBatches))
+	assert.Equal(t, 1, len(tables["table2"].RowBatches))
 }
