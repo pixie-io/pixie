@@ -112,8 +112,8 @@ message ExecuteQueryRequest {
     uuidpb.UUID query_id      = 1 [
                                   (gogoproto.customname) = "QueryID"
                                   ];
-    // TODO(philkuz) DEPRECATION planned.
-    string query_str = 2;
+    // Formerly used for query string.
+    reserved 2;
     pl.carnot.planpb.Plan plan = 3;
     bool analyze = 4;
 }

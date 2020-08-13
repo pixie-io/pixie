@@ -73,3 +73,15 @@ pl_cc_test(
         "//src/common/testing/event:cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "exec_test",
+    srcs = ["exec_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/grpc_utils:cc_library",
+        "//src/common/event:cc_library",
+        "//src/common/system:cc_library_mock",
+        "//src/common/testing/event:cc_library",
+    ],
+)

@@ -3,6 +3,7 @@
 #include <memory>
 
 #include <absl/container/flat_hash_map.h>
+#include "src/carnot/plan/plan.h"
 #include "src/vizier/services/agent/manager/manager.h"
 #include "src/vizier/services/query_broker/querybrokerpb/service.grpc.pb.h"
 
@@ -47,6 +48,39 @@ class ExecuteQueryMessageHandler : public Manager::MessageHandler {
   // Map from query_id -> Running query task.
   absl::flat_hash_map<sole::uuid, pl::event::RunnableAsyncTaskUPtr> running_queries_;
 };
+
+// TODO(nserrino): Delete this function when the batch API is deprecated.
+inline StatusOr<bool> PlanContainsBatchResults(const carnot::planpb::Plan& plan_pb) {
+  auto no_op = [&](const auto&) { return Status::OK(); };
+  carnot::plan::Plan plan;
+  PL_RETURN_IF_ERROR(plan.Init(plan_pb));
+
+  bool plan_contains_batch_results = false;
+
+  auto s = carnot::plan::PlanWalker()
+               .OnPlanFragment([&](auto* pf) {
+                 return carnot::plan::PlanFragmentWalker()
+                     .OnMemorySink([&](auto&) {
+                       plan_contains_batch_results = true;
+                       return Status::OK();
+                     })
+                     .OnMap(no_op)
+                     .OnAggregate(no_op)
+                     .OnFilter(no_op)
+                     .OnLimit(no_op)
+                     .OnMemorySource(no_op)
+                     .OnUnion(no_op)
+                     .OnJoin(no_op)
+                     .OnGRPCSource(no_op)
+                     .OnGRPCSink(no_op)
+                     .OnUDTFSource(no_op)
+                     .Walk(pf);
+               })
+               .Walk(&plan);
+
+  PL_RETURN_IF_ERROR(s);
+  return plan_contains_batch_results;
+}
 
 }  // namespace agent
 }  // namespace vizier

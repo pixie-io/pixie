@@ -57,15 +57,22 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
 
   void Work() override {
     AgentQueryResultRequest res_req;
-
-    auto s = ExecuteQueryInternal((qb_stub_ == nullptr) ? nullptr : res_req.mutable_result());
-    if (!s.ok()) {
-      LOG(ERROR) << absl::Substitute("Query failed, reason: $0, query: $1", s.ToString(),
-                                     req_.query_str());
-      LOG(ERROR) << req_.plan().DebugString();
+    auto contains_batch_result_or_s = PlanContainsBatchResults(req_.plan());
+    if (!contains_batch_result_or_s.ok()) {
+      LOG(ERROR) << absl::Substitute("Query failed, reason: $0, plan: $1",
+                                     contains_batch_result_or_s.status().msg(),
+                                     req_.plan().DebugString());
     }
 
-    if (agent_info_->capabilities.collects_data()) {
+    bool send_batch_result = qb_stub_ != nullptr && contains_batch_result_or_s.ConsumeValueOrDie();
+
+    auto s = ExecuteQueryInternal(send_batch_result ? res_req.mutable_result() : nullptr);
+    if (!s.ok()) {
+      LOG(ERROR) << absl::Substitute("Query failed, reason: $0, plan: $1", s.ToString(),
+                                     req_.plan().DebugString());
+    }
+
+    if (!send_batch_result) {
       // In distributed mode only non data collecting nodes send data.
       // TODO(zasgar/philkuz/michelle): We should actually just code in the Querybroker address into
       // the plan and remove the hardcoding here.
@@ -101,16 +108,13 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
     {
       ScopedTimer query_timer(absl::Substitute("query timer: id=$0", query_id_.str()));
       StatusOr<carnot::CarnotQueryResult> result_or_s;
-      if (req_.has_plan()) {
-        result_or_s = carnot_->ExecutePlan(req_.plan(), query_id_, req_.analyze());
-      } else {
-        result_or_s =
-            carnot_->ExecuteQuery(req_.query_str(), query_id_, CurrentTimeNS(), req_.analyze());
-      }
+      result_or_s = carnot_->ExecutePlan(req_.plan(), query_id_, req_.analyze());
+
       if (resp == nullptr) {
         return result_or_s.status();
       }
 
+      // TODO(nserrino): Deprecate this logic when Kelvin executes all queries in streaming mode.
       *resp->mutable_query_id() = req_.query_id();
       if (!result_or_s.ok()) {
         *resp->mutable_status() = result_or_s.status().ToProto();
