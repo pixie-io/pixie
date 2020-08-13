@@ -124,7 +124,11 @@ func main() {
 		log.Fatal("Could not connect to artifact tracker")
 	}
 
-	c := controller.New(db, dbKey, dnsMgrClient, at, nc)
+	updater, err := controller.NewUpdater(db, at, nc)
+	if err != nil {
+		log.WithError(err).Fatal("Could not start vizier updater")
+	}
+	c := controller.New(db, dbKey, dnsMgrClient, nc, updater)
 	dks := deploymentkey.New(db, dbKey)
 	ds := deployment.New(dks, c)
 

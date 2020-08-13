@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/gogo/protobuf/proto"
@@ -22,7 +21,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	dnsmgr "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
 	"pixielabs.ai/pixielabs/src/cloud/shared/messages"
 	messagespb "pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
@@ -30,7 +28,6 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzerrors"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
-	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	jwtutils "pixielabs.ai/pixielabs/src/shared/services/utils"
@@ -51,19 +48,26 @@ type Server struct {
 	db            *sqlx.DB
 	dbKey         string
 	dnsMgrClient  dnsmgr.DNSMgrServiceClient
-	atClient      artifacttrackerpb.ArtifactTrackerClient
 	nc            *nats.Conn
 	natsCh        chan *nats.Msg
 	natsSubs      []*nats.Subscription
 	msgHandlerMap map[string]HandleNATSMessageFunc
+	updater       VzUpdater
+}
+
+// VzUpdater is the interface for the module responsible for updating Vizier.
+type VzUpdater interface {
+	UpdateOrInstallVizier(vizierID uuid.UUID, version string, redeployEtcd bool) (*cvmsgspb.V2CMessage, error)
+	VersionUpToDate(version string) bool
+	AddToUpdateQueue(vizierID uuid.UUID)
 }
 
 // New creates a new server.
-func New(db *sqlx.DB, dbKey string, dnsMgrClient dnsmgr.DNSMgrServiceClient, atClient artifacttrackerpb.ArtifactTrackerClient, nc *nats.Conn) *Server {
+func New(db *sqlx.DB, dbKey string, dnsMgrClient dnsmgr.DNSMgrServiceClient, nc *nats.Conn, updater VzUpdater) *Server {
 	natsSubs := make([]*nats.Subscription, 0)
 	natsCh := make(chan *nats.Msg, 1024)
 	msgHandlerMap := make(map[string]HandleNATSMessageFunc)
-	s := &Server{db, dbKey, dnsMgrClient, atClient, nc, natsCh, natsSubs, msgHandlerMap}
+	s := &Server{db, dbKey, dnsMgrClient, nc, natsCh, natsSubs, msgHandlerMap, updater}
 
 	// Register NATS message handlers.
 	if nc != nil {
@@ -583,25 +587,6 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 	return &cvmsgspb.RegisterVizierAck{Status: cvmsgspb.ST_OK}, nil
 }
 
-func (s *Server) getLatestVizierVersion(ctx context.Context) (string, error) {
-	req := &artifacttrackerpb.GetArtifactListRequest{
-		ArtifactName: "vizier",
-		ArtifactType: versionspb.AT_CONTAINER_SET_YAMLS,
-		Limit:        1,
-	}
-
-	resp, err := s.atClient.GetArtifactList(ctx, req)
-	if err != nil {
-		return "", err
-	}
-
-	if len(resp.Artifact) != 1 {
-		return "", errors.New("Could not find Vizier artifact")
-	}
-
-	return resp.Artifact[0].VersionStr, nil
-}
-
 // HandleVizierHeartbeat handles the heartbeat from connected viziers.
 func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	anyMsg := v2cMsg.Msg
@@ -688,45 +673,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	}
 
 	// If we reach this point, the cluster is in bootstrap mode and needs to be deployed.
-	// If no version is specified, fetch the latest version.
-	version := req.BootstrapVersion
-	if version == "" {
-		// Get latest version.
-		latestVers, err := s.getLatestVizierVersion(ctx)
-		if err != nil {
-			log.WithError(err).Error("Could not get latest vizier version")
-			return
-		}
-		version = latestVers
-	} else {
-		// Validate that the specified version is valid.
-		atReq := &artifacttrackerpb.GetDownloadLinkRequest{
-			ArtifactName: "vizier",
-			VersionStr:   version,
-			ArtifactType: versionspb.AT_CONTAINER_SET_YAMLS,
-		}
-
-		_, err = s.atClient.GetDownloadLink(ctx, atReq)
-		if err != nil {
-			log.WithError(err).Error("Incorrect version")
-			return
-		}
-	}
-
-	// Generate token.
-	clusterClaims := jwtutils.GenerateJWTForCluster(vizierID.String())
-	tokenString, err := jwtutils.SignJWTClaims(clusterClaims, viper.GetString("jwt_signing_key"))
-	if err != nil {
-		log.WithError(err).Error("Failed to sign token")
-		return
-	}
-
-	updateReq := &cvmsgspb.UpdateOrInstallVizierRequest{
-		VizierID: utils.ProtoFromUUID(&vizierID),
-		Version:  version,
-		Token:    tokenString,
-	}
-	go s.triggerVizierUpdate(ctx, vizierID, updateReq)
+	go s.updater.UpdateOrInstallVizier(vizierID, req.BootstrapVersion, false)
 }
 
 // HandleSSLRequest registers certs for the vizier cluster.
@@ -779,62 +726,11 @@ func getServiceCredentials(signingKey string) (string, error) {
 	return jwtutils.SignJWTClaims(claims, signingKey)
 }
 
-func (s *Server) triggerVizierUpdate(ctx context.Context, vizierID uuid.UUID, req *cvmsgspb.UpdateOrInstallVizierRequest) (*cvmsgspb.V2CMessage, error) {
-	// Send a message to the correct vizier that it should be updated.
-	reqAnyMsg, err := types.MarshalAny(req)
-	if err != nil {
-		return nil, err
-	}
-
-	// Subscribe to topic that the response will be sent on.
-	subCh := make(chan *nats.Msg, 1024)
-	sub, err := s.nc.ChanSubscribe(vzshard.V2CTopic("VizierUpdateResponse", vizierID), subCh)
-	defer sub.Unsubscribe()
-
-	log.WithField("Vizier ID", vizierID.String()).WithField("version", req.Version).Info("Sending update request to Vizier")
-	s.sendNATSMessage("VizierUpdate", reqAnyMsg, vizierID)
-
-	// Wait to receive a response from the vizier that it has received the update message.
-	for {
-		select {
-		case msg := <-subCh:
-			v2cMsg := &cvmsgspb.V2CMessage{}
-			err := proto.Unmarshal(msg.Data, v2cMsg)
-			if err != nil {
-				return nil, err
-			}
-			return v2cMsg, nil
-		case <-ctx.Done():
-			if ctx.Err() != nil {
-				// We never received a response back.
-				return nil, errors.New("Vizier did not send response")
-			}
-		}
-	}
-}
-
 // UpdateOrInstallVizier updates or installs the given vizier cluster to the specified version.
 func (s *Server) UpdateOrInstallVizier(ctx context.Context, req *cvmsgspb.UpdateOrInstallVizierRequest) (*cvmsgspb.UpdateOrInstallVizierResponse, error) {
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 
-	// Generate a signed token for the user who initiated the request.
-	sCtx, err := authcontext.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	userClaims := sCtx.Claims.GetUserClaims()
-	claims := jwtutils.GenerateJWTForUser(userClaims.UserID, userClaims.OrgID, userClaims.Email, time.Now().Add(time.Minute*30))
-	tokenString, err := jwtutils.SignJWTClaims(claims, viper.GetString("jwt_signing_key"))
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to sign token: %s", err.Error())
-	}
-
-	req.Token = tokenString
-	v2cMsg, err := s.triggerVizierUpdate(ctx, vizierID, req)
-	if err != nil {
-		return nil, err
-	}
+	v2cMsg, err := s.updater.UpdateOrInstallVizier(vizierID, req.Version, req.RedeployEtcd)
 
 	resp := &cvmsgspb.UpdateOrInstallVizierResponse{}
 	err = types.UnmarshalAny(v2cMsg.Msg, resp)

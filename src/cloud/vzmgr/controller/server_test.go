@@ -20,17 +20,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
-	mock_artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb/mock"
 	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
 	mock_dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb/mock"
 	messagespb "pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
-	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
+	mock_controller "pixielabs.ai/pixielabs/src/cloud/vzmgr/controller/mock"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/schema"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzerrors"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
@@ -128,9 +125,8 @@ func TestServer_GetViziersByOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
-	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient, mockArtifactTrackerClient, nil)
+	s := controller.New(db, "test", mockDNSClient, nil, nil)
 
 	t.Run("valid", func(t *testing.T) {
 		// Fetch the test data that was inserted earlier.
@@ -195,9 +191,8 @@ func TestServer_GetVizierInfo(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
-	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient, mockArtifactTrackerClient, nil)
+	s := controller.New(db, "test", mockDNSClient, nil, nil)
 	resp, err := s.GetVizierInfo(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
 	require.Nil(t, err)
 	require.NotNil(t, resp)
@@ -230,9 +225,8 @@ func TestServer_UpdateVizierConfig(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
-	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient, mockArtifactTrackerClient, nil)
+	s := controller.New(db, "test", mockDNSClient, nil, nil)
 	resp, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
@@ -257,9 +251,8 @@ func TestServer_UpdateVizierConfig_WrongOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
-	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient, mockArtifactTrackerClient, nil)
+	s := controller.New(db, "test", mockDNSClient, nil, nil)
 	resp, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
 		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
@@ -279,9 +272,8 @@ func TestServer_UpdateVizierConfig_NoUpdates(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
-	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient, mockArtifactTrackerClient, nil)
+	s := controller.New(db, "test", mockDNSClient, nil, nil)
 	resp, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
 		VizierID:     utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{},
@@ -304,9 +296,8 @@ func TestServer_GetVizierConnectionInfo(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
-	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient, mockArtifactTrackerClient, nil)
+	s := controller.New(db, "test", mockDNSClient, nil, nil)
 	resp, err := s.GetVizierConnectionInfo(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
 	require.Nil(t, err)
 	require.NotNil(t, resp)
@@ -338,9 +329,8 @@ func TestServer_VizierConnectedUnhealthy(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
-	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient, mockArtifactTrackerClient, nc)
+	s := controller.New(db, "test", mockDNSClient, nc, nil)
 	req := &cvmsgspb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		JwtKey:   "the-token",
@@ -391,9 +381,8 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
-	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient, mockArtifactTrackerClient, nc)
+	s := controller.New(db, "test", mockDNSClient, nc, nil)
 	req := &cvmsgspb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		JwtKey:   "the-token",
@@ -460,9 +449,8 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		t.Fatal("Could not connect to NATS.")
 	}
 
-	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
-
-	s := controller.New(db, "test", mockDNSClient, mockArtifactTrackerClient, nc)
+	updater := mock_controller.NewMockVzUpdater(ctrl)
+	s := controller.New(db, "test", mockDNSClient, nc, updater)
 
 	tests := []struct {
 		name                       string
@@ -552,42 +540,6 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			numNodes:                   4,
 			numInstrumentedNodes:       3,
 		},
-		{
-			name:                      "bootstrap updating vizier",
-			expectGetDNSAddressCalled: true,
-			dnsAddressResponse: &dnsmgrpb.GetDNSAddressResponse{
-				DNSAddress: "abc.clusters.dev.withpixie.dev",
-			},
-			dnsAddressError:            nil,
-			vizierID:                   "123e4567-e89b-12d3-a456-426655440001",
-			hbAddress:                  "127.0.0.1",
-			hbPort:                     123,
-			updatedClusterStatus:       "UPDATING",
-			expectedClusterAddress:     "abc.clusters.dev.withpixie.dev:123",
-			status:                     cvmsgspb.VZ_ST_UPDATING,
-			bootstrap:                  true,
-			bootstrapVersion:           "",
-			expectedFetchVizierVersion: false,
-			expectDeploy:               false,
-			numNodes:                   4,
-			numInstrumentedNodes:       3,
-		},
-		{
-			name:                      "updating vizier",
-			expectGetDNSAddressCalled: true,
-			dnsAddressResponse: &dnsmgrpb.GetDNSAddressResponse{
-				DNSAddress: "abc.clusters.dev.withpixie.dev",
-			},
-			dnsAddressError:        nil,
-			vizierID:               "123e4567-e89b-12d3-a456-426655440001",
-			hbAddress:              "127.0.0.1",
-			hbPort:                 123,
-			updatedClusterStatus:   "UPDATING",
-			expectedClusterAddress: "abc.clusters.dev.withpixie.dev:123",
-			status:                 cvmsgspb.VZ_ST_UPDATING,
-			numNodes:               4,
-			numInstrumentedNodes:   3,
-		},
 	}
 
 	for _, tc := range tests {
@@ -603,19 +555,11 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 					Return(tc.dnsAddressResponse, tc.dnsAddressError)
 			}
 
-			if tc.expectedFetchVizierVersion {
-				atReq := &artifacttrackerpb.GetArtifactListRequest{
-					ArtifactName: "vizier",
-					ArtifactType: versionspb.AT_CONTAINER_SET_YAMLS,
-					Limit:        1,
-				}
-				mockArtifactTrackerClient.EXPECT().GetArtifactList(
-					gomock.Any(), atReq).Return(&versionspb.ArtifactSet{
-					Name: "vizier",
-					Artifact: []*versionspb.Artifact{&versionspb.Artifact{
-						VersionStr: "test",
-					}},
-				}, nil)
+			if tc.bootstrap {
+				updater.
+					EXPECT().
+					UpdateOrInstallVizier(uuid.FromStringOrNil(tc.vizierID), "", false).
+					Return(&cvmsgspb.V2CMessage{}, nil)
 			}
 
 			nestedMsg := &cvmsgspb.VizierHeartbeat{
@@ -690,9 +634,8 @@ func TestServer_GetSSLCerts(t *testing.T) {
 		t.Fatal("Could not subscribe to NATS.")
 	}
 	defer sub.Unsubscribe()
-	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient, mockArtifactTrackerClient, nc)
+	s := controller.New(db, "test", mockDNSClient, nc, nil)
 
 	t.Run("dnsmgr error", func(t *testing.T) {
 		dnsMgrReq := &dnsmgrpb.GetSSLCertsRequest{
@@ -764,44 +707,26 @@ func TestServer_UpdateOrInstallVizier(t *testing.T) {
 
 	vizierID, _ := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
 
-	go nc.Subscribe("c2v.123e4567-e89b-12d3-a456-426655440001.VizierUpdate", func(m *nats.Msg) {
-		c2vMsg := &cvmsgspb.C2VMessage{}
-		err := proto.Unmarshal(m.Data, c2vMsg)
-		assert.Nil(t, err)
-		resp := &cvmsgspb.UpdateOrInstallVizierRequest{}
-		err = types.UnmarshalAny(c2vMsg.Msg, resp)
-		assert.Equal(t, "0.1.30", resp.Version)
-		assert.NotNil(t, resp.Token)
-		claims := jwt.MapClaims{}
-		_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
-			return []byte("jwtkey"), nil
-		})
-		assert.Nil(t, err)
-		assert.Equal(t, "user", claims["Scopes"].(string))
-		// Send response.
-		updateResp := &cvmsgspb.UpdateOrInstallVizierResponse{
-			UpdateStarted: true,
-		}
-		respAnyMsg, err := types.MarshalAny(updateResp)
-		assert.Nil(t, err)
-		wrappedMsg := &cvmsgspb.V2CMessage{
-			VizierID: vizierID.String(),
-			Msg:      respAnyMsg,
-		}
+	updateResp := &cvmsgspb.UpdateOrInstallVizierResponse{
+		UpdateStarted: true,
+	}
+	respAnyMsg, err := types.MarshalAny(updateResp)
+	assert.Nil(t, err)
+	wrappedMsg := &cvmsgspb.V2CMessage{
+		VizierID: vizierID.String(),
+		Msg:      respAnyMsg,
+	}
+	updater := mock_controller.NewMockVzUpdater(ctrl)
+	updater.
+		EXPECT().
+		UpdateOrInstallVizier(vizierID, "1.3.0", false).
+		Return(wrappedMsg, nil)
 
-		b, err := wrappedMsg.Marshal()
-		assert.Nil(t, err)
-		topic := vzshard.V2CTopic("VizierUpdateResponse", vizierID)
-		err = nc.Publish(topic, b)
-		assert.Nil(t, err)
-	})
-	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
-
-	s := controller.New(db, "test", mockDNSClient, mockArtifactTrackerClient, nc)
+	s := controller.New(db, "test", mockDNSClient, nc, updater)
 
 	req := &cvmsgspb.UpdateOrInstallVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil(vizierID.String()),
-		Version:  "0.1.30",
+		Version:  "1.3.0",
 	}
 
 	resp, err := s.UpdateOrInstallVizier(CreateTestContext(), req)
@@ -833,9 +758,7 @@ func TestServer_MessageHandler(t *testing.T) {
 	}
 	defer sub.Unsubscribe()
 
-	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
-
-	_ = controller.New(db, "test", mockDNSClient, mockArtifactTrackerClient, nc)
+	_ = controller.New(db, "test", mockDNSClient, nc, nil)
 
 	dnsMgrReq := &dnsmgrpb.GetSSLCertsRequest{
 		ClusterID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
