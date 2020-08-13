@@ -45,7 +45,7 @@ final class PrototoolCheckerTest {
             exec('chmod -R 755 '. $cpModuleDir);
         }
 
-        exec('prototool break check . --git-branch main', $output, $return_var);
+        exec('prototool break check . --git-branch main --walk-timeout 10s', $output, $return_var);
         $updatedRes = new ArcanistUnitTestResult();
         $updatedRes->setName('Protobuf Breaking API check');
         if ($return_var == 0) {

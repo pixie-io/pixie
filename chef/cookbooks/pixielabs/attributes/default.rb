@@ -65,10 +65,9 @@ if node[:platform] == 'ubuntu'
     '6eacdd01b68fd140eb71bbca233bea897cccb75dbf9e00a02e648b2f9a8a6939'
 
   default['shellcheck']['download_path'] =
-    'https://storage.googleapis.com/shellcheck/shellcheck-v0.7.0.linux.x86_64.tar.xz'
+    'https://github.com/koalaman/shellcheck/releases/download/v0.7.0/shellcheck-v0.7.0.linux.x86_64.tar.xz'
   default['shellcheck']['sha256']        =
     '39c501aaca6aae3f3c7fc125b3c3af779ddbe4e67e4ebdc44c2ae5cba76c847f'
-
 
   default['sentry']['download_path'] =
     'https://github.com/getsentry/sentry-cli/releases/download/1.52.0/sentry-cli-Linux-x86_64'
@@ -76,9 +75,9 @@ if node[:platform] == 'ubuntu'
     'd6aeb45efbcdd3ec780f714b5082046ea1db31ff60ed0fc39916bbc8b6d708be'
 
   default['prototool']['download_path'] =
-    'https://github.com/uber/prototool/releases/download/v1.8.0/prototool-Linux-x86_64'
+    'https://github.com/uber/prototool/releases/download/v1.10.0/prototool-Linux-x86_64'
   default['prototool']['sha256']        =
-    '7ffbe2c6355241e2115d028ed4a38113ccbea93944ac2ad08bec5770917e12e1'
+    '2247ff34ad31fa7d9433b3310879190d1ab63b2ddbd58257d24c267f53ef64e6'
 
   default['yq']['download_path'] =
     'https://github.com/mikefarah/yq/releases/download/3.2.1/yq_linux_amd64'
@@ -125,7 +124,7 @@ elsif node[:platform] == 'mac_os_x'
     '09bb5920ae609bdf041b74843e2d8211a7059847b21729fadfbd3c3e33e67d26'
 
   default['shellcheck']['download_path'] =
-    'https://storage.googleapis.com/shellcheck/shellcheck-v0.7.0.darwin.x86_64.tar.xz'
+    'https://github.com/koalaman/shellcheck/releases/download/v0.7.0/shellcheck-v0.7.0.darwin.x86_64.tar.xz'
   default['shellcheck']['sha256']        =
     'c4edf1f04e53a35c39a7ef83598f2c50d36772e4cc942fb08a1114f9d48e5380'
 
@@ -135,9 +134,9 @@ elsif node[:platform] == 'mac_os_x'
     '97c9bafbcf87bd7dea4f1069fe18f8e8265de6f7eab20c62ca9299e0fa8c2af6'
 
   default['prototool']['download_path'] =
-    'https://github.com/uber/prototool/releases/download/v1.8.0/prototool-Darwin-x86_64'
+    'https://github.com/uber/prototool/releases/download/v1.10.0/prototool-Darwin-x86_64'
   default['prototool']['sha256']        =
-    'fa5aec63bfc1461f3291948b7aede460d7eda216ba68b618704fd70c8a34b3b0'
+    '5ca2a19f1cb04bc5059bb07e14d565231246e623f7523fafe9389b463addf645'
 
   default['yq']['download_path'] =
     'https://github.com/mikefarah/yq/releases/download/3.2.1/yq_darwin_amd64'
