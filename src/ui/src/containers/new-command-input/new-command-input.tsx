@@ -13,6 +13,7 @@ import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 
 import { ScriptContext, ExecuteArguments } from 'context/script-context';
+import { ContainsMutation } from 'utils/pxl';
 import { ParseFormatStringToTabStops } from './autocomplete-parser';
 import { entityTypeToString } from './autocomplete-utils';
 import { entityPageForScriptId } from '../../components/live-widgets/utils/live-view-params';
@@ -132,8 +133,11 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
         };
 
         setTabStops([]);
+        setIsValid(false);
         setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
-        execute(execArgs);
+        if (!ContainsMutation(execArgs.pxl)) {
+          execute(execArgs);
+        }
         onClose();
       }
     }

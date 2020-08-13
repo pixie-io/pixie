@@ -12,6 +12,7 @@ import Modal from '@material-ui/core/Modal';
 import { ScriptContext, ExecuteArguments } from 'context/script-context';
 import { ResultsContext } from 'context/results-context';
 import { entityPageForScriptId, optionallyGetNamespace } from 'components/live-widgets/utils/live-view-params';
+import { ContainsMutation } from 'utils/pxl';
 
 import { parseVis } from '../live/vis';
 
@@ -83,7 +84,9 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
       };
       clearResults();
       setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
-      execute(execArgs);
+      if (!ContainsMutation(execArgs.pxl)) {
+        execute(execArgs);
+      }
     }
     onClose();
   };
