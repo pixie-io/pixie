@@ -48,9 +48,9 @@ class Analyzer : public RuleExecutor<IR> {
     unique_sink_names->AddRule<UniqueSinkNameRule>();
   }
 
-  void CreateAddLimitToMemorySinkBatch() {
-    RuleBatch* limit_to_mem_sink = CreateRuleBatch<FailOnMax>("AddLimitToMemorySink", 2);
-    limit_to_mem_sink->AddRule<AddLimitToMemorySinkRule>(compiler_state_);
+  void CreateAddLimitToBatchResultSinkBatch() {
+    RuleBatch* limit_to_res_sink = CreateRuleBatch<FailOnMax>("AddLimitToBatchResultSink", 2);
+    limit_to_res_sink->AddRule<AddLimitToBatchResultSinkRule>(compiler_state_);
   }
 
   void CreateOperatorCompileTimeExpressionRuleBatch() {
@@ -100,7 +100,7 @@ class Analyzer : public RuleExecutor<IR> {
     md_handler_ = MetadataHandler::Create();
     CreateSourceAndMetadataResolutionBatch();
     CreateUniqueSinkNamesBatch();
-    CreateAddLimitToMemorySinkBatch();
+    CreateAddLimitToBatchResultSinkBatch();
     CreateOperatorCompileTimeExpressionRuleBatch();
     CreateCombineConsecutiveMapsRule();
     CreateDataTypeResolutionBatch();

@@ -181,6 +181,7 @@ class OperatorRelationRule : public Rule {
   StatusOr<bool> SetUnion(UnionIR* union_ir) const;
   StatusOr<bool> SetOldJoin(JoinIR* join_op) const;
   StatusOr<bool> SetMemorySink(MemorySinkIR* map_ir) const;
+  StatusOr<bool> SetGRPCSink(GRPCSinkIR* map_ir) const;
   StatusOr<bool> SetRolling(RollingIR* rolling_ir) const;
   StatusOr<bool> SetOther(OperatorIR* op) const;
 
@@ -526,12 +527,14 @@ class ResolveWindowSizeRollingRule : public Rule {
 };
 
 /**
- * @brief This rule automatically adds a limit to all memory sinks
+ * @brief This rule automatically adds a limit to all result sinks that are executed in batch.
+ * Currently, that is all of our queries, but we will need to skip this rule in persistent,
+ * streaming queries, when they are introduced.
  *
  */
-class AddLimitToMemorySinkRule : public Rule {
+class AddLimitToBatchResultSinkRule : public Rule {
  public:
-  explicit AddLimitToMemorySinkRule(CompilerState* compiler_state)
+  explicit AddLimitToBatchResultSinkRule(CompilerState* compiler_state)
       : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:

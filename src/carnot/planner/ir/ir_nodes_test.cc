@@ -745,7 +745,7 @@ TEST_F(OperatorTests, swap_parent) {
   EXPECT_EQ(col3->ReferenceID().ConsumeValueOrDie(), parent_map->id());
 }
 
-TEST_F(OperatorTests, grpc_ops) {
+TEST_F(OperatorTests, internal_grpc_ops) {
   int64_t grpc_id = 123;
   std::string source_grpc_address = "1111";
   std::string sink_physical_id = "agent-xyz";
@@ -762,9 +762,20 @@ TEST_F(OperatorTests, grpc_ops) {
   MakeMemSink(grpc_src_group, "out");
 
   grpc_src_group->SetGRPCAddress(source_grpc_address);
+  EXPECT_TRUE(grpc_sink->has_destination_id());
+  EXPECT_FALSE(grpc_sink->has_output_table());
   EXPECT_EQ(grpc_sink->destination_id(), grpc_id);
   EXPECT_OK(grpc_src_group->AddGRPCSink(grpc_sink));
   EXPECT_EQ(grpc_src_group->source_id(), grpc_id);
+}
+
+TEST_F(OperatorTests, external_grpc) {
+  MemorySourceIR* mem_src = MakeMemSource();
+  GRPCSinkIR* grpc_sink = MakeGRPCSink(mem_src, "output_table", std::vector<std::string>{"outcol"});
+  EXPECT_FALSE(grpc_sink->has_destination_id());
+  EXPECT_TRUE(grpc_sink->has_output_table());
+  EXPECT_EQ("output_table", grpc_sink->name());
+  EXPECT_THAT(grpc_sink->out_columns(), ElementsAre("outcol"));
 }
 
 using CloneTests = OperatorTests;
@@ -851,9 +862,26 @@ TEST_F(CloneTests, grpc_source_group) {
   }
 }
 
-TEST_F(CloneTests, grpc_sink) {
+TEST_F(CloneTests, internal_grpc_sink) {
   auto mem_source = MakeMemSource();
   GRPCSinkIR* grpc_sink = MakeGRPCSink(mem_source, 123);
+  grpc_sink->SetDestinationAddress("1111");
+
+  auto out = graph->Clone();
+  EXPECT_OK(out.status());
+  std::unique_ptr<IR> cloned_ir = out.ConsumeValueOrDie();
+
+  ASSERT_EQ(graph->dag().TopologicalSort(), cloned_ir->dag().TopologicalSort());
+
+  // Make sure that all of the columns are now part of the new graph.
+  for (int64_t i : cloned_ir->dag().TopologicalSort()) {
+    CompareClone(cloned_ir->Get(i), graph->Get(i), absl::Substitute("For index $0", i));
+  }
+}
+
+TEST_F(CloneTests, external_grpc_sink) {
+  auto mem_source = MakeMemSource();
+  GRPCSinkIR* grpc_sink = MakeGRPCSink(mem_source, "output_table", std::vector<std::string>{"foo"});
   grpc_sink->SetDestinationAddress("1111");
 
   auto out = graph->Clone();
@@ -1021,7 +1049,7 @@ TEST_F(ToProtoTests, grpc_source_ir) {
   EXPECT_THAT(pb, EqualsProto(kExpectedGRPCSourcePb));
 }
 
-constexpr char kExpectedGRPCSinkPb[] = R"proto(
+constexpr char kExpectedInternalGRPCSinkPb[] = R"proto(
   op_type: GRPC_SINK_OPERATOR
   grpc_sink_op {
     address: "$0"
@@ -1029,10 +1057,9 @@ constexpr char kExpectedGRPCSinkPb[] = R"proto(
   }
 )proto";
 
-TEST_F(ToProtoTests, grpc_sink_ir) {
+TEST_F(ToProtoTests, internal_grpc_sink_ir) {
   int64_t destination_id = 123;
   std::string grpc_address = "1111";
-  std::string physical_id = "agent-aa";
   auto mem_src = MakeMemSource();
   auto grpc_sink = MakeGRPCSink(mem_src, destination_id);
   grpc_sink->SetDestinationAddress(grpc_address);
@@ -1040,7 +1067,44 @@ TEST_F(ToProtoTests, grpc_sink_ir) {
   planpb::Operator pb;
   ASSERT_OK(grpc_sink->ToProto(&pb));
 
-  EXPECT_THAT(pb, EqualsProto(absl::Substitute(kExpectedGRPCSinkPb, grpc_address, destination_id)));
+  EXPECT_THAT(
+      pb, EqualsProto(absl::Substitute(kExpectedInternalGRPCSinkPb, grpc_address, destination_id)));
+}
+
+constexpr char kExpectedExternalGRPCSinkPb[] = R"proto(
+  op_type: GRPC_SINK_OPERATOR
+  grpc_sink_op {
+    address: "$0"
+    output_table {
+      table_name: "$1"
+      column_names: "count"
+      column_names: "cpu0"
+      column_names: "cpu1"
+      column_names: "cpu2"
+      column_types: INT64
+      column_types: FLOAT64
+      column_types: FLOAT64
+      column_types: FLOAT64
+      column_semantic_types: ST_NONE
+      column_semantic_types: ST_NONE
+      column_semantic_types: ST_NONE
+      column_semantic_types: ST_NONE
+    }
+  }
+)proto";
+
+TEST_F(ToProtoTests, external_grpc_sink_ir) {
+  std::string grpc_address = "1111";
+  auto mem_src = MakeMemSource();
+  GRPCSinkIR* grpc_sink = MakeGRPCSink(mem_src, "output_table", std::vector<std::string>{});
+  ASSERT_OK(grpc_sink->SetRelation(MakeRelation()));
+  grpc_sink->SetDestinationAddress(grpc_address);
+
+  planpb::Operator pb;
+  ASSERT_OK(grpc_sink->ToProto(&pb));
+
+  EXPECT_THAT(
+      pb, EqualsProto(absl::Substitute(kExpectedExternalGRPCSinkPb, grpc_address, "output_table")));
 }
 
 constexpr char kIRProto[] = R"proto(
@@ -1666,6 +1730,24 @@ TEST_F(OperatorTests, uint128_ir_init_from_str_bad_format) {
   auto uint128_or_s = graph->CreateNode<UInt128IR>(ast, uuid_str);
   ASSERT_NOT_OK(uint128_or_s);
   EXPECT_THAT(uint128_or_s.status(), HasCompilerError(".* is not a valid UUID"));
+}
+
+TEST_F(OperatorTests, grpc_sink_required_inputs) {
+  auto mem_source =
+      graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{}).ValueOrDie();
+  auto sink = graph
+                  ->CreateNode<GRPCSinkIR>(ast, mem_source, "output_table",
+                                           std::vector<std::string>{"output1", "output2"})
+                  .ValueOrDie();
+
+  auto rel = table_store::schema::Relation(
+      std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64}),
+      std::vector<std::string>({"output1", "output2"}));
+  EXPECT_OK(sink->SetRelation(rel));
+
+  auto inputs = sink->RequiredInputColumns().ConsumeValueOrDie();
+  EXPECT_EQ(1, inputs.size());
+  EXPECT_THAT(inputs[0], UnorderedElementsAre("output1", "output2"));
 }
 
 TEST_F(OperatorTests, map_required_inputs) {

@@ -188,29 +188,38 @@ StatusOr<std::vector<ColumnIR*>> SourceRelationRule::GetColumnsFromRelation(
 StatusOr<bool> OperatorRelationRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, UnresolvedReadyOp(BlockingAgg()))) {
     return SetBlockingAgg(static_cast<BlockingAggIR*>(ir_node));
-  } else if (Match(ir_node, UnresolvedReadyOp(Map()))) {
+  }
+  if (Match(ir_node, UnresolvedReadyOp(Map()))) {
     return SetMap(static_cast<MapIR*>(ir_node));
-  } else if (Match(ir_node, UnresolvedReadyOp(Union()))) {
+  }
+  if (Match(ir_node, UnresolvedReadyOp(Union()))) {
     return SetUnion(static_cast<UnionIR*>(ir_node));
-  } else if (Match(ir_node, UnresolvedReadyOp(Join()))) {
+  }
+  if (Match(ir_node, UnresolvedReadyOp(Join()))) {
     JoinIR* join_node = static_cast<JoinIR*>(ir_node);
     if (Match(ir_node, UnsetOutputColumnsJoin())) {
       PL_RETURN_IF_ERROR(SetJoinOutputColumns(join_node));
     }
     return SetOldJoin(join_node);
-  } else if (Match(ir_node, UnresolvedReadyOp(Drop()))) {
+  }
+  if (Match(ir_node, UnresolvedReadyOp(Drop()))) {
     // Another rule handles this.
     // TODO(philkuz) unify this rule with the drop to map rule.
     return false;
-  } else if (Match(ir_node, UnresolvedReadyOp(MemorySink()))) {
+  }
+  if (Match(ir_node, UnresolvedReadyOp(MemorySink()))) {
     return SetMemorySink(static_cast<MemorySinkIR*>(ir_node));
-  } else if (Match(ir_node, UnresolvedReadyOp(Limit())) ||
-             Match(ir_node, UnresolvedReadyOp(Filter())) ||
-             Match(ir_node, UnresolvedReadyOp(GroupBy())) ||
-             Match(ir_node, UnresolvedReadyOp(Rolling()))) {
+  }
+  if (Match(ir_node, UnresolvedReadyOp(ExternalGRPCSink()))) {
+    return SetGRPCSink(static_cast<GRPCSinkIR*>(ir_node));
+  }
+  if (Match(ir_node, UnresolvedReadyOp(Limit())) || Match(ir_node, UnresolvedReadyOp(Filter())) ||
+      Match(ir_node, UnresolvedReadyOp(GroupBy())) ||
+      Match(ir_node, UnresolvedReadyOp(Rolling()))) {
     // Explicitly match because the general matcher keeps causing problems.
     return SetOther(static_cast<OperatorIR*>(ir_node));
-  } else if (Match(ir_node, UnresolvedReadyOp())) {
+  }
+  if (Match(ir_node, UnresolvedReadyOp())) {
     // Fails in this path because future writers should specify the op.
     DCHECK(false) << ir_node->DebugString();
     return SetOther(static_cast<OperatorIR*>(ir_node));
@@ -462,6 +471,21 @@ StatusOr<bool> OperatorRelationRule::SetUnion(UnionIR* union_ir) const {
 }
 
 StatusOr<bool> OperatorRelationRule::SetMemorySink(MemorySinkIR* sink_ir) const {
+  if (!sink_ir->out_columns().size()) {
+    return SetOther(sink_ir);
+  }
+  auto input_relation = sink_ir->parents()[0]->relation();
+  Relation output_relation;
+  for (const auto& col_name : sink_ir->out_columns()) {
+    output_relation.AddColumn(input_relation.GetColumnType(col_name), col_name,
+                              input_relation.GetColumnDesc(col_name));
+  }
+  PL_RETURN_IF_ERROR(sink_ir->SetRelation(output_relation));
+  return true;
+}
+
+StatusOr<bool> OperatorRelationRule::SetGRPCSink(GRPCSinkIR* sink_ir) const {
+  DCHECK(sink_ir->has_output_table());
   if (!sink_ir->out_columns().size()) {
     return SetOther(sink_ir);
   }
@@ -989,19 +1013,28 @@ StatusOr<bool> RemoveGroupByRule::RemoveGroupBy(GroupByIR* groupby) {
   return true;
 }
 
-StatusOr<bool> UniqueSinkNameRule::Apply(IRNode* ir_node) {
-  if (!Match(ir_node, MemorySink())) {
-    return false;
-  }
-  auto sink = static_cast<MemorySinkIR*>(ir_node);
+template <typename TSinkType>
+StatusOr<bool> ApplyUniqueSinkName(IRNode* ir_node,
+                                   absl::flat_hash_map<std::string, int64_t>* sink_names_count) {
+  auto sink = static_cast<TSinkType*>(ir_node);
   bool changed_name = false;
-  if (sink_names_count_.contains(sink->name())) {
-    sink->set_name(absl::Substitute("$0_$1", sink->name(), sink_names_count_[sink->name()]++));
+  if (sink_names_count->contains(sink->name())) {
+    sink->set_name(absl::Substitute("$0_$1", sink->name(), (*sink_names_count)[sink->name()]++));
     changed_name = true;
   } else {
-    sink_names_count_[sink->name()] = 1;
+    (*sink_names_count)[sink->name()] = 1;
   }
   return changed_name;
+}
+
+StatusOr<bool> UniqueSinkNameRule::Apply(IRNode* ir_node) {
+  if (Match(ir_node, MemorySink())) {
+    return ApplyUniqueSinkName<MemorySinkIR>(ir_node, &sink_names_count_);
+  }
+  if (Match(ir_node, ExternalGRPCSink())) {
+    return ApplyUniqueSinkName<GRPCSinkIR>(ir_node, &sink_names_count_);
+  }
+  return false;
 }
 
 bool ContainsChildColumn(const ExpressionIR& expr,
@@ -1169,7 +1202,7 @@ StatusOr<bool> PruneUnconnectedOperatorsRule::Apply(IRNode* ir_node) {
   auto ir_graph = ir_node->graph();
   auto node_id = ir_node->id();
 
-  if (Match(ir_node, MemorySink()) || sink_connected_nodes_.contains(ir_node)) {
+  if (Match(ir_node, ResultSink()) || sink_connected_nodes_.contains(ir_node)) {
     for (int64_t parent_id : ir_graph->dag().ParentsOf(node_id)) {
       sink_connected_nodes_.insert(ir_graph->Get(parent_id));
     }
@@ -1201,11 +1234,11 @@ StatusOr<bool> PruneUnconnectedOperatorsRule::Apply(IRNode* ir_node) {
   return true;
 }
 
-StatusOr<bool> AddLimitToMemorySinkRule::Apply(IRNode* ir_node) {
+StatusOr<bool> AddLimitToBatchResultSinkRule::Apply(IRNode* ir_node) {
   if (!compiler_state_->has_max_output_rows_per_table()) {
     return false;
   }
-  if (!Match(ir_node, MemorySink())) {
+  if (!Match(ir_node, ResultSink())) {
     return false;
   }
   auto mem_sink = static_cast<MemorySinkIR*>(ir_node);

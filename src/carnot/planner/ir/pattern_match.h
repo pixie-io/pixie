@@ -155,6 +155,36 @@ struct GRPCSinkWithSourceID : public ParentMatch {
   int64_t source_id_;
 };
 
+/* Match an external GRPC (which produces an output table) */
+struct GRPCSinkTypeMatch : public ParentMatch {
+  explicit GRPCSinkTypeMatch(bool internal)
+      : ParentMatch(IRNodeType::kGRPCSink), internal_(internal) {}
+
+  bool Match(const IRNode* node) const override {
+    return GRPCSink().Match(node) &&
+           (internal_ ? static_cast<const GRPCSinkIR*>(node)->has_destination_id()
+                      : static_cast<const GRPCSinkIR*>(node)->has_output_table());
+  }
+
+ private:
+  bool internal_;
+};
+
+// Matches a GRPC which outputs a final result, streamed to a remote destination.
+inline GRPCSinkTypeMatch ExternalGRPCSink() { return GRPCSinkTypeMatch(/* internal */ false); }
+
+// Matches a GRPC which outputs an intermediate result, streamed to another Carnot instance.
+inline GRPCSinkTypeMatch InternalGRPCSink() { return GRPCSinkTypeMatch(/* internal */ true); }
+
+// Matches a sink that produces a final (rather than intermediate) result.
+struct ResultSink : public ParentMatch {
+  ResultSink() : ParentMatch(IRNodeType::kAny) {}
+
+  bool Match(const IRNode* node) const override {
+    return ExternalGRPCSink().Match(node) || MemorySink().Match(node);
+  }
+};
+
 /**
  * @brief Match a specific integer value.
  */

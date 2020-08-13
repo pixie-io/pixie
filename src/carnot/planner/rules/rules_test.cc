@@ -729,6 +729,32 @@ TEST_F(OperatorRelationTest, mem_sink_all_columns_test) {
   EXPECT_EQ(src_relation, sink->relation());
 }
 
+TEST_F(OperatorRelationTest, grpc_sink_with_columns_test) {
+  auto src_relation = MakeRelation();
+  MemorySourceIR* src = MakeMemSource(src_relation);
+  GRPCSinkIR* sink = MakeGRPCSink(src, "foo", {"cpu0"});
+
+  OperatorRelationRule rule(compiler_state_.get());
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  EXPECT_EQ(Relation({types::DataType::FLOAT64}, {"cpu0"}), sink->relation());
+}
+
+TEST_F(OperatorRelationTest, grpc_sink_all_columns_test) {
+  auto src_relation = MakeRelation();
+  MemorySourceIR* src = MakeMemSource(src_relation);
+  GRPCSinkIR* sink = MakeGRPCSink(src, "foo", {});
+
+  OperatorRelationRule rule(compiler_state_.get());
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  EXPECT_EQ(src_relation, sink->relation());
+}
+
 TEST_F(OperatorRelationTest, JoinCreateOutputColumns) {
   std::string join_key = "key";
   Relation rel1({types::INT64, types::FLOAT64, types::STRING}, {join_key, "latency", "data"});
@@ -1759,7 +1785,7 @@ TEST_F(RulesTest, UniqueSinkNameRule) {
   MemorySourceIR* mem_src = MakeMemSource();
   MemorySinkIR* foo1 = MakeMemSink(mem_src, "foo");
   MemorySinkIR* foo2 = MakeMemSink(mem_src, "foo");
-  MemorySinkIR* foo3 = MakeMemSink(mem_src, "foo");
+  GRPCSinkIR* foo3 = MakeGRPCSink(mem_src, "foo", std::vector<std::string>{});
   MemorySinkIR* bar1 = MakeMemSink(mem_src, "bar");
   MemorySinkIR* bar2 = MakeMemSink(mem_src, "bar");
   MemorySinkIR* abc = MakeMemSink(mem_src, "abc");
@@ -1770,9 +1796,15 @@ TEST_F(RulesTest, UniqueSinkNameRule) {
   ASSERT_TRUE(result.ConsumeValueOrDie());
 
   std::vector<std::string> expected_sink_names{"foo", "foo_1", "foo_2", "bar", "bar_1", "abc"};
-  std::vector<MemorySinkIR*> sinks{foo1, foo2, foo3, bar1, bar2, abc};
-  for (const auto& [idx, sink] : Enumerate(sinks)) {
-    EXPECT_EQ(sink->name(), expected_sink_names[idx]);
+  std::vector<OperatorIR*> sinks{foo1, foo2, foo3, bar1, bar2, abc};
+  for (const auto& [idx, op] : Enumerate(sinks)) {
+    std::string sink_name;
+    if (Match(op, MemorySink())) {
+      sink_name = static_cast<MemorySinkIR*>(op)->name();
+    } else {
+      sink_name = static_cast<GRPCSinkIR*>(op)->name();
+    }
+    EXPECT_EQ(sink_name, expected_sink_names[idx]);
   }
 }
 
@@ -2267,14 +2299,14 @@ TEST_F(RulesTest, PruneUnconnectedOperatorsRule_unchanged) {
   EXPECT_EQ(nodes_before, graph->dag().TopologicalSort());
 }
 
-TEST_F(RulesTest, AddLimitToMemorySinkRuleTest_basic) {
+TEST_F(RulesTest, AddLimitToBatchResultSinkRuleTest_basic) {
   MemorySourceIR* src = MakeMemSource(MakeRelation());
-  MemorySinkIR* sink = MakeMemSink(src, "foo", {});
+  GRPCSinkIR* sink = MakeGRPCSink(src, "foo", {});
 
   auto compiler_state =
       std::make_unique<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now, 1000);
 
-  AddLimitToMemorySinkRule rule(compiler_state.get());
+  AddLimitToBatchResultSinkRule rule(compiler_state.get());
   auto result = rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
@@ -2290,7 +2322,7 @@ TEST_F(RulesTest, AddLimitToMemorySinkRuleTest_basic) {
   EXPECT_THAT(limit->parents(), ElementsAre(src));
 }
 
-TEST_F(RulesTest, AddLimitToMemorySinkRuleTest_overwrite_higher) {
+TEST_F(RulesTest, AddLimitToBatchResultSinkRuleTest_overwrite_higher) {
   MemorySourceIR* src = MakeMemSource(MakeRelation());
   auto limit = graph->CreateNode<LimitIR>(ast, src, 1001).ValueOrDie();
   MakeMemSink(limit, "foo", {});
@@ -2298,7 +2330,7 @@ TEST_F(RulesTest, AddLimitToMemorySinkRuleTest_overwrite_higher) {
   auto compiler_state =
       std::make_unique<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now, 1000);
 
-  AddLimitToMemorySinkRule rule(compiler_state.get());
+  AddLimitToBatchResultSinkRule rule(compiler_state.get());
   auto result = rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
@@ -2309,7 +2341,7 @@ TEST_F(RulesTest, AddLimitToMemorySinkRuleTest_overwrite_higher) {
   EXPECT_EQ(1000, limit->limit_value());
 }
 
-TEST_F(RulesTest, AddLimitToMemorySinkRuleTest_dont_overwrite_lower) {
+TEST_F(RulesTest, AAddLimitToBatchResultSinkRuleTest_dont_overwrite_lower) {
   MemorySourceIR* src = MakeMemSource(MakeRelation());
   auto limit = graph->CreateNode<LimitIR>(ast, src, 999).ValueOrDie();
   MakeMemSink(limit, "foo", {});
@@ -2317,20 +2349,20 @@ TEST_F(RulesTest, AddLimitToMemorySinkRuleTest_dont_overwrite_lower) {
   auto compiler_state =
       std::make_unique<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now, 1000);
 
-  AddLimitToMemorySinkRule rule(compiler_state.get());
+  AddLimitToBatchResultSinkRule rule(compiler_state.get());
   auto result = rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_FALSE(result.ValueOrDie());
 }
 
-TEST_F(RulesTest, AddLimitToMemorySinkRuleTest_skip_if_no_limit) {
+TEST_F(RulesTest, AddLimitToBatchResultSinkRuleTest_skip_if_no_limit) {
   MemorySourceIR* src = MakeMemSource(MakeRelation());
   MakeMemSink(src, "foo", {});
 
   auto compiler_state =
       std::make_unique<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now);
 
-  AddLimitToMemorySinkRule rule(compiler_state.get());
+  AddLimitToBatchResultSinkRule rule(compiler_state.get());
   auto result = rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_FALSE(result.ValueOrDie());

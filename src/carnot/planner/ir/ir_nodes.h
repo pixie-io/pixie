@@ -1622,11 +1622,32 @@ class GRPCSinkIR : public OperatorIR {
  public:
   explicit GRPCSinkIR(int64_t id) : OperatorIR(id, IRNodeType::kGRPCSink) {}
 
+  enum GRPCSinkType {
+    kTypeNotSet = 0,
+    kInternal,
+    kExternal,
+  };
+
+  // Init function to call to create an internal GRPCSink, which sends an intermediate
+  // result to a corresponding GRPC Source.
   Status Init(OperatorIR* parent, int64_t destination_id) {
     PL_RETURN_IF_ERROR(AddParent(parent));
     destination_id_ = destination_id;
+    sink_type_ = GRPCSinkType::kInternal;
     return Status::OK();
   }
+
+  // Init function to call to create an external, final result producing GRPCSink, which
+  // streams the output table to a non-Carnot destination (such as the query broker).
+  Status Init(OperatorIR* parent, const std::string& name,
+              const std::vector<std::string> out_columns) {
+    PL_RETURN_IF_ERROR(AddParent(parent));
+    sink_type_ = GRPCSinkType::kExternal;
+    name_ = name;
+    out_columns_ = out_columns;
+    return Status::OK();
+  }
+
   Status ToProto(planpb::Operator* op_pb) const override;
 
   /**
@@ -1635,16 +1656,30 @@ class GRPCSinkIR : public OperatorIR {
    *
    * Once the Distributed Plan is established, you should use DistributedDestinationID().
    */
+  bool has_destination_id() const { return sink_type_ == GRPCSinkType::kInternal; }
   int64_t destination_id() const { return destination_id_; }
   void SetDestinationID(int64_t destination_id) { destination_id_ = destination_id; }
   void SetDestinationAddress(const std::string& address) { destination_address_ = address; }
 
   const std::string& destination_address() const { return destination_address_; }
   bool DestinationAddressSet() const { return destination_address_ != ""; }
+
+  bool has_output_table() const { return sink_type_ == GRPCSinkType::kExternal; }
+  std::string name() const { return name_; }
+  void set_name(const std::string& name) { name_ = name; }
+  // When out_columns_ is empty, the full input relation will be written to the sink.
+  const std::vector<std::string>& out_columns() const { return out_columns_; }
+
   inline bool IsBlocking() const override { return true; }
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
-    return error::Unimplemented("Unexpected call to GRPCSinkIR::RequiredInputColumns");
+    if (sink_type_ != GRPCSinkType::kExternal) {
+      return error::Unimplemented("Unexpected call to GRPCSinkIR::RequiredInputColumns");
+    }
+    DCHECK(IsRelationInit());
+    auto out_cols = relation().col_names();
+    absl::flat_hash_set<std::string> outputs{out_cols.begin(), out_cols.end()};
+    return std::vector<absl::flat_hash_set<std::string>>{outputs};
   }
 
   static constexpr bool FailOnResolveType() { return true; }
@@ -1658,8 +1693,13 @@ class GRPCSinkIR : public OperatorIR {
   }
 
  private:
-  int64_t destination_id_ = -1;
   std::string destination_address_ = "";
+  GRPCSinkType sink_type_ = GRPCSinkType::kTypeNotSet;
+  // Used when GRPCSinkType = kInternal.
+  int64_t destination_id_ = -1;
+  // Used when GRPCSinkType = kExternal.
+  std::string name_;
+  std::vector<std::string> out_columns_;
 };
 
 /**

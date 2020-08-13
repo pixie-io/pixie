@@ -1336,8 +1336,11 @@ Status LimitIR::CopyFromNodeImpl(const IRNode* node, absl::flat_hash_map<const I
 Status GRPCSinkIR::CopyFromNodeImpl(const IRNode* node,
                                     absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const GRPCSinkIR* grpc_sink = static_cast<const GRPCSinkIR*>(node);
+  sink_type_ = grpc_sink->sink_type_;
   destination_id_ = grpc_sink->destination_id_;
   destination_address_ = grpc_sink->destination_address_;
+  name_ = grpc_sink->name_;
+  out_columns_ = grpc_sink->out_columns_;
   return Status::OK();
 }
 
@@ -1419,7 +1422,20 @@ Status GRPCSinkIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_grpc_sink_op();
   op->set_op_type(planpb::GRPC_SINK_OPERATOR);
   pb->set_address(destination_address());
-  pb->set_grpc_source_id(destination_id());
+  if (has_destination_id()) {
+    pb->set_grpc_source_id(destination_id());
+  } else if (has_output_table()) {
+    pb->mutable_output_table()->set_table_name(name());
+    DCHECK(IsRelationInit());
+    for (size_t i = 0; i < relation().NumColumns(); ++i) {
+      pb->mutable_output_table()->add_column_names(relation().GetColumnName(i));
+      pb->mutable_output_table()->add_column_types(relation().GetColumnType(i));
+      pb->mutable_output_table()->add_column_semantic_types(relation().GetColumnSemanticType(i));
+    }
+  } else {
+    return error::Internal(
+        "Error in GRPCSinkIR::ToProto: node has no output table or destination ID");
+  }
   return Status::OK();
 }
 

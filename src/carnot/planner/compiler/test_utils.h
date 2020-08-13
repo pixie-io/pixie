@@ -612,6 +612,13 @@ class OperatorTests : public ::testing::Test {
     return grpc_sink;
   }
 
+  GRPCSinkIR* MakeGRPCSink(OperatorIR* parent, std::string name,
+                           const std::vector<std::string>& out_cols) {
+    GRPCSinkIR* grpc_sink =
+        graph->CreateNode<GRPCSinkIR>(ast, parent, name, out_cols).ConsumeValueOrDie();
+    return grpc_sink;
+  }
+
   GRPCSourceIR* MakeGRPCSource(const table_store::schema::Relation& relation) {
     GRPCSourceIR* grpc_src_group =
         graph->CreateNode<GRPCSourceIR>(ast, relation).ConsumeValueOrDie();
@@ -1165,9 +1172,14 @@ void CompareCloneNode(GRPCSourceIR* /*new_ir*/, GRPCSourceIR* /*old_ir*/,
 
 template <>
 void CompareCloneNode(GRPCSinkIR* new_ir, GRPCSinkIR* old_ir, const std::string& err_string) {
-  EXPECT_EQ(new_ir->destination_id(), old_ir->destination_id()) << err_string;
-  EXPECT_EQ(new_ir->destination_address(), old_ir->destination_address()) << err_string;
   EXPECT_EQ(new_ir->DestinationAddressSet(), old_ir->DestinationAddressSet()) << err_string;
+  EXPECT_EQ(new_ir->destination_address(), old_ir->destination_address()) << err_string;
+  EXPECT_EQ(new_ir->destination_id(), old_ir->destination_id()) << err_string;
+  EXPECT_EQ(new_ir->has_destination_id(), old_ir->has_destination_id()) << err_string;
+  EXPECT_EQ(new_ir->has_output_table(), old_ir->has_output_table()) << err_string;
+  EXPECT_EQ(new_ir->out_columns(), old_ir->out_columns()) << err_string;
+  EXPECT_EQ(new_ir->name(), old_ir->name()) << err_string;
+  EXPECT_EQ(new_ir->out_columns(), old_ir->out_columns()) << err_string;
 }
 
 template <>
