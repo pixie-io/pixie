@@ -523,6 +523,16 @@ TEST(MathOps, basic_int64_min_uda_test) {
   uda_tester.ForInput(5).ForInput(2).ForInput(7).ForInput(1).Expect(1);
 }
 
+TEST(MathOps, basic_float64_min_uda_test) {
+  auto uda_tester = udf::UDATester<MinUDA<types::Float64Value>>();
+  uda_tester.ForInput(-4.64).Expect(-4.64);
+  uda_tester.ForInput(-4.64123445435)
+      .ForInput(2.252242424)
+      .ForInput(1.1)
+      .ForInput(-1.1234566)
+      .Expect(-4.64123445435);
+}
+
 TEST(MathOps, merge_min_test) {
   auto uda_tester = udf::UDATester<MinUDA<types::Int64Value>>();
   uda_tester.ForInput(3).ForInput(6).ForInput(10).ForInput(5).ForInput(2);

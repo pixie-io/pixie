@@ -168,22 +168,35 @@ template <typename TArg>
 class MeanUDA : public udf::UDA {
  public:
   void Update(FunctionContext*, TArg arg) {
-    size_++;
-    count_ += arg.val;
+    info_.size++;
+    info_.count += arg.val;
   }
   void Merge(FunctionContext*, const MeanUDA& other) {
-    size_ += other.size_;
-    count_ += other.count_;
+    info_.size += other.info_.size;
+    info_.count += other.info_.count;
   }
-  Float64Value Finalize(FunctionContext*) { return count_ / size_; }
+  Float64Value Finalize(FunctionContext*) { return info_.count / info_.size; }
 
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::InheritTypeFromArgs<MeanUDA>::Create({types::ST_BYTES, types::ST_PERCENT})};
   }
 
+  StringValue Serialize(FunctionContext*) {
+    return StringValue(reinterpret_cast<char*>(&info_), sizeof(info_));
+  }
+
+  Status Deserialize(FunctionContext*, const StringValue& data) {
+    info_ = *reinterpret_cast<const MeanInfo*>(data.data());
+    return Status::OK();
+  }
+
  protected:
-  uint64_t size_ = 0;
-  double count_ = 0;
+  struct MeanInfo {
+    uint64_t size = 0;
+    double count = 0;
+  };
+
+  MeanInfo info_;
 };
 
 template <typename TArg>
@@ -194,6 +207,15 @@ class SumUDA : public udf::UDA {
   TArg Finalize(FunctionContext*) { return sum_; }
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::InheritTypeFromArgs<SumUDA>::Create({types::ST_BYTES})};
+  }
+  StringValue Serialize(FunctionContext*) {
+    return StringValue(reinterpret_cast<char*>(&sum_), sizeof(sum_));
+  }
+
+  Status Deserialize(FunctionContext*, const StringValue& data) {
+    sum_ =
+        *reinterpret_cast<const typename types::ValueTypeTraits<TArg>::native_type*>(data.data());
+    return Status::OK();
   }
 
  protected:
@@ -219,6 +241,16 @@ class MaxUDA : public udf::UDA {
     return {udf::InheritTypeFromArgs<MaxUDA>::Create({types::ST_BYTES, types::ST_PERCENT})};
   }
 
+  StringValue Serialize(FunctionContext*) {
+    return StringValue(reinterpret_cast<char*>(&max_), sizeof(max_));
+  }
+
+  Status Deserialize(FunctionContext*, const StringValue& data) {
+    max_ =
+        *reinterpret_cast<const typename types::ValueTypeTraits<TArg>::native_type*>(data.data());
+    return Status::OK();
+  }
+
  protected:
   TArg max_ = std::numeric_limits<typename types::ValueTypeTraits<TArg>::native_type>::min();
 };
@@ -240,6 +272,16 @@ class MinUDA : public udf::UDA {
 
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::InheritTypeFromArgs<MinUDA>::Create({types::ST_BYTES, types::ST_PERCENT})};
+  }
+
+  StringValue Serialize(FunctionContext*) {
+    return StringValue(reinterpret_cast<char*>(&min_), sizeof(min_));
+  }
+
+  Status Deserialize(FunctionContext*, const StringValue& data) {
+    min_ =
+        *reinterpret_cast<const typename types::ValueTypeTraits<TArg>::native_type*>(data.data());
+    return Status::OK();
   }
 
  protected:
