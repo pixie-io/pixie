@@ -1,8 +1,22 @@
-import { formatCluster } from './clusters-list';
+import { formatClusters } from './clusters-list';
 
-describe('formatCluster', () => {
+describe('formatClusters', () => {
   it('correctly formats cluster info', () => {
     const clusterResults = [
+      {
+        id: '5b27f024-1234-4d07-b28d-84ab8d88e1a3',
+        clusterName: '456',
+        prettyClusterName: 'pretty-456',
+        status: 'CS_DISCONNECTED',
+        clusterVersion: 'versionABC',
+        vizierVersion: '0.2.4-pre-master.64',
+        vizierConfig: {
+          passthroughEnabled: false,
+        },
+        lastHeartbeatMs: 23424332349024.02,
+        numNodes: 0,
+        numInstrumentedNodes: 4,
+      },
       {
         id: '5b27f024-eccb-4d07-b28d-84ab8d88e6a3',
         clusterName: '123',
@@ -19,8 +33,8 @@ describe('formatCluster', () => {
       },
       {
         id: '5b27f024-eccb-4d07-b28d-84ab8d88e6a3',
-        clusterName: '123',
-        prettyClusterName: 'pretty-123',
+        clusterName: '789',
+        prettyClusterName: 'pretty-789',
         status: 'CS_DISCONNECTED',
         clusterVersion: 'versionABC',
         vizierVersion: '0.2.4-pre-master.64',
@@ -33,8 +47,8 @@ describe('formatCluster', () => {
       },
       {
         id: '1e3a32fc-caa4-5d81-e33d-10de7d77f1b2',
-        clusterName: '456',
-        prettyClusterName: 'pretty-456',
+        clusterName: 'xyz',
+        prettyClusterName: 'pretty-xyz',
         status: 'CS_UPDATE_FAILED',
         clusterVersion: 'versionDEF',
         vizierVersion: '0.2.4+Distribution.d98403c.20200515173726.1',
@@ -46,7 +60,7 @@ describe('formatCluster', () => {
         numInstrumentedNodes: 8,
       },
     ];
-    expect(clusterResults.map((cluster) => formatCluster(cluster))).toStrictEqual([
+    expect(formatClusters(clusterResults)).toStrictEqual([
       {
         clusterVersion: 'versionABC',
         lastHeartbeat: '8 hours 59 min 9 sec ago',
@@ -68,10 +82,10 @@ describe('formatCluster', () => {
         idShort: '84ab8d88e6a3',
         lastHeartbeat: '8 hours 59 min 9 sec ago',
         mode: 'Direct',
-        name: '123',
+        name: '789',
         percentInstrumented: 'N/A',
         percentInstrumentedLevel: 'none',
-        prettyName: 'pretty-123',
+        prettyName: 'pretty-789',
         status: 'DISCONNECTED',
         statusGroup: 'unknown',
         vizierVersion: '0.2.4-pre-master.64',
@@ -83,10 +97,10 @@ describe('formatCluster', () => {
         idShort: '10de7d77f1b2',
         lastHeartbeat: '0 sec ago',
         mode: 'Passthrough',
-        name: '456',
+        name: 'xyz',
         percentInstrumented: '100% (8 of 8)',
         percentInstrumentedLevel: 'high',
-        prettyName: 'pretty-456',
+        prettyName: 'pretty-xyz',
         status: 'UPDATE_FAILED',
         statusGroup: 'unhealthy',
         vizierVersion: '0.2.4+Distribution.d98403c.20200515173726.1',

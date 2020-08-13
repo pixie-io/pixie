@@ -15,6 +15,8 @@ import {
   StyledTableCell, StyledTableHeaderCell, StyledLeftTableCell, StyledRightTableCell,
 } from './utils';
 
+const INACTIVE_AGENT_THRESHOLD_MS = 24 * 60 * 60 * 1000;
+
 const GET_CLUSTERS = gql`
 {
   clusters {
@@ -61,7 +63,7 @@ function getPercentInstrumentedLevel(instrumentedRatio: number): GaugeLevel {
   return 'low';
 }
 
-export function formatCluster(clusterInfo): ClusterDisplay {
+function formatCluster(clusterInfo): ClusterDisplay {
   const {
     id, clusterName, prettyClusterName, clusterVersion, vizierVersion, vizierConfig,
     status, lastHeartbeatMs, numNodes, numInstrumentedNodes,
@@ -102,6 +104,21 @@ export function formatCluster(clusterInfo): ClusterDisplay {
   };
 }
 
+export function formatClusters(clusterInfos): ClusterDisplay[] {
+  return clusterInfos
+    .filter((cluster) => cluster.lastHeartbeatMs < INACTIVE_AGENT_THRESHOLD_MS)
+    .map((cluster) => formatCluster(cluster))
+    .sort((clusterA, clusterB) => {
+      if (clusterA.prettyName < clusterB.prettyName) {
+        return -1;
+      }
+      if (clusterA.prettyName > clusterB.prettyName) {
+        return 1;
+      }
+      return 0;
+    });
+}
+
 const CLUSTERS_POLL_INTERVAL = 2500;
 
 export const ClustersTable = withStyles((theme: Theme) => ({
@@ -129,7 +146,8 @@ export const ClustersTable = withStyles((theme: Theme) => ({
     return <div className={classes.error}>No clusters found.</div>;
   }
 
-  const clusters = data.clusters.map((cluster) => formatCluster(cluster));
+  const clusters = formatClusters(data.clusters);
+
   return (
     <Table>
       <TableHead>
