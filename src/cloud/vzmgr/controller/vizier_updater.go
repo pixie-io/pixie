@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/jmoiron/sqlx"
@@ -31,16 +33,21 @@ type Updater struct {
 	atClient artifacttrackerpb.ArtifactTrackerClient
 	nc       *nats.Conn
 
-	quitCh chan bool
+	quitCh        chan bool
+	updateQueue   chan uuid.UUID
+	queuedViziers map[uuid.UUID]bool // Map to track which viziers are already in the queue.
+	queueMu       sync.Mutex
 }
 
 // NewUpdater creates a new Vizier updater.
 func NewUpdater(db *sqlx.DB, atClient artifacttrackerpb.ArtifactTrackerClient, nc *nats.Conn) (*Updater, error) {
 	updater := &Updater{
-		db:       db,
-		atClient: atClient,
-		nc:       nc,
-		quitCh:   make(chan bool),
+		db:            db,
+		atClient:      atClient,
+		nc:            nc,
+		quitCh:        make(chan bool),
+		updateQueue:   make(chan uuid.UUID, 1000),
+		queuedViziers: make(map[uuid.UUID]bool),
 	}
 
 	latestVersion, err := updater.getLatestVizierVersion()
@@ -53,6 +60,11 @@ func NewUpdater(db *sqlx.DB, atClient artifacttrackerpb.ArtifactTrackerClient, n
 	go updater.pollVizierVersion()
 
 	return updater, nil
+}
+
+// Stop stops the updater.
+func (u *Updater) Stop() {
+	u.quitCh <- true
 }
 
 // Poll periodically to see if the Vizier version has updated.
@@ -206,11 +218,50 @@ func (u *Updater) sendNATSMessage(topic string, msg *types.Any, vizierID uuid.UU
 
 // VersionUpToDate checks if the given version string is up to date with the current vizier version.
 func (u *Updater) VersionUpToDate(version string) bool {
-	// TODO(michelle): Implement.
-	return false
+	latestVersion := semver.MustParse(u.latestVersion)
+	vzVersion := semver.MustParse(version)
+
+	devVersionRange, _ := semver.ParseRange("<=0.0.0")
+	if devVersionRange(vzVersion) {
+		return true // We should not update dev versions.
+	}
+	if vzVersion.Compare(latestVersion) < 0 {
+		return false
+	}
+	return true
 }
 
 // AddToUpdateQueue queues the given Vizier for an update to the latest version.
-func (u *Updater) AddToUpdateQueue(vizierID uuid.UUID) {
-	// TODO(michelle): Implement.
+func (u *Updater) AddToUpdateQueue(vizierID uuid.UUID) bool {
+	u.queueMu.Lock()
+	defer u.queueMu.Unlock()
+
+	if _, ok := u.queuedViziers[vizierID]; ok {
+		return false // Vizier is already queued for an update.
+	}
+
+	u.queuedViziers[vizierID] = true
+	u.updateQueue <- vizierID
+	return true
+}
+
+// ProcessUpdateQueue updates the Viziers in the update queue.
+func (u *Updater) ProcessUpdateQueue() {
+	for {
+		select {
+		case <-u.quitCh:
+			log.Info("Quit signal, stopping Vizier updates")
+			return
+		case vzID := <-u.updateQueue:
+			_, err := u.updateOrInstallVizier(vzID, "", false)
+			if err != nil {
+				log.WithError(err).Error("Failed to send update to Vizier.")
+			}
+			func() {
+				u.queueMu.Lock()
+				defer u.queueMu.Unlock()
+				delete(u.queuedViziers, vzID)
+			}()
+		}
+	}
 }

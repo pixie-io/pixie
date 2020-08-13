@@ -60,8 +60,10 @@ func (mr *MockVzUpdaterMockRecorder) VersionUpToDate(version interface{}) *gomoc
 }
 
 // AddToUpdateQueue mocks base method
-func (m *MockVzUpdater) AddToUpdateQueue(vizierID go_uuid.UUID) {
-	m.ctrl.Call(m, "AddToUpdateQueue", vizierID)
+func (m *MockVzUpdater) AddToUpdateQueue(vizierID go_uuid.UUID) bool {
+	ret := m.ctrl.Call(m, "AddToUpdateQueue", vizierID)
+	ret0, _ := ret[0].(bool)
+	return ret0
 }
 
 // AddToUpdateQueue indicates an expected call of AddToUpdateQueue

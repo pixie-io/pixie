@@ -59,7 +59,7 @@ type Server struct {
 type VzUpdater interface {
 	UpdateOrInstallVizier(vizierID uuid.UUID, version string, redeployEtcd bool) (*cvmsgspb.V2CMessage, error)
 	VersionUpToDate(version string) bool
-	AddToUpdateQueue(vizierID uuid.UUID)
+	AddToUpdateQueue(vizierID uuid.UUID) bool
 }
 
 // New creates a new server.
