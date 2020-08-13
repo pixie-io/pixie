@@ -20,6 +20,7 @@ namespace carnot {
 
 using exec::CarnotTestUtils;
 using planner::compiler::Compiler;
+using ::testing::UnorderedElementsAre;
 
 class CarnotTest : public ::testing::Test {
  protected:
@@ -40,11 +41,6 @@ class CarnotTest : public ::testing::Test {
         table_store::schema::Relation({types::UINT128, types::INT64}, {"upid", "cycles"}));
     table_store_->AddTable("empty_table", empty_table_);
     table_store_->AddTable("duration_table", CarnotTestUtils::TestDuration64Table());
-  }
-
-  // TODO(nserrino/philkuz): Move this logic somewhere more reusable.
-  std::string GetTableName(const sole::uuid& uuid, int64_t idx) const {
-    return absl::Substitute("$0_$1", uuid.str(), idx);
   }
 
   std::shared_ptr<table_store::TableStore> table_store_;
@@ -77,50 +73,17 @@ TEST_F(CarnotTest, basic) {
   EXPECT_GT(res.compile_time_ns, 0);
   EXPECT_GT(res.exec_time_ns, 0);
 
-  auto output_table = table_store_->GetTable(GetTableName(query_id, 0));
-  EXPECT_EQ(2, output_table->NumBatches());
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
+  auto output_batches = result_server_->query_results("test_output");
+  EXPECT_EQ(2, output_batches.size());
 
-  auto rb1 =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+  auto rb1 = output_batches[0];
+  EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(col2_in1, arrow::default_memory_pool())));
 
-  auto rb2 =
-      output_table->GetRowBatch(1, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
-  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(types::ToArrow(col1_in2, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb2->ColumnAt(1)->Equals(types::ToArrow(col2_in2, arrow::default_memory_pool())));
-}
-
-// TODO(somebody): Is this test is needed now that DataType::DURATION64NS is removed?
-TEST_F(CarnotTest, basic_duration_test) {
-  std::vector<types::Int64Value> col1_0_expected = {2, 4, 6};
-
-  auto query = absl::StrJoin(
-      {
-          "import px",
-          "df = px.DataFrame(table='duration_table', select=['col1'])",
-          "df.col1 = df.col1 + df.col1",
-          "px.display(df, 'test_output')",
-      },
-      "\n");
-  auto query_id = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, query_id, 0);
-  ASSERT_OK(s);
-  auto res = s.ConsumeValueOrDie();
-  EXPECT_EQ(3, res.rows_processed);
-  EXPECT_EQ(3 * sizeof(int64_t), res.bytes_processed);
-  EXPECT_GT(res.compile_time_ns, 0);
-  EXPECT_GT(res.exec_time_ns, 0);
-
-  auto output_table = table_store_->GetTable(GetTableName(query_id, 0));
-  EXPECT_EQ(1, output_table->NumBatches());
-
-  auto rb1 = output_table->GetRowBatch(0, std::vector<int64_t>({0}), arrow::default_memory_pool())
-                 .ConsumeValueOrDie();
-  EXPECT_TRUE(
-      rb1->ColumnAt(0)->Equals(types::ToArrow(col1_0_expected, arrow::default_memory_pool())));
+  auto rb2 = output_batches[1];
+  EXPECT_TRUE(rb2.ColumnAt(0)->Equals(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb2.ColumnAt(1)->Equals(types::ToArrow(col2_in2, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, register_metadata) {
@@ -160,14 +123,13 @@ TEST_F(CarnotTest, literal_only) {
   auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
   ASSERT_OK(s);
 
-  auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  EXPECT_EQ(1, output_table->NumBatches());
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("output"));
+  auto output_batches = result_server_->query_results("output");
+  EXPECT_EQ(1, output_batches.size());
 
   std::vector<types::Int64Value> expected1 = {1};
-
-  auto rb1 = output_table->GetRowBatch(0, std::vector<int64_t>({0}), arrow::default_memory_pool())
-                 .ConsumeValueOrDie();
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(expected1, arrow::default_memory_pool())));
+  EXPECT_TRUE(output_batches[0].ColumnAt(0)->Equals(
+      types::ToArrow(expected1, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, map_test) {
@@ -185,16 +147,14 @@ TEST_F(CarnotTest, map_test) {
   auto s = carnot_->ExecuteQuery(query, uuid, 0);
   ASSERT_OK(s);
 
-  auto output_table = table_store_->GetTable(GetTableName(uuid, 0));
-  EXPECT_EQ(2, output_table->NumBatches());
-  //
-  auto rb1 = output_table->GetRowBatch(0, std::vector<int64_t>({0}), arrow::default_memory_pool())
-                 .ConsumeValueOrDie();
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
+  auto output_batches = result_server_->query_results("test_output");
+  EXPECT_EQ(2, output_batches.size());
 
-  auto rb2 = output_table->GetRowBatch(1, std::vector<int64_t>({0}), arrow::default_memory_pool())
-                 .ConsumeValueOrDie();
-  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+  EXPECT_TRUE(output_batches[0].ColumnAt(0)->Equals(
+      types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_TRUE(output_batches[1].ColumnAt(0)->Equals(
+      types::ToArrow(col1_in2, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, subscript_map_test) {
@@ -210,19 +170,15 @@ TEST_F(CarnotTest, subscript_map_test) {
   auto s = carnot_->ExecuteQuery(query, uuid, 0);
   ASSERT_OK(s);
 
-  auto output_table = table_store_->GetTable(GetTableName(uuid, 0));
-  EXPECT_EQ(2, output_table->NumBatches());
-  EXPECT_EQ(3, output_table->NumColumns());
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
+  auto output_batches = result_server_->query_results("test_output");
+  EXPECT_EQ(2, output_batches.size());
+  EXPECT_EQ(3, output_batches[0].num_columns());
 
-  auto rb1 =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
-  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-
-  auto rb2 =
-      output_table->GetRowBatch(1, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
-  EXPECT_TRUE(rb2->ColumnAt(2)->Equals(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+  EXPECT_TRUE(output_batches[0].ColumnAt(2)->Equals(
+      types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_TRUE(output_batches[1].ColumnAt(2)->Equals(
+      types::ToArrow(col1_in2, arrow::default_memory_pool())));
 }
 
 // Test whether the compiler will handle issues nicely
@@ -350,9 +306,10 @@ TEST_F(CarnotTest, order_test) {
   auto s = carnot_->ExecuteQuery(query, uuid, 0);
   ASSERT_OK(s);
 
-  auto output_table = table_store_->GetTable(GetTableName(uuid, 0));
-  EXPECT_EQ(3, output_table->NumBatches());
-  EXPECT_EQ(3, output_table->NumColumns());
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
+  auto output_batches = result_server_->query_results("test_output");
+  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(3, output_batches[0].num_columns());
 
   std::vector<types::Float64Value> col0_out1 = {6.5, 3.2, 17.3};
   std::vector<types::Float64Value> col0_out2 = {5.1, 65.1};
@@ -360,21 +317,16 @@ TEST_F(CarnotTest, order_test) {
   std::vector<types::Int64Value> col1_out1 = {1, 1, 1};
   std::vector<types::Int64Value> col2_out1 = {2, 2, 2};
 
-  auto rb1 =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+  auto rb1 = output_batches[0];
+  EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(col0_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
 
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(col0_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
+  auto rb2 = output_batches[1];
+  EXPECT_TRUE(rb2.ColumnAt(0)->Equals(types::ToArrow(col0_out2, arrow::default_memory_pool())));
 
-  auto rb2 = output_table->GetRowBatch(1, std::vector<int64_t>({0}), arrow::default_memory_pool())
-                 .ConsumeValueOrDie();
-  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(types::ToArrow(col0_out2, arrow::default_memory_pool())));
-
-  auto rb3 = output_table->GetRowBatch(2, std::vector<int64_t>({0}), arrow::default_memory_pool())
-                 .ConsumeValueOrDie();
-  EXPECT_TRUE(rb3->ColumnAt(0)->Equals(types::ToArrow(col1_out3, arrow::default_memory_pool())));
+  auto rb3 = output_batches[2];
+  EXPECT_TRUE(rb3.ColumnAt(0)->Equals(types::ToArrow(col1_out3, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, reused_expr) {
@@ -390,9 +342,10 @@ TEST_F(CarnotTest, reused_expr) {
   auto s = carnot_->ExecuteQuery(query, uuid, 0);
   ASSERT_OK(s);
 
-  auto output_table = table_store_->GetTable(GetTableName(uuid, 0));
-  EXPECT_EQ(3, output_table->NumBatches());
-  EXPECT_EQ(3, output_table->NumColumns());
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
+  auto output_batches = result_server_->query_results("test_output");
+  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(3, output_batches[0].num_columns());
 
   std::vector<types::Float64Value> col0_out1 = {6.5, 3.2, 17.3};
   std::vector<types::Float64Value> col0_out2 = {5.1, 65.1};
@@ -400,21 +353,17 @@ TEST_F(CarnotTest, reused_expr) {
   std::vector<types::Int64Value> col1_out1 = {1, 1, 1};
   std::vector<types::Int64Value> col2_out1 = {2, 2, 2};
 
-  auto rb1 =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+  auto rb1 = output_batches[0];
 
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(col0_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(col0_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
 
-  auto rb2 = output_table->GetRowBatch(1, std::vector<int64_t>({0}), arrow::default_memory_pool())
-                 .ConsumeValueOrDie();
-  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(types::ToArrow(col0_out2, arrow::default_memory_pool())));
+  auto rb2 = output_batches[1];
+  EXPECT_TRUE(rb2.ColumnAt(0)->Equals(types::ToArrow(col0_out2, arrow::default_memory_pool())));
 
-  auto rb3 = output_table->GetRowBatch(2, std::vector<int64_t>({0}), arrow::default_memory_pool())
-                 .ConsumeValueOrDie();
-  EXPECT_TRUE(rb3->ColumnAt(0)->Equals(types::ToArrow(col1_out3, arrow::default_memory_pool())));
+  auto rb3 = output_batches[2];
+  EXPECT_TRUE(rb3.ColumnAt(0)->Equals(types::ToArrow(col1_out3, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, range_test_multiple_rbs) {
@@ -435,13 +384,12 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
 
-  auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  EXPECT_EQ(3, output_table->NumBatches());
-  EXPECT_EQ(3, output_table->NumColumns());
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("range_output"));
+  auto output_batches = result_server_->query_results("range_output");
+  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(3, output_batches[0].num_columns());
 
-  auto rb1 =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+  auto rb1 = output_batches[0];
 
   std::vector<types::Time64NSValue> col0_out1;
   std::vector<types::Float64Value> col1_out1;
@@ -454,13 +402,11 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
     }
   }
 
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(col0_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(col0_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
 
-  auto rb2 =
-      output_table->GetRowBatch(1, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+  auto rb2 = output_batches[1];
 
   std::vector<types::Time64NSValue> col0_out2;
   std::vector<types::Float64Value> col1_out2;
@@ -477,9 +423,9 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
     }
   }
 
-  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(types::ToArrow(col0_out2, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb2->ColumnAt(1)->Equals(types::ToArrow(col1_out2, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb2->ColumnAt(2)->Equals(types::ToArrow(col2_out2, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb2.ColumnAt(0)->Equals(types::ToArrow(col0_out2, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb2.ColumnAt(1)->Equals(types::ToArrow(col1_out2, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb2.ColumnAt(2)->Equals(types::ToArrow(col2_out2, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, range_test_single_rb) {
@@ -499,9 +445,10 @@ TEST_F(CarnotTest, range_test_single_rb) {
   auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
   ASSERT_OK(s);
 
-  auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  EXPECT_EQ(1, output_table->NumBatches());
-  EXPECT_EQ(3, output_table->NumColumns());
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("range_output"));
+  auto output_batches = result_server_->query_results("range_output");
+  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(3, output_batches[0].num_columns());
 
   std::vector<types::Time64NSValue> col0_out1;
   std::vector<types::Float64Value> col1_out1;
@@ -515,12 +462,10 @@ TEST_F(CarnotTest, range_test_single_rb) {
     }
   }
 
-  auto rb1 =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(col0_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
+  auto rb1 = output_batches[0];
+  EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(col0_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, empty_range_test) {
@@ -546,12 +491,10 @@ TEST_F(CarnotTest, empty_range_test) {
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
 
-  auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  EXPECT_EQ(1, output_table->NumBatches());
-  auto rb =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
-  EXPECT_EQ(0, rb->num_rows());
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("range_output"));
+  auto output_batches = result_server_->query_results("range_output");
+  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(0, output_batches[0].num_rows());
 }
 
 class CarnotRangeTest
@@ -594,15 +537,14 @@ TEST_P(CarnotRangeTest, range_now_keyword_test) {
   auto s = carnot_->ExecuteQuery(query, query_uuid, now_time_);
   ASSERT_OK(s);
 
-  auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  EXPECT_EQ(num_batches, output_table->NumBatches());
-  EXPECT_EQ(2, output_table->NumColumns());
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("range_output"));
+  auto output_batches = result_server_->query_results("range_output");
+  EXPECT_EQ(num_batches, output_batches.size());
+  EXPECT_EQ(2, output_batches[0].num_columns());
 
   auto actual_num_rows = 0;
   for (size_t i = 0; i < num_batches; ++i) {
-    auto rb =
-        output_table->GetRowBatch(i, {0, 1}, arrow::default_memory_pool()).ConsumeValueOrDie();
-    actual_num_rows += rb->num_rows();
+    actual_num_rows += output_batches[i].num_rows();
   }
   EXPECT_EQ(num_rows, actual_num_rows);
 }
@@ -628,14 +570,13 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
   auto query_uuid = sole::uuid4();
   auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
   ASSERT_OK(s);
-  auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  EXPECT_EQ(1, output_table->NumBatches());
-  EXPECT_EQ(6, output_table->NumColumns());
 
-  auto rb1 =
-      output_table
-          ->GetRowBatch(0, std::vector<int64_t>({0, 1, 2, 3, 4, 5}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
+  auto output_batches = result_server_->query_results("test_output");
+  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(6, output_batches[0].num_columns());
+
+  auto rb1 = output_batches[0];
 
   auto test_col2 = CarnotTestUtils::big_test_col2;
   auto test_col3 = CarnotTestUtils::big_test_col3;
@@ -656,28 +597,28 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
       std::accumulate(CarnotTestUtils::big_test_col3.begin(), CarnotTestUtils::big_test_col3.end(),
                       0, int64_sum_lambda);
 
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(
+  EXPECT_TRUE(rb1.ColumnAt(0)->Equals(
       types::ToArrow(std::vector<types::Float64Value>({types::Float64Value(col2_expected_mean)}),
                      arrow::default_memory_pool())));
 
-  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(
+  EXPECT_TRUE(rb1.ColumnAt(1)->Equals(
       types::ToArrow(std::vector<types::Int64Value>({types::Int64Value(col3_expected_count)}),
                      arrow::default_memory_pool())));
 
-  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(
+  EXPECT_TRUE(rb1.ColumnAt(2)->Equals(
       types::ToArrow(std::vector<types::Float64Value>({types::Float64Value(col2_expected_min)}),
                      arrow::default_memory_pool())));
 
-  EXPECT_TRUE(rb1->ColumnAt(3)->Equals(
+  EXPECT_TRUE(rb1.ColumnAt(3)->Equals(
       types::ToArrow(std::vector<types::Int64Value>({types::Int64Value(col3_expected_max)}),
                      arrow::default_memory_pool())));
 
-  EXPECT_TRUE(rb1->ColumnAt(4)->Equals(
+  EXPECT_TRUE(rb1.ColumnAt(4)->Equals(
       types::ToArrow(std::vector<types::Int64Value>({types::Int64Value(col3_expected_sum)}),
                      arrow::default_memory_pool())));
 
   // Contents of column 4 and column 5 are the same.
-  EXPECT_TRUE(rb1->ColumnAt(5)->Equals(
+  EXPECT_TRUE(rb1.ColumnAt(5)->Equals(
       types::ToArrow(std::vector<types::Int64Value>({types::Int64Value(col3_expected_sum)}),
                      arrow::default_memory_pool())));
 }
@@ -697,21 +638,21 @@ TEST_F(CarnotTest, group_by_col_agg_test) {
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
 
-  auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  EXPECT_EQ(1, output_table->NumBatches());
-  EXPECT_EQ(2, output_table->NumColumns());
-  auto rb1 =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
+  auto output_batches = result_server_->query_results("test_output");
+  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(2, output_batches[0].num_columns());
+
+  auto rb1 = output_batches[0];
 
   std::vector<types::Int64Value> expected_groups = {1, 2, 3};
   std::vector<types::Int64Value> expected_sum = {13, 129, 24};
   std::unordered_map<int64_t, int64_t> expected = {{1, 13}, {2, 129}, {3, 24}};
   std::unordered_map<int64_t, int64_t> actual;
 
-  for (int i = 0; i < rb1->num_rows(); ++i) {
-    auto output_col_grp = rb1->ColumnAt(0);
-    auto output_col_agg = rb1->ColumnAt(1);
+  for (int i = 0; i < rb1.num_rows(); ++i) {
+    auto output_col_grp = rb1.ColumnAt(0);
+    auto output_col_agg = rb1.ColumnAt(1);
     auto casted_grp = static_cast<arrow::Int64Array*>(output_col_grp.get());
     auto casted_agg = static_cast<arrow::Int64Array*>(output_col_agg.get());
 
@@ -736,12 +677,12 @@ TEST_F(CarnotTest, multiple_group_by_test) {
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
 
-  auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  EXPECT_EQ(1, output_table->NumBatches());
-  EXPECT_EQ(3, output_table->NumColumns());
-  auto rb1 =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
+  auto output_batches = result_server_->query_results("test_output");
+  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(3, output_batches[0].num_columns());
+  auto rb1 = output_batches[0];
+
   struct Key {
     int64_t num_group;
     std::string string_group;
@@ -760,10 +701,10 @@ TEST_F(CarnotTest, multiple_group_by_test) {
       {Key{2, "sum"}, 60}, {Key{2, "mean"}, 69},
   };
   std::map<Key, int64_t> actual;
-  for (int i = 0; i < rb1->num_rows(); ++i) {
-    auto output_col_num_grp = rb1->ColumnAt(0);
-    auto output_col_str_grp = rb1->ColumnAt(1);
-    auto output_col_agg = rb1->ColumnAt(2);
+  for (int i = 0; i < rb1.num_rows(); ++i) {
+    auto output_col_num_grp = rb1.ColumnAt(0);
+    auto output_col_str_grp = rb1.ColumnAt(1);
+    auto output_col_agg = rb1.ColumnAt(2);
     auto casted_num_grp = static_cast<arrow::Int64Array*>(output_col_num_grp.get());
     auto casted_str_grp = static_cast<arrow::StringArray*>(output_col_str_grp.get());
 
@@ -796,23 +737,24 @@ TEST_F(CarnotTest, comparison_tests) {
   auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
-  auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  EXPECT_EQ(3, output_table->NumBatches());
-  EXPECT_EQ(2, output_table->NumColumns());
-  auto rb1 =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
+  auto output_batches = result_server_->query_results("test_output");
+  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(2, output_batches[0].num_columns());
+  auto rb1 = output_batches[0];
+
   auto col3 = CarnotTestUtils::big_test_col3;
   auto col_num_groups = CarnotTestUtils::big_test_groups;
   std::vector<types::BoolValue> lt_exp;
   std::vector<types::BoolValue> gt_exp;
 
-  for (int64_t i = 0; i < rb1->num_rows(); i++) {
+  for (int64_t i = 0; i < rb1.num_rows(); i++) {
     lt_exp.emplace_back(col3[i] < col3_lt_val);
     gt_exp.emplace_back(col_num_groups[i] > num_groups_gt_val);
   }
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(lt_exp, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(gt_exp, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(lt_exp, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(gt_exp, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, comparison_to_agg_tests) {
@@ -834,12 +776,13 @@ TEST_F(CarnotTest, comparison_to_agg_tests) {
   auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
-  auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  EXPECT_EQ(1, output_table->NumBatches());
-  EXPECT_EQ(2, output_table->NumColumns());
-  auto rb1 =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
+  auto output_batches = result_server_->query_results("test_output");
+  EXPECT_EQ(1, output_batches.size());
+  EXPECT_EQ(2, output_batches[0].num_columns());
+  auto rb1 = output_batches[0];
+
   auto col3 = CarnotTestUtils::big_test_col3;
   int64_t gt_count = 0;
   for (auto& i : col3) {
@@ -850,9 +793,9 @@ TEST_F(CarnotTest, comparison_to_agg_tests) {
   std::unordered_map<bool, int64_t> expected = {{true, gt_count}, {false, col3.size() - gt_count}};
   std::unordered_map<bool, int64_t> actual;
 
-  for (int i = 0; i < rb1->num_rows(); ++i) {
-    auto output_col_grp = rb1->ColumnAt(0);
-    auto output_col_agg = rb1->ColumnAt(1);
+  for (int i = 0; i < rb1.num_rows(); ++i) {
+    auto output_col_grp = rb1.ColumnAt(0);
+    auto output_col_agg = rb1.ColumnAt(1);
     auto casted_grp = static_cast<arrow::BooleanArray*>(output_col_grp.get());
     auto casted_agg = static_cast<arrow::Int64Array*>(output_col_agg.get());
 
@@ -916,13 +859,10 @@ TEST_P(CarnotFilterTest, int_filter) {
   auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
   ASSERT_OK(s);
 
-  auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-
-  EXPECT_EQ(5, output_table->NumColumns());
-  std::vector<int64_t> column_selector_vec({0, 1, 2, 3, 4});
-  EXPECT_EQ(output_table->NumColumns(), column_selector_vec.size());
-
-  int output_batch_idx = 0;
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
+  auto output_batches = result_server_->query_results("test_output");
+  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(5, output_batches[0].num_columns());
 
   // iterate through the batches
   for (size_t i = 0; i < CarnotTestUtils::split_idx.size(); i++) {
@@ -946,26 +886,17 @@ TEST_P(CarnotFilterTest, int_filter) {
     }
     // If the filter filters out the entire batch, skip this batch
     if (time_out.size() > 0 || i == CarnotTestUtils::split_idx.size() - 1) {
-      auto rb =
-          output_table
-              ->GetRowBatch(output_batch_idx, column_selector_vec, arrow::default_memory_pool())
-              .ConsumeValueOrDie();
-      output_batch_idx++;
-      EXPECT_TRUE(rb->ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
-      EXPECT_TRUE(rb->ColumnAt(1)->Equals(types::ToArrow(col2_out, arrow::default_memory_pool())));
-      EXPECT_TRUE(rb->ColumnAt(2)->Equals(types::ToArrow(col3_out, arrow::default_memory_pool())));
+      auto rb = output_batches[i];
+      EXPECT_TRUE(rb.ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
+      EXPECT_TRUE(rb.ColumnAt(1)->Equals(types::ToArrow(col2_out, arrow::default_memory_pool())));
+      EXPECT_TRUE(rb.ColumnAt(2)->Equals(types::ToArrow(col3_out, arrow::default_memory_pool())));
+      EXPECT_TRUE(rb.ColumnAt(3)->Equals(types::ToArrow(groups_out, arrow::default_memory_pool())));
       EXPECT_TRUE(
-          rb->ColumnAt(3)->Equals(types::ToArrow(groups_out, arrow::default_memory_pool())));
-      EXPECT_TRUE(
-          rb->ColumnAt(4)->Equals(types::ToArrow(strings_out, arrow::default_memory_pool())));
+          rb.ColumnAt(4)->Equals(types::ToArrow(strings_out, arrow::default_memory_pool())));
     }
   }
-
-  // Output_batch_idx is the number of rowbatches that the comparison function found to be
-  // non-empty, this ensures that that is equal to the number of rowbatches that were actually
-  // outputted.
-  EXPECT_EQ(output_batch_idx, output_table->NumBatches());
 }
+
 INSTANTIATE_TEST_SUITE_P(CarnotFilterTestSuite, CarnotFilterTest,
                          ::testing::ValuesIn(filter_test_values));
 
@@ -993,11 +924,10 @@ TEST_F(CarnotTest, string_filter) {
   auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
   ASSERT_OK(s);
 
-  auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  EXPECT_EQ(3, output_table->NumBatches());
-  EXPECT_EQ(5, output_table->NumColumns());
-  std::vector<int64_t> column_selector_vec({0, 1, 2, 3, 4});
-  EXPECT_EQ(output_table->NumColumns(), column_selector_vec.size());
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
+  auto output_batches = result_server_->query_results("test_output");
+  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(5, output_batches[0].num_columns());
 
   // Iterate through the batches.
   for (size_t i = 0; i < CarnotTestUtils::split_idx.size(); i++) {
@@ -1019,13 +949,12 @@ TEST_F(CarnotTest, string_filter) {
         strings_out.push_back(CarnotTestUtils::big_test_strings[j]);
       }
     }
-    auto rb = output_table->GetRowBatch(i, column_selector_vec, arrow::default_memory_pool())
-                  .ConsumeValueOrDie();
-    EXPECT_TRUE(rb->ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
-    EXPECT_TRUE(rb->ColumnAt(1)->Equals(types::ToArrow(col2_out, arrow::default_memory_pool())));
-    EXPECT_TRUE(rb->ColumnAt(2)->Equals(types::ToArrow(col3_out, arrow::default_memory_pool())));
-    EXPECT_TRUE(rb->ColumnAt(3)->Equals(types::ToArrow(groups_out, arrow::default_memory_pool())));
-    EXPECT_TRUE(rb->ColumnAt(4)->Equals(types::ToArrow(strings_out, arrow::default_memory_pool())));
+    auto rb = output_batches[i];
+    EXPECT_TRUE(rb.ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb.ColumnAt(1)->Equals(types::ToArrow(col2_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb.ColumnAt(2)->Equals(types::ToArrow(col3_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb.ColumnAt(3)->Equals(types::ToArrow(groups_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb.ColumnAt(4)->Equals(types::ToArrow(strings_out, arrow::default_memory_pool())));
   }
 }
 class CarnotLimitTest : public CarnotTest,
@@ -1052,11 +981,11 @@ TEST_P(CarnotLimitTest, limit) {
   auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
   ASSERT_OK(s);
 
-  auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  EXPECT_EQ(expected_num_batches, output_table->NumBatches());
-  EXPECT_EQ(2, output_table->NumColumns());
-  std::vector<int64_t> column_selector_vec({0, 1});
-  EXPECT_EQ(output_table->NumColumns(), column_selector_vec.size());
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
+  auto output_batches = result_server_->query_results("test_output");
+  EXPECT_EQ(expected_num_batches, output_batches.size());
+  EXPECT_EQ(2, output_batches[0].num_columns());
+
   // Iterate through the batches.
   for (int64_t i = 0; i < expected_num_batches; i++) {
     // Iterate through the column.
@@ -1072,10 +1001,9 @@ TEST_P(CarnotLimitTest, limit) {
       time_out.push_back(CarnotTestUtils::big_test_col1[j]);
       col2_out.push_back(CarnotTestUtils::big_test_col2[j]);
     }
-    auto rb = output_table->GetRowBatch(i, column_selector_vec, arrow::default_memory_pool())
-                  .ConsumeValueOrDie();
-    EXPECT_TRUE(rb->ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
-    EXPECT_TRUE(rb->ColumnAt(1)->Equals(types::ToArrow(col2_out, arrow::default_memory_pool())));
+    auto rb = output_batches[i];
+    EXPECT_TRUE(rb.ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb.ColumnAt(1)->Equals(types::ToArrow(col2_out, arrow::default_memory_pool())));
   }
 }
 
@@ -1102,24 +1030,24 @@ TEST_F(CarnotTest, reused_result) {
   VLOG(1) << s.ToString();
   // This used to segfault according to PL-525, should now run without problems.
   ASSERT_OK(s);
-  auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  EXPECT_EQ(3, output_table->NumBatches());
-  EXPECT_EQ(2, output_table->NumColumns());
 
-  auto rb1 =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
+  auto output_batches = result_server_->query_results("test_output");
+  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(2, output_batches[0].num_columns());
+
+  auto rb1 = output_batches[0];
   auto col3 = CarnotTestUtils::big_test_col3;
   auto col_num_groups = CarnotTestUtils::big_test_groups;
   std::vector<types::BoolValue> gt_exp;
   std::vector<types::Int64Value> num_groups;
 
-  for (int64_t i = 0; i < rb1->num_rows(); i++) {
+  for (int64_t i = 0; i < rb1.num_rows(); i++) {
     gt_exp.emplace_back(col3[i] > 30);
     num_groups.emplace_back(col_num_groups[i]);
   }
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(gt_exp, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(num_groups, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(gt_exp, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(num_groups, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, multiple_result_calls) {
@@ -1149,30 +1077,30 @@ TEST_F(CarnotTest, multiple_result_calls) {
 
   // test the original output
   VLOG(1) << "test the original output";
-  auto output_table = table_store_->GetTable(GetTableName(query_uuid, 1));
-  EXPECT_EQ(3, output_table->NumBatches());
-  EXPECT_EQ(2, output_table->NumColumns());
-  auto rb1 =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+
+  EXPECT_THAT(result_server_->output_tables(),
+              UnorderedElementsAre("test_output", "filtered_output"));
+  auto output_batches = result_server_->query_results("test_output");
+  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(2, output_batches[0].num_columns());
+  auto rb1 = output_batches[0];
+
   auto col3 = CarnotTestUtils::big_test_col3;
   auto col_num_groups = CarnotTestUtils::big_test_groups;
   std::vector<types::BoolValue> lt_exp;
   std::vector<types::BoolValue> gt_exp;
 
-  for (int64_t i = 0; i < rb1->num_rows(); i++) {
+  for (int64_t i = 0; i < rb1.num_rows(); i++) {
     lt_exp.emplace_back(col3[i] < col3_lt_val);
     gt_exp.emplace_back(col_num_groups[i] > num_groups_gt_val);
   }
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(lt_exp, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(gt_exp, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(lt_exp, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(gt_exp, arrow::default_memory_pool())));
 
   // test the filtered_output
-  output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  EXPECT_EQ(3, output_table->NumBatches());
-  EXPECT_EQ(4, output_table->NumColumns());
-  std::vector<int64_t> column_selector_vec({0, 1, 2, 3});
-  EXPECT_EQ(output_table->NumColumns(), column_selector_vec.size());
+  output_batches = result_server_->query_results("filtered_output");
+  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(4, output_batches[0].num_columns());
 
   // iterate through the batches
   for (size_t i = 0; i < CarnotTestUtils::split_idx.size(); i++) {
@@ -1192,12 +1120,11 @@ TEST_F(CarnotTest, multiple_result_calls) {
         strings_out.push_back(CarnotTestUtils::big_test_strings[j]);
       }
     }
-    auto rb = output_table->GetRowBatch(i, column_selector_vec, arrow::default_memory_pool())
-                  .ConsumeValueOrDie();
-    EXPECT_TRUE(rb->ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
-    EXPECT_TRUE(rb->ColumnAt(1)->Equals(types::ToArrow(col3_out, arrow::default_memory_pool())));
-    EXPECT_TRUE(rb->ColumnAt(2)->Equals(types::ToArrow(groups_out, arrow::default_memory_pool())));
-    EXPECT_TRUE(rb->ColumnAt(3)->Equals(types::ToArrow(strings_out, arrow::default_memory_pool())));
+    auto rb = output_batches[i];
+    EXPECT_TRUE(rb.ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb.ColumnAt(1)->Equals(types::ToArrow(col3_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb.ColumnAt(2)->Equals(types::ToArrow(groups_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb.ColumnAt(3)->Equals(types::ToArrow(strings_out, arrow::default_memory_pool())));
   }
 }
 
@@ -1234,28 +1161,23 @@ TEST_F(CarnotTest, pass_logical_plan) {
   auto query_uuid = sole::uuid4();
   auto resStatus = carnot_->ExecutePlan(plan, plan_uuid);
   ASSERT_OK(resStatus);
-  auto res = resStatus.ConsumeValueOrDie();
-  ASSERT_EQ(1, res.table_names_.size());
-  ASSERT_EQ(logical_plan_table_name, res.table_names_[0]);
+
   // Run the parallel execution using the Query path.
   ASSERT_OK(
       carnot_->ExecuteQuery(absl::Substitute(query, query_table_name), query_uuid, current_time));
 
-  auto plan_table = table_store_->GetTable(GetTableName(plan_uuid, 0));
-  auto query_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  ASSERT_EQ(plan_table->NumBatches(), query_table->NumBatches());
-  ASSERT_EQ(plan_table->NumColumns(), query_table->NumColumns());
-  std::vector<int64_t> column_selector_vec({0});
-  ASSERT_EQ(plan_table->NumColumns(), column_selector_vec.size());
+  auto plan_table_batches = result_server_->query_results("logical_plan");
+  auto query_table_batches = result_server_->query_results("query");
+  EXPECT_EQ(plan_table_batches.size(), query_table_batches.size());
+  EXPECT_EQ(plan_table_batches[0].num_columns(), query_table_batches[0].num_columns());
+  EXPECT_EQ(1, plan_table_batches[0].num_columns());
 
-  for (int64_t i = 0; i < plan_table->NumBatches(); i++) {
-    auto plan_rb = plan_table->GetRowBatch(i, column_selector_vec, arrow::default_memory_pool())
-                       .ConsumeValueOrDie();
-    auto query_rb = query_table->GetRowBatch(i, column_selector_vec, arrow::default_memory_pool())
-                        .ConsumeValueOrDie();
-    for (int64_t j = 0; j < plan_table->NumColumns(); j++) {
+  for (size_t i = 0; i < plan_table_batches.size(); ++i) {
+    auto plan_rb = plan_table_batches[i];
+    auto query_rb = query_table_batches[i];
+    for (int64_t j = 0; j < plan_rb.num_columns(); ++j) {
       VLOG(2) << absl::Substitute("Batch $0; Column $1", i, j);
-      EXPECT_TRUE(plan_rb->ColumnAt(j)->Equals(query_rb->ColumnAt(j)));
+      EXPECT_TRUE(plan_rb.ColumnAt(j)->Equals(query_rb.ColumnAt(j)));
     }
   }
 }
@@ -1268,7 +1190,9 @@ TEST_F(CarnotTest, DISABLED_metadata_logical_plan_filter) {
   std::string query = absl::StrJoin(
       {
           "import px",
-          "df = px.DataFrame(table='big_test_table', select=['string_groups', '_attr_pod_id'])",
+          // In addition to making the UDFs, need to add upid or pod_id to test table to re-enable
+          // this test.
+          "df = px.DataFrame(table='big_test_table')",
           "df['pod_name'] = df.ctx['pod_name']",
           "bdf = df[df['pod_name'] == 'pl/name']",
           "px.display(bdf, 'logical_plan')",
@@ -1293,47 +1217,18 @@ TEST_F(CarnotTest, DISABLED_metadata_logical_plan_filter) {
   planpb::Plan plan = logical_plan_status.ConsumeValueOrDie();
   ASSERT_OK(carnot_->ExecutePlan(plan, sole::uuid4()));
 
-  auto table = table_store_->GetTable(table_name);
-  std::vector<int64_t> column_selector_vec({0, 1, 2});
-  ASSERT_EQ(table->NumColumns(), column_selector_vec.size());
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("logical_plan"));
+  auto output_batches = result_server_->query_results("logical_plan");
+  EXPECT_EQ(3, output_batches.size());
+  EXPECT_EQ(3, output_batches[0].num_columns());
 
-  for (int64_t i = 0; i < table->NumBatches(); i++) {
-    auto rb = table->GetRowBatch(i, column_selector_vec, arrow::default_memory_pool())
-                  .ConsumeValueOrDie();
-    for (int64_t j = 0; j < table->NumColumns(); j++) {
+  for (const auto& rb : output_batches) {
+    for (int64_t j = 0; j < rb.num_columns(); ++j) {
       // Filters currently don't get rid of batches, but do keep around empty batches.
-      EXPECT_TRUE(rb->ColumnAt(j)->Equals(
+      EXPECT_TRUE(rb.ColumnAt(j)->Equals(
           types::ToArrow(std::vector<types::StringValue>({}), arrow::default_memory_pool())));
     }
   }
-}
-
-TEST_F(CarnotTest, empty_table_yields_empty_results) {
-  // Test to make sure that metadata can actually compile and work in the executor.
-  // This test does not actually test to make sure that the AgentMetadataState works properly.
-  std::string query = "import px\npx.display(px.DataFrame('empty_table'))";
-
-  Compiler compiler;
-  int64_t current_time = 0;
-
-  // Create a CompilerState obj using the relation map and grabbing the current time.
-
-  auto registry_info_or_s = udfexporter::ExportUDFInfo();
-  ASSERT_OK(registry_info_or_s);
-  std::unique_ptr<planner::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
-
-  std::unique_ptr<planner::CompilerState> compiler_state = std::make_unique<planner::CompilerState>(
-      table_store_->GetRelationMap(), registry_info.get(), current_time, "result_addr");
-  StatusOr<planpb::Plan> plan_or_s = compiler.Compile(query, compiler_state.get());
-  ASSERT_OK(plan_or_s);
-  planpb::Plan plan = plan_or_s.ConsumeValueOrDie();
-  ASSERT_OK(carnot_->ExecutePlan(plan, sole::uuid4()));
-
-  auto table = table_store_->GetTable("empty_table");
-  std::vector<int64_t> column_selector_vec({0, 1});
-  ASSERT_EQ(table->NumColumns(), column_selector_vec.size());
-
-  EXPECT_EQ(table->NumBatches(), 0);
 }
 
 }  // namespace carnot

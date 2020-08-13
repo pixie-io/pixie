@@ -263,8 +263,8 @@ TEST_F(AnalyzerTest, test_relation_results) {
   ASSERT_MATCH(agg_node->Children()[0], Limit(10000));
   auto limit = static_cast<LimitIR*>(agg_node->Children()[0]);
   EXPECT_THAT(limit->relation(), UnorderedRelationMatches(test_agg_relation));
-  ASSERT_MATCH(limit->Children()[0], MemorySink());
-  auto sink_node = static_cast<MemorySinkIR*>(limit->Children()[0]);
+  ASSERT_MATCH(limit->Children()[0], ExternalGRPCSink());
+  auto sink_node = static_cast<GRPCSinkIR*>(limit->Children()[0]);
   EXPECT_THAT(sink_node->relation(), UnorderedRelationMatches(test_agg_relation));
 }
 
@@ -330,9 +330,9 @@ TEST_F(AnalyzerTest, test_from_select) {
   ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
-  std::vector<IRNode*> sink_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySink);
+  std::vector<IRNode*> sink_nodes = ir_graph->FindNodesThatMatch(ExternalGRPCSink());
   EXPECT_EQ(sink_nodes.size(), 1);
-  auto sink_node = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  auto sink_node = static_cast<GRPCSinkIR*>(sink_nodes[0]);
   EXPECT_EQ(sink_node->relation(), test_relation);
 }
 
@@ -571,9 +571,9 @@ TEST_F(AnalyzerTest, select_all) {
   ASSERT_OK(HandleRelation(ir_graph));
 
   // Map relation should be contain cpu0, cpu1, and cpu_sum.
-  std::vector<IRNode*> sink_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySink);
+  std::vector<IRNode*> sink_nodes = ir_graph->FindNodesThatMatch(ExternalGRPCSink());
   EXPECT_EQ(sink_nodes.size(), 1);
-  auto sink_node = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  auto sink_node = static_cast<GRPCSinkIR*>(sink_nodes[0]);
   auto relation_map = compiler_state_->relation_map();
   ASSERT_NE(relation_map->find("cpu"), relation_map->end());
   auto expected_relation = relation_map->find("cpu")->second;

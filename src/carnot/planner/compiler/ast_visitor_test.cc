@@ -646,7 +646,7 @@ TEST_F(FilterTest, TestNewFilter) {
   EXPECT_EQ(str->str(), "foo");
 
   ASSERT_EQ(filter->Children().size(), 1);
-  ASSERT_MATCH(filter->Children()[0], MemorySink());
+  ASSERT_MATCH(filter->Children()[0], ExternalGRPCSink());
 }
 
 constexpr char kFilterChainedQuery[] = R"query(
@@ -687,7 +687,7 @@ TEST_F(FilterTest, ChainedFilterQuery) {
   EXPECT_EQ(str->str(), "foo");
 
   ASSERT_EQ(filter->Children().size(), 1);
-  ASSERT_MATCH(filter->Children()[0], MemorySink());
+  ASSERT_MATCH(filter->Children()[0], ExternalGRPCSink());
 }
 
 constexpr char kInvalidFilterChainQuery[] = R"query(
@@ -741,7 +741,7 @@ TEST_F(FilterTest, ChainedFilterWithNewMetadataQuery) {
   EXPECT_EQ(str->str(), "foo");
 
   ASSERT_EQ(filter->Children().size(), 1);
-  ASSERT_MATCH(filter->Children()[0], MemorySink());
+  ASSERT_MATCH(filter->Children()[0], ExternalGRPCSink());
 }
 
 TEST_F(ASTVisitorTest, MemorySourceStartAndDefaultStop) {
@@ -795,16 +795,18 @@ TEST_F(ASTVisitorTest, DisplayTest) {
   auto ir_graph_or_s = CompileGraph(query);
   ASSERT_OK(ir_graph_or_s);
   auto graph = ir_graph_or_s.ConsumeValueOrDie();
-  std::vector<IRNode*> mem_sinks = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  std::vector<IRNode*> result_sinks = graph->FindNodesThatMatch(ExternalGRPCSink());
 
-  ASSERT_EQ(mem_sinks.size(), 1);
+  ASSERT_EQ(result_sinks.size(), 1);
 
-  auto mem_sink = static_cast<MemorySinkIR*>(mem_sinks[0]);
-  EXPECT_EQ(mem_sink->name(), "output");
+  auto result_sink = static_cast<GRPCSinkIR*>(result_sinks[0]);
+  EXPECT_EQ(result_sink->name(), "output");
+  EXPECT_TRUE(result_sink->DestinationAddressSet());
+  EXPECT_EQ(result_sink->destination_address(), "result_addr");
 
-  ASSERT_EQ(mem_sink->parents().size(), 1);
-  ASSERT_MATCH(mem_sink->parents()[0], MemorySource());
-  auto mem_src = static_cast<MemorySourceIR*>(mem_sink->parents()[0]);
+  ASSERT_EQ(result_sink->parents().size(), 1);
+  ASSERT_MATCH(result_sink->parents()[0], MemorySource());
+  auto mem_src = static_cast<MemorySourceIR*>(result_sink->parents()[0]);
   EXPECT_EQ(mem_src->table_name(), "bar");
 }
 
@@ -813,15 +815,17 @@ TEST_F(ASTVisitorTest, DisplayArgumentsTest) {
   auto ir_graph_or_s = CompileGraph(query);
   ASSERT_OK(ir_graph_or_s);
   auto graph = ir_graph_or_s.ConsumeValueOrDie();
-  std::vector<IRNode*> mem_sinks = graph->FindNodesOfType(IRNodeType::kMemorySink);
-  ASSERT_EQ(mem_sinks.size(), 1);
+  std::vector<IRNode*> result_sinks = graph->FindNodesThatMatch(ExternalGRPCSink());
+  ASSERT_EQ(result_sinks.size(), 1);
 
-  auto mem_sink = static_cast<MemorySinkIR*>(mem_sinks[0]);
-  EXPECT_EQ(mem_sink->name(), "foo");
+  auto result_sink = static_cast<GRPCSinkIR*>(result_sinks[0]);
+  EXPECT_EQ(result_sink->name(), "foo");
+  EXPECT_TRUE(result_sink->DestinationAddressSet());
+  EXPECT_EQ(result_sink->destination_address(), "result_addr");
 
-  ASSERT_EQ(mem_sink->parents().size(), 1);
-  ASSERT_MATCH(mem_sink->parents()[0], MemorySource());
-  auto mem_src = static_cast<MemorySourceIR*>(mem_sink->parents()[0]);
+  ASSERT_EQ(result_sink->parents().size(), 1);
+  ASSERT_MATCH(result_sink->parents()[0], MemorySource());
+  auto mem_src = static_cast<MemorySourceIR*>(result_sink->parents()[0]);
   EXPECT_EQ(mem_src->table_name(), "bar");
 }
 
@@ -963,7 +967,7 @@ TEST_F(ASTVisitorTest, define_func_query) {
   MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_EQ(mem_src->table_name(), "http_events");
   ASSERT_EQ(mem_src->Children().size(), 1);
-  ASSERT_MATCH(mem_src->Children()[0], MemorySink());
+  ASSERT_MATCH(mem_src->Children()[0], ExternalGRPCSink());
 }
 
 constexpr char kLocalStateQuery[] = R"query(
@@ -1035,7 +1039,7 @@ TEST_F(ASTVisitorTest, func_def_with_type) {
   MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_EQ(mem_src->table_name(), "http_events");
   ASSERT_EQ(mem_src->Children().size(), 1);
-  ASSERT_MATCH(mem_src->Children()[0], MemorySink());
+  ASSERT_MATCH(mem_src->Children()[0], ExternalGRPCSink());
   // Check what would happen if the wrong type is passed in.
   ir_graph_or_s = CompileGraph(absl::Substitute(kFuncDefWithType, "func(1)"));
   ASSERT_NOT_OK(ir_graph_or_s);
@@ -1061,7 +1065,7 @@ TEST_F(ASTVisitorTest, func_def_with_dataframe_type) {
   MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_EQ(mem_src->table_name(), "http_events");
   ASSERT_EQ(mem_src->Children().size(), 1);
-  ASSERT_MATCH(mem_src->Children()[0], MemorySink());
+  ASSERT_MATCH(mem_src->Children()[0], ExternalGRPCSink());
 
   // Check whether non-Dataframes cause a failure.
   ir_graph_or_s = CompileGraph(absl::Substitute(kFuncDefWithDataframe, "func(1)"));
@@ -1144,7 +1148,7 @@ TEST_F(ASTVisitorTest, func_can_return_object) {
   MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_EQ(mem_src->table_name(), "http_events");
   ASSERT_EQ(mem_src->Children().size(), 1);
-  ASSERT_MATCH(mem_src->Children()[0], MemorySink());
+  ASSERT_MATCH(mem_src->Children()[0], ExternalGRPCSink());
 }
 
 constexpr char kRawReturnNoFuncDef[] = R"query(
@@ -1207,7 +1211,7 @@ TEST_F(ASTVisitorTest, func_with_empty_return) {
   MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_EQ(mem_src->table_name(), "http_events");
   ASSERT_EQ(mem_src->Children().size(), 1);
-  ASSERT_MATCH(mem_src->Children()[0], MemorySink());
+  ASSERT_MATCH(mem_src->Children()[0], ExternalGRPCSink());
 }
 
 constexpr char kFuncDefDoesntDupGlobals[] = R"pxl(
@@ -1267,12 +1271,12 @@ TEST_F(ASTVisitorTest, reassign_px_attrs) {
   ASSERT_OK(graph_or_s);
   auto graph = graph_or_s.ConsumeValueOrDie();
   std::vector<IRNode*> src_nodes = graph->FindNodesOfType(IRNodeType::kMemorySource);
-  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  std::vector<IRNode*> sink_nodes = graph->FindNodesThatMatch(ExternalGRPCSink());
   ASSERT_EQ(src_nodes.size(), 1);
   ASSERT_EQ(sink_nodes.size(), 1);
   MemorySourceIR* src = static_cast<MemorySourceIR*>(src_nodes[0]);
   EXPECT_THAT(src->column_names(), ElementsAre("cpu0"));
-  MemorySinkIR* sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  GRPCSinkIR* sink = static_cast<GRPCSinkIR*>(sink_nodes[0]);
   EXPECT_EQ("table_name", sink->name());
   EXPECT_THAT(sink->parents(), ElementsAre(src));
 }
@@ -1368,9 +1372,9 @@ TEST_F(ASTVisitorTest, global_doc_string) {
   auto graph_or_s = CompileGraph(kGlobalDocStringQuery);
   ASSERT_OK(graph_or_s);
   auto graph = graph_or_s.ConsumeValueOrDie();
-  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  std::vector<IRNode*> sink_nodes = graph->FindNodesThatMatch(ExternalGRPCSink());
   ASSERT_EQ(sink_nodes.size(), 1);
-  MemorySinkIR* sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  GRPCSinkIR* sink = static_cast<GRPCSinkIR*>(sink_nodes[0]);
   EXPECT_EQ("This is a global doc string.", sink->name());
 }
 
@@ -1387,9 +1391,9 @@ TEST_F(ASTVisitorTest, func_doc_string) {
   auto graph_or_s = CompileGraph(kFuncDocStringQuery);
   ASSERT_OK(graph_or_s);
   auto graph = graph_or_s.ConsumeValueOrDie();
-  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  std::vector<IRNode*> sink_nodes = graph->FindNodesThatMatch(ExternalGRPCSink());
   ASSERT_EQ(sink_nodes.size(), 1);
-  MemorySinkIR* sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  GRPCSinkIR* sink = static_cast<GRPCSinkIR*>(sink_nodes[0]);
   EXPECT_EQ("This is a function doc string.", sink->name());
 }
 
@@ -1404,9 +1408,9 @@ TEST_F(ASTVisitorTest, no_doc_string) {
   auto graph_or_s = CompileGraph(kNoDocStringQuery);
   ASSERT_OK(graph_or_s);
   auto graph = graph_or_s.ConsumeValueOrDie();
-  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  std::vector<IRNode*> sink_nodes = graph->FindNodesThatMatch(ExternalGRPCSink());
   ASSERT_EQ(sink_nodes.size(), 1);
-  MemorySinkIR* sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  GRPCSinkIR* sink = static_cast<GRPCSinkIR*>(sink_nodes[0]);
   EXPECT_EQ("", sink->name());
 }
 
@@ -1599,9 +1603,9 @@ TEST_F(ASTVisitorTest, compile_with_exec_funcs) {
   ASSERT_EQ(map->col_exprs().size(), 1);
   EXPECT_EQ(map->col_exprs()[0].name, "my column name");
 
-  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  std::vector<IRNode*> sink_nodes = graph->FindNodesThatMatch(ExternalGRPCSink());
   ASSERT_EQ(sink_nodes.size(), 1);
-  MemorySinkIR* sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  GRPCSinkIR* sink = static_cast<GRPCSinkIR*>(sink_nodes[0]);
   EXPECT_EQ(sink->name(), "test");
 }
 
@@ -1626,9 +1630,9 @@ TEST_F(ASTVisitorTest, compile_with_exec_funcs_and_display) {
   std::vector<IRNode*> source_nodes = graph->FindNodesOfType(IRNodeType::kMemorySource);
   ASSERT_EQ(source_nodes.size(), 2);
 
-  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  std::vector<IRNode*> sink_nodes = graph->FindNodesThatMatch(ExternalGRPCSink());
   ASSERT_EQ(sink_nodes.size(), 1);
-  MemorySinkIR* sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  GRPCSinkIR* sink = static_cast<GRPCSinkIR*>(sink_nodes[0]);
   EXPECT_EQ(sink->name(), "test");
 }
 
@@ -1654,8 +1658,8 @@ TEST_F(ASTVisitorTest, compile_with_exec_funcs_and_debug) {
   ASSERT_EQ(source_nodes.size(), 2);
 
   std::vector<std::string> sink_names;
-  for (auto node : graph->FindNodesOfType(IRNodeType::kMemorySink)) {
-    MemorySinkIR* sink = static_cast<MemorySinkIR*>(node);
+  for (auto node : graph->FindNodesThatMatch(ExternalGRPCSink())) {
+    GRPCSinkIR* sink = static_cast<GRPCSinkIR*>(node);
     sink_names.push_back(sink->name());
   }
   EXPECT_THAT(sink_names, UnorderedElementsAre("_output", "test"));
@@ -1683,8 +1687,8 @@ TEST_F(ASTVisitorTest, compile_with_exec_funcs_and_duplicate_display_name) {
   ASSERT_EQ(source_nodes.size(), 2);
 
   std::vector<std::string> sink_names;
-  for (auto node : graph->FindNodesOfType(IRNodeType::kMemorySink)) {
-    MemorySinkIR* sink = static_cast<MemorySinkIR*>(node);
+  for (auto node : graph->FindNodesThatMatch(ExternalGRPCSink())) {
+    GRPCSinkIR* sink = static_cast<GRPCSinkIR*>(node);
     sink_names.push_back(sink->name());
   }
   EXPECT_THAT(sink_names, UnorderedElementsAre("_test_1", "_test"));
@@ -1729,7 +1733,7 @@ TEST_F(ASTVisitorTest, exec_funcs_with_globals) {
     EXPECT_TRUE(map->IsChildOf(static_cast<OperatorIR*>(source_nodes[0])));
   }
 
-  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  std::vector<IRNode*> sink_nodes = graph->FindNodesThatMatch(ExternalGRPCSink());
   ASSERT_EQ(sink_nodes.size(), 2);
 }
 
@@ -1831,11 +1835,11 @@ TEST_F(ASTVisitorTest, exec_funcs_multiple_returns) {
   ASSERT_OK(graph_or_s);
   auto graph = graph_or_s.ConsumeValueOrDie();
 
-  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  std::vector<IRNode*> sink_nodes = graph->FindNodesThatMatch(ExternalGRPCSink());
   EXPECT_EQ(sink_nodes.size(), 4);
   std::vector<std::string> sink_names;
   for (const auto& node : sink_nodes) {
-    sink_names.push_back(static_cast<MemorySinkIR*>(node)->name());
+    sink_names.push_back(static_cast<GRPCSinkIR*>(node)->name());
   }
   EXPECT_THAT(sink_names, UnorderedElementsAre("f_out[0]", "f_out[1]", "g_out[0]", "g_out[1]"));
 }
@@ -1956,8 +1960,8 @@ TEST_F(ASTVisitorTest, alt_imports_test_normal) {
   auto graph_or_s = CompileGraph(kFuncsUtilsTest, {}, {{"funcs_utils", kFuncsUtilsModule}});
   ASSERT_OK(graph_or_s);
   auto graph = graph_or_s.ConsumeValueOrDie();
-  auto sinks = graph->FindNodesThatMatch(MemorySink());
-  auto sink = static_cast<MemorySinkIR*>(sinks[0]);
+  auto sinks = graph->FindNodesThatMatch(ExternalGRPCSink());
+  auto sink = static_cast<GRPCSinkIR*>(sinks[0]);
   EXPECT_MATCH(sink->parents()[0], MemorySource());
 }
 
@@ -1971,8 +1975,8 @@ TEST_F(ASTVisitorTest, alt_imports_test_from) {
   auto graph_or_s = CompileGraph(kFromFuncsUtilsTest, {}, {{"funcs_utils", kFuncsUtilsModule}});
   ASSERT_OK(graph_or_s);
   auto graph = graph_or_s.ConsumeValueOrDie();
-  auto sinks = graph->FindNodesThatMatch(MemorySink());
-  auto sink = static_cast<MemorySinkIR*>(sinks[0]);
+  auto sinks = graph->FindNodesThatMatch(ExternalGRPCSink());
+  auto sink = static_cast<GRPCSinkIR*>(sinks[0]);
   EXPECT_MATCH(sink->parents()[0], MemorySource());
 }
 

@@ -75,7 +75,8 @@ class PixieModule : public QLObject {
  */
 class DisplayHandler {
  public:
-  static StatusOr<QLObjectPtr> Eval(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
+  static StatusOr<QLObjectPtr> Eval(IR* graph, CompilerState* compiler_state,
+                                    const pypa::AstPtr& ast, const ParsedArgs& args,
                                     ASTVisitor* visitor);
 };
 
@@ -84,7 +85,8 @@ class DisplayHandler {
  */
 class NoopDisplayHandler {
  public:
-  static StatusOr<QLObjectPtr> Eval(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
+  static StatusOr<QLObjectPtr> Eval(IR* graph, CompilerState* compiler_state,
+                                    const pypa::AstPtr& ast, const ParsedArgs& args,
                                     ASTVisitor* visitor);
 };
 
@@ -93,7 +95,7 @@ class NoopDisplayHandler {
  */
 class DebugDisplayHandler {
  public:
-  static StatusOr<QLObjectPtr> Eval(IR* graph,
+  static StatusOr<QLObjectPtr> Eval(IR* graph, CompilerState* compiler_state,
                                     const absl::flat_hash_set<std::string>& reserved_names,
                                     const pypa::AstPtr& ast, const ParsedArgs& args,
                                     ASTVisitor* visitor);
@@ -142,6 +144,23 @@ class UDTFSourceHandler {
   static StatusOr<ExpressionIR*> EvaluateExpression(IR* graph, IRNode* arg_node,
                                                     const udfspb::UDTFSourceSpec::Arg& arg);
 };
+
+// Helper function to add a result sink to an IR.
+inline Status AddResultSink(IR* graph, const pypa::AstPtr& ast, std::string_view out_name,
+                            OperatorIR* parent_op, std::string_view result_addr,
+                            std::string_view result_ssl_targetname) {
+  // It's a bit more concise to do column selection using a keep:
+  // px.display(df[['cols', 'to', 'keep']])
+  // than passing cols as a separate param:
+  // px.display(df, cols=['cols', 'to', 'keep'])
+  // So we don't currently support passing those output columns as an argument to display.
+  std::vector<std::string> columns;
+  PL_ASSIGN_OR_RETURN(
+      auto sink, graph->CreateNode<GRPCSinkIR>(ast, parent_op, std::string(out_name), columns));
+  sink->SetDestinationAddress(std::string(result_addr));
+  sink->SetDestinationSSLTargetName(std::string(result_ssl_targetname));
+  return Status::OK();
+}
 
 }  // namespace compiler
 }  // namespace planner

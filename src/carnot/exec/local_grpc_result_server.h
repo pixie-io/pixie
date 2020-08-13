@@ -33,7 +33,9 @@ class LocalResultSinkServer final : public carnotpb::ResultSinkService::Service 
       ::pl::carnotpb::TransferResultChunkResponse* response) override {
     auto rb = std::make_unique<carnotpb::TransferResultChunkRequest>();
     // Write the results to the result vector.
+
     while (reader->Read(rb.get())) {
+      const std::lock_guard<std::mutex> lock(result_mutex_);
       query_results_.push_back(*rb);
       rb = std::make_unique<carnotpb::TransferResultChunkRequest>();
     }
@@ -52,6 +54,8 @@ class LocalResultSinkServer final : public carnotpb::ResultSinkService::Service 
  private:
   // List of the query results received.
   std::vector<carnotpb::TransferResultChunkRequest> query_results_;
+  // Mutex to handle concurrent calls to TransferResultChunk.
+  std::mutex result_mutex_;
 };
 
 class LocalGRPCResultSinkServer {

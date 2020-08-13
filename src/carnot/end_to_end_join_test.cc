@@ -25,11 +25,11 @@ class JoinTest : public ::testing::Test {
   void SetUp() override {
     Test::SetUp();
     table_store_ = std::make_shared<table_store::TableStore>();
-    exec::LocalGRPCResultSinkServer result_server(10015);
-    result_server.StartServerThread();
+    result_server_ = std::make_unique<exec::LocalGRPCResultSinkServer>(10015);
+    result_server_->StartServerThread();
     carnot_ = Carnot::Create(sole::uuid4(), table_store_,
                              std::bind(&exec::LocalGRPCResultSinkServer::StubGenerator,
-                                       &result_server, std::placeholders::_1))
+                                       result_server_.get(), std::placeholders::_1))
                   .ConsumeValueOrDie();
     auto left_table = CarnotTestUtils::TestTable();
     table_store_->AddTable("left_table", left_table);
@@ -38,6 +38,7 @@ class JoinTest : public ::testing::Test {
   }
 
   std::shared_ptr<table_store::TableStore> table_store_;
+  std::unique_ptr<exec::LocalGRPCResultSinkServer> result_server_;
   std::unique_ptr<Carnot> carnot_;
 };
 
@@ -51,8 +52,7 @@ TEST_F(JoinTest, basic) {
       "join['left_col1'] = join['col1']\n"
       "join['right_col2'] = join['col2']\n"
       "df = join[['left_col1', 'right_col2']]\n"
-      "# fix this\n"
-      "px.display(df, 'unused_param')";
+      "px.display(df, 'joined')";
 
   auto query = absl::StrJoin({queryString}, "\n");
   auto query_id = sole::uuid4();
@@ -65,21 +65,16 @@ TEST_F(JoinTest, basic) {
   EXPECT_GT(res.compile_time_ns, 0);
   EXPECT_GT(res.exec_time_ns, 0);
 
-  // TODO(nserrino/philkuz): Move this logic somewhere more reusable.
-  auto table_id = absl::Substitute("$0_$1", query_id.str(), 0);
+  EXPECT_THAT(result_server_->output_tables(), ::testing::UnorderedElementsAre("joined"));
+  auto output_batches = result_server_->query_results("joined");
+  EXPECT_EQ(1, output_batches.size());
 
-  auto output_table = table_store_->GetTable(table_id);
-  EXPECT_EQ(1, output_table->NumBatches());
+  auto rb1 = output_batches[0];
 
-  auto rb1 =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
   std::vector<types::Float64Value> expected_col1 = {0.5, 1.2, 5.3, 0.1, 5.1};
   std::vector<types::Int64Value> expected_col2 = {1, 2, 3, 5, 6};
-  EXPECT_TRUE(
-      rb1->ColumnAt(0)->Equals(types::ToArrow(expected_col1, arrow::default_memory_pool())));
-  EXPECT_TRUE(
-      rb1->ColumnAt(1)->Equals(types::ToArrow(expected_col2, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(expected_col1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(expected_col2, arrow::default_memory_pool())));
 }
 
 TEST_F(JoinTest, self_join) {
@@ -91,7 +86,7 @@ TEST_F(JoinTest, self_join) {
       "join['left_col1'] = join['col1']\n"
       "join['right_col2'] = join['col2_x']\n"
       "output = join[['left_col1', 'right_col2']]\n"
-      "px.display(output)";
+      "px.display(output, 'joined')";
 
   auto query = absl::StrJoin({queryString}, "\n");
   auto query_id = sole::uuid4();
@@ -104,21 +99,15 @@ TEST_F(JoinTest, self_join) {
   EXPECT_GT(res.compile_time_ns, 0);
   EXPECT_GT(res.exec_time_ns, 0);
 
-  // TODO(nserrino/philkuz): Move this logic somewhere more reusable.
-  auto table_id = absl::Substitute("$0_$1", query_id.str(), 0);
+  EXPECT_THAT(result_server_->output_tables(), ::testing::UnorderedElementsAre("joined"));
+  auto output_batches = result_server_->query_results("joined");
+  EXPECT_EQ(1, output_batches.size());
 
-  auto output_table = table_store_->GetTable(table_id);
-  EXPECT_EQ(1, output_table->NumBatches());
-
-  auto rb1 =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+  auto rb1 = output_batches[0];
   std::vector<types::Float64Value> expected_col1 = {0.5, 1.2, 5.3, 0.1, 5.1};
   std::vector<types::Int64Value> expected_col2 = {1, 2, 3, 5, 6};
-  EXPECT_TRUE(
-      rb1->ColumnAt(0)->Equals(types::ToArrow(expected_col1, arrow::default_memory_pool())));
-  EXPECT_TRUE(
-      rb1->ColumnAt(1)->Equals(types::ToArrow(expected_col2, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(0)->Equals(types::ToArrow(expected_col1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1.ColumnAt(1)->Equals(types::ToArrow(expected_col2, arrow::default_memory_pool())));
 }
 
 }  // namespace carnot

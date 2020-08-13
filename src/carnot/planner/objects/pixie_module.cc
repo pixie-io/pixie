@@ -209,14 +209,15 @@ Status PixieModule::Init() {
 
   auto display_handler = func_based_exec_ ? &NoopDisplayHandler::Eval : DisplayHandler::Eval;
   // Setup methods.
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> display_fn,
-                      FuncObject::Create(kDisplayOpId, {"out", "name", "cols"},
-                                         {{"name", "'output'"}, {"cols", "[]"}},
-                                         /* has_variable_len_args */ false,
-                                         /* has_variable_len_kwargs */ false,
-                                         std::bind(display_handler, graph_, std::placeholders::_1,
-                                                   std::placeholders::_2, std::placeholders::_3),
-                                         ast_visitor()));
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> display_fn,
+      FuncObject::Create(kDisplayOpId, {"out", "name", "cols"},
+                         {{"name", "'output'"}, {"cols", "[]"}},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(display_handler, graph_, compiler_state_, std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
 
   AddMethod(kDisplayOpId, display_fn);
 
@@ -226,8 +227,8 @@ Status PixieModule::Init() {
           kDebugOpId, {"out", "name", "cols"}, {{"name", "'output'"}, {"cols", "[]"}},
           /* has_variable_len_args */ false,
           /* has_variable_len_kwargs */ false,
-          std::bind(DebugDisplayHandler::Eval, graph_, reserved_names_, std::placeholders::_1,
-                    std::placeholders::_2, std::placeholders::_3),
+          std::bind(DebugDisplayHandler::Eval, graph_, compiler_state_, reserved_names_,
+                    std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
 
   AddMethod(kDebugOpId, debug_fn);
@@ -238,42 +239,33 @@ Status PixieModule::Init() {
   return AssignAttribute(kVisAttrId, viz);
 }
 
-StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, const pypa::AstPtr& ast,
-                                           const ParsedArgs& args, ASTVisitor* visitor) {
+StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, CompilerState* compiler_state,
+                                           const pypa::AstPtr& ast, const ParsedArgs& args,
+                                           ASTVisitor* visitor) {
   PL_ASSIGN_OR_RETURN(OperatorIR * out_op, GetArgAs<OperatorIR>(args, "out"));
   PL_ASSIGN_OR_RETURN(StringIR * name, GetArgAs<StringIR>(args, "name"));
 
-  std::string out_name = name->str();
-  std::vector<std::string> columns;
-
-  // TODO(PL-1197) support output columns in the analyzer rules.
-  // PL_ASSIGN_OR_RETURN(IRNode* cols, GetArgAs<IRNode*>(args, "cols"));
-  // if (!Match(cols, ListWithChildren(String()))) {
-  //   return cols->CreateIRNodeError("'cols' must be a list of strings.");
-  // }
-  // PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
-  //                     ParseStringsFromCollection(static_cast<ListIR*>(cols)));
-
-  PL_RETURN_IF_ERROR(graph->CreateNode<MemorySinkIR>(ast, out_op, out_name, columns));
+  PL_RETURN_IF_ERROR(AddResultSink(graph, ast, name->str(), out_op,
+                                   compiler_state->result_address(),
+                                   compiler_state->result_ssl_targetname()));
   return StatusOr(std::make_shared<NoneObject>(visitor));
 }
 
-StatusOr<QLObjectPtr> NoopDisplayHandler::Eval(IR*, const pypa::AstPtr&, const ParsedArgs&,
-                                               ASTVisitor* visitor) {
+StatusOr<QLObjectPtr> NoopDisplayHandler::Eval(IR*, CompilerState*, const pypa::AstPtr&,
+                                               const ParsedArgs&, ASTVisitor* visitor) {
   // TODO(PP-1773): Surface a warning to the user when calling px.display in a function based
   // execution regime. For now, we'll allow it and just have it do nothing.
   return StatusOr(std::make_shared<NoneObject>(visitor));
 }
 
 StatusOr<QLObjectPtr> DebugDisplayHandler::Eval(
-    IR* graph, const absl::flat_hash_set<std::string>& reserved_names, const pypa::AstPtr& ast,
+    IR* graph, CompilerState* compiler_state,
+    const absl::flat_hash_set<std::string>& reserved_names, const pypa::AstPtr& ast,
     const ParsedArgs& args, ASTVisitor* visitor) {
   PL_ASSIGN_OR_RETURN(OperatorIR * out_op, GetArgAs<OperatorIR>(args, "out"));
   PL_ASSIGN_OR_RETURN(StringIR * name, GetArgAs<StringIR>(args, "name"));
 
   std::string out_name = PixieModule::kDebugTablePrefix + name->str();
-  std::vector<std::string> columns;
-
   std::string out_name_base = out_name;
   // Remove ambiguitiy if there is repeated out_name in the display call and func_based_exec.
   int64_t i = 1;
@@ -282,7 +274,8 @@ StatusOr<QLObjectPtr> DebugDisplayHandler::Eval(
     ++i;
   }
 
-  PL_RETURN_IF_ERROR(graph->CreateNode<MemorySinkIR>(ast, out_op, out_name, columns));
+  PL_RETURN_IF_ERROR(AddResultSink(graph, ast, out_name, out_op, compiler_state->result_address(),
+                                   compiler_state->result_ssl_targetname()));
   return StatusOr(std::make_shared<NoneObject>(visitor));
 }
 

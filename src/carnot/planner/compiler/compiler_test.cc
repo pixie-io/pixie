@@ -105,8 +105,8 @@ class CompilerTest : public ::testing::Test {
     http_events_relation.AddColumn(types::INT64, "http_resp_latency_ns");
     rel_map->emplace("http_events", http_events_relation);
 
-    compiler_state_ =
-        std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now, "result_addr");
+    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now,
+                                                      "result_addr", "result_ssltarget");
 
     compiler_ = Compiler();
   }
@@ -161,8 +161,8 @@ TEST_F(CompilerTest, test_general_compilation) {
   EXPECT_EQ(agg->aggregate_expressions()[0].name, "quotient_mean");
   EXPECT_EQ(agg->aggregate_expressions()[1].name, "cpu1_mean");
   child = agg->Children()[0];
-  EXPECT_EQ(child->type(), IRNodeType::kMemorySink);
-  auto sink = static_cast<MemorySinkIR*>(child);
+  EXPECT_MATCH(child, ExternalGRPCSink());
+  auto sink = static_cast<GRPCSinkIR*>(child);
   EXPECT_EQ(sink->name(), "cpu2");
 }
 
@@ -188,14 +188,21 @@ nodes {
   }
   nodes {
     op {
-      op_type: MEMORY_SINK_OPERATOR mem_sink_op {
-        name: "cpu_out"
-        column_types: FLOAT64
-        column_types: INT64
-        column_types: FLOAT64
-        column_names: "cpu2"
-        column_names: "count"
-        column_names: "cpu1"
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "cpu_out"
+          column_types: FLOAT64
+          column_types: INT64
+          column_types: FLOAT64
+          column_names: "cpu2"
+          column_names: "count"
+          column_names: "cpu1"
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
       }
     }
   }
@@ -241,13 +248,19 @@ nodes {
   }
   nodes {
     op {
-      op_type: MEMORY_SINK_OPERATOR
-      mem_sink_op {
-        name: "range_table"
-        column_types: TIME64NS
-        column_types: FLOAT64
-        column_names: "time_"
-        column_names: "xmod10"
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "range_table"
+          column_types: TIME64NS
+          column_types: FLOAT64
+          column_names: "time_"
+          column_names: "xmod10"
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
       }
     }
   }
@@ -298,15 +311,21 @@ nodes {
   }
   nodes {
     op {
-      op_type: MEMORY_SINK_OPERATOR
-      mem_sink_op {
-        name: "$2"
-        column_types: TIME64NS
-        column_types: FLOAT64
-        column_names: "time_"
-        column_names: "xmod10"
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "$2"
+          column_types: TIME64NS
+          column_types: FLOAT64
+          column_names: "time_"
+          column_names: "xmod10"
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
       }
     }
   }
@@ -395,11 +414,17 @@ nodes {
   }
   nodes {
     op {
-      op_type: MEMORY_SINK_OPERATOR
-      mem_sink_op {
-        name: "cpu_out"
-        column_types: FLOAT64
-        column_names: "mean"
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "cpu_out"
+          column_types: FLOAT64
+          column_names: "mean"
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
       }
     }
   }
@@ -556,13 +581,19 @@ nodes {
   }
   nodes {
     op {
-      op_type: MEMORY_SINK_OPERATOR
-      mem_sink_op {
-        name: "$1"
-        column_types: FLOAT64
-        column_types: FLOAT64
-        column_names: "cpu0"
-        column_names: "cpu1"
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "$1"
+          column_types: FLOAT64
+          column_types: FLOAT64
+          column_names: "cpu0"
+          column_names: "cpu1"
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
       }
     }
   }
@@ -652,9 +683,9 @@ TEST_F(CompilerTest, reused_result) {
   EXPECT_EQ(filter_child->Children().size(), 1);
 
   OperatorIR* src_child2 = mem_src->Children()[1];
-  ASSERT_MATCH(src_child2, MemorySink());
-  MemorySinkIR* mem_sink_child = static_cast<MemorySinkIR*>(src_child2);
-  EXPECT_EQ(mem_sink_child->name(), "out");
+  ASSERT_MATCH(src_child2, ExternalGRPCSink());
+  GRPCSinkIR* sink_child = static_cast<GRPCSinkIR*>(src_child2);
+  EXPECT_EQ(sink_child->name(), "out");
 }
 
 TEST_F(CompilerTest, multiple_result_sinks) {
@@ -715,24 +746,30 @@ nodes {
   }
   nodes {
     op {
-      op_type: MEMORY_SINK_OPERATOR
-      mem_sink_op {
-        name: "out"
-        column_types: INT64
-        column_types: FLOAT64
-        column_types: FLOAT64
-        column_types: FLOAT64
-        column_types: UINT128
-        column_names: "count"
-        column_names: "cpu0"
-        column_names: "cpu1"
-        column_names: "cpu2"
-        column_names: "upid"
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "out"
+          column_types: INT64
+          column_types: FLOAT64
+          column_types: FLOAT64
+          column_types: FLOAT64
+          column_types: UINT128
+          column_names: "count"
+          column_names: "cpu0"
+          column_names: "cpu1"
+          column_names: "cpu2"
+          column_names: "upid"
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
       }
     }
   }
@@ -855,19 +892,25 @@ nodes {
   nodes {
     id: 13
     op {
-      op_type: MEMORY_SINK_OPERATOR
-      mem_sink_op {
-        name: "out"
-        column_types: INT64
-        column_types: FLOAT64
-        column_types: FLOAT64
-        column_types: FLOAT64
-        column_types: UINT128
-        column_names: "count"
-        column_names: "cpu0"
-        column_names: "cpu1"
-        column_names: "cpu2"
-        column_names: "upid"
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "out"
+          column_types: INT64
+          column_types: FLOAT64
+          column_types: FLOAT64
+          column_types: FLOAT64
+          column_types: UINT128
+          column_names: "count"
+          column_names: "cpu0"
+          column_names: "cpu1"
+          column_names: "cpu2"
+          column_names: "upid"
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
       }
     }
   }
@@ -951,11 +994,17 @@ nodes {
   nodes {
     id: 16
     op {
-      op_type: MEMORY_SINK_OPERATOR
-      mem_sink_op {
-        name: "out"
-        column_types: STRING
-        column_names: "service"
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "out"
+          column_types: STRING
+          column_names: "service"
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
       }
     }
   }
@@ -1058,13 +1107,19 @@ nodes {
   nodes {
     id: 20
     op {
-      op_type: MEMORY_SINK_OPERATOR
-      mem_sink_op {
-        name: "out"
-        column_types: STRING
-        column_types: FLOAT64
-        column_names: "service"
-        column_names: "mean_cpu"
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "out"
+          column_types: STRING
+          column_types: FLOAT64
+          column_names: "service"
+          column_names: "mean_cpu"
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
       }
     }
   }
@@ -1171,15 +1226,21 @@ nodes {
   nodes {
     id: 22
     op {
-      op_type: MEMORY_SINK_OPERATOR
-      mem_sink_op {
-        name: "out"
-        column_types: FLOAT64
-        column_types: STRING
-        column_types: FLOAT64
-        column_names: "cpu0"
-        column_names: "service"
-        column_names: "mean_cpu"
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "out"
+          column_types: FLOAT64
+          column_types: STRING
+          column_types: FLOAT64
+          column_names: "cpu0"
+          column_names: "service"
+          column_names: "mean_cpu"
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
       }
     }
   }
@@ -1341,15 +1402,21 @@ nodes {
   nodes {
     id: 27
     op {
-      op_type: MEMORY_SINK_OPERATOR
-      mem_sink_op {
-        name: "out"
-        column_types: UINT128
-        column_types: STRING
-        column_types: FLOAT64
-        column_names: "upid"
-        column_names: "service"
-        column_names: "mean_cpu"
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "out"
+          column_types: UINT128
+          column_types: STRING
+          column_types: FLOAT64
+          column_names: "upid"
+          column_names: "service"
+          column_names: "mean_cpu"
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
       }
     }
   }
@@ -1521,15 +1588,21 @@ nodes {
   nodes {
     id: 17
     op {
-      op_type: MEMORY_SINK_OPERATOR
-      mem_sink_op {
-        name: "out"
-        column_types: FLOAT64
-        column_types: STRING
-        column_types: FLOAT64
-        column_names: "cpu0"
-        column_names: "_attr_service_name"
-        column_names: "mean_cpu"
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "out"
+          column_types: FLOAT64
+          column_types: STRING
+          column_types: FLOAT64
+          column_names: "cpu0"
+          column_names: "_attr_service_name"
+          column_names: "mean_cpu"
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
       }
     }
   }
@@ -1747,17 +1820,23 @@ nodes {
   nodes {
     id: 17
     op {
-      op_type: MEMORY_SINK_OPERATOR
-      mem_sink_op {
-        name: "out"
-        column_types: FLOAT64
-        column_types: STRING
-        column_types: FLOAT64
-        column_types: STRING
-        column_names: "cpu0"
-        column_names: "_attr_service_id"
-        column_names: "mean_cpu"
-        column_names: "_attr_service_name"
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "out"
+          column_types: FLOAT64
+          column_types: STRING
+          column_types: FLOAT64
+          column_types: STRING
+          column_names: "cpu0"
+          column_names: "_attr_service_id"
+          column_names: "mean_cpu"
+          column_names: "_attr_service_name"
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
       }
     }
   }
@@ -1972,24 +2051,30 @@ nodes {
   nodes {
     id: 37
     op {
-      op_type: MEMORY_SINK_OPERATOR
-      mem_sink_op {
-        name: "joined"
-        column_types: UINT128
-        column_types: INT64
-        column_types: INT64
-        column_types: FLOAT64
-        column_types: FLOAT64
-        column_names: "upid"
-        column_names: "http_resp_status"
-        column_names: "http_resp_latency_ns"
-        column_names: "cpu0"
-        column_names: "cpu1"
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "joined"
+          column_types: UINT128
+          column_types: INT64
+          column_types: INT64
+          column_types: FLOAT64
+          column_types: FLOAT64
+          column_names: "upid"
+          column_names: "http_resp_status"
+          column_names: "http_resp_latency_ns"
+          column_names: "cpu0"
+          column_names: "cpu1"
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
       }
     }
   }
@@ -2161,24 +2246,30 @@ nodes {
   nodes {
     id: 37
     op {
-      op_type: MEMORY_SINK_OPERATOR
-      mem_sink_op {
-        name: "joined"
-        column_types: UINT128
-        column_types: INT64
-        column_types: INT64
-        column_types: FLOAT64
-        column_types: FLOAT64
-        column_names: "upid"
-        column_names: "http_resp_status"
-        column_names: "http_resp_latency_ns"
-        column_names: "cpu0"
-        column_names: "cpu1"
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "joined"
+          column_types: UINT128
+          column_types: INT64
+          column_types: INT64
+          column_types: FLOAT64
+          column_types: FLOAT64
+          column_names: "upid"
+          column_names: "http_resp_status"
+          column_names: "http_resp_latency_ns"
+          column_names: "cpu0"
+          column_names: "cpu1"
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
       }
     }
   }
@@ -2310,27 +2401,33 @@ nodes {
   nodes {
     id: 20
     op {
-      op_type: MEMORY_SINK_OPERATOR
-      mem_sink_op {
-        name: "joined"
-        column_types: FLOAT64
-        column_types: UINT128
-        column_types: FLOAT64
-        column_types: FLOAT64
-        column_types: UINT128
-        column_types: FLOAT64
-        column_names: "cpu0"
-        column_names: "upid"
-        column_names: "cpu1"
-        column_names: "cpu0_x"
-        column_names: "upid_x"
-        column_names: "cpu1_x"
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
-        column_semantic_types: ST_NONE
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "joined"
+          column_types: FLOAT64
+          column_types: UINT128
+          column_types: FLOAT64
+          column_types: FLOAT64
+          column_types: UINT128
+          column_types: FLOAT64
+          column_names: "cpu0"
+          column_names: "upid"
+          column_names: "cpu1"
+          column_names: "cpu0_x"
+          column_names: "upid_x"
+          column_names: "cpu1_x"
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_NONE
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
       }
     }
   }
@@ -2404,22 +2501,22 @@ TEST_F(CompilerTest, BadDropQuery) {
   auto graph_or_s = compiler_.CompileToIR(kBadDropQuery, compiler_state_.get());
   ASSERT_OK(graph_or_s);
 
-  MemorySinkIR* mem_sink;
+  GRPCSinkIR* sink;
   auto graph = graph_or_s.ConsumeValueOrDie();
   for (int64_t i : graph->dag().TopologicalSort()) {
     auto node = graph->Get(i);
-    if (Match(node, MemorySink())) {
-      mem_sink = static_cast<MemorySinkIR*>(node);
+    if (Match(node, ExternalGRPCSink())) {
+      sink = static_cast<GRPCSinkIR*>(node);
       break;
     }
   }
-  ASSERT_NE(mem_sink, nullptr);
+  ASSERT_NE(sink, nullptr);
   Relation expected_relation(
       {types::STRING, types::FLOAT64, types::FLOAT64, types::FLOAT64, types::TIME64NS},
       {"service", "p50", "p90", "p99", "time_"});
-  EXPECT_EQ(mem_sink->relation(), expected_relation);
-  ASSERT_MATCH(mem_sink->parents()[0], Filter());
-  FilterIR* filter = static_cast<FilterIR*>(mem_sink->parents()[0]);
+  EXPECT_EQ(sink->relation(), expected_relation);
+  ASSERT_MATCH(sink->parents()[0], Filter());
+  FilterIR* filter = static_cast<FilterIR*>(sink->parents()[0]);
   ASSERT_MATCH(filter->parents()[0], Map());
   MapIR* map = static_cast<MapIR*>(filter->parents()[0]);
   EXPECT_EQ(map->relation(), expected_relation);
@@ -2436,19 +2533,19 @@ TEST_F(CompilerTest, DropWithoutListQuery) {
   auto graph_or_s = compiler_.CompileToIR(kDropWithoutListQuery, compiler_state_.get());
   ASSERT_OK(graph_or_s);
 
-  MemorySinkIR* mem_sink;
+  GRPCSinkIR* sink;
   auto graph = graph_or_s.ConsumeValueOrDie();
   for (int64_t i : graph->dag().TopologicalSort()) {
     auto node = graph->Get(i);
-    if (Match(node, MemorySink())) {
-      mem_sink = static_cast<MemorySinkIR*>(node);
+    if (Match(node, ExternalGRPCSink())) {
+      sink = static_cast<GRPCSinkIR*>(node);
       break;
     }
   }
-  ASSERT_NE(mem_sink, nullptr);
+  ASSERT_NE(sink, nullptr);
 
   Relation expected_relation({types::FLOAT64}, {"cpu1"});
-  ASSERT_EQ(mem_sink->relation(), expected_relation);
+  ASSERT_EQ(sink->relation(), expected_relation);
 }
 
 TEST_F(CompilerTest, AndExpressionFailsGracefully) {
@@ -2483,20 +2580,20 @@ TEST_F(CompilerTest, MetadataNoDuplicateColumnsQuery) {
   auto graph_or_s = compiler_.CompileToIR(kMetadataNoDuplicatesQuery, compiler_state_.get());
   ASSERT_OK(graph_or_s);
 
-  MemorySinkIR* mem_sink;
+  GRPCSinkIR* sink;
   auto graph = graph_or_s.ConsumeValueOrDie();
   for (int64_t i : graph->dag().TopologicalSort()) {
     auto node = graph->Get(i);
-    if (Match(node, MemorySink())) {
-      mem_sink = static_cast<MemorySinkIR*>(node);
+    if (Match(node, ExternalGRPCSink())) {
+      sink = static_cast<GRPCSinkIR*>(node);
       break;
     }
   }
-  ASSERT_NE(mem_sink, nullptr);
+  ASSERT_NE(sink, nullptr);
 
   // ensure service_name is in relation but _attr_service_name is not
   Relation expected_relation({types::UINT128, types::STRING}, {"upid", "service_name"});
-  ASSERT_EQ(mem_sink->relation(), expected_relation);
+  ASSERT_EQ(sink->relation(), expected_relation);
 }
 
 TEST_F(CompilerTest, UnusedOperatorsRemoved) {
@@ -2534,10 +2631,10 @@ TEST_F(CompilerTest, UnusedOperatorsRemoved) {
   EXPECT_EQ(filter_child1->Children().size(), 1);
 
   OperatorIR* filter_child_child = filter_child1->Children()[0];
-  ASSERT_MATCH(filter_child_child, MemorySink());
-  MemorySinkIR* mem_sink = static_cast<MemorySinkIR*>(filter_child_child);
+  ASSERT_MATCH(filter_child_child, ExternalGRPCSink());
+  GRPCSinkIR* sink = static_cast<GRPCSinkIR*>(filter_child_child);
   Relation expected_relation({types::TIME64NS}, {"time_"});
-  EXPECT_EQ(mem_sink->relation(), expected_relation);
+  EXPECT_EQ(sink->relation(), expected_relation);
 }
 
 constexpr char kUndefinedFuncError[] = R"pxl(
@@ -2783,7 +2880,7 @@ TEST_F(CompilerTest, multiple_def_calls_get_optimized) {
     ASSERT_MATCH(child, Map());
   }
   ASSERT_MATCH(mem_src->Children()[0], Map());
-  ASSERT_EQ(graph->FindNodesThatMatch(MemorySink()).size(), 3);
+  ASSERT_EQ(graph->FindNodesThatMatch(ExternalGRPCSink()).size(), 3);
 }
 
 constexpr char kPodNodeTypesQuery[] = R"pxl(
@@ -2821,9 +2918,9 @@ TEST_F(CompilerTest, casting) {
   ASSERT_OK(graph_or_s);
 
   auto ir = graph_or_s.ConsumeValueOrDie();
-  auto sinks = ir->FindNodesThatMatch(MemorySink());
+  auto sinks = ir->FindNodesThatMatch(ExternalGRPCSink());
   ASSERT_EQ(1, sinks.size());
-  auto sink = static_cast<MemorySinkIR*>(sinks[0]);
+  auto sink = static_cast<GRPCSinkIR*>(sinks[0]);
   auto type_table = std::static_pointer_cast<TableType>(sink->resolved_type());
   EXPECT_TRUE(type_table->HasColumn("vsize_bytes"));
   auto col_type_or_s = type_table->GetColumnType("vsize_bytes");
@@ -2860,9 +2957,9 @@ TEST_F(CompilerTest, time_casting) {
   ASSERT_OK(graph_or_s);
 
   auto ir = graph_or_s.ConsumeValueOrDie();
-  auto sinks = ir->FindNodesThatMatch(MemorySink());
+  auto sinks = ir->FindNodesThatMatch(ExternalGRPCSink());
   ASSERT_EQ(1, sinks.size());
-  auto sink = static_cast<MemorySinkIR*>(sinks[0]);
+  auto sink = static_cast<GRPCSinkIR*>(sinks[0]);
   auto type_table = std::static_pointer_cast<TableType>(sink->resolved_type());
   EXPECT_TRUE(type_table->HasColumn("time_"));
   auto col_type_or_s = type_table->GetColumnType("time_");
@@ -2887,9 +2984,9 @@ TEST_F(CompilerTest, metadata_types) {
   ASSERT_OK(graph_or_s);
 
   auto ir = graph_or_s.ConsumeValueOrDie();
-  auto sinks = ir->FindNodesThatMatch(MemorySink());
+  auto sinks = ir->FindNodesThatMatch(ExternalGRPCSink());
   ASSERT_EQ(1, sinks.size());
-  auto sink = static_cast<MemorySinkIR*>(sinks[0]);
+  auto sink = static_cast<GRPCSinkIR*>(sinks[0]);
   auto type_table = std::static_pointer_cast<TableType>(sink->resolved_type());
 
   EXPECT_TableHasColumnWithType(type_table, "svc",

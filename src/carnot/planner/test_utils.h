@@ -347,7 +347,9 @@ table_store::schemapb::Schema LoadSchemaPb(std::string_view schema_str) {
 }
 
 distributedpb::LogicalPlannerState LoadLogicalPlannerStatePB(
-    const std::string& distributed_state_str, table_store::schemapb::Schema schema) {
+    const std::string& distributed_state_str, table_store::schemapb::Schema schema,
+    const std::string& result_addr = "query-broker-ip:50300",
+    const std::string& result_ssl_targetname = "query-broker-hostname") {
   distributedpb::LogicalPlannerState logical_planner_state_pb;
   auto distributed_info = logical_planner_state_pb.mutable_distributed_state();
   *distributed_info = LoadDistributedStatePb(distributed_state_str);
@@ -364,6 +366,8 @@ distributedpb::LogicalPlannerState LoadLogicalPlannerStatePB(
       (*schema_info->add_agent_list()) = agent_id;
     }
   }
+  logical_planner_state_pb.set_result_address(result_addr);
+  logical_planner_state_pb.set_result_ssl_targetname(result_ssl_targetname);
   return logical_planner_state_pb;
 }
 
@@ -953,18 +957,24 @@ qb_address_to_plan {
       nodes {
         id: 8
         op {
-          op_type: MEMORY_SINK_OPERATOR
-          mem_sink_op {
-            name: "out"
-            column_types: TIME64NS
-            column_types: INT64
-            column_types: UINT128
-            column_names: "time_"
-            column_names: "cpu_cycles"
-            column_names: "upid"
-            column_semantic_types: ST_NONE
-            column_semantic_types: ST_NONE
-            column_semantic_types: ST_NONE
+          op_type: GRPC_SINK_OPERATOR
+          grpc_sink_op {
+            output_table {
+              table_name: "out"
+              column_types: TIME64NS
+              column_types: INT64
+              column_types: UINT128
+              column_names: "time_"
+              column_names: "cpu_cycles"
+              column_names: "upid"
+              column_semantic_types: ST_NONE
+              column_semantic_types: ST_NONE
+              column_semantic_types: ST_NONE
+            }
+            address: "query-broker-ip:50300"
+            connection_options {
+              ssl_targetname: "query-broker-hostname"
+            }
           }
         }
       }

@@ -170,6 +170,7 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 	}
 
 	ctx = context.WithValue(ctx, compileCompleteKey, time.Now())
+
 	// When the status is not OK, this means it's a compilation error on the query passed in.
 	if plannerResultPB.Status.ErrCode != statuspb.OK {
 		return nil, plannerResultPB.Status, nil
@@ -226,29 +227,31 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 }
 
 func annotateResultWithSemanticTypes(result *queryresultspb.QueryResult, planMap map[uuid.UUID]*planpb.Plan) error {
-	memSinks := make(map[string]*planpb.MemorySinkOperator)
+	resultGRPCTables := make(map[string]*planpb.GRPCSinkOperator_ResultTable)
 
 	for _, plan := range planMap {
 		for _, fragment := range plan.Nodes {
 			for _, node := range fragment.Nodes {
-				if node.Op.OpType == planpb.MEMORY_SINK_OPERATOR {
-					memSinks[node.Op.GetMemSinkOp().Name] = node.Op.GetMemSinkOp()
+				if node.Op.OpType == planpb.GRPC_SINK_OPERATOR {
+					if output := node.Op.GetGRPCSinkOp().GetOutputTable(); output != nil {
+						resultGRPCTables[output.TableName] = output
+					}
 				}
 			}
 		}
 	}
 
 	for _, table := range result.Tables {
-		memSinkOp, ok := memSinks[table.Name]
+		outputTable, ok := resultGRPCTables[table.Name]
 		if !ok {
 			for _, col := range table.Relation.Columns {
 				col.ColumnSemanticType = typespb.ST_NONE
 			}
-			log.Infof("Table '%s' has no corresponding MemSinkOp", table.Name)
+			log.Infof("Table '%s' has no corresponding GRPCSinkOperator", table.Name)
 			return nil
 		}
 		for i, col := range table.Relation.Columns {
-			col.ColumnSemanticType = memSinkOp.ColumnSemanticTypes[i]
+			col.ColumnSemanticType = outputTable.ColumnSemanticTypes[i]
 		}
 	}
 	return nil
@@ -333,7 +336,7 @@ func (s *Server) checkHealth(ctx context.Context) (bool, error) {
 	}
 	resp, err := s.executeScript(ctx, &req)
 	if err != nil {
-		return true, err
+		return false, err
 	}
 	if resp.Status != nil && resp.Status.ErrCode != statuspb.OK {
 		return false, status.Error(codes.Code(resp.Status.ErrCode), resp.Status.Msg)
@@ -541,10 +544,14 @@ func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResu
 	}()
 
 	sendAndClose := func(success bool, message string) error {
-		return srv.SendAndClose(&carnotpb.TransferResultChunkResponse{
+		err := srv.SendAndClose(&carnotpb.TransferResultChunkResponse{
 			Success: success,
 			Message: message,
 		})
+		if err != nil {
+			log.WithError(err).Errorf("TransferResultChunk SendAndClose received error", err)
+		}
+		return err
 	}
 
 	for {
@@ -553,7 +560,7 @@ func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResu
 			return sendAndClose(true, "")
 		default:
 			msg, err := srv.Recv()
-			// Stream closed from server side.
+			// Stream closed from client side.
 			if err != nil && err == io.EOF {
 				return sendAndClose(true, "")
 			}

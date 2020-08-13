@@ -85,17 +85,17 @@ TEST_F(DistributedAnalyzerTest, UDTFOnlyOnPEMsDoesntRunOnKelvin) {
   ASSERT_EQ(pem_udtfs.size(), 1);
   auto new_udtf = static_cast<UDTFSourceIR*>(pem_udtfs[0]);
   ASSERT_EQ(new_udtf->Children().size(), 1UL);
-  EXPECT_EQ(new_udtf->Children()[0]->type(), IRNodeType::kGRPCSink);
+  EXPECT_MATCH(new_udtf->Children()[0], InternalGRPCSink());
 
   // Kelvin should not have UDTFs.
   auto kelvin_udtfs = kelvin_plan->FindNodesOfType(IRNodeType::kUDTFSource);
   ASSERT_EQ(kelvin_udtfs.size(), 0);
   // Kelvin should have two Operators: Memory Sink and GRPCSource
   EXPECT_EQ(kelvin_plan->FindNodesThatMatch(Operator()).size(), 2);
-  auto kelvin_mem_sinks = kelvin_plan->FindNodesOfType(IRNodeType::kMemorySink);
-  auto new_mem_sink = static_cast<MemorySinkIR*>(kelvin_mem_sinks[0]);
-  ASSERT_EQ(new_mem_sink->parents().size(), 1UL);
-  EXPECT_EQ(new_mem_sink->parents()[0]->type(), IRNodeType::kGRPCSource);
+  auto kelvin_sinks = kelvin_plan->FindNodesThatMatch(ExternalGRPCSink());
+  auto new_sink = static_cast<GRPCSinkIR*>(kelvin_sinks[0]);
+  ASSERT_EQ(new_sink->parents().size(), 1UL);
+  EXPECT_EQ(new_sink->parents()[0]->type(), IRNodeType::kGRPCSource);
 }
 
 TEST_F(DistributedAnalyzerTest, UDTFOnKelvinOnlyOnKelvin) {
@@ -155,12 +155,12 @@ TEST_F(DistributedAnalyzerTest, UDTFOnKelvinOnlyOnKelvin) {
   ASSERT_EQ(kelvin_udtfs.size(), 1);
   UDTFSourceIR* udtf = static_cast<UDTFSourceIR*>(kelvin_udtfs[0]);
   ASSERT_EQ(udtf->Children().size(), 1);
-  EXPECT_EQ(udtf->Children()[0]->type(), IRNodeType::kGRPCSink);
+  EXPECT_MATCH(udtf->Children()[0], InternalGRPCSink());
 
-  auto kelvin_mem_sinks = kelvin_plan->FindNodesOfType(IRNodeType::kMemorySink);
-  auto new_mem_sink = static_cast<MemorySinkIR*>(kelvin_mem_sinks[0]);
-  ASSERT_EQ(new_mem_sink->parents().size(), 1UL);
-  EXPECT_EQ(new_mem_sink->parents()[0]->type(), IRNodeType::kGRPCSource);
+  auto kelvin_sinks = kelvin_plan->FindNodesThatMatch(ExternalGRPCSink());
+  auto new_sink = static_cast<GRPCSinkIR*>(kelvin_sinks[0]);
+  ASSERT_EQ(new_sink->parents().size(), 1UL);
+  EXPECT_EQ(new_sink->parents()[0]->type(), IRNodeType::kGRPCSource);
 }
 
 constexpr char kQueryJoinKelvinOnlyUDTFWithPEMOnlyUDTF[] = R"pxl(
@@ -211,8 +211,8 @@ TEST_F(DistributedAnalyzerTest, UDTFOnKelvinJoinWithUDTFOnPEM) {
   // Both PEM and Kelvin should have UDTF before.
   ASSERT_EQ(pem_plan->FindNodesOfType(IRNodeType::kUDTFSource).size(), 2);
   ASSERT_EQ(kelvin_plan->FindNodesOfType(IRNodeType::kUDTFSource).size(), 2);
-  auto pem_grpc_sinks = pem_plan->FindNodesOfType(IRNodeType::kGRPCSink);
-  auto kelvin_grpc_sinks = kelvin_plan->FindNodesOfType(IRNodeType::kGRPCSink);
+  auto pem_grpc_sinks = pem_plan->FindNodesThatMatch(InternalGRPCSink());
+  auto kelvin_grpc_sinks = kelvin_plan->FindNodesThatMatch(InternalGRPCSink());
   ASSERT_EQ(pem_grpc_sinks.size(), 2);
   ASSERT_EQ(kelvin_grpc_sinks.size(), 2);
 
@@ -236,7 +236,7 @@ TEST_F(DistributedAnalyzerTest, UDTFOnKelvinJoinWithUDTFOnPEM) {
   UDTFSourceIR* kelvin_udtf = static_cast<UDTFSourceIR*>(kelvin_udtfs[0]);
   EXPECT_EQ(kelvin_udtf->udtf_spec().name(), "ServiceUpTime");
   ASSERT_EQ(kelvin_udtf->Children().size(), 1);
-  EXPECT_EQ(kelvin_udtf->Children()[0]->type(), IRNodeType::kGRPCSink);
+  EXPECT_MATCH(kelvin_udtf->Children()[0], InternalGRPCSink());
   auto kelvin_grpc_sink = static_cast<GRPCSinkIR*>(kelvin_udtf->Children()[0]);
 
   // PEM should have UDTF.
@@ -253,11 +253,11 @@ TEST_F(DistributedAnalyzerTest, UDTFOnKelvinJoinWithUDTFOnPEM) {
   EXPECT_EQ(pem_udtf_child_child->type(), IRNodeType::kGRPCSink);
   auto pem_grpc_sink = static_cast<GRPCSinkIR*>(pem_udtf_child_child);
 
-  auto kelvin_mem_sinks = kelvin_plan->FindNodesOfType(IRNodeType::kMemorySink);
-  auto new_mem_sink = static_cast<MemorySinkIR*>(kelvin_mem_sinks[0]);
-  ASSERT_EQ(new_mem_sink->parents().size(), 1UL);
-  EXPECT_EQ(new_mem_sink->parents()[0]->type(), IRNodeType::kJoin);
-  auto join = static_cast<JoinIR*>(new_mem_sink->parents()[0]);
+  auto kelvin_result_sinks = kelvin_plan->FindNodesThatMatch(ExternalGRPCSink());
+  auto new_result_sink = static_cast<GRPCSinkIR*>(kelvin_result_sinks[0]);
+  ASSERT_EQ(new_result_sink->parents().size(), 1UL);
+  EXPECT_EQ(new_result_sink->parents()[0]->type(), IRNodeType::kJoin);
+  auto join = static_cast<JoinIR*>(new_result_sink->parents()[0]);
   ASSERT_EQ(join->parents().size(), 2);
   ASSERT_EQ(join->parents()[0]->type(), IRNodeType::kGRPCSource);
   ASSERT_EQ(join->parents()[1]->type(), IRNodeType::kGRPCSource);

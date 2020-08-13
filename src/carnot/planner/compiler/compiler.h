@@ -57,7 +57,7 @@ class Compiler {
 
   Status Analyze(IR* ir, CompilerState* compiler_state);
   Status Optimize(IR* ir, CompilerState* compiler_state);
-  Status VerifyGraphHasMemorySink(IR* ir);
+  Status VerifyGraphHasResultSink(IR* ir);
 };
 
 }  // namespace compiler

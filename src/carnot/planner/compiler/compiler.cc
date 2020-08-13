@@ -45,7 +45,7 @@ StatusOr<std::shared_ptr<IR>> Compiler::CompileToIR(const std::string& query,
   PL_RETURN_IF_ERROR(Analyze(ir.get(), compiler_state));
   PL_RETURN_IF_ERROR(Optimize(ir.get(), compiler_state));
 
-  PL_RETURN_IF_ERROR(VerifyGraphHasMemorySink(ir.get()));
+  PL_RETURN_IF_ERROR(VerifyGraphHasResultSink(ir.get()));
   return ir;
 }
 
@@ -138,8 +138,8 @@ StatusOr<pl::shared::scriptspb::VisFuncsInfo> Compiler::GetVisFuncsInfo(
   return ast_walker->GetVisFuncsInfo();
 }
 
-Status Compiler::VerifyGraphHasMemorySink(IR* ir) {
-  auto sinks = ir->FindNodesThatMatch(MemorySink());
+Status Compiler::VerifyGraphHasResultSink(IR* ir) {
+  auto sinks = ir->FindNodesThatMatch(ResultSink());
   if (sinks.size() == 0) {
     return error::InvalidArgument(
         "query does not output a "

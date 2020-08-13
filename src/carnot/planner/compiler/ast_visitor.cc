@@ -275,9 +275,9 @@ Status ASTVisitorImpl::ProcessExecFuncs(const ExecFuncs& exec_funcs) {
                               func.func_name(), return_obj->name());
       }
       auto df = std::static_pointer_cast<Dataframe>(return_obj);
-      std::vector<std::string> out_columns;
-      PL_RETURN_IF_ERROR(ir_graph()->CreateNode<MemorySinkIR>(
-          ast, df->op(), func.output_table_prefix(), out_columns));
+      PL_RETURN_IF_ERROR(AddResultSink(ir_graph(), ast, func.output_table_prefix(), df->op(),
+                                       compiler_state_->result_address(),
+                                       compiler_state_->result_ssl_targetname()));
       continue;
     }
 
@@ -290,8 +290,9 @@ Status ASTVisitorImpl::ProcessExecFuncs(const ExecFuncs& exec_funcs) {
       }
       auto df = std::static_pointer_cast<Dataframe>(obj);
       auto out_name = absl::Substitute("$0[$1]", func.output_table_prefix(), i);
-      std::vector<std::string> columns;
-      PL_RETURN_IF_ERROR(ir_graph()->CreateNode<MemorySinkIR>(ast, df->op(), out_name, columns));
+      PL_RETURN_IF_ERROR(AddResultSink(ir_graph(), ast, out_name, df->op(),
+                                       compiler_state_->result_address(),
+                                       compiler_state_->result_ssl_targetname()));
     }
   }
   return Status::OK();

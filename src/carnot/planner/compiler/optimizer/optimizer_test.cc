@@ -666,13 +666,13 @@ TEST_F(OptimizerTest, prune_unused_columns) {
 
   ASSERT_EQ(map3->Children().size(), 1);
   ASSERT_MATCH(map3->Children()[0], Limit());
-  auto limit = static_cast<MemorySinkIR*>(map3->Children()[0]);
+  auto limit = static_cast<LimitIR*>(map3->Children()[0]);
   EXPECT_THAT(limit->relation().col_names(), ElementsAre("mb_in"));
 
   // Check sink node
   ASSERT_EQ(limit->Children().size(), 1);
-  ASSERT_MATCH(limit->Children()[0], MemorySink());
-  auto sink = static_cast<MemorySinkIR*>(limit->Children()[0]);
+  ASSERT_MATCH(limit->Children()[0], ExternalGRPCSink());
+  auto sink = static_cast<GRPCSinkIR*>(limit->Children()[0]);
   EXPECT_THAT(sink->relation().col_names(), ElementsAre("mb_in"));
 }
 
@@ -725,22 +725,22 @@ TEST_F(OptimizerTest, aggs_dont_merge_if_different_filter) {
   ASSERT_OK(Optimize(ir_graph));
 
   // Check agg nodes.
-  auto sink_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySink);
+  auto sink_nodes = ir_graph->FindNodesThatMatch(ExternalGRPCSink());
   ASSERT_EQ(2, sink_nodes.size());
 
-  auto mem_sink0 = static_cast<MemorySinkIR*>(sink_nodes[0]);
-  auto mem_sink1 = static_cast<MemorySinkIR*>(sink_nodes[1]);
+  auto sink0 = static_cast<GRPCSinkIR*>(sink_nodes[0]);
+  auto sink1 = static_cast<GRPCSinkIR*>(sink_nodes[1]);
 
-  if (mem_sink1->name() == "no errors") {
-    auto temp = mem_sink1;
-    mem_sink1 = mem_sink0;
-    mem_sink0 = temp;
+  if (sink1->name() == "no errors") {
+    auto temp = sink1;
+    sink1 = sink0;
+    sink0 = temp;
   }
 
-  ASSERT_EQ(mem_sink0->name(), "no errors");
-  ASSERT_EQ(mem_sink1->name(), "with errors");
+  ASSERT_EQ(sink0->name(), "no errors");
+  ASSERT_EQ(sink1->name(), "with errors");
 
-  ASSERT_NE(mem_sink0->parents()[0], mem_sink1->parents()[0]);
+  ASSERT_NE(sink0->parents()[0], sink1->parents()[0]);
 }
 
 }  // namespace compiler

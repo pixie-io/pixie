@@ -60,7 +60,7 @@ class StitcherTest : public DistributedRulesTest {
                                            std::vector<CarnotInstance*> mergers) {
     for (auto data_store_agent : data_stores) {
       // Make sure that the grpc_sink has not yet been set to avoid a false positive.
-      for (auto ir_node : data_store_agent->plan()->FindNodesOfType(IRNodeType::kGRPCSink)) {
+      for (auto ir_node : data_store_agent->plan()->FindNodesThatMatch(InternalGRPCSink())) {
         SCOPED_TRACE(data_store_agent->carnot_info().query_broker_address());
         auto grpc_sink = static_cast<GRPCSinkIR*>(ir_node);
         EXPECT_FALSE(grpc_sink->DestinationAddressSet());
@@ -118,7 +118,7 @@ class StitcherTest : public DistributedRulesTest {
 
     for (auto data_store_agent : data_stores) {
       // Now check that the sink exists for the grpc sources.
-      for (auto ir_node : data_store_agent->plan()->FindNodesOfType(IRNodeType::kGRPCSink)) {
+      for (auto ir_node : data_store_agent->plan()->FindNodesThatMatch(InternalGRPCSink())) {
         SCOPED_TRACE(absl::Substitute("agent : $0, node :$1",
                                       data_store_agent->carnot_info().query_broker_address(),
                                       ir_node->DebugString()));
@@ -150,7 +150,7 @@ class StitcherTest : public DistributedRulesTest {
 
     for (auto data_store_agent : data_stores) {
       // Now check that the sink exists for the grpc sources.
-      for (auto ir_node : data_store_agent->plan()->FindNodesOfType(IRNodeType::kGRPCSink)) {
+      for (auto ir_node : data_store_agent->plan()->FindNodesThatMatch(InternalGRPCSink())) {
         SCOPED_TRACE(absl::Substitute("agent : $0, node :$1",
                                       data_store_agent->carnot_info().query_broker_address(),
                                       ir_node->DebugString()));
@@ -361,11 +361,11 @@ TEST_F(StitcherTest, stitch_all_togther_with_udtf) {
   auto kelvin_plan = kelvin->plan();
   auto pem_plan = pem->plan();
 
-  auto kelvin_grpc_sinks = kelvin_plan->FindNodesOfType(IRNodeType::kGRPCSink);
+  auto kelvin_grpc_sinks = kelvin_plan->FindNodesThatMatch(InternalGRPCSink());
   ASSERT_EQ(kelvin_grpc_sinks.size(), 1);
   auto kelvin_grpc_sink = static_cast<GRPCSinkIR*>(kelvin_grpc_sinks[0]);
 
-  auto pem_grpc_sinks = pem_plan->FindNodesOfType(IRNodeType::kGRPCSink);
+  auto pem_grpc_sinks = pem_plan->FindNodesThatMatch(InternalGRPCSink());
   ASSERT_EQ(pem_grpc_sinks.size(), 1);
   auto pem_grpc_sink = static_cast<GRPCSinkIR*>(pem_grpc_sinks[0]);
 
