@@ -17,7 +17,7 @@ namespace dynamic_tracing {
 constexpr char kStartKTimeNSVarName[] = "start_ktime_ns";
 
 void CreateMap(const ir::logical::Probe& input_probe, ir::logical::TracepointSpec* out) {
-  if (input_probe.args().empty()) {
+  if (input_probe.args().empty() && !input_probe.has_function_latency()) {
     return;
   }
   auto* stash_map = out->add_maps();

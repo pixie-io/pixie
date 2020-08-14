@@ -249,6 +249,47 @@ class DynamicTraceGolangTest : public StirlingDynamicTraceBPFTest {
   }
 };
 
+TEST_F(DynamicTraceGolangTest, TraceLatencyOnly) {
+  StartTraceTarget();
+
+  constexpr std::string_view kProgram = R"(
+deployment_spec {
+  path: "$0"
+}
+tracepoints {
+  program {
+    language: GOLANG
+    outputs {
+      name: "output_table"
+      fields: "latency"
+    }
+    probes {
+      name: "probe0"
+      trace_point {
+        symbol: "main.SaySomethingTo"
+        type: LOGICAL
+      }
+      function_latency { id: "lat0" }
+      output_actions {
+        output_name: "output_table"
+        variable_name: "lat0"
+      }
+    }
+  }
+}
+)";
+
+  auto trace_program = Prepare(kProgram, kBinaryPath);
+  DeployTracepoint(std::move(trace_program));
+
+  // Get field indexes for the two columns we want.
+  ASSERT_HAS_VALUE_AND_ASSIGN(int latency_field_idx,
+                              FindFieldIndex(info_class_.schema(), "latency"));
+
+  types::ColumnWrapperRecordBatch& rb = *record_batches_[0];
+  EXPECT_GT(rb[latency_field_idx]->Get<types::Int64Value>(0), 0);
+}
+
 TEST_F(DynamicTraceGolangTest, TraceString) {
   StartTraceTarget();
 
