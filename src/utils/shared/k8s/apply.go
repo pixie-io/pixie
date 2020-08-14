@@ -46,9 +46,14 @@ func ConvertResourceToYAML(obj runtime.Object) (string, error) {
 }
 
 // ApplyYAML does the equivalent of a kubectl apply for the given yaml.
+func ApplyYAML(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader) error {
+	return ApplyYAMLForResourceTypes(clientset, config, namespace, yamlFile, []string{})
+}
+
+// ApplyYAMLForResourceTypes only applies the specified types in the given YAML file.
 // This function is copied from https://stackoverflow.com/a/47139247 with major updates with
 // respect to API changes and some clean up work.
-func ApplyYAML(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader) error {
+func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader, allowedResources []string) error {
 	decodedYAML := yaml.NewYAMLOrJSONDecoder(yamlFile, 4096)
 	discoveryClient := clientset.Discovery()
 
@@ -78,6 +83,18 @@ func ApplyYAML(clientset *kubernetes.Clientset, config *rest.Config, namespace s
 			return err
 		}
 		k8sRes := mapping.Resource
+
+		if len(allowedResources) != 0 {
+			validResource := false
+			for _, res := range allowedResources {
+				if res == k8sRes.Resource {
+					validResource = true
+				}
+			}
+			if validResource == false {
+				continue // Don't apply this resource.
+			}
+		}
 
 		restconfig := config
 		restconfig.GroupVersion = &schema.GroupVersion{
