@@ -145,7 +145,7 @@ pl_cc_test(
 
 pl_cc_test(
     name = "stirling_dt_bpf_test",
-    timeout = "moderate",
+    timeout = "long",
     srcs = ["stirling_dt_bpf_test.cc"],
     data = [
         "//src/stirling/obj_tools/testdata:dummy_cc_binary",
