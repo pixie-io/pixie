@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -279,6 +280,31 @@ func wrapMetadataRequest(vizierID uuid.UUID, req *cvmsgspb.MetadataRequest) ([]b
 	return b, nil
 }
 
+func compareResourceVersions(rv1 string, rv2 string) int {
+	// The rv may end in "_#", for containers which share the same rv as pods.
+	// This needs to be removed from the string that is about to be padded, and reappended after padding.
+	formatRV := func(rv string) string {
+		splitRV := strings.Split(rv, "_")
+		paddedRV := fmt.Sprintf("%020s", splitRV[0])
+		if len(splitRV) > 1 {
+			// Reappend the suffix, if any.
+			paddedRV = fmt.Sprintf("%s_%s", paddedRV, splitRV[1])
+		}
+		return paddedRV
+	}
+
+	fmtRV1 := formatRV(rv1)
+	fmtRV2 := formatRV(rv2)
+
+	if fmtRV1 == fmtRV2 {
+		return 0
+	}
+	if fmtRV1 < fmtRV2 {
+		return -1
+	}
+	return 1
+}
+
 func (m *MetadataReader) processVizierUpdate(msg *stan.Msg, vzState *VizierState) error {
 	if msg == nil {
 		return nil
@@ -289,15 +315,14 @@ func (m *MetadataReader) processVizierUpdate(msg *stan.Msg, vzState *VizierState
 		return err
 	}
 	update := updateMsg.Update
-
-	for update.PrevResourceVersion > vzState.resourceVersion {
+	for compareResourceVersions(update.PrevResourceVersion, vzState.resourceVersion) > 0 {
 		err = m.getMissingUpdates(vzState.resourceVersion, update.ResourceVersion, update.PrevResourceVersion, vzState)
 		if err != nil {
 			return err
 		}
 	}
 
-	if update.PrevResourceVersion == vzState.resourceVersion {
+	if compareResourceVersions(update.PrevResourceVersion, vzState.resourceVersion) == 0 {
 		err := m.applyMetadataUpdates(vzState, []*metadatapb.ResourceUpdate{update})
 		if err != nil {
 			return err
@@ -352,7 +377,8 @@ func (m *MetadataReader) getMissingUpdates(from string, to string, expectedRV st
 			if len(updates) == 0 {
 				return nil
 			}
-			if updates[0].PrevResourceVersion > vzState.resourceVersion {
+
+			if compareResourceVersions(updates[0].PrevResourceVersion, vzState.resourceVersion) > 0 {
 				// Received out of order update. Need to rerequest metadata.
 				log.WithField("prevRV", updates[0].PrevResourceVersion).WithField("RV", vzState.resourceVersion).Info("Received out of order update")
 				return nil
@@ -363,7 +389,7 @@ func (m *MetadataReader) getMissingUpdates(from string, to string, expectedRV st
 				return err
 			}
 
-			if vzState.resourceVersion >= expectedRV {
+			if compareResourceVersions(vzState.resourceVersion, expectedRV) >= 0 {
 				return nil
 			}
 		case <-time.After(20 * time.Minute):
@@ -376,7 +402,7 @@ func (m *MetadataReader) getMissingUpdates(from string, to string, expectedRV st
 
 func (m *MetadataReader) applyMetadataUpdates(vzState *VizierState, updates []*metadatapb.ResourceUpdate) error {
 	for i, u := range updates {
-		if u.ResourceVersion <= vzState.resourceVersion {
+		if compareResourceVersions(u.ResourceVersion, vzState.resourceVersion) <= 0 {
 			continue // Don't send the update.
 		}
 

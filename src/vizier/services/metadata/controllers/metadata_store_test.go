@@ -809,7 +809,7 @@ func TestKVMetadataStore_UpdatePod(t *testing.T) {
 
 	assert.Equal(t, expectedPb, pb)
 
-	resp, err = c.Get("/resourceVersionUpdate/1")
+	resp, err = c.Get("/paddedRVUpdate/00000000000000000001")
 	assert.Nil(t, err)
 	rvPb := &k8s_metadatapb.MetadataObject{}
 	proto.Unmarshal(resp, rvPb)
@@ -1220,7 +1220,7 @@ func TestKVMetadataStore_UpdateEndpoints(t *testing.T) {
 	proto.Unmarshal(resp, pb)
 	assert.NotEqual(t, int64(0), pb.Metadata.DeletionTimestampNS)
 
-	resp, err = c.Get("/resourceVersionUpdate/1")
+	resp, err = c.Get("/paddedRVUpdate/00000000000000000001")
 	assert.Nil(t, err)
 	rvPb := &k8s_metadatapb.MetadataObject{}
 	proto.Unmarshal(resp, rvPb)
@@ -1324,7 +1324,7 @@ func TestKVMetadataStore_UpdateService(t *testing.T) {
 
 	assert.Equal(t, expectedPb, pb)
 
-	resp, err = c.Get("/resourceVersionUpdate/1")
+	resp, err = c.Get("/paddedRVUpdate/00000000000000000001")
 	assert.Nil(t, err)
 	rvPb := &k8s_metadatapb.MetadataObject{}
 	proto.Unmarshal(resp, rvPb)
@@ -1549,7 +1549,7 @@ func TestKVMetadataStore_UpdateNamespace(t *testing.T) {
 
 	assert.Equal(t, expectedPb, pb)
 
-	resp, err = c.Get("/resourceVersionUpdate/1")
+	resp, err = c.Get("/paddedRVUpdate/00000000000000000001")
 	assert.Nil(t, err)
 	rvPb := &k8s_metadatapb.MetadataObject{}
 	proto.Unmarshal(resp, rvPb)
@@ -1642,7 +1642,7 @@ func TestKVMetadataStore_UpdateNode(t *testing.T) {
 
 	assert.Equal(t, expectedPb, pb)
 
-	resp, err = c.Get("/resourceVersionUpdate/1")
+	resp, err = c.Get("/paddedRVUpdate/00000000000000000001")
 	assert.Nil(t, err)
 	rvPb := &k8s_metadatapb.MetadataObject{}
 	proto.Unmarshal(resp, rvPb)
@@ -1780,7 +1780,7 @@ func TestKVMetadataStore_AddResourceVersion(t *testing.T) {
 	err = mds.AddResourceVersion("1234", obj)
 	assert.Nil(t, err)
 
-	rvUpdate, _ := c.Get("/resourceVersionUpdate/1234")
+	rvUpdate, _ := c.Get("/paddedRVUpdate/00000000000000001234")
 	assert.Equal(t, b, rvUpdate)
 }
 
@@ -1812,12 +1812,12 @@ func TestKVMetadataStore_GetMetadataUpdatesForHostname(t *testing.T) {
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
 	mockDs.
 		EXPECT().
-		GetWithRange("/resourceVersionUpdate", "/resourceVersionUpdate/6").
+		GetWithRange("/paddedRVUpdate/00000000000000000000", "/paddedRVUpdate/00000000000000000006").
 		Return(nil, nil, nil).
 		AnyTimes()
 	mockDs.
 		EXPECT().
-		GetWithRange("/resourceVersionUpdate", "/resourceVersionUpdate/5_1").
+		GetWithRange("/paddedRVUpdate/00000000000000000000", "/paddedRVUpdate/00000000000000000005_1").
 		Return(nil, nil, nil).
 		AnyTimes()
 	mockDs.
@@ -1877,9 +1877,9 @@ func TestKVMetadataStore_GetMetadataUpdatesForHostname(t *testing.T) {
 	pBytes, err := rv3.Marshal()
 	assert.Nil(t, err)
 
-	c.Set("/resourceVersionUpdate/1", string(ep1Bytes))
-	c.Set("/resourceVersionUpdate/3", string(sBytes))
-	c.Set("/resourceVersionUpdate/5", string(pBytes))
+	c.Set("/paddedRVUpdate/00000000000000000001", string(ep1Bytes))
+	c.Set("/paddedRVUpdate/00000000000000000003", string(sBytes))
+	c.Set("/paddedRVUpdate/00000000000000000005", string(pBytes))
 
 	updates, err := mds.GetMetadataUpdatesForHostname(nil, "", "6")
 	assert.Equal(t, 3, len(updates))

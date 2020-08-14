@@ -202,7 +202,17 @@ func getNamespaceKey(e *metadatapb.Namespace) string {
 }
 
 func getResourceVersionMapKey(rv string) string {
-	return path.Join("/", "resourceVersionUpdate", rv)
+	// The rv may end in "_#", for containers which share the same rv as pods.
+	// This needs to be removed from the string that is about to be padded, and reappended after padding.
+	splitRV := strings.Split(rv, "_")
+	// Pad the rv so that ranges work as expected.
+	paddedRV := fmt.Sprintf("%020s", splitRV[0])
+	if len(splitRV) > 1 {
+		// Reappend the suffix, if any.
+		paddedRV = fmt.Sprintf("%s_%s", paddedRV, splitRV[1])
+	}
+
+	return path.Join("/", "paddedRVUpdate", paddedRV)
 }
 
 func getSubscriberResourceVersionKey(sub string) string {
@@ -1281,12 +1291,15 @@ func (mds *KVMetadataStore) GetMetadataUpdatesForHostname(hnPair *HostnameIPPair
 	// Set prevRVs for updates.
 	allUpdates := make([]*metadatapb.ResourceUpdate, 0)
 	prevRV := ""
+	toKey := getResourceVersionMapKey(to)
+	fromKey := getResourceVersionMapKey(from)
 	for i, u := range updatePbs {
 		// Since a single resourceUpdate entry in etcd can be equivalent to multiple updates
 		// (for example, a resourcePodUpdate actually maps to a pod update + container updates), updatesPb
 		// may contain updates that aren't within the requested range. We need to
 		// filter those out here.
-		if u.ResourceVersion >= from && u.ResourceVersion < to {
+		rvKey := getResourceVersionMapKey(u.ResourceVersion)
+		if rvKey >= fromKey && rvKey < toKey {
 			upb := updatePbs[i]
 			upb.PrevResourceVersion = prevRV
 			prevRV = upb.ResourceVersion
