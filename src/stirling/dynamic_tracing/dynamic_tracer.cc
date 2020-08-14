@@ -30,16 +30,16 @@ StatusOr<std::vector<UProbeSpec>> GetUProbeSpec(std::string_view binary_path,
   UProbeSpec spec;
 
   spec.binary_path = binary_path;
-  spec.symbol = probe.trace_point().symbol();
-  DCHECK(probe.trace_point().type() == ir::shared::TracePoint::ENTRY ||
-         probe.trace_point().type() == ir::shared::TracePoint::RETURN);
-  spec.attach_type = probe.trace_point().type() == ir::shared::TracePoint::ENTRY
+  spec.symbol = probe.tracepoint().symbol();
+  DCHECK(probe.tracepoint().type() == ir::shared::Tracepoint::ENTRY ||
+         probe.tracepoint().type() == ir::shared::Tracepoint::RETURN);
+  spec.attach_type = probe.tracepoint().type() == ir::shared::Tracepoint::ENTRY
                          ? BPFProbeAttachType::kEntry
                          : BPFProbeAttachType::kReturn;
   spec.probe_fn = probe.name();
 
   if (language == ir::shared::Language::GOLANG &&
-      probe.trace_point().type() == ir::shared::TracePoint::RETURN) {
+      probe.tracepoint().type() == ir::shared::Tracepoint::RETURN) {
     return bpf_tools::TransformGolangReturnProbe(spec, elf_reader);
   }
   std::vector<UProbeSpec> specs = {spec};

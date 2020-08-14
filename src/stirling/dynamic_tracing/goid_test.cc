@@ -20,7 +20,7 @@ TEST(GOIDTest, CheckProbe) {
   EXPECT_THAT(GenGOIDProbe(), Partially(EqualsProto(
                                   R"proto(
                                         name: "probe_entry_runtime_casgstatus"
-                                        trace_point {
+                                        tracepoint {
                                           symbol: "runtime.casgstatus"
                                           type: ENTRY
                                         }

@@ -11,9 +11,9 @@ Status TracepointIR::ToProto(stirling::dynamic_tracing::ir::logical::TracepointS
                              const std::string& probe_name) {
   auto* probe_pb = pb->add_probes();
   probe_pb->set_name(probe_name);
-  auto* trace_point_pb = probe_pb->mutable_trace_point();
-  trace_point_pb->set_symbol(symbol_);
-  trace_point_pb->set_type(stirling::dynamic_tracing::ir::shared::TracePoint::LOGICAL);
+  auto* tracepoint_pb = probe_pb->mutable_tracepoint();
+  tracepoint_pb->set_symbol(symbol_);
+  tracepoint_pb->set_type(stirling::dynamic_tracing::ir::shared::Tracepoint::LOGICAL);
 
   for (const auto& arg : args_) {
     *probe_pb->add_args() = arg;
@@ -94,13 +94,13 @@ std::shared_ptr<TracepointIR> MutationsIR::StartProbe(
 }
 
 StatusOr<TracepointDeployment*> MutationsIR::CreateTracepointDeployment(
-    const std::string& trace_point_name, const md::UPID& upid, int64_t ttl_ns) {
+    const std::string& tracepoint_name, const md::UPID& upid, int64_t ttl_ns) {
   if (!upid_to_program_map_.empty() && upid_to_program_map_.contains(upid)) {
     return error::InvalidArgument(
         "Cannot UpsertTracepoint on the same binary. Use UpsertTracepoints instead.");
   }
   std::unique_ptr<TracepointDeployment> program =
-      std::make_unique<TracepointDeployment>(trace_point_name, ttl_ns);
+      std::make_unique<TracepointDeployment>(tracepoint_name, ttl_ns);
   TracepointDeployment* raw = program.get();
   upid_to_program_map_[upid] = std::move(program);
   return raw;
@@ -189,8 +189,8 @@ Status MutationsIR::ToProto(plannerpb::CompileMutationsResponse* pb) {
   //   binary_spec->set_path(binary);
   // }
 
-  for (const auto& trace_point_to_delete : TracepointsToDelete()) {
-    pb->add_mutations()->mutable_delete_tracepoint()->set_name(trace_point_to_delete);
+  for (const auto& tracepoint_to_delete : TracepointsToDelete()) {
+    pb->add_mutations()->mutable_delete_tracepoint()->set_name(tracepoint_to_delete);
   }
 
   return Status::OK();

@@ -21,7 +21,7 @@ tracepoints {
   program {
     language: GOLANG
     probes {
-      trace_point: {
+      tracepoint: {
         symbol: "main.MixedArgTypes"
         type: ENTRY
       }
@@ -60,7 +60,7 @@ deployment_spec {
 }
 language: GOLANG
 probes {
-  trace_point {
+  tracepoint {
     symbol: "main.MixedArgTypes"
     type: ENTRY
   }
@@ -177,7 +177,7 @@ tracepoints {
   program {
     language: GOLANG
     probes {
-      trace_point: {
+      tracepoint: {
         symbol: "main.MixedArgTypes"
         type: RETURN
       }
@@ -200,7 +200,7 @@ deployment_spec {
 }
 language: GOLANG
 probes {
-  trace_point {
+  tracepoint {
     symbol: "main.MixedArgTypes"
     type: RETURN
   }
@@ -277,7 +277,7 @@ tracepoints {
   program {
     language: GOLANG
     probes {
-      trace_point: {
+      tracepoint: {
         symbol: "main.PointerWrapperWrapperWrapperFunc"
         type: ENTRY
       }
@@ -300,7 +300,7 @@ deployment_spec {
 }
 language: GOLANG
 probes {
-  trace_point {
+  tracepoint {
     symbol: "main.PointerWrapperWrapperWrapperFunc"
     type: ENTRY
   }
@@ -420,7 +420,7 @@ tracepoints {
       fields: "arg1"
     }
     probes: {
-      trace_point: {
+      tracepoint: {
         symbol: "main.MixedArgTypes"
         type: ENTRY
       }
@@ -451,7 +451,7 @@ tracepoints {
       }
     }
     probes: {
-      trace_point: {
+      tracepoint: {
         symbol: "main.MixedArgTypes"
         type: RETURN
       }
@@ -572,7 +572,7 @@ outputs {
   struct_type: "out_table2_value_t"
 }
 probes {
-  trace_point {
+  tracepoint {
     symbol: "main.MixedArgTypes"
     type: ENTRY
   }
@@ -709,7 +709,7 @@ probes {
   }
 }
 probes {
-  trace_point {
+  tracepoint {
     symbol: "main.MixedArgTypes"
     type: RETURN
   }

@@ -129,7 +129,7 @@ tracepoints {
     }
     probes {
       name: "probe0"
-      trace_point {
+      tracepoint {
         symbol: "CanYouFindThis"
         type: LOGICAL
       }
@@ -202,7 +202,7 @@ TEST_F(DynamicTraceAPITest, MissingSymbol) {
   trace_program->mutable_tracepoints(0)
       ->mutable_program()
       ->mutable_probes(0)
-      ->mutable_trace_point()
+      ->mutable_tracepoint()
       ->set_symbol("GoodLuckFindingThis");
 
   stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
@@ -265,7 +265,7 @@ tracepoints {
     }
     probes {
       name: "probe0"
-      trace_point {
+      tracepoint {
         symbol: "main.SaySomethingTo"
         type: LOGICAL
       }
@@ -307,7 +307,7 @@ tracepoints {
     }
     probes {
       name: "probe0"
-      trace_point {
+      tracepoint {
         symbol: "main.SaySomethingTo"
         type: LOGICAL
       }
@@ -370,7 +370,7 @@ tracepoints {
     }
     probes {
       name: "probe0"
-      trace_point {
+      tracepoint {
         symbol: ""
         type: LOGICAL
       }
@@ -396,7 +396,7 @@ tracepoints {
   trace_program->mutable_tracepoints(0)
       ->mutable_program()
       ->mutable_probes(0)
-      ->mutable_trace_point()
+      ->mutable_tracepoint()
       ->set_symbol(params.function_symbol);
   DeployTracepoint(std::move(trace_program));
 
@@ -448,7 +448,7 @@ tracepoints {
     }
     probes {
       name: "probe0"
-      trace_point {
+      tracepoint {
         symbol: "CanYouFindThis"
         type: LOGICAL
       }
@@ -513,7 +513,7 @@ tracepoints {
     }
     probes {
       name: "probe0"
-      trace_point {
+      tracepoint {
         symbol: "ABCSum64"
         type: LOGICAL
       }
@@ -544,7 +544,7 @@ tracepoints {
   trace_program->mutable_tracepoints(0)
       ->mutable_program()
       ->mutable_probes(0)
-      ->mutable_trace_point()
+      ->mutable_tracepoint()
       ->set_symbol(param);
 
   DeployTracepoint(std::move(trace_program));

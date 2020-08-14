@@ -208,7 +208,7 @@ message Probe {
   string name = 1;
 
   // Where to attach this probe.
-  shared.TracePoint trace_point = 2;
+  shared.Tracepoint tracepoint = 2;
 
   // All variables defined inside this probe.
   repeated Variable vars = 3;

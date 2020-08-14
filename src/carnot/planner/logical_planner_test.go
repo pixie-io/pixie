@@ -435,7 +435,7 @@ tracepoints {
     }
     probes {
       name: "http_return"
-      trace_point {
+      tracepoint {
         symbol: "MyFunc"
       }
       args {

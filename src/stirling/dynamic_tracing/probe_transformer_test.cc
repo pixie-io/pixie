@@ -34,7 +34,7 @@ tracepoints {
     }
     probes {
       name: "probe0"
-      trace_point {
+      tracepoint {
         symbol: "main.MixedArgTypes"
         type: LOGICAL
       }
@@ -115,7 +115,7 @@ tracepoints {
     }
     probes {
       name: "probe_entry_runtime_casgstatus"
-      trace_point {
+      tracepoint {
         symbol: "runtime.casgstatus"
         type: ENTRY
       }
@@ -145,7 +145,7 @@ tracepoints {
     }
     probes {
       name: "probe0_entry"
-      trace_point {
+      tracepoint {
         symbol: "main.MixedArgTypes"
         type: ENTRY
       }
@@ -187,7 +187,7 @@ tracepoints {
     }
     probes {
       name: "probe0_return"
-      trace_point {
+      tracepoint {
         symbol: "main.MixedArgTypes"
         type: RETURN
       }

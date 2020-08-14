@@ -33,7 +33,7 @@ tracepoints {
     }
     probes: {
       name: "probe0"
-      trace_point: {
+      tracepoint: {
         symbol: "main.MixedArgTypes"
         type: LOGICAL
       }

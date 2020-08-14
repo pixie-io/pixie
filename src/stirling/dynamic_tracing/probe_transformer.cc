@@ -46,8 +46,8 @@ bool IsFunctionLatecySpecified(const ir::logical::Probe& probe) {
 void CreateEntryProbe(const ir::shared::Language& language, const ir::logical::Probe& input_probe,
                       ir::logical::TracepointSpec* out) {
   auto* entry_probe = out->add_probes();
-  entry_probe->mutable_trace_point()->CopyFrom(input_probe.trace_point());
-  entry_probe->mutable_trace_point()->set_type(ir::shared::TracePoint::ENTRY);
+  entry_probe->mutable_tracepoint()->CopyFrom(input_probe.tracepoint());
+  entry_probe->mutable_tracepoint()->set_type(ir::shared::Tracepoint::ENTRY);
   entry_probe->set_name(input_probe.name() + "_entry");
 
   // Access arguments.
@@ -98,8 +98,8 @@ Status CreateReturnProbe(const ir::shared::Language& language,
                          ir::logical::TracepointSpec* out) {
   auto* return_probe = out->add_probes();
   return_probe->set_name(input_probe.name() + "_return");
-  return_probe->mutable_trace_point()->CopyFrom(input_probe.trace_point());
-  return_probe->mutable_trace_point()->set_type(ir::shared::TracePoint::RETURN);
+  return_probe->mutable_tracepoint()->CopyFrom(input_probe.tracepoint());
+  return_probe->mutable_tracepoint()->set_type(ir::shared::Tracepoint::RETURN);
 
   if (input_probe.args_size() > 0 || IsFunctionLatecySpecified(input_probe)) {
     std::string map_name = input_probe.name() + "_argstash";
@@ -213,7 +213,7 @@ StatusOr<ir::logical::TracepointDeployment> TransformLogicalProgram(
 
     for (const auto& p : input_tracepoint_spec.probes()) {
       // TODO(yzhao): Turn this into a DCHECK() with the same condition, and remove else branch.
-      if (p.trace_point().type() == ir::shared::TracePoint::LOGICAL) {
+      if (p.tracepoint().type() == ir::shared::Tracepoint::LOGICAL) {
         PL_RETURN_IF_ERROR(TransformLogicalProbe(input_tracepoint_spec.language(), p, outputs,
                                                  out_tracepoint_spec));
       } else {

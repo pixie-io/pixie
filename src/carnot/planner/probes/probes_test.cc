@@ -98,7 +98,7 @@ tracepoints {
     }
     probes {
       name: "http_return"
-      trace_point {
+      tracepoint {
         symbol: "MyFunc"
       }
       args {
@@ -198,7 +198,7 @@ tracepoints {
     }
     probes {
       name: "myfunc0"
-      trace_point {
+      tracepoint {
         symbol: "MyFunc"
       }
       args {
@@ -221,7 +221,7 @@ tracepoints {
     }
     probes {
       name: "myfunc1"
-      trace_point {
+      tracepoint {
         symbol: "HTTPFunc"
       }
       args {
@@ -272,7 +272,7 @@ tracepoints{
     }
     probes {
       name: "http_body"
-      trace_point {
+      tracepoint {
         symbol: "HTTPFunc"
       }
       args {

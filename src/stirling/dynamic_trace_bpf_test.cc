@@ -126,7 +126,7 @@ tracepoints {
     }
     probes: {
       name: "probe_WriteDataPadded"
-      trace_point: {
+      tracepoint: {
         symbol: "golang.org/x/net/http2.(*Framer).WriteDataPadded"
         type: LOGICAL
       }
@@ -160,7 +160,7 @@ tracepoints {
     }
     probes: {
       name: "probe_StreamEnded"
-      trace_point: {
+      tracepoint: {
         symbol: "golang.org/x/net/http2.readFrameHeader"
         type: LOGICAL
       }
@@ -280,7 +280,7 @@ tracepoints {
     }
     probes: {
       name: "probe_foo_bar"
-      trace_point: {
+      tracepoint: {
         symbol: "pl::testing::Foo::Bar"
         type: LOGICAL
       }

@@ -71,7 +71,7 @@ class Dwarvifier {
 
  private:
   Status ProcessProbe(const ir::logical::Probe& input_probe, ir::physical::Program* output_program);
-  Status ProcessTracepoint(const ir::shared::TracePoint& trace_point,
+  Status ProcessTracepoint(const ir::shared::Tracepoint& tracepoint,
                            ir::physical::Probe* output_probe);
   Status AddSpecialVariables(ir::physical::Probe* output_probe);
   Status AddStandardVariables(ir::physical::Probe* output_probe);
@@ -308,9 +308,9 @@ ir::physical::ScalarVariable* Dwarvifier::AddVariable(ir::physical::Probe* probe
 Status Dwarvifier::GenerateProbe(const ir::logical::Probe input_probe,
                                  ir::physical::Program* output_program) {
   PL_ASSIGN_OR_RETURN(args_map_,
-                      dwarf_reader_->GetFunctionArgInfo(input_probe.trace_point().symbol()));
+                      dwarf_reader_->GetFunctionArgInfo(input_probe.tracepoint().symbol()));
   PL_ASSIGN_OR_RETURN(retval_info_,
-                      dwarf_reader_->GetFunctionRetValInfo(input_probe.trace_point().symbol()));
+                      dwarf_reader_->GetFunctionRetValInfo(input_probe.tracepoint().symbol()));
 
   scalar_var_types_.clear();
 
@@ -334,11 +334,11 @@ Status Dwarvifier::Setup(const ir::shared::DeploymentSpec& deployment_spec,
   return Status::OK();
 }
 
-Status Dwarvifier::ProcessTracepoint(const ir::shared::TracePoint& trace_point,
+Status Dwarvifier::ProcessTracepoint(const ir::shared::Tracepoint& tracepoint,
                                      ir::physical::Probe* output_probe) {
-  auto* probe_trace_point = output_probe->mutable_trace_point();
-  probe_trace_point->CopyFrom(trace_point);
-  probe_trace_point->set_type(trace_point.type());
+  auto* probe_tracepoint = output_probe->mutable_tracepoint();
+  probe_tracepoint->CopyFrom(tracepoint);
+  probe_tracepoint->set_type(tracepoint.type());
 
   return Status::OK();
 }
@@ -358,7 +358,7 @@ Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
 
   p->set_name(input_probe.name());
 
-  PL_RETURN_IF_ERROR(ProcessTracepoint(input_probe.trace_point(), p));
+  PL_RETURN_IF_ERROR(ProcessTracepoint(input_probe.tracepoint(), p));
   PL_RETURN_IF_ERROR(AddSpecialVariables(p));
 
   for (auto& constant : input_probe.consts()) {
@@ -403,7 +403,7 @@ Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
 Status Dwarvifier::AddSpecialVariables(ir::physical::Probe* output_probe) {
   PL_RETURN_IF_ERROR(AddStandardVariables(output_probe));
 
-  if (output_probe->trace_point().type() == ir::shared::TracePoint::RETURN) {
+  if (output_probe->tracepoint().type() == ir::shared::Tracepoint::RETURN) {
     PL_RETURN_IF_ERROR(AddRetProbeVariables(output_probe));
   }
 
@@ -598,7 +598,7 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
       if (retval_info_.type == VarType::kVoid) {
         return error::Internal(
             "Attempting to process return variable for function with void return. Symbol=$0",
-            output_probe->trace_point().symbol());
+            output_probe->tracepoint().symbol());
       }
 
       DCHECK(retval_info_.type == VarType::kStruct || retval_info_.type == VarType::kBaseType);

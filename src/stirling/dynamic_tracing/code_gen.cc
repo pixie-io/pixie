@@ -35,7 +35,7 @@ using ::pl::stirling::dynamic_tracing::ir::shared::Condition;
 using ::pl::stirling::dynamic_tracing::ir::shared::Map;
 using ::pl::stirling::dynamic_tracing::ir::shared::Printk;
 using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
-using ::pl::stirling::dynamic_tracing::ir::shared::TracePoint;
+using ::pl::stirling::dynamic_tracing::ir::shared::Tracepoint;
 using ::pl::stirling::dynamic_tracing::ir::shared::VariableType;
 using ::pl::stirling::elf_tools::ElfReader;
 

@@ -71,7 +71,7 @@ enum ScalarType {
 }
 
 // Describes where to attach a probe.
-message TracePoint {
+message Tracepoint {
   message Function {
     // The name of the function. The format varies between languages.
     // In C++, it includes the fully qualified name of the function, including namespaces.

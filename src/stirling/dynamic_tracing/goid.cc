@@ -21,13 +21,13 @@ ir::shared::Map GenGOIDMap() {
 ir::logical::Probe GenGOIDProbe() {
   ir::logical::Probe probe;
 
-  // probe.trace_point.binary is not set. It's left for caller to attach to the same binary,
+  // probe.tracepoint.binary is not set. It's left for caller to attach to the same binary,
   // whose other probes need to access goid.
 
   probe.set_name("probe_entry_runtime_casgstatus");
 
-  probe.mutable_trace_point()->set_symbol("runtime.casgstatus");
-  probe.mutable_trace_point()->set_type(ir::shared::TracePoint::ENTRY);
+  probe.mutable_tracepoint()->set_symbol("runtime.casgstatus");
+  probe.mutable_tracepoint()->set_type(ir::shared::Tracepoint::ENTRY);
 
   auto* constant = probe.add_consts();
   constant->set_name("kGRunningState");

@@ -212,7 +212,7 @@ TEST(GenProgramTest, SpecsAndCode) {
                                        }
                                        probes {
                                          name: "probe_entry"
-                                         trace_point {
+                                         tracepoint {
                                            symbol: "target_symbol"
                                            type: ENTRY
                                          }
@@ -253,7 +253,7 @@ TEST(GenProgramTest, SpecsAndCode) {
                                        }
                                        probes {
                                          name: "probe_return"
-                                         trace_point {
+                                         tracepoint {
                                            symbol: "target_symbol"
                                            type: RETURN
                                          }
