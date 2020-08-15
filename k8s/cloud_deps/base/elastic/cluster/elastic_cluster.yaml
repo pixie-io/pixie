@@ -6,10 +6,36 @@ metadata:
 spec:
   version: 7.6.0
   nodeSets:
-  - name: default
-    count: 3
+  - name: master
+    count: 2
     config:
       node.master: true
+      node.data: false
+      node.ingest: false
+      node.store.allow_mmap: false
+    podTemplate:
+      spec:
+        initContainers:
+        - name: install-plugins
+          command:
+          - sh
+          - -c
+          - |
+              bin/elasticsearch-plugin install --batch repository-gcs
+    volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data
+      spec:
+        storageClassName: ssd
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 0Gi # this is replaced by version specific patches
+  - name: data
+    count: 4
+    config:
+      node.master: false
       node.data: true
       node.ingest: true
       node.store.allow_mmap: false

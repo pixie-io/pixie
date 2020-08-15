@@ -1,4 +1,10 @@
 ---
+# Master node.
 - op: replace
   path: /spec/nodeSets/0/volumeClaimTemplates/0/spec/resources/requests/storage
-  value: 500Gi
+  value: 50Gi
+
+# Data node.
+- op: replace
+  path: /spec/nodeSets/1/volumeClaimTemplates/0/spec/resources/requests/storage
+  value: 100Gi
