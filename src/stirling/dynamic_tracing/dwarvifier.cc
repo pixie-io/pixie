@@ -15,7 +15,8 @@ namespace stirling {
 namespace dynamic_tracing {
 
 using dwarf_tools::ArgInfo;
-using dwarf_tools::VarInfo;
+using dwarf_tools::LocationType;
+using dwarf_tools::StructMemberInfo;
 using dwarf_tools::VarType;
 
 namespace {
@@ -27,13 +28,13 @@ constexpr char kTGIDVarName[] = "tgid_";
 constexpr char kTGIDPIDVarName[] = "tgid_pid_";
 constexpr char kTGIDStartTimeVarName[] = "tgid_start_time_";
 constexpr char kGOIDVarName[] = "goid_";
+// WARNING: Do not change the name of kKTimeVarName.
+//          "time_" is a name implicitly used by the query engine as the time column.
 constexpr char kKTimeVarName[] = "time_";
 constexpr char kStartKTimeNSVarName[] = "start_ktime_ns";
 constexpr char kRCVarName[] = "rc_";
 constexpr char kRCPtrVarName[] = "rc__";
-
-// WARNING: Do not change the name of kKTimeVarName above, as it is a name implicitly used by the
-//          query engine as the time column.
+constexpr char kParmPtrVarName[] = "parm__";
 
 StatusOr<std::string> BPFHelperVariableName(ir::shared::BPFHelper builtin) {
   static const absl::flat_hash_map<ir::shared::BPFHelper, std::string_view> kBuiltinVarNames = {
@@ -73,9 +74,10 @@ class Dwarvifier {
   Status ProcessProbe(const ir::logical::Probe& input_probe, ir::physical::Program* output_program);
   Status ProcessTracepoint(const ir::shared::Tracepoint& tracepoint,
                            ir::physical::Probe* output_probe);
-  Status AddSpecialVariables(ir::physical::Probe* output_probe);
-  Status AddStandardVariables(ir::physical::Probe* output_probe);
-  Status AddRetProbeVariables(ir::physical::Probe* output_probe);
+  void AddSpecialVariables(ir::physical::Probe* output_probe);
+  void AddStandardVariables(ir::physical::Probe* output_probe);
+  void AddEntryProbeVariables(ir::physical::Probe* output_probe);
+  void AddRetProbeVariables(ir::physical::Probe* output_probe);
   Status ProcessConstants(const ir::logical::Constant& constant, ir::physical::Probe* output_probe);
 
   // The input components describes a sequence of field of nesting structures. The first component
@@ -285,10 +287,12 @@ StatusOr<ArgInfo> GetArgInfo(const std::map<std::string, ArgInfo>& args_map,
   }
   ArgInfo retval = args_map_iter->second;
 
-  // The offset of an argument of the stack starts at 8.
-  // This is because the last thing on the stack on a function call is the return address.
-  constexpr int32_t kSPOffset = 8;
-  retval.offset += kSPOffset;
+  if (retval.location.type == LocationType::kStack) {
+    // The offset of an argument of the stack starts at 8.
+    // This is because the last thing on the stack on a function call is the return address.
+    constexpr int32_t kSPOffset = 8;
+    retval.location.offset += kSPOffset;
+  }
 
   return retval;
 }
@@ -359,7 +363,7 @@ Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
   p->set_name(input_probe.name());
 
   PL_RETURN_IF_ERROR(ProcessTracepoint(input_probe.tracepoint(), p));
-  PL_RETURN_IF_ERROR(AddSpecialVariables(p));
+  AddSpecialVariables(p);
 
   for (auto& constant : input_probe.consts()) {
     PL_RETURN_IF_ERROR(ProcessConstants(constant, p));
@@ -400,20 +404,22 @@ Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
   return Status::OK();
 }
 
-Status Dwarvifier::AddSpecialVariables(ir::physical::Probe* output_probe) {
-  PL_RETURN_IF_ERROR(AddStandardVariables(output_probe));
+void Dwarvifier::AddSpecialVariables(ir::physical::Probe* output_probe) {
+  AddStandardVariables(output_probe);
 
-  if (output_probe->tracepoint().type() == ir::shared::Tracepoint::RETURN) {
-    PL_RETURN_IF_ERROR(AddRetProbeVariables(output_probe));
+  if (output_probe->tracepoint().type() == ir::shared::Tracepoint::ENTRY) {
+    AddEntryProbeVariables(output_probe);
   }
 
-  return Status::OK();
+  if (output_probe->tracepoint().type() == ir::shared::Tracepoint::RETURN) {
+    AddRetProbeVariables(output_probe);
+  }
 }
 
 // TODO(oazizi): Could selectively generate some of these variables, when they are not required.
 //               For example, if latency is not required, then there is no need for ktime.
 //               For now, include them all for simplicity.
-Status Dwarvifier::AddStandardVariables(ir::physical::Probe* output_probe) {
+void Dwarvifier::AddStandardVariables(ir::physical::Probe* output_probe) {
   // Add SP variable.
   auto* sp_var = AddVariable(output_probe, kSPVarName, ir::shared::VOID_POINTER);
   sp_var->set_reg(ir::physical::Register::SP);
@@ -440,11 +446,16 @@ Status Dwarvifier::AddStandardVariables(ir::physical::Probe* output_probe) {
     auto* goid_var = AddVariable(output_probe, kGOIDVarName, ir::shared::ScalarType::INT64);
     goid_var->set_builtin(ir::shared::BPFHelper::GOID);
   }
-
-  return Status::OK();
 }
 
-Status Dwarvifier::AddRetProbeVariables(ir::physical::Probe* output_probe) {
+void Dwarvifier::AddEntryProbeVariables(ir::physical::Probe* output_probe) {
+  if ((language_ == ir::shared::C || language_ == ir::shared::CPP)) {
+    auto* parm_ptr_var = AddVariable(output_probe, kParmPtrVarName, ir::shared::VOID_POINTER);
+    parm_ptr_var->set_reg(ir::physical::Register::PARM_PTR);
+  }
+}
+
+void Dwarvifier::AddRetProbeVariables(ir::physical::Probe* output_probe) {
   // Add return value variable for convenience.
   if ((language_ == ir::shared::C || language_ == ir::shared::CPP)) {
     auto* rc_var = AddVariable(output_probe, kRCVarName, ir::shared::VOID_POINTER);
@@ -453,8 +464,6 @@ Status Dwarvifier::AddRetProbeVariables(ir::physical::Probe* output_probe) {
     auto* rc_ptr_var = AddVariable(output_probe, kRCPtrVarName, ir::shared::VOID_POINTER);
     rc_ptr_var->set_reg(ir::physical::Register::RC_PTR);
   }
-
-  return Status::OK();
 }
 
 Status Dwarvifier::ProcessConstants(const ir::logical::Constant& constant,
@@ -474,7 +483,7 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
                                   ir::physical::Probe* output_probe) {
   VarType type = arg_info.type;
   std::string type_name = arg_info.type_name;
-  int offset = arg_info.offset;
+  int offset = arg_info.location.offset;
   std::string base = base_var;
   std::string name = var_name;
 
@@ -498,7 +507,7 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
     }
 
     std::string_view field_name = *iter;
-    PL_ASSIGN_OR_RETURN(VarInfo member_info,
+    PL_ASSIGN_OR_RETURN(StructMemberInfo member_info,
                         dwarf_reader_->GetStructMemberInfo(type_name, field_name));
     offset += member_info.offset;
     type_name = std::move(member_info.type_name);
@@ -550,7 +559,32 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
 
   PL_ASSIGN_OR_RETURN(ArgInfo arg_info, GetArgInfo(args_map_, components.front()));
 
-  return ProcessVarExpr(arg.id(), arg_info, kSPVarName, components, output_probe);
+  switch (language_) {
+    case ir::shared::GOLANG:
+      return ProcessVarExpr(arg.id(), arg_info, kSPVarName, components, output_probe);
+    case ir::shared::CPP:
+    case ir::shared::C: {
+      std::string base_var;
+
+      switch (arg_info.location.type) {
+        case LocationType::kStack:
+          base_var = kSPVarName;
+          break;
+        case LocationType::kRegister:
+          base_var = kParmPtrVarName;
+          break;
+        default:
+          return error::Internal("Unsupported argument LocationType $0",
+                                 magic_enum::enum_name(arg_info.location.type));
+      }
+
+      return ProcessVarExpr(arg.id(), arg_info, base_var, components, output_probe);
+    }
+
+    default:
+      return error::Internal("Argument expressions not yet supported for language=$0",
+                             magic_enum::enum_name(language_));
+  }
 }
 
 Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
@@ -625,12 +659,13 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
       ArgInfo retval;
       retval.type_name = retval_info_.type_name;
       retval.type = retval_info_.type;
-      retval.offset = 0;
+      retval.location.type = LocationType::kStack;
+      retval.location.offset = 0;
 
       return ProcessVarExpr(ret_val.id(), retval, base_var, components, output_probe);
     }
     default:
-      return error::Internal("Return expressions not yet supported for lanuage=$0",
+      return error::Internal("Return expressions not yet supported for language=$0",
                              magic_enum::enum_name(language_));
   }
 }

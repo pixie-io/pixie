@@ -31,10 +31,16 @@ enum class VarType {
   kSubroutine,
 };
 
-struct VarInfo {
-  // Offset to parent context:
-  // - For struct members: offset within the struct.
-  // - For function arguments: offset from the stack pointer.
+// Identifies where an argument is located when tracing a function entry:
+// in memory (kStack), or in registers (kRegister).
+enum class LocationType {
+  kUnknown,
+  kStack,
+  kRegister,
+};
+
+struct StructMemberInfo {
+  // Offset within the struct.
   uint64_t offset = std::numeric_limits<uint64_t>::max();
   VarType type = VarType::kUnspecified;
   std::string type_name = "";
@@ -45,12 +51,26 @@ struct VarInfo {
   }
 };
 
-struct ArgInfo : public VarInfo {
+struct ArgLocation {
+  LocationType type = LocationType::kUnknown;
+  int64_t offset = std::numeric_limits<uint64_t>::max();
+
+  std::string ToString() const {
+    return absl::Substitute("type=$0 offset=$1", magic_enum::enum_name(type), offset);
+  }
+};
+
+struct ArgInfo {
+  VarType type = VarType::kUnspecified;
+  std::string type_name = "";
+  ArgLocation location;
+
   // If true, this argument is really a return value.
   bool retarg = false;
 
   std::string ToString() const {
-    return absl::Substitute("$0 retarg=$1 ", VarInfo::ToString(), retarg);
+    return absl::Substitute("type=$0 type_name=$1 location=[$2] retarg=$3",
+                            magic_enum::enum_name(type), type_name, location.ToString(), retarg);
   }
 };
 
@@ -65,29 +85,16 @@ struct RetValInfo {
   }
 };
 
-// Identifies where an argument is located when tracing a function entry:
-// in memory (kStack), or in registers (kRegister).
-enum class LocationType {
-  kUnknown,
-  kStack,
-  kRegister,
-};
-
-struct ArgLocation {
-  LocationType type = LocationType::kUnknown;
-  int64_t offset = 0;
-
-  std::string ToString() const {
-    return absl::Substitute("type=$0 offset=$1", magic_enum::enum_name(type), offset);
-  }
-};
-
-inline bool operator==(const VarInfo& a, const VarInfo& b) {
+inline bool operator==(const StructMemberInfo& a, const StructMemberInfo& b) {
   return a.offset == b.offset && a.type == b.type && a.type_name == b.type_name;
 }
 
+inline bool operator==(const ArgLocation& a, const ArgLocation& b) {
+  return a.type == b.type && a.offset == b.offset;
+}
+
 inline bool operator==(const ArgInfo& a, const ArgInfo& b) {
-  return a.offset == b.offset && a.type == b.type && a.type_name == b.type_name &&
+  return a.location == b.location && a.type == b.type && a.type_name == b.type_name &&
          a.retarg == b.retarg;
 }
 
@@ -95,12 +102,13 @@ inline bool operator==(const RetValInfo& a, const RetValInfo& b) {
   return a.type == b.type && a.type_name == b.type_name && a.byte_size == b.byte_size;
 }
 
-inline bool operator==(const ArgLocation& a, const ArgLocation& b) {
-  return a.type == b.type && a.offset == b.offset;
+inline std::ostream& operator<<(std::ostream& os, const StructMemberInfo& var_info) {
+  os << var_info.ToString();
+  return os;
 }
 
-inline std::ostream& operator<<(std::ostream& os, const VarInfo& var_info) {
-  os << var_info.ToString();
+inline std::ostream& operator<<(std::ostream& os, const ArgLocation& x) {
+  os << x.ToString();
   return os;
 }
 
@@ -111,11 +119,6 @@ inline std::ostream& operator<<(std::ostream& os, const ArgInfo& arg_info) {
 
 inline std::ostream& operator<<(std::ostream& os, const RetValInfo& ret_val_info) {
   os << ret_val_info.ToString();
-  return os;
-}
-
-inline std::ostream& operator<<(std::ostream& os, const ArgLocation& x) {
-  os << x.ToString();
   return os;
 }
 
@@ -158,7 +161,8 @@ class DwarfReader {
    * @param member_name Name of member within the struct.
    * @return Error if member not found; otherwise a VarInfo struct.
    */
-  StatusOr<VarInfo> GetStructMemberInfo(std::string_view struct_name, std::string_view member_name);
+  StatusOr<StructMemberInfo> GetStructMemberInfo(std::string_view struct_name,
+                                                 std::string_view member_name);
 
   /**
    * Returns the offset of a member within a struct.
@@ -168,7 +172,8 @@ class DwarfReader {
    */
   StatusOr<uint64_t> GetStructMemberOffset(std::string_view struct_name,
                                            std::string_view member_name) {
-    PL_ASSIGN_OR_RETURN(VarInfo member_info, GetStructMemberInfo(struct_name, member_name));
+    PL_ASSIGN_OR_RETURN(StructMemberInfo member_info,
+                        GetStructMemberInfo(struct_name, member_name));
     return member_info.offset;
   }
 
@@ -212,16 +217,14 @@ class DwarfReader {
 
   bool IsValid() { return dwarf_context_->getNumCompileUnits() != 0; }
 
-  const std::optional<llvm::dwarf::SourceLanguage>& source_language() const {
-    return source_language_;
-  }
+  const llvm::dwarf::SourceLanguage& source_language() const { return source_language_; }
 
  private:
   DwarfReader(std::unique_ptr<llvm::MemoryBuffer> buffer,
               std::unique_ptr<llvm::DWARFContext> dwarf_context);
 
   // Detects the source language of the dwarf content being read.
-  void DetectSourceLanguage();
+  Status DetectSourceLanguage();
 
   // Builds an index for certain commonly used DIE types (e.g. structs and functions).
   // When making multiple DwarfReader calls, this speeds up the process at the cost of some memory.
@@ -232,7 +235,7 @@ class DwarfReader {
                                 std::vector<llvm::DWARFDie>* dies_out);
 
   // Records the source language of the DWARF information.
-  std::optional<llvm::dwarf::SourceLanguage> source_language_;
+  llvm::dwarf::SourceLanguage source_language_;
 
   std::unique_ptr<llvm::MemoryBuffer> memory_buffer_;
   std::unique_ptr<llvm::DWARFContext> dwarf_context_;

@@ -409,12 +409,12 @@ tracepoints {
   EXPECT_EQ(rb[name_field_idx]->Get<types::StringValue>(0), params.value);
 }
 
-INSTANTIATE_TEST_SUITE_P(DynamicTraceByteArrayTests, DynamicTraceGolangTestWithParam,
+INSTANTIATE_TEST_SUITE_P(GolangByteArrayTests, DynamicTraceGolangTestWithParam,
                          ::testing::Values(TestParam{"main.BytesToHex", "Bytes"},
                                            TestParam{"main.Uint8ArrayToHex", "Uint8"}));
 
 //-----------------------------------------------------------------------------
-// Dynamic Trace Golang tests
+// Dynamic Trace C++ tests
 //-----------------------------------------------------------------------------
 
 class DynamicTraceCppTest : public StirlingDynamicTraceBPFTest {
@@ -480,13 +480,13 @@ tracepoints {
   DeployTracepoint(std::move(trace_program));
 
   // Get field indexes for the two columns we want.
-  //  ASSERT_HAS_VALUE_AND_ASSIGN(int a_field_idx, FindFieldIndex(info_class_.schema(), "a"));
-  //  ASSERT_HAS_VALUE_AND_ASSIGN(int b_field_idx, FindFieldIndex(info_class_.schema(), "b"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int a_field_idx, FindFieldIndex(info_class_.schema(), "a"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int b_field_idx, FindFieldIndex(info_class_.schema(), "b"));
   ASSERT_HAS_VALUE_AND_ASSIGN(int sum_field_idx, FindFieldIndex(info_class_.schema(), "sum"));
 
   types::ColumnWrapperRecordBatch& rb = *record_batches_[0];
-  //  EXPECT_EQ(rb[a_field_idx]->Get<types::Int64Value>(0).val, 1);
-  //  EXPECT_EQ(rb[b_field_idx]->Get<types::Int64Value>(0).val, 4);
+  EXPECT_EQ(rb[a_field_idx]->Get<types::Int64Value>(0).val, 3);
+  EXPECT_EQ(rb[b_field_idx]->Get<types::Int64Value>(0).val, 4);
   EXPECT_EQ(rb[sum_field_idx]->Get<types::Int64Value>(0).val, 7);
 }
 
@@ -514,7 +514,7 @@ tracepoints {
     probes {
       name: "probe0"
       tracepoint {
-        symbol: "ABCSum64"
+        symbol: ""
         type: LOGICAL
       }
       args {
@@ -562,6 +562,122 @@ tracepoints {
 
 INSTANTIATE_TEST_SUITE_P(CppStructTracingTests, DynamicTraceCppTestWithParam,
                          ::testing::Values("ABCSum32", "ABCSum64"));
+
+TEST_F(DynamicTraceCppTest, ArgsOnStackAndRegisters) {
+  StartTraceTarget();
+
+  constexpr std::string_view kProgram = R"(
+deployment_spec {
+  path: "$0"
+}
+tracepoints {
+  program {
+    language: CPP
+    outputs {
+      name: "output_table"
+      fields: "x_a"
+      fields: "x_c"
+      fields: "y_a"
+      fields: "y_c"
+      fields: "z_a"
+      fields: "z_c"
+      fields: "w_a"
+      fields: "w_c"
+      fields: "sum_a"
+      fields: "sum_c"
+    }
+    probes {
+      name: "probe0"
+      tracepoint {
+        symbol: "ABCSumMixed"
+        type: LOGICAL
+      }
+      args {
+        id: "arg00"
+        expr: "x.a"
+      }
+      args {
+        id: "arg01"
+        expr: "x.c"
+      }
+      args {
+        id: "arg10"
+        expr: "y.a"
+      }
+      args {
+        id: "arg11"
+        expr: "y.c"
+      }
+      args {
+        id: "arg20"
+        expr: "z_a"
+      }
+      args {
+        id: "arg21"
+        expr: "z_c"
+      }
+      args {
+        id: "arg30"
+        expr: "w.a"
+      }
+      args {
+        id: "arg31"
+        expr: "w.c"
+      }
+      ret_vals {
+        id: "retval00"
+        expr: "$$0.a"
+      }
+      ret_vals {
+        id: "retval01"
+        expr: "$$0.c"
+      }
+      output_actions {
+        output_name: "output_table"
+        variable_name: "arg00"
+        variable_name: "arg01"
+        variable_name: "arg10"
+        variable_name: "arg11"
+        variable_name: "arg20"
+        variable_name: "arg21"
+        variable_name: "arg30"
+        variable_name: "arg31"
+        variable_name: "retval00"
+        variable_name: "retval01"
+      }
+    }
+  }
+}
+)";
+
+  auto trace_program = Prepare(kProgram, kBinaryPath);
+
+  DeployTracepoint(std::move(trace_program));
+
+  // Get field indexes for the two columns we want.
+  ASSERT_HAS_VALUE_AND_ASSIGN(int x_a_field_idx, FindFieldIndex(info_class_.schema(), "x_a"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int x_c_field_idx, FindFieldIndex(info_class_.schema(), "x_c"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int y_a_field_idx, FindFieldIndex(info_class_.schema(), "y_a"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int y_c_field_idx, FindFieldIndex(info_class_.schema(), "y_c"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int z_a_field_idx, FindFieldIndex(info_class_.schema(), "z_a"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int z_c_field_idx, FindFieldIndex(info_class_.schema(), "z_c"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int w_a_field_idx, FindFieldIndex(info_class_.schema(), "w_a"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int w_c_field_idx, FindFieldIndex(info_class_.schema(), "w_c"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int sum_a_field_idx, FindFieldIndex(info_class_.schema(), "sum_a"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int sum_c_field_idx, FindFieldIndex(info_class_.schema(), "sum_c"));
+
+  types::ColumnWrapperRecordBatch& rb = *record_batches_[0];
+  EXPECT_EQ(rb[x_a_field_idx]->Get<types::Int64Value>(0).val, 1);
+  EXPECT_EQ(rb[x_c_field_idx]->Get<types::Int64Value>(0).val, 3);
+  EXPECT_EQ(rb[y_a_field_idx]->Get<types::Int64Value>(0).val, 4);
+  EXPECT_EQ(rb[y_c_field_idx]->Get<types::Int64Value>(0).val, 6);
+  EXPECT_EQ(rb[z_a_field_idx]->Get<types::Int64Value>(0).val, 7);
+  EXPECT_EQ(rb[z_c_field_idx]->Get<types::Int64Value>(0).val, 9);
+  EXPECT_EQ(rb[w_a_field_idx]->Get<types::Int64Value>(0).val, 10);
+  EXPECT_EQ(rb[w_c_field_idx]->Get<types::Int64Value>(0).val, 12);
+  EXPECT_EQ(rb[sum_a_field_idx]->Get<types::Int64Value>(0).val, 22);
+  EXPECT_EQ(rb[sum_c_field_idx]->Get<types::Int64Value>(0).val, 30);
+}
 
 }  // namespace stirling
 }  // namespace pl

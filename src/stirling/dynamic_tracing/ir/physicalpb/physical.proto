@@ -32,6 +32,10 @@ enum Register {
   PARM4 = 203;
   PARM5 = 204;
   PARM6 = 205;
+
+  // Places PARM1-PARM6 onto the BPF stack as a contiguous piece of memory,
+  // and returns the pointer to that memory.
+  PARM_PTR = 210;
 }
 
 // Describes a C struct. This is directly converted to a C struct in BCC code.

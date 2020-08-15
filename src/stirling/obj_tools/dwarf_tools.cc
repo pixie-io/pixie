@@ -120,9 +120,9 @@ StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(std::string_view obj_
   auto dwarf_reader = std::unique_ptr<DwarfReader>(
       new DwarfReader(std::move(buffer), DWARFContext::create(*obj_file)));
 
+  PL_RETURN_IF_ERROR(dwarf_reader->DetectSourceLanguage());
+
   if (index) {
-    // Source language determines whether or not to index overloaded functions.
-    dwarf_reader->DetectSourceLanguage();
     dwarf_reader->IndexDIEs();
   }
 
@@ -156,28 +156,6 @@ bool IsMatchingDIE(std::string_view name, std::optional<llvm::dwarf::Tag> tag,
   // const char* die_linkage_name = die.getName(llvm::DINameKind::LinkageName);
 
   return (die_short_name && name == die_short_name);
-}
-
-StatusOr<uint64_t> GetUnsignedAttribute(const llvm::DWARFDie& die, llvm::dwarf::Attribute attr) {
-  PL_ASSIGN_OR_RETURN(
-      const DWARFFormValue& type_attr,
-      AdaptLLVMOptional(die.find(attr), absl::Substitute("Could not find attribute '$0'",
-                                                         magic_enum::enum_name(attr))));
-  auto attr_opt = type_attr.getAsUnsignedConstant();
-  if (attr_opt.hasValue()) {
-    return attr_opt.getValue();
-  }
-  return error::InvalidArgument("Attribute '$0' does not appear to be unsigned",
-                                magic_enum::enum_name(attr));
-}
-
-StatusOr<llvm::dwarf::SourceLanguage> GetSourceLanguage(const DWARFDie& compile_unit_die) {
-  if (compile_unit_die.getTag() != llvm::dwarf::DW_TAG_compile_unit) {
-    return error::InvalidArgument("Input tag is not DW_TAG_compile_unit");
-  }
-  PL_ASSIGN_OR_RETURN(uint64_t lang_enum,
-                      GetUnsignedAttribute(compile_unit_die, llvm::dwarf::DW_AT_language));
-  return static_cast<llvm::dwarf::SourceLanguage>(lang_enum);
 }
 
 }  // namespace
@@ -215,15 +193,24 @@ bool IsNamespace(llvm::dwarf::Tag tag) { return tag == llvm::dwarf::DW_TAG_names
 
 }  // namespace
 
-void DwarfReader::DetectSourceLanguage() {
-  DWARFContext::unit_iterator_range CUs = dwarf_context_->compile_units();
-  for (const auto& CU : CUs) {
-    auto lang_or = GetSourceLanguage(CU->getUnitDIE());
-    if (lang_or.ok()) {
-      source_language_ = lang_or.ValueOrDie();
-      return;
-    }
+Status DwarfReader::DetectSourceLanguage() {
+  if (dwarf_context_->getNumCompileUnits() == 0) {
+    return error::Internal(
+        "Could not determine the source language of the DWARF info. No compile units found.");
   }
+
+  // Use the first compile unit as the source language.
+  DWARFDie CU = dwarf_context_->getUnitAtIndex(0)->getUnitDIE();
+  auto lang = CU.find(llvm::dwarf::DW_AT_language);
+
+  if (!lang.hasValue()) {
+    return error::Internal(
+        "Could not determine the source language of the DWARF info. DW_AT_language not found on "
+        "unit DIE.");
+  }
+
+  source_language_ = static_cast<llvm::dwarf::SourceLanguage>(llvm::dwarf::toUnsigned(lang, 0));
+  return Status::OK();
 }
 
 void DwarfReader::IndexDIEs() {
@@ -457,7 +444,7 @@ StatusOr<VarType> GetType(const DWARFDie& die) {
   }
 }
 
-// This function calls out any die with DW_AT_variable_parameter == 0x1 to be a return value..
+// This function calls out any die with DW_AT_variable_parameter == 0x1 to be a return value.
 // The documentation on how Golang sets this field is sparse, so not sure if this is the
 // right flag to look at.
 // From examining a few cases, this interpretation of the flag seems to work, but it might
@@ -476,9 +463,9 @@ StatusOr<bool> IsGolangRetArg(const DWARFDie& die) {
 
 }  // namespace
 
-StatusOr<VarInfo> DwarfReader::GetStructMemberInfo(std::string_view struct_name,
-                                                   std::string_view member_name) {
-  VarInfo member_info;
+StatusOr<StructMemberInfo> DwarfReader::GetStructMemberInfo(std::string_view struct_name,
+                                                            std::string_view member_name) {
+  StructMemberInfo member_info;
 
   PL_ASSIGN_OR_RETURN(const DWARFDie& struct_die,
                       GetMatchingDIE(struct_name, llvm::dwarf::DW_TAG_structure_type));
@@ -514,6 +501,40 @@ StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view functio
   return error::Internal("Could not find argument.");
 }
 
+StatusOr<ArgLocation> GetDieArgumentLocation(const DWARFDie& die) {
+  PL_ASSIGN_OR_RETURN(const DWARFFormValue& loc_attr,
+                      AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_location),
+                                        "Could not find DW_AT_location for function argument."));
+
+  if (!loc_attr.isFormClass(DWARFFormValue::FC_Block) &&
+      !loc_attr.isFormClass(DWARFFormValue::FC_Exprloc)) {
+    return error::Internal("Unexpected Form: $0", magic_enum::enum_name(loc_attr.getForm()));
+  }
+
+  PL_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> loc_block,
+                      AdaptLLVMOptional(loc_attr.getAsBlock(), "Could not extract location."));
+
+  PL_ASSIGN_OR_RETURN(SimpleBlock decoded_loc_block, DecodeSimpleBlock(loc_block));
+
+  if (decoded_loc_block.code == llvm::dwarf::LocationAtom::DW_OP_fbreg) {
+    if (decoded_loc_block.operand >= 0) {
+      return ArgLocation{.type = LocationType::kStack, .offset = decoded_loc_block.operand};
+    } else {
+      decoded_loc_block.operand *= -1;
+      return ArgLocation{.type = LocationType::kRegister, .offset = decoded_loc_block.operand};
+    }
+  }
+
+  // DW_OP_call_frame_cfa is observed in golang dwarf symbols.
+  // This logic is probably not right, but appears to work for now.
+  // TODO(oazizi): Study call_frame_cfa blocks.
+  if (decoded_loc_block.code == llvm::dwarf::LocationAtom::DW_OP_call_frame_cfa) {
+    return ArgLocation{.type = LocationType::kStack, .offset = 0};
+  }
+
+  return error::Internal("Unsupported operand: $0", magic_enum::enum_name(decoded_loc_block.code));
+}
+
 StatusOr<ArgLocation> DwarfReader::GetArgumentLocation(std::string_view function_symbol_name,
                                                        std::string_view arg_name) {
   PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
@@ -522,60 +543,95 @@ StatusOr<ArgLocation> DwarfReader::GetArgumentLocation(std::string_view function
   for (const auto& die : function_die.children()) {
     if ((die.getTag() == llvm::dwarf::DW_TAG_formal_parameter) &&
         (die.getName(llvm::DINameKind::ShortName) == arg_name)) {
-      PL_ASSIGN_OR_RETURN(
-          const DWARFFormValue& loc_attr,
-          AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_location),
-                            "Could not find DW_AT_location for function argument."));
-
-      if (!loc_attr.isFormClass(DWARFFormValue::FC_Block) &&
-          !loc_attr.isFormClass(DWARFFormValue::FC_Exprloc)) {
-        return error::Internal("Unexpected Form: $0", magic_enum::enum_name(loc_attr.getForm()));
-      }
-
-      PL_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> loc_block,
-                          AdaptLLVMOptional(loc_attr.getAsBlock(), "Could not extract location."));
-
-      PL_ASSIGN_OR_RETURN(SimpleBlock decoded_loc_block, DecodeSimpleBlock(loc_block));
-
-      if (decoded_loc_block.code == llvm::dwarf::LocationAtom::DW_OP_fbreg) {
-        if (decoded_loc_block.operand >= 0) {
-          return ArgLocation{.type = LocationType::kStack, .offset = decoded_loc_block.operand};
-        } else {
-          return ArgLocation{.type = LocationType::kRegister,
-                             .offset = -1 * decoded_loc_block.operand};
-        }
-      }
-
-      // DW_OP_call_frame_cfa is observed in golang dwarf symbols.
-      // This logic is probably not right, but appears to work for now.
-      // TODO(oazizi): Study call_frame_cfa blocks.
-      if (decoded_loc_block.code == llvm::dwarf::LocationAtom::DW_OP_call_frame_cfa) {
-        return ArgLocation{.type = LocationType::kStack, .offset = 0};
-      }
-
-      return error::Internal("Unsupported operand: $0",
-                             magic_enum::enum_name(decoded_loc_block.code));
+      return GetDieArgumentLocation(die);
     }
   }
   return error::Internal("Could not find argument.");
 }
 
 namespace {
-// This function takes an address, and if it is not a multiple of the `size` parameter,
+
+// Return the number of registers available for passing arguments,
+// according to the calling convention.
+// NOTE: We currently only support the System V AMD64 ABI for C/C++.
+StatusOr<int> NumArgPassingRegs(llvm::dwarf::SourceLanguage lang) {
+  switch (lang) {
+    case llvm::dwarf::DW_LANG_Go:
+      // No arguments are passed through register on Go.
+      return 0;
+    case llvm::dwarf::DW_LANG_C:
+    case llvm::dwarf::DW_LANG_C_plus_plus:
+    case llvm::dwarf::DW_LANG_C_plus_plus_03:
+    case llvm::dwarf::DW_LANG_C_plus_plus_11:
+    case llvm::dwarf::DW_LANG_C_plus_plus_14:
+    default:
+      // These languages use the System V AMD64 ABI, which uses 6 registers.
+      // Note that we assume 64-bit machines here.
+      return 6;
+  }
+}
+
+// Return the number of registers available for return values,
+// according to the calling convention.
+StatusOr<int> NumRetValPassingRegs(llvm::dwarf::SourceLanguage lang) {
+  switch (lang) {
+    case llvm::dwarf::DW_LANG_Go:
+      // Return values are passed through a hidden parameter.
+      return 0;
+    case llvm::dwarf::DW_LANG_C:
+    case llvm::dwarf::DW_LANG_C_plus_plus:
+    case llvm::dwarf::DW_LANG_C_plus_plus_03:
+    case llvm::dwarf::DW_LANG_C_plus_plus_11:
+    case llvm::dwarf::DW_LANG_C_plus_plus_14:
+    default:
+      // These languages use the System V AMD64 ABI, which uses up to 2 registers to return values.
+      // Note that we assume 64-bit machines here.
+      return 2;
+  }
+}
+
+// TODO(oazizi): This is a placeholder. This information can come from DWARF.
+uint32_t RegisterSize() { return 8; }
+
+// This function takes a value, and if it is not a multiple of the `size` parameter,
 // it rounds it up to so that it is aligned to the given `size`.
 // Examples:
-//   Align(64, 8) = 64
-//   Align(66, 8) = 70
-uint64_t Align(uint64_t addr, uint64_t size) {
-  uint64_t remainder = addr % size;
-  return (remainder == 0) ? addr : (addr + size - remainder);
+//   SnapUpToMultiple(64, 8) = 64
+//   SnapUpToMultiple(66, 8) = 72
+uint64_t SnapUpToMultiple(uint64_t val, uint64_t size) {
+  // Alternate implementation: std::ceil(val / size) * size.
+  // But the one below avoids floating point math.
+  return ((val + (size - 1)) / size) * size;
 }
+
 }  // namespace
 
+// A large part of this function's responsibilities is to determine where
+// arguments are located in memory (i.e. on the stack) or in registers.
+// For Golang, everything is always on the stack, so the algorithm is easy.
+// For C/C++, which uses the System V ABI, the rules are more complex:
+//   https://uclibc.org/docs/psABI-x86_64.pdf
+// TODO(oazizi): Finish implementing the rules.
 StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
     std::string_view function_symbol_name) {
+  // Get some basic infor about the binary,
+  // including the number of registers used in the calling convention for this language.
+  const uint32_t reg_size = RegisterSize();
+  PL_ASSIGN_OR_RETURN(const int num_arg_regs, NumArgPassingRegs(source_language_));
+  PL_ASSIGN_OR_RETURN(const int num_ret_val_regs, NumRetValPassingRegs(source_language_));
+
   std::map<std::string, ArgInfo> arg_info;
   uint64_t current_offset = 0;
+  uint64_t current_reg_offset = 0;
+  uint64_t total_register_bytes = num_arg_regs * reg_size;
+
+  // If return value is not able to be passed in as a register,
+  // then the the first argument register becomes a pointer to the return value.
+  // Account for that here.
+  PL_ASSIGN_OR_RETURN(RetValInfo ret_val_info, GetFunctionRetValInfo(function_symbol_name));
+  if (ret_val_info.byte_size > num_ret_val_regs * reg_size) {
+    current_reg_offset += reg_size;
+  }
 
   PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
                       GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
@@ -590,16 +646,25 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
       PL_ASSIGN_OR_RETURN(uint64_t type_size, GetTypeByteSize(type_die));
       PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
 
-      current_offset = Align(current_offset, alignment_size);
-      arg.offset = current_offset;
-      current_offset += type_size;
-
       PL_ASSIGN_OR_RETURN(arg.type, GetType(type_die));
       PL_ASSIGN_OR_RETURN(arg.type_name, GetTypeName(type_die));
 
-      // TODO(oazizi): This is specific for Golang.
-      //               Put into if statement once we know what language we are analyzing.
-      PL_ASSIGN_OR(arg.retarg, IsGolangRetArg(die), __s__ = false;);
+      if (type_size <= 16 && current_reg_offset + type_size <= total_register_bytes) {
+        arg.location.type = LocationType::kRegister;
+        arg.location.offset = current_reg_offset;
+        // Consume full registers at a time.
+        current_reg_offset += SnapUpToMultiple(type_size, reg_size);
+      } else {
+        // Align to the type's required alignment.
+        current_offset = SnapUpToMultiple(current_offset, alignment_size);
+        arg.location.type = LocationType::kStack;
+        arg.location.offset = current_offset;
+        current_offset += type_size;
+      }
+
+      if (source_language_ == llvm::dwarf::DW_LANG_Go) {
+        PL_ASSIGN_OR(arg.retarg, IsGolangRetArg(die), __s__ = false;);
+      }
     }
   }
 

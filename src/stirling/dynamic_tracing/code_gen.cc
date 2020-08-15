@@ -224,6 +224,20 @@ std::string GenRegister(const ScalarVariable& var) {
       return absl::Substitute("$0 $1 = ($0)PT_REGS_PARM5(ctx);", type, var.name());
     case Register::PARM6:
       return absl::Substitute("$0 $1 = ($0)ctx->r9;", type, var.name());
+    case Register::PARM_PTR:
+      // In the System V AMD64 ABI, there are 6 registers dedicated to passing arguments.
+      // Small arguments may be passed through these registers.
+      // Copy the register values onto the BPF stack and return a pointer to the return value.
+      return absl::Substitute(
+          "uint64_t parm___[6];"
+          "parm___[0] = PT_REGS_PARM1(ctx);"
+          "parm___[1] = PT_REGS_PARM2(ctx);"
+          "parm___[2] = PT_REGS_PARM3(ctx);"
+          "parm___[3] = PT_REGS_PARM4(ctx);"
+          "parm___[4] = PT_REGS_PARM5(ctx);"
+          "parm___[5] = PT_REGS_PARM6(ctx);"
+          "void* $0 = &parm___;",
+          var.name());
     default:
       LOG(DFATAL) << absl::Substitute("Unsupported type: $0", type);
       return "";

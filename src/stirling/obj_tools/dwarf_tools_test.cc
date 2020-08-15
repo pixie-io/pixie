@@ -45,12 +45,11 @@ TEST_F(DwarfReaderTest, NonExistentPath) {
   ASSERT_NOT_OK(s);
 }
 
-TEST_F(DwarfReaderTest, IndexDIEs) {
+TEST_F(DwarfReaderTest, SourceLanguage) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        DwarfReader::Create(kCppBinaryPath, /*index*/ true));
-  ASSERT_TRUE(dwarf_reader->source_language());
   // We use C++17, but the dwarf shows 14.
-  EXPECT_EQ(dwarf_reader->source_language().value(), llvm::dwarf::DW_LANG_C_plus_plus_14);
+  EXPECT_EQ(dwarf_reader->source_language(), llvm::dwarf::DW_LANG_C_plus_plus_14);
 }
 
 TEST_F(DwarfReaderTest, GetMatchingDIEs) {
@@ -173,17 +172,21 @@ TEST_P(DwarfReaderTest, CppFunctionArgInfo) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        DwarfReader::Create(kCppBinaryPath, p.index));
 
-  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("CanYouFindThis"),
-                     UnorderedElementsAre(Pair("a", ArgInfo{{0, VarType::kBaseType, "int"}}),
-                                          Pair("b", ArgInfo{{4, VarType::kBaseType, "int"}})));
+  EXPECT_OK_AND_THAT(
+      dwarf_reader->GetFunctionArgInfo("CanYouFindThis"),
+      UnorderedElementsAre(
+          Pair("a", ArgInfo{VarType::kBaseType, "int", {LocationType::kRegister, 0}}),
+          Pair("b", ArgInfo{VarType::kBaseType, "int", {LocationType::kRegister, 8}})));
   EXPECT_OK_AND_THAT(
       dwarf_reader->GetFunctionArgInfo("ABCSum32"),
-      UnorderedElementsAre(Pair("x", ArgInfo{{0, VarType::kStruct, "ABCStruct32"}}),
-                           Pair("y", ArgInfo{{12, VarType::kStruct, "ABCStruct32"}})));
+      UnorderedElementsAre(
+          Pair("x", ArgInfo{VarType::kStruct, "ABCStruct32", {LocationType::kRegister, 0}}),
+          Pair("y", ArgInfo{VarType::kStruct, "ABCStruct32", {LocationType::kRegister, 16}})));
   EXPECT_OK_AND_THAT(
       dwarf_reader->GetFunctionArgInfo("SomeFunctionWithPointerArgs"),
-      UnorderedElementsAre(Pair("a", ArgInfo{{0, VarType::kPointer, "int"}}),
-                           Pair("x", ArgInfo{{8, VarType::kPointer, "ABCStruct32"}})));
+      UnorderedElementsAre(
+          Pair("a", ArgInfo{VarType::kPointer, "int", {LocationType::kRegister, 0}}),
+          Pair("x", ArgInfo{VarType::kPointer, "ABCStruct32", {LocationType::kRegister, 8}})));
 }
 
 TEST_P(DwarfReaderTest, CppFunctionRetValInfo) {
@@ -208,31 +211,37 @@ TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
 
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("main.(*Vertex).Scale"),
-        UnorderedElementsAre(Pair("v", ArgInfo{{0, VarType::kPointer, "main.Vertex"}}),
-                             Pair("f", ArgInfo{{8, VarType::kBaseType, "float64"}})));
+        UnorderedElementsAre(
+            Pair("v", ArgInfo{VarType::kPointer, "main.Vertex", {LocationType::kStack, 0}}),
+            Pair("f", ArgInfo{VarType::kBaseType, "float64", {LocationType::kStack, 8}})));
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("main.(*Vertex).CrossScale"),
-        UnorderedElementsAre(Pair("v", ArgInfo{{0, VarType::kPointer, "main.Vertex"}}),
-                             Pair("v2", ArgInfo{{8, VarType::kStruct, "main.Vertex"}}),
-                             Pair("f", ArgInfo{{24, VarType::kBaseType, "float64"}})));
+        UnorderedElementsAre(
+            Pair("v", ArgInfo{VarType::kPointer, "main.Vertex", {LocationType::kStack, 0}}),
+            Pair("v2", ArgInfo{VarType::kStruct, "main.Vertex", {LocationType::kStack, 8}}),
+            Pair("f", ArgInfo{VarType::kBaseType, "float64", {LocationType::kStack, 24}})));
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("main.Vertex.Abs"),
-        UnorderedElementsAre(Pair("v", ArgInfo{{0, VarType::kStruct, "main.Vertex"}}),
-                             Pair("~r0", ArgInfo{{16, VarType::kBaseType, "float64"}, true})));
-    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("main.MixedArgTypes"),
-                       UnorderedElementsAre(
-                           Pair("i1", ArgInfo{{0, VarType::kBaseType, "int"}}),
-                           Pair("b1", ArgInfo{{8, VarType::kBaseType, "bool"}}),
-                           Pair("b2", ArgInfo{{9, VarType::kStruct, "main.BoolWrapper"}}),
-                           Pair("i2", ArgInfo{{16, VarType::kBaseType, "int"}}),
-                           Pair("i3", ArgInfo{{24, VarType::kBaseType, "int"}}),
-                           Pair("b3", ArgInfo{{32, VarType::kBaseType, "bool"}}),
-                           Pair("~r6", ArgInfo{{40, VarType::kBaseType, "int"}, true}),
-                           Pair("~r7", ArgInfo{{48, VarType::kStruct, "main.BoolWrapper"}, true})));
+        UnorderedElementsAre(
+            Pair("v", ArgInfo{VarType::kStruct, "main.Vertex", {LocationType::kStack, 0}}),
+            Pair("~r0", ArgInfo{VarType::kBaseType, "float64", {LocationType::kStack, 16}, true})));
+    EXPECT_OK_AND_THAT(
+        dwarf_reader->GetFunctionArgInfo("main.MixedArgTypes"),
+        UnorderedElementsAre(
+            Pair("i1", ArgInfo{VarType::kBaseType, "int", {LocationType::kStack, 0}}),
+            Pair("b1", ArgInfo{VarType::kBaseType, "bool", {LocationType::kStack, 8}}),
+            Pair("b2", ArgInfo{VarType::kStruct, "main.BoolWrapper", {LocationType::kStack, 9}}),
+            Pair("i2", ArgInfo{VarType::kBaseType, "int", {LocationType::kStack, 16}}),
+            Pair("i3", ArgInfo{VarType::kBaseType, "int", {LocationType::kStack, 24}}),
+            Pair("b3", ArgInfo{VarType::kBaseType, "bool", {LocationType::kStack, 32}}),
+            Pair("~r6", ArgInfo{VarType::kBaseType, "int", {LocationType::kStack, 40}, true}),
+            Pair("~r7",
+                 ArgInfo{VarType::kStruct, "main.BoolWrapper", {LocationType::kStack, 48}, true})));
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("main.GoHasNamedReturns"),
-        UnorderedElementsAre(Pair("retfoo", ArgInfo{{0, VarType::kBaseType, "int"}, true}),
-                             Pair("retbar", ArgInfo{{8, VarType::kBaseType, "bool"}, true})));
+        UnorderedElementsAre(
+            Pair("retfoo", ArgInfo{VarType::kBaseType, "int", {LocationType::kStack, 0}, true}),
+            Pair("retbar", ArgInfo{VarType::kBaseType, "bool", {LocationType::kStack, 8}, true})));
   }
 
   {
@@ -243,12 +252,15 @@ TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
     //   error
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("net/http.(*http2Framer).WriteDataPadded"),
-        UnorderedElementsAre(Pair("f", ArgInfo{{0, VarType::kPointer, "net/http.http2Framer"}}),
-                             Pair("streamID", ArgInfo{{8, VarType::kBaseType, "uint32"}}),
-                             Pair("endStream", ArgInfo{{12, VarType::kBaseType, "bool"}}),
-                             Pair("data", ArgInfo{{16, VarType::kStruct, "[]uint8"}}),
-                             Pair("pad", ArgInfo{{40, VarType::kStruct, "[]uint8"}}),
-                             Pair("~r4", ArgInfo{{64, VarType::kStruct, "runtime.iface"}, true})));
+        UnorderedElementsAre(
+            Pair("f",
+                 ArgInfo{VarType::kPointer, "net/http.http2Framer", {LocationType::kStack, 0}}),
+            Pair("streamID", ArgInfo{VarType::kBaseType, "uint32", {LocationType::kStack, 8}}),
+            Pair("endStream", ArgInfo{VarType::kBaseType, "bool", {LocationType::kStack, 12}}),
+            Pair("data", ArgInfo{VarType::kStruct, "[]uint8", {LocationType::kStack, 16}}),
+            Pair("pad", ArgInfo{VarType::kStruct, "[]uint8", {LocationType::kStack, 40}}),
+            Pair("~r4",
+                 ArgInfo{VarType::kStruct, "runtime.iface", {LocationType::kStack, 64}, true})));
   }
 }
 
@@ -269,7 +281,7 @@ TEST_P(DwarfReaderTest, GoFunctionArgLocationConsistency) {
   for (auto& [arg_name, arg_info] : function_arg_locations) {
     ASSERT_OK_AND_ASSIGN(ArgLocation location,
                          dwarf_reader->GetArgumentLocation("main.MixedArgTypes", arg_name));
-    EXPECT_EQ(location.offset, arg_info.offset)
+    EXPECT_EQ(location, arg_info.location)
         << absl::Substitute("Argument $0 failed consistency check", arg_name);
   }
 }

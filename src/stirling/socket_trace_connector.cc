@@ -477,11 +477,11 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   constexpr int32_t kSPOffset = 8;
   const std::map<std::string, dwarf_tools::ArgInfo> kEmptyMap;
 
-#define GET_ARG_OFFSET(symaddr, fn_args_map, arg)                               \
-  {                                                                             \
-    auto it = fn_args_map.find(arg);                                            \
-    symaddr = (it != fn_args_map.end()) ? (it->second.offset + kSPOffset) : -1; \
-    VLOG(1) << absl::Substitute(#symaddr " = $0", symaddr);                     \
+#define GET_ARG_OFFSET(symaddr, fn_args_map, arg)                                        \
+  {                                                                                      \
+    auto it = fn_args_map.find(arg);                                                     \
+    symaddr = (it != fn_args_map.end()) ? (it->second.location.offset + kSPOffset) : -1; \
+    VLOG(1) << absl::Substitute(#symaddr " = $0", symaddr);                              \
   }
 
   // Arguments of net/http.(*http2Framer).WriteDataPadded.
