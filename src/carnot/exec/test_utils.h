@@ -11,6 +11,8 @@
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/row_tuple.h"
 #include "src/carnot/plan/operators.h"
+#include "src/carnotpb/carnot.grpc.pb.h"
+#include "src/carnotpb/carnot.pb.h"
 #include "src/common/base/base.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/types/arrow_adapter.h"
@@ -22,9 +24,96 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
+// This function provides a mock generator for the result sink server that Carnot sends results to.
 const ResultSinkStubGenerator MockResultSinkStubGenerator =
     [](const std::string&) -> std::unique_ptr<carnotpb::ResultSinkService::StubInterface> {
   return std::make_unique<carnotpb::MockResultSinkServiceStub>();
+};
+
+// This class provides a local GRPC server to receive results from benchmarks and other end-to-end
+// tests.
+class LocalResultSinkServer final : public carnotpb::ResultSinkService::Service {
+ public:
+  const std::vector<carnotpb::TransferResultChunkRequest>& query_results() const {
+    return query_results_;
+  }
+
+  // Implements the TransferResultChunkAPI of ResultSinkService.
+  ::grpc::Status TransferResultChunk(
+      ::grpc::ServerContext*,
+      ::grpc::ServerReader<::pl::carnotpb::TransferResultChunkRequest>* reader,
+      ::pl::carnotpb::TransferResultChunkResponse* response) override {
+    auto rb = std::make_unique<carnotpb::TransferResultChunkRequest>();
+    // Write the results to the result vector.
+    while (reader->Read(rb.get())) {
+      query_results_.push_back(*rb);
+      rb = std::make_unique<carnotpb::TransferResultChunkRequest>();
+    }
+    response->set_success(true);
+    return ::grpc::Status::OK;
+  }
+
+  // Implements the Done of ResultSinkService.
+  // TODO(nserrino): Remove when this API is deprecated.
+  ::grpc::Status Done(::grpc::ServerContext*, const ::pl::carnotpb::DoneRequest*,
+                      ::pl::carnotpb::DoneResponse* response) override {
+    response->set_success(true);
+    return ::grpc::Status::OK;
+  }
+
+ private:
+  // List of the query results received.
+  std::vector<carnotpb::TransferResultChunkRequest> query_results_;
+};
+
+const ResultSinkStubGenerator FakeResultSinkStubGenerator =
+    [](const std::string&) -> std::unique_ptr<carnotpb::ResultSinkService::StubInterface> {
+  return std::make_unique<carnotpb::MockResultSinkServiceStub>();
+};
+
+class LocalGRPCResultSinkServer {
+ public:
+  explicit LocalGRPCResultSinkServer(int32_t port) : port_(port) {}
+
+  void StartServerThread() {
+    grpc_server_thread_ = std::make_unique<std::thread>(&LocalGRPCResultSinkServer::Start, this);
+  }
+
+  ~LocalGRPCResultSinkServer() {
+    if (grpc_server_ && grpc_server_thread_) {
+      grpc_server_->Shutdown();
+      if (grpc_server_thread_->joinable()) {
+        grpc_server_thread_->join();
+      }
+    }
+  }
+
+  const std::vector<carnotpb::TransferResultChunkRequest>& query_results() const {
+    return result_sink_server_.query_results();
+  }
+
+  std::unique_ptr<carnotpb::ResultSinkService::StubInterface> StubGenerator(
+      const std::string&) const {
+    grpc::ChannelArguments args;
+    return pl::carnotpb::ResultSinkService::NewStub(grpc_server_->InProcessChannel(args));
+  }
+
+ private:
+  void Start() {
+    std::string server_address(absl::Substitute("0.0.0.0:$0", port_));
+    grpc::ServerBuilder builder;
+
+    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+    builder.RegisterService(&result_sink_server_);
+    grpc_server_ = builder.BuildAndStart();
+    CHECK(grpc_server_ != nullptr);
+    grpc_server_->Wait();
+  }
+
+  const int32_t port_;
+  std::unique_ptr<std::thread> grpc_server_thread_;
+  std::unique_ptr<grpc::Server> grpc_server_;
+  LocalResultSinkServer result_sink_server_;
 };
 
 table_store::schema::RowBatch ConcatRowBatches(

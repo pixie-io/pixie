@@ -178,7 +178,6 @@ class GRPCSinkOperator : public Operator {
   std::string address() const { return pb_.address(); }
 
   bool has_grpc_source_id() const {
-    LOG(ERROR) << absl::Substitute("DebugString: $0", pb_.DebugString());
     return pb_.destination_case() == planpb::GRPCSinkOperator::kGrpcSourceId;
   }
   int64_t grpc_source_id() const { return pb_.grpc_source_id(); }

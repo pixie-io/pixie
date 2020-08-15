@@ -26,25 +26,31 @@ using table_store::Table;
 using table_store::schema::RowDescriptor;
 
 constexpr char kGroupByNoneQuery[] = R"pxl(
+import px
 df = px.DataFrame(table='test_table', select=['col0', 'col1'])
 df = df.agg(sum=('col1', px.sum))
 px.display(df, '$0')
 )pxl";
 
 constexpr char kGroupByOneQuery[] = R"pxl(
+import px
 df = px.DataFrame(table='test_table', select=['col0', 'col1'])
 df = df.groupby('col0').agg(sum=('col1', px.sum))
 px.display(df, '$0')
 )pxl";
 
 constexpr char kGroupByTwoQuery[] = R"pxl(
+import px
 df = px.DataFrame(table='test_table', select=['col0', 'col1', 'col2'])
 df = df.groupby(['col0', 'col1']).agg(sum=('col2', px.sum))
 px.display(df, '$0')
 )pxl";
 
-std::unique_ptr<Carnot> SetUpCarnot(std::shared_ptr<table_store::TableStore> table_store) {
-  auto carnot_or_s = Carnot::Create(sole::uuid4(), table_store, exec::MockResultSinkStubGenerator);
+std::unique_ptr<Carnot> SetUpCarnot(std::shared_ptr<table_store::TableStore> table_store,
+                                    LocalGRPCResultSinkServer* server) {
+  auto carnot_or_s = Carnot::Create(
+      sole::uuid4(), table_store,
+      std::bind(&LocalGRPCResultSinkServer::StubGenerator, server, std::placeholders::_1));
   if (!carnot_or_s.ok()) {
     LOG(FATAL) << "Failed to initialize Carnot.";
   }
@@ -57,7 +63,10 @@ void BM_Query(benchmark::State& state, std::vector<types::DataType> types,
               int64_t num_batches, const datagen::DistributionParams* dist_vars,
               const datagen::DistributionParams* len_vars) {
   auto table_store = std::make_shared<table_store::TableStore>();
-  auto carnot = SetUpCarnot(table_store);
+  LocalGRPCResultSinkServer server(10015);
+  server.StartServerThread();
+
+  auto carnot = SetUpCarnot(table_store, &server);
   auto table = table_store::CreateTable(types, distribution_types, state.range(0), num_batches,
                                         dist_vars, len_vars)
                    .ConsumeValueOrDie();
