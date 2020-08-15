@@ -18,6 +18,7 @@ go_library(
         "//src/shared/version:go_default_library",
         "//src/utils:go_default_library",
         "//src/vizier/utils/messagebus:go_default_library",
+        "@com_github_blang_semver//:go_default_library",
         "@com_github_cenkalti_backoff//:go_default_library",
         "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",

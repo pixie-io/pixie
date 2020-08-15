@@ -220,7 +220,6 @@ func (u *Updater) sendNATSMessage(topic string, msg *types.Any, vizierID uuid.UU
 func (u *Updater) VersionUpToDate(version string) bool {
 	latestVersion := semver.MustParse(u.latestVersion)
 	vzVersion := semver.MustParse(version)
-
 	devVersionRange, _ := semver.ParseRange("<=0.0.0")
 	if devVersionRange(vzVersion) {
 		return true // We should not update dev versions.

@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/gogo/protobuf/types"
 	log "github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
@@ -32,6 +33,9 @@ import (
 const plNamespace = "pl"
 
 const k8sStateUpdatePeriod = 10 * time.Second
+
+const privateImageRepo = "gcr.io/pl-dev-infra"
+const publicImageRepo = "gcr.io/pixie-prod"
 
 // K8sJobHandler manages k8s jobs.
 // TODO(michelle): Refactor and move job-related operations from the VizierInfo
@@ -271,19 +275,6 @@ func (v *K8sVizierInfo) GetK8sState() (map[string]*cvmsgspb.PodStatus, int32, in
 
 // ParseJobYAML parses the yaml string into a k8s job and applies the image tag and env subtitutions.
 func (v *K8sVizierInfo) ParseJobYAML(yamlStr string, imageTag map[string]string, envSubtitutions map[string]string) (*batchv1.Job, error) {
-	// Get the image tag path from the running cloud-connector pod.
-	podsList, err := v.clientset.CoreV1().Pods(plNamespace).List(context.Background(), metav1.ListOptions{
-		LabelSelector: "name=vizier-cloud-connector",
-	})
-	if err != nil {
-		return nil, err
-	}
-	currImgTag := ""
-	if len(podsList.Items) > 0 && len(podsList.Items[0].Spec.Containers) > 0 {
-		tag := podsList.Items[0].Spec.Containers[0].Image
-		currImgTag = tag[:strings.Index(tag, "/vizier/")]
-	}
-
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode([]byte(yamlStr), nil, nil)
 	if err != nil {
@@ -300,9 +291,15 @@ func (v *K8sVizierInfo) ParseJobYAML(yamlStr string, imageTag map[string]string,
 		if val, ok := imageTag[c.Name]; ok {
 			imgTag := strings.Split(job.Spec.Template.Spec.Containers[i].Image, ":")
 			imgPath := imgTag[0]
-			if currImgTag != "" {
-				imgPath = currImgTag + imgPath[strings.Index(imgPath, "/vizier/"):]
+
+			tagVers := semver.MustParse(val)
+
+			repoPath := publicImageRepo
+			if len(tagVers.Pre) > 0 {
+				repoPath = privateImageRepo
 			}
+			imgPath = repoPath + imgPath[strings.Index(imgPath, "/vizier/"):]
+
 			job.Spec.Template.Spec.Containers[i].Image = imgPath + ":" + val
 		}
 		for j, e := range c.Env {
