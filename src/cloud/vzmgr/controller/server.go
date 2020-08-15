@@ -624,9 +624,10 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	}
 
 	// Fetch previous status.
-	statusQuery := `SELECT status from vizier_cluster_info WHERE vizier_cluster_id=$1`
+	statusQuery := `SELECT status, vizier_version from vizier_cluster_info WHERE vizier_cluster_id=$1`
 	var prevInfo struct {
-		Status string `db:"status"`
+		Status  string `db:"status"`
+		Version string `db:"vizier_version"`
 	}
 	rows, err := s.db.Queryx(statusQuery, vizierID)
 	if err != nil {
@@ -668,7 +669,14 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	if err != nil {
 		log.WithError(err).Error("Could not update vizier heartbeat")
 	}
-	if !req.BootstrapMode || prevInfo.Status == "UPDATING" {
+	if prevInfo.Status == "UPDATING" {
+		return
+	}
+
+	if !req.BootstrapMode {
+		if !s.updater.VersionUpToDate(prevInfo.Version) {
+			s.updater.AddToUpdateQueue(vizierID)
+		}
 		return
 	}
 

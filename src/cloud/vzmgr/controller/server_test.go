@@ -470,6 +470,8 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		controlPlanePodStatuses    controller.PodStatuses
 		numNodes                   int32
 		numInstrumentedNodes       int32
+		checkVersion               bool
+		versionUpdated             bool
 	}{
 		{
 			name:                      "valid vizier",
@@ -486,6 +488,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			controlPlanePodStatuses: testPodStatuses,
 			numNodes:                4,
 			numInstrumentedNodes:    3,
+			checkVersion:            true,
 		},
 		{
 			name:                      "valid vizier dns failed",
@@ -499,6 +502,8 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			expectedClusterAddress:    "127.0.0.1:123",
 			numNodes:                  4,
 			numInstrumentedNodes:      3,
+			checkVersion:              true,
+			versionUpdated:            true,
 		},
 		{
 			name:                      "valid vizier no address",
@@ -510,6 +515,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			expectedClusterAddress:    "",
 			numNodes:                  4,
 			numInstrumentedNodes:      3,
+			checkVersion:              true,
 		},
 		{
 			name:                      "unknown vizier",
@@ -519,6 +525,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			updatedClusterStatus:      "",
 			expectedClusterAddress:    "",
 			status:                    cvmsgspb.VZ_ST_UPDATING,
+			checkVersion:              true,
 		},
 		{
 			name:                      "bootstrap vizier",
@@ -560,6 +567,19 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 					EXPECT().
 					UpdateOrInstallVizier(uuid.FromStringOrNil(tc.vizierID), "", false).
 					Return(&cvmsgspb.V2CMessage{}, nil)
+			}
+
+			if tc.checkVersion {
+				updater.
+					EXPECT().
+					VersionUpToDate(gomock.Any()).
+					Return(!tc.versionUpdated)
+			}
+
+			if tc.versionUpdated {
+				updater.
+					EXPECT().
+					AddToUpdateQueue(uuid.FromStringOrNil(tc.vizierID))
 			}
 
 			nestedMsg := &cvmsgspb.VizierHeartbeat{

@@ -128,6 +128,9 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Could not start vizier updater")
 	}
+	go updater.ProcessUpdateQueue()
+	defer updater.Stop()
+
 	c := controller.New(db, dbKey, dnsMgrClient, nc, updater)
 	dks := deploymentkey.New(db, dbKey)
 	ds := deployment.New(dks, c)
