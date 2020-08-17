@@ -78,13 +78,13 @@ func TestMain(m *testing.M) {
 	elasticClient = es
 
 	// Set up elastic indexes.
-	_, err := es.CreateIndex("md_entities").Body(md.IndexMapping).Do(context.Background())
+	_, err := es.CreateIndex("md_entities_1").Body(md.IndexMapping).Do(context.Background())
 	if err != nil {
 		panic(err)
 	}
 
 	for _, e := range mdEntities {
-		err = insertIntoIndex("md_entities", e.UID, e)
+		err = insertIntoIndex("md_entities_1", e.UID, e)
 		if err != nil {
 			panic(err)
 		}
@@ -410,7 +410,7 @@ func TestGetSuggestions(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			es := autocomplete.NewElasticSuggester(elasticClient, "md_entities", "scripts", nil)
+			es := autocomplete.NewElasticSuggester(elasticClient, "md_entities_1", "scripts", nil)
 			results, err := es.GetSuggestions(test.reqs)
 			assert.Nil(t, err)
 			assert.NotNil(t, results)

@@ -28,8 +28,8 @@ type EsMDEntity struct {
 const IndexMapping = `
 {
     "settings":{
-      "number_of_shards":1,
-      "number_of_replicas":0,
+      "number_of_shards":4,
+      "number_of_replicas":4,
         "analysis": {
           "filter": {
             "autocomplete_filter": {
@@ -52,7 +52,7 @@ const IndexMapping = `
               "type": "edge_ngram",
               "min_gram": 1,
               "max_gram": 20,
-              "token_chars": ["letter", "digit"] 
+              "token_chars": ["letter", "digit"]
             }
           },
           "analyzer": {
@@ -112,7 +112,7 @@ const IndexMapping = `
 }
 `
 
-const indexName = "md_entities"
+const indexName = "md_entities_1"
 
 // InitializeMapping creates the index in elastic.
 func InitializeMapping(es *elastic.Client) error {
