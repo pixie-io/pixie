@@ -47,7 +47,7 @@ func init() {
 	pflag.String("elastic_tls_key", "/elastic-certs/tls.key", "TLS Key for elastic cluster")
 	pflag.String("elastic_username", "elastic", "Username for access to elastic cluster")
 	pflag.String("elastic_password", "", "Password for access to elastic")
-	pflag.String("logs_index_name", "vizier-logs-allclusters_1", "Name of managed index to use for logs.")
+	pflag.String("logs_index_name", "vizier-logs-allclusters-1", "Name of managed index to use for logs.")
 	pflag.String("logs_max_index_size", "50mb", "Maximum size the log index is allowed to grow to before its rolled over.")
 	pflag.String("logs_time_before_delete", "1d", "Time to keep rolledover logs around before deletion.")
 }
