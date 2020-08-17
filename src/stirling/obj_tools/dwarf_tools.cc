@@ -51,12 +51,23 @@ StatusOr<std::string> GetTypeName(const DWARFDie& die) {
       return std::string(GetShortName(type_die));
     }
     case llvm::dwarf::DW_TAG_base_type:
+    case llvm::dwarf::DW_TAG_class_type:
     case llvm::dwarf::DW_TAG_structure_type:
       return std::string(GetShortName(die));
     default:
       return error::Internal(
           absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
   }
+}
+
+std::vector<DWARFDie> GetParamDIEs(const DWARFDie& function_die) {
+  std::vector<DWARFDie> dies;
+  for (auto& die : function_die.children()) {
+    if (die.getTag() == llvm::dwarf::DW_TAG_formal_parameter) {
+      dies.push_back(std::move(die));
+    }
+  }
+  return dies;
 }
 
 }  // namespace
@@ -422,7 +433,8 @@ StatusOr<uint64_t> GetAlignmentByteSize(const DWARFDie& die) {
     }
     default:
       return error::Internal(
-          absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
+          absl::Substitute("Failed to get alignment size, unexpected DIE type: $0",
+                           magic_enum::enum_name(die.getTag())));
   }
 }
 
@@ -436,6 +448,8 @@ StatusOr<VarType> GetType(const DWARFDie& die) {
       return VarType::kSubroutine;
     case llvm::dwarf::DW_TAG_base_type:
       return VarType::kBaseType;
+    case llvm::dwarf::DW_TAG_class_type:
+      return VarType::kClass;
     case llvm::dwarf::DW_TAG_structure_type:
       return VarType::kStruct;
     default:
@@ -491,9 +505,8 @@ StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view functio
   PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
                       GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
 
-  for (const auto& die : function_die.children()) {
-    if ((die.getTag() == llvm::dwarf::DW_TAG_formal_parameter) &&
-        (die.getName(llvm::DINameKind::ShortName) == arg_name)) {
+  for (const auto& die : GetParamDIEs(function_die)) {
+    if (die.getName(llvm::DINameKind::ShortName) == arg_name) {
       PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
       return GetTypeByteSize(type_die);
     }
@@ -540,9 +553,8 @@ StatusOr<ArgLocation> DwarfReader::GetArgumentLocation(std::string_view function
   PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
                       GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
 
-  for (const auto& die : function_die.children()) {
-    if ((die.getTag() == llvm::dwarf::DW_TAG_formal_parameter) &&
-        (die.getName(llvm::DINameKind::ShortName) == arg_name)) {
+  for (const auto& die : GetParamDIEs(function_die)) {
+    if (die.getName(llvm::DINameKind::ShortName) == arg_name) {
       return GetDieArgumentLocation(die);
     }
   }
@@ -636,35 +648,33 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
   PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
                       GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
 
-  for (const auto& die : function_die.children()) {
-    if (die.getTag() == llvm::dwarf::DW_TAG_formal_parameter) {
-      VLOG(1) << die.getName(llvm::DINameKind::ShortName);
-      auto& arg = arg_info[die.getName(llvm::DINameKind::ShortName)];
+  for (const auto& die : GetParamDIEs(function_die)) {
+    VLOG(1) << die.getName(llvm::DINameKind::ShortName);
+    auto& arg = arg_info[die.getName(llvm::DINameKind::ShortName)];
 
-      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+    PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
 
-      PL_ASSIGN_OR_RETURN(uint64_t type_size, GetTypeByteSize(type_die));
-      PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
+    PL_ASSIGN_OR_RETURN(uint64_t type_size, GetTypeByteSize(type_die));
+    PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
 
-      PL_ASSIGN_OR_RETURN(arg.type, GetType(type_die));
-      PL_ASSIGN_OR_RETURN(arg.type_name, GetTypeName(type_die));
+    PL_ASSIGN_OR_RETURN(arg.type, GetType(type_die));
+    PL_ASSIGN_OR_RETURN(arg.type_name, GetTypeName(type_die));
 
-      if (type_size <= 16 && current_reg_offset + type_size <= total_register_bytes) {
-        arg.location.type = LocationType::kRegister;
-        arg.location.offset = current_reg_offset;
-        // Consume full registers at a time.
-        current_reg_offset += SnapUpToMultiple(type_size, reg_size);
-      } else {
-        // Align to the type's required alignment.
-        current_offset = SnapUpToMultiple(current_offset, alignment_size);
-        arg.location.type = LocationType::kStack;
-        arg.location.offset = current_offset;
-        current_offset += type_size;
-      }
+    if (type_size <= 16 && current_reg_offset + type_size <= total_register_bytes) {
+      arg.location.type = LocationType::kRegister;
+      arg.location.offset = current_reg_offset;
+      // Consume full registers at a time.
+      current_reg_offset += SnapUpToMultiple(type_size, reg_size);
+    } else {
+      // Align to the type's required alignment.
+      current_offset = SnapUpToMultiple(current_offset, alignment_size);
+      arg.location.type = LocationType::kStack;
+      arg.location.offset = current_offset;
+      current_offset += type_size;
+    }
 
-      if (source_language_ == llvm::dwarf::DW_LANG_Go) {
-        PL_ASSIGN_OR(arg.retarg, IsGolangRetArg(die), __s__ = false;);
-      }
+    if (source_language_ == llvm::dwarf::DW_LANG_Go) {
+      PL_ASSIGN_OR(arg.retarg, IsGolangRetArg(die), __s__ = false;);
     }
   }
 

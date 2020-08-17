@@ -27,6 +27,7 @@ enum class VarType {
   kVoid,
   kBaseType,
   kPointer,
+  kClass,
   kStruct,
   kSubroutine,
 };
