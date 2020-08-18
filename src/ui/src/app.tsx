@@ -1,3 +1,5 @@
+import './wdyr';
+
 import Axios from 'axios';
 import { CloudClient } from 'common/cloud-gql-client';
 import { DARK_THEME } from 'common/mui-theme';
