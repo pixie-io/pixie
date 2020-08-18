@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include <absl/container/flat_hash_map.h>
+
 #include "third_party/ELFIO/elfio/elfio.hpp"
 
 #include "src/common/base/base.h"
@@ -15,6 +17,9 @@ namespace elf_tools {
 enum class SymbolMatchType {
   // Search for a symbol that is an exact match of the search string.
   kExact,
+
+  // Search for a symbol that starts with the search string.
+  kPrefix,
 
   // Search for a symbol that ends with the search string.
   kSuffix,
@@ -46,10 +51,18 @@ class ElfReader {
    * Returns a list of symbol names that meets the search criteria.
    *
    * @param search_symbol The symbol to search for.
-   * @param match_type Type of search (e.g. exact match, subtring, suffix).
+   * @param match_type Type of search (e.g. exact match, substring, suffix).
+   * @param Symbol type (e.g. STT_FUNC, STT_OBJECT, ...). See uapi/linux/elf.h.
    */
-  std::vector<SymbolInfo> ListFuncSymbols(std::string_view search_symbol,
-                                          SymbolMatchType match_type);
+  StatusOr<std::vector<SymbolInfo>> SearchSymbols(std::string_view search_symbol,
+                                                  SymbolMatchType match_type,
+                                                  std::optional<int> symbol_type = std::nullopt);
+
+  /**
+   * Like SearchSymbols, but for function symbols only.
+   */
+  StatusOr<std::vector<SymbolInfo>> ListFuncSymbols(std::string_view search_symbol,
+                                                    SymbolMatchType match_type);
 
   /**
    * Returns the address of the specified symbol, if found.
@@ -73,18 +86,17 @@ class ElfReader {
    */
   StatusOr<pl::utils::u8string> FuncByteCode(const SymbolInfo& func_symbol);
 
-  /**
-   * Returns a list of symbol names that meets the search criteria.
-   * Use -1 for symbol_type to search all symbol types.
-   */
-  StatusOr<std::vector<SymbolInfo>> SearchSymbols(std::string_view pattern,
-                                                  SymbolMatchType match_type, int symbol_type = -1);
-
   std::string binary_path_;
 
   // Set up an elf reader, so we can extract debug symbols.
   ELFIO::elfio elf_reader_;
 };
+
+/**
+ * Returns a map of all interfaces, and types that implement that interface in a go binary
+ */
+StatusOr<absl::flat_hash_map<std::string, std::vector<std::string>>> ExtractGolangInterfaces(
+    elf_tools::ElfReader* elf_reader);
 
 }  // namespace elf_tools
 }  // namespace stirling

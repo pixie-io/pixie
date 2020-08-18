@@ -29,9 +29,9 @@ struct DwarfReaderTestParam {
 class DwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam> {
  protected:
   DwarfReaderTest()
-      : kCppBinaryPath(pl::testing::TestFilePath(kCppBinary)),
-        kGoBinaryPath(pl::testing::TestFilePath(kDummyGoBinary)),
-        kGoServerBinaryPath(pl::testing::TestFilePath(kGoGRPCServer)),
+      : kCppBinaryPath(pl::testing::BazelBinTestFilePath(kCppBinary)),
+        kGoBinaryPath(pl::testing::BazelBinTestFilePath(kDummyGoBinary)),
+        kGoServerBinaryPath(pl::testing::BazelBinTestFilePath(kGoGRPCServer)),
         kGoBinaryUnconventionalPath(pl::testing::TestFilePath(kGoBinaryUnconventional)) {}
 
   const std::string kCppBinaryPath;

@@ -29,8 +29,8 @@ StatusOr<std::vector<UProbeSpec>> TransformGolangReturnProbe(
 
 StatusOr<std::vector<UProbeSpec>> TransformGolangReturnProbe(const UProbeSpec& spec,
                                                              elf_tools::ElfReader* elf_reader) {
-  const std::vector<elf_tools::ElfReader::SymbolInfo> symbol_infos =
-      elf_reader->ListFuncSymbols(spec.symbol, elf_tools::SymbolMatchType::kExact);
+  PL_ASSIGN_OR_RETURN(const std::vector<elf_tools::ElfReader::SymbolInfo> symbol_infos,
+                      elf_reader->ListFuncSymbols(spec.symbol, elf_tools::SymbolMatchType::kExact));
 
   if (symbol_infos.empty()) {
     return error::NotFound("Symbol '$0' was not found", spec.symbol);

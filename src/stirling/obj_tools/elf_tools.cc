@@ -124,7 +124,7 @@ StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(const std::string& binary
 }
 
 StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
-    std::string_view search_symbol, SymbolMatchType match_type, int symbol_type) {
+    std::string_view search_symbol, SymbolMatchType match_type, std::optional<int> symbol_type) {
   ELFIO::section* symtab_section = nullptr;
   for (int i = 0; i < elf_reader_.sections.size(); ++i) {
     ELFIO::section* psec = elf_reader_.sections[i];
@@ -151,7 +151,7 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
     unsigned char other;
     symbols.get_symbol(j, name, addr, size, bind, type, section_index, other);
 
-    if (symbol_type != -1 && type != symbol_type) {
+    if (symbol_type.has_value() && type != symbol_type.value()) {
       continue;
     }
 
@@ -160,6 +160,9 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
     switch (match_type) {
       case SymbolMatchType::kExact:
         match = (name == search_symbol);
+        break;
+      case SymbolMatchType::kPrefix:
+        match = absl::StartsWith(name, search_symbol);
         break;
       case SymbolMatchType::kSuffix:
         match = absl::EndsWith(name, search_symbol);
@@ -175,26 +178,24 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
   }
   return symbol_infos;
 }
-std::vector<ElfReader::SymbolInfo> ElfReader::ListFuncSymbols(std::string_view search_symbol,
-                                                              SymbolMatchType match_type) {
-  auto symbol_infos_or = SearchSymbols(search_symbol, match_type, STT_FUNC);
-  if (!symbol_infos_or.ok()) {
-    return {};
-  }
 
-  std::vector<ElfReader::SymbolInfo> symbol_infos = symbol_infos_or.ConsumeValueOrDie();
+StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::ListFuncSymbols(
+    std::string_view search_symbol, SymbolMatchType match_type) {
+  PL_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> symbol_infos,
+                      SearchSymbols(search_symbol, match_type, STT_FUNC));
+
   absl::flat_hash_set<uint64_t> symbol_addrs;
-
-  std::vector<ElfReader::SymbolInfo> res;
   for (auto& symbol_info : symbol_infos) {
     // Symbol address has already been seen.
     // Note that multiple symbols can point to the same address.
     // But symbol names cannot be duplicate.
     if (symbol_addrs.insert(symbol_info.address).second) {
-      res.push_back(std::move(symbol_info));
+      LOG(WARNING)
+          << "Found multiple symbols to the same address. New behavior does not filter these out.";
     }
   }
-  return res;
+
+  return symbol_infos;
 }
 
 std::optional<int64_t> ElfReader::SymbolAddress(std::string_view symbol) {
@@ -333,6 +334,35 @@ StatusOr<utils::u8string> ElfReader::FuncByteCode(const SymbolInfo& func_symbol)
                            func_symbol.size, offset, binary_path_, ifs.gcount());
   }
   return byte_code;
+}
+
+StatusOr<absl::flat_hash_map<std::string, std::vector<std::string>>> ExtractGolangInterfaces(
+    ElfReader* elf_reader) {
+  absl::flat_hash_map<std::string, std::vector<std::string>> interface_types;
+
+  // All itable objects in the symbols are prefixed with this string.
+  const std::string_view kITablePrefix("go.itab.");
+
+  PL_ASSIGN_OR_RETURN(
+      std::vector<ElfReader::SymbolInfo> itable_symbols,
+      elf_reader->SearchSymbols(kITablePrefix, SymbolMatchType::kPrefix, STT_OBJECT));
+
+  for (const auto& sym : itable_symbols) {
+    // Expected format is:
+    //  go.itab.<type_name>,<interface_name>
+    std::vector<std::string_view> sym_split = absl::StrSplit(sym.name, ",");
+    if (sym_split.size() != 2) {
+      LOG(WARNING) << absl::Substitute("Ignoring unexpected itable format: $0", sym.name);
+      continue;
+    }
+
+    std::string_view interface_name = sym_split[1];
+    std::string_view type = sym_split[0];
+    type.remove_prefix(kITablePrefix.size());
+    interface_types[std::string(interface_name)].emplace_back(type);
+  }
+
+  return interface_types;
 }
 
 }  // namespace elf_tools

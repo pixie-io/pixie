@@ -25,8 +25,8 @@ int main(int argc, char** argv) {
   LOG(INFO) << absl::Substitute("Reading symbols in $0", FLAGS_binary);
 
   PL_ASSIGN_OR_EXIT(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(FLAGS_binary));
-  std::vector<ElfReader::SymbolInfo> symbol_infos =
-      elf_reader->ListFuncSymbols(FLAGS_filter, SymbolMatchType::kSubstr);
+  PL_ASSIGN_OR_EXIT(std::vector<ElfReader::SymbolInfo> symbol_infos,
+                    elf_reader->ListFuncSymbols(FLAGS_filter, SymbolMatchType::kSubstr));
 
   LOG(INFO) << absl::Substitute("Found $0 symbols", symbol_infos.size());
 

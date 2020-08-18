@@ -292,11 +292,12 @@ StatusOr<std::string> InferHTTP2SymAddrVendorPrefix(ElfReader* elf_reader) {
 
   std::string vendor_prefix;
   for (std::string_view s : kSampleSymbols) {
-    std::vector<ElfReader::SymbolInfo> symbol_matches =
-        elf_reader->ListFuncSymbols(s, elf_tools::SymbolMatchType::kSuffix);
+    PL_ASSIGN_OR(std::vector<ElfReader::SymbolInfo> symbol_matches,
+                 elf_reader->ListFuncSymbols(s, elf_tools::SymbolMatchType::kSuffix), continue);
     if (symbol_matches.size() > 1) {
-      return error::Internal("Found multiple symbol matches for $0. Cannot infer vendor prefix.",
-                             s);
+      VLOG(1) << absl::Substitute(
+          "Found multiple symbol matches for $0. Cannot infer vendor prefix.", s);
+      continue;
     }
     if (!symbol_matches.empty()) {
       const auto& name = symbol_matches.front().name;
@@ -306,7 +307,8 @@ StatusOr<std::string> InferHTTP2SymAddrVendorPrefix(ElfReader* elf_reader) {
     }
   }
 
-  VLOG(1) << absl::Substitute("Inferred vendor prefix: $0", vendor_prefix);
+  VLOG_IF(1, !vendor_prefix.empty())
+      << absl::Substitute("Inferred vendor prefix: $0", vendor_prefix);
   return vendor_prefix;
 }
 
@@ -599,8 +601,16 @@ StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(
                                   bpf_tools::UProbeSpec::kDefaultPID,
                                   tmpl.attach_type,
                                   std::string(tmpl.probe_fn)};
-    const std::vector<ElfReader::SymbolInfo> symbol_infos =
+
+    StatusOr<std::vector<ElfReader::SymbolInfo>> symbol_infos_status =
         elf_reader->ListFuncSymbols(tmpl.symbol, tmpl.match_type);
+    if (!symbol_infos_status.ok()) {
+      VLOG(1) << absl::Substitute("Could not list symbols [error=$0]",
+                                  symbol_infos_status.ToString());
+      continue;
+    }
+    const std::vector<ElfReader::SymbolInfo>& symbol_infos = symbol_infos_status.ValueOrDie();
+
     for (const auto& symbol_info : symbol_infos) {
       switch (tmpl.attach_type) {
         case BPFProbeAttachType::kEntry:
