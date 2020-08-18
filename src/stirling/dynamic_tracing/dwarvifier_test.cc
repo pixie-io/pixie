@@ -842,7 +842,7 @@ TEST_P(DwarfInfoTest, Transform) {
   ASSERT_TRUE(TextFormat::ParseFromString(std::string(input_str), &input_program));
 
   std::string expected_output_str = absl::Substitute(p.expected_output, binary_path_);
-  ASSERT_OK_AND_THAT(AddDwarves(input_program), EqualsProto(expected_output_str));
+  ASSERT_OK_AND_THAT(GeneratePhysicalProgram(input_program), EqualsProto(expected_output_str));
 }
 
 INSTANTIATE_TEST_SUITE_P(DwarfInfoTestSuite, DwarfInfoTest,

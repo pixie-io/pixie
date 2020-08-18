@@ -103,7 +103,8 @@ StatusOr<BCCProgram> CompileProgram(const ir::logical::TracepointDeployment& inp
   LOG(INFO) << absl::Substitute("Tracepoint binary: $0",
                                 intermediate_program.deployment_spec().path());
 
-  PL_ASSIGN_OR_RETURN(ir::physical::Program physical_program, AddDwarves(intermediate_program));
+  PL_ASSIGN_OR_RETURN(ir::physical::Program physical_program,
+                      GeneratePhysicalProgram(intermediate_program));
 
   BCCProgram bcc_program;
 

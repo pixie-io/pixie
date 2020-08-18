@@ -8,7 +8,8 @@ namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
 
-StatusOr<ir::physical::Program> AddDwarves(const ir::logical::TracepointDeployment& input_program);
+StatusOr<ir::physical::Program> GeneratePhysicalProgram(
+    const ir::logical::TracepointDeployment& input_program);
 
 }  // namespace dynamic_tracing
 }  // namespace stirling

@@ -19,40 +19,9 @@ using dwarf_tools::LocationType;
 using dwarf_tools::StructMemberInfo;
 using dwarf_tools::VarType;
 
-namespace {
-
-// Special variables all end with an underscore to minimize chance of conflict with user variables.
-// User variables that end with underscore are not allowed (this is not yet enforced).
-constexpr char kSPVarName[] = "sp_";
-constexpr char kTGIDVarName[] = "tgid_";
-constexpr char kTGIDPIDVarName[] = "tgid_pid_";
-constexpr char kTGIDStartTimeVarName[] = "tgid_start_time_";
-constexpr char kGOIDVarName[] = "goid_";
-// WARNING: Do not change the name of kKTimeVarName.
-//          "time_" is a name implicitly used by the query engine as the time column.
-constexpr char kKTimeVarName[] = "time_";
-constexpr char kStartKTimeNSVarName[] = "start_ktime_ns";
-constexpr char kRCVarName[] = "rc_";
-constexpr char kRCPtrVarName[] = "rc__";
-constexpr char kParmPtrVarName[] = "parm__";
-
-StatusOr<std::string> BPFHelperVariableName(ir::shared::BPFHelper builtin) {
-  static const absl::flat_hash_map<ir::shared::BPFHelper, std::string_view> kBuiltinVarNames = {
-      {ir::shared::BPFHelper::GOID, kGOIDVarName},
-      {ir::shared::BPFHelper::TGID, kTGIDVarName},
-      {ir::shared::BPFHelper::TGID_PID, kTGIDPIDVarName},
-      {ir::shared::BPFHelper::TGID_START_TIME, kTGIDStartTimeVarName},
-      {ir::shared::BPFHelper::KTIME, kKTimeVarName},
-  };
-  auto iter = kBuiltinVarNames.find(builtin);
-  if (iter == kBuiltinVarNames.end()) {
-    return error::NotFound("BPFHelper '$0' does not have a predefined variable",
-                           magic_enum::enum_name(builtin));
-  }
-  return std::string(iter->second);
-}
-
-}  // namespace
+//-----------------------------------------------------------------------------
+// Top-level code
+//-----------------------------------------------------------------------------
 
 /**
  * The Dwarvifier generates a Probe from a given LogicalProbe spec.
@@ -64,14 +33,15 @@ StatusOr<std::string> BPFHelperVariableName(ir::shared::BPFHelper builtin) {
  */
 class Dwarvifier {
  public:
-  Dwarvifier(const std::map<std::string, ir::shared::Map*>& maps,
-             const std::map<std::string, ir::physical::PerfBufferOutput*>& outputs)
-      : maps_(maps), outputs_(outputs) {}
   Status Setup(const ir::shared::DeploymentSpec& deployment_spec, ir::shared::Language language);
-  Status GenerateProbe(const ir::logical::Probe input_probe, ir::physical::Program* output_program);
+  Status Generate(const ir::logical::TracepointSpec input_program,
+                  ir::physical::Program* output_program);
 
  private:
-  Status ProcessProbe(const ir::logical::Probe& input_probe, ir::physical::Program* output_program);
+  void GenerateMap(const ir::shared::Map& map, ir::physical::Program* output_program);
+  void GenerateOutput(const ir::logical::Output& output, ir::physical::Program* output_program);
+  Status GenerateProbe(const ir::logical::Probe& input_probe,
+                       ir::physical::Program* output_program);
   Status ProcessTracepoint(const ir::shared::Tracepoint& tracepoint,
                            ir::physical::Probe* output_probe);
   void AddSpecialVariables(ir::physical::Probe* output_probe);
@@ -113,11 +83,8 @@ class Dwarvifier {
                               const std::string& struct_type_name,
                               ir::physical::Program* output_program);
 
-  StatusOr<ir::shared::ScalarType> VarTypeToProtoScalarType(const VarType& type,
-                                                            std::string_view name);
-
-  const std::map<std::string, ir::shared::Map*>& maps_;
-  const std::map<std::string, ir::physical::PerfBufferOutput*>& outputs_;
+  std::map<std::string, ir::shared::Map*> maps_;
+  std::map<std::string, ir::physical::PerfBufferOutput*> outputs_;
   std::map<std::string, ir::physical::Struct*> structs_;
 
   std::unique_ptr<dwarf_tools::DwarfReader> dwarf_reader_;
@@ -130,69 +97,72 @@ class Dwarvifier {
 
   ir::shared::Language language_;
   std::vector<std::string> implicit_columns_;
-
-  // We use these values as we build temporary variables for expressions.
-
-  // String for . operator (eg. my_struct.field)
-  static constexpr std::string_view kDotStr = "_D_";
-
-  // String for * operator (eg. (*my_struct).field)
-  static constexpr std::string_view kDerefStr = "_X_";
 };
 
-// Returns the struct name associated with an Output or Map declaration.
-std::string StructTypeName(const std::string& obj_name) {
-  return absl::StrCat(obj_name, "_value_t");
-}
-
-// AddDwarves is the main entry point.
-StatusOr<ir::physical::Program> AddDwarves(const ir::logical::TracepointDeployment& input) {
+// GeneratePhysicalProgram is the main entry point.
+StatusOr<ir::physical::Program> GeneratePhysicalProgram(
+    const ir::logical::TracepointDeployment& input) {
   if (input.tracepoints_size() != 1) {
     return error::InvalidArgument("Right now only support exactly 1 Tracepoint, got '$0'",
                                   input.tracepoints_size());
   }
-
-  // Index globals for quick lookups.
-  std::map<std::string, ir::shared::Map*> maps;
-  std::map<std::string, ir::physical::PerfBufferOutput*> outputs;
 
   ir::physical::Program output_program;
 
   output_program.mutable_deployment_spec()->CopyFrom(input.deployment_spec());
   output_program.set_language(input.tracepoints(0).program().language());
 
-  // For each input Tracepoint, populates additional variables to chase from predefined registers.
   for (const auto& input_tracepoint : input.tracepoints()) {
-    const auto& input_program = input_tracepoint.program();
-
-    // Copy all maps.
-    for (const auto& map : input_program.maps()) {
-      auto* m = output_program.add_maps();
-      m->CopyFrom(map);
-      maps[m->name()] = m;
-    }
-
-    // Copy all outputs.
-    for (const auto& output : input_program.outputs()) {
-      auto* o = output_program.add_outputs();
-
-      o->set_name(output.name());
-      o->mutable_fields()->CopyFrom(output.fields());
-      // Also insert the name of the struct that holds the output variables.
-      o->set_struct_type(StructTypeName(output.name()));
-
-      outputs[o->name()] = o;
-    }
-
-    // Transform probes.
-    Dwarvifier dwarvifier(maps, outputs);
-    PL_RETURN_IF_ERROR(dwarvifier.Setup(input.deployment_spec(), input_program.language()));
-    for (const auto& probe : input_program.probes()) {
-      PL_RETURN_IF_ERROR(dwarvifier.GenerateProbe(probe, &output_program));
-    }
+    // Transform tracepoint program.
+    Dwarvifier dwarvifier;
+    PL_RETURN_IF_ERROR(
+        dwarvifier.Setup(input.deployment_spec(), input_tracepoint.program().language()));
+    PL_RETURN_IF_ERROR(dwarvifier.Generate(input_tracepoint.program(), &output_program));
   }
 
   return output_program;
+}
+
+//-----------------------------------------------------------------------------
+// Static helper functions
+//-----------------------------------------------------------------------------
+
+namespace {
+
+// Special variables all end with an underscore to minimize chance of conflict with user variables.
+// User variables that end with underscore are not allowed (this is not yet enforced).
+constexpr char kSPVarName[] = "sp_";
+constexpr char kTGIDVarName[] = "tgid_";
+constexpr char kTGIDPIDVarName[] = "tgid_pid_";
+constexpr char kTGIDStartTimeVarName[] = "tgid_start_time_";
+constexpr char kGOIDVarName[] = "goid_";
+// WARNING: Do not change the name of kKTimeVarName.
+//          "time_" is a name implicitly used by the query engine as the time column.
+constexpr char kKTimeVarName[] = "time_";
+constexpr char kStartKTimeNSVarName[] = "start_ktime_ns";
+constexpr char kRCVarName[] = "rc_";
+constexpr char kRCPtrVarName[] = "rc__";
+constexpr char kParmPtrVarName[] = "parm__";
+
+StatusOr<std::string> BPFHelperVariableName(ir::shared::BPFHelper builtin) {
+  static const absl::flat_hash_map<ir::shared::BPFHelper, std::string_view> kBuiltinVarNames = {
+      {ir::shared::BPFHelper::GOID, kGOIDVarName},
+      {ir::shared::BPFHelper::TGID, kTGIDVarName},
+      {ir::shared::BPFHelper::TGID_PID, kTGIDPIDVarName},
+      {ir::shared::BPFHelper::TGID_START_TIME, kTGIDStartTimeVarName},
+      {ir::shared::BPFHelper::KTIME, kKTimeVarName},
+  };
+  auto iter = kBuiltinVarNames.find(builtin);
+  if (iter == kBuiltinVarNames.end()) {
+    return error::NotFound("BPFHelper '$0' does not have a predefined variable",
+                           magic_enum::enum_name(builtin));
+  }
+  return std::string(iter->second);
+}
+
+// Returns the struct name associated with an Output or Map declaration.
+std::string StructTypeName(const std::string& obj_name) {
+  return absl::StrCat(obj_name, "_value_t");
 }
 
 // Map to convert Go Base types to ScalarType.
@@ -251,11 +221,12 @@ const absl::flat_hash_map<std::string_view, ir::shared::ScalarType>& GetTypesMap
   }
 }
 
-StatusOr<ir::shared::ScalarType> Dwarvifier::VarTypeToProtoScalarType(const VarType& type,
-                                                                      std::string_view name) {
+StatusOr<ir::shared::ScalarType> VarTypeToProtoScalarType(const VarType& type,
+                                                          ir::shared::Language language,
+                                                          std::string_view name) {
   switch (type) {
     case VarType::kBaseType: {
-      auto& types_map = GetTypesMap(language_);
+      auto& types_map = GetTypesMap(language);
       auto iter = types_map.find(name);
       if (iter == types_map.end()) {
         return error::Internal("Unrecognized base type: $0", name);
@@ -265,7 +236,7 @@ StatusOr<ir::shared::ScalarType> Dwarvifier::VarTypeToProtoScalarType(const VarT
     case VarType::kPointer:
       return ir::shared::ScalarType::VOID_POINTER;
     case VarType::kStruct:
-      if (language_ == ir::shared::Language::GOLANG) {
+      if (language == ir::shared::Language::GOLANG) {
         if (name == "string") {
           return ir::shared::ScalarType::STRING;
         }
@@ -297,30 +268,11 @@ StatusOr<ArgInfo> GetArgInfo(const std::map<std::string, ArgInfo>& args_map,
   return retval;
 }
 
-ir::physical::ScalarVariable* Dwarvifier::AddVariable(ir::physical::Probe* probe,
-                                                      const std::string& name,
-                                                      ir::shared::ScalarType type) {
-  auto* var = probe->add_vars()->mutable_scalar_var();
-  var->set_name(name);
-  var->set_type(type);
+}  // namespace
 
-  scalar_var_types_[name] = type;
-
-  return var;
-}
-
-Status Dwarvifier::GenerateProbe(const ir::logical::Probe input_probe,
-                                 ir::physical::Program* output_program) {
-  PL_ASSIGN_OR_RETURN(args_map_,
-                      dwarf_reader_->GetFunctionArgInfo(input_probe.tracepoint().symbol()));
-  PL_ASSIGN_OR_RETURN(retval_info_,
-                      dwarf_reader_->GetFunctionRetValInfo(input_probe.tracepoint().symbol()));
-
-  scalar_var_types_.clear();
-
-  PL_RETURN_IF_ERROR(ProcessProbe(input_probe, output_program));
-  return Status::OK();
-}
+//-----------------------------------------------------------------------------
+// Dwarvifier
+//-----------------------------------------------------------------------------
 
 Status Dwarvifier::Setup(const ir::shared::DeploymentSpec& deployment_spec,
                          ir::shared::Language language) {
@@ -338,26 +290,77 @@ Status Dwarvifier::Setup(const ir::shared::DeploymentSpec& deployment_spec,
   return Status::OK();
 }
 
-Status Dwarvifier::ProcessTracepoint(const ir::shared::Tracepoint& tracepoint,
-                                     ir::physical::Probe* output_probe) {
-  auto* probe_tracepoint = output_probe->mutable_tracepoint();
-  probe_tracepoint->CopyFrom(tracepoint);
-  probe_tracepoint->set_type(tracepoint.type());
+Status Dwarvifier::Generate(const ir::logical::TracepointSpec input_program,
+                            ir::physical::Program* output_program) {
+  // Copy all maps.
+  for (const auto& map : input_program.maps()) {
+    GenerateMap(map, output_program);
+  }
+
+  // Copy all outputs.
+  for (const auto& output : input_program.outputs()) {
+    GenerateOutput(output, output_program);
+  }
+
+  // Transform probes.
+  for (const auto& probe : input_program.probes()) {
+    PL_RETURN_IF_ERROR(GenerateProbe(probe, output_program));
+  }
 
   return Status::OK();
 }
 
+ir::physical::ScalarVariable* Dwarvifier::AddVariable(ir::physical::Probe* probe,
+                                                      const std::string& name,
+                                                      ir::shared::ScalarType type) {
+  auto* var = probe->add_vars()->mutable_scalar_var();
+  var->set_name(name);
+  var->set_type(type);
+
+  scalar_var_types_[name] = type;
+
+  return var;
+}
+
+void Dwarvifier::GenerateMap(const ir::shared::Map& map, ir::physical::Program* output_program) {
+  auto* m = output_program->add_maps();
+  m->CopyFrom(map);
+
+  // Record this map (for quick lookup by GenerateProbe).
+  maps_[m->name()] = m;
+}
+
+void Dwarvifier::GenerateOutput(const ir::logical::Output& output,
+                                ir::physical::Program* output_program) {
+  auto* o = output_program->add_outputs();
+
+  o->set_name(output.name());
+  o->mutable_fields()->CopyFrom(output.fields());
+  // Also insert the name of the struct that holds the output variables.
+  o->set_struct_type(StructTypeName(output.name()));
+
+  // Record this output (for quick lookup by GenerateProbe).
+  outputs_[o->name()] = o;
+}
+
 namespace {
 
-bool IsFunctionLatecySpecified(const ir::logical::Probe& probe) {
+bool IsFunctionLatencySpecified(const ir::logical::Probe& probe) {
   return probe.function_latency_oneof_case() ==
          ir::logical::Probe::FunctionLatencyOneofCase::kFunctionLatency;
 }
 
 }  // namespace
 
-Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
-                                ir::physical::Program* output_program) {
+Status Dwarvifier::GenerateProbe(const ir::logical::Probe& input_probe,
+                                 ir::physical::Program* output_program) {
+  // Some initial setup.
+  scalar_var_types_.clear();
+  PL_ASSIGN_OR_RETURN(args_map_,
+                      dwarf_reader_->GetFunctionArgInfo(input_probe.tracepoint().symbol()));
+  PL_ASSIGN_OR_RETURN(retval_info_,
+                      dwarf_reader_->GetFunctionRetValInfo(input_probe.tracepoint().symbol()));
+
   auto* p = output_program->add_probes();
 
   p->set_name(input_probe.name());
@@ -381,7 +384,7 @@ Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
     PL_RETURN_IF_ERROR(ProcessMapVal(map_val, p));
   }
 
-  if (IsFunctionLatecySpecified(input_probe)) {
+  if (IsFunctionLatencySpecified(input_probe)) {
     PL_RETURN_IF_ERROR(ProcessFunctionLatency(input_probe.function_latency(), p));
   }
 
@@ -400,6 +403,15 @@ Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
   for (const auto& printk : input_probe.printks()) {
     p->add_printks()->CopyFrom(printk);
   }
+
+  return Status::OK();
+}
+
+Status Dwarvifier::ProcessTracepoint(const ir::shared::Tracepoint& tracepoint,
+                                     ir::physical::Probe* output_probe) {
+  auto* probe_tracepoint = output_probe->mutable_tracepoint();
+  probe_tracepoint->CopyFrom(tracepoint);
+  probe_tracepoint->set_type(tracepoint.type());
 
   return Status::OK();
 }
@@ -481,6 +493,12 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
                                   const std::string& base_var,
                                   const std::vector<std::string_view>& components,
                                   ir::physical::Probe* output_probe) {
+  // String for . operator (eg. my_struct.field)
+  static constexpr std::string_view kDotStr = "_D_";
+
+  // String for * operator (eg. (*my_struct).field)
+  static constexpr std::string_view kDerefStr = "_X_";
+
   VarType type = arg_info.type;
   std::string type_name = arg_info.type_name;
   int offset = arg_info.location.offset;
@@ -493,7 +511,7 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
     // If parent is a pointer, create a variable to dereference it.
     if (type == VarType::kPointer) {
       PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type,
-                          VarTypeToProtoScalarType(type, type_name));
+                          VarTypeToProtoScalarType(type, language_, type_name));
 
       absl::StrAppend(&name, kDerefStr);
 
@@ -517,7 +535,8 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
 
   // If parent is a pointer, create a variable to dereference it.
   if (type == VarType::kPointer) {
-    PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type, VarTypeToProtoScalarType(type, type_name));
+    PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type,
+                        VarTypeToProtoScalarType(type, language_, type_name));
 
     absl::StrAppend(&name, kDerefStr);
 
@@ -536,7 +555,8 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
     absl::StrAppend(&name, kDerefStr);
   }
 
-  PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type, VarTypeToProtoScalarType(type, type_name));
+  PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type,
+                      VarTypeToProtoScalarType(type, language_, type_name));
 
   // The very last created variable uses the original id.
   // This is important so that references in the original probe are maintained.
