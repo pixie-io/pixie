@@ -110,6 +110,8 @@ message LogicalPlannerState {
   DistributedState distributed_state = 2;
   // The query options for how the plans should be executed.
   pl.carnot.planpb.PlanOptions plan_options = 3;
+  // The address to which the query results should be sent.
+  string result_address = 4;
 }
 
 // The result for the planner. Contains a status to track any errors

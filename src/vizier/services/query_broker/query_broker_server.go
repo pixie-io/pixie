@@ -11,8 +11,6 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
-
-	"pixielabs.ai/pixielabs/src/carnotpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
@@ -31,6 +29,8 @@ const plMDSAddr = "vizier-metadata.pl.svc:50400"
 func init() {
 	pflag.String("cloud_connector_addr", "vizier-cloud-connector.pl.svc:50800", "The address to the cloud connector")
 	pflag.String("cluster_id", "", "The Cluster ID to use for Pixie Cloud")
+	pflag.String("pod_ip_address", "", "The IP address of this pod to allow the agent to connect to this"+
+		" particular query broker instance across multiple requests")
 }
 
 // NewVizierServiceClient creates a new vz RPC client stub.
@@ -66,9 +66,16 @@ func main() {
 	flush := services.InitDefaultSentry(viper.GetString("cluster_id"))
 	defer flush()
 
-	env, err := querybrokerenv.New()
+	// For a given query, the agents may send multiple sets of results via the query broker.
+	// We pass the pod IP address down to the agents in order to ensure that they continue to
+	// communicate with the same query broker across a single request.
+	podAddr := viper.GetString("pod_ip_address")
+	if podAddr == "" {
+		log.Fatal("Expected to receive pod IP address.")
+	}
+	env, err := querybrokerenv.New(fmt.Sprintf("%s:%d", podAddr, servicePort))
 	if err != nil {
-		log.WithError(err).Fatal("Failed to create api environment")
+		log.WithError(err).Fatal("Failed to create api environment.")
 	}
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
@@ -113,7 +120,7 @@ func main() {
 	defer agentTracker.Stop()
 	server, err := controllers.NewServer(env, agentTracker, mdtpClient, natsConn)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
+		log.WithError(err).Fatal("Failed to initialize GRPC server funcs.")
 	}
 
 	// For query broker we bump up the max message size since resuls might be larger than 4mb.
@@ -123,13 +130,12 @@ func main() {
 		httpmiddleware.WithBearerAuthMiddleware(env, mux), maxMsgSize)
 	querybrokerpb.RegisterQueryBrokerServiceServer(s.GRPCServer(), server)
 	vizierpb.RegisterVizierServiceServer(s.GRPCServer(), server)
-	carnotpb.RegisterResultSinkServiceServer(s.GRPCServer(), server)
 
 	// For the passthrough proxy we create a GRPC client to the current server. It appears really
 	// hard to emulate the streaming GRPC connection and this helps keep the API straightforward.
 	vzServiceClient, err := NewVizierServiceClient(servicePort)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to init vzservice client")
+		log.WithError(err).Fatal("Failed to init vzservice client.")
 	}
 
 	// Start passthrough proxy.

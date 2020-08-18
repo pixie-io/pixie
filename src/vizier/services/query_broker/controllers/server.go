@@ -152,6 +152,7 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 	plannerState := &distributedpb.LogicalPlannerState{
 		DistributedState: info.DistributedState(),
 		PlanOptions:      planOpts,
+		ResultAddress:    s.env.Address(),
 	}
 	log.WithField("query_id", queryID).
 		Infof("Running script")

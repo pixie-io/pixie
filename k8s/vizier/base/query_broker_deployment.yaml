@@ -28,6 +28,7 @@ spec:
           done;
         ']
         env:
+          # The name of the service that the QB must connect with before becoming available.
         - name: SERVICE_NAME
           value: "vizier-metadata"
         - name: SERVICE_PORT
@@ -41,6 +42,10 @@ spec:
             secretKeyRef:
               key: jwt-signing-key
               name: pl-cluster-secrets
+        - name: PL_POD_IP_ADDRESS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
         envFrom:
         - configMapRef:
             name: pl-tls-config
