@@ -8,6 +8,7 @@
 #include <sole.hpp>
 
 #include "src/carnot/carnot.h"
+#include "src/carnot/exec/local_grpc_result_server.h"
 #include "src/carnot/exec/test_utils.h"
 #include "src/carnot/udf/udf.h"
 #include "src/common/base/base.h"

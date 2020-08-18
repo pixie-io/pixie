@@ -9,6 +9,7 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/carnot.h"
+#include "src/carnot/exec/local_grpc_result_server.h"
 #include "src/carnot/exec/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/testing/testing.h"
@@ -24,7 +25,11 @@ class JoinTest : public ::testing::Test {
   void SetUp() override {
     Test::SetUp();
     table_store_ = std::make_shared<table_store::TableStore>();
-    carnot_ = Carnot::Create(sole::uuid4(), table_store_, exec::MockResultSinkStubGenerator)
+    exec::LocalGRPCResultSinkServer result_server(10015);
+    result_server.StartServerThread();
+    carnot_ = Carnot::Create(sole::uuid4(), table_store_,
+                             std::bind(&exec::LocalGRPCResultSinkServer::StubGenerator,
+                                       &result_server, std::placeholders::_1))
                   .ConsumeValueOrDie();
     auto left_table = CarnotTestUtils::TestTable();
     table_store_->AddTable("left_table", left_table);

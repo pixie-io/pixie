@@ -9,6 +9,7 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/carnot.h"
+#include "src/carnot/exec/local_grpc_result_server.h"
 #include "src/carnot/exec/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/testing/testing.h"
@@ -25,7 +26,11 @@ class CarnotTest : public ::testing::Test {
   void SetUp() override {
     Test::SetUp();
     table_store_ = std::make_shared<table_store::TableStore>();
-    carnot_ = Carnot::Create(sole::uuid4(), table_store_, exec::MockResultSinkStubGenerator)
+    result_server_ = std::make_unique<exec::LocalGRPCResultSinkServer>(10015);
+    result_server_->StartServerThread();
+    carnot_ = Carnot::Create(sole::uuid4(), table_store_,
+                             std::bind(&exec::LocalGRPCResultSinkServer::StubGenerator,
+                                       result_server_.get(), std::placeholders::_1))
                   .ConsumeValueOrDie();
     auto table = CarnotTestUtils::TestTable();
     table_store_->AddTable("test_table", table);
@@ -46,6 +51,7 @@ class CarnotTest : public ::testing::Test {
   std::shared_ptr<table_store::Table> big_table_;
   std::shared_ptr<table_store::Table> empty_table_;
   std::unique_ptr<Carnot> carnot_;
+  std::unique_ptr<exec::LocalGRPCResultSinkServer> result_server_;
 };
 
 TEST_F(CarnotTest, basic) {

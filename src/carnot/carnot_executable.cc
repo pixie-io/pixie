@@ -7,6 +7,7 @@
 
 #include "src/carnot/carnot.h"
 #include "src/carnot/exec/exec_state.h"
+#include "src/carnot/exec/local_grpc_result_server.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/type_utils.h"
@@ -231,11 +232,12 @@ int main(int argc, char* argv[]) {
 
   // Execute query.
   auto table_store = std::make_shared<pl::table_store::TableStore>();
+  pl::carnot::exec::LocalGRPCResultSinkServer result_server(10015);
+  result_server.StartServerThread();
   auto carnot_or_s = pl::carnot::Carnot::Create(
       sole::uuid4(), table_store,
-      [](const std::string&) -> std::unique_ptr<pl::carnotpb::ResultSinkService::StubInterface> {
-        return nullptr;
-      });
+      std::bind(&pl::carnot::exec::LocalGRPCResultSinkServer::StubGenerator, &result_server,
+                std::placeholders::_1));
   if (!carnot_or_s.ok()) {
     LOG(FATAL) << "Carnot failed to init.";
   }
