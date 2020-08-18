@@ -8,6 +8,7 @@
 
 #include <absl/strings/str_format.h>
 
+#include "src/carnot/udf/doc.h"
 #include "src/carnot/udf/type_inference.h"
 #include "src/carnot/udf/udf_definition.h"
 #include "src/carnot/udfspb/udfs.pb.h"
@@ -105,6 +106,10 @@ class Registry {
     }
     map_[key] = std::move(udf_def);
     RegisterSemanticTypes<T>(name);
+
+    if constexpr (has_valid_doc_fn<T>()) {
+      PL_RETURN_IF_ERROR(T::Doc().template ToProto<T>(docs_pb_.add_udf()));
+    }
     return Status::OK();
   }
 
@@ -195,6 +200,11 @@ class Registry {
 
   const RegistryMap& map() const { return map_; }
 
+  /**
+   * Returns the UDF docs proto.
+   */
+  const udfspb::Docs& ToDocsProto() { return docs_pb_; }
+
  private:
   /**
    * Get the UDF/UDA/UDTF definition.
@@ -211,6 +221,7 @@ class Registry {
   std::string name_;
   RegistryMap map_;
   std::map<std::string, ExplicitRuleSet> semantic_type_rules_;
+  udfspb::Docs docs_pb_;
 };
 
 }  // namespace udf

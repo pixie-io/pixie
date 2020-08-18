@@ -20,6 +20,12 @@ class ScalarUDF1 : public ScalarUDF {
     PL_UNUSED(ctx);
     return b1.val && (b2.val != 0) ? 3 : 0;
   }
+  static ScalarUDFDocBuilder Doc() {
+    return ScalarUDFDocBuilder("This function adds two numbers: c = a + b")
+        .Arg("b1", "some arg")
+        .Arg("b2", "some other arg")
+        .Returns("returns something");
+  }
 };
 
 class ScalarUDF1WithInit : public ScalarUDF {
@@ -122,6 +128,13 @@ class UDA1 : public UDA {
   void Update(FunctionContext*, types::Int64Value) {}
   void Merge(FunctionContext*, const UDA1&) {}
   types::Int64Value Finalize(FunctionContext*) { return 0; }
+  static UDADocBuilder Doc() {
+    return UDADocBuilder("This function computes the sum of a list of numbers.")
+        .Details("The detailed version of this.")
+        .Arg("a", "The argument to sum")
+        .Returns("The sum of all values of a.")
+        .Example("df.sum = df.agg");
+  }
 };
 
 class UDA1Overload : public UDA {
@@ -541,6 +554,54 @@ TEST(Registry, semantic_type_rules_should_have_both_rules_if_overloaded_and_diff
 
   udfspb::UDFInfo expected_udf_info;
   EXPECT_THAT(udf_info, EqualsProto(kExpectedUDFInfoWithOverloadedTypes2));
+}
+
+auto expectedDocsPbTxt = R"(
+udf {
+  brief: "This function adds two numbers: c = a + b"
+  scalar_udf_doc {
+    args {
+      ident: "some arg"
+      desc: "some arg"
+      type: BOOLEAN
+    }
+    args {
+      ident: "some other arg"
+      desc: "some other arg"
+      type: INT64
+    }
+    retval {
+      desc: "returns something"
+      type: INT64
+    }
+  }
+}
+udf {
+  brief: "This function computes the sum of a list of numbers."
+  desc: "The detailed version of this."
+  examples {
+    value: "df.sum = df.agg"
+  }
+  uda_doc {
+    update_args {
+      ident: "The argument to sum"
+      desc: "The argument to sum"
+      type: INT64
+    }
+    result {
+      desc: "The sum of all values of a."
+      type: INT64
+    }
+  }
+}
+)";
+
+TEST(Registry, docs) {
+  Registry registry("test registry");
+  registry.RegisterOrDie<ScalarUDF1>("scalar1");
+  registry.RegisterOrDie<UDA1>("count");
+  udfspb::Docs docs = registry.ToDocsProto();
+  EXPECT_THAT(docs, EqualsProto(expectedDocsPbTxt));
 }
 
 }  // namespace udf

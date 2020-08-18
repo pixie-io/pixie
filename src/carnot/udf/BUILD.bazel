@@ -58,6 +58,12 @@ pl_cc_test(
     deps = [":cc_library"],
 )
 
+pl_cc_test(
+    name = "doc_test",
+    srcs = ["doc_test.cc"],
+    deps = [":cc_library"],
+)
+
 pl_cc_binary(
     name = "udf_eval_benchmark",
     testonly = 1,

@@ -124,7 +124,10 @@ message ExampleDoc {
 
 // Documentation specific to a UDA.
 message UDADoc {
-  // To be filled in.
+  // Documentation for the update arg used.
+  repeated IdentDoc update_args = 1;
+  // Documentation for the result.
+  IdentDoc result = 2;
 }
 
 // Doc is documentation of single UDF.
