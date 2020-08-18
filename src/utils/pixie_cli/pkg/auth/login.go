@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -350,7 +351,12 @@ func (p *PixieCloudLogin) getRefreshToken(accessToken string) (*RefreshToken, er
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusBadRequest {
-		return nil, errTokenUnauthorized
+		// Read error body.
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, errTokenUnauthorized
+		}
+		return nil, errors.New(string(bodyBytes))
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Request for token failed with status %d", resp.StatusCode)
@@ -434,11 +440,7 @@ func getAuthCompleteURL(cloudAddr string, err error) string {
 		return authURL.String()
 	}
 	params := url.Values{}
-	if err == errTokenUnauthorized {
-		params.Add("err", "token")
-	} else {
-		params.Add("err", "true")
-	}
+	params.Add("err", err.Error())
 	authURL.RawQuery = params.Encode()
 	return authURL.String()
 }
