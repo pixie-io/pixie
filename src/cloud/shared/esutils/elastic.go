@@ -5,8 +5,10 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/olivere/elastic/v7"
 )
@@ -34,7 +36,11 @@ func getESHTTPSClient(config *Config) (*http.Client, error) {
 	}
 	tlsConfig.BuildNameToCertificate()
 	transport := &http.Transport{
-		TLSClientConfig: tlsConfig,
+		DialContext: (&net.Dialer{
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		TLSClientConfig:     tlsConfig,
+		MaxIdleConnsPerHost: 100, // Default is 2.
 	}
 	httpClient := &http.Client{
 		Transport: transport,
