@@ -98,7 +98,8 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 	for _, r := range reqs {
 		ms.Add(elastic.NewSearchRequest().
 			Highlight(highlight).
-			Query(e.getQueryForRequest(r.OrgID, r.ClusterUID, r.Input, r.AllowedKinds, r.AllowedArgs)))
+			Query(e.getQueryForRequest(r.OrgID, r.ClusterUID, r.Input, r.AllowedKinds, r.AllowedArgs)).
+			Size(5).FetchSourceIncludeExclude([]string{"kind", "name", "ns"}, []string{}))
 	}
 
 	resp, err := ms.Do(context.Background())
