@@ -1,15 +1,21 @@
 {
   "variables": [
     {
-      "name": "start",
+      "name": "start_time",
       "type": "PX_STRING",
       "description": "The relative start time of the window. Current time is assumed to be now",
       "defaultValue": "-5m"
     },
     {
-      "name": "pod",
-      "type": "PX_STRING",
-      "description": "The full/partial name of the pod to filter by for pgsql request. Format: ns/pod_name",
+      "name": "requesting_pod",
+      "type": "PX_POD",
+      "description": "The name of the pod sending the request. Format: ns/svc_name",
+      "defaultValue": ""
+    },
+    {
+      "name": "responding_pod",
+      "type": "PX_POD",
+      "description": "The name of the pod receiving the request. Format: ns/svc_name",
       "defaultValue": ""
     }
   ],
@@ -17,15 +23,19 @@
     {
       "outputName": "LET",
       "func": {
-        "name": "pod_pgsql_let",
+        "name": "pod_edge_let",
         "args": [
           {
-            "name": "start",
-            "variable": "start"
+            "name": "start_time",
+            "variable": "start_time"
           },
           {
-            "name": "pod",
-            "variable": "pod"
+            "name": "requesting_pod",
+            "variable": "requesting_pod"
+          },
+          {
+            "name": "responding_pod",
+            "variable": "responding_pod"
           }
         ]
       }
@@ -33,7 +43,7 @@
   ],
   "widgets": [
     {
-      "name": "P50 Latency",
+      "name": "HTTP Request Latency",
       "position": {
         "x": 0,
         "y": 0,
@@ -46,20 +56,26 @@
         "timeseries": [
           {
             "value": "latency_p50",
-            "series": "k8s",
-            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          },
+          {
+            "value": "latency_p90",
+            "mode": "MODE_LINE"
+          },
+          {
+            "value": "latency_p99",
             "mode": "MODE_LINE"
           }
         ],
         "title": "",
         "yAxis": {
-          "label": "P50 Latency (ms)"
+          "label": "latency (ms)"
         },
         "xAxis": null
       }
     },
     {
-      "name": "P90 Latency",
+      "name": "HTTP Request Throughput",
       "position": {
         "x": 4,
         "y": 0,
@@ -71,21 +87,19 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "latency_p90",
-            "series": "k8s",
-            "stackBySeries": false,
+            "value": "rps",
             "mode": "MODE_LINE"
           }
         ],
         "title": "",
         "yAxis": {
-          "label": "P90 Latency (ms)"
+          "label": "requests per s"
         },
         "xAxis": null
       }
     },
     {
-      "name": "P99 Latency",
+      "name": "HTTP Request Error Rate",
       "position": {
         "x": 8,
         "y": 0,
@@ -97,21 +111,19 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "latency_p99",
-            "series": "k8s",
-            "stackBySeries": false,
+            "value": "error_rate",
             "mode": "MODE_LINE"
           }
         ],
         "title": "",
         "yAxis": {
-          "label": "P99 Latency (ms)"
+          "label": "Error Rate (%)"
         },
         "xAxis": null
       }
     },
     {
-      "name": "Request Throughput",
+      "name": "HTTP Data Sent/Received",
       "position": {
         "x": 0,
         "y": 3,
@@ -123,31 +135,83 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "rps",
-            "series": "k8s",
-            "stackBySeries": false,
+            "value": "resp_mb_per_s",
+            "mode": "MODE_LINE"
+          },
+          {
+            "value": "req_mb_per_s",
             "mode": "MODE_LINE"
           }
         ],
         "title": "",
         "yAxis": {
-          "label": "RPS"
+          "label": "MB per s"
         },
         "xAxis": null
       }
     },
     {
+      "name": "Status Code Distribution",
+      "position": {
+        "x": 4,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "func": {
+        "name": "http_code_agg",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "requesting_pod",
+            "variable": "requesting_pod"
+          },
+          {
+            "name": "responding_pod",
+            "variable": "responding_pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.BarChart",
+        "bar": {
+          "value": "count",
+          "label": "http_resp_status",
+          "horizontal": true
+        },
+        "xAxis": {
+          "label": "# of requests"
+        },
+        "yAxis": {
+          "label": "HTTP Status Code"
+        }
+      }
+    },
+    {
       "name": "Request Latency Histogram",
+      "position": {
+        "x": 8,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
       "func": {
         "name": "latency_histogram",
         "args": [
           {
-            "name": "start",
-            "variable": "start"
+            "name": "start_time",
+            "variable": "start_time"
           },
           {
-            "name": "pod",
-            "variable": "pod"
+            "name": "requesting_pod",
+            "variable": "requesting_pod"
+          },
+          {
+            "name": "responding_pod",
+            "variable": "responding_pod"
           }
         ]
       },
@@ -165,16 +229,10 @@
         "yAxis": {
           "label": "# of requests"
         }
-      },
-      "position": {
-        "x": 4,
-        "y": 3,
-        "w": 4,
-        "h": 3
       }
     },
     {
-      "name": "Summary",
+      "name": "HTTP Traffic",
       "position": {
         "x": 0,
         "y": 6,
@@ -182,15 +240,19 @@
         "h": 3
       },
       "func": {
-        "name": "summary_pgsql_let",
+        "name": "http_requests",
         "args": [
           {
-            "name": "start",
-            "variable": "start"
+            "name": "start_time",
+            "variable": "start_time"
           },
           {
-            "name": "pod",
-            "variable": "pod"
+            "name": "requesting_pod",
+            "variable": "requesting_pod"
+          },
+          {
+            "name": "responding_pod",
+            "variable": "responding_pod"
           }
         ]
       },

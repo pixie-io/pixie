@@ -1,0 +1,117 @@
+''' Pod Edge LET stats
+
+This live view calculates LET between a requesting and responding pod.
+'''
+import px
+
+bytes_per_mb = 1024 * 1024
+# Window in seconds within which to aggregate metrics.
+window_s = 10
+# Flag to filter out requests that come from an unresolvable IP.
+filter_unresolved_inbound = True
+# Flag to filter out health checks from the data.
+filter_health_checks = True
+# Flag to filter out ready checks from the data.
+filter_ready_checks = True
+# Flag to filter out non_k8s_traffic from the data.
+filter_non_k8s_traffic = True
+# The bin size in milliseconds to use for the latency histogram.
+latency_bin_size_ms = 50
+
+
+def http_requests(start_time: str, requesting_pod: px.Pod, responding_pod: px.Pod):
+    """ Returns HTTP requests from `requesting_pod` to `responding_pod`.
+
+    Args:
+    @start_time: The start time of the data.
+    @requesting_pod: the name of the pod that originates requests.
+    @responding_pod: the name of the pod that responds to requests.
+    """
+
+    df = px.DataFrame(table='http_events', start_time=start_time)
+
+    # filter to traffic between the requesting and responding pod only.
+    df = df[df.ctx['pod'] == responding_pod]
+
+    # This join is used as a workaround to filter on `requesting_pod` because
+    # px.ip_to_pod_id can only run after a blocking node such as 'agg'.
+    remote_ip_table = df.groupby(['remote_addr']).agg()
+    remote_ip_table.requesting_pod = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
+    remote_ip_table = remote_ip_table[remote_ip_table.requesting_pod == requesting_pod]
+
+    # remote_ip_table = df[px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr)) == requesting_pod]
+    # Inherently filter out IPs that don't belong to `requesting_pod`.
+    df = df.merge(remote_ip_table, how='inner', left_on='remote_addr', right_on='remote_addr',
+                  suffixes=['_x', '']).drop('remote_addr_x')
+
+    df.latency_ms = df.http_resp_latency_ns / 1.0E6
+    df.timestamp = px.bin(df.time_, px.seconds(window_s))
+    df.failure = df.http_resp_status >= 400
+    filter_out_conds = ((df.http_req_path != '/health' or not filter_health_checks) and (
+        df.http_req_path != '/readyz' or not filter_ready_checks)) and (
+        df['remote_addr'] != '-' or not filter_unresolved_inbound)
+    df = df[filter_out_conds]
+    return df[['timestamp', 'latency_ms', 'http_req_method', 'http_req_path', 'http_req_body',
+               'http_resp_status', 'http_resp_body', 'failure']]
+
+
+def http_code_agg(start_time: str, requesting_pod: px.Pod, responding_pod: px.Pod):
+    """ Computes an aggregate of HTTP status codes for traffic between `requesting_pod`
+    and `responding_pod`.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @requesting_pod: The name of the requesting pod.
+    @responding_pod: The name of the requesting pod.
+    """
+    df = http_requests(start_time, requesting_pod, responding_pod)
+    return df.groupby('http_resp_status').agg(count=('timestamp', px.count))
+
+
+def latency_histogram(start_time: str, requesting_pod: px.Pod, responding_pod: px.Pod):
+    """ Computes a histogram of HTTP request latency between `requesting_pod` and
+    `responding_pod`.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @requesting_pod: The name of the requesting pod.
+    @responding_pod: The name of the requesting pod.
+    """
+    df = http_requests(start_time, requesting_pod, responding_pod)
+    df.request_latency_ms = px.bin(df.http_resp_latency_ns / (1000 * 1000),
+                                   latency_bin_size_ms)
+    return df.groupby('request_latency_ms').agg(count=('timestamp', px.count))
+
+
+def pod_edge_let(start_time: str, requesting_pod: px.Pod, responding_pod: px.Pod):
+    """ Computes the latency, error rate, and throughput of traffic between `requesting_pod`
+    and `responding_pod`.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @requesting_pod: The name of the requesting pod.
+    @responding_pod: The name of the requesting pod.
+    """
+
+    df = http_requests(start_time, requesting_pod, responding_pod)
+    df.resp_size = px.length(df.http_resp_body)
+    df.req_size = px.length(df.http_req_body)
+
+    df = df.groupby('timestamp').agg(
+        latency_quantiles=('latency_ms', px.quantiles),
+        error_rate_per_window=('failure', px.mean),
+        throughput_total=('latency_ms', px.count),
+        bytes_recv=('req_size', px.sum),
+        bytes_sent=('resp_size', px.sum)
+    )
+
+    window_size = window_s * 1.0
+    df.latency_p50 = px.pluck_float64(df.latency_quantiles, 'p50')
+    df.latency_p90 = px.pluck_float64(df.latency_quantiles, 'p90')
+    df.latency_p99 = px.pluck_float64(df.latency_quantiles, 'p99')
+    df['time_'] = df['timestamp']
+    df.rps = df.throughput_total / window_size
+    df.req_mb_per_s = df.bytes_recv / (window_size * bytes_per_mb)
+    df.resp_mb_per_s = df.bytes_sent / (window_size * bytes_per_mb)
+    df.error_rate = df.error_rate_per_window * df.rps
+    return df
