@@ -109,7 +109,8 @@ class PixieModuleTest : public QLObjectTest {
     google::protobuf::TextFormat::MergeFromString(kUDTFDefaultValueTestPb, &spec2);
     info_->AddUDTF(spec2);
 
-    compiler_state_ = std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_);
+    compiler_state_ =
+        std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_, "result_addr");
 
     module_ = PixieModule::Create(graph.get(), compiler_state_.get(), ast_visitor.get())
                   .ConsumeValueOrDie();

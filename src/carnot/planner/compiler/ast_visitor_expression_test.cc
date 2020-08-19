@@ -46,8 +46,8 @@ class ASTExpressionTest : public ::testing::Test {
     udfspb::UDFInfo info_pb;
     google::protobuf::TextFormat::MergeFromString(kRegInfoProto, &info_pb);
     PL_CHECK_OK(info_->Init(info_pb));
-    compiler_state_ =
-        std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now_);
+    compiler_state_ = std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info_.get(),
+                                                      time_now_, "result_addr");
     graph = std::make_shared<IR>();
 
     auto ast_visitor_impl = ASTVisitorImpl::Create(graph.get(), &dynamic_trace_,

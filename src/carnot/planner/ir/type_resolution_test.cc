@@ -32,7 +32,8 @@ class TypeResolutionTest : public OperatorTests {
                                      {types::ST_NONE, types::ST_PERCENT, types::ST_PERCENT,
                                       types::ST_PERCENT, types::ST_UPID, types::ST_BYTES}));
 
-    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
+    compiler_state_ =
+        std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now, "result_addr");
     cpu_type_ = ValueType::Create(types::FLOAT64, types::ST_PERCENT);
     upid_type_ = ValueType::Create(types::UINT128, types::ST_UPID);
     bytes_type_ = ValueType::Create(types::INT64, types::ST_BYTES);

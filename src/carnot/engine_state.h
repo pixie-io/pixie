@@ -61,10 +61,13 @@ class EngineState : public NotCopyable {
     return std::make_unique<plan::PlanState>(func_registry_.get());
   }
 
-  std::unique_ptr<planner::CompilerState> CreateCompilerState(types::Time64NSValue time_now) {
+  std::unique_ptr<planner::CompilerState> CreateLocalExecutionCompilerState(
+      types::Time64NSValue time_now) {
     auto rel_map = table_store_->GetRelationMap();
+    // Use an empty string for query result address, because the local execution mode should use
+    // the Local GRPC result server to send results to.
     return std::make_unique<planner::CompilerState>(std::move(rel_map), registry_info_.get(),
-                                                    time_now);
+                                                    time_now, /* result address */ "");
   }
 
   const udf::Registry* func_registry() const { return func_registry_.get(); }

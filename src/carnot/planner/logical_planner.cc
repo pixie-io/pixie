@@ -42,7 +42,8 @@ StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
   // Create a CompilerState obj using the relation map and grabbing the current time.
 
   return std::make_unique<planner::CompilerState>(std::move(rel_map), registry_info,
-                                                  pl::CurrentTimeNS(), max_output_rows_per_table);
+                                                  pl::CurrentTimeNS(), max_output_rows_per_table,
+                                                  logical_state.result_address());
 }
 
 StatusOr<std::unique_ptr<LogicalPlanner>> LogicalPlanner::Create(const udfspb::UDFInfo& udf_info) {

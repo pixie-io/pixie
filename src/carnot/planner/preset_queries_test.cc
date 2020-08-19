@@ -73,7 +73,8 @@ class PresetQueriesTest : public ::testing::Test {
       absl_rel_map[rel_info.name] = rel_info.relation;
     }
 
-    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
+    compiler_state_ =
+        std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now, "result_addr");
     compiler_ = compiler::Compiler();
 
     EXPECT_OK(table_store::schema::Schema::ToProto(&schema_, absl_rel_map));

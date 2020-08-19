@@ -24,22 +24,25 @@ class CompilerState : public NotCopyable {
    * be constructed for every query compiled in Carnot and it will not be reused.
    */
   CompilerState(std::unique_ptr<RelationMap> relation_map, RegistryInfo* registry_info,
-                types::Time64NSValue time_now)
+                types::Time64NSValue time_now, std::string_view result_address)
       : CompilerState(std::move(relation_map), registry_info, time_now,
-                      /* max_output_rows_per_table */ 0) {}
+                      /* max_output_rows_per_table */ 0, result_address) {}
 
   CompilerState(std::unique_ptr<RelationMap> relation_map, RegistryInfo* registry_info,
-                types::Time64NSValue time_now, int64_t max_output_rows_per_table)
+                types::Time64NSValue time_now, int64_t max_output_rows_per_table,
+                std::string_view result_address)
       : relation_map_(std::move(relation_map)),
         registry_info_(registry_info),
         time_now_(time_now),
-        max_output_rows_per_table_(max_output_rows_per_table) {}
+        max_output_rows_per_table_(max_output_rows_per_table),
+        result_address_(std::string(result_address)) {}
 
   CompilerState() = delete;
 
   RelationMap* relation_map() const { return relation_map_.get(); }
   RegistryInfo* registry_info() const { return registry_info_; }
   types::Time64NSValue time_now() const { return time_now_; }
+  const std::string& result_address() const { return result_address_; }
 
   std::map<RegistryKey, int64_t> udf_to_id_map() const { return udf_to_id_map_; }
   std::map<RegistryKey, int64_t> uda_to_id_map() const { return uda_to_id_map_; }
@@ -76,6 +79,7 @@ class CompilerState : public NotCopyable {
   std::map<RegistryKey, int64_t> uda_to_id_map_;
 
   int64_t max_output_rows_per_table_ = 0;
+  const std::string result_address_;
 };
 
 }  // namespace planner

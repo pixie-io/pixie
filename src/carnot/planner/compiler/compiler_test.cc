@@ -105,7 +105,8 @@ class CompilerTest : public ::testing::Test {
     http_events_relation.AddColumn(types::INT64, "http_resp_latency_ns");
     rel_map->emplace("http_events", http_events_relation);
 
-    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
+    compiler_state_ =
+        std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now, "result_addr");
 
     compiler_ = Compiler();
   }

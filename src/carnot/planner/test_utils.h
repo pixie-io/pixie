@@ -1177,8 +1177,9 @@ class DistributedRulesTest : public OperatorTests {
         absl::Substitute("udtfs{$0}", kUDTFOpenNetworkConnections), &udf_info));
 
     ASSERT_OK(registry_info_->Init(udf_info));
-    compiler_state_ = std::make_unique<planner::CompilerState>(
-        MakeRelationMap(LoadSchemaPb(kHttpEventsSchema)), registry_info_.get(), 1234);
+    compiler_state_ =
+        std::make_unique<planner::CompilerState>(MakeRelationMap(LoadSchemaPb(kHttpEventsSchema)),
+                                                 registry_info_.get(), 1234, "result_addr");
   }
 
   std::unique_ptr<RelationMap> MakeRelationMap(const pl::table_store::schemapb::Schema& schema_pb) {

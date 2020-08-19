@@ -32,7 +32,8 @@ class SplitterTest : public OperatorTests {
         std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
     rel_map->emplace("cpu", cpu_relation);
 
-    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
+    compiler_state_ =
+        std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now, "result_addr");
   }
   void HasGRPCSinkChild(int64_t id, IR* test_graph, const std::string& err_string) {
     IRNode* maybe_op_node = test_graph->Get(id);

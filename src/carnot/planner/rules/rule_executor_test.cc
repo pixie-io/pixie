@@ -30,7 +30,8 @@ class RuleExecutorTest : public OperatorTests {
         std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
     rel_map->emplace("cpu", cpu_relation);
 
-    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
+    compiler_state_ =
+        std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now, "result_addr");
 
     ast = MakeTestAstPtr();
     graph = std::make_shared<IR>();

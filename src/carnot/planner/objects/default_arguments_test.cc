@@ -50,7 +50,8 @@ class DefaultArgumentsTest : public OperatorTests {
   void SetUp() override {
     OperatorTests::SetUp();
     info_ = SetUpRegistryInfo();
-    compiler_state_ = std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_);
+    compiler_state_ =
+        std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_, "result_addr");
 
     ast_visitor_ = ASTVisitorImpl::Create(graph.get(), &dynamic_trace_, compiler_state_.get(),
                                           &module_handler_)

@@ -100,8 +100,8 @@ class QLObjectTest : public OperatorTests {
     udfspb::UDFInfo info_pb;
     CHECK(google::protobuf::TextFormat::MergeFromString(kRegistryInfoProto, &info_pb));
     PL_CHECK_OK(info->Init(info_pb));
-    compiler_state =
-        std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);
+    compiler_state = std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0,
+                                                     "result_addr");
     // Graph is set in OperatorTests.
 
     ast_visitor =

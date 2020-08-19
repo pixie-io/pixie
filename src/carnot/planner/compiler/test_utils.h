@@ -279,8 +279,8 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   udfspb::UDFInfo info_pb;
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
   PL_RETURN_IF_ERROR(info->Init(info_pb));
-  auto compiler_state =
-      std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);
+  auto compiler_state = std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(),
+                                                        0, "result_addr");
   compiler::ModuleHandler module_handler;
   compiler::MutationsIR dynamic_trace;
   PL_ASSIGN_OR_RETURN(auto ast_walker,
@@ -903,8 +903,9 @@ class ASTVisitorTest : public OperatorTests {
     relation_map_->emplace("http_events", http_events_relation);
 
     auto max_output_rows_per_table = 10000;
-    compiler_state_ = std::make_unique<CompilerState>(
-        std::move(relation_map_), registry_info_.get(), time_now, max_output_rows_per_table);
+    compiler_state_ =
+        std::make_unique<CompilerState>(std::move(relation_map_), registry_info_.get(), time_now,
+                                        max_output_rows_per_table, "result_addr");
   }
 
   StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query) {

@@ -1225,7 +1225,7 @@ TEST_F(CarnotTest, pass_logical_plan) {
   std::unique_ptr<planner::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
 
   std::unique_ptr<planner::CompilerState> compiler_state = std::make_unique<planner::CompilerState>(
-      table_store_->GetRelationMap(), registry_info.get(), current_time);
+      table_store_->GetRelationMap(), registry_info.get(), current_time, "result_addr");
   StatusOr<planpb::Plan> logical_plan_status =
       compiler.Compile(absl::Substitute(query, logical_plan_table_name), compiler_state.get());
   ASSERT_OK(logical_plan_status);
@@ -1286,7 +1286,7 @@ TEST_F(CarnotTest, DISABLED_metadata_logical_plan_filter) {
   std::unique_ptr<planner::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
 
   std::unique_ptr<planner::CompilerState> compiler_state = std::make_unique<planner::CompilerState>(
-      table_store_->GetRelationMap(), registry_info.get(), current_time);
+      table_store_->GetRelationMap(), registry_info.get(), current_time, "result_addr");
   StatusOr<planpb::Plan> logical_plan_status =
       compiler.Compile(absl::Substitute(query, table_name), compiler_state.get());
   ASSERT_OK(logical_plan_status);
@@ -1323,7 +1323,7 @@ TEST_F(CarnotTest, empty_table_yields_empty_results) {
   std::unique_ptr<planner::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
 
   std::unique_ptr<planner::CompilerState> compiler_state = std::make_unique<planner::CompilerState>(
-      table_store_->GetRelationMap(), registry_info.get(), current_time);
+      table_store_->GetRelationMap(), registry_info.get(), current_time, "result_addr");
   StatusOr<planpb::Plan> plan_or_s = compiler.Compile(query, compiler_state.get());
   ASSERT_OK(plan_or_s);
   planpb::Plan plan = plan_or_s.ConsumeValueOrDie();
