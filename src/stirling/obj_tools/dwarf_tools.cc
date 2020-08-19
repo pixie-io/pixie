@@ -48,11 +48,20 @@ std::string_view GetShortName(const DWARFDie& die) {
 }
 
 std::string_view GetLinkageName(const DWARFDie& die) {
-  llvm::Optional<const char*> name_opt =
-      llvm::dwarf::toString(die.find(llvm::dwarf::DW_AT_linkage_name));
-  if (name_opt.hasValue() && name_opt.getValue() != nullptr) {
-    return std::string_view(name_opt.getValue());
+  auto name_or = AdaptLLVMOptional(llvm::dwarf::toString(die.find(llvm::dwarf::DW_AT_linkage_name)),
+                                   "Failed to read DW_AT_linkage_name.");
+  if (name_or.ok() && name_or.ValueOrDie() != nullptr) {
+    return std::string_view(name_or.ValueOrDie());
   }
+
+  DWARFDie spec_die = die.getAttributeValueAsReferencedDie(llvm::dwarf::DW_AT_specification);
+
+  name_or = AdaptLLVMOptional(llvm::dwarf::toString(spec_die.find(llvm::dwarf::DW_AT_linkage_name)),
+                              "Failed to read DW_AT_linkage_name of the specification DIE.");
+  if (name_or.ok() && name_or.ValueOrDie() != nullptr) {
+    return std::string_view(name_or.ValueOrDie());
+  }
+
   return {};
 }
 
@@ -196,9 +205,26 @@ void DwarfReader::IndexDIEs() {
 
   absl::flat_hash_map<const llvm::DWARFDebugInfoEntry*, std::string> dwarf_entry_names;
 
+  // Map from DW_AT_specification to DIE. Only DW_TAG_subprogram can have this attribute.
+  // Also only applies to CPP binaries.
+  absl::flat_hash_map<uint64_t, DWARFDie> fn_spec_offsets;
+
   for (const auto& CU : CUs) {
     for (const auto& Entry : CU->dies()) {
       DWARFDie die = {CU.get(), &Entry};
+
+      if (die.isSubprogramDIE()) {
+        auto spec_or =
+            AdaptLLVMOptional(llvm::dwarf::toReference(die.find(llvm::dwarf::DW_AT_specification)),
+                              "Could not find attribute DW_AT_specification");
+        if (spec_or.ok()) {
+          fn_spec_offsets[spec_or.ValueOrDie()] = die;
+        }
+      }
+
+      // TODO(oazizi/yzhao): Change to use the demangled name of DW_AT_linkage_name as the key to
+      // index the function DIE. That removes the need of using manually-assembled names (through
+      // parent DIE).
 
       auto name = std::string(GetShortName(die));
 
@@ -240,6 +266,18 @@ void DwarfReader::IndexDIEs() {
         }
       }
     }
+  }
+
+  auto& fn_dies = die_map_[llvm::dwarf::DW_TAG_subprogram];
+
+  for (auto iter = fn_dies.begin(); iter != fn_dies.end(); ++iter) {
+    uint64_t offset = iter->second.getOffset();
+    auto spec_iter = fn_spec_offsets.find(offset);
+    if (spec_iter == fn_spec_offsets.end()) {
+      continue;
+    }
+    // Replace the DIE with the DW_TAG_subprogram die that has DW_AT_specification attribute.
+    iter->second = spec_iter->second;
   }
 }
 
@@ -525,7 +563,7 @@ StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view functio
                       GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
 
   for (const auto& die : GetParamDIEs(function_die)) {
-    if (die.getName(llvm::DINameKind::ShortName) == arg_name) {
+    if (GetShortName(die) == arg_name) {
       PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
       return GetTypeByteSize(type_die);
     }

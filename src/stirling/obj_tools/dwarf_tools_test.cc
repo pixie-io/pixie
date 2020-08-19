@@ -74,8 +74,13 @@ TEST_F(DwarfReaderTest, GetMatchingDIEs) {
       dies, dwarf_reader->GetMatchingDIEs("pl::testing::Foo::Bar", llvm::dwarf::DW_TAG_subprogram));
   ASSERT_THAT(dies, SizeIs(1));
   EXPECT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_subprogram);
+  // Although the DIE does not have name attribute, DWARFDie::getShortName() walks
+  // DW_AT_specification attribute to find the name.
   EXPECT_EQ(GetShortName(dies[0]), "Bar");
-  EXPECT_EQ(GetLinkageName(dies[0]), "_ZNK2pl7testing3Foo3BarEi");
+  EXPECT_THAT(std::string(GetLinkageName(dies[0])), ::testing::StrEq("_ZNK2pl7testing3Foo3BarEi"));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("pl::testing::Foo::Bar", "this"), 8);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("pl::testing::Foo::Bar", "i"), 4);
 
   ASSERT_OK_AND_ASSIGN(
       dies, dwarf_reader->GetMatchingDIEs("ABCStruct32", llvm::dwarf::DW_TAG_structure_type));
