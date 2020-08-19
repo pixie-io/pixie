@@ -748,8 +748,6 @@ Status Dwarvifier::ProcessFunctionLatency(const ir::shared::FunctionLatency& fun
 
   scalar_var_types_[var_name] = ir::shared::ScalarType::INT64;
 
-  output_probe->mutable_function_latency()->CopyFrom(function_latency);
-
   // TODO(yzhao): Add more checks.
 
   return Status::OK();

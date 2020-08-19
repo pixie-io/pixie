@@ -217,11 +217,6 @@ message Probe {
   // All variables defined inside this probe.
   repeated Variable vars = 3;
 
-  // Latency of a function.
-  oneof function_latency_oneof {
-    shared.FunctionLatency function_latency = 8;
-  }
-
   // Inserts key and value into a map.
   //
   // The variable to be inserted into the map must be one of the above vars.
