@@ -135,8 +135,13 @@ class BCCCodeGenerator {
   StatusOr<std::vector<std::string>> GenerateCodeLines();
 
  private:
+  // Generates the code for defining a variable in BCC.
+  Status GenVariable(const Variable& var,
+                     const absl::flat_hash_map<std::string_view, const Variable*>& vars,
+                     std::vector<std::string>* code_lines) const;
+
   // Generates the code for a physical probe.
-  StatusOr<std::vector<std::string>> GenerateProbe(const Probe& probe);
+  StatusOr<std::vector<std::string>> GenerateProbe(const Probe& probe) const;
 
   const ir::physical::Program& program_;
 
@@ -484,49 +489,45 @@ std::string GenPerfBufferOutputAction(const PerfBufferOutputAction& action) {
                           action.variable_name());
 }
 
+ScalarType GetScalarVariableType(const Variable& var) {
+  switch (var.var_oneof_case()) {
+    case Variable::VarOneofCase::kScalarVar:
+      return var.scalar_var().type();
+    case Variable::VarOneofCase::kMemberVar:
+      return var.member_var().type();
+    case Variable::VarOneofCase::kMapVar:
+    case Variable::VarOneofCase::kStructVar:
+      LOG(DFATAL) << "Variable type must be ScalarType";
+      return ScalarType::UNKNOWN;
+    case Variable::VarOneofCase::VAR_ONEOF_NOT_SET:
+      LOG(DFATAL) << "Variable is not set";
+      return ScalarType::UNKNOWN;
+  }
+  GCC_SWITCH_RETURN;
+}
+
 StatusOr<std::string> GenScalarVarPrintk(
-    const absl::flat_hash_map<std::string_view, const ScalarVariable*>& scalar_vars,
-    const absl::flat_hash_map<std::string_view, const MemberVariable*>& member_vars,
-    const Printk& printk) {
-  auto iter1 = scalar_vars.find(printk.scalar());
-  auto iter2 = member_vars.find(printk.scalar());
-  if (iter1 == scalar_vars.end() && iter2 == member_vars.end()) {
+    const absl::flat_hash_map<std::string_view, const Variable*>& vars, const Printk& printk) {
+  auto iter = vars.find(printk.scalar());
+
+  if (iter == vars.end()) {
     return error::InvalidArgument("Variable '$0' is not defined", printk.scalar());
   }
 
-  // This wont happen, as the previous steps rejects duplicate variable names.
-  // Added here for safety.
-  if (iter1 != scalar_vars.end() && iter2 != member_vars.end()) {
-    LOG(DFATAL) << absl::Substitute(
-        "ScalarVariable '$0' is defined as ScalarVariable and "
-        "MemberVariable",
-        printk.scalar());
-  }
-
-  ScalarType type = ScalarType::BOOL;
-
-  if (iter1 != scalar_vars.end()) {
-    type = iter1->second->type();
-  }
-
-  if (iter2 != member_vars.end()) {
-    type = iter2->second->type();
-  }
+  ScalarType type = GetScalarVariableType(*iter->second);
 
   PL_ASSIGN_OR_RETURN(std::string_view format_code, GetPrintFormatCode(type));
 
   return absl::Substitute(R"(bpf_trace_printk("$0: %$1\n", $0);)", printk.scalar(), format_code);
 }
 
-StatusOr<std::string> GenPrintk(
-    const absl::flat_hash_map<std::string_view, const ScalarVariable*>& scalar_vars,
-    const absl::flat_hash_map<std::string_view, const MemberVariable*>& member_vars,
-    const Printk& printk) {
+StatusOr<std::string> GenPrintk(const absl::flat_hash_map<std::string_view, const Variable*>& vars,
+                                const Printk& printk) {
   switch (printk.content_oneof_case()) {
     case Printk::ContentOneofCase::kText:
       return absl::Substitute(R"(bpf_trace_printk("$0\n");)", printk.text());
     case Printk::ContentOneofCase::kScalar:
-      return GenScalarVarPrintk(scalar_vars, member_vars, printk);
+      return GenScalarVarPrintk(vars, printk);
     case Printk::ContentOneofCase::CONTENT_ONEOF_NOT_SET:
       PB_ENUM_SENTINEL_SWITCH_CLAUSE;
   }
@@ -553,18 +554,9 @@ std::vector<std::string> GenMemberVariable(const MemberVariable& var) {
                            var.struct_base(), var.field())};
 }
 
-Status CreateVarName(absl::flat_hash_set<std::string_view>* var_names, std::string_view var_name,
-                     std::string_view var_desc) {
-  if (var_names->contains(var_name)) {
-    return error::InvalidArgument("$0 '$1' was already defined", var_desc, var_name);
-  }
-  var_names->insert(var_name);
-  return Status::OK();
-}
-
-Status CheckVarExists(absl::flat_hash_set<std::string_view>* var_names, std::string_view var_name,
-                      std::string_view context) {
-  if (!var_names->contains(var_name)) {
+Status CheckVarExists(const absl::flat_hash_map<std::string_view, const Variable*>& var_names,
+                      std::string_view var_name, std::string_view context) {
+  if (!var_names.contains(var_name)) {
     return error::InvalidArgument("variable name '$0' was not defined [context = $1]", var_name,
                                   context);
   }
@@ -573,7 +565,69 @@ Status CheckVarExists(absl::flat_hash_set<std::string_view>* var_names, std::str
 
 }  // namespace
 
-StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& probe) {
+Status BCCCodeGenerator::GenVariable(
+    const Variable& var, const absl::flat_hash_map<std::string_view, const Variable*>& vars,
+    std::vector<std::string>* code_lines) const {
+  switch (var.var_oneof_case()) {
+    case Variable::VarOneofCase::kScalarVar: {
+      MOVE_BACK_STR_VEC(GenScalarVariable(var.scalar_var(), program_.language()), code_lines);
+      break;
+    }
+    case Variable::VarOneofCase::kMapVar: {
+      code_lines->push_back(GenMapVariable(var.map_var()));
+      break;
+    }
+    case Variable::VarOneofCase::kMemberVar: {
+      MoveBackStrVec(GenMemberVariable(var.member_var()), code_lines);
+      break;
+    }
+    case Variable::VarOneofCase::kStructVar: {
+      const auto& st_var = var.struct_var();
+
+      for (const auto& fa : st_var.field_assignments()) {
+        PL_RETURN_IF_ERROR(CheckVarExists(
+            vars, fa.variable_name(),
+            absl::Substitute("StructVariable '$0' field assignment", st_var.name())));
+        // TODO(yzhao): Check variable types as well.
+      }
+
+      auto iter = structs_.find(st_var.type());
+      if (iter == structs_.end()) {
+        return error::InvalidArgument("Struct '$0' referenced in variable '$1' was not defined",
+                                      st_var.type(), st_var.name());
+      }
+
+      MOVE_BACK_STR_VEC(GenStructVariable(*iter->second, st_var), code_lines);
+      break;
+    }
+    case Variable::VarOneofCase::VAR_ONEOF_NOT_SET:
+      return error::InvalidArgument("Variable is not set");
+  }
+  return Status::OK();
+}
+
+namespace {
+
+std::string_view GetVariableName(const Variable& var) {
+  switch (var.var_oneof_case()) {
+    case Variable::VarOneofCase::kScalarVar:
+      return var.scalar_var().name();
+    case Variable::VarOneofCase::kMapVar:
+      return var.map_var().name();
+    case Variable::VarOneofCase::kMemberVar:
+      return var.member_var().name();
+    case Variable::VarOneofCase::kStructVar:
+      return var.struct_var().name();
+    case Variable::VarOneofCase::VAR_ONEOF_NOT_SET:
+      LOG(DFATAL) << "Variable is not set";
+      return {};
+  }
+  GCC_SWITCH_RETURN;
+}
+
+}  // namespace
+
+StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& probe) const {
   if (probe.name().empty()) {
     return error::InvalidArgument("Probe's name cannot be empty");
   }
@@ -582,78 +636,43 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
 
   code_lines.push_back(absl::Substitute("int $0(struct pt_regs* ctx) {", probe.name()));
 
-  absl::flat_hash_set<std::string_view> var_names;
-  absl::flat_hash_map<std::string_view, const ScalarVariable*> scalar_vars;
-  absl::flat_hash_map<std::string_view, const MemberVariable*> member_vars;
+  absl::flat_hash_map<std::string_view, const Variable*> vars;
 
   for (const auto& var : probe.vars()) {
-    switch (var.var_oneof_case()) {
-      case Variable::VarOneofCase::kScalarVar: {
-        PL_RETURN_IF_ERROR(CreateVarName(&var_names, var.scalar_var().name(), "ScalarVariable"));
-        scalar_vars[var.scalar_var().name()] = &var.scalar_var();
-        MOVE_BACK_STR_VEC(GenScalarVariable(var.scalar_var(), program_.language()), &code_lines);
-        break;
-      }
-      case Variable::VarOneofCase::kMapVar: {
-        PL_RETURN_IF_ERROR(CreateVarName(&var_names, var.map_var().name(), "MapVariable"));
-        code_lines.push_back(GenMapVariable(var.map_var()));
-        break;
-      }
-      case Variable::VarOneofCase::kMemberVar: {
-        PL_RETURN_IF_ERROR(CreateVarName(&var_names, var.member_var().name(), "MemberVariable"));
-        member_vars[var.member_var().name()] = &var.member_var();
-        MoveBackStrVec(GenMemberVariable(var.member_var()), &code_lines);
-        break;
-      }
-      case Variable::VarOneofCase::kStructVar: {
-        PL_RETURN_IF_ERROR(CreateVarName(&var_names, var.struct_var().name(), "MapVariable"));
+    std::string_view var_name = GetVariableName(var);
 
-        const auto& st_var = var.struct_var();
-
-        for (const auto& fa : st_var.field_assignments()) {
-          PL_RETURN_IF_ERROR(CheckVarExists(
-              &var_names, fa.variable_name(),
-              absl::Substitute("StructVariable '$0' field assignment", st_var.name())));
-          // TODO(yzhao): Check variable types as well.
-        }
-
-        auto iter = structs_.find(st_var.type());
-        if (iter == structs_.end()) {
-          return error::InvalidArgument("Struct '$0' referenced in variable '$1' was not defined",
-                                        st_var.type(), st_var.name());
-        }
-
-        MOVE_BACK_STR_VEC(GenStructVariable(*iter->second, st_var), &code_lines);
-        break;
-      }
-      case Variable::VarOneofCase::VAR_ONEOF_NOT_SET:
-        return error::InvalidArgument("Variable is not set");
+    if (vars.contains(var_name)) {
+      return error::InvalidArgument("Variable '$0' was already defined", var_name);
     }
+
+    vars[var_name] = &var;
+
+    PL_RETURN_IF_ERROR(GenVariable(var, vars, &code_lines));
   }
 
   for (const auto& action : probe.map_stash_actions()) {
-    PL_RETURN_IF_ERROR(CheckVarExists(&var_names, action.key_variable_name(),
+    PL_RETURN_IF_ERROR(CheckVarExists(vars, action.key_variable_name(),
                                       absl::Substitute("BPF map '$0' key", action.map_name())));
-    PL_RETURN_IF_ERROR(CheckVarExists(&var_names, action.value_variable_name(),
+    PL_RETURN_IF_ERROR(CheckVarExists(vars, action.value_variable_name(),
                                       absl::Substitute("BPF map '$0' value", action.map_name())));
     MOVE_BACK_STR_VEC(GenMapStashAction(action), &code_lines);
   }
 
   for (const auto& action : probe.map_delete_actions()) {
-    PL_RETURN_IF_ERROR(CheckVarExists(&var_names, action.key_variable_name(),
+    PL_RETURN_IF_ERROR(CheckVarExists(vars, action.key_variable_name(),
                                       absl::Substitute("BPF map '$0' key", action.map_name())));
     code_lines.push_back(GenMapDeleteAction(action));
   }
 
   for (const auto& action : probe.output_actions()) {
     PL_RETURN_IF_ERROR(
-        CheckVarExists(&var_names, action.variable_name(),
+        CheckVarExists(vars, action.variable_name(),
                        absl::Substitute("Perf buffer '$0'", action.perf_buffer_name())));
     code_lines.push_back(GenPerfBufferOutputAction(action));
   }
 
   for (const auto& printk : probe.printks()) {
-    PL_ASSIGN_OR_RETURN(std::string code_line, GenPrintk(scalar_vars, member_vars, printk));
+    PL_ASSIGN_OR_RETURN(std::string code_line, GenPrintk(vars, printk));
     code_lines.push_back(std::move(code_line));
   }
 
