@@ -1,4 +1,5 @@
 import ClusterContext from 'common/cluster-context';
+import UserContext from 'common/user-context';
 import * as storage from 'common/storage';
 import { ClusterStatus, VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
 import { useSnackbar } from 'components/snackbar/snackbar';
@@ -135,6 +136,16 @@ export default function WithClusterBanner() {
     },
   }), [clusterId, setClusterId, clusters, cluster?.clusterName]);
 
+  const userEmail = userQuery.data?.user.email;
+  const userOrg = userQuery.data?.user.orgName;
+
+  const userContext = React.useMemo(() => ({
+    user: {
+      email: userEmail,
+      orgName: userOrg,
+    },
+  }), [userEmail, userOrg]);
+
   if (loading || userQuery.loading) { return <div>Loading...</div>; }
 
   const errMsg = error?.message || userQuery.error?.message;
@@ -162,12 +173,14 @@ export default function WithClusterBanner() {
 
   return (
     <ClusterContext.Provider value={context}>
-      <ClusterBanner />
-      <Switch>
-        <Route path='/admin' component={AdminView} />
-        <Route path='/live' component={Vizier} />
-        <Redirect from='/*' to='/live' />
-      </Switch>
+      <UserContext.Provider value={userContext}>
+        <ClusterBanner />
+        <Switch>
+          <Route path='/admin' component={AdminView} />
+          <Route path='/live' component={Vizier} />
+          <Redirect from='/*' to='/live' />
+        </Switch>
+      </UserContext.Provider>
     </ClusterContext.Provider>
   );
 }

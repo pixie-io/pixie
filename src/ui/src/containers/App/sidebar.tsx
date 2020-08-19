@@ -10,12 +10,16 @@ import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
+import AnnouncementIcon from '@material-ui/icons/Announcement';
 import SettingsIcon from 'components/icons/settings';
 import { Link } from 'react-router-dom';
 import Tooltip from '@material-ui/core/Tooltip';
 import ClusterContext from 'common/cluster-context';
+import UserContext from 'common/user-context';
 import { toEntityPathname, LiveViewPage } from 'components/live-widgets/utils/live-view-params';
 import { Divider } from '@material-ui/core';
+import AnnounceKit from 'announcekit-react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 const styles = (
   {
@@ -80,6 +84,13 @@ const styles = (
       textOverflow: 'ellipsis',
     },
   },
+  announcekit: {
+    '& .announcekit-widget-badge': {
+      position: 'absolute !important',
+      top: spacing(2),
+      left: spacing(4),
+    },
+  },
 });
 
 interface SideBarProps extends WithStyles<typeof styles> {
@@ -109,6 +120,8 @@ const SideBar = ({
   classes, open,
 }) => {
   const { selectedClusterName } = React.useContext(ClusterContext);
+  const { user } = React.useContext(UserContext);
+  const { announcekit } = useFlags();
 
   const navItems = React.useMemo(() => (
     [{
@@ -140,6 +153,32 @@ const SideBar = ({
       <div className={classes.spacer} />
       <Divider />
       <List>
+        { announcekit
+          && (
+            <Tooltip title='Announcements'>
+              <div className={classes.announcekit}>
+                <AnnounceKit
+                  widget='https://announcekit.app/widgets/v2/1okO1W'
+                  user={
+                    {
+                      id: user.email,
+                      email: user.email,
+                    }
+                  }
+                  data={
+                    {
+                      org: user.orgName,
+                    }
+                  }
+                >
+                  <ListItem button key='annoucements' className={classes.listIcon}>
+                    <ListItemIcon><AnnouncementIcon /></ListItemIcon>
+                    <ListItemText primary='Announcements' />
+                  </ListItem>
+                </AnnounceKit>
+              </div>
+            </Tooltip>
+          )}
         {profileItems.map(({ icon, link, text }) => (
           <SideBarItem key={text} classes={classes} icon={icon} link={link} text={text} />
         ))}
