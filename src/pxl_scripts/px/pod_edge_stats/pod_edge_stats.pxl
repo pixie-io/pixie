@@ -78,8 +78,7 @@ def latency_histogram(start_time: str, requesting_pod: px.Pod, responding_pod: p
     @responding_pod: The name of the requesting pod.
     """
     df = http_requests(start_time, requesting_pod, responding_pod)
-    df.request_latency_ms = px.bin(df.http_resp_latency_ns / (1000 * 1000),
-                                   latency_bin_size_ms)
+    df.request_latency_ms = df.latency_ms
     return df.groupby('request_latency_ms').agg(count=('timestamp', px.count))
 
 
