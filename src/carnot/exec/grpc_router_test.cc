@@ -196,7 +196,7 @@ TEST_F(GRPCRouterTest, basic_router_test) {
   EXPECT_EQ(2, num_continues);
 }
 
-TEST_F(GRPCRouterTest, router_and_done_test) {
+TEST_F(GRPCRouterTest, router_and_stats_test) {
   int64_t grpc_source_node_id = 1;
   ResetStub();
   auto query_id_str = "ea8aa095-697f-49f1-b127-d50e5b6e2645";
@@ -241,12 +241,12 @@ TEST_F(GRPCRouterTest, router_and_done_test) {
   writer->Finish();
 
   {
-    ::pl::carnotpb::DoneRequest done_req;
-    ::pl::carnotpb::DoneResponse done_resp;
+    ::pl::carnotpb::TransferResultChunkRequest stats_req;
+    ::pl::carnotpb::TransferResultChunkResponse stats_resp;
 
-    auto agent_stats = done_req.add_agent_execution_stats();
+    auto agent_stats = stats_req.mutable_execution_and_timing_info()->add_agent_execution_stats();
     ToProto(agent_uuid, agent_stats->mutable_agent_id());
-    ToProto(query_uuid, done_req.mutable_query_id());
+    ToProto(query_uuid, stats_req.mutable_query_id());
     auto mem_src_stats = agent_stats->add_operator_execution_stats();
     mem_src_stats->set_bytes_output(123);
     mem_src_stats->set_records_output(1);
@@ -258,8 +258,11 @@ TEST_F(GRPCRouterTest, router_and_done_test) {
     grpc_sink_stats->set_records_output(0);
     grpc_sink_stats->set_total_execution_time_ns(5000);
     grpc_sink_stats->set_self_execution_time_ns(5000);
-    grpc::ClientContext done_context;
-    auto s = stub_->Done(&done_context, done_req, &done_resp);
+    grpc::ClientContext stats_context;
+    auto writer = stub_->TransferResultChunk(&stats_context, &stats_resp);
+    writer->Write(stats_req);
+    writer->WritesDone();
+    auto s = writer->Finish();
     EXPECT_TRUE(s.ok());
   }
 

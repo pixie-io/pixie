@@ -86,10 +86,11 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
    * @brief Records the execution statistics from the passed in request.
    *
    * @param query_id the query_id which to record the statistics.
-   * @param req the request holding the exec stats.
+   * @param stats the protobuf of the exec stats received by the agent.
    * @return Status
    */
-  Status RecordStats(const sole::uuid& query_id, const ::pl::carnotpb::DoneRequest* req);
+  Status RecordStats(const sole::uuid& query_id,
+                     const std::vector<queryresultspb::AgentExecutionStats>& stats);
 
  private:
   Status EnqueueRowBatch(sole::uuid query_id,

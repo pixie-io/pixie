@@ -288,6 +288,54 @@ Status SendDoneToOutgoingConns(
   return Status::OK();
 }
 
+Status SendExecutionStatsToOutgoingConns(
+    const sole::uuid& query_id,
+    const absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*>&
+        outgoing_servers,
+    const queryresultspb::AgentExecutionStats& agent_stats,
+    const std::vector<queryresultspb::AgentExecutionStats>& all_agent_stats) {
+  // Only run this if there are outgoing_servers.
+  if (outgoing_servers.size()) {
+    ::pl::carnotpb::TransferResultChunkRequest req;
+
+    ToProto(query_id, req.mutable_query_id());
+
+    auto total_bytes_processed = 0;
+    auto total_records_processed = 0;
+
+    // Add all of the agent stats.
+    for (const auto& agent_stats : all_agent_stats) {
+      *(req.mutable_execution_and_timing_info()->add_agent_execution_stats()) = agent_stats;
+      total_records_processed += agent_stats.records_processed();
+      total_bytes_processed += agent_stats.bytes_processed();
+    }
+
+    // Add the stats for this particular agent.
+    auto stats = req.mutable_execution_and_timing_info()->mutable_execution_stats();
+    stats->mutable_timing()->set_execution_time_ns(agent_stats.execution_time_ns());
+    stats->set_bytes_processed(total_bytes_processed);
+    stats->set_records_processed(total_records_processed);
+
+    for (const auto& [addr, server] : outgoing_servers) {
+      ::pl::carnotpb::TransferResultChunkResponse resp;
+      req.set_address(addr);
+      grpc::ClientContext context;
+      context.set_deadline(std::chrono::system_clock::now() + kRPCResultTimeout);
+      auto writer = server->TransferResultChunk(&context, &resp);
+      writer->Write(req);
+      writer->WritesDone();
+      auto status = writer->Finish();
+      if (!status.ok()) {
+        return error::Internal(
+            "Failed to call Finish on TransferResultChunk while sending query execution stats. "
+            "Status: %s",
+            status.error_message());
+      }
+    }
+  }
+  return Status::OK();
+}
+
 StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan,
                                                     const sole::uuid& query_id, bool analyze) {
   auto timer = ElapsedTimer();
@@ -377,8 +425,14 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
   agent_operator_exec_stats.set_records_processed(rows_processed);
   all_agent_stats.push_back(agent_operator_exec_stats);
 
-  PL_RETURN_IF_ERROR(
-      SendDoneToOutgoingConns(agent_id_, query_id, exec_state->OutgoingServers(), all_agent_stats));
+  // TODO(nserrino): Remove this case when the old query API gets deprecated.
+  if (output_table_strs.size()) {
+    PL_RETURN_IF_ERROR(SendDoneToOutgoingConns(agent_id_, query_id, exec_state->OutgoingServers(),
+                                               all_agent_stats));
+  } else {
+    PL_RETURN_IF_ERROR(SendExecutionStatsToOutgoingConns(
+        query_id, exec_state->OutgoingServers(), agent_operator_exec_stats, all_agent_stats));
+  }
 
   std::vector<table_store::Table*> output_tables;
   output_tables.reserve(output_table_strs.size());

@@ -48,12 +48,31 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
     ::pl::carnotpb::TransferResultChunkResponse* response) {
   PL_UNUSED(context);
   auto rb = std::make_unique<carnotpb::TransferResultChunkRequest>();
+
   while (reader->Read(rb.get())) {
     auto query_id = pl::ParseUUID(rb->query_id()).ConsumeValueOrDie();
-    auto s = EnqueueRowBatch(query_id, std::move(rb));
-    if (!s.ok()) {
-      return ::grpc::Status(grpc::StatusCode::INTERNAL, "failed to enqueue batch");
+
+    if (rb->has_execution_and_timing_info()) {
+      std::vector<queryresultspb::AgentExecutionStats> stats;
+      for (const auto& stat : rb->execution_and_timing_info().agent_execution_stats()) {
+        stats.push_back(stat);
+      }
+      auto s = RecordStats(query_id, stats);
+      if (!s.ok()) {
+        return ::grpc::Status(grpc::StatusCode::INTERNAL,
+                              absl::Substitute("Failed to record stats w/ err: $0", s.msg()));
+      }
+    } else if (rb->has_row_batch_result()) {
+      auto s = EnqueueRowBatch(query_id, std::move(rb));
+      if (!s.ok()) {
+        return ::grpc::Status(grpc::StatusCode::INTERNAL, "failed to enqueue batch");
+      }
+    } else {
+      return ::grpc::Status(grpc::StatusCode::INTERNAL,
+                            "expected TransferResultChunkRequest to have either row_batch_result "
+                            "or execution_and_timing_info set, received neither");
     }
+
     rb = std::make_unique<carnotpb::TransferResultChunkRequest>();
   }
 
@@ -64,7 +83,12 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
 ::grpc::Status GRPCRouter::Done(::grpc::ServerContext*, const ::pl::carnotpb::DoneRequest* req,
                                 ::pl::carnotpb::DoneResponse* resp) {
   auto query_id = pl::ParseUUID(req->query_id()).ConsumeValueOrDie();
-  auto s = RecordStats(query_id, req);
+
+  std::vector<queryresultspb::AgentExecutionStats> stats;
+  for (const auto& stat : req->agent_execution_stats()) {
+    stats.push_back(stat);
+  }
+  auto s = RecordStats(query_id, stats);
   if (!s.ok()) {
     return ::grpc::Status(grpc::StatusCode::INTERNAL,
                           absl::Substitute("Failed to record stats w/ err: $0", s.msg()));
@@ -74,14 +98,14 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
 }
 
 Status GRPCRouter::RecordStats(const sole::uuid& query_id,
-                               const ::pl::carnotpb::DoneRequest* resp) {
+                               const std::vector<queryresultspb::AgentExecutionStats>& stats) {
   absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);
   auto it = query_node_map_.find(query_id);
   if (it == query_node_map_.end()) {
     return error::Internal("No query ID $0 found in the GRPCRouter", query_id.str());
   }
   auto tracker = &it->second;
-  for (const auto& agent : resp->agent_execution_stats()) {
+  for (const auto& agent : stats) {
     auto agent_id = pl::ParseUUID(agent.agent_id()).ConsumeValueOrDie();
     // There are some cases where we get duplicate exec stats.
     if (tracker->seen_agents.contains(agent_id)) {
