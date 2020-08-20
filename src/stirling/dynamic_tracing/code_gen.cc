@@ -147,6 +147,10 @@ class BCCCodeGenerator {
                      const absl::flat_hash_map<std::string_view, const Variable*>& vars,
                      std::vector<std::string>* code_lines) const;
 
+  StatusOr<std::vector<std::string>> GenerateConditionalBlock(
+      const absl::flat_hash_map<std::string_view, const Variable*>& outer_vars,
+      const ir::physical::ConditionalBlock& cond_block) const;
+
   // Generates the code for a physical probe.
   StatusOr<std::vector<std::string>> GenerateProbe(const Probe& probe) const;
 
@@ -442,10 +446,12 @@ StatusOr<std::vector<std::string>> GenStructVariable(const Struct& st,
   return code_lines;
 }
 
-StatusOr<std::vector<std::string>> GenCondition(const Condition& condition, std::string body) {
+StatusOr<std::vector<std::string>> GenCondition(const Condition& condition,
+                                                std::vector<std::string> body) {
   switch (condition.op()) {
+    // TODO(yzhao): Remove NIL, replace with has_cond() method to test the presence of condition.
     case Condition::NIL: {
-      std::vector<std::string> code_lines = {std::move(body)};
+      std::vector<std::string> code_lines = std::move(body);
       return code_lines;
     }
     case Condition::EQUAL: {
@@ -453,10 +459,10 @@ StatusOr<std::vector<std::string>> GenCondition(const Condition& condition, std:
         return error::InvalidArgument("Expect 2 variables, got $0", condition.vars_size());
       }
       std::vector<std::string> code_lines = {
-          absl::Substitute("if ($0 == $1) {", condition.vars(0), condition.vars(1)),
-          std::move(body),
-          "}",
-      };
+          absl::Substitute("if ($0 == $1) {", condition.vars(0), condition.vars(1))};
+      code_lines.insert(code_lines.end(), std::move_iterator(body.begin()),
+                        std::move_iterator(body.end()));
+      code_lines.push_back("}");
       return code_lines;
     }
     case ir::shared::Condition_Op_Condition_Op_INT_MIN_SENTINEL_DO_NOT_USE_:
@@ -484,10 +490,10 @@ void MoveBackStrVec(std::vector<std::string>&& src, std::vector<std::string>* ds
 // TODO(yzhao): Alternatively, leave map key as another Variable message (would be pre-generated
 // as part of the physical IR).
 StatusOr<std::vector<std::string>> GenMapStashAction(const MapStashAction& action) {
-  std::string update_code_line =
+  std::vector<std::string> update_code_lines = {
       absl::Substitute("$0.update(&$1, &$2);", action.map_name(), action.key_variable_name(),
-                       action.value_variable_name());
-  return GenCondition(action.cond(), std::move(update_code_line));
+                       action.value_variable_name())};
+  return GenCondition(action.cond(), std::move(update_code_lines));
 }
 
 std::string GenMapDeleteAction(const MapDeleteAction& action) {
@@ -641,6 +647,45 @@ std::string_view GetVariableName(const Variable& var) {
   GCC_SWITCH_RETURN;
 }
 
+StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateConditionalBlock(
+    const absl::flat_hash_map<std::string_view, const Variable*>& outer_vars,
+    const ir::physical::ConditionalBlock& cond_block) const {
+  for (const auto& var_name : cond_block.cond().vars()) {
+    PL_RETURN_IF_ERROR(
+        CheckVarExists(outer_vars, var_name, "Conditional variables were not defined."));
+  }
+
+  std::vector<std::string> code_lines;
+
+  absl::flat_hash_map<std::string_view, const Variable*> vars;
+
+  for (const auto& var : cond_block.vars()) {
+    std::string_view var_name = GetVariableName(var);
+
+    if (vars.contains(var_name)) {
+      return error::InvalidArgument("Variable '$0' was already defined", var_name);
+    }
+
+    vars[var_name] = &var;
+
+    PL_RETURN_IF_ERROR(GenVariable(var, vars, &code_lines));
+  }
+
+  for (const auto& action : cond_block.output_actions()) {
+    PL_RETURN_IF_ERROR(
+        CheckVarExists(vars, action.variable_name(),
+                       absl::Substitute("Perf buffer '$0'", action.perf_buffer_name())));
+    code_lines.push_back(GenPerfBufferOutputAction(action));
+  }
+
+  for (const auto& printk : cond_block.printks()) {
+    PL_ASSIGN_OR_RETURN(std::string code_line, GenPrintk(vars, printk));
+    code_lines.push_back(std::move(code_line));
+  }
+
+  return GenCondition(cond_block.cond(), std::move(code_lines));
+}
+
 }  // namespace
 
 StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& probe) const {
@@ -664,6 +709,14 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
     vars[var_name] = &var;
 
     PL_RETURN_IF_ERROR(GenVariable(var, vars, &code_lines));
+  }
+
+  for (const auto& block : probe.cond_blocks()) {
+    PL_ASSIGN_OR_RETURN(std::vector<std::string> cond_code_lines,
+                        GenerateConditionalBlock(vars, block));
+
+    code_lines.insert(code_lines.end(), std::move_iterator(cond_code_lines.begin()),
+                      std::move_iterator(cond_code_lines.end()));
   }
 
   for (const auto& action : probe.map_stash_actions()) {

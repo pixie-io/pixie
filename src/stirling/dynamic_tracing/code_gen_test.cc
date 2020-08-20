@@ -240,6 +240,34 @@ TEST(GenProgramTest, SpecsAndCode) {
                                              }
                                            }
                                          }
+                                         cond_blocks {
+                                           cond {
+                                             op: EQUAL
+                                             vars: "key"
+                                             vars: "var"
+                                           }
+                                           vars {
+                                             scalar_var {
+                                               name: "inner_var"
+                                               type: INT32
+                                               reg: SP
+                                             }
+                                           }
+                                           vars {
+                                             struct_var {
+                                               name: "st_var"
+                                               type: "socket_data_event_t"
+                                               field_assignments {
+                                                 field_name: "i32"
+                                                 variable_name: "inner_var"
+                                               }
+                                             }
+                                           }
+                                           output_actions {
+                                             perf_buffer_name: "data_events"
+                                             variable_name: "st_var"
+                                           }
+                                         }
                                          map_stash_actions {
                                            map_name: "test"
                                            key_variable_name: "key"
@@ -336,6 +364,12 @@ TEST(GenProgramTest, SpecsAndCode) {
       "int32_t var = (int32_t)PT_REGS_SP(ctx);",
       "struct socket_data_event_t st_var = {};",
       "st_var.i32 = var;",
+      "if (key == var) {",
+      "int32_t inner_var = (int32_t)PT_REGS_SP(ctx);",
+      "struct socket_data_event_t st_var = {};",
+      "st_var.i32 = inner_var;",
+      "data_events.perf_submit(ctx, &st_var, sizeof(st_var));",
+      "}",
       "test.update(&key, &var);",
       "data_events.perf_submit(ctx, &st_var, sizeof(st_var));",
       R"(bpf_trace_printk("var: %d\n", var);)",

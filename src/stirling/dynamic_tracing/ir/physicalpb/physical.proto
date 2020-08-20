@@ -206,6 +206,22 @@ message MapDeleteAction {
   string key_variable_name = 2;
 }
 
+// Describes operations performed inside a if block.
+message ConditionalBlock {
+  // If set, this decide the condition which this map stash should be executed.
+  // This references previously-defined variables.
+  shared.Condition cond = 1;
+
+  // All variables defined inside this block.
+  repeated Variable vars = 2;
+
+  // Writes a value to perf buffer.
+  repeated PerfBufferOutputAction output_actions = 3;
+
+  // Printk text.
+  repeated shared.Printk printks = 4;
+}
+
 // Corresponds to a logical probe.
 message Probe {
   // The name of the BCC probe function.
@@ -216,6 +232,9 @@ message Probe {
 
   // All variables defined inside this probe.
   repeated Variable vars = 3;
+
+  // Multiple if blocks of variables and output actions.
+  repeated ConditionalBlock cond_blocks = 10;
 
   // Inserts key and value into a map.
   //
