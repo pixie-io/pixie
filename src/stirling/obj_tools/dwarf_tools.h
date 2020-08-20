@@ -40,71 +40,84 @@ enum class LocationType {
   kRegister,
 };
 
-struct StructMemberInfo {
-  // Offset within the struct.
-  uint64_t offset = std::numeric_limits<uint64_t>::max();
+struct TypeInfo {
   VarType type = VarType::kUnspecified;
   std::string type_name = "";
 
   std::string ToString() const {
-    return absl::Substitute("offset=$0 type=$1 type_name=$2", offset, magic_enum::enum_name(type),
-                            type_name);
+    return absl::Substitute("type=$0 type_name=$1", magic_enum::enum_name(type), type_name);
+  }
+};
+
+struct StructMemberInfo {
+  // Offset within the struct.
+  uint64_t offset = std::numeric_limits<uint64_t>::max();
+  TypeInfo type_info;
+
+  std::string ToString() const {
+    return absl::Substitute("offset=$0 type_info=[$1]", offset, type_info.ToString());
   }
 };
 
 struct ArgLocation {
-  LocationType type = LocationType::kUnknown;
+  LocationType loc_type = LocationType::kUnknown;
   int64_t offset = std::numeric_limits<uint64_t>::max();
 
   std::string ToString() const {
-    return absl::Substitute("type=$0 offset=$1", magic_enum::enum_name(type), offset);
+    return absl::Substitute("type=$0 offset=$1", magic_enum::enum_name(loc_type), offset);
   }
 };
 
 struct ArgInfo {
-  VarType type = VarType::kUnspecified;
-  std::string type_name = "";
+  TypeInfo type_info;
   ArgLocation location;
 
   // If true, this argument is really a return value.
+  // Used by golang return values which are really function arguments from a DWARF perspective.
   bool retarg = false;
 
   std::string ToString() const {
-    return absl::Substitute("type=$0 type_name=$1 location=[$2] retarg=$3",
-                            magic_enum::enum_name(type), type_name, location.ToString(), retarg);
+    return absl::Substitute("type_info=[$0] location=[$1] retarg=$2", type_info.ToString(),
+                            location.ToString(), retarg);
   }
 };
 
 struct RetValInfo {
-  VarType type = VarType::kUnspecified;
-  std::string type_name = "";
+  TypeInfo type_info;
   size_t byte_size = 0;
 
   std::string ToString() const {
-    return absl::Substitute("type=$0 type_name=$1 byte_size=$2", magic_enum::enum_name(type),
-                            type_name, byte_size);
+    return absl::Substitute("type_info=$0 byte_size=$1", type_info.ToString(), byte_size);
   }
 };
 
+inline bool operator==(const TypeInfo& a, const TypeInfo& b) {
+  return a.type == b.type && a.type_name == b.type_name;
+}
+
 inline bool operator==(const StructMemberInfo& a, const StructMemberInfo& b) {
-  return a.offset == b.offset && a.type == b.type && a.type_name == b.type_name;
+  return a.offset == b.offset && a.type_info == b.type_info;
 }
 
 inline bool operator==(const ArgLocation& a, const ArgLocation& b) {
-  return a.type == b.type && a.offset == b.offset;
+  return a.loc_type == b.loc_type && a.offset == b.offset;
 }
 
 inline bool operator==(const ArgInfo& a, const ArgInfo& b) {
-  return a.location == b.location && a.type == b.type && a.type_name == b.type_name &&
-         a.retarg == b.retarg;
+  return a.location == b.location && a.type_info == b.type_info && a.retarg == b.retarg;
 }
 
 inline bool operator==(const RetValInfo& a, const RetValInfo& b) {
-  return a.type == b.type && a.type_name == b.type_name && a.byte_size == b.byte_size;
+  return a.type_info == b.type_info && a.byte_size == b.byte_size;
 }
 
-inline std::ostream& operator<<(std::ostream& os, const StructMemberInfo& var_info) {
-  os << var_info.ToString();
+inline std::ostream& operator<<(std::ostream& os, const TypeInfo& x) {
+  os << x.ToString();
+  return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const StructMemberInfo& x) {
+  os << x.ToString();
   return os;
 }
 
@@ -113,13 +126,13 @@ inline std::ostream& operator<<(std::ostream& os, const ArgLocation& x) {
   return os;
 }
 
-inline std::ostream& operator<<(std::ostream& os, const ArgInfo& arg_info) {
-  os << arg_info.ToString();
+inline std::ostream& operator<<(std::ostream& os, const ArgInfo& x) {
+  os << x.ToString();
   return os;
 }
 
-inline std::ostream& operator<<(std::ostream& os, const RetValInfo& ret_val_info) {
-  os << ret_val_info.ToString();
+inline std::ostream& operator<<(std::ostream& os, const RetValInfo& x) {
+  os << x.ToString();
   return os;
 }
 
@@ -177,6 +190,11 @@ class DwarfReader {
                         GetStructMemberInfo(struct_name, member_name));
     return member_info.offset;
   }
+
+  /**
+   * Returns the type pointed to by a pointer type.
+   */
+  StatusOr<TypeInfo> DereferencePointerType(std::string type_name);
 
   /**
    * Returns the size (in bytes) for the type of a function argument.

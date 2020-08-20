@@ -132,17 +132,17 @@ TEST_P(DwarfReaderTest, CppArgumentLocation) {
                        DwarfReader::Create(kCppBinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("ABCSum32", "x"),
-                   (ArgLocation{.type = LocationType::kRegister, .offset = 32}));
+                   (ArgLocation{.loc_type = LocationType::kRegister, .offset = 32}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("ABCSum32", "y"),
-                   (ArgLocation{.type = LocationType::kRegister, .offset = 64}));
+                   (ArgLocation{.loc_type = LocationType::kRegister, .offset = 64}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("CanYouFindThis", "a"),
-                   (ArgLocation{.type = LocationType::kRegister, .offset = 4}));
+                   (ArgLocation{.loc_type = LocationType::kRegister, .offset = 4}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("CanYouFindThis", "b"),
-                   (ArgLocation{.type = LocationType::kRegister, .offset = 8}));
+                   (ArgLocation{.loc_type = LocationType::kRegister, .offset = 8}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("SomeFunctionWithPointerArgs", "a"),
-                   (ArgLocation{.type = LocationType::kRegister, .offset = 8}));
+                   (ArgLocation{.loc_type = LocationType::kRegister, .offset = 8}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("SomeFunctionWithPointerArgs", "x"),
-                   (ArgLocation{.type = LocationType::kRegister, .offset = 16}));
+                   (ArgLocation{.loc_type = LocationType::kRegister, .offset = 16}));
 }
 
 TEST_P(DwarfReaderTest, GolangArgumentLocation) {
@@ -151,17 +151,17 @@ TEST_P(DwarfReaderTest, GolangArgumentLocation) {
                        DwarfReader::Create(kGoBinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).Scale", "v"),
-                   (ArgLocation{.type = LocationType::kStack, .offset = 0}));
+                   (ArgLocation{.loc_type = LocationType::kStack, .offset = 0}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).Scale", "f"),
-                   (ArgLocation{.type = LocationType::kStack, .offset = 8}));
+                   (ArgLocation{.loc_type = LocationType::kStack, .offset = 8}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).CrossScale", "v"),
-                   (ArgLocation{.type = LocationType::kStack, .offset = 0}));
+                   (ArgLocation{.loc_type = LocationType::kStack, .offset = 0}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).CrossScale", "v2"),
-                   (ArgLocation{.type = LocationType::kStack, .offset = 8}));
+                   (ArgLocation{.loc_type = LocationType::kStack, .offset = 8}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.(*Vertex).CrossScale", "f"),
-                   (ArgLocation{.type = LocationType::kStack, .offset = 24}));
+                   (ArgLocation{.loc_type = LocationType::kStack, .offset = 24}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentLocation("main.Vertex.Abs", "v"),
-                   (ArgLocation{.type = LocationType::kStack, .offset = 0}));
+                   (ArgLocation{.loc_type = LocationType::kStack, .offset = 0}));
 }
 
 // Note the differences here and the results in CppArgumentStackPointerOffset.
@@ -175,18 +175,20 @@ TEST_P(DwarfReaderTest, CppFunctionArgInfo) {
   EXPECT_OK_AND_THAT(
       dwarf_reader->GetFunctionArgInfo("CanYouFindThis"),
       UnorderedElementsAre(
-          Pair("a", ArgInfo{VarType::kBaseType, "int", {LocationType::kRegister, 0}}),
-          Pair("b", ArgInfo{VarType::kBaseType, "int", {LocationType::kRegister, 8}})));
+          Pair("a", ArgInfo{TypeInfo{VarType::kBaseType, "int"}, {LocationType::kRegister, 0}}),
+          Pair("b", ArgInfo{TypeInfo{VarType::kBaseType, "int"}, {LocationType::kRegister, 8}})));
   EXPECT_OK_AND_THAT(
       dwarf_reader->GetFunctionArgInfo("ABCSum32"),
-      UnorderedElementsAre(
-          Pair("x", ArgInfo{VarType::kStruct, "ABCStruct32", {LocationType::kRegister, 0}}),
-          Pair("y", ArgInfo{VarType::kStruct, "ABCStruct32", {LocationType::kRegister, 16}})));
+      UnorderedElementsAre(Pair("x", ArgInfo{TypeInfo{VarType::kStruct, "ABCStruct32"},
+                                             {LocationType::kRegister, 0}}),
+                           Pair("y", ArgInfo{TypeInfo{VarType::kStruct, "ABCStruct32"},
+                                             {LocationType::kRegister, 16}})));
   EXPECT_OK_AND_THAT(
       dwarf_reader->GetFunctionArgInfo("SomeFunctionWithPointerArgs"),
       UnorderedElementsAre(
-          Pair("a", ArgInfo{VarType::kPointer, "int", {LocationType::kRegister, 0}}),
-          Pair("x", ArgInfo{VarType::kPointer, "ABCStruct32", {LocationType::kRegister, 8}})));
+          Pair("a", ArgInfo{TypeInfo{VarType::kPointer, "int*"}, {LocationType::kRegister, 0}}),
+          Pair("x", ArgInfo{TypeInfo{VarType::kPointer, "ABCStruct32*"},
+                            {LocationType::kRegister, 8}})));
 }
 
 TEST_P(DwarfReaderTest, CppFunctionRetValInfo) {
@@ -195,11 +197,11 @@ TEST_P(DwarfReaderTest, CppFunctionRetValInfo) {
                        DwarfReader::Create(kCppBinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetFunctionRetValInfo("CanYouFindThis"),
-                   (RetValInfo{VarType::kBaseType, "int", 4}));
+                   (RetValInfo{TypeInfo{VarType::kBaseType, "int"}, 4}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetFunctionRetValInfo("ABCSum32"),
-                   (RetValInfo{VarType::kStruct, "ABCStruct32", 12}));
+                   (RetValInfo{TypeInfo{VarType::kStruct, "ABCStruct32"}, 12}));
   EXPECT_OK_AND_EQ(dwarf_reader->GetFunctionRetValInfo("SomeFunctionWithPointerArgs"),
-                   (RetValInfo{VarType::kVoid, "", 0}));
+                   (RetValInfo{TypeInfo{VarType::kVoid, ""}, 0}));
 }
 
 TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
@@ -211,37 +213,47 @@ TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
 
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("main.(*Vertex).Scale"),
-        UnorderedElementsAre(
-            Pair("v", ArgInfo{VarType::kPointer, "main.Vertex", {LocationType::kStack, 0}}),
-            Pair("f", ArgInfo{VarType::kBaseType, "float64", {LocationType::kStack, 8}})));
+        UnorderedElementsAre(Pair("v", ArgInfo{TypeInfo{VarType::kPointer, "*main.Vertex"},
+                                               {LocationType::kStack, 0}}),
+                             Pair("f", ArgInfo{TypeInfo{VarType::kBaseType, "float64"},
+                                               {LocationType::kStack, 8}})));
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("main.(*Vertex).CrossScale"),
-        UnorderedElementsAre(
-            Pair("v", ArgInfo{VarType::kPointer, "main.Vertex", {LocationType::kStack, 0}}),
-            Pair("v2", ArgInfo{VarType::kStruct, "main.Vertex", {LocationType::kStack, 8}}),
-            Pair("f", ArgInfo{VarType::kBaseType, "float64", {LocationType::kStack, 24}})));
+        UnorderedElementsAre(Pair("v", ArgInfo{TypeInfo{VarType::kPointer, "*main.Vertex"},
+                                               {LocationType::kStack, 0}}),
+                             Pair("v2", ArgInfo{TypeInfo{VarType::kStruct, "main.Vertex"},
+                                                {LocationType::kStack, 8}}),
+                             Pair("f", ArgInfo{TypeInfo{VarType::kBaseType, "float64"},
+                                               {LocationType::kStack, 24}})));
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("main.Vertex.Abs"),
-        UnorderedElementsAre(
-            Pair("v", ArgInfo{VarType::kStruct, "main.Vertex", {LocationType::kStack, 0}}),
-            Pair("~r0", ArgInfo{VarType::kBaseType, "float64", {LocationType::kStack, 16}, true})));
+        UnorderedElementsAre(Pair("v", ArgInfo{TypeInfo{VarType::kStruct, "main.Vertex"},
+                                               {LocationType::kStack, 0}}),
+                             Pair("~r0", ArgInfo{TypeInfo{VarType::kBaseType, "float64"},
+                                                 {LocationType::kStack, 16},
+                                                 true})));
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("main.MixedArgTypes"),
         UnorderedElementsAre(
-            Pair("i1", ArgInfo{VarType::kBaseType, "int", {LocationType::kStack, 0}}),
-            Pair("b1", ArgInfo{VarType::kBaseType, "bool", {LocationType::kStack, 8}}),
-            Pair("b2", ArgInfo{VarType::kStruct, "main.BoolWrapper", {LocationType::kStack, 9}}),
-            Pair("i2", ArgInfo{VarType::kBaseType, "int", {LocationType::kStack, 16}}),
-            Pair("i3", ArgInfo{VarType::kBaseType, "int", {LocationType::kStack, 24}}),
-            Pair("b3", ArgInfo{VarType::kBaseType, "bool", {LocationType::kStack, 32}}),
-            Pair("~r6", ArgInfo{VarType::kBaseType, "int", {LocationType::kStack, 40}, true}),
-            Pair("~r7",
-                 ArgInfo{VarType::kStruct, "main.BoolWrapper", {LocationType::kStack, 48}, true})));
+            Pair("i1", ArgInfo{TypeInfo{VarType::kBaseType, "int"}, {LocationType::kStack, 0}}),
+            Pair("b1", ArgInfo{TypeInfo{VarType::kBaseType, "bool"}, {LocationType::kStack, 8}}),
+            Pair("b2", ArgInfo{TypeInfo{VarType::kStruct, "main.BoolWrapper"},
+                               {LocationType::kStack, 9}}),
+            Pair("i2", ArgInfo{TypeInfo{VarType::kBaseType, "int"}, {LocationType::kStack, 16}}),
+            Pair("i3", ArgInfo{TypeInfo{VarType::kBaseType, "int"}, {LocationType::kStack, 24}}),
+            Pair("b3", ArgInfo{TypeInfo{VarType::kBaseType, "bool"}, {LocationType::kStack, 32}}),
+            Pair("~r6",
+                 ArgInfo{TypeInfo{VarType::kBaseType, "int"}, {LocationType::kStack, 40}, true}),
+            Pair("~r7", ArgInfo{TypeInfo{VarType::kStruct, "main.BoolWrapper"},
+                                {LocationType::kStack, 48},
+                                true})));
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("main.GoHasNamedReturns"),
         UnorderedElementsAre(
-            Pair("retfoo", ArgInfo{VarType::kBaseType, "int", {LocationType::kStack, 0}, true}),
-            Pair("retbar", ArgInfo{VarType::kBaseType, "bool", {LocationType::kStack, 8}, true})));
+            Pair("retfoo",
+                 ArgInfo{TypeInfo{VarType::kBaseType, "int"}, {LocationType::kStack, 0}, true}),
+            Pair("retbar",
+                 ArgInfo{TypeInfo{VarType::kBaseType, "bool"}, {LocationType::kStack, 8}, true})));
   }
 
   {
@@ -253,14 +265,18 @@ TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("net/http.(*http2Framer).WriteDataPadded"),
         UnorderedElementsAre(
-            Pair("f",
-                 ArgInfo{VarType::kPointer, "net/http.http2Framer", {LocationType::kStack, 0}}),
-            Pair("streamID", ArgInfo{VarType::kBaseType, "uint32", {LocationType::kStack, 8}}),
-            Pair("endStream", ArgInfo{VarType::kBaseType, "bool", {LocationType::kStack, 12}}),
-            Pair("data", ArgInfo{VarType::kStruct, "[]uint8", {LocationType::kStack, 16}}),
-            Pair("pad", ArgInfo{VarType::kStruct, "[]uint8", {LocationType::kStack, 40}}),
-            Pair("~r4",
-                 ArgInfo{VarType::kStruct, "runtime.iface", {LocationType::kStack, 64}, true})));
+            Pair("f", ArgInfo{TypeInfo{VarType::kPointer, "*net/http.http2Framer"},
+                              {LocationType::kStack, 0}}),
+            Pair("streamID",
+                 ArgInfo{TypeInfo{VarType::kBaseType, "uint32"}, {LocationType::kStack, 8}}),
+            Pair("endStream",
+                 ArgInfo{TypeInfo{VarType::kBaseType, "bool"}, {LocationType::kStack, 12}}),
+            Pair("data",
+                 ArgInfo{TypeInfo{VarType::kStruct, "[]uint8"}, {LocationType::kStack, 16}}),
+            Pair("pad", ArgInfo{TypeInfo{VarType::kStruct, "[]uint8"}, {LocationType::kStack, 40}}),
+            Pair("~r4", ArgInfo{TypeInfo{VarType::kStruct, "runtime.iface"},
+                                {LocationType::kStack, 64},
+                                true})));
   }
 }
 

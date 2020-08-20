@@ -14,10 +14,11 @@ namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
 
-using dwarf_tools::ArgInfo;
-using dwarf_tools::LocationType;
-using dwarf_tools::StructMemberInfo;
-using dwarf_tools::VarType;
+using ::pl::stirling::dwarf_tools::ArgInfo;
+using ::pl::stirling::dwarf_tools::LocationType;
+using ::pl::stirling::dwarf_tools::StructMemberInfo;
+using ::pl::stirling::dwarf_tools::TypeInfo;
+using ::pl::stirling::dwarf_tools::VarType;
 
 //-----------------------------------------------------------------------------
 // Top-level code
@@ -221,32 +222,21 @@ const absl::flat_hash_map<std::string_view, ir::shared::ScalarType>& GetTypesMap
   }
 }
 
-StatusOr<ir::shared::ScalarType> VarTypeToProtoScalarType(const VarType& type,
-                                                          ir::shared::Language language,
-                                                          std::string_view name) {
-  switch (type) {
+StatusOr<ir::shared::ScalarType> VarTypeToProtoScalarType(const TypeInfo& type_info,
+                                                          ir::shared::Language language) {
+  switch (type_info.type) {
     case VarType::kBaseType: {
       auto& types_map = GetTypesMap(language);
-      auto iter = types_map.find(name);
+      auto iter = types_map.find(type_info.type_name);
       if (iter == types_map.end()) {
-        return error::Internal("Unrecognized base type: $0", name);
+        return error::Internal("Unrecognized base type: $0", type_info.type_name);
       }
       return iter->second;
     }
     case VarType::kPointer:
       return ir::shared::ScalarType::VOID_POINTER;
-    case VarType::kStruct:
-      if (language == ir::shared::Language::GOLANG) {
-        if (name == "string") {
-          return ir::shared::ScalarType::STRING;
-        }
-        if (name == "[]uint8" || name == "[]byte") {
-          return ir::shared::ScalarType::BYTE_ARRAY;
-        }
-      }
-      return error::Internal("Unhandled type: $0 (name=$1)", magic_enum::enum_name(type), name);
     default:
-      return error::Internal("Unhandled type: $0 (name=$1)", magic_enum::enum_name(type), name);
+      return error::Internal("Unhandled type: $0", type_info.ToString());
   }
 }
 
@@ -258,7 +248,7 @@ StatusOr<ArgInfo> GetArgInfo(const std::map<std::string, ArgInfo>& args_map,
   }
   ArgInfo retval = args_map_iter->second;
 
-  if (retval.location.type == LocationType::kStack) {
+  if (retval.location.loc_type == LocationType::kStack) {
     // The offset of an argument of the stack starts at 8.
     // This is because the last thing on the stack on a function call is the return address.
     constexpr int32_t kSPOffset = 8;
@@ -499,19 +489,18 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
   // String for * operator (eg. (*my_struct).field)
   static constexpr std::string_view kDerefStr = "_X_";
 
-  VarType type = arg_info.type;
-  std::string type_name = arg_info.type_name;
+  TypeInfo type_info = arg_info.type_info;
   int offset = arg_info.location.offset;
   std::string base = base_var;
   std::string name = var_name;
 
   // Note that we start processing at element [1], not [0], which was used to set the starting
   // state in the lines above.
-  for (auto iter = components.begin() + 1; iter < components.end(); ++iter) {
+  for (auto iter = components.begin() + 1; true; ++iter) {
     // If parent is a pointer, create a variable to dereference it.
-    if (type == VarType::kPointer) {
+    if (type_info.type == VarType::kPointer) {
       PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type,
-                          VarTypeToProtoScalarType(type, language_, type_name));
+                          VarTypeToProtoScalarType(type_info, language_));
 
       absl::StrAppend(&name, kDerefStr);
 
@@ -522,49 +511,52 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
       // Reset base and offset.
       base = name;
       offset = 0;
+
+      PL_ASSIGN_OR_RETURN(type_info, dwarf_reader_->DereferencePointerType(type_info.type_name));
+    }
+
+    // Stop iterating only after dereferencing any pointers one last time.
+    if (iter == components.end()) {
+      break;
     }
 
     std::string_view field_name = *iter;
     PL_ASSIGN_OR_RETURN(StructMemberInfo member_info,
-                        dwarf_reader_->GetStructMemberInfo(type_name, field_name));
+                        dwarf_reader_->GetStructMemberInfo(type_info.type_name, field_name));
     offset += member_info.offset;
-    type_name = std::move(member_info.type_name);
-    type = member_info.type;
+    type_info = std::move(member_info.type_info);
     absl::StrAppend(&name, kDotStr, field_name);
   }
 
-  // If parent is a pointer, create a variable to dereference it.
-  if (type == VarType::kPointer) {
-    PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type,
-                        VarTypeToProtoScalarType(type, language_, type_name));
-
-    absl::StrAppend(&name, kDerefStr);
-
-    auto* var = AddVariable(output_probe, name, pb_type);
-    var->mutable_memory()->set_base(base);
-    var->mutable_memory()->set_offset(offset);
-
-    // Reset base and offset.
-    base = name;
-    offset = 0;
-
-    // Since we are the leaf, also force the type to a BaseType.
-    // If we are not, in fact, at a base type, then VarTypeToProtoScalarType will error out,
-    // as it should--since we can't trace non-base types.
-    type = VarType::kBaseType;
-    absl::StrAppend(&name, kDerefStr);
-  }
-
-  PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type,
-                      VarTypeToProtoScalarType(type, language_, type_name));
-
-  // The very last created variable uses the original id.
+  // Now we make the final variable.
+  // Note that the very last created variable uses the original id.
   // This is important so that references in the original probe are maintained.
 
-  auto* var = AddVariable(output_probe, std::string(var_name), pb_type);
+  if (type_info.type == VarType::kBaseType) {
+    PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type,
+                        VarTypeToProtoScalarType(type_info, language_));
 
-  var->mutable_memory()->set_base(base);
-  var->mutable_memory()->set_offset(offset);
+    auto* var = AddVariable(output_probe, var_name, pb_type);
+    var->mutable_memory()->set_base(base);
+    var->mutable_memory()->set_offset(offset);
+  } else if (type_info.type == VarType::kStruct) {
+    if (language_ == ir::shared::Language::GOLANG) {
+      if (type_info.type_name == "string") {
+        auto* var = AddVariable(output_probe, var_name, ir::shared::ScalarType::STRING);
+        var->mutable_memory()->set_base(base);
+        var->mutable_memory()->set_offset(offset);
+      } else if (type_info.type_name == "[]uint8" || type_info.type_name == "[]byte") {
+        auto* var = AddVariable(output_probe, var_name, ir::shared::ScalarType::BYTE_ARRAY);
+        var->mutable_memory()->set_base(base);
+        var->mutable_memory()->set_offset(offset);
+      } else {
+        // TODO(oazizi): Implement this part.
+        return error::Unimplemented("Tracing structs is future work");
+      }
+    }
+  } else {
+    return error::Internal("Expected struct or base type, but got type: $0", type_info.ToString());
+  }
 
   return Status::OK();
 }
@@ -586,7 +578,7 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
     case ir::shared::C: {
       std::string base_var;
 
-      switch (arg_info.location.type) {
+      switch (arg_info.location.loc_type) {
         case LocationType::kStack:
           base_var = kSPVarName;
           break;
@@ -595,7 +587,7 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
           break;
         default:
           return error::Internal("Unsupported argument LocationType $0",
-                                 magic_enum::enum_name(arg_info.location.type));
+                                 magic_enum::enum_name(arg_info.location.loc_type));
       }
 
       return ProcessVarExpr(arg.id(), arg_info, base_var, components, output_probe);
@@ -649,13 +641,14 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
         return error::Internal("C/C++ only supports a single return value [index=$0].", index);
       }
 
-      if (retval_info_.type == VarType::kVoid) {
+      if (retval_info_.type_info.type == VarType::kVoid) {
         return error::Internal(
             "Attempting to process return variable for function with void return. Symbol=$0",
             output_probe->tracepoint().symbol());
       }
 
-      DCHECK(retval_info_.type == VarType::kStruct || retval_info_.type == VarType::kBaseType);
+      DCHECK(retval_info_.type_info.type == VarType::kStruct ||
+             retval_info_.type_info.type == VarType::kBaseType);
 
       std::string base_var;
 
@@ -677,9 +670,8 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
       }
 
       ArgInfo retval;
-      retval.type_name = retval_info_.type_name;
-      retval.type = retval_info_.type;
-      retval.location.type = LocationType::kStack;
+      retval.type_info = retval_info_.type_info;
+      retval.location.loc_type = LocationType::kStack;
       retval.location.offset = 0;
 
       return ProcessVarExpr(ret_val.id(), retval, base_var, components, output_probe);

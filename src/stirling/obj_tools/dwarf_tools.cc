@@ -27,39 +27,6 @@ StatusOr<TValueType> AdaptLLVMOptional(llvm::Optional<TValueType>&& llvm_opt,
   return llvm_opt.getValue();
 }
 
-StatusOr<DWARFDie> GetTypeDie(const DWARFDie& die) {
-  DWARFDie type_die = die;
-  do {
-    PL_ASSIGN_OR_RETURN(
-        const DWARFFormValue& type_attr,
-        AdaptLLVMOptional(type_die.find(llvm::dwarf::DW_AT_type), "Could not find DW_AT_type."));
-
-    type_die = die.getAttributeValueAsReferencedDie(type_attr);
-  } while (type_die.getTag() == llvm::dwarf::DW_TAG_typedef);
-
-  return type_die;
-}
-
-StatusOr<std::string> GetTypeName(const DWARFDie& die) {
-  DCHECK(die.isValid());
-
-  switch (die.getTag()) {
-    case llvm::dwarf::DW_TAG_subroutine_type:
-      return std::string("func");
-    case llvm::dwarf::DW_TAG_pointer_type: {
-      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-      return std::string(GetShortName(type_die));
-    }
-    case llvm::dwarf::DW_TAG_base_type:
-    case llvm::dwarf::DW_TAG_class_type:
-    case llvm::dwarf::DW_TAG_structure_type:
-      return std::string(GetShortName(die));
-    default:
-      return error::Internal(
-          absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
-  }
-}
-
 std::vector<DWARFDie> GetParamDIEs(const DWARFDie& function_die) {
   std::vector<DWARFDie> dies;
   for (auto& die : function_die.children()) {
@@ -395,6 +362,66 @@ StatusOr<uint64_t> GetBaseOrStructTypeByteSize(const DWARFDie& die) {
   return byte_size;
 }
 
+StatusOr<DWARFDie> GetTypeDie(const DWARFDie& die) {
+  DWARFDie type_die = die;
+  do {
+    PL_ASSIGN_OR_RETURN(
+        const DWARFFormValue& type_attr,
+        AdaptLLVMOptional(type_die.find(llvm::dwarf::DW_AT_type), "Could not find DW_AT_type."));
+
+    type_die = die.getAttributeValueAsReferencedDie(type_attr);
+  } while (type_die.getTag() == llvm::dwarf::DW_TAG_typedef);
+
+  return type_die;
+}
+
+StatusOr<VarType> GetType(const DWARFDie& die) {
+  DCHECK(die.isValid());
+
+  switch (die.getTag()) {
+    case llvm::dwarf::DW_TAG_pointer_type:
+      return VarType::kPointer;
+    case llvm::dwarf::DW_TAG_subroutine_type:
+      return VarType::kSubroutine;
+    case llvm::dwarf::DW_TAG_base_type:
+      return VarType::kBaseType;
+    case llvm::dwarf::DW_TAG_class_type:
+      return VarType::kClass;
+    case llvm::dwarf::DW_TAG_structure_type:
+      return VarType::kStruct;
+    default:
+      return error::Internal(
+          absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
+  }
+}
+
+StatusOr<std::string> GetTypeName(const DWARFDie& die) {
+  DCHECK(die.isValid());
+
+  switch (die.getTag()) {
+    case llvm::dwarf::DW_TAG_subroutine_type:
+      return std::string("func");
+    case llvm::dwarf::DW_TAG_pointer_type: {
+      std::string type_name(GetShortName(die));
+
+      // C++ dwarf info doesn't have a name attached to the pointer types,
+      // so follow to the type die and create the appropriate name.
+      if (type_name.empty()) {
+        PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+        type_name = absl::StrCat(GetShortName(type_die), "*");
+      }
+      return type_name;
+    }
+    case llvm::dwarf::DW_TAG_base_type:
+    case llvm::dwarf::DW_TAG_class_type:
+    case llvm::dwarf::DW_TAG_structure_type:
+      return std::string(GetShortName(die));
+    default:
+      return error::Internal(
+          absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
+  }
+}
+
 StatusOr<uint64_t> GetTypeByteSize(const DWARFDie& die) {
   DCHECK(die.isValid());
 
@@ -438,26 +465,6 @@ StatusOr<uint64_t> GetAlignmentByteSize(const DWARFDie& die) {
   }
 }
 
-StatusOr<VarType> GetType(const DWARFDie& die) {
-  DCHECK(die.isValid());
-
-  switch (die.getTag()) {
-    case llvm::dwarf::DW_TAG_pointer_type:
-      return VarType::kPointer;
-    case llvm::dwarf::DW_TAG_subroutine_type:
-      return VarType::kSubroutine;
-    case llvm::dwarf::DW_TAG_base_type:
-      return VarType::kBaseType;
-    case llvm::dwarf::DW_TAG_class_type:
-      return VarType::kClass;
-    case llvm::dwarf::DW_TAG_structure_type:
-      return VarType::kStruct;
-    default:
-      return error::Internal(
-          absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
-  }
-}
-
 // This function calls out any die with DW_AT_variable_parameter == 0x1 to be a return value.
 // The documentation on how Golang sets this field is sparse, so not sure if this is the
 // right flag to look at.
@@ -487,17 +494,29 @@ StatusOr<StructMemberInfo> DwarfReader::GetStructMemberInfo(std::string_view str
   for (const auto& die : struct_die.children()) {
     if ((die.getTag() == llvm::dwarf::DW_TAG_member) &&
         (die.getName(llvm::DINameKind::ShortName) == member_name)) {
-      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-
       PL_ASSIGN_OR_RETURN(member_info.offset, GetMemberOffset(die));
 
-      PL_ASSIGN_OR_RETURN(member_info.type, GetType(type_die));
-      PL_ASSIGN_OR_RETURN(member_info.type_name, GetTypeName(type_die));
+      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+      PL_ASSIGN_OR_RETURN(member_info.type_info.type, GetType(type_die));
+      PL_ASSIGN_OR_RETURN(member_info.type_info.type_name, GetTypeName(type_die));
       return member_info;
     }
   }
 
   return error::Internal("Could not find member.");
+}
+
+StatusOr<TypeInfo> DwarfReader::DereferencePointerType(std::string type_name) {
+  PL_ASSIGN_OR_RETURN(const DWARFDie& die,
+                      GetMatchingDIE(type_name, llvm::dwarf::DW_TAG_pointer_type));
+
+  TypeInfo type_info;
+
+  PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+  PL_ASSIGN_OR_RETURN(type_info.type, GetType(type_die));
+  PL_ASSIGN_OR_RETURN(type_info.type_name, GetTypeName(type_die));
+
+  return type_info;
 }
 
 StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view function_symbol_name,
@@ -531,10 +550,10 @@ StatusOr<ArgLocation> GetDieArgumentLocation(const DWARFDie& die) {
 
   if (decoded_loc_block.code == llvm::dwarf::LocationAtom::DW_OP_fbreg) {
     if (decoded_loc_block.operand >= 0) {
-      return ArgLocation{.type = LocationType::kStack, .offset = decoded_loc_block.operand};
+      return ArgLocation{.loc_type = LocationType::kStack, .offset = decoded_loc_block.operand};
     } else {
       decoded_loc_block.operand *= -1;
-      return ArgLocation{.type = LocationType::kRegister, .offset = decoded_loc_block.operand};
+      return ArgLocation{.loc_type = LocationType::kRegister, .offset = decoded_loc_block.operand};
     }
   }
 
@@ -542,7 +561,7 @@ StatusOr<ArgLocation> GetDieArgumentLocation(const DWARFDie& die) {
   // This logic is probably not right, but appears to work for now.
   // TODO(oazizi): Study call_frame_cfa blocks.
   if (decoded_loc_block.code == llvm::dwarf::LocationAtom::DW_OP_call_frame_cfa) {
-    return ArgLocation{.type = LocationType::kStack, .offset = 0};
+    return ArgLocation{.loc_type = LocationType::kStack, .offset = 0};
   }
 
   return error::Internal("Unsupported operand: $0", magic_enum::enum_name(decoded_loc_block.code));
@@ -653,22 +672,21 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
     auto& arg = arg_info[die.getName(llvm::DINameKind::ShortName)];
 
     PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+    PL_ASSIGN_OR_RETURN(arg.type_info.type, GetType(type_die));
+    PL_ASSIGN_OR_RETURN(arg.type_info.type_name, GetTypeName(type_die));
 
     PL_ASSIGN_OR_RETURN(uint64_t type_size, GetTypeByteSize(type_die));
     PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
 
-    PL_ASSIGN_OR_RETURN(arg.type, GetType(type_die));
-    PL_ASSIGN_OR_RETURN(arg.type_name, GetTypeName(type_die));
-
     if (type_size <= 16 && current_reg_offset + type_size <= total_register_bytes) {
-      arg.location.type = LocationType::kRegister;
+      arg.location.loc_type = LocationType::kRegister;
       arg.location.offset = current_reg_offset;
       // Consume full registers at a time.
       current_reg_offset += SnapUpToMultiple(type_size, reg_size);
     } else {
       // Align to the type's required alignment.
       current_offset = SnapUpToMultiple(current_offset, alignment_size);
-      arg.location.type = LocationType::kStack;
+      arg.location.loc_type = LocationType::kStack;
       arg.location.offset = current_offset;
       current_offset += type_size;
     }
@@ -687,14 +705,15 @@ StatusOr<RetValInfo> DwarfReader::GetFunctionRetValInfo(std::string_view functio
 
   if (!function_die.find(llvm::dwarf::DW_AT_type).hasValue()) {
     // No return type means the function has a void return type.
-    return RetValInfo{.type = VarType::kVoid, .type_name = "", .byte_size = 0};
+    return RetValInfo{.type_info = TypeInfo{.type = VarType::kVoid, .type_name = ""},
+                      .byte_size = 0};
   }
 
   RetValInfo ret_val_info;
 
   PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(function_die));
-  PL_ASSIGN_OR_RETURN(ret_val_info.type, GetType(type_die));
-  PL_ASSIGN_OR_RETURN(ret_val_info.type_name, GetTypeName(type_die));
+  PL_ASSIGN_OR_RETURN(ret_val_info.type_info.type, GetType(type_die));
+  PL_ASSIGN_OR_RETURN(ret_val_info.type_info.type_name, GetTypeName(type_die));
   PL_ASSIGN_OR_RETURN(ret_val_info.byte_size, GetTypeByteSize(type_die));
 
   return ret_val_info;
