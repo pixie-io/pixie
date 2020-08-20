@@ -28,6 +28,9 @@ type EsMDEntity struct {
 const IndexMapping = `
 {
     "settings":{
+      "store": {
+        "preload": ["nvd", "dvd", "tim", "doc", "dim"]
+      },
       "number_of_shards":4,
       "number_of_replicas":4,
         "analysis": {
@@ -35,7 +38,7 @@ const IndexMapping = `
             "autocomplete_filter": {
               "type": "edge_ngram",
               "min_gram": 1,
-              "max_gram": 20
+              "max_gram": 6
             },
             "dont_split_on_numerics" : {
               "type" : "word_delimiter",
@@ -51,8 +54,8 @@ const IndexMapping = `
             "ngram_tokenizer": {
               "type": "edge_ngram",
               "min_gram": 1,
-              "max_gram": 20,
-              "token_chars": ["letter", "digit"]
+              "max_gram": 6,
+              "token_chars": ["letter", "digit"] 
             }
           },
           "analyzer": {
@@ -74,26 +77,31 @@ const IndexMapping = `
   "mappings":{
     "properties":{
     "orgID":{
-      "type":"text", "analyzer": "myAnalyzer"
+      "type":"text", "analyzer": "myAnalyzer",
+      "eager_global_ordinals": true
     },
     "vizierID":{
       "type":"text", "analyzer": "myAnalyzer"
     },
     "clusterUID": {
-      "type":"text", "analyzer": "myAnalyzer"
+      "type":"text", "analyzer": "myAnalyzer",
+      "eager_global_ordinals": true
     },
     "uid":{
       "type":"text"
     },
     "name":{
       "type":"text",
-        "analyzer": "autocomplete"
+      "analyzer": "autocomplete",
+      "eager_global_ordinals": true
     },
     "ns":{
-      "type":"text", "analyzer": "myAnalyzer"
+      "type":"text", "analyzer": "myAnalyzer",
+      "eager_global_ordinals": true
     },
     "kind":{
-      "type":"text"
+      "type":"text",
+      "eager_global_ordinals": true
     },
     "timeStartedNS":{
       "type":"long"
@@ -111,8 +119,7 @@ const IndexMapping = `
   }
 }
 `
-
-const indexName = "md_entities_1"
+const indexName = "md_entities_2"
 
 // InitializeMapping creates the index in elastic.
 func InitializeMapping(es *elastic.Client) error {
