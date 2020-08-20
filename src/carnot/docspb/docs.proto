@@ -1,0 +1,117 @@
+syntax = "proto3";
+package pl.carnot.docspb;
+
+import "src/carnot/udfspb/udfs.proto";
+
+option go_package = "docspb";
+
+message IdentDoc {
+  // The name of the identifier.
+  string ident = 1;
+  // The description of the identifier.
+  string desc = 2;
+  // Expected type(s) of the identifier.
+  repeated string types = 3;
+  // The default value of the argument, if it exists.
+  string default = 4;
+}
+
+message FuncDoc {
+  // The arguments of the function.
+  repeated IdentDoc args = 1;
+  // The variable args field (*args) if the function supports it.
+  // *args will catch all unnamed aruments that aren't explicitly state. Ie
+  // `def func(*args)` can be called as `func(val1, val2)`
+  IdentDoc repeated_args = 2;
+  // The variable keyword args field (**kwargs) if the function supports it.
+  // **kwargs will catch all named arguments that aren't explicitly stated. Ie
+  // `def func(**kwargs)` can be called as `func(kwarg1=val1, kwarg2=val2)`
+  IdentDoc kwargs = 3;
+  // The value returned by the function, if there is one.
+  IdentDoc return_type = 4;
+}
+
+// DocstringNode is a structure containing a docstring for an object and
+// pointers to children of the object stored as DocstringNodes. Children
+// relationships include classes defined in a  module (ie DataFrame in px)
+// or methods of a class (ie agg() in class DataFrame()). DocstringNodes need to
+// be parsed and formatted into a structured form that is friendly for the UI.
+message DocstringNode {
+  // The name of the object.
+  string name = 1;
+  // Docstring of the object. Written according to the Google styleguide format
+  // for python. For more details:
+  // https://github.com/google/styleguide/blob/gh-pages/pyguide.md#38-comments-and-docstrings
+  string docstring = 2;
+  // The children of the object, such as methods of a class or classes in a
+  // module. For example, children of `px` include the `DataFrame` class and the
+  // `display` function.
+  repeated DocstringNode children = 3;
+}
+
+// InternalPXLDocs contains all the documentation written in Carnot. The
+// documentation comes "as-is" and has to be structured to use in the UI.
+message InternalPXLDocs {
+  // The raw nodes containing top-level objects in the QL, their docstrings, and
+  // the docstrings of their descendents.
+  repeated DocstringNode docstring_nodes = 1;
+  // The documentation of all UDFs.
+  pl.carnot.udfspb.Docs udf_docs = 2;
+}
+
+// Represents a single example.
+message ExampleDoc {
+  // Example written as a string.
+  string value = 1;
+}
+
+// Description that contains all the info of an object.
+message DocBody {
+  // The name of the documented obejct.
+  string name = 1;
+  // The short, single line description.
+  string brief = 2;
+  // The long form the description if it exists.
+  string desc = 3;
+  // The examples of how to use the documented object.
+  repeated ExampleDoc examples = 4;
+}
+
+// MutationDoc hold information about functions that change the state within
+// Vizier. ie UpsertTracepoint()
+message MutationDoc {
+  // The description of the mutation function.
+  DocBody body = 1;
+  // The documentation of the function.
+  FuncDoc func_doc = 2;
+}
+
+// Documentation for the decorators that define a tracepoint. ie goprobe()
+message TracepointDecoratorDoc {
+  // The description of the documented tracepoint decorator.
+  DocBody body = 1;
+  // The documentation of the function.
+  FuncDoc func_doc = 2;
+}
+
+// TracepointFieldDoc contains information about the functions that encode
+// properties of the tracepoint. Ie ArgExpr(), RetExpr(), FunctionLatency()
+message TracepointFieldDoc {
+  // The description of the documented tracepoint spec doc.
+  DocBody body = 1;
+  // The documentation of the function to call for this field.
+  FuncDoc func_doc = 2;
+}
+
+// StructuredDocs is structured documentation that is ready to be parsed into
+// the UI. This shouldn't require much work outside of formatting.
+message StructuredDocs {
+  // Docs that store any operations that change Vizier state.
+  repeated MutationDoc mutation_docs = 1;
+  // Docs that store information about tracepoint decorators.
+  repeated TracepointDecoratorDoc tracepoint_decorator_docs = 2;
+  // Docs that store information about tracepoint fields.
+  repeated TracepointFieldDoc tracepoint_field_docs = 3;
+  // Information about udf docs.
+  pl.carnot.udfspb.Docs udf_docs = 4;
+}
