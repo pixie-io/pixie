@@ -11,9 +11,6 @@ import {
 } from './utils';
 import { Key } from './key';
 
-// The amount of time elasped since a user has last typed after which we can make a API call.
-const TYPING_WAIT_INTERVAL_MS = 500;
-
 const useStyles = makeStyles((theme: Theme) => (
   createStyles({
     root: {
@@ -73,8 +70,6 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
   const [cursorPos, setCursorPos] = React.useState(0);
   const [activeCompletions, setActiveCompletions] = React.useState([]);
   const [activeItem, setActiveItem] = React.useState<CompletionId>('');
-
-  const [timer, setTimer] = React.useState(null);
 
   // Parse tabstops to get boundary and input info.
   const tsInfo = React.useMemo(() => (new TabStopParser(tabStops)), [tabStops]);
@@ -177,15 +172,8 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
   };
 
   const onChangeHandler = React.useCallback((input: string, pos: number) => {
-    clearTimeout(timer);
-    const newTimer = setTimeout(() => {
-      // This is only triggered if the user has stopped typing for a while.
-      onChange(input, pos, 'EDIT', null);
-    }, TYPING_WAIT_INTERVAL_MS);
-    setTimer(newTimer);
-
     onChange(input, pos, 'EDIT', tsInfo.handleChange(input, pos));
-  }, [onChange, tsInfo, timer]);
+  }, [onChange, tsInfo]);
 
   return (
     <div className={clsx(classes.root, className)}>

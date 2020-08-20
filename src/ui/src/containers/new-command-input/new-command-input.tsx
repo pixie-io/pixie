@@ -43,6 +43,10 @@ interface NewCommandInputProps {
   onClose: () => void;
 }
 
+interface CurrentInput {
+  text: string;
+}
+
 const useStyles = makeStyles(() => (createStyles({
   card: {
     position: 'absolute',
@@ -65,14 +69,15 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
 
   const { execute, setScript } = React.useContext(ScriptContext);
   const { scripts } = React.useContext(ScriptsContext);
+  const [currentInput] = React.useState({} as CurrentInput);
 
   const client = useApolloClient();
   const onChange = React.useCallback((input, cursor, action, updatedTabStops) => {
     if (updatedTabStops !== null) {
       setTabStops(updatedTabStops);
       setIsValid(false);
-      return null;
     }
+    currentInput.text = input;
 
     return client.query({
       query: AUTOCOMPLETE_QUERY,
@@ -84,27 +89,29 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
         clusterUID: selectedClusterUID,
       },
     }).then(({ data }) => {
-      setIsValid(data.autocomplete.isExecutable);
-      setTabStops(ParseFormatStringToTabStops(data.autocomplete.formattedInput));
-      const completions = data.autocomplete.tabSuggestions.map((s) => {
-        const suggestions = s.suggestions.map((sugg, i) => ({
-          type: 'item',
-          id: sugg.name + i,
-          title: sugg.name,
-          itemType: entityTypeToString(sugg.kind),
-          description: sugg.description,
-          highlights: sugg.matchedIndexes,
-        }));
+      if (input === currentInput.text) {
+        setIsValid(data.autocomplete.isExecutable);
+        setTabStops(ParseFormatStringToTabStops(data.autocomplete.formattedInput));
+        const completions = data.autocomplete.tabSuggestions.map((s) => {
+          const suggestions = s.suggestions.map((sugg, i) => ({
+            type: 'item',
+            id: sugg.name + i,
+            title: sugg.name,
+            itemType: entityTypeToString(sugg.kind),
+            description: sugg.description,
+            highlights: sugg.matchedIndexes,
+          }));
 
-        return {
-          index: s.tabIndex,
-          executableAfterSelect: s.executableAfterSelect,
-          suggestions,
-        };
-      });
-      setTabSuggestions(completions);
+          return {
+            index: s.tabIndex,
+            executableAfterSelect: s.executableAfterSelect,
+            suggestions,
+          };
+        });
+        setTabSuggestions(completions);
+      }
     });
-  }, [client, selectedClusterUID]);
+  }, [client, selectedClusterUID, currentInput]);
 
   // Make an API call to get a list of initial suggestions when the command input is first loaded.
   React.useEffect(() => {
