@@ -680,7 +680,7 @@ func TestParseIntoCommand(t *testing.T) {
 						ArgName: "svc_name2",
 					},
 				},
-				Executable: false,
+				Executable: true,
 			},
 		},
 		{

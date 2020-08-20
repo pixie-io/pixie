@@ -321,7 +321,7 @@ func validateCommand(scriptDefined bool, cmd *Command) {
 
 	for _, a := range cmd.TabStops {
 		// All args should be valid.
-		if a.Valid != true {
+		if a.Valid != true && a.Value != "" && a.Value != CursorMarker {
 			cmd.Executable = false
 			break
 		}
