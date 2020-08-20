@@ -187,11 +187,16 @@ func (u *Updater) updateOrInstallVizier(vizierID uuid.UUID, version string, rede
 				return nil, err
 			}
 			return v2cMsg, nil
-		case <-ctx.Done():
-			if ctx.Err() != nil {
-				// We never received a response back.
-				return nil, errors.New("Vizier did not send response")
+		case <-time.After(5 * time.Minute):
+			// Our message to the vizier either got lost, or the reply message from the vizier got lost.
+			// In any case, we shouldn't block indefinitely and should put the Vizier back in a reasonable
+			// state so it has a chance to recover and retry the update in the next heartbeat.
+			resetQuery := `UPDATE vizier_cluster_info SET status = 'UNHEALTHY' WHERE vizier_cluster_id = $1`
+			_, err = u.db.Exec(resetQuery, vizierID)
+			if err != nil {
+				return nil, errors.New("Could not update Vizier status")
 			}
+			return nil, errors.New("Did not receive response back from Vizier")
 		}
 	}
 }
