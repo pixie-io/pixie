@@ -221,7 +221,7 @@ func (mh *MetadataHandler) updateEndpoints(e *v1.Endpoints, deleted bool) (*meta
 func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object, eventType watch.EventType) {
 	e, ok := o.(*v1.Endpoints)
 	if !ok {
-		log.WithField("object", o).Error("Received non-endpoints object when handling endpoint metadata.")
+		log.WithField("object", o).Trace("Received non-endpoints object when handling endpoint metadata.")
 		return
 	}
 	// kube-scheduler and kube-controller-manager endpoints (and
@@ -316,7 +316,7 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object, eventType watch.E
 	e, ok := o.(*v1.Pod)
 
 	if !ok {
-		log.WithField("object", o).Error("Received non-pod object when handling pod metadata.")
+		log.WithField("object", o).Trace("Received non-pod object when handling pod metadata.")
 		return
 	}
 
@@ -363,7 +363,7 @@ func (mh *MetadataHandler) handleServiceMetadata(o runtime.Object, eventType wat
 	e, ok := o.(*v1.Service)
 
 	if !ok {
-		log.WithField("object", o).Error("Received non-service object when handling service metadata.")
+		log.WithField("object", o).Trace("Received non-service object when handling service metadata.")
 		return
 	}
 
@@ -389,7 +389,7 @@ func (mh *MetadataHandler) handleNamespaceMetadata(o runtime.Object, eventType w
 	e, ok := o.(*v1.Namespace)
 
 	if !ok {
-		log.WithField("object", o).Error("Received non-namespace object when handling namespace metadata.")
+		log.WithField("object", o).Trace("Received non-namespace object when handling namespace metadata.")
 		return
 	}
 
@@ -411,7 +411,7 @@ func (mh *MetadataHandler) handleNodeMetadata(o runtime.Object, eType watch.Even
 	e, ok := o.(*v1.Node)
 
 	if !ok {
-		log.WithField("object", o).Error("Received non-node object when handling node metadata.")
+		log.WithField("object", o).Trace("Received non-node object when handling node metadata.")
 		return
 	}
 
