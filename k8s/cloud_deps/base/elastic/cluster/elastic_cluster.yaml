@@ -7,12 +7,12 @@ spec:
   version: 7.6.0
   nodeSets:
   - name: master
-    count: 2
+    count: 3
     config:
       node.master: true
       node.data: false
       node.ingest: false
-      node.store.allow_mmap: false
+      node.store.allow_mmap: true
     podTemplate:
       spec:
         initContainers:
@@ -22,6 +22,10 @@ spec:
           - -c
           - |
               bin/elasticsearch-plugin install --batch repository-gcs
+        - name: sysctl
+          securityContext:
+            privileged: true
+          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
     volumeClaimTemplates:
     - metadata:
         name: elasticsearch-data
@@ -38,9 +42,22 @@ spec:
       node.master: false
       node.data: true
       node.ingest: true
-      node.store.allow_mmap: false
+      node.store.allow_mmap: true
+      node.attr.data: hot
     podTemplate:
       spec:
+        containers:
+        - env:
+          - name: ES_JAVA_OPTS
+            value: -Xms2g -Xmx2g
+          name: elasticsearch
+          resources:
+            limits:
+              cpu: 2
+              memory: 4Gi
+            requests:
+              cpu: 0.5
+              memory: 4Gi
         initContainers:
         - name: install-plugins
           command:
@@ -48,6 +65,10 @@ spec:
           - -c
           - |
               bin/elasticsearch-plugin install --batch repository-gcs
+        - name: sysctl
+          securityContext:
+            privileged: true
+          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
     volumeClaimTemplates:
     - metadata:
         name: elasticsearch-data

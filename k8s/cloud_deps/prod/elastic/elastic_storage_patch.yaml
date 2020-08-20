@@ -7,7 +7,7 @@
 # Data node.
 - op: replace
   path: /spec/nodeSets/1/count
-  value: 10
+  value: 5
 
 - op: replace
   path: /spec/nodeSets/1/volumeClaimTemplates/0/spec/resources/requests/storage
