@@ -76,11 +76,64 @@ class TraceModule : public QLObject {
 
   // Constants for functions of pxtrace.
   inline static constexpr char kArgumentId[] = "ArgExpr";
+  inline static constexpr char kArgumentDocstring[] = R"doc(
+  Specifies an argument field to trace.
+
+  Extracts data from the argument specified in the expression. You can
+  specify primitive argument types directly (`arg1`) or evaluate struct
+  children (`arg1.foo`) specified in the expression from what's available
+  in the arguments.
+
+  :topic: tracepoint_fields
+
+  Args:
+    expr (str): The expression to evaluate.
+
+  Returns:
+    px.TracingField: A materialized column pointer to use in output table definitions.
+  )doc";
   inline static constexpr char kRetExprId[] = "RetExpr";
   inline static constexpr char kFunctionLatencyId[] = "FunctionLatency";
   inline static constexpr char kUpsertTraceID[] = "UpsertTracepoint";
+  inline static constexpr char kUpsertTracepointDocstring[] = R"doc(
+  Upserts a tracepoint on the UPID and writes results to the table.
+
+  Upserts the passed in tracepoint on the UPID. Each tracepoint is unique
+  by name. If you upsert on the same trace name and use the same probe func,
+  the TTL of that probe function should update. If you upsert on the same
+  trace name and different probe func, deploying the probe should fail. If you
+  try to write to the same table with a different output schema, deploying will fail.
+
+
+  :topic: pixie_state_management
+
+  Args:
+    name (str): The name of the tracepoint. Should be unique with the probe_fn.
+    table_name (str): The table name to write the results. If the schema output
+      by the probe function does not match, then the tracepoint manager will
+      error out.
+    probe_fn (px.ProbeFn): The probe function to use as part of the Upsert. The return
+      value should bhet
+    upid (px.UPID): The program to trace as specified by unique Vizier PID.
+    ttl (px.Duration): The length of time that a tracepoint will stay alive, after
+      which it will be removed.
+  )doc";
   inline static constexpr char kDeleteTracepointID[] = "DeleteTracepoint";
   inline static constexpr char kGoProbeTraceDefinition[] = "goprobe";
+  inline static constexpr char kGoProbeDocstring[] = R"doc(
+  Decorates a tracepoint definition of a Go function.
+
+  Specifies the decorated function as a goprobe tracepoint on the `trace_fn`
+  name.
+
+  :topic: tracepoint_decorator
+
+  Args:
+    trace_fn (str): The Go func to trace. Format is `<package_name>.<func_name>`.
+
+  Returns:
+    Func: The wrapped probe function.
+  )doc";
 
  protected:
   explicit TraceModule(MutationsIR* mutations_ir, ASTVisitor* ast_visitor)

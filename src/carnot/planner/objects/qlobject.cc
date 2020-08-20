@@ -47,7 +47,15 @@ StatusOr<QLObjectPtr> QLObject::FromIRNode(IRNode* node, ASTVisitor* ast_visitor
   }
 }
 
+Status QLObject::SetDocString(const std::string& doc_string) {
+  // TODO(PP-2142) Support non ExprObject nodes to pass strings around so we can
+  // store it in __doc__.
+  doc_string_ = doc_string;
+  return Status::OK();
+}
+
 Status QLObject::SetDocString(QLObjectPtr doc_string) {
+  // TODO(PP-2142) Redo the doc_string requirements so StringIR isn't a requirement.
   PL_RETURN_IF_ERROR(AssignAttribute(kDocStringAttributeName, doc_string));
   DCHECK(doc_string->HasNode());
   DCHECK_EQ(doc_string->node()->type(), IRNodeType::kString);

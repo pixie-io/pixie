@@ -186,12 +186,25 @@ class QLObject {
    */
   Status SetDocString(QLObjectPtr doc_string);
 
+  /**
+   * @brief Sets the docstring of this object, but doesn't add the property.
+   *
+   * PP-2142 needed to get around the fact that IR nodes are necessary to
+   * make QLObject strings.
+   *
+   * @param doc_string
+   * @return Status
+   */
+  Status SetDocString(const std::string& doc_string);
+
   const std::string& doc_string() const { return doc_string_; }
 
   // Methods are all of the methods available. Exposed to make testing easier.
   const absl::flat_hash_map<std::string, std::shared_ptr<FuncObject>>& methods() const {
     return methods_;
   }
+
+  const absl::flat_hash_map<std::string, QLObjectPtr>& attributes() const { return attributes_; }
 
  protected:
   /**
@@ -264,6 +277,7 @@ class QLObject {
   inline static constexpr char kCallMethodName[] = "__call__";
   inline static constexpr char kDocStringAttributeName[] = "__doc__";
   inline static constexpr char kSubscriptMethodName[] = "__getitem__";
+
   ASTVisitor* ast_visitor() const { return ast_visitor_; }
 
   // The doc string of this object. Every object in Python has a doc string and documentation

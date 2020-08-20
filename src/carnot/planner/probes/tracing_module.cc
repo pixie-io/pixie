@@ -3,6 +3,7 @@
 
 #include "src/carnot/planner/objects/collection_object.h"
 #include "src/carnot/planner/objects/dict_object.h"
+#include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/none_object.h"
 
 namespace pl {
@@ -66,6 +67,7 @@ Status TraceModule::Init() {
                     std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
 
+  PL_RETURN_IF_ERROR(probe_fn->SetDocString(kGoProbeDocstring));
   AddMethod(kGoProbeTraceDefinition, probe_fn);
 
   PL_ASSIGN_OR_RETURN(
@@ -77,6 +79,7 @@ Status TraceModule::Init() {
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
 
+  PL_RETURN_IF_ERROR(arg_expr_fn->SetDocString(kArgumentDocstring));
   AddMethod(kArgumentId, arg_expr_fn);
 
   PL_ASSIGN_OR_RETURN(
@@ -110,6 +113,7 @@ Status TraceModule::Init() {
                          std::bind(UpsertHandler::Eval, mutations_ir_, std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
+  PL_RETURN_IF_ERROR(upsert_fn->SetDocString(kUpsertTracepointDocstring));
   AddMethod(kUpsertTraceID, upsert_fn);
 
   PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> delete_fn,
