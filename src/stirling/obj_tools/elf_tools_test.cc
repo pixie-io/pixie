@@ -149,7 +149,7 @@ TEST(ElfReaderTest, FuncByteCode) {
   }
 }
 
-TEST(ElfGolangItableTest, ExtractInterfaceTypes) {
+TEST(ElfGolangItableTest, DISABLED_ExtractInterfaceTypes) {
   using InterfaceMap = absl::flat_hash_map<std::string, std::vector<std::string>>;
 
   const std::string kPath = pl::testing::BazelBinTestFilePath(
