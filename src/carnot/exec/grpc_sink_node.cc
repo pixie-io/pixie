@@ -44,6 +44,13 @@ Status GRPCSinkNode::PrepareImpl(ExecState*) { return Status::OK(); }
 
 Status GRPCSinkNode::OpenImpl(ExecState* exec_state) {
   stub_ = exec_state->ResultSinkServiceStub(plan_node_->address());
+
+  // When we are sending the results to an external service, such as the query broker,
+  // add authentication to the client context.
+  if (plan_node_->has_table_name()) {
+    exec_state->AddAuthToGRPCClientContext(&context_);
+  }
+
   return Status::OK();
 }
 

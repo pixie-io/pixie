@@ -37,15 +37,17 @@ using ResultSinkStubGenerator =
 class ExecState {
  public:
   ExecState() = delete;
-  explicit ExecState(udf::Registry* func_registry,
-                     std::shared_ptr<table_store::TableStore> table_store,
-                     const ResultSinkStubGenerator& stub_generator, const sole::uuid& query_id,
-                     GRPCRouter* grpc_router = nullptr)
+  explicit ExecState(
+      udf::Registry* func_registry, std::shared_ptr<table_store::TableStore> table_store,
+      const ResultSinkStubGenerator& stub_generator, const sole::uuid& query_id,
+      GRPCRouter* grpc_router = nullptr,
+      std::function<void(grpc::ClientContext*)> add_auth_func = [](grpc::ClientContext*) {})
       : func_registry_(func_registry),
         table_store_(std::move(table_store)),
         stub_generator_(stub_generator),
         query_id_(query_id),
-        grpc_router_(grpc_router) {}
+        grpc_router_(grpc_router),
+        add_auth_to_grpc_client_context_func_(add_auth_func) {}
 
   ~ExecState() {
     if (grpc_router_ != nullptr) {
@@ -132,6 +134,11 @@ class ExecState {
 
   GRPCRouter* grpc_router() { return grpc_router_; }
 
+  void AddAuthToGRPCClientContext(grpc::ClientContext* ctx) {
+    CHECK(add_auth_to_grpc_client_context_func_);
+    add_auth_to_grpc_client_context_func_(ctx);
+  }
+
   const absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*>&
   OutgoingServers() const {
     return result_sink_stub_map_;
@@ -146,6 +153,7 @@ class ExecState {
   std::map<int64_t, udf::UDADefinition*> id_to_uda_map_;
   const sole::uuid query_id_;
   GRPCRouter* grpc_router_ = nullptr;
+  std::function<void(grpc::ClientContext*)> add_auth_to_grpc_client_context_func_;
 
   int64_t current_source_ = 0;
   bool current_source_set_ = false;

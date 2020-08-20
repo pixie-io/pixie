@@ -56,6 +56,12 @@ struct Info {
   services::shared::agent::AgentCapabilities capabilities;
 };
 
+// Generates a service bearer token for authenticated requests.
+std::string GenerateServiceToken();
+
+// Adds service token to a GPRC context for authentication.
+void AddServiceTokenToClientContext(grpc::ClientContext* ctx);
+
 /**
  * Manager is the shared code and common interface for the entity responsible for managing the
  * sub-components of a pixie agent. The base version has a table store, carnot and metadata system.

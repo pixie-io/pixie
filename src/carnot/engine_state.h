@@ -28,25 +28,31 @@ class EngineState : public NotCopyable {
               std::shared_ptr<table_store::TableStore> table_store,
               std::shared_ptr<table_store::schema::Schema> schema,
               std::unique_ptr<planner::RegistryInfo> registry_info,
-              const exec::ResultSinkStubGenerator& stub_generator, exec::GRPCRouter* grpc_router)
+              const exec::ResultSinkStubGenerator& stub_generator,
+              std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func,
+              exec::GRPCRouter* grpc_router)
       : func_registry_(std::move(func_registry)),
         table_store_(std::move(table_store)),
         schema_(std::move(schema)),
         registry_info_(std::move(registry_info)),
         stub_generator_(stub_generator),
+        add_auth_to_grpc_context_func_(add_auth_to_grpc_context_func),
         grpc_router_(grpc_router) {}
 
   static StatusOr<std::unique_ptr<EngineState>> CreateDefault(
       std::unique_ptr<udf::Registry> func_registry,
       std::shared_ptr<table_store::TableStore> table_store,
-      const exec::ResultSinkStubGenerator& stub_generator, exec::GRPCRouter* grpc_router) {
+      const exec::ResultSinkStubGenerator& stub_generator,
+      std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func,
+      exec::GRPCRouter* grpc_router) {
     auto schema = std::make_shared<table_store::schema::Schema>();
     auto registry_info = std::make_unique<planner::RegistryInfo>();
     auto udf_info = func_registry->ToProto();
     PL_RETURN_IF_ERROR(registry_info->Init(udf_info));
 
     return std::make_unique<EngineState>(std::move(func_registry), table_store, schema,
-                                         std::move(registry_info), stub_generator, grpc_router);
+                                         std::move(registry_info), stub_generator,
+                                         add_auth_to_grpc_context_func, grpc_router);
   }
 
   std::shared_ptr<table_store::schema::Schema> schema() { return schema_; }
@@ -54,7 +60,8 @@ class EngineState : public NotCopyable {
   table_store::TableStore* table_store() { return table_store_.get(); }
   std::unique_ptr<exec::ExecState> CreateExecState(const sole::uuid& query_id) {
     return std::make_unique<exec::ExecState>(func_registry_.get(), table_store_, stub_generator_,
-                                             query_id, grpc_router_);
+                                             query_id, grpc_router_,
+                                             add_auth_to_grpc_context_func_);
   }
 
   std::unique_ptr<plan::PlanState> CreatePlanState() {
@@ -78,6 +85,7 @@ class EngineState : public NotCopyable {
   std::shared_ptr<table_store::schema::Schema> schema_;
   std::unique_ptr<planner::RegistryInfo> registry_info_;
   const exec::ResultSinkStubGenerator stub_generator_;
+  std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func_;
   exec::GRPCRouter* grpc_router_ = nullptr;
 };
 

@@ -245,6 +245,16 @@ address: "localhost:1234"
 grpc_source_id: 0
 )";
 
+constexpr char kGRPCSinkOperator2[] = R"(
+address: "localhost:1234"
+output_table {
+  table_name: "output_table_name"
+  column_names: "count"
+  column_types: INT64
+  column_semantic_types: ST_NONE
+}
+)";
+
 constexpr char kMapOperator1[] = R"(
 expressions {
   func {
@@ -1085,6 +1095,14 @@ planpb::Operator CreateTestGRPCSink1PB() {
   planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "GRPC_SINK_OPERATOR", "grpc_sink_op",
                                    kGRPCSinkOperator1);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+planpb::Operator CreateTestGRPCSink2PB() {
+  planpb::Operator op;
+  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "GRPC_SINK_OPERATOR", "grpc_sink_op",
+                                   kGRPCSinkOperator2);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

@@ -28,11 +28,13 @@ class VizierFuncFactoryContext : public NotCopyable {
   VizierFuncFactoryContext(const agent::Manager* agent_manager,
                            const std::shared_ptr<MDSStub>& mds_stub,
                            const std::shared_ptr<MDTPStub>& mdtp_stub,
-                           std::shared_ptr<::pl::table_store::TableStore> table_store)
+                           std::shared_ptr<::pl::table_store::TableStore> table_store,
+                           std::function<void(grpc::ClientContext* ctx)> add_grpc_auth)
       : agent_manager_(agent_manager),
         mds_stub_(mds_stub),
         mdtp_stub_(mdtp_stub),
-        table_store_(table_store) {}
+        table_store_(table_store),
+        add_auth_to_grpc_context_func_(add_grpc_auth) {}
   virtual ~VizierFuncFactoryContext() = default;
 
   const agent::Manager* agent_manager() const {
@@ -52,11 +54,17 @@ class VizierFuncFactoryContext : public NotCopyable {
 
   ::pl::table_store::TableStore* table_store() const { return table_store_.get(); }
 
+  std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func() const {
+    CHECK(add_auth_to_grpc_context_func_);
+    return add_auth_to_grpc_context_func_;
+  }
+
  private:
   const agent::Manager* agent_manager_ = nullptr;
   std::shared_ptr<MDSStub> mds_stub_ = nullptr;
   std::shared_ptr<MDTPStub> mdtp_stub_ = nullptr;
   std::shared_ptr<::pl::table_store::TableStore> table_store_ = nullptr;
+  std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func_;
 };
 
 }  // namespace funcs

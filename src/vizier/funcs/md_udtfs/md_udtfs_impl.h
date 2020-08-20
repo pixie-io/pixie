@@ -23,15 +23,6 @@ namespace pl {
 namespace vizier {
 namespace funcs {
 namespace md {
-
-std::string GenerateServiceToken();
-
-// TODO(zasgar/michelle): We need to figure out a way to restrict access based on user.
-inline void ContextWithServiceAuth(grpc::ClientContext* context) {
-  std::string token = GenerateServiceToken();
-  context->AddMetadata("authorization", absl::Substitute("bearer $0", token));
-}
-
 template <typename TUDTF>
 class UDTFWithMDFactory : public carnot::udf::UDTFFactory {
  public:
@@ -39,7 +30,7 @@ class UDTFWithMDFactory : public carnot::udf::UDTFFactory {
   explicit UDTFWithMDFactory(const VizierFuncFactoryContext& ctx) : ctx_(ctx) {}
 
   std::unique_ptr<carnot::udf::AnyUDTF> Make() override {
-    return std::make_unique<TUDTF>(ctx_.mds_stub());
+    return std::make_unique<TUDTF>(ctx_.mds_stub(), ctx_.add_auth_to_grpc_context_func());
   }
 
  private:
@@ -53,7 +44,7 @@ class UDTFWithMDTPFactory : public carnot::udf::UDTFFactory {
   explicit UDTFWithMDTPFactory(const VizierFuncFactoryContext& ctx) : ctx_(ctx) {}
 
   std::unique_ptr<carnot::udf::AnyUDTF> Make() override {
-    return std::make_unique<TUDTF>(ctx_.mdtp_stub());
+    return std::make_unique<TUDTF>(ctx_.mdtp_stub(), ctx_.add_auth_to_grpc_context_func());
   }
 
  private:
@@ -96,7 +87,9 @@ class GetTableSchemas final : public carnot::udf::UDTF<GetTableSchemas> {
   using MDSStub = vizier::services::metadata::MetadataService::Stub;
   using SchemaResponse = vizier::services::metadata::SchemaResponse;
   GetTableSchemas() = delete;
-  explicit GetTableSchemas(std::shared_ptr<MDSStub> stub) : idx_(0), stub_(stub) {}
+  GetTableSchemas(std::shared_ptr<MDSStub> stub,
+                  std::function<void(grpc::ClientContext*)> add_context_authentication)
+      : idx_(0), stub_(stub), add_context_authentication_func_(add_context_authentication) {}
 
   static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ONE_KELVIN; }
 
@@ -116,7 +109,7 @@ class GetTableSchemas final : public carnot::udf::UDTF<GetTableSchemas> {
     pl::vizier::services::metadata::SchemaResponse resp;
 
     grpc::ClientContext ctx;
-    ContextWithServiceAuth(&ctx);
+    add_context_authentication_func_(&ctx);
     auto s = stub_->GetSchemas(&ctx, req, &resp);
     if (!s.ok()) {
       return error::Internal("Failed to make RPC call to metadata service");
@@ -163,6 +156,7 @@ class GetTableSchemas final : public carnot::udf::UDTF<GetTableSchemas> {
   int idx_ = 0;
   std::vector<RelationInfo> relation_info_;
   std::shared_ptr<MDSStub> stub_;
+  std::function<void(grpc::ClientContext*)> add_context_authentication_func_;
 };
 
 /**
@@ -173,7 +167,9 @@ class GetAgentStatus final : public carnot::udf::UDTF<GetAgentStatus> {
   using MDSStub = vizier::services::metadata::MetadataService::Stub;
   using SchemaResponse = vizier::services::metadata::SchemaResponse;
   GetAgentStatus() = delete;
-  explicit GetAgentStatus(std::shared_ptr<MDSStub> stub) : idx_(0), stub_(stub) {}
+  GetAgentStatus(std::shared_ptr<MDSStub> stub,
+                 std::function<void(grpc::ClientContext*)> add_context_authentication)
+      : idx_(0), stub_(stub), add_context_authentication_func_(add_context_authentication) {}
 
   static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ONE_KELVIN; }
 
@@ -199,7 +195,7 @@ class GetAgentStatus final : public carnot::udf::UDTF<GetAgentStatus> {
     resp_ = std::make_unique<pl::vizier::services::metadata::AgentInfoResponse>();
 
     grpc::ClientContext ctx;
-    ContextWithServiceAuth(&ctx);
+    add_context_authentication_func_(&ctx);
     auto s = stub_->GetAgentInfo(&ctx, req, resp_.get());
     if (!s.ok()) {
       return error::Internal("Failed to make RPC call to GetAgentInfo");
@@ -235,6 +231,7 @@ class GetAgentStatus final : public carnot::udf::UDTF<GetAgentStatus> {
   int idx_ = 0;
   std::unique_ptr<pl::vizier::services::metadata::AgentInfoResponse> resp_;
   std::shared_ptr<MDSStub> stub_;
+  std::function<void(grpc::ClientContext*)> add_context_authentication_func_;
 };
 
 namespace internal {
@@ -531,7 +528,9 @@ class GetTracepointStatus final : public carnot::udf::UDTF<GetTracepointStatus> 
   using MDTPStub = vizier::services::metadata::MetadataTracepointService::Stub;
   using TracepointResponse = vizier::services::metadata::GetTracepointInfoResponse;
   GetTracepointStatus() = delete;
-  explicit GetTracepointStatus(std::shared_ptr<MDTPStub> stub) : idx_(0), stub_(stub) {}
+  explicit GetTracepointStatus(std::shared_ptr<MDTPStub> stub,
+                               std::function<void(grpc::ClientContext*)> add_context_authentication)
+      : idx_(0), stub_(stub), add_context_authentication_func_(add_context_authentication) {}
 
   static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ONE_KELVIN; }
 
@@ -555,7 +554,7 @@ class GetTracepointStatus final : public carnot::udf::UDTF<GetTracepointStatus> 
     resp_ = std::make_unique<pl::vizier::services::metadata::GetTracepointInfoResponse>();
 
     grpc::ClientContext ctx;
-    ContextWithServiceAuth(&ctx);
+    add_context_authentication_func_(&ctx);
     auto s = stub_->GetTracepointInfo(&ctx, req, resp_.get());
     if (!s.ok()) {
       return error::Internal("Failed to make RPC call to GetTracepointStatus: $0",
@@ -629,6 +628,7 @@ class GetTracepointStatus final : public carnot::udf::UDTF<GetTracepointStatus> 
   int idx_ = 0;
   std::unique_ptr<pl::vizier::services::metadata::GetTracepointInfoResponse> resp_;
   std::shared_ptr<MDTPStub> stub_;
+  std::function<void(grpc::ClientContext*)> add_context_authentication_func_;
 };
 
 }  // namespace md

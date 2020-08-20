@@ -9,6 +9,8 @@
 #include <thread>
 #include <utility>
 
+#include <jwt/jwt.hpp>
+
 #include "src/common/base/base.h"
 #include "src/common/perf/perf.h"
 #include "src/vizier/funcs/context/vizier_context.h"
@@ -30,6 +32,9 @@ pl::StatusOr<std::string> GetHostname() {
 }
 
 }  // namespace
+
+DEFINE_string(jwt_signing_key, gflags::StringFromEnv("PL_JWT_SIGNING_KEY", ""),
+              "The JWT signing key for outgoing requests");
 
 namespace pl {
 namespace vizier {
@@ -58,7 +63,7 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
       func_context_(
           this, mds_url.size() == 0 ? nullptr : CreateDefaultMDSStub(mds_url, grpc_channel_creds_),
           mds_url.size() == 0 ? nullptr : CreateDefaultMDTPStub(mds_url, grpc_channel_creds_),
-          table_store_) {
+          table_store_, [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); }) {
   // Register Vizier specific and carnot builtin functions.
 
   auto func_registry = std::make_unique<pl::carnot::udf::Registry>("vizier_func_registry");
@@ -87,6 +92,7 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
                   chan_cache_->Add(remote_addr, chan);
                   return pl::carnotpb::ResultSinkService::NewStub(chan);
                 },
+                [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); },
                 grpc_server_port, SSL::DefaultGRPCServerCreds())
                 .ConsumeValueOrDie();
 
@@ -317,6 +323,26 @@ Manager::MDTPServiceSPtr Manager::CreateDefaultMDTPStub(
 Manager::MessageHandler::MessageHandler(Dispatcher* dispatcher, Info* agent_info,
                                         Manager::VizierNATSConnector* nats_conn)
     : agent_info_(agent_info), nats_conn_(nats_conn), dispatcher_(dispatcher) {}
+
+std::string GenerateServiceToken() {
+  jwt::jwt_object obj{jwt::params::algorithm("HS256")};
+  obj.add_claim("iss", "PL");
+  obj.add_claim("aud", "service");
+  obj.add_claim("jti", sole::uuid4().str());
+  obj.add_claim("iat", std::chrono::system_clock::now());
+  obj.add_claim("nbf", std::chrono::system_clock::now() - std::chrono::seconds{60});
+  obj.add_claim("exp", std::chrono::system_clock::now() + std::chrono::seconds{60});
+  obj.add_claim("sub", "service");
+  obj.add_claim("Scopes", "service");
+  obj.add_claim("ServiceID", "kelvin");
+  obj.secret(FLAGS_jwt_signing_key);
+  return obj.signature();
+}
+
+void AddServiceTokenToClientContext(grpc::ClientContext* grpc_context) {
+  std::string token = GenerateServiceToken();
+  grpc_context->AddMetadata("authorization", absl::Substitute("bearer $0", token));
+}
 
 }  // namespace agent
 }  // namespace vizier

@@ -13,8 +13,6 @@
 
 #include "src/vizier/services/query_broker/querybrokerpb/service.grpc.pb.h"
 
-DECLARE_string(jwt_signing_key);
-
 namespace pl {
 namespace vizier {
 namespace agent {
@@ -25,21 +23,6 @@ using ::pl::event::AsyncTask;
 using ::pl::vizier::services::query_broker::querybrokerpb::AgentQueryResponse;
 using ::pl::vizier::services::query_broker::querybrokerpb::AgentQueryResultRequest;
 using ::pl::vizier::services::query_broker::querybrokerpb::AgentQueryResultResponse;
-
-std::string GenerateServiceToken() {
-  jwt::jwt_object obj{jwt::params::algorithm("HS256")};
-  obj.add_claim("iss", "PL");
-  obj.add_claim("aud", "service");
-  obj.add_claim("jti", sole::uuid4().str());
-  obj.add_claim("iat", std::chrono::system_clock::now());
-  obj.add_claim("nbf", std::chrono::system_clock::now() - std::chrono::seconds{60});
-  obj.add_claim("exp", std::chrono::system_clock::now() + std::chrono::seconds{60});
-  obj.add_claim("sub", "service");
-  obj.add_claim("Scopes", "service");
-  obj.add_claim("ServiceID", "kelvin");
-  obj.secret(FLAGS_jwt_signing_key);
-  return obj.signature();
-}
 
 class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
  public:
@@ -85,8 +68,7 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
     AgentQueryResultResponse res_resp;
     ToProto(agent_info_->agent_id, res_req.mutable_agent_id());
     grpc::ClientContext context;
-    std::string token = GenerateServiceToken();
-    context.AddMetadata("authorization", absl::Substitute("bearer $0", token));
+    AddServiceTokenToClientContext(&context);
     // This timeout ensures that we don't get a hang.
     context.set_deadline(std::chrono::system_clock::now() + kRPCResultTimeout);
     auto query_response_status = qb_stub_->ReceiveAgentQueryResult(&context, res_req, &res_resp);
