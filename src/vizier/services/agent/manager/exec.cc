@@ -102,11 +102,10 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
 
  private:
   Status ExecuteQueryInternal(AgentQueryResponse* resp) {
-    LOG(INFO) << absl::Substitute("Executing query: id=$0", query_id_.str());
+    VLOG(1) << absl::Substitute("Executing query: id=$0", query_id_.str());
     VLOG(1) << absl::Substitute("Query Plan: $0=$1", query_id_.str(), req_.plan().DebugString());
 
     {
-      ScopedTimer query_timer(absl::Substitute("query timer: id=$0", query_id_.str()));
       StatusOr<carnot::CarnotQueryResult> result_or_s;
       result_or_s = carnot_->ExecutePlan(req_.plan(), query_id_, req_.analyze());
 
@@ -151,7 +150,7 @@ Status ExecuteQueryMessageHandler::HandleMessage(std::unique_ptr<messages::Vizie
   auto query_id = task->query_id();
   auto runnable = dispatcher()->CreateAsyncTask(std::move(task));
   auto runnable_ptr = runnable.get();
-  LOG(INFO) << "Queries in flight: " << running_queries_.size();
+  VLOG(1) << "Queries in flight: " << running_queries_.size();
   running_queries_[query_id] = std::move(runnable);
   runnable_ptr->Run();
 

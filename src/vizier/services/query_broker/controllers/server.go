@@ -306,7 +306,7 @@ func (s *Server) ReceiveAgentQueryResult(ctx context.Context, req *querybrokerpb
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	log.WithField("queryID", queryID.String()).Info("Got Kelvin Results")
+	log.WithField("queryID", queryID.String()).Trace("Got Kelvin Results")
 	setExecutor := func(queryID uuid.UUID) (Executor, bool) {
 		s.mux.Lock()
 		exec, ok := s.executors[queryID]
