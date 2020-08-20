@@ -49,6 +49,13 @@ using ::pl::stirling::elf_tools::ElfReader;
 
 namespace {
 
+// NOLINTNEXTLINE: runtime/string
+const std::string kStructString = absl::StrCat("struct blob", std::to_string(kStructStringSize));
+
+// NOLINTNEXTLINE: runtime/string
+const std::string kStructByteArray =
+    absl::StrCat("struct blob", std::to_string(kStructByteArraySize));
+
 // clang-format off
 const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypeToCType = {
     {ScalarType::VOID_POINTER, "void*"},
@@ -78,8 +85,8 @@ const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypeToCType = {
     {ScalarType::FLOAT, "float"},
     {ScalarType::DOUBLE, "double"},
 
-    {ScalarType::STRING, "struct string"},
-    {ScalarType::BYTE_ARRAY, "struct byte_array"},
+    {ScalarType::STRING, kStructString},
+    {ScalarType::BYTE_ARRAY, kStructByteArray},
 };
 // clang-format on
 
@@ -249,6 +256,41 @@ std::string GenRegister(const ScalarVariable& var) {
   }
 }
 
+// Generate a variable that is fundamentally a pointer and a length (e.g. strings and arrays).
+std::vector<std::string> GenPtrAndLenMemoryVariable(const ScalarVariable& var, int ptr_offset,
+                                                    int len_offset, size_t size) {
+  std::vector<std::string> code_lines;
+  code_lines.push_back(absl::Substitute("void* $0_ptr__;", var.name()));
+  code_lines.push_back(absl::Substitute("bpf_probe_read(&$0_ptr__, sizeof(void*), $1 + $2);",
+                                        var.name(), var.memory().base(),
+                                        var.memory().offset() + ptr_offset));
+
+  code_lines.push_back(absl::Substitute("uint64_t $0_len__;", var.name()));
+  code_lines.push_back(absl::Substitute("bpf_probe_read(&$0_len__, sizeof(uint64_t), $1 + $2);",
+                                        var.name(), var.memory().base(),
+                                        var.memory().offset() + len_offset));
+
+  // Make sure we don't overrun the buffer by capping the length (also required for verifier).
+  // Below, we want the size of blobXX->buf. We can do that with this trick:
+  // https://stackoverflow.com/questions/3553296/sizeof-single-struct-member-in-c
+  code_lines.push_back(
+      absl::Substitute("$0_len__ = ($0_len__ > sizeof(((struct blob$1*)0)->buf)) ? $1 : $0_len__;",
+                       var.name(), size));
+  code_lines.push_back(
+      absl::Substitute("$0_len__ = $0_len__ & $1; // Keep verifier happy.", var.name(), size - 1));
+
+  code_lines.push_back(absl::Substitute("$0 $1 = {};", GenScalarType(var.type()), var.name()));
+  code_lines.push_back(absl::Substitute("$0.len = $0_len__;", var.name()));
+
+  code_lines.push_back(
+      "// Read one extra byte to avoid passing a size of 0 to bpf_probe_read(), which causes "
+      "BPF verifier issues on kernel 4.14.");
+  code_lines.push_back(
+      absl::Substitute("bpf_probe_read($0.buf, $0.len + 1, $0_ptr__);", var.name()));
+
+  return code_lines;
+}
+
 // TODO(yzhao/oazizi): Consider making this a member variable to avoid passing language directly.
 //                     Currently deferring this because it will break the tests.
 StatusOr<std::vector<std::string>> GenStringMemoryVariable(const ScalarVariable& var,
@@ -257,32 +299,19 @@ StatusOr<std::vector<std::string>> GenStringMemoryVariable(const ScalarVariable&
 
   // TODO(oazizi): Move string variable into a BPF map so that the size can be increased.
   switch (language) {
-    case ir::shared::Language::GOLANG:
-      code_lines.push_back(absl::Substitute("void* $0_ptr__;", var.name()));
-      code_lines.push_back(absl::Substitute("bpf_probe_read(&$0_ptr__, sizeof(void*), $1 + $2);",
-                                            var.name(), var.memory().base(),
-                                            var.memory().offset()));
-
-      code_lines.push_back(absl::Substitute("uint64_t $0_len__;", var.name()));
-      code_lines.push_back(absl::Substitute("bpf_probe_read(&$0_len__, sizeof(uint64_t), $1 + $2);",
-                                            var.name(), var.memory().base(),
-                                            var.memory().offset() + sizeof(char*)));
-
-      code_lines.push_back(absl::Substitute(
-          "$0_len__ = ($0_len__ > MAX_STR_LEN) ? MAX_STR_LEN : $0_len__;", var.name()));
-      code_lines.push_back(absl::Substitute(
-          "$0_len__ = $0_len__ & MAX_STR_MASK; // Keep verifier happy.", var.name()));
-
-      code_lines.push_back(absl::Substitute("$0 $1 = {};", GenScalarType(var.type()), var.name()));
-      code_lines.push_back(absl::Substitute("$0.len = $0_len__;", var.name()));
-
-      code_lines.push_back(
-          "// Read one extra byte to avoid passing a size of 0 to bpf_probe_read(), which causes "
-          "BPF verifier issues on kernel 4.14.");
-      code_lines.push_back(
-          absl::Substitute("bpf_probe_read($0.buf, $0.len + 1, $0_ptr__);", var.name()));
-
-      return code_lines;
+    case ir::shared::Language::GOLANG: {
+      // A go string is essentially a pointer and a len:
+      // type stringStruct struct {
+      //   str unsafe.Pointer
+      //   len int
+      //}
+      // TODO(oazizi): Could get these offsets from dwarvifier to make sure its more robust.
+      //               Although these are not really expected to change in practice.
+      constexpr int string_ptr_offset = 0;
+      constexpr int string_len_offset = sizeof(void*);
+      return GenPtrAndLenMemoryVariable(var, string_ptr_offset, string_len_offset,
+                                        kStructStringSize);
+    }
     default:
       return error::Internal("Strings are not yet supported for this language ($0)",
                              magic_enum::enum_name(language));
@@ -296,35 +325,22 @@ StatusOr<std::vector<std::string>> GenByteArrayMemoryVariable(
 
   // TODO(oazizi): Move string variable into a BPF map so that the size can be increased.
   switch (language) {
-    case ir::shared::Language::GOLANG:
-      code_lines.push_back(absl::Substitute("void* $0_ptr__;", var.name()));
-      code_lines.push_back(absl::Substitute("bpf_probe_read(&$0_ptr__, sizeof(void*), $1 + $2);",
-                                            var.name(), var.memory().base(),
-                                            var.memory().offset()));
-
-      code_lines.push_back(absl::Substitute("uint64_t $0_len__;", var.name()));
-      code_lines.push_back(absl::Substitute("bpf_probe_read(&$0_len__, sizeof(uint64_t), $1 + $2);",
-                                            var.name(), var.memory().base(),
-                                            var.memory().offset() + sizeof(uint8_t*)));
-
-      code_lines.push_back(absl::Substitute(
-          "$0_len__ = ($0_len__ > MAX_BYTE_ARRAY_LEN) ? MAX_BYTE_ARRAY_LEN : $0_len__;",
-          var.name()));
-      code_lines.push_back(absl::Substitute(
-          "$0_len__ = $0_len__ & MAX_BYTE_ARRAY_MASK; // Keep verifier happy.", var.name()));
-
-      code_lines.push_back(absl::Substitute("$0 $1 = {};", GenScalarType(var.type()), var.name()));
-      code_lines.push_back(absl::Substitute("$0.len = $0_len__;", var.name()));
-
-      code_lines.push_back(
-          "// Read one extra byte to avoid passing a size of 0 to bpf_probe_read(), which causes "
-          "BPF verifier issues on kernel 4.14.");
-      code_lines.push_back(
-          absl::Substitute("bpf_probe_read($0.buf, $0.len + 1, $0_ptr__);", var.name()));
-
-      return code_lines;
+    case ir::shared::Language::GOLANG: {
+      // A go array is essentially a pointer, a length, and a capacity:
+      // type slice struct {
+      //   array unsafe.Pointer
+      //   len   int
+      //   cap   int
+      //}
+      // TODO(oazizi): Could get these offsets from dwarvifier to make sure its more robust.
+      //               Although these are not really expected to change in practice.
+      constexpr int array_ptr_offset = 0;
+      constexpr int array_len_offset = sizeof(void*);
+      return GenPtrAndLenMemoryVariable(var, array_ptr_offset, array_len_offset,
+                                        kStructByteArraySize);
+    }
     default:
-      return error::Internal("Strings are not yet supported for this language ($0)",
+      return error::Internal("Byte arrays are not yet supported for this language ($0)",
                              magic_enum::enum_name(language));
   }
 }
@@ -757,38 +773,28 @@ std::vector<std::string> GenUtilFNs() {
   return code_lines;
 }
 
-std::vector<std::string> GenStringType() {
-  return {
-      absl::Substitute("#define MAX_STR_LEN ($0-sizeof(int64_t)-1)", kStructStringSize),
-      absl::Substitute("#define MAX_STR_MASK ($0-1)", kStructStringSize),
-      "struct string {",
-      "  uint64_t len;",
-      "  char buf[MAX_STR_LEN];",
-      "  // To keep 4.14 kernel verifier happy, we copy an extra byte.",
-      "  // Keep a dummy character to absorb this garbage.",
-      "  char dummy;",
-      "};",
-  };
-}
+std::vector<std::string> GenBlobType(int size) {
+  // Size must be a power of 2.
+  DCHECK_EQ(size & (size - 1), 0);
 
-std::vector<std::string> GenByteArrayType() {
+  std::string size_str = std::to_string(size);
   return {
-      absl::Substitute("#define MAX_BYTE_ARRAY_LEN ($0-sizeof(int64_t)-1)", kStructByteArraySize),
-      absl::Substitute("#define MAX_BYTE_ARRAY_MASK ($0-1)", kStructByteArraySize),
-      "struct byte_array {",
+      absl::Substitute("struct blob$0 {", size_str),
       "  uint64_t len;",
-      "  uint8_t buf[MAX_BYTE_ARRAY_LEN];",
+      absl::Substitute("  uint8_t buf[$0-sizeof(uint64_t)-1];", size),
       "  // To keep 4.14 kernel verifier happy, we copy an extra byte.",
       "  // Keep a dummy character to absorb this garbage.",
-      "  char dummy;",
+      "  uint8_t dummy;",
       "};",
   };
 }
 
 std::vector<std::string> GenTypes() {
   std::vector<std::string> code_lines;
-  MoveBackStrVec(GenStringType(), &code_lines);
-  MoveBackStrVec(GenByteArrayType(), &code_lines);
+  // Create underlying blob types for strings, byte arrays, etc.
+  for (auto& size : std::set{kStructStringSize, kStructByteArraySize}) {
+    MoveBackStrVec(GenBlobType(size), &code_lines);
+  }
   return code_lines;
 }
 
