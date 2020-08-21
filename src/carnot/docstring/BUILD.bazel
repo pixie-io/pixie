@@ -24,3 +24,19 @@ go_binary(
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
 )
+
+# Binary that combines the entire docstring extraction and parsing pipeline.
+# Takes 1 argument -> the output file to write the docs JSON.
+sh_binary(
+    name = "docstring_integration",
+    srcs = ["docstring_integration.sh"],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
+    data = ["//src/carnot/planner/docs:doc_extractor", ":docstring"],
+)
+
+# Test to make sure extraction pipeline works. Should be run to verify that docs are formatted correctly.
+sh_test(
+    name = "docstring_integration_test",
+    srcs = ["docstring_integration_test.sh"],
+    data = [":docstring_integration"],
+)
