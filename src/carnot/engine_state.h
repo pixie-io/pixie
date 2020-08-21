@@ -74,7 +74,8 @@ class EngineState : public NotCopyable {
     // Use an empty string for query result address, because the local execution mode should use
     // the Local GRPC result server to send results to.
     return std::make_unique<planner::CompilerState>(std::move(rel_map), registry_info_.get(),
-                                                    time_now, /* result address */ "");
+                                                    time_now, /* result address */ "",
+                                                    /* ssl target name override*/ "");
   }
 
   const udf::Registry* func_registry() const { return func_registry_.get(); }

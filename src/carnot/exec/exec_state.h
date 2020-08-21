@@ -25,7 +25,7 @@ namespace exec {
 
 using ResultSinkStubGenerator =
     std::function<std::unique_ptr<carnotpb::ResultSinkService::StubInterface>(
-        const std::string& address)>;
+        const std::string& address, const std::string& ssl_targetname)>;
 
 /**
  * ExecState manages the execution state for a single query. A new one will
@@ -81,12 +81,12 @@ class ExecState {
   // This function returns a stub to a service that is responsible for receiving results.
   // Currently, it will either be a Kelvin instance or a query broker.
   carnotpb::ResultSinkService::StubInterface* ResultSinkServiceStub(
-      const std::string& remote_address) {
+      const std::string& remote_address, const std::string& ssl_targetname) {
     if (result_sink_stub_map_.contains(remote_address)) {
       return result_sink_stub_map_[remote_address];
     }
     std::unique_ptr<carnotpb::ResultSinkService::StubInterface> stub_ =
-        stub_generator_(remote_address);
+        stub_generator_(remote_address, ssl_targetname);
     carnotpb::ResultSinkService::StubInterface* raw = stub_.get();
     result_sink_stub_map_[remote_address] = raw;
     // Push to the pool.

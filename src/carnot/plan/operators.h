@@ -177,6 +177,15 @@ class GRPCSinkOperator : public Operator {
 
   std::string address() const { return pb_.address(); }
 
+  // Returns the SSL target override for the GRPC connection if it is present,
+  // empty string otherwise.
+  std::string ssl_targetname() const {
+    if (pb_.has_connection_options()) {
+      return pb_.connection_options().ssl_targetname();
+    }
+    return "";
+  }
+
   bool has_grpc_source_id() const {
     return pb_.destination_case() == planpb::GRPCSinkOperator::kGrpcSourceId;
   }

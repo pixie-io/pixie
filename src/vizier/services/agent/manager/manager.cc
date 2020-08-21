@@ -72,7 +72,7 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
   // TODO(zasgar/nserrino): abstract away the stub generator.
   carnot_ = pl::carnot::Carnot::Create(
                 agent_id, std::move(func_registry), table_store_,
-                [&](const std::string& remote_addr)
+                [&](const std::string& remote_addr, const std::string& ssl_targetname)
                     -> std::unique_ptr<pl::carnotpb::ResultSinkService::StubInterface> {
                   auto chan = chan_cache_->GetChan(remote_addr);
                   if (chan != nullptr) {
@@ -80,7 +80,9 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
                   }
 
                   grpc::ChannelArguments args;
-                  args.SetSslTargetNameOverride("kelvin.pl.svc");
+                  if (ssl_targetname.size()) {
+                    args.SetSslTargetNameOverride(ssl_targetname);
+                  }
                   args.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, 100000);
                   args.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, 100000);
                   args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);

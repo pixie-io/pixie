@@ -39,7 +39,8 @@ class GRPCSinkNodeTest : public ::testing::Test {
     auto table_store = std::make_shared<table_store::TableStore>();
     exec_state_ = std::make_unique<ExecState>(
         func_registry_.get(), table_store,
-        [this](const std::string&) -> std::unique_ptr<ResultSinkService::StubInterface> {
+        [this](const std::string&,
+               const std::string&) -> std::unique_ptr<ResultSinkService::StubInterface> {
           auto s = std::make_unique<MockResultSinkServiceStub>();
           mock_ = s.get();
           return s;

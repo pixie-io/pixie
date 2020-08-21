@@ -26,7 +26,8 @@ namespace exec {
 
 // This function provides a mock generator for the result sink server that Carnot sends results to.
 const ResultSinkStubGenerator MockResultSinkStubGenerator =
-    [](const std::string&) -> std::unique_ptr<carnotpb::ResultSinkService::StubInterface> {
+    [](const std::string&,
+       const std::string&) -> std::unique_ptr<carnotpb::ResultSinkService::StubInterface> {
   return std::make_unique<carnotpb::MockResultSinkServiceStub>();
 };
 
