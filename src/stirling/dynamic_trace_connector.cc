@@ -116,6 +116,12 @@ class StructDecoder {
     return BytesToString<bytes_format::HexCompact>(CreateStringView<char>(bytes));
   }
 
+  StatusOr<std::string> ExtractStructBlobAsJSON() {
+    PL_ASSIGN_OR_RETURN(size_t len, ExtractField<size_t>());
+    buf_.remove_prefix(dynamic_tracing::kStructByteArraySize - sizeof(size_t));
+    return absl::Substitute(R"({ "len" = $0, "body" = "not yet extracted"})", len);
+  }
+
  private:
   std::string_view buf_;
 };
@@ -191,6 +197,11 @@ Status FillColumn(StructDecoder* struct_decoder, DataTable::DynamicRecordBuilder
     }
     case ScalarType::BYTE_ARRAY: {
       PL_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractByteArrayAsHex());
+      r->Append(col_idx++, types::StringValue(val));
+      break;
+    }
+    case ScalarType::STRUCT_BLOB: {
+      PL_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractStructBlobAsJSON());
       r->Append(col_idx++, types::StringValue(val));
       break;
     }

@@ -62,7 +62,12 @@ StatusOr<std::unique_ptr<DynamicDataTableSchema>> DynamicDataTableSchema::Create
           {ScalarType::DOUBLE, types::DataType::FLOAT64},
 
           {ScalarType::STRING, types::DataType::STRING},
+
+          // Will be converted to a hex string.
           {ScalarType::BYTE_ARRAY, types::DataType::STRING},
+
+          // Will be converted to JSON string.
+          {ScalarType::STRUCT_BLOB, types::DataType::STRING},
   };
   // clang-format on
 

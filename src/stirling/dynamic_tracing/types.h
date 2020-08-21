@@ -11,8 +11,18 @@ namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
 
+// For non-base types, like strings and arrays, we currently used fixed size objects
+// to transfer the data. Anything larger will be truncated.
+// These constants define the "container" size for these non-base types.
+
+// Fixed size for tracing strings.
 constexpr size_t kStructStringSize = 32;
+
+// Fixed size for tracing byte arrays.
 constexpr size_t kStructByteArraySize = 64;
+
+// Fixed size for tracing structs.
+constexpr size_t kStructBlobSize = 64;
 
 struct BCCProgram {
   struct PerfBufferSpec {

@@ -88,7 +88,44 @@ TEST_F(DwarfReaderTest, GetMatchingDIEs) {
   ASSERT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_structure_type);
 }
 
-TEST_P(DwarfReaderTest, GetStructMemberOffset) {
+TEST_P(DwarfReaderTest, CppGetStructByteSize) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(kCppBinaryPath, p.index));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetStructByteSize("ABCStruct32"), 12);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetStructByteSize("ABCStruct64"), 24);
+}
+
+TEST_P(DwarfReaderTest, GolangGetStructByteSize) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(kGoBinaryPath, p.index));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetStructByteSize("main.Vertex"), 16);
+}
+
+TEST_P(DwarfReaderTest, CppGetStructMemberInfo) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(kCppBinaryPath, p.index));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberInfo("ABCStruct32", "b"),
+                   (StructMemberInfo{4, TypeInfo{VarType::kBaseType, "int"}}));
+  EXPECT_NOT_OK(dwarf_reader->GetStructMemberInfo("ABCStruct32", "bogus"));
+}
+
+TEST_P(DwarfReaderTest, GoGetStructMemberInfo) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(kGoBinaryPath, p.index));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberInfo("main.Vertex", "Y"),
+                   (StructMemberInfo{8, TypeInfo{VarType::kBaseType, "float64"}}));
+  EXPECT_NOT_OK(dwarf_reader->GetStructMemberInfo("main.Vertex", "bogus"));
+}
+
+TEST_P(DwarfReaderTest, CppGetStructMemberOffset) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        DwarfReader::Create(kCppBinaryPath, p.index));
@@ -96,6 +133,15 @@ TEST_P(DwarfReaderTest, GetStructMemberOffset) {
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("ABCStruct32", "a"), 0);
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("ABCStruct32", "b"), 4);
   EXPECT_NOT_OK(dwarf_reader->GetStructMemberOffset("ABCStruct32", "bogus"));
+}
+
+TEST_P(DwarfReaderTest, GoGetStructMemberOffset) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(kGoBinaryPath, p.index));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("main.Vertex", "Y"), 8);
+  EXPECT_NOT_OK(dwarf_reader->GetStructMemberOffset("main.Vertex", "bogus"));
 }
 
 // Inspired from a real life case.

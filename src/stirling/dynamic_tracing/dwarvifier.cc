@@ -8,6 +8,7 @@
 
 #include <absl/container/flat_hash_map.h>
 
+#include "src/stirling/dynamic_tracing/ir/sharedpb/shared.pb.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
 
 namespace pl {
@@ -532,31 +533,37 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
   // Note that the very last created variable uses the original id.
   // This is important so that references in the original probe are maintained.
 
+  ir::physical::ScalarVariable* var = nullptr;
+
   if (type_info.type == VarType::kBaseType) {
-    PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type,
+    PL_ASSIGN_OR_RETURN(ir::shared::ScalarType scalar_type,
                         VarTypeToProtoScalarType(type_info, language_));
 
-    auto* var = AddVariable(output_probe, var_name, pb_type);
-    var->mutable_memory()->set_base(base);
-    var->mutable_memory()->set_offset(offset);
+    var = AddVariable(output_probe, var_name, scalar_type);
   } else if (type_info.type == VarType::kStruct) {
-    if (language_ == ir::shared::Language::GOLANG) {
-      if (type_info.type_name == "string") {
-        auto* var = AddVariable(output_probe, var_name, ir::shared::ScalarType::STRING);
-        var->mutable_memory()->set_base(base);
-        var->mutable_memory()->set_offset(offset);
-      } else if (type_info.type_name == "[]uint8" || type_info.type_name == "[]byte") {
-        auto* var = AddVariable(output_probe, var_name, ir::shared::ScalarType::BYTE_ARRAY);
-        var->mutable_memory()->set_base(base);
-        var->mutable_memory()->set_offset(offset);
-      } else {
-        // TODO(oazizi): Implement this part.
-        return error::Unimplemented("Tracing structs is future work");
-      }
+    // Strings and byte arrays are special cases of structs, where we follow the pointer to the
+    // data. Otherwise, just grab the raw data of the struct, and send it as a blob.
+    if (language_ == ir::shared::Language::GOLANG && type_info.type_name == "string") {
+      var = AddVariable(output_probe, var_name, ir::shared::ScalarType::STRING);
+    } else if (language_ == ir::shared::Language::GOLANG && type_info.type_name == "[]uint8") {
+      var = AddVariable(output_probe, var_name, ir::shared::ScalarType::BYTE_ARRAY);
+    } else if (language_ == ir::shared::Language::GOLANG && type_info.type_name == "[]byte") {
+      var = AddVariable(output_probe, var_name, ir::shared::ScalarType::BYTE_ARRAY);
+    } else {
+      var = AddVariable(output_probe, var_name, ir::shared::ScalarType::STRUCT_BLOB);
+
+      // STRUCT_BLOB is special. It is the only type where we specify the size to get copied.
+      PL_ASSIGN_OR_RETURN(uint64_t struct_byte_size,
+                          dwarf_reader_->GetStructByteSize(type_info.type_name));
+      var->mutable_memory()->set_size(struct_byte_size);
     }
   } else {
     return error::Internal("Expected struct or base type, but got type: $0", type_info.ToString());
   }
+
+  DCHECK(var != nullptr);
+  var->mutable_memory()->set_base(base);
+  var->mutable_memory()->set_offset(offset);
 
   return Status::OK();
 }

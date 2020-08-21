@@ -1,5 +1,6 @@
 #include "src/stirling/dynamic_tracing/code_gen.h"
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 
@@ -56,6 +57,9 @@ const std::string kStructString = absl::StrCat("struct blob", std::to_string(kSt
 const std::string kStructByteArray =
     absl::StrCat("struct blob", std::to_string(kStructByteArraySize));
 
+// NOLINTNEXTLINE: runtime/string
+const std::string kStructBlob = absl::StrCat("struct blob", std::to_string(kStructBlobSize));
+
 // clang-format off
 const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypeToCType = {
     {ScalarType::VOID_POINTER, "void*"},
@@ -87,6 +91,7 @@ const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypeToCType = {
 
     {ScalarType::STRING, kStructString},
     {ScalarType::BYTE_ARRAY, kStructByteArray},
+    {ScalarType::STRUCT_BLOB, kStructBlob},
 };
 // clang-format on
 
@@ -349,6 +354,31 @@ StatusOr<std::vector<std::string>> GenByteArrayMemoryVariable(
   }
 }
 
+std::vector<std::string> GenStructBlobMemoryVariable(const ScalarVariable& var) {
+  // TODO(oazizi): Refactor the max size parameter.
+  size_t size = std::min<size_t>(var.memory().size(), kStructBlobSize - sizeof(uint64_t) - 1);
+
+  if (size < var.memory().size()) {
+    LOG(WARNING) << absl::Substitute(
+        "Not enough bytes to transmit variable. Truncating. [var_name=$0 original_size=$1 "
+        "truncated_size=$2]",
+        var.name(), var.memory().size(), size);
+  }
+
+  std::vector<std::string> code_lines;
+  // Note that we initialize the variable with `= {}` to keep BPF happy.
+  // This should always be valid since the variable will always be a struct an never a base type.
+  code_lines.push_back(absl::Substitute("$0 $1 = {};", GenScalarType(var.type()), var.name()));
+  code_lines.push_back(absl::Substitute("$0.len = $1;", var.name(), size));
+  code_lines.push_back(absl::Substitute("bpf_probe_read(&$0.buf, $1, $2 + $3);", var.name(), size,
+                                        var.memory().base(), var.memory().offset()));
+
+  // Note: Since we are dealing with statically sized objects, the dummy character
+  // is not actually required.
+
+  return code_lines;
+}
+
 std::vector<std::string> GenMemoryVariable(const ScalarVariable& var) {
   std::vector<std::string> code_lines;
   code_lines.push_back(absl::Substitute("$0 $1;", GenScalarType(var.type()), var.name()));
@@ -409,6 +439,8 @@ StatusOr<std::vector<std::string>> GenScalarVariable(const ScalarVariable& var,
         return GenStringMemoryVariable(var, language);
       } else if (var.type() == ir::shared::ScalarType::BYTE_ARRAY) {
         return GenByteArrayMemoryVariable(var, language);
+      } else if (var.type() == ir::shared::ScalarType::STRUCT_BLOB) {
+        return GenStructBlobMemoryVariable(var);
       } else {
         return GenMemoryVariable(var);
       }
@@ -845,7 +877,7 @@ std::vector<std::string> GenBlobType(int size) {
 std::vector<std::string> GenTypes() {
   std::vector<std::string> code_lines;
   // Create underlying blob types for strings, byte arrays, etc.
-  for (auto& size : std::set{kStructStringSize, kStructByteArraySize}) {
+  for (auto& size : std::set{kStructStringSize, kStructByteArraySize, kStructBlobSize}) {
     MoveBackStrVec(GenBlobType(size), &code_lines);
   }
   return code_lines;

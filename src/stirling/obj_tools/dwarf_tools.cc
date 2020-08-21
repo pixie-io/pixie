@@ -386,20 +386,6 @@ StatusOr<uint64_t> GetMemberOffset(const DWARFDie& die) {
   return offset;
 }
 
-StatusOr<uint64_t> GetBaseOrStructTypeByteSize(const DWARFDie& die) {
-  DCHECK((die.getTag() == llvm::dwarf::DW_TAG_base_type) ||
-         (die.getTag() == llvm::dwarf::DW_TAG_structure_type));
-
-  PL_ASSIGN_OR_RETURN(
-      const DWARFFormValue& byte_size_attr,
-      AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_byte_size), "Could not find DW_AT_byte_size."));
-
-  PL_ASSIGN_OR_RETURN(uint64_t byte_size, AdaptLLVMOptional(byte_size_attr.getAsUnsignedConstant(),
-                                                            "Could not extract byte_size."));
-
-  return byte_size;
-}
-
 StatusOr<DWARFDie> GetTypeDie(const DWARFDie& die) {
   DWARFDie type_die = die;
   do {
@@ -458,6 +444,23 @@ StatusOr<std::string> GetTypeName(const DWARFDie& die) {
       return error::Internal(
           absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
   }
+}
+
+StatusOr<uint64_t> GetBaseOrStructTypeByteSize(const DWARFDie& die) {
+  DCHECK((die.getTag() == llvm::dwarf::DW_TAG_base_type) ||
+         (die.getTag() == llvm::dwarf::DW_TAG_structure_type));
+
+  PL_ASSIGN_OR_RETURN(const DWARFFormValue& byte_size_attr,
+                      AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_byte_size),
+                                        absl::Substitute("Could not find DW_AT_byte_size [die=$0].",
+                                                         GetShortName(die))));
+
+  PL_ASSIGN_OR_RETURN(uint64_t byte_size,
+                      AdaptLLVMOptional(byte_size_attr.getAsUnsignedConstant(),
+                                        absl::Substitute("Could not extract byte_size [die=$0].",
+                                                         GetShortName(die))));
+
+  return byte_size;
 }
 
 StatusOr<uint64_t> GetTypeByteSize(const DWARFDie& die) {
@@ -521,6 +524,13 @@ StatusOr<bool> IsGolangRetArg(const DWARFDie& die) {
 }
 
 }  // namespace
+
+StatusOr<uint64_t> DwarfReader::GetStructByteSize(std::string_view struct_name) {
+  PL_ASSIGN_OR_RETURN(const DWARFDie& struct_die,
+                      GetMatchingDIE(struct_name, llvm::dwarf::DW_TAG_structure_type));
+
+  return GetTypeByteSize(struct_die);
+}
 
 StatusOr<StructMemberInfo> DwarfReader::GetStructMemberInfo(std::string_view struct_name,
                                                             std::string_view member_name) {

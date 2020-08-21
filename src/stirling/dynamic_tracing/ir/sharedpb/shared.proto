@@ -26,6 +26,7 @@ enum BPFHelper {
 // This scalar type encompasses basic types across all supported languages.
 // For Golang, refer to: https://golang.org/pkg/go/types/#pkg-variables
 // For C++, refer to: https://en.cppreference.com/w/cpp/language/types
+// TODO(oazizi): Move to physical.proto once last use in logical form is removed.
 enum ScalarType {
   UNKNOWN = 0;
 
@@ -68,6 +69,9 @@ enum ScalarType {
 
   STRING = 1000;
   BYTE_ARRAY = 1001;
+
+  // A struct represented as a blob of bytes.
+  STRUCT_BLOB = 1100;
 }
 
 // Describes where to attach a probe.

@@ -342,6 +342,51 @@ tracepoints {
   EXPECT_EQ(rb[name_field_idx]->Get<types::StringValue>(0), "pixienaut");
 }
 
+TEST_F(DynamicTraceGolangTest, TraceStruct) {
+  StartTraceTarget();
+
+  constexpr std::string_view kProgram = R"(
+deployment_spec {
+  path: "$0"
+}
+tracepoints {
+  program {
+    language: GOLANG
+    outputs {
+      name: "output_table"
+      fields: "vertex_struct"
+    }
+    probes {
+      name: "probe0"
+      tracepoint {
+        symbol: "main.(*Vertex).CrossScale"
+        type: LOGICAL
+      }
+      args {
+        id: "arg0"
+        expr: "v2"
+      }
+      output_actions {
+        output_name: "output_table"
+        variable_name: "arg0"
+      }
+    }
+  }
+}
+)";
+
+  auto trace_program = Prepare(kProgram, kBinaryPath);
+  DeployTracepoint(std::move(trace_program));
+
+  // Get field indexes for the two columns we want.
+  ASSERT_HAS_VALUE_AND_ASSIGN(int vertex_struct_field_idx,
+                              FindFieldIndex(info_class_.schema(), "vertex_struct"));
+
+  types::ColumnWrapperRecordBatch& rb = *record_batches_[0];
+  EXPECT_EQ(rb[vertex_struct_field_idx]->Get<types::StringValue>(0),
+            R"({ "len" = 16, "body" = "not yet extracted"})");
+}
+
 struct TestParam {
   std::string function_symbol;
   std::string value;

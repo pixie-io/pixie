@@ -170,6 +170,11 @@ class DwarfReader {
                                           std::optional<llvm::dwarf::Tag> type = {});
 
   /**
+   * Return the size of a struct.
+   */
+  StatusOr<uint64_t> GetStructByteSize(std::string_view struct_name);
+
+  /**
    * Returns information about a member within a struct.
    * @param struct_name Full name of the struct.
    * @param member_name Name of member within the struct.

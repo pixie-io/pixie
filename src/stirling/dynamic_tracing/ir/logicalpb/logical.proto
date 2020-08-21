@@ -15,6 +15,7 @@ message Constant {
   string name = 1;
 
   // Describes type of the constant.
+  // TODO(oazizi): This type should be inferred, like all other things in the logical form.
   shared.ScalarType type = 2;
 
   // This is directly assigned to the variable.
