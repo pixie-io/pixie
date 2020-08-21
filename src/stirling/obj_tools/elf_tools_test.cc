@@ -163,13 +163,11 @@ TEST(ElfReaderTest, FuncByteCode) {
 }
 
 TEST(ElfGolangItableTest, ExtractInterfaceTypes) {
-  using InterfaceMap = absl::flat_hash_map<std::string, std::vector<std::string>>;
-
   const std::string kPath = pl::testing::BazelBinTestFilePath(
       "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary");
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
-  ASSERT_OK_AND_ASSIGN(InterfaceMap interfaces, ExtractGolangInterfaces(elf_reader.get()));
+  ASSERT_OK_AND_ASSIGN(const auto interfaces, ExtractGolangInterfaces(elf_reader.get()));
 
   // Check for `bazel coverage` so we can bypass the final checks.
   // Note that we still get accurate coverage metrics, because this only skips the final check.
@@ -184,16 +182,25 @@ TEST(ElfGolangItableTest, ExtractInterfaceTypes) {
   EXPECT_THAT(
       interfaces,
       UnorderedElementsAre(
-          Pair("error", UnorderedElementsAre("*errors.errorString", "*os.PathError",
-                                             "*internal/poll.TimeoutError", "runtime.errorString",
-                                             "syscall.Errno")),
-          Pair("sort.Interface", UnorderedElementsAre("*internal/fmtsort.SortedMap")),
+          Pair("error", UnorderedElementsAre(
+                            Field(&IntfImplTypeInfo::type_name, "main.dummyError"),
+                            Field(&IntfImplTypeInfo::type_name, "*errors.errorString"),
+                            Field(&IntfImplTypeInfo::type_name, "*os.PathError"),
+                            Field(&IntfImplTypeInfo::type_name, "*internal/poll.TimeoutError"),
+                            Field(&IntfImplTypeInfo::type_name, "runtime.errorString"),
+                            Field(&IntfImplTypeInfo::type_name, "syscall.Errno"))),
+          Pair("sort.Interface", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name,
+                                                            "*internal/fmtsort.SortedMap"))),
           Pair("math/rand.Source",
-               UnorderedElementsAre("*math/rand.lockedSource", "*math/rand.rngSource")),
-          Pair("io.Writer", UnorderedElementsAre("*os.File")),
-          Pair("internal/reflectlite.Type", UnorderedElementsAre("*internal/reflectlite.rtype")),
-          Pair("reflect.Type", UnorderedElementsAre("*reflect.rtype")),
-          Pair("fmt.State", UnorderedElementsAre("*fmt.pp"))));
+               UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name, "*math/rand.lockedSource"),
+                                    Field(&IntfImplTypeInfo::type_name, "*math/rand.rngSource"))),
+          Pair("io.Writer", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name, "*os.File"))),
+          Pair("internal/reflectlite.Type",
+               UnorderedElementsAre(
+                   Field(&IntfImplTypeInfo::type_name, "*internal/reflectlite.rtype"))),
+          Pair("reflect.Type",
+               UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name, "*reflect.rtype"))),
+          Pair("fmt.State", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name, "*fmt.pp")))));
 #endif
 }
 

@@ -4,11 +4,11 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math"
 	"math/rand"
 	"time"
-	"encoding/hex"
 )
 
 type Vertex struct {
@@ -47,20 +47,20 @@ type PointerWrapperWrapperWrapper struct {
 }
 
 type LowerStruct struct {
-    L0 bool
-    L1 int32
-    L2 *int64
+	L0 bool
+	L1 int32
+	L2 *int64
 }
 
 type MidStruct struct {
-    M0 LowerStruct
-    M1 bool
-    M2 LowerStruct
+	M0 LowerStruct
+	M1 bool
+	M2 LowerStruct
 }
 
 type OuterStruct struct {
-    O0 int64
-    O1 MidStruct
+	O0 int64
+	O1 MidStruct
 }
 
 func PointerWrapperWrapperWrapperFunc(p PointerWrapperWrapperWrapper) int {
@@ -110,6 +110,16 @@ func OuterStructFunc(x OuterStruct) bool {
 	return x.O1.M0.L0
 }
 
+type dummyError string
+
+func (e dummyError) Error() string {
+	return "dummyError: " + string(e)
+}
+
+func FooReturnsDummyError() error {
+	return dummyError("throw from FooReturnsDummyError")
+}
+
 func main() {
 	for true {
 		v := Vertex{3, 4}
@@ -130,7 +140,7 @@ func main() {
 		c := PointerWrapperWrapper{1, 2, b, 3}
 		d := PointerWrapperWrapperWrapper{1, &c, 2, 3}
 		fmt.Println(PointerWrapperWrapperWrapperFunc(d))
-		fmt.Println(SaySomethingTo("Hello", "pixienaut"));
+		fmt.Println(SaySomethingTo("Hello", "pixienaut"))
 
 		// Note: second argument must be the function symbol name,
 		//       just to simplify stirling_bpf_test.
@@ -141,18 +151,23 @@ func main() {
 		fmt.Println(BytesToHex(id1, "Bytes"))
 
 		x := OuterStruct{
-	        O0: 1,
-	        O1: MidStruct{
-	            M0: LowerStruct{
-	                L0: true,
-	                L1: 2,
-	                L2: nil},
-	            M1: false,
-	            M2: LowerStruct{
-	                L0: true,
-	                L1: 3,
-	                L2: nil}}}
+			O0: 1,
+			O1: MidStruct{
+				M0: LowerStruct{
+					L0: true,
+					L1: 2,
+					L2: nil},
+				M1: false,
+				M2: LowerStruct{
+					L0: true,
+					L1: 3,
+					L2: nil}}}
 		fmt.Println(OuterStructFunc(x))
+
+		// This allows directly examine the value of err in gdb or dlv.
+		err := FooReturnsDummyError()
+
+		fmt.Println(err)
 
 		time.Sleep(time.Second)
 	}

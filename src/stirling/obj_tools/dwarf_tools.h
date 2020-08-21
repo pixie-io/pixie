@@ -44,10 +44,18 @@ enum class LocationType {
 
 struct TypeInfo {
   VarType type = VarType::kUnspecified;
+
+  // Describes the concrete type.
+  // TODO(yzhao): Rename to impl_type (or just keep it).
   std::string type_name = "";
 
+  // Describes the declared type, which is the symbolic type name declared in the source code of the
+  // program. One such example is typedefs in C/C++.
+  std::string decl_type = "";
+
   std::string ToString() const {
-    return absl::Substitute("type=$0 type_name=$1", magic_enum::enum_name(type), type_name);
+    return absl::Substitute("type=$0 decl_type=$1 type_name=$2", magic_enum::enum_name(type),
+                            decl_type, type_name);
   }
 };
 

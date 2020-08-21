@@ -388,14 +388,19 @@ StatusOr<uint64_t> GetMemberOffset(const DWARFDie& die) {
   return offset;
 }
 
+StatusOr<DWARFDie> GetTypeAttribute(const DWARFDie& die) {
+  PL_ASSIGN_OR_RETURN(
+      const DWARFFormValue& type_attr,
+      AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_type), "Could not find DW_AT_type."));
+  return die.getAttributeValueAsReferencedDie(type_attr);
+}
+
+// Recursively resolve the type of the input DIE until reaching a leaf type that has no further
+// alias.
 StatusOr<DWARFDie> GetTypeDie(const DWARFDie& die) {
   DWARFDie type_die = die;
   do {
-    PL_ASSIGN_OR_RETURN(
-        const DWARFFormValue& type_attr,
-        AdaptLLVMOptional(type_die.find(llvm::dwarf::DW_AT_type), "Could not find DW_AT_type."));
-
-    type_die = die.getAttributeValueAsReferencedDie(type_attr);
+    PL_ASSIGN_OR_RETURN(type_die, GetTypeAttribute(type_die));
   } while (type_die.getTag() == llvm::dwarf::DW_TAG_typedef);
 
   return type_die;
@@ -440,11 +445,32 @@ StatusOr<std::string> GetTypeName(const DWARFDie& die) {
     case llvm::dwarf::DW_TAG_base_type:
     case llvm::dwarf::DW_TAG_class_type:
     case llvm::dwarf::DW_TAG_structure_type:
+    case llvm::dwarf::DW_TAG_typedef:
       return std::string(GetShortName(die));
     default:
-      return error::Internal(
-          absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
+      return error::Internal(absl::Substitute(
+          "Could not get the type name of the input DIE, because of unexpected DIE type: $0",
+          magic_enum::enum_name(die.getTag())));
   }
+}
+
+StatusOr<TypeInfo> GetTypeInfo(const DWARFDie& die, const DWARFDie& type_die) {
+  TypeInfo type_info;
+
+  PL_ASSIGN_OR_RETURN(DWARFDie decl_type_die, GetTypeAttribute(die));
+  PL_ASSIGN_OR_RETURN(type_info.decl_type, GetTypeName(decl_type_die));
+
+  type_info.type = GetType(type_die);
+
+  if (type_info.type == VarType::kUnspecified) {
+    return error::InvalidArgument(
+        "Failed to get type information for type DIE, DIE type is not supported, DIE: $0",
+        Dump(type_die));
+  }
+
+  PL_ASSIGN_OR_RETURN(type_info.type_name, GetTypeName(type_die));
+
+  return type_info;
 }
 
 StatusOr<uint64_t> GetBaseOrStructTypeByteSize(const DWARFDie& die) {
@@ -524,6 +550,17 @@ StatusOr<bool> IsGolangRetArg(const DWARFDie& die) {
   return (val == 0x01);
 }
 
+std::vector<DWARFDie> GetMemberDIEs(const DWARFDie& struct_die) {
+  std::vector<DWARFDie> member_dies;
+  for (const auto& die : struct_die.children()) {
+    if (die.getTag() != llvm::dwarf::DW_TAG_member) {
+      continue;
+    }
+    member_dies.push_back(die);
+  }
+  return member_dies;
+}
+
 }  // namespace
 
 StatusOr<uint64_t> DwarfReader::GetStructByteSize(std::string_view struct_name) {
@@ -540,19 +577,14 @@ StatusOr<StructMemberInfo> DwarfReader::GetStructMemberInfo(std::string_view str
   PL_ASSIGN_OR_RETURN(const DWARFDie& struct_die,
                       GetMatchingDIE(struct_name, llvm::dwarf::DW_TAG_structure_type));
 
-  for (const auto& die : struct_die.children()) {
-    if ((die.getTag() == llvm::dwarf::DW_TAG_member) &&
-        (die.getName(llvm::DINameKind::ShortName) == member_name)) {
-      PL_ASSIGN_OR_RETURN(member_info.offset, GetMemberOffset(die));
-
-      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-      member_info.type_info.type = GetType(type_die);
-      if (member_info.type_info.type == VarType::kUnspecified) {
-        continue;
-      }
-      PL_ASSIGN_OR_RETURN(member_info.type_info.type_name, GetTypeName(type_die));
-      return member_info;
+  for (const auto& die : GetMemberDIEs(struct_die)) {
+    if (GetShortName(die) != member_name) {
+      continue;
     }
+    PL_ASSIGN_OR_RETURN(member_info.offset, GetMemberOffset(die));
+    PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+    PL_ASSIGN_OR_RETURN(member_info.type_info, GetTypeInfo(die, type_die));
+    return member_info;
   }
 
   return error::Internal("Could not find member.");
@@ -586,23 +618,15 @@ Status DwarfReader::FlattenedStructSpec(const llvm::DWARFDie& struct_die,
       PL_ASSIGN_OR_RETURN(int member_offset, GetMemberOffset(die));
 
       PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-      VarType type = GetType(type_die);
+      PL_ASSIGN_OR_RETURN(TypeInfo type_info, GetTypeInfo(die, type_die));
 
-      if (type == VarType::kUnspecified) {
-        return error::InvalidArgument(
-            "Failed to flatten struct spec, DIE member type is not supported, DIE: $0",
-            Dump(struct_die));
-      }
-
-      if (type == VarType::kBaseType || type == VarType::kPointer) {
-        PL_ASSIGN_OR_RETURN(std::string type_name, GetTypeName(type_die));
+      if (type_info.type == VarType::kBaseType || type_info.type == VarType::kPointer) {
         PL_ASSIGN_OR_RETURN(int size, GetTypeByteSize(type_die));
 
         StructSpecEntry entry;
         entry.offset = offset + member_offset;
         entry.size = size;
-        entry.type_info.type_name = std::move(type_name);
-        entry.type_info.type = type;
+        entry.type_info = type_info;
         entry.path = path;
 
         output->push_back(std::move(entry));
@@ -618,20 +642,8 @@ Status DwarfReader::FlattenedStructSpec(const llvm::DWARFDie& struct_die,
 StatusOr<TypeInfo> DwarfReader::DereferencePointerType(std::string type_name) {
   PL_ASSIGN_OR_RETURN(const DWARFDie& die,
                       GetMatchingDIE(type_name, llvm::dwarf::DW_TAG_pointer_type));
-
-  TypeInfo type_info;
-
-  PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-  type_info.type = GetType(type_die);
-
-  if (type_info.type == VarType::kUnspecified) {
-    return error::InvalidArgument(
-        "Failed to dereference pointer type, DIE type is not supported, DIE: $0", Dump(type_die));
-  }
-
-  PL_ASSIGN_OR_RETURN(type_info.type_name, GetTypeName(type_die));
-
-  return type_info;
+  PL_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(die));
+  return GetTypeInfo(die, type_die);
 }
 
 StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view function_symbol_name,
@@ -772,7 +784,7 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
   uint64_t total_register_bytes = num_arg_regs * reg_size;
 
   // If return value is not able to be passed in as a register,
-  // then the the first argument register becomes a pointer to the return value.
+  // then the first argument register becomes a pointer to the return value.
   // Account for that here.
   PL_ASSIGN_OR_RETURN(RetValInfo ret_val_info, GetFunctionRetValInfo(function_symbol_name));
   if (ret_val_info.byte_size > num_ret_val_regs * reg_size) {
@@ -786,15 +798,8 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
     VLOG(1) << die.getName(llvm::DINameKind::ShortName);
     auto& arg = arg_info[die.getName(llvm::DINameKind::ShortName)];
 
-    PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-    arg.type_info.type = GetType(type_die);
-
-    if (arg.type_info.type == VarType::kUnspecified) {
-      // Ignore unsupported types.
-      continue;
-    }
-
-    PL_ASSIGN_OR_RETURN(arg.type_info.type_name, GetTypeName(type_die));
+    PL_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(die));
+    PL_ASSIGN_OR_RETURN(arg.type_info, GetTypeInfo(die, type_die));
     PL_ASSIGN_OR_RETURN(uint64_t type_size, GetTypeByteSize(type_die));
     PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
 
@@ -831,13 +836,9 @@ StatusOr<RetValInfo> DwarfReader::GetFunctionRetValInfo(std::string_view functio
 
   RetValInfo ret_val_info;
 
-  PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(function_die));
-  ret_val_info.type_info.type = GetType(type_die);
-
-  if (ret_val_info.type_info.type != VarType::kUnspecified) {
-    PL_ASSIGN_OR_RETURN(ret_val_info.type_info.type_name, GetTypeName(type_die));
-    PL_ASSIGN_OR_RETURN(ret_val_info.byte_size, GetTypeByteSize(type_die));
-  }
+  PL_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(function_die));
+  PL_ASSIGN_OR_RETURN(ret_val_info.type_info, GetTypeInfo(function_die, type_die));
+  PL_ASSIGN_OR_RETURN(ret_val_info.byte_size, GetTypeByteSize(type_die));
 
   return ret_val_info;
 }

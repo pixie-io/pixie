@@ -15,6 +15,7 @@ namespace pl {
 namespace stirling {
 namespace dwarf_tools {
 
+using ::llvm::DWARFDie;
 using ::pl::stirling::dwarf_tools::DwarfReader;
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
@@ -315,20 +316,22 @@ TEST_P(DwarfReaderTest, CppFunctionArgInfo) {
 
   EXPECT_OK_AND_THAT(
       dwarf_reader->GetFunctionArgInfo("CanYouFindThis"),
-      UnorderedElementsAre(
-          Pair("a", ArgInfo{TypeInfo{VarType::kBaseType, "int"}, {LocationType::kRegister, 0}}),
-          Pair("b", ArgInfo{TypeInfo{VarType::kBaseType, "int"}, {LocationType::kRegister, 8}})));
-  EXPECT_OK_AND_THAT(
-      dwarf_reader->GetFunctionArgInfo("ABCSum32"),
-      UnorderedElementsAre(Pair("x", ArgInfo{TypeInfo{VarType::kStruct, "ABCStruct32"},
+      UnorderedElementsAre(Pair("a", ArgInfo{TypeInfo{VarType::kBaseType, "int", "int"},
                                              {LocationType::kRegister, 0}}),
-                           Pair("y", ArgInfo{TypeInfo{VarType::kStruct, "ABCStruct32"},
-                                             {LocationType::kRegister, 16}})));
+                           Pair("b", ArgInfo{TypeInfo{VarType::kBaseType, "int", "int"},
+                                             {LocationType::kRegister, 8}})));
+  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("ABCSum32"),
+                     UnorderedElementsAre(
+                         Pair("x", ArgInfo{TypeInfo{VarType::kStruct, "ABCStruct32", "ABCStruct32"},
+                                           {LocationType::kRegister, 0}}),
+                         Pair("y", ArgInfo{TypeInfo{VarType::kStruct, "ABCStruct32", "ABCStruct32"},
+                                           {LocationType::kRegister, 16}})));
   EXPECT_OK_AND_THAT(
       dwarf_reader->GetFunctionArgInfo("SomeFunctionWithPointerArgs"),
       UnorderedElementsAre(
-          Pair("a", ArgInfo{TypeInfo{VarType::kPointer, "int*"}, {LocationType::kRegister, 0}}),
-          Pair("x", ArgInfo{TypeInfo{VarType::kPointer, "ABCStruct32*"},
+          Pair("a",
+               ArgInfo{TypeInfo{VarType::kPointer, "int*", "int*"}, {LocationType::kRegister, 0}}),
+          Pair("x", ArgInfo{TypeInfo{VarType::kPointer, "ABCStruct32*", "ABCStruct32*"},
                             {LocationType::kRegister, 8}})));
 }
 
@@ -415,7 +418,8 @@ TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
             Pair("data",
                  ArgInfo{TypeInfo{VarType::kStruct, "[]uint8"}, {LocationType::kStack, 16}}),
             Pair("pad", ArgInfo{TypeInfo{VarType::kStruct, "[]uint8"}, {LocationType::kStack, 40}}),
-            Pair("~r4", ArgInfo{TypeInfo{VarType::kStruct, "runtime.iface"},
+            // The returned "error" variable has a different decl_type than the type_name.
+            Pair("~r4", ArgInfo{TypeInfo{VarType::kStruct, "runtime.iface", "error"},
                                 {LocationType::kStack, 64},
                                 true})));
   }

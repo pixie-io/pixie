@@ -390,9 +390,9 @@ StatusOr<utils::u8string> ElfReader::FuncByteCode(const SymbolInfo& func_symbol)
   return byte_code;
 }
 
-StatusOr<absl::flat_hash_map<std::string, std::vector<std::string>>> ExtractGolangInterfaces(
+StatusOr<absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>>> ExtractGolangInterfaces(
     ElfReader* elf_reader) {
-  absl::flat_hash_map<std::string, std::vector<std::string>> interface_types;
+  absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>> interface_types;
 
   // All itable objects in the symbols are prefixed with this string.
   const std::string_view kITablePrefix("go.itab.");
@@ -413,7 +413,13 @@ StatusOr<absl::flat_hash_map<std::string, std::vector<std::string>>> ExtractGola
     std::string_view interface_name = sym_split[1];
     std::string_view type = sym_split[0];
     type.remove_prefix(kITablePrefix.size());
-    interface_types[std::string(interface_name)].emplace_back(type);
+
+    IntfImplTypeInfo info;
+
+    info.type_name = type;
+    info.address = sym.address;
+
+    interface_types[std::string(interface_name)].push_back(std::move(info));
   }
 
   return interface_types;
