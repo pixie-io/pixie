@@ -73,10 +73,44 @@ describe('TabStopParser', () => {
   });
 
   it('should backspace', () => {
-    expect(parsedTS.handleBackspace(9)).toEqual(['pod:pl/pod test', 0]);
-    expect(parsedTS.handleBackspace(21)).toEqual(['svc_name:pl/test test', 16]);
-    expect(parsedTS.handleBackspace(10)).toEqual(['svc_name:l/test pod:pl/pod test', 9]);
-    expect(parsedTS.handleBackspace(28)).toEqual(['svc_name:pl/test pod:pl/pod', 27]);
+    expect(parsedTS.handleBackspace(9)).toEqual([' pod:pl/pod test', 0, [
+      {
+        Index: 2, CursorPosition: 0,
+      },
+      {
+        Index: 3, Label: 'pod', Value: 'pl/pod', CursorPosition: -1,
+      },
+      {
+        Index: 4, Value: 'test', CursorPosition: -1,
+      },
+    ], false]);
+    expect(parsedTS.handleBackspace(21)).toEqual(['svc_name:pl/test test', 16, [
+      {
+        Index: 2, Label: 'svc_name', Value: 'pl/test', CursorPosition: 7,
+      },
+      {
+        Index: 4, Value: 'test', CursorPosition: -1,
+      },
+    ], true]);
+    expect(parsedTS.handleBackspace(10)).toEqual(['svc_name:l/test pod:pl/pod test', 9, [
+      {
+        Index: 2, Label: 'svc_name', Value: 'l/test', CursorPosition: 0,
+      },
+      {
+        Index: 3, Label: 'pod', Value: 'pl/pod', CursorPosition: -1,
+      },
+      {
+        Index: 4, Value: 'test', CursorPosition: -1,
+      },
+    ], false]);
+    expect(parsedTS.handleBackspace(28)).toEqual(['svc_name:pl/test pod:pl/pod', 27, [
+      {
+        Index: 2, Label: 'svc_name', Value: 'pl/test', CursorPosition: -1,
+      },
+      {
+        Index: 3, Label: 'pod', Value: 'pl/pod', CursorPosition: 6,
+      },
+    ], true]);
   });
 
   it('should handleChange', () => {

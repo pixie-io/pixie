@@ -113,8 +113,8 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
   }, [itemsMap, cursorPos, tsInfo, onChange]);
 
   const handleBackspace = React.useCallback((pos) => {
-    const [newStr, newCursorPos] = tsInfo.handleBackspace(pos);
-    return onChange(newStr, newCursorPos, 'EDIT', null);
+    const [newStr, newCursorPos, newTabStops, deletedTabStop] = tsInfo.handleBackspace(pos);
+    return onChange(newStr, newCursorPos, 'EDIT', deletedTabStop ? null : newTabStops);
   }, [tsInfo, onChange]);
 
   const handleLeftKey = React.useCallback((pos) => {

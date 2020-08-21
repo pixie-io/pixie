@@ -163,26 +163,54 @@ export class TabStopParser {
   // handleBackspace returns what the new display string should look like
   // if a backspace was made. It does not actually mutate the contents of the
   // current tabstop.
-  public handleBackspace = (cursorPos: number): [string, number] => {
+  public handleBackspace = (cursorPos: number): [string, number, Array<TabStop>, boolean] => {
     const activeTab = this.getActiveTab(cursorPos);
 
-    if (this.tabBoundaries[activeTab][0] !== cursorPos) { // User is deleting within the current tabstop.
-      const str = getDisplayStringFromTabStops(this.tabStops);
-      const newStr = str.substring(0, cursorPos - 1) + str.substring(cursorPos);
-      return [newStr, cursorPos - 1];
-    }
-    // Delete the whole tabstop.
-    const str = getDisplayStringFromTabStops(this.tabStops.slice(0, activeTab).concat(
-      this.tabStops.slice(activeTab + 1),
-    ));
-    if (activeTab === this.tabStops.length) { //
-      return [str, this.tabBoundaries[activeTab - 1][1] - 2];
-    }
+    const newTStops = [];
+    let newCursor = 0;
+    let tabstopDeleted = false;
 
-    if (activeTab === 0) {
-      return [str, 0];
-    }
-    return [str, this.tabBoundaries[activeTab - 1][1] - 1];
+    this.tabStops.forEach((ts, i) => {
+      if (i === activeTab) {
+        const pos = cursorPos - this.tabBoundaries[i][0]; // Get the cursor position within the tabstop.
+
+        if (activeTab !== 0 && pos === 0) {
+          // User is trying to delete a label. We should move the cursor to the previous tabstop.
+          newTStops[i - 1].CursorPosition = newTStops[i - 1].Value == null ? 0 : newTStops[i - 1].Value.length;
+          // Subtract 1, for tabstop with no label, or 2 for colon and space between tabstops.
+          newCursor = ts.Label == null ? cursorPos - 1 : cursorPos - ts.Label.length - 2;
+          tabstopDeleted = true;
+        } else if (activeTab === 0 && pos === 0) {
+          newCursor = 0;
+          const newTS = {
+            Index: ts.Index,
+            CursorPosition: 0,
+          } as TabStop;
+          if (ts.Label == null) { // If the user just deleted a label, we should also clear the value.
+            newTS.Value = ts.Value;
+          }
+          newTStops.push(newTS);
+        } else {
+          // We are deleting text inside the tabstop.
+          newCursor = cursorPos - 1;
+          newTStops.push({
+            Index: ts.Index,
+            Label: ts.Label,
+            Value: ts.Value.substring(0, pos - 1) + ts.Value.substring(pos),
+            CursorPosition: pos - 1 <= 0 ? 0 : pos - 1,
+          });
+        }
+      } else {
+        newTStops.push({
+          Index: ts.Index,
+          Label: ts.Label,
+          Value: ts.Value,
+          CursorPosition: -1,
+        });
+      }
+    });
+
+    return [getDisplayStringFromTabStops(newTStops), newCursor, newTStops, tabstopDeleted];
   };
 
   // handleBackspace returns what the new display string should look like
@@ -212,7 +240,7 @@ export class TabStopParser {
           Index: ts.Index,
           Label: ts.Label,
           Value: ts.Value,
-          CursorPosition: ts.CursorPosition,
+          CursorPosition: -1, // All non-active tabstops should not have a cursor position.
         });
       }
     });
