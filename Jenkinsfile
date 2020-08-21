@@ -104,6 +104,12 @@ GCS_STASH_BUCKET='px-jenkins-build-temp'
 K8S_PROD_CLUSTER='https://cloud-prod.internal.corp.pixielabs.ai'
 K8S_PROD_CREDS='cloud-staging'
 
+// PXL Docs variables.
+PXL_DOCS_BINARY="//src/carnot/docstring:docstring_integration"
+PXL_DOCS_FILE='pxl-docs.json'
+PXL_DOCS_BUCKET='pl-docs'
+PXL_DOCS_GCS_PATH="gs://${PXL_DOCS_BUCKET}/${PXL_DOCS_FILE}"
+
 // This variable store the dev docker image that we need to parse before running any docker steps.
 devDockerImageWithTag = ''
 devDockerImageExtrasWithTag = ''
@@ -432,7 +438,7 @@ def sendCloudReleaseSlackNotification(String profile) {
   if (currentBuild.result == 'SUCCESS') {
     slackSend color: '#00FF00', message: "${profile} Cloud deployed - ${env.BUILD_TAG} -- URL: ${env.BUILD_URL}."
   } else {
-    slackSend color: '#FF0000', message: "${profile} Cloud deployed FAILED - ${env.BUILD_TAG} -- URL: ${env.BUILD_URL}."    
+    slackSend color: '#FF0000', message: "${profile} Cloud deployed FAILED - ${env.BUILD_TAG} -- URL: ${env.BUILD_URL}."
   }
 }
 
@@ -829,7 +835,32 @@ def  buildScriptForCLIRelease = {
   }
 }
 
-def  buildScriptForVizierRelease = {
+def updatePxlDocs() {
+  WithSourceCode {
+    dockerStep('', devDockerImageExtrasWithTag) {
+      def pxlDocsOut = "/tmp/${PXL_DOCS_FILE}"
+      sh "bazel run ${PXL_DOCS_BINARY} ${pxlDocsOut}"
+      sh "gsutil cp ${pxlDocsOut} ${PXL_DOCS_GCS_PATH}"
+    }
+  }
+}
+
+def vizierReleaseBuilders = [:]
+
+vizierReleaseBuilders['Build & Push Artifacts'] = {
+  WithSourceCodeFatalError {
+    dockerStep('', devDockerImageExtrasWithTag) {
+      sh './ci/vizier_build_release.sh'
+      stash name: "versions", includes: "src/utils/artifacts/artifact_db_updater/VERSIONS.json"
+    }
+  }
+}
+
+vizierReleaseBuilders["Build & Export Docs"] = {
+  updatePxlDocs()
+}
+
+def buildScriptForVizierRelease = {
   node(WORKER_NODE) {
     currentBuild.result = 'SUCCESS'
     deleteDir()
@@ -838,12 +869,7 @@ def  buildScriptForVizierRelease = {
         checkoutAndInitialize()
       }
       stage('Build & Push Artifacts') {
-        WithSourceCodeFatalError {
-          dockerStep('', devDockerImageExtrasWithTag) {
-            sh './ci/vizier_build_release.sh'
-            stash name: "versions", includes: "src/utils/artifacts/artifact_db_updater/VERSIONS.json"
-          }
-        }
+        parallel(vizierReleaseBuilders)
       }
       stage('Update versions database (staging)') {
         updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, "plc-staging")
