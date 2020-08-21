@@ -106,15 +106,15 @@ func (v *VizierIndexer) serviceUpdateToEMD(u *mdpb.ResourceUpdate, serviceUpdate
 		serviceUpdate.PodIDs = make([]string, 0)
 	}
 	return &EsMDEntity{
-		OrgID:         v.orgID.String(),
-		VizierID:      v.vizierID.String(),
-		ClusterUID:    v.k8sUID,
-		UID:           serviceUpdate.UID,
-		Name:          serviceUpdate.Name,
-		NS:            serviceUpdate.Namespace,
-		Kind:          "service",
-		TimeStartedNS: serviceUpdate.StartTimestampNS,
-		TimeStoppedNS: serviceUpdate.StopTimestampNS,
+		OrgID:              v.orgID.String(),
+		VizierID:           v.vizierID.String(),
+		ClusterUID:         v.k8sUID,
+		UID:                serviceUpdate.UID,
+		Name:               serviceUpdate.Name,
+		NS:                 serviceUpdate.Namespace,
+		Kind:               "service",
+		TimeStartedNS:      serviceUpdate.StartTimestampNS,
+		TimeStoppedNS:      serviceUpdate.StopTimestampNS,
 		RelatedEntityNames: serviceUpdate.PodIDs,
 		ResourceVersion:    u.ResourceVersion,
 	}
@@ -139,7 +139,7 @@ if (params.resourceVersion.compareTo(ctx._source.resourceVersion) <= 0)  {
   ctx.op = 'noop';
 }
 ctx._source.relatedEntityNames.addAll(params.entities);
-ctx._source.relatedEntityNames = ctx._source.relatedEntityNames.stream().sorted().collect(Collectors.toList());
+ctx._source.relatedEntityNames = ctx._source.relatedEntityNames.stream().distinct().sorted().collect(Collectors.toList());
 ctx._source.timeStoppedNS = params.timeStoppedNS;
 ctx._source.resourceVersion = params.resourceVersion;
 `
