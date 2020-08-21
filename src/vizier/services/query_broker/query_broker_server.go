@@ -25,6 +25,7 @@ import (
 )
 
 const plMDSAddr = "vizier-metadata.pl.svc:50400"
+const querybrokerHostname = "vizier-query-broker.pl.svc"
 
 func init() {
 	pflag.String("cloud_connector_addr", "vizier-cloud-connector.pl.svc:50800", "The address to the cloud connector")
@@ -73,7 +74,7 @@ func main() {
 	if podAddr == "" {
 		log.Fatal("Expected to receive pod IP address.")
 	}
-	env, err := querybrokerenv.New(fmt.Sprintf("%s:%d", podAddr, servicePort))
+	env, err := querybrokerenv.New(fmt.Sprintf("%s:%d", podAddr, servicePort), querybrokerHostname)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment.")
 	}

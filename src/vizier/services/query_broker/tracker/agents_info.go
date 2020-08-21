@@ -10,6 +10,11 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 )
 
+// KelvinSSLTargetOverride the hostname used for SSL target override when sending data to Kelvin.
+// TODO(nserrino): This value may differ in the future.
+// Have this come from the Kelvins themselves when they send their updated state.
+const KelvinSSLTargetOverride = "kelvin.pl.svc"
+
 // AgentsInfo tracks information about the distributed state of the system.
 type AgentsInfo interface {
 	ClearState()
@@ -137,5 +142,8 @@ func makeKelvinCarnotInfo(agentID uuid.UUID, grpcAddress string, asid uint32) *d
 		AcceptsRemoteSources: true,
 		// When we support persistent storage, Kelvins will also have MetadataInfo.
 		MetadataInfo: nil,
+		// TODO(nserrino): When this value is no longer a constant, we will need to get the value from
+		// the agent update.
+		SSLTargetName: KelvinSSLTargetOverride,
 	}
 }

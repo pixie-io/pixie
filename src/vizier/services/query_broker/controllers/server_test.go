@@ -126,6 +126,7 @@ plan_options: {
 	analyze: false
 }
 result_address: "qb_address"
+result_ssl_targetname: "qb_hostname"
 `
 
 const singleAgentDistributedState = `
@@ -164,6 +165,7 @@ plan_options: {
 	analyze: true
 }
 result_address: "qb_address"
+result_ssl_targetname: "qb_hostname"
 `
 
 const getMultipleAgentsResponse = `
@@ -416,7 +418,7 @@ func TestPlannerErrorResult(t *testing.T) {
 		agentsInfo: agentsInfo,
 	}
 	// Set up server.
-	env, err := querybrokerenv.New("qb_address")
+	env, err := querybrokerenv.New("qb_address", "qb_hostname")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -486,7 +488,7 @@ func TestErrorInStatusResult(t *testing.T) {
 	}
 
 	// Set up server.
-	env, err := querybrokerenv.New("qb_address")
+	env, err := querybrokerenv.New("qb_address", "qb_hostname")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -568,7 +570,7 @@ func TestTransferResultChunk_AgentStreamComplete(t *testing.T) {
 	rf := fakeResultForwarder{}
 
 	// Set up server.
-	env, err := querybrokerenv.New("qb_address")
+	env, err := querybrokerenv.New("qb_address", "qb_hostname")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -662,7 +664,7 @@ func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 	rf := fakeResultForwarder{}
 
 	// Set up server.
-	env, err := querybrokerenv.New("qb_address")
+	env, err := querybrokerenv.New("qb_address", "qb_hostname")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -738,7 +740,7 @@ func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
 	}
 
 	// Set up server.
-	env, err := querybrokerenv.New("qb_address")
+	env, err := querybrokerenv.New("qb_address", "qb_hostname")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}

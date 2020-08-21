@@ -56,6 +56,8 @@ message CarnotInfo {
   uint32 asid = 8 [ (gogoproto.customname) = "ASID" ];
   // Information about the metadata stored on a Carnot instance.
   MetadataInfo metadata_info = 9;
+  // Optional field that gives the SSL target hostname for this Carnot instance.
+  string ssl_targetname = 11 [ (gogoproto.customname) = "SSLTargetName" ];
 }
 
 // Information about the table structure as well as the tablet keys.
@@ -112,6 +114,8 @@ message LogicalPlannerState {
   pl.carnot.planpb.PlanOptions plan_options = 3;
   // The address to which the query results should be sent.
   string result_address = 4;
+  // The SSL target override for the result address, if applicable.
+  string result_ssl_targetname = 5 [ (gogoproto.customname) = "ResultSSLTargetName" ];
 }
 
 // The result for the planner. Contains a status to track any errors

@@ -150,9 +150,10 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 		return nil, nil, status.Error(codes.Unavailable, "not ready yet")
 	}
 	plannerState := &distributedpb.LogicalPlannerState{
-		DistributedState: info.DistributedState(),
-		PlanOptions:      planOpts,
-		ResultAddress:    s.env.Address(),
+		DistributedState:    info.DistributedState(),
+		PlanOptions:         planOpts,
+		ResultAddress:       s.env.Address(),
+		ResultSSLTargetName: s.env.SSLTargetName(),
 	}
 	log.WithField("query_id", queryID).
 		Infof("Running script")

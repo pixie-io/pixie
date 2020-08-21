@@ -220,6 +220,7 @@ func TestAgentsInfo_UpdateAgentsInfo(t *testing.T) {
 		ProcessesData:        true,
 		AcceptsRemoteSources: true,
 		ASID:                 456,
+		SSLTargetName:        "kelvin.pl.svc",
 	}
 
 	agentsMap := make(map[uuid.UUID]*distributedpb.CarnotInfo)

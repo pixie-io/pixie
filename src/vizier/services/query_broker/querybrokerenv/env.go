@@ -6,19 +6,23 @@ import "pixielabs.ai/pixielabs/src/shared/services/env"
 type QueryBrokerEnv interface {
 	// The address of the query broker
 	Address() string
+	// The SSL target hostname of the query broker
+	SSLTargetName() string
 	env.Env
 }
 
 // Impl is an implementation of the ApiEnv interface
 type Impl struct {
-	address string
+	address       string
+	sslTargetName string
 	*env.BaseEnv
 }
 
 // New creates a new api env.
-func New(qbAddress string) (*Impl, error) {
+func New(qbAddress string, sslTargetName string) (*Impl, error) {
 	return &Impl{
 		qbAddress,
+		sslTargetName,
 		env.New(),
 	}, nil
 }
@@ -26,4 +30,9 @@ func New(qbAddress string) (*Impl, error) {
 // Address returns the address of the query broker.
 func (e *Impl) Address() string {
 	return e.address
+}
+
+// SSLTargetName returns the SSL target hostname of the query broker.
+func (e *Impl) SSLTargetName() string {
+	return e.sslTargetName
 }

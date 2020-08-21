@@ -189,6 +189,14 @@ message GRPCSinkOperator {
     // are being sent to a non-Carnot address, such as the query broker.
     ResultTable output_table = 4;
   }
+
+  // Options regarding the GRPC connection to be established.
+  message GRPCConnectionOptions {
+    // This field is used when there is a need for an SSL target hostname override.
+    string ssl_targetname = 1;
+  }
+
+  GRPCConnectionOptions connection_options = 5;
 }
 
 // Performs map operation.
