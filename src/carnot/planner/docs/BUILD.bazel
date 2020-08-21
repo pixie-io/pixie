@@ -1,0 +1,43 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test", "pl_cc_test_library", "pl_cgo_library", "pl_linkopts")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.cc",
+            "*.h",
+        ],
+        exclude = [
+            "**/*_test.cc",
+            "**/*test_utils.h",
+            "*_main.cc",
+        ],
+    ),
+    hdrs = ["doc_extractor.h"],
+    deps = [
+        "//src/carnot/planner/compiler:cc_library",
+        "//src/carnot/planner/distributed:cc_library",
+        "//src/carnot/planner/distributedpb:distributed_plan_pl_cc_proto",
+        "//src/carnot/udf_exporter:cc_library",
+        "//src/carnot/docspb:docs_pl_cc_proto",
+    ],
+)
+
+pl_cc_test(
+    name = "doc_extractor_test",
+    srcs = ["doc_extractor_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner:test_utils",
+    ],
+)
+
+pl_cc_binary(
+    name = "doc_extractor",
+    srcs = ["doc_extractor_main.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
