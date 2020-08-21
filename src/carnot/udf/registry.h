@@ -108,7 +108,9 @@ class Registry {
     RegisterSemanticTypes<T>(name);
 
     if constexpr (has_valid_doc_fn<T>()) {
-      PL_RETURN_IF_ERROR(T::Doc().template ToProto<T>(docs_pb_.add_udf()));
+      auto docpb = docs_pb_.add_udf();
+      PL_RETURN_IF_ERROR(T::Doc().template ToProto<T>(docpb));
+      docpb->set_name(name);
     }
     return Status::OK();
   }

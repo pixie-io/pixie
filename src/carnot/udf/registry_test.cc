@@ -558,6 +558,7 @@ TEST(Registry, semantic_type_rules_should_have_both_rules_if_overloaded_and_diff
 
 auto expectedDocsPbTxt = R"(
 udf {
+  name: "scalar1"
   brief: "This function adds two numbers: c = a + b"
   scalar_udf_doc {
     args {
@@ -577,6 +578,7 @@ udf {
   }
 }
 udf {
+  name: "count"
   brief: "This function computes the sum of a list of numbers."
   desc: "The detailed version of this."
   examples {
