@@ -1,4 +1,5 @@
 #include "src/carnot/planner/docs/doc_extractor.h"
+#include "src/carnot/udf_exporter/udf_exporter.h"
 
 #include <fstream>
 
@@ -23,6 +24,9 @@ StatusOr<docspb::InternalPXLDocs> ExtractDocs() {
     auto mod_doc = extractor.ExtractDoc(module);
     PL_RETURN_IF_ERROR(mod_doc.ToProto(parent.add_docstring_nodes()));
   }
+  // Extract the udfs
+  auto doc = udfexporter::ExportUDFDocs();
+  *(parent.mutable_udf_docs()) = doc;
   return parent;
 }
 

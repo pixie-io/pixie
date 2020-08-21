@@ -43,6 +43,15 @@ TEST_F(UDFExporterTest, udf_proto) {
   EXPECT_TRUE(uda_status.ConsumeValueOrDie() == types::INT64);
 }
 
+TEST_F(UDFExporterTest, docs_proto) {
+  auto docs = ExportUDFDocs();
+  absl::flat_hash_set<std::string> names;
+  for (const auto& doc : docs.udf()) {
+    names.insert(doc.name());
+  }
+  EXPECT_TRUE(names.contains("bin"));
+}
+
 }  // namespace udfexporter
 }  // namespace carnot
 }  // namespace pl

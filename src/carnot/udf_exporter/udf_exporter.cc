@@ -18,6 +18,14 @@ StatusOr<std::unique_ptr<planner::RegistryInfo>> ExportUDFInfo() {
   return registry_info;
 }
 
+udfspb::Docs ExportUDFDocs() {
+  udf::Registry registry("udf_registry");
+
+  vizier::funcs::VizierFuncFactoryContext ctx;
+  vizier::funcs::RegisterFuncsOrDie(ctx, &registry);
+  return registry.ToDocsProto();
+}
+
 }  // namespace udfexporter
 }  // namespace carnot
 }  // namespace pl

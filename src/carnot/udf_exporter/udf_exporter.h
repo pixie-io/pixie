@@ -20,6 +20,13 @@ namespace udfexporter {
  */
 StatusOr<std::unique_ptr<planner::RegistryInfo>> ExportUDFInfo();
 
+/**
+ * @brief ExportUDFDocs loads all the udfs into the registry and exports the docs.
+ *
+ * @return udfspb::Docs
+ */
+udfspb::Docs ExportUDFDocs();
+
 }  // namespace udfexporter
 }  // namespace carnot
 }  // namespace pl
