@@ -141,10 +141,13 @@ class LessThanEqualUDF : public udf::ScalarUDF {
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1 <= b2; }
 };
 
+udf::ScalarUDFDocBuilder BinDoc();
+
 template <typename TReturn, typename TArg1, typename TArg2>
 class BinUDF : public udf::ScalarUDF {
  public:
   TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val - (b1.val % b2.val); }
+  static udf::ScalarUDFDocBuilder Doc() { return BinDoc(); }
 };
 
 // Special instantitization to handle float to int conversion
@@ -154,6 +157,7 @@ class BinUDF<TReturn, types::Float64Value, TArg2> : public udf::ScalarUDF {
   TReturn Exec(FunctionContext*, Float64Value b1, Int64Value b2) {
     return static_cast<int64_t>(b1.val) - (static_cast<int64_t>(b1.val) % b2.val);
   }
+  static udf::ScalarUDFDocBuilder Doc() { return BinDoc(); }
 };
 
 // TODO(philkuz, nserrino) Move decimal places to be a constructor arg after PL-1048 is done.
@@ -188,6 +192,15 @@ class MeanUDA : public udf::UDA {
   Status Deserialize(FunctionContext*, const StringValue& data) {
     info_ = *reinterpret_cast<const MeanInfo*>(data.data());
     return Status::OK();
+  }
+  static udf::UDADocBuilder Doc() {
+    return udf::UDADocBuilder("Calculate the arithmetic mean.")
+        .Details(
+            "Calculates the arithmetic mean by summing the values then dividing by the number of "
+            "values.")
+        .Example("df = df.agg(mean=('latency_ms', px.mean))")
+        .Arg("arg", "The data to average.")
+        .Returns("The mean of the data.");
   }
 
  protected:
@@ -282,6 +295,12 @@ class MinUDA : public udf::UDA {
     min_ =
         *reinterpret_cast<const typename types::ValueTypeTraits<TArg>::native_type*>(data.data());
     return Status::OK();
+  }
+  static udf::UDADocBuilder Doc() {
+    return udf::UDADocBuilder("Returns the minimum.")
+        .Example("df = df.agg(min_latency=('latency_ms', px.min))")
+        .Arg("arg", "The data on which to apply the function.")
+        .Returns("The minimum.");
   }
 
  protected:

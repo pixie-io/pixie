@@ -6,6 +6,15 @@ namespace pl {
 namespace carnot {
 namespace builtins {
 
+udf::ScalarUDFDocBuilder BinDoc() {
+  return udf::ScalarUDFDocBuilder("Rounds value to the nearest multiple.")
+      .Details("Takes the passed in value(s) and bin them to the nearest multiple of a bin.")
+      .Example("# bin column b to multiples of 50\\ndf.a = px.bin(df.b, 50)")
+      .Arg("value", "The value to bin.")
+      .Arg("bin", "The bin value to clip to.")
+      .Returns("The value rounded down to the nearest multiple of bin.");
+}
+
 void RegisterMathOpsOrDie(udf::Registry* registry) {
   CHECK(registry != nullptr);
   /*****************************************
