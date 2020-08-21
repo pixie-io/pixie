@@ -153,6 +153,96 @@ TEST_P(DwarfReaderTest, GetStructMemberOffsetUnconventional) {
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("runtime.g", "goid"), 192);
 }
 
+TEST_P(DwarfReaderTest, CppGetStructSpec) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(kCppBinaryPath, p.index));
+
+  EXPECT_OK_AND_EQ(
+      dwarf_reader->GetStructSpec("OuterStruct"),
+      (std::vector{
+          StructSpecEntry{.offset = 0,
+                          .size = 8,
+                          .type_info = {.type = VarType::kBaseType, .type_name = "long int"},
+                          .path = ".O0"},
+          StructSpecEntry{.offset = 8,
+                          .size = 1,
+                          .type_info = {.type = VarType::kBaseType, .type_name = "bool"},
+                          .path = ".O1.M0.L0"},
+          StructSpecEntry{.offset = 12,
+                          .size = 4,
+                          .type_info = {.type = VarType::kBaseType, .type_name = "int"},
+                          .path = ".O1.M0.L1"},
+          StructSpecEntry{.offset = 16,
+                          .size = 8,
+                          .type_info = {.type = VarType::kPointer, .type_name = "long int*"},
+                          .path = ".O1.M0.L2"},
+          StructSpecEntry{.offset = 24,
+                          .size = 1,
+                          .type_info = {.type = VarType::kBaseType, .type_name = "bool"},
+                          .path = ".O1.M1"},
+          StructSpecEntry{.offset = 32,
+                          .size = 1,
+                          .type_info = {.type = VarType::kBaseType, .type_name = "bool"},
+                          .path = ".O1.M2.L0"},
+          StructSpecEntry{.offset = 36,
+                          .size = 4,
+                          .type_info = {.type = VarType::kBaseType, .type_name = "int"},
+                          .path = ".O1.M2.L1"},
+          StructSpecEntry{.offset = 40,
+                          .size = 8,
+                          .type_info = {.type = VarType::kPointer, .type_name = "long int*"},
+                          .path = ".O1.M2.L2"},
+      }));
+
+  EXPECT_NOT_OK(dwarf_reader->GetStructSpec("Bogus"));
+}
+
+TEST_P(DwarfReaderTest, GoGetStructSpec) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(kGoBinaryPath, p.index));
+
+  EXPECT_OK_AND_EQ(
+      dwarf_reader->GetStructSpec("main.OuterStruct"),
+      (std::vector{
+          StructSpecEntry{.offset = 0,
+                          .size = 8,
+                          .type_info = {.type = VarType::kBaseType, .type_name = "int64"},
+                          .path = ".O0"},
+          StructSpecEntry{.offset = 8,
+                          .size = 1,
+                          .type_info = {.type = VarType::kBaseType, .type_name = "bool"},
+                          .path = ".O1.M0.L0"},
+          StructSpecEntry{.offset = 12,
+                          .size = 4,
+                          .type_info = {.type = VarType::kBaseType, .type_name = "int32"},
+                          .path = ".O1.M0.L1"},
+          StructSpecEntry{.offset = 16,
+                          .size = 8,
+                          .type_info = {.type = VarType::kPointer, .type_name = "*int64"},
+                          .path = ".O1.M0.L2"},
+          StructSpecEntry{.offset = 24,
+                          .size = 1,
+                          .type_info = {.type = VarType::kBaseType, .type_name = "bool"},
+                          .path = ".O1.M1"},
+          StructSpecEntry{.offset = 32,
+                          .size = 1,
+                          .type_info = {.type = VarType::kBaseType, .type_name = "bool"},
+                          .path = ".O1.M2.L0"},
+          StructSpecEntry{.offset = 36,
+                          .size = 4,
+                          .type_info = {.type = VarType::kBaseType, .type_name = "int32"},
+                          .path = ".O1.M2.L1"},
+          StructSpecEntry{.offset = 40,
+                          .size = 8,
+                          .type_info = {.type = VarType::kPointer, .type_name = "*int64"},
+                          .path = ".O1.M2.L2"},
+      }));
+
+  EXPECT_NOT_OK(dwarf_reader->GetStructSpec("main.Bogus"));
+}
+
 TEST_P(DwarfReaderTest, CppArgumentTypeByteSize) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,

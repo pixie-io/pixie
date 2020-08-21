@@ -46,6 +46,23 @@ type PointerWrapperWrapperWrapper struct {
 	V2  int64
 }
 
+type LowerStruct struct {
+    L0 bool
+    L1 int32
+    L2 *int64
+}
+
+type MidStruct struct {
+    M0 LowerStruct
+    M1 bool
+    M2 LowerStruct
+}
+
+type OuterStruct struct {
+    O0 int64
+    O1 MidStruct
+}
+
 func PointerWrapperWrapperWrapperFunc(p PointerWrapperWrapperWrapper) int {
 	return *p.Ptr.Val.Ptr // *(p.Ptr->Val.Ptr)
 
@@ -90,6 +107,8 @@ func BytesToHex(uuid []byte, name string) string {
 }
 
 func main() {
+	x := OuterStruct{}
+	fmt.Println(x.O1.M0.L0)
 	for true {
 		v := Vertex{3, 4}
 		v2 := Vertex{2, 9}

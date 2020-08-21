@@ -16,6 +16,23 @@ struct ABCStruct64 {
   int64_t c;
 };
 
+struct LowerStruct {
+  bool L0;
+  int32_t L1;
+  int64_t* L2;
+};
+
+struct MidStruct {
+  LowerStruct M0;
+  bool M1;
+  LowerStruct M2;
+};
+
+struct OuterStruct {
+  int64_t O0;
+  MidStruct O1;
+};
+
 // Using extern C to avoid name mangling (which just keeps the test a bit more readable).
 extern "C" {
 int CanYouFindThis(int a, int b) { return a + b; }
@@ -37,7 +54,8 @@ ABCStruct64 ABCSumMixed(ABCStruct32 x, ABCStruct64 y, int32_t z_a, int64_t z_b, 
 }
 
 void SomeFunctionWithPointerArgs(int* a, ABCStruct32* x) { x->a = *a; a++; }
-}
+
+} // extern "C"
 
 namespace pl {
 namespace testing {
@@ -53,6 +71,9 @@ class Foo {
 }  // namespace pl
 
 int main() {
+  OuterStruct x;
+  (void)(x);
+
   while (true) {
     int sum = CanYouFindThis(3, 4);
     std::cout << sum << std::endl;

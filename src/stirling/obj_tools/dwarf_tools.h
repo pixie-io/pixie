@@ -87,7 +87,23 @@ struct RetValInfo {
   size_t byte_size = 0;
 
   std::string ToString() const {
-    return absl::Substitute("type_info=$0 byte_size=$1", type_info.ToString(), byte_size);
+    return absl::Substitute("type_info=[$0] byte_size=$1", type_info.ToString(), byte_size);
+  }
+};
+
+struct StructSpecEntry {
+  uint64_t offset = 0;
+  uint64_t size = 0;
+  TypeInfo type_info;
+
+  // The path encoding  the original data source structure, before flattening.
+  // This field uses "JSON pointer" syntax to simplify decoding the data into JSON.
+  // https://rapidjson.org/md_doc_pointer.html
+  std::string path;
+
+  std::string ToString() const {
+    return absl::Substitute("offset=$0 size=$1 type_info=[$2] path=$3", offset, size,
+                            type_info.ToString(), path);
   }
 };
 
@@ -111,6 +127,10 @@ inline bool operator==(const RetValInfo& a, const RetValInfo& b) {
   return a.type_info == b.type_info && a.byte_size == b.byte_size;
 }
 
+inline bool operator==(const StructSpecEntry& a, const StructSpecEntry& b) {
+  return a.offset == b.offset && a.size == b.size && a.type_info == b.type_info && a.path == b.path;
+}
+
 inline std::ostream& operator<<(std::ostream& os, const TypeInfo& x) {
   os << x.ToString();
   return os;
@@ -132,6 +152,11 @@ inline std::ostream& operator<<(std::ostream& os, const ArgInfo& x) {
 }
 
 inline std::ostream& operator<<(std::ostream& os, const RetValInfo& x) {
+  os << x.ToString();
+  return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const StructSpecEntry& x) {
   os << x.ToString();
   return os;
 }
@@ -197,6 +222,29 @@ class DwarfReader {
   }
 
   /**
+   * Returns a struct spec, defining all the base type members of a struct in a flattened form.
+   * For use to decode raw bytes (which are also flat).
+   *
+   * Each base type has:
+   *  - offset: where the data is located in the raw bytes.
+   *  - type_info: the type of the field (useful for knowing how to interpret the bytes).
+   *  - path: encodes the source of the data using JSON pointer syntax,
+   *                  so a raw struct data block can be easily decoded into JSON.
+   *
+   * offset=0 size=8 type_info=[type=kBaseType type_name=long int] path=.O0
+   * offset=8 size=1 type_info=[type=kBaseType type_name=bool] path=.O1.M0.L0
+   * offset=12 size=4 type_info=[type=kBaseType type_name=int] path=.O1.M0.L1
+   * offset=16 size=8 type_info=[type=kPointer type_name=long int*] path=.O1.M0.L2
+   * offset=24 size=1 type_info=[type=kBaseType type_name=bool] path=.O1.M1
+   * offset=32 size=1 type_info=[type=kBaseType type_name=bool] path=.O1.M2.L0
+   * offset=36 size=4 type_info=[type=kBaseType type_name=int] path=.O1.M2.L1
+   *
+   * @param struct_name Full name of the struct.
+   * @return vector of entries in order of layout (offset field is monotonically increasing).
+   */
+  StatusOr<std::vector<StructSpecEntry>> GetStructSpec(std::string_view struct_name);
+
+  /**
    * Returns the type pointed to by a pointer type.
    */
   StatusOr<TypeInfo> DereferencePointerType(std::string type_name);
@@ -257,6 +305,12 @@ class DwarfReader {
   static Status GetMatchingDIEs(llvm::DWARFContext::unit_iterator_range CUs, std::string_view name,
                                 std::optional<llvm::dwarf::Tag> tag,
                                 std::vector<llvm::DWARFDie>* dies_out);
+
+  // Walks the struct_die for all members, recursively visiting any members which are also structs,
+  // to capture information of all base type members of the struct in a flattened form.
+  // See GetStructSpec() for the public interface, and the output format.
+  Status FlattenedStructSpec(const llvm::DWARFDie& struct_die, std::vector<StructSpecEntry>* output,
+                             const std::string& path_prefix, int offset);
 
   // Records the source language of the DWARF information.
   llvm::dwarf::SourceLanguage source_language_;

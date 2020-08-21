@@ -7,6 +7,8 @@
 
 #include "src/stirling/obj_tools/init.h"
 
+#include "src/shared/types/proto/types.pb.h"
+
 namespace pl {
 namespace stirling {
 namespace dwarf_tools {
@@ -552,6 +554,53 @@ StatusOr<StructMemberInfo> DwarfReader::GetStructMemberInfo(std::string_view str
   }
 
   return error::Internal("Could not find member.");
+}
+
+StatusOr<std::vector<StructSpecEntry>> DwarfReader::GetStructSpec(std::string_view struct_name) {
+  StructMemberInfo member_info;
+
+  PL_ASSIGN_OR_RETURN(const DWARFDie& struct_die,
+                      GetMatchingDIE(struct_name, llvm::dwarf::DW_TAG_structure_type));
+
+  std::vector<StructSpecEntry> output;
+  // Start at the beginning (no prefix and offset 0).
+  std::string path_prefix = "";
+  int offset = 0;
+  PL_RETURN_IF_ERROR(FlattenedStructSpec(struct_die, &output, path_prefix, offset));
+
+  return output;
+}
+
+Status DwarfReader::FlattenedStructSpec(const llvm::DWARFDie& struct_die,
+                                        std::vector<StructSpecEntry>* output,
+                                        const std::string& path_prefix, int offset) {
+  for (const auto& die : struct_die.children()) {
+    if ((die.getTag() == llvm::dwarf::DW_TAG_member)) {
+      std::string path = absl::StrCat(path_prefix, ".", GetShortName(die));
+      PL_ASSIGN_OR_RETURN(int member_offset, GetMemberOffset(die));
+
+      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+      PL_ASSIGN_OR_RETURN(VarType type, GetType(type_die));
+
+      if (type == VarType::kBaseType || type == VarType::kPointer) {
+        PL_ASSIGN_OR_RETURN(std::string type_name, GetTypeName(type_die));
+        PL_ASSIGN_OR_RETURN(int size, GetTypeByteSize(type_die));
+
+        StructSpecEntry entry;
+        entry.offset = offset + member_offset;
+        entry.size = size;
+        entry.type_info.type_name = std::move(type_name);
+        entry.type_info.type = type;
+        entry.path = path;
+
+        output->push_back(std::move(entry));
+      } else {
+        PL_RETURN_IF_ERROR(FlattenedStructSpec(type_die, output, path, offset + member_offset));
+      }
+    }
+  }
+
+  return Status::OK();
 }
 
 StatusOr<TypeInfo> DwarfReader::DereferencePointerType(std::string type_name) {

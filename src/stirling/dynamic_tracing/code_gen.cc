@@ -862,9 +862,8 @@ std::vector<std::string> GenBlobType(int size) {
   // Size must be a power of 2.
   DCHECK_EQ(size & (size - 1), 0);
 
-  std::string size_str = std::to_string(size);
   return {
-      absl::Substitute("struct blob$0 {", size_str),
+      absl::Substitute("struct blob$0 {", size),
       "  uint64_t len;",
       absl::Substitute("  uint8_t buf[$0-sizeof(uint64_t)-1];", size),
       "  // To keep 4.14 kernel verifier happy, we copy an extra byte.",
