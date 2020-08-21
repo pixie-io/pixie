@@ -14,6 +14,7 @@ namespace distributed {
 StatusOr<bool> SetSourceGroupGRPCAddressRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, GRPCSourceGroup())) {
     static_cast<GRPCSourceGroupIR*>(ir_node)->SetGRPCAddress(grpc_address_);
+    static_cast<GRPCSourceGroupIR*>(ir_node)->SetSSLTargetName(ssl_targetname_);
     return true;
   }
   return false;

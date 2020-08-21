@@ -247,6 +247,7 @@ carnot_info {
   has_data_store: false
   processes_data: false
   accepts_remote_sources: true
+  ssl_targetname: "kelvin.pl.svc"
 }
 )proto";
 
@@ -280,7 +281,7 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
   PL_RETURN_IF_ERROR(info->Init(info_pb));
   auto compiler_state = std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(),
-                                                        0, "result_addr");
+                                                        0, "result_addr", "result_hostname");
   compiler::ModuleHandler module_handler;
   compiler::MutationsIR dynamic_trace;
   PL_ASSIGN_OR_RETURN(auto ast_walker,
@@ -903,9 +904,9 @@ class ASTVisitorTest : public OperatorTests {
     relation_map_->emplace("http_events", http_events_relation);
 
     auto max_output_rows_per_table = 10000;
-    compiler_state_ =
-        std::make_unique<CompilerState>(std::move(relation_map_), registry_info_.get(), time_now,
-                                        max_output_rows_per_table, "result_addr");
+    compiler_state_ = std::make_unique<CompilerState>(
+        std::move(relation_map_), registry_info_.get(), time_now, max_output_rows_per_table,
+        "result_addr", "result_ssl_targetname");
   }
 
   StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query) {
@@ -1175,6 +1176,8 @@ template <>
 void CompareCloneNode(GRPCSinkIR* new_ir, GRPCSinkIR* old_ir, const std::string& err_string) {
   EXPECT_EQ(new_ir->DestinationAddressSet(), old_ir->DestinationAddressSet()) << err_string;
   EXPECT_EQ(new_ir->destination_address(), old_ir->destination_address()) << err_string;
+  EXPECT_EQ(new_ir->destination_ssl_targetname(), old_ir->destination_ssl_targetname())
+      << err_string;
   EXPECT_EQ(new_ir->destination_id(), old_ir->destination_id()) << err_string;
   EXPECT_EQ(new_ir->has_destination_id(), old_ir->has_destination_id()) << err_string;
   EXPECT_EQ(new_ir->has_output_table(), old_ir->has_output_table()) << err_string;

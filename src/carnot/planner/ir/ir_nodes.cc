@@ -1339,6 +1339,7 @@ Status GRPCSinkIR::CopyFromNodeImpl(const IRNode* node,
   sink_type_ = grpc_sink->sink_type_;
   destination_id_ = grpc_sink->destination_id_;
   destination_address_ = grpc_sink->destination_address_;
+  destination_ssl_targetname_ = grpc_sink->destination_ssl_targetname_;
   name_ = grpc_sink->name_;
   out_columns_ = grpc_sink->out_columns_;
   return Status::OK();
@@ -1422,6 +1423,8 @@ Status GRPCSinkIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_grpc_sink_op();
   op->set_op_type(planpb::GRPC_SINK_OPERATOR);
   pb->set_address(destination_address());
+  pb->mutable_connection_options()->set_ssl_targetname(destination_ssl_targetname());
+
   if (has_destination_id()) {
     pb->set_grpc_source_id(destination_id());
   } else if (has_output_table()) {
@@ -1536,6 +1539,7 @@ Status GRPCSourceGroupIR::AddGRPCSink(GRPCSinkIR* sink_op) {
                               DebugString());
   }
   sink_op->SetDestinationAddress(grpc_address_);
+  sink_op->SetDestinationSSLTargetName(ssl_targetname_);
   dependent_sinks_.emplace_back(sink_op);
   return Status::OK();
 }

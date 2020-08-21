@@ -41,9 +41,9 @@ StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
                       MakeRelationMapFromDistributedState(logical_state.distributed_state()));
   // Create a CompilerState obj using the relation map and grabbing the current time.
 
-  return std::make_unique<planner::CompilerState>(std::move(rel_map), registry_info,
-                                                  pl::CurrentTimeNS(), max_output_rows_per_table,
-                                                  logical_state.result_address());
+  return std::make_unique<planner::CompilerState>(
+      std::move(rel_map), registry_info, pl::CurrentTimeNS(), max_output_rows_per_table,
+      logical_state.result_address(), logical_state.result_ssl_targetname());
 }
 
 StatusOr<std::unique_ptr<LogicalPlanner>> LogicalPlanner::Create(const udfspb::UDFInfo& udf_info) {

@@ -23,13 +23,15 @@ using distributedpb::CarnotInfo;
  */
 class SetSourceGroupGRPCAddressRule : public Rule {
  public:
-  explicit SetSourceGroupGRPCAddressRule(const std::string& grpc_address)
+  SetSourceGroupGRPCAddressRule(const std::string& grpc_address, const std::string& ssl_targetname)
       : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false),
-        grpc_address_(grpc_address) {}
+        grpc_address_(grpc_address),
+        ssl_targetname_(ssl_targetname) {}
 
  private:
   StatusOr<bool> Apply(IRNode* node) override;
   std::string grpc_address_;
+  std::string ssl_targetname_;
 };
 
 /**
@@ -43,7 +45,8 @@ class DistributedSetSourceGroupGRPCAddressRule : public DistributedRule {
 
  protected:
   StatusOr<bool> Apply(CarnotInstance* carnot_instance) override {
-    SetSourceGroupGRPCAddressRule rule(carnot_instance->carnot_info().grpc_address());
+    SetSourceGroupGRPCAddressRule rule(carnot_instance->carnot_info().grpc_address(),
+                                       carnot_instance->carnot_info().ssl_targetname());
     return rule.Execute(carnot_instance->plan());
   }
 };

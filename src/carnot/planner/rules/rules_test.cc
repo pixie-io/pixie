@@ -41,8 +41,8 @@ class RulesTest : public OperatorTests {
     rel_map->emplace("cpu", cpu_relation);
     rel_map->emplace("semantic_table", semantic_rel);
 
-    compiler_state_ =
-        std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now, "result_addr");
+    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now,
+                                                      "result_addr", "result_ssl_targetname");
     md_handler = MetadataHandler::Create();
   }
   FilterIR* MakeFilter(OperatorIR* parent) {
@@ -2304,8 +2304,9 @@ TEST_F(RulesTest, AddLimitToBatchResultSinkRuleTest_basic) {
   MemorySourceIR* src = MakeMemSource(MakeRelation());
   GRPCSinkIR* sink = MakeGRPCSink(src, "foo", {});
 
-  auto compiler_state = std::make_unique<CompilerState>(std::make_unique<RelationMap>(),
-                                                        info_.get(), time_now, 1000, "result_addr");
+  auto compiler_state =
+      std::make_unique<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now, 1000,
+                                      "result_addr", "result_ssl_targetname");
 
   AddLimitToBatchResultSinkRule rule(compiler_state.get());
   auto result = rule.Execute(graph.get());
@@ -2328,8 +2329,9 @@ TEST_F(RulesTest, AddLimitToBatchResultSinkRuleTest_overwrite_higher) {
   auto limit = graph->CreateNode<LimitIR>(ast, src, 1001).ValueOrDie();
   MakeMemSink(limit, "foo", {});
 
-  auto compiler_state = std::make_unique<CompilerState>(std::make_unique<RelationMap>(),
-                                                        info_.get(), time_now, 1000, "result_addr");
+  auto compiler_state =
+      std::make_unique<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now, 1000,
+                                      "result_addr", "result_ssl_targetname");
 
   AddLimitToBatchResultSinkRule rule(compiler_state.get());
   auto result = rule.Execute(graph.get());
@@ -2347,8 +2349,9 @@ TEST_F(RulesTest, AAddLimitToBatchResultSinkRuleTest_dont_overwrite_lower) {
   auto limit = graph->CreateNode<LimitIR>(ast, src, 999).ValueOrDie();
   MakeMemSink(limit, "foo", {});
 
-  auto compiler_state = std::make_unique<CompilerState>(std::make_unique<RelationMap>(),
-                                                        info_.get(), time_now, 1000, "result_addr");
+  auto compiler_state =
+      std::make_unique<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now, 1000,
+                                      "result_addr", "result_ssl_targetname");
 
   AddLimitToBatchResultSinkRule rule(compiler_state.get());
   auto result = rule.Execute(graph.get());
@@ -2360,8 +2363,9 @@ TEST_F(RulesTest, AddLimitToBatchResultSinkRuleTest_skip_if_no_limit) {
   MemorySourceIR* src = MakeMemSource(MakeRelation());
   MakeMemSink(src, "foo", {});
 
-  auto compiler_state = std::make_unique<CompilerState>(std::make_unique<RelationMap>(),
-                                                        info_.get(), time_now, "result_addr");
+  auto compiler_state =
+      std::make_unique<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now,
+                                      "result_addr", "result_ssl_targetname");
 
   AddLimitToBatchResultSinkRule rule(compiler_state.get());
   auto result = rule.Execute(graph.get());

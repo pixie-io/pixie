@@ -214,6 +214,7 @@ carnot_info {
   processes_data: true
   accepts_remote_sources: true
   asid: 456
+  ssl_targetname: "kelvin.pl.svc"
 }
 )proto";
 
@@ -244,6 +245,7 @@ carnot_info {
   processes_data: false
   accepts_remote_sources: true
   asid: 456
+  ssl_targetname: "kelvin.pl.svc"
 }
 )proto";
 

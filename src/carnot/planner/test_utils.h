@@ -263,6 +263,7 @@ has_data_store: false
 processes_data: true
 accepts_remote_sources: true
 asid: $2
+ssl_targetname: "kelvin.pl.svc"
 )proto";
 
 constexpr char kTableInfoTpl[] = R"proto(
@@ -1055,6 +1056,7 @@ carnot_info {
   processes_data: true
   accepts_remote_sources: true
   asid: 456
+  ssl_targetname: "kelvin.pl.svc"
 }
 schema_info {
   name: "table"
@@ -1110,6 +1112,7 @@ carnot_info {
   processes_data: true
   accepts_remote_sources: true
   asid: 456
+  ssl_targetname: "kelvin.pl.svc"
 }
 )proto";
 
@@ -1136,6 +1139,7 @@ carnot_info {
   processes_data: true
   accepts_remote_sources: true
   asid: 456
+  ssl_targetname: "kelvin.pl.svc"
 }
 carnot_info {
   agent_id {
@@ -1148,6 +1152,7 @@ carnot_info {
   processes_data: true
   accepts_remote_sources: true
   asid: 222
+  ssl_targetname: "kelvin.pl.svc"
 }
 carnot_info {
   agent_id {
@@ -1160,6 +1165,7 @@ carnot_info {
   processes_data: true
   accepts_remote_sources: true
   asid: 333
+  ssl_targetname: "kelvin.pl.svc"
 }
 )proto";
 

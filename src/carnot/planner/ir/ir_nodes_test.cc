@@ -866,6 +866,7 @@ TEST_F(CloneTests, internal_grpc_sink) {
   auto mem_source = MakeMemSource();
   GRPCSinkIR* grpc_sink = MakeGRPCSink(mem_source, 123);
   grpc_sink->SetDestinationAddress("1111");
+  grpc_sink->SetDestinationSSLTargetName("kelvin.pl.svc");
 
   auto out = graph->Clone();
   EXPECT_OK(out.status());
@@ -883,6 +884,7 @@ TEST_F(CloneTests, external_grpc_sink) {
   auto mem_source = MakeMemSource();
   GRPCSinkIR* grpc_sink = MakeGRPCSink(mem_source, "output_table", std::vector<std::string>{"foo"});
   grpc_sink->SetDestinationAddress("1111");
+  grpc_sink->SetDestinationSSLTargetName("vizier-query-broker.pl.svc");
 
   auto out = graph->Clone();
   EXPECT_OK(out.status());
@@ -1054,21 +1056,26 @@ constexpr char kExpectedInternalGRPCSinkPb[] = R"proto(
   grpc_sink_op {
     address: "$0"
     grpc_source_id: $1
+    connection_options {
+      ssl_targetname: "$2"
+    }
   }
 )proto";
 
 TEST_F(ToProtoTests, internal_grpc_sink_ir) {
   int64_t destination_id = 123;
   std::string grpc_address = "1111";
+  std::string ssl_targetname = "kelvin.pl.svc";
   auto mem_src = MakeMemSource();
   auto grpc_sink = MakeGRPCSink(mem_src, destination_id);
   grpc_sink->SetDestinationAddress(grpc_address);
+  grpc_sink->SetDestinationSSLTargetName(ssl_targetname);
 
   planpb::Operator pb;
   ASSERT_OK(grpc_sink->ToProto(&pb));
 
-  EXPECT_THAT(
-      pb, EqualsProto(absl::Substitute(kExpectedInternalGRPCSinkPb, grpc_address, destination_id)));
+  EXPECT_THAT(pb, EqualsProto(absl::Substitute(kExpectedInternalGRPCSinkPb, grpc_address,
+                                               destination_id, ssl_targetname)));
 }
 
 constexpr char kExpectedExternalGRPCSinkPb[] = R"proto(
@@ -1090,21 +1097,26 @@ constexpr char kExpectedExternalGRPCSinkPb[] = R"proto(
       column_semantic_types: ST_NONE
       column_semantic_types: ST_NONE
     }
+    connection_options {
+      ssl_targetname: "$2"
+    }
   }
 )proto";
 
 TEST_F(ToProtoTests, external_grpc_sink_ir) {
   std::string grpc_address = "1111";
+  std::string ssl_targetname = "kelvin.pl.svc";
   auto mem_src = MakeMemSource();
   GRPCSinkIR* grpc_sink = MakeGRPCSink(mem_src, "output_table", std::vector<std::string>{});
   ASSERT_OK(grpc_sink->SetRelation(MakeRelation()));
   grpc_sink->SetDestinationAddress(grpc_address);
+  grpc_sink->SetDestinationSSLTargetName(ssl_targetname);
 
   planpb::Operator pb;
   ASSERT_OK(grpc_sink->ToProto(&pb));
 
-  EXPECT_THAT(
-      pb, EqualsProto(absl::Substitute(kExpectedExternalGRPCSinkPb, grpc_address, "output_table")));
+  EXPECT_THAT(pb, EqualsProto(absl::Substitute(kExpectedExternalGRPCSinkPb, grpc_address,
+                                               "output_table", ssl_targetname)));
 }
 
 constexpr char kIRProto[] = R"proto(

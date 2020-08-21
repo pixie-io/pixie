@@ -1660,9 +1660,14 @@ class GRPCSinkIR : public OperatorIR {
   int64_t destination_id() const { return destination_id_; }
   void SetDestinationID(int64_t destination_id) { destination_id_ = destination_id; }
   void SetDestinationAddress(const std::string& address) { destination_address_ = address; }
+  // If needed, specify the ssl target name override for the GRPC sink destination.
+  void SetDestinationSSLTargetName(std::string_view ssl_targetname) {
+    destination_ssl_targetname_ = ssl_targetname;
+  }
 
   const std::string& destination_address() const { return destination_address_; }
   bool DestinationAddressSet() const { return destination_address_ != ""; }
+  const std::string& destination_ssl_targetname() const { return destination_ssl_targetname_; }
 
   bool has_output_table() const { return sink_type_ == GRPCSinkType::kExternal; }
   std::string name() const { return name_; }
@@ -1694,6 +1699,7 @@ class GRPCSinkIR : public OperatorIR {
 
  private:
   std::string destination_address_ = "";
+  std::string destination_ssl_targetname_ = "";
   GRPCSinkType sink_type_ = GRPCSinkType::kTypeNotSet;
   // Used when GRPCSinkType = kInternal.
   int64_t destination_id_ = -1;
@@ -1762,6 +1768,7 @@ class GRPCSourceGroupIR : public OperatorIR {
   }
 
   void SetGRPCAddress(const std::string& grpc_address) { grpc_address_ = grpc_address; }
+  void SetSSLTargetName(const std::string& ssl_targetname) { ssl_targetname_ = ssl_targetname; }
 
   /**
    * @brief Associate the passed in GRPCSinkOperator with this Source Group. The sink_op passed in
@@ -1797,6 +1804,7 @@ class GRPCSourceGroupIR : public OperatorIR {
  private:
   int64_t source_id_ = -1;
   std::string grpc_address_ = "";
+  std::string ssl_targetname_ = "";
   std::vector<GRPCSinkIR*> dependent_sinks_;
 };
 

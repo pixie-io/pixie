@@ -49,6 +49,7 @@ carnot_info {
   has_data_store: false
   processes_data: true
   accepts_remote_sources: true
+  ssl_targetname: "kelvin.pl.svc"
 }
 schema_info {
   name: "table"
