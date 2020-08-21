@@ -6,6 +6,7 @@ go_library(
     srcs = [
         "clock.go",
         "clutils.go",
+        "erroraccumulator.go",
         "genutils.go",
         "uuid.go",
     ],
