@@ -21,6 +21,11 @@ using ::pl::stirling::dwarf_tools::StructMemberInfo;
 using ::pl::stirling::dwarf_tools::TypeInfo;
 using ::pl::stirling::dwarf_tools::VarType;
 
+using ::pl::stirling::dynamic_tracing::ir::physical::MapVariable;
+using ::pl::stirling::dynamic_tracing::ir::physical::MemberVariable;
+using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
+using ::pl::stirling::dynamic_tracing::ir::physical::StructVariable;
+
 //-----------------------------------------------------------------------------
 // Top-level code
 //-----------------------------------------------------------------------------
@@ -36,7 +41,7 @@ using ::pl::stirling::dwarf_tools::VarType;
 class Dwarvifier {
  public:
   Status Setup(const ir::shared::DeploymentSpec& deployment_spec, ir::shared::Language language);
-  Status Generate(const ir::logical::TracepointSpec input_program,
+  Status Generate(const ir::logical::TracepointSpec& input_program,
                   ir::physical::Program* output_program);
 
  private:
@@ -75,8 +80,10 @@ class Dwarvifier {
                              ir::physical::Probe* output_probe,
                              ir::physical::Program* output_program);
 
-  ir::physical::ScalarVariable* AddVariable(ir::physical::Probe* probe, const std::string& name,
-                                            ir::shared::ScalarType type);
+  // TVarType can be ScalarVariable, MemberVariable, etc.
+  template <typename TVarType>
+  TVarType* AddVariable(ir::physical::Probe* probe, const std::string& name,
+                        ir::shared::ScalarType type);
 
   Status GenerateMapValueStruct(const ir::logical::MapStashAction& stash_action_in,
                                 const std::string& struct_type_name,
@@ -94,8 +101,8 @@ class Dwarvifier {
   std::map<std::string, dwarf_tools::ArgInfo> args_map_;
   dwarf_tools::RetValInfo retval_info_;
 
-  // All defined ScalarVariable.
-  absl::flat_hash_map<std::string, ir::shared::ScalarType> scalar_var_types_;
+  // All defined variables.
+  absl::flat_hash_map<std::string, ir::shared::ScalarType> variables_;
 
   ir::shared::Language language_;
   std::vector<std::string> implicit_columns_;
@@ -281,7 +288,7 @@ Status Dwarvifier::Setup(const ir::shared::DeploymentSpec& deployment_spec,
   return Status::OK();
 }
 
-Status Dwarvifier::Generate(const ir::logical::TracepointSpec input_program,
+Status Dwarvifier::Generate(const ir::logical::TracepointSpec& input_program,
                             ir::physical::Program* output_program) {
   // Copy all maps.
   for (const auto& map : input_program.maps()) {
@@ -301,14 +308,28 @@ Status Dwarvifier::Generate(const ir::logical::TracepointSpec input_program,
   return Status::OK();
 }
 
-ir::physical::ScalarVariable* Dwarvifier::AddVariable(ir::physical::Probe* probe,
-                                                      const std::string& name,
-                                                      ir::shared::ScalarType type) {
-  auto* var = probe->add_vars()->mutable_scalar_var();
+template <typename TVarType>
+TVarType* Dwarvifier::AddVariable(ir::physical::Probe* probe, const std::string& name,
+                                  ir::shared::ScalarType type) {
+  TVarType* var;
+
+  if constexpr (std::is_same_v<TVarType, ScalarVariable>) {
+    var = probe->add_vars()->mutable_scalar_var();
+  } else if constexpr (std::is_same_v<TVarType, MemberVariable>) {
+    var = probe->add_vars()->mutable_member_var();
+  } else if constexpr (std::is_same_v<TVarType, StructVariable>) {
+    var = probe->add_vars()->mutable_struct_var();
+  } else if constexpr (std::is_same_v<TVarType, MapVariable>) {
+    var = probe->add_vars()->mutable_map_var();
+  } else {
+    COMPILE_TIME_ASSERT(false, "Unsupported ir::physical::Variable type");
+  }
+
   var->set_name(name);
   var->set_type(type);
 
-  scalar_var_types_[name] = type;
+  // Populate map, so we can lookup this variable later.
+  variables_[name] = type;
 
   return var;
 }
@@ -346,7 +367,7 @@ bool IsFunctionLatencySpecified(const ir::logical::Probe& probe) {
 Status Dwarvifier::GenerateProbe(const ir::logical::Probe& input_probe,
                                  ir::physical::Program* output_program) {
   // Some initial setup.
-  scalar_var_types_.clear();
+  variables_.clear();
   PL_ASSIGN_OR_RETURN(args_map_,
                       dwarf_reader_->GetFunctionArgInfo(input_probe.tracepoint().symbol()));
   PL_ASSIGN_OR_RETURN(retval_info_,
@@ -424,36 +445,41 @@ void Dwarvifier::AddSpecialVariables(ir::physical::Probe* output_probe) {
 //               For now, include them all for simplicity.
 void Dwarvifier::AddStandardVariables(ir::physical::Probe* output_probe) {
   // Add SP variable.
-  auto* sp_var = AddVariable(output_probe, kSPVarName, ir::shared::VOID_POINTER);
+  auto* sp_var = AddVariable<ScalarVariable>(output_probe, kSPVarName, ir::shared::VOID_POINTER);
   sp_var->set_reg(ir::physical::Register::SP);
 
   // Add tgid variable.
-  auto* tgid_var = AddVariable(output_probe, kTGIDVarName, ir::shared::ScalarType::INT32);
+  auto* tgid_var =
+      AddVariable<ScalarVariable>(output_probe, kTGIDVarName, ir::shared::ScalarType::INT32);
   tgid_var->set_builtin(ir::shared::BPFHelper::TGID);
 
   // Add tgid_pid variable.
-  auto* tgid_pid_var = AddVariable(output_probe, kTGIDPIDVarName, ir::shared::ScalarType::UINT64);
+  auto* tgid_pid_var =
+      AddVariable<ScalarVariable>(output_probe, kTGIDPIDVarName, ir::shared::ScalarType::UINT64);
   tgid_pid_var->set_builtin(ir::shared::BPFHelper::TGID_PID);
 
   // Add TGID start time (required for UPID construction).
-  auto* tgid_start_time_var =
-      AddVariable(output_probe, kTGIDStartTimeVarName, ir::shared::ScalarType::UINT64);
+  auto* tgid_start_time_var = AddVariable<ScalarVariable>(output_probe, kTGIDStartTimeVarName,
+                                                          ir::shared::ScalarType::UINT64);
   tgid_start_time_var->set_builtin(ir::shared::BPFHelper::TGID_START_TIME);
 
   // Add current time variable (for latency).
-  auto* ktime_var = AddVariable(output_probe, kKTimeVarName, ir::shared::ScalarType::UINT64);
+  auto* ktime_var =
+      AddVariable<ScalarVariable>(output_probe, kKTimeVarName, ir::shared::ScalarType::UINT64);
   ktime_var->set_builtin(ir::shared::BPFHelper::KTIME);
 
   // Add goid variable (if this is a go binary).
   if (language_ == ir::shared::Language::GOLANG) {
-    auto* goid_var = AddVariable(output_probe, kGOIDVarName, ir::shared::ScalarType::INT64);
+    auto* goid_var =
+        AddVariable<ScalarVariable>(output_probe, kGOIDVarName, ir::shared::ScalarType::INT64);
     goid_var->set_builtin(ir::shared::BPFHelper::GOID);
   }
 }
 
 void Dwarvifier::AddEntryProbeVariables(ir::physical::Probe* output_probe) {
   if ((language_ == ir::shared::C || language_ == ir::shared::CPP)) {
-    auto* parm_ptr_var = AddVariable(output_probe, kParmPtrVarName, ir::shared::VOID_POINTER);
+    auto* parm_ptr_var =
+        AddVariable<ScalarVariable>(output_probe, kParmPtrVarName, ir::shared::VOID_POINTER);
     parm_ptr_var->set_reg(ir::physical::Register::PARM_PTR);
   }
 }
@@ -461,10 +487,11 @@ void Dwarvifier::AddEntryProbeVariables(ir::physical::Probe* output_probe) {
 void Dwarvifier::AddRetProbeVariables(ir::physical::Probe* output_probe) {
   // Add return value variable for convenience.
   if ((language_ == ir::shared::C || language_ == ir::shared::CPP)) {
-    auto* rc_var = AddVariable(output_probe, kRCVarName, ir::shared::VOID_POINTER);
+    auto* rc_var = AddVariable<ScalarVariable>(output_probe, kRCVarName, ir::shared::VOID_POINTER);
     rc_var->set_reg(ir::physical::Register::RC);
 
-    auto* rc_ptr_var = AddVariable(output_probe, kRCPtrVarName, ir::shared::VOID_POINTER);
+    auto* rc_ptr_var =
+        AddVariable<ScalarVariable>(output_probe, kRCPtrVarName, ir::shared::VOID_POINTER);
     rc_ptr_var->set_reg(ir::physical::Register::RC_PTR);
   }
 }
@@ -484,6 +511,8 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
                                   const std::string& base_var,
                                   const std::vector<std::string_view>& components,
                                   ir::physical::Probe* output_probe) {
+  using ir::shared::Language;
+
   // String for . operator (eg. my_struct.field)
   static constexpr std::string_view kDotStr = "_D_";
 
@@ -505,7 +534,7 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
 
       absl::StrAppend(&name, kDerefStr);
 
-      auto* var = AddVariable(output_probe, name, pb_type);
+      auto* var = AddVariable<ScalarVariable>(output_probe, name, pb_type);
       var->mutable_memory()->set_base(base);
       var->mutable_memory()->set_offset(offset);
 
@@ -533,24 +562,25 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
   // Note that the very last created variable uses the original id.
   // This is important so that references in the original probe are maintained.
 
-  ir::physical::ScalarVariable* var = nullptr;
+  ScalarVariable* var = nullptr;
 
   if (type_info.type == VarType::kBaseType) {
     PL_ASSIGN_OR_RETURN(ir::shared::ScalarType scalar_type,
                         VarTypeToProtoScalarType(type_info, language_));
 
-    var = AddVariable(output_probe, var_name, scalar_type);
+    var = AddVariable<ScalarVariable>(output_probe, var_name, scalar_type);
   } else if (type_info.type == VarType::kStruct) {
     // Strings and byte arrays are special cases of structs, where we follow the pointer to the
     // data. Otherwise, just grab the raw data of the struct, and send it as a blob.
-    if (language_ == ir::shared::Language::GOLANG && type_info.type_name == "string") {
-      var = AddVariable(output_probe, var_name, ir::shared::ScalarType::STRING);
-    } else if (language_ == ir::shared::Language::GOLANG && type_info.type_name == "[]uint8") {
-      var = AddVariable(output_probe, var_name, ir::shared::ScalarType::BYTE_ARRAY);
-    } else if (language_ == ir::shared::Language::GOLANG && type_info.type_name == "[]byte") {
-      var = AddVariable(output_probe, var_name, ir::shared::ScalarType::BYTE_ARRAY);
+    if (language_ == Language::GOLANG && type_info.type_name == "string") {
+      var = AddVariable<ScalarVariable>(output_probe, var_name, ir::shared::ScalarType::STRING);
+    } else if (language_ == Language::GOLANG && type_info.type_name == "[]uint8") {
+      var = AddVariable<ScalarVariable>(output_probe, var_name, ir::shared::ScalarType::BYTE_ARRAY);
+    } else if (language_ == Language::GOLANG && type_info.type_name == "[]byte") {
+      var = AddVariable<ScalarVariable>(output_probe, var_name, ir::shared::ScalarType::BYTE_ARRAY);
     } else {
-      var = AddVariable(output_probe, var_name, ir::shared::ScalarType::STRUCT_BLOB);
+      var =
+          AddVariable<ScalarVariable>(output_probe, var_name, ir::shared::ScalarType::STRUCT_BLOB);
 
       // STRUCT_BLOB is special. It is the only type where we specify the size to get copied.
       PL_ASSIGN_OR_RETURN(uint64_t struct_byte_size,
@@ -725,14 +755,10 @@ Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
   for (const auto& value_id : map_val.value_ids()) {
     const auto& field = struct_decl->fields(i++);
 
-    auto* var = output_probe->add_vars()->mutable_member_var();
-    var->set_name(value_id);
-    var->set_type(field.type());
+    auto* var = AddVariable<MemberVariable>(output_probe, value_id, field.type());
     var->set_struct_base(map_var_name);
     var->set_is_struct_base_pointer(true);
     var->set_field(field.name());
-
-    scalar_var_types_[value_id] = field.type();
   }
 
   return Status::OK();
@@ -740,20 +766,13 @@ Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
 
 Status Dwarvifier::ProcessFunctionLatency(const ir::shared::FunctionLatency& function_latency,
                                           ir::physical::Probe* output_probe) {
-  auto* var = output_probe->add_vars()->mutable_scalar_var();
-
-  const auto& var_name = function_latency.id();
-
-  var->set_name(var_name);
-  var->set_type(ir::shared::ScalarType::INT64);
+  auto* var = AddVariable<ScalarVariable>(output_probe, function_latency.id(),
+                                          ir::shared::ScalarType::INT64);
 
   auto* expr = var->mutable_binary_expr();
-
-  expr->set_op(ir::physical::ScalarVariable::BinaryExpression::SUB);
+  expr->set_op(ScalarVariable::BinaryExpression::SUB);
   expr->set_lhs(kKTimeVarName);
   expr->set_rhs(kStartKTimeNSVarName);
-
-  scalar_var_types_[var_name] = ir::shared::ScalarType::INT64;
 
   // TODO(yzhao): Add more checks.
 
@@ -768,15 +787,15 @@ Status Dwarvifier::GenerateMapValueStruct(const ir::logical::MapStashAction& sta
   auto* struct_decl = output_program->add_structs();
   struct_decl->set_name(struct_type_name);
 
-  for (const auto& f : stash_action_in.value_variable_name()) {
+  for (const auto& var_name : stash_action_in.value_variable_name()) {
     auto* struct_field = struct_decl->add_fields();
-    struct_field->set_name(f);
+    struct_field->set_name(var_name);
 
-    auto iter = scalar_var_types_.find(f);
-    if (iter == scalar_var_types_.end()) {
+    auto iter = variables_.find(var_name);
+    if (iter == variables_.end()) {
       return error::Internal(
           "GenerateMapValueStruct [map_name=$0]: Reference to unknown variable: $1",
-          stash_action_in.map_name(), f);
+          stash_action_in.map_name(), var_name);
     }
     struct_field->set_type(iter->second);
   }
@@ -857,8 +876,8 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
     auto* struct_field = struct_decl->add_fields();
     struct_field->set_name(f);
 
-    auto iter = scalar_var_types_.find(f);
-    if (iter == scalar_var_types_.end()) {
+    auto iter = variables_.find(f);
+    if (iter == variables_.end()) {
       return error::Internal("GenerateOutputStruct [output=$0]: Reference to unknown variable $1",
                              output_action_in.output_name(), f);
     }
@@ -889,8 +908,8 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
 
     const std::string& var_name = output_action_in.variable_name(i);
 
-    auto iter = scalar_var_types_.find(var_name);
-    if (iter == scalar_var_types_.end()) {
+    auto iter = variables_.find(var_name);
+    if (iter == variables_.end()) {
       return error::Internal("GenerateOutputStruct [output=$0]: Reference to unknown variable $1",
                              output_action_in.output_name(), var_name);
     }
