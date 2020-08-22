@@ -19,7 +19,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
@@ -263,117 +262,6 @@ func TestGetSchemaByAgent(t *testing.T) {
 
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
-}
-
-func TestGetAgentTableMetadata(t *testing.T) {
-	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
-
-	agent1ID, err := uuid.FromString("11285cdd-1de9-4ab1-ae6a-0ba08c8c676c")
-	require.Nil(t, err)
-	agent2ID, err := uuid.FromString("21285cdd-1de9-4ab1-ae6a-0ba08c8c676c")
-	require.Nil(t, err)
-
-	schemaInfos := []*storepb.TableInfo{
-		&storepb.TableInfo{
-			Name: "table1",
-			Columns: []*storepb.TableInfo_ColumnInfo{
-				&storepb.TableInfo_ColumnInfo{
-					Name:     "t1Col1",
-					DataType: 1,
-				},
-			},
-		},
-	}
-
-	schemaMap := make(map[string]*storepb.ComputedSchema_AgentIDs)
-	agentIDList := []*uuidpb.UUID{
-		utils.ProtoFromUUID(&agent1ID),
-		utils.ProtoFromUUID(&agent2ID),
-	}
-	schemaMap["table1"] = &storepb.ComputedSchema_AgentIDs{
-		AgentID: agentIDList,
-	}
-	mockMds.
-		EXPECT().
-		GetComputedSchema().
-		Return(&storepb.ComputedSchema{
-			Tables:              schemaInfos,
-			TableNameToAgentIDs: schemaMap,
-		}, nil)
-
-	expectedDataInfos := map[uuid.UUID]*messagespb.AgentDataInfo{}
-	expectedDataInfos[agent1ID] = &messagespb.AgentDataInfo{
-		MetadataInfo: &distributedpb.MetadataInfo{
-			MetadataFields: []sharedmetadatapb.MetadataType{
-				sharedmetadatapb.CONTAINER_ID,
-				sharedmetadatapb.POD_NAME,
-			},
-			Filter: &distributedpb.MetadataInfo_XXHash64BloomFilter{
-				XXHash64BloomFilter: &bloomfilterpb.XXHash64BloomFilter{
-					Data:      []byte("1234"),
-					NumHashes: 4,
-				},
-			},
-		},
-	}
-	expectedDataInfos[agent2ID] = &messagespb.AgentDataInfo{
-		MetadataInfo: &distributedpb.MetadataInfo{
-			MetadataFields: []sharedmetadatapb.MetadataType{
-				sharedmetadatapb.CONTAINER_ID,
-				sharedmetadatapb.POD_NAME,
-			},
-			Filter: &distributedpb.MetadataInfo_XXHash64BloomFilter{
-				XXHash64BloomFilter: &bloomfilterpb.XXHash64BloomFilter{
-					Data:      []byte("5678"),
-					NumHashes: 3,
-				},
-			},
-		},
-	}
-
-	mockMds.
-		EXPECT().
-		GetAgentsDataInfo().
-		Return(expectedDataInfos, nil)
-
-	// Set up server.
-	env, err := metadataenv.New()
-	if err != nil {
-		t.Fatal("Failed to create api environment.")
-	}
-
-	clock := testingutils.NewTestClock(time.Unix(0, 70))
-
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, nil, mockMds, clock)
-
-	req := metadatapb.AgentTableMetadataRequest{}
-
-	resp, err := s.GetAgentTableMetadata(context.Background(), &req)
-
-	assert.Nil(t, err)
-	assert.NotNil(t, resp)
-	assert.Equal(t, len(resp.MetadataByAgent), 2)
-	dataInfoMap := map[uuid.UUID]*messagespb.AgentDataInfo{}
-
-	for _, agentMetadata := range resp.MetadataByAgent {
-		id := utils.UUIDFromProtoOrNil(agentMetadata.AgentID)
-		dataInfoMap[id] = agentMetadata.DataInfo
-	}
-
-	assert.Equal(t, len(dataInfoMap), 2)
-	assert.Equal(t, dataInfoMap[agent1ID], expectedDataInfos[agent1ID])
-	assert.Equal(t, dataInfoMap[agent2ID], expectedDataInfos[agent2ID])
-
-	assert.Equal(t, 1, len(resp.SchemaInfo))
-	assert.Equal(t, "table1", resp.SchemaInfo[0].Name)
-	assert.Equal(t, "t1Col1", resp.SchemaInfo[0].Relation.Columns[0].ColumnName)
-	assert.Equal(t, typespb.BOOLEAN, resp.SchemaInfo[0].Relation.Columns[0].ColumnType)
-
-	assert.ElementsMatch(t, resp.SchemaInfo[0].AgentList, agentIDList)
 }
 
 func Test_Server_RegisterTracepoint(t *testing.T) {

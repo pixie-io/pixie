@@ -13,6 +13,76 @@ import (
 	reflect "reflect"
 )
 
+// MockisAgentUpdate_Update is a mock of isAgentUpdate_Update interface
+type MockisAgentUpdate_Update struct {
+	ctrl     *gomock.Controller
+	recorder *MockisAgentUpdate_UpdateMockRecorder
+}
+
+// MockisAgentUpdate_UpdateMockRecorder is the mock recorder for MockisAgentUpdate_Update
+type MockisAgentUpdate_UpdateMockRecorder struct {
+	mock *MockisAgentUpdate_Update
+}
+
+// NewMockisAgentUpdate_Update creates a new mock instance
+func NewMockisAgentUpdate_Update(ctrl *gomock.Controller) *MockisAgentUpdate_Update {
+	mock := &MockisAgentUpdate_Update{ctrl: ctrl}
+	mock.recorder = &MockisAgentUpdate_UpdateMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockisAgentUpdate_Update) EXPECT() *MockisAgentUpdate_UpdateMockRecorder {
+	return m.recorder
+}
+
+// isAgentUpdate_Update mocks base method
+func (m *MockisAgentUpdate_Update) isAgentUpdate_Update() {
+	m.ctrl.Call(m, "isAgentUpdate_Update")
+}
+
+// isAgentUpdate_Update indicates an expected call of isAgentUpdate_Update
+func (mr *MockisAgentUpdate_UpdateMockRecorder) isAgentUpdate_Update() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "isAgentUpdate_Update", reflect.TypeOf((*MockisAgentUpdate_Update)(nil).isAgentUpdate_Update))
+}
+
+// Equal mocks base method
+func (m *MockisAgentUpdate_Update) Equal(arg0 interface{}) bool {
+	ret := m.ctrl.Call(m, "Equal", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Equal indicates an expected call of Equal
+func (mr *MockisAgentUpdate_UpdateMockRecorder) Equal(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Equal", reflect.TypeOf((*MockisAgentUpdate_Update)(nil).Equal), arg0)
+}
+
+// MarshalTo mocks base method
+func (m *MockisAgentUpdate_Update) MarshalTo(arg0 []byte) (int, error) {
+	ret := m.ctrl.Call(m, "MarshalTo", arg0)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MarshalTo indicates an expected call of MarshalTo
+func (mr *MockisAgentUpdate_UpdateMockRecorder) MarshalTo(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarshalTo", reflect.TypeOf((*MockisAgentUpdate_Update)(nil).MarshalTo), arg0)
+}
+
+// Size mocks base method
+func (m *MockisAgentUpdate_Update) Size() int {
+	ret := m.ctrl.Call(m, "Size")
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// Size indicates an expected call of Size
+func (mr *MockisAgentUpdate_UpdateMockRecorder) Size() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Size", reflect.TypeOf((*MockisAgentUpdate_Update)(nil).Size))
+}
+
 // MockMetadataServiceClient is a mock of MetadataServiceClient interface
 type MockMetadataServiceClient struct {
 	ctrl     *gomock.Controller
@@ -36,6 +106,24 @@ func (m *MockMetadataServiceClient) EXPECT() *MockMetadataServiceClientMockRecor
 	return m.recorder
 }
 
+// GetAgentUpdates mocks base method
+func (m *MockMetadataServiceClient) GetAgentUpdates(ctx context.Context, in *metadatapb.AgentUpdatesRequest, opts ...grpc.CallOption) (metadatapb.MetadataService_GetAgentUpdatesClient, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetAgentUpdates", varargs...)
+	ret0, _ := ret[0].(metadatapb.MetadataService_GetAgentUpdatesClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgentUpdates indicates an expected call of GetAgentUpdates
+func (mr *MockMetadataServiceClientMockRecorder) GetAgentUpdates(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentUpdates", reflect.TypeOf((*MockMetadataServiceClient)(nil).GetAgentUpdates), varargs...)
+}
+
 // GetSchemas mocks base method
 func (m *MockMetadataServiceClient) GetSchemas(ctx context.Context, in *metadatapb.SchemaRequest, opts ...grpc.CallOption) (*metadatapb.SchemaResponse, error) {
 	varargs := []interface{}{ctx, in}
@@ -52,24 +140,6 @@ func (m *MockMetadataServiceClient) GetSchemas(ctx context.Context, in *metadata
 func (mr *MockMetadataServiceClientMockRecorder) GetSchemas(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchemas", reflect.TypeOf((*MockMetadataServiceClient)(nil).GetSchemas), varargs...)
-}
-
-// GetSchemaByAgent mocks base method
-func (m *MockMetadataServiceClient) GetSchemaByAgent(ctx context.Context, in *metadatapb.SchemaByAgentRequest, opts ...grpc.CallOption) (*metadatapb.SchemaByAgentResponse, error) {
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetSchemaByAgent", varargs...)
-	ret0, _ := ret[0].(*metadatapb.SchemaByAgentResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSchemaByAgent indicates an expected call of GetSchemaByAgent
-func (mr *MockMetadataServiceClientMockRecorder) GetSchemaByAgent(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchemaByAgent", reflect.TypeOf((*MockMetadataServiceClient)(nil).GetSchemaByAgent), varargs...)
 }
 
 // GetAgentInfo mocks base method
@@ -90,40 +160,22 @@ func (mr *MockMetadataServiceClientMockRecorder) GetAgentInfo(ctx, in interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentInfo", reflect.TypeOf((*MockMetadataServiceClient)(nil).GetAgentInfo), varargs...)
 }
 
-// GetAgentTableMetadata mocks base method
-func (m *MockMetadataServiceClient) GetAgentTableMetadata(ctx context.Context, in *metadatapb.AgentTableMetadataRequest, opts ...grpc.CallOption) (*metadatapb.AgentTableMetadataResponse, error) {
+// GetSchemaByAgent mocks base method
+func (m *MockMetadataServiceClient) GetSchemaByAgent(ctx context.Context, in *metadatapb.SchemaByAgentRequest, opts ...grpc.CallOption) (*metadatapb.SchemaByAgentResponse, error) {
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "GetAgentTableMetadata", varargs...)
-	ret0, _ := ret[0].(*metadatapb.AgentTableMetadataResponse)
+	ret := m.ctrl.Call(m, "GetSchemaByAgent", varargs...)
+	ret0, _ := ret[0].(*metadatapb.SchemaByAgentResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAgentTableMetadata indicates an expected call of GetAgentTableMetadata
-func (mr *MockMetadataServiceClientMockRecorder) GetAgentTableMetadata(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+// GetSchemaByAgent indicates an expected call of GetSchemaByAgent
+func (mr *MockMetadataServiceClientMockRecorder) GetSchemaByAgent(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentTableMetadata", reflect.TypeOf((*MockMetadataServiceClient)(nil).GetAgentTableMetadata), varargs...)
-}
-
-// GetAgentUpdates mocks base method
-func (m *MockMetadataServiceClient) GetAgentUpdates(ctx context.Context, in *metadatapb.AgentUpdatesRequest, opts ...grpc.CallOption) (metadatapb.MetadataService_GetAgentUpdatesClient, error) {
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetAgentUpdates", varargs...)
-	ret0, _ := ret[0].(metadatapb.MetadataService_GetAgentUpdatesClient)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAgentUpdates indicates an expected call of GetAgentUpdates
-func (mr *MockMetadataServiceClientMockRecorder) GetAgentUpdates(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentUpdates", reflect.TypeOf((*MockMetadataServiceClient)(nil).GetAgentUpdates), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchemaByAgent", reflect.TypeOf((*MockMetadataServiceClient)(nil).GetSchemaByAgent), varargs...)
 }
 
 // MockMetadataService_GetAgentUpdatesClient is a mock of MetadataService_GetAgentUpdatesClient interface
@@ -258,6 +310,18 @@ func (m *MockMetadataServiceServer) EXPECT() *MockMetadataServiceServerMockRecor
 	return m.recorder
 }
 
+// GetAgentUpdates mocks base method
+func (m *MockMetadataServiceServer) GetAgentUpdates(arg0 *metadatapb.AgentUpdatesRequest, arg1 metadatapb.MetadataService_GetAgentUpdatesServer) error {
+	ret := m.ctrl.Call(m, "GetAgentUpdates", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// GetAgentUpdates indicates an expected call of GetAgentUpdates
+func (mr *MockMetadataServiceServerMockRecorder) GetAgentUpdates(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentUpdates", reflect.TypeOf((*MockMetadataServiceServer)(nil).GetAgentUpdates), arg0, arg1)
+}
+
 // GetSchemas mocks base method
 func (m *MockMetadataServiceServer) GetSchemas(arg0 context.Context, arg1 *metadatapb.SchemaRequest) (*metadatapb.SchemaResponse, error) {
 	ret := m.ctrl.Call(m, "GetSchemas", arg0, arg1)
@@ -269,19 +333,6 @@ func (m *MockMetadataServiceServer) GetSchemas(arg0 context.Context, arg1 *metad
 // GetSchemas indicates an expected call of GetSchemas
 func (mr *MockMetadataServiceServerMockRecorder) GetSchemas(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchemas", reflect.TypeOf((*MockMetadataServiceServer)(nil).GetSchemas), arg0, arg1)
-}
-
-// GetSchemaByAgent mocks base method
-func (m *MockMetadataServiceServer) GetSchemaByAgent(arg0 context.Context, arg1 *metadatapb.SchemaByAgentRequest) (*metadatapb.SchemaByAgentResponse, error) {
-	ret := m.ctrl.Call(m, "GetSchemaByAgent", arg0, arg1)
-	ret0, _ := ret[0].(*metadatapb.SchemaByAgentResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSchemaByAgent indicates an expected call of GetSchemaByAgent
-func (mr *MockMetadataServiceServerMockRecorder) GetSchemaByAgent(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchemaByAgent", reflect.TypeOf((*MockMetadataServiceServer)(nil).GetSchemaByAgent), arg0, arg1)
 }
 
 // GetAgentInfo mocks base method
@@ -297,29 +348,17 @@ func (mr *MockMetadataServiceServerMockRecorder) GetAgentInfo(arg0, arg1 interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentInfo", reflect.TypeOf((*MockMetadataServiceServer)(nil).GetAgentInfo), arg0, arg1)
 }
 
-// GetAgentTableMetadata mocks base method
-func (m *MockMetadataServiceServer) GetAgentTableMetadata(arg0 context.Context, arg1 *metadatapb.AgentTableMetadataRequest) (*metadatapb.AgentTableMetadataResponse, error) {
-	ret := m.ctrl.Call(m, "GetAgentTableMetadata", arg0, arg1)
-	ret0, _ := ret[0].(*metadatapb.AgentTableMetadataResponse)
+// GetSchemaByAgent mocks base method
+func (m *MockMetadataServiceServer) GetSchemaByAgent(arg0 context.Context, arg1 *metadatapb.SchemaByAgentRequest) (*metadatapb.SchemaByAgentResponse, error) {
+	ret := m.ctrl.Call(m, "GetSchemaByAgent", arg0, arg1)
+	ret0, _ := ret[0].(*metadatapb.SchemaByAgentResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAgentTableMetadata indicates an expected call of GetAgentTableMetadata
-func (mr *MockMetadataServiceServerMockRecorder) GetAgentTableMetadata(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentTableMetadata", reflect.TypeOf((*MockMetadataServiceServer)(nil).GetAgentTableMetadata), arg0, arg1)
-}
-
-// GetAgentUpdates mocks base method
-func (m *MockMetadataServiceServer) GetAgentUpdates(arg0 *metadatapb.AgentUpdatesRequest, arg1 metadatapb.MetadataService_GetAgentUpdatesServer) error {
-	ret := m.ctrl.Call(m, "GetAgentUpdates", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// GetAgentUpdates indicates an expected call of GetAgentUpdates
-func (mr *MockMetadataServiceServerMockRecorder) GetAgentUpdates(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentUpdates", reflect.TypeOf((*MockMetadataServiceServer)(nil).GetAgentUpdates), arg0, arg1)
+// GetSchemaByAgent indicates an expected call of GetSchemaByAgent
+func (mr *MockMetadataServiceServerMockRecorder) GetSchemaByAgent(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchemaByAgent", reflect.TypeOf((*MockMetadataServiceServer)(nil).GetSchemaByAgent), arg0, arg1)
 }
 
 // MockMetadataService_GetAgentUpdatesServer is a mock of MetadataService_GetAgentUpdatesServer interface

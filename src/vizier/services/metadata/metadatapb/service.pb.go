@@ -389,159 +389,6 @@ func (m *AgentMetadata) GetCarnotInfo() *distributedpb.CarnotInfo {
 	return nil
 }
 
-type AgentTableMetadataRequest struct {
-}
-
-func (m *AgentTableMetadataRequest) Reset()      { *m = AgentTableMetadataRequest{} }
-func (*AgentTableMetadataRequest) ProtoMessage() {}
-func (*AgentTableMetadataRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bfe4468195647430, []int{7}
-}
-func (m *AgentTableMetadataRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *AgentTableMetadataRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_AgentTableMetadataRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *AgentTableMetadataRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AgentTableMetadataRequest.Merge(m, src)
-}
-func (m *AgentTableMetadataRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *AgentTableMetadataRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_AgentTableMetadataRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AgentTableMetadataRequest proto.InternalMessageInfo
-
-type AgentTableMetadata struct {
-	AgentID  *proto1.UUID              `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
-	Schema   *proto2.Schema            `protobuf:"bytes,2,opt,name=schema,proto3" json:"schema,omitempty"`
-	DataInfo *messagespb.AgentDataInfo `protobuf:"bytes,3,opt,name=data_info,json=dataInfo,proto3" json:"data_info,omitempty"`
-}
-
-func (m *AgentTableMetadata) Reset()      { *m = AgentTableMetadata{} }
-func (*AgentTableMetadata) ProtoMessage() {}
-func (*AgentTableMetadata) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bfe4468195647430, []int{8}
-}
-func (m *AgentTableMetadata) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *AgentTableMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_AgentTableMetadata.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *AgentTableMetadata) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AgentTableMetadata.Merge(m, src)
-}
-func (m *AgentTableMetadata) XXX_Size() int {
-	return m.Size()
-}
-func (m *AgentTableMetadata) XXX_DiscardUnknown() {
-	xxx_messageInfo_AgentTableMetadata.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AgentTableMetadata proto.InternalMessageInfo
-
-func (m *AgentTableMetadata) GetAgentID() *proto1.UUID {
-	if m != nil {
-		return m.AgentID
-	}
-	return nil
-}
-
-func (m *AgentTableMetadata) GetSchema() *proto2.Schema {
-	if m != nil {
-		return m.Schema
-	}
-	return nil
-}
-
-func (m *AgentTableMetadata) GetDataInfo() *messagespb.AgentDataInfo {
-	if m != nil {
-		return m.DataInfo
-	}
-	return nil
-}
-
-type AgentTableMetadataResponse struct {
-	MetadataByAgent []*AgentTableMetadata       `protobuf:"bytes,1,rep,name=metadata_by_agent,json=metadataByAgent,proto3" json:"metadata_by_agent,omitempty"`
-	CarnotInfo      *distributedpb.CarnotInfo   `protobuf:"bytes,3,opt,name=carnot_info,json=carnotInfo,proto3" json:"carnot_info,omitempty"`
-	SchemaInfo      []*distributedpb.SchemaInfo `protobuf:"bytes,4,rep,name=schema_info,json=schemaInfo,proto3" json:"schema_info,omitempty"`
-}
-
-func (m *AgentTableMetadataResponse) Reset()      { *m = AgentTableMetadataResponse{} }
-func (*AgentTableMetadataResponse) ProtoMessage() {}
-func (*AgentTableMetadataResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bfe4468195647430, []int{9}
-}
-func (m *AgentTableMetadataResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *AgentTableMetadataResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_AgentTableMetadataResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *AgentTableMetadataResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AgentTableMetadataResponse.Merge(m, src)
-}
-func (m *AgentTableMetadataResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *AgentTableMetadataResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_AgentTableMetadataResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AgentTableMetadataResponse proto.InternalMessageInfo
-
-func (m *AgentTableMetadataResponse) GetMetadataByAgent() []*AgentTableMetadata {
-	if m != nil {
-		return m.MetadataByAgent
-	}
-	return nil
-}
-
-func (m *AgentTableMetadataResponse) GetCarnotInfo() *distributedpb.CarnotInfo {
-	if m != nil {
-		return m.CarnotInfo
-	}
-	return nil
-}
-
-func (m *AgentTableMetadataResponse) GetSchemaInfo() []*distributedpb.SchemaInfo {
-	if m != nil {
-		return m.SchemaInfo
-	}
-	return nil
-}
-
 type AgentUpdatesRequest struct {
 	MaxUpdateInterval     *types.Duration `protobuf:"bytes,1,opt,name=max_update_interval,json=maxUpdateInterval,proto3" json:"max_update_interval,omitempty"`
 	MaxUpdatesPerResponse int32           `protobuf:"varint,2,opt,name=max_updates_per_response,json=maxUpdatesPerResponse,proto3" json:"max_updates_per_response,omitempty"`
@@ -550,7 +397,7 @@ type AgentUpdatesRequest struct {
 func (m *AgentUpdatesRequest) Reset()      { *m = AgentUpdatesRequest{} }
 func (*AgentUpdatesRequest) ProtoMessage() {}
 func (*AgentUpdatesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bfe4468195647430, []int{10}
+	return fileDescriptor_bfe4468195647430, []int{7}
 }
 func (m *AgentUpdatesRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -605,7 +452,7 @@ type AgentUpdate struct {
 func (m *AgentUpdate) Reset()      { *m = AgentUpdate{} }
 func (*AgentUpdate) ProtoMessage() {}
 func (*AgentUpdate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bfe4468195647430, []int{11}
+	return fileDescriptor_bfe4468195647430, []int{8}
 }
 func (m *AgentUpdate) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -708,7 +555,7 @@ type AgentUpdatesResponse struct {
 func (m *AgentUpdatesResponse) Reset()      { *m = AgentUpdatesResponse{} }
 func (*AgentUpdatesResponse) ProtoMessage() {}
 func (*AgentUpdatesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bfe4468195647430, []int{12}
+	return fileDescriptor_bfe4468195647430, []int{9}
 }
 func (m *AgentUpdatesResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -765,7 +612,7 @@ type RegisterTracepointRequest struct {
 func (m *RegisterTracepointRequest) Reset()      { *m = RegisterTracepointRequest{} }
 func (*RegisterTracepointRequest) ProtoMessage() {}
 func (*RegisterTracepointRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bfe4468195647430, []int{13}
+	return fileDescriptor_bfe4468195647430, []int{10}
 }
 func (m *RegisterTracepointRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -812,7 +659,7 @@ func (m *RegisterTracepointRequest_TracepointRequest) Reset() {
 }
 func (*RegisterTracepointRequest_TracepointRequest) ProtoMessage() {}
 func (*RegisterTracepointRequest_TracepointRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bfe4468195647430, []int{13, 0}
+	return fileDescriptor_bfe4468195647430, []int{10, 0}
 }
 func (m *RegisterTracepointRequest_TracepointRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -870,7 +717,7 @@ type RegisterTracepointResponse struct {
 func (m *RegisterTracepointResponse) Reset()      { *m = RegisterTracepointResponse{} }
 func (*RegisterTracepointResponse) ProtoMessage() {}
 func (*RegisterTracepointResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bfe4468195647430, []int{14}
+	return fileDescriptor_bfe4468195647430, []int{11}
 }
 func (m *RegisterTracepointResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -924,7 +771,7 @@ func (m *RegisterTracepointResponse_TracepointStatus) Reset() {
 }
 func (*RegisterTracepointResponse_TracepointStatus) ProtoMessage() {}
 func (*RegisterTracepointResponse_TracepointStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bfe4468195647430, []int{14, 0}
+	return fileDescriptor_bfe4468195647430, []int{11, 0}
 }
 func (m *RegisterTracepointResponse_TracepointStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -981,7 +828,7 @@ type GetTracepointInfoRequest struct {
 func (m *GetTracepointInfoRequest) Reset()      { *m = GetTracepointInfoRequest{} }
 func (*GetTracepointInfoRequest) ProtoMessage() {}
 func (*GetTracepointInfoRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bfe4468195647430, []int{15}
+	return fileDescriptor_bfe4468195647430, []int{12}
 }
 func (m *GetTracepointInfoRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1024,7 +871,7 @@ type GetTracepointInfoResponse struct {
 func (m *GetTracepointInfoResponse) Reset()      { *m = GetTracepointInfoResponse{} }
 func (*GetTracepointInfoResponse) ProtoMessage() {}
 func (*GetTracepointInfoResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bfe4468195647430, []int{16}
+	return fileDescriptor_bfe4468195647430, []int{13}
 }
 func (m *GetTracepointInfoResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1074,7 +921,7 @@ func (m *GetTracepointInfoResponse_TracepointState) Reset() {
 }
 func (*GetTracepointInfoResponse_TracepointState) ProtoMessage() {}
 func (*GetTracepointInfoResponse_TracepointState) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bfe4468195647430, []int{16, 0}
+	return fileDescriptor_bfe4468195647430, []int{13, 0}
 }
 func (m *GetTracepointInfoResponse_TracepointState) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1152,7 +999,7 @@ type RemoveTracepointRequest struct {
 func (m *RemoveTracepointRequest) Reset()      { *m = RemoveTracepointRequest{} }
 func (*RemoveTracepointRequest) ProtoMessage() {}
 func (*RemoveTracepointRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bfe4468195647430, []int{17}
+	return fileDescriptor_bfe4468195647430, []int{14}
 }
 func (m *RemoveTracepointRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1195,7 +1042,7 @@ type RemoveTracepointResponse struct {
 func (m *RemoveTracepointResponse) Reset()      { *m = RemoveTracepointResponse{} }
 func (*RemoveTracepointResponse) ProtoMessage() {}
 func (*RemoveTracepointResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bfe4468195647430, []int{18}
+	return fileDescriptor_bfe4468195647430, []int{15}
 }
 func (m *RemoveTracepointResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1240,9 +1087,6 @@ func init() {
 	proto.RegisterType((*AgentInfoRequest)(nil), "pl.vizier.services.metadata.AgentInfoRequest")
 	proto.RegisterType((*AgentInfoResponse)(nil), "pl.vizier.services.metadata.AgentInfoResponse")
 	proto.RegisterType((*AgentMetadata)(nil), "pl.vizier.services.metadata.AgentMetadata")
-	proto.RegisterType((*AgentTableMetadataRequest)(nil), "pl.vizier.services.metadata.AgentTableMetadataRequest")
-	proto.RegisterType((*AgentTableMetadata)(nil), "pl.vizier.services.metadata.AgentTableMetadata")
-	proto.RegisterType((*AgentTableMetadataResponse)(nil), "pl.vizier.services.metadata.AgentTableMetadataResponse")
 	proto.RegisterType((*AgentUpdatesRequest)(nil), "pl.vizier.services.metadata.AgentUpdatesRequest")
 	proto.RegisterType((*AgentUpdate)(nil), "pl.vizier.services.metadata.AgentUpdate")
 	proto.RegisterType((*AgentUpdatesResponse)(nil), "pl.vizier.services.metadata.AgentUpdatesResponse")
@@ -1262,99 +1106,93 @@ func init() {
 }
 
 var fileDescriptor_bfe4468195647430 = []byte{
-	// 1471 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x58, 0x4b, 0x6f, 0xdb, 0xc6,
-	0x13, 0x17, 0x25, 0x3f, 0xe4, 0x71, 0x1c, 0xd9, 0x6b, 0x1b, 0x7f, 0x59, 0x01, 0x68, 0x87, 0x87,
-	0x7f, 0x83, 0x3c, 0xc8, 0xc4, 0x4d, 0xe2, 0x43, 0x83, 0x20, 0x75, 0x84, 0xd8, 0x02, 0x92, 0x22,
-	0xa0, 0x9d, 0x4b, 0x7b, 0x10, 0x96, 0xe2, 0x5a, 0x66, 0x41, 0x89, 0x0c, 0x77, 0x65, 0xd8, 0x69,
-	0x81, 0x36, 0x40, 0x8b, 0x02, 0x3d, 0xf5, 0x92, 0x43, 0x0f, 0xbd, 0xf7, 0x58, 0xa0, 0xdf, 0xa1,
-	0xe8, 0xd1, 0x87, 0x1e, 0x72, 0x0a, 0x6a, 0xe5, 0x52, 0xa0, 0x40, 0x91, 0x7e, 0x83, 0x82, 0xfb,
-	0xa0, 0xa8, 0x87, 0x2d, 0xc9, 0x28, 0x7a, 0xf2, 0xee, 0x70, 0xe6, 0x37, 0x33, 0xbf, 0x9d, 0x9d,
-	0x1d, 0x19, 0xee, 0xd0, 0xa8, 0x66, 0x1d, 0x78, 0x2f, 0x3c, 0x12, 0x59, 0x94, 0x44, 0x07, 0x5e,
-	0x8d, 0x50, 0xab, 0x41, 0x18, 0x76, 0x31, 0xc3, 0xc9, 0x22, 0x74, 0xd4, 0x47, 0x33, 0x8c, 0x02,
-	0x16, 0xa0, 0x4b, 0xa1, 0x6f, 0x0a, 0x2b, 0x53, 0x59, 0x99, 0x4a, 0xb9, 0x74, 0xa3, 0xee, 0xb1,
-	0xfd, 0x96, 0x63, 0xd6, 0x82, 0x86, 0x55, 0x0f, 0xea, 0x81, 0xc5, 0x6d, 0x9c, 0xd6, 0x1e, 0xdf,
-	0xf1, 0x0d, 0x5f, 0x09, 0xac, 0xd2, 0x5a, 0x1c, 0x42, 0x2d, 0x68, 0x34, 0x82, 0xa6, 0xd5, 0x6a,
-	0x79, 0xae, 0x50, 0xe7, 0x4b, 0xa9, 0x61, 0xc4, 0x1a, 0x0c, 0x3b, 0x3e, 0xa9, 0x52, 0x16, 0x44,
-	0x44, 0x6a, 0xd0, 0xda, 0x3e, 0x69, 0x60, 0xa9, 0xb3, 0xc1, 0x51, 0x70, 0xd4, 0x0c, 0x98, 0x15,
-	0xfa, 0xb8, 0xd9, 0x24, 0x91, 0xe5, 0x7a, 0x94, 0x45, 0x9e, 0xd3, 0x62, 0xc4, 0x0d, 0x9d, 0xf4,
-	0xae, 0x1a, 0x6b, 0x48, 0xc3, 0x1b, 0x29, 0x06, 0x1a, 0x84, 0x52, 0x5c, 0xe7, 0x0c, 0x88, 0x45,
-	0xe8, 0x24, 0x4b, 0xa9, 0x6e, 0x0e, 0x22, 0x8c, 0xee, 0xe3, 0x88, 0xb8, 0x16, 0xae, 0x93, 0x26,
-	0x0b, 0x1d, 0xf1, 0x37, 0x1d, 0x17, 0x65, 0x5e, 0xe4, 0x7b, 0xcd, 0xba, 0xe5, 0x1e, 0x35, 0x71,
-	0xc3, 0xab, 0x55, 0x59, 0x84, 0x6b, 0xf1, 0xde, 0x8b, 0x2c, 0x3f, 0xa8, 0x7b, 0x35, 0xec, 0x87,
-	0x8e, 0x5a, 0xa5, 0x93, 0x96, 0xb4, 0x38, 0x98, 0x26, 0x49, 0x33, 0xcc, 0x5a, 0x2a, 0x18, 0xbd,
-	0x1e, 0x04, 0x75, 0x9f, 0x74, 0x08, 0x76, 0x5b, 0x11, 0x66, 0x5e, 0x20, 0x73, 0x33, 0xca, 0xb0,
-	0xb4, 0xc3, 0x49, 0xda, 0x3c, 0xfa, 0x30, 0x8e, 0xc9, 0x26, 0xcf, 0x5b, 0x84, 0x32, 0x74, 0x1d,
-	0x66, 0x78, 0x8c, 0x55, 0xcf, 0xa5, 0x45, 0x6d, 0x2d, 0x77, 0x65, 0x76, 0xbd, 0x60, 0x86, 0xbe,
-	0x19, 0x73, 0x1e, 0x3a, 0xe6, 0xb3, 0x67, 0x95, 0xb2, 0x9d, 0xe7, 0x1a, 0x15, 0x97, 0x1a, 0x5f,
-	0x67, 0x61, 0xb9, 0x07, 0x86, 0x86, 0x41, 0x93, 0x12, 0xb4, 0x0f, 0x05, 0x71, 0x08, 0x55, 0xe7,
-	0xa8, 0xca, 0xf5, 0x25, 0xda, 0x03, 0xf3, 0x8c, 0x02, 0x31, 0x07, 0x82, 0xf5, 0x48, 0xe7, 0x68,
-	0x7a, 0x5b, 0x7a, 0xa9, 0xc1, 0x5c, 0x97, 0x02, 0xda, 0x80, 0xbc, 0xca, 0xa1, 0xa8, 0xad, 0x69,
-	0x03, 0x52, 0xd8, 0x9c, 0x6d, 0xbf, 0x59, 0x9d, 0xe6, 0xda, 0x95, 0xb2, 0x3d, 0x2d, 0xf3, 0x41,
-	0x1b, 0x30, 0x25, 0xb0, 0x8b, 0x59, 0x6e, 0xb6, 0x1a, 0x9b, 0xa5, 0xaa, 0xcb, 0x14, 0x5f, 0x43,
-	0x47, 0x46, 0x64, 0x4b, 0x75, 0xa3, 0xa0, 0x42, 0x90, 0x34, 0x1a, 0x15, 0xb8, 0xa8, 0x04, 0x92,
-	0x90, 0x73, 0x63, 0x23, 0x98, 0x17, 0x81, 0x36, 0xf7, 0x02, 0x05, 0xbf, 0x03, 0x0b, 0x29, 0x99,
-	0xf4, 0x70, 0x1f, 0x26, 0xbc, 0xe6, 0x5e, 0x20, 0x79, 0xbe, 0x7a, 0x26, 0xcf, 0xdc, 0xfa, 0x89,
-	0xdc, 0xd9, 0xdc, 0xce, 0x38, 0xd1, 0x60, 0xae, 0x4b, 0x8e, 0xee, 0xc1, 0xa4, 0x3a, 0xba, 0x38,
-	0xe4, 0xff, 0x0f, 0x82, 0x14, 0x05, 0x6e, 0x8a, 0xc2, 0x16, 0x07, 0x24, 0x8c, 0x50, 0x19, 0xa6,
-	0x44, 0x49, 0xca, 0x8c, 0xaf, 0x8f, 0x66, 0xbe, 0xc3, 0x6d, 0x6c, 0x69, 0x8b, 0x1e, 0xc3, 0xac,
-	0xb8, 0xbb, 0x55, 0x9e, 0x5c, 0x8e, 0x43, 0x5d, 0x8b, 0xa1, 0x84, 0xd8, 0x94, 0x57, 0xda, 0xec,
-	0xba, 0xd2, 0xe6, 0x43, 0xfe, 0x91, 0xf3, 0x03, 0xb5, 0x64, 0x6d, 0x5c, 0x82, 0x15, 0xee, 0x64,
-	0x37, 0x26, 0x3e, 0xc9, 0x5f, 0xb2, 0xfa, 0x8b, 0x06, 0xa8, 0xff, 0xeb, 0x7f, 0x5f, 0x4e, 0xe8,
-	0x3e, 0xcc, 0xc4, 0x9e, 0xd3, 0x19, 0x5f, 0x4e, 0x91, 0x97, 0xf4, 0x1d, 0xee, 0xb1, 0x8c, 0x19,
-	0xe6, 0x79, 0xe6, 0x5d, 0xb9, 0x32, 0x5e, 0x65, 0xa1, 0x34, 0x28, 0x4d, 0x59, 0x28, 0x9f, 0xc0,
-	0x82, 0x2a, 0x84, 0xde, 0xdb, 0x69, 0x0d, 0xaf, 0x9a, 0x6e, 0xcc, 0x82, 0xfa, 0xa8, 0x2e, 0xdf,
-	0xbf, 0x7a, 0x5e, 0x31, 0x9a, 0x6c, 0x23, 0x1c, 0x6d, 0x82, 0x07, 0x39, 0x1c, 0x4d, 0xf0, 0x29,
-	0xd0, 0x68, 0xb2, 0x36, 0xbe, 0xd7, 0x60, 0x91, 0x47, 0xf9, 0x2c, 0x74, 0x31, 0x23, 0x54, 0x35,
-	0xbd, 0x0a, 0x2c, 0x36, 0xf0, 0x61, 0xb5, 0xc5, 0xa5, 0x55, 0xaf, 0xc9, 0x48, 0x74, 0x80, 0x7d,
-	0x79, 0xd8, 0x2b, 0xa6, 0x68, 0xa5, 0xa6, 0x6a, 0xa5, 0x66, 0x59, 0xb6, 0x52, 0x7b, 0xa1, 0x81,
-	0x0f, 0x05, 0x54, 0x45, 0xda, 0xa0, 0x0d, 0x28, 0x76, 0xa0, 0x68, 0x35, 0x24, 0x51, 0x35, 0x92,
-	0xbc, 0xf3, 0x2a, 0x98, 0xb4, 0x97, 0x13, 0x23, 0xfa, 0x94, 0x44, 0xea, 0x50, 0x8c, 0xbf, 0x34,
-	0x98, 0x4d, 0xc5, 0x76, 0xfe, 0xaa, 0x2b, 0xc1, 0xb4, 0x4b, 0x7c, 0xc2, 0x88, 0xcb, 0x1d, 0xe6,
-	0xb7, 0x33, 0xb6, 0x12, 0xa0, 0xfb, 0xea, 0x42, 0xe7, 0xc6, 0xb9, 0xd0, 0xdb, 0x19, 0x75, 0xa5,
-	0x1f, 0xa4, 0x0b, 0x73, 0x62, 0xc4, 0xc2, 0xdc, 0xce, 0x74, 0x4a, 0x73, 0x33, 0x0f, 0x53, 0x82,
-	0x1b, 0xe3, 0x4f, 0x0d, 0x96, 0xba, 0x0f, 0x43, 0x96, 0xe7, 0x13, 0x98, 0x13, 0x99, 0x4b, 0x12,
-	0x65, 0x69, 0x5e, 0x19, 0x5e, 0x9a, 0x02, 0xc9, 0xbe, 0x80, 0x53, 0xb0, 0xe8, 0xa9, 0x82, 0x13,
-	0x85, 0x10, 0x77, 0xa3, 0xb1, 0x8b, 0x48, 0x20, 0x0a, 0x01, 0x45, 0xeb, 0xb0, 0xdc, 0x85, 0x28,
-	0x03, 0x75, 0x39, 0xab, 0x79, 0x7b, 0x31, 0xad, 0x2c, 0xa2, 0x70, 0x8d, 0xdf, 0xb2, 0xb0, 0x62,
-	0x93, 0xba, 0x47, 0x19, 0x89, 0x76, 0x23, 0x5c, 0x23, 0x61, 0xe0, 0x75, 0x5e, 0x5d, 0x17, 0xf2,
-	0x91, 0x58, 0xaa, 0x6c, 0xb7, 0xcf, 0xcc, 0xf6, 0x54, 0x24, 0xb3, 0x4f, 0x62, 0x27, 0xc8, 0xa5,
-	0x63, 0x0d, 0x16, 0xfa, 0x7d, 0x3f, 0x87, 0x65, 0x96, 0x08, 0xab, 0x2e, 0x09, 0xfd, 0xe0, 0xa8,
-	0xd1, 0x69, 0xfa, 0xf7, 0xe2, 0x40, 0xd4, 0x94, 0x62, 0xf6, 0x4c, 0x29, 0xa6, 0x17, 0x99, 0x6a,
-	0x36, 0xe9, 0x20, 0x97, 0x13, 0x0c, 0x7b, 0x89, 0x0d, 0x90, 0x22, 0x04, 0x13, 0x4d, 0xdc, 0x10,
-	0x17, 0x62, 0xc6, 0xe6, 0x6b, 0x74, 0x1b, 0x72, 0x8c, 0xf9, 0xb2, 0x30, 0x4f, 0xbf, 0x73, 0x9b,
-	0xd3, 0xed, 0x37, 0xab, 0xb9, 0xdd, 0xdd, 0xc7, 0x76, 0xac, 0x6e, 0xfc, 0x9c, 0x85, 0xd2, 0x20,
-	0x32, 0x64, 0x29, 0x7d, 0x0a, 0xb3, 0x9d, 0x00, 0xce, 0x4f, 0xad, 0x1c, 0x43, 0x3a, 0x22, 0xf9,
-	0x46, 0xa5, 0xc1, 0xd1, 0xb5, 0x9e, 0xe7, 0x6e, 0x51, 0x10, 0x17, 0x4b, 0xe2, 0x62, 0xea, 0x7a,
-	0xd5, 0x4a, 0x9f, 0xc3, 0x7c, 0x2f, 0x5a, 0x0a, 0x40, 0x1b, 0x0a, 0x80, 0xde, 0x83, 0xac, 0xe7,
-	0x4a, 0x4f, 0x7d, 0x8d, 0x61, 0xaa, 0xfd, 0x66, 0x35, 0x5b, 0x29, 0xdb, 0x59, 0xcf, 0x4d, 0xb8,
-	0xce, 0x75, 0xb8, 0x36, 0x1e, 0x41, 0x71, 0x8b, 0xb0, 0x4e, 0x00, 0xa9, 0xd1, 0x02, 0x5d, 0x85,
-	0xdc, 0xe9, 0xa3, 0x9f, 0x60, 0xbf, 0x52, 0xa6, 0x76, 0xac, 0x64, 0xfc, 0x90, 0x83, 0x95, 0x01,
-	0x40, 0xc9, 0x08, 0x38, 0x80, 0xfc, 0x47, 0x67, 0x92, 0x7f, 0x2a, 0x58, 0x0f, 0xf7, 0xa4, 0x8b,
-	0xfa, 0xd2, 0xab, 0x2c, 0x14, 0x7a, 0x14, 0x24, 0x41, 0xda, 0x70, 0x82, 0x6e, 0xc1, 0x64, 0xcc,
-	0xa9, 0xa8, 0xc6, 0x8b, 0xeb, 0x97, 0xba, 0x58, 0x7f, 0xec, 0xed, 0x91, 0x87, 0x47, 0x35, 0x9f,
-	0x08, 0xaf, 0x42, 0x33, 0x75, 0x52, 0xb9, 0xe1, 0x27, 0xa5, 0x0e, 0x60, 0x22, 0x55, 0xec, 0x9b,
-	0x70, 0x91, 0x1c, 0x86, 0xa4, 0x16, 0xff, 0xe0, 0x10, 0xce, 0x27, 0x87, 0x3b, 0x9f, 0x53, 0x26,
-	0x22, 0xc1, 0xcb, 0x70, 0x41, 0x3e, 0x8d, 0x31, 0x24, 0x2d, 0x4e, 0xad, 0xe5, 0xae, 0xcc, 0xd8,
-	0xf2, 0xb9, 0xfc, 0x28, 0x16, 0x19, 0x16, 0xfc, 0xcf, 0x26, 0x8d, 0xe0, 0x80, 0xf4, 0xdf, 0xfa,
-	0x25, 0x98, 0x14, 0x66, 0x1a, 0x37, 0x13, 0x1b, 0x63, 0x0b, 0x8a, 0xfd, 0x06, 0xf2, 0x38, 0xc7,
-	0x29, 0xcf, 0xf5, 0xbf, 0x27, 0xa0, 0xa0, 0x66, 0x84, 0x1d, 0x71, 0xcc, 0xa8, 0x0e, 0xb0, 0x45,
-	0x92, 0x26, 0x7a, 0x75, 0x84, 0xdf, 0x01, 0x32, 0xd8, 0xd2, 0xb5, 0x91, 0x74, 0xe5, 0x43, 0x9a,
-	0x41, 0x9f, 0xc1, 0x7c, 0xe2, 0x48, 0x8d, 0x25, 0xb7, 0xc6, 0xf9, 0xd9, 0x21, 0xbc, 0xae, 0x8f,
-	0xff, 0x4b, 0xc5, 0xc8, 0xa0, 0x00, 0x2e, 0x6c, 0x11, 0x96, 0x4c, 0xe7, 0xe8, 0xc6, 0xf0, 0x67,
-	0x2b, 0x75, 0xfd, 0x4a, 0xe6, 0xa8, 0xea, 0x89, 0xc3, 0x6f, 0x35, 0x58, 0x56, 0x1e, 0xbb, 0x07,
-	0xd7, 0xbb, 0xe3, 0x0e, 0x73, 0x32, 0x86, 0x8d, 0xb1, 0xed, 0x92, 0x60, 0x5e, 0x40, 0x41, 0xc5,
-	0xa2, 0xde, 0xdf, 0x9b, 0xa3, 0xbe, 0xdb, 0x6a, 0x1c, 0x2b, 0xdd, 0x1a, 0xc3, 0x42, 0x79, 0xbe,
-	0xa9, 0xad, 0xff, 0x94, 0x83, 0x15, 0x15, 0x52, 0xaa, 0x1b, 0xc8, 0xea, 0xfb, 0x46, 0x03, 0xd4,
-	0xdf, 0xdb, 0x87, 0x70, 0x74, 0xea, 0x3b, 0x3b, 0x84, 0xa3, 0xd3, 0x1f, 0x11, 0x23, 0x83, 0xbe,
-	0xd2, 0x60, 0xa1, 0xaf, 0xd1, 0xa1, 0x3b, 0xe3, 0x36, 0x46, 0x11, 0xc7, 0xdd, 0xf3, 0xf5, 0x53,
-	0x23, 0x83, 0x5e, 0x6a, 0x30, 0xdf, 0x7b, 0xd9, 0xd1, 0xed, 0x21, 0x69, 0x0d, 0x6c, 0x26, 0xa5,
-	0x3b, 0x63, 0x5a, 0xa9, 0x18, 0x36, 0xbf, 0x38, 0x3e, 0xd1, 0x33, 0xaf, 0x4f, 0xf4, 0xcc, 0xbb,
-	0x13, 0x5d, 0xfb, 0xb2, 0xad, 0x6b, 0x3f, 0xb6, 0x75, 0xed, 0xd7, 0xb6, 0xae, 0x1d, 0xb7, 0x75,
-	0xed, 0xf7, 0xb6, 0xae, 0xfd, 0xd1, 0xd6, 0x33, 0xef, 0xda, 0xba, 0xf6, 0xdd, 0x5b, 0x3d, 0x73,
-	0xfc, 0x56, 0xcf, 0xbc, 0x7e, 0xab, 0x67, 0x3e, 0xae, 0x84, 0xde, 0xa1, 0x47, 0x7c, 0xec, 0x50,
-	0x13, 0x7b, 0x56, 0xb2, 0xb1, 0x46, 0xfc, 0x87, 0xd5, 0x07, 0x9d, 0xa5, 0x33, 0xc5, 0x07, 0x8c,
-	0xf7, 0xff, 0x09, 0x00, 0x00, 0xff, 0xff, 0x51, 0x48, 0x50, 0xcd, 0xed, 0x12, 0x00, 0x00,
+	// 1371 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x58, 0x4b, 0x6f, 0xdb, 0xc6,
+	0x13, 0x27, 0x45, 0x3f, 0xc7, 0x71, 0x6c, 0xaf, 0x6d, 0xfc, 0x65, 0x05, 0xa0, 0x1d, 0x1e, 0xfe,
+	0x0d, 0xf2, 0x20, 0x13, 0x37, 0x89, 0x0f, 0x0d, 0x82, 0xd4, 0x11, 0x62, 0x0b, 0x48, 0x8a, 0x80,
+	0x4e, 0x2e, 0xbd, 0x08, 0x4b, 0x71, 0x2d, 0xb3, 0xa0, 0x44, 0x86, 0xbb, 0x32, 0xec, 0xb4, 0x40,
+	0x1b, 0xa0, 0x45, 0xaf, 0xbd, 0xf4, 0xd0, 0x43, 0xef, 0x3d, 0x16, 0xe8, 0x97, 0xe8, 0xd1, 0x87,
+	0x1e, 0x72, 0x0a, 0x6a, 0xa5, 0x87, 0x02, 0x05, 0x8a, 0x7c, 0x84, 0x82, 0xfb, 0xa0, 0xa8, 0x87,
+	0x2d, 0xc9, 0x27, 0xed, 0x0e, 0x67, 0x7e, 0x3b, 0xf3, 0x9b, 0xc7, 0x2e, 0x04, 0xf7, 0x68, 0x52,
+	0x73, 0x0e, 0x83, 0xd7, 0x01, 0x49, 0x1c, 0x4a, 0x92, 0xc3, 0xa0, 0x46, 0xa8, 0xd3, 0x20, 0x0c,
+	0xfb, 0x98, 0xe1, 0x6c, 0x11, 0x7b, 0xea, 0xa3, 0x1d, 0x27, 0x11, 0x8b, 0xd0, 0x95, 0x38, 0xb4,
+	0x85, 0x95, 0xad, 0xac, 0x6c, 0xa5, 0x5c, 0xba, 0x55, 0x0f, 0xd8, 0x41, 0xcb, 0xb3, 0x6b, 0x51,
+	0xc3, 0xa9, 0x47, 0xf5, 0xc8, 0xe1, 0x36, 0x5e, 0x6b, 0x9f, 0xef, 0xf8, 0x86, 0xaf, 0x04, 0x56,
+	0x69, 0x23, 0x75, 0xa1, 0x16, 0x35, 0x1a, 0x51, 0xd3, 0x69, 0xb5, 0x02, 0x5f, 0xa8, 0xf3, 0xa5,
+	0xd4, 0xb0, 0x52, 0x0d, 0x86, 0xbd, 0x90, 0x54, 0x29, 0x8b, 0x12, 0x22, 0x35, 0x68, 0xed, 0x80,
+	0x34, 0xb0, 0xd4, 0xd9, 0xe2, 0x28, 0x38, 0x69, 0x46, 0xcc, 0x89, 0x43, 0xdc, 0x6c, 0x92, 0xc4,
+	0xf1, 0x03, 0xca, 0x92, 0xc0, 0x6b, 0x31, 0xe2, 0xc7, 0x5e, 0x7e, 0x57, 0x4d, 0x35, 0xa4, 0xe1,
+	0xad, 0x1c, 0x03, 0x0d, 0x42, 0x29, 0xae, 0x73, 0x06, 0xc4, 0x22, 0xf6, 0xb2, 0xa5, 0x54, 0xb7,
+	0x07, 0x11, 0x46, 0x0f, 0x70, 0x42, 0x7c, 0x07, 0xd7, 0x49, 0x93, 0xc5, 0x9e, 0xf8, 0xcd, 0xfb,
+	0x45, 0x59, 0x90, 0x84, 0x41, 0xb3, 0xee, 0xf8, 0xc7, 0x4d, 0xdc, 0x08, 0x6a, 0x55, 0x96, 0xe0,
+	0x5a, 0xba, 0x0f, 0x12, 0x27, 0x8c, 0xea, 0x41, 0x0d, 0x87, 0xb1, 0xa7, 0x56, 0xf9, 0xa0, 0x25,
+	0x2d, 0x1e, 0xa6, 0x59, 0xd0, 0x0c, 0xb3, 0x96, 0x72, 0xc6, 0xac, 0x47, 0x51, 0x3d, 0x24, 0x1d,
+	0x82, 0xfd, 0x56, 0x82, 0x59, 0x10, 0xc9, 0xd8, 0xac, 0x32, 0xac, 0xec, 0x71, 0x92, 0xb6, 0x8f,
+	0x3f, 0x4d, 0x7d, 0x72, 0xc9, 0xab, 0x16, 0xa1, 0x0c, 0xdd, 0x84, 0x59, 0xee, 0x63, 0x35, 0xf0,
+	0x69, 0x51, 0xdf, 0x30, 0xae, 0xcd, 0x6d, 0x2e, 0xd8, 0x71, 0x68, 0xa7, 0x9c, 0xc7, 0x9e, 0xfd,
+	0xf2, 0x65, 0xa5, 0xec, 0xce, 0x70, 0x8d, 0x8a, 0x4f, 0xad, 0xef, 0x0a, 0xb0, 0xda, 0x03, 0x43,
+	0xe3, 0xa8, 0x49, 0x09, 0x3a, 0x80, 0x05, 0x91, 0x84, 0xaa, 0x77, 0x5c, 0xe5, 0xfa, 0x12, 0xed,
+	0x91, 0x7d, 0x4e, 0x81, 0xd8, 0x03, 0xc1, 0x7a, 0xa4, 0xf3, 0x34, 0xbf, 0x2d, 0xbd, 0xd1, 0x61,
+	0xbe, 0x4b, 0x01, 0x6d, 0xc1, 0x8c, 0x8a, 0xa1, 0xa8, 0x6f, 0xe8, 0x03, 0x42, 0xd8, 0x9e, 0x6b,
+	0xbf, 0x5b, 0x9f, 0xe6, 0xda, 0x95, 0xb2, 0x3b, 0x2d, 0xe3, 0x41, 0x5b, 0x30, 0x25, 0xb0, 0x8b,
+	0x05, 0x6e, 0xb6, 0x9e, 0x9a, 0xe5, 0xaa, 0xcb, 0x16, 0x5f, 0x63, 0x4f, 0x7a, 0xe4, 0x4a, 0x75,
+	0x6b, 0x41, 0xb9, 0x20, 0x69, 0xb4, 0x2a, 0x70, 0x59, 0x09, 0x24, 0x21, 0x17, 0xc6, 0x46, 0xb0,
+	0x28, 0x1c, 0x6d, 0xee, 0x47, 0x0a, 0x7e, 0x0f, 0x96, 0x72, 0x32, 0x79, 0xc2, 0x43, 0x98, 0x08,
+	0x9a, 0xfb, 0x91, 0xe4, 0xf9, 0xfa, 0xb9, 0x3c, 0x73, 0xeb, 0x67, 0x72, 0xe7, 0x72, 0x3b, 0xeb,
+	0x54, 0x87, 0xf9, 0x2e, 0x39, 0x7a, 0x00, 0x93, 0x2a, 0x75, 0xa9, 0xcb, 0xff, 0x1f, 0x04, 0x29,
+	0x0a, 0xdc, 0x16, 0x85, 0x2d, 0x12, 0x24, 0x8c, 0x50, 0x19, 0xa6, 0x44, 0x49, 0xca, 0x88, 0x6f,
+	0x8e, 0x66, 0xbe, 0xc7, 0x6d, 0x5c, 0x69, 0x8b, 0x9e, 0xc2, 0x9c, 0xe8, 0xdd, 0x2a, 0x0f, 0xce,
+	0xe0, 0x50, 0x37, 0x52, 0x28, 0x21, 0xb6, 0x65, 0x4b, 0xdb, 0x5d, 0x2d, 0x6d, 0x3f, 0xe6, 0x1f,
+	0x39, 0x3f, 0x50, 0xcb, 0xd6, 0xd6, 0x4f, 0x3a, 0x2c, 0xf3, 0x53, 0x5e, 0xc6, 0x3e, 0x66, 0x84,
+	0xaa, 0xb2, 0xaf, 0xc0, 0x72, 0x03, 0x1f, 0x55, 0x5b, 0x5c, 0x5a, 0x0d, 0x9a, 0x8c, 0x24, 0x87,
+	0x38, 0x94, 0x71, 0xaf, 0xd9, 0xa2, 0x99, 0x6c, 0xd5, 0x4c, 0x76, 0x59, 0x36, 0x93, 0xbb, 0xd4,
+	0xc0, 0x47, 0x02, 0xaa, 0x22, 0x6d, 0xd0, 0x16, 0x14, 0x3b, 0x50, 0xb4, 0x1a, 0x93, 0xa4, 0x9a,
+	0xc8, 0x14, 0x71, 0x22, 0x26, 0xdd, 0xd5, 0xcc, 0x88, 0x3e, 0x27, 0x89, 0xca, 0x9f, 0xf5, 0xaf,
+	0x0e, 0x73, 0x39, 0xdf, 0x2e, 0x5e, 0xc6, 0x25, 0x98, 0xf6, 0x49, 0x48, 0x18, 0xf1, 0xf9, 0x81,
+	0x33, 0xbb, 0x9a, 0xab, 0x04, 0xe8, 0xa1, 0x4a, 0xa9, 0x31, 0x4e, 0x4a, 0x77, 0x35, 0x95, 0xd4,
+	0x47, 0x30, 0x9b, 0x96, 0x86, 0x48, 0xc6, 0x04, 0xc7, 0xb8, 0x9a, 0xc3, 0xc8, 0x46, 0x22, 0x37,
+	0x2b, 0x63, 0x86, 0x53, 0xda, 0x77, 0x35, 0x77, 0xc6, 0x97, 0xeb, 0xed, 0x19, 0x98, 0x12, 0xdc,
+	0x58, 0xff, 0xe8, 0xb0, 0xd2, 0x9d, 0x0c, 0x59, 0xc9, 0xcf, 0x60, 0x5e, 0x44, 0x2e, 0x49, 0x94,
+	0x25, 0x7d, 0x6d, 0x78, 0x49, 0x0b, 0x24, 0xf7, 0x12, 0xce, 0xc1, 0xa2, 0xe7, 0x0a, 0x4e, 0x74,
+	0x54, 0x5a, 0x8f, 0xc6, 0x48, 0x45, 0x24, 0x3a, 0x91, 0x17, 0x91, 0x40, 0x14, 0x02, 0x8a, 0x36,
+	0x61, 0xb5, 0x0b, 0x51, 0x3a, 0xea, 0x73, 0x56, 0x67, 0xdc, 0xe5, 0xbc, 0xb2, 0xf0, 0xc2, 0xb7,
+	0xfe, 0x28, 0xc0, 0x9a, 0x4b, 0xea, 0x01, 0x65, 0x24, 0x79, 0x91, 0xe0, 0x1a, 0x89, 0xa3, 0xa0,
+	0x33, 0x77, 0x7d, 0x98, 0x49, 0xc4, 0x52, 0x45, 0xbb, 0x7b, 0x6e, 0xb4, 0x67, 0x22, 0xd9, 0x7d,
+	0x12, 0x37, 0x43, 0x2e, 0x9d, 0xe8, 0xb0, 0xd4, 0x7f, 0xf6, 0x2b, 0x58, 0x65, 0x99, 0xb0, 0xea,
+	0x93, 0x38, 0x8c, 0x8e, 0x1b, 0x9d, 0xb6, 0x7f, 0x90, 0x3a, 0xa2, 0xee, 0x29, 0xbb, 0xe7, 0x9e,
+	0xb2, 0x83, 0xc4, 0x56, 0xb7, 0x53, 0x07, 0xb9, 0x9c, 0x61, 0xb8, 0x2b, 0x6c, 0x80, 0x14, 0x21,
+	0x98, 0x68, 0xe2, 0x86, 0x68, 0x88, 0x59, 0x97, 0xaf, 0xd1, 0x5d, 0x30, 0x18, 0x0b, 0x65, 0x61,
+	0x9e, 0xdd, 0x73, 0xdb, 0xd3, 0xed, 0x77, 0xeb, 0xc6, 0x8b, 0x17, 0x4f, 0xdd, 0x54, 0xdd, 0xfa,
+	0xad, 0x00, 0xa5, 0x41, 0x64, 0xc8, 0x52, 0xfa, 0x02, 0xe6, 0x3a, 0x0e, 0x5c, 0x9c, 0x5a, 0x79,
+	0x11, 0x75, 0x44, 0x72, 0x4a, 0xe5, 0xc1, 0xd1, 0x8d, 0x9e, 0x81, 0xb7, 0x2c, 0x88, 0x4b, 0x25,
+	0x69, 0x31, 0x75, 0xcd, 0xb5, 0xd2, 0x57, 0xb0, 0xd8, 0x8b, 0x96, 0x03, 0xd0, 0x87, 0x02, 0xa0,
+	0x8f, 0xa0, 0x10, 0xf8, 0xf2, 0xa4, 0xbe, 0xc1, 0x30, 0xd5, 0x7e, 0xb7, 0x5e, 0xa8, 0x94, 0xdd,
+	0x42, 0xe0, 0x67, 0x5c, 0x1b, 0x1d, 0xae, 0xad, 0x27, 0x50, 0xdc, 0x21, 0xac, 0xe3, 0x40, 0xee,
+	0x72, 0x41, 0xd7, 0xc1, 0x38, 0xfb, 0xf2, 0x17, 0xec, 0x57, 0xca, 0xd4, 0x4d, 0x95, 0xac, 0x9f,
+	0x0d, 0x58, 0x1b, 0x00, 0x94, 0x3d, 0x02, 0x06, 0x90, 0xff, 0xe4, 0x5c, 0xf2, 0xcf, 0x04, 0xeb,
+	0xe1, 0x9e, 0x74, 0x51, 0x5f, 0xfa, 0xb1, 0x00, 0x0b, 0x3d, 0x0a, 0x92, 0x20, 0x7d, 0x38, 0x41,
+	0x77, 0x60, 0x32, 0xe5, 0x54, 0x54, 0xe3, 0xe5, 0xcd, 0x2b, 0x5d, 0xac, 0x3f, 0x0d, 0xf6, 0xc9,
+	0xe3, 0xe3, 0x5a, 0x48, 0xc4, 0xa9, 0x42, 0x33, 0x97, 0x29, 0x63, 0x78, 0xa6, 0x54, 0x02, 0x26,
+	0x72, 0xc5, 0xbe, 0x0d, 0x97, 0xc9, 0x51, 0x4c, 0x6a, 0xe9, 0x93, 0x53, 0x1c, 0x3e, 0x39, 0xfc,
+	0xf0, 0x79, 0x65, 0x22, 0x02, 0xbc, 0x0a, 0x97, 0xe4, 0x1b, 0x2b, 0x85, 0xa4, 0xc5, 0xa9, 0x0d,
+	0xe3, 0xda, 0xac, 0x3b, 0x27, 0x64, 0x9f, 0xa5, 0x22, 0xcb, 0x81, 0xff, 0xb9, 0xa4, 0x11, 0x1d,
+	0x92, 0xfe, 0xae, 0x5f, 0x81, 0x49, 0x61, 0xa6, 0x73, 0x33, 0xb1, 0xb1, 0x76, 0xa0, 0xd8, 0x6f,
+	0x20, 0xd3, 0x39, 0x4e, 0x79, 0x6e, 0xfe, 0x65, 0xc0, 0x82, 0x7a, 0x48, 0xec, 0x89, 0x34, 0xa3,
+	0xd7, 0xb0, 0xb0, 0x43, 0x58, 0x7e, 0xe4, 0xa3, 0xdb, 0xa3, 0xce, 0x74, 0x75, 0x55, 0x97, 0xee,
+	0x8c, 0x61, 0x21, 0x6f, 0x56, 0xed, 0xb6, 0x8e, 0xea, 0x00, 0x3b, 0x24, 0x1b, 0xe0, 0xd7, 0x47,
+	0x78, 0x85, 0xaa, 0x03, 0x6f, 0x8c, 0xa4, 0xab, 0x8e, 0x42, 0x11, 0x5c, 0x52, 0x41, 0xa6, 0xf5,
+	0x8b, 0x6e, 0x0d, 0xf7, 0x37, 0xd7, 0x7d, 0x25, 0x7b, 0x54, 0xf5, 0xec, 0xc0, 0x2f, 0x61, 0x31,
+	0x8b, 0x4c, 0x3d, 0x81, 0xef, 0x8c, 0xf3, 0xca, 0x16, 0x07, 0x6f, 0x8e, 0xff, 0x30, 0xb7, 0xb4,
+	0xcd, 0x5f, 0x0d, 0x58, 0x53, 0x69, 0xce, 0x35, 0xa0, 0x4c, 0xf8, 0xf7, 0x3a, 0xa0, 0xfe, 0x71,
+	0x8a, 0xee, 0x5f, 0xec, 0x6a, 0x2b, 0x6d, 0x5d, 0x70, 0x6e, 0x5b, 0x1a, 0xfa, 0x56, 0x87, 0xa5,
+	0xbe, 0xd9, 0x82, 0xee, 0x8d, 0x3b, 0x8b, 0x84, 0x1f, 0xf7, 0x2f, 0x36, 0xc2, 0x2c, 0x0d, 0xbd,
+	0xd1, 0x61, 0xb1, 0xb7, 0xbf, 0xd0, 0xdd, 0x21, 0x61, 0x0d, 0xec, 0xdf, 0xd2, 0xbd, 0x31, 0xad,
+	0x94, 0x0f, 0xdb, 0x5f, 0x9f, 0x9c, 0x9a, 0xda, 0xdb, 0x53, 0x53, 0xfb, 0x70, 0x6a, 0xea, 0xdf,
+	0xb4, 0x4d, 0xfd, 0x97, 0xb6, 0xa9, 0xff, 0xde, 0x36, 0xf5, 0x93, 0xb6, 0xa9, 0xff, 0xd9, 0x36,
+	0xf5, 0xbf, 0xdb, 0xa6, 0xf6, 0xa1, 0x6d, 0xea, 0x3f, 0xbc, 0x37, 0xb5, 0x93, 0xf7, 0xa6, 0xf6,
+	0xf6, 0xbd, 0xa9, 0x7d, 0x5e, 0x89, 0x83, 0xa3, 0x80, 0x84, 0xd8, 0xa3, 0x36, 0x0e, 0x9c, 0x6c,
+	0xe3, 0x8c, 0xf8, 0x2f, 0xc1, 0x27, 0x9d, 0xa5, 0x37, 0xc5, 0xef, 0xf4, 0x8f, 0xff, 0x0b, 0x00,
+	0x00, 0xff, 0xff, 0x19, 0xb7, 0xd7, 0x77, 0x62, 0x10, 0x00, 0x00,
 }
 
 func (this *SchemaByAgentRequest) Equal(that interface{}) bool {
@@ -1564,97 +1402,6 @@ func (this *AgentMetadata) Equal(that interface{}) bool {
 	}
 	if !this.CarnotInfo.Equal(that1.CarnotInfo) {
 		return false
-	}
-	return true
-}
-func (this *AgentTableMetadataRequest) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*AgentTableMetadataRequest)
-	if !ok {
-		that2, ok := that.(AgentTableMetadataRequest)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	return true
-}
-func (this *AgentTableMetadata) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*AgentTableMetadata)
-	if !ok {
-		that2, ok := that.(AgentTableMetadata)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.AgentID.Equal(that1.AgentID) {
-		return false
-	}
-	if !this.Schema.Equal(that1.Schema) {
-		return false
-	}
-	if !this.DataInfo.Equal(that1.DataInfo) {
-		return false
-	}
-	return true
-}
-func (this *AgentTableMetadataResponse) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*AgentTableMetadataResponse)
-	if !ok {
-		that2, ok := that.(AgentTableMetadataResponse)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if len(this.MetadataByAgent) != len(that1.MetadataByAgent) {
-		return false
-	}
-	for i := range this.MetadataByAgent {
-		if !this.MetadataByAgent[i].Equal(that1.MetadataByAgent[i]) {
-			return false
-		}
-	}
-	if !this.CarnotInfo.Equal(that1.CarnotInfo) {
-		return false
-	}
-	if len(this.SchemaInfo) != len(that1.SchemaInfo) {
-		return false
-	}
-	for i := range this.SchemaInfo {
-		if !this.SchemaInfo[i].Equal(that1.SchemaInfo[i]) {
-			return false
-		}
 	}
 	return true
 }
@@ -2205,51 +1952,6 @@ func (this *AgentMetadata) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *AgentTableMetadataRequest) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 4)
-	s = append(s, "&metadatapb.AgentTableMetadataRequest{")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *AgentTableMetadata) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 7)
-	s = append(s, "&metadatapb.AgentTableMetadata{")
-	if this.AgentID != nil {
-		s = append(s, "AgentID: "+fmt.Sprintf("%#v", this.AgentID)+",\n")
-	}
-	if this.Schema != nil {
-		s = append(s, "Schema: "+fmt.Sprintf("%#v", this.Schema)+",\n")
-	}
-	if this.DataInfo != nil {
-		s = append(s, "DataInfo: "+fmt.Sprintf("%#v", this.DataInfo)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *AgentTableMetadataResponse) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 7)
-	s = append(s, "&metadatapb.AgentTableMetadataResponse{")
-	if this.MetadataByAgent != nil {
-		s = append(s, "MetadataByAgent: "+fmt.Sprintf("%#v", this.MetadataByAgent)+",\n")
-	}
-	if this.CarnotInfo != nil {
-		s = append(s, "CarnotInfo: "+fmt.Sprintf("%#v", this.CarnotInfo)+",\n")
-	}
-	if this.SchemaInfo != nil {
-		s = append(s, "SchemaInfo: "+fmt.Sprintf("%#v", this.SchemaInfo)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
 func (this *AgentUpdatesRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -2463,11 +2165,10 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MetadataServiceClient interface {
-	GetSchemas(ctx context.Context, in *SchemaRequest, opts ...grpc.CallOption) (*SchemaResponse, error)
-	GetSchemaByAgent(ctx context.Context, in *SchemaByAgentRequest, opts ...grpc.CallOption) (*SchemaByAgentResponse, error)
-	GetAgentInfo(ctx context.Context, in *AgentInfoRequest, opts ...grpc.CallOption) (*AgentInfoResponse, error)
-	GetAgentTableMetadata(ctx context.Context, in *AgentTableMetadataRequest, opts ...grpc.CallOption) (*AgentTableMetadataResponse, error)
 	GetAgentUpdates(ctx context.Context, in *AgentUpdatesRequest, opts ...grpc.CallOption) (MetadataService_GetAgentUpdatesClient, error)
+	GetSchemas(ctx context.Context, in *SchemaRequest, opts ...grpc.CallOption) (*SchemaResponse, error)
+	GetAgentInfo(ctx context.Context, in *AgentInfoRequest, opts ...grpc.CallOption) (*AgentInfoResponse, error)
+	GetSchemaByAgent(ctx context.Context, in *SchemaByAgentRequest, opts ...grpc.CallOption) (*SchemaByAgentResponse, error)
 }
 
 type metadataServiceClient struct {
@@ -2476,42 +2177,6 @@ type metadataServiceClient struct {
 
 func NewMetadataServiceClient(cc *grpc.ClientConn) MetadataServiceClient {
 	return &metadataServiceClient{cc}
-}
-
-func (c *metadataServiceClient) GetSchemas(ctx context.Context, in *SchemaRequest, opts ...grpc.CallOption) (*SchemaResponse, error) {
-	out := new(SchemaResponse)
-	err := c.cc.Invoke(ctx, "/pl.vizier.services.metadata.MetadataService/GetSchemas", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *metadataServiceClient) GetSchemaByAgent(ctx context.Context, in *SchemaByAgentRequest, opts ...grpc.CallOption) (*SchemaByAgentResponse, error) {
-	out := new(SchemaByAgentResponse)
-	err := c.cc.Invoke(ctx, "/pl.vizier.services.metadata.MetadataService/GetSchemaByAgent", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *metadataServiceClient) GetAgentInfo(ctx context.Context, in *AgentInfoRequest, opts ...grpc.CallOption) (*AgentInfoResponse, error) {
-	out := new(AgentInfoResponse)
-	err := c.cc.Invoke(ctx, "/pl.vizier.services.metadata.MetadataService/GetAgentInfo", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *metadataServiceClient) GetAgentTableMetadata(ctx context.Context, in *AgentTableMetadataRequest, opts ...grpc.CallOption) (*AgentTableMetadataResponse, error) {
-	out := new(AgentTableMetadataResponse)
-	err := c.cc.Invoke(ctx, "/pl.vizier.services.metadata.MetadataService/GetAgentTableMetadata", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *metadataServiceClient) GetAgentUpdates(ctx context.Context, in *AgentUpdatesRequest, opts ...grpc.CallOption) (MetadataService_GetAgentUpdatesClient, error) {
@@ -2546,109 +2211,60 @@ func (x *metadataServiceGetAgentUpdatesClient) Recv() (*AgentUpdatesResponse, er
 	return m, nil
 }
 
+func (c *metadataServiceClient) GetSchemas(ctx context.Context, in *SchemaRequest, opts ...grpc.CallOption) (*SchemaResponse, error) {
+	out := new(SchemaResponse)
+	err := c.cc.Invoke(ctx, "/pl.vizier.services.metadata.MetadataService/GetSchemas", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metadataServiceClient) GetAgentInfo(ctx context.Context, in *AgentInfoRequest, opts ...grpc.CallOption) (*AgentInfoResponse, error) {
+	out := new(AgentInfoResponse)
+	err := c.cc.Invoke(ctx, "/pl.vizier.services.metadata.MetadataService/GetAgentInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metadataServiceClient) GetSchemaByAgent(ctx context.Context, in *SchemaByAgentRequest, opts ...grpc.CallOption) (*SchemaByAgentResponse, error) {
+	out := new(SchemaByAgentResponse)
+	err := c.cc.Invoke(ctx, "/pl.vizier.services.metadata.MetadataService/GetSchemaByAgent", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MetadataServiceServer is the server API for MetadataService service.
 type MetadataServiceServer interface {
-	GetSchemas(context.Context, *SchemaRequest) (*SchemaResponse, error)
-	GetSchemaByAgent(context.Context, *SchemaByAgentRequest) (*SchemaByAgentResponse, error)
-	GetAgentInfo(context.Context, *AgentInfoRequest) (*AgentInfoResponse, error)
-	GetAgentTableMetadata(context.Context, *AgentTableMetadataRequest) (*AgentTableMetadataResponse, error)
 	GetAgentUpdates(*AgentUpdatesRequest, MetadataService_GetAgentUpdatesServer) error
+	GetSchemas(context.Context, *SchemaRequest) (*SchemaResponse, error)
+	GetAgentInfo(context.Context, *AgentInfoRequest) (*AgentInfoResponse, error)
+	GetSchemaByAgent(context.Context, *SchemaByAgentRequest) (*SchemaByAgentResponse, error)
 }
 
 // UnimplementedMetadataServiceServer can be embedded to have forward compatible implementations.
 type UnimplementedMetadataServiceServer struct {
 }
 
+func (*UnimplementedMetadataServiceServer) GetAgentUpdates(req *AgentUpdatesRequest, srv MetadataService_GetAgentUpdatesServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetAgentUpdates not implemented")
+}
 func (*UnimplementedMetadataServiceServer) GetSchemas(ctx context.Context, req *SchemaRequest) (*SchemaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSchemas not implemented")
-}
-func (*UnimplementedMetadataServiceServer) GetSchemaByAgent(ctx context.Context, req *SchemaByAgentRequest) (*SchemaByAgentResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetSchemaByAgent not implemented")
 }
 func (*UnimplementedMetadataServiceServer) GetAgentInfo(ctx context.Context, req *AgentInfoRequest) (*AgentInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAgentInfo not implemented")
 }
-func (*UnimplementedMetadataServiceServer) GetAgentTableMetadata(ctx context.Context, req *AgentTableMetadataRequest) (*AgentTableMetadataResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAgentTableMetadata not implemented")
-}
-func (*UnimplementedMetadataServiceServer) GetAgentUpdates(req *AgentUpdatesRequest, srv MetadataService_GetAgentUpdatesServer) error {
-	return status.Errorf(codes.Unimplemented, "method GetAgentUpdates not implemented")
+func (*UnimplementedMetadataServiceServer) GetSchemaByAgent(ctx context.Context, req *SchemaByAgentRequest) (*SchemaByAgentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSchemaByAgent not implemented")
 }
 
 func RegisterMetadataServiceServer(s *grpc.Server, srv MetadataServiceServer) {
 	s.RegisterService(&_MetadataService_serviceDesc, srv)
-}
-
-func _MetadataService_GetSchemas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SchemaRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MetadataServiceServer).GetSchemas(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/pl.vizier.services.metadata.MetadataService/GetSchemas",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetadataServiceServer).GetSchemas(ctx, req.(*SchemaRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _MetadataService_GetSchemaByAgent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SchemaByAgentRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MetadataServiceServer).GetSchemaByAgent(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/pl.vizier.services.metadata.MetadataService/GetSchemaByAgent",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetadataServiceServer).GetSchemaByAgent(ctx, req.(*SchemaByAgentRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _MetadataService_GetAgentInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AgentInfoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MetadataServiceServer).GetAgentInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/pl.vizier.services.metadata.MetadataService/GetAgentInfo",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetadataServiceServer).GetAgentInfo(ctx, req.(*AgentInfoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _MetadataService_GetAgentTableMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AgentTableMetadataRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MetadataServiceServer).GetAgentTableMetadata(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/pl.vizier.services.metadata.MetadataService/GetAgentTableMetadata",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetadataServiceServer).GetAgentTableMetadata(ctx, req.(*AgentTableMetadataRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _MetadataService_GetAgentUpdates_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -2672,6 +2288,60 @@ func (x *metadataServiceGetAgentUpdatesServer) Send(m *AgentUpdatesResponse) err
 	return x.ServerStream.SendMsg(m)
 }
 
+func _MetadataService_GetSchemas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SchemaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetadataServiceServer).GetSchemas(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.vizier.services.metadata.MetadataService/GetSchemas",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetadataServiceServer).GetSchemas(ctx, req.(*SchemaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetadataService_GetAgentInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AgentInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetadataServiceServer).GetAgentInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.vizier.services.metadata.MetadataService/GetAgentInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetadataServiceServer).GetAgentInfo(ctx, req.(*AgentInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetadataService_GetSchemaByAgent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SchemaByAgentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetadataServiceServer).GetSchemaByAgent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.vizier.services.metadata.MetadataService/GetSchemaByAgent",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetadataServiceServer).GetSchemaByAgent(ctx, req.(*SchemaByAgentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _MetadataService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "pl.vizier.services.metadata.MetadataService",
 	HandlerType: (*MetadataServiceServer)(nil),
@@ -2681,16 +2351,12 @@ var _MetadataService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _MetadataService_GetSchemas_Handler,
 		},
 		{
-			MethodName: "GetSchemaByAgent",
-			Handler:    _MetadataService_GetSchemaByAgent_Handler,
-		},
-		{
 			MethodName: "GetAgentInfo",
 			Handler:    _MetadataService_GetAgentInfo_Handler,
 		},
 		{
-			MethodName: "GetAgentTableMetadata",
-			Handler:    _MetadataService_GetAgentTableMetadata_Handler,
+			MethodName: "GetSchemaByAgent",
+			Handler:    _MetadataService_GetSchemaByAgent_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
@@ -3141,151 +2807,6 @@ func (m *AgentMetadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		}
 		i--
 		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *AgentTableMetadataRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *AgentTableMetadataRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *AgentTableMetadataRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	return len(dAtA) - i, nil
-}
-
-func (m *AgentTableMetadata) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *AgentTableMetadata) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *AgentTableMetadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.DataInfo != nil {
-		{
-			size, err := m.DataInfo.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintService(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.Schema != nil {
-		{
-			size, err := m.Schema.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintService(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.AgentID != nil {
-		{
-			size, err := m.AgentID.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintService(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *AgentTableMetadataResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *AgentTableMetadataResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *AgentTableMetadataResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.SchemaInfo) > 0 {
-		for iNdEx := len(m.SchemaInfo) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.SchemaInfo[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintService(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x22
-		}
-	}
-	if m.CarnotInfo != nil {
-		{
-			size, err := m.CarnotInfo.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintService(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.MetadataByAgent) > 0 {
-		for iNdEx := len(m.MetadataByAgent) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.MetadataByAgent[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintService(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
 	}
 	return len(dAtA) - i, nil
 }
@@ -4027,61 +3548,6 @@ func (m *AgentMetadata) Size() (n int) {
 	return n
 }
 
-func (m *AgentTableMetadataRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	return n
-}
-
-func (m *AgentTableMetadata) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.AgentID != nil {
-		l = m.AgentID.Size()
-		n += 1 + l + sovService(uint64(l))
-	}
-	if m.Schema != nil {
-		l = m.Schema.Size()
-		n += 1 + l + sovService(uint64(l))
-	}
-	if m.DataInfo != nil {
-		l = m.DataInfo.Size()
-		n += 1 + l + sovService(uint64(l))
-	}
-	return n
-}
-
-func (m *AgentTableMetadataResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.MetadataByAgent) > 0 {
-		for _, e := range m.MetadataByAgent {
-			l = e.Size()
-			n += 1 + l + sovService(uint64(l))
-		}
-	}
-	if m.CarnotInfo != nil {
-		l = m.CarnotInfo.Size()
-		n += 1 + l + sovService(uint64(l))
-	}
-	if len(m.SchemaInfo) > 0 {
-		for _, e := range m.SchemaInfo {
-			l = e.Size()
-			n += 1 + l + sovService(uint64(l))
-		}
-	}
-	return n
-}
-
 func (m *AgentUpdatesRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -4436,49 +3902,6 @@ func (this *AgentMetadata) String() string {
 		`Agent:` + strings.Replace(fmt.Sprintf("%v", this.Agent), "Agent", "agentpb.Agent", 1) + `,`,
 		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "AgentStatus", "agentpb.AgentStatus", 1) + `,`,
 		`CarnotInfo:` + strings.Replace(fmt.Sprintf("%v", this.CarnotInfo), "CarnotInfo", "distributedpb.CarnotInfo", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *AgentTableMetadataRequest) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&AgentTableMetadataRequest{`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *AgentTableMetadata) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&AgentTableMetadata{`,
-		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto1.UUID", 1) + `,`,
-		`Schema:` + strings.Replace(fmt.Sprintf("%v", this.Schema), "Schema", "proto2.Schema", 1) + `,`,
-		`DataInfo:` + strings.Replace(fmt.Sprintf("%v", this.DataInfo), "AgentDataInfo", "messagespb.AgentDataInfo", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *AgentTableMetadataResponse) String() string {
-	if this == nil {
-		return "nil"
-	}
-	repeatedStringForMetadataByAgent := "[]*AgentTableMetadata{"
-	for _, f := range this.MetadataByAgent {
-		repeatedStringForMetadataByAgent += strings.Replace(f.String(), "AgentTableMetadata", "AgentTableMetadata", 1) + ","
-	}
-	repeatedStringForMetadataByAgent += "}"
-	repeatedStringForSchemaInfo := "[]*SchemaInfo{"
-	for _, f := range this.SchemaInfo {
-		repeatedStringForSchemaInfo += strings.Replace(fmt.Sprintf("%v", f), "SchemaInfo", "distributedpb.SchemaInfo", 1) + ","
-	}
-	repeatedStringForSchemaInfo += "}"
-	s := strings.Join([]string{`&AgentTableMetadataResponse{`,
-		`MetadataByAgent:` + repeatedStringForMetadataByAgent + `,`,
-		`CarnotInfo:` + strings.Replace(fmt.Sprintf("%v", this.CarnotInfo), "CarnotInfo", "distributedpb.CarnotInfo", 1) + `,`,
-		`SchemaInfo:` + repeatedStringForSchemaInfo + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5400,377 +4823,6 @@ func (m *AgentMetadata) Unmarshal(dAtA []byte) error {
 				m.CarnotInfo = &distributedpb.CarnotInfo{}
 			}
 			if err := m.CarnotInfo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *AgentTableMetadataRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: AgentTableMetadataRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: AgentTableMetadataRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *AgentTableMetadata) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: AgentTableMetadata: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: AgentTableMetadata: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AgentID", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthService
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.AgentID == nil {
-				m.AgentID = &proto1.UUID{}
-			}
-			if err := m.AgentID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Schema", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthService
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Schema == nil {
-				m.Schema = &proto2.Schema{}
-			}
-			if err := m.Schema.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DataInfo", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthService
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.DataInfo == nil {
-				m.DataInfo = &messagespb.AgentDataInfo{}
-			}
-			if err := m.DataInfo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *AgentTableMetadataResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: AgentTableMetadataResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: AgentTableMetadataResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MetadataByAgent", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthService
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.MetadataByAgent = append(m.MetadataByAgent, &AgentTableMetadata{})
-			if err := m.MetadataByAgent[len(m.MetadataByAgent)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CarnotInfo", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthService
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.CarnotInfo == nil {
-				m.CarnotInfo = &distributedpb.CarnotInfo{}
-			}
-			if err := m.CarnotInfo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SchemaInfo", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthService
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.SchemaInfo = append(m.SchemaInfo, &distributedpb.SchemaInfo{})
-			if err := m.SchemaInfo[len(m.SchemaInfo)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

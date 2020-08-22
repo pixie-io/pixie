@@ -15,18 +15,14 @@ import "google/protobuf/duration.proto";
 option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb;metadatapb";
 
 service MetadataService {
-  /**
-   * These RPC calls are used by the query broker and CLI to fetch metadata.
-   */
-
-  rpc GetSchemas(SchemaRequest) returns (SchemaResponse) {}
-  rpc GetSchemaByAgent(SchemaByAgentRequest) returns (SchemaByAgentResponse) {}
-  rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse) {}
-  rpc GetAgentTableMetadata(AgentTableMetadataRequest) returns (AgentTableMetadataResponse) {}
-  // An endpoint which is responsible for streaming the state of the agents.
-  // It first sends the full initial state of the agents, and then it sends state updates
-  // after that point.
+  // An endpoint used by the query broker which is responsible for streaming the state of the agents.
+  // It first sends the full initial state of the agents, and then it sends state updates after that.
   rpc GetAgentUpdates(AgentUpdatesRequest) returns (stream AgentUpdatesResponse) {}
+  // These RPC calls are used by UDTFs to fetch metadata.
+  rpc GetSchemas(SchemaRequest) returns (SchemaResponse) {}
+  rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse) {}
+  // GetSchemaByAgent is currently inimplemented but would be used to fetch the schema for a given agent.
+  rpc GetSchemaByAgent(SchemaByAgentRequest) returns (SchemaByAgentResponse) {}
 }
 
 service MetadataTracepointService {
@@ -70,20 +66,6 @@ message AgentMetadata {
   pl.vizier.services.shared.agent.AgentStatus status = 2;
   // Info that describes the carnot instance for the agent.
   pl.carnot.planner.distributedpb.CarnotInfo carnot_info = 3;
-}
-
-message AgentTableMetadataRequest {}
-
-message AgentTableMetadata {
-  uuidpb.UUID agent_id = 1 [ (gogoproto.customname) = "AgentID" ];
-  pl.table_store.schemapb.Schema schema = 2;
-  pl.vizier.messages.AgentDataInfo data_info = 3;
-}
-
-message AgentTableMetadataResponse {
-  repeated AgentTableMetadata metadata_by_agent = 1;
-  pl.carnot.planner.distributedpb.CarnotInfo carnot_info = 3;
-  repeated pl.carnot.planner.distributedpb.SchemaInfo schema_info = 4;
 }
 
 message AgentUpdatesRequest {

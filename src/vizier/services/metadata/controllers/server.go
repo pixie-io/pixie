@@ -163,41 +163,6 @@ func (s *Server) GetAgentInfo(ctx context.Context, req *metadatapb.AgentInfoRequ
 	return &resp, nil
 }
 
-// GetAgentTableMetadata returns table metadata for each agent. We currently assume that all agents
-// have the same schema, but this code will need to be updated when that assumption no longer holds true.
-func (s *Server) GetAgentTableMetadata(ctx context.Context, req *metadatapb.AgentTableMetadataRequest) (*metadatapb.AgentTableMetadataResponse, error) {
-	computedSchema, err := s.mds.GetComputedSchema()
-	if err != nil {
-		return nil, err
-	}
-
-	dataInfos, err := s.mds.GetAgentsDataInfo()
-	if err != nil {
-		return nil, err
-	}
-
-	// Populate AgentTableMetadataResponse.
-	var agentsMetadata []*metadatapb.AgentTableMetadata
-	for agentID, dataInfo := range dataInfos {
-		a := &metadatapb.AgentTableMetadata{
-			AgentID:  utils.ProtoFromUUID(&agentID),
-			DataInfo: dataInfo,
-		}
-		agentsMetadata = append(agentsMetadata, a)
-	}
-	schemaInfo, err := convertToSchemaInfo(computedSchema)
-	if err != nil {
-		return nil, err
-	}
-
-	resp := metadatapb.AgentTableMetadataResponse{
-		MetadataByAgent: agentsMetadata,
-		SchemaInfo:      schemaInfo,
-	}
-
-	return &resp, nil
-}
-
 // GetAgentUpdates streams agent updates to the requestor periodically as they come in.
 // It first sends the complete initial agent state in the beginning of the request, and then deltas after that.
 // Note that as it is currently designed, it can only handle one stream at a time (to a single metadata server).
