@@ -233,7 +233,9 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 
 		if finishedSchema && finishedUpdates {
 			// Send an empty update after the duration has passed if we have no new information.
-			err := srv.Send(&metadatapb.AgentUpdatesResponse{})
+			err := srv.Send(&metadatapb.AgentUpdatesResponse{
+				AgentSchemasUpdated: false,
+			})
 			if err != nil {
 				return err
 			}
@@ -244,22 +246,28 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 				case <-srv.Context().Done():
 					return nil
 				default:
-					response := &metadatapb.AgentUpdatesResponse{}
-					if !finishedSchema {
-						schemas, err := convertToSchemaInfo(newComputedSchema)
-						if err != nil {
-							return err
-						}
-						response.AgentSchemas = schemas
-						finishedSchema = true
+					response := &metadatapb.AgentUpdatesResponse{
+						AgentSchemasUpdated: false,
 					}
-
 					for idx := currentIdx; idx < currentIdx+agentChunkSize; idx++ {
 						if idx < len(updates) {
 							response.AgentUpdates = append(response.AgentUpdates, updates[idx])
 						} else {
 							finishedUpdates = true
 						}
+					}
+
+					// Send the schema once all of the other updates have been sent for this batch.
+					// That way, the schema will never prematurely refer to an agent that the client
+					// is currently unaware of.
+					if finishedUpdates && !finishedSchema {
+						schemas, err := convertToSchemaInfo(newComputedSchema)
+						if err != nil {
+							return err
+						}
+						response.AgentSchemas = schemas
+						finishedSchema = true
+						response.AgentSchemasUpdated = true
 					}
 
 					currentIdx += agentChunkSize

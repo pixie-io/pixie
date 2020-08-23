@@ -1041,27 +1041,27 @@ func TestGetAgentUpdates(t *testing.T) {
 
 	// Check first message
 	r0 := resps[0]
-	// Check schemas
-	assert.Equal(t, 2, len(r0.AgentSchemas))
-	assert.Equal(t, "table1", r0.AgentSchemas[0].Name)
-	assert.Equal(t, 3, len(r0.AgentSchemas[0].Relation.Columns))
-	assert.Equal(t, 2, len(r0.AgentSchemas[0].AgentList))
-	assert.Equal(t, u1pb, r0.AgentSchemas[0].AgentList[0])
-	assert.Equal(t, u2pb, r0.AgentSchemas[0].AgentList[1])
-	assert.Equal(t, "table2", r0.AgentSchemas[1].Name)
-	assert.Equal(t, 2, len(r0.AgentSchemas[1].Relation.Columns))
-	assert.Equal(t, 1, len(r0.AgentSchemas[1].AgentList))
-	assert.Equal(t, u1pb, r0.AgentSchemas[1].AgentList[0])
 	// Check updates
 	assert.Equal(t, 2, len(r0.AgentUpdates))
 	assert.Equal(t, updates1[0], r0.AgentUpdates[0])
 	assert.Equal(t, updates1[1], r0.AgentUpdates[1])
+	assert.Nil(t, r0.AgentSchemas)
 
 	// Check second message
 	r1 := resps[1]
-	assert.Nil(t, r1.AgentSchemas)
 	assert.Equal(t, 1, len(r1.AgentUpdates))
 	assert.Equal(t, updates1[2], r1.AgentUpdates[0])
+	// Check schemas
+	assert.Equal(t, 2, len(r1.AgentSchemas))
+	assert.Equal(t, "table1", r1.AgentSchemas[0].Name)
+	assert.Equal(t, 3, len(r1.AgentSchemas[0].Relation.Columns))
+	assert.Equal(t, 2, len(r1.AgentSchemas[0].AgentList))
+	assert.Equal(t, u1pb, r1.AgentSchemas[0].AgentList[0])
+	assert.Equal(t, u2pb, r1.AgentSchemas[0].AgentList[1])
+	assert.Equal(t, "table2", r1.AgentSchemas[1].Name)
+	assert.Equal(t, 2, len(r1.AgentSchemas[1].Relation.Columns))
+	assert.Equal(t, 1, len(r1.AgentSchemas[1].AgentList))
+	assert.Equal(t, u1pb, r1.AgentSchemas[1].AgentList[0])
 
 	// Check empty message
 	r2 := resps[2]

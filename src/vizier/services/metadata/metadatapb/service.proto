@@ -112,7 +112,13 @@ message AgentUpdatesResponse {
   // A list of agent updates, in the order in which they occurred.
   repeated AgentUpdate agent_updates = 1;
   // The latest version of the agent schemas, if they have changed since the last message.
+  // For a given batch of AgentUpdates, the AgentSchemas will always be sent last so that they don't
+  // refer to an agent ID that the client hasn't heard about yet.
+  // Also note the schema will always be sent in its entirety, so it will not be paginated.
   repeated pl.carnot.planner.distributedpb.SchemaInfo agent_schemas = 2;
+  // Whether or not the agent schemas have been updated. This is to differentiate between the case where
+  // there are truly no AgentSchemas present and when there is no update to those agent schemas.
+  bool agent_schemas_updated = 3;
 }
 
 // The request to register tracepoints on all PEMs.

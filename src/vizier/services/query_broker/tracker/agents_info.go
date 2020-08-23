@@ -18,7 +18,7 @@ const KelvinSSLTargetOverride = "kelvin.pl.svc"
 // AgentsInfo tracks information about the distributed state of the system.
 type AgentsInfo interface {
 	ClearState()
-	UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate, schemaInfos []*distributedpb.SchemaInfo) error
+	UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate, schemaInfos []*distributedpb.SchemaInfo, schemasUpdated bool) error
 	DistributedState() *distributedpb.DistributedState
 }
 
@@ -53,8 +53,9 @@ func (a *AgentsInfoImpl) ClearState() {
 }
 
 // UpdateAgentsInfo creates a new agent info.
-func (a *AgentsInfoImpl) UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate, schemaInfos []*distributedpb.SchemaInfo) error {
-	if len(schemaInfos) > 0 {
+func (a *AgentsInfoImpl) UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate, schemaInfos []*distributedpb.SchemaInfo,
+	schemasUpdated bool) error {
+	if schemasUpdated {
 		a.ds.SchemaInfo = schemaInfos
 	}
 	carnotInfoMap := make(map[uuid.UUID]*distributedpb.CarnotInfo)

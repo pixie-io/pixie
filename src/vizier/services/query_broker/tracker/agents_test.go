@@ -29,7 +29,8 @@ func (a *fakeAgentsInfo) DistributedState() *distributedpb.DistributedState {
 	return nil
 }
 
-func (a *fakeAgentsInfo) UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate, schemaInfos []*distributedpb.SchemaInfo) error {
+func (a *fakeAgentsInfo) UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate, schemaInfos []*distributedpb.SchemaInfo,
+	updatedSchema bool) error {
 	if len(agentUpdates) > 0 || len(schemaInfos) > 0 {
 		a.wg.Done()
 	}

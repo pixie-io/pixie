@@ -195,7 +195,7 @@ func TestAgentsInfo_UpdateAgentsInfo(t *testing.T) {
 
 	// Update schema
 	// Add agents 1,2 and add table metadata for 1 agent.
-	err := agentsInfo.UpdateAgentsInfo(updates1, testSchema)
+	err := agentsInfo.UpdateAgentsInfo(updates1, testSchema, true)
 	assert.Nil(t, err)
 	assert.Equal(t, testSchema, agentsInfo.DistributedState().SchemaInfo)
 
@@ -282,7 +282,7 @@ func TestAgentsInfo_UpdateAgentsInfo(t *testing.T) {
 		},
 	}
 
-	err = agentsInfo.UpdateAgentsInfo(updates2, nil)
+	err = agentsInfo.UpdateAgentsInfo(updates2, nil, false)
 	assert.Nil(t, err)
 	agentsMap = make(map[uuid.UUID]*distributedpb.CarnotInfo)
 	for _, carnotInfo := range agentsInfo.DistributedState().CarnotInfo {
@@ -297,4 +297,9 @@ func TestAgentsInfo_UpdateAgentsInfo(t *testing.T) {
 	assert.Equal(t, expectedPEM1Info, agentsMap[uuids[0]])
 	// Agent 3 should be created.
 	assert.Equal(t, expectedPEM2Info, agentsMap[uuids[2]])
+
+	// Test the case where the schema is updated to be fully empty.
+	err = agentsInfo.UpdateAgentsInfo(nil, []*distributedpb.SchemaInfo{}, true)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(agentsInfo.DistributedState().SchemaInfo))
 }

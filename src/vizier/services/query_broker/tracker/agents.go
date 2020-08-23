@@ -63,6 +63,7 @@ func (a *Agents) Start() {
 			if doneCalled {
 				return
 			}
+			log.WithError(err).Errorf("Received error running agent tracker loop. Retrying in 5 seconds.")
 			// If we encounter an error, wait 5 seconds then try again.
 			time.Sleep(5 * time.Second)
 		}
@@ -112,7 +113,7 @@ func (a *Agents) updateState(update *metadatapb.AgentUpdatesResponse, clearCurre
 	if clearCurrentState {
 		a.agentsInfo.ClearState()
 	}
-	return a.agentsInfo.UpdateAgentsInfo(update.AgentUpdates, update.AgentSchemas)
+	return a.agentsInfo.UpdateAgentsInfo(update.AgentUpdates, update.AgentSchemas, update.AgentSchemasUpdated)
 }
 
 type updateOrError struct {
