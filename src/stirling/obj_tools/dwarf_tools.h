@@ -131,35 +131,12 @@ inline bool operator==(const StructSpecEntry& a, const StructSpecEntry& b) {
   return a.offset == b.offset && a.size == b.size && a.type_info == b.type_info && a.path == b.path;
 }
 
-inline std::ostream& operator<<(std::ostream& os, const TypeInfo& x) {
-  os << x.ToString();
-  return os;
-}
-
-inline std::ostream& operator<<(std::ostream& os, const StructMemberInfo& x) {
-  os << x.ToString();
-  return os;
-}
-
-inline std::ostream& operator<<(std::ostream& os, const ArgLocation& x) {
-  os << x.ToString();
-  return os;
-}
-
-inline std::ostream& operator<<(std::ostream& os, const ArgInfo& x) {
-  os << x.ToString();
-  return os;
-}
-
-inline std::ostream& operator<<(std::ostream& os, const RetValInfo& x) {
-  os << x.ToString();
-  return os;
-}
-
-inline std::ostream& operator<<(std::ostream& os, const StructSpecEntry& x) {
-  os << x.ToString();
-  return os;
-}
+DEFINE_TO_STRING_OUTPUT_OPERATOR(TypeInfo);
+DEFINE_TO_STRING_OUTPUT_OPERATOR(StructMemberInfo);
+DEFINE_TO_STRING_OUTPUT_OPERATOR(ArgLocation);
+DEFINE_TO_STRING_OUTPUT_OPERATOR(ArgInfo);
+DEFINE_TO_STRING_OUTPUT_OPERATOR(RetValInfo);
+DEFINE_TO_STRING_OUTPUT_OPERATOR(StructSpecEntry);
 
 //-----------------------------------------------------------------------------
 // DwarfReader

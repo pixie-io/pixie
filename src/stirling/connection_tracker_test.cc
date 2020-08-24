@@ -829,14 +829,8 @@ auto StatsIs(int open, int close, int sent, int recv) {
                Field(&ConnectionStats::Stats::bytes_recv, recv));
 }
 
-#define DefineDebugStringStreamOutput(Type)                     \
-  std::ostream& operator<<(std::ostream& os, const Type& val) { \
-    os << val.DebugString();                                    \
-    return os;                                                  \
-  }
-
-DefineDebugStringStreamOutput(ConnectionStats::AggKey);
-DefineDebugStringStreamOutput(ConnectionStats::Stats);
+DEFINE_TO_STRING_OUTPUT_OPERATOR(ConnectionStats::AggKey);
+DEFINE_TO_STRING_OUTPUT_OPERATOR(ConnectionStats::Stats);
 
 // Test cases for protocols and roles are enumerated to avoid uncertainty in the handling in all of
 // the combinations of protocols and roles; as the handling of protocols and roles is quite

@@ -5,6 +5,8 @@
 
 #include <absl/strings/substitute.h>
 
+#include "src/common/base/base.h"
+
 namespace pl {
 namespace stirling {
 
@@ -21,16 +23,11 @@ struct NV {
   std::string name;
   std::string value;
 
-  std::string DebugString() const {
-    return absl::Substitute("[name='$0' value='$1']", name, value);
-  }
+  std::string ToString() const { return absl::Substitute("[name='$0' value='$1']", name, value); }
 };
 
 // This allows GoogleTest to print NV values.
-inline std::ostream& operator<<(std::ostream& os, const NV& nv) {
-  os << nv.DebugString();
-  return os;
-}
+DEFINE_TO_STRING_OUTPUT_OPERATOR(NV);
 
 inline void RemoveRepeatingSuffix(std::string_view* str, char c) {
   size_t pos = str->find_last_not_of(c);

@@ -54,7 +54,7 @@ class ConnectionStats {
                         key.remote_port);
     }
 
-    std::string DebugString() const {
+    std::string ToString() const {
       return absl::Substitute("[tgid=$0 protocol=$1 role=$2 addr=$3 port=$4]", upid.tgid,
                               traffic_class.protocol, traffic_class.role, remote_addr, remote_port);
     }
@@ -66,7 +66,7 @@ class ConnectionStats {
     uint64_t bytes_sent = 0;
     uint64_t bytes_recv = 0;
 
-    std::string DebugString() const {
+    std::string ToString() const {
       return absl::Substitute("[conn_open=$0 conn_close=$1 bytes_sent=$2 bytes_recv=$3]", conn_open,
                               conn_close, bytes_sent, bytes_recv);
     }
