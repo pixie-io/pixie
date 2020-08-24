@@ -833,6 +833,24 @@ class PodIPToPodIDUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
     return md->k8s_metadata_state().PodIDByIP(pod_ip);
   }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder(
+               "Convert IP address to the kubernetes pod ID that runs the backing service.")
+        .Details(
+            "Converts the IP address into a kubernetes pod ID for that IP address if it exists, "
+            "otherwise returns an empty string. Converting to a pod ID means you can then extract "
+            "the corresponding service name using `px.pod_id_to_service_name`.\n"
+            "Note that this will not be able to convert IP addresses into DNS names generally as "
+            "this is limited to internal Kubernetes state.")
+        .Example(R"doc(
+        | # Convert to the Kubernetes pod ID.
+        | df.pod_id = px.ip_to_pod_id(df.remote_addr)
+        | # Convert the ID to a readable name.
+        | df.service = px.pod_id_to_service_name(df.pod_id)
+        )doc")
+        .Arg("pod_ip", "The IP of a pod to convert.")
+        .Returns("The Kubernetes ID of the pod if it exists, otherwise an empty string.");
+  }
 };
 
 void RegisterMetadataOpsOrDie(pl::carnot::udf::Registry* registry);

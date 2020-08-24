@@ -28,6 +28,14 @@ class ContainsUDF : public udf::ScalarUDF {
 class LengthUDF : public udf::ScalarUDF {
  public:
   Int64Value Exec(FunctionContext*, StringValue b1) { return b1.length(); }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Returns the length of the string")
+        .Example(R"doc(df.service = 'checkout'
+        | df.length = px.length(df.service)
+        )doc")
+        .Arg("s", "The string to get the length of")
+        .Returns("The length of the string.");
+  }
 };
 
 class FindUDF : public udf::ScalarUDF {

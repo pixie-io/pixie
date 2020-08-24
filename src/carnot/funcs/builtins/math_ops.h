@@ -81,18 +81,54 @@ template <typename TArg1, typename TArg2>
 class LogicalOrUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val || b2.val; }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Boolean ORs the passed in values.")
+        .Example(R"doc(
+        | # Implicit operator.
+        | df.can_filter_or_has_data = df.can_filter or df.has_data
+        | # Explicit call.
+        | df.can_filter_or_has_data = px.logicalOr(df.can_filter, df.has_data)
+        )doc")
+        .Arg("b1", "Left side of the OR.")
+        .Arg("b2", "Right side of the OR.")
+        .Returns(
+            "True if either expression is Truthy or both expressions are Truthy, otherwise False.");
+  }
 };
 
 template <typename TArg1, typename TArg2>
 class LogicalAndUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val && b2.val; }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Boolean ANDs the passed in values.")
+        .Example(R"doc(
+        | # Implicit operator.
+        | df.can_filter_and_has_data = df.can_filter and df.has_data
+        | # Explicit call.
+        | df.can_filter_and_has_data = px.logicalAnd(df.can_filter, df.has_data)
+        )doc")
+        .Arg("b1", "Left side of the AND.")
+        .Arg("b2", "Right side of the AND.")
+        .Returns("True if both expressions are Truthy otherwise False.");
+  }
 };
 
 template <typename TArg1>
 class LogicalNotUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1) { return !b1.val; }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Boolean NOTs the passed in value.")
+        .Example(R"doc(
+        | # Implicit operator.
+        | df.not_can_filter = not df.can_filter
+        | # Explicit call.
+        | df.not_can_filter = px.logicalNot(df.can_filter)
+        )doc")
+        .Arg("b1", "The value to Invert.")
+        .Returns("True if input is Falsey otherwise False.");
+  }
 };
 
 template <typename TArg1>
@@ -162,12 +198,31 @@ template <typename TArg1, typename TArg2>
 class LessThanUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1 < b2; }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Returns which value is less than the other.")
+        .Example("df.cpu1_lessthan_cpu2 = df.cpu1 < df.cpu2")
+        .Arg("b1", "Left side of the expression.")
+        .Arg("b2", "Right side of the expression.")
+        .Returns("Whether the left side is less than the right.");
+  }
 };
 
 template <typename TArg1, typename TArg2>
 class LessThanEqualUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1 <= b2; }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Returns which value is less than or equal to the the other.")
+        .Example(R"doc(
+        | # Implicit operator.
+        | df.cpu1_lessthanequal_cpu2 = df.cpu1 <= df.cpu2
+        | # Explicit call.
+        | df.cpu1_lessthanequal_cpu2 = px.lessThanOrEqual(df.cpu1, df.cup2)
+        )doc")
+        .Arg("b1", "Left side of the expression.")
+        .Arg("b2", "Right side of the expression.")
+        .Returns("Whether the left side is less than or equal to the right.");
+  }
 };
 
 udf::ScalarUDFDocBuilder BinDoc();
