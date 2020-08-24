@@ -78,12 +78,40 @@ template <typename TReturn, typename TArg1, typename TArg2>
 class MultiplyUDF : public udf::ScalarUDF {
  public:
   TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val * b2.val; }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Multiplies the arguments.")
+        .Details("Multiplies the two values together. Accessible using the `*` operator syntax.")
+        .Example(R"doc(
+        | # Implicit operator.
+        | df.mult = df.duration * 2
+        | # Explicit call.
+        | df.mult = px.multiply(df.duration, 2)
+        )doc")
+        .Arg("a1", "The first value to multiply.")
+        .Arg("a2", "The second value to multiply.")
+        .Returns("The product of `a1` and `a2`.");
+  }
 };
 
 template <typename TReturn, typename TArg1, typename TArg2>
 class ModuloUDF : public udf::ScalarUDF {
  public:
   TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val % b2.val; }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Calculates the remainder of the division of the two numbers")
+        .Details(
+            "Calculates the remainder of dividing the first argument by the second argument. Same "
+            "results as the C++ modulo operator. Accessible using the `%` syntax.")
+        .Example(R"doc(
+        | # Implicit operator.
+        | df.duration_mod_5s = df.duration % px.seconds(5)
+        | # Explicit call.
+        | df.duration_mod_5s = px.modulo(df.duration, px.seconds(5))
+        )doc")
+        .Arg("a", "The dividend.")
+        .Arg("n", "The divisor.")
+        .Returns("The remainder of dividing `a` by `n`");
+  }
 };
 
 template <typename TArg1, typename TArg2>
@@ -144,6 +172,12 @@ template <typename TArg1>
 class NegateUDF : public udf::ScalarUDF {
  public:
   TArg1 Exec(FunctionContext*, TArg1 b1) { return -b1.val; }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Negates the passed in value.")
+        .Example("df.negative_latency_ms = -df.latency_ms")
+        .Arg("b1", "The value to negate.")
+        .Returns("`b1` with a flipped negative sign.");
+  }
 };
 
 template <typename TArg1>
@@ -163,12 +197,33 @@ template <typename TArg1, typename TArg2>
 class EqualUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1 == b2; }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Returns whether the values are equal.")
+        .Details(
+            "Determines whether the values are equal. Passing in floating-point values might lead "
+            "to false negatives. Use `px.approxEqual(b1, b2)` to compare floats instead.")
+        .Example("df.failed_http_req = df.http_status == 200")
+        .Arg("b1", "")
+        .Arg("b2", "")
+        .Returns("True if `b1` is equal to `b2`, False otherwise.");
+  }
 };
 
 template <typename TArg1, typename TArg2>
 class NotEqualUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1 != b2; }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Returns whether the values are not equal.")
+        .Details(
+            "Determines whether the values are not equal. Passing in floating-point values might "
+            "lead "
+            "to false positives. Use `not px.approxEqual(b1, b2)` to compare floats instead.")
+        .Example("df.failed_http_req = df.http_status != 200")
+        .Arg("b1", "")
+        .Arg("b2", "")
+        .Returns("True if `b1` is not equal to `b2`, False otherwise.");
+  }
 };
 
 template <typename TArg1, typename TArg2>
@@ -375,6 +430,13 @@ class MaxUDA : public udf::UDA {
     return {udf::InheritTypeFromArgs<MaxUDA>::Create({types::ST_BYTES, types::ST_PERCENT})};
   }
 
+  static udf::UDADocBuilder Doc() {
+    return udf::UDADocBuilder("Returns the maximum in the group.")
+        .Example("df = df.agg(max_latency=('latency_ms', px.max))")
+        .Arg("arg", "The data on which to apply the function.")
+        .Returns("The maximum value in the group.");
+  }
+
   StringValue Serialize(FunctionContext*) {
     return StringValue(reinterpret_cast<char*>(&max_), sizeof(max_));
   }
@@ -418,7 +480,7 @@ class MinUDA : public udf::UDA {
     return Status::OK();
   }
   static udf::UDADocBuilder Doc() {
-    return udf::UDADocBuilder("Returns the minimum.")
+    return udf::UDADocBuilder("Returns the minimum in the group.")
         .Example("df = df.agg(min_latency=('latency_ms', px.min))")
         .Arg("arg", "The data on which to apply the function.")
         .Returns("The minimum.");
