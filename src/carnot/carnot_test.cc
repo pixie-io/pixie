@@ -67,11 +67,12 @@ TEST_F(CarnotTest, basic) {
   auto query_id = sole::uuid4();
   auto s = carnot_->ExecuteQuery(query, query_id, 0);
   ASSERT_OK(s);
-  auto res = s.ConsumeValueOrDie();
-  EXPECT_EQ(5, res.rows_processed);
-  EXPECT_EQ(5 * sizeof(double) + 5 * sizeof(int64_t), res.bytes_processed);
-  EXPECT_GT(res.compile_time_ns, 0);
-  EXPECT_GT(res.exec_time_ns, 0);
+
+  auto exec_stats = result_server_->exec_stats().ConsumeValueOrDie();
+  EXPECT_EQ(5, exec_stats.execution_stats().records_processed());
+  EXPECT_EQ(5 * sizeof(double) + 5 * sizeof(int64_t),
+            exec_stats.execution_stats().bytes_processed());
+  EXPECT_LT(0, exec_stats.execution_stats().timing().execution_time_ns());
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");

@@ -77,9 +77,11 @@ void BM_Query(benchmark::State& state, std::vector<types::DataType> types,
   int i = 0;
   for (auto _ : state) {
     auto queryWithTableName = absl::Substitute(query, "results_" + std::to_string(i));
-    auto res = carnot->ExecuteQuery(queryWithTableName, sole::uuid4(), CurrentTimeNS())
-                   .ConsumeValueOrDie();
-    bytes_processed += res.bytes_processed;
+    auto res = carnot->ExecuteQuery(queryWithTableName, sole::uuid4(), CurrentTimeNS());
+    if (!res.ok()) {
+      LOG(FATAL) << "Aggregate benchmark query did not execute successfully.";
+    }
+    bytes_processed += server.exec_stats().ConsumeValueOrDie().execution_stats().bytes_processed();
     ++i;
   }
 

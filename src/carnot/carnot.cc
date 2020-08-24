@@ -18,28 +18,6 @@ namespace carnot {
 
 using types::DataType;
 
-Status CarnotQueryResult::ToProto(queryresultspb::QueryResult* query_result) const {
-  CHECK(query_result != nullptr);
-  auto* exec_stats = query_result->mutable_execution_stats();
-  exec_stats->set_records_processed(rows_processed);
-  exec_stats->set_bytes_processed(bytes_processed);
-
-  auto* timing_info = query_result->mutable_timing_info();
-  timing_info->set_execution_time_ns(exec_time_ns);
-  timing_info->set_compilation_time_ns(compile_time_ns);
-
-  for (size_t i = 0; i < output_tables_.size(); ++i) {
-    auto table = query_result->add_tables();
-    PL_RETURN_IF_ERROR(output_tables_[i]->ToProto(table));
-    table->set_name(table_names_[i]);
-  }
-
-  for (const auto& stats : agent_operator_exec_stats) {
-    (*query_result->add_agent_execution_stats()) = stats;
-  }
-  return Status::OK();
-}
-
 class CarnotImpl final : public Carnot {
  public:
   ~CarnotImpl() override;
@@ -61,11 +39,10 @@ class CarnotImpl final : public Carnot {
               int grpc_server_port = 0,
               std::shared_ptr<grpc::ServerCredentials> grpc_server_creds = nullptr);
 
-  StatusOr<CarnotQueryResult> ExecuteQuery(const std::string& query, const sole::uuid& query_id,
-                                           types::Time64NSValue time_now, bool analyze) override;
+  Status ExecuteQuery(const std::string& query, const sole::uuid& query_id,
+                      types::Time64NSValue time_now, bool analyze) override;
 
-  StatusOr<CarnotQueryResult> ExecutePlan(const planpb::Plan& plan, const sole::uuid& query_id,
-                                          bool analyze) override;
+  Status ExecutePlan(const planpb::Plan& plan, const sole::uuid& query_id, bool analyze) override;
 
   void RegisterAgentMetadataCallback(AgentMetadataCallbackFunc func) override {
     agent_md_callback_ = func;
@@ -93,17 +70,6 @@ class CarnotImpl final : public Carnot {
   bool HasGRPCServer() { return grpc_server_ != nullptr; }
 
   void GRPCServerFunc();
-
-  /**
-   * @brief This rewrites the logical plan's sinks to be related to the query id, removing a bug
-   * that we encountered when you write a table with the same output name but different relation.
-   *
-   * @param logical_plan: the original logical_plan
-   * @param query_id: the query id to use as some form of the sink name.
-   * @return planpb::Plan: the modified plan.
-   */
-  planpb::Plan InterceptSinksInPlan(const planpb::Plan& logical_plan, const sole::uuid& query_id,
-                                    absl::flat_hash_map<std::string, std::string>*);
 
   AgentMetadataCallbackFunc agent_md_callback_;
   planner::compiler::Compiler compiler_;
@@ -143,20 +109,12 @@ Status CarnotImpl::Init(const sole::uuid& agent_id, std::unique_ptr<udf::Registr
   return Status::OK();
 }
 
-StatusOr<CarnotQueryResult> CarnotImpl::ExecuteQuery(const std::string& query,
-                                                     const sole::uuid& query_id,
-                                                     types::Time64NSValue time_now, bool analyze) {
+Status CarnotImpl::ExecuteQuery(const std::string& query, const sole::uuid& query_id,
+                                types::Time64NSValue time_now, bool analyze) {
   // Compile the query.
-  auto timer = ElapsedTimer();
-  timer.Start();
   auto compiler_state = engine_state_->CreateLocalExecutionCompilerState(time_now);
   PL_ASSIGN_OR_RETURN(auto logical_plan, compiler_.Compile(query, compiler_state.get()));
-  timer.Stop();
-  int64_t compile_time_ns = timer.ElapsedTime_us() * 1000;
-  // Get the output table names from the plan.
-  PL_ASSIGN_OR_RETURN(CarnotQueryResult plan_result, ExecutePlan(logical_plan, query_id, analyze));
-  plan_result.compile_time_ns = compile_time_ns;
-  return plan_result;
+  return ExecutePlan(logical_plan, query_id, analyze);
 }
 
 /**
@@ -223,28 +181,6 @@ Status CarnotImpl::WalkExpression(exec::ExecState* exec_state, const plan::Scala
     return error::Internal("Error walking expression.");
   }
   return Status::OK();
-}
-
-planpb::Plan CarnotImpl::InterceptSinksInPlan(
-    const planpb::Plan& logical_plan, const sole::uuid& query_id,
-    absl::flat_hash_map<std::string, std::string>* table_name_mapping) {
-  planpb::Plan modified_logical_plan = logical_plan;
-  int64_t sink_counter = 0;
-  for (int64_t i = 0; i < modified_logical_plan.nodes_size(); ++i) {
-    auto plan_fragment = modified_logical_plan.mutable_nodes(i);
-    for (int64_t frag_i = 0; frag_i < plan_fragment->nodes_size(); ++frag_i) {
-      auto plan_op = plan_fragment->mutable_nodes(frag_i);
-      if (plan_op->op().op_type() == planpb::MEMORY_SINK_OPERATOR) {
-        auto mem_sink = plan_op->mutable_op()->mutable_mem_sink_op();
-        auto new_name = absl::Substitute("$0_$1", query_id.str(), sink_counter);
-        (*table_name_mapping)[new_name] = mem_sink->name();
-        *(mem_sink->mutable_name()) = new_name;
-        sink_counter += 1;
-      }
-    }
-  }
-
-  return modified_logical_plan;
 }
 
 void CarnotImpl::GRPCServerFunc() {
@@ -338,16 +274,12 @@ Status SendExecutionStatsToOutgoingConns(
   return Status::OK();
 }
 
-StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan,
-                                                    const sole::uuid& query_id, bool analyze) {
+Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uuid& query_id,
+                               bool analyze) {
   auto timer = ElapsedTimer();
   plan::Plan plan;
 
-  // Here we intercept the logical plan and remove all references to user specified table names.
-  // TODO(philkuz) in the future when we remove the name argumetn from Results, rework this name.
-  absl::flat_hash_map<std::string, std::string> table_name_mapping;
-
-  PL_RETURN_IF_ERROR(plan.Init(InterceptSinksInPlan(logical_plan, query_id, &table_name_mapping)));
+  PL_RETURN_IF_ERROR(plan.Init(logical_plan));
 
   // For each of the plan fragments in the plan, execute the query.
   std::vector<std::string> output_table_strs;
@@ -432,36 +364,9 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
   agent_operator_exec_stats.set_records_processed(rows_processed);
   all_agent_stats.push_back(agent_operator_exec_stats);
 
-  // TODO(nserrino): Remove this case when the old query API gets deprecated.
-  if (output_table_strs.size()) {
-    PL_RETURN_IF_ERROR(SendDoneToOutgoingConns(agent_id_, query_id, exec_state->OutgoingServers(),
-                                               all_agent_stats));
-  } else {
-    PL_RETURN_IF_ERROR(SendExecutionStatsToOutgoingConns(
-        query_id, exec_state->OutgoingServers(), engine_state_->add_auth_to_grpc_context_func(),
-        agent_operator_exec_stats, all_agent_stats));
-  }
-
-  std::vector<table_store::Table*> output_tables;
-  output_tables.reserve(output_table_strs.size());
-  std::vector<std::string> output_table_names;
-  output_table_names.reserve(output_table_strs.size());
-  for (const auto& table_str : output_table_strs) {
-    auto table_name_mapping_iter = table_name_mapping.find(table_str);
-    if (table_name_mapping_iter == table_name_mapping.end()) {
-      output_table_names.push_back(table_str);
-    } else {
-      output_table_names.push_back(table_name_mapping_iter->second);
-    }
-
-    output_tables.push_back(table_store()->GetTable(table_str));
-  }
-
-  // Compile time is not set for ExecutePlan.
-  int64_t compile_time_ns = 0;
-  // Get the output table names from the plan.
-  return CarnotQueryResult{output_tables,   output_table_names, all_agent_stats, rows_processed,
-                           bytes_processed, compile_time_ns,    exec_time_ns};
+  return SendExecutionStatsToOutgoingConns(query_id, exec_state->OutgoingServers(),
+                                           engine_state_->add_auth_to_grpc_context_func(),
+                                           agent_operator_exec_stats, all_agent_stats);
 }
 
 CarnotImpl::~CarnotImpl() {

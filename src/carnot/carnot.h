@@ -16,24 +16,6 @@
 namespace pl {
 namespace carnot {
 
-struct CarnotQueryResult {
-  size_t NumTables() const { return output_tables_.size(); }
-  table_store::Table* GetTable(int64_t i) const { return output_tables_[i]; }
-  /**
-   * Convert this query result to a proto that can be sent over the wire.
-   * @param query_result The query result to fill in.
-   */
-  Status ToProto(queryresultspb::QueryResult* query_result) const;
-  std::vector<table_store::Table*> output_tables_;
-  std::vector<std::string> table_names_;
-  std::vector<queryresultspb::AgentExecutionStats> agent_operator_exec_stats;
-
-  int64_t rows_processed = 0;
-  int64_t bytes_processed = 0;
-  int64_t compile_time_ns = 0;
-  int64_t exec_time_ns = 0;
-};
-
 constexpr auto kRPCResultTimeout = std::chrono::seconds(2);
 
 class Carnot : public NotCopyable {
@@ -61,19 +43,16 @@ class Carnot : public NotCopyable {
    * @param time_now the current time.
    * @return a Carnot Return with output_tables if successful. Error status otherwise.
    */
-  virtual StatusOr<CarnotQueryResult> ExecuteQuery(const std::string& query,
-                                                   const sole::uuid& query_id,
-                                                   types::Time64NSValue time_now,
-                                                   bool analyze = false) = 0;
+  virtual Status ExecuteQuery(const std::string& query, const sole::uuid& query_id,
+                              types::Time64NSValue time_now, bool analyze = false) = 0;
   /**
    * Executes the given logical plan.
    *
    * @param plan the plan protobuf describing what should be compiled.
    * @return a Carnot Return with output_tables if successful. Error status otherwise.
    */
-  virtual StatusOr<CarnotQueryResult> ExecutePlan(const planpb::Plan& plan,
-                                                  const sole::uuid& query_id,
-                                                  bool analyze = false) = 0;
+  virtual Status ExecutePlan(const planpb::Plan& plan, const sole::uuid& query_id,
+                             bool analyze = false) = 0;
 
   /**
    * Registers the callback for updating the agents metadata state.

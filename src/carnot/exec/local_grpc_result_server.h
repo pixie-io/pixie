@@ -15,6 +15,7 @@ namespace pl {
 namespace carnot {
 
 using table_store::schema::RowBatch;
+using QueryExecStats = carnotpb::TransferResultChunkRequest_QueryExecutionAndTimingInfo;
 
 namespace exec {
 
@@ -22,7 +23,8 @@ namespace exec {
 // tests, and the single node Carnot executable.
 class LocalResultSinkServer final : public carnotpb::ResultSinkService::Service {
  public:
-  const std::vector<carnotpb::TransferResultChunkRequest>& query_results() const {
+  std::vector<carnotpb::TransferResultChunkRequest> query_results() {
+    const std::lock_guard<std::mutex> lock(result_mutex_);
     return query_results_;
   }
 
@@ -76,11 +78,27 @@ class LocalGRPCResultSinkServer {
     }
   }
 
-  const std::vector<carnotpb::TransferResultChunkRequest>& raw_query_results() const {
+  std::vector<carnotpb::TransferResultChunkRequest> raw_query_results() {
     return result_sink_server_.query_results();
   }
 
-  absl::flat_hash_set<std::string> output_tables() const {
+  StatusOr<QueryExecStats> exec_stats() {
+    bool got_exec_stats = false;
+    QueryExecStats output;
+    for (const auto& req : result_sink_server_.query_results()) {
+      if (req.has_execution_and_timing_info()) {
+        if (got_exec_stats) {
+          return error::Internal(
+              "Exec stats result chunk was unexpectedly sent twice for one query");
+        }
+        output = req.execution_and_timing_info();
+        got_exec_stats = true;
+      }
+    }
+    return output;
+  }
+
+  absl::flat_hash_set<std::string> output_tables() {
     absl::flat_hash_set<std::string> output;
     for (const auto& req : result_sink_server_.query_results()) {
       if (req.has_row_batch_result()) {
@@ -90,7 +108,7 @@ class LocalGRPCResultSinkServer {
     return output;
   }
 
-  std::vector<RowBatch> query_results(std::string_view table_name) const {
+  std::vector<RowBatch> query_results(std::string_view table_name) {
     std::vector<RowBatch> output;
     for (const auto& req : result_sink_server_.query_results()) {
       if (req.has_row_batch_result() && req.row_batch_result().table_name() == table_name) {

@@ -187,28 +187,21 @@ std::shared_ptr<pl::table_store::Table> GetTableFromCsv(const std::string& filen
  * @param filename The name of the output CSV file.
  * @param table The table to write to a CSV.
  */
-void TableToCsv(const std::string& filename, pl::table_store::Table* table) {
+void TableToCsv(const std::string& filename,
+                const std::vector<pl::carnot::RowBatch> result_batches) {
   std::ofstream output_csv;
   output_csv.open(filename);
-
-  auto col_idxs = std::vector<int64_t>();
-  for (int64_t i = 0; i < table->NumColumns(); i++) {
-    col_idxs.push_back(i);
+  if (!result_batches.size()) {
+    output_csv.close();
   }
-
-  std::vector<std::string> output_col_names;
-  for (size_t i = 0; i < col_idxs.size(); i++) {
-    output_col_names.push_back(table->GetColumn(i)->name());
-  }
-  output_csv << absl::StrJoin(output_col_names, ",") << "\n";
-
-  for (auto i = 0; i < table->NumBatches(); i++) {
-    auto rb = table->GetRowBatch(i, col_idxs, arrow::default_memory_pool()).ConsumeValueOrDie();
-    for (auto row_idx = 0; row_idx < rb->num_rows(); row_idx++) {
+  // TODO(nserrino): Add the column names back in here.
+  // They will need to either be collected from the plan, or the schema sent via the GRPCSink.
+  for (const auto& rb : result_batches) {
+    for (auto row_idx = 0; row_idx < rb.num_rows(); row_idx++) {
       std::vector<std::string> row;
-      for (size_t col_idx = 0; col_idx < col_idxs.size(); col_idx++) {
-#define TYPE_CASE(_dt_) AddStringValueToRow<_dt_>(&row, rb->ColumnAt(col_idx).get(), row_idx)
-        PL_SWITCH_FOREACH_DATATYPE(table->GetColumn(col_idx)->data_type(), TYPE_CASE);
+      for (auto col_idx = 0; col_idx < rb.num_columns(); col_idx++) {
+#define TYPE_CASE(_dt_) AddStringValueToRow<_dt_>(&row, rb.ColumnAt(col_idx).get(), row_idx)
+        PL_SWITCH_FOREACH_DATATYPE(rb.desc().type(col_idx), TYPE_CASE);
 #undef TYPE_CASE
       }
       output_csv << absl::StrJoin(row, ",") << "\n";
@@ -244,11 +237,17 @@ int main(int argc, char* argv[]) {
   auto carnot = carnot_or_s.ConsumeValueOrDie();
   table_store->AddTable(table_name, table);
   auto exec_status = carnot->ExecuteQuery(query, sole::uuid4(), pl::CurrentTimeNS());
-  auto res = exec_status.ConsumeValueOrDie();
+  if (!exec_status.ok()) {
+    LOG(FATAL) << absl::Substitute("Query failed to execute: $0", exec_status.msg());
+  }
 
+  auto output_names = result_server.output_tables();
+  if (!output_names.size()) {
+    LOG(FATAL) << "Query produced no output tables.";
+  }
+  std::string output_name = *(result_server.output_tables().begin());
+  LOG(INFO) << absl::Substitute("Writing results for output table: $0", output_name);
   // Write output table to CSV.
-  auto output_table = res.output_tables_[0];
-  TableToCsv(output_filename, output_table);
-
+  TableToCsv(output_filename, result_server.query_results(output_name));
   return 0;
 }

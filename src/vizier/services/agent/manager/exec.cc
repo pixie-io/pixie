@@ -17,19 +17,13 @@ namespace pl {
 namespace vizier {
 namespace agent {
 
-constexpr auto kRPCResultTimeout = std::chrono::seconds(2);
-
 using ::pl::event::AsyncTask;
-using ::pl::vizier::services::query_broker::querybrokerpb::AgentQueryResponse;
-using ::pl::vizier::services::query_broker::querybrokerpb::AgentQueryResultRequest;
-using ::pl::vizier::services::query_broker::querybrokerpb::AgentQueryResultResponse;
 
 class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
  public:
-  ExecuteQueryTask(ExecuteQueryMessageHandler* h, const Info* agent_info, carnot::Carnot* carnot,
+  ExecuteQueryTask(ExecuteQueryMessageHandler* h, carnot::Carnot* carnot,
                    QueryBrokerServiceSPtr qb_stub, std::unique_ptr<messages::VizierMessage> msg)
       : parent_(h),
-        agent_info_(agent_info),
         carnot_(carnot),
         qb_stub_(qb_stub),
         msg_(std::move(msg)),
@@ -39,76 +33,20 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
   sole::uuid query_id() { return query_id_; }
 
   void Work() override {
-    AgentQueryResultRequest res_req;
-    auto contains_batch_result_or_s = PlanContainsBatchResults(req_.plan());
-    if (!contains_batch_result_or_s.ok()) {
-      LOG(ERROR) << absl::Substitute("Query failed, reason: $0, plan: $1",
-                                     contains_batch_result_or_s.status().msg(),
-                                     req_.plan().DebugString());
-    }
+    VLOG(1) << absl::Substitute("Executing query: id=$0", query_id_.str());
+    VLOG(1) << absl::Substitute("Query Plan: $0=$1", query_id_.str(), req_.plan().DebugString());
 
-    bool send_batch_result = qb_stub_ != nullptr && contains_batch_result_or_s.ConsumeValueOrDie();
-
-    auto s = ExecuteQueryInternal(send_batch_result ? res_req.mutable_result() : nullptr);
+    auto s = carnot_->ExecutePlan(req_.plan(), query_id_, req_.analyze());
     if (!s.ok()) {
       LOG(ERROR) << absl::Substitute("Query failed, reason: $0, plan: $1", s.ToString(),
                                      req_.plan().DebugString());
-    }
-
-    if (!send_batch_result) {
-      // In distributed mode only non data collecting nodes send data.
-      // TODO(zasgar/philkuz/michelle): We should actually just code in the Querybroker address into
-      // the plan and remove the hardcoding here.
-      return;
-    }
-
-    CHECK(qb_stub_ != nullptr);
-
-    // RPC the results to the query broker.
-    AgentQueryResultResponse res_resp;
-    ToProto(agent_info_->agent_id, res_req.mutable_agent_id());
-    grpc::ClientContext context;
-    AddServiceTokenToClientContext(&context);
-    // This timeout ensures that we don't get a hang.
-    context.set_deadline(std::chrono::system_clock::now() + kRPCResultTimeout);
-    auto query_response_status = qb_stub_->ReceiveAgentQueryResult(&context, res_req, &res_resp);
-    if (!query_response_status.ok()) {
-      LOG(ERROR) << absl::Substitute(
-          "Failed to send query response, code = $0, message = $1, details = $2",
-          query_response_status.error_code(), query_response_status.error_message(),
-          query_response_status.error_details());
     }
   }
 
   void Done() override { parent_->HandleQueryExecutionComplete(query_id_); }
 
  private:
-  Status ExecuteQueryInternal(AgentQueryResponse* resp) {
-    LOG(INFO) << absl::Substitute("Executing query: id=$0", query_id_.str());
-    VLOG(1) << absl::Substitute("Query Plan: $0=$1", query_id_.str(), req_.plan().DebugString());
-
-    {
-      StatusOr<carnot::CarnotQueryResult> result_or_s;
-      result_or_s = carnot_->ExecutePlan(req_.plan(), query_id_, req_.analyze());
-
-      if (resp == nullptr) {
-        return result_or_s.status();
-      }
-
-      // TODO(nserrino): Deprecate this logic when Kelvin executes all queries in streaming mode.
-      *resp->mutable_query_id() = req_.query_id();
-      if (!result_or_s.ok()) {
-        *resp->mutable_status() = result_or_s.status().ToProto();
-        return result_or_s.status();
-      }
-      PL_RETURN_IF_ERROR(result_or_s.ConsumeValueOrDie().ToProto(resp->mutable_query_result()));
-    }
-    *resp->mutable_status() = Status::OK().ToProto();
-    return Status::OK();
-  }
-
   ExecuteQueryMessageHandler* parent_;
-  const Info* agent_info_;
   carnot::Carnot* carnot_;
   QueryBrokerServiceSPtr qb_stub_;
 
@@ -126,8 +64,7 @@ ExecuteQueryMessageHandler::ExecuteQueryMessageHandler(pl::event::Dispatcher* di
 
 Status ExecuteQueryMessageHandler::HandleMessage(std::unique_ptr<messages::VizierMessage> msg) {
   // Create a task and run it on the threadpool.
-  auto task =
-      std::make_unique<ExecuteQueryTask>(this, agent_info(), carnot_, qb_stub_, std::move(msg));
+  auto task = std::make_unique<ExecuteQueryTask>(this, carnot_, qb_stub_, std::move(msg));
 
   auto query_id = task->query_id();
   auto runnable = dispatcher()->CreateAsyncTask(std::move(task));
