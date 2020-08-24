@@ -43,22 +43,26 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     whiteSpace: 'nowrap',
     display: 'inline-block',
     position: 'relative',
+    height: '100%',
   },
   prefix: {
     paddingRight: theme.spacing(2),
+    display: 'flex',
+    alignSelf: 'center',
   },
   inputKey: {
     color: `${theme.palette.success.main}`,
   },
   hint: {
     opacity: 0.2,
+    position: 'absolute',
   },
   valid: {
-    border: theme.palette.success.light,
+    border: theme.palette.success.main,
     borderStyle: 'solid',
   },
   invalid: {
-    border: theme.palette.error.main,
+    border: theme.palette.background.two,
     borderStyle: 'solid',
   },
 }));
@@ -188,7 +192,7 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
           />
           {fieldSpans}
         </div>
-        <span className={classes.hint} tabIndex={-1}>{fieldSpans.length === 0 ? placeholder : ''}</span>
+        <span className={classes.hint} tabIndex={-1}>{displayText.length === 0 ? placeholder : ''}</span>
       </div>
     </div>
   );

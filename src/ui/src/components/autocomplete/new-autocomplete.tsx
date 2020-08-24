@@ -113,8 +113,10 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
   }, [itemsMap, cursorPos, tsInfo, onChange]);
 
   const handleBackspace = React.useCallback((pos) => {
-    const [newStr, newCursorPos, newTabStops, deletedTabStop] = tsInfo.handleBackspace(pos);
-    return onChange(newStr, newCursorPos, 'EDIT', deletedTabStop ? null : newTabStops);
+    if (pos !== 0) {
+      const [newStr, newCursorPos, newTabStops, deletedTabStop] = tsInfo.handleBackspace(pos);
+      onChange(newStr, newCursorPos, 'EDIT', deletedTabStop ? null : newTabStops);
+    }
   }, [tsInfo, onChange]);
 
   const handleLeftKey = React.useCallback((pos) => {
@@ -148,6 +150,9 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
         setActiveItem(findNextItem(activeItem, itemsMap, activeCompletions, -1));
         break;
       case 'DOWN':
+        setActiveItem(findNextItem(activeItem, itemsMap, activeCompletions));
+        break;
+      case 'TAB':
         setActiveItem(findNextItem(activeItem, itemsMap, activeCompletions));
         break;
       case 'LEFT':
