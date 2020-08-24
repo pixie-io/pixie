@@ -149,7 +149,7 @@ TEST(ElfReaderTest, FuncByteCode) {
   }
 }
 
-TEST(ElfGolangItableTest, DISABLED_ExtractInterfaceTypes) {
+TEST(ElfGolangItableTest, ExtractInterfaceTypes) {
   using InterfaceMap = absl::flat_hash_map<std::string, std::vector<std::string>>;
 
   const std::string kPath = pl::testing::BazelBinTestFilePath(
@@ -157,6 +157,16 @@ TEST(ElfGolangItableTest, DISABLED_ExtractInterfaceTypes) {
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(InterfaceMap interfaces, ExtractGolangInterfaces(elf_reader.get()));
+
+  // Check for `bazel coverage` so we can bypass the final checks.
+  // Note that we still get accurate coverage metrics, because this only skips the final check.
+  // Ideally, we'd get bazel to deterministically build dummy_go_binary,
+  // but it's not easy to tell bazel to use a different config for just one target.
+#ifdef PL_COVERAGE
+  LOG(INFO) << "Whoa...`bazel coverage` is messaging with dummy_go_binary. Shame on you bazel. "
+               "Ending this test early.";
+  return;
+#else
 
   EXPECT_THAT(
       interfaces,
@@ -171,6 +181,7 @@ TEST(ElfGolangItableTest, DISABLED_ExtractInterfaceTypes) {
           Pair("internal/reflectlite.Type", UnorderedElementsAre("*internal/reflectlite.rtype")),
           Pair("reflect.Type", UnorderedElementsAre("*reflect.rtype")),
           Pair("fmt.State", UnorderedElementsAre("*fmt.pp"))));
+#endif
 }
 
 }  // namespace elf_tools

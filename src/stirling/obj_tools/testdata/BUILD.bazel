@@ -1,3 +1,5 @@
+# gazelle:ignore
+
 package(default_visibility = ["//visibility:public"])
 
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
@@ -22,25 +24,14 @@ cc_library(
     deps = ["//src/common/exec:cc_library"],
 )
 
-# To force no optimizations and no inlining, we need to pass -N -l
-gcflags_no_opt_no_inline = [
-    "-N",
-    "-l",
-]
-
-go_library(
-    name = "go_default_library",
-    srcs = [
-        "dummy_exe_fixture.h",
-        "dummy_go_binary.go",
-    ],
-    gc_goopts = gcflags_no_opt_no_inline,
-    importpath = "pixielabs.ai/pixielabs/src/stirling/obj_tools/testdata",
-)
-
 go_binary(
     name = "dummy_go_binary",
-    embed = [":go_default_library"],
+    srcs = ["dummy_go_binary.go"],
+    # To force no optimizations and no inlining, we need to pass -N -l
+    gc_goopts = [
+        "-N",
+        "-l",
+    ],
 )
 
 filegroup(

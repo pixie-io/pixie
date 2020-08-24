@@ -147,7 +147,8 @@ def pl_cc_binary(
         tags = [],
         deps = [],
         copts = [],
-        linkopts = []):
+        linkopts = [],
+        defines = []):
     if not linkopts:
         linkopts = pl_linkopts()
     deps = deps
@@ -165,6 +166,7 @@ def pl_cc_binary(
         stamp = 1,
         tags = tags,
         deps = deps + _default_external_deps() + _default_internal_deps(),
+        defines = defines,
     )
 
 # PL C++ test targets should be specified with this function.
@@ -178,6 +180,7 @@ def pl_cc_test(
         size = "small",
         timeout = "short",
         args = [],
+        defines = [],
         coverage = True,
         local = False,
         flaky = False):
@@ -191,6 +194,7 @@ def pl_cc_test(
         deps = deps,
         repository = repository,
         tags = test_lib_tags,
+        defines = defines,
     )
 
     native.cc_test(
@@ -223,7 +227,8 @@ def pl_cc_test_library(
         deps = [],
         visibility = None,
         repository = "",
-        tags = []):
+        tags = [],
+        defines = []):
     native.cc_library(
         name = name,
         srcs = srcs,
@@ -236,6 +241,7 @@ def pl_cc_test_library(
             repository + "//src/common/testing:cc_library",
         ] + _default_external_deps(),
         tags = tags,
+        defines = defines,
         visibility = visibility,
         alwayslink = 1,
         linkstatic = 1,
