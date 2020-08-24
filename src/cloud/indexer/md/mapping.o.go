@@ -96,7 +96,7 @@ const IndexMapping = `
       "eager_global_ordinals": true
     },
     "ns":{
-      "type":"text", "analyzer": "myAnalyzer",
+      "type":"text", "analyzer": "autocomplete",
       "eager_global_ordinals": true
     },
     "kind":{
@@ -119,7 +119,7 @@ const IndexMapping = `
   }
 }
 `
-const indexName = "md_entities_2"
+const indexName = "md_entities_3"
 
 // InitializeMapping creates the index in elastic.
 func InitializeMapping(es *elastic.Client) error {

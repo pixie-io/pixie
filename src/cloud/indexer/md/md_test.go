@@ -259,7 +259,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 			}
 
 			resp, err := elasticClient.Search().
-				Index("md_entities_2").
+				Index("md_entities_3").
 				Query(elastic.NewTermQuery("kind", test.updateKind)).
 				Do(context.Background())
 			assert.Nil(t, err)

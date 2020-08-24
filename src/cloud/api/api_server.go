@@ -159,7 +159,7 @@ func main() {
 		log.WithError(err).Error("Failed to init bundle manager")
 		br = nil
 	}
-	esSuggester := autocomplete.NewElasticSuggester(es, "md_entities_2", "scripts", br)
+	esSuggester := autocomplete.NewElasticSuggester(es, "md_entities_3", "scripts", br)
 
 	as := &controller.AutocompleteServer{Suggester: esSuggester}
 	cloudapipb.RegisterAutocompleteServiceServer(s.GRPCServer(), as)

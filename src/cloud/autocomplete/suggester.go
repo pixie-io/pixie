@@ -244,11 +244,15 @@ func (e *ElasticSuggester) getMDEntityQuery(orgID uuid.UUID, clusterUID string, 
 	splitInput := strings.Split(input, "/") // If contains "/", then everything preceding "/" is a namespace.
 	name := input
 	if len(splitInput) > 1 {
-		entityQuery.Must(elastic.NewTermQuery("ns", splitInput[0]))
+		entityQuery.Must(elastic.NewMatchQuery("ns", splitInput[0]))
 		name = splitInput[1]
-	}
-	if name != "" {
-		entityQuery.Must(elastic.NewMatchQuery("name", name))
+
+		if name != "" {
+			entityQuery.Must(elastic.NewMatchQuery("name", name))
+		}
+	} else if name != "" {
+		nsOrNameQuery := elastic.NewMultiMatchQuery(name, "name", "ns")
+		entityQuery.Must(nsOrNameQuery)
 	}
 
 	// Only search for entities in org.
