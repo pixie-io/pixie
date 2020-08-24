@@ -43,6 +43,17 @@ class FindUDF : public udf::ScalarUDF {
   Int64Value Exec(FunctionContext*, StringValue src, StringValue substr) {
     return src.find(substr);
   }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Find the index of the first occurrence of the substring.")
+        .Details(
+            "Returns the index of the first occurrence of the substring in the given string. If no "
+            "match is found, returns -1.")
+        .Example("df.found = px.Find(df.svc_name, 'pixie-')")
+        .Arg("arg1", "The string to search through.")
+        .Arg("arg2", "The substring to find.")
+        .Returns("The index of the first occurence of the substring. -1 if no match is found.");
+  }
 };
 
 class SubstringUDF : public udf::ScalarUDF {
@@ -95,6 +106,17 @@ class HexToASCII : public udf::ScalarUDF {
       return s_or_res.ConsumeValueOrDie();
     }
     return "";
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert an input hex sequence in ASCII to bytes.")
+        .Details(
+            "This function converts an input hex sequence in ASCII to bytes. "
+            "The input must be a well-formed hex representation, with optional separator."
+            "If the input is invalid, it will return an empty string.")
+        .Example("df.asciiBytes = px.hex_to_ascii(df.resp)")
+        .Arg("arg1", "The ascii hex sequence to convert to bytes.")
+        .Returns("The input converted to a sequence of bytes, or empty string if invalid.");
   }
 };
 

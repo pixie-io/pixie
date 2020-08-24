@@ -63,6 +63,15 @@ template <typename TReturn, typename TArg1, typename TArg2>
 class DivideUDF : public udf::ScalarUDF {
  public:
   TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val / b2.val; }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Arithmetically divide the two arguments.")
+        .Details("This function is implicitly invoked by the / operator.")
+        .Example("df.div = df.a / df.b")
+        .Arg("arg1", "The value to divide.")
+        .Arg("arg2", "The value to divide the first argument by.")
+        .Returns("The value of arg1 divided by arg2.");
+  }
 };
 
 template <typename TReturn, typename TArg1, typename TArg2>
@@ -141,6 +150,13 @@ template <typename TArg1>
 class InvertUDF : public udf::ScalarUDF {
  public:
   TArg1 Exec(FunctionContext*, TArg1 b1) { return ~b1.val; }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Invert the bits of the given value.")
+        .Example("df.inverted = px.invert(df.a)")
+        .Arg("arg1", "The value to invert.")
+        .Returns("The inverted form of arg1.");
+  }
 };
 
 template <typename TArg1, typename TArg2>
@@ -186,12 +202,33 @@ template <typename TArg1, typename TArg2>
 class GreaterThanUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1 > b2; }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder(
+               "Compare whether the first argument is greater than the second argument.")
+        .Details("This function is implicitly invoked by the > operator.")
+        .Example("df.greater = df.a > df.b")
+        .Arg("arg1", "The value to be compared to.")
+        .Arg("arg2", "The value to check if it is greater than the first argument.")
+        .Returns("Boolean of whether arg1 is greater than arg2.");
+  }
 };
 
 template <typename TArg1, typename TArg2>
 class GreaterThanEqualUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1 >= b2; }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder(
+               "Compare whether the first argument is greater than or equal to the second "
+               "argument.")
+        .Details("This function is implicitly invoked by the >= operator.")
+        .Example("df.geq = df.a >= df.b")
+        .Arg("arg1", "The value to be compared to.")
+        .Arg("arg2", "The value to check if it is greater than or equal to the first argument.")
+        .Returns("Boolean of whether arg1 is greater than or equal to arg2.");
+  }
 };
 
 template <typename TArg1, typename TArg2>
