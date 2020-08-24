@@ -30,6 +30,26 @@ Status MemorySinkIR::ResolveType(CompilerState* /* compiler_state */) {
   return SetResolvedType(table);
 }
 
+Status GRPCSinkIR::ResolveType(CompilerState* /* compiler_state */) {
+  if (!has_output_table()) {
+    return CreateIRNodeError(
+        "Cannot resolve type of GRPCSink unless it produces a final output result.");
+  }
+  DCHECK_EQ(1, parent_types().size());
+  // When out_columns_ is empty, the GRPCSink just copies the parent type.
+  if (out_columns_.size() == 0) {
+    PL_ASSIGN_OR_RETURN(auto type_ptr, OperatorIR::DefaultResolveType(parent_types()));
+    return SetResolvedType(type_ptr);
+  }
+  auto parent_table_type = std::static_pointer_cast<TableType>(parent_types()[0]);
+  auto table = TableType::Create();
+  for (const auto& col_name : out_columns_) {
+    PL_ASSIGN_OR_RETURN(auto col_type, parent_table_type->GetColumnType(col_name));
+    table->AddColumn(col_name, col_type);
+  }
+  return SetResolvedType(table);
+}
+
 Status DropIR::ResolveType(CompilerState* /* compiler_state */) {
   DCHECK_EQ(1, parent_types().size());
   auto new_table = std::static_pointer_cast<TableType>(parent_types()[0]->Copy());

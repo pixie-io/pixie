@@ -83,6 +83,25 @@ TEST_F(TypeResolutionTest, mem_sink_with_out_cols) {
   EXPECT_FALSE(mem_sink_type->HasColumn("cpu1"));
 }
 
+TEST_F(TypeResolutionTest, grpc_sink_with_out_cols) {
+  auto mem_src = MakeMemSource("cpu", {"cpu0", "cpu1", "upid"});
+  auto grpc_sink = MakeGRPCSink(mem_src, "out", {"cpu0", "upid"});
+
+  ASSERT_OK(ResolveOperatorType(mem_src, compiler_state_.get()));
+  EXPECT_TRUE(mem_src->is_type_resolved());
+  ASSERT_OK(ResolveOperatorType(grpc_sink, compiler_state_.get()));
+  EXPECT_TRUE(grpc_sink->is_type_resolved());
+
+  auto mem_src_type = std::static_pointer_cast<TableType>(mem_src->resolved_type());
+  auto grpc_sink_type = std::static_pointer_cast<TableType>(grpc_sink->resolved_type());
+  EXPECT_TableHasColumnWithType(mem_src_type, "cpu0", cpu_type_);
+  EXPECT_TableHasColumnWithType(mem_src_type, "cpu1", cpu_type_);
+  EXPECT_TableHasColumnWithType(mem_src_type, "upid", upid_type_);
+  EXPECT_TableHasColumnWithType(grpc_sink_type, "cpu0", cpu_type_);
+  EXPECT_TableHasColumnWithType(grpc_sink_type, "upid", upid_type_);
+  EXPECT_FALSE(grpc_sink_type->HasColumn("cpu1"));
+}
+
 TEST_F(TypeResolutionTest, drop) {
   auto mem_src = MakeMemSource("cpu", {"cpu0", "cpu1", "upid"});
   auto drop = MakeDrop(mem_src, {"cpu1", "upid"});

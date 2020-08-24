@@ -13,6 +13,9 @@
 
 namespace pl {
 namespace carnot {
+
+using table_store::schema::RowBatch;
+
 namespace exec {
 
 // This class provides a local GRPC server to receive results from benchmarks, other end-to-end
@@ -69,8 +72,29 @@ class LocalGRPCResultSinkServer {
     }
   }
 
-  const std::vector<carnotpb::TransferResultChunkRequest>& query_results() const {
+  const std::vector<carnotpb::TransferResultChunkRequest>& raw_query_results() const {
     return result_sink_server_.query_results();
+  }
+
+  absl::flat_hash_set<std::string> output_tables() const {
+    absl::flat_hash_set<std::string> output;
+    for (const auto& req : result_sink_server_.query_results()) {
+      if (req.has_row_batch_result()) {
+        output.insert(req.row_batch_result().table_name());
+      }
+    }
+    return output;
+  }
+
+  std::vector<RowBatch> query_results(std::string_view table_name) const {
+    std::vector<RowBatch> output;
+    for (const auto& req : result_sink_server_.query_results()) {
+      if (req.has_row_batch_result() && req.row_batch_result().table_name() == table_name) {
+        auto rb = RowBatch::FromProto(req.row_batch_result().row_batch()).ConsumeValueOrDie();
+        output.push_back(*rb);
+      }
+    }
+    return output;
   }
 
   std::unique_ptr<carnotpb::ResultSinkService::StubInterface> StubGenerator(

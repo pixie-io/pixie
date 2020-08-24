@@ -47,6 +47,7 @@ Status GRPCSinkNode::OpenImpl(ExecState* exec_state) {
   // When we are sending the results to an external service, such as the query broker,
   // add authentication to the client context.
   if (plan_node_->has_table_name()) {
+    // Adding auth to GRPC client.
     exec_state->AddAuthToGRPCClientContext(&context_);
   }
   return Status::OK();
@@ -99,7 +100,11 @@ Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, 
   // Serialize the RowBatch.
   PL_RETURN_IF_ERROR(rb.ToProto(req.mutable_row_batch_result()->mutable_row_batch()));
 
-  writer_->Write(req);
+  if (!writer_->Write(req)) {
+    return error::Internal("Error writing request to address $0: $1", plan_node_->address(),
+                           response_.message());
+  }
+
   if (!rb.eos()) {
     return Status::OK();
   }

@@ -292,6 +292,7 @@ Status SendExecutionStatsToOutgoingConns(
     const sole::uuid& query_id,
     const absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*>&
         outgoing_servers,
+    std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func,
     const queryresultspb::AgentExecutionStats& agent_stats,
     const std::vector<queryresultspb::AgentExecutionStats>& all_agent_stats) {
   // Only run this if there are outgoing_servers.
@@ -320,6 +321,7 @@ Status SendExecutionStatsToOutgoingConns(
       ::pl::carnotpb::TransferResultChunkResponse resp;
       req.set_address(addr);
       grpc::ClientContext context;
+      add_auth_to_grpc_context_func(&context);
       context.set_deadline(std::chrono::system_clock::now() + kRPCResultTimeout);
       auto writer = server->TransferResultChunk(&context, &resp);
       writer->Write(req);
@@ -431,7 +433,8 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
                                                all_agent_stats));
   } else {
     PL_RETURN_IF_ERROR(SendExecutionStatsToOutgoingConns(
-        query_id, exec_state->OutgoingServers(), agent_operator_exec_stats, all_agent_stats));
+        query_id, exec_state->OutgoingServers(), engine_state_->add_auth_to_grpc_context_func(),
+        agent_operator_exec_stats, all_agent_stats));
   }
 
   std::vector<table_store::Table*> output_tables;

@@ -494,8 +494,8 @@ class OperatorIR : public IRNode {
   }
 
   // Some operators don't need to resolve type. For example, some ops only occur at
-  // the distributed level eg GRPC*, and type information shouldn't be needed at the distributed
-  // stage.
+  // the distributed level eg GRPCSource, and type information shouldn't be needed at the
+  // distributed stage.
   static constexpr bool FailOnResolveType() { return false; }
 
  protected:
@@ -1687,7 +1687,7 @@ class GRPCSinkIR : public OperatorIR {
     return std::vector<absl::flat_hash_set<std::string>>{outputs};
   }
 
-  static constexpr bool FailOnResolveType() { return true; }
+  Status ResolveType(CompilerState* compiler_state);
 
  protected:
   Status CopyFromNodeImpl(const IRNode* node,

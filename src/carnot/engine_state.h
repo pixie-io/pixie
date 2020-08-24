@@ -79,6 +79,9 @@ class EngineState : public NotCopyable {
   }
 
   const udf::Registry* func_registry() const { return func_registry_.get(); }
+  std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func() const {
+    return add_auth_to_grpc_context_func_;
+  }
 
  private:
   std::unique_ptr<udf::Registry> func_registry_;
