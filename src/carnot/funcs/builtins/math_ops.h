@@ -20,6 +20,15 @@ class AddUDF : public udf::ScalarUDF {
         udf::InheritTypeFromArgs<AddUDF>::Create({types::ST_BYTES}),
     };
   }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Arithmetically add the two arguments.")
+        .Details("This function is implicitly invoked by the + operator.")
+        .Example("df.sum = df.a + df.b")
+        .Arg("arg1", "The value to be added to.")
+        .Arg("arg2", "The value to add to the first argument.")
+        .Returns("The sum of arg1 and arg2.");
+  }
 };
 
 template <>
@@ -27,6 +36,15 @@ class AddUDF<types::StringValue, types::StringValue, types::StringValue> : publi
  public:
   types::StringValue Exec(FunctionContext*, types::StringValue b1, types::StringValue b2) {
     return b1 + b2;
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Concatenate two strings.")
+        .Details("This function is implicitly invoked by the + operator.")
+        .Example("df.concat = df.str1 + df.str2")
+        .Arg("arg1", "The first string.")
+        .Arg("arg2", "The string to append to the first string.")
+        .Returns("The concatenation of arg1 and arg2.");
   }
 };
 
@@ -106,6 +124,17 @@ class ApproxEqualUDF : public udf::ScalarUDF {
  public:
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) {
     return std::abs(b1.val - b2.val) < std::numeric_limits<double>::epsilon();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Return whether the two values are approximately equal.")
+        .Details(
+            "Returns whether or not the two given values are approximately equal to each other, "
+            "where the values have an absolute difference of less than 1E-9.")
+        .Example("df.equals = px.approxEqual(df.a, df.b)")
+        .Arg("arg1", "The value to be compared to.")
+        .Arg("arg2", "The value which should be compared to the first argument.")
+        .Returns("Boolean of whether the two arguments are approximately equal.");
   }
 };
 
@@ -321,6 +350,17 @@ class CountUDA : public udf::UDA {
   Status Deserialize(FunctionContext*, const StringValue& data) {
     count_ = *reinterpret_cast<const uint64_t*>(data.data());
     return Status::OK();
+  }
+
+  static udf::UDADocBuilder Doc() {
+    return udf::UDADocBuilder("Returns number of rows in the aggregate group.")
+        .Details(
+            "This function counts the number of rows in the aggregate group. The count of "
+            "rows is independent of which column this function is applied to. Each column should "
+            "return the same number of rows.")
+        .Example("df = df.agg(throughput_total=('latency_ms', px.count))")
+        .Arg("arg", "The data on which to apply the function.")
+        .Returns("The count.");
   }
 
  protected:

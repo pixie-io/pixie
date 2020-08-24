@@ -38,6 +38,13 @@ class ASIDUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
     return md->asid();
   }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the agent ID.")
+        .Details("Get the agent ID of the node that the data originated from.")
+        .Example("df.agent = px.asid()")
+        .Returns("The agent ID.");
+  }
 };
 
 class UPIDToASIDUDF : public ScalarUDF {
@@ -722,6 +729,18 @@ class ContainerIDToContainerStatusUDF : public ScalarUDF {
     return {udf::ExplicitRule::Create<ContainerIDToContainerStatusUDF>(types::ST_CONTAINER_STATUS,
                                                                        {types::ST_NONE})};
   }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the status of the container given the container ID.")
+        .Details(R"doc(Get the status of the container given the container ID.
+            | The status is the K8s state of either 'Running', 'Waiting', 'Terminated' or 'Unknown'.
+            | It may be paired with additional information such as a message and reason explaining
+            | why the container is in that state.
+        )doc")
+        .Arg("id", "The ID of the container to get the status of.")
+        .Example("df.status = px.container_id_to_status(df.id)")
+        .Returns("The status of the container.");
+  }
 };
 
 class UPIDToPodStatusUDF : public ScalarUDF {
@@ -795,6 +814,13 @@ class HostnameUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     return md->hostname();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the hostname of the machine.")
+        .Details("Get the hostname of the machine that the data originated from.")
+        .Example("df.hostname = px._exec_hostname()")
+        .Returns("The hostname of the machine.");
   }
 };
 

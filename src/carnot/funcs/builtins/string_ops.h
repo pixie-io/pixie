@@ -15,6 +15,14 @@ class ContainsUDF : public udf::ScalarUDF {
   BoolValue Exec(FunctionContext*, StringValue b1, StringValue b2) {
     return absl::StrContains(b1, b2);
   }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Returns whether the first string contains the second string.")
+        .Example("matching_df = matching_df[px.contains(matching_df.svc_names, 'my_svc')]")
+        .Arg("arg1", "The string that should contain the second string.")
+        .Arg("arg2", "The string that should be contained in the first string.")
+        .Returns("A boolean of whether the first string contains the second string.");
+  }
 };
 
 class LengthUDF : public udf::ScalarUDF {
