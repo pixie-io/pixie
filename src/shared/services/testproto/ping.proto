@@ -17,5 +17,6 @@ message PingReply {
 service PingService {
   // Sends a greeting
   rpc Ping (PingRequest) returns (PingReply) {}
-  rpc PingStream (PingRequest) returns (stream PingReply) {}
+  rpc PingClientStream (stream PingRequest) returns (PingReply) {}
+  rpc PingServerStream (PingRequest) returns (stream PingReply) {}
 }

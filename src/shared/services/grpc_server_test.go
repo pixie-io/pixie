@@ -31,8 +31,20 @@ func (s *server) Ping(ctx context.Context, in *ping.PingRequest) (*ping.PingRepl
 	return &ping.PingReply{Reply: "test reply"}, nil
 }
 
-func (s *server) PingStream(in *ping.PingRequest, srv ping.PingService_PingStreamServer) error {
+func (s *server) PingServerStream(in *ping.PingRequest, srv ping.PingService_PingServerStreamServer) error {
 	srv.Send(&ping.PingReply{Reply: "test reply"})
+	return nil
+}
+
+func (s *server) PingClientStream(srv ping.PingService_PingClientStreamServer) error {
+	msg, err := srv.Recv()
+	if err != nil {
+		return err
+	}
+	if msg == nil {
+		return fmt.Errorf("Got a nil message")
+	}
+	srv.SendAndClose(&ping.PingReply{Reply: "test reply"})
 	return nil
 }
 
@@ -75,7 +87,7 @@ func makeTestRequest(ctx context.Context, t *testing.T, port int) (*ping.PingRep
 	return c.Ping(ctx, &ping.PingRequest{Req: "hello"})
 }
 
-func makeTestStreamRequest(ctx context.Context, t *testing.T, port int) (*ping.PingReply, error) {
+func makeTestClientStreamRequest(ctx context.Context, t *testing.T, port int) (*ping.PingReply, error) {
 	addr := fmt.Sprintf("localhost:%d", port)
 	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
@@ -84,7 +96,26 @@ func makeTestStreamRequest(ctx context.Context, t *testing.T, port int) (*ping.P
 	defer conn.Close()
 	c := ping.NewPingServiceClient(conn)
 
-	stream, err := c.PingStream(ctx, &ping.PingRequest{Req: "hello"})
+	stream, err := c.PingClientStream(ctx)
+	stream.Send(&ping.PingRequest{Req: "hello"})
+
+	if err != nil {
+		t.Fatalf("Could not create stream")
+	}
+
+	return stream.CloseAndRecv()
+}
+
+func makeTestServerStreamRequest(ctx context.Context, t *testing.T, port int) (*ping.PingReply, error) {
+	addr := fmt.Sprintf("localhost:%d", port)
+	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	if err != nil {
+		t.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+	c := ping.NewPingServiceClient(conn)
+
+	stream, err := c.PingServerStream(ctx, &ping.PingRequest{Req: "hello"})
 	if err != nil {
 		t.Fatalf("Could not create stream")
 	}
@@ -94,11 +125,12 @@ func makeTestStreamRequest(ctx context.Context, t *testing.T, port int) (*ping.P
 
 func TestGrpcServerUnary(t *testing.T) {
 	tests := []struct {
-		name        string
-		token       string
-		stream      bool
-		expectError bool
-		serverOpts  *services.GRPCServerOptions
+		name         string
+		token        string
+		clientStream bool
+		serverStream bool
+		expectError  bool
+		serverOpts   *services.GRPCServerOptions
 	}{
 		{
 			name:        "success - unary",
@@ -116,28 +148,46 @@ func TestGrpcServerUnary(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name:        "success - stream",
-			token:       "abc",
-			expectError: false,
-			stream:      true,
+			name:         "success - client stream",
+			token:        "abc",
+			expectError:  false,
+			clientStream: true,
 		},
 		{
-			name:        "bad token - stream",
-			token:       "bad.jwt.token",
-			expectError: true,
-			stream:      true,
+			name:         "bad token - client stream",
+			token:        "bad.jwt.token",
+			expectError:  true,
+			clientStream: true,
 		},
 		{
-			name:        "unauthenticated - stream",
-			token:       "",
-			expectError: true,
-			stream:      true,
+			name:         "unauthenticated - client stream",
+			token:        "",
+			expectError:  true,
+			clientStream: true,
 		},
 		{
-			name:        "disable auth - unary",
-			token:       "",
-			expectError: false,
-			stream:      false,
+			name:         "success - server stream",
+			token:        "abc",
+			expectError:  false,
+			serverStream: true,
+		},
+		{
+			name:         "bad token - server stream",
+			token:        "bad.jwt.token",
+			expectError:  true,
+			serverStream: true,
+		},
+		{
+			name:         "unauthenticated - server stream",
+			token:        "",
+			expectError:  true,
+			serverStream: true,
+		},
+		{
+			name:         "disable auth - unary",
+			token:        "",
+			expectError:  false,
+			clientStream: false,
 			serverOpts: &services.GRPCServerOptions{
 				DisableAuth: map[string]bool{
 					"/pl.common.PingService/Ping": true,
@@ -145,10 +195,10 @@ func TestGrpcServerUnary(t *testing.T) {
 			},
 		},
 		{
-			name:        "authmiddleware",
-			token:       "",
-			expectError: false,
-			stream:      false,
+			name:         "authmiddleware",
+			token:        "",
+			expectError:  false,
+			clientStream: false,
 			serverOpts: &services.GRPCServerOptions{
 				AuthMiddleware: func(context.Context, env2.Env) (string, error) {
 					return testingutils.GenerateTestJWTToken(t, "abc"), nil
@@ -166,7 +216,7 @@ func TestGrpcServerUnary(t *testing.T) {
 			if test.token != "" {
 				token := testingutils.GenerateTestJWTToken(t, test.token)
 				ctx = metadata.AppendToOutgoingContext(context.Background(),
-					"Authorization", "bearer "+token)
+					"authorization", "bearer "+token)
 			} else {
 				ctx = context.Background()
 			}
@@ -174,8 +224,10 @@ func TestGrpcServerUnary(t *testing.T) {
 			var resp *ping.PingReply
 			var err error
 
-			if test.stream {
-				resp, err = makeTestStreamRequest(ctx, t, port)
+			if test.clientStream {
+				resp, err = makeTestClientStreamRequest(ctx, t, port)
+			} else if test.serverStream {
+				resp, err = makeTestServerStreamRequest(ctx, t, port)
 			} else {
 				resp, err = makeTestRequest(ctx, t, port)
 			}
@@ -188,6 +240,7 @@ func TestGrpcServerUnary(t *testing.T) {
 				assert.Nil(t, resp)
 			} else {
 				assert.Nil(t, err)
+				assert.NotNil(t, resp)
 				assert.Equal(t, "test reply", resp.Reply)
 			}
 		})
