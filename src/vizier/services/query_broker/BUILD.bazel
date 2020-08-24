@@ -9,6 +9,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/query_broker",
     visibility = ["//visibility:private"],
     deps = [
+        "//src/carnotpb:carnot_pl_go_proto",
         "//src/shared/services:go_default_library",
         "//src/shared/services/healthz:go_default_library",
         "//src/shared/services/httpmiddleware:go_default_library",

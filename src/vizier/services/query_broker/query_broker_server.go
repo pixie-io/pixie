@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"pixielabs.ai/pixielabs/src/carnotpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
@@ -70,6 +71,7 @@ func main() {
 	// For a given query, the agents may send multiple sets of results via the query broker.
 	// We pass the pod IP address down to the agents in order to ensure that they continue to
 	// communicate with the same query broker across a single request.
+	// TODO fix to ip
 	podAddr := viper.GetString("pod_ip_address")
 	if podAddr == "" {
 		log.Fatal("Expected to receive pod IP address.")
@@ -129,6 +131,8 @@ func main() {
 
 	s := services.NewPLServer(env,
 		httpmiddleware.WithBearerAuthMiddleware(env, mux), maxMsgSize)
+
+	carnotpb.RegisterResultSinkServiceServer(s.GRPCServer(), server)
 	querybrokerpb.RegisterQueryBrokerServiceServer(s.GRPCServer(), server)
 	vizierpb.RegisterVizierServiceServer(s.GRPCServer(), server)
 
