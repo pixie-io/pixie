@@ -342,6 +342,20 @@ class RoundUDF : public udf::ScalarUDF {
   StringValue Exec(FunctionContext*, Float64Value value, Int64Value decimal_places) {
     return absl::StrFormat("%.*f", decimal_places.val, value.val);
   }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Rounds the float to the nearest decimal places.")
+        .Details(
+            "Rounds the float to the nearest decimal place and returns value as a string. Used to "
+            "clean up the data shown in tables. Set decimals to `0` if you want to round to the "
+            "nearest int value.")
+        .Example(R"doc(
+        | df.cpu1 = 0.248
+        | df.cpu1 = px.round(df.cpu1, 2) # 0.25
+        )doc")
+        .Arg("value", "The value to round.")
+        .Arg("decimals", "Number of decimal places to round to. `0` => round to nearest int.")
+        .Returns("Float rounded to the specified decimal place as a string.");
+  }
 };
 
 template <typename TArg>

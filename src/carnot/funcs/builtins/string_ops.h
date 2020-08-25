@@ -95,6 +95,18 @@ class StripPrefixUDF : public udf::ScalarUDF {
   StringValue Exec(FunctionContext*, StringValue prefix, StringValue s) {
     return StringValue(absl::StripPrefix(s, prefix));
   }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Strips the specified prefix from the string.")
+        .Details(
+            "Returns the string with the prefix removed. Will return the same string if the prefix "
+            "not found.")
+        .Example(R"doc(# df.service is `pl/kelvin`
+        | df.removed_pl = px.strip_prefix('pl/', df.service) # "kelvin"
+        )doc")
+        .Arg("prefix", "The prefix to remove.")
+        .Arg("string", "The string value to strip the prefix from.")
+        .Returns("`string` with `prefix` removed from the beginning if it existed.");
+  }
 };
 
 class HexToASCII : public udf::ScalarUDF {

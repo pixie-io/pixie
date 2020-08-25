@@ -37,6 +37,24 @@ class QuantilesUDA : public udf::UDA {
     return {udf::ExplicitRule::Create<QuantilesUDA>(types::ST_QUANTILES, {types::ST_NONE})};
   }
 
+  static udf::UDADocBuilder Doc() {
+    return udf::UDADocBuilder("Approximates the distribution of the aggregated data.")
+        .Details(
+            "Calculates several useful percentiles of the aggregated data using "
+            "[tdigest](https://github.com/tdunning/t-digest). Returns a serialized JSON object "
+            "with the "
+            "keys for 1%, 10%, 50%, 90%, and 99%. You can use `px.pluck_float64` to grab the "
+            "specific values from the result.")
+        .Example(R"doc(
+        # Calculate the quantiles.
+        df = df.agg(latency_dist=('latency_ms', px.quantiles))
+        # Pluck p99 from the quantiles.
+        df.p99 = px.pluck_float64(df.latency_dist, 'p99')
+        )doc")
+        .Arg("val", "The data to calculate the quantiles distribution.")
+        .Returns("The quantiles data, serialized as a JSON dictionary.");
+  }
+
  protected:
   tdigest::TDigest digest_;
 };

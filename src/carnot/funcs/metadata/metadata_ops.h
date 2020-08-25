@@ -253,6 +253,16 @@ class ServiceIDToServiceNameUDF : public ScalarUDF {
     return {udf::ExplicitRule::Create<ServiceIDToServiceNameUDF>(types::ST_SERVICE_NAME,
                                                                  {types::ST_NONE})};
   }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert the kubernetes service ID to service name.")
+        .Details(
+            "Converts the kubernetes service ID to the name of the service. If the ID "
+            "is not found in our mapping, then returns an empty string.")
+        .Example("df.service = px.service_id_to_service_name(df.service_id)")
+        .Arg("service_id", "The service ID to get the service name for.")
+        .Returns("The service name or an empty string if service_id not found.");
+  }
 };
 
 class ServiceNameToServiceIDUDF : public ScalarUDF {
@@ -269,6 +279,15 @@ class ServiceNameToServiceIDUDF : public ScalarUDF {
     auto service_id = md->k8s_metadata_state().ServiceIDByName(service_name_view);
 
     return service_id;
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert the service name to the service ID.")
+        .Details(
+            "Converts the service name to the corresponding kubernetes service ID. If the name "
+            "is not found in our mapping, the function returns an empty string.")
+        .Example("df.service_id = px.service_name_to_service_id(df.service)")
+        .Arg("service_name", "The service to get the service ID.")
+        .Returns("The kubernetes service ID for the service passed in.");
   }
 };
 
@@ -289,6 +308,18 @@ class ServiceNameToNamespaceUDF : public ScalarUDF {
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::ExplicitRule::Create<ServiceNameToNamespaceUDF>(types::ST_NAMESPACE_NAME,
                                                                  {types::ST_NONE})};
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Gets the namespace from the service name.")
+        .Details(
+            "Extracts the namespace from the service name. It expects the service name to come in "
+            "the format"
+            "`<namespace>/<service_name>`, otherwise it'll return an empty string.")
+        .Example(R"doc(# df.service is `pl/kelvin`
+        | df.namespace = px.service_name_to_namespace(df.service) # "pl"
+        )doc")
+        .Arg("service_name", "The service to extract the namespace.")
+        .Returns("The namespace of the service.");
   }
 };
 
