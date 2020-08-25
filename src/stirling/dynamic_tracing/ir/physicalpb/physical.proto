@@ -77,7 +77,48 @@ message Struct {
   repeated Field fields = 2;
 }
 
-// Describes how to access variable in register or memory from inside BCC code.
+// Describes a variable that resides in memory, in comparison to a Register variable.
+message MemoryExpression {
+  // This must refer to a ScalarVariable with VOID_POINTER type, which specifies the base address
+  // to access this variable.
+  string base = 1;
+
+  // The offset off the base address.
+  uint32 offset = 2;
+
+  // Only used if ScalarType is STRUCT_BLOB.
+  // Otherwise size is automatically inferred based on the ScalarType during code generation.
+  // TODO(oazizi): Remove once STRUCT_BLOB is
+  uint32 size = 3;
+}
+
+// Describes a variable that is calculated from 2 other previously-defined variables.
+message BinaryExpression {
+  enum Op {
+    // TODO(yzhao): Today only support subtraction for function latency calculated.
+    SUB = 0;
+  }
+
+  Op op = 1;
+
+  string lhs = 2;
+  string rhs = 3;
+}
+
+// Describes a variable returned from reading a member of a struct pointer.
+message MemberExpression {
+  // The name of the StructVariable that contains the field.
+  string struct_base = 1;
+
+  // Indicate if the struct_base is a pointer.
+  bool is_struct_base_pointer = 2;
+
+  // The builtin to generate the key value to access the map.
+  string field = 3;
+}
+
+// Describes a basic variable inside BCC code.
+// The source of of the variable could be from a number of locations (e.g. memory, register, etc.).
 message ScalarVariable {
   // Name must be unique in the scope of a Probe.
   string name = 1;
@@ -88,51 +129,26 @@ message ScalarVariable {
   // a scalar variable.
   shared.ScalarType type = 2;
 
-  // Describes a variable that resides in memory, in comparison to a Register variable.
-  message MemoryVariable {
-    // This must refer to a ScalarVariable with VOID_POINTER type, which specifies the base address
-    // to access this variable.
-    string base = 1;
-
-    // The offset off the base address.
-    uint32 offset = 2;
-
-    // Only used if ScalarType is STRUCT_BLOB.
-    // Otherwise size is automatically inferred based on the ScalarType during code generation.
-    uint32 size = 3;
-  }
-
-  // Describes a variable that is calculated from 2 other previously-defined variables.
-  message BinaryExpression {
-    enum Op {
-      // TODO(yzhao): Today only support subtraction for function latency calculated.
-      SUB = 0;
-    }
-
-    Op op = 1;
-
-    string lhs = 2;
-    string rhs = 3;
-  }
-
-  // TODO(yzhao): address_oneof probably should be renamed to expr, which indicates that it
-  // describes how to compute this variable.
-  oneof address_oneof {
-    // Address is stored in a register.
+  // Describes the source expression of the scalar variable.
+  oneof src_expr_oneof {
+    // Source is a register.
     // NOTE: 'reg' is used to avoid name collision with C++ keyword 'register'.
     Register reg = 3;
 
-    // Address is in memory (either stack or heap).
-    MemoryVariable memory = 4;
+    // Source is in memory (either stack or heap).
+    MemoryExpression memory = 4;
 
-    // Return value from one of the BPF helper functions.
+    // Source is a built-in BPF helper function.
     shared.BPFHelper builtin = 5;
 
-    // This is directly assigned to the variable.
+    // Source is a constant.
     string constant = 6;
 
-    // Calculated from another 2 variables.
+    // Source is an expression calculated from another 2 variables.
     BinaryExpression binary_expr = 7;
+
+    // Source is a member variable of a struct.
+    MemberExpression member = 8;
   }
 }
 
@@ -150,28 +166,6 @@ message MapVariable {
 
   // The builtin to generate the key value to access the map.
   string key_variable_name = 4;
-}
-
-// Describes a variable returned from reading a member of a struct pointer.
-// NOTE: Could consider embedding this into MapVariable.
-//       The benefit is that the struct base would no longer be required.
-//       The downside is it breaks the model of ScalarVariable, StructVariable, etc.
-//       each mapping to a single variable declaration in the generated code.
-message MemberVariable {
-  // Name must be unique in the scope of a Probe.
-  string name = 1;
-
-  // Describes type of the value held by this ScalarVariable.
-  shared.ScalarType type = 2;
-
-  // The name of the StructVariable that contains the field.
-  string struct_base = 3;
-
-  // Indicate if the struct_base is a pointer.
-  bool is_struct_base_pointer = 4;
-
-  // The builtin to generate the key value to access the map.
-  string field = 5;
 }
 
 // Describes a struct variable whose fields are assigned values from other scalar variables.
@@ -202,7 +196,6 @@ message Variable {
     ScalarVariable scalar_var = 1;
     StructVariable struct_var = 2;
     MapVariable map_var = 3;
-    MemberVariable member_var = 4;
   }
 }
 

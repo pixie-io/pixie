@@ -19,10 +19,10 @@ namespace dynamic_tracing {
 
 using ::pl::stirling::bpf_tools::BPFProbeAttachType;
 using ::pl::stirling::bpf_tools::UProbeSpec;
+using ::pl::stirling::dynamic_tracing::ir::physical::BinaryExpression;
 using ::pl::stirling::dynamic_tracing::ir::physical::Field;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapDeleteAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
-using ::pl::stirling::dynamic_tracing::ir::physical::MemberVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::PerfBufferOutput;
 using ::pl::stirling::dynamic_tracing::ir::physical::PerfBufferOutputAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::Probe;
@@ -408,9 +408,9 @@ std::string GenConstant(const ScalarVariable& var) {
                           var.constant());
 }
 
-std::string_view GenOp(ScalarVariable::BinaryExpression::Op op) {
-  static absl::flat_hash_map<ScalarVariable::BinaryExpression::Op, std::string_view> kOpTxts = {
-      {ScalarVariable::BinaryExpression::SUB, "-"},
+std::string_view GenOp(BinaryExpression::Op op) {
+  static absl::flat_hash_map<BinaryExpression::Op, std::string_view> kOpTxts = {
+      {BinaryExpression::SUB, "-"},
   };
   DCHECK(kOpTxts.contains(op));
   return kOpTxts[op];
@@ -422,20 +422,36 @@ std::string GenBinaryExpression(const ScalarVariable& var) {
                           GenOp(expr.op()), expr.rhs());
 }
 
+std::vector<std::string> GenMemberExpression(const ScalarVariable& var) {
+  const auto& expr = var.member();
+  if (expr.is_struct_base_pointer()) {
+    // TODO(yzhao): We should set a correct default value here. Two options:
+    // * Set global default based on the type.
+    // * Let MemberVariable specify a default.
+    return {
+        absl::Substitute("if ($0 == NULL) { return 0; }", expr.struct_base()),
+        absl::Substitute("$0 $1 = $2->$3;", GenScalarType(var.type()), var.name(),
+                         expr.struct_base(), expr.field()),
+    };
+  }
+  return {absl::Substitute("$0 $1 = $2.$3;", GenScalarType(var.type()), var.name(),
+                           expr.struct_base(), expr.field())};
+}
+
 }  // namespace
 
 StatusOr<std::vector<std::string>> GenScalarVariable(const ScalarVariable& var,
                                                      const ir::shared::Language& language) {
-  switch (var.address_oneof_case()) {
-    case ScalarVariable::AddressOneofCase::kReg: {
+  switch (var.src_expr_oneof_case()) {
+    case ScalarVariable::SrcExprOneofCase::kReg: {
       std::vector<std::string> code_lines = {GenRegister(var)};
       return code_lines;
     }
-    case ScalarVariable::AddressOneofCase::kBuiltin: {
+    case ScalarVariable::SrcExprOneofCase::kBuiltin: {
       std::vector<std::string> code_lines = {GenBPFHelper(var)};
       return code_lines;
     }
-    case ScalarVariable::AddressOneofCase::kMemory:
+    case ScalarVariable::SrcExprOneofCase::kMemory:
       if (var.type() == ir::shared::ScalarType::STRING) {
         return GenStringMemoryVariable(var, language);
       } else if (var.type() == ir::shared::ScalarType::BYTE_ARRAY) {
@@ -445,16 +461,21 @@ StatusOr<std::vector<std::string>> GenScalarVariable(const ScalarVariable& var,
       } else {
         return GenMemoryVariable(var);
       }
-    case ScalarVariable::AddressOneofCase::kConstant: {
+    case ScalarVariable::SrcExprOneofCase::kConstant: {
       std::vector<std::string> code_lines = {GenConstant(var)};
       return code_lines;
     }
-    case ScalarVariable::AddressOneofCase::kBinaryExpr: {
+    case ScalarVariable::SrcExprOneofCase::kBinaryExpr: {
       // TODO(yzhao): Check lhs rhs were defined.
       std::vector<std::string> code_lines = {GenBinaryExpression(var)};
       return code_lines;
     }
-    case ScalarVariable::AddressOneofCase::ADDRESS_ONEOF_NOT_SET:
+    case ScalarVariable::SrcExprOneofCase::kMember: {
+      // TODO(yzhao): Check lhs rhs were defined.
+      std::vector<std::string> code_lines = GenMemberExpression(var);
+      return code_lines;
+    }
+    case ScalarVariable::SrcExprOneofCase::SRC_EXPR_ONEOF_NOT_SET:
       return error::InvalidArgument("address_oneof must be set");
   }
   GCC_SWITCH_RETURN;
@@ -548,8 +569,6 @@ ScalarType GetScalarVariableType(const Variable& var) {
   switch (var.var_oneof_case()) {
     case Variable::VarOneofCase::kScalarVar:
       return var.scalar_var().type();
-    case Variable::VarOneofCase::kMemberVar:
-      return var.member_var().type();
     case Variable::VarOneofCase::kMapVar:
     case Variable::VarOneofCase::kStructVar:
       LOG(DFATAL) << "Variable type must be ScalarType";
@@ -594,21 +613,6 @@ std::string GenMapVariable(const ir::physical::MapVariable& map_var) {
                           map_var.map_name(), map_var.key_variable_name());
 }
 
-std::vector<std::string> GenMemberVariable(const MemberVariable& var) {
-  if (var.is_struct_base_pointer()) {
-    // TODO(yzhao): We should set a correct default value here. Two options:
-    // * Set global default based on the type.
-    // * Let MemberVariable specify a default.
-    return {
-        absl::Substitute("if ($0 == NULL) { return 0; }", var.struct_base()),
-        absl::Substitute("$0 $1 = $2->$3;", GenScalarType(var.type()), var.name(),
-                         var.struct_base(), var.field()),
-    };
-  }
-  return {absl::Substitute("$0 $1 = $2.$3;", GenScalarType(var.type()), var.name(),
-                           var.struct_base(), var.field())};
-}
-
 Status CheckVarExists(const absl::flat_hash_map<std::string_view, const Variable*>& var_names,
                       std::string_view var_name, std::string_view context) {
   if (!var_names.contains(var_name)) {
@@ -630,10 +634,6 @@ Status BCCCodeGenerator::GenVariable(
     }
     case Variable::VarOneofCase::kMapVar: {
       code_lines->push_back(GenMapVariable(var.map_var()));
-      break;
-    }
-    case Variable::VarOneofCase::kMemberVar: {
-      MoveBackStrVec(GenMemberVariable(var.member_var()), code_lines);
       break;
     }
     case Variable::VarOneofCase::kStructVar: {
@@ -669,8 +669,6 @@ std::string_view GetVariableName(const Variable& var) {
       return var.scalar_var().name();
     case Variable::VarOneofCase::kMapVar:
       return var.map_var().name();
-    case Variable::VarOneofCase::kMemberVar:
-      return var.member_var().name();
     case Variable::VarOneofCase::kStructVar:
       return var.struct_var().name();
     case Variable::VarOneofCase::VAR_ONEOF_NOT_SET:

@@ -23,7 +23,6 @@ using ::pl::stirling::dwarf_tools::TypeInfo;
 using ::pl::stirling::dwarf_tools::VarType;
 
 using ::pl::stirling::dynamic_tracing::ir::physical::MapVariable;
-using ::pl::stirling::dynamic_tracing::ir::physical::MemberVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::StructVariable;
 
@@ -81,7 +80,7 @@ class Dwarvifier {
                              ir::physical::Probe* output_probe,
                              ir::physical::Program* output_program);
 
-  // TVarType can be ScalarVariable, MemberVariable, etc.
+  // TVarType can be ScalarVariable, StructVariable, etc.
   template <typename TVarType>
   TVarType* AddVariable(ir::physical::Probe* probe, const std::string& name,
                         ir::shared::ScalarType type,
@@ -318,8 +317,6 @@ TVarType* Dwarvifier::AddVariable(ir::physical::Probe* probe, const std::string&
 
   if constexpr (std::is_same_v<TVarType, ScalarVariable>) {
     var = probe->add_vars()->mutable_scalar_var();
-  } else if constexpr (std::is_same_v<TVarType, MemberVariable>) {
-    var = probe->add_vars()->mutable_member_var();
   } else if constexpr (std::is_same_v<TVarType, StructVariable>) {
     var = probe->add_vars()->mutable_struct_var();
   } else if constexpr (std::is_same_v<TVarType, MapVariable>) {
@@ -796,10 +793,12 @@ Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
       blob_decoder = field.blob_decoder();
     }
 
-    auto* var = AddVariable<MemberVariable>(output_probe, value_id, field.type(), blob_decoder);
-    var->set_struct_base(map_var_name);
-    var->set_is_struct_base_pointer(true);
-    var->set_field(field.name());
+    auto* var = AddVariable<ScalarVariable>(output_probe, value_id, field.type(), blob_decoder);
+
+    auto* src = var->mutable_member();
+    src->set_struct_base(map_var_name);
+    src->set_is_struct_base_pointer(true);
+    src->set_field(field.name());
   }
 
   return Status::OK();
@@ -811,7 +810,7 @@ Status Dwarvifier::ProcessFunctionLatency(const ir::shared::FunctionLatency& fun
                                           ir::shared::ScalarType::INT64);
 
   auto* expr = var->mutable_binary_expr();
-  expr->set_op(ScalarVariable::BinaryExpression::SUB);
+  expr->set_op(ir::physical::BinaryExpression::SUB);
   expr->set_lhs(kKTimeVarName);
   expr->set_rhs(kStartKTimeNSVarName);
 

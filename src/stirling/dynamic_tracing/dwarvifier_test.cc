@@ -764,21 +764,25 @@ probes {
     }
   }
   vars {
-    member_var {
+    scalar_var {
       name: "arg0"
       type: INT
-      struct_base: "my_stash_ptr"
-      is_struct_base_pointer: true
-      field: "arg0"
+      member {
+        struct_base: "my_stash_ptr"
+        is_struct_base_pointer: true
+        field: "arg0"
+      }
     }
   }
   vars {
-    member_var {
+    scalar_var {
       name: "arg1"
       type: BOOL
-      struct_base: "my_stash_ptr"
-      is_struct_base_pointer: true
-      field: "arg1"
+      member {
+        struct_base: "my_stash_ptr"
+        is_struct_base_pointer: true
+        field: "arg1"
+      }
     }
   }
   vars {
