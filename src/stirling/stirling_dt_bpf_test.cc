@@ -354,17 +354,17 @@ tracepoints {
     language: GOLANG
     outputs {
       name: "output_table"
-      fields: "vertex_struct"
+      fields: "struct_blob"
     }
     probes {
       name: "probe0"
       tracepoint {
-        symbol: "main.(*Vertex).CrossScale"
+        symbol: "main.OuterStructFunc"
         type: LOGICAL
       }
       args {
         id: "arg0"
-        expr: "v2"
+        expr: "x"
       }
       output_actions {
         output_name: "output_table"
@@ -379,12 +379,13 @@ tracepoints {
   DeployTracepoint(std::move(trace_program));
 
   // Get field indexes for the two columns we want.
-  ASSERT_HAS_VALUE_AND_ASSIGN(int vertex_struct_field_idx,
-                              FindFieldIndex(info_class_.schema(), "vertex_struct"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int struct_blob_field_idx,
+                              FindFieldIndex(info_class_.schema(), "struct_blob"));
 
   types::ColumnWrapperRecordBatch& rb = *record_batches_[0];
-  EXPECT_EQ(rb[vertex_struct_field_idx]->Get<types::StringValue>(0),
-            R"({ "len" = 16, "body" = "not yet extracted"})");
+  EXPECT_EQ(
+      rb[struct_blob_field_idx]->Get<types::StringValue>(0),
+      R"({"O0":1,"O1":{"M0":{"L0":true,"L1":2,"L2":0},"M1":false,"M2":{"L0":true,"L1":3,"L2":0}}})");
 }
 
 struct TestParam {

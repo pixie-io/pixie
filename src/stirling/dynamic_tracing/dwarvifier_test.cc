@@ -881,49 +881,49 @@ structs {
       entries {
         size: 8
         type: INT64
-        path: ".O0"
+        path: "/O0"
       }
       entries {
         offset: 8
         size: 1
         type: BOOL
-        path: ".O1.M0.L0"
+        path: "/O1/M0/L0"
       }
       entries {
         offset: 12
         size: 4
         type: INT32
-        path: ".O1.M0.L1"
+        path: "/O1/M0/L1"
       }
       entries {
         offset: 16
         size: 8
         type: VOID_POINTER
-        path: ".O1.M0.L2"
+        path: "/O1/M0/L2"
       }
       entries {
         offset: 24
         size: 1
         type: BOOL
-        path: ".O1.M1"
+        path: "/O1/M1"
       }
       entries {
         offset: 32
         size: 1
         type: BOOL
-        path: ".O1.M2.L0"
+        path: "/O1/M2/L0"
       }
       entries {
         offset: 36
         size: 4
         type: INT32
-        path: ".O1.M2.L1"
+        path: "/O1/M2/L1"
       }
       entries {
         offset: 40
         size: 8
         type: VOID_POINTER
-        path: ".O1.M2.L2"
+        path: "/O1/M2/L2"
       }
     }
   }

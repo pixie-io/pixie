@@ -1,5 +1,10 @@
 #include "src/stirling/dynamic_trace_connector.h"
 
+#include <rapidjson/document.h>
+#include <rapidjson/pointer.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+
 #include "src/shared/types/proto/types.pb.h"
 #include "src/stirling/dynamic_tracing/dynamic_tracer.h"
 
@@ -116,10 +121,86 @@ class StructDecoder {
     return BytesToString<bytes_format::HexCompact>(CreateStringView<char>(bytes));
   }
 
-  StatusOr<std::string> ExtractStructBlobAsJSON() {
+  StatusOr<std::string> ExtractStructBlobAsJSON(
+      const dynamic_tracing::ir::physical::StructSpec& col_decoder) {
     PL_ASSIGN_OR_RETURN(size_t len, ExtractField<size_t>());
-    buf_.remove_prefix(dynamic_tracing::kStructByteArraySize - sizeof(size_t));
-    return absl::Substitute(R"({ "len" = $0, "body" = "not yet extracted"})", len);
+    std::string bytes;
+    bytes.resize(len);
+    std::memcpy(bytes.data(), buf_.data(), len);
+    buf_.remove_prefix(dynamic_tracing::kStructBlobSize - sizeof(size_t));
+
+    rapidjson::Document d;
+    d.SetObject();
+    for (const auto& entry : col_decoder.entries()) {
+      void* ptr = bytes.data() + entry.offset();
+
+#define CASE(type)                                        \
+  {                                                       \
+    type* p2 = reinterpret_cast<type*>(ptr);              \
+    rapidjson::Pointer(entry.path().c_str()).Set(d, *p2); \
+    break;                                                \
+  }
+
+      switch (entry.type()) {
+        case ScalarType::BOOL:
+          CASE(bool);
+        case ScalarType::INT:
+          CASE(int);
+        case ScalarType::INT8:
+          CASE(int8_t);
+        case ScalarType::INT16:
+          CASE(int16_t);
+        case ScalarType::INT32:
+          CASE(int32_t);
+        case ScalarType::INT64:
+          CASE(int64_t);
+        case ScalarType::UINT:
+          CASE(unsigned int);
+        case ScalarType::UINT8:
+          CASE(uint8_t);
+        case ScalarType::UINT16:
+          CASE(uint16_t);
+        case ScalarType::UINT32:
+          CASE(uint32_t);
+        case ScalarType::UINT64:
+          CASE(uint64_t);
+        case ScalarType::SHORT:
+          // NOLINTNEXTLINE(runtime/int)
+          CASE(short);
+        case ScalarType::USHORT:
+          // NOLINTNEXTLINE(runtime/int)
+          CASE(unsigned short);
+        case ScalarType::LONG:
+          // NOLINTNEXTLINE(runtime/int)
+          CASE(long);
+        case ScalarType::ULONG:
+          // NOLINTNEXTLINE(runtime/int)
+          CASE(unsigned long);
+        case ScalarType::LONGLONG:
+          // NOLINTNEXTLINE(runtime/int)
+          CASE(int64_t);  // NOTE: had to change from "long long" for rapidjson
+        case ScalarType::ULONGLONG:
+          // NOLINTNEXTLINE(runtime/int)
+          CASE(uint64_t);  // NOTE: had to change from "unsigned long long" for rapidjson
+        case ScalarType::CHAR:
+          CASE(char);
+        case ScalarType::UCHAR:
+          CASE(unsigned char);
+        case ScalarType::FLOAT:
+          CASE(float);
+        case ScalarType::DOUBLE:
+          CASE(double);
+        case ScalarType::VOID_POINTER:
+          CASE(uint64_t);
+        default:
+          LOG(DFATAL) << absl::Substitute("Unhandled type=$0", entry.type());
+      }
+    }
+
+    rapidjson::StringBuffer sb;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+    d.Accept(writer);
+    return std::string(sb.GetString());
   }
 
  private:
@@ -127,11 +208,11 @@ class StructDecoder {
 };
 
 Status FillColumn(StructDecoder* struct_decoder, DataTable::DynamicRecordBuilder* r, size_t col_idx,
-                  ScalarType type) {
+                  ScalarType type, const dynamic_tracing::ir::physical::StructSpec& col_decoder) {
 #define WRITE_COLUMN(field_type, column_type)                                        \
   {                                                                                  \
     PL_ASSIGN_OR_RETURN(field_type val, struct_decoder->ExtractField<field_type>()); \
-    r->Append(col_idx++, column_type(val));                                          \
+    r->Append(col_idx, column_type(val));                                            \
     break;                                                                           \
   }
 
@@ -192,17 +273,17 @@ Status FillColumn(StructDecoder* struct_decoder, DataTable::DynamicRecordBuilder
       WRITE_COLUMN(uint64_t, types::Int64Value);
     case ScalarType::STRING: {
       PL_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractString());
-      r->Append(col_idx++, types::StringValue(val));
+      r->Append(col_idx, types::StringValue(val));
       break;
     }
     case ScalarType::BYTE_ARRAY: {
       PL_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractByteArrayAsHex());
-      r->Append(col_idx++, types::StringValue(val));
+      r->Append(col_idx, types::StringValue(val));
       break;
     }
     case ScalarType::STRUCT_BLOB: {
-      PL_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractStructBlobAsJSON());
-      r->Append(col_idx++, types::StringValue(val));
+      PL_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractStructBlobAsJSON(col_decoder));
+      r->Append(col_idx, types::StringValue(val));
       break;
     }
     case ScalarType::UNKNOWN:
@@ -242,7 +323,9 @@ Status DynamicTraceConnector::AppendRecord(const Struct& st, uint32_t asid, std:
   // Skip the first 3 fields which are tgid & tgid_start_time, which are combined into upid,
   // and also time.
   for (int i = 3; i < st.fields_size(); ++i) {
-    PL_RETURN_IF_ERROR(FillColumn(&struct_decoder, &r, col_idx++, st.fields(i).type()));
+    const dynamic_tracing::ir::physical::StructSpec& col_decoder = table_schema_->ColumnDecoder(i);
+    PL_RETURN_IF_ERROR(
+        FillColumn(&struct_decoder, &r, col_idx++, st.fields(i).type(), col_decoder));
   }
 
   return Status::OK();

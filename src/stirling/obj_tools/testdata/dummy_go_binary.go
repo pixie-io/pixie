@@ -111,8 +111,6 @@ func OuterStructFunc(x OuterStruct) bool {
 }
 
 func main() {
-	x := OuterStruct{}
-	fmt.Println(OuterStructFunc(x))
 	for true {
 		v := Vertex{3, 4}
 		v2 := Vertex{2, 9}
@@ -141,6 +139,20 @@ func main() {
 
 		id1 := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
 		fmt.Println(BytesToHex(id1, "Bytes"))
+
+		x := OuterStruct{
+	        O0: 1,
+	        O1: MidStruct{
+	            M0: LowerStruct{
+	                L0: true,
+	                L1: 2,
+	                L2: nil},
+	            M1: false,
+	            M2: LowerStruct{
+	                L0: true,
+	                L1: 3,
+	                L2: nil}}}
+		fmt.Println(OuterStructFunc(x))
 
 		time.Sleep(time.Second)
 	}

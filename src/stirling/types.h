@@ -191,6 +191,10 @@ class DynamicDataTableSchema {
       const dynamic_tracing::BCCProgram::PerfBufferSpec& output_spec);
   const DataTableSchema& Get() { return table_schema_; }
 
+  const dynamic_tracing::ir::physical::StructSpec& ColumnDecoder(int index) {
+    return output_struct_->fields(index).blob_decoder();
+  }
+
  private:
   DynamicDataTableSchema(std::unique_ptr<dynamic_tracing::ir::physical::Struct> output_struct,
                          std::string_view name, const std::vector<DataElement>& elements)

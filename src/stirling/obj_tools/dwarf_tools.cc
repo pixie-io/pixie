@@ -574,9 +574,13 @@ StatusOr<std::vector<StructSpecEntry>> DwarfReader::GetStructSpec(std::string_vi
 Status DwarfReader::FlattenedStructSpec(const llvm::DWARFDie& struct_die,
                                         std::vector<StructSpecEntry>* output,
                                         const std::string& path_prefix, int offset) {
+  // We use the JSON pointer path separator, since the path is used to render the struct as JSON.
+  // JSON pointer reference: https://tools.ietf.org/html/rfc6901.
+  constexpr std::string_view kPathSep = "/";
+
   for (const auto& die : struct_die.children()) {
     if ((die.getTag() == llvm::dwarf::DW_TAG_member)) {
-      std::string path = absl::StrCat(path_prefix, ".", GetShortName(die));
+      std::string path = absl::StrCat(path_prefix, kPathSep, GetShortName(die));
       PL_ASSIGN_OR_RETURN(int member_offset, GetMemberOffset(die));
 
       PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
