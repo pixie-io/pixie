@@ -66,41 +66,41 @@ Status TraceModule::Init() {
                     stirling::dynamic_tracing::ir::shared::Language::GOLANG, std::placeholders::_1,
                     std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
-
   PL_RETURN_IF_ERROR(probe_fn->SetDocString(kGoProbeDocstring));
   AddMethod(kGoProbeTraceDefinition, probe_fn);
 
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> arg_expr_fn,
-      FuncObject::Create(kArgumentId, {"expr"}, {},
+      FuncObject::Create(kArgExprID, {"expr"}, {},
                          /* has_variable_len_args */ false,
                          /* has_variable_len_kwargs */ false,
                          std::bind(ArgumentHandler::Eval, mutations_ir_, std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-
-  PL_RETURN_IF_ERROR(arg_expr_fn->SetDocString(kArgumentDocstring));
-  AddMethod(kArgumentId, arg_expr_fn);
+  PL_RETURN_IF_ERROR(arg_expr_fn->SetDocString(kArgExprDocstring));
+  AddMethod(kArgExprID, arg_expr_fn);
 
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> ret_expr_fn,
-      FuncObject::Create(kRetExprId, {"expr"}, {},
+      FuncObject::Create(kRetExprID, {"expr"}, {},
                          /* has_variable_len_args */ false,
                          /* has_variable_len_kwargs */ false,
                          std::bind(ReturnHandler::Eval, mutations_ir_, std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
+  PL_RETURN_IF_ERROR(ret_expr_fn->SetDocString(kUpsertTracepointDocstring));
+  AddMethod(kRetExprID, ret_expr_fn);
 
-  AddMethod(kRetExprId, ret_expr_fn);
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> latency_fn,
-      FuncObject::Create(kFunctionLatencyId, {}, {},
+      FuncObject::Create(kFunctionLatencyID, {}, {},
                          /* has_variable_len_args */ false,
                          /* has_variable_len_kwargs */ false,
                          std::bind(LatencyHandler::Eval, mutations_ir_, std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  AddMethod(kFunctionLatencyId, latency_fn);
+  PL_RETURN_IF_ERROR(latency_fn->SetDocString(kFunctionLatencyDocstring));
+  AddMethod(kFunctionLatencyID, latency_fn);
 
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> upsert_fn,
@@ -124,6 +124,7 @@ Status TraceModule::Init() {
                                                    std::placeholders::_1, std::placeholders::_2,
                                                    std::placeholders::_3),
                                          ast_visitor()));
+  PL_RETURN_IF_ERROR(delete_fn->SetDocString(kDeleteTracepointDocstring));
   AddMethod(kDeleteTracepointID, delete_fn);
 
   return Status::OK();

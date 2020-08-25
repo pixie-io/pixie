@@ -75,8 +75,7 @@ TEST_F(DocExtractorTest, test_object_strings) {
     }
   }
   EXPECT_EQ(tracepoint_doc_node.name(), tracepoint_name);
-  EXPECT_THAT(tracepoint_doc_node.docstring(),
-              ::testing::ContainsRegex("Upserts the passed in tracepoint on the UPID"));
+  EXPECT_THAT(tracepoint_doc_node.docstring(), ::testing::ContainsRegex("Deploys a tracepoint"));
 }
 
 }  // namespace docs

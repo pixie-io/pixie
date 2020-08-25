@@ -75,14 +75,15 @@ class TraceModule : public QLObject {
   inline static constexpr char kTraceModuleObjName[] = "pxtrace";
 
   // Constants for functions of pxtrace.
-  inline static constexpr char kArgumentId[] = "ArgExpr";
-  inline static constexpr char kArgumentDocstring[] = R"doc(
-  Specifies an argument field to trace.
+  inline static constexpr char kArgExprID[] = "ArgExpr";
+  inline static constexpr char kArgExprDocstring[] = R"doc(
+  Specifies a function argument to trace.
 
-  Extracts data from the argument specified in the expression. You can
-  specify primitive argument types directly (`arg1`) or evaluate struct
-  children (`arg1.foo`) specified in the expression from what's available
-  in the arguments.
+  Extracts the function argument, as specified by the provided expression.
+  Traceable types are base types (`int`, `float`, etc.), strings and byte arrays.
+  Base-type arguments are specified directly (`arg1`), while struct members are
+  accessed using dotted notation (`arg1.foo`). The dot operator works on both
+  pointer and non-pointer types.
 
   :topic: tracepoint_fields
 
@@ -92,33 +93,78 @@ class TraceModule : public QLObject {
   Returns:
     px.TracingField: A materialized column pointer to use in output table definitions.
   )doc";
-  inline static constexpr char kRetExprId[] = "RetExpr";
-  inline static constexpr char kFunctionLatencyId[] = "FunctionLatency";
+
+  inline static constexpr char kRetExprID[] = "RetExpr";
+  inline static constexpr char kRetExprDocstring[] = R"doc(
+  Specifies a function return value to trace.
+
+  Extracts data from the function return value, as specified by the provided expression.
+  Traceable types are the same as in `ArgExpr`. Return values are accessed by index
+  (`$0` for the first return value, `$1` for the second return value, etc.).
+  In Golang, the first index value is the number of arguments, excluding the receiver.
+  For example, the return value for `fun Sum(a int, b int) int` is `$2`.
+  Return values that are structs may be accessed using dotted notation, similar to `ArgExpr`,
+  (e.g. `$0.foo`).
+
+  :topic: tracepoint_fields
+
+  Args:
+    expr (str): The expression to evaluate.
+
+  Returns:
+    px.TracingField: A materialized column pointer to use in output table definitions.
+  )doc";
+
+  inline static constexpr char kFunctionLatencyID[] = "FunctionLatency";
+  inline static constexpr char kFunctionLatencyDocstring[] = R"doc(
+  Specifies a function latency to trace.
+
+  Computes the function latency, from entry to return. The measured latency includes
+  includes time spent in sub-calls.
+
+  :topic: tracepoint_fields
+
+  Returns:
+    px.TracingField: A materialized column pointer to use in output table definitions.
+  )doc";
+
   inline static constexpr char kUpsertTraceID[] = "UpsertTracepoint";
   inline static constexpr char kUpsertTracepointDocstring[] = R"doc(
-  Upserts a tracepoint on the UPID and writes results to the table.
+  Deploys a tracepoint on a process and collects the traced data into a table.
 
-  Upserts the passed in tracepoint on the UPID. Each tracepoint is unique
-  by name. If you upsert on the same trace name and use the same probe func,
-  the TTL of that probe function should update. If you upsert on the same
-  trace name and different probe func, deploying the probe should fail. If you
-  try to write to the same table with a different output schema, deploying will fail.
-
+  Deploys the tracepoint on the process (UPID) for the specified amount of time (TTL).
+  The provided name uniquely identifies the tracepoint, and is used to manage the
+  tracepoint (e.g. future calls to `UpsertTracepoint` or `DeleteTracepoint`.)
+  A call to `UpsertTracepoint` on an existing tracepoint resets the TTL, but
+  otherwise has no effect. A call to `UpsertTracepoint` on an existing tracepoint
+  with a different tracepoint function will fail. UpsertTracepoint automatically
+  creates a table with the provided name should it not exist; if the table exists
+  but has a different schema, the deployment will fail.
 
   :topic: pixie_state_management
 
   Args:
     name (str): The name of the tracepoint. Should be unique with the probe_fn.
-    table_name (str): The table name to write the results. If the schema output
-      by the probe function does not match, then the tracepoint manager will
-      error out.
-    probe_fn (px.ProbeFn): The probe function to use as part of the Upsert. The return
-      value should bhet
-    upid (px.UPID): The program to trace as specified by unique Vizier PID.
+    table_name (str): The table name to write the results. The table is created
+      if it does not exist. The table schema must match if the table does exist.
+    probe_fn (px.ProbeFn): The tracepoint function.
+    upid (px.UPID): The process to trace as specified by unique Vizier PID.
     ttl (px.Duration): The length of time that a tracepoint will stay alive, after
       which it will be removed.
   )doc";
+
   inline static constexpr char kDeleteTracepointID[] = "DeleteTracepoint";
+  inline static constexpr char kDeleteTracepointDocstring[] = R"doc(
+  Deletes a tracepoint.
+
+  Deletes the tracepoint with the provided name, should it exist.
+
+  :topic: pixie_state_management
+
+  Args:
+    name (str): The name of the tracepoint.
+  )doc";
+
   inline static constexpr char kGoProbeTraceDefinition[] = "goprobe";
   inline static constexpr char kGoProbeDocstring[] = R"doc(
   Decorates a tracepoint definition of a Go function.
