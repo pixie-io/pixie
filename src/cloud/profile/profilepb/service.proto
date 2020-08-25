@@ -19,6 +19,7 @@ service ProfileService {
     rpc GetOrg(pl.uuidpb.UUID) returns (OrgInfo) {}
     rpc GetOrgByDomain(GetOrgByDomainRequest) returns (OrgInfo) {}
     rpc UpdateUser(UpdateUserRequest) returns (UserInfo) {}
+    rpc GetOrgs(GetOrgsRequest) returns (GetOrgsResponse) {}
 }
 
 
@@ -94,6 +95,12 @@ message CreateOrgAndUserResponse {
 
 message GetOrgByDomainRequest {
     string domain_name = 1;
+}
+
+message GetOrgsRequest {}
+
+message GetOrgsResponse {
+  repeated OrgInfo orgs = 1;
 }
 
 message UpdateUserRequest {

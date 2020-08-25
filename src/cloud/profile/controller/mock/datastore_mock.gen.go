@@ -136,3 +136,16 @@ func (m *MockDatastore) UpdateUser(arg0 *datastore.UserInfo) error {
 func (mr *MockDatastoreMockRecorder) UpdateUser(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*MockDatastore)(nil).UpdateUser), arg0)
 }
+
+// GetOrgs mocks base method
+func (m *MockDatastore) GetOrgs() ([]*datastore.OrgInfo, error) {
+	ret := m.ctrl.Call(m, "GetOrgs")
+	ret0, _ := ret[0].([]*datastore.OrgInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrgs indicates an expected call of GetOrgs
+func (mr *MockDatastoreMockRecorder) GetOrgs() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgs", reflect.TypeOf((*MockDatastore)(nil).GetOrgs))
+}

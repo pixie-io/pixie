@@ -106,6 +106,17 @@ func TestDatastore(t *testing.T) {
 		assert.Equal(t, orgInfo.DomainName, "hulu.com")
 	})
 
+	t.Run("get orgs", func(t *testing.T) {
+		d := datastore.NewDatastore(db)
+		orgs, err := d.GetOrgs()
+		require.Nil(t, err)
+		require.NotNil(t, orgs)
+
+		assert.Equal(t, 1, len(orgs))
+		assert.Equal(t, "hulu", orgs[0].OrgName)
+		assert.Equal(t, "hulu.com", orgs[0].DomainName)
+	})
+
 	t.Run("get org by domain for missing domain should a specific error", func(t *testing.T) {
 		d := datastore.NewDatastore(db)
 		orgInfo, err := d.GetOrgByDomain("goo.com")

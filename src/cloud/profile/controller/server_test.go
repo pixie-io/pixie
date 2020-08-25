@@ -576,6 +576,44 @@ func TestServer_GetOrg(t *testing.T) {
 	assert.Equal(t, resp.OrgName, "hulu")
 }
 
+func TestServer_GetOrgs(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockDatastore(ctrl)
+
+	orgUUID := uuid.NewV4()
+	org2UUID := uuid.NewV4()
+
+	s := controller.NewServer(nil, d)
+
+	mockReply := []*datastore.OrgInfo{&datastore.OrgInfo{
+		ID:         orgUUID,
+		DomainName: "hulu.com",
+		OrgName:    "hulu",
+	},
+		&datastore.OrgInfo{
+			ID:         org2UUID,
+			DomainName: "pixie.com",
+			OrgName:    "pixie",
+		}}
+
+	d.EXPECT().
+		GetOrgs().
+		Return(mockReply, nil)
+
+	resp, err := s.GetOrgs(context.Background(), &profile.GetOrgsRequest{})
+
+	require.Nil(t, err)
+	assert.Equal(t, 2, len(resp.Orgs))
+	assert.Equal(t, utils.ProtoFromUUID(&orgUUID), resp.Orgs[0].ID)
+	assert.Equal(t, "hulu.com", resp.Orgs[0].DomainName)
+	assert.Equal(t, "hulu", resp.Orgs[0].OrgName)
+	assert.Equal(t, utils.ProtoFromUUID(&org2UUID), resp.Orgs[1].ID)
+	assert.Equal(t, "pixie.com", resp.Orgs[1].DomainName)
+	assert.Equal(t, "pixie", resp.Orgs[1].OrgName)
+}
+
 func TestServer_GetOrg_MissingOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

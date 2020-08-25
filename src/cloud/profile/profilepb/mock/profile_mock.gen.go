@@ -162,6 +162,24 @@ func (mr *MockProfileServiceClientMockRecorder) UpdateUser(ctx, in interface{}, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*MockProfileServiceClient)(nil).UpdateUser), varargs...)
 }
 
+// GetOrgs mocks base method
+func (m *MockProfileServiceClient) GetOrgs(ctx context.Context, in *profilepb.GetOrgsRequest, opts ...grpc.CallOption) (*profilepb.GetOrgsResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetOrgs", varargs...)
+	ret0, _ := ret[0].(*profilepb.GetOrgsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrgs indicates an expected call of GetOrgs
+func (mr *MockProfileServiceClientMockRecorder) GetOrgs(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgs", reflect.TypeOf((*MockProfileServiceClient)(nil).GetOrgs), varargs...)
+}
+
 // MockProfileServiceServer is a mock of ProfileServiceServer interface
 type MockProfileServiceServer struct {
 	ctrl     *gomock.Controller
@@ -274,4 +292,17 @@ func (m *MockProfileServiceServer) UpdateUser(arg0 context.Context, arg1 *profil
 // UpdateUser indicates an expected call of UpdateUser
 func (mr *MockProfileServiceServerMockRecorder) UpdateUser(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*MockProfileServiceServer)(nil).UpdateUser), arg0, arg1)
+}
+
+// GetOrgs mocks base method
+func (m *MockProfileServiceServer) GetOrgs(arg0 context.Context, arg1 *profilepb.GetOrgsRequest) (*profilepb.GetOrgsResponse, error) {
+	ret := m.ctrl.Call(m, "GetOrgs", arg0, arg1)
+	ret0, _ := ret[0].(*profilepb.GetOrgsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrgs indicates an expected call of GetOrgs
+func (mr *MockProfileServiceServerMockRecorder) GetOrgs(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgs", reflect.TypeOf((*MockProfileServiceServer)(nil).GetOrgs), arg0, arg1)
 }

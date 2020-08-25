@@ -134,6 +134,27 @@ func (d *Datastore) GetOrg(id uuid.UUID) (*OrgInfo, error) {
 	return nil, errors.New("failed to get org info from database")
 }
 
+// GetOrgs gets all orgs.
+func (d *Datastore) GetOrgs() ([]*OrgInfo, error) {
+	query := `SELECT * from orgs`
+	rows, err := d.db.Queryx(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	orgs := make([]*OrgInfo, 0)
+	for rows.Next() {
+		var orgInfo OrgInfo
+		err := rows.StructScan(&orgInfo)
+		if err != nil {
+			return nil, err
+		}
+		orgs = append(orgs, &orgInfo)
+	}
+	return orgs, nil
+}
+
 // GetOrgByDomain gets org information by domain.
 func (d *Datastore) GetOrgByDomain(domainName string) (*OrgInfo, error) {
 	query := `SELECT * from orgs WHERE domain_name=$1`

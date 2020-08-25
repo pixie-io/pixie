@@ -72,7 +72,7 @@ func NewBundleManagerWithOrgName(bundleFile string, orgName string) (*BundleMana
 	filtered := make(map[string]*pixieScript, 0)
 	// Filter scripts by org.
 	for k, script := range b.Scripts {
-		if len(script.OrgName) == 0 || script.OrgName == orgName {
+		if len(script.OrgName) == 0 || script.OrgName == orgName || orgName == "" {
 			filtered[k] = script
 		}
 	}

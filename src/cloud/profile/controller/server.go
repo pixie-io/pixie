@@ -46,6 +46,9 @@ type Datastore interface {
 	DeleteOrgAndUsers(uuid.UUID) error
 	// UpdateUser updates the user info.
 	UpdateUser(*datastore.UserInfo) error
+
+	// GetOrgs gets all the orgs.
+	GetOrgs() ([]*datastore.OrgInfo, error)
 }
 
 // Server is an implementation of GRPC server for profile service.
@@ -232,6 +235,20 @@ func (s *Server) GetOrg(ctx context.Context, req *uuidpb.UUID) (*profile.OrgInfo
 		return nil, status.Error(codes.NotFound, "no such org")
 	}
 	return orgInfoToProto(orgInfo), nil
+}
+
+// GetOrgs is the GRPC method to get all orgs. This should only be used internally.
+func (s *Server) GetOrgs(ctx context.Context, req *profile.GetOrgsRequest) (*profile.GetOrgsResponse, error) {
+	orgs, err := s.d.GetOrgs()
+	if err != nil {
+		return nil, err
+	}
+	orgProtos := make([]*profile.OrgInfo, len(orgs))
+	for i, o := range orgs {
+		orgProtos[i] = orgInfoToProto(o)
+	}
+
+	return &profile.GetOrgsResponse{Orgs: orgProtos}, nil
 }
 
 // GetOrgByDomain gets an org by domain name.

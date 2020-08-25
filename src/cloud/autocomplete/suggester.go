@@ -3,14 +3,20 @@ package autocomplete
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/olivere/elastic/v7"
 	"github.com/sahilm/fuzzy"
 	uuid "github.com/satori/go.uuid"
+	"github.com/spf13/viper"
+	"google.golang.org/grpc/metadata"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/cloud/indexer/md"
+	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
+	"pixielabs.ai/pixielabs/src/shared/services/utils"
+	pbutils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 )
 
@@ -20,7 +26,8 @@ type ElasticSuggester struct {
 	mdIndexName     string
 	scriptIndexName string
 	// This is temporary, and will be removed once we start indexing scripts.
-	br *script.BundleManager
+	br         *script.BundleManager
+	orgMapping map[uuid.UUID]string
 }
 
 var protoToElasticLabelMap = map[cloudapipb.AutocompleteEntityKind]string{
@@ -37,9 +44,33 @@ var elasticLabelToProtoMap = map[string]cloudapipb.AutocompleteEntityKind{
 	"namespace": cloudapipb.AEK_NAMESPACE,
 }
 
+func getServiceCredentials(signingKey string) (string, error) {
+	claims := utils.GenerateJWTForService("API Service")
+	return utils.SignJWTClaims(claims, signingKey)
+}
+
 // NewElasticSuggester creates a suggester based on an elastic index.
-func NewElasticSuggester(client *elastic.Client, mdIndex string, scriptIndex string, br *script.BundleManager) *ElasticSuggester {
-	return &ElasticSuggester{client, mdIndex, scriptIndex, br}
+func NewElasticSuggester(client *elastic.Client, mdIndex string, scriptIndex string, br *script.BundleManager, pc profilepb.ProfileServiceClient) (*ElasticSuggester, error) {
+	orgMapping := make(map[uuid.UUID]string)
+	if br != nil {
+		// Generate mapping from orgID -> orgName. This is temporary until we have a script indexer.
+		serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
+		if err != nil {
+			return nil, err
+		}
+		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
+			fmt.Sprintf("bearer %s", serviceAuthToken))
+		resp, err := pc.GetOrgs(ctx, &profilepb.GetOrgsRequest{})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, org := range resp.Orgs {
+			orgMapping[pbutils.UUIDFromProtoOrNil(org.ID)] = org.OrgName
+		}
+	}
+
+	return &ElasticSuggester{client, mdIndex, scriptIndex, br, orgMapping}, nil
 }
 
 // SuggestionRequest is a request for autocomplete suggestions.
@@ -156,6 +187,10 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 						scriptArgs := scriptArgMap[m.Str]
 						scriptNames := scriptArgNames[m.Str]
 						valid := true
+						if script.OrgName != "" && e.orgMapping[reqs[i].OrgID] != script.OrgName {
+							valid = false
+						}
+
 						for _, r := range reqs[i].AllowedArgs { // Check that the script takes the allowed args.
 							found := false
 							for _, arg := range scriptArgs {
