@@ -38,15 +38,41 @@ enum Register {
   PARM_PTR = 210;
 }
 
+message StructSpecEntry {
+  // Location of this struct base type member within the raw bytes.
+  int32 offset = 1;
+
+  // Size of this struct base type member.
+  int32 size = 2;
+
+  // The name of the base type (e.g. int, float64, etc.), according to DWARF.
+  shared.ScalarType type = 3;
+
+  // The path encoding the original data source structure, before flattening.
+  // This field uses "JSON pointer" syntax to simplify decoding the data into JSON.
+  // See: https://rapidjson.org/md_doc_pointer.html
+  string path = 4;
+}
+
+message StructSpec {
+  // A struct spec is a list of entries of base types in the flattened struct.
+  // These are listed in order of memory layout.
+  repeated StructSpecEntry entries = 1;
+}
+
+message Field {
+  string name = 1;
+  shared.ScalarType type = 2;
+
+  // Used only if type is STRUCT_BLOB, in which case this provides the spec
+  // that defines what the blob contains.
+  StructSpec blob_decoder = 3;
+}
+
 // Describes a C struct. This is directly converted to a C struct in BCC code.
 message Struct {
   // The name of this struct.
   string name = 1;
-
-  message Field {
-    string name = 1;
-    shared.ScalarType type = 2;
-  }
 
   repeated Field fields = 2;
 }
@@ -169,7 +195,7 @@ message StructVariable {
   repeated FieldAssignment field_assignments = 3;
 }
 
-// A container of different types of variables. Defines how to access them from inside BCC code..
+// A container of different types of variables. Defines how to access them from inside BCC code.
 // Variable names must be unique.
 message Variable {
   oneof var_oneof {
@@ -196,7 +222,7 @@ message MapStashAction {
 }
 
 message PerfBufferOutputAction {
-  // The name of the perf buffer..
+  // The name of the perf buffer.
   string perf_buffer_name = 1;
 
   // The names of the variables to be submitted to the perf buffer.

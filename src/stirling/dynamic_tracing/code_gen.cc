@@ -19,6 +19,7 @@ namespace dynamic_tracing {
 
 using ::pl::stirling::bpf_tools::BPFProbeAttachType;
 using ::pl::stirling::bpf_tools::UProbeSpec;
+using ::pl::stirling::dynamic_tracing::ir::physical::Field;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapDeleteAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::MemberVariable;
@@ -187,7 +188,7 @@ StatusOr<std::string> GenVariableType(const VariableType& var_type) {
   GCC_SWITCH_RETURN;
 }
 
-std::string GenField(const Struct::Field& field) {
+std::string GenField(const Field& field) {
   return absl::Substitute("$0 $1;", GenScalarType(field.type()), field.name());
 }
 

@@ -18,6 +18,7 @@ namespace dynamic_tracing {
 using ::pl::stirling::dwarf_tools::ArgInfo;
 using ::pl::stirling::dwarf_tools::LocationType;
 using ::pl::stirling::dwarf_tools::StructMemberInfo;
+using ::pl::stirling::dwarf_tools::StructSpecEntry;
 using ::pl::stirling::dwarf_tools::TypeInfo;
 using ::pl::stirling::dwarf_tools::VarType;
 
@@ -83,7 +84,8 @@ class Dwarvifier {
   // TVarType can be ScalarVariable, MemberVariable, etc.
   template <typename TVarType>
   TVarType* AddVariable(ir::physical::Probe* probe, const std::string& name,
-                        ir::shared::ScalarType type);
+                        ir::shared::ScalarType type,
+                        std::optional<ir::physical::StructSpec> decoder = std::nullopt);
 
   Status GenerateMapValueStruct(const ir::logical::MapStashAction& stash_action_in,
                                 const std::string& struct_type_name,
@@ -102,7 +104,7 @@ class Dwarvifier {
   dwarf_tools::RetValInfo retval_info_;
 
   // All defined variables.
-  absl::flat_hash_map<std::string, ir::shared::ScalarType> variables_;
+  absl::flat_hash_map<std::string, ir::physical::Field> variables_;
 
   ir::shared::Language language_;
   std::vector<std::string> implicit_columns_;
@@ -310,7 +312,8 @@ Status Dwarvifier::Generate(const ir::logical::TracepointSpec& input_program,
 
 template <typename TVarType>
 TVarType* Dwarvifier::AddVariable(ir::physical::Probe* probe, const std::string& name,
-                                  ir::shared::ScalarType type) {
+                                  ir::shared::ScalarType type,
+                                  std::optional<ir::physical::StructSpec> decoder) {
   TVarType* var;
 
   if constexpr (std::is_same_v<TVarType, ScalarVariable>) {
@@ -329,7 +332,16 @@ TVarType* Dwarvifier::AddVariable(ir::physical::Probe* probe, const std::string&
   var->set_type(type);
 
   // Populate map, so we can lookup this variable later.
-  variables_[name] = type;
+  auto& v = variables_[name];
+  v.set_name(name);
+  v.set_type(type);
+
+  // Decoder should be present if and only if type is STRUCT_BLOB.
+  DCHECK_EQ(type == ir::shared::ScalarType::STRUCT_BLOB, decoder.has_value());
+
+  if (decoder.has_value()) {
+    v.mutable_blob_decoder()->CopyFrom(decoder.value());
+  }
 
   return var;
 }
@@ -507,6 +519,25 @@ Status Dwarvifier::ProcessConstants(const ir::logical::Constant& constant,
   return Status::OK();
 }
 
+namespace {
+Status PopulateStructSpecProto(const std::vector<StructSpecEntry>& struct_spec,
+                               ir::shared::Language lang,
+                               ir::physical::StructSpec* struct_spec_proto) {
+  for (const auto& e : struct_spec) {
+    PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type,
+                        VarTypeToProtoScalarType(e.type_info, lang));
+
+    auto* entry_proto = struct_spec_proto->add_entries();
+    entry_proto->set_offset(e.offset);
+    entry_proto->set_size(e.size);
+    entry_proto->set_type(pb_type);
+    entry_proto->set_path(e.path);
+  }
+
+  return Status::OK();
+}
+}  // namespace
+
 Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& arg_info,
                                   const std::string& base_var,
                                   const std::vector<std::string_view>& components,
@@ -579,8 +610,13 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
     } else if (language_ == Language::GOLANG && type_info.type_name == "[]byte") {
       var = AddVariable<ScalarVariable>(output_probe, var_name, ir::shared::ScalarType::BYTE_ARRAY);
     } else {
-      var =
-          AddVariable<ScalarVariable>(output_probe, var_name, ir::shared::ScalarType::STRUCT_BLOB);
+      PL_ASSIGN_OR_RETURN(std::vector<StructSpecEntry> struct_spec,
+                          dwarf_reader_->GetStructSpec(type_info.type_name));
+      ir::physical::StructSpec struct_spec_proto;
+      PL_RETURN_IF_ERROR(PopulateStructSpecProto(struct_spec, language_, &struct_spec_proto));
+
+      var = AddVariable<ScalarVariable>(output_probe, var_name, ir::shared::ScalarType::STRUCT_BLOB,
+                                        std::move(struct_spec_proto));
 
       // STRUCT_BLOB is special. It is the only type where we specify the size to get copied.
       PL_ASSIGN_OR_RETURN(uint64_t struct_byte_size,
@@ -755,7 +791,12 @@ Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
   for (const auto& value_id : map_val.value_ids()) {
     const auto& field = struct_decl->fields(i++);
 
-    auto* var = AddVariable<MemberVariable>(output_probe, value_id, field.type());
+    std::optional<ir::physical::StructSpec> blob_decoder;
+    if (field.has_blob_decoder()) {
+      blob_decoder = field.blob_decoder();
+    }
+
+    auto* var = AddVariable<MemberVariable>(output_probe, value_id, field.type(), blob_decoder);
     var->set_struct_base(map_var_name);
     var->set_is_struct_base_pointer(true);
     var->set_field(field.name());
@@ -788,16 +829,16 @@ Status Dwarvifier::GenerateMapValueStruct(const ir::logical::MapStashAction& sta
   struct_decl->set_name(struct_type_name);
 
   for (const auto& var_name : stash_action_in.value_variable_name()) {
-    auto* struct_field = struct_decl->add_fields();
-    struct_field->set_name(var_name);
-
     auto iter = variables_.find(var_name);
     if (iter == variables_.end()) {
       return error::Internal(
           "GenerateMapValueStruct [map_name=$0]: Reference to unknown variable: $1",
           stash_action_in.map_name(), var_name);
     }
-    struct_field->set_type(iter->second);
+
+    auto* struct_field = struct_decl->add_fields();
+    struct_field->CopyFrom(iter->second);
+    DCHECK_EQ(struct_field->name(), var_name);
   }
 
   structs_[struct_type_name] = struct_decl;
@@ -873,16 +914,15 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
   struct_decl->set_name(struct_type_name);
 
   for (const auto& f : implicit_columns_) {
-    auto* struct_field = struct_decl->add_fields();
-    struct_field->set_name(f);
-
     auto iter = variables_.find(f);
     if (iter == variables_.end()) {
       return error::Internal("GenerateOutputStruct [output=$0]: Reference to unknown variable $1",
                              output_action_in.output_name(), f);
     }
 
-    struct_field->set_type(iter->second);
+    auto* struct_field = struct_decl->add_fields();
+    struct_field->CopyFrom(iter->second);
+    DCHECK_EQ(struct_field->name(), f);
   }
 
   auto output_iter = outputs_.find(output_action_in.output_name());
@@ -901,11 +941,6 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
   }
 
   for (int i = 0; i < output_action_in.variable_name_size(); ++i) {
-    auto* struct_field = struct_decl->add_fields();
-
-    // Set the field name to the name in the Output.
-    struct_field->set_name(output->fields(i));
-
     const std::string& var_name = output_action_in.variable_name(i);
 
     auto iter = variables_.find(var_name);
@@ -913,7 +948,12 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
       return error::Internal("GenerateOutputStruct [output=$0]: Reference to unknown variable $1",
                              output_action_in.output_name(), var_name);
     }
-    struct_field->set_type(iter->second);
+
+    auto* struct_field = struct_decl->add_fields();
+    struct_field->CopyFrom(iter->second);
+
+    // Set the field name to the name in the Output.
+    struct_field->set_name(output->fields(i));
   }
 
   structs_[struct_type_name] = struct_decl;

@@ -106,9 +106,13 @@ func BytesToHex(uuid []byte, name string) string {
 	return name + "_" + hex.EncodeToString(uuid)
 }
 
+func OuterStructFunc(x OuterStruct) bool {
+	return x.O1.M0.L0
+}
+
 func main() {
 	x := OuterStruct{}
-	fmt.Println(x.O1.M0.L0)
+	fmt.Println(OuterStructFunc(x))
 	for true {
 		v := Vertex{3, 4}
 		v2 := Vertex{2, 9}

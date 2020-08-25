@@ -13,6 +13,7 @@ namespace stirling {
 namespace dynamic_tracing {
 
 using ::google::protobuf::TextFormat;
+using ::pl::stirling::dynamic_tracing::ir::physical::Field;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::PerfBufferOutputAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::Register;
@@ -22,14 +23,13 @@ using ::pl::stirling::dynamic_tracing::ir::physical::StructVariable;
 using ::pl::stirling::dynamic_tracing::ir::shared::BPFHelper;
 using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
 using ::testing::ElementsAre;
-using ::testing::Field;
 using ::testing::StrEq;
 
 TEST(GenStructTest, Output) {
   Struct st;
   st.set_name("socket_data_event_t");
 
-  Struct::Field* field = nullptr;
+  Field* field = nullptr;
 
   field = st.add_fields();
   field->set_name("i32");
@@ -146,7 +146,7 @@ TEST(GenStructVariableTest, Variables) {
 
   st.set_name("socket_data_event_t");
 
-  Struct::Field* field = nullptr;
+  Field* field = nullptr;
 
   field = st.add_fields();
   field->set_name("i32");

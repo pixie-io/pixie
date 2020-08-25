@@ -96,7 +96,7 @@ struct StructSpecEntry {
   uint64_t size = 0;
   TypeInfo type_info;
 
-  // The path encoding  the original data source structure, before flattening.
+  // The path encoding the original data source structure, before flattening.
   // This field uses "JSON pointer" syntax to simplify decoding the data into JSON.
   // https://rapidjson.org/md_doc_pointer.html
   std::string path;

@@ -822,6 +822,208 @@ probes {
 }
 )";
 
+constexpr std::string_view kStructProbeIn = R"(
+deployment_spec {
+  path: "$0"
+}
+tracepoints {
+  program {
+    language: GOLANG
+    outputs {
+      name: "out_table"
+      fields: "out"
+    }
+    probes {
+      tracepoint: {
+        symbol: "main.OuterStructFunc"
+        type: ENTRY
+      }
+      args {
+        id: "arg0"
+        expr: "x"
+      }
+      output_actions {
+        output_name: "out_table"
+        variable_name: "arg0"
+      }
+    }
+  }
+}
+)";
+
+constexpr std::string_view kStructProbeOut = R"(
+deployment_spec {
+  path: "$0"
+}
+language: GOLANG
+structs {
+  name: "out_table_value_t"
+  fields {
+    name: "tgid_"
+    type: INT32
+  }
+  fields {
+    name: "tgid_start_time_"
+    type: UINT64
+  }
+  fields {
+    name: "time_"
+    type: UINT64
+  }
+  fields {
+    name: "goid_"
+    type: INT64
+  }
+  fields {
+    name: "out"
+    type: STRUCT_BLOB
+    blob_decoder {
+      entries {
+        size: 8
+        type: INT64
+        path: ".O0"
+      }
+      entries {
+        offset: 8
+        size: 1
+        type: BOOL
+        path: ".O1.M0.L0"
+      }
+      entries {
+        offset: 12
+        size: 4
+        type: INT32
+        path: ".O1.M0.L1"
+      }
+      entries {
+        offset: 16
+        size: 8
+        type: VOID_POINTER
+        path: ".O1.M0.L2"
+      }
+      entries {
+        offset: 24
+        size: 1
+        type: BOOL
+        path: ".O1.M1"
+      }
+      entries {
+        offset: 32
+        size: 1
+        type: BOOL
+        path: ".O1.M2.L0"
+      }
+      entries {
+        offset: 36
+        size: 4
+        type: INT32
+        path: ".O1.M2.L1"
+      }
+      entries {
+        offset: 40
+        size: 8
+        type: VOID_POINTER
+        path: ".O1.M2.L2"
+      }
+    }
+  }
+}
+outputs {
+  name: "out_table"
+  fields: "out"
+  struct_type: "out_table_value_t"
+}
+probes {
+  tracepoint {
+    symbol: "main.OuterStructFunc"
+    type: ENTRY
+  }
+  vars {
+    scalar_var {
+      name: "sp_"
+      type: VOID_POINTER
+      reg: SP
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_"
+      type: INT32
+      builtin: TGID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_pid_"
+      type: UINT64
+      builtin: TGID_PID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_start_time_"
+      type: UINT64
+      builtin: TGID_START_TIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "time_"
+      type: UINT64
+      builtin: KTIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "goid_"
+      type: INT64
+      builtin: GOID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "arg0"
+      type: STRUCT_BLOB
+      memory {
+        base: "sp_"
+        offset: 8
+        size: 48
+      }
+    }
+  }
+  vars {
+    struct_var {
+      name: "out_table_value"
+      type: "out_table_value_t"
+      field_assignments {
+        field_name: "tgid_"
+        variable_name: "tgid_"
+      }
+      field_assignments {
+        field_name: "tgid_start_time_"
+        variable_name: "tgid_start_time_"
+      }
+      field_assignments {
+        field_name: "time_"
+        variable_name: "time_"
+      }
+      field_assignments {
+        field_name: "goid_"
+        variable_name: "goid_"
+      }
+      field_assignments {
+        field_name: "out"
+        variable_name: "arg0"
+      }
+    }
+  }
+  output_actions {
+    perf_buffer_name: "out_table"
+    variable_name: "out_table_value"
+  }
+}
+)";
+
 struct DwarfInfoTestParam {
   std::string_view input;
   std::string_view expected_output;
@@ -850,7 +1052,8 @@ INSTANTIATE_TEST_SUITE_P(DwarfInfoTestSuite, DwarfInfoTest,
                                            DwarfInfoTestParam{kReturnProbeIn, kReturnProbeOut},
                                            DwarfInfoTestParam{kNestedArgProbeIn,
                                                               kNestedArgProbeOut},
-                                           DwarfInfoTestParam{kActionProbeIn, kActionProbeOut}));
+                                           DwarfInfoTestParam{kActionProbeIn, kActionProbeOut},
+                                           DwarfInfoTestParam{kStructProbeIn, kStructProbeOut}));
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
