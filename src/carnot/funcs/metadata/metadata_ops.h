@@ -50,6 +50,15 @@ class ASIDUDF : public ScalarUDF {
 class UPIDToASIDUDF : public ScalarUDF {
  public:
   Int64Value Exec(FunctionContext*, UInt128Value upid_value) { return upid_value.High64() >> 32; }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Pixie Agent ID from the UPID.")
+        .Details(
+            "Gets the Pixie Agent ID from the given Unique Process ID (UPID). "
+            "The Pixie Agent ID signifies which Pixie Agent is tracing the given process.")
+        .Example("df.agent_id = px.upid_to_asid(df.upid)")
+        .Arg("upid", "The UPID of the process to get the Pixie Agent ID for.")
+        .Returns("The Pixie Agent ID for the UPID passed in.");
+  }
 };
 
 class PodIDToPodNameUDF : public ScalarUDF {
@@ -138,6 +147,17 @@ class UPIDToContainerIDUDF : public ScalarUDF {
     }
     return pid->cid();
   }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Kubernetes container ID from a UPID.")
+        .Details(
+            "Gets the Kubernetes container ID for the container the process "
+            "with the given Unique Process ID (UPID) is running on. "
+            "If the UPID has no associated Kubernetes container, this function will return an "
+            "empty string")
+        .Example("df.container_id = px.upid_to_container_id(df.upid)")
+        .Arg("upid", "The UPID of the process to get the container ID for.")
+        .Returns("The k8s container ID for the UPID passed in.");
+  }
 };
 
 inline const md::ContainerInfo* UPIDToContainer(const pl::md::AgentMetadataState* md,
@@ -164,6 +184,17 @@ class UPIDToContainerNameUDF : public ScalarUDF {
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::ExplicitRule::Create<UPIDToContainerNameUDF>(types::ST_CONTAINER_NAME,
                                                               {types::ST_NONE})};
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Kubernetes container name from a UPID.")
+        .Details(
+            "Gets the Kubernetes container name for the container the process "
+            "with the given Unique Process ID (UPID) is running on. "
+            "If the UPID has no associated Kubernetes container, this function will return an "
+            "empty string")
+        .Example("df.container_name = px.upid_to_container_name(df.upid)")
+        .Arg("upid", "The UPID of the process to get the container name for.")
+        .Returns("The k8s container name for the UPID passed in.");
   }
 };
 
@@ -208,6 +239,17 @@ class UPIDToNamespaceUDF : public ScalarUDF {
     return {
         udf::ExplicitRule::Create<UPIDToNamespaceUDF>(types::ST_NAMESPACE_NAME, {types::ST_NONE})};
   }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Kubernetes namespace from a UPID.")
+        .Details(
+            "Gets the Kubernetes namespace for the process "
+            "with the given Unique Process ID (UPID). "
+            "If the process is not running within a kubernetes context, this function will return "
+            "an empty string")
+        .Example("df.namespace = px.upid_to_namespace(df.upid)")
+        .Arg("upid", "The UPID of the process to get the namespace for.")
+        .Returns("The k8s namespace for the UPID passed in.");
+  }
 };
 
 class UPIDToPodIDUDF : public ScalarUDF {
@@ -219,6 +261,17 @@ class UPIDToPodIDUDF : public ScalarUDF {
       return "";
     }
     return std::string(container_info->pod_id());
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Kubernetes Pod ID from a UPID.")
+        .Details(
+            "Gets the Kubernetes pod ID for the pod the process "
+            "with the given Unique Process ID (UPID) is running on. "
+            "If the UPID has no associated Kubernetes Pod, this function will return an empty "
+            "string.")
+        .Example("df.pod_id = px.upid_to_pod_id(df.upid)")
+        .Arg("upid", "The UPID of the process to get the pod ID for.")
+        .Returns("The k8s pod ID for the UPID passed in.");
   }
 };
 
@@ -234,6 +287,17 @@ class UPIDToPodNameUDF : public ScalarUDF {
   }
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::ExplicitRule::Create<UPIDToPodNameUDF>(types::ST_POD_NAME, {types::ST_NONE})};
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Kubernetes Pod Name from a UPID.")
+        .Details(
+            "Gets the name of Kubernetes pod the process "
+            "with the given Unique Process ID (UPID) is running on. "
+            "If the UPID has no associated Kubernetes Pod, this function will return an empty "
+            "string")
+        .Example("df.pod_name = px.upid_to_pod_name(df.upid)")
+        .Arg("upid", "The UPID of the process to get the pod name for.")
+        .Returns("The k8s pod name for the UPID passed in.");
   }
 };
 
@@ -347,6 +411,19 @@ class UPIDToServiceIDUDF : public ScalarUDF {
 
     return StringifyVector(running_service_ids);
   }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Service ID from a UPID.")
+        .Details(
+            "Gets the Kubernetes Service ID for the process with the given Unique Process ID "
+            "(UPID). "
+            "If the given process doesn't have an associated Kubernetes service, this function "
+            "returns "
+            "an empty string.")
+        .Example("df.service_id = px.upid_to_service_id(df.upid)")
+        .Arg("upid", "The UPID of the process to get the service ID for.")
+        .Returns("The kubernetes service ID for the UPID passed in.");
+  }
 };
 
 /**
@@ -377,6 +454,19 @@ class UPIDToServiceNameUDF : public ScalarUDF {
     return {
         udf::ExplicitRule::Create<UPIDToServiceNameUDF>(types::ST_SERVICE_NAME, {types::ST_NONE})};
   }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Service Name from a UPID.")
+        .Details(
+            "Gets the Kubernetes Service Name for the process with the given Unique Process ID "
+            "(UPID). "
+            "If the given process doesn't have an associated Kubernetes service, this function "
+            "returns "
+            "an empty string")
+        .Example("df.service_name = px.upid_to_service_name(df.upid)")
+        .Arg("upid", "The UPID of the process to get the service name for.")
+        .Returns("The Kubernetes Service Name for the UPID passed in.");
+  }
 };
 
 /**
@@ -396,6 +486,16 @@ class UPIDToNodeNameUDF : public ScalarUDF {
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::ExplicitRule::Create<UPIDToNodeNameUDF>(types::ST_NODE_NAME, {types::ST_NONE})};
   }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Node Name from a UPID.")
+        .Details(
+            "Gets the Kubernetes name of the node the process "
+            "with the given Unique Process ID (UPID) is running on.")
+        .Example("df.node_name = px.upid_to_node_name(df.upid)")
+        .Arg("upid", "The UPID of the process to get the node name for.")
+        .Returns("The name of the node for the UPID passed in.");
+  }
 };
 
 /**
@@ -410,6 +510,16 @@ class UPIDToHostnameUDF : public ScalarUDF {
       return "";
     }
     return pod_info->hostname();
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Hostname from a UPID.")
+        .Details(
+            "Gets the name of the host the process with the given Unique Process ID (UPID) is "
+            "running on. "
+            "Equivalent to running `hostname` in a shell on the node the process is running on.")
+        .Example("df.hostname = px.upid_to_hostname(df.upid)")
+        .Arg("upid", "The UPID of the process to get the hostname for.")
+        .Returns("The hostname for the UPID passed in.");
   }
 };
 
@@ -576,6 +686,19 @@ class UPIDToStringUDF : public ScalarUDF {
     auto upid = md::UPID(upid_uint128);
     return upid.String();
   }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get a stringified version of the UPID.")
+        .Details(
+            "Stringifies a UPID "
+            "The string format of the UPID is \"<asid>:<pid>:<start_time>\", where asid is the "
+            "Pixie Agent unique ID "
+            "that uniquely determines which Pixie Agent traces this UPID, pid is the process ID "
+            "from the host, and "
+            "start_time is the unix time the process started.")
+        .Example("df.upid_str = px.upid_to_string(df.upid)")
+        .Arg("upid", "The UPID to strinify.")
+        .Returns("The stringified UPID.");
+  }
 };
 
 class UPIDToPIDUDF : public ScalarUDF {
@@ -584,6 +707,17 @@ class UPIDToPIDUDF : public ScalarUDF {
     auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
     auto upid = md::UPID(upid_uint128);
     return static_cast<int64_t>(upid.pid());
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the PID of the process for the given UPID.")
+        .Details(
+            "Get the process ID for the process the Unique Process ID (UPID) refers to. "
+            "Note that the UPID is unique across all hosts/containers, whereas the PID could be "
+            "the same "
+            "between different hosts/containers")
+        .Example("df.pid = px.upid_to_pid(df.upid)")
+        .Arg("upid", "The UPID of the process to get the PID for.")
+        .Returns("The PID for the UPID passed in.");
   }
 };
 
@@ -791,6 +925,22 @@ class UPIDToPodStatusUDF : public ScalarUDF {
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::ExplicitRule::Create<UPIDToPodStatusUDF>(types::ST_POD_STATUS, {types::ST_NONE})};
   }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get status information about the pod of a UPID.")
+        .Details(
+            "Gets the Kubernetes status information for the pod the given Unique Process ID (UPID) "
+            "is running on. "
+            "The status is a subset of the Kubernetes PodStatus object returned as JSON. "
+            "The keys included are state, message, and reason. "
+            "See "
+            "https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/"
+            "#podstatus-v1-core "
+            "for more info about this object. "
+            "If the UPID has no associated kubernetes pod, this will return an empty string.")
+        .Example("df.pod_status = px.upid_to_pod_status(df.upid)")
+        .Arg("upid", "The UPID to get the PodStatus for.")
+        .Returns("The Kubernetes PodStatus for the UPID passed in.");
+  }
 };
 
 class UPIDToCmdLineUDF : public ScalarUDF {
@@ -811,6 +961,15 @@ class UPIDToCmdLineUDF : public ScalarUDF {
       return "";
     }
     return pid_info->cmdline();
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the command line arguments used to start a UPID.")
+        .Details(
+            "Get the command line arguments used to start the process with the given Unique "
+            "Process ID (UPID).")
+        .Example("df.cmdline = px.upid_to_cmdline(df.upid)")
+        .Arg("upid", "The UPID to get the command line arguments for.")
+        .Returns("The command line arguments for the UPID passed in, as a string.");
   }
 };
 
@@ -833,6 +992,18 @@ class UPIDToPodQoSUDF : public ScalarUDF {
   StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
     return PodInfoToPodQoS(UPIDtoPod(md, upid_value));
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Kubernetes QOS class for the UPID.")
+        .Details(
+            "Gets the Kubernetes QOS class for the pod the given Unique Process ID (UPID) is "
+            "running on. "
+            "The QOS Class is one of \"Guaranteed\", \"Burstable\", or \"BestEffort\". "
+            "See https://kubernetes.io/docs/tasks/configure-pod-container/quality-service-pod/ for "
+            "more info.")
+        .Example("df.pod_qos = px.upid_to_pod_qos(df.upid)")
+        .Arg("upid", "The UPID to get the Pod QOS class for.")
+        .Returns("The Kubernetes Pod QOS class for the UPID passed in.");
   }
 };
 
