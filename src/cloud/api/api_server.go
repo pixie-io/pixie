@@ -160,7 +160,7 @@ func main() {
 		br = nil
 	}
 
-	esSuggester, err := autocomplete.NewElasticSuggester(es, "md_entities_3", "scripts", br, pc)
+	esSuggester, err := autocomplete.NewElasticSuggester(es, "md_entities_4", "scripts", br, pc)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to start elastic suggester")
 	}

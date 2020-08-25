@@ -83,8 +83,32 @@ func (v *VizierIndexer) nsUpdateToEMD(u *mdpb.ResourceUpdate, nsUpdate *mdpb.Nam
 		TimeStoppedNS:      nsUpdate.StopTimestampNS,
 		RelatedEntityNames: []string{},
 		ResourceVersion:    u.ResourceVersion,
+		State:              getStateFromTimestamps(nsUpdate.StopTimestampNS),
 	}
 }
+
+func podPhaseToState(podUpdate *mdpb.PodUpdate) ESMDEntityState {
+	switch podUpdate.Phase {
+	case mdpb.PENDING:
+		return ESMDEntityStatePending
+	case mdpb.RUNNING:
+		return ESMDEntityStateRunning
+	case mdpb.SUCCEEDED:
+		return ESMDEntityStateTerminated
+	case mdpb.FAILED:
+		return ESMDEntityStateFailed
+	default:
+		return ESMDEntityStateUnknown
+	}
+}
+
+func getStateFromTimestamps(stopTimestamp int64) ESMDEntityState {
+	if stopTimestamp > 0 {
+		return ESMDEntityStateTerminated
+	}
+	return ESMDEntityStateRunning
+}
+
 func (v *VizierIndexer) podUpdateToEMD(u *mdpb.ResourceUpdate, podUpdate *mdpb.PodUpdate) *EsMDEntity {
 	return &EsMDEntity{
 		OrgID:              v.orgID.String(),
@@ -98,6 +122,7 @@ func (v *VizierIndexer) podUpdateToEMD(u *mdpb.ResourceUpdate, podUpdate *mdpb.P
 		TimeStoppedNS:      podUpdate.StopTimestampNS,
 		RelatedEntityNames: []string{},
 		ResourceVersion:    u.ResourceVersion,
+		State:              podPhaseToState(podUpdate),
 	}
 }
 
@@ -117,6 +142,7 @@ func (v *VizierIndexer) serviceUpdateToEMD(u *mdpb.ResourceUpdate, serviceUpdate
 		TimeStoppedNS:      serviceUpdate.StopTimestampNS,
 		RelatedEntityNames: serviceUpdate.PodIDs,
 		ResourceVersion:    u.ResourceVersion,
+		State:              getStateFromTimestamps(serviceUpdate.StopTimestampNS),
 	}
 }
 
@@ -142,6 +168,7 @@ ctx._source.relatedEntityNames.addAll(params.entities);
 ctx._source.relatedEntityNames = ctx._source.relatedEntityNames.stream().distinct().sorted().collect(Collectors.toList());
 ctx._source.timeStoppedNS = params.timeStoppedNS;
 ctx._source.resourceVersion = params.resourceVersion;
+ctx._source.state = params.state;
 `
 
 func (v *VizierIndexer) stanMessageHandler(msg *stan.Msg) {
@@ -181,6 +208,7 @@ func (v *VizierIndexer) HandleResourceUpdate(update *mdpb.ResourceUpdate) error 
 				Param("entities", esEntity.RelatedEntityNames).
 				Param("timeStoppedNS", esEntity.TimeStoppedNS).
 				Param("resourceVersion", esEntity.ResourceVersion).
+				Param("state", esEntity.State).
 				Lang("painless")).
 		Upsert(esEntity).
 		Refresh("true").

@@ -6,6 +6,22 @@ import (
 	"github.com/olivere/elastic/v7"
 )
 
+// ESMDEntityState represents state for a metadata entity in elastic.
+type ESMDEntityState int
+
+const (
+	// ESMDEntityStateUnknown is when the state of the entity is unknown.
+	ESMDEntityStateUnknown ESMDEntityState = iota
+	// ESMDEntityStatePending represents the pending state.
+	ESMDEntityStatePending
+	// ESMDEntityStateRunning represents the running state.
+	ESMDEntityStateRunning
+	// ESMDEntityStateFailed represents the failed state.
+	ESMDEntityStateFailed
+	// ESMDEntityStateTerminated represents the terminated state.
+	ESMDEntityStateTerminated
+)
+
 // EsMDEntity is the struct that is stored in elastic.
 type EsMDEntity struct {
 	OrgID      string `json:"orgID"`
@@ -22,6 +38,8 @@ type EsMDEntity struct {
 	RelatedEntityNames []string `json:"relatedEntityNames"`
 
 	ResourceVersion string `json:"resourceVersion"`
+
+	State ESMDEntityState `json:"state"`
 }
 
 // IndexMapping is the index structure for metadata entities.
@@ -114,12 +132,15 @@ const IndexMapping = `
     },
     "ResourceVersion":{
       "type":"text"
+    },
+    "state": {
+      "type":"integer"
     }
     }
   }
 }
 `
-const indexName = "md_entities_3"
+const indexName = "md_entities_4"
 
 // InitializeMapping creates the index in elastic.
 func InitializeMapping(es *elastic.Client) error {

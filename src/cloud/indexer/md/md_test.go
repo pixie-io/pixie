@@ -74,6 +74,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					TimeStoppedNS:      int64(0),
 					RelatedEntityNames: []string{},
 					ResourceVersion:    "0",
+					State:              md.ESMDEntityStateRunning,
 				},
 			},
 		},
@@ -87,6 +88,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 							Name:             "test-pod",
 							StartTimestampNS: 1000,
 							StopTimestampNS:  0,
+							Phase:            mdpb.PENDING,
 						},
 					},
 					ResourceVersion:     "2",
@@ -107,6 +109,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					TimeStoppedNS:      int64(0),
 					RelatedEntityNames: []string{},
 					ResourceVersion:    "2",
+					State:              md.ESMDEntityStatePending,
 				},
 			},
 		},
@@ -140,6 +143,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					TimeStoppedNS:      int64(0),
 					RelatedEntityNames: []string{},
 					ResourceVersion:    "1",
+					State:              md.ESMDEntityStateRunning,
 				},
 			},
 		},
@@ -186,6 +190,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					TimeStoppedNS:      int64(0),
 					RelatedEntityNames: []string{},
 					ResourceVersion:    "2",
+					State:              md.ESMDEntityStateRunning,
 				},
 			},
 		},
@@ -245,6 +250,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					TimeStoppedNS:      int64(1200),
 					RelatedEntityNames: []string{"abcd", "efgh"},
 					ResourceVersion:    "4",
+					State:              md.ESMDEntityStateTerminated,
 				},
 			},
 		},
@@ -259,7 +265,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 			}
 
 			resp, err := elasticClient.Search().
-				Index("md_entities_3").
+				Index("md_entities_4").
 				Query(elastic.NewTermQuery("kind", test.updateKind)).
 				Do(context.Background())
 			assert.Nil(t, err)
