@@ -26,11 +26,14 @@ Status MemorySourceNode::InitImpl(const plan::Operator& plan_node) {
 
   return Status::OK();
 }
+
 Status MemorySourceNode::PrepareImpl(ExecState*) { return Status::OK(); }
 
 Status MemorySourceNode::OpenImpl(ExecState* exec_state) {
   table_ = exec_state->table_store()->GetTable(plan_node_->TableName(), plan_node_->Tablet());
   DCHECK(table_ != nullptr);
+
+  infinite_stream_ = plan_node_->infinite_stream();
 
   if (table_ == nullptr) {
     return error::NotFound("Table '$0' not found", plan_node_->TableName());
@@ -42,6 +45,9 @@ Status MemorySourceNode::OpenImpl(ExecState* exec_state) {
   if (plan_node_->HasStartTime()) {
     start_batch_info_ = table_->FindBatchPositionGreaterThanOrEqual(plan_node_->start_time(),
                                                                     exec_state->exec_mem_pool());
+
+    // TODO(philkuz) might have a race condition where the data hasn't loaded yet for the
+    // start_time.
 
     // If start batch_idx == -1, no batches exist with a timestamp greater than or equal to the
     // given start time.
@@ -77,7 +83,10 @@ StatusOr<std::unique_ptr<RowBatch>> MemorySourceNode::GetNextRowBatch(ExecState*
   bytes_processed_ += row_batch->NumBytes();
   current_batch_++;
 
-  if (current_batch_ >= table_->NumBatches()) {
+  // If infinite stream is set, we don't send Eow or Eos. Infinite streams therefore never cause
+  // HasBatchesRemaining to be false. Instead the outer loop that calls GenerateNext() is
+  // responsible for managing whether we continue the stream or end it.
+  if (current_batch_ >= table_->NumBatches() && !infinite_stream_) {
     row_batch->set_eow(true);
     row_batch->set_eos(true);
   }
@@ -90,7 +99,11 @@ Status MemorySourceNode::GenerateNextImpl(ExecState* exec_state) {
   return Status::OK();
 }
 
-bool MemorySourceNode::NextBatchReady() { return HasBatchesRemaining(); }
+bool MemorySourceNode::NextBatchReady() {
+  // Next batch is ready if we haven't seen an eow and if it's an infinite_stream that has batches
+  // to push.
+  return HasBatchesRemaining() && (!infinite_stream_ || (current_batch_ < table_->NumBatches()));
+}
 
 }  // namespace exec
 }  // namespace carnot

@@ -17,7 +17,6 @@
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
-
 namespace pl {
 namespace carnot {
 namespace exec {
@@ -38,16 +37,16 @@ class MemorySourceNodeTest : public ::testing::Test {
     table_store::schema::Relation rel({types::DataType::BOOLEAN, types::DataType::TIME64NS},
                                       {"col1", "time_"});
 
-    std::shared_ptr<Table> table = Table::Create(rel);
-    exec_state_->table_store()->AddTable("cpu", table);
+    cpu_table_ = Table::Create(rel);
+    exec_state_->table_store()->AddTable("cpu", cpu_table_);
 
-    auto col1 = table->GetColumn(0);
+    auto col1 = cpu_table_->GetColumn(0);
     std::vector<types::BoolValue> col1_in1 = {true, false, true};
     std::vector<types::BoolValue> col1_in2 = {false, false};
     EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
     EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
 
-    auto col2 = table->GetColumn(1);
+    auto col2 = cpu_table_->GetColumn(1);
     std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
     std::vector<types::Int64Value> col2_in2 = {5, 6};
     EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
@@ -56,6 +55,7 @@ class MemorySourceNodeTest : public ::testing::Test {
     exec_state_->table_store()->AddTable("empty", Table::Create(rel));
   }
 
+  std::shared_ptr<Table> cpu_table_;
   std::unique_ptr<ExecState> exec_state_;
   std::unique_ptr<udf::Registry> func_registry_;
 };
@@ -316,6 +316,51 @@ TEST_F(MemorySourceNodeTabletDeathTest, missing_tablet_fails) {
   EXPECT_OK(exec_node_->Prepare(exec_state_.get()));
 
   EXPECT_DEBUG_DEATH(EXPECT_NOT_OK(exec_node_->Open(exec_state_.get())), "");
+}
+
+TEST_F(MemorySourceNodeTest, infinite_stream) {
+  auto op_proto = planpb::testutils::CreateTestSource1PB();
+  std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
+  // TODO(philkuz/nserrino): this is a hack for now, but is useful for testing the infinite stream
+  // capabilities, before we decide the API to pass the stream to the memory source node.
+
+  static_cast<plan::MemorySourceOperator*>(plan_node.get())->set_infinite_stream(true);
+  RowDescriptor output_rd({types::DataType::TIME64NS});
+
+  auto tester = exec::ExecNodeTester<MemorySourceNode, plan::MemorySourceOperator>(
+      *plan_node, output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
+  EXPECT_TRUE(tester.node()->HasBatchesRemaining());
+  tester.GenerateNextResult().ExpectRowBatch(
+      RowBatchBuilder(output_rd, 3, /*eow*/ false, /*eos*/ false)
+          .AddColumn<types::Time64NSValue>({1, 2, 3})
+          .get());
+  EXPECT_TRUE(tester.node()->HasBatchesRemaining());
+  tester.GenerateNextResult().ExpectRowBatch(
+      RowBatchBuilder(output_rd, 2, /*eow*/ false, /*eos*/ false)
+          .AddColumn<types::Time64NSValue>({5, 6})
+          .get());
+  EXPECT_TRUE(tester.node()->HasBatchesRemaining());
+  EXPECT_FALSE(tester.node()->NextBatchReady());
+
+  // Simulate stirling still writing to the table.
+  auto col1 = cpu_table_->GetColumn(0);
+  std::vector<types::BoolValue> col1_in1 = {true, false, true, true};
+  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+
+  auto col2 = cpu_table_->GetColumn(1);
+  std::vector<types::Int64Value> col2_in1 = {7, 8, 9, 10};
+  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+
+  EXPECT_TRUE(tester.node()->NextBatchReady());
+  EXPECT_TRUE(tester.node()->HasBatchesRemaining());
+  tester.GenerateNextResult().ExpectRowBatch(
+      RowBatchBuilder(output_rd, 4, /*eow*/ false, /*eos*/ false)
+          .AddColumn<types::Time64NSValue>({7, 8, 9, 10})
+          .get());
+  EXPECT_FALSE(tester.node()->NextBatchReady());
+  // NOTE: only the outside loop should determine that batches should remain.
+  EXPECT_TRUE(tester.node()->HasBatchesRemaining());
+  tester.Close();
 }
 
 }  // namespace exec

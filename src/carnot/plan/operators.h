@@ -78,8 +78,13 @@ class MemorySourceOperator : public Operator {
   std::vector<int64_t> Columns() const { return column_idxs_; }
   const types::TabletID& Tablet() const { return pb_.tablet(); }
 
+  void set_infinite_stream(bool infinite_stream) { infinite_stream_ = infinite_stream; }
+  bool infinite_stream() const { return infinite_stream_; }
+
  private:
   planpb::MemorySourceOperator pb_;
+
+  bool infinite_stream_ = false;
 
   std::vector<int64_t> column_idxs_;
 };
