@@ -84,7 +84,7 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
 
  private:
   Status ExecuteQueryInternal(AgentQueryResponse* resp) {
-    VLOG(1) << absl::Substitute("Executing query: id=$0", query_id_.str());
+    LOG(INFO) << absl::Substitute("Executing query: id=$0", query_id_.str());
     VLOG(1) << absl::Substitute("Query Plan: $0=$1", query_id_.str(), req_.plan().DebugString());
 
     {
@@ -132,7 +132,7 @@ Status ExecuteQueryMessageHandler::HandleMessage(std::unique_ptr<messages::Vizie
   auto query_id = task->query_id();
   auto runnable = dispatcher()->CreateAsyncTask(std::move(task));
   auto runnable_ptr = runnable.get();
-  VLOG(1) << "Queries in flight: " << running_queries_.size();
+  LOG(INFO) << "Queries in flight: " << running_queries_.size();
   running_queries_[query_id] = std::move(runnable);
   runnable_ptr->Run();
 
