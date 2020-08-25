@@ -1,5 +1,6 @@
 #pragma once
 
+#include <absl/strings/strip.h>
 #include <algorithm>
 #include <string>
 #include "src/carnot/udf/registry.h"
@@ -59,7 +60,25 @@ class FindUDF : public udf::ScalarUDF {
 class SubstringUDF : public udf::ScalarUDF {
  public:
   StringValue Exec(FunctionContext*, StringValue b1, Int64Value pos, Int64Value length) {
+    if (pos > static_cast<int64_t>(b1.length())) {
+      return "";
+    }
     return b1.substr(static_cast<size_t>(pos.val), static_cast<size_t>(length.val));
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Returns the specified substring from the string")
+        .Details(
+            "Extracts the substring from the string starting at index `pos` and for `length` "
+            "characters. If `pos > len(string)`, `px.substr` returns the "
+            "empty string. If `pos < len(string)` but `pos + length > len(string)`, `px.substr` "
+            "returns the maximum length substring starting at `pos`")
+        .Example(R"doc(df.service = 'checkout'
+        | df.length = px.length(df.service)
+        )doc")
+        .Arg("string", "The string to get the substring from.")
+        .Arg("pos", "The position to start the substring, inclusive.")
+        .Arg("length", "The length of the substring to return.")
+        .Returns("The substring from `string`.");
   }
 };
 
@@ -69,6 +88,15 @@ class ToLowerUDF : public udf::ScalarUDF {
     transform(b1.begin(), b1.end(), b1.begin(), ::tolower);
     return b1;
   }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder(
+               "Transforms all uppercase ascii characters in the string to lowercase.")
+        .Example(R"doc(# df.service is `Kelvin`
+        | df.lower = px.tolower(df.service) # "kelvin"
+        )doc")
+        .Arg("string", "The string to transform.")
+        .Returns("`string` with all uppercase ascii converted to lowercase.");
+  }
 };
 
 class ToUpperUDF : public udf::ScalarUDF {
@@ -77,16 +105,35 @@ class ToUpperUDF : public udf::ScalarUDF {
     transform(b1.begin(), b1.end(), b1.begin(), ::toupper);
     return b1;
   }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder(
+               "Transforms all lowercase ascii characters in the string to uppercase.")
+        .Example(R"doc(# df.service is `Kelvin`
+        | df.upper = px.toupper(df.service) # "KELVIN"
+        )doc")
+        .Arg("string", "The string to transform.")
+        .Returns("`string` with all lowercase ascii converted to uppercase.");
+  }
 };
 
 class TrimUDF : public udf::ScalarUDF {
  public:
   StringValue Exec(FunctionContext*, StringValue s) {
-    auto wsfront = std::find_if_not(s.begin(), s.end(), [](int c) { return std::isspace(c); });
-    auto wsback =
-        std::find_if_not(s.rbegin(), s.rend(), [](int c) { return std::isspace(c); }).base();
-    return (wsback <= wsfront ? StringValue(std::string())
-                              : StringValue(std::string(wsfront, wsback)));
+    std::string val = s;
+    absl::StripAsciiWhitespace(&val);
+    return val;
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder(
+               "Trim ascii whitespace from before and after the string content.")
+        .Details(
+            "Returns a copy of the string with the white space before and after the string trimmed "
+            "away. Does not affect whitespace in between words.")
+        .Example(R"doc(# df.service is `        pl/kelvin `
+        | df.trimmed = px.trim(df.service) # "pl/kelvin"
+        )doc")
+        .Arg("string", "The string to transform.")
+        .Returns("The string but with leading and trailing whitespace removed.");
   }
 };
 

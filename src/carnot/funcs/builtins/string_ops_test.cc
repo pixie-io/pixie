@@ -33,6 +33,7 @@ TEST(StringOps, basic_string_substr_test) {
   auto udf_tester = udf::UDFTester<SubstringUDF>();
   udf_tester.ForInput("pixielabs", 3, 4).Expect("iela");
   udf_tester.ForInput("pixielabs", 5, 10).Expect("labs");
+  udf_tester.ForInput("pixielabs", 9, 20).Expect("");
 }
 
 TEST(StringOps, basic_string_tolower_test) {
@@ -50,6 +51,7 @@ TEST(StringOps, basic_string_trim_test) {
   udf_tester.ForInput("   ").Expect("");
   udf_tester.ForInput(" pixieLabs ").Expect("pixieLabs");
   udf_tester.ForInput("pixie").Expect("pixie");
+  udf_tester.ForInput("p   ixie").Expect("p   ixie");
 }
 
 TEST(StringOps, basic_string_strip_prefix) {

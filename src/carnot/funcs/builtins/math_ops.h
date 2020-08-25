@@ -25,9 +25,9 @@ class AddUDF : public udf::ScalarUDF {
     return udf::ScalarUDFDocBuilder("Arithmetically add the two arguments.")
         .Details("This function is implicitly invoked by the + operator.")
         .Example("df.sum = df.a + df.b")
-        .Arg("arg1", "The value to be added to.")
-        .Arg("arg2", "The value to add to the first argument.")
-        .Returns("The sum of arg1 and arg2.");
+        .Arg("a", "The value to be added to.")
+        .Arg("b", "The value to add to the first argument.")
+        .Returns("The sum of a and b.");
   }
 };
 
@@ -42,8 +42,8 @@ class AddUDF<types::StringValue, types::StringValue, types::StringValue> : publi
     return udf::ScalarUDFDocBuilder("Concatenate two strings.")
         .Details("This function is implicitly invoked by the + operator.")
         .Example("df.concat = df.str1 + df.str2")
-        .Arg("arg1", "The first string.")
-        .Arg("arg2", "The string to append to the first string.")
+        .Arg("a", "The first string.")
+        .Arg("b", "The string to append to the first string.")
         .Returns("The concatenation of arg1 and arg2.");
   }
 };
@@ -56,6 +56,15 @@ class SubtractUDF : public udf::ScalarUDF {
     return {
         udf::InheritTypeFromArgs<SubtractUDF>::Create({types::ST_BYTES}),
     };
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder(
+               "Arithmetically subtract the first argument by the second argument.")
+        .Details("This function is implicitly invoked by the - operator.")
+        .Example("df.subtracted = df.a - df.b")
+        .Arg("a", "The value to be subtracted from.")
+        .Arg("b", "The value to subtract.")
+        .Returns("`a` with `b` subtracted from it.");
   }
 };
 
@@ -87,9 +96,9 @@ class MultiplyUDF : public udf::ScalarUDF {
         | # Explicit call.
         | df.mult = px.multiply(df.duration, 2)
         )doc")
-        .Arg("a1", "The first value to multiply.")
-        .Arg("a2", "The second value to multiply.")
-        .Returns("The product of `a1` and `a2`.");
+        .Arg("a", "The first value to multiply.")
+        .Arg("b", "The second value to multiply.")
+        .Returns("The product of `a` and `b`.");
   }
 };
 
@@ -419,6 +428,13 @@ class SumUDA : public udf::UDA {
     sum_ =
         *reinterpret_cast<const typename types::ValueTypeTraits<TArg>::native_type*>(data.data());
     return Status::OK();
+  }
+
+  static udf::UDADocBuilder Doc() {
+    return udf::UDADocBuilder("Calculate the arithmetic sum of the grouped values.")
+        .Example("df = df.agg(sum=('latency_ms', px.sum))")
+        .Arg("arg", "The group to sum.")
+        .Returns("The sum of the data.");
   }
 
  protected:
