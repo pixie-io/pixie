@@ -38,6 +38,7 @@ func TestAutocomplete(t *testing.T) {
 							Name:           "svc_info_pod",
 							Description:    "this is a pod",
 							MatchedIndexes: []int64{0, 1, 2},
+							State:          cloudapipb.AES_TERMINATED,
 						},
 					},
 				},
@@ -50,6 +51,7 @@ func TestAutocomplete(t *testing.T) {
 							Name:           "pl/test",
 							Description:    "this is a svc",
 							MatchedIndexes: []int64{5, 6, 7},
+							State:          cloudapipb.AES_RUNNING,
 						},
 					},
 				},
@@ -74,6 +76,7 @@ func TestAutocomplete(t *testing.T) {
 								name 
 								description
 								matchedIndexes
+								state
 							}
 						}
 					}
@@ -87,10 +90,10 @@ func TestAutocomplete(t *testing.T) {
 						"tabSuggestions": [
 							{ "tabIndex": 2, "executableAfterSelect": false, "suggestions": []},
 							{ "tabIndex": 3, "executableAfterSelect": false, "suggestions": 
-								[{"kind": "AEK_POD", "name": "svc_info_pod", "description": "this is a pod", "matchedIndexes": [0, 1, 2]}]
+								[{"kind": "AEK_POD", "name": "svc_info_pod", "description": "this is a pod", "matchedIndexes": [0, 1, 2], "state": "AES_TERMINATED"}]
 							},
 							{ "tabIndex": 1, "executableAfterSelect": false, "suggestions": 
-								[{"kind": "AEK_SVC", "name": "pl/test", "description": "this is a svc", "matchedIndexes": [5, 6, 7]}]
+								[{"kind": "AEK_SVC", "name": "pl/test", "description": "this is a svc", "matchedIndexes": [5, 6, 7], "state": "AES_RUNNING"}]
 							}
 						]
 					}
@@ -118,12 +121,14 @@ func TestAutocompleteField(t *testing.T) {
 					Name:           "px/svc_info",
 					Description:    "test",
 					MatchedIndexes: []int64{0, 1, 2},
+					State:          cloudapipb.AES_TERMINATED,
 				},
 				&cloudapipb.AutocompleteSuggestion{
 					Kind:           cloudapipb.AEK_SVC,
 					Name:           "px/svc_info2",
 					Description:    "test2",
 					MatchedIndexes: []int64{0, 1, 2},
+					State:          cloudapipb.AES_RUNNING,
 				},
 			},
 		}, nil)
@@ -140,6 +145,7 @@ func TestAutocompleteField(t *testing.T) {
 						name 
 						description
 						matchedIndexes
+						state
 					}
 				}
 			`,
@@ -147,8 +153,8 @@ func TestAutocompleteField(t *testing.T) {
 				{
 					"autocompleteField": 
 						[
-						 {"kind": "AEK_SVC", "name": "px/svc_info", "description": "test", "matchedIndexes": [0, 1, 2]},
-						 {"kind": "AEK_SVC", "name": "px/svc_info2", "description": "test2", "matchedIndexes": [0, 1, 2]}
+						 {"kind": "AEK_SVC", "name": "px/svc_info", "description": "test", "matchedIndexes": [0, 1, 2], "state": "AES_TERMINATED"},
+						 {"kind": "AEK_SVC", "name": "px/svc_info2", "description": "test2", "matchedIndexes": [0, 1, 2], "state": "AES_RUNNING"}
 						]
 				}
 			`,

@@ -14,17 +14,33 @@ import { GraphQLResolveInfo } from 'graphql';
  *******************************/
 export interface GQLQuery {
   user: GQLUserInfo;
+
+  /**
+   * TODO(nserrino): Make ID required once UI moves over to multi-cluster support.
+   */
   cluster: GQLClusterInfo;
   clusters: Array<GQLClusterInfo>;
+
+  /**
+   * TODO(nserrino): Make ID required once UI moves over to multi-cluster support.
+   */
   clusterConnection: GQLClusterConnectionInfo;
   cliArtifact: GQLCLIArtifact;
   artifacts: GQLArtifactsInfo;
   autocomplete: GQLAutocompleteResult;
   autocompleteField?: Array<GQLAutocompleteSuggestion | null>;
+
+  /**
+   * Scriptmgr endpoints, refer to docs in cloudapi.proto
+   */
   liveViews: Array<GQLLiveViewMetadata>;
   liveViewContents: GQLLiveViewContents;
   scripts: Array<GQLScriptMetadata>;
   scriptContents: GQLScriptContents;
+
+  /**
+   * Deploy keys
+   */
   deploymentKeys: Array<GQLDeploymentKey>;
   deploymentKey: GQLDeploymentKey;
 }
@@ -53,11 +69,38 @@ export interface GQLClusterInfo {
 }
 
 export const enum GQLClusterStatus {
+
+  /**
+   * The default state if nothing is known.
+   */
   VZ_ST_UNKNOWN = 'VZ_ST_UNKNOWN',
+
+  /**
+   * The state is healthy if heartbeats are received on regular intervals and the
+   * cluster is responding to requests.
+   */
   VZ_ST_HEALTHY = 'VZ_ST_HEALTHY',
+
+  /**
+   * The state will go to disconnected if the GRPC connection breaks. The hope is that
+   * the cluster will come back online and resume in HEALTHY state.
+   */
   VZ_ST_DISCONNECTED = 'VZ_ST_DISCONNECTED',
+
+  /**
+   * The state is updating when the cluster is in the process of updating.
+   */
   VZ_ST_UPDATING = 'VZ_ST_UPDATING',
+
+  /**
+   * The vizier has connected, but has not sent any other further status updates about
+   * whether it is healthy or updating.
+   */
   VZ_ST_CONNECTED = 'VZ_ST_CONNECTED',
+
+  /**
+   * The vizier was trying to update, but failed and is now in a bad state.
+   */
   VZ_ST_UPDATE_FAILED = 'VZ_ST_UPDATE_FAILED'
 }
 
@@ -112,18 +155,49 @@ export interface GQLArtifact {
 
 export const enum GQLAutocompleteActionType {
   AAT_UNKNOWN = 'AAT_UNKNOWN',
+
+  /**
+   * An edit action occurs if a user has modified the input text by inserting or deleting characters.
+   * This includes typing on the keyboard and pasting commands.
+   */
   AAT_EDIT = 'AAT_EDIT',
+
+  /**
+   * A select action only occurs if a user has chosen an autocomplete suggestion. This indicates to
+   * the autocomplete that it should move the user's cursor to the next appropriate tab.
+   */
   AAT_SELECT = 'AAT_SELECT'
 }
 
 export interface GQLAutocompleteResult {
+
+  /**
+   * The formatted input is the input string, which has been parsed by the autocomplete to indicate
+   * tabStop positions.
+   */
   formattedInput?: string;
+
+  /**
+   * Whether the input string is a valid, executable command.
+   */
   isExecutable?: boolean;
+
+  /**
+   * All suggestions for each of the tabStops.
+   */
   tabSuggestions?: Array<GQLTabSuggestion | null>;
 }
 
 export interface GQLTabSuggestion {
+
+  /**
+   * The index of the tab that these suggestions are for.
+   */
   tabIndex?: number;
+
+  /**
+   * Whether selecting a suggestion for this tab index will make the command executable.
+   */
   executableAfterSelect?: boolean;
   suggestions?: Array<GQLAutocompleteSuggestion | null>;
 }
@@ -133,6 +207,7 @@ export interface GQLAutocompleteSuggestion {
   name?: string;
   description?: string;
   matchedIndexes?: Array<number | null>;
+  state?: GQLAutocompleteEntityState;
 }
 
 export const enum GQLAutocompleteEntityKind {
@@ -143,18 +218,35 @@ export const enum GQLAutocompleteEntityKind {
   AEK_NAMESPACE = 'AEK_NAMESPACE'
 }
 
+export const enum GQLAutocompleteEntityState {
+  AES_UNKNOWN = 'AES_UNKNOWN',
+  AES_PENDING = 'AES_PENDING',
+  AES_RUNNING = 'AES_RUNNING',
+  AES_FAILED = 'AES_FAILED',
+  AES_TERMINATED = 'AES_TERMINATED'
+}
+
+/**
+ * Refer to docs in cloudapi.proto
+ */
 export interface GQLLiveViewMetadata {
   id: string;
   name: string;
   desc: string;
 }
 
+/**
+ * Refer to docs in cloudapi.proto
+ */
 export interface GQLLiveViewContents {
   metadata: GQLLiveViewMetadata;
   pxlContents: string;
   visJSON: string;
 }
 
+/**
+ * Refer to docs in cloudapi.proto
+ */
 export interface GQLScriptMetadata {
   id: string;
   name: string;
@@ -162,6 +254,9 @@ export interface GQLScriptMetadata {
   hasLiveView: boolean;
 }
 
+/**
+ * Refer to docs in cloudapi.proto
+ */
 export interface GQLScriptContents {
   metadata: GQLScriptMetadata;
   contents: string;
@@ -576,6 +671,7 @@ export interface GQLAutocompleteSuggestionTypeResolver<TParent = any> {
   name?: AutocompleteSuggestionToNameResolver<TParent>;
   description?: AutocompleteSuggestionToDescriptionResolver<TParent>;
   matchedIndexes?: AutocompleteSuggestionToMatchedIndexesResolver<TParent>;
+  state?: AutocompleteSuggestionToStateResolver<TParent>;
 }
 
 export interface AutocompleteSuggestionToKindResolver<TParent = any, TResult = any> {
@@ -591,6 +687,10 @@ export interface AutocompleteSuggestionToDescriptionResolver<TParent = any, TRes
 }
 
 export interface AutocompleteSuggestionToMatchedIndexesResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface AutocompleteSuggestionToStateResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

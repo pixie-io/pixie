@@ -29,6 +29,14 @@ var kindToProtoMap = map[string]cloudapipb.AutocompleteEntityKind{
 	"AEK_NAMESPACE": cloudapipb.AEK_NAMESPACE,
 }
 
+var protoToStateMap = map[cloudapipb.AutocompleteEntityState]string{
+	cloudapipb.AES_UNKNOWN:    "AES_UNKNOWN",
+	cloudapipb.AES_PENDING:    "AES_PENDING",
+	cloudapipb.AES_RUNNING:    "AES_RUNNING",
+	cloudapipb.AES_FAILED:     "AES_FAILED",
+	cloudapipb.AES_TERMINATED: "AES_TERMINATED",
+}
+
 // AutocompleteField is the resolver for autocompleting a single field.
 func (q *QueryResolver) AutocompleteField(ctx context.Context, args *autocompleteFieldArgs) (*[]*AutocompleteSuggestion, error) {
 	grpcAPI := q.Env.AutocompleteServer
@@ -60,6 +68,7 @@ func (q *QueryResolver) AutocompleteField(ctx context.Context, args *autocomplet
 	suggestions := make([]*AutocompleteSuggestion, len(res.Suggestions))
 	for j := range res.Suggestions {
 		kind := protoToKindMap[res.Suggestions[j].Kind]
+		state := protoToStateMap[res.Suggestions[j].State]
 		idxs := make([]*int32, len(res.Suggestions[j].MatchedIndexes))
 		for k, idx := range res.Suggestions[j].MatchedIndexes {
 			castedIdx := int32(idx)
@@ -70,6 +79,7 @@ func (q *QueryResolver) AutocompleteField(ctx context.Context, args *autocomplet
 			Name:           &res.Suggestions[j].Name,
 			Description:    &res.Suggestions[j].Description,
 			MatchedIndexes: &idxs,
+			State:          &state,
 		}
 	}
 
@@ -99,6 +109,7 @@ func (q *QueryResolver) Autocomplete(ctx context.Context, args *autocompleteArgs
 		as := make([]*AutocompleteSuggestion, len(s.Suggestions))
 		for j := range s.Suggestions {
 			kind := protoToKindMap[s.Suggestions[j].Kind]
+			state := protoToStateMap[s.Suggestions[j].State]
 			idxs := make([]*int32, len(s.Suggestions[j].MatchedIndexes))
 			for k, idx := range s.Suggestions[j].MatchedIndexes {
 				castedIdx := int32(idx)
@@ -109,6 +120,7 @@ func (q *QueryResolver) Autocomplete(ctx context.Context, args *autocompleteArgs
 				Name:           &s.Suggestions[j].Name,
 				Description:    &s.Suggestions[j].Description,
 				MatchedIndexes: &idxs,
+				State:          &state,
 			}
 		}
 
@@ -161,4 +173,5 @@ type AutocompleteSuggestion struct {
 	Name           *string
 	Description    *string
 	MatchedIndexes *[]*int32
+	State          *string
 }

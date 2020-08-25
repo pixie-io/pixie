@@ -27,6 +27,14 @@ enum ArtifactType {
     AT_CONTAINER_SET_LINUX_AMD64
 }
 
+enum AutocompleteEntityState {
+  AES_UNKNOWN
+  AES_PENDING
+  AES_RUNNING
+  AES_FAILED
+  AES_TERMINATED
+}
+
 enum AutocompleteActionType {
   AAT_UNKNOWN
   # An edit action occurs if a user has modified the input text by inserting or deleting characters.
@@ -99,6 +107,7 @@ type AutocompleteSuggestion {
   name: String
   description: String
   matchedIndexes: [Int]
+  state: AutocompleteEntityState
 }
 
 enum ClusterStatus {

@@ -470,6 +470,20 @@ enum AutocompleteEntityKind {
   AEK_NAMESPACE = 4;
 }
 
+// This is a proto representation for common lifecycle states.
+enum AutocompleteEntityState {
+  // State of the resource is unknown.
+  AES_UNKNOWN = 0;
+  // Resource is still in the start up process.
+  AES_PENDING = 1;
+  // Resource is active and healthy.
+  AES_RUNNING = 2;
+  // Resource is not running and has failed.
+  AES_FAILED = 3;
+  // Resource has been terminated with no errors.
+  AES_TERMINATED = 4;
+}
+
 message AutocompleteRequest {
   // The input is the text that the user currently sees on the screen,
   // unformatted: "script:px/svc_info svc:pl/front-end"
@@ -507,6 +521,8 @@ message AutocompleteSuggestion {
   string description = 3;
   // The indexes of the name which matched the user's input.
   repeated int64 matched_indexes = 4;
+  // The state of the suggestion, if any.
+  AutocompleteEntityState state = 5;
 }
 
 message AutocompleteResponse {
