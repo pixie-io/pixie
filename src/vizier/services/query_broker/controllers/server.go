@@ -77,7 +77,7 @@ type Server struct {
 
 	mdtp            metadatapb.MetadataTracepointServiceClient
 	udfInfo         udfspb.UDFInfo
-	resultForwarder QueryResultForwarder
+	resultForwarder QueryResultForwarderOld
 }
 
 // NewServer creates GRPC handlers.
@@ -88,7 +88,7 @@ func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker, m
 // NewServerWithExecutor is NewServer with an functor for executor.
 func NewServerWithExecutor(env querybrokerenv.QueryBrokerEnv,
 	agentsTracker AgentsTracker,
-	resultForwarder QueryResultForwarder,
+	resultForwarder QueryResultForwarderOld,
 	mds metadatapb.MetadataTracepointServiceClient,
 	natsConn *nats.Conn,
 	newExecutor func(*nats.Conn, uuid.UUID) Executor) (*Server, error) {
@@ -113,7 +113,7 @@ func NewServerWithExecutor(env querybrokerenv.QueryBrokerEnv,
 	// TODO(nserrino): update this logic when batch Kelvin API is deprecated and s.executors
 	// gets subsumed by s.resultForwarder.
 	if s.resultForwarder == nil {
-		s.resultForwarder = NewQueryResultForwarder(s.executors)
+		s.resultForwarder = NewQueryResultForwarderOld(s.executors)
 	}
 	return s, nil
 }
@@ -492,11 +492,10 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 
 		// Send row batches.
 		for i, rb := range table.RowBatches {
-			newRb, err := RowBatchToVizierRowBatch(rb)
+			newRb, err := RowBatchToVizierRowBatch(rb, tableID)
 			if err != nil {
 				return err
 			}
-			newRb.TableID = tableID
 			if i == len(table.RowBatches)-1 {
 				newRb.Eos = true
 			}
@@ -517,14 +516,13 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 	}
 
 	// Send execution stats.
-	stats, err := QueryResultStatsToVizierStats(qr)
-	if err != nil {
-		return err
-	}
+	stats := QueryResultStatsToVizierStats(qr.ExecutionStats, qr.TimingInfo.CompilationTimeNs)
 	resp := &vizierpb.ExecuteScriptResponse{
 		QueryID: queryID.String(),
 		Result: &vizierpb.ExecuteScriptResponse_Data{
-			Data: stats,
+			Data: &vizierpb.QueryData{
+				ExecutionStats: stats,
+			},
 		},
 	}
 	return srv.Send(resp)

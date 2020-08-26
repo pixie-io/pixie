@@ -2,18 +2,24 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 
 	gogotypes "github.com/gogo/protobuf/types"
 	uuid "github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
+	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
+	"pixielabs.ai/pixielabs/src/carnotpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
+	"pixielabs.ai/pixielabs/src/utils"
 	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
@@ -204,17 +210,15 @@ func RelationFromTable(table *schemapb.Table) (*vizierpb.QueryMetadata, error) {
 }
 
 // QueryResultStatsToVizierStats gets the execution stats from the query results.
-func QueryResultStatsToVizierStats(s *queryresultspb.QueryResult) (*vizierpb.QueryData, error) {
-	return &vizierpb.QueryData{
-		ExecutionStats: &vizierpb.QueryExecutionStats{
-			Timing: &vizierpb.QueryTimingInfo{
-				ExecutionTimeNs:   s.TimingInfo.ExecutionTimeNs,
-				CompilationTimeNs: s.TimingInfo.CompilationTimeNs,
-			},
-			BytesProcessed:   s.ExecutionStats.BytesProcessed,
-			RecordsProcessed: s.ExecutionStats.RecordsProcessed,
+func QueryResultStatsToVizierStats(e *queryresultspb.QueryExecutionStats, compilationTimeNs int64) *vizierpb.QueryExecutionStats {
+	return &vizierpb.QueryExecutionStats{
+		Timing: &vizierpb.QueryTimingInfo{
+			ExecutionTimeNs:   e.Timing.ExecutionTimeNs,
+			CompilationTimeNs: compilationTimeNs,
 		},
-	}, nil
+		BytesProcessed:   e.BytesProcessed,
+		RecordsProcessed: e.RecordsProcessed,
+	}
 }
 
 // UInt128ToVizierUInt128 converts our internal representation of UInt128 to Vizier's representation of UInt128.
@@ -290,7 +294,7 @@ func colToVizierCol(col *schemapb.Column) (*vizierpb.Column, error) {
 }
 
 // RowBatchToVizierRowBatch converts an internal row batch to a vizier row batch.
-func RowBatchToVizierRowBatch(rb *schemapb.RowBatchData) (*vizierpb.RowBatchData, error) {
+func RowBatchToVizierRowBatch(rb *schemapb.RowBatchData, tableID string) (*vizierpb.RowBatchData, error) {
 	cols := make([]*vizierpb.Column, len(rb.Cols))
 	for i, col := range rb.Cols {
 		c, err := colToVizierCol(col)
@@ -301,9 +305,86 @@ func RowBatchToVizierRowBatch(rb *schemapb.RowBatchData) (*vizierpb.RowBatchData
 	}
 
 	return &vizierpb.RowBatchData{
+		TableID: tableID,
 		NumRows: rb.NumRows,
 		Eow:     rb.Eow,
 		Eos:     rb.Eos,
 		Cols:    cols,
+	}, nil
+}
+
+// BuildExecuteScriptResponse Converts the agent-format result into the vizier client format result.
+func BuildExecuteScriptResponse(r *carnotpb.TransferResultChunkRequest,
+	// Map of the received table names to their table ID on the output proto.
+	tableIDMap map[string]string,
+	compilationTimeNs int64) (*vizierpb.ExecuteScriptResponse, error) {
+
+	res := &vizierpb.ExecuteScriptResponse{
+		QueryID: utils.UUIDFromProtoOrNil(r.QueryID).String(),
+	}
+
+	if execStats := r.GetExecutionAndTimingInfo(); execStats != nil {
+		stats := QueryResultStatsToVizierStats(execStats.ExecutionStats, compilationTimeNs)
+		res.Result = &vizierpb.ExecuteScriptResponse_Data{
+			Data: &vizierpb.QueryData{
+				ExecutionStats: stats,
+			},
+		}
+	} else if rbResult := r.GetRowBatchResult(); rbResult != nil {
+		tableName := rbResult.GetTableName()
+		tableID, present := tableIDMap[tableName]
+		if !present {
+			return nil, fmt.Errorf("table %s does not have an ID in the table ID map", tableName)
+		}
+
+		batch, err := RowBatchToVizierRowBatch(rbResult.RowBatch, tableID)
+		if err != nil {
+			return nil, err
+		}
+		res.Result = &vizierpb.ExecuteScriptResponse_Data{
+			Data: &vizierpb.QueryData{
+				Batch: batch,
+			},
+		}
+	} else {
+		return nil, fmt.Errorf("error in ForwardQueryResult: Expected TransferResultChunkRequest to have row batch or exec stats")
+	}
+	return res, nil
+}
+
+// QueryPlanResponse returns the query plan as an ExecuteScriptResponse.
+func QueryPlanResponse(queryID uuid.UUID, plan *distributedpb.DistributedPlan, planMap map[uuid.UUID]*planpb.Plan,
+	agentStats *[]*queryresultspb.AgentExecutionStats,
+	planTableID string) (*vizierpb.ExecuteScriptResponse, error) {
+
+	queryPlan, err := getQueryPlanAsDotString(plan, planMap, agentStats)
+	if err != nil {
+		log.WithError(err).Error("error with query plan")
+		return nil, err
+	}
+
+	batch := &vizierpb.RowBatchData{
+		TableID: planTableID,
+		Cols: []*vizierpb.Column{
+			&vizierpb.Column{
+				ColData: &vizierpb.Column_StringData{
+					StringData: &vizierpb.StringColumn{
+						Data: []string{queryPlan},
+					},
+				},
+			},
+		},
+		NumRows: 1,
+		Eos:     true,
+		Eow:     true,
+	}
+
+	return &vizierpb.ExecuteScriptResponse{
+		QueryID: queryID.String(),
+		Result: &vizierpb.ExecuteScriptResponse_Data{
+			Data: &vizierpb.QueryData{
+				Batch: batch,
+			},
+		},
 	}, nil
 }

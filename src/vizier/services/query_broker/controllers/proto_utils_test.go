@@ -113,6 +113,10 @@ timing_info {
 	compilation_time_ns: 4
 }
 execution_stats {
+	timing {
+		execution_time_ns: 10
+		compilation_time_ns: 4
+	}	
 	bytes_processed: 100
 	records_processed: 50
 }
@@ -263,9 +267,8 @@ func TestQueryResultStatsToVizierStats(t *testing.T) {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
-	qm, err := controllers.QueryResultStatsToVizierStats(sv)
-	assert.Nil(t, err)
-	assert.Equal(t, expectedQd, qm)
+	qm := controllers.QueryResultStatsToVizierStats(sv.ExecutionStats, 4)
+	assert.Equal(t, expectedQd.ExecutionStats, qm)
 }
 
 func TestUInt128ToVizierUInt128(t *testing.T) {
@@ -294,7 +297,15 @@ func TestRowBatchToVizierRowBatch(t *testing.T) {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
-	qm, err := controllers.RowBatchToVizierRowBatch(sv)
+	qm, err := controllers.RowBatchToVizierRowBatch(sv, "")
 	assert.Nil(t, err)
 	assert.Equal(t, expectedQd, qm)
+}
+
+func TestBuildExecuteScriptResponse(t *testing.T) {
+	// TODO(nserrino): Fill this in.
+}
+
+func TestQueryPlanResponse(t *testing.T) {
+	// TODO(nserrino): Fill this in.
 }
