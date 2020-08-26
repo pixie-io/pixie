@@ -115,14 +115,18 @@ func (a *activeQuery) queryComplete() bool {
 // QueryResultForwarder is responsible for receiving query results from the agent streams and forwarding
 // that data to the client stream.
 type QueryResultForwarder interface {
-	RegisterQuery(queryID uuid.UUID, tableIDMap map[string]string)
+	RegisterQuery(queryID uuid.UUID, tableIDMap map[string]string) error
+	// To be used if a query needs to be deleted before StreamResults is invoked.
+	// Otherwise, StreamResults will delete the query for the caller.
+	DeleteQuery(queryID uuid.UUID)
 
 	// Streams results from the agent stream to the client stream.
 	// Blocks until the stream (& the agent stream) has completed, been cancelled, or experienced an error.
+	// Returns error for any error received, and a bool for whether the query timed out (true for timeout)
 	StreamResults(ctx context.Context, queryID uuid.UUID,
 		resultCh chan *vizierpb.ExecuteScriptResponse,
 		compilationTimeNs int64,
-		queryPlanOpts *QueryPlanOpts) error
+		queryPlanOpts *QueryPlanOpts) (bool, error)
 
 	// Pass a message received from the agent stream to the client-side stream.
 	ForwardQueryResult(msg *carnotpb.TransferResultChunkRequest) error
@@ -153,23 +157,35 @@ func NewQueryResultForwarderWithTimeout(timeout time.Duration) QueryResultForwar
 }
 
 // RegisterQuery registers a query ID in the result forwarder.
-func (f *QueryResultForwarderImpl) RegisterQuery(queryID uuid.UUID, tableIDMap map[string]string) {
+func (f *QueryResultForwarderImpl) RegisterQuery(queryID uuid.UUID, tableIDMap map[string]string) error {
 	f.activeQueriesMutex.Lock()
+	defer f.activeQueriesMutex.Unlock()
+
+	if _, present := f.activeQueries[queryID]; present {
+		return fmt.Errorf("Query %d already registered", queryID)
+	}
 	f.activeQueries[queryID] = newActiveQuery(tableIDMap)
-	f.activeQueriesMutex.Unlock()
+	return nil
+}
+
+// DeleteQuery deletes a query ID in the result forwarder.
+func (f *QueryResultForwarderImpl) DeleteQuery(queryID uuid.UUID) {
+	f.activeQueriesMutex.Lock()
+	defer f.activeQueriesMutex.Unlock()
+	delete(f.activeQueries, queryID)
 }
 
 // StreamResults streams results from the agent streams to the client stream.
 func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uuid.UUID,
 	resultCh chan *vizierpb.ExecuteScriptResponse,
-	compilationTimeNs int64, queryPlanOpts *QueryPlanOpts) error {
+	compilationTimeNs int64, queryPlanOpts *QueryPlanOpts) (bool, error) {
 
 	f.activeQueriesMutex.Lock()
 	activeQuery, present := f.activeQueries[queryID]
 	f.activeQueriesMutex.Unlock()
 
 	if !present {
-		return fmt.Errorf("error in StreamResults: Query %s not registered in query forwarder", queryID.String())
+		return false, fmt.Errorf("error in StreamResults: Query %s not registered in query forwarder", queryID.String())
 	}
 
 	defer func() {
@@ -179,10 +195,10 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 	}()
 
 	ctx, cancel := context.WithCancel(ctx)
-	cancelStreamReturnErr := func(err error) error {
+	cancelStreamReturnErr := func(err error, timeout bool) (bool, error) {
 		activeQuery.signalCancelClientStream()
 		cancel()
-		return err
+		return timeout, err
 	}
 
 	var agentExecutionStats *[]*queryresultspb.AgentExecutionStats
@@ -193,7 +209,7 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 			// Client side stream is cancelled.
 			// Subsequent calls to ForwardQueryResult should fail for this query.
 			activeQuery.signalCancelClientStream()
-			return nil
+			return false, nil
 
 		case msg := <-activeQuery.queryResultCh:
 			// Stream the agent stream result to the client stream.
@@ -201,11 +217,11 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 			// If there was an error, then cancel both sides of the stream.
 			err := activeQuery.updateQueryState(msg)
 			if err != nil {
-				return cancelStreamReturnErr(err)
+				return cancelStreamReturnErr(err /*timeout*/, false)
 			}
 			resp, err := BuildExecuteScriptResponse(msg, activeQuery.tableIDMap, compilationTimeNs)
 			if err != nil {
-				return cancelStreamReturnErr(err)
+				return cancelStreamReturnErr(err /*timeout*/, false)
 			}
 			resultCh <- resp
 
@@ -219,19 +235,26 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 					// Send the exec stats at the end of the query.
 					qpRes, err := QueryPlanResponse(queryID, queryPlanOpts.Plan, queryPlanOpts.PlanMap,
 						agentExecutionStats, queryPlanOpts.TableID)
+
 					if err != nil {
-						return cancelStreamReturnErr(err)
+						return cancelStreamReturnErr(err /*timeout*/, false)
 					}
 					resultCh <- qpRes
 				}
-				return nil
+				return /*timeout*/ false, nil
 			}
 
 		case <-activeQuery.cancelClientStreamCh:
-			return cancelStreamReturnErr(fmt.Errorf("Client stream cancelled by agent result stream for query %s", queryID.String()))
+			return cancelStreamReturnErr(
+				fmt.Errorf("Client stream cancelled by agent result stream for query %s", queryID.String()),
+				/*timeout*/ false,
+			)
 
 		case <-time.After(f.streamResultTimeout):
-			return cancelStreamReturnErr(fmt.Errorf("Query %s timed out", queryID.String()))
+			return cancelStreamReturnErr(
+				fmt.Errorf("Query %s timed out", queryID.String()),
+				/*timeout*/ true,
+			)
 		}
 	}
 }

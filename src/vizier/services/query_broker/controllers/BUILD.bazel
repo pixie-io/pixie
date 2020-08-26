@@ -4,6 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "errors.go",
+        "launch_query.go",
         "mock.go",
         "mutation_executor.go",
         "proto_utils.go",
@@ -56,6 +57,7 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = [
+        "launch_query_test.go",
         "mutation_executor_test.go",
         "proto_utils_test.go",
         "query_executor_test.go",

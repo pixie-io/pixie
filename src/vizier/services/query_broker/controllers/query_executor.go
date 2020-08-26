@@ -103,9 +103,9 @@ func AddQueryPlanToResult(queryResult *queryresultspb.QueryResult, plan *distrib
 	return nil
 }
 
-// OutputSchemaFromPlan takes in a plan map and returns the relations for all of the final output
+// OutputSchemaFromPlanOld takes in a plan map and returns the relations for all of the final output
 // tables in the plan map.
-func OutputSchemaFromPlan(planMap map[uuid.UUID]*planpb.Plan) map[string]*schemapb.Relation {
+func OutputSchemaFromPlanOld(planMap map[uuid.UUID]*planpb.Plan) map[string]*schemapb.Relation {
 	outputRelations := make(map[string]*schemapb.Relation)
 
 	for _, plan := range planMap {
@@ -164,7 +164,7 @@ func (e *QueryExecutor) ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan, analyze
 
 	// Set the expected output schema for the case where we are receiving results via TransferResultChunk.
 	// This logic will be removed when the batch API, ReceiveAgentQueryResult, is deprecated.
-	e.schema = OutputSchemaFromPlan(planMap)
+	e.schema = OutputSchemaFromPlanOld(planMap)
 
 	broadcastToAgent := func(agentID uuid.UUID, logicalPlan *planpb.Plan) {
 		defer wg.Done()

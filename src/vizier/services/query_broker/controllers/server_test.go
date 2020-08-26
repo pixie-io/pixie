@@ -305,18 +305,20 @@ plan: {
 				}
 				nodes: {
 					op: {
-						op_type: MEMORY_SINK_OPERATOR
-						mem_sink_op: {
-							name: "out"
-							column_types: TIME64NS
-							column_types: INT64
-							column_types: UINT128
-							column_names: "time_"
-							column_names: "cpu_cycles"
-							column_names: "upid"
-							column_semantic_types: ST_NONE
-							column_semantic_types: ST_NONE
-							column_semantic_types: ST_UPID							
+						op_type: GRPC_SINK_OPERATOR
+						grpc_sink_op: {
+							output_table {
+								table_name: "out"
+								column_types: TIME64NS
+								column_types: INT64
+								column_types: UINT128
+								column_names: "time_"
+								column_names: "cpu_cycles"
+								column_names: "upid"
+								column_semantic_types: ST_NONE
+								column_semantic_types: ST_NONE
+								column_semantic_types: ST_UPID							
+							}
 						}
 					}
 				}

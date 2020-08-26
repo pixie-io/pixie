@@ -22,28 +22,6 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )
 
-const kelvinResponse = `
-agent_id: {
-  data: "21285cdd1de94ab1ae6a0ba08c8c676c"
-}
-result {
-  query_id {
-    data: "11285cdd1de94ab1ae6a0ba08c8c676c"
-  }
-  query_result {
-    tables {
-      relation {
-      }
-    }
-  }
-}
-`
-
-const queryIDStr = "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-const kelvinID = "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-const agent1ID = "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-const agent2ID = "31285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-
 func TestExecuteQuery(t *testing.T) {
 	// Check that the query is broadcasted to all agents.
 	port, cleanup := testingutils.StartNATS(t)
@@ -328,7 +306,7 @@ func TestWaitForCompletionStreaming(t *testing.T) {
 	assert.Equal(t, 1, len(tables["table2"].RowBatches))
 }
 
-func TestOutputSchemaFromPlan(t *testing.T) {
+func TestOutputSchemaFromPlanOld(t *testing.T) {
 	agentUUIDStrs := [2]string{
 		agent1ID,
 		agent2ID,
@@ -357,7 +335,7 @@ func TestOutputSchemaFromPlan(t *testing.T) {
 	planMap[agentUUIDs[0]] = planPB1
 	planMap[agentUUIDs[1]] = planPB2
 
-	output := controllers.OutputSchemaFromPlan(planMap)
+	output := controllers.OutputSchemaFromPlanOld(planMap)
 	assert.Equal(t, 1, len(output))
 	assert.NotNil(t, output["out"])
 	assert.Equal(t, 3, len(output["out"].Columns))

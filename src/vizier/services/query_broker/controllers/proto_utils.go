@@ -388,3 +388,108 @@ func QueryPlanResponse(queryID uuid.UUID, plan *distributedpb.DistributedPlan, p
 		},
 	}, nil
 }
+
+// QueryPlanRelationResponse returns the relation of the query plan as an ExecuteScriptResponse.
+func QueryPlanRelationResponse(queryID uuid.UUID, planTableID string) *vizierpb.ExecuteScriptResponse {
+	return &vizierpb.ExecuteScriptResponse{
+		QueryID: queryID.String(),
+		Result: &vizierpb.ExecuteScriptResponse_MetaData{
+			MetaData: &vizierpb.QueryMetadata{
+				Name: "__query_plan__",
+				ID:   planTableID,
+				Relation: &vizierpb.Relation{
+					Columns: []*vizierpb.Relation_ColumnInfo{
+						{
+							ColumnName: "query_plan",
+							ColumnType: vizierpb.STRING,
+							ColumnDesc: "The query plan",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// OutputSchemaFromPlan takes in a plan map and returns the relations for all of the final output
+// tables in the plan map.
+func OutputSchemaFromPlan(planMap map[uuid.UUID]*planpb.Plan) map[string]*schemapb.Relation {
+	outputRelations := make(map[string]*schemapb.Relation)
+
+	for _, plan := range planMap {
+		if plan == nil {
+			continue
+		}
+		for _, fragment := range plan.Nodes {
+			for _, node := range fragment.Nodes {
+				if node.Op.OpType == planpb.GRPC_SINK_OPERATOR {
+					grpcSink := node.Op.GetGRPCSinkOp()
+					outputTableInfo := grpcSink.GetOutputTable()
+					if outputTableInfo == nil {
+						continue
+					}
+					relation := &schemapb.Relation{
+						Columns: []*schemapb.Relation_ColumnInfo{},
+					}
+					for i, colName := range outputTableInfo.ColumnNames {
+						relation.Columns = append(relation.Columns, &schemapb.Relation_ColumnInfo{
+							ColumnName:         colName,
+							ColumnType:         outputTableInfo.ColumnTypes[i],
+							ColumnSemanticType: outputTableInfo.ColumnSemanticTypes[i],
+						})
+					}
+					outputRelations[outputTableInfo.TableName] = relation
+				}
+			}
+		}
+	}
+	return outputRelations
+}
+
+// AgentRelationToVizierRelation converts the agent relation format to the Vizier relation format.
+func AgentRelationToVizierRelation(relation *schemapb.Relation) *vizierpb.Relation {
+	var cols []*vizierpb.Relation_ColumnInfo
+
+	for _, c := range relation.Columns {
+		newCol := &vizierpb.Relation_ColumnInfo{
+			ColumnName:         c.ColumnName,
+			ColumnDesc:         c.ColumnDesc,
+			ColumnType:         dataTypeToVizierDataType[c.ColumnType],
+			ColumnSemanticType: semanticTypeToVizierSemanticType[c.ColumnSemanticType],
+		}
+		cols = append(cols, newCol)
+	}
+
+	return &vizierpb.Relation{
+		Columns: cols,
+	}
+}
+
+// TableRelationResponses returns the query metadata table schemas as ExecuteScriptResponses.
+func TableRelationResponses(queryID uuid.UUID, tableIDMap map[string]string,
+	planMap map[uuid.UUID]*planpb.Plan) ([]*vizierpb.ExecuteScriptResponse, error) {
+
+	var results []*vizierpb.ExecuteScriptResponse
+	schemas := OutputSchemaFromPlan(planMap)
+
+	for tableName, schema := range schemas {
+		tableID, present := tableIDMap[tableName]
+		if !present {
+			return nil, fmt.Errorf("Table ID for table name %s not found in table map", tableName)
+		}
+
+		convertedRelation := AgentRelationToVizierRelation(schema)
+		results = append(results, &vizierpb.ExecuteScriptResponse{
+			QueryID: queryID.String(),
+			Result: &vizierpb.ExecuteScriptResponse_MetaData{
+				MetaData: &vizierpb.QueryMetadata{
+					Name:     tableName,
+					ID:       tableID,
+					Relation: convertedRelation,
+				},
+			},
+		})
+	}
+
+	return results, nil
+}

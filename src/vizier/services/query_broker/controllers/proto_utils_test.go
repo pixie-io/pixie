@@ -5,10 +5,13 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
+	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
+	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
@@ -308,4 +311,65 @@ func TestBuildExecuteScriptResponse(t *testing.T) {
 
 func TestQueryPlanResponse(t *testing.T) {
 	// TODO(nserrino): Fill this in.
+}
+
+func TestTableRelationResponses(t *testing.T) {
+	// TODO(nserrino): Fill this in.
+}
+
+func TestQueryPlanRelationResponse(t *testing.T) {
+	// TODO(nserrino): Fill this in.
+}
+
+func TestOutputSchemaFromPlan(t *testing.T) {
+	agentUUIDStrs := [2]string{
+		agent1ID,
+		agent2ID,
+	}
+
+	agentUUIDs := make([]uuid.UUID, 0)
+	for _, uid := range agentUUIDStrs {
+		u, err := uuid.FromString(uid)
+		if err != nil {
+			t.Fatal(err)
+		}
+		agentUUIDs = append(agentUUIDs, u)
+	}
+
+	// Plan 1 is a valid, populated plan
+	plannerResultPB := &distributedpb.LogicalPlannerResult{}
+	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
+		t.Fatal("Could not unmarshal protobuf text for planner result.")
+	}
+
+	planPB1 := plannerResultPB.Plan.QbAddressToPlan[agent1ID]
+	// Plan 2 is an empty plan.
+	planPB2 := plannerResultPB.Plan.QbAddressToPlan[agent2ID]
+
+	planMap := make(map[uuid.UUID]*planpb.Plan)
+	planMap[agentUUIDs[0]] = planPB1
+	planMap[agentUUIDs[1]] = planPB2
+
+	output := controllers.OutputSchemaFromPlan(planMap)
+	assert.Equal(t, 1, len(output))
+	assert.NotNil(t, output["out"])
+	assert.Equal(t, 3, len(output["out"].Columns))
+
+	assert.Equal(t, &schemapb.Relation_ColumnInfo{
+		ColumnName:         "time_",
+		ColumnType:         typespb.TIME64NS,
+		ColumnSemanticType: typespb.ST_NONE,
+	}, output["out"].Columns[0])
+
+	assert.Equal(t, &schemapb.Relation_ColumnInfo{
+		ColumnName:         "cpu_cycles",
+		ColumnType:         typespb.INT64,
+		ColumnSemanticType: typespb.ST_NONE,
+	}, output["out"].Columns[1])
+
+	assert.Equal(t, &schemapb.Relation_ColumnInfo{
+		ColumnName:         "upid",
+		ColumnType:         typespb.UINT128,
+		ColumnSemanticType: typespb.ST_UPID,
+	}, output["out"].Columns[2])
 }

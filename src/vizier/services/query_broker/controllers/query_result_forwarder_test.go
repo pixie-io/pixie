@@ -97,11 +97,13 @@ func TestStreamResultsSimple(t *testing.T) {
 	}()
 	ctx := context.Background()
 	var err error
+	var timeout bool
 
-	f.RegisterQuery(queryID, expectedTables)
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables))
 
 	go func() {
-		err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
+		timeout, err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
+		assert.False(t, timeout)
 		close(doneCh)
 	}()
 
@@ -156,11 +158,13 @@ func TestStreamResultsAgentCancel(t *testing.T) {
 	}()
 	ctx := context.Background()
 	var err error
+	var timeout bool
 
-	f.RegisterQuery(queryID, expectedTables)
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables))
 
 	go func() {
-		err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
+		timeout, err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
+		assert.False(t, timeout)
 
 		// Forwarding after stream is done should fail.
 		_, in1 := makeRowBatchResult(t, queryID, "bar", "456" /*eos*/, true)
@@ -216,11 +220,13 @@ func TestStreamResultsClientContextCancel(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	var err error
+	var timeout bool
 
-	f.RegisterQuery(queryID, expectedTables)
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables))
 
 	go func() {
-		err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
+		timeout, err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
+		assert.False(t, timeout)
 		close(doneCh)
 	}()
 
