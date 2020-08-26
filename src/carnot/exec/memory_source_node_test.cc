@@ -319,12 +319,9 @@ TEST_F(MemorySourceNodeTabletDeathTest, missing_tablet_fails) {
 }
 
 TEST_F(MemorySourceNodeTest, infinite_stream) {
-  auto op_proto = planpb::testutils::CreateTestSource1PB();
+  auto op_proto = planpb::testutils::CreateTestStreamingSource1PB();
   std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
-  // TODO(philkuz/nserrino): this is a hack for now, but is useful for testing the infinite stream
-  // capabilities, before we decide the API to pass the stream to the memory source node.
-
-  static_cast<plan::MemorySourceOperator*>(plan_node.get())->set_infinite_stream(true);
+  EXPECT_TRUE(static_cast<plan::MemorySourceOperator*>(plan_node.get())->infinite_stream());
   RowDescriptor output_rd({types::DataType::TIME64NS});
 
   auto tester = exec::ExecNodeTester<MemorySourceNode, plan::MemorySourceOperator>(

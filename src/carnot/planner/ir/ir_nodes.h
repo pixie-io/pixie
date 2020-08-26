@@ -1248,6 +1248,11 @@ class MemorySourceIR : public OperatorIR {
 
   std::string table_name() const { return table_name_; }
 
+  // Whether or not the MemorySource should be executed in persistent streaming mode,
+  // where the MemorySource reads data indefinitely.
+  bool streaming() const { return streaming_; }
+  void set_streaming(bool streaming) { streaming_ = streaming; }
+
   Status SetTimeExpressions(ExpressionIR* start_time_expr, ExpressionIR* end_time_expr);
 
   // Sets the time expressions that eventually get converted
@@ -1314,6 +1319,7 @@ class MemorySourceIR : public OperatorIR {
 
  private:
   std::string table_name_;
+  bool streaming_ = false;
 
   bool has_time_expressions_ = false;
   ExpressionIR* start_time_expr_ = nullptr;

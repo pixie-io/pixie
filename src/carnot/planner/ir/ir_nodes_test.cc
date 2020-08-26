@@ -824,6 +824,8 @@ TEST_F(CloneTests, repeated_exprs_clone) {
 
 TEST_F(CloneTests, all_op_clone) {
   auto mem_source = MakeMemSource();
+  mem_source->set_streaming(true);
+
   auto filter = MakeFilter(
       mem_source, MakeEqualsFunc(MakeMetadataIR("service", 0), MakeString("pl/test_service")));
   auto limit = MakeLimit(filter, 10);

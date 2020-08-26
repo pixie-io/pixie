@@ -1123,6 +1123,7 @@ void CompareCloneNode(MemorySourceIR* new_ir, MemorySourceIR* old_ir,
   }
   EXPECT_EQ(new_ir->column_names(), old_ir->column_names()) << err_string;
   EXPECT_EQ(new_ir->column_index_map_set(), old_ir->column_index_map_set()) << err_string;
+  EXPECT_EQ(new_ir->streaming(), old_ir->streaming()) << err_string;
 }
 
 template <>

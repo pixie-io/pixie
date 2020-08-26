@@ -136,6 +136,9 @@ message MemorySourceOperator {
   google.protobuf.Int64Value stop_time = 6;
   // Optional tabletization value that is passed in if the source is tabletized.
   string tablet = 7;
+  // Whether or not the MemorySource should continually read data indefinitely,
+  // aka executing in 'streaming' mode.
+  bool streaming = 8;
 }
 
 // Writes to in-memory storage.

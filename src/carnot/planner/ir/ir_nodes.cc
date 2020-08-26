@@ -293,7 +293,8 @@ std::string OperatorIR::ChildrenDebugString() {
 }
 
 std::string MemorySourceIR::DebugString() const {
-  return absl::Substitute("$0(id=$1, table=$2)", type_string(), id(), table_name_);
+  return absl::Substitute("$0(id=$1, table=$2, streaming=$3)", type_string(), id(), table_name_,
+                          streaming_);
 }
 
 Status MemorySourceIR::ToProto(planpb::Operator* op) const {
@@ -325,6 +326,7 @@ Status MemorySourceIR::ToProto(planpb::Operator* op) const {
     pb->set_tablet(tablet_value());
   }
 
+  pb->set_streaming(streaming());
   return Status::OK();
 }
 
@@ -1253,6 +1255,7 @@ Status MemorySourceIR::CopyFromNodeImpl(
   column_index_map_set_ = source_ir->column_index_map_set_;
   column_index_map_ = source_ir->column_index_map_;
   has_time_expressions_ = source_ir->has_time_expressions_;
+  streaming_ = source_ir->streaming_;
 
   if (has_time_expressions_) {
     PL_ASSIGN_OR_RETURN(ExpressionIR * new_start_expr,

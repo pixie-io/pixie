@@ -112,6 +112,15 @@ name: "$0"
 column_idxs: 1
 column_types: FLOAT64
 column_names: "usage"
+streaming: false
+)";
+
+constexpr char kStreamingMemSourceOperator1[] = R"(
+name: "$0"
+column_idxs: 1
+column_types: FLOAT64
+column_names: "usage"
+streaming: true
 )";
 
 constexpr char kMemSourceOperatorWithTablet1[] = R"(
@@ -133,6 +142,7 @@ stop_time: {
 column_idxs: 1
 column_types: FLOAT64
 column_names: "usage"
+streaming: false
 )";
 
 constexpr char kMemSourceOperatorEmptyRange[] = R"(
@@ -146,6 +156,7 @@ stop_time: {
 column_idxs: 1
 column_types: FLOAT64
 column_names: "usage"
+streaming: false
 )";
 
 constexpr char kMemSourceOperatorAllRange[] = R"(
@@ -159,6 +170,7 @@ stop_time: {
 column_idxs: 1
 column_types: FLOAT64
 column_names: "usage"
+streaming: false
 )";
 
 constexpr char kBlockingAggOperator1[] = R"(
@@ -1028,6 +1040,15 @@ planpb::Operator CreateTestFilterTwoColsString() {
 planpb::Operator CreateTestSource1PB(const std::string& table_name = "cpu") {
   planpb::Operator op;
   auto mem_proto = absl::Substitute(kMemSourceOperator1, table_name);
+  auto op_proto =
+      absl::Substitute(kOperatorProtoTmpl, "MEMORY_SOURCE_OPERATOR", "mem_source_op", mem_proto);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+planpb::Operator CreateTestStreamingSource1PB(const std::string& table_name = "cpu") {
+  planpb::Operator op;
+  auto mem_proto = absl::Substitute(kStreamingMemSourceOperator1, table_name);
   auto op_proto =
       absl::Substitute(kOperatorProtoTmpl, "MEMORY_SOURCE_OPERATOR", "mem_source_op", mem_proto);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
