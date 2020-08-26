@@ -76,6 +76,13 @@ class PodIDToPodNameUDF : public ScalarUDF {
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::ExplicitRule::Create<PodIDToPodNameUDF>(types::ST_POD_NAME, {types::ST_NONE})};
   }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the name of a pod from its pod ID.")
+        .Details("Gets the kubernetes name for the pod from its pod ID.")
+        .Example("df.pod_name = px.pod_id_to_pod_name(df.pod_id)")
+        .Arg("pod_id", "The pod ID of the pod to get the name for.")
+        .Returns("The k8s pod name for the pod ID passed in.");
+  }
 };
 
 class PodNameToPodIDUDF : public ScalarUDF {
@@ -97,6 +104,13 @@ class PodNameToPodIDUDF : public ScalarUDF {
 
     return pod_id;
   }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the id of a pod from its name.")
+        .Details("Gets the kubernetes ID for the pod from its name.")
+        .Example("df.pod_id = px.pod_name_to_pod_id(df.pod_name)")
+        .Arg("pod_name", "The name of the pod to get the ID for.")
+        .Returns("The k8s pod ID for the pod name passed in.");
+  }
 };
 
 class PodIDToNamespaceUDF : public ScalarUDF {
@@ -115,6 +129,13 @@ class PodIDToNamespaceUDF : public ScalarUDF {
     return {
         udf::ExplicitRule::Create<PodIDToNamespaceUDF>(types::ST_NAMESPACE_NAME, {types::ST_NONE})};
   }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Kubernetes namespace from a pod ID.")
+        .Details("Gets the Kubernetes namespace that the Pod ID belongs to.")
+        .Example("df.namespace = px.pod_id_to_namespace(df.pod_id)")
+        .Arg("pod_id", "The Pod ID of the Pod to get the namespace for.")
+        .Returns("The k8s namespace for the Pod ID passed in.");
+  }
 };
 
 class PodNameToNamespaceUDF : public ScalarUDF {
@@ -131,6 +152,13 @@ class PodNameToNamespaceUDF : public ScalarUDF {
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::ExplicitRule::Create<PodNameToNamespaceUDF>(types::ST_NAMESPACE_NAME,
                                                              {types::ST_NONE})};
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Kubernetes namespace from a pod name.")
+        .Details("Gets the Kubernetes namespace that the pod belongs to.")
+        .Example("df.namespace = px.pod_name_to_namespace(df.pod_name)")
+        .Arg("pod_name", "The name of the Pod to get the namespace for.")
+        .Returns("The k8s namespace for the pod passed in.");
   }
 };
 
@@ -553,6 +581,16 @@ class PodIDToServiceNameUDF : public ScalarUDF {
     return {
         udf::ExplicitRule::Create<PodIDToServiceNameUDF>(types::ST_SERVICE_NAME, {types::ST_NONE})};
   }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the service name for a given pod ID.")
+        .Details(
+            "Gets the Kubernetes service name for the service associated to the pod. If there is "
+            "no "
+            "service associated to this pod, then this function returns an empty string.")
+        .Example("df.service_name = px.pod_id_to_service_name(df.pod_id)")
+        .Arg("pod_id", "The Pod ID of the Pod to get service name for.")
+        .Returns("The k8s service name for the Pod ID passed in.");
+  }
 };
 
 /**
@@ -580,6 +618,15 @@ class PodIDToServiceIDUDF : public ScalarUDF {
     }
     return StringifyVector(running_service_ids);
   }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the service ID for a given pod ID.")
+        .Details(
+            "Gets the Kubernetes service ID for the service associated to the pod. If there is no "
+            "service associated to this pod, then this function returns an empty string.")
+        .Example("df.service_id = px.pod_id_to_service_id(df.pod_id)")
+        .Arg("pod_id", "The Pod ID of the Pod to get service ID for.")
+        .Returns("The k8s service ID for the Pod ID passed in.");
+  }
 };
 
 /**
@@ -599,6 +646,15 @@ class PodIDToNodeNameUDF : public ScalarUDF {
   }
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::ExplicitRule::Create<PodIDToNodeNameUDF>(types::ST_NODE_NAME, {types::ST_NONE})};
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the name of the node a pod ID is running on.")
+        .Details(
+            "Gets the Kubernetes name for the node that the Pod (specified by Pod ID) is running "
+            "on.")
+        .Example("df.node_name = px.pod_id_to_node_name(df.pod_id)")
+        .Arg("pod_id", "The Pod ID of the Pod to get the node name for.")
+        .Returns("The k8s node name for the Pod ID passed in.");
   }
 };
 
@@ -641,6 +697,16 @@ class PodNameToServiceNameUDF : public ScalarUDF {
     return {udf::ExplicitRule::Create<PodNameToServiceNameUDF>(types::ST_SERVICE_NAME,
                                                                {types::ST_POD_NAME})};
   }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the service name for a given pod name.")
+        .Details(
+            "Gets the Kubernetes service name for the service associated to the pod. If there is "
+            "no "
+            "service associated to this pod, then this function returns an empty string.")
+        .Example("df.service_name = px.pod_name_to_service_name(df.pod_name)")
+        .Arg("pod_name", "The name of the Pod to get service name for.")
+        .Returns("The k8s service name for the Pod name passed in.");
+  }
 };
 
 /**
@@ -676,6 +742,15 @@ class PodNameToServiceIDUDF : public ScalarUDF {
       }
     }
     return StringifyVector(running_service_ids);
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the service ID for a given pod name.")
+        .Details(
+            "Gets the Kubernetes service ID for the service associated to the pod. If there is no "
+            "service associated to this pod, then this function returns an empty string.")
+        .Example("df.service_id = px.pod_name_to_service_id(df.pod_name)")
+        .Arg("pod_id", "The name of the Pod to get service ID for.")
+        .Returns("The k8s service ID for the Pod name passed in.");
   }
 };
 
@@ -731,6 +806,13 @@ class PodIDToPodStartTimeUDF : public ScalarUDF {
     }
     return pod_info->start_time_ns();
   }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the start time of a pod from its ID.")
+        .Details("Gets the start time (in nanosecond unix time format) of a pod from its pod ID.")
+        .Example("df.pod_start_time = px.pod_id_to_start_time(df.pod_id)")
+        .Arg("pod_id", "The Pod ID of the Pod to get the start time for.")
+        .Returns("The start time (as an integer) for the Pod ID passed in.");
+  }
 };
 
 class PodNameToPodStartTimeUDF : public ScalarUDF {
@@ -743,6 +825,13 @@ class PodNameToPodStartTimeUDF : public ScalarUDF {
       return 0;
     }
     return pod_info->start_time_ns();
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the start time of a pod from its name.")
+        .Details("Gets the start time (in nanosecond unix time format) of a pod from its name.")
+        .Example("df.pod_start_time = px.pod_name_to_start_time(df.pod_name)")
+        .Arg("pod_name", "The name of the Pod to get the start time for.")
+        .Returns("The start time (as an integer) for the Pod name passed in.");
   }
 };
 
@@ -801,6 +890,20 @@ class PodNameToPodStatusUDF : public ScalarUDF {
   static udf::InfRuleVec SemanticInferenceRules() {
     return {
         udf::ExplicitRule::Create<PodNameToPodStatusUDF>(types::ST_POD_STATUS, {types::ST_NONE})};
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get status information about the given pod.")
+        .Details(
+            "Gets the Kubernetes status information for the pod with the given name. "
+            "The status is a subset of the Kubernetes PodStatus object returned as JSON. "
+            "The keys included are state, message, and reason. "
+            "See "
+            "https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/"
+            "#podstatus-v1-core "
+            "for more info about this object. ")
+        .Example("df.pod_status = px.pod_name_to_pod_status(df.pod_name)")
+        .Arg("pod_name", "The name of the pod to get the PodStatus for.")
+        .Returns("The Kubernetes PodStatus for the Pod passed in.");
   }
 };
 
