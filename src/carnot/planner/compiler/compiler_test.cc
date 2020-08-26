@@ -2996,6 +2996,131 @@ TEST_F(CompilerTest, metadata_types) {
   EXPECT_TableHasColumnWithType(type_table, "node_name",
                                 ValueType::Create(types::STRING, types::ST_NODE_NAME));
 }
+
+const char kMetadataPlanProto[] = R"proto(
+dag {
+  nodes {
+    id: 1
+  }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      id: 7
+      sorted_children: 11
+    }
+    nodes {
+      id: 11
+      sorted_children: 21
+      sorted_parents: 7
+    }
+    nodes {
+      id: 21
+      sorted_parents: 11
+    }
+  }
+  nodes {
+    id: 7
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "process_stats"
+        column_idxs: 1
+        column_names: "upid"
+        column_types: UINT128
+      }
+    }
+  }
+  nodes {
+    id: 11
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          column {
+            node: 7
+          }
+        }
+        expressions {
+          func {
+            name: "upid_to_service_name"
+            args {
+              column {
+                node: 7
+              }
+            }
+            id: 2
+            args_data_types: UINT128
+          }
+        }
+        expressions {
+          func {
+            name: "upid_to_pod_name"
+            args {
+              column {
+                node: 7
+              }
+            }
+            id: 1
+            args_data_types: UINT128
+          }
+        }
+        expressions {
+          func {
+            name: "upid_to_node_name"
+            args {
+              column {
+                node: 7
+              }
+            }
+            args_data_types: UINT128
+          }
+        }
+        column_names: "upid"
+        column_names: "svc"
+        column_names: "pod_name"
+        column_names: "node_name"
+      }
+    }
+  }
+  nodes {
+    id: 21
+    op {
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "output"
+          column_types: UINT128
+          column_types: STRING
+          column_types: STRING
+          column_types: STRING
+          column_names: "upid"
+          column_names: "svc"
+          column_names: "pod_name"
+          column_names: "node_name"
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_SERVICE_NAME
+          column_semantic_types: ST_POD_NAME
+          column_semantic_types: ST_NODE_NAME
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
+      }
+    }
+  }
+}
+)proto";
+
+TEST_F(CompilerTest, metadata_types_proto) {
+  auto plan_or_s = compiler_.Compile(kMetadataSTQuery, compiler_state_.get());
+  ASSERT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_THAT(plan, Partially(EqualsProto(kMetadataPlanProto)));
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

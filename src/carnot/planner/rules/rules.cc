@@ -478,6 +478,7 @@ StatusOr<bool> OperatorRelationRule::SetMemorySink(MemorySinkIR* sink_ir) const 
   Relation output_relation;
   for (const auto& col_name : sink_ir->out_columns()) {
     output_relation.AddColumn(input_relation.GetColumnType(col_name), col_name,
+                              input_relation.GetColumnSemanticType(col_name),
                               input_relation.GetColumnDesc(col_name));
   }
   PL_RETURN_IF_ERROR(sink_ir->SetRelation(output_relation));
@@ -493,6 +494,7 @@ StatusOr<bool> OperatorRelationRule::SetGRPCSink(GRPCSinkIR* sink_ir) const {
   Relation output_relation;
   for (const auto& col_name : sink_ir->out_columns()) {
     output_relation.AddColumn(input_relation.GetColumnType(col_name), col_name,
+                              input_relation.GetColumnSemanticType(col_name),
                               input_relation.GetColumnDesc(col_name));
   }
   PL_RETURN_IF_ERROR(sink_ir->SetRelation(output_relation));

@@ -247,9 +247,9 @@ Status OperatorIR::PruneOutputColumnsTo(const absl::flat_hash_set<std::string>& 
   }
 
   auto output_cols = output_colnames;
-  // Ensure that we always output at least one column, unless it's a memory sink,
+  // Ensure that we always output at least one column, unless it's a result sink,
   // in which case it's ok to output 0 columns.
-  if (!Match(this, MemorySink())) {
+  if (!Match(this, ResultSink())) {
     if (!output_cols.size()) {
       output_cols.insert(relation().col_names()[0]);
     }
@@ -259,6 +259,7 @@ Status OperatorIR::PruneOutputColumnsTo(const absl::flat_hash_set<std::string>& 
   for (const auto& colname : relation_.col_names()) {
     if (required_columns.contains(colname)) {
       updated_relation.AddColumn(relation_.GetColumnType(colname), colname,
+                                 relation_.GetColumnSemanticType(colname),
                                  relation_.GetColumnDesc(colname));
     }
   }
@@ -426,7 +427,7 @@ Status MemorySinkIR::ToProto(planpb::Operator* op) const {
       if (table_type->HasColumn(col_name)) {
         PL_ASSIGN_OR_RETURN(auto col_type, table_type->GetColumnType(col_name));
         if (!col_type->IsValueType()) {
-          return error::Internal("Attempting to create MemorySource with a non-columnar type.");
+          return error::Internal("Attempting to create MemorySink with a non-columnar type.");
         }
         auto val_type = std::static_pointer_cast<ValueType>(col_type);
         pb->add_column_semantic_types(val_type->semantic_type());
@@ -1427,19 +1428,38 @@ Status GRPCSinkIR::ToProto(planpb::Operator* op) const {
 
   if (has_destination_id()) {
     pb->set_grpc_source_id(destination_id());
-  } else if (has_output_table()) {
-    pb->mutable_output_table()->set_table_name(name());
-    DCHECK(IsRelationInit());
-    for (size_t i = 0; i < relation().NumColumns(); ++i) {
-      pb->mutable_output_table()->add_column_names(relation().GetColumnName(i));
-      pb->mutable_output_table()->add_column_types(relation().GetColumnType(i));
-      pb->mutable_output_table()->add_column_semantic_types(relation().GetColumnSemanticType(i));
-    }
-  } else {
-    return error::Internal(
-        "Error in GRPCSinkIR::ToProto: node has no output table or destination ID");
+    return Status::OK();
   }
-  return Status::OK();
+
+  if (has_output_table()) {
+    pb->mutable_output_table()->set_table_name(name());
+
+    auto types = relation().col_types();
+    auto names = relation().col_names();
+
+    for (size_t i = 0; i < relation().NumColumns(); ++i) {
+      pb->mutable_output_table()->add_column_types(types[i]);
+      pb->mutable_output_table()->add_column_names(names[i]);
+    }
+
+    if (is_type_resolved()) {
+      auto table_type = std::static_pointer_cast<TableType>(resolved_type());
+      for (const auto& col_name : names) {
+        if (table_type->HasColumn(col_name)) {
+          PL_ASSIGN_OR_RETURN(auto col_type, table_type->GetColumnType(col_name));
+          if (!col_type->IsValueType()) {
+            return error::Internal("Attempting to create GRPCSink with a non-columnar type.");
+          }
+          auto val_type = std::static_pointer_cast<ValueType>(col_type);
+          pb->mutable_output_table()->add_column_semantic_types(val_type->semantic_type());
+        }
+      }
+    }
+    return Status::OK();
+  }
+
+  return error::Internal(
+      "Error in GRPCSinkIR::ToProto: node has no output table or destination ID");
 }
 
 Status GRPCSourceIR::ToProto(planpb::Operator* op) const {

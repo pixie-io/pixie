@@ -1093,9 +1093,9 @@ constexpr char kExpectedExternalGRPCSinkPb[] = R"proto(
       column_types: FLOAT64
       column_types: FLOAT64
       column_semantic_types: ST_NONE
-      column_semantic_types: ST_NONE
-      column_semantic_types: ST_NONE
-      column_semantic_types: ST_NONE
+      column_semantic_types: ST_PERCENT
+      column_semantic_types: ST_PERCENT
+      column_semantic_types: ST_PERCENT
     }
     connection_options {
       ssl_targetname: "$2"
@@ -1108,7 +1108,16 @@ TEST_F(ToProtoTests, external_grpc_sink_ir) {
   std::string ssl_targetname = "kelvin.pl.svc";
   auto mem_src = MakeMemSource();
   GRPCSinkIR* grpc_sink = MakeGRPCSink(mem_src, "output_table", std::vector<std::string>{});
+
+  auto new_table = TableType::Create();
+  new_table->AddColumn("count", ValueType::Create(types::INT64, types::ST_NONE));
+  new_table->AddColumn("cpu0", ValueType::Create(types::INT64, types::ST_PERCENT));
+  new_table->AddColumn("cpu1", ValueType::Create(types::INT64, types::ST_PERCENT));
+  new_table->AddColumn("cpu2", ValueType::Create(types::INT64, types::ST_PERCENT));
+
   ASSERT_OK(grpc_sink->SetRelation(MakeRelation()));
+  ASSERT_OK(grpc_sink->SetResolvedType(new_table));
+
   grpc_sink->SetDestinationAddress(grpc_address);
   grpc_sink->SetDestinationSSLTargetName(ssl_targetname);
 
