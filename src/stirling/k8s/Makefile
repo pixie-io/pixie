@@ -10,10 +10,11 @@ create_namespace: namespace.yaml.tmpl ## Create the target namespace for a Stirl
 	cat $< | $(EVAL_TMPL) | $(KUBECTL) apply -f -
 
 .PHONY: create_image_pull_secret
-create_image_pull_secret: image-pull-secret.yaml.tmpl  ## Install image pull secrets, required for non GKE clusters.
+create_image_pull_secret:  ## Install image pull secrets, required for non GKE clusters.
 ifneq ($(wildcard ./image-pull-secret.json),)
 	@echo "Installing image-pull-secrets (command echo suppressed)"
-	@cat $< | $(EVAL_TMPL) | sed "s/{{IMAGE_PULL_SECRET}}/$(shell base64 -w 0 image-pull-secret.json)/g" | $(KUBECTL) apply -f -
+	@kubectl -n pl-${USER} delete secret image-pull-secret 2> /dev/null || true
+	@kubectl -n pl-${USER} create secret docker-registry image-pull-secret --docker-server=https://gcr.io --docker-username=_json_key --docker-email=${USER}@pixielabs.ai --docker-password='$(shell cat image-pull-secret.json)'
 endif
 
 .PHONY: deploy_stirling_pod
