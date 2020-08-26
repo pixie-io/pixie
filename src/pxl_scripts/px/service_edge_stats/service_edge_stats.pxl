@@ -1,3 +1,6 @@
+# Copyright (c) Pixie Labs, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+
 ''' Service Edge LET stats
 
 This live view calculates LET between two Services.

@@ -1,3 +1,6 @@
+# Copyright (c) Pixie Labs, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+
 ''' Nodes Overview
 
 This view summarizes the process and network stats for each node in a cluster.
