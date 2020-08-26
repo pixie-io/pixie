@@ -621,6 +621,19 @@ class ResolveTypesRule : public Rule {
   StatusOr<bool> Apply(IRNode* ir_node) override;
 };
 
+class ResolveStreamRule : public Rule {
+  /**
+   * @brief Resolves StreamIRs by setting their ancestor MemorySource nodes to streaming mode.
+   */
+ public:
+  ResolveStreamRule()
+      : Rule(/*compiler_state*/ nullptr, /*use_topo*/ false,
+             /*reverse_topological_execution*/ false) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+};
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl

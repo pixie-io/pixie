@@ -2798,6 +2798,66 @@ TEST_F(RulesTest, map_then_agg) {
   EXPECT_FALSE(result.ValueOrDie());
 }
 
+TEST_F(RulesTest, resolve_stream) {
+  MemorySourceIR* src = MakeMemSource();
+  FilterIR* filter = MakeFilter(src);
+  StreamIR* stream = graph->CreateNode<StreamIR>(ast, filter).ValueOrDie();
+  MemorySinkIR* sink = MakeMemSink(stream, "");
+  auto stream_id = stream->id();
+
+  EXPECT_TRUE(graph->dag().HasNode(stream_id));
+  EXPECT_FALSE(src->streaming());
+
+  ResolveStreamRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  EXPECT_FALSE(graph->dag().HasNode(stream_id));
+  EXPECT_TRUE(src->streaming());
+  EXPECT_THAT(sink->parents(), ElementsAre(filter));
+}
+
+TEST_F(RulesTest, resolve_stream_no_stream) {
+  MemorySourceIR* mem_source = MakeMemSource();
+  GroupByIR* group_by = MakeGroupBy(mem_source, {MakeColumn("col1", 0), MakeColumn("col2", 0)});
+  BlockingAggIR* agg =
+      MakeBlockingAgg(group_by, {}, {{"outcount", MakeMeanFunc(MakeColumn("count", 0))}});
+  MakeMemSink(agg, "");
+
+  ResolveStreamRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_FALSE(result.ValueOrDie());
+}
+
+TEST_F(RulesTest, resolve_stream_blocking_ancestor) {
+  MemorySourceIR* mem_source = MakeMemSource();
+  GroupByIR* group_by = MakeGroupBy(mem_source, {MakeColumn("col1", 0), MakeColumn("col2", 0)});
+  BlockingAggIR* agg =
+      MakeBlockingAgg(group_by, {}, {{"outcount", MakeMeanFunc(MakeColumn("count", 0))}});
+  StreamIR* stream = graph->CreateNode<StreamIR>(ast, agg).ValueOrDie();
+  MakeMemSink(stream, "");
+
+  ResolveStreamRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_NOT_OK(result);
+}
+
+TEST_F(RulesTest, resolve_stream_non_mem_sink_child) {
+  MemorySourceIR* mem_source = MakeMemSource();
+  GroupByIR* group_by = MakeGroupBy(mem_source, {MakeColumn("col1", 0), MakeColumn("col2", 0)});
+  BlockingAggIR* agg =
+      MakeBlockingAgg(group_by, {}, {{"outcount", MakeMeanFunc(MakeColumn("count", 0))}});
+  StreamIR* stream = graph->CreateNode<StreamIR>(ast, agg).ValueOrDie();
+  MakeMemSink(stream, "1");
+  FilterIR* filter = MakeFilter(stream);
+  MakeMemSink(filter, "2");
+
+  ResolveStreamRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_NOT_OK(result);
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl

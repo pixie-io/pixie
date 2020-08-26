@@ -1468,6 +1468,54 @@ StatusOr<bool> ResolveTypesRule::Apply(IRNode* ir_node) {
   return true;
 }
 
+StatusOr<bool> ResolveStreamRule::Apply(IRNode* ir_node) {
+  if (!Match(ir_node, Stream())) {
+    return false;
+  }
+
+  auto stream_node = static_cast<StreamIR*>(ir_node);
+
+  // Check for blocking nodes in the ancestors.
+  // TODO(nserrino): PP-2115: Support blocking ancetor nodes when rolling() is present.
+  DCHECK_EQ(stream_node->parents().size(), 1UL);
+  OperatorIR* parent = stream_node->parents()[0];
+  std::queue<OperatorIR*> nodes;
+  nodes.push(parent);
+
+  while (nodes.size()) {
+    auto node = nodes.front();
+    nodes.pop();
+
+    if (node->IsBlocking()) {
+      return error::Unimplemented("df.stream() not yet supported with blocking operator %s",
+                                  node->DebugString());
+    }
+    if (Match(node, MemorySource())) {
+      static_cast<MemorySourceIR*>(node)->set_streaming(true);
+    }
+    auto node_parents = node->parents();
+    for (OperatorIR* parent : node_parents) {
+      nodes.push(parent);
+    }
+  }
+
+  // The only supported children right now should be MemorySinks.
+  // TODO(nserrino): PP-2115
+  auto children = stream_node->Children();
+  DCHECK_GT(children.size(), 0);
+  for (OperatorIR* child : children) {
+    if (!Match(child, MemorySink())) {
+      return error::Unimplemented("df.stream() in the middle of a query is not yet implemented");
+    }
+    PL_RETURN_IF_ERROR(child->ReplaceParent(stream_node, parent));
+  }
+
+  // Now delete the stream node.
+  PL_RETURN_IF_ERROR(stream_node->RemoveParent(parent));
+  PL_RETURN_IF_ERROR(parent->graph()->DeleteNode(stream_node->id()));
+  return true;
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl
