@@ -1,8 +1,9 @@
 import Axios from 'axios';
 import { isStaging } from 'utils/env';
 
-const PROD_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle.json';
-const STAGING_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-staging.json';
+const PROD_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-core.json';
+const OSS_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-oss.json';
+const STAGING_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-staging-core.json';
 
 export interface Script {
   id: string;
@@ -23,24 +24,25 @@ interface ScriptJSON {
 }
 
 export function GetPxScripts(orgName: string): Promise<Script[]> {
-  const bundlePath = localStorage.getItem('px-custom-bundle-path')
+  const bundlePath = localStorage.getItem('px-custom-core-bundle-path')
     || (isStaging() ? STAGING_SCRIPTS : PROD_SCRIPTS);
-  return Axios({
-    method: 'get',
-    url: bundlePath,
-  }).then((response) => {
+  const ossBundlePath = localStorage.getItem('px-custom-oss-bundle-path') || OSS_SCRIPTS;
+  const fetchPromises = [Axios({ method: 'get', url: bundlePath }), Axios({ method: 'get', url: ossBundlePath })];
+  return Promise.all(fetchPromises).then((response) => {
     const scripts = [];
-    Object.entries(response.data.scripts as ScriptJSON[]).forEach(([id, s]) => {
-      if (s.orgName && orgName !== s.orgName) {
-        return;
-      }
-      scripts.push({
-        id,
-        title: s.ShortDoc,
-        code: s.pxl,
-        vis: s.vis,
-        description: s.LongDoc,
-        hidden: s.hidden,
+    response.forEach((resp) => {
+      Object.entries(resp.data.scripts as ScriptJSON[]).forEach(([id, s]) => {
+        if (s.orgName && orgName !== s.orgName) {
+          return;
+        }
+        scripts.push({
+          id,
+          title: s.ShortDoc,
+          code: s.pxl,
+          vis: s.vis,
+          description: s.LongDoc,
+          hidden: s.hidden,
+        });
       });
     });
     return scripts;
