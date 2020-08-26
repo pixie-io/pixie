@@ -44,6 +44,14 @@ var elasticLabelToProtoMap = map[string]cloudapipb.AutocompleteEntityKind{
 	"namespace": cloudapipb.AEK_NAMESPACE,
 }
 
+var elasticStateToProtoMap = map[md.ESMDEntityState]cloudapipb.AutocompleteEntityState{
+	md.ESMDEntityStateUnknown:    cloudapipb.AES_UNKNOWN,
+	md.ESMDEntityStatePending:    cloudapipb.AES_PENDING,
+	md.ESMDEntityStateRunning:    cloudapipb.AES_RUNNING,
+	md.ESMDEntityStateFailed:     cloudapipb.AES_FAILED,
+	md.ESMDEntityStateTerminated: cloudapipb.AES_TERMINATED,
+}
+
 func getServiceCredentials(signingKey string) (string, error) {
 	claims := utils.GenerateJWTForService("API Service")
 	return utils.SignJWTClaims(claims, signingKey)
@@ -130,7 +138,7 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 		ms.Add(elastic.NewSearchRequest().
 			Highlight(highlight).
 			Query(e.getQueryForRequest(r.OrgID, r.ClusterUID, r.Input, r.AllowedKinds, r.AllowedArgs)).
-			Size(5).FetchSourceIncludeExclude([]string{"kind", "name", "ns"}, []string{}))
+			Size(5).FetchSourceIncludeExclude([]string{"kind", "name", "ns", "state"}, []string{}))
 	}
 
 	resp, err := ms.Do(context.Background())
@@ -247,6 +255,7 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 				Score:          float64(*h.Score),
 				Kind:           elasticLabelToProtoMap[res.Kind],
 				MatchedIndexes: matchedIndexes,
+				State:          elasticStateToProtoMap[res.State],
 			})
 		}
 

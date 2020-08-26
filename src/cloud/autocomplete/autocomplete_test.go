@@ -831,9 +831,10 @@ func TestToFormatString(t *testing.T) {
 						Valid: false,
 						Suggestions: []*autocomplete.Suggestion{
 							&autocomplete.Suggestion{
-								Name: "pl/test",
-								Desc: "a svc",
-								Kind: cloudapipb.AEK_SVC,
+								Name:  "pl/test",
+								Desc:  "a svc",
+								Kind:  cloudapipb.AEK_SVC,
+								State: cloudapipb.AES_RUNNING,
 							},
 						},
 					},
@@ -861,6 +862,7 @@ func TestToFormatString(t *testing.T) {
 							Kind:        cloudapipb.AEK_SVC,
 							Name:        "pl/test",
 							Description: "a svc",
+							State:       cloudapipb.AES_RUNNING,
 						},
 					},
 				},

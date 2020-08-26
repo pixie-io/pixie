@@ -507,6 +507,7 @@ func (a *AutocompleteServer) AutocompleteField(ctx context.Context, req *cloudap
 			Name:           s.Name,
 			Description:    s.Desc,
 			MatchedIndexes: s.MatchedIndexes,
+			State:          s.State,
 		}
 	}
 

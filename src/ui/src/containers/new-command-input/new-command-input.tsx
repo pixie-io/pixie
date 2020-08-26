@@ -32,6 +32,7 @@ query autocomplete($input: String, $cursor: Int, $action: AutocompleteActionType
         name
         description
         matchedIndexes
+        state
       }
     }
   }

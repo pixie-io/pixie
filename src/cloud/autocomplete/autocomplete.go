@@ -29,6 +29,7 @@ type Suggestion struct {
 	ArgNames       []string // If the suggestion is a script, the args that the script takes.
 	ArgKinds       []cloudapipb.AutocompleteEntityKind
 	MatchedIndexes []int64
+	State          cloudapipb.AutocompleteEntityState
 }
 
 // TabStop represents a tab stop in a command.
@@ -453,6 +454,7 @@ func (cmd *Command) ToFormatString(action cloudapipb.AutocompleteActionType, s S
 				Name:           s.Name,
 				Description:    s.Desc,
 				MatchedIndexes: s.MatchedIndexes,
+				State:          s.State,
 			}
 		}
 

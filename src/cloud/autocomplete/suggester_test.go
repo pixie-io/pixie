@@ -48,6 +48,7 @@ var mdEntities = []md.EsMDEntity{
 		TimeStartedNS:      1,
 		TimeStoppedNS:      0,
 		RelatedEntityNames: []string{},
+		State:              md.ESMDEntityStateRunning,
 	},
 	md.EsMDEntity{
 		OrgID:              org1.String(),
@@ -209,8 +210,9 @@ func TestGetSuggestions(t *testing.T) {
 					ExactMatch: false,
 					Suggestions: []*autocomplete.Suggestion{
 						&autocomplete.Suggestion{
-							Name: "anotherNS/test-Pod",
-							Kind: cloudapipb.AEK_POD,
+							Name:  "anotherNS/test-Pod",
+							Kind:  cloudapipb.AEK_POD,
+							State: cloudapipb.AES_RUNNING,
 						},
 					},
 				},
@@ -233,8 +235,9 @@ func TestGetSuggestions(t *testing.T) {
 					ExactMatch: false,
 					Suggestions: []*autocomplete.Suggestion{
 						&autocomplete.Suggestion{
-							Name: "anotherNS/test-Pod",
-							Kind: cloudapipb.AEK_POD,
+							Name:  "anotherNS/test-Pod",
+							Kind:  cloudapipb.AEK_POD,
+							State: cloudapipb.AES_RUNNING,
 						},
 					},
 				},
@@ -265,8 +268,9 @@ func TestGetSuggestions(t *testing.T) {
 							Kind: cloudapipb.AEK_SVC,
 						},
 						&autocomplete.Suggestion{
-							Name: "anotherNS/test-Pod",
-							Kind: cloudapipb.AEK_POD,
+							Name:  "anotherNS/test-Pod",
+							Kind:  cloudapipb.AEK_POD,
+							State: cloudapipb.AES_RUNNING,
 						},
 					},
 				},

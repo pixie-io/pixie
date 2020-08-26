@@ -557,10 +557,12 @@ func TestAutocompleteService_AutocompleteField(t *testing.T) {
 				&autocomplete.Suggestion{
 					Name:  "px/svc_info",
 					Score: 1,
+					State: cloudapipb.AES_RUNNING,
 				},
 				&autocomplete.Suggestion{
 					Name:  "px/svc_info2",
 					Score: 1,
+					State: cloudapipb.AES_TERMINATED,
 				},
 			},
 			ExactMatch: true,
