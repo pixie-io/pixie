@@ -58,7 +58,10 @@ Status MemorySourceNode::OpenImpl(ExecState* exec_state) {
   return Status::OK();
 }
 
-Status MemorySourceNode::CloseImpl(ExecState*) { return Status::OK(); }
+Status MemorySourceNode::CloseImpl(ExecState*) {
+  stats()->AddExtraMetric("infinite", static_cast<double>(infinite_stream_));
+  return Status::OK();
+}
 
 StatusOr<std::unique_ptr<RowBatch>> MemorySourceNode::GetNextRowBatch(ExecState* exec_state) {
   DCHECK(table_ != nullptr);

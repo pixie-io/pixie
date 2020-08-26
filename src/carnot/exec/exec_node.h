@@ -26,6 +26,7 @@ struct ExecNodeStats {
     if (!collect_exec_stats) {
       return;
     }
+    ++batches_output;
     bytes_output += rb.NumBytes();
     rows_output += rb.num_rows();
   }
@@ -34,6 +35,7 @@ struct ExecNodeStats {
     if (!collect_exec_stats) {
       return;
     }
+    ++batches_input;
     bytes_input += rb.NumBytes();
     rows_input += rb.num_rows();
   }
@@ -63,6 +65,14 @@ struct ExecNodeStats {
     total_timer.Stop();
   }
 
+  void AddExtraMetric(std::string_view key, double value) {
+    if (!collect_exec_stats) {
+      return;
+    }
+
+    extra_metrics[key] = value;
+  }
+
   int64_t ChildExecTime() const { return children_timer.ElapsedTime_us() * 1000; }
   int64_t TotalExecTime() const { return total_timer.ElapsedTime_us() * 1000; }
   int64_t SelfExecTime() const { return TotalExecTime() - ChildExecTime(); }
@@ -71,16 +81,23 @@ struct ExecNodeStats {
   int64_t bytes_input = 0;
   // Total rows input to this exec node.
   int64_t rows_input = 0;
+  // Total batches input to this exec node.
+  int64_t batches_input = 0;
   // Total bytes output by this exec node.
   int64_t bytes_output = 0;
   // Total rows output by this exec node.
   int64_t rows_output = 0;
+  // Total batches input to this exec node.
+  int64_t batches_output = 0;
   // Total timer for the node = children_time + self_time.
   ElapsedTimer total_timer;
   // Total timer for the children of the ndoe.
   ElapsedTimer children_timer;
   // Flag to determine whether to collect stats or not.
   bool collect_exec_stats;
+
+  // Extra metrics to store.
+  absl::flat_hash_map<std::string, double> extra_metrics;
 };
 
 /**

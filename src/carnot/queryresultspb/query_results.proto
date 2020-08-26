@@ -42,6 +42,8 @@ message OperatorExecutionStats {
   // Any specialied message that an operator might publish.
   // Ie an aggregate operator might want to publish
   google.protobuf.Any operator_stats = 7;
+  // Extra metrics to store as a kv.
+  map<string, double> extra_metrics = 8;
 }
 
 message AgentExecutionStats {

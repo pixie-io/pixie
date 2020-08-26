@@ -48,7 +48,16 @@ func nodeExecTiming(nodeID int64, execStats *map[int64]*queryresultspb.OperatorE
 	if !ok {
 		return ""
 	}
-	return fmt.Sprintf("self_time: %s\ntotal_time: %s\nbytes: %s\nrecords_processed: %d", timeNSToString(stats.SelfExecutionTimeNs), timeNSToString(stats.TotalExecutionTimeNs), humanize.Bytes(uint64(stats.BytesOutput)), stats.RecordsOutput)
+	extraStats := []string{
+		fmt.Sprintf("self_time: %s", timeNSToString(stats.SelfExecutionTimeNs)),
+		fmt.Sprintf("total_time: %s", timeNSToString(stats.TotalExecutionTimeNs)),
+		fmt.Sprintf("bytes: %s", humanize.Bytes(uint64(stats.BytesOutput))),
+		fmt.Sprintf("records_processed: %d", stats.RecordsOutput),
+	}
+	for k, v := range stats.ExtraMetrics {
+		extraStats = append(extraStats, fmt.Sprintf("%s: %f", k, v))
+	}
+	return strings.Join(extraStats, "\n")
 }
 
 func getQueryPlanAsDotString(distributedPlan *distributedpb.DistributedPlan, planMap map[uuid.UUID]*planpb.Plan, planExecStats *[]*queryresultspb.AgentExecutionStats) (string, error) {

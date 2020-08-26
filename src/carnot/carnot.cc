@@ -388,6 +388,7 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
                 std::string node_name =
                     absl::Substitute("$0 (id=$1)", pf->nodes()[node_id]->DebugString(), node_id);
                 exec::ExecNodeStats* stats = exec_node->stats();
+                stats->AddExtraMetric("batches_output", stats->batches_output);
                 int64_t total_time_ns = stats->TotalExecTime();
                 int64_t self_time_ns = stats->SelfExecTime();
                 LOG(INFO) << absl::Substitute(
@@ -403,6 +404,10 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
                 stats_pb->set_records_output(stats->rows_output);
                 stats_pb->set_total_execution_time_ns(total_time_ns);
                 stats_pb->set_self_execution_time_ns(self_time_ns);
+
+                for (const auto& [k, v] : stats->extra_metrics) {
+                  (*stats_pb->mutable_extra_metrics())[k] = v;
+                }
               }
             }
             return Status::OK();
