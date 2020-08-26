@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"pixielabs.ai/pixielabs/src/carnot/docspb"
+	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	"pixielabs.ai/pixielabs/src/utils"
 )
 
@@ -158,7 +159,7 @@ func (w *parser) processExamples(lines *[]string, i int) (int, error) {
 		i++
 	}
 	w.parsedDoc.body.Examples = append(w.parsedDoc.body.Examples, &docspb.ExampleDoc{
-		Value: strings.Join(example, "\n"),
+		Value: fmt.Sprintf("```%s```", strings.Join(example, "\n")),
 	})
 	return w.Walk(lines, i)
 }
@@ -466,14 +467,30 @@ func parseDocstringTree(node *docspb.DocstringNode, outDocs *docspb.StructuredDo
 	return nil
 }
 
+func processUDFDocs(udfs *udfspb.Docs) (*udfspb.Docs, error) {
+	if udfs == nil {
+		return udfs, nil
+	}
+	for _, u := range udfs.Udf {
+		for _, e := range u.Examples {
+			e.Value = fmt.Sprintf("```%s```", e.Value)
+		}
+	}
+	return udfs, nil
+}
+
 // ParseAllDocStrings takes the doc object and returns a new version where its docstring and children Docs
 // are parsed.
 func ParseAllDocStrings(iDoc *docspb.InternalPXLDocs) (*docspb.StructuredDocs, error) {
+	newUdfDocs, err := processUDFDocs(iDoc.UdfDocs)
+	ea := utils.MakeErrorAccumulator()
+	if err != nil {
+		ea.AddError(err)
+	}
 	newDoc := &docspb.StructuredDocs{
-		UdfDocs: iDoc.UdfDocs,
+		UdfDocs: newUdfDocs,
 	}
 
-	ea := utils.MakeErrorAccumulator()
 	for _, d := range iDoc.DocstringNodes {
 		err := parseDocstringTree(d, newDoc, "")
 		ea.AddError(err)

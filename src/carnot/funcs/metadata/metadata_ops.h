@@ -765,13 +765,13 @@ class UPIDToStringUDF : public ScalarUDF {
     return udf::ScalarUDFDocBuilder("Get a stringified version of the UPID.")
         .Details(
             "Stringifies a UPID "
-            "The string format of the UPID is \"<asid>:<pid>:<start_time>\", where asid is the "
+            "The string format of the UPID is `asid:pid:start_time`, where asid is the "
             "Pixie Agent unique ID "
             "that uniquely determines which Pixie Agent traces this UPID, pid is the process ID "
             "from the host, and "
             "start_time is the unix time the process started.")
         .Example("df.upid_str = px.upid_to_string(df.upid)")
-        .Arg("upid", "The UPID to strinify.")
+        .Arg("upid", "The UPID to stringify.")
         .Returns("The stringified UPID.");
   }
 };
@@ -1000,11 +1000,11 @@ class ContainerIDToContainerStatusUDF : public ScalarUDF {
 
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Get the status of the container given the container ID.")
-        .Details(R"doc(Get the status of the container given the container ID.
-            | The status is the K8s state of either 'Running', 'Waiting', 'Terminated' or 'Unknown'.
-            | It may be paired with additional information such as a message and reason explaining
-            | why the container is in that state.
-        )doc")
+        .Details(
+            "Get the status of the container given the container ID. The status is the K8s state "
+            "of either 'Running', 'Waiting', 'Terminated' or 'Unknown'. It may be paired with "
+            "additional information such as a message and reason explaining why the container is "
+            "in that state.")
         .Arg("id", "The ID of the container to get the status of.")
         .Example("df.status = px.container_id_to_status(df.id)")
         .Returns("The status of the container.");
