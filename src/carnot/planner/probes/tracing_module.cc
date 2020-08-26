@@ -88,7 +88,7 @@ Status TraceModule::Init() {
                          std::bind(ReturnHandler::Eval, mutations_ir_, std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  PL_RETURN_IF_ERROR(ret_expr_fn->SetDocString(kUpsertTracepointDocstring));
+  PL_RETURN_IF_ERROR(ret_expr_fn->SetDocString(kRetExprDocstring));
   AddMethod(kRetExprID, ret_expr_fn);
 
   PL_ASSIGN_OR_RETURN(

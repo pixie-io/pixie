@@ -251,7 +251,7 @@ TEST_F(PixieModuleTest, uuint128_conversion_fails_on_invalid_string) {
 }
 
 TEST_F(PixieModuleTest, dataframe_as_attribute) {
-  auto attr_or_s = module_->GetAttribute(ast, PixieModule::kDataframeOpId);
+  auto attr_or_s = module_->GetAttribute(ast, PixieModule::kDataframeOpID);
   ASSERT_OK(attr_or_s);
 
   QLObjectPtr attr_object = attr_or_s.ConsumeValueOrDie();
@@ -259,7 +259,7 @@ TEST_F(PixieModuleTest, dataframe_as_attribute) {
 }
 
 TEST_F(PixieModuleTest, abs_time_test_with_tz) {
-  auto abs_time_or_s = module_->GetMethod(PixieModule::kAbsTimeOpId);
+  auto abs_time_or_s = module_->GetMethod(PixieModule::kAbsTimeOpID);
   ASSERT_OK(abs_time_or_s);
 
   std::shared_ptr<FuncObject> fn = abs_time_or_s.ConsumeValueOrDie();
@@ -278,7 +278,7 @@ TEST_F(PixieModuleTest, abs_time_test_with_tz) {
 }
 
 TEST_F(PixieModuleTest, abs_time_test_expected_time_zone) {
-  auto abs_time_or_s = module_->GetMethod(PixieModule::kAbsTimeOpId);
+  auto abs_time_or_s = module_->GetMethod(PixieModule::kAbsTimeOpID);
   ASSERT_OK(abs_time_or_s);
 
   std::shared_ptr<FuncObject> fn = abs_time_or_s.ConsumeValueOrDie();

@@ -145,7 +145,7 @@ Status Compiler::VerifyGraphHasResultSink(IR* ir) {
         "query does not output a "
         "result, please add a "
         "$0.$1() statement",
-        PixieModule::kPixieModuleObjName, PixieModule::kDisplayOpId);
+        PixieModule::kPixieModuleObjName, PixieModule::kDisplayOpID);
   }
   return Status::OK();
 }

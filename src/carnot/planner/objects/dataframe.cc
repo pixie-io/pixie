@@ -60,13 +60,14 @@ Status Dataframe::Init() {
                          {{"select", "[]"},
                           {"start_time", "0"},
                           {"end_time", absl::Substitute("$0.$1()", PixieModule::kPixieModuleObjName,
-                                                        PixieModule::kNowOpId)}},
+                                                        PixieModule::kNowOpID)}},
                          /* has_variable_len_args */ false,
                          /* has_variable_len_kwargs */ false,
                          std::bind(&DataFrameHandler::Eval, graph(), std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
   AddCallMethod(constructor_fn);
+  PL_RETURN_IF_ERROR(constructor_fn->SetDocString(kDataFrameConstuctorDocString));
   // If the op is null, then don't init the other funcs.
   if (op() == nullptr) {
     return Status::OK();
@@ -79,14 +80,16 @@ Status Dataframe::Init() {
    */
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> mergefn,
-      FuncObject::Create(kMergeOpId, {"right", "how", "left_on", "right_on", "suffixes"},
+      FuncObject::Create(kMergeOpID, {"right", "how", "left_on", "right_on", "suffixes"},
                          {{"suffixes", "['_x', '_y']"}},
                          /* has_variable_len_args */ false,
                          /* has_variable_len_kwargs */ false,
                          std::bind(&JoinHandler::Eval, graph(), op(), std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  AddMethod(kMergeOpId, mergefn);
+
+  PL_RETURN_IF_ERROR(mergefn->SetDocString(kMergeOpDocstring));
+  AddMethod(kMergeOpID, mergefn);
 
   /**
    * # Equivalent to the python method method syntax:
@@ -95,13 +98,14 @@ Status Dataframe::Init() {
    */
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> aggfn,
-      FuncObject::Create(kBlockingAggOpId, {}, {},
+      FuncObject::Create(kBlockingAggOpID, {}, {},
                          /* has_variable_len_args */ false,
                          /* has_variable_len_kwargs */ true,
                          std::bind(&AggHandler::Eval, graph(), op(), std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  AddMethod(kBlockingAggOpId, aggfn);
+  PL_RETURN_IF_ERROR(aggfn->SetDocString(kBlockingAggOpDocstring));
+  AddMethod(kBlockingAggOpID, aggfn);
 
   /**
    * # Equivalent to the python method method syntax:
@@ -110,12 +114,13 @@ Status Dataframe::Init() {
    */
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> dropfn,
-      FuncObject::Create(kDropOpId, {"columns"}, {}, /* has_variable_len_args */ false,
+      FuncObject::Create(kDropOpID, {"columns"}, {}, /* has_variable_len_args */ false,
                          /* has_variable_len_kwargs */ false,
                          std::bind(&DropHandler::Eval, graph(), op(), std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  AddMethod(kDropOpId, dropfn);
+  PL_RETURN_IF_ERROR(dropfn->SetDocString(kDropOpDocstring));
+  AddMethod(kDropOpID, dropfn);
 
   /**
    * # Equivalent to the python method method syntax:
@@ -124,13 +129,14 @@ Status Dataframe::Init() {
    */
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> limitfn,
-      FuncObject::Create(kLimitOpId, {"n"}, {{"n", "5"}},
+      FuncObject::Create(kLimitOpID, {"n"}, {{"n", "5"}},
                          /* has_variable_len_args */ false,
                          /* has_variable_len_kwargs */ false,
                          std::bind(&LimitHandler::Eval, graph(), op(), std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  AddMethod(kLimitOpId, limitfn);
+  PL_RETURN_IF_ERROR(limitfn->SetDocString(kLimitOpDocstring));
+  AddMethod(kLimitOpID, limitfn);
 
   /**
    *
@@ -147,16 +153,20 @@ Status Dataframe::Init() {
                      std::bind(&SubscriptHandler::Eval, graph(), op(), std::placeholders::_1,
                                std::placeholders::_2, std::placeholders::_3),
                      ast_visitor()));
+  // TODO(philkuz) figure out how to combine these.
+  PL_RETURN_IF_ERROR(subscript_fn->SetDocString(kKeepOpDocstring));
+  PL_RETURN_IF_ERROR(subscript_fn->SetDocString(kFilterOpDocstring));
   AddSubscriptMethod(subscript_fn);
 
   std::shared_ptr<FuncObject> group_by_fn(
-      new FuncObject(kGroupByOpId, {"by"}, {},
+      new FuncObject(kGroupByOpID, {"by"}, {},
                      /* has_variable_len_args */ false,
                      /* has_variable_len_kwargs */ false,
                      std::bind(&GroupByHandler::Eval, graph(), op(), std::placeholders::_1,
                                std::placeholders::_2, std::placeholders::_3),
                      ast_visitor()));
-  AddMethod(kGroupByOpId, group_by_fn);
+  PL_RETURN_IF_ERROR(group_by_fn->SetDocString(kGroupByOpDocstring));
+  AddMethod(kGroupByOpID, group_by_fn);
 
   /**
    * # Equivalent to the python method method syntax:
@@ -165,12 +175,13 @@ Status Dataframe::Init() {
    */
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> union_fn,
-      FuncObject::Create(kUnionOpId, {"objs"}, {}, /* has_variable_len_args */ false,
+      FuncObject::Create(kUnionOpID, {"objs"}, {}, /* has_variable_len_args */ false,
                          /* has_variable_len_kwargs */ false,
                          std::bind(&UnionHandler::Eval, graph(), op(), std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  AddMethod(kUnionOpId, union_fn);
+  PL_RETURN_IF_ERROR(union_fn->SetDocString(kUnionOpDocstring));
+  AddMethod(kUnionOpID, union_fn);
 
   /**
    * # Equivalent to the python method syntax:
@@ -179,13 +190,14 @@ Status Dataframe::Init() {
    */
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> rolling_fn,
-      FuncObject::Create(kRollingOpId, {"window", "on"}, {{"on", "'time_'"}},
+      FuncObject::Create(kRollingOpID, {"window", "on"}, {{"on", "'time_'"}},
                          /* has_variable_len_args */ false,
                          /* has_variable_len_kwargs */ false,
                          std::bind(&RollingHandler::Eval, graph(), op(), std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  AddMethod(kRollingOpId, rolling_fn);
+  PL_RETURN_IF_ERROR(rolling_fn->SetDocString(kRollingOpDocstring));
+  AddMethod(kRollingOpID, rolling_fn);
 
   PL_ASSIGN_OR_RETURN(auto md, MetadataObject::Create(op(), ast_visitor()));
   return AssignAttribute(kMetadataAttrName, md);

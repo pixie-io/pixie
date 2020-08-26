@@ -502,7 +502,7 @@ Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstPtr& assign_target,
 
   // Maps can only assign to the same table as the input table when of the form:
   // df['foo'] = df['bar'] + 2
-  OperatorContext op_context{{parent_df->op()}, Dataframe::kMapOpId, {assign_name_string}};
+  OperatorContext op_context{{parent_df->op()}, Dataframe::kMapOpID, {assign_name_string}};
   PL_ASSIGN_OR_RETURN(auto expr_obj, Process(expr_node, op_context));
   PL_ASSIGN_OR_RETURN(ExpressionIR * expr_val,
                       GetArgAs<ExpressionIR>(expr_obj, "assignment value"));
@@ -710,7 +710,7 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
 
 Status ASTVisitorImpl::ValidateSubscriptValue(const pypa::AstExpr& node,
                                               const OperatorContext& op_context) {
-  if (op_context.operator_name != Dataframe::kMapOpId) {
+  if (op_context.operator_name != Dataframe::kMapOpID) {
     return Status::OK();
   }
   switch (node->type) {

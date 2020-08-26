@@ -5,6 +5,8 @@ import (
 	re "regexp"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+
 	"pixielabs.ai/pixielabs/src/carnot/docspb"
 	"pixielabs.ai/pixielabs/src/utils"
 )
@@ -380,6 +382,12 @@ const TracepointDecorator = "tracepoint_decorator"
 // TracepointFields is the topic for the tracepoint fields.
 const TracepointFields = "tracepoint_fields"
 
+// CompileTimeFns is the topic for functions that execute at compile time.
+const CompileTimeFns = "compile_time_fn"
+
+// DataFrameOps topic is for dataframe operations.
+const DataFrameOps = "dataframe_ops"
+
 // Parses the docstring and writes the result to the structured docs.
 func parseDocstringAndWrite(outDocs *docspb.StructuredDocs, rawDocstring string, name string) error {
 	topic := getTopic(rawDocstring)
@@ -413,6 +421,8 @@ func parseDocstringAndWrite(outDocs *docspb.StructuredDocs, rawDocstring string,
 			Body:    genDocString.body,
 			FuncDoc: genDocString.function,
 		})
+	} else if topic == DataFrameOps || topic == CompileTimeFns {
+		log.Warnf("'%s' not yet supported", topic)
 	} else {
 		return fmt.Errorf("topic not found %s", topic)
 	}

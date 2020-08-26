@@ -42,16 +42,246 @@ class Dataframe : public QLObject {
    */
   IR* graph() const { return graph_; }
 
+  inline static constexpr char kDataFrameConstuctorDocString[] = R"doc(
+  Setups up a DataFrame object from a table.
+
+  Sets up the loading procedure of the table into the rest of the execution engine.
+  The returned value can be transformed, aggregated and filtered using the DataFrame
+  methods.
+
+  Note that we are not actually loading data until the entire query is compiled, meaning
+  that running this by itself won't do anything until a full pipeline is constructed.
+
+  DataFrame is able to load in any set of tables. See `px.GetSchemas()` for a list of tables and
+  the columns that can be loaded.
+
+  :topic: dataframe_ops
+
+  Args:
+    table (string): The table name to load.
+    select (Union[str,List[str]]): The columns of the table to load. Leave empty if you
+      want to select all.
+    start_time (px.Time): The earliest timestamp of data to load. Can be a relative time
+      ie "-5m" or an absolute time in the following format "2020-07-13 18:02:5.00 +0000".
+    end_time (px.Time): The last timestamp of data to load. Can be a relative time
+      ie "-5m" or an absolute time in the following format "2020-07-13 18:02:5.00 +0000".
+
+  Returns:
+    px.DataFrame: DataFrame with the specified columns removed.
+  )doc";
+
   // Method names.
-  inline static constexpr char kMapOpId[] = "map";
-  inline static constexpr char kDropOpId[] = "drop";
-  inline static constexpr char kFilterOpId[] = "filter";
-  inline static constexpr char kBlockingAggOpId[] = "agg";
-  inline static constexpr char kLimitOpId[] = "head";
-  inline static constexpr char kMergeOpId[] = "merge";
-  inline static constexpr char kGroupByOpId[] = "groupby";
-  inline static constexpr char kUnionOpId[] = "append";
-  inline static constexpr char kRollingOpId[] = "rolling";
+  inline static constexpr char kMapOpID[] = "map";
+  inline static constexpr char kDropOpID[] = "drop";
+  inline static constexpr char kDropOpDocstring[] = R"doc(
+  Drops the specified columns from the DataFrame.
+
+  Returns a DataFrame with the specified columns dropped. Useful for removing
+  columns you don't want to see in the final table result.  See [keep](#keep) on how
+  to specify which columns to keep.
+
+  :topic: dataframe_ops
+
+  Args:
+    columns (Union[str,List[str]]): DataFrame columns to drop, either as a string
+      or a list.
+
+  Returns:
+    px.DataFrame: DataFrame with the specified columns removed.
+  )doc";
+  inline static constexpr char kKeepOpDocstring[] = R"doc(
+  Keeps only the specified columns.
+
+  Returns a DataFrame with only the specified columns. Useful for pruning
+  columns to a small set before data is displayed. See `drop()` on how to drop
+  specific columns instead.
+
+  :topic: dataframe_ops
+
+  Args:
+    columns (List[str]): DataFrame columns to keep.
+
+  Returns:
+    px.DataFrame: DataFrame with the specified columns removed.
+  )doc";
+
+  inline static constexpr char kFilterOpID[] = "filter";
+  // TODO(philkuz) update with the UDF docs link.
+  inline static constexpr char kFilterOpDocstring[] = R"doc(
+  Returns a DataFrame with only those rows that match the condition.
+
+  Filters for the rows in the DataFrame that match the boolean condition. Will error
+  out if you don't pass in a boolean expression. The functions available are defined in
+  [UDFs](/udfs).
+
+  :topic: dataframe_ops
+
+  Args:
+    key (bool): DataFrame expression to evaluate to a bool on each row. Rows that caus
+      the expression to evaluate to true will be kept, otherwise they'll be removed.
+
+  Returns:
+    px.DataFrame: DataFrame with only those rows that return True for the expression.
+  )doc";
+  inline static constexpr char kBlockingAggOpID[] = "agg";
+  // TODO(philkuz) update with the UDA docs link.
+  inline static constexpr char kBlockingAggOpDocstring[] = R"doc(
+  Aggregates the data based on the expressions.
+
+  Computes the aggregate expressions on the data. If the preceding operator
+  is a groupby, then we evaluate the aggregate expression in each group. If not, we
+  calculate the aggregate expression using all of the preceding data. If no arguments
+  specified and the call follows a grouped DataFrame, then agg() returns the unique groups.
+  If following a non-grouped DataFrame agg() with no args will yield a compilation error.
+
+  Each aggregate expression is simply the aggregate function applied to a column, formatted
+  as `<out_col_name>=("<column_name>", <function>)`. A list of functions are available in the
+  [UDA docs](/udas.)
+
+  Examples:
+    # Group by UPID and calculate maximum user time for the each
+    # UPID group.
+    df = px.DataFrame('process_stats')
+    df = df.groupby('upid').agg(cpu_utime=('cpu_utime_ns', px.max))
+
+
+  :topic: dataframe_ops
+
+  Args:
+    **kwargs (Tuple[string, AggFn]): The column, aggregate function pair that make up the
+      expression to apply, assigned to the output column name. `<out_col_name>=("<column_name>", <function>)`.
+      If this value is empty, it will return the unique groups in the previous DataFrame.
+
+  Returns:
+    px.DataFrame: DataFrame with aggregated expressions evaluated containing the groups (if any)
+    followed by the output column aggregate expression names.
+  )doc";
+  inline static constexpr char kLimitOpID[] = "head";
+  inline static constexpr char kLimitOpDocstring[] = R"doc(
+  Return the first n rows.
+
+  Returns a DataFrame with the first n rows of data.
+
+  :topic: dataframe_ops
+
+  Args:
+    n (int): The number of rows to return. If not set, default is 5.
+
+  Returns:
+    px.DataFrame: DataFrame with the first n rows.
+  )doc";
+
+  inline static constexpr char kMergeOpID[] = "merge";
+  inline static constexpr char kMergeOpDocstring[] = R"doc(
+  Merges the input DataFrame with this one using a database-style join.
+
+  Joins this DataFrame with the passed in right DataFrame according to the specified Join type.
+  The DataFrame that we apply this on is the left DataFrame. The one passed in as an argument
+  is the right DataFrame. If the join keys do not have the same type, this will error out.
+
+  Examples:
+    # Group by UPID and calculate maximum user time for the each
+    # UPID group.
+    left_df = px.DataFrame('process_stats', start_time='-10s')
+    left_df = left_df.groupby('upid').agg(cpu_utime=('cpu_utime_ns', px.max))
+    right_df = px.DataFrame('http_events', start_time='-10s)
+    right_df = right_df.groupby('upid').agg(count=('http_resp_body', px.count))
+    df = left_df.merge(right_df, how='inner', left_on='upid', right_on='upid',suffixes=['', '_x'])
+
+    # df relation = ['upid', 'cpu_utime', 'upid_x', 'count']
+
+
+  :topic: dataframe_ops
+
+  Args:
+    right (px.DataFrame):
+    how (['inner', 'outer', 'left', 'right'], default 'inner'): the Type of merge to perform.
+      * left: use the keys from the left DataFrame.
+    left_on (string): Column name from this DataFrame.
+    right_on (string): Column name from the right DataFarme to join on. Must be the same type as the `left_on` column.
+    suffixes (Tuple[string, string], default ['_x', '_y']): The suffixes to apply to duplicate columns.
+
+  Returns:
+    px.DataFrame: Merged DataFrame with the relation
+    [left_join_col, ...remaining_left_columns, ...remaining_right_columns].
+  )doc";
+  inline static constexpr char kGroupByOpID[] = "groupby";
+  inline static constexpr char kGroupByOpDocstring[] = R"doc(
+  Groups the data in preparation for an aggregate.
+
+
+  Groups the data by the unique values in the passed in columns. At the current time we do not support
+  standalone groupings, you must always follow the groupby() call with a call to [agg()](#agg).
+
+  Examples:
+    # Group by UPID and calculate maximum user time for the each
+    # UPID group.
+    df = px.DataFrame('process_stats')
+    df = df.groupby('upid').agg(cpu_utime=('cpu_utime_ns', px.max))
+
+
+  :topic: dataframe_ops
+
+  Args:
+    columns (Union[str,List[str]]): DataFrame columns to group by, either as a string
+      or a list.
+
+  Returns:
+    px.DataFrame: Grouped DataFrame. Must be followed by a call to `agg()`.
+  )doc";
+  inline static constexpr char kUnionOpID[] = "append";
+
+  inline static constexpr char kUnionOpDocstring[] = R"doc(
+  Unions the passed in dataframes with this DataFrame.
+
+  Unions the rows of the passed in DataFrames with this DataFrame. The passed
+  in DataFrames. must have the same relation or `append` will throw a compilation error.
+  Use `merge` to combine DataFrames with different relations.
+
+  If there is a time column in the relation, `append` sorts the Unioned data by time.
+  If there is no time column, then append will simply return a DataFrame with each
+  DataFrame stacked on the other.
+
+  Each aggregate expression is simply the aggregate function applied to a column, formatted
+  as `<out_col_name>=("<column_name>", <function>)`. A list of functions are available in the
+  [UDA docs](/udas.)
+
+  Examples:
+    df1 = px.DataFrame('process_stats', start_time='-10m', end_time='-9m')
+    df2 = px.DataFrame('process_stats', start_time='-1m'
+
+    df = df1.append(df2)
+
+
+  :topic: dataframe_ops
+
+  Args:
+    other (px.DataFrame): The DataFrame to union with this one, relation must be the same.
+
+  Returns:
+    px.DataFrame: This DataFrame unioned with the passed in argument.
+  )doc";
+  inline static constexpr char kRollingOpID[] = "rolling";
+  inline static constexpr char kRollingOpDocstring[] = R"doc(
+  Groups the data by rolling windows.
+
+  Rolls up data into groups based on the rolling window that it belongs to. Used to define
+  window aggregates, the streaming analog of batch aggregates.
+
+  Examples:
+    df = px.DataFrame('process_stats')
+    df = df.rolling('2s').agg(...)
+
+
+  :topic: dataframe_ops
+
+  Args:
+    window (px.Duration): the size of the rolling window.
+
+  Returns:
+    px.DataFrame: DataFrame grouped into rolling windows. Must apply either a groupby or an aggregate on the
+    returned DataFrame.
+  )doc";
   // Attribute names.
   inline static constexpr char kMetadataAttrName[] = "ctx";
 
