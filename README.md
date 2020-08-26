@@ -44,7 +44,7 @@ We're building up Pixie for broad use by the end of 2020. If you are interested,
 Visit our [product page](https://work.withpixie.ai/) and signup with your google account.
 
 
-#### Install CLI 
+#### Install CLI
 
 Run the command below:
 
@@ -61,11 +61,11 @@ If you don't already have a K8s cluster available you can:
   - Review our [docs](https://docs.pixielabs.ai/installing-pixie/quick-start/) for alternate options.
 - Start a demo-app
   - Deploy [Weaveworks'](https://www.weave.works/) [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by running `px demo deploy px-sock-shop`
- 
+
 
 #### 🚀 Deploy Pixie
 
-Deploy the Pixie Platform in your K8s cluster by runnning: 
+Deploy the Pixie Platform in your K8s cluster by running:
 
 `px deploy`
 <br>
@@ -103,9 +103,9 @@ Check out our [install guides](https://docs.pixielabs.ai/installing-pixie/instal
 
 <img src="./assets/live_7apr20.gif" alt="CLI Demo" width="425" align="right">
 
-The Pixie Platform auto-generates "Live View" dashboard to visualize script results. 
+The Pixie Platform auto-generates "Live View" dashboard to visualize script results.
 
-You can view them by clicking on the URLs prompted by `px` or by visiting: 
+You can view them by clicking on the URLs prompted by `px` or by visiting:
 
 `https://work.withpixie.ai/live`
 
@@ -116,7 +116,7 @@ You can view them by clicking on the URLs prompted by `px` or by visiting:
 
 <img src="./assets/./cli_demo.svg" alt="CLI Demo" width="425" align="right">
 
-You can transform and pipe your script results into any other system or workflow by consuming `px` results with tools like [jq](https://stedolan.github.io/jq/). 
+You can transform and pipe your script results into any other system or workflow by consuming `px` results with tools like [jq](https://stedolan.github.io/jq/).
 
 Example with http_data:
 
@@ -138,7 +138,7 @@ More examples [here](pxl_scripts)
 
 ## Open Source
 
-Along with building Pixie as a freemium SaaS product, contributing open and accessible projects to the broader developer community is integral to our roadmap. 
+Along with building Pixie as a freemium SaaS product, contributing open and accessible projects to the broader developer community is integral to our roadmap.
 
 We plan to contribute in two ways:
 
@@ -178,4 +178,6 @@ We're heads down building Pixie and excited to share it broadly with the communi
 
 Pixie Community is the free offering of Pixie's proprietary SaaS product catalogue.
 
-Pixie Platform components such as Pxl Scripts, Pixie CLI and eBPF based Data Collectors will be licensed under the Apache License, Version 2.0. Contribution of these are planned for Oct 2020.
+Our [pxl_scripts](PXL Scripts) are licensed under [Apache License, Version 2.0](pxl_scripts/LICENSE.md).
+
+Other Pixie Platform components such as Pixie CLI and eBPF based Data Collectors will also be licensed under the Apache License, Version 2.0. Contribution of these are planned for Oct 2020.
