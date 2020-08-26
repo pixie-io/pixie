@@ -1236,6 +1236,19 @@ StatusOr<bool> PruneUnconnectedOperatorsRule::Apply(IRNode* ir_node) {
   return true;
 }
 
+bool HasStreamingAncestor(OperatorIR* op) {
+  if (Match(op, MemorySource())) {
+    return static_cast<MemorySourceIR*>(op)->streaming();
+  }
+  auto parents = op->parents();
+  for (auto parent : parents) {
+    if (HasStreamingAncestor(parent)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 StatusOr<bool> AddLimitToBatchResultSinkRule::Apply(IRNode* ir_node) {
   if (!compiler_state_->has_max_output_rows_per_table()) {
     return false;
@@ -1243,6 +1256,10 @@ StatusOr<bool> AddLimitToBatchResultSinkRule::Apply(IRNode* ir_node) {
   if (!Match(ir_node, ResultSink())) {
     return false;
   }
+  if (HasStreamingAncestor(static_cast<OperatorIR*>(ir_node))) {
+    return false;
+  }
+
   auto mem_sink = static_cast<MemorySinkIR*>(ir_node);
   DCHECK_EQ(mem_sink->parents().size(), 1UL) << "There should be exactly one parent.";
   auto parent = mem_sink->parents()[0];

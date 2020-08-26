@@ -14,7 +14,9 @@ message PlanOptions {
   // Execute the query and show the execution plan for the query, along with
   // query execution metrics.
   bool analyze = 3;
-  // Max number of output rows per table/
+  // Max number of output rows per table.
+  // This limit applies to the entire result for batch tables, and per window on windowed
+  // streaming queries.
   int64 max_output_rows_per_table = 4;
 
   // Reserved for prior fields (distributed).

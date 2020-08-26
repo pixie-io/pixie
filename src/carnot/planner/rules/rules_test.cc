@@ -2373,6 +2373,22 @@ TEST_F(RulesTest, AddLimitToBatchResultSinkRuleTest_skip_if_no_limit) {
   EXPECT_FALSE(result.ValueOrDie());
 }
 
+TEST_F(RulesTest, AddLimitToBatchResultSinkRuleTest_skip_if_streaming) {
+  MemorySourceIR* src = MakeMemSource(MakeRelation());
+  src->set_streaming(true);
+  FilterIR* filter = MakeFilter(src);
+  MakeMemSink(filter, "foo", {});
+
+  auto compiler_state =
+      std::make_unique<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now,
+                                      "result_addr", "result_ssl_targetname");
+
+  AddLimitToBatchResultSinkRule rule(compiler_state.get());
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_FALSE(result.ValueOrDie());
+}
+
 TEST_F(RulesTest, PropagateExpressionAnnotationsRule_noop) {
   Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
   MemorySourceIR* src = MakeMemSource(relation);
