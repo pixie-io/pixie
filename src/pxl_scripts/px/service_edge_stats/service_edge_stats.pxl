@@ -40,22 +40,6 @@ split_series_name = 'k8s'
 ###############################################################
 
 
-def svc_edge_stats():
-    """Top level svc info function used to test live view.
-
-    For each edge in the svc graph that matches the filter, we calculate the latency,
-    error rate, and throughput as a time-series as well as an avg over the examined
-    data window.
-
-    Notes:
-    1. Will be deleted in the future when live view is done.
-    """
-    px.display(svc_edge_let(
-        start, requesting_svc, responding_svc), 'test')
-    px.display(summary_edge_let(start, requesting_svc,
-                                responding_svc), 'summary')
-
-
 # ----------------------------------------------------------------
 # Visualization functions:
 #
