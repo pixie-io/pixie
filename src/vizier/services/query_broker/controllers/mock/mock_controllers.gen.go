@@ -53,6 +53,19 @@ func (mr *MockPlannerMockRecorder) Plan(planState, req interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Plan", reflect.TypeOf((*MockPlanner)(nil).Plan), planState, req)
 }
 
+// CompileMutations mocks base method
+func (m *MockPlanner) CompileMutations(planState *distributedpb.LogicalPlannerState, request *plannerpb.CompileMutationsRequest) (*plannerpb.CompileMutationsResponse, error) {
+	ret := m.ctrl.Call(m, "CompileMutations", planState, request)
+	ret0, _ := ret[0].(*plannerpb.CompileMutationsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CompileMutations indicates an expected call of CompileMutations
+func (mr *MockPlannerMockRecorder) CompileMutations(planState, request interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompileMutations", reflect.TypeOf((*MockPlanner)(nil).CompileMutations), planState, request)
+}
+
 // Free mocks base method
 func (m *MockPlanner) Free() {
 	m.ctrl.Call(m, "Free")

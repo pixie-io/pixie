@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -18,7 +19,6 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	"pixielabs.ai/pixielabs/src/carnotpb"
-	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 
 	logicalplanner "pixielabs.ai/pixielabs/src/carnot/planner"
@@ -37,13 +37,15 @@ const healthCheckInterval = 5 * time.Second
 type contextKey string
 
 const (
-	execStartKey       = contextKey("execStart")
-	compileCompleteKey = contextKey("compileDone")
+	execStartKey               = contextKey("execStart")
+	compileCompleteKey         = contextKey("compileDone")
+	transferResultChunkTimeout = 5 * time.Second
 )
 
 // Planner describes the interface for any planner.
 type Planner interface {
 	Plan(planState *distributedpb.LogicalPlannerState, req *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error)
+	CompileMutations(planState *distributedpb.LogicalPlannerState, request *plannerpb.CompileMutationsRequest) (*plannerpb.CompileMutationsResponse, error)
 	Free()
 }
 
@@ -66,8 +68,6 @@ type Server struct {
 	env           querybrokerenv.QueryBrokerEnv
 	agentsTracker AgentsTracker
 	natsConn      *nats.Conn
-	newExecutor   func(*nats.Conn, uuid.UUID) Executor
-	executors     map[uuid.UUID]Executor
 	// Mutex is used for managing query executor instances.
 	mux sync.Mutex
 
@@ -76,60 +76,47 @@ type Server struct {
 	hcTime   time.Time
 
 	mdtp            metadatapb.MetadataTracepointServiceClient
-	udfInfo         udfspb.UDFInfo
-	resultForwarder QueryResultForwarderOld
+	resultForwarder QueryResultForwarder
+
+	planner Planner
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker, mds metadatapb.MetadataTracepointServiceClient, natsConn *nats.Conn) (*Server, error) {
-	return NewServerWithExecutor(env, agentsTracker /* queryResultForwarder*/, nil, mds, natsConn, NewQueryExecutor)
-}
-
-// NewServerWithExecutor is NewServer with an functor for executor.
-func NewServerWithExecutor(env querybrokerenv.QueryBrokerEnv,
-	agentsTracker AgentsTracker,
-	resultForwarder QueryResultForwarderOld,
+func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker,
 	mds metadatapb.MetadataTracepointServiceClient,
-	natsConn *nats.Conn,
-	newExecutor func(*nats.Conn, uuid.UUID) Executor) (*Server, error) {
+	natsConn *nats.Conn) (*Server, error) {
 
 	var udfInfo udfspb.UDFInfo
 	if err := loadUDFInfo(&udfInfo); err != nil {
 		return nil, err
 	}
 
+	return NewServerWithForwarderAndPlanner(env, agentsTracker, NewQueryResultForwarder(), mds,
+		natsConn, logicalplanner.New(&udfInfo))
+}
+
+// NewServerWithForwarderAndPlanner is NewServer with a QueryResultForwarder and a planner generating func.
+func NewServerWithForwarderAndPlanner(env querybrokerenv.QueryBrokerEnv,
+	agentsTracker AgentsTracker,
+	resultForwarder QueryResultForwarder,
+	mds metadatapb.MetadataTracepointServiceClient,
+	natsConn *nats.Conn,
+	planner Planner) (*Server, error) {
+
 	s := &Server{
 		env:             env,
 		agentsTracker:   agentsTracker,
 		resultForwarder: resultForwarder,
-
-		natsConn:    natsConn,
-		newExecutor: newExecutor,
-		executors:   make(map[uuid.UUID]Executor),
-
-		mdtp:    mds,
-		udfInfo: udfInfo,
-	}
-	// TODO(nserrino): update this logic when batch Kelvin API is deprecated and s.executors
-	// gets subsumed by s.resultForwarder.
-	if s.resultForwarder == nil {
-		s.resultForwarder = NewQueryResultForwarderOld(s.executors)
+		natsConn:        natsConn,
+		mdtp:            mds,
+		planner:         planner,
 	}
 	return s, nil
 }
 
-func (s *Server) trackExecutorForQuery(executor Executor) {
-	s.mux.Lock()
-	defer s.mux.Unlock()
-
-	s.executors[executor.GetQueryID()] = executor
-}
-
-func (s *Server) deleteExecutorForQuery(queryID uuid.UUID) {
-	s.mux.Lock()
-	defer s.mux.Unlock()
-
-	delete(s.executors, queryID)
+// Close frees the planner memory in the server.
+func (s *Server) Close() {
+	s.planner.Free()
 }
 
 func failedStatusQueryResponse(queryID uuid.UUID, status *statuspb.Status) *querybrokerpb.VizierQueryResponse {
@@ -141,13 +128,28 @@ func failedStatusQueryResponse(queryID uuid.UUID, status *statuspb.Status) *quer
 	return queryResponse
 }
 
-// ExecuteQueryWithPlanner executes a query with the provided planner.
-func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.QueryRequest, queryID uuid.UUID, planner Planner, planOpts *planpb.PlanOptions) (*queryresultspb.QueryResult, *statuspb.Status, error) {
+// runQuery executes a query and streams the results to the client.
+// returns a bool for whether the query timed out and an error.
+func (s *Server) runQuery(ctx context.Context, req *plannerpb.QueryRequest, queryID uuid.UUID,
+	planOpts *planpb.PlanOptions, resultStream chan *vizierpb.ExecuteScriptResponse,
+	doneCh chan bool) (bool, error) {
+
+	log.WithField("query_id", queryID).Infof("Running script")
+	start := time.Now()
+	defer func(t time.Time) {
+		duration := time.Now().Sub(t)
+		log.WithField("query_id", queryID).WithField("duration", duration).Info("Executed query")
+	}(start)
+
+	defer func() {
+		close(doneCh)
+	}()
+
 	ctx = context.WithValue(ctx, execStartKey, time.Now())
 
 	info := s.agentsTracker.GetAgentInfo()
 	if info == nil {
-		return nil, nil, status.Error(codes.Unavailable, "not ready yet")
+		return /*timeout*/ false, status.Error(codes.Unavailable, "not ready yet")
 	}
 	plannerState := &distributedpb.LogicalPlannerState{
 		DistributedState:    info.DistributedState(),
@@ -155,25 +157,21 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 		ResultAddress:       s.env.Address(),
 		ResultSSLTargetName: s.env.SSLTargetName(),
 	}
-	log.WithField("query_id", queryID).
-		Infof("Running script")
-	start := time.Now()
-	defer func(t time.Time) {
-		duration := time.Now().Sub(t)
-		log.WithField("query_id", queryID).WithField("duration", duration).Info("Executed query")
-	}(start)
 
 	// Compile the query plan.
-	plannerResultPB, err := planner.Plan(plannerState, req)
+	plannerResultPB, err := s.planner.Plan(plannerState, req)
+
 	if err != nil {
-		return nil, nil, err
+		// send the compilation error and return nil.
+		return /*timeout*/ false, err
 	}
 
-	ctx = context.WithValue(ctx, compileCompleteKey, time.Now())
+	compilationTimeNs := time.Now().Sub(start).Nanoseconds()
 
 	// When the status is not OK, this means it's a compilation error on the query passed in.
 	if plannerResultPB.Status.ErrCode != statuspb.OK {
-		return nil, plannerResultPB.Status, nil
+		resultStream <- StatusToVizierResponse(queryID, plannerResultPB.Status)
+		return /*timeout*/ false, nil
 	}
 
 	// Plan describes the mapping of agents to the plan that should execute on them.
@@ -184,77 +182,54 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 		u, err := uuid.FromString(carnotID)
 		if err != nil {
 			log.WithError(err).Fatalf("Couldn't parse uuid from agent id \"%s\"", carnotID)
-			return nil, nil, err
+			return /*timeout*/ false, err
 		}
 		planMap[u] = agentPlan
 	}
 
-	queryExecutor := s.newExecutor(s.natsConn, queryID)
-
-	s.trackExecutorForQuery(queryExecutor)
-	defer s.deleteExecutorForQuery(queryID)
-
-	if err := queryExecutor.ExecuteQuery(planMap, planOpts.Analyze); err != nil {
-		return nil, nil, err
-	}
-
-	queryResult, err := queryExecutor.WaitForCompletion()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// TODO(zasgar): Cleanup this code to push the distrbuted plan into
-	// ExecuteQuery directly and do the mapping in there.
-	if plannerState.PlanOptions.Explain {
-		if err := AddQueryPlanToResult(queryResult, plan, planMap, &queryResult.AgentExecutionStats); err != nil {
-			log.WithError(err).Error("Failed to add query plan to result")
-		}
-	}
-
-	execStartTime := ctx.Value(execStartKey).(time.Time)
-	compilationCompleteTime := ctx.Value(compileCompleteKey).(time.Time)
-	if queryResult != nil {
-		queryResult.TimingInfo.CompilationTimeNs = compilationCompleteTime.Sub(execStartTime).Nanoseconds()
-	}
-
-	if queryResult != nil {
-		if err := annotateResultWithSemanticTypes(queryResult, planMap); err != nil {
-			return nil, nil, err
-		}
-	}
-
-	return queryResult, nil, nil
-}
-
-func annotateResultWithSemanticTypes(result *queryresultspb.QueryResult, planMap map[uuid.UUID]*planpb.Plan) error {
-	resultGRPCTables := make(map[string]*planpb.GRPCSinkOperator_ResultTable)
+	queryPlanTableID := uuid.NewV4().String()
+	tableNameToIDMap := make(map[string]string)
 
 	for _, plan := range planMap {
 		for _, fragment := range plan.Nodes {
 			for _, node := range fragment.Nodes {
 				if node.Op.OpType == planpb.GRPC_SINK_OPERATOR {
 					if output := node.Op.GetGRPCSinkOp().GetOutputTable(); output != nil {
-						resultGRPCTables[output.TableName] = output
+						tableNameToIDMap[output.TableName] = uuid.NewV4().String()
 					}
 				}
 			}
 		}
 	}
 
-	for _, table := range result.Tables {
-		outputTable, ok := resultGRPCTables[table.Name]
-		if !ok {
-			for _, col := range table.Relation.Columns {
-				col.ColumnSemanticType = typespb.ST_NONE
-			}
-			log.Infof("Table '%s' has no corresponding GRPCSinkOperator", table.Name)
-			return nil
-		}
-		for i, col := range table.Relation.Columns {
-			col.ColumnSemanticType = outputTable.ColumnSemanticTypes[i]
+	tableRelationResponses, err := TableRelationResponses(queryID, tableNameToIDMap, planMap)
+	for _, resp := range tableRelationResponses {
+		resultStream <- resp
+	}
+
+	err = s.resultForwarder.RegisterQuery(queryID, tableNameToIDMap)
+	if err != nil {
+		return /*timeout*/ false, err
+	}
+	err = LaunchQuery(queryID, s.natsConn, planMap, planOpts.Analyze)
+	if err != nil {
+		s.resultForwarder.DeleteQuery(queryID)
+		return /*timeout*/ false, err
+	}
+
+	// Send over the query plan responses, if applicable.
+	var queryPlanOpts *QueryPlanOpts
+	if planOpts.Explain {
+		resultStream <- QueryPlanRelationResponse(queryID, queryPlanTableID)
+		queryPlanOpts = &QueryPlanOpts{
+			TableID: queryPlanTableID,
+			Plan:    plan,
+			PlanMap: planMap,
 		}
 	}
-	return nil
+
+	return s.resultForwarder.StreamResults(ctx, queryID, resultStream,
+		compilationTimeNs, queryPlanOpts)
 }
 
 func loadUDFInfo(udfInfoPb *udfspb.UDFInfo) error {
@@ -266,89 +241,79 @@ func loadUDFInfo(udfInfoPb *udfspb.UDFInfo) error {
 	return nil
 }
 
-// executeQuery executes query. This is an internal function to be deprecated soon.
-func (s *Server) executeScript(ctx context.Context, req *plannerpb.QueryRequest) (*querybrokerpb.VizierQueryResponse, error) {
-	// TODO(philkuz) we should move the query id into the api so we can track how queries propagate through the system.
-	queryID := uuid.NewV4()
-
-	flags, err := ParseQueryFlags(req.QueryStr)
-	if err != nil {
-		queryIDPB := utils.ProtoFromUUID(&queryID)
-
-		return &querybrokerpb.VizierQueryResponse{
-			QueryID: queryIDPB,
-			Status: &statuspb.Status{
-				ErrCode: statuspb.INVALID_ARGUMENT,
-				Msg:     err.Error(),
-			},
-		}, nil
-	}
-	planOpts := flags.GetPlanOptions()
-	planner := logicalplanner.New(&s.udfInfo)
-	defer planner.Free()
-
-	qr, status, err := s.ExecuteQueryWithPlanner(ctx, req, queryID, planner, planOpts)
-	if err != nil {
-		return nil, err
-	}
-	if status != nil {
-		return failedStatusQueryResponse(queryID, status), nil
-	}
-
-	return &querybrokerpb.VizierQueryResponse{
-		QueryID:     utils.ProtoFromUUID(&queryID),
-		QueryResult: qr,
-	}, nil
-}
-
 // ReceiveAgentQueryResult gets the query result from an agent and stores the results until all
 // relevant agents have responded.
 func (s *Server) ReceiveAgentQueryResult(ctx context.Context, req *querybrokerpb.AgentQueryResultRequest) (*querybrokerpb.AgentQueryResultResponse, error) {
-	queryIDPB := req.Result.QueryID
-	queryID, err := utils.UUIDFromProto(queryIDPB)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	log.WithField("queryID", queryID.String()).Trace("Got Kelvin Results")
-	setExecutor := func(queryID uuid.UUID) (Executor, bool) {
-		s.mux.Lock()
-		exec, ok := s.executors[queryID]
-		defer s.mux.Unlock()
-		return exec, ok
-	}
-
-	exec, ok := setExecutor(queryID)
-	if !ok {
-		return nil, status.Error(codes.InvalidArgument, "Unexpected/Incorrect queryID")
-	}
-
-	exec.AddResult(req)
-	queryResponse := &querybrokerpb.AgentQueryResultResponse{}
-	return queryResponse, nil
+	// TODO(nserrino): Delete this when the API is deprecated.
+	return nil, fmt.Errorf("ReceiveAgentQueryResult is a deprecated API")
 }
 
-// checkHealth runs the health check and returns (request passed, health check error/nil).
-func (s *Server) checkHealth(ctx context.Context) (bool, error) {
+// checkHealth runs the health check and returns an error if it didn't pass.
+func (s *Server) checkHealth(ctx context.Context) error {
 	checkVersionScript := `import px; px.display(px.Version())`
-	req := plannerpb.QueryRequest{
+	req := &plannerpb.QueryRequest{
 		QueryStr: checkVersionScript,
 	}
-	resp, err := s.executeScript(ctx, &req)
+
+	flags, err := ParseQueryFlags(req.QueryStr)
 	if err != nil {
-		return false, err
+		return status.Error(codes.Unavailable, fmt.Sprintf("error parsing query flags: %v", err))
 	}
-	if resp.Status != nil && resp.Status.ErrCode != statuspb.OK {
-		return false, status.Error(codes.Code(resp.Status.ErrCode), resp.Status.Msg)
+	queryID := uuid.NewV4()
+	planOpts := flags.GetPlanOptions()
+
+	resultStream := make(chan *vizierpb.ExecuteScriptResponse)
+	doneCh := make(chan bool)
+
+	var wg sync.WaitGroup
+	receivedRowBatches := 0
+	receivedRows := int64(0)
+
+	wg.Add(1)
+
+	go func() {
+		defer func() {
+			close(resultStream)
+		}()
+		for {
+			select {
+			case <-time.After(healthCheckInterval):
+				wg.Done()
+				return
+			case <-doneCh:
+				wg.Done()
+				return
+			case result := <-resultStream:
+				if data := result.GetData(); data != nil {
+					if rb := data.GetBatch(); rb != nil {
+						receivedRowBatches++
+						receivedRows += rb.NumRows
+					}
+				}
+			}
+		}
+	}()
+
+	timeout, err := s.runQuery(ctx, req, queryID, planOpts, resultStream, doneCh)
+	if err != nil {
+		return status.Error(codes.Unavailable, fmt.Sprintf("error running query: %v", err))
 	}
-	if resp.QueryResult == nil || len(resp.QueryResult.Tables) != 1 || len(resp.QueryResult.Tables[0].RowBatches) != 1 {
-		return false, status.Error(codes.Unavailable, "results not returned on health check")
+	if timeout {
+		return status.Error(codes.Unavailable, "health check timed out")
 	}
-	if resp.QueryResult.Tables[0].RowBatches[0].NumRows != 1 {
-		return false, status.Error(codes.Unavailable, "bad results on healthcheck")
+
+	wg.Wait()
+
+	if receivedRowBatches == 0 || receivedRows == int64(0) {
+		return status.Error(codes.Unavailable, "results not returned on health check")
 	}
-	// HealthCheck OK.
-	return false, nil
+
+	if receivedRowBatches > 1 || receivedRows > int64(1) {
+		// We expect only one row to be received from this query.
+		return status.Error(codes.Unavailable, "bad results on healthcheck")
+	}
+
+	return nil
 }
 
 func (s *Server) checkHealthCached(ctx context.Context) error {
@@ -358,8 +323,8 @@ func (s *Server) checkHealthCached(ctx context.Context) error {
 	if currentTime.Sub(s.hcTime) < healthCheckInterval {
 		return s.hcStatus
 	}
-	reqOk, status := s.checkHealth(ctx)
-	if !reqOk || status != nil {
+	status := s.checkHealth(ctx)
+	if status != nil {
 		// If the request failed don't cache the results.
 		return status
 	}
@@ -376,6 +341,7 @@ func (s *Server) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierpb.Vizi
 		// Pass.
 		code := int32(codes.OK)
 		if hcStatus != nil {
+			log.WithError(hcStatus).Errorf("Received unhealthy heath check result")
 			s, ok := status.FromError(hcStatus)
 			if !ok {
 				code = int32(codes.Unavailable)
@@ -418,11 +384,9 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 	}
 
 	planOpts := flags.GetPlanOptions()
-	planner := logicalplanner.New(&s.udfInfo)
-	defer planner.Free()
 
 	if req.Mutation {
-		mutationExec := NewMutationExecutor(planner, s.mdtp, s.agentsTracker)
+		mutationExec := NewMutationExecutor(s.planner, s.mdtp, s.agentsTracker)
 
 		status, err := mutationExec.Execute(ctx, req, planOpts)
 		if err != nil {
@@ -451,14 +415,39 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 		return err
 	}
 
-	qr, status, err := s.ExecuteQueryWithPlanner(ctx, convertedReq, queryID, planner, planOpts)
+	resultStream := make(chan *vizierpb.ExecuteScriptResponse)
+	doneCh := make(chan bool)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	var sendErr error
+	go func() {
+		for {
+			select {
+			case <-doneCh:
+				close(resultStream)
+				wg.Done()
+				return
+			case result := <-resultStream:
+				err = srv.Send(result)
+				if err != nil {
+					sendErr = err
+				}
+			}
+		}
+	}()
+
+	timeout, err := s.runQuery(ctx, convertedReq, queryID, planOpts, resultStream, doneCh)
+	wg.Wait()
+
 	if err != nil {
-		return srv.Send(ErrToVizierResponse(queryID, err))
+		return err
 	}
-	if status != nil {
-		return srv.Send(StatusToVizierResponse(queryID, status))
+	if sendErr != nil {
+		return err
 	}
-	if qr == nil {
+	if timeout {
 		resp := &vizierpb.ExecuteScriptResponse{
 			QueryID: queryID.String(),
 			Status: &vizierpb.Status{
@@ -468,64 +457,7 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 		}
 		return srv.Send(resp)
 	}
-
-	// Convert query result into the externally-facing format.
-	for _, table := range qr.Tables {
-		tableID := uuid.NewV4().String()
-
-		// Send schema first.
-		md, err := RelationFromTable(table)
-		if err != nil {
-			return err
-		}
-		md.ID = tableID
-		resp := &vizierpb.ExecuteScriptResponse{
-			QueryID: queryID.String(),
-			Result: &vizierpb.ExecuteScriptResponse_MetaData{
-				MetaData: md,
-			},
-		}
-		err = srv.Send(resp)
-		if err != nil {
-			return err
-		}
-
-		// Send row batches.
-		for i, rb := range table.RowBatches {
-			newRb, err := RowBatchToVizierRowBatch(rb, tableID)
-			if err != nil {
-				return err
-			}
-			if i == len(table.RowBatches)-1 {
-				newRb.Eos = true
-			}
-
-			resp := &vizierpb.ExecuteScriptResponse{
-				QueryID: queryID.String(),
-				Result: &vizierpb.ExecuteScriptResponse_Data{
-					Data: &vizierpb.QueryData{
-						Batch: newRb,
-					},
-				},
-			}
-			err = srv.Send(resp)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	// Send execution stats.
-	stats := QueryResultStatsToVizierStats(qr.ExecutionStats, qr.TimingInfo.CompilationTimeNs)
-	resp := &vizierpb.ExecuteScriptResponse{
-		QueryID: queryID.String(),
-		Result: &vizierpb.ExecuteScriptResponse_Data{
-			Data: &vizierpb.QueryData{
-				ExecutionStats: stats,
-			},
-		},
-	}
-	return srv.Send(resp)
+	return nil
 }
 
 // TransferResultChunk implements the API that allows the query broker receive streamed results
@@ -533,13 +465,14 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResultChunkServer) error {
 	var queryID uuid.UUID
 
-	defer func() {
+	cancelQueryAndReturnErr := func(err error) error {
 		if queryID != uuid.Nil {
 			// Stop the client stream, if it still exists in the result forwarder.
 			// It may have already been cancelled before this point.
 			s.resultForwarder.OptionallyCancelClientStream(queryID)
 		}
-	}()
+		return err
+	}
 
 	sendAndClose := func(success bool, message string) error {
 		err := srv.SendAndClose(&carnotpb.TransferResultChunkResponse{
@@ -556,6 +489,8 @@ func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResu
 		select {
 		case <-srv.Context().Done():
 			return sendAndClose(true, "")
+		case <-time.After(transferResultChunkTimeout):
+			return cancelQueryAndReturnErr(fmt.Errorf("Query %s timed out", queryID.String()))
 		default:
 			msg, err := srv.Recv()
 			// Stream closed from client side.
@@ -563,21 +498,26 @@ func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResu
 				return sendAndClose(true, "")
 			}
 			if err != nil {
-				return status.Errorf(codes.Internal, "Error reading TransferResultChunk stream: %+v", err)
+				return cancelQueryAndReturnErr(
+					status.Errorf(codes.Internal, "Error reading TransferResultChunk stream: %+v", err),
+				)
 			}
 
 			qid, err := utils.UUIDFromProto(msg.QueryID)
 			if err != nil {
-				return status.Error(codes.InvalidArgument, err.Error())
+				return cancelQueryAndReturnErr(status.Error(codes.InvalidArgument, err.Error()))
 			}
 
 			if queryID == uuid.Nil {
 				queryID = qid
 			}
 			if queryID != qid {
-				return status.Errorf(codes.Internal,
-					"Received results from multiple queries in the same TransferResultChunk stream: %s and %s",
-					queryID, qid)
+				return cancelQueryAndReturnErr(
+					status.Errorf(codes.Internal,
+						"Received results from multiple queries in the same TransferResultChunk stream: %s and %s",
+						queryID, qid,
+					),
+				)
 			}
 
 			err = s.resultForwarder.ForwardQueryResult(msg)

@@ -125,6 +125,7 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs.")
 	}
+	defer server.Close()
 
 	// For query broker we bump up the max message size since resuls might be larger than 4mb.
 	maxMsgSize := grpc.MaxRecvMsgSize(8 * 1024 * 1024)

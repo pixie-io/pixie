@@ -8,7 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
-	logicalplanner "pixielabs.ai/pixielabs/src/carnot/planner"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
@@ -25,7 +24,7 @@ type TracepointMap map[string]*TracepointInfo
 
 // MutationExecutor is responsible for running script mutations.
 type MutationExecutor struct {
-	planner           logicalplanner.GoPlanner
+	planner           Planner
 	mdtp              metadatapb.MetadataTracepointServiceClient
 	tracker           AgentsTracker
 	activeTracepoints TracepointMap
@@ -41,7 +40,7 @@ type TracepointInfo struct {
 
 // NewMutationExecutor creates a new mutation executor.
 func NewMutationExecutor(
-	planner logicalplanner.GoPlanner,
+	planner Planner,
 	mdtp metadatapb.MetadataTracepointServiceClient,
 	tracker AgentsTracker) *MutationExecutor {
 	return &MutationExecutor{
