@@ -92,23 +92,7 @@ TEST(LinuxHeadersUtils, ModifyVersion) {
   EXPECT_OK_AND_EQ(ReadFileToString(version_h_filename), expected_contents);
 }
 
-TEST(LinuxHeadersUtils, GenAutoConf) {
-  const std::string kHeadersBase =
-      testing::TestFilePath("src/stirling/utils/testdata/linux-headers");
-  const std::string kConfigFile = testing::TestFilePath("src/stirling/utils/testdata/config");
-
-  TempDir linux_headers_dir;
-
-  std::filesystem::path include_generated_dir = linux_headers_dir.path() / "include/generated";
-  std::filesystem::create_directories(include_generated_dir);
-  std::string autoconf_h_filename = include_generated_dir / "autoconf.h";
-
-  int hz;
-  ASSERT_OK(GenAutoConf(linux_headers_dir.path(), kConfigFile, &hz));
-
-  ASSERT_OK_AND_ASSIGN(std::string contents, ReadFileToString(autoconf_h_filename));
-
-  const std::string kExpectedContents = R"(#define CONFIG_64BIT 1
+const std::string_view kExpectedConfigContents = R"(#define CONFIG_64BIT 1
 #define CONFIG_X86_64 1
 #define CONFIG_X86 1
 #define CONFIG_INSTRUCTION_DECODER 1
@@ -129,7 +113,33 @@ TEST(LinuxHeadersUtils, GenAutoConf) {
 #define CONFIG_OPROFILE_MODULE 1
 )";
 
-  EXPECT_EQ(contents, kExpectedContents);
+std::string PrepareAutoConf(std::filesystem::path linux_headers_dir) {
+  std::filesystem::path include_generated_dir = linux_headers_dir / "include/generated";
+  std::filesystem::create_directories(include_generated_dir);
+  std::string autoconf_h_filename = include_generated_dir / "autoconf.h";
+  return autoconf_h_filename;
+}
+
+TEST(LinuxHeadersUtils, GenAutoConf) {
+  const std::string kConfigFile = testing::TestFilePath("src/stirling/utils/testdata/config");
+
+  TempDir linux_headers_dir;
+  std::string autoconf_h_filename = PrepareAutoConf(linux_headers_dir.path());
+
+  int hz;
+  ASSERT_OK(GenAutoConf(linux_headers_dir.path(), kConfigFile, &hz));
+  ASSERT_OK_AND_EQ(ReadFileToString(autoconf_h_filename), kExpectedConfigContents);
+}
+
+TEST(LinuxHeadersUtils, GenAutoConfGz) {
+  const std::string kConfigFile = testing::TestFilePath("src/stirling/utils/testdata/config.gz");
+
+  TempDir linux_headers_dir;
+  std::string autoconf_h_filename = PrepareAutoConf(linux_headers_dir.path());
+
+  int hz;
+  ASSERT_OK(GenAutoConf(linux_headers_dir.path(), kConfigFile, &hz));
+  ASSERT_OK_AND_EQ(ReadFileToString(autoconf_h_filename), kExpectedConfigContents);
 }
 
 TEST(LinuxHeadersUtils, FindClosestPackagedLinuxHeaders) {

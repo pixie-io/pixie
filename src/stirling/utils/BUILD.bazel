@@ -16,6 +16,7 @@ pl_cc_library(
         "//src/common/fs:cc_library",
         "//src/common/minitar:cc_library",
         "//src/common/system:cc_library",
+        "//src/common/zlib:cc_library",
         "//src/shared/metadata:cc_library",
         "//src/stirling/common:cc_library",
         "@com_github_tencent_rapidjson//:rapidjson",
@@ -27,6 +28,7 @@ pl_cc_test(
     srcs = ["linux_headers_test.cc"],
     data = [
         "testdata/config",
+        "testdata/config.gz",
         "testdata/dummy_header_packages/linux-headers-4.14.176.tar.gz",
         "testdata/dummy_header_packages/linux-headers-4.18.20.tar.gz",
         "testdata/dummy_header_packages/linux-headers-5.3.18.tar.gz",
@@ -50,12 +52,12 @@ pl_cc_test(
     data = [
         "//src/stirling/testing/java:HelloWorld",
     ],
+    tags = [
+        "no_coverage",
+    ],
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
-    ],
-    tags = [
-        "no_coverage",
     ],
 )
 

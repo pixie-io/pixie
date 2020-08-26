@@ -16,6 +16,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/minitar/minitar.h"
 #include "src/common/system/config.h"
+#include "src/common/zlib/zlib_wrapper.h"
 
 namespace pl {
 namespace stirling {
@@ -127,17 +128,24 @@ Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
 }
 
 StatusOr<std::filesystem::path> FindKernelConfig() {
-  PL_ASSIGN_OR_RETURN(std::string uname, GetUname());
   const std::filesystem::path& kHost = system::Config::GetInstance().host_path();
 
-  std::filesystem::path boot_kconfig = absl::StrCat("/boot/config-", uname);
-  std::filesystem::path host_boot_kconfig = fs::JoinPath({&kHost, &boot_kconfig});
-  if (fs::Exists(host_boot_kconfig).ok()) {
-    LOG(INFO) << absl::Substitute("Found kernel config at $0", host_boot_kconfig.string());
-    return host_boot_kconfig;
+  // Search for /boot/config-xxxx
+  PL_ASSIGN_OR_RETURN(std::string uname, GetUname());
+  std::string boot_kconfig = absl::StrCat("/boot/config-", uname);
+
+  std::vector<std::string> search_paths = {"/proc/config", "/proc/config.gz", boot_kconfig};
+  for (const auto& path : search_paths) {
+    std::filesystem::path config_path = path;
+    std::filesystem::path host_path = fs::JoinPath({&kHost, &config_path});
+    if (fs::Exists(host_path).ok()) {
+      LOG(INFO) << absl::Substitute("Found kernel config at $0", host_path.string());
+      return host_path;
+    }
   }
 
-  return error::NotFound("No kernel config at $0", host_boot_kconfig.string());
+  return error::NotFound("No kernel config found. Paths searched: $0",
+                         absl::StrJoin(search_paths, ","));
 }
 
 Status GenAutoConf(const std::filesystem::path& linux_headers_base,
@@ -153,6 +161,15 @@ Status GenAutoConf(const std::filesystem::path& linux_headers_base,
   //  #define CONFIG_FOO "foofoo"
 
   std::ifstream fin(config_file);
+
+  // If file is gzipped, then unzip it and read that instead.
+  if (config_file.extension() == ".gz") {
+    const std::string kConfigPath = "/tmp/proc_config";
+    PL_ASSIGN_OR_RETURN(std::string config_gzip_contents, ReadFileToString(config_file));
+    PL_ASSIGN_OR_RETURN(std::string config_contents, pl::zlib::Inflate(config_gzip_contents));
+    PL_RETURN_IF_ERROR(WriteFileFromString(kConfigPath, config_contents));
+    fin = std::ifstream(kConfigPath);
+  }
 
   std::filesystem::path autoconf_file_path = linux_headers_base / "include/generated/autoconf.h";
   std::ofstream fout(autoconf_file_path);
@@ -205,11 +222,11 @@ Status ApplyConfigPatches(const std::filesystem::path& linux_headers_base) {
   int hz = 0;
 
   // Find kernel config.
-  PL_ASSIGN_OR_RETURN(std::filesystem::path host_boot_config_status, FindKernelConfig());
+  PL_ASSIGN_OR_RETURN(std::filesystem::path kernel_config, FindKernelConfig());
 
   // Attempt to generate autconf.h based on the config.
   // While scanning, also pull out the CONFIG_HZ value.
-  PL_RETURN_IF_ERROR(GenAutoConf(linux_headers_base, host_boot_config_status, &hz));
+  PL_RETURN_IF_ERROR(GenAutoConf(linux_headers_base, kernel_config, &hz));
 
   // Attempt to generate timeconst.h based on the HZ in the config.
   PL_RETURN_IF_ERROR(GenTimeconst(linux_headers_base, hz));
