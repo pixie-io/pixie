@@ -65,7 +65,7 @@ If you don't already have a K8s cluster available you can:
 
 #### 🚀 Deploy Pixie
 
-Deploy the Pixie Platform in your K8s cluster by runnning:
+Deploy the Pixie Platform in your K8s cluster by running:
 
 `px deploy`
 <br>
