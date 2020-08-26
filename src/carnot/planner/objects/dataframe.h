@@ -187,16 +187,18 @@ class Dataframe : public QLObject {
     right_df = px.DataFrame('http_events', start_time='-10s)
     right_df = right_df.groupby('upid').agg(count=('http_resp_body', px.count))
     df = left_df.merge(right_df, how='inner', left_on='upid', right_on='upid',suffixes=['', '_x'])
-
     # df relation = ['upid', 'cpu_utime', 'upid_x', 'count']
 
 
   :topic: dataframe_ops
 
   Args:
-    right (px.DataFrame):
+    right (px.DataFrame): The DataFrame to join with this DataFrame.
     how (['inner', 'outer', 'left', 'right'], default 'inner'): the Type of merge to perform.
+      * inner: use the intersection of the left and right keys.
+      * outer: use the union of the left and right keys.
       * left: use the keys from the left DataFrame.
+      * right: use the keys from the right DataFrame.
     left_on (string): Column name from this DataFrame.
     right_on (string): Column name from the right DataFarme to join on. Must be the same type as the `left_on` column.
     suffixes (Tuple[string, string], default ['_x', '_y']): The suffixes to apply to duplicate columns.
@@ -249,7 +251,6 @@ class Dataframe : public QLObject {
   Examples:
     df1 = px.DataFrame('process_stats', start_time='-10m', end_time='-9m')
     df2 = px.DataFrame('process_stats', start_time='-1m'
-
     df = df1.append(df2)
 
 
@@ -291,8 +292,6 @@ class Dataframe : public QLObject {
   as opposed to batch queries which return a finite result.
 
   :topic: dataframe_ops
-
-  Args:
 
   Returns:
     px.DataFrame: the parent DataFrame in streaming mode.

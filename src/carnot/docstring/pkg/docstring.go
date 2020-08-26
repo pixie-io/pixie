@@ -422,7 +422,13 @@ func parseDocstringAndWrite(outDocs *docspb.StructuredDocs, rawDocstring string,
 			Body:    genDocString.body,
 			FuncDoc: genDocString.function,
 		})
-	} else if topic == DataFrameOps || topic == CompileTimeFns {
+	} else if topic == DataFrameOps {
+		outDocs.DataframeOpDocs = append(outDocs.DataframeOpDocs, &docspb.DataFrameOpDoc{
+			Body:    genDocString.body,
+			FuncDoc: genDocString.function,
+		})
+
+	} else if topic == CompileTimeFns {
 		log.Warnf("'%s' not yet supported", topic)
 	} else {
 		return fmt.Errorf("topic not found %s", topic)

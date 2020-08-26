@@ -103,6 +103,14 @@ message TracepointFieldDoc {
   FuncDoc func_doc = 2;
 }
 
+// DataFrameOpDoc contains information about the Operators in the system.
+message DataFrameOpDoc {
+  // The description of the documented tracepoint spec doc.
+  DocBody body = 1;
+  // The documentation of the function to call for this field.
+  FuncDoc func_doc = 2;
+}
+
 // StructuredDocs is structured documentation that is ready to be parsed into
 // the UI. This shouldn't require much work outside of formatting.
 message StructuredDocs {
@@ -112,6 +120,8 @@ message StructuredDocs {
   repeated TracepointDecoratorDoc tracepoint_decorator_docs = 2;
   // Docs that store information about tracepoint fields.
   repeated TracepointFieldDoc tracepoint_field_docs = 3;
+  // Docs that store information about DataFrame operators.
+  repeated DataFrameOpDoc dataframe_op_docs = 5;
   // Information about udf docs.
   pl.carnot.udfspb.Docs udf_docs = 4;
 }

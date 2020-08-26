@@ -24,7 +24,19 @@ StatusOr<docspb::InternalPXLDocs> ExtractDocs() {
     auto mod_doc = extractor.ExtractDoc(module);
     PL_RETURN_IF_ERROR(mod_doc.ToProto(parent.add_docstring_nodes()));
   }
-  // Extract the udfs
+
+  // TODO(philkuz) support a method to access dataframe methods within the PixieModule instead of
+  // doing this.
+  auto ast = std::make_shared<pypa::AstExpressionStatement>();
+  ast->line = 0;
+  ast->column = 0;
+  PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
+                      ir.CreateNode<MemorySourceIR>(ast, "", std::vector<std::string>{}));
+  PL_ASSIGN_OR_RETURN(auto df, compiler::Dataframe::Create(mem_source_op, ast_visitor.get()));
+  auto df_doc = extractor.ExtractDoc(df);
+  PL_RETURN_IF_ERROR(df_doc.ToProto(parent.add_docstring_nodes()));
+
+  // Extract the udfs.
   auto doc = udfexporter::ExportUDFDocs();
   *(parent.mutable_udf_docs()) = doc;
   return parent;
