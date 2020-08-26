@@ -282,6 +282,22 @@ class Dataframe : public QLObject {
     px.DataFrame: DataFrame grouped into rolling windows. Must apply either a groupby or an aggregate on the
     returned DataFrame.
   )doc";
+
+  inline static constexpr char kStreamOpId[] = "stream";
+  inline static constexpr char kStreamOpDocstring[] = R"doc(
+  Execute this DataFrame in streaming mode.
+
+  Returns the input DataFrame, but set to streaming mode. Streaming queries execute indefinitely,
+  as opposed to batch queries which return a finite result.
+
+  :topic: dataframe_ops
+
+  Args:
+
+  Returns:
+    px.DataFrame: the parent DataFrame in streaming mode.
+  )doc";
+
   // Attribute names.
   inline static constexpr char kMetadataAttrName[] = "ctx";
 
@@ -462,6 +478,16 @@ class RollingHandler {
    * @param args the arguments for rolling()
    * @return StatusOr<QLObjectPtr>
    */
+  static StatusOr<QLObjectPtr> Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                    const ParsedArgs& args, ASTVisitor* visitor);
+};
+
+/**
+ * @brief Implements the stream() method and creates the stream node.
+ *
+ */
+class StreamHandler {
+ public:
   static StatusOr<QLObjectPtr> Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                     const ParsedArgs& args, ASTVisitor* visitor);
 };

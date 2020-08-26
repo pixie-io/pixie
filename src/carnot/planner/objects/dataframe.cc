@@ -199,6 +199,22 @@ Status Dataframe::Init() {
   PL_RETURN_IF_ERROR(rolling_fn->SetDocString(kRollingOpDocstring));
   AddMethod(kRollingOpID, rolling_fn);
 
+  /**
+   * # Equivalent to the python method syntax:
+   * def stream(self):
+   *     ...
+   */
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> stream_fn,
+      FuncObject::Create(kStreamOpId, {}, {},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&StreamHandler::Eval, graph(), op(), std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+  PL_RETURN_IF_ERROR(stream_fn->SetDocString(kStreamOpDocstring));
+  AddMethod(kStreamOpId, stream_fn);
+
   PL_ASSIGN_OR_RETURN(auto md, MetadataObject::Create(op(), ast_visitor()));
   return AssignAttribute(kMetadataAttrName, md);
 }
@@ -437,6 +453,12 @@ StatusOr<QLObjectPtr> RollingHandler::Eval(IR* graph, OperatorIR* op, const pypa
   PL_ASSIGN_OR_RETURN(RollingIR * rolling_op,
                       graph->CreateNode<RollingIR>(ast, op, window_col, window_size));
   return Dataframe::Create(rolling_op, visitor);
+}
+
+StatusOr<QLObjectPtr> StreamHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                          const ParsedArgs&, ASTVisitor* visitor) {
+  PL_ASSIGN_OR_RETURN(StreamIR * stream_op, graph->CreateNode<StreamIR>(ast, op));
+  return Dataframe::Create(stream_op, visitor);
 }
 
 StatusOr<QLObjectPtr> DataFrameHandler::Eval(IR* graph, const pypa::AstPtr& ast,

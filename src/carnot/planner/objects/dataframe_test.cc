@@ -663,6 +663,23 @@ TEST_F(DataframeTest, ConstructorTest) {
   EXPECT_EQ(mem_src->table_name(), "http_events");
 }
 
+TEST_F(LimitTest, StreamTest) {
+  MemorySourceIR* src = MakeMemSource();
+  ParsedArgs args;
+
+  auto status = StreamHandler::Eval(graph.get(), src, ast, args, ast_visitor.get());
+  ASSERT_OK(status);
+
+  std::shared_ptr<QLObject> obj = status.ConsumeValueOrDie();
+  ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kDataframe);
+  auto df_obj = static_cast<Dataframe*>(obj.get());
+
+  // Check to make sure that the output is a Stream operator.
+  OperatorIR* op = df_obj->op();
+  ASSERT_MATCH(op, Stream());
+  EXPECT_THAT(op->parents(), ElementsAre(src));
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

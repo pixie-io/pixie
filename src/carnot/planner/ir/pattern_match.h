@@ -135,6 +135,8 @@ inline ClassMatch<IRNodeType::kTabletSourceGroup> TabletSourceGroup() {
 
 inline ClassMatch<IRNodeType::kGroupBy> GroupBy() { return ClassMatch<IRNodeType::kGroupBy>(); }
 inline ClassMatch<IRNodeType::kRolling> Rolling() { return ClassMatch<IRNodeType::kRolling>(); }
+inline ClassMatch<IRNodeType::kStream> Stream() { return ClassMatch<IRNodeType::kStream>(); }
+
 inline ClassMatch<IRNodeType::kUDTFSource> UDTFSource() {
   return ClassMatch<IRNodeType::kUDTFSource>();
 }

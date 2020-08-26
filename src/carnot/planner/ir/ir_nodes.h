@@ -2147,6 +2147,36 @@ class RollingIR : public GroupAcceptorIR {
   ExpressionIR* window_size_;
 };
 
+// StreamIR Is a logical node that marks that a DataFrame should be executed in
+// a streaming fashion (with continuous reads from its MemorySource) rather than batch.
+class StreamIR : public OperatorIR {
+ public:
+  StreamIR() = delete;
+  explicit StreamIR(int64_t id) : OperatorIR(id, IRNodeType::kStream) {}
+  Status Init(OperatorIR* parent) {
+    PL_RETURN_IF_ERROR(AddParent(parent));
+    return Status::OK();
+  }
+
+  Status ToProto(planpb::Operator*) const override {
+    return error::Unimplemented("StreamIR::ToProto should not be called");
+  }
+  Status CopyFromNodeImpl(const IRNode*, absl::flat_hash_map<const IRNode*, IRNode*>*) override {
+    return Status::OK();
+  }
+
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
+    return error::Unimplemented("StreamIR::RequiredInputColumns should not be called");
+  }
+  static constexpr bool FailOnResolveType() { return true; }
+
+ protected:
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>&) override {
+    return error::Unimplemented("StreamIR::PruneOutputColumnsToImpl should not be called");
+  }
+};
+
 Status ResolveOperatorType(OperatorIR* op, CompilerState* compiler_state);
 
 Status ResolveExpressionType(ExpressionIR* expr, CompilerState* compiler_state,
