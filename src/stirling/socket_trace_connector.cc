@@ -783,7 +783,7 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
     if (!elf_reader_status.ok()) {
       LOG(WARNING) << absl::Substitute(
           "Cannot analyze binary $0 for uprobe deployment. "
-          "If file is under /var/lib/docker, container may have terminated. "
+          "If file is under /var/lib, container may have terminated. "
           "Message = $1",
           binary, elf_reader_status.msg());
       continue;

@@ -52,6 +52,8 @@ pl::StatusOr<std::filesystem::path> ResolveProcessRootDir(const std::filesystem:
   return GetOverlayMergedDir(mount_options);
 }
 
+// TODO(oazizi/yzhao): This function only works for docker.
+//                     Containerd follows a different convention.
 pl::StatusOr<std::filesystem::path> GetOverlayMergedDir(std::string_view mount_options) {
   constexpr std::string_view kUpperDir = "upperdir=";
   constexpr std::string_view kDiffSuffix = "/diff";
@@ -63,7 +65,10 @@ pl::StatusOr<std::filesystem::path> GetOverlayMergedDir(std::string_view mount_o
       continue;
     }
     std::string_view s = option.substr(pos + kUpperDir.size());
-    DCHECK(absl::EndsWith(option, kDiffSuffix));
+    if (!absl::EndsWith(option, kDiffSuffix)) {
+      LOG(WARNING) << absl::Substitute("Unexpected overlay path. May be containerd. Path=$0", s);
+      continue;
+    }
     s.remove_suffix(kDiffSuffix.size());
     return std::filesystem::path(s) / kMerged;
   }
