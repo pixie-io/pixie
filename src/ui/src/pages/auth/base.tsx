@@ -6,7 +6,7 @@ import {
   createStyles, Grid, Theme, withStyles, WithStyles,
 } from '@material-ui/core';
 import clsx from 'clsx';
-import * as StarsSVG from './stars.svg';
+import * as StarsPNG from './stars.png';
 import * as pixieLogo from '../../../assets/images/pixie-logo.svg';
 import { Footer } from '../../components/auth/footer';
 
@@ -15,7 +15,7 @@ const styles = ({ spacing, breakpoints }: Theme) => createStyles({
     height: '100%',
     width: '100%',
     minWidth: '400px',
-    backgroundImage: `url(${StarsSVG})`,
+    backgroundImage: `url(${StarsPNG})`,
     display: 'flex',
   },
   flex: {
