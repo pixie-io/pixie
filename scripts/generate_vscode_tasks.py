@@ -9,7 +9,7 @@ import sys
 
 def getOutputBase():
     return subprocess.check_output(
-        ['bazel', 'info', 'output_base']).rstrip()
+        ['bazel', 'info', 'output_base']).rstrip().decode("utf-8")
 
 
 # Returns source file map. Some of these are only relevant for Mac or Linux, respectively,
@@ -151,7 +151,7 @@ def main():
         print('In LLDB mode')
 
     targets_str = subprocess.check_output(
-        ['bazel', 'query', 'kind(\'cc_test rule\', //...)'])
+        ['bazel', 'query', 'kind(\'cc_test rule\', //...)']).decode("utf-8")
     output_base = getOutputBase()
     task_list = []
     launch_list = []
@@ -241,7 +241,7 @@ def main():
         'configurations': launch_list,
     }
     workspace_root = subprocess.check_output(
-        ['bazel', 'info', 'workspace']).rstrip()
+        ['bazel', 'info', 'workspace']).rstrip().decode("utf-8")
 
     with open(os.path.join(workspace_root, '.vscode/launch.json'), 'w') as launch_file:
         launch_file.write(json.dumps(launch, indent=4, sort_keys=True))

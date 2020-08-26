@@ -120,7 +120,7 @@ class ScalarUDFDocBuilder : public UDFDocBuilder<ScalarUDFDocBuilder> {
     auto* scalar_doc = doc->mutable_scalar_udf_doc();
     for (const auto& [i, arg] : Enumerate(args_)) {
       auto* a = scalar_doc->add_args();
-      a->set_ident(arg.desc);
+      a->set_ident(arg.name);
       a->set_desc(arg.desc);
       a->set_type(exec_args[i]);
     }
@@ -161,7 +161,7 @@ class UDADocBuilder : public UDFDocBuilder<UDADocBuilder> {
     auto* uda_doc = doc->mutable_uda_doc();
     for (const auto& [i, arg] : Enumerate(args_)) {
       auto* a = uda_doc->add_update_args();
-      a->set_ident(arg.desc);
+      a->set_ident(arg.name);
       a->set_desc(arg.desc);
       a->set_type(update_args[i]);
     }

@@ -19,12 +19,12 @@ examples {
 }
 scalar_udf_doc {
   args {
-    ident: "The first argument"
+    ident: "a"
     desc: "The first argument"
     type: INT64
   }
   args {
-    ident: "The second argument"
+    ident: "b"
     desc: "The second argument"
     type: INT64
   }
@@ -83,7 +83,7 @@ examples {
 }
 uda_doc {
   update_args {
-    ident: "The argument to sum"
+    ident: "a"
     desc: "The argument to sum"
     type: INT64
   }
