@@ -956,6 +956,33 @@ TEST_F(AnalyzerTest, column_annotations_join) {
   EXPECT_MATCH(join->output_columns()[4], MetadataExpression(MetadataType::SERVICE_NAME));
 }
 
+constexpr char kMapOnlyStreamQuery[] = R"query(
+import px
+df = px.DataFrame(table='cpu', select=['upid', 'cpu0'])
+df.service = df.ctx['service']
+df = df[True]
+px.display(df.stream())
+)query";
+
+TEST_F(AnalyzerTest, map_only_streaming_test) {
+  auto ir_graph_status = CompileGraph(kMapOnlyStreamQuery);
+  ASSERT_OK(ir_graph_status);
+  // now pass into the relation handler.
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto handle_status = HandleRelation(ir_graph);
+  EXPECT_OK(handle_status);
+
+  auto streams = ir_graph->FindNodesThatMatch(Stream());
+  ASSERT_EQ(0, streams.size());
+
+  auto limits = ir_graph->FindNodesThatMatch(Limit());
+  EXPECT_EQ(0, limits.size());
+
+  auto srcs = ir_graph->FindNodesThatMatch(MemorySource());
+  ASSERT_EQ(1, srcs.size());
+  EXPECT_TRUE(static_cast<MemorySourceIR*>(srcs[0])->streaming());
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

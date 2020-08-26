@@ -1521,7 +1521,7 @@ StatusOr<bool> ResolveStreamRule::Apply(IRNode* ir_node) {
   auto children = stream_node->Children();
   DCHECK_GT(children.size(), 0);
   for (OperatorIR* child : children) {
-    if (!Match(child, MemorySink())) {
+    if (!Match(child, ResultSink())) {
       return error::Unimplemented("df.stream() in the middle of a query is not yet implemented");
     }
     PL_RETURN_IF_ERROR(child->ReplaceParent(stream_node, parent));

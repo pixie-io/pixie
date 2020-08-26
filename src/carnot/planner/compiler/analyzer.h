@@ -41,6 +41,7 @@ class Analyzer : public RuleExecutor<IR> {
         IRNodeType::kRolling);
     source_and_metadata_resolution_batch->AddRule<ConvertStringTimesRule>(compiler_state_);
     source_and_metadata_resolution_batch->AddRule<NestedBlockingAggFnCheckRule>();
+    source_and_metadata_resolution_batch->AddRule<ResolveStreamRule>();
   }
 
   void CreateUniqueSinkNamesBatch() {
