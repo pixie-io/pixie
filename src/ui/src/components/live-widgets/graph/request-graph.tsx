@@ -72,7 +72,7 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
   const [network, setNetwork] = React.useState<Network>(null);
   const [graph, setGraph] = React.useState<RequestGraph>(null);
 
-  const [clusteredMode, setClusteredMode] = React.useState<boolean>(false);
+  const [clusteredMode, setClusteredMode] = React.useState<boolean>(true);
   const [hierarchyEnabled, setHierarchyEnabled] = React.useState<boolean>(false);
   const [colorByLatency, setColorByLatency] = React.useState<boolean>(false);
   const [focused, setFocused] = React.useState<boolean>(false);
@@ -80,50 +80,49 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
   /**
    * Toggle the hier/non-hier clustering mode.
    */
-  const toggleMode = React.useCallback(() => setClusteredMode((clustered) => {
-    const nextState = !clustered;
-    if (!network || !graph) {
-      return nextState;
-    }
-    network.setData({
-      nodes: graph.nodes,
-      edges: graph.edges,
-    });
-    if (nextState) {
-      // Clustered.
-      graph.services.forEach((svc) => {
-        const clusterOptionsByData = {
-          joinCondition(childOptions) {
-            return childOptions.service === svc;
-          },
-          clusterNodeProperties: {
-            ...semTypeToShapeConfig(SemanticType.ST_SERVICE_NAME),
-            allowSingleNodeCluster: true,
-            label: svc,
-            scaling: labelOpts,
-          },
-          processProperties(clusterOptions,
-            childNodes) {
-            const newOptions = clusterOptions;
-            let totalValue = 0;
-            childNodes.forEach((node) => {
-              totalValue += node.value;
-            });
-            newOptions.value = totalValue;
-            newOptions.id = svc;
-            if (svc === '') {
-              newOptions.hidden = true;
-              newOptions.physics = false;
-            }
-            return newOptions;
-          },
-        };
-        network.cluster(clusterOptionsByData);
-      });
-    }
+  const toggleMode = React.useCallback(() => setClusteredMode(
+    (clustered) => !clustered), [setClusteredMode]);
 
-    return nextState;
-  }), [network, graph]);
+  React.useEffect(() => {
+    if (network && graph) {
+      network.setData({
+        nodes: graph.nodes,
+        edges: graph.edges,
+      });
+      if (clusteredMode) {
+        // Clustered.
+        graph.services.forEach((svc) => {
+          const clusterOptionsByData = {
+            joinCondition(childOptions) {
+              return childOptions.service === svc;
+            },
+            clusterNodeProperties: {
+              ...semTypeToShapeConfig(SemanticType.ST_SERVICE_NAME),
+              allowSingleNodeCluster: true,
+              label: svc,
+              scaling: labelOpts,
+            },
+            processProperties(clusterOptions,
+              childNodes) {
+              const newOptions = clusterOptions;
+              let totalValue = 0;
+              childNodes.forEach((node) => {
+                totalValue += node.value;
+              });
+              newOptions.value = totalValue;
+              newOptions.id = svc;
+              if (svc === '') {
+                newOptions.hidden = true;
+                newOptions.physics = false;
+              }
+              return newOptions;
+            },
+          };
+          network.cluster(clusterOptionsByData);
+        });
+      }
+    }
+  }, [network, graph, clusteredMode]);
 
   /**
    * This is used to toggle the hierarchical state of graph.
