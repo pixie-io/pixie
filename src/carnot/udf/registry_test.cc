@@ -562,12 +562,12 @@ udf {
   brief: "This function adds two numbers: c = a + b"
   scalar_udf_doc {
     args {
-      ident: "some arg"
+      ident: "b1"
       desc: "some arg"
       type: BOOLEAN
     }
     args {
-      ident: "some other arg"
+      ident: "b2"
       desc: "some other arg"
       type: INT64
     }
@@ -586,7 +586,7 @@ udf {
   }
   uda_doc {
     update_args {
-      ident: "The argument to sum"
+      ident: "a"
       desc: "The argument to sum"
       type: INT64
     }
