@@ -143,7 +143,9 @@ Status UnionNode::MergeData(ExecState* exec_state) {
 
     std::sort(parent_streams.begin(), parent_streams.end(),
               [this](size_t parent_a, size_t parent_b) {
-                return GetTimeAtParentCursor(parent_a) < GetTimeAtParentCursor(parent_b);
+                auto time_a = GetTimeAtParentCursor(parent_a);
+                auto time_b = GetTimeAtParentCursor(parent_b);
+                return time_a < time_b || (time_a == time_b && parent_a < parent_b);
               });
 
     bool has_limit = parent_streams.size() > 1;
@@ -183,7 +185,6 @@ Status UnionNode::MergeData(ExecState* exec_state) {
       PL_RETURN_IF_ERROR(OptionallyFlushRowBatch(exec_state));
     }
   }
-
   return Status::OK();
 }
 
