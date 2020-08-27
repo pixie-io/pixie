@@ -78,7 +78,7 @@ Check out our [install guides](https://docs.pixielabs.ai/installing-pixie/instal
 
 #### Run scripts with `px` CLI
 
-<img src="./pxl_scripts/http_data.svg" alt="CLI Demo" width="425" align="right">
+<img src="http_data.svg" alt="CLI Demo" width="425" align="right">
 
 <br> Service SLA:
 
