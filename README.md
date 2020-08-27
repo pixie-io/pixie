@@ -10,6 +10,7 @@
 [![Slack](https://slackin.withpixie.ai/badge.svg)](https://slackin.withpixie.ai)
 [![Mentioned in Awesome Kubernetes](https://awesome.re/mentioned-badge.svg)](https://github.com/ramitsurana/awesome-kubernetes)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
+[![Build Status](https://travis-ci.org/pixie-labs/pixie.svg?branch=main)](https://travis-ci.org/pixie-labs/pixie)
 
 <br clear="all">
 
