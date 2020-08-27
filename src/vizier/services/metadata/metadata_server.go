@@ -53,6 +53,35 @@ func etcdTLSConfig() (*tls.Config, error) {
 	return tlsInfo.ClientConfig()
 }
 
+func runEtcdWatcher(etcdClient *clientv3.Client) func() {
+	etcdWatchQuitCh := make(chan bool)
+	etcdTicker := time.NewTicker(5 * time.Minute)
+
+	go func() {
+		// Periodically check etcd state, and its memory usage.
+		for {
+			select {
+			case _, ok := <-etcdWatchQuitCh:
+				if !ok {
+					return
+				}
+			case <-etcdTicker.C:
+				resp, err := etcdClient.Status(context.Background(), viper.GetString("md_etcd_server"))
+				if err != nil {
+					log.WithError(err).Error("Failed to get etcd members")
+					continue
+				}
+				log.WithField("dbSizeBytes", resp.DbSize).Info("Etcd state")
+			}
+		}
+	}()
+
+	return func() {
+		close(etcdWatchQuitCh)
+		etcdTicker.Stop()
+	}
+}
+
 func main() {
 	log.WithField("service", "metadata").
 		WithField("version", version.GetVersion().ToString()).
@@ -87,6 +116,9 @@ func main() {
 		log.WithError(err).Fatal("Failed to connect to etcd at " + viper.GetString("md_etcd_server"))
 	}
 	defer etcdClient.Close()
+
+	cleanupEtcdWatcher := runEtcdWatcher(etcdClient)
+	defer cleanupEtcdWatcher()
 
 	var nc *nats.Conn
 	if viper.GetBool("disable_ssl") {
