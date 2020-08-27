@@ -286,6 +286,65 @@ func TestIndexMigrate(t *testing.T) {
 			},
 		},
 		{
+			name:      "not changing static settings shouldn't require reindex",
+			indexName: "test_static_settings_no_reindex-000",
+			aliasName: "test_static_settings_no_reindex",
+			// index.number_of_shards is a static setting but since it doesn't change there should be no error.
+			// index.block.* are dynamic settings so even though they change a reindex shouldn't be required.
+			indexJSON: `
+			{
+				"settings": {
+					"index": {
+						"number_of_shards": 2,
+						"blocks": {
+							"write": "true",
+							"read": "false"
+						}
+					}
+				}
+			}
+			`,
+			expectedIndexJSON: `
+			{
+				"settings": {
+					"index": {
+						"number_of_shards": 2	,
+						"blocks": {
+							"write": "true",
+							"read": "false"
+						}
+					}
+				},
+				"aliases": {
+					"test_static_settings_no_reindex": {
+						"is_write_index": true
+					}
+				}
+			}
+			`,
+			expectErr: false,
+			createBeforeConfig: &struct {
+				aliasName string
+				indexJSON string
+			}{
+				aliasName: "test_static_settings_no_reindex",
+				// index.number_of_shards is a static setting that can only be changed at index creation time.
+				indexJSON: `
+				{
+					"settings": {
+						"index": {
+							"number_of_shards": 2,
+							"blocks": {
+								"write": "false",
+								"read": "true"
+							}
+						}
+					}
+				}
+				`,
+			},
+		},
+		{
 			name:      "changing mapping property type requires reindex",
 			indexName: "test_mapping_reindex-000",
 			aliasName: "test_mapping_reindex",

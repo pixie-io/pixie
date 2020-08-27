@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
@@ -159,11 +160,48 @@ func (i *Index) updateMappings(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
+func getSettingsToUpdate(expected map[string]interface{}, actual map[string]interface{}) (bool, map[string]interface{}) {
+	toUpdate := make(map[string]interface{})
+	for k, expectedVal := range expected {
+		actualVal, ok := actual[k]
+		if !ok {
+			toUpdate[k] = expectedVal
+			continue
+		}
+		var m map[string]interface{}
+		if reflect.TypeOf(expectedVal) == reflect.TypeOf(m) {
+			if reflect.TypeOf(actualVal) != reflect.TypeOf(m) {
+				toUpdate[k] = expectedVal
+				continue
+			}
+			needsUpdate, newVal := getSettingsToUpdate(expectedVal.(map[string]interface{}), actualVal.(map[string]interface{}))
+			if needsUpdate {
+				toUpdate[k] = newVal
+			}
+		} else {
+			// Elastic will convert numbers and floats to strings sometimes,
+			// so check the string version of the expected val as well.
+			if expectedVal != actualVal && fmt.Sprint(expectedVal) != actualVal {
+				toUpdate[k] = expectedVal
+			}
+		}
+	}
+	return len(toUpdate) > 0, toUpdate
+}
+
 func (i *Index) updateSettings(ctx context.Context) (bool, error) {
-	if len(i.index.Settings) == 0 {
+	settingsResp, err := i.es.IndexGetSettings(i.indexName).Do(ctx)
+	if err != nil {
+		log.WithError(err).WithField("index", i.indexName).
+			WithField("cause", err.(*elastic.Error).Details.CausedBy).Error("failed to get index settings")
+		return false, err
+	}
+	indexSettings := settingsResp[i.indexName].Settings
+	needsUpdate, settingsToUpdate := getSettingsToUpdate(i.index.Settings, indexSettings)
+	if !needsUpdate {
 		return false, nil
 	}
-	resp, err := i.es.IndexPutSettings(i.indexName).BodyJson(i.index.Settings).Do(ctx)
+	resp, err := i.es.IndexPutSettings(i.indexName).BodyJson(settingsToUpdate).Do(ctx)
 	if err != nil {
 		// If any of the non-dynamic settings changed, then a reindex is required.
 		if mustParseError(err).isSettingsNonDynamicUpdateFailure() {
