@@ -3,5 +3,7 @@ python:
 - "3.6"
 install:
 - pip3 install flake8==3.8.3
+- ./scripts/install-latest-px.sh
 script:
-- flake8 --config=.pxl.flake8rc pxl_scripts/px/**/*.pxl
+- ./scripts/lint.sh
+- ./scripts/build.sh
