@@ -179,6 +179,6 @@ We're heads down building Pixie and excited to share it broadly with the communi
 
 Pixie Community is the free offering of Pixie's proprietary SaaS product catalogue.
 
-Our [pxl_scripts](PXL Scripts) are licensed under [Apache License, Version 2.0](pxl_scripts/LICENSE.md).
+Our [PxL Scripts](pxl_scripts/README.md) are licensed under [Apache License, Version 2.0](pxl_scripts/LICENSE.md).
 
 Other Pixie Platform components such as Pixie CLI and eBPF based Data Collectors will also be licensed under the Apache License, Version 2.0. Contribution of these are planned for Oct 2020.
