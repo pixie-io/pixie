@@ -1,0 +1,7 @@
+language: python
+python:
+- "3.6"
+install:
+- pip3 install flake8==3.8.3
+script:
+- flake8 --config=.pxl.flake8rc pxl_scripts/px/**/*.pxl
