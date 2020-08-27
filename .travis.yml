@@ -1,6 +1,10 @@
 language: python
 python:
 - '3.6'
+cache:
+  directories:
+  - "$HOME/google-cloud-sdk/"
+
 install:
 - pip3 install flake8==3.8.3
 - "./scripts/install-latest-px.sh"
@@ -10,3 +14,9 @@ script:
 before_install:
 - openssl aes-256-cbc -K $encrypted_3fab9f21603e_key -iv $encrypted_3fab9f21603e_iv
   -in gcs-sa.json.enc -out gcs-sa.json -d
+- gcloud version || true
+- if [ ! -d "$HOME/google-cloud-sdk/bin" ]; then rm -rf $HOME/google-cloud-sdk; export CLOUDSDK_CORE_DISABLE_PROMPTS=1; curl https://sdk.cloud.google.com | bash; fi
+# Add gcloud to $PATH
+- source /home/travis/google-cloud-sdk/path.bash.inc
+- gcloud version
+- gcloud auth activate-service-account --key-file gcs-sa.json
