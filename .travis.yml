@@ -20,9 +20,11 @@ before_install:
 - source /home/travis/google-cloud-sdk/path.bash.inc
 - gcloud version
 - gcloud auth activate-service-account --key-file gcs-sa.json
+- rm gcs-sa.json
 
 deploy:
   - provider: script
-    script: ./script/deploy.sh
+    script: ./scripts/deploy.sh
+    skip_cleanup: true
     on:
       branch: main
