@@ -48,11 +48,24 @@ message TransferResultChunkRequest {
     repeated pl.carnot.queryresultspb.AgentExecutionStats agent_execution_stats = 3;
   }
 
+  // A message containing a heartbeat for an active query.
+  message QueryHeartbeat {
+    // The query execution stats, thus far in the query.
+    // Different from `execution_and_timing_info`, which stores the final exec stats
+    // for the query.
+    QueryExecutionAndTimingInfo intermediate_execution_and_timing_info = 1;
+  }
+
   oneof result {
     // A row batch (including its destination).
     ResultRowBatch row_batch_result = 5;
     // Execution information about the query.
+    // This result will be sent periodically until the end of the query, so it also functions
+    // as a heartbeat for persistent streaming queries.
     QueryExecutionAndTimingInfo execution_and_timing_info = 6;
+    // A heartbeat for the query, sent periodically as the query executes, to show that the
+    // query is still executing as expected.
+    QueryHeartbeat heartbeat = 7;
   }
 }
 

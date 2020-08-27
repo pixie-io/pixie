@@ -330,7 +330,8 @@ func BuildExecuteScriptResponse(r *carnotpb.TransferResultChunkRequest,
 				ExecutionStats: stats,
 			},
 		}
-	} else if rbResult := r.GetRowBatchResult(); rbResult != nil {
+	}
+	if rbResult := r.GetRowBatchResult(); rbResult != nil {
 		tableName := rbResult.GetTableName()
 		tableID, present := tableIDMap[tableName]
 		if !present {
@@ -346,7 +347,17 @@ func BuildExecuteScriptResponse(r *carnotpb.TransferResultChunkRequest,
 				Batch: batch,
 			},
 		}
-	} else {
+	}
+	if hb := r.GetHeartbeat(); hb != nil {
+		execStats := hb.IntermediateExecutionAndTimingInfo.ExecutionStats
+		convertedStats := QueryResultStatsToVizierStats(execStats, compilationTimeNs)
+		res.Result = &vizierpb.ExecuteScriptResponse_Data{
+			Data: &vizierpb.QueryData{
+				ExecutionStats: convertedStats,
+			},
+		}
+	}
+	if res.Result == nil {
 		return nil, fmt.Errorf("error in ForwardQueryResult: Expected TransferResultChunkRequest to have row batch or exec stats")
 	}
 	return res, nil

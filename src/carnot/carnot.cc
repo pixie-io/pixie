@@ -198,7 +198,7 @@ void CarnotImpl::GRPCServerFunc() {
   grpc_server_->Wait();
 }
 
-Status SendExecutionStatsToOutgoingConns(
+Status SendFinalExecutionStatsToOutgoingConns(
     const sole::uuid& query_id,
     const absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*>&
         outgoing_servers,
@@ -338,9 +338,9 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
   agent_operator_exec_stats.set_records_processed(rows_processed);
   all_agent_stats.push_back(agent_operator_exec_stats);
 
-  return SendExecutionStatsToOutgoingConns(query_id, exec_state->OutgoingServers(),
-                                           engine_state_->add_auth_to_grpc_context_func(),
-                                           agent_operator_exec_stats, all_agent_stats);
+  return SendFinalExecutionStatsToOutgoingConns(query_id, exec_state->OutgoingServers(),
+                                                engine_state_->add_auth_to_grpc_context_func(),
+                                                agent_operator_exec_stats, all_agent_stats);
 }
 
 CarnotImpl::~CarnotImpl() {

@@ -13,9 +13,11 @@ import (
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
+	"pixielabs.ai/pixielabs/src/carnotpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
+	pbutils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
@@ -305,8 +307,127 @@ func TestRowBatchToVizierRowBatch(t *testing.T) {
 	assert.Equal(t, expectedQd, qm)
 }
 
-func TestBuildExecuteScriptResponse(t *testing.T) {
-	// TODO(nserrino): Fill this in.
+func TestBuildExecuteScriptResponse_RowBatch(t *testing.T) {
+	receivedRB := new(schemapb.RowBatchData)
+	if err := proto.UnmarshalText(rowBatchPb, receivedRB); err != nil {
+		t.Fatalf("Cannot unmarshal proto %v", err)
+	}
+	convertedRB := new(vizierpb.RowBatchData)
+	if err := proto.UnmarshalText(rowBatchPb, convertedRB); err != nil {
+		t.Fatalf("Cannot unmarshal proto %v", err)
+	}
+	convertedRB.TableID = "output_table_1_id"
+
+	queryID := uuid.NewV4()
+	queryIDpb := pbutils.ProtoFromUUID(&queryID)
+
+	msg := &carnotpb.TransferResultChunkRequest{
+		Address: "foo",
+		QueryID: queryIDpb,
+		Result: &carnotpb.TransferResultChunkRequest_RowBatchResult{
+			RowBatchResult: &carnotpb.TransferResultChunkRequest_ResultRowBatch{
+				RowBatch: receivedRB,
+				Destination: &carnotpb.TransferResultChunkRequest_ResultRowBatch_TableName{
+					TableName: "output_table_1",
+				},
+			},
+		},
+	}
+	tableIDMap := map[string]string{
+		"another_table":  "another_table_id",
+		"output_table_1": "output_table_1_id",
+	}
+	resp, err := controllers.BuildExecuteScriptResponse(msg, tableIDMap, 10)
+	assert.Nil(t, err)
+
+	assert.Nil(t, resp.Status)
+	assert.Equal(t, queryID.String(), resp.QueryID)
+	assert.Nil(t, resp.GetMetaData())
+	assert.NotNil(t, resp.GetData())
+	assert.Nil(t, resp.GetData().GetExecutionStats())
+	assert.Equal(t, convertedRB, resp.GetData().GetBatch())
+}
+
+func TestBuildExecuteScriptResponse_Heartbeat(t *testing.T) {
+	queryID := uuid.NewV4()
+	queryIDpb := pbutils.ProtoFromUUID(&queryID)
+
+	msg := &carnotpb.TransferResultChunkRequest{
+		Address: "foo",
+		QueryID: queryIDpb,
+		Result: &carnotpb.TransferResultChunkRequest_Heartbeat{
+			Heartbeat: &carnotpb.TransferResultChunkRequest_QueryHeartbeat{
+				IntermediateExecutionAndTimingInfo: &carnotpb.TransferResultChunkRequest_QueryExecutionAndTimingInfo{
+					ExecutionStats: &queryresultspb.QueryExecutionStats{
+						Timing: &queryresultspb.QueryTimingInfo{
+							ExecutionTimeNs: 5010,
+						},
+						BytesProcessed:   4521,
+						RecordsProcessed: 4,
+					},
+				},
+			},
+		},
+	}
+
+	expectedStats := &vizierpb.QueryExecutionStats{
+		Timing: &vizierpb.QueryTimingInfo{
+			ExecutionTimeNs:   5010,
+			CompilationTimeNs: 10,
+		},
+		BytesProcessed:   4521,
+		RecordsProcessed: 4,
+	}
+
+	resp, err := controllers.BuildExecuteScriptResponse(msg, nil, 10)
+	assert.Nil(t, err)
+
+	assert.Nil(t, resp.Status)
+	assert.Equal(t, queryID.String(), resp.QueryID)
+	assert.Nil(t, resp.GetMetaData())
+	assert.NotNil(t, resp.GetData())
+	assert.Nil(t, resp.GetData().GetBatch())
+	assert.Equal(t, expectedStats, resp.GetData().GetExecutionStats())
+}
+
+func TestBuildExecuteScriptResponse_ExecutionStats(t *testing.T) {
+	queryID := uuid.NewV4()
+	queryIDpb := pbutils.ProtoFromUUID(&queryID)
+
+	msg := &carnotpb.TransferResultChunkRequest{
+		Address: "foo",
+		QueryID: queryIDpb,
+		Result: &carnotpb.TransferResultChunkRequest_ExecutionAndTimingInfo{
+			ExecutionAndTimingInfo: &carnotpb.TransferResultChunkRequest_QueryExecutionAndTimingInfo{
+				ExecutionStats: &queryresultspb.QueryExecutionStats{
+					Timing: &queryresultspb.QueryTimingInfo{
+						ExecutionTimeNs: 5010,
+					},
+					BytesProcessed:   4521,
+					RecordsProcessed: 4,
+				},
+			},
+		},
+	}
+
+	expectedStats := &vizierpb.QueryExecutionStats{
+		Timing: &vizierpb.QueryTimingInfo{
+			ExecutionTimeNs:   5010,
+			CompilationTimeNs: 10,
+		},
+		BytesProcessed:   4521,
+		RecordsProcessed: 4,
+	}
+
+	resp, err := controllers.BuildExecuteScriptResponse(msg, nil, 10)
+	assert.Nil(t, err)
+
+	assert.Nil(t, resp.Status)
+	assert.Equal(t, queryID.String(), resp.QueryID)
+	assert.Nil(t, resp.GetMetaData())
+	assert.NotNil(t, resp.GetData())
+	assert.Nil(t, resp.GetData().GetBatch())
+	assert.Equal(t, expectedStats, resp.GetData().GetExecutionStats())
 }
 
 func TestQueryPlanResponse(t *testing.T) {

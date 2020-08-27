@@ -45,7 +45,8 @@ type activeQuery struct {
 	// These are deleted as end of stream signals come in.
 	// These two fields are only accessed by a single writer and reader.
 	remainingTableEos map[string]bool
-	gotExecStats      bool
+	gotFinalExecStats bool
+	agentExecStats    *[]*queryresultspb.AgentExecutionStats
 }
 
 func newActiveQuery(tableIDMap map[string]string) *activeQuery {
@@ -59,7 +60,7 @@ func newActiveQuery(tableIDMap map[string]string) *activeQuery {
 		cancelClientStreamCh:  make(chan bool),
 		clientStreamCancelled: false,
 		remainingTableEos:     expectedTables,
-		gotExecStats:          false,
+		gotFinalExecStats:     false,
 		tableIDMap:            tableIDMap,
 	}
 }
@@ -83,10 +84,10 @@ func (a *activeQuery) updateQueryState(msg *carnotpb.TransferResultChunkRequest)
 
 	// Mark down that we received the exec stats for this query.
 	if execStats := msg.GetExecutionAndTimingInfo(); execStats != nil {
-		if a.gotExecStats {
+		if a.gotFinalExecStats {
 			return fmt.Errorf("already received exec stats for query %s", queryIDStr)
 		}
-		a.gotExecStats = true
+		a.gotFinalExecStats = true
 		return nil
 	}
 
@@ -109,7 +110,7 @@ func (a *activeQuery) updateQueryState(msg *carnotpb.TransferResultChunkRequest)
 }
 
 func (a *activeQuery) queryComplete() bool {
-	return len(a.remainingTableEos) == 0 && a.gotExecStats
+	return len(a.remainingTableEos) == 0 && a.gotFinalExecStats
 }
 
 // QueryResultForwarder is responsible for receiving query results from the agent streams and forwarding
@@ -201,8 +202,6 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 		return timeout, err
 	}
 
-	var agentExecutionStats *[]*queryresultspb.AgentExecutionStats
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -225,16 +224,17 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 			}
 			resultCh <- resp
 
-			// Optionally send the query plan (which requires the exec stats).
-			if execStats := msg.GetExecutionAndTimingInfo(); execStats != nil {
-				agentExecutionStats = &(execStats.AgentExecutionStats)
+			// If we are sending a query plan, store the final agent execution stats
+			// to compute the query plan with.
+			execStats := msg.GetExecutionAndTimingInfo()
+			if execStats != nil && queryPlanOpts != nil {
+				activeQuery.agentExecStats = &(execStats.AgentExecutionStats)
 			}
 
 			if activeQuery.queryComplete() {
 				if queryPlanOpts != nil {
-					// Send the exec stats at the end of the query.
 					qpRes, err := QueryPlanResponse(queryID, queryPlanOpts.Plan, queryPlanOpts.PlanMap,
-						agentExecutionStats, queryPlanOpts.TableID)
+						activeQuery.agentExecStats, queryPlanOpts.TableID)
 
 					if err != nil {
 						return cancelStreamReturnErr(err /*timeout*/, false)

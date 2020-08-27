@@ -221,6 +221,7 @@ message QueryTimingInfo {
 }
 
 // QueryExecutionStats contains information about the time/data processed by the query.
+// These will be periodically streamed from the server as the query executes.
 message QueryExecutionStats {
   QueryTimingInfo timing  = 1;
   // The number of input bytes.
