@@ -5,8 +5,6 @@ import (
 	re "regexp"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	"pixielabs.ai/pixielabs/src/carnot/docspb"
 	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	"pixielabs.ai/pixielabs/src/utils"
@@ -429,7 +427,10 @@ func parseDocstringAndWrite(outDocs *docspb.StructuredDocs, rawDocstring string,
 		})
 
 	} else if topic == CompileTimeFns {
-		log.Warnf("'%s' not yet supported", topic)
+		outDocs.CompileFnDocs = append(outDocs.CompileFnDocs, &docspb.CompileFnDoc{
+			Body:    genDocString.body,
+			FuncDoc: genDocString.function,
+		})
 	} else {
 		return fmt.Errorf("topic not found %s", topic)
 	}
