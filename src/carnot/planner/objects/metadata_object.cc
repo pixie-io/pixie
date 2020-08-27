@@ -23,6 +23,8 @@ Status MetadataObject::Init() {
                      std::bind(&MetadataObject::SubscriptHandler, this, std::placeholders::_1,
                                std::placeholders::_2),
                      ast_visitor()));
+
+  PL_RETURN_IF_ERROR(subscript_fn->SetDocString(kCtxDocstring));
   AddSubscriptMethod(subscript_fn);
   return Status::OK();
 }

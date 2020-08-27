@@ -450,18 +450,24 @@ func indent(i string) string {
 	return "\t" + strings.Join(strings.Split(i, "\n"), "\n\t")
 }
 
+func onDenyList(n string) bool {
+	return n == "px.DataFrame.DataFrame"
+}
+
 // parseDocstringTree traverses the DocstringNode tree and parses docstrings into the StructuredDocs.
 func parseDocstringTree(node *docspb.DocstringNode, outDocs *docspb.StructuredDocs, currentName string) error {
 	ea := utils.MakeErrorAccumulator()
 	name := makeName(currentName, node.Name)
-	err := parseDocstringAndWrite(outDocs, node.Docstring, name)
-	if err != nil {
-		// We don't early exit because we want to surface all the errors rather than having to restart.
-		ea.AddError(fmt.Errorf("name: %s, err:%s", name, err.Error()))
+	if !onDenyList(name) {
+		err := parseDocstringAndWrite(outDocs, node.Docstring, name)
+		if err != nil {
+			// We don't early exit because we want to surface all the errors rather than having to restart.
+			ea.AddError(fmt.Errorf("name: %s, err:%s", name, err.Error()))
+		}
 	}
 	// Recurse on the Children.
 	for _, d := range node.Children {
-		err = parseDocstringTree(d, outDocs, name)
+		err := parseDocstringTree(d, outDocs, name)
 		if err != nil {
 			// We don't early exit because we want to surface all the errors rather than having to restart.
 			ea.AddError(err)

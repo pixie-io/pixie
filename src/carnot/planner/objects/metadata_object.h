@@ -13,11 +13,11 @@ namespace compiler {
 class MetadataObject : public QLObject {
  public:
   static constexpr TypeDescriptor MetadataTypeDescriptor = {
-      /* name */ "metadata",
+      /* name */ "ctx",
       /* type */ QLObjectType::kMetadata,
   };
   static StatusOr<std::shared_ptr<MetadataObject>> Create(OperatorIR* op, ASTVisitor* ast_visitor);
-  inline static constexpr char kSubscriptHandler[] = R"doc(
+  inline static constexpr char kCtxDocstring[] = R"doc(
   Creates the specified metadata as a column.
 
   Shorthand for exposing metadata columns in the DataFrame. Each metadata type
@@ -41,6 +41,8 @@ class MetadataObject : public QLObject {
   * cmdline ("cmd"): Sources: "upid"
   * asid: Sources: "upid"
   * pid: Sources: "upid"
+
+  :topic: dataframe_ops
 
   Args:
     metadata (string): The metadata property you wish to access. Function will throw an error if it doesn't exist.
