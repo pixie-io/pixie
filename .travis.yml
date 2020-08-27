@@ -25,4 +25,4 @@ deploy:
   - provider: script
     script: ./script/deploy.sh
     on:
-      branch: main
+      branch: deploy-test
