@@ -1,0 +1,282 @@
+# Copyright (c) Pixie Labs, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+
+"""Pod list and stats for monitored workloads
+
+Quick overview of all pods being monitored with
+instructions to learn how to write pxl scripts
+
+"""
+
+import px
+# ----------------------------------------------------------------
+# Visualization Variables - No need to edit for basic configuration.
+# ----------------------------------------------------------------
+
+# You can use this view to switch to other K8s objects
+# (options: 'pod', 'service')
+k8s_object = 'pod'
+# Window in seconds within which to aggregate metrics.
+window_s = 10
+# k8s_object column is assigned to this and is used in vis spec.
+split_series_name = 'k8s'
+px.Pod = str
+# ----------------------------------------------------------------
+
+
+# ----------------------------------------------------------------
+# Visualization functions:
+#
+# These functions are formatted and ready for use in
+# the visualization speciciation, vis.json.
+# ----------------------------------------------------------------
+def pod_let(start: str, pod: px.Pod):
+    """ Calculates LET time-series for pods that matchpod.
+    Args:
+    @start: The timestamp of data to start at.
+    @pod: the partial/full-name of the pod to
+        calculate LET.
+
+    Returns: DataFrame of the LET stats for pods that
+        match @pod.
+    """
+    df = make_http_table(start)
+    # Calculate LET of svc(s) (k8s_object) over the time window ('timestamp')
+    # after filtering for matching svcs.
+    matching_df = df[px.contains(df[k8s_object], pod)]
+    let_df = calc_LET(matching_df, [k8s_object, 'timestamp'])
+
+    # Format and organize resulting columns.
+    let_df[split_series_name] = let_df[k8s_object]
+    let_df = let_df[['time_', split_series_name, 'latency_p50',
+                     'latency_p90', 'latency_p99', 'error_rate', 'rps', 'bytes_per_s']]
+    return let_df
+
+
+def summary_pod_let(start: str, pod: px.Pod):
+    """ Calculates LET summary for pods matching pod filter.
+
+    Args:
+    @start: The timestamp of data to start at.
+    @pod: the partial/full-name of the pod to
+        calculate LET.
+
+    Returns: DataFrame of the LET summary for pods that
+        match @pod.
+    """
+    df = pod_let(start, pod)
+    summary_df = summarize_LET(df, [split_series_name])
+    return summary_df
+
+
+def resource_stats(start: str, pod: px.Pod):
+    """ Gets the resource usage of matching pods.
+
+    Args:
+    @start: Starting time of the data to examine.
+    @pod: The partial name of the pod(s) to display data for.
+
+    Returns: A DataFrame of resource usage per pod matched in the passed
+        in filters.
+    """
+    # Query process stats in target window
+    rsrc_df = px.DataFrame(table='process_stats', start_time=start)
+    rsrc_df = format_resource_table(rsrc_df)
+    # Filter down to specified objects
+    rsrc_df = rsrc_df[px.contains(rsrc_df[k8s_object], pod)]
+    rsrc_df = calc_resource(rsrc_df)
+    return rsrc_df
+
+
+# ----------------------------------------------------------------
+# Utility functions:
+#
+# These are shared functions. We plan to support imports in v0.3,
+# which will allow these functions to be shared across multiple
+# scripts.
+# ----------------------------------------------------------------
+def make_http_table(start: str):
+    """ Makes the HTTP table given the passed in start.
+
+    The data necessary to compute HTTP level svc information is located in the
+    http_events table. We filter and aggregate data from this table to compute the
+    required metrics.
+
+    Args:
+    @start: The timestamp of data to start at.
+
+    Returns: DataFrame of HTTP events with formatted columns.
+    """
+    # The data necessary to compute HTTP level svc information is located in the
+    # http_events table. We filter and aggregate data from this table to compute the
+    # required metrics.
+    df = px.DataFrame(table='http_events', start_time=start)
+    df = format_http_table(df)
+    return df
+
+
+def format_events_table(spans_df, latency_ns_col):
+    """ Format data and add semantic columns in event tables
+
+    Unifies latency column to 'latency_ms', adds a binned
+    timestamp field to aggregate on, and adds the svc
+    (k8s_object) as a semantic column.
+
+    Works on "mysql_events" and "http_events"
+
+    Args:
+    @df: the input events table
+    @latency_ns_col: the name of the latency column in @df.
+
+    Returns: formatted events DataFrame
+    """
+    spans_df.latency_ms = spans_df[latency_ns_col] / 1.0E6
+    spans_df = spans_df[spans_df['latency_ms'] < 10000.0]
+    spans_df.timestamp = px.bin(spans_df.time_, px.seconds(window_s))
+    spans_df[k8s_object] = spans_df.ctx[k8s_object]
+    spans_df = spans_df[spans_df[k8s_object] != '']
+    return spans_df
+
+
+def format_http_table(spans_df):
+    """ Formats HTTP events tables
+
+    Unifies latency column to 'latency_ms', adds a binned
+    timestamp field to aggregate on, and adds the svc
+    (k8s_object) as a semantic column.
+
+    Works on "mysql_events" and "http_events".
+
+    Args:
+    @spans_df: the input http_events table.
+
+    Returns: formatted HTTP events DataFrame.
+    """
+    spans_df = format_events_table(spans_df, 'http_resp_latency_ns')
+    spans_df.resp_size = px.length(spans_df.http_resp_body)
+    spans_df.failure = spans_df.http_resp_status >= 400
+
+    return spans_df
+
+
+def calc_LET(spans_df, groups):
+    # Aggregate values over the window.
+    spans_df = spans_df.groupby(groups).agg(
+        latency_quantiles=('latency_ms', px.quantiles),
+        error_rate_per_window=('failure', px.mean),
+        throughput_total=('latency_ms', px.count),
+        bytes_total=('resp_size', px.sum)
+    )
+
+    # Convert the aggregated values into rates.
+    spans_df.error_rate = spans_df.error_rate_per_window * spans_df.throughput_total / window_s
+    spans_df.rps = spans_df.throughput_total / (window_s * 1.0)
+    spans_df.bytes_per_s = spans_df.bytes_total / (window_s * 1.0)
+
+    # Rename timestamp to time_.
+    spans_df['time_'] = spans_df['timestamp']
+    # Extract the latency percentile values from the aggregate result.
+    spans_df.latency_p50 = px.pluck_float64(spans_df.latency_quantiles, 'p50')
+    spans_df.latency_p90 = px.pluck_float64(spans_df.latency_quantiles, 'p90')
+    spans_df.latency_p99 = px.pluck_float64(spans_df.latency_quantiles, 'p99')
+    return spans_df
+
+
+def summarize_LET(let_df, groups):
+    """ Aggregate LET values across all windows.
+
+    Args:
+    @let_df: the DataFrame with LET values.
+    @groups: the columns to group over.
+
+    Returns: The summary DF.
+    """
+
+    sum_df = let_df.groupby(groups).agg(
+        latency_p50=('latency_p50', px.mean),
+        latency_p90=('latency_p90', px.mean),
+        latency_p99=('latency_p99', px.mean),
+        rps=('rps', px.mean),
+        bytes_per_s=('bytes_per_s', px.mean),
+        error_rate=('error_rate', px.mean),
+    )
+    return sum_df
+
+
+def format_resource_table(rsrc_df):
+    """ Formats process stats table
+
+    Converts nanoseconds to seconds, bytes to megabytes,
+    adds a binned timestamp field to aggregate on, and adds
+    the svc (k8s_object) as a semantic column.
+
+    Args:
+    @rsrc_df: the input process_stats table.
+
+    Returns: formatted resource stats DataFrame.
+    """
+
+    bytes_per_mb = 1024.0 * 1024.0
+    rsrc_df.timestamp = px.bin(rsrc_df.time_, px.seconds(window_s))
+    rsrc_df.cpu_utime_s = rsrc_df.cpu_utime_ns / 1.0E9
+    rsrc_df.cpu_ktime_s = rsrc_df.cpu_ktime_ns / 1.0E9
+    rsrc_df.vsize_mb = rsrc_df.vsize_bytes / bytes_per_mb
+    rsrc_df.rss_mb = rsrc_df.rss_bytes / bytes_per_mb
+    rsrc_df.read_bytes_mb = rsrc_df.read_bytes / bytes_per_mb
+    rsrc_df.write_bytes_mb = rsrc_df.write_bytes / bytes_per_mb
+    rsrc_df.rchar_bytes_mb = rsrc_df.rchar_bytes / bytes_per_mb
+    rsrc_df.wchar_bytes_mb = rsrc_df.wchar_bytes / bytes_per_mb
+    rsrc_df[k8s_object] = rsrc_df.ctx[k8s_object]
+
+    return rsrc_df
+
+
+def calc_resource(rsrc_df):
+    """ Computes CPU % and reads/writes by the k8s_object type as a timeseries.
+
+    Args:
+    @rsrc_df: the input process_stats table post-formatting.
+
+    Returns: the metrics by k8s_object type as a timeseries.
+    """
+
+    upid_agg = rsrc_df.groupby(['upid', k8s_object, 'timestamp']).agg(
+        # The following columns are all counters, so we take the minimum and maximum values.
+        min_cpu_utime_s=('cpu_utime_s', px.min),
+        min_cpu_ktime_s=('cpu_ktime_s', px.min),
+        min_rchar_bytes_mb=('rchar_bytes_mb', px.min),
+        min_wchar_bytes_mb=('wchar_bytes_mb', px.min),
+        max_cpu_utime_s=('cpu_utime_s', px.max),
+        max_cpu_ktime_s=('cpu_ktime_s', px.max),
+        max_rchar_bytes_mb=('rchar_bytes_mb', px.max),
+        max_wchar_bytes_mb=('wchar_bytes_mb', px.max),
+        rss_mb=('rss_mb', px.mean),
+    )
+
+    upid_agg.cpu_utime_s = (upid_agg.max_cpu_utime_s
+                            - upid_agg.min_cpu_utime_s) / window_s
+    upid_agg.cpu_ktime_s = (upid_agg.max_cpu_ktime_s
+                            - upid_agg.min_cpu_ktime_s) / window_s
+    upid_agg.rchar_bytes_mb = (
+        upid_agg.max_rchar_bytes_mb - upid_agg.min_rchar_bytes_mb) / window_s
+    upid_agg.wchar_bytes_mb = (
+        upid_agg.max_wchar_bytes_mb - upid_agg.min_wchar_bytes_mb) / window_s
+
+    # For this aggregate, we sum up the values as we've already calculated the average/usage
+    # for the upids already.
+    k8s_agg = upid_agg.groupby([k8s_object, 'timestamp']).agg(
+        cpu_utime_s=('cpu_utime_s', px.sum),
+        cpu_ktime_s=('cpu_ktime_s', px.sum),
+        rchar_bytes_mb=('rchar_bytes_mb', px.sum),
+        wchar_bytes_mb=('wchar_bytes_mb', px.sum),
+        rss_mb=('rss_mb', px.sum),
+    )
+
+    k8s_agg.cpu_pct = (k8s_agg.cpu_utime_s
+                       + k8s_agg.cpu_ktime_s) * 100 / window_s
+
+    # Get the output columns we want to plot.
+    k8s_agg[split_series_name] = k8s_agg[k8s_object]
+    k8s_agg['time_'] = k8s_agg['timestamp']
+    return k8s_agg[[split_series_name, 'time_', 'cpu_pct', 'rchar_bytes_mb',
+                    'wchar_bytes_mb', 'rss_mb']]

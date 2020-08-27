@@ -1,0 +1,28 @@
+# Copyright (c) Pixie Labs, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+
+import px
+
+
+def events(t1, latency_col):
+    t1.latency_ms = t1[latency_col] / 1.0E6
+    t1.latency_huge = t1.latency_ms > 10.0
+    t1.negative_latencies = t1.latency_ms < 0.0
+    return t1.groupby(['latency_huge', 'negative_latencies']).agg(count=('latency_ms', px.count))
+
+
+t1 = px.DataFrame(table='http_events', start_time='-300s')
+px.display(events(t1, 'http_resp_latency_ns'), 'http_latencies')
+
+t1 = px.DataFrame(table='mysql_events', start_time='-300s')
+px.display(events(t1, 'latency_ns'), 'mysql_latencies')
+
+t1 = px.DataFrame(table='process_stats', start_time='-30s')
+t1.cmd_line = px.upid_to_cmdline(t1.upid)
+t1 = t1[px.contains(t1.cmd_line, "java")]
+t1 = t1.head(1000)
+px.display(t1, 'java_processes')
+
+t1 = px.DataFrame(table='jvm_stats', start_time='-30s')
+t1.cmd_line = px.upid_to_cmdline(t1.upid)
+px.display(t1, 'jvm_stats')

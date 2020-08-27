@@ -1,0 +1,356 @@
+{
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "description": "The relative start time of the window. Current time is assumed to be now",
+      "defaultValue": "-5m"
+    },
+    {
+      "name": "pod",
+      "type": "PX_POD",
+      "description": "The pod name to filter on. Format: <ns>/<pod_name>",
+      "defaultValue": ""
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "inbound_let_timeseries",
+      "func": {
+        "name": "inbound_let_timeseries",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      }
+    },
+    {
+      "outputName": "resource_timeseries",
+      "func": {
+        "name": "resource_timeseries",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      }
+    },
+    {
+      "outputName": "network_timeseries",
+      "func": {
+        "name": "network_timeseries",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "HTTP Requests",
+      "globalFuncOutputName": "inbound_let_timeseries",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "requests_per_s",
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "requests per s"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "HTTP Errors",
+      "globalFuncOutputName": "inbound_let_timeseries",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "errors_per_s",
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "errors per s"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "HTTP Latency",
+      "globalFuncOutputName": "inbound_let_timeseries",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p50",
+            "mode": "MODE_LINE"
+          },
+          {
+            "value": "latency_p90",
+            "mode": "MODE_LINE"
+          },
+          {
+            "value": "latency_p99",
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "milliseconds"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "CPU Usage",
+      "globalFuncOutputName": "resource_timeseries",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "cpu_pct",
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "CPU %"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Memory Usage",
+      "globalFuncOutputName": "resource_timeseries",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "rss_mb",
+            "mode": "MODE_LINE"
+          },
+          {
+            "value": "vsize_mb",
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "MB"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 4,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Containers List",
+      "func": {
+        "name": "containers",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      },
+      "position": {
+        "x": 8,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Process List",
+      "func": {
+        "name": "processes",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      },
+      "position": {
+        "x": 8,
+        "y": 6,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Bytes Read and Written",
+      "globalFuncOutputName": "resource_timeseries",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "rchar_mb",
+            "mode": "MODE_LINE"
+          },
+          {
+            "value": "wchar_mb",
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "MB per s"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 0,
+        "y": 6,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Network Sent and Received",
+      "globalFuncOutputName": "network_timeseries",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "rx_mb_per_s",
+            "mode": "MODE_LINE"
+          },
+          {
+            "value": "tx_mb_per_s",
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "MB per s"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 4,
+        "y": 6,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Inbound Traffic to Pod",
+      "func": {
+        "name": "inbound_let_summary",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      },
+      "position": {
+        "x": 0,
+        "y": 9,
+        "w": 12,
+        "h": 3
+      }
+    },
+    {
+      "name": "Outbound Traffic from Pod",
+      "func": {
+        "name": "outbound_let_summary",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      },
+      "position": {
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 3
+      }
+    }
+  ]
+}

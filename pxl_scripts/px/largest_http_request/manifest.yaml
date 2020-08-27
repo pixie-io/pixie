@@ -1,0 +1,2 @@
+short: Largest HTTP Request
+long: Calculates the largest HTTP Request according to the passed in filter value.

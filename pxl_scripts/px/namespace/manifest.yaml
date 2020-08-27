@@ -1,0 +1,5 @@
+---
+short: Namespace Overview
+long: >
+  This view gives a top-level summary of the pods and services in a given namespace,
+  as well as a service map.

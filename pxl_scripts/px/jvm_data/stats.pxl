@@ -1,0 +1,18 @@
+# Copyright (c) Pixie Labs, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+
+import px
+
+bytes_per_mb = 1024 * 1024
+
+df = px.DataFrame(table='jvm_stats', start_time='-1m')
+
+# Add additional fields
+df.pid = px.upid_to_pid(df.upid)
+df.used_heap_size_mb = df.used_heap_size / bytes_per_mb
+df.total_heap_size_mb = df.total_heap_size / bytes_per_mb
+df.max_heap_size_mb = df.max_heap_size / bytes_per_mb
+df.cmdline = px.upid_to_cmdline(df.upid)
+
+df = df[['time_', 'pid', 'used_heap_size_mb', 'total_heap_size_mb', 'max_heap_size_mb', 'cmdline']]
+px.display(df)
