@@ -1,0 +1,5 @@
+---
+short: Pod Overview
+long: >-
+  Overview of a specific Pod monitored by Pixie with its high level application metrics
+  (latency, error-rate & rps) and resource usage (cpu, writes, reads).

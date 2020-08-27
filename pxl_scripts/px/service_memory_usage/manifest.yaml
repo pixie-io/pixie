@@ -1,0 +1,3 @@
+---
+short: Memory Usage of Services.
+long: Get the Virtual memory usage and average memory for all services in the k8s cluster.

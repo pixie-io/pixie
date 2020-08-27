@@ -1,0 +1,54 @@
+# Copyright (c) Pixie Labs, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+
+import px
+
+t1 = px.DataFrame(table='http_events', start_time='-30s')
+
+t1.service = t1.ctx['service']
+t1.http_resp_latency_ms = t1.http_resp_latency_ns / 1.0E6
+t1.failure = t1.http_resp_status >= 400
+t1.range_group = t1.time_ - px.modulo(t1.time_, 1000000000)
+
+quantiles_agg = t1.groupby('service').agg(
+    latency_quantiles=('http_resp_latency_ms', px.quantiles),
+    errors=('failure', px.mean),
+    throughput_total=('http_resp_status', px.count),
+)
+
+quantiles_agg.latency_p50 = px.pluck_float64(quantiles_agg.latency_quantiles, 'p50')
+quantiles_agg.latency_p90 = px.pluck_float64(quantiles_agg.latency_quantiles, 'p90')
+quantiles_agg.latency_p99 = px.pluck_float64(quantiles_agg.latency_quantiles, 'p99')
+quantiles_table = quantiles_agg[['service', 'latency_p50',
+                                 'latency_p90', 'latency_p99', 'errors', 'throughput_total']]
+
+# The Range aggregate to calcualte the requests per second.
+range_agg = t1.groupby(['service', 'range_group']).agg(
+    requests_per_window=('http_resp_status', px.count),
+)
+
+rps_table = range_agg.groupby('service').agg(
+    rps=('requests_per_window', px.mean))
+
+joined_table = quantiles_table.merge(rps_table,
+                                     how='inner',
+                                     left_on=['service'],
+                                     right_on=['service'],
+                                     suffixes=['', '_x'])
+
+joined_table['latency(p50)'] = joined_table.latency_p50
+joined_table['latency(p90)'] = joined_table.latency_p90
+joined_table['latency(p99)'] = joined_table.latency_p99
+joined_table['throughput (rps)'] = joined_table.rps
+joined_table['throughput total'] = joined_table.throughput_total
+
+joined_table = joined_table[[
+    'service',
+    'latency(p50)',
+    'latency(p90)',
+    'latency(p99)',
+    'errors',
+    'throughput (rps)',
+    'throughput total']]
+joined_table = joined_table[joined_table.service != '']
+px.display(joined_table)

@@ -1,0 +1,4 @@
+---
+short: Cluster Overview
+long: >
+  This view lists the namespaces and the node that are available on the current cluster.

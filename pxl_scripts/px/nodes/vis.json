@@ -1,0 +1,210 @@
+{
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "description": "The relative start time of the window. Current time is assumed to be now",
+      "defaultValue": "-5m"
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "process_stats",
+      "func": {
+        "name": "process_stats",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          }
+        ]
+      }
+    },
+    {
+      "outputName": "network_stats",
+      "func": {
+        "name": "network_stats",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Nodes",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "func": {
+        "name": "nodes",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    },
+    {
+      "name": "CPU %",
+      "position": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "process_stats",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "cpu_pct",
+            "mode": "MODE_LINE",
+            "series": "node",
+            "stackBySeries": false
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "CPU usage (%)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Sent Network Traffic",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "network_stats",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "tx_mb_per_s",
+            "mode": "MODE_LINE",
+            "series": "node",
+            "stackBySeries": false
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Sent Data (MB/s)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Received Network Traffic",
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "network_stats",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "rx_mb_per_s",
+            "mode": "MODE_LINE",
+            "series": "node",
+            "stackBySeries": false
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Received Data (MB/s)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Bytes read (MB/s)",
+      "position": {
+        "x": 4,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "process_stats",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "rchar_mb",
+            "mode": "MODE_LINE",
+            "series": "node",
+            "stackBySeries": false
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Bytes read (MB/s)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Bytes written (MB/s)",
+      "position": {
+        "x": 8,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "process_stats",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "wchar_mb",
+            "mode": "MODE_LINE",
+            "series": "node",
+            "stackBySeries": false
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Bytes written (MB/s)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Pods",
+      "position": {
+        "x": 0,
+        "y": 6,
+        "w": 12,
+        "h": 3
+      },
+      "func": {
+        "name": "pods_by_node",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    }
+  ]
+}

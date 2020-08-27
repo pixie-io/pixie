@@ -1,0 +1,37 @@
+# Copyright (c) Pixie Labs, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+
+''' HTTP Data Tracer
+
+This script traces all HTTP/HTTP2 data on the cluster for a specified amount of time.
+An optional filter prints only those traces that include the specified service name.
+'''
+
+import px
+
+# ----------------------------------------------------------------
+# Script variables
+# ----------------------------------------------------------------
+
+service_matcher = ''
+start_time = '-30s'
+max_num_records = 100
+
+# ----------------------------------------------------------------
+# Implementation
+# ----------------------------------------------------------------
+
+df = px.DataFrame(table='http_events', select=['time_', 'upid', 'remote_addr', 'remote_port',
+                                               'http_req_method', 'http_req_path',
+                                               'http_resp_status', 'http_resp_message',
+                                               'http_resp_body',
+                                               'http_resp_latency_ns'], start_time=start_time)
+
+df.http_resp_latency_ms = df.http_resp_latency_ns / 1.0E6
+df.service = df.ctx['service']
+df = df.drop(columns=['http_resp_latency_ns', 'upid'])
+
+df = df[px.contains(df['service'], service_matcher)]
+df = df.head(n=max_num_records)
+
+px.display(df)

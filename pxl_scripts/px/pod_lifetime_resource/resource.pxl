@@ -1,0 +1,67 @@
+# Copyright (c) Pixie Labs, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+
+import px
+
+#
+# Returns the Total Resource Usage for each pod.
+#
+t1 = px.DataFrame(table='process_stats', start_time='-60s')
+
+bytes_per_mb = 1024.0 * 1024.0
+
+# Convert to better units.
+t1.cpu_utime_s = t1.cpu_utime_ns / 1.0E9
+t1.cpu_ktime_s = t1.cpu_ktime_ns / 1.0E9
+t1.vsize_mb = t1.vsize_bytes / bytes_per_mb
+t1.rss_bytes_mb = t1.rss_bytes / bytes_per_mb
+t1.read_bytes_mb = t1.read_bytes / bytes_per_mb
+t1.write_bytes_mb = t1.write_bytes / bytes_per_mb
+t1.rchar_bytes_mb = t1.rchar_bytes / bytes_per_mb
+t1.wchar_bytes_mb = t1.wchar_bytes / bytes_per_mb
+t1.pod = t1.ctx['pod']
+
+upid_aggop = t1.groupby(['upid', 'pod']).agg(
+    vsize_mb=('vsize_mb', px.mean),
+    rss_bytes_mb=('rss_bytes_mb', px.mean),
+    # The following columns are all counters, so we take the maximum value.
+    cpu_utime_s=('cpu_utime_s', px.max),
+    cpu_ktime_s=('cpu_ktime_s', px.max),
+    read_bytes_mb=('read_bytes_mb', px.max),
+    write_bytes_mb=('write_bytes_mb', px.max),
+    rchar_bytes_mb=('rchar_bytes_mb', px.max),
+    wchar_bytes_mb=('wchar_bytes_mb', px.max),
+)
+
+# For this aggregate, we sum up the values as we've already calculated the average/usage
+# for the upids already.
+pod_aggop = upid_aggop.groupby('pod').agg(
+    cpu_utime_s=('cpu_utime_s', px.sum),
+    cpu_ktime_s=('cpu_ktime_s', px.sum),
+    vsize_mb=('vsize_mb', px.sum),
+    rss_bytes_mb=('rss_bytes_mb', px.sum),
+    read_bytes_mb=('read_bytes_mb', px.sum),
+    write_bytes_mb=('write_bytes_mb', px.sum),
+    rchar_bytes_mb=('rchar_bytes_mb', px.sum),
+    wchar_bytes_mb=('wchar_bytes_mb', px.sum),
+)
+
+# Format everything nicely.
+pod_aggop.pod_name = pod_aggop.pod
+pod_aggop.status = px.pod_name_to_status(pod_aggop.pod_name)
+pod_aggop['Created on'] = px.pod_name_to_start_time(pod_aggop.pod_name)
+pod_aggop['CPU User time (s)'] = pod_aggop.cpu_utime_s
+pod_aggop['CPU System time (s)'] = pod_aggop.cpu_ktime_s
+pod_aggop['Virtual Memory (mb)'] = pod_aggop.vsize_mb
+pod_aggop['Average Memory (mb)'] = pod_aggop.rss_bytes_mb
+pod_aggop['Read to IO (mb)'] = pod_aggop.read_bytes_mb
+pod_aggop['Write to IO (mb)'] = pod_aggop.write_bytes_mb
+pod_aggop['Characters Read (mb)'] = pod_aggop.rchar_bytes_mb
+pod_aggop['Characters written (mb)'] = pod_aggop.wchar_bytes_mb
+
+keep_columns = pod_aggop[['pod_name', 'status', 'Created on', 'CPU User time (s)',
+                          'CPU System time (s)', 'Virtual Memory (mb)',
+                          'Average Memory (mb)', 'Read to IO (mb)', 'Write to IO (mb)',
+                          'Characters Read (mb)', 'Characters written (mb)']]
+
+px.display(keep_columns)

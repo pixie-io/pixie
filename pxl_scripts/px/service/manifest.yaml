@@ -1,0 +1,4 @@
+---
+short: Service Overview
+long: >
+  This script gets an overview of an individual service, summarizing its request statistics.
