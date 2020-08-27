@@ -18,4 +18,4 @@ artifact_url() {
 }
 
 curl -fsSL "$(artifact_url)" -o /tmp/px_new
-sudo mv /tmp/px_new ${INSTALL_PATH}
+sudo mv /tmp/px_new ${INSTALL_PATH}/px
