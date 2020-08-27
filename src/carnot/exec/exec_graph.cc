@@ -134,8 +134,8 @@ Status ExecutionGraph::ExecuteSources() {
       bool timed_out = YieldWithTimeout();
       timer.Stop();
       if (timed_out) {
-        LOG(WARNING) << absl::Substitute("Timed out loading source data after $0 ms",
-                                         timer.ElapsedTime_us() / 1000.0);
+        LOG(ERROR) << absl::Substitute("Timed out loading source data after $0 ms",
+                                       timer.ElapsedTime_us() / 1000.0);
         for (SourceNode* source : running_sources) {
           PL_RETURN_IF_ERROR(source->SendEndOfStream(exec_state_));
         }
