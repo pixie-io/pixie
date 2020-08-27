@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"pixielabs.ai/pixielabs/src/shared/services"
@@ -22,7 +23,7 @@ const (
 	vizierYAMLPath          = "./yamls/vizier/vizier_prod.yaml"
 	vizierBootstrapYAMLPath = "./yamls/vizier/vizier_bootstrap_prod.yaml"
 	natsYAMLPath            = "./yamls/vizier_deps/nats_prod.yaml"
-	deleteTimeout           = 5 * time.Minute
+	deleteTimeout           = 10 * time.Minute
 )
 
 func init() {
@@ -106,7 +107,11 @@ func main() {
 	// Delete everything but updater dependencies.
 	_, err = od.DeleteByLabel("component=vizier,vizier-updater-dep!=true", k8s.AllResourceKinds...)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to delete old components")
+		if errors.IsTimeout(err) {
+			log.WithError(err).Error("Old components taking longer to terminate than timeout")
+		} else {
+			log.WithError(err).Fatal("Failed to delete old components")
+		}
 	}
 
 	etcdPath := etcdYAMLPath
@@ -143,11 +148,19 @@ func main() {
 		} else {
 			_, err = od.DeleteByLabel("app=pl-monitoring", "StatefulSet")
 			if err != nil {
-				log.WithError(err).Fatal("Could not delete existing etcd")
+				if errors.IsTimeout(err) {
+					log.WithError(err).Error("Existing etcd taking longer to terminate than timeout")
+				} else {
+					log.WithError(err).Fatal("Could not delete existing etc")
+				}
 			}
 			_, err = od.DeleteByLabel("app=pl-monitoring", "PersistentVolumeClaim")
 			if err != nil {
-				log.WithError(err).Fatal("Could not delete etcd pvc")
+				if errors.IsTimeout(err) {
+					log.WithError(err).Error("Existing etcd pvc taking longer to terminate than timeout")
+				} else {
+					log.WithError(err).Fatal("Could not delete etcd pvc")
+				}
 			}
 		}
 
