@@ -28,7 +28,8 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 )
 
-const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle.json"
+const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-core.json"
+const ossBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-oss.json"
 
 func init() {
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
@@ -154,7 +155,7 @@ func main() {
 
 	//TODO(michelle): Requiring the bundle manager in the API service is temporary until we
 	// start indexing scripts.
-	br, err := script.NewBundleManagerWithOrgName(defaultBundleFile, "")
+	br, err := script.NewBundleManagerWithOrgName([]string{defaultBundleFile, ossBundleFile}, "")
 	if err != nil {
 		log.WithError(err).Error("Failed to init bundle manager")
 		br = nil

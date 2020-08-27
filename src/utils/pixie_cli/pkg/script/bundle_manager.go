@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"sync"
 
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
@@ -45,35 +46,56 @@ func isValidURL(toTest string) bool {
 }
 
 // NewBundleManagerWithOrgName reads the json bundle and initializes the bundle reader for a specific org.
-func NewBundleManagerWithOrgName(bundleFile string, orgName string) (*BundleManager, error) {
-	var r io.Reader
-	if isValidURL(bundleFile) {
-		resp, err := http.Get(bundleFile)
-		if err != nil {
-			return nil, err
+func NewBundleManagerWithOrgName(bundleFiles []string, orgName string) (*BundleManager, error) {
+	var wg sync.WaitGroup
+	wg.Add(len(bundleFiles))
+	bundles := make([]*bundle, len(bundleFiles))
+
+	readBundle := func(bundleFile string, index int) {
+		defer wg.Done()
+		var r io.Reader
+		if isValidURL(bundleFile) {
+			resp, err := http.Get(bundleFile)
+			if err != nil {
+				log.WithError(err).Error("Error checking bundle file URL")
+				return
+			}
+			defer resp.Body.Close()
+			r = resp.Body
+		} else {
+			f, err := os.Open(bundleFile)
+			if err != nil {
+				log.WithError(err).Error("Error reading bundle file")
+				return
+			}
+			defer f.Close()
+			r = f
 		}
-		defer resp.Body.Close()
-		r = resp.Body
-	} else {
-		f, err := os.Open(bundleFile)
+
+		var b bundle
+		err := json.NewDecoder(r).Decode(&b)
 		if err != nil {
-			return nil, err
+			log.WithError(err).Error("Error decoding bundle file")
+			return
 		}
-		defer f.Close()
-		r = f
+
+		bundles[index] = &b
 	}
 
-	var b bundle
-	err := json.NewDecoder(r).Decode(&b)
-	if err != nil {
-		return nil, err
+	for i, bundle := range bundleFiles {
+		go readBundle(bundle, i)
 	}
+	wg.Wait()
 
 	filtered := make(map[string]*pixieScript, 0)
 	// Filter scripts by org.
-	for k, script := range b.Scripts {
-		if len(script.OrgName) == 0 || script.OrgName == orgName || orgName == "" {
-			filtered[k] = script
+	for _, b := range bundles {
+		if b != nil {
+			for k, script := range b.Scripts {
+				if len(script.OrgName) == 0 || script.OrgName == orgName || orgName == "" {
+					filtered[k] = script
+				}
+			}
 		}
 	}
 
@@ -83,14 +105,14 @@ func NewBundleManagerWithOrgName(bundleFile string, orgName string) (*BundleMana
 }
 
 // NewBundleManager reads the json bundle and initializes the bundle reader.
-func NewBundleManager(bundleFile string) (*BundleManager, error) {
+func NewBundleManager(bundleFiles []string) (*BundleManager, error) {
 	// TODO(zasgar): Refactor user login state, etc.
 	authInfo, err := auth.LoadDefaultCredentials()
 	if err != nil {
 		log.WithError(err).Fatal("Must be logged in")
 	}
 
-	return NewBundleManagerWithOrgName(bundleFile, authInfo.OrgName)
+	return NewBundleManagerWithOrgName(bundleFiles, authInfo.OrgName)
 }
 
 // GetScriptMetadata returns metadata about available scripts.

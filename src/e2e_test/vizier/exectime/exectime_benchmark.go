@@ -116,7 +116,7 @@ func (d *BytesDistribution) Stddev() float64 {
 }
 
 func createBundleReader(bundleFile string) (*script.BundleManager, error) {
-	br, err := script.NewBundleManager(bundleFile)
+	br, err := script.NewBundleManager([]string{bundleFile})
 	if err != nil {
 		return nil, err
 	}

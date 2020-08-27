@@ -13,7 +13,8 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 )
 
-const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle.json"
+const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-core.json"
+const ossBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-oss.json"
 
 func mustCreateBundleReader() *script.BundleManager {
 	br, err := createBundleReader()
@@ -28,7 +29,7 @@ func createBundleReader() (*script.BundleManager, error) {
 	if bundleFile == "" {
 		bundleFile = defaultBundleFile
 	}
-	br, err := script.NewBundleManager(bundleFile)
+	br, err := script.NewBundleManager([]string{bundleFile, ossBundleFile})
 	if err != nil {
 		return nil, err
 	}
