@@ -1,6 +1,8 @@
 import clsx from 'clsx';
 import * as React from 'react';
 import { isInView } from 'utils/bbox';
+import ServiceIcon from 'components/icons/service';
+import PodIcon from 'components/icons/pod';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
@@ -29,6 +31,7 @@ export interface CompletionItem {
   description?: string;
   highlights?: Array<number>;
   itemType?: string;
+  state?: string;
 }
 
 const useStyles = makeStyles((theme: Theme) => (
@@ -42,7 +45,7 @@ const useStyles = makeStyles((theme: Theme) => (
       overflow: 'auto',
       flex: 3,
       '& > *': {
-        paddingLeft: theme.spacing(7.5),
+        paddingLeft: theme.spacing(2),
       },
     },
     description: {
@@ -71,11 +74,42 @@ const useStyles = makeStyles((theme: Theme) => (
         borderLeftStyle: 'solid',
         borderLeftWidth: theme.spacing(0.5),
         borderLeftColor: theme.palette.primary.main,
-        paddingLeft: theme.spacing(7),
+        paddingLeft: theme.spacing(1.5),
       },
+      display: 'flex',
+      alignItems: 'center',
     },
     highlight: {
       fontWeight: 600,
+    },
+    status: {
+      width: theme.spacing(4),
+      display: 'inline-block',
+      paddingLeft: theme.spacing(1),
+    },
+    itemType: {
+      width: theme.spacing(4),
+      display: 'inline-block',
+    },
+    healthy: {
+      '& svg': {
+        fill: theme.palette.success.main,
+      },
+    },
+    unhealthy: {
+      '& svg': {
+        fill: theme.palette.error.main,
+      },
+    },
+    pending: {
+      '& svg': {
+        fill: theme.palette.warning.main,
+      },
+    },
+    terminated: {
+      '& svg': {
+        fill: theme.palette.foreground?.grey1,
+      },
     },
   })));
 
@@ -156,6 +190,8 @@ const CompletionInternal = (props: CompletionProps) => {
     onSelection,
     onActiveChange,
     active,
+    state,
+    itemType,
   } = props;
 
   const classes = useStyles();
@@ -186,6 +222,35 @@ const CompletionInternal = (props: CompletionProps) => {
       ref.current.scrollIntoView();
     }
   }, [active, ref]);
+
+  let stateClass = null;
+  switch (state) {
+    case 'AES_TERMINATED':
+      stateClass = classes.terminated;
+      break;
+    case 'AES_FAILED':
+      stateClass = classes.unhealthy;
+      break;
+    case 'AES_PENDING':
+      stateClass = classes.pending;
+      break;
+    case 'AES_RUNNING':
+      stateClass = classes.healthy;
+      break;
+    default:
+  }
+
+  let entityIcon = null;
+  switch (itemType) {
+    case 'svc':
+      entityIcon = (<ServiceIcon />);
+      break;
+    case 'pod':
+      entityIcon = (<PodIcon />);
+      break;
+    default:
+  }
+
   return (
     <div
       ref={ref}
@@ -193,6 +258,9 @@ const CompletionInternal = (props: CompletionProps) => {
       onClick={() => onSelection(id)}
       onMouseOver={() => onActiveChange(id)}
     >
+      <div className={clsx(classes.itemType, stateClass)}>
+        {entityIcon}
+      </div>
       {parts}
     </div>
   );

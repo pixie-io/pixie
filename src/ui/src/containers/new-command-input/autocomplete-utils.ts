@@ -28,3 +28,18 @@ export function entityTypeToString(entityType: EntityType): string {
       return '';
   }
 }
+
+export function entityStatusGroup(entityState: string): string {
+  switch (entityState) {
+    case 'AES_TERMINATED':
+      return 'unknown';
+    case 'AES_FAILED':
+      return 'unhealthy';
+    case 'AES_RUNNING':
+      return 'healthy';
+    case 'AES_PENDING':
+      return 'pending';
+    default:
+      return 'unknown';
+  }
+}

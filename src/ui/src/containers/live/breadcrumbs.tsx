@@ -14,7 +14,7 @@ import { ScriptsContext } from 'containers/App/scripts-context';
 import { ScriptContext } from 'context/script-context';
 import { entityPageForScriptId, optionallyGetNamespace } from 'components/live-widgets/utils/live-view-params';
 import { parseVis } from 'containers/live/vis';
-import { EntityType, pxTypetoEntityType } from 'containers/new-command-input/autocomplete-utils';
+import { EntityType, pxTypetoEntityType, entityStatusGroup } from 'containers/new-command-input/autocomplete-utils';
 import { StatusCell } from 'components/status/status';
 import { clusterStatusGroup } from 'containers/admin/utils';
 import { ContainsMutation } from 'utils/pxl';
@@ -36,6 +36,7 @@ query getCompletions($input: String, $kind: AutocompleteEntityKind, $clusterUID:
     name
     description
     matchedIndexes
+    state
   }
 }
 `;
@@ -136,7 +137,10 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     const entityType = pxTypetoEntityType(argTypes[argName]);
     if (entityType !== 'AEK_UNKNOWN') {
       argProps.getListItems = async (input) => (getCompletions(input, entityType)
-        .then((results) => (results.data.autocompleteField.map((suggestion) => ({ value: suggestion.name })))));
+        .then((results) => (results.data.autocompleteField.map((suggestion) => ({
+          value: suggestion.name,
+          icon: <StatusCell statusGroup={entityStatusGroup(suggestion.state)} />,
+        })))));
     }
 
     // TODO(michelle): Ideally we should just be able to use the entityType to determine whether the

@@ -101,6 +101,7 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
             itemType: entityTypeToString(sugg.kind),
             description: sugg.description,
             highlights: sugg.matchedIndexes,
+            state: sugg.state,
           }));
 
           return {
