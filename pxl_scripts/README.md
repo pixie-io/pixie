@@ -1,8 +1,8 @@
 # PXL Scripts Overview
 
-Pixie can run PXL scripts. PXL is a DSL embedded into python based on the
-popular open source python library [Pandas](https://pandas.pydata.org/). All PXL scripts are 100%
-compatible with Python.
+Pixie utilize PxL (Pixie Language) scripts. To learn more about PxL, take a look at our documentation [here](https://docs.pixielabs.ai/pxl). 
+
+
 
 PXL scripts can easily be run using the PX CLI tool. Currently PXL scripts can be passed directly to
 the CLI by running:
