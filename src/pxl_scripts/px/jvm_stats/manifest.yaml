@@ -1,4 +1,0 @@
----
-short: JVM Stats per Pod
-long: >
-  Returns the JVM Stats per Pod. You can filter this by node.

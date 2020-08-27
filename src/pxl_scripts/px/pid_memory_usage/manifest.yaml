@@ -1,3 +1,0 @@
----
-short: Memory Usage of Processes.
-long: Get the Virtual memory usage and average memory for all processes in the k8s cluster.

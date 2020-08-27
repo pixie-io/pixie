@@ -1,4 +1,0 @@
----
-short: Services Overview
-long: >
-  This script gets an overview of the services in a namespace, summarizing their request statistics.

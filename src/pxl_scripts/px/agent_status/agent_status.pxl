@@ -1,6 +1,0 @@
-# Copyright (c) Pixie Labs, Inc.
-# Licensed under the Apache License, Version 2.0 (the "License")
-
-import px
-
-px.display(px.GetAgentStatus())
