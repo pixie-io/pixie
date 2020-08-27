@@ -81,20 +81,30 @@ Status CreateSymlinkIfNotExists(const std::filesystem::path& target,
   }
 
 Status Exists(const std::filesystem::path& path) {
-  WRAP_BOOL_FN(std::filesystem::exists(path, ec))
+  WRAP_BOOL_FN(std::filesystem::exists(path, ec));
   return error::InvalidArgument("Path $0 does not exist [ec=$1]", path.string(), ec.message());
 }
 
 Status Copy(const std::filesystem::path& from, const std::filesystem::path& to,
             std::filesystem::copy_options options) {
-  WRAP_BOOL_FN(std::filesystem::copy_file(from, to, options, ec))
+  WRAP_BOOL_FN(std::filesystem::copy_file(from, to, options, ec));
   return error::InvalidArgument("Could not copy from $0 to $1 [ec=$2]", from.string(), to.string(),
                                 ec.message());
 }
 
 Status Remove(const std::filesystem::path& f) {
-  WRAP_BOOL_FN(std::filesystem::remove(f, ec))
+  WRAP_BOOL_FN(std::filesystem::remove(f, ec));
   return error::InvalidArgument("Could not delete $0 [ec=$1]", f.string(), ec.message());
+}
+
+StatusOr<bool> IsEmpty(const std::filesystem::path& f) {
+  std::error_code ec;
+  bool val = std::filesystem::is_empty(f, ec);
+  if (ec.value()) {
+    return error::InvalidArgument("Could not check for emptiness $0 [ec=$1]", f.string(),
+                                  ec.message());
+  }
+  return val;
 }
 
 StatusOr<std::filesystem::path> Absolute(const std::filesystem::path& path) {

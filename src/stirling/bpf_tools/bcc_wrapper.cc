@@ -1,10 +1,10 @@
 #ifdef __linux__
 
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
-#include "src/stirling/utils/linux_headers.h"
 
 #include <linux/perf_event.h>
 #include <linux/sched.h>
+#include <sys/mount.h>
 
 #include <unistd.h>
 #include <cstdlib>
@@ -19,6 +19,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/system.h"
 #include "src/stirling/obj_tools/elf_tools.h"
+#include "src/stirling/utils/linux_headers.h"
 
 // TODO(yzhao): Do we need make this flag able to specify size for individual perf buffers?
 // At least, we should have different values for ones used for transferring data, and metadata.
@@ -47,6 +48,27 @@ namespace bpf_tools {
 // used for bookkeeping, which translate to equal number of struct kretprobe in memory.
 constexpr int kKprobeMaxActive = 512;
 
+// BCC requires debugfs to be mounted to deploy BPF programs.
+// Most kernels already have this mounted, but some do not.
+// See https://github.com/iovisor/bcc/blob/master/INSTALL.md.
+Status MountDebugFS() {
+  std::filesystem::path sys_kernel_debug("/sys/kernel/debug");
+
+  // If the directory is empty, debugfs needs to be mounted.
+  PL_ASSIGN_OR_RETURN(bool is_empty, fs::IsEmpty(sys_kernel_debug));
+  if (is_empty) {
+    LOG(INFO) << absl::Substitute("Debugfs not mounted at $0. Attempting to mount now.",
+                                  sys_kernel_debug.string());
+    int status = mount("debugfs", sys_kernel_debug.c_str(), "debugfs", /* mountflags */ 0,
+                       /* data */ nullptr);
+    if (status == -1) {
+      return error::Internal("Mount of debugfs failed (required for BCC): $0", strerror(errno));
+    }
+  }
+
+  return Status::OK();
+}
+
 Status BCCWrapper::InitBPFProgram(std::string_view bpf_program,
                                   const std::vector<std::string>& cflags) {
   if (!IsRoot()) {
@@ -60,6 +82,8 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program,
   //       BCCWrapper (e.g. connector_bpf_tests), would have to make sure to call this function.
   //       Thus, it is deemed to be better here.
   PL_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders({utils::kDefaultHeaderSearchOrder}));
+
+  PL_RETURN_IF_ERROR(MountDebugFS());
 
   auto init_res = bpf_.init(std::string(bpf_program), cflags);
   if (init_res.code() != 0) {

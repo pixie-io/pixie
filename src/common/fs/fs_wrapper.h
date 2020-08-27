@@ -45,6 +45,8 @@ Status Copy(const std::filesystem::path& from, const std::filesystem::path& to,
             std::filesystem::copy_options options = std::filesystem::copy_options::none);
 Status Remove(const std::filesystem::path& f);
 
+StatusOr<bool> IsEmpty(const std::filesystem::path& f);
+
 StatusOr<std::filesystem::path> Absolute(const std::filesystem::path& path);
 
 StatusOr<std::filesystem::path> Relative(const std::filesystem::path& path,
