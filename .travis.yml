@@ -22,7 +22,7 @@ before_install:
 - gcloud auth activate-service-account --key-file gcs-sa.json
 
 deploy:
-  provider: script
+  - provider: script
     script: ./script/deploy.sh
-      on:
-        branch: main
+    on:
+      branch: main
