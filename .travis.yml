@@ -20,3 +20,8 @@ before_install:
 - source /home/travis/google-cloud-sdk/path.bash.inc
 - gcloud version
 - gcloud auth activate-service-account --key-file gcs-sa.json
+stages:
+- name: deploy
+  # require the branch name to be master (note for PRs this is the base branch name)
+  if: branch = main
+  script: ./script/deploy.sh
