@@ -45,14 +45,6 @@ namespace obj_tools {
 pl::StatusOr<std::filesystem::path> ResolveProcessRootDir(const std::filesystem::path& proc_pid);
 
 /**
- * Returns the OverlayFS' merged base directory.
- *
- * @param mount_options The options part of a mount entry, which is read from /proc/[pid]/mounts or
- * /proc/[pid]/mountinfo.
- */
-pl::StatusOr<std::filesystem::path> GetOverlayMergedDir(std::string_view mount_options);
-
-/**
  * Given a pid, and path within the context of that pid, returns the host-resolved
  * path, accounting for an overlay filesystems.
  *

@@ -18,61 +18,14 @@ namespace obj_tools {
 // Example #2: container with an overlay on / (as discovered through /proc/pid/mounts)
 //   ResolveProcessRootDir():   /var/lib/docker/overlay2/402fe2...be0/merged
 pl::StatusOr<std::filesystem::path> ResolveProcessRootDir(const std::filesystem::path& proc_pid) {
-  std::filesystem::path mounts = proc_pid / "mounts";
-  PL_ASSIGN_OR_RETURN(std::string mounts_content, pl::ReadFileToString(mounts));
-
-  // The format of /proc/<pid>/mounts is described in the man page of 'fstab':
-  // http://man7.org/linux/man-pages/man5/fstab.5.html
-
-  // Each filesystem is described on a separate line.
-  std::vector<std::string_view> lines =
-      absl::StrSplit(mounts_content, '\n', absl::SkipWhitespace());
-  if (lines.empty()) {
-    return error::InvalidArgument("Mounts file '$0' is empty", mounts.string());
+  pid_t pid = 0;
+  if (!absl::SimpleAtoi(proc_pid.filename().string(), &pid)) {
+    return error::InvalidArgument(
+        "Input is not a /proc/<pid> path, because <pid> is not a number, got: $0",
+        proc_pid.string());
   }
-  // Won't be empty as absl::SkipWhitespace() skips them.
-  // TODO(oazizi): Assumes the overlayfs is the first entry in /proc/<pid>/mounts.
-  const auto& line = lines[0];
-
-  // Fields on each line are separated by tabs or spaces.
-  std::vector<std::string_view> fields = absl::StrSplit(line, absl::ByAnyChar("\t "));
-  if (fields.size() < 4) {
-    return error::Internal(absl::Substitute(
-        "Expected at least 4 fields (separated by tabs or spaces in the content of $0, got $1",
-        mounts.string(), line));
-  }
-  std::string_view mount_point = fields[1];
-  std::string_view type = fields[2];
-  std::string_view mount_options = fields[3];
-
-  // TODO(oazizi): Today this function only works on overlayfs. Support other filesystems.
-  if (mount_point != "/" || type != "overlay") {
-    return std::filesystem::path{};
-  }
-  return GetOverlayMergedDir(mount_options);
-}
-
-// TODO(oazizi/yzhao): This function only works for docker.
-//                     Containerd follows a different convention.
-pl::StatusOr<std::filesystem::path> GetOverlayMergedDir(std::string_view mount_options) {
-  constexpr std::string_view kUpperDir = "upperdir=";
-  constexpr std::string_view kDiffSuffix = "/diff";
-  constexpr std::string_view kMerged = "merged";
-  std::vector<std::string_view> options = absl::StrSplit(mount_options, ',');
-  for (const auto& option : options) {
-    auto pos = option.find(kUpperDir);
-    if (pos == std::string_view::npos) {
-      continue;
-    }
-    std::string_view s = option.substr(pos + kUpperDir.size());
-    if (!absl::EndsWith(option, kDiffSuffix)) {
-      LOG(WARNING) << absl::Substitute("Unexpected overlay path. May be containerd. Path=$0", s);
-      continue;
-    }
-    s.remove_suffix(kDiffSuffix.size());
-    return std::filesystem::path(s) / kMerged;
-  }
-  return error::Internal("Failed to resolve overlay path");
+  system::ProcParser proc_parser(system::Config::GetInstance());
+  return proc_parser.ResolveMountPoint(pid, "/");
 }
 
 // Example #1: regular process not in container
