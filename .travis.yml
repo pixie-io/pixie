@@ -23,7 +23,7 @@ before_install:
 
 deploy:
   - provider: script
-    script: ./script/deploy.sh
+    script: ./scripts/deploy.sh
     skip_cleanup: true
     on:
       branch: deploy-test
