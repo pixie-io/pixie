@@ -46,7 +46,7 @@ trap 'cleanup' EXIT
 
 emph "Running dev server for pxl_scripts"
 echo "Open chrome console and add: "\
-     "${tty_green}localStorage.setItem('px-custom-bundle-path',"\
+     "${tty_green}localStorage.setItem('px-custom-oss-bundle-path',"\
      "'http://127.0.0.1:8000/bundle-oss.json')${tty_reset}"
 
 while sleep 1; do
