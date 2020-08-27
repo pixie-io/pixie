@@ -1,0 +1,3 @@
+---
+short: Sample HTTP POST Data
+long: Show a sample of HTTP requests in the Cluster that have method POST.
