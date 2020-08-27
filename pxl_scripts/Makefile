@@ -2,7 +2,7 @@ PIXIE_CLI := px
 # Update dir name here if you want to add a new directory.
 dirs := px
 script_files := $(foreach dir,$(dirs),$(wildcard $(dir)/**/*))
-BUNDLE := gs://pixie-prod-artifacts/script-bundles/bundle.json
+BUNDLE := gs://pixie-prod-artifacts/script-bundles/bundle-oss.json
 EXECUTABLES = $(PIXIE_CLI) gsutil
 K := $(foreach exec,$(EXECUTABLES),\
         $(if $(shell which $(exec)),some string,$(error "No $(exec) in PATH")))
