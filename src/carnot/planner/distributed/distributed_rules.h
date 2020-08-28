@@ -112,6 +112,28 @@ class PruneEmptyPlansRule : public DistributedRule {
  */
 StatusOr<SchemaMap> LoadSchemaMap(const distributedpb::DistributedState& distributed_state);
 
+/**
+ * @brief
+ */
+class AnnotateAbortableSrcsForLimitsRule : public Rule {
+ public:
+  explicit AnnotateAbortableSrcsForLimitsRule(IR* graph)
+      : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false), graph_(graph) {}
+  StatusOr<bool> Apply(IRNode* node) override;
+
+ private:
+  IR* graph_;
+};
+
+class DistributedAnnotateAbortableSrcsForLimitsRule : public DistributedRule {
+ public:
+  DistributedAnnotateAbortableSrcsForLimitsRule()
+      : DistributedRule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
+
+ protected:
+  StatusOr<bool> Apply(distributed::CarnotInstance* node) override;
+};
+
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot

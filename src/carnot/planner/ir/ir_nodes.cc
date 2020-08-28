@@ -614,6 +614,9 @@ Status LimitIR::ToProto(planpb::Operator* op) const {
   }
 
   pb->set_limit(limit_value_);
+  for (const auto src_id : abortable_srcs_) {
+    pb->add_abortable_srcs(src_id);
+  }
   return Status::OK();
 }
 

@@ -252,6 +252,9 @@ message LimitOperator {
   int64 limit = 1;
   // Defines the columns that are passed from the previous operator.
   repeated Column columns = 2;
+  // List of node_ids corresponding to Memory/GRPC Sources that can be aborted
+  // after this limit has processed all its rows.
+  repeated uint64 abortable_srcs = 3;
 }
 
 // Union merges multiple inputs into a single output result.

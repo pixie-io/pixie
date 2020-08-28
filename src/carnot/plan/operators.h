@@ -234,9 +234,12 @@ class LimitOperator : public Operator {
 
   int64_t record_limit() const { return record_limit_; }
 
+  const std::vector<int64_t>& abortable_srcs() const { return abortable_srcs_; }
+
  private:
   int64_t record_limit_ = 0;
   std::vector<int64_t> selected_cols_;
+  std::vector<int64_t> abortable_srcs_;
   planpb::LimitOperator pb_;
 };
 

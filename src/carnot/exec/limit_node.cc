@@ -56,7 +56,6 @@ Status LimitNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, siz
     output_rb.set_eow(rb.eow());
     return SendRowBatchToChildren(exec_state, output_rb);
   }
-
   RowBatch output_rb(*output_descriptor_, remainder_records);
   DCHECK_EQ(output_descriptor_->size(), plan_node_->selected_cols().size());
   for (int64_t input_col_idx : plan_node_->selected_cols()) {
@@ -68,7 +67,9 @@ Status LimitNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, siz
   records_processed_ += remainder_records;
 
   // Terminate execution.
-  exec_state->StopLimitReached();
+  for (const auto src_id : plan_node_->abortable_srcs()) {
+    exec_state->StopSource(src_id);
+  }
 
   return SendRowBatchToChildren(exec_state, output_rb);
 }

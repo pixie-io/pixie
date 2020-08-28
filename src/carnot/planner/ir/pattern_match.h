@@ -144,6 +144,24 @@ inline ClassMatch<IRNodeType::kUInt128> UInt128Value() {
   return ClassMatch<IRNodeType::kUInt128>();
 }
 
+/* Match any source node */
+struct Source : public ParentMatch {
+  Source() : ParentMatch(IRNodeType::kAny) {}
+
+  bool Match(const IRNode* node) const override {
+    return GRPCSource().Match(node) || MemorySource().Match(node) || UDTFSource().Match(node);
+  }
+};
+
+/* Match any sink node */
+struct Sink : public ParentMatch {
+  Sink() : ParentMatch(IRNodeType::kAny) {}
+
+  bool Match(const IRNode* node) const override {
+    return GRPCSink().Match(node) || MemorySink().Match(node);
+  }
+};
+
 /* Match GRPCSink with a specific source ID */
 struct GRPCSinkWithSourceID : public ParentMatch {
   explicit GRPCSinkWithSourceID(int64_t source_id)

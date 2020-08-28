@@ -178,6 +178,41 @@ StatusOr<SchemaMap> LoadSchemaMap(const distributedpb::DistributedState& distrib
   return agent_schema_map;
 }
 
+StatusOr<bool> DistributedAnnotateAbortableSrcsForLimitsRule::Apply(
+    distributed::CarnotInstance* carnot_instance) {
+  AnnotateAbortableSrcsForLimitsRule rule(carnot_instance->plan());
+  return rule.Execute(carnot_instance->plan());
+}
+
+StatusOr<bool> AnnotateAbortableSrcsForLimitsRule::Apply(IRNode* node) {
+  if (!Match(node, Limit())) {
+    return false;
+  }
+  auto limit = static_cast<LimitIR*>(node);
+  plan::DAG dag_copy = graph_->dag();
+  dag_copy.DeleteNode(limit->id());
+  auto src_nodes = graph_->FindNodesThatMatch(Source());
+  auto sink_nodes = graph_->FindNodesThatMatch(Sink());
+  bool changed = false;
+  for (const auto& src : src_nodes) {
+    auto transitive_deps = dag_copy.TransitiveDepsFrom(src->id());
+    bool is_abortable = true;
+    for (const auto sink : sink_nodes) {
+      if (transitive_deps.find(sink->id()) != transitive_deps.end()) {
+        // If there is a sink in the transitive children of the source node then this source node
+        // is not abortable from this limit node.
+        is_abortable = false;
+        break;
+      }
+    }
+    if (is_abortable) {
+      limit->AddAbortableSource(src->id());
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot

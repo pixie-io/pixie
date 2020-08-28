@@ -99,7 +99,6 @@ TEST_F(LimitNodeTest, single_batch_exact_boundary) {
                           .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15, 1, 3, 6, 9})
                           .get())
       .Close();
-  EXPECT_EQ(false, exec_state_->keep_running());
 }
 
 TEST_F(LimitNodeTest, limits_records_split) {
@@ -159,7 +158,6 @@ TEST_F(LimitNodeTest, limits_exact_boundary) {
                           .get())
       .Close();
 
-  EXPECT_EQ(false, exec_state_->keep_running());
 }
 
 TEST_F(LimitNodeTest, child_fail) {

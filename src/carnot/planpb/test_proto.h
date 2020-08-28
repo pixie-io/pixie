@@ -940,6 +940,7 @@ constexpr char kPlanWithTwoSourcesWithLimits[] = R"proto(
           node: 1
           index: 2
         }
+        abortable_srcs: 1
       }
     }
   }
@@ -961,6 +962,7 @@ constexpr char kPlanWithTwoSourcesWithLimits[] = R"proto(
           node: 2
           index: 2
         }
+        abortable_srcs: 2
       }
     }
   }
@@ -985,6 +987,159 @@ constexpr char kPlanWithTwoSourcesWithLimits[] = R"proto(
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
         name: "output2"
+        column_types: INT64
+        column_types: BOOLEAN
+        column_types: FLOAT64
+        column_names: "a"
+        column_names: "b"
+        column_names: "c"
+      }
+    }
+  }
+)proto";
+
+constexpr char kOneLimit3Sources[] = R"proto(
+  id: 1,
+  dag {
+    nodes {
+      id: 1
+      sorted_children: 4
+    }
+    nodes {
+      id: 2
+      sorted_children: 4
+    }
+    nodes {
+      id: 3
+      sorted_children: 4
+    }
+    nodes {
+      id: 4
+      sorted_children: 5
+      sorted_parents: 1
+      sorted_parents: 2
+      sorted_parents: 3
+    }
+    nodes {
+      id: 5
+      sorted_children: 6
+      sorted_parents: 4
+    }
+    nodes {
+      id: 6
+      sorted_parents: 5
+    }
+  }
+  nodes {
+    id: 1
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "numbers"
+        column_idxs: 0
+        column_types: INT64
+        column_names: "a"
+        column_idxs: 1
+        column_types: BOOLEAN
+        column_names: "b"
+        column_idxs: 2
+        column_types: FLOAT64
+        column_names: "c"
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "numbers"
+        column_idxs: 0
+        column_types: INT64
+        column_names: "a"
+        column_idxs: 1
+        column_types: BOOLEAN
+        column_names: "b"
+        column_idxs: 2
+        column_types: FLOAT64
+        column_names: "c"
+      }
+    }
+  }
+  nodes {
+    id: 3
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "numbers"
+        column_idxs: 0
+        column_types: INT64
+        column_names: "a"
+        column_idxs: 1
+        column_types: BOOLEAN
+        column_names: "b"
+        column_idxs: 2
+        column_types: FLOAT64
+        column_names: "c"
+      }
+    }
+  }
+  nodes {
+    id: 4
+    op {
+      op_type: UNION_OPERATOR
+      union_op {
+        column_names: "a"
+        column_names: "b"
+        column_names: "c"
+        column_mappings {
+          column_indexes: 0
+          column_indexes: 1
+          column_indexes: 2
+        }
+        column_mappings {
+          column_indexes: 0
+          column_indexes: 1
+          column_indexes: 2
+        }
+        column_mappings {
+          column_indexes: 0
+          column_indexes: 1
+          column_indexes: 2
+        }
+      }
+    }
+  }
+  nodes {
+    id: 5
+    op {
+      op_type: LIMIT_OPERATOR
+      limit_op {
+        limit: 2
+        columns {
+          node: 4
+          index: 0
+        }
+        columns {
+          node: 4
+          index: 1
+        }
+        columns {
+          node: 4
+          index: 2
+        }
+        abortable_srcs: 1
+        abortable_srcs: 2
+        abortable_srcs: 3
+      }
+    }
+  }
+  nodes {
+    id: 6
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "output"
         column_types: INT64
         column_types: BOOLEAN
         column_types: FLOAT64

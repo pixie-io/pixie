@@ -392,6 +392,11 @@ Status LimitOperator::Init(const planpb::LimitOperator& pb) {
     selected_cols_.push_back(pb_.columns(i).index());
   }
 
+  abortable_srcs_.reserve(pb_.abortable_srcs_size());
+  for (auto i = 0; i < pb_.abortable_srcs_size(); ++i) {
+    abortable_srcs_.push_back(pb_.abortable_srcs(i));
+  }
+
   is_initialized_ = true;
   return Status::OK();
 }

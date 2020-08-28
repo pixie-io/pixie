@@ -250,6 +250,141 @@ TEST_F(ExecGraphTest, execute_time) {
                   ->Equals(types::ToArrow(out_in2, arrow::default_memory_pool())));
 }
 
+TEST_F(ExecGraphTest, two_limits_dont_interfere) {
+  planpb::PlanFragment pf_pb;
+  ASSERT_TRUE(
+      TextFormat::MergeFromString(planpb::testutils::kPlanWithTwoSourcesWithLimits, &pf_pb));
+  std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
+  ASSERT_OK(plan_fragment_->Init(pf_pb));
+
+  auto plan_state = std::make_unique<plan::PlanState>(func_registry_.get());
+
+  auto schema = std::make_shared<table_store::schema::Schema>();
+  schema->AddRelation(
+      1, table_store::schema::Relation(
+             std::vector<types::DataType>(
+                 {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64}),
+             std::vector<std::string>({"a", "b", "c"})));
+
+  table_store::schema::Relation rel(
+      {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64},
+      {"col1", "col2", "col3"});
+  auto table = Table::Create(rel);
+
+  auto col1 = table->GetColumn(0);
+  std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
+  std::vector<types::Int64Value> col1_in2 = {4, 5};
+
+  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+
+  auto col2 = table->GetColumn(1);
+  std::vector<types::BoolValue> col2_in1 = {true, false, true};
+  std::vector<types::BoolValue> col2_in2 = {false, false};
+  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+
+  auto col3 = table->GetColumn(2);
+  std::vector<types::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
+  std::vector<types::Float64Value> col3_in2 = {3.4, 1.2};
+  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in2, arrow::default_memory_pool())));
+
+  auto table_store = std::make_shared<table_store::TableStore>();
+  table_store->AddTable("numbers", table);
+  auto exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
+                                                 MockResultSinkStubGenerator, sole::uuid4());
+
+  ExecutionGraph e;
+  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get(),
+                  /* collect_exec_node_stats */ false);
+
+  EXPECT_OK(e.Execute());
+
+  auto output_table1 = exec_state_->table_store()->GetTable("output1");
+  auto output_table2 = exec_state_->table_store()->GetTable("output2");
+  std::vector<types::Int64Value> out_col1 = {1, 2};
+  std::vector<types::BoolValue> out_col2 = {true, false};
+  std::vector<types::Float64Value> out_col3 = {1.4, 6.2};
+  EXPECT_EQ(1, output_table1->NumBatches());
+  EXPECT_EQ(1, output_table2->NumBatches());
+  auto out_rb1 =
+      output_table1->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+  auto out_rb2 =
+      output_table2->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+  EXPECT_TRUE(out_rb1->ColumnAt(0)->Equals(types::ToArrow(out_col1, arrow::default_memory_pool())));
+  EXPECT_TRUE(out_rb1->ColumnAt(1)->Equals(types::ToArrow(out_col2, arrow::default_memory_pool())));
+  EXPECT_TRUE(out_rb1->ColumnAt(2)->Equals(types::ToArrow(out_col3, arrow::default_memory_pool())));
+  EXPECT_TRUE(out_rb2->ColumnAt(0)->Equals(types::ToArrow(out_col1, arrow::default_memory_pool())));
+  EXPECT_TRUE(out_rb2->ColumnAt(1)->Equals(types::ToArrow(out_col2, arrow::default_memory_pool())));
+  EXPECT_TRUE(out_rb2->ColumnAt(2)->Equals(types::ToArrow(out_col3, arrow::default_memory_pool())));
+}
+
+TEST_F(ExecGraphTest, limit_w_multiple_srcs) {
+  planpb::PlanFragment pf_pb;
+  ASSERT_TRUE(TextFormat::MergeFromString(planpb::testutils::kOneLimit3Sources, &pf_pb));
+  std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
+  ASSERT_OK(plan_fragment_->Init(pf_pb));
+
+  auto plan_state = std::make_unique<plan::PlanState>(func_registry_.get());
+
+  auto schema = std::make_shared<table_store::schema::Schema>();
+  schema->AddRelation(
+      1, table_store::schema::Relation(
+             std::vector<types::DataType>(
+                 {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64}),
+             std::vector<std::string>({"a", "b", "c"})));
+
+  table_store::schema::Relation rel(
+      {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64},
+      {"col1", "col2", "col3"});
+  auto table = Table::Create(rel);
+
+  auto col1 = table->GetColumn(0);
+  std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
+  std::vector<types::Int64Value> col1_in2 = {4, 5};
+
+  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+
+  auto col2 = table->GetColumn(1);
+  std::vector<types::BoolValue> col2_in1 = {true, false, true};
+  std::vector<types::BoolValue> col2_in2 = {false, false};
+  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+
+  auto col3 = table->GetColumn(2);
+  std::vector<types::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
+  std::vector<types::Float64Value> col3_in2 = {3.4, 1.2};
+  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in2, arrow::default_memory_pool())));
+
+  auto table_store = std::make_shared<table_store::TableStore>();
+  table_store->AddTable("numbers", table);
+  auto exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
+                                                 MockResultSinkStubGenerator, sole::uuid4());
+
+  ExecutionGraph e;
+  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get(),
+                  /* collect_exec_node_stats */ false);
+
+  EXPECT_OK(e.Execute());
+
+  auto output_table = exec_state_->table_store()->GetTable("output");
+  std::vector<types::Int64Value> out_col1 = {1, 2};
+  std::vector<types::BoolValue> out_col2 = {true, false};
+  std::vector<types::Float64Value> out_col3 = {1.4, 6.2};
+  EXPECT_EQ(1, output_table->NumBatches());
+  auto out_rb =
+      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+  EXPECT_TRUE(out_rb->ColumnAt(0)->Equals(types::ToArrow(out_col1, arrow::default_memory_pool())));
+  EXPECT_TRUE(out_rb->ColumnAt(1)->Equals(types::ToArrow(out_col2, arrow::default_memory_pool())));
+  EXPECT_TRUE(out_rb->ColumnAt(2)->Equals(types::ToArrow(out_col3, arrow::default_memory_pool())));
+}
+
 class YieldingExecGraphTest : public BaseExecGraphTest {
  protected:
   void SetUp() { SetUpExecState(); }

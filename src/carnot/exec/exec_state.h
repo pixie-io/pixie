@@ -107,20 +107,17 @@ class ExecState {
     return ctx;
   }
 
-  // A node can call this method to say no more records will be processed (ie. Limit).
-  // That node is responsible for setting eos.
-  void StopLimitReached() {
-    DCHECK(current_source_set_);
-    source_id_to_keep_running_map_[current_source_] = false;
-  }
+  // A node (ie. Limit) can call this method to say no more records will be processed for this
+  // source. That node is responsible for setting eos.
+  void StopSource(int64_t src_id) { source_id_to_keep_running_map_[src_id] = false; }
 
   bool keep_running() {
     DCHECK(current_source_set_);
     return source_id_to_keep_running_map_[current_source_];
   }
 
-  void SetCurrentSource(int64_t source) {
-    current_source_ = source;
+  void SetCurrentSource(int64_t source_id) {
+    current_source_ = source_id;
     current_source_set_ = true;
     if (source_id_to_keep_running_map_.find(current_source_) ==
         source_id_to_keep_running_map_.end()) {

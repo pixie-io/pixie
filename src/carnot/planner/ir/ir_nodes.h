@@ -1597,6 +1597,10 @@ class LimitIR : public OperatorIR {
   bool limit_value_set() const { return limit_value_set_; }
   int64_t limit_value() const { return limit_value_; }
 
+  void AddAbortableSource(int64_t src_id) { abortable_srcs_.insert(src_id); }
+
+  const std::unordered_set<int64_t>& abortable_srcs() const { return abortable_srcs_; }
+
   Status Init(OperatorIR* parent, int64_t limit_value);
 
   Status CopyFromNodeImpl(const IRNode* node,
@@ -1614,6 +1618,7 @@ class LimitIR : public OperatorIR {
  private:
   int64_t limit_value_;
   bool limit_value_set_ = false;
+  std::unordered_set<int64_t> abortable_srcs_;
 };
 
 /**

@@ -466,6 +466,62 @@ TEST_F(DistributedPruneUnavailableSourcesRuleTest, OneKelvinUDTFFiltersOutPEMsUD
   EXPECT_EQ(kelvin_sources.size(), 1);
 }
 
+using AnnotateAbortableSrcsForLimitsRuleTest = DistributedRulesTest;
+TEST_F(AnnotateAbortableSrcsForLimitsRuleTest, SourceLimitSink) {
+  auto mem_src = MakeMemSource("http_events");
+  auto limit = MakeLimit(mem_src, 10);
+  MakeMemSink(limit, "output");
+
+  AnnotateAbortableSrcsForLimitsRule rule(graph.get());
+
+  auto rule_or_s = rule.Execute(graph.get());
+  ASSERT_OK(rule_or_s);
+  ASSERT_TRUE(rule_or_s.ConsumeValueOrDie());
+
+  // Limit should have mem_src as abortable source.
+  EXPECT_THAT(limit->abortable_srcs(), ::testing::UnorderedElementsAre(mem_src->id()));
+}
+
+TEST_F(AnnotateAbortableSrcsForLimitsRuleTest, MultipleSourcesUnioned) {
+  auto mem_src1 = MakeMemSource("http_events");
+  auto mem_src2 = MakeMemSource("http_events");
+  auto mem_src3 = MakeMemSource("http_events");
+  auto union_node = MakeUnion({mem_src1, mem_src2, mem_src3});
+  auto limit = MakeLimit(union_node, 10);
+  MakeMemSink(limit, "output");
+
+  AnnotateAbortableSrcsForLimitsRule rule(graph.get());
+
+  auto rule_or_s = rule.Execute(graph.get());
+  ASSERT_OK(rule_or_s);
+  ASSERT_TRUE(rule_or_s.ConsumeValueOrDie());
+
+  // Limit should have all mem_src as abortable sources.
+  EXPECT_THAT(limit->abortable_srcs(),
+              ::testing::UnorderedElementsAre(mem_src1->id(), mem_src2->id(), mem_src3->id()));
+}
+
+TEST_F(AnnotateAbortableSrcsForLimitsRuleTest, DisjointGraphs) {
+  auto mem_src1 = MakeMemSource("http_events");
+  auto limit1 = MakeLimit(mem_src1, 10);
+  MakeMemSink(limit1, "output1");
+
+  auto mem_src2 = MakeMemSource("http_events");
+  auto limit2 = MakeLimit(mem_src2, 10);
+  MakeMemSink(limit2, "output2");
+
+  AnnotateAbortableSrcsForLimitsRule rule(graph.get());
+
+  auto rule_or_s = rule.Execute(graph.get());
+  ASSERT_OK(rule_or_s);
+  ASSERT_TRUE(rule_or_s.ConsumeValueOrDie());
+
+  // First limit should have first mem src as abortable source
+  EXPECT_THAT(limit1->abortable_srcs(), ::testing::UnorderedElementsAre(mem_src1->id()));
+  // Second limit should have second mem src as abortable source
+  EXPECT_THAT(limit2->abortable_srcs(), ::testing::UnorderedElementsAre(mem_src2->id()));
+}
+
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot

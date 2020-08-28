@@ -8,6 +8,7 @@
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/plan/plan.h"
 #include "src/carnot/planner/compiler/compiler.h"
+#include "src/carnot/planner/distributed/distributed_analyzer.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/perf/perf.h"
 #include "src/shared/types/type_utils.h"
@@ -113,8 +114,14 @@ Status CarnotImpl::ExecuteQuery(const std::string& query, const sole::uuid& quer
                                 types::Time64NSValue time_now, bool analyze) {
   // Compile the query.
   auto compiler_state = engine_state_->CreateLocalExecutionCompilerState(time_now);
-  PL_ASSIGN_OR_RETURN(auto logical_plan, compiler_.Compile(query, compiler_state.get()));
-  return ExecutePlan(logical_plan, query_id, analyze);
+  PL_ASSIGN_OR_RETURN(auto logical_plan, compiler_.CompileToIR(query, compiler_state.get()));
+  // TOOD(james/nserrino/philkuz): This is a hack to make sure that the distributed rule for limits
+  // gets run even in carnot_test. We should think about how we want to run distributed analyzer
+  // rules in these test envs.
+  planner::distributed::AnnotateAbortableSrcsForLimitsRule rule(logical_plan.get());
+  PL_RETURN_IF_ERROR(rule.Execute(logical_plan.get()));
+  PL_ASSIGN_OR_RETURN(auto plan_proto, logical_plan->ToProto());
+  return ExecutePlan(plan_proto, query_id, analyze);
 }
 
 /**
