@@ -20,7 +20,6 @@ Examples:
 	df = df.agg(count=('http_resp_body', px.count))
 	px.display(df)
 
-
 Args:
 	table (str): the name of the table to load into the dataframe.
 	select (List[str]): the list of columns to select. If empty,
@@ -243,18 +242,23 @@ func TestParseDocstring(t *testing.T) {
 	assert.Equal(t, parsedDoc.function.Args[2].Ident, "start_time")
 	assert.Equal(t, parsedDoc.function.Args[3].Ident, "stop_time")
 
+	// Check examples.
+	if assert.Len(t, parsedDoc.body.Examples, 1) {
+		// Is the example wrapped by backticks?
+		assert.Regexp(t, "(?s)^```.*```$", parsedDoc.body.Examples[0].Value)
+	}
+
 	// Aggregate document with kwargs.
 	parsedDoc, err = parseDocstring(aggDoc)
 	if !assert.Nil(t, err) {
 		t.Fatal()
 	}
-	assert.Equal(t, len(parsedDoc.function.Args), 0)
-	if !assert.NotNil(t, parsedDoc.function.Kwargs) {
+	if !assert.Equal(t, 1, len(parsedDoc.function.Args)) {
 		t.Fatal()
 	}
 
-	assert.Regexp(t, "keys are the column names", parsedDoc.function.Kwargs.Desc)
-	assert.ElementsMatch(t, parsedDoc.function.Kwargs.Types, []string{"Tuple[string, FunctionType]"})
+	assert.Regexp(t, "keys are the column names", parsedDoc.function.Args[0].Desc)
+	assert.ElementsMatch(t, parsedDoc.function.Args[0].Types, []string{"Tuple[string, FunctionType]"})
 
 	// Return documentation.
 	parsedDoc, err = parseDocstring(docReturnBeforeArgs)

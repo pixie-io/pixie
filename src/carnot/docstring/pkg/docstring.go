@@ -141,7 +141,13 @@ func (w *parser) Walk(lines *[]string, i int) (int, error) {
 	if len(w.parsedDoc.body.Desc) == 0 {
 		w.parsedDoc.body.Desc = (*lines)[i]
 	} else {
-		w.parsedDoc.body.Desc = w.parsedDoc.body.Desc + " " + (*lines)[i]
+		line := (*lines)[i]
+		// TODO(philkuz) support more cases.
+		// Add newline if starts with *.
+		if ok, err := re.MatchString(`^\*\s`, line); err == nil && ok {
+			line = "\n" + line
+		}
+		w.parsedDoc.body.Desc = w.parsedDoc.body.Desc + " " + line
 	}
 
 	return w.Walk(lines, i+1)
@@ -157,7 +163,7 @@ func (w *parser) processExamples(lines *[]string, i int) (int, error) {
 		i++
 	}
 	w.parsedDoc.body.Examples = append(w.parsedDoc.body.Examples, &docspb.ExampleDoc{
-		Value: fmt.Sprintf("```%s```", strings.Join(example, "\n")),
+		Value: fmt.Sprintf("```\n%s\n```", strings.Join(example, "\n")),
 	})
 	return w.Walk(lines, i)
 }
@@ -174,11 +180,7 @@ func (w *parser) processArguments(lines *[]string, i int) (int, error) {
 
 	i = processRemainingDesc(lines, i, w.tabChar+w.tabChar, argDoc)
 
-	if argDoc.Ident == "**kwargs" {
-		w.parsedDoc.function.Kwargs = argDoc
-	} else {
-		w.parsedDoc.function.Args = append(w.parsedDoc.function.Args, argDoc)
-	}
+	w.parsedDoc.function.Args = append(w.parsedDoc.function.Args, argDoc)
 
 	// Continue to process args if they match.
 	if i < len(*lines) && w.ArgMatch((*lines)[i]) {
@@ -486,7 +488,7 @@ func processUDFDocs(udfs *udfspb.Docs) (*udfspb.Docs, error) {
 	}
 	for _, u := range udfs.Udf {
 		for _, e := range u.Examples {
-			e.Value = fmt.Sprintf("```%s```", e.Value)
+			e.Value = fmt.Sprintf("```\n%s\n```", e.Value)
 		}
 	}
 	return udfs, nil
