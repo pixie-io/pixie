@@ -86,7 +86,6 @@ func TestLaunchQuery(t *testing.T) {
 	}
 
 	planPB1 := plannerResultPB.Plan.QbAddressToPlan[agent1ID]
-	// Plan 2 is an empty plan.
 	planPB2 := plannerResultPB.Plan.QbAddressToPlan[agent2ID]
 
 	planMap := make(map[uuid.UUID]*planpb.Plan)

@@ -241,8 +241,8 @@ func loadUDFInfo(udfInfoPb *udfspb.UDFInfo) error {
 	return nil
 }
 
-// checkHealth runs the health check and returns an error if it didn't pass.
-func (s *Server) checkHealth(ctx context.Context) error {
+// CheckHealth runs the health check and returns an error if it didn't pass.
+func (s *Server) CheckHealth(ctx context.Context) error {
 	checkVersionScript := `import px; px.display(px.Version())`
 	req := &plannerpb.QueryRequest{
 		QueryStr: checkVersionScript,
@@ -316,7 +316,7 @@ func (s *Server) checkHealthCached(ctx context.Context) error {
 	if currentTime.Sub(s.hcTime) < healthCheckInterval {
 		return s.hcStatus
 	}
-	status := s.checkHealth(ctx)
+	status := s.CheckHealth(ctx)
 	if status != nil {
 		// If the request failed don't cache the results.
 		return status

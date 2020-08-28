@@ -428,9 +428,6 @@ func OutputSchemaFromPlan(planMap map[uuid.UUID]*planpb.Plan) map[string]*schema
 	outputRelations := make(map[string]*schemapb.Relation)
 
 	for _, plan := range planMap {
-		if plan == nil {
-			continue
-		}
 		for _, fragment := range plan.Nodes {
 			for _, node := range fragment.Nodes {
 				if node.Op.OpType == planpb.GRPC_SINK_OPERATOR {

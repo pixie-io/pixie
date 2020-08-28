@@ -163,6 +163,66 @@ var rowBatchPb = `
 	}
 `
 
+var agentPlanPb = `
+dag: {
+	nodes: {
+		id: 1
+	}
+}
+nodes: {
+	id: 1
+	dag: {
+		nodes: {
+			id: 2
+			sorted_children: 3
+		}
+		nodes: {
+			sorted_parents: 2
+		}
+	}
+	nodes: {
+		id: 2
+		op: {
+			op_type: MEMORY_SOURCE_OPERATOR
+			mem_source_op: {
+				name: "table1"
+				column_idxs: 0
+				column_idxs: 1
+				column_idxs: 2
+				column_names: "time_"
+				column_names: "cpu_cycles"
+				column_names: "upid"
+				column_types: TIME64NS
+				column_types: INT64
+				column_types: UINT128
+				tablet: "1"							
+			}
+		}
+	}
+	nodes: {
+		id: 3
+		op: {
+			op_type: GRPC_SINK_OPERATOR
+			grpc_sink_op: {
+				address: "foo"
+				output_table {
+					table_name: "agent1_table"
+					column_types: TIME64NS
+					column_types: INT64
+					column_types: UINT128
+					column_names: "time_"
+					column_names: "cpu_cycles"
+					column_names: "upid"
+					column_semantic_types: ST_NONE
+					column_semantic_types: ST_NONE
+					column_semantic_types: ST_UPID
+				}
+			}
+		}
+	}
+}
+`
+
 func TestVizierQueryRequestToPlannerQueryRequest(t *testing.T) {
 	sv := new(vizierpb.ExecuteScriptRequest)
 	if err := proto.UnmarshalText(executeScriptReqPb, sv); err != nil {
@@ -431,15 +491,195 @@ func TestBuildExecuteScriptResponse_ExecutionStats(t *testing.T) {
 }
 
 func TestQueryPlanResponse(t *testing.T) {
-	// TODO(nserrino): Fill this in.
+	queryIDStr := "6683eddd-0824-430c-ac0d-ce05cf9624a8"
+	agentIDStr := "3ca421d4-5f85-4c99-8248-02252204e281"
+	queryID, err := uuid.FromString(queryIDStr)
+	if err != nil {
+		t.Fatal("Error converting query ID to UUID")
+	}
+	agentID, err := uuid.FromString(agentIDStr)
+	if err != nil {
+		t.Fatal("Error converting agent ID to UUID")
+	}
+	planTableID := "table_plan_id"
+
+	agentPlan := &planpb.Plan{}
+	if err := proto.UnmarshalText(agentPlanPb, agentPlan); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	planMap := make(map[uuid.UUID]*planpb.Plan)
+	planMap[agentID] = agentPlan
+	planMapStr := make(map[string]*planpb.Plan)
+	planMapStr[agentIDStr] = agentPlan
+
+	dagIDMap := make(map[string]uint64)
+	dagIDMap[agentIDStr] = 0
+	dag := &planpb.DAG{
+		Nodes: []*planpb.DAG_DAGNode{
+			&planpb.DAG_DAGNode{
+				Id: 0,
+			},
+		},
+	}
+
+	plan := &distributedpb.DistributedPlan{
+		QbAddressToPlan:  planMapStr,
+		QbAddressToDagId: dagIDMap,
+		Dag:              dag,
+	}
+
+	agentStats := []*queryresultspb.AgentExecutionStats{
+		&queryresultspb.AgentExecutionStats{
+			AgentID:          pbutils.ProtoFromUUID(&agentID),
+			ExecutionTimeNs:  123,
+			BytesProcessed:   456,
+			RecordsProcessed: 12,
+			OperatorExecutionStats: []*queryresultspb.OperatorExecutionStats{
+				&queryresultspb.OperatorExecutionStats{
+					PlanFragmentId:       1,
+					NodeId:               2,
+					BytesOutput:          450,
+					RecordsOutput:        14,
+					TotalExecutionTimeNs: 50,
+					SelfExecutionTimeNs:  40,
+				},
+				&queryresultspb.OperatorExecutionStats{
+					PlanFragmentId:       1,
+					NodeId:               2,
+					BytesOutput:          456,
+					RecordsOutput:        12,
+					TotalExecutionTimeNs: 73,
+					SelfExecutionTimeNs:  70,
+				},
+			},
+		},
+	}
+
+	expected := &vizierpb.ExecuteScriptResponse{
+		QueryID: queryIDStr,
+		Result: &vizierpb.ExecuteScriptResponse_Data{
+			Data: &vizierpb.QueryData{
+				Batch: &vizierpb.RowBatchData{
+					TableID: "table_plan_id",
+					Cols: []*vizierpb.Column{
+						&vizierpb.Column{
+							ColData: &vizierpb.Column_StringData{
+								StringData: &vizierpb.StringColumn{
+									Data: []string{
+										"digraph  {\n\tsubgraph cluster_s0 {\n\t\tID = \"cluster_s0\";\n" +
+											"\t\tcolor=\"lightgrey\";label=\"agent::3ca421d4-5f85-4c99-8248-02252204e281\\n" +
+											"123ns\";\n\t\tn1[color=\"blue\",label=\"memory_source_operator[2]\\" +
+											"nself_time: 70ns\\ntotal_time: 73ns\\nbytes: 456 B\\nrecords_processed: 12\"" +
+											",shape=\"rect\"];\n\t\tn2[color=\"yellow\",label=\"grpc_sink_operator[3]\\n\"" +
+											",shape=\"rect\"];\n\t\tn1->n2;\n\t\t\n\t}\n\t\n}",
+									},
+								},
+							},
+						},
+					},
+					NumRows: 1,
+					Eow:     true,
+					Eos:     true,
+				},
+			},
+		},
+	}
+
+	resp, err := controllers.QueryPlanResponse(queryID, plan, planMap, &agentStats, planTableID)
+	assert.Nil(t, err)
+	assert.Equal(t, expected, resp)
 }
 
 func TestTableRelationResponses(t *testing.T) {
-	// TODO(nserrino): Fill this in.
-}
+	queryID := uuid.NewV4()
 
-func TestQueryPlanRelationResponse(t *testing.T) {
-	// TODO(nserrino): Fill this in.
+	plannerResultPB := &distributedpb.LogicalPlannerResult{}
+	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	planPB1 := plannerResultPB.Plan.QbAddressToPlan[agent1ID]
+	planPB2 := plannerResultPB.Plan.QbAddressToPlan[agent2ID]
+
+	agentUUID1, err := uuid.FromString(agent1ID)
+	if err != nil {
+		t.Fatal("Error converting agent ID to UUID")
+	}
+	agentUUID2, err := uuid.FromString(agent2ID)
+	if err != nil {
+		t.Fatal("Error converting agent ID to UUID")
+	}
+
+	planMap := make(map[uuid.UUID]*planpb.Plan)
+	planMap[agentUUID1] = planPB1
+	planMap[agentUUID2] = planPB2
+
+	expectedSchemaResults := make(map[string]*vizierpb.ExecuteScriptResponse)
+	actualSchemaResults := make(map[string]*vizierpb.ExecuteScriptResponse)
+
+	expectedSchemaResults["agent1_table"] = &vizierpb.ExecuteScriptResponse{
+		QueryID: queryID.String(),
+		Result: &vizierpb.ExecuteScriptResponse_MetaData{
+			MetaData: &vizierpb.QueryMetadata{
+				Name: "agent1_table",
+				ID:   "agent1_table_id",
+				Relation: &vizierpb.Relation{
+					Columns: []*vizierpb.Relation_ColumnInfo{
+						&vizierpb.Relation_ColumnInfo{ColumnName: "time_",
+							ColumnType:         6,
+							ColumnDesc:         "",
+							ColumnSemanticType: 1,
+						}, &vizierpb.Relation_ColumnInfo{
+							ColumnName:         "cpu_cycles",
+							ColumnType:         2,
+							ColumnDesc:         "",
+							ColumnSemanticType: 1,
+						}, &vizierpb.Relation_ColumnInfo{
+							ColumnName:         "upid",
+							ColumnType:         3,
+							ColumnDesc:         "",
+							ColumnSemanticType: 200,
+						},
+					},
+				},
+			},
+		},
+	}
+	expectedSchemaResults["agent2_table"] = &vizierpb.ExecuteScriptResponse{
+		QueryID: queryID.String(),
+		Result: &vizierpb.ExecuteScriptResponse_MetaData{
+			MetaData: &vizierpb.QueryMetadata{
+				Name: "agent2_table",
+				ID:   "agent2_table_id",
+				Relation: &vizierpb.Relation{
+					Columns: []*vizierpb.Relation_ColumnInfo{
+						&vizierpb.Relation_ColumnInfo{ColumnName: "time_",
+							ColumnType:         6,
+							ColumnDesc:         "",
+							ColumnSemanticType: 1,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	tableIDMap := map[string]string{
+		"agent1_table": "agent1_table_id",
+		"agent2_table": "agent2_table_id",
+	}
+
+	resps, err := controllers.TableRelationResponses(queryID, tableIDMap, planMap)
+	assert.Nil(t, err)
+	assert.NotNil(t, resps)
+	assert.Equal(t, 2, len(resps))
+	actualSchemaResults[resps[0].GetMetaData().Name] = resps[0]
+	actualSchemaResults[resps[1].GetMetaData().Name] = resps[1]
+
+	for tableName, expected := range expectedSchemaResults {
+		assert.Equal(t, expected, actualSchemaResults[tableName])
+	}
 }
 
 func TestOutputSchemaFromPlan(t *testing.T) {
@@ -472,25 +712,33 @@ func TestOutputSchemaFromPlan(t *testing.T) {
 	planMap[agentUUIDs[1]] = planPB2
 
 	output := controllers.OutputSchemaFromPlan(planMap)
-	assert.Equal(t, 1, len(output))
-	assert.NotNil(t, output["out"])
-	assert.Equal(t, 3, len(output["out"].Columns))
+	assert.Equal(t, 2, len(output))
+	assert.NotNil(t, output["agent1_table"])
+	assert.NotNil(t, output["agent2_table"])
+	assert.Equal(t, 3, len(output["agent1_table"].Columns))
+	assert.Equal(t, 1, len(output["agent2_table"].Columns))
 
 	assert.Equal(t, &schemapb.Relation_ColumnInfo{
 		ColumnName:         "time_",
 		ColumnType:         typespb.TIME64NS,
 		ColumnSemanticType: typespb.ST_NONE,
-	}, output["out"].Columns[0])
+	}, output["agent1_table"].Columns[0])
 
 	assert.Equal(t, &schemapb.Relation_ColumnInfo{
 		ColumnName:         "cpu_cycles",
 		ColumnType:         typespb.INT64,
 		ColumnSemanticType: typespb.ST_NONE,
-	}, output["out"].Columns[1])
+	}, output["agent1_table"].Columns[1])
 
 	assert.Equal(t, &schemapb.Relation_ColumnInfo{
 		ColumnName:         "upid",
 		ColumnType:         typespb.UINT128,
 		ColumnSemanticType: typespb.ST_UPID,
-	}, output["out"].Columns[2])
+	}, output["agent1_table"].Columns[2])
+
+	assert.Equal(t, &schemapb.Relation_ColumnInfo{
+		ColumnName:         "time_",
+		ColumnType:         typespb.TIME64NS,
+		ColumnSemanticType: typespb.ST_NONE,
+	}, output["agent2_table"].Columns[0])
 }

@@ -218,19 +218,14 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 			if err != nil {
 				return cancelStreamReturnErr(err /*timeout*/, false)
 			}
-			resp, err := BuildExecuteScriptResponse(msg, activeQuery.tableIDMap, compilationTimeNs)
-			if err != nil {
-				return cancelStreamReturnErr(err /*timeout*/, false)
-			}
-			resultCh <- resp
 
-			// If we are sending a query plan, store the final agent execution stats
-			// to compute the query plan with.
-			execStats := msg.GetExecutionAndTimingInfo()
-			if execStats != nil && queryPlanOpts != nil {
+			// Optionally send the query plan (which requires the exec stats).
+			if execStats := msg.GetExecutionAndTimingInfo(); execStats != nil {
 				activeQuery.agentExecStats = &(execStats.AgentExecutionStats)
 			}
 
+			// If the query is complete and we need to send the query plan, send it before the final
+			// execution stats, since consumers may expect those to be the last message.
 			if activeQuery.queryComplete() {
 				if queryPlanOpts != nil {
 					qpRes, err := QueryPlanResponse(queryID, queryPlanOpts.Plan, queryPlanOpts.PlanMap,
@@ -241,6 +236,15 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 					}
 					resultCh <- qpRes
 				}
+			}
+
+			resp, err := BuildExecuteScriptResponse(msg, activeQuery.tableIDMap, compilationTimeNs)
+			if err != nil {
+				return cancelStreamReturnErr(err /*timeout*/, false)
+			}
+			resultCh <- resp
+
+			if activeQuery.queryComplete() {
 				return /*timeout*/ false, nil
 			}
 

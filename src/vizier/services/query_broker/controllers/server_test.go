@@ -268,7 +268,7 @@ nodes: {
 
 const expectedPlannerResult = `
 status: {}
-plan: {
+plan: {	
 	qb_address_to_plan: {
 		key: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 		value: {
@@ -313,7 +313,7 @@ plan: {
 						grpc_sink_op: {
 							address: "foo"
 							output_table {
-								table_name: "out"
+								table_name: "agent1_table"
 								column_types: TIME64NS
 								column_types: INT64
 								column_types: UINT128
@@ -330,13 +330,70 @@ plan: {
 			}
 		}
 	}
+	qb_address_to_plan: {
+		key: "31285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+		value: {
+			dag: {
+				nodes: {
+					id: 1
+				}
+			}
+			nodes: {
+				id: 1
+				dag: {
+					nodes: {
+						id: 3
+						sorted_children: 0
+					}
+					nodes: {
+						sorted_parents: 3
+					}
+				}
+				nodes: {
+					id: 3
+					op: {
+						op_type: MEMORY_SOURCE_OPERATOR
+						mem_source_op: {
+							name: "table1"
+							column_idxs: 0
+							column_names: "time_"
+							column_types: TIME64NS
+							tablet: "1"							
+						}
+					}
+				}
+				nodes: {
+					op: {
+						op_type: GRPC_SINK_OPERATOR
+						grpc_sink_op: {
+							address: "bar"
+							output_table {
+								table_name: "agent2_table"
+								column_types: TIME64NS
+								column_names: "time_"
+								column_semantic_types: ST_NONE
+							}
+						}
+					}
+				}
+			}
+		}
+	}	
 	qb_address_to_dag_id: {
-		key: "agent1"
+		key: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 		value: 0
 	}
+	qb_address_to_dag_id: {
+		key: "31285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+		value: 1
+	}	
 	dag: {
 		nodes: {
+			id: 0
 		}
+		nodes: {
+			id: 1
+		}		
 	}
 }
 `
@@ -452,16 +509,179 @@ func (f *fakeResultForwarder) OptionallyCancelClientStream(queryID uuid.UUID) {
 	f.ClientStreamClosed = true
 }
 
-func TestHealthCheck_Success(t *testing.T) {
-	// TODO(nserrino): Add unit tests for health check.
+func TestCheckHealth_Success(t *testing.T) {
+	// Start NATS.
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	// Set up mocks.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	agentsInfo := tracker.NewTestAgentsInfo(plannerStatePB.DistributedState)
+	at := fakeAgentsTracker{
+		agentsInfo: agentsInfo,
+	}
+
+	// Set up server.
+	env, err := querybrokerenv.New("qb_address", "qb_hostname")
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	queryID := uuid.NewV4()
+	fakeResult := &vizierpb.ExecuteScriptResponse{
+		QueryID: queryID.String(),
+		Result: &vizierpb.ExecuteScriptResponse_Data{
+			Data: &vizierpb.QueryData{
+				Batch: &vizierpb.RowBatchData{
+					TableID: "health_check_unused",
+					Cols: []*vizierpb.Column{
+						&vizierpb.Column{
+							ColData: &vizierpb.Column_StringData{
+								StringData: &vizierpb.StringColumn{
+									Data: []string{
+										"foo",
+									},
+								},
+							},
+						},
+					},
+					NumRows: 1,
+					Eow:     true,
+					Eos:     true,
+				},
+			},
+		},
+	}
+
+	rf := &fakeResultForwarder{
+		ClientResultsToSend: []*vizierpb.ExecuteScriptResponse{
+			fakeResult,
+		},
+	}
+
+	// Not the actual health check query, but that's okay for the test since the planner and
+	// query execution are mocked out.
+	plannerResultPB := new(distributedpb.LogicalPlannerResult)
+	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	planner := mock_controllers.NewMockPlanner(ctrl)
+	planner.EXPECT().
+		Plan(plannerStatePB, gomock.Any()).
+		Return(plannerResultPB, nil)
+
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nc, planner)
+	err = s.CheckHealth(context.Background())
+	// Should pass.
+	assert.Nil(t, err)
 }
 
-func TestHealthCheck_CompilationError(t *testing.T) {
-	// TODO(nserrino): Add unit tests for health check.
+func TestCheckHealth_CompilationError(t *testing.T) {
+	// Start NATS.
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	// Set up mocks.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	agentsInfo := tracker.NewTestAgentsInfo(plannerStatePB.DistributedState)
+	at := fakeAgentsTracker{
+		agentsInfo: agentsInfo,
+	}
+
+	// Set up server.
+	env, err := querybrokerenv.New("qb_address", "qb_hostname")
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	rf := &fakeResultForwarder{
+		ClientResultsToSend: []*vizierpb.ExecuteScriptResponse{},
+	}
+
+	planner := mock_controllers.NewMockPlanner(ctrl)
+	planner.EXPECT().
+		Plan(plannerStatePB, gomock.Any()).
+		Return(nil, fmt.Errorf("some compiler error"))
+
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nc, planner)
+	err = s.CheckHealth(context.Background())
+	// Should not pass.
+	assert.NotNil(t, err)
 }
 
 func TestHealthCheck_ExecutionError(t *testing.T) {
-	// TODO(nserrino): Add unit tests for health check.
+	// Start NATS.
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	// Set up mocks.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	agentsInfo := tracker.NewTestAgentsInfo(plannerStatePB.DistributedState)
+	at := fakeAgentsTracker{
+		agentsInfo: agentsInfo,
+	}
+
+	// Set up server.
+	env, err := querybrokerenv.New("qb_address", "qb_hostname")
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	// Receiving no results should cause an error.
+	rf := &fakeResultForwarder{
+		ClientResultsToSend: []*vizierpb.ExecuteScriptResponse{},
+	}
+
+	// Not the actual health check query, but that's okay for the test since the planner and
+	// query execution are mocked out.
+	plannerResultPB := new(distributedpb.LogicalPlannerResult)
+	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	planner := mock_controllers.NewMockPlanner(ctrl)
+	planner.EXPECT().
+		Plan(plannerStatePB, gomock.Any()).
+		Return(plannerResultPB, nil)
+
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nc, planner)
+	err = s.CheckHealth(context.Background())
+	// Should not pass.
+	assert.NotNil(t, err)
 }
 
 func TestExecuteScript_Mutation(t *testing.T) {
@@ -541,7 +761,7 @@ func TestExecuteScript_Success(t *testing.T) {
 		},
 	}
 
-	plannerResultPB := new(distributedpb.LogicalPlannerResult)
+	plannerResultPB := &distributedpb.LogicalPlannerResult{}
 	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -573,43 +793,22 @@ func TestExecuteScript_Success(t *testing.T) {
 	}, srv)
 
 	assert.Nil(t, err)
-	assert.Equal(t, 3, len(resps))
+	assert.Equal(t, 4, len(resps))
 
-	assert.Equal(t, 1, len(rf.TableIDMap))
-	assert.NotEqual(t, 0, len(rf.TableIDMap["out"]))
+	assert.Equal(t, 2, len(rf.TableIDMap))
+	assert.NotEqual(t, 0, len(rf.TableIDMap["agent1_table"]))
+	assert.NotEqual(t, 0, len(rf.TableIDMap["agent2_table"]))
 
 	// Make sure the relation is sent with the metadata.
-	expectedSchemaResult := &vizierpb.ExecuteScriptResponse{
-		QueryID: rf.QueryStreamed.String(),
-		Result: &vizierpb.ExecuteScriptResponse_MetaData{
-			MetaData: &vizierpb.QueryMetadata{
-				Name: "out",
-				ID:   rf.TableIDMap["out"],
-				Relation: &vizierpb.Relation{
-					Columns: []*vizierpb.Relation_ColumnInfo{
-						&vizierpb.Relation_ColumnInfo{ColumnName: "time_",
-							ColumnType:         6,
-							ColumnDesc:         "",
-							ColumnSemanticType: 1,
-						}, &vizierpb.Relation_ColumnInfo{
-							ColumnName:         "cpu_cycles",
-							ColumnType:         2,
-							ColumnDesc:         "",
-							ColumnSemanticType: 1,
-						}, &vizierpb.Relation_ColumnInfo{
-							ColumnName:         "upid",
-							ColumnType:         3,
-							ColumnDesc:         "",
-							ColumnSemanticType: 200,
-						},
-					},
-				},
-			},
-		},
-	}
-	assert.Equal(t, expectedSchemaResult, resps[0])
-	assert.Equal(t, fakeResult1, resps[1])
-	assert.Equal(t, fakeResult2, resps[2])
+	actualSchemaResults := make(map[string]*vizierpb.ExecuteScriptResponse)
+	actualSchemaResults[resps[0].GetMetaData().Name] = resps[0]
+	actualSchemaResults[resps[1].GetMetaData().Name] = resps[1]
+	assert.Equal(t, 2, len(actualSchemaResults))
+	assert.NotNil(t, actualSchemaResults["agent1_table"])
+	assert.NotNil(t, actualSchemaResults["agent2_table"])
+
+	assert.Equal(t, fakeResult1, resps[2])
+	assert.Equal(t, fakeResult2, resps[3])
 }
 
 // TestExecuteScript_PlannerErrorResult makes sure that compiler error handling is done well.
