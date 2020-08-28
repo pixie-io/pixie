@@ -101,8 +101,9 @@ Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, 
   PL_RETURN_IF_ERROR(rb.ToProto(req.mutable_row_batch_result()->mutable_row_batch()));
 
   if (!writer_->Write(req)) {
-    return error::Internal("Error writing request to address $0: $1", plan_node_->address(),
-                           response_.message());
+    return error::Cancelled(
+        "GRPCSink could not write result to address: $0, stream closed by server",
+        plan_node_->address());
   }
 
   if (!rb.eos()) {
