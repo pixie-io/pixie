@@ -34,9 +34,8 @@ StatusOr<std::vector<std::string>> GenStructVariable(const ir::physical::Struct&
 // into a BPF map.
 StatusOr<std::vector<std::string>> GenMapStashAction(const ir::physical::MapStashAction& action);
 
-// TODO(yzhao): Considers move this out of this header and into
-// src/stirling/dynamic_trace_connector.h, because most of this part is not generating BCC code.
-StatusOr<std::string> GenProgram(const ir::physical::Program& program);
+// Returns the BCC code for the input physical IR.
+StatusOr<std::string> GenBCCProgram(const ir::physical::Program& program);
 
 }  // namespace dynamic_tracing
 }  // namespace stirling

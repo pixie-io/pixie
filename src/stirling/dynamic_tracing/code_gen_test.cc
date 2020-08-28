@@ -311,7 +311,7 @@ TEST(GenProgramTest, SpecsAndCode) {
   ASSERT_TRUE(TextFormat::ParseFromString(program_protobuf, &program));
   program.mutable_deployment_spec()->set_path(pl::testing::BazelBinTestFilePath(kBinaryPath));
 
-  ASSERT_OK_AND_ASSIGN(const std::string bcc_code, GenProgram(program));
+  ASSERT_OK_AND_ASSIGN(const std::string bcc_code, GenBCCProgram(program));
 
   const std::vector<std::string> expected_code_lines = {
       "#include <linux/ptrace.h>",

@@ -108,7 +108,7 @@ StatusOr<BCCProgram> CompileProgram(const ir::logical::TracepointDeployment& inp
 
   BCCProgram bcc_program;
 
-  PL_ASSIGN_OR_RETURN(bcc_program.code, GenProgram(physical_program));
+  PL_ASSIGN_OR_RETURN(bcc_program.code, GenBCCProgram(physical_program));
 
   std::unique_ptr<elf_tools::ElfReader> elf_reader;
   const auto& binary_path = physical_program.deployment_spec().path();

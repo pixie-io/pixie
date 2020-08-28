@@ -926,7 +926,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateCodeLines() {
 
 }  // namespace
 
-StatusOr<std::string> GenProgram(const Program& program) {
+StatusOr<std::string> GenBCCProgram(const Program& program) {
   BCCCodeGenerator generator(program);
   PL_ASSIGN_OR_RETURN(std::vector<std::string> code_lines, generator.GenerateCodeLines());
   return absl::StrJoin(code_lines, "\n");
