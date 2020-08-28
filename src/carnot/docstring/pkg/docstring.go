@@ -123,7 +123,9 @@ func (w *parser) Walk(lines *[]string, i int) (int, error) {
 	}
 
 	if w.isTabbedLine((*lines)[i]) {
-		return i, formatLineError(lines, i, "Unexpected indent")
+		rx := re.MustCompile(`^[ \t]*`)
+		tabs := rx.FindString((*lines)[i])
+		return i, formatLineError(lines, i, fmt.Sprintf("Unexpected indent '%s'", tabs))
 	}
 
 	if w.MatchExamplesHeader((*lines)[i]) {
@@ -355,11 +357,13 @@ func parseDocstring(docString string) (*FunctionDocstring, error) {
 	return p.parsedDoc, nil
 }
 
+// TODO(philkuz) combine multiple tag readers into one.
 const topicRegex = `:topic: (?P<topic>[^\s]*)\n`
+const opnameRegex = `:opname: (?P<opname>.*)\n`
 
-// getTopic finds the topic in the docstring if it exists.
-func getTopic(docstring string) string {
-	r := re.MustCompile(topicRegex)
+// getTag finds the tag in the docstring if it exists.
+func getTag(docstring, tagRegex string) string {
+	r := re.MustCompile(tagRegex)
 
 	m := r.FindStringSubmatch(docstring)
 	if len(m) == 0 {
@@ -368,10 +372,20 @@ func getTopic(docstring string) string {
 	return string(m[1])
 }
 
+// removeTag removes the tag from the docstring for cleaner parsing
+func removeTag(docstring, tagRegex string) string {
+	r := re.MustCompile(tagRegex)
+	return r.ReplaceAllString(docstring, "")
+}
+
+// getTopic finds the topic in the docstring if it exists.
+func getTopic(docstring string) string {
+	return getTag(docstring, topicRegex)
+}
+
 // removeTopic removes the topic from the docstring for cleaner parsing
 func removeTopic(docstring string) string {
-	r := re.MustCompile(topicRegex)
-	return r.ReplaceAllString(docstring, "")
+	return removeTag(docstring, topicRegex)
 }
 
 // PixieMutation is the topic for any state changes.
@@ -395,8 +409,12 @@ func parseDocstringAndWrite(outDocs *docspb.StructuredDocs, rawDocstring string,
 	if len(topic) == 0 {
 		return nil
 	}
-
 	docstring := removeTopic(rawDocstring)
+
+	opname := getTag(docstring, opnameRegex)
+
+	docstring = removeTag(docstring, opnameRegex)
+
 	docstring = strings.TrimSpace(dedent(docstring))
 
 	// For now we just figure out which part of outDocs to write the docstring. In the future, we might
@@ -423,8 +441,13 @@ func parseDocstringAndWrite(outDocs *docspb.StructuredDocs, rawDocstring string,
 			FuncDoc: genDocString.function,
 		})
 	} else if topic == DataFrameOps {
+		body := genDocString.body
+		if len(opname) > 0 {
+			body.Name = opname
+		}
+
 		outDocs.DataframeOpDocs = append(outDocs.DataframeOpDocs, &docspb.DataFrameOpDoc{
-			Body:    genDocString.body,
+			Body:    body,
 			FuncDoc: genDocString.function,
 		})
 

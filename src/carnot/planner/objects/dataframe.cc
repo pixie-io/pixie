@@ -109,6 +109,22 @@ Status Dataframe::Init() {
 
   /**
    * # Equivalent to the python method method syntax:
+   * def agg(self, **kwargs):
+   *     ...
+   */
+  // TODO(philkuz) temporary measure, need to fix the subscript assignment.
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> mapfn,
+      FuncObject::Create(kMapOpID, {"column_name", "expr"}, {},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&MapAssignHandler::Eval, graph(), op(), std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+  PL_RETURN_IF_ERROR(mapfn->SetDocString(kMapOpDocstring));
+  AddMethod(kMapOpID, mapfn);
+  /**
+   * # Equivalent to the python method method syntax:
    * def drop(self, fn):
    *     ...
    */
@@ -155,8 +171,17 @@ Status Dataframe::Init() {
                      ast_visitor()));
   // TODO(philkuz) figure out how to combine these.
   PL_RETURN_IF_ERROR(subscript_fn->SetDocString(kKeepOpDocstring));
-  PL_RETURN_IF_ERROR(subscript_fn->SetDocString(kFilterOpDocstring));
   AddSubscriptMethod(subscript_fn);
+  // TODO(philkuz) temporary measure to make sure this is recorded.
+  std::shared_ptr<FuncObject> filter_fn(
+      new FuncObject(kFilterOpID, {"key"}, {},
+                     /* has_variable_len_args */ false,
+                     /* has_variable_len_kwargs */ false,
+                     std::bind(&SubscriptHandler::Eval, graph(), op(), std::placeholders::_1,
+                               std::placeholders::_2, std::placeholders::_3),
+                     ast_visitor()));
+  PL_RETURN_IF_ERROR(filter_fn->SetDocString(kFilterOpDocstring));
+  AddMethod(kFilterOpID, filter_fn);
 
   std::shared_ptr<FuncObject> group_by_fn(
       new FuncObject(kGroupByOpID, {"by"}, {},

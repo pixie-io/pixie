@@ -43,6 +43,27 @@ class MetadataObject : public QLObject {
   * pid: Sources: "upid"
 
   :topic: dataframe_ops
+  :opname: Metadata
+
+  Examples:
+    df = px.DataFrame('http_events', start_time='-5m')
+    # Filter only for data that matches the metadata service.
+    # df.ctx['service'] pulls the service column into the DataFrame.
+    df = df[df.ctx['service'] == "pl/vizier-metadata"]
+  Examples:
+    df = px.DataFrame('http_events', start_time='-5m')
+    # Add the service column from the metadata object.
+    df.service = df.ctx['service']
+    # Group by the service.
+    df = df.groupby('service').agg(req_count=('service', px.count))
+  Examples:
+    # Where metadata context can fail.
+    df = px.DataFrame('http_events', start_time='-5m')
+    # Dropping upid so we remove the "source" column we could use
+    df = df.drop('upid')
+    # FAILS: no source column available for the metadata conversion.
+    df.service = df.ctx['service']
+
 
   Args:
     metadata (string): The metadata property you wish to access. Function will throw an error if it doesn't exist.
