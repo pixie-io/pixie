@@ -68,13 +68,4 @@
   exp; \
 }
 
-// TODO(oazizi/yzhao): Consider turning this into a function template. Because templates respect
-// namespace, and the resultant function needs to be defined inside the same namespace of the type,
-// therefore there needs to additional mechanism to make that working.
-#define DEFINE_TO_STRING_OUTPUT_OPERATOR(type) \
-  inline std::ostream& operator<<(std::ostream& os, const type& v) { \
-    os << v.ToString(); \
-    return os; \
-  }
-
 // clang-format on

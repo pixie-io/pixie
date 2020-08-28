@@ -26,9 +26,6 @@ struct NV {
   std::string ToString() const { return absl::Substitute("[name='$0' value='$1']", name, value); }
 };
 
-// This allows GoogleTest to print NV values.
-DEFINE_TO_STRING_OUTPUT_OPERATOR(NV);
-
 inline void RemoveRepeatingSuffix(std::string_view* str, char c) {
   size_t pos = str->find_last_not_of(c);
   if (pos != std::string_view::npos) {

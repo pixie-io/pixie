@@ -131,13 +131,6 @@ inline bool operator==(const StructSpecEntry& a, const StructSpecEntry& b) {
   return a.offset == b.offset && a.size == b.size && a.type_info == b.type_info && a.path == b.path;
 }
 
-DEFINE_TO_STRING_OUTPUT_OPERATOR(TypeInfo);
-DEFINE_TO_STRING_OUTPUT_OPERATOR(StructMemberInfo);
-DEFINE_TO_STRING_OUTPUT_OPERATOR(ArgLocation);
-DEFINE_TO_STRING_OUTPUT_OPERATOR(ArgInfo);
-DEFINE_TO_STRING_OUTPUT_OPERATOR(RetValInfo);
-DEFINE_TO_STRING_OUTPUT_OPERATOR(StructSpecEntry);
-
 //-----------------------------------------------------------------------------
 // DwarfReader
 //-----------------------------------------------------------------------------

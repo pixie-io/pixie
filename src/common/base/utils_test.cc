@@ -264,9 +264,41 @@ TEST(ArrayTransform, LambdaFunc) {
 
 enum class Color { kRed = 2, kBlue = 4, kGreen = 8 };
 
-TEST(EnumCastOrReturn, basic) {
+TEST(EnumCastOrReturn, Basic) {
   ASSERT_OK_AND_EQ(EnumCast<Color>(2), Color::kRed);
   ASSERT_NOT_OK(EnumCast<Color>(1));
+}
+
+struct NameValue {
+  std::string name;
+  int value;
+
+  std::string ToString() const { return absl::Substitute("name=$0 value=$1", name, value); }
+};
+
+namespace nvspace {
+struct NameValue {
+  std::string name;
+  int value;
+
+  std::string ToString() const { return absl::Substitute("name=$0 value=$1", name, value); }
+};
+}  // namespace nvspace
+
+TEST(AutoStreamOperator, Basic) {
+  {
+    NameValue nv{"pixie", 1};
+    std::stringstream buffer;
+    buffer << nv;
+    EXPECT_EQ(buffer.str(), "name=pixie value=1");
+  }
+
+  {
+    nvspace::NameValue nv{"pixienaut", 2};
+    std::stringstream buffer;
+    buffer << nv;
+    EXPECT_EQ(buffer.str(), "name=pixienaut value=2");
+  }
 }
 
 }  // namespace pl

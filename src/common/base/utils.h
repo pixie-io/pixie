@@ -305,4 +305,16 @@ inline std::vector<std::string_view> GetLines(std::string_view content) {
   return absl::StrSplit(content, "\n", absl::SkipWhitespace());
 }
 
+/**
+ * Automatically generate an operator<< for any class that defines ToString().
+ * Function signature must be:
+ *    std::string ToString() const;
+ */
+// TToString ensures this operator only applies to functions that have ToString() defined.
+template <typename T, typename TToString = decltype(std::declval<T&>().ToString())>
+inline std::ostream& operator<<(std::ostream& os, const T& v) {
+  os << v.ToString();
+  return os;
+}
+
 }  // namespace pl
