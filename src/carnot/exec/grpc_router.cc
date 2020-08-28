@@ -80,23 +80,6 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
   return ::grpc::Status::OK;
 }
 
-::grpc::Status GRPCRouter::Done(::grpc::ServerContext*, const ::pl::carnotpb::DoneRequest* req,
-                                ::pl::carnotpb::DoneResponse* resp) {
-  auto query_id = pl::ParseUUID(req->query_id()).ConsumeValueOrDie();
-
-  std::vector<queryresultspb::AgentExecutionStats> stats;
-  for (const auto& stat : req->agent_execution_stats()) {
-    stats.push_back(stat);
-  }
-  auto s = RecordStats(query_id, stats);
-  if (!s.ok()) {
-    return ::grpc::Status(grpc::StatusCode::INTERNAL,
-                          absl::Substitute("Failed to record stats w/ err: $0", s.msg()));
-  }
-  resp->set_success(true);
-  return ::grpc::Status::OK;
-}
-
 Status GRPCRouter::RecordStats(const sole::uuid& query_id,
                                const std::vector<queryresultspb::AgentExecutionStats>& stats) {
   absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);

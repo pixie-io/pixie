@@ -531,8 +531,3 @@ func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResu
 		}
 	}
 }
-
-// Done is a legacy API on ResultSinkService that will be deprecated.
-func (s *Server) Done(ctx context.Context, req *carnotpb.DoneRequest) (*carnotpb.DoneResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Done not implemented")
-}

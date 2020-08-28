@@ -13,76 +13,6 @@ import (
 	reflect "reflect"
 )
 
-// MockisTransferResultChunkRequest_Destination is a mock of isTransferResultChunkRequest_Destination interface
-type MockisTransferResultChunkRequest_Destination struct {
-	ctrl     *gomock.Controller
-	recorder *MockisTransferResultChunkRequest_DestinationMockRecorder
-}
-
-// MockisTransferResultChunkRequest_DestinationMockRecorder is the mock recorder for MockisTransferResultChunkRequest_Destination
-type MockisTransferResultChunkRequest_DestinationMockRecorder struct {
-	mock *MockisTransferResultChunkRequest_Destination
-}
-
-// NewMockisTransferResultChunkRequest_Destination creates a new mock instance
-func NewMockisTransferResultChunkRequest_Destination(ctrl *gomock.Controller) *MockisTransferResultChunkRequest_Destination {
-	mock := &MockisTransferResultChunkRequest_Destination{ctrl: ctrl}
-	mock.recorder = &MockisTransferResultChunkRequest_DestinationMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockisTransferResultChunkRequest_Destination) EXPECT() *MockisTransferResultChunkRequest_DestinationMockRecorder {
-	return m.recorder
-}
-
-// isTransferResultChunkRequest_Destination mocks base method
-func (m *MockisTransferResultChunkRequest_Destination) isTransferResultChunkRequest_Destination() {
-	m.ctrl.Call(m, "isTransferResultChunkRequest_Destination")
-}
-
-// isTransferResultChunkRequest_Destination indicates an expected call of isTransferResultChunkRequest_Destination
-func (mr *MockisTransferResultChunkRequest_DestinationMockRecorder) isTransferResultChunkRequest_Destination() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "isTransferResultChunkRequest_Destination", reflect.TypeOf((*MockisTransferResultChunkRequest_Destination)(nil).isTransferResultChunkRequest_Destination))
-}
-
-// Equal mocks base method
-func (m *MockisTransferResultChunkRequest_Destination) Equal(arg0 interface{}) bool {
-	ret := m.ctrl.Call(m, "Equal", arg0)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// Equal indicates an expected call of Equal
-func (mr *MockisTransferResultChunkRequest_DestinationMockRecorder) Equal(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Equal", reflect.TypeOf((*MockisTransferResultChunkRequest_Destination)(nil).Equal), arg0)
-}
-
-// MarshalTo mocks base method
-func (m *MockisTransferResultChunkRequest_Destination) MarshalTo(arg0 []byte) (int, error) {
-	ret := m.ctrl.Call(m, "MarshalTo", arg0)
-	ret0, _ := ret[0].(int)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// MarshalTo indicates an expected call of MarshalTo
-func (mr *MockisTransferResultChunkRequest_DestinationMockRecorder) MarshalTo(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarshalTo", reflect.TypeOf((*MockisTransferResultChunkRequest_Destination)(nil).MarshalTo), arg0)
-}
-
-// Size mocks base method
-func (m *MockisTransferResultChunkRequest_Destination) Size() int {
-	ret := m.ctrl.Call(m, "Size")
-	ret0, _ := ret[0].(int)
-	return ret0
-}
-
-// Size indicates an expected call of Size
-func (mr *MockisTransferResultChunkRequest_DestinationMockRecorder) Size() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Size", reflect.TypeOf((*MockisTransferResultChunkRequest_Destination)(nil).Size))
-}
-
 // MockisTransferResultChunkRequest_Result is a mock of isTransferResultChunkRequest_Result interface
 type MockisTransferResultChunkRequest_Result struct {
 	ctrl     *gomock.Controller
@@ -153,6 +83,76 @@ func (mr *MockisTransferResultChunkRequest_ResultMockRecorder) Size() *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Size", reflect.TypeOf((*MockisTransferResultChunkRequest_Result)(nil).Size))
 }
 
+// MockisTransferResultChunkRequest_ResultRowBatch_Destination is a mock of isTransferResultChunkRequest_ResultRowBatch_Destination interface
+type MockisTransferResultChunkRequest_ResultRowBatch_Destination struct {
+	ctrl     *gomock.Controller
+	recorder *MockisTransferResultChunkRequest_ResultRowBatch_DestinationMockRecorder
+}
+
+// MockisTransferResultChunkRequest_ResultRowBatch_DestinationMockRecorder is the mock recorder for MockisTransferResultChunkRequest_ResultRowBatch_Destination
+type MockisTransferResultChunkRequest_ResultRowBatch_DestinationMockRecorder struct {
+	mock *MockisTransferResultChunkRequest_ResultRowBatch_Destination
+}
+
+// NewMockisTransferResultChunkRequest_ResultRowBatch_Destination creates a new mock instance
+func NewMockisTransferResultChunkRequest_ResultRowBatch_Destination(ctrl *gomock.Controller) *MockisTransferResultChunkRequest_ResultRowBatch_Destination {
+	mock := &MockisTransferResultChunkRequest_ResultRowBatch_Destination{ctrl: ctrl}
+	mock.recorder = &MockisTransferResultChunkRequest_ResultRowBatch_DestinationMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockisTransferResultChunkRequest_ResultRowBatch_Destination) EXPECT() *MockisTransferResultChunkRequest_ResultRowBatch_DestinationMockRecorder {
+	return m.recorder
+}
+
+// isTransferResultChunkRequest_ResultRowBatch_Destination mocks base method
+func (m *MockisTransferResultChunkRequest_ResultRowBatch_Destination) isTransferResultChunkRequest_ResultRowBatch_Destination() {
+	m.ctrl.Call(m, "isTransferResultChunkRequest_ResultRowBatch_Destination")
+}
+
+// isTransferResultChunkRequest_ResultRowBatch_Destination indicates an expected call of isTransferResultChunkRequest_ResultRowBatch_Destination
+func (mr *MockisTransferResultChunkRequest_ResultRowBatch_DestinationMockRecorder) isTransferResultChunkRequest_ResultRowBatch_Destination() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "isTransferResultChunkRequest_ResultRowBatch_Destination", reflect.TypeOf((*MockisTransferResultChunkRequest_ResultRowBatch_Destination)(nil).isTransferResultChunkRequest_ResultRowBatch_Destination))
+}
+
+// Equal mocks base method
+func (m *MockisTransferResultChunkRequest_ResultRowBatch_Destination) Equal(arg0 interface{}) bool {
+	ret := m.ctrl.Call(m, "Equal", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Equal indicates an expected call of Equal
+func (mr *MockisTransferResultChunkRequest_ResultRowBatch_DestinationMockRecorder) Equal(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Equal", reflect.TypeOf((*MockisTransferResultChunkRequest_ResultRowBatch_Destination)(nil).Equal), arg0)
+}
+
+// MarshalTo mocks base method
+func (m *MockisTransferResultChunkRequest_ResultRowBatch_Destination) MarshalTo(arg0 []byte) (int, error) {
+	ret := m.ctrl.Call(m, "MarshalTo", arg0)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MarshalTo indicates an expected call of MarshalTo
+func (mr *MockisTransferResultChunkRequest_ResultRowBatch_DestinationMockRecorder) MarshalTo(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarshalTo", reflect.TypeOf((*MockisTransferResultChunkRequest_ResultRowBatch_Destination)(nil).MarshalTo), arg0)
+}
+
+// Size mocks base method
+func (m *MockisTransferResultChunkRequest_ResultRowBatch_Destination) Size() int {
+	ret := m.ctrl.Call(m, "Size")
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// Size indicates an expected call of Size
+func (mr *MockisTransferResultChunkRequest_ResultRowBatch_DestinationMockRecorder) Size() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Size", reflect.TypeOf((*MockisTransferResultChunkRequest_ResultRowBatch_Destination)(nil).Size))
+}
+
 // MockResultSinkServiceClient is a mock of ResultSinkServiceClient interface
 type MockResultSinkServiceClient struct {
 	ctrl     *gomock.Controller
@@ -192,24 +192,6 @@ func (m *MockResultSinkServiceClient) TransferResultChunk(ctx context.Context, o
 func (mr *MockResultSinkServiceClientMockRecorder) TransferResultChunk(ctx interface{}, opts ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{ctx}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TransferResultChunk", reflect.TypeOf((*MockResultSinkServiceClient)(nil).TransferResultChunk), varargs...)
-}
-
-// Done mocks base method
-func (m *MockResultSinkServiceClient) Done(ctx context.Context, in *carnotpb.DoneRequest, opts ...grpc.CallOption) (*carnotpb.DoneResponse, error) {
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "Done", varargs...)
-	ret0, _ := ret[0].(*carnotpb.DoneResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Done indicates an expected call of Done
-func (mr *MockResultSinkServiceClientMockRecorder) Done(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Done", reflect.TypeOf((*MockResultSinkServiceClient)(nil).Done), varargs...)
 }
 
 // MockResultSinkService_TransferResultChunkClient is a mock of ResultSinkService_TransferResultChunkClient interface
@@ -366,19 +348,6 @@ func (m *MockResultSinkServiceServer) TransferResultChunk(arg0 carnotpb.ResultSi
 // TransferResultChunk indicates an expected call of TransferResultChunk
 func (mr *MockResultSinkServiceServerMockRecorder) TransferResultChunk(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TransferResultChunk", reflect.TypeOf((*MockResultSinkServiceServer)(nil).TransferResultChunk), arg0)
-}
-
-// Done mocks base method
-func (m *MockResultSinkServiceServer) Done(arg0 context.Context, arg1 *carnotpb.DoneRequest) (*carnotpb.DoneResponse, error) {
-	ret := m.ctrl.Call(m, "Done", arg0, arg1)
-	ret0, _ := ret[0].(*carnotpb.DoneResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Done indicates an expected call of Done
-func (mr *MockResultSinkServiceServerMockRecorder) Done(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Done", reflect.TypeOf((*MockResultSinkServiceServer)(nil).Done), arg0, arg1)
 }
 
 // MockResultSinkService_TransferResultChunkServer is a mock of ResultSinkService_TransferResultChunkServer interface

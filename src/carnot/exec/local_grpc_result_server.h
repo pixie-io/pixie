@@ -45,14 +45,6 @@ class LocalResultSinkServer final : public carnotpb::ResultSinkService::Service 
     return ::grpc::Status::OK;
   }
 
-  // Implements the Done of ResultSinkService.
-  // TODO(nserrino): Remove when this API is deprecated.
-  ::grpc::Status Done(::grpc::ServerContext*, const ::pl::carnotpb::DoneRequest*,
-                      ::pl::carnotpb::DoneResponse* response) override {
-    response->set_success(true);
-    return ::grpc::Status::OK;
-  }
-
  private:
   // List of the query results received.
   std::vector<carnotpb::TransferResultChunkRequest> query_results_;

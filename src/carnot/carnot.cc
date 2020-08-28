@@ -198,32 +198,6 @@ void CarnotImpl::GRPCServerFunc() {
   grpc_server_->Wait();
 }
 
-Status SendDoneToOutgoingConns(
-    const sole::uuid& agent_id, const sole::uuid& query_id,
-    const absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*>&
-        outgoing_servers,
-    const std::vector<queryresultspb::AgentExecutionStats>& all_agent_stats) {
-  // Only run this if there are outgoing_servers.
-  if (outgoing_servers.size()) {
-    ::pl::carnotpb::DoneRequest done_req;
-    ToProto(agent_id, done_req.mutable_agent_id());
-    ToProto(query_id, done_req.mutable_query_id());
-    for (const auto& agent_stats : all_agent_stats) {
-      *(done_req.add_agent_execution_stats()) = agent_stats;
-    }
-    for (const auto& [addr, server] : outgoing_servers) {
-      ::pl::carnotpb::DoneResponse done_resp;
-      grpc::ClientContext context;
-      context.set_deadline(std::chrono::system_clock::now() + kRPCResultTimeout);
-      auto status = server->Done(&context, done_req, &done_resp);
-      if (!status.ok()) {
-        LOG(ERROR) << status.error_message() << "resp " << done_resp.DebugString();
-      }
-    }
-  }
-  return Status::OK();
-}
-
 Status SendExecutionStatsToOutgoingConns(
     const sole::uuid& query_id,
     const absl::flat_hash_map<std::string, carnotpb::ResultSinkService::StubInterface*>&

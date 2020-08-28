@@ -42,18 +42,6 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
       ::pl::carnotpb::TransferResultChunkResponse* response) override;
 
   /**
-   * @brief Done implements the RPC method to control sending over misc. messages after execution is
-   * done. Currently used to send over exec stats.
-   *
-   * @param context
-   * @param request
-   * @param response
-   * @return ::grpc::Status
-   */
-  ::grpc::Status Done(::grpc::ServerContext* context, const ::pl::carnotpb::DoneRequest* request,
-                      ::pl::carnotpb::DoneResponse* response) override;
-
-  /**
    * Adds the specified source node to the router. Includes a function that should be called to
    * retrigger execution of the graph if currently yielded.
    */
