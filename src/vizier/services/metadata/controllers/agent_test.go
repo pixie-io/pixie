@@ -401,7 +401,7 @@ func TestGetActiveAgents(t *testing.T) {
 func TestAddToUpdateQueue(t *testing.T) {
 	mds, agtMgr := setupAgentManager(t)
 
-	u, err := uuid.FromString(testutils.NewAgentUUID)
+	u, err := uuid.FromString(testutils.ExistingAgentUUID)
 	if err != nil {
 		t.Fatal("Could not parse UUID from string.")
 	}
@@ -493,10 +493,104 @@ func TestAddToUpdateQueue(t *testing.T) {
 	assert.Equal(t, dataInfo, expectedDataInfo)
 }
 
-func TestAgentQueueTerminatedProcesses(t *testing.T) {
+func TestAddToUpdateQueueDeleted(t *testing.T) {
 	mds, agtMgr := setupAgentManager(t)
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
+	if err != nil {
+		t.Fatal("Could not parse UUID from string.")
+	}
+
+	schemas := make([]*storepb.TableInfo, 1)
+
+	schema1 := new(storepb.TableInfo)
+	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	schemas[0] = schema1
+
+	createdProcesses := make([]*k8s_metadatapb.ProcessCreated, 2)
+
+	cp1 := new(k8s_metadatapb.ProcessCreated)
+	if err := proto.UnmarshalText(testutils.ProcessCreated1PB, cp1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	createdProcesses[0] = cp1
+	cp2 := new(k8s_metadatapb.ProcessCreated)
+	if err := proto.UnmarshalText(testutils.ProcessCreated2PB, cp2); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	createdProcesses[1] = cp2
+
+	cProcessInfo := make([]*k8s_metadatapb.ProcessInfo, 2)
+
+	cpi1 := new(k8s_metadatapb.ProcessInfo)
+	if err := proto.UnmarshalText(testutils.ProcessInfo1PB, cpi1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	cProcessInfo[0] = cpi1
+	cpi2 := new(k8s_metadatapb.ProcessInfo)
+	if err := proto.UnmarshalText(testutils.ProcessInfo2PB, cpi2); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	cProcessInfo[1] = cpi2
+
+	expectedDataInfo := &messagespb.AgentDataInfo{
+		MetadataInfo: &distributedpb.MetadataInfo{
+			MetadataFields: []metadatapb.MetadataType{
+				metadatapb.CONTAINER_ID,
+				metadatapb.POD_NAME,
+			},
+			Filter: &distributedpb.MetadataInfo_XXHash64BloomFilter{
+				XXHash64BloomFilter: &bloomfilterpb.XXHash64BloomFilter{
+					Data:      []byte("1234"),
+					NumHashes: 4,
+				},
+			},
+		},
+	}
+
+	update := &messagespb.AgentUpdateInfo{
+		Schema:         schemas,
+		ProcessCreated: createdProcesses,
+		Data:           expectedDataInfo,
+	}
+
+	agentUpdate := controllers.AgentUpdate{
+		UpdateInfo: update,
+		AgentID:    u,
+	}
+
+	agtMgr.ApplyAgentUpdate(&agentUpdate)
+
+	upid1 := &types.UInt128{
+		Low:  uint64(89101),
+		High: uint64(528280977975),
+	}
+
+	upid2 := &types.UInt128{
+		Low:  uint64(468),
+		High: uint64(528280977975),
+	}
+
+	pInfos, err := mds.GetProcesses([]*types.UInt128{upid1, upid2})
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(pInfos))
+
+	assert.Nil(t, pInfos[0])
+	assert.Nil(t, pInfos[1])
+
+	dataInfos, err := mds.GetAgentsDataInfo()
+	assert.Nil(t, err)
+	assert.NotNil(t, dataInfos)
+	_, present := dataInfos[u]
+	assert.False(t, present)
+}
+
+func TestAgentQueueTerminatedProcesses(t *testing.T) {
+	mds, agtMgr := setupAgentManager(t)
+
+	u, err := uuid.FromString(testutils.ExistingAgentUUID)
 	if err != nil {
 		t.Fatal("Could not parse UUID from string.")
 	}

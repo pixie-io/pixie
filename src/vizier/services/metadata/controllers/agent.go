@@ -211,7 +211,16 @@ func (m *AgentManagerImpl) updateAgentDataInfoWrapper(agentID uuid.UUID, agentDa
 
 // ApplyAgentUpdate updates the metadata store with the information from the agent update.
 func (m *AgentManagerImpl) ApplyAgentUpdate(update *AgentUpdate) error {
-	err := m.handleCreatedProcesses(update.UpdateInfo.ProcessCreated)
+	resp, err := m.mds.GetAgent(update.AgentID)
+	if err != nil {
+		log.WithError(err).Error("Failed to get agent")
+		return err
+	} else if resp == nil {
+		log.Info("Ignoring update for agent that has already been deleted")
+		return nil
+	}
+
+	err = m.handleCreatedProcesses(update.UpdateInfo.ProcessCreated)
 	if err != nil {
 		log.WithError(err).Error("Error when creating new processes")
 	}
