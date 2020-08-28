@@ -241,13 +241,6 @@ func loadUDFInfo(udfInfoPb *udfspb.UDFInfo) error {
 	return nil
 }
 
-// ReceiveAgentQueryResult gets the query result from an agent and stores the results until all
-// relevant agents have responded.
-func (s *Server) ReceiveAgentQueryResult(ctx context.Context, req *querybrokerpb.AgentQueryResultRequest) (*querybrokerpb.AgentQueryResultResponse, error) {
-	// TODO(nserrino): Delete this when the API is deprecated.
-	return nil, fmt.Errorf("ReceiveAgentQueryResult is a deprecated API")
-}
-
 // checkHealth runs the health check and returns an error if it didn't pass.
 func (s *Server) checkHealth(ctx context.Context) error {
 	checkVersionScript := `import px; px.display(px.Version())`

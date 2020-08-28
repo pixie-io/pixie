@@ -10,16 +10,7 @@ import "src/table_store/proto/schema.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb;querybrokerpb";
 
-service QueryBrokerService {
-  /**
-   * These RPC calls are used by debug tools, etc, that connect to vizier.
-   */
-  // This is an incoming request from the agents, containing results for a
-  // query.
-  // TODO(nserrino): Deprecate this API.
-  rpc ReceiveAgentQueryResult(AgentQueryResultRequest)
-      returns (AgentQueryResultResponse) {}
-}
+// The query broker implements ResultSinkService and VizierService.
 
 // The schema information per agent.
 message Schema { repeated pl.table_store.schemapb.Relation relations = 1; }

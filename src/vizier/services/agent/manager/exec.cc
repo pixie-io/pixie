@@ -11,8 +11,6 @@
 #include "src/common/perf/perf.h"
 #include "src/vizier/services/agent/manager/manager.h"
 
-#include "src/vizier/services/query_broker/querybrokerpb/service.grpc.pb.h"
-
 namespace pl {
 namespace vizier {
 namespace agent {
@@ -22,10 +20,9 @@ using ::pl::event::AsyncTask;
 class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
  public:
   ExecuteQueryTask(ExecuteQueryMessageHandler* h, carnot::Carnot* carnot,
-                   QueryBrokerServiceSPtr qb_stub, std::unique_ptr<messages::VizierMessage> msg)
+                   std::unique_ptr<messages::VizierMessage> msg)
       : parent_(h),
         carnot_(carnot),
-        qb_stub_(qb_stub),
         msg_(std::move(msg)),
         req_(msg_->execute_query_request()),
         query_id_(ParseUUID(req_.query_id()).ConsumeValueOrDie()) {}
@@ -48,7 +45,6 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
  private:
   ExecuteQueryMessageHandler* parent_;
   carnot::Carnot* carnot_;
-  QueryBrokerServiceSPtr qb_stub_;
 
   std::unique_ptr<messages::VizierMessage> msg_;
   const messages::ExecuteQueryRequest& req_;
@@ -58,13 +54,12 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
 ExecuteQueryMessageHandler::ExecuteQueryMessageHandler(pl::event::Dispatcher* dispatcher,
                                                        Info* agent_info,
                                                        Manager::VizierNATSConnector* nats_conn,
-                                                       QueryBrokerServiceSPtr qb_stub,
                                                        carnot::Carnot* carnot)
-    : MessageHandler(dispatcher, agent_info, nats_conn), qb_stub_(qb_stub), carnot_(carnot) {}
+    : MessageHandler(dispatcher, agent_info, nats_conn), carnot_(carnot) {}
 
 Status ExecuteQueryMessageHandler::HandleMessage(std::unique_ptr<messages::VizierMessage> msg) {
   // Create a task and run it on the threadpool.
-  auto task = std::make_unique<ExecuteQueryTask>(this, carnot_, qb_stub_, std::move(msg));
+  auto task = std::make_unique<ExecuteQueryTask>(this, carnot_, std::move(msg));
 
   auto query_id = task->query_id();
   auto runnable = dispatcher()->CreateAsyncTask(std::move(task));

@@ -20,7 +20,6 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/ptproxy"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
-	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
 	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
@@ -134,7 +133,6 @@ func main() {
 		httpmiddleware.WithBearerAuthMiddleware(env, mux), maxMsgSize)
 
 	carnotpb.RegisterResultSinkServiceServer(s.GRPCServer(), server)
-	querybrokerpb.RegisterQueryBrokerServiceServer(s.GRPCServer(), server)
 	vizierpb.RegisterVizierServiceServer(s.GRPCServer(), server)
 
 	// For the passthrough proxy we create a GRPC client to the current server. It appears really

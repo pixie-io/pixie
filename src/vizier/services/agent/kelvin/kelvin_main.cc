@@ -13,10 +13,6 @@
 DEFINE_string(nats_url, gflags::StringFromEnv("PL_NATS_URL", "pl-nats"),
               "The host address of the nats cluster");
 
-DEFINE_string(query_broker_addr,
-              gflags::StringFromEnv("PL_QUERY_BROKER_ADDR", "vizier-query-broker.pl.svc:50300"),
-              "The host address of Query Broker");
-
 DEFINE_string(mds_addr, gflags::StringFromEnv("PL_MDS_ADDR", "vizier-metadata.pl.svc:50400"),
               "The host address of the MDS");
 
@@ -73,10 +69,9 @@ int main(int argc, char** argv) {
 
   std::string addr = absl::Substitute("$0:$1", FLAGS_pod_ip, FLAGS_rpc_port);
 
-  auto manager =
-      KelvinManager::Create(agent_id, FLAGS_pod_name, FLAGS_host_ip, addr, FLAGS_rpc_port,
-                            FLAGS_nats_url, FLAGS_query_broker_addr, FLAGS_mds_addr)
-          .ConsumeValueOrDie();
+  auto manager = KelvinManager::Create(agent_id, FLAGS_pod_name, FLAGS_host_ip, addr,
+                                       FLAGS_rpc_port, FLAGS_nats_url, FLAGS_mds_addr)
+                     .ConsumeValueOrDie();
 
   err_handler.set_manager(manager.get());
 

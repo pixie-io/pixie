@@ -22,7 +22,7 @@ Status PEMManager::PostRegisterHook() {
   PL_RETURN_IF_ERROR(stirling_->RunAsThread());
 
   auto execute_query_handler = std::make_shared<ExecuteQueryMessageHandler>(
-      dispatcher_.get(), info(), nats_connector(), /*qb_stub_*/ nullptr, carnot_.get());
+      dispatcher_.get(), info(), nats_connector(), carnot_.get());
   PL_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kExecuteQueryRequest,
                                             execute_query_handler));
 

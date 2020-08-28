@@ -20,13 +20,9 @@ namespace agent {
  */
 class ExecuteQueryMessageHandler : public Manager::MessageHandler {
  public:
-  using QueryBrokerService = pl::vizier::services::query_broker::querybrokerpb::QueryBrokerService;
-  using QueryBrokerServiceSPtr = std::shared_ptr<QueryBrokerService::Stub>;
-
   ExecuteQueryMessageHandler() = delete;
   ExecuteQueryMessageHandler(pl::event::Dispatcher* dispatcher, Info* agent_info,
-                             Manager::VizierNATSConnector* nats_conn,
-                             QueryBrokerServiceSPtr qb_stub, carnot::Carnot* carnot);
+                             Manager::VizierNATSConnector* nats_conn, carnot::Carnot* carnot);
   ~ExecuteQueryMessageHandler() override = default;
 
   Status HandleMessage(std::unique_ptr<messages::VizierMessage> msg) override;
@@ -42,7 +38,6 @@ class ExecuteQueryMessageHandler : public Manager::MessageHandler {
   // Forward declare private task class.
   class ExecuteQueryTask;
 
-  QueryBrokerServiceSPtr qb_stub_;
   carnot::Carnot* carnot_;
 
   // Map from query_id -> Running query task.
