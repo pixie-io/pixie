@@ -854,7 +854,12 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 	generateFromGivenName := func(i int) string {
 		name := strings.TrimSpace(clusterName)
 		if i > 0 {
-			name = fmt.Sprintf("%s_%d", name, i)
+			randName := make([]byte, 4)
+			_, err = rand.Read(randName)
+			if err != nil {
+				log.WithError(err).Error("Error generating random name")
+			}
+			name = fmt.Sprintf("%s_%x", name, randName)
 		}
 		return name
 	}

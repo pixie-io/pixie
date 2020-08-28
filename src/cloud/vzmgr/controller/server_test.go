@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -1035,6 +1036,6 @@ func TestServer_ProvisionOrClaimVizier_WithExistingName(t *testing.T) {
 	nameQuery := `SELECT cluster_name, cluster_version from vizier_cluster WHERE id=$1`
 	err = db.Get(&clusterInfo, nameQuery, clusterID)
 	assert.Nil(t, err)
-	assert.Equal(t, "test-cluster_1", *clusterInfo.ClusterName)
+	assert.True(t, strings.HasPrefix(*clusterInfo.ClusterName, "test-cluster_"))
 	assert.Equal(t, "1.1", *clusterInfo.ClusterVersion)
 }
