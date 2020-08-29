@@ -22,10 +22,12 @@ import (
 // have time in "%dms" format.
 const indexSpec = `
 {
-    "settings": {
-      "number_of_shards": 10,
-      "number_of_replicas": 2
-    },
+	"settings": {
+	  	"index": {
+			"number_of_shards": 10,
+			"number_of_replicas": 2
+		}
+	},
 	"mappings" : {
 		"properties" : {
 			"log_processed" : {
