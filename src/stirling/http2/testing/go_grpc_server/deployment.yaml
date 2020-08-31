@@ -1,0 +1,52 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-grpc-server
+  namespace: pl-grpc-test
+  labels:
+    name: go-grpc-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: go-grpc-server
+  template:
+    metadata:
+      labels:
+        name: go-grpc-server
+    spec:
+      imagePullSecrets:
+      - name: image-pull-secret
+      containers:
+      - name: go-grpc-server
+        image: gcr.io/pl-dev-infra/demos/go_grpc_server:{{USER}}
+        ports:
+        - containerPort: 50051
+        args:
+        - --port=50051
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fe
+  labels:
+    name: fe
+  namespace: pl-grpc-test
+  annotations:
+    cloud.google.com/load-balancer-type: "internal"
+spec:
+  type: LoadBalancer
+  ports:
+  - protocol: "TCP"
+    port: 50051
+    targetPort: 50051
+  selector:
+    name: go-grpc-server

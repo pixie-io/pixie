@@ -1,0 +1,33 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-grpc-client
+  namespace: pl-grpc-test
+  labels:
+    name: go-grpc-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: go-grpc-client
+  template:
+    metadata:
+      labels:
+        name: go-grpc-client
+    spec:
+      imagePullSecrets:
+      - name: image-pull-secret
+      containers:
+      - name: go-grpc-client
+        image: gcr.io/pl-dev-infra/demos/go_grpc_client:{{USER}}
+        args:
+        - --address=fe:50051
+        - --count=100000
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 512Mi

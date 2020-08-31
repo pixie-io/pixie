@@ -1,4 +1,6 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 go_library(
     name = "go_default_library",
@@ -21,4 +23,18 @@ go_binary(
     ],
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
+)
+
+go_image(
+    name = "image",
+    binary = ":go_grpc_server",
+)
+
+container_push(
+    name = "push_image",
+    format = "Docker",
+    image = ":image",
+    registry = "gcr.io",
+    repository = "pl-dev-infra/demos/go_grpc_server",
+    tag = "{BUILD_USER}",
 )
