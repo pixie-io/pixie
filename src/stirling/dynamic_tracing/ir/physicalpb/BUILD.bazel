@@ -1,6 +1,6 @@
 # gazelle:ignore
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
 load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_proto_library")
 
