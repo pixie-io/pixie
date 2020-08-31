@@ -101,13 +101,13 @@ func main() {
 	}
 
 	// Update update role first.
-	err = k8s.ApplyYAMLForResourceTypes(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierBootstrapYAMLPath]), []string{"clusterroles"})
+	err = k8s.ApplyYAMLForResourceTypes(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierBootstrapYAMLPath]), []string{"clusterroles"}, true)
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to install vizier bootstrap for updater roles")
 	}
 
-	// Delete everything but updater dependencies.
-	_, err = od.DeleteByLabel("component=vizier,vizier-updater-dep!=true", k8s.AllResourceKinds...)
+	// Delete everything but updater dependencies + bootstrap dependencies.
+	_, err = od.DeleteByLabel("component=vizier,vizier-updater-dep!=true,vizier-bootstrap!=true", k8s.AllResourceKinds...)
 	if err != nil {
 		if errors.Is(err, wait.ErrWaitTimeout) {
 			log.WithError(err).Error("Old components taking longer to terminate than timeout")
@@ -172,9 +172,17 @@ func main() {
 		}
 	}
 
-	err = k8s.ApplyYAML(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierYAMLPath]))
+	err = k8s.ApplyYAML(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierYAMLPath]), true)
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to install vizier")
+	}
+
+	// Bounce the cloud-connector pod so that it deletes the updater job. This is only necessary
+	// when upgrading to the same Vizier version, because the cloud-connector pod should normally restart
+	// when applying YAMLs above.
+	_, err = od.DeleteByLabel("name=vizier-cloud-connector", "Pod")
+	if err != nil {
+		log.WithError(err).Error("Failed to bounce cloud-connector")
 	}
 
 	log.Info("Done with update/install!")
@@ -184,7 +192,7 @@ func retryDeploy(clientset *kubernetes.Clientset, config *rest.Config, namespace
 	tries := 12
 	var err error
 	for tries > 0 {
-		err = k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents))
+		err = k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents), false)
 		if err == nil {
 			return nil
 		}

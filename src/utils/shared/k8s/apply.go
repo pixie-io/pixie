@@ -45,15 +45,16 @@ func ConvertResourceToYAML(obj runtime.Object) (string, error) {
 	return buf.String(), nil
 }
 
-// ApplyYAML does the equivalent of a kubectl apply for the given yaml.
-func ApplyYAML(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader) error {
-	return ApplyYAMLForResourceTypes(clientset, config, namespace, yamlFile, []string{})
+// ApplyYAML does the equivalent of a kubectl apply for the given yaml. If allowUpdate is true, then we update the resource
+// if it already exists.
+func ApplyYAML(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader, allowUpdate bool) error {
+	return ApplyYAMLForResourceTypes(clientset, config, namespace, yamlFile, []string{}, allowUpdate)
 }
 
 // ApplyYAMLForResourceTypes only applies the specified types in the given YAML file.
 // This function is copied from https://stackoverflow.com/a/47139247 with major updates with
 // respect to API changes and some clean up work.
-func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader, allowedResources []string) error {
+func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader, allowedResources []string, allowUpdate bool) error {
 	decodedYAML := yaml.NewYAMLOrJSONDecoder(yamlFile, 4096)
 	discoveryClient := clientset.Discovery()
 
@@ -127,7 +128,7 @@ func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Con
 		if err != nil {
 			if !errors.IsAlreadyExists(err) {
 				return err
-			} else if k8sRes.Resource == "clusterroles" || k8sRes.Resource == "cronjobs" { // Try to update the resource if it is a clusterrole or cronjob.
+			} else if (k8sRes.Resource == "clusterroles" || k8sRes.Resource == "cronjobs") || allowUpdate {
 				_, err = createRes.Update(context.Background(), &unstruct, metav1.UpdateOptions{})
 			}
 		}

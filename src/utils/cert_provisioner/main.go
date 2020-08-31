@@ -71,7 +71,7 @@ func main() {
 		log.WithError(err).Fatal("Failed to generate cert YAMLs")
 	}
 
-	err = k8s.ApplyYAML(clientset, kubeConfig, ns, strings.NewReader(certYAMLs))
+	err = k8s.ApplyYAML(clientset, kubeConfig, ns, strings.NewReader(certYAMLs), false)
 	if err != nil {
 		log.WithError(err).Fatalf("Failed deploy cert YAMLs")
 	}

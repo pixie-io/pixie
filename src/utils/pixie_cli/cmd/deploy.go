@@ -347,7 +347,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		if err != nil {
 			return err
 		}
-		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(nsYAML))
+		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(nsYAML), false)
 	})
 
 	clusterRoleJob := newTaskWrapper("Deleting stale Pixie objects, if any", func() error {
@@ -361,7 +361,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		if err != nil {
 			return err
 		}
-		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(sYAML))
+		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(sYAML), false)
 	})
 
 	setupJobs := []utils.Task{
@@ -570,7 +570,7 @@ func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Cl
 	var clusterID uuid.UUID
 	deployJob := []utils.Task{
 		newTaskWrapper("Deploying Cloud Connector", func() error {
-			return k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents))
+			return k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents), false)
 		}),
 		newTaskWrapper("Waiting for Cloud Connector to come online", func() error {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -609,7 +609,7 @@ func retryDeploy(clientset *kubernetes.Clientset, config *rest.Config, namespace
 	tries := 12
 	var err error
 	for tries > 0 {
-		err = k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents))
+		err = k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents), false)
 		if err == nil {
 			return nil
 		}
