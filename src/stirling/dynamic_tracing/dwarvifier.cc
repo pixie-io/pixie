@@ -23,6 +23,7 @@ using ::pl::stirling::dwarf_tools::TypeInfo;
 using ::pl::stirling::dwarf_tools::VarType;
 
 using ::pl::stirling::dynamic_tracing::ir::physical::MapVariable;
+using ::pl::stirling::dynamic_tracing::ir::physical::PtrLenVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::StructVariable;
 
@@ -85,6 +86,10 @@ class Dwarvifier {
   TVarType* AddVariable(ir::physical::Probe* probe, const std::string& name,
                         ir::shared::ScalarType type,
                         std::optional<ir::physical::StructSpec> decoder = std::nullopt);
+
+  PtrLenVariable* AddPtrLenVariable(ir::physical::Probe* probe, const std::string& name,
+                                    ir::shared::ScalarType type, const std::string& base,
+                                    int ptr_offset, int len_offset);
 
   Status GenerateMapValueStruct(const ir::logical::MapStashAction& stash_action_in,
                                 const std::string& struct_type_name,
@@ -321,6 +326,8 @@ TVarType* Dwarvifier::AddVariable(ir::physical::Probe* probe, const std::string&
     var = probe->add_vars()->mutable_struct_var();
   } else if constexpr (std::is_same_v<TVarType, MapVariable>) {
     var = probe->add_vars()->mutable_map_var();
+  } else if constexpr (std::is_same_v<TVarType, PtrLenVariable>) {
+    var = probe->add_vars()->mutable_ptr_len_var();
   } else {
     COMPILE_TIME_ASSERT(false, "Unsupported ir::physical::Variable type");
   }
@@ -339,6 +346,28 @@ TVarType* Dwarvifier::AddVariable(ir::physical::Probe* probe, const std::string&
   if (decoder.has_value()) {
     v.mutable_blob_decoder()->CopyFrom(decoder.value());
   }
+
+  return var;
+}
+
+PtrLenVariable* Dwarvifier::AddPtrLenVariable(ir::physical::Probe* probe, const std::string& name,
+                                              ir::shared::ScalarType type, const std::string& base,
+                                              int ptr_offset, int len_offset) {
+  std::string ptr_var_name = name + "__ptr";
+  std::string len_var_name = name + "__len";
+
+  auto* ptr_var =
+      AddVariable<ScalarVariable>(probe, ptr_var_name, ir::shared::ScalarType::VOID_POINTER);
+  ptr_var->mutable_memory()->set_base(base);
+  ptr_var->mutable_memory()->set_offset(ptr_offset);
+
+  auto* len_var = AddVariable<ScalarVariable>(probe, len_var_name, ir::shared::ScalarType::INT);
+  len_var->mutable_memory()->set_base(base);
+  len_var->mutable_memory()->set_offset(len_offset);
+
+  auto* var = AddVariable<PtrLenVariable>(probe, name, type);
+  var->set_ptr_var_name(ptr_var_name);
+  var->set_len_var_name(len_var_name);
 
   return var;
 }
@@ -590,43 +619,62 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
   // Note that the very last created variable uses the original id.
   // This is important so that references in the original probe are maintained.
 
-  ScalarVariable* var = nullptr;
-
   if (type_info.type == VarType::kBaseType) {
     PL_ASSIGN_OR_RETURN(ir::shared::ScalarType scalar_type,
                         VarTypeToProtoScalarType(type_info, language_));
 
-    var = AddVariable<ScalarVariable>(output_probe, var_name, scalar_type);
+    auto var = AddVariable<ScalarVariable>(output_probe, var_name, scalar_type);
+    var->mutable_memory()->set_base(base);
+    var->mutable_memory()->set_offset(offset);
   } else if (type_info.type == VarType::kStruct) {
     // Strings and byte arrays are special cases of structs, where we follow the pointer to the
     // data. Otherwise, just grab the raw data of the struct, and send it as a blob.
     if (language_ == Language::GOLANG && type_info.type_name == "string") {
-      var = AddVariable<ScalarVariable>(output_probe, var_name, ir::shared::ScalarType::STRING);
-    } else if (language_ == Language::GOLANG && type_info.type_name == "[]uint8") {
-      var = AddVariable<ScalarVariable>(output_probe, var_name, ir::shared::ScalarType::BYTE_ARRAY);
-    } else if (language_ == Language::GOLANG && type_info.type_name == "[]byte") {
-      var = AddVariable<ScalarVariable>(output_probe, var_name, ir::shared::ScalarType::BYTE_ARRAY);
+      // A go string is essentially a pointer and a len:
+      // type stringStruct struct {
+      //   str unsafe.Pointer
+      //   len int
+      //}
+      // TODO(oazizi): Get these offsets from dwarf_reader to make sure its more robust.
+      constexpr int ptr_offset = 0;
+      constexpr int len_offset = sizeof(void*);
+
+      AddPtrLenVariable(output_probe, var_name, ir::shared::ScalarType::STRING, base,
+                        offset + ptr_offset, offset + len_offset);
+    } else if (language_ == Language::GOLANG &&
+               (type_info.type_name == "[]uint8" || type_info.type_name == "[]byte")) {
+      // A go array is essentially a pointer, a length, and a capacity:
+      // type slice struct {
+      //   array unsafe.Pointer
+      //   len   int
+      //   cap   int
+      //}
+      // TODO(oazizi): Get these offsets from dwarf_reader to make sure its more robust.
+      constexpr int ptr_offset = 0;
+      constexpr int len_offset = sizeof(void*);
+
+      AddPtrLenVariable(output_probe, var_name, ir::shared::ScalarType::BYTE_ARRAY, base,
+                        offset + ptr_offset, offset + len_offset);
     } else {
       PL_ASSIGN_OR_RETURN(std::vector<StructSpecEntry> struct_spec,
                           dwarf_reader_->GetStructSpec(type_info.type_name));
       ir::physical::StructSpec struct_spec_proto;
       PL_RETURN_IF_ERROR(PopulateStructSpecProto(struct_spec, language_, &struct_spec_proto));
 
-      var = AddVariable<ScalarVariable>(output_probe, var_name, ir::shared::ScalarType::STRUCT_BLOB,
-                                        std::move(struct_spec_proto));
-
       // STRUCT_BLOB is special. It is the only type where we specify the size to get copied.
       PL_ASSIGN_OR_RETURN(uint64_t struct_byte_size,
                           dwarf_reader_->GetStructByteSize(type_info.type_name));
+
+      auto var =
+          AddVariable<ScalarVariable>(output_probe, var_name, ir::shared::ScalarType::STRUCT_BLOB,
+                                      std::move(struct_spec_proto));
+      var->mutable_memory()->set_base(base);
+      var->mutable_memory()->set_offset(offset);
       var->mutable_memory()->set_size(struct_byte_size);
     }
   } else {
     return error::Internal("Expected struct or base type, but got type: $0", type_info.ToString());
   }
-
-  DCHECK(var != nullptr);
-  var->mutable_memory()->set_base(base);
-  var->mutable_memory()->set_offset(offset);
 
   return Status::OK();
 }

@@ -27,6 +27,7 @@ using ::pl::stirling::dynamic_tracing::ir::physical::PerfBufferOutput;
 using ::pl::stirling::dynamic_tracing::ir::physical::PerfBufferOutputAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::Probe;
 using ::pl::stirling::dynamic_tracing::ir::physical::Program;
+using ::pl::stirling::dynamic_tracing::ir::physical::PtrLenVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::Register;
 using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::Struct;
@@ -267,92 +268,36 @@ std::string GenRegister(const ScalarVariable& var) {
 }
 
 // Generate a variable that is fundamentally a pointer and a length (e.g. strings and arrays).
-std::vector<std::string> GenPtrAndLenMemoryVariable(const ScalarVariable& var, int ptr_offset,
-                                                    int len_offset, size_t size) {
+StatusOr<std::vector<std::string>> GenPtrLenVariable(const PtrLenVariable& var) {
   std::vector<std::string> code_lines;
-  code_lines.push_back(absl::Substitute("void* $0_ptr__;", var.name()));
-  code_lines.push_back(absl::Substitute("bpf_probe_read(&$0_ptr__, sizeof(void*), $1 + $2);",
-                                        var.name(), var.memory().base(),
-                                        var.memory().offset() + ptr_offset));
 
-  code_lines.push_back(absl::Substitute("uint64_t $0_len__;", var.name()));
-  code_lines.push_back(absl::Substitute("bpf_probe_read(&$0_len__, sizeof(uint64_t), $1 + $2);",
-                                        var.name(), var.memory().base(),
-                                        var.memory().offset() + len_offset));
+  size_t size = 0;
+  if (var.type() == ir::shared::ScalarType::STRING) {
+    size = kStructStringSize;
+  } else if (var.type() == ir::shared::ScalarType::BYTE_ARRAY) {
+    size = kStructByteArraySize;
+  } else {
+    return error::Internal("GenPtrLenVariable received an unsupported type: $0", var.type());
+  }
 
   // Make sure we don't overrun the buffer by capping the length (also required for verifier).
   // Below, we want the size of blobXX->buf. We can do that with this trick:
   // https://stackoverflow.com/questions/3553296/sizeof-single-struct-member-in-c
+  code_lines.push_back(absl::Substitute("$0 = ($0 > sizeof(((struct blob$1*)0)->buf)) ? $1 : $0;",
+                                        var.len_var_name(), size));
   code_lines.push_back(
-      absl::Substitute("$0_len__ = ($0_len__ > sizeof(((struct blob$1*)0)->buf)) ? $1 : $0_len__;",
-                       var.name(), size));
-  code_lines.push_back(
-      absl::Substitute("$0_len__ = $0_len__ & $1; // Keep verifier happy.", var.name(), size - 1));
+      absl::Substitute("$0 = $0 & $1; // Keep verifier happy.", var.len_var_name(), size - 1));
 
   code_lines.push_back(absl::Substitute("$0 $1 = {};", GenScalarType(var.type()), var.name()));
-  code_lines.push_back(absl::Substitute("$0.len = $0_len__;", var.name()));
+  code_lines.push_back(absl::Substitute("$0.len = $1;", var.name(), var.len_var_name()));
 
   code_lines.push_back(
       "// Read one extra byte to avoid passing a size of 0 to bpf_probe_read(), which causes "
       "BPF verifier issues on kernel 4.14.");
   code_lines.push_back(
-      absl::Substitute("bpf_probe_read($0.buf, $0.len + 1, $0_ptr__);", var.name()));
+      absl::Substitute("bpf_probe_read($0.buf, $0.len + 1, $1);", var.name(), var.ptr_var_name()));
 
   return code_lines;
-}
-
-// TODO(yzhao/oazizi): Consider making this a member variable to avoid passing language directly.
-//                     Currently deferring this because it will break the tests.
-StatusOr<std::vector<std::string>> GenStringMemoryVariable(const ScalarVariable& var,
-                                                           const ir::shared::Language& language) {
-  std::vector<std::string> code_lines;
-
-  // TODO(oazizi): Move string variable into a BPF map so that the size can be increased.
-  switch (language) {
-    case ir::shared::Language::GOLANG: {
-      // A go string is essentially a pointer and a len:
-      // type stringStruct struct {
-      //   str unsafe.Pointer
-      //   len int
-      //}
-      // TODO(oazizi): Could get these offsets from dwarvifier to make sure its more robust.
-      //               Although these are not really expected to change in practice.
-      constexpr int string_ptr_offset = 0;
-      constexpr int string_len_offset = sizeof(void*);
-      return GenPtrAndLenMemoryVariable(var, string_ptr_offset, string_len_offset,
-                                        kStructStringSize);
-    }
-    default:
-      return error::Internal("Strings are not yet supported for this language ($0)",
-                             magic_enum::enum_name(language));
-  }
-}
-
-// TODO(oazizi): Consolidate with GenStringMemoryVariable?
-StatusOr<std::vector<std::string>> GenByteArrayMemoryVariable(
-    const ScalarVariable& var, const ir::shared::Language& language) {
-  std::vector<std::string> code_lines;
-
-  // TODO(oazizi): Move string variable into a BPF map so that the size can be increased.
-  switch (language) {
-    case ir::shared::Language::GOLANG: {
-      // A go array is essentially a pointer, a length, and a capacity:
-      // type slice struct {
-      //   array unsafe.Pointer
-      //   len   int
-      //   cap   int
-      //}
-      // TODO(oazizi): Could get these offsets from dwarvifier to make sure its more robust.
-      //               Although these are not really expected to change in practice.
-      constexpr int array_ptr_offset = 0;
-      constexpr int array_len_offset = sizeof(void*);
-      return GenPtrAndLenMemoryVariable(var, array_ptr_offset, array_len_offset,
-                                        kStructByteArraySize);
-    }
-    default:
-      return error::Internal("Byte arrays are not yet supported for this language ($0)",
-                             magic_enum::enum_name(language));
-  }
 }
 
 std::vector<std::string> GenStructBlobMemoryVariable(const ScalarVariable& var) {
@@ -440,8 +385,7 @@ std::vector<std::string> GenMemberExpression(const ScalarVariable& var) {
 
 }  // namespace
 
-StatusOr<std::vector<std::string>> GenScalarVariable(const ScalarVariable& var,
-                                                     const ir::shared::Language& language) {
+StatusOr<std::vector<std::string>> GenScalarVariable(const ScalarVariable& var) {
   switch (var.src_expr_oneof_case()) {
     case ScalarVariable::SrcExprOneofCase::kReg: {
       std::vector<std::string> code_lines = {GenRegister(var)};
@@ -453,9 +397,9 @@ StatusOr<std::vector<std::string>> GenScalarVariable(const ScalarVariable& var,
     }
     case ScalarVariable::SrcExprOneofCase::kMemory:
       if (var.type() == ir::shared::ScalarType::STRING) {
-        return GenStringMemoryVariable(var, language);
+        return error::Internal("Using STRING with ScalarVariable is no longer supported.");
       } else if (var.type() == ir::shared::ScalarType::BYTE_ARRAY) {
-        return GenByteArrayMemoryVariable(var, language);
+        return error::Internal("Using BYTE_ARRAY with ScalarVariable is no longer supported.");
       } else if (var.type() == ir::shared::ScalarType::STRUCT_BLOB) {
         return GenStructBlobMemoryVariable(var);
       } else {
@@ -566,18 +510,12 @@ std::string GenPerfBufferOutputAction(const PerfBufferOutputAction& action) {
 }
 
 ScalarType GetScalarVariableType(const Variable& var) {
-  switch (var.var_oneof_case()) {
-    case Variable::VarOneofCase::kScalarVar:
-      return var.scalar_var().type();
-    case Variable::VarOneofCase::kMapVar:
-    case Variable::VarOneofCase::kStructVar:
-      LOG(DFATAL) << "Variable type must be ScalarType";
-      return ScalarType::UNKNOWN;
-    case Variable::VarOneofCase::VAR_ONEOF_NOT_SET:
-      LOG(DFATAL) << "Variable is not set";
-      return ScalarType::UNKNOWN;
+  if (var.var_oneof_case() == Variable::VarOneofCase::kScalarVar) {
+    return var.scalar_var().type();
   }
-  GCC_SWITCH_RETURN;
+
+  LOG(DFATAL) << "Variable type must be ScalarType";
+  return ScalarType::UNKNOWN;
 }
 
 StatusOr<std::string> GenScalarVarPrintk(
@@ -629,11 +567,15 @@ Status BCCCodeGenerator::GenVariable(
     std::vector<std::string>* code_lines) const {
   switch (var.var_oneof_case()) {
     case Variable::VarOneofCase::kScalarVar: {
-      MOVE_BACK_STR_VEC(GenScalarVariable(var.scalar_var(), program_.language()), code_lines);
+      MOVE_BACK_STR_VEC(GenScalarVariable(var.scalar_var()), code_lines);
       break;
     }
     case Variable::VarOneofCase::kMapVar: {
       code_lines->push_back(GenMapVariable(var.map_var()));
+      break;
+    }
+    case Variable::VarOneofCase::kPtrLenVar: {
+      MOVE_BACK_STR_VEC(GenPtrLenVariable(var.ptr_len_var()), code_lines);
       break;
     }
     case Variable::VarOneofCase::kStructVar: {
@@ -671,6 +613,8 @@ std::string_view GetVariableName(const Variable& var) {
       return var.map_var().name();
     case Variable::VarOneofCase::kStructVar:
       return var.struct_var().name();
+    case Variable::VarOneofCase::kPtrLenVar:
+      return var.ptr_len_var().name();
     case Variable::VarOneofCase::VAR_ONEOF_NOT_SET:
       LOG(DFATAL) << "Variable is not set";
       return {};

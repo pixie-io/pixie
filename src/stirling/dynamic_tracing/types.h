@@ -15,6 +15,14 @@ namespace dynamic_tracing {
 // to transfer the data. Anything larger will be truncated.
 // These constants define the "container" size for these non-base types.
 
+// NOTE: There are three separate sizes for strings, byte arrays and blobs.
+//       This is currently to accommodate two limitations:
+//         1) These structures are on the stack, and we want to tune for BPF stack usage.
+//         2) Our perf_submit is of a fixed sized equal to the size of the struct (instead of
+//            actual usage).
+//
+// When both these limitations are fixed, these sizes can be converged into a single size.
+
 // Fixed size for tracing strings.
 constexpr size_t kStructStringSize = 32;
 

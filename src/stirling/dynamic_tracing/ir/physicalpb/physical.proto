@@ -152,6 +152,21 @@ message ScalarVariable {
   }
 }
 
+message PtrLenVariable {
+  // Name must be unique in the scope of a Probe.
+  string name = 1;
+
+  // The type of the variable.
+  // TODO(oazizi): May need clean-up after resolving ScalarType relationship to STRING/BYTE_ARRAY.
+  shared.ScalarType type = 2;
+
+  // The name of the variable that holds the pointer to the data.
+  string ptr_var_name = 3;
+
+  // The name of the variable that indicates the length of the data.
+  string len_var_name = 4;
+}
+
 // Describes a variable returned from reading a map.
 // The variable is a pointer to the type held by the map.
 message MapVariable {
@@ -196,6 +211,7 @@ message Variable {
     ScalarVariable scalar_var = 1;
     StructVariable struct_var = 2;
     MapVariable map_var = 3;
+    PtrLenVariable ptr_len_var = 4;
   }
 }
 
@@ -288,6 +304,7 @@ message Program {
   shared.DeploymentSpec deployment_spec = 1;
 
   // What language is used by the target binary.
+  // TODO(oazizi/yzhao): Remove this. Shouldn't be required at the physical level.
   shared.Language language = 6;
 
   // Describes the global structs.

@@ -61,34 +61,30 @@ TEST(GenVariableTest, Register) {
   var.set_type(ScalarType::VOID_POINTER);
   var.set_reg(Register::SP);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::GOLANG),
-                     ElementsAre("void* var = (void*)PT_REGS_SP(ctx);"));
+  ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("void* var = (void*)PT_REGS_SP(ctx);"));
 
   var.set_type(ScalarType::INT);
   var.set_reg(Register::RC);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::CPP),
-                     ElementsAre("int var = (int)PT_REGS_RC(ctx);"));
+  ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("int var = (int)PT_REGS_RC(ctx);"));
 
   var.set_type(ScalarType::VOID_POINTER);
   var.set_reg(Register::RC);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::CPP),
-                     ElementsAre("void* var = (void*)PT_REGS_RC(ctx);"));
+  ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("void* var = (void*)PT_REGS_RC(ctx);"));
 
   var.set_type(ScalarType::INT64);
   var.set_reg(Register::RC_PTR);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::CPP),
-                     ElementsAre("uint64_t rc___[2];"
-                                 "rc___[0] = PT_REGS_RC(ctx);"
-                                 "rc___[1] = PT_REGS_PARM3(ctx);"
-                                 "void* var = &rc___;"));
+  ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("uint64_t rc___[2];"
+                                                         "rc___[0] = PT_REGS_RC(ctx);"
+                                                         "rc___[1] = PT_REGS_PARM3(ctx);"
+                                                         "void* var = &rc___;"));
 
   var.set_type(ScalarType::INT64);
   var.set_reg(Register::PARM3);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::CPP),
+  ASSERT_OK_AND_THAT(GenScalarVariable(var),
                      ElementsAre("int64_t var = (int64_t)PT_REGS_PARM3(ctx);"));
 }
 
@@ -104,7 +100,7 @@ TEST(GenVariableTest, MemoryVariable) {
   mem_var->set_offset(123);
 
   ASSERT_OK_AND_THAT(
-      GenScalarVariable(var, ir::shared::Language::GOLANG),
+      GenScalarVariable(var),
       ElementsAre("int32_t var;", "bpf_probe_read(&var, sizeof(int32_t), sp + 123);"));
 }
 
@@ -116,29 +112,26 @@ TEST(GenVariableTest, Builtin) {
 
   var.set_builtin(BPFHelper::GOID);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::GOLANG),
-                     ElementsAre("void* var = pl_goid();"));
+  ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("void* var = pl_goid();"));
 
   var.set_builtin(BPFHelper::TGID);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::GOLANG),
+  ASSERT_OK_AND_THAT(GenScalarVariable(var),
                      ElementsAre("void* var = bpf_get_current_pid_tgid() >> 32;"));
 
   var.set_builtin(BPFHelper::TGID_PID);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::GOLANG),
+  ASSERT_OK_AND_THAT(GenScalarVariable(var),
                      ElementsAre("void* var = bpf_get_current_pid_tgid();"));
 
   var.set_builtin(BPFHelper::KTIME);
   var.set_type(ScalarType::UINT64);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::GOLANG),
-                     ElementsAre("uint64_t var = bpf_ktime_get_ns();"));
+  ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("uint64_t var = bpf_ktime_get_ns();"));
 
   var.set_builtin(BPFHelper::TGID_START_TIME);
   var.set_type(ScalarType::UINT64);
-  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::Language::GOLANG),
-                     ElementsAre("uint64_t var = pl_tgid_start_time();"));
+  ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("uint64_t var = pl_tgid_start_time();"));
 }
 
 TEST(GenStructVariableTest, Variables) {
