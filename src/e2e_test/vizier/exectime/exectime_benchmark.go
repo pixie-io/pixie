@@ -280,6 +280,7 @@ func main() {
 			if err != nil {
 				log.WithError(err).Fatalf("Failed to execute script")
 			}
+			scriptErrors[i] = res.scriptErr
 			externalExecTiming[i] = res.externalExecTime
 			compilationTiming[i] = res.compileTime
 			internalExecTiming[i] = res.internalExecTime
