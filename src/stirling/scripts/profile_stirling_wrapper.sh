@@ -8,7 +8,7 @@
 
 script_dir=$(dirname "$0")
 
-# shellcheck disable=SC1090
+# shellcheck source=./src/stirling/scripts/utils.sh
 source "$script_dir"/utils.sh
 
 usage() {
