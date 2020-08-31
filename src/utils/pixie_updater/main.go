@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"errors"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -13,7 +12,6 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/artifacts"
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
@@ -25,7 +23,7 @@ const (
 	vizierYAMLPath          = "./yamls/vizier/vizier_prod.yaml"
 	vizierBootstrapYAMLPath = "./yamls/vizier/vizier_bootstrap_prod.yaml"
 	natsYAMLPath            = "./yamls/vizier_deps/nats_prod.yaml"
-	deleteTimeout           = 2 * time.Second
+	deleteTimeout           = 10 * time.Minute
 )
 
 func init() {
@@ -51,6 +49,12 @@ func getCloudClientConnection(cloudAddr string) (*grpc.ClientConn, error) {
 	}
 
 	return c, nil
+}
+
+// Checks whether the error is a timeout error. Unfortunately this is not a defined error type
+// in the k8s package, so if they ever change the error text this will start to fail.
+func isTimeoutError(err error) bool {
+	return strings.HasPrefix(err.Error(), "timed out waiting for the condition")
 }
 
 func main() {
@@ -109,7 +113,7 @@ func main() {
 	// Delete everything but updater dependencies + bootstrap dependencies.
 	_, err = od.DeleteByLabel("component=vizier,vizier-updater-dep!=true,vizier-bootstrap!=true", k8s.AllResourceKinds...)
 	if err != nil {
-		if errors.Is(err, wait.ErrWaitTimeout) {
+		if isTimeoutError(err) {
 			log.WithError(err).Error("Old components taking longer to terminate than timeout")
 		} else {
 			log.WithError(err).Fatal("Failed to delete old components")
@@ -150,7 +154,7 @@ func main() {
 		} else {
 			_, err = od.DeleteByLabel("app=pl-monitoring", "StatefulSet")
 			if err != nil {
-				if errors.Is(err, wait.ErrWaitTimeout) {
+				if isTimeoutError(err) {
 					log.WithError(err).Error("Existing etcd taking longer to terminate than timeout")
 				} else {
 					log.WithError(err).Fatal("Could not delete existing etc")
@@ -158,7 +162,7 @@ func main() {
 			}
 			_, err = od.DeleteByLabel("app=pl-monitoring", "PersistentVolumeClaim")
 			if err != nil {
-				if errors.Is(err, wait.ErrWaitTimeout) {
+				if isTimeoutError(err) {
 					log.WithError(err).Error("Existing etcd pvc taking longer to terminate than timeout")
 				} else {
 					log.WithError(err).Fatal("Could not delete etcd pvc")
