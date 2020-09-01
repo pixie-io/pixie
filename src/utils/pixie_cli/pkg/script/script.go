@@ -30,7 +30,7 @@ type ExecutableScript struct {
 }
 
 // LiveViewLink returns the fully qualified URL for the live view.
-func (e ExecutableScript) LiveViewLink() string {
+func (e ExecutableScript) LiveViewLink(clusterID *string) string {
 	if e.Vis == nil {
 		return ""
 	}
@@ -39,10 +39,16 @@ func (e ExecutableScript) LiveViewLink() string {
 		cloudAddr = "withpixie.ai"
 	}
 
+	urlPath := "/live/script"
+	if clusterID != nil {
+		// url.URL automatically escapes the path.
+		urlPath = fmt.Sprintf("/live/clusters/%s/script", *clusterID)
+	}
+
 	u := url.URL{
 		Scheme: "https",
 		Host:   cloudAddr,
-		Path:   "/live",
+		Path:   urlPath,
 	}
 
 	q := u.Query()

@@ -139,7 +139,22 @@ var RunCmd = &cobra.Command{
 			log.WithError(err).Fatal("Failed to execute script")
 		}
 
-		if lvl := execScript.LiveViewLink(); lvl != "" {
+		// Get the name for this cluster for the live view
+		var clusterName *string
+		lister, err := vizier.NewLister(cloudAddr)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to create Vizier lister")
+		}
+		vzInfo, err := lister.GetVizierInfo(clusterID)
+		if err != nil {
+			log.WithError(err).Errorf("Error getting cluster name for cluster %s", clusterID.String())
+		} else if len(vzInfo) == 0 {
+			log.Errorf("Error getting cluster name for cluster %s, no results returned", clusterID.String())
+		} else {
+			clusterName = &(vzInfo[0].ClusterName)
+		}
+
+		if lvl := execScript.LiveViewLink(clusterName); lvl != "" {
 			p := func(s string, a ...interface{}) {
 				fmt.Fprintf(os.Stderr, s, a...)
 			}

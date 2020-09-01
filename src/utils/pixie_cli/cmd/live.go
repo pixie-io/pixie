@@ -63,8 +63,9 @@ var LiveCmd = &cobra.Command{
 		aClient := cloudapipb.NewAutocompleteServiceClient(cloudConn)
 		allClusters, _ := cmd.Flags().GetBool("all-clusters")
 		selectedCluster, _ := cmd.Flags().GetString("cluster")
-		viziers := vizier.MustConnectDefaultVizier(cloudAddr, allClusters, uuid.FromStringOrNil(selectedCluster))
-		lv, err := live.New(br, viziers, cloudAddr, aClient, execScript, useNewAC)
+		clusterUUID := uuid.FromStringOrNil(selectedCluster)
+		viziers := vizier.MustConnectDefaultVizier(cloudAddr, allClusters, clusterUUID)
+		lv, err := live.New(br, viziers, cloudAddr, aClient, execScript, useNewAC, clusterUUID)
 		if err != nil {
 			log.WithError(err).Fatal("Failed to initialize live view")
 		}

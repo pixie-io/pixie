@@ -14,6 +14,8 @@ import (
 	"github.com/alecthomas/chroma/quick"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
+	uuid "github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
@@ -76,20 +78,21 @@ type appState struct {
 
 // View is the top level of the Live View.
 type View struct {
-	app                 *tview.Application
-	pages               *tview.Pages
-	tableSelector       *tview.TextView
-	infoView            *tview.TextView
-	tvTable             *tview.Table
-	logoBox             *tview.TextView
-	bottomBar           *tview.Flex
-	searchBox           *tview.InputField
-	clusterSelector     *tview.DropDown
-	modal               Modal
-	s                   *appState
-	useNewAC            bool
-	cloudAddr           string
-	selectedClusterName string
+	app               *tview.Application
+	pages             *tview.Pages
+	tableSelector     *tview.TextView
+	infoView          *tview.TextView
+	tvTable           *tview.Table
+	logoBox           *tview.TextView
+	bottomBar         *tview.Flex
+	searchBox         *tview.InputField
+	clusterSelector   *tview.DropDown
+	modal             Modal
+	s                 *appState
+	useNewAC          bool
+	cloudAddr         string
+	selectedClusterID uuid.UUID
+	vizierLister      *vizier.Lister
 }
 
 // Modal is the interface for a pop-up view.
@@ -99,7 +102,8 @@ type Modal interface {
 }
 
 // New creates a new live view.
-func New(br *script.BundleManager, viziers []*vizier.Connector, cloudAddr string, aClient cloudapipb.AutocompleteServiceClient, execScript *script.ExecutableScript, useNewAC bool) (*View, error) {
+func New(br *script.BundleManager, viziers []*vizier.Connector, cloudAddr string, aClient cloudapipb.AutocompleteServiceClient,
+	execScript *script.ExecutableScript, useNewAC bool, clusterID uuid.UUID) (*View, error) {
 	// App is the top level view. The layout is approximately as follows:
 	//  ------------------------------------------
 	//  | View Information ...                   |
@@ -165,6 +169,12 @@ func New(br *script.BundleManager, viziers []*vizier.Connector, cloudAddr string
 		ac = newFuzzyAutoCompleter(br)
 	}
 
+	lister, err := vizier.NewLister(cloudAddr)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to create Vizier lister")
+		return nil, err
+	}
+
 	v := &View{
 		app:           app,
 		pages:         pages,
@@ -179,8 +189,10 @@ func New(br *script.BundleManager, viziers []*vizier.Connector, cloudAddr string
 			ac:         ac,
 			execScript: execScript,
 		},
-		useNewAC:  useNewAC,
-		cloudAddr: cloudAddr,
+		useNewAC:          useNewAC,
+		cloudAddr:         cloudAddr,
+		selectedClusterID: clusterID,
+		vizierLister:      lister,
 	}
 
 	// Wire up components.
@@ -298,6 +310,17 @@ func (v *View) execCompleteViewUpdate() {
 func (v *View) updateScriptInfoView() {
 	v.infoView.Clear()
 
+	// Get the name for this cluster for the live view
+	var clusterName *string
+	vzInfo, err := v.vizierLister.GetVizierInfo(v.selectedClusterID)
+	if err != nil {
+		log.WithError(err).Errorf("Error getting cluster name for cluster %s", v.selectedClusterID.String())
+	} else if len(vzInfo) == 0 {
+		log.Errorf("Error getting cluster name for cluster %s, no results returned", v.selectedClusterID.String())
+	} else {
+		clusterName = &(vzInfo[0].ClusterName)
+	}
+
 	fmt.Fprintf(v.infoView, "%s %s", withAccent("Script:"),
 		v.s.execScript.ScriptName)
 	args := v.s.execScript.ComputedArgs()
@@ -308,7 +331,7 @@ func (v *View) updateScriptInfoView() {
 	}
 
 	fmt.Fprintf(v.infoView, "\n")
-	if lvl := v.s.execScript.LiveViewLink(); lvl != "" {
+	if lvl := v.s.execScript.LiveViewLink(clusterName); lvl != "" {
 		fmt.Fprintf(v.infoView, "%s %s", withAccent("Live View:"), lvl)
 	}
 }
@@ -885,21 +908,4 @@ func colCompare(v1 interface{}, v2 interface{}, s sortType) bool {
 		return v1c < v2c
 	}
 	return v2c < v1c
-}
-
-func getVizierList(cloudAddr string) ([]*cloudapipb.ClusterInfo, error) {
-	l, err := vizier.NewLister(cloudAddr)
-	if err != nil {
-		return nil, err
-	}
-
-	vzInfo, err := l.GetViziersInfo()
-	if err != nil {
-		return nil, err
-	}
-
-	if len(vzInfo) == 0 {
-		return nil, errors.New("no Viziers available")
-	}
-	return vzInfo, nil
 }
