@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/olekukonko/tablewriter"
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -29,6 +30,8 @@ func init() {
 	pflag.Int("num_runs", 10, "number of times to run a script ")
 	pflag.StringP("cloud_addr", "a", "withpixie.ai:443", "The address of Pixie Cloud")
 	pflag.StringP("bundle", "b", defaultBundleFile, "The bundle file to use")
+	pflag.BoolP("all-clusters", "d", false, "Run script across all clusters")
+	pflag.StringP("cluster", "c", "", "Run only on selected cluster")
 }
 
 // Distribution is the interface used to make the stats.
@@ -247,6 +250,9 @@ func main() {
 	repeatCount := viper.GetInt("num_runs")
 	cloudAddr := viper.GetString("cloud_addr")
 	bundleFile := viper.GetString("bundle")
+	allClusters := viper.GetBool("all-clusters")
+	selectedCluster := viper.GetString("cluster")
+	clusterID := uuid.FromStringOrNil(selectedCluster)
 
 	br, err := createBundleReader(bundleFile)
 	if err != nil {
@@ -256,10 +262,7 @@ func main() {
 	scripts := br.GetScripts()
 	log.Infof("Running %d scripts %d times each", len(scripts), repeatCount)
 
-	v, err := vizier.ConnectToAllViziers(cloudAddr)
-	if err != nil {
-		log.WithError(err).Fatalf("Failed to connect to '%s'", cloudAddr)
-	}
+	v := vizier.MustConnectDefaultVizier(cloudAddr, allClusters, clusterID)
 
 	data := make(map[string]*ScriptExecData)
 	for i, s := range scripts {
