@@ -11,7 +11,7 @@ import {
   createStyles, makeStyles, Theme,
 } from '@material-ui/core/styles';
 
-import DataDrawerToggle from './data-drawer-toggle';
+import { DataDrawerToggle, STATS_TAB_NAME } from './data-drawer-toggle';
 import ExecutionStats from './execution-stats';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -55,7 +55,7 @@ const DataDrawer = ({ open, activeTab, setActiveTab }) => {
   })), [tables]);
 
   // If the selected table is not in the new result set, show the first table.
-  if (open && tabs.length) {
+  if (open && tabs.length && activeTab !== STATS_TAB_NAME) {
     const selectedTable = tabs.find((t) => t.title === activeTab);
     if (!selectedTable) {
       setActiveTab(tabs[0].title);
@@ -81,7 +81,7 @@ const DataDrawer = ({ open, activeTab, setActiveTab }) => {
                 </LazyPanel>
               ))
             }
-            <LazyPanel className={classes.content} show={open && activeTab === 'stats'}>
+            <LazyPanel className={classes.content} show={open && activeTab === STATS_TAB_NAME}>
               <ExecutionStats />
             </LazyPanel>
           </>

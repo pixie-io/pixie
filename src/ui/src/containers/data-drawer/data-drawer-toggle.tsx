@@ -15,6 +15,8 @@ interface DataDrawerToggleProps {
   toggle: () => void;
 }
 
+export const STATS_TAB_NAME = 'stats';
+
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     height: theme.spacing(4),
@@ -99,7 +101,7 @@ const StyledTab = withStyles((theme: Theme) => createStyles({
   },
 }))(Tab);
 
-const DataDrawerToggle = (props: DataDrawerToggleProps) => {
+export const DataDrawerToggle = (props: DataDrawerToggleProps) => {
   const {
     opened, toggle, activeTab, setActiveTab,
   } = props;
@@ -150,11 +152,17 @@ const DataDrawerToggle = (props: DataDrawerToggleProps) => {
           />
         ))}
         <TabSpacer classes={classes} />
-        {stats ? <StyledTab className={classes.statsTabLabel} value='stats' label='Execution Stats' /> : null}
+        {
+          stats ? (
+            <StyledTab
+              className={classes.statsTabLabel}
+              value={STATS_TAB_NAME}
+              label='Execution Stats'
+            />
+          ) : null
+        }
       </StyledTabs>
       <PixieLogo className={classes.pixieLogo} />
     </div>
   );
 };
-
-export default DataDrawerToggle;
