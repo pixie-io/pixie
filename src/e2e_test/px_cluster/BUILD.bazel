@@ -1,0 +1,74 @@
+sh_library(
+    name = "sh_library",
+    srcs = glob(["*.sh"]),
+)
+
+sh_test(
+    name = "px_on_gke_ubuntu_test",
+    timeout = "long",
+    srcs = ["test_px_on_gke.sh"],
+    args = ["UBUNTU"],
+    tags = ["manual"],
+    deps = [
+        ":sh_library",
+        "//scripts:sh_library",
+    ],
+)
+
+sh_test(
+    name = "px_on_gke_ubuntu_containerd_test",
+    timeout = "long",
+    srcs = ["test_px_on_gke.sh"],
+    args = ["UBUNTU_CONTAINERD"],
+    tags = ["manual"],
+    deps = [
+        ":sh_library",
+        "//scripts:sh_library",
+    ],
+)
+
+sh_test(
+    name = "px_on_gke_cos_test",
+    timeout = "long",
+    srcs = ["test_px_on_gke.sh"],
+    args = ["COS"],
+    tags = ["manual"],
+    deps = [
+        ":sh_library",
+        "//scripts:sh_library",
+    ],
+)
+
+sh_test(
+    name = "px_on_gke_cost_containerd_test",
+    timeout = "long",
+    srcs = ["test_px_on_gke.sh"],
+    args = ["COS_CONTAINERD"],
+    tags = ["manual"],
+    deps = [
+        ":sh_library",
+        "//scripts:sh_library",
+    ],
+)
+
+sh_test(
+    name = "px_on_minikube_test",
+    timeout = "long",
+    srcs = ["test_px_on_minikube.sh"],
+    tags = ["manual"],
+    deps = [
+        ":sh_library",
+        "//scripts:sh_library",
+    ],
+)
+
+sh_test(
+    name = "px_on_kind_test",
+    timeout = "long",
+    srcs = ["test_px_on_kind.sh"],
+    tags = ["manual"],
+    deps = [
+        ":sh_library",
+        "//scripts:sh_library",
+    ],
+)
