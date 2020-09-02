@@ -132,8 +132,8 @@ StatusOr<std::vector<queryresultspb::AgentExecutionStats>> GRPCRouter::GetIncomi
     auto tracker = &it->second;
     agent_exec_stats = tracker->agent_exec_stats;
     if (agent_exec_stats.size() != expected_agent_ids.size()) {
-      LOG(ERROR) << absl::Substitute("Agent ids are not the same size. Got $0 and expected $1",
-                                     agent_exec_stats.size(), expected_agent_ids.size());
+      return error::Internal("Agent ids are not the same size. Got $0 and expected $1",
+                             agent_exec_stats.size(), expected_agent_ids.size());
     }
   }
   return agent_exec_stats;

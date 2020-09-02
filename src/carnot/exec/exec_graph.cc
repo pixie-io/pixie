@@ -198,7 +198,7 @@ ExecutionStats ExecutionGraph::GetStats() const {
     CHECK(res != nodes_.end());
     ExecNode* node = res->second;
     CHECK(node->type() == ExecNodeType::kSourceNode);
-    auto source_node = static_cast<MemorySourceNode*>(node);
+    auto source_node = static_cast<SourceNode*>(node);
     bytes_processed += source_node->BytesProcessed();
     rows_processed += source_node->RowsProcessed();
   }

@@ -295,6 +295,7 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
             auto exec_stats = exec_graph.GetStats();
             bytes_processed += exec_stats.bytes_processed;
             rows_processed += exec_stats.rows_processed;
+
             if (analyze) {
               for (int64_t node_id : pf->dag().TopologicalSort()) {
                 PL_ASSIGN_OR_RETURN(auto exec_node, exec_graph.node(node_id));
@@ -334,15 +335,31 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
   }
   timer.Stop();
   int64_t exec_time_ns = timer.ElapsedTime_us() * 1000;
-  std::vector<queryresultspb::AgentExecutionStats> all_agent_stats;
-  if (HasGRPCServer() && analyze) {
-    PL_ASSIGN_OR_RETURN(all_agent_stats,
+
+  std::vector<queryresultspb::AgentExecutionStats> input_agent_stats;
+  if (HasGRPCServer()) {
+    PL_ASSIGN_OR_RETURN(input_agent_stats,
                         grpc_router_->GetIncomingWorkerExecStats(query_id, incoming_agents));
+  }
+
+  // Compute bytes processed and records processed across all agents for all queries,
+  // regardless of flags.
+  for (const auto& agent_stats : input_agent_stats) {
+    bytes_processed += agent_stats.bytes_processed();
+    rows_processed += agent_stats.records_processed();
   }
 
   agent_operator_exec_stats.set_execution_time_ns(exec_time_ns);
   agent_operator_exec_stats.set_bytes_processed(bytes_processed);
   agent_operator_exec_stats.set_records_processed(rows_processed);
+
+  std::vector<queryresultspb::AgentExecutionStats> all_agent_stats;
+  if (analyze) {
+    all_agent_stats = input_agent_stats;
+  }
+
+  // Even if analyze is set to false, send the most basic exec stats (rows, etc) per agent.
+  // analyze=true will send per operator stats.
   all_agent_stats.push_back(agent_operator_exec_stats);
 
   return SendFinalExecutionStatsToOutgoingConns(query_id, exec_state->OutgoingServers(),
