@@ -134,7 +134,7 @@ type execResults struct {
 	numBytes         int
 }
 
-func exec(v []*vizier.Connector, execScript *script.ExecutableScript) (*execResults, error) {
+func executeScript(v []*vizier.Connector, execScript *script.ExecutableScript) (*execResults, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -269,7 +269,7 @@ func main() {
 		}
 	}
 
-	v := vizier.MustConnectDefaultVizier(cloudAddr, allClusters, clusterID)
+	vzrConns := vizier.MustConnectDefaultVizier(cloudAddr, allClusters, clusterID)
 
 	data := make(map[string]*ScriptExecData)
 	for i, s := range scripts {
@@ -286,7 +286,7 @@ func main() {
 
 		// Run script.
 		for i := 0; i < repeatCount; i++ {
-			res, err := exec(v, s)
+			res, err := executeScript(vzrConns, s)
 			if err != nil {
 				log.WithError(err).Fatalf("Failed to execute script")
 			}
