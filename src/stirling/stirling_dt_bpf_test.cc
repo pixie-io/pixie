@@ -32,6 +32,8 @@ class StirlingDynamicTraceBPFTest : public ::testing::Test {
                                                   std::placeholders::_3));
   }
 
+  void TearDown() override { trace_target_.Kill(); }
+
   void AppendData(uint64_t table_id, types::TabletID tablet_id,
                   std::unique_ptr<types::ColumnWrapperRecordBatch> record_batch) {
     PL_UNUSED(table_id);
@@ -101,9 +103,16 @@ class StirlingDynamicTraceBPFTest : public ::testing::Test {
     stirling_->Stop();
   }
 
+  void StartTraceTarget(const std::string& binary_path) {
+    // Run tracing target.
+    ASSERT_OK(fs::Exists(binary_path));
+    ASSERT_OK(trace_target_.Start({binary_path}));
+  }
+
   std::unique_ptr<Stirling> stirling_;
   std::vector<std::unique_ptr<types::ColumnWrapperRecordBatch>> record_batches_;
   stirlingpb::InfoClass info_class_;
+  SubProcess trace_target_;
 };
 
 //-----------------------------------------------------------------------------
@@ -240,17 +249,10 @@ class DynamicTraceGolangTest : public StirlingDynamicTraceBPFTest {
  protected:
   const std::string kBinaryPath = pl::testing::BazelBinTestFilePath(
       "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary");
-
-  void StartTraceTarget() {
-    // Run tracing target.
-    SubProcess process;
-    ASSERT_OK(fs::Exists(kBinaryPath));
-    ASSERT_OK(process.Start({kBinaryPath}));
-  }
 };
 
 TEST_F(DynamicTraceGolangTest, TraceLatencyOnly) {
-  StartTraceTarget();
+  StartTraceTarget(kBinaryPath);
 
   constexpr std::string_view kProgram = R"(
 deployment_spec {
@@ -291,7 +293,7 @@ tracepoints {
 }
 
 TEST_F(DynamicTraceGolangTest, TraceString) {
-  StartTraceTarget();
+  StartTraceTarget(kBinaryPath);
 
   constexpr std::string_view kProgram = R"(
 deployment_spec {
@@ -343,7 +345,7 @@ tracepoints {
 }
 
 TEST_F(DynamicTraceGolangTest, TraceStruct) {
-  StartTraceTarget();
+  StartTraceTarget(kBinaryPath);
 
   constexpr std::string_view kProgram = R"(
 deployment_spec {
@@ -400,7 +402,7 @@ TEST_P(DynamicTraceGolangTestWithParam, TraceByteArray) {
   auto params = GetParam();
 
   // Run tracing target.
-  StartTraceTarget();
+  StartTraceTarget(kBinaryPath);
 
   constexpr std::string_view kProgram = R"(
 deployment_spec {
@@ -467,17 +469,10 @@ class DynamicTraceCppTest : public StirlingDynamicTraceBPFTest {
  protected:
   const std::string kBinaryPath =
       pl::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe");
-
-  void StartTraceTarget() {
-    // Run tracing target.
-    SubProcess process;
-    ASSERT_OK(fs::Exists(kBinaryPath));
-    ASSERT_OK(process.Start({kBinaryPath}));
-  }
 };
 
 TEST_F(DynamicTraceCppTest, BasicTypes) {
-  StartTraceTarget();
+  StartTraceTarget(kBinaryPath);
 
   constexpr std::string_view kProgram = R"(
 deployment_spec {
@@ -542,7 +537,7 @@ class DynamicTraceCppTestWithParam : public DynamicTraceCppTest,
 TEST_P(DynamicTraceCppTestWithParam, StructTypes) {
   auto param = GetParam();
 
-  StartTraceTarget();
+  StartTraceTarget(kBinaryPath);
 
   constexpr std::string_view kProgram = R"(
 deployment_spec {
@@ -610,7 +605,7 @@ INSTANTIATE_TEST_SUITE_P(CppStructTracingTests, DynamicTraceCppTestWithParam,
                          ::testing::Values("ABCSum32", "ABCSum64"));
 
 TEST_F(DynamicTraceCppTest, ArgsOnStackAndRegisters) {
-  StartTraceTarget();
+  StartTraceTarget(kBinaryPath);
 
   constexpr std::string_view kProgram = R"(
 deployment_spec {
