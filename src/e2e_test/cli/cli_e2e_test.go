@@ -17,10 +17,22 @@ import (
 
 var testDisableList = []string{
 	"px/http2_data",
+	"pixielabs/payment_trace_vis",
+	"pixielabs/metadata_heartbeat",
+	"pixielabs/sock_shop_payment_trace",
+	"pixielabs/metadata_send_nats_heartbeat",
+	"boutique/checkout_trace",
+	"pixielabs/etcd_get_trace",
 }
 
 var stressTestDisableList = []string{
 	"px/http2_data",
+	"pixielabs/payment_trace_vis",
+	"pixielabs/metadata_heartbeat",
+	"pixielabs/sock_shop_payment_trace",
+	"pixielabs/metadata_send_nats_heartbeat",
+	"boutique/checkout_trace",
+	"pixielabs/etcd_get_trace",
 }
 
 type scriptInfo struct {
@@ -32,6 +44,8 @@ var (
 	stressRepeat      = flag.Int("stress_repeat", 1000, "number of times to repeat stress test")
 	stressMaxParallel = flag.Int("stress_parallel", 50, "number of scripts to run in parallel. "+
 		"Numbers larger than 50 might cause timeouts because of Kelvin thread pool.")
+	allClusters = flag.Bool("all-clusters", false, "run script across all clusters")
+	clusterID   = flag.String("c", "", "run only on selected cluster ID")
 )
 
 func mustCLIPath() string {
@@ -101,7 +115,15 @@ func TestCLIE2E_AllScripts(t *testing.T) {
 				t.Skip()
 				return
 			}
-			b, err := cliExecStdoutBytes(t, "run", s.Name, "-o", "json")
+			var b *bytes.Buffer
+			var err error
+			if *allClusters {
+				b, err = cliExecStdoutBytes(t, "run", s.Name, "--all-clusters", "-o", "json")
+			} else if *clusterID != "" {
+				b, err = cliExecStdoutBytes(t, "run", s.Name, "-c", *clusterID, "-o", "json")
+			} else {
+				t.Fatalf("Either --all-clusters or -c <cluster_id> must be provided.")
+			}
 			if err != nil {
 				t.Fatalf("Failed to run script: %+v", err)
 			}
@@ -122,7 +144,15 @@ func TestCLIE2E_AllScriptsRepeat10(t *testing.T) {
 				return
 			}
 			for i := 0; i < repeatCount; i++ {
-				b, err := cliExecStdoutBytes(t, "run", s.Name, "-o", "json")
+				var b *bytes.Buffer
+				var err error
+				if *allClusters {
+					b, err = cliExecStdoutBytes(t, "run", s.Name, "--all-clusters", "-o", "json")
+				} else if *clusterID != "" {
+					b, err = cliExecStdoutBytes(t, "run", s.Name, "-c", *clusterID, "-o", "json")
+				} else {
+					t.Fatalf("Either --all-clusters or -c <cluster_id> must be provided.")
+				}
 				if err != nil {
 					t.Fatalf("Failed to run script: %+v", err)
 				}
@@ -142,7 +172,7 @@ func TestCLIE2E_AgentStatusStressParallel(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				c <- struct{}{}
-				b, err := cliExecStdoutBytes(t, "run", "px/agent_status", "-o", "json")
+				b, err := cliExecStdoutBytes(t, "run", "-c", *clusterID, "px/agent_status", "-o", "json")
 				if err != nil {
 					t.Fatalf("Failed to run script: %+v", err)
 				}
