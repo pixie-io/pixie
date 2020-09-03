@@ -311,19 +311,26 @@ func TestUpdateHeartbeatForNonExistingAgent(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestUpdateAgentState(t *testing.T) {
+func TestUpdateAgentDelete(t *testing.T) {
 	mds, agtMgr := setupAgentManager(t)
-
-	err := agtMgr.UpdateAgentState()
-	assert.Nil(t, err)
-
-	agents, err := mds.GetAgents()
-	assert.Equal(t, 1, len(agents))
 
 	u, err := uuid.FromString(testutils.UnhealthyAgentUUID)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
+	u2, err := uuid.FromString(testutils.UnhealthyKelvinAgentUUID)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+
+	err = agtMgr.DeleteAgent(u)
+	assert.Nil(t, err)
+	err = agtMgr.DeleteAgent(u2)
+	assert.Nil(t, err)
+
+	agents, err := mds.GetAgents()
+	assert.Equal(t, 1, len(agents))
+
 	agent, err := mds.GetAgent(u)
 	assert.Nil(t, err)
 	assert.Nil(t, agent)
@@ -959,7 +966,9 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Now expire it
-	err = agtMgr.UpdateAgentState()
+	err = agtMgr.DeleteAgent(agUUID0)
+	assert.Nil(t, err)
+	err = agtMgr.DeleteAgent(agUUID1)
 	assert.Nil(t, err)
 
 	// Check results of second call to GetAgentUpdates.

@@ -24,6 +24,47 @@ import (
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
+func setup(t *testing.T, sendMsgFn func(topic string, b []byte) error) (*controllers.AgentTopicListener, *mock_controllers.MockAgentManager, *mock_controllers.MockMetadataStore, *mock_controllers.MockTracepointStore, func()) {
+	ctrl := gomock.NewController(t)
+
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
+	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
+
+	// Load some existing agents.
+	mockAgtMgr.
+		EXPECT().
+		GetActiveAgents().
+		Return([]*agentpb.Agent{
+			&agentpb.Agent{
+				LastHeartbeatNS: 0,
+				CreateTimeNS:    0,
+				Info: &agentpb.AgentInfo{
+					AgentID: &uuidpb.UUID{Data: []byte("5ba7b8109dad11d180b400c04fd430c8")},
+					HostInfo: &agentpb.HostInfo{
+						Hostname: "abcd",
+						HostIP:   "127.0.0.3",
+					},
+					Capabilities: &agentpb.AgentCapabilities{
+						CollectsData: false,
+					},
+				},
+				ASID: 789,
+			},
+		}, nil)
+
+	clock := testingutils.NewTestClock(time.Unix(0, 10))
+	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
+
+	atl, _ := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, tracepointMgr, mockMdStore, sendMsgFn, clock)
+
+	cleanup := func() {
+		ctrl.Finish()
+	}
+
+	return atl, mockAgtMgr, mockMdStore, mockTracepointStore, cleanup
+}
+
 func TestAgentRegisterRequest(t *testing.T) {
 	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 	u, err := uuid.FromString(uuidStr)
@@ -31,14 +72,24 @@ func TestAgentRegisterRequest(t *testing.T) {
 		t.Fatal("Could not generate UUID.")
 	}
 
-	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
-	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
+	resp := messages.VizierMessage{
+		Msg: &messages.VizierMessage_RegisterAgentResponse{
+			RegisterAgentResponse: &messages.RegisterAgentResponse{
+				ASID: 1,
+			},
+		},
+	}
+	respPb, err := resp.Marshal()
 
-	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
+	// Set up mock.
+	var wg sync.WaitGroup
+	wg.Add(1)
+	atl, mockAgtMgr, _, mockTracepointStore, cleanup := setup(t, func(topic string, b []byte) error {
+		assert.Equal(t, respPb, b)
+		assert.Equal(t, "/agent/"+uuidStr, topic)
+		return nil
+	})
+	defer cleanup()
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -63,13 +114,13 @@ func TestAgentRegisterRequest(t *testing.T) {
 
 	updates := []*metadatapb.ResourceUpdate{&updatePb}
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-
 	mockTracepointStore.
 		EXPECT().
 		GetTracepoints().
-		Return(nil, nil)
+		DoAndReturn(func() ([]*storepb.TracepointInfo, error) {
+			wg.Done()
+			return nil, nil
+		})
 
 	mockAgtMgr.
 		EXPECT().
@@ -82,7 +133,6 @@ func TestAgentRegisterRequest(t *testing.T) {
 		EXPECT().
 		AddUpdatesToAgentQueue(u.String(), updates).
 		DoAndReturn(func(string, []*metadatapb.ResourceUpdate) error {
-			wg.Done()
 			return nil
 		})
 
@@ -92,29 +142,12 @@ func TestAgentRegisterRequest(t *testing.T) {
 	}
 	reqPb, err := req.Marshal()
 
-	resp := messages.VizierMessage{
-		Msg: &messages.VizierMessage_RegisterAgentResponse{
-			RegisterAgentResponse: &messages.RegisterAgentResponse{
-				ASID: 1,
-			},
-		},
-	}
-	respPb, err := resp.Marshal()
-
 	mockAgtMgr.
 		EXPECT().
 		RegisterAgent(agentInfo).
 		DoAndReturn(func(info *agentpb.Agent) (uint32, error) {
 			return uint32(1), nil
 		})
-
-	// Create Metadata Service controller.
-	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, tracepointMgr, mockMdStore, func(topic string, b []byte) error {
-		assert.Equal(t, respPb, b)
-		assert.Equal(t, "/agent/"+uuidStr, topic)
-		return nil
-	}, clock)
 
 	msg := nats.Msg{}
 	msg.Data = reqPb
@@ -131,14 +164,25 @@ func TestKelvinRegisterRequest(t *testing.T) {
 		t.Fatal("Could not generate UUID.")
 	}
 
-	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
-	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
+	resp := messages.VizierMessage{
+		Msg: &messages.VizierMessage_RegisterAgentResponse{
+			RegisterAgentResponse: &messages.RegisterAgentResponse{
+				ASID: 1,
+			},
+		},
+	}
+	respPb, err := resp.Marshal()
 
-	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
+	// Set up mock.
+	var wg sync.WaitGroup
+	wg.Add(1)
+	atl, mockAgtMgr, _, mockTracepointStore, cleanup := setup(t, func(topic string, b []byte) error {
+		assert.Equal(t, respPb, b)
+		assert.Equal(t, "/agent/"+uuidStr, topic)
+		return nil
+	})
+	defer cleanup()
+
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
@@ -165,14 +209,13 @@ func TestKelvinRegisterRequest(t *testing.T) {
 
 	updates := []*metadatapb.ResourceUpdate{&updatePb}
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-
 	mockTracepointStore.
 		EXPECT().
 		GetTracepoints().
-		Return(nil, nil)
-
+		DoAndReturn(func() ([]*storepb.TracepointInfo, error) {
+			wg.Done()
+			return nil, nil
+		})
 	mockAgtMgr.
 		EXPECT().
 		GetMetadataUpdates(nil).
@@ -184,7 +227,6 @@ func TestKelvinRegisterRequest(t *testing.T) {
 		EXPECT().
 		AddUpdatesToAgentQueue(u.String(), updates).
 		DoAndReturn(func(string, []*metadatapb.ResourceUpdate) error {
-			wg.Done()
 			return nil
 		})
 
@@ -194,28 +236,12 @@ func TestKelvinRegisterRequest(t *testing.T) {
 	}
 	reqPb, err := req.Marshal()
 
-	resp := messages.VizierMessage{
-		Msg: &messages.VizierMessage_RegisterAgentResponse{
-			RegisterAgentResponse: &messages.RegisterAgentResponse{
-				ASID: 1,
-			},
-		},
-	}
-	respPb, err := resp.Marshal()
-
 	mockAgtMgr.
 		EXPECT().
 		RegisterAgent(agentInfo).
 		DoAndReturn(func(info *agentpb.Agent) (uint32, error) {
 			return uint32(1), nil
 		})
-
-	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, tracepointMgr, mockMdStore, func(topic string, b []byte) error {
-		assert.Equal(t, respPb, b)
-		assert.Equal(t, "/agent/"+uuidStr, topic)
-		return nil
-	}, clock)
 
 	msg := nats.Msg{}
 	msg.Data = reqPb
@@ -228,11 +254,22 @@ func TestKelvinRegisterRequest(t *testing.T) {
 func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 
+	resp := messages.VizierMessage{
+		Msg: &messages.VizierMessage_RegisterAgentResponse{
+			RegisterAgentResponse: &messages.RegisterAgentResponse{
+				ASID: 1,
+			},
+		},
+	}
+	respPb, err := resp.Marshal()
+
 	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
+	atl, mockAgtMgr, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+		assert.Equal(t, respPb, b)
+		assert.Equal(t, "/agent/"+uuidStr, topic)
+		return nil
+	})
+	defer cleanup()
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -281,22 +318,6 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	}
 	reqPb, err := req.Marshal()
 
-	resp := messages.VizierMessage{
-		Msg: &messages.VizierMessage_RegisterAgentResponse{
-			RegisterAgentResponse: &messages.RegisterAgentResponse{
-				ASID: 1,
-			},
-		},
-	}
-	respPb, err := resp.Marshal()
-
-	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
-		assert.Equal(t, respPb, b)
-		assert.Equal(t, "/agent/"+uuidStr, topic)
-		return nil
-	}, clock)
-
 	msg := nats.Msg{}
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
@@ -307,23 +328,18 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 
 func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
 	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
+	atl, _, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+		// This function should never be called.
+		assert.Equal(t, true, false)
+		return nil
+	})
+	defer cleanup()
 
 	req := new(messages.VizierMessage)
 	if err := proto.UnmarshalText(testutils.InvalidRegisterAgentRequestPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	reqPb, err := req.Marshal()
-
-	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
-		// This function should never be called.
-		assert.Equal(t, true, false)
-		return nil
-	}, clock)
 
 	msg := nats.Msg{}
 	msg.Data = reqPb
@@ -332,11 +348,14 @@ func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
 }
 
 func TestAgentCreateFailed(t *testing.T) {
-	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	atl, mockAgtMgr, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+		// This function should never be called.
+		assert.Equal(t, true, false)
+		return nil
+	})
+	defer cleanup()
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -360,95 +379,44 @@ func TestAgentCreateFailed(t *testing.T) {
 		EXPECT().
 		RegisterAgent(agentInfo).
 		DoAndReturn(func(info *agentpb.Agent) (uint32, error) {
+			wg.Done()
 			return uint32(0), errors.New("could not create agent")
 		})
 
-	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
-		// This function should never be called.
-		assert.Equal(t, true, false)
-		return nil
-	}, clock)
-
 	msg := nats.Msg{}
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
 	assert.Nil(t, err)
-}
 
-func TestAgentUpdateRequest(t *testing.T) {
-	// Create request and expected response protos.
-	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-
-	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
-
-	resp := messages.VizierMessage{
-		Msg: &messages.VizierMessage_UpdateAgentResponse{},
-	}
-	respPb, err := resp.Marshal()
-
-	req := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(testutils.UpdateAgentRequestPB, req); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	reqPb, err := req.Marshal()
-
-	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
-		assert.Equal(t, respPb, b)
-		assert.Equal(t, "/agent/"+uuidStr, topic)
-		return nil
-	}, clock)
-
-	msg := nats.Msg{}
-	msg.Data = reqPb
-	err = atl.HandleMessage(&msg)
-	assert.Nil(t, err)
-}
-
-func TestAgentUpdateRequestInvalidUUID(t *testing.T) {
-	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
-
-	req := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(testutils.InvalidUpdateAgentRequestPB, req); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	reqPb, err := req.Marshal()
-
-	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
-		// This function should never be called.
-		assert.Equal(t, true, false)
-		return nil
-	}, clock)
-
-	msg := nats.Msg{}
-	msg.Data = reqPb
-	err = atl.HandleMessage(&msg)
-	assert.Nil(t, err)
+	defer wg.Wait()
 }
 
 func TestAgentHeartbeat(t *testing.T) {
+	uuidStr := "5ba7b810-9dad-11d1-80b4-00c04fd430c8"
+
 	// Create request and expected response protos.
-	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-	u, err := uuid.FromString(uuidStr)
-	if err != nil {
-		t.Fatal("Could not generate UUID.")
+	req := new(messages.VizierMessage)
+	if err := proto.UnmarshalText(testutils.HeartbeatPB, req); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
 	}
+	req.GetHeartbeat().AgentID = &uuidpb.UUID{Data: []byte("5ba7b8109dad11d180b400c04fd430c8")}
+	reqPb, err := req.Marshal()
+
+	resp := new(messages.VizierMessage)
+	if err := proto.UnmarshalText(testutils.HeartbeatAckPB, resp); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	respPb, err := resp.Marshal()
 
 	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
+	var wg sync.WaitGroup
+	atl, mockAgtMgr, mockMdStore, _, cleanup := setup(t, func(topic string, b []byte) error {
+		assert.Equal(t, respPb, b)
+		assert.Equal(t, "/agent/"+uuidStr, topic)
+		wg.Done()
+		return nil
+	})
+	defer cleanup()
 
 	mockMdStore.
 		EXPECT().
@@ -462,7 +430,7 @@ func TestAgentHeartbeat(t *testing.T) {
 
 	mockAgtMgr.
 		EXPECT().
-		UpdateHeartbeat(u).
+		UpdateHeartbeat(uuid.FromStringOrNil(uuidStr)).
 		DoAndReturn(func(agentID uuid.UUID) error {
 			return nil
 		})
@@ -502,29 +470,14 @@ func TestAgentHeartbeat(t *testing.T) {
 
 	mockAgtMgr.
 		EXPECT().
-		AddToUpdateQueue(u, agentUpdatePb).
+		AddToUpdateQueue(uuid.FromStringOrNil(uuidStr), agentUpdatePb).
 		DoAndReturn(func(uuid.UUID, *messages.AgentUpdateInfo) {
+			wg.Done()
 			return
 		})
 
-	req := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(testutils.HeartbeatPB, req); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	reqPb, err := req.Marshal()
-
-	resp := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(testutils.HeartbeatAckPB, resp); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	respPb, err := resp.Marshal()
-
-	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
-		assert.Equal(t, respPb, b)
-		assert.Equal(t, "/agent/"+uuidStr, topic)
-		return nil
-	}, clock)
+	wg.Add(2)
+	defer wg.Wait()
 
 	msg := nats.Msg{}
 	msg.Data = reqPb
@@ -533,31 +486,7 @@ func TestAgentHeartbeat(t *testing.T) {
 }
 
 func TestAgentHeartbeat_Failed(t *testing.T) {
-	// Create request and expected response protos.
-	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-	u, err := uuid.FromString(uuidStr)
-	if err != nil {
-		t.Fatal("Could not generate UUID.")
-	}
-
-	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
-
-	mockAgtMgr.
-		EXPECT().
-		UpdateHeartbeat(u).
-		DoAndReturn(func(agentID uuid.UUID) error {
-			return errors.New("Could not update heartbeat")
-		})
-
-	req := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(testutils.HeartbeatPB, req); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	reqPb, err := req.Marshal()
+	uuidStr := "5ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_HeartbeatNack{
@@ -566,13 +495,62 @@ func TestAgentHeartbeat_Failed(t *testing.T) {
 	}
 	respPb, err := resp.Marshal()
 
-	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
+	req := new(messages.VizierMessage)
+	if err := proto.UnmarshalText(testutils.HeartbeatPB, req); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	req.GetHeartbeat().AgentID = &uuidpb.UUID{Data: []byte("5ba7b8109dad11d180b400c04fd430c8")}
+	reqPb, err := req.Marshal()
+
+	// Set up mock.
+	var wg sync.WaitGroup
+	atl, mockAgtMgr, _, _, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "/agent/"+uuidStr, topic)
+		wg.Done()
 		return nil
-	}, clock)
+	})
+	defer cleanup()
 
+	wg.Add(1)
+	defer wg.Wait()
+
+	mockAgtMgr.
+		EXPECT().
+		UpdateHeartbeat(uuid.FromStringOrNil(uuidStr)).
+		DoAndReturn(func(agentID uuid.UUID) error {
+			return errors.New("Could not update heartbeat")
+		})
+
+	msg := nats.Msg{}
+	msg.Data = reqPb
+	err = atl.HandleMessage(&msg)
+	assert.Nil(t, err)
+}
+
+func TestHeartbeatNonExisting(t *testing.T) {
+	resp := messages.VizierMessage{
+		Msg: &messages.VizierMessage_HeartbeatNack{
+			HeartbeatNack: &messages.HeartbeatNack{},
+		},
+	}
+	respPb, err := resp.Marshal()
+
+	req := new(messages.VizierMessage)
+	if err := proto.UnmarshalText(testutils.HeartbeatPB, req); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	reqPb, err := req.Marshal()
+
+	// Set up mock.
+	atl, _, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+		assert.Equal(t, respPb, b)
+		assert.Equal(t, "/agent/11285cdd-1de9-4ab1-ae6a-0ba08c8c676c", topic)
+		return nil
+	})
+	defer cleanup()
+
+	// Send update.
 	msg := nats.Msg{}
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
@@ -581,20 +559,14 @@ func TestAgentHeartbeat_Failed(t *testing.T) {
 
 func TestEmptyMessage(t *testing.T) {
 	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
-
-	req := new(messages.VizierMessage)
-	reqPb, err := req.Marshal()
-
-	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
+	atl, _, _, _, cleanup := setup(t, func(topic string, b []byte) error {
 		// This function should never be called.
 		assert.Equal(t, true, false)
 		return nil
-	}, clock)
+	})
+	defer cleanup()
+	req := new(messages.VizierMessage)
+	reqPb, err := req.Marshal()
 
 	msg := nats.Msg{}
 	msg.Data = reqPb
@@ -604,10 +576,12 @@ func TestEmptyMessage(t *testing.T) {
 
 func TestUnhandledMessage(t *testing.T) {
 	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
+	atl, _, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+		// This function should never be called.
+		assert.Equal(t, true, false)
+		return nil
+	})
+	defer cleanup()
 
 	req := new(messages.VizierMessage)
 	if err := proto.UnmarshalText(testutils.HeartbeatAckPB, req); err != nil {
@@ -615,14 +589,6 @@ func TestUnhandledMessage(t *testing.T) {
 	}
 	reqPb, err := req.Marshal()
 	// Send update.
-
-	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
-		// This function should never be called.
-		assert.Equal(t, true, false)
-		return nil
-	}, clock)
-
 	msg := nats.Msg{}
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
@@ -631,13 +597,10 @@ func TestUnhandledMessage(t *testing.T) {
 
 func TestAgentTracepointInfoUpdate(t *testing.T) {
 	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
-	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
-
-	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
+	atl, _, _, mockTracepointStore, cleanup := setup(t, func(topic string, b []byte) error {
+		return nil
+	})
+	defer cleanup()
 
 	agentID := uuid.NewV4()
 	tpID := uuid.NewV4()
@@ -666,11 +629,6 @@ func TestAgentTracepointInfoUpdate(t *testing.T) {
 	}
 	reqPb, err := req.Marshal()
 	assert.Nil(t, err)
-
-	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, tracepointMgr, mockMdStore, func(topic string, b []byte) error {
-		return nil
-	}, clock)
 
 	msg := nats.Msg{}
 	msg.Data = reqPb

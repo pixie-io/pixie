@@ -76,16 +76,16 @@ func (mr *MockAgentManagerMockRecorder) UpdateAgent(info interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAgent", reflect.TypeOf((*MockAgentManager)(nil).UpdateAgent), info)
 }
 
-// UpdateAgentState mocks base method
-func (m *MockAgentManager) UpdateAgentState() error {
-	ret := m.ctrl.Call(m, "UpdateAgentState")
+// DeleteAgent mocks base method
+func (m *MockAgentManager) DeleteAgent(arg0 go_uuid.UUID) error {
+	ret := m.ctrl.Call(m, "DeleteAgent", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateAgentState indicates an expected call of UpdateAgentState
-func (mr *MockAgentManagerMockRecorder) UpdateAgentState() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAgentState", reflect.TypeOf((*MockAgentManager)(nil).UpdateAgentState))
+// DeleteAgent indicates an expected call of DeleteAgent
+func (mr *MockAgentManagerMockRecorder) DeleteAgent(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAgent", reflect.TypeOf((*MockAgentManager)(nil).DeleteAgent), arg0)
 }
 
 // GetActiveAgents mocks base method

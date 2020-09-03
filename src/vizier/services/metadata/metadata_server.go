@@ -192,14 +192,6 @@ func main() {
 	go func() {
 		for keepAlive {
 			if isLeader {
-				agtMgr.UpdateAgentState()
-			}
-			time.Sleep(10 * time.Second)
-		}
-	}()
-	go func() {
-		for keepAlive {
-			if isLeader {
 				cache.FlushToDatastore()
 				time.Sleep(cacheFlushPeriod)
 			} else {

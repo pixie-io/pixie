@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"sync"
+	"time"
 
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
@@ -17,7 +18,8 @@ import (
 
 // AgentExpirationTimeout is the amount of time that we should wait to receive a heartbeat
 // from an agent before marking it as unhealthy.
-const AgentExpirationTimeout int64 = 1e9 * 60 // 60 seconds in nano-seconds.
+const AgentExpirationTimeout time.Duration = 1 * time.Minute
+
 // MaxAgentUpdates is the total number of updates each agent can have on its queue.
 const MaxAgentUpdates int = 10000
 
@@ -51,9 +53,8 @@ type AgentManager interface {
 	// UpdateAgent updates agent info, such as schema.
 	UpdateAgent(info *agentpb.Agent) error
 
-	// UpdateAgentState will run through all agents and delete those
-	// that are dead.
-	UpdateAgentState() error
+	// Delete agent deletes the agent.
+	DeleteAgent(uuid.UUID) error
 
 	// GetActiveAgents gets all of the current active agents.
 	GetActiveAgents() ([]*agentpb.Agent, error)
@@ -357,6 +358,17 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 	return asid, nil
 }
 
+// DeleteAgent deletes the agent with the given ID.
+func (m *AgentManagerImpl) DeleteAgent(agentID uuid.UUID) error {
+	err := m.deleteAgentWrapper(agentID)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to delete agent from etcd")
+	}
+	m.closeAgentQueue(agentID)
+
+	return err
+}
+
 // UpdateHeartbeat updates the agent heartbeat with the current time.
 func (m *AgentManagerImpl) UpdateHeartbeat(agentID uuid.UUID) error {
 	// Get current AgentData.
@@ -383,33 +395,6 @@ func (m *AgentManagerImpl) UpdateHeartbeat(agentID uuid.UUID) error {
 func (m *AgentManagerImpl) UpdateAgent(info *agentpb.Agent) error {
 	// TODO(michelle): Implement once we figure out how the agent info (schemas, etc) looks.
 	// Make sure to add any updates to the agent updates list.
-	return nil
-}
-
-// UpdateAgentState will run through all agents and delete those
-// that are dead.
-func (m *AgentManagerImpl) UpdateAgentState() error {
-	currentTime := m.clock.Now().UnixNano()
-
-	agentPbs, err := m.mds.GetAgents()
-	if err != nil {
-		return err
-	}
-
-	for _, agentPb := range agentPbs {
-		if currentTime-agentPb.LastHeartbeatNS > AgentExpirationTimeout {
-			uid, err := utils.UUIDFromProto(agentPb.Info.AgentID)
-			if err != nil {
-				log.WithError(err).Fatal("Could not convert UUID to proto")
-			}
-			err = m.deleteAgentWrapper(uid)
-			if err != nil {
-				log.WithError(err).Fatal("Failed to delete agent from etcd")
-			}
-			m.closeAgentQueue(uid)
-		}
-	}
-
 	return nil
 }
 
