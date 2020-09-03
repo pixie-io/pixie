@@ -21,15 +21,15 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
   absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);
   auto& query_map = query_node_map_[query_id];
 
-  if (!req->has_row_batch_result() ||
-      req->row_batch_result().destination_case() !=
-          carnotpb::TransferResultChunkRequest_ResultRowBatch::DestinationCase::kGrpcSourceId) {
+  if (!req->has_query_result() || !req->query_result().has_row_batch() ||
+      req->query_result().destination_case() !=
+          carnotpb::TransferResultChunkRequest_SinkResult::DestinationCase::kGrpcSourceId) {
     return error::Internal(
         "GRPCRouter::EnqueueRowBatch expected TransferResultChunkRequest to contain a row batch "
         "with a GPRC source ID.");
   }
 
-  SourceNodeTracker& snt = query_map.source_node_trackers[req->row_batch_result().grpc_source_id()];
+  SourceNodeTracker& snt = query_map.source_node_trackers[req->query_result().grpc_source_id()];
   absl::base_internal::SpinLockHolder snt_lock(&snt.node_lock);
   // It's possible that we see row batches before we have gotten information about the query. To
   // solve this race, We store a backlog of all the pending batches.
@@ -62,14 +62,17 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
         return ::grpc::Status(grpc::StatusCode::INTERNAL,
                               absl::Substitute("Failed to record stats w/ err: $0", s.msg()));
       }
-    } else if (rb->has_row_batch_result()) {
+    } else if (rb->has_query_result() && rb->query_result().has_row_batch()) {
       auto s = EnqueueRowBatch(query_id, std::move(rb));
       if (!s.ok()) {
         return ::grpc::Status(grpc::StatusCode::INTERNAL, "failed to enqueue batch");
       }
+    } else if (rb->has_query_result() && rb->query_result().initiate_result_stream()) {
+      // TODO(nserrino): Fill this in and add timeouts in exec graphs waiting for all
+      // result tables to initialize.
     } else {
       return ::grpc::Status(grpc::StatusCode::INTERNAL,
-                            "expected TransferResultChunkRequest to have either row_batch_result "
+                            "expected TransferResultChunkRequest to have either query_result "
                             "or execution_and_timing_info set, received neither");
     }
 

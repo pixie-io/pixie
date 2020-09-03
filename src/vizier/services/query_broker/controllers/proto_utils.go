@@ -331,29 +331,28 @@ func BuildExecuteScriptResponse(r *carnotpb.TransferResultChunkRequest,
 			},
 		}
 	}
-	if rbResult := r.GetRowBatchResult(); rbResult != nil {
-		tableName := rbResult.GetTableName()
+	if queryResult := r.GetQueryResult(); queryResult != nil {
+		// This agent message type will not turn into a message on the client stream.
+		if queryResult.GetInitiateResultStream() {
+			return nil, nil
+		}
+
+		tableName := queryResult.GetTableName()
 		tableID, present := tableIDMap[tableName]
 		if !present {
 			return nil, fmt.Errorf("table %s does not have an ID in the table ID map", tableName)
 		}
+		if queryResult.GetRowBatch() == nil {
+			return nil, fmt.Errorf("BuildExecuteScriptResponse expected a non-nil row batch")
+		}
 
-		batch, err := RowBatchToVizierRowBatch(rbResult.RowBatch, tableID)
+		batch, err := RowBatchToVizierRowBatch(queryResult.GetRowBatch(), tableID)
 		if err != nil {
 			return nil, err
 		}
 		res.Result = &vizierpb.ExecuteScriptResponse_Data{
 			Data: &vizierpb.QueryData{
 				Batch: batch,
-			},
-		}
-	}
-	if hb := r.GetHeartbeat(); hb != nil {
-		execStats := hb.IntermediateExecutionAndTimingInfo.ExecutionStats
-		convertedStats := QueryResultStatsToVizierStats(execStats, compilationTimeNs)
-		res.Result = &vizierpb.ExecuteScriptResponse_Data{
-			Data: &vizierpb.QueryData{
-				ExecutionStats: convertedStats,
 			},
 		}
 	}

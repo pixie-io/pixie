@@ -36,10 +36,12 @@ func makeRowBatchResult(t *testing.T, queryID uuid.UUID, tableName string, table
 	return expected, &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
 		QueryID: pbutils.ProtoFromUUID(&queryID),
-		Result: &carnotpb.TransferResultChunkRequest_RowBatchResult{
-			RowBatchResult: &carnotpb.TransferResultChunkRequest_ResultRowBatch{
-				RowBatch: rb,
-				Destination: &carnotpb.TransferResultChunkRequest_ResultRowBatch_TableName{
+		Result: &carnotpb.TransferResultChunkRequest_QueryResult{
+			QueryResult: &carnotpb.TransferResultChunkRequest_SinkResult{
+				ResultContents: &carnotpb.TransferResultChunkRequest_SinkResult_RowBatch{
+					RowBatch: rb,
+				},
+				Destination: &carnotpb.TransferResultChunkRequest_SinkResult_TableName{
 					TableName: tableName,
 				},
 			},
@@ -215,7 +217,7 @@ func TestStreamResultsAgentCancel(t *testing.T) {
 
 	assert.Equal(t, 1, len(results))
 	assert.NotNil(t, err)
-	assert.Equal(t, fmt.Errorf("Client stream cancelled by agent result stream for query %s", queryID.String()), err)
+	assert.Equal(t, fmt.Errorf("Client stream cancelled for query %s", queryID.String()), err)
 }
 
 func TestStreamResultsClientContextCancel(t *testing.T) {
@@ -406,7 +408,7 @@ func TestStreamResultsWrongQueryID(t *testing.T) {
 	wg.Wait()
 
 	assert.Equal(t, err.Error(), fmt.Sprintf(
-		"Client stream cancelled by agent result stream for query %s", queryID.String()))
+		"Client stream cancelled for query %s", queryID.String()))
 	assert.Equal(t, 1, len(results))
 	assert.Equal(t, queryID.String(), results[0].QueryID)
 	assert.Equal(t, expected0, results[0].GetData().Batch)

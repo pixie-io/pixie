@@ -384,10 +384,12 @@ func TestBuildExecuteScriptResponse_RowBatch(t *testing.T) {
 	msg := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
 		QueryID: queryIDpb,
-		Result: &carnotpb.TransferResultChunkRequest_RowBatchResult{
-			RowBatchResult: &carnotpb.TransferResultChunkRequest_ResultRowBatch{
-				RowBatch: receivedRB,
-				Destination: &carnotpb.TransferResultChunkRequest_ResultRowBatch_TableName{
+		Result: &carnotpb.TransferResultChunkRequest_QueryResult{
+			QueryResult: &carnotpb.TransferResultChunkRequest_SinkResult{
+				ResultContents: &carnotpb.TransferResultChunkRequest_SinkResult_RowBatch{
+					RowBatch: receivedRB,
+				},
+				Destination: &carnotpb.TransferResultChunkRequest_SinkResult_TableName{
 					TableName: "output_table_1",
 				},
 			},
@@ -408,46 +410,31 @@ func TestBuildExecuteScriptResponse_RowBatch(t *testing.T) {
 	assert.Equal(t, convertedRB, resp.GetData().GetBatch())
 }
 
-func TestBuildExecuteScriptResponse_Heartbeat(t *testing.T) {
+func TestBuildExecuteScriptResponse_InitiateResultStream(t *testing.T) {
 	queryID := uuid.NewV4()
 	queryIDpb := pbutils.ProtoFromUUID(&queryID)
 
 	msg := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
 		QueryID: queryIDpb,
-		Result: &carnotpb.TransferResultChunkRequest_Heartbeat{
-			Heartbeat: &carnotpb.TransferResultChunkRequest_QueryHeartbeat{
-				IntermediateExecutionAndTimingInfo: &carnotpb.TransferResultChunkRequest_QueryExecutionAndTimingInfo{
-					ExecutionStats: &queryresultspb.QueryExecutionStats{
-						Timing: &queryresultspb.QueryTimingInfo{
-							ExecutionTimeNs: 5010,
-						},
-						BytesProcessed:   4521,
-						RecordsProcessed: 4,
-					},
+		Result: &carnotpb.TransferResultChunkRequest_QueryResult{
+			QueryResult: &carnotpb.TransferResultChunkRequest_SinkResult{
+				ResultContents: &carnotpb.TransferResultChunkRequest_SinkResult_InitiateResultStream{
+					InitiateResultStream: true,
+				},
+				Destination: &carnotpb.TransferResultChunkRequest_SinkResult_TableName{
+					TableName: "output_table_1",
 				},
 			},
 		},
 	}
-
-	expectedStats := &vizierpb.QueryExecutionStats{
-		Timing: &vizierpb.QueryTimingInfo{
-			ExecutionTimeNs:   5010,
-			CompilationTimeNs: 10,
-		},
-		BytesProcessed:   4521,
-		RecordsProcessed: 4,
+	tableIDMap := map[string]string{
+		"another_table":  "another_table_id",
+		"output_table_1": "output_table_1_id",
 	}
-
-	resp, err := controllers.BuildExecuteScriptResponse(msg, nil, 10)
+	resp, err := controllers.BuildExecuteScriptResponse(msg, tableIDMap, 10)
 	assert.Nil(t, err)
-
-	assert.Nil(t, resp.Status)
-	assert.Equal(t, queryID.String(), resp.QueryID)
-	assert.Nil(t, resp.GetMetaData())
-	assert.NotNil(t, resp.GetData())
-	assert.Nil(t, resp.GetData().GetBatch())
-	assert.Equal(t, expectedStats, resp.GetData().GetExecutionStats())
+	assert.Nil(t, resp)
 }
 
 func TestBuildExecuteScriptResponse_ExecutionStats(t *testing.T) {

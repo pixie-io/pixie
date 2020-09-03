@@ -36,9 +36,8 @@ type TransferResultChunkRequest struct {
 	Address string       `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	QueryID *proto1.UUID `protobuf:"bytes,2,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty"`
 	// Types that are valid to be assigned to Result:
-	//	*TransferResultChunkRequest_RowBatchResult
+	//	*TransferResultChunkRequest_QueryResult
 	//	*TransferResultChunkRequest_ExecutionAndTimingInfo
-	//	*TransferResultChunkRequest_Heartbeat
 	Result isTransferResultChunkRequest_Result `protobuf_oneof:"result"`
 }
 
@@ -81,19 +80,15 @@ type isTransferResultChunkRequest_Result interface {
 	Size() int
 }
 
-type TransferResultChunkRequest_RowBatchResult struct {
-	RowBatchResult *TransferResultChunkRequest_ResultRowBatch `protobuf:"bytes,5,opt,name=row_batch_result,json=rowBatchResult,proto3,oneof" json:"row_batch_result,omitempty"`
+type TransferResultChunkRequest_QueryResult struct {
+	QueryResult *TransferResultChunkRequest_SinkResult `protobuf:"bytes,5,opt,name=query_result,json=queryResult,proto3,oneof" json:"query_result,omitempty"`
 }
 type TransferResultChunkRequest_ExecutionAndTimingInfo struct {
 	ExecutionAndTimingInfo *TransferResultChunkRequest_QueryExecutionAndTimingInfo `protobuf:"bytes,6,opt,name=execution_and_timing_info,json=executionAndTimingInfo,proto3,oneof" json:"execution_and_timing_info,omitempty"`
 }
-type TransferResultChunkRequest_Heartbeat struct {
-	Heartbeat *TransferResultChunkRequest_QueryHeartbeat `protobuf:"bytes,7,opt,name=heartbeat,proto3,oneof" json:"heartbeat,omitempty"`
-}
 
-func (*TransferResultChunkRequest_RowBatchResult) isTransferResultChunkRequest_Result()         {}
+func (*TransferResultChunkRequest_QueryResult) isTransferResultChunkRequest_Result()            {}
 func (*TransferResultChunkRequest_ExecutionAndTimingInfo) isTransferResultChunkRequest_Result() {}
-func (*TransferResultChunkRequest_Heartbeat) isTransferResultChunkRequest_Result()              {}
 
 func (m *TransferResultChunkRequest) GetResult() isTransferResultChunkRequest_Result {
 	if m != nil {
@@ -116,9 +111,9 @@ func (m *TransferResultChunkRequest) GetQueryID() *proto1.UUID {
 	return nil
 }
 
-func (m *TransferResultChunkRequest) GetRowBatchResult() *TransferResultChunkRequest_ResultRowBatch {
-	if x, ok := m.GetResult().(*TransferResultChunkRequest_RowBatchResult); ok {
-		return x.RowBatchResult
+func (m *TransferResultChunkRequest) GetQueryResult() *TransferResultChunkRequest_SinkResult {
+	if x, ok := m.GetResult().(*TransferResultChunkRequest_QueryResult); ok {
+		return x.QueryResult
 	}
 	return nil
 }
@@ -130,43 +125,36 @@ func (m *TransferResultChunkRequest) GetExecutionAndTimingInfo() *TransferResult
 	return nil
 }
 
-func (m *TransferResultChunkRequest) GetHeartbeat() *TransferResultChunkRequest_QueryHeartbeat {
-	if x, ok := m.GetResult().(*TransferResultChunkRequest_Heartbeat); ok {
-		return x.Heartbeat
-	}
-	return nil
-}
-
 // XXX_OneofWrappers is for the internal use of the proto package.
 func (*TransferResultChunkRequest) XXX_OneofWrappers() []interface{} {
 	return []interface{}{
-		(*TransferResultChunkRequest_RowBatchResult)(nil),
+		(*TransferResultChunkRequest_QueryResult)(nil),
 		(*TransferResultChunkRequest_ExecutionAndTimingInfo)(nil),
-		(*TransferResultChunkRequest_Heartbeat)(nil),
 	}
 }
 
-type TransferResultChunkRequest_ResultRowBatch struct {
-	RowBatch *proto2.RowBatchData `protobuf:"bytes,1,opt,name=row_batch,json=rowBatch,proto3" json:"row_batch,omitempty"`
+type TransferResultChunkRequest_SinkResult struct {
+	// Types that are valid to be assigned to ResultContents:
+	//	*TransferResultChunkRequest_SinkResult_RowBatch
+	//	*TransferResultChunkRequest_SinkResult_InitiateResultStream
+	ResultContents isTransferResultChunkRequest_SinkResult_ResultContents `protobuf_oneof:"result_contents"`
 	// Types that are valid to be assigned to Destination:
-	//	*TransferResultChunkRequest_ResultRowBatch_GRPCSourceID
-	//	*TransferResultChunkRequest_ResultRowBatch_TableName
-	Destination isTransferResultChunkRequest_ResultRowBatch_Destination `protobuf_oneof:"destination"`
+	//	*TransferResultChunkRequest_SinkResult_GRPCSourceID
+	//	*TransferResultChunkRequest_SinkResult_TableName
+	Destination isTransferResultChunkRequest_SinkResult_Destination `protobuf_oneof:"destination"`
 }
 
-func (m *TransferResultChunkRequest_ResultRowBatch) Reset() {
-	*m = TransferResultChunkRequest_ResultRowBatch{}
-}
-func (*TransferResultChunkRequest_ResultRowBatch) ProtoMessage() {}
-func (*TransferResultChunkRequest_ResultRowBatch) Descriptor() ([]byte, []int) {
+func (m *TransferResultChunkRequest_SinkResult) Reset()      { *m = TransferResultChunkRequest_SinkResult{} }
+func (*TransferResultChunkRequest_SinkResult) ProtoMessage() {}
+func (*TransferResultChunkRequest_SinkResult) Descriptor() ([]byte, []int) {
 	return fileDescriptor_9054907422204f4e, []int{0, 0}
 }
-func (m *TransferResultChunkRequest_ResultRowBatch) XXX_Unmarshal(b []byte) error {
+func (m *TransferResultChunkRequest_SinkResult) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *TransferResultChunkRequest_ResultRowBatch) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *TransferResultChunkRequest_SinkResult) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_TransferResultChunkRequest_ResultRowBatch.Marshal(b, m, deterministic)
+		return xxx_messageInfo_TransferResultChunkRequest_SinkResult.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -176,70 +164,101 @@ func (m *TransferResultChunkRequest_ResultRowBatch) XXX_Marshal(b []byte, determ
 		return b[:n], nil
 	}
 }
-func (m *TransferResultChunkRequest_ResultRowBatch) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TransferResultChunkRequest_ResultRowBatch.Merge(m, src)
+func (m *TransferResultChunkRequest_SinkResult) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TransferResultChunkRequest_SinkResult.Merge(m, src)
 }
-func (m *TransferResultChunkRequest_ResultRowBatch) XXX_Size() int {
+func (m *TransferResultChunkRequest_SinkResult) XXX_Size() int {
 	return m.Size()
 }
-func (m *TransferResultChunkRequest_ResultRowBatch) XXX_DiscardUnknown() {
-	xxx_messageInfo_TransferResultChunkRequest_ResultRowBatch.DiscardUnknown(m)
+func (m *TransferResultChunkRequest_SinkResult) XXX_DiscardUnknown() {
+	xxx_messageInfo_TransferResultChunkRequest_SinkResult.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_TransferResultChunkRequest_ResultRowBatch proto.InternalMessageInfo
+var xxx_messageInfo_TransferResultChunkRequest_SinkResult proto.InternalMessageInfo
 
-type isTransferResultChunkRequest_ResultRowBatch_Destination interface {
-	isTransferResultChunkRequest_ResultRowBatch_Destination()
+type isTransferResultChunkRequest_SinkResult_ResultContents interface {
+	isTransferResultChunkRequest_SinkResult_ResultContents()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+type isTransferResultChunkRequest_SinkResult_Destination interface {
+	isTransferResultChunkRequest_SinkResult_Destination()
 	Equal(interface{}) bool
 	MarshalTo([]byte) (int, error)
 	Size() int
 }
 
-type TransferResultChunkRequest_ResultRowBatch_GRPCSourceID struct {
+type TransferResultChunkRequest_SinkResult_RowBatch struct {
+	RowBatch *proto2.RowBatchData `protobuf:"bytes,1,opt,name=row_batch,json=rowBatch,proto3,oneof" json:"row_batch,omitempty"`
+}
+type TransferResultChunkRequest_SinkResult_InitiateResultStream struct {
+	InitiateResultStream bool `protobuf:"varint,4,opt,name=initiate_result_stream,json=initiateResultStream,proto3,oneof" json:"initiate_result_stream,omitempty"`
+}
+type TransferResultChunkRequest_SinkResult_GRPCSourceID struct {
 	GRPCSourceID uint64 `protobuf:"varint,2,opt,name=grpc_source_id,json=grpcSourceId,proto3,oneof" json:"grpc_source_id,omitempty"`
 }
-type TransferResultChunkRequest_ResultRowBatch_TableName struct {
+type TransferResultChunkRequest_SinkResult_TableName struct {
 	TableName string `protobuf:"bytes,3,opt,name=table_name,json=tableName,proto3,oneof" json:"table_name,omitempty"`
 }
 
-func (*TransferResultChunkRequest_ResultRowBatch_GRPCSourceID) isTransferResultChunkRequest_ResultRowBatch_Destination() {
+func (*TransferResultChunkRequest_SinkResult_RowBatch) isTransferResultChunkRequest_SinkResult_ResultContents() {
 }
-func (*TransferResultChunkRequest_ResultRowBatch_TableName) isTransferResultChunkRequest_ResultRowBatch_Destination() {
+func (*TransferResultChunkRequest_SinkResult_InitiateResultStream) isTransferResultChunkRequest_SinkResult_ResultContents() {
+}
+func (*TransferResultChunkRequest_SinkResult_GRPCSourceID) isTransferResultChunkRequest_SinkResult_Destination() {
+}
+func (*TransferResultChunkRequest_SinkResult_TableName) isTransferResultChunkRequest_SinkResult_Destination() {
 }
 
-func (m *TransferResultChunkRequest_ResultRowBatch) GetDestination() isTransferResultChunkRequest_ResultRowBatch_Destination {
+func (m *TransferResultChunkRequest_SinkResult) GetResultContents() isTransferResultChunkRequest_SinkResult_ResultContents {
+	if m != nil {
+		return m.ResultContents
+	}
+	return nil
+}
+func (m *TransferResultChunkRequest_SinkResult) GetDestination() isTransferResultChunkRequest_SinkResult_Destination {
 	if m != nil {
 		return m.Destination
 	}
 	return nil
 }
 
-func (m *TransferResultChunkRequest_ResultRowBatch) GetRowBatch() *proto2.RowBatchData {
-	if m != nil {
-		return m.RowBatch
+func (m *TransferResultChunkRequest_SinkResult) GetRowBatch() *proto2.RowBatchData {
+	if x, ok := m.GetResultContents().(*TransferResultChunkRequest_SinkResult_RowBatch); ok {
+		return x.RowBatch
 	}
 	return nil
 }
 
-func (m *TransferResultChunkRequest_ResultRowBatch) GetGRPCSourceID() uint64 {
-	if x, ok := m.GetDestination().(*TransferResultChunkRequest_ResultRowBatch_GRPCSourceID); ok {
+func (m *TransferResultChunkRequest_SinkResult) GetInitiateResultStream() bool {
+	if x, ok := m.GetResultContents().(*TransferResultChunkRequest_SinkResult_InitiateResultStream); ok {
+		return x.InitiateResultStream
+	}
+	return false
+}
+
+func (m *TransferResultChunkRequest_SinkResult) GetGRPCSourceID() uint64 {
+	if x, ok := m.GetDestination().(*TransferResultChunkRequest_SinkResult_GRPCSourceID); ok {
 		return x.GRPCSourceID
 	}
 	return 0
 }
 
-func (m *TransferResultChunkRequest_ResultRowBatch) GetTableName() string {
-	if x, ok := m.GetDestination().(*TransferResultChunkRequest_ResultRowBatch_TableName); ok {
+func (m *TransferResultChunkRequest_SinkResult) GetTableName() string {
+	if x, ok := m.GetDestination().(*TransferResultChunkRequest_SinkResult_TableName); ok {
 		return x.TableName
 	}
 	return ""
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
-func (*TransferResultChunkRequest_ResultRowBatch) XXX_OneofWrappers() []interface{} {
+func (*TransferResultChunkRequest_SinkResult) XXX_OneofWrappers() []interface{} {
 	return []interface{}{
-		(*TransferResultChunkRequest_ResultRowBatch_GRPCSourceID)(nil),
-		(*TransferResultChunkRequest_ResultRowBatch_TableName)(nil),
+		(*TransferResultChunkRequest_SinkResult_RowBatch)(nil),
+		(*TransferResultChunkRequest_SinkResult_InitiateResultStream)(nil),
+		(*TransferResultChunkRequest_SinkResult_GRPCSourceID)(nil),
+		(*TransferResultChunkRequest_SinkResult_TableName)(nil),
 	}
 }
 
@@ -292,51 +311,6 @@ func (m *TransferResultChunkRequest_QueryExecutionAndTimingInfo) GetExecutionSta
 func (m *TransferResultChunkRequest_QueryExecutionAndTimingInfo) GetAgentExecutionStats() []*queryresultspb.AgentExecutionStats {
 	if m != nil {
 		return m.AgentExecutionStats
-	}
-	return nil
-}
-
-type TransferResultChunkRequest_QueryHeartbeat struct {
-	IntermediateExecutionAndTimingInfo *TransferResultChunkRequest_QueryExecutionAndTimingInfo `protobuf:"bytes,1,opt,name=intermediate_execution_and_timing_info,json=intermediateExecutionAndTimingInfo,proto3" json:"intermediate_execution_and_timing_info,omitempty"`
-}
-
-func (m *TransferResultChunkRequest_QueryHeartbeat) Reset() {
-	*m = TransferResultChunkRequest_QueryHeartbeat{}
-}
-func (*TransferResultChunkRequest_QueryHeartbeat) ProtoMessage() {}
-func (*TransferResultChunkRequest_QueryHeartbeat) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9054907422204f4e, []int{0, 2}
-}
-func (m *TransferResultChunkRequest_QueryHeartbeat) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *TransferResultChunkRequest_QueryHeartbeat) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_TransferResultChunkRequest_QueryHeartbeat.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *TransferResultChunkRequest_QueryHeartbeat) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TransferResultChunkRequest_QueryHeartbeat.Merge(m, src)
-}
-func (m *TransferResultChunkRequest_QueryHeartbeat) XXX_Size() int {
-	return m.Size()
-}
-func (m *TransferResultChunkRequest_QueryHeartbeat) XXX_DiscardUnknown() {
-	xxx_messageInfo_TransferResultChunkRequest_QueryHeartbeat.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_TransferResultChunkRequest_QueryHeartbeat proto.InternalMessageInfo
-
-func (m *TransferResultChunkRequest_QueryHeartbeat) GetIntermediateExecutionAndTimingInfo() *TransferResultChunkRequest_QueryExecutionAndTimingInfo {
-	if m != nil {
-		return m.IntermediateExecutionAndTimingInfo
 	}
 	return nil
 }
@@ -394,61 +368,59 @@ func (m *TransferResultChunkResponse) GetMessage() string {
 
 func init() {
 	proto.RegisterType((*TransferResultChunkRequest)(nil), "pl.carnotpb.TransferResultChunkRequest")
-	proto.RegisterType((*TransferResultChunkRequest_ResultRowBatch)(nil), "pl.carnotpb.TransferResultChunkRequest.ResultRowBatch")
+	proto.RegisterType((*TransferResultChunkRequest_SinkResult)(nil), "pl.carnotpb.TransferResultChunkRequest.SinkResult")
 	proto.RegisterType((*TransferResultChunkRequest_QueryExecutionAndTimingInfo)(nil), "pl.carnotpb.TransferResultChunkRequest.QueryExecutionAndTimingInfo")
-	proto.RegisterType((*TransferResultChunkRequest_QueryHeartbeat)(nil), "pl.carnotpb.TransferResultChunkRequest.QueryHeartbeat")
 	proto.RegisterType((*TransferResultChunkResponse)(nil), "pl.carnotpb.TransferResultChunkResponse")
 }
 
 func init() { proto.RegisterFile("src/carnotpb/carnot.proto", fileDescriptor_9054907422204f4e) }
 
 var fileDescriptor_9054907422204f4e = []byte{
-	// 718 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x54, 0xcd, 0x4e, 0xdb, 0x4a,
-	0x14, 0xf6, 0x90, 0x40, 0x9c, 0x09, 0x37, 0xe4, 0x1a, 0xdd, 0xab, 0x10, 0x24, 0x13, 0x45, 0x6a,
-	0x9b, 0x0d, 0x8e, 0x44, 0xa5, 0xb6, 0xab, 0x4a, 0x84, 0x54, 0x4d, 0x58, 0x54, 0xc5, 0x01, 0x16,
-	0xdd, 0x58, 0x63, 0x7b, 0x92, 0x58, 0xc4, 0x33, 0x66, 0x66, 0x5c, 0xda, 0x1d, 0x7d, 0x83, 0x4a,
-	0x5d, 0xf4, 0x15, 0xaa, 0x3e, 0x44, 0xd7, 0x5d, 0xb2, 0x64, 0x85, 0x8a, 0xd9, 0x74, 0xc9, 0x23,
-	0x54, 0x1e, 0xdb, 0x0d, 0xa1, 0x81, 0x52, 0xa9, 0xbb, 0xf3, 0xcd, 0xf9, 0xce, 0x77, 0x7e, 0x35,
-	0x70, 0x85, 0x33, 0xa7, 0xe5, 0x20, 0x46, 0xa8, 0x08, 0xec, 0xd4, 0x30, 0x02, 0x46, 0x05, 0xd5,
-	0x4a, 0xc1, 0xd8, 0xc8, 0x3c, 0xb5, 0xf5, 0xa1, 0x27, 0x46, 0xa1, 0x6d, 0x38, 0xd4, 0x6f, 0x0d,
-	0xe9, 0x90, 0xb6, 0x24, 0xc7, 0x0e, 0x07, 0x12, 0x49, 0x20, 0xad, 0x24, 0xb6, 0x56, 0x97, 0xb2,
-	0xd4, 0xf7, 0x29, 0x69, 0x85, 0xa1, 0xe7, 0x26, 0x74, 0x69, 0xa6, 0x8c, 0x46, 0xcc, 0x10, 0xc8,
-	0x1e, 0x63, 0x8b, 0x0b, 0xca, 0x70, 0xca, 0xe0, 0xce, 0x08, 0xfb, 0x28, 0xe5, 0xac, 0x4f, 0x8a,
-	0x6b, 0x1d, 0x86, 0x98, 0xbd, 0x65, 0x98, 0x87, 0x63, 0xc1, 0x03, 0x3b, 0x81, 0x56, 0x8a, 0x13,
-	0x7a, 0xe3, 0x83, 0x0a, 0x6b, 0xbb, 0x0c, 0x11, 0x3e, 0xc0, 0xcc, 0x94, 0x9e, 0xad, 0x51, 0x48,
-	0x0e, 0x4c, 0x7c, 0x18, 0x62, 0x2e, 0xb4, 0x2a, 0x2c, 0x20, 0xd7, 0x65, 0x98, 0xf3, 0x2a, 0xa8,
-	0x83, 0x66, 0xd1, 0xcc, 0xa0, 0xf6, 0x18, 0xaa, 0x89, 0x9e, 0xe7, 0x56, 0xe7, 0xea, 0xa0, 0x59,
-	0xda, 0x58, 0x32, 0x82, 0xb1, 0x11, 0x57, 0x1b, 0xd8, 0xc6, 0xde, 0x5e, 0xaf, 0xd3, 0x2e, 0x45,
-	0x67, 0x6b, 0x85, 0x9d, 0x98, 0xd4, 0xeb, 0x98, 0x05, 0xc9, 0xee, 0xb9, 0x9a, 0x0d, 0x2b, 0x8c,
-	0x1e, 0x59, 0x36, 0x12, 0xce, 0x28, 0x2d, 0xa6, 0x3a, 0x2f, 0x05, 0x1e, 0x19, 0x57, 0xa6, 0x67,
-	0xdc, 0x5c, 0x95, 0x91, 0x3c, 0x99, 0xf4, 0xa8, 0x1d, 0x8b, 0x74, 0x15, 0xb3, 0xcc, 0x52, 0x3b,
-	0xf1, 0x68, 0xc7, 0x00, 0xae, 0xe0, 0x37, 0xd8, 0x09, 0x85, 0x47, 0x89, 0x85, 0x88, 0x6b, 0x09,
-	0xcf, 0xf7, 0xc8, 0xd0, 0xf2, 0xc8, 0x80, 0x56, 0x17, 0x64, 0xb6, 0xad, 0xbb, 0x66, 0x93, 0x1d,
-	0x3c, 0xcb, 0xd4, 0x36, 0x89, 0xbb, 0x2b, 0xb5, 0x7a, 0x64, 0x40, 0xbb, 0x8a, 0xf9, 0x3f, 0x9e,
-	0xe9, 0xd1, 0xf6, 0x61, 0x71, 0x84, 0x11, 0x13, 0x36, 0x46, 0xa2, 0x5a, 0xf8, 0xb3, 0xfe, 0x64,
-	0xc6, 0x6e, 0x16, 0xdd, 0x55, 0xcc, 0x89, 0x54, 0xed, 0x0b, 0x80, 0xe5, 0xe9, 0xfe, 0xb5, 0x36,
-	0x2c, 0xfe, 0x9c, 0xa8, 0x5c, 0x53, 0x69, 0xe3, 0x5e, 0x9c, 0xea, 0xca, 0xa5, 0x18, 0xc9, 0x8d,
-	0x04, 0xb6, 0x91, 0x45, 0x75, 0x90, 0x40, 0xa6, 0x9a, 0xcd, 0x4d, 0x7b, 0x02, 0xcb, 0x43, 0x16,
-	0x38, 0x16, 0xa7, 0x21, 0x73, 0x70, 0xb6, 0xd4, 0x7c, 0xbb, 0x12, 0x9d, 0xad, 0x2d, 0x3e, 0x37,
-	0x5f, 0x6e, 0xf5, 0xa5, 0xa3, 0xd7, 0xe9, 0x2a, 0xe6, 0x62, 0xcc, 0x4c, 0xb1, 0xab, 0xad, 0x41,
-	0x98, 0x24, 0x22, 0xc8, 0xc7, 0xd5, 0x5c, 0x7c, 0x25, 0x71, 0xc5, 0xf2, 0xed, 0x05, 0xf2, 0x71,
-	0xfb, 0x1f, 0x58, 0x72, 0x31, 0x17, 0x1e, 0x41, 0xf1, 0x94, 0x6a, 0x67, 0x00, 0xae, 0xde, 0x32,
-	0x52, 0x6d, 0x1f, 0x2e, 0x4d, 0x56, 0xc7, 0x05, 0x12, 0x3c, 0xbd, 0xaf, 0xf5, 0xc9, 0xf8, 0x8c,
-	0xe9, 0xcb, 0xbe, 0xb6, 0xa2, 0x7e, 0x1c, 0x64, 0x96, 0xf1, 0x14, 0xd6, 0x10, 0xfc, 0x0f, 0x0d,
-	0x31, 0x11, 0xd6, 0x75, 0xf5, 0x5c, 0x3d, 0x77, 0xbb, 0xfa, 0x66, 0x1c, 0x76, 0x4d, 0x7d, 0x19,
-	0xfd, 0xfa, 0xb8, 0x9d, 0x57, 0x41, 0x65, 0xae, 0xf6, 0x19, 0xc0, 0xf2, 0xf4, 0x06, 0xb5, 0x8f,
-	0x00, 0xde, 0xf7, 0x88, 0xc0, 0xcc, 0xc7, 0xae, 0x87, 0x04, 0xb6, 0x6e, 0x3e, 0x4e, 0xf0, 0xd7,
-	0x8e, 0xd3, 0x6c, 0x5c, 0x4d, 0x39, 0x9b, 0xd3, 0x56, 0xe1, 0x42, 0xd2, 0xe8, 0x76, 0x5e, 0xcd,
-	0x55, 0xf2, 0xdb, 0x79, 0x35, 0x5f, 0x99, 0x6f, 0xec, 0xc0, 0xd5, 0x99, 0x39, 0x79, 0x40, 0x09,
-	0xc7, 0xf1, 0xaf, 0xc0, 0x43, 0xc7, 0xc9, 0x7e, 0x05, 0xd5, 0xcc, 0x60, 0xec, 0xf1, 0x31, 0xe7,
-	0x68, 0x88, 0xe5, 0xd2, 0x8a, 0x66, 0x06, 0x37, 0xde, 0x01, 0xf8, 0x6f, 0xa2, 0xd5, 0xf7, 0xc8,
-	0x41, 0x1f, 0xb3, 0xd7, 0x9e, 0x83, 0xb5, 0x31, 0x5c, 0x9e, 0x91, 0x48, 0x7b, 0x70, 0xc7, 0xf6,
-	0x6b, 0xcd, 0xdf, 0x13, 0x93, 0x9a, 0x1b, 0x4a, 0x13, 0xb4, 0x9f, 0x9e, 0x9c, 0xeb, 0xca, 0xe9,
-	0xb9, 0xae, 0x5c, 0x9e, 0xeb, 0xe0, 0x38, 0xd2, 0xc1, 0xa7, 0x48, 0x07, 0x5f, 0x23, 0x1d, 0x9c,
-	0x44, 0x3a, 0xf8, 0x16, 0xe9, 0xe0, 0x7b, 0xa4, 0x2b, 0x97, 0x91, 0x0e, 0xde, 0x5f, 0xe8, 0xca,
-	0xc9, 0x85, 0xae, 0x9c, 0x5e, 0xe8, 0xca, 0x2b, 0x35, 0xd3, 0xb7, 0x17, 0xe4, 0x9f, 0xf9, 0xf0,
-	0x47, 0x00, 0x00, 0x00, 0xff, 0xff, 0x03, 0x38, 0xa6, 0xa1, 0x01, 0x06, 0x00, 0x00,
+	// 700 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x54, 0xc1, 0x4e, 0xdb, 0x4a,
+	0x14, 0xf5, 0x90, 0x10, 0x9c, 0x09, 0x0f, 0x82, 0x79, 0x0f, 0x85, 0x20, 0x99, 0x28, 0xd2, 0x53,
+	0xb3, 0xc1, 0x91, 0x52, 0xa9, 0xed, 0xaa, 0x12, 0x21, 0x55, 0x13, 0x16, 0x55, 0x99, 0x40, 0x2b,
+	0x75, 0x63, 0x8d, 0xed, 0x49, 0x62, 0x11, 0xcf, 0x98, 0x99, 0x71, 0x69, 0x77, 0x74, 0xd5, 0x6d,
+	0x3f, 0xa3, 0x9f, 0xd2, 0x45, 0x17, 0x2c, 0x59, 0xa1, 0x62, 0x36, 0x5d, 0xf2, 0x09, 0x95, 0xc7,
+	0xb6, 0x02, 0x94, 0x52, 0x76, 0x73, 0xe6, 0x9e, 0x7b, 0xe6, 0xe8, 0x9e, 0x6b, 0xc3, 0x75, 0xc1,
+	0xdd, 0xb6, 0x8b, 0x39, 0x65, 0x32, 0x74, 0xb2, 0x83, 0x15, 0x72, 0x26, 0x99, 0x51, 0x09, 0xa7,
+	0x56, 0x5e, 0xa9, 0x6f, 0x8d, 0x7d, 0x39, 0x89, 0x1c, 0xcb, 0x65, 0x41, 0x7b, 0xcc, 0xc6, 0xac,
+	0xad, 0x38, 0x4e, 0x34, 0x52, 0x48, 0x01, 0x75, 0x4a, 0x7b, 0xeb, 0x0d, 0x25, 0xcb, 0x82, 0x80,
+	0xd1, 0x76, 0x14, 0xf9, 0x5e, 0x4a, 0x57, 0xc7, 0x8c, 0xd1, 0x4c, 0x18, 0x12, 0x3b, 0x53, 0x62,
+	0x0b, 0xc9, 0x38, 0xc9, 0x18, 0xc2, 0x9d, 0x90, 0x00, 0x67, 0x9c, 0xad, 0x99, 0xb9, 0xf6, 0x51,
+	0x44, 0xf8, 0x47, 0x4e, 0x44, 0x34, 0x95, 0x22, 0x74, 0x52, 0x68, 0x67, 0x38, 0xa5, 0x37, 0xbf,
+	0x97, 0x60, 0x7d, 0x9f, 0x63, 0x2a, 0x46, 0x84, 0x23, 0x55, 0xd9, 0x99, 0x44, 0xf4, 0x10, 0x91,
+	0xa3, 0x88, 0x08, 0x69, 0xd4, 0xe0, 0x02, 0xf6, 0x3c, 0x4e, 0x84, 0xa8, 0x81, 0x06, 0x68, 0x95,
+	0x51, 0x0e, 0x8d, 0xa7, 0x50, 0x4f, 0xf5, 0x7c, 0xaf, 0x36, 0xd7, 0x00, 0xad, 0x4a, 0x67, 0xd9,
+	0x0a, 0xa7, 0x56, 0xe2, 0x36, 0x74, 0xac, 0x83, 0x83, 0x41, 0xaf, 0x5b, 0x89, 0xcf, 0x37, 0x17,
+	0xf6, 0x12, 0xd2, 0xa0, 0x87, 0x16, 0x14, 0x7b, 0xe0, 0x19, 0x6f, 0xe1, 0xe2, 0x75, 0x23, 0xb5,
+	0x79, 0xd5, 0xdc, 0xb1, 0xae, 0x4d, 0xce, 0xfa, 0xb3, 0x23, 0x6b, 0xe8, 0x27, 0xe7, 0xe4, 0xba,
+	0xaf, 0xa1, 0x8a, 0x52, 0x4a, 0xa1, 0x71, 0x02, 0xe0, 0x3a, 0xf9, 0x40, 0xdc, 0x48, 0xfa, 0x8c,
+	0xda, 0x98, 0x7a, 0xb6, 0xf4, 0x03, 0x9f, 0x8e, 0x6d, 0x9f, 0x8e, 0x58, 0xad, 0xa4, 0x9e, 0xd9,
+	0x79, 0xe8, 0x33, 0xca, 0xf6, 0x8b, 0x5c, 0x6d, 0x9b, 0x7a, 0xfb, 0x4a, 0x6b, 0x40, 0x47, 0xac,
+	0xaf, 0xa1, 0x35, 0x72, 0x67, 0xa5, 0xfe, 0x79, 0x0e, 0xc2, 0x99, 0x41, 0xa3, 0x07, 0xcb, 0x9c,
+	0x1d, 0xdb, 0x0e, 0x96, 0xee, 0x44, 0xcd, 0xaf, 0xd2, 0xf9, 0x3f, 0x31, 0x70, 0x2d, 0x42, 0x2b,
+	0x0d, 0x2f, 0x74, 0x2c, 0xc4, 0x8e, 0xbb, 0x09, 0xb1, 0x87, 0x25, 0xee, 0x6b, 0x48, 0xe7, 0x19,
+	0x36, 0x9e, 0xc0, 0x35, 0x9f, 0xfa, 0xd2, 0xc7, 0x92, 0x64, 0x33, 0xb3, 0x85, 0xe4, 0x04, 0x07,
+	0xb5, 0x62, 0x03, 0xb4, 0xf4, 0xbe, 0x86, 0xfe, 0xcd, 0xeb, 0xe9, 0xbb, 0x43, 0x55, 0x35, 0x9e,
+	0xc1, 0xa5, 0x31, 0x0f, 0x5d, 0x5b, 0xb0, 0x88, 0xbb, 0x24, 0xcf, 0xa9, 0xd8, 0xad, 0xc6, 0xe7,
+	0x9b, 0x8b, 0x2f, 0xd1, 0xeb, 0x9d, 0xa1, 0x2a, 0x0c, 0x7a, 0x7d, 0x80, 0x16, 0x13, 0x66, 0x86,
+	0x3d, 0x63, 0x13, 0xc2, 0xd4, 0x22, 0xc5, 0x01, 0xa9, 0x15, 0x92, 0xe0, 0xfb, 0x00, 0x95, 0xd5,
+	0xdd, 0x2b, 0x1c, 0x90, 0xee, 0x0a, 0x5c, 0xce, 0x9c, 0xb8, 0x8c, 0x4a, 0x42, 0xa5, 0xe8, 0xfe,
+	0x03, 0x2b, 0x1e, 0x11, 0xd2, 0xa7, 0x38, 0x19, 0x4b, 0xfd, 0x1c, 0xc0, 0x8d, 0x7b, 0x66, 0x68,
+	0xbc, 0x81, 0xcb, 0xb3, 0xac, 0x84, 0xc4, 0x52, 0x64, 0x5b, 0xb4, 0x35, 0x4b, 0xc8, 0xba, 0xb9,
+	0xbf, 0xb7, 0x32, 0x19, 0x26, 0x4d, 0x68, 0x89, 0xdc, 0xc0, 0x06, 0x86, 0xff, 0xe1, 0x31, 0xa1,
+	0xd2, 0xbe, 0xad, 0x5e, 0x68, 0x14, 0xee, 0x57, 0xdf, 0x4e, 0xda, 0x6e, 0xa9, 0xaf, 0xe2, 0xdf,
+	0x2f, 0x77, 0x8b, 0x3a, 0xa8, 0xce, 0x75, 0x75, 0x58, 0x4a, 0x7b, 0x77, 0x8b, 0x7a, 0xa1, 0x5a,
+	0xdc, 0x2d, 0xea, 0xc5, 0xea, 0x7c, 0x73, 0x0f, 0x6e, 0xdc, 0xb9, 0x54, 0x22, 0x64, 0x54, 0x90,
+	0xe4, 0x73, 0x12, 0x91, 0xeb, 0xe6, 0x9f, 0x93, 0x8e, 0x72, 0x98, 0x54, 0x02, 0x22, 0x04, 0x1e,
+	0x13, 0x35, 0x87, 0x32, 0xca, 0x61, 0xe7, 0x13, 0x80, 0x2b, 0x59, 0xae, 0x3e, 0x3d, 0x1c, 0x12,
+	0xfe, 0xde, 0x77, 0x89, 0x31, 0x85, 0xab, 0x77, 0x3c, 0x64, 0x3c, 0x7a, 0xe0, 0x7e, 0xd7, 0x5b,
+	0x7f, 0x27, 0xa6, 0x9e, 0x9b, 0x5a, 0x0b, 0x74, 0x9f, 0x9f, 0x5e, 0x98, 0xda, 0xd9, 0x85, 0xa9,
+	0x5d, 0x5d, 0x98, 0xe0, 0x24, 0x36, 0xc1, 0xd7, 0xd8, 0x04, 0xdf, 0x62, 0x13, 0x9c, 0xc6, 0x26,
+	0xf8, 0x11, 0x9b, 0xe0, 0x67, 0x6c, 0x6a, 0x57, 0xb1, 0x09, 0xbe, 0x5c, 0x9a, 0xda, 0xe9, 0xa5,
+	0xa9, 0x9d, 0x5d, 0x9a, 0xda, 0x3b, 0x3d, 0xd7, 0x77, 0x4a, 0xea, 0x67, 0xf3, 0xf8, 0x57, 0x00,
+	0x00, 0x00, 0xff, 0xff, 0x2d, 0x6e, 0x7e, 0xae, 0x3a, 0x05, 0x00, 0x00,
 }
 
 func (this *TransferResultChunkRequest) Equal(that interface{}) bool {
@@ -487,14 +459,14 @@ func (this *TransferResultChunkRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *TransferResultChunkRequest_RowBatchResult) Equal(that interface{}) bool {
+func (this *TransferResultChunkRequest_QueryResult) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*TransferResultChunkRequest_RowBatchResult)
+	that1, ok := that.(*TransferResultChunkRequest_QueryResult)
 	if !ok {
-		that2, ok := that.(TransferResultChunkRequest_RowBatchResult)
+		that2, ok := that.(TransferResultChunkRequest_QueryResult)
 		if ok {
 			that1 = &that2
 		} else {
@@ -506,7 +478,7 @@ func (this *TransferResultChunkRequest_RowBatchResult) Equal(that interface{}) b
 	} else if this == nil {
 		return false
 	}
-	if !this.RowBatchResult.Equal(that1.RowBatchResult) {
+	if !this.QueryResult.Equal(that1.QueryResult) {
 		return false
 	}
 	return true
@@ -535,14 +507,14 @@ func (this *TransferResultChunkRequest_ExecutionAndTimingInfo) Equal(that interf
 	}
 	return true
 }
-func (this *TransferResultChunkRequest_Heartbeat) Equal(that interface{}) bool {
+func (this *TransferResultChunkRequest_SinkResult) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*TransferResultChunkRequest_Heartbeat)
+	that1, ok := that.(*TransferResultChunkRequest_SinkResult)
 	if !ok {
-		that2, ok := that.(TransferResultChunkRequest_Heartbeat)
+		that2, ok := that.(TransferResultChunkRequest_SinkResult)
 		if ok {
 			that1 = &that2
 		} else {
@@ -554,19 +526,34 @@ func (this *TransferResultChunkRequest_Heartbeat) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.Heartbeat.Equal(that1.Heartbeat) {
+	if that1.ResultContents == nil {
+		if this.ResultContents != nil {
+			return false
+		}
+	} else if this.ResultContents == nil {
+		return false
+	} else if !this.ResultContents.Equal(that1.ResultContents) {
+		return false
+	}
+	if that1.Destination == nil {
+		if this.Destination != nil {
+			return false
+		}
+	} else if this.Destination == nil {
+		return false
+	} else if !this.Destination.Equal(that1.Destination) {
 		return false
 	}
 	return true
 }
-func (this *TransferResultChunkRequest_ResultRowBatch) Equal(that interface{}) bool {
+func (this *TransferResultChunkRequest_SinkResult_RowBatch) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*TransferResultChunkRequest_ResultRowBatch)
+	that1, ok := that.(*TransferResultChunkRequest_SinkResult_RowBatch)
 	if !ok {
-		that2, ok := that.(TransferResultChunkRequest_ResultRowBatch)
+		that2, ok := that.(TransferResultChunkRequest_SinkResult_RowBatch)
 		if ok {
 			that1 = &that2
 		} else {
@@ -581,25 +568,40 @@ func (this *TransferResultChunkRequest_ResultRowBatch) Equal(that interface{}) b
 	if !this.RowBatch.Equal(that1.RowBatch) {
 		return false
 	}
-	if that1.Destination == nil {
-		if this.Destination != nil {
-			return false
-		}
-	} else if this.Destination == nil {
-		return false
-	} else if !this.Destination.Equal(that1.Destination) {
-		return false
-	}
 	return true
 }
-func (this *TransferResultChunkRequest_ResultRowBatch_GRPCSourceID) Equal(that interface{}) bool {
+func (this *TransferResultChunkRequest_SinkResult_InitiateResultStream) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*TransferResultChunkRequest_ResultRowBatch_GRPCSourceID)
+	that1, ok := that.(*TransferResultChunkRequest_SinkResult_InitiateResultStream)
 	if !ok {
-		that2, ok := that.(TransferResultChunkRequest_ResultRowBatch_GRPCSourceID)
+		that2, ok := that.(TransferResultChunkRequest_SinkResult_InitiateResultStream)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.InitiateResultStream != that1.InitiateResultStream {
+		return false
+	}
+	return true
+}
+func (this *TransferResultChunkRequest_SinkResult_GRPCSourceID) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*TransferResultChunkRequest_SinkResult_GRPCSourceID)
+	if !ok {
+		that2, ok := that.(TransferResultChunkRequest_SinkResult_GRPCSourceID)
 		if ok {
 			that1 = &that2
 		} else {
@@ -616,14 +618,14 @@ func (this *TransferResultChunkRequest_ResultRowBatch_GRPCSourceID) Equal(that i
 	}
 	return true
 }
-func (this *TransferResultChunkRequest_ResultRowBatch_TableName) Equal(that interface{}) bool {
+func (this *TransferResultChunkRequest_SinkResult_TableName) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*TransferResultChunkRequest_ResultRowBatch_TableName)
+	that1, ok := that.(*TransferResultChunkRequest_SinkResult_TableName)
 	if !ok {
-		that2, ok := that.(TransferResultChunkRequest_ResultRowBatch_TableName)
+		that2, ok := that.(TransferResultChunkRequest_SinkResult_TableName)
 		if ok {
 			that1 = &that2
 		} else {
@@ -672,30 +674,6 @@ func (this *TransferResultChunkRequest_QueryExecutionAndTimingInfo) Equal(that i
 	}
 	return true
 }
-func (this *TransferResultChunkRequest_QueryHeartbeat) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*TransferResultChunkRequest_QueryHeartbeat)
-	if !ok {
-		that2, ok := that.(TransferResultChunkRequest_QueryHeartbeat)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.IntermediateExecutionAndTimingInfo.Equal(that1.IntermediateExecutionAndTimingInfo) {
-		return false
-	}
-	return true
-}
 func (this *TransferResultChunkResponse) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -727,7 +705,7 @@ func (this *TransferResultChunkRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 9)
+	s := make([]string, 0, 8)
 	s = append(s, "&carnotpb.TransferResultChunkRequest{")
 	s = append(s, "Address: "+fmt.Sprintf("%#v", this.Address)+",\n")
 	if this.QueryID != nil {
@@ -739,12 +717,12 @@ func (this *TransferResultChunkRequest) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *TransferResultChunkRequest_RowBatchResult) GoString() string {
+func (this *TransferResultChunkRequest_QueryResult) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&carnotpb.TransferResultChunkRequest_RowBatchResult{` +
-		`RowBatchResult:` + fmt.Sprintf("%#v", this.RowBatchResult) + `}`}, ", ")
+	s := strings.Join([]string{`&carnotpb.TransferResultChunkRequest_QueryResult{` +
+		`QueryResult:` + fmt.Sprintf("%#v", this.QueryResult) + `}`}, ", ")
 	return s
 }
 func (this *TransferResultChunkRequest_ExecutionAndTimingInfo) GoString() string {
@@ -755,22 +733,14 @@ func (this *TransferResultChunkRequest_ExecutionAndTimingInfo) GoString() string
 		`ExecutionAndTimingInfo:` + fmt.Sprintf("%#v", this.ExecutionAndTimingInfo) + `}`}, ", ")
 	return s
 }
-func (this *TransferResultChunkRequest_Heartbeat) GoString() string {
+func (this *TransferResultChunkRequest_SinkResult) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&carnotpb.TransferResultChunkRequest_Heartbeat{` +
-		`Heartbeat:` + fmt.Sprintf("%#v", this.Heartbeat) + `}`}, ", ")
-	return s
-}
-func (this *TransferResultChunkRequest_ResultRowBatch) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 7)
-	s = append(s, "&carnotpb.TransferResultChunkRequest_ResultRowBatch{")
-	if this.RowBatch != nil {
-		s = append(s, "RowBatch: "+fmt.Sprintf("%#v", this.RowBatch)+",\n")
+	s := make([]string, 0, 8)
+	s = append(s, "&carnotpb.TransferResultChunkRequest_SinkResult{")
+	if this.ResultContents != nil {
+		s = append(s, "ResultContents: "+fmt.Sprintf("%#v", this.ResultContents)+",\n")
 	}
 	if this.Destination != nil {
 		s = append(s, "Destination: "+fmt.Sprintf("%#v", this.Destination)+",\n")
@@ -778,19 +748,35 @@ func (this *TransferResultChunkRequest_ResultRowBatch) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *TransferResultChunkRequest_ResultRowBatch_GRPCSourceID) GoString() string {
+func (this *TransferResultChunkRequest_SinkResult_RowBatch) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&carnotpb.TransferResultChunkRequest_ResultRowBatch_GRPCSourceID{` +
+	s := strings.Join([]string{`&carnotpb.TransferResultChunkRequest_SinkResult_RowBatch{` +
+		`RowBatch:` + fmt.Sprintf("%#v", this.RowBatch) + `}`}, ", ")
+	return s
+}
+func (this *TransferResultChunkRequest_SinkResult_InitiateResultStream) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&carnotpb.TransferResultChunkRequest_SinkResult_InitiateResultStream{` +
+		`InitiateResultStream:` + fmt.Sprintf("%#v", this.InitiateResultStream) + `}`}, ", ")
+	return s
+}
+func (this *TransferResultChunkRequest_SinkResult_GRPCSourceID) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&carnotpb.TransferResultChunkRequest_SinkResult_GRPCSourceID{` +
 		`GRPCSourceID:` + fmt.Sprintf("%#v", this.GRPCSourceID) + `}`}, ", ")
 	return s
 }
-func (this *TransferResultChunkRequest_ResultRowBatch_TableName) GoString() string {
+func (this *TransferResultChunkRequest_SinkResult_TableName) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&carnotpb.TransferResultChunkRequest_ResultRowBatch_TableName{` +
+	s := strings.Join([]string{`&carnotpb.TransferResultChunkRequest_SinkResult_TableName{` +
 		`TableName:` + fmt.Sprintf("%#v", this.TableName) + `}`}, ", ")
 	return s
 }
@@ -805,18 +791,6 @@ func (this *TransferResultChunkRequest_QueryExecutionAndTimingInfo) GoString() s
 	}
 	if this.AgentExecutionStats != nil {
 		s = append(s, "AgentExecutionStats: "+fmt.Sprintf("%#v", this.AgentExecutionStats)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *TransferResultChunkRequest_QueryHeartbeat) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 5)
-	s = append(s, "&carnotpb.TransferResultChunkRequest_QueryHeartbeat{")
-	if this.IntermediateExecutionAndTimingInfo != nil {
-		s = append(s, "IntermediateExecutionAndTimingInfo: "+fmt.Sprintf("%#v", this.IntermediateExecutionAndTimingInfo)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -1006,16 +980,16 @@ func (m *TransferResultChunkRequest) MarshalToSizedBuffer(dAtA []byte) (int, err
 	return len(dAtA) - i, nil
 }
 
-func (m *TransferResultChunkRequest_RowBatchResult) MarshalTo(dAtA []byte) (int, error) {
+func (m *TransferResultChunkRequest_QueryResult) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *TransferResultChunkRequest_RowBatchResult) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *TransferResultChunkRequest_QueryResult) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
-	if m.RowBatchResult != nil {
+	if m.QueryResult != nil {
 		{
-			size, err := m.RowBatchResult.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.QueryResult.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -1048,28 +1022,7 @@ func (m *TransferResultChunkRequest_ExecutionAndTimingInfo) MarshalToSizedBuffer
 	}
 	return len(dAtA) - i, nil
 }
-func (m *TransferResultChunkRequest_Heartbeat) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *TransferResultChunkRequest_Heartbeat) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.Heartbeat != nil {
-		{
-			size, err := m.Heartbeat.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintCarnot(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x3a
-	}
-	return len(dAtA) - i, nil
-}
-func (m *TransferResultChunkRequest_ResultRowBatch) Marshal() (dAtA []byte, err error) {
+func (m *TransferResultChunkRequest_SinkResult) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1079,16 +1032,25 @@ func (m *TransferResultChunkRequest_ResultRowBatch) Marshal() (dAtA []byte, err 
 	return dAtA[:n], nil
 }
 
-func (m *TransferResultChunkRequest_ResultRowBatch) MarshalTo(dAtA []byte) (int, error) {
+func (m *TransferResultChunkRequest_SinkResult) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *TransferResultChunkRequest_ResultRowBatch) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *TransferResultChunkRequest_SinkResult) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
+	if m.ResultContents != nil {
+		{
+			size := m.ResultContents.Size()
+			i -= size
+			if _, err := m.ResultContents.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
 	if m.Destination != nil {
 		{
 			size := m.Destination.Size()
@@ -1098,6 +1060,16 @@ func (m *TransferResultChunkRequest_ResultRowBatch) MarshalToSizedBuffer(dAtA []
 			}
 		}
 	}
+	return len(dAtA) - i, nil
+}
+
+func (m *TransferResultChunkRequest_SinkResult_RowBatch) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *TransferResultChunkRequest_SinkResult_RowBatch) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.RowBatch != nil {
 		{
 			size, err := m.RowBatch.MarshalToSizedBuffer(dAtA[:i])
@@ -1112,31 +1084,47 @@ func (m *TransferResultChunkRequest_ResultRowBatch) MarshalToSizedBuffer(dAtA []
 	}
 	return len(dAtA) - i, nil
 }
-
-func (m *TransferResultChunkRequest_ResultRowBatch_GRPCSourceID) MarshalTo(dAtA []byte) (int, error) {
+func (m *TransferResultChunkRequest_SinkResult_GRPCSourceID) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *TransferResultChunkRequest_ResultRowBatch_GRPCSourceID) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *TransferResultChunkRequest_SinkResult_GRPCSourceID) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	i = encodeVarintCarnot(dAtA, i, uint64(m.GRPCSourceID))
 	i--
 	dAtA[i] = 0x10
 	return len(dAtA) - i, nil
 }
-func (m *TransferResultChunkRequest_ResultRowBatch_TableName) MarshalTo(dAtA []byte) (int, error) {
+func (m *TransferResultChunkRequest_SinkResult_TableName) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *TransferResultChunkRequest_ResultRowBatch_TableName) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *TransferResultChunkRequest_SinkResult_TableName) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	i -= len(m.TableName)
 	copy(dAtA[i:], m.TableName)
 	i = encodeVarintCarnot(dAtA, i, uint64(len(m.TableName)))
 	i--
 	dAtA[i] = 0x1a
+	return len(dAtA) - i, nil
+}
+func (m *TransferResultChunkRequest_SinkResult_InitiateResultStream) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *TransferResultChunkRequest_SinkResult_InitiateResultStream) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	i--
+	if m.InitiateResultStream {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
+	}
+	i--
+	dAtA[i] = 0x20
 	return len(dAtA) - i, nil
 }
 func (m *TransferResultChunkRequest_QueryExecutionAndTimingInfo) Marshal() (dAtA []byte, err error) {
@@ -1184,41 +1172,6 @@ func (m *TransferResultChunkRequest_QueryExecutionAndTimingInfo) MarshalToSizedB
 		}
 		i--
 		dAtA[i] = 0x12
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *TransferResultChunkRequest_QueryHeartbeat) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *TransferResultChunkRequest_QueryHeartbeat) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *TransferResultChunkRequest_QueryHeartbeat) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.IntermediateExecutionAndTimingInfo != nil {
-		{
-			size, err := m.IntermediateExecutionAndTimingInfo.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintCarnot(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -1294,14 +1247,14 @@ func (m *TransferResultChunkRequest) Size() (n int) {
 	return n
 }
 
-func (m *TransferResultChunkRequest_RowBatchResult) Size() (n int) {
+func (m *TransferResultChunkRequest_QueryResult) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.RowBatchResult != nil {
-		l = m.RowBatchResult.Size()
+	if m.QueryResult != nil {
+		l = m.QueryResult.Size()
 		n += 1 + l + sovCarnot(uint64(l))
 	}
 	return n
@@ -1318,19 +1271,22 @@ func (m *TransferResultChunkRequest_ExecutionAndTimingInfo) Size() (n int) {
 	}
 	return n
 }
-func (m *TransferResultChunkRequest_Heartbeat) Size() (n int) {
+func (m *TransferResultChunkRequest_SinkResult) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.Heartbeat != nil {
-		l = m.Heartbeat.Size()
-		n += 1 + l + sovCarnot(uint64(l))
+	if m.ResultContents != nil {
+		n += m.ResultContents.Size()
+	}
+	if m.Destination != nil {
+		n += m.Destination.Size()
 	}
 	return n
 }
-func (m *TransferResultChunkRequest_ResultRowBatch) Size() (n int) {
+
+func (m *TransferResultChunkRequest_SinkResult_RowBatch) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1340,13 +1296,9 @@ func (m *TransferResultChunkRequest_ResultRowBatch) Size() (n int) {
 		l = m.RowBatch.Size()
 		n += 1 + l + sovCarnot(uint64(l))
 	}
-	if m.Destination != nil {
-		n += m.Destination.Size()
-	}
 	return n
 }
-
-func (m *TransferResultChunkRequest_ResultRowBatch_GRPCSourceID) Size() (n int) {
+func (m *TransferResultChunkRequest_SinkResult_GRPCSourceID) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1355,7 +1307,7 @@ func (m *TransferResultChunkRequest_ResultRowBatch_GRPCSourceID) Size() (n int) 
 	n += 1 + sovCarnot(uint64(m.GRPCSourceID))
 	return n
 }
-func (m *TransferResultChunkRequest_ResultRowBatch_TableName) Size() (n int) {
+func (m *TransferResultChunkRequest_SinkResult_TableName) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1363,6 +1315,15 @@ func (m *TransferResultChunkRequest_ResultRowBatch_TableName) Size() (n int) {
 	_ = l
 	l = len(m.TableName)
 	n += 1 + l + sovCarnot(uint64(l))
+	return n
+}
+func (m *TransferResultChunkRequest_SinkResult_InitiateResultStream) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += 2
 	return n
 }
 func (m *TransferResultChunkRequest_QueryExecutionAndTimingInfo) Size() (n int) {
@@ -1380,19 +1341,6 @@ func (m *TransferResultChunkRequest_QueryExecutionAndTimingInfo) Size() (n int) 
 			l = e.Size()
 			n += 1 + l + sovCarnot(uint64(l))
 		}
-	}
-	return n
-}
-
-func (m *TransferResultChunkRequest_QueryHeartbeat) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.IntermediateExecutionAndTimingInfo != nil {
-		l = m.IntermediateExecutionAndTimingInfo.Size()
-		n += 1 + l + sovCarnot(uint64(l))
 	}
 	return n
 }
@@ -1431,12 +1379,12 @@ func (this *TransferResultChunkRequest) String() string {
 	}, "")
 	return s
 }
-func (this *TransferResultChunkRequest_RowBatchResult) String() string {
+func (this *TransferResultChunkRequest_QueryResult) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&TransferResultChunkRequest_RowBatchResult{`,
-		`RowBatchResult:` + strings.Replace(fmt.Sprintf("%v", this.RowBatchResult), "TransferResultChunkRequest_ResultRowBatch", "TransferResultChunkRequest_ResultRowBatch", 1) + `,`,
+	s := strings.Join([]string{`&TransferResultChunkRequest_QueryResult{`,
+		`QueryResult:` + strings.Replace(fmt.Sprintf("%v", this.QueryResult), "TransferResultChunkRequest_SinkResult", "TransferResultChunkRequest_SinkResult", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1451,43 +1399,53 @@ func (this *TransferResultChunkRequest_ExecutionAndTimingInfo) String() string {
 	}, "")
 	return s
 }
-func (this *TransferResultChunkRequest_Heartbeat) String() string {
+func (this *TransferResultChunkRequest_SinkResult) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&TransferResultChunkRequest_Heartbeat{`,
-		`Heartbeat:` + strings.Replace(fmt.Sprintf("%v", this.Heartbeat), "TransferResultChunkRequest_QueryHeartbeat", "TransferResultChunkRequest_QueryHeartbeat", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *TransferResultChunkRequest_ResultRowBatch) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&TransferResultChunkRequest_ResultRowBatch{`,
-		`RowBatch:` + strings.Replace(fmt.Sprintf("%v", this.RowBatch), "RowBatchData", "proto2.RowBatchData", 1) + `,`,
+	s := strings.Join([]string{`&TransferResultChunkRequest_SinkResult{`,
+		`ResultContents:` + fmt.Sprintf("%v", this.ResultContents) + `,`,
 		`Destination:` + fmt.Sprintf("%v", this.Destination) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *TransferResultChunkRequest_ResultRowBatch_GRPCSourceID) String() string {
+func (this *TransferResultChunkRequest_SinkResult_RowBatch) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&TransferResultChunkRequest_ResultRowBatch_GRPCSourceID{`,
+	s := strings.Join([]string{`&TransferResultChunkRequest_SinkResult_RowBatch{`,
+		`RowBatch:` + strings.Replace(fmt.Sprintf("%v", this.RowBatch), "RowBatchData", "proto2.RowBatchData", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *TransferResultChunkRequest_SinkResult_GRPCSourceID) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&TransferResultChunkRequest_SinkResult_GRPCSourceID{`,
 		`GRPCSourceID:` + fmt.Sprintf("%v", this.GRPCSourceID) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *TransferResultChunkRequest_ResultRowBatch_TableName) String() string {
+func (this *TransferResultChunkRequest_SinkResult_TableName) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&TransferResultChunkRequest_ResultRowBatch_TableName{`,
+	s := strings.Join([]string{`&TransferResultChunkRequest_SinkResult_TableName{`,
 		`TableName:` + fmt.Sprintf("%v", this.TableName) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *TransferResultChunkRequest_SinkResult_InitiateResultStream) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&TransferResultChunkRequest_SinkResult_InitiateResultStream{`,
+		`InitiateResultStream:` + fmt.Sprintf("%v", this.InitiateResultStream) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1504,16 +1462,6 @@ func (this *TransferResultChunkRequest_QueryExecutionAndTimingInfo) String() str
 	s := strings.Join([]string{`&TransferResultChunkRequest_QueryExecutionAndTimingInfo{`,
 		`ExecutionStats:` + strings.Replace(fmt.Sprintf("%v", this.ExecutionStats), "QueryExecutionStats", "queryresultspb.QueryExecutionStats", 1) + `,`,
 		`AgentExecutionStats:` + repeatedStringForAgentExecutionStats + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *TransferResultChunkRequest_QueryHeartbeat) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&TransferResultChunkRequest_QueryHeartbeat{`,
-		`IntermediateExecutionAndTimingInfo:` + strings.Replace(fmt.Sprintf("%v", this.IntermediateExecutionAndTimingInfo), "TransferResultChunkRequest_QueryExecutionAndTimingInfo", "TransferResultChunkRequest_QueryExecutionAndTimingInfo", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1636,7 +1584,7 @@ func (m *TransferResultChunkRequest) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RowBatchResult", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field QueryResult", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1663,11 +1611,11 @@ func (m *TransferResultChunkRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &TransferResultChunkRequest_ResultRowBatch{}
+			v := &TransferResultChunkRequest_SinkResult{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Result = &TransferResultChunkRequest_RowBatchResult{v}
+			m.Result = &TransferResultChunkRequest_QueryResult{v}
 			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {
@@ -1704,41 +1652,6 @@ func (m *TransferResultChunkRequest) Unmarshal(dAtA []byte) error {
 			}
 			m.Result = &TransferResultChunkRequest_ExecutionAndTimingInfo{v}
 			iNdEx = postIndex
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Heartbeat", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCarnot
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &TransferResultChunkRequest_QueryHeartbeat{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.Result = &TransferResultChunkRequest_Heartbeat{v}
-			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipCarnot(dAtA[iNdEx:])
@@ -1763,7 +1676,7 @@ func (m *TransferResultChunkRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *TransferResultChunkRequest_ResultRowBatch) Unmarshal(dAtA []byte) error {
+func (m *TransferResultChunkRequest_SinkResult) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1786,10 +1699,10 @@ func (m *TransferResultChunkRequest_ResultRowBatch) Unmarshal(dAtA []byte) error
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ResultRowBatch: wiretype end group for non-group")
+			return fmt.Errorf("proto: SinkResult: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ResultRowBatch: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: SinkResult: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1821,12 +1734,11 @@ func (m *TransferResultChunkRequest_ResultRowBatch) Unmarshal(dAtA []byte) error
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.RowBatch == nil {
-				m.RowBatch = &proto2.RowBatchData{}
-			}
-			if err := m.RowBatch.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			v := &proto2.RowBatchData{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			m.ResultContents = &TransferResultChunkRequest_SinkResult_RowBatch{v}
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
@@ -1847,7 +1759,7 @@ func (m *TransferResultChunkRequest_ResultRowBatch) Unmarshal(dAtA []byte) error
 					break
 				}
 			}
-			m.Destination = &TransferResultChunkRequest_ResultRowBatch_GRPCSourceID{v}
+			m.Destination = &TransferResultChunkRequest_SinkResult_GRPCSourceID{v}
 		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field TableName", wireType)
@@ -1878,8 +1790,29 @@ func (m *TransferResultChunkRequest_ResultRowBatch) Unmarshal(dAtA []byte) error
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Destination = &TransferResultChunkRequest_ResultRowBatch_TableName{string(dAtA[iNdEx:postIndex])}
+			m.Destination = &TransferResultChunkRequest_SinkResult_TableName{string(dAtA[iNdEx:postIndex])}
 			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InitiateResultStream", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCarnot
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			b := bool(v != 0)
+			m.ResultContents = &TransferResultChunkRequest_SinkResult_InitiateResultStream{b}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipCarnot(dAtA[iNdEx:])
@@ -2000,95 +1933,6 @@ func (m *TransferResultChunkRequest_QueryExecutionAndTimingInfo) Unmarshal(dAtA 
 			}
 			m.AgentExecutionStats = append(m.AgentExecutionStats, &queryresultspb.AgentExecutionStats{})
 			if err := m.AgentExecutionStats[len(m.AgentExecutionStats)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipCarnot(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *TransferResultChunkRequest_QueryHeartbeat) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowCarnot
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryHeartbeat: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryHeartbeat: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field IntermediateExecutionAndTimingInfo", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCarnot
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.IntermediateExecutionAndTimingInfo == nil {
-				m.IntermediateExecutionAndTimingInfo = &TransferResultChunkRequest_QueryExecutionAndTimingInfo{}
-			}
-			if err := m.IntermediateExecutionAndTimingInfo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

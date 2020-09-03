@@ -93,8 +93,8 @@ class LocalGRPCResultSinkServer {
   absl::flat_hash_set<std::string> output_tables() {
     absl::flat_hash_set<std::string> output;
     for (const auto& req : result_sink_server_.query_results()) {
-      if (req.has_row_batch_result()) {
-        output.insert(req.row_batch_result().table_name());
+      if (req.has_query_result()) {
+        output.insert(req.query_result().table_name());
       }
     }
     return output;
@@ -103,8 +103,9 @@ class LocalGRPCResultSinkServer {
   std::vector<RowBatch> query_results(std::string_view table_name) {
     std::vector<RowBatch> output;
     for (const auto& req : result_sink_server_.query_results()) {
-      if (req.has_row_batch_result() && req.row_batch_result().table_name() == table_name) {
-        auto rb = RowBatch::FromProto(req.row_batch_result().row_batch()).ConsumeValueOrDie();
+      if (req.has_query_result() && req.query_result().has_row_batch() &&
+          req.query_result().table_name() == table_name) {
+        auto rb = RowBatch::FromProto(req.query_result().row_batch()).ConsumeValueOrDie();
         output.push_back(*rb);
       }
     }

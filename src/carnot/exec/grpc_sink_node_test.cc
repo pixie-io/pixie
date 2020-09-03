@@ -63,7 +63,7 @@ address: "localhost:1234"
 query_id {
   data: "$0"
 }
-row_batch_result {
+query_result {
   row_batch {
     cols {
       int64_data {
@@ -79,7 +79,7 @@ address: "localhost:1234"
 query_id {
   data: "$0"
 }
-row_batch_result {
+query_result {
   row_batch {
     cols {
       int64_data {
@@ -97,7 +97,7 @@ address: "localhost:1234"
 query_id {
   data: "$0"
 }
-row_batch_result {
+query_result {
   row_batch {
     cols {
       int64_data {
@@ -172,7 +172,7 @@ address: "localhost:1234"
 query_id {
   data: "$0"
 }
-row_batch_result {
+query_result {
   row_batch {
     cols {
       int64_data {
@@ -188,7 +188,7 @@ address: "localhost:1234"
 query_id {
   data: "$0"
 }
-row_batch_result {
+query_result {
   row_batch {
     cols {
       int64_data {
@@ -206,7 +206,7 @@ address: "localhost:1234"
 query_id {
   data: "$0"
 }
-row_batch_result {
+query_result {
   row_batch {
     cols {
       int64_data {

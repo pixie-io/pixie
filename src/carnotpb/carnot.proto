@@ -21,11 +21,22 @@ message TransferResultChunkRequest {
   reserved 3;
   reserved 4;
 
-  // A RowBatch produced by the query, either an intermediate or final result.
-  message ResultRowBatch {
-    // The row batch data.
-    // TODO(nserrino): Fix this to flat buffers/feather for better performance.
-    pl.table_store.schemapb.RowBatchData row_batch = 1;
+  // QueryResultContents is used to both initiate a connection between a GRPCSink and its remote destination
+  // at the beginning of the stream, also to send any result RowBatches between the sink and its
+  // destination. It contains metadata so that the sink->destination connection can be tracked and
+  // monitored, and the overall query context cancelled if a particular sink->destination stream
+  // has been closed earlier than expected.
+  message SinkResult {
+    oneof result_contents {
+      // The row batch data.
+      // TODO(nserrino): Fix this to flat buffers/feather for better performance.
+      pl.table_store.schemapb.RowBatchData row_batch = 1;
+      // This case is sent by a GRPCSink as soon as it makes the remote connection to the client
+      // receiving its results. It is used by the client to identify the particular connection and
+      // monitor that it has not been closed during query execution. It is also used to identify
+      // potential sinks that have failed to initiate a connection to their corresponding destination.
+      bool initiate_result_stream = 4;
+    }
 
     oneof destination {
       // When the TransferResultChunkRequest is being sent to another Carnot instance, 'grpc_source_id'
@@ -48,24 +59,14 @@ message TransferResultChunkRequest {
     repeated pl.carnot.queryresultspb.AgentExecutionStats agent_execution_stats = 3;
   }
 
-  // A message containing a heartbeat for an active query.
-  message QueryHeartbeat {
-    // The query execution stats, thus far in the query.
-    // Different from `execution_and_timing_info`, which stores the final exec stats
-    // for the query.
-    QueryExecutionAndTimingInfo intermediate_execution_and_timing_info = 1;
-  }
-
   oneof result {
-    // A row batch (including its destination).
-    ResultRowBatch row_batch_result = 5;
+    // `query_result` covers query result data sent from a GRPC sink (including the request
+    // to initiate the connection between the GRPC sink and its destination).
+    SinkResult query_result = 5;
     // Execution information about the query.
     // This result will be sent periodically until the end of the query, so it also functions
     // as a heartbeat for persistent streaming queries.
     QueryExecutionAndTimingInfo execution_and_timing_info = 6;
-    // A heartbeat for the query, sent periodically as the query executes, to show that the
-    // query is still executing as expected.
-    QueryHeartbeat heartbeat = 7;
   }
 }
 

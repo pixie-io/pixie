@@ -1012,10 +1012,12 @@ func TestTransferResultChunk_AgentStreamComplete(t *testing.T) {
 	msg1 := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
 		QueryID: queryIDpb,
-		Result: &carnotpb.TransferResultChunkRequest_RowBatchResult{
-			RowBatchResult: &carnotpb.TransferResultChunkRequest_ResultRowBatch{
-				RowBatch: sv,
-				Destination: &carnotpb.TransferResultChunkRequest_ResultRowBatch_TableName{
+		Result: &carnotpb.TransferResultChunkRequest_QueryResult{
+			QueryResult: &carnotpb.TransferResultChunkRequest_SinkResult{
+				ResultContents: &carnotpb.TransferResultChunkRequest_SinkResult_RowBatch{
+					RowBatch: sv,
+				},
+				Destination: &carnotpb.TransferResultChunkRequest_SinkResult_TableName{
 					TableName: "output_table_1",
 				},
 			},
@@ -1111,10 +1113,12 @@ func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 	msg1 := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
 		QueryID: queryIDpb,
-		Result: &carnotpb.TransferResultChunkRequest_RowBatchResult{
-			RowBatchResult: &carnotpb.TransferResultChunkRequest_ResultRowBatch{
-				RowBatch: sv,
-				Destination: &carnotpb.TransferResultChunkRequest_ResultRowBatch_TableName{
+		Result: &carnotpb.TransferResultChunkRequest_QueryResult{
+			QueryResult: &carnotpb.TransferResultChunkRequest_SinkResult{
+				ResultContents: &carnotpb.TransferResultChunkRequest_SinkResult_RowBatch{
+					RowBatch: sv,
+				},
+				Destination: &carnotpb.TransferResultChunkRequest_SinkResult_TableName{
 					TableName: "output_table_1",
 				},
 			},
@@ -1187,10 +1191,12 @@ func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
 	msg1 := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
 		QueryID: queryIDpb,
-		Result: &carnotpb.TransferResultChunkRequest_RowBatchResult{
-			RowBatchResult: &carnotpb.TransferResultChunkRequest_ResultRowBatch{
-				RowBatch: sv,
-				Destination: &carnotpb.TransferResultChunkRequest_ResultRowBatch_TableName{
+		Result: &carnotpb.TransferResultChunkRequest_QueryResult{
+			QueryResult: &carnotpb.TransferResultChunkRequest_SinkResult{
+				ResultContents: &carnotpb.TransferResultChunkRequest_SinkResult_RowBatch{
+					RowBatch: sv,
+				},
+				Destination: &carnotpb.TransferResultChunkRequest_SinkResult_TableName{
 					TableName: "output_table_1",
 				},
 			},

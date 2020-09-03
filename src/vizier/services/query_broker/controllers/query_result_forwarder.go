@@ -50,16 +50,16 @@ type activeQuery struct {
 }
 
 func newActiveQuery(tableIDMap map[string]string) *activeQuery {
-	expectedTables := make(map[string]bool)
+	eosTables := make(map[string]bool)
 	for tableName := range tableIDMap {
-		expectedTables[tableName] = true
+		eosTables[tableName] = true
 	}
 
 	return &activeQuery{
 		queryResultCh:         make(chan *carnotpb.TransferResultChunkRequest),
 		cancelClientStreamCh:  make(chan bool),
 		clientStreamCancelled: false,
-		remainingTableEos:     expectedTables,
+		remainingTableEos:     eosTables,
 		gotFinalExecStats:     false,
 		tableIDMap:            tableIDMap,
 	}
@@ -92,21 +92,28 @@ func (a *activeQuery) updateQueryState(msg *carnotpb.TransferResultChunkRequest)
 	}
 
 	// Update the set of tables we are waiting on EOS from.
-	if rbResult := msg.GetRowBatchResult(); rbResult != nil {
-		rb := rbResult.RowBatch
-		if !rb.GetEos() {
-			return nil
+	if queryResult := msg.GetQueryResult(); queryResult != nil {
+		tableName := queryResult.GetTableName()
+
+		if rb := queryResult.GetRowBatch(); rb != nil {
+			if !rb.GetEos() {
+				return nil
+			}
+
+			if _, present := a.remainingTableEos[tableName]; present {
+				delete(a.remainingTableEos, tableName)
+				return nil
+			}
+			return fmt.Errorf("unexpected table name '%s' for query ID %s", tableName, queryIDStr)
 		}
 
-		tableName := rbResult.GetTableName()
-		if _, present := a.remainingTableEos[tableName]; present {
-			delete(a.remainingTableEos, tableName)
-			return nil
+		if queryResult.GetInitiateResultStream() {
+			// TODO(nserrino): Fill this in for the case tracking which tables still need to
+			// initialize their streams.
 		}
-		return fmt.Errorf("enexpected table name '%s' for query ID %s", tableName, queryIDStr)
 	}
 
-	return fmt.Errorf("error in ForwardQueryResult: Expected TransferResultChunkRequest to have row batch or exec stats")
+	return fmt.Errorf("error in ForwardQueryResult: Expected TransferResultChunkRequest to have query result or exec stats")
 }
 
 func (a *activeQuery) queryComplete() bool {
@@ -210,6 +217,19 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 			activeQuery.signalCancelClientStream()
 			return false, nil
 
+		case <-activeQuery.cancelClientStreamCh:
+			return cancelStreamReturnErr(
+				fmt.Errorf("Client stream cancelled for query %s", queryID.String()),
+				/*timeout*/ false,
+			)
+
+			// TODO(nserrino): Remove this case and replace with a timeout on all result sinks initialing.
+		case <-time.After(f.streamResultTimeout):
+			return cancelStreamReturnErr(
+				fmt.Errorf("Query %s timed out", queryID.String()),
+				/*timeout*/ true,
+			)
+
 		case msg := <-activeQuery.queryResultCh:
 			// Stream the agent stream result to the client stream.
 			// Check if stream is complete. If so, close client stream.
@@ -242,23 +262,15 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 			if err != nil {
 				return cancelStreamReturnErr(err /*timeout*/, false)
 			}
-			resultCh <- resp
+
+			// Some inbound messages don't translate into responses to the client stream.
+			if resp != nil {
+				resultCh <- resp
+			}
 
 			if activeQuery.queryComplete() {
 				return /*timeout*/ false, nil
 			}
-
-		case <-activeQuery.cancelClientStreamCh:
-			return cancelStreamReturnErr(
-				fmt.Errorf("Client stream cancelled by agent result stream for query %s", queryID.String()),
-				/*timeout*/ false,
-			)
-
-		case <-time.After(f.streamResultTimeout):
-			return cancelStreamReturnErr(
-				fmt.Errorf("Query %s timed out", queryID.String()),
-				/*timeout*/ true,
-			)
 		}
 	}
 }
