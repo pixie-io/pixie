@@ -62,6 +62,7 @@ const auth0Request = (isSignup: boolean) => {
     connection: 'google-oauth2',
     responseType: 'token',
     redirectUri: redirectURL,
+    prompt: 'login',
   });
 };
 
