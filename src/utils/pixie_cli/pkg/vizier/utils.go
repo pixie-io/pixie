@@ -2,6 +2,7 @@ package vizier
 
 import (
 	"errors"
+	"fmt"
 
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
@@ -83,37 +84,32 @@ func ConnectDefaultVizier(cloudAddr string, allClusters bool, clusterID uuid.UUI
 		conns = append(conns, c)
 		return conns, nil
 	}
-	c, err := ConnectFirstHealthyVizier(cloudAddr)
-	if err != nil {
-		return nil, err
-	}
-	conns = append(conns, c)
-	return conns, nil
+	return nil, fmt.Errorf("ConnectDefaultVizier expects either allClusters or clusterID to be set")
 }
 
-// ConnectFirstHealthyVizier connects to the first healthy vizier.
-func ConnectFirstHealthyVizier(cloudAddr string) (*Connector, error) {
+// FirstHealthyVizier returns the cluster ID of the first healthy vizier.
+func FirstHealthyVizier(cloudAddr string) (uuid.UUID, error) {
 	l, err := NewLister(cloudAddr)
 	if err != nil {
-		return nil, err
+		return uuid.Nil, err
 	}
 
 	vzInfo, err := l.GetViziersInfo()
 	if err != nil {
-		return nil, err
+		return uuid.Nil, err
 	}
 
 	if len(vzInfo) == 0 {
-		return nil, errors.New("no Viziers available")
+		return uuid.Nil, errors.New("no Viziers available")
 	}
 
 	// Find the first healthy vizier by default.
 	for _, vz := range vzInfo {
 		if vz.Status == cloudapipb.CS_HEALTHY {
-			return createVizierConnection(cloudAddr, vz)
+			return utils.UUIDFromProtoOrNil(vz.ID), nil
 		}
 	}
-	return nil, errors.New("no healthy Viziers available")
+	return uuid.Nil, errors.New("no healthy Viziers available")
 }
 
 // ConnectionToVizierByID connects to the vizier on specified ID.

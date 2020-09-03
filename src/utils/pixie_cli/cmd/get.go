@@ -45,6 +45,14 @@ var GetPEMsCmd = &cobra.Command{
 		allClusters, _ := cmd.Flags().GetBool("all-clusters")
 		selectedCluster, _ := cmd.Flags().GetString("cluster")
 		clusterID := uuid.FromStringOrNil(selectedCluster)
+		var err error
+		if !allClusters || clusterID == uuid.Nil {
+			clusterID, err = vizier.FirstHealthyVizier(cloudAddr)
+			if err != nil {
+				log.WithError(err).Fatal("Could not fetch healthy vizier")
+			}
+		}
+
 		conns := vizier.MustConnectDefaultVizier(cloudAddr, allClusters, clusterID)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

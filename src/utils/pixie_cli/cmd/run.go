@@ -120,6 +120,14 @@ var RunCmd = &cobra.Command{
 		allClusters, _ := cmd.Flags().GetBool("all-clusters")
 		selectedCluster, _ := cmd.Flags().GetString("cluster")
 		clusterID := uuid.FromStringOrNil(selectedCluster)
+
+		if !allClusters || clusterID == uuid.Nil {
+			clusterID, err = vizier.FirstHealthyVizier(cloudAddr)
+			if err != nil {
+				log.WithError(err).Fatal("Could not fetch healthy vizier")
+			}
+		}
+
 		conns := vizier.MustConnectDefaultVizier(cloudAddr, allClusters, clusterID)
 
 		// TODO(zasgar): Refactor this when we change to the new API to make analytics cleaner.
