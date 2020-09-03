@@ -21,7 +21,7 @@ func NewEtcdStore(client *v3.Client) *EtcdStore {
 
 // Get gets the given key from etcd.
 func (e *EtcdStore) Get(key string) ([]byte, error) {
-	resp, err := e.client.Get(context.Background(), key)
+	resp, err := e.client.Get(context.Background(), key, v3.WithSerializable())
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func (e *EtcdStore) Get(key string) ([]byte, error) {
 func (e *EtcdStore) GetAll(keys []string) ([][]byte, error) {
 	ops := make([]v3.Op, len(keys))
 	for i, k := range keys {
-		ops[i] = v3.OpGet(k)
+		ops[i] = v3.OpGet(k, v3.WithSerializable())
 	}
 
 	resp, err := etcdutils.BatchOps(e.client, ops)
@@ -82,7 +82,7 @@ func (e *EtcdStore) SetAll(keysValues []TTLKeyValue) error {
 
 // GetWithPrefix gets all keys and values starting with the given prefix.
 func (e *EtcdStore) GetWithPrefix(prefix string) ([]string, [][]byte, error) {
-	resp, err := e.client.Get(context.Background(), prefix, v3.WithPrefix())
+	resp, err := e.client.Get(context.Background(), prefix, v3.WithPrefix(), v3.WithSerializable())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -112,7 +112,7 @@ func (e *EtcdStore) Delete(key string) error {
 
 // GetWithRange gets all the keys and values within the given range.
 func (e *EtcdStore) GetWithRange(from string, to string) ([]string, [][]byte, error) {
-	resp, err := e.client.Get(context.Background(), from, v3.WithRange(to))
+	resp, err := e.client.Get(context.Background(), from, v3.WithRange(to), v3.WithSerializable())
 	if err != nil {
 		return nil, nil, err
 	}
