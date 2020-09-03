@@ -73,6 +73,14 @@ struct ExecNodeStats {
     extra_metrics[key] = value;
   }
 
+  void AddExtraInfo(std::string_view key, std::string_view value) {
+    if (!collect_exec_stats) {
+      return;
+    }
+
+    extra_info[key] = value;
+  }
+
   int64_t ChildExecTime() const { return children_timer.ElapsedTime_us() * 1000; }
   int64_t TotalExecTime() const { return total_timer.ElapsedTime_us() * 1000; }
   int64_t SelfExecTime() const { return TotalExecTime() - ChildExecTime(); }
@@ -98,6 +106,7 @@ struct ExecNodeStats {
 
   // Extra metrics to store.
   absl::flat_hash_map<std::string, double> extra_metrics;
+  absl::flat_hash_map<std::string, std::string> extra_info;
 };
 
 /**

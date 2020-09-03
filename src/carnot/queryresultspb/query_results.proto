@@ -44,6 +44,8 @@ message OperatorExecutionStats {
   google.protobuf.Any operator_stats = 7;
   // Extra metrics to store as a kv.
   map<string, double> extra_metrics = 8;
+  // Extra info stored as a string in a map.
+  map<string, string> extra_info = 9;
 }
 
 message AgentExecutionStats {

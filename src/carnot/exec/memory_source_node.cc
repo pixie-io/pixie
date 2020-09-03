@@ -59,7 +59,7 @@ Status MemorySourceNode::OpenImpl(ExecState* exec_state) {
 }
 
 Status MemorySourceNode::CloseImpl(ExecState*) {
-  stats()->AddExtraMetric("infinite", static_cast<double>(infinite_stream_));
+  stats()->AddExtraInfo("infinite_stream", infinite_stream_ ? "true" : "false");
   return Status::OK();
 }
 

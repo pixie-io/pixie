@@ -55,7 +55,10 @@ func nodeExecTiming(nodeID int64, execStats *map[int64]*queryresultspb.OperatorE
 		fmt.Sprintf("records_processed: %d", stats.RecordsOutput),
 	}
 	for k, v := range stats.ExtraMetrics {
-		extraStats = append(extraStats, fmt.Sprintf("%s: %f", k, v))
+		extraStats = append(extraStats, fmt.Sprintf("%s: %.3g", k, v))
+	}
+	for k, v := range stats.ExtraInfo {
+		extraStats = append(extraStats, fmt.Sprintf("%s: %s", k, v))
 	}
 	return strings.Join(extraStats, "\n")
 }

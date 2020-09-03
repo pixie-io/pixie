@@ -39,6 +39,7 @@ Status MapNode::OpenImpl(ExecState* exec_state) {
 }
 
 Status MapNode::CloseImpl(ExecState* exec_state) {
+  stats()->AddExtraInfo("expressions", DebugString());
   PL_RETURN_IF_ERROR(evaluator_->Close(exec_state));
   return Status::OK();
 }

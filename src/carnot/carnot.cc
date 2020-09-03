@@ -322,6 +322,10 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
                 for (const auto& [k, v] : stats->extra_metrics) {
                   (*stats_pb->mutable_extra_metrics())[k] = v;
                 }
+
+                for (const auto& [k, v] : stats->extra_info) {
+                  (*stats_pb->mutable_extra_info())[k] = v;
+                }
               }
             }
             return Status::OK();
