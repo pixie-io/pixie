@@ -239,7 +239,8 @@ class PresetQueriesTest : public ::testing::Test {
   udfspb::UDFInfo udf_info_;
 };
 
-TEST_F(PresetQueriesTest, PresetQueries) {
+// TODO(nserrino): PP-2188 Update this test to download the public scripts from the github repo.
+TEST_F(PresetQueriesTest, DISABLED_PresetQueries) {
   // Test single-node compiler (no distributed planner).
   for (const auto& [path, script] : preset_scripts_) {
     SCOPED_TRACE(absl::Substitute("Single agent for '$0'", path));
