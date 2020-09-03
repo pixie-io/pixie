@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -38,7 +39,10 @@ class ElfReader {
    * @return error if could not setup elf reader.
    */
   static StatusOr<std::unique_ptr<ElfReader>> Create(
-      const std::string& binary_path, std::string_view debug_file_dir = "/usr/lib/debug");
+      const std::string& binary_path,
+      const std::filesystem::path& debug_file_dir = "/usr/lib/debug");
+
+  std::filesystem::path& debug_symbols_path() { return debug_symbols_path_; }
 
   struct SymbolInfo {
     std::string name;
@@ -82,11 +86,22 @@ class ElfReader {
   ElfReader() = default;
 
   /**
+   * Locates the debug symbols for the currently loaded ELF object.
+   * External symbols are discovered using either the build-id or the debug-link.
+   *
+   * @param debug_file_dir The system location where debug symbols are located.
+   * @return The path to the debug symbols, which may be the binary itself, or an external file.
+   */
+  Status LocateDebugSymbols(const std::filesystem::path& debug_file_dir = "/usr/lib/debug");
+
+  /**
    * Returns the byte code of the function specified by the symbol.
    */
   StatusOr<pl::utils::u8string> FuncByteCode(const SymbolInfo& func_symbol);
 
   std::string binary_path_;
+
+  std::filesystem::path debug_symbols_path_;
 
   // Set up an elf reader, so we can extract debug symbols.
   ELFIO::elfio elf_reader_;

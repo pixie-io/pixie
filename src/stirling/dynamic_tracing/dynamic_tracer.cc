@@ -67,7 +67,7 @@ StatusOr<BCCProgram::PerfBufferSpec> GetPerfBufferSpec(
 
 StatusOr<BCCProgram> CompileProgram(const ir::logical::TracepointDeployment& input_program) {
   if (input_program.tracepoints_size() != 1) {
-    return error::InvalidArgument("Right now only support exactly 1 Tracepoint, got '$0'",
+    return error::InvalidArgument("Only one tracepoint currently supported, got '$0'",
                                   input_program.tracepoints_size());
   }
 
@@ -103,19 +103,19 @@ StatusOr<BCCProgram> CompileProgram(const ir::logical::TracepointDeployment& inp
   LOG(INFO) << absl::Substitute("Tracepoint binary: $0",
                                 intermediate_program.deployment_spec().path());
 
+  const auto& binary_path = intermediate_program.deployment_spec().path();
+
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<elf_tools::ElfReader> elf_reader,
+                      elf_tools::ElfReader::Create(binary_path));
+  intermediate_program.mutable_deployment_spec()->set_debug_symbols_path(
+      elf_reader->debug_symbols_path());
+
   PL_ASSIGN_OR_RETURN(ir::physical::Program physical_program,
                       GeneratePhysicalProgram(intermediate_program));
 
   BCCProgram bcc_program;
 
   PL_ASSIGN_OR_RETURN(bcc_program.code, GenBCCProgram(physical_program));
-
-  std::unique_ptr<elf_tools::ElfReader> elf_reader;
-  const auto& binary_path = physical_program.deployment_spec().path();
-
-  if (language == ir::shared::Language::GOLANG) {
-    PL_ASSIGN_OR_RETURN(elf_reader, elf_tools::ElfReader::Create(binary_path));
-  }
 
   for (const auto& probe : physical_program.probes()) {
     PL_ASSIGN_OR_RETURN(std::vector<UProbeSpec> specs,

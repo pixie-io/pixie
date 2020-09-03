@@ -282,7 +282,7 @@ Status Dwarvifier::Setup(const ir::shared::DeploymentSpec& deployment_spec,
                          ir::shared::Language language) {
   using dwarf_tools::DwarfReader;
 
-  PL_ASSIGN_OR_RETURN(dwarf_reader_, DwarfReader::Create(deployment_spec.path()));
+  PL_ASSIGN_OR_RETURN(dwarf_reader_, DwarfReader::Create(deployment_spec.debug_symbols_path()));
 
   language_ = language;
 

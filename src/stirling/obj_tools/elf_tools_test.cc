@@ -107,11 +107,24 @@ TEST(ElfReaderTest, SymbolAddress) {
 }
 #endif
 
-TEST(ElfReaderTest, ExternalDebugSymbols) {
+TEST(ElfReaderTest, ExternalDebugSymbolsBuildID) {
   const std::string stripped_bin =
       pl::testing::TestFilePath("src/stirling/obj_tools/testdata/stripped_dummy_exe");
   const std::string debug_dir =
       pl::testing::TestFilePath("src/stirling/obj_tools/testdata/usr/lib/debug");
+
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
+                       ElfReader::Create(stripped_bin, debug_dir));
+
+  EXPECT_OK_AND_THAT(elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kExact),
+                     ElementsAre(SymbolNameIs("CanYouFindThis")));
+}
+
+TEST(ElfReaderTest, ExternalDebugSymbolsDebugLink) {
+  const std::string stripped_bin =
+      pl::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe_debuglink");
+  const std::string debug_dir =
+      pl::testing::TestFilePath("src/stirling/obj_tools/testdata/usr/lib/debug2");
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
                        ElfReader::Create(stripped_bin, debug_dir));

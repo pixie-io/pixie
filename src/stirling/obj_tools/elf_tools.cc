@@ -27,26 +27,15 @@ struct LowercaseHex {
 };
 }  // namespace
 
-StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(const std::string& binary_path,
-                                                       std::string_view debug_file_dir) {
-  VLOG(1) << absl::Substitute("Creating ElfReader, [binary=$0] [debug_file_dir=$1]", binary_path,
-                              debug_file_dir);
-  auto elf_reader = std::unique_ptr<ElfReader>(new ElfReader);
-
-  elf_reader->binary_path_ = binary_path;
-
-  if (!elf_reader->elf_reader_.load(binary_path, /* skip_segments */ true)) {
-    return error::Internal("Can't find or process ELF file $0", binary_path);
-  }
-
+Status ElfReader::LocateDebugSymbols(const std::filesystem::path& debug_file_dir) {
   std::string build_id;
   std::string debug_link;
   bool found_symtab = false;
 
   // Scan all sections to find the symbol table (SHT_SYMTAB), or links to debug symbols.
-  ELFIO::Elf_Half sec_num = elf_reader->elf_reader_.sections.size();
+  ELFIO::Elf_Half sec_num = elf_reader_.sections.size();
   for (int i = 0; i < sec_num; ++i) {
-    ELFIO::section* psec = elf_reader->elf_reader_.sections[i];
+    ELFIO::section* psec = elf_reader_.sections[i];
     if (psec->get_type() == SHT_SYMTAB) {
       found_symtab = true;
     }
@@ -77,15 +66,11 @@ StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(const std::string& binary
     }
 
     // Method 2: .gnu_debuglink.
-    // This is currently disabled because our modified ELFIO currently removes PROGBITS sections,
-    // including .gnu_debuglink.
-    // TODO(oazizi): Re-enable this section after tweaking ELFIO.
-    //
-    // if (psec->get_name() == ".gnu_debuglink") {
-    //    constexpr int kCRCBytes = 4;
-    //    debug_link = std::string(psec->get_data(), psec->get_size() - kCRCBytes);
-    //    LOG(INFO) << absl::Substitute("Found debuglink: $0", debug_link);
-    // }
+    if (psec->get_name() == ".gnu_debuglink") {
+      constexpr int kCRCBytes = 4;
+      debug_link = std::string(psec->get_data(), psec->get_size() - kCRCBytes);
+      VLOG(1) << absl::Substitute("Found debuglink: $0", debug_link);
+    }
   }
 
   // In priority order, we try:
@@ -100,26 +85,80 @@ StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(const std::string& binary
   //  (2) /usr/lib/debug/usr/bin/ls.debug.
 
   if (found_symtab) {
-    return elf_reader;
+    debug_symbols_path_ = binary_path_;
+    return Status::OK();
   }
 
+  // Try using build-id first.
   if (!build_id.empty()) {
-    std::string symbols_file;
-    symbols_file = absl::Substitute("$0/.build-id/$1/$2.debug", debug_file_dir,
-                                    build_id.substr(0, 2), build_id.substr(2));
+    std::filesystem::path symbols_file;
+    std::string loc =
+        absl::Substitute(".build-id/$0/$1.debug", build_id.substr(0, 2), build_id.substr(2));
+    symbols_file = debug_file_dir / loc;
     if (fs::Exists(symbols_file).ok()) {
-      LOG(INFO) << absl::Substitute("Found debug symbols file $0 for binary $1", symbols_file,
+      debug_symbols_path_ = symbols_file;
+      return Status::OK();
+    }
+  }
+
+  // Next try using debug-link.
+  if (!debug_link.empty()) {
+    std::filesystem::path debug_link_path(debug_link);
+    std::filesystem::path binary_path(binary_path_);
+    std::filesystem::path binary_path_parent = binary_path.parent_path();
+
+    std::filesystem::path candidate1 = fs::JoinPath({&binary_path_parent, &debug_link_path});
+    if (fs::Exists(candidate1).ok()) {
+      debug_symbols_path_ = candidate1;
+      return Status::OK();
+    }
+
+    std::filesystem::path dot_debug(".debug");
+    std::filesystem::path candidate2 =
+        fs::JoinPath({&binary_path_parent, &dot_debug, &debug_link_path});
+    if (fs::Exists(candidate2).ok()) {
+      debug_symbols_path_ = candidate2;
+      return Status::OK();
+    }
+
+    std::filesystem::path candidate3 = fs::JoinPath({&debug_file_dir, &binary_path});
+    if (fs::Exists(candidate3).ok()) {
+      debug_symbols_path_ = candidate3;
+      return Status::OK();
+    }
+  }
+
+  return error::Internal("Could not find debug symbols for $0", binary_path_);
+}
+
+// TODO(oazizi): Consider changing binary_path to std::filesystem::path.
+StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(
+    const std::string& binary_path, const std::filesystem::path& debug_file_dir) {
+  VLOG(1) << absl::Substitute("Creating ElfReader, [binary=$0] [debug_file_dir=$1]", binary_path,
+                              debug_file_dir.string());
+  auto elf_reader = std::unique_ptr<ElfReader>(new ElfReader);
+
+  elf_reader->binary_path_ = binary_path;
+
+  if (!elf_reader->elf_reader_.load(binary_path, /* skip_segments */ true)) {
+    return error::Internal("Can't find or process ELF file $0", binary_path);
+  }
+
+  // Check for external debug symbols.
+  Status s = elf_reader->LocateDebugSymbols(debug_file_dir);
+  if (s.ok()) {
+    std::string debug_symbols_path = elf_reader->debug_symbols_path_.string();
+
+    if (debug_symbols_path != binary_path) {
+      LOG(INFO) << absl::Substitute("Found debug symbols file $0 for binary $1", debug_symbols_path,
                                     binary_path);
-      elf_reader->elf_reader_.load(symbols_file);
+      elf_reader->elf_reader_.load(debug_symbols_path, /* skip_segments */ true);
       return elf_reader;
     }
   }
 
-  LOG_IF(WARNING, !debug_link.empty()) << absl::Substitute(
-      "Resolving debug symbols via .gnu_debuglink is not currently supported [binary=$0].",
-      binary_path);
-
-  // Couldn't find debug symbols, so return original elf_reader.
+  // Debug symbols were either in the binary, or no debug symbols were found,
+  // so return original elf_reader.
   return elf_reader;
 }
 

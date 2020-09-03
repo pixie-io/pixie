@@ -778,6 +778,17 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
 
   int uprobe_count = 0;
   for (auto& [binary, pid_vec] : ConvertPIDsListToMap(pids)) {
+    // OpenSSL Probes.
+    {
+      StatusOr<int> attach_status = AttachOpenSSLUProbes(binary, pid_vec);
+      if (!attach_status.ok()) {
+        LOG_FIRST_N(WARNING, 10) << absl::Substitute("Failed to attach SSL Uprobes to $0: $1",
+                                                     binary, attach_status.ToString());
+      } else {
+        uprobe_count += attach_status.ValueOrDie();
+      }
+    }
+
     // Read binary's symbols.
     StatusOr<std::unique_ptr<ElfReader>> elf_reader_status = ElfReader::Create(binary);
     if (!elf_reader_status.ok()) {
@@ -798,17 +809,6 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
     VLOG(1) << absl::Substitute("binary=$0 has_dwarf=$1 is_go_binary=$2", binary, has_dwarf,
                                 is_go_binary);
     // Temporary end.
-
-    // OpenSSL Probes.
-    {
-      StatusOr<int> attach_status = AttachOpenSSLUProbes(binary, pid_vec);
-      if (!attach_status.ok()) {
-        LOG_FIRST_N(WARNING, 10) << absl::Substitute("Failed to attach SSL Uprobes to $0: $1",
-                                                     binary, attach_status.ToString());
-      } else {
-        uprobe_count += attach_status.ValueOrDie();
-      }
-    }
 
     // HTTP2 Probes.
     if (protocol_transfer_specs_[kProtocolHTTP2U].enabled) {

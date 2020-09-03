@@ -58,26 +58,37 @@ filegroup(
 
 #------------------------------------------------------------------------------
 
-# While the following rules are included for documentation purposes,
-# the output of these command are directly checked into the repo.
+# The output of dummy_exe_stripped_target is also checked into the repo as stripped_dummy_exe.
 # This is because we need a consistent build-id for testing purposes.
 
-#genrule(
-#    name = "dummy_exe_stripped",
-#    srcs = [":dummy_exe"],
-#    outs = [
-#        "stripped_dummy_exe",
-#    ],
-#    cmd = "objcopy -S \"$<\" \"$@\"",
-#)
-#
-#genrule(
-#    name = "dummy_exe_debug",
-#    srcs = [":dummy_exe"],
-#    outs = [
-#        "dummy_exe.debug",
-#    ],
-#    cmd = "objcopy --only-keep-debug \"$<\" \"$@\"",
-#)
+genrule(
+    name = "dummy_exe_stripped_target",
+    srcs = [":dummy_exe"],
+    outs = [
+        "dummy_exe_stripped",
+    ],
+    cmd = "objcopy --strip-all $(location :dummy_exe) $(location dummy_exe_stripped)",
+)
+
+genrule(
+    name = "dummy_exe_debug_target",
+    srcs = [":dummy_exe"],
+    outs = [
+        "dummy_exe.debug",
+    ],
+    cmd = "objcopy --only-keep-debug $(location :dummy_exe) $(location dummy_exe.debug)",
+)
+
+genrule(
+    name = "dummy_exe_debuglink_target",
+    srcs = [
+        ":dummy_exe",
+        ":dummy_exe_debug_target",
+    ],
+    outs = [
+        "dummy_exe_debuglink",
+    ],
+    cmd = "objcopy --strip-all --add-gnu-debuglink=$(location :dummy_exe_debug_target) $(location :dummy_exe) $(location dummy_exe_debuglink)",
+)
 
 #------------------------------------------------------------------------------
