@@ -13,6 +13,8 @@ spec:
     etcdEnv:
     - name: ETCD_AUTO_COMPACTION_RETENTION
       value: "10"
+    - name: ETCD_AUTO_COMPACTION_MODE
+      value: "revision"
   TLS:
     static:
       member:
