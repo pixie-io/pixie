@@ -93,13 +93,17 @@ func EmptyAgentUpdateTracker() AgentUpdateTracker {
 
 // AgentManagerImpl is an implementation for AgentManager which talks to the metadata store.
 type AgentManagerImpl struct {
-	clock              utils.Clock
-	mds                MetadataStore
-	updateCh           chan *AgentUpdate
-	agentQueues        map[string]AgentQueue
-	queueMu            sync.Mutex
+	clock       utils.Clock
+	mds         MetadataStore
+	updateCh    chan *AgentUpdate
+	agentQueues map[string]AgentQueue
+	queueMu     sync.Mutex
+	// The updateAgentsMutex must always be acquired before making any changes to
+	// the updatedAgents tracker.
 	updatedAgentsMutex sync.Mutex
-	updatedAgents      AgentUpdateTracker
+	// When adding an update to the AgentUpdateTracker, we expect the update to be done
+	// in the metadatastore before updating the AgentUpdateTracker.
+	updatedAgents AgentUpdateTracker
 }
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
@@ -138,17 +142,21 @@ func (m *AgentManagerImpl) processAgentUpdates() {
 // This should be called instead of m.mds.UpdateSchemas in order to make sure that the agent
 // schema update is tracked in the our agent state change tracker (updatedAgents).
 func (m *AgentManagerImpl) updateAgentSchemaWrapper(agentID uuid.UUID, schema []*storepb.TableInfo) error {
+	err := m.mds.UpdateSchemas(agentID, schema)
+
 	m.updatedAgentsMutex.Lock()
 	defer m.updatedAgentsMutex.Unlock()
 
 	m.updatedAgents.schemaUpdated = true
-	return m.mds.UpdateSchemas(agentID, schema)
+	return err
 }
 
 // A helper function for all cases where we call m.mds.DeleteAgent.
 // This should be called instead of mds.DeleteAgent in order to make sure that the agent
 // deletion is tracked in the our agent state change tracker (updatedAgents).
 func (m *AgentManagerImpl) deleteAgentWrapper(agentID uuid.UUID) error {
+	err := m.mds.DeleteAgent(agentID)
+
 	m.updatedAgentsMutex.Lock()
 	defer m.updatedAgentsMutex.Unlock()
 
@@ -159,13 +167,15 @@ func (m *AgentManagerImpl) deleteAgentWrapper(agentID uuid.UUID) error {
 			Deleted: true,
 		},
 	})
-	return m.mds.DeleteAgent(agentID)
+	return err
 }
 
 // A helper function for all cases where we call m.mds.CreateAgent.
 // This should be called instead of mds.CreateAgent in order to make sure that the agent
 // creation is tracked in the our agent state change tracker (updatedAgents).
 func (m *AgentManagerImpl) createAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.Agent) error {
+	err := m.mds.CreateAgent(agentID, agentInfo)
+
 	m.updatedAgentsMutex.Lock()
 	defer m.updatedAgentsMutex.Unlock()
 
@@ -175,13 +185,16 @@ func (m *AgentManagerImpl) createAgentWrapper(agentID uuid.UUID, agentInfo *agen
 			Agent: agentInfo,
 		},
 	})
-	return m.mds.CreateAgent(agentID, agentInfo)
+
+	return err
 }
 
 // A helper function for all cases where we call m.mds.CreateAgent.
 // This should be called instead of mds.CreateAgent in order to make sure that the agent
 // update is tracked in the our agent state change tracker (updatedAgents).
 func (m *AgentManagerImpl) updateAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.Agent) error {
+	err := m.mds.UpdateAgent(agentID, agentInfo)
+
 	m.updatedAgentsMutex.Lock()
 	defer m.updatedAgentsMutex.Unlock()
 
@@ -191,13 +204,16 @@ func (m *AgentManagerImpl) updateAgentWrapper(agentID uuid.UUID, agentInfo *agen
 			Agent: agentInfo,
 		},
 	})
-	return m.mds.UpdateAgent(agentID, agentInfo)
+
+	return err
 }
 
 // A helper function for all cases where we call m.mds.UpdateAgentDataInfo.
 // This should be called instead of mds.UpdateAgentDataInfo in order to make sure that the agent
 // update is tracked in the our agent state change tracker (updatedAgents).
 func (m *AgentManagerImpl) updateAgentDataInfoWrapper(agentID uuid.UUID, agentDataInfo *messagespb.AgentDataInfo) error {
+	err := m.mds.UpdateAgentDataInfo(agentID, agentDataInfo)
+
 	m.updatedAgentsMutex.Lock()
 	defer m.updatedAgentsMutex.Unlock()
 
@@ -207,7 +223,8 @@ func (m *AgentManagerImpl) updateAgentDataInfoWrapper(agentID uuid.UUID, agentDa
 			DataInfo: agentDataInfo,
 		},
 	})
-	return m.mds.UpdateAgentDataInfo(agentID, agentDataInfo)
+
+	return err
 }
 
 // ApplyAgentUpdate updates the metadata store with the information from the agent update.
@@ -572,14 +589,26 @@ func (m *AgentManagerImpl) GetMetadataUpdates(hostname *HostnameIPPair) ([]*meta
 // but it will need to be scaled if we have multiple query brokers talking to a single metadata service.
 func (m *AgentManagerImpl) GetAgentUpdates(readInitialState bool) ([]*metadata_servicepb.AgentUpdate,
 	*storepb.ComputedSchema, error) {
-	m.updatedAgentsMutex.Lock()
-	defer m.updatedAgentsMutex.Unlock()
+
+	schemaUpdated := false
+	var updatedAgentsUpdates []*metadata_servicepb.AgentUpdate
+
+	func() {
+		m.updatedAgentsMutex.Lock()
+		defer m.updatedAgentsMutex.Unlock()
+
+		schemaUpdated = m.updatedAgents.schemaUpdated
+		updatedAgentsUpdates = m.updatedAgents.updates
+
+		// Reset the state now that we have popped off the latest updates.
+		m.updatedAgents = EmptyAgentUpdateTracker()
+	}()
 
 	var agentUpdates []*metadata_servicepb.AgentUpdate
 	var computedSchema *storepb.ComputedSchema
 	var err error
 
-	if readInitialState || m.updatedAgents.schemaUpdated {
+	if readInitialState || schemaUpdated {
 		computedSchema, err = m.mds.GetComputedSchema()
 		if err != nil {
 			return nil, nil, err
@@ -587,7 +616,7 @@ func (m *AgentManagerImpl) GetAgentUpdates(readInitialState bool) ([]*metadata_s
 	}
 
 	if !readInitialState {
-		agentUpdates = m.updatedAgents.updates
+		agentUpdates = updatedAgentsUpdates
 	} else {
 		updatedAgents, err := m.mds.GetAgents()
 		if err != nil {
@@ -615,7 +644,5 @@ func (m *AgentManagerImpl) GetAgentUpdates(readInitialState bool) ([]*metadata_s
 		}
 	}
 
-	// Reset the state now that we have popped off the latest updates.
-	m.updatedAgents = EmptyAgentUpdateTracker()
 	return agentUpdates, computedSchema, nil
 }
