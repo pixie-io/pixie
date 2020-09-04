@@ -259,31 +259,15 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object, eventType w
 		return
 	}
 
-	// Add endpoint update to agent update queues.
-	for _, subset := range pb.Subsets {
-		for _, addr := range subset.Addresses {
-			if addr.TargetRef.Kind != "Pod" {
-				continue
-			}
-			hnPair, err := mh.mds.GetHostnameIPPairFromPodName(addr.TargetRef.Name, addr.TargetRef.Namespace)
-
-			if err != nil {
-				continue
-			}
-
-			if hnPair == nil {
-				log.WithField("podName", addr.TargetRef.Name).WithField("namespace", addr.TargetRef.Namespace).Info("Could not find hostnameIPPair for pod")
-				continue
-			}
-
-			updatePb := GetNodeResourceUpdateFromEndpoints(pb, hnPair, mh.mds)
-			mh.subscriberUpdates <- &UpdateMessage{
-				Hostnames:    []*HostnameIPPair{hnPair},
-				Message:      updatePb,
-				NodeSpecific: true,
-			}
+	updates, hnPairs := GetAllResourceUpdatesFromEndpoints(pb, mh.mds)
+	for i, update := range updates {
+		mh.subscriberUpdates <- &UpdateMessage{
+			Hostnames:    []*HostnameIPPair{&hnPairs[i]},
+			Message:      update,
+			NodeSpecific: true,
 		}
 	}
+
 	// Add endpoint update for Kelvins.
 	updatePb := GetNodeResourceUpdateFromEndpoints(pb, nil, mh.mds)
 	mh.subscriberUpdates <- &UpdateMessage{
@@ -546,10 +530,16 @@ func GetNodeResourceUpdateFromEndpoints(ep *metadatapb.Endpoints, hnPair *Hostna
 	for _, subset := range ep.Subsets {
 		for _, addr := range subset.Addresses {
 			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" {
-				podPair, err := mds.GetHostnameIPPairFromPodName(addr.TargetRef.Name, addr.TargetRef.Namespace)
-				if err != nil || podPair == nil {
-					continue
+				var err error
+				var podPair *HostnameIPPair
+
+				if hnPair != nil {
+					podPair, err = mds.GetHostnameIPPairFromPodName(addr.TargetRef.Name, addr.TargetRef.Namespace)
+					if err != nil || podPair == nil {
+						continue
+					}
 				}
+
 				if hnPair == nil || (podPair.IP == hnPair.IP) {
 					podIDs = append(podIDs, addr.TargetRef.UID)
 					podNames = append(podNames, addr.TargetRef.Name)
@@ -559,6 +549,42 @@ func GetNodeResourceUpdateFromEndpoints(ep *metadatapb.Endpoints, hnPair *Hostna
 	}
 
 	return serviceResourceUpdateFromEndpoint(ep, podIDs, podNames)
+}
+
+// GetAllResourceUpdatesFromEndpoints gets all resource updates that can be constructed from this endpoints update, along with the
+// HostnameIPPair that each update is associated with.
+func GetAllResourceUpdatesFromEndpoints(ep *metadatapb.Endpoints, mds MetadataStore) ([]*metadatapb.ResourceUpdate, []HostnameIPPair) {
+	ipToPodNames := make(map[HostnameIPPair][]string)
+	ipToPodUIDs := make(map[HostnameIPPair][]string)
+
+	for _, subset := range ep.Subsets {
+		for _, addr := range subset.Addresses {
+			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" {
+				podPair, err := mds.GetHostnameIPPairFromPodName(addr.TargetRef.Name, addr.TargetRef.Namespace)
+				if err != nil || podPair == nil {
+					continue
+				}
+
+				if _, ok := ipToPodNames[*podPair]; ok {
+					ipToPodNames[*podPair] = append(ipToPodNames[*podPair], addr.TargetRef.Name)
+					ipToPodUIDs[*podPair] = append(ipToPodUIDs[*podPair], addr.TargetRef.UID)
+				} else {
+					ipToPodNames[*podPair] = []string{addr.TargetRef.Name}
+					ipToPodUIDs[*podPair] = []string{addr.TargetRef.UID}
+				}
+			}
+		}
+	}
+
+	updates := make([]*metadatapb.ResourceUpdate, 0)
+	hnPairs := make([]HostnameIPPair, 0)
+
+	for ip := range ipToPodNames {
+		updates = append(updates, serviceResourceUpdateFromEndpoint(ep, ipToPodUIDs[ip], ipToPodNames[ip]))
+		hnPairs = append(hnPairs, ip)
+	}
+
+	return updates, hnPairs
 }
 
 // GetContainerResourceUpdatesFromPod gets the container updates for the given pod.

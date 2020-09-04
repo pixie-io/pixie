@@ -1127,3 +1127,120 @@ func TestSyncNodesData(t *testing.T) {
 
 	mh.SyncNodeData(&nList)
 }
+
+func TestGetAllResourceUpdatesFromEndpoints(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+
+	mockMds.
+		EXPECT().
+		GetHostnameIPPairFromPodName("pod1", "pl").
+		Return(&controllers.HostnameIPPair{"host1", "127.0.0.1"}, nil)
+
+	mockMds.
+		EXPECT().
+		GetHostnameIPPairFromPodName("pod2", "pl").
+		Return(&controllers.HostnameIPPair{"host2", "127.0.0.2"}, nil)
+
+	mockMds.
+		EXPECT().
+		GetHostnameIPPairFromPodName("pod3", "pl").
+		Return(&controllers.HostnameIPPair{"host1", "127.0.0.1"}, nil)
+
+	endpoints := &metadatapb.Endpoints{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "endpointTest",
+			Namespace: "some_namespace",
+			UID:       "some UID",
+		},
+		Subsets: []*metadatapb.EndpointSubset{
+			&metadatapb.EndpointSubset{
+				Addresses: []*metadatapb.EndpointAddress{
+					&metadatapb.EndpointAddress{
+						IP:       "127.0.0.1",
+						Hostname: "host1",
+						NodeName: "node1",
+						TargetRef: &metadatapb.ObjectReference{
+							Kind:      "Pod",
+							Name:      "pod1",
+							Namespace: "pl",
+							UID:       "pod1_uid",
+						},
+					},
+					&metadatapb.EndpointAddress{
+						IP:       "127.0.0.2",
+						Hostname: "host2",
+						NodeName: "node2",
+						TargetRef: &metadatapb.ObjectReference{
+							Kind:      "Pod",
+							Name:      "pod2",
+							Namespace: "pl",
+							UID:       "pod2_uid",
+						},
+					},
+				},
+			},
+			&metadatapb.EndpointSubset{
+				Addresses: []*metadatapb.EndpointAddress{
+					&metadatapb.EndpointAddress{
+						IP:       "127.0.0.1",
+						Hostname: "host1",
+						NodeName: "node1",
+						TargetRef: &metadatapb.ObjectReference{
+							Kind:      "Pod",
+							Name:      "pod3",
+							Namespace: "pl",
+							UID:       "pod3_uid",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	updates, hostnames := controllers.GetAllResourceUpdatesFromEndpoints(endpoints, mockMds)
+	assert.Equal(t, 2, len(updates))
+	assert.Equal(t, 2, len(hostnames))
+
+	expectedUpdate1 := &metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID:       "some UID",
+				Name:      "endpointTest",
+				Namespace: "some_namespace",
+				PodIDs:    []string{"pod1_uid", "pod3_uid"},
+				PodNames:  []string{"pod1", "pod3"},
+			},
+		},
+	}
+	expectedUpdate2 := &metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID:       "some UID",
+				Name:      "endpointTest",
+				Namespace: "some_namespace",
+				PodIDs:    []string{"pod2_uid"},
+				PodNames:  []string{"pod2"},
+			},
+		},
+	}
+
+	if hostnames[0].Hostname == "host1" {
+		assert.Equal(t, hostnames[0].IP, "127.0.0.1")
+		assert.Equal(t, expectedUpdate1, updates[0])
+		assert.Equal(t, hostnames[1].Hostname, "host2")
+		assert.Equal(t, hostnames[1].IP, "127.0.0.2")
+		assert.Equal(t, expectedUpdate2, updates[1])
+	} else if hostnames[0].Hostname == "host2" {
+		assert.Equal(t, hostnames[0].IP, "127.0.0.2")
+		assert.Equal(t, expectedUpdate2, updates[0])
+		assert.Equal(t, hostnames[1].Hostname, "host1")
+		assert.Equal(t, hostnames[1].IP, "127.0.0.1")
+		assert.Equal(t, expectedUpdate1, updates[1])
+	} else {
+		// Unknown hostname.
+		assert.True(t, false)
+	}
+}
