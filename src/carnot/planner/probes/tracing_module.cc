@@ -28,6 +28,12 @@ class UpsertHandler {
                                     const ParsedArgs& args, ASTVisitor* visitor);
 };
 
+class SharedObjectHandler {
+ public:
+  static StatusOr<QLObjectPtr> Eval(const pypa::AstPtr& ast, const ParsedArgs& args,
+                                    ASTVisitor* visitor);
+};
+
 class DeleteTracepointHandler {
  public:
   static StatusOr<QLObjectPtr> Eval(MutationsIR* mutations_ir, const pypa::AstPtr& ast,
@@ -104,7 +110,7 @@ Status TraceModule::Init() {
 
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> upsert_fn,
-      FuncObject::Create(kUpsertTraceID, {"name", "table_name", "probe_fn", "upid", "ttl"}, {},
+      FuncObject::Create(kUpsertTraceID, {"name", "table_name", "probe_fn", "target", "ttl"}, {},
                          // TODO(philkuz/zasgar) uncomment definition when pod based upsert works.
                          // FuncObject::Create(kUpsertTracingVariable, {"name", "probe_fn",
                          // "pod_name", "binary", "ttl"}, {},
@@ -115,6 +121,16 @@ Status TraceModule::Init() {
                          ast_visitor()));
   PL_RETURN_IF_ERROR(upsert_fn->SetDocString(kUpsertTracepointDocstring));
   AddMethod(kUpsertTraceID, upsert_fn);
+
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> shared_object_fn,
+                      FuncObject::Create(kSharedObjectID, {"name", "upid"}, {},
+                                         /* has_variable_len_args */ false,
+                                         /* has_variable_len_kwargs */ false,
+                                         std::bind(SharedObjectHandler::Eval, std::placeholders::_1,
+                                                   std::placeholders::_2, std::placeholders::_3),
+                                         ast_visitor()));
+  PL_RETURN_IF_ERROR(shared_object_fn->SetDocString(kSharedObjectDocstring));
+  AddMethod(kSharedObjectID, shared_object_fn);
 
   PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> delete_fn,
                       FuncObject::Create(kDeleteTracepointID, {"name"}, {},
@@ -269,7 +285,6 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
 
   PL_ASSIGN_OR_RETURN(auto tp_deployment_name_ir, GetArgAs<StringIR>(args, "name"));
   PL_ASSIGN_OR_RETURN(auto output_name_ir, GetArgAs<StringIR>(args, "table_name"));
-  PL_ASSIGN_OR_RETURN(UInt128IR * upid_ir, GetArgAs<UInt128IR>(args, "upid"));
   // TODO(philkuz) support pod_name
   // PL_ASSIGN_OR_RETURN(auto pod_name_ir, GetArgAs<StringIR>(args, "pod_name"));
   // PL_ASSIGN_OR_RETURN(auto binary_name_ir, GetArgAs<StringIR>(args, "binary"));
@@ -277,18 +292,29 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
 
   const std::string& tp_deployment_name = tp_deployment_name_ir->str();
   const std::string& output_name = output_name_ir->str();
-  md::UPID upid(upid_ir->val());
   PL_ASSIGN_OR_RETURN(int64_t ttl_ns, StringToTimeInt(ttl_ir->str()));
 
   // TODO(philkuz/oazizi/zasgar) when we support pods and so on, add this back in.
   // const auto& pod_name = pod_name_ir->str();
   // const auto& container_name = pod_name_ir->str();
   // const auto& binary_name = binary_name_ir->str();
+  TracepointDeployment* trace_program;
+  auto target = args.GetArg("target");
+  if (SharedObjectTarget::IsSharedObject(target)) {
+    auto shared_object = std::static_pointer_cast<SharedObjectTarget>(target);
+    auto trace_program_or_s = mutations_ir->CreateTracepointDeployment(
+        tp_deployment_name, shared_object->shared_object(), ttl_ns);
+    PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
+    trace_program = trace_program_or_s.ConsumeValueOrDie();
+  } else {
+    PL_ASSIGN_OR_RETURN(UInt128IR * upid_ir, GetArgAs<UInt128IR>(args, "target"));
+    md::UPID upid(upid_ir->val());
 
-  auto trace_program_or_s =
-      mutations_ir->CreateTracepointDeployment(tp_deployment_name, upid, ttl_ns);
-  PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
-  auto trace_program = trace_program_or_s.ConsumeValueOrDie();
+    auto trace_program_or_s =
+        mutations_ir->CreateTracepointDeployment(tp_deployment_name, upid, ttl_ns);
+    PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
+    trace_program = trace_program_or_s.ConsumeValueOrDie();
+  }
 
   PL_ASSIGN_OR_RETURN(auto probe_fn, GetCallMethod(ast, args.GetArg("probe_fn")));
   PL_ASSIGN_OR_RETURN(auto probe, probe_fn->Call({}, ast));
@@ -298,6 +324,16 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
       ast, trace_program->AddTracepoint(probe_ir.get(), tp_deployment_name, output_name)));
 
   return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(ast, visitor));
+}
+
+StatusOr<QLObjectPtr> SharedObjectHandler::Eval(const pypa::AstPtr&, const ParsedArgs& args,
+                                                ASTVisitor* visitor) {
+  PL_ASSIGN_OR_RETURN(auto shared_object_name_ir, GetArgAs<StringIR>(args, "name"));
+  PL_ASSIGN_OR_RETURN(UInt128IR * upid_ir, GetArgAs<UInt128IR>(args, "upid"));
+  std::string shared_object_name = shared_object_name_ir->str();
+  md::UPID shared_object_upid(upid_ir->val());
+
+  return SharedObjectTarget::Create(visitor, shared_object_name, shared_object_upid);
 }
 
 StatusOr<QLObjectPtr> DeleteTracepointHandler::Eval(MutationsIR* mutations_ir,

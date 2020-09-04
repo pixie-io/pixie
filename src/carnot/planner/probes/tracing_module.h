@@ -148,7 +148,7 @@ class TraceModule : public QLObject {
     table_name (str): The table name to write the results. The table is created
       if it does not exist. The table schema must match if the table does exist.
     probe_fn (px.ProbeFn): The tracepoint function.
-    upid (px.UPID): The process to trace as specified by unique Vizier PID.
+    target (Union[px.UPID,px.SharedObject]): The process or shared object to trace as specified by unique Vizier PID.
     ttl (px.Duration): The length of time that a tracepoint will stay alive, after
       which it will be removed.
   )doc";
@@ -179,6 +179,21 @@ class TraceModule : public QLObject {
 
   Returns:
     Func: The wrapped probe function.
+  )doc";
+
+  inline static constexpr char kSharedObjectID[] = "SharedObject";
+  inline static constexpr char kSharedObjectDocstring[] = R"doc(
+  Defines a shared object target for Tracepoints.
+
+  :topic: tracepoint_fields
+
+  Args:
+    name (str): The name of the shared object.
+    upid (px.UPID): A process which loads the shared object.
+
+  Returns:
+    SharedObject: A pointer to the SharedObject that can be passed as a target
+    to UpsertTracepoint.
   )doc";
 
  protected:

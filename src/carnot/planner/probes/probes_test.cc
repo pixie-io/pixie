@@ -56,6 +56,26 @@ pxtrace.UpsertTracepoint('http_return',
                          "5m")
 )pxl";
 
+// TODO(philkuz): px.goprobe is not right for this test case.
+//                Change this test case to pxtrace.uprobe or whatever we decide once supported.
+constexpr char kSingleProbeUpsertSharedObjectPxl[] = R"pxl(
+import pxtrace
+import px
+
+@pxtrace.goprobe("MyFunc")
+def probe_func():
+    id = pxtrace.ArgExpr('id')
+    return [{'id': id},
+            {'err': pxtrace.RetExpr('$0.a')},
+            {'latency': pxtrace.FunctionLatency()}]
+
+pxtrace.UpsertTracepoint('http_return',
+                         'http_return_table',
+                         probe_func,
+                         pxtrace.SharedObject('libc', px.uint128('123e4567-e89b-12d3-a456-426655440000')),
+                         '5m')
+)pxl";
+
 constexpr char kSingleProbeInFuncPxl[] = R"pxl(
 import pxtrace
 import px
@@ -123,12 +143,71 @@ tracepoints {
 }
 )pxl";
 
+constexpr char kSingleProbeUpsertSharedObjectProgramPb[] = R"pxl(
+name: "http_return"
+ttl {
+  seconds: 300
+}
+deployment_spec {
+  shared_object {
+    name: "libc"
+    upid {
+      asid: 306070887 pid: 3902477011 ts_ns: 11841725277501915136
+    }
+  }
+}
+tracepoints {
+  output_name: "http_return_table"
+  program {
+    language: GOLANG
+    outputs {
+      name: "http_return_table"
+      fields: "id"
+      fields: "err"
+      fields: "latency"
+    }
+    probes {
+      name: "http_return"
+      tracepoint {
+        symbol: "MyFunc"
+      }
+      args {
+        id: "arg0"
+        expr: "id"
+      }
+      ret_vals {
+        id: "ret0"
+        expr: "$0.a"
+      }
+      function_latency {
+        id: "lat0"
+      }
+      output_actions {
+        output_name: "http_return_table"
+        variable_name: "arg0"
+        variable_name: "ret0"
+        variable_name: "lat0"
+      }
+    }
+  }
+}
+)pxl";
+
 TEST_F(ProbeCompilerTest, parse_single_probe) {
   ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(kSingleProbePxl));
   plannerpb::CompileMutationsResponse pb;
   EXPECT_OK(probe_ir->ToProto(&pb));
   ASSERT_EQ(pb.mutations_size(), 1);
   EXPECT_THAT(pb.mutations()[0].trace(), testing::proto::EqualsProto(kSingleProbeProgramPb));
+}
+
+TEST_F(ProbeCompilerTest, parse_single_probe_on_shared_object) {
+  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(kSingleProbeUpsertSharedObjectPxl));
+  plannerpb::CompileMutationsResponse pb;
+  EXPECT_OK(probe_ir->ToProto(&pb));
+  ASSERT_EQ(pb.mutations_size(), 1);
+  EXPECT_THAT(pb.mutations()[0].trace(),
+              testing::proto::EqualsProto(kSingleProbeUpsertSharedObjectProgramPb));
 }
 
 TEST_F(ProbeCompilerTest, parse_single_probe_in_func) {

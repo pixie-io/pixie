@@ -6,6 +6,7 @@
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/objects/funcobject.h"
 #include "src/carnot/planner/plannerpb/func_args.pb.h"
+#include "src/carnot/planner/probes/shared_object.h"
 #include "src/common/uuid/uuid.h"
 #include "src/shared/metadata/base_types.h"
 #include "src/stirling/dynamic_tracing/ir/logicalpb/logical.pb.h"
@@ -205,6 +206,18 @@ class MutationsIR {
                                                              const md::UPID& upid, int64_t ttl_ns);
 
   /**
+   * @brief Create a TraceProgram for the MutationsIR w/ the specified SharedObject.
+   *
+   * @param program_name
+   * @param shared_obj
+   * @param ttl_ns
+   * @return StatusOr<TracepointDeployment*>
+   */
+  StatusOr<TracepointDeployment*> CreateTracepointDeployment(const std::string& tracepoint_name,
+                                                             const SharedObject& shared_obj,
+                                                             int64_t ttl_ns);
+
+  /**
    * @brief Get the CurrentProbe or return an error. Nice shorthand to support a clean error
    * message that points to the write position in the code.
    *
@@ -245,6 +258,8 @@ class MutationsIR {
  private:
   absl::flat_hash_map<std::string, TracepointDeployment> binary_to_program_map_;
   absl::flat_hash_map<md::UPID, std::unique_ptr<TracepointDeployment>> upid_to_program_map_;
+  absl::flat_hash_map<SharedObject, std::unique_ptr<TracepointDeployment>>
+      shared_object_to_program_map_;
   std::vector<std::shared_ptr<TracepointIR>> probes_pool_;
   std::shared_ptr<TracepointIR> current_tracepoint_;
 
