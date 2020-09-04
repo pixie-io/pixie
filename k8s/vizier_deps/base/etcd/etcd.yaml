@@ -69,7 +69,8 @@ spec:
             --max-snapshots 2 \
             --quota-backend-bytes 8589934592 \
             --auto-compaction-retention 5 \
-            --auto-compaction-mode revision
+            --auto-compaction-mode revision \
+            --snapshot-count 10000
       volumes:
       - name: client-certs
         secret:
