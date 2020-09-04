@@ -66,6 +66,7 @@ def resource_timeseries(start_time: str, pod: px.Pod):
     df = px.DataFrame(table='process_stats', start_time=start_time)
     df = df[df.ctx['pod'] == pod]
     df.timestamp = px.bin(df.time_, px.seconds(window_s))
+    df.container = df.ctx['container_name']
 
     # Convert bytes to MB.
     df.vsize_mb = df.vsize_bytes / bytes_per_mb
@@ -81,7 +82,7 @@ def resource_timeseries(start_time: str, pod: px.Pod):
 
     # First calculate CPU usage by process (UPID) in each k8s_object
     # over all windows.
-    df = df.groupby(['upid', 'timestamp']).agg(
+    df = df.groupby(['upid', 'container', 'timestamp']).agg(
         rss_mb=('rss_mb', px.mean),
         vsize_mb=('vsize_mb', px.mean),
         # The fields below are counters, so we take the min and the max to subtract them.
@@ -108,7 +109,7 @@ def resource_timeseries(start_time: str, pod: px.Pod):
     df.wchar_mb = df.wchar_mb_max - df.wchar_mb_min
 
     # Then aggregate process individual process metrics.
-    df = df.groupby(['timestamp']).agg(
+    df = df.groupby(['container', 'timestamp']).agg(
         cpu_ktime_ms=('cpu_ktime_ms', px.sum),
         cpu_utime_ms=('cpu_utime_ms', px.sum),
         read_mb=('read_mb', px.sum),
@@ -181,8 +182,8 @@ def network_timeseries(start_time: str, pod: px.Pod):
     return df
 
 
-def inbound_let_timeseries(start_time: str, pod: px.Pod):
-    ''' Compute the let as a timeseries for requests received by `pod`.
+def inbound_latency_timeseries(start_time: str, pod: px.Pod):
+    ''' Compute the latency as a timeseries for requests received by `pod`.
 
     Args:
     @start_time: The timestamp of data to start at.
@@ -193,26 +194,45 @@ def inbound_let_timeseries(start_time: str, pod: px.Pod):
     df = df[df.pod == pod]
 
     df = df.groupby(['timestamp']).agg(
-        latency_quantiles=('latency_ms', px.quantiles),
+        latency_quantiles=('latency_ms', px.quantiles)
+    )
+
+    # Format the result of LET aggregates into proper scalar formats and
+    # time series.
+    df.latency_p50 = px.pluck_float64(df.latency_quantiles, 'p50')
+    df.latency_p90 = px.pluck_float64(df.latency_quantiles, 'p90')
+    df.latency_p99 = px.pluck_float64(df.latency_quantiles, 'p99')
+    df.time_ = df.timestamp
+    return df[['time_', 'latency_p50', 'latency_p90', 'latency_p99']]
+
+
+def inbound_request_timeseries_by_container(start_time: str, pod: px.Pod):
+    ''' Compute the request statistics as a timeseries for requests received
+        by `pod` by container.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @pod: The name of the pod to filter on.
+
+    '''
+    df = let_helper(start_time)
+    df = df[df.pod == pod]
+    df.container = df.ctx['container']
+
+    df = df.groupby(['timestamp', 'container']).agg(
         error_rate_per_window=('failure', px.mean),
-        throughput_total=('latency_ms', px.count),
-        bytes_total=('resp_size', px.sum)
+        throughput_total=('latency_ms', px.count)
     )
 
     # Format the result of LET aggregates into proper scalar formats and
     # time series.
     window_size = window_s * 1.0
-    df.latency_p50 = px.pluck_float64(df.latency_quantiles, 'p50')
-    df.latency_p90 = px.pluck_float64(df.latency_quantiles, 'p90')
-    df.latency_p99 = px.pluck_float64(df.latency_quantiles, 'p99')
     df.requests_per_s = df.throughput_total / window_size
     df.errors_per_s = df.error_rate_per_window * df.requests_per_s
     df.error_rate_pct = df.error_rate_per_window * 100
-    df.bytes_per_s = df.bytes_total / window_size
     df.time_ = df.timestamp
 
-    return df[['time_', 'latency_p50', 'latency_p90', 'latency_p99',
-               'requests_per_s', 'errors_per_s', 'error_rate_pct', 'bytes_per_s']]
+    return df[['time_', 'container', 'requests_per_s', 'errors_per_s', 'error_rate_pct']]
 
 
 def inbound_let_summary(start_time: str, pod: px.Pod):
