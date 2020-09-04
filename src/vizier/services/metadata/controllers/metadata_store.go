@@ -837,9 +837,11 @@ func (mds *KVMetadataStore) UpdatePod(p *metadatapb.Pod, deleted bool) error {
 
 	mds.cache.Set(getPodToHostnamePairKey(p.Metadata.Name, p.Metadata.Namespace), fmt.Sprintf("%s:%s", "", p.Status.HostIP))
 
-	err = mds.UpdatePodCIDR(cidrs)
-	if err != nil {
-		log.WithField("cidrs", cidrs).WithError(err).Error("Error updating Pod CIDRs")
+	if p.Status.PodIP != "" {
+		err = mds.UpdatePodCIDR(cidrs)
+		if err != nil {
+			log.WithField("cidrs", cidrs).WithError(err).Error("Error updating Pod CIDRs")
+		}
 	}
 
 	// Add mapping from resource version -> pod.
