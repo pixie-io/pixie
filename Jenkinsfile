@@ -898,7 +898,9 @@ def deployWithSkaffold(String profile, String namespace, String skaffoldFile) {
         sh "skaffold build -q -o '{{json .}}' -p ${profile} -f ${skaffoldFile} --cache-artifacts=false > manifest.json"
         sh "skaffold deploy -p ${profile} --build-artifacts=manifest.json -f ${skaffoldFile}"
         dir ('src/pxl_scripts') {
-          sh "make update_${profile}_bundle"
+          if (profile == "prod") {
+            sh "make update_bundle"
+          }
         }
       }
     }
