@@ -35,13 +35,13 @@ Status LimitNode::OpenImpl(ExecState* /*exec_state*/) { return Status::OK(); }
 Status LimitNode::CloseImpl(ExecState* /*exec_state*/) { return Status::OK(); }
 
 Status LimitNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t) {
-  if (!exec_state->keep_running()) {
-    return Status::OK();
-  }
-
   int64_t record_limit = plan_node_->record_limit();
   // We need to send over a slice of the input data.
   int64_t remainder_records = record_limit - records_processed_;
+
+  if (remainder_records == 0) {
+    return Status::OK();
+  }
 
   // Check if the entire row batch will fit.
   if (remainder_records > rb.num_rows()) {
@@ -56,6 +56,7 @@ Status LimitNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, siz
     output_rb.set_eow(rb.eow());
     return SendRowBatchToChildren(exec_state, output_rb);
   }
+
   RowBatch output_rb(*output_descriptor_, remainder_records);
   DCHECK_EQ(output_descriptor_->size(), plan_node_->selected_cols().size());
   for (int64_t input_col_idx : plan_node_->selected_cols()) {

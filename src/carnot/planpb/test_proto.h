@@ -1151,6 +1151,107 @@ constexpr char kOneLimit3Sources[] = R"proto(
   }
 )proto";
 
+constexpr char kTwoSequentialLimits[] = R"proto(
+  id: 1,
+  dag {
+    nodes {
+      id: 1
+      sorted_children: 2
+    }
+    nodes {
+      id: 2
+      sorted_children: 3
+      sorted_parents: 1
+    }
+    nodes {
+      id: 3
+      sorted_children: 4
+      sorted_parents: 2
+    }
+    nodes {
+      id: 4
+      sorted_parents: 3
+    }
+  }
+  nodes {
+    id: 1
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "numbers"
+        column_idxs: 0
+        column_types: INT64
+        column_names: "a"
+        column_idxs: 1
+        column_types: BOOLEAN
+        column_names: "b"
+        column_idxs: 2
+        column_types: FLOAT64
+        column_names: "c"
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: LIMIT_OPERATOR
+      limit_op {
+        limit: 2
+        columns {
+          node: 1
+          index: 0
+        }
+        columns {
+          node: 1
+          index: 1
+        }
+        columns {
+          node: 1
+          index: 2
+        }
+        abortable_srcs: 1
+      }
+    }
+  }
+  nodes {
+    id: 3
+    op {
+      op_type: LIMIT_OPERATOR
+      limit_op {
+        limit: 4
+        columns {
+          node: 2
+          index: 0
+        }
+        columns {
+          node: 2
+          index: 1
+        }
+        columns {
+          node: 2
+          index: 2
+        }
+        abortable_srcs: 1
+      }
+    }
+  }
+  nodes {
+    id: 4
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "output"
+        column_types: INT64
+        column_types: BOOLEAN
+        column_types: FLOAT64
+        column_names: "a"
+        column_names: "b"
+        column_names: "c"
+      }
+    }
+  }
+)proto";
+
 planpb::Operator CreateTestMap1PB() {
   planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MAP_OPERATOR", "map_op", kMapOperator1);
