@@ -10,12 +10,10 @@ create_namespace: namespace.yaml.tmpl ## Create the target namespace for a Stirl
 	cat $< | $(EVAL_TMPL) | $(KUBECTL) apply -f -
 
 .PHONY: create_image_pull_secret
-create_image_pull_secret:  ## Install image pull secrets, required for non GKE clusters.
-ifneq ($(wildcard ./image-pull-secret.json),)
+create_image_pull_secret:
 	@echo "Installing image-pull-secrets (command echo suppressed)"
 	@kubectl -n pl-${USER} delete secret image-pull-secret 2> /dev/null || true
-	@kubectl -n pl-${USER} create secret docker-registry image-pull-secret --docker-server=https://gcr.io --docker-username=_json_key --docker-email=${USER}@pixielabs.ai --docker-password='$(shell cat image-pull-secret.json)'
-endif
+	@kubectl -n pl-${USER} create secret docker-registry image-pull-secret --docker-server=https://gcr.io --docker-username=_json_key --docker-email=${USER}@pixielabs.ai --docker-password='$(shell sops -d ../../../credentials/k8s/dev/image-pull-secrets.encrypted.json)'
 
 .PHONY: deploy_stirling_pod
 deploy_stirling_pod: stirling-pod.yaml.tmpl create_namespace create_image_pull_secret ## Deploy Stirling as a pod on a single node.
@@ -25,10 +23,6 @@ deploy_stirling_pod: stirling-pod.yaml.tmpl create_namespace create_image_pull_s
 deploy_stirling_daemonset: stirling-daemonset.yaml.tmpl create_namespace create_image_pull_secret  ## Deploys stirling as a daemonset on all nodes.
 	cat $< | $(EVAL_TMPL) | $(KUBECTL) apply -f -
 
-.PHONY: delete_namespace
-delete_namespace: namespace.yaml.tmpl ## Delete the namespace (along with all pods, etc.).
-	cat $< | $(EVAL_TMPL) | $(KUBECTL) delete -f -
-
 .PHONY: delete_stirling_pod
 delete_stirling_pod: stirling-pod.yaml.tmpl ## Delete the previously deployed Stirling pod.
 	cat $< | $(EVAL_TMPL) | $(KUBECTL) delete -f -
@@ -36,6 +30,3 @@ delete_stirling_pod: stirling-pod.yaml.tmpl ## Delete the previously deployed St
 .PHONY: delete_stirling_daemonset
 delete_stirling_daemonset: stirling-daemonset.yaml.tmpl ## Delete the previously deployed Stirling daemonset.
 	cat $< | $(EVAL_TMPL) | $(KUBECTL) delete -f -
-
-.PHONY: delete_all
-delete_all: delete_namespace ## An alias for delete namespace. Deletes all previously Stirling deployments.
