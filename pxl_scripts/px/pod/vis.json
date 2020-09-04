@@ -15,9 +15,25 @@
   ],
   "globalFuncs": [
     {
-      "outputName": "inbound_let_timeseries",
+      "outputName": "inbound_latency",
       "func": {
-        "name": "inbound_let_timeseries",
+        "name": "inbound_latency_timeseries",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      }
+    },
+    {
+      "outputName": "inbound_requests",
+      "func": {
+        "name": "inbound_request_timeseries_by_container",
         "args": [
           {
             "name": "start_time",
@@ -66,13 +82,15 @@
   "widgets": [
     {
       "name": "HTTP Requests",
-      "globalFuncOutputName": "inbound_let_timeseries",
+      "globalFuncOutputName": "inbound_requests",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "requests_per_s",
-            "mode": "MODE_LINE"
+            "mode": "MODE_AREA",
+            "series": "container",
+            "stackBySeries": true
           }
         ],
         "title": "",
@@ -90,13 +108,15 @@
     },
     {
       "name": "HTTP Errors",
-      "globalFuncOutputName": "inbound_let_timeseries",
+      "globalFuncOutputName": "inbound_requests",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "errors_per_s",
-            "mode": "MODE_LINE"
+            "mode": "MODE_AREA",
+            "series": "container",
+            "stackBySeries": true
           }
         ],
         "title": "",
@@ -114,7 +134,7 @@
     },
     {
       "name": "HTTP Latency",
-      "globalFuncOutputName": "inbound_let_timeseries",
+      "globalFuncOutputName": "inbound_latency",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -152,7 +172,9 @@
         "timeseries": [
           {
             "value": "cpu_pct",
-            "mode": "MODE_LINE"
+            "mode": "MODE_AREA",
+            "series": "container",
+            "stackBySeries": true
           }
         ],
         "title": "",
@@ -163,34 +185,6 @@
       },
       "position": {
         "x": 0,
-        "y": 3,
-        "w": 4,
-        "h": 3
-      }
-    },
-    {
-      "name": "Memory Usage",
-      "globalFuncOutputName": "resource_timeseries",
-      "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
-        "timeseries": [
-          {
-            "value": "rss_mb",
-            "mode": "MODE_LINE"
-          },
-          {
-            "value": "vsize_mb",
-            "mode": "MODE_LINE"
-          }
-        ],
-        "title": "",
-        "yAxis": {
-          "label": "MB"
-        },
-        "xAxis": null
-      },
-      "position": {
-        "x": 4,
         "y": 3,
         "w": 4,
         "h": 3
@@ -215,7 +209,7 @@
         "@type": "pixielabs.ai/pl.vispb.Table"
       },
       "position": {
-        "x": 8,
+        "x": 4,
         "y": 3,
         "w": 4,
         "h": 3
@@ -241,35 +235,7 @@
       },
       "position": {
         "x": 8,
-        "y": 6,
-        "w": 4,
-        "h": 3
-      }
-    },
-    {
-      "name": "Bytes Read and Written",
-      "globalFuncOutputName": "resource_timeseries",
-      "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
-        "timeseries": [
-          {
-            "value": "rchar_mb",
-            "mode": "MODE_LINE"
-          },
-          {
-            "value": "wchar_mb",
-            "mode": "MODE_LINE"
-          }
-        ],
-        "title": "",
-        "yAxis": {
-          "label": "MB per s"
-        },
-        "xAxis": null
-      },
-      "position": {
-        "x": 0,
-        "y": 6,
+        "y": 3,
         "w": 4,
         "h": 3
       }
@@ -296,8 +262,112 @@
         "xAxis": null
       },
       "position": {
+        "x": 0,
+        "y": 6,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Bytes Read",
+      "globalFuncOutputName": "resource_timeseries",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "rchar_mb",
+            "mode": "MODE_AREA",
+            "series": "container",
+            "stackBySeries": true
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "MB per s"
+        },
+        "xAxis": null
+      },
+      "position": {
         "x": 4,
         "y": 6,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Bytes Written",
+      "globalFuncOutputName": "resource_timeseries",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "wchar_mb",
+            "mode": "MODE_AREA",
+            "series": "container",
+            "stackBySeries": true
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "MB per s"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 8,
+        "y": 6,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Resident Set Size",
+      "globalFuncOutputName": "resource_timeseries",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "rss_mb",
+            "mode": "MODE_AREA",
+            "series": "container",
+            "stackBySeries": true
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "MB"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 0,
+        "y": 9,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Virtual Memory Size",
+      "globalFuncOutputName": "resource_timeseries",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "vsize_mb",
+            "mode": "MODE_AREA",
+            "series": "container",
+            "stackBySeries": true
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "MB"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 4,
+        "y": 9,
         "w": 4,
         "h": 3
       }
@@ -322,7 +392,7 @@
       },
       "position": {
         "x": 0,
-        "y": 9,
+        "y": 12,
         "w": 12,
         "h": 3
       }
@@ -347,7 +417,7 @@
       },
       "position": {
         "x": 0,
-        "y": 12,
+        "y": 15,
         "w": 12,
         "h": 3
       }
