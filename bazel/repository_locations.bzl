@@ -97,9 +97,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/double-conversion/archive/4199ef3d456ed0549e5665cf4186f0ee6210db3b.tar.gz"],
     ),
     com_intel_tbb = dict(
-        sha256 = "5a05cf61d773edbed326a4635d31e84876c46f6f9ed00c9ee709f126904030d6",
-        strip_prefix = "tbb-8ff3697f544c5a8728146b70ae3a978025be1f3e",
-        urls = ["https://github.com/01org/tbb/archive/8ff3697f544c5a8728146b70ae3a978025be1f3e.tar.gz"],
+        sha256 = "ebc4f6aa47972daed1f7bf71d100ae5bf6931c2e3144cf299c8cc7d041dca2f3",
+        strip_prefix = "oneTBB-2020.3",
+        urls = ["https://github.com/oneapi-src/oneTBB/archive/v2020.3.tar.gz"],
     ),
     com_github_libarchive_libarchive = dict(
         sha256 = "b60d58d12632ecf1e8fad7316dc82c6b9738a35625746b47ecdcaf4aed176176",

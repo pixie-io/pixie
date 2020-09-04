@@ -12,5 +12,6 @@ pl_cc_library(
     deps = [
         "//src/carnot/udf:cc_library",
         "@com_github_tencent_rapidjson//:rapidjson",
+        "@com_intel_tbb//:tbb",
     ],
 )

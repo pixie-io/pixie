@@ -34,12 +34,12 @@ genrule(
         printenv
         WORK_DIR=$$PWD
         DEST_DIR=$$PWD/$(@D)
-        export PATH=$$(dirname $(AR)):$$PATH
-        export CC=$$(FixPath $$PWD $(CC))
-        export CXX=$$(FixPath $$PWD $(CC))
-        export CXXFLAGS=$$(CC_FLAGS)
-        export NM=$$(FixPath $$PWD $(NM))
-        export AR=$$(FixPath $$PWD $(AR))
+        export PATH=$$(dirname $$AR):$$PATH
+        export CC=$$CC
+        export CXX=$$CXX
+        export CXXFLAGS="-O3"
+        export NM=$$(FixPath $$PWD $$NM)
+        export AR=$$(FixPath $$PWD $$AR)
         cd $$(dirname $(location :Makefile))
         COMPILER_OPT="compiler=clang"
 
@@ -48,8 +48,8 @@ genrule(
         make -j10 tbb_build_prefix="build" \
               extra_inc=big_iron.inc \
               $$COMPILER_OPT; \
-        echo cp build/build_{release,debug}/*.a $$DEST_DIR
-        cp build/build_{release,debug}/*.a $$DEST_DIR
+        echo cp build/build_release/*.a $$DEST_DIR
+        cp build/build_release/*.a $$DEST_DIR
         cd $$WORK_DIR
     """,
 )
