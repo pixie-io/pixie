@@ -32,14 +32,6 @@ class StatusOr {
   template <typename U>
   explicit StatusOr(const StatusOr<U>& other) : status_(other.status_), value_(other.value_) {}
 
-  // Conversion assignment operator, T must be assignable from U
-  template <typename U>
-  StatusOr& operator=(const StatusOr<U>& other) {
-    status_ = other.status_;
-    value_ = other.value_;
-    return *this;
-  }
-
   // Rvalue-reference overloads of the other constructors and assignment
   // operators, to support move-only types and avoid unnecessary copying.
   StatusOr(T&& value);  // NOLINT
@@ -53,6 +45,14 @@ class StatusOr {
     if (status_.ok()) {
       value_ = std::move(other.value_);
     }
+  }
+
+  // Conversion assignment operator, T must be assignable from U
+  template <typename U>
+  StatusOr& operator=(const StatusOr<U>& other) {
+    status_ = other.status_;
+    value_ = other.value_;
+    return *this;
   }
 
   // Move assignment operator to avoid unnecessary copy.
@@ -82,6 +82,15 @@ class StatusOr {
 
   // Moves the current value.
   T ConsumeValueOrDie();
+
+  // ValueOr()/ConsumeValueOr() return a pre-specified value if the StatusOr is not OK.
+
+  // Note this variant performs a copy. It does not return a reference like ValueOrDie().
+  // Returning a reference doesn't work because the argument may be an rvalue.
+  T ValueOr(const T& val);
+
+  // This variants are more efficient because they do not copy.
+  T ConsumeValueOr(T&& val);
 
   std::string ToString() const { return status().ToString(); }
 
@@ -120,6 +129,16 @@ template <typename T>
 T StatusOr<T>::ConsumeValueOrDie() {
   PL_CHECK_OK(status_);
   return std::move(value_);
+}
+
+template <typename T>
+T StatusOr<T>::ValueOr(const T& val) {
+  return status_.ok() ? value_ : val;
+}
+
+template <typename T>
+T StatusOr<T>::ConsumeValueOr(T&& val) {
+  return status_.ok() ? std::move(value_) : std::move(val);
 }
 
 template <typename T>

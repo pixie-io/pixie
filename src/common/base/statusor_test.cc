@@ -23,6 +23,24 @@ TEST(StatusOr, ValueMove) {
   EXPECT_NE(val, "abcd");
 }
 
+TEST(StatusOr, ValueOr) {
+  StatusOr<string> s(Status(pl::statuspb::UNKNOWN, "This is not OK"));
+  EXPECT_EQ(s.ValueOr("pixie"), "pixie");
+}
+
+TEST(StatusOr, ConsumeValueOr) {
+  {
+    StatusOr<string> s(Status(pl::statuspb::UNKNOWN, "This is not OK"));
+    EXPECT_EQ(s.ConsumeValueOr("pixie"), "pixie");
+  }
+
+  {
+    StatusOr<std::unique_ptr<int>> s(Status(pl::statuspb::UNKNOWN, "This is not OK"));
+    std::unique_ptr<int> val = s.ConsumeValueOr(std::make_unique<int>(2));
+    EXPECT_EQ(*val, 2);
+  }
+}
+
 TEST(StatusOr, ValuesAndErrors) {
   StatusOr<string> s("testing string");
   ASSERT_OK(s);
