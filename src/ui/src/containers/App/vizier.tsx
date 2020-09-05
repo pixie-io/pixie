@@ -146,6 +146,18 @@ export default function WithClusterBanner() {
     },
   }), [userEmail, userOrg]);
 
+  React.useEffect(() => {
+    if (ldClient != null && userEmail != null) {
+      ldClient.identify({
+        key: userEmail,
+        email: userEmail,
+        custom: {
+          orgName: userOrg,
+        },
+      });
+    }
+  }, [ldClient, userEmail, userOrg]);
+
   if (loading || userQuery.loading) { return <div>Loading...</div>; }
 
   const errMsg = error?.message || userQuery.error?.message;
@@ -162,14 +174,6 @@ export default function WithClusterBanner() {
       setClusterId(cluster.id);
     }
   }
-
-  ldClient.identify({
-    key: userQuery.data.user.email,
-    email: userQuery.data.user.email,
-    custom: {
-      orgName: userQuery.data.user.orgName,
-    },
-  });
 
   return (
     <ClusterContext.Provider value={context}>
