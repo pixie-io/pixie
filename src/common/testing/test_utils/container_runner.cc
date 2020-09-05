@@ -48,9 +48,10 @@ StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::s
   container_name_ = absl::StrCat(instance_name_prefix_, "_",
                                  std::chrono::steady_clock::now().time_since_epoch().count());
 
+  // Note that we don't add --rm to the docker run command, because we sometimes want to inspect
+  // the container state after termination. Instead we explicitly remove the container on
+  // ContainerRunner destruction.
   std::vector<std::string> docker_run_cmd;
-  docker_run_cmd.push_back("timeout");
-  docker_run_cmd.push_back(std::to_string(timeout));
   docker_run_cmd.push_back("docker");
   docker_run_cmd.push_back("run");
   docker_run_cmd.push_back("--pid=host");
@@ -63,6 +64,15 @@ StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::s
 
   LOG(INFO) << docker_run_cmd;
   PL_RETURN_IF_ERROR(container_.Start(docker_run_cmd, /* stderr_to_stdout */ true));
+
+  // If the process receives a SIGKILL, then the docker run command above would leak.
+  // As a safety net for such cases, we spawn off a delayed docker kill command to clean-up.
+  std::string docker_kill_cmd = absl::Substitute(
+      "(sleep $0 && docker kill $1 && docker rm $1) 2>&1 >/dev/null", timeout, container_name_);
+  FILE* pipe = popen(docker_kill_cmd.c_str(), "r");
+  // We deliberately don't ever call pclose() -- even in the destructor -- otherwise, we'd block.
+  // This spawned process is meant to potentially outlive the current process as a safety net.
+  PL_UNUSED(pipe);
 
   // It may take some time for the container to come up, so we keep polling.
   // But keep count of the attempts, because we don't want to poll infinitely.
