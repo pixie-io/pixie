@@ -1,5 +1,6 @@
 #include "src/carnot/exec/grpc_sink_node.h"
 
+#include <utility>
 #include <vector>
 
 #include <grpcpp/test/mock_stream.h>
@@ -37,13 +38,15 @@ class GRPCSinkNodeTest : public ::testing::Test {
   GRPCSinkNodeTest() {
     func_registry_ = std::make_unique<udf::Registry>("test_registry");
     auto table_store = std::make_shared<table_store::TableStore>();
+
+    mock_unique_ = std::make_unique<MockResultSinkServiceStub>();
+    mock_ = mock_unique_.get();
+
     exec_state_ = std::make_unique<ExecState>(
         func_registry_.get(), table_store,
         [this](const std::string&,
                const std::string&) -> std::unique_ptr<ResultSinkService::StubInterface> {
-          auto s = std::make_unique<MockResultSinkServiceStub>();
-          mock_ = s.get();
-          return s;
+          return std::move(mock_unique_);
         },
         sole::uuid4(), nullptr, [this](grpc::ClientContext*) { add_metadata_called_ = true; });
 
@@ -56,7 +59,22 @@ class GRPCSinkNodeTest : public ::testing::Test {
   std::unique_ptr<udf::Registry> func_registry_;
   MockResultSinkServiceStub* mock_;
   bool add_metadata_called_ = false;
+
+ private:
+  // Ownership will be transferred to the GRPC node, so access this ptr via `mock_` in the tests.
+  std::unique_ptr<MockResultSinkServiceStub> mock_unique_;
 };
+
+constexpr char kExpectedInternalInitialization[] = R"proto(
+address: "localhost:1234"
+query_id {
+  data: "$0"
+}
+query_result {
+  initiate_result_stream: true
+  grpc_source_id: 0
+}
+)proto";
 
 constexpr char kExpectedInteralResult0[] = R"proto(
 address: "localhost:1234"
@@ -122,14 +140,12 @@ TEST_F(GRPCSinkNodeTest, internal_result) {
 
   google::protobuf::util::MessageDifferencer differ;
 
-  auto tester = exec::ExecNodeTester<GRPCSinkNode, plan::GRPCSinkOperator>(
-      *plan_node, output_rd, {input_rd}, exec_state_.get());
-
   TransferResultChunkResponse resp;
   resp.set_success(true);
 
-  std::vector<TransferResultChunkRequest> actual_protos(3);
+  std::vector<TransferResultChunkRequest> actual_protos(4);
   std::vector<std::string> expected_protos = {
+      absl::Substitute(kExpectedInternalInitialization, exec_state_->query_id().str()),
       absl::Substitute(kExpectedInteralResult0, exec_state_->query_id().str()),
       absl::Substitute(kExpectedInteralResult1, exec_state_->query_id().str()),
       absl::Substitute(kExpectedInteralResult2, exec_state_->query_id().str()),
@@ -138,34 +154,47 @@ TEST_F(GRPCSinkNodeTest, internal_result) {
   auto writer = new grpc::testing::MockClientWriter<TransferResultChunkRequest>();
 
   EXPECT_CALL(*writer, Write(_, _))
-      .Times(3)
+      .Times(4)
       .WillOnce(DoAll(SaveArg<0>(&actual_protos[0]), Return(true)))
       .WillOnce(DoAll(SaveArg<0>(&actual_protos[1]), Return(true)))
-      .WillOnce(DoAll(SaveArg<0>(&actual_protos[2]), Return(true)));
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[2]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[3]), Return(true)));
 
   EXPECT_CALL(*writer, WritesDone());
   EXPECT_CALL(*writer, Finish()).WillOnce(Return(grpc::Status::OK));
   EXPECT_CALL(*mock_, TransferResultChunkRaw(_, _))
       .WillOnce(DoAll(SetArgPointee<1>(resp), Return(writer)));
 
+  auto tester = exec::ExecNodeTester<GRPCSinkNode, plan::GRPCSinkOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+
   for (auto i = 0; i < 3; ++i) {
     std::vector<types::Int64Value> data(i, i);
     auto rb = RowBatchBuilder(output_rd, i, /*eow*/ i == 2, /*eos*/ i == 2)
                   .AddColumn<types::Int64Value>(data)
                   .get();
-
-    TransferResultChunkRequest expected_proto;
     tester.ConsumeNext(rb, 5, 0);
   }
 
   tester.Close();
 
-  for (auto i = 0; i < 3; ++i) {
+  for (auto i = 0; i < 4; ++i) {
     EXPECT_THAT(actual_protos[i], EqualsProto(expected_protos[i]));
   }
 
   EXPECT_FALSE(add_metadata_called_);
 }
+
+constexpr char kExpectedExternalInitialization[] = R"proto(
+address: "localhost:1234"
+query_id {
+  data: "$0"
+}
+query_result {
+  initiate_result_stream: true
+  table_name: "output_table_name"
+}
+)proto";
 
 constexpr char kExpectedExteralResult0[] = R"proto(
 address: "localhost:1234"
@@ -231,14 +260,12 @@ TEST_F(GRPCSinkNodeTest, external_result) {
 
   google::protobuf::util::MessageDifferencer differ;
 
-  auto tester = exec::ExecNodeTester<GRPCSinkNode, plan::GRPCSinkOperator>(
-      *plan_node, output_rd, {input_rd}, exec_state_.get());
-
   TransferResultChunkResponse resp;
   resp.set_success(true);
 
-  std::vector<TransferResultChunkRequest> actual_protos(3);
+  std::vector<TransferResultChunkRequest> actual_protos(4);
   std::vector<std::string> expected_protos = {
+      absl::Substitute(kExpectedExternalInitialization, exec_state_->query_id().str()),
       absl::Substitute(kExpectedExteralResult0, exec_state_->query_id().str()),
       absl::Substitute(kExpectedExteralResult1, exec_state_->query_id().str()),
       absl::Substitute(kExpectedExteralResult2, exec_state_->query_id().str()),
@@ -247,29 +274,31 @@ TEST_F(GRPCSinkNodeTest, external_result) {
   auto writer = new grpc::testing::MockClientWriter<TransferResultChunkRequest>();
 
   EXPECT_CALL(*writer, Write(_, _))
-      .Times(3)
+      .Times(4)
       .WillOnce(DoAll(SaveArg<0>(&actual_protos[0]), Return(true)))
       .WillOnce(DoAll(SaveArg<0>(&actual_protos[1]), Return(true)))
-      .WillOnce(DoAll(SaveArg<0>(&actual_protos[2]), Return(true)));
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[2]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[3]), Return(true)));
 
   EXPECT_CALL(*writer, WritesDone());
   EXPECT_CALL(*writer, Finish()).WillOnce(Return(grpc::Status::OK));
   EXPECT_CALL(*mock_, TransferResultChunkRaw(_, _))
       .WillOnce(DoAll(SetArgPointee<1>(resp), Return(writer)));
 
+  auto tester = exec::ExecNodeTester<GRPCSinkNode, plan::GRPCSinkOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+
   for (auto i = 0; i < 3; ++i) {
     std::vector<types::Int64Value> data(i, i);
     auto rb = RowBatchBuilder(output_rd, i, /*eow*/ i == 2, /*eos*/ i == 2)
                   .AddColumn<types::Int64Value>(data)
                   .get();
-
-    TransferResultChunkRequest expected_proto;
     tester.ConsumeNext(rb, 5, 0);
   }
 
   tester.Close();
 
-  for (auto i = 0; i < 3; ++i) {
+  for (auto i = 0; i < 4; ++i) {
     EXPECT_THAT(actual_protos[i], EqualsProto(expected_protos[i]));
   }
 

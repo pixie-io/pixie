@@ -108,8 +108,7 @@ func (a *activeQuery) updateQueryState(msg *carnotpb.TransferResultChunkRequest)
 		}
 
 		if queryResult.GetInitiateResultStream() {
-			// TODO(nserrino): Fill this in for the case tracking which tables still need to
-			// initialize their streams.
+			return nil
 		}
 	}
 

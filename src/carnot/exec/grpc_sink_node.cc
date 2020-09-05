@@ -28,6 +28,24 @@ std::string GRPCSinkNode::DebugStringImpl() {
                           plan_node_->address(), destination, input_descriptor_->DebugString());
 }
 
+StatusOr<carnotpb::TransferResultChunkRequest> RequestWithMetadata(
+    plan::GRPCSinkOperator* plan_node, ExecState* exec_state) {
+  carnotpb::TransferResultChunkRequest req;
+  // Set the metadata for the RowBatch (where it should go).
+  req.set_address(plan_node->address());
+
+  if (plan_node->has_grpc_source_id()) {
+    req.mutable_query_result()->set_grpc_source_id(plan_node->grpc_source_id());
+  } else if (plan_node->has_table_name()) {
+    req.mutable_query_result()->set_table_name(plan_node->table_name());
+  } else {
+    return error::Internal("GRPCSink has neither source ID nor table name set.");
+  }
+
+  ToProto(exec_state->query_id(), req.mutable_query_id());
+  return req;
+}
+
 Status GRPCSinkNode::InitImpl(const plan::Operator& plan_node) {
   CHECK(plan_node.op_type() == planpb::OperatorType::GRPC_SINK_OPERATOR);
   if (input_descriptors_.size() != 1) {
@@ -50,6 +68,19 @@ Status GRPCSinkNode::OpenImpl(ExecState* exec_state) {
     // Adding auth to GRPC client.
     exec_state->AddAuthToGRPCClientContext(&context_);
   }
+
+  writer_ = stub_->TransferResultChunk(&context_, &response_);
+
+  PL_ASSIGN_OR_RETURN(auto initial_request, RequestWithMetadata(plan_node_.get(), exec_state));
+  initial_request.mutable_query_result()->set_initiate_result_stream(true);
+
+  if (!writer_->Write(initial_request)) {
+    return error::Internal(
+        "GRPCSink error: unable to write stream initialization TransferResultChunkRequest to "
+        "remote address %s for query %d",
+        plan_node_->address(), exec_state->query_id().str());
+  }
+
   return Status::OK();
 }
 
@@ -80,23 +111,8 @@ Status GRPCSinkNode::CloseImpl(ExecState*) {
 }
 
 Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t) {
-  if (writer_ == nullptr) {
-    writer_ = stub_->TransferResultChunk(&context_, &response_);
-  }
+  PL_ASSIGN_OR_RETURN(auto req, RequestWithMetadata(plan_node_.get(), exec_state));
 
-  carnotpb::TransferResultChunkRequest req;
-  // Set the metadata for the RowBatch (where it should go).
-  req.set_address(plan_node_->address());
-
-  if (plan_node_->has_grpc_source_id()) {
-    req.mutable_query_result()->set_grpc_source_id(plan_node_->grpc_source_id());
-  } else if (plan_node_->has_table_name()) {
-    req.mutable_query_result()->set_table_name(plan_node_->table_name());
-  } else {
-    return error::Internal("GRPCSink has neither source ID nor table name set.");
-  }
-
-  ToProto(exec_state->query_id(), req.mutable_query_id());
   // Serialize the RowBatch.
   PL_RETURN_IF_ERROR(rb.ToProto(req.mutable_query_result()->mutable_row_batch()));
 
