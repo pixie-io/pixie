@@ -715,7 +715,7 @@ StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(const std::string& bina
     return 0;
   }
 
-  // Only try probing so files that we haven't already set probes on.
+  // Only try probing .so files that we haven't already set probes on.
   result = openssl_probed_binaries_.insert(container_lib);
   if (!result.second) {
     return 0;

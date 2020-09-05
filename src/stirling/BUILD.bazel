@@ -150,6 +150,7 @@ pl_cc_test(
     data = [
         "//src/stirling/obj_tools/testdata:dummy_cc_binary",
         "//src/stirling/obj_tools/testdata:dummy_go_binary",
+        "//src/stirling/testing/dns:dns_binary",
     ],
     flaky = True,
     tags = ["requires_bpf"],

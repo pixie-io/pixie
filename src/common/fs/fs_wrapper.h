@@ -49,8 +49,12 @@ StatusOr<bool> IsEmpty(const std::filesystem::path& f);
 
 StatusOr<std::filesystem::path> Absolute(const std::filesystem::path& path);
 
+StatusOr<std::filesystem::path> Canonical(const std::filesystem::path& path);
+
 StatusOr<std::filesystem::path> Relative(const std::filesystem::path& path,
                                          const std::filesystem::path& base);
+
+StatusOr<bool> Equivalent(const std::filesystem::path& p1, const std::filesystem::path& p2);
 
 /**
  * Returns the relative path of the child relative to the parent, if parent is indeed a parent of

@@ -95,6 +95,7 @@ Status ElfReader::LocateDebugSymbols(const std::filesystem::path& debug_file_dir
     std::string loc =
         absl::Substitute(".build-id/$0/$1.debug", build_id.substr(0, 2), build_id.substr(2));
     symbols_file = debug_file_dir / loc;
+    VLOG(1) << absl::Substitute("Checking for debug symbols at $0", symbols_file.string());
     if (fs::Exists(symbols_file).ok()) {
       debug_symbols_path_ = symbols_file;
       return Status::OK();
@@ -104,24 +105,31 @@ Status ElfReader::LocateDebugSymbols(const std::filesystem::path& debug_file_dir
   // Next try using debug-link.
   if (!debug_link.empty()) {
     std::filesystem::path debug_link_path(debug_link);
-    std::filesystem::path binary_path(binary_path_);
+    PL_ASSIGN_OR_RETURN(std::filesystem::path binary_path, fs::Canonical(binary_path_));
     std::filesystem::path binary_path_parent = binary_path.parent_path();
 
     std::filesystem::path candidate1 = fs::JoinPath({&binary_path_parent, &debug_link_path});
+    VLOG(1) << absl::Substitute("Checking for debug symbols at $0", candidate1.string());
     if (fs::Exists(candidate1).ok()) {
-      debug_symbols_path_ = candidate1;
-      return Status::OK();
+      // Ignore the candidate if it just maps back to the original path.
+      bool invalid = fs::Equivalent(candidate1, binary_path).ConsumeValueOr(true);
+      if (!invalid) {
+        debug_symbols_path_ = candidate1;
+        return Status::OK();
+      }
     }
 
     std::filesystem::path dot_debug(".debug");
     std::filesystem::path candidate2 =
         fs::JoinPath({&binary_path_parent, &dot_debug, &debug_link_path});
+    VLOG(1) << absl::Substitute("Checking for debug symbols at $0", candidate2.string());
     if (fs::Exists(candidate2).ok()) {
       debug_symbols_path_ = candidate2;
       return Status::OK();
     }
 
     std::filesystem::path candidate3 = fs::JoinPath({&debug_file_dir, &binary_path});
+    VLOG(1) << absl::Substitute("Checking for debug symbols at $0", candidate3.string());
     if (fs::Exists(candidate3).ok()) {
       debug_symbols_path_ = candidate3;
       return Status::OK();
@@ -149,7 +157,12 @@ StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(
   if (s.ok()) {
     std::string debug_symbols_path = elf_reader->debug_symbols_path_.string();
 
-    if (debug_symbols_path != binary_path) {
+    bool internal_debug_symbols =
+        fs::Equivalent(elf_reader->debug_symbols_path_, binary_path).ConsumeValueOr(true);
+
+    // If external debug symbols were found, load that ELF info instead.
+    if (!internal_debug_symbols) {
+      std::string debug_symbols_path = elf_reader->debug_symbols_path_.string();
       LOG(INFO) << absl::Substitute("Found debug symbols file $0 for binary $1", debug_symbols_path,
                                     binary_path);
       elf_reader->elf_reader_.load(debug_symbols_path, /* skip_segments */ true);

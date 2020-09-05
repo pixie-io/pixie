@@ -1,0 +1,21 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@io_bazel_rules_docker//java:image.bzl", "java_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+
+# These targets are binaries that send requests to the host DNS resolution with different sites.
+# Intended for use in tests, where we want to trace the DNS queries.
+# Intentionally chose Java to demonstrate that Java also uses libc's getaddrinfo() function.
+
+java_binary(
+    name = "dns_binary",
+    srcs = ["DNS.java"],
+    main_class = "DNS",
+)
+
+java_image(
+    name = "dns_image",
+    srcs = ["DNS.java"],
+    main_class = "DNS",
+)

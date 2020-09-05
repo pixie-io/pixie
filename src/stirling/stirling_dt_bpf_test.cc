@@ -17,6 +17,22 @@ namespace stirling {
 // Test fixture and shared code
 //-----------------------------------------------------------------------------
 
+// Utility to run a binary as a trace target.
+// Performs automatic clean-up.
+class BinaryRunner {
+ public:
+  void Run(const std::string& binary_path) {
+    // Run tracing target.
+    ASSERT_OK(fs::Exists(binary_path));
+    ASSERT_OK(trace_target_.Start({binary_path}));
+  }
+
+  ~BinaryRunner() { trace_target_.Kill(); }
+
+ private:
+  SubProcess trace_target_;
+};
+
 class StirlingDynamicTraceBPFTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -31,8 +47,6 @@ class StirlingDynamicTraceBPFTest : public ::testing::Test {
                                                   std::placeholders::_1, std::placeholders::_2,
                                                   std::placeholders::_3));
   }
-
-  void TearDown() override { trace_target_.Kill(); }
 
   void AppendData(uint64_t table_id, types::TabletID tablet_id,
                   std::unique_ptr<types::ColumnWrapperRecordBatch> record_batch) {
@@ -103,16 +117,9 @@ class StirlingDynamicTraceBPFTest : public ::testing::Test {
     stirling_->Stop();
   }
 
-  void StartTraceTarget(const std::string& binary_path) {
-    // Run tracing target.
-    ASSERT_OK(fs::Exists(binary_path));
-    ASSERT_OK(trace_target_.Start({binary_path}));
-  }
-
   std::unique_ptr<Stirling> stirling_;
   std::vector<std::unique_ptr<types::ColumnWrapperRecordBatch>> record_batches_;
   stirlingpb::InfoClass info_class_;
-  SubProcess trace_target_;
 };
 
 //-----------------------------------------------------------------------------
@@ -252,7 +259,8 @@ class DynamicTraceGolangTest : public StirlingDynamicTraceBPFTest {
 };
 
 TEST_F(DynamicTraceGolangTest, TraceLatencyOnly) {
-  StartTraceTarget(kBinaryPath);
+  BinaryRunner trace_target;
+  trace_target.Run(kBinaryPath);
 
   constexpr std::string_view kProgram = R"(
 deployment_spec {
@@ -293,7 +301,8 @@ tracepoints {
 }
 
 TEST_F(DynamicTraceGolangTest, TraceString) {
-  StartTraceTarget(kBinaryPath);
+  BinaryRunner trace_target;
+  trace_target.Run(kBinaryPath);
 
   constexpr std::string_view kProgram = R"(
 deployment_spec {
@@ -345,7 +354,8 @@ tracepoints {
 }
 
 TEST_F(DynamicTraceGolangTest, TraceStruct) {
-  StartTraceTarget(kBinaryPath);
+  BinaryRunner trace_target;
+  trace_target.Run(kBinaryPath);
 
   constexpr std::string_view kProgram = R"(
 deployment_spec {
@@ -402,7 +412,8 @@ TEST_P(DynamicTraceGolangTestWithParam, TraceByteArray) {
   auto params = GetParam();
 
   // Run tracing target.
-  StartTraceTarget(kBinaryPath);
+  BinaryRunner trace_target;
+  trace_target.Run(kBinaryPath);
 
   constexpr std::string_view kProgram = R"(
 deployment_spec {
@@ -472,7 +483,8 @@ class DynamicTraceCppTest : public StirlingDynamicTraceBPFTest {
 };
 
 TEST_F(DynamicTraceCppTest, BasicTypes) {
-  StartTraceTarget(kBinaryPath);
+  BinaryRunner trace_target;
+  trace_target.Run(kBinaryPath);
 
   constexpr std::string_view kProgram = R"(
 deployment_spec {
@@ -537,7 +549,8 @@ class DynamicTraceCppTestWithParam : public DynamicTraceCppTest,
 TEST_P(DynamicTraceCppTestWithParam, StructTypes) {
   auto param = GetParam();
 
-  StartTraceTarget(kBinaryPath);
+  BinaryRunner trace_target;
+  trace_target.Run(kBinaryPath);
 
   constexpr std::string_view kProgram = R"(
 deployment_spec {
@@ -605,7 +618,8 @@ INSTANTIATE_TEST_SUITE_P(CppStructTracingTests, DynamicTraceCppTestWithParam,
                          ::testing::Values("ABCSum32", "ABCSum64"));
 
 TEST_F(DynamicTraceCppTest, ArgsOnStackAndRegisters) {
-  StartTraceTarget(kBinaryPath);
+  BinaryRunner trace_target;
+  trace_target.Run(kBinaryPath);
 
   constexpr std::string_view kProgram = R"(
 deployment_spec {
@@ -718,6 +732,61 @@ tracepoints {
   EXPECT_EQ(rb[w_c_field_idx]->Get<types::Int64Value>(0).val, 12);
   EXPECT_EQ(rb[sum_a_field_idx]->Get<types::Int64Value>(0).val, 22);
   EXPECT_EQ(rb[sum_c_field_idx]->Get<types::Int64Value>(0).val, 30);
+}
+
+//-----------------------------------------------------------------------------
+// Dynamic Trace library tests
+//-----------------------------------------------------------------------------
+
+class DynamicTraceSharedLibraryTest : public StirlingDynamicTraceBPFTest {
+ protected:
+  const std::string kBinaryPath =
+      pl::testing::BazelBinTestFilePath("src/stirling/testing/dns/dns_binary");
+};
+
+TEST_F(DynamicTraceSharedLibraryTest, GetAddrInfo) {
+  BinaryRunner trace_target;
+  trace_target.Run(kBinaryPath);
+
+  constexpr std::string_view kProgram = R"(
+deployment_spec {
+  path: "/lib/x86_64-linux-gnu/libc.so.6"
+}
+tracepoints {
+  output_name: "foo"
+  program {
+    language: CPP
+    outputs {
+      name: "dns_latency_table"
+      fields: "latency"
+    }
+    probes {
+      name: "dns_latency_tracepoint"
+      tracepoint {
+        symbol: "getaddrinfo"
+      }
+      function_latency {
+        id: "lat0"
+      }
+      output_actions {
+        output_name: "dns_latency_table"
+        variable_name: "lat0"
+      }
+    }
+  }
+}
+
+)";
+
+  auto trace_program = Prepare(kProgram, "");
+
+  DeployTracepoint(std::move(trace_program));
+
+  // Get field indexes for the two columns we want.
+  ASSERT_HAS_VALUE_AND_ASSIGN(int latency_idx, FindFieldIndex(info_class_.schema(), "latency"));
+
+  types::ColumnWrapperRecordBatch& rb = *record_batches_[0];
+  EXPECT_GT(rb[latency_idx]->Get<types::Int64Value>(0).val, 0);
 }
 
 }  // namespace stirling

@@ -282,7 +282,7 @@ Status Dwarvifier::Setup(const ir::shared::DeploymentSpec& deployment_spec,
                          ir::shared::Language language) {
   using dwarf_tools::DwarfReader;
 
-  PL_ASSIGN_OR_RETURN(dwarf_reader_, DwarfReader::Create(deployment_spec.debug_symbols_path()));
+  dwarf_reader_ = DwarfReader::Create(deployment_spec.debug_symbols_path()).ConsumeValueOr(nullptr);
 
   language_ = language;
 
@@ -406,10 +406,12 @@ Status Dwarvifier::GenerateProbe(const ir::logical::Probe& input_probe,
                                  ir::physical::Program* output_program) {
   // Some initial setup.
   variables_.clear();
-  PL_ASSIGN_OR_RETURN(args_map_,
-                      dwarf_reader_->GetFunctionArgInfo(input_probe.tracepoint().symbol()));
-  PL_ASSIGN_OR_RETURN(retval_info_,
-                      dwarf_reader_->GetFunctionRetValInfo(input_probe.tracepoint().symbol()));
+  if (dwarf_reader_ != nullptr) {
+    PL_ASSIGN_OR_RETURN(args_map_,
+                        dwarf_reader_->GetFunctionArgInfo(input_probe.tracepoint().symbol()));
+    PL_ASSIGN_OR_RETURN(retval_info_,
+                        dwarf_reader_->GetFunctionRetValInfo(input_probe.tracepoint().symbol()));
+  }
 
   auto* p = output_program->add_probes();
 
@@ -575,6 +577,11 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
 
   // String for * operator (eg. (*my_struct).field)
   static constexpr std::string_view kDerefStr = "_X_";
+
+  if (dwarf_reader_ == nullptr) {
+    return error::Internal(
+        "Could not find debug symbols, but symbols required to evaluate variable $0", var_name);
+  }
 
   TypeInfo type_info = arg_info.type_info;
   int offset = arg_info.location.offset;

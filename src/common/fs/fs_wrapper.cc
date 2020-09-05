@@ -116,10 +116,28 @@ StatusOr<std::filesystem::path> Absolute(const std::filesystem::path& path) {
   return abs_path;
 }
 
+StatusOr<std::filesystem::path> Canonical(const std::filesystem::path& path) {
+  std::error_code ec;
+  std::filesystem::path canonical_path = std::filesystem::canonical(path, ec);
+  if (ec) {
+    return error::System(ec.message());
+  }
+  return canonical_path;
+}
+
 StatusOr<std::filesystem::path> Relative(const std::filesystem::path& path,
                                          const std::filesystem::path& base) {
   std::error_code ec;
   auto res = std::filesystem::relative(path, base, ec);
+  if (ec) {
+    return error::System(ec.message());
+  }
+  return res;
+}
+
+StatusOr<bool> Equivalent(const std::filesystem::path& p1, const std::filesystem::path& p2) {
+  std::error_code ec;
+  auto res = std::filesystem::equivalent(p1, p2, ec);
   if (ec) {
     return error::System(ec.message());
   }

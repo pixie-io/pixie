@@ -78,7 +78,6 @@ message MapDeleteAction {
 }
 
 // Describes the structure of the data Output.
-// Corresponds to px.Output().
 message Output {
   string name = 1;
 
