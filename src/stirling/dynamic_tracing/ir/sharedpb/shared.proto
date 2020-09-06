@@ -137,13 +137,29 @@ message UPID {
 
 // Describes the target of attaching a Tracepoint.
 message DeploymentSpec {
+  message SharedObject {
+    // The name of the shared library to trace.
+    // The name should not include a path or the version number.
+    // E.g. /lib/x86_64-linux-gnu/libc.so.6 -> libc
+    string name = 1;
+
+    // A running process which is used to locate the shared library.
+    // The shared object must be used by this process.
+    // Note, however, that the tracepoint is attached to the shared library; not just this process.
+    UPID upid = 2;
+  }
+
   // TODO(yzhao): Remove this field, replaced by path_regexp, selector_oneof, and selected_upids.
   oneof target_oneof {
-    // The path of the executable file.
+    // The path of the object file (may be executable or shared library).
     string path = 1;
 
     // The UPID of a running process.
+    // Resolved to an executable.
     UPID upid = 3;
+
+    // An way to specify a shared object to be traced.
+    SharedObject shared_object = 8;
   }
 
   // Location of the debug symbols for the path above.

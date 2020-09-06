@@ -5,11 +5,13 @@
 #include <utility>
 #include <vector>
 
+#include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/system.h"
 
 #include "src/stirling/bpf_tools/utils.h"
 #include "src/stirling/dynamic_tracing/code_gen.h"
 #include "src/stirling/dynamic_tracing/dwarvifier.h"
+#include "src/stirling/dynamic_tracing/ir/sharedpb/shared.pb.h"
 #include "src/stirling/dynamic_tracing/probe_transformer.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 #include "src/stirling/obj_tools/proc_path_tools.h"
@@ -78,27 +80,10 @@ StatusOr<BCCProgram> CompileProgram(const ir::logical::TracepointDeployment& inp
 
   pid_t pid = UProbeSpec::kDefaultPID;
 
-  // Expect the outside caller keeps UPID, and specify them in UProbeSpec. Here upid and path are
-  // specified alternatively, and upid will be replaced by binary path.
-  switch (intermediate_program.deployment_spec().target_oneof_case()) {
-    case ir::shared::DeploymentSpec::TargetOneofCase::kPath:
-      // Ignored, no need to resolve binary path.
-      break;
-    case ir::shared::DeploymentSpec::TargetOneofCase::kUpid: {
-      pid = intermediate_program.deployment_spec().upid().pid();
-
-      PL_ASSIGN_OR_RETURN(std::filesystem::path host_binary_path,
-                          obj_tools::GetPIDBinaryOnHost(pid));
-
-      // TODO(yzhao): Here the upid's PID start time is not verified, just looks for the pid.
-      // We might need to add such check in the future.
-
-      intermediate_program.mutable_deployment_spec()->set_path(host_binary_path.string());
-      break;
-    }
-    case ir::shared::DeploymentSpec::TargetOneofCase::TARGET_ONEOF_NOT_SET:
-      return error::InvalidArgument("Must specify path or upid");
-  }
+  // Note that this should do nothing when called as part of Stirling as a whole,
+  // because it was already called by RegisterTracepoint() in stirling.
+  // The extra call should turn into a NOP.
+  PL_RETURN_IF_ERROR(ResolveTargetObjPath(intermediate_program.mutable_deployment_spec()));
 
   LOG(INFO) << absl::Substitute("Tracepoint binary: $0",
                                 intermediate_program.deployment_spec().path());
@@ -147,6 +132,83 @@ StatusOr<BCCProgram> CompileProgram(const ir::logical::TracepointDeployment& inp
   }
 
   return bcc_program;
+}
+
+StatusOr<std::filesystem::path> ResolveUPID(const ir::shared::DeploymentSpec& deployment_spec) {
+  uint32_t pid = deployment_spec.upid().pid();
+
+  std::optional<int64_t> start_time;
+  if (deployment_spec.upid().ts_ns() != 0) {
+    start_time = deployment_spec.upid().ts_ns();
+  }
+
+  return obj_tools::GetPIDBinaryOnHost(pid, start_time);
+}
+
+StatusOr<std::filesystem::path> ResolveSharedObject(
+    const ir::shared::DeploymentSpec& deployment_spec) {
+  const uint32_t& pid = deployment_spec.shared_object().upid().pid();
+  const std::string& lib_name = deployment_spec.shared_object().name();
+
+  std::filesystem::path proc_pid_path =
+      system::Config::GetInstance().proc_path() / std::to_string(pid);
+  if (deployment_spec.upid().ts_ns() != 0) {
+    int64_t spec_start_time = deployment_spec.upid().ts_ns();
+    int64_t pid_start_time = system::GetPIDStartTimeTicks(proc_pid_path);
+    if (spec_start_time != pid_start_time) {
+      return error::NotFound(
+          "This is not the pid you are looking for... "
+          "Start time does not match (specification: $0 vs system: $1).",
+          spec_start_time, pid_start_time);
+    }
+  }
+
+  // Find the path to shared library, which may be inside a container.
+  system::ProcParser proc_parser(system::Config::GetInstance());
+  PL_ASSIGN_OR_RETURN(absl::flat_hash_set<std::string> libs_status, proc_parser.GetMapPaths(pid));
+
+  for (const auto& lib : libs_status) {
+    // Look for a library name such as /lib/libc.so.6 or /lib/libc-2.32.so.
+    // The name is assumed to end with either a '.' or a '-'.
+    std::string lib_path_filename = std::filesystem::path(lib).filename().string();
+    if (absl::StartsWith(lib_path_filename, absl::StrCat(lib_name, ".")) ||
+        absl::StartsWith(lib_path_filename, absl::StrCat(lib_name, "-"))) {
+      return obj_tools::ResolveProcessPath(proc_pid_path, lib);
+    }
+  }
+
+  return error::Internal("Could not find shared library $0 in context of PID $1.", lib_name, pid);
+}
+
+Status ResolveTargetObjPath(ir::shared::DeploymentSpec* deployment_spec) {
+  std::filesystem::path target_obj_path;
+
+  switch (deployment_spec->target_oneof_case()) {
+    // Already a path, so nothing to do.
+    case ir::shared::DeploymentSpec::TargetOneofCase::kPath:
+      target_obj_path = deployment_spec->path();
+      break;
+    // Populate path based on UPID.
+    case ir::shared::DeploymentSpec::TargetOneofCase::kUpid: {
+      PL_ASSIGN_OR_RETURN(target_obj_path, ResolveUPID(*deployment_spec));
+      break;
+    }
+    // Populate path based on shared object identifier.
+    case ir::shared::DeploymentSpec::TargetOneofCase::kSharedObject: {
+      PL_ASSIGN_OR_RETURN(target_obj_path, ResolveSharedObject(*deployment_spec));
+      break;
+    }
+    case ir::shared::DeploymentSpec::TargetOneofCase::TARGET_ONEOF_NOT_SET:
+      return error::InvalidArgument("Must specify target.");
+  }
+
+  if (!fs::Exists(target_obj_path).ok()) {
+    return error::Internal("Binary $0 not found.", target_obj_path.string());
+  }
+
+  deployment_spec->set_path(target_obj_path.string());
+
+  return Status::OK();
 }
 
 }  // namespace dynamic_tracing

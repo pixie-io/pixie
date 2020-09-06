@@ -9,13 +9,13 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 # Intentionally chose Java to demonstrate that Java also uses libc's getaddrinfo() function.
 
 java_binary(
-    name = "dns_binary",
-    srcs = ["DNS.java"],
-    main_class = "DNS",
+    name = "dns_hammer",
+    srcs = ["DNSHammer.java"],
+    main_class = "DNSHammer",
 )
 
 java_image(
-    name = "dns_image",
-    srcs = ["DNS.java"],
-    main_class = "DNS",
+    name = "dns_hammer_image",
+    srcs = ["DNSHammer.java"],
+    main_class = "DNSHammer",
 )

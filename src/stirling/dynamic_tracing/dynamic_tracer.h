@@ -16,6 +16,13 @@ namespace dynamic_tracing {
  */
 StatusOr<BCCProgram> CompileProgram(const ir::logical::TracepointDeployment& input_program);
 
+/**
+ * Resolves the DeploymentSpec target into a path on the host.
+ *  - Resolves PIDs to executable paths.
+ *  - Resolves SharedObjects to shared object paths.
+ */
+Status ResolveTargetObjPath(ir::shared::DeploymentSpec* deployment_spec);
+
 }  // namespace dynamic_tracing
 }  // namespace stirling
 }  // namespace pl

@@ -233,7 +233,7 @@ TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
 
   md::UPID upid(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(idx).val);
   std::filesystem::path proc_pid_path =
-      std::filesystem::path("/proc") / std::to_string(s_.child_pid());
+      system::Config::GetInstance().proc_path() / std::to_string(s_.child_pid());
   md::UPID expected_upid(/* asid */ 0, s_.child_pid(), system::GetPIDStartTimeTicks(proc_pid_path));
   EXPECT_EQ(upid, expected_upid);
 

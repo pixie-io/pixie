@@ -4,6 +4,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/exec/subprocess.h"
+#include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/source_registry.h"
@@ -12,6 +13,8 @@
 
 namespace pl {
 namespace stirling {
+
+using pl::testing::BazelBinTestFilePath;
 
 //-----------------------------------------------------------------------------
 // Test fixture and shared code
@@ -128,8 +131,7 @@ class StirlingDynamicTraceBPFTest : public ::testing::Test {
 
 class DynamicTraceAPITest : public StirlingDynamicTraceBPFTest {
  protected:
-  const std::string kBinaryPath =
-      pl::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe");
+  const std::string kBinaryPath = BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe");
 
   static constexpr std::string_view kTracepointDeployment = R"(
 deployment_spec {
@@ -254,8 +256,8 @@ TEST_F(DynamicTraceAPITest, InvalidReference) {
 
 class DynamicTraceGolangTest : public StirlingDynamicTraceBPFTest {
  protected:
-  const std::string kBinaryPath = pl::testing::BazelBinTestFilePath(
-      "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary");
+  const std::string kBinaryPath =
+      BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary");
 };
 
 TEST_F(DynamicTraceGolangTest, TraceLatencyOnly) {
@@ -478,8 +480,7 @@ INSTANTIATE_TEST_SUITE_P(GolangByteArrayTests, DynamicTraceGolangTestWithParam,
 
 class DynamicTraceCppTest : public StirlingDynamicTraceBPFTest {
  protected:
-  const std::string kBinaryPath =
-      pl::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe");
+  const std::string kBinaryPath = BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe");
 };
 
 TEST_F(DynamicTraceCppTest, BasicTypes) {
@@ -709,7 +710,7 @@ tracepoints {
 
   DeployTracepoint(std::move(trace_program));
 
-  // Get field indexes for the two columns we want.
+  // Get field indexes for the columns we want.
   ASSERT_HAS_VALUE_AND_ASSIGN(int x_a_field_idx, FindFieldIndex(info_class_.schema(), "x_a"));
   ASSERT_HAS_VALUE_AND_ASSIGN(int x_c_field_idx, FindFieldIndex(info_class_.schema(), "x_c"));
   ASSERT_HAS_VALUE_AND_ASSIGN(int y_a_field_idx, FindFieldIndex(info_class_.schema(), "y_a"));
@@ -740,8 +741,7 @@ tracepoints {
 
 class DynamicTraceSharedLibraryTest : public StirlingDynamicTraceBPFTest {
  protected:
-  const std::string kBinaryPath =
-      pl::testing::BazelBinTestFilePath("src/stirling/testing/dns/dns_binary");
+  const std::string kBinaryPath = BazelBinTestFilePath("src/stirling/testing/dns/dns_hammer");
 };
 
 TEST_F(DynamicTraceSharedLibraryTest, GetAddrInfo) {
@@ -782,11 +782,79 @@ tracepoints {
 
   DeployTracepoint(std::move(trace_program));
 
-  // Get field indexes for the two columns we want.
+  // Get field indexes for the columns we want.
   ASSERT_HAS_VALUE_AND_ASSIGN(int latency_idx, FindFieldIndex(info_class_.schema(), "latency"));
 
   types::ColumnWrapperRecordBatch& rb = *record_batches_[0];
   EXPECT_GT(rb[latency_idx]->Get<types::Int64Value>(0).val, 0);
+}
+
+class JavaDNSHammerContainer : public ContainerRunner {
+ public:
+  JavaDNSHammerContainer()
+      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
+
+ private:
+  // Image is created through bazel rules, and stored as a tar file. It is not pushed to any repo.
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/testing/dns/dns_hammer_image.tar";
+  static constexpr std::string_view kInstanceNamePrefix = "dns_hammer";
+  static constexpr std::string_view kReadyMessage = "";
+};
+
+TEST_F(DynamicTraceSharedLibraryTest, GetAddrInfoInsideContainer) {
+  // Run tracing target.
+  JavaDNSHammerContainer trace_target_;
+  trace_target_.Run(60);
+
+  constexpr std::string_view kProgram = R"(
+deployment_spec {
+  shared_object {
+    name: "libc"
+    upid: {
+      pid: $0
+    }
+  }
+}
+tracepoints {
+  output_name: "foo"
+  program {
+    language: CPP
+    outputs {
+      name: "dns_latency_table"
+      fields: "latency"
+    }
+    probes {
+      name: "dns_latency_tracepoint"
+      tracepoint {
+        symbol: "getaddrinfo"
+      }
+      function_latency {
+        id: "lat0"
+      }
+      output_actions {
+        output_name: "dns_latency_table"
+        variable_name: "lat0"
+      }
+    }
+  }
+}
+
+)";
+
+  auto trace_program = Prepare(kProgram, std::to_string(trace_target_.process_pid()));
+
+  DeployTracepoint(std::move(trace_program));
+
+  // Get field indexes for the columns we want.
+  ASSERT_HAS_VALUE_AND_ASSIGN(int latency_idx, FindFieldIndex(info_class_.schema(), "latency"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int pid_idx, FindFieldIndex(info_class_.schema(), "upid"));
+
+  types::ColumnWrapperRecordBatch& rb = *record_batches_[0];
+  EXPECT_GT(rb[latency_idx]->Get<types::Int64Value>(0).val, 0);
+
+  // Make sure the captured data comes from within the container by checking the PID.
+  EXPECT_EQ(rb[pid_idx]->Get<types::UInt128Value>(0).High64(), trace_target_.process_pid());
 }
 
 }  // namespace stirling

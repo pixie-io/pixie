@@ -694,7 +694,8 @@ StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(const std::string& bina
                                   libs_status.msg());
       continue;
     }
-    std::filesystem::path proc_pid_path = std::filesystem::path("/proc") / std::to_string(pid);
+    std::filesystem::path proc_pid_path =
+        system::Config::GetInstance().proc_path() / std::to_string(pid);
     for (const auto& lib : libs_status.ValueOrDie()) {
       if (absl::EndsWith(lib, kLibSSL)) {
         StatusOr<std::filesystem::path> container_lib_status =

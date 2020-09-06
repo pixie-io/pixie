@@ -312,31 +312,6 @@ Status StirlingImpl::RemoveSource(std::string_view source_name) {
   return Status::OK();
 }
 
-Status ResolveUPID(dynamic_tracing::ir::logical::TracepointDeployment* program) {
-  // Expect the outside caller keeps UPID, and specify them in UProbeSpec. Here upid and path are
-  // specified alternatively, and upid will be replaced by binary path.
-  if (program->deployment_spec().target_oneof_case() ==
-      dynamic_tracing::ir::shared::DeploymentSpec::TargetOneofCase::kUpid) {
-    uint32_t pid = program->deployment_spec().upid().pid();
-
-    std::optional<int64_t> start_time;
-    if (program->deployment_spec().upid().ts_ns() != 0) {
-      start_time = program->deployment_spec().upid().ts_ns();
-    }
-
-    PL_ASSIGN_OR_RETURN(std::filesystem::path binary_path,
-                        obj_tools::GetPIDBinaryOnHost(pid, start_time));
-
-    program->mutable_deployment_spec()->set_path(binary_path.string());
-  }
-
-  if (!fs::Exists(program->deployment_spec().path()).ok()) {
-    return error::Internal("Binary $0 not found.", program->deployment_spec().path());
-  }
-
-  return Status::OK();
-}
-
 // Returns, but updates the status map in a concurrent-safe way before doing so.
 // Also converts all statuses to Internal so they don't conflict with the formal
 // codes used on the API (e.g. NotFound or ResourceUnavailable).
@@ -427,7 +402,7 @@ void StirlingImpl::RegisterTracepoint(
   // TODO(oazizi): Need to think of a better way of doing this.
   //               Need to differentiate errors caused by the binary not being on the host vs
   //               other errors. Also should consider races with binary creation/deletion.
-  Status s = ResolveUPID(program.get());
+  Status s = dynamic_tracing::ResolveTargetObjPath(program->mutable_deployment_spec());
   if (!s.ok()) {
     LOG(ERROR) << s.ToString();
     absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);

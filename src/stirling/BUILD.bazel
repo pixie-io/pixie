@@ -150,13 +150,15 @@ pl_cc_test(
     data = [
         "//src/stirling/obj_tools/testdata:dummy_cc_binary",
         "//src/stirling/obj_tools/testdata:dummy_go_binary",
-        "//src/stirling/testing/dns:dns_binary",
+        "//src/stirling/testing/dns:dns_hammer",
+        "//src/stirling/testing/dns:dns_hammer_image.tar",
     ],
     flaky = True,
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
+        "//src/common/testing/test_utils:cc_library",
     ],
 )
 
