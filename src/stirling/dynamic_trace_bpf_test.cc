@@ -75,27 +75,22 @@ class GoHTTPDynamicTraceTest : public ::testing::Test,
         break;
     }
 
-    ASSERT_OK_AND_ASSIGN(bcc_program_, dynamic_tracing::CompileProgram(&logical_program_));
-
-    ASSERT_OK_AND_ASSIGN(table_schema_,
-                         DynamicDataTableSchema::Create(bcc_program_.perf_buffer_specs.front()));
-
-    data_table_ = std::make_unique<DataTable>(table_schema_->Get());
-
     ASSERT_OK_AND_ASSIGN(connector_,
                          DynamicTraceConnector::Create("my_dynamic_source", &logical_program_));
-
     ASSERT_OK(connector_->Init());
-
-    ctx_ = std::make_unique<StandaloneContext>();
 
     ASSERT_OK(c_.Start({client_path_, "-name=PixieLabs", "-count=200",
                         absl::StrCat("-address=localhost:", s_port_)}));
     EXPECT_EQ(0, c_.Wait()) << "Client should be killed";
+  }
 
-    connector_->TransferData(ctx_.get(), /*table_num*/ 0, data_table_.get());
-
-    tablets_ = data_table_->ConsumeRecords();
+  std::vector<TaggedRecordBatch> GetRecords() {
+    constexpr int kTableNum = 0;
+    std::unique_ptr<StandaloneContext> ctx = std::make_unique<StandaloneContext>();
+    std::unique_ptr<DataTable> data_table =
+        std::make_unique<DataTable>(connector_->TableSchema(kTableNum));
+    connector_->TransferData(ctx.get(), kTableNum, data_table.get());
+    return data_table->ConsumeRecords();
   }
 
   std::string server_path_;
@@ -106,12 +101,7 @@ class GoHTTPDynamicTraceTest : public ::testing::Test,
   int s_port_ = 0;
 
   LogicalProgram logical_program_;
-  dynamic_tracing::BCCProgram bcc_program_;
-  std::unique_ptr<DynamicDataTableSchema> table_schema_;
-  std::unique_ptr<DataTable> data_table_;
   std::unique_ptr<SourceConnector> connector_;
-  std::unique_ptr<StandaloneContext> ctx_;
-  std::vector<TaggedRecordBatch> tablets_;
 };
 
 constexpr char kGRPCTraceProgram[] = R"(
@@ -179,14 +169,13 @@ tracepoints {
 
 TEST_P(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
   InitTestFixturesAndRunTestProgram(GetParam(), kGRPCTraceProgram);
+  std::vector<TaggedRecordBatch> tablets = GetRecords();
 
-  ASSERT_THAT(bcc_program_.uprobe_specs, SizeIs(6));
-
-  ASSERT_FALSE(tablets_.empty());
+  ASSERT_FALSE(tablets.empty());
 
   {
     types::ColumnWrapperRecordBatch records =
-        FindRecordsMatchingPID(tablets_[0].records, /*index*/ 0, s_.child_pid());
+        FindRecordsMatchingPID(tablets[0].records, /*index*/ 0, s_.child_pid());
 
     ASSERT_THAT(records, Each(ColWrapperSizeIs(200)));
 
@@ -204,14 +193,13 @@ TEST_P(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
 
 TEST_P(GoHTTPDynamicTraceTest, TraceReturnValue) {
   InitTestFixturesAndRunTestProgram(GetParam(), kReturnValueTraceProgram);
+  std::vector<TaggedRecordBatch> tablets = GetRecords();
 
-  ASSERT_THAT(bcc_program_.uprobe_specs, SizeIs(4));
-
-  ASSERT_FALSE(tablets_.empty());
+  ASSERT_FALSE(tablets.empty());
 
   {
     types::ColumnWrapperRecordBatch records =
-        FindRecordsMatchingPID(tablets_[0].records, /*index*/ 0, s_.child_pid());
+        FindRecordsMatchingPID(tablets[0].records, /*index*/ 0, s_.child_pid());
 
     ASSERT_THAT(records, Each(ColWrapperSizeIs(1600)));
 
@@ -226,48 +214,33 @@ INSTANTIATE_TEST_SUITE_P(VaryingTracePrograms, GoHTTPDynamicTraceTest,
 
 class CPPDynamicTraceTest : public ::testing::Test {
  protected:
-  Status InitTestFixturesAndRunTestProgram(const std::string& text_pb) {
+  void InitTestFixturesAndRunTestProgram(const std::string& text_pb) {
     CHECK(TextFormat::ParseFromString(text_pb, &logical_program_));
 
     logical_program_.mutable_deployment_spec()->set_path(dummy_exe_fixture_.Path());
 
-    PL_ASSIGN_OR_RETURN(bcc_program_, dynamic_tracing::CompileProgram(&logical_program_));
+    ASSERT_OK_AND_ASSIGN(connector_,
+                         DynamicTraceConnector::Create("my_dynamic_source", &logical_program_));
 
-    if (bcc_program_.perf_buffer_specs.empty()) {
-      return error::InvalidArgument("BCCProgram does not define perf buffer.");
-    }
+    ASSERT_OK(connector_->Init());
 
-    PL_ASSIGN_OR_RETURN(table_schema_,
-                        DynamicDataTableSchema::Create(bcc_program_.perf_buffer_specs.front()));
+    ASSERT_OK(dummy_exe_fixture_.Run());
+  }
 
-    data_table_ = std::make_unique<DataTable>(table_schema_->Get());
-
-    PL_ASSIGN_OR_RETURN(connector_,
-                        DynamicTraceConnector::Create("my_dynamic_source", &logical_program_));
-
-    PL_RETURN_IF_ERROR(connector_->Init());
-
-    ctx_ = std::make_unique<StandaloneContext>();
-
-    PL_CHECK_OK(dummy_exe_fixture_.Run());
-
-    connector_->TransferData(ctx_.get(), /*table_num*/ 0, data_table_.get());
-
-    tablets_ = data_table_->ConsumeRecords();
-
-    return Status::OK();
+  std::vector<TaggedRecordBatch> GetRecords() {
+    constexpr int kTableNum = 0;
+    std::unique_ptr<StandaloneContext> ctx = std::make_unique<StandaloneContext>();
+    std::unique_ptr<DataTable> data_table =
+        std::make_unique<DataTable>(connector_->TableSchema(kTableNum));
+    connector_->TransferData(ctx.get(), kTableNum, data_table.get());
+    return data_table->ConsumeRecords();
   }
 
   // Need debug build to include the dwarf info.
   elf_tools::DummyExeFixture dummy_exe_fixture_;
 
   LogicalProgram logical_program_;
-  dynamic_tracing::BCCProgram bcc_program_;
-  std::unique_ptr<DynamicDataTableSchema> table_schema_;
-  std::unique_ptr<DataTable> data_table_;
   std::unique_ptr<SourceConnector> connector_;
-  std::unique_ptr<StandaloneContext> ctx_;
-  std::vector<TaggedRecordBatch> tablets_;
 };
 
 constexpr char kDummyExeTraceProgram[] = R"(
@@ -299,7 +272,9 @@ tracepoints {
 
 TEST_F(CPPDynamicTraceTest, DISABLED_TraceDummyExe) {
   // TODO(yzhao): This does not work yet.
-  ASSERT_OK(InitTestFixturesAndRunTestProgram(kDummyExeTraceProgram));
+  InitTestFixturesAndRunTestProgram(kDummyExeTraceProgram);
+  std::vector<TaggedRecordBatch> tablets = GetRecords();
+  PL_UNUSED(tablets);
 }
 
 }  // namespace stirling
