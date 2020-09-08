@@ -1371,15 +1371,6 @@ void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTa
     const auto& key = iter->first;
     const auto& stats = iter->second;
 
-    md::UPID current_upid(ctx->GetASID(), key.upid.tgid, key.upid.start_time_ticks);
-    if (!upids.contains(current_upid)) {
-      // TODO(yzhao): It makes sense to push out one last record for the final state of the exited
-      // UPID.
-      // NOTE: absl doesn't support iter = agg_stats.erase(iter), so must use this style.
-      agg_stats.erase(iter++);
-      continue;
-    }
-
     if (stats.conn_open < stats.conn_close) {
       LOG_FIRST_N(WARNING, 10) << "Connection open should not be smaller than connection close.";
     }
@@ -1404,6 +1395,24 @@ void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTa
     r.Append<idx::kPxInfo>("");
 #endif
 
+    // Remove historical records of an inactive connection. A connection's history data is lost.
+    // Query scripts need to discards the records of all inactive connections, within accounting
+    // time window.
+    if (stats.conn_close >= stats.conn_open) {
+      agg_stats.erase(iter++);
+      continue;
+    }
+
+    // Remove data for exited upids. Do this after exporting data so that the last records are
+    // exported.
+    md::UPID current_upid(ctx->GetASID(), key.upid.tgid, key.upid.start_time_ticks);
+    if (!upids.contains(current_upid)) {
+      // NOTE: absl doesn't support iter = agg_stats.erase(iter), so must use this style.
+      agg_stats.erase(iter++);
+      continue;
+    }
+
+    // This is at the bottom, in order to avoid accidentally forgetting increment the iterator.
     ++iter;
   }
 }
