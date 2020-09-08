@@ -17,7 +17,7 @@ using ::testing::UnorderedElementsAre;
 TEST(ProcTrackerListPIDsTest, ListUPIDs) {
   const std::filesystem::path proc_path = TestFilePath("src/common/system/testdata/proc");
   EXPECT_THAT(ListUPIDs(proc_path),
-              UnorderedElementsAre(md::UPID{0, 123, 14329}, md::UPID{0, 1, 0},
+              UnorderedElementsAre(md::UPID{0, 123, 14329}, md::UPID{0, 1, 13},
                                    md::UPID{0, 456, 17594622}, md::UPID{0, 789, 46120203}));
 }
 

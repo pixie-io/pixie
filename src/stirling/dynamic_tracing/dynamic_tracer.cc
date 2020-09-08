@@ -248,7 +248,8 @@ StatusOr<std::filesystem::path> ResolveSharedObject(
       system::Config::GetInstance().proc_path() / std::to_string(pid);
   if (deployment_spec.upid().ts_ns() != 0) {
     int64_t spec_start_time = deployment_spec.upid().ts_ns();
-    int64_t pid_start_time = system::GetPIDStartTimeTicks(proc_pid_path);
+
+    PL_ASSIGN_OR_RETURN(int64_t pid_start_time, system::GetPIDStartTimeTicks(proc_pid_path));
     if (spec_start_time != pid_start_time) {
       return error::NotFound(
           "This is not the pid you are looking for... "
@@ -261,13 +262,20 @@ StatusOr<std::filesystem::path> ResolveSharedObject(
   system::ProcParser proc_parser(system::Config::GetInstance());
   PL_ASSIGN_OR_RETURN(absl::flat_hash_set<std::string> libs_status, proc_parser.GetMapPaths(pid));
 
+  const std::filesystem::path& host_path = system::Config::GetInstance().host_path();
   for (const auto& lib : libs_status) {
     // Look for a library name such as /lib/libc.so.6 or /lib/libc-2.32.so.
     // The name is assumed to end with either a '.' or a '-'.
     std::string lib_path_filename = std::filesystem::path(lib).filename().string();
     if (absl::StartsWith(lib_path_filename, absl::StrCat(lib_name, ".")) ||
         absl::StartsWith(lib_path_filename, absl::StrCat(lib_name, "-"))) {
-      return obj_tools::ResolveProcessPath(proc_pid_path, lib);
+      PL_ASSIGN_OR_RETURN(std::filesystem::path lib_path,
+                          obj_tools::ResolveProcessPath(proc_pid_path, lib));
+
+      // If we're running in a container, convert exe to be relative to our host mount.
+      // Note that we mount host '/' to '/host' inside container.
+      // Warning: must use JoinPath, because we are dealing with two absolute paths.
+      return fs::JoinPath({&host_path, &lib_path});
     }
   }
 

@@ -65,12 +65,15 @@ pl::StatusOr<std::filesystem::path> GetPIDBinaryOnHost(uint32_t pid,
   std::filesystem::path pid_path = proc_path / std::to_string(pid);
 
   if (start_time.has_value()) {
-    int64_t pid_start_time = system::GetPIDStartTimeTicks(pid_path);
-    if (start_time.value() != pid_start_time) {
+    StatusOr<int64_t> pid_start_time = system::GetPIDStartTimeTicks(pid_path);
+    if (!pid_start_time.ok()) {
+      return error::Internal("Could not determine start time of PID $0", pid);
+    }
+    if (start_time.value() != pid_start_time.ValueOrDie()) {
       return error::NotFound(
           "This is not the pid you are looking for... "
           "Start time does not match (specification: $0 vs system: $1).",
-          start_time.value(), pid_start_time);
+          start_time.value(), pid_start_time.ValueOrDie());
     }
   }
 

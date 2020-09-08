@@ -122,7 +122,7 @@ TEST_F(ProcParserTest, ParseMemInfo) {
 }
 
 TEST_F(ProcParserTest, read_pid_start_time) {
-  EXPECT_EQ(14329, parser_->GetPIDStartTimeTicks(123));
+  ASSERT_OK_AND_EQ(parser_->GetPIDStartTimeTicks(123), 14329);
 }
 
 TEST_F(ProcParserTest, read_pid_cmdline) {

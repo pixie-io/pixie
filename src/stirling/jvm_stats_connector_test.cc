@@ -81,8 +81,8 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
   md::UPID upid(record_batch[kUPIDIdx]->Get<types::UInt128Value>(idx).val);
   std::filesystem::path proc_pid_path =
       system::Config::GetInstance().proc_path() / std::to_string(hello_world1.child_pid());
-  md::UPID expected_upid(/* asid */ 0, hello_world1.child_pid(),
-                         system::GetPIDStartTimeTicks(proc_pid_path));
+  ASSERT_OK_AND_ASSIGN(int64_t pid_start_time, system::GetPIDStartTimeTicks(proc_pid_path));
+  md::UPID expected_upid(/* asid */ 0, hello_world1.child_pid(), pid_start_time);
   EXPECT_EQ(upid, expected_upid);
 
   EXPECT_GE(record_batch[kYoungGCTimeIdx]->Get<types::Int64Value>(idx), 0);

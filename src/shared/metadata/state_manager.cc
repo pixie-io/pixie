@@ -247,7 +247,12 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
     absl::flat_hash_set<UPID> cgroups_active_upids;
     // We convert all the cgroup_active_pids to the UPIDs so that we can easily convert and check.
     for (uint32_t pid : cgroups_active_pids) {
-      cgroups_active_upids.emplace(md->asid(), pid, proc_parser.GetPIDStartTimeTicks(pid));
+      StatusOr<int64_t> pid_start_time = proc_parser.GetPIDStartTimeTicks(pid);
+      if (!pid_start_time.ok()) {
+        LOG(WARNING) << absl::Substitute("Could not determine start time of PID $0", pid);
+        continue;
+      }
+      cgroups_active_upids.emplace(md->asid(), pid, pid_start_time.ValueOrDie());
     }
 
     std::vector<UPID> upids_to_deactivate;

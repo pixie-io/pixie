@@ -420,7 +420,7 @@ std::string ProcParser::GetPIDCmdline(int32_t pid) const {
   return cmdline;
 }
 
-int64_t ProcParser::GetPIDStartTimeTicks(int32_t pid) const {
+StatusOr<int64_t> ProcParser::GetPIDStartTimeTicks(int32_t pid) const {
   const std::filesystem::path proc_pid_path =
       std::filesystem::path(proc_base_path_) / std::to_string(pid);
   return ::pl::system::GetPIDStartTimeTicks(proc_pid_path);
@@ -501,28 +501,31 @@ Status ProcParser::ReadNSPid(pid_t pid, std::vector<std::string>* ns_pids) const
   return Status::OK();
 }
 
-int64_t GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_path) {
-  const std::filesystem::path fpath = proc_pid_path / "stat";
+StatusOr<int64_t> GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_path) {
+  const std::filesystem::path proc_pid_stat_path = proc_pid_path / "stat";
+  const std::string fpath = proc_pid_stat_path.string();
+
   std::ifstream ifs;
-  ifs.open(fpath.string());
+  ifs.open(fpath);
   if (!ifs) {
-    return 0;
+    return error::Internal("Could not open file $0", fpath);
   }
 
   std::string line;
   if (!std::getline(ifs, line)) {
-    return 0;
+    return error::Internal("Could get line from file $0", fpath);
   }
 
   std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
   // We check less than in case more fields are added later.
   if (split.size() < kProcStatNumFields) {
-    return 0;
+    return error::Internal("Unexpected number of columns in file $0 [columns = $1].", fpath,
+                           split.size());
   }
 
   int64_t start_time_ticks;
   if (!absl::SimpleAtoi(split[kProcStatStartTimeField], &start_time_ticks)) {
-    return 0;
+    return error::Internal("Time value does not parse in file $0", fpath);
   }
 
   return start_time_ticks;
