@@ -350,7 +350,7 @@ void StirlingImpl::DeployDynamicTraceConnector(
   // On failure, set status and exit.
   ASSIGN_OR_RETURN_ERROR(
       std::unique_ptr<SourceConnector> source,
-      DynamicTraceConnector::Create(kDynTraceSourcePrefix + trace_id.str(), *program));
+      DynamicTraceConnector::Create(kDynTraceSourcePrefix + trace_id.str(), program.get()));
 
   LOG(INFO) << absl::Substitute("DynamicTrace [$0]: Program compiled to BCC code in $1 ms.",
                                 trace_id.str(), timer.ElapsedTime_us() / 1000.0);

@@ -75,7 +75,7 @@ class GoHTTPDynamicTraceTest : public ::testing::Test,
         break;
     }
 
-    ASSERT_OK_AND_ASSIGN(bcc_program_, dynamic_tracing::CompileProgram(logical_program_));
+    ASSERT_OK_AND_ASSIGN(bcc_program_, dynamic_tracing::CompileProgram(&logical_program_));
 
     ASSERT_OK_AND_ASSIGN(table_schema_,
                          DynamicDataTableSchema::Create(bcc_program_.perf_buffer_specs.front()));
@@ -83,7 +83,7 @@ class GoHTTPDynamicTraceTest : public ::testing::Test,
     data_table_ = std::make_unique<DataTable>(table_schema_->Get());
 
     ASSERT_OK_AND_ASSIGN(connector_,
-                         DynamicTraceConnector::Create("my_dynamic_source", logical_program_));
+                         DynamicTraceConnector::Create("my_dynamic_source", &logical_program_));
 
     ASSERT_OK(connector_->Init());
 
@@ -231,7 +231,7 @@ class CPPDynamicTraceTest : public ::testing::Test {
 
     logical_program_.mutable_deployment_spec()->set_path(dummy_exe_fixture_.Path());
 
-    PL_ASSIGN_OR_RETURN(bcc_program_, dynamic_tracing::CompileProgram(logical_program_));
+    PL_ASSIGN_OR_RETURN(bcc_program_, dynamic_tracing::CompileProgram(&logical_program_));
 
     if (bcc_program_.perf_buffer_specs.empty()) {
       return error::InvalidArgument("BCCProgram does not define perf buffer.");
@@ -243,7 +243,7 @@ class CPPDynamicTraceTest : public ::testing::Test {
     data_table_ = std::make_unique<DataTable>(table_schema_->Get());
 
     PL_ASSIGN_OR_RETURN(connector_,
-                        DynamicTraceConnector::Create("my_dynamic_source", logical_program_));
+                        DynamicTraceConnector::Create("my_dynamic_source", &logical_program_));
 
     PL_RETURN_IF_ERROR(connector_->Init());
 

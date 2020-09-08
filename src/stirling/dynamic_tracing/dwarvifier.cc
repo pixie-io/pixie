@@ -41,7 +41,7 @@ using ::pl::stirling::dynamic_tracing::ir::physical::StructVariable;
  */
 class Dwarvifier {
  public:
-  Status Setup(const ir::shared::DeploymentSpec& deployment_spec, ir::shared::Language language);
+  Dwarvifier(dwarf_tools::DwarfReader* dwarf_reader, ir::shared::Language language);
   Status Generate(const ir::logical::TracepointSpec& input_program,
                   ir::physical::Program* output_program);
 
@@ -102,7 +102,7 @@ class Dwarvifier {
   std::map<std::string, ir::physical::PerfBufferOutput*> outputs_;
   std::map<std::string, ir::physical::Struct*> structs_;
 
-  std::unique_ptr<dwarf_tools::DwarfReader> dwarf_reader_;
+  dwarf_tools::DwarfReader* dwarf_reader_ = nullptr;
 
   std::map<std::string, dwarf_tools::ArgInfo> args_map_;
   dwarf_tools::RetValInfo retval_info_;
@@ -116,7 +116,7 @@ class Dwarvifier {
 
 // GeneratePhysicalProgram is the main entry point.
 StatusOr<ir::physical::Program> GeneratePhysicalProgram(
-    const ir::logical::TracepointDeployment& input) {
+    const ir::logical::TracepointDeployment& input, dwarf_tools::DwarfReader* dwarf_reader) {
   if (input.tracepoints_size() != 1) {
     return error::InvalidArgument("Right now only support exactly 1 Tracepoint, got '$0'",
                                   input.tracepoints_size());
@@ -129,9 +129,7 @@ StatusOr<ir::physical::Program> GeneratePhysicalProgram(
 
   for (const auto& input_tracepoint : input.tracepoints()) {
     // Transform tracepoint program.
-    Dwarvifier dwarvifier;
-    PL_RETURN_IF_ERROR(
-        dwarvifier.Setup(input.deployment_spec(), input_tracepoint.program().language()));
+    Dwarvifier dwarvifier(dwarf_reader, input_tracepoint.program().language());
     PL_RETURN_IF_ERROR(dwarvifier.Generate(input_tracepoint.program(), &output_program));
   }
 
@@ -278,20 +276,12 @@ StatusOr<ArgInfo> GetArgInfo(const std::map<std::string, ArgInfo>& args_map,
 // Dwarvifier
 //-----------------------------------------------------------------------------
 
-Status Dwarvifier::Setup(const ir::shared::DeploymentSpec& deployment_spec,
-                         ir::shared::Language language) {
-  using dwarf_tools::DwarfReader;
-
-  dwarf_reader_ = DwarfReader::Create(deployment_spec.debug_symbols_path()).ConsumeValueOr(nullptr);
-
-  language_ = language;
-
+Dwarvifier::Dwarvifier(dwarf_tools::DwarfReader* dwarf_reader, ir::shared::Language language)
+    : dwarf_reader_(dwarf_reader), language_(language) {
   implicit_columns_ = {kTGIDVarName, kTGIDStartTimeVarName, kKTimeVarName};
   if (language_ == ir::shared::Language::GOLANG) {
     implicit_columns_.push_back(kGOIDVarName);
   }
-
-  return Status::OK();
 }
 
 Status Dwarvifier::Generate(const ir::logical::TracepointSpec& input_program,

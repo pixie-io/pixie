@@ -73,7 +73,7 @@ TEST(DynamicTracerTest, Compile) {
   ir::logical::TracepointDeployment input_program;
   ASSERT_TRUE(TextFormat::ParseFromString(input_program_str, &input_program));
 
-  ASSERT_OK_AND_ASSIGN(BCCProgram bcc_program, CompileProgram(input_program));
+  ASSERT_OK_AND_ASSIGN(BCCProgram bcc_program, CompileProgram(&input_program));
 
   ASSERT_THAT(bcc_program.uprobe_specs, SizeIs(4));
 

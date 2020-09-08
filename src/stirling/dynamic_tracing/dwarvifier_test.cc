@@ -1,3 +1,4 @@
+#include <memory>
 #include <string>
 
 #include "src/common/testing/testing.h"
@@ -1051,6 +1052,7 @@ class DwarfInfoTest : public ::testing::TestWithParam<DwarfInfoTestParam> {
 };
 
 TEST_P(DwarfInfoTest, Transform) {
+  using dwarf_tools::DwarfReader;
   DwarfInfoTestParam p = GetParam();
 
   std::string input_str = absl::Substitute(p.input, binary_path_);
@@ -1058,7 +1060,10 @@ TEST_P(DwarfInfoTest, Transform) {
   ASSERT_TRUE(TextFormat::ParseFromString(std::string(input_str), &input_program));
 
   std::string expected_output_str = absl::Substitute(p.expected_output, binary_path_);
-  ASSERT_OK_AND_THAT(GeneratePhysicalProgram(input_program), EqualsProto(expected_output_str));
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(binary_path_));
+  ASSERT_OK_AND_THAT(GeneratePhysicalProgram(input_program, dwarf_reader.get()),
+                     EqualsProto(expected_output_str));
 }
 
 INSTANTIATE_TEST_SUITE_P(DwarfInfoTestSuite, DwarfInfoTest,

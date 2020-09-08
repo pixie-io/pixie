@@ -13,6 +13,7 @@
 #include "src/stirling/dynamic_tracing/dwarvifier.h"
 #include "src/stirling/dynamic_tracing/ir/sharedpb/shared.pb.h"
 #include "src/stirling/dynamic_tracing/probe_transformer.h"
+#include "src/stirling/obj_tools/dwarf_tools.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 #include "src/stirling/obj_tools/proc_path_tools.h"
 
@@ -22,6 +23,9 @@ namespace dynamic_tracing {
 
 using ::pl::stirling::bpf_tools::BPFProbeAttachType;
 using ::pl::stirling::bpf_tools::UProbeSpec;
+
+using ::pl::stirling::dwarf_tools::DwarfReader;
+using ::pl::stirling::elf_tools::ElfReader;
 
 namespace {
 
@@ -65,53 +69,126 @@ StatusOr<BCCProgram::PerfBufferSpec> GetPerfBufferSpec(
   return pf_spec;
 }
 
-}  // namespace
-
-StatusOr<BCCProgram> CompileProgram(const ir::logical::TracepointDeployment& input_program) {
-  if (input_program.tracepoints_size() != 1) {
-    return error::InvalidArgument("Only one tracepoint currently supported, got '$0'",
-                                  input_program.tracepoints_size());
+StatusOr<ir::shared::Language> TransformSourceLanguage(
+    const llvm::dwarf::SourceLanguage& source_language) {
+  switch (source_language) {
+    case llvm::dwarf::DW_LANG_Go:
+      return ir::shared::Language::GOLANG;
+    case llvm::dwarf::DW_LANG_C:
+    case llvm::dwarf::DW_LANG_C_plus_plus:
+    case llvm::dwarf::DW_LANG_C_plus_plus_03:
+    case llvm::dwarf::DW_LANG_C_plus_plus_11:
+    case llvm::dwarf::DW_LANG_C_plus_plus_14:
+      return ir::shared::Language::CPP;
+    default:
+      return error::Internal("Detected language $0 is not supported",
+                             magic_enum::enum_name(source_language));
   }
+}
 
-  ir::shared::Language language = input_program.tracepoints(0).program().language();
+// Return value for Prepare(), so we can return multiple pointers.
+struct ObjInfo {
+  std::unique_ptr<ElfReader> elf_reader;
+  std::unique_ptr<DwarfReader> dwarf_reader;
+};
 
-  PL_ASSIGN_OR_RETURN(ir::logical::TracepointDeployment intermediate_program,
-                      TransformLogicalProgram(input_program));
-
-  pid_t pid = UProbeSpec::kDefaultPID;
+// Prepares the input program for compilation by:
+// 1) Resolving the tracepoint target specification into an object path (e.g. UPID->path).
+// 2) Preparing the Elf and Dwarf info for the binary.
+// 3) Auto-detecting the source language.
+StatusOr<ObjInfo> Prepare(ir::logical::TracepointDeployment* input_program) {
+  ObjInfo obj_info;
 
   // Note that this should do nothing when called as part of Stirling as a whole,
   // because it was already called by RegisterTracepoint() in stirling.
   // The extra call should turn into a NOP.
-  PL_RETURN_IF_ERROR(ResolveTargetObjPath(intermediate_program.mutable_deployment_spec()));
+  PL_RETURN_IF_ERROR(ResolveTargetObjPath(input_program->mutable_deployment_spec()));
 
-  LOG(INFO) << absl::Substitute("Tracepoint binary: $0",
-                                intermediate_program.deployment_spec().path());
+  const auto& binary_path = input_program->deployment_spec().path();
+  LOG(INFO) << absl::Substitute("Tracepoint binary: $0", binary_path);
 
-  const auto& binary_path = intermediate_program.deployment_spec().path();
+  PL_ASSIGN_OR_RETURN(obj_info.elf_reader, ElfReader::Create(binary_path));
 
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<elf_tools::ElfReader> elf_reader,
-                      elf_tools::ElfReader::Create(binary_path));
-  intermediate_program.mutable_deployment_spec()->set_debug_symbols_path(
-      elf_reader->debug_symbols_path());
+  const auto& debug_symbols_path = obj_info.elf_reader->debug_symbols_path().string();
+
+  obj_info.dwarf_reader = DwarfReader::Create(debug_symbols_path).ConsumeValueOr(nullptr);
+
+  // Override the language if DWARF info is available.
+  if (obj_info.dwarf_reader != nullptr) {
+    PL_ASSIGN_OR_RETURN(ir::shared::Language language,
+                        TransformSourceLanguage(obj_info.dwarf_reader->source_language()));
+
+    LOG(INFO) << absl::Substitute("Detected language $0 for object $1",
+                                  magic_enum::enum_name(obj_info.dwarf_reader->source_language()),
+                                  binary_path);
+
+    // Since we only support tracing of a single object, all tracepoints have the same language.
+    for (auto& tracepoint : *input_program->mutable_tracepoints()) {
+      tracepoint.mutable_program()->set_language(language);
+    }
+  }
+
+  return obj_info;
+}
+
+}  // namespace
+
+StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_program) {
+  if (input_program->tracepoints_size() != 1) {
+    return error::InvalidArgument("Only one tracepoint currently supported, got '$0'",
+                                  input_program->tracepoints_size());
+  }
+
+  // --------------------------
+  // Pre-processing
+  // --------------------------
+
+  // Prepares the input program by making adjustments to the input program,
+  // and also returning the ELF and DWARF readers for the program.
+  PL_ASSIGN_OR_RETURN(ObjInfo obj_info, Prepare(input_program));
+
+  // --------------------------
+  // Main compilation pipeline
+  // --------------------------
+
+  PL_ASSIGN_OR_RETURN(ir::logical::TracepointDeployment intermediate_program,
+                      TransformLogicalProgram(*input_program));
 
   PL_ASSIGN_OR_RETURN(ir::physical::Program physical_program,
-                      GeneratePhysicalProgram(intermediate_program));
+                      GeneratePhysicalProgram(intermediate_program, obj_info.dwarf_reader.get()));
+
+  PL_ASSIGN_OR_RETURN(std::string bcc_code, GenBCCProgram(physical_program));
+
+  // --------------------------
+  // Generate BCC Program Object
+  // --------------------------
+
+  // TODO(oazizi): Move the code below into its own function.
 
   BCCProgram bcc_program;
+  bcc_program.code = std::move(bcc_code);
 
-  PL_ASSIGN_OR_RETURN(bcc_program.code, GenBCCProgram(physical_program));
+  pid_t pid = physical_program.deployment_spec().upid().pid();
+  const ir::shared::Language& language = physical_program.language();
+  const std::string& binary_path = physical_program.deployment_spec().path();
 
   for (const auto& probe : physical_program.probes()) {
     PL_ASSIGN_OR_RETURN(std::vector<UProbeSpec> specs,
-                        GetUProbeSpec(binary_path, language, probe, elf_reader.get()));
+                        GetUProbeSpec(binary_path, language, probe, obj_info.elf_reader.get()));
     for (auto& spec : specs) {
+      // When PID is specified, the binary_path must still be provided. The PID only further filters
+      // which instances of the binary_path will be traced.
+      // TODO(yzhao): Seems with pid and binary both specified, detaching uprobes will fail after
+      // the process exists. This does not happen if the pid was not specified.
+      if (pid != 0) {
+        spec.pid = pid;
+      }
+
       bcc_program.uprobe_specs.push_back(std::move(spec));
     }
   }
 
   absl::flat_hash_map<std::string_view, const ir::physical::Struct*> structs;
-
   for (const auto& st : physical_program.structs()) {
     structs[st.name()] = &st;
   }
@@ -121,18 +198,10 @@ StatusOr<BCCProgram> CompileProgram(const ir::logical::TracepointDeployment& inp
     bcc_program.perf_buffer_specs.push_back(std::move(pf_spec));
   }
 
-  if (pid != UProbeSpec::kDefaultPID) {
-    // TODO(yzhao): Seems with pid and binary both specified, detaching uprobes will fail after
-    // the process exists. This does not happen if the pid was not specified.
-    for (auto& spec : bcc_program.uprobe_specs) {
-      // When PID is specified, the binary_path must still be provided. The PID only further filters
-      // which instances of the binary_path will be traced.
-      spec.pid = pid;
-    }
-  }
-
   return bcc_program;
 }
+
+namespace {
 
 StatusOr<std::filesystem::path> ResolveUPID(const ir::shared::DeploymentSpec& deployment_spec) {
   uint32_t pid = deployment_spec.upid().pid();
@@ -179,6 +248,8 @@ StatusOr<std::filesystem::path> ResolveSharedObject(
 
   return error::Internal("Could not find shared library $0 in context of PID $1.", lib_name, pid);
 }
+
+}  // namespace
 
 Status ResolveTargetObjPath(ir::shared::DeploymentSpec* deployment_spec) {
   std::filesystem::path target_obj_path;

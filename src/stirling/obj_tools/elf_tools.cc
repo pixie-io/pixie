@@ -36,7 +36,7 @@ Status ElfReader::LocateDebugSymbols(const std::filesystem::path& debug_file_dir
   ELFIO::Elf_Half sec_num = elf_reader_.sections.size();
   for (int i = 0; i < sec_num; ++i) {
     ELFIO::section* psec = elf_reader_.sections[i];
-    if (psec->get_type() == SHT_SYMTAB) {
+    if (psec->get_type() == ELFIO::SHT_SYMTAB) {
       found_symtab = true;
     }
 
@@ -180,7 +180,7 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
   ELFIO::section* symtab_section = nullptr;
   for (int i = 0; i < elf_reader_.sections.size(); ++i) {
     ELFIO::section* psec = elf_reader_.sections[i];
-    if (psec->get_type() == SHT_SYMTAB) {
+    if (psec->get_type() == ELFIO::SHT_SYMTAB) {
       symtab_section = psec;
       break;
     }
@@ -198,7 +198,7 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
     ELFIO::Elf64_Addr addr = 0;
     ELFIO::Elf_Xword size = 0;
     unsigned char bind = 0;
-    unsigned char type = STT_NOTYPE;
+    unsigned char type = ELFIO::STT_NOTYPE;
     ELFIO::Elf_Half section_index;
     unsigned char other;
     symbols.get_symbol(j, name, addr, size, bind, type, section_index, other);
@@ -234,7 +234,7 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
 StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::ListFuncSymbols(
     std::string_view search_symbol, SymbolMatchType match_type) {
   PL_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> symbol_infos,
-                      SearchSymbols(search_symbol, match_type, STT_FUNC));
+                      SearchSymbols(search_symbol, match_type, ELFIO::STT_FUNC));
 
   absl::flat_hash_set<uint64_t> symbol_addrs;
   for (auto& symbol_info : symbol_infos) {
@@ -399,7 +399,7 @@ StatusOr<absl::flat_hash_map<std::string, std::vector<std::string>>> ExtractGola
 
   PL_ASSIGN_OR_RETURN(
       std::vector<ElfReader::SymbolInfo> itable_symbols,
-      elf_reader->SearchSymbols(kITablePrefix, SymbolMatchType::kPrefix, STT_OBJECT));
+      elf_reader->SearchSymbols(kITablePrefix, SymbolMatchType::kPrefix, ELFIO::STT_OBJECT));
 
   for (const auto& sym : itable_symbols) {
     // Expected format is:

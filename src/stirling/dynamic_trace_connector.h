@@ -17,7 +17,7 @@ class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapp
   ~DynamicTraceConnector() override = default;
 
   static StatusOr<std::unique_ptr<SourceConnector>> Create(
-      std::string_view name, const dynamic_tracing::ir::logical::TracepointDeployment& program) {
+      std::string_view name, dynamic_tracing::ir::logical::TracepointDeployment* program) {
     PL_ASSIGN_OR_RETURN(dynamic_tracing::BCCProgram bcc_program,
                         dynamic_tracing::CompileProgram(program));
 
