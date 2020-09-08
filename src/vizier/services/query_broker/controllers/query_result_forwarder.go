@@ -3,10 +3,12 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	uuid "github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
@@ -24,8 +26,8 @@ type QueryPlanOpts struct {
 	PlanMap map[uuid.UUID]*planpb.Plan
 }
 
-// The maximum amount of time to wait for a new result for a given query.
-const defaultStreamResultTimeout = 5 * time.Second
+// The deadline for all sinks in a given query to initialize.
+const defaultResultSinkInitializationTimeout = 5 * time.Second
 
 // A struct to track state for an active query in the system.
 // It can be modified and accessed by multiple agent streams and a single client stream.
@@ -41,6 +43,13 @@ type activeQuery struct {
 	queryResultCh chan *carnotpb.TransferResultChunkRequest
 	tableIDMap    map[string]string
 
+	// The set of result tables that still need to open a connection to this
+	// result forwarder via TransferResultChunk. If they take too long to open the
+	// connection, the query will time out.
+	uninitializedTables map[string]bool
+	// Signal for when all of the expected tables have established a connection.
+	allTablesConnectedCh chan bool
+
 	// The tables left in the query for which to receive end of stream.
 	// These are deleted as end of stream signals come in.
 	// These two fields are only accessed by a single writer and reader.
@@ -51,8 +60,10 @@ type activeQuery struct {
 
 func newActiveQuery(tableIDMap map[string]string) *activeQuery {
 	eosTables := make(map[string]bool)
+	uninitializedTables := make(map[string]bool)
 	for tableName := range tableIDMap {
 		eosTables[tableName] = true
+		uninitializedTables[tableName] = true
 	}
 
 	return &activeQuery{
@@ -60,8 +71,10 @@ func newActiveQuery(tableIDMap map[string]string) *activeQuery {
 		cancelClientStreamCh:  make(chan bool),
 		clientStreamCancelled: false,
 		remainingTableEos:     eosTables,
+		uninitializedTables:   uninitializedTables,
 		gotFinalExecStats:     false,
 		tableIDMap:            tableIDMap,
+		allTablesConnectedCh:  make(chan bool),
 	}
 }
 
@@ -96,6 +109,11 @@ func (a *activeQuery) updateQueryState(msg *carnotpb.TransferResultChunkRequest)
 		tableName := queryResult.GetTableName()
 
 		if rb := queryResult.GetRowBatch(); rb != nil {
+			if _, present := a.uninitializedTables[tableName]; present {
+				return fmt.Errorf("Received RowBatch before initializing table %s for query %s",
+					tableName, queryIDStr)
+			}
+
 			if !rb.GetEos() {
 				return nil
 			}
@@ -108,6 +126,16 @@ func (a *activeQuery) updateQueryState(msg *carnotpb.TransferResultChunkRequest)
 		}
 
 		if queryResult.GetInitiateResultStream() {
+			if _, present := a.uninitializedTables[tableName]; !present {
+				return fmt.Errorf("Did not expect stream to be (re)opened query result table %s for query %s",
+					tableName, queryIDStr)
+			}
+			delete(a.uninitializedTables, tableName)
+			// If we have initialized all of our tables, then signal to the goroutine waiting for all
+			// result sinks to be initialized that it can stop waiting.
+			if len(a.uninitializedTables) == 0 {
+				close(a.allTablesConnectedCh)
+			}
 			return nil
 		}
 	}
@@ -116,7 +144,7 @@ func (a *activeQuery) updateQueryState(msg *carnotpb.TransferResultChunkRequest)
 }
 
 func (a *activeQuery) queryComplete() bool {
-	return len(a.remainingTableEos) == 0 && a.gotFinalExecStats
+	return len(a.uninitializedTables) == 0 && len(a.remainingTableEos) == 0 && a.gotFinalExecStats
 }
 
 // QueryResultForwarder is responsible for receiving query results from the agent streams and forwarding
@@ -129,11 +157,11 @@ type QueryResultForwarder interface {
 
 	// Streams results from the agent stream to the client stream.
 	// Blocks until the stream (& the agent stream) has completed, been cancelled, or experienced an error.
-	// Returns error for any error received, and a bool for whether the query timed out (true for timeout)
+	// Returns error for any error received.
 	StreamResults(ctx context.Context, queryID uuid.UUID,
 		resultCh chan *vizierpb.ExecuteScriptResponse,
 		compilationTimeNs int64,
-		queryPlanOpts *QueryPlanOpts) (bool, error)
+		queryPlanOpts *QueryPlanOpts) error
 
 	// Pass a message received from the agent stream to the client-side stream.
 	ForwardQueryResult(msg *carnotpb.TransferResultChunkRequest) error
@@ -146,20 +174,20 @@ type QueryResultForwarder interface {
 type QueryResultForwarderImpl struct {
 	activeQueries map[uuid.UUID]*activeQuery
 	// Used to guard deletions and accesses of the activeQueries map.
-	activeQueriesMutex  sync.Mutex
-	streamResultTimeout time.Duration
+	activeQueriesMutex              sync.Mutex
+	resultSinkInitializationTimeout time.Duration
 }
 
 // NewQueryResultForwarder creates a new QueryResultForwarder.
 func NewQueryResultForwarder() QueryResultForwarder {
-	return NewQueryResultForwarderWithTimeout(defaultStreamResultTimeout)
+	return NewQueryResultForwarderWithTimeout(defaultResultSinkInitializationTimeout)
 }
 
 // NewQueryResultForwarderWithTimeout returns a query result forwarder with a custom timeout.
 func NewQueryResultForwarderWithTimeout(timeout time.Duration) QueryResultForwarder {
 	return &QueryResultForwarderImpl{
-		activeQueries:       make(map[uuid.UUID]*activeQuery),
-		streamResultTimeout: timeout,
+		activeQueries:                   make(map[uuid.UUID]*activeQuery),
+		resultSinkInitializationTimeout: timeout,
 	}
 }
 
@@ -172,6 +200,7 @@ func (f *QueryResultForwarderImpl) RegisterQuery(queryID uuid.UUID, tableIDMap m
 		return fmt.Errorf("Query %d already registered", queryID)
 	}
 	f.activeQueries[queryID] = newActiveQuery(tableIDMap)
+	log.Errorf("Registering query %s", queryID.String())
 	return nil
 }
 
@@ -185,14 +214,14 @@ func (f *QueryResultForwarderImpl) DeleteQuery(queryID uuid.UUID) {
 // StreamResults streams results from the agent streams to the client stream.
 func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uuid.UUID,
 	resultCh chan *vizierpb.ExecuteScriptResponse,
-	compilationTimeNs int64, queryPlanOpts *QueryPlanOpts) (bool, error) {
+	compilationTimeNs int64, queryPlanOpts *QueryPlanOpts) error {
 
 	f.activeQueriesMutex.Lock()
 	activeQuery, present := f.activeQueries[queryID]
 	f.activeQueriesMutex.Unlock()
 
 	if !present {
-		return false, fmt.Errorf("error in StreamResults: Query %s not registered in query forwarder", queryID.String())
+		return fmt.Errorf("error in StreamResults: Query %s not registered in query forwarder", queryID.String())
 	}
 
 	defer func() {
@@ -202,11 +231,33 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 	}()
 
 	ctx, cancel := context.WithCancel(ctx)
-	cancelStreamReturnErr := func(err error, timeout bool) (bool, error) {
+	cancelStreamReturnErr := func(err error) error {
 		activeQuery.signalCancelClientStream()
 		cancel()
-		return timeout, err
+		return err
 	}
+
+	// Waits for `resultSinkInitializationTimeout` time for all of the result sinks (tables)
+	// for this query to initialize a connection to the query broker.
+	go func() {
+		for {
+			select {
+			case <-activeQuery.cancelClientStreamCh:
+				return
+			case <-activeQuery.allTablesConnectedCh:
+				return
+			case <-time.After(f.resultSinkInitializationTimeout):
+				var missingSinks []string
+				for table := range activeQuery.uninitializedTables {
+					missingSinks = append(missingSinks, table)
+				}
+				log.Errorf("Query %s failed to initialize all result tables within the deadline, missing: %s",
+					queryID.String(), strings.Join(missingSinks, ", "))
+				activeQuery.signalCancelClientStream()
+				return
+			}
+		}
+	}()
 
 	for {
 		select {
@@ -214,20 +265,11 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 			// Client side stream is cancelled.
 			// Subsequent calls to ForwardQueryResult should fail for this query.
 			activeQuery.signalCancelClientStream()
-			return false, nil
+			return nil
 
 		case <-activeQuery.cancelClientStreamCh:
 			return cancelStreamReturnErr(
-				fmt.Errorf("Client stream cancelled for query %s", queryID.String()),
-				/*timeout*/ false,
-			)
-
-			// TODO(nserrino): Remove this case and replace with a timeout on all result sinks initialing.
-		case <-time.After(f.streamResultTimeout):
-			return cancelStreamReturnErr(
-				fmt.Errorf("Query %s timed out", queryID.String()),
-				/*timeout*/ true,
-			)
+				fmt.Errorf("Client stream cancelled for query %s", queryID.String()))
 
 		case msg := <-activeQuery.queryResultCh:
 			// Stream the agent stream result to the client stream.
@@ -235,7 +277,7 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 			// If there was an error, then cancel both sides of the stream.
 			err := activeQuery.updateQueryState(msg)
 			if err != nil {
-				return cancelStreamReturnErr(err /*timeout*/, false)
+				return cancelStreamReturnErr(err)
 			}
 
 			// Optionally send the query plan (which requires the exec stats).
@@ -251,7 +293,7 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 						activeQuery.agentExecStats, queryPlanOpts.TableID)
 
 					if err != nil {
-						return cancelStreamReturnErr(err /*timeout*/, false)
+						return cancelStreamReturnErr(err)
 					}
 					resultCh <- qpRes
 				}
@@ -259,7 +301,7 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 
 			resp, err := BuildExecuteScriptResponse(msg, activeQuery.tableIDMap, compilationTimeNs)
 			if err != nil {
-				return cancelStreamReturnErr(err /*timeout*/, false)
+				return cancelStreamReturnErr(err)
 			}
 
 			// Some inbound messages don't translate into responses to the client stream.
@@ -268,7 +310,7 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 			}
 
 			if activeQuery.queryComplete() {
-				return /*timeout*/ false, nil
+				return nil
 			}
 		}
 	}

@@ -11,15 +11,8 @@ import (
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	// "pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	// "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
-	// "pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
-	// "pixielabs.ai/pixielabs/src/carnot/udfspb"
 	carnotpb "pixielabs.ai/pixielabs/src/carnotpb"
 	mock_carnotpb "pixielabs.ai/pixielabs/src/carnotpb/mock"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
@@ -29,7 +22,6 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 	mock_controllers "pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
-	// "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
 	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 	mock_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb/mock"
@@ -454,7 +446,6 @@ func (f *fakeAgentsTracker) GetAgentInfo() tracker.AgentsInfo {
 type fakeResultForwarder struct {
 	// Variables to pass in for ExecuteScript testing.
 	ClientResultsToSend []*vizierpb.ExecuteScriptResponse
-	Timeout             bool
 	Error               error
 
 	// Variables that will get set during ExecuteScriptTesting.
@@ -484,7 +475,7 @@ func (f *fakeResultForwarder) DeleteQuery(queryID uuid.UUID) {
 func (f *fakeResultForwarder) StreamResults(ctx context.Context, queryID uuid.UUID,
 	resultCh chan *vizierpb.ExecuteScriptResponse,
 	compilationTimeNs int64,
-	queryPlanOpts *controllers.QueryPlanOpts) (bool, error) {
+	queryPlanOpts *controllers.QueryPlanOpts) error {
 
 	f.StreamedQueryPlanOpts = queryPlanOpts
 	f.QueryStreamed = queryID
@@ -492,7 +483,7 @@ func (f *fakeResultForwarder) StreamResults(ctx context.Context, queryID uuid.UU
 	for _, expectedResult := range f.ClientResultsToSend {
 		resultCh <- expectedResult
 	}
-	return f.Timeout, f.Error
+	return f.Error
 }
 
 // ForwardQueryResult forwards the agent result to the client result stream.
@@ -1068,6 +1059,88 @@ func TestTransferResultChunk_MultipleTransferResultChunkStreams(t *testing.T) {
 	// Or modify the _Success test to use multiple streams.
 }
 
+func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	if !assert.Equal(t, 1, len(plannerStatePB.DistributedState.CarnotInfo)) {
+		t.FailNow()
+	}
+	agentsInfo := tracker.NewTestAgentsInfo(plannerStatePB.DistributedState)
+	at := fakeAgentsTracker{
+		agentsInfo: agentsInfo,
+	}
+	rf := fakeResultForwarder{}
+
+	// Set up server.
+	env, err := querybrokerenv.New("qb_address", "qb_hostname")
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nc, nil)
+	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
+
+	sv := new(schemapb.RowBatchData)
+	if err := proto.UnmarshalText(rowBatchPb, sv); err != nil {
+		t.Fatalf("Cannot unmarshal proto %v", err)
+	}
+	sv.Eos = false
+
+	queryID := uuid.NewV4()
+	queryIDpb := pbutils.ProtoFromUUID(&queryID)
+
+	msg1 := &carnotpb.TransferResultChunkRequest{
+		Address: "foo",
+		QueryID: queryIDpb,
+		Result: &carnotpb.TransferResultChunkRequest_QueryResult{
+			QueryResult: &carnotpb.TransferResultChunkRequest_SinkResult{
+				ResultContents: &carnotpb.TransferResultChunkRequest_SinkResult_RowBatch{
+					RowBatch: sv,
+				},
+				Destination: &carnotpb.TransferResultChunkRequest_SinkResult_TableName{
+					TableName: "output_table_1",
+				},
+			},
+		},
+	}
+
+	srv.EXPECT().Context().Return(&testingutils.MockContext{}).AnyTimes()
+	srv.EXPECT().Recv().Return(msg1, nil)
+	srv.EXPECT().Recv().Return(nil, io.EOF)
+	srv.EXPECT().SendAndClose(&carnotpb.TransferResultChunkResponse{
+		Success: false,
+		Message: fmt.Sprintf(
+			"agent stream was unxpectedly closed for table %s of query %s before the results completed",
+			"output_table_1", queryID.String(),
+		),
+	}).Return(nil)
+
+	assert.False(t, rf.ClientStreamClosed)
+	assert.Equal(t, 0, len(rf.ReceivedAgentResults))
+
+	err = s.TransferResultChunk(srv)
+	if !assert.Nil(t, err) {
+		t.Fatal("Error while transferring result chunk", err)
+	}
+
+	assert.True(t, rf.ClientStreamClosed)
+	assert.Equal(t, 1, len(rf.ReceivedAgentResults))
+	assert.Equal(t, msg1, rf.ReceivedAgentResults[0])
+}
+
 func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 	port, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
@@ -1128,16 +1201,16 @@ func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 	srv.EXPECT().Context().Return(&testingutils.MockContext{}).AnyTimes()
 	srv.EXPECT().Recv().Return(msg1, nil)
 	srv.EXPECT().Recv().Return(nil, fmt.Errorf("Agent error"))
+	srv.EXPECT().SendAndClose(&carnotpb.TransferResultChunkResponse{
+		Success: false,
+		Message: "Error reading TransferResultChunk stream: Agent error",
+	}).Return(nil)
 
 	assert.False(t, rf.ClientStreamClosed)
 	assert.Equal(t, 0, len(rf.ReceivedAgentResults))
 
 	err = s.TransferResultChunk(srv)
-	assert.NotNil(t, err)
-
-	res, ok := status.FromError(err)
-	require.True(t, ok)
-	assert.Equal(t, codes.Internal, res.Code())
+	assert.Nil(t, err)
 
 	assert.True(t, rf.ClientStreamClosed)
 	assert.Equal(t, 1, len(rf.ReceivedAgentResults))

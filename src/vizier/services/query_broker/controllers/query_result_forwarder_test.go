@@ -20,6 +20,23 @@ import (
 	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
+func makeInitiateTableRequest(queryID uuid.UUID, tableName string) *carnotpb.TransferResultChunkRequest {
+	return &carnotpb.TransferResultChunkRequest{
+		Address: "foo",
+		QueryID: pbutils.ProtoFromUUID(&queryID),
+		Result: &carnotpb.TransferResultChunkRequest_QueryResult{
+			QueryResult: &carnotpb.TransferResultChunkRequest_SinkResult{
+				ResultContents: &carnotpb.TransferResultChunkRequest_SinkResult_InitiateResultStream{
+					InitiateResultStream: true,
+				},
+				Destination: &carnotpb.TransferResultChunkRequest_SinkResult_TableName{
+					TableName: tableName,
+				},
+			},
+		},
+	}
+}
+
 func makeRowBatchResult(t *testing.T, queryID uuid.UUID, tableName string, tableID string,
 	eos bool) (*vizierpb.RowBatchData, *carnotpb.TransferResultChunkRequest) {
 	rb := new(schemapb.RowBatchData)
@@ -49,7 +66,8 @@ func makeRowBatchResult(t *testing.T, queryID uuid.UUID, tableName string, table
 	}
 }
 
-func makeExecStatsResult(t *testing.T, queryID uuid.UUID) (*vizierpb.QueryExecutionStats, *carnotpb.TransferResultChunkRequest) {
+func makeExecStatsResult(t *testing.T, queryID uuid.UUID) (*vizierpb.QueryExecutionStats,
+	*carnotpb.TransferResultChunkRequest) {
 	execStats := &queryresultspb.QueryExecutionStats{
 		Timing: &queryresultspb.QueryTimingInfo{
 			ExecutionTimeNs:   5010,
@@ -126,13 +144,11 @@ func TestStreamResultsSimple(t *testing.T) {
 	}()
 	ctx := context.Background()
 	var err error
-	var timeout bool
 
 	assert.Nil(t, f.RegisterQuery(queryID, expectedTables))
 
 	go func() {
-		timeout, err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
-		assert.False(t, timeout)
+		err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
 		close(doneCh)
 	}()
 
@@ -141,7 +157,9 @@ func TestStreamResultsSimple(t *testing.T) {
 	expected2, in2 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, true)
 	expected3, in3 := makeExecStatsResult(t, queryID)
 
+	assert.Nil(t, f.ForwardQueryResult(makeInitiateTableRequest(queryID, "foo")))
 	assert.Nil(t, f.ForwardQueryResult(in0))
+	assert.Nil(t, f.ForwardQueryResult(makeInitiateTableRequest(queryID, "bar")))
 	assert.Nil(t, f.ForwardQueryResult(in1))
 	assert.Nil(t, f.ForwardQueryResult(in2))
 	assert.Nil(t, f.ForwardQueryResult(in3))
@@ -187,13 +205,11 @@ func TestStreamResultsAgentCancel(t *testing.T) {
 	}()
 	ctx := context.Background()
 	var err error
-	var timeout bool
 
 	assert.Nil(t, f.RegisterQuery(queryID, expectedTables))
 
 	go func() {
-		timeout, err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
-		assert.False(t, timeout)
+		err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
 
 		// Forwarding after stream is done should fail.
 		_, in1 := makeRowBatchResult(t, queryID, "bar", "456" /*eos*/, true)
@@ -208,6 +224,7 @@ func TestStreamResultsAgentCancel(t *testing.T) {
 	}()
 
 	_, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
+	assert.Nil(t, f.ForwardQueryResult(makeInitiateTableRequest(queryID, "foo")))
 	assert.Nil(t, f.ForwardQueryResult(in0))
 	f.OptionallyCancelClientStream(queryID)
 	// Make sure it's safe to call cancel twice.
@@ -249,16 +266,16 @@ func TestStreamResultsClientContextCancel(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	var err error
-	var timeout bool
 
 	assert.Nil(t, f.RegisterQuery(queryID, expectedTables))
 
 	go func() {
-		timeout, err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
-		assert.False(t, timeout)
+		err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
 		close(doneCh)
 	}()
 
+	assert.Nil(t, f.ForwardQueryResult(makeInitiateTableRequest(queryID, "foo")))
+	assert.Nil(t, f.ForwardQueryResult(makeInitiateTableRequest(queryID, "bar")))
 	_, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
 	_, in1 := makeRowBatchResult(t, queryID, "bar", "456" /*eos*/, true)
 	_, in2 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, true)
@@ -304,7 +321,6 @@ func TestStreamResultsQueryPlan(t *testing.T) {
 	}()
 	ctx := context.Background()
 	var err error
-	var timeout bool
 
 	assert.Nil(t, f.RegisterQuery(queryID, expectedTables))
 
@@ -317,8 +333,7 @@ func TestStreamResultsQueryPlan(t *testing.T) {
 	}
 
 	go func() {
-		timeout, err = f.StreamResults(ctx, queryID, resultCh, 350, queryPlanOpts)
-		assert.False(t, timeout)
+		err = f.StreamResults(ctx, queryID, resultCh, 350, queryPlanOpts)
 		close(doneCh)
 	}()
 
@@ -327,7 +342,9 @@ func TestStreamResultsQueryPlan(t *testing.T) {
 	expected2, in2 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, true)
 	expected4, in3 := makeExecStatsResult(t, queryID)
 
+	assert.Nil(t, f.ForwardQueryResult(makeInitiateTableRequest(queryID, "foo")))
 	assert.Nil(t, f.ForwardQueryResult(in0))
+	assert.Nil(t, f.ForwardQueryResult(makeInitiateTableRequest(queryID, "bar")))
 	assert.Nil(t, f.ForwardQueryResult(in1))
 	assert.Nil(t, f.ForwardQueryResult(in2))
 	assert.Nil(t, f.ForwardQueryResult(in3))
@@ -388,27 +405,118 @@ func TestStreamResultsWrongQueryID(t *testing.T) {
 	}()
 	ctx := context.Background()
 	var err error
-	var timeout bool
 
 	assert.Nil(t, f.RegisterQuery(queryID, expectedTables))
 
 	go func() {
-		timeout, err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
-		assert.False(t, timeout)
+		err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
 		close(doneCh)
 	}()
 
 	expected0, goodInput := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
 	_, badInput := makeRowBatchResult(t, otherQueryID, "bar", "456" /*eos*/, true)
 
+	assert.Nil(t, f.ForwardQueryResult(makeInitiateTableRequest(queryID, "foo")))
 	assert.Nil(t, f.ForwardQueryResult(goodInput))
 	assert.NotNil(t, f.ForwardQueryResult(badInput))
 	f.OptionallyCancelClientStream(queryID)
 	assert.Nil(t, err)
 	wg.Wait()
 
+	assert.Equal(t, err.Error(), fmt.Sprintf("Client stream cancelled for query %s", queryID.String()))
+	assert.Equal(t, 1, len(results))
+	assert.Equal(t, queryID.String(), results[0].QueryID)
+	assert.Equal(t, expected0, results[0].GetData().Batch)
+}
+
+func TestStreamResultsResultsBeforeInitialization(t *testing.T) {
+	queryID := uuid.NewV4()
+
+	f := controllers.NewQueryResultForwarderWithTimeout(1 * time.Second)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	expectedTables := make(map[string]string)
+	expectedTables["foo"] = "123"
+	expectedTables["bar"] = "456"
+
+	var results []*vizierpb.ExecuteScriptResponse
+	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
+	doneCh := make(chan bool)
+
+	go func() {
+		for {
+			select {
+			case msg := <-resultCh:
+				results = append(results, msg)
+			case <-doneCh:
+				wg.Done()
+				return
+			}
+		}
+	}()
+	ctx := context.Background()
+	var err error
+
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables))
+
+	go func() {
+		err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
+		close(doneCh)
+	}()
+
+	_, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
+	assert.Nil(t, f.ForwardQueryResult(in0))
+	wg.Wait()
+
 	assert.Equal(t, err.Error(), fmt.Sprintf(
-		"Client stream cancelled for query %s", queryID.String()))
+		"Received RowBatch before initializing table foo for query %s",
+		queryID.String()))
+	assert.Equal(t, 0, len(results))
+}
+
+func TestStreamResultsNeverInitializedTable(t *testing.T) {
+	queryID := uuid.NewV4()
+
+	f := controllers.NewQueryResultForwarderWithTimeout(1 * time.Second)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	expectedTables := make(map[string]string)
+	expectedTables["foo"] = "123"
+	expectedTables["bar"] = "456"
+
+	var results []*vizierpb.ExecuteScriptResponse
+	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
+	doneCh := make(chan bool)
+
+	go func() {
+		for {
+			select {
+			case msg := <-resultCh:
+				results = append(results, msg)
+			case <-doneCh:
+				wg.Done()
+				return
+			}
+		}
+	}()
+	ctx := context.Background()
+	var err error
+
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables))
+
+	go func() {
+		err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
+		close(doneCh)
+	}()
+
+	expected0, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
+	assert.Nil(t, f.ForwardQueryResult(makeInitiateTableRequest(queryID, "foo")))
+	assert.Nil(t, f.ForwardQueryResult(in0))
+	wg.Wait()
+
+	assert.Equal(t, err.Error(), fmt.Sprintf("Client stream cancelled for query %s", queryID.String()))
 	assert.Equal(t, 1, len(results))
 	assert.Equal(t, queryID.String(), results[0].QueryID)
 	assert.Equal(t, expected0, results[0].GetData().Batch)
