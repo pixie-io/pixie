@@ -85,6 +85,9 @@ echo "-------------------------------------------"
 
 LOGDIR=logs
 mkdir -p "${LOGDIR}"
+
+rm -rf ${LOGDIR:?}/*
+
 timestamp=$(date +%s)
 for pod in $pods; do
   filename="${LOGDIR}/log$timestamp.$pod"
