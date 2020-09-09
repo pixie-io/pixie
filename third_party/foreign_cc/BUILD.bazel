@@ -4,6 +4,7 @@ package(default_visibility = ["//visibility:public"])
 
 load("@rules_foreign_cc//tools/build_defs:configure.bzl", "configure_make")
 load("@rules_foreign_cc//tools/build_defs:cmake.bzl", "cmake_external")
+load("@rules_foreign_cc//tools/build_defs:make.bzl", "make")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 load("@package_bundle//file:packages.bzl", "packages")
 
@@ -81,6 +82,21 @@ cmake_external(
     generate_crosstool_file = True,
     lib_name = "libarchive",
     lib_source = "@com_github_libarchive_libarchive//:all",
+)
+
+make(
+    name = "libbpf",
+    lib_source = "//third_party:libbpf_source",
+    make_commands = ["BUILD_STATIC_ONLY=y make -C src install PREFIX=out; mv src/out/lib64/libbpf.a $INSTALLDIR/lib/libbpf.a; mv src/out/include $INSTALLDIR"],
+    # The right way to setup this target should be the following, but it's not working.
+    # So we use the hack above.
+    # See: https://github.com/bazelbuild/rules_foreign_cc/issues/325
+    #    make_commands = ["BUILD_STATIC_ONLY=y make -C src install PREFIX=out"],
+    #    out_include_dir = "out/include",
+    #    out_lib_dir = "out/lib64",
+    static_libraries = [
+        "libbpf.a",
+    ],
 )
 
 cmake_external(

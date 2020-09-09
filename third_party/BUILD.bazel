@@ -21,6 +21,12 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+filegroup(
+    name = "libbpf_source",
+    srcs = glob(["bcc/src/cc/libbpf/**"]),
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "clang_tidy_stub",
     srcs = ["clang_tidy_stub.cc"],
