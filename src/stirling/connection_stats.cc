@@ -10,14 +10,16 @@ namespace stirling {
 
 namespace {
 
-ConnectionStats::AggKey BuildAggKey(const upid_t& upid, const traffic_class_t&,
+ConnectionStats::AggKey BuildAggKey(const upid_t& upid, const traffic_class_t& traffic_class,
                                     const SockAddr& remote_endpoint) {
   return {
       .upid = upid,
       // TODO(yzhao): Remote address might not be resolved yet. That causes imprecise stats.
       // Add code in address resolution to update stats after resolution is done.
       .remote_addr = remote_endpoint.AddrStr(),
-      .remote_port = remote_endpoint.port,
+      // Set ports to 0 if this event if from a server process.
+      // This avoids creating excessive amount of records from changing ports of K8s services.
+      .remote_port = traffic_class.role == kRoleServer ? 0 : remote_endpoint.port,
   };
 }
 
