@@ -624,9 +624,6 @@ func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.
 		tablenames += schema.Name + ", "
 	}
 
-	log.Errorf("----------------------------------------------")
-	log.Errorf("AgentID: %s has tablenames in update: %s", agentID.String(), tablenames)
-
 	computedSchemaPb, err := mds.GetComputedSchema()
 	// If there are no computed schemas, that means we have yet to set one.
 	if err == errNoComputedSchemas {
@@ -697,24 +694,6 @@ func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.
 			log.WithError(err).Errorf("Could not delete table to agent mapping %s -> %v", tableName, agentID)
 			return err
 		}
-	}
-
-	for tableName, agentIDs := range computedSchemaPb.TableNameToAgentIDs {
-		agentIDsStr := ""
-		for _, agentID := range agentIDs.AgentID {
-			id := utils.UUIDFromProtoOrNil(agentID)
-			agentIDsStr += id.String() + ", "
-		}
-		log.Errorf("Table %s has agents %s", tableName, agentIDsStr)
-	}
-	for _, table := range computedSchemaPb.Tables {
-		log.Errorf("Table %s", table.Name)
-	}
-	if len(computedSchemaPb.Tables) == 0 {
-		log.Errorf("No tables")
-	}
-	if len(computedSchemaPb.TableNameToAgentIDs) == 0 {
-		log.Errorf("No agent to table IDs")
 	}
 
 	computedSchema, err := computedSchemaPb.Marshal()
