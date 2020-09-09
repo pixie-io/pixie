@@ -242,6 +242,13 @@ func (a *AgentTopicListener) onAgentTracepointInfoUpdate(m *messages.TracepointI
 	}
 }
 
+// Stop stops processing any agent messages.
+func (a *AgentTopicListener) Stop() {
+	for _, ah := range a.agentMap {
+		ah.Stop()
+	}
+}
+
 // ProcessMessages handles all of the agent messages for this agent. If it does not receive a heartbeat from the agent
 // after a certain amount of time, it will declare the agent dead and perform deletion.
 func (ah *AgentHandler) ProcessMessages() {

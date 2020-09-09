@@ -139,7 +139,7 @@ func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
 	assert.Equal(t, update, updatePb.Update)
 }
 
-func TestMetadataTopicListener_HandleMessage(t *testing.T) {
+func TestMetadataTopicListener_ProcessMessage(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -180,7 +180,7 @@ func TestMetadataTopicListener_HandleMessage(t *testing.T) {
 
 	msg := nats.Msg{}
 	msg.Data = b
-	err = mdl.HandleMessage(&msg)
+	err = mdl.ProcessMessage(&msg)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(updates))
 	wrapperPb := &cvmsgspb.V2CMessage{}
@@ -194,7 +194,7 @@ func TestMetadataTopicListener_HandleMessage(t *testing.T) {
 	}
 }
 
-func TestMetadataTopicListener_HandleMessageBatch(t *testing.T) {
+func TestMetadataTopicListener_ProcessMessageBatch(t *testing.T) {
 	tests := []struct {
 		name               string
 		numUpdates         int
@@ -277,7 +277,7 @@ func TestMetadataTopicListener_HandleMessageBatch(t *testing.T) {
 
 			msg := nats.Msg{}
 			msg.Data = b
-			err = mdl.HandleMessage(&msg)
+			err = mdl.ProcessMessage(&msg)
 			assert.Nil(t, err)
 			assert.Equal(t, numBatches, test.expectedNumBatches)
 

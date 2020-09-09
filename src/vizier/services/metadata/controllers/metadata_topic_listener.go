@@ -26,6 +26,8 @@ type MetadataTopicListener struct {
 	sendMessage SendMessageFn
 	mds         MetadataStore
 	mh          *MetadataHandler
+	msgCh       chan *nats.Msg
+	quitCh      chan bool
 }
 
 // NewMetadataTopicListener creates a new metadata topic listener.
@@ -34,6 +36,8 @@ func NewMetadataTopicListener(mdStore MetadataStore, mdHandler *MetadataHandler,
 		sendMessage: sendMsgFn,
 		mds:         mdStore,
 		mh:          mdHandler,
+		msgCh:       make(chan *nats.Msg, 1000),
+		quitCh:      make(chan bool),
 	}
 
 	m.mds.UpdateSubscriberResourceVersion(subscriberName, "")
@@ -41,11 +45,40 @@ func NewMetadataTopicListener(mdStore MetadataStore, mdHandler *MetadataHandler,
 	// Subscribe to metadata updates.
 	mdHandler.AddSubscriber(m)
 
+	go m.processMessages()
+
 	return m, nil
 }
 
 // HandleMessage handles a message on the agent topic.
 func (m *MetadataTopicListener) HandleMessage(msg *nats.Msg) error {
+	m.msgCh <- msg
+	return nil
+}
+
+// ProcessMessages processes the metadata requests.
+func (m *MetadataTopicListener) processMessages() {
+	for {
+		select {
+		case msg := <-m.msgCh:
+			err := m.ProcessMessage(msg)
+			if err != nil {
+				log.WithError(err).Error("Failed to process metadata message")
+			}
+		case <-m.quitCh:
+			log.Info("Received quit, stopping metadata listener")
+			return
+		}
+	}
+}
+
+// Stop stops processing any metadata messages.
+func (m *MetadataTopicListener) Stop() {
+	m.quitCh <- true
+}
+
+// ProcessMessage processes a single message in the metadata topic.
+func (m *MetadataTopicListener) ProcessMessage(msg *nats.Msg) error {
 	c2vMsg := &cvmsgspb.C2VMessage{}
 	err := proto.Unmarshal(msg.Data, c2vMsg)
 	if err != nil {

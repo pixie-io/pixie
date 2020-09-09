@@ -8,6 +8,7 @@ import (
 // TopicListener handles NATS messages for a specific topic.
 type TopicListener interface {
 	HandleMessage(*nats.Msg) error
+	Stop()
 }
 
 // SendMessageFn is the function the TopicListener uses to publish messages back to NATS.
@@ -113,4 +114,8 @@ func (mc *MessageBusController) Close() {
 
 	mc.conn.Drain()
 	mc.conn.Close()
+
+	for _, tl := range mc.listeners {
+		tl.Stop()
+	}
 }
