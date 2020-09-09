@@ -76,6 +76,17 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
   // Client process is not discovered by ConnectorContext (StandaloneContext) because it is
   // short-lived, and SocketTraceConnector does not export connection stats of processes that are
   // not reported, so client-side connection stats won't be exposed.
+
+  {
+    // Server code runs in the same process as this test, so the records cannot be removed by
+    // non-existent upids. Here they are not exported because their values are identical to
+    // the previously-exported ones.
+    DataTable data_table{kConnStatsTable};
+    source_->TransferData(ctx_.get(), SocketTraceConnector::kConnStatsTableNum, &data_table_);
+    std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
+    // No changes in the data, so the records are not exported.
+    ASSERT_TRUE(tablets.empty());
+  }
 }
 
 // Test fixture that starts SocketTraceConnector after the connection was already established.

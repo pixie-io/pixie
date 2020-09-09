@@ -66,6 +66,11 @@ class ConnectionStats {
     uint64_t bytes_sent = 0;
     uint64_t bytes_recv = 0;
 
+    // Values of bytes_sent and bytes_recv of the previous record transfer.
+    // Used to indicate whether or not to skip exporting the current record.
+    uint64_t prev_bytes_sent = 0;
+    uint64_t prev_bytes_recv = 0;
+
     std::string ToString() const {
       return absl::Substitute("[conn_open=$0 conn_close=$1 bytes_sent=$2 bytes_recv=$3]", conn_open,
                               conn_close, bytes_sent, bytes_recv);

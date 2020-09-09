@@ -1369,38 +1369,37 @@ void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTa
   auto iter = agg_stats.begin();
   while (iter != agg_stats.end()) {
     const auto& key = iter->first;
-    const auto& stats = iter->second;
+    auto& stats = iter->second;
 
     if (stats.conn_open < stats.conn_close) {
       LOG_FIRST_N(WARNING, 10) << "Connection open should not be smaller than connection close.";
     }
 
-    uint64_t time = AdjustedSteadyClockNowNS();
+    // Only export this record if there are actual changes.
+    // TODO(yzhao): Exports these records after several iterations.
+    if (stats.bytes_sent != stats.prev_bytes_sent || stats.bytes_recv != stats.prev_bytes_recv) {
+      uint64_t time = AdjustedSteadyClockNowNS();
 
-    DataTable::RecordBuilder<&kConnStatsTable> r(data_table, time);
+      DataTable::RecordBuilder<&kConnStatsTable> r(data_table, time);
 
-    r.Append<idx::kTime>(time);
-    md::UPID upid(ctx->GetASID(), key.upid.tgid, key.upid.start_time_ticks);
-    r.Append<idx::kUPID>(upid.value());
-    r.Append<idx::kRemoteAddr>(key.remote_addr);
-    r.Append<idx::kRemotePort>(key.remote_port);
-    r.Append<idx::kProtocol>(key.traffic_class.protocol);
-    r.Append<idx::kRole>(key.traffic_class.role);
-    r.Append<idx::kConnOpen>(stats.conn_open);
-    r.Append<idx::kConnClose>(stats.conn_close);
-    r.Append<idx::kConnActive>(stats.conn_open - stats.conn_close);
-    r.Append<idx::kBytesSent>(stats.bytes_sent);
-    r.Append<idx::kBytesRecv>(stats.bytes_recv);
+      r.Append<idx::kTime>(time);
+      md::UPID upid(ctx->GetASID(), key.upid.tgid, key.upid.start_time_ticks);
+      r.Append<idx::kUPID>(upid.value());
+      r.Append<idx::kRemoteAddr>(key.remote_addr);
+      r.Append<idx::kRemotePort>(key.remote_port);
+      r.Append<idx::kProtocol>(key.traffic_class.protocol);
+      r.Append<idx::kRole>(key.traffic_class.role);
+      r.Append<idx::kConnOpen>(stats.conn_open);
+      r.Append<idx::kConnClose>(stats.conn_close);
+      r.Append<idx::kConnActive>(stats.conn_open - stats.conn_close);
+      r.Append<idx::kBytesSent>(stats.bytes_sent);
+      r.Append<idx::kBytesRecv>(stats.bytes_recv);
 #ifndef NDEBUG
-    r.Append<idx::kPxInfo>("");
+      r.Append<idx::kPxInfo>("");
 #endif
 
-    // Remove historical records of an inactive connection. A connection's history data is lost.
-    // Query scripts need to discards the records of all inactive connections, within accounting
-    // time window.
-    if (stats.conn_close >= stats.conn_open) {
-      agg_stats.erase(iter++);
-      continue;
+      stats.prev_bytes_sent = stats.bytes_sent;
+      stats.prev_bytes_recv = stats.bytes_recv;
     }
 
     // Remove data for exited upids. Do this after exporting data so that the last records are
