@@ -839,7 +839,6 @@ tracepoints {
     }
   }
 }
-
 )";
 
   auto trace_program = Prepare(kProgram, std::to_string(trace_target_.process_pid()));

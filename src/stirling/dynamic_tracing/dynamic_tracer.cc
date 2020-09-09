@@ -86,6 +86,44 @@ StatusOr<ir::shared::Language> TransformSourceLanguage(
   }
 }
 
+void DetectSourceLanguage(ElfReader* elf_reader, DwarfReader* dwarf_reader,
+                          ir::logical::TracepointDeployment* input_program) {
+  // AUTO implies unknown, so use that to mean unknown.
+  ir::shared::Language detected_language = ir::shared::Language::AUTO;
+
+  // Primary detection mechanism is DWARF info, when available.
+  if (dwarf_reader != nullptr) {
+    detected_language = TransformSourceLanguage(dwarf_reader->source_language())
+                            .ConsumeValueOr(ir::shared::Language::AUTO);
+  } else {
+    // Back-up detection policy looks for certain language-specific symbols
+    if (elf_reader->SymbolAddress("runtime.buildVersion").has_value()) {
+      detected_language = ir::shared::Language::GOLANG;
+    }
+
+    // TODO(oazizi): Make this stronger by adding more elf-based tests.
+  }
+
+  if (detected_language != ir::shared::Language::AUTO) {
+    LOG(INFO) << absl::Substitute("Using language $0 for object $1",
+                                  magic_enum::enum_name(dwarf_reader->source_language()),
+                                  input_program->deployment_spec().path());
+
+    // Since we only support tracing of a single object, all tracepoints have the same language.
+    for (auto& tracepoint : *input_program->mutable_tracepoints()) {
+      tracepoint.mutable_program()->set_language(detected_language);
+    }
+  } else {
+    // For now, just print a warning, and let the probe proceed.
+    // This is so we can use things like function argument tracing even when other features may not
+    // work.
+    LOG(WARNING) << absl::Substitute(
+        "Language for object $0 is unknown or unsupported, so assuming C/C++ ABI. "
+        "Some dynamic tracing features may not work, or may produce unexpected results.",
+        input_program->deployment_spec().path());
+  }
+}
+
 // Return value for Prepare(), so we can return multiple pointers.
 struct ObjInfo {
   std::unique_ptr<ElfReader> elf_reader;
@@ -113,20 +151,7 @@ StatusOr<ObjInfo> Prepare(ir::logical::TracepointDeployment* input_program) {
 
   obj_info.dwarf_reader = DwarfReader::Create(debug_symbols_path).ConsumeValueOr(nullptr);
 
-  // Override the language if DWARF info is available.
-  if (obj_info.dwarf_reader != nullptr) {
-    PL_ASSIGN_OR_RETURN(ir::shared::Language language,
-                        TransformSourceLanguage(obj_info.dwarf_reader->source_language()));
-
-    LOG(INFO) << absl::Substitute("Detected language $0 for object $1",
-                                  magic_enum::enum_name(obj_info.dwarf_reader->source_language()),
-                                  binary_path);
-
-    // Since we only support tracing of a single object, all tracepoints have the same language.
-    for (auto& tracepoint : *input_program->mutable_tracepoints()) {
-      tracepoint.mutable_program()->set_language(language);
-    }
-  }
+  DetectSourceLanguage(obj_info.elf_reader.get(), obj_info.dwarf_reader.get(), input_program);
 
   return obj_info;
 }

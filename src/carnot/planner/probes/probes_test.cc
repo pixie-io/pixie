@@ -109,7 +109,6 @@ deployment_spec {
 tracepoints {
   output_name: "http_return_table"
   program {
-    language: GOLANG
     outputs {
       name: "http_return_table"
       fields: "id"
@@ -159,7 +158,6 @@ deployment_spec {
 tracepoints {
   output_name: "http_return_table"
   program {
-    language: GOLANG
     outputs {
       name: "http_return_table"
       fields: "id"
@@ -263,7 +261,6 @@ deployment_spec {
 tracepoints {
   output_name: "cool_func_table"
   program {
-    language: GOLANG
     outputs {
       name: "cool_func_table"
       fields: "id"
@@ -343,7 +340,6 @@ deployment_spec {
 tracepoints{
   output_name: "http_body_table"
   program {
-    language: GOLANG
     outputs {
       name: "http_body_table"
       fields: "req_body"

@@ -342,7 +342,6 @@ deployment_spec {
 tracepoints {
   output_name: "http_return_table"
   program {
-    language: GOLANG
     outputs {
       name: "http_return_table"
       fields: "id"

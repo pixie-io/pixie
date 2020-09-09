@@ -329,8 +329,9 @@ Status StirlingImpl::RemoveSource(std::string_view source_name) {
 
 #define ASSIGN_OR_RETURN_ERROR(lhs, rexpr) PL_ASSIGN_OR(lhs, rexpr, RETURN_ERROR(__s__.status());)
 #define RETURN_IF_ERROR(s) \
-  if (!s.ok()) {           \
-    RETURN_ERROR(s);       \
+  auto __s__ = s;          \
+  if (!__s__.ok()) {       \
+    RETURN_ERROR(__s__);   \
   }
 
 void StirlingImpl::DeployDynamicTraceConnector(
