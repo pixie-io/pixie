@@ -5,8 +5,9 @@ package pl.stirling.dynamic_tracing.ir.shared;
 option go_package = "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/sharedpb";
 
 enum Language {
-  // Automatically infer the language (default).
-  AUTO = 0;
+  // Dynamic tracer will automatically infer the language when set to unknown.
+  // This is the preferred usage.
+  LANG_UNKNOWN = 0;
   C = 1;
   CPP = 2;
   GOLANG = 3;

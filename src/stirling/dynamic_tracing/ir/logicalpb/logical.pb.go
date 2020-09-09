@@ -662,7 +662,7 @@ func (m *TracepointSpec) GetLanguage() sharedpb.Language {
 	if m != nil {
 		return m.Language
 	}
-	return sharedpb.AUTO
+	return sharedpb.LANG_UNKNOWN
 }
 
 func (m *TracepointSpec) GetMaps() []*sharedpb.Map {

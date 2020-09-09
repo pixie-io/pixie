@@ -89,12 +89,12 @@ StatusOr<ir::shared::Language> TransformSourceLanguage(
 void DetectSourceLanguage(ElfReader* elf_reader, DwarfReader* dwarf_reader,
                           ir::logical::TracepointDeployment* input_program) {
   // AUTO implies unknown, so use that to mean unknown.
-  ir::shared::Language detected_language = ir::shared::Language::AUTO;
+  ir::shared::Language detected_language = ir::shared::Language::LANG_UNKNOWN;
 
   // Primary detection mechanism is DWARF info, when available.
   if (dwarf_reader != nullptr) {
     detected_language = TransformSourceLanguage(dwarf_reader->source_language())
-                            .ConsumeValueOr(ir::shared::Language::AUTO);
+                            .ConsumeValueOr(ir::shared::Language::LANG_UNKNOWN);
   } else {
     // Back-up detection policy looks for certain language-specific symbols
     if (elf_reader->SymbolAddress("runtime.buildVersion").has_value()) {
@@ -104,7 +104,7 @@ void DetectSourceLanguage(ElfReader* elf_reader, DwarfReader* dwarf_reader,
     // TODO(oazizi): Make this stronger by adding more elf-based tests.
   }
 
-  if (detected_language != ir::shared::Language::AUTO) {
+  if (detected_language != ir::shared::Language::LANG_UNKNOWN) {
     LOG(INFO) << absl::Substitute("Using language $0 for object $1",
                                   magic_enum::enum_name(dwarf_reader->source_language()),
                                   input_program->deployment_spec().path());

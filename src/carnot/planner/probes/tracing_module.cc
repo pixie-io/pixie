@@ -69,8 +69,8 @@ Status TraceModule::Init() {
           /* has_variable_len_args */ false,
           /* has_variable_len_kwargs */ false,
           std::bind(ProbeHandler::Probe, mutations_ir_,
-                    stirling::dynamic_tracing::ir::shared::Language::AUTO, std::placeholders::_1,
-                    std::placeholders::_2, std::placeholders::_3),
+                    stirling::dynamic_tracing::ir::shared::Language::LANG_UNKNOWN,
+                    std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
   PL_RETURN_IF_ERROR(probe_fn->SetDocString(kGoProbeDocstring));
   AddMethod(kGoProbeTraceDefinition, probe_fn);
