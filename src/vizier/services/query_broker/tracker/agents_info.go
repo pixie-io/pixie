@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	uuid "github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/utils"
@@ -46,6 +47,7 @@ func NewTestAgentsInfo(ds *distributedpb.DistributedState) AgentsInfo {
 
 // ClearState clears the agents info state.
 func (a *AgentsInfoImpl) ClearState() {
+	log.Infof("Clearing distributed state")
 	a.ds = &distributedpb.DistributedState{
 		SchemaInfo: []*distributedpb.SchemaInfo{},
 		CarnotInfo: []*distributedpb.CarnotInfo{},
@@ -56,8 +58,10 @@ func (a *AgentsInfoImpl) ClearState() {
 func (a *AgentsInfoImpl) UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate, schemaInfos []*distributedpb.SchemaInfo,
 	schemasUpdated bool) error {
 	if schemasUpdated {
+		log.Infof("Updating schemas to %s tables", len(schemaInfos))
 		a.ds.SchemaInfo = schemaInfos
 	}
+
 	carnotInfoMap := make(map[uuid.UUID]*distributedpb.CarnotInfo)
 	for _, carnotInfo := range a.ds.CarnotInfo {
 		agentUUID, err := utils.UUIDFromProto(carnotInfo.AgentID)
@@ -67,6 +71,13 @@ func (a *AgentsInfoImpl) UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate
 		carnotInfoMap[agentUUID] = carnotInfo
 	}
 
+	log.Infof("%d agents present in tracker before update", len(carnotInfoMap))
+
+	createdAgents := 0
+	deletedAgents := 0
+	updatedAgents := 0
+	updatedAgentsDataInfo := 0
+
 	for _, agentUpdate := range agentUpdates {
 		agentUUID, err := utils.UUIDFromProto(agentUpdate.AgentID)
 		if err != nil {
@@ -75,6 +86,12 @@ func (a *AgentsInfoImpl) UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate
 		// case 1: agent info update
 		agent := agentUpdate.GetAgent()
 		if agent != nil {
+			if _, present := carnotInfoMap[agentUUID]; present {
+				updatedAgents++
+			} else {
+				createdAgents++
+			}
+
 			if agent.Info.Capabilities == nil || agent.Info.Capabilities.CollectsData {
 				var metadataInfo *distributedpb.MetadataInfo
 				if carnotInfo, present := carnotInfoMap[agentUUID]; present {
@@ -91,9 +108,13 @@ func (a *AgentsInfoImpl) UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate
 		// case 2: agent data info update
 		dataInfo := agentUpdate.GetDataInfo()
 		if dataInfo != nil {
+			updatedAgentsDataInfo++
 			carnotInfo, present := carnotInfoMap[agentUUID]
-			if !present || carnotInfo == nil {
-				return fmt.Errorf("Could not update agent table metadata of unknown agent %+v", agentUUID)
+			if !present {
+				return fmt.Errorf("Could not update agent table metadata of unknown agent %s", agentUUID.String())
+			}
+			if carnotInfo == nil {
+				return fmt.Errorf("Carnot info is nil for agent %s, but received agent data info", agentUUID.String())
 			}
 			if dataInfo.MetadataInfo != nil {
 				carnotInfo.MetadataInfo = dataInfo.MetadataInfo
@@ -101,9 +122,14 @@ func (a *AgentsInfoImpl) UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate
 		}
 		// case 3: agent deleted
 		if agentUpdate.GetDeleted() {
+			deletedAgents++
 			delete(carnotInfoMap, agentUUID)
 		}
 	}
+
+	log.Infof("Created %s agents, deleted %s agents, updated %s agents, updated %s agents data info",
+		createdAgents, deletedAgents, updatedAgents, updatedAgentsDataInfo)
+	log.Infof("%d agents present in tracker after update", len(carnotInfoMap))
 
 	// reset the array and recreate.
 	a.ds.CarnotInfo = []*distributedpb.CarnotInfo{}

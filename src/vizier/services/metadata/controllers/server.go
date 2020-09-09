@@ -7,8 +7,10 @@ import (
 
 	types "github.com/gogo/protobuf/types"
 	uuid "github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
@@ -202,6 +204,7 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 				AgentSchemasUpdated: false,
 			})
 			if err != nil {
+				log.WithError(err).Errorf("Error sending noop agent updates")
 				return err
 			}
 		} else {
@@ -209,6 +212,7 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 			for !(finishedUpdates && finishedSchema) {
 				select {
 				case <-srv.Context().Done():
+					log.Infof("Client closed context for GetAgentUpdates")
 					return nil
 				default:
 					response := &metadatapb.AgentUpdatesResponse{
@@ -228,6 +232,7 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 					if finishedUpdates && !finishedSchema {
 						schemas, err := convertToSchemaInfo(newComputedSchema)
 						if err != nil {
+							log.WithError(err).Errorf("Received error converting schemas in GetAgentUpdates")
 							return err
 						}
 						response.AgentSchemas = schemas
@@ -238,12 +243,14 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 					currentIdx += agentChunkSize
 					err := srv.Send(response)
 					if err != nil {
+						log.WithError(err).Errorf("Error sending agent updates with contents")
 						return err
 					}
 				}
 			}
 		}
 
+		log.Infof("Sent %d agent updates", len(updates))
 		time.Sleep(agentUpdatePeriod)
 	}
 
