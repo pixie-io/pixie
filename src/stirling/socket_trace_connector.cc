@@ -1387,8 +1387,8 @@ void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTa
       r.Append<idx::kUPID>(upid.value());
       r.Append<idx::kRemoteAddr>(key.remote_addr);
       r.Append<idx::kRemotePort>(key.remote_port);
-      r.Append<idx::kProtocol>(key.traffic_class.protocol);
-      r.Append<idx::kRole>(key.traffic_class.role);
+      r.Append<idx::kProtocol>(stats.traffic_class.protocol);
+      r.Append<idx::kRole>(stats.traffic_class.role);
       r.Append<idx::kConnOpen>(stats.conn_open);
       r.Append<idx::kConnClose>(stats.conn_close);
       r.Append<idx::kConnActive>(stats.conn_open - stats.conn_close);

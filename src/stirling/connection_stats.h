@@ -35,32 +35,28 @@ class ConnectionStats {
   // protocol with local port number.
   struct AggKey {
     struct upid_t upid;
-    struct traffic_class_t traffic_class;
-    // This is empty for server role.
     std::string remote_addr;
     int remote_port;
 
     bool operator==(const AggKey& rhs) const {
       return upid.tgid == rhs.upid.tgid && upid.start_time_ticks == rhs.upid.start_time_ticks &&
-             traffic_class.protocol == rhs.traffic_class.protocol &&
-             traffic_class.role == rhs.traffic_class.role && remote_addr == rhs.remote_addr &&
-             remote_port == rhs.remote_port;
+             remote_addr == rhs.remote_addr && remote_port == rhs.remote_port;
     }
 
     template <typename H>
     friend H AbslHashValue(H h, const AggKey& key) {
-      return H::combine(std::move(h), key.upid.tgid, key.upid.start_time_ticks,
-                        key.traffic_class.protocol, key.traffic_class.role, key.remote_addr,
+      return H::combine(std::move(h), key.upid.tgid, key.upid.start_time_ticks, key.remote_addr,
                         key.remote_port);
     }
 
     std::string ToString() const {
-      return absl::Substitute("[tgid=$0 protocol=$1 role=$2 addr=$3 port=$4]", upid.tgid,
-                              traffic_class.protocol, traffic_class.role, remote_addr, remote_port);
+      return absl::Substitute("[tgid=$0 addr=$1 port=$2]", upid.tgid, remote_addr, remote_port);
     }
   };
 
   struct Stats {
+    traffic_class_t traffic_class = {};
+
     uint64_t conn_open = 0;
     uint64_t conn_close = 0;
     uint64_t bytes_sent = 0;
@@ -72,8 +68,9 @@ class ConnectionStats {
     uint64_t prev_bytes_recv = 0;
 
     std::string ToString() const {
-      return absl::Substitute("[conn_open=$0 conn_close=$1 bytes_sent=$2 bytes_recv=$3]", conn_open,
-                              conn_close, bytes_sent, bytes_recv);
+      return absl::Substitute(
+          "[conn_open=$0 conn_close=$1 bytes_sent=$2 bytes_recv=$3 traffic_class=$4]", conn_open,
+          conn_close, bytes_sent, bytes_recv, ::ToString(traffic_class));
     }
   };
 
@@ -83,9 +80,6 @@ class ConnectionStats {
   // traffic_class is unknown (as there is no actual data being examined).
   void AddConnCloseEvent(const ConnectionTracker& tracker);
   void AddDataEvent(const ConnectionTracker& tracker, const SocketDataEvent& event);
-
-  // TODO(yzhao): Handle HTTP2 events.
-
   void RecordConn(const struct conn_id_t& conn_id, const struct traffic_class_t& traffic_class,
                   const SockAddr& remote_endpoint, bool is_open);
   void RecordData(const struct upid_t& upid, const struct traffic_class_t& traffic_class,

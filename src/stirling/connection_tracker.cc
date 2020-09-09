@@ -617,11 +617,7 @@ bool ConnectionTracker::ReadyToExportDataStats() const {
   const bool conn_resolution_finished = remote_endpoint().family == SockAddrFamily::kIPv4 ||
                                         remote_endpoint().family == SockAddrFamily::kIPv6 ||
                                         conn_resolution_failed_;
-
-  const bool protocol_detection_finished = iteration_count_ > kUProbeProtocolDetectionIters ||
-                                           traffic_class_.protocol != kProtocolUnknown;
-
-  return conn_resolution_finished && protocol_detection_finished;
+  return conn_resolution_finished;
 }
 
 void ConnectionTracker::ExportDataStats() {

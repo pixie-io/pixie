@@ -21,7 +21,6 @@ TEST(HashTest, CanBeUsedInFlatHashMap) {
 
   ConnectionStats::AggKey key = {
       .upid = {.tgid = 1, .start_time_ticks = 2},
-      .traffic_class = {.protocol = kProtocolHTTP, .role = kRoleClient},
       .remote_addr = "test",
       .remote_port = 12345,
   };
@@ -45,11 +44,8 @@ class ConnectionStatsTest : public ::testing::Test {
   ConnectionStats conn_stats_;
 };
 
-auto AggKeyIs(int tgid, TrafficProtocol protocol, EndpointRole role, std::string_view remote_addr) {
+auto AggKeyIs(int tgid, std::string_view remote_addr) {
   return AllOf(Field(&ConnectionStats::AggKey::upid, Field(&upid_t::tgid, tgid)),
-               Field(&ConnectionStats::AggKey::traffic_class,
-                     AllOf(Field(&traffic_class_t::protocol, protocol),
-                           Field(&traffic_class_t::role, role))),
                Field(&ConnectionStats::AggKey::remote_addr, remote_addr));
 }
 
@@ -101,8 +97,7 @@ TEST_F(ConnectionStatsTest, ClientSizeAggregationRecord) {
   conn_stats_.AddDataEvent(tracker, data_event);
 
   EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(1, kProtocolHTTP, kRoleClient, "1.1.1.1"),
-                               StatsIs(1, 0, 24690, 24690))));
+              ElementsAre(Pair(AggKeyIs(1, "1.1.1.1"), StatsIs(1, 0, 24690, 24690))));
 
   auto data_event_cpy = std::make_unique<SocketDataEvent>(data_event);
   // This changes tracker's traffic class to be consistent with conn_stats_.
@@ -112,14 +107,12 @@ TEST_F(ConnectionStatsTest, ClientSizeAggregationRecord) {
   // Tests that after receiving conn close event for a connection, another same close event wont
   // increment the connection.
   EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(1, kProtocolHTTP, kRoleClient, "1.1.1.1"),
-                               StatsIs(1, 1, 24690, 24690))));
+              ElementsAre(Pair(AggKeyIs(1, "1.1.1.1"), StatsIs(1, 1, 24690, 24690))));
 
   conn_stats_.AddConnCloseEvent(tracker);
   // The conn_close is not incremented.
   EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(1, kProtocolHTTP, kRoleClient, "1.1.1.1"),
-                               StatsIs(1, 1, 24690, 24690))));
+              ElementsAre(Pair(AggKeyIs(1, "1.1.1.1"), StatsIs(1, 1, 24690, 24690))));
 }
 
 // Tests that disabled ConnectionTracker causes data event being ignored.

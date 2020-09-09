@@ -10,12 +10,10 @@ namespace stirling {
 
 namespace {
 
-ConnectionStats::AggKey BuildAggKey(const upid_t& upid, const traffic_class_t& traffic_class,
+ConnectionStats::AggKey BuildAggKey(const upid_t& upid, const traffic_class_t&,
                                     const SockAddr& remote_endpoint) {
-  DCHECK_NE(traffic_class.role, kRoleAll);
   return {
       .upid = upid,
-      .traffic_class = traffic_class,
       // TODO(yzhao): Remote address might not be resolved yet. That causes imprecise stats.
       // Add code in address resolution to update stats after resolution is done.
       .remote_addr = remote_endpoint.AddrStr(),
@@ -41,7 +39,7 @@ void ConnectionStats::AddDataEvent(const ConnectionTracker& tracker, const Socke
   // Save typing.
   const conn_id_t& conn_id = event.attr.conn_id;
   const upid_t& upid = event.attr.conn_id.upid;
-  const traffic_class_t& tcls = event.attr.traffic_class;
+  const traffic_class_t& tcls = tracker.traffic_class();
   const TrafficDirection dir = event.attr.direction;
   const size_t size = event.attr.msg_size;
 
@@ -59,12 +57,14 @@ void ConnectionStats::RecordConn(const struct conn_id_t& conn_id,
   if (is_open) {
     if (!known_conns_.contains(conn_id)) {
       ++agg_stats_[key].conn_open;
+      agg_stats_[key].traffic_class = traffic_class;
       known_conns_.insert(conn_id);
     }
   } else {
     auto iter = known_conns_.find(conn_id);
     if (iter != known_conns_.end()) {
       ++agg_stats_[key].conn_close;
+      agg_stats_[key].traffic_class = traffic_class;
       known_conns_.erase(iter);
     }
   }
@@ -76,6 +76,8 @@ void ConnectionStats::RecordData(const struct upid_t& upid,
                                  size_t size) {
   AggKey key = BuildAggKey(upid, traffic_class, remote_endpoint);
   auto& stats = agg_stats_[key];
+
+  stats.traffic_class = traffic_class;
 
   switch (direction) {
     case TrafficDirection::kEgress:

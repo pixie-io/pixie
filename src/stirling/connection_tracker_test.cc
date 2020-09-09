@@ -814,11 +814,8 @@ TEST_F(ConnectionTrackerTest, DisabledDueToStitchingFailureRate) {
   EXPECT_EQ(records.size(), 0);
 }
 
-auto AggKeyIs(int tgid, TrafficProtocol protocol, EndpointRole role, std::string remote_addr) {
+auto AggKeyIs(int tgid, std::string remote_addr) {
   return AllOf(Field(&ConnectionStats::AggKey::upid, Field(&upid_t::tgid, tgid)),
-               Field(&ConnectionStats::AggKey::traffic_class,
-                     AllOf(Field(&traffic_class_t::protocol, protocol),
-                           Field(&traffic_class_t::role, role))),
                Field(&ConnectionStats::AggKey::remote_addr, remote_addr));
 }
 
@@ -867,21 +864,18 @@ TEST_P(ConnectionTrackerStatsTest, ConnOpenDataCloseSequence) {
 
   tracker_.AddDataEvent(std::move(req_frame0));
 
-  EXPECT_THAT(
-      conn_stats_.mutable_agg_stats(),
-      UnorderedElementsAre(Pair(AggKeyIs(12345, protocol, role, "0.0.0.0"), StatsIs(1, 0, 4, 0))));
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              UnorderedElementsAre(Pair(AggKeyIs(12345, "0.0.0.0"), StatsIs(1, 0, 4, 0))));
 
   tracker_.AddDataEvent(std::move(resp_frame0));
 
-  EXPECT_THAT(
-      conn_stats_.mutable_agg_stats(),
-      UnorderedElementsAre(Pair(AggKeyIs(12345, protocol, role, "0.0.0.0"), StatsIs(1, 0, 4, 4))));
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              UnorderedElementsAre(Pair(AggKeyIs(12345, "0.0.0.0"), StatsIs(1, 0, 4, 4))));
 
   tracker_.AddControlEvent(close_event);
 
-  EXPECT_THAT(
-      conn_stats_.mutable_agg_stats(),
-      UnorderedElementsAre(Pair(AggKeyIs(12345, protocol, role, "0.0.0.0"), StatsIs(1, 1, 4, 4))));
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              UnorderedElementsAre(Pair(AggKeyIs(12345, "0.0.0.0"), StatsIs(1, 1, 4, 4))));
 }
 
 // Tests that ConnectionTracker accepts data and conn_close events.
@@ -913,15 +907,13 @@ TEST_P(ConnectionTrackerStatsTest, NoConnOpen) {
   // Export cached data stats.
   tracker_.IterationPreTick({}, nullptr, nullptr);
 
-  EXPECT_THAT(
-      conn_stats_.mutable_agg_stats(),
-      UnorderedElementsAre(Pair(AggKeyIs(12345, protocol, role, "0.0.0.0"), StatsIs(1, 0, 4, 4))));
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              UnorderedElementsAre(Pair(AggKeyIs(12345, "0.0.0.0"), StatsIs(1, 0, 4, 4))));
 
   tracker_.AddControlEvent(close_event);
 
-  EXPECT_THAT(
-      conn_stats_.mutable_agg_stats(),
-      UnorderedElementsAre(Pair(AggKeyIs(12345, protocol, role, "0.0.0.0"), StatsIs(1, 1, 4, 4))));
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              UnorderedElementsAre(Pair(AggKeyIs(12345, "0.0.0.0"), StatsIs(1, 1, 4, 4))));
 }
 
 // Tests that receiving conn_ope and conn_close before any data event results into correct stats.
@@ -953,18 +945,16 @@ TEST_P(ConnectionTrackerStatsTest, OnlyDataEvents) {
   // Export cached data stats.
   tracker_.IterationPreTick({}, nullptr, nullptr);
 
-  EXPECT_THAT(
-      conn_stats_.mutable_agg_stats(),
-      UnorderedElementsAre(Pair(AggKeyIs(12345, protocol, role, "0.0.0.0"), StatsIs(1, 0, 4, 4))));
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              UnorderedElementsAre(Pair(AggKeyIs(12345, "0.0.0.0"), StatsIs(1, 0, 4, 4))));
 
   tracker_.SetInactivityDuration(std::chrono::seconds(0));
   std::this_thread::sleep_for(std::chrono::seconds(1));
   // This triggers HandleInactivity().
   tracker_.IterationPostTick();
 
-  EXPECT_THAT(
-      conn_stats_.mutable_agg_stats(),
-      UnorderedElementsAre(Pair(AggKeyIs(12345, protocol, role, "0.0.0.0"), StatsIs(1, 1, 4, 4))));
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              UnorderedElementsAre(Pair(AggKeyIs(12345, "0.0.0.0"), StatsIs(1, 1, 4, 4))));
 }
 
 INSTANTIATE_TEST_SUITE_P(AllProtocols, ConnectionTrackerStatsTest,
