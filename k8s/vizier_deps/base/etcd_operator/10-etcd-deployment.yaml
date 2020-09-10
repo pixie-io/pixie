@@ -8,6 +8,7 @@ spec:
   template:
     metadata:
       labels:
+        plane: control
         name: etcd-operator
     spec:
       containers:
