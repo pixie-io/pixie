@@ -120,6 +120,14 @@ func main() {
 		}
 	}
 
+	// Delete cronjob.
+	_, err = od.DeleteByLabel("app=pl-monitoring", "CronJob")
+	if err != nil {
+		if isTimeoutError(err) {
+			log.WithError(err).Error("Old components taking longer to terminate than timeout")
+		}
+	}
+
 	etcdPath := etcdYAMLPath
 	if viper.GetBool("etcd_operator_enabled") {
 		etcdPath = etcdOperatorYAMLPath

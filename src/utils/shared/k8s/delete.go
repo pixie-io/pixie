@@ -29,7 +29,7 @@ import (
 // AllResourceKinds has the list of all the resource kinds we use.
 var AllResourceKinds = []string{"ClusterRole", "ClusterRoleBinding", "ConfigMap",
 	"DaemonSet", "Pod", "Deployment", "Role", "RoleBinding", "Service",
-	"ServiceAccount", "Job", "PodSecurityPolicy"}
+	"ServiceAccount", "Job", "PodSecurityPolicy", "CronJob"}
 
 type restClientAdapter struct {
 	clientset  *kubernetes.Clientset
