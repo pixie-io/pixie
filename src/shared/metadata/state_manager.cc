@@ -173,11 +173,16 @@ void AgentMetadataStateManager::RemoveDeadPods(int64_t ts, AgentMetadataState* m
         if (cinfo->stop_time_ns() == 0) {
           cinfo->set_stop_time_ns(ts);
 
+          std::vector<UPID> upids_to_deactivate;
           // Mark the containers PIDs as stopped too.
           const auto& active_upids = cinfo->active_upids();
           for (const auto& upid : active_upids) {
-            cinfo->DeactivateUPID(upid);
+            upids_to_deactivate.emplace_back(upid);
             md->MarkUPIDAsStopped(upid, ts);
+          }
+
+          for (const auto& upid : upids_to_deactivate) {
+            cinfo->DeactivateUPID(upid);
           }
         }
       }
