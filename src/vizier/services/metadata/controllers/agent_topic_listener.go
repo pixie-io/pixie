@@ -42,7 +42,10 @@ type AgentHandler struct {
 
 	MsgChannel chan *nats.Msg
 	quitCh     chan bool
-	quitDone   chan bool
+
+	stoppedMu sync.Mutex
+	stopped   bool // Whether stop has been triggered for this agent handler.
+	wg        sync.WaitGroup
 }
 
 // NewAgentTopicListener creates a new agent topic listener.
@@ -157,7 +160,7 @@ func (a *AgentTopicListener) createAgentHandler(agentID uuid.UUID) *AgentHandler
 		atl:               a,
 		MsgChannel:        make(chan *nats.Msg, 10),
 		quitCh:            make(chan bool),
-		quitDone:          make(chan bool),
+		stopped:           false,
 	}
 	a.agentMap[agentID] = newAgentHandler
 	go newAgentHandler.ProcessMessages()
@@ -275,6 +278,8 @@ func (a *AgentTopicListener) Stop() {
 // ProcessMessages handles all of the agent messages for this agent. If it does not receive a heartbeat from the agent
 // after a certain amount of time, it will declare the agent dead and perform deletion.
 func (ah *AgentHandler) ProcessMessages() {
+	ah.wg.Add(1)
+
 	defer ah.stop()
 	timer := time.NewTimer(AgentExpirationTimeout)
 	for {
@@ -452,27 +457,25 @@ func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
 }
 
 func (ah *AgentHandler) stop() {
+	defer ah.wg.Done()
 	close(ah.MsgChannel)
-	close(ah.quitCh)
 	ah.agentManager.DeleteAgent(ah.id)
 	ah.atl.DeleteAgent(ah.id)
-	close(ah.quitDone)
 }
 
 // Stop immediately stops the agent handler from listening to any messages. It blocks until
 // the agent is cleaned up.
 func (ah *AgentHandler) Stop() {
-	// TODO(michelle): There is probably a cleaner way to do this with watchgroups. This should be cleaned up at some point.
-	ah.quitCh <- true
-
-	// Block and wait for the agent to be deleted.
-	for {
-		select {
-		case <-ah.quitDone:
-			return
-		case <-time.After(5 * time.Minute):
-			log.WithField("agentID", ah.id.String()).Info("Timed out waiting for agent handler to stop")
-			return
-		}
+	ah.stoppedMu.Lock()
+	stopped := ah.stopped
+	if !stopped {
+		ah.stopped = true
 	}
+	ah.stoppedMu.Unlock()
+
+	if !stopped {
+		close(ah.quitCh)
+	}
+
+	ah.wg.Wait()
 }
