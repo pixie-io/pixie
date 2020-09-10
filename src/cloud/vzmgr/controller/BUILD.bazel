@@ -49,6 +49,7 @@ go_test(
         "metadata_reader_test.go",
         "server_test.go",
         "status_monitor_test.go",
+        "utils_test.go",
         "vizier_updater_test.go",
     ],
     embed = [":go_default_library"],
