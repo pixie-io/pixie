@@ -7,9 +7,8 @@ Finds services that have traffic to and from a list of IP addresses.
 Calculates bandwidth in bytes per second (BPS).
 
 '''
-import px
 
-window_size_seconds = 10
+import px
 
 df = px.DataFrame('conn_stats')
 
@@ -23,20 +22,20 @@ df = df[expr]
 # Insert the service name.
 df.service = df.ctx['service']
 
-# Put data items into a 10 seconds time windows, then use the difference of max & min,
-# as the transferred bytes in the time window.
-df.timestamp = px.bin(df.time_, px.seconds(window_size_seconds))
-df = df.groupby(['timestamp', 'remote_addr', 'upid', 'service']).agg(
-    bytes_sent_max=('bytes_sent', px.max),
-    bytes_sent_min=('bytes_sent', px.min),
-    bytes_recv_max=('bytes_recv', px.max),
-    bytes_recv_min=('bytes_recv', px.min),
+# Insert the pod name.
+df.pod = df.ctx['pod']
+
+# Insert the cmd.
+df.cmd = df.ctx['cmd']
+
+
+df = df.groupby(['pod', 'upid', 'cmd', 'remote_addr']).agg(
+    bytes_sent=('bytes_sent', px.max),
+    bytes_recv=('bytes_recv', px.max),
 )
 
-df.bps_sent = (df.bytes_sent_max - df.bytes_sent_min) / window_size_seconds
-df.bpf_recv = (df.bytes_recv_max - df.bytes_recv_min) / window_size_seconds
-
-# Drop intermediate data columns.
-df = df.drop(['bytes_sent_max', 'bytes_sent_min', 'bytes_recv_max', 'bytes_recv_min'])
+# Insert the remote hostname.
+# This should be done after filtering to minimize overhead.
+df.remote_hostname = px.nslookup(df.remote_addr)
 
 px.display(df)
