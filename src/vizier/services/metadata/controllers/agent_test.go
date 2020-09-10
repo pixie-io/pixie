@@ -185,61 +185,6 @@ func TestRegisterKelvinAgent(t *testing.T) {
 	assert.Equal(t, 2, len(kelvins))
 }
 
-func TestRegisterAgentWithExistingHostname(t *testing.T) {
-	mds, agtMgr := setupAgentManager(t)
-
-	u, err := uuid.FromString(testutils.NewAgentUUID)
-	if err != nil {
-		t.Fatal("Could not generate UUID.")
-	}
-	upb := utils.ProtoFromUUID(&u)
-	u2, err := uuid.FromString(testutils.ExistingAgentUUID)
-	if err != nil {
-		t.Fatal("Could not generate UUID.")
-	}
-
-	agentInfo := &agentpb.Agent{
-		Info: &agentpb.AgentInfo{
-			HostInfo: &agentpb.HostInfo{
-				Hostname: "testhost",
-				HostIP:   "127.0.0.1",
-			},
-			AgentID: upb,
-			Capabilities: &agentpb.AgentCapabilities{
-				CollectsData: true,
-			},
-		},
-		LastHeartbeatNS: 1,
-		CreateTimeNS:    4,
-	}
-
-	id, err := agtMgr.RegisterAgent(agentInfo)
-	assert.Equal(t, nil, err)
-	assert.Equal(t, uint32(4), id)
-
-	// Check that correct agent info is in MDS.
-	agent, err := mds.GetAgent(u)
-	assert.Nil(t, err)
-	assert.NotNil(t, agent)
-
-	assert.Equal(t, int64(testutils.ClockNowNS), agent.LastHeartbeatNS)
-	assert.Equal(t, int64(testutils.ClockNowNS), agent.CreateTimeNS)
-	uid, err := utils.UUIDFromProto(agent.Info.AgentID)
-	assert.Equal(t, nil, err)
-	assert.Equal(t, testutils.NewAgentUUID, uid.String())
-	assert.Equal(t, "testhost", agent.Info.HostInfo.Hostname)
-	assert.Equal(t, uint32(4), agent.ASID)
-
-	hostnameID, err := mds.GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"", "127.0.0.1"})
-	assert.Nil(t, err)
-	assert.Equal(t, testutils.NewAgentUUID, hostnameID)
-
-	// Check that previous agent has been deleted.
-	agent, err = mds.GetAgent(u2)
-	assert.Nil(t, err)
-	assert.Nil(t, agent)
-}
-
 func TestRegisterExistingAgent(t *testing.T) {
 	mds, agtMgr := setupAgentManager(t)
 

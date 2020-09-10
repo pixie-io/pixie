@@ -8,7 +8,6 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	go_uuid "github.com/satori/go.uuid"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	metadatapb0 "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
@@ -124,16 +123,6 @@ func (m *MockAgentManager) GetFromAgentQueue(arg0 string) ([]*metadatapb.Resourc
 // GetFromAgentQueue indicates an expected call of GetFromAgentQueue
 func (mr *MockAgentManagerMockRecorder) GetFromAgentQueue(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromAgentQueue", reflect.TypeOf((*MockAgentManager)(nil).GetFromAgentQueue), arg0)
-}
-
-// AddToUpdateQueue mocks base method
-func (m *MockAgentManager) AddToUpdateQueue(arg0 go_uuid.UUID, arg1 *messagespb.AgentUpdateInfo) {
-	m.ctrl.Call(m, "AddToUpdateQueue", arg0, arg1)
-}
-
-// AddToUpdateQueue indicates an expected call of AddToUpdateQueue
-func (mr *MockAgentManagerMockRecorder) AddToUpdateQueue(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToUpdateQueue", reflect.TypeOf((*MockAgentManager)(nil).AddToUpdateQueue), arg0, arg1)
 }
 
 // GetMetadataUpdates mocks base method

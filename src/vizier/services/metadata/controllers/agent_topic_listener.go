@@ -41,6 +41,8 @@ type AgentHandler struct {
 	atl               *AgentTopicListener
 
 	MsgChannel chan *nats.Msg
+	quitCh     chan bool
+	quitDone   chan bool
 }
 
 // NewAgentTopicListener creates a new agent topic listener.
@@ -154,6 +156,8 @@ func (a *AgentTopicListener) createAgentHandler(agentID uuid.UUID) *AgentHandler
 		mdStore:           a.mdStore,
 		atl:               a,
 		MsgChannel:        make(chan *nats.Msg, 10),
+		quitCh:            make(chan bool),
+		quitDone:          make(chan bool),
 	}
 	a.agentMap[agentID] = newAgentHandler
 	go newAgentHandler.ProcessMessages()
@@ -212,8 +216,27 @@ func (a *AgentTopicListener) forwardAgentRegisterRequest(m *messages.RegisterAge
 		// Add to agent handler to process.
 		agentHandler.MsgChannel <- msg
 	} else {
-		newAgentHandler := a.createAgentHandler(agentID)
-		newAgentHandler.MsgChannel <- msg
+		func() {
+			a.mapMu.Lock()
+			defer a.mapMu.Unlock()
+			agentHandler = a.createAgentHandler(agentID)
+		}()
+		agentHandler.MsgChannel <- msg
+	}
+}
+
+// StopAgent should be called when an agent should be deleted and its message processing should be stopped.
+func (a *AgentTopicListener) StopAgent(agentID uuid.UUID) {
+	a.mapMu.Lock()
+
+	var ah *AgentHandler
+	if agentHandler, ok := a.agentMap[agentID]; ok {
+		ah = agentHandler
+	}
+	a.mapMu.Unlock()
+
+	if ah != nil {
+		ah.Stop()
 	}
 }
 
@@ -252,10 +275,20 @@ func (a *AgentTopicListener) Stop() {
 // ProcessMessages handles all of the agent messages for this agent. If it does not receive a heartbeat from the agent
 // after a certain amount of time, it will declare the agent dead and perform deletion.
 func (ah *AgentHandler) ProcessMessages() {
-	defer ah.Stop()
+	defer ah.stop()
 	timer := time.NewTimer(AgentExpirationTimeout)
 	for {
 		select {
+		case <-ah.quitCh: // Prioritize the quitChannel.
+			log.WithField("agentID", ah.id.String()).Info("Quit called on agent handler, deleting agent")
+			return
+		default:
+		}
+
+		select {
+		case <-ah.quitCh:
+			log.WithField("agentID", ah.id.String()).Info("Quit called on agent handler, deleting agent")
+			return
 		case msg := <-ah.MsgChannel:
 			if !timer.Reset(AgentExpirationTimeout) {
 				<-timer.C
@@ -286,6 +319,24 @@ func (ah *AgentHandler) onAgentRegisterRequest(m *messages.RegisterAgentRequest)
 	agentID := ah.id
 	log.WithField("agent", agentID.String()).Infof("Received AgentRegisterRequest for agent")
 
+	// Delete agent with same hostname, if any.
+	hostname := ""
+	if !m.Info.Capabilities.CollectsData {
+		hostname = m.Info.HostInfo.Hostname
+	}
+	hostnameAgID, err := ah.mdStore.GetAgentIDForHostnamePair(&HostnameIPPair{hostname, m.Info.HostInfo.HostIP})
+	if err != nil {
+		log.WithError(err).Error("Failed to get agent hostname")
+	}
+	if hostnameAgID != "" {
+		delAgID, err := uuid.FromString(hostnameAgID)
+		if err != nil {
+			log.WithError(err).Error("Could not parse agent ID")
+		} else {
+			ah.atl.StopAgent(delAgID)
+		}
+	}
+
 	// Create agent in agent manager.
 	agentInfo := &agentpb.Agent{
 		Info:            m.Info,
@@ -298,7 +349,6 @@ func (ah *AgentHandler) onAgentRegisterRequest(m *messages.RegisterAgentRequest)
 		log.WithError(err).Error("Could not create agent.")
 		return
 	}
-
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_RegisterAgentResponse{
 			RegisterAgentResponse: &messages.RegisterAgentResponse{
@@ -395,15 +445,34 @@ func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
 		}
 	}
 
-	// Get agent's container/schema updates and add to update queue.
+	// Apply agent's container/schema updates.
 	if m.UpdateInfo != nil {
-		ah.agentManager.AddToUpdateQueue(agentID, m.UpdateInfo)
+		ah.agentManager.ApplyAgentUpdate(&AgentUpdate{AgentID: agentID, UpdateInfo: m.UpdateInfo})
 	}
 }
 
-// Stop stops the agent handler from listening to any messages.
-func (ah *AgentHandler) Stop() {
+func (ah *AgentHandler) stop() {
 	close(ah.MsgChannel)
+	close(ah.quitCh)
 	ah.agentManager.DeleteAgent(ah.id)
 	ah.atl.DeleteAgent(ah.id)
+	close(ah.quitDone)
+}
+
+// Stop immediately stops the agent handler from listening to any messages. It blocks until
+// the agent is cleaned up.
+func (ah *AgentHandler) Stop() {
+	// TODO(michelle): There is probably a cleaner way to do this with watchgroups. This should be cleaned up at some point.
+	ah.quitCh <- true
+
+	// Block and wait for the agent to be deleted.
+	for {
+		select {
+		case <-ah.quitDone:
+			return
+		case <-time.After(5 * time.Minute):
+			log.WithField("agentID", ah.id.String()).Info("Timed out waiting for agent handler to stop")
+			return
+		}
+	}
 }

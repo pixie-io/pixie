@@ -62,8 +62,6 @@ type AgentManager interface {
 	AddToFrontOfAgentQueue(string, *metadatapb.ResourceUpdate) error
 	GetFromAgentQueue(string) ([]*metadatapb.ResourceUpdate, error)
 
-	AddToUpdateQueue(uuid.UUID, *messagespb.AgentUpdateInfo)
-
 	GetMetadataUpdates(hostname *HostnameIPPair) ([]*metadatapb.ResourceUpdate, error)
 
 	AddUpdatesToAgentQueue(string, []*metadatapb.ResourceUpdate) error
@@ -95,7 +93,6 @@ func EmptyAgentUpdateTracker() AgentUpdateTracker {
 type AgentManagerImpl struct {
 	clock       utils.Clock
 	mds         MetadataStore
-	updateCh    chan *AgentUpdate
 	agentQueues map[string]AgentQueue
 	queueMu     sync.Mutex
 	// The updateAgentsMutex must always be acquired before making any changes to
@@ -108,34 +105,14 @@ type AgentManagerImpl struct {
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
 func NewAgentManagerWithClock(mds MetadataStore, clock utils.Clock) *AgentManagerImpl {
-	c := make(chan *AgentUpdate)
-
 	agentManager := &AgentManagerImpl{
 		clock:         clock,
 		mds:           mds,
-		updateCh:      c,
 		agentQueues:   make(map[string]AgentQueue),
 		updatedAgents: EmptyAgentUpdateTracker(),
 	}
 
-	go agentManager.processAgentUpdates()
-
 	return agentManager
-}
-
-func (m *AgentManagerImpl) processAgentUpdates() {
-	for {
-		msg, more := <-m.updateCh
-		if !more {
-			return
-		}
-
-		err := m.ApplyAgentUpdate(msg)
-		if err != nil {
-			// Add update back to the queue to retry.
-			m.updateCh <- msg
-		}
-	}
 }
 
 // A helper function for all cases where we call m.mds.UpdateSchemas
@@ -306,15 +283,6 @@ func (m *AgentManagerImpl) handleTerminatedProcesses(processes []*metadatapb.Pro
 	return m.mds.UpdateProcesses(updatedProcesses)
 }
 
-// AddToUpdateQueue adds the container/schema update to a queue for updates to the metadata store.
-func (m *AgentManagerImpl) AddToUpdateQueue(agentID uuid.UUID, update *messagespb.AgentUpdateInfo) {
-	agentUpdate := &AgentUpdate{
-		UpdateInfo: update,
-		AgentID:    agentID,
-	}
-	m.updateCh <- agentUpdate
-}
-
 // NewAgentManager creates a new agent manager.
 func NewAgentManager(mds MetadataStore) *AgentManagerImpl {
 	clock := utils.SystemClock{}
@@ -327,30 +295,12 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 
 	// Check if agent already exists.
 	aUUID := utils.UUIDFromProtoOrNil(info.AgentID)
+
 	resp, err := m.mds.GetAgent(aUUID)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to get agent")
 	} else if resp != nil {
 		return 0, errors.New("Agent already exists")
-	}
-
-	// Check there's an existing agent for the hostname.
-	hostname := ""
-	if !info.Capabilities.CollectsData {
-		hostname = info.HostInfo.Hostname
-	}
-	hostnameAgID, err := m.mds.GetAgentIDForHostnamePair(&HostnameIPPair{hostname, info.HostInfo.HostIP})
-	if err != nil {
-		log.WithError(err).Fatal("Failed to get agent hostname")
-	} else if hostnameAgID != "" {
-		delAgID, err := uuid.FromString(hostnameAgID)
-		if err != nil {
-			log.WithError(err).Fatal("Could not parse agent ID")
-		}
-		err = m.deleteAgentWrapper(delAgID)
-		if err != nil {
-			log.WithError(err).Fatal("Could not delete agent for hostname")
-		}
 	}
 
 	// Get ASID for the new agent.

@@ -84,7 +84,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 	// Set up mock.
 	var wg sync.WaitGroup
 	wg.Add(1)
-	atl, mockAgtMgr, _, mockTracepointStore, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, mockAgtMgr, mockMD, mockTracepointStore, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "/agent/"+uuidStr, topic)
 		return nil
@@ -98,6 +98,9 @@ func TestAgentRegisterRequest(t *testing.T) {
 				HostIP:   "127.0.0.1",
 			},
 			AgentID: &uuidpb.UUID{Data: []byte("11285cdd1de94ab1ae6a0ba08c8c676c")},
+			Capabilities: &agentpb.AgentCapabilities{
+				CollectsData: true,
+			},
 		},
 		LastHeartbeatNS: 10,
 		CreateTimeNS:    10,
@@ -113,6 +116,11 @@ func TestAgentRegisterRequest(t *testing.T) {
 	}
 
 	updates := []*metadatapb.ResourceUpdate{&updatePb}
+
+	mockMD.
+		EXPECT().
+		GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"", "127.0.0.1"}).
+		Return("", nil)
 
 	mockTracepointStore.
 		EXPECT().
@@ -139,6 +147,9 @@ func TestAgentRegisterRequest(t *testing.T) {
 	req := new(messages.VizierMessage)
 	if err := proto.UnmarshalText(testutils.RegisterAgentRequestPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	req.GetRegisterAgentRequest().Info.Capabilities = &agentpb.AgentCapabilities{
+		CollectsData: true,
 	}
 	reqPb, err := req.Marshal()
 
@@ -176,7 +187,7 @@ func TestKelvinRegisterRequest(t *testing.T) {
 	// Set up mock.
 	var wg sync.WaitGroup
 	wg.Add(1)
-	atl, mockAgtMgr, _, mockTracepointStore, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, mockAgtMgr, mockMD, mockTracepointStore, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "/agent/"+uuidStr, topic)
 		return nil
@@ -208,6 +219,11 @@ func TestKelvinRegisterRequest(t *testing.T) {
 	}
 
 	updates := []*metadatapb.ResourceUpdate{&updatePb}
+
+	mockMD.
+		EXPECT().
+		GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"test-host", "127.0.0.1"}).
+		Return("", nil)
 
 	mockTracepointStore.
 		EXPECT().
@@ -264,7 +280,7 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	respPb, err := resp.Marshal()
 
 	// Set up mock.
-	atl, mockAgtMgr, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, mockAgtMgr, mockMD, _, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "/agent/"+uuidStr, topic)
 		return nil
@@ -278,6 +294,9 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 				HostIP:   "127.0.0.1",
 			},
 			AgentID: &uuidpb.UUID{Data: []byte("11285cdd1de94ab1ae6a0ba08c8c676c")},
+			Capabilities: &agentpb.AgentCapabilities{
+				CollectsData: true,
+			},
 		},
 		LastHeartbeatNS: 10,
 		CreateTimeNS:    10,
@@ -316,7 +335,15 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	if err := proto.UnmarshalText(testutils.RegisterAgentRequestPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
+	req.GetRegisterAgentRequest().Info.Capabilities = &agentpb.AgentCapabilities{
+		CollectsData: true,
+	}
 	reqPb, err := req.Marshal()
+
+	mockMD.
+		EXPECT().
+		GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"", "127.0.0.1"}).
+		Return("", nil)
 
 	msg := nats.Msg{}
 	msg.Data = reqPb
@@ -350,7 +377,7 @@ func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
 func TestAgentCreateFailed(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
-	atl, mockAgtMgr, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, mockAgtMgr, mockMD, _, cleanup := setup(t, func(topic string, b []byte) error {
 		// This function should never be called.
 		assert.Equal(t, true, false)
 		return nil
@@ -364,6 +391,9 @@ func TestAgentCreateFailed(t *testing.T) {
 				HostIP:   "127.0.0.1",
 			},
 			AgentID: &uuidpb.UUID{Data: []byte("11285cdd1de94ab1ae6a0ba08c8c676c")},
+			Capabilities: &agentpb.AgentCapabilities{
+				CollectsData: false,
+			},
 		},
 		LastHeartbeatNS: 10,
 		CreateTimeNS:    10,
@@ -373,7 +403,15 @@ func TestAgentCreateFailed(t *testing.T) {
 	if err := proto.UnmarshalText(testutils.RegisterAgentRequestPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
+	req.GetRegisterAgentRequest().Info.Capabilities = &agentpb.AgentCapabilities{
+		CollectsData: false,
+	}
 	reqPb, err := req.Marshal()
+
+	mockMD.
+		EXPECT().
+		GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"test-host", "127.0.0.1"}).
+		Return("", nil)
 
 	mockAgtMgr.
 		EXPECT().
@@ -470,10 +508,10 @@ func TestAgentHeartbeat(t *testing.T) {
 
 	mockAgtMgr.
 		EXPECT().
-		AddToUpdateQueue(uuid.FromStringOrNil(uuidStr), agentUpdatePb).
-		DoAndReturn(func(uuid.UUID, *messages.AgentUpdateInfo) {
+		ApplyAgentUpdate(&controllers.AgentUpdate{AgentID: uuid.FromStringOrNil(uuidStr), UpdateInfo: agentUpdatePb}).
+		DoAndReturn(func(msg *controllers.AgentUpdate) error {
 			wg.Done()
-			return
+			return nil
 		})
 
 	wg.Add(2)
