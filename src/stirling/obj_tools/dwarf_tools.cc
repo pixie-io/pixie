@@ -401,7 +401,7 @@ StatusOr<DWARFDie> GetTypeDie(const DWARFDie& die) {
   return type_die;
 }
 
-StatusOr<VarType> GetType(const DWARFDie& die) {
+VarType GetType(const DWARFDie& die) {
   DCHECK(die.isValid());
 
   switch (die.getTag()) {
@@ -416,8 +416,7 @@ StatusOr<VarType> GetType(const DWARFDie& die) {
     case llvm::dwarf::DW_TAG_structure_type:
       return VarType::kStruct;
     default:
-      return error::Internal(
-          absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
+      return VarType::kUnspecified;
   }
 }
 
@@ -547,7 +546,10 @@ StatusOr<StructMemberInfo> DwarfReader::GetStructMemberInfo(std::string_view str
       PL_ASSIGN_OR_RETURN(member_info.offset, GetMemberOffset(die));
 
       PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-      PL_ASSIGN_OR_RETURN(member_info.type_info.type, GetType(type_die));
+      member_info.type_info.type = GetType(type_die);
+      if (member_info.type_info.type == VarType::kUnspecified) {
+        continue;
+      }
       PL_ASSIGN_OR_RETURN(member_info.type_info.type_name, GetTypeName(type_die));
       return member_info;
     }
@@ -584,7 +586,13 @@ Status DwarfReader::FlattenedStructSpec(const llvm::DWARFDie& struct_die,
       PL_ASSIGN_OR_RETURN(int member_offset, GetMemberOffset(die));
 
       PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-      PL_ASSIGN_OR_RETURN(VarType type, GetType(type_die));
+      VarType type = GetType(type_die);
+
+      if (type == VarType::kUnspecified) {
+        return error::InvalidArgument(
+            "Failed to flatten struct spec, DIE member type is not supported, DIE: $0",
+            Dump(struct_die));
+      }
 
       if (type == VarType::kBaseType || type == VarType::kPointer) {
         PL_ASSIGN_OR_RETURN(std::string type_name, GetTypeName(type_die));
@@ -614,7 +622,13 @@ StatusOr<TypeInfo> DwarfReader::DereferencePointerType(std::string type_name) {
   TypeInfo type_info;
 
   PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-  PL_ASSIGN_OR_RETURN(type_info.type, GetType(type_die));
+  type_info.type = GetType(type_die);
+
+  if (type_info.type == VarType::kUnspecified) {
+    return error::InvalidArgument(
+        "Failed to dereference pointer type, DIE type is not supported, DIE: $0", Dump(type_die));
+  }
+
   PL_ASSIGN_OR_RETURN(type_info.type_name, GetTypeName(type_die));
 
   return type_info;
@@ -773,9 +787,14 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
     auto& arg = arg_info[die.getName(llvm::DINameKind::ShortName)];
 
     PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-    PL_ASSIGN_OR_RETURN(arg.type_info.type, GetType(type_die));
-    PL_ASSIGN_OR_RETURN(arg.type_info.type_name, GetTypeName(type_die));
+    arg.type_info.type = GetType(type_die);
 
+    if (arg.type_info.type == VarType::kUnspecified) {
+      // Ignore unsupported types.
+      continue;
+    }
+
+    PL_ASSIGN_OR_RETURN(arg.type_info.type_name, GetTypeName(type_die));
     PL_ASSIGN_OR_RETURN(uint64_t type_size, GetTypeByteSize(type_die));
     PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
 
@@ -813,9 +832,12 @@ StatusOr<RetValInfo> DwarfReader::GetFunctionRetValInfo(std::string_view functio
   RetValInfo ret_val_info;
 
   PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(function_die));
-  PL_ASSIGN_OR_RETURN(ret_val_info.type_info.type, GetType(type_die));
-  PL_ASSIGN_OR_RETURN(ret_val_info.type_info.type_name, GetTypeName(type_die));
-  PL_ASSIGN_OR_RETURN(ret_val_info.byte_size, GetTypeByteSize(type_die));
+  ret_val_info.type_info.type = GetType(type_die);
+
+  if (ret_val_info.type_info.type != VarType::kUnspecified) {
+    PL_ASSIGN_OR_RETURN(ret_val_info.type_info.type_name, GetTypeName(type_die));
+    PL_ASSIGN_OR_RETURN(ret_val_info.byte_size, GetTypeByteSize(type_die));
+  }
 
   return ret_val_info;
 }

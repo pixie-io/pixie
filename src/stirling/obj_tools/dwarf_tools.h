@@ -23,7 +23,9 @@ namespace dwarf_tools {
 //-----------------------------------------------------------------------------
 
 enum class VarType {
+  // Refers to types that are not yet handled.
   kUnspecified = 0,
+
   kVoid,
   kBaseType,
   kPointer,

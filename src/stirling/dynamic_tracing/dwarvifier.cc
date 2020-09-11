@@ -258,7 +258,12 @@ StatusOr<ArgInfo> GetArgInfo(const std::map<std::string, ArgInfo>& args_map,
   if (args_map_iter == args_map.end()) {
     return error::Internal("Could not find argument $0", arg_name);
   }
+
   ArgInfo retval = args_map_iter->second;
+
+  if (retval.type_info.type == VarType::kUnspecified) {
+    return error::Internal("Argument=$0 type is not supported yet", arg_name);
+  }
 
   if (retval.location.loc_type == LocationType::kStack) {
     // The offset of an argument of the stack starts at 8.
