@@ -102,6 +102,7 @@ def pl_cc_library_internal(
         repository = "",
         linkstamp = None,
         linkopts = [],
+        defines = [],
         tags = [],
         testonly = 0,
         deps = [],
@@ -123,6 +124,7 @@ def pl_cc_library_internal(
         linkstatic = 1,
         linkstamp = linkstamp,
         linkopts = linkopts,
+        defines = defines,
         testonly = testonly,
         strip_include_prefix = strip_include_prefix,
     )

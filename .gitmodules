@@ -31,6 +31,9 @@
 [submodule "third_party/libpypa"]
 	path = third_party/libpypa
 	url = git@github.com:pixie-labs/libpypa.git
+[submodule "third_party/bpftrace"]
+	path = third_party/bpftrace
+	url = git@github.com:pixie-labs/bpftrace.git
 [submodule "third_party/tdigest"]
 	path = third_party/tdigest
 	url = git@github.com:pixie-labs/tdigest.git
