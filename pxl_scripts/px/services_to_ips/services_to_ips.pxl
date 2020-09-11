@@ -12,9 +12,11 @@ import px
 
 df = px.DataFrame('conn_stats')
 
-# Add IPs of the remote endpoint to filter.
-expr = df.remote_addr == '10.4.1.1'
-expr = expr or df.remote_addr == '10.4.1.2'
+# Replace <ip> with the target IP.
+expr = df.remote_addr == '<ip>'
+
+# Uncomment the below statement for another IP. Replicate the statement for any additional IP.
+# expr = expr or df.remote_addr == '<ip>'
 
 # Filter connections with the remote IP addresses.
 df = df[expr]
