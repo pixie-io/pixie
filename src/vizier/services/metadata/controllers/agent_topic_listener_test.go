@@ -581,12 +581,17 @@ func TestHeartbeatNonExisting(t *testing.T) {
 	reqPb, err := req.Marshal()
 
 	// Set up mock.
-	atl, _, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, mockAgtMgr, _, _, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "/agent/11285cdd-1de9-4ab1-ae6a-0ba08c8c676c", topic)
 		return nil
 	})
 	defer cleanup()
+
+	mockAgtMgr.
+		EXPECT().
+		DeleteAgent(uuid.FromStringOrNil("11285cdd1de94ab1ae6a0ba08c8c676c")).
+		Return(nil)
 
 	// Send update.
 	msg := nats.Msg{}

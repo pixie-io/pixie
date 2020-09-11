@@ -197,6 +197,12 @@ func (a *AgentTopicListener) forwardAgentHeartBeat(m *messages.Heartbeat, msg *n
 			},
 		}
 		a.SendMessageToAgent(agentID, resp)
+
+		// If two metadata services were running simultaneously for a brief period of time
+		// (such as when running through Skaffold), it's possible that it may receive a heartbeat from an
+		// agent that is actually persisted in the metadataStore, but had not existed during
+		// Initialize. We should try to delete the agent from the metadataStore.
+		a.agentManager.DeleteAgent(agentID)
 	}
 }
 
