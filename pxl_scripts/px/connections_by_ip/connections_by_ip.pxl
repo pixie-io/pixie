@@ -1,0 +1,31 @@
+# Copyright (c) Pixie Labs, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+
+''' Connections to a list of remote IPs
+Finds services that have traffic to a list of IP addresses
+Calculates total bandwidth for the lifetime of the connection.
+'''
+import px
+
+
+def talk_to_ips():
+    df = px.DataFrame('conn_stats')
+    # Change the IP addresses for your remote endpoints.
+    df = df[px.equals_any(df.remote_addr, ['10.16.0.1'])]
+    # Insert the pod name.
+    df.pod = df.ctx['pod']
+
+    # Uncomment to show namespace in place of pod.
+    # df.pod = px.pod_name_to_namespace(df.pod)
+
+    # Insert the cmdline.
+    df.cmdline = df.ctx['cmd']
+    # Aggregate the connections.
+    df = df.groupby(['pod', 'upid', 'cmdline', 'remote_addr']).agg(
+        bytes_sent=('bytes_sent', px.max),
+        bytes_recv=('bytes_recv', px.max),
+    )
+    df = df[df.pod != '']
+    # Look up the names of the remote address.
+    df.ns = px.nslookup(df.remote_addr)
+    return df.drop(['remote_addr'])
