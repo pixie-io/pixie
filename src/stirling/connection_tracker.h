@@ -64,6 +64,28 @@ struct SocketClose {
  */
 class ConnectionTracker {
  public:
+  struct Stats {
+    enum class Key {
+      // The number of sent/received data events.
+      kDataEventSent = 0,
+      kDataEventRecv,
+
+      // The number of sent/received bytes.
+      kBytesSent,
+      kBytesRecv,
+
+      // The number of valid/invalid records.
+      kValidRecords,
+      kInvalidRecords,
+    };
+
+    void Increment(Key key, int count = 1) { counts[static_cast<int>(key)] += count; }
+    uint64_t Get(Key key) const { return counts[static_cast<int>(key)]; }
+
+    std::vector<uint64_t> counts = std::vector<uint64_t>(magic_enum::enum_count<Key>(), 0);
+    bool exported = false;
+  };
+
   // State values change monotonically from lower to higher values; and cannot change reversely.
   enum class State {
     // When collecting, the tracker collects data from BPF, but does not push them to table store.
@@ -76,6 +98,26 @@ class ConnectionTracker {
     // It will, however, still track open and close events.
     kDisabled,
   };
+
+  static constexpr std::chrono::seconds kDefaultInactivityDuration{300};
+
+  /**
+   * @brief Number of TransferData() (i.e. PerfBuffer read) calls during which a ConnectionTracker
+   * persists after it has been marked for death. We keep ConnectionTrackers alive to catch
+   * late-arriving events, and for debug purposes.
+   *
+   * Note that an event may arrive appear to up to 1 iteration late.
+   * This is caused by the order we read the perf buffers.   *
+   * Example where event appears to arrive late:
+   *  T0 - read perf buffer of data events
+   *  T1 - DataEvent recorded
+   *  T2 - CloseEvent recorded
+   *  T3 - read perf buffer of close events <---- CloseEvent observed here
+   *  ...
+   *  T4 - read perf buffer of data events <---- DataEvent observed here
+   * In such cases, the timestamps still show the DataEvent as occurring first.
+   */
+  static constexpr int64_t kDeathCountdownIters = 3;
 
   ConnectionTracker() = default;
   ConnectionTracker(ConnectionTracker&& other) = default;
@@ -154,8 +196,8 @@ class ConnectionTracker {
 
     CONN_TRACE(1) << absl::Substitute("records=$0", result.records.size());
 
-    stat_invalid_records_ += result.error_count;
-    stat_valid_records_ += result.records.size();
+    stats_.Increment(Stats::Key::kInvalidRecords, result.error_count);
+    stats_.Increment(Stats::Key::kValidRecords, result.records.size());
 
     Cleanup<TProtocolTraits>();
 
@@ -310,12 +352,6 @@ class ConnectionTracker {
   bool ReadyForDestruction() const;
 
   /**
-   * @brief Updates the any state that changes per iteration on this connection tracker.
-   * Should be called once per sampling, after ProcessToRecords().
-   */
-  void IterationPostTick();
-
-  /**
    * @brief Performs any preprocessing that should happen per iteration on this
    * connection tracker.
    * Should be called once per sampling, before ProcessToRecords().
@@ -328,7 +364,13 @@ class ConnectionTracker {
                         system::SocketInfoManager* socket_info_mgr);
 
   /**
-   * @brief Sets a the duration after which a connection is deemed to be inactive.
+   * @brief Updates the any state that changes per iteration on this connection tracker.
+   * Should be called once per sampling, after ProcessToRecords().
+   */
+  void IterationPostTick();
+
+  /**
+   * @brief Sets the duration after which a connection is deemed to be inactive.
    * After becoming inactive, the connection may either (1) have its buffers purged,
    * where any unparsed frames are discarded or (2) be removed entirely from the
    * set of tracked connections. The main difference between (1) and (2) are that
@@ -343,10 +385,9 @@ class ConnectionTracker {
    * @param duration The duration in seconds, with no events, after which a connection
    * is deemed to be inactive.
    */
-  static void SetInactivityDuration(std::chrono::seconds duration) {
+  static void set_inactivity_duration(std::chrono::seconds duration) {
     inactivity_duration_ = duration;
   }
-  static constexpr std::chrono::seconds kDefaultInactivityDuration{300};
 
   /**
    * @brief Return the currently configured duration, after which a connection is deemed to be
@@ -359,60 +400,7 @@ class ConnectionTracker {
    */
   double StitchFailureRate() const;
 
-  enum class CountStats {
-    // The number of sent/received data events.
-    kDataEventSent = 0,
-    kDataEventRecv,
-
-    // The number of sent/received bytes.
-    kBytesSent,
-    kBytesRecv,
-  };
-
-  /**
-   * Increment a stats event counter for this tracker.
-   * @param stat stat selector.
-   */
-  void IncrementStat(CountStats stat, int count = 1) { stats_[static_cast<int>(stat)] += count; }
-
-  /**
-   * Get current value of a stats event counter for this tracker.
-   * @param stat stat selector.
-   * @return stat count value.
-   */
-  uint64_t Stat(CountStats stat) const { return stats_[static_cast<int>(stat)]; }
-
-  /**
-   * @brief Number of TransferData() (i.e. PerfBuffer read) calls during which a ConnectionTracker
-   * persists after it has been marked for death. We keep ConnectionTrackers alive to catch
-   * late-arriving events, and for debug purposes.
-   *
-   * Note that an event may arrive appear to up to 1 iteration late.
-   * This is caused by the order we read the perf buffers.   *
-   * Example where event appears to arrive late:
-   *  T0 - read perf buffer of data events
-   *  T1 - DataEvent recorded
-   *  T2 - CloseEvent recorded
-   *  T3 - read perf buffer of close events <---- CloseEvent observed here
-   *  ...
-   *  T4 - read perf buffer of data events <---- DataEvent observed here
-   * In such cases, the timestamps still show the DataEvent as occurring first.
-   */
-  static constexpr int64_t kDeathCountdownIters = 3;
-
-  /**
-   * The iterations given for protocol detection by uprobes. The value is given to the worst
-   * situation when the uprobe events are polled after the kprobe events.
-   *
-   * In the first iteration, the uprobe events are not polled at all. Because the uprobe
-   * events are not submitted to the perf buffer.
-   *
-   * In the 2nd iteration, the kprobe events are polled first, but the uprobe events are polled
-   * later.
-   *
-   * Here we do not consider event loss.
-   */
-  static constexpr int64_t kUProbeProtocolDetectionIters = 2;
+  const Stats& stats() const { return stats_; }
 
   /**
    * Initializes protocol state for a protocol.
@@ -487,6 +475,28 @@ class ConnectionTracker {
   void SetTrafficClass(struct traffic_class_t traffic_class);
 
  private:
+  /**
+   * The iterations given for protocol detection by uprobes. The value is given to the worst
+   * situation when the uprobe events are polled after the kprobe events.
+   *
+   * In the first iteration, the uprobe events are not polled at all. Because the uprobe
+   * events are not submitted to the perf buffer.
+   *
+   * In the 2nd iteration, the kprobe events are polled first, but the uprobe events are polled
+   * later.
+   *
+   * Here we do not consider event loss.
+   */
+  static constexpr int64_t kUProbeProtocolDetectionIters = 2;
+
+  // The duration after which a connection is deemed to be inactive.
+  inline static std::chrono::seconds inactivity_duration_ = kDefaultInactivityDuration;
+
+  // conn_info_map_mgr_ is used to release BPF map resources when a ConnectionTracker is destroyed.
+  // It is a safety net, since BPF should release the resources as long as the close() syscall is
+  // made. Note that since there is only one global BPF map, this is a static/global structure.
+  inline static std::shared_ptr<ConnInfoMapManager> conn_info_map_mgr_;
+
   void AddConnOpenEvent(const conn_event_t& conn_info);
   void AddConnCloseEvent(const close_event_t& close_event);
 
@@ -501,11 +511,6 @@ class ConnectionTracker {
   bool ReadyToExportDataStats() const;
   void ExportDataStats();
   void ExportConnCloseStats();
-
-  // conn_info_map_mgr_ is used to release BPF map resources when a ConnectionTracker is destroyed.
-  // It is a safety net, since BPF should release the resources as long as the close() syscall is
-  // made. Note that since there is only one global BPF map, this is a static/global structure.
-  static inline std::shared_ptr<ConnInfoMapManager> conn_info_map_mgr_;
 
   template <typename TFrameType>
   void DataStreamsToFrames() {
@@ -571,8 +576,6 @@ class ConnectionTracker {
 
   std::string disable_reason_;
 
-  inline static std::chrono::seconds inactivity_duration_ = kDefaultInactivityDuration;
-
   // Iterations before the tracker can be killed.
   int32_t death_countdown_ = -1;
 
@@ -581,8 +584,8 @@ class ConnectionTracker {
   int stat_valid_records_ = 0;
 
   ConnectionStats* conn_stats_ = nullptr;
-  bool data_stats_exported_ = false;
-  std::vector<uint64_t> stats_ = std::vector<uint64_t>(magic_enum::enum_count<CountStats>());
+
+  Stats stats_;
 
   // Connection trackers need to keep a state because there can be information between
   // needed from previous requests/responses needed to parse or render current request.

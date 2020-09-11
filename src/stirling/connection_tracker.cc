@@ -417,8 +417,8 @@ void ConnectionTracker::Disable(std::string_view reason) {
 
 bool ConnectionTracker::AllEventsReceived() const {
   return close_info_.timestamp_ns != 0 &&
-         Stat(CountStats::kDataEventSent) == close_info_.send_seq_num &&
-         Stat(CountStats::kDataEventRecv) == close_info_.recv_seq_num;
+         stats_.Get(Stats::Key::kDataEventSent) == close_info_.send_seq_num &&
+         stats_.Get(Stats::Key::kDataEventRecv) == close_info_.recv_seq_num;
 }
 
 void ConnectionTracker::SetConnID(struct conn_id_t conn_id) {
@@ -603,12 +603,12 @@ void ConnectionTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs)
 void ConnectionTracker::UpdateDataStats(const SocketDataEvent& event) {
   switch (event.attr.direction) {
     case TrafficDirection::kEgress: {
-      IncrementStat(CountStats::kBytesSent, event.attr.msg_size);
-      IncrementStat(CountStats::kDataEventSent, 1);
+      stats_.Increment(Stats::Key::kBytesSent, event.attr.msg_size);
+      stats_.Increment(Stats::Key::kDataEventSent, 1);
     } break;
     case TrafficDirection::kIngress: {
-      IncrementStat(CountStats::kBytesRecv, event.attr.msg_size);
-      IncrementStat(CountStats::kDataEventRecv, 1);
+      stats_.Increment(Stats::Key::kBytesRecv, event.attr.msg_size);
+      stats_.Increment(Stats::Key::kDataEventRecv, 1);
     } break;
   }
 }
@@ -621,22 +621,22 @@ bool ConnectionTracker::ReadyToExportDataStats() const {
 }
 
 void ConnectionTracker::ExportDataStats() {
-  if (conn_stats_ == nullptr || data_stats_exported_) {
+  if (conn_stats_ == nullptr || stats_.exported) {
     return;
   }
 
   // If there is no cached stats, don't do anything. This is because, if there is data events
   // received later, ConnectionStats::AddDataEvent() will record a conn_open event anyway.
-  if (Stat(CountStats::kBytesSent) > 0 || Stat(CountStats::kBytesRecv) > 0) {
+  if (stats_.Get(Stats::Key::kBytesSent) > 0 || stats_.Get(Stats::Key::kBytesRecv) > 0) {
     conn_stats_->RecordConn(conn_id_, traffic_class_, remote_endpoint(), /*is_open*/ true);
     conn_stats_->RecordData(conn_id_.upid, traffic_class_, kEgress, remote_endpoint(),
-                            Stat(CountStats::kBytesSent));
+                            stats_.Get(Stats::Key::kBytesSent));
     conn_stats_->RecordData(conn_id_.upid, traffic_class_, kIngress, remote_endpoint(),
-                            Stat(CountStats::kBytesRecv));
+                            stats_.Get(Stats::Key::kBytesRecv));
   }
 
   // Cached stats are only exported once. Following data states are exported in AddDataEvent().
-  data_stats_exported_ = true;
+  stats_.exported = true;
 }
 
 void ConnectionTracker::ExportConnCloseStats() {
@@ -722,7 +722,8 @@ void ConnectionTracker::HandleInactivity() {
 }
 
 double ConnectionTracker::StitchFailureRate() const {
-  int total_attempts = stat_invalid_records_ + stat_valid_records_;
+  int total_attempts =
+      stats_.Get(Stats::Key::kInvalidRecords) + stats_.Get(Stats::Key::kValidRecords);
 
   // Don't report rates until there some meaningful amount of events.
   // - Avoids division by zero.
@@ -731,7 +732,7 @@ double ConnectionTracker::StitchFailureRate() const {
     return 0.0;
   }
 
-  return 1.0 * stat_invalid_records_ / total_attempts;
+  return 1.0 * stats_.Get(Stats::Key::kInvalidRecords) / total_attempts;
 }
 
 namespace {

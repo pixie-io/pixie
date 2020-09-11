@@ -365,16 +365,16 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
   ASSERT_TRUE(tracker.IsZombie());
 }
 
-TEST_F(ConnectionTrackerTest, stats_counter) {
-  ConnectionTracker tracker;
+TEST(StatsTest, Increment) {
+  ConnectionTracker::Stats stats;
 
-  EXPECT_EQ(0, tracker.Stat(ConnectionTracker::CountStats::kDataEventSent));
+  EXPECT_EQ(0, stats.Get(ConnectionTracker::Stats::Key::kDataEventSent));
 
-  tracker.IncrementStat(ConnectionTracker::CountStats::kDataEventSent);
-  EXPECT_EQ(1, tracker.Stat(ConnectionTracker::CountStats::kDataEventSent));
+  stats.Increment(ConnectionTracker::Stats::Key::kDataEventSent);
+  EXPECT_EQ(1, stats.Get(ConnectionTracker::Stats::Key::kDataEventSent));
 
-  tracker.IncrementStat(ConnectionTracker::CountStats::kDataEventSent, 5);
-  EXPECT_EQ(6, tracker.Stat(ConnectionTracker::CountStats::kDataEventSent));
+  stats.Increment(ConnectionTracker::Stats::Key::kDataEventSent, 5);
+  EXPECT_EQ(6, stats.Get(ConnectionTracker::Stats::Key::kDataEventSent));
 }
 
 TEST_F(ConnectionTrackerTest, DataEventsChangesCounter) {
@@ -383,14 +383,14 @@ TEST_F(ConnectionTrackerTest, DataEventsChangesCounter) {
 
   ConnectionTracker tracker;
 
-  EXPECT_EQ(0, tracker.Stat(ConnectionTracker::CountStats::kBytesSent));
-  EXPECT_EQ(0, tracker.Stat(ConnectionTracker::CountStats::kBytesRecv));
+  EXPECT_EQ(0, tracker.stats().Get(ConnectionTracker::Stats::Key::kBytesSent));
+  EXPECT_EQ(0, tracker.stats().Get(ConnectionTracker::Stats::Key::kBytesRecv));
 
   tracker.AddDataEvent(std::move(frame0));
   tracker.AddDataEvent(std::move(frame1));
 
-  EXPECT_EQ(9, tracker.Stat(ConnectionTracker::CountStats::kBytesSent));
-  EXPECT_EQ(9, tracker.Stat(ConnectionTracker::CountStats::kBytesRecv));
+  EXPECT_EQ(9, tracker.stats().Get(ConnectionTracker::Stats::Key::kBytesSent));
+  EXPECT_EQ(9, tracker.stats().Get(ConnectionTracker::Stats::Key::kBytesRecv));
 }
 
 TEST_F(ConnectionTrackerTest, HTTP2ResetAfterStitchFailure) {
@@ -948,7 +948,7 @@ TEST_P(ConnectionTrackerStatsTest, OnlyDataEvents) {
   EXPECT_THAT(conn_stats_.mutable_agg_stats(),
               UnorderedElementsAre(Pair(AggKeyIs(12345, "0.0.0.0"), StatsIs(1, 0, 4, 4))));
 
-  tracker_.SetInactivityDuration(std::chrono::seconds(0));
+  tracker_.set_inactivity_duration(std::chrono::seconds(0));
   std::this_thread::sleep_for(std::chrono::seconds(1));
   // This triggers HandleInactivity().
   tracker_.IterationPostTick();

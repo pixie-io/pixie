@@ -156,7 +156,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     PL_CHECK_OK(ctx_->SetClusterCIDR("1.2.3.4/32"));
 
     // Because some tests change the inactivity duration, make sure to reset it here for each test.
-    ConnectionTracker::SetInactivityDuration(ConnectionTracker::kDefaultInactivityDuration);
+    ConnectionTracker::set_inactivity_duration(ConnectionTracker::kDefaultInactivityDuration);
   }
 
   std::unique_ptr<SourceConnector> connector_;
@@ -706,14 +706,14 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
 
   // First set the inactive duration threshold to be artificially large, so that the next loop
   // checking the number of active connections is robust.
-  ConnectionTracker::SetInactivityDuration(std::chrono::seconds(1000));
+  ConnectionTracker::set_inactivity_duration(std::chrono::seconds(1000));
   for (int i = 0; i < 100; ++i) {
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     EXPECT_EQ(1, source_->NumActiveConnections());
   }
 
   // Then reduce the threshold to 0, so that any connections would be considered dead.
-  ConnectionTracker::SetInactivityDuration(std::chrono::seconds(0));
+  ConnectionTracker::set_inactivity_duration(std::chrono::seconds(0));
   sleep(2);
 
   // Connection should be timed out by now, and should be killed by one more TransferData() call.
@@ -724,7 +724,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
-  ConnectionTracker::SetInactivityDuration(std::chrono::seconds(1));
+  ConnectionTracker::set_inactivity_duration(std::chrono::seconds(1));
 
   // Inactive alive connections are determined by checking the /proc filesystem.
   // Here we create a PID that is a real PID, by using the test process itself.
