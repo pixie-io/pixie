@@ -128,7 +128,7 @@ func (a *AgentsInfoImpl) UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate
 		}
 	}
 
-	log.Infof("Created %s agents, deleted %s agents, updated %s agents, updated %s agents data info",
+	log.Infof("Created %d agents, deleted %d agents, updated %d agents, updated %d agents data info",
 		createdAgents, deletedAgents, updatedAgents, updatedAgentsDataInfo)
 	log.Infof("%d agents present in tracker after update", len(carnotInfoMap))
 
