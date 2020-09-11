@@ -170,8 +170,6 @@ func (s *Server) GetAgentInfo(ctx context.Context, req *metadatapb.AgentInfoRequ
 // Note that as it is currently designed, it can only handle one stream at a time (to a single metadata server).
 // That is because the agent manager tracks the deltas in the state in a single object, rather than per request.
 func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metadatapb.MetadataService_GetAgentUpdatesServer) error {
-	// First read the entire initial state of the agents first, then stream updates after that.
-	readInitialState := true
 	if req.MaxUpdatesPerResponse == 0 {
 		return status.Error(codes.InvalidArgument, "Max updates per agent should be specified in AgentUpdatesRequest")
 	}
@@ -184,14 +182,14 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 		return status.Error(codes.Internal, fmt.Sprintf("Failed to parse duration: %+v", err))
 	}
 
+	cursor := s.agentManager.NewAgentUpdateCursor()
+	defer s.agentManager.DeleteAgentUpdateCursor(cursor)
+
 	for {
-		updates, newComputedSchema, err := s.agentManager.GetAgentUpdates(readInitialState)
+		updates, newComputedSchema, err := s.agentManager.GetAgentUpdates(cursor)
 
 		if err != nil {
 			return err
-		}
-		if readInitialState {
-			readInitialState = false
 		}
 
 		currentIdx := 0
@@ -199,13 +197,19 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 		finishedSchema := newComputedSchema == nil
 
 		if finishedSchema && finishedUpdates {
-			// Send an empty update after the duration has passed if we have no new information.
-			err := srv.Send(&metadatapb.AgentUpdatesResponse{
-				AgentSchemasUpdated: false,
-			})
-			if err != nil {
-				log.WithError(err).Errorf("Error sending noop agent updates")
-				return err
+			select {
+			case <-srv.Context().Done():
+				log.Infof("Client closed context for GetAgentUpdates")
+				return nil
+			default:
+				// Send an empty update after the duration has passed if we have no new information.
+				err := srv.Send(&metadatapb.AgentUpdatesResponse{
+					AgentSchemasUpdated: false,
+				})
+				if err != nil {
+					log.WithError(err).Errorf("Error sending noop agent updates")
+					return err
+				}
 			}
 		} else {
 			// Chunk up the data so we don't overwhelm the query broker with a lot of data at once.

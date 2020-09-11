@@ -38,6 +38,28 @@ func (m *MockAgentManager) EXPECT() *MockAgentManagerMockRecorder {
 	return m.recorder
 }
 
+// NewAgentUpdateCursor mocks base method
+func (m *MockAgentManager) NewAgentUpdateCursor() go_uuid.UUID {
+	ret := m.ctrl.Call(m, "NewAgentUpdateCursor")
+	ret0, _ := ret[0].(go_uuid.UUID)
+	return ret0
+}
+
+// NewAgentUpdateCursor indicates an expected call of NewAgentUpdateCursor
+func (mr *MockAgentManagerMockRecorder) NewAgentUpdateCursor() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewAgentUpdateCursor", reflect.TypeOf((*MockAgentManager)(nil).NewAgentUpdateCursor))
+}
+
+// DeleteAgentUpdateCursor mocks base method
+func (m *MockAgentManager) DeleteAgentUpdateCursor(cursorID go_uuid.UUID) {
+	m.ctrl.Call(m, "DeleteAgentUpdateCursor", cursorID)
+}
+
+// DeleteAgentUpdateCursor indicates an expected call of DeleteAgentUpdateCursor
+func (mr *MockAgentManagerMockRecorder) DeleteAgentUpdateCursor(cursorID interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAgentUpdateCursor", reflect.TypeOf((*MockAgentManager)(nil).DeleteAgentUpdateCursor), cursorID)
+}
+
 // RegisterAgent mocks base method
 func (m *MockAgentManager) RegisterAgent(info *agentpb.Agent) (uint32, error) {
 	ret := m.ctrl.Call(m, "RegisterAgent", info)
@@ -173,8 +195,8 @@ func (mr *MockAgentManagerMockRecorder) HandleUpdate(arg0 interface{}) *gomock.C
 }
 
 // GetAgentUpdates mocks base method
-func (m *MockAgentManager) GetAgentUpdates(readFullState bool) ([]*metadatapb0.AgentUpdate, *storepb.ComputedSchema, error) {
-	ret := m.ctrl.Call(m, "GetAgentUpdates", readFullState)
+func (m *MockAgentManager) GetAgentUpdates(cursorID go_uuid.UUID) ([]*metadatapb0.AgentUpdate, *storepb.ComputedSchema, error) {
+	ret := m.ctrl.Call(m, "GetAgentUpdates", cursorID)
 	ret0, _ := ret[0].([]*metadatapb0.AgentUpdate)
 	ret1, _ := ret[1].(*storepb.ComputedSchema)
 	ret2, _ := ret[2].(error)
@@ -182,6 +204,6 @@ func (m *MockAgentManager) GetAgentUpdates(readFullState bool) ([]*metadatapb0.A
 }
 
 // GetAgentUpdates indicates an expected call of GetAgentUpdates
-func (mr *MockAgentManagerMockRecorder) GetAgentUpdates(readFullState interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentUpdates", reflect.TypeOf((*MockAgentManager)(nil).GetAgentUpdates), readFullState)
+func (mr *MockAgentManagerMockRecorder) GetAgentUpdates(cursorID interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentUpdates", reflect.TypeOf((*MockAgentManager)(nil).GetAgentUpdates), cursorID)
 }

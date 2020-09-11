@@ -55,6 +55,7 @@ func (a *AgentsInfoImpl) ClearState() {
 }
 
 // UpdateAgentsInfo creates a new agent info.
+// This function must be resilient to receiving the same update twice for a given agent.
 func (a *AgentsInfoImpl) UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate, schemaInfos []*distributedpb.SchemaInfo,
 	schemasUpdated bool) error {
 	if schemasUpdated {

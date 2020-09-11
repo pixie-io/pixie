@@ -834,7 +834,8 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Read the initial agent state.
-	updates, schema, err := agtMgr.GetAgentUpdates(true)
+	cursor := agtMgr.NewAgentUpdateCursor()
+	updates, schema, err := agtMgr.GetAgentUpdates(cursor)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(updates))
 	assert.Equal(t, agUUID0, utils.UUIDFromProtoOrNil(updates[0].AgentID))
@@ -897,7 +898,7 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	agtMgr.ApplyAgentUpdate(&agentUpdate)
 
 	// Check results of first call to GetAgentUpdates.
-	updates, schema, err = agtMgr.GetAgentUpdates(false)
+	updates, schema, err = agtMgr.GetAgentUpdates(cursor)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(updates))
 	assert.Equal(t, agUUID3, utils.UUIDFromProtoOrNil(updates[0].AgentID))
@@ -917,7 +918,7 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Check results of second call to GetAgentUpdates.
-	updates, schema, err = agtMgr.GetAgentUpdates(false)
+	updates, schema, err = agtMgr.GetAgentUpdates(cursor)
 	assert.Nil(t, err)
 	assert.Nil(t, schema)
 	assert.Equal(t, 3, len(updates))

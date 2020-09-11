@@ -780,16 +780,22 @@ func TestGetAgentUpdates(t *testing.T) {
 		},
 	}
 
+	cursorID := uuid.NewV4()
+	mockAgtMgr.
+		EXPECT().
+		NewAgentUpdateCursor().
+		Return(cursorID)
+
 	// Initial state (2 messages)
 	mockAgtMgr.
 		EXPECT().
-		GetAgentUpdates(true).
+		GetAgentUpdates(cursorID).
 		Return(updates1, computedSchema1, nil)
 
 	// Empty state (0 messages)
 	mockAgtMgr.
 		EXPECT().
-		GetAgentUpdates(false).
+		GetAgentUpdates(cursorID).
 		Return(nil, nil, nil)
 
 	computedSchema2 := &storepb.ComputedSchema{
@@ -804,7 +810,7 @@ func TestGetAgentUpdates(t *testing.T) {
 	// Schema update (1 message)
 	mockAgtMgr.
 		EXPECT().
-		GetAgentUpdates(false).
+		GetAgentUpdates(cursorID).
 		Return(nil, computedSchema2, nil)
 
 	updates2 := []*metadatapb.AgentUpdate{
@@ -819,14 +825,21 @@ func TestGetAgentUpdates(t *testing.T) {
 	// Agent updates (1 message)
 	mockAgtMgr.
 		EXPECT().
-		GetAgentUpdates(false).
+		GetAgentUpdates(cursorID).
 		Return(updates2, nil, nil)
 
 	// Empty state (0 messages)
 	mockAgtMgr.
 		EXPECT().
-		GetAgentUpdates(false).
+		GetAgentUpdates(cursorID).
 		Return(nil, nil, nil).
+		AnyTimes()
+
+	// Remove cursor
+	mockAgtMgr.
+		EXPECT().
+		DeleteAgentUpdateCursor(cursorID).
+		Return().
 		AnyTimes()
 
 	// Set up server.
