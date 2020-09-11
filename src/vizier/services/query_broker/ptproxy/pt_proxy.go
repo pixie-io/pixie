@@ -197,7 +197,7 @@ func (s *PassThroughProxy) runRequest(reqState *RequestState, msg *cvmsgspb.C2VA
 			s.sendMessage(reqState.requestID, v2cResp)
 			return
 		}
-		log.Info("Sending response message from stream")
+		log.Trace("Sending response message from stream")
 		s.sendMessage(reqState.requestID, msg)
 	}
 }

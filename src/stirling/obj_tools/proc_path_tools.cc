@@ -67,7 +67,8 @@ pl::StatusOr<std::filesystem::path> GetPIDBinaryOnHost(uint32_t pid,
   if (start_time.has_value()) {
     StatusOr<int64_t> pid_start_time = system::GetPIDStartTimeTicks(pid_path);
     if (!pid_start_time.ok()) {
-      return error::Internal("Could not determine start time of PID $0", pid);
+      return error::Internal("Could not determine start time of PID $0: '$1'", pid,
+                             pid_start_time.status().ToString());
     }
     if (start_time.value() != pid_start_time.ValueOrDie()) {
       return error::NotFound(
