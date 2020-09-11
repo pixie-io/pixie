@@ -2,7 +2,9 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	types "github.com/gogo/protobuf/types"
@@ -32,6 +34,10 @@ type Server struct {
 	tracepointManager *TracepointManager
 	clock             utils.Clock
 	mds               MetadataStore
+	// The current cursor that is actively running the GetAgentsUpdate stream. Only one GetAgentsUpdate
+	// stream should be running at a time.
+	getAgentsCursor uuid.UUID
+	mu              sync.Mutex
 }
 
 // NewServerWithClock creates a new server with a clock and the ability to configure the chunk size and
@@ -185,7 +191,22 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 	cursor := s.agentManager.NewAgentUpdateCursor()
 	defer s.agentManager.DeleteAgentUpdateCursor(cursor)
 
+	// This is a temporary hack. We're seeing a bug where the grpc streamServer is unable to
+	// detect that a stream has hit an HTTP2 timeout. This enforces that old, inactive
+	// GetAgentUpdate streams are terminated.
+	s.mu.Lock()
+	s.getAgentsCursor = cursor
+	s.mu.Unlock()
+
 	for {
+		s.mu.Lock()
+		currCursor := s.getAgentsCursor
+		s.mu.Unlock()
+
+		if cursor != currCursor {
+			return errors.New("Only one GetAgentUpdates stream can be active at once... Terminating")
+		}
+
 		updates, newComputedSchema, err := s.agentManager.GetAgentUpdates(cursor)
 
 		if err != nil {
