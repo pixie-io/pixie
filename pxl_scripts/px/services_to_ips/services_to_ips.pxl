@@ -37,7 +37,7 @@ df = df.groupby(['pod', 'upid', 'cmd', 'remote_addr']).agg(
 )
 
 # Insert the remote hostname.
-# This should be done after filtering to minimize overhead.
+# nslookup should be done after filtering to minimize overhead.
 df.remote_hostname = px.nslookup(df.remote_addr)
 
 px.display(df)
