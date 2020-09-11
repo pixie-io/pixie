@@ -3121,6 +3121,27 @@ TEST_F(CompilerTest, metadata_types_proto) {
   EXPECT_THAT(plan, Partially(EqualsProto(kMetadataPlanProto)));
 }
 
+constexpr char kEqualsAnyTest[] = R"pxl(
+import px
+df = px.DataFrame('http_events')
+df = df[px.equals_any(df.remote_addr, ['10.0.0.1', '10.0.0.2', '10.0.0.3'])]
+px.display(df)
+)pxl";
+
+TEST_F(CompilerTest, alt_imports_test_from) {
+  auto plan_or_s = compiler_.CompileToIR(kEqualsAnyTest, compiler_state_.get());
+  ASSERT_OK(plan_or_s);
+
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  auto filter_nodes = plan->FindNodesThatMatch(Filter());
+  ASSERT_EQ(filter_nodes.size(), 1);
+  auto filter = static_cast<FilterIR*>(filter_nodes[0]);
+  EXPECT_MATCH(filter->filter_expr(),
+               LogicalOr(LogicalOr(Equals(ColumnNode("remote_addr", 0), String("10.0.0.1")),
+                                   Equals(ColumnNode("remote_addr", 0), String("10.0.0.2"))),
+                         Equals(ColumnNode("remote_addr", 0), String("10.0.0.3"))));
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

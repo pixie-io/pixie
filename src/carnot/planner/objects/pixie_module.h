@@ -71,6 +71,26 @@ class PixieModule : public QLObject {
     px.Time: The current time as defined at the start of compilation.
 
   )doc";
+  inline static constexpr char kEqualsAnyID[] = "equals_any";
+  inline static constexpr char kEqualsAnyDocstring[] = R"doc(
+  Returns true if the value is in the list.
+
+  Check equality of the input value with every element of a list.
+
+  Examples:
+    df.val = px.equals_any(df.remote_addr, ['10.0.0.1', '10.0.0.2'])
+
+  :topic: compile_time_fn
+
+  Args:
+    value (px.Expr): The value to compare.
+    comparisons (List[px.Expr]): The list of values to check equality to the value.
+
+  Returns:
+    px.Expr: An expression that evaluates to true if the value is found in the list.
+
+  )doc";
+
   inline static constexpr char kUInt128ConversionId[] = "uint128";
   inline static constexpr char kUInt128ConversionDocstring[] = R"doc(
   Parse the UUID string into a UInt128.
@@ -237,6 +257,9 @@ class CompileTimeFuncHandler {
 
   static StatusOr<QLObjectPtr> AbsTime(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
                                        ASTVisitor* visitor);
+
+  static StatusOr<QLObjectPtr> EqualsAny(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
+                                         ASTVisitor* visitor);
 };
 
 /**

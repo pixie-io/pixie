@@ -151,6 +151,18 @@ Status PixieModule::RegisterCompileTimeFuncs() {
 
   PL_RETURN_IF_ERROR(abs_time_fn->SetDocString(kAbsTimeDocstring));
   AddMethod(kAbsTimeOpID, abs_time_fn);
+
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> equals_any_fn,
+      FuncObject::Create(
+          kEqualsAnyID, {"value", "comparisons"}, {},
+          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
+          std::bind(&CompileTimeFuncHandler::EqualsAny, graph_, std::placeholders::_1,
+                    std::placeholders::_2, std::placeholders::_3),
+          ast_visitor()));
+
+  PL_RETURN_IF_ERROR(abs_time_fn->SetDocString(kEqualsAnyDocstring));
+  AddMethod(kEqualsAnyID, equals_any_fn);
   return Status::OK();
 }
 
@@ -362,6 +374,45 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::AbsTime(IR* graph, const pypa::Ast
   int64_t time_ns = absl::ToUnixNanos(tm);
   PL_ASSIGN_OR_RETURN(IntIR * time_count, graph->CreateNode<IntIR>(ast, time_ns));
   return StatusOr<QLObjectPtr>(ExprObject::Create(time_count, visitor));
+}
+
+StatusOr<QLObjectPtr> CompileTimeFuncHandler::EqualsAny(IR* graph, const pypa::AstPtr&,
+                                                        const ParsedArgs& args,
+                                                        ASTVisitor* visitor) {
+  PL_ASSIGN_OR_RETURN(ExpressionIR * value_ir, GetArgAs<ExpressionIR>(args, "value"));
+  auto comparisons = args.GetArg("comparisons");
+  if (!CollectionObject::IsCollection(comparisons)) {
+    return comparisons->CreateError("'comparisons' must be a collection");
+  }
+  auto comparison_values = std::static_pointer_cast<CollectionObject>(comparisons);
+  if (comparison_values->items().empty()) {
+    return comparisons->CreateError("'comparisons' cannot be an empty collection");
+  }
+
+  ExpressionIR* or_expr = nullptr;
+
+  for (const auto& [idx, value] : Enumerate(comparison_values->items())) {
+    if (!value->HasNode()) {
+      return value->CreateError("Could not get IRNode from index '$0'", idx);
+    }
+    PL_ASSIGN_OR_RETURN(auto comparison_expr,
+                        AsNodeType<ExpressionIR>(value->node(), absl::Substitute("$0", idx)));
+
+    FuncIR::Op equal{FuncIR::eq, "equal", "equal"};
+    PL_ASSIGN_OR_RETURN(auto new_equals, graph->CreateNode<FuncIR>(comparison_expr->ast(), equal,
+                                                                   std::vector<ExpressionIR*>{
+                                                                       value_ir, comparison_expr}));
+    if (or_expr == nullptr) {
+      or_expr = new_equals;
+      continue;
+    }
+    FuncIR::Op logicalOr{FuncIR::logor, "logicalOr", "logicalOr"};
+    PL_ASSIGN_OR_RETURN(or_expr,
+                        graph->CreateNode<FuncIR>(comparison_expr->ast(), logicalOr,
+                                                  std::vector<ExpressionIR*>{or_expr, new_equals}));
+  }
+  DCHECK(or_expr);
+  return StatusOr<QLObjectPtr>(ExprObject::Create(or_expr, visitor));
 }
 
 StatusOr<QLObjectPtr> UDFHandler::Eval(IR* graph, std::string name, const pypa::AstPtr& ast,
