@@ -716,6 +716,13 @@ StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(const std::string& bina
     return 0;
   }
 
+  const std::filesystem::path& host_path = system::Config::GetInstance().host_path();
+
+  // If we're running in a container, convert exe to be relative to our host mount.
+  // Note that we mount host '/' to '/host' inside container.
+  // Warning: must use JoinPath, because we are dealing with two absolute paths.
+  container_lib = fs::JoinPath({&host_path, &container_lib});
+
   // Only try probing .so files that we haven't already set probes on.
   result = openssl_probed_binaries_.insert(container_lib);
   if (!result.second) {
