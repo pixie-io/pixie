@@ -33,7 +33,7 @@ def pods_for_node(start_time: str, node: px.Node):
     return df[['pod', 'start_time', 'containers', 'status']]
 
 
-def process_stats(start_time: str, node: px.Node):
+def resource_timeseries(start_time: str, node: px.Node):
     ''' Gets the windowed process stats (CPU, memory, etc) for the input node.
 
     Args:
