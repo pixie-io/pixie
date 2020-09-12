@@ -110,7 +110,6 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
                 totalValue += node.value;
               });
               newOptions.value = totalValue;
-              newOptions.id = svc;
               if (svc === '') {
                 newOptions.hidden = true;
                 newOptions.physics = false;

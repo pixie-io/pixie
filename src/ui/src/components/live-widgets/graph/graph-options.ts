@@ -20,19 +20,23 @@ export const GRAPH_OPTIONS: Options = {
   clickToUse: true,
   layout: {
     randomSeed: 10,
+    improvedLayout: false,
   },
   physics: {
     solver: 'forceAtlas2Based',
+    forceAtlas2Based: {
+      gravitationalConstant: -50,
+    },
     hierarchicalRepulsion: {
       nodeDistance: 100,
     },
+    stabilization: {
+      iterations: 250,
+      updateInterval: 10,
+    },
   },
   edges: {
-    smooth: {
-      enabled: true,
-      type: 'dynamic',
-      roundness: 1.0,
-    },
+    smooth: false,
     scaling: {
       max: 5,
     },
