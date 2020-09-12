@@ -17,8 +17,8 @@ absl::flat_hash_set<md::UPID> ListUPIDs(const std::filesystem::path& proc_path, 
     }
     StatusOr<int64_t> pid_start_time = system::GetPIDStartTimeTicks(p.path());
     if (!pid_start_time.ok()) {
-      LOG(WARNING) << absl::Substitute("Could not get PID start time for pid $0",
-                                       p.path().string());
+      VLOG(1) << absl::Substitute("Could not get PID start time for pid $0. Likely already dead.",
+                                  p.path().string());
       continue;
     }
     pids.emplace(asid, pid, pid_start_time.ValueOrDie());
