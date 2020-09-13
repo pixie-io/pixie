@@ -1,0 +1,11 @@
+import px
+
+
+def tracepoint_info():
+    return px.GetTracepointStatus()
+
+
+def running_tracepoints():
+    df = px.GetTracepointStatus()
+    df = df[df.state == "running"]
+    return df

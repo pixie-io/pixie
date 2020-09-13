@@ -1,0 +1,5 @@
+---
+short: Tracepoint Overview
+long: >
+  Returns information about tracepoints running on the
+  cluster.
