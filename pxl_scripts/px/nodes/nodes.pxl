@@ -78,22 +78,23 @@ def process_stats(start_time: str):
         wchar_mb_min=('wchar_mb', px.min),
     )
 
+    window_size = 1.0 * window_s
     # Next calculate cpu usage and memory stats per window.
     df.cpu_utime_ms = df.cpu_utime_ms_max - df.cpu_utime_ms_min
     df.cpu_ktime_ms = df.cpu_ktime_ms_max - df.cpu_ktime_ms_min
-    df.read_mb = df.read_mb_max - df.read_mb_min
-    df.write_mb = df.write_mb_max - df.write_mb_min
-    df.rchar_mb = df.rchar_mb_max - df.rchar_mb_min
-    df.wchar_mb = df.wchar_mb_max - df.wchar_mb_min
+    df.read_mb_per_s = (df.read_mb_max - df.read_mb_min) / window_size
+    df.write_mb_per_s = (df.write_mb_max - df.write_mb_min) / window_size
+    df.rchar_mb_per_s = (df.rchar_mb_max - df.rchar_mb_min) / window_size
+    df.wchar_mb_per_s = (df.wchar_mb_max - df.wchar_mb_min) / window_size
 
     # Then aggregate process individual process metrics.
     df = df.groupby(['node', 'timestamp']).agg(
         cpu_ktime_ms=('cpu_ktime_ms', px.sum),
         cpu_utime_ms=('cpu_utime_ms', px.sum),
-        read_mb=('read_mb', px.sum),
-        write_mb=('write_mb', px.sum),
-        rchar_mb=('rchar_mb', px.sum),
-        wchar_mb=('wchar_mb', px.sum),
+        read_mb_per_s=('read_mb_per_s', px.sum),
+        write_mb_per_s=('write_mb_per_s', px.sum),
+        rchar_mb_per_s=('rchar_mb_per_s', px.sum),
+        wchar_mb_per_s=('wchar_mb_per_s', px.sum),
         rss_mb=('rss_mb', px.sum),
         vsize_mb=('vsize_mb', px.sum),
     )

@@ -262,7 +262,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "rchar_mb",
+            "value": "rchar_mb_per_s",
             "series": "pod",
             "stackBySeries": false,
             "mode": "MODE_LINE"
@@ -288,7 +288,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "wchar_mb",
+            "value": "wchar_mb_per_s",
             "series": "pod",
             "stackBySeries": false,
             "mode": "MODE_LINE"
