@@ -20,9 +20,9 @@ namespace distributed {
 
 StatusOr<std::unique_ptr<Coordinator>> Coordinator::Create(
     const distributedpb::DistributedState& physical_state) {
-  std::unique_ptr<Coordinator> planner(new CoordinatorImpl());
-  PL_RETURN_IF_ERROR(planner->Init(physical_state));
-  return planner;
+  std::unique_ptr<Coordinator> coordinator(new CoordinatorImpl());
+  PL_RETURN_IF_ERROR(coordinator->Init(physical_state));
+  return coordinator;
 }
 
 Status Coordinator::Init(const distributedpb::DistributedState& physical_state) {
