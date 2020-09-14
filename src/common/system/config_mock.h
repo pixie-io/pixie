@@ -18,6 +18,7 @@ class MockConfig : public Config {
   MOCK_CONST_METHOD0(sysfs_path, const std::filesystem::path&());
   MOCK_CONST_METHOD0(host_path, const std::filesystem::path&());
   MOCK_CONST_METHOD0(proc_path, const std::filesystem::path&());
+  MOCK_CONST_METHOD1(ToHostPath, std::filesystem::path(const std::filesystem::path& p));
 };
 
 }  // namespace system

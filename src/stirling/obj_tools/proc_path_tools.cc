@@ -57,12 +57,11 @@ pl::StatusOr<std::filesystem::path> ResolveProcExe(const std::filesystem::path& 
   return ResolveProcessPath(proc_pid, proc_exe);
 }
 
-pl::StatusOr<std::filesystem::path> GetPIDBinaryOnHost(uint32_t pid,
-                                                       std::optional<int64_t> start_time) {
-  const std::filesystem::path& host_path = system::Config::GetInstance().host_path();
-  const std::filesystem::path& proc_path = system::Config::GetInstance().proc_path();
+pl::StatusOr<std::filesystem::path> ResolvePIDBinary(uint32_t pid,
+                                                     std::optional<int64_t> start_time) {
+  const system::Config& sysconfig = system::Config::GetInstance();
 
-  std::filesystem::path pid_path = proc_path / std::to_string(pid);
+  std::filesystem::path pid_path = sysconfig.proc_path() / std::to_string(pid);
 
   if (start_time.has_value()) {
     StatusOr<int64_t> pid_start_time = system::GetPIDStartTimeTicks(pid_path);
@@ -78,14 +77,7 @@ pl::StatusOr<std::filesystem::path> GetPIDBinaryOnHost(uint32_t pid,
     }
   }
 
-  PL_ASSIGN_OR_RETURN(std::filesystem::path pid_exe_path, ResolveProcExe(pid_path));
-
-  // If we're running in a container, convert exe to be relative to our host mount.
-  // Note that we mount host '/' to '/host' inside container.
-  // Warning: must use JoinPath, because we are dealing with two absolute paths.
-  std::filesystem::path path_on_host = fs::JoinPath({&host_path, &pid_exe_path});
-  PL_RETURN_IF_ERROR(fs::Exists(path_on_host));
-  return path_on_host;
+  return ResolveProcExe(pid_path);
 }
 
 }  // namespace obj_tools

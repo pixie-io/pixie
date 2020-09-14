@@ -128,7 +128,7 @@ Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
 }
 
 StatusOr<std::filesystem::path> FindKernelConfig() {
-  const std::filesystem::path& kHost = system::Config::GetInstance().host_path();
+  const system::Config& sysconfig = system::Config::GetInstance();
 
   // Search for /boot/config-xxxx
   PL_ASSIGN_OR_RETURN(std::string uname, GetUname());
@@ -137,7 +137,7 @@ StatusOr<std::filesystem::path> FindKernelConfig() {
   std::vector<std::string> search_paths = {"/proc/config", "/proc/config.gz", boot_kconfig};
   for (const auto& path : search_paths) {
     std::filesystem::path config_path = path;
-    std::filesystem::path host_path = fs::JoinPath({&kHost, &config_path});
+    std::filesystem::path host_path = sysconfig.ToHostPath(config_path);
     if (fs::Exists(host_path).ok()) {
       LOG(INFO) << absl::Substitute("Found kernel config at $0", host_path.string());
       return host_path;

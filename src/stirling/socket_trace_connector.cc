@@ -83,7 +83,6 @@ using ::pl::stirling::dwarf_tools::DwarfReader;
 using ::pl::stirling::elf_tools::ElfReader;
 using ::pl::stirling::grpc::ParsePB;
 using ::pl::stirling::http2::HTTP2Message;
-using ::pl::stirling::obj_tools::GetPIDBinaryOnHost;
 using ::pl::stirling::obj_tools::ResolveProcessPath;
 using ::pl::stirling::utils::ToJSONString;
 
@@ -684,6 +683,7 @@ StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(const std::string& bina
     return 0;
   }
 
+  const system::Config& sysconfig = system::Config::GetInstance();
   std::filesystem::path container_lib;
 
   // Find the path to libssl for this binary, which may be inside a container.
@@ -694,8 +694,7 @@ StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(const std::string& bina
                                   libs_status.msg());
       continue;
     }
-    std::filesystem::path proc_pid_path =
-        system::Config::GetInstance().proc_path() / std::to_string(pid);
+    std::filesystem::path proc_pid_path = sysconfig.proc_path() / std::to_string(pid);
     for (const auto& lib : libs_status.ValueOrDie()) {
       if (absl::EndsWith(lib, kLibSSL)) {
         StatusOr<std::filesystem::path> container_lib_status =
@@ -716,12 +715,9 @@ StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(const std::string& bina
     return 0;
   }
 
-  const std::filesystem::path& host_path = system::Config::GetInstance().host_path();
-
-  // If we're running in a container, convert exe to be relative to our host mount.
-  // Note that we mount host '/' to '/host' inside container.
-  // Warning: must use JoinPath, because we are dealing with two absolute paths.
-  container_lib = fs::JoinPath({&host_path, &container_lib});
+  // Convert to host path, in case we're running inside a container ourselves.
+  container_lib = sysconfig.ToHostPath(container_lib);
+  PL_RETURN_IF_ERROR(fs::Exists(container_lib));
 
   // Only try probing .so files that we haven't already set probes on.
   result = openssl_probed_binaries_.insert(container_lib);
@@ -741,12 +737,20 @@ namespace {
 // Convert PID list from list of UPIDs to a map with key=binary name, value=PIDs
 std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
     const absl::flat_hash_set<md::UPID>& upids) {
+  using ::pl::stirling::obj_tools::ResolvePIDBinary;
+
+  const system::Config& sysconfig = system::Config::GetInstance();
+
   // Convert to a map of binaries, with the upids that are instances of that binary.
   std::map<std::string, std::vector<int32_t>> new_pids;
 
   // Consider new UPIDs only.
   for (const auto& upid : upids) {
-    PL_ASSIGN_OR(auto host_exe_path, GetPIDBinaryOnHost(upid.pid()), continue);
+    PL_ASSIGN_OR(std::filesystem::path exe_path, ResolvePIDBinary(upid.pid()), continue);
+    std::filesystem::path host_exe_path = sysconfig.ToHostPath(exe_path);
+    if (!fs::Exists(host_exe_path).ok()) {
+      continue;
+    }
     new_pids[host_exe_path.string()].push_back(upid.pid());
   }
 

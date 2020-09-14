@@ -61,6 +61,11 @@ class Config : public NotCopyable {
    */
   virtual const std::filesystem::path& proc_path() const = 0;
 
+  /**
+   * Converts a path to host relative path, for when this binary is running inside a container.
+   */
+  virtual std::filesystem::path ToHostPath(const std::filesystem::path& p) const = 0;
+
  protected:
   Config() {}
 };

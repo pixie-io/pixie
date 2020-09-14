@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include "src/common/base/base.h"
+#include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/system.h"
 
 namespace pl {
@@ -39,6 +40,13 @@ class ConfigImpl final : public Config {
   const std::filesystem::path& host_path() const override { return host_path_; }
 
   const std::filesystem::path& proc_path() const override { return proc_path_; }
+
+  std::filesystem::path ToHostPath(const std::filesystem::path& p) const override {
+    // If we're running in a container, convert path to be relative to our host mount.
+    // Note that we mount host '/' to '/host' inside container.
+    // Warning: must use JoinPath, because we are dealing with two absolute paths.
+    return fs::JoinPath({&host_path_, &p});
+  }
 
  private:
   uint64_t real_time_offset_ = 0;

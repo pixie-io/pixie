@@ -37,7 +37,6 @@ namespace obj_tools {
  * WARNING: Today this function is not robust and looks for a very specific pattern.
  * It only works on overlayfs, and makes assumptions about the ordering of mounts in
  * /proc/<pid>/mounts.
- * IT IS NOT PRODUCTION READY.
  *
  * @param proc_pid Process for which the root directory is desired.
  * @return The host-resolved path.
@@ -62,7 +61,6 @@ pl::StatusOr<std::filesystem::path> ResolveProcessRootDir(const std::filesystem:
  * WARNING: Today this function is not robust and looks for a very specific pattern.
  * It only works on overlayfs, and makes assumptions about the ordering of mounts in
  * /proc/<pid>/mounts.
- * IT IS NOT PRODUCTION READY.
  *
  * @param proc_pid Process for which the root directory is desired.
  * @return The host-resolved path.
@@ -76,25 +74,18 @@ pl::StatusOr<std::filesystem::path> ResolveProcessPath(const std::filesystem::pa
  * This is important for exe files in containers, where the file is actually located on the host
  * at some other location.
  *
- * NOTE: Today this function is not robust and looks for a very specific pattern.
- * IT IS NOT PRODUCTION READY.
- *
  * @param proc_pid Path to process info /proc/<pid>.
  * @return The resolved path. Either the original exe symlink if no overlay fs was found, or the
  * path to the host location if an overlay was found.
  */
 pl::StatusOr<std::filesystem::path> ResolveProcExe(const std::filesystem::path& proc_pid);
 
-//--------------------------------------------------------
-// The following function break the mold, because it depends on system::Config.
-//--------------------------------------------------------
-
 /**
  * Returns the path to the executable of the process specified by the pid.
- * Uses system::Config to find proc_path, and prepends the host path.
+ * Uses system::Config to find proc_path.
  * Returns an error if the resolved file path is not valid.
  */
-pl::StatusOr<std::filesystem::path> GetPIDBinaryOnHost(
+pl::StatusOr<std::filesystem::path> ResolvePIDBinary(
     uint32_t pid, std::optional<int64_t> start_time = std::nullopt);
 
 }  // namespace obj_tools

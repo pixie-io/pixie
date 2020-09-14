@@ -236,7 +236,11 @@ StatusOr<std::filesystem::path> ResolveUPID(const ir::shared::DeploymentSpec& de
     start_time = deployment_spec.upid().ts_ns();
   }
 
-  return obj_tools::GetPIDBinaryOnHost(pid, start_time);
+  PL_ASSIGN_OR_RETURN(std::filesystem::path pid_binary,
+                      obj_tools::ResolvePIDBinary(pid, start_time));
+  pid_binary = system::Config::GetInstance().ToHostPath(pid_binary);
+  PL_RETURN_IF_ERROR(fs::Exists(pid_binary));
+  return pid_binary;
 }
 
 StatusOr<std::filesystem::path> ResolveSharedObject(
@@ -244,8 +248,9 @@ StatusOr<std::filesystem::path> ResolveSharedObject(
   const uint32_t& pid = deployment_spec.shared_object().upid().pid();
   const std::string& lib_name = deployment_spec.shared_object().name();
 
-  std::filesystem::path proc_pid_path =
-      system::Config::GetInstance().proc_path() / std::to_string(pid);
+  const system::Config& sysconfig = system::Config::GetInstance();
+
+  std::filesystem::path proc_pid_path = sysconfig.proc_path() / std::to_string(pid);
   if (deployment_spec.upid().ts_ns() != 0) {
     int64_t spec_start_time = deployment_spec.upid().ts_ns();
 
@@ -259,10 +264,9 @@ StatusOr<std::filesystem::path> ResolveSharedObject(
   }
 
   // Find the path to shared library, which may be inside a container.
-  system::ProcParser proc_parser(system::Config::GetInstance());
+  system::ProcParser proc_parser(sysconfig);
   PL_ASSIGN_OR_RETURN(absl::flat_hash_set<std::string> libs_status, proc_parser.GetMapPaths(pid));
 
-  const std::filesystem::path& host_path = system::Config::GetInstance().host_path();
   for (const auto& lib : libs_status) {
     // Look for a library name such as /lib/libc.so.6 or /lib/libc-2.32.so.
     // The name is assumed to end with either a '.' or a '-'.
@@ -271,11 +275,9 @@ StatusOr<std::filesystem::path> ResolveSharedObject(
         absl::StartsWith(lib_path_filename, absl::StrCat(lib_name, "-"))) {
       PL_ASSIGN_OR_RETURN(std::filesystem::path lib_path,
                           obj_tools::ResolveProcessPath(proc_pid_path, lib));
-
-      // If we're running in a container, convert exe to be relative to our host mount.
-      // Note that we mount host '/' to '/host' inside container.
-      // Warning: must use JoinPath, because we are dealing with two absolute paths.
-      return fs::JoinPath({&host_path, &lib_path});
+      lib_path = sysconfig.ToHostPath(lib_path);
+      PL_RETURN_IF_ERROR(fs::Exists(lib_path));
+      return lib_path;
     }
   }
 
