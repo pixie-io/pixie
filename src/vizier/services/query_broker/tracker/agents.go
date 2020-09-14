@@ -28,8 +28,7 @@ type Agents struct {
 	done chan bool
 	wg   sync.WaitGroup
 
-	agentsInfo   AgentsInfo
-	agentsInfoMu sync.Mutex
+	agentsInfo AgentsInfo
 }
 
 // NewAgents creates a new agent tracker.
@@ -80,8 +79,6 @@ func (a *Agents) Stop() {
 
 // GetAgentInfo returns the current agent info.
 func (a *Agents) GetAgentInfo() AgentsInfo {
-	a.agentsInfoMu.Lock()
-	defer a.agentsInfoMu.Unlock()
 	return a.agentsInfo
 }
 
@@ -99,7 +96,7 @@ func (a *Agents) runLoop() (bool, error) {
 			if msg.Err != nil {
 				return false, msg.Err
 			}
-			err = a.updateState(msg.Update, msg.ClearPrevState)
+			err = a.updateState(msg.Update, msg.FreshState)
 			if err != nil {
 				return false, err
 			}
@@ -108,21 +105,19 @@ func (a *Agents) runLoop() (bool, error) {
 }
 
 func (a *Agents) updateState(update *metadatapb.AgentUpdatesResponse, clearCurrentState bool) error {
-	a.agentsInfoMu.Lock()
-	defer a.agentsInfoMu.Unlock()
 	if clearCurrentState {
-		a.agentsInfo.ClearState()
+		a.agentsInfo.ClearPendingState()
 	}
-	return a.agentsInfo.UpdateAgentsInfo(update.AgentUpdates, update.AgentSchemas, update.AgentSchemasUpdated)
+	return a.agentsInfo.UpdateAgentsInfo(update)
 }
 
 type updateOrError struct {
 	Update *metadatapb.AgentUpdatesResponse
 	Err    error
 	// GetAgentUpdates first reads the full initial state and then sends only updates after that.
-	// As a result, on the first message we need to clear our current agent state to get rid of
-	// stale agent information.
-	ClearPrevState bool
+	// If this is the first message, then we need to start from a fresh state instead of appending
+	// to the current state.
+	FreshState bool
 }
 
 func (a *Agents) streamUpdates() (chan (updateOrError), func(), error) {
@@ -161,9 +156,9 @@ func (a *Agents) streamUpdates() (chan (updateOrError), func(), error) {
 			default:
 				msg, err := resp.Recv()
 				results <- updateOrError{
-					Err:            err,
-					Update:         msg,
-					ClearPrevState: firstMsg,
+					Err:        err,
+					Update:     msg,
+					FreshState: firstMsg,
 				}
 				if firstMsg {
 					firstMsg = false

@@ -26,9 +26,9 @@ type TracepointMap map[string]*TracepointInfo
 type MutationExecutor struct {
 	planner           Planner
 	mdtp              metadatapb.MetadataTracepointServiceClient
-	tracker           AgentsTracker
 	activeTracepoints TracepointMap
 	outputTables      []string
+	distributedState  *distributedpb.DistributedState
 }
 
 // TracepointInfo stores information of a particular tracepoint.
@@ -42,11 +42,11 @@ type TracepointInfo struct {
 func NewMutationExecutor(
 	planner Planner,
 	mdtp metadatapb.MetadataTracepointServiceClient,
-	tracker AgentsTracker) *MutationExecutor {
+	distributedState *distributedpb.DistributedState) *MutationExecutor {
 	return &MutationExecutor{
 		planner:           planner,
 		mdtp:              mdtp,
-		tracker:           tracker,
+		distributedState:  distributedState,
 		activeTracepoints: make(TracepointMap, 0),
 	}
 }
@@ -58,9 +58,8 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScr
 	if err != nil {
 		return nil, err
 	}
-	info := m.tracker.GetAgentInfo()
 	plannerState := &distributedpb.LogicalPlannerState{
-		DistributedState: info.DistributedState(),
+		DistributedState: m.distributedState,
 		PlanOptions:      planOpts,
 	}
 
@@ -228,9 +227,8 @@ func (m *MutationExecutor) MutationInfo(ctx context.Context) (*vizierpb.Mutation
 }
 
 func (m *MutationExecutor) isSchemaReady() bool {
-	info := m.tracker.GetAgentInfo()
 	schemaNames := make(map[string]bool, 0)
-	for _, s := range info.DistributedState().SchemaInfo {
+	for _, s := range m.distributedState.SchemaInfo {
 		schemaNames[s.Name] = true
 	}
 	for _, s := range m.outputTables {

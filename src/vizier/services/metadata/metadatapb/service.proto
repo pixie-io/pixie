@@ -101,6 +101,10 @@ message AgentUpdatesResponse {
   // Whether or not the agent schemas have been updated. This is to differentiate between the case where
   // there are truly no AgentSchemas present and when there is no update to those agent schemas.
   bool agent_schemas_updated = 3;
+  // The AgentUpdateResponses are paginated and sent periodically.
+  // `end_of_update_batch` denotes that the latest batch of updates has completed, and the next message
+  // will be from a new batch of updates.
+  bool end_of_version = 4;
 }
 
 // The request to register tracepoints on all PEMs.

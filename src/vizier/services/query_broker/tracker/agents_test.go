@@ -20,18 +20,17 @@ type fakeAgentsInfo struct {
 	t  *testing.T
 }
 
-// ClearState implementation of clear state for fake agents info.
-func (a *fakeAgentsInfo) ClearState() {
+// ClearPendingState implementation of clear state for fake agents info.
+func (a *fakeAgentsInfo) ClearPendingState() {
 }
 
 // DistributedState implementation for fake agents info.
-func (a *fakeAgentsInfo) DistributedState() *distributedpb.DistributedState {
-	return nil
+func (a *fakeAgentsInfo) DistributedState() distributedpb.DistributedState {
+	return distributedpb.DistributedState{}
 }
 
-func (a *fakeAgentsInfo) UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate, schemaInfos []*distributedpb.SchemaInfo,
-	updatedSchema bool) error {
-	if len(agentUpdates) > 0 || len(schemaInfos) > 0 {
+func (a *fakeAgentsInfo) UpdateAgentsInfo(update *metadatapb.AgentUpdatesResponse) error {
+	if len(update.AgentUpdates) > 0 || len(update.AgentSchemas) > 0 {
 		a.wg.Done()
 	}
 	return nil

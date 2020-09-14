@@ -131,8 +131,8 @@ func failedStatusQueryResponse(queryID uuid.UUID, status *statuspb.Status) *quer
 // runQuery executes a query and streams the results to the client.
 // returns a bool for whether the query timed out and an error.
 func (s *Server) runQuery(ctx context.Context, req *plannerpb.QueryRequest, queryID uuid.UUID,
-	planOpts *planpb.PlanOptions, resultStream chan *vizierpb.ExecuteScriptResponse,
-	doneCh chan bool) (bool, error) {
+	planOpts *planpb.PlanOptions, distributedState *distributedpb.DistributedState,
+	resultStream chan *vizierpb.ExecuteScriptResponse, doneCh chan bool) (bool, error) {
 
 	log.WithField("query_id", queryID).Infof("Running script")
 	start := time.Now()
@@ -152,7 +152,7 @@ func (s *Server) runQuery(ctx context.Context, req *plannerpb.QueryRequest, quer
 		return /*timeout*/ false, status.Error(codes.Unavailable, "not ready yet")
 	}
 	plannerState := &distributedpb.LogicalPlannerState{
-		DistributedState:    info.DistributedState(),
+		DistributedState:    distributedState,
 		PlanOptions:         planOpts,
 		ResultAddress:       s.env.Address(),
 		ResultSSLTargetName: s.env.SSLTargetName(),
@@ -287,7 +287,9 @@ func (s *Server) CheckHealth(ctx context.Context) error {
 		}
 	}()
 
-	timeout, err := s.runQuery(ctx, req, queryID, planOpts, resultStream, doneCh)
+	distributedState := s.agentsTracker.GetAgentInfo().DistributedState()
+	timeout, err := s.runQuery(ctx, req, queryID, planOpts, &distributedState,
+		resultStream, doneCh)
 	if err != nil {
 		return status.Error(codes.Unavailable, fmt.Sprintf("error running query: %v", err))
 	}
@@ -378,8 +380,10 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 
 	planOpts := flags.GetPlanOptions()
 
+	distributedState := s.agentsTracker.GetAgentInfo().DistributedState()
+
 	if req.Mutation {
-		mutationExec := NewMutationExecutor(s.planner, s.mdtp, s.agentsTracker)
+		mutationExec := NewMutationExecutor(s.planner, s.mdtp, &distributedState)
 
 		status, err := mutationExec.Execute(ctx, req, planOpts)
 		if err != nil {
@@ -431,7 +435,8 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 		}
 	}()
 
-	timeout, err := s.runQuery(ctx, convertedReq, queryID, planOpts, resultStream, doneCh)
+	timeout, err := s.runQuery(ctx, convertedReq, queryID, planOpts, &distributedState,
+		resultStream, doneCh)
 	wg.Wait()
 
 	if err != nil {

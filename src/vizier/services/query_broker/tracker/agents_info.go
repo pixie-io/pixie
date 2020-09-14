@@ -2,6 +2,7 @@ package tracker
 
 import (
 	"fmt"
+	"sync"
 
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
@@ -18,20 +19,25 @@ const KelvinSSLTargetOverride = "kelvin.pl.svc"
 
 // AgentsInfo tracks information about the distributed state of the system.
 type AgentsInfo interface {
-	ClearState()
-	UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate, schemaInfos []*distributedpb.SchemaInfo, schemasUpdated bool) error
-	DistributedState() *distributedpb.DistributedState
+	ClearPendingState()
+	UpdateAgentsInfo(update *metadatapb.AgentUpdatesResponse) error
+	DistributedState() distributedpb.DistributedState
 }
 
 // AgentsInfoImpl implements AgentsInfo to track information about the distributed state of the system.
 type AgentsInfoImpl struct {
-	ds *distributedpb.DistributedState
+	ds distributedpb.DistributedState
+	// Controls access to ds.
+	dsMutex sync.Mutex
+
+	pendingDs *distributedpb.DistributedState
 }
 
 // NewAgentsInfo creates an empty agents info.
 func NewAgentsInfo() AgentsInfo {
 	return &AgentsInfoImpl{
-		&distributedpb.DistributedState{
+		ds: distributedpb.DistributedState{},
+		pendingDs: &distributedpb.DistributedState{
 			SchemaInfo: []*distributedpb.SchemaInfo{},
 			CarnotInfo: []*distributedpb.CarnotInfo{},
 		},
@@ -41,14 +47,15 @@ func NewAgentsInfo() AgentsInfo {
 // NewTestAgentsInfo creates an agents info from a passed in distributed state.
 func NewTestAgentsInfo(ds *distributedpb.DistributedState) AgentsInfo {
 	return &AgentsInfoImpl{
-		ds,
+		ds:        *(ds),
+		pendingDs: nil,
 	}
 }
 
-// ClearState clears the agents info state.
-func (a *AgentsInfoImpl) ClearState() {
+// ClearPendingState clears the pending agents info state (the upcoming version).
+func (a *AgentsInfoImpl) ClearPendingState() {
 	log.Infof("Clearing distributed state")
-	a.ds = &distributedpb.DistributedState{
+	a.pendingDs = &distributedpb.DistributedState{
 		SchemaInfo: []*distributedpb.SchemaInfo{},
 		CarnotInfo: []*distributedpb.CarnotInfo{},
 	}
@@ -56,15 +63,14 @@ func (a *AgentsInfoImpl) ClearState() {
 
 // UpdateAgentsInfo creates a new agent info.
 // This function must be resilient to receiving the same update twice for a given agent.
-func (a *AgentsInfoImpl) UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate, schemaInfos []*distributedpb.SchemaInfo,
-	schemasUpdated bool) error {
-	if schemasUpdated {
-		log.Infof("Updating schemas to %s tables", len(schemaInfos))
-		a.ds.SchemaInfo = schemaInfos
+func (a *AgentsInfoImpl) UpdateAgentsInfo(update *metadatapb.AgentUpdatesResponse) error {
+	if update.AgentSchemasUpdated {
+		log.Infof("Updating schemas to %s tables", len(update.AgentSchemas))
+		a.pendingDs.SchemaInfo = update.AgentSchemas
 	}
 
 	carnotInfoMap := make(map[uuid.UUID]*distributedpb.CarnotInfo)
-	for _, carnotInfo := range a.ds.CarnotInfo {
+	for _, carnotInfo := range a.pendingDs.CarnotInfo {
 		agentUUID, err := utils.UUIDFromProto(carnotInfo.AgentID)
 		if err != nil {
 			return err
@@ -79,7 +85,7 @@ func (a *AgentsInfoImpl) UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate
 	updatedAgents := 0
 	updatedAgentsDataInfo := 0
 
-	for _, agentUpdate := range agentUpdates {
+	for _, agentUpdate := range update.AgentUpdates {
 		agentUUID, err := utils.UUIDFromProto(agentUpdate.AgentID)
 		if err != nil {
 			return err
@@ -133,15 +139,28 @@ func (a *AgentsInfoImpl) UpdateAgentsInfo(agentUpdates []*metadatapb.AgentUpdate
 	log.Infof("%d agents present in tracker after update", len(carnotInfoMap))
 
 	// reset the array and recreate.
-	a.ds.CarnotInfo = []*distributedpb.CarnotInfo{}
+	a.pendingDs.CarnotInfo = []*distributedpb.CarnotInfo{}
 	for _, carnotInfo := range carnotInfoMap {
-		a.ds.CarnotInfo = append(a.ds.CarnotInfo, carnotInfo)
+		a.pendingDs.CarnotInfo = append(a.pendingDs.CarnotInfo, carnotInfo)
 	}
+
+	// If we have reached the end of version, promote the pending DistributedState to the current external-facing
+	// distributed state accessible by clients of `Agents`.
+	if update.EndOfVersion {
+		a.dsMutex.Lock()
+		a.ds = *(a.pendingDs)
+		a.dsMutex.Unlock()
+	}
+
 	return nil
 }
 
-// DistributedState returns the current distributed state. Will return nil if not existent.
-func (a *AgentsInfoImpl) DistributedState() *distributedpb.DistributedState {
+// DistributedState returns the current distributed state.
+// Returns a non-pointer because a.ds will change over time and we want the consumer of DistributedState()
+// to have a consistent result.
+func (a *AgentsInfoImpl) DistributedState() distributedpb.DistributedState {
+	a.dsMutex.Lock()
+	defer a.dsMutex.Unlock()
 	return a.ds
 }
 

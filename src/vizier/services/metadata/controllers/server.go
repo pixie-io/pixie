@@ -266,6 +266,11 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 					}
 
 					currentIdx += agentChunkSize
+
+					if finishedSchema && finishedUpdates {
+						response.EndOfVersion = true
+					}
+
 					err := srv.Send(response)
 					if err != nil {
 						log.WithError(err).Errorf("Error sending agent updates with contents")
