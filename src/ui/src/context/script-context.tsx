@@ -115,7 +115,9 @@ const ScriptContextProvider = (props) => {
   const { scripts } = React.useContext(ScriptsContext);
   const { selectedClusterName, setClusterByName, selectedClusterPrettyName } = React.useContext(ClusterContext);
   const { client, healthy } = React.useContext(ClientContext);
-  const { setResults, setLoading, loading } = React.useContext(ResultsContext);
+  const {
+    setResults, setLoading, loading, clearResults,
+  } = React.useContext(ResultsContext);
   const { editorPanelOpen } = React.useContext(LayoutContext);
   const showSnackbar = useSnackbar();
 
@@ -184,6 +186,7 @@ const ScriptContextProvider = (props) => {
   // Logic to update entity paths when live view page or cluster changes.
 
   React.useEffect(() => {
+    clearResults();
     const entityParams = getEntityParams(liveViewPage, args);
     const entityURL = {
       clusterName: selectedClusterName,
