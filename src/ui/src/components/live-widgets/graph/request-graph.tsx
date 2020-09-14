@@ -223,12 +223,14 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
 
   const doubleClickCallback = React.useCallback((params?: any) => {
     if (params.nodes.length > 0) {
+      const nodeName = !clusteredMode ? params.nodes[0]
+        : graph.nodes.get(network.getNodesInCluster(params.nodes[0]))[0].service;
       const semType = !clusteredMode ? SemanticType.ST_POD_NAME : SemanticType.ST_SERVICE_NAME;
-      const page = toSingleEntityPage(params.nodes[0], semType, selectedClusterName);
+      const page = toSingleEntityPage(nodeName, semType, selectedClusterName);
       const pathname = toEntityURL(page, props.propagatedArgs);
       history.push(pathname);
     }
-  }, [history, selectedClusterName, clusteredMode]);
+  }, [history, selectedClusterName, clusteredMode, network, graph, props.propagatedArgs]);
 
   // This function needs to dynamically change on 'network' every time clusteredMode is updated,
   // so we assign it separately from where Network is created.
