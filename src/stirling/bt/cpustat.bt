@@ -11,22 +11,23 @@
 
 interval:ms:100
 {
-    $cpu_id = $1;
+    $cpu_id = (uint64) $1;
 
     //sudo cat /proc/kallsyms | less
     $cpustat_offset = kaddr("kernel_cpustat");
     $per_cpu_offsets = kaddr("__per_cpu_offset");
 
-    $cputime_user    = 0;
-    $cputime_nice    = 0;
-    $cputime_system  = 0;
-    $cputime_softirq = 0;
-    $cputime_irq     = 0;
-    $cputime_idle    = 0;
-    $cputime_iowait  = 0;
+    $cputime_user    = (uint64) 0;
+    $cputime_nice    = (uint64) 0;
+    $cputime_system  = (uint64) 0;
+    $cputime_softirq = (uint64) 0;
+    $cputime_irq     = (uint64) 0;
+    $cputime_idle    = (uint64) 0;
+    $cputime_iowait  = (uint64) 0;
 
-    $nsec_per_sec = 1000000000;
-    $user_hz = 100;
+    $nsec_per_sec = (uint64) 1000000000;
+    $user_hz = (uint64) 100;
+    $nsec_per_tick = $nsec_per_sec / $user_hz;
 
     $cpu = $cpu_id;
     unroll(1) {
@@ -46,13 +47,13 @@ interval:ms:100
         $cpu = $cpu+1;
     }
 
-    $cputime_user    = $cputime_user    / ($nsec_per_sec / $user_hz);
-    $cputime_nice    = $cputime_nice    / ($nsec_per_sec / $user_hz);
-    $cputime_system  = $cputime_system  / ($nsec_per_sec / $user_hz);
-    $cputime_softirq = $cputime_softirq / ($nsec_per_sec / $user_hz);
-    $cputime_irq     = $cputime_irq     / ($nsec_per_sec / $user_hz);
-    $cputime_idle    = $cputime_idle    / ($nsec_per_sec / $user_hz);
-    $cputime_iowait  = $cputime_iowait  / ($nsec_per_sec / $user_hz);
+    $cputime_user    = $cputime_user    / $nsec_per_tick;
+    $cputime_nice    = $cputime_nice    / $nsec_per_tick;
+    $cputime_system  = $cputime_system  / $nsec_per_tick;
+    $cputime_softirq = $cputime_softirq / $nsec_per_tick;
+    $cputime_irq     = $cputime_irq     / $nsec_per_tick;
+    $cputime_idle    = $cputime_idle    / $nsec_per_tick;
+    $cputime_iowait  = $cputime_iowait  / $nsec_per_tick;
 
     @retval[0] = nsecs;
     @retval[1] = $cputime_user;

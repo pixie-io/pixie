@@ -433,6 +433,18 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "bpftrace_connector_bpf_test",
+    timeout = "long",
+    srcs = ["bpftrace_connector_bpf_test.cc"],
+    flaky = True,
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "fd_resolver_test",
     srcs = ["fd_resolver_test.cc"],
     deps = [

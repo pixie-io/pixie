@@ -25,7 +25,7 @@ namespace pl {
 namespace stirling {
 
 /**
- * @brief Bbpftrace connector
+ * @brief Bpftrace connector
  *
  */
 class BPFTraceConnector : public SourceConnector {

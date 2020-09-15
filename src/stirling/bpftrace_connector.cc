@@ -57,15 +57,15 @@ Status BPFTraceConnector::InitImpl() {
   bpftrace_.join_argnum_ = 16;
   bpftrace_.join_argsize_ = 1024;
 
-  err = static_cast<int>(!bpftrace::TracepointFormatParser::parse(driver.root_, bpftrace_));
+  err = static_cast<int>(!bpftrace::TracepointFormatParser::parse(driver.root_.get(), bpftrace_));
   if (err != 0) {
     return error::Internal("TracepointFormatParser failed.");
   }
 
   bpftrace::ClangParser clang;
-  clang.parse(driver.root_, bpftrace_);
+  clang.parse(driver.root_.get(), bpftrace_);
 
-  bpftrace::ast::SemanticAnalyser semantics(driver.root_, bpftrace_, bpftrace_.feature_);
+  bpftrace::ast::SemanticAnalyser semantics(driver.root_.get(), bpftrace_, bpftrace_.feature_);
   err = semantics.analyse();
   if (err != 0) {
     return error::Internal("Semantic analyser failed.");
@@ -76,7 +76,7 @@ Status BPFTraceConnector::InitImpl() {
     return error::Internal("Failed to create BPF maps");
   }
 
-  bpftrace::ast::CodegenLLVM llvm(driver.root_, bpftrace_);
+  bpftrace::ast::CodegenLLVM llvm(driver.root_.get(), bpftrace_);
   llvm.generate_ir();
   llvm.optimize();
   bpforc_ = llvm.emit();
