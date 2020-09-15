@@ -329,7 +329,11 @@ def ip_to_svc_name(df, ip_col, svc_col_name):
     """
     pod_id = 'pod_id'
     df[pod_id] = px.ip_to_pod_id(df[ip_col])
-    df[svc_col_name] = px.pod_id_to_service_name(df[pod_id])
+    df_has_k8s = df[pod_id != '']
+    df_no_k8s = df[pod_id == '']
+    df_no_k8s[svc_col_name] = px.nslookup(df_no_k8s[ip_col])
+    df_has_k8s[svc_col_name] = px.pod_id_to_service_name(df_has_k8s[pod_id])
+    df = df_has_k8s.append(df_no_k8s)
     return df.drop(pod_id)
 
 
