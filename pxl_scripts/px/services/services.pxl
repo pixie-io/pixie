@@ -116,6 +116,25 @@ def inbound_let_summary(start_time: str, namespace: px.Namespace):
                    'inbound_bytes_per_s', 'outbound_bytes_per_s']]
 
 
+def add_requestor_metadata(df: px.DataFrame):
+    # Get the requestor Pod ID via Pixie Metadata
+    df.requestor_pod_id = px.ip_to_pod_id(df.remote_addr)
+    # Filter Data Based on whether the Pixie Metadata has an entry for the remote addr IP.
+    df_k8s = df[df.requestor_pod_id != '']
+    df_no_k8s = df[df.requestor_pod_id == '']
+
+    # If the pod ID exists, the data is within Kubernetes and we use these functions to extract them.
+    df_k8s.requestor_pod = px.pod_id_to_pod_name(df_k8s.requestor_pod_id)
+    df_k8s.requestor_service = px.pod_id_to_service_name(df_k8s.requestor_pod_id)
+
+    # If the pod ID doesn't exist, we nslookup the name.
+    df_no_k8s.requestor_pod = px.nslookup(df.remote_addr)
+    df_no_k8s.requestor_service = df_no_k8s.requestor_pod
+
+    # Append the different name resolution DataFrames together.
+    return df_k8s.append(df_no_k8s)
+
+
 def inbound_let_service_graph(start_time: str, namespace: px.Namespace):
     ''' Compute a summary of traffic by requesting service, for requests on services in `namespace`.
         Similar to `inbound_let_summary` but also breaks down by pod in addition to service.
@@ -139,11 +158,11 @@ def inbound_let_service_graph(start_time: str, namespace: px.Namespace):
     df.latency_p99 = px.pluck_float64(df.latency_quantiles, 'p99')
 
     df = df[df.remote_addr != '']
+    df = add_requestor_metadata(df)
+
+    # Add responder metadata.
     df.responder_pod = df.pod
-    df.requestor_pod_id = px.ip_to_pod_id(df.remote_addr)
-    df.requestor_pod = px.pod_id_to_pod_name(df.requestor_pod_id)
     df.responder_service = df.service
-    df.requestor_service = px.pod_id_to_service_name(df.requestor_pod_id)
 
     window_size = 1.0 * window_s
     df.requests_per_s = df.throughput_total / window_size
