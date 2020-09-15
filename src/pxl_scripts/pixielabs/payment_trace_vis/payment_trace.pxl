@@ -31,7 +31,7 @@ latency_bin_size_ms = 50
 payment_process_upid = "00000008-0000-31cb-0000-00000000ab84"
 
 
-@pxtrace.goprobe("github.com/microservices-demo/payment.(*service).Authorise")
+@pxtrace.probe("github.com/microservices-demo/payment.(*service).Authorise")
 def probe_func():
     amount = pxtrace.ArgExpr("amount")
     return [{'amount': amount}]

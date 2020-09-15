@@ -209,7 +209,7 @@ heyweretheArgs:andsomemorethat should cause this to fail
 const docIndentedAndArgsBadIndent = `
   Decorates a tracepoint definition of a Go function.
 
-  Specifies the decorated function as a goprobe tracepoint on the 'trace_fn'
+  Specifies the decorated function as a probe tracepoint on the 'trace_fn'
   name.
 
   the next line is bad

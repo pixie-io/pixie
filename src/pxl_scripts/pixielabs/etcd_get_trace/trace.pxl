@@ -7,8 +7,8 @@ table_name = 'key_trace3'
 tp_name = table_name
 
 
-@pxtrace.goprobe("pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/"
-                 "kvstore.(*EtcdStore).Get")
+@pxtrace.probe("pixielabs.ai/pixielabs/src/vizier/services/metadata/"
+               "controllers/kvstore.(*EtcdStore).Get")
 def probe_func():
     return [{'key': pxtrace.ArgExpr("key")},
             {'latency': pxtrace.FunctionLatency()}]

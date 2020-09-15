@@ -315,7 +315,7 @@ constexpr char kPxTraceQuery[] = R"pxl(
 import pxtrace
 import px
 
-@pxtrace.goprobe("MyFunc")
+@pxtrace.probe("MyFunc")
 def probe_func():
     id = pxtrace.ArgExpr('id')
     return [{'id': id},

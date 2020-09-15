@@ -13,7 +13,7 @@ const (
 import pxtrace
 import px
 
-@pxtrace.goprobe("github.com/microservices-demo/payment.(*service).Authorise")
+@pxtrace.probe("github.com/microservices-demo/payment.(*service).Authorise")
 def probe_func():
     amount = pxtrace.ArgExpr("amount")
     return [{'amount': amount}]

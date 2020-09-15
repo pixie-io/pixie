@@ -5,7 +5,7 @@ checkout_upid = "0000000c-002a-e83c-0000-000070366e78"
 
 
 # func Sum(l, r pb.Money) (pb.Money, error)
-@pxtrace.goprobe('github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money.Sum')
+@pxtrace.probe('github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money.Sum')
 def probe_func():
     return [{'lUnits': pxtrace.ArgExpr('l.Units')},
             {'lNanos': pxtrace.ArgExpr('l.Nanos')},

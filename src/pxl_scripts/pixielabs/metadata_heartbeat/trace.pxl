@@ -7,8 +7,8 @@ table_name = 'hb1'
 tp_name = table_name
 
 
-@pxtrace.goprobe("pixielabs.ai/pixielabs/src/vizier/services/metadata/"
-                 "controllers.(*AgentTopicListener).onAgentHeartBeat")
+@pxtrace.probe("pixielabs.ai/pixielabs/src/vizier/services/metadata/"
+               "controllers.(*AgentTopicListener).onAgentHeartBeat")
 def probe_func():
     return [{'id': pxtrace.ArgExpr("m.AgentID.Data")},
             {'seq': pxtrace.ArgExpr("m.SequenceNumber")},

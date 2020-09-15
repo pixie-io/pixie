@@ -65,15 +65,15 @@ Status TraceModule::Init() {
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> probe_fn,
       FuncObject::Create(
-          kGoProbeTraceDefinition, {"fn_name"}, {},
+          kProbeTraceDefinition, {"fn_name"}, {},
           /* has_variable_len_args */ false,
           /* has_variable_len_kwargs */ false,
           std::bind(ProbeHandler::Probe, mutations_ir_,
                     stirling::dynamic_tracing::ir::shared::Language::LANG_UNKNOWN,
                     std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
-  PL_RETURN_IF_ERROR(probe_fn->SetDocString(kGoProbeDocstring));
-  AddMethod(kGoProbeTraceDefinition, probe_fn);
+  PL_RETURN_IF_ERROR(probe_fn->SetDocString(kProbeDocstring));
+  AddMethod(kProbeTraceDefinition, probe_fn);
 
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> arg_expr_fn,
@@ -154,7 +154,7 @@ StatusOr<QLObjectPtr> ProbeHandler::Probe(MutationsIR* mutations_ir,
   PL_ASSIGN_OR_RETURN(StringIR * function_name_ir, GetArgAs<StringIR>(args, "fn_name"));
 
   return FuncObject::Create(
-      TraceModule::kGoProbeTraceDefinition, {"fn"}, {},
+      TraceModule::kProbeTraceDefinition, {"fn"}, {},
       /* has_variable_len_args */ false,
       /* has_variable_len_kwargs */ false,
       std::bind(&ProbeHandler::Decorator, mutations_ir, language, function_name_ir->str(),

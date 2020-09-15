@@ -165,17 +165,18 @@ class TraceModule : public QLObject {
     name (str): The name of the tracepoint.
   )doc";
 
-  inline static constexpr char kGoProbeTraceDefinition[] = "goprobe";
-  inline static constexpr char kGoProbeDocstring[] = R"doc(
-  Decorates a tracepoint definition of a Go function.
+  inline static constexpr char kProbeTraceDefinition[] = "probe";
+  inline static constexpr char kProbeDocstring[] = R"doc(
+  Decorates a tracepoint definition.
 
-  Specifies the decorated function as a goprobe tracepoint on the `trace_fn`
-  name.
+  Specifies the decorated function as a tracepoint on the `trace_fn`
+  name. Automatically figures out the language based on the functon
+  specified.
 
   :topic: tracepoint_decorator
 
   Args:
-    trace_fn (str): The Go func to trace. Format is `<package_name>.<func_name>`.
+    trace_fn (str): The func to trace. For go, the format is `<package_name>.<func_name>`.
 
   Returns:
     Func: The wrapped probe function.

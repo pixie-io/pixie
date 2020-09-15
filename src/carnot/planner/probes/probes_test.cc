@@ -42,7 +42,7 @@ constexpr char kSingleProbePxl[] = R"pxl(
 import pxtrace
 import px
 
-@pxtrace.goprobe("MyFunc")
+@pxtrace.probe("MyFunc")
 def probe_func():
     id = pxtrace.ArgExpr('id')
     return [{'id': id},
@@ -56,13 +56,12 @@ pxtrace.UpsertTracepoint('http_return',
                          "5m")
 )pxl";
 
-// TODO(philkuz): px.goprobe is not right for this test case.
 //                Change this test case to pxtrace.uprobe or whatever we decide once supported.
 constexpr char kSingleProbeUpsertSharedObjectPxl[] = R"pxl(
 import pxtrace
 import px
 
-@pxtrace.goprobe("MyFunc")
+@pxtrace.probe("MyFunc")
 def probe_func():
     id = pxtrace.ArgExpr('id')
     return [{'id': id},
@@ -80,7 +79,7 @@ constexpr char kSingleProbeInFuncPxl[] = R"pxl(
 import pxtrace
 import px
 
-@pxtrace.goprobe("MyFunc")
+@pxtrace.probe("MyFunc")
 def probe_func():
     id = pxtrace.ArgExpr('id')
     return [{'id': id},
@@ -229,14 +228,14 @@ constexpr char kMultipleProbePxl[] = R"pxl(
 import pxtrace
 import px
 
-@pxtrace.goprobe("MyFunc")
+@pxtrace.probe("MyFunc")
 def cool_func_probe():
     return "cool_func_table", [{'id': pxtrace.ArgExpr('id')},
             {'err': pxtrace.RetExpr('$0.a')},
             {'latency': pxtrace.FunctionLatency()}]
 
 
-@pxtrace.goprobe("HTTPFunc")
+@pxtrace.probe("HTTPFunc")
 def http_func_probe():
     return "http_table", [{'req_body': pxtrace.ArgExpr('req_body')},
             {'resp_body': pxtrace.ArgExpr('req_status')}]
@@ -372,7 +371,7 @@ constexpr char kMultipleUpsertsInOneScriptTpl[] = R"pxl(
 import pxtrace
 import px
 
-@pxtrace.goprobe("MyFunc")
+@pxtrace.probe("MyFunc")
 def probe_func():
     id = pxtrace.ArgExpr('id')
     return [{'id': id},
@@ -387,7 +386,7 @@ pxtrace.UpsertTracepoint('http_return',
                          "5m")
 
 
-@pxtrace.goprobe("HTTPFunc")
+@pxtrace.probe("HTTPFunc")
 def http_body_probe():
     return [{'req_body': pxtrace.ArgExpr('req_body')},
             {'resp_body': pxtrace.ArgExpr('resp_body')}]
@@ -441,7 +440,7 @@ constexpr char kProbeNoReturn[] = R"pxl(
 import pxtrace
 import px
 
-@pxtrace.goprobe("MyFunc")
+@pxtrace.probe("MyFunc")
 def no_return_value_probe():
     id = pxtrace.ArgExpr('id')
 
@@ -465,7 +464,7 @@ constexpr char kProbeDefNoUpsertPxl[] = R"pxl(
 import pxtrace
 import px
 
-@pxtrace.goprobe("MyFunc")
+@pxtrace.probe("MyFunc")
 def probe_func():
     return [{'id': pxtrace.ArgExpr('id')},
             {'err': pxtrace.RetExpr('$0.a')},
@@ -494,33 +493,33 @@ pxtrace.UpsertTracepoint('p1',
 )pxl";
 
 constexpr char kOldTableNameSpecification[] = R"pxl(
-@pxtrace.goprobe("MyFunc")
+@pxtrace.probe("MyFunc")
 def probe_func():
     return 'tablename', [{'id': pxtrace.ArgExpr('id')}]
 )pxl";
 
 constexpr char kNoCollectionReturnValue[] = R"pxl(
-@pxtrace.goprobe("MyFunc")
+@pxtrace.probe("MyFunc")
 def probe_func():
     return 'tablename'
 )pxl";
 
 constexpr char kBadOutputColumnFormat[] = R"pxl(
-@pxtrace.goprobe("MyFunc")
+@pxtrace.probe("MyFunc")
 def probe_func():
     # should be a dict not a tracing variable
     return [pxtrace.ArgExpr('id')]
 )pxl";
 
 constexpr char kBadOutputColumnKey[] = R"pxl(
-@pxtrace.goprobe("MyFunc")
+@pxtrace.probe("MyFunc")
 def probe_func():
     # key is invalid.
     return [{pxtrace.ArgExpr('id'): pxtrace.ArgExpr('id')}]
 )pxl";
 
 constexpr char kBadOutputColumnValue[] = R"pxl(
-@pxtrace.goprobe("MyFunc")
+@pxtrace.probe("MyFunc")
 def probe_func():
     # value should be a probe value.
     return [{"id": "id"}]
