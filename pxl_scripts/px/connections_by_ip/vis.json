@@ -1,0 +1,48 @@
+{
+  "variables": [],
+  "globalFuncs": [],
+  "widgets": [
+    {
+      "name": "Namespace Service Graph",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "func": {
+        "name": "talk_to_ips",
+        "args": []
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Graph",
+        "adjacencyList": {
+          "fromColumn": "pod",
+          "toColumn": "ns"
+        },
+        "annotations": [
+          {
+            "name": "bytes_sent",
+            "value": "bytes_sent"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Table",
+      "position": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "func": {
+        "name": "talk_to_ips",
+        "args": []
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    }
+  ]
+}
