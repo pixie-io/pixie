@@ -63,7 +63,7 @@ func (e ExecutableScript) LiveViewLink(clusterID *string) string {
 }
 
 // parses the spec return nil on failure.
-func parseVisSpec(specJSON string) *vispb.Vis {
+func ParseVisSpec(specJSON string) *vispb.Vis {
 	var pb vispb.Vis
 	if err := jsonpb.UnmarshalString(specJSON, &pb); err != nil {
 		return nil

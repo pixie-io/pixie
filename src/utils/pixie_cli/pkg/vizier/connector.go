@@ -145,7 +145,8 @@ func makeFuncToExecute(f *vispb.Widget_Func, computedArgs []script.Arg, name str
 	return execFunc, nil
 }
 
-func getFuncsToExecute(script *script.ExecutableScript) ([]*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute, error) {
+// GetFuncsToExecute extracts the funcs to execute from the script.
+func GetFuncsToExecute(script *script.ExecutableScript) ([]*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute, error) {
 	if script.Vis == nil {
 		return []*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute{}, nil
 	}
@@ -193,7 +194,7 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 		return nil, errors.New("input query is empty")
 	}
 
-	execFuncs, err := getFuncsToExecute(script)
+	execFuncs, err := GetFuncsToExecute(script)
 	if err != nil {
 		return nil, err
 	}

@@ -367,7 +367,7 @@ func QueryPlanResponse(queryID uuid.UUID, plan *distributedpb.DistributedPlan, p
 	agentStats *[]*queryresultspb.AgentExecutionStats,
 	planTableID string) (*vizierpb.ExecuteScriptResponse, error) {
 
-	queryPlan, err := getQueryPlanAsDotString(plan, planMap, agentStats)
+	queryPlan, err := GetQueryPlanAsDotString(plan, planMap, agentStats)
 	if err != nil {
 		log.WithError(err).Error("error with query plan")
 		return nil, err

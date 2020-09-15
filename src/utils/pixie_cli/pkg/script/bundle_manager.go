@@ -24,7 +24,7 @@ func pixieScriptToExecutableScript(scriptName string, script *pixieScript) *Exec
 		ScriptName:   scriptName,
 		ShortDoc:     script.ShortDoc,
 		LongDoc:      script.LongDoc,
-		Vis:          parseVisSpec(script.Vis),
+		Vis:          ParseVisSpec(script.Vis),
 		ScriptString: script.Pxl,
 		OrgName:      script.OrgName,
 		Hidden:       script.Hidden,
