@@ -587,11 +587,17 @@ class OperatorTests : public ::testing::Test {
                              std::vector<ExpressionIR*>{})
         .ConsumeValueOrDie();
   }
+
+  FuncIR* AddSupportsPartial(FuncIR* func) {
+    func->SetSupportsPartial(true);
+    return func;
+  }
   FuncIR* MakeCountFunc(ExpressionIR* value) {
-    return graph
-        ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "count"},
-                             std::vector<ExpressionIR*>({value}))
-        .ConsumeValueOrDie();
+    return AddSupportsPartial(
+        graph
+            ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "count"},
+                                 std::vector<ExpressionIR*>({value}))
+            .ConsumeValueOrDie());
   }
 
   std::shared_ptr<IR> SwapGraphBeingBuilt(std::shared_ptr<IR> new_graph) {

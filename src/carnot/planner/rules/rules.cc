@@ -63,6 +63,9 @@ StatusOr<bool> DataTypeRule::EvaluateFunc(CompilerState* compiler_state, FuncIR*
           compiler_state->GetUDAID(RegistryKey(func->func_name(), children_data_types)));
       func->SetOutputDataType(data_type);
       func->SetSupportsPartial(can_partial);
+      if (can_partial) {
+        LOG(INFO) << func->func_name() << " supports partial";
+      }
       break;
     }
     default: {

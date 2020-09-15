@@ -120,7 +120,8 @@ class DistributedSplitter : public NotCopyable {
   BlockingSplitNodeIDGroups GetSplitGroups(const IR* logical_plan,
                                            const absl::flat_hash_map<int64_t, bool>& on_kelvin);
 
-  absl::flat_hash_map<int64_t, bool> GetKelvinNodes(const std::vector<OperatorIR*>& sources);
+  absl::flat_hash_map<int64_t, bool> GetKelvinNodes(const IR* logical_plan,
+                                                    const std::vector<int64_t>& source_ids);
   absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>> GetEdgesToBreak(
       const IR* logical_plan, const absl::flat_hash_map<int64_t, bool>& on_kelvin,
       const std::vector<int64_t>& sources);
@@ -130,7 +131,6 @@ class DistributedSplitter : public NotCopyable {
   bool RunsOnDataStores(const std::vector<OperatorIR*> sources);
   bool RunsOnRemoteProcessors(const std::vector<OperatorIR*> sources);
   bool IsSourceOnKelvin(OperatorIR* source_op);
-  bool IsChildOpOnKelvin(bool is_parent_on_kelvin, OperatorIR* source_op);
   StatusOr<std::unique_ptr<IR>> CreateGRPCBridgePlan(
       const IR* logical_plan, const absl::flat_hash_map<int64_t, bool>& on_kelvin,
       const std::vector<int64_t>& sources);
@@ -138,6 +138,143 @@ class DistributedSplitter : public NotCopyable {
   StatusOr<GRPCSourceGroupIR*> CreateGRPCSourceGroup(OperatorIR* parent_op, int64_t grpc_id);
   Status InsertGRPCBridge(IR* plan, OperatorIR* parent, const std::vector<OperatorIR*>& parents);
   PartialOperatorMgr* GetPartialOperatorMgr(OperatorIR* op) const;
+  absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>> ConsolidateEdges(
+      const IR* logical_plan,
+      const absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>>& edges);
+
+  /**
+   * The GRPCBridgeTree data structure is used as part of the GRPCBridge consolidation step,
+   * organizing GRPCbridges that can be merged together on a shared operator edge instead of
+   * existing as independent GRPC Bridges.
+   *
+   * We might choose to merge the GRPCBridges in a GRPCBridgeTree if the heuristic network cost of
+   * the individual GRPCBridges exceeds the cost of a single merged GRPCBridge.
+   *
+   * A slight caveat to this model is some Operators must be run on PEM, meaning they cannot exist
+   * after a GRPCBridge. Best practice is to make those nodes their own GRPCBridgeTrees and marking
+   * `must_be_on_pem` as true. Processor should make sure not to merge those Children GRPCBridgeTree
+   * nodes that fit this property.
+   *
+   * For a better understanding of these concepts, the tests in distributed_splitter have
+   * accompanying documentation and diagrams for the resulting split graphs.
+   */
+  struct GRPCBridgeTree {
+    // The operator where this bridge node was added. This will be the operator that we will start
+    // at if we decided to push-down the GRPCBridges in this node.
+    OperatorIR* starting_op;
+    // The starting operator of the bridges that belong to this GRPCBridgeTree. Acts as a key in the
+    // original GRPCBridge map.
+    std::vector<OperatorIR*> bridges;
+    // Children GRPCBridgeTrees are descendents of `starting_op` that are not necessarily bridges
+    // but can be considered rough equivalents of a bridge, with the added caveat that children
+    // GRPCBridgeTrees can be subdivided into its own GRPCBridges (and GRPCBridgeTree children),
+    // applying the same heuristic calculations as done on the parent tree.
+    std::vector<GRPCBridgeTree> children;
+
+    /**
+     * @brief Add a Child to this GRPCBridgeTree.
+     *
+     * @param child
+     */
+    void AddChild(const GRPCBridgeTree& child) { children.push_back(child); }
+
+    /**
+     * @brief DebugString that makes it easier to understand what's going on in the tree.
+     *
+     * @return std::string
+     */
+    std::string DebugString() const {
+      std::vector<std::string> children_debug_strings;
+      children_debug_strings.push_back(absl::Substitute("$0", starting_op->DebugString()));
+      children_debug_strings.push_back(absl::Substitute(
+          "\tbridges:$0", absl::StrJoin(bridges, ",", [](std::string* out, const OperatorIR* op) {
+            out->append(op->DebugString());
+          })));
+      for (const auto& c : children) {
+        children_debug_strings.push_back(
+            "\t" + absl::StrJoin(absl::StrSplit(c.DebugString(), "\n"), "\n\t"));
+      }
+      return absl::StrJoin(children_debug_strings, "\n");
+    }
+
+    // Whether all the bridges have a partial mgr. If true and HasChildrenThatMustBeOnPem() is
+    // false, then we heuristically determine that `has_children_that_must_be_on_pem` is false then
+    // we don't need to consolidate the GRPC Bridges into a single one. Otherwise,
+    bool all_bridges_partial_mgr = true;
+    // Whether this BridgeTree starting_op must be on PEM.
+    bool must_be_on_pem = false;
+    // Whether any `children` must be on pem.
+    bool HasChildrenThatMustBeOnPem() const {
+      for (const auto& c : children) {
+        if (c.HasChildrenThatMustBeOnPem() || c.must_be_on_pem) {
+          return true;
+        }
+      }
+      return false;
+    }
+  };
+
+  /**
+   * @brief ConstructGRPCBridgeTree creates an internal graph rooted on the GRPCBridgeTree
+   containing
+   * all of the GRPCBridges that belong to the "starting_op" as well as any children
+   * GRPCBridgeTrees. Children GRPCBridgeTrees typically start at non-bridge OperatorIRs that would
+   * be efficient as separate GRPCBridges even if their children are not necessarily efficient.
+   *
+   * For now, we support operators includes sparse Filters that can be pruned during the
+   * coordination stage, such as  `df.ctx['service'] == 'pl/vizier-metadata'`, but can  be extended
+   * to other filters, expensive Maps, etc.
+   *
+
+   * @param op The current operator and it's children to look at.
+   * @param node The node representing the current set of GRPCBridges that can be consolidated
+   (pushed-down)
+   * @param grpc_bridges The original GRPC Bridges to consolidate.
+   */
+  void ConstructGRPCBridgeTree(
+      OperatorIR* op, GRPCBridgeTree* node,
+      const absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>>& grpc_bridges);
+
+  /**
+   * @brief ExtractBridgesFromGRPCBridgeTree traverses the GRPCBridgeTree tree and outputs the new
+   * grpc bridges as such: A GRPCBridgeTree can be either transformed into a single, pushed down
+   * GRPCBridge or a set of a GRPCBridges depending on the current heuristic decision function. For
+   * now, we use the heuristic that among a set of bridges that come from the same source are only
+   * more efficient than a single bridge close to the source if each bridge in the set applies to a
+   * partially evaluated blocking operation. If that heuristic is met, we copy the GRPCBridges owned
+   * by this node into the output and recurse over children GRPCBridgeTrees with the same
+   * evaluation.
+   *
+   * @param node The node representing the current set of GRPCBridges that can be consolidated
+   * (pushed-down)
+   * @param new_grpc_bridges The new, consolidated bridges.
+   * @param old_grpc_bridges The original GRPC bridges to consolidate.
+   */
+  void ExtractBridgesFromGRPCBridgeTree(
+      const GRPCBridgeTree& blob,
+      absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>>* new_grpc_bridges,
+      const absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>>& old_grpc_bridges);
+
+  /**
+   * @brief Returns true if we should start a new node in the GRPCBridgeTree
+   * constructor with this operator. Any operator that comes up true for this should be more
+   * optimally run on a PEM (closer to the data collection) because it reduces the overall cost of a
+   * query execution.
+   *
+   * This currently only includes a check for Filters that can eliminate certain agents from this
+   * part of the plan, but nothing is preventing future other operators such as drop heavy maps from
+   * being included here.
+   *
+   * If amending this in the future, consider that your change has second order effects that can
+   * cause queries to become less performant because ExtractBridgesFromGRPCBridgeTree() will
+   * consider any matched operators as a viable target to put before a GRPCBridge, leading to higher
+   * network utilization for a query.
+   *
+   * @param operator
+   * @return true
+   * @return false
+   */
+  bool CanBeGRPCBridgeTree(OperatorIR* op);
 
   /**
    * @brief Returns true if each child has a partial operator version. If each child does, then we

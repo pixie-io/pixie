@@ -406,7 +406,7 @@ import px
 
 left = px.DataFrame(table='http_events', start_time='-120s', select=['upid'])
 left = left[left.ctx['pod_id'] == 'agent1_pod']
-right = px.DataFrame(table='http_events', start_time='-120s', select=['upid'])
+right = px.DataFrame(table='process_stats', start_time='-120s', select=['upid'])
 joined_table = left.merge(right, how='inner', left_on=['upid'], right_on=['upid'],
                           suffixes=['', '_x'])
 px.display(joined_table, 'multi_parent')
@@ -468,7 +468,7 @@ px.display(multichild, 'sink2')
 
 )pxl";
 
-TEST_F(CoordinatorTest, prune_agents_multichild) {
+TEST_F(CoordinatorTest, DISABLED_prune_agents_multichild) {
   auto physical_plan = ThreeAgentOneKelvinCoordinateQuery(kPruneAgentsMultiChild);
   EXPECT_EQ(physical_plan->dag().nodes().size(), 4UL);
 

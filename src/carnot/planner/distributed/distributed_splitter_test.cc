@@ -606,6 +606,589 @@ TEST_F(SplitterTest, UDTFOnSubsetOfPEMs) {
   EXPECT_EQ(grpc_sink->destination_id(), grpc_source_group->source_id());
 }
 
+/** Tests the following graph:
+ *    ____T1_____
+ *   /           \
+ * Map           Map
+ *  |             |
+ * BlockingAgg  BlockingAgg
+ *  |             |
+ * Sink          Sink
+ *
+ * becomes
+ *    T1
+ *     |
+ * GRPCSink(1)
+ *
+ *   GRPCSource(1)
+ *   /           \
+ * Map           Map
+ *  |             |
+ * BlockingAgg  BlockingAgg
+ *  |             |
+ * Sink          Sink
+ */
+
+TEST_F(SplitterTest, MultipleBranchedIdenticalDepths) {
+  auto mem_src = MakeMemSource(MakeRelation());
+  // Branch 1.
+  auto map1 = MakeMap(mem_src, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
+  EXPECT_OK(map1->SetRelation(MakeRelation()));
+  auto agg1 = MakeBlockingAgg(map1, {MakeColumn("count", 0)},
+                              {{"mean", MakeMeanFunc(MakeColumn("col0", 0))}});
+  MakeMemSink(agg1, "out1");
+
+  // Branch 2.
+  auto map2 = MakeMap(mem_src, {{"col2", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
+  EXPECT_OK(map2->SetRelation(MakeRelation()));
+  auto agg2 = MakeBlockingAgg(map2, {MakeColumn("count", 0)},
+                              {{"mean", MakeMeanFunc(MakeColumn("count", 0))}});
+  MakeMemSink(agg2, "out2");
+
+  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ true);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
+  std::unique_ptr<BlockingSplitPlan> split_plan =
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+  auto before_blocking = split_plan->before_blocking.get();
+  auto after_blocking = split_plan->after_blocking.get();
+
+  // Before should be Memsrc->GRPCSink plan.
+  auto sources = before_blocking->FindNodesThatMatch(MemorySource());
+  ASSERT_EQ(sources.size(), 1);
+  auto new_mem_src = static_cast<MemorySourceIR*>(sources[0]);
+  ASSERT_EQ(new_mem_src->Children().size(), 1);
+  ASSERT_MATCH(new_mem_src->Children()[0], GRPCSink());
+  auto grpc_sink = static_cast<GRPCSinkIR*>(new_mem_src->Children()[0]);
+
+  // After should be single grpc source group followed by the branch stuff.
+  auto grpc_source_groups = after_blocking->FindNodesThatMatch(GRPCSourceGroup());
+  ASSERT_EQ(grpc_source_groups.size(), 1);
+  GRPCSourceGroupIR* grpc_source = static_cast<GRPCSourceGroupIR*>(grpc_source_groups[0]);
+
+  EXPECT_EQ(grpc_source->source_id(), grpc_sink->destination_id());
+
+  ASSERT_EQ(grpc_source->Children().size(), 2);
+  ASSERT_EQ(grpc_source->Children()[0]->Children().size(), 1);
+  ASSERT_EQ(grpc_source->Children()[1]->Children().size(), 1);
+  // Check the types of all children.
+  // Run at the end because this shouldn't block anything
+  EXPECT_MATCH(grpc_source->Children()[0], Map());
+  EXPECT_MATCH(grpc_source->Children()[1], Map());
+  EXPECT_MATCH(grpc_source->Children()[0]->Children()[0], BlockingAgg());
+  EXPECT_MATCH(grpc_source->Children()[1]->Children()[0], BlockingAgg());
+}
+
+/** Tests the following graph:
+ *    ____T1_____
+ *   /           \
+ * Map         BlockingAgg
+ *  |             |
+ * BlockingAgg  Sink
+ *  |
+ * Sink
+ *
+ * becomes:
+ *
+ *       T1
+ *        |
+ *    GRPCSink(1)
+ *
+ *   GRPCSource(1)
+ *   /           \
+ * Map         BlockingAgg
+ *  |             |
+ * BlockingAgg  Sink
+ *  |
+ * Sink
+ */
+TEST_F(SplitterTest, MultipleBranchedDifferentBlockingDepths) {
+  auto mem_src = MakeMemSource(MakeRelation());
+  auto map1 = MakeMap(mem_src, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
+  EXPECT_OK(map1->SetRelation(MakeRelation()));
+  auto agg1 = MakeBlockingAgg(map1, {MakeColumn("count", 0)},
+                              {{"mean", MakeMeanFunc(MakeColumn("col0", 0))}});
+  MakeMemSink(agg1, "out1");
+
+  auto agg2 = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},
+                              {{"mean", MakeMeanFunc(MakeColumn("count", 0))}});
+  MakeMemSink(agg2, "out2");
+
+  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ true);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
+  std::unique_ptr<BlockingSplitPlan> split_plan =
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+  auto before_blocking = split_plan->before_blocking.get();
+  auto after_blocking = split_plan->after_blocking.get();
+
+  auto sources = before_blocking->FindNodesThatMatch(MemorySource());
+  ASSERT_EQ(sources.size(), 1);
+
+  // Before should be Memsrc->GRPCSink plan.
+  auto new_mem_src = static_cast<MemorySourceIR*>(sources[0]);
+  ASSERT_EQ(new_mem_src->Children().size(), 1);
+  ASSERT_MATCH(new_mem_src->Children()[0], GRPCSink());
+  auto grpc_sink = static_cast<GRPCSinkIR*>(new_mem_src->Children()[0]);
+
+  // After should be grpc_source_group followed by the branching pattern.
+  auto grpc_source_groups = after_blocking->FindNodesThatMatch(GRPCSourceGroup());
+  ASSERT_EQ(grpc_source_groups.size(), 1);
+  GRPCSourceGroupIR* grpc_source = static_cast<GRPCSourceGroupIR*>(grpc_source_groups[0]);
+
+  EXPECT_EQ(grpc_source->source_id(), grpc_sink->destination_id());
+
+  ASSERT_EQ(grpc_source->Children().size(), 2);
+  ASSERT_EQ(grpc_source->Children()[0]->Children().size(), 1);
+  // Check the types of all children.
+  // Run at the end because this shouldn't block anything
+  EXPECT_MATCH(grpc_source->Children()[0], Map());
+  EXPECT_MATCH(grpc_source->Children()[0]->Children()[0], BlockingAgg());
+  EXPECT_MATCH(grpc_source->Children()[1], BlockingAgg());
+}
+
+/** Tests the following graph:
+ * Agg: Partial-friendly Aggregate.
+ *
+ *            ____T1_____
+ *           /           \
+ *    SparseFilter      Agg(2)
+ *        /   \           |
+ *      Map   Agg(1)     Sink
+ *       |     |
+ *     Sink    Sink
+ *
+ * becomes:
+ *
+ *            ________T1_______
+ *           /                 \
+ *   SparseFilter         PartialAgg(2)
+ *         /                    |
+ *    GRPCSink(1)           GRPCSink(2)
+ * - - - - - - - -  - - - - - - - - - - - -
+ *   GRPCSource(1)          GRPCSource(2)
+ *   /           \              |
+ * Map          Agg(1)     FinalizeAgg(2)
+ *  |             |             |
+ * Sink          Sink         Sink
+ *
+ * We don't  make Agg(1) partial because then we'll have to send the Map data and the Agg data which
+ * will be more data sent over the network than just sending the mutual parent, assuming the Map
+ * doesn't reduce the size of the batches over significantly.
+ */
+TEST_F(SplitterTest, MultipleBranchesAndSparseFilter) {
+  table_store::schema::Relation relation(
+      {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64},
+      {"upid", "time_", "count", "cpu0"});
+  auto mem_src = MakeMemSource(relation);
+  // Makes a sparse filter.
+  auto metadata_fn = MakeFunc("upid_to_service_name", {MakeColumn("upid", 0)});
+  metadata_fn->set_annotations(ExpressionIR::Annotations{MetadataType::SERVICE_NAME});
+  auto filter = MakeFilter(mem_src, MakeEqualsFunc(metadata_fn, MakeString("pl/agent1")));
+  EXPECT_OK(filter->SetRelation(relation));
+  auto map =
+      MakeMap(filter, {{"time_", MakeColumn("time_", 0)}, {"count", MakeColumn("count", 0)}});
+  EXPECT_OK(map->SetRelation(
+      table_store::schema::Relation({types::TIME64NS, types::INT64}, {"time_", "count"})));
+  MakeMemSink(map, "out1");
+
+  auto agg1 = MakeBlockingAgg(filter, {MakeColumn("count", 0)},
+                              {{"countelms", MakeCountFunc(MakeColumn("count", 0))}});
+  MakeMemSink(agg1, "out2");
+
+  auto agg2 = MakeBlockingAgg(mem_src, {}, {{"countelms", MakeCountFunc(MakeColumn("count", 0))}});
+  MakeMemSink(agg2, "out3");
+
+  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ true);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
+  std::unique_ptr<BlockingSplitPlan> split_plan =
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+  auto before_blocking = split_plan->before_blocking.get();
+  auto after_blocking = split_plan->after_blocking.get();
+
+  auto sources = before_blocking->FindNodesThatMatch(MemorySource());
+  ASSERT_EQ(sources.size(), 1);
+
+  // Before should be Memsrc->GRPCSink plan.
+  auto new_mem_src = static_cast<MemorySourceIR*>(sources[0]);
+  ASSERT_EQ(new_mem_src->Children().size(), 2);
+  auto new_filter = new_mem_src->Children()[0];
+  auto partial_agg2 = new_mem_src->Children()[1];
+  ASSERT_MATCH(new_filter, Filter());
+  ASSERT_MATCH(partial_agg2, PartialAgg());
+
+  ASSERT_EQ(new_filter->Children().size(), 1);
+  ASSERT_MATCH(new_filter->Children()[0], GRPCSink());
+  auto new_filter_sink = static_cast<GRPCSinkIR*>(new_filter->Children()[0]);
+
+  ASSERT_EQ(partial_agg2->Children().size(), 1);
+  ASSERT_MATCH(partial_agg2->Children()[0], GRPCSink());
+  auto partial_agg2_sink = static_cast<GRPCSinkIR*>(partial_agg2->Children()[0]);
+
+  auto grpc_sources = after_blocking->FindNodesThatMatch(GRPCSourceGroup());
+  ASSERT_EQ(grpc_sources.size(), 2);
+  auto grpc_source0 = static_cast<GRPCSourceGroupIR*>(grpc_sources[0]);
+  auto grpc_source1 = static_cast<GRPCSourceGroupIR*>(grpc_sources[1]);
+  // Swap the sources so they match our expected connections.
+  if (grpc_source0->source_id() != new_filter_sink->destination_id()) {
+    auto tmp = grpc_source0;
+    grpc_source0 = grpc_source1;
+    grpc_source1 = tmp;
+  }
+
+  ASSERT_EQ(grpc_source0->source_id(), new_filter_sink->destination_id());
+  ASSERT_EQ(grpc_source1->source_id(), partial_agg2_sink->destination_id());
+
+  ASSERT_EQ(grpc_source0->Children().size(), 2);
+  auto new_map = grpc_source0->Children()[0];
+  auto new_agg1 = grpc_source0->Children()[1];
+  EXPECT_MATCH(new_map, Map());
+  EXPECT_MATCH(new_map->Children()[0], MemorySink());
+  EXPECT_MATCH(new_agg1, BlockingAgg());
+  EXPECT_MATCH(new_agg1->Children()[0], MemorySink());
+
+  ASSERT_EQ(grpc_source1->Children().size(), 1);
+  auto finalize_agg = grpc_source1->Children()[0];
+  EXPECT_MATCH(finalize_agg, FinalizeAgg());
+
+  ASSERT_EQ(finalize_agg->Children().size(), 1);
+  EXPECT_MATCH(finalize_agg->Children()[0], MemorySink());
+}
+
+/** Tests the following graph:
+ * Agg: Partial-friendly Aggregate.
+ *
+ *            ____T1_____
+ *           /           \
+ *    SparseFilter      Agg(2)
+ *        /   \           |
+ *      Agg(3)   Agg(1)     Sink
+ *       |     |
+ *     Sink    Sink
+ *
+ * becomes:
+ *
+ *              ________T1_______
+ *             /                 \
+ *        SparseFilter         PartialAgg(2)
+ *         /          \               |
+ * PartialAgg(3)  PartialAgg(1)       |
+ *       |             |              |
+ * GRPCSink(1)     GRPCSink(2)    GRPCSink(3)
+ * - - - - - - - -  - - - - - - - - - - - -
+ * GRPCSource(1) GRPCSource(2)   GRPCSource(3)
+ *       |             |              |
+ * FinalizeAgg(3) FinalizeAgg(1)   FinalizeAgg(2)
+ *       |             |              |
+ *      Sink          Sink           Sink
+ *
+ *
+ */
+
+/** Tests the following graph:
+ *
+ *
+ *             ______T1_____
+ *             /             \
+ *         RandomMap          \
+ *           /                 \
+ *      MustBePEMMap       NonPartialAgg(2)
+ *        /   \                 |
+ *     Agg(1) MustBePEMMap     Sink
+ *       |     |
+ *       |     |
+ *       |     |
+ *     Sink    Sink
+ *
+ *
+ *
+ *             ______T1_____
+ *             /             \
+ *         RandomMap          \
+ *           /                 \
+ *      MustBePEMMap(1)      GRPCSink(3))
+ *        /        \
+ * PartialAgg(1) MustBePEMMap(2)
+ *       |            |
+ *   GRPCSink(1) GRPCSink(2)
+ * - - - - - - - -  - - - - - - - - - - - -
+ * GRPCSource(1) GRPCSource(2)   GRPCSource(3)
+ *       |             |              |
+ * FinalizeAgg(1)      |        NonPartialAgg(2)
+ *       |             |              |
+ *      Sink          Sink           Sink
+ */
+TEST_F(SplitterTest, branch_where_children_must_be_on_pem) {
+  table_store::schema::Relation relation(
+      {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64},
+      {"upid", "time_", "count", "cpu0"});
+  auto mem_src = MakeMemSource(relation);
+  auto random_map = MakeMap(mem_src, {{"cpu++", MakeAddFunc(MakeColumn("cpu0", 0), MakeInt(1))}},
+                            /*keep_input_columns*/ true);
+
+  EXPECT_OK(random_map->SetRelation(Relation(
+      {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64, types::FLOAT64},
+      {"upid", "time_", "count", "cpu0", "cpu++"})));
+  // Makes a sparse filter.
+  auto metadata_fn1 = MakeFunc("upid_to_service_name", {MakeColumn("upid", 0)});
+  metadata_fn1->set_annotations(ExpressionIR::Annotations{MetadataType::SERVICE_NAME});
+  auto map1 = MakeMap(random_map,
+                      {{"equals_service", MakeEqualsFunc(metadata_fn1, MakeString("pl/agent1"))}},
+                      /*keep_input_columns*/ true);
+
+  EXPECT_OK(
+      map1->SetRelation(Relation({types::UINT128, types::TIME64NS, types::INT64,
+                                  types::DataType::FLOAT64, types::FLOAT64, types::BOOLEAN},
+                                 {"upid", "time_", "count", "cpu0", "cpu++", "equals_service"})));
+
+  // agg1 should partial.
+  auto count_col_agg1 = MakeColumn("count", 0);
+  count_col_agg1->ResolveColumnType(types::INT64);
+  auto agg1 = MakeBlockingAgg(map1, {count_col_agg1},
+                              {{"countelms", MakeCountFunc(MakeColumn("count", 0))}});
+  MakeMemSink(agg1, "out2");
+
+  // agg2 should not partial.
+  auto agg2_count_fn = MakeCountFunc(MakeColumn("count", 0));
+  agg2_count_fn->SetSupportsPartial(false);
+  auto agg2 = MakeBlockingAgg(mem_src, {}, {{"countelms", agg2_count_fn}});
+  MakeMemSink(agg2, "out3");
+
+  auto metadata_fn2 = MakeFunc("upid_to_pod_name", {MakeColumn("upid", 0)});
+  metadata_fn2->set_annotations(ExpressionIR::Annotations{MetadataType::POD_NAME});
+
+  auto map2 = MakeMap(map1, {{"pod", metadata_fn2}, {"count", MakeColumn("count", 0)}},
+                      /*keep_input_columns*/ true);
+  EXPECT_OK(map2->SetRelation(
+      Relation({types::UINT128, types::TIME64NS, types::DataType::FLOAT64, types::FLOAT64,
+                types::BOOLEAN, types::STRING, types::INT64},
+               {"upid", "time_", "cpu0", "cpu++", "equals_service", "pod", "count"})));
+  MakeMemSink(map2, "out1");
+
+  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ true);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
+  std::unique_ptr<BlockingSplitPlan> split_plan =
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+  auto before_blocking = split_plan->before_blocking.get();
+  auto after_blocking = split_plan->after_blocking.get();
+
+  auto sources = before_blocking->FindNodesThatMatch(MemorySource());
+  ASSERT_EQ(sources.size(), 1);
+
+  // Before should be Memsrc->GRPCSink plan.
+  auto new_mem_src = static_cast<MemorySourceIR*>(sources[0]);
+  ASSERT_EQ(new_mem_src->Children().size(), 2);
+  auto new_random_map = new_mem_src->Children()[0];
+  auto grpc_sink3 = static_cast<GRPCSinkIR*>(new_mem_src->Children()[1]);
+  ASSERT_MATCH(new_random_map, Map());
+  ASSERT_MATCH(grpc_sink3, GRPCSink());
+
+  ASSERT_EQ(new_random_map->Children().size(), 1);
+  auto new_map1 = new_random_map->Children()[0];
+  ASSERT_MATCH(new_map1, Map());
+
+  ASSERT_EQ(new_map1->Children().size(), 2);
+  auto partial_agg1 = new_map1->Children()[0];
+  auto new_map2 = new_map1->Children()[1];
+  if (Match(partial_agg1, Map())) {
+    auto tmp = new_map2;
+    new_map2 = partial_agg1;
+    partial_agg1 = tmp;
+  }
+  ASSERT_MATCH(new_map2, Map());
+  ASSERT_MATCH(partial_agg1, PartialAgg());
+
+  ASSERT_EQ(partial_agg1->Children().size(), 1);
+  ASSERT_EQ(new_map2->Children().size(), 1);
+
+  ASSERT_MATCH(partial_agg1->Children()[0], GRPCSink());
+  ASSERT_MATCH(new_map2->Children()[0], GRPCSink());
+
+  auto grpc_sink1 = static_cast<GRPCSinkIR*>(partial_agg1->Children()[0]);
+  auto grpc_sink2 = static_cast<GRPCSinkIR*>(new_map2->Children()[0]);
+
+  auto grpc_sources = after_blocking->FindNodesThatMatch(GRPCSourceGroup());
+  ASSERT_EQ(grpc_sources.size(), 3);
+  GRPCSourceGroupIR* grpc_source1 = nullptr;
+  GRPCSourceGroupIR* grpc_source2 = nullptr;
+  GRPCSourceGroupIR* grpc_source3 = nullptr;
+
+  for (const auto& s : grpc_sources) {
+    auto grpc_src = static_cast<GRPCSourceGroupIR*>(s);
+    if (grpc_src->source_id() == grpc_sink1->destination_id()) {
+      grpc_source1 = grpc_src;
+    }
+
+    if (grpc_src->source_id() == grpc_sink2->destination_id()) {
+      grpc_source2 = grpc_src;
+    }
+
+    if (grpc_src->source_id() == grpc_sink3->destination_id()) {
+      grpc_source3 = grpc_src;
+    }
+  }
+
+  ASSERT_EQ(grpc_source1->source_id(), grpc_sink1->destination_id());
+  ASSERT_EQ(grpc_source2->source_id(), grpc_sink2->destination_id());
+  ASSERT_EQ(grpc_source3->source_id(), grpc_sink3->destination_id());
+
+  ASSERT_EQ(grpc_source1->Children().size(), 1);
+  auto finalize_agg = grpc_source1->Children()[0];
+  EXPECT_MATCH(finalize_agg, FinalizeAgg());
+  ASSERT_EQ(finalize_agg->Children().size(), 1);
+  EXPECT_MATCH(finalize_agg->Children()[0], MemorySink());
+
+  ASSERT_EQ(grpc_source2->Children().size(), 1);
+  EXPECT_MATCH(grpc_source2->Children()[0], MemorySink());
+
+  ASSERT_EQ(grpc_source3->Children().size(), 1);
+  EXPECT_MATCH(grpc_source3->Children()[0], BlockingAgg());
+  auto new_agg2 = grpc_source3->Children()[0];
+  ASSERT_EQ(new_agg2->Children().size(), 1);
+  EXPECT_MATCH(new_agg2->Children()[0], MemorySink());
+}
+
+/** Tests the following graph:
+ *
+ *
+ *              ______T1_____
+ *             /             \
+ *         RandomMap1         \
+ *           /                 \
+ *      MustBePEMMap       NonPartialAgg(2)
+ *        /   \                 |
+ *     Agg(1) RandomMap2       Sink
+ *       |     |
+ *     Sink    Sink
+ *
+ *
+ *
+ *             ______T1_____
+ *             /             \
+ *      RandomMap(1)          \
+ *           /                 \
+ *      MustBePEMMap(1)      GRPCSink(2))
+ *          |
+ *      GRPCSink(1)
+ * - - - - - - - -  - - - - - - - - - - - -
+ *     GRPCSource(1)           GRPCSource(3)
+ *      /        \                  |
+ *  Agg(1)      RandomMap(2)      Agg(2)
+ *     |             |              |
+ *    Sink          Sink           Sink
+ */
+TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurse) {
+  table_store::schema::Relation relation(
+      {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64},
+      {"upid", "time_", "count", "cpu0"});
+  auto mem_src = MakeMemSource(relation);
+  auto random_map1 = MakeMap(mem_src, {{"cpu++", MakeAddFunc(MakeColumn("cpu0", 0), MakeInt(1))}},
+                             /*keep_input_columns*/ true);
+
+  EXPECT_OK(random_map1->SetRelation(Relation(
+      {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64, types::FLOAT64},
+      {"upid", "time_", "count", "cpu0", "cpu++"})));
+  // Makes a sparse filter.
+  auto metadata_fn1 = MakeFunc("upid_to_service_name", {MakeColumn("upid", 0)});
+  metadata_fn1->set_annotations(ExpressionIR::Annotations{MetadataType::SERVICE_NAME});
+  auto pem_map1 = MakeMap(
+      random_map1, {{"equals_service", MakeEqualsFunc(metadata_fn1, MakeString("pl/agent1"))}},
+      /*keep_input_columns*/ true);
+
+  EXPECT_OK(pem_map1->SetRelation(
+      Relation({types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64,
+                types::FLOAT64, types::BOOLEAN},
+               {"upid", "time_", "count", "cpu0", "cpu++", "equals_service"})));
+
+  // agg1 should partial.
+  auto count_col_agg1 = MakeColumn("count", 0);
+  count_col_agg1->ResolveColumnType(types::INT64);
+  auto agg1 = MakeBlockingAgg(pem_map1, {count_col_agg1},
+                              {{"countelms", MakeCountFunc(MakeColumn("count", 0))}});
+  MakeMemSink(agg1, "out2");
+
+  // agg2 should not partial.
+  auto agg2_count_fn = MakeCountFunc(MakeColumn("count", 0));
+  agg2_count_fn->SetSupportsPartial(false);
+  auto agg2 = MakeBlockingAgg(mem_src, {}, {{"countelms", agg2_count_fn}});
+  MakeMemSink(agg2, "out3");
+
+  auto random_map2 = MakeMap(pem_map1,
+                             {{"count++", MakeAddFunc(MakeColumn("count", 0), MakeInt(1))},
+                              {"count", MakeColumn("count", 0)}},
+                             /*keep_input_columns*/ true);
+  EXPECT_OK(random_map2->SetRelation(
+      Relation({types::UINT128, types::TIME64NS, types::DataType::FLOAT64, types::FLOAT64,
+                types::BOOLEAN, types::INT64, types::INT64},
+               {"upid", "time_", "cpu0", "cpu++", "equals_service", "count++", "count"})));
+  MakeMemSink(random_map2, "out1");
+
+  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ true);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
+  std::unique_ptr<BlockingSplitPlan> split_plan =
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+  auto before_blocking = split_plan->before_blocking.get();
+  auto after_blocking = split_plan->after_blocking.get();
+
+  auto sources = before_blocking->FindNodesThatMatch(MemorySource());
+  ASSERT_EQ(sources.size(), 1);
+
+  // Before should be Memsrc->GRPCSink plan.
+  auto new_mem_src = static_cast<MemorySourceIR*>(sources[0]);
+  ASSERT_EQ(new_mem_src->Children().size(), 2);
+  auto new_random_map1 = new_mem_src->Children()[0];
+  auto grpc_sink2 = static_cast<GRPCSinkIR*>(new_mem_src->Children()[1]);
+  ASSERT_MATCH(new_random_map1, Map());
+  ASSERT_MATCH(grpc_sink2, GRPCSink());
+
+  ASSERT_EQ(new_random_map1->Children().size(), 1);
+  auto new_pem_map = new_random_map1->Children()[0];
+  ASSERT_MATCH(new_pem_map, Map());
+
+  ASSERT_EQ(new_pem_map->Children().size(), 1);
+  ASSERT_MATCH(new_pem_map->Children()[0], GRPCSink());
+
+  auto grpc_sink1 = static_cast<GRPCSinkIR*>(new_pem_map->Children()[0]);
+
+  auto grpc_sources = after_blocking->FindNodesThatMatch(GRPCSourceGroup());
+  ASSERT_EQ(grpc_sources.size(), 2);
+  GRPCSourceGroupIR* grpc_source1 = nullptr;
+  GRPCSourceGroupIR* grpc_source2 = nullptr;
+
+  for (const auto& s : grpc_sources) {
+    auto grpc_src = static_cast<GRPCSourceGroupIR*>(s);
+    if (grpc_src->source_id() == grpc_sink1->destination_id()) {
+      grpc_source1 = grpc_src;
+    }
+
+    if (grpc_src->source_id() == grpc_sink2->destination_id()) {
+      grpc_source2 = grpc_src;
+    }
+  }
+
+  ASSERT_EQ(grpc_source1->source_id(), grpc_sink1->destination_id());
+  ASSERT_EQ(grpc_source2->source_id(), grpc_sink2->destination_id());
+
+  ASSERT_EQ(grpc_source1->Children().size(), 2);
+  auto new_agg1 = grpc_source1->Children()[0];
+  auto new_random_map2 = grpc_source1->Children()[1];
+
+  EXPECT_MATCH(new_agg1, BlockingAgg());
+  ASSERT_EQ(new_agg1->Children().size(), 1);
+  EXPECT_MATCH(new_agg1->Children()[0], MemorySink());
+
+  ASSERT_EQ(new_random_map2->Children().size(), 1);
+  EXPECT_MATCH(new_random_map2->Children()[0], MemorySink());
+
+  ASSERT_EQ(grpc_source2->Children().size(), 1);
+  auto new_agg2 = grpc_source2->Children()[0];
+  EXPECT_MATCH(new_agg2, BlockingAgg());
+  ASSERT_EQ(new_agg2->Children().size(), 1);
+  EXPECT_MATCH(new_agg2->Children()[0], MemorySink());
+}
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot

@@ -70,7 +70,7 @@ relation_map {
     columns {
       column_name: "upid"
       column_type: UINT128
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_UPID
     }
     columns {
       column_name: "remote_addr"
@@ -165,6 +165,26 @@ relation_map {
     columns {
       column_name: "cpu2"
       column_type: FLOAT64
+      column_semantic_type: ST_NONE
+    }
+  }
+}
+relation_map {
+  key: "process_stats"
+  value {
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "cpu_ktime_ns"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "cpu_utime_ns"
+      column_type: INT64
       column_semantic_type: ST_NONE
     }
   }

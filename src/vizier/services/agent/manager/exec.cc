@@ -30,7 +30,7 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
   sole::uuid query_id() { return query_id_; }
 
   void Work() override {
-    VLOG(1) << absl::Substitute("Executing query: id=$0", query_id_.str());
+    LOG(INFO) << absl::Substitute("Executing query: id=$0", query_id_.str());
     VLOG(1) << absl::Substitute("Query Plan: $0=$1", query_id_.str(), req_.plan().DebugString());
 
     auto s = carnot_->ExecutePlan(req_.plan(), query_id_, req_.analyze());

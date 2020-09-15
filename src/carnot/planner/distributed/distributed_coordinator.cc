@@ -332,7 +332,9 @@ StatusOr<absl::flat_hash_map<int64_t, std::unique_ptr<IR>>> GetCarnotPlans(
         sink_produces_data = OperatorMayProduceData(sink, *md_filter);
       }
       // If the sink produces data, or this is the last Carnot instance and no Carnot has
-      // matched this subgraph, then add it to the current Carnot instance.
+      // matched this subgraph, then add it to the current Carnot instance. We have the last
+      // carnot instance case so that a completely exclusive filter still produces
+      // empty row batches for Kelvin to return.
       if (!sink_produces_data &&
           (carnot_idx < carnot_instances.size() - 1 || allocated_sinks.contains(sink))) {
         continue;

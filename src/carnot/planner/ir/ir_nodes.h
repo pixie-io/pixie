@@ -1412,6 +1412,18 @@ class MapIR : public OperatorIR {
 
   Status ResolveType(CompilerState* compiler_state);
 
+  std::string DebugString() const override {
+    return absl::Substitute("Map(id=$0, $1)", id(), DebugStringExprs());
+  }
+
+  std::string DebugStringExprs() const {
+    std::vector<std::string> expr_strings;
+    for (const auto& expr : col_exprs_) {
+      expr_strings.push_back(absl::Substitute("$0=$1", expr.name, expr.node->DebugString()));
+    }
+    return absl::StrJoin(expr_strings, ",");
+  }
+
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
       const absl::flat_hash_set<std::string>& output_colnames) override;
