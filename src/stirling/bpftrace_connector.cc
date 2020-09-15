@@ -85,8 +85,8 @@ Status BPFTraceConnector::InitImpl() {
     return error::Internal("No bpftrace probes to deploy.");
   }
 
-  bool nonblocking_run = true;
-  err = bpftrace_.run(bpforc_.get(), nonblocking_run);
+  bpftrace_.bpforc_ = bpforc_.get();
+  err = bpftrace_.deploy();
   if (err != 0) {
     return error::Internal("Failed to run BPF code.");
   }
@@ -208,8 +208,7 @@ void PIDCPUUseBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, u
 }
 
 Status BPFTraceConnector::StopImpl() {
-  // TODO(oazizi): Test this. Not guaranteed to work.
-  bpftrace_.stop();
+  bpftrace_.finalize();
   return Status::OK();
 }
 
