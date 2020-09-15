@@ -223,6 +223,15 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "dynamic_bpftrace_connector_test",
+    srcs = ["dynamic_bpftrace_connector_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "data_stream_test",
     srcs = ["data_stream_test.cc"],
     deps = [

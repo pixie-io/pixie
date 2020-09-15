@@ -162,6 +162,28 @@ message TracepointSpec {
   repeated Probe probes = 4;
 }
 
+message BPFTrace {
+  // This overlaps with Field message in physical.proto. But does not need StructSpec.
+  //
+  // This is temporary until the output schema parsing is done for bpftrace, which directly
+  // extracts the output format of the perf buffer.
+  //
+  // TODO(yzhao): Remove this after implementing bpftrace output format parsing.
+  message Output {
+    // Name of this output field.
+    string name = 1;
+
+    // Type of this output field.
+    shared.ScalarType type = 2;
+  }
+
+  // Bpftrace code to be deployed.
+  string program = 1;
+
+  // Describes the output format of the above code.
+  repeated Output outputs = 2;
+}
+
 // A logical program, either an application tracepoint, or a bpftrace.
 message TracepointDeployment {
   // The name of this deployment. Used to identify this operation.
@@ -189,28 +211,6 @@ message TracepointDeployment {
   }
 
   repeated Tracepoint tracepoints = 4;
-
-  message BPFTrace {
-    // This overlaps with Field message in physical.proto. But does not need StructSpec.
-    //
-    // This is temporary until the output schema parsing is done for bpftrace, which directly
-    // extracts the output format of the perf buffer.
-    //
-    // TODO(yzhao): Remove this after implementing bpftrace output format parsing.
-    message Output {
-      // Name of this output field.
-      string name = 1;
-
-      // Type of this output field.
-      shared.ScalarType type = 2;
-    }
-
-    // Bpftrace code to be deployed.
-    string program = 1;
-
-    // Describes the output format of the above code.
-    repeated Output outputs = 2;
-  }
 
   // This applies to bpftrace. Note that only one bpftrace program is allowed.
   //

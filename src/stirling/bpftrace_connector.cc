@@ -28,6 +28,7 @@ BPFTraceConnector::BPFTraceConnector(std::string_view source_name,
     : SourceConnector(source_name, table_schemas), script_(script), params_(std::move(params)) {}
 
 Status BPFTraceConnector::InitImpl() {
+  // TODO(oazizi/yzhao): Move this into a BPFTraceWrapper class.
   if (!IsRoot()) {
     return error::PermissionDenied("Bpftrace currently only supported as the root user.");
   }
