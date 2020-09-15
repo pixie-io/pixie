@@ -1,0 +1,17 @@
+package(default_visibility = ["//src/stirling:__pkg__"])
+
+load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource", "pl_cc_resource", "pl_cc_resource_impl")
+
+pl_bpf_cc_resource(
+    name = "cpustat",
+    src = "cpustat.bt",
+    hdrs = [],
+    syshdrs = "//src/stirling/bcc_bpf:dummy_system_headers",
+)
+
+pl_bpf_cc_resource(
+    name = "pidruntime",
+    src = "pidruntime.bt",
+    hdrs = [],
+    syshdrs = "//src/stirling/bcc_bpf:dummy_system_headers",
+)

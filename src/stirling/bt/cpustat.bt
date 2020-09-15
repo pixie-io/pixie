@@ -1,0 +1,65 @@
+// TODO
+// 1) idle and iowait are actually functions in proc/stat.c
+//    get_idle_time(), get_iowait_time()
+//    they modify the raw values before reporting them.
+//    That functionality may need to be replicated.
+// 2) unroll doesn't work for values above 6
+// 3) Need to determine user_hz dynamically (or pass in as argument)
+// 4) Determine num_cpus dynamically (or pass in as argument)
+// 5) There is a sampling time by the source (this file), and another
+//    sampling time by the connector. Think about best way of managing both.
+
+interval:ms:100
+{
+    $cpu_id = $1;
+
+    //sudo cat /proc/kallsyms | less
+    $cpustat_offset = kaddr("kernel_cpustat");
+    $per_cpu_offsets = kaddr("__per_cpu_offset");
+
+    $cputime_user    = 0;
+    $cputime_nice    = 0;
+    $cputime_system  = 0;
+    $cputime_softirq = 0;
+    $cputime_irq     = 0;
+    $cputime_idle    = 0;
+    $cputime_iowait  = 0;
+
+    $nsec_per_sec = 1000000000;
+    $user_hz = 100;
+
+    $cpu = $cpu_id;
+    unroll(1) {
+        $cpu_base = *($per_cpu_offsets+($cpu*8));
+        $cpustat  = $cpu_base + $cpustat_offset;
+
+        //printf("cpu=%d addr=%llx\n", $cpu, $cpustat);
+
+        $cputime_user    = $cputime_user    + *($cpustat + 0);
+        $cputime_nice    = $cputime_nice    + *($cpustat + 8);
+        $cputime_system  = $cputime_system  + *($cpustat + 16);
+        $cputime_softirq = $cputime_softirq + *($cpustat + 24);
+        $cputime_irq     = $cputime_irq     + *($cpustat + 32);
+        $cputime_idle    = $cputime_idle    + *($cpustat + 40);
+        $cputime_iowait  = $cputime_iowait  + *($cpustat + 48);
+
+        $cpu = $cpu+1;
+    }
+
+    $cputime_user    = $cputime_user    / ($nsec_per_sec / $user_hz);
+    $cputime_nice    = $cputime_nice    / ($nsec_per_sec / $user_hz);
+    $cputime_system  = $cputime_system  / ($nsec_per_sec / $user_hz);
+    $cputime_softirq = $cputime_softirq / ($nsec_per_sec / $user_hz);
+    $cputime_irq     = $cputime_irq     / ($nsec_per_sec / $user_hz);
+    $cputime_idle    = $cputime_idle    / ($nsec_per_sec / $user_hz);
+    $cputime_iowait  = $cputime_iowait  / ($nsec_per_sec / $user_hz);
+
+    @retval[0] = nsecs;
+    @retval[1] = $cputime_user;
+    @retval[2] = $cputime_nice;
+    @retval[3] = $cputime_system;
+    @retval[4] = $cputime_softirq;
+    @retval[5] = $cputime_irq;
+    @retval[6] = $cputime_idle;
+    @retval[7] = $cputime_iowait;
+}

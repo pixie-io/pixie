@@ -1,0 +1,18 @@
+#include <linux/sched.h>
+
+BEGIN
+{
+  printf("Sampling CPU tasks at 99 Hertz... Hit Ctrl-C to end.\n");
+}
+
+profile:hz:99
+{
+  $task = (task_struct*) curtask;
+
+  if (pid != 0) {
+    printf("pid:        %d\n", $task->pid);
+    printf("start_time: %u\n", $task->start_time);
+    printf("utime:      %u\n", $task->utime);
+    printf("stime:      %u\n", $task->stime);
+  }
+}

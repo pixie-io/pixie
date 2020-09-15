@@ -48,9 +48,12 @@ pl_cc_library(
         "//demos/applications/hipster_shop:cc_library",
     ] + select({
         "@bazel_tools//src/conditions:linux_x86_64": [
+            "//third_party:bpftrace",
             "//src/stirling/bcc_bpf:socket_trace",
             "//src/stirling/bcc_bpf:pidruntime",
             "//src/stirling/bcc_bpf:proc_trace",
+            "//src/stirling/bt:cpustat",
+            "//src/stirling/bt:pidruntime",
         ],
         "//conditions:default": [],
     }),

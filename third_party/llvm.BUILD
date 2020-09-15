@@ -81,6 +81,12 @@ cc_library(
         "lib/libLLVMSupport.a",
         "lib/libLLVMDemangle.a",
         "lib/libLLVMX86Disassembler.a",
+        "lib/libLLVMWebAssemblyAsmParser.a",
+        "lib/libLLVMWebAssemblyCodeGen.a",
+        "lib/libLLVMWebAssemblyDesc.a",
+        "lib/libLLVMWebAssemblyDisassembler.a",
+        "lib/libLLVMWebAssemblyInfo.a",
+        "lib/libLLVMOrcError.a",
 
         # WARNING HACK: This adds a stub so that we don't have to include all of
         # clang-tidy with the LLVM build. We don't need to use clang-tidy since we don't

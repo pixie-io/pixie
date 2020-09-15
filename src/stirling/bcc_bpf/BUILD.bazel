@@ -9,7 +9,10 @@ filegroup(
     srcs = glob([
         "system-headers/**",
     ]),
-    visibility = ["//experimental/bpf:__subpackages__"],
+    visibility = [
+        "//experimental/bpf:__subpackages__",
+        "//src/stirling:__subpackages__",
+    ],
 )
 
 filegroup(
@@ -104,10 +107,10 @@ pl_bpf_preprocess(
 pl_cc_test(
     name = "protocol_inference_test",
     srcs = [
-        "stubs.h",
-        "utils.h",
         "protocol_inference.h",
         "protocol_inference_test.cc",
+        "stubs.h",
+        "utils.h",
     ],
     deps = [
         "//src/stirling/common:cc_library",

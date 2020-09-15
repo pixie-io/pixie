@@ -69,8 +69,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr uint32_t kCQLTableNum = SourceConnector::TableNum(kTables, kCQLTable);
   static constexpr uint32_t kPGSQLTableNum = SourceConnector::TableNum(kTables, kPGSQLTable);
 
-  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
-
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new SocketTraceConnector(name));
   }

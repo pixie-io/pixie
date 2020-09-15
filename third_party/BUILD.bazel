@@ -254,9 +254,6 @@ pl_cc_library(
         "bpftrace/src/arch",
         "bpftrace/src/ast",
     ],
-    linkopts = [
-        "-lbfd",
-    ],
     tags = ["linux_only"],
     visibility = ["//visibility:public"],
     deps = [

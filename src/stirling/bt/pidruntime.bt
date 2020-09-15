@@ -1,0 +1,17 @@
+tracepoint:sched:sched_switch
+{
+  // Calculate run-time of previously running process.
+  $descheduled_pid_start_time = @start_time[args->prev_pid];
+  if ($descheduled_pid_start_time) {
+    delete(@start_time[args->prev_pid]);
+    $runtime = nsecs - $descheduled_pid_start_time;
+    @names[args->prev_pid] = args->prev_comm;
+    @total_time[args->prev_pid] = @total_time[args->prev_pid] + $runtime;
+  }
+
+  // Record start time of the newly scheduled process.
+  @start_time[args->next_pid] = nsecs;
+
+  // Also record the current time as a timestamp.
+  @time[0] = nsecs;
+}
