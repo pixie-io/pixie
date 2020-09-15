@@ -69,7 +69,7 @@ Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
       .OnGRPCSource([&](auto& node) {
         auto s = OnOperatorImpl<plan::GRPCSourceOperator, GRPCSourceNode>(node, &descriptors);
         PL_RETURN_IF_ERROR(s);
-        grpc_sources_.push_back(node.id());
+        grpc_sources_.insert(node.id());
         return exec_state->grpc_router()->AddGRPCSourceNode(
             exec_state->query_id(), node.id(), static_cast<GRPCSourceNode*>(nodes_[node.id()]),
             std::bind(&ExecutionGraph::Continue, this));
@@ -99,9 +99,43 @@ void ExecutionGraph::Continue() {
   execution_cv_.notify_one();
 }
 
+Status ExecutionGraph::CheckUpstreamGRPCConnectionHealth(GRPCSourceNode* source_node) {
+  // Note: for the following logic, HasBatchesRemaining is equivalent to whether or not
+  // the source node has sent a final end of stream row batch already or not.
+  // It's ok if the connection is closed if the GRPC source sent EOS, but if the EOS
+  // is still pending and the connection has been closed, that's an error.
+  // If there are queued row batches to this GRPC source, they may contain the EOS,
+  // so don't produce an error if the GRPC source has batches ready.
+  if (!source_node->NextBatchReady() && source_node->HasBatchesRemaining() &&
+      source_node->upstream_closed_connection()) {
+    return error::Internal(
+        "Error executing query $0: GRPC connection to source node closed its connection",
+        exec_state_->query_id().str());
+  }
+
+  if (source_node->upstream_initiated_connection()) {
+    return Status::OK();
+  }
+
+  SystemTimePoint now = std::chrono::system_clock::now();
+  auto delta = now - query_start_time_;
+  // Wait a certain amount of time before determining the connection has taken too long to
+  // establish.
+  if (delta < upstream_result_connection_timeout_ms_) {
+    return Status::OK();
+  }
+
+  return error::DeadlineExceeded(
+      "Error executing query $0: GRPC connection for source node $1 took longer than $2 ms to "
+      "establish a connection",
+      exec_state_->query_id().str(), source_node->DebugString(),
+      upstream_result_connection_timeout_ms_.count());
+}
+
 Status ExecutionGraph::ExecuteSources() {
-  std::set<SourceNode*> running_sources;
-  std::unordered_map<SourceNode*, int64_t> source_to_id;
+  absl::flat_hash_set<SourceNode*> running_sources;
+
+  absl::flat_hash_map<SourceNode*, int64_t> source_to_id;
   for (auto node_id : sources_) {
     auto node = nodes_.find(node_id);
     if (node == nodes_.end()) {
@@ -112,34 +146,107 @@ Status ExecutionGraph::ExecuteSources() {
     source_to_id[n] = node_id;
   }
 
-  while (running_sources.size() > 0) {
-    std::vector<SourceNode*> completed_sources;
+  // Run all sources to completion, or exit if the query encounters an error.
+  while (running_sources.size()) {
+    absl::flat_hash_set<SourceNode*> completed_sources_execute_loop;
+
+    // Execute each running source up to `consecutive_generate_calls_per_source_` times.
+    // Alternate between sources round-robin style so that all tables in an infinite
+    // streaming query will have results emitted.
     for (SourceNode* source : running_sources) {
-      exec_state_->SetCurrentSource(source_to_id[source]);
-      while (exec_state_->keep_running() && source->NextBatchReady()) {
-        PL_RETURN_IF_ERROR(source->GenerateNext(exec_state_));
+      if (grpc_sources_.contains(source_to_id.at(source))) {
+        auto s = CheckUpstreamGRPCConnectionHealth(static_cast<GRPCSourceNode*>(source));
+        if (!s.ok()) {
+          LOG(ERROR) << absl::Substitute(
+              "GRPCSourceNode connection to remote sink not healthy, terminating that source and "
+              "proceeding with the rest of the query. Message: $0",
+              s.msg());
+          PL_RETURN_IF_ERROR(source->SendEndOfStream(exec_state_));
+          completed_sources_execute_loop.insert(source);
+          continue;
+        }
       }
-      if (!source->HasBatchesRemaining() || !exec_state_->keep_running()) {
-        completed_sources.push_back(source);
+
+      exec_state_->SetCurrentSource(source_to_id[source]);
+
+      for (auto i = 0; i < consecutive_generate_calls_per_source_; ++i) {
+        // keep_running will be set to false when a downstream limit for this particular
+        // source (set in exec_state) has been reached.
+        if (!source->HasBatchesRemaining() || !exec_state_->keep_running()) {
+          completed_sources_execute_loop.insert(source);
+          break;
+        }
+        if (!source->NextBatchReady()) {
+          break;
+        }
+        PL_RETURN_IF_ERROR(source->GenerateNext(exec_state_));
       }
     }
 
-    for (SourceNode* source : completed_sources) {
+    // Flush all of the completed sources.
+    for (SourceNode* source : completed_sources_execute_loop) {
       running_sources.erase(source);
     }
 
-    if (running_sources.size()) {
+    // If all sources are complete, the query is done executing.
+    if (!running_sources.size()) {
+      break;
+    }
+
+    // For all running sources, check to see if any of them have data
+    // or if we need to yield for more data.
+    bool wait_for_more_data = true;
+    for (SourceNode* source : running_sources) {
+      if (source->NextBatchReady()) {
+        wait_for_more_data = false;
+        break;
+      }
+    }
+
+    while (wait_for_more_data) {
       auto timer = ElapsedTimer();
       timer.Start();
-      bool timed_out = YieldWithTimeout();
+      YieldWithTimeout();
       timer.Stop();
-      if (timed_out) {
-        LOG(ERROR) << absl::Substitute("Timed out loading source data after $0 ms",
-                                       timer.ElapsedTime_us() / 1000.0);
-        for (SourceNode* source : running_sources) {
-          PL_RETURN_IF_ERROR(source->SendEndOfStream(exec_state_));
+
+      absl::flat_hash_set<SourceNode*> completed_sources_wait_loop;
+
+      // This check is used for Memory sources that are waiting on data, because we don't currently
+      // have a mechanism to call Yield() on them while they are waiting.
+      // Once we introduce Carnot ETL, we can have the ingest phase of Carnot ETL call yield.
+      for (SourceNode* source : running_sources) {
+        if (source->NextBatchReady()) {
+          wait_for_more_data = false;
         }
+        // Check the upstream connection health of all running GRPC sources after each yield.
+        if (grpc_sources_.contains(source_to_id.at(source))) {
+          auto s = CheckUpstreamGRPCConnectionHealth(static_cast<GRPCSourceNode*>(source));
+          if (!s.ok()) {
+            LOG(ERROR) << absl::Substitute(
+                "GRPCSourceNode connection to remote sink not healthy, terminating that source and "
+                "proceeding with the rest of the query. Message: $0",
+                s.msg());
+            PL_RETURN_IF_ERROR(source->SendEndOfStream(exec_state_));
+            completed_sources_wait_loop.insert(source);
+            continue;
+          }
+        }
+      }
+
+      // Flush all of the completed sources after this phase of source deletion.
+      for (SourceNode* source : completed_sources_wait_loop) {
+        running_sources.erase(source);
+      }
+      if (!running_sources.size()) {
         return Status::OK();
+      }
+
+      if (wait_for_more_data) {
+        // This type of timeout is okay as long as the connections to upstream sources and
+        // downstream destinations are healthy. For streaming queries on sparse data, there may
+        // be a legitimate, noticeable wait between output row batches.
+        LOG(ERROR) << absl::Substitute("Timed out waiting for source data after $0 ms. Retrying.",
+                                       timer.ElapsedTime_us() / 1000.0);
       }
     }
   }
@@ -152,6 +259,8 @@ Status ExecutionGraph::ExecuteSources() {
  * @return a status of whether execution succeeded.
  */
 Status ExecutionGraph::Execute() {
+  query_start_time_ = std::chrono::system_clock::now();
+
   // Get vector of nodes.
   std::vector<ExecNode*> nodes(nodes_.size());
   transform(nodes_.begin(), nodes_.end(), nodes.begin(), [](auto pair) { return pair.second; });
@@ -164,13 +273,27 @@ Status ExecutionGraph::Execute() {
     PL_RETURN_IF_ERROR(node->Open(exec_state_));
   }
 
-  PL_RETURN_IF_ERROR(ExecuteSources());
+  // We don't PL_RETURN_IF_ERROR here because we want to make sure we close all of our
+  // nodes, even if there was an error during execution.
+  Status source_status = ExecuteSources();
+  Status close_status = Status::OK();
 
   for (auto node : nodes) {
-    PL_RETURN_IF_ERROR(node->Close(exec_state_));
+    auto s = node->Close(exec_state_);
+    if (!s.ok()) {
+      // Since we only return a single error status if there are multiple errors,
+      // make sure to log all of the errors that we receive as we close down the query.
+      LOG(ERROR) << absl::Substitute(
+          "Error in ExecutionGraph::Execute() for query $0, could not close source: $1",
+          exec_state_->query_id().str(), s.msg());
+      close_status = s;
+    }
   }
 
-  return Status::OK();
+  if (!source_status.ok()) {
+    return source_status;
+  }
+  return close_status;
 }
 
 std::vector<std::string> ExecutionGraph::OutputTables() const {

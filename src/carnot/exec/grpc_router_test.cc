@@ -84,6 +84,13 @@ TEST_F(GRPCRouterTest, no_node_router_test) {
   ResetStub();
   auto query_id_str = "ea8aa095-697f-49f1-b127-d50e5b6e2645";
 
+  carnotpb::TransferResultChunkRequest initiate_stream_req0;
+  auto query_id = initiate_stream_req0.mutable_query_id();
+  query_id->set_data(query_id_str);
+  initiate_stream_req0.set_address(hostname);
+  initiate_stream_req0.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
+  initiate_stream_req0.mutable_query_result()->set_initiate_result_stream(true);
+
   // Create row batches.
   RowDescriptor input_rd({types::DataType::INT64});
   auto rb1 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
@@ -93,7 +100,7 @@ TEST_F(GRPCRouterTest, no_node_router_test) {
   EXPECT_OK(rb1.ToProto(rb_req1.mutable_query_result()->mutable_row_batch()));
   rb_req1.set_address(hostname);
   rb_req1.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
-  auto query_id = rb_req1.mutable_query_id();
+  query_id = rb_req1.mutable_query_id();
   query_id->set_data(query_id_str);
 
   auto rb2 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
@@ -110,6 +117,7 @@ TEST_F(GRPCRouterTest, no_node_router_test) {
   carnotpb::TransferResultChunkResponse response;
   grpc::ClientContext context;
   auto writer = stub_->TransferResultChunk(&context, &response);
+  writer->Write(initiate_stream_req0);
   writer->Write(rb_req1);
   writer->Write(rb_req2);
   writer->WritesDone();
@@ -125,11 +133,14 @@ TEST_F(GRPCRouterTest, no_node_router_test) {
 
   auto s = service_->AddGRPCSourceNode(query_uuid, grpc_source_node_id, &source_node, [] {});
   ASSERT_OK(s);
+
+  EXPECT_TRUE(source_node.upstream_initiated_connection());
   EXPECT_EQ(2, source_node.row_batches.size());
   EXPECT_EQ(1,
             source_node.row_batches.at(0)->query_result().row_batch().cols(0).int64_data().data(0));
   EXPECT_EQ(4,
             source_node.row_batches.at(1)->query_result().row_batch().cols(0).int64_data().data(0));
+  EXPECT_TRUE(source_node.upstream_closed_connection());
 }
 
 TEST_F(GRPCRouterTest, basic_router_test) {
@@ -151,8 +162,17 @@ TEST_F(GRPCRouterTest, basic_router_test) {
   auto s = service_->AddGRPCSourceNode(query_uuid, grpc_source_node_id, &source_node,
                                        [&] { num_continues++; });
   ASSERT_OK(s);
+  EXPECT_FALSE(source_node.upstream_initiated_connection());
   EXPECT_EQ(0, source_node.row_batches.size());
   EXPECT_EQ(0, num_continues);
+  EXPECT_FALSE(source_node.upstream_closed_connection());
+
+  carnotpb::TransferResultChunkRequest initiate_stream_req0;
+  auto query_id = initiate_stream_req0.mutable_query_id();
+  query_id->set_data(query_id_str);
+  initiate_stream_req0.set_address(hostname);
+  initiate_stream_req0.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
+  initiate_stream_req0.mutable_query_result()->set_initiate_result_stream(true);
 
   // Create row batches.
   auto rb1 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
@@ -162,7 +182,7 @@ TEST_F(GRPCRouterTest, basic_router_test) {
   EXPECT_OK(rb1.ToProto(rb_req1.mutable_query_result()->mutable_row_batch()));
   rb_req1.set_address(hostname);
   rb_req1.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
-  auto query_id = rb_req1.mutable_query_id();
+  query_id = rb_req1.mutable_query_id();
   query_id->set_data(query_id_str);
 
   auto rb2 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
@@ -179,17 +199,20 @@ TEST_F(GRPCRouterTest, basic_router_test) {
   pl::carnotpb::TransferResultChunkResponse response;
   grpc::ClientContext context;
   auto writer = stub_->TransferResultChunk(&context, &response);
+  writer->Write(initiate_stream_req0);
   writer->Write(rb_req1);
   writer->Write(rb_req2);
   writer->WritesDone();
   writer->Finish();
 
+  EXPECT_TRUE(source_node.upstream_initiated_connection());
   EXPECT_EQ(2, source_node.row_batches.size());
   EXPECT_EQ(1,
             source_node.row_batches.at(0)->query_result().row_batch().cols(0).int64_data().data(0));
   EXPECT_EQ(4,
             source_node.row_batches.at(1)->query_result().row_batch().cols(0).int64_data().data(0));
   EXPECT_EQ(2, num_continues);
+  EXPECT_TRUE(source_node.upstream_closed_connection());
 }
 
 TEST_F(GRPCRouterTest, router_and_stats_test) {
@@ -214,8 +237,17 @@ TEST_F(GRPCRouterTest, router_and_stats_test) {
   auto s = service_->AddGRPCSourceNode(query_uuid, grpc_source_node_id, &source_node,
                                        [&] { num_continues++; });
   ASSERT_OK(s);
+  EXPECT_FALSE(source_node.upstream_initiated_connection());
   EXPECT_EQ(0, source_node.row_batches.size());
   EXPECT_EQ(0, num_continues);
+  EXPECT_FALSE(source_node.upstream_closed_connection());
+
+  carnotpb::TransferResultChunkRequest initiate_stream_req0;
+  auto query_id = initiate_stream_req0.mutable_query_id();
+  query_id->set_data(query_id_str);
+  initiate_stream_req0.set_address(hostname);
+  initiate_stream_req0.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
+  initiate_stream_req0.mutable_query_result()->set_initiate_result_stream(true);
 
   // Create row batch.
   auto rb1 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
@@ -225,13 +257,14 @@ TEST_F(GRPCRouterTest, router_and_stats_test) {
   EXPECT_OK(rb1.ToProto(rb_req1.mutable_query_result()->mutable_row_batch()));
   rb_req1.set_address(hostname);
   rb_req1.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
-  auto query_id = rb_req1.mutable_query_id();
+  query_id = rb_req1.mutable_query_id();
   query_id->set_data(query_id_str);
 
   // Send row batches to GRPC router.
   pl::carnotpb::TransferResultChunkResponse response;
   grpc::ClientContext context;
   auto writer = stub_->TransferResultChunk(&context, &response);
+  writer->Write(initiate_stream_req0);
   writer->Write(rb_req1);
   writer->WritesDone();
   writer->Finish();
@@ -262,10 +295,12 @@ TEST_F(GRPCRouterTest, router_and_stats_test) {
     EXPECT_TRUE(s.ok());
   }
 
+  EXPECT_TRUE(source_node.upstream_initiated_connection());
   EXPECT_EQ(1, source_node.row_batches.size());
   EXPECT_EQ(1,
             source_node.row_batches.at(0)->query_result().row_batch().cols(0).int64_data().data(0));
   EXPECT_EQ(1, num_continues);
+  EXPECT_TRUE(source_node.upstream_closed_connection());
 
   uuidpb::UUID agent_uuid_pb;
   ToProto(agent_uuid, &agent_uuid_pb);
@@ -349,8 +384,16 @@ TEST_F(GRPCRouterTest, threaded_router_test) {
   grpc::ClientContext context;
   auto writer = stub_->TransferResultChunk(&context, &response);
 
+  carnotpb::TransferResultChunkRequest initiate_stream_req0;
+  auto query_id = initiate_stream_req0.mutable_query_id();
+  query_id->set_data(query_id_str);
+  initiate_stream_req0.set_address(hostname);
+  initiate_stream_req0.mutable_query_result()->set_grpc_source_id(0);
+  initiate_stream_req0.mutable_query_result()->set_initiate_result_stream(true);
+
   // Start up thread that enqueues row batches.
   std::thread write_thread([&] {
+    writer->Write(initiate_stream_req0);
     for (int idx = 0; idx <= 100; ++idx) {
       auto rb = RowBatchBuilder(input_rd, /*size*/ 1, /*eow*/ idx == 100, /*eos*/ idx == 100)
                     .AddColumn<types::Int64Value>({

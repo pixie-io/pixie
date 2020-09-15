@@ -42,6 +42,42 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
   return Status::OK();
 }
 
+Status GRPCRouter::MarkResultStreamInitiated(sole::uuid query_id, int64_t source_id) {
+  absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);
+  auto& query_map = query_node_map_[query_id];
+
+  SourceNodeTracker& snt = query_map.source_node_trackers[source_id];
+  absl::base_internal::SpinLockHolder snt_lock(&snt.node_lock);
+  // It's possible that we see row batches before we have gotten information about the query. To
+  // solve this race, We store a backlog of all the pending batches.
+  if (snt.source_node == nullptr) {
+    DCHECK(!snt.connection_initiated_by_sink);
+    snt.connection_initiated_by_sink = true;
+    return Status::OK();
+  }
+  DCHECK(!snt.source_node->upstream_initiated_connection());
+  snt.source_node->set_upstream_initiated_connection();
+  return Status::OK();
+}
+
+Status GRPCRouter::MarkResultStreamClosed(sole::uuid query_id, int64_t source_id) {
+  absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);
+  auto& query_map = query_node_map_[query_id];
+
+  SourceNodeTracker& snt = query_map.source_node_trackers[source_id];
+  absl::base_internal::SpinLockHolder snt_lock(&snt.node_lock);
+  // It's possible that we see row batches before we have gotten information about the query. To
+  // solve this race, We store a backlog of all the pending batches.
+  if (snt.source_node == nullptr) {
+    DCHECK(!snt.connection_closed_by_sink);
+    snt.connection_closed_by_sink = true;
+    return Status::OK();
+  }
+  DCHECK(!snt.source_node->upstream_closed_connection());
+  snt.source_node->set_upstream_closed_connection();
+  return Status::OK();
+}
+
 ::grpc::Status GRPCRouter::TransferResultChunk(
     ::grpc::ServerContext* context,
     ::grpc::ServerReader<::pl::carnotpb::TransferResultChunkRequest>* reader,
@@ -49,8 +85,18 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
   PL_UNUSED(context);
   auto rb = std::make_unique<carnotpb::TransferResultChunkRequest>();
 
+  // If this is a query result stream, these are used to track whether or not this particular
+  // result stream has been closed so that downstream operators on the corresponding
+  // source node can assess the health of the connection.
+  // Ignored if this stream is used to send exec stats.
+  // These assume that a given TransferResultChunk stream is only used to send the data for
+  // a single result table.
+  bool stream_has_query_results = false;
+  int64_t source_node_id = 0;
+  sole::uuid query_id;
+
   while (reader->Read(rb.get())) {
-    auto query_id = pl::ParseUUID(rb->query_id()).ConsumeValueOrDie();
+    query_id = pl::ParseUUID(rb->query_id()).ConsumeValueOrDie();
 
     if (rb->has_execution_and_timing_info()) {
       std::vector<queryresultspb::AgentExecutionStats> stats;
@@ -68,8 +114,19 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
         return ::grpc::Status(grpc::StatusCode::INTERNAL, "failed to enqueue batch");
       }
     } else if (rb->has_query_result() && rb->query_result().initiate_result_stream()) {
-      // TODO(nserrino): Fill this in and add timeouts in exec graphs waiting for all
-      // result tables to initialize.
+      if (rb->query_result().destination_case() !=
+          carnotpb::TransferResultChunkRequest_SinkResult::DestinationCase::kGrpcSourceId) {
+        return ::grpc::Status(grpc::StatusCode::INTERNAL,
+                              "expected result stream to have grpc source ID");
+      }
+
+      stream_has_query_results = true;
+      source_node_id = rb->query_result().grpc_source_id();
+      auto s = MarkResultStreamInitiated(query_id, source_node_id);
+      if (!s.ok()) {
+        return ::grpc::Status(grpc::StatusCode::INTERNAL, s.msg());
+      }
+
     } else {
       return ::grpc::Status(grpc::StatusCode::INTERNAL,
                             "expected TransferResultChunkRequest to have either query_result "
@@ -77,6 +134,13 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
     }
 
     rb = std::make_unique<carnotpb::TransferResultChunkRequest>();
+  }
+
+  if (stream_has_query_results) {
+    auto s = MarkResultStreamClosed(query_id, source_node_id);
+    if (!s.ok()) {
+      return ::grpc::Status(grpc::StatusCode::INTERNAL, s.msg());
+    }
   }
 
   response->set_success(true);
@@ -114,12 +178,19 @@ Status GRPCRouter::AddGRPCSourceNode(sole::uuid query_id, int64_t source_id,
   }
   absl::base_internal::SpinLockHolder snt_lock(&snt->node_lock);
   snt->source_node = source_node;
+  if (snt->connection_initiated_by_sink) {
+    source_node->set_upstream_initiated_connection();
+  }
   if (snt->response_backlog.size() > 0) {
     for (auto& rb : snt->response_backlog) {
       PL_RETURN_IF_ERROR(snt->source_node->EnqueueRowBatch(std::move(rb)));
     }
     snt->response_backlog.clear();
   }
+  if (snt->connection_closed_by_sink) {
+    source_node->set_upstream_closed_connection();
+  }
+
   return Status::OK();
 }
 

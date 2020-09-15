@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 #include <sole.hpp>
 
+#include "src/carnot/exec/grpc_source_node.h"
 #include "src/carnot/exec/test_utils.h"
 #include "src/carnot/plan/plan_fragment.h"
 #include "src/carnot/plan/plan_state.h"
@@ -448,83 +449,6 @@ TEST_F(ExecGraphTest, two_sequential_limits) {
   EXPECT_TRUE(out_rb->ColumnAt(2)->Equals(types::ToArrow(out_col3, arrow::default_memory_pool())));
 }
 
-class YieldingExecGraphTest : public BaseExecGraphTest {
- protected:
-  void SetUp() { SetUpExecState(); }
-};
-
-TEST_F(YieldingExecGraphTest, yield) {
-  ExecutionGraph e;
-  e.testing_set_exec_state(exec_state_.get());
-
-  RowDescriptor output_rd({types::DataType::INT64});
-  MockSourceNode yielding_source(output_rd);
-  MockSourceNode non_yielding_source(output_rd);
-
-  FakePlanNode yielding_plan_node(1);
-  FakePlanNode non_yielding_plan_node(2);
-
-  EXPECT_CALL(yielding_source, InitImpl(::testing::_));
-  EXPECT_CALL(non_yielding_source, InitImpl(::testing::_));
-
-  ASSERT_OK(yielding_source.Init(yielding_plan_node, output_rd, {}));
-  ASSERT_OK(non_yielding_source.Init(non_yielding_plan_node, output_rd, {}));
-
-  e.AddNode(1, &yielding_source);
-  e.AddNode(2, &non_yielding_source);
-
-  auto set_eos = [&](ExecState*) { non_yielding_source.SendEOS(); };
-
-  // Setup
-  EXPECT_CALL(non_yielding_source, PrepareImpl(::testing::_))
-      .Times(1)
-      .WillOnce(::testing::Return(Status::OK()));
-  EXPECT_CALL(non_yielding_source, OpenImpl(::testing::_))
-      .Times(1)
-      .WillOnce(::testing::Return(Status::OK()));
-  EXPECT_CALL(yielding_source, PrepareImpl(::testing::_))
-      .Times(1)
-      .WillOnce(::testing::Return(Status::OK()));
-  EXPECT_CALL(yielding_source, OpenImpl(::testing::_))
-      .Times(1)
-      .WillOnce(::testing::Return(Status::OK()));
-
-  // Non-yielding
-  EXPECT_CALL(non_yielding_source, NextBatchReady())
-      .Times(3)
-      .WillOnce(::testing::Return(true))
-      .WillOnce(::testing::Return(true))
-      .WillOnce(::testing::Return(false));
-
-  EXPECT_CALL(non_yielding_source, GenerateNextImpl(::testing::_))
-      .Times(2)
-      .WillOnce(::testing::Return(Status::OK()))
-      .WillOnce(::testing::DoAll(::testing::Invoke(set_eos), ::testing::Return(Status::OK())));
-
-  // YieldingSource still gets NextBatchReady calls.
-  EXPECT_CALL(yielding_source, NextBatchReady())
-      .Times(2)
-      .WillOnce(::testing::Return(false))
-      .WillOnce(::testing::Return(false));
-
-  // We don't set expectations on GenerateNextImpl for the yielding source, because
-  // in TSAN the timeout may or may not occur resulting in different outputs.
-
-  // Cleanup
-  EXPECT_CALL(non_yielding_source, CloseImpl(::testing::_))
-      .Times(1)
-      .WillOnce(::testing::Return(Status::OK()));
-  EXPECT_CALL(yielding_source, CloseImpl(::testing::_))
-      .Times(1)
-      .WillOnce(::testing::Return(Status::OK()));
-
-  std::thread exec_thread([&] { ASSERT_OK(e.Execute()); });
-
-  // Prod yielding node
-  e.Continue();
-  exec_thread.join();
-}
-
 TEST_F(ExecGraphTest, execute_with_two_limits) {
   planpb::PlanFragment pf_pb;
   ASSERT_TRUE(
@@ -593,6 +517,330 @@ TEST_F(ExecGraphTest, execute_with_two_limits) {
           .ConsumeValueOrDie()
           ->ColumnAt(0)
           ->Equals(types::ToArrow(out_in1, arrow::default_memory_pool())));
+}
+
+class YieldingExecGraphTest : public BaseExecGraphTest {
+ protected:
+  void SetUp() { SetUpExecState(); }
+};
+
+TEST_F(YieldingExecGraphTest, yield) {
+  ExecutionGraph e{std::chrono::milliseconds(1), std::chrono::milliseconds(1)};
+  e.testing_set_exec_state(exec_state_.get());
+
+  RowDescriptor output_rd({types::DataType::INT64});
+  MockSourceNode yielding_source(output_rd);
+  MockSourceNode non_yielding_source(output_rd);
+
+  FakePlanNode yielding_plan_node(1);
+  FakePlanNode non_yielding_plan_node(2);
+
+  EXPECT_CALL(yielding_source, InitImpl(::testing::_));
+  EXPECT_CALL(non_yielding_source, InitImpl(::testing::_));
+
+  ASSERT_OK(yielding_source.Init(yielding_plan_node, output_rd, {}));
+  ASSERT_OK(non_yielding_source.Init(non_yielding_plan_node, output_rd, {}));
+
+  e.AddNode(1, &yielding_source);
+  e.AddNode(2, &non_yielding_source);
+
+  auto set_non_yielding_eos = [&](ExecState*) { non_yielding_source.SendEOS(); };
+  auto set_yielding_eos = [&](ExecState*) { yielding_source.SendEOS(); };
+
+  // Setup
+  EXPECT_CALL(non_yielding_source, PrepareImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+  EXPECT_CALL(non_yielding_source, OpenImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+  EXPECT_CALL(yielding_source, PrepareImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+  EXPECT_CALL(yielding_source, OpenImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+
+  // Non-yielding
+  EXPECT_CALL(non_yielding_source, NextBatchReady()).WillRepeatedly(::testing::Return(true));
+
+  EXPECT_CALL(non_yielding_source, GenerateNextImpl(::testing::_))
+      .Times(2)
+      .WillOnce(::testing::Return(Status::OK()))
+      .WillOnce(::testing::DoAll(::testing::Invoke(set_non_yielding_eos),
+                                 ::testing::Return(Status::OK())));
+
+  // YieldingSource will retrigger execution once it returns true for NextBatchReady.
+  EXPECT_CALL(yielding_source, NextBatchReady())
+      .Times(6)
+      .WillOnce(::testing::Return(false))
+      .WillOnce(::testing::Return(false))
+      .WillOnce(::testing::Return(false))
+      .WillOnce(::testing::Return(true))   // Break out of the wait loop
+      .WillOnce(::testing::Return(true))   // Generate first batch
+      .WillOnce(::testing::Return(true));  // Generate EOS batch.
+
+  EXPECT_CALL(yielding_source, GenerateNextImpl(::testing::_))
+      .Times(2)
+      .WillOnce(::testing::Return(Status::OK()))
+      .WillOnce(
+          ::testing::DoAll(::testing::Invoke(set_yielding_eos), ::testing::Return(Status::OK())));
+
+  // Cleanup
+  EXPECT_CALL(non_yielding_source, CloseImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+
+  EXPECT_CALL(yielding_source, CloseImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+
+  ASSERT_OK(e.Execute());
+}
+
+TEST_F(YieldingExecGraphTest, continue_yield) {
+  ExecutionGraph e;
+  e.testing_set_exec_state(exec_state_.get());
+
+  std::thread exec_thread([&] {
+    bool timed_out = e.YieldWithTimeout();
+    ASSERT_FALSE(timed_out);
+  });
+
+  e.Continue();
+  exec_thread.join();
+}
+
+TEST_F(YieldingExecGraphTest, yield_timeout) {
+  ExecutionGraph e{std::chrono::milliseconds(1), std::chrono::milliseconds(1)};
+  e.testing_set_exec_state(exec_state_.get());
+
+  std::thread exec_thread([&] {
+    bool timed_out = e.YieldWithTimeout();
+    ASSERT_TRUE(timed_out);
+  });
+  exec_thread.join();
+}
+
+constexpr char kGRPCSourcePlanFragment[] = R"(
+  id: 1,
+  dag {
+    nodes {
+      id: 1
+      sorted_children: 2
+    }
+    nodes {
+      id: 2
+      sorted_parents: 1
+    }
+  }
+  nodes {
+    id: 1
+    op {
+      op_type: GRPC_SOURCE_OPERATOR
+      grpc_source_op {
+        column_types: INT64
+        column_names: "test"
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "mem_sink"
+        column_types: INT64
+        column_names: "test"
+      }
+    }
+  }
+)";
+
+class GRPCExecGraphTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    SetUpPlanFragment();
+    SetUpExecStateWithGRPCRouter();
+    schema_ = std::make_shared<table_store::schema::Schema>();
+    table_store::schema::Relation relation(std::vector<types::DataType>({types::DataType::INT64}),
+                                           std::vector<std::string>({"test"}));
+    schema_->AddRelation(1, relation);
+    plan_state_ = std::make_unique<plan::PlanState>(func_registry_.get());
+  }
+
+  void SetUpExecStateWithGRPCRouter() {
+    grpc_router_ = std::make_unique<GRPCRouter>();
+    func_registry_ = std::make_unique<udf::Registry>("test_registry");
+    func_registry_->RegisterOrDie<AddUDF>("add");
+    func_registry_->RegisterOrDie<MultiplyUDF>("multiply");
+
+    auto table_store = std::make_shared<table_store::TableStore>();
+    exec_state_ =
+        std::make_unique<ExecState>(func_registry_.get(), table_store, MockResultSinkStubGenerator,
+                                    sole::uuid4(), grpc_router_.get());
+  }
+
+  void SetUpPlanFragment() {
+    planpb::PlanFragment pf_pb;
+    ASSERT_TRUE(TextFormat::MergeFromString(kGRPCSourcePlanFragment, &pf_pb));
+    ASSERT_OK(plan_fragment_->Init(pf_pb));
+  }
+
+  std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
+  std::shared_ptr<table_store::schema::Schema> schema_;
+  std::unique_ptr<plan::PlanState> plan_state_;
+  std::unique_ptr<GRPCRouter> grpc_router_;
+  std::unique_ptr<udf::Registry> func_registry_;
+  std::unique_ptr<ExecState> exec_state_;
+};
+
+TEST_F(GRPCExecGraphTest, pending_row_batches_closed_connection_eos_success) {
+  // Make a GRPC source, but don't initiate the connection.
+  // Set timeouts to be 0 so that we definitely time out on connections being established.
+  ExecutionGraph e{std::chrono::milliseconds(0), std::chrono::milliseconds(0)};
+  auto s = e.Init(schema_, plan_state_.get(), exec_state_.get(), plan_fragment_.get(),
+                  /* collect_exec_node_stats */ false);
+  ASSERT_OK(s);
+
+  auto grpc_sources = e.grpc_sources();
+  ASSERT_EQ(1, grpc_sources.size());
+  auto src_id = *(grpc_sources.begin());
+  auto grpc_src = static_cast<GRPCSourceNode*>(e.node(src_id).ConsumeValueOrDie());
+  grpc_src->set_upstream_initiated_connection();
+  auto req1 = std::make_unique<carnotpb::TransferResultChunkRequest>();
+  auto req2 = std::make_unique<carnotpb::TransferResultChunkRequest>();
+
+  RowDescriptor output_rd({types::DataType::INT64});
+  auto rb1 = RowBatchBuilder(output_rd, 2, /*eow*/ false, /*eos*/ false)
+                 .AddColumn<types::Int64Value>({2, 3})
+                 .get();
+  auto rb2 = RowBatchBuilder(output_rd, 3, /*eow*/ true, /*eos*/ true)
+                 .AddColumn<types::Int64Value>({4, 5, 6})
+                 .get();
+
+  ASSERT_OK(rb1.ToProto(req1->mutable_query_result()->mutable_row_batch()));
+  ASSERT_OK(rb2.ToProto(req2->mutable_query_result()->mutable_row_batch()));
+
+  ASSERT_OK(grpc_src->EnqueueRowBatch(std::move(req1)));
+  ASSERT_OK(grpc_src->EnqueueRowBatch(std::move(req2)));
+  grpc_src->set_upstream_closed_connection();
+
+  // This should be a successful case.
+  s = e.Execute();
+  EXPECT_OK(s);
+}
+
+TEST_F(GRPCExecGraphTest, pending_row_batches_closed_connection_no_eos) {
+  // Make a GRPC source, but don't initiate the connection.
+  // Set timeouts to be 0 so that we definitely time out on connections being established.
+  ExecutionGraph e{std::chrono::milliseconds(0), std::chrono::milliseconds(0)};
+  auto s = e.Init(schema_, plan_state_.get(), exec_state_.get(), plan_fragment_.get(),
+                  /* collect_exec_node_stats */ false);
+  ASSERT_OK(s);
+
+  auto grpc_sources = e.grpc_sources();
+  ASSERT_EQ(1, grpc_sources.size());
+  auto src_id = *(grpc_sources.begin());
+  auto grpc_src = static_cast<GRPCSourceNode*>(e.node(src_id).ConsumeValueOrDie());
+  grpc_src->set_upstream_initiated_connection();
+  auto req1 = std::make_unique<carnotpb::TransferResultChunkRequest>();
+  auto req2 = std::make_unique<carnotpb::TransferResultChunkRequest>();
+
+  RowDescriptor output_rd({types::DataType::INT64});
+  auto rb1 = RowBatchBuilder(output_rd, 2, /*eow*/ false, /*eos*/ false)
+                 .AddColumn<types::Int64Value>({2, 3})
+                 .get();
+  auto rb2 = RowBatchBuilder(output_rd, 3, /*eow*/ false, /*eos*/ false)
+                 .AddColumn<types::Int64Value>({4, 5, 6})
+                 .get();
+
+  ASSERT_OK(rb1.ToProto(req1->mutable_query_result()->mutable_row_batch()));
+  ASSERT_OK(rb2.ToProto(req2->mutable_query_result()->mutable_row_batch()));
+
+  ASSERT_OK(grpc_src->EnqueueRowBatch(std::move(req1)));
+  ASSERT_OK(grpc_src->EnqueueRowBatch(std::move(req2)));
+  grpc_src->set_upstream_closed_connection();
+
+  // This shouldn't hang or error out.
+  s = e.Execute();
+  EXPECT_OK(s);
+}
+
+TEST_F(GRPCExecGraphTest, upstream_never_connected_no_active_sources) {
+  // Make a GRPC source, but don't initiate the connection.
+  // Set timeouts to be 0 so that we definitely time out on connections being established.
+  ExecutionGraph e{std::chrono::milliseconds(0), std::chrono::milliseconds(0)};
+  auto s = e.Init(schema_, plan_state_.get(), exec_state_.get(), plan_fragment_.get(),
+                  /* collect_exec_node_stats */ false);
+  ASSERT_OK(s);
+
+  // This shouldn't hang or error out.
+  s = e.Execute();
+  EXPECT_OK(s);
+}
+
+TEST_F(GRPCExecGraphTest, infinite_source_and_error_source) {
+  ExecutionGraph e{std::chrono::milliseconds(1), std::chrono::milliseconds(1)};
+  e.testing_set_exec_state(exec_state_.get());
+
+  RowDescriptor output_rd({types::DataType::INT64});
+
+  MockSourceNode data_producing_source(output_rd);
+  FakePlanNode data_producing_plan_node(1);
+
+  MockSourceNode error_source(output_rd);
+  FakePlanNode error_plan_node(2);
+
+  // Setup a source that will continuously produce data, and another that will error
+  // and cause the rest of the query to be cancelled.
+
+  EXPECT_CALL(data_producing_source, InitImpl(::testing::_));
+  ASSERT_OK(data_producing_source.Init(data_producing_plan_node, output_rd, {}));
+
+  EXPECT_CALL(error_source, InitImpl(::testing::_));
+  ASSERT_OK(error_source.Init(error_plan_node, output_rd, {}));
+
+  EXPECT_CALL(data_producing_source, PrepareImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+  EXPECT_CALL(error_source, PrepareImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+
+  EXPECT_CALL(data_producing_source, OpenImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+  EXPECT_CALL(error_source, OpenImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+
+  EXPECT_CALL(data_producing_source, NextBatchReady()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(error_source, NextBatchReady()).WillRepeatedly(::testing::Return(true));
+
+  EXPECT_CALL(data_producing_source, GenerateNextImpl(::testing::_))
+      .WillRepeatedly(::testing::Return(Status::OK()));
+
+  EXPECT_CALL(error_source, GenerateNextImpl(::testing::_))
+      .Times(2)
+      .WillOnce(::testing::Return(Status::OK()))
+      .WillOnce(::testing::Return(error::Internal("o no an error")));
+
+  // Even though the execute query errors out, the query should still call
+  // Close() on all of the nodes.
+  EXPECT_CALL(data_producing_source, CloseImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+  EXPECT_CALL(error_source, CloseImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+
+  e.AddNode(10, &data_producing_source);
+  e.AddNode(20, &error_source);
+
+  // This should return an error, even though the first source is fully healthy.
+  auto s = e.Execute();
+  EXPECT_NOT_OK(s);
 }
 
 }  // namespace exec

@@ -84,6 +84,9 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
   Status EnqueueRowBatch(sole::uuid query_id,
                          std::unique_ptr<carnotpb::TransferResultChunkRequest> req);
 
+  Status MarkResultStreamInitiated(sole::uuid query_id, int64_t source_id);
+  Status MarkResultStreamClosed(sole::uuid query_id, int64_t source_id);
+
   /**
    * SourceNodeTracker is responsible for tracking a single source node and the backlog of messages
    * for the source node.
@@ -91,6 +94,8 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
   struct SourceNodeTracker {
     SourceNodeTracker() = default;
     GRPCSourceNode* source_node GUARDED_BY(node_lock) = nullptr;
+    bool connection_initiated_by_sink GUARDED_BY(node_lock) = false;
+    bool connection_closed_by_sink GUARDED_BY(node_lock) = false;
     std::vector<std::unique_ptr<::pl::carnotpb::TransferResultChunkRequest>> response_backlog
         GUARDED_BY(node_lock);
     absl::base_internal::SpinLock node_lock;

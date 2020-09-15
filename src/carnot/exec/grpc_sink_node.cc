@@ -76,9 +76,9 @@ Status GRPCSinkNode::OpenImpl(ExecState* exec_state) {
 
   if (!writer_->Write(initial_request)) {
     return error::Internal(
-        "GRPCSink error: unable to write stream initialization TransferResultChunkRequest to "
-        "remote address %s for query %d",
-        plan_node_->address(), exec_state->query_id().str());
+        "GRPCSinkNode $0 error: unable to write stream initialization TransferResultChunkRequest "
+        "to remote address $1 for query $2",
+        plan_node_->id(), plan_node_->address(), exec_state->query_id().str());
   }
 
   return Status::OK();
@@ -91,8 +91,8 @@ Status GRPCSinkNode::CloseWriter() {
   writer_->WritesDone();
   auto s = writer_->Finish();
   if (!s.ok()) {
-    LOG(ERROR) << absl::Substitute("GRPCSink node: Error calling Finish on stream, message: $0",
-                                   s.error_message());
+    LOG(ERROR) << absl::Substitute("GRPCSinkNode $0: Error calling Finish on stream, message: $1",
+                                   plan_node_->id(), s.error_message());
   }
   return Status::OK();
 }
@@ -104,7 +104,7 @@ Status GRPCSinkNode::CloseImpl(ExecState*) {
 
   if (writer_ != nullptr) {
     PL_RETURN_IF_ERROR(CloseWriter());
-    return error::Internal("Closing GRPCSinkNode without receiving EOS.");
+    return error::Internal("Closing GRPCSinkNode $0 without receiving EOS", plan_node_->id());
   }
 
   return Status::OK();
@@ -118,8 +118,8 @@ Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, 
 
   if (!writer_->Write(req)) {
     return error::Cancelled(
-        "GRPCSink could not write result to address: $0, stream closed by server",
-        plan_node_->address());
+        "GRPCSinkNode $0 could not write result to address: $1, stream closed by server",
+        plan_node_->id(), plan_node_->address());
   }
 
   if (!rb.eos()) {
@@ -132,8 +132,8 @@ Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, 
   return response_.success()
              ? Status::OK()
              : error::Internal(absl::Substitute(
-                   "GRPCSinkNode: error sending stream to address $0, error message: $1",
-                   plan_node_->address(), response_.message()));
+                   "GRPCSinkNode $0 encountered error sending stream to address $1, message: $2",
+                   plan_node_->id(), plan_node_->address(), response_.message()));
 }
 
 }  // namespace exec

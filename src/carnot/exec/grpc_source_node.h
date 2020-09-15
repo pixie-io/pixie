@@ -28,6 +28,18 @@ class GRPCSourceNode : public SourceNode {
   bool NextBatchReady() override;
   virtual Status EnqueueRowBatch(std::unique_ptr<carnotpb::TransferResultChunkRequest> row_batch);
 
+  // Tracks whether the upstream sink node has successfully initiated the connection to
+  // this remote source. Used by the exec graph to determine whether or not any sources have
+  // taken too long for their connection to be established with the sinks.
+  void set_upstream_initiated_connection() { upstream_initiated_connection_ = true; }
+  bool upstream_initiated_connection() const { return upstream_initiated_connection_; }
+
+  // Tracks whether the upstream sink node has closed or cancelled the connection to
+  // this remote source. Used by the exec graph to determine whether or not any sources have
+  // unexpectedly had their connections closed with their remote sinks.
+  void set_upstream_closed_connection() { upstream_closed_connection_ = true; }
+  bool upstream_closed_connection() const { return upstream_closed_connection_; }
+
  protected:
   std::string DebugStringImpl() override;
   Status InitImpl(const plan::Operator& plan_node) override;
@@ -44,6 +56,8 @@ class GRPCSourceNode : public SourceNode {
       row_batch_queue_;
 
   std::unique_ptr<plan::GRPCSourceOperator> plan_node_;
+  bool upstream_initiated_connection_ = false;
+  bool upstream_closed_connection_ = false;
 };
 
 }  // namespace exec

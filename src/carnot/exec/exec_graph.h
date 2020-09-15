@@ -30,12 +30,31 @@ struct ExecutionStats {
 };
 
 constexpr std::chrono::milliseconds kDefaultYieldTimeoutMS{1000};
+constexpr std::chrono::milliseconds kDefaultUpstreamResultConnectionTimeout{5000};
+constexpr int32_t kDefaultConsecutiveGenerateCallsPerSource = 10;
+using SystemTimePoint = std::chrono::time_point<std::chrono::system_clock>;
 
 /**
  * An Execution Graph defines the structure of execution nodes for a given plan fragment.
  */
 class ExecutionGraph {
  public:
+  /**
+   * Creates the Execution Graph with the specified timeouts.
+   * @param yield_duration When no data is available, but the query is still running, how long to
+   * yield before checking for new data points.
+   * @param upstream_result_connection_timeout How long to wait for upstream GRPCSources to
+   * establish a connection to this node. If this time is surpassed, the query will be cancelled.
+   * @return The execution graph.
+   */
+  ExecutionGraph(const std::chrono::milliseconds& yield_duration,
+                 const std::chrono::milliseconds& upstream_result_connection_timeout)
+      : upstream_result_connection_timeout_ms_(upstream_result_connection_timeout),
+        yield_timeout_ms_(yield_duration) {}
+
+  ExecutionGraph()
+      : ExecutionGraph(kDefaultYieldTimeoutMS, kDefaultUpstreamResultConnectionTimeout) {}
+
   /**
    * Initializes the Execution Graph by initializing the execution nodes and their children.
    * @param schema The schema of available relations.
@@ -63,7 +82,7 @@ class ExecutionGraph {
   }
 
   std::vector<int64_t> sources() { return sources_; }
-  std::vector<int64_t> grpc_sources() { return grpc_sources_; }
+  absl::flat_hash_set<int64_t> grpc_sources() { return grpc_sources_; }
 
   StatusOr<ExecNode*> node(int64_t id) {
     auto node = nodes_.find(id);
@@ -77,10 +96,17 @@ class ExecutionGraph {
    * Executes the current graph until there is no more work that can be done synchronously.
    */
   Status Execute();
+
   /**
    * Re-awakens Execute() when there is more work available to do.
    */
   void Continue();
+
+  /**
+   * Yields the execution of the current graph until Continue() is called or the timeout is reached.
+   * @return true if the yield timed out, false if Continue() was called.
+   */
+  bool YieldWithTimeout();
 
   std::vector<std::string> OutputTables() const;
   ExecutionStats GetStats() const;
@@ -97,12 +123,12 @@ class ExecutionGraph {
    */
   void testing_set_exec_state(ExecState* exec_state) { exec_state_ = exec_state; }
 
- private:
-  /**
-   * Yields the execution of the current graph until Continue() is called or the timeout is reached.
-   */
-  bool YieldWithTimeout();
+  // Check the upstream connection health for a given GRPC source.
+  // If it is not healthy, then we will just omit this particular source from the query,
+  // since an input agent may have just been deleted or some other legitimate reason.
+  Status CheckUpstreamGRPCConnectionHealth(GRPCSourceNode* source_node);
 
+ private:
   /**
    * For the given operator type, creates the corresponding execution node and updates the structure
    * of the execution graph.
@@ -159,12 +185,25 @@ class ExecutionGraph {
   plan::PlanState* plan_state_;
   plan::PlanFragment* pf_;
   std::vector<int64_t> sources_;
-  std::vector<int64_t> grpc_sources_;
   std::vector<int64_t> sinks_;
+  absl::flat_hash_set<int64_t> grpc_sources_;
   std::unordered_map<int64_t, ExecNode*> nodes_;
 
-  // How long in milliseconds to wait on a node when there is no other work to do.
-  std::chrono::milliseconds yield_timeout_ms_{kDefaultYieldTimeoutMS};
+  SystemTimePoint query_start_time_;
+
+  // How long to wait for any upstream result to make the initial connection to this query.
+  std::chrono::milliseconds upstream_result_connection_timeout_ms_;
+
+  // How long to yield during query execution when no data is currently available, before checking
+  // for the presence of new data.
+  std::chrono::milliseconds yield_timeout_ms_;
+
+  // We alternate round robin style between running sources when calling GenerateNext to ensure
+  // that no active sources are starved during a streaming query. This field sets the max number of
+  // times in a row to invoke a particular source before moving on to another available source.
+  // (Doesn't apply if there is only one active source.)
+  int32_t consecutive_generate_calls_per_source_ = kDefaultConsecutiveGenerateCallsPerSource;
+
   // Whether or not the graph should continue executing or wait for more work to do.
   bool continue_ = false;
   std::mutex execution_mutex_;
