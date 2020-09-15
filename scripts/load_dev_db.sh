@@ -37,4 +37,4 @@ bazel run -c opt //src/cloud/dnsmgr/load_certs:load_certs -- \
 kill -15 "$!"
 sleep 2
 # Make sure process cleans up properly.
-kill -9 "$!"
+kill -9 "$!" 2> /dev/null
