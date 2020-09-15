@@ -28,7 +28,7 @@ inline std::string DNSLookup(const std::string& addr) {
       getnameinfo((struct sockaddr*)&sa, sizeof(sa), node, sizeof(node), NULL, 0, NI_NAMEREQD);
 
   if (res) {
-    return res == EAI_NONAME ? "" : gai_strerror(res);
+    return res == EAI_NONAME ? addr : gai_strerror(res);
   }
   return node;
 }

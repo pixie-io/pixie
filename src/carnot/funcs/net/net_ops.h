@@ -28,7 +28,7 @@ class NSLookupUDF : public ScalarUDF {
 
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Perform a DNS lookup for the value (experimental).")
-        .Details("Experimental UDF to perform a DNS lookup for a given value..")
+        .Details("Experimental UDF to perform a DNS lookup for a given value.")
         .Arg("addr", "An IP address")
         .Example("df.hostname = px.nslookup(df.ip_addr)")
         .Returns("The hostname.");
