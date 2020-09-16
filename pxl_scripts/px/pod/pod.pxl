@@ -137,7 +137,7 @@ def network_timeseries(start_time: str, pod: px.Pod):
     @node: The full name of the node to filter on.
     '''
     df = px.DataFrame(table='network_stats', start_time=start_time)
-    df = df[px.pod_id_to_pod_name(df.pod_id) == pod]
+    df = df[df.ctx['pod'] == pod]
     df.timestamp = px.bin(df.time_, px.seconds(window_s))
 
     df.rx_mb = df.rx_bytes / bytes_per_mb
@@ -243,31 +243,8 @@ def inbound_let_summary(start_time: str, pod: px.Pod):
     @start: Starting time of the data to examine.
     @pod: The pod to filter on.
     '''
-    df = let_summary_helper(start_time)
-    df = df[df.responder == pod]
-    return df.drop('responder')
-
-
-def outbound_let_summary(start_time: str, pod: px.Pod):
-    ''' Gets a summary of requests outbound from `pod`.
-
-    Args:
-    @start: Starting time of the data to examine.
-    @pod: The pod to filter on.
-    '''
-    df = let_summary_helper(start_time)
-    df = df[df.requestor == pod]
-    return df.drop(['requestor', 'remote_addr'])
-
-
-def let_summary_helper(start_time: str):
-    ''' Gets a summary of request statistics. This is a helper function, filtering by
-        pod is done elsewhere.
-
-    Args:
-    @start: Starting time of the data to examine.
-    '''
     df = let_helper(start_time)
+    df = df[df.pod == pod]
 
     quantiles_agg = df.groupby(['pod', 'remote_addr']).agg(
         latency_ms=('latency_ms', px.quantiles),
@@ -299,7 +276,7 @@ def let_summary_helper(start_time: str):
     joined_table.responder = df.pod
     joined_table.requestor = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
 
-    return joined_table[['responder', 'requestor', 'remote_addr', 'latency_ms',
+    return joined_table[['requestor', 'remote_addr', 'latency_ms',
                          'error_rate_pct', 'requests_per_s']]
 
 
