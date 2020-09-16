@@ -19,8 +19,8 @@ TEST(BPFTracerWrapperTest, MapRead) {
   ASSERT_OK(bpftrace_wrapper.Deploy(kScript, /* params */ {}));
   sleep(1);
 
-  bpftrace::BPFTraceMap entries = bpftrace_wrapper.GetBPFMap("retval");
-  PL_UNUSED(entries);
+  bpftrace::BPFTraceMap entries = bpftrace_wrapper.GetBPFMap("@retval");
+  EXPECT_FALSE(entries.empty());
 
   bpftrace_wrapper.Stop();
 }
