@@ -22,6 +22,7 @@ pl_cc_library(
     ] + select({
         "@bazel_tools//src/conditions:linux_x86_64": [
             "//third_party/foreign_cc:bcc",
+            "//third_party:bpftrace",
             "//:llvm",
         ],
         "//conditions:default": [],
@@ -37,6 +38,16 @@ pl_cc_binary(
 pl_cc_test(
     name = "bcc_wrapper_test",
     srcs = ["bcc_wrapper_test.cc"],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/obj_tools/testdata:dummy_exe_fixture",
+    ],
+)
+
+pl_cc_test(
+    name = "bpftrace_wrapper_test",
+    srcs = ["bpftrace_wrapper_test.cc"],
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",

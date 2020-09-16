@@ -260,7 +260,7 @@ class BCCWrapper {
   static size_t num_attached_perf_events() { return num_attached_perf_events_; }
 
  private:
-  FRIEND_TEST(BCCWraperTest, DetachUProbe);
+  FRIEND_TEST(BCCWrapperTest, DetachUProbe);
 
   Status DetachKProbe(const KProbeSpec& probe);
   Status DetachUProbe(const UProbeSpec& probe);

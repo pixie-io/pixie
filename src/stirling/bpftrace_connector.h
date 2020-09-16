@@ -18,8 +18,7 @@ DUMMY_SOURCE_CONNECTOR(PIDCPUUseBPFTraceConnector);
 #else
 
 #include "src/common/base/base.h"
-#include "third_party/bpftrace/src/bpforc.h"
-#include "third_party/bpftrace/src/bpftrace.h"
+#include "src/stirling/bpf_tools/bpftrace_wrapper.h"
 
 namespace pl {
 namespace stirling {
@@ -28,7 +27,7 @@ namespace stirling {
  * @brief Bpftrace connector
  *
  */
-class BPFTraceConnector : public SourceConnector {
+class BPFTraceConnector : public SourceConnector, public bpf_tools::BPFTraceWrapper {
  public:
   BPFTraceConnector() = delete;
   ~BPFTraceConnector() override = default;
@@ -42,17 +41,12 @@ class BPFTraceConnector : public SourceConnector {
 
   Status StopImpl() override;
 
-  bpftrace::BPFTraceMap GetBPFMap(const std::string& name) { return bpftrace_.get_map(name); }
-
  private:
   // This is the script that will run with this Bpftrace Connector.
   std::string_view script_;
 
   // List of params to the program (like argv).
   std::vector<std::string> params_;
-
-  bpftrace::BPFtrace bpftrace_;
-  std::unique_ptr<bpftrace::BpfOrc> bpforc_;
 };
 
 class CPUStatBPFTraceConnector : public BPFTraceConnector {

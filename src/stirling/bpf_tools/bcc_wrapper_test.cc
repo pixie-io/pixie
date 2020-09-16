@@ -13,7 +13,7 @@ namespace bpf_tools {
 using ::pl::testing::BazelBinTestFilePath;
 using ::pl::testing::TempDir;
 
-class BCCWraperTest : public ::testing::Test {
+class BCCWrapperTest : public ::testing::Test {
  protected:
   inline static const elf_tools::DummyExeFixture kDummyExeFixture;
   static constexpr char kSymbol[] = "CanYouFindThis";
@@ -35,7 +35,7 @@ class BCCWraperTest : public ::testing::Test {
   std::filesystem::path dummy_exe_path_;
 };
 
-TEST_F(BCCWraperTest, DetachUProbe) {
+TEST_F(BCCWrapperTest, DetachUProbe) {
   UProbeSpec spec = {
       .binary_path = dummy_exe_path_,
       .symbol = kSymbol,
