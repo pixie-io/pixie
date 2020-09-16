@@ -8,13 +8,16 @@
 #include "third_party/bpftrace/src/ast/semantic_analyser.h"
 #include "third_party/bpftrace/src/clang_parser.h"
 #include "third_party/bpftrace/src/driver.h"
+#include "third_party/bpftrace/src/procmon.h"
 #include "third_party/bpftrace/src/tracepoint_format_parser.h"
 
 namespace pl {
 namespace stirling {
 namespace bpf_tools {
 
-Status BPFTraceWrapper::Deploy(std::string_view script, const std::vector<std::string>& params) {
+Status BPFTraceWrapper::Deploy(
+    std::string_view script, const std::vector<std::string>& params,
+    const std::function<void(const std::vector<bpftrace::Field>, uint8_t*)>& printf_callback) {
   if (!IsRoot()) {
     return error::PermissionDenied("Bpftrace currently only supported as the root user.");
   }
@@ -72,6 +75,9 @@ Status BPFTraceWrapper::Deploy(std::string_view script, const std::vector<std::s
     return error::Internal("No bpftrace probes to deploy.");
   }
 
+  if (printf_callback) {
+    bpftrace_.printf_callback_ = printf_callback;
+  }
   bpftrace_.bpforc_ = bpforc_.get();
   err = bpftrace_.deploy();
   if (err != 0) {

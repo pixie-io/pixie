@@ -25,7 +25,9 @@ class BPFTraceWrapper {
   /**
    * Compiles the BPFTrace program and deploys it.
    */
-  Status Deploy(std::string_view bpf_program, const std::vector<std::string>& params);
+  Status Deploy(std::string_view bpf_program, const std::vector<std::string>& params,
+                const std::function<void(const std::vector<bpftrace::Field>, uint8_t*)>&
+                    printf_callback = nullptr);
 
   /**
    * Drains all of the managed perf buffers, calling the handle function for each event.
