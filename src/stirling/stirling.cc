@@ -431,7 +431,7 @@ void StirlingImpl::RegisterTracepoint(
       LOG(ERROR) << s.ToString();
       absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
       dynamic_trace_status_map_[trace_id] =
-          error::FailedPrecondition("Target binary/UPID not found: '$0'", s.ToString());
+          error::FailedPrecondition("Target binary/UPID not found");
       return;
     }
   }
