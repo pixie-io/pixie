@@ -1,5 +1,6 @@
 #pragma once
 
+#include "src/stirling/bpf_tools/bpftrace_wrapper.h"
 #include "src/stirling/source_connector.h"
 
 #ifndef __linux__
@@ -22,7 +23,7 @@ DUMMY_SOURCE_CONNECTOR(DynamicBPFTraceConnector);
 namespace pl {
 namespace stirling {
 
-class DynamicBPFTraceConnector : public SourceConnector {
+class DynamicBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTraceWrapper {
  public:
   static std::unique_ptr<SourceConnector> Create(
       std::string_view source_name, const dynamic_tracing::ir::logical::BPFTrace& bpftrace);
@@ -32,7 +33,7 @@ class DynamicBPFTraceConnector : public SourceConnector {
 
  protected:
   explicit DynamicBPFTraceConnector(std::string_view source_name,
-                                    const ArrayView<DataTableSchema>& table_schemas,
+                                    std::unique_ptr<DynamicDataTableSchema> table_schema,
                                     std::string_view script);
   Status InitImpl() override;
   Status StopImpl() override;
@@ -40,6 +41,7 @@ class DynamicBPFTraceConnector : public SourceConnector {
 
  private:
   std::string name_;
+  std::unique_ptr<DynamicDataTableSchema> table_schema_;
   std::string script_;
 };
 

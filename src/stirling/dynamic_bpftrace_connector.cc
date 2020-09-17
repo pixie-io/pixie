@@ -2,6 +2,7 @@
 
 #include "src/stirling/dynamic_bpftrace_connector.h"
 
+#include <utility>
 #include <vector>
 
 #include <absl/memory/memory.h>
@@ -11,24 +12,24 @@ namespace stirling {
 
 std::unique_ptr<SourceConnector> DynamicBPFTraceConnector::Create(
     std::string_view source_name, const dynamic_tracing::ir::logical::BPFTrace& bpftrace) {
-  std::vector<DataElement> dummy_elements;
-  const DataTableSchema dummy_table_schema_array[] = {{source_name, dummy_elements}};
-  const ArrayView<DataTableSchema> dummy_table_schemas(dummy_table_schema_array);
-  return absl::WrapUnique<DynamicBPFTraceConnector>(
-      new DynamicBPFTraceConnector(source_name, dummy_table_schemas, bpftrace.program()));
+  std::unique_ptr<DynamicDataTableSchema> table_schema =
+      DynamicDataTableSchema::Create(absl::StrCat(source_name, "_output"), bpftrace);
+  return std::unique_ptr<SourceConnector>(
+      new DynamicBPFTraceConnector(source_name, std::move(table_schema), bpftrace.program()));
 }
 
-DynamicBPFTraceConnector::DynamicBPFTraceConnector(std::string_view source_name,
-                                                   const ArrayView<DataTableSchema>& table_schemas,
-                                                   std::string_view script)
-    : SourceConnector(source_name, table_schemas), script_(script) {}
+DynamicBPFTraceConnector::DynamicBPFTraceConnector(
+    std::string_view source_name, std::unique_ptr<DynamicDataTableSchema> table_schema,
+    std::string_view script)
+    : SourceConnector(source_name, ArrayView<DataTableSchema>(&table_schema->Get(), 1)),
+      table_schema_(std::move(table_schema)),
+      script_(script) {}
 
-Status DynamicBPFTraceConnector::InitImpl() {
-  return error::Unimplemented("DynamicBPFTraceConnector::InitImpl()");
-}
+Status DynamicBPFTraceConnector::InitImpl() { return Deploy(script_, /*params*/ {}); }
 
 Status DynamicBPFTraceConnector::StopImpl() {
-  return error::Unimplemented("DynamicBPFTraceConnector::StopImpl()");
+  BPFTraceWrapper::Stop();
+  return Status::OK();
 }
 
 void DynamicBPFTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
