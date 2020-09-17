@@ -28,11 +28,9 @@ class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapp
     }
 
     const auto& output = bcc_program.perf_buffer_specs[0];
-    PL_ASSIGN_OR_RETURN(std::unique_ptr<DynamicDataTableSchema> table_schema,
-                        DynamicDataTableSchema::Create(output));
 
-    return std::unique_ptr<SourceConnector>(
-        new DynamicTraceConnector(name, std::move(table_schema), std::move(bcc_program)));
+    return std::unique_ptr<SourceConnector>(new DynamicTraceConnector(
+        name, DynamicDataTableSchema::Create(output), std::move(bcc_program)));
   }
 
   // Accepts a piece of data from the perf buffer.

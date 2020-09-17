@@ -10,6 +10,7 @@
 #include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/type_utils.h"
+#include "src/stirling/dynamic_tracing/ir/logicalpb/logical.pb.h"
 #include "src/stirling/dynamic_tracing/types.h"
 #include "src/stirling/proto/stirling.pb.h"
 
@@ -187,23 +188,22 @@ class DataTableSchema {
  */
 class DynamicDataTableSchema {
  public:
-  static StatusOr<std::unique_ptr<DynamicDataTableSchema>> Create(
+  static std::unique_ptr<DynamicDataTableSchema> Create(
       const dynamic_tracing::BCCProgram::PerfBufferSpec& output_spec);
+
+  static std::unique_ptr<DynamicDataTableSchema> Create(
+      std::string_view output_name, const dynamic_tracing::ir::logical::BPFTrace& bpftrace);
+
   const DataTableSchema& Get() { return table_schema_; }
 
-  const dynamic_tracing::ir::physical::StructSpec& ColumnDecoder(int index) {
-    return output_struct_->fields(index).blob_decoder();
-  }
-
  private:
-  DynamicDataTableSchema(std::unique_ptr<dynamic_tracing::ir::physical::Struct> output_struct,
-                         std::string_view name, const std::vector<DataElement>& elements)
-      : output_struct_(std::move(output_struct)),
-        elements_(elements),
-        table_schema_(name, elements_) {}
-
-  // Keep the copy of the protobuf, because elements_ has views into this data structure.
-  std::unique_ptr<dynamic_tracing::ir::physical::Struct> output_struct_;
+  DynamicDataTableSchema(std::string_view name, std::vector<DataElement> elements,
+                         std::unique_ptr<dynamic_tracing::ir::physical::Struct> output_struct,
+                         std::unique_ptr<dynamic_tracing::ir::logical::BPFTrace> bpftrace)
+      : elements_(std::move(elements)),
+        table_schema_(name, elements_),
+        output_struct_(std::move(output_struct)),
+        bpftrace_(std::move(bpftrace)) {}
 
   // Keep a copy of the passed elements, because table_schema_ has views into this data structure.
   std::vector<DataElement> elements_;
@@ -211,6 +211,10 @@ class DynamicDataTableSchema {
   // The main data structure, which mostly has views into elements_, and by extension
   // output_struct_.
   DataTableSchema table_schema_;
+
+  // Keep the copy of the protobuf, because elements_ has views into these data structures.
+  std::unique_ptr<dynamic_tracing::ir::physical::Struct> output_struct_;
+  std::unique_ptr<dynamic_tracing::ir::logical::BPFTrace> bpftrace_;
 };
 
 }  // namespace stirling

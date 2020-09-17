@@ -100,10 +100,62 @@ TEST(DynamicDataTableSchemaTest, generate) {
   ASSERT_TRUE(google::protobuf::TextFormat::ParseFromString(std::string(kOutputStruct),
                                                             &output_spec.output));
 
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DynamicDataTableSchema> table_schema_ptr,
-                       DynamicDataTableSchema::Create(output_spec));
+  std::unique_ptr<DynamicDataTableSchema> table_schema_ptr =
+      DynamicDataTableSchema::Create(output_spec);
 
   const DataTableSchema& table_schema = table_schema_ptr->Get();
+
+  EXPECT_EQ(table_schema.name(), "out_table");
+  ASSERT_EQ(table_schema.elements().size(), 6);
+  EXPECT_EQ(table_schema.tabletized(), false);
+  EXPECT_EQ(table_schema.ColIndex("upid"), 0);
+  EXPECT_EQ(table_schema.ColIndex("arg2"), 5);
+  EXPECT_EQ(table_schema.elements()[1].name(), "goid_");
+  EXPECT_EQ(table_schema.elements()[5].name(), "arg2");
+
+  // There's a hack to convert any column with name "time_" to TIME64NS. Check that.
+  EXPECT_EQ(table_schema.elements()[table_schema.ColIndex("time_")].type(), types::TIME64NS);
+}
+
+TEST(DynamicDataTableSchemaTest, GenerateForBPFTrace) {
+  constexpr std::string_view kBPFTraceWithSameFields = R"(
+    program: "test"
+    outputs {
+      name: "tgid_"
+      type: INT32
+    }
+    outputs {
+      name: "tgid_start_time_"
+      type: UINT64
+    }
+    outputs {
+      name: "goid_"
+      type: INT64
+    }
+    outputs {
+      name: "time_"
+      type: UINT64
+    }
+    outputs {
+      name: "arg0"
+      type: INT
+    }
+    outputs {
+      name: "arg1"
+      type: BOOL
+    }
+    outputs {
+      name: "arg2"
+      type: BOOL
+    }
+  )";
+
+  dynamic_tracing::ir::logical::BPFTrace bpftrace;
+  ASSERT_TRUE(google::protobuf::TextFormat::ParseFromString(std::string(kBPFTraceWithSameFields),
+                                                            &bpftrace));
+  auto data_table_schema = DynamicDataTableSchema::Create("out_table", bpftrace);
+
+  const DataTableSchema& table_schema = data_table_schema->Get();
 
   EXPECT_EQ(table_schema.name(), "out_table");
   ASSERT_EQ(table_schema.elements().size(), 6);

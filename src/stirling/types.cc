@@ -1,7 +1,12 @@
 #include "src/stirling/types.h"
 
+#include <google/protobuf/repeated_field.h>
+
 namespace pl {
 namespace stirling {
+
+using ::pl::stirling::dynamic_tracing::ir::logical::BPFTrace;
+using ::pl::stirling::dynamic_tracing::ir::physical::Struct;
 
 stirlingpb::Element DataElement::ToProto() const {
   stirlingpb::Element element_proto;
@@ -32,8 +37,13 @@ stirlingpb::TableSchema DataTableSchema::ToProto() const {
   return table_schema_proto;
 }
 
-StatusOr<std::unique_ptr<DynamicDataTableSchema>> DynamicDataTableSchema::Create(
-    const dynamic_tracing::BCCProgram::PerfBufferSpec& output_spec) {
+namespace {
+
+// TFieldsType must be a protobuf message with 'name' and 'type' fields, which are a string
+// and a ScalarType respectively.
+template <typename TFieldsType>
+std::vector<DataElement> CreateDataElements(
+    const google::protobuf::RepeatedPtrField<TFieldsType>& repeated_fields) {
   using dynamic_tracing::ir::shared::ScalarType;
 
   // clang-format off
@@ -78,8 +88,8 @@ StatusOr<std::unique_ptr<DynamicDataTableSchema>> DynamicDataTableSchema::Create
   elements.emplace_back("upid", "upid", types::DataType::UINT128, types::SemanticType::ST_NONE,
                         types::PatternType::UNSPECIFIED);
 
-  for (int i = 2; i < output_spec.output.fields_size(); ++i) {
-    const auto& field = output_spec.output.fields(i);
+  for (int i = 2; i < repeated_fields.size(); ++i) {
+    const auto& field = repeated_fields[i];
 
     types::DataType data_type;
 
@@ -101,11 +111,27 @@ StatusOr<std::unique_ptr<DynamicDataTableSchema>> DynamicDataTableSchema::Create
                           types::PatternType::UNSPECIFIED);
   }
 
-  auto output_struct_ptr =
-      std::make_unique<dynamic_tracing::ir::physical::Struct>(output_spec.output);
+  return elements;
+}
 
-  return std::unique_ptr<DynamicDataTableSchema>(
-      new DynamicDataTableSchema(std::move(output_struct_ptr), output_spec.name, elements));
+}  // namespace
+
+std::unique_ptr<DynamicDataTableSchema> DynamicDataTableSchema::Create(
+    const dynamic_tracing::BCCProgram::PerfBufferSpec& output_spec) {
+  auto output_struct_ptr = std::make_unique<Struct>(output_spec.output);
+  std::unique_ptr<BPFTrace> bpftrace_ptr;
+  return absl::WrapUnique(
+      new DynamicDataTableSchema(output_spec.name, CreateDataElements(output_struct_ptr->fields()),
+                                 std::move(output_struct_ptr), std::move(bpftrace_ptr)));
+}
+
+std::unique_ptr<DynamicDataTableSchema> DynamicDataTableSchema::Create(
+    std::string_view output_name, const dynamic_tracing::ir::logical::BPFTrace& bpftrace) {
+  std::unique_ptr<Struct> output_struct_ptr;
+  auto bpftrace_ptr = std::make_unique<BPFTrace>(bpftrace);
+  return absl::WrapUnique(
+      new DynamicDataTableSchema(output_name, CreateDataElements(bpftrace_ptr->outputs()),
+                                 std::move(output_struct_ptr), std::move(bpftrace_ptr)));
 }
 
 }  // namespace stirling

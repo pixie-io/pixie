@@ -323,9 +323,8 @@ Status DynamicTraceConnector::AppendRecord(const Struct& st, uint32_t asid, std:
   // Skip the first 3 fields which are tgid & tgid_start_time, which are combined into upid,
   // and also time.
   for (int i = 3; i < st.fields_size(); ++i) {
-    const dynamic_tracing::ir::physical::StructSpec& col_decoder = table_schema_->ColumnDecoder(i);
-    PL_RETURN_IF_ERROR(
-        FillColumn(&struct_decoder, &r, col_idx++, st.fields(i).type(), col_decoder));
+    PL_RETURN_IF_ERROR(FillColumn(&struct_decoder, &r, col_idx++, st.fields(i).type(),
+                                  st.fields(i).blob_decoder()));
   }
 
   return Status::OK();
