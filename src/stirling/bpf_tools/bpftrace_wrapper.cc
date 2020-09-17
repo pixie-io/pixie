@@ -67,9 +67,7 @@ Status BPFTraceWrapper::Deploy(
   }
 
   bpftrace::ast::CodegenLLVM llvm(driver.root_.get(), bpftrace_);
-  llvm.generate_ir();
-  llvm.optimize();
-  bpforc_ = llvm.emit();
+  bpforc_ = llvm.compile();
 
   if (bpftrace_.num_probes() == 0) {
     return error::Internal("No bpftrace probes to deploy.");
