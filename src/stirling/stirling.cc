@@ -24,6 +24,7 @@
 #include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"
 
+#include "src/stirling/dynamic_bpftrace_connector.h"
 #include "src/stirling/dynamic_trace_connector.h"
 #include "src/stirling/jvm_stats_connector.h"
 #include "src/stirling/pid_runtime_connector.h"
@@ -204,8 +205,6 @@ class StirlingImpl final : public Stirling {
   absl::base_internal::SpinLock dynamic_trace_status_map_lock_;
   absl::flat_hash_map<sole::uuid, StatusOr<stirlingpb::Publish>> dynamic_trace_status_map_
       ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
-
-  static inline const std::string kDynTraceSourcePrefix = "DT_";
 };
 
 StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
@@ -334,27 +333,51 @@ Status StirlingImpl::RemoveSource(std::string_view source_name) {
     RETURN_ERROR(__s__);   \
   }
 
+namespace {
+
+constexpr char kDynTraceSourcePrefix[] = "DT_";
+
+StatusOr<std::unique_ptr<SourceConnector>> CreateDynamicSourceConnector(
+    sole::uuid trace_id,
+    dynamic_tracing::ir::logical::TracepointDeployment* tracepoint_deployment) {
+  if (tracepoint_deployment->tracepoints().empty() && !tracepoint_deployment->has_bpftrace()) {
+    return error::Internal("Nothing defined in the input tracepoint_deployment.");
+  }
+
+  if (!tracepoint_deployment->tracepoints().empty() && tracepoint_deployment->has_bpftrace()) {
+    return error::Internal("Cannot have both tracepoints and bpftrace.");
+  }
+
+  if (tracepoint_deployment->tracepoints_size() > 1) {
+    return error::Internal("Only one Tracepoint is currently supported.");
+  }
+
+  if (tracepoint_deployment->has_bpftrace()) {
+    return DynamicBPFTraceConnector::Create(absl::StrCat(kDynTraceSourcePrefix, trace_id.str()),
+                                            tracepoint_deployment->bpftrace());
+  }
+  return DynamicTraceConnector::Create(kDynTraceSourcePrefix + trace_id.str(),
+                                       tracepoint_deployment);
+}
+
+}  // namespace
+
 void StirlingImpl::DeployDynamicTraceConnector(
     sole::uuid trace_id,
     std::unique_ptr<dynamic_tracing::ir::logical::TracepointDeployment> program) {
-  if (program->tracepoints_size() == 0) {
-    RETURN_ERROR(error::Internal("Dynamic trace must define at least one Tracepoint."));
-  }
-  if (program->tracepoints_size() > 1) {
-    RETURN_ERROR(error::Internal("Only one Trancepoint is currently supported."));
-  }
-
   auto timer = ElapsedTimer();
   timer.Start();
 
   // Try creating the DynamicTraceConnector--which compiles BCC code.
   // On failure, set status and exit.
-  ASSIGN_OR_RETURN_ERROR(
-      std::unique_ptr<SourceConnector> source,
-      DynamicTraceConnector::Create(kDynTraceSourcePrefix + trace_id.str(), program.get()));
+  ASSIGN_OR_RETURN_ERROR(std::unique_ptr<SourceConnector> source,
+                         CreateDynamicSourceConnector(trace_id, program.get()));
 
-  LOG(INFO) << absl::Substitute("DynamicTrace [$0]: Program compiled to BCC code in $1 ms.",
-                                trace_id.str(), timer.ElapsedTime_us() / 1000.0);
+  LOG(INFO) << absl::Substitute("DynamicTraceConnector [$0] created in $1 ms.",
+                                source->source_name(), timer.ElapsedTime_us() / 1000.0);
+
+  // Cache table schema name as source will be moved below.
+  std::string output_name(source->TableSchema(0).name());
 
   timer.Start();
   // Next, try adding the source (this actually tries to deploy BPF code).
@@ -366,9 +389,7 @@ void StirlingImpl::DeployDynamicTraceConnector(
   stirlingpb::Publish publication;
   {
     absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
-    for (const auto& output : program->tracepoints(0).program().outputs()) {
-      config_->PopulatePublishProto(&publication, info_class_mgrs_, output.name());
-    }
+    config_->PopulatePublishProto(&publication, info_class_mgrs_, output_name);
   }
 
   absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
@@ -403,13 +424,16 @@ void StirlingImpl::RegisterTracepoint(
   // TODO(oazizi): Need to think of a better way of doing this.
   //               Need to differentiate errors caused by the binary not being on the host vs
   //               other errors. Also should consider races with binary creation/deletion.
-  Status s = dynamic_tracing::ResolveTargetObjPath(program->mutable_deployment_spec());
-  if (!s.ok()) {
-    LOG(ERROR) << s.ToString();
-    absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
-    dynamic_trace_status_map_[trace_id] =
-        error::FailedPrecondition("Target binary/UPID not found: '$0'", s.ToString());
-    return;
+
+  if (program->has_deployment_spec()) {
+    Status s = dynamic_tracing::ResolveTargetObjPath(program->mutable_deployment_spec());
+    if (!s.ok()) {
+      LOG(ERROR) << s.ToString();
+      absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
+      dynamic_trace_status_map_[trace_id] =
+          error::FailedPrecondition("Target binary/UPID not found: '$0'", s.ToString());
+      return;
+    }
   }
 
   // Initialize the status of this trace to pending.
