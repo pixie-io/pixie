@@ -22,12 +22,12 @@ install:
 
 deploy:
   - provider: script
-    script:
-    - openssl aes-256-cbc -K $encrypted_3fab9f21603e_key -iv $encrypted_3fab9f21603e_iv
-      -in gcs-sa.json.enc -out gcs-sa.json -d
-    - gcloud auth activate-service-account --key-file gcs-sa.json
-    - rm gcs-sa.json
-    - ./scripts/deploy.sh
+    script: >-
+      openssl aes-256-cbc -K $encrypted_3fab9f21603e_key -iv $encrypted_3fab9f21603e_iv
+      -in gcs-sa.json.enc -out gcs-sa.json -d &&
+      gcloud auth activate-service-account --key-file gcs-sa.json &&
+      rm gcs-sa.json &&
+      ./scripts/deploy.sh
     skip_cleanup: true
     on:
       branch: main
