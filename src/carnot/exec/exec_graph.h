@@ -61,10 +61,20 @@ class ExecutionGraph {
    * @param compilerState The compiler state.
    * @param execState The execution state.
    * @param pf The plan fragment to create the execution graph from.
+   * @param collect_exec_node_stats Whether or not to collect exec node stats.
+   * @param consecutive_generate_calls_per_source how many times in a row to call GenerateNext
+   * before switching to another available source.
    * @return The status of whether initialization succeeded.
    */
   Status Init(std::shared_ptr<table_store::schema::Schema> schema, plan::PlanState* plan_state,
-              ExecState* exec_state, plan::PlanFragment* pf, bool collect_exec_node_stats);
+              ExecState* exec_state, plan::PlanFragment* pf, bool collect_exec_node_stats,
+              int32_t consecutive_generate_calls_per_source);
+
+  Status Init(std::shared_ptr<table_store::schema::Schema> schema, plan::PlanState* plan_state,
+              ExecState* exec_state, plan::PlanFragment* pf, bool collect_exec_node_stats) {
+    return Init(schema, plan_state, exec_state, pf, collect_exec_node_stats,
+                kDefaultConsecutiveGenerateCallsPerSource);
+  }
 
   ~ExecutionGraph() {
     // We need to remove these GRPC source nodes from the GRPC router because the exec graph

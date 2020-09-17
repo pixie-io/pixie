@@ -4,6 +4,7 @@
 #include <arrow/memory_pool.h>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include <google/protobuf/text_format.h>
@@ -106,7 +107,13 @@ TEST_F(ExecGraphTest, basic) {
   EXPECT_EQ(0, root_children[1]->children()[0]->children().size());
 }
 
-TEST_F(ExecGraphTest, execute) {
+class ExecGraphExecuteTest : public ExecGraphTest,
+                             public ::testing::WithParamInterface<std::tuple<int32_t>> {};
+
+TEST_P(ExecGraphExecuteTest, execute) {
+  int32_t calls_to_generate;
+  std::tie(calls_to_generate) = GetParam();
+
   planpb::PlanFragment pf_pb;
   ASSERT_TRUE(TextFormat::MergeFromString(planpb::testutils::kLinearPlanFragment, &pf_pb));
   std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
@@ -158,7 +165,7 @@ TEST_F(ExecGraphTest, execute) {
 
   ExecutionGraph e;
   auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get(),
-                  /* collect_exec_node_stats */ false);
+                  /* collect_exec_node_stats */ false, calls_to_generate);
 
   EXPECT_OK(e.Execute());
 
@@ -175,6 +182,16 @@ TEST_F(ExecGraphTest, execute) {
                   ->ColumnAt(0)
                   ->Equals(types::ToArrow(out_in2, arrow::default_memory_pool())));
 }
+
+std::vector<std::tuple<int32_t>> calls_to_execute = {
+    {1},
+    {2},
+    {3},
+    {4},
+};
+
+INSTANTIATE_TEST_SUITE_P(ExecGraphExecuteTestSuite, ExecGraphExecuteTest,
+                         ::testing::ValuesIn(calls_to_execute));
 
 TEST_F(ExecGraphTest, execute_time) {
   planpb::PlanFragment pf_pb;
@@ -562,7 +579,11 @@ TEST_F(YieldingExecGraphTest, yield) {
       .WillOnce(::testing::Return(Status::OK()));
 
   // Non-yielding
-  EXPECT_CALL(non_yielding_source, NextBatchReady()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(non_yielding_source, NextBatchReady())
+      .Times(3)
+      .WillOnce(::testing::Return(true))
+      .WillOnce(::testing::Return(true))
+      .WillOnce(::testing::Return(false));
 
   EXPECT_CALL(non_yielding_source, GenerateNextImpl(::testing::_))
       .Times(2)
@@ -572,13 +593,14 @@ TEST_F(YieldingExecGraphTest, yield) {
 
   // YieldingSource will retrigger execution once it returns true for NextBatchReady.
   EXPECT_CALL(yielding_source, NextBatchReady())
-      .Times(6)
+      .Times(7)
       .WillOnce(::testing::Return(false))
       .WillOnce(::testing::Return(false))
       .WillOnce(::testing::Return(false))
-      .WillOnce(::testing::Return(true))   // Break out of the wait loop
-      .WillOnce(::testing::Return(true))   // Generate first batch
-      .WillOnce(::testing::Return(true));  // Generate EOS batch.
+      .WillOnce(::testing::Return(true))    // Break out of the wait loop
+      .WillOnce(::testing::Return(true))    // Generate first batch
+      .WillOnce(::testing::Return(true))    // Generate EOS batch.
+      .WillOnce(::testing::Return(false));  // No more batches
 
   EXPECT_CALL(yielding_source, GenerateNextImpl(::testing::_))
       .Times(2)

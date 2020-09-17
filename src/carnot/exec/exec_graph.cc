@@ -31,12 +31,14 @@ using table_store::schema::RowDescriptor;
 
 Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
                             plan::PlanState* plan_state, ExecState* exec_state,
-                            plan::PlanFragment* pf, bool collect_exec_node_stats) {
+                            plan::PlanFragment* pf, bool collect_exec_node_stats,
+                            int32_t consecutive_generate_calls_per_source) {
   plan_state_ = plan_state;
   schema_ = schema;
   pf_ = pf;
   exec_state_ = exec_state;
   collect_exec_node_stats_ = collect_exec_node_stats;
+  consecutive_generate_calls_per_source_ = consecutive_generate_calls_per_source;
 
   std::unordered_map<int64_t, ExecNode*> nodes;
   std::unordered_map<int64_t, RowDescriptor> descriptors;
@@ -170,16 +172,17 @@ Status ExecutionGraph::ExecuteSources() {
       exec_state_->SetCurrentSource(source_to_id[source]);
 
       for (auto i = 0; i < consecutive_generate_calls_per_source_; ++i) {
-        // keep_running will be set to false when a downstream limit for this particular
-        // source (set in exec_state) has been reached.
-        if (!source->HasBatchesRemaining() || !exec_state_->keep_running()) {
-          completed_sources_execute_loop.insert(source);
-          break;
-        }
-        if (!source->NextBatchReady()) {
+        if (!source->NextBatchReady() || !exec_state_->keep_running()) {
           break;
         }
         PL_RETURN_IF_ERROR(source->GenerateNext(exec_state_));
+      }
+
+      // keep_running will be set to false when a downstream limit for this particular
+      // source (set in exec_state) has been reached.
+      if (!source->HasBatchesRemaining() || !exec_state_->keep_running()) {
+        completed_sources_execute_loop.insert(source);
+        break;
       }
     }
 
@@ -245,8 +248,9 @@ Status ExecutionGraph::ExecuteSources() {
         // This type of timeout is okay as long as the connections to upstream sources and
         // downstream destinations are healthy. For streaming queries on sparse data, there may
         // be a legitimate, noticeable wait between output row batches.
-        LOG(ERROR) << absl::Substitute("Timed out waiting for source data after $0 ms. Retrying.",
-                                       timer.ElapsedTime_us() / 1000.0);
+        LOG(ERROR) << absl::Substitute(
+            "Timed out in query $0 waiting for source data from $1 sources after $2 ms. Retrying.",
+            exec_state_->query_id().str(), running_sources.size(), timer.ElapsedTime_us() / 1000.0);
       }
     }
   }
