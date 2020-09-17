@@ -324,6 +324,7 @@ StatusOr<absl::flat_hash_map<int64_t, std::unique_ptr<IR>>> GetCarnotPlans(
   for (const auto& [carnot_idx, carnot_id] : Enumerate(carnot_instances)) {
     absl::flat_hash_set<OperatorIR*> relevant_ops_for_instance;
     md::AgentMetadataFilter* md_filter = plan->Get(carnot_id)->metadata_filter();
+    bool last_carnot_instance = carnot_idx >= carnot_instances.size() - 1;
 
     for (const auto& [sink, sink_and_ancestors] : sinks_to_ancestor_ops) {
       auto sink_produces_data = true;
@@ -335,8 +336,7 @@ StatusOr<absl::flat_hash_map<int64_t, std::unique_ptr<IR>>> GetCarnotPlans(
       // matched this subgraph, then add it to the current Carnot instance. We have the last
       // carnot instance case so that a completely exclusive filter still produces
       // empty row batches for Kelvin to return.
-      if (!sink_produces_data &&
-          (carnot_idx < carnot_instances.size() - 1 || allocated_sinks.contains(sink))) {
+      if (!sink_produces_data && (!last_carnot_instance || allocated_sinks.contains(sink))) {
         continue;
       }
       allocated_sinks.insert(sink);

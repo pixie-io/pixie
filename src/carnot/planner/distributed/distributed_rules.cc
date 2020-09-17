@@ -7,8 +7,8 @@ namespace carnot {
 namespace planner {
 namespace distributed {
 
-PruneUnavailableSourcesRule::PruneUnavailableSourcesRule(distributedpb::CarnotInfo carnot_info,
-                                                         const SchemaMap& schema_map)
+PruneUnavailableSourcesRule::PruneUnavailableSourcesRule(
+    const distributedpb::CarnotInfo& carnot_info, const SchemaMap& schema_map)
     : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false),
       carnot_info_(carnot_info),
       schema_map_(schema_map) {
@@ -57,9 +57,6 @@ bool PruneUnavailableSourcesRule::AgentSupportsMemorySources() {
 }
 
 bool PruneUnavailableSourcesRule::AgentHasTable(std::string table_name) {
-  if (!schema_map_.contains(table_name)) {
-    return false;
-  }
   auto schema_iter = schema_map_.find(table_name);
   return schema_iter != schema_map_.end() && schema_iter->second.contains(agent_id_);
 }

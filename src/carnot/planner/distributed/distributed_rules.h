@@ -52,7 +52,8 @@ class DistributedIRRule : public DistributedRule {
 
 class PruneUnavailableSourcesRule : public Rule {
  public:
-  PruneUnavailableSourcesRule(distributedpb::CarnotInfo carnot_info, const SchemaMap& schema_map);
+  PruneUnavailableSourcesRule(const distributedpb::CarnotInfo& carnot_info,
+                              const SchemaMap& schema_map);
   StatusOr<bool> Apply(IRNode* node) override;
 
  private:
@@ -69,9 +70,8 @@ class PruneUnavailableSourcesRule : public Rule {
   bool IsKelvin(const distributedpb::CarnotInfo& carnot_info);
   bool IsPEM(const distributedpb::CarnotInfo& carnot_info);
 
-  distributedpb::CarnotInfo carnot_info_;
-
-  SchemaMap schema_map_;
+  const distributedpb::CarnotInfo& carnot_info_;
+  const SchemaMap& schema_map_;
   sole::uuid agent_id_;
 };
 
