@@ -69,12 +69,7 @@ spec:
         - name: sys
           mountPath: /sys
           readOnly: true
-        resources:
-          limits:
-            memory: 4096Mi
-          requests:
-            cpu: 1000m
-            memory: 2048Mi
+        resources: {}
       terminationGracePeriodSeconds: 30
       volumes:
       - name: certs

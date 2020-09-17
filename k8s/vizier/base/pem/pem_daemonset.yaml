@@ -64,12 +64,7 @@ spec:
             secretKeyRef:
               key: jwt-signing-key
               name: pl-cluster-secrets
-        resources:
-          limits:
-            memory: 2048Mi
-          requests:
-            cpu: 100m
-            memory: 1024Mi
+        resources: {}
         securityContext:
           capabilities:
             add:
