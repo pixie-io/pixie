@@ -19,13 +19,7 @@
         "adjacencyList": {
           "fromColumn": "pod",
           "toColumn": "ns"
-        },
-        "annotations": [
-          {
-            "name": "bytes_sent",
-            "value": "bytes_sent"
-          }
-        ]
+        }
       }
     },
     {
