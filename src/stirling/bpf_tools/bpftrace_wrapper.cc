@@ -84,7 +84,9 @@ void BPFTraceWrapper::PollPerfBuffers(int timeout_ms) {
   bpftrace_.poll_perf_events(/* drain */ false, timeout_ms);
 }
 
-void BPFTraceWrapper::Stop() { bpftrace_.finalize(); }
+void BPFTraceWrapper::Stop() {
+  // There is no need to manually cleanup bpftrace_.
+}
 
 StatusOr<std::vector<bpftrace::Field>> BPFTraceWrapper::OutputFields() {
   if (bpftrace_.printf_args_.size() != 1) {
