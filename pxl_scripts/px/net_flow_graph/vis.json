@@ -1,6 +1,40 @@
 {
-  "variables": [],
-  "globalFuncs": [],
+  "variables": [
+    {
+      "name": "ips",
+      "type": "PX_STRING",
+      "description": "The IP address you wish to get the network flow into.",
+      "defaultValue": ""
+    },
+    {
+      "name": "start",
+      "type": "PX_STRING",
+      "description": "The start time of the window in time units before now.",
+      "defaultValue": "-5m"
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "net_flow",
+      "func": {
+        "name": "net_flow_graph",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "ips",
+            "variable": "ips"
+          },
+          {
+            "name": "grouping_entity",
+            "value": "pod"
+          }
+        ]
+      }
+    }
+  ],
   "widgets": [
     {
       "name": "Net Flow Graph",
@@ -10,10 +44,7 @@
         "w": 6,
         "h": 4
       },
-      "func": {
-        "name": "net_flow_graph",
-        "args": []
-      },
+      "globalFuncOutputName": "net_flow",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.Graph",
         "adjacencyList": {
@@ -30,10 +61,7 @@
         "w": 6,
         "h": 4
       },
-      "func": {
-        "name": "net_flow_graph",
-        "args": []
-      },
+      "globalFuncOutputName": "net_flow",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.Table"
       }
