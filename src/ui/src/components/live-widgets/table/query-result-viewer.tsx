@@ -51,13 +51,14 @@ const QueryResultTableBare = (({ data, classes, propagatedArgs }: QueryResultTab
   const [count, setCount] = React.useState<number>(0);
   const [totalCount, setTotalCount] = React.useState<number>(0);
 
+  const dataLength = data && data.data ? data.data.length : 0;
   React.useEffect(() => {
     if (data && data.data) {
       setTotalCount(
         data.data.map((d) => d.getNumRows())
           .reduce((p, n) => p + n, 0));
     }
-  }, [data, setTotalCount]);
+  }, [data, dataLength, setTotalCount]);
 
   const getTableSummary = React.useCallback(() => {
     let summary = `Showing ${count} of ${totalCount} records`;

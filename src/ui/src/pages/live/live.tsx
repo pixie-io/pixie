@@ -119,7 +119,9 @@ const LiveView = () => {
   const classes = useStyles();
   const { newAutoComplete } = useFlags();
 
-  const { pxl, id, saveEditorAndExecute } = React.useContext(ScriptContext);
+  const {
+    pxl, id, saveEditorAndExecute, cancelExecution,
+  } = React.useContext(ScriptContext);
   const { loading } = React.useContext(VizierGRPCClientContext);
   const {
     setDataDrawerOpen, editorPanelOpen, setEditorPanelOpen, isMobile,
@@ -149,6 +151,14 @@ const LiveView = () => {
     'toggle-data-drawer': () => setDataDrawerOpen((open) => !open),
     execute: () => saveEditorAndExecute(),
   };
+
+  React.useEffect(() => {
+    window.addEventListener('beforeunload', () => {
+      if (cancelExecution != null) {
+        cancelExecution();
+      }
+    });
+  }, [cancelExecution]);
 
   React.useEffect(() => {
     if (!pxl && !id) {

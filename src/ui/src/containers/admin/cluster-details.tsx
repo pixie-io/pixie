@@ -146,7 +146,7 @@ const AgentsTable = () => {
       return;
     }
     const fetchAgentStatus = () => {
-      client.executeScript(AGENT_STATUS_SCRIPT, [], false).then((results) => {
+      const onData = (results) => {
         if (results.tables.length !== 1) {
           if (results.status) {
             setState({ ...state, error: results.status.getMessage() });
@@ -155,9 +155,11 @@ const AgentsTable = () => {
         }
         const data = dataFromProto(results.tables[0].relation, results.tables[0].data);
         setState({ data });
-      }).catch((error) => {
+      };
+      const onError = (error) => {
         setState({ ...state, error: error?.message });
-      });
+      };
+      client.executeScript(AGENT_STATUS_SCRIPT, [], false, onData, onError);
     };
     fetchAgentStatus();
   }, [client, state]);

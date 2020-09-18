@@ -10,3 +10,7 @@ export const ContainsMutation = (pxl): boolean => (
     return pxl.match(re);
   })
 );
+
+export const IsStreaming = (pxl): boolean => (
+  pxl.indexOf('.stream()') !== -1
+);

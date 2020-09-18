@@ -8,7 +8,7 @@ import {
 import ClientContext from 'common/vizier-grpc-client-context';
 import { VizierQueryError, GRPCStatusCode } from 'common/errors';
 import { VizierQueryFunc } from 'common/vizier-grpc-client';
-import { ContainsMutation } from 'utils/pxl';
+import { ContainsMutation, IsStreaming } from 'utils/pxl';
 
 import * as React from 'react';
 import { withRouter } from 'react-router';
@@ -254,37 +254,10 @@ const ScriptContextProvider = (props) => {
     urlParams.commitAll(scriptId, '', nonEntityArgs);
   };
 
-  const executeScriptUntilMutationCompletion = (
-    execArgs: ExecuteArguments,
-    funcs: VizierQueryFunc[],
-    mutation: boolean,
-    numTries: number) => (
-    client.executeScript(execArgs.pxl, funcs, mutation).then(async (queryResults) => {
-      let triesLeft = numTries;
-      // If the results are from a mutation, we should wait and retry if the mutation is still pending.
-      if (triesLeft <= 0) {
-        setResults({ tables: {}, error: new VizierQueryError('execution', 'Deploying tracepoints failed') });
-        return null;
-      }
-      if (queryResults.mutationInfo && queryResults.mutationInfo.getStatus().getCode() === GRPCStatusCode.Unavailable) {
-        // Wait 5s before executing again.
-        setResults({ tables: {}, mutationInfo: queryResults.mutationInfo });
-        await Promise.race([
-          new Promise((resolve) => setTimeout(resolve, mutationRetryMs)),
-          new Promise((resolve) => {
-            const cancel = () => (() => {
-              triesLeft = 0;
-              resolve();
-            });
-            setCancelExecution(cancel);
-          }),
-        ]);
-        return executeScriptUntilMutationCompletion(execArgs, funcs, mutation, triesLeft - 1);
-      }
-      return queryResults;
-    }));
-
   const execute = (execArgs: ExecuteArguments) => {
+    if (cancelExecution != null) {
+      cancelExecution();
+    }
     if (loading) {
       showSnackbar({
         message: 'Script is already executing, please wait for it to complete',
@@ -305,70 +278,163 @@ const ScriptContextProvider = (props) => {
 
     let errMsg: string;
     let queryId: string;
+    let loaded = false;
 
     const mutation = ContainsMutation(execArgs.pxl);
+    const isStreaming = IsStreaming(execArgs.pxl);
 
     if (!execArgs.skipURLUpdate) {
       commitURL(execArgs.liveViewPage, execArgs.id, execArgs.args);
     }
 
-    new Promise((resolve, reject) => {
-      try {
-        // Make sure vis has proper references.
-        if (execArgs.vis) {
-          // validateVis errors out on null vis arguments.
-          const visErr = validateVis(execArgs.vis, execArgs.args);
-          if (visErr) {
-            throw visErr;
-          }
-        }
-        resolve(getQueryFuncs(execArgs.vis, execArgs.args));
-      } catch (error) {
-        reject(error);
-      }
-    })
-      .then((funcs: VizierQueryFunc[]) => executeScriptUntilMutationCompletion(
-        execArgs, funcs, mutation, maxMutationRetryMs / mutationRetryMs),
-      )
-      .then((queryResults) => {
-        if (queryResults) {
-          const newTables = {};
-          ({ queryId } = queryResults);
-          queryResults.tables.forEach((table) => {
-            newTables[table.name] = table;
-          });
-          setResults({ tables: newTables, stats: queryResults.executionStats });
-        }
-      }).catch((e) => {
-        let error = e;
-        if (Array.isArray(error) && error.length) {
-          error = error[0];
-        }
-
-        setResults({ tables: {}, error });
-        const { errType } = (error as VizierQueryError);
-        errMsg = error.message;
-        if (errType === 'server' || !errType) {
+    try {
+      // Make sure vis has proper references.
+      if (execArgs.vis) {
+        // validateVis errors out on null vis arguments.
+        const visErr = validateVis(execArgs.vis, execArgs.args);
+        if (visErr) {
           showSnackbar({
-            message: errMsg,
-            action: () => execute(execArgs),
-            actionTitle: 'retry',
+            message: 'Invalid Vis spec',
             autoHideDuration: 5000,
           });
-        } else {
-          // This appears as an error in the canvas now.
+          return;
         }
-      })
-      .finally(() => {
-        setLoading(false);
-        analytics.track('Query Execution', {
-          status: errMsg ? 'success' : 'failed',
-          query: execArgs.pxl,
-          queryID: queryId,
-          error: errMsg,
-          title: execArgs.id,
-        });
+      }
+    } catch (error) {
+      showSnackbar({
+        message: error,
+        autoHideDuration: 5000,
       });
+      return;
+    }
+
+    const onData = (queryResults) => {
+      // If the query is not streaming, we should only set the results when the query has completed.
+      // This is to prevent unnecessary re-renders of graphs. This should be fixed when we refactor all of
+      // our widgets to properly handle streaming queries.
+      if (queryResults && (isStreaming || queryResults.executionStats)) {
+        const newTables = {};
+        ({ queryId } = queryResults);
+        queryResults.tables.forEach((table) => {
+          newTables[table.name] = table;
+        });
+        setResults({ tables: newTables, stats: queryResults.executionStats });
+        if (!loaded) {
+          setLoading(false);
+          loaded = true;
+        }
+      }
+    };
+
+    const onError = (e) => {
+      let error = e;
+      if (Array.isArray(error) && error.length) {
+        error = error[0];
+      }
+
+      setResults({ tables: {}, error });
+      const { errType } = (error as VizierQueryError);
+      errMsg = error.message;
+      if (errType === 'server' || !errType) {
+        showSnackbar({
+          message: errMsg,
+          action: () => execute(execArgs),
+          actionTitle: 'retry',
+          autoHideDuration: 5000,
+        });
+      }
+      if (!loaded) {
+        setLoading(false);
+        loaded = true;
+      }
+    };
+
+    if (mutation) {
+      const runMutation = async () => {
+        let numTries = 5;
+        let mutationComplete = false;
+        let cancelled = false;
+        let queryCancelFn = null;
+
+        const onMutationData = (queryResults) => {
+          if (cancelled) {
+            return;
+          }
+
+          if (queryResults.mutationInfo
+            && queryResults.mutationInfo.getStatus().getCode() === GRPCStatusCode.Unavailable) {
+            setResults({ tables: {}, mutationInfo: queryResults.mutationInfo });
+          } else {
+            onData(queryResults);
+            mutationComplete = true;
+          }
+        };
+
+        const onMutationError = (error) => {
+          if (cancelled) {
+            return;
+          }
+
+          numTries = 0;
+          mutationComplete = true;
+          onError(error);
+        };
+
+        while (numTries > 0) {
+          if (queryCancelFn != null) {
+            queryCancelFn()();
+          }
+          const newQueryCancelFn = client.executeScript(
+            execArgs.pxl,
+            getQueryFuncs(execArgs.vis, execArgs.args),
+            mutation,
+            onMutationData,
+            onMutationError,
+          );
+          queryCancelFn = newQueryCancelFn;
+          setCancelExecution(newQueryCancelFn);
+
+          if (mutationComplete) {
+            return;
+          }
+
+          // eslint-disable-next-line
+          const cancel = await Promise.race([
+            new Promise((resolve) => setTimeout(resolve, mutationRetryMs)),
+            new Promise((resolve) => {
+              const cancelFn = () => (() => {
+                newQueryCancelFn();
+                resolve(true);
+              });
+              setCancelExecution(cancelFn);
+            }),
+          ]);
+          if (cancel) {
+            cancelled = true;
+            break;
+          }
+
+          numTries--;
+        }
+        if (!loaded) {
+          setLoading(false);
+          loaded = true;
+        }
+        if (!mutationComplete && !cancelled) {
+          setResults({ tables: {}, error: new VizierQueryError('execution', 'Deploying tracepoints failed') });
+        }
+      };
+      runMutation();
+    } else {
+      const cancelFn = client.executeScript(
+        execArgs.pxl,
+        getQueryFuncs(execArgs.vis, execArgs.args),
+        mutation,
+        onData,
+        onError,
+      );
+      setCancelExecution(cancelFn);
+    }
   };
 
   // Parses the editor and returns an ExecuteArguments object.

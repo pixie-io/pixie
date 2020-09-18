@@ -224,12 +224,8 @@ const InternalDataTable = ({
     columns.forEach((col) => {
       let w = col.width || null;
       if (!w) {
-        const rng = seedrandom(1234);
-        for (let i = 0; i < sampleCount; i++) {
-          const rowIndex = Math.floor(rng() * Math.floor(rowCount));
-          const row = rowGetter(rowIndex);
-          w = Math.min(Math.max(w, String(row[col.dataKey]).length), MAX_COL_CHAR_WIDTH);
-        }
+        const row = rowGetter(0);
+        w = Math.min(Math.max(w, String(row[col.dataKey]).length), MAX_COL_CHAR_WIDTH);
       }
 
       // We add 2 to the header width to accommodate type/sort icons.
@@ -270,11 +266,13 @@ const InternalDataTable = ({
   const onSortWrapper = React.useCallback(({ sortBy, sortDirection }) => {
     if (sortBy) {
       const nextSortState = { dataKey: sortBy, direction: sortDirection };
-      setSortState(nextSortState);
+      if (sortState.dataKey !== sortBy || sortState.direction !== sortDirection) {
+        setSortState(nextSortState);
+      }
       onSort(nextSortState);
       tableRef.current.forceUpdateGrid();
     }
-  }, [onSort]);
+  }, [onSort, sortState]);
 
   React.useEffect(() => {
     let sortKey;
@@ -287,8 +285,10 @@ const InternalDataTable = ({
     }
     if (sortKey && !sortState.dataKey) {
       onSortWrapper({ sortBy: sortKey, sortDirection: SortDirection.ASC });
+    } else {
+      onSortWrapper({ sortBy: sortKey, sortDirection: sortState.direction });
     }
-  }, [columns, onSortWrapper]);
+  }, [columns, onSortWrapper, sortState]);
 
   const onRowClickWrapper = React.useCallback(({ index }) => {
     if (expandable) {

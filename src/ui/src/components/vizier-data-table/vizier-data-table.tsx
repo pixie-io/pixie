@@ -75,6 +75,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
   const [columnDisplayInfos, setColumnDisplayInfos] = React.useState<Map<string, ColumnDisplayInfo>>(
     new Map<string, ColumnDisplayInfo>());
 
+  const dataLength = table.data ? table.data.length : 0;
   React.useEffect(() => {
     // Map containing the display information for the column.
     const displayInfos = new Map<string, ColumnDisplayInfo>();
@@ -98,7 +99,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
       setRows(rawRows);
     }
     setColumnDisplayInfos(displayInfos);
-  }, [table.relation, table.data, clusterName, prettyRender]);
+  }, [table, dataLength, clusterName, prettyRender]);
 
   const dataTableCols = React.useMemo((): ColumnProps[] => (
     [...columnDisplayInfos.values()].map((displayInfo: ColumnDisplayInfo) => {
@@ -122,7 +123,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
       }
       return colProps;
     })
-  ), [rows, columnDisplayInfos, clusterName, prettyRender]);
+  ), [columnDisplayInfos, clusterName, prettyRender, propagatedArgs, rows]);
 
   const rowGetter = React.useCallback(
     (i) => rows[i],

@@ -106,99 +106,93 @@ export class VizierGRPCClient {
 
   // Use a generator to produce the VizierQueryFunc to remove the dependency on vis.tsx.
   // funcsGenerator should correspond to getQueryFuncs in vis.tsx.
-  executeScript(script: string, funcs: VizierQueryFunc[], mutation: boolean): Promise<VizierQueryResult> {
+  executeScript(script: string, funcs: VizierQueryFunc[], mutation: boolean, onData, onError) {
     const headers = {
       ...(this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` }),
     };
-    return new Promise((resolve, reject) => {
-      let req: ExecuteScriptRequest;
-      try {
-        req = this.buildRequest(script, funcs, mutation);
-      } catch (err) {
-        reject(err);
-        return;
+
+    let req: ExecuteScriptRequest;
+    try {
+      req = this.buildRequest(script, funcs, mutation);
+    } catch (err) {
+      onError(err);
+      return () => {};
+    }
+
+    const call = this.client.executeScript(req, headers);
+    const tablesMap = new Map<string, Table>();
+    const results: VizierQueryResult = { tables: [] };
+    let resolved = false;
+
+    call.on('data', (resp) => {
+      if (!results.queryId) {
+        results.queryId = resp.getQueryId();
       }
 
-      const call = this.client.executeScript(req, headers);
-      const tablesMap = new Map<string, Table>();
-      const results: VizierQueryResult = { tables: [] };
-      let resolved = false;
-
-      call.on('data', (resp) => {
-        if (!results.queryId) {
-          results.queryId = resp.getQueryId();
+      if (resp.hasStatus()) {
+        const status = resp.getStatus();
+        const errList = status.getErrorDetailsList();
+        if (errList.length > 0) {
+          onError(new VizierQueryError('execution', getExecutionErrors(errList), status));
+          return;
         }
-
-        if (resp.hasStatus()) {
-          const status = resp.getStatus();
-          const errList = status.getErrorDetailsList();
-          if (errList.length > 0) {
-            reject(new VizierQueryError('execution', getExecutionErrors(errList), status));
-            return;
-          }
-          const errMsg = status.getMessage();
-          if (errMsg) {
-            reject(new VizierQueryError('execution', errMsg, status));
-            return;
-          }
-
-          results.status = status;
-          resolve(results);
-          resolved = true;
+        const errMsg = status.getMessage();
+        if (errMsg) {
+          onError(new VizierQueryError('execution', errMsg, status));
           return;
         }
 
-        if (resp.hasMetaData()) {
-          const relation = resp.getMetaData().getRelation();
-          const id = resp.getMetaData().getId();
-          const name = resp.getMetaData().getName();
-          tablesMap.set(id, {
-            relation, id, name, data: [],
-          });
-        } else if (resp.hasMutationInfo()) {
-          results.mutationInfo = resp.getMutationInfo();
-        } else if (resp.hasData()) {
-          const data = resp.getData();
-          if (data.hasBatch()) {
-            const batch = data.getBatch();
-            const id = batch.getTableId();
-            const table = tablesMap.get(id);
-            if (!table) {
-              throw new Error('table does not exisit');
-            }
-            // Append the data.
-            table.data.push(batch);
+        results.status = status;
+        onData(results);
+        resolved = true;
+        return;
+      }
 
-            // The table is complete.
-            if (batch.getEos()) {
-              results.tables.push(table);
-              tablesMap.delete(id);
-            }
-          } else if (data.hasExecutionStats()) {
-            // The query finished executing, and all the data has been received.
-            results.executionStats = data.getExecutionStats();
-            resolve(results);
-            resolved = true;
-          }
+      if (resp.hasMetaData()) {
+        const relation = resp.getMetaData().getRelation();
+        const id = resp.getMetaData().getId();
+        const name = resp.getMetaData().getName();
+        tablesMap.set(id, {
+          relation, id, name, data: [],
+        });
+        const table = tablesMap.get(id);
+        results.tables.push(table);
+      } else if (resp.hasMutationInfo()) {
+        results.mutationInfo = resp.getMutationInfo();
+      } else if (resp.hasData()) {
+        const data = resp.getData();
+        if (data.hasBatch()) {
+          const batch = data.getBatch();
+          const id = batch.getTableId();
+          const table = tablesMap.get(id);
+          table.data.push(batch);
+
+          // TODO: This resends all batches to onData. In the future, we will want this to only send
+          // the latest batch. This will require more extensive changes that require us to track the
+          // full set of batches elsewhere. For now, updating to a subscription/callback model gets a
+          // step closer to that point.
+          onData(results);
+        } else if (data.hasExecutionStats()) {
+          // The query finished executing, and all the data has been received.
+          results.executionStats = data.getExecutionStats();
+          onData(results);
+          resolved = true;
         }
-      });
+      }
+    });
 
-      call.on('end', () => {
-        if (!resolved) {
-          reject(new VizierQueryError('execution', 'Execution ended with incomplete results'));
-        }
-      });
+    call.on('end', () => {
+      if (!resolved) {
+        onError(new VizierQueryError('execution', 'Execution ended with incomplete results'));
+      }
+    });
 
-      call.on('error', (err) => {
-        reject(new VizierQueryError('server', err.message));
-      });
+    call.on('error', (err) => {
+      onError(new VizierQueryError('server', err.message));
+    });
 
-      setTimeout(() => {
-        if (!resolved) {
-          call.cancel();
-          reject(new VizierQueryError('execution', 'Execution timed out'));
-        }
-      }, EXECUTE_SCRIPT_TIMEOUT);
+    return () => (() => {
+      call.cancel();
     });
   }
 
