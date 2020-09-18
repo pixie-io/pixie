@@ -305,26 +305,28 @@ Status DynamicTraceConnector::AppendRecord(const Struct& st, uint32_t asid, std:
   StructDecoder struct_decoder(buf);
   DataTable::DynamicRecordBuilder r(data_table);
 
-  // TODO(yzhao): Come up more principled approach to process upid and ktime, such that explicit
-  // checks can be applied to avoid these fields being misused. Today this code is brittle because
-  // it is implicitly linked to the order generated in dwarvifier.cc.
-  PL_ASSIGN_OR_RETURN(uint32_t tgid, struct_decoder.ExtractField<uint32_t>());
-  PL_ASSIGN_OR_RETURN(uint64_t tgid_start_time, struct_decoder.ExtractField<uint64_t>());
-  PL_ASSIGN_OR_RETURN(uint64_t ktime_ns, struct_decoder.ExtractField<uint64_t>());
-
   int col_idx = 0;
+  for (int i = 0; i < st.fields_size(); ++i) {
+    auto& field = st.fields(i);
 
-  md::UPID upid(asid, tgid, tgid_start_time);
-  r.Append(col_idx++, types::UInt128Value(upid.value()));
+    if (field.name() == "time_") {
+      PL_ASSIGN_OR_RETURN(uint64_t ktime_ns, struct_decoder.ExtractField<uint64_t>());
+      int64_t time = ktime_ns + ClockRealTimeOffset();
+      r.Append(col_idx++, types::Time64NSValue(time));
+    } else if ((field.name() == "tgid_") && (i + 1 < st.fields_size()) &&
+               (st.fields(i + 1).name() == "tgid_start_time_")) {
+      // If we see "tgid_" and "tgid_start_time_" back-to-back, then we automatically create UPID.
+      PL_ASSIGN_OR_RETURN(uint32_t tgid, struct_decoder.ExtractField<uint32_t>());
+      PL_ASSIGN_OR_RETURN(uint64_t tgid_start_time, struct_decoder.ExtractField<uint64_t>());
+      md::UPID upid(asid, tgid, tgid_start_time);
+      r.Append(col_idx++, types::UInt128Value(upid.value()));
 
-  int64_t time = ktime_ns + ClockRealTimeOffset();
-  r.Append(col_idx++, types::Time64NSValue(time));
-
-  // Skip the first 3 fields which are tgid & tgid_start_time, which are combined into upid,
-  // and also time.
-  for (int i = 3; i < st.fields_size(); ++i) {
-    PL_RETURN_IF_ERROR(FillColumn(&struct_decoder, &r, col_idx++, st.fields(i).type(),
-                                  st.fields(i).blob_decoder()));
+      // Consume the extra tgid_start_time_ column.
+      ++i;
+    } else {
+      PL_RETURN_IF_ERROR(
+          FillColumn(&struct_decoder, &r, col_idx++, field.type(), field.blob_decoder()));
+    }
   }
 
   return Status::OK();

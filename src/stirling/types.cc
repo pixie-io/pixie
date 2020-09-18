@@ -86,8 +86,14 @@ std::vector<DataElement> CreateDataElements(
   elements.emplace_back("upid", "upid", types::DataType::UINT128, types::SemanticType::ST_NONE,
                         types::PatternType::UNSPECIFIED);
 
-  for (int i = 2; i < repeated_fields.size(); ++i) {
+  for (int i = 0; i < repeated_fields.size(); ++i) {
     const auto& field = repeated_fields[i];
+
+    if (field.name() == "tgid_" || field.name() == "tgid_start_time_") {
+      // We already automatically added the upid column.
+      // These will get merged into the UPID, so skip.
+      continue;
+    }
 
     types::DataType data_type;
 
@@ -99,7 +105,6 @@ std::vector<DataElement> CreateDataElements(
       data_type = iter->second;
     }
 
-    // TODO(oazizi): This is hacky. Fix.
     if (field.name() == "time_") {
       data_type = types::DataType::TIME64NS;
     }
