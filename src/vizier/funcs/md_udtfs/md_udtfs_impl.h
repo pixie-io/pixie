@@ -617,7 +617,17 @@ class GetTracepointStatus final : public carnot::udf::UDTF<GetTracepointStatus> 
     rw->Append<IndexOf("tracepoint_id")>(absl::MakeUint128(u.ab, u.cd));
     rw->Append<IndexOf("name")>(tracepoint_info.name());
     rw->Append<IndexOf("state")>(state);
-    rw->Append<IndexOf("status")>(tracepoint_info.status().msg());
+
+    rapidjson::Document statuses;
+    statuses.SetArray();
+    for (const auto& status : tracepoint_info.statuses()) {
+      statuses.PushBack(internal::StringRef(status.msg()), statuses.GetAllocator());
+    }
+    rapidjson::StringBuffer statuses_sb;
+    rapidjson::Writer<rapidjson::StringBuffer> statuses_writer(statuses_sb);
+    statuses.Accept(statuses_writer);
+    rw->Append<IndexOf("status")>(statuses_sb.GetString());
+
     rw->Append<IndexOf("output_tables")>(tables_sb.GetString());
 
     ++idx_;

@@ -376,9 +376,9 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 			tracepointState[i] = &metadatapb.GetTracepointInfoResponse_TracepointState{
 				ID:    req.IDs[i],
 				State: statuspb.UNKNOWN_STATE,
-				Status: &statuspb.Status{
+				Statuses: []*statuspb.Status{&statuspb.Status{
 					ErrCode: statuspb.NOT_FOUND,
-				},
+				}},
 			}
 			continue
 		}
@@ -389,7 +389,7 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 			return nil, err
 		}
 
-		state, status := getTracepointStateFromAgentTracepointStates(tracepointStates)
+		state, statuses := getTracepointStateFromAgentTracepointStates(tracepointStates)
 
 		schemas := make([]string, len(tracepoint.Tracepoint.Tracepoints))
 		for i, tracepoint := range tracepoint.Tracepoint.Tracepoints {
@@ -399,7 +399,7 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 		tracepointState[i] = &metadatapb.GetTracepointInfoResponse_TracepointState{
 			ID:            tracepoint.ID,
 			State:         state,
-			Status:        status,
+			Statuses:      statuses,
 			Name:          tracepoint.Name,
 			ExpectedState: tracepoint.ExpectedState,
 			SchemaNames:   schemas,
@@ -411,7 +411,7 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 	}, nil
 }
 
-func getTracepointStateFromAgentTracepointStates(agentStates []*storepb.AgentTracepointStatus) (statuspb.LifeCycleState, *statuspb.Status) {
+func getTracepointStateFromAgentTracepointStates(agentStates []*storepb.AgentTracepointStatus) (statuspb.LifeCycleState, []*statuspb.Status) {
 	if len(agentStates) == 0 {
 		return statuspb.PENDING_STATE, nil
 	}
@@ -420,12 +420,16 @@ func getTracepointStateFromAgentTracepointStates(agentStates []*storepb.AgentTra
 	numTerminated := 0
 	numPending := 0
 	numRunning := 0
+	statuses := make([]*statuspb.Status, 0)
 
 	for _, s := range agentStates {
 		if s.State == statuspb.TERMINATED_STATE {
 			numTerminated++
 		} else if s.State == statuspb.FAILED_STATE {
 			numFailed++
+			if s.Status.ErrCode != statuspb.FAILED_PRECONDITION && s.Status.ErrCode != statuspb.OK {
+				statuses = append(statuses, s.Status)
+			}
 		} else if s.State == statuspb.PENDING_STATE {
 			numPending++
 		} else if s.State == statuspb.RUNNING_STATE {
@@ -434,22 +438,25 @@ func getTracepointStateFromAgentTracepointStates(agentStates []*storepb.AgentTra
 	}
 
 	if numTerminated > 0 { // If any agentTracepoints are terminated, then we consider the tracepoint in an terminated state.
-		return statuspb.TERMINATED_STATE, nil
+		return statuspb.TERMINATED_STATE, []*statuspb.Status{}
 	}
 
 	if numRunning > 0 { // If a single agentTracepoint is running, then we consider the overall tracepoint as healthy.
-		return statuspb.RUNNING_STATE, nil
+		return statuspb.RUNNING_STATE, []*statuspb.Status{}
 	}
 
 	if numPending > 0 { // If no agentTracepoints are running, but some are in a pending state, the tracepoint is pending.
-		return statuspb.PENDING_STATE, nil
+		return statuspb.PENDING_STATE, []*statuspb.Status{}
 	}
 
 	if numFailed > 0 { // If there are no terminated/running/pending tracepoints, then the tracepoint is failed.
-		return statuspb.FAILED_STATE, agentStates[0].Status // Just use the status from the first failed agent for now.
+		if len(statuses) == 0 {
+			return statuspb.FAILED_STATE, []*statuspb.Status{agentStates[0].Status} // If there are no non FAILED_PRECONDITION statuses, just use the error from the first agent.
+		}
+		return statuspb.FAILED_STATE, statuses
 	}
 
-	return statuspb.UNKNOWN_STATE, nil
+	return statuspb.UNKNOWN_STATE, []*statuspb.Status{}
 }
 
 // RemoveTracepoint is a request to evict the given tracepoint on all agents.

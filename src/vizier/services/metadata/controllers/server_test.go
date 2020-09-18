@@ -472,6 +472,9 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			agentStates: []*storepb.AgentTracepointStatus{
 				&storepb.AgentTracepointStatus{
 					State: statuspb.FAILED_STATE,
+					Status: &statuspb.Status{
+						ErrCode: statuspb.NOT_FOUND,
+					},
 				},
 				&storepb.AgentTracepointStatus{
 					State: statuspb.RUNNING_STATE,
@@ -509,6 +512,9 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			agentStates: []*storepb.AgentTracepointStatus{
 				&storepb.AgentTracepointStatus{
 					State: statuspb.FAILED_STATE,
+					Status: &statuspb.Status{
+						ErrCode: statuspb.NOT_FOUND,
+					},
 				},
 				&storepb.AgentTracepointStatus{
 					State: statuspb.PENDING_STATE,
@@ -531,6 +537,9 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 				},
 				&storepb.AgentTracepointStatus{
 					State: statuspb.FAILED_STATE,
+					Status: &statuspb.Status{
+						ErrCode: statuspb.RESOURCE_UNAVAILABLE,
+					},
 				},
 			},
 			tracepointExists: true,
@@ -542,6 +551,9 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			agentStates: []*storepb.AgentTracepointStatus{
 				&storepb.AgentTracepointStatus{
 					State: statuspb.FAILED_STATE,
+					Status: &statuspb.Status{
+						ErrCode: statuspb.RESOURCE_UNAVAILABLE,
+					},
 				},
 				&storepb.AgentTracepointStatus{
 					State: statuspb.PENDING_STATE,
@@ -622,7 +634,11 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			assert.Equal(t, 1, len(resp.Tracepoints))
 			assert.Equal(t, utils.ProtoFromUUID(&tID), resp.Tracepoints[0].ID)
 			assert.Equal(t, test.expectedState, resp.Tracepoints[0].State)
-			assert.Equal(t, test.expectedStatus, resp.Tracepoints[0].Status)
+			var status *statuspb.Status
+			if len(resp.Tracepoints[0].Statuses) > 0 {
+				status = resp.Tracepoints[0].Statuses[0]
+			}
+			assert.Equal(t, test.expectedStatus, status)
 			if test.tracepointExists {
 				assert.Equal(t, statuspb.RUNNING_STATE, resp.Tracepoints[0].ExpectedState)
 				assert.Equal(t, []string{"table1", "test"}, resp.Tracepoints[0].SchemaNames)

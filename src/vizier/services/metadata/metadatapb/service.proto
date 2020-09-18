@@ -146,7 +146,7 @@ message GetTracepointInfoResponse {
         // The state of the tracepoint.
         pl.statuspb.LifeCycleState state = 2;
         // The status of the tracepoint, specified if the state of the tracepoint is not healthy.
-        pl.statuspb.Status status = 3;
+        repeated pl.statuspb.Status statuses = 3;
         string name = 4;
         // The desired state for the tracepoint. This can be used to determine whether
         // the tracepoint is just starting up or in the process of terminating.
