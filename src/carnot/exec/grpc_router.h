@@ -86,6 +86,8 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
 
   Status MarkResultStreamInitiated(sole::uuid query_id, int64_t source_id);
   Status MarkResultStreamClosed(sole::uuid query_id, int64_t source_id);
+  void RegisterResultStreamContext(sole::uuid query_id, ::grpc::ServerContext* context);
+  void MarkResultStreamContextAsComplete(sole::uuid query_id, ::grpc::ServerContext* context);
 
   /**
    * SourceNodeTracker is responsible for tracking a single source node and the backlog of messages
@@ -111,6 +113,7 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
     std::function<void()> restart_execution_func_;
     // The set of agents we've seen for the query.
     absl::flat_hash_set<sole::uuid> seen_agents;
+    absl::flat_hash_set<::grpc::ServerContext*> active_agent_contexts;
     // The execution stats for agents that are clients to this service.
     std::vector<queryresultspb::AgentExecutionStats> agent_exec_stats;
   };

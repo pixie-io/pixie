@@ -34,7 +34,7 @@ class GRPCSinkNode : public SinkNode {
                          size_t parent_index) override;
 
  private:
-  Status CloseWriter();
+  Status CloseWriter(ExecState* exec_state);
 
   bool sent_eos_ = false;
 

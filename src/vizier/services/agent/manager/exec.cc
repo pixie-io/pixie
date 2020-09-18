@@ -35,8 +35,14 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
 
     auto s = carnot_->ExecutePlan(req_.plan(), query_id_, req_.analyze());
     if (!s.ok()) {
-      LOG(ERROR) << absl::Substitute("Query failed, reason: $0, plan: $1", s.ToString(),
-                                     req_.plan().DebugString());
+      if (s.code() == pl::statuspb::Code::CANCELLED) {
+        LOG(WARNING) << absl::Substitute("Cancelled query: $0", query_id_.str());
+      } else {
+        LOG(ERROR) << absl::Substitute("Query $0 failed, reason: $1, plan: $2", query_id_.str(),
+                                       s.ToString(), req_.plan().DebugString());
+      }
+    } else {
+      LOG(INFO) << absl::Substitute("Completed query: id=$0", query_id_.str());
     }
   }
 

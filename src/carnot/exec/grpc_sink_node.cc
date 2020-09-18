@@ -84,27 +84,29 @@ Status GRPCSinkNode::OpenImpl(ExecState* exec_state) {
   return Status::OK();
 }
 
-Status GRPCSinkNode::CloseWriter() {
+Status GRPCSinkNode::CloseWriter(ExecState* exec_state) {
   if (writer_ == nullptr) {
     return Status::OK();
   }
   writer_->WritesDone();
   auto s = writer_->Finish();
   if (!s.ok()) {
-    LOG(ERROR) << absl::Substitute("GRPCSinkNode $0: Error calling Finish on stream, message: $1",
-                                   plan_node_->id(), s.error_message());
+    LOG(ERROR) << absl::Substitute(
+        "GRPCSinkNode $0 in query $1: Error calling Finish on stream, message: $2",
+        plan_node_->id(), exec_state->query_id().str(), s.error_message());
   }
   return Status::OK();
 }
 
-Status GRPCSinkNode::CloseImpl(ExecState*) {
+Status GRPCSinkNode::CloseImpl(ExecState* exec_state) {
   if (sent_eos_) {
     return Status::OK();
   }
 
   if (writer_ != nullptr) {
-    PL_RETURN_IF_ERROR(CloseWriter());
-    return error::Internal("Closing GRPCSinkNode $0 without receiving EOS", plan_node_->id());
+    LOG(INFO) << absl::Substitute("Closing GRPCSinkNode $0 in query $1 before receiving EOS",
+                                  plan_node_->id(), exec_state->query_id().str());
+    PL_RETURN_IF_ERROR(CloseWriter(exec_state));
   }
 
   return Status::OK();
@@ -118,8 +120,9 @@ Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, 
 
   if (!writer_->Write(req)) {
     return error::Cancelled(
-        "GRPCSinkNode $0 could not write result to address: $1, stream closed by server",
-        plan_node_->id(), plan_node_->address());
+        "GRPCSinkNode $0 of query $1 could not write result to address: $2, stream closed by "
+        "server",
+        exec_state->query_id().str(), plan_node_->id(), plan_node_->address());
   }
 
   if (!rb.eos()) {
@@ -127,7 +130,7 @@ Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, 
   }
 
   sent_eos_ = true;
-  PL_RETURN_IF_ERROR(CloseWriter());
+  PL_RETURN_IF_ERROR(CloseWriter(exec_state));
 
   return response_.success()
              ? Status::OK()

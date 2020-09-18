@@ -78,6 +78,24 @@ Status GRPCRouter::MarkResultStreamClosed(sole::uuid query_id, int64_t source_id
   return Status::OK();
 }
 
+// For all inbound result streams, we want to register the context of the stream,
+// so that if the query gets cancelled, then we can make sure to also cancel the corresponding
+// TransferResultChunk streams for that query.
+void GRPCRouter::RegisterResultStreamContext(sole::uuid query_id, ::grpc::ServerContext* context) {
+  absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);
+  auto& query_map = query_node_map_[query_id];
+  query_map.active_agent_contexts.insert(context);
+}
+
+// When a result stream is complete, we remove it from the list of stream contexts to
+// cancel in the event that the query is cancelled.
+void GRPCRouter::MarkResultStreamContextAsComplete(sole::uuid query_id,
+                                                   ::grpc::ServerContext* context) {
+  absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);
+  auto& query_map = query_node_map_[query_id];
+  query_map.active_agent_contexts.erase(context);
+}
+
 ::grpc::Status GRPCRouter::TransferResultChunk(
     ::grpc::ServerContext* context,
     ::grpc::ServerReader<::pl::carnotpb::TransferResultChunkRequest>* reader,
@@ -95,8 +113,15 @@ Status GRPCRouter::MarkResultStreamClosed(sole::uuid query_id, int64_t source_id
   int64_t source_node_id = 0;
   sole::uuid query_id;
 
+  ::grpc::Status result_status = ::grpc::Status::OK;
+  bool registered_server_context = false;
+
   while (reader->Read(rb.get())) {
     query_id = pl::ParseUUID(rb->query_id()).ConsumeValueOrDie();
+    if (!registered_server_context) {
+      RegisterResultStreamContext(query_id, context);
+      registered_server_context = true;
+    }
 
     if (rb->has_execution_and_timing_info()) {
       std::vector<queryresultspb::AgentExecutionStats> stats;
@@ -105,44 +130,58 @@ Status GRPCRouter::MarkResultStreamClosed(sole::uuid query_id, int64_t source_id
       }
       auto s = RecordStats(query_id, stats);
       if (!s.ok()) {
-        return ::grpc::Status(grpc::StatusCode::INTERNAL,
-                              absl::Substitute("Failed to record stats w/ err: $0", s.msg()));
+        result_status =
+            ::grpc::Status(grpc::StatusCode::INTERNAL,
+                           absl::Substitute("Failed to record stats w/ err: $0", s.msg()));
+        break;
       }
     } else if (rb->has_query_result() && rb->query_result().has_row_batch()) {
       auto s = EnqueueRowBatch(query_id, std::move(rb));
       if (!s.ok()) {
-        return ::grpc::Status(grpc::StatusCode::INTERNAL, "failed to enqueue batch");
+        result_status = ::grpc::Status(grpc::StatusCode::INTERNAL, "failed to enqueue batch");
+        break;
       }
     } else if (rb->has_query_result() && rb->query_result().initiate_result_stream()) {
       if (rb->query_result().destination_case() !=
           carnotpb::TransferResultChunkRequest_SinkResult::DestinationCase::kGrpcSourceId) {
-        return ::grpc::Status(grpc::StatusCode::INTERNAL,
-                              "expected result stream to have grpc source ID");
+        result_status = ::grpc::Status(grpc::StatusCode::INTERNAL,
+                                       "expected result stream to have grpc source ID");
+        break;
       }
 
       stream_has_query_results = true;
       source_node_id = rb->query_result().grpc_source_id();
       auto s = MarkResultStreamInitiated(query_id, source_node_id);
       if (!s.ok()) {
-        return ::grpc::Status(grpc::StatusCode::INTERNAL, s.msg());
+        result_status = ::grpc::Status(grpc::StatusCode::INTERNAL, s.msg());
+        break;
       }
 
     } else {
-      return ::grpc::Status(grpc::StatusCode::INTERNAL,
-                            "expected TransferResultChunkRequest to have either query_result "
-                            "or execution_and_timing_info set, received neither");
+      result_status =
+          ::grpc::Status(grpc::StatusCode::INTERNAL,
+                         "expected TransferResultChunkRequest to have either query_result "
+                         "or execution_and_timing_info set, received neither");
+      break;
     }
 
     rb = std::make_unique<carnotpb::TransferResultChunkRequest>();
   }
 
+  if (!result_status.ok()) {
+    MarkResultStreamContextAsComplete(query_id, context);
+    return result_status;
+  }
+
   if (stream_has_query_results) {
     auto s = MarkResultStreamClosed(query_id, source_node_id);
     if (!s.ok()) {
+      MarkResultStreamContextAsComplete(query_id, context);
       return ::grpc::Status(grpc::StatusCode::INTERNAL, s.msg());
     }
   }
 
+  MarkResultStreamContextAsComplete(query_id, context);
   response->set_success(true);
   return ::grpc::Status::OK;
 }
@@ -237,6 +276,10 @@ void GRPCRouter::DeleteQuery(sole::uuid query_id) {
     VLOG(1) << "No such query when deleting: " << query_id.str()
             << "(this is expected if no grpc sources are present)";
     return;
+  }
+  // For any active input streams for this query, mark their context as cancelled.
+  for (auto ctx : query_node_map_[query_id].active_agent_contexts) {
+    ctx->TryCancel();
   }
   query_node_map_.erase(it);
 }
