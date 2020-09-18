@@ -3,7 +3,7 @@
   "globalFuncs": [],
   "widgets": [
     {
-      "name": "Namespace Service Graph",
+      "name": "Net Flow Graph",
       "position": {
         "x": 0,
         "y": 0,
@@ -11,14 +11,14 @@
         "h": 4
       },
       "func": {
-        "name": "talk_to_ips",
+        "name": "net_flow_graph",
         "args": []
       },
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.Graph",
         "adjacencyList": {
-          "fromColumn": "pod",
-          "toColumn": "ns"
+          "fromColumn": "from_entity",
+          "toColumn": "to_entity"
         }
       }
     },
@@ -31,7 +31,7 @@
         "h": 4
       },
       "func": {
-        "name": "talk_to_ips",
+        "name": "net_flow_graph",
         "args": []
       },
       "displaySpec": {

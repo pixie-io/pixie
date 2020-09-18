@@ -7,25 +7,24 @@ Calculates total bandwidth for the lifetime of the connection.
 '''
 import px
 
-
-def talk_to_ips():
+# TODO mv to net_flow_graph.pxl
+def net_flow_graph(start_time: str, ips: str, grouping_entity: str):
     df = px.DataFrame('conn_stats')
     # Change the IP addresses for your remote endpoints.
+    # TODO split ips into a list.
     df = df[px.equals_any(df.remote_addr, ['10.16.0.1'])]
-    # Insert the pod name.
-    df.pod = df.ctx['pod']
 
-    # Uncomment to show namespace in place of pod.
-    # df.pod = px.pod_name_to_namespace(df.pod)
+    # Add the grouping entity column.
+    df['from_entity'] = df.ctx[grouping_entity]
 
     # Insert the cmdline.
     df.cmdline = df.ctx['cmd']
     # Aggregate the connections.
-    df = df.groupby(['pod', 'upid', 'cmdline', 'remote_addr']).agg(
+    df = df.groupby(['from_entity', 'upid', 'cmdline', 'remote_addr']).agg(
         bytes_sent=('bytes_sent', px.max),
         bytes_recv=('bytes_recv', px.max),
     )
-    df = df[df.pod != '']
+    df = df[df['from_entity'] != '']
     # Look up the names of the remote address.
-    df.ns = px.nslookup(df.remote_addr)
+    df.to_entity = px.nslookup(df.remote_addr)
     return df.drop(['remote_addr'])
