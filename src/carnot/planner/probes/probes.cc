@@ -137,7 +137,7 @@ Status TracepointDeployment::AddTracepoint(TracepointIR* tracepoint_ir,
 
   stirling::dynamic_tracing::ir::logical::TracepointDeployment::Tracepoint tracepoint_pb;
   PL_CHECK_OK(tracepoint_ir->ToProto(tracepoint_pb.mutable_program(), probe_name));
-  tracepoint_pb.set_output_name(output_name);
+  tracepoint_pb.set_table_name(output_name);
   tracepoints_.push_back(tracepoint_pb);
 
   auto output = tracepoint_ir->output();

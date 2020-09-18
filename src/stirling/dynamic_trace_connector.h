@@ -17,21 +17,7 @@ class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapp
   ~DynamicTraceConnector() override = default;
 
   static StatusOr<std::unique_ptr<SourceConnector>> Create(
-      std::string_view name, dynamic_tracing::ir::logical::TracepointDeployment* program) {
-    PL_ASSIGN_OR_RETURN(dynamic_tracing::BCCProgram bcc_program,
-                        dynamic_tracing::CompileProgram(program));
-
-    LOG(INFO) << "BCCProgram:\n" << bcc_program.ToString();
-
-    if (bcc_program.perf_buffer_specs.size() != 1) {
-      return error::Internal("Only a single output table is allowed for now.");
-    }
-
-    const auto& output = bcc_program.perf_buffer_specs[0];
-
-    return std::unique_ptr<SourceConnector>(new DynamicTraceConnector(
-        name, DynamicDataTableSchema::Create(output), std::move(bcc_program)));
-  }
+      std::string_view name, dynamic_tracing::ir::logical::TracepointDeployment* program);
 
   // Accepts a piece of data from the perf buffer.
   void AcceptDataEvents(std::string data) { data_items_.push_back(std::move(data)); }

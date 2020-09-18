@@ -194,30 +194,26 @@ message TracepointDeployment {
   // the tracepoint will be deleted.
   google.protobuf.Duration ttl = 2 [ (gogoproto.customname) = "TTL" ];
 
-  // deployment_spec are tracepoints are for application tracepoint.
-
   // The target processes of this deployment.
-  //
-  // Right now this only applies to application tracepoint, but not bpftrace.
-  // It is possible to support bpftrace for uprobe.
+  // Right now this only applies to PXL application tracepoints.
+  // May become applicable to bpftrace when we support bpftrace uprobes.
   shared.DeploymentSpec deployment_spec = 3;
 
-  // Describes a Tracepoint with a configurable output (table) name.
+  // Describes a Tracepoint with a output table name.
   message Tracepoint {
     // The name of the table to hold the output data.
-    string output_name = 1;
+    string table_name = 1;
 
-    // The actual logical operations performed by this Tracepoint.
+    // A native PXL tracepoint specification.
     TracepointSpec program = 2;
+
+    // This applies to bpftrace. Note that only one bpftrace program is allowed.
+    BPFTrace bpftrace = 5;
+
+    // It's an error to have both TracepointSpec program and bpftrace specified.
+    // TODO(yzhao): Move tracepoints and bpftrace to be options in an oneof field.
+    // This is not done at the beginning to minimize the work for supporting bpftrace.
   }
 
   repeated Tracepoint tracepoints = 4;
-
-  // This applies to bpftrace. Note that only one bpftrace program is allowed.
-  //
-  // It's an error to have both tracepoints/deployment_spec and bpftrace specified.
-  //
-  // TODO(yzhao): Move tracepoints and bpftrace to be options in an oneof field.
-  // This is not done at the beginning to minimize the work for supporting bpftrace.
-  BPFTrace bpftrace = 5;
 }

@@ -424,7 +424,7 @@ deployment_spec {
   }
 }
 tracepoints {
-  output_name: "http_return_table"
+  table_name: "http_return_table"
   program {
     outputs {
       name: "http_return_table"

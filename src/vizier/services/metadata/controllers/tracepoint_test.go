@@ -37,7 +37,7 @@ func TestCreateTracepoint(t *testing.T) {
 			newTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
 					&logicalpb.TracepointDeployment_Tracepoint{
-						OutputName: "table1",
+						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
 								&logicalpb.Output{
@@ -56,7 +56,7 @@ func TestCreateTracepoint(t *testing.T) {
 			originalTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
 					&logicalpb.TracepointDeployment_Tracepoint{
-						OutputName: "table1",
+						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
 								&logicalpb.Output{
@@ -72,7 +72,7 @@ func TestCreateTracepoint(t *testing.T) {
 			newTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
 					&logicalpb.TracepointDeployment_Tracepoint{
-						OutputName: "table1",
+						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
 								&logicalpb.Output{
@@ -91,7 +91,7 @@ func TestCreateTracepoint(t *testing.T) {
 			originalTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
 					&logicalpb.TracepointDeployment_Tracepoint{
-						OutputName: "table2",
+						TableName: "table2",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
 								&logicalpb.Output{
@@ -102,7 +102,7 @@ func TestCreateTracepoint(t *testing.T) {
 						},
 					},
 					&logicalpb.TracepointDeployment_Tracepoint{
-						OutputName: "table1",
+						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
 								&logicalpb.Output{
@@ -118,7 +118,7 @@ func TestCreateTracepoint(t *testing.T) {
 			newTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
 					&logicalpb.TracepointDeployment_Tracepoint{
-						OutputName: "table1",
+						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
 								&logicalpb.Output{
@@ -137,7 +137,7 @@ func TestCreateTracepoint(t *testing.T) {
 			originalTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
 					&logicalpb.TracepointDeployment_Tracepoint{
-						OutputName: "table1",
+						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
 								&logicalpb.Output{
@@ -153,7 +153,7 @@ func TestCreateTracepoint(t *testing.T) {
 			newTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
 					&logicalpb.TracepointDeployment_Tracepoint{
-						OutputName: "table1",
+						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
 								&logicalpb.Output{
@@ -173,7 +173,7 @@ func TestCreateTracepoint(t *testing.T) {
 			originalTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
 					&logicalpb.TracepointDeployment_Tracepoint{
-						OutputName: "table1",
+						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
 								&logicalpb.Output{
@@ -191,7 +191,7 @@ func TestCreateTracepoint(t *testing.T) {
 			newTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
 					&logicalpb.TracepointDeployment_Tracepoint{
-						OutputName: "table1",
+						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
 								&logicalpb.Output{
@@ -212,7 +212,7 @@ func TestCreateTracepoint(t *testing.T) {
 			originalTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
 					&logicalpb.TracepointDeployment_Tracepoint{
-						OutputName: "table1",
+						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
 								&logicalpb.Output{
@@ -230,7 +230,7 @@ func TestCreateTracepoint(t *testing.T) {
 			newTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
 					&logicalpb.TracepointDeployment_Tracepoint{
-						OutputName: "table1",
+						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
 								&logicalpb.Output{
@@ -433,10 +433,10 @@ func TestRegisterTracepoint(t *testing.T) {
 	program := &logicalpb.TracepointDeployment{
 		Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
 			&logicalpb.TracepointDeployment_Tracepoint{
-				OutputName: "test",
+				TableName: "test",
 			},
 			&logicalpb.TracepointDeployment_Tracepoint{
-				OutputName: "anotherTracepoint",
+				TableName: "anotherTracepoint",
 			},
 		},
 	}

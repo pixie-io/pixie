@@ -200,10 +200,13 @@ class DynamicDataTableSchema {
   DynamicDataTableSchema(std::string_view name, std::vector<DataElement> elements,
                          std::unique_ptr<dynamic_tracing::ir::physical::Struct> output_struct,
                          std::unique_ptr<dynamic_tracing::ir::logical::BPFTrace> bpftrace)
-      : elements_(std::move(elements)),
-        table_schema_(name, elements_),
+      : name_(name),
+        elements_(std::move(elements)),
+        table_schema_(name_, elements_),
         output_struct_(std::move(output_struct)),
         bpftrace_(std::move(bpftrace)) {}
+
+  std::string name_;
 
   // Keep a copy of the passed elements, because table_schema_ has views into this data structure.
   std::vector<DataElement> elements_;

@@ -12,13 +12,12 @@ namespace pl {
 namespace stirling {
 
 std::unique_ptr<SourceConnector> DynamicBPFTraceConnector::Create(
-    std::string_view source_name, const dynamic_tracing::ir::logical::BPFTrace& bpftrace) {
-  // TODO(oazizi): Name should come from the table name specified in the TracepointDeployment
-  //               message. Fix after adjusting the proto files accordingly.
+    std::string_view source_name,
+    const dynamic_tracing::ir::logical::TracepointDeployment::Tracepoint& tracepoint) {
   std::unique_ptr<DynamicDataTableSchema> table_schema =
-      DynamicDataTableSchema::Create(absl::StrCat(source_name, "_output"), bpftrace);
-  return std::unique_ptr<SourceConnector>(
-      new DynamicBPFTraceConnector(source_name, std::move(table_schema), bpftrace.program()));
+      DynamicDataTableSchema::Create(tracepoint.table_name(), tracepoint.bpftrace());
+  return std::unique_ptr<SourceConnector>(new DynamicBPFTraceConnector(
+      source_name, std::move(table_schema), tracepoint.bpftrace().program()));
 }
 
 DynamicBPFTraceConnector::DynamicBPFTraceConnector(

@@ -184,7 +184,7 @@ StatusOr<ir::logical::TracepointDeployment> TransformLogicalProgram(
   for (const auto& input_tracepoint : input_program.tracepoints()) {
     auto* out_tracepoint = out.add_tracepoints();
 
-    out_tracepoint->set_output_name(input_tracepoint.output_name());
+    out_tracepoint->set_table_name(input_tracepoint.table_name());
 
     const auto& input_tracepoint_spec = input_tracepoint.program();
     auto* out_tracepoint_spec = out_tracepoint->mutable_program();

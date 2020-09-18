@@ -340,24 +340,26 @@ constexpr char kDynTraceSourcePrefix[] = "DT_";
 StatusOr<std::unique_ptr<SourceConnector>> CreateDynamicSourceConnector(
     sole::uuid trace_id,
     dynamic_tracing::ir::logical::TracepointDeployment* tracepoint_deployment) {
-  if (tracepoint_deployment->tracepoints().empty() && !tracepoint_deployment->has_bpftrace()) {
+  if (tracepoint_deployment->tracepoints().empty()) {
     return error::Internal("Nothing defined in the input tracepoint_deployment.");
-  }
-
-  if (!tracepoint_deployment->tracepoints().empty() && tracepoint_deployment->has_bpftrace()) {
-    return error::Internal("Cannot have both tracepoints and bpftrace.");
   }
 
   if (tracepoint_deployment->tracepoints_size() > 1) {
     return error::Internal("Only one Tracepoint is currently supported.");
   }
 
-  if (tracepoint_deployment->has_bpftrace()) {
-    return DynamicBPFTraceConnector::Create(absl::StrCat(kDynTraceSourcePrefix, trace_id.str()),
-                                            tracepoint_deployment->bpftrace());
+  const auto tracepoint = tracepoint_deployment->tracepoints(0);
+
+  if (tracepoint.has_program() && tracepoint.has_bpftrace()) {
+    return error::Internal("Cannot have both PXL program and bpftrace.");
   }
-  return DynamicTraceConnector::Create(kDynTraceSourcePrefix + trace_id.str(),
-                                       tracepoint_deployment);
+
+  std::string source_name = absl::StrCat(kDynTraceSourcePrefix, trace_id.str());
+
+  if (tracepoint.has_bpftrace()) {
+    return DynamicBPFTraceConnector::Create(source_name, tracepoint);
+  }
+  return DynamicTraceConnector::Create(source_name, tracepoint_deployment);
 }
 
 }  // namespace

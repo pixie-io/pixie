@@ -148,9 +148,7 @@ StatusOr<Publish> DeployTrace(Stirling* stirling, TraceProgram trace_program_str
 
   // Automatically enable printing of this table.
   for (const auto& tracepoint : trace_program->tracepoints()) {
-    for (const auto& o : tracepoint.program().outputs()) {
-      g_table_print_enables.push_back(o.name());
-    }
+    g_table_print_enables.push_back(tracepoint.table_name());
   }
 
   sole::uuid trace_id = sole::uuid4();

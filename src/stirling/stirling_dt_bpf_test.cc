@@ -753,7 +753,7 @@ deployment_spec {
   path: "/lib/x86_64-linux-gnu/libc.so.6"
 }
 tracepoints {
-  output_name: "foo"
+  table_name: "foo"
   program {
     language: CPP
     outputs {
@@ -817,7 +817,7 @@ deployment_spec {
   }
 }
 tracepoints {
-  output_name: "foo"
+  table_name: "foo"
   program {
     language: CPP
     outputs {

@@ -106,7 +106,7 @@ deployment_spec {
   }
 }
 tracepoints {
-  output_name: "http_return_table"
+  table_name: "http_return_table"
   program {
     outputs {
       name: "http_return_table"
@@ -155,7 +155,7 @@ deployment_spec {
   }
 }
 tracepoints {
-  output_name: "http_return_table"
+  table_name: "http_return_table"
   program {
     outputs {
       name: "http_return_table"
@@ -258,7 +258,7 @@ deployment_spec {
   }
 }
 tracepoints {
-  output_name: "cool_func_table"
+  table_name: "cool_func_table"
   program {
     outputs {
       name: "cool_func_table"
@@ -337,7 +337,7 @@ deployment_spec {
   }
 }
 tracepoints{
-  output_name: "http_body_table"
+  table_name: "http_body_table"
   program {
     outputs {
       name: "http_body_table"

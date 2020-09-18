@@ -39,6 +39,23 @@ void GenericHandleEventLoss(void* cb_cookie, uint64_t lost) {
 
 }  // namespace
 
+StatusOr<std::unique_ptr<SourceConnector>> DynamicTraceConnector::Create(
+    std::string_view name, dynamic_tracing::ir::logical::TracepointDeployment* program) {
+  PL_ASSIGN_OR_RETURN(dynamic_tracing::BCCProgram bcc_program,
+                      dynamic_tracing::CompileProgram(program));
+
+  LOG(INFO) << "BCCProgram:\n" << bcc_program.ToString();
+
+  if (bcc_program.perf_buffer_specs.size() != 1) {
+    return error::Internal("Only a single output table is allowed for now.");
+  }
+
+  const auto& output = bcc_program.perf_buffer_specs[0];
+
+  return std::unique_ptr<SourceConnector>(new DynamicTraceConnector(
+      name, DynamicDataTableSchema::Create(output), std::move(bcc_program)));
+}
+
 Status DynamicTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(InitBPFProgram(bcc_program_.code));
 

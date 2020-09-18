@@ -4,38 +4,41 @@
 namespace pl {
 namespace stirling {
 
-using ::pl::stirling::dynamic_tracing::ir::logical::BPFTrace;
+using ::pl::stirling::dynamic_tracing::ir::logical::TracepointDeployment_Tracepoint;
 
 TEST(DynamicBPFTraceConnectorTest, Basic) {
   // Create a BPFTrace program spec
-  BPFTrace bpftrace;
+  TracepointDeployment_Tracepoint tracepoint;
+  tracepoint.set_table_name("pid_sample_table");
   {
     constexpr char kScript[] = R"(interval:ms:100 {
       printf("%llu %u %s\n", nsecs, pid, comm);
     })";
 
-    bpftrace.set_program(kScript);
+    auto* bpftrace = tracepoint.mutable_bpftrace();
+
+    bpftrace->set_program(kScript);
     {
-      auto* output = bpftrace.add_outputs();
+      auto* output = bpftrace->add_outputs();
       output->set_name("time");
       output->set_type(types::DataType::INT64);
     }
 
     {
-      auto* output = bpftrace.add_outputs();
+      auto* output = bpftrace->add_outputs();
       output->set_name("pid");
       output->set_type(types::DataType::INT64);
     }
 
     {
-      auto* output = bpftrace.add_outputs();
+      auto* output = bpftrace->add_outputs();
       output->set_name("comm");
       output->set_type(types::DataType::STRING);
     }
   }
 
   // Now deploy the spec and check for some data.
-  std::unique_ptr<SourceConnector> connector = DynamicBPFTraceConnector::Create("test", bpftrace);
+  std::unique_ptr<SourceConnector> connector = DynamicBPFTraceConnector::Create("test", tracepoint);
   ASSERT_OK(connector->Init());
 
   // Give some time to collect data.
