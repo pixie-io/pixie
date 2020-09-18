@@ -4,7 +4,7 @@
       "name": "ips",
       "type": "PX_STRING",
       "description": "The IP address you wish to get the network flow into.",
-      "defaultValue": ""
+      "defaultValue": "10.16.0.1"
     },
     {
       "name": "start",
