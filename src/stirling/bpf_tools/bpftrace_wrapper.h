@@ -39,6 +39,20 @@ class BPFTraceWrapper {
    */
   void Stop();
 
+  /**
+   * Returns the fields of the BPFTrace program's printf.
+   * @return error if there are not exactly one printf statement in the compiled program.
+   *         otherwise, returns a vector of fields which represents the types in the printf.
+   */
+  StatusOr<std::vector<bpftrace::Field>> OutputFields();
+
+  // NOTE: In addition to OutputFields(), it's possible to grab the format string.
+  // If we ever need to recreate the printf on the fly, we could add that as an extra column.
+  // Potentially useful in collapsing multiple tables into a "log" table.
+
+  /**
+   * Gets the specified map name, using BPFTrace name. Map name should include the '@' prefix.
+   */
   bpftrace::BPFTraceMap GetBPFMap(const std::string& name);
 
  private:

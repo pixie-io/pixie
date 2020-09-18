@@ -29,9 +29,6 @@ Status BPFTraceWrapper::Deploy(
   // bpftrace::bt_verbose = true;
   // bpftrace::bt_debug++;
 
-  // Script from file
-  // err = driver.parse_file(script_filename_);
-
   // Script from string (command line argument)
   err = driver.parse_str(std::string(script));
   if (err != 0) {
@@ -89,6 +86,16 @@ void BPFTraceWrapper::PollPerfBuffers(int timeout_ms) {
 }
 
 void BPFTraceWrapper::Stop() { bpftrace_.finalize(); }
+
+StatusOr<std::vector<bpftrace::Field>> BPFTraceWrapper::OutputFields() {
+  if (bpftrace_.printf_args_.size() != 1) {
+    return error::Internal(
+        "The BPFTrace program must contain exactly one printf statement, but found $0.",
+        bpftrace_.printf_args_.size());
+  }
+
+  return std::get<1>(bpftrace_.printf_args_.front());
+}
 
 bpftrace::BPFTraceMap BPFTraceWrapper::GetBPFMap(const std::string& name) {
   return bpftrace_.get_map(name);
