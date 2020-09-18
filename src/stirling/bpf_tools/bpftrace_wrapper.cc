@@ -15,9 +15,8 @@ namespace pl {
 namespace stirling {
 namespace bpf_tools {
 
-Status BPFTraceWrapper::Deploy(
-    std::string_view script, const std::vector<std::string>& params,
-    const std::function<void(const std::vector<bpftrace::Field>, uint8_t*)>& printf_callback) {
+Status BPFTraceWrapper::Deploy(std::string_view script, const std::vector<std::string>& params,
+                               const PrintfCallback& printf_callback) {
   if (!IsRoot()) {
     return error::PermissionDenied("Bpftrace currently only supported as the root user.");
   }

@@ -117,16 +117,17 @@ TEST(DynamicDataTableSchemaTest, generate) {
   EXPECT_EQ(table_schema.elements()[table_schema.ColIndex("time_")].type(), types::TIME64NS);
 }
 
-TEST(DynamicDataTableSchemaTest, GenerateForBPFTrace) {
+// TODO(oazizi/yzhao): Re-enable after finalizing strategy for auto-generating DataTableSchema.
+TEST(DynamicDataTableSchemaTest, DISABLED_GenerateForBPFTrace) {
   constexpr std::string_view kBPFTraceWithSameFields = R"(
     program: "test"
     outputs {
       name: "tgid_"
-      type: INT32
+      type: INT64
     }
     outputs {
       name: "tgid_start_time_"
-      type: UINT64
+      type: INT64
     }
     outputs {
       name: "goid_"
@@ -134,19 +135,19 @@ TEST(DynamicDataTableSchemaTest, GenerateForBPFTrace) {
     }
     outputs {
       name: "time_"
-      type: UINT64
+      type: INT64
     }
     outputs {
       name: "arg0"
-      type: INT
+      type: INT64
     }
     outputs {
       name: "arg1"
-      type: BOOL
+      type: BOOLEAN
     }
     outputs {
       name: "arg2"
-      type: BOOL
+      type: BOOLEAN
     }
   )";
 
@@ -164,9 +165,6 @@ TEST(DynamicDataTableSchemaTest, GenerateForBPFTrace) {
   EXPECT_EQ(table_schema.ColIndex("arg2"), 5);
   EXPECT_EQ(table_schema.elements()[1].name(), "goid_");
   EXPECT_EQ(table_schema.elements()[5].name(), "arg2");
-
-  // There's a hack to convert any column with name "time_" to TIME64NS. Check that.
-  EXPECT_EQ(table_schema.elements()[table_schema.ColIndex("time_")].type(), types::TIME64NS);
 }
 
 }  // namespace stirling

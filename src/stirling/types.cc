@@ -39,11 +39,9 @@ stirlingpb::TableSchema DataTableSchema::ToProto() const {
 
 namespace {
 
-// TFieldsType must be a protobuf message with 'name' and 'type' fields, which are a string
-// and a ScalarType respectively.
-template <typename TFieldsType>
 std::vector<DataElement> CreateDataElements(
-    const google::protobuf::RepeatedPtrField<TFieldsType>& repeated_fields) {
+    const google::protobuf::RepeatedPtrField<::pl::stirling::dynamic_tracing::ir::physical::Field>&
+        repeated_fields) {
   using dynamic_tracing::ir::shared::ScalarType;
 
   // clang-format off
@@ -108,6 +106,18 @@ std::vector<DataElement> CreateDataElements(
 
     // TODO(oazizi): See if we need to find a way to define SemanticTypes and PatternTypes.
     elements.emplace_back(field.name(), field.name(), data_type, types::SemanticType::ST_NONE,
+                          types::PatternType::UNSPECIFIED);
+  }
+
+  return elements;
+}
+
+std::vector<DataElement> CreateDataElements(
+    const google::protobuf::RepeatedPtrField<
+        ::pl::stirling::dynamic_tracing::ir::logical::BPFTrace::Output>& repeated_fields) {
+  std::vector<DataElement> elements;
+  for (const auto& field : repeated_fields) {
+    elements.emplace_back(field.name(), field.name(), field.type(), types::SemanticType::ST_NONE,
                           types::PatternType::UNSPECIFIED);
   }
 

@@ -20,19 +20,24 @@ namespace bpf_tools {
  */
 class BPFTraceWrapper {
  public:
+  /**
+   * Callback from BPFTrace is a raw pointer to data which needs to be
+   * interpreted as the printf data.
+   */
+  using PrintfCallback = std::function<void(uint8_t*)>;
+
   ~BPFTraceWrapper() { Stop(); }
 
   /**
    * Compiles the BPFTrace program and deploys it.
    */
   Status Deploy(std::string_view bpf_program, const std::vector<std::string>& params,
-                const std::function<void(const std::vector<bpftrace::Field>, uint8_t*)>&
-                    printf_callback = nullptr);
+                const PrintfCallback& printf_callback = nullptr);
 
   /**
    * Drains all of the managed perf buffers, calling the handle function for each event.
    */
-  void PollPerfBuffers(int timeout_ms = 1);
+  void PollPerfBuffers(int timeout_ms = 100);
 
   /**
    * Stops the running BPFTrace program.

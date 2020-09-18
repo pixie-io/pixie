@@ -1,6 +1,5 @@
 #pragma once
 
-#include "src/stirling/bpf_tools/bpftrace_wrapper.h"
 #include "src/stirling/source_connector.h"
 
 #ifndef __linux__
@@ -17,7 +16,9 @@ DUMMY_SOURCE_CONNECTOR(DynamicBPFTraceConnector);
 
 #include <memory>
 #include <string>
+#include <vector>
 
+#include "src/stirling/bpf_tools/bpftrace_wrapper.h"
 #include "src/stirling/dynamic_tracing/ir/logicalpb/logical.pb.h"
 
 namespace pl {
@@ -40,9 +41,17 @@ class DynamicBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTr
   void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
 
  private:
+  void HandleEvent(uint8_t* data);
+
   std::string name_;
   std::unique_ptr<DynamicDataTableSchema> table_schema_;
   std::string script_;
+
+  // The types according to the BPFTrace printf format.
+  std::vector<bpftrace::Field> output_fields_;
+
+  // Used by HandleEvent so that when a callback is triggered, HandleEvent knows the context.
+  DataTable* data_table_ = nullptr;
 };
 
 }  // namespace stirling

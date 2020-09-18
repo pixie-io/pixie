@@ -44,11 +44,7 @@ TEST(BPFTracerWrapperTest, PerfBufferPoll) {
 // To show that the callback can be to a member function.
 class CallbackWrapperClass {
  public:
-  void PrintfCallback(const std::vector<bpftrace::Field>& fields, uint8_t* /* data */) {
-    LOG(INFO) << absl::Substitute("Number of fields $0", fields.size());
-    ASSERT_GT(fields.size(), 0);
-    ++callback_count;
-  }
+  void PrintfCallback(uint8_t* /* data */) { ++callback_count; }
 
   int callback_count = 0;
 };
@@ -67,8 +63,8 @@ TEST(BPFTracerWrapperTest, PerfBufferPollWithCallback) {
   CallbackWrapperClass callback_target;
 
   BPFTraceWrapper bpftrace_wrapper;
-  auto callback_fn = std::bind(&CallbackWrapperClass::PrintfCallback, &callback_target,
-                               std::placeholders::_1, std::placeholders::_2);
+  auto callback_fn =
+      std::bind(&CallbackWrapperClass::PrintfCallback, &callback_target, std::placeholders::_1);
   ASSERT_OK(bpftrace_wrapper.Deploy(script, /* params */ {}, callback_fn));
   sleep(kProbeDurationSeconds);
 
