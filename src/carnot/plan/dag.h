@@ -11,6 +11,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 #include <absl/strings/str_cat.h>
 #include <absl/strings/str_format.h>
@@ -94,6 +95,8 @@ class DAG {
   std::unordered_map<int64_t, std::vector<int64_t>> forward_edges_by_node_;
   // These are ids of the predecesors nodes.
   std::unordered_map<int64_t, std::vector<int64_t>> reverse_edges_by_node_;
+  // Used for quick lookups of edges which get really expensive at scale.
+  absl::flat_hash_map<int64_t, absl::flat_hash_set<int64_t>> forward_edges_map_;
 };
 
 }  // namespace plan

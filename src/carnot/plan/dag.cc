@@ -28,6 +28,7 @@ void DAG::Init(const planpb::DAG& dag) {
     AddNode(node.id());
     for (int64_t child : node.sorted_children()) {
       forward_edges_by_node_[node.id()].push_back(child);
+      forward_edges_map_[node.id()].insert(child);
     }
     for (int64_t parent : node.sorted_parents()) {
       reverse_edges_by_node_[node.id()].push_back(parent);
@@ -113,6 +114,8 @@ void DAG::AddForwardEdge(int64_t from_node, int64_t to_node) {
                    to_node) == forward_edges_by_node_[from_node].end())
       << absl::Substitute("Forward edge from $0 to $1 already exists", from_node, to_node);
   forward_edges_by_node_[from_node].push_back(to_node);
+  // Add to the forward edges map.
+  forward_edges_map_[from_node].insert(to_node);
 }
 
 void DAG::AddReverseEdge(int64_t to_node, int64_t from_node) {
@@ -138,6 +141,8 @@ void DAG::DeleteParentEdges(int64_t to_node) {
     // Erase points to the next valid iterator.
     // Delete to_node->parent edge.
     parent_iter = reverse_edges.erase(parent_iter);
+    // Remove the entry from the map for each parent of the edge.
+    forward_edges_map_[*parent_iter].erase(to_node);
   }
 }
 
@@ -158,6 +163,8 @@ void DAG::DeleteDependentEdges(int64_t from_node) {
     // Delete from_node->dependent edge.
     child_iter = forward_edges.erase(child_iter);
   }
+  // Remove the entry from the edge map.
+  forward_edges_map_.erase(from_node);
 }
 
 void DAG::DeleteEdge(int64_t from_node, int64_t to_node) {
@@ -167,6 +174,11 @@ void DAG::DeleteEdge(int64_t from_node, int64_t to_node) {
   if (node != end(forward_edges)) {
     forward_edges.erase(node);
   }
+
+  // Update the edge map. Must remake the hash set because we cannot simply remove the old edge and
+  // add the new one as there might be duplicate edges before the replacement.
+  forward_edges_map_[from_node] =
+      absl::flat_hash_set<int64_t>(forward_edges.begin(), forward_edges.end());
 
   auto& reverse_edges = reverse_edges_by_node_[to_node];
   const auto& reverse_node = std::find(begin(reverse_edges), end(reverse_edges), from_node);
@@ -184,6 +196,11 @@ void DAG::ReplaceChildEdge(int64_t parent_node, int64_t old_child_node, int64_t 
 
   // Repalce the old_child_node with the new_child_node in the forward edge.
   std::replace(forward_edges.begin(), forward_edges.end(), old_child_node, new_child_node);
+
+  // Update the edge map. Must remake the hash set because we cannot simply remove the old edge and
+  // add the new one as there might be duplicate edges before the replacement.
+  forward_edges_map_[parent_node] =
+      absl::flat_hash_set<int64_t>(forward_edges.begin(), forward_edges.end());
 
   // Remove the old reverse edge (old_child_node, parent_node)
   auto& reverse_edges = reverse_edges_by_node_[old_child_node];
@@ -213,14 +230,18 @@ void DAG::ReplaceParentEdge(int64_t child_node, int64_t old_parent_node, int64_t
     forward_edges.erase(forward_node);
   }
 
+  // Update the edge map. Must remake the hash set because we cannot simply remove the old edge and
+  // add the new one as there might be duplicate edges before the replacement.
+  forward_edges_map_[old_parent_node] =
+      absl::flat_hash_set<int64_t>(forward_edges.begin(), forward_edges.end());
+
   // Add the new forward edge (new_from_node, child_node)
   AddForwardEdge(new_parent_node, child_node);
 }
 
 bool DAG::HasEdge(int64_t from_node, int64_t to_node) const {
-  const auto& forward_edges = forward_edges_by_node_.at(from_node);
-  const auto& node = std::find(begin(forward_edges), end(forward_edges), to_node);
-  return node != end(forward_edges);
+  const auto& iter = forward_edges_map_.find(from_node);
+  return iter != forward_edges_map_.end() && iter->second.contains(to_node);
 }
 
 std::unordered_set<int64_t> DAG::TransitiveDepsFrom(int64_t node) {

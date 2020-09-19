@@ -1640,20 +1640,22 @@ Status UnionIR::SetRelationFromParents() {
 
   std::vector<InputColumnMapping> mappings;
   for (const auto& [parent_idx, parent] : Enumerate(parents())) {
-    Relation cur_relation = parent->relation();
-    std::string err_msg = absl::Substitute(
-        "Table schema disagreement between parent ops $0 and $1 of $2. $0: $3 vs $1: $4. $5",
-        base_parent->DebugString(), parent->DebugString(), DebugString(),
-        base_relation.DebugString(), cur_relation.DebugString(), "$0");
+    const Relation& cur_relation = parent->relation();
     if (cur_relation.NumColumns() != base_relation.NumColumns()) {
-      return CreateIRNodeError(err_msg, "Column count wrong.");
+      return CreateIRNodeError(
+          "Table schema disagreement between parent ops $0 and $1 of $2. $0: $3 vs $1: $4. $5",
+          base_parent->DebugString(), parent->DebugString(), DebugString(),
+          base_relation.DebugString(), cur_relation.DebugString(), "Column count wrong.");
     }
     InputColumnMapping column_mapping;
     for (const std::string& col_name : base_relation.col_names()) {
       types::DataType col_type = base_relation.GetColumnType(col_name);
       if (!cur_relation.HasColumn(col_name) || cur_relation.GetColumnType(col_name) != col_type) {
-        return CreateIRNodeError(err_msg,
-                                 absl::Substitute("Missing or wrong type for $0.", col_name));
+        return CreateIRNodeError(
+            "Table schema disagreement between parent ops $0 and $1 of $2. $0: $3 vs $1: $4. $5",
+            base_parent->DebugString(), parent->DebugString(), DebugString(),
+            base_relation.DebugString(), cur_relation.DebugString(),
+            absl::Substitute("Missing or wrong type for $0.", col_name));
       }
       PL_ASSIGN_OR_RETURN(auto col_node, graph()->CreateNode<ColumnIR>(
                                              ast(), col_name, /*parent_op_idx*/ parent_idx));
