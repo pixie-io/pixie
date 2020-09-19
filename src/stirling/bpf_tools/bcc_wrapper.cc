@@ -81,7 +81,11 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program,
   // Note: Could also put this in Stirling Init() function, but then some tests which use
   //       BCCWrapper (e.g. connector_bpf_tests), would have to make sure to call this function.
   //       Thus, it is deemed to be better here.
-  PL_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders({utils::kDefaultHeaderSearchOrder}));
+  PL_ASSIGN_OR_RETURN(const std::filesystem::path sys_headers_dir,
+                      utils::FindOrInstallLinuxHeaders({utils::kDefaultHeaderSearchOrder}));
+
+  LOG(INFO) << absl::Substitute("Using linux headers found at $0 for BCC runtime.",
+                                sys_headers_dir.string());
 
   PL_RETURN_IF_ERROR(MountDebugFS());
 

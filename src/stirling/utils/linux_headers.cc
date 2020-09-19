@@ -420,7 +420,8 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir)
   return Status::OK();
 }
 
-Status FindOrInstallLinuxHeaders(const std::vector<LinuxHeaderStrategy>& attempt_order) {
+StatusOr<std::filesystem::path> FindOrInstallLinuxHeaders(
+    const std::vector<LinuxHeaderStrategy>& attempt_order) {
   PL_ASSIGN_OR_RETURN(std::string uname, GetUname());
   LOG(INFO) << absl::Substitute("Detected kernel release (uname -r): $0", uname);
 
@@ -449,8 +450,7 @@ Status FindOrInstallLinuxHeaders(const std::vector<LinuxHeaderStrategy>& attempt
     // Now check for a healthy set of headers.
     headers_dir = FindLinuxHeadersDirectory(lib_modules_dir);
     if (!headers_dir.empty()) {
-      LOG(INFO) << absl::Substitute("Using linux headers found at $0", headers_dir.string());
-      return Status::OK();
+      return headers_dir;
     }
   }
 

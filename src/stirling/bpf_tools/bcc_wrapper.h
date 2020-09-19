@@ -282,6 +282,8 @@ class BCCWrapper {
   std::vector<PerfBufferSpec> perf_buffers_;
   std::vector<PerfEventSpec> perf_events_;
 
+  std::string system_headers_include_dir_;
+
   ebpf::BPF bpf_;
 
   // These are static counters across all instances, because:

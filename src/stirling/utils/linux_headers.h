@@ -152,7 +152,8 @@ inline const std::vector<LinuxHeaderStrategy> kDefaultHeaderSearchOrder = {
  * @return Status error if no headers (either host headers or installed packaged headers) are
  * available in the end state.
  */
-Status FindOrInstallLinuxHeaders(const std::vector<LinuxHeaderStrategy>& attempt_order);
+StatusOr<std::filesystem::path> FindOrInstallLinuxHeaders(
+    const std::vector<LinuxHeaderStrategy>& attempt_order);
 
 }  // namespace utils
 }  // namespace stirling

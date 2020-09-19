@@ -11,6 +11,8 @@
 #include "third_party/bpftrace/src/procmon.h"
 #include "third_party/bpftrace/src/tracepoint_format_parser.h"
 
+#include "src/stirling/utils/linux_headers.h"
+
 namespace pl {
 namespace stirling {
 namespace bpf_tools {
@@ -49,7 +51,14 @@ Status BPFTraceWrapper::Deploy(std::string_view script, const std::vector<std::s
   }
 
   bpftrace::ClangParser clang;
-  clang.parse(driver.root_.get(), bpftrace_);
+
+  PL_ASSIGN_OR_RETURN(std::filesystem::path sys_headers_dir,
+                      utils::FindOrInstallLinuxHeaders({utils::kDefaultHeaderSearchOrder}));
+  LOG(INFO) << absl::Substitute("Using linux headers found at $0 for BPFtrace runtime.",
+                                sys_headers_dir.string());
+  auto sys_headers_include_dir = sys_headers_dir / "include";
+
+  clang.parse(driver.root_.get(), bpftrace_, {"-isystem", sys_headers_include_dir.string()});
 
   bpftrace::ast::SemanticAnalyser semantics(driver.root_.get(), bpftrace_, bpftrace_.feature_);
   err = semantics.analyse();
