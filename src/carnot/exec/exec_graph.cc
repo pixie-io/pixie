@@ -96,8 +96,10 @@ bool ExecutionGraph::YieldWithTimeout() {
 }
 
 void ExecutionGraph::Continue() {
-  std::lock_guard<std::mutex> lock(execution_mutex_);
-  continue_ = true;
+  {
+    std::lock_guard<std::mutex> lock(execution_mutex_);
+    continue_ = true;
+  }
   execution_cv_.notify_one();
 }
 
