@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
-	"time"
 
 	"github.com/fatih/color"
 	uuid "github.com/satori/go.uuid"
@@ -139,12 +139,31 @@ var RunCmd = &cobra.Command{
 				Set("scriptString", execScript.ScriptString),
 		})
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
+		// Support Ctrl+C to cancel a query.
+		ctx, cancel := context.WithCancel(context.Background())
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		defer func() {
+			signal.Stop(c)
+			cancel()
+		}()
+
+		go func() {
+			select {
+			case <-c:
+				cancel()
+			case <-ctx.Done():
+			}
+		}()
 
 		err = vizier.RunScriptAndOutputResults(ctx, conns, execScript, format)
+
 		if err != nil {
-			log.WithError(err).Fatal("Failed to execute script")
+			if vzErr, ok := err.(*vizier.ScriptExecutionError); ok && vzErr.Code() == vizier.CodeCanceled {
+				log.Info("Script was cancelled. Exiting.")
+			} else {
+				log.WithError(err).Fatal("Failed to execute script")
+			}
 		}
 
 		// Get the name for this cluster for the live view

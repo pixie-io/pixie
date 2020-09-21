@@ -20,6 +20,8 @@ const (
 	CodeGRPCError
 	// CodeCompilerError is used for compilations errors.
 	CodeCompilerError
+	// CodeCanceled is used for script cancellation.
+	CodeCanceled
 )
 
 // ScriptExecutionError occurs for errors during script execution on vizier.

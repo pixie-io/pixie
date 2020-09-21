@@ -171,6 +171,10 @@ func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream cha
 		select {
 		case <-ctx.Done():
 			if err := ctx.Err(); err != nil {
+				if errors.Is(err, context.Canceled) {
+					v.err = newScriptExecutionError(CodeCanceled, err.Error())
+					return
+				}
 				if errors.Is(err, context.DeadlineExceeded) {
 					v.err = newScriptExecutionError(CodeTimeout, err.Error())
 					return
