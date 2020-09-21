@@ -11,6 +11,12 @@
       "type": "PX_STRING",
       "description": "The start time of the window in time units before now.",
       "defaultValue": "-5m"
+    },
+    {
+      "name": "grouping_entity",
+      "type": "PX_STRING",
+      "description": "The k8s object to group connections by.",
+      "defaultValue": "pod"
     }
   ],
   "globalFuncs": [
@@ -29,7 +35,7 @@
           },
           {
             "name": "grouping_entity",
-            "value": "pod"
+            "variable": "grouping_entity"
           }
         ]
       }
@@ -41,7 +47,7 @@
       "position": {
         "x": 0,
         "y": 0,
-        "w": 6,
+        "w": 12,
         "h": 4
       },
       "globalFuncOutputName": "net_flow",
@@ -56,9 +62,9 @@
     {
       "name": "Table",
       "position": {
-        "x": 6,
-        "y": 0,
-        "w": 6,
+        "x": 0,
+        "y": 4,
+        "w": 12,
         "h": 4
       },
       "globalFuncOutputName": "net_flow",
