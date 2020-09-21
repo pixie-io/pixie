@@ -15,9 +15,9 @@
   ],
   "globalFuncs": [
     {
-      "outputName": "process_stats",
+      "outputName": "resource_timeseries",
       "func": {
-        "name": "process_stats",
+        "name": "resource_timeseries",
         "args": [
           {
             "name": "start_time",
@@ -81,7 +81,7 @@
         "w": 4,
         "h": 3
       },
-      "globalFuncOutputName": "process_stats",
+      "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -105,7 +105,7 @@
         "w": 4,
         "h": 3
       },
-      "globalFuncOutputName": "process_stats",
+      "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -129,7 +129,7 @@
         "w": 4,
         "h": 3
       },
-      "globalFuncOutputName": "process_stats",
+      "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -201,7 +201,7 @@
         "w": 4,
         "h": 3
       },
-      "globalFuncOutputName": "process_stats",
+      "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -225,7 +225,7 @@
         "w": 4,
         "h": 3
       },
-      "globalFuncOutputName": "process_stats",
+      "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
