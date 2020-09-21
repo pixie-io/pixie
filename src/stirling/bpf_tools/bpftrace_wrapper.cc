@@ -24,11 +24,12 @@ Status BPFTraceWrapper::Deploy(std::string_view script, const std::vector<std::s
   }
 
   int err;
+  int success;
   bpftrace::Driver driver(bpftrace_);
 
   // Change these values for debug
   // bpftrace::bt_verbose = true;
-  // bpftrace::bt_debug++;
+  // bpftrace::bt_debug = bpftrace::DebugLevel::kFullDebug;
 
   // Script from string (command line argument)
   err = driver.parse_str(std::string(script));
@@ -50,15 +51,45 @@ Status BPFTraceWrapper::Deploy(std::string_view script, const std::vector<std::s
     return error::Internal("TracepointFormatParser failed.");
   }
 
-  bpftrace::ClangParser clang;
-
   PL_ASSIGN_OR_RETURN(std::filesystem::path sys_headers_dir,
                       utils::FindOrInstallLinuxHeaders({utils::kDefaultHeaderSearchOrder}));
   LOG(INFO) << absl::Substitute("Using linux headers found at $0 for BPFtrace runtime.",
                                 sys_headers_dir.string());
-  auto sys_headers_include_dir = sys_headers_dir / "include";
 
-  clang.parse(driver.root_.get(), bpftrace_, {"-isystem", sys_headers_include_dir.string()});
+  // TODO(oazizi): Include dirs and include files not used right now.
+  //               Consider either removing them or pushing them up into the Deploy() interface.
+  std::vector<std::string> include_dirs;
+  std::vector<std::string> include_files;
+  std::vector<std::string> extra_flags;
+  {
+    struct utsname utsname;
+    uname(&utsname);
+    std::string ksrc, kobj;
+    auto kdirs = bpftrace::get_kernel_dirs(utsname);
+    ksrc = std::get<0>(kdirs);
+    kobj = std::get<1>(kdirs);
+
+    if (ksrc != "") {
+      extra_flags = bpftrace::get_kernel_cflags(utsname.machine, ksrc, kobj);
+    }
+  }
+  extra_flags.push_back("-include");
+  extra_flags.push_back(CLANG_WORKAROUNDS_H);
+
+  for (auto dir : include_dirs) {
+    extra_flags.push_back("-I");
+    extra_flags.push_back(dir);
+  }
+  for (auto file : include_files) {
+    extra_flags.push_back("-include");
+    extra_flags.push_back(file);
+  }
+
+  bpftrace::ClangParser clang;
+  success = clang.parse(driver.root_.get(), bpftrace_, extra_flags);
+  if (!success) {
+    return error::Internal("Clang parse failed.");
+  }
 
   bpftrace::ast::SemanticAnalyser semantics(driver.root_.get(), bpftrace_, bpftrace_.feature_);
   err = semantics.analyse();
