@@ -21,6 +21,7 @@ namespace carnot {
 namespace exec {
 
 constexpr size_t kDefaultUnionRowBatchSize = 1024;
+constexpr size_t kDefaultDataFlushTimeoutMillis = 1000;
 
 // This node presumes that input streams will always come in ordered by time
 // when there is a time column.
@@ -36,6 +37,12 @@ class UnionNode : public ProcessingNode {
     types::Time64NSValue time;
     bool end_of_row_batch;
   };
+
+  void disable_data_flush_timeout() { enable_data_flush_timeout_ = false; }
+  void set_data_flush_timeout(const std::chrono::milliseconds& data_flush_timeout) {
+    enable_data_flush_timeout_ = true;
+    data_flush_timeout_ = data_flush_timeout;
+  }
 
  protected:
   std::string DebugStringImpl() override;
@@ -66,7 +73,9 @@ class UnionNode : public ProcessingNode {
   Status InitializeColumnBuilders();
   types::Time64NSValue GetTimeAtParentCursor(size_t parent_index) const;
   Status AppendRow(size_t parent);
-  Status OptionallyFlushRowBatch(ExecState* exec_state);
+  Status OptionallyFlushRowBatchIfMaxRowsOrEOS(ExecState* exec_state);
+  Status OptionallyFlushRowBatchIfTimeout(ExecState* exec_state);
+  Status FlushBatch(ExecState* exec_state);
   Status MergeData(ExecState* exec_state);
 
   // output_rows_per_batch is only used in the ordered case, because in the unordered case,
@@ -84,6 +93,14 @@ class UnionNode : public ProcessingNode {
   // Cache current working time and data columns for performance reasons.
   std::vector<arrow::Array*> time_columns_;
   std::vector<std::vector<arrow::Array*>> data_columns_;
+
+  bool enable_data_flush_timeout_ = true;
+  // When enable_data_flush_timeout_ is set to true, use this time to decide if we should
+  // flush data to consumers before the output row batch reaches a certain size.
+  std::chrono::milliseconds data_flush_timeout_ =
+      std::chrono::milliseconds(kDefaultDataFlushTimeoutMillis);
+  std::chrono::time_point<std::chrono::system_clock> last_data_flush_time_ =
+      std::chrono::system_clock::now();
 };
 
 }  // namespace exec

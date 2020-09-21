@@ -106,16 +106,48 @@ Status UnionNode::AppendRow(size_t parent) {
   return Status::OK();
 }
 
-Status UnionNode::OptionallyFlushRowBatch(ExecState* exec_state) {
-  DCHECK(!sent_eos_);
+// Flush the row batch if we have waited too long between row batches.
+Status UnionNode::OptionallyFlushRowBatchIfTimeout(ExecState* exec_state) {
+  if (!enable_data_flush_timeout_) {
+    return Status::OK();
+  }
+
+  auto time_now = std::chrono::system_clock::now();
+  auto since_last_flush =
+      std::chrono::duration_cast<std::chrono::milliseconds>(time_now - last_data_flush_time_);
+  bool timed_out = since_last_flush > data_flush_timeout_;
+
+  if (!timed_out) {
+    return Status::OK();
+  }
+
+  DCHECK_GT(column_builders_.size(), 0);
+  if (column_builders_[0]->length()) {
+    return FlushBatch(exec_state);
+  }
+  return Status::OK();
+}
+
+// Flush the row batch if we have reached a certain number of records.
+Status UnionNode::OptionallyFlushRowBatchIfMaxRowsOrEOS(ExecState* exec_state) {
   bool eos = InputsComplete();
   int64_t output_rows = column_builders_[0]->length();
+
   if (output_rows < static_cast<int64_t>(output_rows_per_batch_) && !eos) {
     return Status::OK();
   }
+
+  return FlushBatch(exec_state);
+}
+
+Status UnionNode::FlushBatch(ExecState* exec_state) {
+  DCHECK(!sent_eos_);
+
+  bool eos = InputsComplete();
   PL_ASSIGN_OR_RETURN(auto rb, RowBatch::FromColumnBuilders(*output_descriptor_, /*eow*/ eos,
                                                             /*eos*/ eos, &column_builders_));
   PL_RETURN_IF_ERROR(InitializeColumnBuilders());
+  last_data_flush_time_ = std::chrono::system_clock::now();
   return SendRowBatchToChildren(exec_state, *rb);
 }
 
@@ -138,7 +170,7 @@ Status UnionNode::MergeData(ExecState* exec_state) {
 
     // If we have reached end of stream for all of our inputs, flush the queue.
     if (!parent_streams.size()) {
-      return OptionallyFlushRowBatch(exec_state);
+      return OptionallyFlushRowBatchIfMaxRowsOrEOS(exec_state);
     }
 
     std::sort(parent_streams.begin(), parent_streams.end(),
@@ -182,7 +214,7 @@ Status UnionNode::MergeData(ExecState* exec_state) {
       }
 
       // Flush the current RowBatch if necessary.
-      PL_RETURN_IF_ERROR(OptionallyFlushRowBatch(exec_state));
+      PL_RETURN_IF_ERROR(OptionallyFlushRowBatchIfMaxRowsOrEOS(exec_state));
     }
   }
   return Status::OK();
@@ -211,7 +243,8 @@ Status UnionNode::ConsumeNextOrdered(ExecState* exec_state, const RowBatch& rb,
                                      size_t parent_index) {
   parent_row_batches_[parent_index].push_back(rb);
   CacheNextRowBatch(parent_index);
-  return MergeData(exec_state);
+  PL_RETURN_IF_ERROR(MergeData(exec_state));
+  return OptionallyFlushRowBatchIfTimeout(exec_state);
 }
 
 Status UnionNode::ConsumeNextUnordered(ExecState* exec_state, const RowBatch& rb,
