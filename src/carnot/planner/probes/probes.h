@@ -171,6 +171,15 @@ class TracepointDeployment {
   Status AddTracepoint(TracepointIR* probe_ir, const std::string& probe_name,
                        const std::string& output_name);
 
+  /**
+   * @brief Sets the BPF trace program for a deployment.
+   *
+   * @param bpftrace_program the program in string format.
+   * @param output_name the output table to write program results.
+   * @return Status
+   */
+  Status AddBPFTrace(const std::string& bpftrace_program, const std::string& output_name);
+
  private:
   std::string name_;
   int64_t ttl_ns_;
@@ -216,7 +225,8 @@ class MutationsIR {
   StatusOr<TracepointDeployment*> CreateTracepointDeployment(const std::string& tracepoint_name,
                                                              const SharedObject& shared_obj,
                                                              int64_t ttl_ns);
-
+  StatusOr<TracepointDeployment*> CreateKProbeTracepointDeployment(
+      const std::string& tracepoint_name, int64_t ttl_ns);
   /**
    * @brief Get the CurrentProbe or return an error. Nice shorthand to support a clean error
    * message that points to the write position in the code.
@@ -260,6 +270,7 @@ class MutationsIR {
   absl::flat_hash_map<md::UPID, std::unique_ptr<TracepointDeployment>> upid_to_program_map_;
   absl::flat_hash_map<SharedObject, std::unique_ptr<TracepointDeployment>>
       shared_object_to_program_map_;
+  std::vector<std::unique_ptr<TracepointDeployment>> bpftrace_programs_;
   std::vector<std::shared_ptr<TracepointIR>> probes_pool_;
   std::shared_ptr<TracepointIR> current_tracepoint_;
 

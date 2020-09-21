@@ -120,6 +120,24 @@ StatusOr<TracepointDeployment*> MutationsIR::CreateTracepointDeployment(
   return raw;
 }
 
+StatusOr<TracepointDeployment*> MutationsIR::CreateKProbeTracepointDeployment(
+    const std::string& tracepoint_name, int64_t ttl_ns) {
+  std::unique_ptr<TracepointDeployment> program =
+      std::make_unique<TracepointDeployment>(tracepoint_name, ttl_ns);
+  TracepointDeployment* raw = program.get();
+  bpftrace_programs_.push_back(std::move(program));
+  return raw;
+}
+
+Status TracepointDeployment::AddBPFTrace(const std::string& bpftrace_program,
+                                         const std::string& output_name) {
+  stirling::dynamic_tracing::ir::logical::TracepointDeployment::Tracepoint tracepoint_pb;
+  tracepoint_pb.mutable_bpftrace()->set_program(bpftrace_program);
+  tracepoint_pb.set_table_name(output_name);
+  tracepoints_.push_back(tracepoint_pb);
+  return Status::OK();
+}
+
 Status TracepointDeployment::AddTracepoint(TracepointIR* tracepoint_ir,
                                            const std::string& probe_name,
                                            const std::string& output_name) {
@@ -210,12 +228,10 @@ Status MutationsIR::ToProto(plannerpb::CompileMutationsResponse* pb) {
     upid_pb->set_ts_ns(shared_object.upid().start_ts());
   }
 
-  // for (const auto& [binary, program] : binary_to_program_map_) {
-  //   auto program_pb = pb->add_mutations()->mutable_trace();
-  //   PL_RETURN_IF_ERROR(program.ToProto(program_pb));
-  //   auto binary_spec = program_pb->mutable_binary_spec();
-  //   binary_spec->set_path(binary);
-  // }
+  for (const auto& program : bpftrace_programs_) {
+    auto program_pb = pb->add_mutations()->mutable_trace();
+    PL_RETURN_IF_ERROR(program->ToProto(program_pb));
+  }
 
   for (const auto& tracepoint_to_delete : TracepointsToDelete()) {
     pb->add_mutations()->mutable_delete_tracepoint()->set_name(tracepoint_to_delete);

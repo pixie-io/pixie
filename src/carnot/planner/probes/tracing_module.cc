@@ -5,6 +5,7 @@
 #include "src/carnot/planner/objects/dict_object.h"
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/none_object.h"
+#include "src/carnot/planner/probes/kprobe_target.h"
 
 namespace pl {
 namespace carnot {
@@ -29,6 +30,12 @@ class UpsertHandler {
 };
 
 class SharedObjectHandler {
+ public:
+  static StatusOr<QLObjectPtr> Eval(const pypa::AstPtr& ast, const ParsedArgs& args,
+                                    ASTVisitor* visitor);
+};
+
+class KProbeTargetHandler {
  public:
   static StatusOr<QLObjectPtr> Eval(const pypa::AstPtr& ast, const ParsedArgs& args,
                                     ASTVisitor* visitor);
@@ -131,6 +138,16 @@ Status TraceModule::Init() {
                                          ast_visitor()));
   PL_RETURN_IF_ERROR(shared_object_fn->SetDocString(kSharedObjectDocstring));
   AddMethod(kSharedObjectID, shared_object_fn);
+
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> kprobe_target_fn,
+                      FuncObject::Create(kKProbeTargetID, {}, {},
+                                         /* has_variable_len_args */ false,
+                                         /* has_variable_len_kwargs */ false,
+                                         std::bind(KProbeTargetHandler::Eval, std::placeholders::_1,
+                                                   std::placeholders::_2, std::placeholders::_3),
+                                         ast_visitor()));
+  PL_RETURN_IF_ERROR(kprobe_target_fn->SetDocString(kKProbeTargetDocstring));
+  AddMethod(kKProbeTargetID, kprobe_target_fn);
 
   PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> delete_fn,
                       FuncObject::Create(kDeleteTracepointID, {"name"}, {},
@@ -306,6 +323,12 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
         tp_deployment_name, shared_object->shared_object(), ttl_ns);
     PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
     trace_program = trace_program_or_s.ConsumeValueOrDie();
+  } else if (KProbeTarget::IsKProbeTarget(target)) {
+    auto shared_object = std::static_pointer_cast<SharedObjectTarget>(target);
+    auto trace_program_or_s =
+        mutations_ir->CreateKProbeTracepointDeployment(tp_deployment_name, ttl_ns);
+    PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
+    trace_program = trace_program_or_s.ConsumeValueOrDie();
   } else {
     PL_ASSIGN_OR_RETURN(UInt128IR * upid_ir, GetArgAs<UInt128IR>(args, "target"));
     md::UPID upid(upid_ir->val());
@@ -316,12 +339,19 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
     trace_program = trace_program_or_s.ConsumeValueOrDie();
   }
 
-  PL_ASSIGN_OR_RETURN(auto probe_fn, GetCallMethod(ast, args.GetArg("probe_fn")));
-  PL_ASSIGN_OR_RETURN(auto probe, probe_fn->Call({}, ast));
-  CHECK(ProbeObject::IsProbe(probe));
-  auto probe_ir = std::static_pointer_cast<ProbeObject>(probe)->probe();
-  PL_RETURN_IF_ERROR(WrapAstError(
-      ast, trace_program->AddTracepoint(probe_ir.get(), tp_deployment_name, output_name)));
+  if (FuncObject::IsFuncObject(args.GetArg("probe_fn"))) {
+    PL_ASSIGN_OR_RETURN(auto probe_fn, GetCallMethod(ast, args.GetArg("probe_fn")));
+    PL_ASSIGN_OR_RETURN(auto probe, probe_fn->Call({}, ast));
+    CHECK(ProbeObject::IsProbe(probe));
+    auto probe_ir = std::static_pointer_cast<ProbeObject>(probe)->probe();
+    PL_RETURN_IF_ERROR(WrapAstError(
+        ast, trace_program->AddTracepoint(probe_ir.get(), tp_deployment_name, output_name)));
+  } else {
+    // The probe_fn is a string.
+    PL_ASSIGN_OR_RETURN(auto program_str_ir, GetArgAs<StringIR>(args, "probe_fn"));
+    PL_RETURN_IF_ERROR(
+        WrapAstError(ast, trace_program->AddBPFTrace(program_str_ir->str(), output_name)));
+  }
 
   return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(ast, visitor));
 }
@@ -334,6 +364,11 @@ StatusOr<QLObjectPtr> SharedObjectHandler::Eval(const pypa::AstPtr&, const Parse
   md::UPID shared_object_upid(upid_ir->val());
 
   return SharedObjectTarget::Create(visitor, shared_object_name, shared_object_upid);
+}
+
+StatusOr<QLObjectPtr> KProbeTargetHandler::Eval(const pypa::AstPtr&, const ParsedArgs&,
+                                                ASTVisitor* visitor) {
+  return KProbeTarget::Create(visitor);
 }
 
 StatusOr<QLObjectPtr> DeleteTracepointHandler::Eval(MutationsIR* mutations_ir,

@@ -568,6 +568,61 @@ TEST_F(ProbeCompilerTest, delete_tracepoint) {
               UnorderedElementsAre("http_return", "cool_http_func"));
 }
 
+constexpr char kBPFTraceProgram[] = R"bpftrace(
+tracepoint:syscalls:sys_enter_write
+{
+  @fds[tid] = args->fd
+}
+
+tracepoint:syscalls:sys_exit_write
+{
+  printf("tgid: %d ktime_ns: %d fd: %d ret: %d\\n",
+         pid, nsecs, @fds[tid], args->ret);
+}
+)bpftrace";
+
+constexpr char kBPFTracePxl[] = R"pxl(
+import pxtrace
+import px
+
+bpftrace_syscall_write_program = """$0"""
+
+pxtrace.UpsertTracepoint('syscall_write_bpftrace',
+                         'output_table',
+                         bpftrace_syscall_write_program,
+                         pxtrace.kprobe(),
+                         '5m')
+)pxl";
+
+constexpr char kBPFTraceProgramPb[] = R"proto(
+name: "syscall_write_bpftrace"
+ttl {
+  seconds: 300
+}
+tracepoints{
+  table_name: "output_table"
+  bpftrace: {
+    program: "$0"
+  }
+}
+)proto";
+
+TEST_F(ProbeCompilerTest, parse_bpftrace) {
+  ASSERT_OK_AND_ASSIGN(auto probe_ir,
+                       CompileProbeScript(absl::Substitute(kBPFTracePxl, kBPFTraceProgram)));
+  plannerpb::CompileMutationsResponse pb;
+  EXPECT_OK(probe_ir->ToProto(&pb));
+  ASSERT_EQ(pb.mutations_size(), 1);
+
+  std::string literal_bpf_trace = kBPFTraceProgram;
+  literal_bpf_trace = std::regex_replace(literal_bpf_trace, std::regex(R"(\\\n)"), R"(\\\\n)");
+  literal_bpf_trace = std::regex_replace(literal_bpf_trace, std::regex("\n"), "\\n");
+  literal_bpf_trace = std::regex_replace(literal_bpf_trace, std::regex("\""), "\\\"");
+
+  EXPECT_THAT(pb.mutations()[0].trace(),
+              testing::proto::EqualsProto(absl::Substitute(kBPFTraceProgramPb, literal_bpf_trace)));
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

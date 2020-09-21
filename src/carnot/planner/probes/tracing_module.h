@@ -197,6 +197,16 @@ class TraceModule : public QLObject {
     to UpsertTracepoint.
   )doc";
 
+  inline static constexpr char kKProbeTargetID[] = "kprobe";
+  inline static constexpr char kKProbeTargetDocstring[] = R"doc(
+  Defines a kprobe target for an UpsertTracepoint.
+
+  :topic: tracepoint_fields
+
+  Returns:
+    KProbeTarget: KProbe target that can be passed into UpsertTracepoint.
+  )doc";
+
  protected:
   explicit TraceModule(MutationsIR* mutations_ir, ASTVisitor* ast_visitor)
       : QLObject(TraceModuleType, ast_visitor), mutations_ir_(mutations_ir) {}

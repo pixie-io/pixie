@@ -40,6 +40,7 @@ enum class QLObjectType {
   kTracingVariable,
   kProbe,
   kSharedObjectTraceTarget,
+  kKProbeTraceTarget,
 };
 
 class TypeDescriptor {

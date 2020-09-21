@@ -172,6 +172,8 @@ class FuncObject : public QLObject {
 
   pl::shared::scriptspb::FuncArgsSpec CreateFuncArgsSpec() const;
 
+  static bool IsFuncObject(const QLObjectPtr& ptr) { return ptr->type() == FuncType.type(); }
+
  private:
   StatusOr<ParsedArgs> PrepareArgs(const ArgMap& args, const pypa::AstPtr& ast);
 
