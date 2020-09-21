@@ -111,9 +111,15 @@ TEST_F(GRPCSourceConversionTest, no_sinks_affiliated) {
   // run the conversion rule.
   GRPCSourceGroupConversionRule rule;
   auto result = rule.Execute(graph.get());
-  ASSERT_NOT_OK(result);
-  EXPECT_THAT(result.status(), HasCompilerError("GRPCSourceGroup\\(id=[0-9]*\\), source_id=[0-9]*, "
-                                                "must be affiliated with remote sinks"));
+  ASSERT_OK(result);
+
+  auto memory_sinks_raw = graph->FindNodesThatMatch(MemorySink());
+  ASSERT_EQ(memory_sinks_raw.size(), 1);
+  auto mem_sink = static_cast<MemorySinkIR*>(memory_sinks_raw[0]);
+  ASSERT_EQ(mem_sink->parents().size(), 1);
+  EXPECT_MATCH(mem_sink->parents()[0], EmptySource());
+
+  ASSERT_EQ(graph->FindNodesThatMatch(Operator()).size(), 2);
 }
 
 TEST_F(GRPCSourceConversionTest, multiple_grpc_source_groups) {

@@ -117,6 +117,10 @@ inline ClassMatch<IRNodeType::kMemorySource> MemorySource() {
 inline ClassMatch<IRNodeType::kMemorySink> MemorySink() {
   return ClassMatch<IRNodeType::kMemorySink>();
 }
+
+inline ClassMatch<IRNodeType::kEmptySource> EmptySource() {
+  return ClassMatch<IRNodeType::kEmptySource>();
+}
 inline ClassMatch<IRNodeType::kLimit> Limit() { return ClassMatch<IRNodeType::kLimit>(); }
 
 inline ClassMatch<IRNodeType::kGRPCSource> GRPCSource() {

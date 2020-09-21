@@ -50,8 +50,9 @@ StatusOr<OperatorIR*> GRPCSourceGroupConversionRule::ConvertGRPCSourceGroup(
   auto sinks = group_ir->dependent_sinks();
 
   if (sinks.size() == 0) {
-    return group_ir->CreateIRNodeError("$0, source_id=$1, must be affiliated with remote sinks.",
-                                       group_ir->DebugString(), group_ir->source_id());
+    PL_ASSIGN_OR_RETURN(EmptySourceIR * empty_source,
+                        ir_graph->CreateNode<EmptySourceIR>(group_ir->ast(), group_ir->relation()));
+    return empty_source;
   }
 
   // Don't add an unnecessary union node if there is only one sink.
