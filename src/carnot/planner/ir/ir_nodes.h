@@ -1341,6 +1341,39 @@ class MemorySourceIR : public OperatorIR {
 };
 
 /**
+ * @brief The MemorySourceIR is a dual logical plan
+ * and IR node operator. It inherits from both classes
+ */
+class EmptySourceIR : public OperatorIR {
+ public:
+  EmptySourceIR() = delete;
+  explicit EmptySourceIR(int64_t id) : OperatorIR(id, IRNodeType::kEmptySource) {}
+
+  /**
+   * @brief Initialize the EmptySource. Must have types already decided before.
+   *
+   * @param table_name the table to load.
+   * @param select_columns the columns to select. If vector is empty, then select all columns.
+   * @return Status
+   */
+  Status Init(const Relation& relation);
+
+  Status ToProto(planpb::Operator*) const override;
+
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
+
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
+    return std::vector<absl::flat_hash_set<std::string>>{};
+  }
+  bool IsSource() const override { return true; }
+
+ protected:
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& output_colnames) override;
+};
+
+/**
  * The MemorySinkIR describes the MemorySink operator.
  */
 class MemorySinkIR : public OperatorIR {

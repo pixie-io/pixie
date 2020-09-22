@@ -79,6 +79,7 @@ enum OperatorType {
   MEMORY_SOURCE_OPERATOR = 1000;
   GRPC_SOURCE_OPERATOR = 1100;
   UDTF_SOURCE_OPERATOR = 1200;
+  EMPTY_SOURCE_OPERATOR = 1300;
   // Regular operators are range 2000 - 10000.
   MAP_OPERATOR = 2000;
   AGGREGATE_OPERATOR = 2100;
@@ -119,6 +120,8 @@ message Operator {
     JoinOperator join_op = 11;
     // Operator that represents the UDTF source.
     UDTFSourceOperator udtf_source_op = 12;
+    // EmptySourceOperator represents an operator that outputs empty rowbatches.
+    EmptySourceOperator empty_source_op = 13;
   }
 }
 
@@ -316,6 +319,14 @@ message UDTFSourceOperator {
   string name = 1;
   // The values to assign the arguments. Must be the same length as arg_name.
   repeated ScalarValue arg_values = 2;
+}
+
+// Source operator that returns an empty batch.
+message EmptySourceOperator {
+  // The names for the columns.
+  repeated string column_names = 1;
+  // The types of the columns.
+  repeated pl.types.DataType column_types = 2;
 }
 
 // Scalar expression is any single valued expression.

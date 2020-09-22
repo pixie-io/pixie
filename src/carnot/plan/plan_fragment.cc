@@ -74,6 +74,9 @@ Status PlanFragmentWalker::CallWalkFn(const Operator& op) {
     case planpb::OperatorType::UDTF_SOURCE_OPERATOR:
       PL_RETURN_IF_ERROR(CallAs<UDTFSourceOperator>(on_udtf_source_walk_fn_, op));
       break;
+    case planpb::OperatorType::EMPTY_SOURCE_OPERATOR:
+      PL_RETURN_IF_ERROR(CallAs<EmptySourceOperator>(on_empty_source_walk_fn_, op));
+      break;
     default:
       LOG(FATAL) << absl::Substitute("Operator does not exist: $0", magic_enum::enum_name(op_type));
       return error::InvalidArgument("Operator does not exist: $0", magic_enum::enum_name(op_type));
@@ -86,7 +89,7 @@ Status PlanFragmentWalker::Walk(PlanFragment* plan_fragment) {
   for (const auto& node_id : operators) {
     auto node = plan_fragment->nodes().find(node_id);
     if (node == plan_fragment->nodes().end()) {
-      LOG(WARNING) << absl::StrCat("Could not find node in plan fragment");
+      LOG(WARNING) << absl::Substitute("Could not find node $0 in plan fragment", node_id);
     } else {
       PL_RETURN_IF_ERROR(CallWalkFn(*node->second));
     }

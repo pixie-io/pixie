@@ -1232,5 +1232,74 @@ TEST_F(CarnotTest, DISABLED_metadata_logical_plan_filter) {
   }
 }
 
+constexpr char kEmptySourcePlan[] = R"proto(
+dag {
+  nodes {
+    id: 1
+  }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      id: 1
+      sorted_children: 2
+    }
+    nodes {
+      id: 2
+      sorted_parents: 1
+    }
+  }
+  nodes {
+    id: 1
+    op {
+      op_type: EMPTY_SOURCE_OPERATOR
+      empty_source_op {
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_types: INT64
+        column_types: FLOAT64
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: GRPC_SINK_OPERATOR
+      grpc_sink_op {
+        address: "result_addr"
+        output_table {
+          table_name: "out_table"
+          column_names: "cpu0"
+          column_names: "cpu1"
+          column_types: INT64
+          column_types: FLOAT64
+        }
+        connection_options {
+          ssl_targetname: "result_ssltarget"
+        }
+      }
+    }
+  }
+}
+)proto";
+TEST_F(CarnotTest, empty_source_test) {
+  planpb::Plan plan;
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kEmptySourcePlan, &plan));
+
+  ASSERT_OK(carnot_->ExecutePlan(plan, sole::uuid4()));
+
+  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("out_table"));
+  auto output_batches = result_server_->query_results("out_table");
+  ASSERT_EQ(1, output_batches.size());
+  EXPECT_EQ(2, output_batches[0].num_columns());
+
+  for (const auto& rb : output_batches) {
+    EXPECT_TRUE(rb.ColumnAt(0)->Equals(
+        types::ToArrow(std::vector<types::Int64Value>({}), arrow::default_memory_pool())));
+    EXPECT_TRUE(rb.ColumnAt(1)->Equals(
+        types::ToArrow(std::vector<types::Float64Value>({}), arrow::default_memory_pool())));
+  }
+}
 }  // namespace carnot
 }  // namespace pl

@@ -330,18 +330,31 @@ Status MemorySourceIR::ToProto(planpb::Operator* op) const {
   return Status::OK();
 }
 
-std::string DebugStringFmt(int64_t depth, std::string name,
-                           std::map<std::string, std::string> property_value_map) {
-  std::vector<std::string> property_strings;
-  std::map<std::string, std::string>::iterator it;
-  std::string depth_string = std::string(depth, '\t');
-  property_strings.push_back(absl::Substitute("$0$1", depth_string, name));
+Status EmptySourceIR::Init(const Relation& relation) {
+  PL_RETURN_IF_ERROR(SetRelation(relation));
+  return Status::OK();
+}
+Status EmptySourceIR::ToProto(planpb::Operator* op) const {
+  auto pb = op->mutable_empty_source_op();
+  op->set_op_type(planpb::EMPTY_SOURCE_OPERATOR);
 
-  for (it = property_value_map.begin(); it != property_value_map.end(); it++) {
-    std::string prop_str = absl::Substitute("$0 $1\t-$2", depth_string, it->first, it->second);
-    property_strings.push_back(prop_str);
+  for (size_t i = 0; i < relation().NumColumns(); ++i) {
+    pb->add_column_names(relation().col_names()[i]);
+    pb->add_column_types(relation().col_types()[i]);
   }
-  return absl::StrJoin(property_strings, "\n");
+
+  return Status::OK();
+}
+
+Status EmptySourceIR::CopyFromNodeImpl(const IRNode* source,
+                                       absl::flat_hash_map<const IRNode*, IRNode*>*) {
+  const EmptySourceIR* empty = static_cast<const EmptySourceIR*>(source);
+  return SetRelation(empty->relation());
+}
+
+StatusOr<absl::flat_hash_set<std::string>> EmptySourceIR::PruneOutputColumnsToImpl(
+    const absl::flat_hash_set<std::string>&) {
+  return error::Unimplemented("Cannot prune columns for empty source.");
 }
 
 Status MemorySinkIR::Init(OperatorIR* parent, const std::string& name,
@@ -1917,7 +1930,6 @@ Status UDTFSourceIR::InitArgValues(
   return SetArgValues(arg_values);
 }
 
-// StatusOr<IRNode*> UDTFSourceIR::DeepCloneIntoImpl(IR* graph) const {
 Status UDTFSourceIR::CopyFromNodeImpl(
     const IRNode* source, absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   const UDTFSourceIR* udtf = static_cast<const UDTFSourceIR*>(source);

@@ -157,6 +157,31 @@ TEST(ToProto, memory_source_ir) {
   EXPECT_THAT(pb, EqualsProto(kExpectedMemSrcPb));
 }
 
+constexpr char kExpectedEmptySrcPb[] = R"(
+  op_type: EMPTY_SOURCE_OPERATOR
+  empty_source_op {
+    column_names: "cpu0"
+    column_names: "cpu1"
+    column_types: INT64
+    column_types: FLOAT64
+  }
+)";
+
+TEST(ToProto, empty_source_ir) {
+  auto ast = MakeTestAstPtr();
+  auto graph = std::make_shared<IR>();
+
+  ASSERT_OK_AND_ASSIGN(
+      EmptySourceIR * empty_source,
+      graph->CreateNode<EmptySourceIR>(
+          ast, Relation{{types::DataType::INT64, types::DataType::FLOAT64}, {"cpu0", "cpu1"}}));
+
+  planpb::Operator pb;
+  EXPECT_OK(empty_source->ToProto(&pb));
+
+  EXPECT_THAT(pb, EqualsProto(kExpectedEmptySrcPb));
+}
+
 constexpr char kExpectedMemSrcWithTabletPb[] = R"(
   op_type: MEMORY_SOURCE_OPERATOR
   mem_source_op {

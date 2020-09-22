@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "src/carnot/exec/agg_node.h"
+#include "src/carnot/exec/empty_source_node.h"
 #include "src/carnot/exec/equijoin_node.h"
 #include "src/carnot/exec/exec_node.h"
 #include "src/carnot/exec/filter_node.h"
@@ -81,6 +82,9 @@ Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
       })
       .OnUDTFSource([&](auto& node) {
         return OnOperatorImpl<plan::UDTFSourceOperator, UDTFSourceNode>(node, &descriptors);
+      })
+      .OnEmptySource([&](auto& node) {
+        return OnOperatorImpl<plan::EmptySourceOperator, EmptySourceNode>(node, &descriptors);
       })
       .Walk(pf_);
 }

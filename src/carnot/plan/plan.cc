@@ -23,7 +23,7 @@ Status PlanWalker::Walk(Plan* plan) {
   for (const auto& node_id : plan_fragments) {
     auto node = plan->nodes().find(node_id);
     if (node == plan->nodes().end()) {
-      LOG(WARNING) << absl::StrCat("Could not find node in plan.");
+      LOG(WARNING) << absl::Substitute("Could not find node $0 in plan", node_id);
     } else {
       PL_RETURN_IF_ERROR(CallWalkFn(node->second.get()));
     }

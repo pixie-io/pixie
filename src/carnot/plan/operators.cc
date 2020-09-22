@@ -62,6 +62,8 @@ std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator& pb, int64_
       return CreateOperator<JoinOperator>(id, pb.join_op());
     case planpb::UDTF_SOURCE_OPERATOR:
       return CreateOperator<UDTFSourceOperator>(id, pb.udtf_source_op());
+    case planpb::EMPTY_SOURCE_OPERATOR:
+      return CreateOperator<EmptySourceOperator>(id, pb.empty_source_op());
     default:
       LOG(FATAL) << absl::Substitute("Unknown operator type: $0",
                                      magic_enum::enum_name(pb.op_type()));
@@ -657,6 +659,34 @@ std::string UDTFSourceOperator::DebugString() const {
 
 const std::vector<ScalarValue>& UDTFSourceOperator::init_arguments() const {
   return init_arguments_;
+}
+
+/**
+ *  EmptySourceOperator definition.
+ */
+
+std::string EmptySourceOperator::DebugString() const { return "Op:EmptySource"; }
+
+Status EmptySourceOperator::Init(const planpb::EmptySourceOperator& pb) {
+  pb_ = pb;
+  is_initialized_ = true;
+  return Status::OK();
+}
+
+StatusOr<table_store::schema::Relation> EmptySourceOperator::OutputRelation(
+    const table_store::schema::Schema&, const PlanState&,
+    const std::vector<int64_t>& input_ids) const {
+  DCHECK(is_initialized_) << "Not initialized";
+  if (!input_ids.empty()) {
+    // TODO(zasgar): We should figure out if we need to treat the "source table" as
+    // an input relation.
+    return error::InvalidArgument("Source operator cannot have any inputs");
+  }
+  table_store::schema::Relation r;
+  for (int i = 0; i < pb_.column_types_size(); ++i) {
+    r.AddColumn(pb_.column_types(i), pb_.column_names(i));
+  }
+  return r;
 }
 
 }  // namespace plan

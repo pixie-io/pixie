@@ -323,6 +323,21 @@ class UDTFSourceOperator : public Operator {
   std::vector<ScalarValue> init_arguments_;
 };
 
+class EmptySourceOperator : public Operator {
+ public:
+  explicit EmptySourceOperator(int64_t id) : Operator(id, planpb::EMPTY_SOURCE_OPERATOR) {}
+  ~EmptySourceOperator() override = default;
+  StatusOr<table_store::schema::Relation> OutputRelation(
+      const table_store::schema::Schema& schema, const PlanState& state,
+      const std::vector<int64_t>& input_ids) const override;
+  Status Init(const planpb::EmptySourceOperator& pb);
+  std::string DebugString() const override;
+
+ private:
+  planpb::EmptySourceOperator pb_;
+  std::vector<int64_t> column_idxs_;
+};
+
 }  // namespace plan
 }  // namespace carnot
 }  // namespace pl
