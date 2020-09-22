@@ -38,8 +38,6 @@ export const BAR_CHART_TYPE = 'pixielabs.ai/pl.vispb.BarChart';
 export const HISTOGRAM_CHART_TYPE = 'pixielabs.ai/pl.vispb.HistogramChart';
 
 export const COLOR_SCALE = 'color';
-const HOVER_LINE_COLOR = '#4dffd4';
-const HOVER_TIME_COLOR = '#121212';
 const HOVER_LINE_OPACITY = 0.75;
 const HOVER_LINE_DASH = [6, 6];
 const HOVER_LINE_WIDTH = 2;
@@ -124,14 +122,14 @@ export interface VegaSpecWithProps {
 
 export type ChartDisplay = TimeseriesDisplay | BarDisplay | VegaDisplay | HistogramDisplay;
 
-function convertWidgetDisplayToSpecWithErrors(display: ChartDisplay, source: string): VegaSpecWithProps {
+function convertWidgetDisplayToSpecWithErrors(display: ChartDisplay, source: string, theme: Theme): VegaSpecWithProps {
   switch (display[DISPLAY_TYPE_KEY]) {
     case BAR_CHART_TYPE:
       return convertToBarChart(display as BarDisplay, source);
     case HISTOGRAM_CHART_TYPE:
       return convertToHistogramChart(display as HistogramDisplay, source);
     case TIMESERIES_CHART_TYPE:
-      return convertToTimeseriesChart(display as TimeseriesDisplay, source);
+      return convertToTimeseriesChart(display as TimeseriesDisplay, source, theme);
     case VEGA_CHART_TYPE:
       return convertToVegaChart(display as VegaDisplay);
     default:
@@ -146,7 +144,7 @@ function convertWidgetDisplayToSpecWithErrors(display: ChartDisplay, source: str
 
 export function convertWidgetDisplayToVegaSpec(display: ChartDisplay, source: string, theme: Theme): VegaSpecWithProps {
   try {
-    const specWithProps = convertWidgetDisplayToSpecWithErrors(display, source);
+    const specWithProps = convertWidgetDisplayToSpecWithErrors(display, source, theme);
     hydrateSpecWithTheme(specWithProps.spec, theme);
     return specWithProps;
   } catch (error) {
@@ -668,7 +666,7 @@ function addYDomainSignal(
   return addSignal(spec, signal);
 }
 
-function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): VegaSpecWithProps {
+function convertToTimeseriesChart(display: TimeseriesDisplay, source: string, theme: Theme): VegaSpecWithProps {
   if (!display.timeseries) {
     throw new Error('TimeseriesChart must have one timeseries entry');
   }
@@ -846,7 +844,7 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
     i++;
   }
 
-  addHoverMarks(spec, legendData.name);
+  addHoverMarks(spec, legendData.name, theme);
 
   if (display.title) {
     addTitle(spec, display.title);
@@ -1490,7 +1488,7 @@ export const VALUE_DOMAIN_SIGNAL = 'y_domain';
 // less than this value, we set this as the upper bound.
 export const DOMAIN_MIN_UPPER_VALUE = 1;
 
-function addHoverMarks(spec: VgSpec, dataName: string) {
+function addHoverMarks(spec: VgSpec, dataName: string, theme: Theme) {
   // Used by both HOVER_RULE, HOVER_LINE_TIME and HOVER_BULB.
   const hoverOpacityEncoding = [
     {
@@ -1511,7 +1509,7 @@ function addHoverMarks(spec: VgSpec, dataName: string) {
     from: { data: dataName },
     encode: {
       enter: {
-        stroke: { value: HOVER_LINE_COLOR },
+        stroke: { value: theme.palette.success.light },
         strokeDash: { value: HOVER_LINE_DASH },
         strokeWidth: { value: HOVER_LINE_WIDTH },
       },
@@ -1531,8 +1529,8 @@ function addHoverMarks(spec: VgSpec, dataName: string) {
     from: { data: dataName },
     encode: {
       enter: {
-        fill: { value: HOVER_LINE_COLOR },
-        stroke: { value: HOVER_LINE_COLOR },
+        fill: { value: theme.palette.success.light },
+        stroke: { value: theme.palette.success.light },
         size: { value: 45 },
         shape: { value: 'circle' },
         strokeOpacity: { value: 0 },
@@ -1553,7 +1551,7 @@ function addHoverMarks(spec: VgSpec, dataName: string) {
     from: { data: dataName },
     encode: {
       enter: {
-        fill: { value: HOVER_TIME_COLOR },
+        fill: { value: theme.palette.foreground.grey3 },
         align: { value: 'center' },
         baseline: { value: 'top' },
         font: { value: 'Roboto' },
@@ -1578,7 +1576,7 @@ function addHoverMarks(spec: VgSpec, dataName: string) {
         y: { signal: `datum.y - ${HOVER_LINE_TEXT_PADDING}` },
         width: { signal: `datum.bounds.x2 - datum.bounds.x1 + 2 * ${HOVER_LINE_TEXT_PADDING}` },
         height: { signal: `datum.bounds.y2 - datum.bounds.y1 + 2 * ${HOVER_LINE_TEXT_PADDING}` },
-        fill: { value: HOVER_LINE_COLOR },
+        fill: { value: theme.palette.success.light },
         opacity: { signal: 'datum.opacity > 0 ? 1.0 : 0.0' },
       },
     },
@@ -1632,27 +1630,27 @@ function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
     style: {
       bar: {
         // binSpacing: 2,
-        fill: '#39A8F5',
+        fill: theme.palette.graph.primary,
         stroke: null,
       },
       cell: {
         stroke: 'transparent',
       },
       arc: {
-        fill: '#39A8F5',
+        fill: theme.palette.graph.primary,
       },
       area: {
-        fill: '#39A8F5',
+        fill: theme.palette.graph.primary,
       },
       line: {
-        stroke: '#39A8F5',
+        stroke: theme.palette.graph.primary,
         strokeWidth: 1,
       },
       symbol: {
         shape: 'circle',
       },
       rect: {
-        fill: '#39A8F5',
+        fill: theme.palette.graph.primary,
       },
       'group-title': {
         fontSize: 0,
@@ -1704,39 +1702,19 @@ function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
       grid: false,
     },
     group: {
-      fill: '#f0f0f0',
+      fill: theme.palette.foreground.grey5,
     },
     path: {
-      stroke: '#39A8F5',
+      stroke: theme.palette.graph.primary,
       strokeWidth: 0.5,
     },
     range: {
-      category: [
-        '#21a1e7',
-        '#2ca02c',
-        '#98df8a',
-        '#aec7e8',
-        '#ff7f0e',
-        '#ffbb78',
-      ],
-      diverging: [
-        '#cc0020',
-        '#e77866',
-        '#f6e7e1',
-        '#d6e8ed',
-        '#91bfd9',
-        '#1d78b5',
-      ],
-      heatmap: [
-        '#d6e8ed',
-        '#cee0e5',
-        '#91bfd9',
-        '#549cc6',
-        '#1d78b5',
-      ],
+      category: theme.palette.graph.category,
+      diverging: theme.palette.graph.diverging,
+      heatmap: theme.palette.graph.heatmap,
     },
     shape: {
-      stroke: '#39A8F5',
+      stroke: theme.palette.graph.primary,
     },
   };
 }

@@ -25,6 +25,12 @@ declare module '@material-ui/core/styles/createPalette' {
       colorTop?: string;
       colorBottom?: string;
     };
+    graph: {
+      category?: string[];
+      diverging?: string[];
+      heatmap?: string[];
+      primary?: string;
+    };
   }
 
   interface PaletteOptions {
@@ -43,6 +49,12 @@ declare module '@material-ui/core/styles/createPalette' {
     topBar: {
       colorTop?: string;
       colorBottom?: string;
+    };
+    graph: {
+      category?: string[];
+      diverging?: string[];
+      heatmap?: string[];
+      primary?: string;
     };
   }
 }
@@ -158,6 +170,32 @@ export const DARK_THEME = createMuiTheme({
     },
     action: {
       active: '#a6a8ae', // foreground 1.
+    },
+    graph: {
+      category: [
+        '#21a1e7', // one
+        '#2ca02c', // two
+        '#98df8a', // three
+        '#aec7e8', // four
+        '#ff7f0e', // five
+        '#ffbb78', // six
+      ],
+      diverging: [
+        '#cc0020', // left-dark
+        '#e77866', // left-main
+        '#f6e7e1', // left-light
+        '#d6e8ed', // right-light
+        '#91bfd9', // right-main
+        '#1d78b5', // right-dark
+      ],
+      heatmap: [
+        '#d6e8ed', // light-1
+        '#cee0e5', // light-2
+        '#91bfd9', // main
+        '#549cc6', // dark-1
+        '#1d78b5', // dark-2
+      ],
+      primary: '#39A8F5',
     },
   },
   overrides: {
