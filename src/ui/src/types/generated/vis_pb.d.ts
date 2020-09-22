@@ -540,6 +540,25 @@ export class Graph extends jspb.Message {
   hasAdjacencyList(): boolean;
   clearAdjacencyList(): void;
 
+  getEdgeWeightColumn(): string;
+  setEdgeWeightColumn(value: string): void;
+
+  getNodeWeightColumn(): string;
+  setNodeWeightColumn(value: string): void;
+
+  getEdgeColorColumn(): string;
+  setEdgeColorColumn(value: string): void;
+
+  getEdgeThresholds(): Graph.EdgeThresholds | undefined;
+  setEdgeThresholds(value?: Graph.EdgeThresholds): void;
+  hasEdgeThresholds(): boolean;
+  clearEdgeThresholds(): void;
+
+  getEdgeHoverInfoList(): Array<string>;
+  setEdgeHoverInfoList(value: Array<string>): void;
+  clearEdgeHoverInfoList(): void;
+  addEdgeHoverInfo(value: string, index?: number): void;
+
   getInputCase(): Graph.InputCase;
 
   serializeBinary(): Uint8Array;
@@ -554,6 +573,11 @@ export namespace Graph {
   export type AsObject = {
     dotColumn: string,
     adjacencyList?: Graph.AdjacencyList.AsObject,
+    edgeWeightColumn: string,
+    nodeWeightColumn: string,
+    edgeColorColumn: string,
+    edgeThresholds?: Graph.EdgeThresholds.AsObject,
+    edgeHoverInfoList: Array<string>,
   }
 
   export class AdjacencyList extends jspb.Message {
@@ -575,6 +599,29 @@ export namespace Graph {
     export type AsObject = {
       fromColumn: string,
       toColumn: string,
+    }
+  }
+
+
+  export class EdgeThresholds extends jspb.Message {
+    getMediumThreshold(): number;
+    setMediumThreshold(value: number): void;
+
+    getHighThreshold(): number;
+    setHighThreshold(value: number): void;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): EdgeThresholds.AsObject;
+    static toObject(includeInstance: boolean, msg: EdgeThresholds): EdgeThresholds.AsObject;
+    static serializeBinaryToWriter(message: EdgeThresholds, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): EdgeThresholds;
+    static deserializeBinaryFromReader(message: EdgeThresholds, reader: jspb.BinaryReader): EdgeThresholds;
+  }
+
+  export namespace EdgeThresholds {
+    export type AsObject = {
+      mediumThreshold: number,
+      highThreshold: number,
     }
   }
 

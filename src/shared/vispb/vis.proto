@@ -300,11 +300,28 @@ message Graph {
     // The column containing the destination nodes in the graph.
     string to_column = 2;
   }
+  message EdgeThresholds {
+    // The value at which the edge should be considered 'MEDIUM'.
+    int64 medium_threshold = 1;
+    // The value at which the edge should be considered 'HIGH'.
+    int64 high_threshold = 2;
+  }
   oneof input {
     // The column which contains the dot-formatted graph file to render.
     string dot_column = 1;
     AdjacencyList adjacency_list = 2;
   }
+  // The column to use to determine the stroke width of the edge. Optional.
+  string edge_weight_column = 3;
+  // The column to use to determine the size of the node. Optional.
+  string node_weight_column = 4;
+  // The column to use to determine what the color of the edge should be. Optional.
+  string edge_color_column = 5;
+  // The threshold at which edge values are classified as a 'LOW'/'MEDIUM'/'HIGH' color.
+  // Optional, but must have a EdgeColorColumn specified.
+  EdgeThresholds edge_thresholds = 6;
+  // The columns to display when hovering over an edge. Optional.
+  repeated string edge_hover_info = 7;
 }
 
 // Display traffic between pods or services as a graph.
