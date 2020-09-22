@@ -28,7 +28,7 @@ func TestCreateTracepoint(t *testing.T) {
 		originalTracepoint      *logicalpb.TracepointDeployment
 		originalTracepointState statuspb.LifeCycleState
 		newTracepoint           *logicalpb.TracepointDeployment
-		expectedError           bool
+		expectError             bool
 		expectOldUpdated        bool
 	}{
 		{
@@ -49,10 +49,10 @@ func TestCreateTracepoint(t *testing.T) {
 					},
 				},
 			},
-			expectedError: false,
+			expectError: false,
 		},
 		{
-			name: "existing tracepoint, no field match",
+			name: "existing tracepoint, not exactly same (1)",
 			originalTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
 					&logicalpb.TracepointDeployment_Tracepoint{
@@ -84,53 +84,7 @@ func TestCreateTracepoint(t *testing.T) {
 					},
 				},
 			},
-			expectedError: true,
-		},
-		{
-			name: "existing tracepoint, no output match",
-			originalTracepoint: &logicalpb.TracepointDeployment{
-				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
-					&logicalpb.TracepointDeployment_Tracepoint{
-						TableName: "table2",
-						Program: &logicalpb.TracepointSpec{
-							Outputs: []*logicalpb.Output{
-								&logicalpb.Output{
-									Name:   "table2",
-									Fields: []string{"abc"},
-								},
-							},
-						},
-					},
-					&logicalpb.TracepointDeployment_Tracepoint{
-						TableName: "table1",
-						Program: &logicalpb.TracepointSpec{
-							Outputs: []*logicalpb.Output{
-								&logicalpb.Output{
-									Name:   "table1",
-									Fields: []string{"abc", "def"},
-								},
-							},
-						},
-					},
-				},
-			},
-			originalTracepointState: statuspb.RUNNING_STATE,
-			newTracepoint: &logicalpb.TracepointDeployment{
-				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
-					&logicalpb.TracepointDeployment_Tracepoint{
-						TableName: "table1",
-						Program: &logicalpb.TracepointSpec{
-							Outputs: []*logicalpb.Output{
-								&logicalpb.Output{
-									Name:   "table1",
-									Fields: []string{"abc", "def"},
-								},
-							},
-						},
-					},
-				},
-			},
-			expectedError: true,
+			expectOldUpdated: true,
 		},
 		{
 			name: "existing tracepoint, match",
@@ -165,10 +119,10 @@ func TestCreateTracepoint(t *testing.T) {
 					},
 				},
 			},
-			expectedError: true,
+			expectError: true,
 		},
 		{
-			name:                    "existing tracepoint, not exactly same",
+			name:                    "existing tracepoint, not exactly same (2)",
 			originalTracepointState: statuspb.RUNNING_STATE,
 			originalTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
@@ -203,7 +157,7 @@ func TestCreateTracepoint(t *testing.T) {
 					},
 				},
 			},
-			expectedError:    false,
+			expectError:      false,
 			expectOldUpdated: true,
 		},
 		{
@@ -242,7 +196,7 @@ func TestCreateTracepoint(t *testing.T) {
 					},
 				},
 			},
-			expectedError: false,
+			expectError: false,
 		},
 	}
 
@@ -283,7 +237,7 @@ func TestCreateTracepoint(t *testing.T) {
 					Return(nil)
 			}
 
-			if !test.expectedError {
+			if !test.expectError {
 				mockTracepointStore.
 					EXPECT().
 					UpsertTracepoint(gomock.Any(), gomock.Any()).
@@ -317,7 +271,7 @@ func TestCreateTracepoint(t *testing.T) {
 
 			tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 			actualTpID, err := tracepointMgr.CreateTracepoint("test_tracepoint", test.newTracepoint, time.Second*5)
-			if test.expectedError {
+			if test.expectError {
 				assert.Equal(t, controllers.ErrTracepointAlreadyExists, err)
 			} else {
 				assert.Nil(t, err)

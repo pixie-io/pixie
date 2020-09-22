@@ -90,7 +90,7 @@ func (m *TracepointManager) SyncTracepoints() error {
 	return nil
 }
 
-func comparePrograms(p1 *logicalpb.TracepointSpec, p2 *logicalpb.TracepointSpec) bool {
+func compareTracepoints(p1 *logicalpb.TracepointDeployment_Tracepoint, p2 *logicalpb.TracepointDeployment_Tracepoint) bool {
 	val1, err := p1.Marshal()
 	if err != nil {
 		return false
@@ -191,41 +191,32 @@ func (m *TracepointManager) CreateTracepoint(tracepointName string, tracepointDe
 			return nil, err
 		}
 		if prevTracepoint != nil && prevTracepoint.ExpectedState != statuspb.TERMINATED_STATE {
+			// If everything is exactly the same, no need to redeploy
+			//   - return prevTracepointID, ErrTracepointAlreadyExists
+			// If anything inside tracepoints has changed
+			//   - delete old tracepoints, and insert new tracepoints.
 
-			//  We can replace it if the outputs are the same.
-			if len(prevTracepoint.Tracepoint.Tracepoints) != len(tracepointDeployment.Tracepoints) {
-				return prevTracepointID, ErrTracepointAlreadyExists
-			}
-			for i, tracepoint := range prevTracepoint.Tracepoint.Tracepoints {
-				if len(tracepoint.Program.Outputs) != len(tracepointDeployment.Tracepoints[i].Program.Outputs) {
-					return prevTracepointID, ErrTracepointAlreadyExists
-				}
+			// Check if the tracepoints are exactly the same.
+			allTpsSame := true
 
-				for j, output := range tracepoint.Program.Outputs {
-					if len(output.Fields) != len(tracepointDeployment.Tracepoints[i].Program.Outputs[j].Fields) {
-						return prevTracepointID, ErrTracepointAlreadyExists
-					}
-					for k, field := range output.Fields {
-						if field != tracepointDeployment.Tracepoints[i].Program.Outputs[j].Fields[k] {
-							return prevTracepointID, ErrTracepointAlreadyExists
+			if len(prevTracepoint.Tracepoint.Tracepoints) == len(tracepointDeployment.Tracepoints) {
+				for i := range prevTracepoint.Tracepoint.Tracepoints {
+					if tracepointDeployment.Tracepoints[i] != nil {
+						if !compareTracepoints(tracepointDeployment.Tracepoints[i], prevTracepoint.Tracepoint.Tracepoints[i]) {
+							allTpsSame = false
+							break
 						}
 					}
 				}
-			}
-			// Check if the tracepoints are exactly the same.
-			allTpsSame := true
-			for i := range prevTracepoint.Tracepoint.Tracepoints {
-				if !comparePrograms(tracepointDeployment.Tracepoints[i].Program, prevTracepoint.Tracepoint.Tracepoints[i].Program) {
-					allTpsSame = false
-					break
-				}
+			} else {
+				allTpsSame = false
 			}
 
 			if allTpsSame {
 				return prevTracepointID, ErrTracepointAlreadyExists
 			}
 
-			// Trigger termination of the old tracepoint.
+			// Something has changed, so trigger termination of the old tracepoint.
 			err = m.mds.DeleteTracepointTTLs([]uuid.UUID{*prevTracepointID})
 			if err != nil {
 				return nil, err

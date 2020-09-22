@@ -208,7 +208,7 @@ message TracepointDeployment {
     TracepointSpec program = 2;
 
     // This applies to bpftrace. Note that only one bpftrace program is allowed.
-    BPFTrace bpftrace = 5;
+    BPFTrace bpftrace = 5 [ (gogoproto.customname) = "BPFTrace" ];
 
     // It's an error to have both TracepointSpec program and bpftrace specified.
     // TODO(yzhao): Move tracepoints and bpftrace to be options in an oneof field.

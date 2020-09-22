@@ -423,6 +423,41 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 			},
 		}, nil)
 
+	mockTracepointStore.
+		EXPECT().
+		DeleteTracepointTTLs([]uuid.UUID{oldTPID}).
+		Return(nil)
+
+	mockAgtMgr.
+		EXPECT().
+		GetActiveAgents().
+		Return([]*agentpb.Agent{}, nil)
+
+	var tpID uuid.UUID
+	mockTracepointStore.
+		EXPECT().
+		UpsertTracepoint(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(tracepointID uuid.UUID, tracepointInfo *storepb.TracepointInfo) error {
+			assert.Equal(t, program, tracepointInfo.Tracepoint)
+			tpID = tracepointID
+			assert.Equal(t, "test_tracepoint", tracepointInfo.Name)
+			return nil
+		})
+	mockTracepointStore.
+		EXPECT().
+		SetTracepointWithName("test_tracepoint", gomock.Any()).
+		DoAndReturn(func(tpName string, id uuid.UUID) error {
+			assert.Equal(t, tpID, id)
+			return nil
+		})
+	mockTracepointStore.
+		EXPECT().
+		SetTracepointTTL(gomock.Any(), time.Second*5).
+		DoAndReturn(func(id uuid.UUID, ttl time.Duration) error {
+			assert.Equal(t, tpID, id)
+			return nil
+		})
+
 	// Set up server.
 	env, err := metadataenv.New()
 	if err != nil {
@@ -452,8 +487,8 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, 1, len(resp.Tracepoints))
-	assert.Equal(t, utils.ProtoFromUUID(&oldTPID), resp.Tracepoints[0].ID)
-	assert.Equal(t, statuspb.ALREADY_EXISTS, resp.Tracepoints[0].Status.ErrCode)
+	assert.Equal(t, utils.ProtoFromUUID(&tpID), resp.Tracepoints[0].ID)
+	assert.Equal(t, statuspb.OK, resp.Tracepoints[0].Status.ErrCode)
 }
 
 func Test_Server_GetTracepointInfo(t *testing.T) {
