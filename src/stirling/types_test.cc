@@ -5,6 +5,7 @@
 
 using ::pl::types::DataType;
 using ::pl::types::PatternType;
+using ::pl::types::SemanticType;
 
 using ::testing::IsEmpty;
 using ::testing::Pair;
@@ -14,7 +15,7 @@ namespace pl {
 namespace stirling {
 
 TEST(DataElementTest, data_element_proto_getters_test) {
-  DataElement element("user_percentage", "", DataType::FLOAT64, types::SemanticType::ST_NONE,
+  DataElement element("user_percentage", "", DataType::FLOAT64, SemanticType::ST_NONE,
                       PatternType::METRIC_GAUGE);
 
   EXPECT_EQ("user_percentage", std::string(element.name().data()));
@@ -30,15 +31,12 @@ TEST(DataTableSchemaTest, table_schema_proto_getters_test) {
   enum class BEnum : int64_t { kLow, kMed, kHigh = 99 };
   const std::map<int64_t, std::string_view> enum_decoder = EnumDefToMap<BEnum>();
   DataElement elements[] = {
-      {"time_", "", types::DataType::TIME64NS, types::SemanticType::ST_NONE,
-       types::PatternType::METRIC_COUNTER},
-      {"a", "", types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
-      {"b", "", types::DataType::INT64, types::SemanticType::ST_NONE,
-       types::PatternType::GENERAL_ENUM, &enum_decoder},
-      {"c", "", types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
-      {"d", "", types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
-      {"e", "", types::DataType::FLOAT64, types::SemanticType::ST_NONE,
-       types::PatternType::GENERAL},
+      {"time_", "", DataType::TIME64NS, SemanticType::ST_NONE, PatternType::METRIC_COUNTER},
+      {"a", "", DataType::INT64, SemanticType::ST_NONE, PatternType::GENERAL},
+      {"b", "", DataType::INT64, SemanticType::ST_NONE, PatternType::GENERAL_ENUM, &enum_decoder},
+      {"c", "", DataType::INT64, SemanticType::ST_NONE, PatternType::GENERAL},
+      {"d", "", DataType::INT64, SemanticType::ST_NONE, PatternType::GENERAL},
+      {"e", "", DataType::FLOAT64, SemanticType::ST_NONE, PatternType::GENERAL},
   };
   auto table_schema = DataTableSchema("table", elements);
 
@@ -118,53 +116,22 @@ TEST(DynamicDataTableSchemaTest, generate) {
 }
 
 // TODO(oazizi/yzhao): Re-enable after finalizing strategy for auto-generating DataTableSchema.
-TEST(DynamicDataTableSchemaTest, DISABLED_GenerateForBPFTrace) {
-  constexpr std::string_view kBPFTraceWithSameFields = R"(
-    program: "test"
-    outputs {
-      name: "tgid_"
-      type: INT64
-    }
-    outputs {
-      name: "tgid_start_time_"
-      type: INT64
-    }
-    outputs {
-      name: "goid_"
-      type: INT64
-    }
-    outputs {
-      name: "time_"
-      type: INT64
-    }
-    outputs {
-      name: "arg0"
-      type: INT64
-    }
-    outputs {
-      name: "arg1"
-      type: BOOLEAN
-    }
-    outputs {
-      name: "arg2"
-      type: BOOLEAN
-    }
-  )";
+TEST(DynamicDataTableSchemaTest, Create2) {
+  std::vector<DataType> columns = {DataType::INT64, DataType::STRING, DataType::INT64};
 
-  dynamic_tracing::ir::logical::BPFTrace bpftrace;
-  ASSERT_TRUE(google::protobuf::TextFormat::ParseFromString(std::string(kBPFTraceWithSameFields),
-                                                            &bpftrace));
-  auto data_table_schema = DynamicDataTableSchema::Create("out_table", bpftrace);
+  auto data_table_schema = DynamicDataTableSchema::Create("out_table", columns);
 
   const DataTableSchema& table_schema = data_table_schema->Get();
 
   EXPECT_EQ(table_schema.name(), "out_table");
-  ASSERT_EQ(table_schema.elements().size(), 6);
+  ASSERT_EQ(table_schema.elements().size(), 3);
   EXPECT_EQ(table_schema.tabletized(), false);
-  EXPECT_EQ(table_schema.ColIndex("upid"), 0);
-  EXPECT_EQ(table_schema.ColIndex("arg2"), 5);
-  EXPECT_EQ(table_schema.elements()[1].name(), "goid_");
-  EXPECT_EQ(table_schema.elements()[5].name(), "arg2");
+  EXPECT_EQ(table_schema.elements()[0].type(), DataType::INT64);
+  EXPECT_EQ(table_schema.elements()[1].type(), DataType::STRING);
+  EXPECT_EQ(table_schema.elements()[2].type(), DataType::INT64);
+  EXPECT_EQ(table_schema.elements()[0].name(), "Column 0");
+  EXPECT_EQ(table_schema.elements()[1].name(), "Column 1");
+  EXPECT_EQ(table_schema.elements()[2].name(), "Column 2");
 }
 
 }  // namespace stirling

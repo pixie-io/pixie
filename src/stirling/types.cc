@@ -1,12 +1,10 @@
 #include "src/stirling/types.h"
 
 #include <google/protobuf/repeated_field.h>
+#include "src/stirling/dynamic_tracing/ir/physicalpb/physical.pb.h"
 
 namespace pl {
 namespace stirling {
-
-using ::pl::stirling::dynamic_tracing::ir::logical::BPFTrace;
-using ::pl::stirling::dynamic_tracing::ir::physical::Struct;
 
 stirlingpb::Element DataElement::ToProto() const {
   stirlingpb::Element element_proto;
@@ -39,7 +37,7 @@ stirlingpb::TableSchema DataTableSchema::ToProto() const {
 
 namespace {
 
-std::vector<DataElement> CreateDataElements(
+BackedDataElements CreateDataElements(
     const google::protobuf::RepeatedPtrField<::pl::stirling::dynamic_tracing::ir::physical::Field>&
         repeated_fields) {
   using dynamic_tracing::ir::shared::ScalarType;
@@ -79,12 +77,11 @@ std::vector<DataElement> CreateDataElements(
   };
   // clang-format on
 
-  std::vector<DataElement> elements;
+  BackedDataElements elements(repeated_fields.size());
 
   // Insert the special upid column.
   // TODO(yzhao): Make sure to have a structured way to let the IR to express the upid.
-  elements.emplace_back("upid", "upid", types::DataType::UINT128, types::SemanticType::ST_NONE,
-                        types::PatternType::UNSPECIFIED);
+  elements.emplace_back("upid", "", types::DataType::UINT128);
 
   for (int i = 0; i < repeated_fields.size(); ++i) {
     const auto& field = repeated_fields[i];
@@ -110,20 +107,17 @@ std::vector<DataElement> CreateDataElements(
     }
 
     // TODO(oazizi): See if we need to find a way to define SemanticTypes and PatternTypes.
-    elements.emplace_back(field.name(), field.name(), data_type, types::SemanticType::ST_NONE,
-                          types::PatternType::UNSPECIFIED);
+    elements.emplace_back(field.name(), "", data_type);
   }
 
   return elements;
 }
 
-std::vector<DataElement> CreateDataElements(
-    const google::protobuf::RepeatedPtrField<
-        ::pl::stirling::dynamic_tracing::ir::logical::BPFTrace::Output>& repeated_fields) {
-  std::vector<DataElement> elements;
-  for (const auto& field : repeated_fields) {
-    elements.emplace_back(field.name(), field.name(), field.type(), types::SemanticType::ST_NONE,
-                          types::PatternType::UNSPECIFIED);
+BackedDataElements CreateDataElements(const std::vector<types::DataType>& columns) {
+  BackedDataElements elements(columns.size());
+
+  for (size_t i = 0; i < columns.size(); ++i) {
+    elements.emplace_back(absl::StrCat("Column ", i), "", columns[i]);
   }
 
   return elements;
@@ -133,20 +127,13 @@ std::vector<DataElement> CreateDataElements(
 
 std::unique_ptr<DynamicDataTableSchema> DynamicDataTableSchema::Create(
     const dynamic_tracing::BCCProgram::PerfBufferSpec& output_spec) {
-  auto output_struct_ptr = std::make_unique<Struct>(output_spec.output);
-  std::unique_ptr<BPFTrace> bpftrace_ptr;
-  return absl::WrapUnique(
-      new DynamicDataTableSchema(output_spec.name, CreateDataElements(output_struct_ptr->fields()),
-                                 std::move(output_struct_ptr), std::move(bpftrace_ptr)));
+  return absl::WrapUnique(new DynamicDataTableSchema(
+      output_spec.name, CreateDataElements(output_spec.output.fields())));
 }
 
 std::unique_ptr<DynamicDataTableSchema> DynamicDataTableSchema::Create(
-    std::string_view output_name, const dynamic_tracing::ir::logical::BPFTrace& bpftrace) {
-  std::unique_ptr<Struct> output_struct_ptr;
-  auto bpftrace_ptr = std::make_unique<BPFTrace>(bpftrace);
-  return absl::WrapUnique(
-      new DynamicDataTableSchema(output_name, CreateDataElements(bpftrace_ptr->outputs()),
-                                 std::move(output_struct_ptr), std::move(bpftrace_ptr)));
+    std::string_view output_name, const std::vector<types::DataType>& columns) {
+  return absl::WrapUnique(new DynamicDataTableSchema(output_name, CreateDataElements(columns)));
 }
 
 }  // namespace stirling

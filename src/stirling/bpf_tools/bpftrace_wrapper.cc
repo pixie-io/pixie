@@ -17,12 +17,7 @@ namespace pl {
 namespace stirling {
 namespace bpf_tools {
 
-Status BPFTraceWrapper::Deploy(std::string_view script, const std::vector<std::string>& params,
-                               const PrintfCallback& printf_callback) {
-  if (!IsRoot()) {
-    return error::PermissionDenied("Bpftrace currently only supported as the root user.");
-  }
-
+Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::string>& params) {
   int err;
   int success;
   bpftrace::Driver driver(bpftrace_);
@@ -104,16 +99,25 @@ Status BPFTraceWrapper::Deploy(std::string_view script, const std::vector<std::s
 
   bpftrace::ast::CodegenLLVM llvm(driver.root_.get(), bpftrace_);
   bpforc_ = llvm.compile();
+  bpftrace_.bpforc_ = bpforc_.get();
 
   if (bpftrace_.num_probes() == 0) {
     return error::Internal("No bpftrace probes to deploy.");
   }
 
+  return Status::OK();
+}
+
+Status BPFTraceWrapper::Deploy(const PrintfCallback& printf_callback) {
+  if (!IsRoot()) {
+    return error::PermissionDenied("Bpftrace currently only supported as the root user.");
+  }
+
   if (printf_callback) {
     bpftrace_.printf_callback_ = printf_callback;
   }
-  bpftrace_.bpforc_ = bpforc_.get();
-  err = bpftrace_.deploy();
+
+  int err = bpftrace_.deploy();
   if (err != 0) {
     return error::Internal("Failed to run BPF code.");
   }

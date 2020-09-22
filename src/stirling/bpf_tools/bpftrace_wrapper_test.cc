@@ -16,7 +16,8 @@ TEST(BPFTracerWrapperTest, MapRead) {
   )";
 
   BPFTraceWrapper bpftrace_wrapper;
-  ASSERT_OK(bpftrace_wrapper.Deploy(kScript, /* params */ {}));
+  ASSERT_OK(bpftrace_wrapper.Compile(kScript, /* params */ {}));
+  ASSERT_OK(bpftrace_wrapper.Deploy());
   sleep(1);
 
   bpftrace::BPFTraceMap entries = bpftrace_wrapper.GetBPFMap("@retval");
@@ -33,7 +34,8 @@ TEST(BPFTracerWrapperTest, PerfBufferPoll) {
     )";
 
   BPFTraceWrapper bpftrace_wrapper;
-  ASSERT_OK(bpftrace_wrapper.Deploy(kScript, /* params */ {}));
+  ASSERT_OK(bpftrace_wrapper.Compile(kScript, /* params */ {}));
+  ASSERT_OK(bpftrace_wrapper.Deploy());
   sleep(1);
 
   bpftrace_wrapper.PollPerfBuffers(100);
@@ -65,7 +67,8 @@ TEST(BPFTracerWrapperTest, PerfBufferPollWithCallback) {
   BPFTraceWrapper bpftrace_wrapper;
   auto callback_fn =
       std::bind(&CallbackWrapperClass::PrintfCallback, &callback_target, std::placeholders::_1);
-  ASSERT_OK(bpftrace_wrapper.Deploy(script, /* params */ {}, callback_fn));
+  ASSERT_OK(bpftrace_wrapper.Compile(script, /* params */ {}));
+  ASSERT_OK(bpftrace_wrapper.Deploy(callback_fn));
   sleep(kProbeDurationSeconds);
 
   bpftrace_wrapper.PollPerfBuffers();
@@ -89,7 +92,8 @@ TEST(BPFTracerWrapperTest, OutputFields) {
     )";
 
   BPFTraceWrapper bpftrace_wrapper;
-  ASSERT_OK(bpftrace_wrapper.Deploy(script, /* params */ {}));
+  ASSERT_OK(bpftrace_wrapper.Compile(script, /* params */ {}));
+  ASSERT_OK(bpftrace_wrapper.Deploy());
   sleep(1);
 
   ASSERT_OK_AND_ASSIGN(const std::vector<bpftrace::Field>& fields, bpftrace_wrapper.OutputFields());

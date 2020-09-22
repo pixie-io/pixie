@@ -11,11 +11,68 @@
 namespace pl {
 namespace stirling {
 
+namespace {
+
+StatusOr<std::vector<types::DataType>> ConvertFields(const std::vector<bpftrace::Field> fields) {
+  std::vector<types::DataType> columns;
+
+  for (size_t i = 0; i < fields.size(); ++i) {
+    bpftrace::Type bpftrace_type = fields[i].type.type;
+
+    // Check #2: Any integers must be an expected size.
+    if (bpftrace_type == bpftrace::Type::integer) {
+      size_t bpftrace_type_size = fields[i].type.size;
+
+      switch (bpftrace_type_size) {
+        case 8:
+        case 4:
+        case 2:
+        case 1:
+          break;
+        default:
+          return error::Internal("Perf event on column $0 contains invalid integer size: $1.", i,
+                                 bpftrace_type_size);
+      }
+    }
+
+    types::DataType col_type = types::DataType::DATA_TYPE_UNKNOWN;
+    switch (bpftrace_type) {
+      case bpftrace::Type::integer:
+        col_type = types::DataType::INT64;
+        break;
+      case bpftrace::Type::string:
+        col_type = types::DataType::STRING;
+        break;
+      default:
+        return error::Internal("Column $0 has an unhandled field type $1.", i,
+                               magic_enum::enum_name(bpftrace_type));
+    }
+    columns.push_back(col_type);
+  }
+
+  return columns;
+}
+
+}  // namespace
+
 std::unique_ptr<SourceConnector> DynamicBPFTraceConnector::Create(
     std::string_view source_name,
     const dynamic_tracing::ir::logical::TracepointDeployment::Tracepoint& tracepoint) {
+  // We create a separate BPFTrace instance just to compile and get the schema.
+  // We later will run the compilation again a second time during Init.
+  // This is wasteful and somewhat hacky, but there is a circular dependency otherwise.
+  // TODO(oazizi): Clean this up. No time now since trying to get this out quickly.
+  //               Right solution is probably to inject the compiled program into the connector.
+  BPFTraceWrapper bpftrace;
+  Status s = bpftrace.Compile(tracepoint.bpftrace().program(), {});
+  std::vector<bpftrace::Field> fields = bpftrace.OutputFields().ValueOr({});
+  std::vector<types::DataType> columns = ConvertFields(fields).ValueOr({});
+  // Note that we ignore all compilation errors; the second compilation during Init() will report
+  // them.
+
   std::unique_ptr<DynamicDataTableSchema> table_schema =
-      DynamicDataTableSchema::Create(tracepoint.table_name(), tracepoint.bpftrace());
+      DynamicDataTableSchema::Create(tracepoint.table_name(), std::move(columns));
+
   return std::unique_ptr<SourceConnector>(new DynamicBPFTraceConnector(
       source_name, std::move(table_schema), tracepoint.bpftrace().program()));
 }
@@ -89,7 +146,8 @@ Status CheckOutputFields(const std::vector<bpftrace::Field> fields,
 
 Status DynamicBPFTraceConnector::InitImpl() {
   auto callback_fn = std::bind(&DynamicBPFTraceConnector::HandleEvent, this, std::placeholders::_1);
-  PL_RETURN_IF_ERROR(Deploy(script_, {}, callback_fn));
+  PL_RETURN_IF_ERROR(Compile(script_, {}));
+  PL_RETURN_IF_ERROR(Deploy(callback_fn));
   PL_ASSIGN_OR_RETURN(output_fields_, OutputFields());
   PL_RETURN_IF_ERROR(CheckOutputFields(output_fields_, table_schema_->Get().elements()));
   return Status::OK();

@@ -29,10 +29,14 @@ class BPFTraceWrapper {
   ~BPFTraceWrapper() { Stop(); }
 
   /**
-   * Compiles the BPFTrace program and deploys it.
+   * Compiles the BPFTrace program.
    */
-  Status Deploy(std::string_view bpf_program, const std::vector<std::string>& params,
-                const PrintfCallback& printf_callback = nullptr);
+  Status Compile(std::string_view bpf_program, const std::vector<std::string>& params);
+
+  /**
+   * Deploys the previously compiled BPFTrace program.
+   */
+  Status Deploy(const PrintfCallback& printf_callback = nullptr);
 
   /**
    * Drains all of the managed perf buffers, calling the handle function for each event.

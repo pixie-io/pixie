@@ -10,7 +10,6 @@
 #include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/type_utils.h"
-#include "src/stirling/dynamic_tracing/ir/logicalpb/logical.pb.h"
 #include "src/stirling/dynamic_tracing/types.h"
 #include "src/stirling/proto/stirling.pb.h"
 
@@ -180,6 +179,42 @@ class DataTableSchema {
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 };
 
+class BackedDataElements {
+ public:
+  explicit BackedDataElements(size_t size) : size_(size) {
+    // Constructor forces an initial size. It is critical to size names_ and descriptions_
+    // up-front, otherwise a reallocation will cause the string_views from elements_ into these
+    // structures to become invalid.
+    names_.resize(size_);
+    descriptions_.resize(size_);
+
+    elements_.reserve(size_);
+  }
+
+  const std::vector<DataElement>& elements() const { return elements_; }
+
+  void emplace_back(std::string_view name, std::string_view description, types::DataType type,
+                    types::SemanticType stype = types::SemanticType::ST_NONE,
+                    types::PatternType ptype = types::PatternType::UNSPECIFIED) {
+    DCHECK(pos_ < size_);
+
+    names_[pos_] = name;
+    descriptions_[pos_] = description;
+    elements_.emplace_back(names_[pos_], descriptions_[pos_], type, stype, ptype);
+    ++pos_;
+  }
+
+ private:
+  std::vector<DataElement> elements_;
+
+  // Backing store for the string views in elements.
+  std::vector<std::string> names_;
+  std::vector<std::string> descriptions_;
+
+  size_t size_ = 0;
+  size_t pos_ = 0;
+};
+
 /**
  * A wrapper around DataTableSchema that also holds storage for the elements.
  * DataTableSchema itself does not hold elements, but rather has views into the elements.
@@ -190,34 +225,24 @@ class DynamicDataTableSchema {
  public:
   static std::unique_ptr<DynamicDataTableSchema> Create(
       const dynamic_tracing::BCCProgram::PerfBufferSpec& output_spec);
-
   static std::unique_ptr<DynamicDataTableSchema> Create(
-      std::string_view output_name, const dynamic_tracing::ir::logical::BPFTrace& bpftrace);
+      std::string_view output_name, const std::vector<types::DataType>& columns);
 
   const DataTableSchema& Get() { return table_schema_; }
 
  private:
-  DynamicDataTableSchema(std::string_view name, std::vector<DataElement> elements,
-                         std::unique_ptr<dynamic_tracing::ir::physical::Struct> output_struct,
-                         std::unique_ptr<dynamic_tracing::ir::logical::BPFTrace> bpftrace)
-      : name_(name),
-        elements_(std::move(elements)),
-        table_schema_(name_, elements_),
-        output_struct_(std::move(output_struct)),
-        bpftrace_(std::move(bpftrace)) {}
+  DynamicDataTableSchema(std::string_view name, BackedDataElements elements)
+      : name_(name), elements_(std::move(elements)), table_schema_(name_, elements_.elements()) {}
 
   std::string name_;
 
-  // Keep a copy of the passed elements, because table_schema_ has views into this data structure.
-  std::vector<DataElement> elements_;
+  // Keep the copy of the elements, because table_schema_ has views into this data,
+  // particularly the name and description (i.e. strings).
+  BackedDataElements elements_;
 
   // The main data structure, which mostly has views into elements_, and by extension
   // output_struct_.
   DataTableSchema table_schema_;
-
-  // Keep the copy of the protobuf, because elements_ has views into these data structures.
-  std::unique_ptr<dynamic_tracing::ir::physical::Struct> output_struct_;
-  std::unique_ptr<dynamic_tracing::ir::logical::BPFTrace> bpftrace_;
 };
 
 }  // namespace stirling
