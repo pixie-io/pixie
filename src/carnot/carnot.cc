@@ -342,7 +342,7 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
   int64_t exec_time_ns = timer.ElapsedTime_us() * 1000;
 
   std::vector<queryresultspb::AgentExecutionStats> input_agent_stats;
-  if (HasGRPCServer()) {
+  if (HasGRPCServer() && !incoming_agents.empty()) {
     PL_ASSIGN_OR_RETURN(input_agent_stats,
                         grpc_router_->GetIncomingWorkerExecStats(query_id, incoming_agents));
   }
