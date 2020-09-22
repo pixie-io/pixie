@@ -22,19 +22,24 @@ std::unique_ptr<MetadataHandler> MetadataHandler::Create() {
   std::unique_ptr<MetadataHandler> handler(new MetadataHandler());
   handler->AddObject<IdMetadataProperty>(MetadataType::CONTAINER_ID, {}, {MetadataType::UPID});
   handler->AddObject<IdMetadataProperty>(MetadataType::SERVICE_ID, {},
-                                         {MetadataType::UPID, MetadataType::SERVICE_NAME});
+                                         {MetadataType::UPID, MetadataType::SERVICE_NAME,
+                                          MetadataType::POD_ID, MetadataType::POD_NAME});
   handler->AddObject<IdMetadataProperty>(MetadataType::POD_ID, {},
                                          {MetadataType::UPID, MetadataType::POD_NAME});
   handler->AddObject<IdMetadataProperty>(MetadataType::DEPLOYMENT_ID, {},
                                          {MetadataType::UPID, MetadataType::DEPLOYMENT_NAME});
-  handler->AddObject<NameMetadataProperty>(MetadataType::SERVICE_NAME, {"service"},
-                                           {MetadataType::UPID, MetadataType::SERVICE_ID});
+  handler->AddObject<NameMetadataProperty>(
+      MetadataType::SERVICE_NAME, {"service"},
+      {MetadataType::UPID, MetadataType::SERVICE_ID, MetadataType::POD_ID, MetadataType::POD_NAME});
   handler->AddObject<NameMetadataProperty>(MetadataType::POD_NAME, {"pod"},
                                            {MetadataType::UPID, MetadataType::POD_ID});
   handler->AddObject<NameMetadataProperty>(MetadataType::DEPLOYMENT_NAME, {"deployment"},
                                            {MetadataType::UPID, MetadataType::DEPLOYMENT_ID});
-  handler->AddObject<NameMetadataProperty>(MetadataType::NAMESPACE, {}, {MetadataType::UPID});
-  handler->AddObject<NameMetadataProperty>(MetadataType::NODE_NAME, {"node"}, {MetadataType::UPID});
+  handler->AddObject<NameMetadataProperty>(MetadataType::NAMESPACE, {},
+                                           {MetadataType::UPID, MetadataType::POD_ID,
+                                            MetadataType::POD_NAME, MetadataType::SERVICE_NAME});
+  handler->AddObject<NameMetadataProperty>(MetadataType::NODE_NAME, {"node"},
+                                           {MetadataType::UPID, MetadataType::POD_ID});
   handler->AddObject<NameMetadataProperty>(MetadataType::HOSTNAME, {"host"}, {MetadataType::UPID});
   handler->AddObject<NameMetadataProperty>(MetadataType::CONTAINER_NAME, {"container"},
                                            {MetadataType::UPID});
