@@ -157,6 +157,7 @@ export class VizierGRPCClient {
         });
         const table = tablesMap.get(id);
         results.tables.push(table);
+        onData(results);
       } else if (resp.hasMutationInfo()) {
         results.mutationInfo = resp.getMutationInfo();
       } else if (resp.hasData()) {
