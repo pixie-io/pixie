@@ -98,12 +98,12 @@ export const AdminTooltip = ({ children, title }) => {
   );
 };
 
-export const StyledTabs = withStyles(() => createStyles({
+export const StyledTabs = withStyles((theme: Theme) => createStyles({
   root: {
     flex: 1,
   },
   indicator: {
-    backgroundColor: '#12D6D6',
+    backgroundColor: theme.palette.primary.main,
     height: '4px',
   },
 }))(Tabs);
@@ -131,7 +131,7 @@ export const StyledTableCell = withStyles((theme: Theme) => createStyles({
   root: {
     fontWeight: theme.typography.fontWeightLight,
     fontSize: '14px',
-    color: '#748790',
+    color: theme.palette.foreground.one,
     backgroundColor: theme.palette.foreground.grey3,
     borderWidth: theme.spacing(1),
     borderColor: theme.palette.background.default,
@@ -185,7 +185,7 @@ withStyles((theme: Theme) => createStyles({
   root: {
     fontWeight: theme.typography.fontWeightLight,
     fontSize: '14px',
-    color: '#748790',
+    color: theme.palette.foreground.one,
     backgroundColor: theme.palette.foreground.grey3,
     borderWidth: 8,
     borderColor: theme.palette.background.default,

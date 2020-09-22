@@ -1,12 +1,9 @@
 import { Options } from 'vis-network/standalone';
+import { Theme } from '@material-ui/core/styles';
+
 import * as podSVG from './pod.svg';
 import * as svcSVG from './svc.svg';
 import { SemanticType } from '../../../types/generated/vizier_pb';
-
-// TODO(michelle): Get these from MUI theme.
-const HIGH_EDGE_COLOR = '#e54e5c';
-const MED_EDGE_COLOR = '#dc9406';
-const LOW_EDGE_COLOR = '#00bd8f';
 
 export const LABEL_OPTIONS = {
   label: {
@@ -16,48 +13,50 @@ export const LABEL_OPTIONS = {
   },
 };
 
-export const GRAPH_OPTIONS: Options = {
-  clickToUse: true,
-  layout: {
-    randomSeed: 10,
-    improvedLayout: false,
-  },
-  physics: {
-    solver: 'forceAtlas2Based',
-    forceAtlas2Based: {
-      gravitationalConstant: -50,
+export function getGraphOptions(theme: Theme): Options {
+  return {
+    clickToUse: true,
+    layout: {
+      randomSeed: 10,
+      improvedLayout: false,
     },
-    hierarchicalRepulsion: {
-      nodeDistance: 100,
-    },
-    stabilization: {
-      iterations: 250,
-      updateInterval: 10,
-    },
-  },
-  edges: {
-    smooth: false,
-    scaling: {
-      max: 5,
-    },
-    arrows: {
-      to: {
-        enabled: true,
-        type: 'arrow',
-        scaleFactor: 0.5,
+    physics: {
+      solver: 'forceAtlas2Based',
+      forceAtlas2Based: {
+        gravitationalConstant: -50,
+      },
+      hierarchicalRepulsion: {
+        nodeDistance: 100,
+      },
+      stabilization: {
+        iterations: 250,
+        updateInterval: 10,
       },
     },
-  },
-  nodes: {
-    borderWidth: 0.5,
-    scaling: LABEL_OPTIONS,
-    font: {
-      face: 'Roboto',
-      color: '#a6a8ae',
-      align: 'left',
+    edges: {
+      smooth: false,
+      scaling: {
+        max: 5,
+      },
+      arrows: {
+        to: {
+          enabled: true,
+          type: 'arrow',
+          scaleFactor: 0.5,
+        },
+      },
     },
-  },
-};
+    nodes: {
+      borderWidth: 0.5,
+      scaling: LABEL_OPTIONS,
+      font: {
+        face: 'Roboto',
+        color: theme.palette.text.primary,
+        align: 'left',
+      },
+    },
+  };
+}
 
 const semTypeToIcon = {
   [SemanticType.ST_SERVICE_NAME]: svcSVG,
@@ -84,16 +83,16 @@ export function getNamespaceFromEntityName(val: string): string {
   return val.split('/')[0];
 }
 
-export function getColorForLatency(val: number): string {
+export function getColorForLatency(val: number, theme: Theme): string {
   if (val < 100) {
-    return LOW_EDGE_COLOR;
+    return theme.palette.success.dark;
   }
-  return val > 200 ? HIGH_EDGE_COLOR : MED_EDGE_COLOR;
+  return val > 200 ? theme.palette.error.main : theme.palette.warning.main;
 }
 
-export function getColorForErrorRate(val: number): string {
+export function getColorForErrorRate(val: number, theme: Theme): string {
   if (val < 1) {
-    return LOW_EDGE_COLOR;
+    return theme.palette.success.dark;
   }
-  return val > 2 ? HIGH_EDGE_COLOR : MED_EDGE_COLOR;
+  return val > 2 ? theme.palette.error.main : theme.palette.warning.main;
 }

@@ -62,7 +62,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     padding: 0,
     fontWeight: theme.typography.fontWeightLight,
     fontSize: '14px',
-    color: '#748790',
+    color: theme.palette.foreground.one,
     backgroundColor: theme.palette.foreground.grey3,
     borderWidth: 8,
     borderColor: theme.palette.background.default,
@@ -97,7 +97,7 @@ const StyledListItemText = withStyles((theme: Theme) => createStyles({
   primary: {
     fontWeight: theme.typography.fontWeightLight,
     fontSize: '14px',
-    color: '#748790',
+    color: theme.palette.foreground.one,
   },
 }))(ListItemText);
 

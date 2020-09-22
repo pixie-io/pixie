@@ -244,7 +244,7 @@ const styles = (theme: Theme) => createStyles({
     // This mirrors the default style in our existing Material UI tooltips for consistency.
     '#vg-tooltip-element.vg-tooltip.custom-theme': {
       borderWidth: 0,
-      color: '#fff',
+      color: theme.palette.foreground.white,
       padding: '4px 8px',
       fontSize: '0.625rem',
       maxWidth: 300,
@@ -253,7 +253,7 @@ const styles = (theme: Theme) => createStyles({
       fontWeight: 500,
       lineHeight: '1.4em',
       borderRadius: '4px',
-      backgroundColor: '#616161',
+      backgroundColor: theme.palette.foreground.grey1,
       opacity: 0.9,
     },
   },

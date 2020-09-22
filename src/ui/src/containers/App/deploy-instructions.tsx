@@ -15,7 +15,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   content: {
     padding: theme.spacing(6),
-    color: '#B2B5BB',
+    color: theme.palette.foreground.one,
   },
   container: {
     display: 'flex',
@@ -48,7 +48,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   linkItem: {
     ...theme.typography.body1,
     fontFamily: 'monospace',
-    color: '#B2B5BB',
+    color: theme.palette.foreground.one,
     textDecoration: 'underline',
   },
   list: {

@@ -2,7 +2,7 @@ import * as React from 'react';
 import { WidgetDisplay } from 'containers/live/vis';
 
 import { data as visData, Network } from 'vis-network/standalone';
-import { createStyles, makeStyles } from '@material-ui/core/styles';
+import { createStyles, makeStyles, useTheme } from '@material-ui/core/styles';
 import { toEntityURL, toSingleEntityPage } from 'components/live-widgets/utils/live-view-params';
 import ClusterContext from 'common/cluster-context';
 import { SemanticType } from 'types/generated/vizier_pb';
@@ -13,7 +13,7 @@ import { formatFloat64Data } from 'utils/format-data';
 import {
   getColorForErrorRate,
   getColorForLatency,
-  GRAPH_OPTIONS as graphOpts,
+  getGraphOptions,
   LABEL_OPTIONS as labelOpts,
   semTypeToShapeConfig,
 } from './graph-options';
@@ -76,6 +76,9 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
   const [hierarchyEnabled, setHierarchyEnabled] = React.useState<boolean>(false);
   const [colorByLatency, setColorByLatency] = React.useState<boolean>(false);
   const [focused, setFocused] = React.useState<boolean>(false);
+
+  const theme = useTheme();
+  const graphOpts = getGraphOptions(theme);
 
   /**
    * Toggle the hier/non-hier clustering mode.
@@ -167,7 +170,7 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
       graph.edges.forEach((edge: Edge) => {
         graph.edges.update({
           ...edge,
-          color: latencyColor ? getColorForLatency(edge.p99) : getColorForErrorRate(edge.errorRate),
+          color: latencyColor ? getColorForLatency(edge.p99, theme) : getColorForErrorRate(edge.errorRate, theme),
         });
       });
     }
@@ -202,7 +205,8 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
                        p50: ${formatFloat64Data(edge.p50)} ms <br>
                        p99: ${formatFloat64Data(edge.p99)} ms`;
 
-        const color = colorByLatency ? getColorForLatency(edge.p99) : getColorForErrorRate(edge.errorRate);
+        const color = colorByLatency
+          ? getColorForLatency(edge.p99, theme) : getColorForErrorRate(edge.errorRate, theme);
         const value = bps;
         graph.edges.update({
           ...edge,

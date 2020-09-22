@@ -32,17 +32,17 @@ const jsonStyles = (theme: Theme) => createStyles({
     color: theme.palette.foreground?.white,
   },
   number: {
-    color: '#ae81ff',
+    color: theme.palette.secondary.main,
   },
   null: {
-    color: '#f92672',
+    color: theme.palette.success.main,
   },
   string: {
     color: theme.palette.info.light,
     wordBreak: 'break-all',
   },
   boolean: {
-    color: '#f92672',
+    color: theme.palette.success.main,
   },
 });
 

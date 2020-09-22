@@ -1,14 +1,15 @@
 import * as copyBtn from 'images/icons/copy-btn.svg';
 import Highlight, { defaultProps } from 'prism-react-renderer';
 import * as React from 'react';
+import { Theme } from '@material-ui/core/styles';
 
 import { Box } from '@material-ui/core';
 import IconButton from '@material-ui/core/IconButton';
 import withStyles from '@material-ui/core/styles/withStyles';
 
-const CodeRenderer = withStyles(() => ({
+const CodeRenderer = withStyles((theme: Theme) => ({
   code: {
-    backgroundColor: '#212324',
+    backgroundColor: theme.palette.foreground.grey3,
     borderRadius: '5px',
     boxShadow: '0px 6px 18px rgba(0, 0, 0, 0.0864292)',
     marginTop: '24px',

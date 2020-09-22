@@ -3,13 +3,13 @@ import {
   data as visData, Edge, Network, Node, parseDOTNetwork,
 } from 'vis-network/standalone';
 import * as React from 'react';
-import { createStyles, makeStyles } from '@material-ui/core/styles';
+import { createStyles, makeStyles, useTheme } from '@material-ui/core/styles';
 import { useHistory } from 'react-router';
 import ClusterContext from 'common/cluster-context';
 import { Arguments } from 'utils/args-utils';
 import { DataType, Relation, SemanticType } from '../../../types/generated/vizier_pb';
 import {
-  GRAPH_OPTIONS as graphOpts, semTypeToShapeConfig,
+  getGraphOptions, semTypeToShapeConfig,
 } from './graph-options';
 import { toEntityURL, toSingleEntityPage } from '../utils/live-view-params';
 
@@ -114,6 +114,8 @@ export const Graph = (props: GraphProps) => {
   const {
     dot, toCol, fromCol, data, propagatedArgs,
   } = props;
+  const theme = useTheme();
+  const graphOpts = getGraphOptions(theme);
 
   // TODO(zasgar/michelle/nserrino): Remove the context information from here and elsewhere.
   const { selectedClusterName } = React.useContext(ClusterContext);
