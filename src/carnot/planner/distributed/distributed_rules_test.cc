@@ -39,7 +39,10 @@ TEST_F(DistributedRulesTest, DistributedIRRuleTest) {
   for (int64_t i = 0; i < physical_state.carnot_info_size(); ++i) {
     int64_t carnot_id =
         physical_plan->AddCarnot(physical_state.carnot_info()[i]).ConsumeValueOrDie();
-    physical_plan->Get(carnot_id)->AddPlan(std::make_unique<IR>());
+
+    auto plan_uptr = std::make_unique<IR>();
+    physical_plan->Get(carnot_id)->AddPlan(plan_uptr.get());
+    physical_plan->AddPlan(std::move(plan_uptr));
   }
 
   DistributedIRRule<MockRule> rule;
@@ -77,8 +80,10 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnKelvinFiltersOutPEMPlan) {
   auto carnot_info = logical_state_.distributed_state().carnot_info()[0];
   ASSERT_TRUE(IsPEM(carnot_info));
 
-  ASSERT_OK_AND_ASSIGN(auto schema_map, LoadSchemaMap(logical_state_.distributed_state()));
-  PruneUnavailableSourcesRule rule(carnot_info, schema_map);
+  ASSERT_OK_AND_ASSIGN(sole::uuid uuid, ParseUUID(carnot_info.agent_id()));
+  ASSERT_OK_AND_ASSIGN(auto schema_map,
+                       LoadSchemaMap(logical_state_.distributed_state(), uuid_to_id_map_));
+  PruneUnavailableSourcesRule rule(uuid_to_id_map_[uuid], carnot_info, schema_map);
 
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
@@ -126,8 +131,10 @@ TEST_F(PruneUnavailableSourcesRuleTest, DISABLED_UDTFOnKelvinShouldBeRemovedIfOt
   // Should be a kelvin.
   ASSERT_TRUE(!IsPEM(carnot_info));
 
-  ASSERT_OK_AND_ASSIGN(auto schema_map, LoadSchemaMap(logical_state_.distributed_state()));
-  PruneUnavailableSourcesRule rule(carnot_info, schema_map);
+  ASSERT_OK_AND_ASSIGN(sole::uuid uuid, ParseUUID(carnot_info.agent_id()));
+  ASSERT_OK_AND_ASSIGN(auto schema_map,
+                       LoadSchemaMap(logical_state_.distributed_state(), uuid_to_id_map_));
+  PruneUnavailableSourcesRule rule(uuid_to_id_map_[uuid], carnot_info, schema_map);
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
   ASSERT_TRUE(rule_or_s.ConsumeValueOrDie());
@@ -152,8 +159,10 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnKelvinKeepsAllKelvinNodes) {
   auto carnot_info = logical_state_.distributed_state().carnot_info()[2];
   // Should be a kelvin.
   ASSERT_TRUE(!IsPEM(carnot_info));
-  ASSERT_OK_AND_ASSIGN(auto schema_map, LoadSchemaMap(logical_state_.distributed_state()));
-  PruneUnavailableSourcesRule rule(carnot_info, schema_map);
+  ASSERT_OK_AND_ASSIGN(sole::uuid uuid, ParseUUID(carnot_info.agent_id()));
+  ASSERT_OK_AND_ASSIGN(auto schema_map,
+                       LoadSchemaMap(logical_state_.distributed_state(), uuid_to_id_map_));
+  PruneUnavailableSourcesRule rule(uuid_to_id_map_[uuid], carnot_info, schema_map);
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
   ASSERT_FALSE(rule_or_s.ConsumeValueOrDie());
@@ -185,8 +194,10 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnPEMsRemovesKelvin) {
 
   auto kelvin_info = logical_state_.distributed_state().carnot_info()[2];
   ASSERT_FALSE(IsPEM(kelvin_info));
-  ASSERT_OK_AND_ASSIGN(auto schema_map, LoadSchemaMap(logical_state_.distributed_state()));
-  PruneUnavailableSourcesRule rule(kelvin_info, schema_map);
+  ASSERT_OK_AND_ASSIGN(sole::uuid uuid, ParseUUID(kelvin_info.agent_id()));
+  ASSERT_OK_AND_ASSIGN(auto schema_map,
+                       LoadSchemaMap(logical_state_.distributed_state(), uuid_to_id_map_));
+  PruneUnavailableSourcesRule rule(uuid_to_id_map_[uuid], kelvin_info, schema_map);
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
   ASSERT_TRUE(rule_or_s.ConsumeValueOrDie());
@@ -223,12 +234,14 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnPEMsKeepsPEM) {
   auto grpc_sink2_id = grpc_sink2->id();
 
   // We want to grab a PEM.
-  auto pem_info = logical_state_.distributed_state().carnot_info()[0];
-  pem_info.set_asid(upid.asid());
-  ASSERT_TRUE(IsPEM(pem_info));
+  auto carnot_info = logical_state_.distributed_state().carnot_info()[0];
+  carnot_info.set_asid(upid.asid());
+  ASSERT_TRUE(IsPEM(carnot_info));
 
-  ASSERT_OK_AND_ASSIGN(auto schema_map, LoadSchemaMap(logical_state_.distributed_state()));
-  PruneUnavailableSourcesRule rule(pem_info, schema_map);
+  ASSERT_OK_AND_ASSIGN(sole::uuid uuid, ParseUUID(carnot_info.agent_id()));
+  ASSERT_OK_AND_ASSIGN(auto schema_map,
+                       LoadSchemaMap(logical_state_.distributed_state(), uuid_to_id_map_));
+  PruneUnavailableSourcesRule rule(uuid_to_id_map_[uuid], carnot_info, schema_map);
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
   // Should not change anything.
@@ -262,11 +275,13 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnAllAgentsKeepsPEM) {
   auto grpc_sink2_id = grpc_sink2->id();
 
   // We want to grab a PEM.
-  auto pem_info = logical_state_.distributed_state().carnot_info()[0];
-  ASSERT_TRUE(IsPEM(pem_info));
+  auto carnot_info = logical_state_.distributed_state().carnot_info()[0];
+  ASSERT_TRUE(IsPEM(carnot_info));
 
-  ASSERT_OK_AND_ASSIGN(auto schema_map, LoadSchemaMap(logical_state_.distributed_state()));
-  PruneUnavailableSourcesRule rule(pem_info, schema_map);
+  ASSERT_OK_AND_ASSIGN(sole::uuid uuid, ParseUUID(carnot_info.agent_id()));
+  ASSERT_OK_AND_ASSIGN(auto schema_map,
+                       LoadSchemaMap(logical_state_.distributed_state(), uuid_to_id_map_));
+  PruneUnavailableSourcesRule rule(uuid_to_id_map_[uuid], carnot_info, schema_map);
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
   ASSERT_FALSE(rule_or_s.ConsumeValueOrDie());
@@ -303,7 +318,9 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnAllAgentsKeepsAllKelvinNodes) {
   auto carnot_info = logical_state_.distributed_state().carnot_info()[2];
   // Should be a kelvin.
   ASSERT_TRUE(!IsPEM(carnot_info));
-  PruneUnavailableSourcesRule rule(carnot_info, {});
+  ASSERT_OK_AND_ASSIGN(sole::uuid uuid, ParseUUID(carnot_info.agent_id()));
+  PruneUnavailableSourcesRule rule(uuid_to_id_map_[uuid], carnot_info, {});
+
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
   ASSERT_FALSE(rule_or_s.ConsumeValueOrDie());
@@ -342,7 +359,10 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnAllAgentsFilterOnAgentUIDKeepAgent
 
   // Should be a kelvin.
   ASSERT_TRUE(!IsPEM(carnot_info));
-  PruneUnavailableSourcesRule rule(carnot_info, {});
+
+  ASSERT_OK_AND_ASSIGN(sole::uuid uuid, ParseUUID(carnot_info.agent_id()));
+  PruneUnavailableSourcesRule rule(uuid_to_id_map_[uuid], carnot_info, {});
+
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
   ASSERT_FALSE(rule_or_s.ConsumeValueOrDie());
@@ -382,7 +402,8 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnAllAgentsFilterOutNonMatchingAgent
 
   // Should be a PEM.
   ASSERT_TRUE(IsPEM(carnot_info));
-  PruneUnavailableSourcesRule rule(carnot_info, {});
+  ASSERT_OK_AND_ASSIGN(sole::uuid uuid, ParseUUID(carnot_info.agent_id()));
+  PruneUnavailableSourcesRule rule(uuid_to_id_map_[uuid], carnot_info, {});
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
   ASSERT_TRUE(rule_or_s.ConsumeValueOrDie());
@@ -399,7 +420,7 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnAllAgentsFilterOutNonMatchingAgent
 
 using DistributedPruneUnavailableSourcesRuleTest = DistributedRulesTest;
 TEST_F(DistributedPruneUnavailableSourcesRuleTest, AllAgentsUDTFFiltersNoOne) {
-  auto plan = PlanQuery("import px\npx.display(px._Test_MD_State())");
+  auto plan = CoordinateQuery("import px\npx.display(px._Test_MD_State())");
   // id = 1 && id = 2 should be agents.
   auto agent1_instance = plan->Get(1);
   ASSERT_TRUE(IsPEM(agent1_instance->carnot_info()));
@@ -432,47 +453,13 @@ TEST_F(DistributedPruneUnavailableSourcesRuleTest, AllAgentsUDTFFiltersNoOne) {
   EXPECT_EQ(kelvin_sources.size(), 1);
 }
 
-TEST_F(DistributedPruneUnavailableSourcesRuleTest, OneKelvinUDTFFiltersOutPEMsUDTF) {
-  auto plan = PlanQuery("import px\npx.display(px.ServiceUpTime())");
-  // id = 1 && id = 2 should be agents.
-  auto agent1_instance = plan->Get(1);
-  ASSERT_TRUE(IsPEM(agent1_instance->carnot_info()));
-  auto agent2_instance = plan->Get(2);
-  ASSERT_TRUE(IsPEM(agent2_instance->carnot_info()));
-
-  // id = 0  should be a Kelvin.
-  auto kelvin_instance = plan->Get(0);
-  ASSERT_TRUE(!IsPEM(kelvin_instance->carnot_info()));
-
-  // Before the rule, we should have UDTFs on every node.
-  auto udtf_sources_agent1 = agent1_instance->plan()->FindNodesOfType(IRNodeType::kUDTFSource);
-  EXPECT_EQ(udtf_sources_agent1.size(), 1);
-  auto udtf_sources_agent2 = agent2_instance->plan()->FindNodesOfType(IRNodeType::kUDTFSource);
-  EXPECT_EQ(udtf_sources_agent2.size(), 1);
-  auto kelvin_sources = kelvin_instance->plan()->FindNodesOfType(IRNodeType::kUDTFSource);
-  EXPECT_EQ(kelvin_sources.size(), 1);
-
-  DistributedPruneUnavailableSourcesRule rule({});
-  auto result_or_s = rule.Execute(plan.get());
-  ASSERT_OK(result_or_s);
-  ASSERT_TRUE(result_or_s.ConsumeValueOrDie());
-
-  // After the rule, we should still have UDTFs on the kelvin, but none on agents.
-  udtf_sources_agent1 = agent1_instance->plan()->FindNodesOfType(IRNodeType::kUDTFSource);
-  EXPECT_EQ(udtf_sources_agent1.size(), 0);
-  udtf_sources_agent2 = agent2_instance->plan()->FindNodesOfType(IRNodeType::kUDTFSource);
-  EXPECT_EQ(udtf_sources_agent2.size(), 0);
-  kelvin_sources = kelvin_instance->plan()->FindNodesOfType(IRNodeType::kUDTFSource);
-  EXPECT_EQ(kelvin_sources.size(), 1);
-}
-
 using AnnotateAbortableSrcsForLimitsRuleTest = DistributedRulesTest;
 TEST_F(AnnotateAbortableSrcsForLimitsRuleTest, SourceLimitSink) {
   auto mem_src = MakeMemSource("http_events");
   auto limit = MakeLimit(mem_src, 10);
   MakeMemSink(limit, "output");
 
-  AnnotateAbortableSrcsForLimitsRule rule(graph.get());
+  AnnotateAbortableSrcsForLimitsRule rule;
 
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
@@ -490,7 +477,7 @@ TEST_F(AnnotateAbortableSrcsForLimitsRuleTest, MultipleSourcesUnioned) {
   auto limit = MakeLimit(union_node, 10);
   MakeMemSink(limit, "output");
 
-  AnnotateAbortableSrcsForLimitsRule rule(graph.get());
+  AnnotateAbortableSrcsForLimitsRule rule;
 
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);
@@ -510,7 +497,7 @@ TEST_F(AnnotateAbortableSrcsForLimitsRuleTest, DisjointGraphs) {
   auto limit2 = MakeLimit(mem_src2, 10);
   MakeMemSink(limit2, "output2");
 
-  AnnotateAbortableSrcsForLimitsRule rule(graph.get());
+  AnnotateAbortableSrcsForLimitsRule rule;
 
   auto rule_or_s = rule.Execute(graph.get());
   ASSERT_OK(rule_or_s);

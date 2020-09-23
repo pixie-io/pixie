@@ -27,17 +27,20 @@ StatusOr<bool> AssociateDistributedPlanEdgesRule::Apply(CarnotInstance* from_car
     CarnotInstance* to_carnot_instance =
         from_carnot_instance->distributed_plan()->Get(to_carnot_instance_id);
     PL_ASSIGN_OR_RETURN(bool did_connect_this_graph,
-                        ConnectGraphs(from_carnot_instance->plan(), to_carnot_instance->plan()));
+                        ConnectGraphs(from_carnot_instance->plan(), {from_carnot_instance->id()},
+                                      to_carnot_instance->plan()));
     did_connect_any_graph |= did_connect_this_graph;
   }
   // Make sure we can connect to self.
   PL_ASSIGN_OR_RETURN(bool did_connect_graph_to_self,
-                      ConnectGraphs(from_carnot_instance->plan(), from_carnot_instance->plan()));
+                      ConnectGraphs(from_carnot_instance->plan(), {from_carnot_instance->id()},
+                                    from_carnot_instance->plan()));
   did_connect_any_graph |= did_connect_graph_to_self;
   return did_connect_any_graph;
 }
 
-StatusOr<bool> AssociateDistributedPlanEdgesRule::ConnectGraphs(IR* from_graph, IR* to_graph) {
+StatusOr<bool> AssociateDistributedPlanEdgesRule::ConnectGraphs(
+    IR* from_graph, const absl::flat_hash_set<int64_t>& from_agents, IR* to_graph) {
   // In this, we find the bridge ids that overlap between the from_graph and to_graph.
   // 1. We get a mapping of bridge id to grpc sink in the from_graph
   // 2. We iterate through the GRPCSourceGroups, if any are connected to existing sinks, we add them
@@ -64,7 +67,7 @@ StatusOr<bool> AssociateDistributedPlanEdgesRule::ConnectGraphs(IR* from_graph, 
 
   bool did_connect_graph = false;
   for (const auto& [source_group, sink] : grpc_bridges) {
-    PL_RETURN_IF_ERROR(source_group->AddGRPCSink(sink));
+    PL_RETURN_IF_ERROR(source_group->AddGRPCSink(sink, from_agents));
     did_connect_graph = true;
   }
 

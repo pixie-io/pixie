@@ -43,7 +43,6 @@ class DistributedSetSourceGroupGRPCAddressRule : public DistributedRule {
   DistributedSetSourceGroupGRPCAddressRule()
       : DistributedRule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
- protected:
   StatusOr<bool> Apply(CarnotInstance* carnot_instance) override {
     SetSourceGroupGRPCAddressRule rule(carnot_instance->carnot_info().grpc_address(),
                                        carnot_instance->carnot_info().ssl_targetname());
@@ -60,9 +59,12 @@ class AssociateDistributedPlanEdgesRule : public DistributedRule {
   AssociateDistributedPlanEdgesRule()
       : DistributedRule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
+  static StatusOr<bool> ConnectGraphs(IR* from_graph,
+                                      const absl::flat_hash_set<int64_t>& from_agents,
+                                      IR* to_graph);
+
  protected:
   StatusOr<bool> Apply(CarnotInstance* from_carnot_instance) override;
-  StatusOr<bool> ConnectGraphs(IR* from_graph, IR* to_graph);
 };
 
 }  // namespace distributed

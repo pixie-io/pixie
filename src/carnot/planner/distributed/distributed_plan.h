@@ -6,11 +6,13 @@
 #include <vector>
 
 #include <absl/container/flat_hash_map.h>
+
 #include "src/carnot/planner/compiler_state/registry_info.h"
 #include "src/carnot/planner/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/carnot/planpb/plan.pb.h"
+#include "src/common/uuid/uuid.h"
 #include "src/shared/metadata/metadata_filter.h"
 
 namespace pl {
@@ -34,13 +36,13 @@ class CarnotInstance {
   const std::string& QueryBrokerAddress() const { return carnot_info_.query_broker_address(); }
   int64_t id() const { return id_; }
 
-  void AddPlan(std::unique_ptr<IR> plan) { plan_ = std::move(plan); }
+  void AddPlan(IR* plan) { plan_ = plan; }
 
-  StatusOr<planpb::Plan> PlanProto() const { return plan_->ToProto(); }
+  StatusOr<planpb::Plan> PlanProto() const { return plan_->ToProto(id_); }
 
   const distributedpb::CarnotInfo& carnot_info() const { return carnot_info_; }
 
-  IR* plan() const { return plan_.get(); }
+  IR* plan() const { return plan_; }
   DistributedPlan* distributed_plan() const { return distributed_plan_; }
 
   std::string DebugString() const {
@@ -61,7 +63,7 @@ class CarnotInstance {
   int64_t id_;
   // The specification of this carnot instance.
   distributedpb::CarnotInfo carnot_info_;
-  std::unique_ptr<IR> plan_;
+  IR* plan_;
   // The distributed plan that this instance belongs to.
   DistributedPlan* distributed_plan_;
   // A filter containing the metadata entities stored on a particular Carnot.
@@ -110,11 +112,43 @@ class DistributedPlan {
 
   void SetPlanOptions(planpb::PlanOptions plan_options) { plan_options_.CopyFrom(plan_options); }
 
+  void AddPlan(std::unique_ptr<IR> plan) { plan_pool_.push_back(std::move(plan)); }
+  const absl::flat_hash_map<sole::uuid, int64_t>& uuid_to_id_map() const { return uuid_to_id_map_; }
+
+  std::vector<IR*> UniquePlans() {
+    std::vector<IR*> plans;
+    for (const auto& plan : plan_pool_) {
+      plans.push_back(plan.get());
+    }
+    return plans;
+  }
+
+  void SetKelvin(CarnotInstance* kelvin) {
+    DCHECK(id_to_node_map_.contains(kelvin->id()));
+    CHECK(kelvin);
+    kelvin_ = kelvin;
+  }
+
+  void AddPlanToAgentMap(
+      const absl::flat_hash_map<IR*, absl::flat_hash_set<int64_t>>& plan_to_agent_map) {
+    plan_to_agent_map_ = std::move(plan_to_agent_map);
+  }
+
+  const absl::flat_hash_map<IR*, absl::flat_hash_set<int64_t>>& plan_to_agent_map() const {
+    return plan_to_agent_map_;
+  }
+
+  CarnotInstance* kelvin() const { return kelvin_; }
+
  private:
   plan::DAG dag_;
   absl::flat_hash_map<int64_t, std::unique_ptr<CarnotInstance>> id_to_node_map_;
+  absl::flat_hash_map<IR*, absl::flat_hash_set<int64_t>> plan_to_agent_map_;
+  CarnotInstance* kelvin_ = nullptr;
+  std::vector<std::unique_ptr<IR>> plan_pool_;
+  absl::flat_hash_map<int64_t, IR*> agent_to_plan_map_;
+  absl::flat_hash_map<sole::uuid, int64_t> uuid_to_id_map_;
   int64_t id_counter_ = 0;
-
   planpb::PlanOptions plan_options_;
 };
 

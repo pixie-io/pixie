@@ -22,6 +22,7 @@ namespace distributed {
 using DistributedRule = BaseRule<distributed::DistributedPlan>;
 using DistributedRuleBatch = BaseRuleBatch<DistributedRule>;
 using SchemaMap = absl::flat_hash_map<std::string, absl::flat_hash_set<sole::uuid>>;
+using SchemaToAgentsMap = absl::flat_hash_map<std::string, absl::flat_hash_set<int64_t>>;
 /**
  * @brief This class supports running an IR graph rule (independently) over each IR graph of a
  * DistributedPlan. This is distinct from other DistributedRules, which may modify the
@@ -52,9 +53,12 @@ class DistributedIRRule : public DistributedRule {
 
 class PruneUnavailableSourcesRule : public Rule {
  public:
-  PruneUnavailableSourcesRule(const distributedpb::CarnotInfo& carnot_info,
-                              const SchemaMap& schema_map);
+  PruneUnavailableSourcesRule(int64_t agent_id, const distributedpb::CarnotInfo& carnot_info,
+                              const SchemaToAgentsMap& schema_map);
   StatusOr<bool> Apply(IRNode* node) override;
+
+  static bool UDTFMatchesFilters(UDTFSourceIR* source,
+                                 const distributedpb::CarnotInfo& carnot_info);
 
  private:
   StatusOr<bool> RemoveSourceIfNotNecessary(OperatorIR* node);
@@ -62,7 +66,6 @@ class PruneUnavailableSourcesRule : public Rule {
   StatusOr<bool> MaybePruneUDTFSource(UDTFSourceIR* udtf_src);
 
   bool AgentExecutesUDTF(UDTFSourceIR* source, const distributedpb::CarnotInfo& carnot_info);
-  bool UDTFMatchesFilters(UDTFSourceIR* source, const distributedpb::CarnotInfo& carnot_info);
 
   bool AgentSupportsMemorySources();
   bool AgentHasTable(std::string table_name);
@@ -70,9 +73,9 @@ class PruneUnavailableSourcesRule : public Rule {
   bool IsKelvin(const distributedpb::CarnotInfo& carnot_info);
   bool IsPEM(const distributedpb::CarnotInfo& carnot_info);
 
+  int64_t agent_id_;
   const distributedpb::CarnotInfo& carnot_info_;
-  const SchemaMap& schema_map_;
-  sole::uuid agent_id_;
+  const SchemaToAgentsMap& schema_map_;
 };
 
 /**
@@ -82,14 +85,14 @@ class PruneUnavailableSourcesRule : public Rule {
  */
 class DistributedPruneUnavailableSourcesRule : public DistributedRule {
  public:
-  explicit DistributedPruneUnavailableSourcesRule(const SchemaMap& schema_map)
+  explicit DistributedPruneUnavailableSourcesRule(const SchemaToAgentsMap& schema_map)
       : DistributedRule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false),
         schema_map_(schema_map) {}
 
- protected:
   StatusOr<bool> Apply(distributed::CarnotInstance* node) override;
 
-  SchemaMap schema_map_;
+ protected:
+  const SchemaToAgentsMap& schema_map_;
 };
 
 /**
@@ -108,21 +111,23 @@ class PruneEmptyPlansRule : public DistributedRule {
  * @brief LoadSchemaMap loads the schema map from a distributed state.
  *
  * @param distributed_state
- * @return StatusOr<SchemaMap>
+ * @param uuid_to_id_map
+ * @return StatusOr<SchemaToAgentsMap>
  */
-StatusOr<SchemaMap> LoadSchemaMap(const distributedpb::DistributedState& distributed_state);
+StatusOr<SchemaToAgentsMap> LoadSchemaMap(
+    const distributedpb::DistributedState& distributed_state,
+    const absl::flat_hash_map<sole::uuid, int64_t>& uuid_to_id_map);
 
 /**
  * @brief
  */
 class AnnotateAbortableSrcsForLimitsRule : public Rule {
  public:
-  explicit AnnotateAbortableSrcsForLimitsRule(IR* graph)
-      : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false), graph_(graph) {}
-  StatusOr<bool> Apply(IRNode* node) override;
+  AnnotateAbortableSrcsForLimitsRule()
+      : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
- private:
-  IR* graph_;
+ protected:
+  StatusOr<bool> Apply(IRNode* node) override;
 };
 
 class DistributedAnnotateAbortableSrcsForLimitsRule : public DistributedRule {

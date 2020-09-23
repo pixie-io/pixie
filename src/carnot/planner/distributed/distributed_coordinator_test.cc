@@ -71,10 +71,8 @@ class CoordinatorTest : public testutils::DistributedRulesTest {
 
   // Verifies whether the Kelvin Merger plan matches what we expect.
   void VerifyKelvinMergerPlan(IR* plan) {
-    EXPECT_EQ(plan->FindNodesThatMatch(Operator()).size(), 4);
     SCOPED_TRACE("Verify Kelvin merger plan");
-    VerifyHasDataSourcePlan(plan);
-
+    EXPECT_EQ(plan->FindNodesThatMatch(Operator()).size(), 2);
     auto grpc_src_nodes = plan->FindNodesOfType(IRNodeType::kGRPCSourceGroup);
     ASSERT_EQ(grpc_src_nodes.size(), 1);
     GRPCSourceGroupIR* grpc_src = static_cast<GRPCSourceGroupIR*>(grpc_src_nodes[0]);
@@ -554,6 +552,83 @@ TEST_F(CoordinatorTest, prune_agents_logical_conjunctions) {
 
   auto kelvin_sources = plan_by_qb_addr["kelvin"]->FindNodesThatMatch(GRPCSourceGroup());
   EXPECT_EQ(3, kelvin_sources.size());
+  EXPECT_EQ(plan_by_qb_addr["kelvin"]->FindNodesThatMatch(MemorySource()).size(), 0);
+}
+
+constexpr char kPruneAgentsByMemorySource[] = R"pxl(
+import px
+
+t1 = px.DataFrame(table='only_pem1', start_time='-120s', select=['upid'])
+px.display(t1, 't1')
+
+)pxl";
+
+TEST_F(CoordinatorTest, prune_agent_on_mem_src) {
+  auto physical_plan = ThreeAgentOneKelvinCoordinateQuery(kPruneAgentsByMemorySource);
+  ASSERT_EQ(physical_plan->dag().nodes().size(), 2UL);
+
+  absl::flat_hash_map<std::string, IR*> plan_by_qb_addr;
+  for (int64_t carnot_id : physical_plan->dag().nodes()) {
+    auto carnot = physical_plan->Get(carnot_id);
+    EXPECT_NE(carnot->plan(), nullptr) << carnot->QueryBrokerAddress();
+    plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
+  }
+
+  ASSERT_THAT(plan_by_qb_addr, UnorderedElementsAre(Key("pem1"), Key("kelvin")));
+
+  auto agent1_sinks = plan_by_qb_addr["pem1"]->FindNodesThatMatch(GRPCSink());
+  EXPECT_EQ(1, agent1_sinks.size());
+  auto agent1_sink_parents = static_cast<OperatorIR*>(agent1_sinks[0])->parents();
+  EXPECT_EQ(1, agent1_sink_parents.size());
+  EXPECT_MATCH(agent1_sink_parents[0], MemorySource("only_pem1"));
+
+  auto kelvin_sources = plan_by_qb_addr["kelvin"]->FindNodesThatMatch(GRPCSourceGroup());
+  EXPECT_EQ(1, kelvin_sources.size());
+  EXPECT_EQ(plan_by_qb_addr["kelvin"]->FindNodesThatMatch(MemorySource()).size(), 0);
+}
+
+constexpr char kPruneAgentsByUDTFOnKelvin[] = R"pxl(
+import px
+
+px.display(px.GetSchemas(), 't1')
+)pxl";
+
+TEST_F(CoordinatorTest, prune_agent_on_kelvin_udtf) {
+  auto physical_plan = ThreeAgentOneKelvinCoordinateQuery(kPruneAgentsByUDTFOnKelvin);
+  ASSERT_EQ(physical_plan->dag().nodes().size(), 1UL);
+
+  absl::flat_hash_map<std::string, IR*> plan_by_qb_addr;
+  for (int64_t carnot_id : physical_plan->dag().nodes()) {
+    auto carnot = physical_plan->Get(carnot_id);
+    EXPECT_NE(carnot->plan(), nullptr) << carnot->QueryBrokerAddress();
+    plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
+  }
+
+  ASSERT_THAT(plan_by_qb_addr, UnorderedElementsAre(Key("kelvin")));
+
+  auto kelvin_sources = plan_by_qb_addr["kelvin"]->FindNodesThatMatch(UDTFSource());
+  EXPECT_EQ(1, kelvin_sources.size());
+}
+
+constexpr char kPruneAgentsByUDTFOnPEM[] = R"pxl(
+import px
+
+px.display(px._DebugStackTrace(), 't1')
+)pxl";
+
+TEST_F(CoordinatorTest, prune_agent_on_pem_udtf) {
+  auto physical_plan = ThreeAgentOneKelvinCoordinateQuery(kPruneAgentsByUDTFOnPEM);
+  ASSERT_EQ(physical_plan->dag().nodes().size(), 4UL);
+
+  absl::flat_hash_map<std::string, IR*> plan_by_qb_addr;
+  for (int64_t carnot_id : physical_plan->dag().nodes()) {
+    auto carnot = physical_plan->Get(carnot_id);
+    EXPECT_NE(carnot->plan(), nullptr) << carnot->QueryBrokerAddress();
+    plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
+  }
+
+  auto kelvin_sources = plan_by_qb_addr["kelvin"]->FindNodesThatMatch(UDTFSource());
+  EXPECT_EQ(1, kelvin_sources.size());
 }
 
 }  // namespace distributed

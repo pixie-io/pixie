@@ -34,8 +34,10 @@ TEST_F(GRPCSourceConversionTest, construction_test) {
   auto mem_src2 = MakeMemSource(MakeTimeRelation());
   auto grpc_sink2 = MakeGRPCSink(mem_src2, grpc_bridge_id);
 
-  EXPECT_OK(grpc_source_group->AddGRPCSink(grpc_sink1));
-  EXPECT_OK(grpc_source_group->AddGRPCSink(grpc_sink2));
+  auto agent_id = 0;
+
+  EXPECT_OK(grpc_source_group->AddGRPCSink(grpc_sink1, {agent_id}));
+  EXPECT_OK(grpc_source_group->AddGRPCSink(grpc_sink2, {agent_id}));
 
   // run the conversion rule.
   GRPCSourceGroupConversionRule rule;
@@ -63,7 +65,9 @@ TEST_F(GRPCSourceConversionTest, construction_test) {
     actual_ids.push_back(grpc_source->id());
   }
 
-  std::vector<int64_t> expected_ids{grpc_sink1->destination_id(), grpc_sink2->destination_id()};
+  auto grpc_sink1_destination = grpc_sink1->agent_id_to_destination_id().find(agent_id)->second;
+  auto grpc_sink2_destination = grpc_sink2->agent_id_to_destination_id().find(agent_id)->second;
+  std::vector<int64_t> expected_ids{grpc_sink1_destination, grpc_sink2_destination};
   // Accumulate the GRPC source group ids and make sure they match the GRPC sink ones.
   EXPECT_THAT(actual_ids, UnorderedElementsAreArray(expected_ids));
 }
@@ -80,7 +84,8 @@ TEST_F(GRPCSourceConversionTest, construction_test_single_source) {
   auto mem_src1 = MakeMemSource(MakeTimeRelation());
   auto grpc_sink1 = MakeGRPCSink(mem_src1, grpc_bridge_id);
 
-  EXPECT_OK(grpc_source_group->AddGRPCSink(grpc_sink1));
+  auto agent_id = 0;
+  EXPECT_OK(grpc_source_group->AddGRPCSink(grpc_sink1, {agent_id}));
 
   // run the conversion rule.
   GRPCSourceGroupConversionRule rule;
@@ -97,8 +102,9 @@ TEST_F(GRPCSourceConversionTest, construction_test_single_source) {
   OperatorIR* mem_sink1_parent = mem_sink1->parents()[0];
   ASSERT_EQ(mem_sink1_parent->type(), IRNodeType::kGRPCSource) << mem_sink1_parent->type_string();
 
+  auto grpc_sink1_destination = grpc_sink1->agent_id_to_destination_id().find(agent_id)->second;
   auto grpc_source1 = static_cast<GRPCSourceIR*>(mem_sink1_parent);
-  EXPECT_EQ(grpc_source1->id(), grpc_sink1->destination_id());
+  EXPECT_EQ(grpc_source1->id(), grpc_sink1_destination);
 }
 
 TEST_F(GRPCSourceConversionTest, no_sinks_affiliated) {
@@ -142,8 +148,9 @@ TEST_F(GRPCSourceConversionTest, multiple_grpc_source_groups) {
   auto mem_src2 = MakeMemSource(MakeTimeRelation());
   auto grpc_sink2 = MakeGRPCSink(mem_src2, grpc_bridge_id2);
 
-  EXPECT_OK(grpc_source_group1->AddGRPCSink(grpc_sink1));
-  EXPECT_OK(grpc_source_group2->AddGRPCSink(grpc_sink2));
+  auto agent_id = 0;
+  EXPECT_OK(grpc_source_group1->AddGRPCSink(grpc_sink1, {agent_id}));
+  EXPECT_OK(grpc_source_group2->AddGRPCSink(grpc_sink2, {agent_id}));
 
   std::vector<int64_t> expected_ids = {grpc_sink1->destination_id(), grpc_sink2->destination_id()};
 
@@ -163,16 +170,18 @@ TEST_F(GRPCSourceConversionTest, multiple_grpc_source_groups) {
   OperatorIR* mem_sink1_parent = mem_sink1->parents()[0];
   ASSERT_EQ(mem_sink1_parent->type(), IRNodeType::kGRPCSource) << mem_sink1_parent->type_string();
 
+  auto grpc_sink1_destination = grpc_sink1->agent_id_to_destination_id().find(agent_id)->second;
   auto grpc_source1 = static_cast<GRPCSourceIR*>(mem_sink1_parent);
-  EXPECT_EQ(grpc_source1->id(), grpc_sink1->destination_id());
+  EXPECT_EQ(grpc_source1->id(), grpc_sink1_destination);
 
   // Check to see that mem_sink2 has a new parent that is a union.
   ASSERT_EQ(mem_sink2->parents().size(), 1UL);
   OperatorIR* mem_sink2_parent = mem_sink2->parents()[0];
   ASSERT_EQ(mem_sink2_parent->type(), IRNodeType::kGRPCSource) << mem_sink2_parent->type_string();
 
+  auto grpc_sink2_destination = grpc_sink2->agent_id_to_destination_id().find(agent_id)->second;
   auto grpc_source2 = static_cast<GRPCSourceIR*>(mem_sink2_parent);
-  EXPECT_EQ(grpc_source2->id(), grpc_sink2->destination_id());
+  EXPECT_EQ(grpc_source2->id(), grpc_sink2_destination);
 }
 
 }  // namespace distributed

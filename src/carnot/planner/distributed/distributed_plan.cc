@@ -36,6 +36,8 @@ StatusOr<int64_t> DistributedPlan::AddCarnot(const distributedpb::CarnotInfo& ca
   ++id_counter_;
   PL_ASSIGN_OR_RETURN(auto instance, CarnotInstance::Create(carnot_id, carnot_info, this));
   id_to_node_map_.emplace(carnot_id, std::move(instance));
+  PL_ASSIGN_OR_RETURN(sole::uuid uuid, ParseUUID(carnot_info.agent_id()));
+  uuid_to_id_map_[uuid] = carnot_id;
   dag_.AddNode(carnot_id);
   return carnot_id;
 }

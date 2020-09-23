@@ -234,6 +234,9 @@ udas {
 
 constexpr char kOneAgentDistributedState[] = R"proto(
 carnot_info {
+  agent_id {
+    data: "00000001-0000-0000-0000-000000000001"
+  }
   query_broker_address: "agent"
   has_grpc_server: false
   has_data_store: true
@@ -241,6 +244,9 @@ carnot_info {
   accepts_remote_sources: false
 }
 carnot_info {
+  agent_id {
+    data: "00000001-0000-0000-0000-000000000002"
+  }
   query_broker_address: "kelvin"
   grpc_address: "1111"
   has_grpc_server: true

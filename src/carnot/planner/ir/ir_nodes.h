@@ -335,6 +335,7 @@ class IR {
    * @return StatusOr<planpb::Plan>
    */
   StatusOr<planpb::Plan> ToProto() const;
+  StatusOr<planpb::Plan> ToProto(int64_t agent_id) const;
 
   /**
    * @brief Removes the nodes and edges listed in the following set.
@@ -390,7 +391,7 @@ class IR {
   }
 
  private:
-  Status OutputProto(planpb::PlanFragment* pf, const OperatorIR* op_node) const;
+  Status OutputProto(planpb::PlanFragment* pf, const OperatorIR* op_node, int64_t agent_id) const;
   // Helper function for Clone and CopySelectedOperators.
   Status CopySelectedNodesAndDeps(const IR* src, const absl::flat_hash_set<int64_t>& selected_ids);
 
@@ -1712,7 +1713,23 @@ class GRPCSinkIR : public OperatorIR {
     return Status::OK();
   }
 
+  /**
+   * @brief ToProto for GRPCSinks that send tables over.
+   *
+   * @param op_pb
+   * @return Status
+   */
   Status ToProto(planpb::Operator* op_pb) const override;
+
+  /**
+   * @brief ToProto for GRPCSinks that have destination ids. Support mostly-duplicate PEM plans that
+   * differ solely on the destination IDs of the GRPCSinks.
+   *
+   * @param op_pb
+   * @param destination_id the ID of GRPCSource node that this GRPCSink sends data to.
+   * @return Status
+   */
+  Status ToProto(planpb::Operator* op_pb, int64_t destination_id) const;
 
   /**
    * @brief The id used for initial mapping. This associates a GRPCSink with a subsequent
@@ -1723,6 +1740,10 @@ class GRPCSinkIR : public OperatorIR {
   bool has_destination_id() const { return sink_type_ == GRPCSinkType::kInternal; }
   int64_t destination_id() const { return destination_id_; }
   void SetDestinationID(int64_t destination_id) { destination_id_ = destination_id; }
+  void AddDestinationIDMap(int64_t destination_id, int64_t agent_id) {
+    agent_id_to_destination_id_[agent_id] = destination_id;
+  }
+
   void SetDestinationAddress(const std::string& address) { destination_address_ = address; }
   // If needed, specify the ssl target name override for the GRPC sink destination.
   void SetDestinationSSLTargetName(std::string_view ssl_targetname) {
@@ -1753,6 +1774,10 @@ class GRPCSinkIR : public OperatorIR {
 
   Status ResolveType(CompilerState* compiler_state);
 
+  const absl::flat_hash_map<int64_t, int64_t>& agent_id_to_destination_id() {
+    return agent_id_to_destination_id_;
+  }
+
  protected:
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
@@ -1770,6 +1795,7 @@ class GRPCSinkIR : public OperatorIR {
   // Used when GRPCSinkType = kExternal.
   std::string name_;
   std::vector<std::string> out_columns_;
+  absl::flat_hash_map<int64_t, int64_t> agent_id_to_destination_id_;
 };
 
 /**
@@ -1842,11 +1868,13 @@ class GRPCSourceGroupIR : public OperatorIR {
    * @param sink_op: the sink operator that should be connected with this source operator.
    * @return Status: error if this->source_id and sink_op->destination_id don't line up.
    */
-  Status AddGRPCSink(GRPCSinkIR* sink_op);
+  Status AddGRPCSink(GRPCSinkIR* sink_op, const absl::flat_hash_set<int64_t>& agents);
   bool GRPCAddressSet() const { return grpc_address_ != ""; }
   const std::string& grpc_address() const { return grpc_address_; }
   int64_t source_id() const { return source_id_; }
-  std::vector<GRPCSinkIR*> dependent_sinks() { return dependent_sinks_; }
+  const std::vector<std::pair<GRPCSinkIR*, absl::flat_hash_set<int64_t>>>& dependent_sinks() {
+    return dependent_sinks_;
+  }
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
     return error::Unimplemented("Unexpected call to GRPCSourceGroupIR::RequiredInputColumns");
@@ -1869,7 +1897,7 @@ class GRPCSourceGroupIR : public OperatorIR {
   int64_t source_id_ = -1;
   std::string grpc_address_ = "";
   std::string ssl_targetname_ = "";
-  std::vector<GRPCSinkIR*> dependent_sinks_;
+  std::vector<std::pair<GRPCSinkIR*, absl::flat_hash_set<int64_t>>> dependent_sinks_;
 };
 
 // [Column("foo", 0)] would indicate the foo column of the 0th parent relation maps to index 0 of

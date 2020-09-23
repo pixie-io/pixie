@@ -45,17 +45,6 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "distributed_analyzer_test",
-    srcs = ["distributed_analyzer_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/carnot/planner:cc_library",
-        "//src/carnot/planner:test_utils",
-        "//src/carnot/udf_exporter:cc_library",
-    ],
-)
-
-pl_cc_test(
     name = "distributed_planner_test",
     srcs = ["distributed_planner_test.cc"],
     deps = [

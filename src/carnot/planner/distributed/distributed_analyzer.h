@@ -33,10 +33,10 @@ class DistributedAnalyzer : public RuleExecutor<DistributedPlan> {
     tabletizer_batch->AddRule<DistributedTabletizerRule>();
   }
 
-  void CreateSourcePruneBatch() {
-    DistributedRuleBatch* source_prune_batch = CreateRuleBatch<TryUntilMax>("SourcePruneBatch", 2);
-    source_prune_batch->AddRule<DistributedPruneUnavailableSourcesRule>(agent_schema_map_);
-  }
+  // void CreateSourcePruneBatch() {
+  //   DistributedRuleBatch* source_prune_batch = CreateRuleBatch<TryUntilMax>("SourcePruneBatch",
+  //   2); source_prune_batch->AddRule<DistributedPruneUnavailableSourcesRule>(agent_schema_map_);
+  // }
 
   void CreatePlanPruneBatch() {
     DistributedRuleBatch* plan_prune_batch = CreateRuleBatch<TryUntilMax>("PlanPruneBatch", 2);
@@ -57,18 +57,18 @@ class DistributedAnalyzer : public RuleExecutor<DistributedPlan> {
     limit_batch->AddRule<DistributedAnnotateAbortableSrcsForLimitsRule>();
   }
 
-  Status Init(const distributedpb::DistributedState& distributed_state) {
-    PL_ASSIGN_OR_RETURN(agent_schema_map_, LoadSchemaMap(distributed_state));
+  Status Init(const distributedpb::DistributedState&) {
+    // PL_ASSIGN_OR_RETURN(agent_schema_map_, LoadSchemaMap(distributed_state));
     // TODO(philkuz) Enable tabletizer batch when we need it.
     // CreateTabletizerBatch();
-    CreateSourcePruneBatch();
-    CreatePlanPruneBatch();
-    CreateStitcherBatch();
+    // CreateSourcePruneBatch();
+    // CreatePlanPruneBatch();
+    // CreateStitcherBatch();
     CreateAnnotateLimitsBatch();
     return Status::OK();
   }
 
-  SchemaMap agent_schema_map_;
+  // SchemaMap agent_schema_map_;
 };
 
 }  // namespace distributed

@@ -23,6 +23,7 @@ namespace pl {
 namespace carnot {
 namespace planner {
 namespace distributed {
+using ::testing::_;
 using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
@@ -111,7 +112,7 @@ class StitcherTest : public DistributedRulesTest {
       for (auto ir_node : merger_agent->plan()->FindNodesOfType(IRNodeType::kGRPCSourceGroup)) {
         auto grpc_source_group = static_cast<GRPCSourceGroupIR*>(ir_node);
         for (auto sink : grpc_source_group->dependent_sinks()) {
-          sinks_referenced_by_sources.insert(sink);
+          sinks_referenced_by_sources.insert(sink.first);
         }
       }
     }
@@ -158,7 +159,9 @@ class StitcherTest : public DistributedRulesTest {
         // Test GRPCSinks for expected GRPC destination address, as well as the proper physical id
         // being set, as well as being set to the correct value.
         EXPECT_TRUE(sink->DestinationAddressSet());
-        destination_ids.emplace_back(sink->destination_id());
+        auto grpc_sink_destination =
+            sink->agent_id_to_destination_id().find(data_store_agent->id())->second;
+        destination_ids.emplace_back(grpc_sink_destination);
       }
     }
 
@@ -276,19 +279,14 @@ TEST_F(StitcherTest, three_pems_one_kelvin) {
 TEST_F(StitcherTest, stitch_self_together_with_udtf) {
   auto ps = LoadDistributedStatePb(kOnePEMOneKelvinDistributedState);
   // px.ServiceUpTime() is a Kelvin-Only UDTF, so it should only run on Kelvin.
-  auto physical_plan = PlanQuery("import px\npx.display(px.ServiceUpTime())", ps);
+  auto physical_plan = CoordinateQuery("import px\npx.display(px.ServiceUpTime())", ps);
 
-  EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(1, 0));
+  EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(0));
   CarnotInstance* kelvin = physical_plan->Get(0);
 
   std::string kelvin_qb_address = "kelvin";
   ASSERT_EQ(kelvin->carnot_info().query_broker_address(), kelvin_qb_address);
 
-  CarnotInstance* pem = physical_plan->Get(1);
-  ASSERT_EQ(pem->carnot_info().query_broker_address(), "pem");
-  // Remove the pem instance as if we were a rule that would remove the PEM because it doens't run
-  // the UDTF.
-  EXPECT_OK(physical_plan->DeleteNode(1));
   {
     SCOPED_TRACE("stitch_kelvin_to_self");
     TestBeforeSetSourceGroupGRPCAddress({kelvin}, {kelvin});
@@ -321,7 +319,7 @@ TEST_F(StitcherTest, stitch_self_together_with_udtf) {
 TEST_F(StitcherTest, stitch_all_togther_with_udtf) {
   auto ps = LoadDistributedStatePb(kOnePEMOneKelvinDistributedState);
   // px._Test_MDState() is an all agent so it should run on every pem and kelvin.
-  auto physical_plan = PlanQuery("import px\npx.display(px._Test_MD_State())", ps);
+  auto physical_plan = CoordinateQuery("import px\npx.display(px._Test_MD_State())", ps);
 
   EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(1, 0));
   CarnotInstance* kelvin = physical_plan->Get(0);
@@ -372,8 +370,11 @@ TEST_F(StitcherTest, stitch_all_togther_with_udtf) {
   auto grpc_sources = kelvin_plan->FindNodesOfType(IRNodeType::kGRPCSourceGroup);
   ASSERT_EQ(grpc_sources.size(), 1);
   auto kelvin_grpc_source = static_cast<GRPCSourceGroupIR*>(grpc_sources[0]);
-  EXPECT_THAT(kelvin_grpc_source->dependent_sinks(),
-              UnorderedElementsAre(pem_grpc_sink, kelvin_grpc_sink));
+  std::vector<GRPCSinkIR*> dependent_sinks;
+  for (const auto& dep_sinks : kelvin_grpc_source->dependent_sinks()) {
+    dependent_sinks.push_back(dep_sinks.first);
+  }
+  EXPECT_THAT(dependent_sinks, UnorderedElementsAre(pem_grpc_sink, kelvin_grpc_sink));
 }
 
 }  // namespace distributed

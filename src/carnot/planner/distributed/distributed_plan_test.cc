@@ -180,7 +180,9 @@ TEST_F(DistributedPlanTest, construction_test) {
     auto mem_source = MakeMemSource(MakeRelation());
     auto mem_sink = MakeMemSink(mem_source, carnot_instance->QueryBrokerAddress());
     EXPECT_OK(mem_sink->SetRelation(MakeRelation()));
-    carnot_instance->AddPlan(new_graph->Clone().ConsumeValueOrDie());
+    auto clone_uptr = new_graph->Clone().ConsumeValueOrDie();
+    carnot_instance->AddPlan(clone_uptr.get());
+    physical_plan->AddPlan(std::move(clone_uptr));
 
     auto carnot_plan_proto = carnot_instance->PlanProto().ConsumeValueOrDie();
   }

@@ -19,6 +19,7 @@
 #include "src/carnot/planner/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/base/base.h"
+#include "src/common/uuid/uuid.h"
 
 namespace pl {
 namespace carnot {
@@ -185,6 +186,21 @@ relation_map {
     columns {
       column_name: "cpu_utime_ns"
       column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+  }
+}
+relation_map {
+  key: "only_pem1"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
       column_semantic_type: ST_NONE
     }
   }
@@ -1117,6 +1133,72 @@ schema_info {
     data: "00000001-0000-0000-0000-000000000003"
   }
 }
+schema_info {
+  name: "http_events"
+  relation {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_NONE
+    }
+  }
+  agent_list {
+    data: "00000001-0000-0000-0000-000000000001"
+  }
+  agent_list {
+    data: "00000001-0000-0000-0000-000000000002"
+  }
+  agent_list {
+    data: "00000001-0000-0000-0000-000000000003"
+  }
+}
+schema_info {
+  name: "process_stats"
+  relation {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_NONE
+    }
+  }
+  agent_list {
+    data: "00000001-0000-0000-0000-000000000001"
+  }
+  agent_list {
+    data: "00000001-0000-0000-0000-000000000002"
+  }
+  agent_list {
+    data: "00000001-0000-0000-0000-000000000003"
+  }
+}
+schema_info {
+  name: "only_pem1"
+  relation {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_NONE
+    }
+  }
+  agent_list {
+    data: "00000001-0000-0000-0000-000000000001"
+  }
+}
 )proto";
 
 constexpr char kOnePEMOneKelvinDistributedState[] = R"proto(
@@ -1143,6 +1225,29 @@ carnot_info {
   accepts_remote_sources: true
   asid: 456
   ssl_targetname: "kelvin.pl.svc"
+}
+schema_info {
+  name: "table"
+  relation {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "cpu_cycles"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_NONE
+    }
+  }
+  agent_list {
+    data: "00000001-0000-0000-0000-000000000001"
+  }
 }
 )proto";
 
@@ -1197,39 +1302,551 @@ carnot_info {
   asid: 333
   ssl_targetname: "kelvin.pl.svc"
 }
+schema_info {
+  name: "table"
+  relation {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "cpu_cycles"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_NONE
+    }
+  }
+  agent_list {
+    data: "00000001-0000-0000-0000-000000000001"
+  }
+}
 )proto";
+
+constexpr char kAllSchemas[] = R"proto(
+relation_map {
+  key: "conn_stats"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "remote_addr"
+      column_type: STRING
+      column_semantic_type: ST_IP_ADDRESS
+    }
+    columns {
+      column_name: "remote_port"
+      column_type: INT64
+      column_semantic_type: ST_PORT
+    }
+    columns {
+      column_name: "protocol"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "role"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "conn_open"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "conn_close"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "conn_active"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "bytes_sent"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "bytes_recv"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+  }
+}
+relation_map {
+  key: "cql_events"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "remote_addr"
+      column_type: STRING
+      column_semantic_type: ST_IP_ADDRESS
+    }
+    columns {
+      column_name: "remote_port"
+      column_type: INT64
+      column_semantic_type: ST_PORT
+    }
+    columns {
+      column_name: "trace_role"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "req_op"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "req_body"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "resp_op"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "resp_body"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "latency_ns"
+      column_type: INT64
+      column_semantic_type: ST_DURATION_NS
+    }
+  }
+}
+relation_map {
+  key: "http_events"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "remote_addr"
+      column_type: STRING
+      column_semantic_type: ST_IP_ADDRESS
+    }
+    columns {
+      column_name: "remote_port"
+      column_type: INT64
+      column_semantic_type: ST_PORT
+    }
+    columns {
+      column_name: "trace_role"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "http_major_version"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "http_minor_version"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "http_content_type"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "http_req_headers"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "http_req_method"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "http_req_path"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "http_req_body"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "http_resp_headers"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "http_resp_status"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "http_resp_message"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "http_resp_body"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "http_resp_body_size"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "http_resp_latency_ns"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+  }
+}
+relation_map {
+  key: "jvm_stats"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "young_gc_time"
+      column_type: INT64
+      column_semantic_type: ST_DURATION_NS
+    }
+    columns {
+      column_name: "full_gc_time"
+      column_type: INT64
+      column_semantic_type: ST_DURATION_NS
+    }
+    columns {
+      column_name: "used_heap_size"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "total_heap_size"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "max_heap_size"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+  }
+}
+relation_map {
+  key: "mysql_events"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "remote_addr"
+      column_type: STRING
+      column_semantic_type: ST_IP_ADDRESS
+    }
+    columns {
+      column_name: "remote_port"
+      column_type: INT64
+      column_semantic_type: ST_PORT
+    }
+    columns {
+      column_name: "trace_role"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "req_cmd"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "req_body"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "resp_status"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "resp_body"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "latency_ns"
+      column_type: INT64
+      column_semantic_type: ST_DURATION_NS
+    }
+  }
+}
+relation_map {
+  key: "network_stats"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "pod_id"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "rx_bytes"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "rx_packets"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "rx_errors"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "rx_drops"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "tx_bytes"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "tx_packets"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "tx_errors"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "tx_drops"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+  }
+}
+relation_map {
+  key: "pgsql_events"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "remote_addr"
+      column_type: STRING
+      column_semantic_type: ST_IP_ADDRESS
+    }
+    columns {
+      column_name: "remote_port"
+      column_type: INT64
+      column_semantic_type: ST_PORT
+    }
+    columns {
+      column_name: "trace_role"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "req"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "resp"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "latency_ns"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+  }
+}
+relation_map {
+  key: "process_stats"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "major_faults"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "minor_faults"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "cpu_utime_ns"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "cpu_ktime_ns"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "num_threads"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "vsize_bytes"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "rss_bytes"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "rchar_bytes"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "wchar_bytes"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "read_bytes"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "write_bytes"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+  }
+}
+)proto";
+
+udfspb::UDFInfo UDFInfoWithTestUDTF() {
+  auto udf_info = udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb();
+  CHECK(google::protobuf::TextFormat::MergeFromString(absl::Substitute("udtfs{$0}", kUDTFAllAgents),
+                                                      &udf_info));
+  CHECK(google::protobuf::TextFormat::MergeFromString(
+      absl::Substitute("udtfs{$0}", kUDTFServiceUpTimePb), &udf_info));
+  CHECK(google::protobuf::TextFormat::MergeFromString(
+      absl::Substitute("udtfs{$0}", kUDTFOpenNetworkConnections), &udf_info));
+
+  return udf_info;
+}
+
+std::unique_ptr<RelationMap> MakeRelationMap(const pl::table_store::schemapb::Schema& schema_pb) {
+  auto rel_map = std::make_unique<pl::carnot::planner::RelationMap>();
+  for (auto& relation_pair : schema_pb.relation_map()) {
+    pl::table_store::schema::Relation rel;
+    PL_CHECK_OK(rel.FromProto(&relation_pair.second));
+    rel_map->emplace(relation_pair.first, rel);
+  }
+
+  return rel_map;
+}
 
 class DistributedRulesTest : public OperatorTests {
  protected:
   void SetUpImpl() override {
     registry_info_ = std::make_unique<RegistryInfo>();
     logical_state_ = CreateTwoPEMsOneKelvinPlannerState(kHttpEventsSchema);
-    auto udf_info = udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb();
-    ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(
-        absl::Substitute("udtfs{$0}", kUDTFAllAgents), &udf_info));
-    ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(
-        absl::Substitute("udtfs{$0}", kUDTFServiceUpTimePb), &udf_info));
-    ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(
-        absl::Substitute("udtfs{$0}", kUDTFOpenNetworkConnections), &udf_info));
 
-    ASSERT_OK(registry_info_->Init(udf_info));
+    ASSERT_OK(registry_info_->Init(UDFInfoWithTestUDTF()));
     compiler_state_ =
         std::make_unique<planner::CompilerState>(MakeRelationMap(LoadSchemaPb(kHttpEventsSchema)),
                                                  registry_info_.get(), 1234, "result_addr");
-  }
 
-  std::unique_ptr<RelationMap> MakeRelationMap(const pl::table_store::schemapb::Schema& schema_pb) {
-    auto rel_map = std::make_unique<pl::carnot::planner::RelationMap>();
-    for (auto& relation_pair : schema_pb.relation_map()) {
-      pl::table_store::schema::Relation rel;
-      PL_CHECK_OK(rel.FromProto(&relation_pair.second));
-      rel_map->emplace(relation_pair.first, rel);
+    for (const auto& [plan_id, carnot_info] :
+         Enumerate(logical_state_.distributed_state().carnot_info())) {
+      sole::uuid uuid = ParseUUID(carnot_info.agent_id()).ConsumeValueOrDie();
+      uuid_to_id_map_[uuid] = plan_id;
     }
-
-    return rel_map;
   }
 
-  std::unique_ptr<distributed::DistributedPlan> PlanQuery(
+  std::unique_ptr<distributed::DistributedPlan> CoordinateQuery(
       const std::string& query, const distributedpb::DistributedState& distributed_state) {
     // Create a CompilerState obj using the relation map and grabbing the current time.
 
@@ -1244,8 +1861,19 @@ class DistributedRulesTest : public OperatorTests {
         coordinator->Coordinate(single_node_plan.get()).ConsumeValueOrDie();
     return distributed_plan;
   }
+  std::unique_ptr<distributed::DistributedPlan> CoordinateQuery(const std::string& query) {
+    return CoordinateQuery(query, logical_state_.distributed_state());
+  }
+
   std::unique_ptr<distributed::DistributedPlan> PlanQuery(const std::string& query) {
-    return PlanQuery(query, logical_state_.distributed_state());
+    compiler::Compiler compiler;
+    std::shared_ptr<IR> single_node_plan =
+        compiler.CompileToIR(query, compiler_state_.get()).ConsumeValueOrDie();
+
+    auto distributed_planner = distributed::DistributedPlanner::Create().ConsumeValueOrDie();
+    return distributed_planner
+        ->Plan(logical_state_.distributed_state(), compiler_state_.get(), single_node_plan.get())
+        .ConsumeValueOrDie();
   }
 
   bool IsPEM(const distributedpb::CarnotInfo& carnot_instance) {
@@ -1256,6 +1884,7 @@ class DistributedRulesTest : public OperatorTests {
   std::unique_ptr<RegistryInfo> registry_info_;
   std::unique_ptr<CompilerState> compiler_state_;
   distributedpb::LogicalPlannerState logical_state_;
+  absl::flat_hash_map<sole::uuid, int64_t> uuid_to_id_map_;
 };
 
 }  // namespace testutils

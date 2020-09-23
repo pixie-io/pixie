@@ -157,6 +157,24 @@ struct Source : public ParentMatch {
   }
 };
 
+struct MemorySourceTableMatcher : public ParentMatch {
+  explicit MemorySourceTableMatcher(std::string_view table_name)
+      : ParentMatch(IRNodeType::kMemorySource), table_name_(std::string(table_name)) {}
+  bool Match(const IRNode* node) const override {
+    if (!MemorySource().Match(node)) {
+      return false;
+    }
+    auto mem_src = static_cast<const MemorySourceIR*>(node);
+    return mem_src->table_name() == table_name_;
+  }
+
+  std::string table_name_;
+};
+
+inline MemorySourceTableMatcher MemorySource(std::string_view table_name) {
+  return MemorySourceTableMatcher(table_name);
+}
+
 /* Match any sink node */
 struct Sink : public ParentMatch {
   Sink() : ParentMatch(IRNodeType::kAny) {}

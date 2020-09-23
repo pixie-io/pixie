@@ -1,4 +1,7 @@
 #include "src/carnot/planner/distributed/distributed_rules.h"
+
+#include <utility>
+
 #include "src/common/uuid/uuid.h"
 #include "src/shared/metadata/base_types.h"
 
@@ -8,12 +11,12 @@ namespace planner {
 namespace distributed {
 
 PruneUnavailableSourcesRule::PruneUnavailableSourcesRule(
-    const distributedpb::CarnotInfo& carnot_info, const SchemaMap& schema_map)
+    int64_t agent_id, const distributedpb::CarnotInfo& carnot_info,
+    const SchemaToAgentsMap& schema_map)
     : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false),
+      agent_id_(agent_id),
       carnot_info_(carnot_info),
-      schema_map_(schema_map) {
-  agent_id_ = ParseUUID(carnot_info_.agent_id()).ConsumeValueOrDie();
-}
+      schema_map_(schema_map) {}
 
 StatusOr<bool> PruneUnavailableSourcesRule::Apply(IRNode* node) {
   if (Match(node, SourceOperator())) {
@@ -150,7 +153,8 @@ bool PruneUnavailableSourcesRule::UDTFMatchesFilters(UDTFSourceIR* source,
 
 StatusOr<bool> DistributedPruneUnavailableSourcesRule::Apply(
     distributed::CarnotInstance* carnot_instance) {
-  PruneUnavailableSourcesRule rule(carnot_instance->carnot_info(), schema_map_);
+  PruneUnavailableSourcesRule rule(carnot_instance->id(), carnot_instance->carnot_info(),
+                                   schema_map_);
   return rule.Execute(carnot_instance->plan());
 }
 
@@ -162,22 +166,28 @@ StatusOr<bool> PruneEmptyPlansRule::Apply(distributed::CarnotInstance* node) {
   return true;
 }
 
-StatusOr<SchemaMap> LoadSchemaMap(const distributedpb::DistributedState& distributed_state) {
-  SchemaMap agent_schema_map;
+StatusOr<SchemaToAgentsMap> LoadSchemaMap(
+    const distributedpb::DistributedState& distributed_state,
+    const absl::flat_hash_map<sole::uuid, int64_t>& uuid_to_id_map) {
+  SchemaToAgentsMap agent_schema_map;
   for (const auto& schema : distributed_state.schema_info()) {
-    absl::flat_hash_set<sole::uuid> agent_ids;
+    absl::flat_hash_set<int64_t> agent_ids;
     for (const auto& uid_pb : schema.agent_list()) {
       PL_ASSIGN_OR_RETURN(sole::uuid uuid, ParseUUID(uid_pb));
-      agent_ids.insert(uuid);
+      if (!uuid_to_id_map.contains(uuid)) {
+        VLOG(1) << absl::Substitute("UUID $0 not found in agent_id_to_plan_id map", uuid.str());
+        continue;
+      }
+      agent_ids.insert(uuid_to_id_map.find(uuid)->second);
     }
-    agent_schema_map[schema.name()] = agent_ids;
+    agent_schema_map[schema.name()] = std::move(agent_ids);
   }
   return agent_schema_map;
 }
 
 StatusOr<bool> DistributedAnnotateAbortableSrcsForLimitsRule::Apply(
     distributed::CarnotInstance* carnot_instance) {
-  AnnotateAbortableSrcsForLimitsRule rule(carnot_instance->plan());
+  AnnotateAbortableSrcsForLimitsRule rule;
   return rule.Execute(carnot_instance->plan());
 }
 
@@ -185,11 +195,13 @@ StatusOr<bool> AnnotateAbortableSrcsForLimitsRule::Apply(IRNode* node) {
   if (!Match(node, Limit())) {
     return false;
   }
+  IR* graph = node->graph();
   auto limit = static_cast<LimitIR*>(node);
-  plan::DAG dag_copy = graph_->dag();
+
+  plan::DAG dag_copy = graph->dag();
   dag_copy.DeleteNode(limit->id());
-  auto src_nodes = graph_->FindNodesThatMatch(Source());
-  auto sink_nodes = graph_->FindNodesThatMatch(Sink());
+  auto src_nodes = graph->FindNodesThatMatch(Source());
+  auto sink_nodes = graph->FindNodesThatMatch(Sink());
   bool changed = false;
   for (const auto& src : src_nodes) {
     auto transitive_deps = dag_copy.TransitiveDepsFrom(src->id());

@@ -39,8 +39,10 @@ StatusOr<GRPCSourceIR*> GRPCSourceGroupConversionRule::CreateGRPCSource(
   return graph->CreateNode<GRPCSourceIR>(group_ir->ast(), group_ir->relation());
 }
 
-Status UpdateSink(GRPCSourceIR* source, GRPCSinkIR* sink) {
-  sink->SetDestinationID(source->id());
+// Have to get rid of this function. Instead, need to associate (agent_id, sink_id) ->
+// source_id/destination_id.
+Status UpdateSink(GRPCSourceIR* source, GRPCSinkIR* sink, int64_t agent_id) {
+  sink->AddDestinationIDMap(source->id(), agent_id);
   return Status::OK();
 }
 
@@ -56,17 +58,20 @@ StatusOr<OperatorIR*> GRPCSourceGroupConversionRule::ConvertGRPCSourceGroup(
   }
 
   // Don't add an unnecessary union node if there is only one sink.
-  if (sinks.size() == 1) {
+  if (sinks.size() == 1 && sinks[0].second.size() == 1) {
     PL_ASSIGN_OR_RETURN(auto new_grpc_source, CreateGRPCSource(group_ir));
-    PL_RETURN_IF_ERROR(UpdateSink(new_grpc_source, sinks[0]));
+    PL_RETURN_IF_ERROR(UpdateSink(new_grpc_source, sinks[0].first, *(sinks[0].second.begin())));
     return new_grpc_source;
   }
 
   std::vector<OperatorIR*> grpc_sources;
-  for (GRPCSinkIR* sink : sinks) {
-    PL_ASSIGN_OR_RETURN(GRPCSourceIR * new_grpc_source, CreateGRPCSource(group_ir));
-    PL_RETURN_IF_ERROR(UpdateSink(new_grpc_source, sink));
-    grpc_sources.push_back(new_grpc_source);
+  for (const auto& sink : sinks) {
+    DCHECK_GE(sinks[0].second.size(), 1);
+    for (int64_t agent_id : sink.second) {
+      PL_ASSIGN_OR_RETURN(GRPCSourceIR * new_grpc_source, CreateGRPCSource(group_ir));
+      PL_RETURN_IF_ERROR(UpdateSink(new_grpc_source, sink.first, agent_id));
+      grpc_sources.push_back(new_grpc_source);
+    }
   }
 
   PL_ASSIGN_OR_RETURN(UnionIR * union_op,

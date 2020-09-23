@@ -1447,45 +1447,47 @@ Status GRPCSourceGroupIR::ToProto(planpb::Operator* op) const {
 }
 
 Status GRPCSinkIR::ToProto(planpb::Operator* op) const {
+  CHECK(has_output_table());
+  auto pb = op->mutable_grpc_sink_op();
+  op->set_op_type(planpb::GRPC_SINK_OPERATOR);
+  pb->mutable_output_table()->set_table_name(name());
+  pb->set_address(destination_address());
+  pb->mutable_connection_options()->set_ssl_targetname(destination_ssl_targetname());
+
+  auto types = relation().col_types();
+  auto names = relation().col_names();
+
+  for (size_t i = 0; i < relation().NumColumns(); ++i) {
+    pb->mutable_output_table()->add_column_types(types[i]);
+    pb->mutable_output_table()->add_column_names(names[i]);
+  }
+
+  if (is_type_resolved()) {
+    auto table_type = std::static_pointer_cast<TableType>(resolved_type());
+    for (const auto& col_name : names) {
+      if (table_type->HasColumn(col_name)) {
+        PL_ASSIGN_OR_RETURN(auto col_type, table_type->GetColumnType(col_name));
+        if (!col_type->IsValueType()) {
+          return error::Internal("Attempting to create GRPCSink with a non-columnar type.");
+        }
+        auto val_type = std::static_pointer_cast<ValueType>(col_type);
+        pb->mutable_output_table()->add_column_semantic_types(val_type->semantic_type());
+      }
+    }
+  }
+  return Status::OK();
+}
+
+Status GRPCSinkIR::ToProto(planpb::Operator* op, int64_t agent_id) const {
   auto pb = op->mutable_grpc_sink_op();
   op->set_op_type(planpb::GRPC_SINK_OPERATOR);
   pb->set_address(destination_address());
   pb->mutable_connection_options()->set_ssl_targetname(destination_ssl_targetname());
-
-  if (has_destination_id()) {
-    pb->set_grpc_source_id(destination_id());
-    return Status::OK();
+  if (!agent_id_to_destination_id_.contains(agent_id)) {
+    return CreateIRNodeError("No agent ID '$0' found in grpc sink '$1'", agent_id, DebugString());
   }
-
-  if (has_output_table()) {
-    pb->mutable_output_table()->set_table_name(name());
-
-    auto types = relation().col_types();
-    auto names = relation().col_names();
-
-    for (size_t i = 0; i < relation().NumColumns(); ++i) {
-      pb->mutable_output_table()->add_column_types(types[i]);
-      pb->mutable_output_table()->add_column_names(names[i]);
-    }
-
-    if (is_type_resolved()) {
-      auto table_type = std::static_pointer_cast<TableType>(resolved_type());
-      for (const auto& col_name : names) {
-        if (table_type->HasColumn(col_name)) {
-          PL_ASSIGN_OR_RETURN(auto col_type, table_type->GetColumnType(col_name));
-          if (!col_type->IsValueType()) {
-            return error::Internal("Attempting to create GRPCSink with a non-columnar type.");
-          }
-          auto val_type = std::static_pointer_cast<ValueType>(col_type);
-          pb->mutable_output_table()->add_column_semantic_types(val_type->semantic_type());
-        }
-      }
-    }
-    return Status::OK();
-  }
-
-  return error::Internal(
-      "Error in GRPCSinkIR::ToProto: node has no output table or destination ID");
+  pb->set_grpc_source_id(agent_id_to_destination_id_.find(agent_id)->second);
+  return Status::OK();
 }
 
 Status GRPCSourceIR::ToProto(planpb::Operator* op) const {
@@ -1501,7 +1503,9 @@ Status GRPCSourceIR::ToProto(planpb::Operator* op) const {
   return Status::OK();
 }
 
-StatusOr<planpb::Plan> IR::ToProto() const {
+StatusOr<planpb::Plan> IR::ToProto() const { return ToProto(0); }
+
+StatusOr<planpb::Plan> IR::ToProto(int64_t agent_id) const {
   auto plan = planpb::Plan();
   // TODO(michelle) For M1.5 , we'll only handle plans with a single plan fragment. In the future
   // we will need to update this to loop through all plan fragments.
@@ -1517,7 +1521,7 @@ StatusOr<planpb::Plan> IR::ToProto() const {
   for (const auto& node_id : operators) {
     auto node = Get(node_id);
     if (node->IsOperator()) {
-      PL_RETURN_IF_ERROR(OutputProto(plan_fragment, static_cast<OperatorIR*>(node)));
+      PL_RETURN_IF_ERROR(OutputProto(plan_fragment, static_cast<OperatorIR*>(node), agent_id));
     } else {
       non_op_nodes.emplace(node_id);
     }
@@ -1526,7 +1530,8 @@ StatusOr<planpb::Plan> IR::ToProto() const {
   return plan;
 }
 
-Status IR::OutputProto(planpb::PlanFragment* pf, const OperatorIR* op_node) const {
+Status IR::OutputProto(planpb::PlanFragment* pf, const OperatorIR* op_node,
+                       int64_t agent_id) const {
   // Check to make sure that the relation is set for this op_node, otherwise it's not connected to
   // a Sink.
   CHECK(op_node->IsRelationInit())
@@ -1536,9 +1541,16 @@ Status IR::OutputProto(planpb::PlanFragment* pf, const OperatorIR* op_node) cons
   auto plan_node = pf->add_nodes();
   plan_node->set_id(op_node->id());
   auto op_pb = plan_node->mutable_op();
-  PL_RETURN_IF_ERROR(op_node->ToProto(op_pb));
+  // Special case for GRPCSinks.
+  if (Match(op_node, GRPCSink())) {
+    const GRPCSinkIR* grpc_sink = static_cast<const GRPCSinkIR*>(op_node);
+    if (grpc_sink->has_output_table()) {
+      return grpc_sink->ToProto(op_pb);
+    }
+    return grpc_sink->ToProto(op_pb, agent_id);
+  }
 
-  return Status::OK();
+  return op_node->ToProto(op_pb);
 }
 
 Status IR::Prune(const absl::flat_hash_set<int64_t>& ids_to_prune) {
@@ -1575,7 +1587,9 @@ std::vector<IRNode*> IR::FindNodesOfType(IRNodeType type) const {
   }
   return nodes;
 }
-Status GRPCSourceGroupIR::AddGRPCSink(GRPCSinkIR* sink_op) {
+
+Status GRPCSourceGroupIR::AddGRPCSink(GRPCSinkIR* sink_op,
+                                      const absl::flat_hash_set<int64_t>& agents) {
   if (sink_op->destination_id() != source_id_) {
     return DExitOrIRNodeError("Source id $0 and destination id $1 aren't equal.",
                               sink_op->destination_id(), source_id_);
@@ -1586,7 +1600,7 @@ Status GRPCSourceGroupIR::AddGRPCSink(GRPCSinkIR* sink_op) {
   }
   sink_op->SetDestinationAddress(grpc_address_);
   sink_op->SetDestinationSSLTargetName(ssl_targetname_);
-  dependent_sinks_.emplace_back(sink_op);
+  dependent_sinks_.emplace_back(sink_op, agents);
   return Status::OK();
 }
 

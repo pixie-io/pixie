@@ -29,7 +29,7 @@ class Coordinator : public NotCopyable {
  public:
   virtual ~Coordinator() = default;
   static StatusOr<std::unique_ptr<Coordinator>> Create(
-      const distributedpb::DistributedState& physical_state);
+      const distributedpb::DistributedState& distributed_state);
 
   /**
    * @brief Using the physical state and the current plan, assembles a proto Distributed Plan. This
@@ -39,12 +39,12 @@ class Coordinator : public NotCopyable {
    */
   StatusOr<std::unique_ptr<DistributedPlan>> Coordinate(const IR* logical_plan);
 
-  Status Init(const distributedpb::DistributedState& physical_state);
+  Status Init(const distributedpb::DistributedState& distributed_state);
 
  protected:
   Status ProcessConfig(const CarnotInfo& carnot_info);
 
-  virtual Status InitImpl(const distributedpb::DistributedState& physical_state) = 0;
+  virtual Status InitImpl(const distributedpb::DistributedState& distributed_state) = 0;
 
   /**
    * @brief Implementation of the Coordinate function. Using the phyiscal state and the plan, should
@@ -65,14 +65,12 @@ class Coordinator : public NotCopyable {
 class CoordinatorImpl : public Coordinator {
  protected:
   StatusOr<std::unique_ptr<DistributedPlan>> CoordinateImpl(const IR* logical_plan) override;
-  Status InitImpl(const distributedpb::DistributedState& physical_state) override;
+  Status InitImpl(const distributedpb::DistributedState& distributed_state) override;
   Status ProcessConfigImpl(const CarnotInfo& carnot_info) override;
 
  private:
   const distributedpb::CarnotInfo& GetRemoteProcessor() const;
   bool HasExecutableNodes(const IR* plan);
-  Status PrunePlan(IR* plan, const distributedpb::CarnotInfo& carnot_info);
-  bool KeepSource(OperatorIR* source, const distributedpb::CarnotInfo& carnot_info);
 
   /**
    * @brief Removes the sources and any operators depending on that source. Operators that depend on
@@ -101,11 +99,12 @@ class CoordinatorImpl : public Coordinator {
    */
   Status RemoveSourcesAndDependentOperators(IR* plan,
                                             const std::vector<OperatorIR*>& sources_to_remove);
-  bool UDTFMatchesFilters(UDTFSourceIR* source, const distributedpb::CarnotInfo& carnot_info);
   // Nodes that have a source of data.
   std::vector<CarnotInfo> data_store_nodes_;
   // Nodes that remotely prcoess data.
   std::vector<CarnotInfo> remote_processor_nodes_;
+  // The distributed state object.
+  const distributedpb::DistributedState* distributed_state_ = nullptr;
 };
 
 }  // namespace distributed

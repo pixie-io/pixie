@@ -790,7 +790,7 @@ TEST_F(OperatorTests, internal_grpc_ops) {
   EXPECT_TRUE(grpc_sink->has_destination_id());
   EXPECT_FALSE(grpc_sink->has_output_table());
   EXPECT_EQ(grpc_sink->destination_id(), grpc_id);
-  EXPECT_OK(grpc_src_group->AddGRPCSink(grpc_sink));
+  EXPECT_OK(grpc_src_group->AddGRPCSink(grpc_sink, {0}));
   EXPECT_EQ(grpc_src_group->source_id(), grpc_id);
 }
 
@@ -1097,12 +1097,14 @@ TEST_F(ToProtoTests, internal_grpc_sink_ir) {
   auto grpc_sink = MakeGRPCSink(mem_src, destination_id);
   grpc_sink->SetDestinationAddress(grpc_address);
   grpc_sink->SetDestinationSSLTargetName(ssl_targetname);
+  int64_t agent_id = 0;
+  grpc_sink->AddDestinationIDMap(destination_id + 1, agent_id);
 
   planpb::Operator pb;
-  ASSERT_OK(grpc_sink->ToProto(&pb));
+  ASSERT_OK(grpc_sink->ToProto(&pb, agent_id));
 
   EXPECT_THAT(pb, EqualsProto(absl::Substitute(kExpectedInternalGRPCSinkPb, grpc_address,
-                                               destination_id, ssl_targetname)));
+                                               destination_id + 1, ssl_targetname)));
 }
 
 constexpr char kExpectedExternalGRPCSinkPb[] = R"proto(

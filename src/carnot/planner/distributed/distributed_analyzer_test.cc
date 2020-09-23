@@ -33,7 +33,7 @@ TEST_F(DistributedAnalyzerTest, UDTFOnlyOnPEMsDoesntRunOnKelvin) {
   md::UPID upid(asid, 456, 3420030816657ULL);
   std::string upid_str =
       sole::rebuild(absl::Uint128High64(upid.value()), absl::Uint128Low64(upid.value())).str();
-  auto physical_plan = PlanQuery(
+  auto physical_plan = CoordinateQuery(
       absl::Substitute("import px\npx.display(px.OpenNetworkConnections('$0'))", upid_str));
   // The plan starts with 3 agents -> 2 pems and 1 kelvin
   ASSERT_EQ(physical_plan->dag().nodes().size(), 3UL);
@@ -99,7 +99,7 @@ TEST_F(DistributedAnalyzerTest, UDTFOnlyOnPEMsDoesntRunOnKelvin) {
 }
 
 TEST_F(DistributedAnalyzerTest, UDTFOnKelvinOnlyOnKelvin) {
-  auto physical_plan = PlanQuery("import px\npx.display(px.ServiceUpTime())");
+  auto physical_plan = CoordinateQuery("import px\npx.display(px.ServiceUpTime())");
   // The plan starts with 3 agents -> 2 pems and 1 kelvin
   ASSERT_EQ(physical_plan->dag().nodes().size(), 3UL);
   // Find the appropriate agents.
@@ -177,7 +177,7 @@ TEST_F(DistributedAnalyzerTest, UDTFOnKelvinJoinWithUDTFOnPEM) {
   std::string upid_as_str =
       sole::rebuild(absl::Uint128High64(upid.value()), absl::Uint128Low64(upid.value())).str();
   auto physical_plan =
-      PlanQuery(absl::Substitute(kQueryJoinKelvinOnlyUDTFWithPEMOnlyUDTF, upid_as_str));
+      CoordinateQuery(absl::Substitute(kQueryJoinKelvinOnlyUDTFWithPEMOnlyUDTF, upid_as_str));
   // The plan starts with 3 agents -> 2 pems and 1 kelvin.
   ASSERT_EQ(physical_plan->dag().nodes().size(), 3UL);
 
