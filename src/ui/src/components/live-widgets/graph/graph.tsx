@@ -3,7 +3,9 @@ import {
   data as visData, Edge, Network, Node, parseDOTNetwork,
 } from 'vis-network/standalone';
 import * as React from 'react';
-import { createStyles, makeStyles, useTheme } from '@material-ui/core/styles';
+import {
+  createStyles, makeStyles, useTheme, Theme,
+} from '@material-ui/core/styles';
 import { useHistory } from 'react-router';
 import ClusterContext from 'common/cluster-context';
 import { Arguments } from 'utils/args-utils';
@@ -24,10 +26,20 @@ interface AdjacencyList {
   fromColumn: string;
 }
 
+interface EdgeThresholds {
+  mediumThreshold: number;
+  highThreshold: number;
+}
+
 export interface GraphDisplay extends WidgetDisplay {
   readonly dotColumn?: string;
   readonly adjacencyList?: AdjacencyList;
   readonly data?: any[];
+  readonly edgeWeightColumn?: string;
+  readonly nodeWeightColumn?: string;
+  readonly edgeColorColumn?: string;
+  readonly edgeThresholds?: EdgeThresholds;
+  readonly edgeHoverInfo?: string[];
 }
 
 interface GraphWidgetProps {
@@ -67,6 +79,7 @@ export const GraphWidget = (props: GraphWidgetProps) => {
           toCol={toColInfo}
           fromCol={fromColInfo}
           propagatedArgs={props.propagatedArgs}
+          {...display}
         />
       );
     }
@@ -80,6 +93,11 @@ interface GraphProps {
   toCol?: ColInfo;
   fromCol?: ColInfo;
   propagatedArgs?: Arguments;
+  edgeWeightColumn?: string;
+  nodeWeightColumn?: string;
+  edgeColorColumn?: string;
+  edgeThresholds?: EdgeThresholds;
+  edgeHoverInfo?: string[];
 }
 
 const useStyles = makeStyles(() => createStyles({
@@ -110,9 +128,20 @@ interface GraphData {
   propagatedArgs?: Arguments;
 }
 
+function getColorForEdge(val: number, theme: Theme, thresholds: EdgeThresholds): string {
+  const medThreshold = thresholds ? thresholds.mediumThreshold : 100;
+  const highThreshold = thresholds ? thresholds.highThreshold : 200;
+
+  if (val < medThreshold) {
+    return theme.palette.success.dark;
+  }
+  return val > highThreshold ? theme.palette.error.main : theme.palette.warning.main;
+}
+
 export const Graph = (props: GraphProps) => {
   const {
-    dot, toCol, fromCol, data, propagatedArgs,
+    dot, toCol, fromCol, data, propagatedArgs, edgeWeightColumn,
+    nodeWeightColumn, edgeColorColumn, edgeThresholds, edgeHoverInfo,
   } = props;
   const theme = useTheme();
   const graphOpts = getGraphOptions(theme);
@@ -154,13 +183,19 @@ export const Graph = (props: GraphProps) => {
     const nodes = new visData.DataSet<Node>();
     const idToSemType = {};
 
-    const upsertNode = (label: string, st: SemanticType) => {
+    const upsertNode = (label: string, st: SemanticType, weight: number) => {
       if (!idToSemType[label]) {
-        nodes.add({
+        const node = {
           ...semTypeToShapeConfig(st),
           id: label,
           label,
-        });
+        };
+
+        if (weight !== -1) {
+          node.value = weight;
+        }
+
+        nodes.add(node);
         idToSemType[label] = st;
       }
     };
@@ -168,13 +203,36 @@ export const Graph = (props: GraphProps) => {
       const nt = d[toCol.name];
       const nf = d[fromCol.name];
 
-      upsertNode(nt, toCol.semType);
-      upsertNode(nf, fromCol.semType);
+      let nodeWeight = -1;
+      if (nodeWeightColumn && nodeWeightColumn !== '') {
+        nodeWeight = d[nodeWeightColumn];
+      }
 
-      edges.add({
+      upsertNode(nt, toCol.semType, nodeWeight);
+      upsertNode(nf, fromCol.semType, nodeWeight);
+
+      const edge = {
         from: nf,
         to: nt,
-      });
+      } as Edge;
+
+      if (edgeWeightColumn && edgeWeightColumn !== '') {
+        edge.value = d[edgeWeightColumn];
+      }
+
+      if (edgeColorColumn) {
+        edge.color = getColorForEdge(d[edgeColorColumn], theme, edgeThresholds);
+      }
+
+      if (edgeHoverInfo) {
+        let edgeInfo = '';
+        edgeHoverInfo.forEach((info, i) => {
+          edgeInfo = `${edgeInfo}${i === 0 ? '' : '<br>'} ${info}: ${d[info]}`;
+        });
+        edge.title = edgeInfo;
+      }
+
+      edges.add(edge);
     });
 
     setGraph({
