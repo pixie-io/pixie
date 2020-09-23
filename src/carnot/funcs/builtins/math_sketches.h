@@ -24,7 +24,9 @@ class QuantilesUDA : public udf::UDA {
     d.SetObject();
     d.AddMember("p01", digest_.quantile(0.01), d.GetAllocator());
     d.AddMember("p10", digest_.quantile(0.10), d.GetAllocator());
+    d.AddMember("p25", digest_.quantile(0.25), d.GetAllocator());
     d.AddMember("p50", digest_.quantile(0.50), d.GetAllocator());
+    d.AddMember("p75", digest_.quantile(0.75), d.GetAllocator());
     d.AddMember("p90", digest_.quantile(0.90), d.GetAllocator());
     d.AddMember("p99", digest_.quantile(0.99), d.GetAllocator());
     rapidjson::StringBuffer sb;
