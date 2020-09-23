@@ -93,8 +93,6 @@ TEST(BPFTracerWrapperTest, OutputFields) {
 
   BPFTraceWrapper bpftrace_wrapper;
   ASSERT_OK(bpftrace_wrapper.Compile(script, /* params */ {}));
-  ASSERT_OK(bpftrace_wrapper.Deploy());
-  sleep(1);
 
   ASSERT_OK_AND_ASSIGN(const std::vector<bpftrace::Field>& fields, bpftrace_wrapper.OutputFields());
 
@@ -110,9 +108,7 @@ TEST(BPFTracerWrapperTest, OutputFields) {
   EXPECT_EQ(fields[2].type.size, 16);
 
   EXPECT_EQ(fields[3].type.type, bpftrace::Type::inet);
-  EXPECT_EQ(fields[2].type.size, 16);
-
-  bpftrace_wrapper.Stop();
+  EXPECT_EQ(fields[3].type.size, 24);
 }
 
 }  // namespace bpf_tools

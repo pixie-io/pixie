@@ -36,8 +36,8 @@ pl_cc_binary(
 )
 
 pl_cc_test(
-    name = "bcc_wrapper_test",
-    srcs = ["bcc_wrapper_test.cc"],
+    name = "bcc_wrapper_bpf_test",
+    srcs = ["bcc_wrapper_bpf_test.cc"],
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
@@ -46,8 +46,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "bpftrace_wrapper_test",
-    srcs = ["bpftrace_wrapper_test.cc"],
+    name = "bpftrace_wrapper_bpf_test",
+    srcs = ["bpftrace_wrapper_bpf_test.cc"],
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
