@@ -140,6 +140,7 @@ class ASTVisitorImpl : public ASTVisitor {
   inline static constexpr char kIntTypeName[] = "int";
   inline static constexpr char kFloatTypeName[] = "float";
   inline static constexpr char kBoolTypeName[] = "bool";
+  inline static constexpr char kListTypeName[] = "list";
   inline static constexpr char kNoneName[] = "None";
   inline static constexpr char kTrueName[] = "True";
   inline static constexpr char kFalseName[] = "False";
@@ -545,7 +546,7 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return StatusOr<QLObjectPtr> the parsed expression object.
    */
   StatusOr<QLObjectPtr> ParseStringAsType(const pypa::AstPtr& ast, const std::string& value,
-                                          std::shared_ptr<TypeObject> type);
+                                          const std::shared_ptr<TypeObject>& type);
 
   Status SetupModules(const absl::flat_hash_map<std::string, std::string>& module_name_to_pxl_map);
 

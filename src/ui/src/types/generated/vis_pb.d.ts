@@ -706,4 +706,6 @@ export enum PXType {
   PX_CONTAINER = 1002,
   PX_NAMESPACE = 1003,
   PX_NODE = 1004,
+  PX_LIST = 2000,
+  PX_STRING_LIST = 2001,
 }

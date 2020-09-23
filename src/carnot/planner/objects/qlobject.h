@@ -43,6 +43,8 @@ enum class QLObjectType {
   kKProbeTraceTarget,
 };
 
+std::string QLObjectTypeString(QLObjectType type);
+
 class TypeDescriptor {
  public:
   constexpr TypeDescriptor(const std::string_view name, QLObjectType type)

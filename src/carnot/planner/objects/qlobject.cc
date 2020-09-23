@@ -10,6 +10,10 @@ namespace pl {
 namespace carnot {
 namespace planner {
 namespace compiler {
+std::string QLObjectTypeString(QLObjectType type) {
+  return std::string(absl::StripPrefix(absl::AsciiStrToLower(magic_enum::enum_name(type)), "k"));
+}
+
 void QLObject::AddSubscriptMethod(std::shared_ptr<FuncObject> func_object) {
   DCHECK_EQ(func_object->name(), kSubscriptMethodName);
   DCHECK(func_object->arguments() == std::vector<std::string>{"key"})

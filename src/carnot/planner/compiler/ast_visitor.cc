@@ -91,6 +91,8 @@ Status ASTVisitorImpl::InitGlobals() {
   var_table_->Add(ASTVisitorImpl::kFloatTypeName, float_type_object);
   PL_ASSIGN_OR_RETURN(auto bool_type_object, TypeObject::Create(IRNodeType::kBool, this));
   var_table_->Add(ASTVisitorImpl::kBoolTypeName, bool_type_object);
+  PL_ASSIGN_OR_RETURN(auto list_type_object, TypeObject::Create(QLObjectType::kList, this));
+  var_table_->Add(ASTVisitorImpl::kListTypeName, list_type_object);
   // Populate other reserved words
   var_table_->Add(ASTVisitorImpl::kNoneName, std::make_shared<NoneObject>(this));
 
@@ -159,7 +161,16 @@ Status ASTVisitorImpl::ProcessModuleNode(const pypa::AstModulePtr& m) {
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ParseStringAsType(const pypa::AstPtr& ast,
                                                         const std::string& value,
-                                                        std::shared_ptr<TypeObject> type) {
+                                                        const std::shared_ptr<TypeObject>& type) {
+  if (type->ql_object_type() != QLObjectType::kExpr) {
+    PL_ASSIGN_OR_RETURN(auto parsed, ParseAndProcessSingleExpression(value, /*import_px*/ true));
+    if (!type->ObjectMatches(parsed)) {
+      return CreateAstError(ast, "Expected '$0' got '$1' for expr '$2'", type->TypeString(),
+                            QLObjectTypeString(parsed->type()));
+    }
+    return parsed;
+  }
+
   ExpressionIR* node;
   switch (type->data_type()) {
     case types::DataType::BOOLEAN: {
@@ -586,16 +597,24 @@ Status ASTVisitorImpl::ProcessAssignNode(const pypa::AstAssignPtr& node) {
 
 Status ASTVisitorImpl::DoesArgMatchAnnotation(QLObjectPtr ql_arg, QLObjectPtr annotation_obj) {
   DCHECK(annotation_obj);
-  DCHECK(ql_arg->HasNode());
-  auto arg = ql_arg->node();
   if (annotation_obj->type() == QLObjectType::kType) {
     auto type_object = std::static_pointer_cast<TypeObject>(annotation_obj);
+    if (type_object->ObjectMatches(ql_arg)) {
+      return Status::OK();
+    }
+    if (!ql_arg->HasNode()) {
+      return ql_arg->CreateError("Expected '$0', received '$1'", type_object->TypeString(),
+                                 QLObjectTypeString(ql_arg->type()));
+    }
+    // TODO(philkuz) (PP-2217) clean up Type code.
+    auto arg = ql_arg->node();
     if (!arg->IsExpression()) {
       return arg->CreateIRNodeError("Expected '$0', received '$1'", type_object->TypeString(),
                                     arg->type_string());
     }
     return type_object->NodeMatches(static_cast<ExpressionIR*>(arg));
   } else if (annotation_obj->type() != ql_arg->type()) {
+    auto arg = ql_arg->node();
     return arg->CreateIRNodeError("Expected '$0', received '$1'", annotation_obj->name(),
                                   ql_arg->name());
   }

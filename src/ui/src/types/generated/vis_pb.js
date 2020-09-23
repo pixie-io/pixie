@@ -5594,7 +5594,9 @@ proto.pl.vispb.PXType = {
   PX_POD: 1001,
   PX_CONTAINER: 1002,
   PX_NAMESPACE: 1003,
-  PX_NODE: 1004
+  PX_NODE: 1004,
+  PX_LIST: 2000,
+  PX_STRING_LIST: 2001
 };
 
 goog.object.extend(exports, proto.pl.vispb);

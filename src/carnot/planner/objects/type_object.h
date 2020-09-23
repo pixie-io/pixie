@@ -9,6 +9,7 @@
 #include <pypa/ast/ast.hh>
 
 #include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/qlobject.h"
 
 namespace pl {
@@ -37,10 +38,20 @@ class TypeObject : public QLObject {
                                                       ASTVisitor* ast_visitor) {
     return Create(data_type, types::ST_NONE, ast_visitor);
   }
+
+  static StatusOr<std::shared_ptr<TypeObject>> Create(QLObjectType ql_object_type,
+                                                      ASTVisitor* ast_visitor) {
+    auto type = std::shared_ptr<TypeObject>(
+        new TypeObject(types::DATA_TYPE_UNKNOWN, types::ST_NONE, ql_object_type, ast_visitor));
+    PL_RETURN_IF_ERROR(type->Init());
+    return type;
+  }
+
   static StatusOr<std::shared_ptr<TypeObject>> Create(types::DataType data_type,
                                                       types::SemanticType semantic_type,
                                                       ASTVisitor* ast_visitor) {
-    auto type = std::shared_ptr<TypeObject>(new TypeObject(data_type, semantic_type, ast_visitor));
+    auto type = std::shared_ptr<TypeObject>(
+        new TypeObject(data_type, semantic_type, QLObjectType::kExpr, ast_visitor));
     PL_RETURN_IF_ERROR(type->Init());
     return type;
   }
@@ -59,9 +70,26 @@ class TypeObject : public QLObject {
     return Status::OK();
   }
 
-  types::DataType data_type() { return data_type_; }
-  types::SemanticType semantic_type() { return semantic_type_; }
+  bool ObjectMatches(const QLObjectPtr& ql_object) const {
+    if (ql_object->type() != ql_object_type_) {
+      return false;
+    }
+    // Only evaluate DataType/SemanticType if the object type is an expression.
+    if (ql_object_type_ != QLObjectType::kExpr) {
+      return true;
+    }
+    auto expr_object = static_cast<ExprObject*>(ql_object.get());
+    auto expr_ir = static_cast<ExpressionIR*>(expr_object->node());
+    return expr_ir->EvaluatedDataType() == data_type_ && expr_ir->semantic_type();
+  }
+
+  types::DataType data_type() const { return data_type_; }
+  types::SemanticType semantic_type() const { return semantic_type_; }
+  QLObjectType ql_object_type() const { return ql_object_type_; }
   std::string TypeString() {
+    if (ql_object_type_ != QLObjectType::kExpr) {
+      return absl::AsciiStrToLower(magic_enum::enum_name(ql_object_type_));
+    }
     if (semantic_type_ == types::ST_NONE) {
       return absl::AsciiStrToLower(magic_enum::enum_name(data_type_));
     }
@@ -74,15 +102,18 @@ class TypeObject : public QLObject {
    *
    * @param ast the ast ptr for the
    */
-  TypeObject(types::DataType data_type, types::SemanticType semantic_type, ASTVisitor* ast_visitor)
+  TypeObject(types::DataType data_type, types::SemanticType semantic_type,
+             QLObjectType ql_object_type, ASTVisitor* ast_visitor)
       : QLObject(TypeObjectType, ast_visitor),
         data_type_(data_type),
-        semantic_type_(semantic_type) {}
+        semantic_type_(semantic_type),
+        ql_object_type_(ql_object_type) {}
 
  private:
   types::DataType data_type_;
   types::SemanticType semantic_type_;
-};  // namespace compiler
+  QLObjectType ql_object_type_;
+};
 
 class ParsedArgs;
 

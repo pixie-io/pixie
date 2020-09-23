@@ -1937,6 +1937,30 @@ TEST_F(ASTVisitorTest, exec_funcs_func_not_a_function) {
   EXPECT_THAT(graph_or_s.status(), HasCompilerError("'f' is a 'DataFrame' not a function."));
 }
 
+constexpr char kPlanExecFuncsListArg[] = R"pxl(
+import px
+def f(cols: list):
+  return px.DataFrame('http_events', select=cols, start_time='-2m')
+)pxl";
+
+TEST_F(ASTVisitorTest, exec_funcs_list_arg) {
+  FuncToExecute f;
+  f.set_func_name("f");
+  f.set_output_table_prefix("test");
+  auto a = f.add_arg_values();
+  a->set_name("cols");
+  a->set_value("['http_resp_status', 'upid', 'time_']");
+
+  ExecFuncs exec_funcs({f});
+
+  ASSERT_OK_AND_ASSIGN(auto graph, CompileGraph(kPlanExecFuncsListArg, exec_funcs));
+  auto mem_srcs = graph->FindNodesThatMatch(MemorySource());
+  ASSERT_EQ(mem_srcs.size(), 1);
+
+  EXPECT_THAT(static_cast<MemorySourceIR*>(mem_srcs[0])->column_names(),
+              ElementsAre("http_resp_status", "upid", "time_"));
+}
+
 // The function definition Module.
 constexpr char kFuncsUtilsModule[] = R"pxl(
 import px

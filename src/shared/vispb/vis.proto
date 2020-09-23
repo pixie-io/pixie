@@ -22,6 +22,12 @@ enum PXType {
   PX_CONTAINER = 1002;
   PX_NAMESPACE = 1003;
   PX_NODE = 1004;
+  // 2000+ are reserved for container types.
+  // List types.
+  PX_LIST = 2000;
+  // Specifically a string list type. Differentiated from other list types to make the UI
+  // rendering simple.
+  PX_STRING_LIST = 2001;
 }
 
 // Vis is the protobuf form of vis.json which describes the configuration of a Live View.
