@@ -13,10 +13,11 @@ storiesOf('Breadcrumbs', module)
         selectable: true,
         allowTyping: false,
         // eslint-disable-next-line
-        getListItems: async (input) => (
+        getListItems: async () => (
           [
-            { value: 'cluster1', icon: <StatusCell statusGroup='healthy' /> },
-            { value: 'cluster2', icon: <StatusCell statusGroup='unhealthy' /> },
+            // Description is optional, so only providing it on some to demonstrate what happens when it isn't provided.
+            { value: 'cluster1', icon: <StatusCell statusGroup='healthy' />, description: 'Cluster 1 description' },
+            { value: 'cluster2', icon: <StatusCell statusGroup='unhealthy' />, description: 'Cluster 2 description' },
             { value: 'cluster3', icon: <StatusCell statusGroup='pending' /> },
           ]
         ),
@@ -32,9 +33,12 @@ storiesOf('Breadcrumbs', module)
         allowTyping: true,
         getListItems: async (input) => {
           if (input === '') {
-            return [{ value: 'pod1' }, { value: 'pod2' }];
+            return [{ value: 'pod1' }, { value: 'pod2', description: 'Pod 2 has a description, 1 does not' }];
           }
-          return [{ value: 'some pod' }, { value: 'another pod' }, { value: 'pod' }];
+          return [
+            { value: 'some pod' },
+            { value: 'another pod', description: 'Interrupting cow says what?' },
+            { value: 'pod' }];
         },
         onSelect: (input) => {
           // eslint-disable-next-line

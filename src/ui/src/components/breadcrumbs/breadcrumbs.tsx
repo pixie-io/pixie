@@ -1,13 +1,13 @@
 import * as React from 'react';
 import {
-  createStyles, Theme, WithStyles, withStyles,
+  createStyles, Theme, WithStyles, withStyles, ThemeProvider,
 } from '@material-ui/core/styles';
 import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
-import TextField from '@material-ui/core/TextField';
-import Menu from '@material-ui/core/Menu';
-import MenuItem from '@material-ui/core/MenuItem';
-import ListItemText from '@material-ui/core/ListItemText';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
+import { Card, Popover } from '@material-ui/core';
+import createTypography from '@material-ui/core/styles/createTypography';
+import createSpacing from '@material-ui/core/styles/createSpacing';
+import { CompletionItem } from '../autocomplete/completions';
+import Autocomplete from '../autocomplete';
 
 const styles = ({ spacing, typography, palette }: Theme) => createStyles({
   breadcrumbs: {
@@ -22,6 +22,12 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
     fontWeight: typography.fontWeightBold,
     paddingRight: spacing(0.5),
     paddingLeft: spacing(0.5),
+  },
+  card: {
+    width: '608px',
+  },
+  autocomplete: {
+    maxHeight: '60vh',
   },
   value: {
     color: palette.primary.main,
@@ -48,6 +54,11 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
   },
   input: {
     padding: `0 ${spacing(1)}px ${spacing(1)}px ${spacing(1)}px`,
+  },
+  completionsContainer: {
+    // 80% as wide as the Command Input, and using 80% of the fontSize and 80% of the spacing
+    maxWidth: '608px',
+    maxHeight: '60vh',
   },
   // CSS for the front/back of the breadcrumb element.
   triangle: {
@@ -114,20 +125,27 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
 
 interface DialogDropdownProps extends WithStyles<typeof styles> {
   onSelect: (input: string) => void;
-  getListItems: (input: string) => Promise<Array<string>>;
+  getListItems: (input: string) => Promise<BreadcrumbListItem[]>;
   onClose: () => void;
-  showInputField: boolean;
+  allowTyping: boolean;
   anchorEl: HTMLElement;
 }
 
 const DialogDropdown = ({
-  classes, onSelect, onClose, getListItems, showInputfield, anchorEl,
-}) => {
-  const [listItems, setListItems] = React.useState<Array<BreadcrumbListItem>>([]);
+  classes, onSelect, onClose, getListItems, allowTyping, anchorEl,
+}: DialogDropdownProps) => {
+  const [listItems, setListItems] = React.useState<BreadcrumbListItem[]>([]);
+  const [completionItems, setCompletionItems] = React.useState<CompletionItem[]>([]);
   const inputRef = React.useRef(null);
 
-  const onEnter = React.useCallback(() => {
-    if (getListItems) {
+  if (anchorEl && inputRef.current) {
+    setTimeout(() => {
+      inputRef.current.focus();
+    }, 100);
+  }
+
+  React.useEffect(() => {
+    if (typeof getListItems === 'function') {
       getListItems('').then((items) => {
         setListItems(items);
       });
@@ -136,99 +154,68 @@ const DialogDropdown = ({
     }
   }, [getListItems]);
 
-  if (anchorEl) {
-    if (inputRef.current) {
-      setTimeout(() => {
-        inputRef.current.focus();
-      }, 100);
-    }
-  }
+  const onCompletionSelected = React.useCallback((itemValue: string) => {
+    if (typeof getListItems !== 'function') throw new Error(`List items not gettable when selecting "${itemValue}"!`);
+    getListItems(itemValue).then((items) => {
+      if (items.length !== 1) throw new Error(`Found ${items.length} matches to select but expected exactly 1.`);
+      onSelect(itemValue);
+      onClose();
+    });
+  }, [getListItems, onClose, onSelect]);
 
-  const handleClose = React.useCallback(() => {
-    if (inputRef.current) {
-      inputRef.current.value = '';
-    }
-    onClose();
-  }, [inputRef, onClose]);
+  React.useEffect(() => {
+    const mapped: CompletionItem[] = listItems.map((item) => ({
+      type: 'item' as 'item',
+      id: item.value,
+      description: item.description,
+      icon: item.icon,
+      title: item.value,
+    }));
+    setCompletionItems(mapped);
+  }, [listItems]);
 
-  const handleInput = React.useCallback((input) => {
-    if (getListItems) {
-      getListItems(input.target.value).then((items) => {
-        setListItems(items);
-      });
-    }
-  }, [getListItems]);
+  const getCompletions = React.useCallback((input: string) => {
+    if (!input) return Promise.resolve(completionItems);
+    return Promise.resolve(completionItems.filter((item) => item.title.includes(input)));
+  }, [completionItems]);
 
-  const handleKey = React.useCallback((event) => {
-    if (event.key === 'Enter') {
-      onSelect(inputRef.current.value);
-      handleClose();
-    }
-  }, [inputRef, onSelect, handleClose]);
+  // Used to shrink the <Autocomplete/>'s fonts and negative space, to not be as huge / central as the Command Input.
+  const compactThemeBuilder = React.useMemo<(theme: Theme) => Theme>(() => (theme: Theme) => ({
+    ...theme,
+    typography: createTypography(theme.palette, { fontSize: theme.typography.fontSize * 0.8 }),
+    spacing: createSpacing((factor) => (factor * 0.8 * theme.spacing(1))),
+  }), []);
 
   return (
-    <Menu
+    <Popover
+      classes={{ paper: classes.completionsContainer }}
       anchorEl={anchorEl}
       keepMounted
       open={Boolean(anchorEl)}
-      onEnter={onEnter}
-      onClose={handleClose}
+      onClose={onClose}
       getContentAnchorEl={null}
       anchorOrigin={{
         vertical: 'bottom',
-        horizontal: 'center',
+        horizontal: 'left',
       }}
       transformOrigin={{
         vertical: 'top',
-        horizontal: 'center',
+        horizontal: 'left',
       }}
       elevation={0}
     >
-      {
-        showInputfield
-        && (
-          <MenuItem
-            onKeyDown={(e) => {
-              // Support keying up and down on the menu options.
-              if (e.key !== 'ArrowDown') {
-                e.stopPropagation();
-              }
-            }}
-            className={classes.inputItem}
-          >
-            <TextField
-              autoFocus
-              className={classes.input}
-              defaultValue=''
-              size='small'
-              onChange={handleInput}
-              onKeyPress={handleKey}
-              inputRef={inputRef}
-            />
-          </MenuItem>
-        )
-      }
-      {
-        listItems.map((item) => (
-          <MenuItem
-            key={item.value}
-            onClick={() => {
-              onSelect(item.value);
-              handleClose();
-            }}
-          >
-
-            {item.icon
-              && (
-                <ListItemIcon className={classes.icon}>
-                  {item.icon}
-                </ListItemIcon>
-              )}
-            <ListItemText primary={item.value} />
-          </MenuItem>
-        ))
-      }
-    </Menu>
+      <ThemeProvider theme={compactThemeBuilder}>
+        <Card className={classes.card}>
+          <Autocomplete
+            className={classes.autocomplete}
+            placeholder='Filter...'
+            onSelection={onCompletionSelected}
+            getCompletions={getCompletions}
+            allowTyping={allowTyping}
+          />
+        </Card>
+      </ThemeProvider>
+    </Popover>
   );
 };
 
@@ -259,16 +246,16 @@ const Breadcrumb = ({
     <div className={classes.breadcrumb}>
       <div className={classes.body}>
         <div className={classes.content}>
-          { !omitKey && <span className={classes.title}>{`${title}: `}</span> }
+          {!omitKey && <span className={classes.title}>{`${title}: `}</span>}
           <span className={classes.value}>{value}</span>
-          { selectable && <div className={classes.dropdownArrow} onClick={handleClick}><ArrowDropDownIcon /></div> }
-          { !selectable && <div className={classes.spacer} />}
+          {selectable && <div className={classes.dropdownArrow} onClick={handleClick}><ArrowDropDownIcon /></div>}
+          {!selectable && <div className={classes.spacer} />}
           <DialogDropdown
             classes={classes}
             onSelect={onSelect}
             onClose={onClose}
             getListItems={getListItems}
-            showInputfield={allowTyping}
+            allowTyping={allowTyping}
             anchorEl={anchorEl}
           />
         </div>
@@ -279,10 +266,11 @@ const Breadcrumb = ({
 
 interface BreadcrumbListItem {
   value: string;
+  description?: string;
   icon?: React.ReactNode;
 }
 
-interface BreadcrumbOptions {
+export interface BreadcrumbOptions {
   title: string;
   value: string;
   selectable: boolean;
@@ -292,7 +280,7 @@ interface BreadcrumbOptions {
 }
 
 interface BreadcrumbsProps extends WithStyles<typeof styles> {
-  breadcrumbs: Array<BreadcrumbOptions>;
+  breadcrumbs: BreadcrumbOptions[];
 }
 
 // TODO(nserrino/michelle): Support links (non-menu) as a type of breadcrumb,
@@ -313,7 +301,7 @@ const Breadcrumbs = ({
             {...breadcrumb}
           />
           {(i !== breadcrumbs.length - 1)
-            && <div className={classes.separator}>/</div> }
+          && <div className={classes.separator}>/</div>}
         </React.Fragment>
       ))
     }

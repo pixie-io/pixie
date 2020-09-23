@@ -34,6 +34,8 @@ interface AutoCompleteProps {
   placeholder?: string;
   prefix?: React.ReactNode;
   className?: string;
+  /** @default true */
+  allowTyping?: boolean;
 }
 
 type ItemsMap = Map<CompletionId, { title: CompletionTitle; index: number }>;
@@ -61,6 +63,7 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
   placeholder,
   prefix,
   className,
+  allowTyping = true,
 }) => {
   const classes = useStyles();
   const [inputValue, setInputValue] = React.useState('');
@@ -117,6 +120,7 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
 
   return (
     <div className={clsx(classes.root, className)}>
+      {allowTyping !== false && (
       <Input
         className={classes.input}
         onChange={setInputValue}
@@ -126,6 +130,7 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
         prefix={prefix}
         suggestion={itemsMap.get(activeItem)?.title || ''}
       />
+      )}
       <Completions
         className={classes.completions}
         items={completions}

@@ -32,6 +32,7 @@ export interface CompletionItem {
   highlights?: Array<number>;
   itemType?: string;
   state?: string;
+  icon?: React.ReactNode;
 }
 
 const useStyles = makeStyles((theme: Theme) => (
@@ -170,9 +171,11 @@ type CompletionProps = Omit<CompletionItem, 'type'> & {
   active: boolean;
   onSelection: (id: string) => void;
   onActiveChange: (id: string) => void;
+  /** If set, this will replace the default icon for the completion's type. */
+  icon?: React.ReactNode;
 };
 
-export const Completion = (props: CompletionProps) => {
+export const Completion: React.FC<CompletionProps> = (props) => {
   const { title } = props;
 
   if (!title) {
@@ -192,6 +195,7 @@ const CompletionInternal = (props: CompletionProps) => {
     active,
     state,
     itemType,
+    icon,
   } = props;
 
   const classes = useStyles();
@@ -259,7 +263,7 @@ const CompletionInternal = (props: CompletionProps) => {
       onMouseOver={() => onActiveChange(id)}
     >
       <div className={clsx(classes.itemType, stateClass)}>
-        {entityIcon}
+        {icon ?? entityIcon ?? null}
       </div>
       {parts}
     </div>

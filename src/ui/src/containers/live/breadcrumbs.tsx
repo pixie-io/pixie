@@ -6,7 +6,7 @@ import {
 import gql from 'graphql-tag';
 import { useQuery, useApolloClient } from '@apollo/react-hooks';
 
-import Breadcrumbs from 'components/breadcrumbs/breadcrumbs';
+import Breadcrumbs, { BreadcrumbOptions } from 'components/breadcrumbs/breadcrumbs';
 import ClusterContext from 'common/cluster-context';
 import { CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
 import { argsForVis, getArgTypesForVis } from 'utils/args-utils';
@@ -93,12 +93,12 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     return (<div>Loading...</div>);
   }
 
-  const entityBreadcrumbs = [];
-  const argBreadcrumbs = [];
+  const entityBreadcrumbs: BreadcrumbOptions[] = [];
+  const argBreadcrumbs: BreadcrumbOptions[] = [];
 
   // Cluster always goes first in breadcrumbs.
   const clusterName = data.clusters.find((c) => c.id === selectedCluster)?.prettyClusterName || 'unknown cluster';
-  const clusterNameToID = {};
+  const clusterNameToID: Record<string, string> = {};
   data.clusters.forEach((c) => {
     clusterNameToID[c.prettyClusterName] = c.id;
   });
@@ -107,7 +107,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     value: clusterName,
     selectable: true,
     // eslint-disable-next-line
-    getListItems: async (input) => (data.clusters.filter((c) => c.status !== CLUSTER_STATUS_DISCONNECTED)
+    getListItems: async () => (data.clusters.filter((c) => c.status !== CLUSTER_STATUS_DISCONNECTED)
       .map((c) => ({ value: c.prettyClusterName, icon: <StatusCell statusGroup={clusterStatusGroup(c.status)} /> }))
     ),
     onSelect: (input) => {
@@ -139,6 +139,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
       argProps.getListItems = async (input) => (getCompletions(input, entityType)
         .then((results) => (results.data.autocompleteField.map((suggestion) => ({
           value: suggestion.name,
+          description: suggestion.description,
           icon: <StatusCell statusGroup={entityStatusGroup(suggestion.state)} />,
         })))));
     }
@@ -163,11 +164,11 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     allowTyping: true,
     getListItems: async (input) => {
       if (!input) {
-        return scriptIds.map((scriptId) => ({ value: scriptId }));
+        return scriptIds.map((scriptId) => ({ value: scriptId, description: scripts.get(scriptId).description }));
       }
       return scriptIds
         .filter((scriptId) => scriptId.indexOf(input) >= 0)
-        .map((scriptId) => ({ value: scriptId }));
+        .map((scriptId) => ({ value: scriptId, description: scripts.get(scriptId).description }));
     },
     onSelect: (newVal) => {
       const script = scripts.get(newVal);
