@@ -58,19 +58,25 @@ StatusOr<std::vector<ColumnSpec>> ConvertFields(const std::vector<bpftrace::Fiel
     // Get column name.
     // This is currently a hack that just renames the first three columns to what we mandate.
     // TODO(oazizi): Find a better way from BPFTrace.
-    switch (i) {
-      case 0:
-        col.name = "time_";
-        col.type = types::DataType::TIME64NS;
-        break;
-      case 1:
-        col.name = "tgid_";
-        break;
-      case 2:
-        col.name = "tgid_start_time_";
-        break;
-      default:
-        col.name = absl::StrCat("Column_", i);
+    //    switch (i) {
+    //      case 0:
+    //        col.name = "time_";
+    //        col.type = types::DataType::TIME64NS;
+    //        break;
+    //      case 1:
+    //        col.name = "tgid_";
+    //        break;
+    //      case 2:
+    //        col.name = "tgid_start_time_";
+    //        break;
+    //      default:
+    //        col.name = absl::StrCat("Column_", i);
+    //    }
+    if (i == 0) {
+      col.name = "time";
+      col.type = types::DataType::TIME64NS;
+    } else {
+      col.name = absl::StrCat("Column_", i);
     }
 
     // No way to set a description from BPFTrace code.
@@ -238,10 +244,10 @@ void DynamicBPFTraceConnector::HandleEvent(uint8_t* data) {
     switch (field.type.type) {
       case bpftrace::Type::integer:
 
-#define APPEND(int_type, expr)                                          \
+#define APPEND_INTEGER(int_type, expr)                                  \
   {                                                                     \
     auto val = *reinterpret_cast<int_type*>(expr);                      \
-    if (column.name() == "time_") {                                     \
+    if (column.type() == types::DataType::TIME64NS) {                   \
       r.Append(col, types::Time64NSValue(val + ClockRealTimeOffset())); \
     } else {                                                            \
       r.Append(col, types::Int64Value(val));                            \
@@ -250,16 +256,16 @@ void DynamicBPFTraceConnector::HandleEvent(uint8_t* data) {
 
         switch (field.type.size) {
           case 8:
-            APPEND(uint64_t, data + field.offset);
+            APPEND_INTEGER(uint64_t, data + field.offset);
             break;
           case 4:
-            APPEND(uint32_t, data + field.offset);
+            APPEND_INTEGER(uint32_t, data + field.offset);
             break;
           case 2:
-            APPEND(uint16_t, data + field.offset);
+            APPEND_INTEGER(uint16_t, data + field.offset);
             break;
           case 1:
-            APPEND(uint8_t, data + field.offset);
+            APPEND_INTEGER(uint8_t, data + field.offset);
             break;
           default:
             LOG(DFATAL) << absl::Substitute(
@@ -269,7 +275,7 @@ void DynamicBPFTraceConnector::HandleEvent(uint8_t* data) {
             break;
         }
         break;
-#undef APPEND
+#undef APPEND_INTEGER
       case bpftrace::Type::string: {
         auto p = reinterpret_cast<char*>(data + field.offset);
         r.Append(col, types::StringValue(std::string(p, strnlen(p, field.type.size))));
