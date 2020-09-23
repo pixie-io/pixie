@@ -82,7 +82,7 @@ class ScalarExpressionTest : public ::testing::TestWithParam<ScalarExpressionEva
 
     EXPECT_TRUE(func_registry_->Register<AddUDF>("add").ok());
     exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
-                                              MockResultSinkStubGenerator, sole::uuid4());
+                                              MockResultSinkStubGenerator, sole::uuid4(), nullptr);
     EXPECT_OK(exec_state_->AddScalarUDF(
         0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::INT64})));
 
@@ -100,7 +100,7 @@ class ScalarExpressionTest : public ::testing::TestWithParam<ScalarExpressionEva
   std::unique_ptr<ScalarExpressionEvaluator> RunEvaluator(
       const std::vector<std::shared_ptr<const plan::ScalarExpression>>& exprs,
       RowBatch* output_rb) {
-    function_ctx_ = std::make_unique<udf::FunctionContext>(nullptr);
+    function_ctx_ = std::make_unique<udf::FunctionContext>(nullptr, nullptr);
     auto evaluator = ScalarExpressionEvaluator::Create(exprs, GetParam(), function_ctx_.get());
     EXPECT_TRUE(evaluator->Open(exec_state_.get()).ok());
     EXPECT_TRUE(evaluator->Evaluate(exec_state_.get(), *input_rb_, output_rb).ok());

@@ -32,7 +32,7 @@ class AddUDF : public ScalarUDF {
 };
 
 TEST(UDFDefinition, no_args) {
-  auto ctx = FunctionContext(nullptr);
+  auto ctx = FunctionContext(nullptr, nullptr);
   ScalarUDFDefinition def("noargudf");
   EXPECT_OK(def.Init<NoArgUDF>());
 
@@ -48,7 +48,7 @@ TEST(UDFDefinition, no_args) {
 }
 
 TEST(UDFDefinition, two_args) {
-  auto ctx = FunctionContext(nullptr);
+  auto ctx = FunctionContext(nullptr, nullptr);
   ScalarUDFDefinition def("add");
   EXPECT_OK(def.Init<AddUDF>());
 
@@ -64,7 +64,7 @@ TEST(UDFDefinition, two_args) {
 }
 
 TEST(UDFDefinition, str_args) {
-  auto ctx = FunctionContext(nullptr);
+  auto ctx = FunctionContext(nullptr, nullptr);
   ScalarUDFDefinition def("substr");
   EXPECT_OK(def.Init<SubStrUDF>());
 
@@ -80,7 +80,7 @@ TEST(UDFDefinition, str_args) {
 }
 
 TEST(UDFDefinition, arrow_write) {
-  auto ctx = FunctionContext(nullptr);
+  auto ctx = FunctionContext(nullptr, nullptr);
   std::vector<types::Int64Value> v1 = {1, 2, 3};
   std::vector<types::Int64Value> v2 = {3, 4, 5};
 
@@ -114,7 +114,7 @@ class MinSumUDA : public udf::UDA {
 };
 
 TEST(UDADefinition, without_merge) {
-  auto ctx = FunctionContext(nullptr);
+  auto ctx = FunctionContext(nullptr, nullptr);
   UDADefinition def("minsum");
   EXPECT_OK(def.Init<MinSumUDA>());
 
@@ -129,7 +129,7 @@ TEST(UDADefinition, without_merge) {
 }
 
 TEST(UDADefinition, with_merge) {
-  auto ctx = FunctionContext(nullptr);
+  auto ctx = FunctionContext(nullptr, nullptr);
   UDADefinition def("minsum");
   EXPECT_OK(def.Init<MinSumUDA>());
 
@@ -149,7 +149,7 @@ TEST(UDADefinition, with_merge) {
 }
 
 TEST(UDADefinition, arrow_output) {
-  auto ctx = FunctionContext(nullptr);
+  auto ctx = FunctionContext(nullptr, nullptr);
   UDADefinition def("minsum");
   EXPECT_OK(def.Init<MinSumUDA>());
 

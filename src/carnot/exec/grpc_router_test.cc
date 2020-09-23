@@ -356,8 +356,8 @@ TEST_F(GRPCRouterTest, threaded_router_test) {
 
   auto func_registry_ = std::make_unique<udf::Registry>("test_registry");
   auto table_store = std::make_shared<table_store::TableStore>();
-  auto exec_state = std::make_unique<ExecState>(func_registry_.get(), table_store,
-                                                MockResultSinkStubGenerator, sole::uuid4());
+  auto exec_state = std::make_unique<ExecState>(
+      func_registry_.get(), table_store, MockResultSinkStubGenerator, sole::uuid4(), nullptr);
 
   MockExecNode mock_child;
 

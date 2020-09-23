@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "src/carnot/exec/exec_state.h"
+#include "src/carnot/exec/ml/model_pool.h"
 #include "src/carnot/funcs/funcs.h"
 #include "src/carnot/plan/plan_state.h"
 #include "src/carnot/planner/compiler_state/compiler_state.h"
@@ -30,14 +31,15 @@ class EngineState : public NotCopyable {
               std::unique_ptr<planner::RegistryInfo> registry_info,
               const exec::ResultSinkStubGenerator& stub_generator,
               std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func,
-              exec::GRPCRouter* grpc_router)
+              exec::GRPCRouter* grpc_router, std::unique_ptr<exec::ml::ModelPool> model_pool)
       : func_registry_(std::move(func_registry)),
         table_store_(std::move(table_store)),
         schema_(std::move(schema)),
         registry_info_(std::move(registry_info)),
         stub_generator_(stub_generator),
         add_auth_to_grpc_context_func_(add_auth_to_grpc_context_func),
-        grpc_router_(grpc_router) {}
+        grpc_router_(grpc_router),
+        model_pool_(std::move(model_pool)) {}
 
   static StatusOr<std::unique_ptr<EngineState>> CreateDefault(
       std::unique_ptr<udf::Registry> func_registry,
@@ -49,10 +51,11 @@ class EngineState : public NotCopyable {
     auto registry_info = std::make_unique<planner::RegistryInfo>();
     auto udf_info = func_registry->ToProto();
     PL_RETURN_IF_ERROR(registry_info->Init(udf_info));
+    auto model_pool = exec::ml::ModelPool::Create();
 
-    return std::make_unique<EngineState>(std::move(func_registry), table_store, schema,
-                                         std::move(registry_info), stub_generator,
-                                         add_auth_to_grpc_context_func, grpc_router);
+    return std::make_unique<EngineState>(
+        std::move(func_registry), table_store, schema, std::move(registry_info), stub_generator,
+        add_auth_to_grpc_context_func, grpc_router, std::move(model_pool));
   }
 
   std::shared_ptr<table_store::schema::Schema> schema() { return schema_; }
@@ -60,7 +63,7 @@ class EngineState : public NotCopyable {
   table_store::TableStore* table_store() { return table_store_.get(); }
   std::unique_ptr<exec::ExecState> CreateExecState(const sole::uuid& query_id) {
     return std::make_unique<exec::ExecState>(func_registry_.get(), table_store_, stub_generator_,
-                                             query_id, grpc_router_,
+                                             query_id, model_pool_.get(), grpc_router_,
                                              add_auth_to_grpc_context_func_);
   }
 
@@ -83,6 +86,8 @@ class EngineState : public NotCopyable {
     return add_auth_to_grpc_context_func_;
   }
 
+  exec::ml::ModelPool* model_pool() const { return model_pool_.get(); }
+
  private:
   std::unique_ptr<udf::Registry> func_registry_;
   std::shared_ptr<table_store::TableStore> table_store_;
@@ -91,6 +96,7 @@ class EngineState : public NotCopyable {
   const exec::ResultSinkStubGenerator stub_generator_;
   std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func_;
   exec::GRPCRouter* grpc_router_ = nullptr;
+  std::unique_ptr<exec::ml::ModelPool> model_pool_;
 };
 
 }  // namespace carnot

@@ -92,6 +92,19 @@ pl_cc_base_packages = [
     packages["zlib1g"],
 ]
 
+# These filegroups aren't strictly necessary but nice to avoid the extra @*_model//file:, in any other rules that want
+# to use these files.
+filegroup(
+    name = "sentencepiece.proto",
+    srcs = ["@sentencepiece_model//file:sentencepiece.proto"],
+    visibility = ["//visibility:public"],
+)
+filegroup(
+    name = "embedding.proto",
+    srcs = ["@embedding_model//file:embedding.proto"],
+    visibility = ["//visibility:public"],
+)
+
 container_image(
     name = "pl_cc_base_image",
     base = "@base_image//image",

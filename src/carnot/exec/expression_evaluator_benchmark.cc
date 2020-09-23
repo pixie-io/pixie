@@ -63,8 +63,8 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
   auto func_registry = std::make_unique<Registry>("test_registry");
   auto table_store = std::make_shared<pl::table_store::TableStore>();
   PL_CHECK_OK(func_registry->Register<AddUDF>("add"));
-  auto exec_state = std::make_unique<ExecState>(func_registry.get(), table_store,
-                                                MockResultSinkStubGenerator, sole::uuid4());
+  auto exec_state = std::make_unique<ExecState>(
+      func_registry.get(), table_store, MockResultSinkStubGenerator, sole::uuid4(), nullptr);
 
   auto in1 = pl::datagen::CreateLargeData<Int64Value>(data_size);
   auto in2 = pl::datagen::CreateLargeData<Int64Value>(data_size);
@@ -78,7 +78,7 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
   for (auto _ : state) {
     RowDescriptor rd_output({DataType::INT64});
     RowBatch output_rb(rd_output, input_rb->num_rows());
-    auto function_ctx = std::make_unique<pl::carnot::udf::FunctionContext>(nullptr);
+    auto function_ctx = std::make_unique<pl::carnot::udf::FunctionContext>(nullptr, nullptr);
     auto evaluator = ScalarExpressionEvaluator::Create({se}, eval_type, function_ctx.get());
     PL_CHECK_OK(evaluator->Open(exec_state.get()));
     PL_CHECK_OK(evaluator->Evaluate(exec_state.get(), *input_rb, &output_rb));

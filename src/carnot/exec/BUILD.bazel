@@ -28,6 +28,7 @@ pl_cc_library(
         "//src/common/uuid:cc_library",
         "//src/shared/types:cc_library",
         "//src/table_store/table:cc_library",
+        "//src/carnot/exec/ml:cc_library",
         "//third_party:arrow",
         "@com_efficient_libcuckoo//:libcuckoo",
         "@com_github_grpc_grpc//:grpc++",

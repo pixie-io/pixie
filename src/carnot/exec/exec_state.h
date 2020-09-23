@@ -11,6 +11,7 @@
 #include <sole.hpp>
 
 #include "src/carnot/exec/grpc_router.h"
+#include "src/carnot/exec/ml/model_pool.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnotpb/carnot.pb.h"
 #include "src/common/base/base.h"
@@ -40,12 +41,13 @@ class ExecState {
   explicit ExecState(
       udf::Registry* func_registry, std::shared_ptr<table_store::TableStore> table_store,
       const ResultSinkStubGenerator& stub_generator, const sole::uuid& query_id,
-      GRPCRouter* grpc_router = nullptr,
+      ml::ModelPool* model_pool, GRPCRouter* grpc_router = nullptr,
       std::function<void(grpc::ClientContext*)> add_auth_func = [](grpc::ClientContext*) {})
       : func_registry_(func_registry),
         table_store_(std::move(table_store)),
         stub_generator_(stub_generator),
         query_id_(query_id),
+        model_pool_(model_pool),
         grpc_router_(grpc_router),
         add_auth_to_grpc_client_context_func_(add_auth_func) {}
 
@@ -64,6 +66,8 @@ class ExecState {
   table_store::TableStore* table_store() { return table_store_.get(); }
 
   const sole::uuid& query_id() const { return query_id_; }
+
+  ml::ModelPool* model_pool() { return model_pool_; }
 
   Status AddScalarUDF(int64_t id, const std::string& name,
                       const std::vector<types::DataType> arg_types) {
@@ -103,7 +107,7 @@ class ExecState {
   udf::UDADefinition* GetUDADefinition(int64_t id) { return id_to_uda_map_[id]; }
 
   std::unique_ptr<udf::FunctionContext> CreateFunctionContext() {
-    auto ctx = std::make_unique<udf::FunctionContext>(metadata_state_);
+    auto ctx = std::make_unique<udf::FunctionContext>(metadata_state_, model_pool_);
     return ctx;
   }
 
@@ -149,6 +153,7 @@ class ExecState {
   std::map<int64_t, udf::ScalarUDFDefinition*> id_to_scalar_udf_map_;
   std::map<int64_t, udf::UDADefinition*> id_to_uda_map_;
   const sole::uuid query_id_;
+  ml::ModelPool* model_pool_;
   GRPCRouter* grpc_router_ = nullptr;
   std::function<void(grpc::ClientContext*)> add_auth_to_grpc_client_context_func_;
 

@@ -63,34 +63,34 @@ class MetadataOpsTest : public ::testing::Test {
 };
 
 TEST_F(MetadataOpsTest, asid_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<ASIDUDF>(std::move(function_ctx));
   udf_tester.ForInput().Expect(1);
 }
 
 TEST_F(MetadataOpsTest, upid_to_asid_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto upid = types::UInt128Value(528280977975, 89101);
   auto udf_tester = pl::carnot::udf::UDFTester<UPIDToASIDUDF>(std::move(function_ctx));
   udf_tester.ForInput(upid).Expect(123);
 }
 
 TEST_F(MetadataOpsTest, pod_id_to_pod_name_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<PodIDToPodNameUDF>(std::move(function_ctx));
   udf_tester.ForInput("1_uid").Expect("pl/running_pod");
   udf_tester.ForInput("2_uid").Expect("pl/terminating_pod");
 }
 
 TEST_F(MetadataOpsTest, pod_name_to_pod_id_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<PodNameToPodIDUDF>(std::move(function_ctx));
   udf_tester.ForInput("pl/running_pod").Expect("1_uid");
   udf_tester.ForInput("pl/terminating_pod").Expect("2_uid");
 }
 
 TEST_F(MetadataOpsTest, upid_to_pod_id_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<UPIDToPodIDUDF>(std::move(function_ctx));
   auto upid1 = types::UInt128Value(528280977975, 89101);
   udf_tester.ForInput(upid1).Expect("1_uid");
@@ -101,7 +101,7 @@ TEST_F(MetadataOpsTest, upid_to_pod_id_test) {
 }
 
 TEST_F(MetadataOpsTest, upid_to_pod_name_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<UPIDToPodNameUDF>(std::move(function_ctx));
   auto upid1 = types::UInt128Value(528280977975, 89101);
   udf_tester.ForInput(upid1).Expect("pl/running_pod");
@@ -112,7 +112,7 @@ TEST_F(MetadataOpsTest, upid_to_pod_name_test) {
 }
 
 TEST_F(MetadataOpsTest, upid_to_namespace_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<UPIDToNamespaceUDF>(std::move(function_ctx));
   auto upid1 = types::UInt128Value(528280977975, 89101);
   udf_tester.ForInput(upid1).Expect("pl");
@@ -123,7 +123,7 @@ TEST_F(MetadataOpsTest, upid_to_namespace_test) {
 }
 
 TEST_F(MetadataOpsTest, upid_to_container_id_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<UPIDToContainerIDUDF>(std::move(function_ctx));
   auto upid1 = types::UInt128Value(528280977975, 89101);
   udf_tester.ForInput(upid1).Expect("pod1_container_1");
@@ -134,7 +134,7 @@ TEST_F(MetadataOpsTest, upid_to_container_id_test) {
 }
 
 TEST_F(MetadataOpsTest, upid_to_container_name_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<UPIDToContainerNameUDF>(std::move(function_ctx));
   auto upid1 = types::UInt128Value(528280977975, 89101);
   udf_tester.ForInput(upid1).Expect("running_container");
@@ -145,7 +145,7 @@ TEST_F(MetadataOpsTest, upid_to_container_name_test) {
 }
 
 TEST_F(MetadataOpsTest, upid_to_service_id_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<UPIDToServiceIDUDF>(std::move(function_ctx));
   auto upid1 = types::UInt128Value(528280977975, 89101);
   udf_tester.ForInput(upid1).Expect("3_uid");
@@ -163,7 +163,7 @@ TEST_F(MetadataOpsTest, upid_to_service_id_test) {
 }
 
 TEST_F(MetadataOpsTest, upid_to_service_name_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<UPIDToServiceNameUDF>(std::move(function_ctx));
   auto upid1 = types::UInt128Value(528280977975, 89101);
   udf_tester.ForInput(upid1).Expect("pl/running_service");
@@ -180,7 +180,7 @@ TEST_F(MetadataOpsTest, upid_to_service_name_test) {
 }
 
 TEST_F(MetadataOpsTest, upid_to_node_name_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<UPIDToNodeNameUDF>(std::move(function_ctx));
   auto upid1 = types::UInt128Value(528280977975, 89101);
   udf_tester.ForInput(upid1).Expect("test_node");
@@ -197,7 +197,7 @@ TEST_F(MetadataOpsTest, upid_to_node_name_test) {
 }
 
 TEST_F(MetadataOpsTest, pod_id_to_node_name_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<PodIDToNodeNameUDF>(std::move(function_ctx));
   udf_tester.ForInput("1_uid").Expect("test_node");
   // This pod is not available, should return empty.
@@ -205,7 +205,7 @@ TEST_F(MetadataOpsTest, pod_id_to_node_name_test) {
 }
 
 TEST_F(MetadataOpsTest, upid_to_hostname_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<UPIDToHostnameUDF>(std::move(function_ctx));
   auto upid1 = types::UInt128Value(528280977975, 89101);
   udf_tester.ForInput(upid1).Expect("test_host");
@@ -222,14 +222,14 @@ TEST_F(MetadataOpsTest, upid_to_hostname_test) {
 }
 
 TEST_F(MetadataOpsTest, service_id_to_service_name_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<ServiceIDToServiceNameUDF>(std::move(function_ctx));
   udf_tester.ForInput("3_uid").Expect("pl/running_service");
   udf_tester.ForInput("4_uid").Expect("pl/terminating_service");
 }
 
 TEST_F(MetadataOpsTest, service_name_to_service_id_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<ServiceNameToServiceIDUDF>(std::move(function_ctx));
   udf_tester.ForInput("pl/running_service").Expect("3_uid");
   // Terminating service has not yet terminated.
@@ -240,7 +240,7 @@ TEST_F(MetadataOpsTest, upid_to_service_id_test_multiple_services) {
   updates_->enqueue(pl::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
                                                                &md_filter_, updates_.get()));
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   // auto udf_tester = pl::carnot::udf::UDFTester<UPIDToServiceIDUDF>(std::move(function_ctx));
   UPIDToServiceIDUDF udf;
   auto upid1 = types::UInt128Value(528280977975, 89101);
@@ -252,7 +252,7 @@ TEST_F(MetadataOpsTest, upid_to_service_name_test_multiple_services) {
   updates_->enqueue(pl::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
                                                                &md_filter_, updates_.get()));
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   UPIDToServiceNameUDF udf;
   auto upid1 = types::UInt128Value(528280977975, 89101);
   EXPECT_THAT(udf.Exec(function_ctx.get(), upid1),
@@ -264,7 +264,7 @@ TEST_F(MetadataOpsTest, pod_id_to_service_name_test_multiple_services) {
   updates_->enqueue(pl::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
                                                                &md_filter_, updates_.get()));
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   PodIDToServiceNameUDF udf;
   EXPECT_THAT(udf.Exec(function_ctx.get(), "1_uid"),
               AnyOf("[\"pl/running_service\",\"pl/other_service_with_pod\"]",
@@ -275,7 +275,7 @@ TEST_F(MetadataOpsTest, pod_id_to_service_id_test_multiple_services) {
   updates_->enqueue(pl::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
                                                                &md_filter_, updates_.get()));
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   PodIDToServiceIDUDF udf;
   EXPECT_THAT(udf.Exec(function_ctx.get(), "1_uid"),
               AnyOf("[\"3_uid\",\"5_uid\"]", "[\"5_uid\",\"3_uid\"]"));
@@ -285,7 +285,7 @@ TEST_F(MetadataOpsTest, pod_name_to_service_name_test_multiple_services) {
   updates_->enqueue(pl::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
                                                                &md_filter_, updates_.get()));
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   PodNameToServiceNameUDF udf;
   EXPECT_THAT(udf.Exec(function_ctx.get(), "pl/running_pod"),
               AnyOf("[\"pl/running_service\",\"pl/other_service_with_pod\"]",
@@ -296,7 +296,7 @@ TEST_F(MetadataOpsTest, pod_name_to_service_id_test_multiple_services) {
   updates_->enqueue(pl::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
                                                                &md_filter_, updates_.get()));
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   PodNameToServiceIDUDF udf;
   EXPECT_THAT(udf.Exec(function_ctx.get(), "pl/running_pod"),
               AnyOf("[\"3_uid\",\"5_uid\"]", "[\"5_uid\",\"3_uid\"]"));
@@ -322,7 +322,7 @@ TEST_F(MetadataOpsTest, upid_to_pid) {
 
 TEST_F(MetadataOpsTest, pod_id_to_start_time) {
   PodIDToPodStartTimeUDF udf;
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   // 1_uid is the Pod id for the currently running pod.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "1_uid").val, 5);
   // 1234567_uid is a nonexistant Pod id, should return 0.
@@ -331,7 +331,7 @@ TEST_F(MetadataOpsTest, pod_id_to_start_time) {
 
 TEST_F(MetadataOpsTest, pod_name_to_start_time) {
   PodNameToPodStartTimeUDF udf;
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   // 1_uid is the Pod id for the currently running pod.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/running_pod").val, 5);
   // 1234567_uid is a nonexistant Pod id, should return 0.
@@ -344,7 +344,7 @@ TEST_F(MetadataOpsTest, pod_name_to_pod_status) {
   updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedPodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
                                                                &md_filter_, updates_.get()));
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   // 1_uid is the Pod id for the currently running pod.
   auto running_res = status_udf.Exec(function_ctx.get(), "pl/running_pod");
   auto failed_res = status_udf.Exec(function_ctx.get(), "pl/terminating_pod");
@@ -367,7 +367,7 @@ TEST_F(MetadataOpsTest, container_id_to_container_status) {
 
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
                                                                &md_filter_, updates_.get()));
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
 
   auto running_res = status_udf.Exec(function_ctx.get(), "pod1_container_1");
   auto terminating_res = status_udf.Exec(function_ctx.get(), "pod2_container_1");
@@ -386,7 +386,7 @@ TEST_F(MetadataOpsTest, container_id_to_container_status) {
 }
 
 TEST_F(MetadataOpsTest, upid_to_cmdline) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
 
   UPIDToCmdLineUDF udf;
   auto upid1 = md::UPID(123, 567, 89101);
@@ -396,21 +396,21 @@ TEST_F(MetadataOpsTest, upid_to_cmdline) {
 }
 
 TEST_F(MetadataOpsTest, hostname) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
 
   HostnameUDF udf;
   EXPECT_EQ(udf.Exec(function_ctx.get()), "myhost");
 }
 
 TEST_F(MetadataOpsTest, pod_ip) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
 
   PodIPToPodIDUDF udf;
   EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.1"), "1_uid");
 }
 
 TEST_F(MetadataOpsTest, upid_to_qos) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<UPIDToPodQoSUDF>(std::move(function_ctx));
   auto upid1 = types::UInt128Value(528280977975, 89101);
   udf_tester.ForInput(upid1).Expect("kGuaranteed");
@@ -425,7 +425,7 @@ TEST_F(MetadataOpsTest, upid_to_pod_status) {
   updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedPodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
                                                                &md_filter_, updates_.get()));
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   // 1_uid is the Pod id for the currently running pod.
   auto upid1 = types::UInt128Value(528280977975, 89101);
   auto running_res = udf.Exec(function_ctx.get(), upid1);
@@ -446,21 +446,21 @@ TEST_F(MetadataOpsTest, upid_to_pod_status) {
 }
 
 TEST_F(MetadataOpsTest, pod_id_to_namespace_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<PodIDToNamespaceUDF>(std::move(function_ctx));
   udf_tester.ForInput("1_uid").Expect("pl");
   udf_tester.ForInput("2_uid").Expect("pl");
 }
 
 TEST_F(MetadataOpsTest, pod_name_to_namespace_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<PodNameToNamespaceUDF>(std::move(function_ctx));
   udf_tester.ForInput("pl/running_pod").Expect("pl");
   udf_tester.ForInput("px-sock-shop/terminating_pod").Expect("px-sock-shop");
 }
 
 TEST_F(MetadataOpsTest, service_name_to_namespace_test) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<ServiceNameToNamespaceUDF>(std::move(function_ctx));
   udf_tester.ForInput("pl/orders").Expect("pl");
   udf_tester.ForInput("").Expect("");

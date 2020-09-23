@@ -21,6 +21,7 @@ pl_cc_library(
         "//src/shared/metadata:cc_library",
         "//src/shared/types:cc_library",
         "//src/shared/types/proto:types_pl_cc_proto",
+        "//src/carnot/exec/ml:cc_library",
         "//third_party:arrow",
     ],
 )
