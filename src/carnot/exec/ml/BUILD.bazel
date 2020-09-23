@@ -1,0 +1,43 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test", "pl_cc_test_library")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.cc",
+            "*.h",
+        ],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+            "**/*_mock.h",
+            "**/*test_utils.h",
+            "**/*test_utils.cc",
+        ],
+    ),
+    deps = [
+        "//src/shared/types:cc_library",
+        "@com_github_tencent_rapidjson//:rapidjson",
+        "@org_tensorflow//third_party/eigen3",
+    ],
+)
+
+pl_cc_test(
+    name = "coreset_test",
+    srcs = ["coreset_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_binary(
+    name = "coreset_benchmark",
+    testonly = 1,
+    srcs = ["coreset_benchmark.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/benchmark:cc_library",
+    ],
+)
