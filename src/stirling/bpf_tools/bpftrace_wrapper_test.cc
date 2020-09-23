@@ -87,7 +87,7 @@ TEST(BPFTracerWrapperTest, PerfBufferPollWithCallback) {
 TEST(BPFTracerWrapperTest, OutputFields) {
   std::string script = R"(
         interval:ms:100 {
-            printf("%llu %u %s\n", nsecs, pid, comm);
+            printf("%llu %u %s %s\n", nsecs, pid, comm, ntop(0));
         }
     )";
 
@@ -97,7 +97,9 @@ TEST(BPFTracerWrapperTest, OutputFields) {
   sleep(1);
 
   ASSERT_OK_AND_ASSIGN(const std::vector<bpftrace::Field>& fields, bpftrace_wrapper.OutputFields());
-  EXPECT_EQ(fields.size(), 3);
+
+  ASSERT_EQ(fields.size(), 4);
+
   EXPECT_EQ(fields[0].type.type, bpftrace::Type::integer);
   EXPECT_EQ(fields[0].type.size, 8);
 
@@ -105,6 +107,9 @@ TEST(BPFTracerWrapperTest, OutputFields) {
   EXPECT_EQ(fields[1].type.size, 8);
 
   EXPECT_EQ(fields[2].type.type, bpftrace::Type::string);
+  EXPECT_EQ(fields[2].type.size, 16);
+
+  EXPECT_EQ(fields[3].type.type, bpftrace::Type::inet);
   EXPECT_EQ(fields[2].type.size, 16);
 
   bpftrace_wrapper.Stop();

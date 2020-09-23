@@ -47,6 +47,9 @@ StatusOr<std::vector<ColumnSpec>> ConvertFields(const std::vector<bpftrace::Fiel
       case bpftrace::Type::string:
         col.type = types::DataType::STRING;
         break;
+      case bpftrace::Type::inet:
+        col.type = types::DataType::STRING;
+        break;
       default:
         return error::Internal("Column $0 has an unhandled field type $1.", i,
                                magic_enum::enum_name(bpftrace_type));
@@ -92,12 +95,13 @@ std::unique_ptr<SourceConnector> DynamicBPFTraceConnector::Create(
   BPFTraceWrapper bpftrace;
   Status s = bpftrace.Compile(tracepoint.bpftrace().program(), {});
   std::vector<bpftrace::Field> fields = bpftrace.OutputFields().ValueOr({});
-  std::vector<ColumnSpec> columns = ConvertFields(fields).ValueOr({});
+  StatusOr<std::vector<ColumnSpec>> columns = ConvertFields(fields);
+  LOG_IF(ERROR, !columns.ok()) << columns.ToString();
   // Note that we ignore all compilation errors; the second compilation during Init() will report
   // them.
 
   std::unique_ptr<DynamicDataTableSchema> table_schema =
-      DynamicDataTableSchema::Create(tracepoint.table_name(), columns);
+      DynamicDataTableSchema::Create(tracepoint.table_name(), columns.ValueOr({}));
 
   return std::unique_ptr<SourceConnector>(new DynamicBPFTraceConnector(
       source_name, std::move(table_schema), tracepoint.bpftrace().program()));
@@ -134,6 +138,9 @@ Status CheckOutputFields(const std::vector<bpftrace::Field> fields,
         expected_type = (i == 0) ? types::DataType::TIME64NS : types::DataType::INT64;
         break;
       case bpftrace::Type::string:
+        expected_type = types::DataType::STRING;
+        break;
+      case bpftrace::Type::inet:
         expected_type = types::DataType::STRING;
         break;
       default:
@@ -195,6 +202,29 @@ void DynamicBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uin
   data_table_ = nullptr;
 }
 
+namespace {
+
+// TODO(oazizi): Consolidate with inet_utils.
+std::string ResolveInet(int af, const uint8_t* inet) {
+  switch (af) {
+    case AF_INET: {
+      char addr_cstr[INET_ADDRSTRLEN];
+      inet_ntop(AF_INET, inet, addr_cstr, INET_ADDRSTRLEN);
+      return std::string(addr_cstr);
+    }
+    case AF_INET6: {
+      char addr_cstr[INET6_ADDRSTRLEN];
+      inet_ntop(AF_INET6, inet, addr_cstr, INET6_ADDRSTRLEN);
+      return std::string(addr_cstr);
+    }
+  }
+
+  // Shouldn't ever get here.
+  return "Error decoding inet";
+}
+
+}  // namespace
+
 void DynamicBPFTraceConnector::HandleEvent(uint8_t* data) {
   DataTable::DynamicRecordBuilder r(data_table_);
 
@@ -208,14 +238,14 @@ void DynamicBPFTraceConnector::HandleEvent(uint8_t* data) {
     switch (field.type.type) {
       case bpftrace::Type::integer:
 
-#define APPEND(int_type, expr)                     \
-  {                                                \
-    auto val = *reinterpret_cast<int_type*>(expr); \
-    if (column.name() == "time_") {                \
-      r.Append(col, types::Time64NSValue(val));    \
-    } else {                                       \
-      r.Append(col, types::Int64Value(val));       \
-    }                                              \
+#define APPEND(int_type, expr)                                          \
+  {                                                                     \
+    auto val = *reinterpret_cast<int_type*>(expr);                      \
+    if (column.name() == "time_") {                                     \
+      r.Append(col, types::Time64NSValue(val + ClockRealTimeOffset())); \
+    } else {                                                            \
+      r.Append(col, types::Int64Value(val));                            \
+    }                                                                   \
   }
 
         switch (field.type.size) {
@@ -243,6 +273,12 @@ void DynamicBPFTraceConnector::HandleEvent(uint8_t* data) {
       case bpftrace::Type::string: {
         auto p = reinterpret_cast<char*>(data + field.offset);
         r.Append(col, types::StringValue(std::string(p, strnlen(p, field.type.size))));
+        break;
+      }
+      case bpftrace::Type::inet: {
+        int64_t af = *reinterpret_cast<int64_t*>(data + field.offset);
+        uint8_t* inet = reinterpret_cast<uint8_t*>(data + field.offset + 8);
+        r.Append(col, types::StringValue(ResolveInet(af, inet)));
         break;
       }
       default:
