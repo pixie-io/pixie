@@ -2,6 +2,7 @@
 #include "src/carnot/funcs/builtins/json_ops.h"
 #include "src/carnot/funcs/builtins/math_ops.h"
 #include "src/carnot/funcs/builtins/math_sketches.h"
+#include "src/carnot/funcs/builtins/ml_ops.h"
 #include "src/carnot/funcs/builtins/string_ops.h"
 
 #include "src/carnot/udf/registry.h"
@@ -15,6 +16,7 @@ void RegisterBuiltinsOrDie(udf::Registry* registry) {
   RegisterMathSketchesOrDie(registry);
   RegisterJSONOpsOrDie(registry);
   RegisterStringOpsOrDie(registry);
+  RegisterMLOpsOrDie(registry);
 }
 
 }  // namespace builtins

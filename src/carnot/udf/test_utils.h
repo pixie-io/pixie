@@ -48,6 +48,12 @@ class UDFTester {
 
  public:
   UDFTester() {}
+  template <typename... Args>
+  explicit UDFTester(Args... args) : udf_(args...) {}
+
+  template <typename... Args>
+  UDFTester(std::unique_ptr<udf::FunctionContext> function_ctx, Args... args)
+      : udf_(args...), function_ctx_(std::move(function_ctx)) {}
 
   explicit UDFTester(std::unique_ptr<udf::FunctionContext> function_ctx)
       : function_ctx_(std::move(function_ctx)) {}
@@ -95,6 +101,8 @@ class UDATester {
   UDATester(UDATester const&) = delete;
   UDATester& operator=(UDATester const&) = delete;
   UDATester() = default;
+  template <typename... Args>
+  explicit UDATester(Args... args) : uda_(args...) {}
   /*
    * Add the given arguments to the UDAs inputs.
    * Arguments must be of a type that can usually be passed into the UDA's Update function,

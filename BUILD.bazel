@@ -109,6 +109,7 @@ container_image(
     name = "pl_cc_base_image",
     base = "@base_image//image",
     debs = pl_cc_base_packages,
+    files = ["//:embedding.proto", "//:sentencepiece.proto"],
     visibility = ["//visibility:public"],
 )
 
@@ -116,6 +117,7 @@ container_image(
     name = "pl_cc_base_debug_image",
     base = "@base_image_debug//image",
     debs = pl_cc_base_packages,
+    files = ["//:embedding.proto", "//:sentencepiece.proto"],
     visibility = ["//visibility:public"],
 )
 
