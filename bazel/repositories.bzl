@@ -80,6 +80,7 @@ def _cc_deps():
     _bazel_repo("com_github_google_glog")
     _bazel_repo("com_google_absl")
     _bazel_repo("com_google_flatbuffers")
+    _repo_impl("org_tensorflow")
 
     _include_all_repo("com_github_gperftools_gperftools", patch_cmds = ["./autogen.sh"])
     _include_all_repo("com_github_nats_io_natsc", patches = ["//third_party:natsc.patch"], patch_args = ["-p1"])
@@ -120,6 +121,7 @@ def pl_deps():
     _bazel_repo("com_google_boringssl")
     _bazel_repo("rules_foreign_cc")
     _bazel_repo("io_bazel_rules_k8s")
+    _bazel_repo("io_bazel_rules_closure")
 
     _repo_impl("com_github_grpc_grpc", patches = ["//third_party:grpc.patch"], patch_args = ["-p1"])
     _repo_impl("com_intel_tbb", build_file = "@pl//third_party:tbb.BUILD")

@@ -156,3 +156,6 @@ build --define BUNDLE_VERSION={STABLE_BUILD_TAG}
 # Import other bazelrc files
 try-import %workspace%/jenkins.bazelrc
 try-import %workspace%/user.bazelrc
+
+# Tensorflow requires this option
+common --experimental_repo_remote_exec

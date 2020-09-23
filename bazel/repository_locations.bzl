@@ -212,4 +212,17 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "jsonrpcpp-1.3.2",
         urls = ["https://github.com/badaix/jsonrpcpp/archive/v1.3.2.tar.gz"],
     ),
+    # August 18, 2020.
+    org_tensorflow = dict(
+        sha256 = "2595a5c401521f20a2734c4e5d54120996f8391f00bb62a57267d930bce95350",
+        strip_prefix = "tensorflow-2.3.0",
+        urls = ["https://github.com/tensorflow/tensorflow/archive/v2.3.0.tar.gz"],
+    ),
+    io_bazel_rules_closure = dict(
+        sha256 = "5b00383d08dd71f28503736db0500b6fb4dda47489ff5fc6bed42557c07c6ba9",
+        strip_prefix = "rules_closure-308b05b2419edb5c8ee0471b67a40403df940149",
+        urls = [
+            "https://github.com/bazelbuild/rules_closure/archive/308b05b2419edb5c8ee0471b67a40403df940149.tar.gz",
+        ],
+    ),
 )

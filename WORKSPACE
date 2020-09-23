@@ -84,6 +84,10 @@ load("//bazel:gogo.bzl", "gogo_grpc_proto")
 
 gogo_grpc_proto(name = "gogo_grpc_proto")
 
+# Setup tensorflow.
+load("@org_tensorflow//tensorflow:workspace.bzl", "tf_repositories")
+
+tf_repositories()
 ##########################################################
 # Manual GO dependencies (those we patch)
 ##########################################################
