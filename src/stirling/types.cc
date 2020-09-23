@@ -113,11 +113,11 @@ BackedDataElements CreateDataElements(
   return elements;
 }
 
-BackedDataElements CreateDataElements(const std::vector<types::DataType>& columns) {
+BackedDataElements CreateDataElements(const std::vector<ColumnSpec>& columns) {
   BackedDataElements elements(columns.size());
 
-  for (size_t i = 0; i < columns.size(); ++i) {
-    elements.emplace_back(absl::StrCat("Column ", i), "", columns[i]);
+  for (const auto& col : columns) {
+    elements.emplace_back(col.name, col.desc, col.type);
   }
 
   return elements;
@@ -132,7 +132,7 @@ std::unique_ptr<DynamicDataTableSchema> DynamicDataTableSchema::Create(
 }
 
 std::unique_ptr<DynamicDataTableSchema> DynamicDataTableSchema::Create(
-    std::string_view output_name, const std::vector<types::DataType>& columns) {
+    std::string_view output_name, const std::vector<ColumnSpec>& columns) {
   return absl::WrapUnique(new DynamicDataTableSchema(output_name, CreateDataElements(columns)));
 }
 

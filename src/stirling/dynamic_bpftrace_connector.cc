@@ -13,13 +13,14 @@ namespace stirling {
 
 namespace {
 
-StatusOr<std::vector<types::DataType>> ConvertFields(const std::vector<bpftrace::Field> fields) {
-  std::vector<types::DataType> columns;
+StatusOr<std::vector<ColumnSpec>> ConvertFields(const std::vector<bpftrace::Field> fields) {
+  std::vector<ColumnSpec> columns;
+  columns.reserve(fields.size());
 
   for (size_t i = 0; i < fields.size(); ++i) {
     bpftrace::Type bpftrace_type = fields[i].type.type;
 
-    // Check #2: Any integers must be an expected size.
+    // Check: Any integers must be an expected size.
     if (bpftrace_type == bpftrace::Type::integer) {
       size_t bpftrace_type_size = fields[i].type.size;
 
@@ -35,19 +36,44 @@ StatusOr<std::vector<types::DataType>> ConvertFields(const std::vector<bpftrace:
       }
     }
 
-    types::DataType col_type = types::DataType::DATA_TYPE_UNKNOWN;
+    ColumnSpec col;
+
+    // Get column type.
+    col.type = types::DataType::DATA_TYPE_UNKNOWN;
     switch (bpftrace_type) {
       case bpftrace::Type::integer:
-        col_type = types::DataType::INT64;
+        col.type = types::DataType::INT64;
         break;
       case bpftrace::Type::string:
-        col_type = types::DataType::STRING;
+        col.type = types::DataType::STRING;
         break;
       default:
         return error::Internal("Column $0 has an unhandled field type $1.", i,
                                magic_enum::enum_name(bpftrace_type));
     }
-    columns.push_back(col_type);
+
+    // Get column name.
+    // This is currently a hack that just renames the first three columns to what we mandate.
+    // TODO(oazizi): Find a better way from BPFTrace.
+    switch (i) {
+      case 0:
+        col.name = "time_";
+        col.type = types::DataType::TIME64NS;
+        break;
+      case 1:
+        col.name = "tgid_";
+        break;
+      case 2:
+        col.name = "tgid_start_time_";
+        break;
+      default:
+        col.name = absl::StrCat("Column_", i);
+    }
+
+    // No way to set a description from BPFTrace code.
+    col.desc = "";
+
+    columns.push_back(std::move(col));
   }
 
   return columns;
@@ -66,12 +92,12 @@ std::unique_ptr<SourceConnector> DynamicBPFTraceConnector::Create(
   BPFTraceWrapper bpftrace;
   Status s = bpftrace.Compile(tracepoint.bpftrace().program(), {});
   std::vector<bpftrace::Field> fields = bpftrace.OutputFields().ValueOr({});
-  std::vector<types::DataType> columns = ConvertFields(fields).ValueOr({});
+  std::vector<ColumnSpec> columns = ConvertFields(fields).ValueOr({});
   // Note that we ignore all compilation errors; the second compilation during Init() will report
   // them.
 
   std::unique_ptr<DynamicDataTableSchema> table_schema =
-      DynamicDataTableSchema::Create(tracepoint.table_name(), std::move(columns));
+      DynamicDataTableSchema::Create(tracepoint.table_name(), columns);
 
   return std::unique_ptr<SourceConnector>(new DynamicBPFTraceConnector(
       source_name, std::move(table_schema), tracepoint.bpftrace().program()));
@@ -105,7 +131,7 @@ Status CheckOutputFields(const std::vector<bpftrace::Field> fields,
     types::DataType expected_type = types::DataType::DATA_TYPE_UNKNOWN;
     switch (bpftrace_type) {
       case bpftrace::Type::integer:
-        expected_type = types::DataType::INT64;
+        expected_type = (i == 0) ? types::DataType::TIME64NS : types::DataType::INT64;
         break;
       case bpftrace::Type::string:
         expected_type = types::DataType::STRING;
@@ -172,22 +198,38 @@ void DynamicBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uin
 void DynamicBPFTraceConnector::HandleEvent(uint8_t* data) {
   DataTable::DynamicRecordBuilder r(data_table_);
 
+  const auto& columns = table_schema_->Get().elements();
+
   int col = 0;
-  for (const auto& field : output_fields_) {
+  for (size_t i = 0; i < output_fields_.size(); ++i) {
+    const auto& field = output_fields_[i];
+    const auto& column = columns[i];
+
     switch (field.type.type) {
       case bpftrace::Type::integer:
+
+#define APPEND(int_type, expr)                     \
+  {                                                \
+    auto val = *reinterpret_cast<int_type*>(expr); \
+    if (column.name() == "time_") {                \
+      r.Append(col, types::Time64NSValue(val));    \
+    } else {                                       \
+      r.Append(col, types::Int64Value(val));       \
+    }                                              \
+  }
+
         switch (field.type.size) {
           case 8:
-            r.Append(col, types::Int64Value(*reinterpret_cast<uint64_t*>(data + field.offset)));
+            APPEND(uint64_t, data + field.offset);
             break;
           case 4:
-            r.Append(col, types::Int64Value(*reinterpret_cast<uint32_t*>(data + field.offset)));
+            APPEND(uint32_t, data + field.offset);
             break;
           case 2:
-            r.Append(col, types::Int64Value(*reinterpret_cast<uint16_t*>(data + field.offset)));
+            APPEND(uint16_t, data + field.offset);
             break;
           case 1:
-            r.Append(col, types::Int64Value(*reinterpret_cast<uint8_t*>(data + field.offset)));
+            APPEND(uint8_t, data + field.offset);
             break;
           default:
             LOG(DFATAL) << absl::Substitute(
@@ -197,6 +239,7 @@ void DynamicBPFTraceConnector::HandleEvent(uint8_t* data) {
             break;
         }
         break;
+#undef APPEND
       case bpftrace::Type::string: {
         auto p = reinterpret_cast<char*>(data + field.offset);
         r.Append(col, types::StringValue(std::string(p, strnlen(p, field.type.size))));

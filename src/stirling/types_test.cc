@@ -117,7 +117,9 @@ TEST(DynamicDataTableSchemaTest, generate) {
 
 // TODO(oazizi/yzhao): Re-enable after finalizing strategy for auto-generating DataTableSchema.
 TEST(DynamicDataTableSchemaTest, Create2) {
-  std::vector<DataType> columns = {DataType::INT64, DataType::STRING, DataType::INT64};
+  std::vector<ColumnSpec> columns = {ColumnSpec{"a", "this is column a", DataType::INT64},
+                                     ColumnSpec{"b", "this is column b", DataType::STRING},
+                                     ColumnSpec{"c", "this is column c", DataType::INT64}};
 
   auto data_table_schema = DynamicDataTableSchema::Create("out_table", columns);
 
@@ -129,9 +131,12 @@ TEST(DynamicDataTableSchemaTest, Create2) {
   EXPECT_EQ(table_schema.elements()[0].type(), DataType::INT64);
   EXPECT_EQ(table_schema.elements()[1].type(), DataType::STRING);
   EXPECT_EQ(table_schema.elements()[2].type(), DataType::INT64);
-  EXPECT_EQ(table_schema.elements()[0].name(), "Column 0");
-  EXPECT_EQ(table_schema.elements()[1].name(), "Column 1");
-  EXPECT_EQ(table_schema.elements()[2].name(), "Column 2");
+  EXPECT_EQ(table_schema.elements()[0].name(), "a");
+  EXPECT_EQ(table_schema.elements()[1].name(), "b");
+  EXPECT_EQ(table_schema.elements()[2].name(), "c");
+  EXPECT_EQ(table_schema.elements()[0].desc(), "this is column a");
+  EXPECT_EQ(table_schema.elements()[1].desc(), "this is column b");
+  EXPECT_EQ(table_schema.elements()[2].desc(), "this is column c");
 }
 
 }  // namespace stirling

@@ -179,6 +179,12 @@ class DataTableSchema {
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 };
 
+struct ColumnSpec {
+  std::string name;
+  std::string desc;
+  types::DataType type = types::DataType::DATA_TYPE_UNKNOWN;
+};
+
 class BackedDataElements {
  public:
   explicit BackedDataElements(size_t size) : size_(size) {
@@ -225,8 +231,8 @@ class DynamicDataTableSchema {
  public:
   static std::unique_ptr<DynamicDataTableSchema> Create(
       const dynamic_tracing::BCCProgram::PerfBufferSpec& output_spec);
-  static std::unique_ptr<DynamicDataTableSchema> Create(
-      std::string_view output_name, const std::vector<types::DataType>& columns);
+  static std::unique_ptr<DynamicDataTableSchema> Create(std::string_view output_name,
+                                                        const std::vector<ColumnSpec>& columns);
 
   const DataTableSchema& Get() { return table_schema_; }
 
