@@ -56,7 +56,12 @@ class PartialOperatorMgr : public NotCopyable {
  */
 class LimitOperatorMgr : public PartialOperatorMgr {
  public:
-  bool Matches(OperatorIR* op) const override { return Match(op, Limit()); }
+  bool Matches(OperatorIR* op) const override {
+    if (!Match(op, Limit())) {
+      return false;
+    }
+    return !static_cast<LimitIR*>(op)->pem_only();
+  }
   StatusOr<OperatorIR*> CreatePrepareOperator(IR* plan, OperatorIR* op) const override;
   StatusOr<OperatorIR*> CreateMergeOperator(IR* plan, OperatorIR* new_parent,
                                             OperatorIR* op) const override;

@@ -492,6 +492,12 @@ class OperatorTests : public ::testing::Test {
     return limit;
   }
 
+  LimitIR* MakeLimit(OperatorIR* parent, int64_t limit_value, bool pem_only) {
+    LimitIR* limit =
+        graph->CreateNode<LimitIR>(ast, parent, limit_value, pem_only).ConsumeValueOrDie();
+    return limit;
+  }
+
   BlockingAggIR* MakeBlockingAgg(OperatorIR* parent, const std::vector<ColumnIR*>& columns,
                                  const ColExpressionVector& col_agg) {
     BlockingAggIR* agg =

@@ -1650,16 +1650,17 @@ class LimitIR : public OperatorIR {
   }
   bool limit_value_set() const { return limit_value_set_; }
   int64_t limit_value() const { return limit_value_; }
+  bool pem_only() const { return pem_only_; }
 
   void AddAbortableSource(int64_t src_id) { abortable_srcs_.insert(src_id); }
 
   const std::unordered_set<int64_t>& abortable_srcs() const { return abortable_srcs_; }
 
-  Status Init(OperatorIR* parent, int64_t limit_value);
+  Status Init(OperatorIR* parent, int64_t limit_value, bool pem_only = false);
 
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
-  inline bool IsBlocking() const override { return true; }
+  inline bool IsBlocking() const override { return !pem_only_; }
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
 
@@ -1672,6 +1673,7 @@ class LimitIR : public OperatorIR {
  private:
   int64_t limit_value_;
   bool limit_value_set_ = false;
+  bool pem_only_ = false;
   std::unordered_set<int64_t> abortable_srcs_;
 };
 

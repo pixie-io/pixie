@@ -302,9 +302,9 @@ TEST_F(AggHandlerTest, NonStrFirstTupleArg) {
   args.AddKwarg("outcol1", MakeTupleObj(MakeInt(1), MakeMeanFunc()));
   auto status = AggHandler::Eval(graph.get(), src, ast, args, ast_visitor.get());
   ASSERT_NOT_OK(status);
-  EXPECT_THAT(
-      status.status(),
-      HasCompilerError("Expected arg 'first tuple argument' as type 'String', received 'Int'"));
+  EXPECT_THAT(status.status(),
+              HasCompilerError("All elements of the agg tuple must be column names, except the "
+                               "last which should be a function"));
 }
 
 TEST_F(AggHandlerTest, NonFuncSecondTupleArg) {
@@ -328,6 +328,7 @@ TEST_F(LimitTest, CreateLimit) {
   int64_t limit_int_node_id = limit_value->id();
   ParsedArgs args;
   args.AddArg("n", ToQLObject(limit_value));
+  args.AddArg("_pem_only", ToQLObject(MakeInt(1)));
 
   auto status = LimitHandler::Eval(graph.get(), src, ast, args, ast_visitor.get());
   ASSERT_OK(status);

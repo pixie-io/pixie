@@ -564,6 +564,26 @@ TEST_F(LogicalPlannerTest, partial_agg) {
   EXPECT_OK(plan->ToProto());
 }
 
+constexpr char kPemOnlyLimit[] = R"pxl(
+import px
+df = px.DataFrame(table='http_events')
+df = df.head(n=100, _pem_only=1)
+df.test = 1
+px.display(df)
+)pxl";
+TEST_F(LogicalPlannerTest, pem_only_limit) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  auto plan_or_s =
+      planner->Plan(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+                    MakeQueryRequest(kPemOnlyLimit));
+  EXPECT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_OK(plan->ToProto());
+  std::string out;
+  google::protobuf::TextFormat::PrintToString(plan->ToProto().ConsumeValueOrDie(), &out);
+  LOG(INFO) << out;
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl

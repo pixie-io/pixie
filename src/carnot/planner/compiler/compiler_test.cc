@@ -2906,6 +2906,25 @@ TEST_F(CompilerTest, pod_and_node_types) {
   ASSERT_OK(graph_or_s);
 }
 
+constexpr char kPemOnlyLimitQuery[] = R"pxl(
+import px
+df = px.DataFrame(table='http_events')
+df = df.head(n=100, _pem_only=1)
+df.test = 1
+px.display(df)
+)pxl";
+
+TEST_F(CompilerTest, pem_only_limit) {
+  ExecFuncs exec_funcs;
+
+  auto graph_or_s = compiler_.CompileToIR(kPemOnlyLimitQuery, compiler_state_.get(), exec_funcs);
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+  auto limit_nodes = graph->FindNodesThatMatch(Limit());
+  EXPECT_EQ(1UL, limit_nodes.size());
+  EXPECT_TRUE(static_cast<LimitIR*>(limit_nodes[0])->pem_only());
+}
+
 constexpr char kCastQuery[] = R"pxl(
 import px
 df = px.DataFrame(table='process_stats', select=['vsize_bytes'])

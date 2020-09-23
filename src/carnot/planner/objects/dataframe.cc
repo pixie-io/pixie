@@ -140,12 +140,12 @@ Status Dataframe::Init() {
 
   /**
    * # Equivalent to the python method method syntax:
-   * def head(self, n=5):
+   * def head(self, n=5, _pem_only=False):
    *     ...
    */
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> limitfn,
-      FuncObject::Create(kLimitOpID, {"n"}, {{"n", "5"}},
+      FuncObject::Create(kLimitOpID, {"n", "_pem_only"}, {{"n", "5"}, {"_pem_only", "0"}},
                          /* has_variable_len_args */ false,
                          /* has_variable_len_kwargs */ false,
                          std::bind(&LimitHandler::Eval, graph(), op(), std::placeholders::_1,
@@ -340,18 +340,28 @@ StatusOr<QLObjectPtr> AggHandler::Eval(IR* graph, OperatorIR* op, const pypa::As
 
 StatusOr<FuncIR*> AggHandler::ParseNameTuple(IR* ir, const pypa::AstPtr& ast,
                                              std::shared_ptr<TupleObject> tuple) {
-  DCHECK_EQ(tuple->items().size(), 2UL);
-  PL_ASSIGN_OR_RETURN(StringIR * name,
-                      GetArgAs<StringIR>(tuple->items()[0], "first tuple argument"));
+  DCHECK_GE(tuple->items().size(), 2UL);
+  auto num_args = tuple->items().size() - 1;
+  std::vector<StringIR*> arg_names;
+  for (auto i = 0UL; i < num_args; i++) {
+    auto name_or_s =
+        GetArgAs<StringIR>(tuple->items()[i], absl::Substitute("$0-th tuple argument", i + 1));
+    if (!name_or_s.ok()) {
+      return tuple->items()[i]->node()->CreateIRNodeError(
+          "All elements of the agg tuple must be column names, except the last which should be a "
+          "function");
+    }
+    arg_names.push_back(name_or_s.ConsumeValueOrDie());
+  }
 
-  auto func = tuple->items()[1];
+  auto func = tuple->items()[num_args];
   if (func->type() != QLObjectType::kFunction) {
     return func->CreateError("Expected second tuple argument to be type Func, received $0",
                              func->name());
   }
   PL_ASSIGN_OR_RETURN(auto called, std::static_pointer_cast<FuncObject>(func)->Call({}, ast));
 
-  PL_ASSIGN_OR_RETURN(FuncIR * func_ir, GetArgAs<FuncIR>(called, "second tuple argument"));
+  PL_ASSIGN_OR_RETURN(FuncIR * func_ir, GetArgAs<FuncIR>(called, "last tuple argument"));
 
   // The function should be specified as a single function by itself.
   // This could change in the future.
@@ -360,9 +370,11 @@ StatusOr<FuncIR*> AggHandler::ParseNameTuple(IR* ir, const pypa::AstPtr& ast,
   }
 
   // parent_op_idx is 0 because we only have one parent for an aggregate.
-  PL_ASSIGN_OR_RETURN(ColumnIR * argcol, ir->CreateNode<ColumnIR>(name->ast(), name->str(),
-                                                                  /* parent_op_idx */ 0));
-  PL_RETURN_IF_ERROR(func_ir->AddArg(argcol));
+  for (auto name : arg_names) {
+    PL_ASSIGN_OR_RETURN(ColumnIR * argcol, ir->CreateNode<ColumnIR>(name->ast(), name->str(),
+                                                                    /* parent_op_idx */ 0));
+    PL_RETURN_IF_ERROR(func_ir->AddArg(argcol));
+  }
   return func_ir;
 }
 
@@ -379,9 +391,12 @@ StatusOr<QLObjectPtr> LimitHandler::Eval(IR* graph, OperatorIR* op, const pypa::
                                          const ParsedArgs& args, ASTVisitor* visitor) {
   // TODO(philkuz) (PL-1161) Add support for compile time evaluation of Limit argument.
   PL_ASSIGN_OR_RETURN(IntIR * rows_node, GetArgAs<IntIR>(args, "n"));
+  PL_ASSIGN_OR_RETURN(IntIR * pem_only, GetArgAs<IntIR>(args, "_pem_only"));
   int64_t limit_value = rows_node->val();
+  bool pem_only_val = pem_only->val() > 0;
 
-  PL_ASSIGN_OR_RETURN(LimitIR * limit_op, graph->CreateNode<LimitIR>(ast, op, limit_value));
+  PL_ASSIGN_OR_RETURN(LimitIR * limit_op,
+                      graph->CreateNode<LimitIR>(ast, op, limit_value, pem_only_val));
   // Delete the integer node.
   PL_RETURN_IF_ERROR(graph->DeleteNode(rows_node->id()));
   return Dataframe::Create(limit_op, visitor);

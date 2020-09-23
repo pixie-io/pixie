@@ -605,9 +605,10 @@ Status FilterIR::ToProto(planpb::Operator* op) const {
   return Status::OK();
 }
 
-Status LimitIR::Init(OperatorIR* parent, int64_t limit_value) {
+Status LimitIR::Init(OperatorIR* parent, int64_t limit_value, bool pem_only) {
   PL_RETURN_IF_ERROR(AddParent(parent));
   SetLimitValue(limit_value);
+  pem_only_ = pem_only;
   return Status::OK();
 }
 
@@ -1357,6 +1358,7 @@ Status LimitIR::CopyFromNodeImpl(const IRNode* node, absl::flat_hash_map<const I
   const LimitIR* limit = static_cast<const LimitIR*>(node);
   limit_value_ = limit->limit_value_;
   limit_value_set_ = limit->limit_value_set_;
+  pem_only_ = limit->pem_only_;
   return Status::OK();
 }
 
