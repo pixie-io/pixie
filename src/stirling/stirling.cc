@@ -385,7 +385,7 @@ void StirlingImpl::DeployDynamicTraceConnector(
   // Next, try adding the source (this actually tries to deploy BPF code).
   // On failure, set status and exit, but do this outside the lock for efficiency reasons.
   RETURN_IF_ERROR(AddSource(std::move(source)));
-  LOG(INFO) << absl::Substitute("DynamicTrace [$0]: Deployed BCC code in $1 ms.", trace_id.str(),
+  LOG(INFO) << absl::Substitute("DynamicTrace [$0]: Deployed BPF program in $1 ms.", trace_id.str(),
                                 timer.ElapsedTime_us() / 1000.0);
 
   stirlingpb::Publish publication;

@@ -10,44 +10,50 @@ TEST(DynamicBPFTraceConnectorTest, Basic) {
   // Create a BPFTrace program spec
   TracepointDeployment_Tracepoint tracepoint;
   tracepoint.set_table_name("pid_sample_table");
+
+  constexpr char kScript[] = R"(interval:ms:100 {
+    printf("%llu %u %llu %s %s\n", nsecs, pid, 0, comm, ntop(0));
+  })";
+
+  tracepoint.mutable_bpftrace()->set_program(kScript);
+
+  std::unique_ptr<SourceConnector> connector = DynamicBPFTraceConnector::Create("test", tracepoint);
+
+  const int kTableNum = 0;
+  const DataTableSchema& table_schema = connector->TableSchema(kTableNum);
+
+  // Check the inferred table schema.
   {
-    constexpr char kScript[] = R"(interval:ms:100 {
-      printf("%llu %u %s\n", nsecs, pid, comm);
-    })";
+    const ArrayView<DataElement>& elements = table_schema.elements();
 
-    auto* bpftrace = tracepoint.mutable_bpftrace();
+    ASSERT_EQ(elements.size(), 5);
 
-    bpftrace->set_program(kScript);
-    {
-      auto* output = bpftrace->add_outputs();
-      output->set_name("time");
-      output->set_type(types::DataType::INT64);
-    }
+    EXPECT_EQ(elements[0].name(), "time_");
+    EXPECT_EQ(elements[0].type(), types::DataType::TIME64NS);
 
-    {
-      auto* output = bpftrace->add_outputs();
-      output->set_name("pid");
-      output->set_type(types::DataType::INT64);
-    }
+    EXPECT_EQ(elements[1].name(), "tgid_");
+    EXPECT_EQ(elements[1].type(), types::DataType::INT64);
 
-    {
-      auto* output = bpftrace->add_outputs();
-      output->set_name("comm");
-      output->set_type(types::DataType::STRING);
-    }
+    EXPECT_EQ(elements[2].name(), "tgid_start_time_");
+    EXPECT_EQ(elements[2].type(), types::DataType::INT64);
+
+    EXPECT_EQ(elements[3].name(), "Column_3");
+    EXPECT_EQ(elements[3].type(), types::DataType::STRING);
+
+    EXPECT_EQ(elements[4].name(), "Column_4");
+    EXPECT_EQ(elements[4].type(), types::DataType::STRING);
   }
 
   // Now deploy the spec and check for some data.
-  std::unique_ptr<SourceConnector> connector = DynamicBPFTraceConnector::Create("test", tracepoint);
   ASSERT_OK(connector->Init());
 
   // Give some time to collect data.
   sleep(1);
 
   // Read the data.
-  const int kTableNum = 0;
+
   StandaloneContext ctx;
-  DataTable data_table(connector->TableSchema(kTableNum));
+  DataTable data_table(table_schema);
   connector->TransferData(&ctx, kTableNum, &data_table);
   std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
 
