@@ -352,38 +352,45 @@ const ScriptContextProvider = (props) => {
     if (mutation) {
       const runMutation = async () => {
         let numTries = 5;
-        let mutationComplete = false;
-        let cancelled = false;
         let queryCancelFn = null;
-
-        const onMutationData = (queryResults) => {
-          if (cancelled) {
-            return;
-          }
-
-          if (queryResults.mutationInfo
-            && queryResults.mutationInfo.getStatus().getCode() === GRPCStatusCode.Unavailable) {
-            setResults({ tables: {}, mutationInfo: queryResults.mutationInfo });
-          } else {
-            onData(queryResults);
-            mutationComplete = true;
-          }
-        };
-
-        const onMutationError = (error) => {
-          if (cancelled) {
-            return;
-          }
-
-          numTries = 0;
-          mutationComplete = true;
-          onError(error);
-        };
 
         while (numTries > 0) {
           if (queryCancelFn != null) {
             queryCancelFn()();
           }
+
+          let mutationComplete = false;
+          let cancelled = false;
+
+          let resolveMutationExecution = null;
+          const queryPromise = new Promise((resolve) => { resolveMutationExecution = resolve; });
+
+          const onMutationData = (queryResults) => {
+            if (cancelled) {
+              resolveMutationExecution();
+              return;
+            }
+
+            if (queryResults.mutationInfo
+              && queryResults.mutationInfo.getStatus().getCode() === GRPCStatusCode.Unavailable) {
+              resolveMutationExecution();
+              setResults({ tables: {}, mutationInfo: queryResults.mutationInfo });
+            } else {
+              onData(queryResults);
+              mutationComplete = true;
+            }
+          };
+
+          const onMutationError = (error) => {
+            resolveMutationExecution();
+            if (cancelled) {
+              return;
+            }
+
+            mutationComplete = true;
+            onError(error);
+          };
+
           const newQueryCancelFn = client.executeScript(
             execArgs.pxl,
             getQueryFuncs(execArgs.vis, execArgs.args),
@@ -394,6 +401,18 @@ const ScriptContextProvider = (props) => {
           queryCancelFn = newQueryCancelFn;
           setCancelExecution(newQueryCancelFn);
 
+          // Wait for the query to get a mutation response before retrying.
+          const cancelPromise = new Promise((resolve) => {
+            const cancelFn = () => (() => {
+              newQueryCancelFn();
+              resolve(true);
+            });
+            setCancelExecution(cancelFn);
+          });
+
+          // eslint-disable-next-line
+          await Promise.race([queryPromise, cancelPromise]);
+
           if (mutationComplete) {
             return;
           }
@@ -401,13 +420,7 @@ const ScriptContextProvider = (props) => {
           // eslint-disable-next-line
           const cancel = await Promise.race([
             new Promise((resolve) => setTimeout(resolve, mutationRetryMs)),
-            new Promise((resolve) => {
-              const cancelFn = () => (() => {
-                newQueryCancelFn();
-                resolve(true);
-              });
-              setCancelExecution(cancelFn);
-            }),
+            cancelPromise,
           ]);
           if (cancel) {
             cancelled = true;
@@ -420,9 +433,8 @@ const ScriptContextProvider = (props) => {
           setLoading(false);
           loaded = true;
         }
-        if (!mutationComplete && !cancelled) {
-          setResults({ tables: {}, error: new VizierQueryError('execution', 'Deploying tracepoints failed') });
-        }
+
+        setResults({ tables: {}, error: new VizierQueryError('execution', 'Deploying tracepoints failed') });
       };
       runMutation();
     } else {

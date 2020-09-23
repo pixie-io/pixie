@@ -124,6 +124,8 @@ export class VizierGRPCClient {
     const results: VizierQueryResult = { tables: [] };
     let resolved = false;
 
+    let lastFlush = new Date();
+
     call.on('data', (resp) => {
       if (!results.queryId) {
         results.queryId = resp.getQueryId();
@@ -168,11 +170,15 @@ export class VizierGRPCClient {
           const table = tablesMap.get(id);
           table.data.push(batch);
 
-          // TODO: This resends all batches to onData. In the future, we will want this to only send
-          // the latest batch. This will require more extensive changes that require us to track the
-          // full set of batches elsewhere. For now, updating to a subscription/callback model gets a
-          // step closer to that point.
-          onData(results);
+          // Only flush every 1s, to avoid excessive rerenders in the UI.
+          if (new Date().getTime() - lastFlush.getTime() > 1000) {
+            // TODO: This resends all batches to onData. In the future, we will want this to only send
+            // the latest batch. This will require more extensive changes that require us to track the
+            // full set of batches elsewhere. For now, updating to a subscription/callback model gets a
+            // step closer to that point.
+            onData(results);
+            lastFlush = new Date();
+          }
         } else if (data.hasExecutionStats()) {
           // The query finished executing, and all the data has been received.
           results.executionStats = data.getExecutionStats();
