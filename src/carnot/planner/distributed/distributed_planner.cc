@@ -4,9 +4,11 @@
 #include <vector>
 
 #include "src/carnot/planner/compiler/ast_visitor.h"
-#include "src/carnot/planner/distributed/distributed_analyzer.h"
 #include "src/carnot/planner/distributed/distributed_coordinator.h"
 #include "src/carnot/planner/distributed/distributed_planner.h"
+#include "src/carnot/planner/distributed/distributed_rules.h"
+#include "src/carnot/planner/distributed/distributed_stitcher_rules.h"
+#include "src/carnot/planner/distributed/grpc_source_conversion.h"
 #include "src/carnot/planner/rules/rules.h"
 namespace pl {
 namespace carnot {

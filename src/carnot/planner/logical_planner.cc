@@ -1,5 +1,4 @@
 #include "src/carnot/planner/logical_planner.h"
-#include "src/carnot/planner/distributed/distributed_analyzer.h"
 
 #include <utility>
 

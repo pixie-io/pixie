@@ -547,7 +547,7 @@ class AddLimitToBatchResultSinkRule : public Rule {
  * assigned to be the value of a new column, that new column should have receive the same
  * annotations as the integer that created it.
  *
- * TODO(nserrino): Possibly move this rule to the distributed_analyzer, in the event that the
+ * TODO(nserrino): Possibly move this rule to the distributed_planner, in the event that the
  * unions and GRPCSources that are generated in the distributed planner need to be given
  * annotations as well. For now, all of the nodes downstream of the union/grpc sources should be
  * annotated in those distributed plans from this rules in the single node analyzer.

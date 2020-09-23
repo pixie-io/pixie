@@ -8,7 +8,7 @@
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/plan/plan.h"
 #include "src/carnot/planner/compiler/compiler.h"
-#include "src/carnot/planner/distributed/distributed_analyzer.h"
+#include "src/carnot/planner/distributed/distributed_rules.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/perf/perf.h"
 #include "src/shared/types/type_utils.h"
