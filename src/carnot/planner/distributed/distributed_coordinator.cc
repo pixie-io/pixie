@@ -207,26 +207,139 @@ const distributedpb::CarnotInfo& CoordinatorImpl::GetRemoteProcessor() const {
   return remote_processor_nodes_[0];
 }
 
-// TODO(nserrino): Support aliases for pruning metadata filters,
-// such as p = df.ctx['pod'], then filter on p.
-bool FilterExpressionMayProduceData(ExpressionIR* expr, const md::AgentMetadataFilter& md_filter) {
-  if (!Match(expr, Func())) {
-    return true;
-  }
-  auto func = static_cast<FuncIR*>(expr);
-  if (func->args().size() != 2) {
-    return true;
+using OperatorToAgentSet = absl::flat_hash_map<OperatorIR*, absl::flat_hash_set<int64_t>>;
+
+/**
+ * @brief Data structure that tracks a set of agents that can remove an Operator and simplifies
+ * the set logic to combine two such data structures when recursively evaluating subexpressions that
+ * produce different sets of agents and need to be combined.
+ *
+ * Comes with Methods that simplify an otherwise complex set logic for combining two agent sets
+ * using boolean logic. The complexity comes the fact this data structure nature: these are agents
+ * to _remove_ rather than keep, so the set operations are flipped from typical And/Or set logic.
+ *
+ * Simply:
+ * And := Union
+ * Or := Intersection
+ *
+ */
+struct AgentSet {
+  AgentSet Union(const AgentSet& other) {
+    // If either struct is empty(), we only trim the other side of the expression.
+    if (other.agents.empty()) {
+      return *this;
+    }
+    // If this has no_agents, we return whatever is in other.
+    if (agents.empty()) {
+      return other;
+    }
+    AgentSet unioned;
+    for (const auto& agent : agents) {
+      unioned.agents.insert(agent);
+    }
+    for (const auto& agent : other.agents) {
+      unioned.agents.insert(agent);
+    }
+    return unioned;
   }
 
-  auto logical_and = Match(expr, LogicalAnd(Value(), Value()));
-  auto logical_or = Match(expr, LogicalOr(Value(), Value()));
-  if (logical_and || logical_or) {
-    auto lhs = FilterExpressionMayProduceData(func->args()[0], md_filter);
-    auto rhs = FilterExpressionMayProduceData(func->args()[1], md_filter);
-    return logical_and ? lhs && rhs : lhs || rhs;
+  AgentSet Intersection(const AgentSet& other) {
+    // If either struct is empty(), that means we trim no agents so we return the empty struct.
+    if (other.agents.empty() || agents.empty()) {
+      return AgentSet();
+    }
+    AgentSet intersection;
+    const absl::flat_hash_set<int64_t>* smaller = &(other.agents);
+    const absl::flat_hash_set<int64_t>* bigger = &agents;
+    if (smaller->size() > bigger->size()) {
+      bigger = &(other.agents);
+      smaller = &agents;
+    }
+    for (const auto& agent : *smaller) {
+      if (bigger->contains(agent)) {
+        intersection.agents.insert(agent);
+      }
+    }
+    return intersection;
   }
 
-  if (Match(expr, Equals(MetadataExpression(), String()))) {
+  absl::flat_hash_set<int64_t> agents;
+};
+
+class MapRemovableOperatorsRule : public Rule {
+ public:
+  /**
+   * @brief Returns a mapping of operators in the query that can be removed from the plans of
+   * corresponding agents.
+   *
+   * Intended to create a set of Operators that can be removed per agent which will then be used to
+   * identify unique plans that are duplicated across all agents in a distributed plan.
+   *
+   * @param plan The distributed plan which describes all the agents in the system.
+   * @param pem_instances The Agent IDs from `plan` that we use to build OperatorToAgentSet.
+   * @param query The main plan that will derive all other plans. The source of all operators.
+   * @return StatusOr<OperatorToAgentSet> the mapping of removable operators to the agents whose
+   * plans can remove those operators.
+   */
+  static StatusOr<OperatorToAgentSet> GetRemovableOperators(
+      DistributedPlan* plan, const std::vector<int64_t>& pem_instances, IR* query) {
+    MapRemovableOperatorsRule rule(plan, pem_instances);
+    PL_ASSIGN_OR_RETURN(auto did_remove, rule.Execute(query));
+    DCHECK_EQ(did_remove, !rule.op_to_agent_set.empty());
+    return rule.op_to_agent_set;
+  }
+
+ protected:
+  MapRemovableOperatorsRule(DistributedPlan* plan, const std::vector<int64_t>& pem_instances)
+      : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false),
+        plan_(plan),
+        pem_instances_(pem_instances) {}
+
+  StatusOr<bool> Apply(IRNode* node) override {
+    if (Match(node, Filter())) {
+      return CheckFilter(static_cast<FilterIR*>(node));
+    }
+    if (Match(node, MemorySource())) {
+      return CheckMemorySource(static_cast<MemorySourceIR*>(node));
+    }
+    if (Match(node, UDTFSource())) {
+      return CheckUDTFSource(static_cast<UDTFSourceIR*>(node));
+    }
+    return false;
+  }
+
+  /**
+   * @brief Returns the set of agents that are removed by this expression.
+   *
+   * Will return agents if an expression contains a metadata equal expression predicate
+   * as well as the composition of such subexpressions inside ofboolean conjunction.
+   *
+   * @param expr the filter expression to evaluate.
+   * @return AgentSet the set of agents that are filtered out by the expression.
+   */
+  AgentSet FilterExpressionMayProduceData(ExpressionIR* expr) {
+    if (!Match(expr, Func())) {
+      return AgentSet();
+    }
+    auto func = static_cast<FuncIR*>(expr);
+    if (func->args().size() != 2) {
+      return AgentSet();
+    }
+
+    auto logical_and = Match(expr, LogicalAnd(Value(), Value()));
+    auto logical_or = Match(expr, LogicalOr(Value(), Value()));
+    if (logical_and || logical_or) {
+      auto lhs = FilterExpressionMayProduceData(func->args()[0]);
+      auto rhs = FilterExpressionMayProduceData(func->args()[1]);
+      // If the expression is AND, we union the agents we want to remove.
+      // otherwise, we take the intersection of those agents.
+      return logical_and ? lhs.Union(rhs) : lhs.Intersection(rhs);
+    }
+
+    // We only care about those expressions that match df.ctx['pod'] == 'pl/pod_name'.
+    if (!Match(expr, Equals(MetadataExpression(), String()))) {
+      return AgentSet();
+    }
     ExpressionIR* metadata_expr;
     StringIR* value;
 
@@ -239,115 +352,211 @@ bool FilterExpressionMayProduceData(ExpressionIR* expr, const md::AgentMetadataF
     }
 
     auto metadata_type = metadata_expr->annotations().metadata_type;
-    if (!md_filter.metadata_types().contains(metadata_type)) {
-      return true;
-    }
-    return md_filter.ContainsEntity(metadata_type, value->str());
-  }
-  return true;
-}
-
-/**
- * @brief Evaluates whether an operator may produce data on a given Carnot instance.
- * Will first detect when the query filters data to metadata that is not part of the
- * input Carnot instance, but in the future can add more logic based on column contents, etc.
- */
-bool OperatorMayProduceData(OperatorIR* op, const md::AgentMetadataFilter& md_filter) {
-  // If the filter makes it so that no data will be produced, return false.
-  if (Match(op, Filter()) &&
-      !FilterExpressionMayProduceData(static_cast<FilterIR*>(op)->filter_expr(), md_filter)) {
-    return false;
-  }
-  auto parents = op->parents();
-  if (parents.size() == 0) {
-    return true;
-  }
-  for (OperatorIR* parent : parents) {
-    // If any parent may produce data, return true.
-    // TODO(nserrino): Optimize this, for example inner joins would need both
-    // parents to produce data. However, inner joins are not on the "before blocking"
-    // side of the query, so it isn't relevant for now.
-    if (OperatorMayProduceData(parent, md_filter)) {
-      return true;
-    }
-  }
-
-  // If none of the parents may produce data, neither will this operator.
-  return false;
-}
-
-// Returns a set containing the input sink and all of its ancestor ops.
-absl::flat_hash_set<OperatorIR*> GetSinkAndAncestors(OperatorIR* sink) {
-  absl::flat_hash_set<OperatorIR*> result;
-  std::queue<OperatorIR*> queue;
-  queue.push(sink);
-  while (queue.size()) {
-    auto op = queue.front();
-    result.insert(op);
-    for (OperatorIR* parent_op : op->parents()) {
-      queue.push(parent_op);
-    }
-    queue.pop();
-  }
-  return result;
-}
-
-/**
- * @brief Produces the IR for each input Carnot instance in `plan` with the relevant sinks
- * of `query` based on metadata stored on each selected carnot instance.
- *
- * 1. For the Carnot in the list, create an entry in `plan`.
- * 2. Find the parts of `query` that might produce data on each Carnot
- * 3. Copy over the relevant subgraphs of `query` for that particular carnot instance.
- * We currently filter on Carnot metadata only for now.
- * This function guarantees that even if no Carnots will produce data for a sink in `query`,
- * each sink will still be run on at least one Carnot instance in the list.
- * The work necessary to connect the output of these Carnot instances to a GRPCSink must be done
- * in the client, because this function does not assume a particular configuration.
- */
-StatusOr<absl::flat_hash_map<int64_t, std::unique_ptr<IR>>> GetCarnotPlans(
-    IR* query, DistributedPlan* plan, const std::vector<int64_t>& carnot_instances) {
-  absl::flat_hash_map<int64_t, std::unique_ptr<IR>> carnot_plans;
-
-  // Map each sink to its dependency operators.
-  absl::flat_hash_map<GRPCSinkIR*, absl::flat_hash_set<OperatorIR*>> sinks_to_ancestor_ops;
-  auto sink_nodes = query->FindNodesThatMatch(GRPCSink());
-  for (IRNode* node : sink_nodes) {
-    auto casted_op = static_cast<GRPCSinkIR*>(node);
-    sinks_to_ancestor_ops[casted_op] = GetSinkAndAncestors(casted_op);
-  }
-
-  // Used to make sure each sink runs on at least one of the input Carnots, even if none will
-  // produce data.
-  absl::flat_hash_set<GRPCSinkIR*> allocated_sinks;
-
-  for (const auto& [carnot_idx, carnot_id] : Enumerate(carnot_instances)) {
-    absl::flat_hash_set<OperatorIR*> relevant_ops_for_instance;
-    md::AgentMetadataFilter* md_filter = plan->Get(carnot_id)->metadata_filter();
-    bool last_carnot_instance = carnot_idx >= carnot_instances.size() - 1;
-
-    for (const auto& [sink, sink_and_ancestors] : sinks_to_ancestor_ops) {
-      auto sink_produces_data = true;
-      // If we don't have a metadata filter on this Carnot, we assume it might produce data.
-      if (md_filter != nullptr) {
-        sink_produces_data = OperatorMayProduceData(sink, *md_filter);
-      }
-      // If the sink produces data, or this is the last Carnot instance and no Carnot has
-      // matched this subgraph, then add it to the current Carnot instance. We have the last
-      // carnot instance case so that a completely exclusive filter still produces
-      // empty row batches for Kelvin to return.
-      if (!sink_produces_data && (!last_carnot_instance || allocated_sinks.contains(sink))) {
+    AgentSet agents_that_remove_op;
+    for (int64_t pem : pem_instances_) {
+      auto* md_filter = plan_->Get(pem)->metadata_filter();
+      // The Filter is kept if the metadata type is missing.
+      if (!md_filter->metadata_types().contains(metadata_type)) {
         continue;
       }
-      allocated_sinks.insert(sink);
-      relevant_ops_for_instance.insert(sink_and_ancestors.begin(), sink_and_ancestors.end());
+      // The Filter is removed if we don't contain the entity.
+      if (!md_filter->ContainsEntity(metadata_type, value->str())) {
+        agents_that_remove_op.agents.insert(pem);
+      }
     }
-
-    carnot_plans[carnot_id] = std::make_unique<IR>();
-    PL_RETURN_IF_ERROR(
-        carnot_plans[carnot_id]->CopyOperatorSubgraph(query, relevant_ops_for_instance));
+    return agents_that_remove_op;
   }
-  return carnot_plans;
+
+  StatusOr<bool> CheckFilter(FilterIR* filter_ir) {
+    AgentSet agents_that_remove_op = FilterExpressionMayProduceData(filter_ir->filter_expr());
+    // If the filter appears on all agents, we don't wanna add it.
+    if (agents_that_remove_op.agents.empty()) {
+      return false;
+    }
+    op_to_agent_set[filter_ir] = std::move(agents_that_remove_op.agents);
+    return true;
+  }
+
+  StatusOr<bool> CheckMemorySource(MemorySourceIR* mem_src_ir) {
+    PL_UNUSED(mem_src_ir);
+    return false;
+  }
+
+  StatusOr<bool> CheckUDTFSource(UDTFSourceIR* udtf_ir) {
+    PL_UNUSED(udtf_ir);
+    return false;
+  }
+
+  OperatorToAgentSet op_to_agent_set;
+  DistributedPlan* plan_;
+  const std::vector<int64_t>& pem_instances_;
+};
+
+/**
+ * @brief PlanCluster is the data structure used to each unique plan in the distributed plan.
+ * Can then call CreatePlan to return a plan with the specified ops removed.
+ */
+struct PlanCluster {
+  PlanCluster(absl::flat_hash_set<int64_t> agents, absl::flat_hash_set<OperatorIR*> ops)
+      : agent_set(std::move(agents)), ops_to_remove(std::move(ops)) {}
+
+  StatusOr<std::unique_ptr<IR>> CreatePlan(const IR* base_query) const {
+    // TODO(philkuz) invert this so we don't clone everything.
+    PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> new_ir, base_query->Clone());
+    for (const auto& op : ops_to_remove) {
+      DCHECK(Match(new_ir->Get(op->id()), Operator()));
+      std::queue<OperatorIR*> ancestor_to_maybe_delete_q;
+      for (const auto& p : static_cast<OperatorIR*>(new_ir->Get(op->id()))->parents()) {
+        ancestor_to_maybe_delete_q.push(p);
+      }
+
+      PL_RETURN_IF_ERROR(new_ir->DeleteSubtree(op->id()));
+      while (!ancestor_to_maybe_delete_q.empty()) {
+        OperatorIR* ancestor = ancestor_to_maybe_delete_q.front();
+        ancestor_to_maybe_delete_q.pop();
+        // If all the children have been deleted, clean up the ancestor.
+        if (ancestor->Children().size() != 0) {
+          continue;
+        }
+        for (const auto& p : ancestor->parents()) {
+          ancestor_to_maybe_delete_q.push(p);
+        }
+        PL_RETURN_IF_ERROR(new_ir->DeleteSubtree(ancestor->id()));
+      }
+    }
+    return new_ir;
+  }
+
+  // The agents that correspond to this plan.
+  absl::flat_hash_set<int64_t> agent_set;
+  absl::flat_hash_set<OperatorIR*> ops_to_remove;
+};
+
+/**
+ * A mapping of agent IDs to the corresponding plan.
+ */
+struct AgentToPlanMap {
+  absl::flat_hash_map<int64_t, IR*> agent_to_plan_map;
+  std::vector<std::unique_ptr<IR>> plan_pool;
+};
+
+/**
+ * @brief Clusters Agents together based on similar sets of Operators to prune from the original
+ * query plan.
+ *
+ * Finds the unique PEM plans based on the agents that remove the same set of Operators.
+ *
+ * @param set
+ * @return std::vector<PlanCluster>
+ */
+std::vector<PlanCluster> ClusterOperators(const OperatorToAgentSet& set) {
+  OperatorToAgentSet op_to_agents = set;
+  std::vector<PlanCluster> plan_clusters;
+  // While we still have agents that are in the ops_to_agents set.
+  // Every loop iteration should finish with a new cluster.
+  while (!op_to_agents.empty()) {
+    absl::flat_hash_set<OperatorIR*> operators;
+    absl::flat_hash_set<int64_t> current_set;
+    for (const auto& [op, agent_set] : op_to_agents) {
+      if (agent_set.empty()) {
+        continue;
+      }
+      // If the current_set is empty, we need to start accumulating it and this operator will be the
+      // first of the new cluster.
+      if (current_set.empty()) {
+        operators.insert(op);
+        current_set = agent_set;
+        continue;
+      }
+      absl::flat_hash_set<int64_t> intersection;
+      for (const auto& c : current_set) {
+        if (agent_set.contains(c)) {
+          intersection.insert(c);
+        }
+      }
+      // If the intersection is empty, we should just not include this op for now.
+      if (intersection.empty()) {
+        continue;
+      }
+      // If the intersection is non-empty that is our new set of agents for the cluster.
+      current_set = std::move(intersection);
+      operators.insert(op);
+    }
+    // Create the new cluster with the set of agents and the operators.
+    plan_clusters.emplace_back(current_set, operators);
+    // Remove the agents in the clusters from the OperatorToAgentSet mapping, as we know they
+    // should not belong in other clusters.
+    OperatorToAgentSet new_op_to_agents;
+    for (const auto& [op, agents] : op_to_agents) {
+      for (const auto& agent : agents) {
+        if (current_set.contains(agent)) {
+          continue;
+        }
+        new_op_to_agents[op].insert(agent);
+      }
+    }
+    op_to_agents = std::move(new_op_to_agents);
+  }
+  return plan_clusters;
+}
+
+/**
+ * @brief Returns the set of all_agents that don't appear in OperatorToAgentSet.
+ *
+ * @param op_to_agent_set The operators that can be removed on the specified agents.
+ * @param all_agents Every agent that we want to do work.
+ * @return absl::flat_hash_set<int64_t>
+ */
+absl::flat_hash_set<int64_t> RemainingAgents(const OperatorToAgentSet& op_to_agent_set,
+                                             const std::vector<int64_t>& all_agents) {
+  absl::flat_hash_set<int64_t> remaining_agents(all_agents.begin(), all_agents.end());
+  for (const auto& [op, agent_set] : op_to_agent_set) {
+    for (const auto& agent : agent_set) {
+      remaining_agents.erase(agent);
+    }
+  }
+  return remaining_agents;
+}
+
+StatusOr<AgentToPlanMap> GetPEMPlans(IR* query, DistributedPlan* plan,
+                                     const std::vector<int64_t>& carnot_instances) {
+  PL_ASSIGN_OR_RETURN(
+      OperatorToAgentSet removable_ops_to_agents,
+      MapRemovableOperatorsRule::GetRemovableOperators(plan, carnot_instances, query));
+  AgentToPlanMap agent_to_plan_map;
+  if (removable_ops_to_agents.empty()) {
+    // Create the default single PEM map.
+    PL_ASSIGN_OR_RETURN(auto default_ir_uptr, query->Clone());
+    auto default_ir = default_ir_uptr.get();
+    agent_to_plan_map.plan_pool.push_back(std::move(default_ir_uptr));
+    // TODO(philkuz) enable this when we move over the Distributed analyzer.
+    // plan->AddPlan(std::move(default_ir_uptr));
+    for (int64_t carnot_i : carnot_instances) {
+      agent_to_plan_map.agent_to_plan_map[carnot_i] = default_ir;
+    }
+    return agent_to_plan_map;
+  }
+
+  std::vector<PlanCluster> clusters = ClusterOperators(removable_ops_to_agents);
+  // Cluster representing the original plan if any exist.
+  auto remaining_agents = RemainingAgents(removable_ops_to_agents, carnot_instances);
+  if (!remaining_agents.empty()) {
+    clusters.emplace_back(remaining_agents, absl::flat_hash_set<OperatorIR*>{});
+  }
+  for (const auto& c : clusters) {
+    PL_ASSIGN_OR_RETURN(auto cluster_plan_uptr, c.CreatePlan(query));
+    auto cluster_plan = cluster_plan_uptr.get();
+    if (cluster_plan->FindNodesThatMatch(Operator()).empty()) {
+      continue;
+    }
+    agent_to_plan_map.plan_pool.push_back(std::move(cluster_plan_uptr));
+    // TODO(philkuz) enable this when we move over the Distributed analyzer.
+    // plan->AddPlan(std::move(cluster_plan_uptr));
+    for (const auto& agent : c.agent_set) {
+      agent_to_plan_map.agent_to_plan_map[agent] = cluster_plan;
+    }
+  }
+  return agent_to_plan_map;
 }
 
 StatusOr<std::unique_ptr<DistributedPlan>> CoordinatorImpl::CoordinateImpl(const IR* logical_plan) {
@@ -356,27 +565,37 @@ StatusOr<std::unique_ptr<DistributedPlan>> CoordinatorImpl::CoordinateImpl(const
                       DistributedSplitter::Create(/* support_partial_agg */ false));
   PL_ASSIGN_OR_RETURN(std::unique_ptr<BlockingSplitPlan> split_plan,
                       splitter->SplitKelvinAndAgents(logical_plan));
-  auto physical_plan = std::make_unique<DistributedPlan>();
-  PL_ASSIGN_OR_RETURN(int64_t remote_node_id, physical_plan->AddCarnot(GetRemoteProcessor()));
+  auto distributed_plan = std::make_unique<DistributedPlan>();
+  PL_ASSIGN_OR_RETURN(int64_t remote_node_id, distributed_plan->AddCarnot(GetRemoteProcessor()));
   // TODO(philkuz) Need to update the Blocking Split Plan to better represent what we expect.
   // TODO(philkuz) (PL-1469) Future support for grabbing data from multiple Kelvin nodes.
   PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> remote_plan, split_plan->original_plan->Clone());
-  physical_plan->Get(remote_node_id)->AddPlan(std::move(remote_plan));
+  distributed_plan->Get(remote_node_id)->AddPlan(std::move(remote_plan));
+  // TODO(philkuz) enable this when we move over the Distributed analyzer.
+  // distributed_plan->Get(remote_node_id)->AddPlan(remote_plan.get());
+  // distributed_plan->AddPlan(std::move(remote_plan));
 
   std::vector<int64_t> source_node_ids;
   for (const auto& [i, data_store_info] : Enumerate(data_store_nodes_)) {
-    PL_ASSIGN_OR_RETURN(int64_t source_node_id, physical_plan->AddCarnot(data_store_info));
-    physical_plan->AddEdge(source_node_id, remote_node_id);
+    PL_ASSIGN_OR_RETURN(int64_t source_node_id, distributed_plan->AddCarnot(data_store_info));
+    distributed_plan->AddEdge(source_node_id, remote_node_id);
     source_node_ids.push_back(source_node_id);
   }
 
-  PL_ASSIGN_OR_RETURN(auto carnot_plans, GetCarnotPlans(split_plan->before_blocking.get(),
-                                                        physical_plan.get(), source_node_ids));
+  PL_ASSIGN_OR_RETURN(auto agent_to_plan_map, GetPEMPlans(split_plan->before_blocking.get(),
+                                                          distributed_plan.get(), source_node_ids));
   for (const auto carnot_id : source_node_ids) {
-    physical_plan->Get(carnot_id)->AddPlan(std::move(carnot_plans.at(carnot_id)));
+    if (!agent_to_plan_map.agent_to_plan_map.contains(carnot_id)) {
+      PL_RETURN_IF_ERROR(distributed_plan->DeleteNode(carnot_id));
+      continue;
+    }
+    PL_ASSIGN_OR_RETURN(auto clone, agent_to_plan_map.agent_to_plan_map[carnot_id]->Clone());
+    distributed_plan->Get(carnot_id)->AddPlan(std::move(clone));
+    // TODO(philkuz) enable this when we move over the Distributed analyzer.
+    // distributed_plan->Get(carnot_id)->AddPlan(agent_to_plan_map.agent_to_plan_map[carnot_id]);
   }
 
-  return physical_plan;
+  return distributed_plan;
 }
 
 }  // namespace distributed

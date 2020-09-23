@@ -276,6 +276,14 @@ class IR {
   Status DeleteOrphansInSubtree(int64_t node);
 
   /**
+   * @brief Deletes the subtree of the graph that are orphans after this id is removed.
+   *
+   * @param id the id of the first node to delete.
+   * @return Status: error if any occurs.
+   */
+  Status DeleteSubtree(int64_t id);
+
+  /**
    * @brief Adds an edge between the parent and child nodes in the DAG.
    * If there is already a link between them, then the child is cloned and an edge is added between
    * the parent and the clone instead.

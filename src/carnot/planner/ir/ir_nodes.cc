@@ -55,6 +55,13 @@ Status IR::DeleteOrphansInSubtree(int64_t id) {
   return Status::OK();
 }
 
+Status IR::DeleteSubtree(int64_t id) {
+  for (const auto& p : dag_.ParentsOf(id)) {
+    dag_.DeleteEdge(p, id);
+  }
+  return DeleteOrphansInSubtree(id);
+}
+
 Status IR::DeleteNode(int64_t node) {
   if (!dag_.HasNode(node)) {
     return error::InvalidArgument("No node $0 exists in graph.", node);

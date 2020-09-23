@@ -59,7 +59,8 @@ class DistributedAnalyzer : public RuleExecutor<DistributedPlan> {
 
   Status Init(const distributedpb::DistributedState& distributed_state) {
     PL_ASSIGN_OR_RETURN(agent_schema_map_, LoadSchemaMap(distributed_state));
-    CreateTabletizerBatch();
+    // TODO(philkuz) Enable tabletizer batch when we need it.
+    // CreateTabletizerBatch();
     CreateSourcePruneBatch();
     CreatePlanPruneBatch();
     CreateStitcherBatch();
