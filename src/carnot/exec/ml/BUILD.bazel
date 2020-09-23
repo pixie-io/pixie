@@ -24,6 +24,14 @@ pl_cc_library(
     ],
 )
 
+pl_cc_test_library(
+    name = "eigen_testutils",
+    srcs = ["eigen_test_utils.cc", "eigen_test_utils.h"],
+    deps = [
+        "@org_tensorflow//third_party/eigen3",
+    ],
+)
+
 pl_cc_test(
     name = "coreset_test",
     srcs = ["coreset_test.cc"],
@@ -36,6 +44,25 @@ pl_cc_binary(
     name = "coreset_benchmark",
     testonly = 1,
     srcs = ["coreset_benchmark.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/benchmark:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "kmeans_test",
+    srcs = ["kmeans_test.cc"],
+    deps = [
+        ":cc_library",
+        ":eigen_testutils",
+    ],
+)
+
+pl_cc_binary(
+    name = "kmeans_benchmark",
+    testonly = 1,
+    srcs = ["kmeans_benchmark.cc"],
     deps = [
         ":cc_library",
         "//src/common/benchmark:cc_library",
