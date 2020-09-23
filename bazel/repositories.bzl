@@ -99,6 +99,12 @@ def _cc_deps():
     _repo_impl("com_github_cyan4973_xxhash", build_file = "//third_party:xxhash.BUILD")
     _repo_impl("com_github_nlohmann_json", build_file = "//third_party:nlohmann_json.BUILD")
     _repo_impl("com_github_badaix_jsonrpcpp", build_file = "//third_party:jsonrpcpp.BUILD")
+    _repo_impl(
+        "com_github_google_sentencepiece",
+        build_file = "//third_party:sentencepiece.BUILD",
+        patches = ["//third_party:sentencepiece.patch"],
+        patch_args = ["-p1"],
+    )
 
     _com_github_nghttp2_nghttp2()
     _com_github_threadstacks()

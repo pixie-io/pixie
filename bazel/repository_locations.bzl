@@ -225,4 +225,10 @@ REPOSITORY_LOCATIONS = dict(
             "https://github.com/bazelbuild/rules_closure/archive/308b05b2419edb5c8ee0471b67a40403df940149.tar.gz",
         ],
     ),
+    # August 19, 2020.
+    com_github_google_sentencepiece = dict(
+        sha256 = "6e9863851e6277862083518cc9f96211f334215d596fc8c65e074d564baeef0c",
+        strip_prefix = "sentencepiece-0.1.92",
+        urls = ["https://github.com/google/sentencepiece/archive/v0.1.92.tar.gz"],
+    ),
 )
