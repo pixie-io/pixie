@@ -52,17 +52,6 @@ func TestAgentsInfo_GetAgentInfo(t *testing.T) {
 	agents := makeTestAgents(t)
 	agentDataInfos := makeTestAgentDataInfo()
 
-	mockClient := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
-
-	var wg sync.WaitGroup
-	agentsInfo := &fakeAgentsInfo{&wg, t}
-	agentsTracker := tracker.NewAgentsWithInfo(mockClient, "fakesigningkey", agentsInfo)
-	agentsTracker.Start()
-	// 2 sets of updates
-	wg.Add(2)
-
-	mockResp := mock_metadatapb.NewMockMetadataService_GetAgentUpdatesClient(ctrl)
-
 	msg1 := &metadatapb.AgentUpdatesResponse{
 		AgentUpdates: []*metadatapb.AgentUpdate{
 			&metadatapb.AgentUpdate{
@@ -85,6 +74,8 @@ func TestAgentsInfo_GetAgentInfo(t *testing.T) {
 		AgentSchemas: testSchema,
 	}
 
+	mockClient := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
+	mockResp := mock_metadatapb.NewMockMetadataService_GetAgentUpdatesClient(ctrl)
 	mockResp.EXPECT().Context().Return(&testingutils.MockContext{}).AnyTimes()
 	mockResp.EXPECT().Recv().Return(msg1, nil)
 	mockResp.EXPECT().Recv().Return(msg2, nil)
@@ -93,6 +84,13 @@ func TestAgentsInfo_GetAgentInfo(t *testing.T) {
 	mockClient.EXPECT().
 		GetAgentUpdates(gomock.Any(), gomock.Any()).
 		Return(mockResp, nil)
+
+	var wg sync.WaitGroup
+	agentsInfo := &fakeAgentsInfo{&wg, t}
+	agentsTracker := tracker.NewAgentsWithInfo(mockClient, "fakesigningkey", agentsInfo)
+	agentsTracker.Start()
+	// 2 sets of updates
+	wg.Add(2)
 
 	wg.Wait()
 	agentsTracker.Stop()
