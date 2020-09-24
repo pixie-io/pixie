@@ -83,6 +83,14 @@ export const GraphWidget = (props: GraphWidgetProps) => {
         />
       );
     }
+
+    let errorMsg = `${display.adjacencyList.toColumn} and ${display.adjacencyList.fromColumn} columns do not exist`;
+    if (toColInfo) {
+      errorMsg = `${display.adjacencyList.fromColumn} column does not exist`;
+    } else if (fromColInfo) {
+      errorMsg = `${display.adjacencyList.toColumn} column does not exist`;
+    }
+    return <div>{errorMsg}</div>;
   }
   return <div key={props.display.dotColumn}>Invalid spec for graph</div>;
 };
