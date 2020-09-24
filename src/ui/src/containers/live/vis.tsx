@@ -1,5 +1,6 @@
 import { VizierQueryError } from 'common/errors';
 import { VizierQueryArg, VizierQueryFunc } from 'common/vizier-grpc-client';
+import { ArgTypeMap, getArgTypesForVis } from 'utils/args-utils';
 
 import { ChartPosition } from './layout';
 
@@ -120,9 +121,30 @@ function getFuncArgs(variableValues: { [key: string]: string }, func: Func): Viz
   return args;
 }
 
+interface VariableValues {
+  [key: string]: string;
+}
+
+function preprocessVariables(variableValues: VariableValues, argTypes: ArgTypeMap): VariableValues {
+  const processedVariables: VariableValues = {};
+
+  Object.entries(variableValues).forEach(([argName, argVal]) => {
+    // Special parsing for string lists.
+    if (argTypes[argName] === 'PX_STRING_LIST') {
+      const elms = argVal.split(',');
+      const listJoined = elms.map((elm) => `'${elm}'`).join(',');
+      const listRepr = `[${listJoined}]\n`;
+      processedVariables[argName] = listRepr;
+      return;
+    }
+    processedVariables[argName] = argVal;
+  });
+  return processedVariables;
+}
+
 // This should only be called by table grpc client, and it will reject the returned promise
 // when executeScript() is called with an invalid Vis spec.
-export function getQueryFuncs(vis: Vis, variableValues: { [key: string]: string }): VizierQueryFunc[] {
+export function getQueryFuncs(vis: Vis, variableValues: VariableValues): VizierQueryFunc[] {
   const defaults = {};
   if (!vis) {
     return [];
@@ -132,10 +154,12 @@ export function getQueryFuncs(vis: Vis, variableValues: { [key: string]: string 
       defaults[v.name] = v.defaultValue;
     }
   });
-  const valsOrDefaults = {
+  const unprocessedValsOrDefaults = {
     ...defaults,
     ...variableValues,
   };
+  const argTypes = getArgTypesForVis(vis);
+  const valsOrDefaults = preprocessVariables(unprocessedValsOrDefaults, argTypes);
 
   let visGlobalFuncs = vis.globalFuncs;
   if (!vis.globalFuncs) {
