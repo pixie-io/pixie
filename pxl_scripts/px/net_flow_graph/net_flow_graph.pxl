@@ -8,9 +8,9 @@ Calculates total bandwidth for the lifetime of the connection.
 import px
 
 
-def net_flow_graph(start: str, ips: str, grouping_entity: str):
+def net_flow_graph(start: str, ips: list, grouping_entity: str):
     df = px.DataFrame('conn_stats', start_time=start)
-    df = df[px.equals_any(df.remote_addr, [ips])]
+    df = df[px.equals_any(df.remote_addr, ips)]
 
     # Add the grouping entity column.
     df['from_entity'] = df.ctx[grouping_entity]

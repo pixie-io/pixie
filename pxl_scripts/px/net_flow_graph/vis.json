@@ -2,8 +2,8 @@
   "variables": [
     {
       "name": "ips",
-      "type": "PX_STRING",
-      "description": "The IP address you wish to get the network flow into.",
+      "type": "PX_STRING_LIST",
+      "description": "The IP addresses you wish to get the network flow into.",
       "defaultValue": "10.16.0.1"
     },
     {
