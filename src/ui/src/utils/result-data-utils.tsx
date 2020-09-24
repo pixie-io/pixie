@@ -2,7 +2,7 @@ import * as _ from 'lodash';
 import {
   Column, Relation, RowBatchData,
 } from 'types/generated/vizier_pb';
-
+import { formatUInt128Protobuf } from './format-data';
 import { nanoToMilliSeconds } from './time';
 
 export function ResultsToCsv(results) {
@@ -40,7 +40,7 @@ export function columnFromProto(column: Column): any[] {
   } if (column.hasInt64Data()) {
     return column.getInt64Data().getDataList();
   } if (column.hasUint128Data()) {
-    return column.getUint128Data().getDataList();
+    return column.getUint128Data().getDataList().map((uint128) => formatUInt128Protobuf(uint128));
   } if (column.hasFloat64Data()) {
     return column.getFloat64Data().getDataList();
   } if (column.hasStringData()) {

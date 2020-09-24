@@ -1,8 +1,8 @@
-import { quantilesSortFunc } from './sort-funcs';
+import { fieldSortFunc } from './sort-funcs';
 
-describe('quantilesSortFunc', () => {
-  it('correctly sorts the quantiles by p99 (ascending, with a value and record null)', () => {
-    const f = quantilesSortFunc('p99', true);
+describe('fieldSortFunc', () => {
+  it('correctly sorts the object by the specified subfield (ascending, with a value and record null)', () => {
+    const f = fieldSortFunc('p99', true);
     const rows = [
       { p50: -20, p90: -26, p99: -23 },
       { p50: 10, p90: 60 },
@@ -21,8 +21,8 @@ describe('quantilesSortFunc', () => {
     ]);
   });
 
-  it('correctly sorts the quantiles by p99 (descending, with a record null)', () => {
-    const f = quantilesSortFunc('p99', false);
+  it('correctly sorts the object by the specified subfield (descending, with a record null)', () => {
+    const f = fieldSortFunc('p99', false);
     const rows = [
       { p50: -20, p90: -26, p99: -23 },
       { p50: 10, p90: 60, p99: 89 },

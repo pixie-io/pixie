@@ -49,11 +49,11 @@ describe('formatFloat64Data test', () => {
   });
 });
 
-describe('formatUint128 test', () => {
+describe('formatUInt128Protobuf test', () => {
   it('should format to an uuid string', () => {
     const val = new UInt128();
     val.setHigh(77311094061);
     val.setLow(34858981);
-    expect(FormatData.formatUInt128(val)).toEqual('00000012-0019-ad2d-0000-00000213e7e5');
+    expect(FormatData.formatUInt128Protobuf(val)).toEqual('00000012-0019-ad2d-0000-00000213e7e5');
   });
 });

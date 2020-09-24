@@ -53,8 +53,8 @@ export function looksLikeAlertCol(colName: string, colType: DataType) {
   return !!colNameLC.match(/alert.*/);
 }
 
-// Converts UInt128 to UUID formatted string.
-export function formatUInt128(val: UInt128): string {
+// Converts UInt128PB to UUID formatted string.
+export function formatUInt128Protobuf(val: UInt128): string {
   // TODO(zasgar/michelle): Revisit this to check and make sure endianness is correct.
   // Each segment of the UUID is a hex value of 16 nibbles.
   // Note: BigInt support only available in Chrome > 67, FF > 68.
@@ -88,9 +88,11 @@ export function getDataRenderer(type: DataType): (any) => string {
     case DataType.BOOLEAN:
       return formatBoolData;
     case DataType.UINT128:
-      return formatUInt128;
     case DataType.STRING:
     default:
+      // Note: UINT128 protobufs are parsed when the result table is loaded, so Uint128 values
+      // are strings rather than protos by the time they get to here. As a result, we don't need
+      // to call formatUInt128Protobuf here.
       return (d) => d.toString();
   }
 }
@@ -102,7 +104,7 @@ const intSortFunc = (a, b) => Number(a) - Number(b);
 
 const numberSortFunc = (a, b) => Number(a) - Number(b);
 
-const uint128SortFunc = (a, b) => formatUInt128(a).localeCompare(formatUInt128(b));
+const uint128SortFunc = stringSortFunc;
 
 const boolSortFunc = (a, b) => {
   if (a === b) {

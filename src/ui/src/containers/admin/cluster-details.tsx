@@ -31,7 +31,7 @@ import {
   StyledRightTableCell, StyledSmallLeftTableCell, StyledSmallRightTableCell,
   StyledTab, StyledTableCell, StyledTableHeaderCell, StyledTabs,
 } from './utils';
-import { formatUInt128 } from '../../utils/format-data';
+import { formatUInt128Protobuf } from '../../utils/format-data';
 
 const StyledBreadcrumbLink = withStyles((theme: Theme) => ({
   root: {
@@ -86,7 +86,7 @@ interface AgentDisplay {
 
 export function formatAgent(agentInfo): AgentDisplay {
   const now = new Date();
-  const agentID = formatUInt128(agentInfo.agent_id);
+  const agentID = formatUInt128Protobuf(agentInfo.agent_id);
   return {
     id: agentID,
     idShort: agentID.split('-').pop(),

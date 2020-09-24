@@ -3,21 +3,21 @@ import { getDataSortFunc } from 'utils/format-data';
 import { DataType, SemanticType } from 'types/generated/vizier_pb';
 import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info';
 
-// Sort funcs for semnatic column types (when the pure data type alone doesn't produce
+// Sort funcs for semantic column types (when the pure data type alone doesn't produce
 // the sort result that we want.
 
-// TODO(nserrino): Make the selected percentile configurable and sort on that.
-export function quantilesSortFunc(percentile: string, ascending: boolean) {
+// Sorts an object on a specific field name.
+export function fieldSortFunc(fieldName: string, ascending: boolean) {
   return (a, b) => {
-    const aNull = !(a && a[percentile] != null) ? 1 : 0;
-    const bNull = !(b && b[percentile] != null) ? 1 : 0;
+    const aNull = !(a && a[fieldName] != null) ? 1 : 0;
+    const bNull = !(b && b[fieldName] != null) ? 1 : 0;
 
     // Nulls come last.
     if (aNull || bNull) {
       return aNull - bNull;
     }
 
-    const result = a[percentile] - b[percentile];
+    const result = a[fieldName] - b[fieldName];
     return (ascending ? result : -result);
   };
 }
@@ -26,12 +26,22 @@ export function getSortFunc(display: ColumnDisplayInfo, direction: SortDirection
   const ascending = direction === SortDirection.ASC;
 
   let f;
-  if (display.semanticType === SemanticType.ST_QUANTILES) {
-    const quantilesDisplay = display.displayState as QuantilesDisplayState;
-    const selectedPercentile = quantilesDisplay.selectedPercentile || 'p99';
-    f = quantilesSortFunc(selectedPercentile, ascending);
-  } else {
-    f = getDataSortFunc(display.type, ascending);
+  switch (display.semanticType) {
+    case SemanticType.ST_QUANTILES: {
+      const quantilesDisplay = display.displayState as QuantilesDisplayState;
+      const selectedPercentile = quantilesDisplay.selectedPercentile || 'p99';
+      f = fieldSortFunc(selectedPercentile, ascending);
+      break;
+    }
+    case SemanticType.ST_POD_STATUS:
+      f = fieldSortFunc('phase', ascending);
+      break;
+    case SemanticType.ST_CONTAINER_STATUS:
+      f = fieldSortFunc('state', ascending);
+      break;
+    default:
+      f = getDataSortFunc(display.type, ascending);
+      break;
   }
   return (a, b) => f(a[display.columnName], b[display.columnName]);
 }
