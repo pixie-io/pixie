@@ -40,6 +40,7 @@ export interface GraphDisplay extends WidgetDisplay {
   readonly edgeColorColumn?: string;
   readonly edgeThresholds?: EdgeThresholds;
   readonly edgeHoverInfo?: string[];
+  readonly edgeLength?: number;
 }
 
 interface GraphWidgetProps {
@@ -106,6 +107,7 @@ interface GraphProps {
   edgeColorColumn?: string;
   edgeThresholds?: EdgeThresholds;
   edgeHoverInfo?: string[];
+  edgeLength?: number;
 }
 
 const useStyles = makeStyles(() => createStyles({
@@ -149,10 +151,10 @@ function getColorForEdge(val: number, theme: Theme, thresholds: EdgeThresholds):
 export const Graph = (props: GraphProps) => {
   const {
     dot, toCol, fromCol, data, propagatedArgs, edgeWeightColumn,
-    nodeWeightColumn, edgeColorColumn, edgeThresholds, edgeHoverInfo,
+    nodeWeightColumn, edgeColorColumn, edgeThresholds, edgeHoverInfo, edgeLength,
   } = props;
   const theme = useTheme();
-  const graphOpts = getGraphOptions(theme);
+  const graphOpts = getGraphOptions(theme, edgeLength);
 
   // TODO(zasgar/michelle/nserrino): Remove the context information from here and elsewhere.
   const { selectedClusterName } = React.useContext(ClusterContext);

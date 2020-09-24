@@ -29,7 +29,10 @@ pl_cc_library(
 
 pl_cc_test_library(
     name = "eigen_testutils",
-    srcs = ["eigen_test_utils.cc", "eigen_test_utils.h"],
+    srcs = [
+        "eigen_test_utils.cc",
+        "eigen_test_utils.h",
+    ],
     deps = [
         "@org_tensorflow//third_party/eigen3",
     ],

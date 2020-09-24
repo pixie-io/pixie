@@ -4450,7 +4450,8 @@ proto.pl.vispb.Graph.toObject = function(includeInstance, msg) {
     nodeWeightColumn: jspb.Message.getFieldWithDefault(msg, 4, ""),
     edgeColorColumn: jspb.Message.getFieldWithDefault(msg, 5, ""),
     edgeThresholds: (f = msg.getEdgeThresholds()) && proto.pl.vispb.Graph.EdgeThresholds.toObject(includeInstance, f),
-    edgeHoverInfoList: (f = jspb.Message.getRepeatedField(msg, 7)) == null ? undefined : f
+    edgeHoverInfoList: (f = jspb.Message.getRepeatedField(msg, 7)) == null ? undefined : f,
+    edgeLength: jspb.Message.getFieldWithDefault(msg, 8, 0)
   };
 
   if (includeInstance) {
@@ -4516,6 +4517,10 @@ proto.pl.vispb.Graph.deserializeBinaryFromReader = function(msg, reader) {
     case 7:
       var value = /** @type {string} */ (reader.readString());
       msg.addEdgeHoverInfo(value);
+      break;
+    case 8:
+      var value = /** @type {number} */ (reader.readInt64());
+      msg.setEdgeLength(value);
       break;
     default:
       reader.skipField();
@@ -4594,6 +4599,13 @@ proto.pl.vispb.Graph.serializeBinaryToWriter = function(message, writer) {
   if (f.length > 0) {
     writer.writeRepeatedString(
       7,
+      f
+    );
+  }
+  f = message.getEdgeLength();
+  if (f !== 0) {
+    writer.writeInt64(
+      8,
       f
     );
   }
@@ -5118,6 +5130,24 @@ proto.pl.vispb.Graph.prototype.addEdgeHoverInfo = function(value, opt_index) {
  */
 proto.pl.vispb.Graph.prototype.clearEdgeHoverInfoList = function() {
   return this.setEdgeHoverInfoList([]);
+};
+
+
+/**
+ * optional int64 edge_length = 8;
+ * @return {number}
+ */
+proto.pl.vispb.Graph.prototype.getEdgeLength = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 8, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.pl.vispb.Graph} returns this
+ */
+proto.pl.vispb.Graph.prototype.setEdgeLength = function(value) {
+  return jspb.Message.setProto3IntField(this, 8, value);
 };
 
 

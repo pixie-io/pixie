@@ -13,7 +13,7 @@ export const LABEL_OPTIONS = {
   },
 };
 
-export function getGraphOptions(theme: Theme): Options {
+export function getGraphOptions(theme: Theme, edgeLength: number): Options {
   return {
     clickToUse: true,
     layout: {
@@ -24,6 +24,7 @@ export function getGraphOptions(theme: Theme): Options {
       solver: 'forceAtlas2Based',
       forceAtlas2Based: {
         gravitationalConstant: -50,
+        springLength: edgeLength > 0 ? edgeLength : 100,
       },
       hierarchicalRepulsion: {
         nodeDistance: 100,

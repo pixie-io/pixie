@@ -559,6 +559,9 @@ export class Graph extends jspb.Message {
   clearEdgeHoverInfoList(): void;
   addEdgeHoverInfo(value: string, index?: number): void;
 
+  getEdgeLength(): number;
+  setEdgeLength(value: number): void;
+
   getInputCase(): Graph.InputCase;
 
   serializeBinary(): Uint8Array;
@@ -578,6 +581,7 @@ export namespace Graph {
     edgeColorColumn: string,
     edgeThresholds?: Graph.EdgeThresholds.AsObject,
     edgeHoverInfoList: Array<string>,
+    edgeLength: number,
   }
 
   export class AdjacencyList extends jspb.Message {

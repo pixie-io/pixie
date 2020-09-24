@@ -78,7 +78,7 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
   const [focused, setFocused] = React.useState<boolean>(false);
 
   const theme = useTheme();
-  const graphOpts = getGraphOptions(theme);
+  const graphOpts = getGraphOptions(theme, -1);
 
   /**
    * Toggle the hier/non-hier clustering mode.

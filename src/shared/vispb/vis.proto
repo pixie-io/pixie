@@ -328,6 +328,8 @@ message Graph {
   EdgeThresholds edge_thresholds = 6;
   // The columns to display when hovering over an edge. Optional.
   repeated string edge_hover_info = 7;
+  // The length of the edge. Default is 100.
+  int64 edge_length = 8;
 }
 
 // Display traffic between pods or services as a graph.
