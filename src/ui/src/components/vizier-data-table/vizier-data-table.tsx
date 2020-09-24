@@ -130,12 +130,12 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
     [rows],
   );
 
-  const onSort = (sortState: SortState) => {
+  const onSort = React.useCallback((sortState: SortState) => {
     const column = columnDisplayInfos.get(sortState.dataKey);
     setRows(rows.sort(getSortFunc(column, sortState.direction)));
     setSelectedRow(-1);
     onRowSelectionChanged(null);
-  };
+  }, [rows, columnDisplayInfos, onRowSelectionChanged]);
 
   const onRowSelect = React.useCallback((rowIndex) => {
     let newRowIndex = rowIndex;
@@ -192,11 +192,15 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 export const VizierDataTableWithDetails = (props: { table: Table }) => {
   const [details, setDetails] = React.useState(null);
 
+  const onRowSelection = React.useCallback((row) => {
+    setDetails(row);
+  }, [setDetails]);
+
   const classes = useStyles();
   return (
     <div className={classes.root}>
       <div className={classes.table}>
-        <VizierDataTable expandable={false} table={props.table} onRowSelectionChanged={(row) => { setDetails(row); }} />
+        <VizierDataTable expandable={false} table={props.table} onRowSelectionChanged={onRowSelection} />
       </div>
       <VizierDataRowDetails data={details} />
     </div>
