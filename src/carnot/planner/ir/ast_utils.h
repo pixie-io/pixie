@@ -3,8 +3,8 @@
 #include <string>
 #include <vector>
 
+#include <google/protobuf/any.h>
 #include <pypa/ast/ast.hh>
-
 #include "src/carnot/planner/compiler_error_context/compiler_error_context.h"
 #include "src/carnot/planner/compilerpb/compiler_status.pb.h"
 #include "src/carnot/planner/ir/ir_nodes.h"
@@ -76,6 +76,33 @@ StatusOr<std::string> GetStrAstValue(const pypa::AstPtr& ast);
  * @return Status
  */
 Status WrapAstError(const pypa::AstPtr& ast, Status status);
+
+/**
+ * @brief Wraps an error with "outer context" which means we can get a stack trace of where an error
+ * might come from.
+ * @param ast the ast pointer to wrap with.
+ * @param str the new error to add.
+ * @param status the status to wrap.
+ * @return Status the original status wrapped with the new one.
+ */
+template <typename... Args>
+Status AddOuterContextToError(Status status, const pypa::AstPtr& ast, Args... args) {
+  if (status.ok()) {
+    return status;
+  }
+  if (!status.has_context()) {
+    status = WrapAstError(ast, status);
+  }
+  if (!status.context()->Is<compilerpb::CompilerErrorGroup>()) {
+    return status;
+  }
+  compilerpb::CompilerErrorGroup error_group;
+  CHECK(status.context()->UnpackTo(&error_group));
+  AddLineColError(&error_group, ast->line, ast->column, absl::Substitute(args...));
+
+  return Status(statuspb::INVALID_ARGUMENT, "",
+                std::make_unique<compilerpb::CompilerErrorGroup>(error_group));
+}
 
 template <typename T>
 StatusOr<T> WrapError(StatusOr<T> status_or, const pypa::AstPtr& ast) {

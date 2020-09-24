@@ -163,7 +163,12 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ParseStringAsType(const pypa::AstPtr& ast,
                                                         const std::string& value,
                                                         const std::shared_ptr<TypeObject>& type) {
   if (type->ql_object_type() != QLObjectType::kExpr) {
-    PL_ASSIGN_OR_RETURN(auto parsed, ParseAndProcessSingleExpression(value, /*import_px*/ true));
+    auto parsed_or_s = ParseAndProcessSingleExpression(value, /*import_px*/ true);
+    if (!parsed_or_s.ok()) {
+      return AddOuterContextToError(parsed_or_s.status(), ast, "Failed to parse arg '$0'as '$1'",
+                                    value, QLObjectTypeString(type->ql_object_type()));
+    }
+    auto parsed = parsed_or_s.ConsumeValueOrDie();
     if (!type->ObjectMatches(parsed)) {
       return CreateAstError(ast, "Expected '$0' got '$1' for expr '$2'", type->TypeString(),
                             QLObjectTypeString(parsed->type()));

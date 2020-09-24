@@ -13,14 +13,20 @@
 namespace pl {
 namespace carnot {
 namespace planner {
-compilerpb::CompilerErrorGroup LineColErrorPb(int64_t line, int64_t column, std::string message) {
+compilerpb::CompilerErrorGroup LineColErrorPb(int64_t line, int64_t column,
+                                              std::string_view message) {
   compilerpb::CompilerErrorGroup error_group;
-  compilerpb::CompilerError* err = error_group.add_errors();
+  AddLineColError(&error_group, line, column, message);
+  return error_group;
+}
+
+void AddLineColError(compilerpb::CompilerErrorGroup* error_group, int64_t line, int64_t column,
+                     std::string_view message) {
+  compilerpb::CompilerError* err = error_group->add_errors();
   compilerpb::LineColError* lc_err_pb = err->mutable_line_col_error();
   lc_err_pb->set_line(line);
   lc_err_pb->set_column(column);
-  lc_err_pb->set_message(message);
-  return error_group;
+  lc_err_pb->set_message(std::string(message));
 }
 
 compilerpb::CompilerErrorGroup MergeGroups(

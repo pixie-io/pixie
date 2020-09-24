@@ -1961,6 +1961,23 @@ TEST_F(ASTVisitorTest, exec_funcs_list_arg) {
               ElementsAre("http_resp_status", "upid", "time_"));
 }
 
+TEST_F(ASTVisitorTest, exec_funcs_list_arg_syntax_error) {
+  FuncToExecute f;
+  f.set_func_name("f");
+  f.set_output_table_prefix("test");
+  auto a = f.add_arg_values();
+  a->set_name("cols");
+
+  // Missing opening bracket here.
+  a->set_value("'http_resp_status', 'upid', 'time_']");
+
+  ExecFuncs exec_funcs({f});
+
+  auto graph_or_s = CompileGraph(kPlanExecFuncsListArg, exec_funcs);
+  ASSERT_NOT_OK(graph_or_s);
+  EXPECT_THAT(graph_or_s.status(), HasCompilerError("Failed to parse arg"));
+}
+
 // The function definition Module.
 constexpr char kFuncsUtilsModule[] = R"pxl(
 import px
