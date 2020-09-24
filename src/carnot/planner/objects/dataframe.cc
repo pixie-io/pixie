@@ -395,10 +395,7 @@ StatusOr<QLObjectPtr> LimitHandler::Eval(IR* graph, OperatorIR* op, const pypa::
   int64_t limit_value = rows_node->val();
   bool pem_only_val = pem_only->val() > 0;
 
-  PL_ASSIGN_OR_RETURN(LimitIR * limit_op,
-                      graph->CreateNode<LimitIR>(ast, op, limit_value, pem_only_val));
-  // Delete the integer node.
-  PL_RETURN_IF_ERROR(graph->DeleteNode(rows_node->id()));
+  PL_ASSIGN_OR_RETURN(LimitIR * limit_op, graph->CreateNode<LimitIR>(ast, op, limit_value, pem_only_val));
   return Dataframe::Create(limit_op, visitor);
 }
 

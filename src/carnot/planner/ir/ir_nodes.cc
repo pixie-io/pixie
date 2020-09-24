@@ -29,7 +29,9 @@ bool IR::HasEdge(int64_t from_node, int64_t to_node) const {
 
 Status IR::DeleteEdge(int64_t from_node, int64_t to_node) {
   DCHECK(dag_.HasEdge(from_node, to_node))
-      << absl::Substitute("No edge ($0, $1) exists.", from_node, to_node);
+      << absl::Substitute("No edge ($0, $1) exists. (from:'$2', to:'$3')", from_node, to_node,
+                          HasNode(from_node) ? Get(from_node)->DebugString() : "DoesNotExist",
+                          HasNode(to_node) ? Get(to_node)->DebugString() : "DoesNotExist");
   if (!dag_.HasEdge(from_node, to_node)) {
     return error::InvalidArgument("No edge ($0, $1) exists.", from_node, to_node);
   }

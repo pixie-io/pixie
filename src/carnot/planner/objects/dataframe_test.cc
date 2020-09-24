@@ -340,7 +340,7 @@ TEST_F(LimitTest, CreateLimit) {
   LimitIR* limit = static_cast<LimitIR*>(limit_obj->op());
   EXPECT_EQ(limit->limit_value(), 1234);
 
-  EXPECT_FALSE(graph->HasNode(limit_int_node_id));
+  EXPECT_TRUE(graph->HasNode(limit_int_node_id));
 }
 
 TEST_F(LimitTest, LimitNonIntArgument) {
@@ -381,7 +381,8 @@ TEST_F(DataframeTest, LimitCall) {
   LimitIR* limit = static_cast<LimitIR*>(limit_obj->op());
   EXPECT_EQ(limit->limit_value(), 1234);
 
-  EXPECT_FALSE(graph->HasNode(limit_int_node_id));
+  // We do not delete the integer value passed in.
+  EXPECT_TRUE(graph->HasNode(limit_int_node_id));
 }
 
 class SubscriptTest : public DataframeTest {

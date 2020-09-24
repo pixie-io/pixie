@@ -2004,6 +2004,19 @@ TEST_F(ASTVisitorTest, alt_imports_test_from) {
   EXPECT_MATCH(sink->parents()[0], MemorySource());
 }
 
+constexpr char kReuseLimitArg[] = R"pxl(
+import px
+
+start_time = '-3m'
+max_num_records = 500
+def embeddings():
+  df = px.DataFrame(table='http_events', start_time='-3m')
+  return df.head(max_num_records)
+px.display(embeddings())
+px.display(embeddings())
+)pxl";
+TEST_F(ASTVisitorTest, reuse_limit_arg) { ASSERT_OK(CompileGraph(kReuseLimitArg, {}, {})); }
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
