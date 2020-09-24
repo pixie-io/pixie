@@ -90,13 +90,13 @@ def demo_func():
     df.src = df.resolved_src
     df.dst = px.Service(df.ns_dst)
 
-    # Count
-    df = df.groupby(['src', 'dst']).agg(count=('ns_src', px.count))
+    # Count retransmits.
+    df = df.groupby(['src', 'dst']).agg(retransmits=('ns_src', px.count))
 
     # Filter for a particular service, if desired.
     df = df[px.contains(df['dst'], '')]
 
     # Set a threshold to display, if desired.
-    df = df[df['count'] > 0]
+    df = df[df['retransmits'] > 0]
 
     return df
