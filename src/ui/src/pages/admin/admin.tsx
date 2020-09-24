@@ -1,5 +1,10 @@
 import { scrollbarStyles } from 'common/mui-theme';
-import { Theme, withStyles } from '@material-ui/core/styles';
+import {
+  withStyles,
+  Theme,
+  createStyles,
+  WithStyles,
+} from '@material-ui/core/styles';
 
 import * as React from 'react';
 import { Route, Router, Switch } from 'react-router-dom';
@@ -8,8 +13,9 @@ import { AdminOverview } from 'containers/admin/admin-overview';
 import { ClusterDetails } from 'containers/admin/cluster-details';
 import NavBars from 'containers/App/nav-bars';
 import history from 'utils/pl-history';
+import { PropsWithChildren } from 'react';
 
-const AdminPage = withStyles((theme: Theme) => ({
+export const AdminPage = withStyles((theme: Theme) => createStyles({
   root: {
     height: '100%',
     width: '100%',
@@ -37,7 +43,7 @@ const AdminPage = withStyles((theme: Theme) => ({
     color: theme.palette.foreground.grey5,
     fontWeight: theme.typography.fontWeightBold,
   },
-}))(({ children, classes }: any) => (
+}))(({ children, classes }: PropsWithChildren<WithStyles>) => (
   <div className={classes.root}>
     <NavBars>
       <div className={classes.title}>
