@@ -10,10 +10,14 @@
 
 #include "third_party/bpftrace/src/bpforc.h"
 #include "third_party/bpftrace/src/bpftrace.h"
+#include "third_party/bpftrace/src/driver.h"
 
 namespace pl {
 namespace stirling {
 namespace bpf_tools {
+
+// Dump the bpftrace program's syntax data and other relevant internal process data.
+std::string DumpDriver(const bpftrace::Driver& driver);
 
 /**
  * Wrapper around BPFTrace, as a convenience.

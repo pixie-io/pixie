@@ -2,9 +2,12 @@
 
 #include "src/stirling/bpf_tools/bpftrace_wrapper.h"
 
+#include <sstream>
+
 #include "src/common/base/base.h"
 
 #include "third_party/bpftrace/src/ast/codegen_llvm.h"
+#include "third_party/bpftrace/src/ast/printer.h"
 #include "third_party/bpftrace/src/ast/semantic_analyser.h"
 #include "third_party/bpftrace/src/clang_parser.h"
 #include "third_party/bpftrace/src/driver.h"
@@ -16,6 +19,17 @@
 namespace pl {
 namespace stirling {
 namespace bpf_tools {
+
+using ::bpftrace::Driver;
+using ::bpftrace::ast::Printer;
+
+std::string DumpDriver(const Driver& driver) {
+  std::ostringstream oss;
+
+  Printer p(oss);
+  driver.root_->accept(p);
+  return oss.str();
+}
 
 Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::string>& params) {
   int err;
