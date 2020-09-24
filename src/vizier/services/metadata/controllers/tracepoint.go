@@ -213,6 +213,7 @@ func (m *TracepointManager) CreateTracepoint(tracepointName string, tracepointDe
 			}
 
 			if allTpsSame {
+				err = m.mds.SetTracepointTTL(*prevTracepointID, ttl)
 				return prevTracepointID, ErrTracepointAlreadyExists
 			}
 
