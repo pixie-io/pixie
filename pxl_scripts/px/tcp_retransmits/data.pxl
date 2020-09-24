@@ -6,8 +6,15 @@ import px
 
 # Adapted from https://github.com/iovisor/bpftrace/blob/master/tools/tcpretrans.bt
 program = """
+// tcpretrans.bt Trace or count TCP retransmits
+//               For Linux, uses bpftrace and eBPF.
+//
+// Copyright (c) 2018 Dale Hamel.
+// Licensed under the Apache License, Version 2.0 (the "License")
+
 #include <linux/socket.h>
 #include <net/sock.h>
+
 BEGIN
 {
   // See include/net/tcp_states.h:
@@ -24,6 +31,7 @@ BEGIN
   @tcp_states[11] = \"CLOSING\";
   @tcp_states[12] = \"NEW_SYN_RECV\";
 }
+
 kprobe:tcp_retransmit_skb
 {
   $sk = (struct sock *)arg0;
@@ -58,6 +66,7 @@ kprobe:tcp_retransmit_skb
       $statestr);
   }
 }
+
 END
 {
   clear(@tcp_states);
