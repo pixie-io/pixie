@@ -1,0 +1,37 @@
+{
+  "variables": [],
+  "globalFuncs": [
+    {
+      "outputName": "results",
+      "func": {
+        "name": "demo_func",
+        "args": []
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Results",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 3
+      },
+      "globalFuncOutputName": "results",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Graph",
+        "adjacencyList": {
+          "fromColumn": "src",
+          "toColumn": "dst"
+        },
+        "edgeWeightColumn": "count",
+        "edgeColorColumn": "count",
+        "edgeThresholds": {
+          "mediumThreshold": 0,
+          "highThreshold": 5
+        }
+      }
+    }
+  ]
+}
