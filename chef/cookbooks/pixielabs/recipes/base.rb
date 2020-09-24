@@ -1,3 +1,5 @@
+ENV['PATH'] = "/opt/gsutil:#{ENV['PATH']}"
+
 case node['platform']
 when 'mac_os_x'
   include_recipe 'pixielabs::mac_os_x'
@@ -84,4 +86,19 @@ remote_file '/opt/pixielabs/bin/yq' do
   source node['yq']['download_path']
   mode 0755
   checksum node['yq']['sha256']
+end
+
+
+remote_file '/tmp/gsutil.tar.gz' do
+  source node['gsutil']['download_path']
+  mode 0755
+  checksum node['gsutil']['sha256']
+end
+
+execute 'install gsutil' do
+  command 'tar xfz /tmp/gsutil.tar.gz -C /opt'
+end
+
+file '/tmp/gsutil.tar.gz' do
+  action :delete
 end

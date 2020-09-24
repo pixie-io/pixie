@@ -84,6 +84,8 @@ if node[:platform] == 'ubuntu'
   default['yq']['sha256']        =
     '11a830ffb72aad0eaa7640ef69637068f36469be4f68a93da822fbe454e998f8'
 
+  default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil.tar.gz'
+  default['gsutil']['sha256']        = 'be105e3724f7766a305f8094ac26f812498b0dac76a503fff871dcd9f13105fa'
 elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
     'https://github.com/bazelbuild/bazel/releases/download/3.4.1/bazel-3.4.1-darwin-x86_64'
@@ -142,4 +144,7 @@ elsif node[:platform] == 'mac_os_x'
     'https://github.com/mikefarah/yq/releases/download/3.2.1/yq_darwin_amd64'
   default['yq']['sha256']        =
     '116f74a384d0b4fa31a58dd01cfcdeffa6fcd21c066de223cbb0ebc042a8bc28'
+
+  default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil.tar.gz'
+  default['gsutil']['sha256']        = 'be105e3724f7766a305f8094ac26f812498b0dac76a503fff871dcd9f13105fa'
 end
