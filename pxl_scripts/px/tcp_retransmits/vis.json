@@ -28,9 +28,12 @@
         "edgeWeightColumn": "retransmits",
         "edgeColorColumn": "retransmits",
         "edgeThresholds": {
-          "mediumThreshold": 0,
-          "highThreshold": 5
-        }
+          "mediumThreshold": 5,
+          "highThreshold": 50
+        },
+        "edgeHoverInfo": [
+          "retransmits"
+        ]
       }
     }
   ]
