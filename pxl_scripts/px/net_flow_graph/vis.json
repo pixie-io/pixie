@@ -57,13 +57,14 @@
           "fromColumn": "from_entity",
           "toColumn": "to_entity"
         },
-        "edgeWeightColumn": "bytes_sent",
-        "edgeColorColumn": "bytes_recv",
+        "edgeWeightColumn": "bytes_total",
+        "edgeColorColumn": "bytes_total",
         "edgeThresholds": {
-          "mediumThreshold": 2000,
-          "highThreshold": 5000
+          "mediumThreshold": 50000,
+          "highThreshold": 500000
         },
         "edgeHoverInfo": [
+          "bytes_total",
           "bytes_sent",
           "bytes_recv"
         ]
