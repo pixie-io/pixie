@@ -91,6 +91,8 @@ export function toLayout(widgets: Widget[], isMobile: boolean): Layout[] {
     i: widgetName(widget, i),
     x: widget.position?.x || 0,
     y: widget.position?.y || 0,
+    w: widget.position?.w || 0,
+    h: widget.position?.h || 0,
     minH: 2,
     minW: 2,
   }));
