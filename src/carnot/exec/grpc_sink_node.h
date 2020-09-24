@@ -20,9 +20,21 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
+constexpr std::chrono::milliseconds kDefaultConnectionCheckTimeoutMS{2000};
+
 class GRPCSinkNode : public SinkNode {
  public:
   GRPCSinkNode() = default;
+
+  // Used to check the downstream connection after connection_check_timeout_ has elapsed.
+  Status OptionallyCheckConnection(ExecState* exec_state);
+
+  void testing_set_connection_check_timeout(const std::chrono::milliseconds& timeout) {
+    connection_check_timeout_ = timeout;
+  }
+  const std::chrono::time_point<std::chrono::system_clock>& testing_last_send_time() const {
+    return last_send_time_;
+  }
 
  protected:
   std::string DebugStringImpl() override;
@@ -36,7 +48,7 @@ class GRPCSinkNode : public SinkNode {
  private:
   Status CloseWriter(ExecState* exec_state);
 
-  bool sent_eos_ = false;
+  bool cancelled_ = true;
 
   grpc::ClientContext context_;
   carnotpb::TransferResultChunkResponse response_;
@@ -46,6 +58,10 @@ class GRPCSinkNode : public SinkNode {
 
   std::unique_ptr<plan::GRPCSinkOperator> plan_node_;
   std::unique_ptr<table_store::schema::RowDescriptor> input_descriptor_;
+
+  std::chrono::milliseconds connection_check_timeout_ = kDefaultConnectionCheckTimeoutMS;
+  std::chrono::time_point<std::chrono::system_clock> last_send_time_ =
+      std::chrono::system_clock::now();
 };
 
 }  // namespace exec

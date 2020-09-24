@@ -306,6 +306,80 @@ TEST_F(GRPCSinkNodeTest, external_result) {
   EXPECT_TRUE(add_metadata_called_);
 }
 
+TEST_F(GRPCSinkNodeTest, check_connection) {
+  auto op_proto = planpb::testutils::CreateTestGRPCSink2PB();
+  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1);
+  auto s = plan_node->Init(op_proto.grpc_sink_op());
+  RowDescriptor input_rd({types::DataType::INT64});
+  RowDescriptor output_rd({types::DataType::INT64});
+
+  google::protobuf::util::MessageDifferencer differ;
+
+  TransferResultChunkResponse resp;
+  resp.set_success(true);
+
+  auto writer = new grpc::testing::MockClientWriter<TransferResultChunkRequest>();
+  EXPECT_CALL(*writer, Write(_, _))
+      .Times(3)
+      .WillOnce(Return(true))    // Initiate result sink
+      .WillOnce(Return(true))    // Successful OptionallyCheckConnection
+      .WillOnce(Return(false));  // Failed OptionallyCheckConnection
+
+  EXPECT_CALL(*mock_, TransferResultChunkRaw(_, _))
+      .WillOnce(DoAll(SetArgPointee<1>(resp), Return(writer)));
+
+  auto tester = exec::ExecNodeTester<GRPCSinkNode, plan::GRPCSinkOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+  tester.node()->testing_set_connection_check_timeout(std::chrono::milliseconds(-1));
+
+  auto before_flush_time = tester.node()->testing_last_send_time();
+  EXPECT_OK(tester.node()->OptionallyCheckConnection(exec_state_.get()));
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  EXPECT_NOT_OK(tester.node()->OptionallyCheckConnection(exec_state_.get()));
+  auto after_flush_time = tester.node()->testing_last_send_time();
+
+  EXPECT_GT(after_flush_time, before_flush_time);
+
+  tester.Close();
+}
+
+TEST_F(GRPCSinkNodeTest, update_connection_time) {
+  auto op_proto = planpb::testutils::CreateTestGRPCSink2PB();
+  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1);
+  auto s = plan_node->Init(op_proto.grpc_sink_op());
+  RowDescriptor input_rd({types::DataType::INT64});
+  RowDescriptor output_rd({types::DataType::INT64});
+
+  google::protobuf::util::MessageDifferencer differ;
+
+  TransferResultChunkResponse resp;
+  resp.set_success(true);
+
+  auto writer = new grpc::testing::MockClientWriter<TransferResultChunkRequest>();
+  EXPECT_CALL(*mock_, TransferResultChunkRaw(_, _))
+      .WillOnce(DoAll(SetArgPointee<1>(resp), Return(writer)));
+
+  EXPECT_CALL(*writer, Write(_, _))
+      .Times(2)
+      .WillOnce(Return(true))   // Initiate stream
+      .WillOnce(Return(true));  // ConsumeNext
+
+  auto tester = exec::ExecNodeTester<GRPCSinkNode, plan::GRPCSinkOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+
+  auto before_flush_time = tester.node()->testing_last_send_time();
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+  auto rb = RowBatchBuilder(output_rd, 3, /*eow*/ false, /*eos*/ false)
+                .AddColumn<types::Int64Value>({1, 2, 3})
+                .get();
+
+  tester.ConsumeNext(rb, 5, 0);
+  auto after_flush_time = tester.node()->testing_last_send_time();
+
+  EXPECT_GT(after_flush_time, before_flush_time);
+}
+
 }  // namespace exec
 }  // namespace carnot
 }  // namespace pl

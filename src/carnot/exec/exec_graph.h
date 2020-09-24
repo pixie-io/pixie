@@ -137,6 +137,9 @@ class ExecutionGraph {
   // If it is not healthy, then we will just omit this particular source from the query,
   // since an input agent may have just been deleted or some other legitimate reason.
   Status CheckUpstreamGRPCConnectionHealth(GRPCSourceNode* source_node);
+  // Check the downstream GRPC connections for the query.
+  // If it is not healthy, we will cancel the query.
+  Status CheckDownstreamGRPCConnectionsHealth();
 
  private:
   /**
@@ -197,6 +200,7 @@ class ExecutionGraph {
   std::vector<int64_t> sources_;
   std::vector<int64_t> sinks_;
   absl::flat_hash_set<int64_t> grpc_sources_;
+  absl::flat_hash_set<int64_t> grpc_sinks_;
   std::unordered_map<int64_t, ExecNode*> nodes_;
 
   SystemTimePoint query_start_time_;

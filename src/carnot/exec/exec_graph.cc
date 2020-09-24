@@ -78,6 +78,7 @@ Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
             std::bind(&ExecutionGraph::Continue, this));
       })
       .OnGRPCSink([&](auto& node) {
+        grpc_sinks_.insert(node.id());
         return OnOperatorImpl<plan::GRPCSinkOperator, GRPCSinkNode>(node, &descriptors);
       })
       .OnUDTFSource([&](auto& node) {
@@ -140,6 +141,18 @@ Status ExecutionGraph::CheckUpstreamGRPCConnectionHealth(GRPCSourceNode* source_
       upstream_result_connection_timeout_ms_.count());
 }
 
+Status ExecutionGraph::CheckDownstreamGRPCConnectionsHealth() {
+  for (const auto& grpc_sink_id : grpc_sinks_) {
+    auto node = nodes_.find(grpc_sink_id);
+    if (node == nodes_.end()) {
+      return error::NotFound("Could not find GRPCSinkNode $0.", grpc_sink_id);
+    }
+    GRPCSinkNode* grpc_sink = static_cast<GRPCSinkNode*>(node->second);
+    PL_RETURN_IF_ERROR(grpc_sink->OptionallyCheckConnection(exec_state_));
+  }
+  return Status::OK();
+}
+
 Status ExecutionGraph::ExecuteSources() {
   absl::flat_hash_set<SourceNode*> running_sources;
 
@@ -158,9 +171,6 @@ Status ExecutionGraph::ExecuteSources() {
   while (running_sources.size()) {
     absl::flat_hash_set<SourceNode*> completed_sources_execute_loop;
 
-    // Execute each running source up to `consecutive_generate_calls_per_source_` times.
-    // Alternate between sources round-robin style so that all tables in an infinite
-    // streaming query will have results emitted.
     for (SourceNode* source : running_sources) {
       if (grpc_sources_.contains(source_to_id.at(source))) {
         auto s = CheckUpstreamGRPCConnectionHealth(static_cast<GRPCSourceNode*>(source));
@@ -191,6 +201,7 @@ Status ExecutionGraph::ExecuteSources() {
         break;
       }
     }
+    PL_RETURN_IF_ERROR(CheckDownstreamGRPCConnectionsHealth());
 
     // Flush all of the completed sources.
     for (SourceNode* source : completed_sources_execute_loop) {
@@ -241,6 +252,7 @@ Status ExecutionGraph::ExecuteSources() {
           }
         }
       }
+      PL_RETURN_IF_ERROR(CheckDownstreamGRPCConnectionsHealth());
 
       // Flush all of the completed sources after this phase of source deletion.
       for (SourceNode* source : completed_sources_wait_loop) {
@@ -248,15 +260,6 @@ Status ExecutionGraph::ExecuteSources() {
       }
       if (!running_sources.size()) {
         return Status::OK();
-      }
-
-      if (wait_for_more_data) {
-        // This type of timeout is okay as long as the connections to upstream sources and
-        // downstream destinations are healthy. For streaming queries on sparse data, there may
-        // be a legitimate, noticeable wait between output row batches.
-        LOG(ERROR) << absl::Substitute(
-            "Timed out in query $0 waiting for source data from $1 sources after $2 ms. Retrying.",
-            exec_state_->query_id().str(), running_sources.size(), timer.ElapsedTime_us() / 1000.0);
       }
     }
   }
