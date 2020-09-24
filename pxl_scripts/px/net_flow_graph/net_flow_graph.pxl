@@ -25,4 +25,5 @@ def net_flow_graph(start: str, ips: list, grouping_entity: str):
     df = df[df['from_entity'] != '']
     # Look up the names of the remote address.
     df.to_entity = px.nslookup(df.remote_addr)
+    df.bytes_total = df.bytes_sent + df.bytes_recv
     return df.drop(['remote_addr'])
