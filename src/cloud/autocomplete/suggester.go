@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/olivere/elastic/v7"
 	"github.com/sahilm/fuzzy"
@@ -25,9 +26,11 @@ type ElasticSuggester struct {
 	client          *elastic.Client
 	mdIndexName     string
 	scriptIndexName string
+	pc              profilepb.ProfileServiceClient
 	// This is temporary, and will be removed once we start indexing scripts.
 	br         *script.BundleManager
 	orgMapping map[uuid.UUID]string
+	bundleMu   sync.Mutex
 }
 
 var protoToElasticLabelMap = map[cloudapipb.AutocompleteEntityKind]string{
@@ -58,27 +61,14 @@ func getServiceCredentials(signingKey string) (string, error) {
 }
 
 // NewElasticSuggester creates a suggester based on an elastic index.
-func NewElasticSuggester(client *elastic.Client, mdIndex string, scriptIndex string, br *script.BundleManager, pc profilepb.ProfileServiceClient) (*ElasticSuggester, error) {
-	orgMapping := make(map[uuid.UUID]string)
-	if br != nil {
-		// Generate mapping from orgID -> orgName. This is temporary until we have a script indexer.
-		serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
-		if err != nil {
-			return nil, err
-		}
-		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-			fmt.Sprintf("bearer %s", serviceAuthToken))
-		resp, err := pc.GetOrgs(ctx, &profilepb.GetOrgsRequest{})
-		if err != nil {
-			return nil, err
-		}
-
-		for _, org := range resp.Orgs {
-			orgMapping[pbutils.UUIDFromProtoOrNil(org.ID)] = org.OrgName
-		}
-	}
-
-	return &ElasticSuggester{client, mdIndex, scriptIndex, br, orgMapping}, nil
+func NewElasticSuggester(client *elastic.Client, mdIndex string, scriptIndex string, pc profilepb.ProfileServiceClient) (*ElasticSuggester, error) {
+	return &ElasticSuggester{
+		client:          client,
+		mdIndexName:     mdIndex,
+		scriptIndexName: scriptIndex,
+		pc:              pc,
+		orgMapping:      make(map[uuid.UUID]string),
+	}, nil
 }
 
 // SuggestionRequest is a request for autocomplete suggestions.
@@ -121,8 +111,42 @@ func parseHighlightIndexes(highlightStr string, offset int) []int64 {
 	return matchedIndexes
 }
 
+// UpdateScriptBundle updates the script bundle used to populate the suggester's script suggestions.
+func (e *ElasticSuggester) UpdateScriptBundle(br *script.BundleManager) error {
+	orgMapping := make(map[uuid.UUID]string)
+	if br != nil {
+		// Generate mapping from orgID -> orgName. This is temporary until we have a script indexer.
+		serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
+		if err != nil {
+			return err
+		}
+		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
+			fmt.Sprintf("bearer %s", serviceAuthToken))
+		resp, err := e.pc.GetOrgs(ctx, &profilepb.GetOrgsRequest{})
+		if err != nil {
+			return err
+		}
+
+		for _, org := range resp.Orgs {
+			orgMapping[pbutils.UUIDFromProtoOrNil(org.ID)] = org.OrgName
+		}
+	}
+
+	e.bundleMu.Lock()
+	defer e.bundleMu.Unlock()
+	e.orgMapping = orgMapping
+	e.br = br
+
+	return nil
+}
+
 // GetSuggestions get suggestions for the given input using Elastic.
 func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*SuggestionResult, error) {
+	e.bundleMu.Lock()
+	br := e.br
+	orgMapping := e.orgMapping
+	e.bundleMu.Unlock()
+
 	resps := make([]*SuggestionResult, len(reqs))
 
 	if len(reqs) == 0 {
@@ -151,8 +175,8 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 	scripts := []string{}
 	scriptArgMap := make(map[string][]cloudapipb.AutocompleteEntityKind)
 	scriptArgNames := make(map[string][]string)
-	if e.br != nil {
-		for _, s := range e.br.GetScripts() {
+	if br != nil {
+		for _, s := range br.GetScripts() {
 			scripts = append(scripts, s.ScriptName)
 			scriptArgMap[s.ScriptName] = make([]cloudapipb.AutocompleteEntityKind, 0)
 			for _, a := range s.ComputedArgs() {
@@ -176,7 +200,7 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 	for i, r := range resp.Responses {
 		// This is temporary until we index scripts in Elastic.
 		scriptResults := make([]*Suggestion, 0)
-		if e.br != nil {
+		if br != nil {
 			for _, t := range reqs[i].AllowedKinds {
 				if t == cloudapipb.AEK_SCRIPT { // Script is an allowed type for this tabstop, so we should find matching scripts.
 					matches := fuzzy.Find(reqs[i].Input, scripts)
@@ -191,11 +215,11 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 						}
 					}
 					for _, m := range matches {
-						script := e.br.MustGetScript(m.Str)
+						script := br.MustGetScript(m.Str)
 						scriptArgs := scriptArgMap[m.Str]
 						scriptNames := scriptArgNames[m.Str]
 						valid := true
-						if script.OrgName != "" && e.orgMapping[reqs[i].OrgID] != script.OrgName {
+						if script.OrgName != "" && orgMapping[reqs[i].OrgID] != script.OrgName {
 							valid = false
 						}
 

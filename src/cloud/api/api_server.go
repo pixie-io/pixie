@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/spf13/viper"
@@ -153,18 +154,42 @@ func main() {
 	sms := &controller.ScriptMgrServer{ScriptMgr: sm}
 	cloudapipb.RegisterScriptMgrServer(s.GRPCServer(), sms)
 
-	//TODO(michelle): Requiring the bundle manager in the API service is temporary until we
-	// start indexing scripts.
-	br, err := script.NewBundleManagerWithOrgName([]string{defaultBundleFile, ossBundleFile}, "")
-	if err != nil {
-		log.WithError(err).Error("Failed to init bundle manager")
-		br = nil
-	}
-
-	esSuggester, err := autocomplete.NewElasticSuggester(es, "md_entities_4", "scripts", br, pc)
+	esSuggester, err := autocomplete.NewElasticSuggester(es, "md_entities_4", "scripts", pc)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to start elastic suggester")
 	}
+
+	var br *script.BundleManager
+	var bundleErr error
+	updateBundle := func() {
+		//TODO(michelle): Requiring the bundle manager in the API service is temporary until we
+		// start indexing scripts.
+		br, bundleErr = script.NewBundleManagerWithOrgName([]string{defaultBundleFile, ossBundleFile}, "")
+		if bundleErr != nil {
+			log.WithError(bundleErr).Error("Failed to init bundle manager")
+			br = nil
+		}
+		err := esSuggester.UpdateScriptBundle(br)
+		if err != nil {
+			log.WithError(err).Error("Failed to update script bundle for suggester")
+		}
+	}
+
+	quitCh := make(chan bool)
+	go func() {
+		updateBundle()
+		scriptTimer := time.NewTicker(30 * time.Second)
+		defer scriptTimer.Stop()
+		for {
+			select {
+			case <-quitCh:
+				return
+			case <-scriptTimer.C:
+				updateBundle()
+			}
+		}
+	}()
+	defer close(quitCh)
 
 	as := &controller.AutocompleteServer{Suggester: esSuggester}
 	cloudapipb.RegisterAutocompleteServiceServer(s.GRPCServer(), as)

@@ -414,7 +414,7 @@ func TestGetSuggestions(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			es, _ := autocomplete.NewElasticSuggester(elasticClient, "md_entities_1", "scripts", nil, nil)
+			es, _ := autocomplete.NewElasticSuggester(elasticClient, "md_entities_1", "scripts", nil)
 			results, err := es.GetSuggestions(test.reqs)
 			assert.Nil(t, err)
 			assert.NotNil(t, results)
