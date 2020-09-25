@@ -390,8 +390,8 @@ schema::Relation Table::GetRelation() const {
   return schema::Relation(types, names);
 }
 
-TableInfo Table::GetTableInfo() const {
-  TableInfo info;
+TableStats Table::GetTableStats() const {
+  TableStats info;
   absl::base_internal::SpinLockHolder cold_lock(&cold_batches_lock_);
   absl::base_internal::SpinLockHolder lock(&hot_batches_lock_);
 

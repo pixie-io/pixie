@@ -499,7 +499,7 @@ class GetDebugTableInfo final : public carnot::udf::UDTF<GetDebugTableInfo> {
 
     uint64_t selected_id = table_ids_[current_idx_];
     const auto* table = table_store_->GetTable(selected_id);
-    auto info = table->GetTableInfo();
+    auto info = table->GetTableStats();
 
     rw->Append<IndexOf("asid")>(ctx->metadata_state()->asid());
     rw->Append<IndexOf("name")>(table_store_->GetTableName(selected_id));

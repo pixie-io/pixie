@@ -32,7 +32,7 @@ struct BatchPosition {
   bool FoundValidBatches() { return batch_idx != -1; }
 };
 
-struct TableInfo {
+struct TableStats {
   int64_t bytes;
   int64_t num_batches;
   int64_t batches_added;
@@ -195,7 +195,7 @@ class Table : public NotCopyable {
    */
   Status ToProto(table_store::schemapb::Table* table_proto) const;
 
-  TableInfo GetTableInfo() const;
+  TableStats GetTableStats() const;
 
  private:
   /**

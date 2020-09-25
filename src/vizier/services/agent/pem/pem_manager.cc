@@ -53,11 +53,10 @@ Status PEMManager::InitSchemas() {
       // backup.
       auto t = std::shared_ptr<table_store::Table>(
           new table_store::Table(relation_info.relation, 1024 * 1024 * 512));
-      PL_RETURN_IF_ERROR(table_store()->AddTable(relation_info.id, relation_info.name, t));
+      table_store()->AddTable(relation_info.id, relation_info.name, t);
     } else {
-      PL_RETURN_IF_ERROR(
-          table_store()->AddTable(relation_info.id, relation_info.name,
-                                  table_store::Table::Create(relation_info.relation)));
+      table_store()->AddTable(relation_info.id, relation_info.name,
+                              table_store::Table::Create(relation_info.relation));
     }
     PL_RETURN_IF_ERROR(relation_info_manager()->AddRelationInfo(relation_info));
   }

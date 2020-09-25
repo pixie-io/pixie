@@ -204,10 +204,8 @@ Status TracepointManager::UpdateSchema(const stirling::stirlingpb::Publish& publ
   // figure out how to handle this as part of the data model refactor project.
   for (const auto& relation_info : relation_info_vec) {
     if (!relation_info_manager_->HasRelation(relation_info.name)) {
-      PL_RETURN_IF_ERROR(
-          table_store_->AddTable(relation_info.id, relation_info.name,
-
-                                 table_store::Table::Create(relation_info.relation)));
+      table_store_->AddTable(relation_info.id, relation_info.name,
+                             table_store::Table::Create(relation_info.relation));
       PL_RETURN_IF_ERROR(relation_info_manager_->AddRelationInfo(relation_info));
     }
     // TODO(zasgar): We should verify that the case where table names are reused we have the

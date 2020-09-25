@@ -56,8 +56,8 @@ TEST_F(TableStoreTest, basic) {
 
 TEST_F(TableStoreTest, get_table_ids) {
   auto table_store = TableStore();
-  EXPECT_OK(table_store.AddTable(1, "a", table1));
-  EXPECT_OK(table_store.AddTable(20, "b", table2));
+  table_store.AddTable(1, "a", table1);
+  table_store.AddTable(20, "b", table2);
 
   EXPECT_THAT(table_store.GetTableIDs(), ::testing::UnorderedElementsAre(1, 20));
 }
@@ -72,8 +72,7 @@ TEST_F(TableStoreDeathTest, rewrite_fails) {
   EXPECT_EQ(table1->GetRelation(), lookup->at("a"));
   EXPECT_FALSE(table2->GetRelation() == lookup->at("a"));
 
-  EXPECT_DEBUG_DEATH(table_store.AddTable("a", table2),
-                     "name_to_relation_map_iter->second == table->GetRelation.*");
+  EXPECT_DEBUG_DEATH(table_store.AddTable("a", table2), "name_to_relation_map_iter->second == .*");
 }
 
 const char* kTableStoreProto = R"proto(
@@ -156,8 +155,8 @@ TEST_F(TableStoreTabletsTest, tablet_test) {
   types::TabletID tablet2_id = "789";
 
   // Create the containing table and add the tablets to the table.
-  EXPECT_OK(table_store.AddTable(table_id, "a", tablet1_id, tablet1_1));
-  EXPECT_OK(table_store.AddTable(table_id, "a", tablet2_id, tablet1_2));
+  table_store.AddTable(table_id, "a", tablet1_id, tablet1_1);
+  table_store.AddTable(table_id, "a", tablet2_id, tablet1_2);
 
   Table* tablet1 = table_store.GetTable("a", tablet1_id);
   EXPECT_EQ(tablet1->NumBytes(), 0);
@@ -189,7 +188,7 @@ TEST_F(TableStoreTabletsTest, add_tablet_on_append_data) {
   types::TabletID tablet2_id = "789";
 
   // Only add tablet 2.
-  EXPECT_OK(table_store.AddTable(table_id, "a", tablet2_id, tablet1_1));
+  table_store.AddTable(table_id, "a", tablet2_id, tablet1_1);
 
   Table* tablet2 = table_store.GetTable("a", tablet2_id);
   EXPECT_EQ(tablet2->NumBytes(), 0);
@@ -215,10 +214,9 @@ TEST_F(TableStoreTabletsDeathTest, tablet_test) {
   types::TabletID tablet2_id = "789";
   types::TabletID tablet3_id = "654";
 
-  EXPECT_OK(table_store.AddTable(table_id, "a", tablet1_id, tablet1_1));
-  EXPECT_OK(table_store.AddTable(table_id, "a", tablet2_id, tablet1_2));
-  EXPECT_DEBUG_DEATH(EXPECT_OK(table_store.AddTable(table_id, "a", tablet3_id, tablet2_1)),
-                     ".*relation == table->GetRelation.*");
+  table_store.AddTable(table_id, "a", tablet1_id, tablet1_1);
+  table_store.AddTable(table_id, "a", tablet2_id, tablet1_2);
+  EXPECT_DEBUG_DEATH(table_store.AddTable(table_id, tablet3_id, tablet2_1), "");
 }
 
 }  // namespace table_store
