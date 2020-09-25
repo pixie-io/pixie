@@ -224,11 +224,12 @@ class StirlingTest : public ::testing::Test {
     return GenerateRandomSubscription(publish_proto_);
   }
 
-  void AppendData(uint64_t table_id, TabletID tablet_id,
-                  std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
+  Status AppendData(uint64_t table_id, TabletID tablet_id,
+                    std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
     // Note: Implicit assumption (not checked here) is that all columns have the same size
     size_t num_records = (*record_batch)[0]->Size();
     CheckRecordBatch(table_id, tablet_id, num_records, *record_batch);
+    return Status::OK();
   }
 
   void CheckRecordBatch(const uint64_t table_id, TabletID tablet_id, size_t num_records,

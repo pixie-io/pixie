@@ -24,6 +24,7 @@
 
 #include "src/carnot/planner/probes/tracepoint_generator.h"
 
+using pl::Status;
 using pl::StatusOr;
 
 using pl::stirling::IndexPublication;
@@ -62,25 +63,25 @@ pl::ProcessStatsMonitor* g_process_stats_monitor = nullptr;
 absl::flat_hash_map<uint64_t, ::pl::stirling::stirlingpb::InfoClass> g_table_info_map;
 absl::base_internal::SpinLock g_callback_state_lock;
 
-void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
-                             std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
+Status StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
+                               std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
   absl::base_internal::SpinLockHolder lock(&g_callback_state_lock);
 
   // Find the table info from the publications.
   auto iter = g_table_info_map.find(table_id);
   if (iter == g_table_info_map.end()) {
-    LOG(DFATAL) << absl::Substitute("Encountered unknown table id $0", table_id);
-    return;
+    return pl::error::Internal("Encountered unknown table id $0", table_id);
   }
   const pl::stirling::stirlingpb::InfoClass& table_info = iter->second;
 
   // Only output enabled tables (lookup by name).
   if (std::find(g_table_print_enables.begin(), g_table_print_enables.end(),
                 table_info.schema().name()) == g_table_print_enables.end()) {
-    return;
+    return Status::OK();
   }
 
   PrintRecordBatch(table_info.schema().name(), table_info.schema(), *record_batch);
+  return Status::OK();
 }
 
 void SignalHandler(int signum) {

@@ -27,11 +27,12 @@ class StirlingBPFTest : public ::testing::Test {
                                                   std::placeholders::_3));
   }
 
-  void AppendData(uint64_t table_id, types::TabletID tablet_id,
-                  std::unique_ptr<types::ColumnWrapperRecordBatch> record_batch) {
+  Status AppendData(uint64_t table_id, types::TabletID tablet_id,
+                    std::unique_ptr<types::ColumnWrapperRecordBatch> record_batch) {
     PL_UNUSED(table_id);
     PL_UNUSED(tablet_id);
     record_batches_.push_back(std::move(record_batch));
+    return Status::OK();
   }
 
   std::unique_ptr<Stirling> stirling_;

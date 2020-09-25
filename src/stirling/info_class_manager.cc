@@ -41,9 +41,10 @@ void InfoClassManager::PushData(DataPushCallback agent_callback) {
   auto record_batches = data_table_->ConsumeRecords();
   for (auto& record_batch : record_batches) {
     if (!record_batch.records.empty()) {
-      agent_callback(
+      Status s = agent_callback(
           id(), record_batch.tablet_id,
           std::make_unique<types::ColumnWrapperRecordBatch>(std::move(record_batch.records)));
+      LOG_IF(DFATAL, !s.ok()) << absl::Substitute("Failed to push data. Message = $0", s.msg());
     }
   }
 
@@ -55,11 +56,7 @@ void InfoClassManager::PushData(DataPushCallback agent_callback) {
 
 stirlingpb::InfoClass InfoClassManager::ToProto() const {
   stirlingpb::InfoClass info_class_proto;
-  stirlingpb::TableSchema* table_schema_proto = info_class_proto.mutable_schema();
-  // TODO(oazizi): This copies, which is inefficient. A populate() model would work better.
-  table_schema_proto->MergeFrom(schema_.ToProto());
-
-  // Add all the other fields for the proto.
+  info_class_proto.mutable_schema()->CopyFrom(schema_.ToProto());
   info_class_proto.set_id(id_);
   info_class_proto.set_subscribed(subscribed_);
   info_class_proto.set_sampling_period_millis(sampling_period_.count());
