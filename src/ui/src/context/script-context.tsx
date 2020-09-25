@@ -258,13 +258,7 @@ const ScriptContextProvider = (props) => {
     if (cancelExecution != null) {
       cancelExecution();
     }
-    if (loading) {
-      showSnackbar({
-        message: 'Script is already executing, please wait for it to complete',
-        autoHideDuration: 2000,
-      });
-      return;
-    }
+
     if (!healthy || !client) {
       // TODO(philkuz): Maybe link to the admin page to show what is wrong.
       showSnackbar({
