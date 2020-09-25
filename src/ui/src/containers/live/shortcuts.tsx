@@ -5,31 +5,20 @@ import { isMac } from 'utils/detect-os';
 import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { Handlers, KeyMap, ShortcutsContextProps } from 'context/shortcuts-context';
 
-type HotKeyAction =
+type LiveHotKeyAction =
   'pixie-command' |
   'show-help' |
   'toggle-editor' |
   'toggle-data-drawer' |
   'execute';
 
-type KeyMap = {
-  [action in HotKeyAction]: {
-    sequence: string | string[];
-    displaySequence: string | string[];
-    description: string;
-  }
-};
-
-export type Handlers = Omit<{
-  [action in HotKeyAction]: () => void;
-}, 'show-help'>;
-
 interface LiveViewShortcutsProps {
-  handlers: Handlers;
+  handlers: Omit<Handlers<LiveHotKeyAction>, 'show-help'>;
 }
 
-export function getKeyMap(): KeyMap {
+export function getKeyMap(): KeyMap<LiveHotKeyAction> {
   const seqPrefix = isMac() ? 'Meta' : 'Control';
   const displayPrefix = isMac() ? 'Cmd' : 'Ctrl';
   const withPrefix = (key: string) => ({
@@ -62,11 +51,18 @@ export function getKeyMap(): KeyMap {
 }
 
 /**
+ * Provides access to globally-defined hotkeys, both their shortcuts and their actual handlers. Use this to:
+ * - Show the user inline what they've set as their shortcut for some action that's contextually relevant
+ * - Programmatically trigger an action as if the user had activated it themselves
+ */
+export const LiveShortcutsContext = React.createContext<ShortcutsContextProps<LiveHotKeyAction>>(null);
+
+/**
  * Keyboard shortcuts declarations for the live view.
  *
  * The keybindings are declared here, handlers can be registered by child components of the live view.
  */
-const LiveViewShortcuts = (props: LiveViewShortcutsProps) => {
+const LiveViewShortcutsProvider: React.FC<LiveViewShortcutsProps> = (props) => {
   // Run this setup once.
   React.useEffect(() => {
     configure({
@@ -79,7 +75,7 @@ const LiveViewShortcuts = (props: LiveViewShortcutsProps) => {
   const [openHelp, setOpenHelp] = React.useState(false);
   const toggleOpenHelp = React.useCallback(() => setOpenHelp((cur) => !cur), []);
 
-  const keyMap: KeyMap = React.useMemo(getKeyMap, []);
+  const keyMap: KeyMap<LiveHotKeyAction> = React.useMemo(getKeyMap, []);
   const actionSequences = React.useMemo(() => {
     const map = {};
     Object.keys(keyMap).forEach((key) => {
@@ -88,34 +84,46 @@ const LiveViewShortcuts = (props: LiveViewShortcutsProps) => {
     return map;
   }, [keyMap]);
 
-  const handlers = React.useMemo(() => {
+  const handlers: Handlers<LiveHotKeyAction> = React.useMemo(() => {
     const handlerWrapper = (handler) => (e) => {
       e.preventDefault();
       handler();
     };
-    const wrappedHandlers = {
+    const wrappedHandlers: Handlers<LiveHotKeyAction> = {
       'show-help': toggleOpenHelp,
+      ...Object.keys(props.handlers).reduce((result, action) => ({
+        ...result,
+        [action]: handlerWrapper(props.handlers[action]),
+      }), {}) as LiveViewShortcutsProps['handlers'],
     };
-    Object.keys(props.handlers).forEach((action) => {
-      wrappedHandlers[action] = handlerWrapper(props.handlers[action]);
-    });
     return wrappedHandlers;
   }, [props.handlers, toggleOpenHelp]);
+
+  const context = Object.keys(handlers).reduce((result, action) => ({
+    ...result,
+    [action]: {
+      handler: handlers[action],
+      ...keyMap[action],
+    },
+  }), {}) as ShortcutsContextProps<LiveHotKeyAction>;
 
   return (
     <>
       <GlobalHotKeys keyMap={actionSequences} handlers={handlers} allowChanges />
       <LiveViewShortcutsHelp keyMap={keyMap} open={openHelp} onClose={toggleOpenHelp} />
+      <LiveShortcutsContext.Provider value={context}>
+        {props.children}
+      </LiveShortcutsContext.Provider>
     </>
   );
 };
 
-export default LiveViewShortcuts;
+export default LiveViewShortcutsProvider;
 
 interface LiveViewShortcutsHelpProps {
   open: boolean;
   onClose: () => void;
-  keyMap: KeyMap;
+  keyMap: KeyMap<LiveHotKeyAction>;
 }
 
 const useShortcutHelpStyles = makeStyles((theme: Theme) => createStyles({

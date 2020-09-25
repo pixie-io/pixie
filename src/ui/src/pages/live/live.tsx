@@ -23,7 +23,7 @@ import { DataDrawerSplitPanel } from 'containers/data-drawer/data-drawer';
 import { EditorSplitPanel } from 'containers/editor/editor';
 import ExecuteScriptButton from 'containers/live/execute-button';
 import { ScriptLoader } from 'containers/live/script-loader';
-import LiveViewShortcuts from 'containers/live/shortcuts';
+import LiveViewShortcutsProvider from 'containers/live/shortcuts';
 import LiveViewTitle from 'containers/live/title';
 import LiveViewBreadcrumbs from 'containers/live/breadcrumbs';
 import NavBars from 'containers/App/nav-bars';
@@ -176,66 +176,67 @@ const LiveView = () => {
 
   return (
     <div className={classes.root}>
-      <LiveViewShortcuts handlers={hotkeyHandlers} />
-      <NavBars>
-        <LiveViewTitle className={classes.title} />
-        <Tooltip title='Pixie Command'>
-          <IconButton disabled={commandOpen} onClick={toggleCommandOpen}>
-            <PixieCommandIcon fontSize='large' className={classes.pixieIcon} />
-          </IconButton>
-        </Tooltip>
-        <ExecuteScriptButton />
-        <Tooltip title='More' onClick={openMenu}>
-          <IconButton>
-            <MoreVertIcon className={classes.kabobIcon} />
-          </IconButton>
-        </Tooltip>
-        <Menu
-          open={moreMenuOpen}
-          onClose={closeMenu}
-          anchorEl={anchorEl}
-          getContentAnchorEl={null}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        >
-          <MenuItem key='edit' dense button onClick={() => setEditorPanelOpen(!editorPanelOpen)}>
-            <StyledListItemIcon>
-              <EditIcon />
-            </StyledListItemIcon>
-            <ListItemText primary={editorPanelOpen ? 'Close Editor' : 'Open Editor'} />
-          </MenuItem>
-          <MenuItem key='move-widget' dense button onClick={() => setWidgetsMoveable(!widgetsMoveable)}>
-            <StyledListItemIcon>
-              <MoveIcon />
-            </StyledListItemIcon>
-            <ListItemText primary={widgetsMoveable ? 'Disable Edit View' : 'Enable Edit View'} />
-          </MenuItem>
-        </Menu>
-        <ProfileMenu />
-      </NavBars>
-      <div className={classes.content}>
-        <LiveViewBreadcrumbs />
-        {
-          loading ? (
-            <div className='center-content'>
-              <ClusterInstructions message='Connecting to cluster...' />
-            </div>
-          ) : (
-            <>
-              <ScriptLoader />
-              <DataDrawerSplitPanel className={classes.mainPanel}>
-                <EditorSplitPanel className={classes.editorPanel}>
-                  <div className={classes.canvas} ref={canvasRef}>
-                    <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
-                  </div>
-                </EditorSplitPanel>
-              </DataDrawerSplitPanel>
-              { newAutoComplete
-                ? <NewCommandInput open={commandOpen} onClose={toggleCommandOpen} />
-                : <CommandInput open={commandOpen} onClose={toggleCommandOpen} /> }
-            </>
-          )
-        }
-      </div>
+      <LiveViewShortcutsProvider handlers={hotkeyHandlers}>
+        <NavBars>
+          <LiveViewTitle className={classes.title} />
+          <Tooltip title='Pixie Command'>
+            <IconButton disabled={commandOpen} onClick={toggleCommandOpen}>
+              <PixieCommandIcon fontSize='large' className={classes.pixieIcon} />
+            </IconButton>
+          </Tooltip>
+          <ExecuteScriptButton />
+          <Tooltip title='More' onClick={openMenu}>
+            <IconButton>
+              <MoreVertIcon className={classes.kabobIcon} />
+            </IconButton>
+          </Tooltip>
+          <Menu
+            open={moreMenuOpen}
+            onClose={closeMenu}
+            anchorEl={anchorEl}
+            getContentAnchorEl={null}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          >
+            <MenuItem key='edit' dense button onClick={() => setEditorPanelOpen(!editorPanelOpen)}>
+              <StyledListItemIcon>
+                <EditIcon />
+              </StyledListItemIcon>
+              <ListItemText primary={editorPanelOpen ? 'Close Editor' : 'Open Editor'} />
+            </MenuItem>
+            <MenuItem key='move-widget' dense button onClick={() => setWidgetsMoveable(!widgetsMoveable)}>
+              <StyledListItemIcon>
+                <MoveIcon />
+              </StyledListItemIcon>
+              <ListItemText primary={widgetsMoveable ? 'Disable Edit View' : 'Enable Edit View'} />
+            </MenuItem>
+          </Menu>
+          <ProfileMenu />
+        </NavBars>
+        <div className={classes.content}>
+          <LiveViewBreadcrumbs />
+          {
+            loading ? (
+              <div className='center-content'>
+                <ClusterInstructions message='Connecting to cluster...' />
+              </div>
+            ) : (
+              <>
+                <ScriptLoader />
+                <DataDrawerSplitPanel className={classes.mainPanel}>
+                  <EditorSplitPanel className={classes.editorPanel}>
+                    <div className={classes.canvas} ref={canvasRef}>
+                      <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
+                    </div>
+                  </EditorSplitPanel>
+                </DataDrawerSplitPanel>
+                { newAutoComplete
+                  ? <NewCommandInput open={commandOpen} onClose={toggleCommandOpen} />
+                  : <CommandInput open={commandOpen} onClose={toggleCommandOpen} /> }
+              </>
+            )
+          }
+        </div>
+      </LiveViewShortcutsProvider>
     </div>
   );
 };

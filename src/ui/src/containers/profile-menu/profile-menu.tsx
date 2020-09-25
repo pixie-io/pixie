@@ -1,6 +1,7 @@
 import DocsIcon from 'components/icons/docs';
 import LogoutIcon from 'components/icons/logout';
 import SettingsIcon from 'components/icons/settings';
+import KeyboardIcon from '@material-ui/icons/Keyboard';
 import { DOMAIN_NAME } from 'containers/constants';
 import gql from 'graphql-tag';
 import * as React from 'react';
@@ -16,6 +17,8 @@ import MenuItem from '@material-ui/core/MenuItem';
 import {
   createStyles, makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
+import { useContext } from 'react';
+import { LiveShortcutsContext } from '../live/shortcuts';
 
 export const GET_USER_INFO = gql`
 {
@@ -85,6 +88,7 @@ const ProfileMenu = (props: { className?: string }) => {
   const classes = useStyles();
   const [open, setOpen] = React.useState<boolean>(false);
   const [anchorEl, setAnchorEl] = React.useState(null);
+  const shortcuts = useContext(LiveShortcutsContext);
 
   const openMenu = React.useCallback((event) => {
     setOpen(true);
@@ -134,6 +138,12 @@ const ProfileMenu = (props: { className?: string }) => {
             <DocsIcon />
           </StyledListItemIcon>
           <StyledListItemText primary='Documentation' />
+        </MenuItem>
+        <MenuItem key='shortcuts' button component='button' onClick={() => shortcuts['show-help'].handler()}>
+          <StyledListItemIcon>
+            <KeyboardIcon />
+          </StyledListItemIcon>
+          <StyledListItemText primary='Keyboard Shortcuts' />
         </MenuItem>
         <MenuItem key='logout' button component={Link} to='/logout'>
           <StyledListItemIcon>
