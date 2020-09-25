@@ -6,7 +6,10 @@ pl_cc_library(
     name = "cc_library",
     srcs = glob(
         ["*.cc"],
-        exclude = ["**/*_test.cc", "**/*_benchmark.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+        ],
     ),
     hdrs = glob(["*.h"]),
     deps = [

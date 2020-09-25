@@ -99,6 +99,7 @@ filegroup(
     srcs = ["@sentencepiece_model//file:sentencepiece.proto"],
     visibility = ["//visibility:public"],
 )
+
 filegroup(
     name = "embedding.proto",
     srcs = ["@embedding_model//file:embedding.proto"],
@@ -109,7 +110,10 @@ container_image(
     name = "pl_cc_base_image",
     base = "@base_image//image",
     debs = pl_cc_base_packages,
-    files = ["//:embedding.proto", "//:sentencepiece.proto"],
+    files = [
+        "//:embedding.proto",
+        "//:sentencepiece.proto",
+    ],
     visibility = ["//visibility:public"],
 )
 
@@ -117,7 +121,10 @@ container_image(
     name = "pl_cc_base_debug_image",
     base = "@base_image_debug//image",
     debs = pl_cc_base_packages,
-    files = ["//:embedding.proto", "//:sentencepiece.proto"],
+    files = [
+        "//:embedding.proto",
+        "//:sentencepiece.proto",
+    ],
     visibility = ["//visibility:public"],
 )
 

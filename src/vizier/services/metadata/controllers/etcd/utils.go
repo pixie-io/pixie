@@ -6,6 +6,7 @@ import (
 
 	v3 "github.com/coreos/etcd/clientv3"
 	etcdpb "github.com/coreos/etcd/etcdserver/etcdserverpb"
+	log "github.com/sirupsen/logrus"
 )
 
 // The maximum number of operations that can be done in a single transaction, set by the etcd cluster.
@@ -23,6 +24,7 @@ func BatchOps(client *v3.Client, ops []v3.Op) ([]*etcdpb.ResponseOp, error) {
 	for _, op := range ops {
 		opBytes := len(op.ValueBytes())
 		if opBytes > maxNumBytes {
+			log.WithField("key", string(op.KeyBytes())).WithField("value", string(op.ValueBytes())).Error("Single operator too large to send to etcd")
 			return nil, errors.New("Etcd operation bytes larger than max request bytes")
 		}
 
