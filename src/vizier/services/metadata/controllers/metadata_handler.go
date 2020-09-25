@@ -424,7 +424,7 @@ func formatContainerID(cid string) string {
 	tokens := strings.SplitN(cid, "://", 2)
 	if len(tokens) != 2 {
 		if cid != "" {
-			log.Error("Container ID is not in the expected format: " + cid)
+			log.Info("Container ID is not in the expected format: " + cid)
 		}
 		return cid
 	}

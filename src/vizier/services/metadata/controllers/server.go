@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -204,7 +203,8 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 		s.mu.Unlock()
 
 		if cursor != currCursor {
-			return errors.New("Only one GetAgentUpdates stream can be active at once... Terminating")
+			log.Trace("Only one GetAgentUpdates stream can be active at once... Terminating")
+			return nil
 		}
 
 		updates, newComputedSchema, err := s.agentManager.GetAgentUpdates(cursor)

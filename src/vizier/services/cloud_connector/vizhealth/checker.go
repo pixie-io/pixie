@@ -60,7 +60,7 @@ func (c *Checker) run() {
 			case <-t.C:
 				current := atomic.LoadInt64(&hcCount)
 				if lastHCCount == current {
-					log.Error("watchdog timeout on healthcheck")
+					log.Trace("watchdog timeout on healthcheck")
 					// Write nil b/c health check has hung.
 					c.updateHCResp(nil)
 				}
@@ -71,7 +71,7 @@ func (c *Checker) run() {
 
 	failCount := 0
 	handleFailure := func(err error) {
-		log.WithError(err).Error("failed vizier health check, will restart healthcheck")
+		log.WithError(err).Info("failed vizier health check, will restart healthcheck")
 		failCount++
 		if failCount > 1 {
 			// If it fails more than once then update the response to nil.
