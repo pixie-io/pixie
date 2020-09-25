@@ -200,7 +200,6 @@ func (f *QueryResultForwarderImpl) RegisterQuery(queryID uuid.UUID, tableIDMap m
 		return fmt.Errorf("Query %d already registered", queryID)
 	}
 	f.activeQueries[queryID] = newActiveQuery(tableIDMap)
-	log.Errorf("Registering query %s", queryID.String())
 	return nil
 }
 

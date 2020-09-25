@@ -117,7 +117,7 @@ loop:
 		case <-s.done:
 			return nil
 		case <-time.After(30 * time.Second):
-			log.Error("Timeout waiting for SSL certs. Re-requesting")
+			log.Info("Timeout waiting for SSL certs. Re-requesting")
 			err = s.sendSSLCertRequest()
 			if err != nil {
 				log.WithError(err).Warn("Failed to send message to request SSL certs")

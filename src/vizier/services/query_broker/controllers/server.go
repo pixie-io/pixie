@@ -250,7 +250,7 @@ func (s *Server) CheckHealth(ctx context.Context) error {
 
 	flags, err := ParseQueryFlags(req.QueryStr)
 	if err != nil {
-		return status.Error(codes.Unavailable, fmt.Sprintf("error parsing query flags: %v", err))
+		return fmt.Errorf("error parsing query flags: %v", err)
 	}
 	queryID := uuid.NewV4()
 	planOpts := flags.GetPlanOptions()
@@ -290,18 +290,18 @@ func (s *Server) CheckHealth(ctx context.Context) error {
 	distributedState := s.agentsTracker.GetAgentInfo().DistributedState()
 	err = s.runQuery(ctx, req, queryID, planOpts, &distributedState, resultStream, doneCh)
 	if err != nil {
-		return status.Error(codes.Unavailable, fmt.Sprintf("error running query: %v", err))
+		return fmt.Errorf("error running healthcheck query ID %s: %v", queryID.String(), err)
 	}
 
 	wg.Wait()
 
 	if receivedRowBatches == 0 || receivedRows == int64(0) {
-		return status.Error(codes.Unavailable, "results not returned on health check")
+		return fmt.Errorf("results not returned on health check for query ID %s", queryID.String())
 	}
 
 	if receivedRowBatches > 1 || receivedRows > int64(1) {
 		// We expect only one row to be received from this query.
-		return status.Error(codes.Unavailable, "bad results on healthcheck")
+		return fmt.Errorf("bad results on healthcheck for query ID %s", queryID.String())
 	}
 
 	return nil
@@ -328,22 +328,12 @@ func (s *Server) checkHealthCached(ctx context.Context) error {
 func (s *Server) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierpb.VizierService_HealthCheckServer) error {
 	// For now, just report itself as healthy.
 	for c := time.Tick(healthCheckInterval); ; {
-		hcStatus := s.checkHealthCached(srv.Context())
+		hcResult := s.checkHealthCached(srv.Context())
 		// Pass.
 		code := int32(codes.OK)
-		if hcStatus != nil {
-			log.WithError(hcStatus).Errorf("Received unhealthy heath check result")
-			s, ok := status.FromError(hcStatus)
-			if !ok {
-				code = int32(codes.Unavailable)
-			} else {
-				code = int32(s.Code())
-			}
-
-			if code == int32(codes.Unauthenticated) {
-				// Request failed probably because of token expiration. Abort the request since this is not recoverable.
-				return status.Errorf(codes.Unauthenticated, "authentication error")
-			}
+		if hcResult != nil {
+			log.Infof("Received unhealthy heath check result: %s", hcResult.Error())
+			code = int32(codes.Unavailable)
 		}
 		err := srv.Send(&vizierpb.HealthCheckResponse{
 			Status: &vizierpb.Status{
@@ -431,6 +421,7 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 		}
 	}()
 
+	log.Infof("Launching query: %s", queryID)
 	err = s.runQuery(ctx, convertedReq, queryID, planOpts, &distributedState, resultStream, doneCh)
 	wg.Wait()
 
