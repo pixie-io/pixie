@@ -3,16 +3,10 @@ import { formatAgent } from './cluster-details';
 import { UInt128 } from '../../types/generated/vizier_pb';
 
 describe('formatAgent', () => {
-  const agentID1 = new UInt128();
-  const agentID2 = new UInt128();
-  agentID1.setHigh(111);
-  agentID1.setLow(222);
-  agentID2.setHigh(333);
-  agentID2.setLow(444);
   it('correctly formats agent info', () => {
     const agentResults = [
       {
-        agent_id: agentID1,
+        agent_id: '00000000-0000-006f-0000-0000000000de',
         asid: 1780,
         hostname: 'gke-host',
         ip_address: '',
@@ -21,7 +15,7 @@ describe('formatAgent', () => {
         last_heartbeat_ns: 100074517116,
       },
       {
-        agent_id: agentID2,
+        agent_id: '00000000-0000-014d-0000-0000000001bc',
         asid: 1780,
         hostname: 'gke-host2',
         ip_address: '',

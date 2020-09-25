@@ -86,7 +86,7 @@ interface AgentDisplay {
 
 export function formatAgent(agentInfo): AgentDisplay {
   const now = new Date();
-  const agentID = formatUInt128Protobuf(agentInfo.agent_id);
+  const agentID = agentInfo.agent_id;
   return {
     id: agentID,
     idShort: agentID.split('-').pop(),
@@ -143,26 +143,33 @@ const AgentsTable = () => {
 
   React.useEffect(() => {
     if (!client) {
-      return;
+      return () => {}; // noop
     }
     const fetchAgentStatus = () => {
       const onData = (results) => {
-        if (results.tables.length !== 1) {
-          if (results.status) {
-            setState({ ...state, error: results.status.getMessage() });
+        if (!results.schemaOnly) {
+          if (results.tables.length !== 1) {
+            if (results.status) {
+              setState({ data: [], error: results.status.getMessage() });
+            }
+            return;
           }
-          return;
+          const data = dataFromProto(results.tables[0].relation, results.tables[0].data);
+          setState({ data });
         }
-        const data = dataFromProto(results.tables[0].relation, results.tables[0].data);
-        setState({ data });
       };
       const onError = (error) => {
-        setState({ ...state, error: error?.message });
+        setState({ data: [], error: error?.message });
       };
       client.executeScript(AGENT_STATUS_SCRIPT, [], false, onData, onError);
     };
-    fetchAgentStatus();
-  }, [client, state]);
+
+    fetchAgentStatus(); // Fetch the agent status initially, before starting the timer for AGENTS_POLL_INTERVAL.
+    const interval = setInterval(() => {
+      fetchAgentStatus();
+    }, AGENTS_POLL_INTERVAL);
+    return () => clearInterval(interval);
+  }, [client]);
 
   if (state.error) {
     return (

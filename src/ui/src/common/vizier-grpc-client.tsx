@@ -33,6 +33,7 @@ export interface VizierQueryResult {
   status?: Status;
   executionStats?: QueryExecutionStats;
   mutationInfo?: MutationInfo;
+  schemaOnly?: boolean; // Whether the result only has the schema loaded so far.
 }
 
 export interface VizierQueryArg {
@@ -159,12 +160,15 @@ export class VizierGRPCClient {
         });
         const table = tablesMap.get(id);
         results.tables.push(table);
+        results.schemaOnly = true;
         onData(results);
       } else if (resp.hasMutationInfo()) {
         results.mutationInfo = resp.getMutationInfo();
       } else if (resp.hasData()) {
         const data = resp.getData();
         if (data.hasBatch()) {
+          results.schemaOnly = false;
+
           const batch = data.getBatch();
           const id = batch.getTableId();
           const table = tablesMap.get(id);
