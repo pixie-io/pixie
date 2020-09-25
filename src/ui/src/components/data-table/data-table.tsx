@@ -17,7 +17,6 @@ import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 import * as expanded from 'images/icons/expanded.svg';
 import * as unexpanded from 'images/icons/unexpanded.svg';
-import * as seedrandom from 'seedrandom';
 
 const EXPANDED_ROW_HEIGHT = 300;
 // The maximum number of characters to use for each column in determining sizing.
@@ -94,11 +93,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     justifyContent: 'flex-end',
   },
   sortIcon: {
-    width: theme.spacing(2),
+    width: theme.spacing(3),
     paddingLeft: theme.spacing(1),
   },
   sortIconHidden: {
-    width: theme.spacing(2),
+    width: theme.spacing(3),
     opacity: '0.2',
     paddingLeft: theme.spacing(1),
   },
@@ -107,6 +106,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     alignItems: 'center',
     flex: 'auto',
     overflow: 'hidden',
+    background: 'transparent',
+    border: 'none',
+    color: 'inherit',
+    cursor: 'pointer',
+
   },
   gutterCell: {
     paddingLeft: '0px',
@@ -218,8 +222,6 @@ const InternalDataTable = ({
 
   const colTextWidthRatio = React.useMemo<{[dataKey: string]: number}>(() => {
     const colsWidth: {[dataKey: string]: number} = {};
-    // Randomly sample 10 rows to figure out the width basis of each row.
-    const sampleCount = Math.min(10, rowCount);
     let totalWidth = 0;
     columns.forEach((col) => {
       let w = col.width || null;
@@ -346,47 +348,30 @@ const InternalDataTable = ({
   const colIsResizable = (idx: number): boolean => (resizableColumns || true) && (idx !== columns.length - 1);
 
   const headerRendererCommon: TableHeaderRenderer = React.useCallback((props) => {
-    let sortIcon = (
-      <UpIcon
-        className={classes.sortIconHidden}
-        onClick={() => {
-          onSortWrapper({ sortBy: props.dataKey, sortDirection: SortDirection.ASC });
-        }}
-      />
-    );
+    const sort = () => onSortWrapper({
+      sortBy: props.dataKey,
+      sortDirection: props.sortDirection === SortDirection.ASC ? SortDirection.DESC : SortDirection.ASC,
+    });
+
+    let sortIcon = <UpIcon className={classes.sortIconHidden} />;
     if (props.sortBy === props.dataKey && props.sortDirection === SortDirection.ASC) {
-      sortIcon = (
-        <UpIcon
-          className={classes.sortIcon}
-          onClick={() => {
-            onSortWrapper({ sortBy: props.dataKey, sortDirection: SortDirection.DESC });
-          }}
-        />
-      );
+      sortIcon = <UpIcon className={classes.sortIcon} />;
     } else if (props.sortBy === props.dataKey && props.sortDirection === SortDirection.DESC) {
-      sortIcon = (
-        <DownIcon
-          className={classes.sortIcon}
-          onClick={() => {
-            onSortWrapper({ sortBy: props.dataKey, sortDirection: SortDirection.ASC });
-          }}
-        />
-      );
+      sortIcon = <DownIcon className={classes.sortIcon} />;
     }
+
     const headerStyle = clsx(
       [classes.headerTitle],
       [classes[props.columnData.align]],
     );
 
     return (
-      <>
-        <div className={headerStyle}>
-          <Tooltip title={props.label}>
-            <span className={classes.cellText}>{props.label}</span>
-          </Tooltip>
-          {sortIcon}
-        </div>
-      </>
+      <button type='button' className={headerStyle} onClick={sort}>
+        <Tooltip title={props.label}>
+          <span className={classes.cellText}>{props.label}</span>
+        </Tooltip>
+        {sortIcon}
+      </button>
     );
   }, [classes, onSortWrapper]);
 
