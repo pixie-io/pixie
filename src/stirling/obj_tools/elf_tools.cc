@@ -242,7 +242,7 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::ListFuncSymbols(
     // Note that multiple symbols can point to the same address.
     // But symbol names cannot be duplicate.
     if (!symbol_addrs.insert(symbol_info.address).second) {
-      LOG(WARNING) << absl::Substitute(
+      VLOG(1) << absl::Substitute(
           "Found multiple symbols to the same address ($0). New behavior does not filter these "
           "out. Symbol=$1",
           symbol_info.address, symbol_info.name);
