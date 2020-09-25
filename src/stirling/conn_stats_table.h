@@ -23,9 +23,9 @@ constexpr DataElement kConnStatsElements[] = {
         {"conn_active", "The number of active connections",
          types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_GAUGE},
         {"bytes_sent", "The number of bytes sent to the remote endpoint(s).",
-         types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_COUNTER},
+         types::DataType::INT64, types::SemanticType::ST_BYTES, types::PatternType::METRIC_COUNTER},
         {"bytes_recv", "The number of bytes received from the remote endpoint(s).",
-         types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_COUNTER},
+         types::DataType::INT64, types::SemanticType::ST_BYTES, types::PatternType::METRIC_COUNTER},
 #ifndef NDEBUG
         {"px_info_", "Pixie messages regarding the record (e.g. warnings)",
          types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
