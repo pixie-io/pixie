@@ -4,6 +4,7 @@ import * as storage from 'common/storage';
 import { ClusterStatus, VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
 import { useSnackbar } from 'components/snackbar/snackbar';
 import AdminView from 'pages/admin/admin';
+import CreditsView from 'pages/credits/credits';
 import { ScriptsContextProvider } from 'containers/App/scripts-context';
 import LiveView from 'pages/live/live';
 import gql from 'graphql-tag';
@@ -181,6 +182,7 @@ export default function WithClusterBanner() {
         <ClusterBanner />
         <Switch>
           <Route path='/admin' component={AdminView} />
+          <Route path='/credits' component={CreditsView} />
           <Route path='/live' component={Vizier} />
           <Redirect from='/*' to='/live' />
         </Switch>
