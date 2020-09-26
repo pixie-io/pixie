@@ -213,7 +213,7 @@ class MemorySourceNodeTabletTest : public ::testing::Test {
     std::shared_ptr<Table> tablet = Table::Create(rel);
     AddValuesToTable(tablet.get());
 
-    exec_state_->table_store()->AddTable(table_id_, table_name_, tablet_id_, tablet);
+    exec_state_->table_store()->AddTable(tablet, table_name_, table_id_, tablet_id_);
   }
 
   void AddValuesToTable(Table* table) {

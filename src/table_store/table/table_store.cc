@@ -93,9 +93,8 @@ void TableStore::RegisterTableID(uint64_t table_id, TableInfo table_info,
   id_to_table_map_[key] = table;
 }
 
-void TableStore::AddTableImpl(std::optional<uint64_t> table_id, const std::string& table_name,
-                              const types::TabletID& tablet_id,
-                              std::shared_ptr<table_store::Table> table) {
+void TableStore::AddTable(std::shared_ptr<table_store::Table> table, const std::string& table_name,
+                          std::optional<uint64_t> table_id, const types::TabletID& tablet_id) {
   const auto& table_relation = table->GetRelation();
 
   // Register the table by name.

@@ -48,16 +48,16 @@ Status PEMManager::InitSchemas() {
   // This should eventually be done by subscribe requests.
   auto relation_info_vec = ConvertSubscribePBToRelationInfo(subscribe_pb);
   for (const auto& relation_info : relation_info_vec) {
+    // Make http_events hold 512Mi. This is a hack and will be removed once we have proactive
+    // backup.
+    std::shared_ptr<table_store::Table> table_ptr;
     if (relation_info.name == "http_events") {
-      // Make http_events hold 512Mi. This is a hack and will be removed once we have proactive
-      // backup.
-      auto t = std::shared_ptr<table_store::Table>(
-          new table_store::Table(relation_info.relation, 1024 * 1024 * 512));
-      table_store()->AddTable(relation_info.id, relation_info.name, t);
+      std::make_shared<table_store::Table>(relation_info.relation, 1024 * 1024 * 512);
     } else {
-      table_store()->AddTable(relation_info.id, relation_info.name,
-                              table_store::Table::Create(relation_info.relation));
+      table_store::Table::Create(relation_info.relation);
     }
+
+    table_store()->AddTable(std::move(table_ptr), relation_info.name, relation_info.id);
     PL_RETURN_IF_ERROR(relation_info_manager()->AddRelationInfo(relation_info));
   }
   return Status::OK();

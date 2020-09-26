@@ -92,28 +92,22 @@ class TableStore {
   /**
    * Add a table under the given name and optionally tablet id.
    *
-   * @ param table_id: unique ID to associate with the table.
-   * @ param table_name: the name of the table to add this under.
    * @ param table: the table to store.
-   * @ param tablet_id: the optional id of the tablet to assign this to.
+   * @ param table_name: the name of the table to add this under.
+   * @ param table_id: optional unique ID to for the table name, for quick-lookups.
+   * @ param tablet_id: the tablet id to assign this to.
+   *
+   * Unlike most interfaces, this has the value first (table), and the key second (table_name,
+   * table_id and tablet_id are all essentially keys). This is done because to accommodate
+   * optional fields.
    */
-  void AddTable(uint64_t table_id, const std::string& table_name, const types::TabletID& tablet_id,
-                std::shared_ptr<table_store::Table> table) {
-    return AddTableImpl(table_id, table_name, tablet_id, table);
-  }
+  void AddTable(std::shared_ptr<table_store::Table> table, const std::string& table_name,
+                std::optional<uint64_t> table_id = std::nullopt,
+                const types::TabletID& tablet_id = kDefaultTablet);
 
-  void AddTable(uint64_t table_id, const std::string& table_name,
-                std::shared_ptr<table_store::Table> table) {
-    return AddTableImpl(table_id, table_name, kDefaultTablet, table);
-  }
-
-  void AddTable(const std::string& table_name, const types::TabletID& tablet_id,
-                std::shared_ptr<table_store::Table> table) {
-    return AddTableImpl(std::nullopt, table_name, tablet_id, table);
-  }
-
+  // Old interface: Deprecated.
   void AddTable(const std::string& table_name, std::shared_ptr<table_store::Table> table) {
-    return AddTableImpl(std::nullopt, table_name, kDefaultTablet, table);
+    return AddTable(std::move(table), table_name);
   }
 
   /**
@@ -154,17 +148,6 @@ class TableStore {
   }
 
  private:
-  /**
-   * Add a table under the given name and optionally tablet id.
-   *
-   * @ param table_name: the name of the table to add this under.
-   * @ param table_id: optional unique ID to associate with the table.
-   * @ param table: the table to store.
-   * @ param tablet_id: the optional id of the tablet to assign this to.
-   */
-  void AddTableImpl(std::optional<uint64_t> table_id, const std::string& table_name,
-                    const types::TabletID& tablet_id, std::shared_ptr<table_store::Table> table);
-
   void RegisterTableName(const std::string& table_name, const types::TabletID& tablet_id,
                          const schema::Relation& table_relation,
                          std::shared_ptr<table_store::Table> table);

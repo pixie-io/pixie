@@ -52,8 +52,8 @@ class TableStoreTest : public ::testing::Test {
 
 TEST_F(TableStoreTest, basic) {
   auto table_store = TableStore();
-  table_store.AddTable("a", table1);
-  table_store.AddTable("b", table2);
+  table_store.AddTable(table1, "a");
+  table_store.AddTable(table2, "b");
 
   auto lookup = table_store.GetRelationMap();
   EXPECT_EQ(2, lookup->size());
@@ -71,8 +71,8 @@ TEST_F(TableStoreTest, basic) {
 
 TEST_F(TableStoreTest, get_table_ids) {
   auto table_store = TableStore();
-  table_store.AddTable(1, "a", table1);
-  table_store.AddTable(20, "b", table2);
+  table_store.AddTable(table1, "a", 1);
+  table_store.AddTable(table2, "b", 20);
 
   EXPECT_THAT(table_store.GetTableIDs(), ::testing::UnorderedElementsAre(1, 20));
 }
@@ -83,7 +83,7 @@ TEST_F(TableStoreTest, table_id_aliasing) {
   const uint64_t kTableID = 1;
   const uint64_t kAliasID = 5;
 
-  table_store.AddTable(kTableID, "a", table1);
+  table_store.AddTable(table1, "a", kTableID);
   EXPECT_OK(table_store.AddTableAlias(kAliasID, "a"));
 
   Table* table;
@@ -132,14 +132,14 @@ TEST_F(TableStoreTest, table_id_aliasing) {
 using TableStoreDeathTest = TableStoreTest;
 TEST_F(TableStoreDeathTest, rewrite_fails) {
   auto table_store = TableStore();
-  table_store.AddTable("a", table1);
+  table_store.AddTable(table1, "a");
 
   auto lookup = table_store.GetRelationMap();
   EXPECT_EQ(1, lookup->size());
   EXPECT_EQ(table1->GetRelation(), lookup->at("a"));
   EXPECT_FALSE(table2->GetRelation() == lookup->at("a"));
 
-  EXPECT_DEBUG_DEATH(table_store.AddTable("a", table2), "name_to_relation_map_iter->second == .*");
+  EXPECT_DEBUG_DEATH(table_store.AddTable(table2, "a"), "name_to_relation_map_iter->second == .*");
 }
 
 const char* kTableStoreProto = R"proto(
@@ -176,8 +176,8 @@ relation_map {
 )proto";
 TEST_F(TableStoreTest, to_proto) {
   auto table_store = TableStore();
-  table_store.AddTable("a", table1);
-  table_store.AddTable("b", table1);
+  table_store.AddTable(table1, "a");
+  table_store.AddTable(table1, "b");
   schemapb::Schema actual_schema;
   schemapb::Schema expected_schema;
   EXPECT_OK(table_store.SchemaAsProto(&actual_schema));
@@ -208,8 +208,8 @@ TEST_F(TableStoreTabletsTest, tablet_test) {
   types::TabletID tablet2_id = "789";
 
   // Create the containing table and add the tablets to the table.
-  table_store.AddTable(table_id, "a", tablet1_id, tablet1_1);
-  table_store.AddTable(table_id, "a", tablet2_id, tablet1_2);
+  table_store.AddTable(tablet1_1, "a", table_id, tablet1_id);
+  table_store.AddTable(tablet1_2, "a", table_id, tablet2_id);
 
   Table* tablet1 = table_store.GetTable("a", tablet1_id);
   EXPECT_EQ(tablet1->NumBytes(), 0);
@@ -241,7 +241,7 @@ TEST_F(TableStoreTabletsTest, add_tablet_on_append_data) {
   types::TabletID tablet2_id = "789";
 
   // Only add tablet 2.
-  table_store.AddTable(table_id, "a", tablet2_id, tablet1_1);
+  table_store.AddTable(tablet1_1, "a", table_id, tablet2_id);
 
   Table* tablet2 = table_store.GetTable("a", tablet2_id);
   EXPECT_EQ(tablet2->NumBytes(), 0);
@@ -267,9 +267,9 @@ TEST_F(TableStoreTabletsDeathTest, tablet_test) {
   types::TabletID tablet2_id = "789";
   types::TabletID tablet3_id = "654";
 
-  table_store.AddTable(table_id, "a", tablet1_id, tablet1_1);
-  table_store.AddTable(table_id, "a", tablet2_id, tablet1_2);
-  EXPECT_DEBUG_DEATH(table_store.AddTable(table_id, tablet3_id, tablet2_1), "");
+  table_store.AddTable(tablet1_1, "a", table_id, tablet1_id);
+  table_store.AddTable(tablet1_2, "a", table_id, tablet2_id);
+  EXPECT_DEBUG_DEATH(table_store.AddTable(tablet2_1, "a", table_id, tablet3_id), "");
 }
 
 }  // namespace table_store
