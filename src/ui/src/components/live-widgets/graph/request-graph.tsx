@@ -240,6 +240,7 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
   // so we assign it separately from where Network is created.
   React.useEffect(() => {
     if (network) {
+      network.off('doubleClick'); // Clear the previous doubleClick listener.
       network.on('doubleClick', doubleClickCallback);
     }
   }, [network, doubleClickCallback]);
