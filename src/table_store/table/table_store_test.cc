@@ -29,6 +29,21 @@ class TableStoreTest : public ::testing::Test {
     table2 = Table::Create(rel2);
   }
 
+  std::unique_ptr<ColumnWrapperRecordBatch> MakeRel1ColumnWrapperBatch() {
+    std::vector<types::BoolValue> col1 = {true, true, false};
+    std::vector<types::Float64Value> col2 = {1.1, 5.0, 2.9};
+    auto wrapper_batch_1 = std::make_unique<types::ColumnWrapperRecordBatch>();
+    auto col_wrapper_1 = std::make_shared<types::BoolValueColumnWrapper>(3);
+    auto col_wrapper_2 = std::make_shared<types::Float64ValueColumnWrapper>(3);
+    col_wrapper_1->Clear();
+    col_wrapper_1->AppendFromVector(col1);
+    col_wrapper_2->Clear();
+    col_wrapper_2->AppendFromVector(col2);
+    wrapper_batch_1->push_back(col_wrapper_1);
+    wrapper_batch_1->push_back(col_wrapper_2);
+    return wrapper_batch_1;
+  }
+
   std::shared_ptr<Table> table1;
   std::shared_ptr<Table> table2;
   schema::Relation rel1;
@@ -60,6 +75,58 @@ TEST_F(TableStoreTest, get_table_ids) {
   table_store.AddTable(20, "b", table2);
 
   EXPECT_THAT(table_store.GetTableIDs(), ::testing::UnorderedElementsAre(1, 20));
+}
+
+TEST_F(TableStoreTest, table_id_aliasing) {
+  auto table_store = TableStore();
+
+  const uint64_t kTableID = 1;
+  const uint64_t kAliasID = 5;
+
+  table_store.AddTable(kTableID, "a", table1);
+  EXPECT_OK(table_store.AddTableAlias(kAliasID, "a"));
+
+  Table* table;
+
+  table = table_store.GetTable("a");
+  EXPECT_EQ(table->NumBytes(), 0);
+  EXPECT_EQ(table->NumBatches(), 0);
+
+  table = table_store.GetTable(kTableID);
+  EXPECT_EQ(table->NumBytes(), 0);
+  EXPECT_EQ(table->NumBatches(), 0);
+
+  table = table_store.GetTable(kAliasID);
+  EXPECT_EQ(table->NumBytes(), 0);
+  EXPECT_EQ(table->NumBatches(), 0);
+
+  EXPECT_OK(table_store.AppendData(kTableID, "", MakeRel1ColumnWrapperBatch()));
+
+  table = table_store.GetTable("a");
+  EXPECT_EQ(table->NumBytes(), 27);
+  EXPECT_EQ(table->NumBatches(), 1);
+
+  table = table_store.GetTable(kTableID);
+  EXPECT_EQ(table->NumBytes(), 27);
+  EXPECT_EQ(table->NumBatches(), 1);
+
+  table = table_store.GetTable(kAliasID);
+  EXPECT_EQ(table->NumBytes(), 27);
+  EXPECT_EQ(table->NumBatches(), 1);
+
+  EXPECT_OK(table_store.AppendData(kAliasID, "", MakeRel1ColumnWrapperBatch()));
+
+  table = table_store.GetTable("a");
+  EXPECT_EQ(table->NumBytes(), 54);
+  EXPECT_EQ(table->NumBatches(), 2);
+
+  table = table_store.GetTable(kTableID);
+  EXPECT_EQ(table->NumBytes(), 54);
+  EXPECT_EQ(table->NumBatches(), 2);
+
+  table = table_store.GetTable(kAliasID);
+  EXPECT_EQ(table->NumBytes(), 54);
+  EXPECT_EQ(table->NumBatches(), 2);
 }
 
 using TableStoreDeathTest = TableStoreTest;
@@ -129,20 +196,6 @@ class TableStoreTabletsTest : public TableStoreTest {
     tablet2_1 = Table::Create(rel2);
   }
 
-  std::unique_ptr<ColumnWrapperRecordBatch> MakeRel1ColumnWrapperBatch() {
-    std::vector<types::BoolValue> col1 = {true, true, false};
-    std::vector<types::Float64Value> col2 = {1.1, 5.0, 2.9};
-    auto wrapper_batch_1 = std::make_unique<types::ColumnWrapperRecordBatch>();
-    auto col_wrapper_1 = std::make_shared<types::BoolValueColumnWrapper>(3);
-    auto col_wrapper_2 = std::make_shared<types::Float64ValueColumnWrapper>(3);
-    col_wrapper_1->Clear();
-    col_wrapper_1->AppendFromVector(col1);
-    col_wrapper_2->Clear();
-    col_wrapper_2->AppendFromVector(col2);
-    wrapper_batch_1->push_back(col_wrapper_1);
-    wrapper_batch_1->push_back(col_wrapper_2);
-    return wrapper_batch_1;
-  }
   std::shared_ptr<Table> tablet1_1;
   std::shared_ptr<Table> tablet1_2;
   std::shared_ptr<Table> tablet2_1;

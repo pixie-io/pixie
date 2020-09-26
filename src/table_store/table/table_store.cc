@@ -64,37 +64,68 @@ table_store::Table* TableStore::GetTable(uint64_t table_id,
   return id_to_table_iter->second.get();
 }
 
+void TableStore::RegisterTableName(const std::string& table_name, const types::TabletID& tablet_id,
+                                   const schema::Relation& table_relation,
+                                   std::shared_ptr<table_store::Table> table) {
+  auto name_to_relation_map_iter = name_to_relation_map_.find(table_name);
+  if (name_to_relation_map_iter == name_to_relation_map_.end()) {
+    name_to_relation_map_[table_name] = table_relation;
+  } else {
+    DCHECK_EQ(name_to_relation_map_iter->second, table_relation);
+  }
+
+  NameTablet key = {table_name, tablet_id};
+  name_to_table_map_[key] = table;
+}
+
+void TableStore::RegisterTableID(uint64_t table_id, TableInfo table_info,
+                                 const types::TabletID& tablet_id,
+                                 std::shared_ptr<table_store::Table> table) {
+  // Lookup whether the table already exists in the relation map, add if it does not.
+  auto id_to_table_info_map_iter = id_to_table_info_map_.find(table_id);
+  if (id_to_table_info_map_iter == id_to_table_info_map_.end()) {
+    id_to_table_info_map_[table_id] = table_info;
+  } else {
+    DCHECK_EQ(id_to_table_info_map_iter->second.relation, table_info.relation);
+  }
+
+  TableIDTablet key{table_id, tablet_id};
+  id_to_table_map_[key] = table;
+}
+
 void TableStore::AddTableImpl(std::optional<uint64_t> table_id, const std::string& table_name,
                               const types::TabletID& tablet_id,
                               std::shared_ptr<table_store::Table> table) {
   const auto& table_relation = table->GetRelation();
 
   // Register the table by name.
-  {
-    auto name_to_relation_map_iter = name_to_relation_map_.find(table_name);
-    if (name_to_relation_map_iter == name_to_relation_map_.end()) {
-      name_to_relation_map_[table_name] = table_relation;
-    } else {
-      DCHECK_EQ(name_to_relation_map_iter->second, table_relation);
-    }
-
-    NameTablet key = {table_name, tablet_id};
-    name_to_table_map_[key] = table;
-  }
+  RegisterTableName(table_name, tablet_id, table_relation, table);
 
   // Register the table by ID, if one is present.
   if (table_id.has_value()) {
-    // Lookup whether the table already exists in the relation map, add if it does not.
-    auto id_to_table_info_map_iter = id_to_table_info_map_.find(table_id.value());
-    if (id_to_table_info_map_iter == id_to_table_info_map_.end()) {
-      id_to_table_info_map_[table_id.value()] = TableInfo({table_name, table_relation});
-    } else {
-      DCHECK_EQ(id_to_table_info_map_iter->second.relation, table_relation);
-    }
-
-    TableIDTablet key = {table_id.value(), tablet_id};
-    id_to_table_map_[key] = table;
+    RegisterTableID(table_id.value(), TableInfo{table_name, table_relation}, tablet_id, table);
   }
+}
+
+Status TableStore::AddTableAlias(uint64_t table_id, const std::string& table_name) {
+  auto table_iter = name_to_table_map_.find({table_name, ""});
+  if (table_iter == name_to_table_map_.end()) {
+    return error::Internal(
+        "Could not create table alias. Could not find table for $0 If the target table is "
+        "tabletized, aliasing is not yet supported.",
+        table_name);
+  }
+  std::shared_ptr<Table> table_ptr = table_iter->second;
+
+  auto relation_iter = name_to_relation_map_.find(table_name);
+  if (relation_iter == name_to_relation_map_.end()) {
+    return error::Internal("Could not create table alias. Could not find relation for $0.",
+                           table_name);
+  }
+  const schema::Relation& relation = relation_iter->second;
+
+  RegisterTableID(table_id, TableInfo{table_name, relation}, "", std::move(table_ptr));
+  return Status::OK();
 }
 
 Status TableStore::SchemaAsProto(schemapb::Schema* schema) const {

@@ -117,6 +117,12 @@ class TableStore {
   }
 
   /**
+   * Creates a mapping between a table ID and an existing table as specified by the name.
+   * @return Error if table name does not exist.
+   */
+  Status AddTableAlias(uint64_t table_id, const std::string& table_name);
+
+  /**
    * @return A map of table name to relation representing the table's structure.
    */
   std::unique_ptr<RelationMap> GetRelationMap();
@@ -159,6 +165,13 @@ class TableStore {
   void AddTableImpl(std::optional<uint64_t> table_id, const std::string& table_name,
                     const types::TabletID& tablet_id, std::shared_ptr<table_store::Table> table);
 
+  void RegisterTableName(const std::string& table_name, const types::TabletID& tablet_id,
+                         const schema::Relation& table_relation,
+                         std::shared_ptr<table_store::Table> table);
+
+  void RegisterTableID(uint64_t table_id, TableInfo table_info, const types::TabletID& tablet_id,
+                       std::shared_ptr<table_store::Table> table);
+
   /**
    * Create a new tablet inside of the table with table_id
    *
@@ -175,6 +188,9 @@ class TableStore {
   // Map an id to a table.
   absl::flat_hash_map<TableIDTablet, std::shared_ptr<Table>> id_to_table_map_;
   // Mapping from name to relation for adding new tablets.
+  // TODO(oazizi): value should likely be shared_ptr<schema::Relation> because the
+  //               same information is in id_to_table_info_map_ TableInfo.
+  //               Can avoid this copy.
   absl::flat_hash_map<std::string, schema::Relation> name_to_relation_map_;
   // Mapping from id to name and relation pair for adding new tablets.
   absl::flat_hash_map<uint64_t, TableInfo> id_to_table_info_map_;

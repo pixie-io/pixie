@@ -207,12 +207,18 @@ Status TracepointManager::UpdateSchema(const stirling::stirlingpb::Publish& publ
       table_store_->AddTable(relation_info.id, relation_info.name,
                              table_store::Table::Create(relation_info.relation));
       PL_RETURN_IF_ERROR(relation_info_manager_->AddRelationInfo(relation_info));
+    } else {
+      if (relation_info.relation != table_store_->GetTable(relation_info.name)->GetRelation()) {
+        return error::Internal(
+            "Tracepoint is not compatible with the schema of the specified output table. "
+            "[table_name=$0]",
+            relation_info.name);
+      }
+      PL_RETURN_IF_ERROR(table_store_->AddTableAlias(relation_info.id, relation_info.name));
     }
-    // TODO(zasgar): We should verify that the case where table names are reused we have the
-    // exact same relation.
   }
   PL_RETURN_IF_ERROR(stirling_->SetSubscription(subscribe_pb));
-  return Status();
+  return Status::OK();
 }
 
 }  // namespace agent
