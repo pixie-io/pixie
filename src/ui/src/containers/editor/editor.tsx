@@ -171,7 +171,7 @@ export const EditorSplitPanel = (props) => {
   return (
     <ResizableDrawer
       drawerDirection='right'
-      initialSize={600}
+      initialSize={850}
       open={editorPanelOpen}
       otherContent={props.children}
       overlay
