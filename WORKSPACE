@@ -3253,3 +3253,10 @@ go_repository(
     sum = "h1:7uVkIFmeBqHfdjD+gZwtXXI+RODJ2Wc4O7MPEh/QiW4=",
     version = "v1.3.0",
 )
+
+go_repository(
+    name = "com_github_ianlancetaylor_cgosymbolizer",
+    importpath = "github.com/ianlancetaylor/cgosymbolizer",
+    sum = "h1:IpTHAzWv1pKDDWeJDY5VOHvqc2T9d3C8cPKEf2VPqHE=",
+    version = "v0.0.0-20200424224625-be1b05b0b279",
+)

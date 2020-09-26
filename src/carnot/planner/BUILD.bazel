@@ -83,6 +83,7 @@ pl_cgo_library(
     cgo = True,
     importpath = "pixielabs.ai/pixielabs/src/carnot/planner",
     deps = [
+        "@com_github_ianlancetaylor_cgosymbolizer//:go_default_library",
         "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
         "//src/carnot/planner/plannerpb:func_args_pl_go_proto",
