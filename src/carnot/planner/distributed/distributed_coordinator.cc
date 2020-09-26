@@ -299,7 +299,7 @@ class MapRemovableOperatorsRule : public Rule {
    * @param expr the filter expression to evaluate.
    * @return AgentSet the set of agents that are filtered out by the expression.
    */
-  AgentSet FilterExpressionMayProduceData(ExpressionIR* expr) {
+  StatusOr<AgentSet> FilterExpressionMayProduceData(ExpressionIR* expr) {
     if (!Match(expr, Func())) {
       return AgentSet();
     }
@@ -311,8 +311,8 @@ class MapRemovableOperatorsRule : public Rule {
     auto logical_and = Match(expr, LogicalAnd(Value(), Value()));
     auto logical_or = Match(expr, LogicalOr(Value(), Value()));
     if (logical_and || logical_or) {
-      auto lhs = FilterExpressionMayProduceData(func->args()[0]);
-      auto rhs = FilterExpressionMayProduceData(func->args()[1]);
+      PL_ASSIGN_OR_RETURN(auto lhs, FilterExpressionMayProduceData(func->args()[0]));
+      PL_ASSIGN_OR_RETURN(auto rhs, FilterExpressionMayProduceData(func->args()[1]));
       // If the expression is AND, we union the agents we want to remove.
       // otherwise, we take the intersection of those agents.
       return logical_and ? lhs.Union(rhs) : lhs.Intersection(rhs);
@@ -336,7 +336,11 @@ class MapRemovableOperatorsRule : public Rule {
     auto metadata_type = metadata_expr->annotations().metadata_type;
     AgentSet agents_that_remove_op;
     for (int64_t pem : pem_instances_) {
-      auto* md_filter = plan_->Get(pem)->metadata_filter();
+      auto pem_carnot = plan_->Get(pem);
+      if (!pem_carnot) {
+        return error::InvalidArgument("Cannot find pem $0 in distributed plan", pem);
+      }
+      auto* md_filter = pem_carnot->metadata_filter();
       if (md_filter == nullptr) {
         agents_that_remove_op.agents.insert(pem);
         continue;
@@ -354,7 +358,8 @@ class MapRemovableOperatorsRule : public Rule {
   }
 
   StatusOr<bool> CheckFilter(FilterIR* filter_ir) {
-    AgentSet agents_that_remove_op = FilterExpressionMayProduceData(filter_ir->filter_expr());
+    PL_ASSIGN_OR_RETURN(AgentSet agents_that_remove_op,
+                        FilterExpressionMayProduceData(filter_ir->filter_expr()));
     // If the filter appears on all agents, we don't wanna add it.
     if (agents_that_remove_op.agents.empty()) {
       return false;

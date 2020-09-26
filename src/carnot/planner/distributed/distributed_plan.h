@@ -67,7 +67,7 @@ class CarnotInstance {
   // The distributed plan that this instance belongs to.
   DistributedPlan* distributed_plan_;
   // A filter containing the metadata entities stored on a particular Carnot.
-  std::unique_ptr<md::AgentMetadataFilter> md_filter_;
+  std::unique_ptr<md::AgentMetadataFilter> md_filter_ = nullptr;
 };
 
 // TODO(nserrino): Refactor this and IR to share a common base class for shared operations like
