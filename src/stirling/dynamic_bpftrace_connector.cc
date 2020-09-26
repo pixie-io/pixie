@@ -210,19 +210,20 @@ void DynamicBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uin
 
 namespace {
 
-// TODO(oazizi): Consolidate with inet_utils.
 std::string ResolveInet(int af, const uint8_t* inet) {
+  std::string inet_str;
+  Status s;
   switch (af) {
-    case AF_INET: {
-      char addr_cstr[INET_ADDRSTRLEN];
-      inet_ntop(AF_INET, inet, addr_cstr, INET_ADDRSTRLEN);
-      return std::string(addr_cstr);
-    }
-    case AF_INET6: {
-      char addr_cstr[INET6_ADDRSTRLEN];
-      inet_ntop(AF_INET6, inet, addr_cstr, INET6_ADDRSTRLEN);
-      return std::string(addr_cstr);
-    }
+    case AF_INET:
+      s = IPv4AddrToString(*reinterpret_cast<const struct in_addr*>(inet), &inet_str);
+      break;
+    case AF_INET6:
+      s = IPv6AddrToString(*reinterpret_cast<const struct in6_addr*>(inet), &inet_str);
+      break;
+  }
+
+  if (s.ok()) {
+    return inet_str;
   }
 
   // Shouldn't ever get here.
