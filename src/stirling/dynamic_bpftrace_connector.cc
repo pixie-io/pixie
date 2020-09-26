@@ -1,12 +1,14 @@
 #ifdef __linux__
 
 #include "src/stirling/dynamic_bpftrace_connector.h"
-#include "src/shared/types/proto/types.pb.h"
 
 #include <utility>
 #include <vector>
 
 #include <absl/memory/memory.h>
+#include <absl/strings/ascii.h>
+
+#include "src/shared/types/proto/types.pb.h"
 
 namespace pl {
 namespace stirling {
@@ -88,6 +90,36 @@ StatusOr<std::vector<ColumnSpec>> ConvertFields(const std::vector<bpftrace::Fiel
   return columns;
 }
 
+// Returns column names from the printf_fmt_str.
+// The printf_fmt_str should be formatted as below:
+// <column1_name>:%d <column2_name>:%s ...
+//
+// NOTE:
+// * Column names must not have whitespaces.
+// * Use ':' to separate column name and format specifier.
+std::vector<std::string_view> GetColumnNamesFromFmtStr(std::string_view printf_fmt_str) {
+  std::vector<std::string_view> res;
+
+  std::vector<std::string_view> name_and_fmts =
+      absl::StrSplit(printf_fmt_str, ' ', absl::SkipEmpty());
+  for (auto name_and_fmt : name_and_fmts) {
+    if (!absl::StrContains(name_and_fmt, "%")) {
+      // Ignore non-formatting strings.
+      continue;
+    }
+
+    std::vector<std::string_view> name_fmt_pair = absl::StrSplit(name_and_fmt, ':');
+
+    std::string_view column_name;
+
+    if (name_fmt_pair.size() >= 2) {
+      column_name = absl::StripLeadingAsciiWhitespace(name_fmt_pair[0]);
+    }
+    res.push_back(column_name);
+  }
+  return res;
+}
+
 }  // namespace
 
 std::unique_ptr<SourceConnector> DynamicBPFTraceConnector::Create(
@@ -101,13 +133,35 @@ std::unique_ptr<SourceConnector> DynamicBPFTraceConnector::Create(
   BPFTraceWrapper bpftrace;
   Status s = bpftrace.Compile(tracepoint.bpftrace().program(), {});
   std::vector<bpftrace::Field> fields = bpftrace.OutputFields().ValueOr({});
-  StatusOr<std::vector<ColumnSpec>> columns = ConvertFields(fields);
-  LOG_IF(ERROR, !columns.ok()) << columns.ToString();
+  auto columns_or = ConvertFields(fields);
+  LOG_IF(ERROR, !columns_or.ok()) << columns_or.ToString();
   // Note that we ignore all compilation errors; the second compilation during Init() will report
   // them.
 
+  if (columns_or.ok()) {
+    std::vector<std::string_view> column_names =
+        GetColumnNamesFromFmtStr(bpftrace.OutputFmtStr().ValueOr({}));
+
+    auto& columns = columns_or.ValueOrDie();
+
+    if (column_names.size() != columns.size()) {
+      LOG(ERROR) << absl::Substitute(
+          "Column name count ($0) and actual output count ($1) "
+          "do not match!",
+          column_names.size(), columns.size());
+    } else {
+      for (size_t i = 0; i < columns.size(); ++i) {
+        if (column_names[i].empty()) {
+          continue;
+        }
+        columns[i].name = column_names[i];
+        columns[i].desc = column_names[i];
+      }
+    }
+  }
+
   std::unique_ptr<DynamicDataTableSchema> table_schema =
-      DynamicDataTableSchema::Create(tracepoint.table_name(), columns.ValueOr({}));
+      DynamicDataTableSchema::Create(tracepoint.table_name(), columns_or.ValueOr({}));
 
   return std::unique_ptr<SourceConnector>(new DynamicBPFTraceConnector(
       source_name, std::move(table_schema), tracepoint.bpftrace().program()));

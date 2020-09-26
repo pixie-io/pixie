@@ -157,6 +157,16 @@ StatusOr<std::vector<bpftrace::Field>> BPFTraceWrapper::OutputFields() {
   return std::get<1>(bpftrace_.printf_args_.front());
 }
 
+StatusOr<std::string_view> BPFTraceWrapper::OutputFmtStr() {
+  if (bpftrace_.printf_args_.size() != 1) {
+    return error::Internal(
+        "The BPFTrace program must contain exactly one printf statement, but found $0.",
+        bpftrace_.printf_args_.size());
+  }
+
+  return std::string_view(std::get<0>(bpftrace_.printf_args_.front()));
+}
+
 bpftrace::BPFTraceMap BPFTraceWrapper::GetBPFMap(const std::string& name) {
   return bpftrace_.get_map(name);
 }
