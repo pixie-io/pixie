@@ -50,6 +50,7 @@ interface InputProps {
   prefix?: React.ReactNode;
   className?: string;
   value: string;
+  customRef?: React.MutableRefObject<HTMLInputElement>;
 }
 
 const Input: React.FC<InputProps> = ({
@@ -60,10 +61,12 @@ const Input: React.FC<InputProps> = ({
   placeholder = '',
   prefix = null,
   value,
+  customRef,
 }) => {
   const classes = useStyles();
   const [focused, setFocused] = React.useState<boolean>(true);
-  const inputRef = React.useRef<HTMLInputElement>(null);
+  const defaultRef = React.useRef<HTMLInputElement>(null);
+  const inputRef = customRef || defaultRef;
 
   const handleChange = React.useCallback((e) => {
     const val = e.target.value;

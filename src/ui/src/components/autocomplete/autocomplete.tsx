@@ -36,6 +36,8 @@ interface AutoCompleteProps {
   className?: string;
   /** @default true */
   allowTyping?: boolean;
+  requireCompletion?: boolean;
+  inputRef?: React.MutableRefObject<HTMLInputElement>;
 }
 
 type ItemsMap = Map<CompletionId, { title: CompletionTitle; index: number }>;
@@ -64,6 +66,8 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
   prefix,
   className,
   allowTyping = true,
+  requireCompletion = true,
+  inputRef,
 }) => {
   const classes = useStyles();
   const [inputValue, setInputValue] = React.useState('');
@@ -95,11 +99,15 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
 
   const handleSelection = React.useCallback((id) => {
     const item = itemsMap.get(id);
-    if (!item) {
+    if (!item && requireCompletion) {
       return;
     }
-    onSelection(id);
-    setInputValue(item.title);
+    if (item) {
+      onSelection(id);
+      setInputValue(item.title);
+    } else {
+      onSelection(inputValue);
+    }
   }, [itemsMap, onSelection]);
 
   const handleKey = (key: Key) => {
@@ -129,6 +137,7 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
         placeholder={placeholder}
         prefix={prefix}
         suggestion={itemsMap.get(activeItem)?.title || ''}
+        customRef={inputRef}
       />
       )}
       <Completions

@@ -113,6 +113,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     onSelect: (input) => {
       setCluster(clusterNameToID[input]);
     },
+    requireCompletion: false,
   });
 
   // Add args to breadcrumbs.
@@ -133,6 +134,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
         });
       },
       getListItems: null,
+      requireCompletion: false,
     };
     const entityType = pxTypetoEntityType(argTypes[argName]);
     if (entityType !== 'AEK_UNKNOWN') {

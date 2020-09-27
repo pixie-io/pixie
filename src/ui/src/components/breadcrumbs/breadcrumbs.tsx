@@ -129,14 +129,15 @@ interface DialogDropdownProps extends WithStyles<typeof styles> {
   onClose: () => void;
   allowTyping: boolean;
   anchorEl: HTMLElement;
+  requireCompletion: boolean;
 }
 
 const DialogDropdown = ({
-  classes, onSelect, onClose, getListItems, allowTyping, anchorEl,
+  classes, onSelect, onClose, getListItems, allowTyping, anchorEl, requireCompletion,
 }: DialogDropdownProps) => {
   const [listItems, setListItems] = React.useState<BreadcrumbListItem[]>([]);
   const [completionItems, setCompletionItems] = React.useState<CompletionItem[]>([]);
-  const inputRef = React.useRef(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
   if (anchorEl && inputRef.current) {
     setTimeout(() => {
@@ -155,13 +156,9 @@ const DialogDropdown = ({
   }, [getListItems]);
 
   const onCompletionSelected = React.useCallback((itemValue: string) => {
-    if (typeof getListItems !== 'function') throw new Error(`List items not gettable when selecting "${itemValue}"!`);
-    getListItems(itemValue).then((items) => {
-      if (items.length !== 1) throw new Error(`Found ${items.length} matches to select but expected exactly 1.`);
-      onSelect(itemValue);
-      onClose();
-    });
-  }, [getListItems, onClose, onSelect]);
+    onSelect(itemValue);
+    onClose();
+  }, [onClose, onSelect]);
 
   React.useEffect(() => {
     const mapped: CompletionItem[] = listItems.map((item) => ({
@@ -212,6 +209,8 @@ const DialogDropdown = ({
             onSelection={onCompletionSelected}
             getCompletions={getCompletions}
             allowTyping={allowTyping}
+            requireCompletion={requireCompletion}
+            inputRef={inputRef}
           />
         </Card>
       </ThemeProvider>
@@ -224,13 +223,14 @@ interface BreadcrumbProps extends WithStyles<typeof styles> {
   value: string;
   selectable: boolean;
   allowTyping?: boolean;
+  requireCompletion?: boolean;
   getListItems?: (input: string) => Promise<Array<BreadcrumbListItem>>;
   onSelect?: (input: string) => void;
   omitKey?: boolean;
 }
 
 const Breadcrumb = ({
-  classes, title, value, selectable, allowTyping, getListItems, onSelect, omitKey,
+  classes, title, value, selectable, allowTyping, getListItems, onSelect, omitKey, requireCompletion,
 }: BreadcrumbProps) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
@@ -256,6 +256,7 @@ const Breadcrumb = ({
             onClose={onClose}
             getListItems={getListItems}
             allowTyping={allowTyping}
+            requireCompletion={requireCompletion}
             anchorEl={anchorEl}
           />
         </div>
@@ -277,6 +278,7 @@ export interface BreadcrumbOptions {
   allowTyping?: boolean;
   getListItems?: (input: string) => Promise<Array<BreadcrumbListItem>>;
   onSelect?: (input: string) => void;
+  requireCompletion?: boolean;
 }
 
 interface BreadcrumbsProps extends WithStyles<typeof styles> {
@@ -294,7 +296,7 @@ const Breadcrumbs = ({
         // Fragment shorthand syntax does not support key, which is needed to prevent
         // the console error where a key is not present in a list element.
         // eslint-disable-next-line react/jsx-fragments
-        <React.Fragment key={i}>
+        <React.Fragment key={`i-${breadcrumb.title}`}>
           <Breadcrumb
             key={i}
             classes={classes}
