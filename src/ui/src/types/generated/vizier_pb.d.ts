@@ -787,6 +787,9 @@ export enum SemanticType {
   ST_QUANTILES = 1000,
   ST_IP_ADDRESS = 1100,
   ST_PORT = 1200,
+  ST_HTTP_REQ_METHOD = 1300,
+  ST_HTTP_RESP_STATUS = 1400,
+  ST_HTTP_RESP_MESSAGE = 1500,
 }
 export enum LifeCycleState { 
   UNKNOWN_STATE = 0,
