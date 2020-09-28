@@ -39,7 +39,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     },
   },
   gridItem: {
-    padding: theme.spacing(1),
+    padding: theme.spacing(0.8),
     backgroundColor: theme.palette.background.six,
     boxShadow: '2px 2px 2px rgba(0, 0, 0, 0.31)',
     borderRadius: '5px',
@@ -68,6 +68,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     padding: theme.spacing(0.5),
     color: theme.palette.foreground.two,
     textTransform: 'capitalize',
+    marginBottom: theme.spacing(1.8),
   },
   chart: {
     flex: 1,

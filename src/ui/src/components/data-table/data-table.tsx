@@ -75,7 +75,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   compact: {
     paddingLeft: theme.spacing(1.5),
     paddingRight: 0,
-    height: theme.spacing(4),
+    height: theme.spacing(5),
   },
   clickable: {
     cursor: 'pointer',
@@ -267,7 +267,7 @@ const InternalDataTable = ({
     </div>
   ), [classes.cellText]);
 
-  const defaultCellHeight = compact ? theme.spacing(4) : theme.spacing(6);
+  const defaultCellHeight = compact ? theme.spacing(5) : theme.spacing(6);
   const computeRowHeight = React.useCallback(({ index }) => (expandedRowState[index]
     ? EXPANDED_ROW_HEIGHT
     : defaultCellHeight), [defaultCellHeight, expandedRowState]);
