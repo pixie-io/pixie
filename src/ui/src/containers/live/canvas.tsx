@@ -43,6 +43,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     backgroundColor: theme.palette.background.six,
     boxShadow: '2px 2px 2px rgba(0, 0, 0, 0.31)',
     borderRadius: '5px',
+    border: theme.palette.border.unFocused,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'stretch',

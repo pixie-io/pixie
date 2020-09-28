@@ -78,6 +78,7 @@ const styles = (
     backgroundColor: palette.sideBar.color,
     boxShadow: `${spacing(0.25)}px 0px ${spacing(1)}px `
       + `${fade(palette.sideBar.colorShadow, palette.sideBar.colorShadowOpacity)}`,
+    borderRight: palette.border.unFocused,
     paddingBottom: spacing(2),
     [breakpoints.down('sm')]: {
       display: 'none',

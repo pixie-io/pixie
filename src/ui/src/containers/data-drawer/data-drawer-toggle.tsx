@@ -26,6 +26,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.palette.sideBar.color,
+    borderTop: theme.palette.border.unFocused,
     cursor: 'pointer',
     paddingTop: theme.spacing(1),
     paddingBottom: theme.spacing(1),

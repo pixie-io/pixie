@@ -52,6 +52,7 @@ const styles = (({ shape, palette, spacing }: Theme) => createStyles({
     height: spacing(4.5),
     paddingTop: spacing(1),
     paddingBottom: spacing(1),
+    marginTop: spacing(1),
     marginRight: spacing(4.5),
     marginLeft: spacing(3),
     marginBottom: spacing(1),
@@ -62,6 +63,7 @@ const styles = (({ shape, palette, spacing }: Theme) => createStyles({
     // discover.
     borderRadius: shape.borderRadius,
     boxShadow: '4px 4px 4px rgba(0, 0, 0, 0.25)',
+    border: palette.border.unFocused,
   },
   spacer: {
     flex: 1,

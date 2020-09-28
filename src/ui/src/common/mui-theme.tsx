@@ -33,6 +33,10 @@ declare module '@material-ui/core/styles/createPalette' {
       heatmap?: string[];
       primary?: string;
     };
+    border: {
+      focused?: string;
+      unFocused?: string;
+    };
   }
 
   interface PaletteOptions {
@@ -58,6 +62,10 @@ declare module '@material-ui/core/styles/createPalette' {
       diverging?: string[];
       heatmap?: string[];
       primary?: string;
+    };
+    border: {
+      focused?: string;
+      unFocused?: string;
     };
   }
 }
@@ -126,6 +134,10 @@ export const DARK_THEME = createMuiTheme({
   },
   palette: {
     type: 'dark',
+    border: {
+      focused: '1px solid rgba(255, 255, 255, 0.2)',
+      unFocused: '1px solid rgba(255, 255, 255, 0.1)',
+    },
     sideBar: {
       color: '#161616',
       colorShadow: '#000000',
