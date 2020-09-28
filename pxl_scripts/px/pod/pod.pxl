@@ -110,7 +110,7 @@ def resource_timeseries(start_time: str, pod: px.Pod):
     df.wchar_mb_per_s = (df.wchar_mb_max - df.wchar_mb_min) / window_size
 
     # Then aggregate process individual process metrics.
-    df = df.groupby(['timestamp']).agg(
+    df = df.groupby(['timestamp', 'container']).agg(
         cpu_ktime_ms=('cpu_ktime_ms', px.sum),
         cpu_utime_ms=('cpu_utime_ms', px.sum),
         read_mb_per_s=('read_mb_per_s', px.sum),
