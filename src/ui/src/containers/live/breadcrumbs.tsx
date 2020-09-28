@@ -6,6 +6,7 @@ import {
 import gql from 'graphql-tag';
 import { useQuery, useApolloClient } from '@apollo/react-hooks';
 
+import PixieCommandIcon from 'components/icons/pixie-command';
 import Breadcrumbs, { BreadcrumbOptions } from 'components/breadcrumbs/breadcrumbs';
 import ClusterContext from 'common/cluster-context';
 import { CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
@@ -18,6 +19,9 @@ import { EntityType, pxTypetoEntityType, entityStatusGroup } from 'containers/ne
 import { StatusCell } from 'components/status/status';
 import { clusterStatusGroup } from 'containers/admin/utils';
 import { ContainsMutation } from 'utils/pxl';
+import IconButton from '@material-ui/core/IconButton';
+import Tooltip from '@material-ui/core/Tooltip';
+import ExecuteScriptButton from './execute-button';
 
 const LIST_CLUSTERS = gql`
 {
@@ -41,32 +45,46 @@ query getCompletions($input: String, $kind: AutocompleteEntityKind, $clusterUID:
 }
 `;
 
-const styles = (({ palette, spacing }: Theme) => createStyles({
+const styles = (({ shape, palette, spacing }: Theme) => createStyles({
   root: {
     display: 'flex',
+    alignItems: 'center',
+    height: spacing(4.5),
     paddingTop: spacing(1),
     paddingBottom: spacing(1),
     marginRight: spacing(4.5),
     marginLeft: spacing(3),
     marginBottom: spacing(1),
-    borderBottom: `1px solid ${palette.foreground.grey2}`,
-
+    background: palette.background.three,
     // This adds a scroll to the breadcrumbs on overflow,
     // but it's hard for the user to know it exists. Perhaps we can
     // consider adding a scroll effect or something to make it easier to
     // discover.
-    overflow: 'scroll',
-    scrollbarWidth: 'none', // Firefox
-    '&::-webkit-scrollbar': {
-      display: 'none',
-    },
+    borderRadius: shape.borderRadius,
+    boxShadow: '4px 4px 4px rgba(0, 0, 0, 0.25)',
   },
   spacer: {
     flex: 1,
   },
+  verticalLine: {
+    borderLeft: `2px solid ${palette.foreground.grey1}`,
+    height: spacing(2.7),
+    padding: 0,
+  },
+  pixieIcon: {
+    color: palette.primary.main,
+    marginRight: spacing(1),
+    marginLeft: spacing(0.5),
+  },
+  breadcrumbs: {
+    width: '100%',
+    overflow: 'hidden',
+    display: 'flex',
+    height: spacing(3),
+  },
 }));
 
-const LiveViewBreadcrumbs = ({ classes }) => {
+const LiveViewBreadcrumbs = ({ classes, commandOpen, toggleCommandOpen }) => {
   const { loading, data } = useQuery(LIST_CLUSTERS);
   const { selectedCluster, setCluster, selectedClusterUID } = React.useContext(ClusterContext);
   const { scripts } = React.useContext(ScriptsContext);
@@ -195,13 +213,24 @@ const LiveViewBreadcrumbs = ({ classes }) => {
 
   return (
     <div className={classes.root}>
-      <Breadcrumbs
-        breadcrumbs={entityBreadcrumbs}
-      />
-      <div className={classes.spacer} />
-      <Breadcrumbs
-        breadcrumbs={argBreadcrumbs}
-      />
+      <Tooltip title='Pixie Command'>
+        <IconButton disabled={commandOpen} onClick={toggleCommandOpen}>
+          <PixieCommandIcon fontSize='large' className={classes.pixieIcon} />
+        </IconButton>
+      </Tooltip>
+      <div className={classes.verticalLine} />
+      <div className={classes.breadcrumbs}>
+        <Breadcrumbs
+          breadcrumbs={entityBreadcrumbs}
+        />
+        <div className={classes.spacer} />
+        <div>
+          <Breadcrumbs
+            breadcrumbs={argBreadcrumbs}
+          />
+        </div>
+      </div>
+      <ExecuteScriptButton />
     </div>
   );
 };

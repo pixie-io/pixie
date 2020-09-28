@@ -2,6 +2,7 @@ import DocsIcon from 'components/icons/docs';
 import LogoutIcon from 'components/icons/logout';
 import SettingsIcon from 'components/icons/settings';
 import KeyboardIcon from '@material-ui/icons/Keyboard';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { DOMAIN_NAME } from 'containers/constants';
 import gql from 'graphql-tag';
 import * as React from 'react';
@@ -18,6 +19,7 @@ import {
   createStyles, makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
 import { useContext } from 'react';
+import { Avatar, ProfileMenuWrapper } from 'components/profile/profile';
 import { LiveShortcutsContext } from '../live/shortcuts';
 
 export const GET_USER_INFO = gql`
@@ -51,25 +53,10 @@ const useStyles = makeStyles((theme: Theme) => ({
   centeredListItemText: {
     textAlign: 'center',
   },
-  centeredMenuItem: {
+  expandedProfile: {
     flexDirection: 'column',
   },
 }));
-
-interface AvatarProps {
-  name: string;
-  picture?: string;
-  className?: string;
-}
-
-const Avatar = (props: AvatarProps) => {
-  // When the picture is an empty string, the fallback letter-style avatar of alt isn't used.
-  // That only happens when the picture field is an invalid link.
-  if (!props.picture && props.name.length > 0) {
-    return <BaseAvatar className={props.className}>{props.name[0]}</BaseAvatar>;
-  }
-  return <BaseAvatar src={props.picture} alt={props.name} className={props.className} />;
-};
 
 const StyledListItemText = withStyles((theme: Theme) => createStyles({
   primary: {
@@ -111,22 +98,17 @@ const ProfileMenu = (props: { className?: string }) => {
       <IconButton onClick={openMenu} className={props.className || ''}>
         <Avatar name={user.name} picture={user.picture} className={classes.avatarSm} />
       </IconButton>
-      <Menu
+
+      <ProfileMenuWrapper
+        classes={classes}
         open={open}
-        onClose={closeMenu}
-        anchorEl={anchorEl}
-        getContentAnchorEl={null}
+        onCloseMenu={closeMenu}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorEl={anchorEl}
+        name={user.name}
+        email={user.email}
+        picture={user.picture}
       >
-        <MenuItem key='profile' alignItems='center' button={false} className={classes.centeredMenuItem}>
-          <Avatar name={user.name} picture={user.picture} className={classes.avatarLg} />
-          <ListItemText
-            primary={user.name}
-            secondary={user.email}
-            classes={{ primary: classes.listItemHeader, secondary: classes.listItemText }}
-            className={classes.centeredListItemText}
-          />
-        </MenuItem>
         <MenuItem key='admin' button component={Link} to='/admin'>
           <StyledListItemIcon>
             <SettingsIcon />
@@ -151,7 +133,7 @@ const ProfileMenu = (props: { className?: string }) => {
           </StyledListItemIcon>
           <StyledListItemText primary='Logout' />
         </MenuItem>
-      </Menu>
+      </ProfileMenuWrapper>
     </>
   );
 };

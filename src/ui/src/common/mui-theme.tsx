@@ -7,6 +7,7 @@ declare module '@material-ui/core/styles/createPalette' {
     three?: string;
     four?: string;
     five?: string;
+    six?: string;
   }
 
   interface Palette {
@@ -21,9 +22,10 @@ declare module '@material-ui/core/styles/createPalette' {
       grey5?: string;
       white: string;
     };
-    topBar: {
-      colorTop?: string;
-      colorBottom?: string;
+    sideBar: {
+      color?: string;
+      colorShadow?: string;
+      colorShadowOpacity?: number;
     };
     graph: {
       category?: string[];
@@ -46,9 +48,10 @@ declare module '@material-ui/core/styles/createPalette' {
       grey5?: string;
       white?: string;
     };
-    topBar: {
-      colorTop?: string;
-      colorBottom?: string;
+    sideBar: {
+      color?: string;
+      colorShadow?: string;
+      colorShadowOpacity?: number;
     };
     graph: {
       category?: string[];
@@ -102,11 +105,31 @@ export const DARK_THEME = createMuiTheme({
       small: '0px 5px 5px 0px',
     },
   },
+  typography: {
+    h3: {
+      fontSize: '18px',
+      fontWeight: 500,
+      marginBottom: '16px',
+      marginTop: '12px',
+    },
+    h2: {
+      fontSize: '24px',
+      fontWeight: 500,
+    },
+    h4: {
+      fontSize: '14px',
+      fontWeight: 500,
+    },
+    caption: {
+      fontSize: '14px',
+    },
+  },
   palette: {
     type: 'dark',
-    topBar: {
-      colorTop: '#212324',
-      colorBottom: '#212324',
+    sideBar: {
+      color: '#161616',
+      colorShadow: '#000000',
+      colorShadowOpacity: 0.5,
     },
     common: {
       black: '#000000',
@@ -161,10 +184,11 @@ export const DARK_THEME = createMuiTheme({
       three: '#353535',
       four: '#161616',
       five: '#090909',
+      six: '#242424',
     },
     divider: '#272822',
     text: {
-      primary: '#a6a8ae', // foreground 1
+      primary: '#e2e5ee', // foreground 1
       secondary: '#ffffff', // foreground 2
       disabled: '#',
     },

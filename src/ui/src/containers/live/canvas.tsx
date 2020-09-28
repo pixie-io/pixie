@@ -40,9 +40,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   gridItem: {
     padding: theme.spacing(1),
-    backgroundColor: theme.palette.background.default,
-    border: `solid 0.5px ${fade(theme.palette.primary.main, 0.10)}`,
-    boxShadow: `0px 0px ${theme.spacing(0.5)}px ${theme.palette.background.five}`,
+    backgroundColor: theme.palette.background.six,
+    boxShadow: '2px 2px 2px rgba(0, 0, 0, 0.31)',
+    borderRadius: '5px',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'stretch',
@@ -64,10 +64,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     },
   },
   widgetTitle: {
-    ...theme.typography.subtitle1,
+    ...theme.typography.h3,
     padding: theme.spacing(0.5),
     color: theme.palette.foreground.two,
-    textAlign: 'center',
     textTransform: 'capitalize',
   },
   chart: {
@@ -152,22 +151,28 @@ const WidgetDisplay = ({
 
   if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
     return (
-      <GraphWidget
-        display={display as GraphDisplay}
-        data={parsedTable}
-        relation={table.relation}
-        propagatedArgs={propagatedArgs}
-      />
+      <>
+        <div className={classes.widgetTitle}>{widgetName}</div>
+        <GraphWidget
+          display={display as GraphDisplay}
+          data={parsedTable}
+          relation={table.relation}
+          propagatedArgs={propagatedArgs}
+        />
+      </>
     );
   }
 
   if (display[DISPLAY_TYPE_KEY] === REQUEST_GRAPH_DISPLAY_TYPE) {
     return (
-      <RequestGraphWidget
-        display={display as RequestGraphDisplay}
-        data={parsedTable}
-        propagatedArgs={propagatedArgs}
-      />
+      <>
+        <div className={classes.widgetTitle}>{widgetName}</div>
+        <RequestGraphWidget
+          display={display as RequestGraphDisplay}
+          data={parsedTable}
+          propagatedArgs={propagatedArgs}
+        />
+      </>
     );
   }
 

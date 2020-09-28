@@ -10,7 +10,6 @@ import {
   createStyles, makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
-import MoreVertIcon from '@material-ui/icons/MoreVert';
 import EditIcon from 'components/icons/edit';
 
 import Canvas from 'containers/live/canvas';
@@ -21,17 +20,12 @@ import { LayoutContext } from 'context/layout-context';
 import { ScriptContext } from 'context/script-context';
 import { DataDrawerSplitPanel } from 'containers/data-drawer/data-drawer';
 import { EditorSplitPanel } from 'containers/editor/editor';
-import ExecuteScriptButton from 'containers/live/execute-button';
 import { ScriptLoader } from 'containers/live/script-loader';
 import LiveViewShortcutsProvider from 'containers/live/shortcuts';
 import LiveViewTitle from 'containers/live/title';
 import LiveViewBreadcrumbs from 'containers/live/breadcrumbs';
 import NavBars from 'containers/App/nav-bars';
-import ProfileMenu from 'containers/profile-menu/profile-menu';
-import Menu from '@material-ui/core/Menu';
-import MenuItem from '@material-ui/core/MenuItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
-import ListItemText from '@material-ui/core/ListItemText';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -46,6 +40,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   content: {
     marginLeft: theme.spacing(6),
+    marginTop: theme.spacing(2),
     display: 'flex',
     flex: 1,
     minWidth: 0,
@@ -57,9 +52,10 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     },
   },
   title: {
-    marginLeft: theme.spacing(2),
-    flexGrow: 1,
-    color: theme.palette.foreground.grey5,
+    ...theme.typography.h3,
+    marginLeft: theme.spacing(3),
+    marginBottom: theme.spacing(0),
+    color: theme.palette.primary.main,
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -85,35 +81,58 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     height: '100%',
     width: '100%',
   },
-  opener: {
-    position: 'absolute',
-    top: theme.spacing(10) + 2, // Topbar height + border
-    height: theme.spacing(6),
-    width: theme.spacing(3),
-    display: 'flex',
-    alignItems: 'center',
-    background: theme.palette.background.three,
-    cursor: 'pointer',
-    borderTopRightRadius: 0,
-    borderBottomRightRadius: 0,
-    right: 0,
-  },
   hidden: {
     display: 'none',
   },
-  kabobIcon: {
-    color: theme.palette.foreground.three,
-  },
-  pixieIcon: {
+  iconActive: {
+    width: theme.spacing(2),
     color: theme.palette.primary.main,
+  },
+  iconInactive: {
+    width: theme.spacing(2),
+    color: theme.palette.foreground.grey1,
+  },
+  iconButton: {
+    marginRight: theme.spacing(1),
+    padding: theme.spacing(0.5),
+  },
+  iconPanel: {
+    marginTop: 0,
+    marginLeft: theme.spacing(3),
+    [theme.breakpoints.down('sm')]: {
+      display: 'none',
+    },
   },
 }));
 
-const StyledListItemIcon = withStyles(({ spacing }: Theme) => createStyles({
-  root: {
-    minWidth: spacing(4),
-  },
-}))(ListItemIcon);
+const ScriptOptions = ({
+  classes, widgetsMoveable, setWidgetsMoveable,
+}) => {
+  const {
+    editorPanelOpen, setEditorPanelOpen, isMobile,
+  } = React.useContext(LayoutContext);
+  return (
+    <>
+      {
+        !isMobile
+        && (
+          <div className={classes.iconPanel}>
+            <Tooltip title={`${editorPanelOpen ? 'Close' : 'Open'} editor`} className={classes.iconButton}>
+              <IconButton className={classes.iconButton} onClick={() => setEditorPanelOpen(!editorPanelOpen)}>
+                <EditIcon className={editorPanelOpen ? classes.iconActive : classes.iconInactive} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={`${widgetsMoveable ? 'Disable' : 'Enable'} move widgets`} className={classes.iconButton}>
+              <IconButton onClick={() => setWidgetsMoveable(!widgetsMoveable)}>
+                <MoveIcon className={widgetsMoveable ? classes.iconActive : classes.iconInactive} />
+              </IconButton>
+            </Tooltip>
+          </div>
+        )
+      }
+    </>
+  );
+};
 
 const LiveView = () => {
   const classes = useStyles();
@@ -124,26 +143,13 @@ const LiveView = () => {
   } = React.useContext(ScriptContext);
   const { loading } = React.useContext(VizierGRPCClientContext);
   const {
-    setDataDrawerOpen, editorPanelOpen, setEditorPanelOpen, isMobile,
+    setDataDrawerOpen, setEditorPanelOpen, isMobile,
   } = React.useContext(LayoutContext);
 
   const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
 
   const [commandOpen, setCommandOpen] = React.useState<boolean>(false);
   const toggleCommandOpen = React.useCallback(() => setCommandOpen((opened) => !opened), []);
-
-  const [moreMenuOpen, setMoreMenuOpen] = React.useState<boolean>(false);
-  const [anchorEl, setAnchorEl] = React.useState(null);
-
-  const openMenu = React.useCallback((event) => {
-    setMoreMenuOpen(true);
-    setAnchorEl(event.currentTarget);
-  }, []);
-
-  const closeMenu = React.useCallback(() => {
-    setMoreMenuOpen(false);
-    setAnchorEl(null);
-  }, []);
 
   const hotkeyHandlers = {
     'pixie-command': toggleCommandOpen,
@@ -172,69 +178,56 @@ const LiveView = () => {
     }
   }, [isMobile]);
 
+  React.useEffect(() => {
+    const handleEsc = (event) => {
+      if (event.keyCode === 27) {
+        setWidgetsMoveable(false);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+    };
+  }, [setWidgetsMoveable]);
+
   const canvasRef = React.useRef<HTMLDivElement>(null);
 
   return (
     <div className={classes.root}>
       <LiveViewShortcutsProvider handlers={hotkeyHandlers}>
-        <NavBars>
-          <LiveViewTitle className={classes.title} />
-          <Tooltip title='Pixie Command'>
-            <IconButton disabled={commandOpen} onClick={toggleCommandOpen}>
-              <PixieCommandIcon fontSize='large' className={classes.pixieIcon} />
-            </IconButton>
-          </Tooltip>
-          <ExecuteScriptButton />
-          <Tooltip title='More' onClick={openMenu}>
-            <IconButton>
-              <MoreVertIcon className={classes.kabobIcon} />
-            </IconButton>
-          </Tooltip>
-          <Menu
-            open={moreMenuOpen}
-            onClose={closeMenu}
-            anchorEl={anchorEl}
-            getContentAnchorEl={null}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-          >
-            <MenuItem key='edit' dense button onClick={() => setEditorPanelOpen(!editorPanelOpen)}>
-              <StyledListItemIcon>
-                <EditIcon />
-              </StyledListItemIcon>
-              <ListItemText primary={editorPanelOpen ? 'Close Editor' : 'Open Editor'} />
-            </MenuItem>
-            <MenuItem key='move-widget' dense button onClick={() => setWidgetsMoveable(!widgetsMoveable)}>
-              <StyledListItemIcon>
-                <MoveIcon />
-              </StyledListItemIcon>
-              <ListItemText primary={widgetsMoveable ? 'Disable Edit View' : 'Enable Edit View'} />
-            </MenuItem>
-          </Menu>
-          <ProfileMenu />
-        </NavBars>
+        <NavBars />
         <div className={classes.content}>
-          <LiveViewBreadcrumbs />
-          {
-            loading ? (
-              <div className='center-content'>
-                <ClusterInstructions message='Connecting to cluster...' />
-              </div>
-            ) : (
-              <>
-                <ScriptLoader />
-                <DataDrawerSplitPanel className={classes.mainPanel}>
-                  <EditorSplitPanel className={classes.editorPanel}>
-                    <div className={classes.canvas} ref={canvasRef}>
-                      <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
-                    </div>
-                  </EditorSplitPanel>
-                </DataDrawerSplitPanel>
-                { newAutoComplete
-                  ? <NewCommandInput open={commandOpen} onClose={toggleCommandOpen} />
-                  : <CommandInput open={commandOpen} onClose={toggleCommandOpen} /> }
-              </>
-            )
-          }
+          <LiveViewBreadcrumbs toggleCommandOpen={toggleCommandOpen} commandOpen={commandOpen} />
+          <EditorSplitPanel className={classes.editorPanel}>
+            <>
+              <LiveViewTitle className={classes.title} />
+              <ScriptOptions
+                classes={classes}
+                widgetsMoveable={widgetsMoveable}
+                setWidgetsMoveable={setWidgetsMoveable}
+              />
+              {
+                loading ? (
+                  <div className='center-content'>
+                    <ClusterInstructions message='Connecting to cluster...' />
+                  </div>
+                ) : (
+                  <>
+                    <ScriptLoader />
+                    <DataDrawerSplitPanel className={classes.mainPanel}>
+                      <div className={classes.canvas} ref={canvasRef}>
+                        <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
+                      </div>
+                    </DataDrawerSplitPanel>
+                    { newAutoComplete
+                      ? <NewCommandInput open={commandOpen} onClose={toggleCommandOpen} />
+                      : <CommandInput open={commandOpen} onClose={toggleCommandOpen} /> }
+                  </>
+                )
+              }
+            </>
+          </EditorSplitPanel>
         </div>
       </LiveViewShortcutsProvider>
     </div>

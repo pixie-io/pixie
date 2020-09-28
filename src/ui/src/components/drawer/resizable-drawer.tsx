@@ -112,8 +112,13 @@ const ResizableDrawer = ({
     </DraggableCore>
   );
 
+  let dragFlex = {};
+  if (drawerDirection === 'left' || drawerDirection === 'right') {
+    dragFlex = { display: 'flex', flexDirection: 'column' };
+  }
+
   const draggableContent = (
-    <div className={classes.draggableContent}>
+    <div className={classes.draggableContent} style={dragFlex}>
       {
         (drawerDirection === 'top' || drawerDirection === 'left') && open
         && dragHandle

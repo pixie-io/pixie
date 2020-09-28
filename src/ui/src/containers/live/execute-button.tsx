@@ -10,13 +10,21 @@ import {
   Button, createStyles, Theme, withStyles, WithStyles,
 } from '@material-ui/core';
 
-const styles = ({ breakpoints }: Theme) => createStyles({
+const styles = ({ breakpoints, typography }: Theme) => createStyles({
   buttonText: {
+    fontWeight: typography.fontWeightBold,
     [breakpoints.down('md')]: {
       display: 'none',
     },
   },
 });
+
+const StyledButton = withStyles((theme: Theme) => createStyles({
+  root: {
+    height: theme.spacing(4.25),
+    borderRadius: `0 ${theme.shape.borderRadius}px ${theme.shape.borderRadius}px 0px`,
+  },
+}))(Button);
 
 type ExecuteScriptButtonProps = WithStyles<typeof styles>;
 
@@ -37,7 +45,7 @@ const ExecuteScriptButtonBare = ({ classes }: ExecuteScriptButtonProps) => {
   return (
     <Tooltip title={tooltipTitle}>
       <div>
-        <Button
+        <StyledButton
           variant='contained'
           color='primary'
           disabled={!healthy || loading}
@@ -46,7 +54,7 @@ const ExecuteScriptButtonBare = ({ classes }: ExecuteScriptButtonProps) => {
           startIcon={<PlayIcon />}
         >
           <span className={classes.buttonText}>Run</span>
-        </Button>
+        </StyledButton>
       </div>
     </Tooltip>
   );

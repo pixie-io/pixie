@@ -1613,20 +1613,10 @@ function addHoverMarks(spec: VgSpec, dataName: string, theme: Theme) {
 }
 
 function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
-  spec.background = theme.palette.background.default;
+  spec.background = theme.palette.background.six;
   spec.padding = theme.spacing(2);
   spec.config = {
     ...spec.config,
-    legend: {
-      // fillOpacity: 1,
-      labelColor: theme.palette.foreground.one,
-      labelFont: 'Roboto',
-      labelFontSize: 10,
-      padding: theme.spacing(1),
-      symbolSize: 100,
-      titleColor: theme.palette.foreground.one,
-      titleFontSize: 12,
-    },
     style: {
       bar: {
         // binSpacing: 2,
@@ -1670,16 +1660,16 @@ function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
       },
     },
     axis: {
-      labelColor: theme.palette.foreground.one,
+      labelColor: theme.palette.text.primary,
       labelFont: 'Roboto',
-      labelFontSize: 10,
+      labelFontSize: 14,
       labelPadding: theme.spacing(0.5),
       tickColor: theme.palette.foreground.grey4,
       tickSize: 10,
       tickWidth: 1,
-      titleColor: theme.palette.foreground.one,
+      titleColor: theme.palette.text.primary,
       titleFont: 'Roboto',
-      titleFontSize: 12,
+      titleFontSize: 15,
       // titleFontWeight: theme.typography.fontWeightRegular,
       titlePadding: theme.spacing(3),
     },

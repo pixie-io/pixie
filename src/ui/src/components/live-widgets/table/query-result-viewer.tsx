@@ -18,7 +18,7 @@ const styles = ({ spacing }: Theme) => createStyles({
     flexDirection: 'column',
     '@global': {
       '.ReactVirtualized__Table__row': {
-        fontSize: '0.8rem',
+        fontSize: '0.975rem',
       },
     },
   },
@@ -48,7 +48,7 @@ const QueryResultTableBare = (({ data, classes, propagatedArgs }: QueryResultTab
       multiline
     />
   );
-  const [count, setCount] = React.useState<number>(0);
+  const [indexRange, setIndexRange] = React.useState<IndexRange>({ startIndex: 0, stopIndex: 0 });
   const [totalCount, setTotalCount] = React.useState<number>(0);
 
   const dataLength = data && data.data ? data.data.length : 0;
@@ -61,12 +61,17 @@ const QueryResultTableBare = (({ data, classes, propagatedArgs }: QueryResultTab
   }, [data, dataLength, setTotalCount]);
 
   const getTableSummary = React.useCallback(() => {
-    let summary = `Showing ${count} of ${totalCount} records`;
+    const start = indexRange.startIndex;
+    const stop = indexRange.stopIndex;
+    const count = stop - start + 1;
+    let summary = `Showing ${start + 1} - ${stop + 1} / ${totalCount} records`;
     if (count <= 0) {
       summary = 'No records to show';
+    } else if (count >= totalCount) {
+      summary = '';
     }
     return <Typography variant='subtitle2'>{summary}</Typography>;
-  }, [count, totalCount]);
+  }, [indexRange, totalCount]);
 
   return (
     <div className={classes.root}>
@@ -78,7 +83,7 @@ const QueryResultTableBare = (({ data, classes, propagatedArgs }: QueryResultTab
           prettyRender
           clusterName={selectedClusterName}
           onRowsRendered={(info: IndexRange) => {
-            setCount(info.stopIndex - info.startIndex + 1);
+            setIndexRange(info);
           }}
           propagatedArgs={propagatedArgs}
         />

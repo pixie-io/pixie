@@ -10,7 +10,7 @@ import withAutoSizer, { WithAutoSizerProps } from 'utils/autosizer';
 import noop from 'utils/noop';
 
 import {
-  createStyles, makeStyles, Theme, useTheme,
+  createStyles, fade, makeStyles, Theme, useTheme,
 } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
@@ -28,13 +28,12 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     color: theme.palette.text.primary,
     '& > .ReactVirtualized__Table__headerRow': {
       ...theme.typography.caption,
-      border: `solid 1px ${theme.palette.foreground.grey3}`,
-      backgroundColor: theme.palette.background.default,
+      backgroundColor: theme.palette.foreground.grey2,
       display: 'flex',
     },
   },
   row: {
-    borderBottom: `solid 1px ${theme.palette.foreground.grey3}`,
+    borderBottom: `solid 2px ${theme.palette.background.three}`,
     '& > .ReactVirtualized__Table__rowColumn:first-of-type': {
       marginLeft: 0,
       marginRight: 0,
@@ -42,8 +41,14 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     '&:hover $hidden': {
       display: 'flex',
     },
+    '& > .ReactVirtualized__Table__rowColumn': {
+      borderRight: `solid 1px ${theme.palette.background.three}`,
+    },
+    '& > .ReactVirtualized__Table__rowColumn:last-child': {
+      borderRight: 'none',
+    },
     display: 'flex',
-    fontSize: '0.875rem',
+    fontSize: '15px',
   },
   rowContainer: {
     borderBottom: `solid 1px ${theme.palette.foreground.grey3}`,
@@ -80,7 +85,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   highlightable: {
     '&:hover': {
-      backgroundColor: theme.palette.foreground.grey3,
+      backgroundColor: `${fade(theme.palette.foreground.grey2, 0.42)}`,
     },
   },
   center: {
@@ -102,6 +107,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     paddingLeft: theme.spacing(1),
   },
   headerTitle: {
+    ...theme.typography.h4,
     display: 'flex',
     alignItems: 'center',
     flex: 'auto',
@@ -110,7 +116,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     border: 'none',
     color: 'inherit',
     cursor: 'pointer',
-
+    textTransform: 'uppercase',
   },
   gutterCell: {
     paddingLeft: '0px',
@@ -121,6 +127,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     minWidth: theme.spacing(2.5),
     display: 'flex',
     height: '100%',
+    borderRight: 'none !important',
   },
   dragHandle: {
     flex: '0 0 12px',

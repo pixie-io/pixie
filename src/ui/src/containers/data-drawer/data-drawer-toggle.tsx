@@ -1,3 +1,5 @@
+import DownIcon from '@material-ui/icons/KeyboardArrowDown';
+import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 import PixieLogo from 'components/icons/pixie-logo';
 import { ResultsContext } from 'context/results-context';
 import * as React from 'react';
@@ -23,51 +25,52 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.palette.background.default,
+    backgroundColor: theme.palette.sideBar.color,
     cursor: 'pointer',
-    boxShadow: `inset 0 ${theme.spacing(0.3)}px ${theme.spacing(1)}px ${fade(theme.palette.foreground.grey5, 0.1)}`,
     paddingTop: theme.spacing(1),
     paddingBottom: theme.spacing(1),
+    boxShadow: '0px -4px 4px #00000042',
+    zIndex: 100,
   },
-  icon: {
-    marginLeft: theme.spacing(2),
-    marginRight: theme.spacing(2),
+  toggleIcon: {
+    marginLeft: theme.spacing(1),
+    marginRight: theme.spacing(1),
   },
   pixieLogo: {
     width: '48px',
     marginLeft: theme.spacing(1),
     alignSelf: 'center',
     marginRight: theme.spacing(2),
-    fill: theme.palette.primary.main,
+    fill: theme.palette.foreground.three,
   },
   label: {
     paddingLeft: theme.spacing(2),
     paddingRight: theme.spacing(2),
   },
+  selectedTabLabel: {
+    color: `${theme.palette.primary.light} !important`,
+  },
   dataTabLabel: {
-    color: theme.palette.secondary.light,
-    minWidth: 0,
-    paddingLeft: `${theme.spacing(1)}px !important`,
-    paddingRight: `${theme.spacing(1)}px !important`,
-    '&:focus': {
-      color: `${theme.palette.secondary.main} !important`,
-    },
     '&:after': {
       content: '""',
-      background: theme.palette.foreground.grey2,
+      background: theme.palette.foreground.three,
       position: 'absolute',
       height: '75%',
       width: theme.spacing(0.2),
       right: 0,
     },
-    whiteSpace: 'nowrap',
+    color: theme.palette.foreground.three,
+    minWidth: 0,
+    paddingLeft: `${theme.spacing(1)}px !important`,
+    paddingRight: `${theme.spacing(1)}px !important`,
     textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   statsTabLabel: {
-    color: theme.palette.secondary.main,
     '&:focus': {
-      color: `${theme.palette.secondary.dark} !important`,
+      color: `${theme.palette.primary.light} !important`,
     },
+    color: theme.palette.foreground.three,
   },
   spacer: {
     flex: 1,
@@ -97,7 +100,12 @@ const StyledTab = withStyles((theme: Theme) => createStyles({
     '&:focus': {
       color: theme.palette.foreground.two,
     },
-    ...theme.typography.body2,
+    fontSize: '16px',
+    fontWeight: 500,
+    maxWidth: 300,
+  },
+  wrapper: {
+    alignItems: 'flex-start',
   },
 }))(Tab);
 
@@ -134,7 +142,9 @@ export const DataDrawerToggle = (props: DataDrawerToggleProps) => {
 
   return (
     <div className={classes.root} onClick={toggle}>
-      <span className={classes.label}>Underlying Data:</span>
+      {
+        opened ? <DownIcon className={classes.toggleIcon} /> : <UpIcon className={classes.toggleIcon} />
+      }
       <StyledTabs
         value={activeTab}
         onChange={onTabChange}
@@ -146,7 +156,7 @@ export const DataDrawerToggle = (props: DataDrawerToggleProps) => {
         {tabs.map((tab) => (
           <StyledTab
             key={tab.title}
-            className={classes.dataTabLabel}
+            className={`${classes.dataTabLabel} ${tab.title !== activeTab ? '' : classes.selectedTabLabel}`}
             value={tab.title}
             label={tab.title}
           />

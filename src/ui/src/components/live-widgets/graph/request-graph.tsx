@@ -47,14 +47,14 @@ const useStyles = makeStyles(() => createStyles({
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-end',
-    border: '1px solid #161616',
     '&.focus': {
       border: '1px solid #353738',
     },
   },
   container: {
     width: '100%',
-    height: '95%',
+    height: '90%',
+    minHeight: 0,
     '& > .vis-active': {
       boxShadow: 'none',
     },

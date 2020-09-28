@@ -11,17 +11,24 @@ import Autocomplete from '../autocomplete';
 
 const styles = ({ spacing, typography, palette }: Theme) => createStyles({
   breadcrumbs: {
-    display: 'inline-flex',
-    background: palette.background.four,
+    height: '100%',
+    overflowX: 'scroll',
+    scrollbarWidth: 'none', // Firefox
+    '&::-webkit-scrollbar': {
+      display: 'none',
+    },
+    display: 'flex',
   },
   breadcrumb: {
     display: 'inline-flex',
     paddingRight: spacing(0.5),
+    alignItems: 'center',
   },
   title: {
-    fontWeight: typography.fontWeightBold,
+    fontWeight: typography.fontWeightMedium,
     paddingRight: spacing(0.5),
     paddingLeft: spacing(0.5),
+    fontFamily: '"Roboto Mono", Monospace',
   },
   card: {
     width: '608px',
@@ -32,6 +39,7 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
   value: {
     color: palette.primary.main,
     whiteSpace: 'nowrap',
+    fontFamily: '"Roboto Mono", Monospace',
   },
   body: {
     ...typography.body2,
@@ -302,8 +310,6 @@ const Breadcrumbs = ({
             classes={classes}
             {...breadcrumb}
           />
-          {(i !== breadcrumbs.length - 1)
-          && <div className={classes.separator}>/</div>}
         </React.Fragment>
       ))
     }

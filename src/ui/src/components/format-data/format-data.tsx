@@ -26,7 +26,7 @@ interface JSONDataProps {
 const jsonStyles = (theme: Theme) => createStyles({
   base: {
     fontFamily: '"Roboto Mono", serif',
-    fontSize: 13,
+    fontSize: '14px',
   },
   jsonKey: {
     color: theme.palette.foreground?.white,

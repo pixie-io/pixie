@@ -27,10 +27,10 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     alignItems: 'center',
   },
   name: {
-    ...theme.typography.subtitle2,
+    ...theme.typography.h3,
   },
   value: {
-    ...theme.typography.h4,
+    ...theme.typography.h2,
   },
 }));
 

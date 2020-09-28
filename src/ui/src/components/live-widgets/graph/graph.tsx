@@ -117,7 +117,6 @@ const useStyles = makeStyles(() => createStyles({
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-end',
-    border: '1px solid #161616',
     '&.focus': {
       border: '1px solid #353738',
     },

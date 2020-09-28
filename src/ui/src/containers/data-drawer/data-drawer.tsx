@@ -27,9 +27,17 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     flex: 1,
     backgroundColor: theme.palette.background.default,
   },
-  content: {
+  execStats: {
     flex: 1,
     minHeight: 0,
+  },
+  resultTable: {
+    marginTop: theme.spacing(2),
+    marginLeft: theme.spacing(3),
+    marginRight: theme.spacing(4),
+    flex: 1,
+    minHeight: 0,
+    backgroundColor: theme.palette.background.six,
   },
   spinner: {
     position: 'absolute',
@@ -74,14 +82,14 @@ const DataDrawer = ({ open, activeTab, setActiveTab }) => {
               tabs.map((tab) => (
                 <LazyPanel
                   key={tab.title}
-                  className={classes.content}
+                  className={classes.resultTable}
                   show={open && activeTab === tab.title}
                 >
                   {tab.content}
                 </LazyPanel>
               ))
             }
-            <LazyPanel className={classes.content} show={open && activeTab === STATS_TAB_NAME}>
+            <LazyPanel className={classes.execStats} show={open && activeTab === STATS_TAB_NAME}>
               <ExecutionStats />
             </LazyPanel>
           </>
