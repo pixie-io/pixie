@@ -55,7 +55,7 @@ kprobe:tcp_retransmit_skb
     $dport = ($dport >> 8) | (($dport << 8) & 0x00FF00);
     $state = $sk->__sk_common.skc_state;
     $statestr = @tcp_states[$state];
-    printf(\"time:%llu pid:%u pid_start_time:%llu src_id:%s src_port:%d dst_ip:%s dst_port:%d state:%s\",
+    printf(\"time:%llu pid:%u pid_start_time:%llu src_ip:%s src_port:%d dst_ip:%s dst_port:%d state:%s\",
       nsecs,
       pid,
       ((struct task_struct*)curtask)->group_leader->start_time / 10000000,
