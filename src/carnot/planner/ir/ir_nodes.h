@@ -307,12 +307,15 @@ class IR {
   std::string DebugString();
   std::string OperatorsDebugString();
 
-  IRNode* Get(int64_t id) const {
-    DCHECK(dag_.HasNode(id)) << "DAG doesn't have node: " << id;
-    auto iterator = id_node_map_.find(id);
-    DCHECK(iterator != id_node_map_.end()) << "id to node map doesn't contain id: " << id;
-    return iterator->second.get();
-  }
+  /**
+   * @brief Returns the corresponding node for the passed in ID. Returns a nullptr when the id
+   * doesn't exist.
+   *
+   * @param id the id of the node to get.
+   * @return IRNode* The Node or a nullptr if not found.
+   */
+  IRNode* Get(int64_t id) const;
+
   size_t size() const { return id_node_map_.size(); }
 
   std::vector<OperatorIR*> GetSources() const;

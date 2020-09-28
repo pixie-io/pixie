@@ -430,7 +430,13 @@ struct PlanCluster {
     // TODO(philkuz) invert this so we don't clone everything.
     PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> new_ir, base_query->Clone());
     for (const auto& op : ops_to_remove) {
-      DCHECK(Match(new_ir->Get(op->id()), Operator()));
+      // Some ops to remove are dependent upon each other, so they might be removed beforehand.
+      if (!new_ir->HasNode(op->id())) {
+        continue;
+      }
+      auto cur_op = new_ir->Get(op->id());
+      CHECK(cur_op != nullptr);
+      CHECK(Match(cur_op, Operator()));
       std::queue<OperatorIR*> ancestor_to_maybe_delete_q;
       for (const auto& p : static_cast<OperatorIR*>(new_ir->Get(op->id()))->parents()) {
         ancestor_to_maybe_delete_q.push(p);

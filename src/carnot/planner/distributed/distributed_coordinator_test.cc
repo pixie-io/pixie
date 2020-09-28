@@ -631,6 +631,55 @@ TEST_F(CoordinatorTest, prune_agent_on_pem_udtf) {
   EXPECT_EQ(1, kelvin_sources.size());
 }
 
+constexpr char kExtraPEM[] = R"carnotinfo(
+query_broker_address: "pem5"
+agent_id {
+  data: "00000001-0000-0000-0000-000000000005"
+}
+has_grpc_server: false
+has_data_store: true
+processes_data: true
+accepts_remote_sources: false
+asid: 1111111
+)carnotinfo";
+
+constexpr char kDependentRemovableOpsQuery[] = R"pxl(
+import px
+def containers(start_time: str, pod: px.Pod):
+    ''' A list of containers in `pod`.
+    Args:
+    @start_time: The timestamp of data to start at.
+    @pod: The name of the pod to filter on.
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df = df[df.ctx['pod_id'] == pod]
+    return df.head(50)
+px.display(containers("-10s", "agent1_pod"))
+)pxl";
+TEST_F(CoordinatorTest, delete_dependent_nodes) {
+  auto ps = ThreeAgentOneKelvinStateWithMetadataInfo();
+  // We add an extra PEM that doesn't have an entry in the schema table.
+  EXPECT_TRUE(google::protobuf::TextFormat::MergeFromString(kExtraPEM, ps.add_carnot_info()));
+
+  auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
+  compiler::Compiler compiler;
+  auto graph =
+      compiler.CompileToIR(kDependentRemovableOpsQuery, compiler_state_.get()).ConsumeValueOrDie();
+
+  auto physical_plan = coordinator->Coordinate(graph.get()).ConsumeValueOrDie();
+  ASSERT_EQ(physical_plan->dag().nodes().size(), 2UL);
+
+  absl::flat_hash_map<std::string, IR*> plan_by_qb_addr;
+  for (int64_t carnot_id : physical_plan->dag().nodes()) {
+    auto carnot = physical_plan->Get(carnot_id);
+    EXPECT_NE(carnot->plan(), nullptr) << carnot->QueryBrokerAddress();
+    plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
+  }
+
+  EXPECT_TRUE(plan_by_qb_addr.contains("kelvin"));
+  EXPECT_TRUE(plan_by_qb_addr.contains("pem1"));
+}
+
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot

@@ -1509,6 +1509,14 @@ Status GRPCSourceIR::ToProto(planpb::Operator* op) const {
 
 StatusOr<planpb::Plan> IR::ToProto() const { return ToProto(0); }
 
+IRNode* IR::Get(int64_t id) const {
+  auto iterator = id_node_map_.find(id);
+  if (iterator == id_node_map_.end()) {
+    return nullptr;
+  }
+  return iterator->second.get();
+}
+
 StatusOr<planpb::Plan> IR::ToProto(int64_t agent_id) const {
   auto plan = planpb::Plan();
   // TODO(michelle) For M1.5 , we'll only handle plans with a single plan fragment. In the future
