@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "src/common/base/base.h"
+#include "src/common/system/config.h"
 
 #include "third_party/bpftrace/src/ast/codegen_llvm.h"
 #include "third_party/bpftrace/src/ast/printer.h"
@@ -39,6 +40,18 @@ Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::
   // Change these values for debug
   // bpftrace::bt_verbose = true;
   // bpftrace::bt_debug = bpftrace::DebugLevel::kFullDebug;
+
+  uint64_t time_offset = pl::system::Config::GetInstance().ClockRealTimeOffset();
+
+  // Set boottime. Required to support strftime() in bpftrace code.
+  // Since BPF nsecs uses monotonic clock, but strftime() needs to know the real time,
+  // BPFtrace requires the offset to be passed in directly.
+  // BPFTrace then applies the offset before performing the formatting.
+  constexpr uint64_t kNanosPerSecond = 1000 * 1000 * 1000;
+  struct timespec boottime;
+  boottime.tv_sec = time_offset / kNanosPerSecond;
+  boottime.tv_nsec = time_offset % kNanosPerSecond;
+  bpftrace_.boottime_ = boottime;
 
   // Script from string (command line argument)
   err = driver.parse_str(std::string(script));

@@ -51,7 +51,6 @@ using ::testing::AnyOf;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
-using ::testing::MatchesRegex;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 

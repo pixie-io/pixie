@@ -41,7 +41,7 @@ class Config : public NotCopyable {
   virtual int64_t KernelTicksPerSecond() const = 0;
 
   /**
-   * If recording nsecs in your bt file, this function can be used to find the offset for
+   * If recording `nsecs` from bpf, this function can be used to find the offset for
    * convert the result into realtime.
    */
   virtual uint64_t ClockRealTimeOffset() const = 0;

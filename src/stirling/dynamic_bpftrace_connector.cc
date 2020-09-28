@@ -9,11 +9,32 @@
 #include <absl/strings/ascii.h>
 
 #include "src/shared/types/proto/types.pb.h"
+#include "third_party/bpftrace/src/ast/async_event_types.h"
 
 namespace pl {
 namespace stirling {
 
 namespace {
+
+StatusOr<types::DataType> BPFTraceTypeToDataType(const bpftrace::Type& bpftrace_type) {
+  switch (bpftrace_type) {
+    case bpftrace::Type::integer:
+    case bpftrace::Type::pointer:
+      return types::DataType::INT64;
+    case bpftrace::Type::string:
+    case bpftrace::Type::inet:
+    case bpftrace::Type::usym:
+    case bpftrace::Type::ksym:
+    case bpftrace::Type::username:
+    case bpftrace::Type::probe:
+    case bpftrace::Type::kstack:
+    case bpftrace::Type::ustack:
+    case bpftrace::Type::timestamp:
+      return types::DataType::STRING;
+    default:
+      return error::Internal("Unhandled field type $0.", magic_enum::enum_name(bpftrace_type));
+  }
+}
 
 StatusOr<std::vector<ColumnSpec>> ConvertFields(const std::vector<bpftrace::Field> fields) {
   std::vector<ColumnSpec> columns;
@@ -39,48 +60,8 @@ StatusOr<std::vector<ColumnSpec>> ConvertFields(const std::vector<bpftrace::Fiel
     }
 
     ColumnSpec col;
-
-    // Get column type.
-    col.type = types::DataType::DATA_TYPE_UNKNOWN;
-    switch (bpftrace_type) {
-      case bpftrace::Type::integer:
-        col.type = types::DataType::INT64;
-        break;
-      case bpftrace::Type::string:
-        col.type = types::DataType::STRING;
-        break;
-      case bpftrace::Type::inet:
-        col.type = types::DataType::STRING;
-        break;
-      default:
-        return error::Internal("Column $0 has an unhandled field type $1.", i,
-                               magic_enum::enum_name(bpftrace_type));
-    }
-
-    // Get column name.
-    // This is currently a hack that just renames the first three columns to what we mandate.
-    // TODO(oazizi): Find a better way from BPFTrace.
-    //    switch (i) {
-    //      case 0:
-    //        col.name = "time_";
-    //        col.type = types::DataType::TIME64NS;
-    //        break;
-    //      case 1:
-    //        col.name = "tgid_";
-    //        break;
-    //      case 2:
-    //        col.name = "tgid_start_time_";
-    //        break;
-    //      default:
-    //        col.name = absl::StrCat("Column_", i);
-    //    }
-    if (i == 0) {
-      col.name = "time";
-      col.type = types::DataType::TIME64NS;
-    } else {
-      col.name = absl::StrCat("Column_", i);
-    }
-
+    PL_ASSIGN_OR_RETURN(col.type, BPFTraceTypeToDataType(bpftrace_type));
+    col.name = absl::StrCat("Column_", i);
     // No way to set a description from BPFTrace code.
     col.desc = "";
 
@@ -156,6 +137,9 @@ std::unique_ptr<SourceConnector> DynamicBPFTraceConnector::Create(
         }
         columns[i].name = column_names[i];
         columns[i].desc = column_names[i];
+        if (columns[i].name == "time_") {
+          columns[i].type = types::DataType::TIME64NS;
+        }
       }
     }
   }
@@ -192,20 +176,10 @@ Status CheckOutputFields(const std::vector<bpftrace::Field> fields,
     bpftrace::Type bpftrace_type = fields[i].type.type;
     types::DataType table_type = table_schema_elements[i].type();
 
-    types::DataType expected_type = types::DataType::DATA_TYPE_UNKNOWN;
-    switch (bpftrace_type) {
-      case bpftrace::Type::integer:
-        expected_type = (i == 0) ? types::DataType::TIME64NS : types::DataType::INT64;
-        break;
-      case bpftrace::Type::string:
-        expected_type = types::DataType::STRING;
-        break;
-      case bpftrace::Type::inet:
-        expected_type = types::DataType::STRING;
-        break;
-      default:
-        return error::Internal("Column $0 has an unhandled field type $1.", i,
-                               magic_enum::enum_name(bpftrace_type));
+    PL_ASSIGN_OR_RETURN(types::DataType expected_type, BPFTraceTypeToDataType(bpftrace_type));
+
+    if (table_schema_elements[i].name() == "time_") {
+      expected_type = types::DataType::TIME64NS;
     }
 
     // Check #1: Type must be consistent with specified schema.
@@ -340,6 +314,52 @@ void DynamicBPFTraceConnector::HandleEvent(uint8_t* data) {
         int64_t af = *reinterpret_cast<int64_t*>(data + field.offset);
         uint8_t* inet = reinterpret_cast<uint8_t*>(data + field.offset + 8);
         r.Append(col, types::StringValue(ResolveInet(af, inet)));
+        break;
+      }
+      case bpftrace::Type::usym: {
+        uint64_t addr = *reinterpret_cast<uint64_t*>(data + field.offset);
+        uint64_t pid = *reinterpret_cast<uint64_t*>(data + field.offset + 8);
+        r.Append(col, types::StringValue(bpftrace_.resolve_usym(addr, pid)));
+        break;
+      }
+      case bpftrace::Type::ksym: {
+        uint64_t addr = *reinterpret_cast<uint64_t*>(data + field.offset);
+        r.Append(col, types::StringValue(bpftrace_.resolve_ksym(addr)));
+        break;
+      }
+      case bpftrace::Type::username: {
+        uint64_t addr = *reinterpret_cast<uint64_t*>(data + field.offset);
+        r.Append(col, types::StringValue(bpftrace_.resolve_uid(addr)));
+        break;
+      }
+      case bpftrace::Type::probe: {
+        uint64_t probe_id = *reinterpret_cast<uint64_t*>(data + field.offset);
+        r.Append(col, types::StringValue(bpftrace_.resolve_probe(probe_id)));
+        break;
+      }
+      case bpftrace::Type::kstack: {
+        uint64_t stackidpid = *reinterpret_cast<uint64_t*>(data + field.offset);
+        bool ustack = false;
+        auto& stack_type = field.type.stack_type;
+        r.Append(col, types::StringValue(bpftrace_.get_stack(stackidpid, ustack, stack_type)));
+        break;
+      }
+      case bpftrace::Type::ustack: {
+        uint64_t stackidpid = *reinterpret_cast<uint64_t*>(data + field.offset);
+        bool ustack = true;
+        auto& stack_type = field.type.stack_type;
+        r.Append(col, types::StringValue(bpftrace_.get_stack(stackidpid, ustack, stack_type)));
+        break;
+      }
+      case bpftrace::Type::timestamp: {
+        auto x = reinterpret_cast<bpftrace::AsyncEvent::Strftime*>(data + field.offset);
+        r.Append(col, types::StringValue(
+                          bpftrace_.resolve_timestamp(x->strftime_id, x->nsecs_since_boot)));
+        break;
+      }
+      case bpftrace::Type::pointer: {
+        uint64_t p = *reinterpret_cast<uint64_t*>(data + field.offset);
+        r.Append(col, types::Int64Value(p));
         break;
       }
       default:

@@ -325,7 +325,7 @@ TEST_F(SocketTraceBPFTest, StartTime) {
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Recv, &TCPSocket::Send>(script);
 
-  // Kernel uses monotonic clock as start_time, so we must do the same.
+  // Kernel uses a special monotonic clock as start_time, so we must do the same.
   auto now = pl::chrono::boot_clock::now();
 
   // Use a time window to make sure the recorded PID start_time is right.

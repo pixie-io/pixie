@@ -75,7 +75,7 @@ class BPFTraceWrapper {
    */
   bpftrace::BPFTraceMap GetBPFMap(const std::string& name);
 
- private:
+ protected:
   bpftrace::BPFtrace bpftrace_;
   std::unique_ptr<bpftrace::BpfOrc> bpforc_;
 };
