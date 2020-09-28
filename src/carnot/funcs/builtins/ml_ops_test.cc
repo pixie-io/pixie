@@ -33,7 +33,7 @@ std::string write_vector_to_json(const Eigen::VectorXf& vector) {
   return sb.GetString();
 }
 
-TEST(KMeans, DISABLED_basic) {
+TEST(KMeans, basic) {
   int k = 3;
   int d = 2;
 
@@ -61,7 +61,7 @@ TEST(SentencePiece, basic) {
   udf_tester.Expect("[4,197,803,195,16,5001]");
 }
 
-TEST(Transformer, DISABLED_basic) {
+TEST(Transformer, basic) {
   auto pool = exec::ml::ModelPool::Create();
   auto ctx = std::make_unique<FunctionContext>(nullptr, pool.get());
   auto udf_tester = udf::UDFTester<TransformerUDF>(std::move(ctx), FLAGS_embedding_dir);

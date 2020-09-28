@@ -54,11 +54,8 @@ static void BM_CoresetTreeMerge(benchmark::State& state) {
 // NOLINTNEXTLINE : runtime/references.
 static void BM_CoresetFromWeightedPointSet(benchmark::State& state) {
   int d = 65;
-  auto set = std::make_shared<WeightedPointSet>(4 * 64, d);
-  for (int i = 0; i < 4 * 64; i++) {
-    Eigen::VectorXf point = Eigen::VectorXf::Random(d);
-    set->Add(point, 1.0f);
-  }
+  Eigen::MatrixXf points = Eigen::MatrixXf::Random(4 * 64, d);
+  auto set = std::make_shared<WeightedPointSet>(points, Eigen::VectorXf::Ones(4 * 64));
 
   for (auto _ : state) {
     KMeansCoreset::FromWeightedPointSet(set, 64);

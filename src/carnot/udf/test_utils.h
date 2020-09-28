@@ -102,7 +102,7 @@ class UDATester {
   UDATester& operator=(UDATester const&) = delete;
   UDATester() = default;
   template <typename... Args>
-  explicit UDATester(Args... args) : uda_(args...) {}
+  explicit UDATester(Args... args) : uda_(args...), test_merge_(false) {}
   /*
    * Add the given arguments to the UDAs inputs.
    * Arguments must be of a type that can usually be passed into the UDA's Update function,
@@ -112,9 +112,11 @@ class UDATester {
   UDATester& ForInput(Args... args) {
     uda_.Update(nullptr, args...);
 
-    std::unique_ptr<TUDA> merge_uda = std::make_unique<TUDA>();
-    merge_uda->Update(nullptr, args...);
-    merge_udas_.emplace_back(std::move(merge_uda));
+    if (test_merge_) {
+      std::unique_ptr<TUDA> merge_uda = std::make_unique<TUDA>();
+      merge_uda->Update(nullptr, args...);
+      merge_udas_.emplace_back(std::move(merge_uda));
+    }
 
     return *this;
   }
@@ -132,13 +134,15 @@ class UDATester {
       internal::ExpectEquality(other.Finalize(nullptr), arg);
     }
 
-    // Test merge.
-    auto rng = std::default_random_engine{};
-    std::shuffle(std::begin(merge_udas_), std::end(merge_udas_), rng);
-    for (size_t i = 1; i < merge_udas_.size(); i++) {
-      merge_udas_[0]->Merge(nullptr, *merge_udas_[i]);
+    if (test_merge_) {
+      // Test merge.
+      auto rng = std::default_random_engine{};
+      std::shuffle(std::begin(merge_udas_), std::end(merge_udas_), rng);
+      for (size_t i = 1; i < merge_udas_.size(); i++) {
+        merge_udas_[0]->Merge(nullptr, *merge_udas_[i]);
+      }
+      internal::ExpectEquality(merge_udas_[0]->Finalize(nullptr), arg);
     }
-    internal::ExpectEquality(merge_udas_[0]->Finalize(nullptr), arg);
 
     return *this;
   }
@@ -157,7 +161,9 @@ class UDATester {
   UDATester& Merge(UDATester* other) {
     uda_.Merge(nullptr, other->uda_);
 
-    merge_udas_.emplace_back(std::make_unique<TUDA>(other->uda_));
+    if (test_merge_) {
+      merge_udas_.emplace_back(std::make_unique<TUDA>(other->uda_));
+    }
     return *this;
   }
 
@@ -173,6 +179,10 @@ class UDATester {
  private:
   TUDA uda_;
 
+  // If the UDATester is initialized with Args for the uda then we don't create new merge udas
+  // without args. Once init args are supported we can properly test UDA/UDFs with init args, rather
+  // than having to pass those args to the constructor.
+  bool test_merge_ = true;
   // Vector of UDAs, created for each ForInput call, for testing merge.
   // std::vector<std::unique_ptr<TUDA>> merge_udas_;
   std::vector<std::unique_ptr<TUDA>> merge_udas_;

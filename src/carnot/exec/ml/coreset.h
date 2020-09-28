@@ -21,24 +21,17 @@ namespace ml {
 
 class WeightedPointSet {
  public:
-  WeightedPointSet() {}
+  WeightedPointSet() : size_(0) {}
   WeightedPointSet(const Eigen::MatrixXf& points, const Eigen::VectorXf& weights) {
     DCHECK_EQ(points.rows(), weights.rows());
-    size_ = set_size_ = points.rows();
+    size_ = points.rows();
     point_size_ = points.cols();
-    set_ = points;
+    points_ = points;
     weights_ = weights;
   }
-  WeightedPointSet(int size, int point_size) : set_size_(size), point_size_(point_size) {
-    set_.resize(size, point_size);
+  WeightedPointSet(int size, int point_size) : size_(size), point_size_(point_size) {
+    points_.resize(size, point_size);
     weights_.resize(size);
-  }
-
-  void Add(const Eigen::VectorXf& point, float weight) {
-    DCHECK_LT(size_, set_size_);
-    set_.row(size_) = point;
-    weights_(size_) = weight;
-    size_++;
   }
 
   static std::shared_ptr<WeightedPointSet> Union(
@@ -52,10 +45,8 @@ class WeightedPointSet {
     auto index = 0;
     for (auto set : point_sets) {
       auto end_of_set = index + set->size() - 1;
-      (*union_set).set_(Eigen::seq(index, end_of_set), Eigen::all) =
-          set->points()(Eigen::seq(0, set->size() - 1), Eigen::all);
-      (*union_set).weights_(Eigen::seq(index, end_of_set)) =
-          set->weights()(Eigen::seq(0, set->size() - 1));
+      (*union_set).points_(Eigen::seq(index, end_of_set), Eigen::all) = set->points();
+      (*union_set).weights_(Eigen::seq(index, end_of_set)) = set->weights();
       index = end_of_set + 1;
     }
     union_set->size_ = union_size;
@@ -64,14 +55,12 @@ class WeightedPointSet {
 
   void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) {
     writer->StartObject();
-    writer->Key("set_size");
-    writer->Int(set_size_);
     writer->Key("points");
     writer->StartArray();
     for (int i = 0; i < size_; i++) {
       writer->StartArray();
       for (int j = 0; j < point_size_; j++) {
-        writer->Double(set_(i, j));
+        writer->Double(points_(i, j));
       }
       writer->EndArray();
     }
@@ -87,26 +76,24 @@ class WeightedPointSet {
 
   void FromJSON(const rapidjson::Document::ValueType& doc) {
     DCHECK(doc.IsObject());
-    DCHECK(doc.HasMember("set_size"));
-    DCHECK(doc["set_size"].IsInt());
     DCHECK(doc.HasMember("points"));
     DCHECK(doc["points"].IsArray());
     DCHECK(doc.HasMember("weights"));
     DCHECK(doc["weights"].IsArray());
 
-    set_size_ = doc["set_size"].GetInt();
-    weights_.resize(set_size_);
-
     const rapidjson::Value& points = doc["points"];
     const rapidjson::Value& weights = doc["weights"];
+    DCHECK_EQ(points.Size(), weights.Size());
+    size_ = points.Size();
+    weights_.resize(size_);
     for (rapidjson::SizeType i = 0; i < points.Size(); i++) {
       const rapidjson::Value& point_json = points[i];
       if (i == 0) {
         point_size_ = point_json.Size();
-        set_.resize(set_size_, point_size_);
+        points_.resize(size_, point_size_);
       }
       for (rapidjson::SizeType j = 0; j < point_json.Size(); j++) {
-        set_(i, j) = point_json[j].GetFloat();
+        points_(i, j) = point_json[j].GetFloat();
       }
       weights_(i) = weights[i].GetFloat();
     }
@@ -120,23 +107,21 @@ class WeightedPointSet {
     return set;
   }
 
-  const Eigen::MatrixXf& points() const { return set_; }
+  const Eigen::MatrixXf& points() const { return points_; }
   const Eigen::VectorXf& weights() const { return weights_; }
   int point_size() const { return point_size_; }
   int size() const { return size_; }
 
  protected:
-  int size_ = 0;
-  int set_size_;
+  int size_;
   int point_size_;
-  Eigen::MatrixXf set_;
+  Eigen::MatrixXf points_;
   Eigen::VectorXf weights_;
 };
 
 class KMeansCoreset : public WeightedPointSet {
  public:
   KMeansCoreset(int coreset_size, int d) : WeightedPointSet(coreset_size, d) {}
-
   static std::shared_ptr<KMeansCoreset> FromWeightedPointSet(std::shared_ptr<WeightedPointSet> set,
                                                              size_t coreset_size);
 
@@ -284,34 +269,38 @@ class CoresetDriver {
  public:
   template <typename... Args>
   CoresetDriver(int m, int d, Args... args)
-      : m_(m), d_(d), coreset_data_(args...), set_(std::make_shared<WeightedPointSet>(m, d)) {}
+      : m_(m), d_(d), coreset_data_(args...), points_(m_, d_), weights_(m_), size_(0) {}
 
   void Update(const Eigen::VectorXf& p) {
-    set_->Add(p, 1.0f);
-    if (set_->size() == m_) {
-      coreset_data_.Update(set_);
-      set_.reset(new WeightedPointSet(m_, d_));
+    points_(size_, Eigen::all) = p.transpose();
+    weights_(size_) = 1.0f;
+    size_++;
+    if (size_ == m_) {
+      coreset_data_.Update(std::make_shared<WeightedPointSet>(points_, weights_));
+      size_ = 0;
     }
   }
 
   std::shared_ptr<WeightedPointSet> Query() {
     auto coreset = coreset_data_.Coreset();
-    if (set_->size() == 0) {
+    if (size_ == 0) {
       // If we haven't seen any data, this could return an empty set.
       return coreset;
     }
     if (coreset->size() == 0) {
-      return set_;
+      return CurrentSet();
     }
-    return WeightedPointSet::Union({coreset, set_});
+    return WeightedPointSet::Union({coreset, CurrentSet()});
   }
 
   void Merge(const CoresetDriver<TCoresetStructure>& other) {
     coreset_data_.Merge(other.coreset_data_);
-    set_ = WeightedPointSet::Union({set_, other.set_});
-    if (set_->size() >= m_) {
-      coreset_data_.Update(set_);
-      set_.reset(new WeightedPointSet(m_, d_));
+    auto new_set = WeightedPointSet::Union({CurrentSet(), other.CurrentSet()});
+    if (new_set->size() >= m_) {
+      coreset_data_.Update(new_set);
+      size_ = 0;
+    } else {
+      GatherPointsFromSet(new_set);
     }
   }
 
@@ -320,7 +309,7 @@ class CoresetDriver {
     rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
     writer.StartObject();
     writer.Key("base_set");
-    set_->ToJSON(&writer);
+    CurrentSet()->ToJSON(&writer);
     writer.Key("coreset");
     coreset_data_.ToJSON(&writer);
     writer.EndObject();
@@ -333,15 +322,35 @@ class CoresetDriver {
     DCHECK(doc.IsObject());
     DCHECK(doc.HasMember("base_set"));
     DCHECK(doc.HasMember("coreset"));
-    set_ = WeightedPointSet::CreateFromJSON(doc["base_set"]);
+    auto set = WeightedPointSet::CreateFromJSON(doc["base_set"]);
+    GatherPointsFromSet(set);
     coreset_data_.FromJSON(doc["coreset"]);
   }
 
  private:
+  std::shared_ptr<WeightedPointSet> CurrentSet() const {
+    if (size_ == 0) {
+      return std::make_shared<WeightedPointSet>(0, points_.cols());
+    }
+    return std::make_shared<WeightedPointSet>(points_(Eigen::seq(0, size_ - 1), Eigen::all),
+                                              weights_(Eigen::seq(0, size_ - 1)));
+  }
+  void GatherPointsFromSet(std::shared_ptr<WeightedPointSet> set) {
+    size_ = set->size();
+    if (set->size() == 1) {
+      points_(0, Eigen::all) = set->points()(0, Eigen::all);
+      weights_(0) = set->weights()(0);
+    } else if (set->size() > 1) {
+      points_(Eigen::seq(0, set->size() - 1), Eigen::all) = set->points();
+      weights_(Eigen::seq(0, set->size() - 1)) = set->weights();
+    }
+  }
   int m_;
   int d_;
   TCoresetStructure coreset_data_;
-  std::shared_ptr<WeightedPointSet> set_;
+  Eigen::MatrixXf points_;
+  Eigen::VectorXf weights_;
+  int size_;
 };
 
 }  // namespace ml

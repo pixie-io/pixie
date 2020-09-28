@@ -20,12 +20,11 @@ void KMeansCoreset::Construct(const Eigen::MatrixXf& points, const Eigen::Vector
       ((0.5 * weights / weight_sum).array() + 0.5 * (weighted_dists / weighted_dists_sum).array())
           .eval();
   Eigen::ArrayXi sample_inds;
-  sample_from_probs(probs, &sample_inds, set_size_);
-  set_ = points(sample_inds, Eigen::all);
+  sample_from_probs(probs, &sample_inds, size_);
+  points_ = points(sample_inds, Eigen::all);
   // u(x)
-  weights_ = weights(sample_inds, Eigen::all).array() /
-             (set_size_ * probs(sample_inds, Eigen::all)).array();
-  size_ = set_size_;
+  weights_ =
+      weights(sample_inds, Eigen::all).array() / (size_ * probs(sample_inds, Eigen::all)).array();
 }
 
 std::shared_ptr<KMeansCoreset> KMeansCoreset::FromWeightedPointSet(

@@ -14,11 +14,6 @@ void KMeans::Fit(std::shared_ptr<WeightedPointSet> set) {
   }
   auto points = set->points();
   auto weights = set->weights();
-  // TODO(james): move this into WeightedPointSet API.
-  if (set->size() < points.rows()) {
-    points = points(Eigen::seq(0, set->size() - 1), Eigen::all);
-    weights = weights(Eigen::seq(0, set->size() - 1));
-  }
 
   centroids_.resize(k_, points.cols());
   switch (init_type_) {

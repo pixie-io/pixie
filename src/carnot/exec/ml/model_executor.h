@@ -15,7 +15,10 @@ enum ModelType {
  * Subclasses should implement a static Type method with signature
  *  static constexpr ModelType Type();
  */
-class ModelExecutor {};
+class ModelExecutor {
+ public:
+  virtual ~ModelExecutor() = default;
+};
 
 }  // namespace ml
 }  // namespace exec

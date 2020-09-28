@@ -10,7 +10,7 @@ namespace carnot {
 namespace exec {
 namespace ml {
 
-TEST(ModelPool, DISABLED_basic) {
+TEST(ModelPool, basic) {
   auto p = ModelPool::Create();
   auto executor = p->GetModelExecutor<TransformerExecutor>(FLAGS_embedding_dir);
   EXPECT_EQ(kTransformer, executor->Type());
