@@ -241,6 +241,21 @@ columns {
 }
 `
 
+// SchemaInfoWithSemanticTypePB is the protobuf for a schema info with semantic type.
+var SchemaInfoWithSemanticTypePB = `
+name: "a_table"
+start_timestamp_ns: 2
+columns {
+  name: "column_1"
+  data_type: 2
+  semantic_type: 1200  
+}
+columns {
+  name: "column_2"
+  data_type: 4
+}
+`
+
 // SchemaInfo2PB is the protobuf for another schema info.
 var SchemaInfo2PB = `
 name: "b_table"
