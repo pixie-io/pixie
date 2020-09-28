@@ -16,6 +16,7 @@ import (
 	k8s_metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/types"
+	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
@@ -452,6 +453,67 @@ func TestKVMetadataStore_UpdateSchemasBasic(t *testing.T) {
 	assert.Equal(t, 1, len(agentIDs.AgentID))
 	uuidPb := utils.ProtoFromUUID(&u)
 	assert.Equal(t, agentIDs.AgentID[0], uuidPb)
+}
+
+func TestKVMetadataStore_UpdateSchemasUpdateExistingTable(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		Get("/computedSchema").
+		Return(nil, nil)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	u, err := uuid.FromString(testutils.NewAgentUUID)
+	if err != nil {
+		t.Fatal("Could not parse UUID from string.")
+	}
+
+	schemas := make([]*storepb.TableInfo, 1)
+
+	schema1 := new(storepb.TableInfo)
+	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	schemas[0] = schema1
+
+	err = mds.UpdateSchemas(u, schemas)
+	assert.Nil(t, err)
+
+	cSchema, err := c.Get("/computedSchema")
+	assert.Nil(t, err)
+	assert.NotNil(t, cSchema)
+	computedPb := &storepb.ComputedSchema{}
+	proto.Unmarshal(cSchema, computedPb)
+	assert.Equal(t, 1, len(computedPb.Tables))
+	assert.Equal(t, "a_table", computedPb.Tables[0].Name)
+	assert.Equal(t, 2, len(computedPb.Tables[0].Columns))
+	assert.Equal(t, typespb.ST_UNSPECIFIED, computedPb.Tables[0].Columns[0].SemanticType)
+
+	schema2 := new(storepb.TableInfo)
+	if err := proto.UnmarshalText(testutils.SchemaInfoWithSemanticTypePB, schema2); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	schemas[0] = schema2
+
+	err = mds.UpdateSchemas(u, schemas)
+	assert.Nil(t, err)
+
+	cSchema, err = c.Get("/computedSchema")
+	assert.Nil(t, err)
+	assert.NotNil(t, cSchema)
+	computedPb = &storepb.ComputedSchema{}
+	proto.Unmarshal(cSchema, computedPb)
+	assert.Equal(t, 1, len(computedPb.Tables))
+	assert.Equal(t, "a_table", computedPb.Tables[0].Name)
+	assert.Equal(t, 2, len(computedPb.Tables[0].Columns))
+	assert.Equal(t, typespb.ST_PORT, computedPb.Tables[0].Columns[0].SemanticType)
 }
 
 func getTableNames(computedSchemaPb *storepb.ComputedSchema) []string {

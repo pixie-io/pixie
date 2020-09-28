@@ -646,6 +646,13 @@ func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.
 	previousAgentTableTracker := make(map[string]bool)
 
 	agentIDPb := utils.ProtoFromUUID(&agentID)
+
+	// Build up a table map so that we can update tables by name.
+	tableMap := make(map[string]*storepb.TableInfo)
+	for _, existingTable := range computedSchemaPb.Tables {
+		tableMap[existingTable.Name] = existingTable
+	}
+
 	// Add the list of tables that the agent currently belongs to.
 	for name, agents := range computedSchemaPb.TableNameToAgentIDs {
 		for _, a := range agents.AgentID {
@@ -656,7 +663,12 @@ func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.
 		}
 	}
 
+	// Now for each schema, update the agent references to that table.
 	for _, schemaPb := range schemas {
+		// Update the table map to contain the new version of the table, in the event
+		// that the aggent mapping is the same but the table itself has changed.
+		tableMap[schemaPb.Name] = schemaPb
+
 		_, agentHasTable := previousAgentTableTracker[schemaPb.Name]
 		if agentHasTable {
 			// If it's in the new schema, we don't need to do anything, so we mark this true.
@@ -675,13 +687,18 @@ func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.
 			continue
 		}
 
-		// Case 2 table does not exist, must add it to the list of schemas and
-		// create a map entry.
-		computedSchemaPb.Tables = append(computedSchemaPb.Tables, schemaPb)
 		computedSchemaPb.TableNameToAgentIDs[schemaPb.Name] = &storepb.ComputedSchema_AgentIDs{
 			AgentID: []*uuidpb.UUID{agentIDPb},
 		}
 	}
+
+	// Update the tables in the schema to the new version.
+	var resultTableInfos []*storepb.TableInfo
+	for _, tableInfo := range tableMap {
+		log.Errorf("Table info %+v", tableInfo)
+		resultTableInfos = append(resultTableInfos, tableInfo)
+	}
+	computedSchemaPb.Tables = resultTableInfos
 
 	// Now find any tables that might have been deleted from an Agent.
 	// This will also delete tables entirely when there are no more agents after the last agent is deleted.
