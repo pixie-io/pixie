@@ -234,7 +234,7 @@ const Legend = React.memo((props: LegendProps) => {
             <div className={classes.colorCircle} style={colorStyles} />
           </div>
           <Tooltip title={entry.key} interactive enterDelay={1500}>
-            <div style={styles} className={classes.key}>{entry.key}</div>
+            <div style={styles} className={classes.key}>{entry.key === 'undefined' ? 'Unknown' : entry.key}</div>
           </Tooltip>
           <div style={styles} className={classes.val}>{entry.val}</div>
         </div>,
