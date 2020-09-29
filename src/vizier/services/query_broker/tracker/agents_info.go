@@ -65,7 +65,7 @@ func (a *AgentsInfoImpl) ClearPendingState() {
 // This function must be resilient to receiving the same update twice for a given agent.
 func (a *AgentsInfoImpl) UpdateAgentsInfo(update *metadatapb.AgentUpdatesResponse) error {
 	if update.AgentSchemasUpdated {
-		log.Infof("Updating schemas to %s tables", len(update.AgentSchemas))
+		log.Infof("Updating schemas to %d tables", len(update.AgentSchemas))
 		a.pendingDs.SchemaInfo = update.AgentSchemas
 	}
 
@@ -118,7 +118,9 @@ func (a *AgentsInfoImpl) UpdateAgentsInfo(update *metadatapb.AgentUpdatesRespons
 			updatedAgentsDataInfo++
 			carnotInfo, present := carnotInfoMap[agentUUID]
 			if !present {
-				return fmt.Errorf("Could not update agent table metadata of unknown agent %s", agentUUID.String())
+				continue
+				// TODO(michelle, nserrino): Re-enable when PP-2232 is fixed.
+				// return fmt.Errorf("Could not update agent table metadata of unknown agent %s", agentUUID.String())
 			}
 			if carnotInfo == nil {
 				return fmt.Errorf("Carnot info is nil for agent %s, but received agent data info", agentUUID.String())
