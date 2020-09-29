@@ -446,7 +446,7 @@ func runSimpleHealthCheckScript(cloudAddr string, clusterID uuid.UUID) error {
 
 func waitForHealthCheckTaskGenerator(cloudAddr string, clusterID uuid.UUID) func() error {
 	return func() error {
-		timeout := time.NewTimer(2 * time.Minute)
+		timeout := time.NewTimer(5 * time.Minute)
 		defer timeout.Stop()
 		for {
 			select {
