@@ -6,8 +6,9 @@ import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
 import { Card, Popover } from '@material-ui/core';
 import createTypography from '@material-ui/core/styles/createTypography';
 import createSpacing from '@material-ui/core/styles/createSpacing';
-import { CompletionItem } from '../autocomplete/completions';
-import Autocomplete from '../autocomplete';
+import { CompletionItem } from 'components/autocomplete/completions';
+import Autocomplete from 'components/autocomplete';
+import { AutocompleteContext } from 'components/autocomplete/autocomplete';
 
 const styles = ({ spacing, typography, palette }: Theme) => createStyles({
   breadcrumbs: {
@@ -135,14 +136,13 @@ interface DialogDropdownProps extends WithStyles<typeof styles> {
   onSelect: (input: string) => void;
   getListItems: (input: string) => Promise<BreadcrumbListItem[]>;
   onClose: () => void;
-  allowTyping: boolean;
   anchorEl: HTMLElement;
-  requireCompletion: boolean;
 }
 
 const DialogDropdown = ({
-  classes, onSelect, onClose, getListItems, allowTyping, anchorEl, requireCompletion,
+  classes, onSelect, onClose, getListItems, anchorEl,
 }: DialogDropdownProps) => {
+  const { allowTyping, requireCompletion } = React.useContext(AutocompleteContext);
   const [listItems, setListItems] = React.useState<BreadcrumbListItem[]>([]);
   const [completionItems, setCompletionItems] = React.useState<CompletionItem[]>([]);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -164,9 +164,21 @@ const DialogDropdown = ({
   }, [getListItems]);
 
   const onCompletionSelected = React.useCallback((itemValue: string) => {
-    onSelect(itemValue);
-    onClose();
-  }, [onClose, onSelect]);
+    if (requireCompletion) {
+      // Completion required, refresh the valid options and verify that the user picked one of them.
+      // As getListItems is async, we refresh it so that the check is run atomically and can't be out of date.
+      if (typeof getListItems !== 'function') throw new Error(`List items not gettable when selecting "${itemValue}"!`);
+      getListItems(itemValue).then((items) => {
+        if (items.length !== 1) throw new Error(`Found ${items.length} matches to select but expected exactly 1.`);
+        onSelect(itemValue);
+        onClose();
+      });
+    } else {
+      // Completion not required, so we don't care if the user picked an item that actually exists. Skip validation.
+      onSelect(itemValue);
+      onClose();
+    }
+  }, [requireCompletion, getListItems, onClose, onSelect]);
 
   React.useEffect(() => {
     const mapped: CompletionItem[] = listItems.map((item) => ({
@@ -211,15 +223,14 @@ const DialogDropdown = ({
     >
       <ThemeProvider theme={compactThemeBuilder}>
         <Card className={classes.card}>
-          <Autocomplete
-            className={classes.autocomplete}
-            placeholder='Filter...'
-            onSelection={onCompletionSelected}
-            getCompletions={getCompletions}
-            allowTyping={allowTyping}
-            requireCompletion={requireCompletion}
-            inputRef={inputRef}
-          />
+          <AutocompleteContext.Provider value={{ allowTyping, requireCompletion, inputRef }}>
+            <Autocomplete
+              className={classes.autocomplete}
+              placeholder='Filter...'
+              onSelection={onCompletionSelected}
+              getCompletions={getCompletions}
+            />
+          </AutocompleteContext.Provider>
         </Card>
       </ThemeProvider>
     </Popover>
@@ -230,15 +241,13 @@ interface BreadcrumbProps extends WithStyles<typeof styles> {
   title: string;
   value: string;
   selectable: boolean;
-  allowTyping?: boolean;
-  requireCompletion?: boolean;
   getListItems?: (input: string) => Promise<Array<BreadcrumbListItem>>;
   onSelect?: (input: string) => void;
   omitKey?: boolean;
 }
 
 const Breadcrumb = ({
-  classes, title, value, selectable, allowTyping, getListItems, onSelect, omitKey, requireCompletion,
+  classes, title, value, selectable, getListItems, onSelect, omitKey,
 }: BreadcrumbProps) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
@@ -263,8 +272,6 @@ const Breadcrumb = ({
             onSelect={onSelect}
             onClose={onClose}
             getListItems={getListItems}
-            allowTyping={allowTyping}
-            requireCompletion={requireCompletion}
             anchorEl={anchorEl}
           />
         </div>
@@ -297,23 +304,33 @@ interface BreadcrumbsProps extends WithStyles<typeof styles> {
 // replace breadcrumbs in cluster details page with that new type of breadcrumb.
 const Breadcrumbs = ({
   classes, breadcrumbs,
-}: BreadcrumbsProps) => (
-  <div className={classes.breadcrumbs}>
-    {
-      breadcrumbs.map((breadcrumb, i) => (
-        // Fragment shorthand syntax does not support key, which is needed to prevent
-        // the console error where a key is not present in a list element.
-        // eslint-disable-next-line react/jsx-fragments
-        <React.Fragment key={`i-${breadcrumb.title}`}>
-          <Breadcrumb
-            key={i}
-            classes={classes}
-            {...breadcrumb}
-          />
-        </React.Fragment>
-      ))
-    }
-  </div>
-);
+}: BreadcrumbsProps) => {
+  // Read default values from parent context, in case the breadcrumbs don't individually specify.
+  // This is because React doesn't cascade context values: the nearest ancestor context is read whole, including
+  // undefined values. It won't look any further up the tree to find defined values. We have to do that part ourselves.
+  const { allowTyping, requireCompletion } = React.useContext(AutocompleteContext);
+  return (
+    <div className={classes.breadcrumbs}>
+      {
+        breadcrumbs.map((breadcrumb, i) => (
+          // Key is needed to prevent a console error when a key is missing in a list element.
+          <AutocompleteContext.Provider
+            key={`i-${breadcrumb.title}`}
+            value={{
+              allowTyping: breadcrumb.allowTyping ?? allowTyping,
+              requireCompletion: breadcrumb.requireCompletion ?? requireCompletion,
+            }}
+          >
+            <Breadcrumb
+              key={i}
+              classes={classes}
+              {...breadcrumb}
+            />
+          </AutocompleteContext.Provider>
+        ))
+      }
+    </div>
+  );
+};
 
 export default withStyles(styles)(Breadcrumbs);

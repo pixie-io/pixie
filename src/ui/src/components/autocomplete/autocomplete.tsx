@@ -28,16 +28,25 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
+export interface AutocompleteContextProps {
+  /** @default true */
+  allowTyping?: boolean;
+  /** @default true */
+  requireCompletion?: boolean;
+  inputRef?: React.MutableRefObject<HTMLInputElement>;
+}
+
+export const AutocompleteContext = React.createContext<AutocompleteContextProps>({
+  allowTyping: true,
+  requireCompletion: true,
+});
+
 interface AutoCompleteProps {
   onSelection: (id: CompletionId) => void;
   getCompletions: (input: string) => Promise<CompletionItems>;
   placeholder?: string;
   prefix?: React.ReactNode;
   className?: string;
-  /** @default true */
-  allowTyping?: boolean;
-  requireCompletion?: boolean;
-  inputRef?: React.MutableRefObject<HTMLInputElement>;
 }
 
 type ItemsMap = Map<CompletionId, { title: CompletionTitle; index: number }>;
@@ -65,11 +74,9 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
   placeholder,
   prefix,
   className,
-  allowTyping = true,
-  requireCompletion = true,
-  inputRef,
 }) => {
   const classes = useStyles();
+  const { allowTyping, requireCompletion, inputRef } = React.useContext(AutocompleteContext);
   const [inputValue, setInputValue] = React.useState('');
   const [completions, setCompletions] = React.useState([]);
   const [activeItem, setActiveItem] = React.useState<CompletionId>('');
@@ -108,7 +115,7 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
     } else {
       onSelection(inputValue);
     }
-  }, [itemsMap, onSelection]);
+  }, [inputValue, requireCompletion, itemsMap, onSelection]);
 
   const handleKey = (key: Key) => {
     switch (key) {
