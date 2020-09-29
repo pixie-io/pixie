@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: go-http-server
-  namespace: stirling-testing
+  namespace: pl-http-test
   labels:
     name: go-http-server
 spec:
@@ -38,7 +38,7 @@ metadata:
   name: fe
   labels:
     name: fe
-  namespace: stirling-testing
+  namespace: pl-http-test
   annotations:
     cloud.google.com/load-balancer-type: "internal"
 spec:

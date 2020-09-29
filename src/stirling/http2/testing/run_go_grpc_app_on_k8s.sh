@@ -1,5 +1,8 @@
 #!/bin/bash
 
+bazel run src/stirling/http2/testing/go_grpc_client:push_image
+bazel run src/stirling/http2/testing/go_grpc_server:push_image
+
 namespace_name="pl-grpc-test"
 
 kubectl create namespace "${namespace_name}"

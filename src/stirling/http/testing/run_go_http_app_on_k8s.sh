@@ -1,6 +1,9 @@
 #!/bin/bash
 
-namespace_name="stirling-testing"
+bazel run src/stirling/http/testing/go_http_client:push_image
+bazel run src/stirling/http/testing/go_http_server:push_image
+
+namespace_name="pl-http-test"
 
 kubectl create namespace "${namespace_name}"
 

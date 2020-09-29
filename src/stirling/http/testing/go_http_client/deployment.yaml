@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: go-http-client
-  namespace: stirling-testing
+  namespace: pl-http-test
   labels:
     name: go-http-client
 spec:
