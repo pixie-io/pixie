@@ -473,23 +473,6 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
-    name = "proc_tracer_bpf_test",
-    srcs = ["proc_tracer_bpf_test.cc"],
-    data = ["//src/stirling/testing:forker"],
-    tags = [
-        "requires_bpf",
-        # Triggers an asan failure in BCC codebase, where we don't want to fix.
-        # Accessing misaligned data won't affect correctness anyway.
-        "no_asan",
-    ],
-    deps = [
-        ":cc_library",
-        "//src/common/exec:cc_library",
-        "//src/common/testing/test_utils:cc_library",
-    ],
-)
-
 # TODO(oazizi): Currently test needs to be run manually with sudo.
 sh_test(
     name = "stirling_wrapper_kprobe_leak_test",
