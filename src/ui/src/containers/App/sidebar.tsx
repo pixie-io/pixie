@@ -34,6 +34,7 @@ import { toEntityPathname, LiveViewPage } from 'components/live-widgets/utils/li
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { DOMAIN_NAME } from 'containers/constants';
 import { LiveShortcutsContext } from 'containers/live/shortcuts';
+import { SidebarContext } from '../../context/sidebar-context';
 
 const styles = (
   {
@@ -212,6 +213,7 @@ const ProfileItem = ({
   const [open, setOpen] = React.useState<boolean>(false);
   const [anchorEl, setAnchorEl] = React.useState(null);
   const shortcuts = React.useContext(LiveShortcutsContext);
+  const { shortcutHelpInProfileMenu } = React.useContext(SidebarContext);
 
   const openMenu = React.useCallback((event) => {
     setOpen(true);
@@ -260,12 +262,16 @@ const ProfileItem = ({
           </StyledListItemIcon>
           <StyledListItemText primary='Admin' />
         </MenuItem>
-        <MenuItem key='shortcuts' button component='button' onClick={() => shortcuts['show-help'].handler()}>
-          <StyledListItemIcon>
-            <KeyboardIcon />
-          </StyledListItemIcon>
-          <StyledListItemText primary='Keyboard Shortcuts' />
-        </MenuItem>
+        {
+          shortcutHelpInProfileMenu && (
+            <MenuItem key='shortcuts' button component='button' onClick={() => shortcuts['show-help'].handler()}>
+              <StyledListItemIcon>
+                <KeyboardIcon />
+              </StyledListItemIcon>
+              <StyledListItemText primary='Keyboard Shortcuts' />
+            </MenuItem>
+          )
+        }
         <MenuItem key='logout' button component={Link} to='/logout'>
           <StyledListItemIcon>
             <LogoutIcon />
