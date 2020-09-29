@@ -367,14 +367,16 @@ pl_cc_test(
     name = "pgsql_trace_bpf_test",
     timeout = "moderate",
     srcs = [
-        "no_asan",
         "pgsql_trace_bpf_test.cc",
     ],
     data = [
         "//src/stirling/pgsql/testing:demo_image.tar",
     ],
     flaky = True,
-    tags = ["requires_bpf"],
+    tags = [
+        "no_asan",
+        "requires_bpf",
+    ],
     deps = [
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",
@@ -387,10 +389,12 @@ pl_cc_test(
     timeout = "moderate",
     srcs = [
         "cql_trace_bpf_test.cc",
-        "no_asan",
     ],
     flaky = True,
-    tags = ["requires_bpf"],
+    tags = [
+        "no_asan",
+        "requires_bpf",
+    ],
     deps = [
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",
