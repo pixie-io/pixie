@@ -34,25 +34,12 @@ using testutils::kThreePEMsOneKelvinDistributedState;
 
 class CoordinatorTest : public testutils::DistributedRulesTest {
  protected:
-  distributedpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
-    distributedpb::DistributedState physical_state_pb;
-    CHECK(google::protobuf::TextFormat::MergeFromString(physical_state_txt, &physical_state_pb));
-    return physical_state_pb;
-  }
-
   void MakeGraph() {
     auto mem_src = MakeMemSource(MakeRelation());
     auto mem_sink = MakeMemSink(mem_src, "out");
     PL_CHECK_OK(mem_sink->SetRelation(MakeRelation()));
   }
 
-  template <typename TIR>
-  TIR* GetEquivalentInNewPlan(IR* new_graph, TIR* old_node) {
-    DCHECK(new_graph->HasNode(old_node->id()));
-    IRNode* new_node = new_graph->Get(old_node->id());
-    DCHECK_EQ(new_node->type(), old_node->type());
-    return static_cast<TIR*>(new_node);
-  }
   void VerifyHasDataSourcePlan(IR* plan) {
     auto mem_src_nodes = plan->FindNodesOfType(IRNodeType::kMemorySource);
     ASSERT_EQ(mem_src_nodes.size(), 1);
@@ -79,47 +66,6 @@ class CoordinatorTest : public testutils::DistributedRulesTest {
     ASSERT_EQ(grpc_src->Children().size(), 1);
     EXPECT_TRUE(Match(grpc_src->Children()[0], MemorySink()))
         << grpc_src->Children()[0]->DebugString();
-  }
-
-  distributedpb::DistributedState ThreeAgentOneKelvinStateWithMetadataInfo() {
-    auto ps = LoadDistributedStatePb(kThreePEMsOneKelvinDistributedState);
-    auto agent1_filter =
-        AgentMetadataFilter::Create(100, 0.01, {MetadataType::POD_ID, MetadataType::SERVICE_ID})
-            .ConsumeValueOrDie();
-    auto agent2_filter =
-        AgentMetadataFilter::Create(100, 0.01, {MetadataType::POD_ID, MetadataType::SERVICE_ID})
-            .ConsumeValueOrDie();
-    auto agent3_filter =
-        AgentMetadataFilter::Create(100, 0.01, {MetadataType::POD_ID, MetadataType::SERVICE_ID})
-            .ConsumeValueOrDie();
-
-    PL_CHECK_OK(agent1_filter->InsertEntity(MetadataType::POD_ID, "agent1_pod"));
-    PL_CHECK_OK(agent2_filter->InsertEntity(MetadataType::SERVICE_ID, "agent2_service"));
-
-    absl::flat_hash_map<std::string, distributedpb::MetadataInfo> mds;
-    mds["pem1"] = agent1_filter->ToProto();
-    mds["pem2"] = agent2_filter->ToProto();
-    mds["pem3"] = agent3_filter->ToProto();
-
-    for (auto i = 0; i < ps.carnot_info_size(); ++i) {
-      if (ps.carnot_info(i).query_broker_address() == "kelvin") {
-        continue;
-      }
-      *(ps.mutable_carnot_info(i)->mutable_metadata_info()) =
-          mds.at(ps.carnot_info(i).query_broker_address());
-    }
-    return ps;
-  }
-
-  std::unique_ptr<DistributedPlan> ThreeAgentOneKelvinCoordinateQuery(std::string_view query) {
-    auto ps = ThreeAgentOneKelvinStateWithMetadataInfo();
-
-    auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
-    compiler::Compiler compiler;
-    auto graph =
-        compiler.CompileToIR(std::string(query), compiler_state_.get()).ConsumeValueOrDie();
-
-    return coordinator->Coordinate(graph.get()).ConsumeValueOrDie();
   }
 };
 
@@ -643,19 +589,6 @@ accepts_remote_sources: false
 asid: 1111111
 )carnotinfo";
 
-constexpr char kDependentRemovableOpsQuery[] = R"pxl(
-import px
-def containers(start_time: str, pod: px.Pod):
-    ''' A list of containers in `pod`.
-    Args:
-    @start_time: The timestamp of data to start at.
-    @pod: The name of the pod to filter on.
-    '''
-    df = px.DataFrame(table='process_stats', start_time=start_time)
-    df = df[df.ctx['pod_id'] == pod]
-    return df.head(50)
-px.display(containers("-10s", "agent1_pod"))
-)pxl";
 TEST_F(CoordinatorTest, delete_dependent_nodes) {
   auto ps = ThreeAgentOneKelvinStateWithMetadataInfo();
   // We add an extra PEM that doesn't have an entry in the schema table.
@@ -663,8 +596,8 @@ TEST_F(CoordinatorTest, delete_dependent_nodes) {
 
   auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
   compiler::Compiler compiler;
-  auto graph =
-      compiler.CompileToIR(kDependentRemovableOpsQuery, compiler_state_.get()).ConsumeValueOrDie();
+  auto graph = compiler.CompileToIR(testutils::kDependentRemovableOpsQuery, compiler_state_.get())
+                   .ConsumeValueOrDie();
 
   auto physical_plan = coordinator->Coordinate(graph.get()).ConsumeValueOrDie();
   ASSERT_EQ(physical_plan->dag().nodes().size(), 2UL);

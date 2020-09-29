@@ -83,6 +83,26 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "removable_ops_rule_test",
+    srcs = ["removable_ops_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/udf_exporter:cc_library",
+        "//src/carnot/planner:test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "plan_clusters_test",
+    srcs = ["plan_clusters_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/udf_exporter:cc_library",
+        "//src/carnot/planner:test_utils",
+    ],
+)
+
+pl_cc_test(
     name = "distributed_stitcher_rules_test",
     srcs = ["distributed_stitcher_rules_test.cc"],
     deps = [

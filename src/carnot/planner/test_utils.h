@@ -15,17 +15,28 @@
 #include "src/carnot/planner/compiler/compiler.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/distributed/distributed_coordinator.h"
+#include "src/carnot/planner/distributed/distributed_plan.h"
 #include "src/carnot/planner/distributed/distributed_planner.h"
+#include "src/carnot/planner/distributed/distributed_splitter.h"
 #include "src/carnot/planner/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/base/base.h"
 #include "src/common/uuid/uuid.h"
+#include "src/shared/metadata/metadata_filter.h"
 
 namespace pl {
 namespace carnot {
 namespace planner {
 namespace testutils {
 
+using md::AgentMetadataFilter;
+using ::pl::testing::proto::EqualsProto;
+using ::pl::testing::proto::Partially;
+using ::testing::Contains;
+using ::testing::ContainsRegex;
+using ::testing::ElementsAre;
+using ::testing::Key;
+using ::testing::UnorderedElementsAre;
 /**
  * This files provides canonical test protos that
  * other parts of the project can use to provide "fakes" for the
@@ -1846,6 +1857,11 @@ class DistributedRulesTest : public OperatorTests {
     }
   }
 
+  std::shared_ptr<IR> CompileSingleNodePlan(std::string_view query) {
+    compiler::Compiler compiler;
+    return compiler.CompileToIR(std::string(query), compiler_state_.get()).ConsumeValueOrDie();
+  }
+
   std::unique_ptr<distributed::DistributedPlan> CoordinateQuery(
       const std::string& query, const distributedpb::DistributedState& distributed_state) {
     // Create a CompilerState obj using the relation map and grabbing the current time.
@@ -1853,14 +1869,13 @@ class DistributedRulesTest : public OperatorTests {
     std::unique_ptr<distributed::Coordinator> coordinator =
         distributed::Coordinator::Create(distributed_state).ConsumeValueOrDie();
 
-    compiler::Compiler compiler;
-    std::shared_ptr<IR> single_node_plan =
-        compiler.CompileToIR(query, compiler_state_.get()).ConsumeValueOrDie();
+    std::shared_ptr<IR> single_node_plan = CompileSingleNodePlan(query);
 
     std::unique_ptr<distributed::DistributedPlan> distributed_plan =
         coordinator->Coordinate(single_node_plan.get()).ConsumeValueOrDie();
     return distributed_plan;
   }
+
   std::unique_ptr<distributed::DistributedPlan> CoordinateQuery(const std::string& query) {
     return CoordinateQuery(query, logical_state_.distributed_state());
   }
@@ -1881,11 +1896,107 @@ class DistributedRulesTest : public OperatorTests {
            !carnot_instance.has_grpc_server();
   }
 
+  distributedpb::DistributedState ThreeAgentOneKelvinStateWithMetadataInfo() {
+    auto ps = LoadDistributedStatePb(kThreePEMsOneKelvinDistributedState);
+    auto agent1_filter =
+        AgentMetadataFilter::Create(100, 0.01, {MetadataType::POD_ID, MetadataType::SERVICE_ID})
+            .ConsumeValueOrDie();
+    auto agent2_filter =
+        AgentMetadataFilter::Create(100, 0.01, {MetadataType::POD_ID, MetadataType::SERVICE_ID})
+            .ConsumeValueOrDie();
+    auto agent3_filter =
+        AgentMetadataFilter::Create(100, 0.01, {MetadataType::POD_ID, MetadataType::SERVICE_ID})
+            .ConsumeValueOrDie();
+
+    PL_CHECK_OK(agent1_filter->InsertEntity(MetadataType::POD_ID, "agent1_pod"));
+    PL_CHECK_OK(agent2_filter->InsertEntity(MetadataType::SERVICE_ID, "agent2_service"));
+
+    absl::flat_hash_map<std::string, distributedpb::MetadataInfo> mds;
+    mds["pem1"] = agent1_filter->ToProto();
+    mds["pem2"] = agent2_filter->ToProto();
+    mds["pem3"] = agent3_filter->ToProto();
+
+    for (auto i = 0; i < ps.carnot_info_size(); ++i) {
+      if (ps.carnot_info(i).query_broker_address() == "kelvin") {
+        continue;
+      }
+      *(ps.mutable_carnot_info(i)->mutable_metadata_info()) =
+          mds.at(ps.carnot_info(i).query_broker_address());
+    }
+    return ps;
+  }
+
+  std::unique_ptr<distributed::DistributedPlan> ThreeAgentOneKelvinCoordinateQuery(
+      std::string_view query) {
+    auto ps = ThreeAgentOneKelvinStateWithMetadataInfo();
+
+    auto coordinator = distributed::Coordinator::Create(ps).ConsumeValueOrDie();
+    compiler::Compiler compiler;
+    auto graph =
+        compiler.CompileToIR(std::string(query), compiler_state_.get()).ConsumeValueOrDie();
+
+    return coordinator->Coordinate(graph.get()).ConsumeValueOrDie();
+  }
+
+  absl::flat_hash_set<int64_t> SourceNodeIds(distributed::DistributedPlan* plan) {
+    absl::flat_hash_set<int64_t> node_ids;
+    if (!plan) {
+      return node_ids;
+    }
+    for (const auto& node : plan->dag().nodes()) {
+      const auto& carnot_info = plan->Get(node)->carnot_info();
+      if (!(carnot_info.has_data_store() && carnot_info.processes_data())) {
+        continue;
+      }
+      node_ids.insert(node);
+    }
+    return node_ids;
+  }
+
+  /**
+   * @brief Assembles the distributed plan from the distributed state.
+   *
+   * @param distributed_state
+   * @return std::unique_ptr<DistributedPlan>
+   */
+  std::unique_ptr<distributed::DistributedPlan> AssembleDistributedPlan(
+      const distributedpb::DistributedState& distributed_state) {
+    auto distributed_plan = std::make_unique<distributed::DistributedPlan>();
+
+    for (const auto& carnot_info : distributed_state.carnot_info()) {
+      auto id = distributed_plan->AddCarnot(carnot_info).ConsumeValueOrDie();
+      if (carnot_info.processes_data() && carnot_info.accepts_remote_sources()) {
+        distributed_plan->SetKelvin(distributed_plan->Get(id));
+      }
+    }
+    return distributed_plan;
+  }
+
+  /**
+   * @brief Splits the plan using the distributed splitter.
+   *
+   * @param logical_plan
+   * @return std::unique_ptr<BlockingSplitPlan>
+   */
+  std::unique_ptr<distributed::BlockingSplitPlan> SplitPlan(IR* logical_plan) {
+    std::unique_ptr<distributed::DistributedSplitter> splitter =
+        distributed::DistributedSplitter::Create(/* support_partial_agg */ false)
+            .ConsumeValueOrDie();
+    return splitter->SplitKelvinAndAgents(logical_plan).ConsumeValueOrDie();
+  }
+
   std::unique_ptr<RegistryInfo> registry_info_;
   std::unique_ptr<CompilerState> compiler_state_;
   distributedpb::LogicalPlannerState logical_state_;
   absl::flat_hash_map<sole::uuid, int64_t> uuid_to_id_map_;
 };
+
+constexpr char kDependentRemovableOpsQuery[] = R"pxl(
+import px
+df = px.DataFrame(table='process_stats')
+df = df[df.ctx['pod_id'] == "agent1_pod"]
+px.display(df)
+)pxl";
 
 }  // namespace testutils
 }  // namespace planner
