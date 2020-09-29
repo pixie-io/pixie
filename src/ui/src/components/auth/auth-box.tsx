@@ -103,7 +103,7 @@ const AuthBox = withStyles(styles)((props: AuthBoxProps) => {
             <img src={pixienautBalloonSvg} alt='pixienaut' className={classes.pixienaut} />
           </Grid>
           <Grid item className={clsx(classes.flex, classes.centerSelf)}>
-            <Typography variant='h4' className={clsx(classes.title, classes.textCenter)}>
+            <Typography variant='h1' className={clsx(classes.title, classes.textCenter)}>
               {textByVariant[variant].title}
             </Typography>
           </Grid>
@@ -135,7 +135,7 @@ const AuthBox = withStyles(styles)((props: AuthBoxProps) => {
                 </Typography>
               </Grid>
               <Grid item>
-                <Button component={Link} color='secondary' href={toggleURL}>{textByVariant[variant].buttonText}</Button>
+                <Button component={Link} color='primary' href={toggleURL}>{textByVariant[variant].buttonText}</Button>
               </Grid>
             </Grid>
           </Grid>

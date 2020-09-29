@@ -65,7 +65,7 @@ export const MessageBox = withStyles(styles)((props: MessageBoxProps) => {
               : <img src={pixienautSVG} alt='pixienaut' />}
           </Grid>
           <Grid item className={classes.centerContent}>
-            <Typography variant='h4' className={classes.title}>
+            <Typography variant='h1' className={classes.title}>
               {title}
             </Typography>
           </Grid>

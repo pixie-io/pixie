@@ -114,22 +114,33 @@ export const DARK_THEME = createMuiTheme({
     },
   },
   typography: {
+    // The below rem conversions are based on a root font-size of 16px.
     h3: {
-      fontSize: '18px',
+      fontSize: '1.125rem', // 18px
       fontWeight: 500,
       marginBottom: '16px',
       marginTop: '12px',
     },
     h2: {
-      fontSize: '24px',
+      fontSize: '1.5rem', // 24px
       fontWeight: 500,
     },
     h4: {
-      fontSize: '14px',
+      fontSize: '0.875rem', // 14px
       fontWeight: 500,
     },
     caption: {
-      fontSize: '14px',
+      fontSize: '0.875rem', // 14px
+    },
+    subtitle1: {
+      fontSize: '1rem', // 16px
+    },
+    subtitle2: {
+      fontSize: '0.875rem', // 14px
+    },
+    h1: {
+      fontSize: '2.125rem', // 34px
+      fontWeight: 400,
     },
   },
   palette: {
