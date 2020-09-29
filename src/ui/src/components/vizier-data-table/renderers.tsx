@@ -1,22 +1,28 @@
 import * as React from 'react';
 import {
-  AlertData, CPUData, JSONData, LatencyData,
+  AlertData,
+  BytesRenderer,
+  CPUData, DurationRenderer,
+  JSONData,
+  LatencyData,
+  PortRenderer,
 } from 'components/format-data/format-data';
 import {
   EntityLink,
-  isEntityType, STATUS_TYPES, toStatusIndicator,
+  isEntityType,
+  STATUS_TYPES,
+  toStatusIndicator,
 } from 'components/live-widgets/utils';
-import QuantilesBoxWhisker, {
-  SelectedPercentile,
-} from 'components/quantiles-box-whisker/quantiles-box-whisker';
+import QuantilesBoxWhisker, { SelectedPercentile } from 'components/quantiles-box-whisker/quantiles-box-whisker';
 import { DataType, SemanticType } from 'types/generated/vizier_pb';
 import { Arguments } from 'utils/args-utils';
 import {
-  getDataRenderer, looksLikeAlertCol, looksLikeCPUCol, looksLikeLatencyCol,
+  getDataRenderer,
+  looksLikeAlertCol,
+  looksLikeCPUCol,
+  looksLikeLatencyCol,
 } from 'utils/format-data';
-import {
-  getCPULevel, getLatencyLevel, GaugeLevel,
-} from 'utils/metric-thresholds';
+import { GaugeLevel, getCPULevel, getLatencyLevel } from 'utils/metric-thresholds';
 import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info';
 
 // Expects a p99 field in colName.
@@ -82,6 +88,12 @@ export function quantilesRenderer(display: ColumnDisplayInfo,
   };
 }
 
+function renderWrapper(RendererFunc: any /* TODO(zasgar): revisit this typing */) {
+  return function renderer(val) {
+    return <RendererFunc data={val} />;
+  };
+}
+
 const statusRenderer = (st: SemanticType) => (v: string) => toStatusIndicator(v, st);
 
 const serviceRendererFuncGen = (clusterName: string, propagatedArgs?: Arguments) => (v) => {
@@ -143,14 +155,24 @@ export const prettyCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (C
     return entityRenderer(st, clusterName, propagatedArgs);
   }
 
-  if (st === SemanticType.ST_QUANTILES) {
-    return quantilesRenderer(display, updateDisplay, rows);
+  switch (st) {
+    case SemanticType.ST_QUANTILES:
+      return quantilesRenderer(display, updateDisplay, rows);
+    case SemanticType.ST_PORT:
+      return renderWrapper(PortRenderer);
+    case SemanticType.ST_DURATION_NS:
+      return renderWrapper(DurationRenderer);
+    case SemanticType.ST_BYTES:
+      return renderWrapper(BytesRenderer);
+    default:
+      break;
   }
 
   if (STATUS_TYPES.has(st)) {
     return statusRenderer(st);
   }
 
+  // TODO(zasgar): Remove latency information.
   if (looksLikeLatencyCol(name, dt)) {
     return LatencyDataWrapper;
   }

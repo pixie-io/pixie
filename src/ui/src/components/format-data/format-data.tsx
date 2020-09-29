@@ -1,7 +1,12 @@
 import * as React from 'react';
 import { createStyles, Theme, withStyles } from '@material-ui/core/styles';
 import { formatBoolData, formatFloat64Data } from 'utils/format-data';
-import { GaugeLevel, getCPULevel, getLatencyLevel } from 'utils/metric-thresholds';
+import {
+  GaugeLevel,
+  getCPULevel,
+  getLatencyLevel,
+  getLatencyNSLevel,
+} from 'utils/metric-thresholds';
 
 const JSON_INDENT_PX = 16;
 
@@ -153,8 +158,95 @@ export const LatencyData = withStyles(gaugeStyles, {
   <GaugeDataBase classes={classes} data={data} getLevel={getLatencyLevel} />
 ));
 
+export const GaugeData = withStyles(gaugeStyles, {
+  name: 'GaugeData',
+})(({ classes, data, level }: any) => (
+  <div className={classes[level]}>
+    {data}
+  </div>
+));
+
 export const CPUData = withStyles(gaugeStyles, {
   name: 'CPUData',
 })(({ classes, data }: any) => (
   <GaugeDataBase classes={classes} data={data} getLevel={getCPULevel} />
 ));
+
+export const PortRendererBase = ({ data, classes }) => (
+  <>
+    <span className={classes.value}>{data}</span>
+  </>
+);
+
+export const PortRenderer = withStyles(() => ({
+  value: {
+    fontFamily: '"Roboto Mono", serif',
+    fontSize: '14px',
+  },
+}))(PortRendererBase);
+
+export interface DataWithUnits {
+  val: string;
+  units: string;
+}
+
+export const formatBytes = (data: number): DataWithUnits => {
+  const decimals = 2;
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['\u00a0B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+  const i = Math.min(Math.floor(Math.log(data) / Math.log(k)), sizes.length + 1);
+
+  const val = `${parseFloat((data / (k ** i)).toFixed(dm))}\u00A0`;
+  const units = sizes[i];
+
+  return {
+    val,
+    units,
+  };
+};
+
+export const formatDuration = (data: number): DataWithUnits => {
+  const decimals = 2;
+  const k = 1000;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['ns', '\u00b5s', 'ms', '\u00a0s'];
+
+  const i = Math.min(Math.floor(Math.log(data) / Math.log(k)), sizes.length + 1);
+
+  const val = `${parseFloat((data / (k ** i)).toFixed(dm))}\u00A0`;
+  const units = sizes[i];
+
+  return {
+    val,
+    units,
+  };
+};
+
+const RenderValueWithUnitsBase = ({ data, classes }: {data: DataWithUnits; classes: any}) => (
+  <>
+    <span className={classes.value}>{data.val}</span>
+    <span className={classes.units}>{data.units}</span>
+  </>
+);
+
+const RenderValueWithUnits = withStyles(() => ({
+  units: {
+    opacity: 0.5,
+    fontFamily: '"Roboto Mono", serif',
+    fontSize: '14px',
+  },
+  value: {
+    fontFamily: '"Roboto Mono", serif',
+    fontSize: '14px',
+  },
+}))(RenderValueWithUnitsBase);
+
+export const BytesRenderer = ({ data }: {data: number}) => <RenderValueWithUnits data={formatBytes(data)} />;
+export const DurationRenderer = ({ data }: {data: number}) => (
+  <GaugeData
+    data={<RenderValueWithUnits data={formatDuration(data)} />}
+    level={getLatencyNSLevel(data)}
+  />
+);

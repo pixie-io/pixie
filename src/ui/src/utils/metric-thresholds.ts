@@ -25,3 +25,13 @@ export function getCPULevel(val: number): GaugeLevel {
   }
   return 'high';
 }
+
+export function getLatencyNSLevel(val: number): GaugeLevel {
+  if (val < (LATENCY_MED_THRESHOLD * 1.0E6)) {
+    return 'low';
+  }
+  if (val < (LATENCY_HIGH_THRESHOLD * 1.0E6)) {
+    return 'med';
+  }
+  return 'high';
+}
