@@ -16,25 +16,39 @@ const useStyles = makeStyles((theme: Theme) => (
       fontWeight: theme.typography.fontWeightLight,
       display: 'flex',
       flexDirection: 'row',
+      alignItems: 'baseline',
+
+      '> *': {
+        flex: '1',
+      },
+    },
+    inputWrapper: {
+      position: 'relative',
+      minWidth: '0.1px',
     },
     inputElem: {
+      // Match the root surrounding it
+      color: 'inherit',
+      background: 'inherit',
+      border: 'none',
+      fontSize: 'inherit',
+      fontWeight: 'inherit',
+      lineHeight: 'inherit',
       position: 'absolute',
-      opacity: 0,
+      top: '0',
+      left: '0',
+      padding: '0',
+    },
+    // Since HTMLInputElement does not obey normal width calculations, we position it atop an invisible span that does.
+    dummy: {
+      color: 'transparent',
+      pointerEvents: 'none',
+      paddingRight: '0.01px', // Guarantees that inputWrapper will have a nonzero width, so the input knows where to be.
     },
     hint: {
       opacity: 0.2,
     },
-    caret: {
-      display: 'inline-block',
-      width: 0,
-      height: '100%',
-      borderRight: '1px solid white',
-      visibility: 'hidden',
-      '&.visible': {
-        visibility: 'visible',
-      },
-    },
-    inputValue: {
+    textArea: {
       flex: 1,
     },
     prefix: {
@@ -64,7 +78,7 @@ const Input: React.FC<InputProps> = ({
   customRef,
 }) => {
   const classes = useStyles();
-  const [focused, setFocused] = React.useState<boolean>(true);
+  const dummyElement = React.useRef<HTMLSpanElement>(null);
   const defaultRef = React.useRef<HTMLInputElement>(null);
   const inputRef = customRef || defaultRef;
 
@@ -93,21 +107,15 @@ const Input: React.FC<InputProps> = ({
     }
   }, [onKey]);
 
-  const handleFocus = React.useCallback(() => {
-    setFocused(true);
-  }, []);
-
-  const handleBlur = React.useCallback(() => {
-    setFocused(false);
-  }, []);
-
   const focusInput = React.useCallback(() => {
     inputRef.current.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Focus the input element whenever the suggestion changes.
   React.useEffect(() => {
     inputRef.current.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suggestion]);
 
   const hint = React.useMemo(() => {
@@ -120,44 +128,22 @@ const Input: React.FC<InputProps> = ({
 
   return (
     <div className={clsx(classes.root, className)} onClick={focusInput}>
+      <span className={classes.inputWrapper}>
+        <span className={classes.dummy} ref={dummyElement}>{value}</span>
+        <input
+          type='text'
+          className={classes.inputElem}
+          ref={inputRef}
+          value={value}
+          onChange={handleChange}
+          onKeyDown={handleKey}
+          size={0} // Ensures that CSS controls the width of this element
+        />
+      </span>
       {prefix ? <div className={classes.prefix}>{prefix}</div> : null}
-      <input
-        className={classes.inputElem}
-        ref={inputRef}
-        value={value}
-        onChange={handleChange}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        onKeyDown={handleKey}
-      />
-      <div className={classes.inputValue}>
-        <span>{value}</span>
-        <Caret active={focused} />
-        <span className={classes.hint} tabIndex={-1}>{hint}</span>
-      </div>
+      <span className={classes.hint} tabIndex={-1}>{hint}</span>
     </div>
   );
-};
-
-const BLINK_INTERVAL = 500; // 1000ms = 1s
-
-const Caret: React.FC<{ active: boolean }> = ({ active }) => {
-  const classes = useStyles();
-  const [visible, setVisible] = React.useState(true);
-  React.useEffect(() => {
-    if (!active) { return; }
-
-    const intervalSub = setInterval(() => {
-      setVisible((show) => !show);
-    }, BLINK_INTERVAL);
-
-    // eslint-disable-next-line consistent-return
-    return () => {
-      clearInterval(intervalSub);
-    };
-  }, [active]);
-  return (
-    <div className={clsx(classes.caret, active && visible && 'visible')}>&nbsp;</div>);
 };
 
 type FormField = [string, string];
@@ -178,7 +164,7 @@ export const FormInput: React.FC<InputFormProps> = ({ form }) => {
   }, [form]);
 
   return (
-    <textarea className={classes.inputValue} ref={ref} value={value} />
+    <textarea className={classes.textArea} ref={ref} value={value} />
   );
 };
 
