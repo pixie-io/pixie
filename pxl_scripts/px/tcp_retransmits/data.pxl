@@ -55,7 +55,7 @@ kprobe:tcp_retransmit_skb
     $dport = ($dport >> 8) | (($dport << 8) & 0x00FF00);
     $state = $sk->__sk_common.skc_state;
     $statestr = @tcp_states[$state];
-    printf(\"%llu %u %llu %s:%d %s:%d %s\",
+    printf(\"time:%llu pid:%u pid_start_time:%llu src_ip:%s src_port:%d dst_ip:%s dst_port:%d state:%s\",
       nsecs,
       pid,
       ((struct task_struct*)curtask)->group_leader->start_time / 10000000,
@@ -83,13 +83,7 @@ def demo_func():
                              "10m")
     # Rename columns
     df = px.DataFrame(table=name,
-                      select=['time', 'Column_3', 'Column_4', 'Column_5', 'Column_6', 'Column_7'])
-    df.src_ip = df.Column_3
-    df.src_port = df.Column_4
-    df.dst_ip = df.Column_5
-    df.dst_port = df.Column_6
-    df.state = df.Column_7
-    df = df.drop(['Column_3', 'Column_4', 'Column_5', 'Column_6', 'Column_7'])
+                      select=['time', 'src_ip', 'src_port', 'dst_ip', 'dst_port', 'state'])
 
     # Convert IPs to domain names.
     df.resolved_src = px.pod_id_to_pod_name(px.ip_to_pod_id(df.src_ip))
