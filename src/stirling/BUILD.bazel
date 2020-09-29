@@ -286,7 +286,10 @@ pl_cc_test(
     srcs = ["http_trace_bpf_test.cc"],
     # This test sometimes times out.
     flaky = True,
-    tags = ["requires_bpf"],
+    tags = [
+        "no_asan",
+        "requires_bpf",
+    ],
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
@@ -300,7 +303,10 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["mysql_trace_bpf_test.cc"],
     flaky = True,
-    tags = ["requires_bpf"],
+    tags = [
+        "no_asan",
+        "requires_bpf",
+    ],
     deps = [
         ":cc_library",
         "//src/stirling/testing:cc_library",
@@ -316,7 +322,10 @@ pl_cc_test(
         "//src/stirling/mysql/testing:scripts",
     ],
     flaky = True,
-    tags = ["requires_bpf"],
+    tags = [
+        "no_asan",
+        "requires_bpf",
+    ],
     deps = [
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",
@@ -330,7 +339,10 @@ pl_cc_test(
     srcs = ["openssl_bpf_test.cc"],
     data = ["//src/stirling/testing/ssl:nginx_ssl_image.tar"],
     flaky = True,
-    tags = ["requires_bpf"],
+    tags = [
+        "no_asan",
+        "requires_bpf",
+    ],
     deps = [
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",
@@ -354,7 +366,10 @@ pl_cc_test(
 pl_cc_test(
     name = "pgsql_trace_bpf_test",
     timeout = "moderate",
-    srcs = ["pgsql_trace_bpf_test.cc"],
+    srcs = [
+        "no_asan",
+        "pgsql_trace_bpf_test.cc",
+    ],
     data = [
         "//src/stirling/pgsql/testing:demo_image.tar",
     ],
@@ -370,7 +385,10 @@ pl_cc_test(
 pl_cc_test(
     name = "cql_trace_bpf_test",
     timeout = "moderate",
-    srcs = ["cql_trace_bpf_test.cc"],
+    srcs = [
+        "cql_trace_bpf_test.cc",
+        "no_asan",
+    ],
     flaky = True,
     tags = ["requires_bpf"],
     deps = [
@@ -395,6 +413,7 @@ pl_cc_test(
         # This test runs Go gRPC client & server, which causes other tests to attach & detach
         # uprobes and slowed down significantly.
         "exclusive",
+        "no_asan",
     ],
     deps = [
         ":cc_library",
@@ -420,6 +439,7 @@ pl_cc_test(
         # This test runs Go gRPC client & server, which causes other tests to attach & detach
         # uprobes, slowing them down significantly.
         "exclusive",
+        "no_asan",
     ],
     deps = [
         ":cc_library",
