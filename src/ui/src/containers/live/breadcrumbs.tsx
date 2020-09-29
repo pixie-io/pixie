@@ -53,7 +53,7 @@ const styles = (({ shape, palette, spacing }: Theme) => createStyles({
     paddingTop: spacing(1),
     paddingBottom: spacing(1),
     marginTop: spacing(1),
-    marginRight: spacing(4.5),
+    marginRight: spacing(3.5),
     marginLeft: spacing(3),
     marginBottom: spacing(1),
     background: palette.background.three,
