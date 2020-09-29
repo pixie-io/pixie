@@ -47,15 +47,15 @@ using pl::stirling::kPGSQLTable;
 
 DEFINE_string(sources, "kProd", "[kAll|kProd|kMetrics|kTracers] Choose sources to enable.");
 DEFINE_string(trace, "", "Dynamic trace to deploy.");
-DEFINE_string(print_record_batches, "",
+DEFINE_string(print_record_batches,
+              absl::Substitute("$0,$1,$2", kHTTPTable.name(), kMySQLTable.name(), kCQLTable.name()),
               "Comma-separated list of tables to print. Defaults to tracers if not specified. Use "
               "'None' for none.");
 DEFINE_bool(init_only, false, "If true, only runs the init phase and exits. For testing.");
 DEFINE_int32(timeout_secs, 0,
              "If greater than 0, only runs for the specified amount of time and exits.");
 
-std::vector<std::string> g_table_print_enables = {
-    std::string(kHTTPTable.name()), std::string(kMySQLTable.name()), std::string(kCQLTable.name())};
+std::vector<std::string> g_table_print_enables;
 
 // Put this in global space, so we can kill it in the signal handler.
 Stirling* g_stirling = nullptr;
