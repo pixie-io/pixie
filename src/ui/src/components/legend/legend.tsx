@@ -132,6 +132,7 @@ const Legend = React.memo((props: LegendProps) => {
         ...interactState,
         selectedSeries: [...interactState.selectedSeries, key],
       });
+      setCurrentPage(0);
     }
   }, [interactState, setInteractState]);
 
@@ -173,7 +174,12 @@ const Legend = React.memo((props: LegendProps) => {
 
   let dataEntries: LegendEntry[];
   if (interactState.selectedSeries.length > 0) {
+    // Put selected series first.
     dataEntries = data.entries.filter((entry) => _.includes(interactState.selectedSeries, entry.key));
+    dataEntries = [
+      ...dataEntries,
+      ...data.entries.filter((entry) => !_.includes(interactState.selectedSeries, entry.key)),
+    ];
   } else {
     dataEntries = data.entries;
   }
