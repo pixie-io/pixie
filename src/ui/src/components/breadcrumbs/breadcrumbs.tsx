@@ -142,7 +142,7 @@ interface DialogDropdownProps extends WithStyles<typeof styles> {
 const DialogDropdown = ({
   classes, onSelect, onClose, getListItems, anchorEl,
 }: DialogDropdownProps) => {
-  const { allowTyping, requireCompletion } = React.useContext(AutocompleteContext);
+  const { allowTyping, requireCompletion, preSelect } = React.useContext(AutocompleteContext);
   const [listItems, setListItems] = React.useState<BreadcrumbListItem[]>([]);
   const [completionItems, setCompletionItems] = React.useState<CompletionItem[]>([]);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -223,7 +223,13 @@ const DialogDropdown = ({
     >
       <ThemeProvider theme={compactThemeBuilder}>
         <Card className={classes.card}>
-          <AutocompleteContext.Provider value={{ allowTyping, requireCompletion, inputRef }}>
+          <AutocompleteContext.Provider value={{
+            allowTyping,
+            requireCompletion,
+            inputRef,
+            preSelect: !!(preSelect && anchorEl),
+          }}
+          >
             <Autocomplete
               className={classes.autocomplete}
               placeholder='Filter...'
@@ -305,9 +311,7 @@ interface BreadcrumbsProps extends WithStyles<typeof styles> {
 const Breadcrumbs = ({
   classes, breadcrumbs,
 }: BreadcrumbsProps) => {
-  // Read default values from parent context, in case the breadcrumbs don't individually specify.
-  // This is because React doesn't cascade context values: the nearest ancestor context is read whole, including
-  // undefined values. It won't look any further up the tree to find defined values. We have to do that part ourselves.
+  // In case a breadcrumb doesn't override, give it the nearest context's values.
   const { allowTyping, requireCompletion } = React.useContext(AutocompleteContext);
   return (
     <div className={classes.breadcrumbs}>
@@ -319,6 +323,7 @@ const Breadcrumbs = ({
             value={{
               allowTyping: breadcrumb.allowTyping ?? allowTyping,
               requireCompletion: breadcrumb.requireCompletion ?? requireCompletion,
+              preSelect: true,
             }}
           >
             <Breadcrumb

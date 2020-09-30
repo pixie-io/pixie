@@ -33,12 +33,18 @@ export interface AutocompleteContextProps {
   allowTyping?: boolean;
   /** @default true */
   requireCompletion?: boolean;
+  /**
+   * If true, existing contents will be selected when this autocomplete is opened.
+   * @default false
+   */
+  preSelect?: boolean;
   inputRef?: React.MutableRefObject<HTMLInputElement>;
 }
 
 export const AutocompleteContext = React.createContext<AutocompleteContextProps>({
   allowTyping: true,
   requireCompletion: true,
+  preSelect: false,
 });
 
 interface AutoCompleteProps {
@@ -76,7 +82,9 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
   className,
 }) => {
   const classes = useStyles();
-  const { allowTyping, requireCompletion, inputRef } = React.useContext(AutocompleteContext);
+  const {
+    allowTyping, requireCompletion, inputRef, preSelect,
+  } = React.useContext(AutocompleteContext);
   const [inputValue, setInputValue] = React.useState('');
   const [completions, setCompletions] = React.useState([]);
   const [activeItem, setActiveItem] = React.useState<CompletionId>('');
@@ -145,6 +153,7 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
         prefix={prefix}
         suggestion={itemsMap.get(activeItem)?.title || ''}
         customRef={inputRef}
+        preSelect={preSelect}
       />
       )}
       <Completions

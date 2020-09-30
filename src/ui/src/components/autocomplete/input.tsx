@@ -65,6 +65,7 @@ interface InputProps {
   className?: string;
   value: string;
   customRef?: React.MutableRefObject<HTMLInputElement>;
+  preSelect?: boolean;
 }
 
 const Input: React.FC<InputProps> = ({
@@ -76,11 +77,22 @@ const Input: React.FC<InputProps> = ({
   prefix = null,
   value,
   customRef,
+  preSelect,
 }) => {
   const classes = useStyles();
   const dummyElement = React.useRef<HTMLSpanElement>(null);
   const defaultRef = React.useRef<HTMLInputElement>(null);
   const inputRef = customRef || defaultRef;
+
+  React.useEffect(() => {
+    if (preSelect && inputRef.current) {
+      // Need to wait for the value to propagate, so let the render complete before manipulating the selection directly.
+      setTimeout(() => {
+        inputRef.current.setSelectionRange(0, inputRef.current.value.length);
+      }, 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preSelect, inputRef]);
 
   const handleChange = React.useCallback((e) => {
     const val = e.target.value;
