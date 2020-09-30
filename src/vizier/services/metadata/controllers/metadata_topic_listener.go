@@ -1,13 +1,17 @@
 package controllers
 
 import (
+	"fmt"
 	"math"
+	"sort"
+	"strings"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
 )
 
@@ -77,6 +81,14 @@ func (m *MetadataTopicListener) Stop() {
 	m.quitCh <- true
 }
 
+func sortResourceUpdates(arr []*metadatapb.ResourceUpdate) {
+	sortFn := func(i, j int) bool {
+		return compareResourceVersions(arr[i].ResourceVersion, arr[j].ResourceVersion) < 0
+	}
+
+	sort.Slice(arr, sortFn)
+}
+
 // ProcessMessage processes a single message in the metadata topic.
 func (m *MetadataTopicListener) ProcessMessage(msg *nats.Msg) error {
 	c2vMsg := &cvmsgspb.C2VMessage{}
@@ -92,9 +104,31 @@ func (m *MetadataTopicListener) ProcessMessage(msg *nats.Msg) error {
 		return err
 	}
 
-	updates, err := m.mds.GetMetadataUpdatesForHostname(nil, pb.From, pb.To)
-	if err != nil {
-		return err
+	var updates []*metadatapb.ResourceUpdate
+	if pb.From == "" {
+		// Get current state using the pods/endpoints/containers known in etcd.
+		mdUpdates, mdErr := m.mds.GetMetadataUpdates(nil)
+		if mdErr != nil {
+			log.WithError(mdErr).Error("Could not get metadata updates")
+			return mdErr
+		}
+
+		// Sort updates.
+		sortResourceUpdates(mdUpdates)
+
+		// Assign prevRVs and filter out any RVs greater than the To request.
+		updates = make([]*metadatapb.ResourceUpdate, 0)
+		currRV := ""
+		for _, u := range mdUpdates {
+			u.PrevResourceVersion = currRV
+			currRV = u.ResourceVersion
+			updates = append(updates, u)
+		}
+	} else {
+		updates, err = m.mds.GetMetadataUpdatesForHostname(nil, pb.From, pb.To)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Send updates in batches.
@@ -127,6 +161,31 @@ func (m *MetadataTopicListener) ProcessMessage(msg *nats.Msg) error {
 	return nil
 }
 
+func compareResourceVersions(rv1 string, rv2 string) int {
+	// The rv may end in "_#", for containers which share the same rv as pods.
+	// This needs to be removed from the string that is about to be padded, and reappended after padding.
+	formatRV := func(rv string) string {
+		splitRV := strings.Split(rv, "_")
+		paddedRV := fmt.Sprintf("%020s", splitRV[0])
+		if len(splitRV) > 1 {
+			// Reappend the suffix, if any.
+			paddedRV = fmt.Sprintf("%s_%s", paddedRV, splitRV[1])
+		}
+		return paddedRV
+	}
+
+	fmtRV1 := formatRV(rv1)
+	fmtRV2 := formatRV(rv2)
+
+	if fmtRV1 == fmtRV2 {
+		return 0
+	}
+	if fmtRV1 < fmtRV2 {
+		return -1
+	}
+	return 1
+}
+
 // HandleUpdate sends the metadata update over the message bus.
 func (m *MetadataTopicListener) HandleUpdate(update *UpdateMessage) {
 	if update.NodeSpecific { // The metadata update is an update for a specific agent.
@@ -141,18 +200,23 @@ func (m *MetadataTopicListener) HandleUpdate(update *UpdateMessage) {
 	}
 
 	if prevRV == "" { // This should only happen on the first update we ever send from Vizier->Cloud.
-		updates, err := m.mds.GetMetadataUpdatesForHostname(nil, "", update.Message.ResourceVersion)
+		// Get current state using the pods/endpoints/containers known in etcd.
+		updates, err := m.mds.GetMetadataUpdates(nil)
 		if err != nil {
-			log.WithError(err).Error("Could not fetch previous updates to get PrevResourceVersion")
+			log.WithError(err).Error("Could not get metadata updates")
 			return
 		}
-		if len(updates) > 0 {
-			prevRV = updates[len(updates)-1].ResourceVersion
-		}
+
+		// Sort updates, since they may not be returned in-order from GetMetadataUpdates.
+		sortResourceUpdates(updates)
+
+		// Get the most recent update. This is the prevRV we will use for the incoming update.
+		prevRV = updates[len(updates)-1].ResourceVersion
+		m.mds.UpdateSubscriberResourceVersion(subscriberName, prevRV)
 	}
 
 	// Don't send updates we have already sent before.
-	if update.Message.ResourceVersion <= prevRV {
+	if compareResourceVersions(update.Message.ResourceVersion, prevRV) < 1 {
 		log.WithField("update", update).Trace("Received old update that should have already been sent")
 		return
 	}
@@ -178,7 +242,6 @@ func (m *MetadataTopicListener) HandleUpdate(update *UpdateMessage) {
 	if err != nil {
 		return
 	}
-
 	err = m.sendMessage(MetadataUpdatesTopic, b)
 	if err != nil {
 		log.WithError(err).Error("Could not send metadata update over NATS")

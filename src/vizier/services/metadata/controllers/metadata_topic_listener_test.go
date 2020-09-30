@@ -115,13 +115,16 @@ func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
 		Return("", nil)
 	mockMdStore.
 		EXPECT().
-		GetMetadataUpdatesForHostname(nil, "", "1_0").
+		GetMetadataUpdates(nil).
 		Return([]*metadatapb.ResourceUpdate{
 			&metadatapb.ResourceUpdate{
 				ResourceVersion:     "0",
 				PrevResourceVersion: "",
 			},
 		}, nil)
+	mockMdStore.
+		EXPECT().
+		UpdateSubscriberResourceVersion("cloud", "0")
 	mockMdStore.
 		EXPECT().
 		UpdateSubscriberResourceVersion("cloud", "1_0")
@@ -146,15 +149,19 @@ func TestMetadataTopicListener_ProcessMessage(t *testing.T) {
 	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
 	mockMdStore.
 		EXPECT().
-		GetMetadataUpdatesForHostname(nil, "", "5").
+		GetMetadataUpdates(nil).
 		Return([]*metadatapb.ResourceUpdate{
+			&metadatapb.ResourceUpdate{ResourceVersion: "6"},
 			&metadatapb.ResourceUpdate{ResourceVersion: "1"},
-			&metadatapb.ResourceUpdate{ResourceVersion: "2"},
 			&metadatapb.ResourceUpdate{ResourceVersion: "3"},
+			&metadatapb.ResourceUpdate{ResourceVersion: "5"},
+			&metadatapb.ResourceUpdate{ResourceVersion: "2"},
+			&metadatapb.ResourceUpdate{ResourceVersion: "4"},
 		}, nil)
 	mockMdStore.
 		EXPECT().
 		UpdateSubscriberResourceVersion("cloud", "")
+
 	isLeader := true
 	mdh, _ := controllers.NewMetadataHandler(mockMdStore, &isLeader)
 	updates := make([][]byte, 0)
@@ -188,7 +195,7 @@ func TestMetadataTopicListener_ProcessMessage(t *testing.T) {
 	updatePb := &cvmsgspb.MetadataResponse{}
 	err = types.UnmarshalAny(wrapperPb.Msg, updatePb)
 
-	assert.Equal(t, 3, len(updatePb.Updates))
+	assert.Equal(t, 6, len(updatePb.Updates))
 	for i, u := range updatePb.Updates {
 		assert.Equal(t, fmt.Sprintf("%d", i+1), u.ResourceVersion)
 	}
@@ -236,7 +243,7 @@ func TestMetadataTopicListener_ProcessMessageBatch(t *testing.T) {
 
 			mockMdStore.
 				EXPECT().
-				GetMetadataUpdatesForHostname(nil, "", fmt.Sprintf("%d", test.numUpdates+1)).
+				GetMetadataUpdatesForHostname(nil, "0", fmt.Sprintf("%d", test.numUpdates+1)).
 				Return(retUpdates, nil)
 
 			mockMdStore.
@@ -263,7 +270,7 @@ func TestMetadataTopicListener_ProcessMessageBatch(t *testing.T) {
 			})
 
 			req := cvmsgspb.MetadataRequest{
-				From:  "",
+				From:  "0",
 				To:    fmt.Sprintf("%d", test.numUpdates+1),
 				Topic: "1234",
 			}
