@@ -33,8 +33,8 @@ def pods_for_namespace(start_time: str, namespace: px.Namespace):
     df = df[df.ctx['namespace'] == namespace]
     df.pod = df.ctx['pod_name']
     df = df.groupby(['pod']).agg(
-        rss_bytes=('rss_bytes', px.mean),
-        vsize_bytes=('vsize_bytes', px.mean),
+        rss=('rss_bytes', px.mean),
+        vsize=('vsize_bytes', px.mean),
     )
 
     df.create_time = px.pod_name_to_start_time(df.pod)
