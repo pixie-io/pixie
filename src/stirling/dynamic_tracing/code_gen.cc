@@ -283,8 +283,10 @@ StatusOr<std::vector<std::string>> GenPtrLenVariable(const PtrLenVariable& var) 
   // Make sure we don't overrun the buffer by capping the length (also required for verifier).
   // Below, we want the size of blobXX->buf. We can do that with this trick:
   // https://stackoverflow.com/questions/3553296/sizeof-single-struct-member-in-c
-  code_lines.push_back(absl::Substitute("$0 = ($0 > sizeof(((struct blob$1*)0)->buf)) ? $1 : $0;",
-                                        var.len_var_name(), size));
+  code_lines.push_back(absl::Substitute(
+      "uint8_t $0_truncate__ = $0 > sizeof(((struct blob$1*)0)->buf);", var.len_var_name(), size));
+  code_lines.push_back(absl::Substitute(
+      "$0 = $0_truncate__ ? sizeof(((struct blob$1*)0)->buf) : $0;", var.len_var_name(), size));
   code_lines.push_back(
       absl::Substitute("$0 = $0 & $1; // Keep verifier happy.", var.len_var_name(), size - 1));
 
@@ -296,6 +298,9 @@ StatusOr<std::vector<std::string>> GenPtrLenVariable(const PtrLenVariable& var) 
       "BPF verifier issues on kernel 4.14.");
   code_lines.push_back(
       absl::Substitute("bpf_probe_read($0.buf, $0.len + 1, $1);", var.name(), var.ptr_var_name()));
+  code_lines.push_back("// Must write this after the buf probe read, otherwise may get clobbered.");
+  code_lines.push_back(
+      absl::Substitute("$0.dummy = $1_truncate__;", var.name(), var.len_var_name()));
 
   return code_lines;
 }
@@ -811,6 +816,7 @@ std::vector<std::string> GenBlobType(int size) {
       absl::Substitute("  uint8_t buf[$0-sizeof(uint64_t)-1];", size),
       "  // To keep 4.14 kernel verifier happy, we copy an extra byte.",
       "  // Keep a dummy character to absorb this garbage.",
+      "  // We also use this extra byte to track if data has been truncated.",
       "  uint8_t dummy;",
       "};",
   };

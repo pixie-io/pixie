@@ -98,12 +98,13 @@ class StructDecoder {
     // A copy is provided here for reference:
     //
     // #define MAX_STR_LEN (kStructStringSize-sizeof(int64_t)-1)
-    // struct string {
+    // struct blob {
     //   uint64_t len;
     //   char buf[MAX_STR_LEN];
     //   // To keep 4.14 kernel verifier happy we copy an extra byte.
     //   // Keep a dummy character to absorb this garbage.
-    //   char dummy;
+    //   // We also use this extra byte to track if data has been truncated.
+    //   uint8_t dummy;
     // };
     //
     // TODO(oazizi): Find a better way to keep these in sync.
@@ -111,7 +112,12 @@ class StructDecoder {
     std::string s;
     s.resize(len);
     std::memcpy(s.data(), buf_.data(), len);
-    buf_.remove_prefix(dynamic_tracing::kStructStringSize - sizeof(size_t));
+    buf_.remove_prefix(dynamic_tracing::kStructStringSize - sizeof(size_t) - 1);
+    PL_ASSIGN_OR_RETURN(uint8_t truncated, ExtractField<uint8_t>());
+
+    if (truncated) {
+      absl::StrAppend(&s, "<truncated>");
+    }
     return s;
   }
 
@@ -125,7 +131,8 @@ class StructDecoder {
     //   uint8_t buf[MAX_BYTE_ARRAY_LEN];
     //   // To keep 4.14 kernel verifier happy we copy an extra byte.
     //   // Keep a dummy character to absorb this garbage.
-    //   char dummy;
+    //   // We also use this extra byte to track if data has been truncated.
+    //   uint8_t dummy;
     // };
     //
     // TODO(oazizi): Find a better way to keep these in sync.
@@ -133,9 +140,14 @@ class StructDecoder {
     std::basic_string<uint8_t> bytes;
     bytes.resize(len);
     std::memcpy(bytes.data(), buf_.data(), len);
-    buf_.remove_prefix(dynamic_tracing::kStructByteArraySize - sizeof(size_t));
+    buf_.remove_prefix(dynamic_tracing::kStructByteArraySize - sizeof(size_t) - 1);
+    PL_ASSIGN_OR_RETURN(uint8_t truncated, ExtractField<uint8_t>());
 
-    return BytesToString<bytes_format::HexCompact>(CreateStringView<char>(bytes));
+    std::string s = BytesToString<bytes_format::HexCompact>(CreateStringView<char>(bytes));
+    if (truncated) {
+      absl::StrAppend(&s, "<truncated>");
+    }
+    return s;
   }
 
   StatusOr<std::string> ExtractStructBlobAsJSON(

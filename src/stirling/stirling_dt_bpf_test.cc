@@ -356,6 +356,50 @@ tracepoints {
   EXPECT_EQ(rb[name_field_idx]->Get<types::StringValue>(0), "pixienaut");
 }
 
+TEST_F(DynamicTraceGolangTest, TraceLongString) {
+  BinaryRunner trace_target;
+  trace_target.Run(kBinaryPath);
+
+  constexpr std::string_view kProgram = R"(
+deployment_spec {
+  path: "$0"
+}
+tracepoints {
+  program {
+    language: GOLANG
+    outputs {
+      name: "output_table"
+      fields: "value"
+    }
+    probes {
+      name: "probe0"
+      tracepoint {
+        symbol: "main.Echo"
+        type: LOGICAL
+      }
+      args {
+        id: "arg0"
+        expr: "x"
+      }
+      output_actions {
+        output_name: "output_table"
+        variable_name: "arg0"
+      }
+    }
+  }
+}
+)";
+
+  auto trace_program = Prepare(kProgram, kBinaryPath);
+  DeployTracepoint(std::move(trace_program));
+
+  // Get field indexes for the two columns we want.
+  ASSERT_HAS_VALUE_AND_ASSIGN(int value_field_idx, FindFieldIndex(info_class_.schema(), "value"));
+
+  types::ColumnWrapperRecordBatch& rb = *record_batches_[0];
+  EXPECT_EQ(rb[value_field_idx]->Get<types::StringValue>(0), "This is a loooooooooooo<truncated>");
+}
+
 TEST_F(DynamicTraceGolangTest, TraceStruct) {
   BinaryRunner trace_target;
   trace_target.Run(kBinaryPath);

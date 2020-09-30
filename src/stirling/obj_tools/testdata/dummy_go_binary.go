@@ -98,6 +98,10 @@ func SaySomethingTo(something string, name string) string {
 	return something + ", " + name
 }
 
+func Echo(x string) string {
+	return x
+}
+
 func Uint8ArrayToHex(uuid []uint8, name string) string {
 	return hex.EncodeToString(uuid)
 }
@@ -141,6 +145,7 @@ func main() {
 		d := PointerWrapperWrapperWrapper{1, &c, 2, 3}
 		fmt.Println(PointerWrapperWrapperWrapperFunc(d))
 		fmt.Println(SaySomethingTo("Hello", "pixienaut"))
+		fmt.Println(Echo("This is a looooooooooooooooooooooooooooooooooooooooooooooooong string that should overrun the buffer"))
 
 		// Note: second argument must be the function symbol name,
 		//       just to simplify stirling_bpf_test.

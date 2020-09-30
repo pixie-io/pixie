@@ -46,6 +46,25 @@ spec:
         env:
         - name: PL_HOST_PATH
           value: "/host"
+        - name: STIRLING_AUTO_TRACE
+          value: |
+              import pxtrace
+              import px
+              # This is a placeholder example. To use, update UPID and other fields.
+              upid = "00000000-0000-0000-0000-000000000000"
+              table_name = 'placeholder_table'
+              tp_name = table_name
+              @pxtrace.probe("SomeFunction")
+              def probe_func():
+                  return [{
+                      'latency': pxtrace.FunctionLatency(),
+                      'id': pxtrace.ArgExpr('id')
+                  }]
+              pxtrace.UpsertTracepoint(table_name,
+                                       table_name,
+                                       probe_func,
+                                       px.uint128(upid),
+                                       "30m")
       hostNetwork: true
       hostPID: true
       dnsPolicy: ClusterFirstWithHostNet
