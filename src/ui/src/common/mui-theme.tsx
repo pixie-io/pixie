@@ -137,6 +137,7 @@ export const DARK_THEME = createMuiTheme({
     },
     subtitle2: {
       fontSize: '0.875rem', // 14px
+      fontWeight: 400,
     },
     h1: {
       fontSize: '2.125rem', // 34px

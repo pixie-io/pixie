@@ -48,7 +48,7 @@ export const SignupMarcom = withStyles(styles)(({ classes }: WithStyles<typeof s
         alignItems='center'
       >
         <Grid item>
-          <Typography variant='h4' className={classes.heading}>
+          <Typography variant='h1' className={classes.heading}>
             Instantly troubleshoot your applications on Kubernetes
           </Typography>
         </Grid>
