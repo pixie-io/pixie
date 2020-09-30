@@ -309,7 +309,8 @@ func (v *VizierStreamOutputAdapter) parseError(ctx context.Context, s *pl_api_vi
 	}
 
 	if len(compilerErrors) > 0 {
-		err := newScriptExecutionError(CodeCompilerError, "Script compilation failed")
+		err := newScriptExecutionError(CodeCompilerError,
+			fmt.Sprintf("Script compilation failed: %s", strings.Join(compilerErrors, ", ")))
 		err.compilerErrors = compilerErrors
 		return err
 	}

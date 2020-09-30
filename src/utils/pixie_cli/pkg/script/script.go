@@ -41,8 +41,7 @@ func (e ExecutableScript) LiveViewLink(clusterID *string) string {
 
 	urlPath := "/live/script"
 	if clusterID != nil {
-		// url.URL automatically escapes the path.
-		urlPath = fmt.Sprintf("/live/clusters/%s/script", *clusterID)
+		urlPath = fmt.Sprintf("/live/clusters/%s/script", url.PathEscape(*clusterID))
 	}
 
 	u := url.URL{

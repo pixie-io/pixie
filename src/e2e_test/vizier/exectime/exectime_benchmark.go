@@ -262,7 +262,7 @@ func main() {
 	scripts := br.GetScripts()
 	log.Infof("Running %d scripts %d times each", len(scripts), repeatCount)
 
-	if !allClusters || clusterID == uuid.Nil {
+	if !allClusters && clusterID == uuid.Nil {
 		clusterID, err = vizier.FirstHealthyVizier(cloudAddr)
 		if err != nil {
 			log.WithError(err).Fatal("Could not fetch healthy vizier")

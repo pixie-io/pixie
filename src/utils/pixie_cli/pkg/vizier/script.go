@@ -182,13 +182,13 @@ func RunScript(ctx context.Context, conns []*Connector, execScript *script.Execu
 			}
 
 			for v := range resp {
+				mergedResponses <- v
 				if v.Err != nil && v.Err == io.EOF {
 					return nil
 				}
 				if v.Err != nil {
 					return v.Err
 				}
-				mergedResponses <- v
 			}
 			return nil
 		})
