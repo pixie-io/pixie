@@ -928,4 +928,9 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	assert.True(t, updates[1].GetDeleted())
 	assert.Equal(t, agUUID1, utils.UUIDFromProtoOrNil(updates[2].AgentID))
 	assert.True(t, updates[2].GetDeleted())
+
+	agtMgr.DeleteAgentUpdateCursor(cursor)
+	// This should throw an error because the cursor has been deleted.
+	updates, schema, err = agtMgr.GetAgentUpdates(cursor)
+	assert.NotNil(t, err)
 }

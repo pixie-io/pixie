@@ -147,8 +147,7 @@ func (m *AgentManagerImpl) NewAgentUpdateCursor() uuid.UUID {
 func (m *AgentManagerImpl) DeleteAgentUpdateCursor(cursorID uuid.UUID) {
 	m.agentUpdateTrackersMutex.Lock()
 	defer m.agentUpdateTrackersMutex.Unlock()
-	cursor := uuid.NewV4()
-	delete(m.agentUpdateTrackers, cursor)
+	delete(m.agentUpdateTrackers, cursorID)
 }
 
 // A helper function for all cases where we call m.mds.UpdateSchemas
