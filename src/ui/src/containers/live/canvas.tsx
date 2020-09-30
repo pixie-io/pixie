@@ -245,7 +245,10 @@ const Canvas = (props: CanvasProps) => {
   const [defaultHeight, setDefaultHeight] = React.useState<number>(0);
 
   if (props.parentRef.current && !defaultHeight) {
-    setDefaultHeight(props.parentRef.current.getBoundingClientRect().height);
+    const newHeight = props.parentRef.current.getBoundingClientRect().height;
+    if (newHeight !== defaultHeight) {
+      setDefaultHeight(newHeight);
+    }
   }
 
   // These are that we want to propagate to any downstream links in the data table
@@ -335,6 +338,7 @@ const Canvas = (props: CanvasProps) => {
       );
     });
     return widgets;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tables, vis, loading, layout, className, classes.spinner]);
 
   if (loading && charts.length === 0) {
@@ -346,7 +350,7 @@ const Canvas = (props: CanvasProps) => {
     );
   }
 
-  let displayGrid = null;
+  let displayGrid: React.ReactNode;
 
   if (charts.length === 0) {
     const tableLayout = addTableLayout(Object.keys(tables), defaultLayout, isMobile, defaultHeight);
