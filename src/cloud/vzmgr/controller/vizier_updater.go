@@ -69,7 +69,7 @@ func (u *Updater) Stop() {
 
 // Poll periodically to see if the Vizier version has updated.
 func (u *Updater) pollVizierVersion() {
-	tick := time.Tick(30 * time.Minute)
+	tick := time.Tick(1 * time.Minute)
 	for {
 		select {
 		case <-u.quitCh:
