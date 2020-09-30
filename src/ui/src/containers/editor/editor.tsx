@@ -56,7 +56,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-const VisEditor = () => {
+const VisEditor = ({ visible }: {visible: boolean}) => {
   const classes = useStyles();
   const { visJSON, setVisEditorText } = React.useContext(ScriptContext);
 
@@ -80,13 +80,14 @@ const VisEditor = () => {
         setVisEditorText(code);
       }}
       className={classes.editor}
+      visible={visible}
       spinnerClass={classes.spinner}
       language='json'
     />
   );
 };
 
-const ScriptEditor = () => {
+const ScriptEditor = ({ visible }: {visible: boolean}) => {
   const classes = useStyles();
   const { pxl, setPxlEditorText } = React.useContext(ScriptContext);
   const editorRef = React.createRef<CodeEditor>();
@@ -109,6 +110,7 @@ const ScriptEditor = () => {
         setPxlEditorText(code);
       }}
       className={classes.editor}
+      visible={visible}
       spinnerClass={classes.spinner}
       language='python'
     />
@@ -133,7 +135,7 @@ const StyledTab = withStyles((theme: Theme) => createStyles({
   },
 }))(Tab);
 
-const LiveViewEditor = () => {
+const LiveViewEditor = ({ visible }: {visible: boolean}) => {
   const classes = useStyles();
   const [tab, setTab] = React.useState('pixie');
   const { setEditorPanelOpen, editorPanelOpen } = React.useContext(LayoutContext);
@@ -155,10 +157,10 @@ const LiveViewEditor = () => {
           </div>
         </div>
         <LazyPanel className={classes.panel} show={tab === 'pixie'}>
-          <ScriptEditor />
+          <ScriptEditor visible={visible && tab === 'pixie'} />
         </LazyPanel>
         <LazyPanel className={classes.panel} show={tab === 'vis'}>
-          <VisEditor />
+          <VisEditor visible={visible && tab === 'vis'} />
         </LazyPanel>
       </LazyPanel>
     </div>
@@ -176,7 +178,7 @@ export const EditorSplitPanel = (props) => {
       otherContent={props.children}
       overlay
     >
-      <LiveViewEditor />
+      <LiveViewEditor visible={editorPanelOpen} />
     </ResizableDrawer>
   );
 };

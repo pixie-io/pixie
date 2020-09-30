@@ -5,10 +5,14 @@ import * as React from 'react';
 
 import { getKeyMap } from 'containers/live/shortcuts';
 import { Spinner } from 'components/spinner/spinner';
+import { editor as MonacoEditorTypes } from 'monaco-editor';
+import ICodeEditor = MonacoEditorTypes.ICodeEditor;
 
 interface CodeEditorProps {
   code?: string;
   onChange?: (code: string) => void;
+  /** Used to auto-focus the embedded Monaco editor when this component is shown */
+  visible?: boolean;
   disabled?: boolean;
   className?: string;
   spinnerClass?: string;
@@ -29,7 +33,7 @@ function removeKeybindings(editor, keys: string[]) {
 }
 
 export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
-  private editorRef;
+  private editorRef: ICodeEditor;
 
   // Holder for code in the editor.
   private code;
@@ -64,6 +68,12 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
     return import(/* webpackPrefetch: true */ 'react-monaco-editor').then(({ default: MonacoEditor }) => {
       this.setState({ editorModule: MonacoEditor });
     });
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.props.visible && this.props.visible !== prevProps.visible && this.editorRef) {
+      this.editorRef.focus();
+    }
   }
 
   onChange(code) {
