@@ -127,7 +127,8 @@ const LiveViewBreadcrumbs = ({ classes, commandOpen, toggleCommandOpen }) => {
     value: clusterName,
     selectable: true,
     // eslint-disable-next-line
-    getListItems: async () => (data.clusters.filter((c) => c.status !== CLUSTER_STATUS_DISCONNECTED)
+    getListItems: async (input) => (data.clusters.filter((c) => c.status !== CLUSTER_STATUS_DISCONNECTED
+        && c.prettyClusterName.includes(input))
       .map((c) => ({ value: c.prettyClusterName, icon: <StatusCell statusGroup={clusterStatusGroup(c.status)} /> }))
     ),
     onSelect: (input) => {

@@ -143,7 +143,6 @@ const DialogDropdown = ({
   classes, onSelect, onClose, getListItems, anchorEl,
 }: DialogDropdownProps) => {
   const { allowTyping, requireCompletion, preSelect } = React.useContext(AutocompleteContext);
-  const [listItems, setListItems] = React.useState<BreadcrumbListItem[]>([]);
   const [completionItems, setCompletionItems] = React.useState<CompletionItem[]>([]);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -152,16 +151,6 @@ const DialogDropdown = ({
       inputRef.current.focus();
     }, 100);
   }
-
-  React.useEffect(() => {
-    if (typeof getListItems === 'function') {
-      getListItems('').then((items) => {
-        setListItems(items);
-      });
-    } else {
-      setListItems([]);
-    }
-  }, [getListItems]);
 
   const onCompletionSelected = React.useCallback((itemValue: string) => {
     if (requireCompletion) {
@@ -180,21 +169,24 @@ const DialogDropdown = ({
     }
   }, [requireCompletion, getListItems, onClose, onSelect]);
 
-  React.useEffect(() => {
-    const mapped: CompletionItem[] = listItems.map((item) => ({
-      type: 'item' as 'item',
-      id: item.value,
-      description: item.description,
-      icon: item.icon,
-      title: item.value,
-    }));
-    setCompletionItems(mapped);
-  }, [listItems]);
-
   const getCompletions = React.useCallback((input: string) => {
-    if (!input) return Promise.resolve(completionItems);
-    return Promise.resolve(completionItems.filter((item) => item.title.includes(input)));
-  }, [completionItems]);
+    if (typeof getListItems === 'function') {
+      return getListItems(input).then((items) => {
+        const mapped: CompletionItem[] = items.map((item) => ({
+          type: 'item' as 'item',
+          id: item.value,
+          description: item.description,
+          icon: item.icon,
+          title: item.value,
+        }));
+        setCompletionItems(mapped);
+        return mapped;
+      });
+    }
+
+    setCompletionItems([]);
+    return Promise.resolve([]);
+  }, [getListItems]);
 
   // Used to shrink the <Autocomplete/>'s fonts and negative space, to not be as huge / central as the Command Input.
   const compactThemeBuilder = React.useMemo<(theme: Theme) => Theme>(() => (theme: Theme) => ({
