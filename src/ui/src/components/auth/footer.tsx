@@ -34,10 +34,10 @@ export const Footer = withStyles(styles)(({ classes }: FooterProps) => (
   <Grid container direction='row' alignContent='flex-end'>
     <Grid item xs={false} sm={6} className={classes.gridItem}>
       <Typography variant='subtitle2' className={clsx(classes.paddingRight)}>
-        <Button disabled size='small'>Terms & Conditions</Button>
+        <Button href='https://pixielabs.ai/terms/' size='small'>Terms & Conditions</Button>
       </Typography>
       <Typography variant='subtitle2'>
-        <Button disabled size='small'>Privacy Policy</Button>
+        <Button href='https://pixielabs.ai/privacy' size='small'>Privacy Policy</Button>
       </Typography>
     </Grid>
     <Grid
