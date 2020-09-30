@@ -21,15 +21,12 @@ export const STATS_TAB_NAME = 'stats';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
-    height: theme.spacing(4),
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.palette.sideBar.color,
     borderTop: theme.palette.border.unFocused,
     cursor: 'pointer',
-    paddingTop: theme.spacing(1),
-    paddingBottom: theme.spacing(1),
     boxShadow: '0px -4px 4px #00000042',
     zIndex: 100,
   },
@@ -55,15 +52,19 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     '&:after': {
       content: '""',
       background: theme.palette.foreground.three,
+      opacity: 0.4,
       position: 'absolute',
-      height: '75%',
-      width: theme.spacing(0.2),
+      height: theme.spacing(2.6),
+      width: theme.spacing(0.25),
       right: 0,
     },
+    opacity: 1,
     color: theme.palette.foreground.three,
     minWidth: 0,
-    paddingLeft: `${theme.spacing(1)}px !important`,
-    paddingRight: `${theme.spacing(1)}px !important`,
+    paddingLeft: `${theme.spacing(1.4)}px !important`,
+    paddingRight: `${theme.spacing(1.4)}px !important`,
+    paddingTop: `${theme.spacing(0.7)}px !important`,
+    paddingBottom: `${theme.spacing(0.7)}px !important`,
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
@@ -101,8 +102,9 @@ const StyledTab = withStyles((theme: Theme) => createStyles({
     '&:focus': {
       color: theme.palette.foreground.two,
     },
-    fontSize: '16px',
-    fontWeight: 500,
+    color: `${theme.palette.primary.dark}80`, // Make text darker by lowering opacity to 50%.
+    ...theme.typography.subtitle1,
+    fontWeight: 400,
     maxWidth: 300,
   },
   wrapper: {
