@@ -96,10 +96,12 @@ func (m *ManagedIndex) IndexFromJSONString(j string) *ManagedIndex {
 	var indexJSON map[string]interface{}
 	// index.FromJSONString checks if the json string can be unmarshalled so we can ignore the error here.
 	_ = json.Unmarshal([]byte(j), &indexJSON)
-	if _, ok := indexJSON["mappings"]; !ok {
-		return m
+	if _, ok := indexJSON["mappings"]; ok {
+		m.template.AddIndexMappings(indexJSON["mappings"].(map[string]interface{}))
 	}
-	m.template.AddIndexMappings(indexJSON["mappings"].(map[string]interface{}))
+	if _, ok := indexJSON["settings"]; ok {
+		m.template.AddIndexSettings(indexJSON["settings"].(map[string]interface{}))
+	}
 	return m
 }
 

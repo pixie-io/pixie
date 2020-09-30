@@ -84,6 +84,25 @@ func (t *IndexTemplate) AddIndexMappings(mappings map[string]interface{}) *Index
 	return t
 }
 
+// AddIndexSettings populates the settings of the index template from the map passed in.
+// I thought that elastic copied over the settings on index rollover, but it seems that doesn't happen sometimes,
+// so copying the settings to the template to make sure that happens.
+func (t *IndexTemplate) AddIndexSettings(settings map[string]interface{}) *IndexTemplate {
+	for k, v := range settings {
+		if m, ok := v.(map[string]interface{}); ok {
+			if t.template.Settings[k] == nil {
+				t.template.Settings[k] = make(map[string]interface{})
+			}
+			for childK, childV := range m {
+				t.template.Settings[k].(map[string]interface{})[childK] = childV
+			}
+		} else {
+			t.template.Settings[k] = v
+		}
+	}
+	return t
+}
+
 func (t *IndexTemplate) validate() error {
 	if len(t.template.IndexPatterns) == 0 {
 		return fmt.Errorf("must specify at least 1 index pattern to create an index template")
