@@ -169,7 +169,7 @@ const DialogDropdown = ({
       // As getListItems is async, we refresh it so that the check is run atomically and can't be out of date.
       if (typeof getListItems !== 'function') throw new Error(`List items not gettable when selecting "${itemValue}"!`);
       getListItems(itemValue).then((items) => {
-        if (items.length !== 1) throw new Error(`Found ${items.length} matches to select but expected exactly 1.`);
+        if (items.length < 1) throw new Error('Failed to match the input to a valid choice!');
         onSelect(itemValue);
         onClose();
       });
