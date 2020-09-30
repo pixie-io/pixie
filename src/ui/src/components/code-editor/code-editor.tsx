@@ -84,6 +84,9 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
 
   onEditorMount(editor) {
     this.editorRef = editor;
+    if (this.editorRef && this.props.visible) {
+      this.editorRef.focus();
+    }
     const shortcutKeys = _.flatMap(Object.values(getKeyMap()), (keybinding) => keybinding.sequence)
       .map((key) => key.toLowerCase().replace('control', 'ctrl'));
     removeKeybindings(editor, shortcutKeys);
