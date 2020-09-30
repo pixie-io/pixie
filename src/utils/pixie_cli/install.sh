@@ -156,11 +156,21 @@ plane. After installation of the CLI you can easily manage Pixie
 installations on your K8s clusters and execute scripts to collect
 telemetry from your clusters using Pixie.
 
-More Info:
+Docs:
   ${tty_underline}https://${CLOUD_ADDR}/docs${tty_reset}
 EOS
 
+
 printf "\n\n"
+emph "Terms and Conditions ${tty_underline}https://www.pixielabs.ai/terms${tty_reset}"
+read -r -p "I have read and accepted the Terms & Conditions [y/n]: " READ_TERMS
+printf "\n\n"
+
+READ_TERMS=${READ_TERMS:0:1}
+if ! [[ "$READ_TERMS" == 'Y' || "$READ_TERMS" == 'y' ]]; then
+    abort "Cannot install Pixie CLI (px) until you accept the Terms & Conditions."
+fi
+
 emph "Installing PX CLI:"
 read -r -p "Install Path [${DEFAULT_INSTALL_PATH}]: " INSTALL_PATH
 INSTALL_PATH=${INSTALL_PATH:-${DEFAULT_INSTALL_PATH}}
