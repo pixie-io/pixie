@@ -16,7 +16,7 @@
 
 ## What is Pixie?
 
-<img src="./assets/live_7apr20.gif" alt="Pixie" width="425" align="right">
+<img src="./assets/live_30sep20.gif" alt="Pixie" width="425" align="right">
 
 Pixie gives you instant visibility by giving access to metrics, events, traces and logs without changing code.
 
@@ -102,7 +102,7 @@ Check out our [install guides](https://docs.pixielabs.ai/installing-pixie/instal
 
 #### View machine generated dashboards with Live views
 
-<img src="./assets/live_7apr20.gif" alt="CLI Demo" width="425" align="right">
+<img src="./assets/live_30sep20.gif" alt="CLI Demo" width="425" align="right">
 
 The Pixie Platform auto-generates "Live View" dashboard to visualize script results.
 
