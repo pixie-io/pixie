@@ -53,7 +53,7 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
           "subtract");
 
   // Division
-  registry->RegisterOrDie<DivideUDF<types::Int64Value, types::Int64Value, types::Int64Value>>(
+  registry->RegisterOrDie<DivideUDF<types::Float64Value, types::Int64Value, types::Int64Value>>(
       "divide");
   registry->RegisterOrDie<DivideUDF<types::Float64Value, types::Float64Value, types::Int64Value>>(
       "divide");
@@ -63,7 +63,7 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
       "divide");
 
   // Multiplication
-  registry->RegisterOrDie<MultiplyUDF<types::Float64Value, types::Int64Value, types::Int64Value>>(
+  registry->RegisterOrDie<MultiplyUDF<types::Int64Value, types::Int64Value, types::Int64Value>>(
       "multiply");
   registry->RegisterOrDie<MultiplyUDF<types::Float64Value, types::Float64Value, types::Int64Value>>(
       "multiply");
