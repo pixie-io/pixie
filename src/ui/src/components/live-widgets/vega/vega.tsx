@@ -5,6 +5,8 @@ import {
 } from 'components/legend/legend-data';
 import {
   ChartDisplay, convertWidgetDisplayToVegaSpec, EXTERNAL_HOVER_SIGNAL, EXTERNAL_TS_DOMAIN_SIGNAL,
+  getColumnFromDisplay,
+  getVegaFormatFunc,
   HOVER_PIVOT_TRANSFORM, HOVER_SIGNAL, INTERNAL_HOVER_SIGNAL, INTERNAL_TS_DOMAIN_SIGNAL,
   LEGEND_HOVER_SIGNAL, LEGEND_SELECT_SIGNAL, REVERSE_HOVER_SIGNAL, REVERSE_SELECT_SIGNAL,
   REVERSE_UNSELECT_SIGNAL,
@@ -22,7 +24,10 @@ import {
   createStyles, makeStyles, useTheme, Theme,
 } from '@material-ui/core/styles';
 
+import { formatFloat64Data } from 'utils/format-data';
 import { TimeSeriesContext } from '../context/time-series-context';
+
+const NUMERAL_FORMAT_STRING = '0.00';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   flexbox: {
@@ -58,6 +63,17 @@ interface VegaProps {
   className?: string;
 }
 
+function getFormatter(relation: Relation, display: ChartDisplay) {
+  const column = getColumnFromDisplay(display);
+  if (column) {
+    const formatFunc = getVegaFormatFunc(relation, column);
+    if (formatFunc) {
+      return formatFunc.formatter;
+    }
+  }
+  return (val: number): string => formatFloat64Data(val, NUMERAL_FORMAT_STRING);
+}
+
 const Vega = React.memo((props: VegaProps) => {
   const classes = useStyles();
   const theme = useTheme();
@@ -68,6 +84,8 @@ const Vega = React.memo((props: VegaProps) => {
     spec, hasLegend, legendColumnName, error,
   } = React.useMemo(() => convertWidgetDisplayToVegaSpec(display, tableName, theme, relation),
     [display, tableName, theme, relation]);
+
+  const formatter = React.useMemo(() => getFormatter(relation, display), [display, relation]);
 
   const data = React.useMemo(() => ({ [tableName]: inputData }), [tableName, inputData]);
 
@@ -102,10 +120,10 @@ const Vega = React.memo((props: VegaProps) => {
     if (value && value.time_) {
       const unformattedEntries = hoverDataCache.timeHashMap[value.time_];
       if (unformattedEntries) {
-        setLegendData(formatLegendData(currentView, value.time_, unformattedEntries));
+        setLegendData(formatLegendData(currentView, value.time_, unformattedEntries, formatter));
       }
     }
-  }, [currentView, hoverDataCache]);
+  }, [currentView, hoverDataCache, formatter]);
 
   const updateView = React.useMemo(() => {
     let called = false;
@@ -206,9 +224,9 @@ const Vega = React.memo((props: VegaProps) => {
       setHoverTime(hoverDataCache.maxTime);
       // set the legend data since the signal listener might not be added yet when we set the hover signal.
       const unformattedEntries = hoverDataCache.timeHashMap[hoverDataCache.maxTime];
-      setLegendData(formatLegendData(currentView, hoverDataCache.maxTime, unformattedEntries));
+      setLegendData(formatLegendData(currentView, hoverDataCache.maxTime, unformattedEntries, formatter));
     }
-  }, [hoverDataCache, currentView, setHoverTime]);
+  }, [hoverDataCache, currentView, setHoverTime, formatter]);
 
   React.useEffect(() => {
     if (!currentView) {

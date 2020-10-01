@@ -197,7 +197,8 @@ export const formatBytes = (data: number): DataWithUnits => {
   const dm = decimals < 0 ? 0 : decimals;
   const sizes = ['\u00a0B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 
-  const i = data === 0 ? 0 : Math.min(Math.floor(Math.log(data) / Math.log(k)), sizes.length + 1);
+  let i = Math.min(Math.floor(Math.log(Math.abs(data)) / Math.log(k)), sizes.length + 1);
+  i = Math.max(0, i);
 
   const val = `${parseFloat((data / (k ** i)).toFixed(dm))}\u00A0`;
   const units = sizes[i];
@@ -214,7 +215,8 @@ export const formatDuration = (data: number): DataWithUnits => {
   const dm = decimals < 0 ? 0 : decimals;
   const sizes = ['ns', '\u00b5s', 'ms', '\u00a0s'];
 
-  const i = data === 0 ? 0 : Math.min(Math.floor(Math.log(data) / Math.log(k)), sizes.length + 1);
+  let i = Math.min(Math.floor(Math.log(Math.abs(data)) / Math.log(k)), sizes.length + 1);
+  i = Math.max(0, i);
 
   const val = `${parseFloat((data / (k ** i)).toFixed(dm))}\u00A0`;
   const units = sizes[i];
@@ -225,7 +227,7 @@ export const formatDuration = (data: number): DataWithUnits => {
   };
 };
 
-const RenderValueWithUnitsBase = ({ data, classes }: {data: DataWithUnits; classes: any}) => (
+const RenderValueWithUnitsBase = ({ data, classes }: { data: DataWithUnits; classes: any }) => (
   <>
     <span className={classes.value}>{data.val}</span>
     <span className={classes.units}>{data.units}</span>
@@ -244,8 +246,8 @@ const RenderValueWithUnits = withStyles(() => ({
   },
 }))(RenderValueWithUnitsBase);
 
-export const BytesRenderer = ({ data }: {data: number}) => <RenderValueWithUnits data={formatBytes(data)} />;
-export const DurationRenderer = ({ data }: {data: number}) => (
+export const BytesRenderer = ({ data }: { data: number }) => <RenderValueWithUnits data={formatBytes(data)} />;
+export const DurationRenderer = ({ data }: { data: number }) => (
   <GaugeData
     data={<RenderValueWithUnits data={formatDuration(data)} />}
     level={getLatencyNSLevel(data)}

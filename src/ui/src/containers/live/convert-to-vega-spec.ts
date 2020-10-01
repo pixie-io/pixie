@@ -84,6 +84,22 @@ interface TimeseriesDisplay extends WidgetDisplay, DisplayWithLabels {
   readonly timeseries: Timeseries[];
 }
 
+// TODO(philkuz) A bit of a hack to get the column from the display,
+// fix when you fix the heterogenous timeseries types fix.
+export function getColumnFromDisplay(display: ChartDisplay): string {
+  switch (display[DISPLAY_TYPE_KEY]) {
+    case TIMESERIES_CHART_TYPE: {
+      const ts = (display as TimeseriesDisplay);
+      if (!ts.timeseries) {
+        return '';
+      }
+      return ts.timeseries[0].value;
+    }
+    default:
+      return '';
+  }
+}
+
 interface Bar {
   readonly value: string;
   readonly label: string;
@@ -134,7 +150,6 @@ function registerFunctions(formatters: VegaLabelFormatFunction[]) {
   });
 }
 
-// const formatters: { [semType: SemanticType]: VegaLabelFormatFunction } = {
 const formatters: VegaLabelFormatFunction[] = [
   {
     functionName: 'formatBytes',
@@ -630,21 +645,21 @@ function addLabelsToAxes(xAxis: Axis, yAxis: Axis, display: DisplayWithLabels) {
   }
 }
 
-const vegaFormatFuncForSemanticType = (semType: SemanticType): string => {
+const vegaFormatFuncForSemanticType = (semType: SemanticType): VegaLabelFormatFunction | null => {
   if (semType <= SemanticType.ST_NONE) {
-    return '';
+    return null;
   }
   for (const formatter of formatters) {
     if (formatter.semType === semType) {
-      return formatter.functionName;
+      return formatter;
     }
   }
-  return '';
+  return null;
 };
 
-const getVegaFormatFunc = (relation: Relation, column: string): string => {
+export const getVegaFormatFunc = (relation: Relation, column: string): VegaLabelFormatFunction | null => {
   if (!relation) {
-    return '';
+    return null;
   }
   for (const columnInfo of relation.getColumnsList()) {
     if (column !== columnInfo.getColumnName()) {
@@ -652,7 +667,7 @@ const getVegaFormatFunc = (relation: Relation, column: string): string => {
     }
     return vegaFormatFuncForSemanticType(columnInfo.getColumnSemanticType());
   }
-  return '';
+  return null;
 };
 
 function createTSAxes(
@@ -691,7 +706,7 @@ function createTSAxes(
   if (formatFunc) {
     formatAxis = {
       encode: {
-        labels: { update: { text: { signal: `${formatFunc}(datum.value)` } } },
+        labels: { update: { text: { signal: `${formatFunc.functionName}(datum.value)` } } },
       },
     };
   }

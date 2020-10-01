@@ -1,10 +1,7 @@
 import { COLOR_SCALE } from 'containers/live/convert-to-vega-spec';
 import * as _ from 'lodash';
 import { isArray, isNumber } from 'util';
-import { formatFloat64Data } from 'utils/format-data';
 import { View } from 'vega-typings';
-
-const NUMERAL_FORMAT_STRING = '0.00';
 
 export interface LegendEntry {
   key: string;
@@ -17,13 +14,18 @@ export interface LegendData {
   entries: LegendEntry[];
 }
 
-const formatLegendEntry = (scale, key: string, val: number): LegendEntry => ({
+const formatLegendEntry = (scale, key: string, val: number, formatter: (number) => string): LegendEntry => ({
   color: scale(key),
   key,
-  val: formatFloat64Data(val, NUMERAL_FORMAT_STRING),
+  val: formatter(val),
 });
 
-export const formatLegendData = (view: View, time: number, entries: UnformattedLegendEntry[]): LegendData => {
+export const formatLegendData = (
+  view: View,
+  time: number,
+  entries: UnformattedLegendEntry[],
+  formatter: (number) => string,
+): LegendData => {
   const legendData: LegendData = {
     time: new Date(time).toLocaleString(),
     entries: [],
@@ -36,7 +38,12 @@ export const formatLegendData = (view: View, time: number, entries: UnformattedL
     // This shouldn't happen but if it does, return empty legend data.
     return legendData;
   }
-  legendData.entries = entries.map((entry) => formatLegendEntry(scale, entry.key, entry.val));
+  legendData.entries = entries.map((entry) => formatLegendEntry(
+    scale,
+    entry.key,
+    entry.val,
+    formatter,
+  ));
   return legendData;
 };
 

@@ -13,6 +13,19 @@ describe('formatters Test', () => {
   it('should handle 0 duration correctly', () => {
     expect(formatDuration(0)).toEqual({ units: 'ns', val: '0\u00A0' });
   });
+  it('should handle |x| < 1  Bytes correctly', () => {
+    expect(formatBytes(0.1)).toEqual({ units: '\u00a0B', val: '0.1\u00A0' });
+  });
+
+  it('should handle |x| < 1 duration correctly', () => {
+    expect(formatDuration(0.1)).toEqual({ units: 'ns', val: '0.1\u00A0' });
+  });
+  it('should handle x < 0 duration correctly', () => {
+    expect(formatDuration(-2)).toEqual({ units: 'ns', val: '-2\u00A0' });
+  });
+  it('should handle x < 0 bytes correctly', () => {
+    expect(formatBytes(-2048)).toEqual({ units: 'KB', val: '-2\u00A0' });
+  });
 });
 
 describe('<LatencyData/> test', () => {
