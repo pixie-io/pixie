@@ -154,11 +154,24 @@ func main() {
 		log.Info("Redeploying etcd")
 
 		if viper.GetBool("etcd_operator_enabled") {
+			// This deletes the pl-etcd instance and clears out any existing etcd data.
+			// Deleting the etcd instance does not delete the etcd-operator, but the operator is
+			// robust to a new etcd instance starting up.
 			_, err = od.DeleteByLabel("app=pl-monitoring", "etcdclusters.etcd.database.coreos.com")
 			if err != nil {
 				log.WithError(err).Error("Failed to delete old etcd")
 			}
 
+			// Delete etcd operator and pl-etcd pods in case there is some issue with
+			// the underlying pods. This is usually unncessary if we just want to clear out etcd data.
+			_, err = od.DeleteByLabel("name=etcd-operator", "Pod")
+			if err != nil {
+				log.WithError(err).Error("Failed to delete old etcd operator")
+			}
+			_, err = od.DeleteByLabel("app=etcd", "Pod")
+			if err != nil {
+				log.WithError(err).Error("Failed to delete old pl-etcd pods")
+			}
 		} else {
 			_, err = od.DeleteByLabel("app=pl-monitoring", "StatefulSet")
 			if err != nil {
