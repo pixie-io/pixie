@@ -36,7 +36,9 @@ class QuantilesUDA : public udf::UDA {
   }
 
   static udf::InfRuleVec SemanticInferenceRules() {
-    return {udf::ExplicitRule::Create<QuantilesUDA>(types::ST_QUANTILES, {types::ST_NONE})};
+    return {udf::ExplicitRule::Create<QuantilesUDA>(types::ST_QUANTILES, {types::ST_NONE}),
+            udf::ExplicitRule::Create<QuantilesUDA>(types::ST_DURATION_NS_QUANTILES,
+                                                    {types::ST_DURATION_NS})};
   }
 
   static udf::UDADocBuilder Doc() {
