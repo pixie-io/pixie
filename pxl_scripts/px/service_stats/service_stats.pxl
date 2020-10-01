@@ -20,8 +20,10 @@ import px
 # K8s object is the abstraction to group on.
 # Options are ['pod', 'service'].
 k8s_object = 'service'
-# Window in seconds within which to aggregate metrics.
-window_s = 10
+ns_per_ms = 1000 * 1000
+ns_per_s = 1000 * ns_per_ms
+# Window size to use on time_ column for bucketing.
+window_ns = px.DurationNanos(10 * ns_per_s)
 # Flag to filter out requests that come from an unresolvable IP.
 filter_unresolved_inbound = True
 # Flag to filter out health checks from the data.

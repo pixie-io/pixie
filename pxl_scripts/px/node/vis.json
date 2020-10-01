@@ -125,7 +125,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "rchar_mb_per_s",
+            "value": "rchar_bytes_per_ns",
             "mode": "MODE_LINE",
             "series": "groupby_col"
           }
@@ -150,7 +150,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "wchar_mb_per_s",
+            "value": "wchar_bytes_per_ns",
             "mode": "MODE_LINE",
             "series": "groupby_col"
           }
@@ -175,7 +175,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "tx_mb_per_s",
+            "value": "tx_bytes_per_ns",
             "mode": "MODE_LINE",
             "series": "groupby_col"
           }
@@ -200,7 +200,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "rx_mb_per_s",
+            "value": "rx_bytes_per_ns",
             "mode": "MODE_LINE",
             "series": "groupby_col"
           }
@@ -225,7 +225,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "rss_mb",
+            "value": "rss_bytes",
             "mode": "MODE_LINE",
             "series": "groupby_col",
             "stackBySeries": false
@@ -251,7 +251,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "vsize_mb",
+            "value": "vsize_bytes",
             "mode": "MODE_LINE",
             "series": "groupby_col",
             "stackBySeries": false

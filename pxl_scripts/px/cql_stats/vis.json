@@ -97,7 +97,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "rps",
+            "value": "requests_per_ns",
             "series": "k8s",
             "stackBySeries": false,
             "mode": "MODE_LINE"
@@ -154,7 +154,7 @@
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.HistogramChart",
         "histogram": {
-          "value": "request_latency_ms",
+          "value": "request_latency_ns",
           "prebinCount": "count",
           "maxbins": 10,
           "minstep": 50.0

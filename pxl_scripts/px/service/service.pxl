@@ -8,8 +8,10 @@
 
 import px
 
-# Window in seconds within which to aggregate metrics.
-window_s = 10
+ns_per_ms = 1000 * 1000
+ns_per_s = 1000 * ns_per_ms
+# Window size to use on time_ column for bucketing.
+window_ns = px.DurationNanos(10 * ns_per_s)
 # Flag to filter out requests that come from an unresolvable IP.
 filter_unresolved_inbound = True
 # Flag to filter out health checks from the data.
@@ -141,7 +143,7 @@ def service_slow_requests(start_time: str, service: px.Service):
                         suffixes=['', '_x'])
     requests = requests[requests.latency_ms >= requests.service_p99]
     return requests[['time_', 'pod', 'latency_ms', 'http_req_method',
-                     'http_req_path', 'http_resp_status', 'remote_addr', 'remote_port',
+                     'http_req_path', 'http_req_body', 'http_resp_status', 'remote_addr', 'remote_port',
                      'http_resp_message', 'http_resp_body']].head(100)
 
 

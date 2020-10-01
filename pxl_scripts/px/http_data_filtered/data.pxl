@@ -27,10 +27,9 @@ def http_data(start: str, svc: px.Service, pod: px.Pod, req_path: str):
                                                    'http_resp_body',
                                                    'http_resp_latency_ns'], start_time=start)
 
-    df.http_resp_latency_ms = df.http_resp_latency_ns / 1.0E6
     df.svc = df.ctx['service']
     df.pod = df.ctx['pod']
-    df = df.drop(columns=['http_resp_latency_ns', 'upid'])
+    df = df.drop(columns=['upid'])
 
     df = df[px.contains(df.svc, svc) and (px.contains(df.pod, pod)
                                           and px.contains(df.http_req_path, req_path))]

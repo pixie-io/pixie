@@ -55,7 +55,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "young_gc_time_ms",
+            "value": "young_gc_time",
             "series": "k8s",
             "stackBySeries": false,
             "mode": "MODE_LINE"
@@ -81,7 +81,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "full_gc_time_ms",
+            "value": "full_gc_time",
             "series": "k8s",
             "stackBySeries": false,
             "mode": "MODE_LINE"

@@ -8,15 +8,12 @@ import px
 #
 t1 = px.DataFrame(table='process_stats', start_time='-30s')
 
-bytes_per_mb = 1024.0 * 1024.0
-t1.vsize_mb = t1.vsize_bytes / bytes_per_mb
-t1.rss_bytes_mb = t1.rss_bytes / bytes_per_mb
 t1.timestamp = px.bin(t1.time_, px.seconds(10))
 t1.cmdline = px.upid_to_cmdline(t1.upid)
 
 aggop = t1.groupby(['upid', 'timestamp', 'cmdline']).agg(
-    vsize_mb=('vsize_mb', px.mean),
-    rss_bytes_mb=('rss_bytes_mb', px.mean),
+    vsize_bytes=('vsize_bytes', px.mean),
+    rss_bytes_bytes=('rss_bytes_bytes', px.mean),
 )
 
 # Format column names.
@@ -27,8 +24,8 @@ aggop['Process Name'] = aggop.cmdline
 # Uncomment and replace number to filter on a specific pid.
 # aggop = aggop[aggop.pid == 4862]
 
-aggop['Virtual Memory (mb)'] = aggop.vsize_mb
-aggop['Average Memory (mb)'] = aggop.rss_bytes_mb
+aggop['Virtual Memory (mb)'] = aggop.vsize_bytes
+aggop['Average Memory (mb)'] = aggop.rss_bytes_bytes
 keep_columns = aggop[[
     'pid',
     'Process Name',
