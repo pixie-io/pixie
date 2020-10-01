@@ -36,41 +36,6 @@ StatusOr<types::DataType> BPFTraceTypeToDataType(const bpftrace::Type& bpftrace_
   }
 }
 
-StatusOr<std::vector<ColumnSpec>> ConvertFields(const std::vector<bpftrace::Field> fields) {
-  std::vector<ColumnSpec> columns;
-  columns.reserve(fields.size());
-
-  for (size_t i = 0; i < fields.size(); ++i) {
-    bpftrace::Type bpftrace_type = fields[i].type.type;
-
-    // Check: Any integers must be an expected size.
-    if (bpftrace_type == bpftrace::Type::integer) {
-      size_t bpftrace_type_size = fields[i].type.size;
-
-      switch (bpftrace_type_size) {
-        case 8:
-        case 4:
-        case 2:
-        case 1:
-          break;
-        default:
-          return error::Internal("Perf event on column $0 contains invalid integer size: $1.", i,
-                                 bpftrace_type_size);
-      }
-    }
-
-    ColumnSpec col;
-    PL_ASSIGN_OR_RETURN(col.type, BPFTraceTypeToDataType(bpftrace_type));
-    col.name = absl::StrCat("Column_", i);
-    // No way to set a description from BPFTrace code.
-    col.desc = "";
-
-    columns.push_back(std::move(col));
-  }
-
-  return columns;
-}
-
 // Returns column names from the printf_fmt_str.
 // The printf_fmt_str should be formatted as below:
 // <column1_name>:%d <column2_name>:%s ...
@@ -101,9 +66,59 @@ std::vector<std::string_view> GetColumnNamesFromFmtStr(std::string_view printf_f
   return res;
 }
 
+StatusOr<std::vector<ColumnSpec>> ConvertFields(const std::vector<bpftrace::Field> fields,
+                                                std::string_view format_str) {
+  std::vector<ColumnSpec> columns;
+  columns.reserve(fields.size());
+
+  std::vector<std::string_view> column_names = GetColumnNamesFromFmtStr(format_str);
+
+  if (column_names.size() != fields.size()) {
+    return error::Internal("Column name count ($0) and actual output count ($1) do not match!",
+                           column_names.size(), fields.size());
+  }
+
+  for (size_t i = 0; i < fields.size(); ++i) {
+    bpftrace::Type bpftrace_type = fields[i].type.type;
+
+    // Check: Any integers must be an expected size.
+    if (bpftrace_type == bpftrace::Type::integer) {
+      size_t bpftrace_type_size = fields[i].type.size;
+
+      switch (bpftrace_type_size) {
+        case 8:
+        case 4:
+        case 2:
+        case 1:
+          break;
+        default:
+          return error::Internal("Perf event on column $0 contains invalid integer size: $1.", i,
+                                 bpftrace_type_size);
+      }
+    }
+
+    ColumnSpec col;
+    PL_ASSIGN_OR_RETURN(col.type, BPFTraceTypeToDataType(bpftrace_type));
+    col.name = column_names[i].empty() ? absl::StrCat("Column_", i) : column_names[i];
+    // No way to set a description from BPFTrace code.
+    col.desc = "";
+
+    if (col.name == "time_") {
+      if (col.type != types::DataType::INT64) {
+        return error::Internal("time_ must be an integer type");
+      }
+      col.type = types::DataType::TIME64NS;
+    }
+
+    columns.push_back(std::move(col));
+  }
+
+  return columns;
+}
+
 }  // namespace
 
-std::unique_ptr<SourceConnector> DynamicBPFTraceConnector::Create(
+StatusOr<std::unique_ptr<SourceConnector>> DynamicBPFTraceConnector::Create(
     std::string_view source_name,
     const dynamic_tracing::ir::logical::TracepointDeployment::Tracepoint& tracepoint) {
   // We create a separate BPFTrace instance just to compile and get the schema.
@@ -112,40 +127,13 @@ std::unique_ptr<SourceConnector> DynamicBPFTraceConnector::Create(
   // TODO(oazizi): Clean this up. No time now since trying to get this out quickly.
   //               Right solution is probably to inject the compiled program into the connector.
   BPFTraceWrapper bpftrace;
-  Status s = bpftrace.Compile(tracepoint.bpftrace().program(), {});
-  std::vector<bpftrace::Field> fields = bpftrace.OutputFields().ValueOr({});
-  auto columns_or = ConvertFields(fields);
-  LOG_IF(ERROR, !columns_or.ok()) << columns_or.ToString();
-  // Note that we ignore all compilation errors; the second compilation during Init() will report
-  // them.
-
-  if (columns_or.ok()) {
-    std::vector<std::string_view> column_names =
-        GetColumnNamesFromFmtStr(bpftrace.OutputFmtStr().ValueOr({}));
-
-    auto& columns = columns_or.ValueOrDie();
-
-    if (column_names.size() != columns.size()) {
-      LOG(ERROR) << absl::Substitute(
-          "Column name count ($0) and actual output count ($1) "
-          "do not match!",
-          column_names.size(), columns.size());
-    } else {
-      for (size_t i = 0; i < columns.size(); ++i) {
-        if (column_names[i].empty()) {
-          continue;
-        }
-        columns[i].name = column_names[i];
-        columns[i].desc = column_names[i];
-        if (columns[i].name == "time_") {
-          columns[i].type = types::DataType::TIME64NS;
-        }
-      }
-    }
-  }
+  PL_RETURN_IF_ERROR(bpftrace.Compile(tracepoint.bpftrace().program(), {}));
+  PL_ASSIGN_OR_RETURN(std::vector<bpftrace::Field> fields, bpftrace.OutputFields());
+  PL_ASSIGN_OR_RETURN(std::string_view format_str, bpftrace.OutputFmtStr());
+  PL_ASSIGN_OR_RETURN(std::vector<ColumnSpec> columns, ConvertFields(fields, format_str));
 
   std::unique_ptr<DynamicDataTableSchema> table_schema =
-      DynamicDataTableSchema::Create(tracepoint.table_name(), columns_or.ValueOr({}));
+      DynamicDataTableSchema::Create(tracepoint.table_name(), columns);
 
   return std::unique_ptr<SourceConnector>(new DynamicBPFTraceConnector(
       source_name, std::move(table_schema), tracepoint.bpftrace().program()));

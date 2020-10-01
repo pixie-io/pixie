@@ -26,7 +26,7 @@ namespace stirling {
 
 class DynamicBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTraceWrapper {
  public:
-  static std::unique_ptr<SourceConnector> Create(
+  static StatusOr<std::unique_ptr<SourceConnector> > Create(
       std::string_view source_name,
       const dynamic_tracing::ir::logical::TracepointDeployment::Tracepoint& tracepoint);
 

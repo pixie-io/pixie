@@ -27,7 +27,8 @@ TEST(DynamicBPFTraceConnectorTest, Basic) {
 
   tracepoint.mutable_bpftrace()->set_program(kScript);
 
-  std::unique_ptr<SourceConnector> connector = DynamicBPFTraceConnector::Create("test", tracepoint);
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<SourceConnector> connector,
+                       DynamicBPFTraceConnector::Create("test", tracepoint));
 
   const int kTableNum = 0;
   const DataTableSchema& table_schema = connector->TableSchema(kTableNum);
@@ -85,7 +86,8 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceBuiltins) {
 
   tracepoint.mutable_bpftrace()->set_program(kScript);
 
-  std::unique_ptr<SourceConnector> connector = DynamicBPFTraceConnector::Create("test", tracepoint);
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<SourceConnector> connector,
+                       DynamicBPFTraceConnector::Create("test", tracepoint));
 
   const int kTableNum = 0;
   const DataTableSchema& table_schema = connector->TableSchema(kTableNum);
@@ -219,7 +221,8 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceBuiltins2) {
 
   tracepoint.mutable_bpftrace()->set_program(kScript);
 
-  std::unique_ptr<SourceConnector> connector = DynamicBPFTraceConnector::Create("test", tracepoint);
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<SourceConnector> connector,
+                       DynamicBPFTraceConnector::Create("test", tracepoint));
 
   const int kTableNum = 0;
   const DataTableSchema& table_schema = connector->TableSchema(kTableNum);
@@ -238,6 +241,77 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceBuiltins2) {
     EXPECT_EQ(elements[kUsernameIdx].type(), types::DataType::STRING);
 
     EXPECT_EQ(elements[kFTimeIdx].name(), "ftime");
+    EXPECT_EQ(elements[kFTimeIdx].type(), types::DataType::STRING);
+
+    EXPECT_EQ(elements[kInetIdx].name(), "inet");
+    EXPECT_EQ(elements[kInetIdx].type(), types::DataType::STRING);
+  }
+
+  // Now deploy the spec and check for some data.
+  ASSERT_OK(connector->Init());
+
+  // Give some time to collect data.
+  sleep(1);
+
+  // Read the data.
+  StandaloneContext ctx;
+  DataTable data_table(table_schema);
+  connector->TransferData(&ctx, kTableNum, &data_table);
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+
+  // Should've gotten something in the records.
+  ASSERT_FALSE(tablets.empty());
+
+  types::ColumnWrapperRecordBatch& records = tablets[0].records;
+
+  std::string username = records[kUsernameIdx]->Get<types::StringValue>(0);
+  LOG(INFO) << absl::Substitute("username: $0", username);
+  EXPECT_THAT(username, MatchesRegex(kPrintableRegex));
+
+  std::string ftime = records[kFTimeIdx]->Get<types::StringValue>(0);
+  LOG(INFO) << absl::Substitute("ftime: $0", ftime);
+  EXPECT_THAT(ftime, MatchesRegex("[0-2][0-9]:[0-5][0-9]:[0-5][0-9]"));
+
+  std::string inet = records[kInetIdx]->Get<types::StringValue>(0);
+  LOG(INFO) << absl::Substitute("inet: $0", inet);
+  EXPECT_EQ(inet, "0.0.0.0");
+
+  // Check that we can gracefully wrap-up.
+  ASSERT_OK(connector->Stop());
+}
+
+TEST(DynamicBPFTraceConnectorTest, BPFTraceMalformedPrintf) {
+  // Create a BPFTrace program spec
+  TracepointDeployment_Tracepoint tracepoint;
+  tracepoint.set_table_name("pid_sample_table");
+
+  constexpr char kScript[] = R"(interval:ms:100 {
+       printf("username:%s foo   %s inet:%s",
+               username, strftime("%H:%M:%S", nsecs), ntop(0));
+    })";
+
+  tracepoint.mutable_bpftrace()->set_program(kScript);
+
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<SourceConnector> connector,
+                       DynamicBPFTraceConnector::Create("test", tracepoint));
+
+  const int kTableNum = 0;
+  const DataTableSchema& table_schema = connector->TableSchema(kTableNum);
+
+  const int kUsernameIdx = 0;
+  const int kFTimeIdx = 1;
+  const int kInetIdx = 2;
+
+  // Check the inferred table schema.
+  {
+    const ArrayView<DataElement>& elements = table_schema.elements();
+
+    ASSERT_EQ(elements.size(), 3);
+
+    EXPECT_EQ(elements[kUsernameIdx].name(), "username");
+    EXPECT_EQ(elements[kUsernameIdx].type(), types::DataType::STRING);
+
+    EXPECT_EQ(elements[kFTimeIdx].name(), "Column_1");
     EXPECT_EQ(elements[kFTimeIdx].type(), types::DataType::STRING);
 
     EXPECT_EQ(elements[kInetIdx].name(), "inet");
