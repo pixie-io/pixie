@@ -13,6 +13,7 @@ import { resizeEvent, triggerResize } from 'utils/resize';
 import { dataFromProto } from 'utils/result-data-utils';
 import { Alert, AlertTitle } from '@material-ui/lab';
 import { VizierErrorDetails, VizierQueryError } from 'common/errors';
+import { ContainsMutation } from 'utils/pxl';
 
 import {
   createStyles, fade, makeStyles, Theme, useTheme,
@@ -127,12 +128,12 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 }));
 
 const WidgetDisplay = ({
-  display, table, tableName, widgetName, propagatedArgs,
+  display, table, tableName, widgetName, propagatedArgs, emptyTableMsg,
 }) => {
   const classes = useStyles();
 
   if (!table) {
-    const msg = `"${tableName}" not found`;
+    const msg = emptyTableMsg || `"${tableName}" not found`;
     return (
       <div>
         {msg}
@@ -238,7 +239,9 @@ const Canvas = (props: CanvasProps) => {
   const {
     tables, loading, error, mutationInfo,
   } = React.useContext(ResultsContext);
-  const { args, vis, setVis } = React.useContext(ScriptContext);
+  const {
+    args, vis, setVis, pxl,
+  } = React.useContext(ScriptContext);
   const { isMobile } = React.useContext(LayoutContext);
   const { setTimeseriesDomain } = React.useContext(TimeSeriesContext);
 
@@ -307,6 +310,13 @@ const Canvas = (props: CanvasProps) => {
   const layout = React.useMemo(() => toLayout(vis.widgets, isMobile), [vis, isMobile]);
   const [errorOpen, setErrorOpen] = React.useState(false);
 
+  const emptyTableMsg = React.useMemo(() => {
+    if (ContainsMutation(pxl)) {
+      return 'Run to generate results';
+    }
+    return '';
+  }, [pxl]);
+
   const charts = React.useMemo(() => {
     const widgets = [];
     vis.widgets.forEach((widget, i) => {
@@ -335,13 +345,14 @@ const Canvas = (props: CanvasProps) => {
             tableName={tableName}
             widgetName={widgetName}
             propagatedArgs={propagatedArgs}
+            emptyTableMsg={emptyTableMsg}
           />
         </div>,
       );
     });
     return widgets;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tables, vis, loading, layout, className, classes.spinner]);
+  }, [tables, vis, loading, layout, className, classes.spinner, emptyTableMsg]);
 
   if (loading && charts.length === 0) {
     return (
