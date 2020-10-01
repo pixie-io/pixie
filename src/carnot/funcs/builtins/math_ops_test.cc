@@ -147,6 +147,18 @@ TEST(MathOps, basic_int64_negate_test) {
   udf_tester.ForInput(4).Expect(-4);
 }
 
+TEST(MathOps, basic_ceil_test) {
+  auto udf_tester = udf::UDFTester<CeilUDF>();
+  udf_tester.ForInput(4.0).Expect(4);
+  udf_tester.ForInput(4.5).Expect(5);
+}
+
+TEST(MathOps, basic_floor_test) {
+  auto udf_tester = udf::UDFTester<FloorUDF>();
+  udf_tester.ForInput(4.0).Expect(4);
+  udf_tester.ForInput(4.5).Expect(4);
+}
+
 TEST(MathOps, basic_int64_equal_test) {
   auto udf_tester = udf::UDFTester<EqualUDF<types::Int64Value, types::Int64Value>>();
   udf_tester.ForInput(-4, -4).Expect(true);

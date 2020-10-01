@@ -217,6 +217,34 @@ class InvertUDF : public udf::ScalarUDF {
   }
 };
 
+class CeilUDF : public udf::ScalarUDF {
+ public:
+  Int64Value Exec(FunctionContext*, Float64Value b1) {
+    return static_cast<int64_t>(std::ceil(b1.val));
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Compute the ceiling of the value.")
+        .Example("df.b = px.ceil(df.a)")
+        .Arg("arg1", "The value to take the ceiling of.")
+        .Returns("The ceiling of arg1.");
+  }
+};
+
+class FloorUDF : public udf::ScalarUDF {
+ public:
+  Int64Value Exec(FunctionContext*, Float64Value b1) {
+    return static_cast<int64_t>(std::floor(b1.val));
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Compute the floor of the value.")
+        .Example("df.b = px.floor(df.a)")
+        .Arg("arg1", "The value to take the floor of.")
+        .Returns("The floor of arg1.");
+  }
+};
+
 template <typename TArg1, typename TArg2>
 class EqualUDF : public udf::ScalarUDF {
  public:

@@ -83,6 +83,10 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
   registry->RegisterOrDie<ModuloUDF<types::Int64Value, types::Int64Value, types::Int64Value>>(
       "modulo");
 
+  // Ceiling/Floor.
+  registry->RegisterOrDie<CeilUDF>("ceil");
+  registry->RegisterOrDie<FloorUDF>("floor");
+
   // Or (||)
   registry->RegisterOrDie<LogicalOrUDF<types::Int64Value, types::Int64Value>>("logicalOr");
   registry->RegisterOrDie<LogicalOrUDF<types::BoolValue, types::BoolValue>>("logicalOr");
