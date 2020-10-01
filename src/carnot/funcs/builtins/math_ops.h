@@ -74,8 +74,12 @@ class SubtractUDF : public udf::ScalarUDF {
 
 template <typename TReturn, typename TArg1, typename TArg2>
 class DivideUDF : public udf::ScalarUDF {
+  using ReturnValueType = typename types::ValueTypeTraits<TReturn>::native_type;
+
  public:
-  TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val / b2.val; }
+  TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) {
+    return ReturnValueType(b1.val) / ReturnValueType(b2.val);
+  }
 
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::ExplicitRule::Create<DivideUDF>(types::ST_THROUGHPUT_RATE,

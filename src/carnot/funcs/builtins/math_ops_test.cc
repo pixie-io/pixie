@@ -56,8 +56,8 @@ TEST(MathOps, basic_mixed_subtract_test) {
 
 TEST(MathOps, basic_int64_divide_test) {
   auto udf_tester =
-      udf::UDFTester<DivideUDF<types::Int64Value, types::Int64Value, types::Int64Value>>();
-  udf_tester.ForInput(1, 2).Expect(0);
+      udf::UDFTester<DivideUDF<types::Float64Value, types::Int64Value, types::Int64Value>>();
+  udf_tester.ForInput(1, 2).Expect(0.5);
 }
 
 TEST(MathOps, basic_float64_divide_test) {
@@ -426,7 +426,6 @@ TEST(MathOps, basic_bool_mean_uda_test) {
       .ForInput(false)
       .ForInput(false)
       .Expect(expected_mean);
-  LOG(INFO) << expected_mean;
 }
 
 TEST(MathOps, basic_int64_mean_uda_test) {
