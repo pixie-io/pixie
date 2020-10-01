@@ -71,9 +71,10 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
   }
 
   componentDidUpdate(prevProps) {
-    if (this.props.visible && this.props.visible !== prevProps.visible && this.editorRef) {
-      this.editorRef.focus();
-    }
+    // TODO(nick) investigate why this causes the rest of the view to bounce.
+    // if (this.props.visible && this.props.visible !== prevProps.visible && this.editorRef) {
+    //   this.editorRef.focus();
+    // }
   }
 
   onChange(code) {
