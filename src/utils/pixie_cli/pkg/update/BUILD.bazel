@@ -10,6 +10,7 @@ go_library(
         "//src/shared/services:go_default_library",
         "//src/shared/version:go_default_library",
         "//src/utils/pixie_cli/pkg/auth:go_default_library",
+        "//src/utils/pixie_cli/pkg/utils:go_default_library",
         "@com_github_blang_semver//:go_default_library",
         "@com_github_inconshreveable_go_update//:go_default_library",
         "@com_github_kardianos_osext//:go_default_library",

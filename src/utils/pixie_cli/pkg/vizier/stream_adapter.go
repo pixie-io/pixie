@@ -19,6 +19,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
+	cliLog "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
@@ -315,7 +316,7 @@ func (v *VizierStreamOutputAdapter) parseError(ctx context.Context, s *pl_api_vi
 		return err
 	}
 
-	log.Fatalf("Script execution error: %s", s.Message)
+	cliLog.Errorf("Script execution error: %s", s.Message)
 	return newScriptExecutionError(CodeUnknown, "Script execution error:"+s.Message)
 }
 

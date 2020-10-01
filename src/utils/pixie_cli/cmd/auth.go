@@ -11,6 +11,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
+	cliLog "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
 
 func init() {
@@ -29,7 +30,7 @@ var AuthCmd = &cobra.Command{
 	Use:   "auth",
 	Short: "Authenticate with Pixie",
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Info("Nothing here... Please execute one of the subcommands")
+		cliLog.Info("Nothing here... Please execute one of the subcommands")
 		cmd.Help()
 		return
 	},
@@ -49,9 +50,11 @@ var LoginCmd = &cobra.Command{
 		refreshToken := &auth.RefreshToken{}
 		var err error
 		if refreshToken, err = l.Run(); err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Fatal("Failed to login")
 		}
 		if err = auth.SaveRefreshToken(refreshToken); err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Fatal("Failed to persists auth token")
 		}
 
@@ -66,7 +69,7 @@ var LoginCmd = &cobra.Command{
 				})
 			}
 		}
-		log.Info("Authentication Successful")
+		cliLog.Info("Authentication Successful")
 
 		if orgName != "" {
 			components.RenderBureaucratDragon(orgName)

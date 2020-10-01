@@ -158,12 +158,13 @@ func (p *PixieCloudLogin) Run() (*RefreshToken, error) {
 		case nil:
 			return refreshToken, nil
 		case errUserChallengeTimeout:
+			// TODO(nserrino): Refactor so that we don't use log.Fatal, which sends an unnecessary
+			// event to Sentry.
 			log.Fatal("Timeout waiting for response from browser. Perhaps try --manual mode.")
 		case errBrowserFailed:
 			fallthrough
 		default:
-			log.Infof("err: %v", err)
-			log.Info("Failed to perform browser based auth. Will try manual auth")
+			utils2.WithError(err).Info("Failed to perform browser based auth. Will try manual auth")
 		}
 	}
 	_ = pxanalytics.Client().Enqueue(&analytics.Track{
@@ -175,7 +176,7 @@ func (p *PixieCloudLogin) Run() (*RefreshToken, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Info("Fetching refresh token")
+	utils2.Info("Fetching refresh token")
 
 	return p.getRefreshToken(accessToken)
 }
@@ -202,6 +203,8 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 	q.Set("redirect_uri", localServerRedirectURL)
 	authURL.RawQuery = q.Encode()
 
+	// Need to leave this as a fmt.Println because it does something different with the
+	// %s in the url than the cli_out.go code does.
 	fmt.Printf("Opening authentication URL: %s\n", authURL.String())
 
 	type result struct {
@@ -270,12 +273,14 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 			if err == http.ErrServerClosed {
 				return
 			}
+			// TODO(nserrino): Refactor so that we don't use log.Fatal, which sends an unnecessary
+			// event to Sentry.
 			log.WithError(err).Fatal("failed to listen")
 		}
 	}()
 
 	go func() {
-		log.Info("Starting browser")
+		utils2.Info("Starting browser")
 		err := open.Run(authURL.String())
 		if err != nil {
 			_ = pxanalytics.Client().Enqueue(&analytics.Track{
@@ -307,7 +312,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 				Event:  "Auth Success",
 			})
 			// TODO(zasgar): This is a hack, figure out why this function takes so long to exit.
-			log.Info("Fetching refresh token ...")
+			utils2.Info("Fetching refresh token ...")
 			return res.Token, res.err
 		}
 	}
@@ -315,6 +320,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 
 func (p *PixieCloudLogin) getAuthStringManually() (string, error) {
 	authURL := p.getAuthURL()
+	// fmt.Printf appears to escape % (as desired) so we use it here instead of the cli logger.
 	fmt.Printf("\nPlease Visit: \n \t %s\n\n", authURL.String())
 	f := bufio.NewWriter(os.Stdout)
 	f.WriteString("Copy and paste token here: ")
@@ -410,6 +416,8 @@ type RefreshToken struct {
 func (p *PixieCloudLogin) getAuthURL() *url.URL {
 	authURL, err := url.Parse(fmt.Sprintf("https://work.%s", p.CloudAddr))
 	if err != nil {
+		// TODO(nserrino): Refactor so that we don't use log.Fatal, which sends an unnecessary
+		// event to Sentry.
 		log.WithError(err).Fatal("Failed to parse cloud addr.")
 	}
 	authURL.Path = "/login"
@@ -425,6 +433,8 @@ func (p *PixieCloudLogin) getAuthURL() *url.URL {
 func (p *PixieCloudLogin) getAuthAPIURL() string {
 	authURL, err := url.Parse(fmt.Sprintf("https://%s/api/auth/login", p.CloudAddr))
 	if err != nil {
+		// TODO(nserrino): Refactor so that we don't use log.Fatal, which sends an unnecessary
+		// event to Sentry.
 		log.WithError(err).Fatal("Failed to parse cloud addr.")
 	}
 	return authURL.String()

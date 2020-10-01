@@ -31,6 +31,7 @@ var LoadClusterSecretsCmd = &cobra.Command{
 
 		err := LoadClusterSecrets(clientset, cloudAddr, deployKey, namespace, devCloudNamespace, kubeConfig, "")
 		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Fatal("Could not load cluster secrets")
 		}
 	},

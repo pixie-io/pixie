@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"fmt"
+	"os"
 
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
@@ -11,6 +11,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/utils"
+	cliLog "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/vizier"
 )
 
@@ -22,12 +23,12 @@ var ConfigCmd = &cobra.Command{
 		// Check cluster ID.
 		clusterID, _ := cmd.Flags().GetString("cluster_id")
 		if clusterID == "" {
-			fmt.Printf("Need to specify cluster ID in flags: --cluster_id=<cluster-id>\n")
+			cliLog.Error("Need to specify cluster ID in flags: --cluster_id=<cluster-id>")
 			return
 		}
 		clusterUUID, err := uuid.FromString(clusterID)
 		if err != nil {
-			fmt.Printf("Invalid cluster ID: %s\n", err.Error())
+			cliLog.Errorf("Invalid cluster ID: %s\n", err.Error())
 			return
 		}
 		clusterIDPb := utils.ProtoFromUUID(&clusterUUID)
@@ -35,22 +36,25 @@ var ConfigCmd = &cobra.Command{
 		cloudAddr := viper.GetString("cloud_addr")
 		l, err := vizier.NewLister(cloudAddr)
 		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Fatal("Failed to create Vizier lister")
 		}
 
 		vzInfo, err := l.GetVizierInfo(clusterUUID)
 		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Fatal("Failed to get Vizier info")
 		}
 
 		if len(vzInfo) == 0 {
-			log.WithError(err).Fatal("Invalid cluster ID")
+			cliLog.Errorf("Invalid cluster ID: %s", clusterID)
+			os.Exit(1)
 		}
 
 		update, _ := cmd.Flags().GetBool("update")
 		if !update {
 			// Update not specified. User just wants to get the config.
-			fmt.Printf("%s: %t\n", "PassthroughEnabled", vzInfo[0].Config.PassthroughEnabled)
+			cliLog.Infof("%s: %t", "PassthroughEnabled", vzInfo[0].Config.PassthroughEnabled)
 			return
 		}
 
@@ -60,7 +64,7 @@ var ConfigCmd = &cobra.Command{
 		}
 
 		if ptEnabled != "true" && ptEnabled != "false" {
-			fmt.Printf("Invalid option specified for passthrough: %s. Expected (true|false)\n", ptEnabled)
+			cliLog.Infof("Invalid option specified for passthrough: %s. Expected (true|false)", ptEnabled)
 			return
 		}
 
@@ -77,9 +81,9 @@ var ConfigCmd = &cobra.Command{
 
 		err = l.UpdateVizierConfig(req)
 		if err != nil {
-			fmt.Printf("Error updating config: %s\n", err.Error())
+			cliLog.Errorf("Error updating config: %s", err.Error())
 		}
-		fmt.Printf("Successfully updated config\n")
+		cliLog.Info("Successfully updated config")
 	},
 }
 

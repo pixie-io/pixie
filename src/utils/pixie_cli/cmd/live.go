@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -43,7 +45,8 @@ var LiveCmd = &cobra.Command{
 
 			if fs != nil {
 				if err := fs.Parse(args[1:]); err != nil {
-					log.WithError(err).Fatal("Failed to parse script flags")
+					utils.WithError(err).Error("Failed to parse script flags")
+					os.Exit(1)
 				}
 				execScript.UpdateFlags(fs)
 			}
@@ -58,6 +61,7 @@ var LiveCmd = &cobra.Command{
 
 		cloudConn, err := utils.GetCloudClientConnection(cloudAddr)
 		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Fatal("Could not connect to cloud")
 		}
 		aClient := cloudapipb.NewAutocompleteServiceClient(cloudConn)
@@ -67,18 +71,21 @@ var LiveCmd = &cobra.Command{
 		if !allClusters && clusterUUID == uuid.Nil {
 			clusterUUID, err = vizier.FirstHealthyVizier(cloudAddr)
 			if err != nil {
-				log.WithError(err).Fatal("Could not fetch healthy vizier")
+				utils.WithError(err).Error("Could not fetch healthy vizier")
+				os.Exit(1)
 			}
 		}
 
 		viziers := vizier.MustConnectDefaultVizier(cloudAddr, allClusters, clusterUUID)
 		lv, err := live.New(br, viziers, cloudAddr, aClient, execScript, useNewAC, clusterUUID)
 		if err != nil {
-			log.WithError(err).Fatal("Failed to initialize live view")
+			utils.WithError(err).Error("Failed to initialize live view")
+			os.Exit(1)
 		}
 
 		if err := lv.Run(); err != nil {
-			log.WithError(err).Fatal("Failed to run live view")
+			utils.WithError(err).Error("Failed to run live view")
+			os.Exit(1)
 		}
 	},
 }

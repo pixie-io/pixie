@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	cliLog "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )
 
@@ -27,6 +28,6 @@ var CollectLogsCmd = &cobra.Command{
 			log.WithError(err).Fatal("Failed to get log files")
 		}
 
-		log.Infof("Logs written to %s\n", fName)
+		cliLog.Infof("Logs written to %s", fName)
 	},
 }

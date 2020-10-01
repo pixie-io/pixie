@@ -36,6 +36,7 @@ var CreateBundle = &cobra.Command{
 		b := script.NewBundleWriter(searchPaths, basePaths)
 		err := b.Write(out)
 		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Fatal("Failed to create bundle")
 		}
 	},

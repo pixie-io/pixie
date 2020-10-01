@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "checker.go",
         "checks.go",
+        "cli_out.go",
         "cloud.go",
         "cmd.go",
         "job_runner.go",
@@ -17,6 +18,7 @@ go_library(
         "//src/utils/pixie_cli/pkg/components:go_default_library",
         "//src/utils/shared/k8s:go_default_library",
         "@com_github_blang_semver//:go_default_library",
+        "@com_github_fatih_color//:go_default_library",
         "@in_gopkg_yaml_v2//:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@org_golang_google_grpc//:go_default_library",

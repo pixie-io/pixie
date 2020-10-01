@@ -17,6 +17,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/sentryhook"
+	cliLog "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
 
 const sentryDSN = "https://ef3a781b5e7b42e282706fc541077f3a@sentry.io/4090453"
@@ -63,6 +64,6 @@ func main() {
 	})
 
 	log.SetOutput(os.Stderr)
-	log.Info("Pixie CLI")
+	cliLog.Info("Pixie CLI")
 	cmd.Execute()
 }

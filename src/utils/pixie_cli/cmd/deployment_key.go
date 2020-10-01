@@ -39,7 +39,7 @@ var DeployKeyCmd = &cobra.Command{
 	Use:   "deploy-key",
 	Short: "Manage deployment keys for Pixie",
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Info("Nothing here... Please execute one of the subcommands")
+		utils.Info("Nothing here... Please execute one of the subcommands")
 		cmd.Help()
 		return
 	},
@@ -55,9 +55,10 @@ var CreateDeployKeyCmd = &cobra.Command{
 
 		keyID, key, err := generateDeployKey(cloudAddr, desc)
 		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Fatal("Failed to generate deployment key")
 		}
-		log.Info(fmt.Sprintf("Generated deployment key: \nID: %s \nKey: %s", keyID, key))
+		utils.Infof("Generated deployment key: \nID: %s \nKey: %s", keyID, key)
 	},
 }
 
@@ -69,19 +70,22 @@ var DeleteDeployKeyCmd = &cobra.Command{
 		cloudAddr := viper.GetString("cloud_addr")
 		id := viper.GetString("id")
 		if id == "" {
-			log.Fatal("Deployment key ID must be specified using --id flag")
+			utils.Error("Deployment key ID must be specified using --id flag")
+			os.Exit(1)
 		}
 
 		idUUID, err := uuid.FromString(id)
 		if err != nil {
-			log.WithError(err).Fatal("Invalid deployment key ID")
+			utils.WithError(err).Error("Invalid deployment key ID")
+			os.Exit(1)
 		}
 
 		err = deleteDeployKey(cloudAddr, idUUID)
 		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Fatal("Failed to delete deployment key")
 		}
-		log.Info("Successfully deleted deployment key")
+		utils.Info("Successfully deleted deployment key")
 	},
 }
 
@@ -96,6 +100,7 @@ var ListDeployKeyCmd = &cobra.Command{
 
 		keys, err := listDeployKeys(cloudAddr)
 		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Fatal("Failed to list deployment keys")
 		}
 		// Throw keys into table.
@@ -113,6 +118,7 @@ func getClientAndContext(cloudAddr string) (cloudapipb.VizierDeploymentKeyManage
 	// Get grpc connection to cloud.
 	cloudConn, err := utils.GetCloudClientConnection(cloudAddr)
 	if err != nil {
+		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 		log.Fatalln(err)
 	}
 

@@ -210,6 +210,7 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 		var err error
 		ctx, err = ctxWithCreds(ctx)
 		if err != nil {
+			// TODO(nserrino): refactor so that Sentry doesn't grab this error as an event.
 			log.WithError(err).Fatalln("Failed to get credentials")
 		}
 	} else {

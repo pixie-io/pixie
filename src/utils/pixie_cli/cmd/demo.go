@@ -40,7 +40,7 @@ var DemoCmd = &cobra.Command{
 	Use:   "demo",
 	Short: "Manage demo apps",
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Info("Nothing here... Please execute one of the subcommands")
+		utils.Info("Nothing here... Please execute one of the subcommands")
 		cmd.Help()
 		return
 	},
@@ -135,6 +135,7 @@ func listCmd(cmd *cobra.Command, args []string) {
 
 	manifest, err := downloadManifest(viper.GetString("artifacts"))
 	if err != nil {
+		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 		log.WithError(err).Fatal("Could not download manifest file")
 	}
 
@@ -168,27 +169,32 @@ func deleteCmd(cmd *cobra.Command, args []string) {
 
 	manifest, err := downloadManifest(viper.GetString("artifacts"))
 	if err != nil {
+		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 		log.WithError(err).Fatal("Could not download manifest file")
 	}
 	if _, ok := manifest[appName]; !ok {
-		log.Fatalf("%s is not a supported demo app", appName)
+		utils.Errorf("%s is not a supported demo app", appName)
+		os.Exit(1)
 	}
 
 	currentCluster := getCurrentCluster()
-	fmt.Printf("Deleting demo app %s from the following cluster: %s\n", appName, currentCluster)
+	utils.Infof("Deleting demo app %s from the following cluster: %s", appName, currentCluster)
 	clusterOk := components.YNPrompt("Is the cluster correct?", true)
 	if !clusterOk {
-		log.Fatal("Cluster is not correct. Aborting.")
+		utils.Error("Cluster is not correct. Aborting.")
+		os.Exit(1)
 	}
 
 	if !namespaceExists(appName) {
-		log.Fatalf("Namespace %s does not exist on cluster %s", appName, currentCluster)
+		utils.Errorf("Namespace %s does not exist on cluster %s", appName, currentCluster)
+		os.Exit(1)
 	}
 
 	if err = deleteDemoApp(appName); err != nil {
+		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 		log.WithError(err).Fatalf("Error deleting demo app %s from cluster %s", appName, currentCluster)
 	} else {
-		log.Infof("Successfully deleted demo app %s from cluster %s", appName, currentCluster)
+		utils.Infof("Successfully deleted demo app %s from cluster %s", appName, currentCluster)
 	}
 }
 
@@ -211,43 +217,50 @@ func deployCmd(cmd *cobra.Command, args []string) {
 
 	manifest, err := downloadManifest(viper.GetString("artifacts"))
 	if err != nil {
+		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 		log.WithError(err).Fatal("Could not download manifest file")
 	}
 
 	appSpec, ok := manifest[appName]
 	// When a demo app is deprecated, its contents will be set to null in manifest.json.
 	if !ok || appSpec == nil {
-		log.Fatalf("%s is not a supported demo app", appName)
+		utils.Errorf("%s is not a supported demo app", appName)
+		os.Exit(1)
 	}
 	instructions := strings.Join(appSpec.Instructions, "\n")
 
 	yamls, err := downloadDemoAppYAMLs(appName, viper.GetString("artifacts"))
 	if err != nil {
+		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 		log.WithError(err).Fatal("Could not download demo yaml apps for app '%s'", appName)
 	}
 
 	currentCluster := getCurrentCluster()
-	fmt.Printf("Deploying demo app %s to the following cluster: %s\n", appName, currentCluster)
+	utils.Infof("Deploying demo app %s to the following cluster: %s", appName, currentCluster)
 	clusterOk := components.YNPrompt("Is the cluster correct?", true)
 	if !clusterOk {
-		log.Error("Cluster is not correct. Aborting.")
+		utils.Error("Cluster is not correct. Aborting.")
 		return
 	}
 
 	err = setupDemoApp(appName, yamls)
 	if err != nil {
 		if errors.Is(err, errNamespaceAlreadyExists) {
-			log.Fatalf("Failed to deploy demo application: namespace already exists.")
+			utils.Error("Failed to deploy demo application: namespace already exists.")
+			return
 		}
+		// Using log.Errorf rather than CLI log in order to track this unexpected error in Sentry.
 		log.WithError(err).Errorf("Error deploying demo application, deleting namespace %s", appName)
 		// Note: If you can specify the namespace for the demo app in the future, we shouldn't delete the namespace.
 		if err = deleteDemoApp(appName); err != nil {
+			// Using log.Errorf rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Errorf("Error deleting namespace %s", appName)
 		}
-		log.Fatalf("Failed to deploy demo application.")
+		utils.Error("Failed to deploy demo application.")
+		os.Exit(1)
 	}
 
-	fmt.Fprintf(os.Stderr, "Successfully deployed demo app %s to cluster %s.\n", args[0], currentCluster)
+	utils.Infof("Successfully deployed demo app %s to cluster %s.", args[0], currentCluster)
 
 	p := func(s string, a ...interface{}) {
 		fmt.Fprintf(os.Stderr, s, a...)

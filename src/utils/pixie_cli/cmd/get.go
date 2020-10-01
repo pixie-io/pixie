@@ -16,6 +16,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
+	cliLog "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/vizier"
 )
 
@@ -49,7 +50,8 @@ var GetPEMsCmd = &cobra.Command{
 		if !allClusters && clusterID == uuid.Nil {
 			clusterID, err = vizier.FirstHealthyVizier(cloudAddr)
 			if err != nil {
-				log.WithError(err).Fatal("Could not fetch healthy vizier")
+				cliLog.WithError(err).Error("Could not fetch healthy vizier")
+				os.Exit(1)
 			}
 		}
 
@@ -58,8 +60,8 @@ var GetPEMsCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		if err := vizier.RunScriptAndOutputResults(ctx, conns, execScript, format); err != nil {
-			fmt.Fprint(os.Stderr, vizier.FormatErrorMessage(err))
-			log.Fatal("Script Failed")
+			cliLog.Errorf("Script failed: %s", vizier.FormatErrorMessage(err))
+			os.Exit(1)
 		}
 	},
 }
@@ -76,10 +78,12 @@ var GetViziersCmd = &cobra.Command{
 
 		l, err := vizier.NewLister(cloudAddr)
 		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Fatal("Failed to create Vizier lister")
 		}
 		vzs, err := l.GetViziersInfo()
 		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Fatalln("Failed to get vizier information")
 		}
 

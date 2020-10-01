@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	cliLog "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )
 
@@ -24,6 +25,7 @@ var ProxyCmd = &cobra.Command{
 		ns, _ := cmd.Flags().GetString("namespace")
 		p := k8s.NewVizierProxy(ns)
 		if err := p.Run(); err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Fatal("Failed to start proxy")
 		}
 
@@ -34,7 +36,7 @@ var ProxyCmd = &cobra.Command{
 		select {
 		case <-stop:
 			{
-				log.Info("Stopping proxy")
+				cliLog.Info("Stopping proxy")
 				_ = p.Stop()
 				break
 			}

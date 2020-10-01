@@ -16,6 +16,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
+	cliLog "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/vizier"
 )
 
@@ -33,6 +34,8 @@ func init() {
 	RunCmd.SetHelpFunc(func(command *cobra.Command, args []string) {
 		br, err := createBundleReader()
 		if err != nil {
+			// Keep this as a log.Fatal() as opposed to using the cliLog, because it
+			// is an unexpected error that Sentry should catch.
 			log.WithError(err).Fatal("Failed to read script bundle")
 		}
 
@@ -86,6 +89,8 @@ var RunCmd = &cobra.Command{
 		listScripts, _ := cmd.Flags().GetBool("list")
 		br, err := createBundleReader()
 		if err != nil {
+			// Keep this as a log.Fatal() as opposed to using the cliLog, because it
+			// is an unexpected error that Sentry should catch.
 			log.WithError(err).Fatal("Failed to read script bundle")
 		}
 
@@ -98,7 +103,8 @@ var RunCmd = &cobra.Command{
 		scriptFile, _ := cmd.Flags().GetString("file")
 		if scriptFile == "" {
 			if len(args) == 0 {
-				log.Fatal("Expected script_name with script args.")
+				cliLog.Error("Expected script_name with script args.")
+				os.Exit(1)
 			}
 			scriptName := args[0]
 			execScript = br.MustGetScript(scriptName)
@@ -106,14 +112,16 @@ var RunCmd = &cobra.Command{
 
 			if fs != nil {
 				if err := fs.Parse(args[1:]); err != nil {
-					log.WithError(err).Fatal("Failed to parse script flags")
+					cliLog.WithError(err).Error("Failed to parse script flags")
+					os.Exit(1)
 				}
 				execScript.UpdateFlags(fs)
 			}
 		} else {
 			execScript, err = loadScriptFromFile(scriptFile)
 			if err != nil {
-				log.WithError(err).Fatal("Failed to get query string")
+				cliLog.WithError(err).Error("Failed to get query string")
+				os.Exit(1)
 			}
 		}
 
@@ -124,7 +132,8 @@ var RunCmd = &cobra.Command{
 		if !allClusters && clusterID == uuid.Nil {
 			clusterID, err = vizier.FirstHealthyVizier(cloudAddr)
 			if err != nil {
-				log.WithError(err).Fatal("Could not fetch healthy vizier")
+				cliLog.WithError(err).Error("Could not fetch healthy vizier")
+				os.Exit(1)
 			}
 		}
 
@@ -160,9 +169,10 @@ var RunCmd = &cobra.Command{
 
 		if err != nil {
 			if vzErr, ok := err.(*vizier.ScriptExecutionError); ok && vzErr.Code() == vizier.CodeCanceled {
-				log.Info("Script was cancelled. Exiting.")
+				cliLog.Info("Script was cancelled. Exiting.")
 			} else {
-				log.WithError(err).Fatal("Failed to execute script")
+				log.WithError(err).Error("Failed to execute script")
+				os.Exit(1)
 			}
 		}
 
@@ -174,9 +184,9 @@ var RunCmd = &cobra.Command{
 		}
 		vzInfo, err := lister.GetVizierInfo(clusterID)
 		if err != nil {
-			log.WithError(err).Errorf("Error getting cluster name for cluster %s", clusterID.String())
+			cliLog.WithError(err).Errorf("Error getting cluster name for cluster %s", clusterID.String())
 		} else if len(vzInfo) == 0 {
-			log.Errorf("Error getting cluster name for cluster %s, no results returned", clusterID.String())
+			cliLog.Errorf("Error getting cluster name for cluster %s, no results returned", clusterID.String())
 		} else {
 			clusterName = &(vzInfo[0].ClusterName)
 		}

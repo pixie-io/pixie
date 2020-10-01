@@ -15,10 +15,10 @@ import (
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	uuid "github.com/satori/go.uuid"
-	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
+	cliLog "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/vizier"
 )
 
@@ -171,7 +171,7 @@ func New(br *script.BundleManager, viziers []*vizier.Connector, cloudAddr string
 
 	lister, err := vizier.NewLister(cloudAddr)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to create Vizier lister")
+		cliLog.WithError(err).Error("Failed to create Vizier lister")
 		return nil, err
 	}
 
@@ -314,9 +314,9 @@ func (v *View) updateScriptInfoView() {
 	var clusterName *string
 	vzInfo, err := v.vizierLister.GetVizierInfo(v.selectedClusterID)
 	if err != nil {
-		log.WithError(err).Errorf("Error getting cluster name for cluster %s", v.selectedClusterID.String())
+		cliLog.WithError(err).Errorf("Error getting cluster name for cluster %s", v.selectedClusterID.String())
 	} else if len(vzInfo) == 0 {
-		log.Errorf("Error getting cluster name for cluster %s, no results returned", v.selectedClusterID.String())
+		cliLog.Errorf("Error getting cluster name for cluster %s, no results returned", v.selectedClusterID.String())
 	} else {
 		clusterName = &(vzInfo[0].ClusterName)
 	}

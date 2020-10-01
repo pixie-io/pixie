@@ -44,7 +44,7 @@ var UpdateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update Pixie/CLI",
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Info("Nothing here... Please execute one of the subcommands")
+		utils.Info("Nothing here... Please execute one of the subcommands")
 		cmd.Help()
 		return
 	},
@@ -70,7 +70,8 @@ var VizierUpdateCmd = &cobra.Command{
 		if len(clusterStr) > 0 {
 			u, err := uuid.FromString(clusterStr)
 			if err != nil {
-				log.WithError(err).Fatal("Failed to parse cluster argument")
+				utils.WithError(err).Error("Failed to parse cluster argument")
+				os.Exit(1)
 			}
 			clusterID = u
 		}
@@ -78,24 +79,31 @@ var VizierUpdateCmd = &cobra.Command{
 		// Get grpc connection to cloud.
 		cloudConn, err := utils.GetCloudClientConnection(cloudAddr)
 		if err != nil {
+			// Keep this as a log.Fatal() as opposed to using the cliLog, because it
+			// is an unexpected error that Sentry should catch.
 			log.Fatalln(err)
 		}
 
 		clusterInfo, err := getClusterForUpgrade(cloudConn, clusterID)
 		if err != nil {
+			// Keep this as a log.Fatal() as opposed to using the cliLog, because it
+			// is an unexpected error that Sentry should catch.
 			log.WithError(err).Fatal("Failed to fetch cluster information")
 		}
 
 		clusterID = utils2.UUIDFromProtoOrNil(clusterInfo.ID)
 		status := clusterInfo.Status
 		if status == cloudapipb.CS_DISCONNECTED {
-			log.WithField("status", status).Fatalf("Cluster must be connected to update")
+			utils.Errorf("Cluster must be connected to update. status=%v", status)
+			os.Exit(1)
 		}
 
 		if len(versionString) == 0 {
 			// Fetch latest version.
 			versionString, err = getLatestVizierVersion(cloudConn)
 			if err != nil {
+				// Keep this as a log.Fatal() as opposed to using the cliLog, because it
+				// is an unexpected error that Sentry should catch.
 				log.WithError(err).Fatal("Failed to fetch Vizier versions")
 			}
 		}
@@ -103,9 +111,9 @@ var VizierUpdateCmd = &cobra.Command{
 		if sv, err := semver.Parse(clusterInfo.VizierVersion); err == nil {
 			svNew := semver.MustParse(versionString)
 			if svNew.Compare(sv) < 0 {
-				log.WithField("current", sv.String()).
-					WithField("requested", svNew.String()).
-					Fatalf("Cannot upgrade to older version")
+				utils.Errorf("Cannot upgrade current version %s to requested older version %s",
+					sv.String(), svNew.String())
+				os.Exit(1)
 			}
 		}
 
@@ -118,7 +126,7 @@ var VizierUpdateCmd = &cobra.Command{
 				Set("cluster_status", status.String()),
 		})
 
-		fmt.Printf("Updating to version: %s\n", versionString)
+		utils.Infof("Updating to version: %s", versionString)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
@@ -171,6 +179,8 @@ var VizierUpdateCmd = &cobra.Command{
 					Set("cluster_id", clusterID),
 			})
 
+			// Keep as log.Fatal which produces a Sentry error for this unexpected behavior
+			// (as opposed to user error which shouldn't be tracked in Sentry)
 			log.WithError(err).Fatal("Update failed")
 		}
 
@@ -205,7 +215,7 @@ var CLIUpdateCmd = &cobra.Command{
 				panic(err)
 			}
 			if len(versions) <= 0 {
-				fmt.Println("No updates available")
+				utils.Info("No updates available")
 				return
 			}
 
@@ -213,7 +223,7 @@ var CLIUpdateCmd = &cobra.Command{
 				if err != nil {
 					panic(err)
 				}
-				fmt.Println("cannot perform update, it's likely the file is not in a writable path.")
+				utils.Error("cannot perform update, it's likely the file is not in a writable path.")
 				os.Exit(1)
 				// TODO(zasgar): Provide a means to update this as well.
 			}
@@ -223,7 +233,7 @@ var CLIUpdateCmd = &cobra.Command{
 			}
 		}
 
-		fmt.Printf("Updating to version: %s\n", selectedVersion)
+		utils.Infof("Updating to version: %s", selectedVersion)
 		mustInstallVersion(updater, selectedVersion)
 	},
 }
@@ -231,10 +241,10 @@ var CLIUpdateCmd = &cobra.Command{
 func mustInstallVersion(u *update.CLIUpdater, v string) {
 	err := u.UpdateSelf(v)
 	if err != nil {
-		fmt.Println("Failed to apply update")
+		utils.Error("Failed to apply update")
 		panic(err)
 	}
-	fmt.Println("Update completed successfully")
+	utils.Info("Update completed successfully")
 }
 
 func getClusterForUpgrade(conn *grpc.ClientConn, c uuid.UUID) (*cloudapipb.ClusterInfo, error) {

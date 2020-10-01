@@ -12,6 +12,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
+	cliLog "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
 
 // BundleManager reads a script bundle.
@@ -57,7 +58,7 @@ func NewBundleManagerWithOrgName(bundleFiles []string, orgName string) (*BundleM
 		if isValidURL(bundleFile) {
 			resp, err := http.Get(bundleFile)
 			if err != nil {
-				log.WithError(err).Error("Error checking bundle file URL")
+				cliLog.WithError(err).Error("Error checking bundle file URL")
 				return
 			}
 			defer resp.Body.Close()
@@ -65,7 +66,7 @@ func NewBundleManagerWithOrgName(bundleFiles []string, orgName string) (*BundleM
 		} else {
 			f, err := os.Open(bundleFile)
 			if err != nil {
-				log.WithError(err).Error("Error reading bundle file")
+				cliLog.WithError(err).Error("Error reading bundle file")
 				return
 			}
 			defer f.Close()
@@ -75,7 +76,7 @@ func NewBundleManagerWithOrgName(bundleFiles []string, orgName string) (*BundleM
 		var b bundle
 		err := json.NewDecoder(r).Decode(&b)
 		if err != nil {
-			log.WithError(err).Error("Error decoding bundle file")
+			cliLog.WithError(err).Error("Error decoding bundle file")
 			return
 		}
 
@@ -109,6 +110,8 @@ func NewBundleManager(bundleFiles []string) (*BundleManager, error) {
 	// TODO(zasgar): Refactor user login state, etc.
 	authInfo, err := auth.LoadDefaultCredentials()
 	if err != nil {
+		// TODO(nserrino): Refactor logic to return error rather than log.Fatal,
+		// which sends an event to Sentry.
 		log.WithError(err).Fatal("Must be logged in")
 	}
 
@@ -148,6 +151,9 @@ func (b BundleManager) GetScript(scriptName string) (*ExecutableScript, error) {
 func (b BundleManager) MustGetScript(scriptName string) *ExecutableScript {
 	es, err := b.GetScript(scriptName)
 	if err != nil {
+		// TODO(nserrino): Refactor to return an error rather than log.Fatal,
+		// or fatal without log.Fatal, rather than this approach which sends an
+		// unnecessary error event to sentry.
 		log.WithError(err).Fatal("Failed to get script")
 	}
 	return es

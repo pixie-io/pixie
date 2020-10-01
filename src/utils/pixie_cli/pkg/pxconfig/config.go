@@ -77,18 +77,24 @@ func Cfg() *ConfigInfo {
 	once.Do(func() {
 		configPath, err := ensureDefaultConfigFilePath()
 		if err != nil {
+			// TODO(nserrino): Refactor to use cliLog so that an unnecessary event
+			// is not sent to Sentry.
 			log.WithError(err).Fatal("Failed to load/create config file path")
 		}
 		_, err = os.Stat(configPath)
 		if os.IsNotExist(err) {
 			// Write the default config.
 			if config, err = writeDefaultConfig(configPath); err != nil {
+				// TODO(nserrino): Refactor to use cliLog so that an unnecessary event
+				// is not sent to Sentry.
 				log.WithError(err).Fatal("Failed to create default config")
 			}
 			return
 		}
 
 		if config, err = readDefaultConfig(configPath); err != nil {
+			// TODO(nserrino): Refactor to use cliLog so that an unnecessary event
+			// is not sent to Sentry.
 			log.WithError(err).Fatal("Failed to read config file")
 		}
 	})

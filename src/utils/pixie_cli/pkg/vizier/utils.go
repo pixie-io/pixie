@@ -14,6 +14,7 @@ import (
 func MustConnectDefaultVizier(cloudAddr string, allClusters bool, clusterID uuid.UUID) []*Connector {
 	c, err := ConnectDefaultVizier(cloudAddr, allClusters, clusterID)
 	if err != nil {
+		// TODO(nserrino): Change the logic to not use logrus.
 		log.WithError(err).Fatal("Failed to connect to vizier")
 	}
 	return c

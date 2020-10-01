@@ -10,13 +10,13 @@ import (
 	"time"
 
 	uuid "github.com/satori/go.uuid"
-	log "github.com/sirupsen/logrus"
 	"gopkg.in/segmentio/analytics-go.v3"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
+	cliLog "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
 
 const proxyIPAddr = "https://127.0.0.1:31068"
@@ -126,7 +126,7 @@ func (l *Lister) GetVizierConnection(id uuid.UUID) (*ConnectionInfo, error) {
 			return nil, err
 		}
 
-		log.WithField("addr", addr).Info("Selected Vizier address")
+		cliLog.Infof("Selected Vizier address addr=%s", addr)
 		_ = pxanalytics.Client().Enqueue(&analytics.Track{
 			UserId: pxconfig.Cfg().UniqueClientID,
 			Event:  "Selected Vizier Address",

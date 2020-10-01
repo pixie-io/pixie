@@ -5,7 +5,6 @@ import (
 	"regexp"
 
 	"github.com/fatih/color"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -14,6 +13,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/update"
+	cliLog "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
 
 func init() {
@@ -133,6 +133,7 @@ func Execute() {
 			UserId: pxconfig.Cfg().UniqueClientID,
 			Event:  "Exec Error",
 		})
-		log.WithError(err).Fatal("Error executing command")
+		cliLog.WithError(err).Error("Error executing command")
+		os.Exit(1)
 	}
 }

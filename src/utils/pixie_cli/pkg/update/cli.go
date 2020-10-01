@@ -24,6 +24,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/version"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
+	cliLog "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
 
 func newATClient(cloudAddr string) (cloudapipb.ArtifactTrackerClient, error) {
@@ -183,7 +184,7 @@ func (c *CLIUpdater) UpdateSelf(version string) error {
 		return err
 	}
 
-	fmt.Println("Download complete, applying update ...")
+	cliLog.Info("Download complete, applying update ...")
 	checksum, err := hex.DecodeString(resp.SHA256)
 	if err != nil {
 		return err
