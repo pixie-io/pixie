@@ -1,12 +1,13 @@
 import * as React from 'react';
 import { createStyles, Theme, withStyles } from '@material-ui/core/styles';
-import { formatBoolData, formatFloat64Data } from 'utils/format-data';
+import { formatBoolData, formatFloat64Data, formatUInt128Protobuf } from 'utils/format-data';
 import {
   GaugeLevel,
   getCPULevel,
   getLatencyLevel,
   getLatencyNSLevel,
 } from 'utils/metric-thresholds';
+import { DataType, SemanticType } from '../../types/generated/vizier_pb';
 
 const JSON_INDENT_PX = 16;
 
@@ -250,3 +251,33 @@ export const DurationRenderer = ({ data }: {data: number}) => (
     level={getLatencyNSLevel(data)}
   />
 );
+
+export const formatBySemType = (semType: SemanticType, val: any): DataWithUnits => {
+  switch (semType) {
+    case SemanticType.ST_BYTES:
+      return formatBytes(val);
+    case SemanticType.ST_DURATION_NS:
+      return formatDuration(val);
+    default:
+      break;
+  }
+
+  return {
+    val,
+    units: '',
+  };
+};
+
+export const formatByDataType = (dataType: DataType, val: any): string => {
+  switch (dataType) {
+    case DataType.FLOAT64:
+      return formatFloat64Data(val);
+    case DataType.BOOLEAN:
+      return formatBoolData(val);
+    case DataType.UINT128:
+      return formatUInt128Protobuf(val);
+    case DataType.STRING:
+    default:
+      return val;
+  }
+};

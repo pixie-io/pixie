@@ -1,19 +1,25 @@
 import { WidgetDisplay } from 'containers/live/vis';
 import {
-  data as visData, Edge, Network, Node, parseDOTNetwork,
+  data as visData,
+  Edge,
+  Network,
+  Node,
+  parseDOTNetwork,
 } from 'vis-network/standalone';
 import * as React from 'react';
 import {
-  createStyles, makeStyles, useTheme, Theme,
+  createStyles,
+  makeStyles,
+  Theme,
+  useTheme,
 } from '@material-ui/core/styles';
 import { useHistory } from 'react-router';
 import ClusterContext from 'common/cluster-context';
 import { Arguments } from 'utils/args-utils';
 import { DataType, Relation, SemanticType } from '../../../types/generated/vizier_pb';
-import {
-  getGraphOptions, semTypeToShapeConfig,
-} from './graph-options';
+import { getGraphOptions, semTypeToShapeConfig } from './graph-options';
 import { toEntityURL, toSingleEntityPage } from '../utils/live-view-params';
+import { formatByDataType, formatBySemType } from '../../format-data/format-data';
 
 interface ColInfo {
   type: DataType;
@@ -73,14 +79,19 @@ export const GraphWidget = (props: GraphWidgetProps) => {
   } if (display.adjacencyList && display.adjacencyList.fromColumn && display.adjacencyList.toColumn) {
     const toColInfo = colInfoFromName(relation, display.adjacencyList.toColumn);
     const fromColInfo = colInfoFromName(relation, display.adjacencyList.fromColumn);
+    let edgeHoverInfo = [];
+    if (display.edgeHoverInfo && display.edgeHoverInfo.length > 0) {
+      edgeHoverInfo = display.edgeHoverInfo.map((e): ColInfo => colInfoFromName(relation, e));
+    }
     if (toColInfo && fromColInfo) {
       return (
         <Graph
+          {...display}
           data={data}
           toCol={toColInfo}
           fromCol={fromColInfo}
           propagatedArgs={props.propagatedArgs}
-          {...display}
+          edgeHoverInfo={edgeHoverInfo}
         />
       );
     }
@@ -106,7 +117,7 @@ interface GraphProps {
   nodeWeightColumn?: string;
   edgeColorColumn?: string;
   edgeThresholds?: EdgeThresholds;
-  edgeHoverInfo?: string[];
+  edgeHoverInfo?: ColInfo[];
   edgeLength?: number;
 }
 
@@ -233,10 +244,17 @@ export const Graph = (props: GraphProps) => {
         edge.color = getColorForEdge(d[edgeColorColumn], theme, edgeThresholds);
       }
 
-      if (edgeHoverInfo) {
+      if (edgeHoverInfo && edgeHoverInfo.length > 0) {
         let edgeInfo = '';
         edgeHoverInfo.forEach((info, i) => {
-          edgeInfo = `${edgeInfo}${i === 0 ? '' : '<br>'} ${info}: ${d[info]}`;
+          let val = '';
+          if (info.semType === SemanticType.ST_NONE || info.semType === SemanticType.ST_UNSPECIFIED) {
+            val = formatByDataType(info.type, d[info.name]);
+          } else {
+            const valWithUnits = formatBySemType(info.semType, d[info.name]);
+            val = `${valWithUnits.val} ${valWithUnits.units}`;
+          }
+          edgeInfo = `${edgeInfo}${i === 0 ? '' : '<br>'} ${info.name}: ${val}`;
         });
         edge.title = edgeInfo;
       }
