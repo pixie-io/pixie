@@ -137,10 +137,8 @@ const styles = (
   },
   profileText: {
     whiteSpace: 'nowrap',
-    '& .MuiTypography-displayBlock': {
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-    },
+    textOverflow: 'ellipsis',
+    overflow: 'hidden',
   },
   sidebarToggleIcon: {
     color: palette.foreground.two,
