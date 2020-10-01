@@ -46,6 +46,8 @@ spec:
   template:
     metadata:
       name: vizier-upgrade-job
+      labels:
+        plane: control
     spec:
       serviceAccountName: updater-service-account
       containers:
