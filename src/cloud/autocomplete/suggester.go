@@ -283,7 +283,13 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 			})
 		}
 
-		exactMatch = exactMatch || len(results) > 0 && results[0].Name == reqs[i].Input
+		for _, r := range results {
+			// If any of the suggested results exactly matches the typed-in argument, then
+			// we consider the argument an exact match, and therefore a valid argument.
+			// Usually the exact input is always the first argument, but elastic ranking
+			// can be weird sometimes.
+			exactMatch = exactMatch || r.Name == reqs[i].Input
+		}
 
 		results = append(scriptResults, results...)
 
