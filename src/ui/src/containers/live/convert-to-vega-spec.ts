@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable no-param-reassign */
 import { Theme } from '@material-ui/core/styles';
+import { formatBytes, formatDuration } from 'components/format-data/format-data';
 import { addPxTimeFormatExpression } from 'components/live-widgets/vega/timeseries-axis';
-import * as _ from 'lodash';
+import { Relation, SemanticType } from 'types/generated/vizier_pb';
 import {
   Axis,
   Data,
@@ -21,6 +22,7 @@ import {
   Transforms,
   AreaMark,
   ScaleData,
+  expressionFunction,
 } from 'vega';
 import { vegaLite, VisualizationSpec } from 'vega-embed';
 import { TopLevelSpec as VlSpec } from 'vega-lite';
@@ -120,16 +122,60 @@ export interface VegaSpecWithProps {
   error?: Error;
 }
 
+interface VegaLabelFormatFunction {
+  functionName: string;
+  semType: SemanticType;
+  formatter: (number) => string;
+}
+
+function registerFunctions(formatters: VegaLabelFormatFunction[]) {
+  formatters.forEach((value: VegaLabelFormatFunction) => {
+    expressionFunction(value.functionName, value.formatter);
+  });
+}
+
+// const formatters: { [semType: SemanticType]: VegaLabelFormatFunction } = {
+const formatters: VegaLabelFormatFunction[] = [
+  {
+    functionName: 'formatBytes',
+    formatter: (val: number): string => {
+      const data = formatBytes(val);
+      return `${data.val}${data.units}`;
+    },
+    semType: SemanticType.ST_BYTES,
+  },
+  {
+    functionName: 'formatDuration',
+    formatter: (val: number): string => {
+      const data = formatDuration(val);
+      return `${data.val}${data.units}`;
+    },
+    semType: SemanticType.ST_DURATION_NS,
+  },
+];
+
+registerFunctions(formatters);
+
 export type ChartDisplay = TimeseriesDisplay | BarDisplay | VegaDisplay | HistogramDisplay;
 
-function convertWidgetDisplayToSpecWithErrors(display: ChartDisplay, source: string, theme: Theme): VegaSpecWithProps {
+function convertWidgetDisplayToSpecWithErrors(
+  display: ChartDisplay,
+  source: string,
+  theme: Theme,
+  relation?: Relation,
+): VegaSpecWithProps {
   switch (display[DISPLAY_TYPE_KEY]) {
     case BAR_CHART_TYPE:
       return convertToBarChart(display as BarDisplay, source);
     case HISTOGRAM_CHART_TYPE:
       return convertToHistogramChart(display as HistogramDisplay, source);
     case TIMESERIES_CHART_TYPE:
-      return convertToTimeseriesChart(display as TimeseriesDisplay, source, theme);
+      return convertToTimeseriesChart(
+        display as TimeseriesDisplay,
+        source,
+        theme,
+        relation,
+      );
     case VEGA_CHART_TYPE:
       return convertToVegaChart(display as VegaDisplay);
     default:
@@ -137,14 +183,21 @@ function convertWidgetDisplayToSpecWithErrors(display: ChartDisplay, source: str
         spec: {},
         legendColumnName: null,
         hasLegend: false,
-        error: new Error(`Unsupported display type: ${display[DISPLAY_TYPE_KEY]}`),
+        error: new Error(
+          `Unsupported display type: ${display[DISPLAY_TYPE_KEY]}`,
+        ),
       };
   }
 }
 
-export function convertWidgetDisplayToVegaSpec(display: ChartDisplay, source: string, theme: Theme): VegaSpecWithProps {
+export function convertWidgetDisplayToVegaSpec(
+  display: ChartDisplay,
+  source: string,
+  theme: Theme,
+  relation?: Relation,
+): VegaSpecWithProps {
   try {
-    const specWithProps = convertWidgetDisplayToSpecWithErrors(display, source, theme);
+    const specWithProps = convertWidgetDisplayToSpecWithErrors(display, source, theme, relation);
     hydrateSpecWithTheme(specWithProps.spec, theme);
     return specWithProps;
   } catch (error) {
@@ -577,7 +630,39 @@ function addLabelsToAxes(xAxis: Axis, yAxis: Axis, display: DisplayWithLabels) {
   }
 }
 
-function createTSAxes(spec: VgSpec, xScale: Scale, yScale: Scale, display: DisplayWithLabels) {
+const vegaFormatFuncForSemanticType = (semType: SemanticType): string => {
+  if (semType <= SemanticType.ST_NONE) {
+    return '';
+  }
+  for (const formatter of formatters) {
+    if (formatter.semType === semType) {
+      return formatter.functionName;
+    }
+  }
+  return '';
+};
+
+const getVegaFormatFunc = (relation: Relation, column: string): string => {
+  if (!relation) {
+    return '';
+  }
+  for (const columnInfo of relation.getColumnsList()) {
+    if (column !== columnInfo.getColumnName()) {
+      continue;
+    }
+    return vegaFormatFuncForSemanticType(columnInfo.getColumnSemanticType());
+  }
+  return '';
+};
+
+function createTSAxes(
+  spec: VgSpec,
+  xScale: Scale,
+  yScale: Scale,
+  display: DisplayWithLabels,
+  column: string,
+  relation: Relation,
+) {
   const xAxis = addAxis(spec, {
     scale: xScale.name,
     orient: 'bottom',
@@ -591,7 +676,8 @@ function createTSAxes(spec: VgSpec, xScale: Scale, yScale: Scale, display: Displ
       labels: {
         update: {
           text: {
-            signal: `pxTimeFormat(datum, ceil(width), ceil(width/${PX_BETWEEN_X_TICKS}),`
+            signal:
+              `pxTimeFormat(datum, ceil(width), ceil(width/${PX_BETWEEN_X_TICKS}),`
               + ` ${X_AXIS_LABEL_SEPARATION}, "${X_AXIS_LABEL_FONT}", ${X_AXIS_LABEL_FONT_SIZE})`,
           },
         },
@@ -599,6 +685,17 @@ function createTSAxes(spec: VgSpec, xScale: Scale, yScale: Scale, display: Displ
     },
     zindex: 0,
   });
+
+  const formatFunc = getVegaFormatFunc(relation, column);
+  let formatAxis = {};
+  if (formatFunc) {
+    formatAxis = {
+      encode: {
+        labels: { update: { text: { signal: `${formatFunc}(datum.value)` } } },
+      },
+    };
+  }
+
   const yAxis = addAxis(spec, {
     scale: yScale.name,
     orient: 'left',
@@ -609,6 +706,7 @@ function createTSAxes(spec: VgSpec, xScale: Scale, yScale: Scale, display: Displ
     },
     labelOverlap: true,
     zindex: 0,
+    ...formatAxis,
   });
   addLabelsToAxes(xAxis, yAxis, display);
 }
@@ -666,7 +764,12 @@ function addYDomainSignal(
   return addSignal(spec, signal);
 }
 
-function convertToTimeseriesChart(display: TimeseriesDisplay, source: string, theme: Theme): VegaSpecWithProps {
+function convertToTimeseriesChart(
+  display: TimeseriesDisplay,
+  source: string,
+  theme: Theme,
+  relation?: Relation,
+): VegaSpecWithProps {
   if (!display.timeseries) {
     throw new Error('TimeseriesChart must have one timeseries entry');
   }
@@ -743,7 +846,8 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string, th
   // Create scales/axes.
   const { xScale, yScale, colorScale } = createTSScales(
     spec, tsDomainSignal, yDomainSignal);
-  createTSAxes(spec, xScale, yScale, display);
+  // TODO(philkuz) handle case where the timeseries axes might be different sem types.
+  createTSAxes(spec, xScale, yScale, display, timeseriesValues[0], relation);
 
   // Create marks for ts lines.
   let i = 0;

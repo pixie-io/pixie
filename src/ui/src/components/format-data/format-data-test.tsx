@@ -1,7 +1,19 @@
 import { getClasses } from '@material-ui/core/test-utils';
 import { mount } from 'enzyme';
 import * as React from 'react';
-import { AlertData, JSONData, LatencyData } from './format-data';
+import {
+  AlertData, JSONData, LatencyData, formatBytes, formatDuration,
+} from './format-data';
+
+describe('formatters Test', () => {
+  it('should handle 0 Bytes correctly', () => {
+    expect(formatBytes(0)).toEqual({ units: '\u00a0B', val: '0\u00A0' });
+  });
+
+  it('should handle 0 duration correctly', () => {
+    expect(formatDuration(0)).toEqual({ units: 'ns', val: '0\u00A0' });
+  });
+});
 
 describe('<LatencyData/> test', () => {
   const classes = getClasses(<LatencyData data='20' />);

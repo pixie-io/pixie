@@ -187,6 +187,7 @@ const WidgetDisplay = ({
             className={classes.chart}
             data={parsedTable}
             display={display as React.ComponentProps<typeof Vega>['display']}
+            relation={table.relation}
             tableName={tableName}
           />
         </React.Suspense>

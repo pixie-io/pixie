@@ -1,4 +1,5 @@
 import { DARK_THEME } from 'common/mui-theme';
+import { Relation, SemanticType } from 'types/generated/vizier_pb';
 import { Spec } from 'vega';
 import {
   convertWidgetDisplayToVegaSpec,
@@ -158,6 +159,46 @@ function addHoverTests(spec: Spec) {
   });
 }
 
+function addTimseriesAxesTest(spec: Spec, formatFuncName: string) {
+  // No format func name, means we expec the y axis to not have anything
+  if (formatFuncName === '') {
+    it('does not have encoding on labels', () => {
+      expect(spec.axes).toEqual(expect.arrayContaining([
+        {
+          scale: 'y',
+          orient: 'left',
+          gridScale: 'x',
+          grid: true,
+          tickCount: {
+            signal: expect.stringContaining('ceil(height'),
+          },
+          labelOverlap: true,
+          zindex: 0,
+        },
+      ]));
+    });
+  } else {
+    it('has encoding on labels with formatFunc', () => {
+      expect(spec.axes).toEqual(expect.arrayContaining([
+        {
+          scale: 'y',
+          orient: 'left',
+          gridScale: 'x',
+          grid: true,
+          tickCount: {
+            signal: expect.stringContaining('ceil(height'),
+          },
+          labelOverlap: true,
+          zindex: 0,
+          encode: {
+            labels: { update: { text: { signal: expect.stringContaining(formatFuncName) } } },
+          },
+        },
+      ]));
+    });
+  }
+}
+
 function addTimeseriesYDomainHoverTests(spec: Spec, dsName: string, tsValues: string[]) {
   const makeSignalName = (data: string, tsValue: string) => (`${data}_${tsValue}_extent`);
   it('adds extents for timeseries values (y axis)', () => {
@@ -289,6 +330,51 @@ describe('simple timeseries', () => {
   addHoverReverseTests(spec, expectedInteractivitySelector);
   addHoverDataTest(spec, null, [valueFieldName]);
   addTimeseriesYDomainHoverTests(spec, TRANSFORMED_DATA_SOURCE_NAME, [valueFieldName]);
+  addTimseriesAxesTest(spec, /* formatFuncName */ '');
+});
+
+describe('simple timeseries with y label bytes formatting', () => {
+  const valueFieldName = 'bytes_per_second';
+  const input = {
+    '@type': 'pixielabs.ai/pl.vispb.TimeseriesChart',
+    timeseries: [
+      {
+        value: valueFieldName,
+        mode: 'MODE_LINE',
+      },
+    ],
+  };
+
+  const rel = new Relation();
+  const col = new Relation.ColumnInfo();
+  col.setColumnName(valueFieldName);
+  col.setColumnSemanticType(SemanticType.ST_BYTES);
+  rel.addColumns(col, 0);
+
+  const { spec } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME, rel);
+  addTimseriesAxesTest(spec, /* formatFuncName */ 'formatBytes');
+});
+
+describe('simple timeseries with y label duration formatting', () => {
+  const valueFieldName = 'latency_ms';
+  const input = {
+    '@type': 'pixielabs.ai/pl.vispb.TimeseriesChart',
+    timeseries: [
+      {
+        value: valueFieldName,
+        mode: 'MODE_LINE',
+      },
+    ],
+  };
+
+  const rel = new Relation();
+  const col = new Relation.ColumnInfo();
+  col.setColumnName(valueFieldName);
+  col.setColumnSemanticType(SemanticType.ST_DURATION_NS);
+  rel.addColumns(col, 0);
+
+  const { spec } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME, rel);
+  addTimseriesAxesTest(spec, /* formatFuncName */ 'formatDuration');
 });
 
 describe('timeseries with series', () => {

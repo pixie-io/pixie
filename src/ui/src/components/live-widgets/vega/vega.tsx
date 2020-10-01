@@ -9,6 +9,9 @@ import {
   LEGEND_HOVER_SIGNAL, LEGEND_SELECT_SIGNAL, REVERSE_HOVER_SIGNAL, REVERSE_SELECT_SIGNAL,
   REVERSE_UNSELECT_SIGNAL,
 } from 'containers/live/convert-to-vega-spec';
+import {
+  Relation,
+} from 'types/generated/vizier_pb';
 import * as _ from 'lodash';
 import * as React from 'react';
 import { Vega as ReactVega } from 'react-vega';
@@ -49,6 +52,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 
 interface VegaProps {
   data: Array<{}>;
+  relation: Relation;
   tableName: string;
   display: ChartDisplay;
   className?: string;
@@ -57,11 +61,13 @@ interface VegaProps {
 const Vega = React.memo((props: VegaProps) => {
   const classes = useStyles();
   const theme = useTheme();
-  const { data: inputData, tableName, display } = props;
+  const {
+    data: inputData, tableName, display, relation,
+  } = props;
   const {
     spec, hasLegend, legendColumnName, error,
-  } = React.useMemo(() => convertWidgetDisplayToVegaSpec(display, tableName, theme),
-    [display, tableName, theme]);
+  } = React.useMemo(() => convertWidgetDisplayToVegaSpec(display, tableName, theme, relation),
+    [display, tableName, theme, relation]);
 
   const data = React.useMemo(() => ({ [tableName]: inputData }), [tableName, inputData]);
 

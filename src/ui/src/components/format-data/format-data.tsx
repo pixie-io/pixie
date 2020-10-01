@@ -197,7 +197,7 @@ export const formatBytes = (data: number): DataWithUnits => {
   const dm = decimals < 0 ? 0 : decimals;
   const sizes = ['\u00a0B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 
-  const i = Math.min(Math.floor(Math.log(data) / Math.log(k)), sizes.length + 1);
+  const i = data === 0 ? 0 : Math.min(Math.floor(Math.log(data) / Math.log(k)), sizes.length + 1);
 
   const val = `${parseFloat((data / (k ** i)).toFixed(dm))}\u00A0`;
   const units = sizes[i];
@@ -214,7 +214,7 @@ export const formatDuration = (data: number): DataWithUnits => {
   const dm = decimals < 0 ? 0 : decimals;
   const sizes = ['ns', '\u00b5s', 'ms', '\u00a0s'];
 
-  const i = Math.min(Math.floor(Math.log(data) / Math.log(k)), sizes.length + 1);
+  const i = data === 0 ? 0 : Math.min(Math.floor(Math.log(data) / Math.log(k)), sizes.length + 1);
 
   const val = `${parseFloat((data / (k ** i)).toFixed(dm))}\u00A0`;
   const units = sizes[i];
