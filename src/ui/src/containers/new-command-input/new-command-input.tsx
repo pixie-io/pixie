@@ -118,8 +118,8 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
   // Make an API call to get a list of initial suggestions when the command input is first loaded.
   React.useEffect(() => {
     onChange('', 0, 'EDIT', null);
-  // We only want this useEffect to be called the first time the command input is loaded.
-  // eslint-disable-next-line
+    // We only want this useEffect to be called the first time the command input is loaded.
+    // eslint-disable-next-line
   }, []);
 
   const onSubmit = React.useCallback(() => {
@@ -140,8 +140,7 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
           id: script.id,
           args: argsForVis(vis, args),
         };
-
-        setTabStops([]);
+        setTabStops([{ CursorPosition: 0, Index: 1, Value: '' }]);
         setIsValid(false);
         setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
         if (!ContainsMutation(execArgs.pxl)) {
