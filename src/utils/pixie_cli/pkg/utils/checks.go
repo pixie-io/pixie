@@ -38,6 +38,26 @@ var (
 		}
 		return nil
 	})
+	clusterTypeIsSupported = NamedCheck("Cluster type is supported", func() error {
+		// We don't support kind.
+		result, err := exec.Command("/bin/sh", "-c", `kind get clusters | grep "^$(kubectl config current-context | sed -e "s/^kind-//g")$"`).Output()
+		if err == nil {
+			// err not nil, means command failed and either kind is not installed or not used.
+			if len(result) > 0 {
+				return fmt.Errorf("We don't currently support Kind clusters. Support coming soon! ")
+			}
+		}
+
+		result, err = exec.Command("/bin/sh", "-c", `minikube profile list | grep " $(kubectl config current-context) "| cut -f3 -d'|'`).Output()
+		if err == nil {
+			s := strings.Trim(string(result), " \n")
+			// err not nil, means command failed and either minikube is not installed or not used.
+			if s == "docker" {
+				return fmt.Errorf("Docker driver is not supported with minikube. Support coming soon! Please use kvm2/HyperKit instead. ")
+			}
+		}
+		return nil
+	})
 	k8sVersionCheck = NamedCheck(fmt.Sprintf("K8s version > %s", k8sMinVersion), func() error {
 		kubeConfig := k8s.GetConfig()
 
@@ -99,6 +119,7 @@ var (
 // DefaultClusterChecks is a list of cluster that are performed by default.
 var DefaultClusterChecks = []Checker{
 	kernelVersionCheck,
+	clusterTypeIsSupported,
 	k8sVersionCheck,
 	hasKubectlCheck,
 	userCanCreateNamespace,
