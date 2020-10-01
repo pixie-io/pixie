@@ -147,12 +147,12 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
     // The user has clicked a new position in the input box. We must
     // update the cursor position accordingly.
     setCursor(inputRef.current.selectionStart);
-    inputRef.current.focus();
+    inputRef.current?.focus();
   }, [setCursor]);
 
   // Focus the input element whenever the suggestion changes.
   React.useEffect(() => {
-    inputRef.current.focus();
+    inputRef.current?.focus();
   }, [value]);
 
   // Each field in the input box is a different span so that we can control color.

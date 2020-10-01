@@ -120,13 +120,13 @@ const Input: React.FC<InputProps> = ({
   }, [onKey]);
 
   const focusInput = React.useCallback(() => {
-    inputRef.current.focus();
+    inputRef.current?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Focus the input element whenever the suggestion changes.
   React.useEffect(() => {
-    inputRef.current.focus();
+    inputRef.current?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suggestion]);
 

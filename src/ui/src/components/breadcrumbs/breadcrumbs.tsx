@@ -148,7 +148,7 @@ const DialogDropdown = ({
 
   if (anchorEl && inputRef.current) {
     setTimeout(() => {
-      inputRef.current.focus();
+      inputRef.current?.focus();
     }, 100);
   }
 
