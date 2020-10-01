@@ -188,7 +188,7 @@ func (y *YAMLGenerator) ExtractYAMLs(extractPath string, format ExtractYAMLForma
 	filePath := path.Join(extractPath, "yamls.tar")
 	writer, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
-		return errors.New("Failed to open file to write YAMLs")
+		return fmt.Errorf("Failed trying to open extract_yaml path: %s", err)
 	}
 	defer writer.Close()
 	w := tar.NewWriter(writer)

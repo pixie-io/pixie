@@ -301,7 +301,9 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	// If extract_path is specified, write out yamls to file.
 	if extractPath != "" {
-		yamlGenerator.ExtractYAMLs(extractPath, artifacts.MultiFileExtractYAMLFormat, yamlArgs)
+		if err := yamlGenerator.ExtractYAMLs(extractPath, artifacts.MultiFileExtractYAMLFormat, yamlArgs); err != nil {
+			log.WithError(err).Fatal("failed to extract deployment YAMLs")
+		}
 		return
 	}
 
