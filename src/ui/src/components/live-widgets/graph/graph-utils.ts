@@ -3,7 +3,7 @@ import { Theme } from '@material-ui/core/styles';
 
 import * as podSVG from './pod.svg';
 import * as svcSVG from './svc.svg';
-import { SemanticType } from '../../../types/generated/vizier_pb';
+import { DataType, Relation, SemanticType } from '../../../types/generated/vizier_pb';
 
 export const LABEL_OPTIONS = {
   label: {
@@ -12,6 +12,12 @@ export const LABEL_OPTIONS = {
     maxVisible: 20,
   },
 };
+
+export interface ColInfo {
+  type: DataType;
+  semType: SemanticType;
+  name: string;
+}
 
 export function getGraphOptions(theme: Theme, edgeLength: number): Options {
   return {
@@ -96,4 +102,18 @@ export function getColorForErrorRate(val: number, theme: Theme): string {
     return theme.palette.success.dark;
   }
   return val > 2 ? theme.palette.error.main : theme.palette.warning.main;
+}
+
+export function colInfoFromName(relation: Relation, name: string): ColInfo {
+  const cols = relation.getColumnsList();
+  for (let i = 0; i < cols.length; i++) {
+    if (cols[i].getColumnName() === name) {
+      return {
+        name,
+        type: cols[i].getColumnType(),
+        semType: cols[i].getColumnSemanticType(),
+      };
+    }
+  }
+  return undefined;
 }

@@ -1,5 +1,5 @@
 import { data as visData } from 'vis-network/standalone';
-import { getNamespaceFromEntityName, semTypeToShapeConfig } from './graph-options';
+import { getNamespaceFromEntityName, semTypeToShapeConfig } from './graph-utils';
 import { RequestGraphDisplay } from './request-graph';
 import { SemanticType } from '../../../types/generated/vizier_pb';
 

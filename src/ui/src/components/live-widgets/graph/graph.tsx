@@ -17,15 +17,11 @@ import { useHistory } from 'react-router';
 import ClusterContext from 'common/cluster-context';
 import { Arguments } from 'utils/args-utils';
 import { DataType, Relation, SemanticType } from '../../../types/generated/vizier_pb';
-import { getGraphOptions, semTypeToShapeConfig } from './graph-options';
+import {
+  getGraphOptions, semTypeToShapeConfig, colInfoFromName, ColInfo,
+} from './graph-utils';
 import { toEntityURL, toSingleEntityPage } from '../utils/live-view-params';
 import { formatByDataType, formatBySemType } from '../../format-data/format-data';
-
-interface ColInfo {
-  type: DataType;
-  semType: SemanticType;
-  name: string;
-}
 
 interface AdjacencyList {
   toColumn: string;
@@ -55,20 +51,6 @@ interface GraphWidgetProps {
   relation: Relation;
   propagatedArgs?: Arguments;
 }
-
-const colInfoFromName = (relation: Relation, name: string): ColInfo => {
-  const cols = relation.getColumnsList();
-  for (let i = 0; i < cols.length; i++) {
-    if (cols[i].getColumnName() === name) {
-      return {
-        name,
-        type: cols[i].getColumnType(),
-        semType: cols[i].getColumnSemanticType(),
-      };
-    }
-  }
-  return undefined;
-};
 
 export const GraphWidget = (props: GraphWidgetProps) => {
   const { display, data, relation } = props;

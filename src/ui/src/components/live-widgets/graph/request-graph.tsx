@@ -5,7 +5,7 @@ import { data as visData, Network } from 'vis-network/standalone';
 import { createStyles, makeStyles, useTheme } from '@material-ui/core/styles';
 import { toEntityURL, toSingleEntityPage } from 'components/live-widgets/utils/live-view-params';
 import ClusterContext from 'common/cluster-context';
-import { SemanticType } from 'types/generated/vizier_pb';
+import { SemanticType, Relation } from 'types/generated/vizier_pb';
 import Button from '@material-ui/core/Button';
 import { useHistory } from 'react-router-dom';
 import { Arguments } from 'utils/args-utils';
@@ -16,8 +16,11 @@ import {
   getGraphOptions,
   LABEL_OPTIONS as labelOpts,
   semTypeToShapeConfig,
-} from './graph-options';
+  colInfoFromName,
+  ColInfo,
+} from './graph-utils';
 import { Edge, RequestGraph, RequestGraphParser } from './request-graph-parser';
+import { formatBySemType } from '../../format-data/format-data';
 
 export interface RequestGraphDisplay extends WidgetDisplay {
   readonly requestorPodColumn: string;
@@ -37,6 +40,7 @@ export interface RequestGraphDisplay extends WidgetDisplay {
 interface RequestGraphProps {
   display: RequestGraphDisplay;
   data: any[];
+  relation: Relation;
   propagatedArgs?: Arguments;
 }
 
@@ -66,11 +70,13 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
   const history = useHistory();
 
   const ref = React.useRef<HTMLDivElement>();
-  const { data } = props;
+  const { data, relation } = props;
   const { display } = props;
 
   const [network, setNetwork] = React.useState<Network>(null);
   const [graph, setGraph] = React.useState<RequestGraph>(null);
+
+  const [colInfos, setColInfos] = React.useState<{[key: string]: ColInfo}>({});
 
   const [clusteredMode, setClusteredMode] = React.useState<boolean>(true);
   const [hierarchyEnabled, setHierarchyEnabled] = React.useState<boolean>(false);
@@ -85,6 +91,21 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
    */
   const toggleMode = React.useCallback(() => setClusteredMode(
     (clustered) => !clustered), [setClusteredMode]);
+
+  React.useEffect(() => {
+    const infos = {};
+
+    // Get columnInfos for all relevant columns.
+    const cols = [display.p50Column, display.p90Column, display.errorRateColumn, display.requestsPerSecondColumn,
+      display.inboundBytesPerSecondColumn, display.outboundBytesPerSecondColumn,
+    ];
+
+    cols.forEach((c) => {
+      infos[c] = colInfoFromName(relation, c);
+    });
+
+    setColInfos(infos);
+  }, [relation, display]);
 
   React.useEffect(() => {
     if (network && graph) {
@@ -197,13 +218,25 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
   React.useEffect(() => {
     if (ref && graph) {
       // Hydrate the data.
+
+      const getDisplayText = (value: any, colName: string, defaultUnits: string) => {
+        const info = colInfos[colName];
+        if (info.semType === SemanticType.ST_NONE || info.semType === SemanticType.ST_UNSPECIFIED) {
+          return `${formatFloat64Data(value)}${defaultUnits}`;
+        }
+        const valWithUnits = formatBySemType(info.semType, value);
+        return `${valWithUnits.val} ${valWithUnits.units}`;
+      };
+
       graph.edges.forEach((edge: Edge) => {
         const bps = edge.inboundBPS + edge.outputBPS;
-        const title = `${formatFloat64Data(bps)} B/s <br />
-                       ${formatFloat64Data(edge.rps)} req/s <br >
-                       Error: ${`${formatFloat64Data(edge.errorRate)}%`} <br>
-                       p50: ${formatFloat64Data(edge.p50)} ms <br>
-                       p99: ${formatFloat64Data(edge.p99)} ms`;
+
+        const title = `${getDisplayText(bps, display.inboundBytesPerSecondColumn, ' B/s')} <br>
+                       ${getDisplayText(edge.rps, display.requestsPerSecondColumn, ' req/s')} <br>
+                       Error: ${getDisplayText(edge.errorRate, display.errorRateColumn, '%')} <br>
+                       p50: ${getDisplayText(edge.p50, display.p50Column, 'ms')} <br>
+                       p90: ${getDisplayText(edge.p90, display.p50Column, 'ms')}
+        `;
 
         const color = colorByLatency
           ? getColorForLatency(edge.p99, theme) : getColorForErrorRate(edge.errorRate, theme);
@@ -223,7 +256,9 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
       const n = new Network(ref.current, d, graphOpts);
       setNetwork(n);
     }
-  }, [graph, ref, colorByLatency]);
+    // To list all exhaustive deps, we also have to list theme and graphOpts, which will never change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [graph, display, ref, colorByLatency, colInfos]);
 
   const doubleClickCallback = React.useCallback((params?: any) => {
     if (params.nodes.length > 0) {

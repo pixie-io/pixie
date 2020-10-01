@@ -172,6 +172,7 @@ const WidgetDisplay = ({
         <RequestGraphWidget
           display={display as RequestGraphDisplay}
           data={parsedTable}
+          relation={table.relation}
           propagatedArgs={propagatedArgs}
         />
       </>
