@@ -59,43 +59,32 @@ export const VizierGRPCClientProvider = (props: Props) => {
   const cloudClient = React.useContext(CloudClientContext);
   const [client, setClient] = React.useState<VizierGRPCClient>(null);
   const [loading, setLoading] = React.useState(true);
-  const subscriptionRef = React.useRef<Subscription>(null);
-  const retryRef = React.useRef<RetryOperation>(null);
-  if (!retryRef.current) {
-    retryRef.current = operation({ forever: true, randomize: true });
-  }
 
   const healthy = client && clusterStatus === 'CS_HEALTHY';
 
   React.useEffect(() => {
-    if (!client) {
-      return;
-    }
-    if (client.clusterID !== clusterID) {
-      setLoading(true);
-    }
-  }, [client, clusterID]);
+    // Everytime the clusterID changes, we enter a loading state until we
+    // receive a healthy status.
+    setLoading(true);
+  }, [clusterID]);
 
   React.useEffect(() => {
-    if (clusterStatus !== 'CS_HEALTHY') {
-      retryRef.current.stop();
-      if (subscriptionRef.current) {
-        subscriptionRef.current.unsubscribe();
-        subscriptionRef.current = null;
-      }
-    } else {
-      // Cluster is healthy
-      retryRef.current.reset();
-      retryRef.current.attempt(() => {
-        if (subscriptionRef.current) {
-          subscriptionRef.current.unsubscribe();
+    let currentSubscription = null;
+    let subscriptionPromise = Promise.resolve();
+    const retryOp = operation({ forever: true, randomize: true });
+
+    if (clusterStatus === 'CS_HEALTHY') {
+      retryOp.attempt(() => {
+        // If retrying, cancel the subscription from the previous try.
+        if (currentSubscription) {
+          currentSubscription.unsubscribe();
         }
         setClient(null);
-        newVizierClient(cloudClient, clusterID, passthroughEnabled).then(
+        subscriptionPromise = newVizierClient(cloudClient, clusterID, passthroughEnabled).then(
           (newClient) => {
-            subscriptionRef.current = newClient.health().subscribe({
+            currentSubscription = newClient.health().subscribe({
               next: (status) => {
-                retryRef.current.reset();
+                retryOp.reset();
                 if (status.getCode() === 0) {
                   setClient(newClient);
                   setLoading(false);
@@ -104,11 +93,11 @@ export const VizierGRPCClientProvider = (props: Props) => {
                 }
               },
               complete: () => {
-                retryRef.current.retry(new Error('stream ended'));
+                retryOp.retry(new Error('stream ended'));
               },
               error: (error) => {
                 setClient(null);
-                retryRef.current.retry(error);
+                retryOp.retry(error);
               },
             });
           },
@@ -116,10 +105,12 @@ export const VizierGRPCClientProvider = (props: Props) => {
       });
     }
     return () => {
-      if (subscriptionRef.current) {
-        subscriptionRef.current.unsubscribe();
-      }
-      retryRef.current.stop();
+      subscriptionPromise.then(() => {
+        if (currentSubscription) {
+          currentSubscription.unsubscribe();
+        }
+      });
+      retryOp.stop();
     };
   }, [clusterID, passthroughEnabled, clusterStatus, cloudClient]);
 

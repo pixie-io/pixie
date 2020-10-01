@@ -86,6 +86,9 @@ export class VizierGRPCClient {
     const call = this.client.healthCheck(req, headers);
     return new Observable<Status>((observer) => {
       call.on('data', (resp) => {
+        if (observer.closed) {
+          call.cancel();
+        }
         observer.next(resp.getStatus());
       });
 
