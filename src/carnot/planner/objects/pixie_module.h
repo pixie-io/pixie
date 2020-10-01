@@ -180,7 +180,9 @@ class PixieModule : public QLObject {
   inline static constexpr char kPodTypeName[] = "Pod";
   inline static constexpr char kServiceTypeName[] = "Service";
   inline static constexpr char kBytesTypeName[] = "Bytes";
+  inline static constexpr char kDurationNSTypeName[] = "DurationNanos";
   inline static constexpr char kUPIDTypeName[] = "UPID";
+  inline static constexpr char kPercentTypeName[] = "Percent";
 
   // Submodules of Px.
   inline static constexpr char kVisAttrId[] = "vis";

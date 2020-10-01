@@ -80,7 +80,15 @@ class TypeObject : public QLObject {
     }
     auto expr_object = static_cast<ExprObject*>(ql_object.get());
     auto expr_ir = static_cast<ExpressionIR*>(expr_object->node());
-    return expr_ir->EvaluatedDataType() == data_type_ && expr_ir->semantic_type();
+
+    if (expr_ir->EvaluatedDataType() != data_type_) {
+      return false;
+    }
+
+    if (!expr_ir->HasTypeCast()) {
+      return semantic_type_ == types::ST_NONE;
+    }
+    return expr_ir->type_cast()->semantic_type() == semantic_type_;
   }
 
   types::DataType data_type() const { return data_type_; }

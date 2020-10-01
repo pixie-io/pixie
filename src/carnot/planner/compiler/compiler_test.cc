@@ -3161,6 +3161,46 @@ TEST_F(CompilerTest, alt_imports_test_from) {
                          Equals(ColumnNode("remote_addr", 0), String("10.0.0.3"))));
 }
 
+constexpr char kSemanticTypeCast[] = R"pxl(
+import px
+df = px.DataFrame('http_events')
+df.foo = px.DurationNanos(345)
+px.display(df[['foo']])
+)pxl";
+
+TEST_F(CompilerTest, semantic_type_cast) {
+  auto plan_or_s = compiler_.CompileToIR(kSemanticTypeCast, compiler_state_.get());
+  ASSERT_OK(plan_or_s);
+
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  auto nodes = plan->FindNodesThatMatch(Int(345));
+  ASSERT_EQ(1, nodes.size());
+
+  auto node = static_cast<ExpressionIR*>(nodes[0]);
+  EXPECT_TRUE(node->HasTypeCast());
+  EXPECT_EQ(types::ST_DURATION_NS, node->type_cast()->semantic_type());
+}
+
+constexpr char kNestedSemanticTypeCast[] = R"pxl(
+import px
+df = px.DataFrame('http_events')
+df.foo = px.DurationNanos(345*10)
+px.display(df[['foo']])
+)pxl";
+
+TEST_F(CompilerTest, nested_semantic_type_cast) {
+  auto plan_or_s = compiler_.CompileToIR(kNestedSemanticTypeCast, compiler_state_.get());
+  ASSERT_OK(plan_or_s);
+
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  auto nodes = plan->FindNodesThatMatch(Int(3450));
+  ASSERT_EQ(1, nodes.size());
+
+  auto node = static_cast<ExpressionIR*>(nodes[0]);
+  EXPECT_TRUE(node->HasTypeCast());
+  EXPECT_EQ(types::ST_DURATION_NS, node->type_cast()->semantic_type());
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

@@ -209,13 +209,26 @@ Status PixieModule::RegisterTypeObjs() {
                       TypeObject::Create(types::STRING, types::ST_CONTAINER_NAME, ast_visitor()));
   PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kContainerTypeName, container_type_object));
 
+  // UPID
+  PL_ASSIGN_OR_RETURN(auto upid_type_object,
+                      TypeObject::Create(types::UINT128, types::ST_UPID, ast_visitor()));
+  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kUPIDTypeName, upid_type_object));
+
   // Bytes
   PL_ASSIGN_OR_RETURN(auto bytes_type_object,
                       TypeObject::Create(types::INT64, types::ST_BYTES, ast_visitor()));
   PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kBytesTypeName, bytes_type_object));
-  PL_ASSIGN_OR_RETURN(auto upid_type_object,
-                      TypeObject::Create(types::UINT128, types::ST_UPID, ast_visitor()));
-  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kUPIDTypeName, upid_type_object));
+
+  // Duration ns
+  PL_ASSIGN_OR_RETURN(auto duration_type_object,
+                      TypeObject::Create(types::INT64, types::ST_DURATION_NS, ast_visitor()));
+  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kDurationNSTypeName, duration_type_object));
+
+  // Percent
+  PL_ASSIGN_OR_RETURN(auto percent_type_object,
+                      TypeObject::Create(types::FLOAT64, types::ST_PERCENT, ast_visitor()));
+  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kPercentTypeName, percent_type_object));
+
   return Status::OK();
 }
 

@@ -570,13 +570,22 @@ StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalArithmetic(FuncIR* func_ir) {
                                       func_ir->carnot_op_name());
   }
 
-  return func_ir->graph()->CreateNode<IntIR>(func_ir->ast(), result);
+  PL_ASSIGN_OR_RETURN(auto node, func_ir->graph()->CreateNode<IntIR>(func_ir->ast(), result));
+  if (func_ir->HasTypeCast()) {
+    node->SetTypeCast(func_ir->type_cast());
+  }
+  return node;
 }
 
 StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalTimeNow(FuncIR* func_ir) {
   CHECK_EQ(func_ir->args().size(), 0U)
       << "Received unexpected args for " << func_ir->carnot_op_name() << " function";
-  return func_ir->graph()->CreateNode<IntIR>(func_ir->ast(), compiler_state_->time_now().val);
+  PL_ASSIGN_OR_RETURN(auto node, func_ir->graph()->CreateNode<IntIR>(
+                                     func_ir->ast(), compiler_state_->time_now().val));
+  if (func_ir->HasTypeCast()) {
+    node->SetTypeCast(func_ir->type_cast());
+  }
+  return node;
 }
 
 StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalUnitTime(FuncIR* func_ir) {
@@ -599,7 +608,12 @@ StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalUnitTime(FuncIR* func_ir) {
   auto time_unit = fn_type_iter->second;
   time_output = time_unit * time_val;
   // create the ir_node;
-  return func_ir->graph()->CreateNode<IntIR>(func_ir->ast(), time_output.count());
+  PL_ASSIGN_OR_RETURN(auto node,
+                      func_ir->graph()->CreateNode<IntIR>(func_ir->ast(), time_output.count()));
+  if (func_ir->HasTypeCast()) {
+    node->SetTypeCast(func_ir->type_cast());
+  }
+  return node;
 }
 
 StatusOr<bool> OperatorCompileTimeExpressionRule::Apply(IRNode* ir_node) {

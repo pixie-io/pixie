@@ -543,7 +543,6 @@ class ExpressionIR : public IRNode {
   bool IsOperator() const override { return false; }
   bool IsExpression() const override { return true; }
   virtual types::DataType EvaluatedDataType() const = 0;
-  virtual types::SemanticType semantic_type() const { return types::ST_NONE; }
   virtual bool IsDataTypeEvaluated() const = 0;
   virtual bool IsColumn() const { return false; }
   virtual bool IsData() const { return false; }

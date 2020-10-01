@@ -1219,6 +1219,25 @@ TEST_F(CompileTimeExpressionTest, already_completed) {
   EXPECT_EQ(mem_src->time_start_ns(), 24);
   EXPECT_EQ(mem_src->time_stop_ns(), 8);
 }
+
+TEST_F(CompileTimeExpressionTest, semantic_type_nested) {
+  auto add_func = MakeAddFunc(MakeInt(1), MakeInt(2));
+  auto new_type = ValueType::Create(types::INT64, types::ST_DURATION_NS);
+  add_func->SetTypeCast(new_type);
+  EXPECT_EQ(types::ST_DURATION_NS, add_func->type_cast()->semantic_type());
+
+  auto map = MakeMap(mem_src, {ColumnExpression{"col", add_func}}, true);
+  OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
+  auto result = compiler_expr_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  auto map_expr = map->col_exprs()[0].node;
+
+  ASSERT_TRUE(map_expr->HasTypeCast());
+  EXPECT_EQ(types::ST_DURATION_NS, map_expr->type_cast()->semantic_type());
+}
+
 class VerifyFilterExpressionTest : public RulesTest {
  protected:
   void SetUp() override {
@@ -1534,9 +1553,6 @@ TEST_F(RulesTest, MergeGroupByAggRule_MultipleAggsOneGroupBy) {
   BlockingAggIR* agg2 =
       MakeBlockingAgg(group_by, {}, {{"latency_mean", MakeMeanFunc(MakeColumn("latency", 0))}});
   MakeMemSink(agg2, "");
-
-  LOG(INFO) << "agg1=" << agg1->DebugString();
-  LOG(INFO) << "agg2=" << agg2->DebugString();
 
   EXPECT_EQ(graph->FindNodesThatMatch(BlockingAgg()).size(), 2);
 

@@ -17,7 +17,9 @@ class AddUDF : public udf::ScalarUDF {
   TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val + b2.val; }
   static udf::InfRuleVec SemanticInferenceRules() {
     return {
-        udf::InheritTypeFromArgs<AddUDF>::Create({types::ST_BYTES}),
+        udf::InheritTypeFromArgs<AddUDF>::Create({types::ST_BYTES, types::ST_THROUGHPUT_RATE,
+                                                  types::ST_THROUGHPUT_BYTES,
+                                                  types::ST_DURATION_NS}),
     };
   }
 
@@ -54,7 +56,9 @@ class SubtractUDF : public udf::ScalarUDF {
   TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val - b2.val; }
   static udf::InfRuleVec SemanticInferenceRules() {
     return {
-        udf::InheritTypeFromArgs<SubtractUDF>::Create({types::ST_BYTES}),
+        udf::InheritTypeFromArgs<SubtractUDF>::Create({types::ST_BYTES, types::ST_THROUGHPUT_RATE,
+                                                       types::ST_THROUGHPUT_BYTES,
+                                                       types::ST_DURATION_NS}),
     };
   }
   static udf::ScalarUDFDocBuilder Doc() {
@@ -72,6 +76,13 @@ template <typename TReturn, typename TArg1, typename TArg2>
 class DivideUDF : public udf::ScalarUDF {
  public:
   TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val / b2.val; }
+
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<DivideUDF>(types::ST_THROUGHPUT_RATE,
+                                                 {types::ST_NONE, types::ST_DURATION_NS}),
+            udf::ExplicitRule::Create<DivideUDF>(types::ST_THROUGHPUT_BYTES,
+                                                 {types::ST_BYTES, types::ST_DURATION_NS})};
+  }
 
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Arithmetically divide the two arguments.")
@@ -381,7 +392,9 @@ class MeanUDA : public udf::UDA {
   Float64Value Finalize(FunctionContext*) { return info_.count / info_.size; }
 
   static udf::InfRuleVec SemanticInferenceRules() {
-    return {udf::InheritTypeFromArgs<MeanUDA>::Create({types::ST_BYTES, types::ST_PERCENT})};
+    return {udf::InheritTypeFromArgs<MeanUDA>::Create({types::ST_BYTES, types::ST_THROUGHPUT_RATE,
+                                                       types::ST_THROUGHPUT_BYTES,
+                                                       types::ST_DURATION_NS, types::ST_PERCENT})};
   }
 
   StringValue Serialize(FunctionContext*) {
@@ -418,7 +431,8 @@ class SumUDA : public udf::UDA {
   void Merge(FunctionContext*, const SumUDA& other) { sum_ = sum_.val + other.sum_.val; }
   TArg Finalize(FunctionContext*) { return sum_; }
   static udf::InfRuleVec SemanticInferenceRules() {
-    return {udf::InheritTypeFromArgs<SumUDA>::Create({types::ST_BYTES})};
+    return {udf::InheritTypeFromArgs<SumUDA>::Create(
+        {types::ST_BYTES, types::ST_THROUGHPUT_RATE, types::ST_THROUGHPUT_BYTES})};
   }
   StringValue Serialize(FunctionContext*) {
     return StringValue(reinterpret_cast<char*>(&sum_), sizeof(sum_));
@@ -457,7 +471,9 @@ class MaxUDA : public udf::UDA {
   TArg Finalize(FunctionContext*) { return max_; }
 
   static udf::InfRuleVec SemanticInferenceRules() {
-    return {udf::InheritTypeFromArgs<MaxUDA>::Create({types::ST_BYTES, types::ST_PERCENT})};
+    return {udf::InheritTypeFromArgs<MaxUDA>::Create({types::ST_BYTES, types::ST_THROUGHPUT_RATE,
+                                                      types::ST_THROUGHPUT_BYTES,
+                                                      types::ST_DURATION_NS, types::ST_PERCENT})};
   }
 
   static udf::UDADocBuilder Doc() {
@@ -497,7 +513,9 @@ class MinUDA : public udf::UDA {
   TArg Finalize(FunctionContext*) { return min_; }
 
   static udf::InfRuleVec SemanticInferenceRules() {
-    return {udf::InheritTypeFromArgs<MinUDA>::Create({types::ST_BYTES, types::ST_PERCENT})};
+    return {udf::InheritTypeFromArgs<MinUDA>::Create({types::ST_BYTES, types::ST_THROUGHPUT_RATE,
+                                                      types::ST_THROUGHPUT_BYTES,
+                                                      types::ST_DURATION_NS, types::ST_PERCENT})};
   }
 
   StringValue Serialize(FunctionContext*) {
