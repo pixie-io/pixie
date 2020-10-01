@@ -2,14 +2,22 @@
 
 # Deploy pixie.
 function px_deploy() {
+  date
   px deploy -y
+  date
   # Wait some additional time for pods to settle, just to be safe.
   sleep 30
 }
 
+function get_cluster_id() {
+  cluster_name=$1
+  px get viziers | grep " $cluster_name " | tr -s ' ' | cut -f3 -d' '
+}
+
 # Run a simple script. Could add more scripts to expand coverage.
 function run_script() {
-  px script run px/http_data
+  cluster_id=$1
+  px -c "$cluster_id" script run px/http_data
 }
 
 function check_results() {

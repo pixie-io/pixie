@@ -42,7 +42,7 @@ struct HalfStream {
   }
 
   std::string DebugString() const {
-    return absl::Substitute("[headers=$0] [data=$1] [trailers=$2] [end_stream=$3",
+    return absl::Substitute("[headers=$0] [data=$1] [trailers=$2] [end_stream=$3]",
                             headers.DebugString(), data, trailers.DebugString(), end_stream);
   }
 };

@@ -36,5 +36,6 @@ trap 'gcloud container clusters delete "$cluster_name" --quiet' EXIT
 
 # Test pixie here.
 px_deploy
-output=$(run_script)
+cluster_id=$(get_cluster_id "$cluster_name")
+output=$(run_script "$cluster_id")
 check_results "$output"
