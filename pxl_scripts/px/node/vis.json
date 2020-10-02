@@ -11,6 +11,12 @@
       "type": "PX_NODE",
       "description": "The node name to filter on",
       "defaultValue": ""
+    },
+    {
+      "name": "groupby",
+      "type": "PX_STRING",
+      "description": "The element to groupby",
+      "defaultValue": "node"
     }
   ],
   "globalFuncs": [
@@ -26,6 +32,10 @@
           {
             "name": "node",
             "variable": "node"
+          },
+          {
+            "name": "groupby",
+            "variable": "groupby"
           }
         ]
       }
@@ -42,6 +52,10 @@
           {
             "name": "node",
             "variable": "node"
+          },
+          {
+            "name": "groupby",
+            "variable": "groupby"
           }
         ]
       }
@@ -87,7 +101,8 @@
         "timeseries": [
           {
             "value": "cpu_pct",
-            "mode": "MODE_LINE"
+            "mode": "MODE_LINE",
+            "series": "groupby_col"
           }
         ],
         "title": "",
@@ -111,7 +126,8 @@
         "timeseries": [
           {
             "value": "rchar_mb_per_s",
-            "mode": "MODE_LINE"
+            "mode": "MODE_LINE",
+            "series": "groupby_col"
           }
         ],
         "title": "",
@@ -135,7 +151,8 @@
         "timeseries": [
           {
             "value": "wchar_mb_per_s",
-            "mode": "MODE_LINE"
+            "mode": "MODE_LINE",
+            "series": "groupby_col"
           }
         ],
         "title": "",
@@ -159,7 +176,8 @@
         "timeseries": [
           {
             "value": "tx_mb_per_s",
-            "mode": "MODE_LINE"
+            "mode": "MODE_LINE",
+            "series": "groupby_col"
           }
         ],
         "title": "",
@@ -183,7 +201,8 @@
         "timeseries": [
           {
             "value": "rx_mb_per_s",
-            "mode": "MODE_LINE"
+            "mode": "MODE_LINE",
+            "series": "groupby_col"
           }
         ],
         "title": "",
@@ -207,7 +226,9 @@
         "timeseries": [
           {
             "value": "rss_mb",
-            "mode": "MODE_LINE"
+            "mode": "MODE_LINE",
+            "series": "groupby_col",
+            "stackBySeries": false
           }
         ],
         "title": "",
@@ -231,7 +252,9 @@
         "timeseries": [
           {
             "value": "vsize_mb",
-            "mode": "MODE_LINE"
+            "mode": "MODE_LINE",
+            "series": "groupby_col",
+            "stackBySeries": false
           }
         ],
         "title": "",

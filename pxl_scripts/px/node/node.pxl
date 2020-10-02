@@ -33,7 +33,7 @@ def pods_for_node(start_time: str, node: px.Node):
     return df[['pod', 'start_time', 'containers', 'status']]
 
 
-def resource_timeseries(start_time: str, node: px.Node):
+def resource_timeseries(start_time: str, node: px.Node, groupby: str):
     ''' Gets the windowed process stats (CPU, memory, etc) for the input node.
 
     Args:
@@ -42,6 +42,8 @@ def resource_timeseries(start_time: str, node: px.Node):
     '''
     df = px.DataFrame(table='process_stats', start_time=start_time)
     df = df[df.ctx['node_name'] == node]
+
+    df[groupby] = df.ctx[groupby]
     df.timestamp = px.bin(df.time_, px.seconds(window_s))
 
     # Convert bytes to MB.
@@ -58,7 +60,7 @@ def resource_timeseries(start_time: str, node: px.Node):
 
     # First calculate CPU usage by process (UPID) in each k8s_object
     # over all windows.
-    df = df.groupby(['upid', 'timestamp']).agg(
+    df = df.groupby(['upid', 'timestamp', groupby]).agg(
         rss_mb=('rss_mb', px.mean),
         vsize_mb=('vsize_mb', px.mean),
         # The fields below are counters, so we take the min and the max to subtract them.
@@ -85,7 +87,7 @@ def resource_timeseries(start_time: str, node: px.Node):
     df.wchar_mb_per_s = (df.wchar_mb_max - df.wchar_mb_min) / window_size
 
     # Then aggregate process individual process metrics.
-    df = df.groupby(['timestamp']).agg(
+    df = df.groupby(['timestamp', groupby]).agg(
         cpu_ktime_ms=('cpu_ktime_ms', px.sum),
         cpu_utime_ms=('cpu_utime_ms', px.sum),
         read_mb_per_s=('read_mb_per_s', px.sum),
@@ -101,10 +103,11 @@ def resource_timeseries(start_time: str, node: px.Node):
     # Finally, calculate total (kernel + user time)  percentage used over window.
     df.cpu_pct = (df.cpu_ktime_ms + df.cpu_utime_ms) / window_size_ms * 100
     df['time_'] = df['timestamp']
-    return df.drop(['cpu_ktime_ms', 'cpu_utime_ms', 'timestamp'])
+    df.groupby_col = df[groupby]
+    return df.drop(['cpu_ktime_ms', 'cpu_utime_ms', 'timestamp', groupby])
 
 
-def network_stats(start_time: str, node: px.Node):
+def network_stats(start_time: str, node: px.Node, groupby: str):
     ''' Gets the network stats (transmitted/received traffic) for the input node.
 
     Args:
@@ -113,6 +116,7 @@ def network_stats(start_time: str, node: px.Node):
     '''
     df = px.DataFrame(table='network_stats', start_time=start_time)
     df = df[px.pod_id_to_node_name(df.pod_id) == node]
+    df[groupby] = df.ctx[groupby]
     df.timestamp = px.bin(df.time_, px.seconds(window_s))
 
     df.rx_mb = df.rx_bytes / bytes_per_mb
@@ -120,7 +124,7 @@ def network_stats(start_time: str, node: px.Node):
 
     # First calculate network usage by node over all windows.
     # Data is sharded by Pod in network_stats.
-    df = df.groupby(['timestamp', 'pod_id']).agg(
+    df = df.groupby(['timestamp', 'pod_id', groupby]).agg(
         rx_mb_end=('rx_mb', px.max),
         rx_mb_start=('rx_mb', px.min),
         tx_mb_end=('tx_mb', px.max),
@@ -146,7 +150,7 @@ def network_stats(start_time: str, node: px.Node):
     df.tx_errors_per_s = (df.tx_errors_end - df.tx_errors_start) / window_s
 
     # Add up the network values per node.
-    df = df.groupby(['timestamp']).agg(
+    df = df.groupby(['timestamp', groupby]).agg(
         rx_mb_per_s=('rx_mb_per_s', px.sum),
         tx_mb_per_s=('tx_mb_per_s', px.sum),
         rx_drop_per_s=('rx_drops_per_s', px.sum),
@@ -154,5 +158,6 @@ def network_stats(start_time: str, node: px.Node):
         rx_errors_per_s=('rx_errors_per_s', px.sum),
         tx_errors_per_s=('tx_errors_per_s', px.sum),
     )
+    df.groupby_col = df[groupby]
     df['time_'] = df['timestamp']
-    return df
+    return df.drop(['timestamp', groupby])
