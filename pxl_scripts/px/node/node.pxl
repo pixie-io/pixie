@@ -156,7 +156,7 @@ def network_stats(start_time: str, node: px.Node, groupby: str):
         rx_drop_per_s=('rx_drops_per_s', px.sum),
         tx_drops_per_s=('tx_drops_per_s', px.sum),
         rx_errors_per_s=('rx_errors_per_s', px.sum),
-       tx_errors_per_s=('tx_errors_per_s', px.sum),
+        tx_errors_per_s=('tx_errors_per_s', px.sum),
     )
     df.groupby_col = df[groupby]
     df['time_'] = df['timestamp']
