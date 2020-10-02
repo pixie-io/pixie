@@ -139,6 +139,7 @@ const styles = (
     whiteSpace: 'nowrap',
     textOverflow: 'ellipsis',
     overflow: 'hidden',
+    marginLeft: spacing(0.5),
   },
   sidebarToggleIcon: {
     color: palette.foreground.two,
