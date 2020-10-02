@@ -114,7 +114,7 @@ func (le *K8sLeaderElectionMgr) runElection(ctx context.Context, callback func(s
 			},
 			OnStoppedLeading: func() {
 				// we can do cleanup here
-				log.Errorf("leadership lost: %s", id)
+				log.WithField("id", id).Error("leadership lost")
 				panic(fmt.Errorf("leadership lost"))
 			},
 			OnNewLeader: callback,

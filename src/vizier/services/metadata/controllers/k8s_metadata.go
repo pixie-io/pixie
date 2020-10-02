@@ -127,7 +127,7 @@ func (mc *K8sMetadataController) startWatcher(resource string, resourceVersion i
 						break
 					}
 					// Ignore and let the retry watcher retry.
-					log.WithField("resource", resource).WithField("object", c.Object).Error("Failed to read from k8s watcher")
+					log.WithField("resource", resource).WithField("object", c.Object).Info("Failed to read from k8s watcher")
 					continue
 				}
 

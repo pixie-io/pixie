@@ -453,7 +453,7 @@ func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridg
 	for {
 		select {
 		case <-time.After(registrationTimeout):
-			log.Error("Timeout with registration terminating stream")
+			log.Info("Timeout with registration terminating stream")
 			return ErrRegistrationTimeout
 		case resp := <-s.grpcInCh:
 			// Try to receive the registerAck.
@@ -698,7 +698,7 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 
 			if bridgeMsg.Topic == "VizierUpdate" {
 				err := s.handleUpdateMessage(bridgeMsg.Msg)
-				if err != nil {
+				if err != nil && !k8sErrors.IsAlreadyExists(err) {
 					log.WithError(err).Error("Failed to launch vizier update job")
 				}
 				continue
@@ -816,7 +816,7 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.Vizie
 	sendHeartbeat := func() {
 		addr, port, err := s.vzInfo.GetAddress()
 		if err != nil {
-			log.WithError(err).Error("Failed to get vizier address")
+			log.WithError(err).Info("Failed to get vizier address")
 		}
 		podStatuses, numNodes, numInstrumentedNodes, updatedTime := s.vzInfo.GetK8sState()
 		hbMsg := &cvmsgspb.VizierHeartbeat{

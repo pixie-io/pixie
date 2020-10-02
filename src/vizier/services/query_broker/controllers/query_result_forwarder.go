@@ -250,7 +250,7 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 				for table := range activeQuery.uninitializedTables {
 					missingSinks = append(missingSinks, table)
 				}
-				log.Errorf("Query %s failed to initialize all result tables within the deadline, missing: %s",
+				log.Infof("Query %s failed to initialize all result tables within the deadline, missing: %s",
 					queryID.String(), strings.Join(missingSinks, ", "))
 				activeQuery.signalCancelClientStream()
 				return

@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/election"
@@ -76,8 +77,8 @@ func main() {
 	certJob, err := vzInfo.GetJob("cert-provisioner-job")
 	if certJob != nil {
 		err = vzInfo.DeleteJob("cert-provisioner-job")
-		if err != nil {
-			log.WithError(err).Error("Error deleting cert-provisioner-job")
+		if err != nil && !k8sErrors.IsNotFound(err) {
+			log.WithError(err).Info("Error deleting cert-provisioner-job")
 		}
 	}
 
