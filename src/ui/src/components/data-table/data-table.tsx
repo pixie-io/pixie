@@ -136,6 +136,8 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     justifyContent: 'center',
     alignItems: 'center',
     cursor: 'col-resize',
+    // Move the handle's center, rather than its right edge, to line up with the column's right border
+    transform: 'translateX(50%)',
     '&:hover': {
       color: theme.palette.foreground.white,
     },
