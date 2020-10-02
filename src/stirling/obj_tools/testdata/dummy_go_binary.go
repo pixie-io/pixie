@@ -120,8 +120,11 @@ func (e dummyError) Error() string {
 	return "dummyError: " + string(e)
 }
 
-func FooReturnsDummyError() error {
-	return dummyError("throw from FooReturnsDummyError")
+func FooReturnsDummyError(a int) error {
+	if (a == 0) {
+		return dummyError("throw from FooReturnsDummyError")
+	}
+	return nil
 }
 
 func main() {
@@ -170,9 +173,14 @@ func main() {
 		fmt.Println(OuterStructFunc(x))
 
 		// This allows directly examine the value of err in gdb or dlv.
-		err := FooReturnsDummyError()
-
-		fmt.Println(err)
+		err := FooReturnsDummyError(0)
+		if err != nil {
+			fmt.Println(err)
+		}
+		err = FooReturnsDummyError(1)
+		if err != nil {
+			fmt.Println(err)
+		}
 
 		time.Sleep(time.Second)
 	}

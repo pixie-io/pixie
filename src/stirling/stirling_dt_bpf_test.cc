@@ -1,3 +1,4 @@
+#include <rapidjson/document.h>
 #include <functional>
 #include <thread>
 #include <utility>
@@ -295,7 +296,7 @@ tracepoints {
   auto trace_program = Prepare(kProgram, kBinaryPath);
   DeployTracepoint(std::move(trace_program));
 
-  // Get field indexes for the two columns we want.
+  // Get field indexes for the columns we want.
   ASSERT_HAS_VALUE_AND_ASSIGN(int latency_field_idx,
                               FindFieldIndex(info_class_.schema(), "latency"));
 
@@ -346,7 +347,7 @@ tracepoints {
   auto trace_program = Prepare(kProgram, kBinaryPath);
   DeployTracepoint(std::move(trace_program));
 
-  // Get field indexes for the two columns we want.
+  // Get field indexes for the columns we want.
   ASSERT_HAS_VALUE_AND_ASSIGN(int name_field_idx, FindFieldIndex(info_class_.schema(), "name"));
   ASSERT_HAS_VALUE_AND_ASSIGN(int something_field_idx,
                               FindFieldIndex(info_class_.schema(), "something"));
@@ -393,7 +394,7 @@ tracepoints {
   auto trace_program = Prepare(kProgram, kBinaryPath);
   DeployTracepoint(std::move(trace_program));
 
-  // Get field indexes for the two columns we want.
+  // Get field indexes for the columns we want.
   ASSERT_HAS_VALUE_AND_ASSIGN(int value_field_idx, FindFieldIndex(info_class_.schema(), "value"));
 
   types::ColumnWrapperRecordBatch& rb = *record_batches_[0];
@@ -437,7 +438,7 @@ tracepoints {
   auto trace_program = Prepare(kProgram, kBinaryPath);
   DeployTracepoint(std::move(trace_program));
 
-  // Get field indexes for the two columns we want.
+  // Get field indexes for the columns we want.
   ASSERT_HAS_VALUE_AND_ASSIGN(int struct_blob_field_idx,
                               FindFieldIndex(info_class_.schema(), "struct_blob"));
 
@@ -445,6 +446,76 @@ tracepoints {
   EXPECT_EQ(
       rb[struct_blob_field_idx]->Get<types::StringValue>(0),
       R"({"O0":1,"O1":{"M0":{"L0":true,"L1":2,"L2":0},"M1":false,"M2":{"L0":true,"L1":3,"L2":0}}})");
+}
+
+TEST_F(DynamicTraceGolangTest, TraceError) {
+  BinaryRunner trace_target;
+  trace_target.Run(kBinaryPath);
+
+  constexpr std::string_view kProgram = R"(
+  deployment_spec {
+    path: "$0"
+  }
+  tracepoints {
+    program {
+      language: GOLANG
+      outputs {
+        name: "output_table"
+        fields: "arg"
+        fields: "err"
+      }
+      probes {
+        name: "probe0"
+        tracepoint {
+          symbol: "main.FooReturnsDummyError"
+          type: LOGICAL
+        }
+        args {
+          id: "arg0"
+          expr: "a"
+        }
+        ret_vals {
+          id: "retval0"
+          expr: "$$1"
+        }
+        output_actions {
+          output_name: "output_table"
+          variable_name: "arg0"
+          variable_name: "retval0"
+        }
+      }
+    }
+  }
+  )";
+
+  auto trace_program = Prepare(kProgram, kBinaryPath);
+  DeployTracepoint(std::move(trace_program));
+
+  // Get field indexes for the columns we want.
+  ASSERT_HAS_VALUE_AND_ASSIGN(int arg_field_idx, FindFieldIndex(info_class_.schema(), "arg"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int err_field_idx, FindFieldIndex(info_class_.schema(), "err"));
+
+  for (auto& rb_ptr : record_batches_) {
+    const auto& rb = *rb_ptr;
+    for (size_t i = 0; i < rb[arg_field_idx]->Size(); ++i) {
+      int64_t arg = rb[arg_field_idx]->Get<types::Int64Value>(i).val;
+      ASSERT_TRUE(arg == 0 || arg == 1);
+
+      rapidjson::Document d;
+      rapidjson::ParseResult ok = d.Parse(rb[err_field_idx]->Get<types::StringValue>(i).data());
+      ASSERT_NE(ok, nullptr);
+      const auto& tab_value = d["tab"];
+      const auto& data_value = d["data"];
+
+      if (arg == 0) {
+        EXPECT_NE(tab_value.GetInt(), 0);
+        EXPECT_NE(data_value.GetInt(), 0);
+      } else {
+        EXPECT_EQ(tab_value.GetInt(), 0);
+        EXPECT_EQ(data_value.GetInt(), 0);
+      }
+    }
+  }
 }
 
 struct TestParam {
@@ -506,7 +577,7 @@ tracepoints {
       ->set_symbol(params.function_symbol);
   DeployTracepoint(std::move(trace_program));
 
-  // Get field indexes for the two columns we want.
+  // Get field indexes for the columns we want.
   ASSERT_HAS_VALUE_AND_ASSIGN(int uuid_field_idx, FindFieldIndex(info_class_.schema(), "uuid"));
   ASSERT_HAS_VALUE_AND_ASSIGN(int name_field_idx, FindFieldIndex(info_class_.schema(), "name"));
 
@@ -578,7 +649,7 @@ tracepoints {
 
   DeployTracepoint(std::move(trace_program));
 
-  // Get field indexes for the two columns we want.
+  // Get field indexes for the columns we want.
   ASSERT_HAS_VALUE_AND_ASSIGN(int a_field_idx, FindFieldIndex(info_class_.schema(), "a"));
   ASSERT_HAS_VALUE_AND_ASSIGN(int b_field_idx, FindFieldIndex(info_class_.schema(), "b"));
   ASSERT_HAS_VALUE_AND_ASSIGN(int sum_field_idx, FindFieldIndex(info_class_.schema(), "sum"));
@@ -649,7 +720,7 @@ tracepoints {
 
   DeployTracepoint(std::move(trace_program));
 
-  // Get field indexes for the two columns we want.
+  // Get field indexes for the columns we want.
   //  ASSERT_HAS_VALUE_AND_ASSIGN(int x_field_idx, FindFieldIndex(info_class_.schema(), "x"));
   //  ASSERT_HAS_VALUE_AND_ASSIGN(int y_field_idx, FindFieldIndex(info_class_.schema(), "y"));
   ASSERT_HAS_VALUE_AND_ASSIGN(int sum_field_idx, FindFieldIndex(info_class_.schema(), "sum"));
