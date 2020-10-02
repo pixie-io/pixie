@@ -39,6 +39,7 @@ pl_cc_test_library(
     hdrs = glob(["rule_mock.h"]),
     deps = [
         ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
     ],
 )
 

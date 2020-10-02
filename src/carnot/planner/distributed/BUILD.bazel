@@ -41,6 +41,7 @@ pl_cc_test(
     srcs = ["tablet_rules_test.cc"],
     deps = [
         ":cc_library",
+        "//src/carnot/planner:test_utils",
     ],
 )
 
@@ -59,6 +60,7 @@ pl_cc_test(
     srcs = ["distributed_plan_test.cc"],
     deps = [
         ":cc_library",
+        "//src/carnot/planner:test_utils",
     ],
 )
 
@@ -127,6 +129,7 @@ pl_cc_test(
     srcs = ["grpc_source_conversion_test.cc"],
     deps = [
         ":cc_library",
+        "//src/carnot/planner:test_utils",
     ],
 )
 

@@ -12,6 +12,7 @@ pl_cc_library(
         exclude = [
             "**/*_test.cc",
             "**/*_test_utils.h",
+            "test_utils.h",
         ],
     ),
     hdrs = ["compiler.h"],
@@ -32,7 +33,7 @@ pl_cc_library(
 
 pl_cc_test_library(
     name = "test_utils",
-    hdrs = glob(["*_test_utils.h"]),
+    hdrs = glob(["*_test_utils.h", "test_utils.h"]),
     deps = [
         ":cc_library",
     ],
@@ -63,11 +64,15 @@ pl_cc_test(
         ":cc_library",
         "//src/carnot/planpb:plan_testutils",
         "//src/carnot/udf_exporter:cc_library",
+        ":test_utils",
     ],
 )
 
 pl_cc_test(
     name = "analyzer_test",
     srcs = ["analyzer_test.cc"],
-    deps = [":cc_library"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
 )

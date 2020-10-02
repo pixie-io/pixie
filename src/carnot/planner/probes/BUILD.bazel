@@ -31,6 +31,7 @@ pl_cc_test(
         ":cc_library",
         ":tracepoint_generator_lib",
         "//src/carnot/planner/compiler:cc_library",
+        "//src/carnot/planner:test_utils",
     ],
 )
 
