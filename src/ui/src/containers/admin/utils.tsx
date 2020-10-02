@@ -48,8 +48,10 @@ export function agentStatusGroup(status: string): StatusGroup {
 }
 
 export function clusterStatusGroup(status: string): StatusGroup {
-  if (['CS_HEALTHY', 'CS_UPDATING', 'CS_CONNECTED'].indexOf(status) !== -1) {
+  if (['CS_HEALTHY', 'CS_CONNECTED'].indexOf(status) !== -1) {
     return 'healthy';
+  } if (['CS_UPDATING'].indexOf(status) !== -1) {
+    return 'pending';
   } if (['CS_UNHEALTHY', 'CS_UPDATE_FAILED'].indexOf(status) !== -1) {
     return 'unhealthy';
   }
