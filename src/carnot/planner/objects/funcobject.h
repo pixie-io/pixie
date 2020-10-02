@@ -219,8 +219,9 @@ StatusOr<TIRNode*> GetArgAs(const pypa::AstPtr& ast, QLObjectPtr arg, std::strin
 }
 
 template <typename TIRNode>
-StatusOr<TIRNode*> GetArgAs(const ParsedArgs& args, std::string_view arg_name) {
-  return GetArgAs<TIRNode>(args.GetArg(arg_name), arg_name);
+StatusOr<TIRNode*> GetArgAs(const pypa::AstPtr& ast, const ParsedArgs& args,
+                            std::string_view arg_name) {
+  return GetArgAs<TIRNode>(ast, args.GetArg(arg_name), arg_name);
 }
 
 /**

@@ -26,7 +26,7 @@ StatusOr<QLObjectPtr> CollectionObject::SubscriptHandler(
     return CreateAstError(ast, "$0 indices must be integers, not $1", name, key->name());
   }
 
-  PL_ASSIGN_OR_RETURN(IntIR * index_node, GetArgAs<IntIR>(args, "key"));
+  PL_ASSIGN_OR_RETURN(IntIR * index_node, GetArgAs<IntIR>(ast, args, "key"));
   if (index_node->val() >= static_cast<int64_t>(items->size())) {
     return CreateAstError(ast, "$0 index out of range", name);
   }

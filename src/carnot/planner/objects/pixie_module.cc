@@ -273,8 +273,8 @@ Status PixieModule::Init() {
 StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, CompilerState* compiler_state,
                                            const pypa::AstPtr& ast, const ParsedArgs& args,
                                            ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(OperatorIR * out_op, GetArgAs<OperatorIR>(args, "out"));
-  PL_ASSIGN_OR_RETURN(StringIR * name, GetArgAs<StringIR>(args, "name"));
+  PL_ASSIGN_OR_RETURN(OperatorIR * out_op, GetArgAs<OperatorIR>(ast, args, "out"));
+  PL_ASSIGN_OR_RETURN(StringIR * name, GetArgAs<StringIR>(ast, args, "name"));
 
   PL_RETURN_IF_ERROR(AddResultSink(graph, ast, name->str(), out_op,
                                    compiler_state->result_address(),
@@ -293,8 +293,8 @@ StatusOr<QLObjectPtr> DebugDisplayHandler::Eval(
     IR* graph, CompilerState* compiler_state,
     const absl::flat_hash_set<std::string>& reserved_names, const pypa::AstPtr& ast,
     const ParsedArgs& args, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(OperatorIR * out_op, GetArgAs<OperatorIR>(args, "out"));
-  PL_ASSIGN_OR_RETURN(StringIR * name, GetArgAs<StringIR>(args, "name"));
+  PL_ASSIGN_OR_RETURN(OperatorIR * out_op, GetArgAs<OperatorIR>(ast, args, "out"));
+  PL_ASSIGN_OR_RETURN(StringIR * name, GetArgAs<StringIR>(ast, args, "name"));
 
   std::string out_name = PixieModule::kDebugTablePrefix + name->str();
   std::string out_name_base = out_name;
@@ -325,7 +325,7 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::TimeEval(IR* graph, std::string ti
                                                        ASTVisitor* visitor) {
   // TODO(philkuz/nserrino) maybe just convert this into an Integer because we have the info here.
   std::vector<ExpressionIR*> expr_args;
-  PL_ASSIGN_OR_RETURN(ExpressionIR * unit, GetArgAs<ExpressionIR>(args, "unit"));
+  PL_ASSIGN_OR_RETURN(ExpressionIR * unit, GetArgAs<ExpressionIR>(ast, args, "unit"));
   expr_args.push_back(unit);
   FuncIR::Op op{FuncIR::Opcode::non_op, "", time_name};
   PL_ASSIGN_OR_RETURN(FuncIR * node, graph->CreateNode<FuncIR>(ast, op, expr_args));
@@ -335,7 +335,7 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::TimeEval(IR* graph, std::string ti
 StatusOr<QLObjectPtr> CompileTimeFuncHandler::UInt128Conversion(IR* graph, const pypa::AstPtr& ast,
                                                                 const ParsedArgs& args,
                                                                 ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(StringIR * uuid_str, GetArgAs<StringIR>(args, "uuid"));
+  PL_ASSIGN_OR_RETURN(StringIR * uuid_str, GetArgAs<StringIR>(ast, args, "uuid"));
   auto upid_or_s = md::UPID::ParseFromUUIDString(static_cast<StringIR*>(uuid_str)->str());
   if (!upid_or_s.ok()) {
     return uuid_str->CreateIRNodeError(upid_or_s.msg());
@@ -349,9 +349,9 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::UInt128Conversion(IR* graph, const
 StatusOr<QLObjectPtr> CompileTimeFuncHandler::UPIDConstructor(IR* graph, const pypa::AstPtr& ast,
                                                               const ParsedArgs& args,
                                                               ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(IntIR * asid_ir, GetArgAs<IntIR>(args, "asid"));
-  PL_ASSIGN_OR_RETURN(IntIR * pid_ir, GetArgAs<IntIR>(args, "pid"));
-  PL_ASSIGN_OR_RETURN(IntIR * ts_ns_ir, GetArgAs<IntIR>(args, "ts_ns"));
+  PL_ASSIGN_OR_RETURN(IntIR * asid_ir, GetArgAs<IntIR>(ast, args, "asid"));
+  PL_ASSIGN_OR_RETURN(IntIR * pid_ir, GetArgAs<IntIR>(ast, args, "pid"));
+  PL_ASSIGN_OR_RETURN(IntIR * ts_ns_ir, GetArgAs<IntIR>(ast, args, "ts_ns"));
   // Check to make sure asid and pid values are within range of the uint32 values.
 
   if (asid_ir->val() > UINT32_MAX || asid_ir->val() < 0) {
@@ -375,8 +375,8 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::UPIDConstructor(IR* graph, const p
 
 StatusOr<QLObjectPtr> CompileTimeFuncHandler::AbsTime(IR* graph, const pypa::AstPtr& ast,
                                                       const ParsedArgs& args, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(StringIR * date_str_ir, GetArgAs<StringIR>(args, "date_string"));
-  PL_ASSIGN_OR_RETURN(StringIR * format_str_ir, GetArgAs<StringIR>(args, "format"));
+  PL_ASSIGN_OR_RETURN(StringIR * date_str_ir, GetArgAs<StringIR>(ast, args, "date_string"));
+  PL_ASSIGN_OR_RETURN(StringIR * format_str_ir, GetArgAs<StringIR>(ast, args, "format"));
   std::string date_str = date_str_ir->str();
   std::string format_str = format_str_ir->str();
   absl::Time tm;
@@ -389,10 +389,10 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::AbsTime(IR* graph, const pypa::Ast
   return StatusOr<QLObjectPtr>(ExprObject::Create(time_count, visitor));
 }
 
-StatusOr<QLObjectPtr> CompileTimeFuncHandler::EqualsAny(IR* graph, const pypa::AstPtr&,
+StatusOr<QLObjectPtr> CompileTimeFuncHandler::EqualsAny(IR* graph, const pypa::AstPtr& ast,
                                                         const ParsedArgs& args,
                                                         ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(ExpressionIR * value_ir, GetArgAs<ExpressionIR>(args, "value"));
+  PL_ASSIGN_OR_RETURN(ExpressionIR * value_ir, GetArgAs<ExpressionIR>(ast, args, "value"));
   auto comparisons = args.GetArg("comparisons");
   if (!CollectionObject::IsCollection(comparisons)) {
     return comparisons->CreateError("'comparisons' must be a collection");
@@ -500,7 +500,7 @@ StatusOr<QLObjectPtr> UDTFSourceHandler::Eval(IR* graph,
   absl::flat_hash_map<std::string, ExpressionIR*> arg_map;
   for (const auto& arg : udtf_source_spec.args()) {
     DCHECK(args.args().contains(arg.name()));
-    PL_ASSIGN_OR_RETURN(IRNode * arg_node, GetArgAs<IRNode>(args, arg.name()));
+    PL_ASSIGN_OR_RETURN(IRNode * arg_node, GetArgAs<IRNode>(ast, args, arg.name()));
     PL_ASSIGN_OR_RETURN(arg_map[arg.name()], EvaluateExpression(graph, arg_node, arg));
   }
   PL_ASSIGN_OR_RETURN(

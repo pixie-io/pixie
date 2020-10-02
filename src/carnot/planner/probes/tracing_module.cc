@@ -165,10 +165,10 @@ Status TraceModule::Init() {
 
 StatusOr<QLObjectPtr> ProbeHandler::Probe(MutationsIR* mutations_ir,
                                           stirling::dynamic_tracing::ir::shared::Language language,
-                                          const pypa::AstPtr&, const ParsedArgs& args,
+                                          const pypa::AstPtr& ast, const ParsedArgs& args,
                                           ASTVisitor* visitor) {
   DCHECK(mutations_ir);
-  PL_ASSIGN_OR_RETURN(StringIR * function_name_ir, GetArgAs<StringIR>(args, "fn_name"));
+  PL_ASSIGN_OR_RETURN(StringIR * function_name_ir, GetArgAs<StringIR>(ast, args, "fn_name"));
 
   return FuncObject::Create(
       TraceModule::kProbeTraceDefinition, {"fn"}, {},
@@ -277,7 +277,7 @@ StatusOr<QLObjectPtr> ArgumentHandler::Eval(MutationsIR* mutations_ir, const pyp
   DCHECK(mutations_ir);
   PL_ASSIGN_OR_RETURN(auto current_probe, mutations_ir->GetCurrentProbeOrError(ast));
 
-  PL_ASSIGN_OR_RETURN(auto expr_ir, GetArgAs<StringIR>(args, "expr"));
+  PL_ASSIGN_OR_RETURN(auto expr_ir, GetArgAs<StringIR>(ast, args, "expr"));
   std::string id = current_probe->NextArgName();
   current_probe->AddArgument(id, expr_ir->str());
 
@@ -289,7 +289,7 @@ StatusOr<QLObjectPtr> ReturnHandler::Eval(MutationsIR* mutations_ir, const pypa:
   DCHECK(mutations_ir);
   PL_ASSIGN_OR_RETURN(auto current_probe, mutations_ir->GetCurrentProbeOrError(ast));
 
-  PL_ASSIGN_OR_RETURN(auto expr_ir, GetArgAs<StringIR>(args, "expr"));
+  PL_ASSIGN_OR_RETURN(auto expr_ir, GetArgAs<StringIR>(ast, args, "expr"));
   std::string id = current_probe->NextReturnName();
   current_probe->AddReturnValue(id, expr_ir->str());
 
@@ -300,12 +300,12 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
                                           const ParsedArgs& args, ASTVisitor* visitor) {
   DCHECK(mutations_ir);
 
-  PL_ASSIGN_OR_RETURN(auto tp_deployment_name_ir, GetArgAs<StringIR>(args, "name"));
-  PL_ASSIGN_OR_RETURN(auto output_name_ir, GetArgAs<StringIR>(args, "table_name"));
+  PL_ASSIGN_OR_RETURN(auto tp_deployment_name_ir, GetArgAs<StringIR>(ast, args, "name"));
+  PL_ASSIGN_OR_RETURN(auto output_name_ir, GetArgAs<StringIR>(ast, args, "table_name"));
   // TODO(philkuz) support pod_name
   // PL_ASSIGN_OR_RETURN(auto pod_name_ir, GetArgAs<StringIR>(args, "pod_name"));
   // PL_ASSIGN_OR_RETURN(auto binary_name_ir, GetArgAs<StringIR>(args, "binary"));
-  PL_ASSIGN_OR_RETURN(auto ttl_ir, GetArgAs<StringIR>(args, "ttl"));
+  PL_ASSIGN_OR_RETURN(auto ttl_ir, GetArgAs<StringIR>(ast, args, "ttl"));
 
   const std::string& tp_deployment_name = tp_deployment_name_ir->str();
   const std::string& output_name = output_name_ir->str();
@@ -330,7 +330,7 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
     PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
     trace_program = trace_program_or_s.ConsumeValueOrDie();
   } else {
-    PL_ASSIGN_OR_RETURN(UInt128IR * upid_ir, GetArgAs<UInt128IR>(args, "target"));
+    PL_ASSIGN_OR_RETURN(UInt128IR * upid_ir, GetArgAs<UInt128IR>(ast, args, "target"));
     md::UPID upid(upid_ir->val());
 
     auto trace_program_or_s =
@@ -348,7 +348,7 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
         ast, trace_program->AddTracepoint(probe_ir.get(), tp_deployment_name, output_name)));
   } else {
     // The probe_fn is a string.
-    PL_ASSIGN_OR_RETURN(auto program_str_ir, GetArgAs<StringIR>(args, "probe_fn"));
+    PL_ASSIGN_OR_RETURN(auto program_str_ir, GetArgAs<StringIR>(ast, args, "probe_fn"));
     PL_RETURN_IF_ERROR(
         WrapAstError(ast, trace_program->AddBPFTrace(program_str_ir->str(), output_name)));
   }
@@ -356,10 +356,10 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
   return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(ast, visitor));
 }
 
-StatusOr<QLObjectPtr> SharedObjectHandler::Eval(const pypa::AstPtr&, const ParsedArgs& args,
+StatusOr<QLObjectPtr> SharedObjectHandler::Eval(const pypa::AstPtr& ast, const ParsedArgs& args,
                                                 ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(auto shared_object_name_ir, GetArgAs<StringIR>(args, "name"));
-  PL_ASSIGN_OR_RETURN(UInt128IR * upid_ir, GetArgAs<UInt128IR>(args, "upid"));
+  PL_ASSIGN_OR_RETURN(auto shared_object_name_ir, GetArgAs<StringIR>(ast, args, "name"));
+  PL_ASSIGN_OR_RETURN(UInt128IR * upid_ir, GetArgAs<UInt128IR>(ast, args, "upid"));
   std::string shared_object_name = shared_object_name_ir->str();
   md::UPID shared_object_upid(upid_ir->val());
 
@@ -374,7 +374,7 @@ StatusOr<QLObjectPtr> KProbeTargetHandler::Eval(const pypa::AstPtr&, const Parse
 StatusOr<QLObjectPtr> DeleteTracepointHandler::Eval(MutationsIR* mutations_ir,
                                                     const pypa::AstPtr& ast, const ParsedArgs& args,
                                                     ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(auto tp_deployment_name_ir, GetArgAs<StringIR>(args, "name"));
+  PL_ASSIGN_OR_RETURN(auto tp_deployment_name_ir, GetArgAs<StringIR>(ast, args, "name"));
   const std::string& tp_deployment_name = tp_deployment_name_ir->str();
   mutations_ir->DeleteTracepoint(tp_deployment_name);
   return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(ast, visitor));

@@ -29,9 +29,9 @@ StatusOr<std::shared_ptr<VisualizationObject>> VisualizationObject::Create(
   return viz_object;
 }
 
-StatusOr<QLObjectPtr> VegaHandler::Eval(const pypa::AstPtr&, const ParsedArgs& args,
+StatusOr<QLObjectPtr> VegaHandler::Eval(const pypa::AstPtr& ast, const ParsedArgs& args,
                                         ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(StringIR * vega_spec_ir, GetArgAs<StringIR>(args, "vega_spec"));
+  PL_ASSIGN_OR_RETURN(StringIR * vega_spec_ir, GetArgAs<StringIR>(ast, args, "vega_spec"));
   std::string vega_spec = vega_spec_ir->str();
   return FuncObject::Create(VisualizationObject::kVegaAttrId, {"fn"}, {},
                             /* has_variable_len_args */ false,

@@ -31,7 +31,7 @@ Status MetadataObject::Init() {
 
 StatusOr<QLObjectPtr> MetadataObject::SubscriptHandler(const pypa::AstPtr& ast,
                                                        const ParsedArgs& args) {
-  PL_ASSIGN_OR_RETURN(StringIR * key, GetArgAs<StringIR>(args, "key"));
+  PL_ASSIGN_OR_RETURN(StringIR * key, GetArgAs<StringIR>(ast, args, "key"));
   std::string key_value = key->str();
   // Lookup the key
   IR* ir_graph = key->graph();

@@ -272,8 +272,8 @@ StatusOr<QLObjectPtr> JoinHandler::Eval(IR* graph, OperatorIR* op, const pypa::A
                                         const ParsedArgs& args, ASTVisitor* visitor) {
   // GetArg returns non-nullptr or errors out in Debug mode. No need
   // to check again.
-  PL_ASSIGN_OR_RETURN(OperatorIR * right, GetArgAs<OperatorIR>(args, "right"));
-  PL_ASSIGN_OR_RETURN(StringIR * how, GetArgAs<StringIR>(args, "how"));
+  PL_ASSIGN_OR_RETURN(OperatorIR * right, GetArgAs<OperatorIR>(ast, args, "right"));
+  PL_ASSIGN_OR_RETURN(StringIR * how, GetArgAs<StringIR>(ast, args, "how"));
   QLObjectPtr suffixes_node = args.GetArg("suffixes");
   std::string how_type = how->str();
 
@@ -390,12 +390,13 @@ StatusOr<QLObjectPtr> DropHandler::Eval(IR* graph, OperatorIR* op, const pypa::A
 StatusOr<QLObjectPtr> LimitHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                          const ParsedArgs& args, ASTVisitor* visitor) {
   // TODO(philkuz) (PL-1161) Add support for compile time evaluation of Limit argument.
-  PL_ASSIGN_OR_RETURN(IntIR * rows_node, GetArgAs<IntIR>(args, "n"));
-  PL_ASSIGN_OR_RETURN(IntIR * pem_only, GetArgAs<IntIR>(args, "_pem_only"));
+  PL_ASSIGN_OR_RETURN(IntIR * rows_node, GetArgAs<IntIR>(ast, args, "n"));
+  PL_ASSIGN_OR_RETURN(IntIR * pem_only, GetArgAs<IntIR>(ast, args, "_pem_only"));
   int64_t limit_value = rows_node->val();
   bool pem_only_val = pem_only->val() > 0;
 
-  PL_ASSIGN_OR_RETURN(LimitIR * limit_op, graph->CreateNode<LimitIR>(ast, op, limit_value, pem_only_val));
+  PL_ASSIGN_OR_RETURN(LimitIR * limit_op,
+                      graph->CreateNode<LimitIR>(ast, op, limit_value, pem_only_val));
   return Dataframe::Create(limit_op, visitor);
 }
 
@@ -476,8 +477,8 @@ StatusOr<QLObjectPtr> UnionHandler::Eval(IR* graph, OperatorIR* op, const pypa::
 
 StatusOr<QLObjectPtr> RollingHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                            const ParsedArgs& args, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(StringIR * window_col_name, GetArgAs<StringIR>(args, "on"));
-  PL_ASSIGN_OR_RETURN(ExpressionIR * window_size, GetArgAs<ExpressionIR>(args, "window"));
+  PL_ASSIGN_OR_RETURN(StringIR * window_col_name, GetArgAs<StringIR>(ast, args, "on"));
+  PL_ASSIGN_OR_RETURN(ExpressionIR * window_size, GetArgAs<ExpressionIR>(ast, args, "window"));
 
   if (window_col_name->str() != "time_") {
     return window_col_name->CreateIRNodeError(
@@ -500,11 +501,11 @@ StatusOr<QLObjectPtr> StreamHandler::Eval(IR* graph, OperatorIR* op, const pypa:
 
 StatusOr<QLObjectPtr> DataFrameHandler::Eval(IR* graph, const pypa::AstPtr& ast,
                                              const ParsedArgs& args, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(StringIR * table, GetArgAs<StringIR>(args, "table"));
+  PL_ASSIGN_OR_RETURN(StringIR * table, GetArgAs<StringIR>(ast, args, "table"));
   PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
                       ParseAsListOfStrings(args.GetArg("select"), "select"));
-  PL_ASSIGN_OR_RETURN(ExpressionIR * start_time, GetArgAs<ExpressionIR>(args, "start_time"));
-  PL_ASSIGN_OR_RETURN(ExpressionIR * end_time, GetArgAs<ExpressionIR>(args, "end_time"));
+  PL_ASSIGN_OR_RETURN(ExpressionIR * start_time, GetArgAs<ExpressionIR>(ast, args, "start_time"));
+  PL_ASSIGN_OR_RETURN(ExpressionIR * end_time, GetArgAs<ExpressionIR>(ast, args, "end_time"));
 
   std::string table_name = table->str();
   PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
