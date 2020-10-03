@@ -17,8 +17,8 @@ class AddUDF : public udf::ScalarUDF {
   TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val + b2.val; }
   static udf::InfRuleVec SemanticInferenceRules() {
     return {
-        udf::InheritTypeFromArgs<AddUDF>::Create({types::ST_BYTES, types::ST_THROUGHPUT_RATE,
-                                                  types::ST_THROUGHPUT_BYTES,
+        udf::InheritTypeFromArgs<AddUDF>::Create({types::ST_BYTES, types::ST_THROUGHPUT_PER_NS,
+                                                  types::ST_THROUGHPUT_BYTES_PER_NS,
                                                   types::ST_DURATION_NS}),
     };
   }
@@ -56,8 +56,8 @@ class SubtractUDF : public udf::ScalarUDF {
   TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val - b2.val; }
   static udf::InfRuleVec SemanticInferenceRules() {
     return {
-        udf::InheritTypeFromArgs<SubtractUDF>::Create({types::ST_BYTES, types::ST_THROUGHPUT_RATE,
-                                                       types::ST_THROUGHPUT_BYTES,
+        udf::InheritTypeFromArgs<SubtractUDF>::Create({types::ST_BYTES, types::ST_THROUGHPUT_PER_NS,
+                                                       types::ST_THROUGHPUT_BYTES_PER_NS,
                                                        types::ST_DURATION_NS}),
     };
   }
@@ -82,9 +82,9 @@ class DivideUDF : public udf::ScalarUDF {
   }
 
   static udf::InfRuleVec SemanticInferenceRules() {
-    return {udf::ExplicitRule::Create<DivideUDF>(types::ST_THROUGHPUT_RATE,
+    return {udf::ExplicitRule::Create<DivideUDF>(types::ST_THROUGHPUT_PER_NS,
                                                  {types::ST_NONE, types::ST_DURATION_NS}),
-            udf::ExplicitRule::Create<DivideUDF>(types::ST_THROUGHPUT_BYTES,
+            udf::ExplicitRule::Create<DivideUDF>(types::ST_THROUGHPUT_BYTES_PER_NS,
                                                  {types::ST_BYTES, types::ST_DURATION_NS})};
   }
 
@@ -424,8 +424,8 @@ class MeanUDA : public udf::UDA {
   Float64Value Finalize(FunctionContext*) { return info_.count / info_.size; }
 
   static udf::InfRuleVec SemanticInferenceRules() {
-    return {udf::InheritTypeFromArgs<MeanUDA>::Create({types::ST_BYTES, types::ST_THROUGHPUT_RATE,
-                                                       types::ST_THROUGHPUT_BYTES,
+    return {udf::InheritTypeFromArgs<MeanUDA>::Create({types::ST_BYTES, types::ST_THROUGHPUT_PER_NS,
+                                                       types::ST_THROUGHPUT_BYTES_PER_NS,
                                                        types::ST_DURATION_NS, types::ST_PERCENT})};
   }
 
@@ -464,7 +464,7 @@ class SumUDA : public udf::UDA {
   TArg Finalize(FunctionContext*) { return sum_; }
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::InheritTypeFromArgs<SumUDA>::Create(
-        {types::ST_BYTES, types::ST_THROUGHPUT_RATE, types::ST_THROUGHPUT_BYTES})};
+        {types::ST_BYTES, types::ST_THROUGHPUT_PER_NS, types::ST_THROUGHPUT_BYTES_PER_NS})};
   }
   StringValue Serialize(FunctionContext*) {
     return StringValue(reinterpret_cast<char*>(&sum_), sizeof(sum_));
@@ -503,8 +503,8 @@ class MaxUDA : public udf::UDA {
   TArg Finalize(FunctionContext*) { return max_; }
 
   static udf::InfRuleVec SemanticInferenceRules() {
-    return {udf::InheritTypeFromArgs<MaxUDA>::Create({types::ST_BYTES, types::ST_THROUGHPUT_RATE,
-                                                      types::ST_THROUGHPUT_BYTES,
+    return {udf::InheritTypeFromArgs<MaxUDA>::Create({types::ST_BYTES, types::ST_THROUGHPUT_PER_NS,
+                                                      types::ST_THROUGHPUT_BYTES_PER_NS,
                                                       types::ST_DURATION_NS, types::ST_PERCENT})};
   }
 
@@ -545,8 +545,8 @@ class MinUDA : public udf::UDA {
   TArg Finalize(FunctionContext*) { return min_; }
 
   static udf::InfRuleVec SemanticInferenceRules() {
-    return {udf::InheritTypeFromArgs<MinUDA>::Create({types::ST_BYTES, types::ST_THROUGHPUT_RATE,
-                                                      types::ST_THROUGHPUT_BYTES,
+    return {udf::InheritTypeFromArgs<MinUDA>::Create({types::ST_BYTES, types::ST_THROUGHPUT_PER_NS,
+                                                      types::ST_THROUGHPUT_BYTES_PER_NS,
                                                       types::ST_DURATION_NS, types::ST_PERCENT})};
   }
 
