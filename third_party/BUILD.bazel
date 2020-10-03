@@ -154,6 +154,16 @@ pl_cc_binary(
 )
 
 pl_cc_library(
+    name = "dnsparser",
+    srcs = glob(["dnsparser/src/*.cpp", "dnsparser/src/*.h"]),
+    hdrs = ["dnsparser/include/dnsparser.h"],
+    copts = [
+        "-Wno-unused-parameter",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+pl_cc_library(
     name = "aes-min",
     srcs = ["aes-min/aes-min.c"],
     hdrs = ["aes-min/aes-min.h"],
