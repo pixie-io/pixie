@@ -318,6 +318,15 @@ const ScriptContextProvider = (props) => {
           loaded = true;
         }
       }
+
+      if (queryResults.executionStats) { // For non-streaming queries, the query is complete. Log analytics.
+        analytics.track('Query Execution', {
+          status: 'success',
+          query: execArgs.pxl,
+          queryID: queryId,
+          title: execArgs.id,
+        });
+      }
     };
 
     const onError = (e) => {
@@ -329,6 +338,15 @@ const ScriptContextProvider = (props) => {
       setResults({ tables: {}, error });
       const { errType } = (error as VizierQueryError);
       errMsg = error.message;
+
+      analytics.track('Query Execution', {
+        status: 'failed',
+        query: execArgs.pxl,
+        queryID: queryId,
+        error: errMsg,
+        title: execArgs.id,
+      });
+
       if (errType === 'server' || !errType) {
         showSnackbar({
           message: errMsg,
