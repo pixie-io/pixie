@@ -2195,20 +2195,6 @@ class UDTFSourceIR : public OperatorIR {
   udfspb::UDTFSourceSpec udtf_spec_;
 };
 
-template <typename TIRNode>
-inline StatusOr<TIRNode*> AsNodeType(IRNode* node, std::string_view node_name) {
-  if (!TIRNode::NodeMatches(node)) {
-    return node->CreateIRNodeError("Expected arg '$0' as type '$1', received '$2'", node_name,
-                                   TIRNode::class_type_string(), node->type_string());
-  }
-  return static_cast<TIRNode*>(node);
-}
-
-template <>
-inline StatusOr<IRNode*> AsNodeType<IRNode>(IRNode* node, std::string_view /* node_name */) {
-  return node;
-}
-
 class RollingIR : public GroupAcceptorIR {
  public:
   RollingIR() = delete;

@@ -105,7 +105,7 @@ Status AddOuterContextToError(Status status, const pypa::AstPtr& ast, Args... ar
 }
 
 template <typename T>
-StatusOr<T> WrapError(StatusOr<T> status_or, const pypa::AstPtr& ast) {
+StatusOr<T> WrapError(const pypa::AstPtr& ast, StatusOr<T> status_or) {
   if (status_or.ok() || status_or.status().has_context()) {
     return status_or;
   }

@@ -2034,6 +2034,20 @@ px.display(embeddings())
 )pxl";
 TEST_F(ASTVisitorTest, reuse_limit_arg) { ASSERT_OK(CompileGraph(kReuseLimitArg, {}, {})); }
 
+constexpr char kAssignToGroupby[] = R"pxl(
+import px
+
+def resource_timeseries(start_time: str, node: px.Node, groupby: str):
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df.groupby = df[groupby]
+    return df
+px.display(resource_timeseries('-5m', '', 'pod'))
+)pxl";
+TEST_F(ASTVisitorTest, rsrc_ts) {
+  EXPECT_COMPILER_ERROR(CompileGraph(kAssignToGroupby, {}, {}),
+                        "Expected 'Column' in arg 'assignment target', got 'function'");
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

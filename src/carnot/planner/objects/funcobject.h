@@ -8,6 +8,7 @@
 #include <pypa/ast/ast.hh>
 
 #include "src/carnot/planner/ast/ast_visitor.h"
+#include "src/carnot/planner/ir/ir_node_type_conversion.h"
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/objects/qlobject.h"
 #include "src/carnot/planner/objects/type_object.h"
@@ -206,9 +207,15 @@ class FuncObject : public QLObject {
 template <typename TIRNode>
 StatusOr<TIRNode*> GetArgAs(QLObjectPtr arg, std::string_view arg_name) {
   if (!arg->HasNode()) {
-    return error::InvalidArgument("Could not get IRNode from arg '$0'", arg_name);
+    return arg->CreateError("Expected '$0' in arg '$1', got '$2'", IRNodeTraits<TIRNode>::name,
+                            arg_name, QLObjectTypeString(arg->type()));
   }
   return AsNodeType<TIRNode>(arg->node(), arg_name);
+}
+
+template <typename TIRNode>
+StatusOr<TIRNode*> GetArgAs(const pypa::AstPtr& ast, QLObjectPtr arg, std::string_view arg_name) {
+  return WrapError(ast, GetArgAs<TIRNode>(arg, arg_name));
 }
 
 template <typename TIRNode>

@@ -508,8 +508,9 @@ Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstPtr& assign_target,
                           GetAstTypeName(assign_target->type));
   }
   auto assign_name_string = GetNameAsString(assign_target);
-  PL_ASSIGN_OR_RETURN(ColumnIR * target_column,
-                      GetArgAs<ColumnIR>(target_node, "assignment value"));
+
+  PL_ASSIGN_OR_RETURN(auto target_column,
+                      GetArgAs<ColumnIR>(assign_target, target_node, "assignment target"));
 
   if (!parent_df->op()) {
     return CreateAstError(assign_target,
@@ -521,7 +522,7 @@ Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstPtr& assign_target,
   OperatorContext op_context{{parent_df->op()}, Dataframe::kMapOpID, {assign_name_string}};
   PL_ASSIGN_OR_RETURN(auto expr_obj, Process(expr_node, op_context));
   PL_ASSIGN_OR_RETURN(ExpressionIR * expr_val,
-                      GetArgAs<ExpressionIR>(expr_obj, "assignment value"));
+                      GetArgAs<ExpressionIR>(expr_node, expr_obj, "assignment value"));
 
   PL_ASSIGN_OR_RETURN(auto dataframe,
                       parent_df->FromColumnAssignment(expr_node, target_column, expr_val));

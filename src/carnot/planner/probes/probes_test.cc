@@ -548,7 +548,8 @@ TEST_F(ProbeCompilerTest, probe_definition_wrong_return_values) {
   ASSERT_NOT_OK(probe_ir_or_s);
   // TODO(philkuz) (PP-2043) add AST to objects that don't have nodes.
   // EXPECT_THAT(probe_ir_or_s.status(), HasCompilerError("Expected String, got Tracing Variable"));
-  EXPECT_THAT(probe_ir_or_s.status().msg(), ContainsRegex("Could not get IRNode from arg 'key'"));
+  EXPECT_THAT(probe_ir_or_s.status().msg(),
+              ContainsRegex("Expected 'String' in arg 'key', got 'tracingvariable'"));
 
   probe_ir_or_s = CompileProbeScript(absl::Substitute(kProbeTemplate, kBadOutputColumnValue));
   ASSERT_NOT_OK(probe_ir_or_s);

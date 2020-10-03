@@ -20,6 +20,7 @@
 #include "src/carnot/planner/parser/parser.h"
 #include "src/carnot/planner/parser/string_reader.h"
 #include "src/carnot/planner/probes/tracing_module.h"
+#include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/testing/testing.h"
 
 namespace pl {
@@ -321,8 +322,13 @@ struct CompilerErrorMatcher {
   bool MatchAndExplain(const Status& status, ::testing::MatchResultListener* listener) const {
     if (status.ok()) {
       (*listener) << "Status is ok, no compiler error found.";
+      return false;
     }
-    if (!status.has_context()) {
+    if (!status.has_context() && !status.msg().empty()) {
+      (*listener) << "Status does not have a context.";
+      return false;
+    }
+    if (!status.has_context() && status.msg().empty()) {
       (*listener) << absl::Substitute("Status does not have a context, but has a message: '$0'",
                                       status.msg());
       return false;
@@ -873,7 +879,7 @@ class ASTVisitorTest : public OperatorTests {
     relation_map_ = std::make_unique<RelationMap>();
 
     registry_info_ = std::make_shared<RegistryInfo>();
-    udfspb::UDFInfo info_pb;
+    udfspb::UDFInfo info_pb = udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb();
     google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
     EXPECT_OK(registry_info_->Init(info_pb));
     // TODO(philkuz) remove this when we have a udtf registry.
@@ -1290,6 +1296,12 @@ void CompareClone(IRNode* new_ir, IRNode* old_ir, const std::string& err_string)
   ASSERT_TRUE(table_type->HasColumn(col_name));                                  \
   EXPECT_EQ(*expected_basic_type, *std::static_pointer_cast<ValueType>(          \
                                       table_type->GetColumnType(col_name).ConsumeValueOrDie()));
+
+#define EXPECT_COMPILER_ERROR(status, ...) \
+  EXPECT_THAT(StatusAdapter(status), HasCompilerError(__VA_ARGS__))
+
+#define ASSERT_COMPILER_ERROR(status, ...) \
+  ASSERT_THAT(StatusAdapter(status), HasCompilerError(__VA_ARGS__))
 
 }  // namespace planner
 }  // namespace carnot
