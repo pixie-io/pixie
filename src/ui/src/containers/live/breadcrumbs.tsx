@@ -10,11 +10,13 @@ import PixieCommandIcon from 'components/icons/pixie-command';
 import Breadcrumbs, { BreadcrumbOptions } from 'components/breadcrumbs/breadcrumbs';
 import ClusterContext from 'common/cluster-context';
 import { CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
-import { argsForVis, getArgTypesForVis } from 'utils/args-utils';
+import {
+  argsForVis, ArgToVariableMap, getArgTypesForVis, getArgVariableMap,
+} from 'utils/args-utils';
+import { Variable } from './vis';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import { ScriptContext } from 'context/script-context';
 import { entityPageForScriptId, optionallyGetNamespace } from 'components/live-widgets/utils/live-view-params';
-import { parseVis } from 'containers/live/vis';
 import { EntityType, pxTypetoEntityType, entityStatusGroup } from 'containers/new-command-input/autocomplete-utils';
 import { StatusCell } from 'components/status/status';
 import { clusterStatusGroup } from 'containers/admin/utils';
@@ -128,7 +130,7 @@ const LiveViewBreadcrumbs = ({ classes, commandOpen, toggleCommandOpen }) => {
     selectable: true,
     // eslint-disable-next-line
     getListItems: async (input) => (data.clusters.filter((c) => c.status !== CLUSTER_STATUS_DISCONNECTED
-        && c.prettyClusterName.includes(input))
+      && c.prettyClusterName.includes(input))
       .map((c) => ({ value: c.prettyClusterName, icon: <StatusCell statusGroup={clusterStatusGroup(c.status)} /> }))
     ),
     onSelect: (input) => {
@@ -139,6 +141,9 @@ const LiveViewBreadcrumbs = ({ classes, commandOpen, toggleCommandOpen }) => {
 
   // Add args to breadcrumbs.
   const argTypes = getArgTypesForVis(vis);
+
+  const argVariableMap = getArgVariableMap(vis);
+
   // TODO(michelle): We may want to separate non-entity args from the entity args and put them in separate
   // breadcrumbs. For now, they will all go in the same breadcrumbs object.
   Object.entries(args).filter(([argName]) => argName !== 'script').forEach(([argName, argVal]) => {
@@ -157,6 +162,21 @@ const LiveViewBreadcrumbs = ({ classes, commandOpen, toggleCommandOpen }) => {
       getListItems: null,
       requireCompletion: false,
     };
+
+    // Only add suggestions if validValues are specified. Otherwise, the dropdown is populated with autocomplete
+    // entities or has no elements and the user must manually type in values.
+    const variable: Variable = argVariableMap[argName];
+    if (variable && variable.validValues && variable.validValues.length) {
+      argProps.getListItems = async (input) => (variable.validValues
+        .filter((suggestion) => input === '' || suggestion.indexOf(input) >= 0)
+        .map((suggestion) => ({
+          value: suggestion,
+          description: '',
+        })));
+
+      argProps.requireCompletion = true;
+    }
+
     const entityType = pxTypetoEntityType(argTypes[argName]);
     if (entityType !== 'AEK_UNKNOWN') {
       argProps.getListItems = async (input) => (getCompletions(input, entityType)

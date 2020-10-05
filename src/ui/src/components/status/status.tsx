@@ -22,7 +22,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const StatusCell = ({ statusGroup }) => {
+export const StatusCell = ({ statusGroup }: { statusGroup: StatusGroup }) => {
   const classes = useStyles();
   switch (statusGroup) {
     case 'healthy':

@@ -1,3 +1,5 @@
+import { StatusGroup } from 'components/status/status';
+
 export type EntityType = 'AEK_UNKNOWN' | 'AEK_POD' | 'AEK_SVC' | 'AEK_SCRIPT' | 'AEK_NAMESPACE';
 
 // Converts a vixpb.PXType to an entityType that is accepted by autocomplete.
@@ -29,7 +31,7 @@ export function entityTypeToString(entityType: EntityType): string {
   }
 }
 
-export function entityStatusGroup(entityState: string): string {
+export function entityStatusGroup(entityState: string): StatusGroup {
   switch (entityState) {
     case 'AES_TERMINATED':
       return 'unknown';

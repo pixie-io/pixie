@@ -46,6 +46,11 @@ export namespace Vis {
     getDescription(): string;
     setDescription(value: string): void;
 
+    getValidValuesList(): Array<string>;
+    setValidValuesList(value: Array<string>): void;
+    clearValidValuesList(): void;
+    addValidValues(value: string, index?: number): void;
+
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Variable.AsObject;
     static toObject(includeInstance: boolean, msg: Variable): Variable.AsObject;
@@ -60,6 +65,7 @@ export namespace Vis {
       type: PXType,
       defaultValue: string,
       description: string,
+      validValuesList: Array<string>,
     }
   }
 

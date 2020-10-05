@@ -73,7 +73,7 @@ if (goog.DEBUG && !COMPILED) {
  * @constructor
  */
 proto.pl.vispb.Vis.Variable = function(opt_data) {
-  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
+  jspb.Message.initialize(this, opt_data, 0, -1, proto.pl.vispb.Vis.Variable.repeatedFields_, null);
 };
 goog.inherits(proto.pl.vispb.Vis.Variable, jspb.Message);
 if (goog.DEBUG && !COMPILED) {
@@ -635,6 +635,13 @@ proto.pl.vispb.Vis.serializeBinaryToWriter = function(message, writer) {
 
 
 
+/**
+ * List of repeated fields within this message type.
+ * @private {!Array<number>}
+ * @const
+ */
+proto.pl.vispb.Vis.Variable.repeatedFields_ = [5];
+
 
 
 if (jspb.Message.GENERATE_TO_OBJECT) {
@@ -669,7 +676,8 @@ proto.pl.vispb.Vis.Variable.toObject = function(includeInstance, msg) {
     name: jspb.Message.getFieldWithDefault(msg, 1, ""),
     type: jspb.Message.getFieldWithDefault(msg, 2, 0),
     defaultValue: jspb.Message.getFieldWithDefault(msg, 3, ""),
-    description: jspb.Message.getFieldWithDefault(msg, 4, "")
+    description: jspb.Message.getFieldWithDefault(msg, 4, ""),
+    validValuesList: (f = jspb.Message.getRepeatedField(msg, 5)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -721,6 +729,10 @@ proto.pl.vispb.Vis.Variable.deserializeBinaryFromReader = function(msg, reader) 
     case 4:
       var value = /** @type {string} */ (reader.readString());
       msg.setDescription(value);
+      break;
+    case 5:
+      var value = /** @type {string} */ (reader.readString());
+      msg.addValidValues(value);
       break;
     default:
       reader.skipField();
@@ -776,6 +788,13 @@ proto.pl.vispb.Vis.Variable.serializeBinaryToWriter = function(message, writer) 
   if (f.length > 0) {
     writer.writeString(
       4,
+      f
+    );
+  }
+  f = message.getValidValuesList();
+  if (f.length > 0) {
+    writer.writeRepeatedString(
+      5,
       f
     );
   }
@@ -851,6 +870,43 @@ proto.pl.vispb.Vis.Variable.prototype.getDescription = function() {
  */
 proto.pl.vispb.Vis.Variable.prototype.setDescription = function(value) {
   return jspb.Message.setProto3StringField(this, 4, value);
+};
+
+
+/**
+ * repeated string valid_values = 5;
+ * @return {!Array<string>}
+ */
+proto.pl.vispb.Vis.Variable.prototype.getValidValuesList = function() {
+  return /** @type {!Array<string>} */ (jspb.Message.getRepeatedField(this, 5));
+};
+
+
+/**
+ * @param {!Array<string>} value
+ * @return {!proto.pl.vispb.Vis.Variable} returns this
+ */
+proto.pl.vispb.Vis.Variable.prototype.setValidValuesList = function(value) {
+  return jspb.Message.setField(this, 5, value || []);
+};
+
+
+/**
+ * @param {string} value
+ * @param {number=} opt_index
+ * @return {!proto.pl.vispb.Vis.Variable} returns this
+ */
+proto.pl.vispb.Vis.Variable.prototype.addValidValues = function(value, opt_index) {
+  return jspb.Message.addToRepeatedField(this, 5, value, opt_index);
+};
+
+
+/**
+ * Clears the list making it empty but non-null.
+ * @return {!proto.pl.vispb.Vis.Variable} returns this
+ */
+proto.pl.vispb.Vis.Variable.prototype.clearValidValuesList = function() {
+  return this.setValidValuesList([]);
 };
 
 

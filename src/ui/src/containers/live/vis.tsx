@@ -35,11 +35,12 @@ export interface Widget {
   displaySpec: WidgetDisplay;
 }
 
-interface Variable {
+export interface Variable {
   name: string;
   type: string;
   defaultValue?: string;
   description?: string;
+  validValues?: string[];
 }
 
 interface GlobalFunc {

@@ -51,6 +51,14 @@ message Vis {
     string default_value = 3;
     // description provides a description of the variable to help the user fill it in.
     string description = 4;
+
+    // valid_values are an optional restricted set of values that can be set for
+    // an argument. Defining >= 1 value in this field means the user of the
+    // VisJSON can only pass one of these values into the variable. ie you might
+    // want valid_values for something like an argument that takes Kubernetes
+    // entity types (pod, service, namespace, etc.). If unspecified, the set of
+    // valid of values will be determined by the semantic type.
+    repeated string valid_values = 5;
   }
   // variables defines the set of input variables that Widgets in this Live View can bind to.
   repeated Variable variables = 1;

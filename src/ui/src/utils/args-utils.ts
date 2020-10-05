@@ -1,4 +1,4 @@
-import { Vis } from 'containers/live/vis';
+import { Variable, Vis } from 'containers/live/vis';
 
 export interface Arguments {
   [arg: string]: string;
@@ -64,4 +64,17 @@ export function getArgTypesForVis(vis: Vis): ArgTypeMap {
     types[v.name] = v.type;
   });
   return types;
+}
+
+export interface ArgToVariableMap {
+  [arg: string]: Variable;
+}
+
+export function getArgVariableMap(vis: Vis): ArgToVariableMap {
+  const map: ArgToVariableMap = {};
+
+  vis.variables.forEach((v) => {
+    map[v.name] = v;
+  });
+  return map;
 }
