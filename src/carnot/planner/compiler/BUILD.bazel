@@ -33,7 +33,10 @@ pl_cc_library(
 
 pl_cc_test_library(
     name = "test_utils",
-    hdrs = glob(["*_test_utils.h", "test_utils.h"]),
+    hdrs = glob([
+        "*_test_utils.h",
+        "test_utils.h",
+    ]),
     deps = [
         "//src/carnot/udf_exporter:cc_library",
         ":cc_library",

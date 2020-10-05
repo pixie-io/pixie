@@ -8,16 +8,15 @@ import (
 	"io"
 	"os"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/fatih/color"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/status"
+
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
 	cliLog "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
@@ -26,12 +25,10 @@ import (
 type StreamWriterFactorFunc = func(md *pl_api_vizierpb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter
 
 type TableInfo struct {
-	w           components.OutputStreamWriter
-	ID          string
-	relation    *pl_api_vizierpb.Relation
-	timeColIdx  int
-	latencyCols map[int]bool
-	alertCols   map[int]bool
+	w          components.OutputStreamWriter
+	ID         string
+	relation   *pl_api_vizierpb.Relation
+	timeColIdx int
 }
 
 type VizierExecData struct {
@@ -48,19 +45,14 @@ type VizierStreamOutputAdapter struct {
 	wg                  sync.WaitGroup
 	enableFormat        bool
 	format              string
+	formatters          map[string]DataFormatter
 	mutationInfo        *pl_api_vizierpb.MutationInfo
 
 	// This is used to track table/ID -> names across multiple clusters.
 	tabledIDToName map[string]string
 
 	// Captures error if any on the stream and returns it with Finish.
-	err                      error
-	latencyYellowThresholdMS float64
-	latencyRedThresholdMS    float64
-
-	// Internally used functions.
-	redSprintf    func(format string, a ...interface{}) string
-	yellowSprintf func(format string, a ...interface{}) string
+	err error
 
 	totalBytes int
 }
@@ -80,15 +72,12 @@ func NewVizierStreamOutputAdapterWithFactory(ctx context.Context, stream chan *V
 	enableFormat := format != "json" && format != FormatInMemory
 
 	adapter := &VizierStreamOutputAdapter{
-		tableNameToInfo:          make(map[string]*TableInfo),
-		streamWriterFactory:      factoryFunc,
-		format:                   format,
-		enableFormat:             enableFormat,
-		tabledIDToName:           make(map[string]string, 0),
-		latencyYellowThresholdMS: 200,
-		latencyRedThresholdMS:    400,
-		redSprintf:               color.New(color.FgRed).SprintfFunc(),
-		yellowSprintf:            color.New(color.FgYellow).SprintfFunc(),
+		tableNameToInfo:     make(map[string]*TableInfo),
+		streamWriterFactory: factoryFunc,
+		format:              format,
+		enableFormat:        enableFormat,
+		formatters:          make(map[string]DataFormatter),
+		tabledIDToName:      make(map[string]string, 0),
 	}
 
 	adapter.wg.Add(1)
@@ -295,6 +284,7 @@ func (v *VizierStreamOutputAdapter) getNativeTypedValue(tableInfo *TableInfo, ro
 	}
 	return nil
 }
+
 func (v *VizierStreamOutputAdapter) parseError(ctx context.Context, s *pl_api_vizierpb.Status) error {
 	var compilerErrors []string
 	if s.ErrorDetails != nil {
@@ -318,21 +308,6 @@ func (v *VizierStreamOutputAdapter) parseError(ctx context.Context, s *pl_api_vi
 
 	cliLog.Errorf("Script execution error: %s", s.Message)
 	return newScriptExecutionError(CodeUnknown, "Script execution error:"+s.Message)
-}
-
-func (v *VizierStreamOutputAdapter) getFormattedValue(tableInfo *TableInfo, colIdx int, val interface{}) interface{} {
-	if _, ok := tableInfo.latencyCols[colIdx]; ok {
-		// If it's a latency col and the data type float64 we will color it based on value.
-		if lv, ok := val.(float64); ok {
-			return v.latencyColValueToString(lv)
-		}
-	} else if _, ok := tableInfo.alertCols[colIdx]; ok {
-		// If it's a latency col and the data type is bool we will color it based on value.
-		if b, ok := val.(bool); ok {
-			return v.alertColValueToString(b)
-		}
-	}
-	return val
 }
 
 func (v *VizierStreamOutputAdapter) handleExecutionStats(ctx context.Context, es *pl_api_vizierpb.QueryExecutionStats) error {
@@ -360,6 +335,10 @@ func (v *VizierStreamOutputAdapter) handleData(ctx context.Context, cid string, 
 	if !ok {
 		return ErrMetadataMissing
 	}
+	formatter, ok := v.formatters[tableName]
+	if !ok {
+		return ErrMetadataMissing
+	}
 
 	numRows := 0
 	if d.Data != nil && d.Data.Batch != nil && d.Data.Batch.Cols != nil {
@@ -377,7 +356,7 @@ func (v *VizierStreamOutputAdapter) handleData(ctx context.Context, cid string, 
 		for colIdx, col := range cols {
 			val := v.getNativeTypedValue(tableInfo, rowIdx, colIdx, col.ColData)
 			if v.enableFormat {
-				rec[colIdx+1] = v.getFormattedValue(tableInfo, colIdx, val)
+				rec[colIdx+1] = formatter.FormatValue(colIdx, val)
 			} else {
 				rec[colIdx+1] = val
 			}
@@ -407,21 +386,11 @@ func (v *VizierStreamOutputAdapter) handleMetadata(ctx context.Context, md *pl_a
 	}
 	relation := md.MetaData.Relation
 
-	latencyCols := make(map[int]bool)
-	alertCols := make(map[int]bool)
 	timeColIdx := -1
-	// For p50, p99, etc.
-	latencyRegex := regexp.MustCompile(`p\d{2}`)
-
 	for idx, col := range relation.Columns {
 		if col.ColumnName == "time_" {
 			timeColIdx = idx
-		}
-		if col.ColumnName == "alert" || strings.HasPrefix(col.ColumnName, "alert_") {
-			alertCols[idx] = true
-		}
-		if latencyRegex.Match([]byte(col.ColumnName)) {
-			latencyCols[idx] = true
+			break
 		}
 	}
 
@@ -434,38 +403,12 @@ func (v *VizierStreamOutputAdapter) handleMetadata(ctx context.Context, md *pl_a
 	newWriter.SetHeader(md.MetaData.Name, headerKeys)
 
 	v.tableNameToInfo[tableName] = &TableInfo{
-		ID:          tableName,
-		w:           newWriter,
-		relation:    relation,
-		timeColIdx:  timeColIdx,
-		latencyCols: latencyCols,
-		alertCols:   alertCols,
+		ID:         tableName,
+		w:          newWriter,
+		relation:   relation,
+		timeColIdx: timeColIdx,
 	}
 
+	v.formatters[tableName] = NewDataFormatterForTable(relation)
 	return nil
-}
-
-func (v *VizierStreamOutputAdapter) isYellowLatency(timeMS float64) bool {
-	return (timeMS >= v.latencyYellowThresholdMS) && (timeMS <= v.latencyRedThresholdMS)
-}
-
-func (v *VizierStreamOutputAdapter) isRedLatency(timeMS float64) bool {
-	return timeMS >= v.latencyRedThresholdMS
-}
-func (v *VizierStreamOutputAdapter) latencyColValueToString(timeMS float64) string {
-	asStr := fmt.Sprintf("%.2f", timeMS)
-	if v.isRedLatency(timeMS) {
-		return v.redSprintf(asStr)
-	}
-	if v.isYellowLatency(timeMS) {
-		return v.yellowSprintf(asStr)
-	}
-	return asStr
-}
-
-func (v *VizierStreamOutputAdapter) alertColValueToString(val bool) string {
-	if val {
-		return v.redSprintf("ALERT")
-	}
-	return ""
 }

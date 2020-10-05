@@ -51,7 +51,7 @@ func nodeExecTiming(nodeID int64, execStats *map[int64]*queryresultspb.OperatorE
 	extraStats := []string{
 		fmt.Sprintf("self_time: %s", timeNSToString(stats.SelfExecutionTimeNs)),
 		fmt.Sprintf("total_time: %s", timeNSToString(stats.TotalExecutionTimeNs)),
-		fmt.Sprintf("bytes: %s", humanize.Bytes(uint64(stats.BytesOutput))),
+		fmt.Sprintf("bytes: %s", humanize.IBytes(uint64(stats.BytesOutput))),
 		fmt.Sprintf("records_processed: %d", stats.RecordsOutput),
 	}
 	for k, v := range stats.ExtraMetrics {
