@@ -51,9 +51,6 @@ const styles = (({ shape, palette, spacing }: Theme) => createStyles({
   root: {
     display: 'flex',
     alignItems: 'center',
-    height: spacing(4.5),
-    paddingTop: spacing(1),
-    paddingBottom: spacing(1),
     marginTop: spacing(1),
     marginRight: spacing(3.5),
     marginLeft: spacing(3),
@@ -80,11 +77,13 @@ const styles = (({ shape, palette, spacing }: Theme) => createStyles({
     marginRight: spacing(1),
     marginLeft: spacing(0.5),
   },
+  iconContainer: {
+    padding: 0,
+  },
   breadcrumbs: {
     width: '100%',
     overflow: 'hidden',
     display: 'flex',
-    height: spacing(3),
   },
 }));
 
@@ -242,7 +241,7 @@ const LiveViewBreadcrumbs = ({ classes, commandOpen, toggleCommandOpen }) => {
   return (
     <div className={classes.root}>
       <Tooltip title='Pixie Command'>
-        <IconButton disabled={commandOpen} onClick={toggleCommandOpen}>
+        <IconButton disabled={commandOpen} onClick={toggleCommandOpen} className={classes.iconContainer}>
           <PixieCommandIcon fontSize='large' className={classes.pixieIcon} />
         </IconButton>
       </Tooltip>

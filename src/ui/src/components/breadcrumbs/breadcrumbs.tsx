@@ -10,15 +10,20 @@ import { CompletionItem } from 'components/autocomplete/completions';
 import Autocomplete from 'components/autocomplete';
 import { AutocompleteContext } from 'components/autocomplete/autocomplete';
 
-const styles = ({ spacing, typography, palette }: Theme) => createStyles({
+const styles = ({
+  spacing, typography, palette, breakpoints,
+}: Theme) => createStyles({
   breadcrumbs: {
     height: '100%',
-    overflowX: 'scroll',
     scrollbarWidth: 'none', // Firefox
     '&::-webkit-scrollbar': {
       display: 'none',
     },
-    display: 'flex',
+    display: 'inline-block',
+    [breakpoints.down('sm')]: {
+      overflowX: 'scroll',
+      display: 'flex',
+    },
   },
   breadcrumb: {
     display: 'inline-flex',

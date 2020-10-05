@@ -17,11 +17,14 @@ const styles = ({ breakpoints, typography }: Theme) => createStyles({
       display: 'none',
     },
   },
+  buttonContainer: {
+    height: '100%',
+  },
 });
 
 const StyledButton = withStyles((theme: Theme) => createStyles({
   root: {
-    height: theme.spacing(4.25),
+    height: '100%',
     borderRadius: `0 ${theme.shape.borderRadius}px ${theme.shape.borderRadius}px 0px`,
   },
 }))(Button);
@@ -44,7 +47,7 @@ const ExecuteScriptButtonBare = ({ classes }: ExecuteScriptButtonProps) => {
 
   return (
     <Tooltip title={tooltipTitle}>
-      <div>
+      <div className={classes.buttonContainer}>
         <StyledButton
           variant='contained'
           color='primary'
