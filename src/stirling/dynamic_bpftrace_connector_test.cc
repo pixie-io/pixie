@@ -11,6 +11,8 @@ namespace stirling {
 
 using ::pl::stirling::dynamic_tracing::ir::logical::TracepointDeployment_Tracepoint;
 
+using ::pl::testing::status::StatusIs;
+using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
 
 // A regex for a string of printable characters. See ASCII table.
@@ -280,7 +282,7 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceBuiltins2) {
   ASSERT_OK(connector->Stop());
 }
 
-TEST(DynamicBPFTraceConnectorTest, BPFTraceMalformedPrintf) {
+TEST(DynamicBPFTraceConnectorTest, BPFTraceUnlabeledColumn) {
   // Create a BPFTrace program spec
   TracepointDeployment_Tracepoint tracepoint;
   tracepoint.set_table_name("pid_sample_table");
@@ -349,6 +351,22 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceMalformedPrintf) {
 
   // Check that we can gracefully wrap-up.
   ASSERT_OK(connector->Stop());
+}
+
+TEST(DynamicBPFTraceConnectorTest, BPFTraceMalformedPrintf) {
+  // Create a BPFTrace program spec
+  TracepointDeployment_Tracepoint tracepoint;
+  tracepoint.set_table_name("pid_sample_table");
+
+  constexpr char kScript[] = R"(interval:ms:100 {
+         printf("username:%s foo   %s inet:%s",
+                 username, strftime("%H:%M:%S", nsecs), ntop(0), 0);
+      })";
+
+  tracepoint.mutable_bpftrace()->set_program(kScript);
+
+  ASSERT_THAT(DynamicBPFTraceConnector::Create("test", tracepoint).status(),
+              StatusIs(statuspb::INTERNAL, HasSubstr("Semantic analyser failed")));
 }
 
 }  // namespace stirling
