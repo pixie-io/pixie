@@ -1,17 +1,21 @@
-import { DataType, UInt128 } from 'types/generated/vizier_pb';
+import { DataType, SemanticType, UInt128 } from 'types/generated/vizier_pb';
 import * as FormatData from './format-data';
 
 describe('looksLikeLatencyCol test', () => {
   it('should not accept non-float latency columns', () => {
-    expect(FormatData.looksLikeLatencyCol('latency', DataType.STRING)).toEqual(false);
+    expect(FormatData.looksLikeLatencyCol('latency', SemanticType.ST_DURATION_NS, DataType.STRING)).toEqual(false);
   });
 
   it('should not accept incorrectly named columns', () => {
-    expect(FormatData.looksLikeLatencyCol('CPU', DataType.FLOAT64)).toEqual(false);
+    expect(FormatData.looksLikeLatencyCol('CPU', SemanticType.ST_DURATION_NS, DataType.FLOAT64)).toEqual(false);
   });
 
   it('should accept FLOAT64 columns with correct naming', () => {
-    expect(FormatData.looksLikeLatencyCol('latency', DataType.FLOAT64)).toEqual(true);
+    expect(FormatData.looksLikeLatencyCol('latency', SemanticType.ST_DURATION_NS, DataType.FLOAT64)).toEqual(true);
+  });
+
+  it('should accept FLOAT64 columns with correct naming must have semantic type', () => {
+    expect(FormatData.looksLikeLatencyCol('latency', SemanticType.ST_NONE, DataType.FLOAT64)).toEqual(false);
   });
 });
 

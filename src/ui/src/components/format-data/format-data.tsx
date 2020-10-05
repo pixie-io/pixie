@@ -1,5 +1,10 @@
 import * as React from 'react';
-import { createStyles, Theme, withStyles } from '@material-ui/core/styles';
+import {
+  createStyles,
+  Theme,
+  WithStyles,
+  withStyles,
+} from '@material-ui/core/styles';
 import { formatBoolData, formatFloat64Data, formatUInt128Protobuf } from 'utils/format-data';
 import {
   GaugeLevel,
@@ -7,6 +12,7 @@ import {
   getLatencyLevel,
   getLatencyNSLevel,
 } from 'utils/metric-thresholds';
+import clsx from 'clsx';
 import { DataType, SemanticType } from '../../types/generated/vizier_pb';
 
 const JSON_INDENT_PX = 16;
@@ -191,17 +197,13 @@ export interface DataWithUnits {
   units: string;
 }
 
-export const formatBytes = (data: number): DataWithUnits => {
-  const decimals = 2;
-  const k = 1024;
+export const formatScaled = (data: number, scale: number, suffixes: string[], decimals = 2): DataWithUnits => {
   const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['\u00a0B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+  let i = Math.min(Math.floor(Math.log(Math.abs(data)) / Math.log(scale)), suffixes.length + 1);
+  i = Math.max(0, Math.min(i, suffixes.length - 1));
 
-  let i = Math.min(Math.floor(Math.log(Math.abs(data)) / Math.log(k)), sizes.length + 1);
-  i = Math.max(0, i);
-
-  const val = `${parseFloat((data / (k ** i)).toFixed(dm))}\u00A0`;
-  const units = sizes[i];
+  const val = `${parseFloat((data / (scale ** i)).toFixed(dm))}`;
+  const units = suffixes[i];
 
   return {
     val,
@@ -209,27 +211,37 @@ export const formatBytes = (data: number): DataWithUnits => {
   };
 };
 
-export const formatDuration = (data: number): DataWithUnits => {
-  const decimals = 2;
-  const k = 1000;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['ns', '\u00b5s', 'ms', '\u00a0s'];
+export const formatBytes = (data: number): DataWithUnits => (
+  formatScaled(data,
+    1024,
+    ['\u00a0B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
+    1)
+);
 
-  let i = Math.min(Math.floor(Math.log(Math.abs(data)) / Math.log(k)), sizes.length + 1);
-  i = Math.max(0, i);
+export const formatDuration = (data: number): DataWithUnits => (
+  formatScaled(data,
+    1000,
+    ['ns', '\u00b5s', 'ms', '\u00a0s'],
+    1)
+);
 
-  const val = `${parseFloat((data / (k ** i)).toFixed(dm))}\u00A0`;
-  const units = sizes[i];
+export const formatThroughput = (data: number): DataWithUnits => (
+  formatScaled(data * 1E9,
+    1000,
+    ['\u00a0/s', 'K/s', 'M/s', 'B/s'],
+    1)
+);
 
-  return {
-    val,
-    units,
-  };
-};
+export const formatThroughputBytes = (data: number): DataWithUnits => (
+  formatScaled(data * 1E9,
+    1024,
+    ['\u00a0B/s', 'KB/s', 'MB/s', 'GB/s'],
+    1)
+);
 
 const RenderValueWithUnitsBase = ({ data, classes }: { data: DataWithUnits; classes: any }) => (
   <>
-    <span className={classes.value}>{data.val}</span>
+    <span className={classes.value}>{`${data.val}\u00A0`}</span>
     <span className={classes.units}>{data.units}</span>
   </>
 );
@@ -254,12 +266,87 @@ export const DurationRenderer = ({ data }: { data: number }) => (
   />
 );
 
+const httpStatusCodeRendererStyles = (theme: Theme) => createStyles({
+  root: {},
+  unknown: {
+    color: theme.palette.foreground.grey1,
+  },
+  oneHundredLevel: {
+    color: theme.palette.success.main,
+  },
+  twoHundredLevel: {
+    color: theme.palette.success.main,
+  },
+  threeHundredLevel: {
+    color: theme.palette.success.main,
+  },
+  fourHundredLevel: {
+    color: theme.palette.error.main,
+  },
+  fiveHundredLevel: {
+    color: theme.palette.error.main,
+  },
+});
+
+interface HTTPStatusCodeRendererProps extends WithStyles<typeof httpStatusCodeRendererStyles> {
+  data: string;
+}
+
+export const HTTPStatusCodeRenderer = withStyles(httpStatusCodeRendererStyles)(
+  ({ classes, data }: HTTPStatusCodeRendererProps) => {
+    const intVal = parseInt(data, 10);
+    const cls = clsx(
+      classes.root,
+      intVal < 0 && classes.unknown,
+      intVal > 0 && intVal < 200 && classes.oneHundredLevel,
+      intVal >= 200 && intVal < 300 && classes.twoHundredLevel,
+      intVal >= 300 && intVal < 400 && classes.threeHundredLevel,
+      intVal >= 400 && intVal < 500 && classes.fourHundredLevel,
+      intVal >= 500 && classes.fiveHundredLevel);
+
+    return (
+      <>
+        <span className={cls}>{data}</span>
+      </>
+    );
+  });
+
+export const formatPercent = (data: number): DataWithUnits => {
+  const val = (100 * parseFloat(data.toString())).toFixed(1);
+  const units = '%';
+
+  return {
+    val,
+    units,
+  };
+};
+
+interface PercentRendererProps {
+  data: number;
+}
+
+export const PercentRenderer = ({ data }: PercentRendererProps) => <RenderValueWithUnits data={formatPercent(data)} />;
+
+export const ThroughputRenderer = ({ data }: PercentRendererProps) => (
+  <RenderValueWithUnits data={formatThroughput(data)} />
+);
+
+export const ThroughputBytesRenderer = ({ data }: PercentRendererProps) => (
+  <RenderValueWithUnits data={formatThroughputBytes(data)} />
+);
+
 export const formatBySemType = (semType: SemanticType, val: any): DataWithUnits => {
   switch (semType) {
     case SemanticType.ST_BYTES:
       return formatBytes(val);
     case SemanticType.ST_DURATION_NS:
       return formatDuration(val);
+    case SemanticType.ST_PERCENT:
+      return formatPercent(val);
+    case SemanticType.ST_THROUGHPUT_PER_NS:
+      return formatThroughput(val);
+    case SemanticType.ST_THROUGHPUT_BYTES_PER_NS:
+      return formatThroughputBytes(val);
     default:
       break;
   }

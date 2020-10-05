@@ -7,24 +7,30 @@ import {
 
 describe('formatters Test', () => {
   it('should handle 0 Bytes correctly', () => {
-    expect(formatBytes(0)).toEqual({ units: '\u00a0B', val: '0\u00A0' });
+    expect(formatBytes(0)).toEqual({ units: '\u00a0B', val: '0' });
   });
 
   it('should handle 0 duration correctly', () => {
-    expect(formatDuration(0)).toEqual({ units: 'ns', val: '0\u00A0' });
+    expect(formatDuration(0)).toEqual({ units: 'ns', val: '0' });
   });
   it('should handle |x| < 1  Bytes correctly', () => {
-    expect(formatBytes(0.1)).toEqual({ units: '\u00a0B', val: '0.1\u00A0' });
+    expect(formatBytes(0.1)).toEqual({ units: '\u00a0B', val: '0.1' });
   });
 
   it('should handle |x| < 1 duration correctly', () => {
-    expect(formatDuration(0.1)).toEqual({ units: 'ns', val: '0.1\u00A0' });
+    expect(formatDuration(0.1)).toEqual({ units: 'ns', val: '0.1' });
   });
   it('should handle x < 0 duration correctly', () => {
-    expect(formatDuration(-2)).toEqual({ units: 'ns', val: '-2\u00A0' });
+    expect(formatDuration(-2)).toEqual({ units: 'ns', val: '-2' });
   });
   it('should handle x < 0 bytes correctly', () => {
-    expect(formatBytes(-2048)).toEqual({ units: 'KB', val: '-2\u00A0' });
+    expect(formatBytes(-2048)).toEqual({ units: 'KB', val: '-2' });
+  });
+  it('should handle large bytes correctly', () => {
+    expect(formatBytes(1024 ** 9)).toEqual({ units: 'YB', val: '1024' });
+  });
+  it('should handle large durations correctly', () => {
+    expect(formatDuration(1000 ** 4)).toEqual({ units: '\u00A0s', val: '1000' });
   });
 });
 

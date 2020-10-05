@@ -2,10 +2,13 @@ import * as React from 'react';
 import {
   AlertData,
   BytesRenderer,
-  CPUData, DurationRenderer,
+  CPUData,
+  DurationRenderer,
+  HTTPStatusCodeRenderer,
   JSONData,
   LatencyData,
-  PortRenderer,
+  PercentRenderer,
+  PortRenderer, ThroughputBytesRenderer, ThroughputRenderer,
 } from 'components/format-data/format-data';
 import {
   EntityLink,
@@ -57,12 +60,12 @@ export function quantilesRenderer(display: ColumnDisplayInfo,
     let p90Level: GaugeLevel = 'none';
     let p99Level: GaugeLevel = 'none';
     // Can't pass in DataType here, which is STRING, but we know quantiles are floats.
-    if (looksLikeLatencyCol(display.columnName, DataType.FLOAT64)) {
+    if (looksLikeLatencyCol(display.columnName, display.semanticType, DataType.FLOAT64)) {
       p50Level = getLatencyLevel(p50);
       p90Level = getLatencyLevel(p90);
       p99Level = getLatencyLevel(p99);
     }
-    if (looksLikeCPUCol(display.columnName, DataType.FLOAT64)) {
+    if (looksLikeCPUCol(display.columnName, display.semanticType, DataType.FLOAT64)) {
       p50Level = getCPULevel(p50);
       p90Level = getCPULevel(p90);
       p99Level = getCPULevel(p99);
@@ -164,6 +167,14 @@ export const prettyCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (C
       return renderWrapper(DurationRenderer);
     case SemanticType.ST_BYTES:
       return renderWrapper(BytesRenderer);
+    case SemanticType.ST_HTTP_RESP_STATUS:
+      return renderWrapper(HTTPStatusCodeRenderer);
+    case SemanticType.ST_PERCENT:
+      return renderWrapper(PercentRenderer);
+    case SemanticType.ST_THROUGHPUT_PER_NS:
+      return renderWrapper(ThroughputRenderer);
+    case SemanticType.ST_THROUGHPUT_BYTES_PER_NS:
+      return renderWrapper(ThroughputBytesRenderer);
     default:
       break;
   }
@@ -173,11 +184,11 @@ export const prettyCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (C
   }
 
   // TODO(zasgar): Remove latency information.
-  if (looksLikeLatencyCol(name, dt)) {
+  if (looksLikeLatencyCol(name, st, dt)) {
     return LatencyDataWrapper;
   }
 
-  if (looksLikeCPUCol(name, dt)) {
+  if (looksLikeCPUCol(name, st, dt)) {
     return CPUDataWrapper;
   }
 

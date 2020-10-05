@@ -1,5 +1,5 @@
 import * as numeral from 'numeral';
-import { DataType, UInt128 } from 'types/generated/vizier_pb';
+import { DataType, SemanticType, UInt128 } from 'types/generated/vizier_pb';
 
 export function formatInt64Data(val: string): string {
   return numeral(val).format('0,0');
@@ -23,8 +23,11 @@ export function formatFloat64Data(val: number, formatStr = '0[.]00'): string {
   return num;
 }
 
-export function looksLikeLatencyCol(colName: string, colType: DataType) {
+export function looksLikeLatencyCol(colName: string, semType: SemanticType, colType: DataType) {
   if (colType !== DataType.FLOAT64) {
+    return false;
+  }
+  if (semType !== SemanticType.ST_DURATION_NS) {
     return false;
   }
   const colNameLC = colName.toLowerCase();
@@ -34,8 +37,11 @@ export function looksLikeLatencyCol(colName: string, colType: DataType) {
   return !!colNameLC.match(/p\d{0,2}$/);
 }
 
-export function looksLikeCPUCol(colName: string, colType: DataType) {
+export function looksLikeCPUCol(colName: string, semType: SemanticType, colType: DataType) {
   if (colType !== DataType.FLOAT64) {
+    return false;
+  }
+  if (semType !== SemanticType.ST_PERCENT) {
     return false;
   }
   const colNameLC = colName.toLowerCase();
