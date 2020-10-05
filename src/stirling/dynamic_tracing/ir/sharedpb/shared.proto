@@ -166,10 +166,6 @@ message DeploymentSpec {
     string pod = 9;
   }
 
-  // Location of the debug symbols for the path above.
-  // Automatically populated during processing of the DeploymentSpec.
-  string debug_symbols_path = 2;
-
   // Processes with exe path that matches this pattern are the target of this deployment.
   // The exe path is the one recorded in the process's exe path as seen inside the container,
   // not the one resolved through overlay FS.

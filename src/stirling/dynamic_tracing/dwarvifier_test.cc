@@ -17,7 +17,6 @@ using ::pl::testing::proto::EqualsProto;
 constexpr std::string_view kEntryProbeIn = R"(
 deployment_spec {
   path: "$0"
-  debug_symbols_path: "$0"
 }
 tracepoints {
   program {
@@ -59,7 +58,6 @@ tracepoints {
 constexpr std::string_view kEntryProbeOut = R"(
 deployment_spec {
   path: "$0"
-  debug_symbols_path: "$0"
 }
 language: GOLANG
 probes {
@@ -175,7 +173,6 @@ probes {
 constexpr std::string_view kReturnProbeIn = R"(
 deployment_spec {
   path: "$0"
-  debug_symbols_path: "$0"
 }
 tracepoints {
   program {
@@ -201,7 +198,6 @@ tracepoints {
 constexpr std::string_view kReturnProbeOut = R"(
 deployment_spec {
   path: "$0"
-  debug_symbols_path: "$0"
 }
 language: GOLANG
 probes {
@@ -277,7 +273,6 @@ probes {
 constexpr std::string_view kNestedArgProbeIn = R"(
 deployment_spec {
   path: "$0"
-  debug_symbols_path: "$0"
 }
 tracepoints {
   program {
@@ -303,7 +298,6 @@ tracepoints {
 constexpr std::string_view kNestedArgProbeOut = R"(
 deployment_spec {
   path: "$0"
-  debug_symbols_path: "$0"
 }
 language: GOLANG
 probes {
@@ -408,7 +402,6 @@ probes {
 constexpr std::string_view kActionProbeIn = R"(
 deployment_spec {
   path: "$0"
-  debug_symbols_path: "$0"
 }
 tracepoints {
   program {
@@ -486,7 +479,6 @@ tracepoints {
 constexpr std::string_view kActionProbeOut = R"(
 deployment_spec {
   path: "$0"
-  debug_symbols_path: "$0"
 }
 language: GOLANG
 structs {
@@ -838,7 +830,6 @@ probes {
 constexpr std::string_view kStructProbeIn = R"(
 deployment_spec {
   path: "$0"
-  debug_symbols_path: "$0"
 }
 tracepoints {
   program {
@@ -868,7 +859,6 @@ tracepoints {
 constexpr std::string_view kStructProbeOut = R"(
 deployment_spec {
   path: "$0"
-  debug_symbols_path: "$0"
 }
 language: GOLANG
 structs {
