@@ -54,21 +54,18 @@ class BPFTraceWrapper {
 
   /**
    * Returns the fields of the BPFTrace program's printf.
-   * @return error if there are not exactly one printf statement in the compiled program.
+   * @return error if there is no printf statement in the compiled program,
+   *         or if all the printfs in the program do not have a consistent format string.
    *         otherwise, returns a vector of fields which represents the types in the printf.
    */
-  StatusOr<std::vector<bpftrace::Field>> OutputFields();
+  StatusOr<std::vector<bpftrace::Field>> OutputFields() const;
 
   /**
    * Returns the format string of the BPFTrace program's printf.
-   * @return error if there are not exactly one printf statement in the compiled program.
-   *         otherwise, returns a vector of fields which represents the types in the printf.
+   * @return error if there is no printf statement in the compiled program,
+   *         or if all the printfs in the program do not have a consistent format string.
    */
-  StatusOr<std::string_view> OutputFmtStr();
-
-  // NOTE: In addition to OutputFields(), it's possible to grab the format string.
-  // If we ever need to recreate the printf on the fly, we could add that as an extra column.
-  // Potentially useful in collapsing multiple tables into a "log" table.
+  StatusOr<std::string_view> OutputFmtStr() const;
 
   /**
    * Gets the specified map name, using BPFTrace name. Map name should include the '@' prefix.
@@ -76,6 +73,12 @@ class BPFTraceWrapper {
   bpftrace::BPFTraceMap GetBPFMap(const std::string& name);
 
  protected:
+  // Checks the output for dynamic tracing:
+  //  1) There must be at least one printf.
+  //  2) If there is more than one printf, all printfs have a consistent format string.
+  //     In other words, all printfs must output to the same table.
+  Status CheckPrintfs() const;
+
   bpftrace::BPFtrace bpftrace_;
   std::unique_ptr<bpftrace::BpfOrc> bpforc_;
 };

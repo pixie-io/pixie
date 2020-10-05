@@ -94,7 +94,7 @@ TEST(BPFTracerWrapperTest, OutputFields) {
   BPFTraceWrapper bpftrace_wrapper;
   ASSERT_OK(bpftrace_wrapper.Compile(script, /* params */ {}));
 
-  ASSERT_OK_AND_ASSIGN(const std::vector<bpftrace::Field>& fields, bpftrace_wrapper.OutputFields());
+  ASSERT_OK_AND_ASSIGN(std::vector<bpftrace::Field> fields, bpftrace_wrapper.OutputFields());
 
   ASSERT_EQ(fields.size(), 4);
 
@@ -109,6 +109,61 @@ TEST(BPFTracerWrapperTest, OutputFields) {
 
   EXPECT_EQ(fields[3].type.type, bpftrace::Type::inet);
   EXPECT_EQ(fields[3].type.size, 24);
+}
+
+TEST(BPFTracerWrapperTest, MultiplePrintfs) {
+  std::string script = R"(
+          interval:ms:100 {
+              printf("time_:%llu id:%u s:%s ip:%s", nsecs, pid, comm, ntop(0));
+              printf("time_:%llu id:%u s:%s ip:%s", nsecs, tid, "foo", ntop(1));
+          }
+      )";
+
+  BPFTraceWrapper bpftrace_wrapper;
+  ASSERT_OK(bpftrace_wrapper.Compile(script, /* params */ {}));
+  ASSERT_OK_AND_ASSIGN(std::vector<bpftrace::Field> fields, bpftrace_wrapper.OutputFields());
+
+  ASSERT_EQ(fields.size(), 4);
+
+  EXPECT_EQ(fields[0].type.type, bpftrace::Type::integer);
+  EXPECT_EQ(fields[0].type.size, 8);
+
+  EXPECT_EQ(fields[1].type.type, bpftrace::Type::integer);
+  EXPECT_EQ(fields[1].type.size, 8);
+
+  EXPECT_EQ(fields[2].type.type, bpftrace::Type::string);
+  EXPECT_EQ(fields[2].type.size, 16);
+
+  EXPECT_EQ(fields[3].type.type, bpftrace::Type::inet);
+  EXPECT_EQ(fields[3].type.size, 24);
+}
+
+TEST(BPFTracerWrapperTest, InconsistentPrintfs) {
+  {
+    std::string script = R"(
+            interval:ms:100 {
+                printf("time_:%llu id:%u s:%s ip:%s", nsecs, pid, comm, ntop(0));
+                printf("time_:%llu XX:%u s:%s ip:%s", nsecs, tid, "foo", ntop(1));
+            }
+        )";
+
+    BPFTraceWrapper bpftrace_wrapper;
+    ASSERT_OK(bpftrace_wrapper.Compile(script, /* params */ {}));
+    ASSERT_NOT_OK(bpftrace_wrapper.OutputFields());
+  }
+
+  {
+    std::string script = R"(
+            interval:ms:100 {
+                printf("time_:%llu id:%u s:%s ip:%s", nsecs, pid, comm, ntop(0));
+                printf("time_:%llu id:%llu s:%s ip:%s", nsecs, tid, "foo", ntop(1));
+            }
+        )";
+
+    BPFTraceWrapper bpftrace_wrapper;
+    ASSERT_OK(bpftrace_wrapper.Compile(script, /* params */ {}));
+    ASSERT_NOT_OK(bpftrace_wrapper.OutputFields());
+  }
 }
 
 }  // namespace bpf_tools

@@ -160,22 +160,33 @@ void BPFTraceWrapper::Stop() {
   // There is no need to manually cleanup bpftrace_.
 }
 
-StatusOr<std::vector<bpftrace::Field>> BPFTraceWrapper::OutputFields() {
-  if (bpftrace_.printf_args_.size() != 1) {
-    return error::Internal(
-        "The BPFTrace program must contain exactly one printf statement, but found $0.",
-        bpftrace_.printf_args_.size());
+Status BPFTraceWrapper::CheckPrintfs() const {
+  if (bpftrace_.printf_args_.empty()) {
+    return error::Internal("The BPFTrace program must contain at least one printf statement.");
   }
+
+  const std::string& fmt = std::get<0>(bpftrace_.printf_args_[0]);
+  for (size_t i = 1; i < bpftrace_.printf_args_.size(); ++i) {
+    const std::string& fmt_i = std::get<0>(bpftrace_.printf_args_[i]);
+    if (fmt_i != fmt) {
+      return error::Internal(
+          "All printf statements must have exactly the same format string. [$0] does not match "
+          "[$1]",
+          fmt_i, fmt);
+    }
+  }
+
+  return Status::OK();
+}
+
+StatusOr<std::vector<bpftrace::Field>> BPFTraceWrapper::OutputFields() const {
+  PL_RETURN_IF_ERROR(CheckPrintfs());
 
   return std::get<1>(bpftrace_.printf_args_.front());
 }
 
-StatusOr<std::string_view> BPFTraceWrapper::OutputFmtStr() {
-  if (bpftrace_.printf_args_.size() != 1) {
-    return error::Internal(
-        "The BPFTrace program must contain exactly one printf statement, but found $0.",
-        bpftrace_.printf_args_.size());
-  }
+StatusOr<std::string_view> BPFTraceWrapper::OutputFmtStr() const {
+  PL_RETURN_IF_ERROR(CheckPrintfs());
 
   return std::string_view(std::get<0>(bpftrace_.printf_args_.front()));
 }
