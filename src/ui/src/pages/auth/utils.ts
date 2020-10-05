@@ -37,6 +37,10 @@ const auth0Request = (isSignup: boolean) => {
       redirectArgs.mode = 'cli_token';
     }
   } else {
+    if (parsed.redirect_uri && typeof parsed.redirect_uri === 'string') {
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      redirectArgs.redirect_uri = String(parsed.redirect_uri);
+    }
     redirectArgs.mode = 'ui';
   }
 

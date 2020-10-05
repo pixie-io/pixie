@@ -75,6 +75,11 @@ export class App extends React.Component {
     const {
       gqlClient, authenticated, loaded, cloudClient,
     } = this.state;
+    const authRedirectUri = (window.location.pathname.length > 1
+      ? encodeURIComponent(window.location.pathname + window.location.search)
+      : '');
+    const authRedirectTo = authRedirectUri ? `/login?redirect_uri=${authRedirectUri}` : '/login';
+
     return !gqlClient || !loaded
       ? null
       : (
@@ -91,7 +96,7 @@ export class App extends React.Component {
                     <RedirectWithArgs exact from='/auth-complete' to='/auth/cli-auth-complete' />
                     {
                       authenticated ? <Route component={Vizier} />
-                        : <Redirect from='/*' to='/login' />
+                        : <Redirect from='/*' to={authRedirectTo} />
                     }
                   </Switch>
                 </div>

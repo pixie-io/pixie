@@ -170,7 +170,7 @@ export const AuthCallbackPage = () => {
             // We just need to redirect if in signup or login were successful since
             // the cookies are installed.
             if ((signup && signupSuccess) || loginSuccess) {
-              RedirectUtils.redirect(location || '/', {});
+              RedirectUtils.redirect(redirectURI || location || '/', {});
             }
         }
 
