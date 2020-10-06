@@ -20,6 +20,11 @@ bazel build -c opt --build_event_text_file=/tmp/darwin_build --stamp //src/utils
 
 bazel build -c opt --stamp //src/utils/pixie_cli:px
 
+# For prod push to docker repo as well.
+if [[ ! "$release_tag" == *"-"* ]]; then
+    bazel build -c opt --stamp //src/utils/pixie_cli:push_px_image
+fi
+
 write_artifacts_to_gcs() {
     output_path=$1
     mac_binary=$(grep -oP -m 1 '(?<=pl\/).*px_darwin(?=\")' /tmp/darwin_build)
