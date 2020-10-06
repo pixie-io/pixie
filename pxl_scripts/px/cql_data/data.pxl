@@ -5,7 +5,6 @@ import px
 
 t1 = px.DataFrame(table='cql_events', start_time='-30s')
 
-t1.latency_ms = t1.latency_ns / 1.0E6
-t2 = t1.drop(columns=['latency_ns']).head(n=100)
+t2 = t1.head(n=100)
 
 px.display(t2)

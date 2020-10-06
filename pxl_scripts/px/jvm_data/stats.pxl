@@ -9,10 +9,9 @@ df = px.DataFrame(table='jvm_stats', start_time='-1m')
 
 # Add additional fields
 df.pid = px.upid_to_pid(df.upid)
-df.used_heap_size_mb = df.used_heap_size / bytes_per_mb
-df.total_heap_size_mb = df.total_heap_size / bytes_per_mb
-df.max_heap_size_mb = df.max_heap_size / bytes_per_mb
 df.cmdline = px.upid_to_cmdline(df.upid)
-
-df = df[['time_', 'pid', 'used_heap_size_mb', 'total_heap_size_mb', 'max_heap_size_mb', 'cmdline']]
+df.used_heap_size = px.Bytes(df.used_heap_size)
+df.total_heap_size = px.Bytes(df.total_heap_size)
+df.max_heap_size = px.Bytes(df.max_heap_size)
+df = df[['time_', 'pid', 'used_heap_size', 'total_heap_size', 'max_heap_size', 'cmdline']]
 px.display(df)

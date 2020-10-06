@@ -56,7 +56,7 @@
       }
     },
     {
-      "name": "CPU %",
+      "name": "CPU Usage",
       "position": {
         "x": 4,
         "y": 0,
@@ -68,7 +68,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "cpu_pct",
+            "value": "cpu_usage",
             "mode": "MODE_LINE",
             "series": "node",
             "stackBySeries": false
@@ -76,7 +76,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "CPU usage (%)"
+          "label": "CPU usage"
         },
         "xAxis": null
       }
@@ -94,7 +94,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "tx_mb_per_s",
+            "value": "tx_bytes_per_ns",
             "mode": "MODE_LINE",
             "series": "node",
             "stackBySeries": false
@@ -102,7 +102,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Sent Data (MB/s)"
+          "label": "Sent Data"
         },
         "xAxis": null
       }
@@ -120,7 +120,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "rx_mb_per_s",
+            "value": "rx_bytes_per_ns",
             "mode": "MODE_LINE",
             "series": "node",
             "stackBySeries": false
@@ -128,13 +128,13 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Received Data (MB/s)"
+          "label": "Received Data"
         },
         "xAxis": null
       }
     },
     {
-      "name": "Bytes read (MB/s)",
+      "name": "Bytes read",
       "position": {
         "x": 4,
         "y": 3,
@@ -146,7 +146,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "rchar_mb_per_s",
+            "value": "total_disk_read_throughput",
             "mode": "MODE_LINE",
             "series": "node",
             "stackBySeries": false
@@ -154,13 +154,13 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Bytes read (MB/s)"
+          "label": "Bytes read"
         },
         "xAxis": null
       }
     },
     {
-      "name": "Bytes written (MB/s)",
+      "name": "Bytes written",
       "position": {
         "x": 8,
         "y": 3,
@@ -172,7 +172,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "wchar_mb_per_s",
+            "value": "total_disk_write_throughput",
             "mode": "MODE_LINE",
             "series": "node",
             "stackBySeries": false
@@ -180,7 +180,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Bytes written (MB/s)"
+          "label": "Bytes written"
         },
         "xAxis": null
       }

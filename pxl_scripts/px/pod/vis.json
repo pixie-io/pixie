@@ -87,7 +87,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "requests_per_s",
+            "value": "request_throughput",
             "mode": "MODE_AREA",
             "series": "container",
             "stackBySeries": true
@@ -95,7 +95,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "requests per s"
+          "label": "request throughput"
         },
         "xAxis": null
       },
@@ -113,7 +113,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "errors_per_s",
+            "value": "errors_per_ns",
             "mode": "MODE_AREA",
             "series": "container",
             "stackBySeries": true
@@ -121,7 +121,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "errors per s"
+          "label": "error rate"
         },
         "xAxis": null
       },
@@ -171,7 +171,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "cpu_pct",
+            "value": "cpu_usage",
             "mode": "MODE_AREA",
             "series": "container",
             "stackBySeries": true
@@ -179,7 +179,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "CPU %"
+          "label": "CPU usage"
         },
         "xAxis": null
       },
@@ -247,17 +247,17 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "rx_mb_per_s",
+            "value": "rx_bytes_per_ns",
             "mode": "MODE_LINE"
           },
           {
-            "value": "tx_mb_per_s",
+            "value": "tx_bytes_per_ns",
             "mode": "MODE_LINE"
           }
         ],
         "title": "",
         "yAxis": {
-          "label": "MB per s"
+          "label": "Network throughput"
         },
         "xAxis": null
       },
@@ -275,7 +275,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "rchar_mb_per_s",
+            "value": "total_disk_read_throughput",
             "mode": "MODE_AREA",
             "series": "container",
             "stackBySeries": true
@@ -283,7 +283,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "MB per s"
+          "label": "Disk Read Throughput"
         },
         "xAxis": null
       },
@@ -301,7 +301,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "wchar_mb_per_s",
+            "value": "total_disk_write_throughput",
             "mode": "MODE_AREA",
             "series": "container",
             "stackBySeries": true
@@ -309,7 +309,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "MB per s"
+          "label": "Disk Write Throughput"
         },
         "xAxis": null
       },
@@ -327,7 +327,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "rss_mb",
+            "value": "rss",
             "mode": "MODE_AREA",
             "series": "container",
             "stackBySeries": true
@@ -335,7 +335,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "MB"
+          "label": "RSS"
         },
         "xAxis": null
       },
@@ -353,7 +353,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "vsize_mb",
+            "value": "vsize",
             "mode": "MODE_AREA",
             "series": "container",
             "stackBySeries": true
@@ -361,7 +361,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "MB"
+          "label": "vsize"
         },
         "xAxis": null
       },

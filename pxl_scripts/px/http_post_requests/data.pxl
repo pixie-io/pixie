@@ -28,9 +28,8 @@ df = px.DataFrame(table='http_events', select=['time_', 'upid', 'remote_addr', '
                                                'http_resp_latency_ns'], start_time=start_time)
 
 df = df[df.http_req_method == 'POST']
-df.http_resp_latency_ms = df.http_resp_latency_ns / 1.0E6
 df.service = df.ctx['service']
-df = df.drop(columns=['http_resp_latency_ns', 'upid'])
+df = df.drop(columns=['upid'])
 
 df = df[px.contains(df['service'], service_matcher)]
 df = df.head(n=max_num_records)

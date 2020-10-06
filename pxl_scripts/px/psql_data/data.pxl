@@ -5,8 +5,7 @@ import px
 
 t1 = px.DataFrame(table='pgsql_events', select=['time_', 'remote_addr', 'remote_port',
                                                 'req', 'resp', 'latency_ns'], start_time='-30s')
-
-t1.latency_ms = t1.latency_ns / 1.0E6
-t2 = t1.drop(columns=['latency_ns']).head(n=100)
+t1.latency = px.DurationNanos(t1.latency_ns)
+t2 = t1.drop(['latency_ns']).head(n=100)
 
 px.display(t2)

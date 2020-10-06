@@ -80,7 +80,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "requests_per_s",
+            "value": "request_throughput",
             "series": "pod",
             "stackBySeries": false,
             "mode": "MODE_LINE"
@@ -88,7 +88,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "requests per second"
+          "label": "request throughput"
         },
         "xAxis": null
       },
@@ -114,7 +114,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "P50 Latency (ms)"
+          "label": "P50 Latency"
         },
         "xAxis": null
       },
@@ -140,7 +140,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "P90 Latency (ms)"
+          "label": "P90 Latency"
         },
         "xAxis": null
       },
@@ -166,7 +166,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "P99 Latency (ms)"
+          "label": "P99 Latency"
         },
         "xAxis": null
       },
@@ -184,7 +184,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "error_rate_pct",
+            "value": "error_rate",
             "series": "pod",
             "stackBySeries": false,
             "mode": "MODE_LINE"
@@ -192,7 +192,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "error rate (%)"
+          "label": "error rate"
         },
         "xAxis": null
       },
@@ -210,7 +210,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "cpu_pct",
+            "value": "cpu_usage",
             "series": "pod",
             "stackBySeries": false,
             "mode": "MODE_LINE"
@@ -218,7 +218,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "CPU (%)"
+          "label": "CPU usage"
         },
         "xAxis": null
       },
@@ -236,7 +236,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "rss_mb",
+            "value": "rss",
             "series": "pod",
             "stackBySeries": false,
             "mode": "MODE_LINE"
@@ -244,7 +244,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "RSS Size (MB)"
+          "label": "RSS Size"
         },
         "xAxis": null
       },
@@ -262,7 +262,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "rchar_mb_per_s",
+            "value": "total_disk_read_throughput",
             "series": "pod",
             "stackBySeries": false,
             "mode": "MODE_LINE"
@@ -270,7 +270,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "bytes (MB/s)"
+          "label": "bytes read"
         },
         "xAxis": null
       },
@@ -288,7 +288,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "wchar_mb_per_s",
+            "value": "total_disk_write_throughput",
             "series": "pod",
             "stackBySeries": false,
             "mode": "MODE_LINE"
@@ -296,7 +296,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "bytes (MB/s)"
+          "label": "bytes written"
         },
         "xAxis": null
       },

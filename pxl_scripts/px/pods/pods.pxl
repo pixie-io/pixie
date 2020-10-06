@@ -11,9 +11,10 @@ List of Pods monitored by Pixie in a given Namespace with their high level appli
 import px
 
 
-bytes_per_mb = 1024.0 * 1024.0
-# Window size for computing timeseries
-window_s = 10
+ns_per_ms = 1000 * 1000
+ns_per_s = 1000 * ns_per_ms
+# Window size to use on time_ column for bucketing.
+window_ns = px.DurationNanos(10 * ns_per_s)
 # Flag to filter out requests that come from an unresolvable IP.
 filter_unresolved_inbound = True
 # Flag to filter out health checks from the data.
@@ -53,67 +54,52 @@ def resource_timeseries(start_time: str, namespace: px.Namespace):
     df = px.DataFrame(table='process_stats', start_time=start_time)
     df = df[df.ctx['namespace'] == namespace]
     df.pod = df.ctx['pod_name']
-    df.timestamp = px.bin(df.time_, px.seconds(window_s))
-
-    # Convert bytes to MB.
-    df.vsize_mb = df.vsize_bytes / bytes_per_mb
-    df.rss_mb = df.rss_bytes / bytes_per_mb
-    df.read_mb = df.read_bytes / bytes_per_mb
-    df.write_mb = df.write_bytes / bytes_per_mb
-    df.rchar_mb = df.rchar_bytes / bytes_per_mb
-    df.wchar_mb = df.wchar_bytes / bytes_per_mb
-
-    # Convert nanoseconds to milliseconds.
-    df.cpu_utime_ms = df.cpu_utime_ns / 1.0E6
-    df.cpu_ktime_ms = df.cpu_ktime_ns / 1.0E6
+    df.timestamp = px.bin(df.time_, window_ns)
 
     # First calculate CPU usage by process (UPID) in each k8s_object
     # over all windows.
     df = df.groupby(['upid', 'pod', 'timestamp']).agg(
-        rss_mb=('rss_mb', px.mean),
-        vsize_mb=('vsize_mb', px.mean),
+        rss=('rss_bytes', px.mean),
+        vsize=('vsize_bytes', px.mean),
         # The fields below are counters, so we take the min and the max to subtract them.
-        cpu_utime_ms_max=('cpu_utime_ms', px.max),
-        cpu_utime_ms_min=('cpu_utime_ms', px.min),
-        cpu_ktime_ms_max=('cpu_ktime_ms', px.max),
-        cpu_ktime_ms_min=('cpu_ktime_ms', px.min),
-        read_mb_max=('read_mb', px.max),
-        read_mb_min=('read_mb', px.min),
-        write_mb_max=('write_mb', px.max),
-        write_mb_min=('write_mb', px.min),
-        rchar_mb_max=('rchar_mb', px.max),
-        rchar_mb_min=('rchar_mb', px.min),
-        wchar_mb_max=('wchar_mb', px.max),
-        wchar_mb_min=('wchar_mb', px.min),
+        cpu_utime_ns_max=('cpu_utime_ns', px.max),
+        cpu_utime_ns_min=('cpu_utime_ns', px.min),
+        cpu_ktime_ns_max=('cpu_ktime_ns', px.max),
+        cpu_ktime_ns_min=('cpu_ktime_ns', px.min),
+        read_bytes_max=('read_bytes', px.max),
+        read_bytes_min=('read_bytes', px.min),
+        write_bytes_max=('write_bytes', px.max),
+        write_bytes_min=('write_bytes', px.min),
+        rchar_bytes_max=('rchar_bytes', px.max),
+        rchar_bytes_min=('rchar_bytes', px.min),
+        wchar_bytes_max=('wchar_bytes', px.max),
+        wchar_bytes_min=('wchar_bytes', px.min),
     )
 
-    window_size = 1.0 * window_s
     # Next calculate cpu usage and memory stats per window.
-    df.cpu_utime_ms = df.cpu_utime_ms_max - df.cpu_utime_ms_min
-    df.cpu_ktime_ms = df.cpu_ktime_ms_max - df.cpu_ktime_ms_min
-    df.read_mb_per_s = (df.read_mb_max - df.read_mb_min) / window_size
-    df.write_mb_per_s = (df.write_mb_max - df.write_mb_min) / window_size
-    df.rchar_mb_per_s = (df.rchar_mb_max - df.rchar_mb_min) / window_size
-    df.wchar_mb_per_s = (df.wchar_mb_max - df.wchar_mb_min) / window_size
+    df.cpu_utime_ns = df.cpu_utime_ns_max - df.cpu_utime_ns_min
+    df.cpu_ktime_ns = df.cpu_ktime_ns_max - df.cpu_ktime_ns_min
+    df.actual_disk_read_throughput = (df.read_bytes_max - df.read_bytes_min) / window_ns
+    df.actual_disk_write_throughput = (df.write_bytes_max - df.write_bytes_min) / window_ns
+    df.total_disk_read_throughput = (df.rchar_bytes_max - df.rchar_bytes_min) / window_ns
+    df.total_disk_write_throughput = (df.wchar_bytes_max - df.wchar_bytes_min) / window_ns
 
     # Then aggregate process individual process metrics.
     df = df.groupby(['pod', 'timestamp']).agg(
-        cpu_ktime_ms=('cpu_ktime_ms', px.sum),
-        cpu_utime_ms=('cpu_utime_ms', px.sum),
-        read_mb_per_s=('read_mb_per_s', px.sum),
-        write_mb_per_s=('write_mb_per_s', px.sum),
-        rchar_mb_per_s=('rchar_mb_per_s', px.sum),
-        wchar_mb_per_s=('wchar_mb_per_s', px.sum),
-        rss_mb=('rss_mb', px.sum),
-        vsize_mb=('vsize_mb', px.sum),
+        cpu_ktime_ns=('cpu_ktime_ns', px.sum),
+        cpu_utime_ns=('cpu_utime_ns', px.sum),
+        actual_disk_read_throughput=('actual_disk_read_throughput', px.sum),
+        actual_disk_write_throughput=('actual_disk_write_throughput', px.sum),
+        total_disk_read_throughput=('total_disk_read_throughput', px.sum),
+        total_disk_write_throughput=('total_disk_write_throughput', px.sum),
+        rss=('rss', px.sum),
+        vsize=('vsize', px.sum),
     )
 
-    # Convert window_s into the same units as cpu time.
-    window_size_ms = window_s * 1.0E3
     # Finally, calculate total (kernel + user time)  percentage used over window.
-    df.cpu_pct = (df.cpu_ktime_ms + df.cpu_utime_ms) / window_size_ms * 100
+    df.cpu_usage = px.Percent((df.cpu_ktime_ns + df.cpu_utime_ns) / window_ns)
     df['time_'] = df['timestamp']
-    return df.drop(['cpu_ktime_ms', 'cpu_utime_ms', 'timestamp'])
+    return df.drop(['cpu_ktime_ns', 'cpu_utime_ns', 'timestamp'])
 
 
 def inbound_let_timeseries(start_time: str, namespace: px.Namespace):
@@ -127,25 +113,24 @@ def inbound_let_timeseries(start_time: str, namespace: px.Namespace):
     df = inbound_let_helper(start_time, namespace)
 
     df = df.groupby(['pod', 'timestamp']).agg(
-        latency_quantiles=('latency_ms', px.quantiles),
+        latency_quantiles=('latency', px.quantiles),
         error_rate_per_window=('failure', px.mean),
-        throughput_total=('latency_ms', px.count),
+        throughput_total=('latency', px.count),
         bytes_total=('resp_size', px.sum)
     )
 
     # Format the result of LET aggregates into proper scalar formats and
     # time series.
-    window_size = window_s * 1.0
-    df.latency_p50 = px.pluck_float64(df.latency_quantiles, 'p50')
-    df.latency_p90 = px.pluck_float64(df.latency_quantiles, 'p90')
-    df.latency_p99 = px.pluck_float64(df.latency_quantiles, 'p99')
-    df.requests_per_s = df.throughput_total / window_size
-    df.error_rate_pct = df.error_rate_per_window * 100
-    df.bytes_per_s = df.bytes_total / window_size
+    df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
+    df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
+    df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
+    df.request_throughput = df.throughput_total / window_ns
+    df.error_rate = px.Percent(df.error_rate_per_window)
+    df.bytes_per_ns = df.bytes_total / window_ns
     df.time_ = df.timestamp
 
     return df[['time_', 'pod', 'latency_p50', 'latency_p90', 'latency_p99',
-               'requests_per_s', 'error_rate_pct', 'bytes_per_s']]
+               'request_throughput', 'error_rate', 'bytes_per_ns']]
 
 
 def inbound_let_summary(start_time: str, namespace: px.Namespace):
@@ -158,10 +143,10 @@ def inbound_let_summary(start_time: str, namespace: px.Namespace):
     df = inbound_let_helper(start_time, namespace)
 
     quantiles_agg = df.groupby(['pod', 'remote_addr']).agg(
-        latency_ms=('latency_ms', px.quantiles),
-        total_request_count=('latency_ms', px.count)
+        latency=('latency', px.quantiles),
+        total_request_count=('latency', px.count)
     )
-    quantiles_table = quantiles_agg[['pod', 'remote_addr', 'latency_ms',
+    quantiles_table = quantiles_agg[['pod', 'remote_addr', 'latency',
                                      'total_request_count']]
 
     range_agg = df.groupby(['pod', 'remote_addr', 'timestamp']).agg(
@@ -180,14 +165,14 @@ def inbound_let_summary(start_time: str, namespace: px.Namespace):
                                          right_on=['pod', 'remote_addr'],
                                          suffixes=['', '_x'])
 
-    joined_table.error_rate_pct = 100 * joined_table.error_rate
-    joined_table.requests_per_s = joined_table.requests_per_window / (1.0 * window_s)
+    joined_table.error_rate = px.Percent(joined_table.error_rate)
+    joined_table.request_throughput = joined_table.requests_per_window / window_ns
 
     joined_table.responder = df.pod
     joined_table.requestor = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
 
-    return joined_table[['responder', 'requestor', 'latency_ms', 'error_rate_pct',
-                         'requests_per_s']]
+    return joined_table[['responder', 'requestor', 'latency', 'error_rate',
+                         'request_throughput']]
 
 
 def inbound_let_helper(start_time: str, namespace: px.Namespace):
@@ -202,11 +187,11 @@ def inbound_let_helper(start_time: str, namespace: px.Namespace):
     df = df[df.ctx['namespace'] == namespace]
     df.pod = df.ctx['pod']
     df = df[df.pod != '']
-    df.latency_ms = df.http_resp_latency_ns / 1.0E6
-    df = df[df['latency_ms'] < 10000.0]
-    df.timestamp = px.bin(df.time_, px.seconds(window_s))
+    df.latency = df.http_resp_latency_ns
+    df = df[df['latency'] < (10000 * ns_per_ms)]
+    df.timestamp = px.bin(df.time_, window_ns)
 
-    df.resp_size = px.length(df.http_resp_body)
+    df.resp_size = px.Bytes(px.length(df.http_resp_body))
     df.failure = df.http_resp_status >= 400
     filter_out_conds = ((df.http_req_path != '/health' or not filter_health_checks) and (
         df.http_req_path != '/readyz' or not filter_ready_checks)) and (

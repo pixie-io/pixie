@@ -3,12 +3,13 @@
 
 import px
 
+ns_per_ms = 1000 * 1000
+
 
 def events(t1, latency_col):
-    t1.latency_ms = t1[latency_col] / 1.0E6
-    t1.latency_huge = t1.latency_ms > 10.0
-    t1.negative_latencies = t1.latency_ms < 0.0
-    return t1.groupby(['latency_huge', 'negative_latencies']).agg(count=('latency_ms', px.count))
+    t1.latency_huge = t1[latency_col] > (10 * ns_per_ms)
+    t1.negative_latencies = t1[latency_col] < 0
+    return t1.groupby(['latency_huge', 'negative_latencies']).agg(count=(latency_col, px.count))
 
 
 t1 = px.DataFrame(table='http_events', start_time='-300s')

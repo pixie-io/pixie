@@ -19,13 +19,12 @@ import px
 # K8s object is the abstraction to group on.
 # Options are ['pod', 'service'].
 k8s_object = 'pod'
-# Window in seconds within which to aggregate metrics.
-window_s = 10
+ns_per_ms = 1000 * 1000
+ns_per_s = 1000 * ns_per_ms
+# Window size to use on time_ column for bucketing.
+window_ns = px.DurationNanos(10 * ns_per_s)
 # Name of the node column to display.
 node_col = 'node_name'
-# The number of bytes per megabyte. Saved as a variable to simplify
-# reuse.
-bytes_per_mb = 1024.0 * 1024.0
 
 split_series_name = 'k8s'
 px.Node = str
@@ -70,7 +69,7 @@ def jvm_stats(start: str, node_name: px.Node, pod: px.Pod):
     """
     df = filtered_process_stats(start, node_name, pod)
     # Calculate the CPU usage per window.
-    jvm_df = calculate_jvm(df, window_s)
+    jvm_df = calculate_jvm(df, window_ns)
     jvm_df[split_series_name] = jvm_df[k8s_object]
     return jvm_df
 
@@ -117,7 +116,7 @@ def filtered_process_stats(start: str, node_name: px.Node, pod: px.Pod):
     # Load and prepare the process_stats table to calculate CPU usage
     # by pod.
     process_df = px.DataFrame(table='jvm_stats', start_time=start)
-    process_df = format_jvm_table(process_df, window_s)
+    process_df = format_jvm_table(process_df, window_ns)
     process_df = filter_stats(process_df, node_name, pod)
     return process_df
 
@@ -134,7 +133,7 @@ def format_stats_table(df, window_size):
 
     Returns: formatted stats DataFrame.
     """
-    df.timestamp = px.bin(df.time_, px.seconds(window_size))
+    df.timestamp = px.bin(df.time_, window_size)
     return df
 
 
@@ -154,17 +153,6 @@ def format_jvm_table(df, window_size):
     df = format_stats_table(df, window_size)
     df[node_col] = df.ctx['node_name']
     df[k8s_object] = df.ctx[k8s_object]
-
-    # # Convert bytes to MB.
-    # df.vsize_mb = df.vsize_bytes / bytes_per_mb
-    # df.rss_mb = df.rss_bytes / bytes_per_mb
-    df.used_heap_size = df.used_heap_size / bytes_per_mb
-    df.total_heap_size = df.total_heap_size / bytes_per_mb
-    df.max_heap_size = df.max_heap_size / bytes_per_mb
-
-    # Convert nanoseconds to milliseconds.
-    df.young_gc_time_ms = ((df.young_gc_time + df.time_) - df.time_) / 1.0E6
-    df.full_gc_time_ms = ((df.full_gc_time + df.time_) - df.time_) / 1.0E6
     return df
 
 
@@ -185,8 +173,6 @@ def format_network_table(df, window_size):
     df = format_stats_table(df, window_size)
     df[node_col] = px.pod_id_to_node_name(df.pod_id)
     df[k8s_object] = px.pod_id_to_pod_name(df.pod_id)
-    df.rx_mb = df.rx_bytes / bytes_per_mb
-    df.tx_mb = df.tx_bytes / bytes_per_mb
     return df
 
 
@@ -229,30 +215,35 @@ def calculate_jvm(df, window_size):
 
     Returns: Calculated JVM stats per window and pod/svc.
     """
+    df.used_heap_size = px.Bytes(df.used_heap_size)
+    df.total_heap_size = px.Bytes(df.total_heap_size)
+    df.max_heap_size = px.Bytes(df.max_heap_size)
     # Aggregate over each UPID, k8s_object, and window.
     by_upid = df.groupby(['upid', k8s_object, 'timestamp']).agg(
-        young_gc_time_ms_max=('young_gc_time_ms', px.max),
-        young_gc_time_ms_min=('young_gc_time_ms', px.min),
-        full_gc_time_ms_max=('full_gc_time_ms', px.max),
-        full_gc_time_ms_min=('full_gc_time_ms', px.min),
+        young_gc_time_max=('young_gc_time', px.max),
+        young_gc_time_min=('young_gc_time', px.min),
+        full_gc_time_max=('full_gc_time', px.max),
+        full_gc_time_min=('full_gc_time', px.min),
         used_heap_size=('used_heap_size', px.mean),
         total_heap_size=('total_heap_size', px.mean),
         max_heap_size=('max_heap_size', px.mean),
     )
 
     # Conver the counter metrics into accumulated values over the window.
-    by_upid.young_gc_time_ms = by_upid.young_gc_time_ms_max - by_upid.young_gc_time_ms_min
-    by_upid.full_gc_time_ms = by_upid.full_gc_time_ms_max - by_upid.full_gc_time_ms_min
+    by_upid.young_gc_time = by_upid.young_gc_time_max - by_upid.young_gc_time_min
+    by_upid.full_gc_time = by_upid.full_gc_time_max - by_upid.full_gc_time_min
 
     # Then aggregate process individual process metrics into the overall
     # k8s_object.
     per_k8s = by_upid.groupby([k8s_object, 'timestamp']).agg(
-        young_gc_time_ms=('young_gc_time_ms', px.sum),
-        full_gc_time_ms=('full_gc_time_ms', px.sum),
+        young_gc_time=('young_gc_time', px.sum),
+        full_gc_time=('full_gc_time', px.sum),
         used_heap_size=('used_heap_size', px.sum),
         max_heap_size=('max_heap_size', px.sum),
         total_heap_size=('total_heap_size', px.sum),
     )
+    per_k8s.young_gc_time = px.DurationNanos(per_k8s.young_gc_time)
+    per_k8s.full_gc_time = px.DurationNanos(per_k8s.full_gc_time)
 
     # Finally, calculate total (kernel + user time)  percentage used over window.
     per_k8s['time_'] = per_k8s['timestamp']
