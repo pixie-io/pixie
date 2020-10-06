@@ -8,7 +8,7 @@ export interface QuantilesDisplayState {
 type TypeSpecificDisplayState = QuantilesDisplayState | {};
 
 function defaultDisplayState(st: SemanticType) {
-  if (st === SemanticType.ST_QUANTILES) {
+  if (st === SemanticType.ST_QUANTILES || st === SemanticType.ST_DURATION_NS_QUANTILES) {
     return { selectedPercentile: 'p99' };
   }
   return {};
@@ -35,7 +35,7 @@ export function displayInfoFromColumn(col: Relation.ColumnInfo): ColumnDisplayIn
 }
 
 export function titleFromInfo(col: ColumnDisplayInfo) {
-  if (col.semanticType === SemanticType.ST_QUANTILES) {
+  if (col.semanticType === SemanticType.ST_QUANTILES || col.semanticType === SemanticType.ST_DURATION_NS_QUANTILES) {
     const quantilesState = col.displayState as QuantilesDisplayState;
     const selectedPercentile = quantilesState.selectedPercentile || 'p99';
     return `${col.baseTitle} (${selectedPercentile})`;

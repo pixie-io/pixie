@@ -62,6 +62,7 @@ export function parseRows(semanticTypeMap: Map<string, SemanticType>, rows: any[
         parsers.set(dataKey, parsePodStatus);
         break;
       case SemanticType.ST_QUANTILES:
+      case SemanticType.ST_DURATION_NS_QUANTILES:
         parsers.set(dataKey, parseQuantile);
         break;
       default:

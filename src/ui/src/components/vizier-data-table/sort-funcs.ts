@@ -27,7 +27,8 @@ export function getSortFunc(display: ColumnDisplayInfo, direction: SortDirection
 
   let f;
   switch (display.semanticType) {
-    case SemanticType.ST_QUANTILES: {
+    case SemanticType.ST_QUANTILES:
+    case SemanticType.ST_DURATION_NS_QUANTILES: {
       const quantilesDisplay = display.displayState as QuantilesDisplayState;
       const selectedPercentile = quantilesDisplay.selectedPercentile || 'p99';
       f = fieldSortFunc(selectedPercentile, ascending);

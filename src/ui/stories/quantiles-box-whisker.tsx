@@ -19,6 +19,9 @@ storiesOf('QuantilesBoxWhisker', module)
           p50Level='low'
           p90Level='med'
           p99Level='high'
+          p50Display='100 ms'
+          p90Display='200 ms'
+          p99Display='500 ms'
           selectedPercentile={selectedPercentile}
           onChangePercentile={setSelectedPercentile}
         />

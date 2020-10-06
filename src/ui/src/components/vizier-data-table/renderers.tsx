@@ -3,10 +3,11 @@ import {
   AlertData,
   BytesRenderer,
   CPUData,
+  DataWithUnits,
   DurationRenderer,
+  formatDuration,
   HTTPStatusCodeRenderer,
   JSONData,
-  LatencyData,
   PercentRenderer,
   PortRenderer, ThroughputBytesRenderer, ThroughputRenderer,
 } from 'components/format-data/format-data';
@@ -25,7 +26,7 @@ import {
   looksLikeCPUCol,
   looksLikeLatencyCol,
 } from 'utils/format-data';
-import { GaugeLevel, getCPULevel, getLatencyLevel } from 'utils/metric-thresholds';
+import { GaugeLevel, getLatencyNSLevel } from 'utils/metric-thresholds';
 import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info';
 
 // Expects a p99 field in colName.
@@ -47,8 +48,53 @@ export function getMaxQuantile(rows: any[], colName: string): number {
   return max;
 }
 
-// Expects data to contain p50, p90, and p99 fields.
+// Expects data to contain floats in p50, p90, and p99 fields.
 export function quantilesRenderer(display: ColumnDisplayInfo,
+  updateDisplay: (ColumnDisplayInfo) => void, rows: any[]) {
+  const max = getMaxQuantile(rows, display.columnName);
+
+  return function renderer(val) {
+    const { p50, p90, p99 } = val;
+    const quantilesDisplay = display.displayState as QuantilesDisplayState;
+    const selectedPercentile = quantilesDisplay.selectedPercentile || 'p99';
+
+    const floatRenderer = getDataRenderer(DataType.FLOAT64);
+    const p50Display = floatRenderer(p50);
+    const p90Display = floatRenderer(p90);
+    const p99Display = floatRenderer(p99);
+
+    return (
+      <QuantilesBoxWhisker
+        p50={p50}
+        p90={p90}
+        p99={p99}
+        max={max}
+        p50Display={p50Display}
+        p90Display={p90Display}
+        p99Display={p99Display}
+        p50Level='none'
+        p90Level='none'
+        p99Level='none'
+        selectedPercentile={selectedPercentile}
+        onChangePercentile={(newPercentile: SelectedPercentile) => {
+          updateDisplay({
+            ...display,
+            displayState: { selectedPercentile: newPercentile },
+          });
+        }}
+      />
+    );
+  };
+}
+
+// Helper to durationQuantilesRenderer since it takes in a string, rather than a span
+// for p50Display et al.
+function dataWithUnitsToString(dataWithUnits: DataWithUnits): string {
+  return `${dataWithUnits.val} ${dataWithUnits.units}`;
+}
+
+// Expects data to contain p50, p90, and p99 fields.
+export function durationQuantilesRenderer(display: ColumnDisplayInfo,
   updateDisplay: (ColumnDisplayInfo) => void, rows: any[]) {
   const max = getMaxQuantile(rows, display.columnName);
 
@@ -59,23 +105,27 @@ export function quantilesRenderer(display: ColumnDisplayInfo,
     let p50Level: GaugeLevel = 'none';
     let p90Level: GaugeLevel = 'none';
     let p99Level: GaugeLevel = 'none';
-    // Can't pass in DataType here, which is STRING, but we know quantiles are floats.
-    if (looksLikeLatencyCol(display.columnName, display.semanticType, DataType.FLOAT64)) {
-      p50Level = getLatencyLevel(p50);
-      p90Level = getLatencyLevel(p90);
-      p99Level = getLatencyLevel(p99);
+
+    // individual keys in ST_DURATION_NS_QUANTILES are FLOAT64 ST_DURATION_NS.
+    if (looksLikeLatencyCol(display.columnName, SemanticType.ST_DURATION_NS, DataType.FLOAT64)) {
+      p50Level = getLatencyNSLevel(p50);
+      p90Level = getLatencyNSLevel(p90);
+      p99Level = getLatencyNSLevel(p99);
     }
-    if (looksLikeCPUCol(display.columnName, display.semanticType, DataType.FLOAT64)) {
-      p50Level = getCPULevel(p50);
-      p90Level = getCPULevel(p90);
-      p99Level = getCPULevel(p99);
-    }
+
+    const p50Display = dataWithUnitsToString(formatDuration(p50));
+    const p90Display = dataWithUnitsToString(formatDuration(p90));
+    const p99Display = dataWithUnitsToString(formatDuration(p99));
+
     return (
       <QuantilesBoxWhisker
         p50={p50}
         p90={p90}
         p99={p99}
         max={max}
+        p50Display={p50Display}
+        p90Display={p90Display}
+        p99Display={p99Display}
         p50Level={p50Level}
         p90Level={p90Level}
         p99Level={p99Level}
@@ -143,7 +193,6 @@ const entityRenderer = (st: SemanticType, clusterName: string, propagatedArgs?: 
   return entity;
 };
 
-const LatencyDataWrapper = (data: any) => <LatencyData data={data} />;
 const CPUDataWrapper = (data: any) => <CPUData data={data} />;
 const AlertDataWrapper = (data: any) => <AlertData data={data} />;
 
@@ -161,6 +210,8 @@ export const prettyCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (C
   switch (st) {
     case SemanticType.ST_QUANTILES:
       return quantilesRenderer(display, updateDisplay, rows);
+    case SemanticType.ST_DURATION_NS_QUANTILES:
+      return durationQuantilesRenderer(display, updateDisplay, rows);
     case SemanticType.ST_PORT:
       return renderWrapper(PortRenderer);
     case SemanticType.ST_DURATION_NS:
@@ -181,11 +232,6 @@ export const prettyCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (C
 
   if (STATUS_TYPES.has(st)) {
     return statusRenderer(st);
-  }
-
-  // TODO(zasgar): Remove latency information.
-  if (looksLikeLatencyCol(name, st, dt)) {
-    return LatencyDataWrapper;
   }
 
   if (looksLikeCPUCol(name, st, dt)) {

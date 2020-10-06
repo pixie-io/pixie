@@ -31,6 +31,7 @@ const DataAlignmentMap = new Map<DataType, CellAlignment>(
 const SemanticTypeWidthOverrideMap = new Map<SemanticType, number>(
   [
     [SemanticType.ST_QUANTILES, 40],
+    [SemanticType.ST_DURATION_NS_QUANTILES, 40],
   ],
 );
 const DataTypeWidthOverrideMap = new Map<DataType, number>(

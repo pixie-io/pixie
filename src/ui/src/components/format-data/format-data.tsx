@@ -9,7 +9,6 @@ import { formatBoolData, formatFloat64Data, formatUInt128Protobuf } from 'utils/
 import {
   GaugeLevel,
   getCPULevel,
-  getLatencyLevel,
   getLatencyNSLevel,
 } from 'utils/metric-thresholds';
 import clsx from 'clsx';
@@ -158,12 +157,6 @@ const gaugeStyles = (theme: Theme) => createStyles({
     color: theme.palette.error.dark,
   },
 });
-
-export const LatencyData = withStyles(gaugeStyles, {
-  name: 'LatencyData',
-})(({ classes, data }: any) => (
-  <GaugeDataBase classes={classes} data={data} getLevel={getLatencyLevel} />
-));
 
 export const GaugeData = withStyles(gaugeStyles, {
   name: 'GaugeData',

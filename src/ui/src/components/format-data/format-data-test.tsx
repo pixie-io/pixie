@@ -2,7 +2,7 @@ import { getClasses } from '@material-ui/core/test-utils';
 import { mount } from 'enzyme';
 import * as React from 'react';
 import {
-  AlertData, JSONData, LatencyData, formatBytes, formatDuration,
+  AlertData, DurationRenderer, JSONData, formatBytes, formatDuration,
 } from './format-data';
 
 describe('formatters Test', () => {
@@ -34,28 +34,32 @@ describe('formatters Test', () => {
   });
 });
 
-describe('<LatencyData/> test', () => {
-  const classes = getClasses(<LatencyData data='20' />);
+describe('DurationRenderer test', () => {
+  const baseComponent = DurationRenderer({ data: 20 * 1000 * 1000 });
+  const classes = getClasses(baseComponent);
 
   it('should render correctly for low latency', () => {
-    const wrapper = mount(<LatencyData data='20' />);
+    const component = DurationRenderer({ data: 20 * 1000 * 1000 });
+    const wrapper = mount(component);
 
     expect(wrapper.find('div').prop('className')).toEqual(classes.low);
-    expect(wrapper.find('div').text()).toEqual('20');
+    expect(wrapper.find('div').text()).toEqual('20\u00a0ms');
   });
 
   it('should render correctly for medium latency', () => {
-    const wrapper = mount(<LatencyData data='160' />);
+    const component = DurationRenderer({ data: 250 * 1000 * 1000 });
+    const wrapper = mount(component);
 
     expect(wrapper.find('div').prop('className')).toEqual(classes.med);
-    expect(wrapper.find('div').text()).toEqual('160');
+    expect(wrapper.find('div').text()).toEqual('250\u00a0ms');
   });
 
   it('should render correctly for high latency', () => {
-    const wrapper = mount(<LatencyData data='350' />);
+    const component = DurationRenderer({ data: 400 * 1000 * 1000 });
+    const wrapper = mount(component);
 
     expect(wrapper.find('div').prop('className')).toEqual(classes.high);
-    expect(wrapper.find('div').text()).toEqual('350');
+    expect(wrapper.find('div').text()).toEqual('400\u00a0ms');
   });
 });
 

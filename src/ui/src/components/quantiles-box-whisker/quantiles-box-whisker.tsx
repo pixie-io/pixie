@@ -26,6 +26,9 @@ interface QuantilesBoxWhiskerFields {
   p90: number;
   p99: number;
   max: number;
+  p50Display: string;
+  p90Display: string;
+  p99Display: string;
   p50Fill: string;
   p90Fill: string;
   p99Fill: string;
@@ -38,7 +41,7 @@ interface QuantilesBoxWhiskerFields {
 
 const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
   const {
-    p50, p90, p99, max, p50Fill, p90Fill, p99Fill,
+    p50, p90, p99, max, p50Display, p90Display, p99Display, p50Fill, p90Fill, p99Fill,
     p50HoverFill, p90HoverFill, p99HoverFill, barFill, whiskerFill,
   } = fields;
 
@@ -56,6 +59,9 @@ const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
             boxMax: p90,
             whiskerMin: 0,
             whiskerMax: p99,
+            p50Display,
+            p90Display,
+            p99Display,
           },
         ],
       },
@@ -125,7 +131,7 @@ const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
             fill: { value: p50Fill },
             ariaRoleDescription: { value: 'tick' },
             description: {
-              signal: '"p50: " + format(datum["p50"], ".2f")',
+              signal: '"p50: " + datum["p50Display"]',
             },
             xc: { scale: 'x', field: 'p50' },
             yc: { signal: 'height', mult: 0.5 },
@@ -136,7 +142,7 @@ const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
             fill: { value: p50HoverFill },
             fillOpacity: { value: 1 },
             tooltip: {
-              signal: '"p50: " + format(datum["p50"], ".2f")',
+              signal: '"p50: " + datum["p50Display"]',
             },
           },
         },
@@ -152,7 +158,7 @@ const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
             fill: { value: p90Fill },
             ariaRoleDescription: { value: 'tick' },
             description: {
-              signal: '"p90: " + format(datum["boxMax"], ".2f")',
+              signal: '"p90: " + datum["p90Display"]',
             },
             xc: { scale: 'x', field: 'boxMax' },
             yc: { signal: 'height', mult: 0.5 },
@@ -163,7 +169,7 @@ const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
             fill: { value: p90HoverFill },
             fillOpacity: { value: 1 },
             tooltip: {
-              signal: '"p90: " + format(datum["boxMax"], ".2f")',
+              signal: '"p90: " + datum["p90Display"]',
             },
           },
         },
@@ -179,7 +185,7 @@ const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
             fill: { value: p99Fill },
             ariaRoleDescription: { value: 'tick' },
             description: {
-              signal: '"p99: " + format(datum["whiskerMax"], ".2f")',
+              signal: '"p99: " + datum["p99Display"]',
             },
             xc: { scale: 'x', field: 'whiskerMax' },
             yc: { signal: 'height', mult: 0.5 },
@@ -190,7 +196,7 @@ const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
             fill: { value: p99HoverFill },
             fillOpacity: { value: 1 },
             tooltip: {
-              signal: '"p99: " + format(datum["whiskerMax"], ".2f")',
+              signal: '"p99: " + datum["p99Display"]',
             },
           },
         },
@@ -291,6 +297,9 @@ interface QuantilesBoxWhiskerProps extends WithStyles<typeof styles> {
   p90: number;
   p99: number;
   max: number;
+  p50Display: string;
+  p90Display: string;
+  p99Display: string;
   p50Level: GaugeLevel;
   p90Level: GaugeLevel;
   p99Level: GaugeLevel;
@@ -301,7 +310,7 @@ interface QuantilesBoxWhiskerProps extends WithStyles<typeof styles> {
 
 const QuantilesBoxWhisker = (props: QuantilesBoxWhiskerProps) => {
   const {
-    classes, p50, p90, p99, max, p50Level, p90Level, p99Level,
+    classes, p50, p90, p99, max, p50Level, p90Level, p99Level, p50Display, p90Display, p99Display,
     selectedPercentile, onChangePercentile,
   } = props;
   const theme = useTheme();
@@ -312,6 +321,7 @@ const QuantilesBoxWhisker = (props: QuantilesBoxWhiskerProps) => {
   let p90Fill = theme.palette.text.secondary;
   let p99Fill = theme.palette.text.secondary;
   let percentileValue;
+  let selectedPercentileDisplay;
   let selectedPercentileLevel;
 
   const changePercentileIfDifferent = (percentile: SelectedPercentile) => {
@@ -324,12 +334,14 @@ const QuantilesBoxWhisker = (props: QuantilesBoxWhiskerProps) => {
     case 'p50': {
       p50Fill = p50HoverFill;
       percentileValue = p50;
+      selectedPercentileDisplay = p50Display;
       selectedPercentileLevel = p50Level;
       break;
     }
     case 'p90': {
       p90Fill = p90HoverFill;
       percentileValue = p90;
+      selectedPercentileDisplay = p90Display;
       selectedPercentileLevel = p90Level;
       break;
     }
@@ -337,6 +349,7 @@ const QuantilesBoxWhisker = (props: QuantilesBoxWhiskerProps) => {
     default: {
       p99Fill = p99HoverFill;
       percentileValue = p99;
+      selectedPercentileDisplay = p99Display;
       selectedPercentileLevel = p99Level;
     }
   }
@@ -346,6 +359,9 @@ const QuantilesBoxWhisker = (props: QuantilesBoxWhiskerProps) => {
     p90,
     p99,
     max,
+    p50Display,
+    p90Display,
+    p99Display,
     p50Fill,
     p90Fill,
     p99Fill,
@@ -375,7 +391,7 @@ const QuantilesBoxWhisker = (props: QuantilesBoxWhiskerProps) => {
         tooltip={tooltipHandler}
       />
       <span className={clsx(classes.label, classes[selectedPercentileLevel])}>
-        {`${percentileValue.toFixed(2)}`}
+        {selectedPercentileDisplay}
       </span>
     </div>
   );
