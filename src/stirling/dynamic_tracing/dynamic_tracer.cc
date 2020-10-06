@@ -304,6 +304,12 @@ Status ResolveTargetObjPath(ir::shared::DeploymentSpec* deployment_spec) {
       PL_ASSIGN_OR_RETURN(target_obj_path, ResolveSharedObject(*deployment_spec));
       break;
     }
+    // Populate UPIDs based on Pod name.
+    case ir::shared::DeploymentSpec::TargetOneofCase::kPod: {
+      // TODO(yzhao): Add impl.
+      LOG(DFATAL) << "Pod tracepoint target is not supported yet.";
+      break;
+    }
     case ir::shared::DeploymentSpec::TargetOneofCase::TARGET_ONEOF_NOT_SET:
       return error::InvalidArgument("Must specify target.");
   }

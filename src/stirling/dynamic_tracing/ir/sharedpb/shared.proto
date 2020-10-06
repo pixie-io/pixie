@@ -150,7 +150,7 @@ message DeploymentSpec {
     UPID upid = 2;
   }
 
-  // TODO(yzhao): Remove this field, replaced by path_regexp, selector_oneof, and selected_upids.
+  // TODO(yzhao): Rename this field to selector_oneof.
   oneof target_oneof {
     // The path of the object file (may be executable or shared library).
     string path = 1;
@@ -161,6 +161,9 @@ message DeploymentSpec {
 
     // An way to specify a shared object to be traced.
     SharedObject shared_object = 8;
+
+    // The name of the pod whose processes are the targets to be traced.
+    string pod = 9;
   }
 
   // Location of the debug symbols for the path above.
@@ -170,10 +173,14 @@ message DeploymentSpec {
   // Processes with exe path that matches this pattern are the target of this deployment.
   // The exe path is the one recorded in the process's exe path as seen inside the container,
   // not the one resolved through overlay FS.
+  //
+  // TODO(yzhao): This field is not used right now. Figure out its use and remove this TODO.
   string path_regexp = 4;
 
   // Selector is used to select the target processes. All selected processes are subject to
   // filtering with path_regexp.
+  //
+  // TODO(yzhao): Remove this oneof field, which is not used.
   oneof selector_oneof {
       // All processes running inside the pod are target processes.
       string pod_name = 5;
@@ -184,6 +191,8 @@ message DeploymentSpec {
   }
 
   // The finalized process list for attachment. PEM/Stirling only uses this field.
+  //
+  // TODO(yzhao): This field is not used right now. Figure out its use and remove this TODO.
   repeated UPID selected_upids = 7;
 }
 
