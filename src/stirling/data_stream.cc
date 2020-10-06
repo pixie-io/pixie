@@ -99,7 +99,7 @@ bool IsSyncRequired(int64_t stuck_count) {
 
 }  // namespace
 
-// ProcessToRecords() processes the raw data in the DataStream to extract parsed frames.
+// ProcessBytesToFrames() processes the raw data in the DataStream to extract parsed frames.
 //
 // It considers contiguous events from the head of the stream. Any missing events in the sequence
 // are treated as lost forever; it is not expected that these events arrive in a subsequent
@@ -110,7 +110,7 @@ bool IsSyncRequired(int64_t stuck_count) {
 // independently of each other.
 //
 // To be robust to lost events, which are not necessarily aligned to parseable entity boundaries,
-// ProcessToRecords() will invoke a call to ParseFrames() with a stream recovery argument when
+// ProcessBytesToFrames() will invoke a call to ParseFrames() with a stream recovery argument when
 // necessary.
 template <typename TFrameType>
 void DataStream::ProcessBytesToFrames(MessageType type) {

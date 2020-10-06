@@ -395,6 +395,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);
   FRIEND_TEST(SocketTraceConnectorTest, SortedByResponseTime);
+  FRIEND_TEST(SocketTraceConnectorTest, HTTPBasic);
   FRIEND_TEST(SocketTraceConnectorTest, HTTPContentType);
   FRIEND_TEST(SocketTraceConnectorTest, UPIDCheck);
   FRIEND_TEST(SocketTraceConnectorTest, RequestResponseMatching);

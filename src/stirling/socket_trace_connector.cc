@@ -1055,7 +1055,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_req_headers"), kMaxHTTPHeadersBytes>(ToJSONString(req_message.headers));
   r.Append<r.ColIndex("http_req_method")>(std::move(req_message.req_method));
   r.Append<r.ColIndex("http_req_path")>(std::move(req_message.req_path));
-  r.Append<r.ColIndex("http_req_body"), kMaxBodyBytes>("-");
+  r.Append<r.ColIndex("http_req_body_size")>(req_message.body.size());
+  r.Append<r.ColIndex("http_req_body"), kMaxBodyBytes>(std::move(req_message.body));
   r.Append<r.ColIndex("http_resp_headers"), kMaxHTTPHeadersBytes>(
       ToJSONString(resp_message.headers));
   r.Append<r.ColIndex("http_resp_status")>(resp_message.resp_status);
@@ -1109,6 +1110,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_resp_status")>(resp_status);
   // TODO(yzhao): Populate the following field from headers.
   r.Append<r.ColIndex("http_resp_message")>("-");
+  r.Append<r.ColIndex("http_req_body_size")>(req_message.message.size());
   r.Append<r.ColIndex("http_req_body"), kMaxBodyBytes>(std::move(req_message.message));
   r.Append<r.ColIndex("http_resp_body_size")>(resp_message.message.size());
   r.Append<r.ColIndex("http_resp_body"), kMaxBodyBytes>(std::move(resp_message.message));
@@ -1171,6 +1173,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_resp_status")>(resp_status);
   // TODO(yzhao): Populate the following field from headers.
   r.Append<r.ColIndex("http_resp_message")>("OK");
+  r.Append<r.ColIndex("http_req_body_size")>(req_stream->data.size());
   r.Append<r.ColIndex("http_req_body"), kMaxBodyBytes>(std::move(req_stream->data));
   r.Append<r.ColIndex("http_resp_body_size")>(resp_stream->data.size());
   r.Append<r.ColIndex("http_resp_body"), kMaxBodyBytes>(std::move(resp_stream->data));

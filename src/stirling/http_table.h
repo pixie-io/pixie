@@ -54,6 +54,10 @@ constexpr DataElement kHTTPElements[] = {
      types::DataType::STRING,
      types::SemanticType::ST_NONE,
      types::PatternType::STRUCTURED},
+    {"http_req_body_size", "Request body size (before any truncation)",
+     types::DataType::INT64,
+     types::SemanticType::ST_BYTES,
+     types::PatternType::METRIC_GAUGE},
     {"http_resp_headers", "Response headers in JSON format",
      types::DataType::STRING,
      types::SemanticType::ST_NONE,
@@ -103,6 +107,7 @@ constexpr int kHTTPReqHeadersIdx = kHTTPTable.ColIndex("http_req_headers");
 constexpr int kHTTPReqMethodIdx = kHTTPTable.ColIndex("http_req_method");
 constexpr int kHTTPReqPathIdx = kHTTPTable.ColIndex("http_req_path");
 constexpr int kHTTPReqBodyIdx = kHTTPTable.ColIndex("http_req_body");
+constexpr int kHTTPReqBodySizeIdx = kHTTPTable.ColIndex("http_req_body_size");
 constexpr int kHTTPRespHeadersIdx = kHTTPTable.ColIndex("http_resp_headers");
 constexpr int kHTTPRespStatusIdx = kHTTPTable.ColIndex("http_resp_status");
 constexpr int kHTTPRespMessageIdx = kHTTPTable.ColIndex("http_resp_message");

@@ -55,6 +55,14 @@ const std::string_view kReq2 =
     "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
     "\r\n";
 
+const std::string_view kReq3 =
+    "POST /logs.html HTTP/1.1\r\n"
+    "Host: www.pixielabs.ai\r\n"
+    "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
+    "Content-Length: 21\r\n"
+    "\r\n"
+    "I have a message body";
+
 const std::string_view kJSONResp =
     "HTTP/1.1 200 OK\r\n"
     "Content-Type: application/json; charset=utf-8\r\n"
@@ -184,6 +192,35 @@ auto ToIntVector(const types::SharedColumnWrapper& col) {
     result.push_back(col->Get<TValueType>(i).val);
   }
   return result;
+}
+
+TEST_F(SocketTraceConnectorTest, HTTPBasic) {
+  testing::EventGenerator event_gen(&mock_clock_);
+  struct socket_control_event_t conn = event_gen.InitConn();
+  std::unique_ptr<SocketDataEvent> event0_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq3);
+  std::unique_ptr<SocketDataEvent> event0_resp_json =
+      event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
+  struct socket_control_event_t close_event = event_gen.InitClose();
+
+  DataTable data_table(kHTTPTable);
+
+  EXPECT_NE(0, source_->ClockRealTimeOffset());
+
+  // Registers a new connection.
+  source_->AcceptControlEvent(conn);
+  source_->AcceptDataEvent(std::move(event0_req));
+  source_->AcceptDataEvent(std::move(event0_resp_json));
+  source_->AcceptControlEvent(close_event);
+
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  ASSERT_FALSE(tablets.empty());
+  RecordBatch record_batch = tablets[0].records;
+
+  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+  EXPECT_THAT(ToStringVector(record_batch[kHTTPReqBodyIdx]), ElementsAre("I have a message body"));
+  EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("foo"));
 }
 
 TEST_F(SocketTraceConnectorTest, HTTPContentType) {

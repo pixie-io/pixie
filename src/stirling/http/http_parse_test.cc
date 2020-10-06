@@ -39,7 +39,7 @@ Message HTTPGetReq0ExpectedMessage() {
                               {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
   expected_message.req_method = "GET";
   expected_message.req_path = "/index.html";
-  expected_message.body = "-";
+  expected_message.body = "";
   return expected_message;
 }
 
@@ -59,7 +59,7 @@ Message HTTPGetReq1ExpectedMessage() {
                               {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
   expected_message.req_method = "GET";
   expected_message.req_path = "/foo.html";
-  expected_message.body = "-";
+  expected_message.body = "";
   return expected_message;
 }
 
@@ -508,7 +508,7 @@ TEST_F(HTTPParserTest, ParseRequestWithoutLengthOrChunking) {
                               {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
   expected_message.req_method = "GET";
   expected_message.req_path = "/index.html";
-  expected_message.body = "-";
+  expected_message.body = "";
 
   std::deque<Message> parsed_messages;
   ParseResult result = parser_.ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages);
