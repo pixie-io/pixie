@@ -59,15 +59,14 @@ struct Frame : public stirling::FrameBase {
 //-----------------------------------------------------------------------------
 
 struct Request {
-  // The body of the request, if request has a single string parameter. Otherwise empty for now.
-  std::string msg;
+  // TODO(oazizi): Capture queries.
 
   // Timestamp of the request packet.
   uint64_t timestamp_ns = 0;
 };
 
 struct Response {
-  // Any relevant response message.
+  // Query Answers.
   std::string msg;
 
   // Timestamp of the response packet.

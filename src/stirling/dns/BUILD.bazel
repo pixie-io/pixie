@@ -22,3 +22,9 @@ pl_cc_test(
     srcs = ["dns_parse_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "dns_stitcher_test",
+    srcs = ["dns_stitcher_test.cc"],
+    deps = [":cc_library"],
+)
