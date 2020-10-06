@@ -53,7 +53,6 @@ interface ScriptContextProps {
   visJSON: string;
   vis: Vis;
   setVis: SetStateFunc<Vis>;
-  setVisJSON: SetStateFunc<string>;
 
   setCancelExecution: SetStateFunc<() => void>;
   cancelExecution: () => void;
@@ -72,6 +71,7 @@ interface ScriptContextProps {
     liveViewPage?: LiveViewPage) => void;
   execute: (execArgs: ExecuteArguments) => void;
   saveEditorAndExecute: () => void;
+  parseVisOrShowError: (json: string) => Vis | null;
 }
 
 export const ScriptContext = React.createContext<ScriptContextProps>(null);
@@ -123,8 +123,8 @@ const ScriptContextProvider = (props) => {
 
   const entity = matchLiveViewEntity(location.pathname);
   const [liveViewPage, setLiveViewPage] = React.useState<LiveViewPage>(entity.page);
-  const [visEditorText, setVisEditorText] = React.useState<string>();
-  const [pxlEditorText, setPxlEditorText] = React.useState<string>();
+  const [visEditorText, setVisEditorText] = React.useState<string>(null);
+  const [pxlEditorText, setPxlEditorText] = React.useState<string>(null);
 
   const [cancelExecution, setCancelExecution] = React.useState<() => void>();
 
@@ -141,12 +141,26 @@ const ScriptContextProvider = (props) => {
   // Vis Raw is the outgoing state from the vis editor.
   const [visJSON, setVisJSONBase] = useSessionStorage<string>(LIVE_VIEW_VIS_SPEC_KEY);
   const [vis, setVisBase] = React.useState(() => {
-    const parsed = parseVis(visJSON);
-    if (parsed) {
-      return parsed;
+    if (visJSON) {
+      const parsed = parseVis(visJSON);
+      if (parsed) {
+        return parsed;
+      }
     }
     return emptyVis();
   });
+
+  const parseVisOrShowError = (json: string): Vis | null => {
+    if (!json || !json.trim().length) {
+      return emptyVis();
+    }
+    const parsed = parseVis(json);
+    if (parsed) {
+      return parsed;
+    }
+    setResults({ tables: {}, error: new VizierQueryError('vis', 'Error parsing VisSpec') });
+    return null;
+  };
 
   React.useEffect(() => {
     const newArgs = argsForVis(vis, args);
@@ -171,8 +185,8 @@ const ScriptContextProvider = (props) => {
     if (entity.clusterName && entity.clusterName !== selectedClusterName) {
       setClusterByName(entity.clusterName);
     }
-  // We only want this useEffect to be called the first time the page is loaded.
-  // eslint-disable-next-line
+    // We only want this useEffect to be called the first time the page is loaded.
+    // eslint-disable-next-line
   }, []);
 
   // Logic to set url params when location changes
@@ -221,20 +235,7 @@ const ScriptContextProvider = (props) => {
     setVisBase(visToSet);
   };
 
-  const setVisDebounce = React.useRef(debounce((newJSON: string) => {
-    const parsed = parseVis(newJSON);
-    if (parsed) {
-      setVisBase(parsed);
-    }
-  }, 2000));
-
-  const setVisJSON = (newJSON: string) => {
-    setVisJSONBase(newJSON);
-    setVisDebounce.current(newJSON);
-  };
-
   // Logic to update the full script
-
   const setScript = (newVis: Vis, newPxl: string, newArgs: Arguments, newID: string,
     newLiveViewPage?: LiveViewPage) => {
     setVis(newVis);
@@ -471,13 +472,21 @@ const ScriptContextProvider = (props) => {
       liveViewPage,
     };
     if (editorPanelOpen) {
-      let parsedVis = parseVis(visEditorText);
-      if (!parsedVis) {
-        parsedVis = vis;
+      let parsedVis = vis;
+      let pxlVal = pxl;
+      // If the editor has been lazy loaded, the editorText of the other thing will be null until it's been opened.
+      if (visEditorText !== null) {
+        parsedVis = parseVisOrShowError(visEditorText);
+        if (!parsedVis) {
+          return null;
+        }
+      }
+      if (pxlEditorText !== null) {
+        pxlVal = pxlEditorText;
       }
       const parsedArgs = argsForVis(parsedVis, args, id);
       execArgs = {
-        pxl: pxlEditorText,
+        pxl: pxlVal,
         vis: parsedVis,
         args: parsedArgs,
         id,
@@ -489,8 +498,10 @@ const ScriptContextProvider = (props) => {
 
   const saveEditorAndExecute = () => {
     const execArgs = getExecArgsFromEditor();
-    setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
-    execute(execArgs);
+    if (execArgs) {
+      setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
+      execute(execArgs);
+    }
   };
 
   return (
@@ -506,7 +517,7 @@ const ScriptContextProvider = (props) => {
         vis,
         setVis,
         visJSON,
-        setVisJSON,
+        parseVisOrShowError,
         pxl,
         setPxl,
         title,

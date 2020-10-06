@@ -56,7 +56,9 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
     })));
   }, [scripts]);
 
-  const { args, execute, setScript } = React.useContext(ScriptContext);
+  const {
+    args, execute, setScript, parseVisOrShowError,
+  } = React.useContext(ScriptContext);
   const { clearResults } = React.useContext(ResultsContext);
 
   const getCompletions = React.useCallback((input) => {
@@ -68,8 +70,8 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
 
   const selectScript = (id) => {
     const script = scripts.get(id);
-    const vis = parseVis(script.vis);
-    if (script) {
+    const vis = parseVisOrShowError(script.vis);
+    if (script && vis) {
       const execArgs: ExecuteArguments = {
         vis,
         liveViewPage: entityPageForScriptId(script.id),

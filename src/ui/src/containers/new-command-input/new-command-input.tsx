@@ -68,7 +68,7 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
   const [isValid, setIsValid] = React.useState(false);
   const { selectedClusterUID } = React.useContext(ClusterContext);
 
-  const { execute, setScript } = React.useContext(ScriptContext);
+  const { execute, setScript, parseVisOrShowError } = React.useContext(ScriptContext);
   const { scripts } = React.useContext(ScriptsContext);
   const [currentInput] = React.useState({} as CurrentInput);
 
@@ -125,8 +125,8 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
   const onSubmit = React.useCallback(() => {
     if (isValid) {
       const script = scripts.get(tabStops[0].Value);
-      const vis = parseVis(script.vis);
-      if (script) {
+      const vis = parseVisOrShowError(script.vis);
+      if (script && vis) {
         const args = {};
         tabStops.forEach((ts, idx) => {
           if (idx !== 0) { // Skip the "script" argument.

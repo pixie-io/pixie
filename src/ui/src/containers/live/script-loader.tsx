@@ -19,7 +19,7 @@ export function ScriptLoader() {
   const [loadState, setLoadState] = React.useState<LoadScriptState>('unloaded');
   const { promise: scriptPromise } = React.useContext(ScriptsContext);
   const {
-    pxl, vis, args, id, liveViewPage, setScript, execute,
+    pxl, vis, args, id, liveViewPage, setScript, execute, parseVisOrShowError,
   } = React.useContext(ScriptContext);
 
   const { clearResults } = React.useContext(ResultsContext);
@@ -68,7 +68,10 @@ export function ScriptLoader() {
         }
 
         const script = scripts.get(selectedId);
-        const parsedVis = parseVis(script.vis);
+        const parsedVis = parseVisOrShowError(script.vis);
+        if (!parsedVis) {
+          return;
+        }
         const parsedArgs = argsForVis(parsedVis, { ...urlArgs, ...entity.params }, selectedId);
         const execArgs = {
           liveViewPage: entity.page,

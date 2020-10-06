@@ -11,9 +11,8 @@ import Breadcrumbs, { BreadcrumbOptions } from 'components/breadcrumbs/breadcrum
 import ClusterContext from 'common/cluster-context';
 import { CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
 import {
-  argsForVis, ArgToVariableMap, getArgTypesForVis, getArgVariableMap,
+  argsForVis, getArgTypesForVis, getArgVariableMap,
 } from 'utils/args-utils';
-import { Variable } from './vis';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import { ScriptContext } from 'context/script-context';
 import { entityPageForScriptId, optionallyGetNamespace } from 'components/live-widgets/utils/live-view-params';
@@ -24,6 +23,7 @@ import { ContainsMutation } from 'utils/pxl';
 import IconButton from '@material-ui/core/IconButton';
 import Tooltip from '@material-ui/core/Tooltip';
 import ExecuteScriptButton from './execute-button';
+import { Variable } from './vis';
 
 const LIST_CLUSTERS = gql`
 {
@@ -94,7 +94,7 @@ const LiveViewBreadcrumbs = ({ classes, commandOpen, toggleCommandOpen }) => {
   const { scripts } = React.useContext(ScriptsContext);
 
   const {
-    vis, pxl, args, id, liveViewPage, setArgs, execute, setScript,
+    vis, pxl, args, id, liveViewPage, setArgs, execute, setScript, parseVisOrShowError,
   } = React.useContext(ScriptContext);
 
   const client = useApolloClient();
@@ -215,7 +215,10 @@ const LiveViewBreadcrumbs = ({ classes, commandOpen, toggleCommandOpen }) => {
     },
     onSelect: (newVal) => {
       const script = scripts.get(newVal);
-      const selectedVis = parseVis(script.vis);
+      const selectedVis = parseVisOrShowError(script.vis);
+      if (!selectedVis) {
+        return;
+      }
       const execArgs = {
         liveViewPage: entityPageForScriptId(newVal),
         pxl: script.code,
