@@ -82,7 +82,7 @@ def http_code_histogram(start: str, svc: px.Service):
     """
     df = make_http_table(start)
     matching_df = df[px.contains(df[k8s_object], svc)]
-    return matching_df.groupby(['http_resp_status']).agg(count=('time_', px.count))
+    return matching_df.groupby(['http_resp_status']).agg(count=('http_resp_latency_ns', px.count))
 
 
 def latency_histogram(start: str, svc: px.Service):
@@ -97,9 +97,9 @@ def latency_histogram(start: str, svc: px.Service):
     """
     df = make_http_table(start)
     matching_df = df[px.contains(df[k8s_object], svc)]
-    matching_df.request_latency = px.bin(matching_df.http_resp_latency_ns,
-                                         latency_bin_size_ns)
-    return matching_df.groupby('request_latency').agg(count=('time_', px.count))
+    matching_df.request_latency = px.DurationNanos(px.bin(matching_df.http_resp_latency_ns,
+                                                          latency_bin_size_ns))
+    return matching_df.groupby('request_latency').agg(count=('http_resp_status', px.count))
 
 
 def outgoing_edges(start: str, svc: px.Service):
