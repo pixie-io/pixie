@@ -57,7 +57,7 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
   }, [scripts]);
 
   const {
-    args, execute, setScript, parseVisOrShowError,
+    args, execute, setScript, parseVisOrShowError, argsForVisOrShowError,
   } = React.useContext(ScriptContext);
   const { clearResults } = React.useContext(ResultsContext);
 
@@ -71,18 +71,20 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
   const selectScript = (id) => {
     const script = scripts.get(id);
     const vis = parseVisOrShowError(script.vis);
-    if (script && vis) {
+    const combinedArgs = argsForVisOrShowError(vis, {
+      // Grab the namespace if it exists on a service or pod argument.
+      namespace: optionallyGetNamespace(args),
+      ...args,
+    });
+
+    if (script && vis && combinedArgs) {
       const execArgs: ExecuteArguments = {
         vis,
         liveViewPage: entityPageForScriptId(script.id),
         pxl: script.code,
         id: script.id,
         // Fill the default args for now. This will go away once the autocomplete is implemented.
-        args: argsForVis(vis, {
-          // Grab the namespace if it exists on a service or pod argument.
-          namespace: optionallyGetNamespace(args),
-          ...args,
-        }),
+        args: combinedArgs,
       };
       clearResults();
       setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);

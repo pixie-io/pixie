@@ -7,7 +7,6 @@ import {
 } from 'common/storage';
 import ClientContext from 'common/vizier-grpc-client-context';
 import { VizierQueryError, GRPCStatusCode } from 'common/errors';
-import { VizierQueryFunc } from 'common/vizier-grpc-client';
 import { ContainsMutation, IsStreaming } from 'utils/pxl';
 
 import * as React from 'react';
@@ -16,8 +15,9 @@ import { withRouter } from 'react-router';
 import {
   parseVis, toJSON, Vis, getQueryFuncs, validateVis,
 } from 'containers/live/vis';
-import { argsEquals, argsForVis, Arguments } from 'utils/args-utils';
-import { debounce } from 'utils/debounce';
+import {
+  argsEquals, argsForVis, Arguments, validateArgValues,
+} from 'utils/args-utils';
 import urlParams from 'utils/url-params';
 import { useSnackbar } from 'components/snackbar/snackbar';
 
@@ -72,6 +72,7 @@ interface ScriptContextProps {
   execute: (execArgs: ExecuteArguments) => void;
   saveEditorAndExecute: () => void;
   parseVisOrShowError: (json: string) => Vis | null;
+  argsForVisOrShowError: (vis: Vis, args: Arguments, scriptId?: string) => Arguments;
 }
 
 export const ScriptContext = React.createContext<ScriptContextProps>(null);
@@ -116,7 +117,7 @@ const ScriptContextProvider = (props) => {
   const { selectedClusterName, setClusterByName, selectedClusterPrettyName } = React.useContext(ClusterContext);
   const { client, healthy } = React.useContext(ClientContext);
   const {
-    setResults, setLoading, loading, clearResults,
+    setResults, setLoading, clearResults,
   } = React.useContext(ResultsContext);
   const { editorPanelOpen } = React.useContext(LayoutContext);
   const showSnackbar = useSnackbar();
@@ -160,6 +161,16 @@ const ScriptContextProvider = (props) => {
     }
     setResults({ tables: {}, error: new VizierQueryError('vis', 'Error parsing VisSpec') });
     return null;
+  };
+
+  const argsForVisOrShowError = (visToUse: Vis, argsToUse: Arguments, scriptId?: string): Arguments => {
+    const argValueErr = validateArgValues(visToUse, argsToUse);
+    if (argValueErr) {
+      setResults({ tables: {}, error: argValueErr });
+      return null;
+    }
+
+    return argsForVis(visToUse, argsToUse, scriptId);
   };
 
   React.useEffect(() => {
@@ -208,6 +219,7 @@ const ScriptContextProvider = (props) => {
       params: entityParams,
     };
     urlParams.setPathname(toEntityPathname(entityURL));
+    // DO NOT ADD clearResults() it destroys the UI.
   }, [selectedClusterName, liveViewPage, args]);
 
   React.useEffect(() => {
@@ -484,7 +496,11 @@ const ScriptContextProvider = (props) => {
       if (pxlEditorText !== null) {
         pxlVal = pxlEditorText;
       }
-      const parsedArgs = argsForVis(parsedVis, args, id);
+
+      const parsedArgs = argsForVisOrShowError(parsedVis, args, id);
+      if (!parsedArgs) {
+        return null;
+      }
       execArgs = {
         pxl: pxlVal,
         vis: parsedVis,
@@ -492,6 +508,9 @@ const ScriptContextProvider = (props) => {
         id,
         liveViewPage: LiveViewPage.Default,
       };
+      // Verify the args are legit.
+    } else if (!argsForVisOrShowError(vis, args, id)) {
+      return null;
     }
     return execArgs;
   };
@@ -527,6 +546,8 @@ const ScriptContextProvider = (props) => {
         saveEditorAndExecute,
         cancelExecution,
         setCancelExecution,
+
+        argsForVisOrShowError,
       }}
     >
       {props.children}

@@ -3,7 +3,6 @@ import { TabStop } from 'components/autocomplete/utils';
 import PixieCommandIcon from 'components/icons/pixie-command';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
-import { argsForVis } from 'utils/args-utils';
 import gql from 'graphql-tag';
 import { useApolloClient } from '@apollo/react-hooks';
 import ClusterContext from 'common/cluster-context';
@@ -68,7 +67,9 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
   const [isValid, setIsValid] = React.useState(false);
   const { selectedClusterUID } = React.useContext(ClusterContext);
 
-  const { execute, setScript, parseVisOrShowError } = React.useContext(ScriptContext);
+  const {
+    execute, setScript, parseVisOrShowError, argsForVisOrShowError,
+  } = React.useContext(ScriptContext);
   const { scripts } = React.useContext(ScriptsContext);
   const [currentInput] = React.useState({} as CurrentInput);
 
@@ -126,19 +127,21 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
     if (isValid) {
       const script = scripts.get(tabStops[0].Value);
       const vis = parseVisOrShowError(script.vis);
-      if (script && vis) {
-        const args = {};
-        tabStops.forEach((ts, idx) => {
-          if (idx !== 0) { // Skip the "script" argument.
-            args[ts.Label] = ts.Value;
-          }
-        });
+      const args = {};
+      tabStops.forEach((ts, idx) => {
+        if (idx !== 0) { // Skip the "script" argument.
+          args[ts.Label] = ts.Value;
+        }
+      });
+      const parsedArgs = argsForVisOrShowError(vis, args);
+
+      if (script && vis && parsedArgs) {
         const execArgs: ExecuteArguments = {
           liveViewPage: entityPageForScriptId(script.id),
           pxl: script.code,
           vis,
           id: script.id,
-          args: argsForVis(vis, args),
+          args: parsedArgs,
         };
         setTabStops([{ CursorPosition: 0, Index: 1, Value: '' }]);
         setIsValid(false);

@@ -1,12 +1,11 @@
 import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
-import { argsForVis } from 'utils/args-utils';
 import urlParams from 'utils/url-params';
 import { ContainsMutation } from 'utils/pxl';
 
 import { ScriptContext } from 'context/script-context';
 import { ResultsContext } from 'context/results-context';
-import { parseVis } from './vis';
+import { argsForVis } from 'utils/args-utils';
 import {
   LiveViewPage,
   LiveViewPageScriptIds,
@@ -19,7 +18,7 @@ export function ScriptLoader() {
   const [loadState, setLoadState] = React.useState<LoadScriptState>('unloaded');
   const { promise: scriptPromise } = React.useContext(ScriptsContext);
   const {
-    pxl, vis, args, id, liveViewPage, setScript, execute, parseVisOrShowError,
+    pxl, vis, args, id, liveViewPage, setScript, execute, parseVisOrShowError, argsForVisOrShowError,
   } = React.useContext(ScriptContext);
 
   const { clearResults } = React.useContext(ResultsContext);
@@ -69,10 +68,11 @@ export function ScriptLoader() {
 
         const script = scripts.get(selectedId);
         const parsedVis = parseVisOrShowError(script.vis);
-        if (!parsedVis) {
+        const parsedArgs = argsForVis(parsedVis, { ...urlArgs, ...entity.params }, selectedId);
+        if (!parsedVis && !parsedArgs) {
           return;
         }
-        const parsedArgs = argsForVis(parsedVis, { ...urlArgs, ...entity.params }, selectedId);
+
         const execArgs = {
           liveViewPage: entity.page,
           pxl: script.code,
@@ -83,6 +83,10 @@ export function ScriptLoader() {
         };
         clearResults();
         setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
+        // Use this hack because otherwise args are not set when you first load a page.
+        if (!argsForVisOrShowError(parsedVis, { ...urlArgs, ...entity.params }, selectedId)) {
+          return;
+        }
         if (!ContainsMutation(execArgs.pxl)) {
           ref.current.execute(execArgs);
         }

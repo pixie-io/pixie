@@ -11,7 +11,7 @@ import Breadcrumbs, { BreadcrumbOptions } from 'components/breadcrumbs/breadcrum
 import ClusterContext from 'common/cluster-context';
 import { CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
 import {
-  argsForVis, getArgTypesForVis, getArgVariableMap,
+  getArgTypesForVis, getArgVariableMap,
 } from 'utils/args-utils';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import { ScriptContext } from 'context/script-context';
@@ -94,7 +94,7 @@ const LiveViewBreadcrumbs = ({ classes, commandOpen, toggleCommandOpen }) => {
   const { scripts } = React.useContext(ScriptsContext);
 
   const {
-    vis, pxl, args, id, liveViewPage, setArgs, execute, setScript, parseVisOrShowError,
+    vis, pxl, args, id, liveViewPage, setArgs, execute, setScript, parseVisOrShowError, argsForVisOrShowError,
   } = React.useContext(ScriptContext);
 
   const client = useApolloClient();
@@ -216,18 +216,20 @@ const LiveViewBreadcrumbs = ({ classes, commandOpen, toggleCommandOpen }) => {
     onSelect: (newVal) => {
       const script = scripts.get(newVal);
       const selectedVis = parseVisOrShowError(script.vis);
-      if (!selectedVis) {
+      const parsedArgs = argsForVisOrShowError(selectedVis, {
+        // Grab the namespace if it exists on a service or pod argument.
+        namespace: optionallyGetNamespace(args),
+        ...args,
+      });
+      if (!selectedVis && !parsedArgs) {
         return;
       }
+
       const execArgs = {
         liveViewPage: entityPageForScriptId(newVal),
         pxl: script.code,
         id: newVal,
-        args: argsForVis(selectedVis, {
-          // Grab the namespace if it exists on a service or pod argument.
-          namespace: optionallyGetNamespace(args),
-          ...args,
-        }),
+        args: parsedArgs,
         vis: selectedVis,
       };
       setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);

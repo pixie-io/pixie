@@ -1,3 +1,4 @@
+import { VizierQueryError } from 'common/errors';
 import { Variable, Vis } from 'containers/live/vis';
 
 export interface Arguments {
@@ -31,11 +32,11 @@ export function argsEquals(args1: Arguments, args2: Arguments): boolean {
 
 // Populate arguments either from defaultValues or from the input args.
 export function argsForVis(vis: Vis, args: Arguments, scriptId?: string): Arguments {
-  const outArgs: Arguments = {};
   if (!vis) {
     return {};
   }
   let inArgs = args;
+  const outArgs: Arguments = {};
   if (!args) {
     inArgs = {};
   }
@@ -77,4 +78,30 @@ export function getArgVariableMap(vis: Vis): ArgToVariableMap {
     map[v.name] = v;
   });
   return map;
+}
+
+export function validateArgValues(vis: Vis, args: Arguments): VizierQueryError {
+  if (!vis) {
+    return null;
+  }
+  let inArgs = args;
+  if (!args) {
+    inArgs = {};
+  }
+  const errors = [];
+  for (const variable of vis.variables) {
+    const val = inArgs[variable.name] != null ? inArgs[variable.name] : variable.defaultValue;
+    if (variable.validValues && variable.validValues.length) {
+      const validValuesSet = new Set(variable.validValues);
+      if (!validValuesSet.has(val)) {
+        errors.push(`Value '${val}' passed in for '${variable.name}' is not in `
+          + `the set of valid values '${variable.validValues.join(', ')}'.`);
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    return new VizierQueryError('vis', errors);
+  }
+  return null;
 }
