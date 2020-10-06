@@ -32,6 +32,9 @@ class ExprObject : public QLObject {
     }
     return "FuncCall";
   }
+  static bool IsExprObject(const QLObjectPtr& object) {
+    return object->type() == QLObjectType::kExpr;
+  }
 
  protected:
   ExprObject(ExpressionIR* expr, ASTVisitor* visitor) : QLObject(ExprType, expr, visitor) {}

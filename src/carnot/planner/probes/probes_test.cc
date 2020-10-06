@@ -7,6 +7,7 @@ namespace carnot {
 namespace planner {
 namespace compiler {
 using ::testing::ContainsRegex;
+using ::testing::Not;
 using ::testing::UnorderedElementsAre;
 
 class ProbeCompilerTest : public ASTVisitorTest {
@@ -38,7 +39,7 @@ class ProbeCompilerTest : public ASTVisitorTest {
   }
 };
 
-constexpr char kSingleProbePxl[] = R"pxl(
+constexpr char kSingleProbeOnUPIDPxl[] = R"pxl(
 import pxtrace
 import px
 
@@ -75,6 +76,42 @@ pxtrace.UpsertTracepoint('http_return',
                          '5m')
 )pxl";
 
+constexpr char kSingleProbeUpsertPodPxl[] = R"pxl(
+import pxtrace
+import px
+
+@pxtrace.probe("MyFunc")
+def probe_func():
+    id = pxtrace.ArgExpr('id')
+    return [{'id': id},
+            {'err': pxtrace.RetExpr('$0.a')},
+            {'latency': pxtrace.FunctionLatency()}]
+
+pxtrace.UpsertTracepoint('http_return',
+                         'http_return_table',
+                         probe_func,
+                         px.Pod('pl/vizier-query-broker-85dc9bc4d-jzw4s'),
+                         '5m')
+)pxl";
+
+constexpr char kSingleProbeUpsertPxlTpl[] = R"pxl(
+import pxtrace
+import px
+
+@pxtrace.probe("MyFunc")
+def probe_func():
+    id = pxtrace.ArgExpr('id')
+    return [{'id': id},
+            {'err': pxtrace.RetExpr('$0.a')},
+            {'latency': pxtrace.FunctionLatency()}]
+
+pxtrace.UpsertTracepoint('http_return',
+                         'http_return_table',
+                         probe_func,
+                         $1,
+                         '5m')
+)pxl";
+
 constexpr char kSingleProbeInFuncPxl[] = R"pxl(
 import pxtrace
 import px
@@ -95,7 +132,7 @@ def probe_table(upid: str):
   return px.DataFrame('http_return_table')
 )pxl";
 
-constexpr char kSingleProbeProgramPb[] = R"pxl(
+constexpr char kSingleProbeProgramOnUPIDPb[] = R"pxl(
 name: "http_return"
 ttl {
   seconds: 300
@@ -104,6 +141,50 @@ deployment_spec {
   upid {
     asid: 306070887 pid: 3902477011 ts_ns: 11841725277501915136
   }
+}
+tracepoints {
+  table_name: "http_return_table"
+  program {
+    outputs {
+      name: "http_return_table"
+      fields: "id"
+      fields: "err"
+      fields: "latency"
+    }
+    probes {
+      name: "http_return"
+      tracepoint {
+        symbol: "MyFunc"
+      }
+      args {
+        id: "arg0"
+        expr: "id"
+      }
+      ret_vals {
+        id: "ret0"
+        expr: "$0.a"
+      }
+      function_latency {
+        id: "lat0"
+      }
+      output_actions {
+        output_name: "http_return_table"
+        variable_name: "arg0"
+        variable_name: "ret0"
+        variable_name: "lat0"
+      }
+    }
+  }
+}
+)pxl";
+
+constexpr char kSingleProbeProgramOnPodPb[] = R"pxl(
+name: "http_return"
+ttl {
+  seconds: 300
+}
+deployment_spec {
+  pod: "pl/vizier-query-broker-85dc9bc4d-jzw4s"
 }
 tracepoints {
   table_name: "http_return_table"
@@ -191,11 +272,40 @@ tracepoints {
 )pxl";
 
 TEST_F(ProbeCompilerTest, parse_single_probe) {
-  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(kSingleProbePxl));
+  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(kSingleProbeOnUPIDPxl));
   plannerpb::CompileMutationsResponse pb;
   EXPECT_OK(probe_ir->ToProto(&pb));
   ASSERT_EQ(pb.mutations_size(), 1);
-  EXPECT_THAT(pb.mutations()[0].trace(), testing::proto::EqualsProto(kSingleProbeProgramPb));
+  EXPECT_THAT(pb.mutations()[0].trace(), testing::proto::EqualsProto(kSingleProbeProgramOnUPIDPb));
+}
+
+TEST_F(ProbeCompilerTest, parse_probe_pod_spec) {
+  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(kSingleProbeUpsertPodPxl));
+  plannerpb::CompileMutationsResponse pb;
+  EXPECT_OK(probe_ir->ToProto(&pb));
+  ASSERT_EQ(pb.mutations_size(), 1);
+  EXPECT_THAT(pb.mutations()[0].trace(), testing::proto::EqualsProto(kSingleProbeProgramOnPodPb));
+  EXPECT_THAT(pb.mutations()[0].trace(),
+              Not(testing::proto::EqualsProto(kSingleProbeProgramOnUPIDPb)));
+}
+
+TEST_F(ProbeCompilerTest, parse_probe_pod_spec_non_pod) {
+  // No pod specification.
+  EXPECT_COMPILER_ERROR(CompileProbeScript(absl::Substitute(kSingleProbeUpsertPxlTpl, "$0",
+                                                            "'pl/vizier-query-broker'")),
+                        "Expected 'pod', received 'String'");
+
+  // Using a Service specification.
+  EXPECT_COMPILER_ERROR(
+      CompileProbeScript(
+          absl::Substitute(kSingleProbeUpsertPxlTpl, "$0", "px.Service('pl/vizier-query-broker')")),
+      "Expected 'pod', received 'service'");
+
+  // Using a namespace specification.
+  EXPECT_COMPILER_ERROR(
+      CompileProbeScript(absl::Substitute(kSingleProbeUpsertPxlTpl, "$0",
+                                          "px.Namespace('pl/vizier-query-broker')")),
+      "Expected 'pod', received 'namespace'");
 }
 
 TEST_F(ProbeCompilerTest, parse_single_probe_on_shared_object) {
@@ -221,7 +331,7 @@ TEST_F(ProbeCompilerTest, parse_single_probe_in_func) {
   plannerpb::CompileMutationsResponse pb;
   EXPECT_OK(probe_ir->ToProto(&pb));
   ASSERT_EQ(pb.mutations_size(), 1);
-  EXPECT_THAT(pb.mutations()[0].trace(), testing::proto::EqualsProto(kSingleProbeProgramPb));
+  EXPECT_THAT(pb.mutations()[0].trace(), testing::proto::EqualsProto(kSingleProbeProgramOnUPIDPb));
 }
 
 constexpr char kMultipleProbePxl[] = R"pxl(
@@ -420,7 +530,7 @@ TEST_F(ProbeCompilerTest, probes_with_multiple_binaries) {
     returnPb = tmp;
   }
 
-  EXPECT_THAT(returnPb, testing::proto::EqualsProto(kSingleProbeProgramPb));
+  EXPECT_THAT(returnPb, testing::proto::EqualsProto(kSingleProbeProgramOnUPIDPb));
   EXPECT_THAT(bodyPb, testing::proto::EqualsProto(kHTTPBodyTracepointPb));
 }
 

@@ -329,14 +329,41 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
         mutations_ir->CreateKProbeTracepointDeployment(tp_deployment_name, ttl_ns);
     PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
     trace_program = trace_program_or_s.ConsumeValueOrDie();
-  } else {
-    PL_ASSIGN_OR_RETURN(UInt128IR * upid_ir, GetArgAs<UInt128IR>(ast, args, "target"));
-    md::UPID upid(upid_ir->val());
+  } else if (ExprObject::IsExprObject(target)) {
+    auto expr_object = std::static_pointer_cast<ExprObject>(target);
+    if (Match(expr_object->node(), UInt128Value())) {
+      PL_ASSIGN_OR_RETURN(UInt128IR * upid_ir, GetArgAs<UInt128IR>(ast, args, "target"));
+      md::UPID upid(upid_ir->val());
 
-    auto trace_program_or_s =
-        mutations_ir->CreateTracepointDeployment(tp_deployment_name, upid, ttl_ns);
-    PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
-    trace_program = trace_program_or_s.ConsumeValueOrDie();
+      auto trace_program_or_s =
+          mutations_ir->CreateTracepointDeployment(tp_deployment_name, upid, ttl_ns);
+      PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
+      trace_program = trace_program_or_s.ConsumeValueOrDie();
+    } else if (Match(expr_object->node(), String())) {
+      PL_ASSIGN_OR_RETURN(StringIR * string_ir, GetArgAs<StringIR>(ast, args, "target"));
+      if (string_ir->type_cast() == nullptr) {
+        return string_ir->CreateIRNodeError("Expected 'pod', received '$0'",
+                                            string_ir->type_string());
+      }
+      if (string_ir->type_cast()->semantic_type() != types::ST_POD_NAME) {
+        return string_ir->CreateIRNodeError(
+            "Expected 'pod', received '$0'",
+            absl::StripSuffix(absl::StripPrefix(absl::AsciiStrToLower(types::SemanticType_Name(
+                                                    string_ir->type_cast()->semantic_type())),
+                                                "st_"),
+                              "_name"));
+      }
+      auto trace_program_or_s = mutations_ir->CreateTracepointDeploymentOnPod(
+          tp_deployment_name, string_ir->str(), ttl_ns);
+      PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
+      trace_program = trace_program_or_s.ConsumeValueOrDie();
+    } else {
+      return CreateAstError(ast, "Unexpected type '$0' for arg '$1'",
+                            expr_object->node()->type_string(), "target");
+    }
+  } else {
+    return CreateAstError(ast, "Unexpected type '$0' for arg '$1'",
+                          QLObjectTypeString(target->type()), "target");
   }
 
   if (FuncObject::IsFuncObject(args.GetArg("probe_fn"))) {

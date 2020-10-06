@@ -225,6 +225,18 @@ class MutationsIR {
   StatusOr<TracepointDeployment*> CreateTracepointDeployment(const std::string& tracepoint_name,
                                                              const SharedObject& shared_obj,
                                                              int64_t ttl_ns);
+
+  /**
+   * @brief Create a TraceProgram for the MutationsIR w/ the specified Pod name.
+   *
+   * @param program_name
+   * @param pod_name
+   * @param ttl_ns
+   * @return StatusOr<TracepointDeployment*>
+   */
+  StatusOr<TracepointDeployment*> CreateTracepointDeploymentOnPod(
+      const std::string& tracepoint_name, const std::string& pod_name, int64_t ttl_ns);
+
   StatusOr<TracepointDeployment*> CreateKProbeTracepointDeployment(
       const std::string& tracepoint_name, int64_t ttl_ns);
   /**
@@ -270,6 +282,7 @@ class MutationsIR {
   absl::flat_hash_map<md::UPID, std::unique_ptr<TracepointDeployment>> upid_to_program_map_;
   absl::flat_hash_map<SharedObject, std::unique_ptr<TracepointDeployment>>
       shared_object_to_program_map_;
+  absl::flat_hash_map<std::string, std::unique_ptr<TracepointDeployment>> pod_name_to_program_map_;
   std::vector<std::unique_ptr<TracepointDeployment>> bpftrace_programs_;
   std::vector<std::shared_ptr<TracepointIR>> probes_pool_;
   std::shared_ptr<TracepointIR> current_tracepoint_;
