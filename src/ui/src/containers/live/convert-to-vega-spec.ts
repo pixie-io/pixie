@@ -172,9 +172,9 @@ function convertWidgetDisplayToSpecWithErrors(
 ): VegaSpecWithProps {
   switch (display[DISPLAY_TYPE_KEY]) {
     case BAR_CHART_TYPE:
-      return convertToBarChart(display as BarDisplay, source);
+      return convertToBarChart(display as BarDisplay, source, relation);
     case HISTOGRAM_CHART_TYPE:
-      return convertToHistogramChart(display as HistogramDisplay, source);
+      return convertToHistogramChart(display as HistogramDisplay, source, relation);
     case TIMESERIES_CHART_TYPE:
       return convertToTimeseriesChart(
         display as TimeseriesDisplay,
@@ -1123,7 +1123,7 @@ interface BarChartProps {
 }
 
 // The internal function to render barCharts.
-function barChartInternal(chart: BarChartProps, spec: VgSpec): VegaSpecWithProps {
+function barChartInternal(chart: BarChartProps, spec: VgSpec, formatFuncMD: FormatFnMetadata): VegaSpecWithProps {
   if (!chart.groupBy) {
     addAutosize(spec);
   }
@@ -1369,6 +1369,20 @@ function barChartInternal(chart: BarChartProps, spec: VgSpec): VegaSpecWithProps
   const xHasGrid = !chart.groupBy && !!horizontalBars;
   const yHasGrid = !chart.groupBy && !horizontalBars;
 
+  let xFormatAxis = {};
+  let yFormatAxis = {};
+  if (formatFuncMD) {
+    const formatAxis = {
+      encode: {
+        labels: { update: { text: { signal: `${formatFuncMD.name}(datum.value)` } } },
+      },
+    };
+    if (horizontalBars) {
+      yFormatAxis = formatAxis;
+    } else {
+      xFormatAxis = formatAxis;
+    }
+  }
   const xAxis = addAxis((horizontalBars) ? groupForValueAxis : groupForLabelAxis, {
     scale: (horizontalBars) ? valueScale.name : labelScale.name,
     orient: 'bottom',
@@ -1383,6 +1397,7 @@ function barChartInternal(chart: BarChartProps, spec: VgSpec): VegaSpecWithProps
     tickCount: {
       signal: `ceil(${widthName}/${PX_BETWEEN_Y_TICKS})`,
     },
+    ...xFormatAxis,
   });
   const yAxis = addAxis((horizontalBars) ? groupForLabelAxis : groupForValueAxis, {
     scale: (horizontalBars) ? labelScale.name : valueScale.name,
@@ -1394,6 +1409,7 @@ function barChartInternal(chart: BarChartProps, spec: VgSpec): VegaSpecWithProps
     tickCount: {
       signal: `ceil(${heightName}/${PX_BETWEEN_Y_TICKS})`,
     },
+    ...yFormatAxis,
   });
   addLabelsToAxes(xAxis, yAxis, chart.display);
 
@@ -1425,7 +1441,7 @@ function barChartInternal(chart: BarChartProps, spec: VgSpec): VegaSpecWithProps
   };
 }
 
-function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithProps {
+function convertToBarChart(display: BarDisplay, source: string, relation?: Relation): VegaSpecWithProps {
   if (!display.bar) {
     throw new Error('BarChart must have an entry for property bar');
   }
@@ -1445,6 +1461,7 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
   // Horizontal should be default.
   const horizontalBars = (display.bar.horizontal === undefined) ? true : display.bar.horizontal;
 
+  const formatFuncMD = getVegaFormatFunc(relation, display.bar.value);
   return barChartInternal({
     barStart: display.bar.label,
     horizontal: horizontalBars,
@@ -1462,10 +1479,10 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
       type: 'band',
     },
     display,
-  }, spec);
+  }, spec, formatFuncMD);
 }
 
-function convertToHistogramChart(display: HistogramDisplay, source: string): VegaSpecWithProps {
+function convertToHistogramChart(display: HistogramDisplay, source: string, relation?: Relation): VegaSpecWithProps {
   if (!display.histogram) {
     throw new Error('HistogramChart must have an entry for property histogram');
   }
@@ -1523,6 +1540,7 @@ function convertToHistogramChart(display: HistogramDisplay, source: string): Veg
     },
   ]);
 
+  const formatFuncMD = getVegaFormatFunc(relation, display.histogram.value);
   return barChartInternal({
     barStart: binStart,
     barEnd: binEnd,
@@ -1537,7 +1555,7 @@ function convertToHistogramChart(display: HistogramDisplay, source: string): Veg
       bins: { signal: binSignal },
     },
     display,
-  }, spec);
+  }, spec, formatFuncMD);
 }
 
 function convertToVegaChart(display: VegaDisplay): VegaSpecWithProps {
