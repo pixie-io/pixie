@@ -157,7 +157,7 @@
           "value": "request_latency",
           "prebinCount": "count",
           "maxbins": 10,
-          "minstep": 50.0
+          "minstep": 50000000
         },
         "xAxis": {
           "label": "Request Latency"

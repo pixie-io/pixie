@@ -36,7 +36,7 @@ ip_col_name = 'MySQL IP'
 # Temporary way to ensure px.Pod works as expected.
 px.Pod = str
 # The bin size to use for the latency histogram.
-latency_bin_size_ns = px.DurationNanos(50 * ns_per_ms)
+latency_bin_size_ns = px.DurationNanos(5 * ns_per_ms)
 # ----------------------------------------------------------------
 
 
@@ -102,8 +102,8 @@ def latency_histogram(start: str, pod: px.Pod):
     # over the time window ('timestamp') after filtering for matching svcs.
     matching_df = df[px.contains(df[k8s_object], pod)]
 
-    matching_df.request_latency = px.bin(matching_df.latency,
-                                         latency_bin_size_ns)
+    matching_df.request_latency = px.DurationNanos(px.bin(matching_df.latency,
+                                                          latency_bin_size_ns))
     return matching_df.groupby('request_latency').agg(count=('time_', px.count))
 
 

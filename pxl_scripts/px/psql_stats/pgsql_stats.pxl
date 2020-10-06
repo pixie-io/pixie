@@ -97,8 +97,8 @@ def latency_histogram(start: str, pod: px.Pod):
     # over the time window ('timestamp') after filtering for matching svcs.
     matching_df = df[px.contains(df[k8s_object], pod)]
 
-    matching_df.request_latency = px.bin(matching_df.latency,
-                                         latency_bin_size_ns)
+    matching_df.request_latency = px.DurationNanos(px.bin(matching_df.latency,
+                                                          latency_bin_size_ns))
     return matching_df.groupby('request_latency').agg(count=('time_', px.count))
 
 
