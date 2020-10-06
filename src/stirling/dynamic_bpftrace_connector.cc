@@ -127,9 +127,9 @@ StatusOr<std::unique_ptr<SourceConnector>> DynamicBPFTraceConnector::Create(
   // TODO(oazizi): Clean this up. No time now since trying to get this out quickly.
   //               Right solution is probably to inject the compiled program into the connector.
   BPFTraceWrapper bpftrace;
-  PL_RETURN_IF_ERROR(bpftrace.Compile(tracepoint.bpftrace().program(), {}));
-  PL_ASSIGN_OR_RETURN(std::vector<bpftrace::Field> fields, bpftrace.OutputFields());
-  PL_ASSIGN_OR_RETURN(std::string_view format_str, bpftrace.OutputFmtStr());
+  PL_RETURN_IF_ERROR(bpftrace.CompileForPrintfOutput(tracepoint.bpftrace().program(), {}));
+  const std::vector<bpftrace::Field>& fields = bpftrace.OutputFields();
+  std::string_view format_str = bpftrace.OutputFmtStr();
   PL_ASSIGN_OR_RETURN(std::vector<ColumnSpec> columns, ConvertFields(fields, format_str));
 
   std::unique_ptr<DynamicDataTableSchema> table_schema =
@@ -151,7 +151,7 @@ namespace {
 // Perform some checks on the fields to see that it is well formed.
 // Important because we don't want the record builder to fail half-way through,
 // otherwise the data table will be badly messed up.
-Status CheckOutputFields(const std::vector<bpftrace::Field> fields,
+Status CheckOutputFields(const std::vector<bpftrace::Field>& fields,
                          const ArrayView<DataElement>& table_schema_elements) {
   if (fields.size() != table_schema_elements.size()) {
     return error::Internal(
@@ -201,10 +201,10 @@ Status CheckOutputFields(const std::vector<bpftrace::Field> fields,
 
 Status DynamicBPFTraceConnector::InitImpl() {
   auto callback_fn = std::bind(&DynamicBPFTraceConnector::HandleEvent, this, std::placeholders::_1);
-  PL_RETURN_IF_ERROR(Compile(script_, {}));
-  PL_RETURN_IF_ERROR(Deploy(callback_fn));
-  PL_ASSIGN_OR_RETURN(output_fields_, OutputFields());
+  PL_RETURN_IF_ERROR(CompileForPrintfOutput(script_, {}));
+  output_fields_ = OutputFields();
   PL_RETURN_IF_ERROR(CheckOutputFields(output_fields_, table_schema_->Get().elements()));
+  PL_RETURN_IF_ERROR(Deploy(callback_fn));
   return Status::OK();
 }
 

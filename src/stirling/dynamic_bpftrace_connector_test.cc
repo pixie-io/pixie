@@ -353,7 +353,24 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceUnlabeledColumn) {
   ASSERT_OK(connector->Stop());
 }
 
-TEST(DynamicBPFTraceConnectorTest, BPFTraceMalformedPrintf) {
+TEST(DynamicBPFTraceConnectorTest, BPFTraceSyntacticError) {
+  // Create a BPFTrace program spec
+  TracepointDeployment_Tracepoint tracepoint;
+  tracepoint.set_table_name("pid_sample_table");
+
+  constexpr char kScript[] = R"(interval:ms:100 {
+           bogus
+           printf("username:%s time:%s", username, nsecs);
+        })";
+
+  tracepoint.mutable_bpftrace()->set_program(kScript);
+
+  // TODO(oazizi): Find a way to get the clang error passed up.
+  ASSERT_THAT(DynamicBPFTraceConnector::Create("test", tracepoint).status(),
+              StatusIs(statuspb::INTERNAL, HasSubstr("Could not load bpftrace script")));
+}
+
+TEST(DynamicBPFTraceConnectorTest, BPFTraceSemanticError) {
   // Create a BPFTrace program spec
   TracepointDeployment_Tracepoint tracepoint;
   tracepoint.set_table_name("pid_sample_table");
@@ -366,7 +383,26 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceMalformedPrintf) {
   tracepoint.mutable_bpftrace()->set_program(kScript);
 
   ASSERT_THAT(DynamicBPFTraceConnector::Create("test", tracepoint).status(),
-              StatusIs(statuspb::INTERNAL, HasSubstr("Semantic analyser failed")));
+              StatusIs(statuspb::INTERNAL,
+                       HasSubstr("ERROR: printf: Too many arguments for format string")));
+}
+
+TEST(DynamicBPFTraceConnectorTest, BPFTraceCheckPrintfsError) {
+  // Create a BPFTrace program spec
+  TracepointDeployment_Tracepoint tracepoint;
+  tracepoint.set_table_name("pid_sample_table");
+
+  constexpr char kScript[] = R"(interval:ms:100 {
+           printf("time:%llu val:%d inet:%s", nsecs, 1, "true");
+           printf("time:%llu name:%s", nsecs, "hello");
+        })";
+
+  tracepoint.mutable_bpftrace()->set_program(kScript);
+
+  ASSERT_THAT(
+      DynamicBPFTraceConnector::Create("test", tracepoint).status(),
+      StatusIs(statuspb::INTERNAL,
+               HasSubstr("All printf statements must have exactly the same format string")));
 }
 
 }  // namespace stirling

@@ -8,6 +8,9 @@ namespace pl {
 namespace stirling {
 namespace bpf_tools {
 
+using ::pl::testing::status::StatusIs;
+using ::testing::HasSubstr;
+
 TEST(BPFTracerWrapperTest, MapRead) {
   constexpr std::string_view kScript = R"(
   interval:ms:100 {
@@ -16,7 +19,7 @@ TEST(BPFTracerWrapperTest, MapRead) {
   )";
 
   BPFTraceWrapper bpftrace_wrapper;
-  ASSERT_OK(bpftrace_wrapper.Compile(kScript, /* params */ {}));
+  ASSERT_OK(bpftrace_wrapper.CompileForMapOutput(kScript, /* params */ {}));
   ASSERT_OK(bpftrace_wrapper.Deploy());
   sleep(1);
 
@@ -34,7 +37,7 @@ TEST(BPFTracerWrapperTest, PerfBufferPoll) {
     )";
 
   BPFTraceWrapper bpftrace_wrapper;
-  ASSERT_OK(bpftrace_wrapper.Compile(kScript, /* params */ {}));
+  ASSERT_OK(bpftrace_wrapper.CompileForMapOutput(kScript, /* params */ {}));
   ASSERT_OK(bpftrace_wrapper.Deploy());
   sleep(1);
 
@@ -67,7 +70,7 @@ TEST(BPFTracerWrapperTest, PerfBufferPollWithCallback) {
   BPFTraceWrapper bpftrace_wrapper;
   auto callback_fn =
       std::bind(&CallbackWrapperClass::PrintfCallback, &callback_target, std::placeholders::_1);
-  ASSERT_OK(bpftrace_wrapper.Compile(script, /* params */ {}));
+  ASSERT_OK(bpftrace_wrapper.CompileForPrintfOutput(script, /* params */ {}));
   ASSERT_OK(bpftrace_wrapper.Deploy(callback_fn));
   sleep(kProbeDurationSeconds);
 
@@ -92,9 +95,9 @@ TEST(BPFTracerWrapperTest, OutputFields) {
     )";
 
   BPFTraceWrapper bpftrace_wrapper;
-  ASSERT_OK(bpftrace_wrapper.Compile(script, /* params */ {}));
+  ASSERT_OK(bpftrace_wrapper.CompileForPrintfOutput(script, /* params */ {}));
 
-  ASSERT_OK_AND_ASSIGN(std::vector<bpftrace::Field> fields, bpftrace_wrapper.OutputFields());
+  const std::vector<bpftrace::Field>& fields = bpftrace_wrapper.OutputFields();
 
   ASSERT_EQ(fields.size(), 4);
 
@@ -120,8 +123,8 @@ TEST(BPFTracerWrapperTest, MultiplePrintfs) {
       )";
 
   BPFTraceWrapper bpftrace_wrapper;
-  ASSERT_OK(bpftrace_wrapper.Compile(script, /* params */ {}));
-  ASSERT_OK_AND_ASSIGN(std::vector<bpftrace::Field> fields, bpftrace_wrapper.OutputFields());
+  ASSERT_OK(bpftrace_wrapper.CompileForPrintfOutput(script, /* params */ {}));
+  const std::vector<bpftrace::Field>& fields = bpftrace_wrapper.OutputFields();
 
   ASSERT_EQ(fields.size(), 4);
 
@@ -148,8 +151,10 @@ TEST(BPFTracerWrapperTest, InconsistentPrintfs) {
         )";
 
     BPFTraceWrapper bpftrace_wrapper;
-    ASSERT_OK(bpftrace_wrapper.Compile(script, /* params */ {}));
-    ASSERT_NOT_OK(bpftrace_wrapper.OutputFields());
+    ASSERT_THAT(
+        bpftrace_wrapper.CompileForPrintfOutput(script, /* params */ {}).status(),
+        StatusIs(statuspb::INTERNAL,
+                 HasSubstr("All printf statements must have exactly the same format string")));
   }
 
   {
@@ -161,8 +166,10 @@ TEST(BPFTracerWrapperTest, InconsistentPrintfs) {
         )";
 
     BPFTraceWrapper bpftrace_wrapper;
-    ASSERT_OK(bpftrace_wrapper.Compile(script, /* params */ {}));
-    ASSERT_NOT_OK(bpftrace_wrapper.OutputFields());
+    ASSERT_THAT(
+        bpftrace_wrapper.CompileForPrintfOutput(script, /* params */ {}).status(),
+        StatusIs(statuspb::INTERNAL,
+                 HasSubstr("All printf statements must have exactly the same format string")));
   }
 }
 

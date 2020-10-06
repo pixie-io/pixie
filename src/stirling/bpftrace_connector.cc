@@ -22,7 +22,7 @@ BPFTraceConnector::BPFTraceConnector(std::string_view source_name,
     : SourceConnector(source_name, table_schemas), script_(script), params_(std::move(params)) {}
 
 Status BPFTraceConnector::InitImpl() {
-  PL_RETURN_IF_ERROR(Compile(script_, params_));
+  PL_RETURN_IF_ERROR(CompileForMapOutput(script_, params_));
   PL_RETURN_IF_ERROR(Deploy());
 
   return Status::OK();

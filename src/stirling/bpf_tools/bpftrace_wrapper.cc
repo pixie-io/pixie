@@ -32,6 +32,20 @@ std::string DumpDriver(const Driver& driver) {
   return oss.str();
 }
 
+Status BPFTraceWrapper::CompileForPrintfOutput(std::string_view script,
+                                               const std::vector<std::string>& params) {
+  PL_RETURN_IF_ERROR(Compile(script, params));
+  PL_RETURN_IF_ERROR(CheckPrintfs());
+  printf_to_table_ = true;
+  return Status::OK();
+}
+
+Status BPFTraceWrapper::CompileForMapOutput(std::string_view script,
+                                            const std::vector<std::string>& params) {
+  PL_RETURN_IF_ERROR(Compile(script, params));
+  return Status::OK();
+}
+
 Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::string>& params) {
   int err;
   int success;
@@ -114,10 +128,13 @@ Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::
     return error::Internal("Clang parse failed.");
   }
 
-  bpftrace::ast::SemanticAnalyser semantics(driver.root_.get(), bpftrace_, bpftrace_.feature_);
+  std::ostringstream semantic_analyser_out;
+  bpftrace::ast::SemanticAnalyser semantics(driver.root_.get(), bpftrace_, bpftrace_.feature_,
+                                            semantic_analyser_out);
   err = semantics.analyse();
   if (err != 0) {
-    return error::Internal("Semantic analyser failed.");
+    return error::Internal("Semantic analyser failed with message: $0",
+                           semantic_analyser_out.str());
   }
 
   err = semantics.create_maps(bpftrace::bt_debug != bpftrace::DebugLevel::kNone);
@@ -133,10 +150,16 @@ Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::
     return error::Internal("No bpftrace probes to deploy.");
   }
 
+  compiled_ = true;
+
   return Status::OK();
 }
 
 Status BPFTraceWrapper::Deploy(const PrintfCallback& printf_callback) {
+  DCHECK(compiled_) << "Must compile first.";
+  DCHECK_EQ(printf_callback != nullptr, printf_to_table_)
+      << "Provide callback if and only if compiled for printfs output";
+
   if (!IsRoot()) {
     return error::PermissionDenied("Bpftrace currently only supported as the root user.");
   }
@@ -179,14 +202,16 @@ Status BPFTraceWrapper::CheckPrintfs() const {
   return Status::OK();
 }
 
-StatusOr<std::vector<bpftrace::Field>> BPFTraceWrapper::OutputFields() const {
-  PL_RETURN_IF_ERROR(CheckPrintfs());
+const std::vector<bpftrace::Field>& BPFTraceWrapper::OutputFields() const {
+  DCHECK(compiled_) << "Must compile first.";
+  DCHECK(printf_to_table_) << "OutputFields() on supported if compiling with printf_to_table";
 
   return std::get<1>(bpftrace_.printf_args_.front());
 }
 
-StatusOr<std::string_view> BPFTraceWrapper::OutputFmtStr() const {
-  PL_RETURN_IF_ERROR(CheckPrintfs());
+std::string_view BPFTraceWrapper::OutputFmtStr() const {
+  DCHECK(compiled_) << "Must compile first.";
+  DCHECK(printf_to_table_) << "OutputFmtStr() on supported if compiling with printf_to_table";
 
   return std::string_view(std::get<0>(bpftrace_.printf_args_.front()));
 }

@@ -33,9 +33,21 @@ class BPFTraceWrapper {
   ~BPFTraceWrapper() { Stop(); }
 
   /**
-   * Compiles the BPFTrace program.
+   * Compiles the BPFTrace program, assuming the output mode is via printfs.
+   *
+   * @return error if there is a syntax or semantic error.
+   *         Also errors if there is no printf statement in the compiled program,
+   *         or if all the printfs in the program do not have a consistent format string.
    */
-  Status Compile(std::string_view bpf_program, const std::vector<std::string>& params);
+  Status CompileForPrintfOutput(std::string_view script, const std::vector<std::string>& params);
+
+  /**
+   * Compiles the BPFTrace program, but without treating printfs in any special way.
+   * Meant for model where output is through BPF maps.
+   *
+   * @return error if there is a syntax or semantic error.
+   */
+  Status CompileForMapOutput(std::string_view script, const std::vector<std::string>& params);
 
   /**
    * Deploys the previously compiled BPFTrace program.
@@ -54,18 +66,15 @@ class BPFTraceWrapper {
 
   /**
    * Returns the fields of the BPFTrace program's printf.
-   * @return error if there is no printf statement in the compiled program,
-   *         or if all the printfs in the program do not have a consistent format string.
-   *         otherwise, returns a vector of fields which represents the types in the printf.
+   * Only valid if compiled with printf_to_table option; undefined behavior otherwise.
    */
-  StatusOr<std::vector<bpftrace::Field>> OutputFields() const;
+  const std::vector<bpftrace::Field>& OutputFields() const;
 
   /**
    * Returns the format string of the BPFTrace program's printf.
-   * @return error if there is no printf statement in the compiled program,
-   *         or if all the printfs in the program do not have a consistent format string.
+   * Only valid if compiled with printf_to_table option, undefined behavior otherwise.
    */
-  StatusOr<std::string_view> OutputFmtStr() const;
+  std::string_view OutputFmtStr() const;
 
   /**
    * Gets the specified map name, using BPFTrace name. Map name should include the '@' prefix.
@@ -73,14 +82,20 @@ class BPFTraceWrapper {
   bpftrace::BPFTraceMap GetBPFMap(const std::string& name);
 
  protected:
+  bpftrace::BPFtrace bpftrace_;
+  std::unique_ptr<bpftrace::BpfOrc> bpforc_;
+
+ private:
+  Status Compile(std::string_view script, const std::vector<std::string>& params);
+
   // Checks the output for dynamic tracing:
   //  1) There must be at least one printf.
   //  2) If there is more than one printf, all printfs have a consistent format string.
   //     In other words, all printfs must output to the same table.
   Status CheckPrintfs() const;
 
-  bpftrace::BPFtrace bpftrace_;
-  std::unique_ptr<bpftrace::BpfOrc> bpforc_;
+  bool compiled_ = false;
+  bool printf_to_table_ = false;
 };
 
 }  // namespace bpf_tools
