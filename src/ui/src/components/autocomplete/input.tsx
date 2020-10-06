@@ -38,6 +38,12 @@ const useStyles = makeStyles((theme: Theme) => (
       top: '0',
       left: '0',
       padding: '0',
+      // <input /> is a replaced element, and as such is frustratingly disobedient with CSS. Its width calculation is
+      // off slightly; oversizing it allows it to fit its whole contents when growing to, well, fit its contents.
+      // The hint still lines up because its position is based on the adjacent dummy, which sizes correctly on its own.
+      // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#CSS
+      // https://developer.mozilla.org/en-US/docs/Web/CSS/Replaced_element
+      width: '120%',
     },
     // Since HTMLInputElement does not obey normal width calculations, we position it atop an invisible span that does.
     dummy: {
