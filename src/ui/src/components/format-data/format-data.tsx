@@ -328,22 +328,36 @@ export const ThroughputBytesRenderer = ({ data }: PercentRendererProps) => (
   <RenderValueWithUnits data={formatThroughputBytes(data)} />
 );
 
-export const formatBySemType = (semType: SemanticType, val: any): DataWithUnits => {
+// FormatFnMetadata stores a function with the string rep of that function.
+// We need this datastructure to support formatting in Vega Axes.
+export interface FormatFnMetadata {
+  name: string;
+  formatFn: (data: number) => DataWithUnits;
+}
+
+export const getFormatFnMetadata = (semType: SemanticType): FormatFnMetadata => {
   switch (semType) {
     case SemanticType.ST_BYTES:
-      return formatBytes(val);
+      return { formatFn: formatBytes, name: 'formatBytes' };
     case SemanticType.ST_DURATION_NS:
-      return formatDuration(val);
+      return { formatFn: formatDuration, name: 'formatDuration' };
     case SemanticType.ST_PERCENT:
-      return formatPercent(val);
+      return { formatFn: formatPercent, name: 'formatPercent' };
     case SemanticType.ST_THROUGHPUT_PER_NS:
-      return formatThroughput(val);
+      return { formatFn: formatThroughput, name: 'formatThroughput' };
     case SemanticType.ST_THROUGHPUT_BYTES_PER_NS:
-      return formatThroughputBytes(val);
+      return { formatFn: formatThroughputBytes, name: 'formatThroughputBytes' };
     default:
       break;
   }
+  return null;
+};
 
+export const formatBySemType = (semType: SemanticType, val: any): DataWithUnits => {
+  const formatFnMd = getFormatFnMetadata(semType);
+  if (formatFnMd) {
+    return formatFnMd.formatFn(val);
+  }
   return {
     val,
     units: '',

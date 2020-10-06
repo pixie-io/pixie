@@ -10,6 +10,7 @@ import {
   HOVER_PIVOT_TRANSFORM, HOVER_SIGNAL, INTERNAL_HOVER_SIGNAL, INTERNAL_TS_DOMAIN_SIGNAL,
   LEGEND_HOVER_SIGNAL, LEGEND_SELECT_SIGNAL, REVERSE_HOVER_SIGNAL, REVERSE_SELECT_SIGNAL,
   REVERSE_UNSELECT_SIGNAL,
+  wrapFormatFn,
 } from 'containers/live/convert-to-vega-spec';
 import {
   Relation,
@@ -68,7 +69,7 @@ function getFormatter(relation: Relation, display: ChartDisplay) {
   if (column) {
     const formatFunc = getVegaFormatFunc(relation, column);
     if (formatFunc) {
-      return formatFunc.formatter;
+      return wrapFormatFn(formatFunc.formatFn);
     }
   }
   return (val: number): string => formatFloat64Data(val, NUMERAL_FORMAT_STRING);

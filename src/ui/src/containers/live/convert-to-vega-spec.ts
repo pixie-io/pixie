@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable no-param-reassign */
 import { Theme } from '@material-ui/core/styles';
-import { formatBytes, formatDuration } from 'components/format-data/format-data';
+import { getFormatFnMetadata, DataWithUnits, FormatFnMetadata } from 'components/format-data/format-data';
 import { addPxTimeFormatExpression } from 'components/live-widgets/vega/timeseries-axis';
 import { Relation, SemanticType } from 'types/generated/vizier_pb';
 import {
@@ -144,32 +144,23 @@ interface VegaLabelFormatFunction {
   formatter: (number) => string;
 }
 
-function registerFunctions(formatters: VegaLabelFormatFunction[]) {
-  formatters.forEach((value: VegaLabelFormatFunction) => {
-    expressionFunction(value.functionName, value.formatter);
+export function wrapFormatFn(fn: (data: number) => DataWithUnits) {
+  return (val: number): string => {
+    const fmt = fn(val);
+    return `${fmt.val}${fmt.units}`;
+  };
+}
+
+function registerVegaFormatFunctions() {
+  Object.values(SemanticType).forEach((semType: SemanticType) => {
+    const fnMetadata = getFormatFnMetadata(semType);
+    if (fnMetadata) {
+      expressionFunction(fnMetadata.name, wrapFormatFn(fnMetadata.formatFn));
+    }
   });
 }
 
-const formatters: VegaLabelFormatFunction[] = [
-  {
-    functionName: 'formatBytes',
-    formatter: (val: number): string => {
-      const data = formatBytes(val);
-      return `${data.val}${data.units}`;
-    },
-    semType: SemanticType.ST_BYTES,
-  },
-  {
-    functionName: 'formatDuration',
-    formatter: (val: number): string => {
-      const data = formatDuration(val);
-      return `${data.val}${data.units}`;
-    },
-    semType: SemanticType.ST_DURATION_NS,
-  },
-];
-
-registerFunctions(formatters);
+registerVegaFormatFunctions();
 
 export type ChartDisplay = TimeseriesDisplay | BarDisplay | VegaDisplay | HistogramDisplay;
 
@@ -645,19 +636,7 @@ function addLabelsToAxes(xAxis: Axis, yAxis: Axis, display: DisplayWithLabels) {
   }
 }
 
-const vegaFormatFuncForSemanticType = (semType: SemanticType): VegaLabelFormatFunction | null => {
-  if (semType <= SemanticType.ST_NONE) {
-    return null;
-  }
-  for (const formatter of formatters) {
-    if (formatter.semType === semType) {
-      return formatter;
-    }
-  }
-  return null;
-};
-
-export const getVegaFormatFunc = (relation: Relation, column: string): VegaLabelFormatFunction | null => {
+export const getVegaFormatFunc = (relation: Relation, column: string): FormatFnMetadata => {
   if (!relation) {
     return null;
   }
@@ -665,7 +644,7 @@ export const getVegaFormatFunc = (relation: Relation, column: string): VegaLabel
     if (column !== columnInfo.getColumnName()) {
       continue;
     }
-    return vegaFormatFuncForSemanticType(columnInfo.getColumnSemanticType());
+    return getFormatFnMetadata(columnInfo.getColumnSemanticType());
   }
   return null;
 };
@@ -675,8 +654,7 @@ function createTSAxes(
   xScale: Scale,
   yScale: Scale,
   display: DisplayWithLabels,
-  column: string,
-  relation: Relation,
+  formatFuncMD: FormatFnMetadata,
 ) {
   const xAxis = addAxis(spec, {
     scale: xScale.name,
@@ -701,12 +679,11 @@ function createTSAxes(
     zindex: 0,
   });
 
-  const formatFunc = getVegaFormatFunc(relation, column);
   let formatAxis = {};
-  if (formatFunc) {
+  if (formatFuncMD) {
     formatAxis = {
       encode: {
-        labels: { update: { text: { signal: `${formatFunc.functionName}(datum.value)` } } },
+        labels: { update: { text: { signal: `${formatFuncMD.name}(datum.value)` } } },
       },
     };
   }
@@ -852,17 +829,21 @@ function convertToTimeseriesChart(
     ],
   });
 
+  // TODO(philkuz) handle case where the timeseries axes might be different sem types.
+  const formatFuncMD = getVegaFormatFunc(relation, timeseriesValues[0]);
+
   // Create signals.
   addWidthHeightSignals(spec);
   const reverseSignals = addHoverSelectSignals(spec);
   const tsDomainSignal = addTimeseriesDomainSignals(spec);
-  const yDomainSignal = addYDomainSignal(spec, extentSignalNames, DOMAIN_MIN_UPPER_VALUE);
+  // Don't set a Min upper domain value for values that have format functions.
+  const minUpperDomainValue = formatFuncMD ? 0 : DOMAIN_MIN_UPPER_VALUE;
+  const yDomainSignal = addYDomainSignal(spec, extentSignalNames, minUpperDomainValue);
 
   // Create scales/axes.
   const { xScale, yScale, colorScale } = createTSScales(
     spec, tsDomainSignal, yDomainSignal);
-  // TODO(philkuz) handle case where the timeseries axes might be different sem types.
-  createTSAxes(spec, xScale, yScale, display, timeseriesValues[0], relation);
+  createTSAxes(spec, xScale, yScale, display, formatFuncMD);
 
   // Create marks for ts lines.
   let i = 0;

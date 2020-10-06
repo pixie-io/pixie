@@ -24,7 +24,7 @@ export const formatLegendData = (
   view: View,
   time: number,
   entries: UnformattedLegendEntry[],
-  formatter: (number) => string,
+  formatter: (val: number) => string,
 ): LegendData => {
   const legendData: LegendData = {
     time: new Date(time).toLocaleString(),
