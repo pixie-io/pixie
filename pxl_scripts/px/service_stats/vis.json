@@ -53,7 +53,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "P50 Latency (ms)"
+          "label": "P50 Latency"
         },
         "xAxis": null
       }
@@ -79,7 +79,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "P90 Latency (ms)"
+          "label": "P90 Latency"
         },
         "xAxis": null
       }
@@ -97,7 +97,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "rps",
+            "value": "request_throughput",
             "series": "k8s",
             "stackBySeries": false,
             "mode": "MODE_LINE"
@@ -105,7 +105,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "RPS"
+          "label": "Request throughput"
         },
         "xAxis": null
       }
@@ -131,7 +131,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Error Rate (%)"
+          "label": "Error Rate"
         },
         "xAxis": null
       }
@@ -190,13 +190,13 @@
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.HistogramChart",
         "histogram": {
-          "value": "request_latency_ms",
+          "value": "request_latency",
           "prebinCount": "count",
           "maxbins": 10,
           "minstep": 50.0
         },
         "xAxis": {
-          "label": "Request Latency (ms)"
+          "label": "Request Latency"
         },
         "yAxis": {
           "label": "# of requests"

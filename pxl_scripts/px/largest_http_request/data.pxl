@@ -30,7 +30,7 @@ def get_max_elm(df, column):
 
 df = px.DataFrame(table='http_events', start_time='-2m')
 
-df[resp_size] = px.length(df.http_resp_body)
+df[resp_size] = px.Bytes(px.length(df.http_resp_body))
 df[k8s_object] = df.ctx[k8s_object]
 filter_pods = px.contains(df[k8s_object], match_name)
 filter_out_conds = ((df.http_req_path != '/health' or not filter_health) and (

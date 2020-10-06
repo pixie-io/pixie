@@ -53,32 +53,32 @@ def inbound_service_let_summary(start_time: str, namespace: px.Namespace):
     '''
     df = inbound_service_let_helper(start_time, namespace)
 
-    per_s_df = df.groupby(['timestamp', 'service']).agg(
-        throughput_total=('latency_ns', px.count),
+    per_ns_df = df.groupby(['timestamp', 'service']).agg(
+        throughput_total=('latency', px.count),
         inbound_bytes_total=('req_size', px.sum),
         outbound_bytes_total=('resp_size', px.sum)
     )
 
-    per_s_df.requests_per_ns = per_s_df.throughput_total / window_ns
-    per_s_df.inbound_bytes_per_ns = per_s_df.inbound_bytes_total / window_ns
-    per_s_df.outbound_bytes_per_ns = per_s_df.outbound_bytes_total / window_ns
+    per_ns_df.request_throughput = per_ns_df.throughput_total / window_ns
+    per_ns_df.inbound_throughput = per_ns_df.inbound_bytes_total / window_ns
+    per_ns_df.outbound_throughput = per_ns_df.outbound_bytes_total / window_ns
 
-    per_s_df = per_s_df.groupby(['service']).agg(
-        requests_per_ns=('requests_per_ns', px.mean),
-        inbound_bytes_per_ns=('inbound_bytes_per_ns', px.mean),
-        outbound_bytes_per_ns=('outbound_bytes_per_ns', px.mean)
+    per_ns_df = per_ns_df.groupby(['service']).agg(
+        request_throughput=('request_throughput', px.mean),
+        inbound_throughput=('inbound_throughput', px.mean),
+        outbound_throughput=('outbound_throughput', px.mean)
     )
 
     quantiles_df = df.groupby(['service']).agg(
-        latency_ns=('latency_ns', px.quantiles),
+        latency=('latency', px.quantiles),
         error_rate=('failure', px.mean)
     )
-    quantiles_df.error_rate_pct = px.Percent(quantiles_df.error_rate)
+    quantiles_df.error_rate = px.Percent(quantiles_df.error_rate)
 
-    joined = per_s_df.merge(quantiles_df, left_on='service', right_on='service', how='inner',
-                            suffixes=['', '_x'])
-    return joined[['service', 'latency_ns', 'requests_per_ns', 'error_rate_pct',
-                   'inbound_bytes_per_ns', 'outbound_bytes_per_ns']]
+    joined = per_ns_df.merge(quantiles_df, left_on='service', right_on='service', how='inner',
+                             suffixes=['', '_x'])
+    return joined[['service', 'latency', 'request_throughput', 'error_rate',
+                   'inbound_throughput', 'outbound_throughput']]
 
 
 def inbound_service_let_graph(start_time: str, namespace: px.Namespace):
@@ -93,9 +93,9 @@ def inbound_service_let_graph(start_time: str, namespace: px.Namespace):
     df = inbound_service_let_helper(start_time, namespace)
 
     df = df.groupby(['timestamp', 'service', 'remote_addr', 'pod']).agg(
-        latency_quantiles=('latency_ns', px.quantiles),
+        latency_quantiles=('latency', px.quantiles),
         error_rate=('failure', px.mean),
-        throughput_total=('latency_ns', px.count),
+        throughput_total=('latency', px.count),
         inbound_bytes_total=('req_size', px.sum),
         outbound_bytes_total=('resp_size', px.sum)
     )
@@ -111,20 +111,20 @@ def inbound_service_let_graph(start_time: str, namespace: px.Namespace):
     df.responder_service = df.service
     df.requestor_service = px.pod_id_to_service_name(df.requestor_pod_id)
 
-    df.requests_per_ns = df.throughput_total / window_ns
-    df.inbound_bytes_per_ns = df.inbound_bytes_total / window_ns
-    df.outbound_bytes_per_ns = df.outbound_bytes_total / window_ns
-    df.error_rate_pct = px.Percent(df.error_rate)
+    df.request_throughput = df.throughput_total / window_ns
+    df.inbound_throughput = df.inbound_bytes_total / window_ns
+    df.outbound_throughput = df.outbound_bytes_total / window_ns
+    df.error_rate = px.Percent(df.error_rate)
 
     return df.groupby(['responder_pod', 'requestor_pod', 'responder_service',
                        'requestor_service']).agg(
         latency_p50=('latency_p50', px.mean),
         latency_p90=('latency_p90', px.mean),
         latency_p99=('latency_p99', px.mean),
-        requests_per_ns=('requests_per_ns', px.mean),
-        error_rate_pct=('error_rate_pct', px.mean),
-        inbound_bytes_per_ns=('inbound_bytes_per_ns', px.mean),
-        outbound_bytes_per_ns=('outbound_bytes_per_ns', px.mean),
+        request_throughput=('request_throughput', px.mean),
+        error_rate=('error_rate', px.mean),
+        inbound_throughput=('inbound_throughput', px.mean),
+        outbound_throughput=('outbound_throughput', px.mean),
         throughput_total=('throughput_total', px.sum)
     )
 
@@ -141,8 +141,8 @@ def inbound_service_let_helper(start_time: str, namespace: px.Namespace):
     df.service = df.ctx['service']
     df.pod = df.ctx['pod_name']
     df = df[df.ctx['namespace'] == namespace and df.service != '']
-    df.latency_ns = df.http_resp_latency_ns
-    df = df[df['latency_ns'] < (10000 * ns_per_ms)]
+    df.latency = df.http_resp_latency_ns
+    df = df[df['latency'] < (10000 * ns_per_ms)]
     df.timestamp = px.bin(df.time_, window_ns)
 
     df.req_size = px.Bytes(px.length(df.http_req_body))
@@ -154,5 +154,3 @@ def inbound_service_let_helper(start_time: str, namespace: px.Namespace):
 
     df = df[filter_out_conds]
     return df
-
-px.display(inbound_service_let_summary('-10s', 'pl'))

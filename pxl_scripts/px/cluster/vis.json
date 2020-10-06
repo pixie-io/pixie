@@ -34,10 +34,10 @@
         "p50Column": "latency_p50",
         "p90Column": "latency_p90",
         "p99Column": "latency_p99",
-        "errorRateColumn": "error_rate_pct",
-        "requestsPerSecondColumn": "requests_per_ns",
-        "inboundBytesPerSecondColumn": "inbound_bytes_per_ns",
-        "outboundBytesPerSecondColumn": "outbound_bytes_per_ns",
+        "errorRateColumn": "error_rate",
+        "requestsPerSecondColumn": "request_throughput",
+        "inboundBytesPerSecondColumn": "inbound_throughput",
+        "outboundBytesPerSecondColumn": "outbound_throughput",
         "totalRequestCountColumn": "throughput_total"
       }
     },

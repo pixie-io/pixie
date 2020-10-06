@@ -70,7 +70,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "requests_per_s",
+            "value": "request_throughput",
             "mode": "MODE_LINE",
             "series": "service",
             "stackBySeries": false
@@ -96,7 +96,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "error_rate_pct",
+            "value": "error_rate",
             "mode": "MODE_LINE",
             "series": "service",
             "stackBySeries": false
@@ -110,7 +110,7 @@
       }
     },
     {
-      "name": "HTTP P50 Latency (ms)",
+      "name": "HTTP P50 Latency",
       "position": {
         "x": 0,
         "y": 3,
@@ -130,13 +130,13 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Mean latency (ms)"
+          "label": "Mean latency"
         },
         "xAxis": null
       }
     },
     {
-      "name": "HTTP P90 Latency (ms)",
+      "name": "HTTP P90 Latency",
       "position": {
         "x": 4,
         "y": 3,
@@ -156,13 +156,13 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Mean latency (ms)"
+          "label": "Mean latency"
         },
         "xAxis": null
       }
     },
     {
-      "name": "HTTP P99 Latency (ms)",
+      "name": "HTTP P99 Latency",
       "position": {
         "x": 8,
         "y": 3,
@@ -182,7 +182,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Mean latency (ms)"
+          "label": "Mean latency"
         },
         "xAxis": null
       }
@@ -217,10 +217,10 @@
         "p50Column": "latency_p50",
         "p90Column": "latency_p90",
         "p99Column": "latency_p99",
-        "errorRateColumn": "error_rate_pct",
-        "requestsPerSecondColumn": "requests_per_s",
-        "inboundBytesPerSecondColumn": "inbound_bytes_per_s",
-        "outboundBytesPerSecondColumn": "outbound_bytes_per_s",
+        "errorRateColumn": "error_rate",
+        "requestsPerSecondColumn": "request_throughput",
+        "inboundBytesPerSecondColumn": "inbound_throughput",
+        "outboundBytesPerSecondColumn": "outbound_throughput",
         "totalRequestCountColumn": "throughput_total"
       }
     },

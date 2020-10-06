@@ -88,7 +88,7 @@
       }
     },
     {
-      "name": "CPU %",
+      "name": "CPU Usage",
       "position": {
         "x": 8,
         "y": 0,
@@ -100,20 +100,20 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "cpu_pct",
+            "value": "cpu_usage",
             "mode": "MODE_LINE",
             "series": "groupby_col"
           }
         ],
         "title": "",
         "yAxis": {
-          "label": "CPU usage (%)"
+          "label": "CPU usage"
         },
         "xAxis": null
       }
     },
     {
-      "name": "Bytes read (MB/s)",
+      "name": "Bytes read",
       "position": {
         "x": 0,
         "y": 3,
@@ -125,20 +125,20 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "rchar_bytes_per_ns",
+            "value": "total_disk_read_throughput",
             "mode": "MODE_LINE",
             "series": "groupby_col"
           }
         ],
         "title": "",
         "yAxis": {
-          "label": "Bytes read (MB/s)"
+          "label": "Bytes read"
         },
         "xAxis": null
       }
     },
     {
-      "name": "Bytes written (MB/s)",
+      "name": "Bytes written",
       "position": {
         "x": 4,
         "y": 3,
@@ -150,14 +150,14 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "wchar_bytes_per_ns",
+            "value": "total_disk_write_throughput",
             "mode": "MODE_LINE",
             "series": "groupby_col"
           }
         ],
         "title": "",
         "yAxis": {
-          "label": "Bytes written (MB/s)"
+          "label": "Bytes written"
         },
         "xAxis": null
       }
@@ -182,7 +182,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Sent Data (MB/s)"
+          "label": "Sent Data"
         },
         "xAxis": null
       }
@@ -207,13 +207,13 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Received Data (MB/s)"
+          "label": "Received Data"
         },
         "xAxis": null
       }
     },
     {
-      "name": "Resident Set Size (MB)",
+      "name": "Resident Set Size",
       "position": {
         "x": 4,
         "y": 6,
@@ -225,7 +225,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "rss_bytes",
+            "value": "rss",
             "mode": "MODE_LINE",
             "series": "groupby_col",
             "stackBySeries": false
@@ -233,13 +233,13 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Resident Memory Usage (mb)"
+          "label": "Resident Memory Usage"
         },
         "xAxis": null
       }
     },
     {
-      "name": "Virtual Memory Size (MB)",
+      "name": "Virtual Memory Size",
       "position": {
         "x": 8,
         "y": 6,
@@ -251,7 +251,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "vsize_bytes",
+            "value": "vsize",
             "mode": "MODE_LINE",
             "series": "groupby_col",
             "stackBySeries": false
@@ -259,7 +259,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Virtual Memory Usage (MB)"
+          "label": "Virtual Memory Usage"
         },
         "xAxis": null
       }

@@ -63,7 +63,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Young GC Time (ms)"
+          "label": "Young GC Time"
         },
         "xAxis": null
       }
@@ -89,7 +89,7 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Full GC Time (ms)"
+          "label": "Full GC Time"
         },
         "xAxis": null
       }

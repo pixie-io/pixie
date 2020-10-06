@@ -45,13 +45,13 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "requests_per_s",
+            "value": "request_throughput",
             "mode": "MODE_LINE"
           }
         ],
         "title": "",
         "yAxis": {
-          "label": "requests per second"
+          "label": "request throughput"
         },
         "xAxis": null
       }
@@ -69,13 +69,13 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "errors_per_s",
+            "value": "errors_per_ns",
             "mode": "MODE_LINE"
           }
         ],
         "title": "",
         "yAxis": {
-          "label": "errors per second"
+          "label": "error rate"
         },
         "xAxis": null
       }
@@ -107,13 +107,13 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Latency (ms)"
+          "label": "Latency"
         },
         "xAxis": null
       }
     },
     {
-      "name": "HTTP Response Size",
+      "name": "HTTP Response Data Throughput",
       "position": {
         "x": 0,
         "y": 3,
@@ -125,13 +125,13 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "mbytes_per_s",
+            "value": "bytes_per_ns",
             "mode": "MODE_LINE"
           }
         ],
         "title": "",
         "yAxis": {
-          "label": "MB / s"
+          "label": "Response data throughput"
         },
         "xAxis": null
       }

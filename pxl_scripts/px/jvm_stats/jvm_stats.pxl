@@ -69,7 +69,7 @@ def jvm_stats(start: str, node_name: px.Node, pod: px.Pod):
     """
     df = filtered_process_stats(start, node_name, pod)
     # Calculate the CPU usage per window.
-    jvm_df = calculate_jvm(df, window_s)
+    jvm_df = calculate_jvm(df, window_ns)
     jvm_df[split_series_name] = jvm_df[k8s_object]
     return jvm_df
 
@@ -116,7 +116,7 @@ def filtered_process_stats(start: str, node_name: px.Node, pod: px.Pod):
     # Load and prepare the process_stats table to calculate CPU usage
     # by pod.
     process_df = px.DataFrame(table='jvm_stats', start_time=start)
-    process_df = format_jvm_table(process_df, window_s)
+    process_df = format_jvm_table(process_df, window_ns)
     process_df = filter_stats(process_df, node_name, pod)
     return process_df
 
@@ -215,6 +215,9 @@ def calculate_jvm(df, window_size):
 
     Returns: Calculated JVM stats per window and pod/svc.
     """
+    df.used_heap_size = px.Bytes(df.used_heap_size)
+    df.total_heap_size = px.Bytes(df.total_heap_size)
+    df.max_heap_size = px.Bytes(df.max_heap_size)
     # Aggregate over each UPID, k8s_object, and window.
     by_upid = df.groupby(['upid', k8s_object, 'timestamp']).agg(
         young_gc_time_max=('young_gc_time', px.max),
@@ -239,6 +242,8 @@ def calculate_jvm(df, window_size):
         max_heap_size=('max_heap_size', px.sum),
         total_heap_size=('total_heap_size', px.sum),
     )
+    per_k8s.young_gc_time = px.DurationNanos(per_k8s.young_gc_time)
+    per_k8s.full_gc_time = px.DurationNanos(per_k8s.full_gc_time)
 
     # Finally, calculate total (kernel + user time)  percentage used over window.
     per_k8s['time_'] = per_k8s['timestamp']

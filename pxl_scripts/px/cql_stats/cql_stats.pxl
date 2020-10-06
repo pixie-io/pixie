@@ -52,7 +52,7 @@ def pod_cql_let(start: str, pod: px.Pod):
     """
     df = cql_let_per_pod(start, pod)
     return df['time_', split_series_name, ip_col_name, 'latency_p50',
-              'latency_p90', 'latency_p99', 'error_rate', 'requests_per_ns']
+              'latency_p90', 'latency_p99', 'error_rate', 'request_throughput']
 
 
 def summary_cql_let(start: str, pod: px.Pod):
@@ -69,7 +69,8 @@ def summary_cql_let(start: str, pod: px.Pod):
     """
     df = cql_let_per_pod(start, pod)
     summary_df = summarize_LET(df, [k8s_object, ip_col_name])
-    return summary_df[[k8s_object, ip_col_name, "requests_per_ns", "error_rate", "latency", "total_requests"]]
+    return summary_df[[k8s_object, ip_col_name, "request_throughput",
+                       "error_rate", "latency", "total_requests"]]
 
 
 def latency_histogram(start: str, pod: px.Pod):
@@ -92,9 +93,9 @@ def latency_histogram(start: str, pod: px.Pod):
     # over the time window ('timestamp') after filtering for matching svcs.
     matching_df = df[px.contains(df[k8s_object], pod)]
 
-    matching_df.request_latency_ns = px.bin(matching_df.latency_ns,
-                                            latency_bin_size_ns)
-    return matching_df.groupby('request_latency_ns').agg(count=('time_', px.count))
+    matching_df.request_latency = px.bin(matching_df.latency,
+                                         latency_bin_size_ns)
+    return matching_df.groupby('request_latency').agg(count=('time_', px.count))
 
 
 # ----------------------------------------------------------------
@@ -132,7 +133,7 @@ def cql_let_per_pod(start: str, pod: px.Pod):
     return let_df
 
 
-def format_events_table(df, latency_ns_col):
+def format_events_table(df, latency_col):
     """ Format data and add semantic columns in event tables
 
     Unifies latency column to 'latency_ms', adds a binned
@@ -143,11 +144,12 @@ def format_events_table(df, latency_ns_col):
 
     Args:
     @df: the input events table
-    @latency_ns_col: the name of the latency column in @df.
+    @latency_col: the name of the latency column in @df.
 
     Returns: formatted events DataFrame
     """
-    df = df[df[latency_ns_col] < (10000 * ns_per_ms)]
+    df.latency = df[latency_col]
+    df = df[df.latency < (10000 * ns_per_ms)]
     df.timestamp = px.bin(df.time_, window_ns)
     df[k8s_object] = df.ctx[k8s_object]
     df = df[df[k8s_object] != '']
@@ -177,7 +179,7 @@ def format_LET_aggs(df):
 
     Converts the result of aggregates on windows into well-formatted metrics that
     can be visualized. Latency quantile values need to be extracted from the
-    quantiles struct, and then error_rate, requests_per_ns, and bytes_per_ns are calculated as
+    quantiles struct, and then error_rate, request_throughput, and bytes_per_ns are calculated as
     a function of window size.
 
 
@@ -186,7 +188,7 @@ def format_LET_aggs(df):
 
     Args:
     @df: the input events table grouped into windows with aggregated
-        columns 'throughput_total', 'error_rate_per_window', and 'requests_per_ns'
+        columns 'throughput_total', 'error_rate_per_window', and 'request_throughput'
 
     Returns: DataFrame with formatted LET metrics.
     """
@@ -195,9 +197,9 @@ def format_LET_aggs(df):
     df.latency_p90 = px.pluck_float64(df.latency_quantiles, 'p90')
     df.latency_p99 = px.pluck_float64(df.latency_quantiles, 'p99')
     df['time_'] = df['timestamp']
-    df.requests_per_ns = df.throughput_total / window_ns
+    df.request_throughput = df.throughput_total / window_ns
     df.bytes_per_ns = df.bytes_total / window_ns
-    df.error_rate = df.error_rate_per_window * df.requests_per_ns / px.DurationNanos(1)
+    df.error_rate = df.error_rate_per_window * df.request_throughput / px.DurationNanos(1)
 
     return df
 
@@ -217,14 +219,14 @@ def calc_cql_LET(df, groups):
     """
     # All requests for errors and throughput
     et = df.groupby(groups).agg(
-        throughput_total=('latency_ns', px.count),
+        throughput_total=('latency', px.count),
         error_rate_per_window=('failure', px.mean),
     )
 
     filt_df = df[df.resp_op != 0]
     # Calculate latency on all requests that return or return an err.
     lcy = filt_df.groupby(groups).agg(
-        latency_quantiles=('latency_ns', px.quantiles),
+        latency_quantiles=('latency', px.quantiles),
         bytes_total=('resp_size', px.sum)
     )
     # Left join because et's groups are a strict superset of lcy.
@@ -266,7 +268,7 @@ def summarize_LET(let_df, groups):
     Returns: The summary DF.
     """
     df = let_df.groupby(groups).agg(
-        requests_per_ns=('requests_per_ns', px.mean),
+        request_throughput=('request_throughput', px.mean),
         bytes_per_ns=('bytes_per_ns', px.mean),
         error_rate=('error_rate', px.mean),
         total_requests=('throughput_total', px.sum),

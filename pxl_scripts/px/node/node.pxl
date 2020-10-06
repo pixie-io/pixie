@@ -46,20 +46,16 @@ def resource_timeseries(start_time: str, node: px.Node, groupby: str):
     df[groupby] = df.ctx[groupby]
     df.timestamp = px.bin(df.time_, window_ns)
 
-    # Convert nanoseconds to milliseconds.
-    df.cpu_utime_ms = df.cpu_utime_ns / 1.0E6
-    df.cpu_ktime_ms = df.cpu_ktime_ns / 1.0E6
-
     # First calculate CPU usage by process (UPID) in each k8s_object
     # over all windows.
     df = df.groupby(['upid', 'timestamp', groupby]).agg(
-        rss_bytes=('rss_bytes', px.mean),
-        vsize_bytes=('vsize_bytes', px.mean),
+        rss=('rss_bytes', px.mean),
+        vsize=('vsize_bytes', px.mean),
         # The fields below are counters, so we take the min and the max to subtract them.
-        cpu_utime_ms_max=('cpu_utime_ms', px.max),
-        cpu_utime_ms_min=('cpu_utime_ms', px.min),
-        cpu_ktime_ms_max=('cpu_ktime_ms', px.max),
-        cpu_ktime_ms_min=('cpu_ktime_ms', px.min),
+        cpu_utime_ns_max=('cpu_utime_ns', px.max),
+        cpu_utime_ns_min=('cpu_utime_ns', px.min),
+        cpu_ktime_ns_max=('cpu_ktime_ns', px.max),
+        cpu_ktime_ns_min=('cpu_ktime_ns', px.min),
         read_bytes_max=('read_bytes', px.max),
         read_bytes_min=('read_bytes', px.min),
         write_bytes_max=('write_bytes', px.max),
@@ -70,32 +66,30 @@ def resource_timeseries(start_time: str, node: px.Node, groupby: str):
         wchar_bytes_min=('wchar_bytes', px.min),
     )
     # Next calculate cpu usage and memory stats per window.
-    df.cpu_utime_ms = df.cpu_utime_ms_max - df.cpu_utime_ms_min
-    df.cpu_ktime_ms = df.cpu_ktime_ms_max - df.cpu_ktime_ms_min
-    df.read_bytes_per_ns = (df.read_bytes_max - df.read_bytes_min) / window_ns
-    df.write_bytes_per_ns = (df.write_bytes_max - df.write_bytes_min) / window_ns
-    df.rchar_bytes_per_ns = (df.rchar_bytes_max - df.rchar_bytes_min) / window_ns
-    df.wchar_bytes_per_ns = (df.wchar_bytes_max - df.wchar_bytes_min) / window_ns
+    df.cpu_utime_ns = df.cpu_utime_ns_max - df.cpu_utime_ns_min
+    df.cpu_ktime_ns = df.cpu_ktime_ns_max - df.cpu_ktime_ns_min
+    df.actual_disk_read_throughput = (df.read_bytes_max - df.read_bytes_min) / window_ns
+    df.actual_disk_write_throughput = (df.write_bytes_max - df.write_bytes_min) / window_ns
+    df.total_disk_read_throughput = (df.rchar_bytes_max - df.rchar_bytes_min) / window_ns
+    df.total_disk_write_throughput = (df.wchar_bytes_max - df.wchar_bytes_min) / window_ns
 
     # Then aggregate process individual process metrics.
     df = df.groupby(['timestamp', groupby]).agg(
-        cpu_ktime_ms=('cpu_ktime_ms', px.sum),
-        cpu_utime_ms=('cpu_utime_ms', px.sum),
-        read_bytes_per_ns=('read_bytes_per_ns', px.sum),
-        write_bytes_per_ns=('write_bytes_per_ns', px.sum),
-        rchar_bytes_per_ns=('rchar_bytes_per_ns', px.sum),
-        wchar_bytes_per_ns=('wchar_bytes_per_ns', px.sum),
-        rss_bytes=('rss_bytes', px.sum),
-        vsize_bytes=('vsize_bytes', px.sum),
+        cpu_ktime_ns=('cpu_ktime_ns', px.sum),
+        cpu_utime_ns=('cpu_utime_ns', px.sum),
+        actual_disk_read_throughput=('actual_disk_read_throughput', px.sum),
+        actual_disk_write_throughput=('actual_disk_write_throughput', px.sum),
+        total_disk_read_throughput=('total_disk_read_throughput', px.sum),
+        total_disk_write_throughput=('total_disk_write_throughput', px.sum),
+        rss=('rss', px.sum),
+        vsize=('vsize', px.sum),
     )
 
-    # Convert window_ns into the same units as cpu time.
-    window_size_ms = window_ns * 1.0E3
     # Finally, calculate total (kernel + user time)  percentage used over window.
-    df.cpu_pct = (df.cpu_ktime_ms + df.cpu_utime_ms) / window_size_ms * 100
+    df.cpu_usage = px.Percent((df.cpu_ktime_ns + df.cpu_utime_ns) / window_ns)
     df['time_'] = df['timestamp']
     df.groupby_col = df[groupby]
-    return df.drop(['cpu_ktime_ms', 'cpu_utime_ms', 'timestamp', groupby])
+    return df.drop(['cpu_ktime_ns', 'cpu_utime_ns', 'timestamp', groupby])
 
 
 def network_stats(start_time: str, node: px.Node, groupby: str):

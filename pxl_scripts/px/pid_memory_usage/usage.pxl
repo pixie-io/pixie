@@ -12,8 +12,8 @@ t1.timestamp = px.bin(t1.time_, px.seconds(10))
 t1.cmdline = px.upid_to_cmdline(t1.upid)
 
 aggop = t1.groupby(['upid', 'timestamp', 'cmdline']).agg(
-    vsize_bytes=('vsize_bytes', px.mean),
-    rss_bytes_bytes=('rss_bytes_bytes', px.mean),
+    vsize=('vsize_bytes', px.mean),
+    rss=('rss_bytes', px.mean),
 )
 
 # Format column names.
@@ -24,15 +24,15 @@ aggop['Process Name'] = aggop.cmdline
 # Uncomment and replace number to filter on a specific pid.
 # aggop = aggop[aggop.pid == 4862]
 
-aggop['Virtual Memory (mb)'] = aggop.vsize_bytes
-aggop['Average Memory (mb)'] = aggop.rss_bytes_bytes
+aggop['Virtual Memory'] = aggop.vsize
+aggop['Average Memory'] = aggop.rss
 keep_columns = aggop[[
     'pid',
     'Process Name',
     'asid',
     'timestamp',
-    'Virtual Memory (mb)',
-    'Average Memory (mb)'
+    'Virtual Memory',
+    'Average Memory'
 ]]
 
 px.display(keep_columns)

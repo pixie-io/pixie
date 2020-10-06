@@ -41,7 +41,7 @@ dest_col = 'responder'
 # visualization spec.
 split_series_name = 'k8s'
 # The bin size to use for the latency histogram.
-latency_bin_size_ms = 50
+latency_bin_size_ns = px.DurationNanos(50 * ns_per_ms)
 # ----------------------------------------------------------------
 
 
@@ -65,7 +65,8 @@ def svc_let(start: str, svc: px.Service):
     # Format and organize resulting columns.
     let_df[split_series_name] = let_df[k8s_object]
     let_df = let_df[['time_', split_series_name, 'latency_p50',
-                     'latency_p90', 'latency_p99', 'error_rate', 'rps', 'bytes_per_s']]
+                     'latency_p90', 'latency_p99', 'error_rate',
+                     'request_throughput', 'bytes_per_ns']]
     return let_df
 
 
@@ -96,9 +97,9 @@ def latency_histogram(start: str, svc: px.Service):
     """
     df = make_http_table(start)
     matching_df = df[px.contains(df[k8s_object], svc)]
-    matching_df.request_latency_ms = px.bin(matching_df.http_resp_latency_ns / (1000 * 1000),
-                                            latency_bin_size_ms)
-    return matching_df.groupby('request_latency_ms').agg(count=('time_', px.count))
+    matching_df.request_latency = px.bin(matching_df.http_resp_latency_ns,
+                                         latency_bin_size_ns)
+    return matching_df.groupby('request_latency').agg(count=('time_', px.count))
 
 
 def outgoing_edges(start: str, svc: px.Service):
@@ -206,10 +207,10 @@ def let_per_edge(start: str):
     return edge_let_df
 
 
-def format_events_table(df, latency_ns_col):
+def format_events_table(df, latency_col):
     """ Format data and add semantic columns in event tables
 
-    Unifies latency column to 'latency_ms', adds a binned
+    Unifies latency column to 'latency', adds a binned
     timestamp field to aggregate on, and adds the svc
     (k8s_object) as a semantic column.
 
@@ -217,13 +218,13 @@ def format_events_table(df, latency_ns_col):
 
     Args:
     @df: the input events table
-    @latency_ns_col: the name of the latency column in @df.
+    @latency_col: the name of the latency column in @df.
 
     Returns: formatted events DataFrame
     """
-    df.latency_ms = df[latency_ns_col] / 1.0E6
-    df = df[df['latency_ms'] < 10000.0]
-    df.timestamp = px.bin(df.time_, px.seconds(window_s))
+    df.latency = df[latency_col]
+    df = df[df['latency'] < (10000 * ns_per_ms)]
+    df.timestamp = px.bin(df.time_, window_ns)
     df[k8s_object] = df.ctx[k8s_object]
     df = df[df[k8s_object] != '']
     return df
@@ -248,7 +249,7 @@ def format_http_table(df, filter_health_checks, filter_ready_checks,
     Returns: formatted HTTP events DataFrame.
     """
     df = format_events_table(df, 'http_resp_latency_ns')
-    df.resp_size = px.length(df.http_resp_body)
+    df.resp_size = px.Bytes(px.length(df.http_resp_body))
     df.failure = df.http_resp_status >= 400
     filter_out_conds = ((df.http_req_path != '/health' or not filter_health_checks) and (
         df.http_req_path != '/readyz' or not filter_ready_checks)) and (
@@ -263,7 +264,7 @@ def format_LET_aggs(df):
 
     Converts the result of aggregates on windows into well-formatted metrics that
     can be visualized. Latency quantile values need to be extracted from the
-    quantiles struct, and then error_rate, rps, and bytes_per_s are calculated as
+    quantiles struct, and then error_rate, request_throughput, and bytes_per_ns are calculated as
     a function of window size.
 
 
@@ -272,19 +273,17 @@ def format_LET_aggs(df):
 
     Args:
     @df: the input events table grouped into windows with aggregated
-        columns 'throughput_total', 'error_rate_per_window', and 'rps'
+        columns 'throughput_total', 'error_rate_per_window', and 'request_throughput'
 
     Returns: DataFrame with formatted LET metrics.
     """
-    window_size = window_s * 1.0
-
-    df.latency_p50 = px.pluck_float64(df.latency_quantiles, 'p50')
-    df.latency_p90 = px.pluck_float64(df.latency_quantiles, 'p90')
-    df.latency_p99 = px.pluck_float64(df.latency_quantiles, 'p99')
+    df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
+    df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
+    df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
     df['time_'] = df['timestamp']
-    df.rps = df.throughput_total / window_size
-    df.bytes_per_s = df.bytes_total / window_size
-    df.error_rate = df.error_rate_per_window * df.rps
+    df.request_throughput = df.throughput_total / window_ns
+    df.bytes_per_ns = df.bytes_total / window_ns
+    df.error_rate = df.error_rate_per_window * df.request_throughput / px.DurationNanos(1)
 
     return df
 
@@ -293,7 +292,7 @@ def calc_http_LET(df, groups):
     """ Calculates Latency, Error Rate, and Throughput on HTTP events.
 
     Calculates latency, error rate, and throughput aggregated over
-    @groups. Throughput is represented by two values: rps, and bytes_per_s.
+    @groups. Throughput is represented by two values: request_throughput, and bytes_per_ns.
 
     Args:
     @df: the input http_events table.
@@ -304,9 +303,9 @@ def calc_http_LET(df, groups):
     """
     # Aggregate values over the window.
     df = df.groupby(groups).agg(
-        latency_quantiles=('latency_ms', px.quantiles),
+        latency_quantiles=('latency', px.quantiles),
         error_rate_per_window=('failure', px.mean),
-        throughput_total=('latency_ms', px.count),
+        throughput_total=('latency', px.count),
         bytes_total=('resp_size', px.sum)
     )
 
@@ -346,8 +345,8 @@ def summarize_LET(let_df, groups):
     """
 
     df = let_df.groupby(groups).agg(
-        rps=('rps', px.mean),
-        bytes_per_s=('bytes_per_s', px.mean),
+        request_throughput=('request_throughput', px.mean),
+        bytes_per_ns=('bytes_per_ns', px.mean),
         error_rate=('error_rate', px.mean),
     )
     return df

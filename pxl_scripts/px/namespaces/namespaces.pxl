@@ -47,8 +47,8 @@ def process_stats_by_namespace(start_time: str):
     df.timestamp = px.bin(df.time_, window_ns)
 
     df = df.groupby(['upid', 'namespace', 'timestamp']).agg(
-        vsize_bytes=('vsize_bytes', px.mean),
-        rss_bytes=('rss_bytes', px.mean),
+        vsize=('vsize_bytes', px.mean),
+        rss=('rss_bytes', px.mean),
         read_bytes_max=('read_bytes', px.max),
         read_bytes_min=('read_bytes', px.min),
         write_bytes_max=('write_bytes', px.max),
@@ -68,27 +68,27 @@ def process_stats_by_namespace(start_time: str):
     # For this aggregate, we sum up the values as we've already calculated the average/usage
     # for the upids already.
     df = df.groupby(['namespace', 'timestamp']).agg(
-        vsize_bytes=('vsize_bytes', px.sum),
-        rss_bytes=('rss_bytes', px.sum),
+        vsize=('vsize', px.sum),
+        rss=('rss', px.sum),
         read_bytes=('read_bytes', px.sum),
         write_bytes=('write_bytes', px.sum),
         rchar_bytes=('rchar_bytes', px.sum),
         wchar_bytes=('wchar_bytes', px.sum),
     )
 
-    df.read_bytes_per_ns = df.read_bytes / window_ns
-    df.write_bytes_per_ns = df.write_bytes / window_ns
-    df.rchar_bytes_per_ns = df.rchar_bytes / window_ns
-    df.wchar_bytes_per_ns = df.wchar_bytes / window_ns
+    df.actual_disk_read_throughput = df.read_bytes / window_ns
+    df.actual_disk_write_throughput = df.write_bytes / window_ns
+    df.total_disk_read_throughput = df.rchar_bytes / window_ns
+    df.total_disk_write_throughput = df.wchar_bytes / window_ns
 
     # Finally, we get the mean value across the total time window.
     df = df.groupby('namespace').agg(
-        avg_vsize_bytes=('vsize_bytes', px.mean),
-        avg_rss_bytes=('rss_bytes', px.mean),
-        read_bytes_per_ns=('read_bytes_per_ns', px.mean),
-        write_bytes_per_ns=('write_bytes_per_ns', px.mean),
-        rchar_bytes_per_ns=('rchar_bytes_per_ns', px.mean),
-        wchar_bytes_per_ns=('wchar_bytes_per_ns', px.mean),
+        avg_vsize=('vsize', px.mean),
+        avg_rss=('rss', px.mean),
+        actual_disk_read_throughput=('actual_disk_read_throughput', px.mean),
+        actual_disk_write_throughput=('actual_disk_write_throughput', px.mean),
+        total_disk_read_throughput=('total_disk_read_throughput', px.mean),
+        total_disk_write_throughput=('total_disk_write_throughput', px.mean),
     )
 
     return df
