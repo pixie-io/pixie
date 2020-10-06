@@ -88,7 +88,7 @@ func (c *CLIOutputEntry) write(w io.Writer, format string, args ...interface{}) 
 
 // Infof prints the input string to stdout formatted with the input args.
 func (c *CLIOutputEntry) Infof(format string, args ...interface{}) {
-	c.write(os.Stdout, format, args...)
+	c.write(os.Stderr, format, args...)
 }
 
 // Info prints the input string to stdout.
