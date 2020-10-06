@@ -192,7 +192,7 @@ export interface DataWithUnits {
 
 export const formatScaled = (data: number, scale: number, suffixes: string[], decimals = 2): DataWithUnits => {
   const dm = decimals < 0 ? 0 : decimals;
-  let i = Math.min(Math.floor(Math.log(Math.abs(data)) / Math.log(scale)), suffixes.length + 1);
+  let i = Math.floor(Math.log(Math.abs(data)) / Math.log(scale));
   i = Math.max(0, Math.min(i, suffixes.length - 1));
 
   const val = `${parseFloat((data / (scale ** i)).toFixed(dm))}`;
