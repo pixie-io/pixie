@@ -782,53 +782,59 @@ def  buildScriptForCLIRelease = {
   node(WORKER_NODE) {
     currentBuild.result = 'SUCCESS'
     deleteDir()
-    try {
-      stage('Checkout code') {
-        checkoutAndInitialize()
-      }
-      stage('Build & Push Artifacts') {
-        WithSourceCodeFatalError {
-          dockerStep('', devDockerImageExtrasWithTag) {
-            sh './ci/cli_build_release.sh'
-            stash name: 'ci_scripts_signing', includes: 'ci/**'
-            stash name: "versions", includes: "src/utils/artifacts/artifact_db_updater/VERSIONS.json"
-
-          }
+    withCredentials([
+      string(
+        credentialsId: 'docker_access_token',
+        variable: 'DOCKER_TOKEN')
+    ]) {
+      try {
+        stage('Checkout code') {
+          checkoutAndInitialize()
         }
-      }
-      stage('Sign Mac Binary') {
-        node('macos') {
-          deleteDir()
-          unstash "ci_scripts_signing"
-          withCredentials([string(credentialsId: 'pl_ac_passwd', variable: 'AC_PASSWD'),
-            string(credentialsId: 'jenkins_keychain_pw', variable: 'JENKINSKEY')]) {
-            sh './ci/cli_sign.sh'
-          }
-          stash name: 'cli_darwin_amd64_signed', includes: 'cli_darwin_amd64*'
-        }
-      }
-      stage('Upload Signed Binary') {
-        node('macos') {
+        stage('Build & Push Artifacts') {
           WithSourceCodeFatalError {
             dockerStep('', devDockerImageExtrasWithTag) {
-              unstash 'cli_darwin_amd64_signed'
-              sh './ci/cli_upload_signed.sh'
+              sh 'docker login -u pixielabs -p $DOCKER_TOKEN'
+              sh './ci/cli_build_release.sh'
+              stash name: 'ci_scripts_signing', includes: 'ci/**'
+              stash name: "versions", includes: "src/utils/artifacts/artifact_db_updater/VERSIONS.json"
             }
           }
         }
+        stage('Sign Mac Binary') {
+          node('macos') {
+            deleteDir()
+            unstash "ci_scripts_signing"
+            withCredentials([string(credentialsId: 'pl_ac_passwd', variable: 'AC_PASSWD'),
+              string(credentialsId: 'jenkins_keychain_pw', variable: 'JENKINSKEY')]) {
+              sh './ci/cli_sign.sh'
+            }
+            stash name: 'cli_darwin_amd64_signed', includes: 'cli_darwin_amd64*'
+          }
+        }
+        stage('Upload Signed Binary') {
+          node('macos') {
+            WithSourceCodeFatalError {
+              dockerStep('', devDockerImageExtrasWithTag) {
+                unstash 'cli_darwin_amd64_signed'
+                sh './ci/cli_upload_signed.sh'
+              }
+            }
+          }
+        }
+        stage('Update versions database (staging)') {
+          updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, "plc-staging")
+        }
+        stage('Update versions database (prod)') {
+          updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, "plc")
+        }
       }
-      stage('Update versions database (staging)') {
-        updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, "plc-staging")
+      catch(err) {
+        currentBuild.result = 'FAILURE'
+        echo "Exception thrown:\n ${err}"
+        echo "Stacktrace:"
+        err.printStackTrace()
       }
-      stage('Update versions database (prod)') {
-        updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, "plc")
-      }
-    }
-    catch(err) {
-      currentBuild.result = 'FAILURE'
-      echo "Exception thrown:\n ${err}"
-      echo "Stacktrace:"
-      err.printStackTrace()
     }
 
     postBuildActions()

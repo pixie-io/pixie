@@ -54,3 +54,12 @@ container_push(
     repository = "pixie-prod/pixie-prod-artifacts/px",
     tag = "{STABLE_BUILD_TAG}",
 )
+
+container_push(
+    name = "push_px_image_to_docker",
+    format = "Docker",
+    image = ":px_image",
+    registry = "index.docker.io",
+    repository = "pixielabs/px",
+    tag = "{STABLE_BUILD_TAG}",
+)
