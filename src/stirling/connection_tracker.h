@@ -74,6 +74,10 @@ class ConnectionTracker {
       kBytesSent,
       kBytesRecv,
 
+      // The number of sent/received bytes that were transferred to user-space.
+      kBytesSentTransferred,
+      kBytesRecvTransferred,
+
       // The number of valid/invalid records.
       kValidRecords,
       kInvalidRecords,

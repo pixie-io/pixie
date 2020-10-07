@@ -603,12 +603,14 @@ void ConnectionTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs)
 void ConnectionTracker::UpdateDataStats(const SocketDataEvent& event) {
   switch (event.attr.direction) {
     case TrafficDirection::kEgress: {
-      stats_.Increment(Stats::Key::kBytesSent, event.attr.msg_size);
       stats_.Increment(Stats::Key::kDataEventSent, 1);
+      stats_.Increment(Stats::Key::kBytesSent, event.attr.msg_size);
+      stats_.Increment(Stats::Key::kBytesSentTransferred, event.attr.msg_buf_size);
     } break;
     case TrafficDirection::kIngress: {
-      stats_.Increment(Stats::Key::kBytesRecv, event.attr.msg_size);
       stats_.Increment(Stats::Key::kDataEventRecv, 1);
+      stats_.Increment(Stats::Key::kBytesRecv, event.attr.msg_size);
+      stats_.Increment(Stats::Key::kBytesRecvTransferred, event.attr.msg_buf_size);
     } break;
   }
 }

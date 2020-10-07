@@ -58,6 +58,7 @@ class EventGenerator {
     event.attr.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
     event.attr.seq_num = seq_num;
     event.attr.msg_size = msg.size();
+    event.attr.msg_buf_size = msg.size();
     msg.copy(event.msg, msg.size());
     return std::make_unique<SocketDataEvent>(&event);
   }

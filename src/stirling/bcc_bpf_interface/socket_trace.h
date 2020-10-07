@@ -121,8 +121,12 @@ struct socket_data_event_t {
     // Note that write/send have separate sequences than read/recv.
     uint64_t seq_num;
     // The size of the original message. We use this to truncate msg field to minimize the amount
-    // of data being transferred. This data available in msg buffer is min(msg_size, MAX_MSG_SIZE).
+    // of data being transferred.
     uint32_t msg_size;
+    // The amount of data actually being sent to user space. This may be less than msg_size if
+    // data had to be truncated, or if the data was stripped because we only want to send metadata
+    // (e.g. if the connection data tracking has been disabled).
+    uint32_t msg_buf_size;
   } attr;
   char msg[MAX_MSG_SIZE];
   // IMPORTANT: This extra byte must follow char msg[MAX_MSG_SIZE].

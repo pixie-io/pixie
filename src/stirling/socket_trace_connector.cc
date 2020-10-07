@@ -61,7 +61,7 @@ DEFINE_bool(stirling_enable_pgsql_tracing, true,
 DEFINE_bool(stirling_enable_cass_tracing, true,
             "If true, stirling will trace and process Cassandra messages.");
 DEFINE_bool(stirling_disable_self_tracing, true,
-            "If true, stirling will trace and process syscalls made by itself.");
+            "If true, stirling will not trace and process syscalls made by itself.");
 DEFINE_string(stirling_role_to_trace, "kRoleAll",
               "Must be one of [kRoleClient|kRoleServer|kRoleAll]. Specifies which role(s) will be "
               "traced by BPF.");
@@ -278,8 +278,8 @@ Status SocketTraceConnector::TestOnlySetTargetPID(int64_t pid) {
 
 Status SocketTraceConnector::DisableSelfTracing() {
   auto control_map_handle = bpf().get_percpu_array_table<int64_t>(kControlValuesArrayName);
-  int64_t my_pid = getpid();
-  return UpdatePerCPUArrayValue(kStirlingTGIDIndex, my_pid, &control_map_handle);
+  int64_t self_pid = getpid();
+  return UpdatePerCPUArrayValue(kStirlingTGIDIndex, self_pid, &control_map_handle);
 }
 
 StatusOr<std::string> InferHTTP2SymAddrVendorPrefix(ElfReader* elf_reader) {
@@ -1406,6 +1406,12 @@ void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTa
       r.Append<idx::kConnOpen>(stats.conn_open);
       r.Append<idx::kConnClose>(stats.conn_close);
       r.Append<idx::kConnActive>(stats.conn_open - stats.conn_close);
+      // TODO(yzhao/oazizi): This is a bug, because the stats only reflect the bytes of BPF events
+      //                     that made it through the perf buffer; lost events are not included.
+      //                     A better approach is to have BPF events update the cumulative number of
+      //                     bytes transferred,  and use that here directly. We already have a
+      //                     ticket to convert seq numbers to bytes transferred, so we could kill
+      //                     two birds with one stone.
       r.Append<idx::kBytesSent>(stats.bytes_sent);
       r.Append<idx::kBytesRecv>(stats.bytes_recv);
 #ifndef NDEBUG

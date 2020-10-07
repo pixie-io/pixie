@@ -218,18 +218,6 @@ static __inline bool should_trace_conn(const struct conn_info_t* conn_info) {
          should_trace_classified(&conn_info->traffic_class);
 }
 
-static __inline bool test_only_should_trace_target_tgid(const uint32_t tgid) {
-  int idx = kTargetTGIDIndex;
-  int64_t* target_tgid = control_values.lookup(&idx);
-  if (target_tgid == NULL) {
-    return true;
-  }
-  if (*target_tgid < 0) {
-    return true;
-  }
-  return *target_tgid == tgid;
-}
-
 static __inline bool is_stirling_tgid(const uint32_t tgid) {
   int idx = kStirlingTGIDIndex;
   int64_t* target_tgid = control_values.lookup(&idx);
@@ -240,7 +228,15 @@ static __inline bool is_stirling_tgid(const uint32_t tgid) {
 }
 
 static __inline bool should_trace_tgid(const uint32_t tgid) {
-  return test_only_should_trace_target_tgid(tgid) && !is_stirling_tgid(tgid);
+  int idx = kTargetTGIDIndex;
+  int64_t* target_tgid = control_values.lookup(&idx);
+  if (target_tgid == NULL) {
+    return true;
+  }
+  if (*target_tgid < 0) {
+    return true;
+  }
+  return *target_tgid == tgid;
 }
 
 static __inline struct socket_data_event_t* fill_event(enum TrafficDirection direction,
@@ -336,15 +332,16 @@ static __inline void submit_close_event(struct pt_regs* ctx, struct conn_info_t*
 
 // TODO(yzhao): We can write a test for this, by define a dummy bpf_probe_read() function. Similar
 // in idea to a mock in normal C++ code.
-//
+
 // Writes the input buf to event, and submits the event to the corresponding perf buffer.
-//
 // Returns the bytes output from the input buf. Note that is not the total bytes submitted to the
 // perf buffer, which includes additional metadata.
-static __inline size_t perf_submit_buf(struct pt_regs* ctx, const enum TrafficDirection direction,
-                                       const char* buf, size_t buf_size,
-                                       struct conn_info_t* conn_info,
-                                       struct socket_data_event_t* event) {
+// If send_data is false, only the metadata is sent for accounting purposes (used for connection
+// stats).
+static __inline void perf_submit_buf(struct pt_regs* ctx, const enum TrafficDirection direction,
+                                     const char* buf, size_t buf_size,
+                                     struct conn_info_t* conn_info,
+                                     struct socket_data_event_t* event, bool send_data) {
   switch (direction) {
     case kEgress:
       event->attr.seq_num = conn_info->wr_seq_num;
@@ -355,6 +352,10 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const enum TrafficDi
       ++conn_info->rd_seq_num;
       break;
   }
+
+  // Record original size of packet. This may get truncated below before submit.
+  // TODO(oazizi): Combine seq_num and msg_size into a combined byte_position.
+  event->attr.msg_size = buf_size;
 
   // This rest of this function has been written carefully to keep the BPF verifier happy in older
   // kernels, so please take care when modifying.
@@ -386,10 +387,14 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const enum TrafficDi
   //   4.15.18 (Ubuntu 4.15.0-96-generic)
 
   if (buf_size > MAX_MSG_SIZE || buf_size == 0) {
-    return 0;
+    return;
   }
 
-  event->attr.msg_size = buf_size;
+  // Modify buf_size this way, to reduce the number of BPF instructions.
+  // Note that kMask is a constant that can be pulled out of the perf_submit_buf() loop,
+  // and so this reduces if-statements inside the loop, as long as the compiler is smart enough.
+  const uint32_t kMask = send_data ? 0xffffffff : 0;
+  buf_size = buf_size & kMask;
 
   // Clang is too smart for us, and tries to remove some of the obvious hints we are leaving for the
   // BPF verifier. So we add this NOP volatile statement, so clang can't optimize away some of our
@@ -403,36 +408,32 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const enum TrafficDi
     buf_size = 0;
   }
 
-  const bool is_classified = event->attr.traffic_class.protocol != kProtocolUnknown;
+  // Read an extra byte.
+  // Required for 4.14 kernels, which reject bpf_probe_read with size of zero.
+  // Note that event->msg is followed by event->unused, so the extra byte will not clobber
+  // anything in the case that buf_size==MAX_MSG_SIZE.
+  bpf_probe_read(&event->msg, buf_size + 1, buf);
 
-  // Do not export the data if they are unclassified.
-  // The metadata is still sent for accounting purpose (connection stats).
-  if (is_classified) {
-    // Read an extra byte.
-    // Required for 4.14 kernels, which reject bpf_probe_read with size of zero.
-    // Note that event->msg is followed by event->unused, so the extra byte will not clobber
-    // anything in the case that buf_size==MAX_MSG_SIZE.
-    bpf_probe_read(&event->msg, buf_size + 1, buf);
-  }
-  // BPF verifier rejects `if (!is_classified) { buf_size = 0; }`.
-  socket_data_events.perf_submit(ctx, event, sizeof(event->attr) + (is_classified ? buf_size : 0));
-  return buf_size;
+  event->attr.msg_buf_size = buf_size;
+  socket_data_events.perf_submit(ctx, event, sizeof(event->attr) + buf_size);
 }
 
 static __inline void perf_submit_wrapper(struct pt_regs* ctx, const enum TrafficDirection direction,
                                          const char* buf, const size_t buf_size,
                                          struct conn_info_t* conn_info,
-                                         struct socket_data_event_t* event) {
+                                         struct socket_data_event_t* event, bool send_data) {
   int bytes_remaining = buf_size;
   unsigned int i;
 
 #pragma unroll
   for (i = 0; i < CHUNK_LIMIT; ++i) {
     if (bytes_remaining >= MAX_MSG_SIZE) {
-      perf_submit_buf(ctx, direction, buf + i * MAX_MSG_SIZE, MAX_MSG_SIZE, conn_info, event);
+      perf_submit_buf(ctx, direction, buf + i * MAX_MSG_SIZE, MAX_MSG_SIZE, conn_info, event,
+                      send_data);
       bytes_remaining = bytes_remaining - MAX_MSG_SIZE;
     } else if (bytes_remaining > 0) {
-      perf_submit_buf(ctx, direction, buf + i * MAX_MSG_SIZE, bytes_remaining, conn_info, event);
+      perf_submit_buf(ctx, direction, buf + i * MAX_MSG_SIZE, bytes_remaining, conn_info, event,
+                      send_data);
       bytes_remaining = 0;
     }
   }
@@ -457,7 +458,7 @@ static __inline void perf_submit_wrapper(struct pt_regs* ctx, const enum Traffic
 static __inline void perf_submit_iovecs(struct pt_regs* ctx, const enum TrafficDirection direction,
                                         const struct iovec* iov, const size_t iovlen,
                                         const size_t total_size, struct conn_info_t* conn_info,
-                                        struct socket_data_event_t* event) {
+                                        struct socket_data_event_t* event, bool send_data) {
   // NOTE: The loop index 'i' used to be int. BPF verifier somehow conclude that msg_size inside
   // perf_submit_buf(), after a series of assignment, and passed into a function call, can be
   // negative.
@@ -482,9 +483,8 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const enum TrafficD
     const size_t iov_size = iov_cpy.iov_len < bytes_remain ? iov_cpy.iov_len : bytes_remain;
 
     // TODO(oazizi/yzhao): Should switch this to go through perf_submit_wrapper.
-    const size_t submit_size =
-        perf_submit_buf(ctx, direction, iov_cpy.iov_base, iov_size, conn_info, event);
-    bytes_copied += submit_size;
+    perf_submit_buf(ctx, direction, iov_cpy.iov_base, iov_size, conn_info, event, send_data);
+    bytes_copied += iov_size;
   }
 }
 
@@ -628,14 +628,18 @@ static __inline void process_data(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
+  bool send_data =
+      event->attr.traffic_class.protocol != kProtocolUnknown && !is_stirling_tgid(tgid);
+
   // TODO(yzhao): Same TODO for split the interface.
   if (args->buf != NULL) {
-    perf_submit_wrapper(ctx, direction, args->buf, bytes_count, conn_info, event);
+    perf_submit_wrapper(ctx, direction, args->buf, bytes_count, conn_info, event, send_data);
   } else if (args->iov != NULL && args->iovlen > 0) {
     // TODO(yzhao): iov[0] is copied twice, once in calling update_traffic_class(), and here.
     // This happens to the write probes as well, but the calls are placed in the entry and return
     // probes respectively. Consider remove one copy.
-    perf_submit_iovecs(ctx, direction, args->iov, args->iovlen, bytes_count, conn_info, event);
+    perf_submit_iovecs(ctx, direction, args->iov, args->iovlen, bytes_count, conn_info, event,
+                       send_data);
   }
   return;
 }
