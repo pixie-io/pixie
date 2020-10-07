@@ -123,6 +123,11 @@ class ProcParser {
   std::string GetPIDCmdline(int32_t pid) const;
 
   /**
+   * Returns the /proc/<pid>/exe
+   */
+  std::string GetExePath(int32_t pid) const;
+
+  /**
    * Parses /proc/<pid>/io files.
    * @param pid is the pid for which to read IO data.
    * @param out A valid pointer to an output struct.

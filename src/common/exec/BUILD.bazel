@@ -11,5 +11,6 @@ pl_cc_library_internal(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/common/base:cc_library",
+        "//src/common/system:cc_library",
     ],
 )

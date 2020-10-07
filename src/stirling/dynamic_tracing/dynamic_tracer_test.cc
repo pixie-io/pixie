@@ -27,8 +27,6 @@ TEST(ResolveTargetObjPath, ResolveUPID) {
 
   SubProcess s;
   ASSERT_OK(s.Start({server_path}));
-  // Give some time for the server to start up.
-  sleep(2);
 
   ir::shared::DeploymentSpec deployment_spec;
   deployment_spec.mutable_upid()->set_pid(s.child_pid());

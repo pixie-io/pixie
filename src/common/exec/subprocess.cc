@@ -7,6 +7,8 @@
 #include <cerrno>
 
 #include "src/common/base/error.h"
+#include "src/common/system/config.h"
+#include "src/common/system/proc_parser.h"
 
 namespace pl {
 
@@ -50,15 +52,25 @@ Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_st
     // argv[1] = "-la";
     // argv[2] = NULL;
     // execvp(cmd, argv);
-    int retval = execvp(exec_args[0], exec_args.data());
+    int retval = execvp(exec_args.front(), exec_args.data());
     if (retval == -1) {
       exit(1);
     }
-    exit(0);
   } else {
+    // We wanted to wait until the execution has started.
+    // Test code might still want to wait for the child process actually initiated and one can
+    // interact with it.
+    system::ProcParser proc_parser(system::Config::GetInstance());
+
+    // Wait until the exe path changed.
+    while (proc_parser.GetExePath(child_pid_) == proc_parser.GetExePath(getpid())) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
     close(pipefd_[kWrite]);  // Close write end, as write is done by child.
     return Status::OK();
   }
+  return Status::OK();
 }
 
 // TODO(oazizi/yzhao): This implementation has unexpected behavior if the child pid terminates
