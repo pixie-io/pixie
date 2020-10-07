@@ -136,8 +136,8 @@ struct Record {
 };
 
 struct ProtocolTraits {
-  using frame_type = cass::Frame;
-  using record_type = cass::Record;
+  using frame_type = Frame;
+  using record_type = Record;
   using state_type = NoState;
 };
 

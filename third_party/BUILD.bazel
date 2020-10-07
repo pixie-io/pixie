@@ -155,10 +155,16 @@ pl_cc_binary(
 
 pl_cc_library(
     name = "dnsparser",
-    srcs = glob(["dnsparser/src/*.cpp", "dnsparser/src/*.h"]),
+    srcs = glob([
+        "dnsparser/src/*.cpp",
+        "dnsparser/src/*.h",
+    ]),
     hdrs = ["dnsparser/include/dnsparser.h"],
     copts = [
         "-Wno-unused-parameter",
+    ],
+    includes = [
+        "dnsparser/include",
     ],
     visibility = ["//visibility:public"],
 )

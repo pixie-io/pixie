@@ -66,8 +66,8 @@ struct Stream {
 using Record = Stream;
 
 struct ProtocolTraits {
-  using frame_type = http2u::Stream;
-  using record_type = http2u::Record;
+  using frame_type = Stream;
+  using record_type = Record;
   using state_type = NoState;
 };
 
