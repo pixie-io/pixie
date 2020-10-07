@@ -249,6 +249,21 @@ const Canvas = (props: CanvasProps) => {
   const [defaultLayout, setDefaultLayout] = React.useState<Layout[]>([]);
   const [defaultHeight, setDefaultHeight] = React.useState<number>(0);
 
+  React.useEffect(() => {
+    /**
+     * React-virtualized's AutoSizer works whenever the window receives a resize event. However, this only works with
+     * trusted (real) events, synthetic ones don't trigger it. Listening for the untrusted events and manually updating
+     * the container's height when that happens is sufficient to fix this.
+     */
+    const listener = (event: Event) => {
+      if (event.type === 'resize' && !event.isTrusted) {
+        setDefaultHeight(props.parentRef.current.getBoundingClientRect().height);
+      }
+    };
+    window.addEventListener('resize', listener);
+    return () => window.removeEventListener('resize', listener);
+  }, [props.parentRef]);
+
   if (props.parentRef.current && !defaultHeight) {
     const newHeight = props.parentRef.current.getBoundingClientRect().height;
     if (newHeight !== defaultHeight) {
