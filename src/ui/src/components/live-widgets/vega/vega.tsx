@@ -13,7 +13,7 @@ import {
   wrapFormatFn,
 } from 'containers/live/convert-to-vega-spec';
 import {
-  Relation,
+  Relation, SemanticType,
 } from 'types/generated/vizier_pb';
 import * as _ from 'lodash';
 import * as React from 'react';
@@ -75,6 +75,28 @@ function getFormatter(relation: Relation, display: ChartDisplay) {
   return (val: number): string => formatFloat64Data(val, NUMERAL_FORMAT_STRING);
 }
 
+function getCleanerForSemanticType(semType: SemanticType) {
+  switch (semType) {
+    case SemanticType.ST_SERVICE_NAME:
+      return (val) => (val || 'no linked service');
+    case SemanticType.ST_POD_NAME:
+      return (val) => (val || 'no linked pod');
+    default:
+      return null;
+  }
+}
+
+function cleanInputData(relation: Relation, data: Array<{}>) {
+  const columnToCleaner = _.fromPairs(relation.getColumnsList().map((colInfo) => {
+    const colName = colInfo.getColumnName();
+    const colST = colInfo.getColumnSemanticType();
+    return [colName, getCleanerForSemanticType(colST)];
+  }));
+  return data.map((row: any) => _.mapValues(row, (val, key) => (
+    columnToCleaner[key] ? columnToCleaner[key](val) : val
+  )));
+}
+
 const Vega = React.memo((props: VegaProps) => {
   const classes = useStyles();
   const theme = useTheme();
@@ -88,7 +110,9 @@ const Vega = React.memo((props: VegaProps) => {
 
   const formatter = React.useMemo(() => getFormatter(relation, display), [display, relation]);
 
-  const data = React.useMemo(() => ({ [tableName]: inputData }), [tableName, inputData]);
+  const cleanedInputData = React.useMemo(() => cleanInputData(relation, inputData), [relation, inputData]);
+
+  const data = React.useMemo(() => ({ [tableName]: cleanedInputData }), [tableName, cleanedInputData]);
 
   const {
     setHoverTime,
