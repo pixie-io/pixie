@@ -58,6 +58,12 @@ TEST_F(CQLParserTest, BasicReq) {
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
   ASSERT_EQ(frames.size(), 1);
+  EXPECT_EQ(frames[0].header.txid, 0xc6fa);
+  EXPECT_EQ(frames[0].header.flags, 0x0100);
+  EXPECT_EQ(frames[0].header.num_queries, 1);
+  EXPECT_EQ(frames[0].header.num_answers, 0);
+  EXPECT_EQ(frames[0].header.num_auth, 0);
+  EXPECT_EQ(frames[0].header.num_addl, 1);
   EXPECT_EQ(frames[0].records.size(), 0);
 }
 
@@ -70,10 +76,54 @@ TEST_F(CQLParserTest, BasicResp) {
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
   ASSERT_EQ(frames.size(), 1);
+  EXPECT_EQ(frames[0].header.txid, 0xc6fa);
+  EXPECT_EQ(frames[0].header.flags, 0x8180);
+  EXPECT_EQ(frames[0].header.num_queries, 1);
+  EXPECT_EQ(frames[0].header.num_answers, 1);
+  EXPECT_EQ(frames[0].header.num_auth, 0);
+  EXPECT_EQ(frames[0].header.num_addl, 1);
   EXPECT_EQ(frames[0].records.size(), 1);
   EXPECT_EQ(frames[0].records[0].name, "intellij-experiments.appspot.com");
   EXPECT_EQ(frames[0].records[0].addr.family, SockAddrFamily::kIPv4);
   EXPECT_EQ(frames[0].records[0].addr.AddrStr(), "216.58.194.180");
+}
+
+TEST_F(CQLParserTest, IncompleteHeader) {
+  constexpr uint8_t kIncompleteHeader[] = {0xc6, 0xfa, 0x01, 0x00, 0x00, 0x01,
+                                           0x00, 0x00, 0x00, 0x00, 0x00};
+  auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kIncompleteHeader));
+
+  std::deque<Frame> frames;
+  ParseResult<size_t> parse_result =
+      parser_.ParseFramesLoop(MessageType::kRequest, frame_view, &frames);
+
+  ASSERT_EQ(parse_result.state, ParseState::kInvalid);
+}
+
+// NOTE that some partial records parse correctly, while others don't.
+// Should modify the submodule so that all are reported as invalid.
+TEST_F(CQLParserTest, PartialRecords) {
+  {
+    auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kRespFrame));
+    frame_view.remove_suffix(10);
+
+    std::deque<Frame> frames;
+    ParseResult<size_t> parse_result =
+        parser_.ParseFramesLoop(MessageType::kRequest, frame_view, &frames);
+
+    ASSERT_EQ(parse_result.state, ParseState::kSuccess);
+  }
+
+  {
+    auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kRespFrame));
+    frame_view.remove_suffix(20);
+
+    std::deque<Frame> frames;
+    ParseResult<size_t> parse_result =
+        parser_.ParseFramesLoop(MessageType::kRequest, frame_view, &frames);
+
+    ASSERT_EQ(parse_result.state, ParseState::kInvalid);
+  }
 }
 
 }  // namespace dns

@@ -18,6 +18,22 @@ namespace dns {
 // Cassandra Frame
 //-----------------------------------------------------------------------------
 
+struct DNSHeader {
+  uint16_t txid = 0;
+  uint16_t flags = 0;
+  uint16_t num_queries = 0;
+  uint16_t num_answers = 0;
+  uint16_t num_auth = 0;
+  uint16_t num_addl = 0;
+};
+
+constexpr int kTXIDOffset = 0;
+constexpr int kFlagsOffset = 2;
+constexpr int kNumQueriesOffset = 4;
+constexpr int kNumAnswersOffset = 6;
+constexpr int kNumAuthOffset = 8;
+constexpr int kNumAddlOffset = 10;
+
 // A DNSRecord represents a DNS resource record
 // Typically it is the answer to a query (e.g. from name->addr).
 // Spec: https://www.ietf.org/rfc/rfc1035.txt
@@ -28,6 +44,7 @@ struct DNSRecord {
 };
 
 struct Frame : public stirling::FrameBase {
+  DNSHeader header;
   std::vector<DNSRecord> records;
   bool consumed = false;
 
