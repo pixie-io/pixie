@@ -16,7 +16,13 @@
       "name": "grouping_entity",
       "type": "PX_STRING",
       "description": "The k8s object to group connections by.",
-      "defaultValue": "pod"
+      "defaultValue": "pod",
+      "validValues": [
+        "node",
+        "service",
+        "pod",
+        "namespace"
+      ]
     }
   ],
   "globalFuncs": [

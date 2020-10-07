@@ -16,7 +16,13 @@
       "name": "groupby",
       "type": "PX_STRING",
       "description": "The element to groupby",
-      "defaultValue": "node"
+      "defaultValue": "node",
+      "validValues": [
+        "node",
+        "service",
+        "pod",
+        "namespace"
+      ]
     }
   ],
   "globalFuncs": [
