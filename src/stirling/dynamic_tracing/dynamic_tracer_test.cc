@@ -1,5 +1,7 @@
 #include <string>
 
+#include "src/common/exec/subprocess.h"
+#include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/dynamic_tracing/dynamic_tracer.h"
 
@@ -13,8 +15,33 @@ namespace dynamic_tracing {
 using ::google::protobuf::TextFormat;
 using ::pl::stirling::bpf_tools::UProbeSpec;
 using ::pl::testing::proto::EqualsProto;
+using ::testing::EndsWith;
 using ::testing::Field;
 using ::testing::SizeIs;
+
+constexpr char kServerPath[] =
+    "src/stirling/http2/testing/go_grpc_server/go_grpc_server_/go_grpc_server";
+
+TEST(ResolveTargetObjPath, ResolveUPID) {
+  auto server_path = pl::testing::BazelBinTestFilePath(kServerPath).string();
+
+  SubProcess s;
+  ASSERT_OK(s.Start({server_path}));
+  // Give some time for the server to start up.
+  sleep(2);
+
+  ir::shared::DeploymentSpec deployment_spec;
+  deployment_spec.mutable_upid()->set_pid(s.child_pid());
+
+  md::K8sMetadataState k8s_mds;
+
+  ASSERT_OK(ResolveTargetObjPath(k8s_mds, &deployment_spec));
+  EXPECT_THAT(deployment_spec.path(), EndsWith(kServerPath));
+  EXPECT_OK(fs::Exists(deployment_spec.path()));
+
+  s.Kill();
+  EXPECT_EQ(9, s.Wait()) << "Server should have been killed.";
+}
 
 constexpr std::string_view kLogicalProgramSpec = R"(
 deployment_spec {

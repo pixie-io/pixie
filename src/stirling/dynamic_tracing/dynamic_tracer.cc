@@ -137,11 +137,6 @@ struct ObjInfo {
 StatusOr<ObjInfo> Prepare(ir::logical::TracepointDeployment* input_program) {
   ObjInfo obj_info;
 
-  // Note that this should do nothing when called as part of Stirling as a whole,
-  // because it was already called by RegisterTracepoint() in stirling.
-  // The extra call should turn into a NOP.
-  PL_RETURN_IF_ERROR(ResolveTargetObjPath(input_program->mutable_deployment_spec()));
-
   const auto& binary_path = input_program->deployment_spec().path();
   LOG(INFO) << absl::Substitute("Tracepoint binary: $0", binary_path);
 
@@ -159,6 +154,10 @@ StatusOr<ObjInfo> Prepare(ir::logical::TracepointDeployment* input_program) {
 }  // namespace
 
 StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_program) {
+  if (input_program->deployment_spec().path().empty()) {
+    return error::InvalidArgument("Must have path resolved before compiling program");
+  }
+
   if (input_program->tracepoints_size() != 1) {
     return error::InvalidArgument("Only one tracepoint currently supported, got '$0'",
                                   input_program->tracepoints_size());
@@ -193,22 +192,16 @@ StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_pro
   BCCProgram bcc_program;
   bcc_program.code = std::move(bcc_code);
 
-  pid_t pid = physical_program.deployment_spec().upid().pid();
   const ir::shared::Language& language = physical_program.language();
   const std::string& binary_path = physical_program.deployment_spec().path();
+
+  // TODO(yzhao): deployment_spec.upid will be lost after calling ResolveTargetObjPath().
+  // Consider adjust data structure such that both can be preserved.
 
   for (const auto& probe : physical_program.probes()) {
     PL_ASSIGN_OR_RETURN(std::vector<UProbeSpec> specs,
                         GetUProbeSpec(binary_path, language, probe, obj_info.elf_reader.get()));
     for (auto& spec : specs) {
-      // When PID is specified, the binary_path must still be provided. The PID only further filters
-      // which instances of the binary_path will be traced.
-      // TODO(yzhao): Seems with pid and binary both specified, detaching uprobes will fail after
-      // the process exists. This does not happen if the pid was not specified.
-      if (pid != 0) {
-        spec.pid = pid;
-      }
-
       bcc_program.uprobe_specs.push_back(std::move(spec));
     }
   }
@@ -284,11 +277,93 @@ StatusOr<std::filesystem::path> ResolveSharedObject(
   return error::Internal("Could not find shared library $0 in context of PID $1.", lib_name, pid);
 }
 
+using K8sNameIdentView = ::pl::md::K8sMetadataState::K8sNameIdentView;
+
+// pod_name is formatted as <namespace>/<name>.
+StatusOr<K8sNameIdentView> GetPodNameIdent(std::string_view pod_name) {
+  std::vector<std::string_view> ns_and_name = absl::StrSplit(pod_name, '/');
+
+  if (ns_and_name.size() != 2) {
+    return error::InvalidArgument("Invalid Pod name, expect '<namespace>/<name>', got '$0'",
+                                  pod_name);
+  }
+
+  return K8sNameIdentView(ns_and_name.front(), ns_and_name.back());
+}
+
+// Returns a list of UPIDs belong to the Pod with the specified name.
+StatusOr<std::vector<md::UPID>> GetPodUPIDs(const md::K8sMetadataState& k8s_mds,
+                                            std::string_view pod_name) {
+  PL_ASSIGN_OR_RETURN(K8sNameIdentView name_ident_view, GetPodNameIdent(pod_name));
+
+  std::string pod_uid = k8s_mds.PodIDByName(name_ident_view);
+  if (pod_uid.empty()) {
+    return error::InvalidArgument("Could not find Pod for name '$0'", pod_name);
+  }
+
+  auto* pod_info = k8s_mds.PodInfoByID(pod_uid);
+  if (pod_info == nullptr) {
+    return error::InvalidArgument("Pod '$0' is recognized, but PodInfo is not found", pod_name);
+  }
+  if (pod_info->stop_time_ns() > 0) {
+    return error::InvalidArgument("Pod '$0' has died", pod_name);
+  }
+
+  std::vector<md::UPID> res;
+  for (const auto& container_id : pod_info->containers()) {
+    auto* container_info = k8s_mds.ContainerInfoByID(container_id);
+    if (container_info == nullptr || container_info->stop_time_ns() > 0) {
+      continue;
+    }
+    for (const auto& upid : container_info->active_upids()) {
+      res.push_back(upid);
+    }
+  }
+  return res;
+}
+
+// Returns a protobuf message from the corresponding native object.
+ir::shared::UPID UPIDToProto(const md::UPID& upid) {
+  dynamic_tracing::ir::shared::UPID res;
+  res.set_asid(upid.asid());
+  res.set_pid(upid.pid());
+  res.set_ts_ns(upid.start_ts());
+  return res;
+}
+
+// Given a TracepointDeployment that specifies a Pod as the target, resolves the UPIDs, and writes
+// them into the input protobuf.
+Status ResolvePodUPIDs(const md::K8sMetadataState& k8s_mds,
+                       dynamic_tracing::ir::shared::DeploymentSpec* deployment_spec) {
+  std::string_view pod_name = deployment_spec->pod();
+
+  PL_ASSIGN_OR_RETURN(std::vector<md::UPID> pod_upids, GetPodUPIDs(k8s_mds, pod_name));
+
+  if (pod_upids.empty()) {
+    return error::NotFound("Found no UPIDs for Pod '$0'", pod_name);
+  }
+  if (pod_upids.size() > 1) {
+    return error::Internal("Found more than 1 UPIDs for Pod '$0'", pod_name);
+  }
+  // Target oneof now clears the pod.
+  deployment_spec->mutable_upid()->CopyFrom(UPIDToProto(pod_upids.front()));
+
+  return Status::OK();
+}
+
 }  // namespace
 
-Status ResolveTargetObjPath(ir::shared::DeploymentSpec* deployment_spec) {
+Status ResolveTargetObjPath(const md::K8sMetadataState& k8s_mds,
+                            ir::shared::DeploymentSpec* deployment_spec) {
+  // Write Pod UPID to deployment_spec.upid.
+  if (!deployment_spec->pod().empty()) {
+    PL_RETURN_IF_ERROR(ResolvePodUPIDs(k8s_mds, deployment_spec));
+  }
+
   std::filesystem::path target_obj_path;
 
+  // TODO(yzhao/oazizi): Consider removing switch statement, and changes into a sequential
+  // processing workflow: Pod->UPID->Path.
   switch (deployment_spec->target_oneof_case()) {
     // Already a path, so nothing to do.
     case ir::shared::DeploymentSpec::TargetOneofCase::kPath:
@@ -306,8 +381,7 @@ Status ResolveTargetObjPath(ir::shared::DeploymentSpec* deployment_spec) {
     }
     // Populate UPIDs based on Pod name.
     case ir::shared::DeploymentSpec::TargetOneofCase::kPod: {
-      // TODO(yzhao): Add impl.
-      LOG(DFATAL) << "Pod tracepoint target is not supported yet.";
+      LOG(DFATAL) << "This should never happen, pod must have been rewritten to UPID.";
       break;
     }
     case ir::shared::DeploymentSpec::TargetOneofCase::TARGET_ONEOF_NOT_SET:

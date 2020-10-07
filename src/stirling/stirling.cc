@@ -428,7 +428,17 @@ void StirlingImpl::RegisterTracepoint(
   //               other errors. Also should consider races with binary creation/deletion.
 
   if (program->has_deployment_spec()) {
-    Status s = dynamic_tracing::ResolveTargetObjPath(program->mutable_deployment_spec());
+    std::unique_ptr<ConnectorContext> conn_ctx = GetContext();
+
+    if (conn_ctx == nullptr) {
+      absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
+      dynamic_trace_status_map_[trace_id] = error::FailedPrecondition(
+          "Failed to get K8s metadata; cannot resolve K8s entity to UPID");
+      return;
+    }
+
+    Status s = dynamic_tracing::ResolveTargetObjPath(conn_ctx->GetK8SMetadata(),
+                                                     program->mutable_deployment_spec());
     if (!s.ok()) {
       LOG(ERROR) << s.ToString();
       absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);

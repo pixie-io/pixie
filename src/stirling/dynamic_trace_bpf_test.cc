@@ -3,6 +3,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/exec/subprocess.h"
+#include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/dynamic_trace_connector.h"
 #include "src/stirling/obj_tools/testdata/dummy_exe_fixture.h"
@@ -31,14 +32,8 @@ using ::testing::StrEq;
 
 using LogicalProgram = ::pl::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
 
-enum class TargetKind {
-  kBinaryPath,
-  kPID,
-};
-
 // TODO(yzhao): Create test fixture that wraps the test binaries.
-class GoHTTPDynamicTraceTest : public ::testing::Test,
-                               public ::testing::WithParamInterface<TargetKind> {
+class GoHTTPDynamicTraceTest : public ::testing::Test {
  protected:
   void SetUp() override {
     client_path_ = pl::testing::BazelBinTestFilePath(kClientPath).string();
@@ -63,17 +58,10 @@ class GoHTTPDynamicTraceTest : public ::testing::Test,
     EXPECT_EQ(9, s_.Wait()) << "Server should have been killed.";
   }
 
-  void InitTestFixturesAndRunTestProgram(TargetKind target_kind, const std::string& text_pb) {
+  void InitTestFixturesAndRunTestProgram(const std::string& text_pb) {
     CHECK(TextFormat::ParseFromString(text_pb, &logical_program_));
 
-    switch (target_kind) {
-      case TargetKind::kBinaryPath:
-        logical_program_.mutable_deployment_spec()->set_path(server_path_);
-        break;
-      case TargetKind::kPID:
-        logical_program_.mutable_deployment_spec()->mutable_upid()->set_pid(s_.child_pid());
-        break;
-    }
+    logical_program_.mutable_deployment_spec()->set_path(server_path_);
 
     ASSERT_OK_AND_ASSIGN(connector_,
                          DynamicTraceConnector::Create("my_dynamic_source", &logical_program_));
@@ -167,8 +155,8 @@ tracepoints {
 }
 )";
 
-TEST_P(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
-  InitTestFixturesAndRunTestProgram(GetParam(), kGRPCTraceProgram);
+TEST_F(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
+  InitTestFixturesAndRunTestProgram(kGRPCTraceProgram);
   std::vector<TaggedRecordBatch> tablets = GetRecords();
 
   ASSERT_FALSE(tablets.empty());
@@ -191,8 +179,8 @@ TEST_P(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
   }
 }
 
-TEST_P(GoHTTPDynamicTraceTest, TraceReturnValue) {
-  InitTestFixturesAndRunTestProgram(GetParam(), kReturnValueTraceProgram);
+TEST_F(GoHTTPDynamicTraceTest, TraceReturnValue) {
+  InitTestFixturesAndRunTestProgram(kReturnValueTraceProgram);
   std::vector<TaggedRecordBatch> tablets = GetRecords();
 
   ASSERT_FALSE(tablets.empty());
@@ -208,9 +196,6 @@ TEST_P(GoHTTPDynamicTraceTest, TraceReturnValue) {
     EXPECT_EQ(records[kFrameHeaderValidIdx]->Get<types::BoolValue>(0).val, true);
   }
 }
-
-INSTANTIATE_TEST_SUITE_P(VaryingTracePrograms, GoHTTPDynamicTraceTest,
-                         ::testing::Values(TargetKind::kBinaryPath, TargetKind::kPID));
 
 class CPPDynamicTraceTest : public ::testing::Test {
  protected:
