@@ -172,7 +172,16 @@ const DialogDropdown = ({
   const getCompletions = React.useCallback((input: string) => {
     if (typeof getListItems === 'function') {
       return getListItems(input).then((items) => {
-        const mapped: CompletionItem[] = items.map((item) => ({
+        // TODO(nick,PC-630): This should be done on the API side. Once it is, remove this defensive coding.
+        const seenNames = new Set<string>();
+        const deduped = items.filter((item) => {
+          if (seenNames.has(item.value)) {
+            return false;
+          }
+          seenNames.add(item.value);
+          return true;
+        });
+        const mapped: CompletionItem[] = deduped.map((item) => ({
           type: 'item' as 'item',
           id: item.value,
           description: item.description,
