@@ -201,7 +201,7 @@ export const VizierDataTableWithDetails = (props: { table: Table }) => {
   return (
     <div className={classes.root}>
       <div className={classes.table}>
-        <VizierDataTable expandable={false} table={props.table} onRowSelectionChanged={onRowSelection} />
+        <VizierDataTable prettyRender expandable={false} table={props.table} onRowSelectionChanged={onRowSelection} />
       </div>
       <VizierDataRowDetails data={details} />
     </div>
