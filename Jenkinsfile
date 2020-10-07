@@ -302,6 +302,8 @@ def dockerStep(String dockerConfig = '', String dockerImage = devDockerImageWith
     }
     print "Cache String ${cacheString}"
 
+    jenkinsMnt = ' -v /mnt/jenkins/sharedDir:/mnt/jenkins/sharedDir'
+
     // This allows us to create sibling docker containers which we need to
     // run tests that need to launch docker containers (for example DB tests).
     // We also mount /var/lib/docker, because Stirling accesses it.
@@ -310,7 +312,7 @@ def dockerStep(String dockerConfig = '', String dockerImage = devDockerImageWith
     dockerSock = ' -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/docker:/var/lib/docker'
     // TODO(zasgar): We should be able to run this in isolated networks. We need --net=host
     // because dockertest needs to be able to access sibling containers.
-    docker.image(dockerImage).inside(dockerConfig + cacheString + dockerSock + ' --net=host') {
+    docker.image(dockerImage).inside(dockerConfig + cacheString + dockerSock + jenkinsMnt + ' --net=host') {
       body()
     }
   }

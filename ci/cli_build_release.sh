@@ -15,6 +15,7 @@ versions_file="${repo_path}/src/utils/artifacts/artifact_db_updater/VERSIONS.jso
 
 echo "The release tag is: ${release_tag}"
 linux_binary=bazel-bin/src/utils/pixie_cli/px_/px
+docker_repo="pixielabs/px"
 
 bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
       --repo_path "${repo_path}" --artifact_name cli --versions_file "${versions_file}"
@@ -27,9 +28,17 @@ bazel build -c opt --stamp //src/utils/pixie_cli:px
 bazel run -c opt --stamp //src/utils/pixie_cli:push_px_image
 
 if [[ ! "$release_tag" == *"-"* ]]; then
+    # Make tmp directory, because the binary path is a symlink.
+    # We need to move the tmp directory to a shared location between the mounted
+    # docker volume and the host.
+    tmp_dir="$(mktemp -d)"
+    cp -RaL "${linux_binary}" "${tmp_dir}"
+    mv "${tmp_dir}" /mnt/jenkins/sharedDir
+    tmp_subpath="$(echo "${tmp_dir}" | cut -d'/' -f3-)"
+
     # Create rpm package.
-    docker run \
-           -v "${repo_path}/${linux_binary}:/src/px" \
+    docker run -i --rm \
+           -v "/mnt/jenkins/sharedDir/${tmp_subpath}:/src/" \
            -v "${repo_path}:/image" \
            cdrx/fpm-fedora:24 \
            fpm \
@@ -43,8 +52,8 @@ if [[ ! "$release_tag" == *"-"* ]]; then
            px
 
     # Create deb package.
-    docker run \
-           -v "${repo_path}/${linux_binary}:/src/px" \
+    docker run -i --rm \
+           -v "/mnt/jenkins/sharedDir/${tmp_subpath}:/src/" \
            -v "${repo_path}:/image" \
            cdrx/fpm-ubuntu:18.04 \
            fpm \
@@ -59,6 +68,11 @@ if [[ ! "$release_tag" == *"-"* ]]; then
 
     # Push officially releases to docker hub.
     bazel run -c opt --stamp //src/utils/pixie_cli:push_px_image_to_docker
+
+    # Update latest tag.
+    docker pull "${docker_repo}:${release_tag}"
+    docker tag "${docker_repo}:${release_tag}" "${docker_repo}:latest"
+    docker push "${docker_repo}:latest"
 fi
 
 write_artifacts_to_gcs() {
@@ -69,8 +83,8 @@ write_artifacts_to_gcs() {
 
     if [[ ! "$release_tag" == *"-"* ]]; then
         # RPM/DEB only exists for release builds.
-        copy_artifact_to_gcs "$output_path" "${repo_path}/${pkg_prefix}.deb" "${pkg_prefix}.deb"
-        copy_artifact_to_gcs "$output_path" "${repo_path}/${pkg_prefix}.rpm" "${pkg_prefix}.rpm"
+        copy_artifact_to_gcs "$output_path" "${repo_path}/${pkg_prefix}.deb" "pixie-px.${arch}.deb"
+        copy_artifact_to_gcs "$output_path" "${repo_path}/${pkg_prefix}.rpm" "pixie-px.${arch}.rpm"
     fi
 }
 
