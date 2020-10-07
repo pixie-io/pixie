@@ -179,7 +179,8 @@ StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_pro
                       TransformLogicalProgram(*input_program));
 
   PL_ASSIGN_OR_RETURN(ir::physical::Program physical_program,
-                      GeneratePhysicalProgram(intermediate_program, obj_info.dwarf_reader.get()));
+                      GeneratePhysicalProgram(intermediate_program, obj_info.dwarf_reader.get(),
+                                              obj_info.elf_reader.get()));
 
   PL_ASSIGN_OR_RETURN(std::string bcc_code, GenBCCProgram(physical_program));
 

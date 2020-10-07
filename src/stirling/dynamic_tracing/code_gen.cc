@@ -425,7 +425,8 @@ StatusOr<std::vector<std::string>> GenScalarVariable(const ScalarVariable& var) 
       return code_lines;
     }
     case ScalarVariable::SrcExprOneofCase::SRC_EXPR_ONEOF_NOT_SET:
-      return error::InvalidArgument("address_oneof must be set");
+      return error::InvalidArgument("ScalarVariable.address_oneof must be set, got: $0",
+                                    var.DebugString());
   }
   GCC_SWITCH_RETURN;
 }

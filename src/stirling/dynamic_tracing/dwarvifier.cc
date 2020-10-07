@@ -7,9 +7,14 @@
 #include <vector>
 
 #include <absl/container/flat_hash_map.h>
+#include <absl/strings/str_replace.h>
 
 #include "src/stirling/dynamic_tracing/ir/sharedpb/shared.pb.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
+#include "src/stirling/obj_tools/elf_tools.h"
+
+DEFINE_bool(enable_tracing_golang_interface, false,
+            "Temporary flat to avoid disrupt existing code while finishing the implementation.");
 
 namespace pl {
 namespace stirling {
@@ -41,7 +46,8 @@ using ::pl::stirling::dynamic_tracing::ir::physical::StructVariable;
  */
 class Dwarvifier {
  public:
-  Dwarvifier(dwarf_tools::DwarfReader* dwarf_reader, ir::shared::Language language);
+  Dwarvifier(dwarf_tools::DwarfReader* dwarf_reader, elf_tools::ElfReader* elf_reader,
+             ir::shared::Language language);
   Status Generate(const ir::logical::TracepointSpec& input_program,
                   ir::physical::Program* output_program);
 
@@ -57,6 +63,12 @@ class Dwarvifier {
   void AddEntryProbeVariables(ir::physical::Probe* output_probe);
   void AddRetProbeVariables(ir::physical::Probe* output_probe);
   Status ProcessConstants(const ir::logical::Constant& constant, ir::physical::Probe* output_probe);
+
+  // Used by ProcessVarExpr() to handle Golang interface variables.
+  // TODO(yzhao): Too many parameters, consider grouping into abstract type.
+  Status ProcessGolangInterfaceExpr(const std::string& base, uint64_t offset,
+                                    const TypeInfo& type_info, const std::string& var_name,
+                                    ir::physical::Probe* output_probe);
 
   // The input components describes a sequence of field of nesting structures. The first component
   // is the name of an input argument of a function, or an expression to describe the index of an
@@ -103,6 +115,7 @@ class Dwarvifier {
   std::map<std::string, ir::physical::Struct*> structs_;
 
   dwarf_tools::DwarfReader* dwarf_reader_ = nullptr;
+  elf_tools::ElfReader* elf_reader_ = nullptr;
 
   std::map<std::string, dwarf_tools::ArgInfo> args_map_;
   dwarf_tools::RetValInfo retval_info_;
@@ -116,7 +129,8 @@ class Dwarvifier {
 
 // GeneratePhysicalProgram is the main entry point.
 StatusOr<ir::physical::Program> GeneratePhysicalProgram(
-    const ir::logical::TracepointDeployment& input, dwarf_tools::DwarfReader* dwarf_reader) {
+    const ir::logical::TracepointDeployment& input, dwarf_tools::DwarfReader* dwarf_reader,
+    elf_tools::ElfReader* elf_reader) {
   if (input.tracepoints_size() != 1) {
     return error::InvalidArgument("Right now only support exactly 1 Tracepoint, got '$0'",
                                   input.tracepoints_size());
@@ -129,7 +143,7 @@ StatusOr<ir::physical::Program> GeneratePhysicalProgram(
 
   for (const auto& input_tracepoint : input.tracepoints()) {
     // Transform tracepoint program.
-    Dwarvifier dwarvifier(dwarf_reader, input_tracepoint.program().language());
+    Dwarvifier dwarvifier(dwarf_reader, elf_reader, input_tracepoint.program().language());
     PL_RETURN_IF_ERROR(dwarvifier.Generate(input_tracepoint.program(), &output_program));
   }
 
@@ -281,8 +295,9 @@ StatusOr<ArgInfo> GetArgInfo(const std::map<std::string, ArgInfo>& args_map,
 // Dwarvifier
 //-----------------------------------------------------------------------------
 
-Dwarvifier::Dwarvifier(dwarf_tools::DwarfReader* dwarf_reader, ir::shared::Language language)
-    : dwarf_reader_(dwarf_reader), language_(language) {
+Dwarvifier::Dwarvifier(dwarf_tools::DwarfReader* dwarf_reader, elf_tools::ElfReader* elf_reader,
+                       ir::shared::Language language)
+    : dwarf_reader_(dwarf_reader), elf_reader_(elf_reader), language_(language) {
   implicit_columns_ = {kTGIDVarName, kTGIDStartTimeVarName, kKTimeVarName};
   if (language_ == ir::shared::Language::GOLANG) {
     implicit_columns_.push_back(kGOIDVarName);
@@ -559,7 +574,80 @@ Status PopulateStructSpecProto(const std::vector<StructSpecEntry>& struct_spec,
 
   return Status::OK();
 }
+
+bool IsGolangPointerType(std::string_view type_name) { return absl::StartsWith(type_name, "*"); }
+
+constexpr char kGolangInterfaceTypeName[] = "runtime.iface";
+
 }  // namespace
+
+Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t offset,
+                                              const TypeInfo& type_info,
+                                              const std::string& var_name,
+                                              ir::physical::Probe* output_probe) {
+  // TODO(yzhao): Needs to:
+  // * Add a struct block variable, plus its size in the outer scope before these if statements.
+  // * For each concrete type, produces a ConditionalBlock that enclose all leaf fields
+  //   of the type, and write it out.
+  // * For each concrete type, produces a type ID and spec for the StructBlob.
+  // * For each concrete type, writes type ID along with the rest of the data.
+  // * Add a output action for the struct blob variable.
+
+  // TODO(yzhao): Remove this.
+  // This variable is not valid. It's added to allow later output action references to a defined
+  // variable.
+  AddVariable<ScalarVariable>(output_probe, var_name, ir::shared::ScalarType::VOID_POINTER);
+
+  constexpr char kIfaceTabSuffix[] = "_intf_tab";
+
+  PL_ASSIGN_OR_RETURN(const StructMemberInfo mem_info,
+                      dwarf_reader_->GetStructMemberInfo(kGolangInterfaceTypeName, "tab"));
+
+  std::string iface_tab_var_name = absl::StrCat(var_name, kIfaceTabSuffix);
+  ir::physical::ScalarVariable* iface_tab_var =
+      AddVariable<ScalarVariable>(output_probe, iface_tab_var_name, ir::shared::ScalarType::UINT64);
+
+  iface_tab_var->mutable_memory()->set_base(base);
+  iface_tab_var->mutable_memory()->set_offset(offset + mem_info.offset);
+
+  // TODO(yzhao): Add a variable that reads the value of the runtime.iface.tab.
+
+  // TODO(yzhao): In case this is reused elsewhere, let Dwarvifier manage the return value, to avoid
+  // duplicate computation.
+  PL_ASSIGN_OR_RETURN(const auto intf_impl_map, elf_tools::ExtractGolangInterfaces(elf_reader_));
+
+  auto iter = intf_impl_map.find(type_info.decl_type);
+
+  if (iter == intf_impl_map.end()) {
+    return error::Internal(
+        "While processing variable '$0', failed to find the implementation types of interface=$1.",
+        var_name, type_info.decl_type);
+  }
+
+  for (const elf_tools::IntfImplTypeInfo& info : iter->second) {
+    if (IsGolangPointerType(info.type_name)) {
+      LOG(WARNING) << absl::Substitute(
+          "Does not support pointer type as interface implementation type yet, "
+          "interface=$0 impl_type=$1",
+          type_info.decl_type, type_info.type_name);
+      continue;
+    }
+
+    std::string intf_tab_addr_constant_name =
+        absl::StrCat(absl::StrReplaceAll(info.type_name, {{".", "__"}}), "_sym_addr");
+
+    auto* intf_tab_addr_constant = AddVariable<ScalarVariable>(
+        output_probe, intf_tab_addr_constant_name, ir::shared::ScalarType::UINT64);
+    intf_tab_addr_constant->set_constant(std::to_string(info.address));
+
+    auto* cond_block = output_probe->add_cond_blocks();
+
+    cond_block->mutable_cond()->set_op(ir::shared::Condition::EQUAL);
+    cond_block->mutable_cond()->add_vars(iface_tab_var->name());
+    cond_block->mutable_cond()->add_vars(intf_tab_addr_constant->name());
+  }
+  return Status::OK();
+}
 
 Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& arg_info,
                                   const std::string& base_var,
@@ -657,6 +745,11 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
 
       AddPtrLenVariable(output_probe, var_name, ir::shared::ScalarType::BYTE_ARRAY, base,
                         offset + ptr_offset, offset + len_offset);
+    } else if (FLAGS_enable_tracing_golang_interface && language_ == ir::shared::Language::GOLANG &&
+               // Meaning that this variable is an interface.
+               type_info.type_name == kGolangInterfaceTypeName) {
+      PL_RETURN_IF_ERROR(
+          ProcessGolangInterfaceExpr(base, offset, type_info, var_name, output_probe));
     } else {
       PL_ASSIGN_OR_RETURN(std::vector<StructSpecEntry> struct_spec,
                           dwarf_reader_->GetStructSpec(type_info.type_name));

@@ -1039,6 +1039,206 @@ probes {
 }
 )";
 
+constexpr std::string_view kGolangErrorInterfaceProbeIn = R"(
+deployment_spec {
+  path: "$0"
+}
+tracepoints {
+  program {
+    language: GOLANG
+    outputs {
+      name: "out_table"
+      fields: "error"
+    }
+    probes: {
+      tracepoint: {
+        symbol: "main.FooReturnsDummyError"
+        type: RETURN
+      }
+      args {
+        id: "retval"
+        expr: "~r1"
+      }
+      output_actions {
+        output_name: "out_table"
+        variable_name: "retval"
+      }
+    }
+  }
+}
+)";
+
+constexpr std::string_view kGolangErrorInterfaceProbeOut = R"(
+deployment_spec {
+  path: "$0"
+}
+structs {
+  name: "out_table_value_t"
+  fields {
+    name: "tgid_"
+    type: INT32
+  }
+  fields {
+    name: "tgid_start_time_"
+    type: UINT64
+  }
+  fields {
+    name: "time_"
+    type: UINT64
+  }
+  fields {
+    name: "goid_"
+    type: INT64
+  }
+  fields {
+    name: "error"
+    type: VOID_POINTER
+  }
+}
+outputs {
+  name: "out_table"
+  fields: "error"
+  struct_type: "out_table_value_t"
+}
+probes {
+  tracepoint {
+    symbol: "main.FooReturnsDummyError"
+    type: RETURN
+  }
+  vars {
+    scalar_var {
+      name: "sp_"
+      type: VOID_POINTER
+      reg: SP
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_"
+      type: INT32
+      builtin: TGID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_pid_"
+      type: UINT64
+      builtin: TGID_PID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_start_time_"
+      type: UINT64
+      builtin: TGID_START_TIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "time_"
+      type: UINT64
+      builtin: KTIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "goid_"
+      type: INT64
+      builtin: GOID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "retval"
+      type: VOID_POINTER
+    }
+  }
+  vars {
+    scalar_var {
+      name: "retval_intf_tab"
+      type: UINT64
+      memory {
+        base: "sp_"
+        offset: 16
+      }
+    }
+  }
+  vars {
+    scalar_var {
+      name: "main__dummyError_sym_addr"
+      type: UINT64
+      constant: "5112128"
+    }
+  }
+  vars {
+    scalar_var {
+      name: "runtime__errorString_sym_addr"
+      type: UINT64
+      constant: "5112160"
+    }
+  }
+  vars {
+    scalar_var {
+      name: "syscall__Errno_sym_addr"
+      type: UINT64
+      constant: "5112192"
+    }
+  }
+  vars {
+    struct_var {
+      name: "out_table_value"
+      type: "out_table_value_t"
+      field_assignments {
+        field_name: "tgid_"
+        variable_name: "tgid_"
+      }
+      field_assignments {
+        field_name: "tgid_start_time_"
+        variable_name: "tgid_start_time_"
+      }
+      field_assignments {
+        field_name: "time_"
+        variable_name: "time_"
+      }
+      field_assignments {
+        field_name: "goid_"
+        variable_name: "goid_"
+      }
+      field_assignments {
+        field_name: "error"
+        variable_name: "retval"
+      }
+    }
+  }
+  output_actions {
+    perf_buffer_name: "out_table"
+    variable_name: "out_table_value"
+  }
+  cond_blocks {
+    cond {
+      op: EQUAL
+      vars: "retval_intf_tab"
+      vars: "main__dummyError_sym_addr"
+    }
+  }
+  cond_blocks {
+    cond {
+      op: EQUAL
+      vars: "retval_intf_tab"
+      vars: "runtime__errorString_sym_addr"
+    }
+  }
+  cond_blocks {
+    cond {
+      op: EQUAL
+      vars: "retval_intf_tab"
+      vars: "syscall__Errno_sym_addr"
+    }
+  }
+}
+language: GOLANG
+)";
+
 struct DwarfInfoTestParam {
   std::string_view input;
   std::string_view expected_output;
@@ -1053,6 +1253,11 @@ class DwarfInfoTest : public ::testing::TestWithParam<DwarfInfoTestParam> {
 
 TEST_P(DwarfInfoTest, Transform) {
   using dwarf_tools::DwarfReader;
+  using elf_tools::ElfReader;
+
+  // TODO(yzhao): Remove this after the feature is finished.
+  FLAGS_enable_tracing_golang_interface = true;
+
   DwarfInfoTestParam p = GetParam();
 
   std::string input_str = absl::Substitute(p.input, binary_path_);
@@ -1062,7 +1267,8 @@ TEST_P(DwarfInfoTest, Transform) {
   std::string expected_output_str = absl::Substitute(p.expected_output, binary_path_);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        DwarfReader::Create(binary_path_));
-  ASSERT_OK_AND_THAT(GeneratePhysicalProgram(input_program, dwarf_reader.get()),
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(binary_path_));
+  ASSERT_OK_AND_THAT(GeneratePhysicalProgram(input_program, dwarf_reader.get(), elf_reader.get()),
                      EqualsProto(expected_output_str));
 }
 
@@ -1072,7 +1278,9 @@ INSTANTIATE_TEST_SUITE_P(DwarfInfoTestSuite, DwarfInfoTest,
                                            DwarfInfoTestParam{kNestedArgProbeIn,
                                                               kNestedArgProbeOut},
                                            DwarfInfoTestParam{kActionProbeIn, kActionProbeOut},
-                                           DwarfInfoTestParam{kStructProbeIn, kStructProbeOut}));
+                                           DwarfInfoTestParam{kStructProbeIn, kStructProbeOut},
+                                           DwarfInfoTestParam{kGolangErrorInterfaceProbeIn,
+                                                              kGolangErrorInterfaceProbeOut}));
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
