@@ -46,7 +46,12 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     },
   },
   linkItem: {
-    ...theme.typography.body1,
+    ...theme.typography.subtitle1,
+    fontFamily: 'monospace',
+    color: theme.palette.foreground.one,
+    textDecoration: 'underline',
+  },
+  instructionLink: {
     fontFamily: 'monospace',
     color: theme.palette.foreground.one,
     textDecoration: 'underline',
@@ -98,6 +103,13 @@ export const DeployInstructions = () => {
           <div className={classes.instructions}>
             Run this in a macOS Terminal or Linux shell to install Pixie in your K8s cluster.
             Share with your admin if you don&apos;t have access.
+            <br />
+            <br />
+            <span>
+              Or, click&nbsp;
+              <a className={classes.instructionLink} href='/docs/installing-pixie/quick-start/'>here</a>
+              &nbsp;for more options for installing the CLI.
+            </span>
           </div>
           <div className={classes.linksHeader}>Don&apos;t have K8s?</div>
           <ul className={classes.list}>
