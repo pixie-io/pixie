@@ -174,7 +174,7 @@ inline std::string ToString(const close_event_t& event) {
 
 inline std::string ToString(const conn_event_t& event) {
   return absl::Substitute("[ts=$0 conn_id=$1 addr=$2]", event.timestamp_ns, ToString(event.conn_id),
-                          ::pl::ToString(event.addr));
+                          ::pl::ToString(reinterpret_cast<const struct sockaddr*>(&event.addr)));
 }
 
 inline std::string ToString(const socket_control_event_t& event) {

@@ -5,28 +5,32 @@ namespace pl {
 
 using ::testing::StrEq;
 
-TEST(PopulateInetAddr, Basic) {
+TEST(InetUtils, PopulateInetAddr) {
   struct in_addr in_addr;
   inet_pton(AF_INET, "10.1.2.3", &in_addr);
   in_port_t in_port = htons(12345);
 
   SockAddr addr;
   PopulateInetAddr(in_addr, in_port, &addr);
-  EXPECT_EQ(addr.AddrStr(), "10.1.2.3");
-  EXPECT_EQ(addr.port, 12345);
+  ASSERT_EQ(addr.family, SockAddrFamily::kIPv4);
+  auto& addr4 = std::get<SockAddrIPv4>(addr.addr);
+  EXPECT_EQ(addr4.AddrStr(), "10.1.2.3");
+  EXPECT_EQ(addr4.port, 12345);
 }
 
-TEST(PopulateInet6Addr, Basic) {
+TEST(InetUtils, PopulateInet6Addr) {
   struct in6_addr in6_addr = IN6ADDR_LOOPBACK_INIT;
   in_port_t in6_port = htons(12345);
 
   SockAddr addr;
   PopulateInet6Addr(in6_addr, in6_port, &addr);
-  EXPECT_EQ(addr.AddrStr(), "::1");
-  EXPECT_EQ(addr.port, 12345);
+  ASSERT_EQ(addr.family, SockAddrFamily::kIPv6);
+  auto& addr6 = std::get<SockAddrIPv6>(addr.addr);
+  EXPECT_EQ(addr6.AddrStr(), "::1");
+  EXPECT_EQ(addr6.port, 12345);
 }
 
-TEST(PopulateUnixAddr, Basic) {
+TEST(InetUtils, PopulateUnixAddr) {
   // Using sun_path rom struct sockaddr_un:
   // struct sockaddr_un {
   //   sa_family_t sun_family;               /* AF_UNIX */
@@ -37,25 +41,28 @@ TEST(PopulateUnixAddr, Basic) {
 
   SockAddr addr;
   PopulateUnixAddr(path, inode_num, &addr);
-  EXPECT_EQ(addr.AddrStr(), "unix_socket:/path/to/unix/domain/socket");
-  EXPECT_EQ(addr.port, 54321);
+  auto& addr_un = std::get<SockAddrUnix>(addr.addr);
+  EXPECT_EQ(addr_un.path, "/path/to/unix/domain/socket");
+  EXPECT_EQ(addr_un.inode_num, 54321);
 }
 
-TEST(ParseSockAddr, IPv4) {
+TEST(InetUtils, PopulateSockAddrInet4) {
   // Create an IP address for the test.
   struct sockaddr_in sockaddr;
   sockaddr.sin_family = AF_INET;
   inet_pton(AF_INET, "10.1.2.3", &sockaddr.sin_addr);
   sockaddr.sin_port = htons(53000);
 
-  // Now check InetAddrToString produces the expected string.
+  // Now check PopulateSockAddr produces the expected string.
   SockAddr addr;
   PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
-  EXPECT_EQ(addr.AddrStr(), "10.1.2.3");
-  EXPECT_EQ(addr.port, 53000);
+  ASSERT_EQ(addr.family, SockAddrFamily::kIPv4);
+  auto& addr4 = std::get<SockAddrIPv4>(addr.addr);
+  EXPECT_EQ(addr4.AddrStr(), "10.1.2.3");
+  EXPECT_EQ(addr4.port, 53000);
 }
 
-TEST(ParseSockAddr, IPv6) {
+TEST(InetUtils, PopulateSockAddrInet6) {
   struct sockaddr_in6 sockaddr;
   sockaddr.sin6_family = AF_INET6;
   EXPECT_OK(ParseIPv6Addr("::1", &sockaddr.sin6_addr));
@@ -63,11 +70,13 @@ TEST(ParseSockAddr, IPv6) {
 
   SockAddr addr;
   PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
-  EXPECT_EQ(addr.AddrStr(), "::1");
-  EXPECT_EQ(addr.port, 12345);
+  ASSERT_EQ(addr.family, SockAddrFamily::kIPv6);
+  auto& addr6 = std::get<SockAddrIPv6>(addr.addr);
+  EXPECT_EQ(addr6.AddrStr(), "::1");
+  EXPECT_EQ(addr6.port, 12345);
 }
 
-TEST(ParseSockAddr, Unix) {
+TEST(InetUtils, PopulateSockAddrUnix) {
   struct sockaddr_un sockaddr;
   sockaddr.sun_family = AF_UNIX;
   const char kUnixPath[108] = "/path/to/unix/domain/socket";
@@ -75,18 +84,19 @@ TEST(ParseSockAddr, Unix) {
 
   SockAddr addr;
   PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
-  EXPECT_EQ(addr.AddrStr(), "unix_socket:/path/to/unix/domain/socket");
-  EXPECT_EQ(addr.port, -1);
+  ASSERT_EQ(addr.family, SockAddrFamily::kUnix);
+  auto& addr_unix = std::get<SockAddrUnix>(addr.addr);
+  EXPECT_EQ(addr_unix.path, "/path/to/unix/domain/socket");
+  EXPECT_EQ(addr_unix.inode_num, -1);
 }
 
-TEST(ParseSockAddr, Unspecified) {
+TEST(InetUtils, PopulateSockAddrUnspecified) {
   struct sockaddr sockaddr;
   sockaddr.sa_family = AF_UNSPEC;
 
   SockAddr addr;
   PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
-  EXPECT_EQ(addr.AddrStr(), "-");
-  EXPECT_EQ(addr.port, -1);
+  ASSERT_EQ(addr.family, SockAddrFamily::kUnspecified);
 }
 
 TEST(ParseIPAddr, ipv4) {
@@ -95,10 +105,7 @@ TEST(ParseIPAddr, ipv4) {
   EXPECT_OK(ParseIPv4Addr("1.2.3.4", &in_addr));
 
   // Now check for the expected string.
-  std::string addr;
-  Status s = IPv4AddrToString(in_addr, &addr);
-  EXPECT_OK(s);
-  EXPECT_EQ(addr, "1.2.3.4");
+  ASSERT_OK_AND_EQ(IPv4AddrToString(in_addr), "1.2.3.4");
 }
 
 TEST(ParseIPAddr, ipv6) {
@@ -107,11 +114,8 @@ TEST(ParseIPAddr, ipv6) {
   EXPECT_OK(ParseIPv6Addr("2001:0db8:85a3:0000:0000:8a2e:0370:7334", &in6_addr));
 
   // Now check for the expected string.
-  std::string addr;
-  Status s = IPv6AddrToString(in6_addr, &addr);
-  EXPECT_OK(s);
   // Note that formatting is slightly different (zeros removed).
-  EXPECT_EQ(addr, "2001:db8:85a3::8a2e:370:7334");
+  ASSERT_OK_AND_EQ(IPv6AddrToString(in6_addr), "2001:db8:85a3::8a2e:370:7334");
 }
 
 TEST(ParseIPAddr, ipv4_mapped_into_ipv6) {
@@ -120,36 +124,20 @@ TEST(ParseIPAddr, ipv4_mapped_into_ipv6) {
   EXPECT_OK(ParseIPv6Addr("::ffff:1.2.3.4", &in6_addr));
 
   // Now check for the expected string.
-  std::string addr;
-  Status s = IPv6AddrToString(in6_addr, &addr);
-  EXPECT_OK(s);
-  // Note that formatting is slightly different (zeros removed).
-  EXPECT_EQ(addr, "1.2.3.4");
-}
-
-TEST(ParseIPAddr, ipv4_using_in6_addr) {
-  // Create an IP address for the test.
-  struct in6_addr in6_addr;
-  EXPECT_OK(ParseIPv4Addr("1.2.3.4", &in6_addr));
-
-  // Now check for the expected string.
-  std::string addr;
-  Status s = IPv4AddrToString(in6_addr, &addr);
-  EXPECT_OK(s);
-  // Note that formatting is slightly different (zeros removed).
-  EXPECT_EQ(addr, "1.2.3.4");
+  // Note that formatting is slightly different (::ffff: removed).
+  ASSERT_OK_AND_EQ(IPv6AddrToString(in6_addr), "1.2.3.4");
 }
 
 TEST(CIDRBlockTest, ContainsIPv4Address) {
   CIDRBlock block;
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/24", &block));
   for (int i = 0; i < 256; ++i) {
-    SockAddr addr;
+    InetAddr addr;
     EXPECT_OK(ParseIPAddress(absl::StrCat("1.2.3.", i), &addr));
     EXPECT_TRUE(CIDRContainsIPAddr(block, addr));
   }
   for (int i = 0; i < 256; ++i) {
-    SockAddr addr;
+    InetAddr addr;
     EXPECT_OK(ParseIPAddress(absl::StrCat("1.2.4.", i), &addr));
     EXPECT_FALSE(CIDRContainsIPAddr(block, addr));
   }
@@ -163,7 +151,7 @@ TEST(CIDRBlockTest, ContainsIPv6Address) {
       std::string addr_str2 = "1111:1112:1113:1114:1115:1116:1117:11";
       addr_str2 += a;
       addr_str2 += b;
-      SockAddr addr6_2;
+      InetAddr addr6_2;
       EXPECT_OK(ParseIPAddress(addr_str2, &addr6_2));
       EXPECT_TRUE(CIDRContainsIPAddr(block, addr6_2));
     }
@@ -173,7 +161,7 @@ TEST(CIDRBlockTest, ContainsIPv6Address) {
 TEST(CIDRBlockTest, ContainsMixedAddress) {
   {
     CIDRBlock block6;
-    SockAddr addr4;
+    InetAddr addr4;
 
     ASSERT_OK(ParseCIDRBlock("::ffff:10.64.0.0/16", &block6));
     ASSERT_OK(ParseIPAddress("10.64.5.1", &addr4));
@@ -190,7 +178,7 @@ TEST(CIDRBlockTest, ContainsMixedAddress) {
 
   {
     CIDRBlock block4;
-    SockAddr addr6;
+    InetAddr addr6;
 
     ASSERT_OK(ParseCIDRBlock("10.64.0.0/16", &block4));
     EXPECT_OK(ParseIPAddress("::ffff:10.64.5.1", &addr6));
@@ -237,10 +225,10 @@ TEST(CIDRBlockTest, ParseInvalidIPAddressString) {
 }
 
 TEST(MapIPv4ToIPv6Test, WorksAsExpected) {
-  SockAddr v4_addr;
+  InetAddr v4_addr;
   EXPECT_OK(ParseIPAddress("1.2.3.4", &v4_addr));
   {
-    SockAddr v6_addr = MapIPv4ToIPv6(v4_addr);
+    InetAddr v6_addr = MapIPv4ToIPv6(v4_addr);
     EXPECT_EQ("1.2.3.4", v6_addr.AddrStr());
   }
   {

@@ -26,25 +26,11 @@ using ::testing::UnorderedElementsAre;
 
 // Keep two versions of AddrPortStr, in case the host machine is using IPv6.
 std::string AddrPortStr(struct in6_addr in_addr, in_port_t in_port) {
-  std::string addr;
-  int port;
-
-  Status s = IPv6AddrToString(in_addr, &addr);
-  CHECK(s.ok());
-  port = ntohs(in_port);
-
-  return absl::StrCat(addr, ":", port);
+  return absl::StrCat(IPv6AddrToString(in_addr).ValueOr("<Decoding error>"), ":", ntohs(in_port));
 }
 
 std::string AddrPortStr(struct in_addr in_addr, in_port_t in_port) {
-  std::string addr;
-  int port;
-
-  Status s = IPv4AddrToString(in_addr, &addr);
-  CHECK(s.ok());
-  port = ntohs(in_port);
-
-  return absl::StrCat(addr, ":", port);
+  return absl::StrCat(IPv4AddrToString(in_addr).ValueOr("<Decoding error>"), ":", ntohs(in_port));
 }
 
 MATCHER_P(HasLocalIPEndpoint, endpoint, "") {

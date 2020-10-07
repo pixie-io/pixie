@@ -403,8 +403,8 @@ void ConnectionTracker::Reset() {
 void ConnectionTracker::Disable(std::string_view reason) {
   if (state_ != State::kDisabled) {
     CONN_TRACE(1) << absl::Substitute("Disabling connection dest=$0:$1 reason=$2",
-                                      open_info_.remote_addr.AddrStr(), open_info_.remote_addr.port,
-                                      reason);
+                                      open_info_.remote_addr.AddrStr(),
+                                      open_info_.remote_addr.port(), reason);
   }
 
   state_ = State::kDisabled;
@@ -518,11 +518,10 @@ bool ConnectionTracker::ReadyForDestruction() const {
 }
 
 bool ConnectionTracker::IsRemoteAddrInCluster(const std::vector<CIDRBlock>& cluster_cidrs) {
-  DCHECK(open_info_.remote_addr.family == SockAddrFamily::kIPv4 ||
-         open_info_.remote_addr.family == SockAddrFamily::kIPv6);
+  PL_ASSIGN_OR(InetAddr remote_addr, open_info_.remote_addr.ToInetAddr(), return false);
 
   for (const auto& cluster_cidr : cluster_cidrs) {
-    if (CIDRContainsIPAddr(cluster_cidr, open_info_.remote_addr)) {
+    if (CIDRContainsIPAddr(cluster_cidr, remote_addr)) {
       return true;
     }
   }
@@ -846,7 +845,8 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   }
 
   CONN_TRACE(1) << absl::Substitute("Inferred connection dest=$0:$1",
-                                    open_info_.remote_addr.AddrStr(), open_info_.remote_addr.port);
+                                    open_info_.remote_addr.AddrStr(),
+                                    open_info_.remote_addr.port());
 
   // No need for the resolver anymore, so free its memory.
   conn_resolver_.reset();

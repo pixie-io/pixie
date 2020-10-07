@@ -27,21 +27,11 @@ using ::pl::system::SocketInfo;
 using ::pl::system::SocketInfoManager;
 
 std::string IPv4AddrToString(struct in_addr addr, in_port_t port) {
-  std::string out;
-  Status s = pl::IPv4AddrToString(addr, &out);
-  if (!s.ok()) {
-    out = "<error>";
-  }
-  return absl::StrCat(out, ":", port);
+  return absl::StrCat(pl::IPv4AddrToString(addr).ValueOr("<error>"), ":", port);
 }
 
 std::string IPv6AddrToString(struct in6_addr addr, in_port_t port) {
-  std::string out;
-  Status s = pl::IPv4AddrToString(addr, &out);
-  if (!s.ok()) {
-    out = "<error>";
-  }
-  return absl::StrCat(out, ":", port);
+  return absl::StrCat(pl::IPv6AddrToString(addr).ValueOr("<error>"), ":", port);
 }
 
 std::string UnixAddrToString(struct un_path_t path, uint32_t inode) {

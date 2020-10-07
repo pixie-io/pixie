@@ -169,17 +169,17 @@ StatusOr<SockAddr> FrameBodyDecoder::ExtractInet() {
   switch (n) {
     case 4: {
       addr.family = SockAddrFamily::kIPv4;
-      addr.addr = in_addr{};
-      PL_RETURN_IF_ERROR((ExtractBytesCore<uint8_t, 4>(reinterpret_cast<uint8_t*>(&addr.addr))));
+      auto& addr4 = addr.addr.emplace<SockAddrIPv4>();
+      PL_RETURN_IF_ERROR((ExtractBytesCore<uint8_t, 4>(reinterpret_cast<uint8_t*>(&addr4.addr))));
+      PL_ASSIGN_OR_RETURN(addr4.port, ExtractInt());
     } break;
     case 16: {
       addr.family = SockAddrFamily::kIPv6;
-      addr.addr = in6_addr{};
-      PL_RETURN_IF_ERROR((ExtractBytesCore<uint8_t, 16>(reinterpret_cast<uint8_t*>(&addr.addr))));
+      auto& addr6 = addr.addr.emplace<SockAddrIPv6>();
+      PL_RETURN_IF_ERROR((ExtractBytesCore<uint8_t, 16>(reinterpret_cast<uint8_t*>(&addr6.addr))));
+      PL_ASSIGN_OR_RETURN(addr6.port, ExtractInt());
     } break;
   }
-
-  PL_ASSIGN_OR_RETURN(addr.port, ExtractInt());
 
   return addr;
 }

@@ -19,7 +19,7 @@ ConnectionStats::AggKey BuildAggKey(const upid_t& upid, const traffic_class_t& t
       .remote_addr = remote_endpoint.AddrStr(),
       // Set ports to 0 if this event if from a server process.
       // This avoids creating excessive amount of records from changing ports of K8s services.
-      .remote_port = traffic_class.role == kRoleServer ? 0 : remote_endpoint.port,
+      .remote_port = traffic_class.role == kRoleServer ? 0 : remote_endpoint.port(),
   };
 }
 

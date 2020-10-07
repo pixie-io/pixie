@@ -84,7 +84,7 @@ TEST_F(CQLParserTest, BasicResp) {
   EXPECT_EQ(frames[0].header.num_addl, 1);
   EXPECT_EQ(frames[0].records.size(), 1);
   EXPECT_EQ(frames[0].records[0].name, "intellij-experiments.appspot.com");
-  EXPECT_EQ(frames[0].records[0].addr.family, SockAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records[0].addr.family, InetAddrFamily::kIPv4);
   EXPECT_EQ(frames[0].records[0].addr.AddrStr(), "216.58.194.180");
 }
 

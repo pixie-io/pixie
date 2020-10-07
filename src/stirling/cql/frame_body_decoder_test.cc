@@ -593,9 +593,10 @@ TEST(ExtractUUID, Oversized) {
 TEST(ExtractInet, V4Exact) {
   FrameBodyDecoder decoder(kInet4);
   ASSERT_OK_AND_ASSIGN(SockAddr addr, decoder.ExtractInet());
-  EXPECT_EQ(addr.family, SockAddrFamily::kIPv4);
-  EXPECT_EQ(addr.AddrStr(), "1.2.3.4");
-  EXPECT_EQ(addr.port, 80);
+  ASSERT_EQ(addr.family, SockAddrFamily::kIPv4);
+  const auto& addr4 = std::get<SockAddrIPv4>(addr.addr);
+  EXPECT_EQ(addr4.AddrStr(), "1.2.3.4");
+  EXPECT_EQ(addr4.port, 80);
   ASSERT_TRUE(decoder.eof());
 
   PL_UNUSED(kInet6);
@@ -604,9 +605,10 @@ TEST(ExtractInet, V4Exact) {
 TEST(ExtractInet, V6Exact) {
   FrameBodyDecoder decoder(kInet6);
   ASSERT_OK_AND_ASSIGN(SockAddr addr, decoder.ExtractInet());
-  EXPECT_EQ(addr.family, SockAddrFamily::kIPv6);
-  EXPECT_EQ(addr.AddrStr(), "::1");
-  EXPECT_EQ(addr.port, 80);
+  ASSERT_EQ(addr.family, SockAddrFamily::kIPv6);
+  const auto& addr6 = std::get<SockAddrIPv6>(addr.addr);
+  EXPECT_EQ(addr6.AddrStr(), "::1");
+  EXPECT_EQ(addr6.port, 80);
   ASSERT_TRUE(decoder.eof());
 
   PL_UNUSED(kInet6);

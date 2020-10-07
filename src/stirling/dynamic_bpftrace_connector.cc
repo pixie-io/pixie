@@ -227,23 +227,18 @@ void DynamicBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uin
 namespace {
 
 std::string ResolveInet(int af, const uint8_t* inet) {
-  std::string inet_str;
-  Status s;
   switch (af) {
     case AF_INET:
-      s = IPv4AddrToString(*reinterpret_cast<const struct in_addr*>(inet), &inet_str);
-      break;
+      return IPv4AddrToString(*reinterpret_cast<const struct in_addr*>(inet))
+          .ValueOr("<Error decoding inet>");
     case AF_INET6:
-      s = IPv6AddrToString(*reinterpret_cast<const struct in6_addr*>(inet), &inet_str);
+      return IPv6AddrToString(*reinterpret_cast<const struct in6_addr*>(inet))
+          .ValueOr("<Error decoding inet>");
       break;
-  }
-
-  if (s.ok()) {
-    return inet_str;
   }
 
   // Shouldn't ever get here.
-  return "Error decoding inet";
+  return "<Error decoding inet>";
 }
 
 }  // namespace

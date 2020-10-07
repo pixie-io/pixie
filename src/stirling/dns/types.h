@@ -38,7 +38,7 @@ constexpr int kNumAddlOffset = 10;
 // Typically it is the answer to a query (e.g. from name->addr).
 // Spec: https://www.ietf.org/rfc/rfc1035.txt
 struct DNSRecord {
-  SockAddr addr;
+  InetAddr addr;
   std::string name;
   std::string path;
 };

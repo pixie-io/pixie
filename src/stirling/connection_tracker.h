@@ -628,7 +628,7 @@ std::string DebugString(const ConnectionTracker& c, std::string_view prefix) {
   info += absl::Substitute("$0conn_id=$1\n", prefix, ToString(c.conn_id()));
   info += absl::Substitute("state=$0\n", magic_enum::enum_name(c.state()));
   info += absl::Substitute("$0remote_addr=$1:$2\n", prefix, c.remote_endpoint().AddrStr(),
-                           c.remote_endpoint().port);
+                           c.remote_endpoint().port());
   info += absl::Substitute("$0protocol=$1\n", prefix,
                            magic_enum::enum_name(c.traffic_class().protocol));
   info += absl::Substitute("$0recv queue\n", prefix);

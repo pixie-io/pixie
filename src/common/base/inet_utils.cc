@@ -4,67 +4,154 @@
 
 namespace pl {
 
-const int kIPv4BitLen = 32;
-const int kIPv6BitLen = 128;
+constexpr int kIPv4BitLen = 32;
+constexpr int kIPv6BitLen = 128;
+
+// The IPv4 IP is located in the last 32-bit word of IPv6 address.
+constexpr int kIPv4Offset = 3;
 
 std::string SockAddr::AddrStr() const {
+  switch (family) {
+    case SockAddrFamily::kUnspecified:
+      return "-";
+    case SockAddrFamily::kIPv4:
+      return IPv4AddrToString(std::get<SockAddrIPv4>(addr).addr)
+          .ValueOr("<Error decoding address>");
+    case SockAddrFamily::kIPv6:
+      return IPv6AddrToString(std::get<SockAddrIPv6>(addr).addr)
+          .ValueOr("<Error decoding address>");
+    case SockAddrFamily::kUnix:
+      return absl::StrCat("unix_socket:", std::get<SockAddrUnix>(addr).path);
+    default:
+      return absl::Substitute("<unknown SockAddrFamily $0>", magic_enum::enum_name(family));
+  }
+}
+
+int SockAddr::port() const {
+  switch (family) {
+    case SockAddrFamily::kUnspecified:
+      return -1;
+    case SockAddrFamily::kIPv4:
+      return std::get<SockAddrIPv4>(addr).port;
+    case SockAddrFamily::kIPv6:
+      return std::get<SockAddrIPv6>(addr).port;
+    case SockAddrFamily::kUnix:
+      return std::get<SockAddrUnix>(addr).inode_num;
+    default:
+      return -1;
+  }
+}
+
+std::string InetAddr::AddrStr() const {
   std::string out;
 
   Status s;
   switch (family) {
-    case SockAddrFamily::kUnspecified:
-      out = "-";
-      break;
-    case SockAddrFamily::kIPv4:
-      s = IPv4AddrToString(std::get<struct in_addr>(addr), &out);
-      break;
-    case SockAddrFamily::kIPv6:
-      s = IPv6AddrToString(std::get<struct in6_addr>(addr), &out);
-      break;
-    case SockAddrFamily::kUnix:
-      out = absl::StrCat("unix_socket:", std::get<std::string>(addr));
-      break;
-    case SockAddrFamily::kOther:
-      out = "other";
-      break;
+    case InetAddrFamily::kUnspecified:
+      return "-";
+    case InetAddrFamily::kIPv4:
+      return IPv4AddrToString(std::get<struct in_addr>(addr)).ValueOr("<Error decoding address>");
+    case InetAddrFamily::kIPv6:
+      return IPv6AddrToString(std::get<struct in6_addr>(addr)).ValueOr("<Error decoding address>");
+    default:
+      return absl::Substitute("<unknown InetAddrFamily $0>", magic_enum::enum_name(family));
   }
-
-  if (!s.ok()) {
-    out = s.msg();
-  }
-
-  return out;
 }
 
-SockAddr MapIPv4ToIPv6(const SockAddr& addr) {
-  DCHECK(addr.family == SockAddrFamily::kIPv4);
+StatusOr<std::string> IPv4AddrToString(const struct in_addr& in_addr) {
+  char buf[INET_ADDRSTRLEN];
+  if (inet_ntop(AF_INET, &in_addr, buf, INET_ADDRSTRLEN) == nullptr) {
+    return error::Internal("Could not parse sockaddr (AF_INET) errno=$0", errno);
+  }
+  return std::string(buf);
+}
 
-  struct in6_addr mapped_addr = {{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0, 0, 0, 0}}};
-  mapped_addr.s6_addr32[kIPv4Offset] = std::get<struct in_addr>(addr.addr).s_addr;
+StatusOr<std::string> IPv6AddrToString(const struct in6_addr& in6_addr) {
+  char buf[INET6_ADDRSTRLEN];
+  if (!IsIPv4Mapped(in6_addr)) {
+    if (inet_ntop(AF_INET6, &in6_addr, buf, INET6_ADDRSTRLEN) == nullptr) {
+      return error::InvalidArgument("Could not parse sockaddr (AF_INET6) errno=$0", errno);
+    }
+  } else {
+    if (inet_ntop(AF_INET, &in6_addr.s6_addr32[kIPv4Offset], buf, INET_ADDRSTRLEN) == nullptr) {
+      return error::InvalidArgument(
+          "Could not parse sockaddr (AF_INET mapped as AF_INET6) errno=$0", errno);
+    }
+  }
 
-  SockAddr v6_addr;
-  v6_addr.family = SockAddrFamily::kIPv6;
-  v6_addr.addr = mapped_addr;
-  v6_addr.port = addr.port;
-  return v6_addr;
+  return std::string(buf);
+}
+
+StatusOr<std::string> IPv4SockAddrToString(const struct sockaddr_in& a) {
+  PL_ASSIGN_OR_RETURN(std::string addr_str, IPv4AddrToString(a.sin_addr));
+  return absl::Substitute("[family=$0 addr=$1 port=$2]", a.sin_family, addr_str, a.sin_port);
+}
+
+StatusOr<std::string> IPv6SockAddrToString(const struct sockaddr_in6& a) {
+  PL_ASSIGN_OR_RETURN(std::string addr_str, IPv6AddrToString(a.sin6_addr));
+  return absl::Substitute("[family=$0 addr=$1 port=$2]", a.sin6_family, addr_str, a.sin6_port);
+}
+
+StatusOr<std::string> UnixSockAddrToString(const struct sockaddr_un& a) {
+  return absl::Substitute("[family=$0 addr=$1]", a.sun_family, a.sun_path);
+}
+
+std::string ToString(const struct sockaddr* sa) {
+  switch (sa->sa_family) {
+    case AF_INET:
+      return IPv4SockAddrToString(*reinterpret_cast<const struct sockaddr_in*>(sa))
+          .ValueOr("<Error decoding address>");
+    case AF_INET6:
+      return IPv6SockAddrToString(*reinterpret_cast<const struct sockaddr_in6*>(sa))
+          .ValueOr("<Error decoding address>");
+    case AF_UNIX:
+      return UnixSockAddrToString(*reinterpret_cast<const struct sockaddr_un*>(sa))
+          .ValueOr("<Error decoding address>");
+    default:
+      return absl::Substitute("<unsupported address family $0>", sa->sa_family);
+  }
+}
+
+Status ParseIPv4Addr(std::string_view addr_str_view, struct in_addr* in_addr) {
+  const std::string addr_str(addr_str_view);
+  if (!inet_pton(AF_INET, addr_str.c_str(), in_addr)) {
+    return error::Internal("Could not parse IPv4 (AF_INET) address: $0", addr_str);
+  }
+  return Status::OK();
+}
+
+Status ParseIPv6Addr(std::string_view addr_str_view, struct in6_addr* in6_addr) {
+  const std::string addr_str(addr_str_view);
+  if (!inet_pton(AF_INET6, addr_str.c_str(), in6_addr)) {
+    return error::Internal("Could not parse IPv6 (AF_INET6) address: $0", addr_str);
+  }
+  return Status::OK();
+}
+
+InetAddr MapIPv4ToIPv6(const InetAddr& addr) {
+  DCHECK(addr.family == InetAddrFamily::kIPv4);
+
+  const struct in_addr& v4_addr = std::get<struct in_addr>(addr.addr);
+
+  struct in6_addr v6_addr = {{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0, 0, 0, 0}}};
+  v6_addr.s6_addr32[kIPv4Offset] = v4_addr.s_addr;
+
+  return InetAddr{InetAddrFamily::kIPv6, v6_addr};
 }
 
 void PopulateInetAddr(struct in_addr in_addr, in_port_t port, SockAddr* addr) {
   addr->family = SockAddrFamily::kIPv4;
-  addr->addr = in_addr;
-  addr->port = ntohs(port);
+  addr->addr = SockAddrIPv4{in_addr, ntohs(port)};
 }
 
 void PopulateInet6Addr(struct in6_addr in6_addr, in_port_t port, SockAddr* addr) {
   addr->family = SockAddrFamily::kIPv6;
-  addr->addr = in6_addr;
-  addr->port = ntohs(port);
+  addr->addr = SockAddrIPv6{in6_addr, ntohs(port)};
 }
 
 void PopulateUnixAddr(const char* sun_path, uint32_t inode_num, SockAddr* addr) {
   addr->family = SockAddrFamily::kUnix;
-  addr->addr = std::string(sun_path);
-  addr->port = inode_num;
+  addr->addr = SockAddrUnix{sun_path, inode_num};
 }
 
 void PopulateSockAddr(const struct sockaddr* sa, SockAddr* addr) {
@@ -86,27 +173,25 @@ void PopulateSockAddr(const struct sockaddr* sa, SockAddr* addr) {
     }
     case AF_UNSPEC: {
       addr->family = SockAddrFamily::kUnspecified;
-      addr->addr = {};
-      addr->port = -1;
+      addr->addr = std::monostate();
       break;
     }
     default: {
       addr->family = SockAddrFamily::kOther;
-      addr->addr = {};
-      addr->port = -1;
+      addr->addr = std::monostate();
     }
   }
 }
 
-Status ParseIPAddress(std::string_view addr_str_view, SockAddr* ip_addr) {
+Status ParseIPAddress(std::string_view addr_str_view, InetAddr* ip_addr) {
   struct in_addr v4_addr = {};
   struct in6_addr v6_addr = {};
 
   if (ParseIPv4Addr(addr_str_view, &v4_addr).ok()) {
-    ip_addr->family = SockAddrFamily::kIPv4;
+    ip_addr->family = InetAddrFamily::kIPv4;
     ip_addr->addr = v4_addr;
   } else if (ParseIPv6Addr(addr_str_view, &v6_addr).ok()) {
-    ip_addr->family = SockAddrFamily::kIPv6;
+    ip_addr->family = InetAddrFamily::kIPv6;
     ip_addr->addr = v6_addr;
   } else {
     return error::InvalidArgument("Cannot parse input '$0' as IP address", addr_str_view);
@@ -135,23 +220,23 @@ bool IPv6CIDRContains(struct in6_addr cidr_ip, size_t prefix_length, struct in6_
 
 }  // namespace
 
-bool CIDRContainsIPAddr(const CIDRBlock& block, const SockAddr& ip_addr) {
-  if (block.ip_addr.family == SockAddrFamily::kIPv4 && ip_addr.family == SockAddrFamily::kIPv4) {
+bool CIDRContainsIPAddr(const CIDRBlock& block, const InetAddr& ip_addr) {
+  if (block.ip_addr.family == InetAddrFamily::kIPv4 && ip_addr.family == InetAddrFamily::kIPv4) {
     return IPv4CIDRContains(std::get<struct in_addr>(block.ip_addr.addr), block.prefix_length,
                             std::get<struct in_addr>(ip_addr.addr));
   }
 
-  if (block.ip_addr.family == SockAddrFamily::kIPv6 && ip_addr.family == SockAddrFamily::kIPv6) {
+  if (block.ip_addr.family == InetAddrFamily::kIPv6 && ip_addr.family == InetAddrFamily::kIPv6) {
     return IPv6CIDRContains(std::get<struct in6_addr>(block.ip_addr.addr), block.prefix_length,
                             std::get<struct in6_addr>(ip_addr.addr));
   }
 
   // From this point on, we have mixed IP modes. Convert both to IPv6, then compare.
-  CIDRBlock block6 = (block.ip_addr.family == SockAddrFamily::kIPv4) ? MapIPv4ToIPv6(block) : block;
-  SockAddr ip_addr6 = (ip_addr.family == SockAddrFamily::kIPv4) ? MapIPv4ToIPv6(ip_addr) : ip_addr;
+  CIDRBlock block6 = (block.ip_addr.family == InetAddrFamily::kIPv4) ? MapIPv4ToIPv6(block) : block;
+  InetAddr ip_addr6 = (ip_addr.family == InetAddrFamily::kIPv4) ? MapIPv4ToIPv6(ip_addr) : ip_addr;
 
-  DCHECK(block6.ip_addr.family == SockAddrFamily::kIPv6);
-  DCHECK(ip_addr6.family == SockAddrFamily::kIPv6);
+  DCHECK(block6.ip_addr.family == InetAddrFamily::kIPv6);
+  DCHECK(ip_addr6.family == InetAddrFamily::kIPv6);
 
   return IPv6CIDRContains(std::get<struct in6_addr>(block6.ip_addr.addr), block6.prefix_length,
                           std::get<struct in6_addr>(ip_addr6.addr));
@@ -172,14 +257,14 @@ Status ParseCIDRBlock(std::string_view cidr_str, CIDRBlock* cidr) {
     return error::InvalidArgument("Prefix length must be >= 0, got: '$0'", prefix_length);
   }
 
-  SockAddr addr;
+  InetAddr addr;
   PL_RETURN_IF_ERROR(ParseIPAddress(fields[0], &addr));
 
-  if (addr.family == SockAddrFamily::kIPv4 && prefix_length > kIPv4BitLen) {
+  if (addr.family == InetAddrFamily::kIPv4 && prefix_length > kIPv4BitLen) {
     return error::InvalidArgument("Prefix length for IPv4 CIDR block must be <=$0, got: '$1'",
                                   kIPv4BitLen, prefix_length);
   }
-  if (addr.family == SockAddrFamily::kIPv6 && prefix_length > kIPv6BitLen) {
+  if (addr.family == InetAddrFamily::kIPv6 && prefix_length > kIPv6BitLen) {
     return error::InvalidArgument("Prefix length for IPv6 CIDR block must be <=$0, got: '$1'",
                                   kIPv6BitLen, prefix_length);
   }
