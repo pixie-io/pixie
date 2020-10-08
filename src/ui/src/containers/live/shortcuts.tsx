@@ -58,6 +58,36 @@ export function getKeyMap(): KeyMap<LiveHotKeyAction> {
 export const LiveShortcutsContext = React.createContext<ShortcutsContextProps<LiveHotKeyAction>>(null);
 
 /**
+ * A behavior adjustment for hotkey handlers. Blocks triggers for shortcuts that would change text, focus, or selection.
+ * Thus, binding `Shift+/` will emit `?` in text fields and perform its bound function otherwise (for example).
+ */
+const handlerWrapper = (handler) => (e) => {
+  const active = document.activeElement;
+  const editable = active?.tagName === 'INPUT'
+      || active?.tagName === 'TEXTAREA'
+      || (active as HTMLElement|null)?.isContentEditable;
+  // Of note: this means the Tab key, if bound, will do its bound function unless tabbing away from an editable element.
+  // Recommendation: don't bind Tab in a global shortcut. That isn't a very nice thing to do.
+  if (!editable) {
+    e.preventDefault();
+    handler();
+    return;
+  }
+
+  /*
+   * The element IS editable. At this point, the handler has been suppressed. We use a heuristic to check if the combo
+   * most likely would affect the current text, selection, or focus of the element. If it would, the handler remains
+   * suppressed and the element receives the event normally. Otherwise, we run the handler. This is imperfect: users can
+   * change their OS shortcuts. However, these assumptions cover the typical defaults for a US-ASCII keyboard layout.
+   */
+  if ((e.ctrlKey || e.metaKey || e.altKey)
+      && !['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight', 'Home', 'End', 'PageDown', 'PageUp'].includes(e.key)) {
+    e.preventDefault();
+    handler();
+  }
+};
+
+/**
  * Keyboard shortcuts declarations for the live view.
  *
  * The keybindings are declared here, handlers can be registered by child components of the live view.
@@ -85,12 +115,8 @@ const LiveViewShortcutsProvider: React.FC<LiveViewShortcutsProps> = (props) => {
   }, [keyMap]);
 
   const handlers: Handlers<LiveHotKeyAction> = React.useMemo(() => {
-    const handlerWrapper = (handler) => (e) => {
-      e.preventDefault();
-      handler();
-    };
     const wrappedHandlers: Handlers<LiveHotKeyAction> = {
-      'show-help': toggleOpenHelp,
+      'show-help': handlerWrapper(toggleOpenHelp),
       ...Object.keys(props.handlers).reduce((result, action) => ({
         ...result,
         [action]: handlerWrapper(props.handlers[action]),

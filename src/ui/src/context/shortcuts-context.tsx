@@ -1,7 +1,7 @@
 type Action = string;
 
 export type Handlers<T extends Action> = {
-  [action in T]: () => void;
+  [action in T]: <E extends Event = Event>(e?: E) => void;
 };
 
 export type KeyMap<T extends Action> = {
@@ -12,6 +12,6 @@ export type KeyMap<T extends Action> = {
   }
 };
 
-export type ShortcutsContextProps<T extends string> = {
+export type ShortcutsContextProps<T extends Action> = {
   [action in T]: KeyMap<T>[action] & { handler: Handlers<T>[action] };
 };
