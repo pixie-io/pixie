@@ -11,7 +11,10 @@
 namespace pl {
 namespace stirling {
 
+using ::google::protobuf::RepeatedPtrField;
+
 using ::pl::stirling::dynamic_tracing::ir::physical::Struct;
+using ::pl::stirling::dynamic_tracing::ir::physical::StructSpec;
 using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
 
 namespace {
@@ -150,8 +153,7 @@ class StructDecoder {
     return s;
   }
 
-  StatusOr<std::string> ExtractStructBlobAsJSON(
-      const dynamic_tracing::ir::physical::StructSpec& col_decoder) {
+  StatusOr<std::string> ExtractStructBlobAsJSON(const StructSpec& col_decoder) {
     PL_ASSIGN_OR_RETURN(size_t len, ExtractField<size_t>());
     std::string bytes;
     bytes.resize(len);
@@ -237,7 +239,7 @@ class StructDecoder {
 };
 
 Status FillColumn(StructDecoder* struct_decoder, DataTable::DynamicRecordBuilder* r, size_t col_idx,
-                  ScalarType type, const dynamic_tracing::ir::physical::StructSpec& col_decoder) {
+                  ScalarType type, const RepeatedPtrField<StructSpec>& col_decoder) {
 #define WRITE_COLUMN(field_type, column_type)                                        \
   {                                                                                  \
     PL_ASSIGN_OR_RETURN(field_type val, struct_decoder->ExtractField<field_type>()); \
@@ -311,7 +313,9 @@ Status FillColumn(StructDecoder* struct_decoder, DataTable::DynamicRecordBuilder
       break;
     }
     case ScalarType::STRUCT_BLOB: {
-      PL_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractStructBlobAsJSON(col_decoder));
+      ECHECK(col_decoder.size() == 1) << "Only support exactly one StructSpec for StructBlob";
+      PL_ASSIGN_OR_RETURN(std::string val,
+                          struct_decoder->ExtractStructBlobAsJSON(col_decoder.Get(0)));
       r->Append(col_idx, types::StringValue(val));
       break;
     }

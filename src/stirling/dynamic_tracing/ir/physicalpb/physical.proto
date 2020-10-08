@@ -66,7 +66,13 @@ message Field {
 
   // Used only if type is STRUCT_BLOB, in which case this provides the spec
   // that defines what the blob contains.
-  StructSpec blob_decoder = 3;
+  //
+  // If there are more than one element in this field, then the output data is prepended with
+  // a single byte 'index' to specify the correct StructSpec for the output data.
+  //
+  // For example, this is used for Golang interface tracing to specify the actual implementation
+  // type of the traced interface.
+  repeated StructSpec blob_decoder = 3;
 }
 
 // Describes a C struct. This is directly converted to a C struct in BCC code.

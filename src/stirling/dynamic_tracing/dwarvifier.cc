@@ -8,6 +8,7 @@
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/strings/str_replace.h>
+#include <google/protobuf/repeated_field.h>
 
 #include "src/stirling/dynamic_tracing/ir/sharedpb/shared.pb.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
@@ -19,6 +20,8 @@ DEFINE_bool(enable_tracing_golang_interface, false,
 namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
+
+using ::google::protobuf::RepeatedPtrField;
 
 using ::pl::stirling::dwarf_tools::ArgInfo;
 using ::pl::stirling::dwarf_tools::LocationType;
@@ -97,7 +100,7 @@ class Dwarvifier {
   template <typename TVarType>
   TVarType* AddVariable(ir::physical::Probe* probe, const std::string& name,
                         ir::shared::ScalarType type,
-                        std::optional<ir::physical::StructSpec> decoder = std::nullopt);
+                        RepeatedPtrField<ir::physical::StructSpec> decoder = {});
 
   PtrLenVariable* AddPtrLenVariable(ir::physical::Probe* probe, const std::string& name,
                                     ir::shared::ScalarType type, const std::string& base,
@@ -327,7 +330,7 @@ Status Dwarvifier::Generate(const ir::logical::TracepointSpec& input_program,
 template <typename TVarType>
 TVarType* Dwarvifier::AddVariable(ir::physical::Probe* probe, const std::string& name,
                                   ir::shared::ScalarType type,
-                                  std::optional<ir::physical::StructSpec> decoder) {
+                                  RepeatedPtrField<ir::physical::StructSpec> decoder) {
   TVarType* var;
 
   if constexpr (std::is_same_v<TVarType, ScalarVariable>) {
@@ -351,11 +354,11 @@ TVarType* Dwarvifier::AddVariable(ir::physical::Probe* probe, const std::string&
   v.set_type(type);
 
   // Decoder should be present if and only if type is STRUCT_BLOB.
-  DCHECK_EQ(type == ir::shared::ScalarType::STRUCT_BLOB, decoder.has_value());
+  DCHECK_EQ(type == ir::shared::ScalarType::STRUCT_BLOB, !decoder.empty());
 
-  if (decoder.has_value()) {
-    v.mutable_blob_decoder()->CopyFrom(decoder.value());
-  }
+  ECHECK(decoder.size() <= 1) << "Does not allow multiple StructSpec.";
+
+  v.mutable_blob_decoder()->CopyFrom(std::move(decoder));
 
   return var;
 }
@@ -760,9 +763,11 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
       PL_ASSIGN_OR_RETURN(uint64_t struct_byte_size,
                           dwarf_reader_->GetStructByteSize(type_info.type_name));
 
-      auto var =
-          AddVariable<ScalarVariable>(output_probe, var_name, ir::shared::ScalarType::STRUCT_BLOB,
-                                      std::move(struct_spec_proto));
+      RepeatedPtrField<ir::physical::StructSpec> specs;
+      specs.Add(std::move(struct_spec_proto));
+
+      auto var = AddVariable<ScalarVariable>(output_probe, var_name,
+                                             ir::shared::ScalarType::STRUCT_BLOB, std::move(specs));
       var->mutable_memory()->set_base(base);
       var->mutable_memory()->set_offset(offset);
       var->mutable_memory()->set_size(struct_byte_size);
@@ -931,12 +936,8 @@ Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
   for (const auto& value_id : map_val.value_ids()) {
     const auto& field = struct_decl->fields(i++);
 
-    std::optional<ir::physical::StructSpec> blob_decoder;
-    if (field.has_blob_decoder()) {
-      blob_decoder = field.blob_decoder();
-    }
-
-    auto* var = AddVariable<ScalarVariable>(output_probe, value_id, field.type(), blob_decoder);
+    auto* var =
+        AddVariable<ScalarVariable>(output_probe, value_id, field.type(), field.blob_decoder());
 
     auto* src = var->mutable_member();
     src->set_struct_base(map_var_name);
