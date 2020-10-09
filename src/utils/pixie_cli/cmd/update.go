@@ -250,7 +250,7 @@ func mustInstallVersion(u *update.CLIUpdater, v string) {
 func getClusterForUpgrade(conn *grpc.ClientConn, c uuid.UUID) (*cloudapipb.ClusterInfo, error) {
 	client := cloudapipb.NewVizierClusterInfoClient(conn)
 
-	creds, err := auth.LoadDefaultCredentials()
+	creds, err := auth.MustLoadDefaultCredentials()
 	if err != nil {
 		return nil, err
 	}

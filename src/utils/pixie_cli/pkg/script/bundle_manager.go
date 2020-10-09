@@ -108,7 +108,7 @@ func NewBundleManagerWithOrgName(bundleFiles []string, orgName string) (*BundleM
 // NewBundleManager reads the json bundle and initializes the bundle reader.
 func NewBundleManager(bundleFiles []string) (*BundleManager, error) {
 	// TODO(zasgar): Refactor user login state, etc.
-	authInfo, err := auth.LoadDefaultCredentials()
+	authInfo, err := auth.MustLoadDefaultCredentials()
 	if err != nil {
 		// TODO(nserrino): Refactor logic to return error rather than log.Fatal,
 		// which sends an event to Sentry.

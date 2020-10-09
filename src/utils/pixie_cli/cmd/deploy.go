@@ -143,7 +143,7 @@ func newArtifactTrackerClient(conn *grpc.ClientConn) cloudapipb.ArtifactTrackerC
 func mustGetImagePullSecret(conn *grpc.ClientConn) string {
 	// Make rpc request to the cloud to get creds.
 	client := newVizAuthClient(conn)
-	creds, err := auth.LoadDefaultCredentials()
+	creds, err := auth.MustLoadDefaultCredentials()
 	if err != nil {
 		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 		log.WithError(err).Fatal("Failed to get creds. You might have to run: 'pixie auth login'")
@@ -172,7 +172,7 @@ func mustReadCredsFile(credsFile string) string {
 func getLatestVizierVersion(conn *grpc.ClientConn) (string, error) {
 	client := newArtifactTrackerClient(conn)
 
-	creds, err := auth.LoadDefaultCredentials()
+	creds, err := auth.MustLoadDefaultCredentials()
 	if err != nil {
 		return "", err
 	}
@@ -282,7 +282,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		credsData = mustReadCredsFile(credsFile)
 	}
 	secretName, _ := cmd.Flags().GetString("secret_name")
-	creds, err := auth.LoadDefaultCredentials()
+	creds, err := auth.MustLoadDefaultCredentials()
 	if err != nil {
 		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 		log.WithError(err).Fatal("Could not get auth token")
@@ -522,7 +522,7 @@ func getCurrentCluster() string {
 func waitForCluster(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.UUID) error {
 	client := cloudapipb.NewVizierClusterInfoClient(conn)
 
-	creds, err := auth.LoadDefaultCredentials()
+	creds, err := auth.MustLoadDefaultCredentials()
 	if err != nil {
 		return err
 	}
@@ -555,7 +555,7 @@ func waitForCluster(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.
 func initiateUpdate(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.UUID, version string, redeployEtcd bool) error {
 	client := cloudapipb.NewVizierClusterInfoClient(conn)
 
-	creds, err := auth.LoadDefaultCredentials()
+	creds, err := auth.MustLoadDefaultCredentials()
 	if err != nil {
 		return err
 	}

@@ -137,6 +137,23 @@ func LoadDefaultCredentials() (*RefreshToken, error) {
 	return token, nil
 }
 
+// MustLoadDefaultCredentials loads the default credentials for the user.
+func MustLoadDefaultCredentials() (*RefreshToken, error) {
+	token, err := LoadDefaultCredentials()
+
+	if err != nil && os.IsNotExist(err) {
+		utils2.Error("You must be logged in to perform this operation. Please run `px auth login`.")
+	} else if err != nil {
+		utils2.Errorf("Failed to get auth credentials: %s", err.Error())
+	}
+
+	if err != nil {
+		os.Exit(1)
+	}
+
+	return token, nil
+}
+
 // PixieCloudLogin performs login on the pixie cloud.
 type PixieCloudLogin struct {
 	ManualMode bool

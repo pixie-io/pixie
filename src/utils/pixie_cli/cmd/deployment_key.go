@@ -125,7 +125,7 @@ func getClientAndContext(cloudAddr string) (cloudapipb.VizierDeploymentKeyManage
 	// Get client for deployKeyMgr.
 	deployMgrClient := cloudapipb.NewVizierDeploymentKeyManagerClient(cloudConn)
 
-	creds, err := auth.LoadDefaultCredentials()
+	creds, err := auth.MustLoadDefaultCredentials()
 	if err != nil {
 		return nil, nil, err
 	}

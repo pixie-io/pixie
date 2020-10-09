@@ -19,7 +19,7 @@ func ctxWithTokenCreds(ctx context.Context, token string) context.Context {
 }
 
 func ctxWithCreds(ctx context.Context) (context.Context, error) {
-	creds, err := auth.LoadDefaultCredentials()
+	creds, err := auth.MustLoadDefaultCredentials()
 	if err != nil {
 		return nil, err
 	}
