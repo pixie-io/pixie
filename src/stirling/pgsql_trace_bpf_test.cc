@@ -53,12 +53,7 @@ class GolangSQLxContainer : public ContainerRunner {
 
 class PostgreSQLTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ true> {
  protected:
-  PostgreSQLTraceTest() {
-    const char kCreateNetCmd[] = "docker network create --driver bridge pg-net";
-    PL_CHECK_OK(pl::Exec(kCreateNetCmd));
-
-    PL_CHECK_OK(container_.Run(150, {"--network=pg-net", "--env=POSTGRES_PASSWORD=docker"}));
-  }
+  PostgreSQLTraceTest() { PL_CHECK_OK(container_.Run(150, {"--env=POSTGRES_PASSWORD=docker"})); }
   ~PostgreSQLTraceTest() { container_.Stop(); }
 
   DataTable data_table_{kPGSQLTable};
@@ -73,8 +68,8 @@ class PostgreSQLTraceTest : public testing::SocketTraceBPFTest</* TClientSideTra
 TEST_F(PostgreSQLTraceTest, SelectQuery) {
   // --pid host is required to access the correct PID.
   constexpr char kCmdTmpl[] =
-      "docker run --pid host --rm -e PGPASSWORD=docker --network pg-net postgres bash -c "
-      R"('psql -h $0 -U postgres -c "$1" &>/dev/null & echo $$! && wait')";
+      "docker run --pid host --rm -e PGPASSWORD=docker --network=container:$0 postgres bash -c "
+      R"('psql -h localhost -U postgres -c "$1" &>/dev/null & echo $$! && wait')";
   const std::string kCreateTableCmd =
       absl::Substitute(kCmdTmpl, container_.container_name(),
                        "create table foo (field0 serial primary key);"
@@ -177,8 +172,8 @@ TEST_F(PostgreSQLTraceGoSQLxTest, GolangSqlxDemo) {
 TEST_F(PostgreSQLTraceTest, FunctionCall) {
   // --pid host is required to access the correct PID.
   constexpr char kCmdTmpl[] =
-      "docker run --pid host --rm -e PGPASSWORD=docker --network pg-net postgres bash -c "
-      R"('psql -h $0 -U postgres -c "$1" &>/dev/null & echo $$! && wait')";
+      "docker run --pid host --rm -e PGPASSWORD=docker --network=container:$0 postgres bash -c "
+      R"('psql -h localhost -U postgres -c "$1" &>/dev/null & echo $$! && wait')";
   {
     const std::string cmd = absl::Substitute(
         kCmdTmpl, container_.container_name(),
