@@ -13,16 +13,16 @@
 #include "src/common/system/socket_info.h"
 #include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
 #include "src/stirling/common/go_grpc_types.h"
-#include "src/stirling/common/protocol_traits.h"
 #include "src/stirling/common/socket_trace.h"
-#include "src/stirling/cql/cql_stitcher.h"
 #include "src/stirling/data_stream.h"
 #include "src/stirling/fd_resolver.h"
-#include "src/stirling/http/http_stitcher.h"
-#include "src/stirling/http2u/stitcher.h"
-#include "src/stirling/mysql/mysql_parse.h"
-#include "src/stirling/mysql/mysql_stitcher.h"
-#include "src/stirling/pgsql/parse.h"
+#include "src/stirling/protocols/common/protocol_traits.h"
+#include "src/stirling/protocols/cql/cql_stitcher.h"
+#include "src/stirling/protocols/http/http_stitcher.h"
+#include "src/stirling/protocols/http2u/stitcher.h"
+#include "src/stirling/protocols/mysql/mysql_parse.h"
+#include "src/stirling/protocols/mysql/mysql_stitcher.h"
+#include "src/stirling/protocols/pgsql/parse.h"
 #include "src/stirling/socket_trace_bpf_tables.h"
 
 DECLARE_bool(enable_unix_domain_sockets);
@@ -223,10 +223,10 @@ class ConnectionTracker {
     return send_data_.Frames<TFrameType>();
   }
 
-  const std::deque<http2u::Stream>& http2_send_streams() const {
+  const std::deque<protocols::http2u::Stream>& http2_send_streams() const {
     return send_data_.http2_streams();
   }
-  const std::deque<http2u::Stream>& http2_recv_streams() const {
+  const std::deque<protocols::http2u::Stream>& http2_recv_streams() const {
     return recv_data_.http2_streams();
   }
 
@@ -443,7 +443,7 @@ class ConnectionTracker {
     using TFrameType = typename TProtocolTraits::frame_type;
     using TStateType = typename TProtocolTraits::state_type;
 
-    if constexpr (std::is_same_v<TFrameType, http2u::Stream>) {
+    if constexpr (std::is_same_v<TFrameType, protocols::http2u::Stream>) {
       send_data_.CleanupHTTP2Streams();
       recv_data_.CleanupHTTP2Streams();
     } else {
@@ -557,7 +557,7 @@ class ConnectionTracker {
   uint32_t oldest_active_server_stream_id_;
 
   // Access the appropriate HalfStream object for the given stream ID.
-  http2u::HalfStream* HalfStreamPtr(uint32_t stream_id, bool write_event);
+  protocols::http2u::HalfStream* HalfStreamPtr(uint32_t stream_id, bool write_event);
 
   // According to the HTTP2 protocol, Stream IDs are incremented by 2.
   // Client-initiated streams use odd IDs, while server-initiated streams use even IDs.
@@ -618,7 +618,8 @@ class ConnectionTracker {
 // Explicit template specialization must be declared in namespace scope.
 // See https://en.cppreference.com/w/cpp/language/member_template
 template <>
-std::vector<http2u::Record> ConnectionTracker::ProcessToRecords<http2u::ProtocolTraits>();
+std::vector<protocols::http2u::Record>
+ConnectionTracker::ProcessToRecords<protocols::http2u::ProtocolTraits>();
 
 template <typename TProtocolTraits>
 std::string DebugString(const ConnectionTracker& c, std::string_view prefix) {

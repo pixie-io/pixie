@@ -16,8 +16,8 @@ pl_cc_library(
         ],
     ),
     deps = [
-        "//src/shared/types:cc_library",
         "//src/shared/metadata:cc_library",
+        "//src/shared/types:cc_library",
         "//src/stirling/bpf_tools:cc_library",
         "//src/stirling/dynamic_tracing/ir/logicalpb:logical_pl_cc_proto",
         "//src/stirling/dynamic_tracing/ir/physicalpb:physical_pl_cc_proto",
@@ -65,7 +65,7 @@ pl_cc_test(
     srcs = ["dynamic_tracer_test.cc"],
     data = [
         "//src/stirling/obj_tools/testdata:dummy_go_binary",
-        "//src/stirling/http2/testing/go_grpc_server",
+        "//src/stirling/protocols/http2/testing/go_grpc_server",
     ],
     deps = [
         ":cc_library",

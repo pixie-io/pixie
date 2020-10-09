@@ -21,15 +21,6 @@ pl_cc_library(
 )
 
 pl_cc_test(
-    name = "event_parser_test",
-    srcs = ["event_parser_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/stirling/testing:cc_library",
-    ],
-)
-
-pl_cc_test(
     name = "binary_decoder_test",
     srcs = ["binary_decoder_test.cc"],
     deps = [

@@ -13,6 +13,8 @@
 namespace pl {
 namespace stirling {
 
+namespace http = protocols::http;
+
 using ::pl::stirling::testing::AccessRecordBatch;
 using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::testing::BazelBinTestFilePath;

@@ -1,0 +1,54 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.cc",
+        ],
+        exclude = [
+            "**/*_test.cc",
+        ],
+    ),
+    hdrs = glob(
+        [
+            "*.h",
+        ],
+    ),
+    deps = [
+        "//src/stirling/protocols/common:cc_library",
+        "//src/stirling/utils:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "parse_utils_test",
+    srcs = ["parse_utils_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "packet_utils_test",
+    srcs = ["packet_utils_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "mysql_handler_test",
+    srcs = ["mysql_handler_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "mysql_stitcher_test",
+    srcs = ["mysql_stitcher_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "mysql_parse_test",
+    srcs = ["mysql_parse_test.cc"],
+    deps = [":cc_library"],
+)

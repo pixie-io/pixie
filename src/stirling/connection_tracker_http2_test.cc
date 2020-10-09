@@ -9,6 +9,8 @@
 namespace pl {
 namespace stirling {
 
+namespace http2u = protocols::http2u;
+
 using ::testing::IsEmpty;
 using ::testing::Pair;
 using ::testing::StrEq;

@@ -20,7 +20,7 @@ using ::testing::Field;
 using ::testing::SizeIs;
 
 constexpr char kServerPath[] =
-    "src/stirling/http2/testing/go_grpc_server/go_grpc_server_/go_grpc_server";
+    "src/stirling/protocols/http2/testing/go_grpc_server/go_grpc_server_/go_grpc_server";
 
 TEST(ResolveTargetObjPath, ResolveUPID) {
   auto server_path = pl::testing::BazelBinTestFilePath(kServerPath).string();

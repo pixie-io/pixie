@@ -10,17 +10,21 @@
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/cql/test_utils.h"
 #include "src/stirling/data_table.h"
-#include "src/stirling/mysql/test_data.h"
-#include "src/stirling/mysql/test_utils.h"
 #include "src/stirling/mysql_table.h"
+#include "src/stirling/protocols/cql/test_utils.h"
+#include "src/stirling/protocols/mysql/test_data.h"
+#include "src/stirling/protocols/mysql/test_utils.h"
 #include "src/stirling/testing/common.h"
 #include "src/stirling/testing/event_generator.h"
 #include "src/stirling/testing/http2_stream_generator.h"
 
 namespace pl {
 namespace stirling {
+
+namespace http = protocols::http;
+namespace mysql = protocols::mysql;
+namespace cass = protocols::cass;
 
 using ::testing::Each;
 using ::testing::ElementsAre;

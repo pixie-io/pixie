@@ -4,12 +4,12 @@
 #include <sstream>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/http2/testing/proto/greet.pb.h"
+#include "src/stirling/protocols/http2/testing/proto/greet.pb.h"
 
 namespace pl {
 namespace rio {
 
-using ::pl::stirling::http2::testing::HelloRequest;
+using ::pl::stirling::protocols::http2::testing::HelloRequest;
 using ::pl::testing::TempDir;
 using ::pl::testing::proto::EqualsProto;
 

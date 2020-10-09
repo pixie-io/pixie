@@ -46,7 +46,8 @@ class GolangSQLxContainer : public ContainerRunner {
   }
 
  private:
-  static constexpr std::string_view kBazelImageTar = "src/stirling/pgsql/testing/demo_image.tar";
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/protocols/pgsql/testing/demo_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "pgsql_demo";
   static constexpr std::string_view kReadyMessage = "";
 };

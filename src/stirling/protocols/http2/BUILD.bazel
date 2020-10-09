@@ -1,0 +1,51 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.cc",
+        ],
+        exclude = [
+            "**/*_test.cc",
+        ],
+    ),
+    hdrs = glob(
+        [
+            "*.h",
+        ],
+    ),
+    deps = [
+        "//external:nghttp2",
+        "//src/common/grpcutils:cc_library",
+        "//src/stirling/protocols/common:cc_library",
+        "//src/stirling/utils:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "frame_test",
+    srcs = ["frame_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "http2_test",
+    srcs = ["http2_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/protocols/http2/testing:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "grpc_test",
+    srcs = ["grpc_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/protocols/http2/testing/proto:greet_pl_cc_proto",
+    ],
+)

@@ -15,8 +15,8 @@ if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
     # If the script was run in a stand-alone way, then build and set paths.
     pixie_root="$script_dir"/../..
     stirling_image=$pixie_root/$(bazel_build //src/stirling:stirling_wrapper_image.tar)
-    go_grpc_server=$pixie_root/$(bazel_build //src/stirling/http2/testing/go_grpc_server:go_grpc_server)
-    go_grpc_client=$pixie_root/$(bazel_build //src/stirling/http2/testing/go_grpc_client:go_grpc_client)
+    go_grpc_server=$pixie_root/$(bazel_build //src/stirling/protocols/http2/testing/go_grpc_server:go_grpc_server)
+    go_grpc_client=$pixie_root/$(bazel_build //src/stirling/protocols/http2/testing/go_grpc_client:go_grpc_client)
 else
     # If the script was run through bazel, the locations are passed as arguments.
     stirling_image=$1

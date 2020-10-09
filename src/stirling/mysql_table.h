@@ -3,16 +3,16 @@
 #include <map>
 
 #include "src/stirling/canonical_types.h"
-#include "src/stirling/mysql/types.h"
+#include "src/stirling/protocols/mysql/types.h"
 #include "src/stirling/types.h"
 
 namespace pl {
 namespace stirling {
 
 static const std::map<int64_t, std::string_view> kMySQLReqCmdDecoder =
-    pl::EnumDefToMap<mysql::Command>();
+    pl::EnumDefToMap<protocols::mysql::Command>();
 static const std::map<int64_t, std::string_view> kMySQLRespStatusDecoder =
-    pl::EnumDefToMap<mysql::RespStatus>();
+    pl::EnumDefToMap<protocols::mysql::RespStatus>();
 
 // clang-format off
 static constexpr DataElement kMySQLElements[] = {

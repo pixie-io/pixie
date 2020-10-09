@@ -22,6 +22,8 @@
 namespace pl {
 namespace stirling {
 
+namespace http = protocols::http;
+
 using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::stirling::testing::SocketTraceBPFTest;
 using ::pl::testing::BazelBinTestFilePath;

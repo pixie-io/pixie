@@ -35,12 +35,12 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/stirling/conn_stats_table.h"
 #include "src/stirling/connection_stats.h"
 #include "src/stirling/connection_tracker.h"
-#include "src/stirling/http/utils.h"
 #include "src/stirling/http_table.h"
 #include "src/stirling/mysql_table.h"
-#include "src/stirling/pgsql/stitcher.h"
-#include "src/stirling/pgsql/types.h"
 #include "src/stirling/pgsql_table.h"
+#include "src/stirling/protocols/http/utils.h"
+#include "src/stirling/protocols/pgsql/stitcher.h"
+#include "src/stirling/protocols/pgsql/types.h"
 #include "src/stirling/socket_trace_bpf_tables.h"
 #include "src/stirling/source_connector.h"
 #include "src/stirling/utils/proc_tracker.h"
@@ -351,16 +351,18 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // The table num identifies which data the collected data is transferred.
   // The transfer_fn defines which function is called to process the data for transfer.
   std::map<TrafficProtocol, TransferSpec> protocol_transfer_specs_ = {
-      {kProtocolHTTP, {kHTTPTableNum, &SocketTraceConnector::TransferStream<http::ProtocolTraits>}},
+      {kProtocolHTTP,
+       {kHTTPTableNum, &SocketTraceConnector::TransferStream<protocols::http::ProtocolTraits>}},
       {kProtocolHTTP2,
-       {kHTTPTableNum, &SocketTraceConnector::TransferStream<http2::ProtocolTraits>}},
+       {kHTTPTableNum, &SocketTraceConnector::TransferStream<protocols::http2::ProtocolTraits>}},
       {kProtocolHTTP2U,
-       {kHTTPTableNum, &SocketTraceConnector::TransferStream<http2u::ProtocolTraits>}},
+       {kHTTPTableNum, &SocketTraceConnector::TransferStream<protocols::http2u::ProtocolTraits>}},
       {kProtocolMySQL,
-       {kMySQLTableNum, &SocketTraceConnector::TransferStream<mysql::ProtocolTraits>}},
-      {kProtocolCQL, {kCQLTableNum, &SocketTraceConnector::TransferStream<cass::ProtocolTraits>}},
+       {kMySQLTableNum, &SocketTraceConnector::TransferStream<protocols::mysql::ProtocolTraits>}},
+      {kProtocolCQL,
+       {kCQLTableNum, &SocketTraceConnector::TransferStream<protocols::cass::ProtocolTraits>}},
       {kProtocolPGSQL,
-       {kPGSQLTableNum, &SocketTraceConnector::TransferStream<pgsql::ProtocolTraits>}},
+       {kPGSQLTableNum, &SocketTraceConnector::TransferStream<protocols::pgsql::ProtocolTraits>}},
       // Unknown protocols attached to HTTP table so that they run their cleanup functions,
       // but the use of nullptr transfer_fn means it won't actually transfer data to the HTTP table.
       {kProtocolUnknown, {kHTTPTableNum, nullptr}},

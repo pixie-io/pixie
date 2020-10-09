@@ -1,0 +1,19 @@
+load("//bazel:pl_build_system.bzl", "pl_cc_binary")
+
+pl_cc_binary(
+    name = "server",
+    srcs = ["server.cc"],
+    deps = [
+        "//src/stirling/protocols/http2/testing:cc_library",
+        "@com_github_grpc_grpc//:grpc++_reflection",
+    ],
+)
+
+pl_cc_binary(
+    name = "client",
+    srcs = ["client.cc"],
+    deps = [
+        "//src/stirling/protocols/http2/testing:cc_library",
+        "//src/stirling/protocols/http2/testing/proto:greet_pl_cc_proto",
+    ],
+)

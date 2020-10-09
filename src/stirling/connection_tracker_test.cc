@@ -8,11 +8,15 @@
 
 #include "src/common/base/test_utils.h"
 #include "src/stirling/connection_stats.h"
-#include "src/stirling/mysql/test_utils.h"
+#include "src/stirling/protocols/mysql/test_utils.h"
 #include "src/stirling/testing/event_generator.h"
 
 namespace pl {
 namespace stirling {
+
+namespace http = protocols::http;
+namespace http2 = protocols::http2;
+namespace mysql = protocols::mysql;
 
 using ::testing::Field;
 using ::testing::IsEmpty;

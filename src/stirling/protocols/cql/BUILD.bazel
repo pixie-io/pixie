@@ -1,0 +1,36 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = ["**/*_test.cc"],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//src/common/json:cc_library",
+        "//src/stirling/protocols/common:cc_library",
+        "//src/stirling/utils:cc_library",
+        "@com_github_rlyeh_sole//:sole",
+    ],
+)
+
+pl_cc_test(
+    name = "cql_parse_test",
+    srcs = ["cql_parse_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "cql_stitcher_test",
+    srcs = ["cql_stitcher_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "frame_body_decoder_test",
+    srcs = ["frame_body_decoder_test.cc"],
+    deps = [":cc_library"],
+)

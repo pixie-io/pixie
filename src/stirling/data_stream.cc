@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "src/stirling/pgsql/types.h"
+#include "src/stirling/protocols/pgsql/types.h"
 
 DEFINE_uint32(messages_expiration_duration_secs, 10 * 60,
               "The duration for which a cached message to be erased.");
@@ -41,7 +41,7 @@ void DataStream::AddData(std::unique_ptr<SocketDataEvent> event) {
   has_new_events_ = true;
 }
 
-size_t DataStream::AppendEvents(EventParser* parser) const {
+size_t DataStream::AppendEvents(protocols::EventParser* parser) const {
   size_t append_count = 0;
 
   // Prepare all recorded events for parsing.
@@ -148,12 +148,12 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
 
   bool keep_processing = has_new_events_ || attempt_sync;
 
-  ParseResult<BufferPosition> parse_result;
+  protocols::ParseResult<protocols::BufferPosition> parse_result;
   parse_result.state = ParseState::kNeedsMoreData;
   parse_result.end_position = {next_seq_num_, offset_};
 
   while (keep_processing) {
-    EventParser parser;
+    protocols::EventParser parser;
 
     // Set-up events in parser.
     size_t num_events_appended = AppendEvents(&parser);
@@ -227,11 +227,11 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
   has_new_events_ = false;
 }
 
-template void DataStream::ProcessBytesToFrames<http::Message>(MessageType type);
-template void DataStream::ProcessBytesToFrames<http2::Frame>(MessageType type);
-template void DataStream::ProcessBytesToFrames<mysql::Packet>(MessageType type);
-template void DataStream::ProcessBytesToFrames<cass::Frame>(MessageType type);
-template void DataStream::ProcessBytesToFrames<pgsql::RegularMessage>(MessageType type);
+template void DataStream::ProcessBytesToFrames<protocols::http::Message>(MessageType type);
+template void DataStream::ProcessBytesToFrames<protocols::http2::Frame>(MessageType type);
+template void DataStream::ProcessBytesToFrames<protocols::mysql::Packet>(MessageType type);
+template void DataStream::ProcessBytesToFrames<protocols::cass::Frame>(MessageType type);
+template void DataStream::ProcessBytesToFrames<protocols::pgsql::RegularMessage>(MessageType type);
 
 void DataStream::Reset() {
   // Before clearing raw events, update next_seq_num_ to the next expected value.

@@ -3,16 +3,16 @@
 #include <map>
 
 #include "src/stirling/canonical_types.h"
-#include "src/stirling/cql/types.h"
+#include "src/stirling/protocols/cql/types.h"
 #include "src/stirling/types.h"
 
 namespace pl {
 namespace stirling {
 
 static const std::map<int64_t, std::string_view> kCQLReqOpDecoder =
-    pl::EnumDefToMap<cass::RespOp>();
+    pl::EnumDefToMap<protocols::cass::RespOp>();
 static const std::map<int64_t, std::string_view> kCQLRespOpDecoder =
-    pl::EnumDefToMap<cass::RespOp>();
+    pl::EnumDefToMap<protocols::cass::RespOp>();
 
 // clang-format off
 static constexpr DataElement kCQLElements[] = {

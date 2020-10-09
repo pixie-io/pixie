@@ -15,32 +15,32 @@ extern "C" {
 #include "src/common/testing/testing.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/data_table.h"
-#include "src/stirling/http2/grpc.h"
-#include "src/stirling/http2/testing/greeter_server.h"
-#include "src/stirling/http2/testing/grpc_stub.h"
-#include "src/stirling/http2/testing/proto/greet.grpc.pb.h"
+#include "src/stirling/protocols/http2/grpc.h"
+#include "src/stirling/protocols/http2/testing/greeter_server.h"
+#include "src/stirling/protocols/http2/testing/grpc_stub.h"
+#include "src/stirling/protocols/http2/testing/proto/greet.grpc.pb.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/testing/common.h"
 
 constexpr std::string_view kClientPath =
-    "src/stirling/http2/testing/go_grpc_client/go_grpc_client_/go_grpc_client";
+    "src/stirling/protocols/http2/testing/go_grpc_client/go_grpc_client_/go_grpc_client";
 constexpr std::string_view kServerPath =
-    "src/stirling/http2/testing/go_grpc_server/go_grpc_server_/go_grpc_server";
+    "src/stirling/protocols/http2/testing/go_grpc_server/go_grpc_server_/go_grpc_server";
 
 namespace pl {
 namespace stirling {
 
 using ::grpc::Channel;
 using ::pl::stirling::grpc::kGRPCMessageHeaderSizeInBytes;
-using ::pl::stirling::http2::testing::Greeter;
-using ::pl::stirling::http2::testing::Greeter2;
-using ::pl::stirling::http2::testing::Greeter2Service;
-using ::pl::stirling::http2::testing::GreeterService;
-using ::pl::stirling::http2::testing::HelloReply;
-using ::pl::stirling::http2::testing::HelloRequest;
-using ::pl::stirling::http2::testing::ServiceRunner;
-using ::pl::stirling::http2::testing::StreamingGreeter;
-using ::pl::stirling::http2::testing::StreamingGreeterService;
+using ::pl::stirling::protocols::http2::testing::Greeter;
+using ::pl::stirling::protocols::http2::testing::Greeter2;
+using ::pl::stirling::protocols::http2::testing::Greeter2Service;
+using ::pl::stirling::protocols::http2::testing::GreeterService;
+using ::pl::stirling::protocols::http2::testing::HelloReply;
+using ::pl::stirling::protocols::http2::testing::HelloRequest;
+using ::pl::stirling::protocols::http2::testing::ServiceRunner;
+using ::pl::stirling::protocols::http2::testing::StreamingGreeter;
+using ::pl::stirling::protocols::http2::testing::StreamingGreeterService;
 using ::pl::stirling::testing::CreateInsecureGRPCChannel;
 using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::stirling::testing::GRPCStub;
@@ -168,7 +168,7 @@ TEST_F(GoGRPCKProbeTraceTest, TestGolangGrpcService) {
       std::string(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(target_record_idx)),
       AllOf(HasSubstr(absl::Substitute(R"(":authority":"localhost:$0")", s_port_)),
             HasSubstr(R"(":method":"POST")"),
-            HasSubstr(R"(":path":"/pl.stirling.http2.testing.Greeter/SayHello")"),
+            HasSubstr(R"(":path":"/pl.stirling.protocols.http2.testing.Greeter/SayHello")"),
             HasSubstr(R"(":scheme":"http")"), HasSubstr(R"("content-type":"application/grpc")"),
             HasSubstr(R"("grpc-timeout")"), HasSubstr(R"("te":"trailers","user-agent")")));
   EXPECT_THAT(

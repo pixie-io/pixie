@@ -8,6 +8,9 @@
 namespace pl {
 namespace stirling {
 
+namespace http = protocols::http;
+namespace http2 = protocols::http2;
+
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
 

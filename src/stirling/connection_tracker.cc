@@ -17,16 +17,16 @@
 #include "src/common/system/socket_info.h"
 #include "src/common/system/system.h"
 #include "src/stirling/common/go_grpc_types.h"
-#include "src/stirling/common/protocol_traits.h"
 #include "src/stirling/connection_stats.h"
-#include "src/stirling/cql/cql_stitcher.h"
-#include "src/stirling/cql/types.h"
-#include "src/stirling/http/http_stitcher.h"
-#include "src/stirling/http/types.h"
-#include "src/stirling/http2u/stitcher.h"
-#include "src/stirling/http2u/types.h"
-#include "src/stirling/mysql/mysql_stitcher.h"
-#include "src/stirling/mysql/types.h"
+#include "src/stirling/protocols/common/protocol_traits.h"
+#include "src/stirling/protocols/cql/cql_stitcher.h"
+#include "src/stirling/protocols/cql/types.h"
+#include "src/stirling/protocols/http/http_stitcher.h"
+#include "src/stirling/protocols/http/types.h"
+#include "src/stirling/protocols/http2u/stitcher.h"
+#include "src/stirling/protocols/http2u/types.h"
+#include "src/stirling/protocols/mysql/mysql_stitcher.h"
+#include "src/stirling/protocols/mysql/types.h"
 
 DEFINE_bool(enable_unix_domain_sockets, false, "Whether Unix domain sockets are traced or not.");
 DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
@@ -146,10 +146,11 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   }
 }
 
-http2u::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool write_event) {
+protocols::http2u::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id,
+                                                                bool write_event) {
   // Check for both client-initiated (odd stream_ids) and server-initiated (even stream_ids)
   // streams.
-  std::deque<http2u::Stream>* streams_deque_ptr;
+  std::deque<protocols::http2u::Stream>* streams_deque_ptr;
   uint32_t* oldest_active_stream_id_ptr;
 
   bool client_stream = (stream_id % 2 == 1);
@@ -189,7 +190,7 @@ http2u::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wr
       *oldest_active_stream_id_ptr = stream_id;
     } else {
       streams_deque_ptr->insert(streams_deque_ptr->begin(), new_size - streams_deque_ptr->size(),
-                                http2u::Stream());
+                                protocols::http2u::Stream());
       index = 0;
       *oldest_active_stream_id_ptr = stream_id;
     }
@@ -216,7 +217,7 @@ http2u::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wr
 
   auto& stream = (*streams_deque_ptr)[index];
 
-  http2u::HalfStream* half_stream_ptr = write_event ? &stream.send : &stream.recv;
+  protocols::http2u::HalfStream* half_stream_ptr = write_event ? &stream.send : &stream.recv;
   return half_stream_ptr;
 }
 
@@ -289,7 +290,7 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
     }
   }
 
-  http2u::HalfStream* half_stream_ptr = HalfStreamPtr(hdr->attr.stream_id, write_event);
+  protocols::http2u::HalfStream* half_stream_ptr = HalfStreamPtr(hdr->attr.stream_id, write_event);
 
   // End stream flag is on a dummy header, so just record the end_stream, but don't add the headers.
   if (hdr->attr.end_stream) {
@@ -360,7 +361,7 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
       return;
   }
 
-  http2u::HalfStream* half_stream_ptr = HalfStreamPtr(data->attr.stream_id, write_event);
+  protocols::http2u::HalfStream* half_stream_ptr = HalfStreamPtr(data->attr.stream_id, write_event);
 
   // Note: Duplicate calls to the writeHeaders have been observed (though they are rare).
   // It is not yet known if duplicate data also occurs. This log will help us figure out if such
@@ -378,17 +379,18 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
 }
 
 template <>
-std::vector<http2u::Record> ConnectionTracker::ProcessToRecords<http2u::ProtocolTraits>() {
+std::vector<protocols::http2u::Record>
+ConnectionTracker::ProcessToRecords<protocols::http2u::ProtocolTraits>() {
   // TODO(oazizi): ECHECK that raw events are empty.
 
-  std::vector<http2u::Record> records;
+  std::vector<protocols::http2u::Record> records;
 
-  http2u::ProcessHTTP2Streams(&client_streams_.http2_streams(), &oldest_active_client_stream_id_,
-                              &records);
-  http2u::ProcessHTTP2Streams(&server_streams_.http2_streams(), &oldest_active_server_stream_id_,
-                              &records);
+  protocols::http2u::ProcessHTTP2Streams(&client_streams_.http2_streams(),
+                                         &oldest_active_client_stream_id_, &records);
+  protocols::http2u::ProcessHTTP2Streams(&server_streams_.http2_streams(),
+                                         &oldest_active_server_stream_id_, &records);
 
-  Cleanup<http2u::ProtocolTraits>();
+  Cleanup<protocols::http2u::ProtocolTraits>();
 
   return records;
 }

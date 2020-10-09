@@ -21,17 +21,17 @@
 #include "src/common/system/socket_info.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
-#include "src/stirling/common/event_parser.h"
 #include "src/stirling/common/go_grpc_types.h"
 #include "src/stirling/connection_stats.h"
-#include "src/stirling/cql/types.h"
-#include "src/stirling/http/http_stitcher.h"
-#include "src/stirling/http2/grpc.h"
-#include "src/stirling/http2/http2.h"
-#include "src/stirling/mysql/mysql_parse.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
 #include "src/stirling/obj_tools/proc_path_tools.h"
 #include "src/stirling/proto/sock_event.pb.h"
+#include "src/stirling/protocols/common/event_parser.h"
+#include "src/stirling/protocols/cql/types.h"
+#include "src/stirling/protocols/http/http_stitcher.h"
+#include "src/stirling/protocols/http2/grpc.h"
+#include "src/stirling/protocols/http2/http2.h"
+#include "src/stirling/protocols/mysql/mysql_parse.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/utils/linux_headers.h"
 
@@ -82,8 +82,8 @@ using ::pl::stirling::kMySQLTable;
 using ::pl::stirling::dwarf_tools::DwarfReader;
 using ::pl::stirling::elf_tools::ElfReader;
 using ::pl::stirling::grpc::ParsePB;
-using ::pl::stirling::http2::HTTP2Message;
 using ::pl::stirling::obj_tools::ResolveProcessPath;
+using ::pl::stirling::protocols::http2::HTTP2Message;
 using ::pl::stirling::utils::ToJSONString;
 
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
@@ -1024,20 +1024,20 @@ int64_t CalculateLatency(int64_t req_timestamp_ns, int64_t resp_timestamp_ns) {
 
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
-                                         const ConnectionTracker& conn_tracker, http::Record record,
-                                         DataTable* data_table) {
-  http::Message& req_message = record.req;
-  http::Message& resp_message = record.resp;
+                                         const ConnectionTracker& conn_tracker,
+                                         protocols::http::Record record, DataTable* data_table) {
+  protocols::http::Message& req_message = record.req;
+  protocols::http::Message& resp_message = record.resp;
 
   // Currently decompresses gzip content, but could handle other transformations too.
   // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
-  http::PreProcessMessage(&resp_message);
+  protocols::http::PreProcessMessage(&resp_message);
 
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
   HTTPContentType content_type = HTTPContentType::kUnknown;
-  if (http::IsJSONContent(resp_message)) {
+  if (protocols::http::IsJSONContent(resp_message)) {
     content_type = HTTPContentType::kJSON;
   }
 
@@ -1073,7 +1073,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          const ConnectionTracker& conn_tracker,
-                                         http2::Record record, DataTable* data_table) {
+                                         protocols::http2::Record record, DataTable* data_table) {
+  using ::pl::stirling::protocols::http2::HTTP2Message;
+
   HTTP2Message& req_message = record.req;
   HTTP2Message& resp_message = record.resp;
 
@@ -1083,7 +1085,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
-  std::string path = req_message.headers.ValueByKey(http2::headers::kPath);
+  std::string path = req_message.headers.ValueByKey(protocols::http2::headers::kPath);
 
   if (FLAGS_stirling_enable_parsing_protobufs &&
       (req_message.HasGRPCContentType() || resp_message.HasGRPCContentType())) {
@@ -1105,7 +1107,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
   r.Append<r.ColIndex("http_resp_headers"), kMaxHTTPHeadersBytes>(
       ToJSONString(resp_message.headers));
-  r.Append<r.ColIndex("http_req_method")>(req_message.headers.ValueByKey(http2::headers::kMethod));
+  r.Append<r.ColIndex("http_req_method")>(
+      req_message.headers.ValueByKey(protocols::http2::headers::kMethod));
   r.Append<r.ColIndex("http_req_path")>(path);
   r.Append<r.ColIndex("http_resp_status")>(resp_status);
   // TODO(yzhao): Populate the following field from headers.
@@ -1124,9 +1127,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          const ConnectionTracker& conn_tracker,
-                                         http2u::Record record, DataTable* data_table) {
-  http2u::HalfStream* req_stream;
-  http2u::HalfStream* resp_stream;
+                                         protocols::http2u::Record record, DataTable* data_table) {
+  protocols::http2u::HalfStream* req_stream;
+  protocols::http2u::HalfStream* resp_stream;
 
   // Depending on whether the traced entity was the requestor or responder,
   // we need to flip the interpretation of the half-streams.
@@ -1146,7 +1149,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
-  std::string path = req_stream->headers.ValueByKey(http2::headers::kPath);
+  std::string path = req_stream->headers.ValueByKey(protocols::http2::headers::kPath);
 
   if (FLAGS_stirling_enable_parsing_protobufs &&
       (req_stream->HasGRPCContentType() || resp_stream->HasGRPCContentType())) {
@@ -1168,7 +1171,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
   r.Append<r.ColIndex("http_resp_headers"), kMaxHTTPHeadersBytes>(
       ToJSONString(resp_stream->headers));
-  r.Append<r.ColIndex("http_req_method")>(req_stream->headers.ValueByKey(http2::headers::kMethod));
+  r.Append<r.ColIndex("http_req_method")>(
+      req_stream->headers.ValueByKey(protocols::http2::headers::kMethod));
   r.Append<r.ColIndex("http_req_path")>(req_stream->headers.ValueByKey(":path"));
   r.Append<r.ColIndex("http_resp_status")>(resp_status);
   // TODO(yzhao): Populate the following field from headers.
@@ -1186,8 +1190,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
-                                         const ConnectionTracker& conn_tracker, mysql::Record entry,
-                                         DataTable* data_table) {
+                                         const ConnectionTracker& conn_tracker,
+                                         protocols::mysql::Record entry, DataTable* data_table) {
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
@@ -1210,8 +1214,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
-                                         const ConnectionTracker& conn_tracker, cass::Record entry,
-                                         DataTable* data_table) {
+                                         const ConnectionTracker& conn_tracker,
+                                         protocols::cass::Record entry, DataTable* data_table) {
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
@@ -1234,8 +1238,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
-                                         const ConnectionTracker& conn_tracker, pgsql::Record entry,
-                                         DataTable* data_table) {
+                                         const ConnectionTracker& conn_tracker,
+                                         protocols::pgsql::Record entry, DataTable* data_table) {
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 

@@ -7,12 +7,12 @@
 #include <string>
 
 #include "src/stirling/common/socket_trace.h"
-#include "src/stirling/cql/types.h"
-#include "src/stirling/http/http_parse.h"
-#include "src/stirling/http2/http2.h"
-#include "src/stirling/http2u/types.h"
-#include "src/stirling/mysql/types.h"
-#include "src/stirling/pgsql/types.h"
+#include "src/stirling/protocols/cql/types.h"
+#include "src/stirling/protocols/http/http_parse.h"
+#include "src/stirling/protocols/http2/http2.h"
+#include "src/stirling/protocols/http2u/types.h"
+#include "src/stirling/protocols/mysql/types.h"
+#include "src/stirling/protocols/pgsql/types.h"
 
 DECLARE_uint32(messages_expiration_duration_secs);
 DECLARE_uint32(messages_size_limit_bytes);
@@ -78,8 +78,8 @@ class DataStream {
    * Returns the current set of streams (for Uprobe-based HTTP2 only)
    * @return deque of streams.
    */
-  std::deque<http2u::Stream>& http2_streams() { return http2_streams_; }
-  const std::deque<http2u::Stream>& http2_streams() const { return http2_streams_; }
+  std::deque<protocols::http2u::Stream>& http2_streams() { return http2_streams_; }
+  const std::deque<protocols::http2u::Stream>& http2_streams() const { return http2_streams_; }
 
   /**
    * @brief Clears all unparsed and parsed data from the Datastream.
@@ -219,7 +219,7 @@ class DataStream {
   }
 
   static void EraseExpiredStreams(std::chrono::seconds exp_dur,
-                                  std::deque<http2u::Stream>* streams) {
+                                  std::deque<protocols::http2u::Stream>* streams) {
     auto iter = streams->begin();
     for (; iter != streams->end(); ++iter) {
       uint64_t timestamp_ns = std::max(iter->send.timestamp_ns, iter->recv.timestamp_ns);
@@ -236,7 +236,7 @@ class DataStream {
 
   // Helper function that appends all contiguous events to the parser.
   // Returns number of events appended.
-  size_t AppendEvents(EventParser* parser) const;
+  size_t AppendEvents(protocols::EventParser* parser) const;
 
   // Raw data events from BPF.
   // TODO(oazizi/yzhao): Convert this to vector or deque.
@@ -260,13 +260,13 @@ class DataStream {
   //
   // Additionally, ConnectionTracker must not switch type during runtime, which indicates serious
   // bug, so we add std::monostate as the default type. And switch to the right time in runtime.
-  std::variant<std::monostate, std::deque<http::Message>, std::deque<http2::Frame>,
-               std::deque<mysql::Packet>, std::deque<cass::Frame>,
-               std::deque<pgsql::RegularMessage>>
+  std::variant<std::monostate, std::deque<protocols::http::Message>,
+               std::deque<protocols::http2::Frame>, std::deque<protocols::mysql::Packet>,
+               std::deque<protocols::cass::Frame>, std::deque<protocols::pgsql::RegularMessage>>
       frames_;
 
   // Used by Uprobe-based HTTP2 only.
-  std::deque<http2u::Stream> http2_streams_;
+  std::deque<protocols::http2u::Stream> http2_streams_;
 
   // The following state keeps track of whether the raw events were touched or not since the last
   // call to ProcessBytesToFrames(). It enables ProcessToRecords() to exit early if nothing has
@@ -311,7 +311,8 @@ inline std::string DebugString(const DataStream& d, std::string_view prefix) {
 }
 
 template <>
-inline std::string DebugString<http2u::Stream>(const DataStream& d, std::string_view prefix) {
+inline std::string DebugString<protocols::http2u::Stream>(const DataStream& d,
+                                                          std::string_view prefix) {
   std::string info;
   info += absl::Substitute("$0active streams=$1\n", prefix, d.http2_streams().size());
   return info;

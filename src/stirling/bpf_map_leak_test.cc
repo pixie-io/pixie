@@ -24,7 +24,7 @@ using ::testing::Key;
 using ::testing::Not;
 
 constexpr std::string_view kServerPath =
-    "src/stirling/http/testing/leaky_cpp_http_server/leaky_http_server";
+    "src/stirling/protocols/http/testing/leaky_cpp_http_server/leaky_http_server";
 
 using BPFMapLeakTest = SocketTraceBPFTest<>;
 

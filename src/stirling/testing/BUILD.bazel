@@ -12,8 +12,6 @@ pl_cc_library(
     deps = [
         "//src/common/system:cc_library",
         "//src/stirling:cc_library",
-        "//src/stirling/mysql:cc_library",
-        "//src/stirling/testing/test_output_generator:cc_library",
     ],
 )
 
