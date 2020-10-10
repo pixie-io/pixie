@@ -4,7 +4,7 @@
     {
       "outputName": "results",
       "func": {
-        "name": "demo_func",
+        "name": "tcp_retransmissions_func",
         "args": []
       }
     }
@@ -25,15 +25,15 @@
           "fromColumn": "src",
           "toColumn": "dst"
         },
-        "edgeWeightColumn": "retransmits",
-        "edgeColorColumn": "retransmits",
+        "edgeWeightColumn": "retransmissions",
+        "edgeColorColumn": "retransmissions",
         "edgeLength": 300,
         "edgeThresholds": {
           "mediumThreshold": 5,
           "highThreshold": 50
         },
         "edgeHoverInfo": [
-          "retransmits"
+          "retransmissions"
         ]
       }
     }
