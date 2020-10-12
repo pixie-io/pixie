@@ -932,7 +932,7 @@ void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEv
   pb->mutable_attr()->mutable_traffic_class()->set_protocol(event.attr.traffic_class.protocol);
   pb->mutable_attr()->mutable_traffic_class()->set_role(event.attr.traffic_class.role);
   pb->mutable_attr()->set_direction(event.attr.direction);
-  pb->mutable_attr()->set_seq_num(event.attr.seq_num);
+  pb->mutable_attr()->set_pos(event.attr.pos);
   pb->mutable_attr()->set_msg_size(event.attr.msg_size);
   pb->set_msg(event.msg);
 }

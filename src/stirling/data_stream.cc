@@ -15,7 +15,7 @@ namespace pl {
 namespace stirling {
 
 void DataStream::AddData(std::unique_ptr<SocketDataEvent> event) {
-  uint64_t seq_num = event->attr.seq_num;
+  uint64_t pos = event->attr.pos;
 
   // Note that the BPF code will also generate a missing sequence number when truncation occurs,
   // so the data stream will naturally reset after processing this event.
@@ -23,20 +23,20 @@ void DataStream::AddData(std::unique_ptr<SocketDataEvent> event) {
       << absl::Substitute("Message truncated, original size: $0, accepted size: $1",
                           event->attr.msg_size, event->msg.size());
 
-  if (seq_num < next_seq_num_) {
+  if (pos < next_pos_) {
     LOG(WARNING) << absl::Substitute(
-        "Ignoring event that has already been skipped [event seq_num=$0, current seq_num=$1].",
-        seq_num, next_seq_num_);
+        "Ignoring event that has already been skipped [event pos=$0, current pos=$1].",
+        event->attr.pos, next_pos_);
     return;
   }
 
-  auto res = events_.emplace(seq_num, std::move(event));
+  auto res = events_.emplace(pos, std::move(event));
   if (!res.second) {
-    DCHECK_EQ(res.first->first, seq_num);
+    DCHECK_EQ(res.first->first, pos);
     std::unique_ptr<SocketDataEvent>& orig_event = res.first->second;
-    LOG(ERROR) << absl::Substitute("Clobbering data event [seq_num=$0 pid=$1 fd=$2 gen=$3].",
-                                   seq_num, orig_event->attr.conn_id.upid.pid,
-                                   orig_event->attr.conn_id.fd, orig_event->attr.conn_id.tsid);
+    LOG(ERROR) << absl::Substitute("Clobbering data event [pos=$0 pid=$1 fd=$2 gen=$3].", pos,
+                                   orig_event->attr.conn_id.upid.pid, orig_event->attr.conn_id.fd,
+                                   orig_event->attr.conn_id.tsid);
   }
   has_new_events_ = true;
 }
@@ -45,13 +45,17 @@ size_t DataStream::AppendEvents(protocols::EventParser* parser) const {
   size_t append_count = 0;
 
   // Prepare all recorded events for parsing.
-  size_t next_seq_num = next_seq_num_;
+  size_t next_pos = next_pos_;
   size_t next_offset = offset_;
-  for (const auto& [seq_num, event] : events_) {
-    // Not at expected seq_num. Stop submitting events to parser.
-    if (seq_num != next_seq_num) {
+  for (const auto& [pos, event] : events_) {
+    // Not at expected pos. Stop submitting events to parser.
+    if (pos != next_pos) {
+      // If not expected, it should be a missing event,
+      // not a position that goes backwards, which would imply overlapping events.
+      DCHECK_GT(pos, next_pos);
       break;
     }
+
     // First message may have been partially processed by a previous call to this function.
     // In such cases, the offset will be non-zero, and we need a sub-string of the first event.
     if (next_offset != 0) {
@@ -64,7 +68,7 @@ size_t DataStream::AppendEvents(protocols::EventParser* parser) const {
     parser->Append(*event);
 
     next_offset = 0;
-    ++next_seq_num;
+    next_pos += event->attr.msg_size;
     ++append_count;
   }
 
@@ -120,7 +124,7 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
   LOG_IF(WARNING, IsEOS()) << "Calling ProcessToRecords on stream that is at EOS.";
 
   const size_t orig_offset = offset_;
-  const size_t orig_seq_num = next_seq_num_;
+  const size_t orig_pos = next_pos_;
 
   // A description of some key variables in this function:
   //
@@ -150,7 +154,7 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
 
   protocols::ParseResult<protocols::BufferPosition> parse_result;
   parse_result.state = ParseState::kNeedsMoreData;
-  parse_result.end_position = {next_seq_num_, offset_};
+  parse_result.end_position = {next_pos_, offset_};
 
   while (keep_processing) {
     protocols::EventParser parser;
@@ -169,7 +173,7 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
       std::advance(erase_iter, num_events_appended);
       events_.erase(events_.begin(), erase_iter);
       ECHECK(!events_.empty());
-      next_seq_num_ = events_.begin()->first;
+      next_pos_ = events_.begin()->first;
       offset_ = 0;
 
       // Update stuck count so we use the correct sync type on the next iteration.
@@ -179,13 +183,21 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
     } else {
       // We appended all events, which means we had a contiguous stream, with no missing events.
       // Find and erase events that have been fully processed.
-      // Note that ParseResult seq_nums are based on events added to parser, not seq_nums from BPF.
+      // Note that ParseResult seq_nums are based on events added to parser.
       size_t num_events_consumed = parse_result.end_position.seq_num;
-      auto erase_iter = events_.begin();
-      std::advance(erase_iter, num_events_consumed);
-      events_.erase(events_.begin(), erase_iter);
-      next_seq_num_ += num_events_consumed;
-      offset_ = parse_result.end_position.offset;
+      if (num_events_consumed == events_.size()) {
+        auto back_iter = --events_.end();
+        next_pos_ = back_iter->first + back_iter->second->attr.msg_size;
+        offset_ = 0;
+        DCHECK_EQ(parse_result.end_position.offset, 0);
+        events_.clear();
+      } else {
+        auto erase_iter = events_.begin();
+        std::advance(erase_iter, num_events_consumed);
+        events_.erase(events_.begin(), erase_iter);
+        next_pos_ = events_.begin()->first;
+        offset_ = parse_result.end_position.offset;
+      }
 
       keep_processing = false;
     }
@@ -198,7 +210,7 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
   // Check to see if we are blocked on parsing.
   // Note that missing events is handled separately (not considered stuck).
   bool events_but_no_progress =
-      !events_.empty() && (next_seq_num_ == orig_seq_num) && (offset_ == orig_offset);
+      !events_.empty() && (next_pos_ == orig_pos) && (offset_ == orig_offset);
   if (events_but_no_progress) {
     ++stuck_count_;
   }
@@ -215,7 +227,7 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
     if (!events_.empty()) {
       auto iter = events_.end();
       --iter;
-      next_seq_num_ = (iter->first) + 1;
+      next_pos_ = (iter->first) + (iter->second->attr.msg_size);
     }
     offset_ = 0;
     events_.clear();
@@ -234,11 +246,11 @@ template void DataStream::ProcessBytesToFrames<protocols::cass::Frame>(MessageTy
 template void DataStream::ProcessBytesToFrames<protocols::pgsql::RegularMessage>(MessageType type);
 
 void DataStream::Reset() {
-  // Before clearing raw events, update next_seq_num_ to the next expected value.
+  // Before clearing raw events, update next_pos_ to the next expected value.
   if (!events_.empty()) {
     auto iter = events_.end();
     --iter;
-    next_seq_num_ = (iter->first) + 1;
+    next_pos_ = (iter->first) + 1;
   }
   offset_ = 0;
   events_.clear();
