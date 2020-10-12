@@ -159,11 +159,17 @@ const LiveView = () => {
   };
 
   React.useEffect(() => {
-    window.addEventListener('beforeunload', () => {
+    const listener = () => {
       if (cancelExecution != null) {
         cancelExecution();
       }
-    });
+    };
+
+    window.addEventListener('beforeunload', listener);
+
+    return () => {
+      window.removeEventListener('beforeunload', listener);
+    };
   }, [cancelExecution]);
 
   React.useEffect(() => {
