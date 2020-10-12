@@ -221,10 +221,10 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
 
       const getDisplayText = (value: any, colName: string, defaultUnits: string) => {
         const info = colInfos[colName];
-        if (info.semType === SemanticType.ST_NONE || info.semType === SemanticType.ST_UNSPECIFIED) {
+        if (info?.semType === SemanticType.ST_NONE || info?.semType === SemanticType.ST_UNSPECIFIED) {
           return `${formatFloat64Data(value)}${defaultUnits}`;
         }
-        const valWithUnits = formatBySemType(info.semType, value);
+        const valWithUnits = formatBySemType(info?.semType, value);
         return `${valWithUnits.val} ${valWithUnits.units}`;
       };
 

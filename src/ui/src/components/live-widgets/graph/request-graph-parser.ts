@@ -82,12 +82,12 @@ export class RequestGraphParser {
     data.forEach((value) => {
       const req = this.upsertPod(
         value[display.requestorServiceColumn],
-        value[display.requestorPodColumn],
+        value[display.requestorPodColumn] || '',
         value[display.outboundBytesPerSecondColumn],
       );
       const resp = this.upsertPod(
         value[display.responderServiceColumn],
-        value[display.responderPodColumn],
+        value[display.responderPodColumn] || '',
         value[display.inboundBytesPerSecondColumn],
       );
 
