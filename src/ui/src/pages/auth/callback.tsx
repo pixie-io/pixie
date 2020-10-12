@@ -96,7 +96,14 @@ export const AuthCallbackPage = () => {
           orgName,
         });
         analytics.identify(response.data.userInfo.userID);
-        analytics.track('User signed up');
+        await new Promise((resolve, reject) => { // Wait for analytics to be sent out before redirecting.
+          analytics.track('User logged up', (err) => {
+            if (err) {
+              reject();
+            }
+            resolve();
+          });
+        });
         return true;
       } catch (err) {
         analytics.track('User signup failed', { error: err.response.data });
