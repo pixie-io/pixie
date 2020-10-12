@@ -31,10 +31,29 @@ const StyledButton = withStyles((theme: Theme) => createStyles({
 
 type ExecuteScriptButtonProps = WithStyles<typeof styles>;
 
+const CANCELLABILITY_DELAY_MS = 1000;
+
 const ExecuteScriptButtonBare = ({ classes }: ExecuteScriptButtonProps) => {
   const { healthy } = React.useContext(ClientContext);
   const { loading } = React.useContext(ResultsContext);
-  const { saveEditorAndExecute } = React.useContext(ScriptContext);
+  const { saveEditorAndExecute, cancelExecution } = React.useContext(ScriptContext);
+
+  const [cancellable, setCancellable] = React.useState<boolean>(false);
+  const [cancellabilityTimer, setCancellabilityTimer] = React.useState<number>(undefined);
+
+  React.useEffect(() => {
+    window.clearTimeout(cancellabilityTimer);
+    if (loading && healthy) {
+      setCancellabilityTimer(window.setTimeout(() => {
+        setCancellable(loading && healthy);
+      }, CANCELLABILITY_DELAY_MS));
+    } else {
+      setCancellable(false);
+    }
+
+    // cancellabilityTimer must not appear in this hook's deps. Infinite loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, healthy, cancelExecution]);
 
   let tooltipTitle;
   if (loading) {
@@ -49,14 +68,14 @@ const ExecuteScriptButtonBare = ({ classes }: ExecuteScriptButtonProps) => {
     <Tooltip title={tooltipTitle}>
       <div className={classes.buttonContainer}>
         <StyledButton
-          variant='contained'
+          variant={cancellable ? 'outlined' : 'contained'}
           color='primary'
-          disabled={!healthy || loading}
-          onClick={saveEditorAndExecute}
+          disabled={!healthy || (loading && !cancellable)}
+          onClick={cancellable ? cancelExecution : saveEditorAndExecute}
           size='small'
           startIcon={<PlayIcon />}
         >
-          <span className={classes.buttonText}>Run</span>
+          <span className={classes.buttonText}>{cancellable ? 'Stop' : 'Run'}</span>
         </StyledButton>
       </div>
     </Tooltip>
