@@ -1,0 +1,13 @@
+$TTL 86400
+
+@ IN SOA dnstest.com root.dnstest.com (
+  2018050600
+  3600
+  900
+  604800
+  86400
+)
+
+@      IN NS server
+server IN A  192.168.32.200
+client IN A  192.168.32.201

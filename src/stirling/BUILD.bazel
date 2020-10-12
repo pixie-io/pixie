@@ -461,6 +461,27 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "dns_trace_bpf_test",
+    timeout = "moderate",
+    srcs = [
+        "dns_trace_bpf_test.cc",
+    ],
+    data = [
+        "//src/stirling/testing/dns2:dns_server_image.tar",
+    ],
+    flaky = True,
+    tags = [
+        "no_asan",
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "conn_stats_bpf_test",
     timeout = "moderate",
     srcs = ["conn_stats_bpf_test.cc"],

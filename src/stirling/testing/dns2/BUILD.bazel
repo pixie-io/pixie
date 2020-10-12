@@ -1,0 +1,49 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_layer")
+
+# Create a custom Alpine image with DNS server & utilities.
+genrule(
+    name = "alpine_dns",
+    srcs = [
+        "Dockerfile",
+    ],
+    outs = ["alpine_dns.tar"],
+    cmd = """
+      docker build -t alpine_dns -f $(location :Dockerfile) .
+      docker save alpine_dns > $@
+    """,
+)
+
+pkg_tar(
+    name = "bind_conf_files",
+    srcs = [
+        "dnstest.com.zone",
+        "named.conf",
+    ],
+    mode = "0755",
+    strip_prefix = "/src/stirling/testing/dns2",
+)
+
+container_layer(
+    name = "bind_conf",
+    directory = "/etc/bind",
+    tars = [":bind_conf_files"],
+)
+
+container_image(
+    name = "dns_server_image",
+    base = ":alpine_dns",
+    cmd = [
+        "named",
+        "-c",
+        "/etc/bind/named.conf",
+        "-g",
+        "-u",
+        "named",
+    ],
+    layers = [
+        ":bind_conf",
+    ],
+)
