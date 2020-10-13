@@ -48,10 +48,10 @@ struct SocketOpen {
 
 struct SocketClose {
   uint64_t timestamp_ns = 0;
-  // The number of bytes sent on the connection at time of close.
-  uint64_t send_bytes = 0;
-  // The number of bytes received on the connection at time of close.
-  uint64_t recv_bytes = 0;
+  // The send/write sequence number at time of close.
+  uint64_t send_seq_num = 0;
+  // The recv/read sequence number at time of close.
+  uint64_t recv_seq_num = 0;
 };
 
 /**

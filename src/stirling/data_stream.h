@@ -32,12 +32,14 @@ namespace stirling {
 class DataStream {
  public:
   /**
-   * Adds a raw (unparsed) chunk of data into the stream.
+   * @brief Adds a raw (unparsed) chunk of data into the stream.
+   * Uses seq_num inside the SocketDataEvent to determine the sequence spot.
+   * @param event The data.
    */
   void AddData(std::unique_ptr<SocketDataEvent> event);
 
   /**
-   * Parses as many messages as it can from the raw events into the messages container.
+   * @brief Parses as many messages as it can from the raw events into the messages container.
    * @tparam TFrameType The parsed message type within the deque.
    * @param type whether to parse as requests, responses or mixed traffic.
    * @return deque of parsed messages.
@@ -80,12 +82,12 @@ class DataStream {
   const std::deque<protocols::http2u::Stream>& http2_streams() const { return http2_streams_; }
 
   /**
-   * Clears all unparsed and parsed data from the Datastream.
+   * @brief Clears all unparsed and parsed data from the Datastream.
    */
   void Reset();
 
   /**
-   * Checks if the DataStream is empty of both raw events and parsed messages.
+   * @brief Checks if the DataStream is empty of both raw events and parsed messages.
    * @return true if empty of all data.
    */
   template <typename TFrameType>
@@ -96,7 +98,7 @@ class DataStream {
   const auto& events() const { return events_; }
 
   /**
-   * Checks if the DataStream is in a Stuck state, which means that it has
+   * @brief Checks if the DataStream is in a Stuck state, which means that it has
    * raw events with no missing events, but that it cannot parse anything.
    *
    * @return true if DataStream is stuck.
@@ -130,7 +132,7 @@ class DataStream {
   }
 
   /**
-   * Checks if the DataStream is at end-of-stream (EOS), which means that we
+   * @brief Checks if the DataStream is at end-of-stream (EOS), which means that we
    * should stop processing the data on the stream, even if more exists.
    *
    * One use case is for HTTP connection upgrades. We want to stop monitoring the
@@ -141,7 +143,7 @@ class DataStream {
   bool IsEOS() const { return last_parse_state_ == ParseState::kEOS; }
 
   /**
-   * Cleanup frames that are parsed from the BPF events, when the condition is right.
+   * @brief Cleanup frames that are parsed from the BPF events, when the condition is right.
    */
   template <typename TFrameType>
   void CleanupFrames() {
@@ -161,7 +163,7 @@ class DataStream {
   }
 
   /**
-   * Cleanup HTTP2 that are received from the BPF uprobe events, when the condition is right.
+   * @brief Cleanup HTTP2 that are received from the BPF uprobe events, when the condition is right.
    */
   void CleanupHTTP2Streams() {
     // TODO(yzhao): Consider put the size computation into a member function of DataStream.
@@ -183,7 +185,7 @@ class DataStream {
   }
 
   /**
-   * Cleanup BPF events that are not able to be be processed.
+   * @brief Cleanup BPF events that are not able to be be processed.
    */
   bool CleanupEvents() {
     if (IsStuck()) {
@@ -240,9 +242,9 @@ class DataStream {
   // TODO(oazizi/yzhao): Convert this to vector or deque.
   std::map<size_t, std::unique_ptr<SocketDataEvent>> events_;
 
-  // Keep track of the byte position of the stream.
+  // Keep track of the sequence number of the stream.
   // This is used to identify missing events.
-  size_t next_pos_ = 0;
+  size_t next_seq_num_ = 0;
 
   // To support partially processed events,
   // the stream may start at an offset in the first raw data event.

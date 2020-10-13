@@ -33,10 +33,15 @@ struct conn_info_t {
   // submitting a new connection. Consider separate these data with the above data that is pushed to
   // perf buffer.
 
-  // The number of bytes written on this connection.
-  uint64_t wr_bytes;
-  // The number of bytes read on this connection.
-  uint64_t rd_bytes;
+  // TODO(oazizi/yzhao/PL-935): Convert these seq_num to byte positions. This will help in recovery
+  // when there is a lost event.
+
+  // A 0-based number for the next write event on this connection.
+  // This number is incremented each time a new write event is recorded.
+  uint64_t wr_seq_num;
+  // A 0-based number for the next read event on this connection.
+  // This number is incremented each time a new read event is recorded.
+  uint64_t rd_seq_num;
 
   // The offset to start read the first frame of the upcoming bytes buffer.
   uint64_t wr_next_http2_frame_offset;
@@ -64,9 +69,8 @@ struct close_event_t {
   uint64_t timestamp_ns;     // Must be shared with conn_event_t.
   struct conn_id_t conn_id;  // Must be shared with conn_event_t.
 
-  // The number of bytes written and read at time of close.
-  uint64_t wr_bytes;
-  uint64_t rd_bytes;
+  uint64_t wr_seq_num;
+  uint64_t rd_seq_num;
 };
 
 // Data buffer message size. BPF can submit at most this amount of data to a perf buffer.
@@ -113,10 +117,9 @@ struct socket_data_event_t {
     enum TrafficDirection direction;
     // Whether the traffic was collected from an encrypted channel.
     bool ssl;
-    // A 0-based position number for this event on the connection, in terms of byte position.
-    // The position is for the first byte of this message.
+    // A 0-based sequence number for this event on the connection.
     // Note that write/send have separate sequences than read/recv.
-    uint64_t pos;
+    uint64_t seq_num;
     // The size of the original message. We use this to truncate msg field to minimize the amount
     // of data being transferred.
     uint32_t msg_size;
@@ -158,14 +161,15 @@ inline std::string ToString(const traffic_class_t& tcls) {
 }
 
 inline std::string ToString(const socket_data_event_t::attr_t& attr) {
-  return absl::Substitute("[ts=$0 conn_id=$1 tcls=$2 dir=$3 ssl=$4 pos=$5 size=$6]",
+  return absl::Substitute("[ts=$0 conn_id=$1 tcls=$2 dir=$3 ssl=$4 seq=$5 size=$6]",
                           attr.timestamp_ns, ToString(attr.conn_id), ToString(attr.traffic_class),
-                          magic_enum::enum_name(attr.direction), attr.ssl, attr.pos, attr.msg_size);
+                          magic_enum::enum_name(attr.direction), attr.ssl, attr.seq_num,
+                          attr.msg_size);
 }
 
 inline std::string ToString(const close_event_t& event) {
-  return absl::Substitute("[ts=$0 conn_id=$1 wr_bytes=$2 rd_bytes=$3]", event.timestamp_ns,
-                          ToString(event.conn_id), event.wr_bytes, event.rd_bytes);
+  return absl::Substitute("[ts=$0 conn_id=$1 wr_seq_num=$2 rd_seq_num=$3]", event.timestamp_ns,
+                          ToString(event.conn_id), event.wr_seq_num, event.rd_seq_num);
 }
 
 inline std::string ToString(const conn_event_t& event) {

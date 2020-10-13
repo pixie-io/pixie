@@ -25,7 +25,7 @@ message SocketDataEvent {
     ConnID  conn_id = 2;
     TrafficClass traffic_class = 3;
     uint32 direction = 4;
-    uint64 pos = 5;
+    uint64 seq_num = 5;
     // The original size of the msg, could be larger than the size of msg.
     uint32 msg_size = 6;
   }

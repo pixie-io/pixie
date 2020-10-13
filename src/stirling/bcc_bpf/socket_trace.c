@@ -324,8 +324,8 @@ static __inline void submit_close_event(struct pt_regs* ctx, struct conn_info_t*
   close_event.type = kConnClose;
   close_event.close.timestamp_ns = bpf_ktime_get_ns();
   close_event.close.conn_id = conn_info->conn_id;
-  close_event.close.rd_bytes = conn_info->rd_bytes;
-  close_event.close.wr_bytes = conn_info->wr_bytes;
+  close_event.close.rd_seq_num = conn_info->rd_seq_num;
+  close_event.close.wr_seq_num = conn_info->wr_seq_num;
 
   socket_control_events.perf_submit(ctx, &close_event, sizeof(struct socket_control_event_t));
 }
@@ -344,16 +344,17 @@ static __inline void perf_submit_buf(struct pt_regs* ctx, const enum TrafficDire
                                      struct socket_data_event_t* event, bool send_data) {
   switch (direction) {
     case kEgress:
-      event->attr.pos = conn_info->wr_bytes;
-      conn_info->wr_bytes += buf_size;
+      event->attr.seq_num = conn_info->wr_seq_num;
+      ++conn_info->wr_seq_num;
       break;
     case kIngress:
-      event->attr.pos = conn_info->rd_bytes;
-      conn_info->rd_bytes += buf_size;
+      event->attr.seq_num = conn_info->rd_seq_num;
+      ++conn_info->rd_seq_num;
       break;
   }
 
   // Record original size of packet. This may get truncated below before submit.
+  // TODO(oazizi): Combine seq_num and msg_size into a combined byte_position.
   event->attr.msg_size = buf_size;
 
   // This rest of this function has been written carefully to keep the BPF verifier happy in older
@@ -438,17 +439,19 @@ static __inline void perf_submit_wrapper(struct pt_regs* ctx, const enum Traffic
   }
 
   // If the message is too long, then we can't transmit it all.
-  // But we still want to record an accurate number of bytes transmitted on the connection.
-  //
-  // If bytes_remaining is non-zero here, it will appear as missing data in socket_trace_connector,
+  // To indicate to user-space that there is a gap in data transmitted,
+  // we increment the appropriate sequence numbers.
+  // This will appear as missing data in the socket_trace_connector,
   // which is exactly what we want it to believe.
-  switch (direction) {
-    case kEgress:
-      conn_info->wr_bytes += bytes_remaining;
-      break;
-    case kIngress:
-      conn_info->rd_bytes += bytes_remaining;
-      break;
+  if (bytes_remaining > 0) {
+    switch (direction) {
+      case kEgress:
+        ++conn_info->wr_seq_num;
+        break;
+      case kIngress:
+        ++conn_info->rd_seq_num;
+        break;
+    }
   }
 }
 
@@ -470,31 +473,18 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const enum TrafficD
   // array order. That means they read or fill iov[0], then iov[1], and so on. They return the total
   // size of the written or read data. Therefore, when loop through the buffers, both the number of
   // buffers and the total size need to be checked. More details can be found on their man pages.
-  unsigned int bytes_remaining = total_size;
+  unsigned int bytes_copied = 0;
 #pragma unroll
-  for (unsigned int i = 0; i < LOOP_LIMIT && i < iovlen && bytes_remaining > 0; ++i) {
+  for (unsigned int i = 0; i < LOOP_LIMIT && i < iovlen && bytes_copied < total_size; ++i) {
     struct iovec iov_cpy;
     bpf_probe_read(&iov_cpy, sizeof(struct iovec), &iov[i]);
 
-    const size_t iov_size = iov_cpy.iov_len < bytes_remaining ? iov_cpy.iov_len : bytes_remaining;
+    const size_t bytes_remain = total_size - bytes_copied;
+    const size_t iov_size = iov_cpy.iov_len < bytes_remain ? iov_cpy.iov_len : bytes_remain;
 
     // TODO(oazizi/yzhao): Should switch this to go through perf_submit_wrapper.
     perf_submit_buf(ctx, direction, iov_cpy.iov_base, iov_size, conn_info, event, send_data);
-    bytes_remaining -= iov_size;
-  }
-
-  // If the message is too long, then we can't transmit it all.
-  // But we still want to record an accurate number of bytes transmitted on the connection.
-  //
-  // If bytes_remaining is non-zero here, it will appear as missing data in socket_trace_connector,
-  // which is exactly what we want it to believe.
-  switch (direction) {
-    case kEgress:
-      conn_info->wr_bytes += bytes_remaining;
-      break;
-    case kIngress:
-      conn_info->rd_bytes += bytes_remaining;
-      break;
+    bytes_copied += iov_size;
   }
 }
 
@@ -688,7 +678,8 @@ static __inline void process_syscall_close(struct pt_regs* ctx, uint64_t id,
 
   // Only submit event to user-space if there was a corresponding open or data event reported.
   // This is to avoid polluting the perf buffer.
-  if (conn_info->addr.sin6_family != 0 || conn_info->wr_bytes != 0 || conn_info->rd_bytes != 0) {
+  if (conn_info->addr.sin6_family != 0 || conn_info->wr_seq_num != 0 ||
+      conn_info->rd_seq_num != 0) {
     submit_close_event(ctx, conn_info);
   }
 

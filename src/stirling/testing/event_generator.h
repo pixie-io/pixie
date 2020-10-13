@@ -36,16 +36,16 @@ class EventGenerator {
 
   template <TrafficProtocol TProtocol>
   std::unique_ptr<SocketDataEvent> InitSendEvent(std::string_view msg) {
-    return InitDataEvent<TProtocol>(TrafficDirection::kEgress, &send_pos_, msg);
+    return InitDataEvent<TProtocol>(TrafficDirection::kEgress, send_seq_num_++, msg);
   }
 
   template <TrafficProtocol TProtocol>
   std::unique_ptr<SocketDataEvent> InitRecvEvent(std::string_view msg) {
-    return InitDataEvent<TProtocol>(TrafficDirection::kIngress, &recv_pos_, msg);
+    return InitDataEvent<TProtocol>(TrafficDirection::kIngress, recv_seq_num_++, msg);
   }
 
   template <TrafficProtocol TProtocol>
-  std::unique_ptr<SocketDataEvent> InitDataEvent(TrafficDirection direction, uint64_t* pos,
+  std::unique_ptr<SocketDataEvent> InitDataEvent(TrafficDirection direction, uint64_t seq_num,
                                                  std::string_view msg) {
     socket_data_event_t event = {};
     event.attr.direction = direction;
@@ -56,24 +56,21 @@ class EventGenerator {
     event.attr.conn_id.fd = kFD;
     event.attr.conn_id.tsid = tsid_;
     event.attr.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
-    event.attr.pos = *pos;
+    event.attr.seq_num = seq_num;
     event.attr.msg_size = msg.size();
     event.attr.msg_buf_size = msg.size();
     msg.copy(event.msg, msg.size());
-
-    *pos += msg.size();
-
     return std::make_unique<SocketDataEvent>(&event);
   }
 
   std::unique_ptr<SocketDataEvent> InitSendEvent(TrafficProtocol protocol, std::string_view msg) {
-    auto res = InitDataEvent<kProtocolUnknown>(TrafficDirection::kEgress, &send_pos_, msg);
+    auto res = InitDataEvent<kProtocolUnknown>(TrafficDirection::kEgress, send_seq_num_++, msg);
     res->attr.traffic_class.protocol = protocol;
     return res;
   }
 
   std::unique_ptr<SocketDataEvent> InitRecvEvent(TrafficProtocol protocol, std::string_view msg) {
-    auto res = InitDataEvent<kProtocolUnknown>(TrafficDirection::kIngress, &recv_pos_, msg);
+    auto res = InitDataEvent<kProtocolUnknown>(TrafficDirection::kIngress, send_seq_num_++, msg);
     res->attr.traffic_class.protocol = protocol;
     return res;
   }
@@ -86,16 +83,16 @@ class EventGenerator {
     close_event.close.conn_id.fd = kFD;
     close_event.close.conn_id.tsid = tsid_;
     close_event.close.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
-    close_event.close.rd_bytes = recv_pos_;
-    close_event.close.wr_bytes = send_pos_;
+    close_event.close.rd_seq_num = recv_seq_num_;
+    close_event.close.wr_seq_num = send_seq_num_;
     return close_event;
   }
 
  private:
   Clock* clock_;
   uint64_t tsid_ = 0;
-  uint64_t send_pos_ = 0;
-  uint64_t recv_pos_ = 0;
+  uint64_t send_seq_num_ = 0;
+  uint64_t recv_seq_num_ = 0;
 };
 
 constexpr std::string_view kHTTPReq0 =
