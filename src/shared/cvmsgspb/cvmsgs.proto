@@ -133,6 +133,19 @@ message PodStatus {
     google.protobuf.Timestamp created_at = 6 [
                                              (gogoproto.customname) = "CreatedAt"
                                              ];
+    // The K8s events associated with the pod.
+    repeated K8sEvent events = 7;
+}
+
+// K8sEvent represents a K8s event belonging to a pod.
+message K8sEvent {
+    // The string describing the event itself.
+    string message = 1;
+    // The first time at which the event occurred.
+    google.protobuf.Timestamp first_time = 2;
+    // The last time at which the event occurred. Using the first_time, we can
+    // determine how long this evenet has been occurring.
+    google.protobuf.Timestamp last_time = 3;
 }
 
 // ContainerStatus represents pa container's status at a moment in time.

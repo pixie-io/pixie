@@ -245,6 +245,34 @@ func (v *K8sVizierInfo) UpdateK8sState() {
 			}
 		}
 		name := podPb.Metadata.Name
+		ns := plNamespace
+		events := make([]*cvmsgspb.K8SEvent, 0)
+
+		eventsInterface := v.clientset.CoreV1().Events(plNamespace)
+		selector := eventsInterface.GetFieldSelector(&name, &ns, nil, nil)
+		options := metav1.ListOptions{FieldSelector: selector.String()}
+		evs, err := eventsInterface.List(context.Background(), options)
+
+		if err == nil {
+			// Limit to last 5 events.
+			start := len(evs.Items) - 5
+			if start < 0 {
+				start = 0
+			}
+			end := len(evs.Items)
+
+			for start < end {
+				e := evs.Items[start]
+				events = append(events, &cvmsgspb.K8SEvent{
+					Message:   e.Message,
+					FirstTime: nanosToTimestampProto(e.FirstTimestamp.UnixNano()),
+					LastTime:  nanosToTimestampProto(e.LastTimestamp.UnixNano()),
+				})
+				start++
+			}
+		} else {
+			log.WithError(err).Info("Error getting K8s events")
+		}
 
 		s := &cvmsgspb.PodStatus{
 			Name:          name,
@@ -252,6 +280,7 @@ func (v *K8sVizierInfo) UpdateK8sState() {
 			StatusMessage: msg,
 			Containers:    containers,
 			CreatedAt:     nanosToTimestampProto(podPb.Metadata.CreationTimestampNS),
+			Events:        events,
 		}
 		podMap[name] = s
 	}

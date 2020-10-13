@@ -18,6 +18,7 @@ rules:
   - endpoints
   - namespaces
   - jobs
+  - events
   verbs:
   - "*"
 - apiGroups:
