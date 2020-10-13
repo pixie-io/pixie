@@ -68,7 +68,8 @@
           "bytes_total",
           "bytes_sent",
           "bytes_recv"
-        ]
+        ],
+        "edgeLength": 100
       }
     },
     {
