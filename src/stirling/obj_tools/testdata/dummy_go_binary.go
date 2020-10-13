@@ -110,8 +110,13 @@ func BytesToHex(uuid []byte, name string) string {
 	return name + "_" + hex.EncodeToString(uuid)
 }
 
-func OuterStructFunc(x OuterStruct) bool {
-	return x.O1.M0.L0
+type IntStruct struct {
+	X int
+	Y int
+}
+
+func OuterStructFunc(x OuterStruct) IntStruct {
+	return IntStruct{3, 4}
 }
 
 type dummyError string
@@ -121,7 +126,7 @@ func (e dummyError) Error() string {
 }
 
 func FooReturnsDummyError(a int) error {
-	if (a == 0) {
+	if a == 0 {
 		return dummyError("throw from FooReturnsDummyError")
 	}
 	return nil

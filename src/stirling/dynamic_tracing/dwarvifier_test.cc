@@ -1157,21 +1157,21 @@ probes {
     scalar_var {
       name: "main__dummyError_sym_addr"
       type: UINT64
-      constant: "5112128"
+      constant: "5112416"
     }
   }
   vars {
     scalar_var {
       name: "runtime__errorString_sym_addr"
       type: UINT64
-      constant: "5112160"
+      constant: "5112448"
     }
   }
   vars {
     scalar_var {
       name: "syscall__Errno_sym_addr"
       type: UINT64
-      constant: "5112192"
+      constant: "5112480"
     }
   }
   vars {

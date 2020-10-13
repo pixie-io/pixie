@@ -15,7 +15,8 @@
 namespace pl {
 namespace stirling {
 
-using pl::testing::BazelBinTestFilePath;
+using ::pl::testing::BazelBinTestFilePath;
+using ::testing::StrEq;
 
 //-----------------------------------------------------------------------------
 // Test fixture and shared code
@@ -401,7 +402,8 @@ tracepoints {
   EXPECT_EQ(rb[value_field_idx]->Get<types::StringValue>(0), "This is a loooooooooooo<truncated>");
 }
 
-TEST_F(DynamicTraceGolangTest, TraceStruct) {
+// Tests tracing StructBlob variables.
+TEST_F(DynamicTraceGolangTest, TraceStructBlob) {
   BinaryRunner trace_target;
   trace_target.Run(kBinaryPath);
 
@@ -415,6 +417,7 @@ tracepoints {
     outputs {
       name: "output_table"
       fields: "struct_blob"
+      fields: "return_struct_blob"
     }
     probes {
       name: "probe0"
@@ -426,9 +429,14 @@ tracepoints {
         id: "arg0"
         expr: "x"
       }
+      ret_vals {
+        id: "retval0"
+        expr: "$$1"
+      }
       output_actions {
         output_name: "output_table"
         variable_name: "arg0"
+        variable_name: "retval0"
       }
     }
   }
@@ -441,11 +449,15 @@ tracepoints {
   // Get field indexes for the columns we want.
   ASSERT_HAS_VALUE_AND_ASSIGN(int struct_blob_field_idx,
                               FindFieldIndex(info_class_.schema(), "struct_blob"));
+  ASSERT_HAS_VALUE_AND_ASSIGN(int ret_field_idx,
+                              FindFieldIndex(info_class_.schema(), "return_struct_blob"));
 
   types::ColumnWrapperRecordBatch& rb = *record_batches_[0];
   EXPECT_EQ(
       rb[struct_blob_field_idx]->Get<types::StringValue>(0),
       R"({"O0":1,"O1":{"M0":{"L0":true,"L1":2,"L2":0},"M1":false,"M2":{"L0":true,"L1":3,"L2":0}}})");
+  const std::string& ret = rb[ret_field_idx]->Get<types::StringValue>(0);
+  EXPECT_THAT(ret, StrEq(R"({"X":3,"Y":4})"));
 }
 
 TEST_F(DynamicTraceGolangTest, TraceError) {
