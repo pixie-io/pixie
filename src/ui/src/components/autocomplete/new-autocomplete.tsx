@@ -50,6 +50,7 @@ interface NewAutoCompleteProps {
   completions: Array<TabSuggestion>;
   tabStops: Array<TabStop>;
   prefix?: React.ReactNode;
+  suffix?: React.ReactNode;
   className?: string;
   placeholder?: string;
   isValid: boolean;
@@ -61,6 +62,7 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
   tabStops,
   completions,
   prefix,
+  suffix,
   className,
   isValid,
   placeholder = '',
@@ -190,6 +192,7 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
         onKey={handleKey}
         value={tsInfo.getInput()}
         prefix={prefix}
+        suffix={suffix}
         placeholder={placeholder}
         isValid={isValid}
       />

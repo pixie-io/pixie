@@ -79,6 +79,7 @@ interface AutocompleteInputProps {
   value: Array<AutocompleteField>; // The text to show in the input box, marked by type.
   cursorPos: number; // Where the cursor position should be.
   prefix?: React.ReactNode; // An image to display to the left of the input box, if any.
+  suffix?: React.ReactNode; // Something to display on the right of the input box, such as a hotkey hint.
   // Clicking around in the input box may result in a cursor change. This allows AutocompleteInput to notify the
   // parentClass of this change.
   setCursor: (val: number) => void;
@@ -93,6 +94,7 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   cursorPos,
   setCursor,
   prefix = null,
+  suffix = null,
   placeholder = '',
   value,
   isValid,
@@ -194,6 +196,7 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
         </div>
         <span className={classes.hint} tabIndex={-1}>{displayText.length === 0 ? placeholder : ''}</span>
       </div>
+      { suffix && <div>{suffix}</div>}
     </div>
   );
 };

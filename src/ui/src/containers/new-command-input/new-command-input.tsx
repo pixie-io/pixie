@@ -7,7 +7,7 @@ import gql from 'graphql-tag';
 import { useApolloClient } from '@apollo/react-hooks';
 import ClusterContext from 'common/cluster-context';
 
-import { createStyles, makeStyles } from '@material-ui/core';
+import { createStyles, makeStyles, Theme } from '@material-ui/core';
 import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 
@@ -46,6 +46,40 @@ interface NewCommandInputProps {
 interface CurrentInput {
   text: string;
 }
+
+const useHintStyles = makeStyles((theme: Theme) => (createStyles({
+  hotkeyHint: {
+    opacity: 0.6,
+    fontSize: '50%',
+    flex: '0 0 auto',
+    position: 'relative',
+    bottom: theme.spacing(0.25), // Vertically aligns the shift/enter symbols with lowercase letters
+    pointerEvents: 'none',
+    userSelect: 'none',
+    paddingLeft: theme.spacing(1.25),
+
+    '& code': {
+      border: '1px rgba(255, 255, 255, 0.5) solid',
+      borderRadius: theme.spacing(0.25),
+      padding: `${theme.spacing(0.625)}px ${theme.spacing(1)}px`,
+    },
+
+    '& span': {
+      margin: '0 0.5em',
+    },
+  },
+})));
+
+const PixieCommandSubmitHint: React.FC = () => {
+  const classes = useHintStyles();
+  return (
+    <span className={classes.hotkeyHint} tabIndex={-1} aria-label='Press Shift+Enter to run this command'>
+      <code>{'\u21E7' /* Shift as shown on many older keyboards */}</code>
+      <span>+</span>
+      <code>{'\u23CE' /* Enter as shown on many older keyboards */}</code>
+    </span>
+  );
+};
 
 const useStyles = makeStyles(() => (createStyles({
   card: {
@@ -166,6 +200,7 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
           placeholder='Type a script or entity...'
           isValid={isValid}
           prefix={<PixieCommandIcon />}
+          suffix={<PixieCommandSubmitHint />}
         />
       </Card>
     </Modal>
