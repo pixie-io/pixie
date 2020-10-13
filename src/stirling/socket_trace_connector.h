@@ -30,20 +30,22 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/common/grpcutils/service_descriptor_database.h"
 #include "src/common/system/socket_info.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
-#include "src/stirling/cass_table.h"
+
 #include "src/stirling/common/socket_trace.h"
 #include "src/stirling/conn_stats_table.h"
 #include "src/stirling/connection_stats.h"
 #include "src/stirling/connection_tracker.h"
-#include "src/stirling/http_table.h"
-#include "src/stirling/mysql_table.h"
-#include "src/stirling/pgsql_table.h"
 #include "src/stirling/protocols/http/utils.h"
-#include "src/stirling/protocols/pgsql/stitcher.h"
-#include "src/stirling/protocols/pgsql/types.h"
 #include "src/stirling/socket_trace_bpf_tables.h"
 #include "src/stirling/source_connector.h"
 #include "src/stirling/utils/proc_tracker.h"
+
+// PROTOCOL_LIST: Requires update on new protocols.
+#include "src/stirling/cass_table.h"
+#include "src/stirling/dns_table.h"
+#include "src/stirling/http_table.h"
+#include "src/stirling/mysql_table.h"
+#include "src/stirling/pgsql_table.h"
 
 DECLARE_bool(stirling_enable_parsing_protobufs);
 DECLARE_uint32(stirling_socket_trace_sampling_period_millis);
@@ -61,13 +63,14 @@ namespace stirling {
 class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
   static constexpr auto kTables =
-      MakeArray(kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable, kPGSQLTable);
-  static constexpr uint32_t kConnStatsTableNum =
-      SourceConnector::TableNum(kTables, kConnStatsTable);
-  static constexpr uint32_t kHTTPTableNum = SourceConnector::TableNum(kTables, kHTTPTable);
-  static constexpr uint32_t kMySQLTableNum = SourceConnector::TableNum(kTables, kMySQLTable);
-  static constexpr uint32_t kCQLTableNum = SourceConnector::TableNum(kTables, kCQLTable);
-  static constexpr uint32_t kPGSQLTableNum = SourceConnector::TableNum(kTables, kPGSQLTable);
+      MakeArray(kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable, kPGSQLTable, kDNSTable);
+
+  static constexpr uint32_t kConnStatsTableNum = TableNum(kTables, kConnStatsTable);
+  static constexpr uint32_t kHTTPTableNum = TableNum(kTables, kHTTPTable);
+  static constexpr uint32_t kMySQLTableNum = TableNum(kTables, kMySQLTable);
+  static constexpr uint32_t kCQLTableNum = TableNum(kTables, kCQLTable);
+  static constexpr uint32_t kPGSQLTableNum = TableNum(kTables, kPGSQLTable);
+  static constexpr uint32_t kDNSTableNum = TableNum(kTables, kDNSTable);
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new SocketTraceConnector(name));
@@ -350,6 +353,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // This map controls how each protocol is processed and transferred.
   // The table num identifies which data the collected data is transferred.
   // The transfer_fn defines which function is called to process the data for transfer.
+  // PROTOCOL_LIST: Requires update on new protocols.
   std::map<TrafficProtocol, TransferSpec> protocol_transfer_specs_ = {
       {kProtocolHTTP,
        {kHTTPTableNum, &SocketTraceConnector::TransferStream<protocols::http::ProtocolTraits>}},
@@ -363,6 +367,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
        {kCQLTableNum, &SocketTraceConnector::TransferStream<protocols::cass::ProtocolTraits>}},
       {kProtocolPGSQL,
        {kPGSQLTableNum, &SocketTraceConnector::TransferStream<protocols::pgsql::ProtocolTraits>}},
+      {kProtocolDNS,
+       {kDNSTableNum, &SocketTraceConnector::TransferStream<protocols::dns::ProtocolTraits>}},
       // Unknown protocols attached to HTTP table so that they run their cleanup functions,
       // but the use of nullptr transfer_fn means it won't actually transfer data to the HTTP table.
       {kProtocolUnknown, {kHTTPTableNum, nullptr}},

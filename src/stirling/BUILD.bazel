@@ -35,6 +35,7 @@ pl_cc_library(
         "//src/stirling/utils:cc_library",
         "//src/stirling/proto:stirling_pl_cc_proto",
         "//src/stirling/protocols/cql:cc_library",
+        "//src/stirling/protocols/dns:cc_library",
         "//src/stirling/protocols/mysql:cc_library",
         "//src/stirling/protocols/pgsql:cc_library",
         "//src/stirling/protocols/http:cc_library",
@@ -306,11 +307,11 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["mysql_trace_bpf_test.cc"],
     flaky = True,
+    shard_count = 2,
     tags = [
         "no_asan",
         "requires_bpf",
     ],
-    shard_count = 2,
     deps = [
         ":cc_library",
         "//src/stirling/testing:cc_library",
@@ -486,8 +487,8 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["conn_stats_bpf_test.cc"],
     flaky = True,
-    tags = ["requires_bpf"],
     shard_count = 2,
+    tags = ["requires_bpf"],
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",

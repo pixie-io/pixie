@@ -17,13 +17,15 @@
 #include "src/stirling/data_stream.h"
 #include "src/stirling/fd_resolver.h"
 #include "src/stirling/protocols/common/protocol_traits.h"
+#include "src/stirling/socket_trace_bpf_tables.h"
+
+// PROTOCOL_LIST: Requires update on new protocols.
 #include "src/stirling/protocols/cql/cql_stitcher.h"
+#include "src/stirling/protocols/dns/dns_stitcher.h"
 #include "src/stirling/protocols/http/http_stitcher.h"
 #include "src/stirling/protocols/http2u/stitcher.h"
-#include "src/stirling/protocols/mysql/mysql_parse.h"
 #include "src/stirling/protocols/mysql/mysql_stitcher.h"
-#include "src/stirling/protocols/pgsql/parse.h"
-#include "src/stirling/socket_trace_bpf_tables.h"
+#include "src/stirling/protocols/pgsql/stitcher.h"
 
 DECLARE_bool(enable_unix_domain_sockets);
 

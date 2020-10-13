@@ -47,7 +47,7 @@ DEFINE_string(perf_buffer_events_output_path, "",
               "writes data events. If the filename ends with '.bin', the events are serialized in "
               "binary format; otherwise, text format.");
 
-// TODO(oazizi/yzhao): Re-enable grpc and mysql tracing once stable.
+// PROTOCOL_LIST: Requires update on new protocols.
 DEFINE_bool(stirling_enable_http_tracing, true,
             "If true, stirling will trace and process HTTP messages");
 DEFINE_bool(stirling_enable_grpc_kprobe_tracing, false,
@@ -60,6 +60,9 @@ DEFINE_bool(stirling_enable_pgsql_tracing, true,
             "If true, stirling will trace and process PostgreSQL messages.");
 DEFINE_bool(stirling_enable_cass_tracing, true,
             "If true, stirling will trace and process Cassandra messages.");
+DEFINE_bool(stirling_enable_dns_tracing, false,
+            "If true, stirling will trace and process DNS messages.");
+
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will not trace and process syscalls made by itself.");
 DEFINE_string(stirling_role_to_trace, "kRoleAll",
@@ -83,7 +86,6 @@ using ::pl::stirling::dwarf_tools::DwarfReader;
 using ::pl::stirling::elf_tools::ElfReader;
 using ::pl::stirling::grpc::ParsePB;
 using ::pl::stirling::obj_tools::ResolveProcessPath;
-using ::pl::stirling::protocols::http2::HTTP2Message;
 using ::pl::stirling::utils::ToJSONString;
 
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
@@ -100,13 +102,15 @@ void SocketTraceConnector::InitProtocols() {
     DCHECK(protocol_transfer_specs_.find(p) != protocol_transfer_specs_.end());
   }
 
-  // Populate `enabled` from flags
+  // Populate `enabled` from flags.
+  // PROTOCOL_LIST: Requires update on new protocols.
   protocol_transfer_specs_[kProtocolHTTP].enabled = FLAGS_stirling_enable_http_tracing;
   protocol_transfer_specs_[kProtocolHTTP2].enabled = FLAGS_stirling_enable_grpc_kprobe_tracing;
   protocol_transfer_specs_[kProtocolHTTP2U].enabled = FLAGS_stirling_enable_grpc_uprobe_tracing;
   protocol_transfer_specs_[kProtocolMySQL].enabled = FLAGS_stirling_enable_mysql_tracing;
-  protocol_transfer_specs_[kProtocolCQL].enabled = FLAGS_stirling_enable_mysql_tracing;
+  protocol_transfer_specs_[kProtocolCQL].enabled = FLAGS_stirling_enable_cass_tracing;
   protocol_transfer_specs_[kProtocolPGSQL].enabled = FLAGS_stirling_enable_pgsql_tracing;
+  protocol_transfer_specs_[kProtocolDNS].enabled = FLAGS_stirling_enable_dns_tracing;
 
   // Populate `role_to_trace` from flags.
   std::optional<EndpointRole> role_to_trace =
@@ -1229,6 +1233,28 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("req_body"), kMaxBodyBytes>(std::move(entry.req.msg));
   r.Append<r.ColIndex("resp_op")>(static_cast<uint64_t>(entry.resp.op));
   r.Append<r.ColIndex("resp_body"), kMaxBodyBytes>(std::move(entry.resp.msg));
+  r.Append<r.ColIndex("latency_ns")>(
+      CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
+#ifndef NDEBUG
+  r.Append<r.ColIndex("px_info_")>("");
+#endif
+}
+
+template <>
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
+                                         const ConnectionTracker& conn_tracker,
+                                         protocols::dns::Record entry, DataTable* data_table) {
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
+
+  DataTable::RecordBuilder<&kDNSTable> r(data_table, entry.resp.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
+  r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
+  r.Append<r.ColIndex("req")>("");
+  r.Append<r.ColIndex("resp")>("");
   r.Append<r.ColIndex("latency_ns")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG

@@ -18,6 +18,7 @@ enum TrafficDirection {
 };
 
 // Protocol being used on a connection (HTTP, MySQL, etc.).
+// PROTOCOL_LIST: Requires update on new protocols.
 enum TrafficProtocol {
   kProtocolUnknown = 0,
   kProtocolHTTP,
@@ -28,6 +29,7 @@ enum TrafficProtocol {
   kProtocolMySQL,
   kProtocolCQL,
   kProtocolPGSQL,
+  kProtocolDNS,
   kNumProtocols
 };
 

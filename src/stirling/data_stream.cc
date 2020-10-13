@@ -227,11 +227,13 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
   has_new_events_ = false;
 }
 
+// PROTOCOL_LIST: Requires update on new protocols.
 template void DataStream::ProcessBytesToFrames<protocols::http::Message>(MessageType type);
 template void DataStream::ProcessBytesToFrames<protocols::http2::Frame>(MessageType type);
 template void DataStream::ProcessBytesToFrames<protocols::mysql::Packet>(MessageType type);
 template void DataStream::ProcessBytesToFrames<protocols::cass::Frame>(MessageType type);
 template void DataStream::ProcessBytesToFrames<protocols::pgsql::RegularMessage>(MessageType type);
+template void DataStream::ProcessBytesToFrames<protocols::dns::Frame>(MessageType type);
 
 void DataStream::Reset() {
   // Before clearing raw events, update next_seq_num_ to the next expected value.
