@@ -167,7 +167,8 @@ class BCCCodeGenerator {
   absl::flat_hash_map<std::string_view, const ir::physical::Struct*> structs_;
 };
 
-std::string_view GenScalarType(ScalarType type) {
+// Returns the C type name of the input ScalarType.
+std::string_view GetScalarTypeCName(ScalarType type) {
   auto iter = kScalarTypeToCType.find(type);
   if (iter == kScalarTypeToCType.end()) {
     LOG(DFATAL) << absl::Substitute("Mapping to C-type not present for $0", type);
@@ -180,7 +181,7 @@ std::string_view GenScalarType(ScalarType type) {
 StatusOr<std::string> GenVariableType(const VariableType& var_type) {
   switch (var_type.type_oneof_case()) {
     case VariableType::TypeOneofCase::kScalar:
-      return std::string(GenScalarType(var_type.scalar()));
+      return std::string(GetScalarTypeCName(var_type.scalar()));
     case VariableType::TypeOneofCase::kStructType:
       return absl::Substitute("struct $0", var_type.struct_type());
     case VariableType::TypeOneofCase::TYPE_ONEOF_NOT_SET:
@@ -190,7 +191,7 @@ StatusOr<std::string> GenVariableType(const VariableType& var_type) {
 }
 
 std::string GenField(const Field& field) {
-  return absl::Substitute("$0 $1;", GenScalarType(field.type()), field.name());
+  return absl::Substitute("$0 $1;", GetScalarTypeCName(field.type()), field.name());
 }
 
 }  // namespace
@@ -215,7 +216,7 @@ StatusOr<std::vector<std::string>> GenStruct(const Struct& st, int member_indent
 namespace {
 
 std::string GenRegister(const ScalarVariable& var) {
-  std::string_view type = GenScalarType(var.type());
+  std::string_view type = GetScalarTypeCName(var.type());
 
   switch (var.reg()) {
     case Register::SP:
@@ -290,7 +291,7 @@ StatusOr<std::vector<std::string>> GenPtrLenVariable(const PtrLenVariable& var) 
   code_lines.push_back(
       absl::Substitute("$0 = $0 & $1; // Keep verifier happy.", var.len_var_name(), size - 1));
 
-  code_lines.push_back(absl::Substitute("$0 $1 = {};", GenScalarType(var.type()), var.name()));
+  code_lines.push_back(absl::Substitute("$0 $1 = {};", GetScalarTypeCName(var.type()), var.name()));
   code_lines.push_back(absl::Substitute("$0.len = $1;", var.name(), var.len_var_name()));
 
   code_lines.push_back(
@@ -319,7 +320,7 @@ std::vector<std::string> GenStructBlobMemoryVariable(const ScalarVariable& var) 
   std::vector<std::string> code_lines;
   // Note that we initialize the variable with `= {}` to keep BPF happy.
   // This should always be valid since the variable will always be a struct an never a base type.
-  code_lines.push_back(absl::Substitute("$0 $1 = {};", GenScalarType(var.type()), var.name()));
+  code_lines.push_back(absl::Substitute("$0 $1 = {};", GetScalarTypeCName(var.type()), var.name()));
   code_lines.push_back(absl::Substitute("$0.len = $1;", var.name(), size));
   code_lines.push_back(absl::Substitute("bpf_probe_read(&$0.buf, $1, $2 + $3);", var.name(), size,
                                         var.memory().base(), var.memory().offset()));
@@ -332,9 +333,9 @@ std::vector<std::string> GenStructBlobMemoryVariable(const ScalarVariable& var) 
 
 std::vector<std::string> GenMemoryVariable(const ScalarVariable& var) {
   std::vector<std::string> code_lines;
-  code_lines.push_back(absl::Substitute("$0 $1;", GenScalarType(var.type()), var.name()));
+  code_lines.push_back(absl::Substitute("$0 $1;", GetScalarTypeCName(var.type()), var.name()));
   code_lines.push_back(absl::Substitute("bpf_probe_read(&$0, sizeof($1), $2 + $3);", var.name(),
-                                        GenScalarType(var.type()), var.memory().base(),
+                                        GetScalarTypeCName(var.type()), var.memory().base(),
                                         var.memory().offset()));
   return code_lines;
 }
@@ -350,11 +351,11 @@ std::string GenBPFHelper(const ScalarVariable& var) {
   };
   auto iter = kBPFHelpers.find(var.builtin());
   DCHECK(iter != kBPFHelpers.end());
-  return absl::Substitute("$0 $1 = $2;", GenScalarType(var.type()), var.name(), iter->second);
+  return absl::Substitute("$0 $1 = $2;", GetScalarTypeCName(var.type()), var.name(), iter->second);
 }
 
 std::string GenConstant(const ScalarVariable& var) {
-  return absl::Substitute("const $0 $1 = $2;", GenScalarType(var.type()), var.name(),
+  return absl::Substitute("const $0 $1 = $2;", GetScalarTypeCName(var.type()), var.name(),
                           var.constant());
 }
 
@@ -368,8 +369,8 @@ std::string_view GenOp(BinaryExpression::Op op) {
 
 std::string GenBinaryExpression(const ScalarVariable& var) {
   const auto& expr = var.binary_expr();
-  return absl::Substitute("$0 $1 = $2 $3 $4;", GenScalarType(var.type()), var.name(), expr.lhs(),
-                          GenOp(expr.op()), expr.rhs());
+  return absl::Substitute("$0 $1 = $2 $3 $4;", GetScalarTypeCName(var.type()), var.name(),
+                          expr.lhs(), GenOp(expr.op()), expr.rhs());
 }
 
 std::vector<std::string> GenMemberExpression(const ScalarVariable& var) {
@@ -380,11 +381,11 @@ std::vector<std::string> GenMemberExpression(const ScalarVariable& var) {
     // * Let MemberVariable specify a default.
     return {
         absl::Substitute("if ($0 == NULL) { return 0; }", expr.struct_base()),
-        absl::Substitute("$0 $1 = $2->$3;", GenScalarType(var.type()), var.name(),
+        absl::Substitute("$0 $1 = $2->$3;", GetScalarTypeCName(var.type()), var.name(),
                          expr.struct_base(), expr.field()),
     };
   }
-  return {absl::Substitute("$0 $1 = $2.$3;", GenScalarType(var.type()), var.name(),
+  return {absl::Substitute("$0 $1 = $2.$3;", GetScalarTypeCName(var.type()), var.name(),
                            expr.struct_base(), expr.field())};
 }
 
