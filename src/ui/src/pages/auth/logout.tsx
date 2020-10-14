@@ -8,6 +8,8 @@ export const LogoutPage = () => {
   // eslint-disable-next-line class-methods-use-this
   React.useEffect(() => {
     Axios.post('/api/auth/logout').then(() => {
+      localStorage.clear();
+      sessionStorage.clear();
       RedirectUtils.redirect('', {});
     });
   }, []);
