@@ -82,6 +82,83 @@ Status DynamicTraceConnector::InitImpl() {
 
 namespace {
 
+// Parses the content of the input bytes based on the schema in the StructSpec,
+// and returns the content as JSON string.
+StatusOr<std::string> ParseStructBlobToJSON(const StructSpec& struct_spec, std::string_view bytes) {
+  rapidjson::Document d;
+  d.SetObject();
+  for (const auto& entry : struct_spec.entries()) {
+    const void* ptr = bytes.data() + entry.offset();
+
+#define CASE(type)                                        \
+  {                                                       \
+    type tmp = MemCpy<type>(ptr);                         \
+    rapidjson::Pointer(entry.path().c_str()).Set(d, tmp); \
+    break;                                                \
+  }
+    switch (entry.type()) {
+      case ScalarType::BOOL:
+        CASE(bool);
+      case ScalarType::INT:
+        CASE(int);
+      case ScalarType::INT8:
+        CASE(int8_t);
+      case ScalarType::INT16:
+        CASE(int16_t);
+      case ScalarType::INT32:
+        CASE(int32_t);
+      case ScalarType::INT64:
+        CASE(int64_t);
+      case ScalarType::UINT:
+        CASE(unsigned int);
+      case ScalarType::UINT8:
+        CASE(uint8_t);
+      case ScalarType::UINT16:
+        CASE(uint16_t);
+      case ScalarType::UINT32:
+        CASE(uint32_t);
+      case ScalarType::UINT64:
+        CASE(uint64_t);
+      case ScalarType::SHORT:
+        // NOLINTNEXTLINE(runtime/int)
+        CASE(short);
+      case ScalarType::USHORT:
+        // NOLINTNEXTLINE(runtime/int)
+        CASE(unsigned short);
+      case ScalarType::LONG:
+        // NOLINTNEXTLINE(runtime/int)
+        CASE(long);
+      case ScalarType::ULONG:
+        // NOLINTNEXTLINE(runtime/int)
+        CASE(unsigned long);
+      case ScalarType::LONGLONG:
+        // NOLINTNEXTLINE(runtime/int)
+        CASE(int64_t);  // NOTE: had to change from "long long" for rapidjson
+      case ScalarType::ULONGLONG:
+        // NOLINTNEXTLINE(runtime/int)
+        CASE(uint64_t);  // NOTE: had to change from "unsigned long long" for rapidjson
+      case ScalarType::CHAR:
+        CASE(char);
+      case ScalarType::UCHAR:
+        CASE(unsigned char);
+      case ScalarType::FLOAT:
+        CASE(float);
+      case ScalarType::DOUBLE:
+        CASE(double);
+      case ScalarType::VOID_POINTER:
+        CASE(uint64_t);
+      default:
+        LOG(DFATAL) << absl::Substitute("Unhandled type=$0", entry.type());
+    }
+  }
+#undef CASE
+
+  rapidjson::StringBuffer sb;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+  d.Accept(writer);
+  return std::string(sb.GetString());
+}
+
 // Reads a byte sequence representing a packed C/C++ struct, and extract the values of the fields.
 class StructDecoder {
  public:
@@ -156,79 +233,7 @@ class StructDecoder {
     PL_ASSIGN_OR_RETURN(size_t len, ExtractField<size_t>());
     std::string_view bytes = buf_.substr(0, len);
     buf_.remove_prefix(dynamic_tracing::kStructBlobSize - sizeof(size_t));
-
-    rapidjson::Document d;
-    d.SetObject();
-    for (const auto& entry : col_decoder.entries()) {
-      const char* ptr = bytes.data() + entry.offset();
-
-#define CASE(type)                                       \
-  {                                                      \
-    type p2 = MemCpy<type>(ptr);                         \
-    rapidjson::Pointer(entry.path().c_str()).Set(d, p2); \
-    break;                                               \
-  }
-
-      switch (entry.type()) {
-        case ScalarType::BOOL:
-          CASE(bool);
-        case ScalarType::INT:
-          CASE(int);
-        case ScalarType::INT8:
-          CASE(int8_t);
-        case ScalarType::INT16:
-          CASE(int16_t);
-        case ScalarType::INT32:
-          CASE(int32_t);
-        case ScalarType::INT64:
-          CASE(int64_t);
-        case ScalarType::UINT:
-          CASE(unsigned int);
-        case ScalarType::UINT8:
-          CASE(uint8_t);
-        case ScalarType::UINT16:
-          CASE(uint16_t);
-        case ScalarType::UINT32:
-          CASE(uint32_t);
-        case ScalarType::UINT64:
-          CASE(uint64_t);
-        case ScalarType::SHORT:
-          // NOLINTNEXTLINE(runtime/int)
-          CASE(short);
-        case ScalarType::USHORT:
-          // NOLINTNEXTLINE(runtime/int)
-          CASE(unsigned short);
-        case ScalarType::LONG:
-          // NOLINTNEXTLINE(runtime/int)
-          CASE(long);
-        case ScalarType::ULONG:
-          // NOLINTNEXTLINE(runtime/int)
-          CASE(unsigned long);
-        case ScalarType::LONGLONG:
-          // NOLINTNEXTLINE(runtime/int)
-          CASE(int64_t);  // NOTE: had to change from "long long" for rapidjson
-        case ScalarType::ULONGLONG:
-          // NOLINTNEXTLINE(runtime/int)
-          CASE(uint64_t);  // NOTE: had to change from "unsigned long long" for rapidjson
-        case ScalarType::CHAR:
-          CASE(char);
-        case ScalarType::UCHAR:
-          CASE(unsigned char);
-        case ScalarType::FLOAT:
-          CASE(float);
-        case ScalarType::DOUBLE:
-          CASE(double);
-        case ScalarType::VOID_POINTER:
-          CASE(uint64_t);
-        default:
-          LOG(DFATAL) << absl::Substitute("Unhandled type=$0", entry.type());
-      }
-    }
-
-    rapidjson::StringBuffer sb;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
-    d.Accept(writer);
-    return std::string(sb.GetString());
+    return ParseStructBlobToJSON(col_decoder, bytes);
   }
 
  private:
