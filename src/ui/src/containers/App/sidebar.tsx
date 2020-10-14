@@ -299,7 +299,6 @@ const SideBar = ({ classes }) => {
 
   const { selectedClusterName } = React.useContext(ClusterContext);
   const { user } = React.useContext(UserContext);
-  const { announcekit } = useFlags();
   const { data } = useQuery(GET_USER_INFO, { fetchPolicy: 'network-only' });
 
   const navItems = React.useMemo(() => (
@@ -342,33 +341,29 @@ const SideBar = ({ classes }) => {
         </List>
         <div className={classes.spacer} />
         <List>
-          { announcekit
-            && (
-              <Tooltip title='Announcements'>
-                <div className={classes.announcekit}>
-                  <AnnounceKit
-                    widget='https://announcekit.app/widgets/v2/1okO1W'
-                    user={
-                      {
-                        id: user.email,
-                        email: user.email,
-                      }
-                    }
-                    data={
-                      {
-                        org: user.orgName,
-                      }
-                    }
-                  >
-                    <ListItem button key='annoucements' className={classes.listIcon}>
-                      <ListItemIcon><AnnouncementIcon className={classes.icon} /></ListItemIcon>
-                      <ListItemText primary='Announcements' />
-                    </ListItem>
-                  </AnnounceKit>
-                </div>
-              </Tooltip>
-            )}
-
+          <Tooltip title='Announcements'>
+            <div className={classes.announcekit}>
+              <AnnounceKit
+                widget='https://announcekit.app/widgets/v2/1okO1W'
+                user={
+                  {
+                    id: user.email,
+                    email: user.email,
+                  }
+                }
+                data={
+                  {
+                    org: user.orgName,
+                  }
+                }
+              >
+                <ListItem button key='annoucements' className={classes.listIcon}>
+                  <ListItemIcon><AnnouncementIcon className={classes.icon} /></ListItemIcon>
+                  <ListItemText primary='Announcements' />
+                </ListItem>
+              </AnnounceKit>
+            </div>
+          </Tooltip>
           <SideBarExternalLinkItem
             key='Docs'
             classes={classes}
