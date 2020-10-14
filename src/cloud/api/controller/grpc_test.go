@@ -140,6 +140,13 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 						CreatedAt: &types.Timestamp{Seconds: 1561230620},
 					},
 				},
+				Events: []*cvmsgspb.K8SEvent{
+					&cvmsgspb.K8SEvent{
+						Message:   "this is a test event",
+						FirstTime: &types.Timestamp{Seconds: 1561230620},
+						LastTime:  &types.Timestamp{Seconds: 1561230625},
+					},
+				},
 				StatusMessage: "pod message",
 				Reason:        "pod reason",
 				CreatedAt:     &types.Timestamp{Seconds: 1561230621},
@@ -170,6 +177,13 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 					Message:   "container message",
 					Reason:    "container reason",
 					CreatedAt: &types.Timestamp{Seconds: 1561230620},
+				},
+			},
+			Events: []*cloudapipb.K8SEvent{
+				&cloudapipb.K8SEvent{
+					Message:   "this is a test event",
+					FirstTime: &types.Timestamp{Seconds: 1561230620},
+					LastTime:  &types.Timestamp{Seconds: 1561230625},
 				},
 			},
 			StatusMessage: "pod message",

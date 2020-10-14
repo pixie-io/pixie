@@ -52,6 +52,13 @@ func TestClusterInfoWithoutID(t *testing.T) {
 					CreatedAt: &types.Timestamp{Seconds: 1561230620},
 				},
 			},
+			Events: []*cloudapipb.K8SEvent{
+				&cloudapipb.K8SEvent{
+					Message:   "this is a test event",
+					LastTime:  &types.Timestamp{Seconds: 1561230620},
+					FirstTime: &types.Timestamp{Seconds: 1561230621},
+				},
+			},
 			StatusMessage: "pod message",
 			Reason:        "pod reason",
 			CreatedAt:     &types.Timestamp{Seconds: 1561230621},
@@ -116,6 +123,11 @@ func TestClusterInfoWithoutID(t *testing.T) {
 								reason
 								message
 							}
+							events {
+								message
+								lastTimeMs
+								firstTimeMs
+							}
 						}
 						numNodes
 						numInstrumentedNodes
@@ -147,14 +159,20 @@ func TestClusterInfoWithoutID(t *testing.T) {
 							"message": "pod message",
 							"name": "vizier-proxy",
 							"reason": "pod reason",
-							"status": "RUNNING"
+							"status": "RUNNING",
+							"events": [{
+								"firstTimeMs": 1561230621000,
+								"lastTimeMs": 1561230620000,
+								"message": "this is a test event"
+							}]
 						}, {
 							"containers": [],
 							"createdAtMs": 0,
 							"message": "",
 							"name": "vizier-query-broker",
 							"reason": "",
-							"status": "RUNNING"
+							"status": "RUNNING",
+							"events": []
 						}],
 						"numNodes": 3,
 						"numInstrumentedNodes": 2

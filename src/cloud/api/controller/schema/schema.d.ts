@@ -115,6 +115,7 @@ export interface GQLPodStatus {
   message?: string;
   reason?: string;
   containers: Array<GQLContainerStatus>;
+  events: Array<GQLK8sEvent>;
 }
 
 export interface GQLContainerStatus {
@@ -123,6 +124,12 @@ export interface GQLContainerStatus {
   state: string;
   message?: string;
   reason?: string;
+}
+
+export interface GQLK8sEvent {
+  message?: string;
+  firstTimeMs: number;
+  lastTimeMs: number;
 }
 
 export interface GQLClusterConnectionInfo {
@@ -298,6 +305,7 @@ export interface GQLResolver {
   VizierConfig?: GQLVizierConfigTypeResolver;
   PodStatus?: GQLPodStatusTypeResolver;
   ContainerStatus?: GQLContainerStatusTypeResolver;
+  K8sEvent?: GQLK8sEventTypeResolver;
   ClusterConnectionInfo?: GQLClusterConnectionInfoTypeResolver;
   CLIArtifact?: GQLCLIArtifactTypeResolver;
   ArtifactsInfo?: GQLArtifactsInfoTypeResolver;
@@ -524,6 +532,7 @@ export interface GQLPodStatusTypeResolver<TParent = any> {
   message?: PodStatusToMessageResolver<TParent>;
   reason?: PodStatusToReasonResolver<TParent>;
   containers?: PodStatusToContainersResolver<TParent>;
+  events?: PodStatusToEventsResolver<TParent>;
 }
 
 export interface PodStatusToNameResolver<TParent = any, TResult = any> {
@@ -547,6 +556,10 @@ export interface PodStatusToReasonResolver<TParent = any, TResult = any> {
 }
 
 export interface PodStatusToContainersResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface PodStatusToEventsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
@@ -575,6 +588,24 @@ export interface ContainerStatusToMessageResolver<TParent = any, TResult = any> 
 }
 
 export interface ContainerStatusToReasonResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLK8sEventTypeResolver<TParent = any> {
+  message?: K8sEventToMessageResolver<TParent>;
+  firstTimeMs?: K8sEventToFirstTimeMsResolver<TParent>;
+  lastTimeMs?: K8sEventToLastTimeMsResolver<TParent>;
+}
+
+export interface K8sEventToMessageResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface K8sEventToFirstTimeMsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface K8sEventToLastTimeMsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

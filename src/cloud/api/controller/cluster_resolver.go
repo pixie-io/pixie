@@ -59,17 +59,46 @@ func podStatusToResolver(podStatus *cloudapipb.PodStatus) (*PodStatusResolver, e
 		containers = append(containers, c)
 	}
 
+	var events []*K8sEventResolver
+	for _, ev := range podStatus.Events {
+		e, err := k8sEventToResolver(ev)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, e)
+	}
+
 	resolver := &PodStatusResolver{
 		name:       podStatus.Name,
 		status:     podStatus.Status.String(),
 		message:    &podStatus.StatusMessage,
 		reason:     &podStatus.Reason,
 		containers: containers,
+		events:     events,
 	}
 
 	if podStatus.CreatedAt != nil {
 		resolver.createdAtNS = timestampProtoToNanos(podStatus.CreatedAt)
 	}
+	return resolver, nil
+}
+
+func k8sEventToResolver(event *cloudapipb.K8SEvent) (*K8sEventResolver, error) {
+	if event == nil {
+		return nil, errors.New("got nil k8s event")
+	}
+
+	resolver := &K8sEventResolver{
+		message: &event.Message,
+	}
+
+	if event.FirstTime != nil {
+		resolver.firstTimeNS = timestampProtoToNanos(event.FirstTime)
+	}
+	if event.LastTime != nil {
+		resolver.lastTimeNS = timestampProtoToNanos(event.LastTime)
+	}
+
 	return resolver, nil
 }
 
@@ -235,6 +264,7 @@ type PodStatusResolver struct {
 	message     *string
 	reason      *string
 	containers  []*ContainerStatusResolver
+	events      []*K8sEventResolver
 }
 
 // Name returns pod name.
@@ -265,6 +295,11 @@ func (p *PodStatusResolver) Reason() *string {
 // Containers returns pod container states.
 func (p *PodStatusResolver) Containers() []*ContainerStatusResolver {
 	return p.containers
+}
+
+// Events returns the events belonging to the pod.
+func (p *PodStatusResolver) Events() []*K8sEventResolver {
+	return p.events
 }
 
 // ClusterInfoResolver is the resolver responsible for cluster info.
@@ -392,4 +427,26 @@ func (c *ClusterConnectionInfoResolver) IPAddress() string {
 // Token returns the connection's token.
 func (c *ClusterConnectionInfoResolver) Token() string {
 	return c.token
+}
+
+// K8sEventResolver is a resolver for k8s events.
+type K8sEventResolver struct {
+	message     *string
+	firstTimeNS int64
+	lastTimeNS  int64
+}
+
+// FirstTimeMs returns the timestamp of when the event first occurred.
+func (k *K8sEventResolver) FirstTimeMs() float64 {
+	return float64(k.firstTimeNS) / 1e6
+}
+
+// LastTimeMs returns the timestamp of when the event last occurred.
+func (k *K8sEventResolver) LastTimeMs() float64 {
+	return float64(k.lastTimeNS) / 1e6
+}
+
+// Message returns the event message.
+func (k *K8sEventResolver) Message() *string {
+	return k.message
 }

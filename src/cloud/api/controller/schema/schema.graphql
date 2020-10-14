@@ -140,6 +140,12 @@ type ContainerStatus {
   reason: String
 }
 
+type K8sEvent {
+  message: String
+  firstTimeMs: Float!
+  lastTimeMs: Float!
+}
+
 type PodStatus {
   name: String!
   createdAtMs: Float!
@@ -147,6 +153,7 @@ type PodStatus {
   message: String
   reason: String
   containers: [ContainerStatus!]!
+  events: [K8sEvent!]!
 }
 
 type ClusterInfo {
