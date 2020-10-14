@@ -88,21 +88,20 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   Status DisableSelfTracing();
 
   /**
-   * @brief Number of active ConnectionTrackers.
+   * Returns number of active ConnectionTrackers.
    *
-   * Note: Multiple ConnectionTrackers on same TGID+FD are counted as 1.
+   * Note: Multiple ConnectionTrackers on same TGID+FD are counted as one.
    */
   size_t NumActiveConnections() const { return connection_trackers_.size(); }
 
   ConnectionTracker& GetMutableConnTracker(struct conn_id_t conn_id);
 
   /**
-   * @brief Gets a pointer to a ConnectionTracker by conn_id.
+   * Gets a pointer to the most recent ConnectionTracker for the given pid and fd.
    *
-   * @param connid The connection to get.
    * @return Pointer to the ConnectionTracker, or nullptr if it does not exist.
    */
-  const ConnectionTracker* GetConnectionTracker(struct conn_id_t conn_id) const;
+  const ConnectionTracker* GetConnectionTracker(uint32_t pid, uint32_t fd) const;
 
  private:
   // ReadPerfBuffers poll callback functions (must be static).

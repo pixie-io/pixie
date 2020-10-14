@@ -798,11 +798,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
     EXPECT_EQ(1, source_->NumActiveConnections());
   }
 
-  conn_id_t search_conn_id;
-  search_conn_id.upid.pid = real_pid;
-  search_conn_id.fd = real_fd;
-  search_conn_id.tsid = 1;
-  const ConnectionTracker* tracker = source_->GetConnectionTracker(search_conn_id);
+  const ConnectionTracker* tracker = source_->GetConnectionTracker(real_pid, real_fd);
   ASSERT_NE(nullptr, tracker);
 
   sleep(2);

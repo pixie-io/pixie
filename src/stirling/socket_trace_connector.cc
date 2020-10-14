@@ -922,8 +922,8 @@ void SocketTraceConnector::HandleHTTP2DataLoss(void* /*cb_cookie*/, uint64_t los
 
 namespace {
 
-uint64_t GetConnMapKey(struct conn_id_t conn_id) {
-  return (static_cast<uint64_t>(conn_id.upid.pid) << 32) | conn_id.fd;
+uint64_t GetConnMapKey(uint32_t pid, uint32_t fd) {
+  return (static_cast<uint64_t>(pid) << 32) | fd;
 }
 
 void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEvent* pb) {
@@ -982,16 +982,16 @@ void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event
 }
 
 ConnectionTracker& SocketTraceConnector::GetMutableConnTracker(struct conn_id_t conn_id) {
-  const uint64_t conn_map_key = GetConnMapKey(conn_id);
+  const uint64_t conn_map_key = GetConnMapKey(conn_id.upid.pid, conn_id.fd);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
   auto& conn_tracker = connection_trackers_[conn_map_key][conn_id.tsid];
   conn_tracker.set_conn_stats(&connection_stats_);
   return conn_tracker;
 }
 
-const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(
-    struct conn_id_t conn_id) const {
-  const uint64_t conn_map_key = GetConnMapKey(conn_id);
+const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(uint32_t pid,
+                                                                    uint32_t fd) const {
+  const uint64_t conn_map_key = GetConnMapKey(pid, fd);
 
   auto tracker_set_it = connection_trackers_.find(conn_map_key);
   if (tracker_set_it == connection_trackers_.end()) {
@@ -999,11 +999,15 @@ const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(
   }
 
   const auto& tracker_generations = tracker_set_it->second;
-  auto tracker_it = tracker_generations.find(conn_id.tsid);
-  if (tracker_it == tracker_generations.end()) {
+
+  if (tracker_generations.empty()) {
+    DCHECK(false);
     return nullptr;
   }
 
+  // Return last connection.
+  auto tracker_it = tracker_generations.end();
+  --tracker_it;
   return &tracker_it->second;
 }
 
