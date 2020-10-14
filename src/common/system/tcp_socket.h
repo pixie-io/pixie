@@ -10,9 +10,9 @@ namespace pl {
 namespace system {
 
 /**
- * @brief A simple wrapper of the syscalls for IPv4 TCP socket.
+ * A simple wrapper of the syscalls for IPv4 TCP socket.
  *
- * Note: Not yet ready for use in production code. This class uses CHECKs instead of Status/error.
+ * Note: Not meant for use in production code. This class uses CHECKs instead of Status/error.
  */
 class TCPSocket {
  public:
@@ -24,10 +24,8 @@ class TCPSocket {
   void Connect(const TCPSocket& addr);
   void Close();
 
-  int sockfd() { return sockfd_; }
-  struct in_addr addr() {
-    return addr_.sin_addr;
-  }
+  int sockfd() const { return sockfd_; }
+  const struct in_addr& addr() const { return addr_.sin_addr; }
   in_port_t port() const { return addr_.sin_port; }
 
   ssize_t Write(std::string_view data) const;

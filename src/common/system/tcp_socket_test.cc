@@ -107,7 +107,7 @@ TEST(TCPSocketTest, ServerAddrAndPort) {
     EXPECT_EQ(server_addr, "0.0.0.0");
   }
 
-  // Check th client address and port.
+  // Check the client address and port.
   {
     client.Connect(server);
     std::string client_addr;
@@ -117,7 +117,7 @@ TEST(TCPSocketTest, ServerAddrAndPort) {
     inet_ntop(AF_INET, &client_in_addr, client_addr.data(), INET_ADDRSTRLEN);
     client_addr.erase(client_addr.find('\0'));
 
-    uint16_t client_port = ntohs(server.port());
+    uint16_t client_port = ntohs(client.port());
 
     EXPECT_GT(client_port, 0);
     EXPECT_EQ(client_addr, "127.0.0.1");
