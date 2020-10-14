@@ -135,5 +135,24 @@ TFloatType BEndianBytesToFloat(std::string_view buf) {
   return ReverseBytes<TFloatType>(ptr);
 }
 
+template <typename TValueType>
+TValueType MemCpy(const void* buf) {
+  TValueType tmp;
+  memcpy(&tmp, buf, sizeof(tmp));
+  return tmp;
+}
+
+template <typename TValueType, typename TByteType>
+TValueType MemCpy(std::basic_string_view<TByteType> buf) {
+  static_assert(sizeof(TByteType) == 1);
+  return MemCpy<TValueType>(static_cast<const void*>(buf.data()));
+}
+
+template <typename TValueType, typename TByteType>
+TValueType MemCpy(const TByteType* buf) {
+  static_assert(sizeof(TByteType) == 1);
+  return MemCpy<TValueType>(static_cast<const void*>(buf));
+}
+
 }  // namespace utils
 }  // namespace pl

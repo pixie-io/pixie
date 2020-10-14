@@ -196,5 +196,30 @@ TEST(UtilsTest, TestBEndianBytesToFloatUnAligned) {
   EXPECT_DOUBLE_EQ(BEndianBytesToFloat<double>(unaligned_double_bytes), 10.2);
 }
 
+TEST(UtilsTest, MemCpy) {
+  constexpr char kCharArr[] = {'\x01', '\x02', '\x03', '\x04', '\x05', '\x00'};
+  constexpr uint8_t kUint8Arr[] = {'\x01', '\x02', '\x03', '\x04', '\x05', '\x00'};
+
+  {
+    std::string_view view(kCharArr);
+    int val = MemCpy<int>(view);
+    EXPECT_EQ(val, 0x04030201);
+    val = MemCpy<int>(kCharArr);
+    EXPECT_EQ(val, 0x04030201);
+    // Wont trigger ubsan error of accessing unaligned address.
+    val = MemCpy<int>(kCharArr + 1);
+    EXPECT_EQ(val, 0x05040302);
+  }
+  {
+    std::basic_string_view<uint8_t> view(kUint8Arr);
+    int val = MemCpy<int>(view);
+    EXPECT_EQ(val, 0x04030201);
+    val = MemCpy<int>(kUint8Arr);
+    EXPECT_EQ(val, 0x04030201);
+    val = MemCpy<int>(kUint8Arr + 1);
+    EXPECT_EQ(val, 0x05040302);
+  }
+}
+
 }  // namespace utils
 }  // namespace pl

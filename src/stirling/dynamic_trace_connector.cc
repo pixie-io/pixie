@@ -5,6 +5,7 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
+#include "src/common/base/base.h"
 #include "src/shared/types/proto/types.pb.h"
 #include "src/stirling/dynamic_tracing/dynamic_tracer.h"
 
@@ -16,6 +17,7 @@ using ::google::protobuf::RepeatedPtrField;
 using ::pl::stirling::dynamic_tracing::ir::physical::Struct;
 using ::pl::stirling::dynamic_tracing::ir::physical::StructSpec;
 using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
+using ::pl::utils::MemCpy;
 
 namespace {
 
@@ -90,8 +92,7 @@ class StructDecoder {
     if (buf_.size() < sizeof(NativeScalarType)) {
       return error::ResourceUnavailable("Insufficient number of bytes.");
     }
-    NativeScalarType val = {};
-    std::memcpy(&val, buf_.data(), sizeof(NativeScalarType));
+    auto val = MemCpy<NativeScalarType>(buf_);
     buf_.remove_prefix(sizeof(NativeScalarType));
     return val;
   }
@@ -112,9 +113,7 @@ class StructDecoder {
     //
     // TODO(oazizi): Find a better way to keep these in sync.
     PL_ASSIGN_OR_RETURN(size_t len, ExtractField<size_t>());
-    std::string s;
-    s.resize(len);
-    std::memcpy(s.data(), buf_.data(), len);
+    std::string s(buf_.substr(0, len));
     buf_.remove_prefix(dynamic_tracing::kStructStringSize - sizeof(size_t) - 1);
     PL_ASSIGN_OR_RETURN(uint8_t truncated, ExtractField<uint8_t>());
 
@@ -140,13 +139,13 @@ class StructDecoder {
     //
     // TODO(oazizi): Find a better way to keep these in sync.
     PL_ASSIGN_OR_RETURN(size_t len, ExtractField<size_t>());
-    std::basic_string<uint8_t> bytes;
-    bytes.resize(len);
-    std::memcpy(bytes.data(), buf_.data(), len);
+
+    std::string_view bytes = buf_.substr(0, len);
+
     buf_.remove_prefix(dynamic_tracing::kStructByteArraySize - sizeof(size_t) - 1);
     PL_ASSIGN_OR_RETURN(uint8_t truncated, ExtractField<uint8_t>());
 
-    std::string s = BytesToString<bytes_format::HexCompact>(CreateStringView<char>(bytes));
+    std::string s = BytesToString<bytes_format::HexCompact>(bytes);
     if (truncated) {
       absl::StrAppend(&s, "<truncated>");
     }
@@ -155,21 +154,19 @@ class StructDecoder {
 
   StatusOr<std::string> ExtractStructBlobAsJSON(const StructSpec& col_decoder) {
     PL_ASSIGN_OR_RETURN(size_t len, ExtractField<size_t>());
-    std::string bytes;
-    bytes.resize(len);
-    std::memcpy(bytes.data(), buf_.data(), len);
+    std::string_view bytes = buf_.substr(0, len);
     buf_.remove_prefix(dynamic_tracing::kStructBlobSize - sizeof(size_t));
 
     rapidjson::Document d;
     d.SetObject();
     for (const auto& entry : col_decoder.entries()) {
-      void* ptr = bytes.data() + entry.offset();
+      const char* ptr = bytes.data() + entry.offset();
 
-#define CASE(type)                                        \
-  {                                                       \
-    type* p2 = reinterpret_cast<type*>(ptr);              \
-    rapidjson::Pointer(entry.path().c_str()).Set(d, *p2); \
-    break;                                                \
+#define CASE(type)                                       \
+  {                                                      \
+    type p2 = MemCpy<type>(ptr);                         \
+    rapidjson::Pointer(entry.path().c_str()).Set(d, p2); \
+    break;                                               \
   }
 
       switch (entry.type()) {
