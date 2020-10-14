@@ -61,7 +61,7 @@ export const LiveShortcutsContext = React.createContext<ShortcutsContextProps<Li
  * A behavior adjustment for hotkey handlers. Blocks triggers for shortcuts that would change text, focus, or selection.
  * Thus, binding `Shift+/` will emit `?` in text fields and perform its bound function otherwise (for example).
  */
-const handlerWrapper = (handler) => (e) => {
+const handlerWrapper = (handler) => (e?: KeyboardEvent) => {
   const active = document.activeElement;
   const editable = active?.tagName === 'INPUT'
       || active?.tagName === 'TEXTAREA'
@@ -69,7 +69,7 @@ const handlerWrapper = (handler) => (e) => {
   // Of note: this means the Tab key, if bound, will do its bound function unless tabbing away from an editable element.
   // Recommendation: don't bind Tab in a global shortcut. That isn't a very nice thing to do.
   if (!editable) {
-    e.preventDefault();
+    e?.preventDefault();
     handler();
     return;
   }
@@ -80,9 +80,9 @@ const handlerWrapper = (handler) => (e) => {
    * suppressed and the element receives the event normally. Otherwise, we run the handler. This is imperfect: users can
    * change their OS shortcuts. However, these assumptions cover the typical defaults for a US-ASCII keyboard layout.
    */
-  if ((e.ctrlKey || e.metaKey || e.altKey)
-      && !['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight', 'Home', 'End', 'PageDown', 'PageUp'].includes(e.key)) {
-    e.preventDefault();
+  if ((e?.ctrlKey || e?.metaKey || e?.altKey)
+      && !['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight', 'Home', 'End', 'PageDown', 'PageUp'].includes(e?.key)) {
+    e?.preventDefault();
     handler();
   }
 };

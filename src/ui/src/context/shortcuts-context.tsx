@@ -1,7 +1,7 @@
 type Action = string;
 
-export type Handlers<T extends Action> = {
-  [action in T]: <E extends Event = Event>(e?: E) => void;
+export type Handlers<T extends Action, E extends UIEvent = KeyboardEvent> = {
+  [action in T]: (e?: E) => void;
 };
 
 export type KeyMap<T extends Action> = {
