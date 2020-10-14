@@ -1,4 +1,4 @@
-import { DOMAIN_NAME } from 'containers/constants';
+import { DOMAIN_NAME, SEGMENT_UI_WRITE_KEY } from 'containers/constants';
 import { format } from 'date-fns';
 
 const { BUILD_NUMBER } = process.env;
@@ -33,4 +33,14 @@ export function isStaging(): boolean {
 
 export function isProd(): boolean {
   return !isDev() && !isStaging();
+}
+
+function isValidSegmentKey(k) {
+  // The TS compiler is really smart and is optmizing away the checks,
+  // which is why this check is so convoluted...
+  return k && !k.startsWith('__S');
+}
+
+export function isValidAnalytics(): boolean {
+  return isValidSegmentKey(SEGMENT_UI_WRITE_KEY);
 }

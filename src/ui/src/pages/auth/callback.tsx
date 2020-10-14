@@ -5,6 +5,7 @@ import * as QueryString from 'querystring';
 import Axios, { AxiosError } from 'axios';
 import * as RedirectUtils from 'utils/redirect-utils';
 import { Grid } from '@material-ui/core';
+import { isValidAnalytics } from 'utils/env';
 import { MessageBox } from '../../components/auth/message';
 import { BasePage } from './base';
 import { AuthCallbackMode } from './utils';
@@ -96,14 +97,16 @@ export const AuthCallbackPage = () => {
           orgName,
         });
         analytics.identify(response.data.userInfo.userID);
-        await new Promise((resolve, reject) => { // Wait for analytics to be sent out before redirecting.
-          analytics.track('User logged up', (err) => {
-            if (err) {
-              reject();
-            }
-            resolve();
+        if (isValidAnalytics()) {
+          await new Promise((resolve, reject) => { // Wait for analytics to be sent out before redirecting.
+            analytics.track('User logged up', (err) => {
+              if (err) {
+                reject();
+              }
+              resolve();
+            });
           });
-        });
+        }
         return true;
       } catch (err) {
         analytics.track('User signup failed', { error: err.response.data });
