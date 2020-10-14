@@ -73,6 +73,10 @@ class Dwarvifier {
                                     const TypeInfo& type_info, const std::string& var_name,
                                     ir::physical::Probe* output_probe);
 
+  // Used by ProcessVarExpr() to handle a Struct variable.
+  Status ProcessStructBlob(const std::string& base, uint64_t offset, const TypeInfo& type_info,
+                           const std::string& var_name, ir::physical::Probe* output_probe);
+
   // The input components describes a sequence of field of nesting structures. The first component
   // is the name of an input argument of a function, or an expression to describe the index of an
   // return value of the function.
@@ -561,21 +565,23 @@ Status Dwarvifier::ProcessConstants(const ir::logical::Constant& constant,
 }
 
 namespace {
-Status PopulateStructSpecProto(const std::vector<StructSpecEntry>& struct_spec,
-                               ir::shared::Language lang,
-                               ir::physical::StructSpec* struct_spec_proto) {
-  for (const auto& e : struct_spec) {
+
+StatusOr<ir::physical::StructSpec> CreateStructSpecProto(
+    const std::vector<StructSpecEntry>& struct_spec_entires, ir::shared::Language lang) {
+  ir::physical::StructSpec struct_spec;
+
+  for (const auto& e : struct_spec_entires) {
     PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type,
                         VarTypeToProtoScalarType(e.type_info, lang));
 
-    auto* entry_proto = struct_spec_proto->add_entries();
+    auto* entry_proto = struct_spec.add_entries();
     entry_proto->set_offset(e.offset);
     entry_proto->set_size(e.size);
     entry_proto->set_type(pb_type);
     entry_proto->set_path(e.path);
   }
 
-  return Status::OK();
+  return struct_spec;
 }
 
 bool IsGolangPointerType(std::string_view type_name) { return absl::StartsWith(type_name, "*"); }
@@ -649,6 +655,29 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
     cond_block->mutable_cond()->add_vars(iface_tab_var->name());
     cond_block->mutable_cond()->add_vars(intf_tab_addr_constant->name());
   }
+  return Status::OK();
+}
+
+Status Dwarvifier::ProcessStructBlob(const std::string& base, uint64_t offset,
+                                     const TypeInfo& type_info, const std::string& var_name,
+                                     ir::physical::Probe* output_probe) {
+  PL_ASSIGN_OR_RETURN(std::vector<StructSpecEntry> struct_spec_entires,
+                      dwarf_reader_->GetStructSpec(type_info.type_name));
+  PL_ASSIGN_OR_RETURN(ir::physical::StructSpec struct_spec_proto,
+                      CreateStructSpecProto(struct_spec_entires, language_));
+
+  // STRUCT_BLOB is special. It is the only type where we specify the size to get copied.
+  PL_ASSIGN_OR_RETURN(uint64_t struct_byte_size,
+                      dwarf_reader_->GetStructByteSize(type_info.type_name));
+
+  RepeatedPtrField<ir::physical::StructSpec> struct_spec;
+  struct_spec.Add(std::move(struct_spec_proto));
+
+  auto var = AddVariable<ScalarVariable>(
+      output_probe, var_name, ir::shared::ScalarType::STRUCT_BLOB, std::move(struct_spec));
+  var->mutable_memory()->set_base(base);
+  var->mutable_memory()->set_offset(offset);
+  var->mutable_memory()->set_size(struct_byte_size);
   return Status::OK();
 }
 
@@ -754,23 +783,7 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
       PL_RETURN_IF_ERROR(
           ProcessGolangInterfaceExpr(base, offset, type_info, var_name, output_probe));
     } else {
-      PL_ASSIGN_OR_RETURN(std::vector<StructSpecEntry> struct_spec,
-                          dwarf_reader_->GetStructSpec(type_info.type_name));
-      ir::physical::StructSpec struct_spec_proto;
-      PL_RETURN_IF_ERROR(PopulateStructSpecProto(struct_spec, language_, &struct_spec_proto));
-
-      // STRUCT_BLOB is special. It is the only type where we specify the size to get copied.
-      PL_ASSIGN_OR_RETURN(uint64_t struct_byte_size,
-                          dwarf_reader_->GetStructByteSize(type_info.type_name));
-
-      RepeatedPtrField<ir::physical::StructSpec> specs;
-      specs.Add(std::move(struct_spec_proto));
-
-      auto var = AddVariable<ScalarVariable>(output_probe, var_name,
-                                             ir::shared::ScalarType::STRUCT_BLOB, std::move(specs));
-      var->mutable_memory()->set_base(base);
-      var->mutable_memory()->set_offset(offset);
-      var->mutable_memory()->set_size(struct_byte_size);
+      PL_RETURN_IF_ERROR(ProcessStructBlob(base, offset, type_info, var_name, output_probe));
     }
   } else {
     return error::Internal("Expected struct or base type, but got type: $0", type_info.ToString());
