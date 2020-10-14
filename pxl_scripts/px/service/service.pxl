@@ -96,38 +96,18 @@ def let_summary_helper(start_time: str):
     '''
     df = let_helper(start_time)
 
-    quantiles_agg = df.groupby(['service', 'remote_addr']).agg(
+    df = df.groupby(['service', 'remote_addr']).agg(
         latency=('latency', px.quantiles),
         total_request_count=('latency', px.count)
+        error_rate=('failure', px.mean),
     )
 
-    quantiles_table = quantiles_agg[['service', 'remote_addr', 'latency',
-                                     'total_request_count']]
+    df.error_rate = px.Percent(df.error_rate)
+    df.responder = df.service
+    df.requestor = px.pod_id_to_service_name(px.ip_to_pod_id(df.remote_addr))
 
-    range_agg = df.groupby(['service', 'remote_addr', 'timestamp']).agg(
-        requests_per_window=('time_', px.count),
-        error_rate=('failure', px.mean)
-    )
-
-    rps_table = range_agg.groupby(['service', 'remote_addr']).agg(
-        requests_per_window=('requests_per_window', px.mean),
-        error_rate=('error_rate', px.mean)
-    )
-
-    joined_table = quantiles_table.merge(rps_table,
-                                         how='inner',
-                                         left_on=['service', 'remote_addr'],
-                                         right_on=['service', 'remote_addr'],
-                                         suffixes=['', '_x'])
-
-    joined_table.error_rate = px.Percent(joined_table.error_rate)
-    joined_table.request_throughput = joined_table.requests_per_window / window_ns
-
-    joined_table.responder = df.service
-    joined_table.requestor = px.pod_id_to_service_name(px.ip_to_pod_id(df.remote_addr))
-
-    return joined_table[['responder', 'requestor', 'remote_addr', 'latency',
-                         'error_rate', 'request_throughput']]
+    return df[['responder', 'requestor', 'remote_addr', 'latency',
+                         'error_rate']]
 
 
 def service_slow_requests(start_time: str, service: px.Service):
