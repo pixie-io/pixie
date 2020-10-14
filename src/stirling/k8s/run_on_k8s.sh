@@ -63,6 +63,12 @@ echo "-------------------------------------------"
 
 make deploy_stirling_daemonset
 
+if [ "$T" -eq 0 ]; then
+  echo "Deployed stirling_wrapper with no time limit."
+  echo "Run \`make delete_stirling_daemonset\` or \`kubectl delete -n pl-${USER}\` when done."
+  exit 0
+fi
+
 echo ""
 echo "-------------------------------------------"
 echo "Waiting ${T} seconds to collect data"
