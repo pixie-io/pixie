@@ -107,7 +107,7 @@ def let_summary_helper(start_time: str):
     df.requestor = px.pod_id_to_service_name(px.ip_to_pod_id(df.remote_addr))
 
     return df[['responder', 'requestor', 'remote_addr', 'latency',
-                         'error_rate']]
+               'error_rate']]
 
 
 def service_slow_requests(start_time: str, service: px.Service):
