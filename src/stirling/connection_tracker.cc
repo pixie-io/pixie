@@ -97,8 +97,8 @@ void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {
   UpdateTimestamps(close_event.timestamp_ns);
 
   close_info_.timestamp_ns = close_event.timestamp_ns;
-  close_info_.send_seq_num = close_event.wr_seq_num;
-  close_info_.recv_seq_num = close_event.rd_seq_num;
+  close_info_.send_bytes = close_event.wr_bytes;
+  close_info_.recv_bytes = close_event.rd_bytes;
 
   MarkForDeath();
 }
@@ -419,8 +419,8 @@ void ConnectionTracker::Disable(std::string_view reason) {
 
 bool ConnectionTracker::AllEventsReceived() const {
   return close_info_.timestamp_ns != 0 &&
-         stats_.Get(Stats::Key::kDataEventSent) == close_info_.send_seq_num &&
-         stats_.Get(Stats::Key::kDataEventRecv) == close_info_.recv_seq_num;
+         stats_.Get(Stats::Key::kBytesSent) == close_info_.send_bytes &&
+         stats_.Get(Stats::Key::kBytesRecv) == close_info_.recv_bytes;
 }
 
 void ConnectionTracker::SetConnID(struct conn_id_t conn_id) {

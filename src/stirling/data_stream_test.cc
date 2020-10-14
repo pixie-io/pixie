@@ -1,6 +1,9 @@
 #include "src/stirling/data_stream.h"
 
+#include <algorithm>
+#include <random>
 #include <utility>
+#include <vector>
 
 #include "src/common/testing/testing.h"
 #include "src/stirling/testing/event_generator.h"
@@ -267,6 +270,48 @@ TEST_F(DataStreamTest, Stats) {
   EXPECT_EQ(stream.stat_raw_data_gaps(), 1);
   EXPECT_EQ(stream.stat_invalid_frames(), 2);
   EXPECT_EQ(stream.stat_valid_frames(), 5);
+}
+
+TEST_F(DataStreamTest, Stress) {
+  constexpr int kIters = 1000;
+
+  std::default_random_engine rng(37777);
+
+  // Pack a bunch of requests together.
+  std::string data;
+  for (int i = 0; i < 100; ++i) {
+    data += kHTTPReq0;
+  }
+
+  // Repeat this randomized test many times.
+  for (int iter = 0; iter < kIters; ++iter) {
+    DataStream stream;
+    testing::EventGenerator event_gen(&real_clock_);
+
+    // Chop the requests in random ways into a number of events.
+    std::string_view d(data);
+    std::vector<std::unique_ptr<SocketDataEvent>> events;
+    std::uniform_int_distribution<size_t> event_dist(1, 2 * kHTTPReq0.size());
+    while (!d.empty()) {
+      size_t len = std::min(event_dist(rng), d.size());
+      events.push_back(event_gen.InitSendEvent<kProtocolHTTP>(d.substr(0, len)));
+      d.remove_prefix(len);
+    }
+
+    // Add the events in shuffled order, and occasionally drop some events.
+    std::shuffle(std::begin(events), std::end(events), rng);
+    std::uniform_real_distribution<double> probability(0, 1.0);
+
+    for (auto& event : events) {
+      // Occasionally drop an event.
+      if (probability(rng) <= 0.99) {
+        stream.AddData(std::move(event));
+      }
+    }
+
+    // Process the events. Here we are looking for any DCHECKS that may fire.
+    stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
+  }
 }
 
 TEST_F(DataStreamTest, CannotSwitchType) {
