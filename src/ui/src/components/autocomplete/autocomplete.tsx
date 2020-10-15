@@ -4,6 +4,7 @@ import * as React from 'react';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
+import useIsMounted from 'utils/use-is-mounted';
 import Completions, {
   CompletionId, CompletionItem, CompletionItems, CompletionTitle,
 } from './completions';
@@ -82,6 +83,7 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
   className,
 }) => {
   const classes = useStyles();
+  const mounted = useIsMounted();
   const {
     allowTyping, requireCompletion, inputRef, preSelect,
   } = React.useContext(AutocompleteContext);
@@ -100,6 +102,7 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
 
   React.useEffect(() => {
     getCompletions(inputValue).then((cmpls) => {
+      if (!mounted.current) return;
       setCompletions(cmpls);
       for (let i = 0; i < cmpls.length; ++i) {
         const completion = cmpls[i];
@@ -110,6 +113,8 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
         }
       }
     });
+    // `mounted` is not in this array because changing it should ONLY affect whether the resolved promise acts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputValue, getCompletions]);
 
   const handleSelection = React.useCallback((id) => {

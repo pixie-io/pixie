@@ -9,6 +9,7 @@ import createSpacing from '@material-ui/core/styles/createSpacing';
 import { CompletionItem } from 'components/autocomplete/completions';
 import Autocomplete from 'components/autocomplete';
 import { AutocompleteContext } from 'components/autocomplete/autocomplete';
+import useIsMounted from 'utils/use-is-mounted';
 
 const styles = ({
   spacing, typography, palette, breakpoints,
@@ -147,8 +148,8 @@ interface DialogDropdownProps extends WithStyles<typeof styles> {
 const DialogDropdown = ({
   classes, onSelect, onClose, getListItems, anchorEl,
 }: DialogDropdownProps) => {
+  const mounted = useIsMounted();
   const { allowTyping, requireCompletion, preSelect } = React.useContext(AutocompleteContext);
-  const [completionItems, setCompletionItems] = React.useState<CompletionItem[]>([]);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   if (anchorEl && inputRef.current) {
@@ -164,14 +165,22 @@ const DialogDropdown = ({
       if (typeof getListItems !== 'function') throw new Error(`List items not gettable when selecting "${itemValue}"!`);
       getListItems(itemValue).then((items) => {
         if (items.length < 1) throw new Error('Failed to match the input to a valid choice!');
-        onSelect(itemValue);
-        onClose();
+        if (mounted.current) {
+          onSelect(itemValue);
+        }
+        // These two conditionals ARE separate: onSelect is able to cause this component to unmount before onClose.
+        // If we called onClose anyway, React could try to update state on an unmounted component, which is an error.
+        if (mounted.current) {
+          onClose();
+        }
       });
     } else {
       // Completion not required, so we don't care if the user picked an item that actually exists. Skip validation.
       onSelect(itemValue);
       onClose();
     }
+    // `mounted` is not in this array because changing it should ONLY affect whether the resolved promise acts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requireCompletion, getListItems, onClose, onSelect]);
 
   const getCompletions = React.useCallback((input: string) => {
@@ -193,12 +202,10 @@ const DialogDropdown = ({
           icon: item.icon,
           title: item.value,
         }));
-        setCompletionItems(mapped);
         return mapped;
       });
     }
 
-    setCompletionItems([]);
     return Promise.resolve([]);
   }, [getListItems]);
 
