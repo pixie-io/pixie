@@ -5,7 +5,7 @@ import { ResultsContext } from 'context/results-context';
 import * as React from 'react';
 
 import {
-  createStyles, fade, makeStyles, Theme, withStyles,
+  createStyles, makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
@@ -143,13 +143,15 @@ export const DataDrawerToggle = (props: DataDrawerToggleProps) => {
     }
   }, []);
 
+  const activeTabExists = activeTab && tabs.some((tab) => tab.title === activeTab);
+
   return (
     <div className={classes.root} onClick={toggle}>
       {
         opened ? <DownIcon className={classes.toggleIcon} /> : <UpIcon className={classes.toggleIcon} />
       }
       <StyledTabs
-        value={activeTab}
+        value={activeTabExists ? activeTab : ''}
         onChange={onTabChange}
         variant='scrollable'
         scrollButtons='auto'
