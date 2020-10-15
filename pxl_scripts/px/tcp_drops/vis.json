@@ -25,15 +25,15 @@
           "fromColumn": "src",
           "toColumn": "dst"
         },
-        "edgeWeightColumn": "retransmits",
-        "edgeColorColumn": "retransmits",
+        "edgeWeightColumn": "drops",
+        "edgeColorColumn": "drops",
         "edgeLength": 300,
         "edgeThresholds": {
           "mediumThreshold": 5,
           "highThreshold": 50
         },
         "edgeHoverInfo": [
-          "retransmits"
+          "drops"
         ]
       }
     }
