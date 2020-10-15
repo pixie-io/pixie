@@ -1,7 +1,7 @@
 import ClusterContext from 'common/cluster-context';
 import UserContext from 'common/user-context';
 import * as storage from 'common/storage';
-import { ClusterStatus, VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
+import { ClusterStatus, VizierGRPCClientProvider, CLUSTER_STATUS_UNKNOWN } from 'common/vizier-grpc-client-context';
 import { useSnackbar } from 'components/snackbar/snackbar';
 import AdminView from 'pages/admin/admin';
 import CreditsView from 'pages/credits/credits';
@@ -98,13 +98,13 @@ const Vizier = () => {
     return <DeployInstructions />;
   }
 
-  const status: ClusterStatus = cluster?.status || 'CS_UNKNOWN';
+  const status: ClusterStatus = cluster?.status || CLUSTER_STATUS_UNKNOWN;
 
   return (
     <VizierGRPCClientProvider
       clusterID={selectedCluster}
       passthroughEnabled={cluster.vizierConfig.passthroughEnabled}
-      clusterStatus={errMsg ? 'CS_UNKNOWN' : status}
+      clusterStatus={errMsg ? CLUSTER_STATUS_UNKNOWN : status}
     >
       <ScriptsContextProvider>
         <LiveView />

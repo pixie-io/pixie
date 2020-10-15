@@ -28,6 +28,7 @@ interface ContextProps {
   client: VizierGRPCClient | null;
   healthy: boolean;
   loading: boolean;
+  clusterStatus: ClusterStatus;
 }
 
 const VizierGRPCClientContext = React.createContext<ContextProps>(null);
@@ -60,7 +61,7 @@ export const VizierGRPCClientProvider = (props: Props) => {
   const [client, setClient] = React.useState<VizierGRPCClient>(null);
   const [loading, setLoading] = React.useState(true);
 
-  const healthy = client && clusterStatus === 'CS_HEALTHY';
+  const healthy = client && clusterStatus === CLUSTER_STATUS_HEALTHY;
 
   React.useEffect(() => {
     // Everytime the clusterID changes, we enter a loading state until we
@@ -72,10 +73,17 @@ export const VizierGRPCClientProvider = (props: Props) => {
     let currentSubscription = null;
     let subscriptionPromise = Promise.resolve();
     const retryOp = operation({ forever: true, randomize: true });
-
-    if (clusterStatus === 'CS_HEALTHY') {
+    // TODO might need to remove this.
+    if (clusterStatus !== CLUSTER_STATUS_HEALTHY) {
+      retryOp.stop();
+      if (currentSubscription) {
+        currentSubscription.unsubscribe();
+        currentSubscription = null;
+      }
+    } else {
+      // Cluster is healthy
+      retryOp.reset();
       retryOp.attempt(() => {
-        // If retrying, cancel the subscription from the previous try.
         if (currentSubscription) {
           currentSubscription.unsubscribe();
         }
@@ -118,7 +126,8 @@ export const VizierGRPCClientProvider = (props: Props) => {
     client,
     healthy,
     loading,
-  }), [client, healthy, loading]);
+    clusterStatus,
+  }), [client, healthy, loading, clusterStatus]);
 
   return (
     <VizierGRPCClientContext.Provider value={context}>

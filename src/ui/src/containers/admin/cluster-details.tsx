@@ -143,7 +143,7 @@ const AgentsTable = () => {
 
   React.useEffect(() => {
     if (!client) {
-      return () => {}; // noop
+      return () => { }; // noop
     }
     const fetchAgentStatus = () => {
       const onData = (results) => {

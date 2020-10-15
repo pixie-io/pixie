@@ -1,11 +1,13 @@
 import { scrollbarStyles } from 'common/mui-theme';
-import VizierGRPCClientContext from 'common/vizier-grpc-client-context';
+import VizierGRPCClientContext, { ClusterStatus, CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
+import ClusterContext from 'common/cluster-context';
 import MoveIcon from '@material-ui/icons/OpenWith';
 import PixieCommandIcon from 'components/icons/pixie-command';
 import { ClusterInstructions } from 'containers/App/deploy-instructions';
 import * as React from 'react';
 
 import IconButton from '@material-ui/core/IconButton';
+import { Alert, AlertTitle } from '@material-ui/lab';
 import {
   createStyles, makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
@@ -134,6 +136,63 @@ const ScriptOptions = ({
   );
 };
 
+interface ClusterLoadingProps {
+  clusterUnhealthy: boolean;
+  clusterStatus: ClusterStatus;
+  clusterName: string | null;
+  clusterUID: string;
+}
+
+const ClusterLoadingComponent = (props: ClusterLoadingProps) => {
+  // Options:
+  // 1. Name of the cluster
+  const formatStatus = React.useMemo(
+    () => props.clusterStatus.replace('CS_', '').toLowerCase(),
+    [props.clusterStatus]);
+
+  const actionMsg = React.useMemo(
+    () => {
+      if (props.clusterStatus === CLUSTER_STATUS_DISCONNECTED) {
+        return (<div>Please redeploy Pixie to the cluster or choose another cluster.</div>);
+      }
+      return (
+        <div>
+          <div>
+            If this issue continues, please send a message to the
+            <span> </span>
+            <a href='https://slackin.withpixie.ai/' target='_blank' rel='noreferrer'>community slack</a>
+            .
+          </div>
+          <div>{`Include your cluster ID "${props.clusterUID}" in the message.`}</div>
+        </div>
+      );
+    },
+    [props.clusterStatus, props.clusterUID]);
+
+  return (
+    <>
+      {props.clusterUnhealthy ? (
+        <div>
+          <Alert severity='error'>
+            <AlertTitle>
+              {`Cluster '${props.clusterName}' unavailable`}
+            </AlertTitle>
+            <div>
+              {`Pixie instrumentation on '${props.clusterName}' is ${formatStatus}.`}
+            </div>
+            {actionMsg}
+          </Alert>
+        </div>
+      ) : (
+        <ClusterInstructions message='Connecting to cluster...' />
+      )}
+    </>
+  );
+};
+
+// Timeout before we display the cluster as unhealthy, in milliseconds.
+const UNHEALTHY_CLUSTER_TIMEOUT = 5000;
+
 const LiveView = () => {
   const classes = useStyles();
   const { newAutoComplete } = useFlags();
@@ -141,7 +200,7 @@ const LiveView = () => {
   const {
     pxl, id, saveEditorAndExecute, cancelExecution,
   } = React.useContext(ScriptContext);
-  const { loading } = React.useContext(VizierGRPCClientContext);
+  const { loading, clusterStatus } = React.useContext(VizierGRPCClientContext);
   const {
     setDataDrawerOpen, setEditorPanelOpen, isMobile,
   } = React.useContext(LayoutContext);
@@ -150,6 +209,8 @@ const LiveView = () => {
 
   const [commandOpen, setCommandOpen] = React.useState<boolean>(false);
   const toggleCommandOpen = React.useCallback(() => setCommandOpen((opened) => !opened), []);
+  const { selectedClusterPrettyName, selectedCluster } = React.useContext(ClusterContext);
+  const [unhealthyClusterName, setUnhealthyCluster] = React.useState<string | null>(null);
 
   const hotkeyHandlers = {
     'pixie-command': toggleCommandOpen,
@@ -196,6 +257,16 @@ const LiveView = () => {
       window.removeEventListener('keydown', handleEsc);
     };
   }, [setWidgetsMoveable]);
+  // eslint-disable-next-line consistent-return
+  React.useEffect(() => {
+    if (loading) {
+      setUnhealthyCluster(null);
+      const intervalId = setInterval(() => {
+        setUnhealthyCluster(selectedClusterPrettyName);
+      }, UNHEALTHY_CLUSTER_TIMEOUT);
+      return () => clearInterval(intervalId);
+    }
+  }, [loading, selectedClusterPrettyName]);
 
   const canvasRef = React.useRef<HTMLDivElement>(null);
 
@@ -216,7 +287,15 @@ const LiveView = () => {
               {
                 loading ? (
                   <div className='center-content'>
-                    <ClusterInstructions message='Connecting to cluster...' />
+                    <ClusterLoadingComponent
+                      clusterUnhealthy={
+                        unhealthyClusterName
+                        && unhealthyClusterName === selectedClusterPrettyName
+                      }
+                      clusterStatus={clusterStatus}
+                      clusterName={selectedClusterPrettyName}
+                      clusterUID={selectedCluster}
+                    />
                   </div>
                 ) : (
                   <>
@@ -226,9 +305,9 @@ const LiveView = () => {
                         <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
                       </div>
                     </DataDrawerSplitPanel>
-                    { newAutoComplete
+                    {newAutoComplete
                       ? <NewCommandInput open={commandOpen} onClose={toggleCommandOpen} />
-                      : <CommandInput open={commandOpen} onClose={toggleCommandOpen} /> }
+                      : <CommandInput open={commandOpen} onClose={toggleCommandOpen} />}
                   </>
                 )
               }
