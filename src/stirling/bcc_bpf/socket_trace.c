@@ -6,6 +6,8 @@
 #include <linux/sched.h>
 #include <linux/socket.h>
 
+#define socklen_t size_t
+
 #include "src/stirling/bcc_bpf/protocol_inference.h"
 #include "src/stirling/bcc_bpf/utils.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
@@ -176,7 +178,7 @@ static __inline bool should_trace_classified(const struct traffic_class_t* traff
   return control & traffic_class->role;
 }
 
-// Returns true if detection passes threshold. Right now this only makes sense for MySQL.
+// Returns true if detection passes threshold. Right now this is only used for PGSQL.
 //
 // TODO(yzhao): Remove protocol detection threshold.
 static __inline bool protocol_detection_passes_threshold(const struct conn_info_t* conn_info) {
@@ -549,11 +551,19 @@ static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
   submit_new_conn(ctx, tgid, (uint32_t)ret_fd, args->addr);
 }
 
-static __inline void process_data(struct pt_regs* ctx, uint64_t id,
+static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t id,
                                   const enum TrafficDirection direction,
                                   const struct data_args_t* args, bool ssl) {
   uint32_t tgid = id >> 32;
   ssize_t bytes_count = PT_REGS_RC(ctx);
+
+  if (!vecs && args->buf == NULL) {
+    return;
+  }
+
+  if (vecs && (args->iov == NULL || args->iovlen <= 0)) {
+    return;
+  }
 
   if (args->fd < 0) {
     return;
@@ -602,9 +612,9 @@ static __inline void process_data(struct pt_regs* ctx, uint64_t id,
   // TODO(yzhao): Split the interface such that the singular buf case and multiple bufs in msghdr
   // are handled separately without mixed interface. The plan is to factor out helper functions for
   // lower-level functionalities, and call them separately for each case.
-  if (args->buf != NULL) {
+  if (!vecs) {
     update_traffic_class(conn_info, direction, args->buf, bytes_count);
-  } else if (args->iov != NULL && args->iovlen > 0) {
+  } else {
     struct iovec iov_cpy;
     bpf_probe_read(&iov_cpy, sizeof(struct iovec), &args->iov[0]);
     // Ensure we are not reading beyond the available data.
@@ -632,9 +642,9 @@ static __inline void process_data(struct pt_regs* ctx, uint64_t id,
       event->attr.traffic_class.protocol != kProtocolUnknown && !is_stirling_tgid(tgid);
 
   // TODO(yzhao): Same TODO for split the interface.
-  if (args->buf != NULL) {
+  if (!vecs) {
     perf_submit_wrapper(ctx, direction, args->buf, bytes_count, conn_info, event, send_data);
-  } else if (args->iov != NULL && args->iovlen > 0) {
+  } else {
     // TODO(yzhao): iov[0] is copied twice, once in calling update_traffic_class(), and here.
     // This happens to the write probes as well, but the calls are placed in the entry and return
     // probes respectively. Consider remove one copy.
@@ -644,10 +654,26 @@ static __inline void process_data(struct pt_regs* ctx, uint64_t id,
   return;
 }
 
+// These wrappers around process_data are carefully written so that they call process_data(),
+// with a constant for `vecs`. Normally this would be done with meta-programming--for example
+// through a template parameter--but C does not support that.
+// By using a hard-coded constant for vecs (true or false), we enable clang to clone process_data
+// and optimize away some code paths depending on whether we are using the iovecs or buf-based
+// version. This is important for reducing the number of BPF instructions, since each syscall only
+// needs one particular version.
+// TODO(oazizi): Split process_data() into two versions, so we don't have to count on
+//               Clang function cloning, which is not directly controllable.
+
 static __inline void process_syscall_data(struct pt_regs* ctx, uint64_t id,
                                           const enum TrafficDirection direction,
                                           const struct data_args_t* args) {
-  process_data(ctx, id, direction, args, /* ssl */ false);
+  process_data(/* vecs */ false, ctx, id, direction, args, /* ssl */ false);
+}
+
+static __inline void process_syscall_data_vecs(struct pt_regs* ctx, uint64_t id,
+                                               const enum TrafficDirection direction,
+                                               const struct data_args_t* args) {
+  process_data(/* vecs */ true, ctx, id, direction, args, /* ssl */ false);
 }
 
 static __inline void process_syscall_close(struct pt_regs* ctx, uint64_t id,
@@ -711,7 +737,7 @@ int syscall__probe_ret_open(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_connect(struct pt_regs* ctx, int sockfd, const struct sockaddr* addr,
-                                 size_t addrlen) {
+                                 socklen_t addrlen) {
   uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
@@ -737,7 +763,7 @@ int syscall__probe_ret_connect(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_accept(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
-                                size_t* addrlen) {
+                                socklen_t* addrlen) {
   uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
@@ -762,7 +788,7 @@ int syscall__probe_ret_accept(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_accept4(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
-                                 size_t* addrlen) {
+                                 socklen_t* addrlen) {
   uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
@@ -811,12 +837,12 @@ int syscall__probe_ret_write(struct pt_regs* ctx) {
   return 0;
 }
 
-int syscall__probe_entry_send(struct pt_regs* ctx, int fd, char* buf, size_t count) {
+int syscall__probe_entry_send(struct pt_regs* ctx, int sockfd, char* buf, size_t len) {
   uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
   struct data_args_t write_args = {};
-  write_args.fd = fd;
+  write_args.fd = sockfd;
   write_args.buf = buf;
   active_write_args_map.update(&id, &write_args);
 
@@ -861,12 +887,12 @@ int syscall__probe_ret_read(struct pt_regs* ctx) {
   return 0;
 }
 
-int syscall__probe_entry_recv(struct pt_regs* ctx, int fd, char* buf, size_t count) {
+int syscall__probe_entry_recv(struct pt_regs* ctx, int sockfd, char* buf, size_t len) {
   uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
   struct data_args_t read_args = {};
-  read_args.fd = fd;
+  read_args.fd = sockfd;
   read_args.buf = buf;
   active_read_args_map.update(&id, &read_args);
 
@@ -886,12 +912,21 @@ int syscall__probe_ret_recv(struct pt_regs* ctx) {
   return 0;
 }
 
-int syscall__probe_entry_sendto(struct pt_regs* ctx, int fd, char* buf, size_t count) {
+int syscall__probe_entry_sendto(struct pt_regs* ctx, int sockfd, char* buf, size_t len, int flags,
+                                const struct sockaddr* dest_addr, socklen_t addrlen) {
   uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
+  if (dest_addr != NULL) {
+    struct connect_args_t connect_args = {};
+    connect_args.fd = sockfd;
+    connect_args.addr = dest_addr;
+    active_connect_args_map.update(&id, &connect_args);
+  }
+
+  // Stash arguments.
   struct data_args_t write_args = {};
-  write_args.fd = fd;
+  write_args.fd = sockfd;
   write_args.buf = buf;
   active_write_args_map.update(&id, &write_args);
 
@@ -901,6 +936,26 @@ int syscall__probe_entry_sendto(struct pt_regs* ctx, int fd, char* buf, size_t c
 int syscall__probe_ret_sendto(struct pt_regs* ctx) {
   uint64_t id = bpf_get_current_pid_tgid();
 
+  // Potential issue: If sentto() addr is provided by a TCP connection, the syscall may ignore it,
+  // but we would still trace it. In practice, TCP connections should not be using sendto() with an
+  // addr argument.
+  //
+  // From the man page:
+  //   If sendto() is used on a connection-mode (SOCK_STREAM, SOCK_SEQPACKET) socket, the arguments
+  //   dest_addr and addrlen are ignored (and the error EISCONN may be returned when they  are not
+  //   NULL and 0)
+  //
+  //   EISCONN
+  //   The connection-mode socket was connected already but a recipient was specified. (Now either
+  //   this error is returned, or the recipient specification is ignored.)
+
+  // Unstash arguments, and process syscall.
+  const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
+  if (connect_args != NULL) {
+    process_syscall_connect(ctx, id, connect_args);
+  }
+  active_connect_args_map.delete(&id);
+
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
   if (write_args != NULL) {
@@ -908,16 +963,59 @@ int syscall__probe_ret_sendto(struct pt_regs* ctx) {
   }
 
   active_write_args_map.delete(&id);
+
   return 0;
 }
 
-int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int fd, const struct user_msghdr* msghdr) {
+int syscall__probe_entry_recvfrom(struct pt_regs* ctx, int sockfd, char* buf, size_t len, int flags,
+                                  struct sockaddr* src_addr, socklen_t* addrlen) {
+  uint64_t id = bpf_get_current_pid_tgid();
+
+  // Stash arguments.
+  if (src_addr != NULL) {
+    struct accept_args_t accept_args;
+    accept_args.addr = src_addr;
+    active_accept_args_map.update(&id, &accept_args);
+  }
+
+  // Stash arguments.
+  struct data_args_t read_args = {};
+  read_args.fd = sockfd;
+  read_args.buf = buf;
+  active_read_args_map.update(&id, &read_args);
+
+  return 0;
+}
+
+int syscall__probe_ret_recvfrom(struct pt_regs* ctx) {
+  uint64_t id = bpf_get_current_pid_tgid();
+
+  // Unstash arguments, and process syscall.
+  struct accept_args_t* accept_args = active_accept_args_map.lookup(&id);
+  if (accept_args != NULL) {
+    process_syscall_accept(ctx, id, accept_args);
+  }
+
+  active_accept_args_map.delete(&id);
+
+  // Unstash arguments, and process syscall.
+  struct data_args_t* read_args = active_read_args_map.lookup(&id);
+  if (read_args != NULL) {
+    process_syscall_data(ctx, id, kIngress, read_args);
+  }
+
+  active_read_args_map.delete(&id);
+  return 0;
+}
+
+int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int sockfd,
+                                 const struct user_msghdr* msghdr) {
   uint64_t id = bpf_get_current_pid_tgid();
 
   if (msghdr != NULL) {
     // Stash arguments.
     struct data_args_t write_args = {};
-    write_args.fd = fd;
+    write_args.fd = sockfd;
     write_args.iov = msghdr->msg_iov;
     write_args.iovlen = msghdr->msg_iovlen;
     active_write_args_map.update(&id, &write_args);
@@ -932,7 +1030,7 @@ int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
   if (write_args != NULL) {
-    process_syscall_data(ctx, id, kEgress, write_args);
+    process_syscall_data_vecs(ctx, id, kEgress, write_args);
   }
 
   active_write_args_map.delete(&id);
@@ -960,7 +1058,7 @@ int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
   if (read_args != NULL) {
-    process_syscall_data(ctx, id, kIngress, read_args);
+    process_syscall_data_vecs(ctx, id, kIngress, read_args);
   }
 
   active_read_args_map.delete(&id);
@@ -986,7 +1084,7 @@ int syscall__probe_ret_writev(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
   if (write_args != NULL) {
-    process_syscall_data(ctx, id, kEgress, write_args);
+    process_syscall_data_vecs(ctx, id, kEgress, write_args);
   }
 
   active_write_args_map.delete(&id);
@@ -1012,7 +1110,7 @@ int syscall__probe_ret_readv(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
   if (read_args != NULL) {
-    process_syscall_data(ctx, id, kIngress, read_args);
+    process_syscall_data_vecs(ctx, id, kIngress, read_args);
   }
 
   active_read_args_map.delete(&id);

@@ -7,6 +7,7 @@
 
 #include "src/common/system/boot_clock.h"
 #include "src/common/system/tcp_socket.h"
+#include "src/common/system/udp_socket.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
@@ -359,6 +360,48 @@ TEST_F(SocketTraceBPFTest, StartTime) {
   EXPECT_EQ(system.ClientPID(), upid1.pid());
   EXPECT_LT(time_window_start, upid1.start_ts());
   EXPECT_GT(time_window_end, upid1.start_ts());
+}
+
+TEST_F(SocketTraceBPFTest, UDPSendToRecvFrom) {
+  using ::pl::system::UDPSocket;
+
+  ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
+
+  // Run a UDP-based client-server system.
+  {
+    UDPSocket server;
+    server.BindAndListen();
+
+    UDPSocket client;
+    std::string recv_data;
+
+    ASSERT_EQ(client.SendTo(kHTTPReqMsg1, server), kHTTPReqMsg1.size());
+    std::unique_ptr<UDPSocket> server_remote = server.RecvFrom(&recv_data);
+    ASSERT_NE(server_remote.get(), nullptr);
+    EXPECT_EQ(recv_data, kHTTPReqMsg1);
+
+    ASSERT_EQ(server.SendTo(kHTTPRespMsg1, *server_remote.get()), kHTTPRespMsg1.size());
+    std::unique_ptr<UDPSocket> client_remote = client.RecvFrom(&recv_data);
+    ASSERT_NE(client_remote.get(), nullptr);
+    ASSERT_EQ(client_remote->port(), server.port());
+    EXPECT_EQ(recv_data, kHTTPRespMsg1);
+
+    client.Close();
+    server.Close();
+  }
+
+  DataTable data_table(kHTTPTable);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  ASSERT_FALSE(tablets.empty());
+  types::ColumnWrapperRecordBatch records =
+      FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, getpid());
+
+  ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
+
+  EXPECT_EQ(200, records[kHTTPRespStatusIdx]->Get<types::Int64Value>(0).val);
+  EXPECT_THAT(std::string(records[kHTTPRespBodyIdx]->Get<types::StringValue>(0)), StrEq(""));
+  EXPECT_THAT(std::string(records[kHTTPRespMessageIdx]->Get<types::StringValue>(0)), StrEq("OK"));
 }
 
 }  // namespace stirling
