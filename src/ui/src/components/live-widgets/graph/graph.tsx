@@ -61,9 +61,14 @@ export const GraphWidget = (props: GraphWidgetProps) => {
   } if (display.adjacencyList && display.adjacencyList.fromColumn && display.adjacencyList.toColumn) {
     const toColInfo = colInfoFromName(relation, display.adjacencyList.toColumn);
     const fromColInfo = colInfoFromName(relation, display.adjacencyList.fromColumn);
-    let edgeHoverInfo = [];
+    const edgeHoverInfo = [];
     if (display.edgeHoverInfo && display.edgeHoverInfo.length > 0) {
-      edgeHoverInfo = display.edgeHoverInfo.map((e): ColInfo => colInfoFromName(relation, e));
+      for (const e of display.edgeHoverInfo) {
+        const info = colInfoFromName(relation, e);
+        if (info) { // Only push valid column infos. The user may pass in an invalid column name in the vis spec.
+          edgeHoverInfo.push(info);
+        }
+      }
     }
     if (toColInfo && fromColInfo) {
       return (
@@ -210,8 +215,8 @@ export const Graph = (props: GraphProps) => {
         nodeWeight = d[nodeWeightColumn];
       }
 
-      upsertNode(nt, toCol.semType, nodeWeight);
-      upsertNode(nf, fromCol.semType, nodeWeight);
+      upsertNode(nt, toCol?.semType, nodeWeight);
+      upsertNode(nf, fromCol?.semType, nodeWeight);
 
       const edge = {
         from: nf,
@@ -229,14 +234,16 @@ export const Graph = (props: GraphProps) => {
       if (edgeHoverInfo && edgeHoverInfo.length > 0) {
         let edgeInfo = '';
         edgeHoverInfo.forEach((info, i) => {
-          let val = '';
-          if (info.semType === SemanticType.ST_NONE || info.semType === SemanticType.ST_UNSPECIFIED) {
-            val = formatByDataType(info.type, d[info.name]);
-          } else {
-            const valWithUnits = formatBySemType(info.semType, d[info.name]);
-            val = `${valWithUnits.val} ${valWithUnits.units}`;
+          if (info != null) {
+            let val = '';
+            if (info.semType === SemanticType.ST_NONE || info.semType === SemanticType.ST_UNSPECIFIED) {
+              val = formatByDataType(info.type, d[info.name]);
+            } else {
+              const valWithUnits = formatBySemType(info.semType, d[info.name]);
+              val = `${valWithUnits.val} ${valWithUnits.units}`;
+            }
+            edgeInfo = `${edgeInfo}${i === 0 ? '' : '<br>'} ${info.name}: ${val}`;
           }
-          edgeInfo = `${edgeInfo}${i === 0 ? '' : '<br>'} ${info.name}: ${val}`;
         });
         edge.title = edgeInfo;
       }
