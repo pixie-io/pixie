@@ -373,6 +373,31 @@
       }
     },
     {
+      "name": "Node that Runs Pod",
+      "func": {
+        "name": "node",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      },
+      "position": {
+        "x": 8,
+        "y": 9,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
       "name": "Inbound Traffic to Pod",
       "func": {
         "name": "inbound_let_summary",
