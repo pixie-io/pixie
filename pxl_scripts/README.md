@@ -6,7 +6,7 @@ Pixie open sources all of its scripts, which serve as examples of scripting in t
 - px/[cluster](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/cluster): Lists the namespaces and the node that are available on the current cluster.
 - px/[cql_data](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/cql_data): Shows a sample of CQL (Cassandra) requests in the cluster.
 - px/[cql_stats](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/cql_stats): Calculates the latency, error rate, and throughput of a pod's CQL (Cassandra) requests.
-- px/[funcs](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/funcs): Lists all of the funcs available in Pixie.
+- px/[funcs](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/funcs): Lists all of the functions available in Pixie.
 - px/[http_data](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/http_data): Shows a sample of HTTP requests in the Cluster.
 - px/[http_data_filtered](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/http_data_filtered): Shows a sample of HTTP requests in the Cluster filtered by service, pod & req-path.
 - px/[http_post_requests](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/http_post_requests): Show a sample of HTTP requests in the Cluster that have method POST.
