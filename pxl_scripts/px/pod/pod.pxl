@@ -50,7 +50,7 @@ def node(start_time: str, pod: px.Pod):
     df = px.DataFrame(table='process_stats', start_time=start_time)
     df = df[df.ctx['pod'] == pod]
     df.name = df.ctx['node_name']
-    df = df.groupby(['name']).agg()
+    df = df.groupby('name').agg()
     return df
 
 
