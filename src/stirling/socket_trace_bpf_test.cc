@@ -375,15 +375,16 @@ TEST_F(SocketTraceBPFTest, UDPSendToRecvFrom) {
     UDPSocket client;
     std::string recv_data;
 
-    ASSERT_EQ(client.SendTo(kHTTPReqMsg1, server), kHTTPReqMsg1.size());
-    std::unique_ptr<UDPSocket> server_remote = server.RecvFrom(&recv_data);
-    ASSERT_NE(server_remote.get(), nullptr);
+    ASSERT_EQ(client.SendTo(kHTTPReqMsg1, server.sockaddr()), kHTTPReqMsg1.size());
+    struct sockaddr_in server_remote = server.RecvFrom(&recv_data);
+    ASSERT_NE(server_remote.sin_addr.s_addr, 0);
+    ASSERT_NE(server_remote.sin_port, 0);
     EXPECT_EQ(recv_data, kHTTPReqMsg1);
 
-    ASSERT_EQ(server.SendTo(kHTTPRespMsg1, *server_remote.get()), kHTTPRespMsg1.size());
-    std::unique_ptr<UDPSocket> client_remote = client.RecvFrom(&recv_data);
-    ASSERT_NE(client_remote.get(), nullptr);
-    ASSERT_EQ(client_remote->port(), server.port());
+    ASSERT_EQ(server.SendTo(kHTTPRespMsg1, server_remote), kHTTPRespMsg1.size());
+    struct sockaddr_in client_remote = client.RecvFrom(&recv_data);
+    ASSERT_NE(client_remote.sin_addr.s_addr, server.addr().s_addr);
+    ASSERT_EQ(client_remote.sin_port, server.port());
     EXPECT_EQ(recv_data, kHTTPRespMsg1);
 
     client.Close();

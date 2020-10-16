@@ -23,24 +23,21 @@ class UDPSocket {
   void Close();
 
   int sockfd() const { return sockfd_; }
+  const struct sockaddr_in sockaddr() const { return addr_; }
   const struct in_addr& addr() const { return addr_.sin_addr; }
   in_port_t port() const { return addr_.sin_port; }
 
   /**
    * Sends data to the specified destination socket.
    */
-  ssize_t SendTo(std::string_view data, const UDPSocket& dst) const;
+  ssize_t SendTo(std::string_view data, const struct sockaddr_in& dst) const;
 
   /**
    * Receives data from the socket, returns a UDPSocket with information about the sender.
    */
-  std::unique_ptr<UDPSocket> RecvFrom(std::string* data) const;
+  struct sockaddr_in RecvFrom(std::string* data) const;
 
  private:
-  // This is the core constructor, which is used to internally create an empty UDPSockets.
-  // In contrast, the public UDPSocket constructor always creates an initialized UDPSocket.
-  // The argument is actually useless, but is used to differentiate the two constructor signatures.
-  explicit UDPSocket(int internal);
   int sockfd_ = 0;
   struct sockaddr_in addr_;
 

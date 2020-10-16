@@ -17,15 +17,10 @@ namespace system {
 
 // NOTE: Must convert CHECKs to Status if this code is ever used outside test code.
 
-UDPSocket::UDPSocket() : UDPSocket(0) {
+UDPSocket::UDPSocket() {
+  memset(&addr_, 0, sizeof(struct sockaddr_in));
   sockfd_ = socket(AF_INET, SOCK_DGRAM, /*protocol*/ 0);
   CHECK(sockfd_ > 0) << "Failed to create socket, error message: " << strerror(errno);
-}
-
-UDPSocket::UDPSocket(int internal) {
-  memset(&addr_, 0, sizeof(struct sockaddr_in));
-  // Required to differentiate the private vs public UDPSocket constructor.
-  PL_UNUSED(internal);
 }
 
 UDPSocket::~UDPSocket() { Close(); }
@@ -53,19 +48,19 @@ void UDPSocket::Close() {
   }
 }
 
-ssize_t UDPSocket::SendTo(std::string_view data, const UDPSocket& dst) const {
+ssize_t UDPSocket::SendTo(std::string_view data, const struct sockaddr_in& dst) const {
   return sendto(sockfd_, data.data(), data.size(), /*flags*/ 0,
-                reinterpret_cast<const struct sockaddr*>(&dst.addr_), sizeof(struct sockaddr_in));
+                reinterpret_cast<const struct sockaddr*>(&dst), sizeof(struct sockaddr_in));
 }
 
-std::unique_ptr<UDPSocket> UDPSocket::RecvFrom(std::string* data) const {
-  auto src = std::unique_ptr<UDPSocket>(new UDPSocket(0));
+struct sockaddr_in UDPSocket::RecvFrom(std::string* data) const {
+  struct sockaddr_in src;
   socklen_t len = sizeof(struct sockaddr_in);
   char buf[kBufSize];
   ssize_t size = recvfrom(sockfd_, static_cast<void*>(buf), sizeof(buf), /*flags*/ 0,
-                          reinterpret_cast<struct sockaddr*>(&src->addr_), &len);
+                          reinterpret_cast<struct sockaddr*>(&src), &len);
   if (size <= 0) {
-    return nullptr;
+    return {};
   }
   CHECK(len == sizeof(struct sockaddr_in));
   data->assign(buf, size);
