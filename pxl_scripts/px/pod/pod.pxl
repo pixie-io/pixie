@@ -49,9 +49,14 @@ def node(start_time: str, pod: px.Pod):
     '''
     df = px.DataFrame(table='process_stats', start_time=start_time)
     df = df[df.ctx['pod'] == pod]
-    df.name = df.ctx['node_name']
-    df = df.groupby('name').agg()
-    return df
+    df.node = df.ctx['node_name']
+    df.service = df.ctx['service']
+    df.pod_id = df.ctx['pod_id']
+    df.pod_name = df.ctx['pod']
+    df = df.groupby(['node', 'service', 'pod_id', 'pod_name']).agg()
+    df.pod_start_time = px.pod_name_to_start_time(df.pod_name)
+    df.status = px.pod_name_to_status(df.pod_name)
+    return df.drop('pod_name')
 
 
 def processes(start_time: str, pod: px.Pod):
