@@ -38,6 +38,17 @@ enum Register {
   PARM_PTR = 210;
 }
 
+enum VariableStmtOp {
+  // Define variable and assign value to it.
+  DEFINE_AND_ASSIGN = 0;
+
+  // Only assign value to the variable.
+  ASSIGN_ONLY = 1;
+
+  // Only define the variable.
+  DEFINE_ONLY = 2;
+}
+
 message StructSpecEntry {
   // Location of this struct base type member within the raw bytes.
   int32 offset = 1;
@@ -96,6 +107,12 @@ message MemoryExpression {
   // Otherwise size is automatically inferred based on the ScalarType during code generation.
   // TODO(oazizi): Remove once STRUCT_BLOB is
   uint32 size = 3;
+
+  // Only used if ScalarType is STRUCT_BLOB.
+  //
+  // TODO(yzhao): This could be moved into Variable. Then that is better to have variable name and
+  // type lifted from the wrapped types (ScalarVariable, StructVariable, ...) into Variable as well.
+  VariableStmtOp op = 5;
 }
 
 // Describes a variable that is calculated from 2 other previously-defined variables.
@@ -208,6 +225,10 @@ message StructVariable {
   // The variable count must be equal to the field count of the above struct.
   // If unset, the corresponding field is default constructed.
   repeated FieldAssignment field_assignments = 3;
+
+  // TODO(yzhao): This could be moved into Variable. Then that is better to have variable name and
+  // type lifted from the wrapped types (ScalarVariable, StructVariable, ...) into Variable as well.
+  VariableStmtOp op = 4;
 }
 
 // A container of different types of variables. Defines how to access them from inside BCC code.

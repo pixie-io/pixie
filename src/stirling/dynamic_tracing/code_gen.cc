@@ -306,6 +306,7 @@ StatusOr<std::vector<std::string>> GenPtrLenVariable(const PtrLenVariable& var) 
   return code_lines;
 }
 
+// Generate code lines for a STRUCT_BLOB variable.
 std::vector<std::string> GenStructBlobMemoryVariable(const ScalarVariable& var) {
   // TODO(oazizi): Refactor the max size parameter.
   size_t size = std::min<size_t>(var.memory().size(), kStructBlobSize - sizeof(uint64_t) - 1);
@@ -319,11 +320,17 @@ std::vector<std::string> GenStructBlobMemoryVariable(const ScalarVariable& var) 
 
   std::vector<std::string> code_lines;
   // Note that we initialize the variable with `= {}` to keep BPF happy.
-  // This should always be valid since the variable will always be a struct an never a base type.
-  code_lines.push_back(absl::Substitute("$0 $1 = {};", GetScalarTypeCName(var.type()), var.name()));
-  code_lines.push_back(absl::Substitute("$0.len = $1;", var.name(), size));
-  code_lines.push_back(absl::Substitute("bpf_probe_read(&$0.buf, $1, $2 + $3);", var.name(), size,
-                                        var.memory().base(), var.memory().offset()));
+  // This should always be valid since the variable will always be a struct and never a base type.
+  if (var.memory().op() != ir::physical::ASSIGN_ONLY) {
+    code_lines.push_back(
+        absl::Substitute("$0 $1 = {};", GetScalarTypeCName(var.type()), var.name()));
+  }
+
+  if (var.memory().op() != ir::physical::DEFINE_ONLY) {
+    code_lines.push_back(absl::Substitute("$0.len = $1;", var.name(), size));
+    code_lines.push_back(absl::Substitute("bpf_probe_read(&$0.buf, $1, $2 + $3);", var.name(), size,
+                                          var.memory().base(), var.memory().offset()));
+  }
 
   // Note: Since we are dealing with statically sized objects, the dummy character
   // is not actually required.
@@ -331,6 +338,8 @@ std::vector<std::string> GenStructBlobMemoryVariable(const ScalarVariable& var) 
   return code_lines;
 }
 
+// Returns code lines for producing a "simple" memory variable. These types are mapped to native
+// C scalar types in kScalarTypeToCType.
 std::vector<std::string> GenMemoryVariable(const ScalarVariable& var) {
   std::vector<std::string> code_lines;
   code_lines.push_back(absl::Substitute("$0 $1;", GetScalarTypeCName(var.type()), var.name()));
@@ -432,20 +441,18 @@ StatusOr<std::vector<std::string>> GenScalarVariable(const ScalarVariable& var) 
   GCC_SWITCH_RETURN;
 }
 
-StatusOr<std::vector<std::string>> GenStructVariable(const Struct& st,
-                                                     const StructVariable& st_var) {
-  if (st.name() != st_var.type()) {
-    return error::InvalidArgument("Names of the struct do not match, $0 vs. $1", st.name(),
-                                  st_var.type());
-  }
-
+StatusOr<std::vector<std::string>> GenStructVariable(const StructVariable& st_var) {
   std::vector<std::string> code_lines;
 
-  code_lines.push_back(absl::Substitute("struct $0 $1 = {};", st.name(), st_var.name()));
+  if (st_var.op() != ir::physical::ASSIGN_ONLY) {
+    code_lines.push_back(absl::Substitute("struct $0 $1 = {};", st_var.type(), st_var.name()));
+  }
 
-  for (const auto& fa : st_var.field_assignments()) {
-    code_lines.push_back(
-        absl::Substitute("$0.$1 = $2;", st_var.name(), fa.field_name(), fa.variable_name()));
+  if (st_var.op() != ir::physical::DEFINE_ONLY) {
+    for (const auto& fa : st_var.field_assignments()) {
+      code_lines.push_back(
+          absl::Substitute("$0.$1 = $2;", st_var.name(), fa.field_name(), fa.variable_name()));
+    }
   }
 
   return code_lines;
@@ -567,6 +574,17 @@ Status CheckVarExists(const absl::flat_hash_map<std::string_view, const Variable
   return Status::OK();
 }
 
+bool IsVariableDefinition(const Variable& var) {
+  if (var.has_scalar_var() && var.scalar_var().has_memory() &&
+      var.scalar_var().memory().op() == ir::physical::ASSIGN_ONLY) {
+    return false;
+  }
+  if (var.has_struct_var() && var.struct_var().op() == ir::physical::ASSIGN_ONLY) {
+    return false;
+  }
+  return true;
+}
+
 }  // namespace
 
 Status BCCCodeGenerator::GenVariable(
@@ -588,20 +606,27 @@ Status BCCCodeGenerator::GenVariable(
     case Variable::VarOneofCase::kStructVar: {
       const auto& st_var = var.struct_var();
 
+      if (IsVariableDefinition(var)) {
+        auto iter = structs_.find(st_var.type());
+        if (iter == structs_.end()) {
+          return error::InvalidArgument("Struct '$0' referenced in variable '$1' was not defined",
+                                        st_var.type(), st_var.name());
+        }
+        if (iter->second->name() != st_var.type()) {
+          return error::InvalidArgument("Names of the struct do not match, $0 vs. $1",
+                                        iter->second->name(), st_var.type());
+        }
+      }
+
       for (const auto& fa : st_var.field_assignments()) {
-        PL_RETURN_IF_ERROR(CheckVarExists(
-            vars, fa.variable_name(),
-            absl::Substitute("StructVariable '$0' field assignment", st_var.name())));
+        PL_RETURN_IF_ERROR(
+            CheckVarExists(vars, fa.variable_name(),
+                           absl::Substitute("StructVariable '$0' field assignment '$1'",
+                                            st_var.name(), fa.ShortDebugString())));
         // TODO(yzhao): Check variable types as well.
       }
 
-      auto iter = structs_.find(st_var.type());
-      if (iter == structs_.end()) {
-        return error::InvalidArgument("Struct '$0' referenced in variable '$1' was not defined",
-                                      st_var.type(), st_var.name());
-      }
-
-      MOVE_BACK_STR_VEC(GenStructVariable(*iter->second, st_var), code_lines);
+      MOVE_BACK_STR_VEC(GenStructVariable(st_var), code_lines);
       break;
     }
     case Variable::VarOneofCase::VAR_ONEOF_NOT_SET:
@@ -644,8 +669,9 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateConditionalBlock(
   for (const auto& var : cond_block.vars()) {
     std::string_view var_name = GetVariableName(var);
 
-    if (vars.contains(var_name)) {
-      return error::InvalidArgument("Variable '$0' was already defined", var_name);
+    if (IsVariableDefinition(var) && vars.contains(var_name)) {
+      return error::InvalidArgument("Variable '$0' in ConditionalBlock '$1' was already defined",
+                                    var.ShortDebugString(), cond_block.ShortDebugString());
     }
 
     vars[var_name] = &var;
@@ -684,8 +710,9 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
   for (const auto& var : probe.vars()) {
     std::string_view var_name = GetVariableName(var);
 
-    if (vars.contains(var_name)) {
-      return error::InvalidArgument("Variable '$0' was already defined", var_name);
+    if (IsVariableDefinition(var) && vars.contains(var_name)) {
+      return error::InvalidArgument("Variable '$0' in Probe '$1' was already defined",
+                                    var.ShortDebugString(), probe.ShortDebugString());
     }
 
     vars[var_name] = &var;
@@ -824,6 +851,7 @@ std::vector<std::string> GenBlobType(int size) {
   };
 }
 
+// Returns the type definitions of pre-defined data structures.
 std::vector<std::string> GenTypes() {
   std::vector<std::string> code_lines;
   // Create underlying blob types for strings, byte arrays, etc.

@@ -162,7 +162,7 @@ TEST(GenStructVariableTest, Variables) {
   fa->set_field_name("i64");
   fa->set_variable_name("bar");
 
-  ASSERT_OK_AND_THAT(GenStructVariable(st, st_var),
+  ASSERT_OK_AND_THAT(GenStructVariable(st_var),
                      ElementsAre("struct socket_data_event_t st_var = {};", "st_var.i32 = foo;",
                                  "st_var.i64 = bar;"));
 }
