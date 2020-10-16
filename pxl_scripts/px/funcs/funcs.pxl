@@ -4,8 +4,13 @@
 import px
 
 # Regular functions.
-px.display(px.GetUDFList(), "map funcs")
+def map_funcs():
+    return px.GetUDFList()
+
 # Aggregate functions.
-px.display(px.GetUDAList(), "agg funcs")
+def agg_funcs():
+    return px.GetUDAList()
+
 # Table generationg functions.
-px.display(px.GetUDTFList(), "table_funcs")
+def table_funcs():
+	return px.GetUDTFList()
