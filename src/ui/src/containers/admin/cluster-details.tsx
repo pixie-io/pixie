@@ -199,13 +199,16 @@ const GET_CLUSTER_CONTROL_PLANE_PODS = gql`
         reason
         message
       }
+      events {
+        message
+      }
     }
   }
 }
 `;
 
 const formatPodStatus = ({
-  name, status, message, reason, containers,
+  name, status, message, reason, containers, events,
 }) => ({
   name,
   status,
@@ -219,6 +222,9 @@ const formatPodStatus = ({
     reason: container.reason,
     statusGroup: containerStatusGroup(container.state),
   })),
+  events: events.map((event) => ({
+    message: event.message,
+  })),
 });
 
 const none = '<none>';
@@ -227,9 +233,12 @@ const ExpandablePodRow = withStyles((theme: Theme) => ({
   messageAndReason: {
     ...theme.typography.body2,
   },
+  eventList: {
+    marginTop: 0,
+  },
 }))(({ podStatus, classes }: any) => {
   const {
-    name, status, statusGroup, message, reason, containers,
+    name, status, statusGroup, message, reason, containers, events,
   } = podStatus;
   const [open, setOpen] = React.useState(false);
 
@@ -265,6 +274,20 @@ const ExpandablePodRow = withStyles((theme: Theme) => ({
                 {' '}
                 {reason || none}
               </div>
+              {
+                (events && events.length > 0) && (
+                  <div>
+                    Events:
+                    <ul className={classes.eventList}>
+                      {events.map((event, i) => (
+                        <li key={`${name}-${i}`}>
+                          {event.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )
+              }
               <Table size='small'>
                 <TableHead>
                   <TableRow key={name}>
