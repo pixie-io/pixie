@@ -187,31 +187,6 @@
       }
     },
     {
-      "name": "Outbound Traffic By Responding Service",
-      "position": {
-        "x": 0,
-        "y": 9,
-        "w": 12,
-        "h": 3
-      },
-      "func": {
-        "name": "outbound_let_summary",
-        "args": [
-          {
-            "name": "start_time",
-            "variable": "start_time"
-          },
-          {
-            "name": "service",
-            "variable": "service"
-          }
-        ]
-      },
-      "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
-      }
-    },
-    {
       "name": "Sample of Slow Requests",
       "position": {
         "x": 0,
