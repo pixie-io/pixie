@@ -18,6 +18,10 @@ spec:
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
+      - operator: Exists
+        effect: NoExecute
+      - operator: Exists
+        effect: NoSchedule
       imagePullSecrets:
       - name: pl-image-secret
       initContainers:
