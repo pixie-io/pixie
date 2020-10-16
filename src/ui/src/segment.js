@@ -37,7 +37,7 @@
        * PLEASE NOTE!!!!
        *******************************************/
       // They function defers the loading of segment until the browser is idle,
-      // followed by waiting another 5 seconds. This significantly helps with page performance
+      // followed by waiting another 2 seconds. This significantly helps with page performance
       // because it defers loading of external resources.
       analytics.load = function(t, e) {
         idleCallback(() => {
@@ -49,7 +49,7 @@
             var a = document.getElementsByTagName('script')[0];
             a.parentNode.insertBefore(n, a);
             analytics._loadOptions = e;
-          }, 5000);
+          }, 2000);
         });
       };
       analytics.SNIPPET_VERSION = "4.1.0";

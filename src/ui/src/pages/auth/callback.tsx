@@ -98,14 +98,19 @@ export const AuthCallbackPage = () => {
         });
         analytics.identify(response.data.userInfo.userID);
         if (isValidAnalytics()) {
-          await new Promise((resolve, reject) => { // Wait for analytics to be sent out before redirecting.
-            analytics.track('User logged up', (err) => {
-              if (err) {
-                reject();
-              }
-              resolve();
-            });
-          });
+          await Promise.race([
+            new Promise((resolve, reject) => { // Wait for analytics to be sent out before redirecting.
+              analytics.track('User logged up', (err) => {
+                if (err) {
+                  reject();
+                }
+                resolve();
+              });
+            }),
+            // Wait a maximum of 6s before redirecting. If it takes this long, it probably means that
+            // something in Segment failed to initialize/send.
+            new Promise((resolve) => setTimeout(resolve, 6000)),
+          ]);
         }
         return true;
       } catch (err) {
