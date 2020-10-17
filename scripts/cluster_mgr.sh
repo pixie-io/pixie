@@ -44,7 +44,7 @@ downscale() {
     NODEPOOL=$3
     gcloud container clusters update "${CLUSTER}" --no-enable-autoscaling \
         --zone "${ZONE}" --node-pool "${NODEPOOL}"
-    gcloud container clusters resize "${CLUSTER}" --node-pool "${NODEPOOL}" --size=0 --zone "${ZONE}" -q
+    gcloud container clusters resize "${CLUSTER}" --node-pool "${NODEPOOL}" --num_nodes=0 --zone "${ZONE}" -q
 }
 
 unset NODEPOOLS CLUSTER ACTION ZONE HELP
@@ -68,9 +68,14 @@ do
   esac
 done
 
+
 # display usage when -[u|d] and -c options are missing
 [ -z "${ACTION}"  ] && [ -z "${CLUSTER}" ] && usage
 [ "${HELP}" = true  ] && usage
+
+if [ "${ACTION}" == "STOP" ]; then
+  SIZE=0;
+fi
 
 # Convert arguments into arrays from comma delineated strings
 IFS=', ' read -r -a NODEPOOLS <<< "${NODEPOOLS}"
