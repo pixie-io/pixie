@@ -52,6 +52,7 @@ class AggNode : public ProcessingNode {
 
  public:
   AggNode() = default;
+  virtual ~AggNode() = default;
 
  protected:
   Status AggregateGroupByNone(ExecState* exec_state, const table_store::schema::RowBatch& rb);
