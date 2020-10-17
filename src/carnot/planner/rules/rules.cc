@@ -769,43 +769,6 @@ bool ConvertStringTimesRule::HasStringTime(const ExpressionIR* node) {
   return false;
 }
 
-StatusOr<int64_t> ConvertStringTimesRule::ParseDurationFmt(const StringIR* node,
-                                                           bool relative_time) {
-  auto int_or_s = StringToTimeInt(node->str());
-  if (!int_or_s.ok()) {
-    return int_or_s.status();
-  }
-  int64_t time_repr = int_or_s.ConsumeValueOrDie();
-  if (relative_time) {
-    time_repr += compiler_state_->time_now().val;
-  }
-  return time_repr;
-}
-
-StatusOr<int64_t> ConvertStringTimesRule::ParseAbsFmt(const StringIR* node) {
-  absl::Time tm;
-  std::string err_str;
-  if (!absl::ParseTime(kAbsTimeFormat, node->str(), &tm, &err_str)) {
-    return node->CreateIRNodeError("Failed to parse time: '$0'", err_str);
-  }
-  int64_t time_ns = absl::ToUnixNanos(tm);
-  return time_ns;
-}
-
-StatusOr<ExpressionIR*> ConvertStringTimesRule::ParseStringToTime(const StringIR* node,
-                                                                  bool relative_time) {
-  auto time_or_s = ParseDurationFmt(node, relative_time);
-  if (!time_or_s.ok()) {
-    time_or_s = ParseAbsFmt(node);
-  }
-  if (!time_or_s.ok()) {
-    return time_or_s.status();
-  }
-  PL_ASSIGN_OR_RETURN(auto new_node,
-                      node->graph()->CreateNode<IntIR>(node->ast(), time_or_s.ConsumeValueOrDie()));
-  return new_node;
-}
-
 // Support taking strings like "-2m" into a memory source or rolling operator.
 // relative_time determines whether to add in the current compiler time or just
 // use the time given by the string
@@ -824,8 +787,10 @@ StatusOr<ExpressionIR*> ConvertStringTimesRule::ConvertStringTimes(ExpressionIR*
 
   if (Match(node, String())) {
     auto str_node = static_cast<StringIR*>(node);
-    PL_ASSIGN_OR_RETURN(auto out_node, ParseStringToTime(str_node, relative_time));
-    return out_node;
+    PL_ASSIGN_OR_RETURN(
+        int64_t time,
+        ParseStringToTime(str_node, relative_time ? compiler_state_->time_now().val : 0));
+    return node->graph()->CreateNode<IntIR>(node->ast(), time);
   } else if (Match(node, Func())) {
     auto func_node = static_cast<FuncIR*>(node);
     for (const auto& [idx, arg] : Enumerate(func_node->args())) {

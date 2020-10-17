@@ -10,6 +10,7 @@
 #include "src/carnot/planner/compiler_state/registry_info.h"
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/ir/pattern_match.h"
+#include "src/carnot/planner/ir/time.h"
 #include "src/carnot/planner/metadata/metadata_handler.h"
 
 namespace pl {
@@ -287,7 +288,6 @@ class ConvertStringTimesRule : public Rule {
    *
    */
  public:
-  inline static constexpr char kAbsTimeFormat[] = "%E4Y-%m-%d %H:%M:%E*S %z";
   explicit ConvertStringTimesRule(CompilerState* compiler_state)
       : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
@@ -297,9 +297,6 @@ class ConvertStringTimesRule : public Rule {
   StatusOr<bool> HandleRolling(RollingIR* rolling);
   bool HasStringTime(const ExpressionIR* expr);
   StatusOr<ExpressionIR*> ConvertStringTimes(ExpressionIR* expr, bool relative_time);
-  StatusOr<int64_t> ParseDurationFmt(const StringIR* node, bool relative_time);
-  StatusOr<int64_t> ParseAbsFmt(const StringIR* node);
-  StatusOr<ExpressionIR*> ParseStringToTime(const StringIR* node, bool relative_time);
 };
 
 class SetMemSourceNsTimesRule : public Rule {

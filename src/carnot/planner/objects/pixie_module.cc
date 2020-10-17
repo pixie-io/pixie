@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "src/carnot/planner/ir/time.h"
 #include "src/carnot/planner/objects/dataframe.h"
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/none_object.h"
@@ -377,14 +378,7 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::AbsTime(IR* graph, const pypa::Ast
                                                       const ParsedArgs& args, ASTVisitor* visitor) {
   PL_ASSIGN_OR_RETURN(StringIR * date_str_ir, GetArgAs<StringIR>(ast, args, "date_string"));
   PL_ASSIGN_OR_RETURN(StringIR * format_str_ir, GetArgAs<StringIR>(ast, args, "format"));
-  std::string date_str = date_str_ir->str();
-  std::string format_str = format_str_ir->str();
-  absl::Time tm;
-  std::string err_str;
-  if (!absl::ParseTime(format_str, date_str, &tm, &err_str)) {
-    return CreateAstError(ast, "Failed to parse with error '$0'", err_str);
-  }
-  int64_t time_ns = absl::ToUnixNanos(tm);
+  PL_ASSIGN_OR_RETURN(int64_t time_ns, ParseAbsFmt(date_str_ir, format_str_ir->str()));
   PL_ASSIGN_OR_RETURN(IntIR * time_count, graph->CreateNode<IntIR>(ast, time_ns));
   return StatusOr<QLObjectPtr>(ExprObject::Create(time_count, visitor));
 }
