@@ -285,8 +285,6 @@ static __inline struct traffic_class_t infer_traffic(enum TrafficDirection direc
     traffic_class.protocol = kProtocolPGSQL;
   } else if ((req_resp_type = infer_mysql_message(buf, count)) != kUnknown) {
     traffic_class.protocol = kProtocolMySQL;
-  } else if ((req_resp_type = infer_http2_message(buf, count)) != kUnknown) {
-    traffic_class.protocol = kProtocolHTTP2;
   } else {
     return traffic_class;
   }

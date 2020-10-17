@@ -11,9 +11,8 @@
 // PROTOCOL_LIST: Requires update on new protocols.
 #include "src/stirling/protocols/cql/types.h"
 #include "src/stirling/protocols/dns/types.h"
-#include "src/stirling/protocols/http/http_parse.h"
-#include "src/stirling/protocols/http2/http2.h"
-#include "src/stirling/protocols/http2u/types.h"
+#include "src/stirling/protocols/http/types.h"
+#include "src/stirling/protocols/http2/types.h"
 #include "src/stirling/protocols/mysql/types.h"
 #include "src/stirling/protocols/pgsql/types.h"
 
@@ -263,9 +262,8 @@ class DataStream {
   // bug, so we add std::monostate as the default type. And switch to the right time in runtime.
   // PROTOCOL_LIST: Requires update on new protocols.
   std::variant<std::monostate, std::deque<protocols::http::Message>,
-               std::deque<protocols::http2::Frame>, std::deque<protocols::mysql::Packet>,
-               std::deque<protocols::cass::Frame>, std::deque<protocols::pgsql::RegularMessage>,
-               std::deque<protocols::dns::Frame>>
+               std::deque<protocols::mysql::Packet>, std::deque<protocols::cass::Frame>,
+               std::deque<protocols::pgsql::RegularMessage>, std::deque<protocols::dns::Frame>>
       frames_;
 
   // Used by Uprobe-based HTTP2 only.

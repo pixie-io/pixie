@@ -1,4 +1,4 @@
-#include "src/stirling/protocols/http2u/stitcher.h"
+#include "src/stirling/protocols/http2/stitcher.h"
 
 #include <utility>
 

@@ -51,8 +51,7 @@ DECLARE_bool(stirling_enable_parsing_protobufs);
 DECLARE_uint32(stirling_socket_trace_sampling_period_millis);
 DECLARE_string(perf_buffer_events_output_path);
 DECLARE_bool(stirling_enable_http_tracing);
-DECLARE_bool(stirling_enable_grpc_kprobe_tracing);
-DECLARE_bool(stirling_enable_grpc_uprobe_tracing);
+DECLARE_bool(stirling_enable_grpc_tracing);
 DECLARE_bool(stirling_enable_mysql_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
 DECLARE_string(stirling_role_to_trace);
@@ -357,8 +356,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {kProtocolHTTP,
        {kHTTPTableNum, &SocketTraceConnector::TransferStream<protocols::http::ProtocolTraits>}},
       {kProtocolHTTP2,
-       {kHTTPTableNum, &SocketTraceConnector::TransferStream<protocols::http2::ProtocolTraits>}},
-      {kProtocolHTTP2U,
        {kHTTPTableNum, &SocketTraceConnector::TransferStream<protocols::http2u::ProtocolTraits>}},
       {kProtocolMySQL,
        {kMySQLTableNum, &SocketTraceConnector::TransferStream<protocols::mysql::ProtocolTraits>}},

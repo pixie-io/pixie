@@ -15,15 +15,12 @@ namespace pl {
 namespace stirling {
 
 namespace http = protocols::http;
-namespace http2 = protocols::http2;
 namespace mysql = protocols::mysql;
 
 using ::testing::Field;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
 
-using testing::kHTTP2EndStreamDataFrame;
-using testing::kHTTP2EndStreamHeadersFrame;
 using testing::kHTTPReq0;
 using testing::kHTTPReq1;
 using testing::kHTTPReq2;
@@ -382,137 +379,19 @@ TEST(StatsTest, Increment) {
 }
 
 TEST_F(ConnectionTrackerTest, DataEventsChangesCounter) {
-  auto frame0 = event_gen_.InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
-  auto frame1 = event_gen_.InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
+  auto frame0 = event_gen_.InitRecvEvent<kProtocolHTTP>(kHTTPReq0);
+  auto frame1 = event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPResp0);
 
   ConnectionTracker tracker;
 
-  EXPECT_EQ(0, tracker.stats().Get(ConnectionTracker::Stats::Key::kBytesSent));
   EXPECT_EQ(0, tracker.stats().Get(ConnectionTracker::Stats::Key::kBytesRecv));
+  EXPECT_EQ(0, tracker.stats().Get(ConnectionTracker::Stats::Key::kBytesSent));
 
   tracker.AddDataEvent(std::move(frame0));
   tracker.AddDataEvent(std::move(frame1));
 
-  EXPECT_EQ(9, tracker.stats().Get(ConnectionTracker::Stats::Key::kBytesSent));
-  EXPECT_EQ(9, tracker.stats().Get(ConnectionTracker::Stats::Key::kBytesRecv));
-}
-
-TEST_F(ConnectionTrackerTest, HTTP2ResetAfterStitchFailure) {
-  testing::EventGenerator event_gen(&real_clock_);
-  auto frame0 = event_gen.InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
-  auto frame1 = event_gen.InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
-  auto frame2 = event_gen.InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
-  auto frame3 = event_gen.InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
-  auto frame4 = event_gen.InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
-  auto frame5 = event_gen.InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
-
-  ConnectionTracker tracker;
-
-  tracker.AddDataEvent(std::move(frame0));
-  tracker.ProcessToRecords<http2::ProtocolTraits>();
-  EXPECT_THAT(tracker.resp_frames<http2::Frame>(), SizeIs(1));
-
-  tracker.AddDataEvent(std::move(frame1));
-  tracker.ProcessToRecords<http2::ProtocolTraits>();
-  // Now we see two END_STREAM headers frame on stream ID 1, then that translate to 2 gRPC
-  // response messages. That failure will cause stream being reset.
-  EXPECT_THAT(tracker.resp_frames<http2::Frame>(), IsEmpty());
-
-  tracker.AddDataEvent(std::move(frame2));
-  tracker.ProcessToRecords<http2::ProtocolTraits>();
-  EXPECT_THAT(tracker.req_frames<http2::Frame>(), SizeIs(1));
-
-  tracker.AddDataEvent(std::move(frame3));
-  tracker.ProcessToRecords<http2::ProtocolTraits>();
-  // Ditto.
-  EXPECT_THAT(tracker.req_frames<http2::Frame>(), IsEmpty());
-
-  // Add a call to make sure things do not go haywire after resetting stream.
-  tracker.AddDataEvent(std::move(frame4));
-  tracker.AddDataEvent(std::move(frame5));
-  auto records = tracker.ProcessToRecords<http2::ProtocolTraits>();
-  // These 2 messages forms a matching req & resp.
-  EXPECT_THAT(records, SizeIs(1));
-}
-
-// TODO(yzhao): Add the same test for HTTPMessage.
-TEST_F(ConnectionTrackerTest, HTTP2FramesCleanedUpAfterBreachingSizeLimit) {
-  testing::EventGenerator event_gen(&real_clock_);
-  auto frame0 = event_gen.InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
-  auto frame1 = event_gen.InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
-  auto frame2 = event_gen.InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
-  auto frame3 = event_gen.InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
-
-  ConnectionTracker tracker;
-
-  FLAGS_messages_size_limit_bytes = 10000;
-
-  tracker.AddDataEvent(std::move(frame0));
-  tracker.ProcessToRecords<http2::ProtocolTraits>();
-  EXPECT_THAT(tracker.resp_frames<http2::Frame>(), SizeIs(1));
-
-  // Set to 0 so it can expire immediately.
-  FLAGS_messages_size_limit_bytes = 0;
-
-  tracker.ProcessToRecords<http2::ProtocolTraits>();
-  EXPECT_THAT(tracker.resp_frames<http2::Frame>(), IsEmpty());
-
-  FLAGS_messages_size_limit_bytes = 10000;
-  tracker.AddDataEvent(std::move(frame1));
-  tracker.ProcessToRecords<http2::ProtocolTraits>();
-  EXPECT_THAT(tracker.req_frames<http2::Frame>(), SizeIs(1));
-
-  FLAGS_messages_size_limit_bytes = 0;
-  tracker.ProcessToRecords<http2::ProtocolTraits>();
-  // Ditto.
-  EXPECT_THAT(tracker.req_frames<http2::Frame>(), IsEmpty());
-
-  // Add a call to make sure things do not go haywire after resetting stream.
-  tracker.AddDataEvent(std::move(frame2));
-  tracker.AddDataEvent(std::move(frame3));
-  auto records = tracker.ProcessToRecords<http2::ProtocolTraits>();
-  // These 2 messages forms a matching req & resp.
-  EXPECT_THAT(records, SizeIs(1));
-}
-
-TEST_F(ConnectionTrackerTest, HTTP2FramesErasedAfterExpiration) {
-  testing::EventGenerator event_gen(&real_clock_);
-  auto frame0 = event_gen.InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
-  auto frame1 = event_gen.InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
-  auto frame2 = event_gen.InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
-  auto frame3 = event_gen.InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
-
-  ConnectionTracker tracker;
-
-  FLAGS_messages_size_limit_bytes = 10000;
-  FLAGS_messages_expiration_duration_secs = 10000;
-
-  tracker.AddDataEvent(std::move(frame0));
-  tracker.ProcessToRecords<http2::ProtocolTraits>();
-  EXPECT_THAT(tracker.resp_frames<http2::Frame>(), SizeIs(1));
-
-  // Set to 0 so it can expire immediately.
-  FLAGS_messages_expiration_duration_secs = 0;
-
-  tracker.ProcessToRecords<http2::ProtocolTraits>();
-  EXPECT_THAT(tracker.resp_frames<http2::Frame>(), IsEmpty());
-
-  FLAGS_messages_expiration_duration_secs = 10000;
-  tracker.AddDataEvent(std::move(frame1));
-  tracker.ProcessToRecords<http2::ProtocolTraits>();
-  EXPECT_THAT(tracker.req_frames<http2::Frame>(), SizeIs(1));
-
-  FLAGS_messages_expiration_duration_secs = 0;
-  tracker.ProcessToRecords<http2::ProtocolTraits>();
-  // Ditto.
-  EXPECT_THAT(tracker.req_frames<http2::Frame>(), IsEmpty());
-
-  // Add a call to make sure things do not go haywire after resetting stream.
-  tracker.AddDataEvent(std::move(frame2));
-  tracker.AddDataEvent(std::move(frame3));
-  auto records = tracker.ProcessToRecords<http2::ProtocolTraits>();
-  // These 2 messages forms a matching req & resp.
-  EXPECT_THAT(records, SizeIs(1));
+  EXPECT_EQ(kHTTPReq0.size(), tracker.stats().Get(ConnectionTracker::Stats::Key::kBytesRecv));
+  EXPECT_EQ(kHTTPResp0.size(), tracker.stats().Get(ConnectionTracker::Stats::Key::kBytesSent));
 }
 
 TEST_F(ConnectionTrackerTest, HTTPStuckEventsAreRemoved) {
@@ -964,9 +843,8 @@ TEST_P(ConnectionTrackerStatsTest, OnlyDataEvents) {
 // PROTOCOL_LIST: Requires update on new protocols.
 INSTANTIATE_TEST_SUITE_P(AllProtocols, ConnectionTrackerStatsTest,
                          ::testing::Combine(::testing::Values(kProtocolUnknown, kProtocolHTTP,
-                                                              kProtocolHTTP2, kProtocolMySQL,
-                                                              kProtocolCQL, kProtocolPGSQL,
-                                                              kProtocolDNS),
+                                                              kProtocolMySQL, kProtocolCQL,
+                                                              kProtocolPGSQL, kProtocolDNS),
                                             ::testing::Values(kRoleClient, kRoleServer)));
 
 }  // namespace stirling

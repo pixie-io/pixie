@@ -12,7 +12,7 @@ namespace pl {
 namespace stirling {
 
 namespace http = protocols::http;
-namespace http2 = protocols::http2;
+namespace mysql = protocols::mysql;
 
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
@@ -320,10 +320,10 @@ TEST_F(DataStreamTest, CannotSwitchType) {
   stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
 
 #if DCHECK_IS_ON()
-  EXPECT_DEATH(stream.ProcessBytesToFrames<http2::Frame>(MessageType::kRequest),
+  EXPECT_DEATH(stream.ProcessBytesToFrames<mysql::Packet>(MessageType::kRequest),
                "ConnectionTracker cannot change the type it holds during runtime");
 #else
-  EXPECT_THROW(stream.ProcessBytesToFrames<http2::Frame>(MessageType::kRequest), std::exception);
+  EXPECT_THROW(stream.ProcessBytesToFrames<mysql::Packet>(MessageType::kRequest), std::exception);
 #endif
 }
 

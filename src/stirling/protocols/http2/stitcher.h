@@ -3,7 +3,7 @@
 #include <deque>
 #include <vector>
 
-#include "src/stirling/protocols/http2u/types.h"
+#include "src/stirling/protocols/http2/types.h"
 
 namespace pl {
 namespace stirling {

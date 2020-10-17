@@ -23,7 +23,7 @@
 #include "src/stirling/protocols/cql/cql_stitcher.h"
 #include "src/stirling/protocols/dns/dns_stitcher.h"
 #include "src/stirling/protocols/http/http_stitcher.h"
-#include "src/stirling/protocols/http2u/stitcher.h"
+#include "src/stirling/protocols/http2/stitcher.h"
 #include "src/stirling/protocols/mysql/mysql_stitcher.h"
 #include "src/stirling/protocols/pgsql/stitcher.h"
 

@@ -22,10 +22,7 @@ enum TrafficDirection {
 enum TrafficProtocol {
   kProtocolUnknown = 0,
   kProtocolHTTP,
-  // TODO(oazizi): Consolidate the two HTTP2 protocols once Uprobe work is complete.
-  // Currently BPF doesn't produce kProtocolHTTP2U, so it is only created through tests.
   kProtocolHTTP2,
-  kProtocolHTTP2U,
   kProtocolMySQL,
   kProtocolCQL,
   kProtocolPGSQL,

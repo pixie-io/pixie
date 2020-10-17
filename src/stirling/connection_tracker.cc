@@ -23,8 +23,8 @@
 #include "src/stirling/protocols/cql/types.h"
 #include "src/stirling/protocols/http/http_stitcher.h"
 #include "src/stirling/protocols/http/types.h"
-#include "src/stirling/protocols/http2u/stitcher.h"
-#include "src/stirling/protocols/http2u/types.h"
+#include "src/stirling/protocols/http2/stitcher.h"
+#include "src/stirling/protocols/http2/types.h"
 #include "src/stirling/protocols/mysql/mysql_stitcher.h"
 #include "src/stirling/protocols/mysql/types.h"
 
@@ -237,7 +237,7 @@ EndpointRole InferHTTP2Role(bool write_event, const std::unique_ptr<HTTP2HeaderE
 
 void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   SetConnID(hdr->attr.conn_id);
-  traffic_class_.protocol = kProtocolHTTP2U;
+  traffic_class_.protocol = kProtocolHTTP2;
 
   CONN_TRACE(1) << absl::Substitute("stream_id=$0 end_stream=$1 header=$2:$3", hdr->attr.stream_id,
                                     hdr->attr.end_stream, hdr->name, hdr->value);
@@ -321,7 +321,7 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
 
 void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   SetConnID(data->attr.conn_id);
-  traffic_class_.protocol = kProtocolHTTP2U;
+  traffic_class_.protocol = kProtocolHTTP2;
 
   CONN_TRACE(1) << absl::Substitute(
       "stream_id=$0 end_stream=$1 data=$2 ...", data->attr.stream_id, data->attr.end_stream,

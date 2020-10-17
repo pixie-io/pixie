@@ -40,7 +40,6 @@ pl_cc_library(
         "//src/stirling/protocols/pgsql:cc_library",
         "//src/stirling/protocols/http:cc_library",
         "//src/stirling/protocols/http2:cc_library",
-        "//src/stirling/protocols/http2u:cc_library",
         "//src/stirling/proto:sock_event_pl_cc_proto",
         "//src/stirling/bcc_bpf_interface:cc_library",
         "//src/stirling/bpf_tools:cc_library",

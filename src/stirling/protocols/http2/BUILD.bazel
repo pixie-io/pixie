@@ -18,34 +18,7 @@ pl_cc_library(
         ],
     ),
     deps = [
-        "//external:nghttp2",
-        "//src/common/grpcutils:cc_library",
+        "//src/stirling/common:cc_library",
         "//src/stirling/protocols/common:cc_library",
-        "//src/stirling/utils:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "frame_test",
-    srcs = ["frame_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
-    name = "http2_test",
-    srcs = ["http2_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/stirling/protocols/http2/testing:cc_library",
-        "//src/stirling/testing:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "grpc_test",
-    srcs = ["grpc_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/stirling/protocols/http2/testing/proto:greet_pl_cc_proto",
     ],
 )

@@ -30,7 +30,6 @@
 #include "src/stirling/protocols/cql/types.h"
 #include "src/stirling/protocols/http/http_stitcher.h"
 #include "src/stirling/protocols/http2/grpc.h"
-#include "src/stirling/protocols/http2/http2.h"
 #include "src/stirling/protocols/mysql/mysql_parse.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/utils/linux_headers.h"
@@ -50,9 +49,7 @@ DEFINE_string(perf_buffer_events_output_path, "",
 // PROTOCOL_LIST: Requires update on new protocols.
 DEFINE_bool(stirling_enable_http_tracing, true,
             "If true, stirling will trace and process HTTP messages");
-DEFINE_bool(stirling_enable_grpc_kprobe_tracing, false,
-            "If true, stirling will trace and process gRPC RPCs.");
-DEFINE_bool(stirling_enable_grpc_uprobe_tracing, true,
+DEFINE_bool(stirling_enable_grpc_tracing, true,
             "If true, stirling will trace and process gRPC RPCs.");
 DEFINE_bool(stirling_enable_mysql_tracing, true,
             "If true, stirling will trace and process MySQL messages.");
@@ -105,8 +102,7 @@ void SocketTraceConnector::InitProtocols() {
   // Populate `enabled` from flags.
   // PROTOCOL_LIST: Requires update on new protocols.
   protocol_transfer_specs_[kProtocolHTTP].enabled = FLAGS_stirling_enable_http_tracing;
-  protocol_transfer_specs_[kProtocolHTTP2].enabled = FLAGS_stirling_enable_grpc_kprobe_tracing;
-  protocol_transfer_specs_[kProtocolHTTP2U].enabled = FLAGS_stirling_enable_grpc_uprobe_tracing;
+  protocol_transfer_specs_[kProtocolHTTP2].enabled = FLAGS_stirling_enable_grpc_tracing;
   protocol_transfer_specs_[kProtocolMySQL].enabled = FLAGS_stirling_enable_mysql_tracing;
   protocol_transfer_specs_[kProtocolCQL].enabled = FLAGS_stirling_enable_cass_tracing;
   protocol_transfer_specs_[kProtocolPGSQL].enabled = FLAGS_stirling_enable_pgsql_tracing;
@@ -133,13 +129,6 @@ Status SocketTraceConnector::InitImpl() {
     return error::Internal(
         "SC_CLK_TCK aka USER_HZ must be 100, otherwise our BPF code may not generate proper "
         "timestamps in a way that matches how /proc/stat does it");
-  }
-
-  if (FLAGS_stirling_enable_grpc_kprobe_tracing && FLAGS_stirling_enable_grpc_uprobe_tracing) {
-    LOG(DFATAL) << "--stirling_enable_grpc_kprobe_tracing and "
-                   "--stirling_enable_grpc_uprobe_tracing cannot be both true. "
-                   "--stirling_enable_grpc_kprobe_tracing is forced to false.";
-    FLAGS_stirling_enable_grpc_kprobe_tracing = false;
   }
 
   PL_ASSIGN_OR_RETURN(utils::KernelVersion kernel_version, utils::GetKernelVersion());
@@ -827,7 +816,7 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
     // Temporary end.
 
     // HTTP2 Probes.
-    if (protocol_transfer_specs_[kProtocolHTTP2U].enabled) {
+    if (protocol_transfer_specs_[kProtocolHTTP2].enabled) {
       StatusOr<int> attach_status =
           AttachHTTP2UProbes(binary, elf_reader.get(), pid_vec, http2_symaddrs_map_.get());
       if (!attach_status.ok()) {
@@ -1081,60 +1070,6 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          const ConnectionTracker& conn_tracker,
-                                         protocols::http2::Record record, DataTable* data_table) {
-  using ::pl::stirling::protocols::http2::HTTP2Message;
-
-  HTTP2Message& req_message = record.req;
-  HTTP2Message& resp_message = record.resp;
-
-  int64_t resp_status;
-  ECHECK(absl::SimpleAtoi(resp_message.headers.ValueByKey(":status", "-1"), &resp_status));
-
-  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
-                conn_tracker.conn_id().upid.start_time_ticks);
-
-  std::string path = req_message.headers.ValueByKey(protocols::http2::headers::kPath);
-
-  if (FLAGS_stirling_enable_parsing_protobufs &&
-      (req_message.HasGRPCContentType() || resp_message.HasGRPCContentType())) {
-    MethodInputOutput rpc = grpc_desc_db_.GetMethodInputOutput(::pl::grpc::MethodPath(path));
-    req_message.message = ParsePB(req_message.message, rpc.input.get());
-    resp_message.message = ParsePB(resp_message.message, rpc.output.get());
-  }
-
-  DataTable::RecordBuilder<&kHTTPTable> r(data_table, resp_message.timestamp_ns);
-  r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
-  r.Append<r.ColIndex("upid")>(upid.value());
-  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
-  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
-  r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
-  r.Append<r.ColIndex("http_major_version")>(2);
-  // HTTP2 does not define minor version.
-  r.Append<r.ColIndex("http_minor_version")>(0);
-  r.Append<r.ColIndex("http_req_headers"), kMaxHTTPHeadersBytes>(ToJSONString(req_message.headers));
-  r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
-  r.Append<r.ColIndex("http_resp_headers"), kMaxHTTPHeadersBytes>(
-      ToJSONString(resp_message.headers));
-  r.Append<r.ColIndex("http_req_method")>(
-      req_message.headers.ValueByKey(protocols::http2::headers::kMethod));
-  r.Append<r.ColIndex("http_req_path")>(path);
-  r.Append<r.ColIndex("http_resp_status")>(resp_status);
-  // TODO(yzhao): Populate the following field from headers.
-  r.Append<r.ColIndex("http_resp_message")>("-");
-  r.Append<r.ColIndex("http_req_body_size")>(req_message.message.size());
-  r.Append<r.ColIndex("http_req_body"), kMaxBodyBytes>(std::move(req_message.message));
-  r.Append<r.ColIndex("http_resp_body_size")>(resp_message.message.size());
-  r.Append<r.ColIndex("http_resp_body"), kMaxBodyBytes>(std::move(resp_message.message));
-  r.Append<r.ColIndex("http_resp_latency_ns")>(
-      CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
-#ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>("");
-#endif
-}
-
-template <>
-void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
-                                         const ConnectionTracker& conn_tracker,
                                          protocols::http2u::Record record, DataTable* data_table) {
   protocols::http2u::HalfStream* req_stream;
   protocols::http2u::HalfStream* resp_stream;
@@ -1157,7 +1092,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
-  std::string path = req_stream->headers.ValueByKey(protocols::http2::headers::kPath);
+  std::string path = req_stream->headers.ValueByKey(protocols::http2u::headers::kPath);
 
   if (FLAGS_stirling_enable_parsing_protobufs &&
       (req_stream->HasGRPCContentType() || resp_stream->HasGRPCContentType())) {
@@ -1180,7 +1115,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_resp_headers"), kMaxHTTPHeadersBytes>(
       ToJSONString(resp_stream->headers));
   r.Append<r.ColIndex("http_req_method")>(
-      req_stream->headers.ValueByKey(protocols::http2::headers::kMethod));
+      req_stream->headers.ValueByKey(protocols::http2u::headers::kMethod));
   r.Append<r.ColIndex("http_req_path")>(req_stream->headers.ValueByKey(":path"));
   r.Append<r.ColIndex("http_resp_status")>(resp_status);
   // TODO(yzhao): Populate the following field from headers.
