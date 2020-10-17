@@ -19,6 +19,8 @@ namespace exec {
 class EmptySourceNode : public SourceNode {
  public:
   EmptySourceNode() = default;
+  virtual ~EmptySourceNode() = default;
+
   bool NextBatchReady() override;
 
  protected:

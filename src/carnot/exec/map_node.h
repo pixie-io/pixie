@@ -21,6 +21,7 @@ namespace exec {
 class MapNode : public ProcessingNode {
  public:
   MapNode() = default;
+  virtual ~MapNode() = default;
 
  protected:
   std::string DebugStringImpl() override;

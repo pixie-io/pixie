@@ -22,6 +22,8 @@ using table_store::schema::RowBatch;
 class MemorySourceNode : public SourceNode {
  public:
   MemorySourceNode() = default;
+  virtual ~MemorySourceNode() = default;
+
   bool NextBatchReady() override;
 
  protected:

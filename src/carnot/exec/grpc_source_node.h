@@ -25,6 +25,8 @@ namespace exec {
 class GRPCSourceNode : public SourceNode {
  public:
   GRPCSourceNode() = default;
+  virtual ~GRPCSourceNode() = default;
+
   bool NextBatchReady() override;
   virtual Status EnqueueRowBatch(std::unique_ptr<carnotpb::TransferResultChunkRequest> row_batch);
 

@@ -325,6 +325,7 @@ class ExecNode {
 class ProcessingNode : public ExecNode {
  public:
   ProcessingNode() : ExecNode(ExecNodeType::kProcessingNode) {}
+  virtual ~ProcessingNode() = default;
 };
 
 /**
@@ -334,6 +335,8 @@ class ProcessingNode : public ExecNode {
 class SourceNode : public ExecNode {
  public:
   SourceNode() : ExecNode(ExecNodeType::kSourceNode) {}
+  virtual ~SourceNode() = default;
+
   bool HasBatchesRemaining() { return !sent_eos_; }
   virtual bool NextBatchReady() = 0;
   int64_t BytesProcessed() const { return bytes_processed_; }
@@ -358,6 +361,7 @@ class SourceNode : public ExecNode {
 class SinkNode : public ExecNode {
  public:
   SinkNode() : ExecNode(ExecNodeType::kSinkNode) {}
+  virtual ~SinkNode() = default;
 };
 
 }  // namespace exec

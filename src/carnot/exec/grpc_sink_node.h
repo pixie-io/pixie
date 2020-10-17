@@ -25,6 +25,7 @@ constexpr std::chrono::milliseconds kDefaultConnectionCheckTimeoutMS{2000};
 class GRPCSinkNode : public SinkNode {
  public:
   GRPCSinkNode() = default;
+  virtual ~GRPCSinkNode() = default;
 
   // Used to check the downstream connection after connection_check_timeout_ has elapsed.
   Status OptionallyCheckConnection(ExecState* exec_state);

@@ -44,6 +44,7 @@ class EquijoinNode : public ProcessingNode {
 
  public:
   EquijoinNode() = default;
+  virtual ~EquijoinNode() = default;
 
  protected:
   std::string DebugStringImpl() override;

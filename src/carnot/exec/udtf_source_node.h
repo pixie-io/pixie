@@ -22,6 +22,8 @@ namespace exec {
 class UDTFSourceNode : public SourceNode {
  public:
   UDTFSourceNode() = default;
+  virtual ~UDTFSourceNode() = default;
+
   bool NextBatchReady() override;
 
  protected:

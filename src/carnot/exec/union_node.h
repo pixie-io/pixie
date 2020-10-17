@@ -28,6 +28,7 @@ constexpr size_t kDefaultDataFlushTimeoutMillis = 1000;
 class UnionNode : public ProcessingNode {
  public:
   UnionNode() = default;
+  virtual ~UnionNode() = default;
 
   // For the time ordered case: A MergeRow represents a row in an input row batch.
   struct MergeRow {

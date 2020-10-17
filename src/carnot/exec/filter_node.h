@@ -21,6 +21,7 @@ namespace exec {
 class FilterNode : public ProcessingNode {
  public:
   FilterNode() = default;
+  virtual ~FilterNode() = default;
 
  protected:
   std::string DebugStringImpl() override;

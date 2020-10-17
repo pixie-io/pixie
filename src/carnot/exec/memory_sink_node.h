@@ -19,6 +19,8 @@ namespace exec {
 class MemorySinkNode : public SinkNode {
  public:
   MemorySinkNode() = default;
+  virtual ~MemorySinkNode() = default;
+
   std::string TableName() const { return plan_node_->TableName(); }
 
  protected:

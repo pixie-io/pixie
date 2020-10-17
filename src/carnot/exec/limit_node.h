@@ -20,6 +20,7 @@ namespace exec {
 class LimitNode : public ProcessingNode {
  public:
   LimitNode() = default;
+  virtual ~LimitNode() = default;
 
  protected:
   std::string DebugStringImpl() override;
