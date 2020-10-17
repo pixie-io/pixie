@@ -14,3 +14,4 @@ def agg_funcs():
 # Table generationg functions.
 def table_funcs():
 	return px.GetUDTFList()
+	
