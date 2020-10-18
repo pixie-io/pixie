@@ -27,11 +27,6 @@ pl_cc_library(
     ],
 )
 
-config_setting(
-    name = "coverage",
-    values = {"define": "PL_COVERAGE=true"},
-)
-
 pl_cc_test(
     name = "elf_tools_test",
     srcs = ["elf_tools_test.cc"],
@@ -42,10 +37,6 @@ pl_cc_test(
         "//src/stirling/obj_tools/testdata:prebuilt_exe",
         "//src/stirling/obj_tools/testdata:stripped_exe",
     ],
-    defines = select({
-        ":coverage": ["PL_COVERAGE"],
-        "//conditions:default": [],
-    }),
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",

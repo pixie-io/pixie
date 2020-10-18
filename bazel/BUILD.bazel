@@ -15,7 +15,6 @@ config_setting(
     values = {
         "define": "PL_COVERAGE=true",
     },
-    visibility = ["//visibility:public"],
 )
 
 config_setting(
