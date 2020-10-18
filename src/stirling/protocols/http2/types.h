@@ -12,7 +12,7 @@
 namespace pl {
 namespace stirling {
 namespace protocols {
-namespace http2u {
+namespace http2 {
 
 namespace headers {
 
@@ -104,7 +104,7 @@ struct ProtocolTraits {
   using state_type = NoState;
 };
 
-}  // namespace http2u
+}  // namespace http2
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace pl

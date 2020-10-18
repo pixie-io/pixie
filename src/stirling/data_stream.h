@@ -78,8 +78,8 @@ class DataStream {
    * Returns the current set of streams (for Uprobe-based HTTP2 only)
    * @return deque of streams.
    */
-  std::deque<protocols::http2u::Stream>& http2_streams() { return http2_streams_; }
-  const std::deque<protocols::http2u::Stream>& http2_streams() const { return http2_streams_; }
+  std::deque<protocols::http2::Stream>& http2_streams() { return http2_streams_; }
+  const std::deque<protocols::http2::Stream>& http2_streams() const { return http2_streams_; }
 
   /**
    * Clears all unparsed and parsed data from the Datastream.
@@ -219,7 +219,7 @@ class DataStream {
   }
 
   static void EraseExpiredStreams(std::chrono::seconds exp_dur,
-                                  std::deque<protocols::http2u::Stream>* streams) {
+                                  std::deque<protocols::http2::Stream>* streams) {
     auto iter = streams->begin();
     for (; iter != streams->end(); ++iter) {
       uint64_t timestamp_ns = std::max(iter->send.timestamp_ns, iter->recv.timestamp_ns);
@@ -267,7 +267,7 @@ class DataStream {
       frames_;
 
   // Used by Uprobe-based HTTP2 only.
-  std::deque<protocols::http2u::Stream> http2_streams_;
+  std::deque<protocols::http2::Stream> http2_streams_;
 
   // The following state keeps track of whether the raw events were touched or not since the last
   // call to ProcessBytesToFrames(). It enables ProcessToRecords() to exit early if nothing has
@@ -312,8 +312,8 @@ inline std::string DebugString(const DataStream& d, std::string_view prefix) {
 }
 
 template <>
-inline std::string DebugString<protocols::http2u::Stream>(const DataStream& d,
-                                                          std::string_view prefix) {
+inline std::string DebugString<protocols::http2::Stream>(const DataStream& d,
+                                                         std::string_view prefix) {
   std::string info;
   info += absl::Substitute("$0active streams=$1\n", prefix, d.http2_streams().size());
   return info;

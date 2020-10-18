@@ -643,7 +643,7 @@ StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(
 // That allows the BPF code and companion user-space code for uprobe & kprobe be separated
 // cleanly. For example, right now, enabling uprobe & kprobe simultaneously can crash Stirling,
 // because of the mixed & duplicate data events from these 2 sources.
-StatusOr<int> SocketTraceConnector::AttachHTTP2UProbes(
+StatusOr<int> SocketTraceConnector::AttachHTTP2Probes(
     const std::string& binary, elf_tools::ElfReader* elf_reader,
     const std::vector<int32_t>& new_pids,
     ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map) {
@@ -662,7 +662,7 @@ StatusOr<int> SocketTraceConnector::AttachHTTP2UProbes(
     // This is not a new binary, so nothing more to do.
     return 0;
   }
-  return AttachUProbeTmpl(kHTTP2UProbeTmpls, binary, elf_reader);
+  return AttachUProbeTmpl(kHTTP2ProbeTmpls, binary, elf_reader);
 }
 
 StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(const std::string& binary,
@@ -818,7 +818,7 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
     // HTTP2 Probes.
     if (protocol_transfer_specs_[kProtocolHTTP2].enabled) {
       StatusOr<int> attach_status =
-          AttachHTTP2UProbes(binary, elf_reader.get(), pid_vec, http2_symaddrs_map_.get());
+          AttachHTTP2Probes(binary, elf_reader.get(), pid_vec, http2_symaddrs_map_.get());
       if (!attach_status.ok()) {
         LOG_FIRST_N(WARNING, 10) << absl::Substitute("Failed to attach HTTP2 Uprobes to $0: $1",
                                                      binary, attach_status.ToString());
@@ -1070,9 +1070,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          const ConnectionTracker& conn_tracker,
-                                         protocols::http2u::Record record, DataTable* data_table) {
-  protocols::http2u::HalfStream* req_stream;
-  protocols::http2u::HalfStream* resp_stream;
+                                         protocols::http2::Record record, DataTable* data_table) {
+  protocols::http2::HalfStream* req_stream;
+  protocols::http2::HalfStream* resp_stream;
 
   // Depending on whether the traced entity was the requestor or responder,
   // we need to flip the interpretation of the half-streams.
@@ -1092,7 +1092,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
-  std::string path = req_stream->headers.ValueByKey(protocols::http2u::headers::kPath);
+  std::string path = req_stream->headers.ValueByKey(protocols::http2::headers::kPath);
 
   if (FLAGS_stirling_enable_parsing_protobufs &&
       (req_stream->HasGRPCContentType() || resp_stream->HasGRPCContentType())) {
@@ -1115,7 +1115,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_resp_headers"), kMaxHTTPHeadersBytes>(
       ToJSONString(resp_stream->headers));
   r.Append<r.ColIndex("http_req_method")>(
-      req_stream->headers.ValueByKey(protocols::http2u::headers::kMethod));
+      req_stream->headers.ValueByKey(protocols::http2::headers::kMethod));
   r.Append<r.ColIndex("http_req_path")>(req_stream->headers.ValueByKey(":path"));
   r.Append<r.ColIndex("http_resp_status")>(resp_status);
   // TODO(yzhao): Populate the following field from headers.

@@ -146,11 +146,11 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   }
 }
 
-protocols::http2u::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id,
-                                                                bool write_event) {
+protocols::http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id,
+                                                               bool write_event) {
   // Check for both client-initiated (odd stream_ids) and server-initiated (even stream_ids)
   // streams.
-  std::deque<protocols::http2u::Stream>* streams_deque_ptr;
+  std::deque<protocols::http2::Stream>* streams_deque_ptr;
   uint32_t* oldest_active_stream_id_ptr;
 
   bool client_stream = (stream_id % 2 == 1);
@@ -190,7 +190,7 @@ protocols::http2u::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_
       *oldest_active_stream_id_ptr = stream_id;
     } else {
       streams_deque_ptr->insert(streams_deque_ptr->begin(), new_size - streams_deque_ptr->size(),
-                                protocols::http2u::Stream());
+                                protocols::http2::Stream());
       index = 0;
       *oldest_active_stream_id_ptr = stream_id;
     }
@@ -217,7 +217,7 @@ protocols::http2u::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_
 
   auto& stream = (*streams_deque_ptr)[index];
 
-  protocols::http2u::HalfStream* half_stream_ptr = write_event ? &stream.send : &stream.recv;
+  protocols::http2::HalfStream* half_stream_ptr = write_event ? &stream.send : &stream.recv;
   return half_stream_ptr;
 }
 
@@ -290,7 +290,7 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
     }
   }
 
-  protocols::http2u::HalfStream* half_stream_ptr = HalfStreamPtr(hdr->attr.stream_id, write_event);
+  protocols::http2::HalfStream* half_stream_ptr = HalfStreamPtr(hdr->attr.stream_id, write_event);
 
   // End stream flag is on a dummy header, so just record the end_stream, but don't add the headers.
   if (hdr->attr.end_stream) {
@@ -361,7 +361,7 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
       return;
   }
 
-  protocols::http2u::HalfStream* half_stream_ptr = HalfStreamPtr(data->attr.stream_id, write_event);
+  protocols::http2::HalfStream* half_stream_ptr = HalfStreamPtr(data->attr.stream_id, write_event);
 
   // Note: Duplicate calls to the writeHeaders have been observed (though they are rare).
   // It is not yet known if duplicate data also occurs. This log will help us figure out if such
@@ -379,18 +379,18 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
 }
 
 template <>
-std::vector<protocols::http2u::Record>
-ConnectionTracker::ProcessToRecords<protocols::http2u::ProtocolTraits>() {
+std::vector<protocols::http2::Record>
+ConnectionTracker::ProcessToRecords<protocols::http2::ProtocolTraits>() {
   // TODO(oazizi): ECHECK that raw events are empty.
 
-  std::vector<protocols::http2u::Record> records;
+  std::vector<protocols::http2::Record> records;
 
-  protocols::http2u::ProcessHTTP2Streams(&client_streams_.http2_streams(),
-                                         &oldest_active_client_stream_id_, &records);
-  protocols::http2u::ProcessHTTP2Streams(&server_streams_.http2_streams(),
-                                         &oldest_active_server_stream_id_, &records);
+  protocols::http2::ProcessHTTP2Streams(&client_streams_.http2_streams(),
+                                        &oldest_active_client_stream_id_, &records);
+  protocols::http2::ProcessHTTP2Streams(&server_streams_.http2_streams(),
+                                        &oldest_active_server_stream_id_, &records);
 
-  Cleanup<protocols::http2u::ProtocolTraits>();
+  Cleanup<protocols::http2::ProtocolTraits>();
 
   return records;
 }

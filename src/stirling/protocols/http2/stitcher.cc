@@ -5,16 +5,16 @@
 namespace pl {
 namespace stirling {
 namespace protocols {
-namespace http2u {
+namespace http2 {
 
-void ProcessHTTP2Streams(std::deque<http2u::Stream>* http2_streams,
+void ProcessHTTP2Streams(std::deque<http2::Stream>* http2_streams,
                          uint32_t* oldest_active_stream_id_ptr,
-                         std::vector<http2u::Record>* trace_records) {
+                         std::vector<http2::Record>* trace_records) {
   int count_head_consumed = 0;
   bool skipped = false;
   for (auto& stream : *http2_streams) {
     if (stream.StreamEnded() && !stream.consumed) {
-      trace_records->emplace_back(http2u::Record{std::move(stream)});
+      trace_records->emplace_back(http2::Record{std::move(stream)});
       stream.consumed = true;
     }
 
@@ -36,7 +36,7 @@ void ProcessHTTP2Streams(std::deque<http2u::Stream>* http2_streams,
   *oldest_active_stream_id_ptr += 2 * count_head_consumed;
 }
 
-}  // namespace http2u
+}  // namespace http2
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace pl

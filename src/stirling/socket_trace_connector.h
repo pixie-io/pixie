@@ -148,7 +148,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {"close", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_close"},
   });
 
-  inline static constexpr auto kHTTP2UProbeTmpls = MakeArray<bpf_tools::UProbeTmpl>({
+  inline static constexpr auto kHTTP2ProbeTmpls = MakeArray<bpf_tools::UProbeTmpl>({
       // Probes on Golang net/http2 library.
       bpf_tools::UProbeTmpl{
           .symbol = "google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders",
@@ -289,7 +289,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   StatusOr<int> AttachUProbeTmpl(const ArrayView<bpf_tools::UProbeTmpl>& probe_tmpls,
                                  const std::string& binary, elf_tools::ElfReader* elf_reader);
 
-  StatusOr<int> AttachHTTP2UProbes(
+  StatusOr<int> AttachHTTP2Probes(
       const std::string& binary, elf_tools::ElfReader* elf_reader,
       const std::vector<int32_t>& new_pids,
       ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map);
@@ -356,7 +356,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {kProtocolHTTP,
        {kHTTPTableNum, &SocketTraceConnector::TransferStream<protocols::http::ProtocolTraits>}},
       {kProtocolHTTP2,
-       {kHTTPTableNum, &SocketTraceConnector::TransferStream<protocols::http2u::ProtocolTraits>}},
+       {kHTTPTableNum, &SocketTraceConnector::TransferStream<protocols::http2::ProtocolTraits>}},
       {kProtocolMySQL,
        {kMySQLTableNum, &SocketTraceConnector::TransferStream<protocols::mysql::ProtocolTraits>}},
       {kProtocolCQL,

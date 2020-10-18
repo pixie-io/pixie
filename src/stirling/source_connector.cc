@@ -35,7 +35,7 @@ Status SourceConnector::Stop() {
   }
 
   // Update state first, so that StopImpl() can act accordingly.
-  // For example, SocketTraceConnector::AttachHTTP2UprobesLoop() exists loop when state_ is
+  // For example, SocketTraceConnector::AttachHTTP2probesLoop() exists loop when state_ is
   // kStopped; and SocketTraceConnector::StopImpl() joins the thread.
   state_ = State::kStopped;
   Status s = StopImpl();

@@ -225,10 +225,10 @@ class ConnectionTracker {
     return send_data_.Frames<TFrameType>();
   }
 
-  const std::deque<protocols::http2u::Stream>& http2_send_streams() const {
+  const std::deque<protocols::http2::Stream>& http2_send_streams() const {
     return send_data_.http2_streams();
   }
-  const std::deque<protocols::http2u::Stream>& http2_recv_streams() const {
+  const std::deque<protocols::http2::Stream>& http2_recv_streams() const {
     return recv_data_.http2_streams();
   }
 
@@ -445,7 +445,7 @@ class ConnectionTracker {
     using TFrameType = typename TProtocolTraits::frame_type;
     using TStateType = typename TProtocolTraits::state_type;
 
-    if constexpr (std::is_same_v<TFrameType, protocols::http2u::Stream>) {
+    if constexpr (std::is_same_v<TFrameType, protocols::http2::Stream>) {
       send_data_.CleanupHTTP2Streams();
       recv_data_.CleanupHTTP2Streams();
     } else {
@@ -559,7 +559,7 @@ class ConnectionTracker {
   uint32_t oldest_active_server_stream_id_;
 
   // Access the appropriate HalfStream object for the given stream ID.
-  protocols::http2u::HalfStream* HalfStreamPtr(uint32_t stream_id, bool write_event);
+  protocols::http2::HalfStream* HalfStreamPtr(uint32_t stream_id, bool write_event);
 
   // According to the HTTP2 protocol, Stream IDs are incremented by 2.
   // Client-initiated streams use odd IDs, while server-initiated streams use even IDs.
@@ -620,8 +620,8 @@ class ConnectionTracker {
 // Explicit template specialization must be declared in namespace scope.
 // See https://en.cppreference.com/w/cpp/language/member_template
 template <>
-std::vector<protocols::http2u::Record>
-ConnectionTracker::ProcessToRecords<protocols::http2u::ProtocolTraits>();
+std::vector<protocols::http2::Record>
+ConnectionTracker::ProcessToRecords<protocols::http2::ProtocolTraits>();
 
 template <typename TProtocolTraits>
 std::string DebugString(const ConnectionTracker& c, std::string_view prefix) {
