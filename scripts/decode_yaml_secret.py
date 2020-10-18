@@ -24,7 +24,7 @@ def main():
 
     del data['data']
 
-    metadata_keys = data['metadata'].keys()
+    metadata_keys = list(data['metadata'])
     for mk in metadata_keys:
         if mk != "name":
             del data['metadata'][mk]
