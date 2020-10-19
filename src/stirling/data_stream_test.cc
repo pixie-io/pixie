@@ -303,8 +303,18 @@ TEST_F(DataStreamTest, Stress) {
     std::uniform_real_distribution<double> probability(0, 1.0);
 
     for (auto& event : events) {
-      // Occasionally drop an event.
-      if (probability(rng) <= 0.99) {
+      double p = probability(rng);
+      if (p < 0.01) {
+        // Occasionally drop an event (don't do anything inside this if statement).
+      } else if (p < 0.02) {
+        // Occasionally corrupt the data.
+        random_shuffle(event->msg.begin(), event->msg.end());
+        stream.AddData(std::move(event));
+      } else if (p < 0.03) {
+        // Occasionally reset the stream.
+        stream.Reset();
+      } else {
+        // Add data correctly.
         stream.AddData(std::move(event));
       }
     }

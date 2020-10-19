@@ -19,8 +19,8 @@ void DataStream::AddData(std::unique_ptr<SocketDataEvent> event) {
 
   // Note that the BPF code will also generate a missing sequence number when truncation occurs,
   // so the data stream will naturally reset after processing this event.
-  LOG_IF(ERROR, event->attr.msg_size > event->msg.size())
-      << absl::Substitute("Message truncated, original size: $0, accepted size: $1",
+  LOG_IF(ERROR, event->attr.msg_size > event->msg.size() && !event->msg.empty())
+      << absl::Substitute("Message truncated, original size: $0, transferred size: $1",
                           event->attr.msg_size, event->msg.size());
 
   if (pos < next_pos_) {
@@ -158,6 +158,11 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
 
   while (keep_processing) {
     DCHECK(!events_.empty());
+    // This shouldn't be required (hence the DCHECK above),
+    // but keep this statement around to avoid potential seg-faults in production.
+    if (events_.empty()) {
+      break;
+    }
 
     protocols::EventParser parser;
 
@@ -189,12 +194,13 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
       std::advance(erase_iter, parse_result.end_position.seq_num);
 
       // If anything was processed at all, reset stuck count.
-      if (erase_iter != events_.begin() || (offset_ != parse_result.end_position.offset)) {
+      if (parse_result.end_position.seq_num != 0 || parse_result.end_position.offset != offset_) {
         stuck_count_ = 0;
       }
 
       // Calculate next_pos before erasing events.
       if (erase_iter == events_.end()) {
+        DCHECK(!events_.empty());
         auto last_event_iter = erase_iter;
         --last_event_iter;
         DCHECK_EQ(parse_result.end_position.offset, 0);
@@ -260,6 +266,7 @@ void DataStream::Reset() {
   next_pos_ = 0;
   offset_ = 0;
   events_.clear();
+  has_new_events_ = false;
   stuck_count_ = 0;
 
   frames_ = std::monostate();
