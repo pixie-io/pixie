@@ -142,7 +142,7 @@ def inbound_service_let_helper(start_time: str, namespace: px.Namespace):
     df.pod = df.ctx['pod_name']
     df = df[df.ctx['namespace'] == namespace and df.service != '']
     df.latency = df.http_resp_latency_ns
-    df = df[df['latency'] < (10000 * ns_per_ms)]
+
     df.timestamp = px.bin(df.time_, window_ns)
 
     df.req_size = px.Bytes(px.length(df.http_req_body))

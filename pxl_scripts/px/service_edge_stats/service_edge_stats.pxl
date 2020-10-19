@@ -172,7 +172,7 @@ def format_events_table(df, latency_col):
     Returns: formatted events DataFrame
     """
     df.latency = df[latency_col]
-    df = df[df['latency'] < (10000 * ns_per_ms)]
+
     df.timestamp = px.bin(df.time_, window_ns)
     df[k8s_object] = df.ctx[k8s_object]
     df = df[df[k8s_object] != '']
