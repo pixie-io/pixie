@@ -139,7 +139,7 @@ def let_helper(start_time: str):
     df.service = df.ctx['service']
     df.pod = df.ctx['pod']
     df.latency = df.http_resp_latency_ns
-    df = df[df['latency'] < (10000 * ns_per_ms)]
+
     df.timestamp = px.bin(df.time_, window_ns)
 
     df.resp_size = px.Bytes(px.length(df.http_resp_body))
