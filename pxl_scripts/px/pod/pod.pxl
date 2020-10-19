@@ -10,7 +10,6 @@ Overview of a specific Pod monitored by Pixie with its high level application me
 
 import px
 
-
 ns_per_ms = 1000 * 1000
 ns_per_s = 1000 * ns_per_ms
 # Window size to use on time_ column for bucketing.
@@ -38,6 +37,26 @@ def containers(start_time: str, pod: px.Pod):
     df = df.groupby(['name', 'id']).agg()
     df.status = px.container_id_to_status(df.id)
     return df
+
+
+def node(start_time: str, pod: px.Pod):
+    ''' A list containing the node the `pod` is running on.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @pod: The name of the pod to filter on.
+
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df = df[df.ctx['pod'] == pod]
+    df.node = df.ctx['node_name']
+    df.service = df.ctx['service']
+    df.pod_id = df.ctx['pod_id']
+    df.pod_name = df.ctx['pod']
+    df = df.groupby(['node', 'service', 'pod_id', 'pod_name']).agg()
+    df.pod_start_time = px.pod_name_to_start_time(df.pod_name)
+    df.status = px.pod_name_to_status(df.pod_name)
+    return df.drop('pod_name')
 
 
 def processes(start_time: str, pod: px.Pod):

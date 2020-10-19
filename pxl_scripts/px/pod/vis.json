@@ -396,6 +396,31 @@
         "w": 12,
         "h": 3
       }
+    },
+    {
+      "name": "Pod Metadata",
+      "func": {
+        "name": "node",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      },
+      "position": {
+        "x": 0,
+        "y": 15,
+        "w": 12,
+        "h": 1.5
+      }
     }
   ]
 }
