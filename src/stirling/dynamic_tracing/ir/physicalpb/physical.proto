@@ -303,11 +303,8 @@ message ConditionalBlock {
   // All variables defined inside this block.
   repeated Variable vars = 2;
 
-  // Writes a value to perf buffer.
-  repeated PerfBufferOutputAction output_actions = 3;
-
-  // Printk text.
-  repeated shared.Printk printks = 4;
+  // If non-empty, produces a return statement that returns the specified value.
+  string return_value = 3;
 }
 
 // Corresponds to a logical probe.

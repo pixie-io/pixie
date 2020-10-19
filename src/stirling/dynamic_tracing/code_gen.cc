@@ -682,16 +682,8 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateConditionalBlock(
     PL_RETURN_IF_ERROR(GenVariable(var, vars, &code_lines));
   }
 
-  for (const auto& action : cond_block.output_actions()) {
-    PL_RETURN_IF_ERROR(
-        CheckVarExists(vars, action.variable_name(),
-                       absl::Substitute("Perf buffer '$0'", action.perf_buffer_name())));
-    code_lines.push_back(GenPerfBufferOutputAction(action));
-  }
-
-  for (const auto& printk : cond_block.printks()) {
-    PL_ASSIGN_OR_RETURN(std::string code_line, GenPrintk(vars, printk));
-    code_lines.push_back(std::move(code_line));
+  if (!cond_block.return_value().empty()) {
+    code_lines.push_back(absl::Substitute("return $0;", cond_block.return_value()));
   }
 
   return GenCondition(cond_block.cond(), std::move(code_lines));

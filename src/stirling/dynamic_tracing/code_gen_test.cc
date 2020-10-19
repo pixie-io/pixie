@@ -296,10 +296,7 @@ TEST(GenProgramTest, SpecsAndCode) {
                                                }
                                              }
                                            }
-                                           output_actions {
-                                             perf_buffer_name: "data_events"
-                                             variable_name: "st_var"
-                                           }
+                                           return_value: "0"
                                          }
                                          map_stash_actions {
                                            map_name: "test"
@@ -411,7 +408,7 @@ TEST(GenProgramTest, SpecsAndCode) {
       "int32_t inner_var = (int32_t)PT_REGS_SP(ctx);",
       "struct socket_data_event_t st_var = {};",
       "st_var.i32 = inner_var;",
-      "data_events.perf_submit(ctx, &st_var, sizeof(st_var));",
+      "return 0;",
       "}",
       "test.update(&key, &var);",
       "data_events.perf_submit(ctx, &st_var, sizeof(st_var));",
