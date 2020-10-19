@@ -3,15 +3,18 @@
 
 import px
 
-# Regular functions.
+
 def map_funcs():
+	# Gets a list of the regular functions.
     return px.GetUDFList()
 
-# Aggregate functions.
+
 def agg_funcs():
+	# Gets a list of the aggregate functions.
     return px.GetUDAList()
 
-# Table generationg functions.
+
 def table_funcs():
+	# Gets a list of the table generating functions.
 	return px.GetUDTFList()
 	
