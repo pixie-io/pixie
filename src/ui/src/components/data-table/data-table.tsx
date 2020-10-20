@@ -61,8 +61,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     paddingRight: theme.spacing(3),
     backgroundColor: 'transparent',
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'baseline',
     height: theme.spacing(6),
+    lineHeight: `${theme.spacing(6)}px`,
     margin: '0 !important',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
@@ -76,6 +77,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     paddingLeft: theme.spacing(1.5),
     paddingRight: 0,
     height: theme.spacing(5),
+    lineHeight: `${theme.spacing(5)}px`,
   },
   clickable: {
     cursor: 'pointer',
@@ -108,6 +110,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   headerTitle: {
     ...theme.typography.h4,
+    height: '100%',
     display: 'flex',
     alignItems: 'center',
     flex: 'auto',
@@ -137,7 +140,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     alignItems: 'center',
     cursor: 'col-resize',
     // Move the handle's center, rather than its right edge, to line up with the column's right border
-    transform: 'translateX(50%)',
+    transform: 'translate(50%, -1px)',
     '&:hover': {
       color: theme.palette.foreground.white,
     },
