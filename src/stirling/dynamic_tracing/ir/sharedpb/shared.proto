@@ -150,6 +150,17 @@ message DeploymentSpec {
     UPID upid = 2;
   }
 
+  message PodProcess {
+    // The name of the Pod.
+    string pod = 1;
+
+    // The name of the container inside the above Pod.
+    string container = 2;
+
+    // The application processes whose cmdline contains this regexp are selected.
+    string process = 3;
+  }
+
   // TODO(yzhao): Rename this field to selector_oneof.
   oneof target_oneof {
     // The path of the object file (may be executable or shared library).
@@ -163,7 +174,11 @@ message DeploymentSpec {
     SharedObject shared_object = 8;
 
     // The name of the pod whose processes are the targets to be traced.
+    // TODO(yzhao): Remove this after pod_process is supported.
     string pod = 9;
+
+    // Describes the target process to attach.
+    PodProcess pod_process = 10;
   }
 
   // Processes with exe path that matches this pattern are the target of this deployment.

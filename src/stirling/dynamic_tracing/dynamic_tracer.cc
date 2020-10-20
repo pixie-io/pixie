@@ -385,6 +385,10 @@ Status ResolveTargetObjPath(const md::K8sMetadataState& k8s_mds,
       LOG(DFATAL) << "This should never happen, pod must have been rewritten to UPID.";
       break;
     }
+    case ir::shared::DeploymentSpec::TargetOneofCase::kPodProcess: {
+      LOG(DFATAL) << "Unimplemented yet";
+      break;
+    }
     case ir::shared::DeploymentSpec::TargetOneofCase::TARGET_ONEOF_NOT_SET:
       return error::InvalidArgument("Must specify target.");
   }
