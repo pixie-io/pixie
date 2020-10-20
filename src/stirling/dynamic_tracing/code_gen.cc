@@ -23,6 +23,7 @@ using ::pl::stirling::dynamic_tracing::ir::physical::BinaryExpression;
 using ::pl::stirling::dynamic_tracing::ir::physical::Field;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapDeleteAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
+using ::pl::stirling::dynamic_tracing::ir::physical::PerCPUArray;
 using ::pl::stirling::dynamic_tracing::ir::physical::PerfBufferOutput;
 using ::pl::stirling::dynamic_tracing::ir::physical::PerfBufferOutputAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::Probe;
@@ -364,6 +365,8 @@ std::string GenBPFHelper(const ScalarVariable& var) {
 }
 
 std::string GenConstant(const ScalarVariable& var) {
+  // TODO(yzhao): Need to remove 'const' from the generated statement, because the generated
+  // variable might be used as index to BPF maps, which cannot be const.
   return absl::Substitute("const $0 $1 = $2;", GetScalarTypeCName(var.type()), var.name(),
                           var.constant());
 }
@@ -770,6 +773,17 @@ StatusOr<std::vector<std::string>> GenMap(const Map& map) {
   return code_lines;
 }
 
+StatusOr<std::vector<std::string>> GenArray(const PerCPUArray& array) {
+  if (array.capacity() <= 0) {
+    return error::InvalidArgument("Input array capacity cannot be less than 1, got: $0",
+                                  array.capacity());
+  }
+  PL_ASSIGN_OR_RETURN(std::string key_code, GenVariableType(array.type()));
+  std::vector<std::string> code_lines = {
+      absl::Substitute("BPF_PERCPU_ARRAY($0, $1, $2);", array.name(), key_code, array.capacity())};
+  return code_lines;
+}
+
 std::vector<std::string> GenIncludes() {
   return {
       "#include <linux/ptrace.h>",
@@ -886,6 +900,10 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateCodeLines() {
                                     map.value_type().struct_type(), map.name());
     }
     MOVE_BACK_STR_VEC(GenMap(map), &code_lines);
+  }
+
+  for (const auto& array : program_.arrays()) {
+    MOVE_BACK_STR_VEC(GenArray(array), &code_lines);
   }
 
   if (program_.language() == ir::shared::Language::GOLANG) {

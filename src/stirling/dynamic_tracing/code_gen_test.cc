@@ -195,6 +195,23 @@ TEST(GenProgramTest, SpecsAndCode) {
                                            type: INT32
                                          }
                                        }
+                                       structs {
+                                         name: "value_t"
+                                         fields {
+                                           name: "i32"
+                                           type: INT32
+                                         }
+                                       }
+                                       maps {
+                                         name: "map"
+                                         key_type { scalar: UINT32 }
+                                         value_type { struct_type: "value_t" }
+                                       }
+                                       arrays {
+                                         name: "array"
+                                         type { struct_type: "socket_data_event_t" }
+                                         capacity: 1
+                                       }
                                        outputs {
                                           name: "data_events"
                                           struct_type: "socket_data_event_t"
@@ -231,6 +248,29 @@ TEST(GenProgramTest, SpecsAndCode) {
                                                field_name: "i32"
                                                variable_name: "var"
                                              }
+                                           }
+                                         }
+                                         vars {
+                                           map_var {
+                                             name: "map_var"
+                                             type: "value_t"
+                                             map_name: "map"
+                                             key_variable_name: "key"
+                                           }
+                                         }
+                                         vars {
+                                           scalar_var {
+                                             name: "index"
+                                             type: INT32
+                                             constant: "0"
+                                           }
+                                         }
+                                         vars {
+                                           map_var {
+                                             name: "array_var"
+                                             type: "socket_data_event_t"
+                                             map_name: "array"
+                                             key_variable_name: "index"
                                            }
                                          }
                                          cond_blocks {
@@ -347,6 +387,11 @@ TEST(GenProgramTest, SpecsAndCode) {
       "struct socket_data_event_t {",
       "  int32_t i32;",
       "} __attribute__((packed, aligned(1)));",
+      "struct value_t {",
+      "  int32_t i32;",
+      "} __attribute__((packed, aligned(1)));",
+      "BPF_HASH(map, uint32_t, struct value_t);",
+      "BPF_PERCPU_ARRAY(array, struct socket_data_event_t, 1);",
       "static __inline int64_t pl_goid() {",
       "uint64_t current_pid_tgid = bpf_get_current_pid_tgid();",
       "const struct pid_goid_map_value_t* goid_ptr = pid_goid_map.lookup(&current_pid_tgid);",
@@ -359,6 +404,9 @@ TEST(GenProgramTest, SpecsAndCode) {
       "int32_t var = (int32_t)PT_REGS_SP(ctx);",
       "struct socket_data_event_t st_var = {};",
       "st_var.i32 = var;",
+      "struct value_t* map_var = map.lookup(&key);",
+      "const int32_t index = 0;",
+      "struct socket_data_event_t* array_var = array.lookup(&index);",
       "if (key == var) {",
       "int32_t inner_var = (int32_t)PT_REGS_SP(ctx);",
       "struct socket_data_event_t st_var = {};",

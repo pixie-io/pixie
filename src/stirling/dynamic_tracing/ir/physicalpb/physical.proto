@@ -94,6 +94,19 @@ message Struct {
   repeated Field fields = 2;
 }
 
+// Describes a BPF_PERCPU_ARRAY.
+// TODO(yzhao): Consider merging this with Map.
+message PerCPUArray {
+  // The name of this array.
+  string name = 1;
+
+  // The type of the elements of this array.
+  shared.VariableType type = 2;
+
+  // The capacity of this array.
+  uint32 capacity = 3;
+}
+
 // Describes a variable that resides in memory, in comparison to a Register variable.
 message MemoryExpression {
   // This must refer to a ScalarVariable with VOID_POINTER type, which specifies the base address
@@ -203,7 +216,13 @@ message MapVariable {
   string map_name = 3;
 
   // The builtin to generate the key value to access the map.
-  string key_variable_name = 4;
+  oneof key_oneof {
+    // The key is a variable.
+    string key_variable_name = 4;
+
+    // For a literal value used for lookup the value.
+    string key_value = 5;
+  }
 }
 
 // Describes a struct variable whose fields are assigned values from other scalar variables.
@@ -234,6 +253,9 @@ message StructVariable {
 // A container of different types of variables. Defines how to access them from inside BCC code.
 // Variable names must be unique.
 message Variable {
+  // TODO(yzhao): Consider move the 'name' field of the messages of the below oneof field.
+  // TODO(yzhao): Consider move the 'type' field of the messages of the below oneof field.
+
   oneof var_oneof {
     ScalarVariable scalar_var = 1;
     StructVariable struct_var = 2;
@@ -339,6 +361,9 @@ message Program {
 
   // Describes BPF maps.
   repeated shared.Map maps = 3;
+
+  // Describes BPF arrays.
+  repeated PerCPUArray arrays = 7;
 
   // Describes perf buffers.
   repeated PerfBufferOutput outputs = 4;
