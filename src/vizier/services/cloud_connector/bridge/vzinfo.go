@@ -218,6 +218,18 @@ func (v *K8sVizierInfo) UpdateK8sState() {
 	if err != nil {
 		return
 	}
+	// Get the count of healthy PEMs.
+	healthyPemCount := 0
+	for _, p := range pemPodsList.Items {
+		podPb, err := protoutils.PodToProto(&p)
+		if err != nil {
+			return
+		}
+
+		if podPb.Status != nil && podPb.Status.Phase == metadatapb.RUNNING {
+			healthyPemCount++
+		}
+	}
 
 	now := time.Now()
 
@@ -291,7 +303,7 @@ func (v *K8sVizierInfo) UpdateK8sState() {
 	v.currentPodStatus = podMap
 	v.k8sStateLastUpdated = now
 	v.numNodes = int32(len(nodesList.Items))
-	v.numInstrumentedNodes = int32(len(pemPodsList.Items))
+	v.numInstrumentedNodes = int32(healthyPemCount)
 }
 
 // GetPodStatuses gets the pod statuses and the last time they were updated.
