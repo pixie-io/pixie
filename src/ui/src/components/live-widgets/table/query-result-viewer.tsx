@@ -16,6 +16,7 @@ const styles = ({ spacing }: Theme) => createStyles({
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
+    overflowX: 'hidden',
     '@global': {
       '.ReactVirtualized__Table__row': {
         fontSize: '0.975rem',

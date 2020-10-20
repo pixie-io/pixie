@@ -3,8 +3,18 @@ import * as React from 'react';
 import { DraggableCore } from 'react-draggable';
 
 import {
-  Column, SortDirection, SortDirectionType, Table, TableCellProps, TableCellRenderer,
-  TableHeaderProps, TableHeaderRenderer, TableRowRenderer, TableRowProps, defaultTableRowRenderer, IndexRange,
+  Column,
+  defaultTableRowRenderer,
+  IndexRange,
+  SortDirection,
+  SortDirectionType,
+  Table,
+  TableCellProps,
+  TableCellRenderer,
+  TableHeaderProps,
+  TableHeaderRenderer,
+  TableRowProps,
+  TableRowRenderer,
 } from 'react-virtualized';
 import withAutoSizer, { WithAutoSizerProps } from 'utils/autosizer';
 import noop from 'utils/noop';
@@ -17,11 +27,12 @@ import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 import * as expanded from 'images/icons/expanded.svg';
 import * as unexpanded from 'images/icons/unexpanded.svg';
+import { CSSProperties, MutableRefObject } from 'react';
 
 const EXPANDED_ROW_HEIGHT = 300;
-// The maximum number of characters to use for each column in determining sizing.
-// This prevents cases where one really large column dominates the entire table.
-const MAX_COL_CHAR_WIDTH = 50;
+// Prevent any one column from dominating the viewport or becoming too thin to show its contents
+const MIN_COL_CHAR_WIDTH = 90;
+const MAX_COL_CHAR_WIDTH = 400;
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   table: {
@@ -30,6 +41,15 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       ...theme.typography.caption,
       backgroundColor: theme.palette.foreground.grey2,
       display: 'flex',
+      width: 'var(--header-width) !important',
+      position: 'relative',
+    },
+    '& > .ReactVirtualized__Table__Grid': {
+      overflowX: 'auto !important',
+      '& > .ReactVirtualized__Grid__innerScrollContainer': {
+        maxWidth: 'var(--table-width) !important',
+        width: 'var(--table-width) !important',
+      },
     },
   },
   row: {
@@ -210,7 +230,7 @@ const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerProps<Da
   return <InternalDataTable {...props} />;
 }));
 
-(DataTable as React.SFC).displayName = 'DataTable';
+(DataTable as React.FC).displayName = 'DataTable';
 
 export { DataTable };
 
@@ -232,34 +252,42 @@ const InternalDataTable = ({
   const classes = useStyles();
   const theme = useTheme();
 
+  const [widthOverrides, setColumnWidthOverride] = React.useState<ColWidthOverrides>({});
+  const tableRef: MutableRefObject<Table> = React.useRef(null);
+
+  const [sortState, setSortState] = React.useState<SortState>({ dataKey: '', direction: SortDirection.DESC });
+  const [expandedRowState, setExpandedRowState] = React.useState<ExpandedRows>({});
+
+  const totalWidth = React.useRef<number>(0);
   const colTextWidthRatio = React.useMemo<{[dataKey: string]: number}>(() => {
+    totalWidth.current = 0;
     const colsWidth: {[dataKey: string]: number} = {};
-    let totalWidth = 0;
     columns.forEach((col) => {
       let w = col.width || null;
       if (!w) {
         const row = rowGetter(0);
-        w = Math.min(Math.max(w, String(row[col.dataKey]).length), MAX_COL_CHAR_WIDTH);
+        w = Math.min(Math.max(w, String(row[col.dataKey]).length, MIN_COL_CHAR_WIDTH), MAX_COL_CHAR_WIDTH);
       }
 
       // We add 2 to the header width to accommodate type/sort icons.
       const headerWidth = col.label.length + 2;
-      colsWidth[col.dataKey] = Math.min(Math.max(headerWidth, w), MAX_COL_CHAR_WIDTH);
-      totalWidth += colsWidth[col.dataKey];
+      colsWidth[col.dataKey] = Math.min(Math.max(headerWidth, w, MIN_COL_CHAR_WIDTH), MAX_COL_CHAR_WIDTH);
+      totalWidth.current += colsWidth[col.dataKey];
     });
+    // Ensure the total is at least as wide as the available space, and not so wide as to violate column max widths.
+    const minTotal = Math.max(MIN_COL_CHAR_WIDTH * columns.length, width);
+    const maxTotal = Math.max(MAX_COL_CHAR_WIDTH * columns.length, width);
+    const clamped = Math.max(minTotal, Math.min(totalWidth.current, maxTotal));
+    const scale = clamped / totalWidth.current;
+    totalWidth.current = clamped;
 
     const ratio: {[dataKey: string]: number} = {};
     Object.keys(colsWidth).forEach((colsWidthKey) => {
-      ratio[colsWidthKey] = colsWidth[colsWidthKey] / totalWidth;
+      ratio[colsWidthKey] = scale * colsWidth[colsWidthKey] / totalWidth.current;
     });
     return ratio;
-  }, [columns, rowGetter, rowCount]);
-
-  const [widthOverrides, setColumnWidthOverride] = React.useState<ColWidthOverrides>({});
-  const tableRef = React.useRef(null);
-
-  const [sortState, setSortState] = React.useState<SortState>({ dataKey: '', direction: SortDirection.DESC });
-  const [expandedRowState, setExpandedRowstate] = React.useState<ExpandedRows>({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columns, rowGetter, rowCount, width]);
 
   const rowGetterWrapper = React.useCallback(({ index }) => rowGetter(index), [rowGetter]);
 
@@ -270,7 +298,7 @@ const InternalDataTable = ({
         {!props.columnData.cellRenderer && <span className={classes.cellText}>{String(props.cellData)}</span>}
       </div>
     </div>
-  ), [classes.cellText]);
+  ), [classes]);
 
   const defaultCellHeight = compact ? theme.spacing(5) : theme.spacing(6);
   const computeRowHeight = React.useCallback(({ index }) => (expandedRowState[index]
@@ -306,7 +334,7 @@ const InternalDataTable = ({
 
   const onRowClickWrapper = React.useCallback(({ index }) => {
     if (expandable) {
-      setExpandedRowstate((state) => {
+      setExpandedRowState((state) => {
         const expandedRows = { ...state };
         if (expandedRows[index]) {
           delete expandedRows[index];
@@ -341,20 +369,41 @@ const InternalDataTable = ({
       }
 
       const nextColKey = columns[colIdx + 1].dataKey;
-      let newWidth = state[dataKey] || (colTextWidthRatio[dataKey]);
-      let nextColWidth = state[nextColKey] || (colTextWidthRatio[nextColKey]);
+      let leftPercent = state[dataKey] || (colTextWidthRatio[dataKey]);
+      let rightPercent = state[nextColKey] || (colTextWidthRatio[nextColKey]);
 
-      const percentDelta = deltaX / width;
+      const deltaPercent = deltaX / totalWidth.current;
+      // How large/small is a column allowed to get?
+      const minPercent = MIN_COL_CHAR_WIDTH / totalWidth.current;
+      const maxPercent = MAX_COL_CHAR_WIDTH / totalWidth.current;
 
-      newWidth += percentDelta;
-      nextColWidth -= percentDelta;
+      // How far can we move the drag handle either direction before either column would be too thin/wide?
+      const minDeltaPercent = Math.max(minPercent - leftPercent, rightPercent - maxPercent);
+      const maxDeltaPercent = Math.min(maxPercent - leftPercent, rightPercent - minPercent);
+
+      // Don't allow pushing either column further away from min/maxWidth, do allow pulling back into bounds.
+      // If the table isn't the same width as its container, it will absorb excess delta that would help fix it.
+      const clampedDeltaPercent = Math.max(minDeltaPercent, Math.min(deltaPercent, maxDeltaPercent));
+      if ((minDeltaPercent < 0 && deltaPercent < 0) || (maxDeltaPercent > 0 && deltaPercent > 0)) {
+        leftPercent += clampedDeltaPercent;
+        rightPercent -= clampedDeltaPercent;
+
+        /*
+         * TODO(nick): Scenarios that should resize other cells or the entire table.
+         *  If the delta was clamped in the intended direction, but not in the other, try modifying the size of the
+         *  other column. The change in its width should be given to / taken from other cells that can accommodate it.
+         *  If there is still "leftover" delta, check if the table itself can grow or shrink to handle it. When doing
+         *  this, recalculate width limits on every column. This is complex enough for its own module.
+         */
+      }
 
       return {
         ...state,
-        [dataKey]: newWidth,
-        [nextColKey]: nextColWidth,
+        [dataKey]: leftPercent,
+        [nextColKey]: rightPercent,
       };
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [width, colTextWidthRatio, columns]);
 
   const colIsResizable = (idx: number): boolean => (resizableColumns || true) && (idx !== columns.length - 1);
@@ -377,6 +426,36 @@ const InternalDataTable = ({
       return newOverrides;
     });
   };
+
+  const tableWrapper = React.useRef<HTMLDivElement>(null);
+
+  // This detects both the presence and width of the vertical scrollbar, to avoid miscalculating header dimensions.
+  // Note that on mobile devices, Safari, and Chrome (by default but configurable), the scrollbar is an overlay that
+  // doesn't affect the geometry of the element it scrolls. In that case, the scrollbar has a width of 0.
+  const scrollbarWidth = React.useMemo<number>(() => {
+    const scroller: HTMLElement = tableWrapper.current?.querySelector('.ReactVirtualized__Table__Grid');
+    if (!scroller) return 0;
+    return scroller.offsetWidth - scroller.clientWidth;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableWrapper.current, width, totalWidth.current, colTextWidthRatio, widthOverrides, columns]);
+
+  React.useEffect(() => {
+    // Using direct DOM manipulation as we're messing with internals of a third-party component that doesn't expose refs
+    const header: HTMLDivElement = tableWrapper.current?.querySelector('.ReactVirtualized__Table__headerRow');
+    const scroller = tableWrapper.current?.querySelector('.ReactVirtualized__Table__Grid');
+    if (!header || !scroller) return () => {};
+
+    const listener = () => {
+      if (header && scroller) {
+        header.style.left = `${-1 * scroller.scrollLeft ?? 0}px`;
+      }
+    };
+
+    scroller.addEventListener('scroll', listener);
+    return () => {
+      if (scroller) scroller.removeEventListener('scroll', listener);
+    };
+  }, [tableWrapper]);
 
   const headerRendererCommon: TableHeaderRenderer = React.useCallback((props) => {
     const sort = () => onSortWrapper({
@@ -432,7 +511,7 @@ const InternalDataTable = ({
     return (
       <>
         <div className={cls}>
-          <img src={icon} />
+          <img alt='' src={icon} />
         </div>
       </>
     );
@@ -484,61 +563,67 @@ const InternalDataTable = ({
     classes.gutterCell,
   );
   return (
-    <Table
-      headerHeight={defaultCellHeight}
-      ref={tableRef}
-      className={classes.table}
-      overscanRowCount={2}
-      rowGetter={rowGetterWrapper}
-      rowCount={rowCount}
-      rowHeight={computeRowHeight}
-      onRowClick={onRowClickWrapper}
-      rowClassName={getRowClass}
-      rowRenderer={rowRenderer}
-      height={height}
-      width={width}
-      sortDirection={sortState.direction}
-      sortBy={sortState.dataKey}
-      onRowsRendered={onRowsRendered}
-    >
-      {
-        expandable
-        && (
-        <Column
-          key='gutter'
-          dataKey='gutter'
-          label=''
-          headerClassName={gutterClass}
-          className={gutterClass}
-          headerRenderer={gutterHeaderRenderer}
-          cellRenderer={gutterCellRenderer}
-          width={4 /* width for chevron */}
-          columnData={null}
-        />
-        )
-      }
-      {
-        columns.map((col, i) => {
-          const className = clsx(
-            classes.cell,
-            classes[col.align],
-            compact && classes.compact,
-          );
-          return (
-            <Column
-              key={col.dataKey}
-              dataKey={col.dataKey}
-              label={col.label}
-              headerClassName={className}
-              className={className}
-              headerRenderer={colIsResizable(i) ? headerRendererWithDrag : headerRenderer}
-              cellRenderer={cellRenderer}
-              width={(widthOverrides[col.dataKey] || colTextWidthRatio[col.dataKey]) * width}
-              columnData={col}
-            />
-          );
-        })
-      }
-    </Table>
+    <div ref={tableWrapper}>
+      <Table
+        headerHeight={defaultCellHeight}
+        ref={tableRef}
+        className={classes.table}
+        overscanRowCount={2}
+        rowGetter={rowGetterWrapper}
+        rowCount={rowCount}
+        rowHeight={computeRowHeight}
+        onRowClick={onRowClickWrapper}
+        rowClassName={getRowClass}
+        rowRenderer={rowRenderer}
+        height={height}
+        width={width}
+        style={{
+          '--table-width': `${totalWidth.current - scrollbarWidth}px`,
+          '--header-width': `${totalWidth.current}px`,
+        } as (CSSProperties & Record<string, string>)}
+        sortDirection={sortState.direction}
+        sortBy={sortState.dataKey}
+        onRowsRendered={onRowsRendered}
+      >
+        {
+          expandable
+          && (
+          <Column
+            key='gutter'
+            dataKey='gutter'
+            label=''
+            headerClassName={gutterClass}
+            className={gutterClass}
+            headerRenderer={gutterHeaderRenderer}
+            cellRenderer={gutterCellRenderer}
+            width={4 /* width for chevron */}
+            columnData={null}
+          />
+          )
+        }
+        {
+          columns.map((col, i) => {
+            const className = clsx(
+              classes.cell,
+              classes[col.align],
+              compact && classes.compact,
+            );
+            return (
+              <Column
+                key={col.dataKey}
+                dataKey={col.dataKey}
+                label={col.label}
+                headerClassName={className}
+                className={className}
+                headerRenderer={colIsResizable(i) ? headerRendererWithDrag : headerRenderer}
+                cellRenderer={cellRenderer}
+                width={(widthOverrides[col.dataKey] || colTextWidthRatio[col.dataKey]) * totalWidth.current}
+                columnData={col}
+              />
+            );
+          })
+        }
+      </Table>
+    </div>
   );
 };
