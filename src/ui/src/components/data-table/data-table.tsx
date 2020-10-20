@@ -359,6 +359,25 @@ const InternalDataTable = ({
 
   const colIsResizable = (idx: number): boolean => (resizableColumns || true) && (idx !== columns.length - 1);
 
+  const resetColumn = (dataKey: string) => {
+    setColumnWidthOverride((overrides) => {
+      const colIdx = columns.findIndex((col) => col.dataKey === dataKey);
+      if (colIdx === -1) {
+        return overrides;
+      }
+
+      const newOverrides = { ...overrides };
+      delete newOverrides[dataKey];
+
+      const nextKey = columns[colIdx + 1]?.dataKey;
+      if (nextKey) {
+        delete newOverrides[nextKey];
+      }
+
+      return newOverrides;
+    });
+  };
+
   const headerRendererCommon: TableHeaderRenderer = React.useCallback((props) => {
     const sort = () => onSortWrapper({
       sortBy: props.dataKey,
@@ -454,7 +473,7 @@ const InternalDataTable = ({
               });
             }}
           >
-            <span className={classes.dragHandle}>&#8942;</span>
+            <span className={classes.dragHandle} onDoubleClick={() => { resetColumn(dataKey); }}>&#8942;</span>
           </DraggableCore>
         </React.Fragment>
       </>
