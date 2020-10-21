@@ -1,11 +1,10 @@
 import AnnounceKit from 'announcekit-react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import * as React from 'react';
 
 import { useQuery } from '@apollo/react-hooks';
 import Drawer from '@material-ui/core/Drawer';
 import {
-  createStyles, fade, WithStyles, withStyles, Theme,
+  createStyles, fade, withStyles, Theme,
 } from '@material-ui/core/styles';
 
 import HelpIcon from '@material-ui/icons/Help';
@@ -34,7 +33,9 @@ import { toEntityPathname, LiveViewPage } from 'components/live-widgets/utils/li
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { DOMAIN_NAME } from 'containers/constants';
 import { LiveShortcutsContext } from 'containers/live/shortcuts';
-import { SidebarContext } from '../../context/sidebar-context';
+import { SidebarContext } from 'context/sidebar-context';
+import { LiveTourDialog } from 'containers/App/live-tour';
+import ExploreIcon from '@material-ui/icons/Explore';
 
 const styles = (
   {
@@ -155,6 +156,13 @@ const styles = (
   spacer: {
     flex: 1,
   },
+  hideOnMobile: {
+    // Same breakpoint (960px) at which the entire layout switches to suit mobile.
+    [breakpoints.down('sm')]: {
+      display: 'none',
+    },
+    width: '100%',
+  },
 });
 
 export const GET_USER_INFO = gql`
@@ -166,10 +174,6 @@ export const GET_USER_INFO = gql`
   }
 }
 `;
-
-interface SideBarProps extends WithStyles<typeof styles> {
-  open: boolean;
-}
 
 const SideBarInternalLinkItem = ({
   classes, icon, link, text,
@@ -207,12 +211,14 @@ const StyledListItemIcon = withStyles(() => createStyles({
 }))(ListItemIcon);
 
 const ProfileItem = ({
-  classes, data,
+  classes, data, setSidebarOpen,
 }) => {
   const [open, setOpen] = React.useState<boolean>(false);
+  const [tourOpen, setTourOpen] = React.useState<boolean>(false);
+  const [wasSidebarOpenBeforeTour, setWasSidebarOpenBeforeTour] = React.useState<boolean>(false);
   const [anchorEl, setAnchorEl] = React.useState(null);
   const shortcuts = React.useContext(LiveShortcutsContext);
-  const { shortcutHelpInProfileMenu } = React.useContext(SidebarContext);
+  const { inLiveView } = React.useContext(SidebarContext);
 
   const openMenu = React.useCallback((event) => {
     setOpen(true);
@@ -224,6 +230,19 @@ const ProfileItem = ({
     setAnchorEl(null);
   }, []);
 
+  const openTour = () => {
+    setTourOpen(true);
+    setSidebarOpen((current) => {
+      setWasSidebarOpenBeforeTour(current);
+      return false;
+    });
+  };
+
+  const closeTour = () => {
+    setTourOpen(false);
+    setSidebarOpen(wasSidebarOpenBeforeTour);
+  };
+
   let name = '';
   let picture = '';
   let email = '';
@@ -233,6 +252,7 @@ const ProfileItem = ({
 
   return (
     <ListItem button onClick={openMenu} key='Profile' className={classes.profileIcon}>
+      <LiveTourDialog open={tourOpen} onClose={closeTour} />
       <ListItemIcon>
         <Avatar
           name={name}
@@ -262,13 +282,21 @@ const ProfileItem = ({
           <StyledListItemText primary='Admin' />
         </MenuItem>
         {
-          shortcutHelpInProfileMenu && (
+          inLiveView && (
+          <>
+            <MenuItem key='tour' button component='button' onClick={openTour} className={classes.hideOnMobile}>
+              <StyledListItemIcon>
+                <ExploreIcon />
+              </StyledListItemIcon>
+              <StyledListItemText primary='Tour' />
+            </MenuItem>
             <MenuItem key='shortcuts' button component='button' onClick={() => shortcuts['show-help'].handler()}>
               <StyledListItemIcon>
                 <KeyboardIcon />
               </StyledListItemIcon>
               <StyledListItemText primary='Keyboard Shortcuts' />
             </MenuItem>
+          </>
           )
         }
         <MenuItem key='credits' button component={Link} to='/credits'>
@@ -318,6 +346,7 @@ const SideBar = ({ classes }) => {
       link: toEntityPathname({ params: {}, clusterName: selectedClusterName, page: LiveViewPage.Namespaces }),
       text: 'Namespaces',
     }]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   ), [selectedClusterName]);
 
   return (
@@ -383,7 +412,7 @@ const SideBar = ({ classes }) => {
               <ListItemText primary='Help' />
             </ListItem>
           </Tooltip>
-          <ProfileItem classes={classes} data={data} />
+          <ProfileItem classes={classes} data={data} setSidebarOpen={setSidebarOpen} />
         </List>
       </Drawer>
     </>

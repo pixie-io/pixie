@@ -46,7 +46,7 @@ export const AdminPage = withStyles((theme: Theme) => createStyles({
   },
 }))(({ children, classes }: PropsWithChildren<WithStyles>) => (
   <div className={classes.root}>
-    <SidebarContext.Provider value={{ shortcutHelpInProfileMenu: false }}>
+    <SidebarContext.Provider value={{ inLiveView: false }}>
       <NavBars>
         <div className={classes.title}>
           <div className={classes.titleText}>Admin</div>

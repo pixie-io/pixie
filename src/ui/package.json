@@ -164,6 +164,7 @@
     "ts-node": "^8.10.2",
     "typeface-roboto": "^0.0.75",
     "typeface-roboto-mono": "^0.0.75",
+    "typeface-walter-turncoat": "^1.1.13",
     "unfetch": "^4.0.1",
     "uuid": "^8.0.0",
     "vega": "5.13.0",

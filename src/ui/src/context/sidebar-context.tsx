@@ -1,9 +1,9 @@
 import React from 'react';
 
 export interface SidebarContextProps {
-  shortcutHelpInProfileMenu: boolean;
+  inLiveView: boolean;
 }
 
 export const SidebarContext = React.createContext<SidebarContextProps>({
-  shortcutHelpInProfileMenu: true,
+  inLiveView: true,
 });
