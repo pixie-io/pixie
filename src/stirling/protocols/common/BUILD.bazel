@@ -34,6 +34,6 @@ pl_cc_test(
     srcs = ["event_parser_test.cc"],
     deps = [
         ":cc_library",
-        "//src/stirling/testing:cc_library",
+        "//src/stirling/common:cc_library",
     ],
 )

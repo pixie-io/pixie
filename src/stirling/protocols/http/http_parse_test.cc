@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "src/stirling/protocols/common/test_utils.h"
 #include "src/stirling/protocols/http/http_parse.h"
 
 namespace pl {
@@ -195,6 +196,8 @@ bool operator==(const Message& lhs, const Message& rhs) {
     LOG(INFO) << #field ": " << lhs.field << " vs. " << rhs.field; \
     return false;                                                  \
   }
+  CMP(req_method);
+  CMP(req_path);
   CMP(minor_version);
   CMP(resp_status);
   CMP(resp_message);
@@ -239,25 +242,7 @@ struct TestParam {
   uint32_t iters;
 };
 
-std::vector<SocketDataEvent> CreateEvents(const std::vector<std::string_view>& msgs) {
-  std::vector<SocketDataEvent> events;
-  for (size_t i = 0; i < msgs.size(); ++i) {
-    events.emplace_back();
-    events.back().msg = msgs[i];
-  }
-  return events;
-}
-
-class HTTPParserTest : public ::testing::TestWithParam<TestParam> {
- protected:
-  void ParserAppendEvents(const std::vector<SocketDataEvent>& events) {
-    for (const auto& event : events) {
-      parser_.Append(event);
-    }
-  }
-
-  EventParser parser_;
-};
+class HTTPParserTest : public EventParserTestWrapper, public ::testing::TestWithParam<TestParam> {};
 
 //=============================================================================
 // HTTP Parse() Tests
@@ -507,8 +492,8 @@ TEST_F(HTTPParserTest, ParseRequestWithoutLengthOrChunking) {
   expected_message.headers = {{"Host", "www.pixielabs.ai"},
                               {"Accept", "image/gif, image/jpeg, */*"},
                               {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
-  expected_message.req_method = "GET";
-  expected_message.req_path = "/index.html";
+  expected_message.req_method = "HEAD";
+  expected_message.req_path = "/foo.html";
   expected_message.body = "";
 
   std::deque<Message> parsed_messages;
@@ -674,7 +659,7 @@ TEST_F(HTTPParserTest, ParseHTTPResponsesWithLeftover) {
 
   ASSERT_EQ(msg, absl::StrCat(msg_splits[0], msg_splits[1], msg_splits[2]));
 
-  std::vector<SocketDataEvent> events = CreateEvents(msg_splits);
+  std::vector<SocketDataEvent> events = CreateEvents<std::string_view>(msg_splits);
 
   parser_.Append(events[0]);
   parser_.Append(events[1]);
@@ -721,7 +706,7 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
 
     ASSERT_EQ(msg, absl::StrCat(msg_splits[0], msg_splits[1], msg_splits[2]));
 
-    std::vector<SocketDataEvent> events = CreateEvents(msg_splits);
+    std::vector<SocketDataEvent> events = CreateEvents<std::string_view>(msg_splits);
 
     // Append and parse some--but not all--splits.
     parser_.Append(events[0]);
@@ -860,11 +845,11 @@ TEST_F(HTTPParserTest, FindNoBoundary) {
 
 TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessage) {
   // Test iterates through different offsets into the first message to stress the functionality.
-  for (uint32_t offset = 1; offset < kHTTPGetReq0.length(); ++offset) {
+  for (size_t offset = 1; offset < kHTTPGetReq0.length(); ++offset) {
     std::string partial_http_get_req0(kHTTPGetReq0.substr(offset, kHTTPGetReq0.length()));
     std::vector<SocketDataEvent> events =
-        CreateEvents({partial_http_get_req0, kHTTPPostReq0, kHTTPGetReq1});
-    ParserAppendEvents(events);
+        CreateEvents<std::string_view>({partial_http_get_req0, kHTTPPostReq0, kHTTPGetReq1});
+    AppendEvents(events);
 
     std::deque<Message> parsed_messages;
     ParseResult result =
@@ -872,17 +857,17 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessage) {
 
     EXPECT_EQ(ParseState::kSuccess, result.state);
     EXPECT_THAT(parsed_messages,
-                ElementsAre(HTTPPostReq0ExpectedMessage(), HTTPGetReq0ExpectedMessage()));
+                ElementsAre(HTTPPostReq0ExpectedMessage(), HTTPGetReq1ExpectedMessage()));
   }
 }
 
 TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessage) {
   // Test iterates through different offsets into the first message to stress the functionality.
-  for (uint32_t offset = 1; offset < kHTTPResp0.length(); ++offset) {
+  for (size_t offset = 1; offset < kHTTPResp0.length(); ++offset) {
     std::string partial_http_resp0(kHTTPResp0.substr(offset, kHTTPResp0.length()));
     std::vector<SocketDataEvent> events =
-        CreateEvents({partial_http_resp0, kHTTPResp1, kHTTPResp2});
-    ParserAppendEvents(events);
+        CreateEvents<std::string_view>({partial_http_resp0, kHTTPResp1, kHTTPResp2});
+    AppendEvents(events);
 
     std::deque<Message> parsed_messages;
     ParseResult result =
@@ -901,24 +886,25 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageNoSync) {
   const size_t offset = 4;
   std::string partial_http_get_req0(kHTTPGetReq0.substr(offset, kHTTPGetReq0.length()));
   std::vector<SocketDataEvent> events =
-      CreateEvents({partial_http_get_req0, kHTTPPostReq0, kHTTPGetReq1});
+      CreateEvents<std::string_view>({partial_http_get_req0, kHTTPPostReq0, kHTTPGetReq1});
+  AppendEvents(events);
 
-  ParserAppendEvents(events);
   std::deque<Message> parsed_messages;
   ParseResult result =
       parser_.ParseFrames(MessageType::kRequest, &parsed_messages, /* resync */ false);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages,
-              ElementsAre(HTTPPostReq0ExpectedMessage(), HTTPGetReq0ExpectedMessage()));
+              ElementsAre(HTTPPostReq0ExpectedMessage(), HTTPGetReq1ExpectedMessage()));
 }
 
 TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageNoSync) {
   size_t offset = 1;
   std::string partial_http_resp0(kHTTPResp0.substr(offset, kHTTPResp0.length()));
-  std::vector<SocketDataEvent> events = CreateEvents({partial_http_resp0, kHTTPResp1, kHTTPResp2});
+  std::vector<SocketDataEvent> events =
+      CreateEvents<std::string_view>({partial_http_resp0, kHTTPResp1, kHTTPResp2});
+  AppendEvents(events);
 
-  ParserAppendEvents(events);
   std::deque<Message> parsed_messages;
   ParseResult result =
       parser_.ParseFrames(MessageType::kResponse, &parsed_messages, /* resync */ false);
@@ -941,21 +927,21 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageWithSync) {
       "But the data is just not there.";
 
   std::vector<SocketDataEvent> events =
-      CreateEvents({kStuckInducingReq, kHTTPPostReq0, kHTTPGetReq1});
+      CreateEvents<std::string_view>({kStuckInducingReq, kHTTPPostReq0, kHTTPGetReq1});
 
   std::deque<Message> parsed_messages;
   ParseResult<BufferPosition> result;
 
-  ParserAppendEvents(events);
+  AppendEvents(events);
   result = parser_.ParseFrames(MessageType::kRequest, &parsed_messages, /* resync */ false);
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_EQ(0, parsed_messages.size());
 
-  ParserAppendEvents(events);
+  AppendEvents(events);
   result = parser_.ParseFrames(MessageType::kRequest, &parsed_messages, /* resync */ true);
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages,
-              ElementsAre(HTTPPostReq0ExpectedMessage(), HTTPGetReq0ExpectedMessage()));
+              ElementsAre(HTTPPostReq0ExpectedMessage(), HTTPGetReq1ExpectedMessage()));
 }
 
 TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageWithSync) {
@@ -966,17 +952,18 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageWithSync) {
       "\r\n"
       "pixielabs";
 
-  std::vector<SocketDataEvent> events = CreateEvents({kStuckInducingResp, kHTTPResp1, kHTTPResp2});
+  std::vector<SocketDataEvent> events =
+      CreateEvents<std::string_view>({kStuckInducingResp, kHTTPResp1, kHTTPResp2});
 
   std::deque<Message> parsed_messages;
   ParseResult<BufferPosition> result;
 
-  ParserAppendEvents(events);
+  AppendEvents(events);
   result = parser_.ParseFrames(MessageType::kResponse, &parsed_messages, /* resync */ false);
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_EQ(0, parsed_messages.size());
 
-  ParserAppendEvents(events);
+  AppendEvents(events);
   result = parser_.ParseFrames(MessageType::kResponse, &parsed_messages, /* resync */ true);
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(HTTPResp1ExpectedMessage(), HTTPResp2ExpectedMessage()));

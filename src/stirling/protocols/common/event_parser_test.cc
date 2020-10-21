@@ -6,13 +6,12 @@
 #include <deque>
 
 #include "src/stirling/common/utils.h"
-#include "src/stirling/testing/event_generator.h"
+#include "src/stirling/protocols/common/test_utils.h"
 
 namespace pl {
 namespace stirling {
 namespace protocols {
 
-using ::pl::stirling::testing::DataEventWithTimestamp;
 using ::testing::ElementsAre;
 using ::testing::Pair;
 
@@ -72,23 +71,26 @@ TEST(PositionConverterTest, Basic) {
   EXPECT_DEBUG_DEATH(converter.Convert(msgs, 7), "");
 }
 
-// Use dummy protocol to test basics of EventParser and its position conversions.
-TEST(EventParserTest, BasicPositionConversions) {
-  EventParser parser;
+class EventParserTest : public EventParserTestWrapper, public ::testing::Test {};
+
+// Use dummy protocol to test basics of EventParser.
+TEST_F(EventParserTest, BasicProtocolParsing) {
   std::deque<TestFrame> word_frames;
 
-  SocketDataEvent event0 = DataEventWithTimestamp("jupiter,satu", 0);
-  SocketDataEvent event1 = DataEventWithTimestamp("rn,neptune,uranus", 2);
-  SocketDataEvent event2 = DataEventWithTimestamp(",", 3);
-  SocketDataEvent event3 = DataEventWithTimestamp("pluto,", 4);
-  SocketDataEvent event4 = DataEventWithTimestamp("mercury,", 6);
+  // clang-format off
+  std::vector<std::string> event_messages = {
+          "jupiter,satu",
+          "rn,neptune,uranus",
+          ",",
+          "pluto,",
+          "mercury,"
+  };
+  // clang-format on
 
-  parser.Append(event0);
-  parser.Append(event1);
-  parser.Append(event2);
-  parser.Append(event3);
-  parser.Append(event4);
-  ParseResult<BufferPosition> res = parser.ParseFrames(MessageType::kRequest, &word_frames);
+  std::vector<SocketDataEvent> events = CreateEvents(event_messages);
+
+  AppendEvents(events);
+  ParseResult<BufferPosition> res = parser_.ParseFrames(MessageType::kRequest, &word_frames);
 
   EXPECT_EQ(ParseState::kSuccess, res.state);
   EXPECT_THAT(res.frame_positions, ElementsAre(StartEndPos<BufferPosition>{{0, 0}, {0, 7}},
@@ -103,7 +105,7 @@ TEST(EventParserTest, BasicPositionConversions) {
   for (const auto& frame : word_frames) {
     timestamps.push_back(frame.timestamp_ns);
   }
-  EXPECT_THAT(timestamps, ElementsAre(0, 2, 2, 3, 4, 6));
+  EXPECT_THAT(timestamps, ElementsAre(0, 1, 1, 2, 3, 4));
 }
 
 // TODO(oazizi): Move any protocol specific tests that check for general EventParser behavior here.

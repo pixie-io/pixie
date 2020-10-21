@@ -155,14 +155,6 @@ static constexpr std::string_view kHTTP2EndStreamHeadersFrame =
 static constexpr std::string_view kHTTP2EndStreamDataFrame =
     ConstStringView("\x0\x0\x0\x0\x1\x0\x0\x0\x1");
 
-SocketDataEvent DataEventWithTimestamp(std::string_view msg, uint64_t timestamp) {
-  SocketDataEvent event;
-  event.attr.timestamp_ns = timestamp;
-  event.attr.msg_size = msg.size();
-  event.msg = msg;
-  return event;
-}
-
 void SetIPv4RemoteAddr(struct socket_control_event_t* conn, std::string_view addr_str,
                        uint16_t port = 123) {
   // Set an address that falls in the intra-cluster address range.
