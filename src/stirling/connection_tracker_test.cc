@@ -71,55 +71,6 @@ TEST_F(ConnectionTrackerTest, timestamp_test) {
   EXPECT_EQ(8, tracker.last_bpf_timestamp_ns());
 }
 
-// This test is of marginal value. Remove if it becomes hard to maintain.
-TEST_F(ConnectionTrackerTest, info_string) {
-  testing::EventGenerator event_gen(&real_clock_);
-  struct socket_control_event_t conn = event_gen.InitConn();
-  std::unique_ptr<SocketDataEvent> event0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> event1 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
-  std::unique_ptr<SocketDataEvent> event2 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1);
-
-  ConnectionTracker tracker;
-  tracker.AddControlEvent(conn);
-  tracker.AddDataEvent(std::move(event0));
-  tracker.AddDataEvent(std::move(event1));
-  tracker.AddDataEvent(std::move(event2));
-
-  std::string debug_info = DebugString<http::ProtocolTraits>(tracker, "");
-
-  std::string expected_output = R"(conn_id=[pid=12345 start_time_ticks=112358 fd=3 gen=1]
-state=kCollecting
-remote_addr=0.0.0.0:0
-protocol=kProtocolHTTP
-recv queue
-  raw events=1
-  parsed frames=0
-send queue
-  raw events=2
-  parsed frames=0
-)";
-
-  EXPECT_EQ(expected_output, debug_info);
-
-  tracker.ProcessToRecords<http::ProtocolTraits>();
-
-  debug_info = DebugString<http::ProtocolTraits>(tracker, "");
-
-  expected_output = R"(conn_id=[pid=12345 start_time_ticks=112358 fd=3 gen=1]
-state=kCollecting
-remote_addr=0.0.0.0:0
-protocol=kProtocolHTTP
-recv queue
-  raw events=0
-  parsed frames=0
-send queue
-  raw events=0
-  parsed frames=1
-)";
-
-  EXPECT_EQ(expected_output, debug_info);
-}
-
 TEST_F(ConnectionTrackerTest, ReqRespMatchingSimple) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();
