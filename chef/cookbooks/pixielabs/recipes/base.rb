@@ -10,7 +10,7 @@ else
 end
 
 execute 'install_python_packages' do
-  command 'pip3 install flake8 flake8-mypy setuptools yamllint numpy'
+  command 'python3 -m pip install flake8 flake8-mypy setuptools yamllint numpy'
 end
 
 include_recipe 'pixielabs::phabricator'
