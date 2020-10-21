@@ -6,7 +6,7 @@ import Axios, { AxiosError } from 'axios';
 import * as RedirectUtils from 'utils/redirect-utils';
 import { Grid } from '@material-ui/core';
 import { isValidAnalytics } from 'utils/env';
-import { MessageBox } from '../../components/auth/message';
+import { MessageBox } from 'components/auth/message';
 import { BasePage } from './base';
 import { AuthCallbackMode } from './utils';
 
@@ -254,21 +254,19 @@ export const AuthCallbackPage = () => {
 
   const loading = !config || config.loading;
   return (
-    <>
-      <BasePage>
-        <Grid
-          container
-          direction='row'
-          spacing={0}
-          justify='space-evenly'
-          alignItems='center'
-        >
-          <Grid item>
-            { loading && renderLoadingMessage() }
-            { !loading && (config.err ? renderError() : renderMessage())}
-          </Grid>
+    <BasePage>
+      <Grid
+        container
+        direction='row'
+        spacing={0}
+        justify='space-evenly'
+        alignItems='center'
+      >
+        <Grid item>
+          { loading && renderLoadingMessage() }
+          { !loading && (config.err ? renderError() : renderMessage())}
         </Grid>
-      </BasePage>
-    </>
+      </Grid>
+    </BasePage>
   );
 };

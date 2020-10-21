@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { Grid } from '@material-ui/core';
 import * as QueryString from 'querystring';
+import { MessageBox } from 'components/auth/message';
 import { BasePage } from './base';
-import { MessageBox } from '../../components/auth/message';
 
 export const CLIAuthCompletePage = () => {
   const params = QueryString.parse(window.location.search.substr(1));

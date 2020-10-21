@@ -1,64 +1,62 @@
 import * as React from 'react';
 import {
-  Button, createStyles, Grid, Theme, Typography, withStyles, WithStyles,
+  createStyles, Theme, Typography, withStyles, WithStyles,
 } from '@material-ui/core';
-import clsx from 'clsx';
 
 const styles = ({ spacing, breakpoints, palette }: Theme) => createStyles({
   root: {
     display: 'flex',
-  },
-  paddingRight: {
-    paddingRight: spacing(6),
-  },
-  gridItem: {
-    display: 'flex',
-    padding: '10px',
-    flexGrow: 1,
-    alignItems: 'center',
+    flexFlow: 'row wrap',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    width: '100%',
+    margin: 0,
+    marginTop: spacing(3),
     [breakpoints.only('xs')]: {
       justifyContent: 'center',
     },
+
+    '& > *': {
+      display: 'flex',
+      flexFlow: 'row wrap',
+      paddingBottom: spacing(3),
+      [breakpoints.only('xs')]: {
+        justifyContent: 'center',
+      },
+    },
   },
-  copyright: {
+  left: {
+    justifyContent: 'flex-start',
+  },
+  right: {
     justifyContent: 'flex-end',
-    [breakpoints.only('xs')]: {
-      justifyContent: 'center',
-    },
   },
-  footerLinks: {
+  text: {
+    padding: `0 ${spacing(3)}px`,
+    color: palette.foreground.three,
     textDecoration: 'none',
-    color: palette.foreground.three,
-  },
-  footerText: {
-    color: palette.foreground.three,
   },
 });
 
 type FooterProps = WithStyles<typeof styles>;
 
 export const Footer = withStyles(styles)(({ classes }: FooterProps) => (
-  <Grid container direction='row' alignContent='flex-end'>
-    <Grid item xs={false} sm={6} className={classes.gridItem}>
+  <div className={classes.root}>
+    <div className={classes.left}>
       <a
         href='https://pixielabs.ai/terms/'
-        className={clsx(classes.paddingRight, classes.footerLinks, classes.footerText)}
+        className={classes.text}
       >
         Terms & Conditions
       </a>
-      <a href='https://pixielabs.ai/privacy' className={clsx(classes.footerLinks, classes.footerText)}>
+      <a href='https://pixielabs.ai/privacy' className={classes.text}>
         Privacy Policy
       </a>
-    </Grid>
-    <Grid
-      item
-      xs={false}
-      sm={6}
-      className={clsx(classes.copyright, classes.gridItem)}
-    >
-      <Typography variant='subtitle2' className={classes.footerText}>
+    </div>
+    <div className={classes.right}>
+      <Typography variant='subtitle2' className={classes.text}>
         &copy; 2020,  Pixie Labs Inc.
       </Typography>
-    </Grid>
-  </Grid>
+    </div>
+  </div>
 ));
