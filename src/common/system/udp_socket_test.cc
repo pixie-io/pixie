@@ -31,6 +31,24 @@ TEST(UDPSocketTest, SendToAndRecvFrom) {
   server.Close();
 }
 
+TEST(UDPSocketTest, SendMsgAndRecvMsg) {
+  UDPSocket server;
+  server.BindAndListen();
+
+  UDPSocket client;
+  std::string recv_data;
+  std::thread server_thread([&server, &recv_data]() { server.RecvMsg(&recv_data); });
+
+  EXPECT_EQ(5, client.SendMsg("pixie", server.sockaddr())) << absl::Substitute("errno=$0", errno);
+
+  server_thread.join();
+
+  EXPECT_EQ(recv_data, "pixie");
+
+  client.Close();
+  server.Close();
+}
+
 TEST(UDPSocketTest, AddrAndPort) {
   UDPSocket server;
   UDPSocket client;

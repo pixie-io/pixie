@@ -31,11 +31,13 @@ class UDPSocket {
    * Sends data to the specified destination socket.
    */
   ssize_t SendTo(std::string_view data, const struct sockaddr_in& dst) const;
+  ssize_t SendMsg(std::string_view data, const struct sockaddr_in& dst) const;
 
   /**
    * Receives data from the socket, returns a UDPSocket with information about the sender.
    */
   struct sockaddr_in RecvFrom(std::string* data) const;
+  struct sockaddr_in RecvMsg(std::string* data) const;
 
  private:
   int sockfd_ = 0;

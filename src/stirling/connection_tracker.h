@@ -29,8 +29,9 @@
 
 DECLARE_bool(enable_unix_domain_sockets);
 
-#define CONN_TRACE(level) \
-  LOG_IF(INFO, level <= debug_trace_level_) << absl::Substitute("$0 ", ToString(conn_id_))
+#define CONN_TRACE(level)                                        \
+  LOG_IF(INFO, level <= debug_trace_level_) << absl::Substitute( \
+      "$0 protocol=$1 ", ToString(conn_id_), magic_enum::enum_name(traffic_class_.protocol))
 
 namespace pl {
 namespace stirling {

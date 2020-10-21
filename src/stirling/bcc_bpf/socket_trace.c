@@ -561,6 +561,49 @@ static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
   submit_new_conn(ctx, tgid, (uint32_t)ret_fd, args->addr);
 }
 
+// TODO(oazizi): This is badly broken (but better than before).
+//               Suppose a server with a UDP socket has the following sequence:
+//                 recvmsg(/*sockfd*/ 5, /*msgaddr*/ A);
+//                 recvmsg(/*sockfd*/ 5, /*msgaddr*/ B);
+//                 sendmsg(/*sockfd*/ 5, /*msgaddr*/ B);
+//                 sendmsg(/*sockfd*/ 5, /*msgaddr*/ A);
+//
+// This function will produce incorrect results, because it will never register B.
+// Everything will be attributed to the first address recorded on the socket.
+//
+// Note that even if we record address changes, the sequence above will
+// not be correct for the last sendmsg in the sequence above.
+//
+// Problem is our ConnectionTracker model is not suitable for UDP, where there is no connection.
+// For a TCP server, accept() sets the remote address, and all messages on that socket are to/from
+// that remote address. For a UDP server, there is no such thing. Every datagram has an address
+// specified with it. If we try to record and submit the "connection", then it may not be the right
+// remote endpoint for all messages on that socket.
+//
+// In this example, process_implicit_conn() will get triggered on the first recvmsg, and then
+// everything on sockfd=5 will assume to be on that address...which is clearly wrong.
+static __inline void process_implicit_conn(struct pt_regs* ctx, uint64_t id,
+                                           const struct connect_args_t* args) {
+  uint32_t tgid = id >> 32;
+
+  if (!should_trace_tgid(tgid)) {
+    return;
+  }
+
+  if (args->fd < 0) {
+    return;
+  }
+
+  uint64_t tgid_fd = gen_tgid_fd(tgid, args->fd);
+
+  struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
+  if (conn_info != NULL) {
+    return;
+  }
+
+  submit_new_conn(ctx, tgid, (uint32_t)args->fd, args->addr);
+}
+
 static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t id,
                                   const enum TrafficDirection direction,
                                   const struct data_args_t* args, bool ssl) {
@@ -961,7 +1004,7 @@ int syscall__probe_ret_sendto(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
   if (connect_args != NULL) {
-    process_syscall_connect(ctx, id, connect_args);
+    process_implicit_conn(ctx, id, connect_args);
   }
   active_connect_args_map.delete(&id);
 
@@ -982,9 +1025,10 @@ int syscall__probe_entry_recvfrom(struct pt_regs* ctx, int sockfd, char* buf, si
 
   // Stash arguments.
   if (src_addr != NULL) {
-    struct accept_args_t accept_args;
-    accept_args.addr = src_addr;
-    active_accept_args_map.update(&id, &accept_args);
+    struct connect_args_t connect_args = {};
+    connect_args.fd = sockfd;
+    connect_args.addr = src_addr;
+    active_connect_args_map.update(&id, &connect_args);
   }
 
   // Stash arguments.
@@ -1000,20 +1044,19 @@ int syscall__probe_ret_recvfrom(struct pt_regs* ctx) {
   uint64_t id = bpf_get_current_pid_tgid();
 
   // Unstash arguments, and process syscall.
-  struct accept_args_t* accept_args = active_accept_args_map.lookup(&id);
-  if (accept_args != NULL) {
-    process_syscall_accept(ctx, id, accept_args);
+  const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
+  if (connect_args != NULL) {
+    process_implicit_conn(ctx, id, connect_args);
   }
-
-  active_accept_args_map.delete(&id);
+  active_connect_args_map.delete(&id);
 
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
   if (read_args != NULL) {
     process_syscall_data(ctx, id, kIngress, read_args);
   }
-
   active_read_args_map.delete(&id);
+
   return 0;
 }
 
@@ -1022,6 +1065,14 @@ int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int sockfd,
   uint64_t id = bpf_get_current_pid_tgid();
 
   if (msghdr != NULL) {
+    // Stash arguments.
+    if (msghdr->msg_name != NULL) {
+      struct connect_args_t connect_args = {};
+      connect_args.fd = sockfd;
+      connect_args.addr = msghdr->msg_name;
+      active_connect_args_map.update(&id, &connect_args);
+    }
+
     // Stash arguments.
     struct data_args_t write_args = {};
     write_args.fd = sockfd;
@@ -1035,6 +1086,14 @@ int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int sockfd,
 
 int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
   uint64_t id = bpf_get_current_pid_tgid();
+  ssize_t bytes_count = PT_REGS_RC(ctx);
+
+  // Unstash arguments, and process syscall.
+  const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
+  if (connect_args != NULL) {
+    process_implicit_conn(ctx, id, connect_args);
+  }
+  active_connect_args_map.delete(&id);
 
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
@@ -1046,13 +1105,21 @@ int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
   return 0;
 }
 
-int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int fd, struct user_msghdr* msghdr) {
+int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int sockfd, struct user_msghdr* msghdr) {
   uint64_t id = bpf_get_current_pid_tgid();
 
   if (msghdr != NULL) {
     // Stash arguments.
+    if (msghdr->msg_name != NULL) {
+      struct connect_args_t connect_args = {};
+      connect_args.fd = sockfd;
+      connect_args.addr = msghdr->msg_name;
+      active_connect_args_map.update(&id, &connect_args);
+    }
+
+    // Stash arguments.
     struct data_args_t read_args = {};
-    read_args.fd = fd;
+    read_args.fd = sockfd;
     read_args.iov = msghdr->msg_iov;
     read_args.iovlen = msghdr->msg_iovlen;
     active_read_args_map.update(&id, &read_args);
@@ -1063,6 +1130,14 @@ int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int fd, struct user_msghdr
 
 int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
   uint64_t id = bpf_get_current_pid_tgid();
+  ssize_t bytes_count = PT_REGS_RC(ctx);
+
+  // Unstash arguments, and process syscall.
+  const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
+  if (connect_args != NULL) {
+    process_implicit_conn(ctx, id, connect_args);
+  }
+  active_connect_args_map.delete(&id);
 
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
@@ -1152,10 +1227,10 @@ int syscall__probe_ret_close(struct pt_regs* ctx) {
 
 // TODO(oazizi): Look into the following opens:
 // 1) Why does the syscall table only include sendto, while Linux source code and man page list both
-// sendto and send? 2) What do we do when the sendto() is called with a dest_addr provided? I
-// believe this overrides the conn_info.
+// sendto and send?
 
-// Includes HTTP2 tracing probes.
+// Include HTTP2 tracing probes.
 #include "src/stirling/bcc_bpf/go_grpc.c"
 
+// Include OpenSSL tracing probes.
 #include "src/stirling/bcc_bpf/openssl_trace.c"

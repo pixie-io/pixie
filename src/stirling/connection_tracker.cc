@@ -80,8 +80,9 @@ void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   PopulateSockAddr(reinterpret_cast<const struct sockaddr*>(&conn_event.addr),
                    &open_info_.remote_addr);
 
-  CONN_TRACE(1) << absl::Substitute("conn_open af=$0",
-                                    magic_enum::enum_name(open_info_.remote_addr.family));
+  CONN_TRACE(1) << absl::Substitute("conn_open af=$0 addr=$1",
+                                    magic_enum::enum_name(open_info_.remote_addr.family),
+                                    open_info_.remote_addr.AddrStr());
 }
 
 void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {

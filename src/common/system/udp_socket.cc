@@ -53,6 +53,20 @@ ssize_t UDPSocket::SendTo(std::string_view data, const struct sockaddr_in& dst) 
                 reinterpret_cast<const struct sockaddr*>(&dst), sizeof(struct sockaddr_in));
 }
 
+ssize_t UDPSocket::SendMsg(std::string_view data, const struct sockaddr_in& dst) const {
+  struct iovec msg_iov = {};
+  msg_iov.iov_len = data.size();
+  msg_iov.iov_base = const_cast<void*>(reinterpret_cast<const void*>(data.data()));
+
+  struct msghdr msg = {};
+  msg.msg_name = const_cast<void*>(reinterpret_cast<const void*>(&dst));
+  msg.msg_namelen = sizeof(struct sockaddr_in);
+  msg.msg_iovlen = 1;
+  msg.msg_iov = &msg_iov;
+
+  return sendmsg(sockfd_, &msg, /*flags*/ 0);
+}
+
 struct sockaddr_in UDPSocket::RecvFrom(std::string* data) const {
   struct sockaddr_in src;
   socklen_t len = sizeof(struct sockaddr_in);
@@ -63,6 +77,28 @@ struct sockaddr_in UDPSocket::RecvFrom(std::string* data) const {
     return {};
   }
   CHECK(len == sizeof(struct sockaddr_in));
+  data->assign(buf, size);
+  return src;
+}
+
+struct sockaddr_in UDPSocket::RecvMsg(std::string* data) const {
+  struct sockaddr_in src;
+  char buf[kBufSize];
+
+  struct iovec msg_iov = {};
+  msg_iov.iov_base = buf;
+  msg_iov.iov_len = kBufSize;
+
+  struct msghdr msg = {};
+  msg.msg_name = reinterpret_cast<void*>(&src);
+  msg.msg_namelen = sizeof(src);
+  msg.msg_iovlen = 1;
+  msg.msg_iov = &msg_iov;
+
+  ssize_t size = recvmsg(sockfd_, &msg, /*flags*/ 0);
+  if (size <= 0) {
+    return {};
+  }
   data->assign(buf, size);
   return src;
 }
