@@ -46,6 +46,19 @@ class GRPCSourceGroupConversionRule : public Rule {
   Status RemoveGRPCSourceGroup(GRPCSourceGroupIR* grpc_source_group) const;
 };
 
+class MergeSameNodeGRPCBridgeRule : public Rule {
+ public:
+  explicit MergeSameNodeGRPCBridgeRule(int64_t current_agent_id)
+      : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false),
+        current_agent_id_(current_agent_id) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+
+ private:
+  int64_t current_agent_id_;
+};
+
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot

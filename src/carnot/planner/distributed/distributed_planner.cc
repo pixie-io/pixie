@@ -46,7 +46,8 @@ Status StitchPlan(DistributedPlan* distributed_plan) {
 
   // Expand GRPCSourceGroups in the remote_plan.
   GRPCSourceGroupConversionRule conversion_rule;
-  return conversion_rule.Execute(remote_plan).status();
+  PL_RETURN_IF_ERROR(conversion_rule.Execute(remote_plan));
+  return MergeSameNodeGRPCBridgeRule(remote_node_id).Execute(remote_plan).status();
 }
 
 StatusOr<std::unique_ptr<DistributedPlan>> DistributedPlanner::Plan(

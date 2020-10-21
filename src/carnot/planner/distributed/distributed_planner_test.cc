@@ -256,22 +256,17 @@ TEST_F(DistributedPlannerUDTFTests, UDTFOnKelvinOnlyOnKelvin) {
   ASSERT_EQ(kelvin_instance->carnot_info().query_broker_address(), "kelvin");
   auto kelvin_plan = kelvin_instance->plan();
 
-  // TODO(philkuz) (PL-1468) update this when we combine GRPCSink and GRPCSource on the same plan.
-  // Kelvin should have four Operators that form two subgraphs:
-  // UDTFSource -> GRPCSink && GRPCSource -> MemSink
-  EXPECT_EQ(kelvin_plan->FindNodesThatMatch(Operator()).size(), 4);
+  // We combine GRPCSink and GRPCSource on the same plan.
+  // Kelvin should have two Operators that form one subgraphs:
+  // UDTFSource -> MemSink
+  EXPECT_EQ(kelvin_plan->FindNodesThatMatch(Operator()).size(), 2);
 
   // Kelvin should have UDTFs.
   auto kelvin_udtfs = kelvin_plan->FindNodesOfType(IRNodeType::kUDTFSource);
   ASSERT_EQ(kelvin_udtfs.size(), 1);
   UDTFSourceIR* udtf = static_cast<UDTFSourceIR*>(kelvin_udtfs[0]);
   ASSERT_EQ(udtf->Children().size(), 1);
-  EXPECT_MATCH(udtf->Children()[0], InternalGRPCSink());
-
-  auto kelvin_sinks = kelvin_plan->FindNodesThatMatch(ExternalGRPCSink());
-  auto new_sink = static_cast<GRPCSinkIR*>(kelvin_sinks[0]);
-  ASSERT_EQ(new_sink->parents().size(), 1UL);
-  EXPECT_EQ(new_sink->parents()[0]->type(), IRNodeType::kGRPCSource);
+  EXPECT_MATCH(udtf->Children()[0], ExternalGRPCSink());
 }
 
 constexpr char kQueryJoinKelvinOnlyUDTFWithPEMOnlyUDTF[] = R"pxl(
@@ -325,8 +320,7 @@ TEST_F(DistributedPlannerUDTFTests, UDTFOnKelvinJoinWithUDTFOnPEM) {
   UDTFSourceIR* kelvin_udtf = static_cast<UDTFSourceIR*>(kelvin_udtfs[0]);
   EXPECT_EQ(kelvin_udtf->udtf_spec().name(), "ServiceUpTime");
   ASSERT_EQ(kelvin_udtf->Children().size(), 1);
-  EXPECT_MATCH(kelvin_udtf->Children()[0], InternalGRPCSink());
-  auto kelvin_grpc_sink = static_cast<GRPCSinkIR*>(kelvin_udtf->Children()[0]);
+  EXPECT_MATCH(kelvin_udtf->Children()[0], Join());
 
   // PEM should have UDTF.
   auto pem_udtfs = pem_plan->FindNodesOfType(IRNodeType::kUDTFSource);
@@ -348,12 +342,9 @@ TEST_F(DistributedPlannerUDTFTests, UDTFOnKelvinJoinWithUDTFOnPEM) {
   EXPECT_EQ(new_result_sink->parents()[0]->type(), IRNodeType::kJoin);
   auto join = static_cast<JoinIR*>(new_result_sink->parents()[0]);
   ASSERT_EQ(join->parents().size(), 2);
-  ASSERT_EQ(join->parents()[0]->type(), IRNodeType::kGRPCSource);
-  ASSERT_EQ(join->parents()[1]->type(), IRNodeType::kGRPCSource);
-  auto kelvin_grpc_source = static_cast<GRPCSourceIR*>(join->parents()[0]);
+  ASSERT_MATCH(join->parents()[0], UDTFSource());
+  ASSERT_MATCH(join->parents()[1], GRPCSource());
   auto pem_grpc_source = static_cast<GRPCSourceIR*>(join->parents()[1]);
-  EXPECT_EQ(kelvin_grpc_source->id(),
-            kelvin_grpc_sink->agent_id_to_destination_id().find(kelvin_instance->id())->second);
   EXPECT_EQ(pem_grpc_source->id(),
             pem_grpc_sink->agent_id_to_destination_id().find(pem_instance->id())->second);
 }

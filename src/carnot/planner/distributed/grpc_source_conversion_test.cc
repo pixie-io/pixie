@@ -16,6 +16,7 @@ namespace planner {
 namespace distributed {
 
 using ::testing::_;
+using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::UnorderedElementsAreArray;
 
@@ -182,6 +183,43 @@ TEST_F(GRPCSourceConversionTest, multiple_grpc_source_groups) {
   auto grpc_sink2_destination = grpc_sink2->agent_id_to_destination_id().find(agent_id)->second;
   auto grpc_source2 = static_cast<GRPCSourceIR*>(mem_sink2_parent);
   EXPECT_EQ(grpc_source2->id(), grpc_sink2_destination);
+}
+
+using MergeSameNodeGRPCBridgeRuleTest = GRPCSourceConversionTest;
+TEST_F(MergeSameNodeGRPCBridgeRuleTest, construction_test) {
+  int64_t grpc_bridge_id = 123;
+  std::string grpc_address = "1111";
+  auto grpc_source_group = MakeGRPCSourceGroup(grpc_bridge_id, MakeTimeRelation());
+  grpc_source_group->SetGRPCAddress(grpc_address);
+  MakeMemSink(grpc_source_group, "out");
+
+  auto mem_src1 = MakeMemSource(MakeTimeRelation());
+  auto grpc_sink1 = MakeGRPCSink(mem_src1, grpc_bridge_id);
+
+  auto mem_src2 = MakeMemSource(MakeTimeRelation());
+  auto grpc_sink2 = MakeGRPCSink(mem_src2, grpc_bridge_id);
+
+  auto agent_id = 0;
+
+  EXPECT_OK(grpc_source_group->AddGRPCSink(grpc_sink1, {agent_id}));
+  EXPECT_OK(grpc_source_group->AddGRPCSink(grpc_sink2, {agent_id}));
+
+  // run the conversion rule.
+  GRPCSourceGroupConversionRule setup_rule;
+  auto result = setup_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  bool does_change = result.ConsumeValueOrDie();
+  EXPECT_TRUE(does_change);
+
+  MergeSameNodeGRPCBridgeRule rule(agent_id);
+  ASSERT_OK(rule.Execute(graph.get()));
+  // All the GRPCSinks should be replaced.
+  ASSERT_THAT(graph->FindNodesThatMatch(GRPCSink()), ElementsAre());
+  auto mem_srcs = graph->FindNodesThatMatch(MemorySource());
+  EXPECT_EQ(mem_srcs.size(), 2);
+  auto mem_src_child = static_cast<MemorySourceIR*>(mem_srcs[0])->Children()[0];
+  ASSERT_MATCH(mem_src_child, Union());
+  ASSERT_MATCH(mem_src_child->Children()[0], MemorySink());
 }
 
 }  // namespace distributed

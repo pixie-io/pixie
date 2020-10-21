@@ -81,6 +81,32 @@ StatusOr<OperatorIR*> GRPCSourceGroupConversionRule::ConvertGRPCSourceGroup(
   return union_op;
 }
 
+StatusOr<bool> MergeSameNodeGRPCBridgeRule::Apply(IRNode* ir_node) {
+  if (!Match(ir_node, InternalGRPCSink())) {
+    return false;
+  }
+  GRPCSinkIR* grpc_sink = static_cast<GRPCSinkIR*>(ir_node);
+  DCHECK(grpc_sink->agent_id_to_destination_id().contains(current_agent_id_))
+      << "Expected the grpc sink to contain this current agent ID as a a target";
+  int64_t dest_id = grpc_sink->agent_id_to_destination_id().at(current_agent_id_);
+  auto node = grpc_sink->graph()->Get(dest_id);
+  if (!Match(node, GRPCSource())) {
+    return node->CreateIRNodeError("Expected node to be a 'GRPCSource', but recieved a '$0'",
+                                   node->DebugString());
+  }
+  auto grpc_sink_parent = grpc_sink->parents()[0];
+  PL_RETURN_IF_ERROR(grpc_sink->RemoveParent(grpc_sink_parent));
+  auto grpc_source_to_replace = static_cast<GRPCSourceIR*>(node);
+  for (OperatorIR* child : grpc_source_to_replace->Children()) {
+    PL_RETURN_IF_ERROR(child->ReplaceParent(grpc_source_to_replace, grpc_sink_parent));
+  }
+  IR* graph = grpc_source_to_replace->graph();
+  PL_RETURN_IF_ERROR(graph->DeleteNode(grpc_sink->id()));
+  PL_RETURN_IF_ERROR(graph->DeleteNode(grpc_source_to_replace->id()));
+
+  return true;
+}
+
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
