@@ -183,7 +183,7 @@ TEST(ElfGolangItableTest, ExtractInterfaceTypes) {
       interfaces,
       UnorderedElementsAre(
           Pair("error", UnorderedElementsAre(
-                            Field(&IntfImplTypeInfo::type_name, "main.dummyError"),
+                            Field(&IntfImplTypeInfo::type_name, "main.IntStruct"),
                             Field(&IntfImplTypeInfo::type_name, "*errors.errorString"),
                             Field(&IntfImplTypeInfo::type_name, "*os.PathError"),
                             Field(&IntfImplTypeInfo::type_name, "*internal/poll.TimeoutError"),

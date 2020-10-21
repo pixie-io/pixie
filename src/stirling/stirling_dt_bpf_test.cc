@@ -16,6 +16,7 @@ namespace pl {
 namespace stirling {
 
 using ::pl::testing::BazelBinTestFilePath;
+using ::testing::SizeIs;
 using ::testing::StrEq;
 
 //-----------------------------------------------------------------------------
@@ -403,6 +404,10 @@ tracepoints {
 }
 
 // Tests tracing StructBlob variables.
+// TODO(yzhao): Add test for returned StructBlob of OuterStructFunc(). We need to put output
+// variable into BPF_PERCPU_ARRAY:
+// (https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#7-bpf_percpu_array)
+// to work around the stack size limit.
 TEST_F(DynamicTraceGolangTest, TraceStructBlob) {
   BinaryRunner trace_target;
   trace_target.Run(kBinaryPath);
@@ -417,7 +422,6 @@ tracepoints {
     outputs {
       name: "output_table"
       fields: "struct_blob"
-      fields: "return_struct_blob"
     }
     probes {
       name: "probe0"
@@ -436,7 +440,6 @@ tracepoints {
       output_actions {
         output_name: "output_table"
         variable_name: "arg0"
-        variable_name: "retval0"
       }
     }
   }
@@ -449,15 +452,11 @@ tracepoints {
   // Get field indexes for the columns we want.
   ASSERT_HAS_VALUE_AND_ASSIGN(int struct_blob_field_idx,
                               FindFieldIndex(info_class_.schema(), "struct_blob"));
-  ASSERT_HAS_VALUE_AND_ASSIGN(int ret_field_idx,
-                              FindFieldIndex(info_class_.schema(), "return_struct_blob"));
 
   types::ColumnWrapperRecordBatch& rb = *record_batches_[0];
   EXPECT_EQ(
       rb[struct_blob_field_idx]->Get<types::StringValue>(0),
       R"({"O0":1,"O1":{"M0":{"L0":true,"L1":2,"L2":0},"M1":false,"M2":{"L0":true,"L1":3,"L2":0}}})");
-  const std::string& ret = rb[ret_field_idx]->Get<types::StringValue>(0);
-  EXPECT_THAT(ret, StrEq(R"({"X":3,"Y":4})"));
 }
 
 TEST_F(DynamicTraceGolangTest, TraceError) {
@@ -473,7 +472,6 @@ TEST_F(DynamicTraceGolangTest, TraceError) {
       language: GOLANG
       outputs {
         name: "output_table"
-        fields: "arg"
         fields: "err"
       }
       probes {
@@ -482,17 +480,12 @@ TEST_F(DynamicTraceGolangTest, TraceError) {
           symbol: "main.FooReturnsDummyError"
           type: LOGICAL
         }
-        args {
-          id: "arg0"
-          expr: "a"
-        }
         ret_vals {
           id: "retval0"
-          expr: "$$1"
+          expr: "$$0"
         }
         output_actions {
           output_name: "output_table"
-          variable_name: "arg0"
           variable_name: "retval0"
         }
       }
@@ -504,29 +497,13 @@ TEST_F(DynamicTraceGolangTest, TraceError) {
   DeployTracepoint(std::move(trace_program));
 
   // Get field indexes for the columns we want.
-  ASSERT_HAS_VALUE_AND_ASSIGN(int arg_field_idx, FindFieldIndex(info_class_.schema(), "arg"));
+  // ASSERT_HAS_VALUE_AND_ASSIGN(int arg_field_idx, FindFieldIndex(info_class_.schema(), "arg"));
   ASSERT_HAS_VALUE_AND_ASSIGN(int err_field_idx, FindFieldIndex(info_class_.schema(), "err"));
 
-  for (auto& rb_ptr : record_batches_) {
-    const auto& rb = *rb_ptr;
-    for (size_t i = 0; i < rb[arg_field_idx]->Size(); ++i) {
-      int64_t arg = rb[arg_field_idx]->Get<types::Int64Value>(i).val;
-      ASSERT_TRUE(arg == 0 || arg == 1);
-
-      rapidjson::Document d;
-      rapidjson::ParseResult ok = d.Parse(rb[err_field_idx]->Get<types::StringValue>(i).data());
-      ASSERT_NE(ok, nullptr);
-      const auto& tab_value = d["tab"];
-      const auto& data_value = d["data"];
-
-      if (arg == 0) {
-        EXPECT_NE(tab_value.GetInt(), 0);
-        EXPECT_NE(data_value.GetInt(), 0);
-      } else {
-        EXPECT_EQ(tab_value.GetInt(), 0);
-        EXPECT_EQ(data_value.GetInt(), 0);
-      }
-    }
+  EXPECT_THAT(record_batches_, SizeIs(1));
+  const auto& rb = *record_batches_[0];
+  for (size_t i = 0; i < rb[err_field_idx]->Size(); ++i) {
+    EXPECT_THAT(rb[err_field_idx]->Get<types::StringValue>(i), StrEq(R"({"X":3,"Y":4})"));
   }
 }
 

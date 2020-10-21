@@ -1,5 +1,6 @@
 #include "src/stirling/dynamic_tracing/dwarvifier.h"
 
+#include <limits>
 #include <map>
 #include <memory>
 #include <string>
@@ -13,9 +14,6 @@
 #include "src/stirling/dynamic_tracing/ir/sharedpb/shared.pb.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
 #include "src/stirling/obj_tools/elf_tools.h"
-
-DEFINE_bool(enable_tracing_golang_interface, false,
-            "Temporary flat to avoid disrupt existing code while finishing the implementation.");
 
 namespace pl {
 namespace stirling {
@@ -34,6 +32,7 @@ using ::pl::stirling::dynamic_tracing::ir::physical::MapVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::PtrLenVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::StructVariable;
+using ::pl::stirling::dynamic_tracing::ir::physical::Variable;
 
 //-----------------------------------------------------------------------------
 // Top-level code
@@ -72,6 +71,11 @@ class Dwarvifier {
   Status ProcessGolangInterfaceExpr(const std::string& base, uint64_t offset,
                                     const TypeInfo& type_info, const std::string& var_name,
                                     ir::physical::Probe* output_probe);
+
+  // Generates a ScalarVariable for a StrutBlob variable described by the input type info,
+  // and located at the (base + offset) address.
+  StatusOr<ScalarVariable> GenerateStructBlobVariable(uint8_t idx, const std::string& base,
+                                                      uint64_t offset, const TypeInfo& type_info);
 
   // Used by ProcessVarExpr() to handle a Struct variable.
   Status ProcessStructBlob(const std::string& base, uint64_t offset, const TypeInfo& type_info,
@@ -339,29 +343,33 @@ TVarType* Dwarvifier::AddVariable(ir::physical::Probe* probe, const std::string&
 
   if constexpr (std::is_same_v<TVarType, ScalarVariable>) {
     var = probe->add_vars()->mutable_scalar_var();
+    var->set_type(type);
   } else if constexpr (std::is_same_v<TVarType, StructVariable>) {
+    // TODO(yzhao): This branch is not used, consider removing.
     var = probe->add_vars()->mutable_struct_var();
   } else if constexpr (std::is_same_v<TVarType, MapVariable>) {
+    // TODO(yzhao): This branch is not used, consider removing.
     var = probe->add_vars()->mutable_map_var();
   } else if constexpr (std::is_same_v<TVarType, PtrLenVariable>) {
     var = probe->add_vars()->mutable_ptr_len_var();
+    var->set_type(type);
   } else {
     COMPILE_TIME_ASSERT(false, "Unsupported ir::physical::Variable type");
   }
 
   var->set_name(name);
-  var->set_type(type);
 
-  // Populate map, so we can lookup this variable later.
+  // UNKNOWN means that this is not a variable definition, therefore can skip this check below.
+  if (type == ir::shared::ScalarType::UNKNOWN) {
+    return var;
+  }
+
   auto& v = variables_[name];
   v.set_name(name);
   v.set_type(type);
 
   // Decoder should be present if and only if type is STRUCT_BLOB.
   DCHECK_EQ(type == ir::shared::ScalarType::STRUCT_BLOB, !decoder.empty());
-
-  ECHECK(decoder.size() <= 1) << "Does not allow multiple StructSpec.";
-
   v.mutable_blob_decoder()->CopyFrom(std::move(decoder));
 
   return var;
@@ -602,14 +610,11 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
   // * For each concrete type, writes type ID along with the rest of the data.
   // * Add a output action for the struct blob variable.
 
-  // TODO(yzhao): Remove this.
-  // This variable is not valid. It's added to allow later output action references to a defined
-  // variable.
-  AddVariable<ScalarVariable>(output_probe, var_name, ir::shared::ScalarType::VOID_POINTER);
-
   constexpr char kIfaceTabSuffix[] = "_intf_tab";
+  constexpr char kIfaceDataSuffix[] = "_intf_data";
 
-  PL_ASSIGN_OR_RETURN(const StructMemberInfo mem_info,
+  // Used to determine the implementation type.
+  PL_ASSIGN_OR_RETURN(const StructMemberInfo tab_mem_info,
                       dwarf_reader_->GetStructMemberInfo(kGolangInterfaceTypeName, "tab"));
 
   std::string iface_tab_var_name = absl::StrCat(var_name, kIfaceTabSuffix);
@@ -617,7 +622,18 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
       AddVariable<ScalarVariable>(output_probe, iface_tab_var_name, ir::shared::ScalarType::UINT64);
 
   iface_tab_var->mutable_memory()->set_base(base);
-  iface_tab_var->mutable_memory()->set_offset(offset + mem_info.offset);
+  iface_tab_var->mutable_memory()->set_offset(offset + tab_mem_info.offset);
+
+  // Used to copy the content of the implementation variable.
+  PL_ASSIGN_OR_RETURN(const StructMemberInfo data_mem_info,
+                      dwarf_reader_->GetStructMemberInfo(kGolangInterfaceTypeName, "data"));
+
+  std::string iface_data_var_name = absl::StrCat(var_name, kIfaceDataSuffix);
+  ir::physical::ScalarVariable* iface_data_var = AddVariable<ScalarVariable>(
+      output_probe, iface_data_var_name, ir::shared::ScalarType::VOID_POINTER);
+
+  iface_data_var->mutable_memory()->set_base(base);
+  iface_data_var->mutable_memory()->set_offset(offset + data_mem_info.offset);
 
   // TODO(yzhao): Add a variable that reads the value of the runtime.iface.tab.
 
@@ -633,12 +649,37 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
         var_name, type_info.decl_type);
   }
 
-  for (const elf_tools::IntfImplTypeInfo& info : iter->second) {
+  RepeatedPtrField<ir::physical::StructSpec> struct_spec;
+
+  if (iter->second.size() > std::numeric_limits<int8_t>::max()) {
+    return error::Internal("The number of implementation types '$0' exceeds limit '$1'",
+                           iter->second.size(), std::numeric_limits<int8_t>::max());
+  }
+
+  for (size_t decoder_idx = 0; decoder_idx < iter->second.size(); ++decoder_idx) {
+    const elf_tools::IntfImplTypeInfo& info = iter->second[decoder_idx];
+
     if (IsGolangPointerType(info.type_name)) {
       LOG(WARNING) << absl::Substitute(
           "Does not support pointer type as interface implementation type yet, "
           "interface=$0 impl_type=$1",
           type_info.decl_type, type_info.type_name);
+      continue;
+    }
+
+    // TODO(yzhao): Need to add support to read base type, which can also implement error interface.
+    // One such example is syscall.Errno.
+    auto struct_spec_entires_or = dwarf_reader_->GetStructSpec(info.type_name);
+    if (!struct_spec_entires_or.ok()) {
+      continue;
+    }
+    auto struct_spec_proto_or =
+        CreateStructSpecProto(struct_spec_entires_or.ConsumeValueOrDie(), language_);
+    if (!struct_spec_proto_or.ok()) {
+      continue;
+    }
+    auto struct_byte_size_or = dwarf_reader_->GetStructByteSize(type_info.type_name);
+    if (!struct_byte_size_or.ok()) {
       continue;
     }
 
@@ -654,7 +695,38 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
     cond_block->mutable_cond()->set_op(ir::shared::Condition::EQUAL);
     cond_block->mutable_cond()->add_vars(iface_tab_var->name());
     cond_block->mutable_cond()->add_vars(intf_tab_addr_constant->name());
+
+    struct_spec.Add(struct_spec_proto_or.ConsumeValueOrDie());
+
+    auto* scalar_var = cond_block->add_vars()->mutable_scalar_var();
+
+    // Assign this particular type to the output variable.
+    scalar_var->set_name(var_name);
+    scalar_var->set_type(ir::shared::ScalarType::STRUCT_BLOB);
+    scalar_var->mutable_memory()->set_op(ir::physical::ASSIGN_ONLY);
+    scalar_var->mutable_memory()->set_decoder_idx(decoder_idx);
+    scalar_var->mutable_memory()->set_base(iface_data_var_name);
+    scalar_var->mutable_memory()->set_offset(0);
+    scalar_var->mutable_memory()->set_size(struct_byte_size_or.ValueOrDie());
   }
+
+  // NOTE: Logically this should appear before the ConditionalBlock generation code above.
+  // However, because protobuf message has vars field before cond_blocks, this reordering does not
+  // affect the processing order, i.e., the below code is generated before the ConditionalBlock.
+  //
+  // NOTE: It is more convenient to collect StructSpec in the above loop.
+  auto var = AddVariable<ScalarVariable>(
+      output_probe, var_name, ir::shared::ScalarType::STRUCT_BLOB, std::move(struct_spec));
+  var->mutable_memory()->set_op(ir::physical::DEFINE_ONLY);
+
+  // TODO(yzhao): Should have overloaded functions for different sub-types.
+  auto assigned_var = AddVariable<StructVariable>(output_probe, var_name, ir::shared::UNKNOWN);
+  assigned_var->set_op(ir::physical::ASSIGN_ONLY);
+
+  auto* field_assign = assigned_var->add_field_assignments();
+  field_assign->set_field_name("decoder_idx");
+  field_assign->set_value("-1");
+
   return Status::OK();
 }
 
@@ -675,6 +747,8 @@ Status Dwarvifier::ProcessStructBlob(const std::string& base, uint64_t offset,
 
   auto var = AddVariable<ScalarVariable>(
       output_probe, var_name, ir::shared::ScalarType::STRUCT_BLOB, std::move(struct_spec));
+  // For StuctBlob with one single schema, the index is always 0.
+  var->mutable_memory()->set_decoder_idx(0);
   var->mutable_memory()->set_base(base);
   var->mutable_memory()->set_offset(offset);
   var->mutable_memory()->set_size(struct_byte_size);
@@ -777,7 +851,7 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
 
       AddPtrLenVariable(output_probe, var_name, ir::shared::ScalarType::BYTE_ARRAY, base,
                         offset + ptr_offset, offset + len_offset);
-    } else if (FLAGS_enable_tracing_golang_interface && language_ == ir::shared::Language::GOLANG &&
+    } else if (language_ == ir::shared::Language::GOLANG &&
                // Meaning that this variable is an interface.
                type_info.type_name == kGolangInterfaceTypeName) {
       PL_RETURN_IF_ERROR(
@@ -1154,6 +1228,7 @@ Status Dwarvifier::ProcessOutputAction(const ir::logical::OutputAction& output_a
   auto* struct_var = output_probe->add_vars()->mutable_struct_var();
   struct_var->set_type(struct_type_name);
   struct_var->set_name(variable_name);
+  struct_var->set_is_output(true);
 
   // The Struct generated in above step is always the last element.
   const ir::physical::Struct& output_struct = *output_program->structs().rbegin();

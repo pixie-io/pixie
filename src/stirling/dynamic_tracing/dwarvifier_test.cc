@@ -695,6 +695,7 @@ probes {
         field_name: "arg2"
         variable_name: "arg2"
       }
+      is_output: true
     }
   }
   map_stash_actions {
@@ -814,6 +815,7 @@ probes {
         field_name: "arg1"
         variable_name: "arg1"
       }
+      is_output: true
     }
   }
   map_delete_actions {
@@ -1020,6 +1022,7 @@ probes {
         field_name: "out"
         variable_name: "arg0"
       }
+      is_output: true
     }
   }
   output_actions {
@@ -1047,7 +1050,7 @@ tracepoints {
       }
       args {
         id: "retval"
-        expr: "~r1"
+        expr: "~r0"
       }
       output_actions {
         output_name: "out_table"
@@ -1082,7 +1085,33 @@ structs {
   }
   fields {
     name: "error"
-    type: VOID_POINTER
+    type: STRUCT_BLOB
+    blob_decoder {
+      entries {
+        size: 8
+        type: INT
+        path: "/X"
+      }
+      entries {
+        offset: 8
+        size: 8
+        type: INT
+        path: "/Y"
+      }
+    }
+    blob_decoder {
+      entries {
+        size: 8
+        type: VOID_POINTER
+        path: "/str"
+      }
+      entries {
+        offset: 8
+        size: 8
+        type: INT
+        path: "/len"
+      }
+    }
   }
 }
 outputs {
@@ -1139,14 +1168,18 @@ probes {
   }
   vars {
     scalar_var {
-      name: "retval"
-      type: VOID_POINTER
+      name: "retval_intf_tab"
+      type: UINT64
+      memory {
+        base: "sp_"
+        offset: 8
+      }
     }
   }
   vars {
     scalar_var {
-      name: "retval_intf_tab"
-      type: UINT64
+      name: "retval_intf_data"
+      type: VOID_POINTER
       memory {
         base: "sp_"
         offset: 16
@@ -1155,23 +1188,35 @@ probes {
   }
   vars {
     scalar_var {
-      name: "main__dummyError_sym_addr"
+      name: "main__IntStruct_sym_addr"
       type: UINT64
-      constant: "5112416"
+      constant: "5112064"
     }
   }
   vars {
     scalar_var {
       name: "runtime__errorString_sym_addr"
       type: UINT64
-      constant: "5112448"
+      constant: "5112096"
     }
   }
   vars {
     scalar_var {
-      name: "syscall__Errno_sym_addr"
-      type: UINT64
-      constant: "5112480"
+      name: "retval"
+      type: STRUCT_BLOB
+      memory {
+        op: DEFINE_ONLY
+      }
+    }
+  }
+  vars {
+    struct_var {
+      name: "retval"
+      field_assignments {
+        field_name: "decoder_idx"
+        value: "-1"
+      }
+      op: ASSIGN_ONLY
     }
   }
   vars {
@@ -1198,6 +1243,7 @@ probes {
         field_name: "error"
         variable_name: "retval"
       }
+      is_output: true
     }
   }
   output_actions {
@@ -1208,7 +1254,18 @@ probes {
     cond {
       op: EQUAL
       vars: "retval_intf_tab"
-      vars: "main__dummyError_sym_addr"
+      vars: "main__IntStruct_sym_addr"
+    }
+    vars {
+      scalar_var {
+        name: "retval"
+        type: STRUCT_BLOB
+        memory {
+          base: "retval_intf_data"
+          size: 16
+          op: ASSIGN_ONLY
+        }
+      }
     }
   }
   cond_blocks {
@@ -1217,12 +1274,17 @@ probes {
       vars: "retval_intf_tab"
       vars: "runtime__errorString_sym_addr"
     }
-  }
-  cond_blocks {
-    cond {
-      op: EQUAL
-      vars: "retval_intf_tab"
-      vars: "syscall__Errno_sym_addr"
+    vars {
+      scalar_var {
+        name: "retval"
+        type: STRUCT_BLOB
+        memory {
+          base: "retval_intf_data"
+          size: 16
+          decoder_idx: 1
+          op: ASSIGN_ONLY
+        }
+      }
     }
   }
 }
@@ -1244,9 +1306,6 @@ class DwarfInfoTest : public ::testing::TestWithParam<DwarfInfoTestParam> {
 TEST_P(DwarfInfoTest, Transform) {
   using dwarf_tools::DwarfReader;
   using elf_tools::ElfReader;
-
-  // TODO(yzhao): Remove this after the feature is finished.
-  FLAGS_enable_tracing_golang_interface = true;
 
   DwarfInfoTestParam p = GetParam();
 

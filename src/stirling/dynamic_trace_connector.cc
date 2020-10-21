@@ -229,11 +229,26 @@ class StructDecoder {
     return s;
   }
 
-  StatusOr<std::string> ExtractStructBlobAsJSON(const StructSpec& col_decoder) {
+  StatusOr<std::string> ExtractStructBlobAsJSON(const RepeatedPtrField<StructSpec>& struct_specs) {
     PL_ASSIGN_OR_RETURN(size_t len, ExtractField<size_t>());
+    PL_ASSIGN_OR_RETURN(int8_t idx, ExtractField<int8_t>());
+
     std::string_view bytes = buf_.substr(0, len);
     buf_.remove_prefix(dynamic_tracing::kStructBlobSize - sizeof(size_t));
-    return ParseStructBlobToJSON(col_decoder, bytes);
+
+    if (idx < 0) {
+      // BPF could not figure out the correct index to the implementation type of an interface.
+      // This can happen if the implementation type was not support yet. Examples include pointer
+      // types, and base/native types.
+      //
+      // TODO(yzhao): Change to output the literal interface struct in this case. Such that we could
+      // remove this special case.
+      return absl::Substitute(R"({"bytes": "$0"})", BytesToString<bytes_format::Hex>(bytes));
+    }
+
+    // This tells which StructSpec actually describes the data.
+    ECHECK_LT(idx, struct_specs.size());
+    return ParseStructBlobToJSON(struct_specs.Get(idx), bytes);
   }
 
  private:
@@ -315,9 +330,7 @@ Status FillColumn(StructDecoder* struct_decoder, DataTable::DynamicRecordBuilder
       break;
     }
     case ScalarType::STRUCT_BLOB: {
-      ECHECK(col_decoder.size() == 1) << "Only support exactly one StructSpec for StructBlob";
-      PL_ASSIGN_OR_RETURN(std::string val,
-                          struct_decoder->ExtractStructBlobAsJSON(col_decoder.Get(0)));
+      PL_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractStructBlobAsJSON(col_decoder));
       r->Append(col_idx, types::StringValue(val));
       break;
     }

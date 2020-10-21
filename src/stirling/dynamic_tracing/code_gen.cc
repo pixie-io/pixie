@@ -61,7 +61,7 @@ const std::string kStructByteArray =
     absl::StrCat("struct blob", std::to_string(kStructByteArraySize));
 
 // NOLINTNEXTLINE: runtime/string
-const std::string kStructBlob = absl::StrCat("struct blob", std::to_string(kStructBlobSize));
+const std::string kStructBlob = absl::StrCat("struct struct_blob", std::to_string(kStructBlobSize));
 
 // clang-format off
 const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypeToCType = {
@@ -279,7 +279,8 @@ StatusOr<std::vector<std::string>> GenPtrLenVariable(const PtrLenVariable& var) 
   } else if (var.type() == ir::shared::ScalarType::BYTE_ARRAY) {
     size = kStructByteArraySize;
   } else {
-    return error::Internal("GenPtrLenVariable received an unsupported type: $0", var.type());
+    return error::Internal("GenPtrLenVariable $0 received an unsupported type: $1",
+                           var.ShortDebugString(), ScalarType_Name(var.type()));
   }
 
   // Make sure we don't overrun the buffer by capping the length (also required for verifier).
@@ -329,6 +330,8 @@ std::vector<std::string> GenStructBlobMemoryVariable(const ScalarVariable& var) 
 
   if (var.memory().op() != ir::physical::DEFINE_ONLY) {
     code_lines.push_back(absl::Substitute("$0.len = $1;", var.name(), size));
+    code_lines.push_back(
+        absl::Substitute("$0.decoder_idx = $1;", var.name(), var.memory().decoder_idx()));
     code_lines.push_back(absl::Substitute("bpf_probe_read(&$0.buf, $1, $2 + $3);", var.name(), size,
                                           var.memory().base(), var.memory().offset()));
   }
@@ -453,8 +456,19 @@ StatusOr<std::vector<std::string>> GenStructVariable(const StructVariable& st_va
 
   if (st_var.op() != ir::physical::DEFINE_ONLY) {
     for (const auto& fa : st_var.field_assignments()) {
-      code_lines.push_back(
-          absl::Substitute("$0.$1 = $2;", st_var.name(), fa.field_name(), fa.variable_name()));
+      switch (fa.value_oneof_case()) {
+        case StructVariable::FieldAssignment::kVariableName:
+          code_lines.push_back(
+              absl::Substitute("$0.$1 = $2;", st_var.name(), fa.field_name(), fa.variable_name()));
+          break;
+        case StructVariable::FieldAssignment::kValue:
+          code_lines.push_back(
+              absl::Substitute("$0.$1 = $2;", st_var.name(), fa.field_name(), fa.value()));
+          break;
+        case StructVariable::FieldAssignment::VALUE_ONEOF_NOT_SET:
+          return error::InvalidArgument(
+              "FieldAssignment of StructVariable '$0' does not have value", st_var.name());
+      }
     }
   }
 
@@ -571,7 +585,7 @@ std::string GenMapVariable(const ir::physical::MapVariable& map_var) {
 Status CheckVarExists(const absl::flat_hash_map<std::string_view, const Variable*>& var_names,
                       std::string_view var_name, std::string_view context) {
   if (!var_names.contains(var_name)) {
-    return error::InvalidArgument("variable name '$0' was not defined [context = $1]", var_name,
+    return error::InvalidArgument("Variable name '$0' was not defined [context = $1]", var_name,
                                   context);
   }
   return Status::OK();
@@ -622,11 +636,13 @@ Status BCCCodeGenerator::GenVariable(
       }
 
       for (const auto& fa : st_var.field_assignments()) {
-        PL_RETURN_IF_ERROR(
-            CheckVarExists(vars, fa.variable_name(),
-                           absl::Substitute("StructVariable '$0' field assignment '$1'",
-                                            st_var.name(), fa.ShortDebugString())));
-        // TODO(yzhao): Check variable types as well.
+        if (fa.value_oneof_case() == StructVariable::FieldAssignment::kVariableName) {
+          PL_RETURN_IF_ERROR(
+              CheckVarExists(vars, fa.variable_name(),
+                             absl::Substitute("StructVariable '$0' field assignment '$1'",
+                                              st_var.name(), fa.ShortDebugString())));
+          // TODO(yzhao): Check variable types as well.
+        }
       }
 
       MOVE_BACK_STR_VEC(GenStructVariable(st_var), code_lines);
@@ -710,6 +726,11 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
                                     var.ShortDebugString(), probe.ShortDebugString());
     }
 
+    if (var.has_struct_var() && var.struct_var().is_output()) {
+      // Leave output variable to be generated right before the output action.
+      continue;
+    }
+
     vars[var_name] = &var;
 
     PL_RETURN_IF_ERROR(GenVariable(var, vars, &code_lines));
@@ -735,6 +756,28 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
     PL_RETURN_IF_ERROR(CheckVarExists(vars, action.key_variable_name(),
                                       absl::Substitute("BPF map '$0' key", action.map_name())));
     code_lines.push_back(GenMapDeleteAction(action));
+  }
+
+  // Generate assignments to output variables right before the output action, and after all other
+  // variables, such that the values got changed in the previous ConditionalBlock can take effect.
+  //
+  // TODO(yzhao): Consider letting PerfBufferOutput to include the output variable itself.
+  for (const auto& var : probe.vars()) {
+    // Skip variables that are not to be output.
+    if (!var.has_struct_var() || !var.struct_var().is_output()) {
+      continue;
+    }
+
+    std::string_view var_name = GetVariableName(var);
+
+    if (IsVariableDefinition(var) && vars.contains(var_name)) {
+      return error::InvalidArgument("Output variable '$0' in Probe '$1' was already defined.",
+                                    var.ShortDebugString(), probe.ShortDebugString());
+    }
+
+    vars[var_name] = &var;
+
+    PL_RETURN_IF_ERROR(GenVariable(var, vars, &code_lines));
   }
 
   for (const auto& action : probe.output_actions()) {
@@ -841,29 +884,44 @@ std::vector<std::string> GenUtilFNs() {
   return code_lines;
 }
 
-std::vector<std::string> GenBlobType(int size) {
+std::vector<std::string> GenBlobType(std::string_view type_name, int size,
+                                     bool include_decoder_index = false) {
   // Size must be a power of 2.
   DCHECK_EQ(size & (size - 1), 0);
 
-  return {
-      absl::Substitute("struct blob$0 {", size),
-      "  uint64_t len;",
-      absl::Substitute("  uint8_t buf[$0-sizeof(uint64_t)-1];", size),
-      "  // To keep 4.14 kernel verifier happy, we copy an extra byte.",
-      "  // Keep a dummy character to absorb this garbage.",
-      "  // We also use this extra byte to track if data has been truncated.",
-      "  uint8_t dummy;",
-      "};",
-  };
+  std::vector<std::string> code_lines = {
+      // Length field must be the first field, which is used to determine how much bytes to read
+      // during decoding.
+      absl::Substitute("$0 {", type_name), "  uint64_t len;"};
+
+  if (include_decoder_index) {
+    // TODO(yzhao): Change to use uint16_t.
+    code_lines.push_back("  int8_t decoder_idx;");
+  }
+
+  code_lines.insert(code_lines.end(),
+                    {
+                        absl::Substitute("  uint8_t buf[$0-sizeof(uint64_t)-1];", size),
+                        "  // To keep 4.14 kernel verifier happy, we copy an extra byte.",
+                        "  // Keep a dummy character to absorb this garbage.",
+                        "  // We also use this extra byte to track if data has been truncated.",
+                        "  uint8_t dummy;",
+                        "};",
+                    });
+
+  return code_lines;
 }
 
 // Returns the type definitions of pre-defined data structures.
 std::vector<std::string> GenTypes() {
   std::vector<std::string> code_lines;
   // Create underlying blob types for strings, byte arrays, etc.
-  for (auto& size : std::set{kStructStringSize, kStructByteArraySize, kStructBlobSize}) {
-    MoveBackStrVec(GenBlobType(size), &code_lines);
+  for (auto& size : std::set{kStructStringSize, kStructByteArraySize}) {
+    const std::string type_name = absl::StrCat("struct blob", size);
+    MoveBackStrVec(GenBlobType(type_name, size), &code_lines);
   }
+  MoveBackStrVec(GenBlobType(kStructBlob, kStructBlobSize, /*include_decoder_index*/ true),
+                 &code_lines);
   return code_lines;
 }
 

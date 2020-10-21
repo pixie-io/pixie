@@ -241,6 +241,18 @@ TEST(GenProgramTest, SpecsAndCode) {
                                            }
                                          }
                                          vars {
+                                           scalar_var {
+                                             name: "struct_blob"
+                                             type: STRUCT_BLOB
+                                             memory {
+                                               base: "var"
+                                               offset: 16
+                                               size: 8
+                                               op: DEFINE_ONLY
+                                             }
+                                           }
+                                         }
+                                         vars {
                                            struct_var {
                                              name: "st_var"
                                              type: "socket_data_event_t"
@@ -278,6 +290,18 @@ TEST(GenProgramTest, SpecsAndCode) {
                                              op: EQUAL
                                              vars: "key"
                                              vars: "var"
+                                           }
+                                           vars {
+                                             scalar_var {
+                                               name: "struct_blob"
+                                               type: STRUCT_BLOB
+                                               memory {
+                                                 base: "var"
+                                                 offset: 16
+                                                 size: 8
+                                                 op: ASSIGN_ONLY
+                                               }
+                                             }
                                            }
                                            vars {
                                              scalar_var {
@@ -381,6 +405,15 @@ TEST(GenProgramTest, SpecsAndCode) {
       "  // We also use this extra byte to track if data has been truncated.",
       "  uint8_t dummy;",
       "};",
+      "struct struct_blob64 {",
+      "  uint64_t len;",
+      "  int8_t decoder_idx;",
+      "  uint8_t buf[64-sizeof(uint64_t)-1];",
+      "  // To keep 4.14 kernel verifier happy, we copy an extra byte.",
+      "  // Keep a dummy character to absorb this garbage.",
+      "  // We also use this extra byte to track if data has been truncated.",
+      "  uint8_t dummy;",
+      "};",
       "struct socket_data_event_t {",
       "  int32_t i32;",
       "} __attribute__((packed, aligned(1)));",
@@ -399,12 +432,16 @@ TEST(GenProgramTest, SpecsAndCode) {
       "int probe_entry(struct pt_regs* ctx) {",
       "uint32_t key = bpf_get_current_pid_tgid() >> 32;",
       "int32_t var = (int32_t)PT_REGS_SP(ctx);",
+      "struct struct_blob64 struct_blob = {};",
       "struct socket_data_event_t st_var = {};",
       "st_var.i32 = var;",
       "struct value_t* map_var = map.lookup(&key);",
       "const int32_t index = 0;",
       "struct socket_data_event_t* array_var = array.lookup(&index);",
       "if (key == var) {",
+      "struct_blob.len = 8;",
+      "struct_blob.decoder_idx = 0;",
+      "bpf_probe_read(&struct_blob.buf, 8, var + 16);",
       "int32_t inner_var = (int32_t)PT_REGS_SP(ctx);",
       "struct socket_data_event_t st_var = {};",
       "st_var.i32 = inner_var;",

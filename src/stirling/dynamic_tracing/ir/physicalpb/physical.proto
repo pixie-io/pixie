@@ -122,6 +122,10 @@ message MemoryExpression {
   uint32 size = 3;
 
   // Only used if ScalarType is STRUCT_BLOB.
+  // Specify the index of the byte blob's decoder among a list of candidate decoders.
+  uint32 decoder_idx = 4;
+
+  // Only used if ScalarType is STRUCT_BLOB.
   //
   // TODO(yzhao): This could be moved into Variable. Then that is better to have variable name and
   // type lifted from the wrapped types (ScalarVariable, StructVariable, ...) into Variable as well.
@@ -237,7 +241,10 @@ message StructVariable {
   // Describe an expression to assign variable_name to the specified field.
   message FieldAssignment {
     string field_name = 1;
-    string variable_name = 2;
+    oneof value_oneof {
+      string variable_name = 2;
+      string value = 3;
+    }
   }
 
   // The names of the variables that are assigned to the fields in the above struct.
@@ -248,6 +255,13 @@ message StructVariable {
   // TODO(yzhao): This could be moved into Variable. Then that is better to have variable name and
   // type lifted from the wrapped types (ScalarVariable, StructVariable, ...) into Variable as well.
   VariableStmtOp op = 4;
+
+  // If true, this variable is output to the userspace. During codegen, this variable is processed
+  // right before the output actions, but is after all other variables.
+  //
+  // TODO(yzhao): Consider change output action codegen to produce the code that assign variables
+  // to this struct's fields.
+  bool is_output = 5;
 }
 
 // A container of different types of variables. Defines how to access them from inside BCC code.
