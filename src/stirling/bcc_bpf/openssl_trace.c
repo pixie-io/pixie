@@ -7,7 +7,8 @@
 static __inline void process_openssl_data(struct pt_regs* ctx, uint64_t id,
                                           const enum TrafficDirection direction,
                                           const struct data_args_t* args) {
-  process_data(/* vecs */ false, ctx, id, direction, args, /* ssl */ true);
+  ssize_t bytes_count = PT_REGS_RC(ctx);
+  process_data(/* vecs */ false, ctx, id, direction, args, bytes_count, /* ssl */ true);
 }
 
 static __inline void set_conn_as_ssl(uint64_t id, uint32_t fd) {

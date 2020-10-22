@@ -448,5 +448,48 @@ TEST_F(SocketTraceBPFTest, UDPSendMsgRecvMsg) {
   EXPECT_THAT(std::string(records[kHTTPRespMessageIdx]->Get<types::StringValue>(0)), StrEq("OK"));
 }
 
+TEST_F(SocketTraceBPFTest, UDPSendMMsgRecvMMsg) {
+  using ::pl::system::UDPSocket;
+
+  ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
+
+  // Run a UDP-based client-server system.
+  {
+    UDPSocket server;
+    server.BindAndListen();
+
+    UDPSocket client;
+    std::string recv_data;
+
+    ASSERT_EQ(client.SendMMsg(kHTTPReqMsg1, server.sockaddr()), kHTTPReqMsg1.size());
+    struct sockaddr_in server_remote = server.RecvMMsg(&recv_data);
+    ASSERT_NE(server_remote.sin_addr.s_addr, 0);
+    ASSERT_NE(server_remote.sin_port, 0);
+    EXPECT_EQ(recv_data, kHTTPReqMsg1);
+
+    ASSERT_EQ(server.SendMMsg(kHTTPRespMsg1, server_remote), kHTTPRespMsg1.size());
+    struct sockaddr_in client_remote = client.RecvMMsg(&recv_data);
+    ASSERT_NE(client_remote.sin_addr.s_addr, server.addr().s_addr);
+    ASSERT_EQ(client_remote.sin_port, server.port());
+    EXPECT_EQ(recv_data, kHTTPRespMsg1);
+
+    client.Close();
+    server.Close();
+  }
+
+  DataTable data_table(kHTTPTable);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  ASSERT_FALSE(tablets.empty());
+  types::ColumnWrapperRecordBatch records =
+      FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, getpid());
+
+  ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
+
+  EXPECT_EQ(200, records[kHTTPRespStatusIdx]->Get<types::Int64Value>(0).val);
+  EXPECT_THAT(std::string(records[kHTTPRespBodyIdx]->Get<types::StringValue>(0)), StrEq(""));
+  EXPECT_THAT(std::string(records[kHTTPRespMessageIdx]->Get<types::StringValue>(0)), StrEq("OK"));
+}
+
 }  // namespace stirling
 }  // namespace pl

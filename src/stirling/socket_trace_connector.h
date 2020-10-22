@@ -134,6 +134,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {"sendto", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_sendto"},
       {"sendmsg", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_sendmsg"},
       {"sendmsg", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_sendmsg"},
+      {"sendmmsg", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_sendmmsg"},
+      {"sendmmsg", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_sendmmsg"},
       {"read", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_read"},
       {"read", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_read"},
       {"readv", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_readv"},
@@ -144,6 +146,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {"recvfrom", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_recvfrom"},
       {"recvmsg", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_recvmsg"},
       {"recvmsg", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_recvmsg"},
+      {"recvmmsg", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_recvmmsg"},
+      {"recvmmsg", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_recvmmsg"},
       {"close", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_close"},
       {"close", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_close"},
   });
