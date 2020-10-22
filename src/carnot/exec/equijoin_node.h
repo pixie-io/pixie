@@ -112,8 +112,8 @@ class EquijoinNode : public ProcessingNode {
   // Column builders will flush a batch once they hit output_rows_per_batch_ rows.
   std::vector<std::unique_ptr<arrow::ArrayBuilder>> column_builders_;
   // Manages the RowTuples containing the keys for the join.
-  ObjectPool key_values_pool_;
-  ObjectPool column_values_pool_;
+  ObjectPool key_values_pool_{"equijoin_kv_pool"};
+  ObjectPool column_values_pool_{"equijoin_col_vals_pool"};
 
   // Chunk of data to use when extracting join keys.
   std::vector<RowTuple*> join_keys_chunk_;

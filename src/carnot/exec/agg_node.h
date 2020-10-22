@@ -105,8 +105,8 @@ class AggNode : public ProcessingNode {
   // 3. The data type of the stored colums, by the index they are stored at.
   std::vector<types::DataType> stored_cols_data_types_;
 
-  ObjectPool group_args_pool_;
-  ObjectPool udas_pool_;
+  ObjectPool group_args_pool_{"group_args_pool"};
+  ObjectPool udas_pool_{"udas_pool"};
 
   std::vector<types::DataType> group_data_types_;
   std::vector<types::DataType> value_data_types_;

@@ -48,7 +48,7 @@ Status UDTFSourceNode::OpenImpl(ExecState* exec_state) {
   function_ctx_ = exec_state->CreateFunctionContext();
   udtf_inst_ = udtf_def_->Make();
 
-  ObjectPool init_args_pool;
+  ObjectPool init_args_pool{"udtf_init_args_pool"};
   std::vector<const types::BaseValueType*> init_args;
 
   for (const auto& sv : plan_node_->init_arguments()) {
