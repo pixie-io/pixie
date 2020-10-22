@@ -109,8 +109,6 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   SetConnID(event->attr.conn_id);
   SetTrafficClass(event->attr.traffic_class);
 
-  SetDebugTrace(2);
-
   // Only export metric to conn_stats_ after remote_endpoint has been resolved.
   if (ReadyToExportDataStats()) {
     if (conn_stats_ != nullptr) {
