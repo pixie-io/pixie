@@ -9,4 +9,4 @@ fi
 workspace=$(bazel info workspace 2> /dev/null)
 
 cd ${workspace}/src/utils/pixie_cli/
-bazel run :pixie -- install-certs --namespace=${namespace}
+bazel run :px -- install-certs --namespace="$namespace"
