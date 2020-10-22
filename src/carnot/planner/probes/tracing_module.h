@@ -148,7 +148,8 @@ class TraceModule : public QLObject {
     table_name (str): The table name to write the results. The table is created
       if it does not exist. The table schema must match if the table does exist.
     probe_fn (px.ProbeFn): The tracepoint function.
-    target (Union[px.UPID,px.SharedObject]): The process or shared object to trace as specified by unique Vizier PID.
+    target (Union[px.UPID,px.SharedObject,px.Pod,pxtrace.Process]): The process or shared object
+      to trace as specified by unique Vizier PID.
     ttl (px.Duration): The length of time that a tracepoint will stay alive, after
       which it will be removed.
   )doc";
@@ -205,6 +206,30 @@ class TraceModule : public QLObject {
 
   Returns:
     KProbeTarget: KProbe target that can be passed into UpsertTracepoint.
+  )doc";
+
+  inline static constexpr char kProcessTargetID[] = "PodProcess";
+  inline static constexpr char kProcessTargetDocstring[] = R"doc(
+  Creates a Tracepoint target for a process.
+
+  Defines a tracepoint target for a process based on the pod and if that's not specific
+  enough a container and process path.
+
+  :topic: tracepoint_fields
+
+  Args:
+    pod_name (str): The name of the pod that's running the process to target.
+    container_name (str, optional): The name of the container that's running
+      the process. Specify this argument if a pod has more than one container. The
+      compiler will error out if a Pod has mulitple container_names and this is
+      not specified.
+    process_name (str, optional): The name of the process as you might find in top.
+      Specify this if a container has more than one process. The compiler will
+      error out if a container has multiple cmdlines and this is not specified.
+
+  Returns:
+    ProcessTarget: A pointer to that Process that can be passed as a target
+    to UpsertTracepoint.
   )doc";
 
  protected:

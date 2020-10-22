@@ -162,7 +162,7 @@ Status PixieModule::RegisterCompileTimeFuncs() {
                     std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
 
-  PL_RETURN_IF_ERROR(abs_time_fn->SetDocString(kEqualsAnyDocstring));
+  PL_RETURN_IF_ERROR(equals_any_fn->SetDocString(kEqualsAnyDocstring));
   AddMethod(kEqualsAnyID, equals_any_fn);
   return Status::OK();
 }

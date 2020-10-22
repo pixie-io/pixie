@@ -6,6 +6,7 @@
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/none_object.h"
 #include "src/carnot/planner/probes/kprobe_target.h"
+#include "src/carnot/planner/probes/process_target.h"
 
 namespace pl {
 namespace carnot {
@@ -52,6 +53,8 @@ class ReturnHandler {
   static StatusOr<QLObjectPtr> Eval(MutationsIR* mutations_ir, const pypa::AstPtr& ast,
                                     const ParsedArgs& args, ASTVisitor* visitor);
 };
+StatusOr<QLObjectPtr> ProcessTargetHandler(const pypa::AstPtr& ast, const ParsedArgs& args,
+                                           ASTVisitor* visitor);
 
 StatusOr<QLObjectPtr> LatencyHandler::Eval(MutationsIR* mutations_ir, const pypa::AstPtr& ast,
                                            const ParsedArgs&, ASTVisitor* visitor) {
@@ -159,6 +162,18 @@ Status TraceModule::Init() {
                                          ast_visitor()));
   PL_RETURN_IF_ERROR(delete_fn->SetDocString(kDeleteTracepointDocstring));
   AddMethod(kDeleteTracepointID, delete_fn);
+
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> process_target_constructor,
+      FuncObject::Create(kProcessTargetID, {"pod_name", "container_name", "process_path"},
+                         {{"process_path", "''"}, {"container_name", "''"}},
+                         /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
+                         std::bind(ProcessTargetHandler, std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+
+  PL_RETURN_IF_ERROR(process_target_constructor->SetDocString(kProcessTargetDocstring));
+  AddMethod(kProcessTargetID, process_target_constructor);
 
   return Status::OK();
 }
@@ -324,9 +339,14 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
     PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
     trace_program = trace_program_or_s.ConsumeValueOrDie();
   } else if (KProbeTarget::IsKProbeTarget(target)) {
-    auto shared_object = std::static_pointer_cast<SharedObjectTarget>(target);
     auto trace_program_or_s =
         mutations_ir->CreateKProbeTracepointDeployment(tp_deployment_name, ttl_ns);
+    PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
+    trace_program = trace_program_or_s.ConsumeValueOrDie();
+  } else if (ProcessTarget::IsProcessTarget(target)) {
+    auto process_target = std::static_pointer_cast<ProcessTarget>(target);
+    auto trace_program_or_s = mutations_ir->CreateTracepointDeploymentOnProcessSpec(
+        tp_deployment_name, process_target->target(), ttl_ns);
     PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
     trace_program = trace_program_or_s.ConsumeValueOrDie();
   } else if (ExprObject::IsExprObject(target)) {
@@ -405,6 +425,15 @@ StatusOr<QLObjectPtr> DeleteTracepointHandler::Eval(MutationsIR* mutations_ir,
   const std::string& tp_deployment_name = tp_deployment_name_ir->str();
   mutations_ir->DeleteTracepoint(tp_deployment_name);
   return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(ast, visitor));
+}
+
+StatusOr<QLObjectPtr> ProcessTargetHandler(const pypa::AstPtr& ast, const ParsedArgs& args,
+                                           ASTVisitor* visitor) {
+  PL_ASSIGN_OR_RETURN(auto pod_name_ir, GetArgAs<StringIR>(ast, args, "pod_name"));
+  PL_ASSIGN_OR_RETURN(auto container_name_ir, GetArgAs<StringIR>(ast, args, "container_name"));
+  PL_ASSIGN_OR_RETURN(auto process_path_ir, GetArgAs<StringIR>(ast, args, "process_path"));
+  return ProcessTarget::Create(visitor, pod_name_ir->str(), container_name_ir->str(),
+                               process_path_ir->str());
 }
 
 }  // namespace compiler

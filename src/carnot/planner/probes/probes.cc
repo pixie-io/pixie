@@ -133,6 +133,20 @@ StatusOr<TracepointDeployment*> MutationsIR::CreateTracepointDeploymentOnPod(
   return raw;
 }
 
+StatusOr<TracepointDeployment*> MutationsIR::CreateTracepointDeploymentOnProcessSpec(
+    const std::string& tracepoint_name, const ProcessSpec& process_spec, int64_t ttl_ns) {
+  if (!process_target_to_program_map_.empty() &&
+      process_target_to_program_map_.contains(process_spec)) {
+    return error::InvalidArgument(
+        "Cannot UpsertTracepoint on the same binary. Use UpsertTracepoints instead.");
+  }
+  std::unique_ptr<TracepointDeployment> program =
+      std::make_unique<TracepointDeployment>(tracepoint_name, ttl_ns);
+  TracepointDeployment* raw = program.get();
+  process_target_to_program_map_[process_spec] = std::move(program);
+  return raw;
+}
+
 StatusOr<TracepointDeployment*> MutationsIR::CreateKProbeTracepointDeployment(
     const std::string& tracepoint_name, int64_t ttl_ns) {
   std::unique_ptr<TracepointDeployment> program =
@@ -246,6 +260,16 @@ Status MutationsIR::ToProto(plannerpb::CompileMutationsResponse* pb) {
     PL_RETURN_IF_ERROR(program->ToProto(program_pb));
     auto deployment_spec = program_pb->mutable_deployment_spec();
     deployment_spec->set_pod(pod_name);
+  }
+
+  for (const auto& [target, program] : process_target_to_program_map_) {
+    auto program_pb = pb->add_mutations()->mutable_trace();
+    PL_RETURN_IF_ERROR(program->ToProto(program_pb));
+    auto deployment_spec = program_pb->mutable_deployment_spec();
+    auto pod_process = deployment_spec->mutable_pod_process();
+    pod_process->set_pod(target.pod_name_);
+    pod_process->set_container(target.container_name_);
+    pod_process->set_process(target.process_);
   }
 
   for (const auto& program : bpftrace_programs_) {

@@ -39,61 +39,6 @@ class ProbeCompilerTest : public ASTVisitorTest {
   }
 };
 
-constexpr char kSingleProbeOnUPIDPxl[] = R"pxl(
-import pxtrace
-import px
-
-@pxtrace.probe("MyFunc")
-def probe_func():
-    id = pxtrace.ArgExpr('id')
-    return [{'id': id},
-            {'err': pxtrace.RetExpr('$0.a')},
-            {'latency': pxtrace.FunctionLatency()}]
-
-pxtrace.UpsertTracepoint('http_return',
-                         'http_return_table',
-                         probe_func,
-                         px.uint128("123e4567-e89b-12d3-a456-426655440000"),
-                         "5m")
-)pxl";
-
-//                Change this test case to pxtrace.uprobe or whatever we decide once supported.
-constexpr char kSingleProbeUpsertSharedObjectPxl[] = R"pxl(
-import pxtrace
-import px
-
-@pxtrace.probe("MyFunc")
-def probe_func():
-    id = pxtrace.ArgExpr('id')
-    return [{'id': id},
-            {'err': pxtrace.RetExpr('$0.a')},
-            {'latency': pxtrace.FunctionLatency()}]
-
-pxtrace.UpsertTracepoint('http_return',
-                         'http_return_table',
-                         probe_func,
-                         pxtrace.SharedObject('libc', px.uint128('123e4567-e89b-12d3-a456-426655440000')),
-                         '5m')
-)pxl";
-
-constexpr char kSingleProbeUpsertPodPxl[] = R"pxl(
-import pxtrace
-import px
-
-@pxtrace.probe("MyFunc")
-def probe_func():
-    id = pxtrace.ArgExpr('id')
-    return [{'id': id},
-            {'err': pxtrace.RetExpr('$0.a')},
-            {'latency': pxtrace.FunctionLatency()}]
-
-pxtrace.UpsertTracepoint('http_return',
-                         'http_return_table',
-                         probe_func,
-                         px.Pod('pl/vizier-query-broker-85dc9bc4d-jzw4s'),
-                         '5m')
-)pxl";
-
 constexpr char kSingleProbeUpsertPxlTpl[] = R"pxl(
 import pxtrace
 import px
@@ -175,6 +120,27 @@ tracepoints {
       }
     }
   }
+}
+)pxl";
+
+constexpr char kPodProcessDeploymentSpec[] = R"pxl(
+pod_process: {
+  pod: "pl/vizier-query-broker-85dc9bc4d-jzw4s"
+  container: "querybroker"
+  process: "/app/querybroker"
+}
+)pxl";
+
+constexpr char kPodProcessDeploymentSpecNoProcessName[] = R"pxl(
+pod_process: {
+  pod: "pl/vizier-query-broker-85dc9bc4d-jzw4s"
+  container: "querybroker"
+}
+)pxl";
+
+constexpr char kPodProcessDeploymentSpecJustPod[] = R"pxl(
+pod_process: {
+  pod: "pl/vizier-query-broker-85dc9bc4d-jzw4s"
 }
 )pxl";
 
@@ -272,7 +238,9 @@ tracepoints {
 )pxl";
 
 TEST_F(ProbeCompilerTest, parse_single_probe) {
-  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(kSingleProbeOnUPIDPxl));
+  std::string query = absl::Substitute(kSingleProbeUpsertPxlTpl, "$0",
+                                       "px.uint128('123e4567-e89b-12d3-a456-426655440000')");
+  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(query));
   plannerpb::CompileMutationsResponse pb;
   EXPECT_OK(probe_ir->ToProto(&pb));
   ASSERT_EQ(pb.mutations_size(), 1);
@@ -280,7 +248,9 @@ TEST_F(ProbeCompilerTest, parse_single_probe) {
 }
 
 TEST_F(ProbeCompilerTest, parse_probe_pod_spec) {
-  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(kSingleProbeUpsertPodPxl));
+  std::string query = absl::Substitute(kSingleProbeUpsertPxlTpl, "$0",
+                                       "px.Pod('pl/vizier-query-broker-85dc9bc4d-jzw4s')");
+  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(query));
   plannerpb::CompileMutationsResponse pb;
   EXPECT_OK(probe_ir->ToProto(&pb));
   ASSERT_EQ(pb.mutations_size(), 1);
@@ -308,8 +278,50 @@ TEST_F(ProbeCompilerTest, parse_probe_pod_spec_non_pod) {
       "Expected 'pod', received 'namespace'");
 }
 
+TEST_F(ProbeCompilerTest, parse_process_spec_just_pod) {
+  std::string query =
+      absl::Substitute(kSingleProbeUpsertPxlTpl, "$0",
+                       "pxtrace.PodProcess('pl/vizier-query-broker-85dc9bc4d-jzw4s')");
+  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(query));
+  plannerpb::CompileMutationsResponse pb;
+  EXPECT_OK(probe_ir->ToProto(&pb));
+  ASSERT_EQ(pb.mutations_size(), 1);
+  // TODO(yzhao) update on protobuf changes.
+  EXPECT_THAT(pb.mutations()[0].trace().deployment_spec(),
+              testing::proto::EqualsProto(kPodProcessDeploymentSpecJustPod));
+}
+
+TEST_F(ProbeCompilerTest, parse_process_spec_pod_and_container) {
+  std::string query = absl::Substitute(
+      kSingleProbeUpsertPxlTpl, "$0",
+      "pxtrace.PodProcess('pl/vizier-query-broker-85dc9bc4d-jzw4s', 'querybroker')");
+  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(query));
+  plannerpb::CompileMutationsResponse pb;
+  EXPECT_OK(probe_ir->ToProto(&pb));
+  ASSERT_EQ(pb.mutations_size(), 1);
+  EXPECT_THAT(pb.mutations()[0].trace().deployment_spec(),
+              testing::proto::EqualsProto(kPodProcessDeploymentSpecNoProcessName));
+}
+
+TEST_F(ProbeCompilerTest, parse_process_spec) {
+  std::string query =
+      absl::Substitute(kSingleProbeUpsertPxlTpl, "$0",
+                       "pxtrace.PodProcess('pl/vizier-query-broker-85dc9bc4d-jzw4s', "
+                       "'querybroker', '/app/querybroker')");
+  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(query));
+  plannerpb::CompileMutationsResponse pb;
+  EXPECT_OK(probe_ir->ToProto(&pb));
+  ASSERT_EQ(pb.mutations_size(), 1);
+  EXPECT_THAT(pb.mutations()[0].trace().deployment_spec(),
+              testing::proto::EqualsProto(kPodProcessDeploymentSpec));
+}
+
 TEST_F(ProbeCompilerTest, parse_single_probe_on_shared_object) {
-  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(kSingleProbeUpsertSharedObjectPxl));
+  std::string query = absl::Substitute(
+      kSingleProbeUpsertPxlTpl, "$0",
+      "pxtrace.SharedObject('libc', px.uint128('123e4567-e89b-12d3-a456-426655440000'))");
+  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(query));
+
   plannerpb::CompileMutationsResponse pb;
   EXPECT_OK(probe_ir->ToProto(&pb));
   ASSERT_EQ(pb.mutations_size(), 1);

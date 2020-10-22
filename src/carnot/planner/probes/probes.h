@@ -6,6 +6,7 @@
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/objects/funcobject.h"
 #include "src/carnot/planner/plannerpb/func_args.pb.h"
+#include "src/carnot/planner/probes/process_target.h"
 #include "src/carnot/planner/probes/shared_object.h"
 #include "src/common/uuid/uuid.h"
 #include "src/shared/metadata/base_types.h"
@@ -236,6 +237,16 @@ class MutationsIR {
    */
   StatusOr<TracepointDeployment*> CreateTracepointDeploymentOnPod(
       const std::string& tracepoint_name, const std::string& pod_name, int64_t ttl_ns);
+  /**
+   * @brief Create a TraceProgram for the MutationsIR w/ the specified Pod name.
+   *
+   * @param program_name
+   * @param pod_name
+   * @param ttl_ns
+   * @return StatusOr<TracepointDeployment*>
+   */
+  StatusOr<TracepointDeployment*> CreateTracepointDeploymentOnProcessSpec(
+      const std::string& tracepoint_name, const ProcessSpec& pod_name, int64_t ttl_ns);
 
   StatusOr<TracepointDeployment*> CreateKProbeTracepointDeployment(
       const std::string& tracepoint_name, int64_t ttl_ns);
@@ -283,6 +294,8 @@ class MutationsIR {
   absl::flat_hash_map<SharedObject, std::unique_ptr<TracepointDeployment>>
       shared_object_to_program_map_;
   absl::flat_hash_map<std::string, std::unique_ptr<TracepointDeployment>> pod_name_to_program_map_;
+  absl::flat_hash_map<ProcessSpec, std::unique_ptr<TracepointDeployment>>
+      process_target_to_program_map_;
   std::vector<std::unique_ptr<TracepointDeployment>> bpftrace_programs_;
   std::vector<std::shared_ptr<TracepointIR>> probes_pool_;
   std::shared_ptr<TracepointIR> current_tracepoint_;
