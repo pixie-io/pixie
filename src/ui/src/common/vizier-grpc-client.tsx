@@ -204,6 +204,11 @@ export class VizierGRPCClient {
     call.on('error', (err) => {
       onError(new VizierQueryError('server', err.message));
     });
+    call.on('status', (status) => {
+      if (status.code > 0) {
+        onError(new VizierQueryError('server', status.details));
+      }
+    });
 
     return () => (() => {
       call.cancel();
