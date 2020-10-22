@@ -168,7 +168,8 @@ func TestPassThroughProxy(t *testing.T) {
 					RequestID: "2",
 					Msg: &cvmsgspb.V2CAPIStreamResponse_Status{
 						Status: &vizierpb.Status{
-							Code: int32(codes.Internal),
+							Code:    int32(codes.Internal),
+							Message: "stream read error",
 						},
 					},
 				},

@@ -178,21 +178,21 @@ func (s *PassThroughProxy) runRequest(reqState *RequestState, msg *cvmsgspb.C2VA
 		msg, err := stream.Recv()
 		if err != nil && err == io.EOF {
 			log.Trace("Stream has closed (Read)")
-			v2cResp := formatStatusMessage(reqState.requestID, codes.OK)
+			v2cResp := formatStatusMessage(reqState.requestID, codes.OK, "")
 
 			s.sendMessage(reqState.requestID, v2cResp)
 			return
 		}
 		if err != nil && (errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled) {
 			log.Trace("Stream has been cancelled")
-			v2cResp := formatStatusMessage(reqState.requestID, codes.Canceled)
+			v2cResp := formatStatusMessage(reqState.requestID, codes.Canceled, "")
 
 			s.sendMessage(reqState.requestID, v2cResp)
 			return
 		}
 		if err != nil {
 			log.WithError(err).Error("Got a stream read error")
-			v2cResp := formatStatusMessage(reqState.requestID, codes.Internal)
+			v2cResp := formatStatusMessage(reqState.requestID, codes.Internal, "stream read error")
 
 			s.sendMessage(reqState.requestID, v2cResp)
 			return
@@ -202,12 +202,13 @@ func (s *PassThroughProxy) runRequest(reqState *RequestState, msg *cvmsgspb.C2VA
 	}
 }
 
-func formatStatusMessage(reqID string, code codes.Code) *cvmsgspb.V2CAPIStreamResponse {
+func formatStatusMessage(reqID string, code codes.Code, message string) *cvmsgspb.V2CAPIStreamResponse {
 	return &cvmsgspb.V2CAPIStreamResponse{
 		RequestID: reqID,
 		Msg: &cvmsgspb.V2CAPIStreamResponse_Status{
 			Status: &vizierpb.Status{
-				Code: int32(code),
+				Code:    int32(code),
+				Message: message,
 			},
 		},
 	}
@@ -231,7 +232,13 @@ func (s *PassThroughProxy) sendMessage(reqID string, msg *cvmsgspb.V2CAPIStreamR
 	}
 
 	err = s.nc.Publish(topic, b)
-	if err != nil {
+	// If the err is a max payload, let's try to propagate it up, otherwise nats errors
+	// mean something is broken with nats and retrying can be catastrophic.limit
+	if err != nil && err == nats.ErrMaxPayload {
+		errResp := formatStatusMessage(reqID, codes.Internal, "Large data batch rejected "+
+			"by passthrough proxy limits. The Pixie team is currently working on this. In the meantime, please add a head() to your query to avoid the problem.")
+		s.sendMessage(reqID, errResp)
+	} else if err != nil {
 		log.WithError(err).Error("Failed to publish message")
 	}
 }
