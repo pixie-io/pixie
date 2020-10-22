@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
+	"path"
 	"sort"
 
+	"github.com/bmatcuk/doublestar"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
@@ -60,38 +62,90 @@ func listBundleScripts(br *script.BundleManager, format string) {
 	}
 }
 
-func loadScriptFromFile(path string) (*script.ExecutableScript, error) {
-	var qb []byte
-	var err error
-	if path == "-" {
-		// Read from STDIN.
-		qb, err = ioutil.ReadAll(os.Stdin)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		r, err := os.Open(path)
-		if err != nil {
-			return nil, err
-		}
-
-		qb, err = ioutil.ReadAll(r)
-		if err != nil {
-			return nil, err
-		}
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
 	}
+	return !info.IsDir()
+}
 
-	if len(qb) == 0 {
+func baseScript() *script.ExecutableScript {
+	return &script.ExecutableScript{
+		ShortDoc: "Script supplied by user",
+		LongDoc:  "Script supplied by user",
+	}
+}
+
+func loadScriptFromStdin() (*script.ExecutableScript, error) {
+	s := baseScript()
+	// Read from STDIN.
+	query, err := ioutil.ReadAll(os.Stdin)
+	if err != nil {
+		return nil, err
+	}
+	if len(query) == 0 {
 		return nil, errors.New("script string is empty")
 	}
-	scriptName := "stdin_script"
-	if path != "-" {
-		scriptName = filepath.Base(path)
+	s.ScriptName = "stdin_script"
+	s.ScriptString = string(query)
+	return s, nil
+}
+
+func isDir(scriptPath string) bool {
+	r, err := os.Open(scriptPath)
+	if err != nil {
+		return false
 	}
-	return &script.ExecutableScript{
-		ScriptName:   scriptName,
-		ScriptString: string(qb),
-		ShortDoc:     "Script supplied by user",
-		LongDoc:      "Script supplied by user",
-	}, nil
+	stat, err := r.Stat()
+	if err != nil {
+		return false
+	}
+	return stat.Mode().IsDir()
+}
+
+func loadScriptFromDir(scriptPath string) (*script.ExecutableScript, error) {
+	s := baseScript()
+
+	pxlFiles, err := doublestar.Glob(path.Join(scriptPath, "*.pxl"))
+	if len(pxlFiles) != 1 {
+		return nil, fmt.Errorf("Expected 1 pxl file, got %d", len(pxlFiles))
+	}
+	query, err := ioutil.ReadFile(pxlFiles[0])
+	if err != nil {
+		return nil, err
+	}
+	s.ScriptString = string(query)
+	visFile := path.Join(scriptPath, "vis.json")
+	if fileExists(visFile) {
+		vis, err := ioutil.ReadFile(visFile)
+		if err != nil {
+			return nil, err
+		}
+		s.Vis = script.ParseVisSpec(string(vis))
+	}
+	return s, nil
+}
+
+func loadScriptFromFile(scriptPath string) (*script.ExecutableScript, error) {
+	if scriptPath == "-" {
+		return loadScriptFromStdin()
+	}
+
+	if isDir(scriptPath) {
+		return loadScriptFromDir(scriptPath)
+	}
+
+	r, err := os.Open(scriptPath)
+	if err != nil {
+		return nil, err
+	}
+
+	s := baseScript()
+	query, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	s.ScriptString = string(query)
+	return s, nil
 }
