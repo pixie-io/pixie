@@ -76,8 +76,8 @@ StatusOr<OperatorIR*> GRPCSourceGroupConversionRule::ConvertGRPCSourceGroup(
 
   PL_ASSIGN_OR_RETURN(UnionIR * union_op,
                       ir_graph->CreateNode<UnionIR>(group_ir->ast(), grpc_sources));
-  PL_RETURN_IF_ERROR(union_op->SetRelationFromParents());
-  DCHECK(union_op->HasColumnMappings());
+  PL_RETURN_IF_ERROR(union_op->SetRelation(grpc_sources[0]->relation()));
+  PL_RETURN_IF_ERROR(union_op->SetDefaultColumnMapping());
   return union_op;
 }
 

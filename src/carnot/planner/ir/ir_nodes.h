@@ -1919,7 +1919,25 @@ class UnionIR : public OperatorIR {
   Status Init(const std::vector<OperatorIR*>& parents);
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
+  /**
+   * @brief Set the Relation From Parents. This also figures out the relation from parents.
+   *
+   * @return Status error if one occurs.
+   */
   Status SetRelationFromParents();
+
+  /**
+   * @brief Sets the column mapping to default no mapping. Used to save effort in creating Relation
+   * from parents and input column mapping in the case where the parents are known to have the same
+   * relation.
+   *
+   * This is part of an optimization to support huge unions of GRPCSources that would otherwise be
+   * extremely costly.
+   *
+   * @return Status
+   */
+  Status SetDefaultColumnMapping();
+
   bool HasColumnMappings() const { return column_mappings_.size() == parents().size(); }
   Status SetColumnMappings(const std::vector<InputColumnMapping>& mappings);
   const std::vector<InputColumnMapping>& column_mappings() const { return column_mappings_; }
@@ -1927,6 +1945,8 @@ class UnionIR : public OperatorIR {
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
 
   Status ResolveType(CompilerState* compiler_state);
+
+  bool default_column_mapping() const { return default_column_mapping_; }
 
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
@@ -1943,6 +1963,8 @@ class UnionIR : public OperatorIR {
   Status AddColumnMapping(const InputColumnMapping& input_column_map);
   // The vector is size N when there are N input tables.
   std::vector<InputColumnMapping> column_mappings_;
+  // Whether we should just assume the parents have the same column_mappings.
+  bool default_column_mapping_ = false;
 };
 
 /**

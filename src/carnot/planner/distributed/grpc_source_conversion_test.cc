@@ -19,6 +19,7 @@ using ::testing::_;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::UnorderedElementsAreArray;
+using testing::proto::EqualsProto;
 
 class GRPCSourceConversionTest : public OperatorTests {};
 TEST_F(GRPCSourceConversionTest, construction_test) {
@@ -59,7 +60,7 @@ TEST_F(GRPCSourceConversionTest, construction_test) {
   std::vector<int64_t> actual_ids;
   UnionIR* union_op = static_cast<UnionIR*>(mem_sink_parent);
   EXPECT_TRUE(union_op->IsRelationInit());
-  EXPECT_TRUE(union_op->HasColumnMappings());
+  EXPECT_TRUE(union_op->default_column_mapping());
   for (auto* union_op_parent : union_op->parents()) {
     ASSERT_EQ(union_op_parent->type(), IRNodeType::kGRPCSource) << union_op_parent->type_string();
     auto grpc_source = static_cast<GRPCSourceIR*>(union_op_parent);
@@ -71,6 +72,29 @@ TEST_F(GRPCSourceConversionTest, construction_test) {
   std::vector<int64_t> expected_ids{grpc_sink1_destination, grpc_sink2_destination};
   // Accumulate the GRPC source group ids and make sure they match the GRPC sink ones.
   EXPECT_THAT(actual_ids, UnorderedElementsAreArray(expected_ids));
+  // Check ToProto
+  planpb::Operator op_pb;
+  ASSERT_OK(union_op->ToProto(&op_pb));
+  EXPECT_THAT(op_pb, EqualsProto(R"pb(
+op_type: UNION_OPERATOR
+union_op {
+  column_names: "time_"
+  column_names: "cpu0"
+  column_names: "cpu1"
+  column_names: "cpu2"
+  column_mappings {
+    column_indexes: 0
+    column_indexes: 1
+    column_indexes: 2
+    column_indexes: 3
+  }
+  column_mappings {
+    column_indexes: 0
+    column_indexes: 1
+    column_indexes: 2
+    column_indexes: 3
+  }
+})pb"));
 }
 
 // When making a single source, no need to have a union.

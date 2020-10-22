@@ -1622,7 +1622,20 @@ Status UnionIR::ToProto(planpb::Operator* op) const {
 
   auto types = relation().col_types();
   auto names = relation().col_names();
+  for (size_t i = 0; i < relation().NumColumns(); i++) {
+    pb->add_column_names(names[i]);
+  }
+  if (default_column_mapping_) {
+    for (size_t parent_i = 0; parent_i < parents().size(); ++parent_i) {
+      auto* pb_column_mapping = pb->add_column_mappings();
+      for (size_t col_i = 0; col_i < relation().NumColumns(); ++col_i) {
+        pb_column_mapping->add_column_indexes(col_i);
+      }
+    }
+    return Status::OK();
+  }
   DCHECK_EQ(parents().size(), column_mappings_.size()) << "parents and column_mappings disagree.";
+  DCHECK(HasColumnMappings());
 
   for (const auto& column_mapping : column_mappings_) {
     auto* pb_column_mapping = pb->add_column_mappings();
@@ -1630,10 +1643,6 @@ Status UnionIR::ToProto(planpb::Operator* op) const {
       PL_ASSIGN_OR_RETURN(auto index, col->GetColumnIndex());
       pb_column_mapping->add_column_indexes(index);
     }
-  }
-
-  for (size_t i = 0; i < relation().NumColumns(); i++) {
-    pb->add_column_names(names[i]);
   }
 
   // NOTE: not setting value as this is set in the execution engine. Keeping this here in case it
@@ -1677,6 +1686,8 @@ Status UnionIR::SetColumnMappings(const std::vector<InputColumnMapping>& column_
 // union where the output schema of the union is the combined set of the input relations, and any
 // input table that is missing a certain column will just output null.
 Status UnionIR::SetRelationFromParents() {
+  DCHECK(!default_column_mapping_)
+      << "Default column mapping set on using the SetRelationFromParents call.";
   DCHECK(!parents().empty());
 
   std::vector<Relation> relations;
@@ -1710,6 +1721,16 @@ Status UnionIR::SetRelationFromParents() {
     mappings.push_back(column_mapping);
   }
   return SetColumnMappings(mappings);
+}
+
+Status UnionIR::SetDefaultColumnMapping() {
+  if (!IsRelationInit()) {
+    return CreateIRNodeError("Relation is not initialized yet");
+  }
+  DCHECK(!HasColumnMappings())
+      << "Trying to set default column mapping on a Union that has a default column mapping.";
+  default_column_mapping_ = true;
+  return Status::OK();
 }
 
 StatusOr<std::vector<absl::flat_hash_set<std::string>>> UnionIR::RequiredInputColumns() const {
