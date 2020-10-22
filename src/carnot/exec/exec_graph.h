@@ -193,7 +193,7 @@ class ExecutionGraph {
   Status ExecuteSources();
 
   ExecState* exec_state_;
-  ObjectPool pool_;
+  ObjectPool pool_{"exec_graph_pool"};
   std::shared_ptr<table_store::schema::Schema> schema_;
   plan::PlanState* plan_state_;
   plan::PlanFragment* pf_;

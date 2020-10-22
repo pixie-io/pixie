@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <absl/base/internal/spinlock.h>
@@ -14,7 +15,14 @@ namespace pl {
 class ObjectPool final : public pl::NotCopyable {
  public:
   ObjectPool() = default;
-  ~ObjectPool() { Clear(); }
+  explicit ObjectPool(std::string_view name) : name_(name) {
+    VLOG(1) << "Creating Object Pool: " << name_;
+  }
+
+  ~ObjectPool() {
+    Clear();
+    VLOG_IF(1, !name_.empty()) << "Deleting Object Pool: " << name_;
+  }
   /**
    * Take ownership of passed in pointer.
    *
@@ -47,6 +55,7 @@ class ObjectPool final : public pl::NotCopyable {
     DeleteFn delete_fn;
   };
 
+  const std::string name_;
   absl::base_internal::SpinLock lock_;
   std::vector<Entity> obj_list_;
 };
