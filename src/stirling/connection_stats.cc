@@ -17,7 +17,7 @@ ConnectionStats::AggKey BuildAggKey(const upid_t& upid, const traffic_class_t& t
       // TODO(yzhao): Remote address might not be resolved yet. That causes imprecise stats.
       // Add code in address resolution to update stats after resolution is done.
       .remote_addr = remote_endpoint.AddrStr(),
-      // Set ports to 0 if this event if from a server process.
+      // Set port to 0 if this event if from a server process.
       // This avoids creating excessive amount of records from changing ports of K8s services.
       .remote_port = traffic_class.role == kRoleServer ? 0 : remote_endpoint.port(),
   };
@@ -58,15 +58,21 @@ void ConnectionStats::RecordConn(const struct conn_id_t& conn_id,
 
   if (is_open) {
     if (!known_conns_.contains(conn_id)) {
-      ++agg_stats_[key].conn_open;
-      agg_stats_[key].traffic_class = traffic_class;
+      auto& stats = agg_stats_[key];
+
+      ++stats.conn_open;
+      stats.traffic_class = traffic_class;
+      stats.addr_family = remote_endpoint.family;
       known_conns_.insert(conn_id);
     }
   } else {
     auto iter = known_conns_.find(conn_id);
     if (iter != known_conns_.end()) {
-      ++agg_stats_[key].conn_close;
-      agg_stats_[key].traffic_class = traffic_class;
+      auto& stats = agg_stats_[key];
+
+      ++stats.conn_close;
+      stats.traffic_class = traffic_class;
+      stats.addr_family = remote_endpoint.family;
       known_conns_.erase(iter);
     }
   }

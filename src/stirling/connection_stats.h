@@ -56,6 +56,7 @@ class ConnectionStats {
 
   struct Stats {
     traffic_class_t traffic_class = {};
+    SockAddrFamily addr_family = SockAddrFamily::kUnspecified;
 
     uint64_t conn_open = 0;
     uint64_t conn_close = 0;

@@ -61,6 +61,9 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
     int bytes_rcvd =
         AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kBytesRecv, indices[0])
             .val;
+    int addr_family =
+        AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kAddrFamily, indices[0])
+            .val;
     EXPECT_THAT(conn_open, 1);
     // TODO(yzhao): This should be 1. This fails because:
     // * SocketTraceConnector reads perf buffers in the order:
@@ -72,6 +75,7 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
     EXPECT_THAT(conn_close, 0);
     EXPECT_THAT(bytes_sent, 10);
     EXPECT_THAT(bytes_rcvd, 8);
+    EXPECT_THAT(addr_family, static_cast<int>(SockAddrFamily::kIPv4));
   }
   // Client process is not discovered by ConnectorContext (StandaloneContext) because it is
   // short-lived, and SocketTraceConnector does not export connection stats of processes that are

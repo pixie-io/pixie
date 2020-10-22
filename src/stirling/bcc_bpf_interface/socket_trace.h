@@ -4,6 +4,8 @@
 
 #include "src/stirling/bcc_bpf_interface/common.h"
 
+#define AF_UNKNOWN 0xff
+
 const char kControlMapName[] = "control_map";
 const uint64_t kSocketTraceNothing = 0;
 

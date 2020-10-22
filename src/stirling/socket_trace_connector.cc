@@ -1370,6 +1370,7 @@ void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTa
       r.Append<idx::kUPID>(upid.value());
       r.Append<idx::kRemoteAddr>(key.remote_addr);
       r.Append<idx::kRemotePort>(key.remote_port);
+      r.Append<idx::kAddrFamily>(static_cast<int>(stats.addr_family));
       r.Append<idx::kProtocol>(stats.traffic_class.protocol);
       r.Append<idx::kRole>(stats.traffic_class.role);
       r.Append<idx::kConnOpen>(stats.conn_open);

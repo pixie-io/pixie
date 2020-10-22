@@ -157,6 +157,7 @@ static __inline void init_conn_info(uint32_t tgid, uint32_t fd, struct conn_info
 static __inline struct conn_info_t* get_conn_info(uint32_t tgid, uint32_t fd) {
   uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   struct conn_info_t new_conn_info = {};
+  new_conn_info.addr.sin6_family = AF_UNKNOWN;
   new_conn_info.addr_valid = false;
   struct conn_info_t* conn_info = conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
   // Use TGID zero to detect that a new conn_info needs to be initialized.
@@ -294,7 +295,7 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
  ***********************************************************/
 
 static __inline bool should_trace_sockaddr_family(sa_family_t sa_family) {
-  return sa_family == AF_UNSPEC || sa_family == AF_UNIX || is_inet_family(sa_family);
+  return sa_family == AF_UNKNOWN || sa_family == AF_UNIX || is_inet_family(sa_family);
 }
 
 static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_t fd,
@@ -647,7 +648,8 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
   uint64_t tgid_fd = gen_tgid_fd(tgid, args->fd);
 
   // While we keep all sa_family types in conn_info_map,
-  // we only send connections with supported protocols to user-space.
+  // we only send connections on INET/UNIX or UNKNOWN to user-space.
+  // Why UNKNOWN? Because we may have failed to trace the initial connection.
   if (!should_trace_sockaddr_family(conn_info->addr.sin6_family)) {
     if (!conn_info->addr_valid) {
       conn_info_map.delete(&tgid_fd);

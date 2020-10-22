@@ -12,6 +12,8 @@ constexpr DataElement kConnStatsElements[] = {
         canonical_data_elements::kUPID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
+        {"addr_family", "The socket address family of the connection.",
+         types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::GENERAL_ENUM},
         {"protocol", "The protocol of the traffic on the connections.",
          types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::GENERAL_ENUM},
         {"role", "The role of the process that owns the connections.",
@@ -43,6 +45,7 @@ constexpr int kTime = kConnStatsTable.ColIndex("time_");
 constexpr int kUPID = kConnStatsTable.ColIndex("upid");
 constexpr int kRemoteAddr = kConnStatsTable.ColIndex("remote_addr");
 constexpr int kRemotePort = kConnStatsTable.ColIndex("remote_port");
+constexpr int kAddrFamily = kConnStatsTable.ColIndex("addr_family");
 constexpr int kProtocol = kConnStatsTable.ColIndex("protocol");
 constexpr int kRole = kConnStatsTable.ColIndex("role");
 constexpr int kConnOpen = kConnStatsTable.ColIndex("conn_open");
