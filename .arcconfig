@@ -1,10 +1,11 @@
 {
   "phabricator.uri" : "https://phab.corp.pixielabs.ai/",
   "repository.callsign": "PLM",
-  "arc.land.onto.default": "main",
+  "arc.land.onto": ["main"],
   "base": "git:merge-base(origin/main), arc:prompt",
   "arc.feature.start.default": "origin/main",
-    "load": ["./linters/arc-tslint", "./linters/arcanist-go",
-             "./linters/clang-format-linter", "./linters/shellcheck-linter", "./linters/pinterest", "./linters"],
+  "load": ["./linters/arc-tslint", "./linters/arcanist-go",
+           "./linters/clang-format-linter", "./linters/shellcheck-linter",
+           "./linters/pinterest", "./linters"],
   "unit.engine": "PLTestEngine"
 }
