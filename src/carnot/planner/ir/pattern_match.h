@@ -38,6 +38,7 @@
  * rather you can use an existing struct to fit your use-case.
  */
 #pragma once
+#include <limits>
 #include <string>
 #include <unordered_map>
 
@@ -235,8 +236,8 @@ struct IntMatch : public ParentMatch {
 
   bool Match(const IRNode* node) const override {
     if (node->type() == type) {
-      auto iVal = static_cast<const IntIR*>(node);
-      return iVal->val() == val;
+      auto node_val = static_cast<const IntIR*>(node)->val();
+      return node_val == val;
     }
     return false;
   }
@@ -252,8 +253,8 @@ struct StringMatch : public ParentMatch {
 
   bool Match(const IRNode* node) const override {
     if (node->type() == type) {
-      auto sVal = static_cast<const StringIR*>(node);
-      return sVal->str() == val;
+      auto node_val = static_cast<const StringIR*>(node)->str();
+      return node_val == val;
     }
     return false;
   }
@@ -261,6 +262,33 @@ struct StringMatch : public ParentMatch {
   const std::string val;
 };
 
+struct FloatMatch : public ParentMatch {
+  explicit FloatMatch(const double v) : ParentMatch(IRNodeType::kFloat), val(v) {}
+
+  bool Match(const IRNode* node) const override {
+    if (node->type() == type) {
+      auto node_val = static_cast<const FloatIR*>(node)->val();
+      return std::abs(node_val - val) < std::numeric_limits<double>::epsilon();
+    }
+    return false;
+  }
+
+  double val;
+};
+
+struct BoolMatch : public ParentMatch {
+  explicit BoolMatch(const bool v) : ParentMatch(IRNodeType::kBool), val(v) {}
+
+  bool Match(const IRNode* node) const override {
+    if (node->type() == type) {
+      auto node_val = static_cast<const BoolIR*>(node)->val();
+      return node_val == val;
+    }
+    return false;
+  }
+
+  bool val;
+};
 /**
  * @brief Match a specific integer value.
  */
@@ -270,6 +298,16 @@ inline IntMatch Int(const int64_t val) { return IntMatch(val); }
  * @brief Match a specific integer value.
  */
 inline StringMatch String(const std::string val) { return StringMatch(val); }
+
+/**
+ * @brief Match a specific integer value.
+ */
+inline FloatMatch Float(const double val) { return FloatMatch(val); }
+
+/**
+ * @brief Match a specific integer value.
+ */
+inline BoolMatch Bool(const bool val) { return BoolMatch(val); }
 
 /**
  * @brief Match a tablet ID type.

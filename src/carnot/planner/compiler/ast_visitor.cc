@@ -46,6 +46,7 @@ StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
 
   PL_RETURN_IF_ERROR(ast_visitor->InitGlobals());
   PL_RETURN_IF_ERROR(ast_visitor->SetupModules(module_map));
+  builtins::RegisterMathOpsOrDie(&(ast_visitor->udf_registry_));
   return ast_visitor;
 }
 
@@ -927,6 +928,85 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessNumber(const pypa::AstNumberPtr& no
   }
 }
 
+StatusOr<udf::ScalarUDFDefinition*> GetUDFDefinition(const udf::Registry& registry,
+                                                     const std::string& name,
+                                                     const std::vector<ExpressionIR*>& args) {
+  std::vector<types::DataType> arg_types;
+  for (const ExpressionIR* arg : args) {
+    if (!arg->IsData()) {
+      return nullptr;
+    }
+    DCHECK(arg->IsDataTypeEvaluated());
+    arg_types.push_back(arg->EvaluatedDataType());
+  }
+  auto udf_or_s = registry.GetScalarUDFDefinition(name, arg_types);
+  if (udf_or_s.code() == statuspb::NOT_FOUND) {
+    return nullptr;
+  }
+  return udf_or_s;
+}
+
+StatusOr<ExpressionIR*> ExecUDF(IR* graph, const pypa::AstPtr& ast, udf::ScalarUDFDefinition* def,
+                                const std::vector<ExpressionIR*>& args) {
+  std::vector<std::shared_ptr<types::ColumnWrapper>> column_pool;
+  std::vector<const types::ColumnWrapper*> columns;
+  // Extract the argument values out into column wrappers.
+  for (ExpressionIR* arg : args) {
+    CHECK(arg->IsData()) << "Unexpected type for UDCF ";
+    DCHECK(arg->IsDataTypeEvaluated());
+    types::DataType arg_type = arg->EvaluatedDataType();
+    auto col = types::ColumnWrapper::Make(arg_type, 0);
+    column_pool.push_back(col);
+    switch (arg->type()) {
+      case IRNodeType::kInt:
+        col->Append<types::Int64Value>(static_cast<IntIR*>(arg)->val());
+        break;
+      case IRNodeType::kFloat:
+        col->Append<types::Float64Value>(static_cast<FloatIR*>(arg)->val());
+        break;
+      case IRNodeType::kString:
+        col->Append<types::StringValue>(static_cast<StringIR*>(arg)->str());
+        break;
+      case IRNodeType::kUInt128:
+        col->Append<types::UInt128Value>(static_cast<UInt128IR*>(arg)->val());
+        break;
+      case IRNodeType::kBool:
+        col->Append<types::BoolValue>(static_cast<BoolIR*>(arg)->val());
+        break;
+      case IRNodeType::kTime:
+        col->Append<types::Time64NSValue>(static_cast<TimeIR*>(arg)->val());
+        break;
+      default:
+        CHECK("Can't find Arg type");
+    }
+    columns.push_back(col.get());
+  }
+
+  // Execute the UDF.
+  auto output = types::ColumnWrapper::Make(def->exec_return_type(), 1);
+  auto function_ctx = std::make_unique<pl::carnot::udf::FunctionContext>(nullptr, nullptr);
+  auto udf = def->Make();
+  PL_RETURN_IF_ERROR(def->ExecBatch(udf.get(), function_ctx.get(), columns, output.get(), 1));
+
+  // Convert the output type into a DataIR.
+  switch (def->exec_return_type()) {
+    case types::INT64:
+      return graph->CreateNode<IntIR>(ast, output->Get<types::Int64Value>(0).val);
+    case types::FLOAT64:
+      return graph->CreateNode<FloatIR>(ast, output->Get<types::Float64Value>(0).val);
+    case types::STRING:
+      return graph->CreateNode<StringIR>(ast, output->Get<types::StringValue>(0));
+    case types::UINT128:
+      return graph->CreateNode<UInt128IR>(ast, output->Get<types::UInt128Value>(0).val);
+    case types::BOOLEAN:
+      return graph->CreateNode<BoolIR>(ast, output->Get<types::BoolValue>(0).val);
+    case types::TIME64NS:
+      return graph->CreateNode<TimeIR>(ast, output->Get<types::Time64NSValue>(0).val);
+    default:
+      return CreateAstError(ast, "Unable to find a matching return type for the UDF");
+  }
+}
+
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataBinOp(const pypa::AstBinOpPtr& node,
                                                        const OperatorContext& op_context) {
   std::string op_str = pypa::to_string(node->op);
@@ -940,6 +1020,11 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataBinOp(const pypa::AstBinOpPtr& 
 
   PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
   std::vector<ExpressionIR*> args = {left, right};
+  PL_ASSIGN_OR_RETURN(auto udf, GetUDFDefinition(udf_registry_, op.carnot_op_name, args));
+  if (udf != nullptr) {
+    PL_ASSIGN_OR_RETURN(ExpressionIR * expr, ExecUDF(ir_graph_, node, udf, args));
+    return ExprObject::Create(expr, this);
+  }
   PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
   return ExprObject::Create(ir_node, this);
 }
@@ -960,6 +1045,11 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataBoolOp(const pypa::AstBoolOpPtr
 
   PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
   std::vector<ExpressionIR*> args{left, right};
+  PL_ASSIGN_OR_RETURN(auto udf, GetUDFDefinition(udf_registry_, op.carnot_op_name, args));
+  if (udf != nullptr) {
+    PL_ASSIGN_OR_RETURN(ExpressionIR * expr, ExecUDF(ir_graph_, node, udf, args));
+    return ExprObject::Create(expr, this);
+  }
   PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
   return ExprObject::Create(ir_node, this);
 }
@@ -975,16 +1065,22 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataCompare(const pypa::AstCompareP
   PL_ASSIGN_OR_RETURN(auto left_obj, Process(node->left, op_context));
   PL_ASSIGN_OR_RETURN(ExpressionIR * left,
                       GetArgAs<ExpressionIR>(left_obj, "left side of operation"));
-  std::vector<ExpressionIR*> expressions{left};
+  std::vector<ExpressionIR*> args{left};
 
   for (const auto& comp : node->comparators) {
     PL_ASSIGN_OR_RETURN(auto obj, Process(comp, op_context));
     PL_ASSIGN_OR_RETURN(ExpressionIR * expr, GetArgAs<ExpressionIR>(obj, "argument to operation"));
-    expressions.push_back(expr);
+    args.push_back(expr);
   }
 
   PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
-  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, expressions));
+  PL_ASSIGN_OR_RETURN(auto udf, GetUDFDefinition(udf_registry_, op.carnot_op_name, args));
+  if (udf != nullptr) {
+    PL_ASSIGN_OR_RETURN(ExpressionIR * expr, ExecUDF(ir_graph_, node, udf, args));
+    return ExprObject::Create(expr, this);
+  }
+
+  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
   return ExprObject::Create(ir_node, this);
 }
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDict(const pypa::AstDictPtr& node,

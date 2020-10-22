@@ -12,6 +12,7 @@
 #include <pypa/ast/ast.hh>
 #include <pypa/ast/tree_walker.hh>
 
+#include "src/carnot/funcs/builtins/math_ops.h"
 #include "src/carnot/planner/ast/ast_visitor.h"
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/ir/ast_utils.h"
@@ -164,7 +165,8 @@ class ASTVisitorImpl : public ASTVisitor {
         func_based_exec_(func_based_exec),
         reserved_names_(reserved_names),
         module_handler_(module_handler),
-        dynamic_trace_(dynamic_trace) {}
+        dynamic_trace_(dynamic_trace),
+        udf_registry_("udcf") {}
 
   Status InitGlobals();
   Status CreateBoolLiterals();
@@ -569,6 +571,9 @@ class ASTVisitorImpl : public ASTVisitor {
   ModuleHandler* module_handler_;
   // The Probe definition builder.
   MutationsIR* dynamic_trace_;
+  // Compile time registry for udfs. Used to execute constant expressions which simplifies
+  // expression management for arguments.
+  udf::Registry udf_registry_;
 };
 
 }  // namespace compiler

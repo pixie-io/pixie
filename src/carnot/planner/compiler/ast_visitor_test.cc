@@ -3,6 +3,7 @@
 #include <pypa/ast/tree_walker.hh>
 #include <pypa/parser/parser.hh>
 
+#include "src/carnot/funcs/builtins/math_ops.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/compilerpb/compiler_status.pb.h"
 #include "src/carnot/planner/ir/pattern_match.h"
@@ -308,9 +309,8 @@ TEST_F(AggTest, not_allowed_agg_fn) {
       "\n");
   auto status = CompileGraph(single_col_bad_agg_fn);
   ASSERT_NOT_OK(status);
-  EXPECT_THAT(
-      status.status(),
-      HasCompilerError("Expected second tuple argument to be type Func, received FuncCall"));
+  EXPECT_THAT(status.status(),
+              HasCompilerError("Expected second tuple argument to be type Func, received Int"));
   std::string single_col_dict_by_not_pl = absl::StrJoin(
       {
           "import px",
@@ -537,7 +537,7 @@ TEST_F(AggTest, not_allowed_by_arguments) {
   ASSERT_NOT_OK(ir_graph_status);
 
   EXPECT_THAT(ir_graph_status.status(),
-              HasCompilerError("Expected arg 'by' as type 'String', received 'Func'"));
+              HasCompilerError("Expected arg 'by' as type 'String', received 'Int'"));
 }
 
 constexpr char kInnerJoinQuery[] = R"query(
@@ -910,28 +910,19 @@ TEST_F(ASTVisitorTest, test_repeated_exprs) {
   std::vector<IRNode*> mem_srcs = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
   EXPECT_EQ(mem_srcs.size(), 1);
   auto expr1 = static_cast<MemorySourceIR*>(mem_srcs[0])->start_time_expr();
-  auto expr1_args = static_cast<FuncIR*>(expr1)->args();
-  // Make sure the clones are identical but distinct
-  EXPECT_EQ(2, expr1_args.size());
-  EXPECT_NE(expr1_args[0]->id(), expr1_args[1]->id());
-  CompareClone(expr1_args[0], expr1_args[1], "Start time expression in MemorySource node");
+  ASSERT_MATCH(expr1, Int(20));
 
   // Fetch the processed args for b * b > 10
   std::vector<IRNode*> filters = ir_graph->FindNodesOfType(IRNodeType::kFilter);
   EXPECT_EQ(filters.size(), 1);
   auto expr2 = static_cast<FilterIR*>(filters[0])->filter_expr();
-  auto expr2_args = static_cast<FuncIR*>(expr2)->args();
-  ASSERT_EQ(2, expr2_args.size());
-  auto expr2_subargs = static_cast<FuncIR*>(expr2_args[0])->args();
-  ASSERT_EQ(2, expr2_subargs.size());
-  // Make sure the clones are identical but distinct
-  EXPECT_NE(expr2_subargs[0]->id(), expr2_subargs[1]->id());
-  CompareClone(expr2_subargs[0], expr2_subargs[1], "Filter expression in Filter node");
+  ASSERT_MATCH(expr2, Bool(true));
 
   // Fetch the processed args for c + c
   std::vector<IRNode*> maps = ir_graph->FindNodesOfType(IRNodeType::kMap);
   EXPECT_EQ(maps.size(), 1);
   auto expr3 = static_cast<MapIR*>(maps[0])->col_exprs()[0].node;
+  ASSERT_MATCH(expr3, Func());
   auto expr3_args = static_cast<FuncIR*>(expr3)->args();
   // Make sure the clones are identical but distinct
   EXPECT_EQ(2, expr3_args.size());
@@ -2046,6 +2037,13 @@ px.display(resource_timeseries('-5m', '', 'pod'))
 TEST_F(ASTVisitorTest, rsrc_ts) {
   EXPECT_COMPILER_ERROR(CompileGraph(kAssignToGroupby, {}, {}),
                         "Expected 'Column' in arg 'assignment target', got 'function'");
+}
+constexpr char kCompileTimeStringConcat[] = R"pxl(
+import px
+px.display(px.DataFrame(table='http' + '_events'))
+)pxl";
+TEST_F(ASTVisitorTest, compile_time_string_concat) {
+  ASSERT_OK(CompileGraph(kCompileTimeStringConcat, {}, {}));
 }
 
 }  // namespace compiler
