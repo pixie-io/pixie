@@ -122,7 +122,27 @@ const JSONBase = React.memo<JSONDataProps>((props) => {
       </span>
     );
   }
-  return <span className={classes[cls]}>{String(data)}</span>;
+
+  const splits = String(data)
+    .replace(/ /g, '\u00A0')
+    .split('\n');
+
+  const indent = {
+    marginLeft: props.multiline ? (indentation + 1) * JSON_INDENT_PX : 0,
+  };
+
+  return (
+    <span className={classes[cls]}>
+      {
+        splits.map((val, idx) => (
+          <span key={idx} style={idx > 0 ? indent : {}}>
+            {val}
+            {props.multiline && (idx !== splits.length - 1) ? <br /> : null}
+          </span>
+        ))
+      }
+    </span>
+  );
 });
 // linter needs this for React.memo components.
 JSONBase.displayName = 'JSONBase';

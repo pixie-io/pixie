@@ -113,6 +113,7 @@ describe('<JSONData/> test', () => {
       + '\u00A0testNull:\u00A0null,\u00A0testJSON:\u00A0{\u00A0hello:\u00A0world\u00A0}\u00A0}');
     const base = wrapper.find('span').at(0);
     expect(base.prop('className')).toEqual(classes.base);
+
     const topLevelJSONContents = base.children();
     expect(topLevelJSONContents).toHaveLength(6);
     expect(topLevelJSONContents.find({ className: classes.jsonKey })).toHaveLength(5);
@@ -173,7 +174,7 @@ describe('<JSONData/> test', () => {
       />,
     );
 
-    expect(wrapper.text()).toEqual('[\u00A0some text,\u00A0some other text\u00A0]');
+    expect(wrapper.text()).toEqual('[\u00A0some\u00A0text,\u00A0some\u00A0other\u00A0text\u00A0]');
     expect(wrapper.find('br')).toHaveLength(0);
   });
 
