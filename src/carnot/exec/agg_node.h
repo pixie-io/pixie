@@ -48,7 +48,7 @@ struct GroupArgs {
 };
 
 class AggNode : public ProcessingNode {
-  using AggHashMap = RowTupleHashMap<AggHashValue*>;
+  using AggHashMap = AbslRowTupleHashMap<AggHashValue*>;
 
  public:
   AggNode() = default;

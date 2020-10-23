@@ -218,19 +218,21 @@ Status AggNode::HashRowBatch(ExecState* exec_state, const RowBatch& rb) {
   PL_UNUSED(exec_state);
   // Loop through all the row and basically store the values into column chunk based on which
   // group they belong to.
-  AggHashValue* val = nullptr;
   for (auto row_idx = 0; row_idx < rb.num_rows(); ++row_idx) {
     auto& ga = group_args_chunk_[row_idx];
+    AggHashValue* val = nullptr;
     // Check to see if in hash
     // TODO(zasgar): Change this to upsert.
-    bool found = agg_hash_map_.find(ga.rt, val);
+    auto it = agg_hash_map_.find(ga.rt);
     // If not in hash then insert
-    if (!found) {
+    if (it == agg_hash_map_.end()) {
       // Create a val array.
       val = CreateAggHashValue(exec_state);
-      agg_hash_map_.insert(ga.rt, val);
+      agg_hash_map_[ga.rt] = val;
       // We have inserted this, so the stored RowTuple is now in the table.
       ga.rt = nullptr;
+    } else {
+      val = it->second;
     }
     ga.av = val;
   }
@@ -293,8 +295,7 @@ Status AggNode::ConvertAggHashMapToRowBatch(ExecState* exec_state, RowBatch* out
   }
 
   // Agg into agg values and emit!
-  auto locked_table = agg_hash_map_.lock_table();
-  for (const auto& kv : locked_table) {
+  for (const auto& kv : agg_hash_map_) {
     auto* groups_rt = kv.first;
     auto* val = kv.second;
 
@@ -313,7 +314,6 @@ Status AggNode::ConvertAggHashMapToRowBatch(ExecState* exec_state, RowBatch* out
                                                      value_builders[i].get()));
     }
   }
-  locked_table.unlock();
 
   for (const auto& group_builder : group_builders) {
     std::shared_ptr<arrow::Array> arr;
