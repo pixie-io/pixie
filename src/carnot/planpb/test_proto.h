@@ -8,7 +8,7 @@
 #include <vector>
 
 #include <absl/strings/substitute.h>
-#include "src/carnot/plan/dag.h"
+#include "src/carnot/dag/dag.h"
 #include "src/carnot/plan/plan_fragment.h"
 #include "src/carnot/plan/plan_graph.h"
 #include "src/carnot/planpb/plan.pb.h"

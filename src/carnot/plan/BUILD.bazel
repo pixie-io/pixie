@@ -12,15 +12,8 @@ pl_cc_library(
     deps = [
         "//src/carnot/planpb:plan_pl_cc_proto",
         "//src/carnot/udf:cc_library",
+        "//src/carnot/dag:cc_library",
         "//src/table_store:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "dag_test",
-    srcs = ["dag_test.cc"],
-    deps = [
-        ":cc_library",
     ],
 )
 

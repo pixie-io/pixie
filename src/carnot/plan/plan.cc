@@ -8,7 +8,7 @@
 
 #include <absl/strings/str_cat.h>
 
-#include "src/carnot/plan/dag.h"
+#include "src/carnot/dag/dag.h"
 #include "src/carnot/plan/plan_fragment.h"
 #include "src/common/base/base.h"
 

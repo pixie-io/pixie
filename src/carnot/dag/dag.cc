@@ -1,4 +1,4 @@
-#include "src/carnot/plan/dag.h"
+#include "src/carnot/dag/dag.h"
 
 #include <algorithm>
 #include <iostream>

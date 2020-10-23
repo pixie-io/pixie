@@ -10,20 +10,9 @@
 #include <utility>
 #include <vector>
 
-#include <pypa/ast/ast.hh>
-
-#include "src/carnot/plan/dag.h"
-#include "src/carnot/plan/operators.h"
-#include "src/carnot/planner/compiler_error_context/compiler_error_context.h"
-#include "src/carnot/planner/compiler_state/compiler_state.h"
-#include "src/carnot/planner/compilerpb/compiler_status.pb.h"
 #include "src/carnot/planner/ir/ir_node_traits.h"
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/types/types.h"
-#include "src/carnot/udfspb/udfs.pb.h"
-#include "src/common/base/base.h"
-#include "src/shared/metadatapb/metadata.pb.h"
-#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {

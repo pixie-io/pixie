@@ -13,7 +13,6 @@
 #include "src/carnot/planner/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/planner/logical_planner.h"
 #include "src/carnot/planpb/plan.pb.h"
-#include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/base/time.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 #include "src/table_store/proto/schema.pb.h"

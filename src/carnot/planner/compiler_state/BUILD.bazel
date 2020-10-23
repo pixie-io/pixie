@@ -18,8 +18,7 @@ pl_cc_library(
     ),
     hdrs = ["compiler_state.h"],
     deps = [
-        "//src/carnot/plan:cc_library",
-        "//src/carnot/udf:cc_library",
+        "//src/carnot/udfspb:udfs_pl_cc_proto",
         "//src/carnot/planner/types:cc_library",
     ],
 )

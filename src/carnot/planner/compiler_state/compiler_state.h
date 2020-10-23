@@ -10,7 +10,6 @@
 
 #include "src/common/base/base.h"
 #include "src/shared/types/types.h"
-#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {

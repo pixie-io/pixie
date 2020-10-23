@@ -3,7 +3,6 @@
 #include <unordered_set>
 #include <vector>
 
-#include "src/carnot/planner/compiler/ast_visitor.h"
 #include "src/carnot/planner/distributed/distributed_coordinator.h"
 #include "src/carnot/planner/distributed/distributed_planner.h"
 #include "src/carnot/planner/distributed/distributed_rules.h"

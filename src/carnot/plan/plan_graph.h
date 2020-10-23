@@ -3,7 +3,7 @@
 #include <memory>
 #include <unordered_map>
 
-#include "src/carnot/plan/dag.h"
+#include "src/carnot/dag/dag.h"
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"

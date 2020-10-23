@@ -26,21 +26,12 @@ namespace planner {
 using pl::testing::proto::EqualsProto;
 using pl::testing::proto::Partially;
 
-constexpr char kUDFInfoPb[] = R"proto(
-scalar_udfs {
-  name: "px.greaterThanEqual"
-  exec_arg_types: INT64
-  exec_arg_types: INT64
-  return_type: BOOLEAN
-}
-)proto";
-
 class PlannerExportTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // TODO(philkuz/zasgar) need to import the udf_info str here once we have the genrule.
     // or figure out a different way to handle this.
-    udf_info_str_ = kUDFInfoPb;
+    udf_info_str_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb().DebugString();
   }
 
   plannerpb::QueryRequest MakeQueryRequest(const std::string& query) {

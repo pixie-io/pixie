@@ -10,7 +10,7 @@
 #include <absl/strings/substitute.h>
 #include <magic_enum.hpp>
 
-#include "src/carnot/plan/dag.h"
+#include "src/carnot/dag/dag.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 

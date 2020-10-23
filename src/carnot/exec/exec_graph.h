@@ -9,10 +9,10 @@
 #include <utility>
 #include <vector>
 
+#include "src/carnot/dag/dag.h"
 #include "src/carnot/exec/exec_node.h"
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/memory_source_node.h"
-#include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/plan_fragment.h"
 #include "src/carnot/plan/plan_state.h"
 #include "src/common/base/base.h"

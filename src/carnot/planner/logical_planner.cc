@@ -2,7 +2,6 @@
 
 #include <utility>
 
-#include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
 namespace pl {
@@ -63,12 +62,11 @@ Status LogicalPlanner::Init(const udfspb::UDFInfo& udf_info) {
 StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
     const distributedpb::LogicalPlannerState& logical_state,
     const plannerpb::QueryRequest& query_request) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<RegistryInfo> registry_info, udfexporter::ExportUDFInfo());
   // Compile into the IR.
   auto ms = logical_state.plan_options().max_output_rows_per_table();
   VLOG(1) << "Max output rows: " << ms;
   PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
-                      CreateCompilerState(logical_state, registry_info.get(), ms));
+                      CreateCompilerState(logical_state, registry_info_.get(), ms));
 
   std::vector<plannerpb::FuncToExecute> exec_funcs(query_request.exec_funcs().begin(),
                                                    query_request.exec_funcs().end());
@@ -83,12 +81,11 @@ StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
 StatusOr<std::unique_ptr<compiler::MutationsIR>> LogicalPlanner::CompileTrace(
     const distributedpb::LogicalPlannerState& logical_state,
     const plannerpb::CompileMutationsRequest& mutations_req) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<RegistryInfo> registry_info, udfexporter::ExportUDFInfo());
   // Compile into the IR.
   auto ms = logical_state.plan_options().max_output_rows_per_table();
   VLOG(1) << "Max output rows: " << ms;
   PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
-                      CreateCompilerState(logical_state, registry_info.get(), ms));
+                      CreateCompilerState(logical_state, registry_info_.get(), ms));
 
   std::vector<plannerpb::FuncToExecute> exec_funcs(mutations_req.exec_funcs().begin(),
                                                    mutations_req.exec_funcs().end());
@@ -98,18 +95,16 @@ StatusOr<std::unique_ptr<compiler::MutationsIR>> LogicalPlanner::CompileTrace(
 
 StatusOr<shared::scriptspb::FuncArgsSpec> LogicalPlanner::GetMainFuncArgsSpec(
     const plannerpb::QueryRequest& query_request) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<RegistryInfo> registry_info, udfexporter::ExportUDFInfo());
   PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
-                      CreateCompilerState({}, registry_info.get(), 0));
+                      CreateCompilerState({}, registry_info_.get(), 0));
 
   return compiler_.GetMainFuncArgsSpec(query_request.query_str(), compiler_state.get());
 }
 
 StatusOr<pl::shared::scriptspb::VisFuncsInfo> LogicalPlanner::GetVisFuncsInfo(
     const std::string& script_str) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<RegistryInfo> registry_info, udfexporter::ExportUDFInfo());
   PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
-                      CreateCompilerState({}, registry_info.get(), 0));
+                      CreateCompilerState({}, registry_info_.get(), 0));
 
   return compiler_.GetVisFuncsInfo(script_str, compiler_state.get());
 }

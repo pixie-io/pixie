@@ -10,7 +10,6 @@
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/rules/rule_executor.h"
 #include "src/carnot/planner/rules/rules.h"
-#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {
