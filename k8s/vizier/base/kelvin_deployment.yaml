@@ -60,6 +60,8 @@ spec:
             secretKeyRef:
               key: jwt-signing-key
               name: pl-cluster-secrets
+        - name: TCMALLOC_SAMPLE_PARAMETER
+          value: "1048576"
         ports:
         - containerPort: 59300
           hostPort: 59300
