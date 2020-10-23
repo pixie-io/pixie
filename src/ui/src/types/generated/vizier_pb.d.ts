@@ -758,6 +758,46 @@ export namespace HealthCheckResponse {
   }
 }
 
+export class DebugLogRequest extends jspb.Message {
+  getClusterId(): string;
+  setClusterId(value: string): void;
+
+  getPodName(): string;
+  setPodName(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): DebugLogRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: DebugLogRequest): DebugLogRequest.AsObject;
+  static serializeBinaryToWriter(message: DebugLogRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): DebugLogRequest;
+  static deserializeBinaryFromReader(message: DebugLogRequest, reader: jspb.BinaryReader): DebugLogRequest;
+}
+
+export namespace DebugLogRequest {
+  export type AsObject = {
+    clusterId: string,
+    podName: string,
+  }
+}
+
+export class DebugLogResponse extends jspb.Message {
+  getData(): string;
+  setData(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): DebugLogResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: DebugLogResponse): DebugLogResponse.AsObject;
+  static serializeBinaryToWriter(message: DebugLogResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): DebugLogResponse;
+  static deserializeBinaryFromReader(message: DebugLogResponse, reader: jspb.BinaryReader): DebugLogResponse;
+}
+
+export namespace DebugLogResponse {
+  export type AsObject = {
+    data: string,
+  }
+}
+
 export enum DataType { 
   DATA_TYPE_UNKNOWN = 0,
   BOOLEAN = 1,

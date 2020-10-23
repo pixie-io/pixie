@@ -72,6 +72,22 @@ func (v *VizierPassThroughProxy) HealthCheck(req *pl_api_vizierpb.HealthCheckReq
 	return rp.Run()
 }
 
+// DebugLog is the GRPC stream method to fetch debug logs from vizier.
+func (v *VizierPassThroughProxy) DebugLog(req *pl_api_vizierpb.DebugLogRequest, srv pl_api_vizierpb.VizierDebugService_DebugLogServer) error {
+	rp, err := newRequestProxyer(v.vc, v.nc, req, srv)
+	if err != nil {
+		return err
+	}
+	defer rp.Finish()
+	vizReq := rp.prepareVizierRequest()
+	vizReq.Msg = &cvmsgspb.C2VAPIStreamRequest_DebugLogReq{DebugLogReq: req}
+	if err := rp.sendMessageToVizier(vizReq); err != nil {
+		return err
+	}
+
+	return rp.Run()
+}
+
 func getCredsFromCtx(ctx context.Context) (token string, claim *jwt.JWTClaims, err error) {
 	var aCtx *authcontext.AuthContext
 	aCtx, err = authcontext.FromContext(ctx)

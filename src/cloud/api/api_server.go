@@ -146,6 +146,7 @@ func main() {
 
 	vpt := ptproxy.NewVizierPassThroughProxy(nc, vc)
 	pl_api_vizierpb.RegisterVizierServiceServer(s.GRPCServer(), vpt)
+	pl_api_vizierpb.RegisterVizierDebugServiceServer(s.GRPCServer(), vpt)
 
 	sm, err := apienv.NewScriptMgrServiceClient()
 	if err != nil {

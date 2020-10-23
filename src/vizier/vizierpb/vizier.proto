@@ -290,8 +290,27 @@ message HealthCheckResponse {
   Status status = 1;
 }
 
+
 service VizierService {
   // This is an incoming request to Vizier to execute queries.
   rpc ExecuteScript(ExecuteScriptRequest) returns (stream ExecuteScriptResponse) {}
   rpc HealthCheck(HealthCheckRequest) returns (stream HealthCheckResponse) {}
+}
+
+message DebugLogRequest {
+  // The UUID of the cluster encoded as a string with dashes.
+  string cluster_id = 1 [ (gogoproto.customname) = "ClusterID" ];;
+  // The Vizier pod name we want to log.
+  string pod_name = 2;
+}
+
+message DebugLogResponse {
+  // A chunk of the log response data.
+  string data = 2;
+}
+
+// Service used to run debug commands on Vizier.
+service VizierDebugService {
+  // Get a debug log for a specific vizier pod.
+  rpc DebugLog(DebugLogRequest) returns (stream DebugLogResponse) {}
 }

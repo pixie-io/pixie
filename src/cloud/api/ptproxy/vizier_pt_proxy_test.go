@@ -56,6 +56,7 @@ func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	}
 
 	pl_api_vizierpb.RegisterVizierServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}))
+	pl_api_vizierpb.RegisterVizierDebugServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}))
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
@@ -240,7 +241,6 @@ func TestVizierPassThroughProxy_ExecuteScript(t *testing.T) {
 							return
 						}
 						responses = append(responses, msg)
-						fmt.Printf("Got message: %+v\n", msg.String())
 					}
 				}
 			}()
@@ -395,6 +395,128 @@ func TestVizierPassThroughProxy_HealthCheck(t *testing.T) {
 
 			timeout := time.NewTimer(5 * time.Second)
 			responses := make([]*pl_api_vizierpb.HealthCheckResponse, 0)
+			defer timeout.Stop()
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for {
+					select {
+					case <-resp.Context().Done():
+						return
+					case <-timeout.C:
+						t.Fatal("timeout")
+					case msg := <-grpcDataCh:
+						if msg == nil {
+							return
+						}
+						responses = append(responses, msg)
+						fmt.Printf("Got message: %+v\n", msg.String())
+					}
+				}
+			}()
+			wg.Wait()
+
+			if tc.expGRPCError != nil {
+				if gotReadErr == nil {
+					t.Fatal("Expected to get GRPC error")
+				}
+				assert.Equal(t, status.Code(tc.expGRPCError), status.Code(gotReadErr))
+			}
+			if tc.expGRPCResponses == nil {
+				if len(responses) != 0 {
+					t.Fatal("Expected to get no responses")
+				}
+			} else {
+				assert.Equal(t, tc.expGRPCResponses, responses)
+			}
+		})
+	}
+}
+
+func TestVizierPassThroughProxy_DebugLog(t *testing.T) {
+	viper.Set("jwt_signing_key", "the-key")
+
+	ts, cleanup := createTestState(t)
+	defer cleanup(t)
+
+	client := pl_api_vizierpb.NewVizierDebugServiceClient(ts.conn)
+	validTestToken := testingutils.GenerateTestJWTToken(t, viper.GetString("jwt_signing_key"))
+
+	testCases := []struct {
+		name string
+
+		clusterID      string
+		authToken      string
+		respFromVizier []*cvmsgspb.V2CAPIStreamResponse
+
+		expGRPCError     error
+		expGRPCResponses []*pl_api_vizierpb.DebugLogResponse
+	}{
+		{
+			name: "Normal Stream",
+
+			clusterID: "00000000-1111-2222-2222-333333333333",
+			authToken: validTestToken,
+			respFromVizier: []*cvmsgspb.V2CAPIStreamResponse{
+				{
+					Msg: &cvmsgspb.V2CAPIStreamResponse_DebugLogResp{DebugLogResp: &pl_api_vizierpb.DebugLogResponse{Data: "test log 1"}},
+				},
+				{
+					Msg: &cvmsgspb.V2CAPIStreamResponse_DebugLogResp{DebugLogResp: &pl_api_vizierpb.DebugLogResponse{Data: "test log 2"}},
+				},
+			},
+
+			expGRPCError: nil,
+			expGRPCResponses: []*pl_api_vizierpb.DebugLogResponse{
+				&pl_api_vizierpb.DebugLogResponse{Data: "test log 1"},
+				&pl_api_vizierpb.DebugLogResponse{Data: "test log 2"},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			if len(tc.authToken) > 0 {
+				ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
+					fmt.Sprintf("bearer %s", tc.authToken))
+			}
+
+			ctx, cancel := context.WithCancel(ctx)
+			defer cancel()
+			resp, err := client.DebugLog(ctx,
+				&pl_api_vizierpb.DebugLogRequest{ClusterID: tc.clusterID})
+			assert.Nil(t, err)
+
+			fv := newFakeVizier(t, uuid.FromStringOrNil(tc.clusterID), ts.nc)
+			fv.Run(t, tc.respFromVizier)
+			defer fv.Stop()
+
+			grpcDataCh := make(chan *pl_api_vizierpb.DebugLogResponse)
+			var gotReadErr error
+			var wg sync.WaitGroup
+			wg.Add(1)
+
+			go func() {
+				defer wg.Done()
+				defer close(grpcDataCh)
+				for {
+					d, err := resp.Recv()
+					if err != nil && err != io.EOF {
+						gotReadErr = err
+					}
+					if err == io.EOF {
+						return
+					}
+					if d == nil {
+						return
+					}
+					grpcDataCh <- d
+				}
+			}()
+
+			timeout := time.NewTimer(5 * time.Second)
+			responses := make([]*pl_api_vizierpb.DebugLogResponse, 0)
 			defer timeout.Stop()
 			wg.Add(1)
 			go func() {
