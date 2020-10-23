@@ -30,6 +30,11 @@ enum TrafficProtocol {
   kNumProtocols
 };
 
+struct protocol_message_t {
+  enum TrafficProtocol protocol;
+  enum MessageType type;
+};
+
 #ifdef __cplusplus
 inline auto TrafficProtocolEnumValues() {
   auto protocols_array = magic_enum::enum_values<TrafficProtocol>();

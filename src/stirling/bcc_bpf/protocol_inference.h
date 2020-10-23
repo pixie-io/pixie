@@ -270,33 +270,20 @@ static __inline enum MessageType infer_http2_message(const char* buf, size_t cou
   return kUnknown;
 }
 
-static __inline struct traffic_class_t infer_traffic(enum TrafficDirection direction,
-                                                     const char* buf, size_t count) {
-  struct traffic_class_t traffic_class;
-  traffic_class.protocol = kProtocolUnknown;
-  traffic_class.role = kRoleNone;
+static __inline struct protocol_message_t infer_protocol(const char* buf, size_t count) {
+  struct protocol_message_t inferred_message;
+  inferred_message.protocol = kProtocolUnknown;
+  inferred_message.type = kUnknown;
 
-  enum MessageType req_resp_type;
-  if ((req_resp_type = infer_http_message(buf, count)) != kUnknown) {
-    traffic_class.protocol = kProtocolHTTP;
-  } else if ((req_resp_type = infer_cql_message(buf, count)) != kUnknown) {
-    traffic_class.protocol = kProtocolCQL;
-  } else if ((req_resp_type = infer_pgsql_message(buf, count)) != kUnknown) {
-    traffic_class.protocol = kProtocolPGSQL;
-  } else if ((req_resp_type = infer_mysql_message(buf, count)) != kUnknown) {
-    traffic_class.protocol = kProtocolMySQL;
-  } else {
-    return traffic_class;
+  if ((inferred_message.type = infer_http_message(buf, count)) != kUnknown) {
+    inferred_message.protocol = kProtocolHTTP;
+  } else if ((inferred_message.type = infer_cql_message(buf, count)) != kUnknown) {
+    inferred_message.protocol = kProtocolCQL;
+  } else if ((inferred_message.type = infer_pgsql_message(buf, count)) != kUnknown) {
+    inferred_message.protocol = kProtocolPGSQL;
+  } else if ((inferred_message.type = infer_mysql_message(buf, count)) != kUnknown) {
+    inferred_message.protocol = kProtocolMySQL;
   }
 
-  // Classify Role as XOR between direction and req_resp_type:
-  //    direction  req_resp_type  => role
-  //    ------------------------------------
-  //    kEgress    kRequest       => Client
-  //    kEgress    KResponse      => Server
-  //    kIngress   kRequest       => Server
-  //    kIngress   kResponse      => Client
-  traffic_class.role =
-      ((direction == kEgress) ^ (req_resp_type == kResponse)) ? kRoleClient : kRoleServer;
-  return traffic_class;
+  return inferred_message;
 }

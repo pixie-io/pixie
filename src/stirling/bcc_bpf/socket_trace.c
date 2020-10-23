@@ -147,11 +147,11 @@ static __inline void clear_open_file(uint64_t id, int fd) {
 }
 
 // The caller must memset conn_info to '0', otherwise the behavior is undefined.
-static __inline void init_conn_info(uint32_t tgid, uint32_t fd, struct conn_info_t* conn_info) {
-  conn_info->conn_id.upid.tgid = tgid;
-  conn_info->conn_id.upid.start_time_ticks = get_tgid_start_time();
-  conn_info->conn_id.fd = fd;
-  conn_info->conn_id.tsid = bpf_ktime_get_ns();
+static __inline void init_conn_id(uint32_t tgid, uint32_t fd, struct conn_id_t* conn_id) {
+  conn_id->upid.tgid = tgid;
+  conn_id->upid.start_time_ticks = get_tgid_start_time();
+  conn_id->fd = fd;
+  conn_id->tsid = bpf_ktime_get_ns();
 }
 
 static __inline struct conn_info_t* get_conn_info(uint32_t tgid, uint32_t fd) {
@@ -162,7 +162,7 @@ static __inline struct conn_info_t* get_conn_info(uint32_t tgid, uint32_t fd) {
   struct conn_info_t* conn_info = conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
   // Use TGID zero to detect that a new conn_info needs to be initialized.
   if (conn_info->conn_id.upid.tgid == 0) {
-    init_conn_info(tgid, fd, conn_info);
+    init_conn_id(tgid, fd, &conn_info->conn_id);
   }
   return conn_info;
 }
@@ -274,19 +274,33 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
   conn_info->protocol_total_count += 1;
 
   // Try to infer connection type (protocol) based on data.
-  struct traffic_class_t traffic_class = infer_traffic(direction, buf, count);
+  struct protocol_message_t inferred_protocol = infer_protocol(buf, count);
 
   // Could not infer the traffic.
-  if (traffic_class.protocol == kProtocolUnknown) {
+  if (inferred_protocol.protocol == kProtocolUnknown) {
     return;
   }
 
+  // Update protocol if not set.
   if (conn_info->traffic_class.protocol == kProtocolUnknown) {
-    // TODO(oazizi): Look for only certain protocols on write/send()?
-    conn_info->traffic_class = traffic_class;
+    conn_info->traffic_class.protocol = inferred_protocol.protocol;
     conn_info->protocol_match_count = 1;
-  } else if (conn_info->traffic_class.protocol == traffic_class.protocol) {
+  } else if (conn_info->traffic_class.protocol == inferred_protocol.protocol) {
     conn_info->protocol_match_count += 1;
+  }
+
+  // Update role if not set.
+  if (conn_info->traffic_class.role == kRoleNone) {
+    // Classify Role as XOR between direction and req_resp_type:
+    //    direction  req_resp_type  => role
+    //    ------------------------------------
+    //    kEgress    kRequest       => Client
+    //    kEgress    KResponse      => Server
+    //    kIngress   kRequest       => Server
+    //    kIngress   kResponse      => Client
+    conn_info->traffic_class.role = ((direction == kEgress) ^ (inferred_protocol.type == kResponse))
+                                        ? kRoleClient
+                                        : kRoleServer;
   }
 }
 
@@ -299,11 +313,12 @@ static __inline bool should_trace_sockaddr_family(sa_family_t sa_family) {
 }
 
 static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_t fd,
-                                     const struct sockaddr* addr) {
+                                     const struct sockaddr* addr, enum EndpointRole role) {
   struct conn_info_t conn_info = {};
   conn_info.addr_valid = true;
   conn_info.addr = *((struct sockaddr_in6*)addr);
-  init_conn_info(tgid, fd, &conn_info);
+  conn_info.traffic_class.role = role;
+  init_conn_id(tgid, fd, &conn_info.conn_id);
 
   uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   conn_info_map.update(&tgid_fd, &conn_info);
@@ -545,7 +560,7 @@ static __inline void process_syscall_connect(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, (uint32_t)args->fd, args->addr);
+  submit_new_conn(ctx, tgid, (uint32_t)args->fd, args->addr, kRoleClient);
 }
 
 static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
@@ -561,7 +576,7 @@ static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, (uint32_t)ret_fd, args->addr);
+  submit_new_conn(ctx, tgid, (uint32_t)ret_fd, args->addr, kRoleServer);
 }
 
 // TODO(oazizi): This is badly broken (but better than before).
@@ -604,7 +619,7 @@ static __inline void process_implicit_conn(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, (uint32_t)args->fd, args->addr);
+  submit_new_conn(ctx, tgid, (uint32_t)args->fd, args->addr, kRoleNone);
 }
 
 static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t id,
