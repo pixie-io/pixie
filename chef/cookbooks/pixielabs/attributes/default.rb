@@ -84,8 +84,8 @@ if node[:platform] == 'ubuntu'
   default['yq']['sha256']        =
     '11a830ffb72aad0eaa7640ef69637068f36469be4f68a93da822fbe454e998f8'
 
-  default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil.tar.gz'
-  default['gsutil']['sha256']        = 'be105e3724f7766a305f8094ac26f812498b0dac76a503fff871dcd9f13105fa'
+  default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil_4.54.tar.gz'
+  default['gsutil']['sha256']        = 'a6698479af8dc26e2ed809102e9e5d813f475bca44ce7007ed4e25ee79a3289c'
 elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
     'https://github.com/bazelbuild/bazel/releases/download/3.4.1/bazel-3.4.1-darwin-x86_64'
@@ -145,6 +145,6 @@ elsif node[:platform] == 'mac_os_x'
   default['yq']['sha256']        =
     '116f74a384d0b4fa31a58dd01cfcdeffa6fcd21c066de223cbb0ebc042a8bc28'
 
-  default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil.tar.gz'
-  default['gsutil']['sha256']        = 'be105e3724f7766a305f8094ac26f812498b0dac76a503fff871dcd9f13105fa'
+  default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil_4.54.tar.gz'
+  default['gsutil']['sha256']        = 'a6698479af8dc26e2ed809102e9e5d813f475bca44ce7007ed4e25ee79a3289c'
 end
