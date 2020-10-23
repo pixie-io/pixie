@@ -586,10 +586,6 @@ class ConnectionTracker {
   // Iterations before the tracker can be killed.
   int32_t death_countdown_ = -1;
 
-  // Keep some stats on ProcessFrames() calls.
-  int stat_invalid_records_ = 0;
-  int stat_valid_records_ = 0;
-
   ConnectionStats* conn_stats_ = nullptr;
 
   Stats stats_;
