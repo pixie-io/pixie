@@ -31,6 +31,7 @@ type Connector struct {
 	id                 uuid.UUID
 	conn               *grpc.ClientConn
 	vz                 pl_api_vizierpb.VizierServiceClient
+	vzDebug            pl_api_vizierpb.VizierDebugServiceClient
 	vzToken            string
 	passthroughEnabled bool
 }
@@ -62,6 +63,7 @@ func NewConnector(cloudAddr string, vzInfo *cloudapipb.ClusterInfo, conn *Connec
 	}
 
 	c.vz = pl_api_vizierpb.NewVizierServiceClient(c.conn)
+	c.vzDebug = pl_api_vizierpb.NewVizierDebugServiceClient(c.conn)
 
 	return c, nil
 }
@@ -240,6 +242,62 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 			}
 		}
 
+	}()
+	return results, nil
+}
+
+type DebugLogResponse struct {
+	Data string
+	Err error
+}
+
+// DebugLogRequest sends a debug log request and returns data in a chan.
+func (c *Connector) DebugLogRequest(ctx context.Context, podName string) (chan *DebugLogResponse, error) {
+	reqPB := &pl_api_vizierpb.DebugLogRequest{
+		ClusterID: c.id.String(),
+		PodName:   podName,
+	}
+	if c.passthroughEnabled {
+		var err error
+		ctx, err = ctxWithCreds(ctx)
+		if err != nil {
+			// TODO(nserrino): refactor so that Sentry doesn't grab this error as an event.
+			log.WithError(err).Fatalln("Failed to get credentials")
+		}
+	} else {
+		ctx = ctxWithTokenCreds(ctx, c.vzToken)
+	}
+
+	resp, err := c.vzDebug.DebugLog(ctx, reqPB)
+	if err != nil {
+		return nil, err
+	}
+
+	results := make(chan *DebugLogResponse)
+	go func() {
+		defer close(results)
+		for {
+			select {
+			case <-resp.Context().Done():
+				if resp.Context().Err() != nil {
+					results <- &DebugLogResponse{
+						Err: resp.Context().Err(),
+					}
+				}
+				return
+			case <-ctx.Done():
+				return
+			default:
+				msg, err := resp.Recv()
+
+				if err != nil || msg == nil {
+					return
+				}
+				results <- &DebugLogResponse{
+					Data: msg.Data,
+				}
+			}
+		}
 	}()
 	return results, nil
 }

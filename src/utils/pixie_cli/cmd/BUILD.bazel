@@ -9,6 +9,7 @@ go_library(
         "collect_logs.go",
         "config.go",
         "create_bundle.go",
+        "debug.go",
         "delete_pixie.go",
         "demo.go",
         "deploy.go",
