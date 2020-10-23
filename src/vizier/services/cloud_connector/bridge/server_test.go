@@ -190,6 +190,10 @@ func (f *FakeVZInfo) UpdateClusterID(string) error {
 	return nil
 }
 
+func (f *FakeVZInfo) GetPodLogs(string) (string, error) {
+	return "fake log", nil
+}
+
 type testState struct {
 	vzServer *FakeVZConnServer
 	vzClient vzconnpb.VZConnServiceClient

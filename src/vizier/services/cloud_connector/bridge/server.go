@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -14,6 +15,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 
 	uuid "github.com/satori/go.uuid"
@@ -25,6 +27,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
+	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 const (
@@ -34,6 +37,7 @@ const (
 	NATSBackoffMultipler = 2
 	// NATSBackoffMaxElapsedTime is the maximum elapsed time that we should retry.
 	NATSBackoffMaxElapsedTime = 10 * time.Minute
+	logChunkSize              = 500
 )
 
 // UpdaterJobYAML is the YAML that should be applied for the updater job.
@@ -123,6 +127,7 @@ type VizierInfo interface {
 	GetJob(string) (*batchv1.Job, error)
 	GetClusterUID() (string, error)
 	UpdateClusterID(string) error
+	GetPodLogs(string) (string, error)
 }
 
 // VizierHealthChecker is the interface that gets information on health of a Vizier.
@@ -427,6 +432,86 @@ func (s *Bridge) handleUpdateMessage(msg *types.Any) error {
 	return nil
 }
 
+func (s *Bridge) sendPTStatusMessage(reqID string, code codes.Code, message string) {
+	topic := fmt.Sprintf("v2c.reply-%s", reqID)
+
+	resp := &cvmsgspb.V2CAPIStreamResponse{
+		RequestID: reqID,
+		Msg: &cvmsgspb.V2CAPIStreamResponse_Status{
+			Status: &vizierpb.Status{
+				Code:    int32(code),
+				Message: message,
+			},
+		},
+	}
+	// Wrap message in V2C message.
+	reqAnyMsg, err := types.MarshalAny(resp)
+	if err != nil {
+		log.WithError(err).Info("Failed to marshal any")
+		return
+	}
+	v2cMsg := cvmsgspb.V2CMessage{
+		Msg: reqAnyMsg,
+	}
+	b, err := v2cMsg.Marshal()
+	if err != nil {
+		log.WithError(err).Info("Failed to marshal to bytes")
+		return
+	}
+
+	err = s.nc.Publish(topic, b)
+	if err != nil {
+		log.WithError(err).Error("Failed to publish PTStatus Message")
+	}
+}
+
+func (s *Bridge) handleDebugLogRequest(msg *cvmsgspb.C2VAPIStreamRequest) error {
+	reqID := msg.RequestID
+	topic := fmt.Sprintf("v2c.reply-%s", reqID)
+	debugReq := msg.GetDebugLogReq()
+
+	logs, err := s.vzInfo.GetPodLogs(debugReq.PodName)
+	if err != nil {
+		s.sendPTStatusMessage(reqID, codes.NotFound, err.Error())
+		return err
+	}
+
+	i := 0
+	for i*logChunkSize <= len(logs) {
+		resp := &cvmsgspb.V2CAPIStreamResponse{
+			RequestID: reqID,
+			Msg: &cvmsgspb.V2CAPIStreamResponse_DebugLogResp{
+				DebugLogResp: &vizierpb.DebugLogResponse{
+					Data: logs[i*logChunkSize : int(math.Min(float64(len(logs)), float64((i+1)*logChunkSize)))],
+				},
+			},
+		}
+		// Wrap message in V2C message.
+		reqAnyMsg, err := types.MarshalAny(resp)
+		if err != nil {
+			log.WithError(err).Info("Failed to marshal any")
+			return err
+		}
+		v2cMsg := cvmsgspb.V2CMessage{
+			Msg: reqAnyMsg,
+		}
+		b, err := v2cMsg.Marshal()
+		if err != nil {
+			log.WithError(err).Info("Failed to marshal to bytes")
+			return err
+		}
+
+		err = s.nc.Publish(topic, b)
+		if err != nil {
+			return err
+		}
+		i++
+	}
+
+	s.sendPTStatusMessage(reqID, codes.OK, "")
+	return nil
+}
+
 func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridgeClient) error {
 	addr, _, err := s.vzInfo.GetAddress()
 	if err != nil {
@@ -702,6 +787,24 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 					log.WithError(err).Error("Failed to launch vizier update job")
 				}
 				continue
+			}
+
+			if bridgeMsg.Topic == "VizierPassthroughRequest" {
+				pb := &cvmsgspb.C2VAPIStreamRequest{}
+				err := types.UnmarshalAny(bridgeMsg.Msg, pb)
+				if err != nil {
+					log.WithError(err).Error("Could not unmarshal c2v stream req message")
+					return err
+				}
+				switch pb.Msg.(type) {
+				case *cvmsgspb.C2VAPIStreamRequest_DebugLogReq:
+					err := s.handleDebugLogRequest(pb)
+					if err != nil {
+						log.WithError(err).Error("Could not handle debug log request")
+					}
+					continue
+				default:
+				}
 			}
 
 			topic := messagebus.C2VTopic(bridgeMsg.Topic)

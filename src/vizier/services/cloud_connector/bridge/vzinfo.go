@@ -198,6 +198,16 @@ func nanosToTimestampProto(nanos int64) *types.Timestamp {
 	}
 }
 
+// GetPodLogs gets the k8s logs for the pod with the given name.
+func (v *K8sVizierInfo) GetPodLogs(podName string) (string, error) {
+	resp := v.clientset.CoreV1().Pods(plNamespace).GetLogs(podName, &corev1.PodLogOptions{}).Do(context.Background())
+	rawResp, err := resp.Raw()
+	if err != nil {
+		return "", err
+	}
+	return string(rawResp), nil
+}
+
 // UpdateK8sState gets the relevant state of the cluster, such as pod statuses, at the current moment in time.
 func (v *K8sVizierInfo) UpdateK8sState() {
 	nodesList, err := v.clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})

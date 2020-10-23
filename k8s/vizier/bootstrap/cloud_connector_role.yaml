@@ -19,6 +19,7 @@ rules:
   - namespaces
   - jobs
   - events
+  - pods/log
   verbs:
   - "*"
 - apiGroups:
