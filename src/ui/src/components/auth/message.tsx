@@ -1,11 +1,8 @@
 import * as React from 'react';
 import {
-  Box,
-  Container, createStyles, fade, Theme, Typography, withStyles, WithStyles,
+  createStyles, fade, Theme, Typography, withStyles, WithStyles,
 } from '@material-ui/core';
-import Grid from '@material-ui/core/Grid';
-import clsx from 'clsx';
-import * as pixienautSVG from '../../../assets/images/pixienaut.svg';
+import { PixienautBox } from 'components/auth/pixienaut-box';
 import * as authErrorSVG from './auth-error.svg';
 import CodeRenderer from '../code-renderer/code-renderer';
 
@@ -19,22 +16,20 @@ const styles = ({ palette, spacing }: Theme) => createStyles({
     boxShadow: `0px ${spacing(0.25)}px ${spacing(2)}px rgba(0, 0, 0, 0.6)`,
     borderRadius: spacing(3),
   },
-  centerText: {
-    textAlign: 'center',
-  },
-  centerContent: {
-    display: 'flex',
-    justifyContent: 'center',
-  },
   title: {
     color: palette.foreground.two,
   },
   message: {
     color: palette.foreground.one,
-    paddingTop: spacing(2),
+    marginTop: spacing(5.5),
+    marginBottom: spacing(4),
   },
   errorDetails: {
     color: palette.foreground.grey4,
+    marginTop: spacing(4),
+  },
+  extraPadding: {
+    height: spacing(6),
   },
 });
 
@@ -55,45 +50,26 @@ export const MessageBox = withStyles(styles)((props: MessageBoxProps) => {
     code,
     classes,
   } = props;
+  const errorImage = <img src={authErrorSVG} alt='error' />;
   return (
-    <Box maxWidth={0.9} maxHeight={500} className={classes.root}>
-      <Container maxWidth='sm'>
-        <Grid container justify='center' direction='column' spacing={5}>
-          <Grid item className={classes.centerContent}>
-            {error
-              ? <img src={authErrorSVG} alt='error' />
-              : <img src={pixienautSVG} alt='pixienaut' />}
-          </Grid>
-          <Grid item className={classes.centerContent}>
-            <Typography variant='h1' className={classes.title}>
-              {title}
-            </Typography>
-          </Grid>
-          <Grid container justify='center' direction='column' spacing={2}>
-            <Grid item className={clsx(classes.centerContent, classes.centerText)}>
-              <Typography variant='h6' className={classes.message}>
-                {message}
-              </Typography>
-            </Grid>
-            {code
-            && (
-              <Grid item className={classes.centerContent}>
-                <CodeRenderer
-                  code={code}
-                />
-              </Grid>
-            )}
-            {error && errorDetails
-            && (
-              <Grid item className={classes.centerContent}>
-                <Typography variant='body1' className={classes.errorDetails}>
-                  {`Details: ${errorDetails}`}
-                </Typography>
-              </Grid>
-            )}
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
+    <PixienautBox overrideImage={error ? errorImage : undefined}>
+      <Typography variant='h1' className={classes.title}>
+        {title}
+      </Typography>
+      <Typography variant='h6' className={classes.message}>
+        {message}
+      </Typography>
+      {code && (
+        <CodeRenderer
+          code={code}
+        />
+      )}
+      {error && errorDetails && (
+        <Typography variant='body1' className={classes.errorDetails}>
+          {`Details: ${errorDetails}`}
+        </Typography>
+      )}
+      <div className={classes.extraPadding} />
+    </PixienautBox>
   );
 });

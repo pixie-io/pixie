@@ -4,7 +4,6 @@ import { AUTH0_CLIENT_ID, AUTH0_DOMAIN } from 'containers/constants';
 import * as QueryString from 'querystring';
 import Axios, { AxiosError } from 'axios';
 import * as RedirectUtils from 'utils/redirect-utils';
-import { Grid } from '@material-ui/core';
 import { isValidAnalytics } from 'utils/env';
 import { MessageBox } from 'components/auth/message';
 import { BasePage } from './base';
@@ -255,18 +254,8 @@ export const AuthCallbackPage = () => {
   const loading = !config || config.loading;
   return (
     <BasePage>
-      <Grid
-        container
-        direction='row'
-        spacing={0}
-        justify='space-evenly'
-        alignItems='center'
-      >
-        <Grid item>
-          { loading && renderLoadingMessage() }
-          { !loading && (config.err ? renderError() : renderMessage())}
-        </Grid>
-      </Grid>
+      { loading && renderLoadingMessage() }
+      { !loading && (config.err ? renderError() : renderMessage())}
     </BasePage>
   );
 };

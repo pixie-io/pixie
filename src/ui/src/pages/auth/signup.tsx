@@ -1,33 +1,40 @@
-import { Grid, Hidden } from '@material-ui/core';
+import {
+  createStyles, Theme, WithStyles, withStyles,
+} from '@material-ui/core';
 import * as React from 'react';
+import { SignupMarcom } from 'components/auth/signup-marcom';
+import { AuthBox } from 'components/auth/auth-box';
 import { BasePage } from './base';
-import { SignupMarcom } from '../../components/auth/signup-marcom';
-import { AuthBox } from '../../components/auth/auth-box';
 import { auth0SignupRequest } from './utils';
 
-export const SignupPage = () => (
-  <>
-    <BasePage>
-      <Grid
-        container
-        direction='row'
-        spacing={0}
-        justify='space-evenly'
-        alignItems='center'
-      >
-        <Hidden smDown>
-          <Grid item xs={5}>
-            <SignupMarcom />
-          </Grid>
-        </Hidden>
-        <Grid item>
-          <AuthBox
-            variant='signup'
-            toggleURL={`/auth/login${window.location.search}`}
-            onPrimaryButtonClick={auth0SignupRequest}
-          />
-        </Grid>
-      </Grid>
-    </BasePage>
-  </>
-);
+const styles = ({ breakpoints }: Theme) => createStyles({
+  root: {
+    width: '100%',
+    display: 'flex',
+    flexFlow: 'row nowrap',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+  },
+  marketingBlurb: {
+    [breakpoints.down('sm')]: {
+      display: 'none',
+    },
+  },
+});
+
+export const SignupPage = withStyles(styles)(({ classes }: WithStyles<typeof styles>) => (
+  <BasePage>
+    <div className={classes.root}>
+      <div className={classes.marketingBlurb}>
+        <SignupMarcom />
+      </div>
+      <div>
+        <AuthBox
+          variant='signup'
+          toggleURL={`/auth/login${window.location.search}`}
+          onPrimaryButtonClick={auth0SignupRequest}
+        />
+      </div>
+    </div>
+  </BasePage>
+));
