@@ -7,6 +7,10 @@ spec:
   selector:
     matchLabels:
       name: vizier-pem
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 20
   template:
     metadata:
       labels:
@@ -87,7 +91,7 @@ spec:
       hostPID: true
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
-      terminationGracePeriodSeconds: 30
+      terminationGracePeriodSeconds: 10
       volumes:
       - name: host-root
         hostPath:

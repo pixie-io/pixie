@@ -66,6 +66,16 @@ spec:
             scheme: HTTPS
             path: /healthz
             port: 50400
+          initialDelaySeconds: 120
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 50400
+          initialDelaySeconds: 30
+          failureThreshold: 5
+          periodSeconds: 10
       imagePullSecrets:
       - name: pl-image-secret
       volumes:
