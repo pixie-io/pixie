@@ -17,7 +17,7 @@ ConnectionStats::AggKey BuildAggKey(const upid_t& upid, const traffic_class_t& t
       // TODO(yzhao): Remote address might not be resolved yet. That causes imprecise stats.
       // Add code in address resolution to update stats after resolution is done.
       .remote_addr = remote_endpoint.AddrStr(),
-      // Set port to 0 if this event if from a server process.
+      // Set port to 0 if this event is from a server process.
       // This avoids creating excessive amount of records from changing ports of K8s services.
       .remote_port = traffic_class.role == kRoleServer ? 0 : remote_endpoint.port(),
   };
@@ -25,30 +25,32 @@ ConnectionStats::AggKey BuildAggKey(const upid_t& upid, const traffic_class_t& t
 
 }  // namespace
 
+void ConnectionStats::AddConnOpenEvent(const ConnectionTracker& tracker) {
+  const conn_id_t& conn_id = tracker.conn_id();
+  const traffic_class_t& tcls = tracker.traffic_class();
+  const SockAddr& remote_endpoint = tracker.remote_endpoint();
+  const bool is_open = true;
+
+  RecordConn(conn_id, tcls, remote_endpoint, is_open);
+}
+
 void ConnectionStats::AddConnCloseEvent(const ConnectionTracker& tracker) {
   const conn_id_t& conn_id = tracker.conn_id();
   const traffic_class_t& tcls = tracker.traffic_class();
+  const auto& remote_endpoint = tracker.remote_endpoint();
+  const bool is_open = false;
 
-  RecordConn(conn_id, tcls, tracker.remote_endpoint(), /*is_open*/ false);
+  RecordConn(conn_id, tcls, remote_endpoint, is_open);
 }
 
 void ConnectionStats::AddDataEvent(const ConnectionTracker& tracker, const SocketDataEvent& event) {
-  // Do not account this data event if the ConnectionTracker is disabled.
-  if (tracker.state() == ConnectionTracker::State::kDisabled) {
-    return;
-  }
-
-  // Save typing.
-  const conn_id_t& conn_id = event.attr.conn_id;
   const upid_t& upid = event.attr.conn_id.upid;
   const traffic_class_t& tcls = tracker.traffic_class();
   const TrafficDirection dir = event.attr.direction;
+  const SockAddr& remote_endpoint = tracker.remote_endpoint();
   const size_t size = event.attr.msg_size;
 
-  // Traffic class is known only after receiving at least one data event.
-  RecordConn(conn_id, tcls, tracker.remote_endpoint(), /*is_open*/ true);
-
-  RecordData(upid, tcls, dir, tracker.remote_endpoint(), size);
+  RecordData(upid, tcls, dir, remote_endpoint, size);
 }
 
 void ConnectionStats::RecordConn(const struct conn_id_t& conn_id,

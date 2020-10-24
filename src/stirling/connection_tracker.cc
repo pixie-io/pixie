@@ -84,6 +84,10 @@ void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   CONN_TRACE(1) << absl::Substitute("conn_open af=$0 addr=$1",
                                     magic_enum::enum_name(open_info_.remote_addr.family),
                                     open_info_.remote_addr.AddrStr());
+
+  if (ShouldExportToConnStats()) {
+    ExportInitialConnStats();
+  }
 }
 
 void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {
@@ -111,11 +115,9 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   SetTrafficClass(event->attr.traffic_class);
 
   // Only export metric to conn_stats_ after remote_endpoint has been resolved.
-  if (ReadyToExportDataStats()) {
-    if (conn_stats_ != nullptr) {
-      // Export stats to ConnectionStats object.
-      conn_stats_->AddDataEvent(*this, *event);
-    }
+  if (ShouldExportToConnStats()) {
+    // Export stats to ConnectionStats object.
+    conn_stats_->AddDataEvent(*this, *event);
   }
 
   UpdateDataStats(*event);
@@ -505,7 +507,9 @@ DataStream* ConnectionTracker::resp_data() {
 }
 
 void ConnectionTracker::MarkForDeath(int32_t countdown) {
-  ExportConnCloseStats();
+  if (ShouldExportToConnStats()) {
+    conn_stats_->AddConnCloseEvent(*this);
+  }
 
   // We received the close event.
   // Now give up to some more TransferData calls to receive trailing data events.
@@ -622,37 +626,22 @@ void ConnectionTracker::UpdateDataStats(const SocketDataEvent& event) {
   }
 }
 
-bool ConnectionTracker::ReadyToExportDataStats() const {
-  const bool conn_resolution_finished = remote_endpoint().family == SockAddrFamily::kIPv4 ||
-                                        remote_endpoint().family == SockAddrFamily::kIPv6 ||
-                                        conn_resolution_failed_;
-  return conn_resolution_finished;
-}
-
-void ConnectionTracker::ExportDataStats() {
-  if (conn_stats_ == nullptr || stats_.exported) {
-    return;
-  }
-
-  // If there is no cached stats, don't do anything. This is because, if there is data events
-  // received later, ConnectionStats::AddDataEvent() will record a conn_open event anyway.
-  if (stats_.Get(Stats::Key::kBytesSent) > 0 || stats_.Get(Stats::Key::kBytesRecv) > 0) {
-    conn_stats_->RecordConn(conn_id_, traffic_class_, remote_endpoint(), /*is_open*/ true);
-    conn_stats_->RecordData(conn_id_.upid, traffic_class_, kEgress, remote_endpoint(),
-                            stats_.Get(Stats::Key::kBytesSent));
-    conn_stats_->RecordData(conn_id_.upid, traffic_class_, kIngress, remote_endpoint(),
-                            stats_.Get(Stats::Key::kBytesRecv));
-  }
-
-  // Cached stats are only exported once. Following data states are exported in AddDataEvent().
-  stats_.exported = true;
-}
-
-void ConnectionTracker::ExportConnCloseStats() {
+bool ConnectionTracker::ShouldExportToConnStats() const {
   if (conn_stats_ == nullptr) {
-    return;
+    return false;
   }
-  conn_stats_->AddConnCloseEvent(*this);
+
+  return remote_endpoint().family == SockAddrFamily::kIPv4 ||
+         remote_endpoint().family == SockAddrFamily::kIPv6;
+}
+
+void ConnectionTracker::ExportInitialConnStats() {
+  conn_stats_->AddConnOpenEvent(*this);
+
+  conn_stats_->RecordData(conn_id_.upid, traffic_class_, kEgress, remote_endpoint(),
+                          stats_.Get(Stats::Key::kBytesSent));
+  conn_stats_->RecordData(conn_id_.upid, traffic_class_, kIngress, remote_endpoint(),
+                          stats_.Get(Stats::Key::kBytesRecv));
 }
 
 void ConnectionTracker::IterationPreTick(const std::vector<CIDRBlock>& cluster_cidrs,
@@ -671,11 +660,10 @@ void ConnectionTracker::IterationPreTick(const std::vector<CIDRBlock>& cluster_c
   // Attempt to infer the connection information, to populate remote_addr.
   if (open_info_.remote_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr != nullptr) {
     InferConnInfo(proc_parser, socket_info_mgr);
-  }
-
-  // If remote_endpoint resolution is done (either succeeded or failed), export cached data.
-  if (ReadyToExportDataStats()) {
-    ExportDataStats();
+    if (open_info_.remote_addr.family != SockAddrFamily::kUnspecified &&
+        ShouldExportToConnStats()) {
+      ExportInitialConnStats();
+    }
   }
 
   UpdateState(cluster_cidrs);

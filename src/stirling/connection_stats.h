@@ -77,16 +77,17 @@ class ConnectionStats {
 
   auto& mutable_agg_stats() { return agg_stats_; }
 
-  // AddConnOpenEvent() cannot be added, because when conn_event_t is received, its
-  // traffic_class is unknown (as there is no actual data being examined).
+  void AddConnOpenEvent(const ConnectionTracker& tracker);
   void AddConnCloseEvent(const ConnectionTracker& tracker);
   void AddDataEvent(const ConnectionTracker& tracker, const SocketDataEvent& event);
-  void RecordConn(const struct conn_id_t& conn_id, const struct traffic_class_t& traffic_class,
-                  const SockAddr& remote_endpoint, bool is_open);
+
   void RecordData(const struct upid_t& upid, const struct traffic_class_t& traffic_class,
                   TrafficDirection direction, const SockAddr& remote_endpoint, size_t size);
 
  private:
+  void RecordConn(const struct conn_id_t& conn_id, const struct traffic_class_t& traffic_class,
+                  const SockAddr& remote_endpoint, bool is_open);
+
   absl::flat_hash_map<AggKey, Stats> agg_stats_;
   absl::flat_hash_set<struct conn_id_t> known_conns_;
 };

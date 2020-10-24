@@ -5,6 +5,7 @@
 #include <absl/container/flat_hash_map.h>
 
 #include "src/common/testing/testing.h"
+#include "src/stirling/testing/event_generator.h"
 
 namespace pl {
 namespace stirling {
@@ -41,7 +42,13 @@ TEST(HashTest, CanBeUsedInFlatHashMap) {
 
 class ConnectionStatsTest : public ::testing::Test {
  protected:
+  ConnectionStatsTest() : event_gen_(&mock_clock_) { tracker_.set_conn_stats(&conn_stats_); }
+
   ConnectionStats conn_stats_;
+  ConnectionTracker tracker_;
+
+  testing::MockClock mock_clock_;
+  testing::EventGenerator event_gen_;
 };
 
 auto AggKeyIs(int tgid, std::string_view remote_addr) {
@@ -58,86 +65,87 @@ auto StatsIs(int open, int close, int sent, int recv) {
 
 // Tests that aggregated records for client side events are correctly put into ConnectionStats.
 TEST_F(ConnectionStatsTest, ClientSizeAggregationRecord) {
-  struct conn_id_t conn_id = {
-      .upid = {.tgid = 1, .start_time_ticks = 2},
-      .fd = 2,
-      .tsid = 3,
-  };
-
-  // GCC requires initialize all fields in designated initializer expression.
-  // So we use the field initialization.
-  struct conn_event_t event = {};
-  event.conn_id = conn_id;
-  auto* sockaddr = reinterpret_cast<struct sockaddr_in*>(&event.addr);
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  auto* sockaddr = reinterpret_cast<struct sockaddr_in*>(&conn.open.addr);
   sockaddr->sin_family = AF_INET;
-  sockaddr->sin_port = 12345;
-  // 1.1.1.1
-  sockaddr->sin_addr.s_addr = 0x01010101;
+  sockaddr->sin_port = 54321;
+  sockaddr->sin_addr.s_addr = 0x01010101;  // 1.1.1.1
 
-  struct socket_control_event_t ctrl_event = {};
-  ctrl_event.type = kConnOpen, ctrl_event.open = event;
+  auto frame1 = event_gen_.InitSendEvent<kProtocolHTTP>("abc");
+  auto frame2 = event_gen_.InitSendEvent<kProtocolHTTP>("def");
+  auto frame3 = event_gen_.InitRecvEvent<kProtocolHTTP>("1234");
+  auto frame4 = event_gen_.InitRecvEvent<kProtocolHTTP>("5");
+  auto frame5 = event_gen_.InitRecvEvent<kProtocolHTTP>("6789");
 
-  // This setup the remote address and port, which is then used by ConnectionStats::AddDataEvent().
-  ConnectionTracker tracker;
-  tracker.AddControlEvent(ctrl_event);
+  struct socket_control_event_t close_event = event_gen_.InitClose();
 
-  SocketDataEvent data_event;
-  data_event.attr = {};
-  data_event.attr.conn_id = conn_id;
-  data_event.attr.traffic_class.protocol = kProtocolHTTP;
-  data_event.attr.traffic_class.role = kRoleClient;
-  data_event.attr.direction = kEgress;
-  data_event.attr.msg_size = 12345;
-
-  conn_stats_.AddDataEvent(tracker, data_event);
-  conn_stats_.AddDataEvent(tracker, data_event);
-
-  data_event.attr.direction = kIngress;
-  conn_stats_.AddDataEvent(tracker, data_event);
-  conn_stats_.AddDataEvent(tracker, data_event);
+  // This sets up the remote address and port.
+  tracker_.AddControlEvent(conn);
 
   EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(1, "1.1.1.1"), StatsIs(1, 0, 24690, 24690))));
+              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 0, 0))));
 
-  auto data_event_cpy = std::make_unique<SocketDataEvent>(data_event);
-  // This changes tracker's traffic class to be consistent with conn_stats_.
-  tracker.AddDataEvent(std::move(data_event_cpy));
+  tracker_.AddDataEvent(std::move(frame1));
 
-  conn_stats_.AddConnCloseEvent(tracker);
-  // Tests that after receiving conn close event for a connection, another same close event wont
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 3, 0))));
+
+  tracker_.AddDataEvent(std::move(frame2));
+  tracker_.AddDataEvent(std::move(frame3));
+  tracker_.AddDataEvent(std::move(frame4));
+
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 6, 5))));
+
+  tracker_.AddDataEvent(std::move(frame5));
+
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 6, 9))));
+
+  tracker_.AddControlEvent(close_event);
+
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 1, 6, 9))));
+
+  // Tests that after receiving conn close event for a connection, another same close event won't
   // increment the connection.
+  tracker_.AddControlEvent(close_event);
   EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(1, "1.1.1.1"), StatsIs(1, 1, 24690, 24690))));
-
-  conn_stats_.AddConnCloseEvent(tracker);
-  // The conn_close is not incremented.
-  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(1, "1.1.1.1"), StatsIs(1, 1, 24690, 24690))));
+              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 1, 6, 9))));
 }
 
-// Tests that disabled ConnectionTracker causes data event being ignored.
-TEST_F(ConnectionStatsTest, DisabledConnectionTracker) {
-  struct conn_id_t conn_id = {
-      .upid = {.tgid = 1, .start_time_ticks = 2},
-      .fd = 2,
-      .tsid = 3,
-  };
+// Tests that any connection trackers with no remote endpoint do not report conn stats events.
+TEST_F(ConnectionStatsTest, NoEventsIfNoRemoteAddr) {
+  auto frame1 = event_gen_.InitSendEvent<kProtocolHTTP>("foo");
 
-  // This setup the remote address and port, which is then used by ConnectionStats::AddDataEvent().
-  ConnectionTracker tracker;
-  tracker.Disable("test");
-
-  SocketDataEvent data_event;
-  data_event.attr = {};
-  data_event.attr.conn_id = conn_id;
-  data_event.attr.traffic_class.protocol = kProtocolHTTP;
-  data_event.attr.traffic_class.role = kRoleClient;
-  data_event.attr.direction = kEgress;
-  data_event.attr.msg_size = 12345;
-
-  conn_stats_.AddDataEvent(tracker, data_event);
+  tracker_.AddDataEvent(std::move(frame1));
 
   EXPECT_THAT(conn_stats_.mutable_agg_stats(), IsEmpty());
+}
+
+// Tests that disabled ConnectionTracker still reports data.
+TEST_F(ConnectionStatsTest, DisabledConnectionTracker) {
+  struct socket_control_event_t conn = event_gen_.InitConn();
+  auto* sockaddr = reinterpret_cast<struct sockaddr_in*>(&conn.open.addr);
+  sockaddr->sin_family = AF_INET;
+  sockaddr->sin_port = 54321;
+  sockaddr->sin_addr.s_addr = 0x01010101;  // 1.1.1.1
+
+  auto frame1 = event_gen_.InitSendEvent<kProtocolHTTP>("abc");
+
+  //
+  // Main test sequence.
+  //
+
+  // This sets up the remote address and port.
+  tracker_.AddControlEvent(conn);
+
+  tracker_.Disable("test");
+
+  tracker_.AddDataEvent(std::move(frame1));
+
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 3, 0))));
 }
 
 }  // namespace stirling

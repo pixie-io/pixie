@@ -92,7 +92,6 @@ class ConnectionTracker {
     uint64_t Get(Key key) const { return counts[static_cast<int>(key)]; }
 
     std::vector<uint64_t> counts = std::vector<uint64_t>(magic_enum::enum_count<Key>(), 0);
-    bool exported = false;
   };
 
   // State values change monotonically from lower to higher values; and cannot change reversely.
@@ -517,9 +516,8 @@ class ConnectionTracker {
   void UpdateState(const std::vector<CIDRBlock>& cluster_cidrs);
 
   void UpdateDataStats(const SocketDataEvent& event);
-  bool ReadyToExportDataStats() const;
-  void ExportDataStats();
-  void ExportConnCloseStats();
+  bool ShouldExportToConnStats() const;
+  void ExportInitialConnStats();
 
   template <typename TFrameType>
   void DataStreamsToFrames() {

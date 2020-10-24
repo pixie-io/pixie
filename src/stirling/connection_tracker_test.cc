@@ -694,7 +694,8 @@ TEST_P(ConnectionTrackerStatsTest, ConnOpenDataCloseSequence) {
   tracker_.AddControlEvent(open_event);
 
   // No stats pushed for conn_open.
-  EXPECT_THAT(conn_stats_.mutable_agg_stats(), IsEmpty());
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              UnorderedElementsAre(Pair(AggKeyIs(12345, "0.0.0.0"), StatsIs(1, 0, 0, 0))));
 
   tracker_.AddDataEvent(std::move(req_frame0));
 

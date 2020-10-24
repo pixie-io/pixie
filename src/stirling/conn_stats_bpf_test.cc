@@ -21,6 +21,13 @@ using ::testing::UnorderedElementsAre;
 class ConnStatsBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ true> {
  protected:
   DataTable data_table_{kConnStatsTable};
+
+  static constexpr int kUPIDIdx = conn_stats_idx::kUPID;
+  static constexpr int kConnOpenIdx = conn_stats_idx::kConnOpen;
+  static constexpr int kConnCloseIdx = conn_stats_idx::kConnClose;
+  static constexpr int kBytesSentIdx = conn_stats_idx::kBytesSent;
+  static constexpr int kBytesRecvIdx = conn_stats_idx::kBytesRecv;
+  static constexpr int kAddrFamilyIdx = conn_stats_idx::kAddrFamily;
 };
 
 TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
@@ -31,65 +38,44 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
   script.push_back({{"req2"}, {"resp2"}});
   cs.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script);
 
-  {
-    DataTable data_table(kHTTPTable);
-    // Try to add 3 transfer iteration to go above the threshold.
-    source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
-    source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
-    source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
-  }
-
   source_->TransferData(ctx_.get(), SocketTraceConnector::kConnStatsTableNum, &data_table_);
   std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
-  PrintRecordBatch("test", kConnStatsTable.ToProto(), record_batch);
+  types::ColumnWrapperRecordBatch rb = tablets[0].records;
+  PrintRecordBatch("test", kConnStatsTable.ToProto(), rb);
 
+  // Check server-side stats.
   {
-    auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, cs.ServerPID());
+    auto indices = FindRecordIdxMatchesPID(rb, kUPIDIdx, cs.ServerPID());
     ASSERT_THAT(indices, SizeIs(1));
 
-    int conn_open =
-        AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kConnOpen, indices[0])
-            .val;
-    int conn_close =
-        AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kConnClose, indices[0])
-            .val;
-    int bytes_sent =
-        AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kBytesSent, indices[0])
-            .val;
-    int bytes_rcvd =
-        AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kBytesRecv, indices[0])
-            .val;
-    int addr_family =
-        AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kAddrFamily, indices[0])
-            .val;
+    int conn_open = AccessRecordBatch<types::Int64Value>(rb, kConnOpenIdx, indices[0]).val;
+    int conn_close = AccessRecordBatch<types::Int64Value>(rb, kConnCloseIdx, indices[0]).val;
+    int bytes_sent = AccessRecordBatch<types::Int64Value>(rb, kBytesSentIdx, indices[0]).val;
+    int bytes_rcvd = AccessRecordBatch<types::Int64Value>(rb, kBytesRecvIdx, indices[0]).val;
+    int addr_family = AccessRecordBatch<types::Int64Value>(rb, kAddrFamilyIdx, indices[0]).val;
+
     EXPECT_THAT(conn_open, 1);
-    // TODO(yzhao): This should be 1. This fails because:
-    // * SocketTraceConnector reads perf buffers in the order:
-    //   "socket_control_events" "socket_data_events".
-    // * conn_event_t is completely ignored, because its traffic_class cannot be resolved until
-    // socket_data_event_t is received.
-    // * When close_event_t is received, it is also ignored, as the conn_event_t is ignored,
-    // and the socket_data_event_t has not arrived yet,
-    EXPECT_THAT(conn_close, 0);
+    EXPECT_THAT(conn_close, 1);
     EXPECT_THAT(bytes_sent, 10);
     EXPECT_THAT(bytes_rcvd, 8);
     EXPECT_THAT(addr_family, static_cast<int>(SockAddrFamily::kIPv4));
   }
-  // Client process is not discovered by ConnectorContext (StandaloneContext) because it is
-  // short-lived, and SocketTraceConnector does not export connection stats of processes that are
-  // not reported, so client-side connection stats won't be exposed.
 
+  // Check client-side stats.
   {
-    // Server code runs in the same process as this test, so the records cannot be removed by
-    // non-existent upids. Here they are not exported because their values are identical to
-    // the previously-exported ones.
-    DataTable data_table{kConnStatsTable};
-    source_->TransferData(ctx_.get(), SocketTraceConnector::kConnStatsTableNum, &data_table_);
-    std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
-    // No changes in the data, so the records are not exported.
-    ASSERT_TRUE(tablets.empty());
+    auto indices = FindRecordIdxMatchesPID(rb, kUPIDIdx, cs.ClientPID());
+    ASSERT_THAT(indices, SizeIs(1));
+
+    int conn_open = AccessRecordBatch<types::Int64Value>(rb, kConnOpenIdx, indices[0]).val;
+    int conn_close = AccessRecordBatch<types::Int64Value>(rb, kConnCloseIdx, indices[0]).val;
+    int bytes_sent = AccessRecordBatch<types::Int64Value>(rb, kBytesSentIdx, indices[0]).val;
+    int bytes_rcvd = AccessRecordBatch<types::Int64Value>(rb, kBytesRecvIdx, indices[0]).val;
+
+    EXPECT_THAT(conn_open, 1);
+    EXPECT_THAT(conn_close, 1);
+    EXPECT_THAT(bytes_sent, 8);
+    EXPECT_THAT(bytes_rcvd, 10);
   }
 }
 
@@ -138,7 +124,7 @@ TEST_F(ConnStatsMidConnBPFTest, DidNotSeeConnEstablishment) {
   if (!tablets.empty()) {
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
-    auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, getpid());
+    auto indices = FindRecordIdxMatchesPID(record_batch, conn_stats_idx::kUPID, getpid());
     ASSERT_THAT(indices, IsEmpty());
   }
 }
