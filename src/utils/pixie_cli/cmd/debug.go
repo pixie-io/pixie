@@ -17,6 +17,8 @@ import (
 func init() {
 	DebugCmd.AddCommand(DebugLogCmd)
 	DebugCmd.PersistentFlags().StringP("cluster", "c", "", "Run only on selected cluster")
+
+	DebugLogCmd.Flags().BoolP("previous", "p", false, "Show log from previous pod instead.")
 }
 
 // DebugCmd has internal debug functionality.
@@ -60,7 +62,8 @@ var DebugLogCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		resp, err := conn.DebugLogRequest(context.Background(), podName)
+		prev := viper.GetBool("previous")
+		resp, err := conn.DebugLogRequest(context.Background(), podName, prev)
 		if err != nil {
 			cliLog.WithError(err).Error("Logging failed")
 			os.Exit(1)
