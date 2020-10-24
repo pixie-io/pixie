@@ -31,12 +31,15 @@ emph() {
 
 SERVER_PID=""
 
+LOCAL_STORAGE_PATH="px-custom-core-bundle-path"
+BUNDLE_FILE='bundle-core.json'
+
 cleanup() {
   if [[ -n "${SERVER_PID}" ]]; then
     kill "${SERVER_PID}"
   fi
   emph "Cleanup"
-  echo "Run ${tty_green}localStorage.clear('px-custom-bundle-path')${tty_reset}"
+  echo "Run ${tty_green}localStorage.clear('${LOCAL_STORAGE_PATH}')${tty_reset}"
 }
 
 python3 cors_http_server.py &
@@ -46,9 +49,9 @@ trap 'cleanup' EXIT
 
 emph "Running dev server for pxl_scripts"
 echo "Open chrome console and add: "\
-     "${tty_green}localStorage.setItem('px-custom-bundle-path',"\
-     "'http://127.0.0.1:8000/bundle.json')${tty_reset}"
+     "${tty_green}localStorage.setItem('${LOCAL_STORAGE_PATH}',"\
+     "'http://127.0.0.1:8000/${BUNDLE_FILE}')${tty_reset}"
 
 while sleep 1; do
-    make -s bundle.json
+    make -s ${BUNDLE_FILE}
 done
