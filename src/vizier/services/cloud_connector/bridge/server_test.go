@@ -190,7 +190,7 @@ func (f *FakeVZInfo) UpdateClusterID(string) error {
 	return nil
 }
 
-func (f *FakeVZInfo) GetPodLogs(string) (string, error) {
+func (f *FakeVZInfo) GetPodLogs(string, bool) (string, error) {
 	return "fake log", nil
 }
 
