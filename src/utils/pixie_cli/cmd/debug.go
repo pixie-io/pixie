@@ -17,7 +17,6 @@ import (
 func init() {
 	DebugCmd.AddCommand(DebugLogCmd)
 	DebugCmd.PersistentFlags().StringP("cluster", "c", "", "Run only on selected cluster")
-
 }
 
 // DebugCmd has internal debug functionality.
@@ -32,13 +31,12 @@ var DebugLogCmd = &cobra.Command{
 	Use:   "log",
 	Short: "Show log for vizier pods",
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) != 2 {
+		if len(args) != 1 {
 			cliLog.Error("Must supply a single argument pod name")
 			os.Exit(1)
 		}
 
-		podName := args[1]
-		fmt.Printf("Pod Name: %s\n", podName)
+		podName := args[0]
 		var err error
 
 		cloudAddr := viper.GetString("cloud_addr")
@@ -52,6 +50,10 @@ var DebugLogCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		}
+
+		fmt.Printf("Pod Name: %s\n", podName)
+		fmt.Printf("Cluster ID : %s\n", clusterID.String())
+
 		conn, err := vizier.ConnectionToVizierByID(cloudAddr, clusterID)
 		if err != nil {
 			cliLog.WithError(err).Error("Could not connect to vizier")
@@ -77,4 +79,3 @@ var DebugLogCmd = &cobra.Command{
 		}
 	},
 }
-
