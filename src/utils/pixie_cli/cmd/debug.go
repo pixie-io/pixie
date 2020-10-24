@@ -62,7 +62,7 @@ var DebugLogCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		prev := viper.GetBool("previous")
+		prev, _ := cmd.Flags().GetBool("previous")
 		resp, err := conn.DebugLogRequest(context.Background(), podName, prev)
 		if err != nil {
 			cliLog.WithError(err).Error("Logging failed")
