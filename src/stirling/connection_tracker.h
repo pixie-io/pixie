@@ -28,10 +28,12 @@
 #include "src/stirling/protocols/pgsql/stitcher.h"
 
 DECLARE_bool(enable_unix_domain_sockets);
+DECLARE_int64(stirling_conn_trace_pid);
 
 #define CONN_TRACE(level)                                        \
   LOG_IF(INFO, level <= debug_trace_level_) << absl::Substitute( \
-      "$0 protocol=$1 ", ToString(conn_id_), magic_enum::enum_name(traffic_class_.protocol))
+      "$0 protocol=$1 role=$2 ", ToString(conn_id_),             \
+      magic_enum::enum_name(traffic_class_.protocol), magic_enum::enum_name(traffic_class_.role))
 
 namespace pl {
 namespace stirling {

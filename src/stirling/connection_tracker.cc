@@ -32,6 +32,7 @@ DEFINE_bool(enable_unix_domain_sockets, false, "Whether Unix domain sockets are 
 DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
               "If a stream ID jumps by this many spots or more, an error is assumed and the entire "
               "connection info is cleared.");
+DEFINE_int64(stirling_conn_trace_pid, -1, "Trace activity on this pid.");
 
 namespace pl {
 namespace stirling {
@@ -474,6 +475,10 @@ void ConnectionTracker::CheckTracker() {
     LOG_FIRST_N(WARNING, 10) << absl::Substitute(
         "Did not expect new event more than 1 sampling iteration after Close. Connection=$0.",
         ToString(conn_id_));
+  }
+
+  if (conn_id_.upid.pid == FLAGS_stirling_conn_trace_pid) {
+    SetDebugTrace(2);
   }
 }
 
