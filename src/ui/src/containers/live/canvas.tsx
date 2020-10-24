@@ -372,7 +372,7 @@ const Canvas = (props: CanvasProps) => {
   if (loading && charts.length === 0) {
     return (
       <>
-        {loading && mutationInfo && <MutationModal mutationInfo={mutationInfo} /> }
+        {loading && mutationInfo && <MutationModal mutationInfo={mutationInfo} />}
         <div className='center-content'><Spinner /></div>
       </>
     );
@@ -420,9 +420,9 @@ const Canvas = (props: CanvasProps) => {
   }
   return (
     <>
-      {loading && mutationInfo && <MutationModal mutationInfo={mutationInfo} /> }
+      {loading && mutationInfo && <MutationModal mutationInfo={mutationInfo} />}
       { error
-        && <ErrorDisplay classes={classes} error={error} setOpen={setErrorOpen} open={errorOpen} /> }
+        && <ErrorDisplay classes={classes} error={error} setOpen={setErrorOpen} open={errorOpen} />}
       {displayGrid}
     </>
   );

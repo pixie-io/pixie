@@ -120,7 +120,7 @@ export class VizierGRPCClient {
       req = this.buildRequest(script, funcs, mutation);
     } catch (err) {
       onError(err);
-      return () => {};
+      return () => { };
     }
 
     const call = this.client.executeScript(req, headers);
@@ -138,6 +138,7 @@ export class VizierGRPCClient {
       if (resp.hasStatus()) {
         const status = resp.getStatus();
         const errList = status.getErrorDetailsList();
+        resolved = true;
         if (errList.length > 0) {
           onError(new VizierQueryError('execution', getExecutionErrors(errList), status));
           return;
@@ -150,7 +151,6 @@ export class VizierGRPCClient {
 
         results.status = status;
         onData(results);
-        resolved = true;
         return;
       }
 
@@ -202,10 +202,12 @@ export class VizierGRPCClient {
     });
 
     call.on('error', (err) => {
+      resolved = true;
       onError(new VizierQueryError('server', err.message));
     });
     call.on('status', (status) => {
       if (status.code > 0) {
+        resolved = true;
         onError(new VizierQueryError('server', status.details));
       }
     });
