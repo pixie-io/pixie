@@ -8,13 +8,13 @@
     },
     {
       "name": "window_s",
-      "type": "PX_INT",
+      "type": "PX_INT64",
       "description": "The relative start time of the window. Current time is assumed to be now",
       "defaultValue": "10"
     },
     {
       "name": "bin_size",
-      "type": "PX_INT",
+      "type": "PX_INT64",
       "description": "The bin size to use for the histogram",
       "defaultValue": "10"
     }

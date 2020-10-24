@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <map>
+#include <regex>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
@@ -14,6 +15,7 @@
 #include <google/protobuf/util/type_resolver_util.h>
 #include <pypa/parser/parser.hh>
 
+#include "absl/strings/str_cat.h"
 #include "src/carnot/funcs/metadata/metadata_ops.h"
 #include "src/carnot/planner/compiler/compiler.h"
 #include "src/carnot/planner/compiler/test_utils.h"
@@ -44,7 +46,10 @@ using planpb::testutils::CompareLogicalPlans;
 using ::testing::_;
 using ::testing::ContainsRegex;
 
+DEFINE_string(oss_bundle, "", "OSS bundle to use");
+
 struct LiveView {
+  std::string name;
   std::string pxl_script;
   std::string vis_spec;
 };
@@ -61,24 +66,28 @@ class PresetQueriesTest : public ::testing::Test {
     auto rel_map = std::make_unique<RelationMap>();
     absl::flat_hash_map<std::string, Relation> absl_rel_map;
 
-    // Get the production relations from Stirling
-    auto stirling = stirling::Stirling::Create(stirling::CreateSourceRegistry());
-    stirling::stirlingpb::Publish publish_pb;
-    stirling->GetPublishProto(&publish_pb);
-    auto subscribe_pb = stirling::SubscribeToAllInfoClasses(publish_pb);
-    auto relation_info_vec = ConvertSubscribePBToRelationInfo(subscribe_pb);
+    // Get the production relations from Stirling if we're root, otherwise grab the test schema.
+    if (IsRoot()) {
+      auto stirling = stirling::Stirling::Create(stirling::CreateSourceRegistry());
+      stirling::stirlingpb::Publish publish_pb;
+      stirling->GetPublishProto(&publish_pb);
+      auto subscribe_pb = stirling::SubscribeToAllInfoClasses(publish_pb);
+      auto relation_info_vec = ConvertSubscribePBToRelationInfo(subscribe_pb);
 
-    for (const auto& rel_info : relation_info_vec) {
-      rel_map->emplace(rel_info.name, rel_info.relation);
-      absl_rel_map[rel_info.name] = rel_info.relation;
+      for (const auto& rel_info : relation_info_vec) {
+        rel_map->emplace(rel_info.name, rel_info.relation);
+        absl_rel_map[rel_info.name] = rel_info.relation;
+      }
+      EXPECT_OK(table_store::schema::Schema::ToProto(&schema_, absl_rel_map));
+    } else {
+      schema_ = testutils::LoadSchemaPb(testutils::kAllSchemas);
+      rel_map = testutils::MakeRelationMap(schema_);
     }
-
     compiler_state_ =
         std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now, "result_addr");
     compiler_ = compiler::Compiler();
 
-    EXPECT_OK(table_store::schema::Schema::ToProto(&schema_, absl_rel_map));
-    ParsePresetQueries();
+    LoadScripts();
   }
 
   void AddOrCreateVisSpec(const std::filesystem::path& vis_spec_path) {
@@ -86,7 +95,15 @@ class PresetQueriesTest : public ::testing::Test {
     if (!preset_scripts_.contains(parent_path)) {
       preset_scripts_[parent_path] = {};
     }
-    preset_scripts_[parent_path].vis_spec = vis_spec_path.string();
+    preset_scripts_[parent_path].name = parent_path;
+
+    if (vis_spec_path.empty()) {
+      preset_scripts_[parent_path].vis_spec = vis_spec_path.string();
+      return;
+    }
+
+    ASSERT_OK_AND_ASSIGN(preset_scripts_[parent_path].vis_spec,
+                         ReadFileToString(vis_spec_path.string()));
   }
 
   void AddOrCreatePxlScript(const std::filesystem::path& pxl_script_path) {
@@ -94,12 +111,50 @@ class PresetQueriesTest : public ::testing::Test {
     if (!preset_scripts_.contains(parent_path)) {
       preset_scripts_[parent_path] = {};
     }
-    PL_ASSIGN_OR_EXIT(preset_scripts_[parent_path].pxl_script,
-                      ReadFileToString(pxl_script_path.string()));
+    ASSERT_OK_AND_ASSIGN(preset_scripts_[parent_path].pxl_script,
+                         ReadFileToString(pxl_script_path.string()));
   }
 
-  void ParsePresetQueries() {
-    absl::flat_hash_set<std::string> ignore_directories;
+  void LoadScripts() {
+    LoadLocalScripts();
+    LoadCommunityScripts();
+    absl::flat_hash_set<std::string> to_erase;
+    for (const auto& [path, script] : preset_scripts_) {
+      // TODO(philkuz/oazizi) support mutation compilation.
+      if (!std::regex_search(script.pxl_script, std::regex("pxtrace"))) {
+        continue;
+      }
+      LOG(INFO) << "skip " << path;
+      to_erase.insert(path);
+    }
+    for (const std::string& path : to_erase) {
+      preset_scripts_.erase(path);
+    }
+  }
+
+  void LoadCommunityScripts() {
+    if (FLAGS_oss_bundle.empty()) {
+      return;
+    }
+    auto path = testing::TestFilePath(FLAGS_oss_bundle);
+    PL_ASSIGN_OR_EXIT(auto bundle_txt, ReadFileToString(path));
+    rapidjson::Document doc;
+    doc.Parse(bundle_txt.data());
+    CHECK(doc.HasMember("scripts"));
+    const rapidjson::Value& scripts = doc["scripts"];
+    for (rapidjson::Value::ConstMemberIterator iter = scripts.MemberBegin();
+         iter != scripts.MemberEnd(); ++iter) {
+      std::string path = iter->name.GetString();
+      CHECK(iter->value.HasMember("pxl"));
+      preset_scripts_[path].name = path;
+      preset_scripts_[path].pxl_script = iter->value["pxl"].GetString();
+      if (iter->value.HasMember("vis")) {
+        preset_scripts_[path].vis_spec = iter->value["vis"].GetString();
+      }
+    }
+  }
+
+  void LoadLocalScripts() {
     // 1st pass: find directories to ignore.
     for (const auto& entry : std::filesystem::recursive_directory_iterator(scripts_dir_)) {
       std::string strpath = entry.path().string();
@@ -110,7 +165,6 @@ class PresetQueriesTest : public ::testing::Test {
         AddOrCreatePxlScript(entry.path());
       }
     }
-    ASSERT_GT(preset_scripts_.size(), 0);
   }
 
   compiler::FuncToExecute ParseFunc(
@@ -130,7 +184,7 @@ class PresetQueriesTest : public ::testing::Test {
         case vispb::Widget_Func_FuncArg::kVariable: {
           // Pass up that parsing failed. Not a Check because we should surface multiple errors if
           // they exist.
-          EXPECT_TRUE(variable_map.contains(arg_val.name()))
+          EXPECT_TRUE(variable_map.contains(arg_val.variable()))
               << absl::Substitute("Variable $0 not found", arg_val.name());
 
           if (!variable_map.contains(arg_val.name())) {
@@ -156,34 +210,30 @@ class PresetQueriesTest : public ::testing::Test {
 
     // Load vis spec as a protobuf.
     // First load as a JSON string.
-    auto vis_json_or_s = ReadFileToString(lv.vis_spec);
-    EXPECT_OK(vis_json_or_s);
-    if (!vis_json_or_s.ok()) {
-      return {};
-    }
-    auto vis_json = vis_json_or_s.ConsumeValueOrDie();
     std::string output;
     // Then resolve JSON string to a protobuf serialized string.
     auto resolver = std::unique_ptr<TypeResolver>(
         NewTypeResolverForDescriptorPool("pixielabs.ai", DescriptorPool::generated_pool()));
     auto status =
-        JsonToBinaryString(resolver.get(), "pixielabs.ai/pl.vispb.Vis", vis_json, &output);
-    EXPECT_TRUE(status.ok()) << status.error_message();
-    if (!status.ok()) {
-      return {};
-    }
+        JsonToBinaryString(resolver.get(), "pixielabs.ai/pl.vispb.Vis", lv.vis_spec, &output);
+    PL_CHECK_OK(status);
     // Finally parse protobuf serialization to struct.
     Vis vs;
     bool parse_from_string_succesful = vs.ParseFromString(output);
-    EXPECT_TRUE(parse_from_string_succesful);
-    if (!parse_from_string_succesful) {
-      return {};
-    }
+    CHECK(parse_from_string_succesful);
 
     // Parse global variables.
     absl::flat_hash_map<std::string, std::string> variable_map;
     for (const auto& var : vs.variables()) {
-      variable_map[var.name()] = var.default_value();
+      std::string value = var.default_value();
+      if (var.type() == vispb::PX_STRING_LIST) {
+        value = absl::Substitute("[$0]", absl::StrJoin(absl::StrSplit(value, ","), ",",
+                                                       [](std::string* out, std::string_view val) {
+                                                         absl::StrAppend(
+                                                             out, absl::Substitute("'$0'", val));
+                                                       }));
+      }
+      variable_map[var.name()] = value;
     }
 
     compiler::ExecFuncs exec_funcs;
@@ -235,15 +285,16 @@ class PresetQueriesTest : public ::testing::Test {
   compiler::Compiler compiler_;
   table_store::schemapb::Schema schema_;
   Relation cgroups_relation_;
-  const std::string scripts_dir_ = "src/pxl_scripts/px";
+  const std::string scripts_dir_ = "src/pxl_scripts";
   udfspb::UDFInfo udf_info_;
 };
 
-// TODO(nserrino): PP-2188 Update this test to download the public scripts from the github repo.
-TEST_F(PresetQueriesTest, DISABLED_PresetQueries) {
+TEST_F(PresetQueriesTest, PresetQueries) {
+  // Make sure that we have some scripts.
+  EXPECT_GE(preset_scripts_.size(), 1);
   // Test single-node compiler (no distributed planner).
   for (const auto& [path, script] : preset_scripts_) {
-    SCOPED_TRACE(absl::Substitute("Single agent for '$0'", path));
+    SCOPED_TRACE(absl::Substitute("Simple compilation for '$0'", path));
     auto exec_funcs = GetExecFuncs(script);
     auto plan_or_s = compiler_.Compile(script.pxl_script, compiler_state_.get(), exec_funcs);
     EXPECT_OK(plan_or_s) << "Query failed";
@@ -251,7 +302,8 @@ TEST_F(PresetQueriesTest, DISABLED_PresetQueries) {
 
   // Test single agent planning.
   for (const auto& [path, script] : preset_scripts_) {
-    SCOPED_TRACE(absl::Substitute("Single agent for '$0'", path));
+    SCOPED_TRACE(absl::Substitute("Single agent for '$0' Has exec funcs $1", path,
+                                  !script.vis_spec.empty()));
     auto planner = LogicalPlanner::Create(udf_info_).ConsumeValueOrDie();
     auto single_pem_state = testutils::CreateOnePEMOneKelvinPlannerState(schema_);
     single_pem_state.mutable_plan_options()->set_max_output_rows_per_table(10000);
@@ -260,13 +312,17 @@ TEST_F(PresetQueriesTest, DISABLED_PresetQueries) {
     SetExecFuncs(script, &query_request);
     auto plan_or_s = planner->Plan(single_pem_state, query_request);
     EXPECT_OK(plan_or_s) << "Query failed";
+    if (!plan_or_s.ok()) {
+      continue;
+    }
     auto plan = plan_or_s.ConsumeValueOrDie();
     EXPECT_OK(plan->ToProto()) << "Query failed to compile to proto";
   }
 
   // Test multi agent planning.
   for (const auto& [path, script] : preset_scripts_) {
-    SCOPED_TRACE(absl::Substitute("Single agent for '$0'", path));
+    SCOPED_TRACE(
+        absl::Substitute("Multi agent for '$0' Has exec funcs $1", path, !script.vis_spec.empty()));
     auto planner = LogicalPlanner::Create(udf_info_).ConsumeValueOrDie();
     auto multi_pem_state = testutils::CreateTwoPEMsOneKelvinPlannerState(schema_);
     multi_pem_state.mutable_plan_options()->set_max_output_rows_per_table(10000);
@@ -275,6 +331,9 @@ TEST_F(PresetQueriesTest, DISABLED_PresetQueries) {
     SetExecFuncs(script, &query_request);
     auto plan_or_s = planner->Plan(multi_pem_state, query_request);
     EXPECT_OK(plan_or_s) << "Query failed";
+    if (!plan_or_s.ok()) {
+      continue;
+    }
     auto plan = plan_or_s.ConsumeValueOrDie();
     EXPECT_OK(plan->ToProto()) << "Query failed to compile to proto";
   }

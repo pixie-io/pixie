@@ -147,3 +147,14 @@ pl_cc_test(
         "//src/shared/vispb:vis_pl_cc_proto",
     ],
 )
+
+sh_test(
+    name = "preset_queries_oss_test",
+    srcs = ["preset_queries_test.sh"],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
+    tags = ["requires_bpf"],
+    data = [
+        ":preset_queries_test",
+        "//src/pxl_scripts:preset_queries",
+    ],
+)
