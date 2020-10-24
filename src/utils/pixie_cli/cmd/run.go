@@ -13,11 +13,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/segmentio/analytics-go.v3"
+	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 	cliLog "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/vizier"
+	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )
 
 func init() {
@@ -130,10 +132,33 @@ var RunCmd = &cobra.Command{
 		clusterID := uuid.FromStringOrNil(selectedCluster)
 
 		if !allClusters && clusterID == uuid.Nil {
-			clusterID, err = vizier.FirstHealthyVizier(cloudAddr)
-			if err != nil {
-				cliLog.WithError(err).Error("Could not fetch healthy vizier")
-				os.Exit(1)
+			config := k8s.GetConfig()
+			if config != nil {
+				clusterID = vizier.GetClusterIDFromKubeConfig(config)
+			}
+			if clusterID != uuid.Nil {
+				clusterInfo, err := vizier.GetVizierInfo(cloudAddr, clusterID)
+				if err != nil {
+					cliLog.WithError(err).Error("The current cluster in the kubeconfig not found within this org.")
+					clusterID = uuid.Nil
+				}
+				if clusterInfo.Status != cloudapipb.CS_HEALTHY {
+					cliLog.WithError(err).Errorf("'%s'in the kubeconfig's Pixie instance is unhealthy.", clusterInfo.PrettyClusterName)
+					clusterID = uuid.Nil
+				}
+			}
+			if clusterID == uuid.Nil {
+				clusterID, err = vizier.FirstHealthyVizier(cloudAddr)
+				if err != nil {
+					cliLog.WithError(err).Error("Could not fetch healthy vizier")
+					os.Exit(1)
+				}
+				clusterInfo, err := vizier.GetVizierInfo(cloudAddr, clusterID)
+				if err != nil {
+					cliLog.WithError(err).Error("Could not fetch healthy vizier")
+					os.Exit(1)
+				}
+				cliLog.WithError(err).Infof("Running on '%s' instead.", clusterInfo.PrettyClusterName)
 			}
 		}
 

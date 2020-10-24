@@ -6,8 +6,10 @@ import (
 
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/rest"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/utils"
+	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )
 
 // MustConnectDefaultVizier vizier will connect to default vizier based on parameters.
@@ -129,6 +131,22 @@ func ConnectionToVizierByID(cloudAddr string, clusterID uuid.UUID) (*Connector, 
 	return nil, errors.New("no such vizier")
 }
 
+// GetVizierInfo returns the info about the vizier running on the specified cluster, if it exists.
+func GetVizierInfo(cloudAddr string, clusterID uuid.UUID) (*cloudapipb.ClusterInfo, error) {
+	vzInfos, err := GetVizierList(cloudAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, vzInfo := range vzInfos {
+		if utils.UUIDFromProtoOrNil(vzInfo.ID) == clusterID {
+			return vzInfo, err
+		}
+	}
+
+	return nil, errors.New("no such vizier")
+}
+
 // ConnectToAllViziers connets to all available viziers.
 func ConnectToAllViziers(cloudAddr string) ([]*Connector, error) {
 	vzInfos, err := GetVizierList(cloudAddr)
@@ -149,4 +167,25 @@ func ConnectToAllViziers(cloudAddr string) ([]*Connector, error) {
 	}
 
 	return conns, nil
+}
+
+// GetClusterIDFromKubeConfig returns the clusterID given the kubeconfig. If anything fails, then will return a nil UUID.
+func GetClusterIDFromKubeConfig(config *rest.Config) uuid.UUID {
+	if config == nil {
+		return uuid.Nil
+	}
+	clientset := k8s.GetClientset(config)
+	if clientset == nil {
+		return uuid.Nil
+	}
+	s := k8s.GetSecret(clientset, "pl", "pl-cluster-secrets")
+	if s == nil {
+		return uuid.Nil
+	}
+	cID, ok := s.Data["cluster-id"]
+	if !ok {
+		return uuid.Nil
+
+	}
+	return uuid.FromStringOrNil(string(cID))
 }
