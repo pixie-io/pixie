@@ -299,9 +299,11 @@ service VizierService {
 
 message DebugLogRequest {
   // The UUID of the cluster encoded as a string with dashes.
-  string cluster_id = 1 [ (gogoproto.customname) = "ClusterID" ];;
+  string cluster_id = 1 [ (gogoproto.customname) = "ClusterID" ];
   // The Vizier pod name we want to log.
   string pod_name = 2;
+  // Return the log for the previous instance instead of the current active one.
+  bool previous = 3;
 }
 
 message DebugLogResponse {
