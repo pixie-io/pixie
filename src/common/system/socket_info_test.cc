@@ -69,9 +69,11 @@ TEST(NetlinkSocketProberTest, EstablishedInetConnection) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<NetlinkSocketProber> socket_prober,
                        NetlinkSocketProber::Create());
   std::map<int, SocketInfo> socket_info_entries;
-  ASSERT_OK(socket_prober->InetConnections(&socket_info_entries));
+  ASSERT_OK(socket_prober->InetConnections(&socket_info_entries, kTCPEstablishedState));
 
   EXPECT_THAT(socket_info_entries, Contains(HasLocalIPEndpoint(client_endpoint)));
+  ASSERT_FALSE(socket_info_entries.empty());
+  EXPECT_EQ(socket_info_entries.begin()->second.state, ConnState::kEstablished);
 
   client.Close();
   server.Close();

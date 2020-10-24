@@ -27,10 +27,21 @@ struct un_path_t {
 namespace pl {
 namespace system {
 
-// See tcp_states.h for other states if we ever need them.
+// See linux tcp_states.h for other states if we ever need them.
+enum class ConnState {
+  kUnknown = 0,
+  kEstablished = 1,
+  kTimeWait = 6,
+  kCloseWait = 8,
+  kListening = 10,
+};
+
+// These are bit-select versions of ConnState above.
 // Note: These are not an enum, so they can be or'ed together.
-constexpr int kTCPEstablishedState = 1 << 1;
-constexpr int kTCPListeningState = 1 << 10;
+constexpr int kTCPEstablishedState = 1 << static_cast<int>(ConnState::kEstablished);
+constexpr int kTCPTimeWaitState = 1 << static_cast<int>(ConnState::kTimeWait);
+constexpr int kTCPCloseWaitState = 1 << static_cast<int>(ConnState::kCloseWait);
+constexpr int kTCPListeningState = 1 << static_cast<int>(ConnState::kListening);
 
 struct SocketInfo {
   sa_family_t family;
@@ -39,6 +50,7 @@ struct SocketInfo {
   // Use uint32_t instead of in_port_t, since it represents an inode for unix domain sockets.
   uint32_t local_port;
   uint32_t remote_port;
+  ConnState state;
 };
 
 /**

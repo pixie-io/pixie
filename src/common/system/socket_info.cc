@@ -149,6 +149,8 @@ Status ProcessDiagMsg(const struct inet_diag_msg& diag_msg, unsigned int len,
   socket_info.family = diag_msg.idiag_family;
   socket_info.local_port = diag_msg.id.idiag_sport;
   socket_info.remote_port = diag_msg.id.idiag_dport;
+  socket_info.state =
+      magic_enum::enum_cast<ConnState>(diag_msg.idiag_state).value_or(ConnState::kUnknown);
   if (socket_info.family == AF_INET) {
     socket_info.local_addr = *reinterpret_cast<const struct in_addr*>(&diag_msg.id.idiag_src);
     socket_info.remote_addr = *reinterpret_cast<const struct in_addr*>(&diag_msg.id.idiag_dst);
@@ -203,6 +205,8 @@ Status ProcessDiagMsg(const struct unix_diag_msg& diag_msg, unsigned int len,
   socket_info.local_addr = un_path_t{};
   socket_info.remote_port = peer;
   socket_info.remote_addr = un_path_t{};
+  socket_info.state =
+      magic_enum::enum_cast<ConnState>(diag_msg.udiag_state).value_or(ConnState::kUnknown);
 
   socket_info_entries->insert({diag_msg.udiag_ino, std::move(socket_info)});
 
