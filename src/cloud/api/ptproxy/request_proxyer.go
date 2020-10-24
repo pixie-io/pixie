@@ -53,7 +53,7 @@ type ClusterIDer interface {
 	GetClusterID() string
 }
 
-func newRequestProxyer(vzmgr vzmgrClient, nc *nats.Conn, r ClusterIDer, s grpcStream) (*requestProxyer, error) {
+func newRequestProxyer(vzmgr vzmgrClient, nc *nats.Conn, debugMode bool, r ClusterIDer, s grpcStream) (*requestProxyer, error) {
 	// Make a request to Vizier Manager validate that we have permissions to access the cluster
 	// and get the key to generate the token.
 	requestID := uuid.NewV4()
@@ -73,7 +73,7 @@ func newRequestProxyer(vzmgr vzmgrClient, nc *nats.Conn, r ClusterIDer, s grpcSt
 	}
 	p.clusterID = clusterID
 
-	signedToken, err := p.validateRequestAndFetchCreds(ctx, vzmgr)
+	signedToken, err := p.validateRequestAndFetchCreds(ctx, debugMode, vzmgr)
 	if err != nil {
 		if err == ErrNotAvailable {
 			return nil, err
@@ -102,7 +102,7 @@ func newRequestProxyer(vzmgr vzmgrClient, nc *nats.Conn, r ClusterIDer, s grpcSt
 	return p, nil
 }
 
-func (p requestProxyer) validateRequestAndFetchCreds(ctx context.Context, vzmgr vzmgrClient) (signingKey string, err error) {
+func (p requestProxyer) validateRequestAndFetchCreds(ctx context.Context, debugMode bool, vzmgr vzmgrClient) (signingKey string, err error) {
 	clusterIDProto := utils.ProtoFromUUID(&p.clusterID)
 
 	eg := errgroup.Group{}
@@ -114,8 +114,14 @@ func (p requestProxyer) validateRequestAndFetchCreds(ctx context.Context, vzmgr 
 			}
 			return err
 		}
-		if resp.Status != cvmsgspb.VZ_ST_HEALTHY {
-			return ErrNotAvailable
+		if debugMode {
+			if resp.Status == cvmsgspb.VZ_ST_DISCONNECTED {
+				return ErrNotAvailable
+			}
+		} else {
+			if resp.Status != cvmsgspb.VZ_ST_HEALTHY {
+				return ErrNotAvailable
+			}
 		}
 		return nil
 	})

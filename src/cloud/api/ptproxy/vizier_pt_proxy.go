@@ -41,7 +41,7 @@ func NewVizierPassThroughProxy(nc *nats.Conn, vc vzmgrClient) *VizierPassThrough
 
 // ExecuteScript is the GRPC stream method.
 func (v *VizierPassThroughProxy) ExecuteScript(req *pl_api_vizierpb.ExecuteScriptRequest, srv pl_api_vizierpb.VizierService_ExecuteScriptServer) error {
-	rp, err := newRequestProxyer(v.vc, v.nc, req, srv)
+	rp, err := newRequestProxyer(v.vc, v.nc, false, req, srv)
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func (v *VizierPassThroughProxy) ExecuteScript(req *pl_api_vizierpb.ExecuteScrip
 
 // HealthCheck is the GRPC stream method.
 func (v *VizierPassThroughProxy) HealthCheck(req *pl_api_vizierpb.HealthCheckRequest, srv pl_api_vizierpb.VizierService_HealthCheckServer) error {
-	rp, err := newRequestProxyer(v.vc, v.nc, req, srv)
+	rp, err := newRequestProxyer(v.vc, v.nc, false, req, srv)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (v *VizierPassThroughProxy) HealthCheck(req *pl_api_vizierpb.HealthCheckReq
 
 // DebugLog is the GRPC stream method to fetch debug logs from vizier.
 func (v *VizierPassThroughProxy) DebugLog(req *pl_api_vizierpb.DebugLogRequest, srv pl_api_vizierpb.VizierDebugService_DebugLogServer) error {
-	rp, err := newRequestProxyer(v.vc, v.nc, req, srv)
+	rp, err := newRequestProxyer(v.vc, v.nc, true, req, srv)
 	if err != nil {
 		return err
 	}

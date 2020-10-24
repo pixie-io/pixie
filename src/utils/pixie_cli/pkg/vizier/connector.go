@@ -248,7 +248,7 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 
 type DebugLogResponse struct {
 	Data string
-	Err error
+	Err  error
 }
 
 // DebugLogRequest sends a debug log request and returns data in a chan.
@@ -291,6 +291,9 @@ func (c *Connector) DebugLogRequest(ctx context.Context, podName string) (chan *
 				msg, err := resp.Recv()
 
 				if err != nil || msg == nil {
+					if err != nil {
+						fmt.Printf("%v", err)
+					}
 					return
 				}
 				results <- &DebugLogResponse{
