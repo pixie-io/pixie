@@ -1,18 +1,7 @@
 #include "src/carnot/udf/type_inference.h"
 
-namespace {
-/**
- * Combines two size_t hash values. Useful for compatibility with std::hash.
- * Implementation from boost::hash_combine.
- * @param h1 the first hash
- * @param h2 the second hash
- * @return A size_t combined hash.
- */
-static inline size_t HashCombine(size_t h1, size_t h2) {
-  return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
-}
+#include "src/common/base/hash_utils.h"
 
-}  // namespace
 namespace pl {
 namespace carnot {
 namespace udf {
@@ -20,13 +9,13 @@ namespace udf {
 size_t ExplicitRule::Hash() const {
   auto int_hash = std::hash<int>{};
   size_t hash = 0;
-  hash = HashCombine(hash, int_hash(static_cast<int>(udf_exec_type_)));
-  hash = HashCombine(hash, int_hash(static_cast<int>(out_type_)));
+  hash = ::pl::HashCombine(hash, int_hash(static_cast<int>(udf_exec_type_)));
+  hash = ::pl::HashCombine(hash, int_hash(static_cast<int>(out_type_)));
   for (const auto& arg_type : init_arg_types_) {
-    hash = HashCombine(hash, int_hash(static_cast<int>(arg_type)));
+    hash = ::pl::HashCombine(hash, int_hash(static_cast<int>(arg_type)));
   }
   for (const auto& arg_type : exec_or_update_types_) {
-    hash = HashCombine(hash, int_hash(static_cast<int>(arg_type)));
+    hash = ::pl::HashCombine(hash, int_hash(static_cast<int>(arg_type)));
   }
   return hash;
 }

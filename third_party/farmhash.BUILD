@@ -6,6 +6,6 @@ cc_library(
     name = "farmhash",
     srcs = ["src/farmhash.cc"],
     hdrs = ["src/farmhash.h"],
-    includes = ["src/."],
+    includes = ["src"],
     visibility = ["//visibility:public"],
 )

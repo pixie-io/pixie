@@ -1,8 +1,10 @@
 #pragma once
 
 #include <arrow/array.h>
+#include <farmhash.h>
 #include <stdint.h>
 #include <string.h>
+
 #include <algorithm>
 #include <iostream>
 #include <memory>
@@ -18,7 +20,6 @@
 
 #include "src/common/base/base.h"
 #include "src/common/base/hash_utils.h"
-#include "src/farmhash.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/hash_utils.h"
 #include "src/shared/types/proto/types.pb.h"
@@ -128,7 +129,7 @@ struct RowTuple : public NotCopyable {
     for (const auto& val : variable_values) {
       // This should be edited when we add support for new variable sized types.
       DCHECK(std::holds_alternative<types::StringValue>(val));
-      hash = HashCombine(
+      hash = ::pl::HashCombine(
           hash, types::utils::hash<types::StringValue>()(std::get<types::StringValue>(val)));
     }
     return hash;
