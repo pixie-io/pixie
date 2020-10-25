@@ -147,11 +147,10 @@ func k8sWatchAndUpdateHosts() error {
 	clientset := getClientset(kubeConfig)
 	namespace := viper.GetString("n")
 	serviceWatcher, err := watchK8sResource(clientset, "services", namespace)
-	defer serviceWatcher.Stop()
-
 	if err != nil {
 		log.WithError(err).Fatal("failed to watch cloud proxy")
 	}
+	defer serviceWatcher.Stop()
 
 	svcInfoCh := make(chan svcInfo)
 	var g errgroup.Group
