@@ -21,6 +21,7 @@
 #include <utility>
 
 #include "src/common/base/base.h"
+#include "src/common/base/inet_utils.h"
 #include "src/common/system/system.h"
 
 namespace pl {
@@ -134,10 +135,12 @@ Status ProcessDiagMsg(const struct inet_diag_msg& diag_msg, unsigned int len,
   }
 
   if (diag_msg.idiag_inode == 0) {
-    // TODO(PL-1001): Investigate why inode of 0 is intermittently produced.
-    // Shouldn't happen since we ask for for established connections only.
-    LOG_EVERY_N(WARNING, 100)
-        << "Did not expect inode of 0 for established connections...ignoring it.";
+    // An inode of 0 is intermittently produced.
+    // One case of this is cause by a server that has not yet called accept().
+    // Between the client trying to establish a connection and the server calling accept(),
+    // the connection appears as ESTABLISHED, but with an inode of 0.
+
+    // Ingore it, since an inode of 0 is not useful.
     return Status::OK();
   }
 
@@ -150,7 +153,7 @@ Status ProcessDiagMsg(const struct inet_diag_msg& diag_msg, unsigned int len,
   socket_info.local_port = diag_msg.id.idiag_sport;
   socket_info.remote_port = diag_msg.id.idiag_dport;
   socket_info.state =
-      magic_enum::enum_cast<ConnState>(diag_msg.idiag_state).value_or(ConnState::kUnknown);
+      magic_enum::enum_cast<TCPConnState>(diag_msg.idiag_state).value_or(TCPConnState::kUnknown);
   if (socket_info.family == AF_INET) {
     socket_info.local_addr = *reinterpret_cast<const struct in_addr*>(&diag_msg.id.idiag_src);
     socket_info.remote_addr = *reinterpret_cast<const struct in_addr*>(&diag_msg.id.idiag_dst);
@@ -206,7 +209,7 @@ Status ProcessDiagMsg(const struct unix_diag_msg& diag_msg, unsigned int len,
   socket_info.remote_port = peer;
   socket_info.remote_addr = un_path_t{};
   socket_info.state =
-      magic_enum::enum_cast<ConnState>(diag_msg.udiag_state).value_or(ConnState::kUnknown);
+      magic_enum::enum_cast<TCPConnState>(diag_msg.udiag_state).value_or(TCPConnState::kUnknown);
 
   socket_info_entries->insert({diag_msg.udiag_ino, std::move(socket_info)});
 
@@ -254,6 +257,59 @@ Status NetlinkSocketProber::RecvDiagResp(std::map<int, SocketInfo>* socket_info_
   return Status::OK();
 }
 
+namespace {
+void ClassifySocketRoles(std::map<int, SocketInfo>* socket_info_entries) {
+  absl::flat_hash_set<SockAddrIPv4, SockAddrIPv4HashFn, SockAddrIPv4EqFn> ipv4_listening_sockets;
+  absl::flat_hash_set<SockAddrIPv6, SockAddrIPv6HashFn, SockAddrIPv6EqFn> ipv6_listening_sockets;
+
+  // Create a hash map of all listening sockets, for quick look-ups.
+  for (const auto& [_, s] : *socket_info_entries) {
+    uint16_t local_port = static_cast<uint16_t>(s.local_port);
+    if (s.state == TCPConnState::kListening) {
+      switch (s.family) {
+        case AF_INET:
+          ipv4_listening_sockets.insert({std::get<struct in_addr>(s.local_addr), local_port});
+          break;
+        case AF_INET6:
+          ipv6_listening_sockets.insert({std::get<struct in6_addr>(s.local_addr), local_port});
+          break;
+        default:
+          LOG(DFATAL) << absl::Substitute("Unexpected address family $0", s.family);
+      }
+    }
+  }
+
+  // Look for a match with a listening socket with the same IP and port.
+  // Also consider the zero IP (e.g. 0.0.0.0) as a match.
+  struct in_addr ipv4_any = {};
+  struct in6_addr ipv6_any = {};
+  for (auto& [_, s] : *socket_info_entries) {
+    uint16_t local_port = static_cast<uint16_t>(s.local_port);
+    switch (s.family) {
+      case AF_INET:
+        if (ipv4_listening_sockets.contains({ipv4_any, local_port}) ||
+            ipv4_listening_sockets.contains({std::get<struct in_addr>(s.local_addr), local_port})) {
+          s.role = ClientServerRole::kServer;
+        } else {
+          s.role = ClientServerRole::kClient;
+        }
+        break;
+      case AF_INET6:
+        if (ipv6_listening_sockets.contains({ipv6_any, local_port}) ||
+            ipv6_listening_sockets.contains(
+                {std::get<struct in6_addr>(s.local_addr), local_port})) {
+          s.role = ClientServerRole::kServer;
+        } else {
+          s.role = ClientServerRole::kClient;
+        }
+        break;
+      default:
+        LOG(DFATAL) << absl::Substitute("Unexpected address family $0", s.family);
+    }
+  }
+}
+}  // namespace
+
 Status NetlinkSocketProber::InetConnections(std::map<int, SocketInfo>* socket_info_entries,
                                             int conn_states) {
   struct inet_diag_req_v2 msg_req = {};
@@ -269,6 +325,11 @@ Status NetlinkSocketProber::InetConnections(std::map<int, SocketInfo>* socket_in
   msg_req.sdiag_family = AF_INET6;
   PL_RETURN_IF_ERROR(SendDiagReq(msg_req));
   PL_RETURN_IF_ERROR(RecvDiagResp<struct inet_diag_msg>(socket_info_entries));
+
+  // If Listening connections were queried, then also populate the role field of the connections.
+  if (conn_states & kTCPListeningState) {
+    ClassifySocketRoles(socket_info_entries);
+  }
 
   return Status::OK();
 }
@@ -467,6 +528,12 @@ StatusOr<SocketInfo*> SocketInfoManager::Lookup(uint32_t pid, uint32_t inode_num
   }
 
   return &iter->second;
+}
+
+void SocketInfoManager::Flush() {
+  socket_probers_->Update();
+  connections_.clear();
+  num_socket_prober_calls_ = 0;
 }
 
 }  // namespace system

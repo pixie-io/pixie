@@ -69,7 +69,7 @@ struct TableTabletCol {
   }
 };
 
-// Hash function required to use TableTabletCol as an unorered_map key.
+// Hash function required to use TableTabletCol as an unordered_map key.
 class TableTabletColHashFn {
  public:
   size_t operator()(const TableTabletCol& val) const {

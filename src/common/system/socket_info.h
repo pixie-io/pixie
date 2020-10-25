@@ -28,7 +28,7 @@ namespace pl {
 namespace system {
 
 // See linux tcp_states.h for other states if we ever need them.
-enum class ConnState {
+enum class TCPConnState {
   kUnknown = 0,
   kEstablished = 1,
   kTimeWait = 6,
@@ -36,12 +36,23 @@ enum class ConnState {
   kListening = 10,
 };
 
+enum class UnixConnState {
+  kUnknown = 0,
+  kEstablished = 1,
+  kListening = 3,
+};
+
+enum class ClientServerRole { kUnknown = 0, kClient = 1, kServer = 2 };
+
 // These are bit-select versions of ConnState above.
 // Note: These are not an enum, so they can be or'ed together.
-constexpr int kTCPEstablishedState = 1 << static_cast<int>(ConnState::kEstablished);
-constexpr int kTCPTimeWaitState = 1 << static_cast<int>(ConnState::kTimeWait);
-constexpr int kTCPCloseWaitState = 1 << static_cast<int>(ConnState::kCloseWait);
-constexpr int kTCPListeningState = 1 << static_cast<int>(ConnState::kListening);
+constexpr int kTCPEstablishedState = 1 << static_cast<int>(TCPConnState::kEstablished);
+constexpr int kTCPTimeWaitState = 1 << static_cast<int>(TCPConnState::kTimeWait);
+constexpr int kTCPCloseWaitState = 1 << static_cast<int>(TCPConnState::kCloseWait);
+constexpr int kTCPListeningState = 1 << static_cast<int>(TCPConnState::kListening);
+
+constexpr int kUnixEstablishedState = 1 << static_cast<int>(TCPConnState::kEstablished);
+constexpr int kUnixListeningState = 1 << static_cast<int>(TCPConnState::kEstablished);
 
 struct SocketInfo {
   sa_family_t family;
@@ -50,7 +61,8 @@ struct SocketInfo {
   // Use uint32_t instead of in_port_t, since it represents an inode for unix domain sockets.
   uint32_t local_port;
   uint32_t remote_port;
-  ConnState state;
+  TCPConnState state;
+  ClientServerRole role = ClientServerRole::kUnknown;
 };
 
 /**
@@ -260,11 +272,7 @@ class SocketInfoManager {
   /**
    * Flushes the cache so new connections can be discovered.
    */
-  void Flush() {
-    socket_probers_->Update();
-    connections_.clear();
-    num_socket_prober_calls_ = 0;
-  }
+  void Flush();
 
   /**
    * Number of socket prober queries made since the last Flush() (or init).

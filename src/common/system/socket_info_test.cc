@@ -73,7 +73,7 @@ TEST(NetlinkSocketProberTest, EstablishedInetConnection) {
 
   EXPECT_THAT(socket_info_entries, Contains(HasLocalIPEndpoint(client_endpoint)));
   ASSERT_FALSE(socket_info_entries.empty());
-  EXPECT_EQ(socket_info_entries.begin()->second.state, ConnState::kEstablished);
+  EXPECT_EQ(socket_info_entries.begin()->second.state, TCPConnState::kEstablished);
 
   client.Close();
   server.Close();
@@ -132,8 +132,6 @@ TEST(NetlinkSocketProberTest, EstablishedUnixConnection) {
 
 TEST(NetlinkSocketProberTest, ListeningInetConnection) {
   TCPSocket server;
-
-  // A bind and connect is sufficient to establish a connection.
   server.BindAndListen();
 
   std::string server_endpoint = AddrPortStr(server.addr(), server.port());
@@ -166,6 +164,96 @@ TEST(NetlinkSocketProberTest, ListeningInetConnection) {
     EXPECT_THAT(socket_info_entries, Contains(HasLocalIPEndpoint(server_endpoint)));
   }
 
+  server.Close();
+}
+
+TEST(NetlinkSocketProberTest, DetectRole) {
+  TCPSocket server;
+  TCPSocket client;
+
+  server.BindAndListen();
+
+  // Check results before client connects.
+  {
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<NetlinkSocketProber> socket_prober,
+                         NetlinkSocketProber::Create());
+    std::map<int, SocketInfo> socket_info_entries;
+    ASSERT_OK(socket_prober->InetConnections(&socket_info_entries,
+                                             kTCPEstablishedState | kTCPListeningState));
+
+    int server_socket_count = 0;
+    int client_socket_count = 0;
+    for (const auto& s : socket_info_entries) {
+      if (s.second.local_port == server.port()) {
+        ASSERT_EQ(s.second.role, ClientServerRole::kServer);
+        ++server_socket_count;
+      }
+
+      if (s.second.local_port == client.port()) {
+        ASSERT_EQ(s.second.role, ClientServerRole::kClient);
+        ++client_socket_count;
+      }
+    }
+
+    ASSERT_EQ(server_socket_count, 1);
+    ASSERT_EQ(client_socket_count, 0);
+  }
+
+  client.Connect(server);
+  std::unique_ptr<TCPSocket> server_conn = server.Accept();
+
+  // Check results before client connects.
+  {
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<NetlinkSocketProber> socket_prober,
+                         NetlinkSocketProber::Create());
+    std::map<int, SocketInfo> socket_info_entries;
+    ASSERT_OK(socket_prober->InetConnections(&socket_info_entries,
+                                             kTCPEstablishedState | kTCPListeningState));
+
+    int server_socket_count = 0;
+    int client_socket_count = 0;
+    for (const auto& s : socket_info_entries) {
+      if (s.second.local_port == server.port()) {
+        ASSERT_EQ(s.second.role, ClientServerRole::kServer);
+        ++server_socket_count;
+      }
+
+      if (s.second.local_port == client.port()) {
+        ASSERT_EQ(s.second.role, ClientServerRole::kClient);
+        ++client_socket_count;
+      }
+    }
+
+    ASSERT_EQ(server_socket_count, 2);
+    ASSERT_EQ(client_socket_count, 1);
+  }
+
+  // If not requesting established connections, then role inference won't work.
+  {
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<NetlinkSocketProber> socket_prober,
+                         NetlinkSocketProber::Create());
+    std::map<int, SocketInfo> socket_info_entries;
+    ASSERT_OK(socket_prober->InetConnections(&socket_info_entries, kTCPEstablishedState));
+
+    int server_socket_count = 0;
+    int client_socket_count = 0;
+    for (const auto& s : socket_info_entries) {
+      if (s.second.local_port == server.port()) {
+        ASSERT_EQ(s.second.role, ClientServerRole::kUnknown);
+        ++server_socket_count;
+      }
+
+      if (s.second.local_port == client.port()) {
+        ASSERT_EQ(s.second.role, ClientServerRole::kUnknown);
+        ++client_socket_count;
+      }
+    }
+
+    ASSERT_EQ(server_socket_count, 1);
+    ASSERT_EQ(client_socket_count, 1);
+  }
+
+  client.Close();
   server.Close();
 }
 

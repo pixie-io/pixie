@@ -4,6 +4,7 @@
 // TODO(oazizi): Consider renaming the file to sock_utils instead of inet_utils.
 
 #include <arpa/inet.h>
+#include <farmhash.h>
 #include <netinet/in.h>
 #include <sys/un.h>
 
@@ -12,6 +13,7 @@
 #include <variant>
 
 #include "src/common/base/error.h"
+#include "src/common/base/hash_utils.h"
 #include "src/common/base/status.h"
 #include "src/common/base/statusor.h"
 
@@ -100,6 +102,37 @@ struct SockAddrIPv6 {
   uint16_t port = -1;
 
   std::string AddrStr() const { return IPv6AddrToString(addr).ValueOr("<Could not decode>"); }
+};
+
+struct SockAddrIPv4HashFn {
+  size_t operator()(const SockAddrIPv4& x) const {
+    size_t hash = std::hash<uint32_t>{}(x.addr.s_addr);
+    hash = pl::HashCombine(hash, std::hash<uint32_t>{}(x.port));
+    return hash;
+  }
+};
+
+struct SockAddrIPv4EqFn {
+  size_t operator()(const SockAddrIPv4& a, const SockAddrIPv4& b) const {
+    return a.addr.s_addr == b.addr.s_addr && a.port == b.port;
+  }
+};
+
+struct SockAddrIPv6HashFn {
+  size_t operator()(const SockAddrIPv6& x) const {
+    size_t hash = ::util::Hash64(reinterpret_cast<const char*>(&x.addr), sizeof(struct in6_addr));
+    hash = pl::HashCombine(hash, std::hash<uint32_t>{}(x.port));
+    return hash;
+  }
+};
+
+struct SockAddrIPv6EqFn {
+  size_t operator()(const SockAddrIPv6& a, const SockAddrIPv6& b) const {
+    return a.addr.s6_addr32[0] == b.addr.s6_addr32[0] &&
+           a.addr.s6_addr32[1] == b.addr.s6_addr32[1] &&
+           a.addr.s6_addr32[2] == b.addr.s6_addr32[2] &&
+           a.addr.s6_addr32[3] == b.addr.s6_addr32[3] && a.port == b.port;
+  }
 };
 
 /**

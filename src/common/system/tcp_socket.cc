@@ -62,6 +62,9 @@ std::unique_ptr<TCPSocket> TCPSocket::Accept() {
   CHECK(new_conn->sockfd_ >= 0) << "Failed to accept, error message: " << strerror(errno);
   CHECK(remote_addr_len == sizeof(struct sockaddr_in))
       << "Address length is wrong, " << remote_addr_len << " vs. " << sizeof(struct sockaddr_in);
+  LOG(INFO) << absl::Substitute("Accept(): remote_port=$0 on local_port=$1",
+                                ntohs(new_conn->port()), ntohs(port()));
+
   return new_conn;
 }
 
@@ -73,7 +76,7 @@ void TCPSocket::Connect(const TCPSocket& addr) {
   socklen_t addr_len = sizeof(struct sockaddr_in);
   CHECK(getsockname(sockfd_, reinterpret_cast<struct sockaddr*>(&addr_), &addr_len) == 0)
       << "Failed to get socket name, error message: " << strerror(errno);
-  LOG(INFO) << absl::Substitute("Connected remote_port=$0 on local_port=$1", ntohs(addr.port()),
+  LOG(INFO) << absl::Substitute("Connect(): remote_port=$0 on local_port=$1", ntohs(addr.port()),
                                 ntohs(port()));
 
   CHECK(addr_len == sizeof(struct sockaddr_in)) << "Address size is incorrect";

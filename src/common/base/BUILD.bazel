@@ -17,6 +17,7 @@ pl_cc_library_internal(
     ),
     deps = [
         "//src/common/base/proto:status_pl_cc_proto",
+        "@com_google_farmhash//:farmhash",
         "@com_google_googletest//:gtest_prod",
     ],
 )
