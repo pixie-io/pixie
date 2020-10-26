@@ -329,12 +329,38 @@ TEST_F(MetadataOpsTest, pod_id_to_start_time) {
   EXPECT_EQ(udf.Exec(function_ctx.get(), "1234567_uid").val, 0);
 }
 
+TEST_F(MetadataOpsTest, pod_id_to_stop_time) {
+  PodIDToPodStopTimeUDF udf;
+  updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedPodUpdatePB());
+  EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
+                                                               &md_filter_, updates_.get()));
+
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  // 2_uid is the Pod id for a terminating pod.
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "2_uid").val, 15);
+  // 1234567_uid is a nonexistant Pod id, should return 0.
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "1234567_uid").val, 0);
+}
+
 TEST_F(MetadataOpsTest, pod_name_to_start_time) {
   PodNameToPodStartTimeUDF udf;
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
-  // 1_uid is the Pod id for the currently running pod.
+  // pl/running_pod is the Pod name for the currently running pod.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/running_pod").val, 5);
-  // 1234567_uid is a nonexistant Pod id, should return 0.
+  // pl/blah is a nonexistant Pod, should return 0.
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/blah").val, 0);
+}
+
+TEST_F(MetadataOpsTest, pod_name_to_stop_time) {
+  PodNameToPodStopTimeUDF udf;
+  updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedPodUpdatePB());
+  EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
+                                                               &md_filter_, updates_.get()));
+
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  // pl/terminating_pod is the Pod name for a terminating pod.
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/terminating_pod").val, 15);
+  // pl/blah is a nonexistant Pod, should return 0.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/blah").val, 0);
 }
 

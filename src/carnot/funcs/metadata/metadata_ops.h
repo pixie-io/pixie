@@ -815,6 +815,25 @@ class PodIDToPodStartTimeUDF : public ScalarUDF {
   }
 };
 
+class PodIDToPodStopTimeUDF : public ScalarUDF {
+ public:
+  Time64NSValue Exec(FunctionContext* ctx, StringValue pod_id) {
+    auto md = GetMetadataState(ctx);
+    const pl::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return 0;
+    }
+    return pod_info->stop_time_ns();
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the stop time of a pod from its ID.")
+        .Details("Gets the stop time (in nanosecond unix time format) of a pod from its pod ID.")
+        .Example("df.pod_stop_time = px.pod_id_to_stop_time(df.pod_id)")
+        .Arg("pod_id", "The Pod ID of the Pod to get the stop time for.")
+        .Returns("The stop time (as an integer) for the Pod ID passed in.");
+  }
+};
+
 class PodNameToPodStartTimeUDF : public ScalarUDF {
  public:
   Time64NSValue Exec(FunctionContext* ctx, StringValue pod_name) {
@@ -832,6 +851,26 @@ class PodNameToPodStartTimeUDF : public ScalarUDF {
         .Example("df.pod_start_time = px.pod_name_to_start_time(df.pod_name)")
         .Arg("pod_name", "The name of the Pod to get the start time for.")
         .Returns("The start time (as an integer) for the Pod name passed in.");
+  }
+};
+
+class PodNameToPodStopTimeUDF : public ScalarUDF {
+ public:
+  Time64NSValue Exec(FunctionContext* ctx, StringValue pod_name) {
+    auto md = GetMetadataState(ctx);
+    StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
+    const pl::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return 0;
+    }
+    return pod_info->stop_time_ns();
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the stop time of a pod from its name.")
+        .Details("Gets the stop time (in nanosecond unix time format) of a pod from its name.")
+        .Example("df.pod_stop_time = px.pod_name_to_stop_time(df.pod_name)")
+        .Arg("pod_name", "The name of the Pod to get the stop time for.")
+        .Returns("The stop time (as an integer) for the Pod name passed in.");
   }
 };
 
