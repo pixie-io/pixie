@@ -270,6 +270,51 @@ static __inline enum MessageType infer_http2_message(const char* buf, size_t cou
   return kUnknown;
 }
 
+static __inline enum MessageType infer_dns_message(const char* buf, size_t count) {
+  // https://stackoverflow.com/questions/6794926/how-many-a-records-can-fit-in-a-single-dns-response
+
+  const int kDNSHeaderSize = 12;
+
+  // Use the maximum *guaranteed* UDP packet size as the max DNS message size.
+  // UDP packets can be larger, but this is the typical maximum size for DNS.
+  const int kMaxDNSMessageSize = 512;
+  if (count < kDNSHeaderSize || count > kMaxDNSMessageSize) {
+    return kUnknown;
+  }
+
+  const uint8_t* ubuf = (const uint8_t*)buf;
+
+  uint16_t flags = (ubuf[2] << 8) + ubuf[3];
+  uint16_t num_questions = (ubuf[4] << 8) + ubuf[5];
+  uint16_t num_answers = (ubuf[6] << 8) + ubuf[7];
+  uint16_t num_auth = (ubuf[8] << 8) + ubuf[9];
+  uint16_t num_addl = (ubuf[10] << 8) + ubuf[11];
+
+  bool qr = (flags >> 15) & 0x1;
+  uint8_t opcode = (flags >> 11) & 0xf;
+  uint8_t zero = (flags >> 6) & 0x1;
+
+  if (zero != 0) {
+    return kUnknown;
+  }
+
+  if (opcode != 0) {
+    return kUnknown;
+  }
+
+  if (num_questions == 0 || num_questions > 10) {
+    return kUnknown;
+  }
+
+  // https://stackoverflow.com/questions/6794926/how-many-a-records-can-fit-in-a-single-dns-response
+  uint32_t num_rr = num_questions + num_answers + num_auth + num_addl;
+  if (num_rr > 25) {
+    return kUnknown;
+  }
+
+  return (qr == 0) ? kRequest : kResponse;
+}
+
 static __inline struct protocol_message_t infer_protocol(const char* buf, size_t count) {
   struct protocol_message_t inferred_message;
   inferred_message.protocol = kProtocolUnknown;
@@ -283,6 +328,9 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
     inferred_message.protocol = kProtocolPGSQL;
   } else if ((inferred_message.type = infer_mysql_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolMySQL;
+    // TODO(oazizi): Enable DNS protocol inference.
+    //} else if ((inferred_message.type = infer_dns_message(buf, count)) != kUnknown) {
+    //  inferred_message.protocol = kProtocolDNS;
   }
 
   return inferred_message;
