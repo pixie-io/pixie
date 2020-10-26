@@ -66,6 +66,9 @@ func ctxWithCreds(ctx context.Context) (context.Context, error) {
 // UpdatesAvailable returns the version if updates are available, otherwise empty string.
 // Errors also return empty strings.
 func UpdatesAvailable(cloudAddr string) string {
+	if version.GetVersion().IsDev() {
+		return ""
+	}
 	u := NewCLIUpdater(cloudAddr)
 	versions, err := u.GetAvailableVersions(version.GetVersion().Semver())
 	if err != nil {
