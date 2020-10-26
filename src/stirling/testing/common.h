@@ -6,6 +6,7 @@
 
 #include <absl/strings/substitute.h>
 
+#include "src/common/system/proc_parser.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/metadata/base_types.h"
 #include "src/shared/types/column_wrapper.h"
@@ -85,6 +86,12 @@ template <>
 const std::string& AccessRecordBatch<std::string>(
     const types::ColumnWrapperRecordBatch& record_batch, int column_idx, int row_idx) {
   return record_batch[column_idx]->Get<types::StringValue>(row_idx);
+}
+
+md::UPID PIDToUPID(pid_t pid) {
+  system::ProcParser proc_parser(system::Config::GetInstance());
+  return md::UPID{/*asid*/ 0, static_cast<uint32_t>(pid),
+                  proc_parser.GetPIDStartTimeTicks(pid).ValueOrDie()};
 }
 
 }  // namespace testing

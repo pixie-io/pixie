@@ -1,12 +1,16 @@
 #include "src/stirling/dynamic_tracing/dynamic_tracer.h"
 
+#include <algorithm>
 #include <memory>
+#include <regex>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/system.h"
+
+#include "src/shared/metadata/k8s_objects.h"
 
 #include "src/stirling/bpf_tools/utils.h"
 #include "src/stirling/dynamic_tracing/code_gen.h"
@@ -334,6 +338,8 @@ ir::shared::UPID UPIDToProto(const md::UPID& upid) {
 
 // Given a TracepointDeployment that specifies a Pod as the target, resolves the UPIDs, and writes
 // them into the input protobuf.
+//
+// TODO(yzhao): Remove this.
 Status ResolvePodUPIDs(const md::K8sMetadataState& k8s_mds,
                        dynamic_tracing::ir::shared::DeploymentSpec* deployment_spec) {
   std::string_view pod_name = deployment_spec->pod();
@@ -352,6 +358,123 @@ Status ResolvePodUPIDs(const md::K8sMetadataState& k8s_mds,
   return Status::OK();
 }
 
+StatusOr<const md::PodInfo*> ResolvePod(const md::K8sMetadataState& k8s_mds,
+                                        std::string_view pod_name) {
+  PL_ASSIGN_OR_RETURN(K8sNameIdentView name_ident_view, GetPodNameIdent(pod_name));
+
+  std::string pod_uid = k8s_mds.PodIDByName(name_ident_view);
+  if (pod_uid.empty()) {
+    return error::InvalidArgument("Could not find Pod for name '$0'", pod_name);
+  }
+
+  const auto* pod_info = k8s_mds.PodInfoByID(pod_uid);
+  if (pod_info == nullptr) {
+    return error::InvalidArgument("Pod '$0' is recognized, but PodInfo is not found", pod_name);
+  }
+  if (pod_info->stop_time_ns() > 0) {
+    return error::InvalidArgument("Pod '$0' has died", pod_name);
+  }
+
+  return pod_info;
+}
+
+StatusOr<const md::ContainerInfo*> ResolveContainer(const md::K8sMetadataState& k8s_mds,
+                                                    const md::PodInfo& pod_info,
+                                                    std::string_view container_name) {
+  absl::flat_hash_map<std::string_view, const md::ContainerInfo*> name_to_container_info;
+  std::vector<std::string_view> container_names;
+
+  for (const auto& container_id : pod_info.containers()) {
+    auto* container_info = k8s_mds.ContainerInfoByID(container_id);
+    if (container_info == nullptr || container_info->stop_time_ns() > 0) {
+      continue;
+    }
+    name_to_container_info[container_info->name()] = container_info;
+    container_names.push_back(container_info->name());
+  }
+
+  if (name_to_container_info.empty()) {
+    return error::Internal("There is no live container in Pod '$0'", pod_info.name());
+  }
+
+  if (name_to_container_info.size() > 1 && container_name.empty()) {
+    std::sort(container_names.begin(), container_names.end());
+    return error::InvalidArgument(
+        "Container not specified, but Pod '$0' has multiple containers '$1'", pod_info.name(),
+        absl::StrJoin(container_names, ","));
+  }
+
+  const md::ContainerInfo* container_info = nullptr;
+
+  if (container_name.empty()) {
+    DCHECK_EQ(name_to_container_info.size(), 1ul);
+    container_info = name_to_container_info.begin()->second;
+  } else {
+    auto iter = name_to_container_info.find(container_name);
+    if (iter == name_to_container_info.end()) {
+      return error::NotFound("Could not found live container for Pod: $0", pod_info.name());
+    }
+    container_info = iter->second;
+  }
+
+  return container_info;
+}
+
+StatusOr<md::UPID> ResolveProcess(const md::ContainerInfo& container_info,
+                                  std::string_view process_regexp) {
+  if (container_info.active_upids().size() > 1 && process_regexp.empty()) {
+    return error::InvalidArgument(
+        "Process not specified, but Container '$0' has multiple processes", container_info.name());
+  }
+
+  std::vector<md::UPID> upids;
+  system::ProcParser proc_parser(system::Config::GetInstance());
+
+  for (const auto& upid : container_info.active_upids()) {
+    if (!process_regexp.empty()) {
+      std::string cmd = proc_parser.GetPIDCmdline(upid.pid());
+      std::smatch match_results;
+      std::regex regex(process_regexp.data(), process_regexp.size());
+      if (!std::regex_search(cmd, match_results, regex, std::regex_constants::match_any)) {
+        continue;
+      }
+    }
+    upids.push_back(upid);
+  }
+
+  if (upids.empty()) {
+    return error::NotFound("Found no UPIDs for Container: '$0'", container_info.name());
+  }
+  if (upids.size() > 1) {
+    return error::Internal("Found more than 1 UPIDs for Container: '$0'", container_info.name());
+  }
+
+  return upids.front();
+}
+
+// Given a TracepointDeployment that specifies a Pod as the target, resolves the UPIDs, and writes
+// them into the input protobuf.
+Status ResolvePodProcess(const md::K8sMetadataState& k8s_mds,
+                         dynamic_tracing::ir::shared::DeploymentSpec* deployment_spec) {
+  std::string_view pod_name = deployment_spec->pod_process().pod();
+
+  PL_ASSIGN_OR_RETURN(const md::PodInfo* pod_info, ResolvePod(k8s_mds, pod_name));
+
+  std::string_view container_name = deployment_spec->pod_process().container();
+
+  PL_ASSIGN_OR_RETURN(const md::ContainerInfo* container_info,
+                      ResolveContainer(k8s_mds, *pod_info, container_name));
+
+  std::string_view process_regexp = deployment_spec->pod_process().process();
+
+  PL_ASSIGN_OR_RETURN(const md::UPID upid, ResolveProcess(*container_info, process_regexp));
+
+  // Target oneof now clears the pod.
+  deployment_spec->mutable_upid()->CopyFrom(UPIDToProto(upid));
+
+  return Status::OK();
+}
+
 }  // namespace
 
 Status ResolveTargetObjPath(const md::K8sMetadataState& k8s_mds,
@@ -359,6 +482,11 @@ Status ResolveTargetObjPath(const md::K8sMetadataState& k8s_mds,
   // Write Pod UPID to deployment_spec.upid.
   if (!deployment_spec->pod().empty()) {
     PL_RETURN_IF_ERROR(ResolvePodUPIDs(k8s_mds, deployment_spec));
+  }
+
+  // Write PodProcess to deployment_spec.upid.
+  if (deployment_spec->has_pod_process()) {
+    PL_RETURN_IF_ERROR(ResolvePodProcess(k8s_mds, deployment_spec));
   }
 
   std::filesystem::path target_obj_path;
@@ -386,7 +514,7 @@ Status ResolveTargetObjPath(const md::K8sMetadataState& k8s_mds,
       break;
     }
     case ir::shared::DeploymentSpec::TargetOneofCase::kPodProcess: {
-      LOG(DFATAL) << "Unimplemented yet";
+      LOG(DFATAL) << "This should never happen, pod process must have been rewritten to UPID.";
       break;
     }
     case ir::shared::DeploymentSpec::TargetOneofCase::TARGET_ONEOF_NOT_SET:

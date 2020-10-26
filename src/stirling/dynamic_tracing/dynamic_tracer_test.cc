@@ -4,6 +4,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/dynamic_tracing/dynamic_tracer.h"
+#include "src/stirling/testing/testing.h"
 
 constexpr std::string_view kBinaryPath =
     "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary";
@@ -14,31 +15,129 @@ namespace dynamic_tracing {
 
 using ::google::protobuf::TextFormat;
 using ::pl::stirling::bpf_tools::UProbeSpec;
+using ::pl::stirling::testing::PIDToUPID;
 using ::pl::testing::proto::EqualsProto;
+using ::pl::testing::status::StatusIs;
 using ::testing::EndsWith;
 using ::testing::Field;
+using ::testing::HasSubstr;
 using ::testing::SizeIs;
 
 constexpr char kServerPath[] =
     "src/stirling/protocols/http2/testing/go_grpc_server/go_grpc_server_/go_grpc_server";
 
-TEST(ResolveTargetObjPath, ResolveUPID) {
-  auto server_path = pl::testing::BazelBinTestFilePath(kServerPath).string();
+constexpr char kPodUpdateTxt[] = R"(
+  uid: "pod0"
+  name: "pod0"
+  namespace: "ns0"
+  start_timestamp_ns: 100
+  container_ids: "container0"
+  container_ids: "container1"
+  container_names: "container0"
+  container_names: "container1"
+)";
 
-  SubProcess s;
-  ASSERT_OK(s.Start({server_path}));
+constexpr char kContainer0UpdateTxt[] = R"(
+  cid: "container0"
+  name: "container0"
+  namespace: "ns0"
+  start_timestamp_ns: 100
+  pod_id: "pod0"
+  pod_name: "pod0"
+)";
 
+constexpr char kContainer1UpdateTxt[] = R"(
+  cid: "container1"
+  name: "container1"
+  namespace: "ns0"
+  start_timestamp_ns: 100
+  pod_id: "pod0"
+  pod_name: "pod0"
+)";
+
+class ResolveTargetObjPathTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    auto server_path = pl::testing::BazelBinTestFilePath(kServerPath).string();
+    ASSERT_OK(s_.Start({server_path}));
+
+    md::K8sMetadataState::PodUpdate pod_update;
+    md::K8sMetadataState::ContainerUpdate container0_update;
+    md::K8sMetadataState::ContainerUpdate container1_update;
+
+    ASSERT_TRUE(TextFormat::ParseFromString(kPodUpdateTxt, &pod_update));
+    ASSERT_TRUE(TextFormat::ParseFromString(kContainer0UpdateTxt, &container0_update));
+    ASSERT_TRUE(TextFormat::ParseFromString(kContainer1UpdateTxt, &container1_update));
+
+    ASSERT_OK(k8s_mds_.HandleContainerUpdate(container0_update));
+    ASSERT_OK(k8s_mds_.HandleContainerUpdate(container1_update));
+
+    ASSERT_OK(k8s_mds_.HandlePodUpdate(pod_update));
+    k8s_mds_.containers_by_id()["container0"]->AddUPID(PIDToUPID(s_.child_pid()));
+  }
+
+  void TearDown() override {
+    s_.Kill();
+    EXPECT_EQ(9, s_.Wait()) << "Server should have been killed.";
+  }
+
+  SubProcess s_;
+  md::K8sMetadataState k8s_mds_;
+};
+
+TEST_F(ResolveTargetObjPathTest, ResolveUPID) {
   ir::shared::DeploymentSpec deployment_spec;
-  deployment_spec.mutable_upid()->set_pid(s.child_pid());
+  deployment_spec.mutable_upid()->set_pid(s_.child_pid());
 
-  md::K8sMetadataState k8s_mds;
-
-  ASSERT_OK(ResolveTargetObjPath(k8s_mds, &deployment_spec));
+  ASSERT_OK(ResolveTargetObjPath(k8s_mds_, &deployment_spec));
   EXPECT_THAT(deployment_spec.path(), EndsWith(kServerPath));
   EXPECT_OK(fs::Exists(deployment_spec.path()));
+}
 
-  s.Kill();
-  EXPECT_EQ(9, s.Wait()) << "Server should have been killed.";
+TEST_F(ResolveTargetObjPathTest, ResolvePodProcessSuccess) {
+  ir::shared::DeploymentSpec deployment_spec;
+  constexpr char kDeploymentSpecTxt[] = R"(
+    pod_process {
+      pod: "ns0/pod0"
+      container: "container0"
+      process: "go_grpc_server"
+    }
+  )";
+  TextFormat::ParseFromString(kDeploymentSpecTxt, &deployment_spec);
+  ASSERT_OK(ResolveTargetObjPath(k8s_mds_, &deployment_spec));
+  EXPECT_THAT(deployment_spec.path(), EndsWith(kServerPath));
+  EXPECT_OK(fs::Exists(deployment_spec.path()));
+}
+
+// Tests that non-matching process regexp returns no UPID.
+TEST_F(ResolveTargetObjPathTest, ResolvePodProcessNonMatchingProcessRegexp) {
+  ir::shared::DeploymentSpec deployment_spec;
+  constexpr char kDeploymentSpecTxt[] = R"(
+    pod_process {
+      pod: "ns0/pod0"
+      container: "container0"
+      process: "non-existent-regexp"
+    }
+  )";
+  TextFormat::ParseFromString(kDeploymentSpecTxt, &deployment_spec);
+  EXPECT_THAT(
+      ResolveTargetObjPath(k8s_mds_, &deployment_spec),
+      StatusIs(pl::statuspb::NOT_FOUND, HasSubstr("Found no UPIDs for Container: 'container0'")));
+}
+
+// Tests that empty container name results into failure when there are multiple containers in Pod.
+TEST_F(ResolveTargetObjPathTest, ResolvePodProcessMissingContainerName) {
+  ir::shared::DeploymentSpec deployment_spec;
+  constexpr char kDeploymentSpecTxt[] = R"(
+    pod_process {
+      pod: "ns0/pod0"
+    }
+  )";
+  TextFormat::ParseFromString(kDeploymentSpecTxt, &deployment_spec);
+  EXPECT_THAT(ResolveTargetObjPath(k8s_mds_, &deployment_spec),
+              StatusIs(pl::statuspb::INVALID_ARGUMENT,
+                       HasSubstr("Container not specified, but Pod 'pod0' has multiple "
+                                 "containers 'container0,container1'")));
 }
 
 constexpr std::string_view kLogicalProgramSpec = R"(
