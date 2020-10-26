@@ -12,10 +12,13 @@ namespace {
 
 ConnectionStats::AggKey BuildAggKey(const upid_t& upid, const traffic_class_t& traffic_class,
                                     const SockAddr& remote_endpoint) {
+  // Both local UPID and remote endpoint must be fully specified.
+  DCHECK_NE(upid.pid, 0);
+  DCHECK_NE(upid.start_time_ticks, 0);
+  DCHECK(remote_endpoint.family != SockAddrFamily::kUnspecified);
+  DCHECK(traffic_class.role != kRoleNone);
   return {
       .upid = upid,
-      // TODO(yzhao): Remote address might not be resolved yet. That causes imprecise stats.
-      // Add code in address resolution to update stats after resolution is done.
       .remote_addr = remote_endpoint.AddrStr(),
       // Set port to 0 if this event is from a server process.
       // This avoids creating excessive amount of records from changing ports of K8s services.
@@ -37,7 +40,7 @@ void ConnectionStats::AddConnOpenEvent(const ConnectionTracker& tracker) {
 void ConnectionStats::AddConnCloseEvent(const ConnectionTracker& tracker) {
   const conn_id_t& conn_id = tracker.conn_id();
   const traffic_class_t& tcls = tracker.traffic_class();
-  const auto& remote_endpoint = tracker.remote_endpoint();
+  const SockAddr& remote_endpoint = tracker.remote_endpoint();
   const bool is_open = false;
 
   RecordConn(conn_id, tcls, remote_endpoint, is_open);
@@ -58,25 +61,15 @@ void ConnectionStats::RecordConn(const struct conn_id_t& conn_id,
                                  const SockAddr& remote_endpoint, bool is_open) {
   AggKey key = BuildAggKey(conn_id.upid, traffic_class, remote_endpoint);
 
+  auto& stats = agg_stats_[key];
+
   if (is_open) {
-    if (!known_conns_.contains(conn_id)) {
-      auto& stats = agg_stats_[key];
+    ++stats.conn_open;
+    stats.traffic_class = traffic_class;
+    stats.addr_family = remote_endpoint.family;
 
-      ++stats.conn_open;
-      stats.traffic_class = traffic_class;
-      stats.addr_family = remote_endpoint.family;
-      known_conns_.insert(conn_id);
-    }
   } else {
-    auto iter = known_conns_.find(conn_id);
-    if (iter != known_conns_.end()) {
-      auto& stats = agg_stats_[key];
-
-      ++stats.conn_close;
-      stats.traffic_class = traffic_class;
-      stats.addr_family = remote_endpoint.family;
-      known_conns_.erase(iter);
-    }
+    ++stats.conn_close;
   }
 }
 

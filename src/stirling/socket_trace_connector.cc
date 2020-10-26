@@ -1353,7 +1353,8 @@ void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTa
 
     // Only export this record if there are actual changes.
     // TODO(yzhao): Exports these records after several iterations.
-    if (stats.bytes_sent != stats.prev_bytes_sent || stats.bytes_recv != stats.prev_bytes_recv) {
+    if (!stats.prev_bytes_sent.has_value() || !stats.prev_bytes_recv.has_value() ||
+        stats.bytes_sent != stats.prev_bytes_sent || stats.bytes_recv != stats.prev_bytes_recv) {
       uint64_t time = AdjustedSteadyClockNowNS();
 
       DataTable::RecordBuilder<&kConnStatsTable> r(data_table, time);

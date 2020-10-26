@@ -81,6 +81,16 @@ void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   PopulateSockAddr(reinterpret_cast<const struct sockaddr*>(&conn_event.addr),
                    &open_info_.remote_addr);
 
+  if (traffic_class_.role == kRoleNone) {
+    traffic_class_.role = conn_event.role;
+  } else if (conn_event.role != kRoleNone) {
+    DCHECK_EQ(traffic_class_.role, conn_event.role) << absl::Substitute(
+        "Not allowed to change the role of an active ConnectionTracker: $0, old role: $1, new "
+        "role: $2",
+        ToString(conn_id_), magic_enum::enum_name(traffic_class_.role),
+        magic_enum::enum_name(conn_event.role));
+  }
+
   CONN_TRACE(1) << absl::Substitute("conn_open af=$0 addr=$1",
                                     magic_enum::enum_name(open_info_.remote_addr.family),
                                     open_info_.remote_addr.AddrStr());
@@ -105,6 +115,8 @@ void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {
   close_info_.timestamp_ns = close_event.timestamp_ns;
   close_info_.send_bytes = close_event.wr_bytes;
   close_info_.recv_bytes = close_event.rd_bytes;
+
+  CONN_TRACE(1) << absl::Substitute("conn_close");
 
   MarkForDeath();
 }
@@ -285,6 +297,10 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   EndpointRole role = InferHTTP2Role(write_event, hdr);
   if (traffic_class_.role == kRoleNone) {
     traffic_class_.role = role;
+
+    if (ShouldExportToConnStats()) {
+      ExportInitialConnStats();
+    }
   } else {
     if (!(role == kRoleNone || role == traffic_class_.role)) {
       LOG_FIRST_N(ERROR, 10) << absl::Substitute(
@@ -457,6 +473,9 @@ void ConnectionTracker::SetTrafficClass(struct traffic_class_t traffic_class) {
 
   if (traffic_class_.role == kRoleNone) {
     traffic_class_.role = traffic_class.role;
+    if (ShouldExportToConnStats()) {
+      ExportInitialConnStats();
+    }
   } else if (traffic_class.role != kRoleNone) {
     DCHECK_EQ(traffic_class_.role, traffic_class.role) << absl::Substitute(
         "Not allowed to change the role of an active ConnectionTracker: $0, old role: $1, new "
@@ -507,7 +526,8 @@ DataStream* ConnectionTracker::resp_data() {
 }
 
 void ConnectionTracker::MarkForDeath(int32_t countdown) {
-  if (ShouldExportToConnStats()) {
+  // Only send the first time MarkForDeath is called (death_countdown == -1).
+  if (death_countdown_ == -1 && ShouldExportToConnStats()) {
     conn_stats_->AddConnCloseEvent(*this);
   }
 
@@ -631,8 +651,11 @@ bool ConnectionTracker::ShouldExportToConnStats() const {
     return false;
   }
 
-  return remote_endpoint().family == SockAddrFamily::kIPv4 ||
-         remote_endpoint().family == SockAddrFamily::kIPv6;
+  bool endpoint_resolved = remote_endpoint().family == SockAddrFamily::kIPv4 ||
+                           remote_endpoint().family == SockAddrFamily::kIPv6;
+  bool role_resolved = (traffic_class_.role != kRoleNone);
+
+  return endpoint_resolved && role_resolved;
 }
 
 void ConnectionTracker::ExportInitialConnStats() {
@@ -665,8 +688,8 @@ void ConnectionTracker::IterationPreTick(const std::vector<CIDRBlock>& cluster_c
     //               we should mark the state in BPF to Other too, so BPF stops tracing.
     //               We should also mark the ConnectionTracker for death.
 
-    if (open_info_.remote_addr.family != SockAddrFamily::kUnspecified &&
-        ShouldExportToConnStats()) {
+    // If the address was successfully resolved, then send the connect information to conn stats.
+    if (ShouldExportToConnStats()) {
       ExportInitialConnStats();
     }
   }

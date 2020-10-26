@@ -18,6 +18,7 @@
 #include "src/stirling/stirling.h"
 
 #include "src/stirling/cass_table.h"
+#include "src/stirling/conn_stats_table.h"
 #include "src/stirling/http_table.h"
 #include "src/stirling/mysql_table.h"
 #include "src/stirling/pgsql_table.h"
@@ -40,6 +41,7 @@ using DynamicTracepointDeployment =
 using pl::types::ColumnWrapperRecordBatch;
 using pl::types::TabletID;
 
+using pl::stirling::kConnStatsTable;
 using pl::stirling::kCQLTable;
 using pl::stirling::kHTTPTable;
 using pl::stirling::kMySQLTable;

@@ -22,7 +22,7 @@ class EventGenerator {
  public:
   explicit EventGenerator(Clock* clock) : clock_(clock) {}
 
-  struct socket_control_event_t InitConn() {
+  struct socket_control_event_t InitConn(EndpointRole role = kRoleNone) {
     struct socket_control_event_t conn_event {};
     conn_event.type = kConnOpen;
     conn_event.open.timestamp_ns = clock_->now();
@@ -31,26 +31,27 @@ class EventGenerator {
     conn_event.open.conn_id.tsid = ++tsid_;
     conn_event.open.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
     conn_event.open.addr.sin6_family = AF_INET;
+    conn_event.open.role = role;
     return conn_event;
   }
 
-  template <TrafficProtocol TProtocol>
+  template <TrafficProtocol TProtocol, EndpointRole TRole = kRoleClient>
   std::unique_ptr<SocketDataEvent> InitSendEvent(std::string_view msg) {
-    return InitDataEvent<TProtocol>(TrafficDirection::kEgress, &send_pos_, msg);
+    return InitDataEvent<TProtocol, TRole>(TrafficDirection::kEgress, &send_pos_, msg);
   }
 
-  template <TrafficProtocol TProtocol>
+  template <TrafficProtocol TProtocol, EndpointRole TRole = kRoleClient>
   std::unique_ptr<SocketDataEvent> InitRecvEvent(std::string_view msg) {
-    return InitDataEvent<TProtocol>(TrafficDirection::kIngress, &recv_pos_, msg);
+    return InitDataEvent<TProtocol, TRole>(TrafficDirection::kIngress, &recv_pos_, msg);
   }
 
-  template <TrafficProtocol TProtocol>
+  template <TrafficProtocol TProtocol, EndpointRole TRole>
   std::unique_ptr<SocketDataEvent> InitDataEvent(TrafficDirection direction, uint64_t* pos,
                                                  std::string_view msg) {
     socket_data_event_t event = {};
     event.attr.direction = direction;
     event.attr.traffic_class.protocol = TProtocol;
-    event.attr.traffic_class.role = kRoleClient;
+    event.attr.traffic_class.role = TRole;
     event.attr.timestamp_ns = clock_->now();
     event.attr.conn_id.upid.pid = kPID;
     event.attr.conn_id.fd = kFD;
@@ -66,15 +67,21 @@ class EventGenerator {
     return std::make_unique<SocketDataEvent>(&event);
   }
 
-  std::unique_ptr<SocketDataEvent> InitSendEvent(TrafficProtocol protocol, std::string_view msg) {
-    auto res = InitDataEvent<kProtocolUnknown>(TrafficDirection::kEgress, &send_pos_, msg);
+  std::unique_ptr<SocketDataEvent> InitSendEvent(TrafficProtocol protocol, EndpointRole role,
+                                                 std::string_view msg) {
+    auto res =
+        InitDataEvent<kProtocolUnknown, kRoleNone>(TrafficDirection::kEgress, &send_pos_, msg);
     res->attr.traffic_class.protocol = protocol;
+    res->attr.traffic_class.role = role;
     return res;
   }
 
-  std::unique_ptr<SocketDataEvent> InitRecvEvent(TrafficProtocol protocol, std::string_view msg) {
-    auto res = InitDataEvent<kProtocolUnknown>(TrafficDirection::kIngress, &recv_pos_, msg);
+  std::unique_ptr<SocketDataEvent> InitRecvEvent(TrafficProtocol protocol, EndpointRole role,
+                                                 std::string_view msg) {
+    auto res =
+        InitDataEvent<kProtocolUnknown, kRoleNone>(TrafficDirection::kIngress, &recv_pos_, msg);
     res->attr.traffic_class.protocol = protocol;
+    res->attr.traffic_class.role = role;
     return res;
   }
 

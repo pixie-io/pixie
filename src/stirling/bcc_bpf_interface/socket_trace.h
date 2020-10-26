@@ -58,6 +58,7 @@ struct conn_event_t {
   uint64_t timestamp_ns;     // Must be shared with close_event_t.
   struct conn_id_t conn_id;  // Must be shared with close_event_t.
   struct sockaddr_in6 addr;
+  enum EndpointRole role;
 };
 
 // This struct is a subset of conn_info_t. It is used to communicate close events.

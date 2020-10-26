@@ -680,11 +680,9 @@ TEST_P(ConnectionTrackerStatsTest, ConnOpenDataCloseSequence) {
 
   std::tie(protocol, role) = GetParam();
 
-  auto open_event = event_gen_.InitConn();
-  auto req_frame0 = event_gen_.InitSendEvent(protocol, "aaaa");
-  req_frame0->attr.traffic_class.role = role;
-  auto resp_frame0 = event_gen_.InitRecvEvent(protocol, "bbbb");
-  resp_frame0->attr.traffic_class.role = role;
+  auto open_event = event_gen_.InitConn(role);
+  auto req_frame0 = event_gen_.InitSendEvent(protocol, role, "aaaa");
+  auto resp_frame0 = event_gen_.InitRecvEvent(protocol, role, "bbbb");
   auto close_event = event_gen_.InitClose();
 
   tracker_.IterationPreTick({}, nullptr, nullptr);
@@ -721,10 +719,9 @@ TEST_P(ConnectionTrackerStatsTest, NoConnOpen) {
   std::tie(protocol, role) = GetParam();
 
   auto open_event = event_gen_.InitConn();
-  auto req_frame0 = event_gen_.InitSendEvent(protocol, "aaaa");
-  req_frame0->attr.traffic_class.role = role;
-  auto resp_frame0 = event_gen_.InitRecvEvent(protocol, "bbbb");
-  resp_frame0->attr.traffic_class.role = role;
+  open_event.open.role = role;
+  auto req_frame0 = event_gen_.InitSendEvent(protocol, role, "aaaa");
+  auto resp_frame0 = event_gen_.InitRecvEvent(protocol, role, "bbbb");
   auto close_event = event_gen_.InitClose();
 
   // No stats pushed for conn_open.
@@ -759,10 +756,8 @@ TEST_P(ConnectionTrackerStatsTest, OnlyDataEvents) {
   std::tie(protocol, role) = GetParam();
 
   auto open_event = event_gen_.InitConn();
-  auto req_frame0 = event_gen_.InitSendEvent(protocol, "aaaa");
-  req_frame0->attr.traffic_class.role = role;
-  auto resp_frame0 = event_gen_.InitRecvEvent(protocol, "bbbb");
-  resp_frame0->attr.traffic_class.role = role;
+  auto req_frame0 = event_gen_.InitSendEvent(protocol, role, "aaaa");
+  auto resp_frame0 = event_gen_.InitRecvEvent(protocol, role, "bbbb");
   // No close_event.
 
   // Increment iteration count, and the next IterationPreTick() can export the cached data stats.

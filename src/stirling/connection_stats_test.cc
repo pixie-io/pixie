@@ -65,17 +65,68 @@ auto StatsIs(int open, int close, int sent, int recv) {
 
 // Tests that aggregated records for client side events are correctly put into ConnectionStats.
 TEST_F(ConnectionStatsTest, ClientSizeAggregationRecord) {
-  struct socket_control_event_t conn = event_gen_.InitConn();
+  struct socket_control_event_t conn = event_gen_.InitConn(kRoleClient);
   auto* sockaddr = reinterpret_cast<struct sockaddr_in*>(&conn.open.addr);
   sockaddr->sin_family = AF_INET;
   sockaddr->sin_port = 54321;
   sockaddr->sin_addr.s_addr = 0x01010101;  // 1.1.1.1
 
-  auto frame1 = event_gen_.InitSendEvent<kProtocolHTTP>("abc");
-  auto frame2 = event_gen_.InitSendEvent<kProtocolHTTP>("def");
-  auto frame3 = event_gen_.InitRecvEvent<kProtocolHTTP>("1234");
-  auto frame4 = event_gen_.InitRecvEvent<kProtocolHTTP>("5");
-  auto frame5 = event_gen_.InitRecvEvent<kProtocolHTTP>("6789");
+  auto frame1 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleClient, "abc");
+  auto frame2 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleClient, "def");
+  auto frame3 = event_gen_.InitRecvEvent(kProtocolHTTP, kRoleClient, "1234");
+  auto frame4 = event_gen_.InitRecvEvent(kProtocolHTTP, kRoleClient, "5");
+  auto frame5 = event_gen_.InitRecvEvent(kProtocolHTTP, kRoleClient, "6789");
+
+  struct socket_control_event_t close_event = event_gen_.InitClose();
+
+  // This sets up the remote address and port.
+  tracker_.AddControlEvent(conn);
+
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 0, 0))));
+
+  tracker_.AddDataEvent(std::move(frame1));
+
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 3, 0))));
+
+  tracker_.AddDataEvent(std::move(frame2));
+  tracker_.AddDataEvent(std::move(frame3));
+  tracker_.AddDataEvent(std::move(frame4));
+
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 6, 5))));
+
+  tracker_.AddDataEvent(std::move(frame5));
+
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 6, 9))));
+
+  tracker_.AddControlEvent(close_event);
+
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 1, 6, 9))));
+
+  // Tests that after receiving conn close event for a connection, another same close event won't
+  // increment the connection.
+  tracker_.AddControlEvent(close_event);
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
+              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 1, 6, 9))));
+}
+
+// Tests that aggregated records for server side events are correctly put into ConnectionStats.
+TEST_F(ConnectionStatsTest, ServerSizeAggregationRecord) {
+  struct socket_control_event_t conn = event_gen_.InitConn(kRoleServer);
+  auto* sockaddr = reinterpret_cast<struct sockaddr_in*>(&conn.open.addr);
+  sockaddr->sin_family = AF_INET;
+  sockaddr->sin_port = 54321;
+  sockaddr->sin_addr.s_addr = 0x01010101;  // 1.1.1.1
+
+  auto frame1 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleServer, "abc");
+  auto frame2 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleServer, "def");
+  auto frame3 = event_gen_.InitRecvEvent(kProtocolHTTP, kRoleServer, "1234");
+  auto frame4 = event_gen_.InitRecvEvent(kProtocolHTTP, kRoleServer, "5");
+  auto frame5 = event_gen_.InitRecvEvent(kProtocolHTTP, kRoleServer, "6789");
 
   struct socket_control_event_t close_event = event_gen_.InitClose();
 
@@ -116,7 +167,7 @@ TEST_F(ConnectionStatsTest, ClientSizeAggregationRecord) {
 
 // Tests that any connection trackers with no remote endpoint do not report conn stats events.
 TEST_F(ConnectionStatsTest, NoEventsIfNoRemoteAddr) {
-  auto frame1 = event_gen_.InitSendEvent<kProtocolHTTP>("foo");
+  auto frame1 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleClient, "foo");
 
   tracker_.AddDataEvent(std::move(frame1));
 
@@ -131,17 +182,11 @@ TEST_F(ConnectionStatsTest, DisabledConnectionTracker) {
   sockaddr->sin_port = 54321;
   sockaddr->sin_addr.s_addr = 0x01010101;  // 1.1.1.1
 
-  auto frame1 = event_gen_.InitSendEvent<kProtocolHTTP>("abc");
+  auto frame1 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleClient, "abc");
 
-  //
   // Main test sequence.
-  //
-
-  // This sets up the remote address and port.
   tracker_.AddControlEvent(conn);
-
   tracker_.Disable("test");
-
   tracker_.AddDataEvent(std::move(frame1));
 
   EXPECT_THAT(conn_stats_.mutable_agg_stats(),
