@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"sort"
 
 	"github.com/graph-gophers/graphql-go"
 	uuid "github.com/satori/go.uuid"
@@ -80,6 +81,8 @@ func (q *QueryResolver) DeploymentKeys(ctx context.Context) ([]*DeploymentKeyRes
 		}
 		keys = append(keys, resolvedKey)
 	}
+	// Sort by descending time
+	sort.Slice(keys, func(i, j int) bool { return keys[i].createdAtNs > keys[j].createdAtNs })
 	return keys, nil
 }
 

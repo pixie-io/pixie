@@ -71,6 +71,7 @@ func TestDeploymentKey(t *testing.T) {
 func TestDeploymentKeys(t *testing.T) {
 	key1ID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 	key2ID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	key3ID := "8cb848c6-9dad-11d1-80b4-00c04fd430c8"
 
 	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
@@ -86,7 +87,13 @@ func TestDeploymentKeys(t *testing.T) {
 	if err != nil {
 		t.Fatalf("could not write time %+v as protobuf", createTime2)
 	}
+	createTime3 := time.Date(2020, 10, 3, 17, 46, 100, 412401, time.UTC)
+	createTime3Pb, err := types.TimestampProto(createTime3)
+	if err != nil {
+		t.Fatalf("could not write time %+v as protobuf", createTime3)
+	}
 
+	// Inserted keys are not sorted by creation time.
 	mockClients.MockVizierDeployKey.EXPECT().
 		List(gomock.Any(), &cloudapipb.ListDeploymentKeyRequest{}).
 		Return(&cloudapipb.ListDeploymentKeyResponse{
@@ -103,10 +110,17 @@ func TestDeploymentKeys(t *testing.T) {
 					CreatedAt: createTime2Pb,
 					Desc:      "key description 2",
 				},
+				&cloudapipb.DeploymentKey{
+					ID:        utils.ProtoFromUUIDStrOrNil(key3ID),
+					Key:       "ghi",
+					CreatedAt: createTime3Pb,
+					Desc:      "key description 3",
+				},
 			},
 		}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
+	// Expect returned keys to be sorted.
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Schema:  gqlSchema,
@@ -124,11 +138,17 @@ func TestDeploymentKeys(t *testing.T) {
 			ExpectedResult: `
 				{
 					"deploymentKeys": [{
+						"id": "8cb848c6-9dad-11d1-80b4-00c04fd430c8",
+						"key": "ghi",
+						"createdAtMs": 1601747260000.4124,
+						"desc": "key description 3"
+					}, {
 						"id": "7ba7b810-9dad-11d1-80b4-00c04fd430c8",
 						"key": "abc",
 						"createdAtMs": 1583776060001.2324,
-						"desc": "key description 1"					
-					}, {
+						"desc": "key description 1"
+					},
+					{
 						"id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
 						"key": "def",
 						"createdAtMs": 1572803260000.4124,
