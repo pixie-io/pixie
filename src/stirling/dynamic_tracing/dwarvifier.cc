@@ -100,6 +100,12 @@ class Dwarvifier {
                             ir::physical::Program* output_program);
   Status ProcessDeleteAction(const ir::logical::MapDeleteAction& stash_action,
                              ir::physical::Probe* output_probe);
+  // Generates physical IR objects that lookup a struct pointer to the only variable in
+  // BPF_PERCPU_ARRAY, which is used to store the output variables to the perf buffer.
+  StructVariable* GenerateDataBufferVariable(const std::string& struct_type_name,
+                                             const std::string& variable_name,
+                                             ir::physical::Probe* output_probe,
+                                             ir::physical::Program* output_program);
   Status ProcessOutputAction(const ir::logical::OutputAction& output_action,
                              ir::physical::Probe* output_probe,
                              ir::physical::Program* output_program);
@@ -1211,6 +1217,49 @@ Status PopulateOutputTypes(const std::map<std::string, ir::physical::PerfBufferO
 }
 }  // namespace
 
+StructVariable* Dwarvifier::GenerateDataBufferVariable(const std::string& struct_type_name,
+                                                       const std::string& variable_name,
+                                                       ir::physical::Probe* output_probe,
+                                                       ir::physical::Program* output_program) {
+  // Add data buffer array.
+  ir::physical::PerCPUArray* data_buffer_array = output_program->add_arrays();
+  std::string data_buffer_array_name = absl::StrCat(variable_name, "_array");
+  data_buffer_array->set_name(data_buffer_array_name);
+  data_buffer_array->mutable_type()->set_struct_type(struct_type_name);
+  data_buffer_array->set_capacity(1);
+
+  // Add data buffer variable's index.
+  std::string data_buffer_idx_name = absl::StrCat(variable_name, "_idx");
+  auto* data_buffer_idx =
+      AddVariable<ScalarVariable>(output_probe, data_buffer_idx_name, ir::shared::UINT32);
+  data_buffer_idx->set_constant("0");
+
+  // Add data variable.
+  auto* data_buffer_var =
+      AddVariable<MapVariable>(output_probe, variable_name, ir::shared::ScalarType::UNKNOWN);
+  data_buffer_var->set_type(struct_type_name);
+  data_buffer_var->set_map_name(data_buffer_array_name);
+  data_buffer_var->set_key_variable_name(data_buffer_idx_name);
+
+  // Add null check.
+  auto* null_check = output_probe->add_cond_blocks();
+  null_check->mutable_cond()->set_op(ir::shared::Condition::EQUAL);
+  null_check->mutable_cond()->add_vars(variable_name);
+  // This does not distinguish between a variable name and literal value.
+  null_check->mutable_cond()->add_vars("NULL");
+  null_check->set_return_value("0");
+
+  // Create and initialize a struct variable.
+  auto* struct_var = output_probe->add_vars()->mutable_struct_var();
+  struct_var->set_type(struct_type_name);
+  struct_var->set_name(variable_name);
+  struct_var->set_op(ir::physical::ASSIGN_ONLY);
+  struct_var->set_is_pointer(true);
+  struct_var->set_is_output(true);
+
+  return struct_var;
+}
+
 Status Dwarvifier::ProcessOutputAction(const ir::logical::OutputAction& output_action_in,
                                        ir::physical::Probe* output_probe,
                                        ir::physical::Program* output_program) {
@@ -1224,11 +1273,8 @@ Status Dwarvifier::ProcessOutputAction(const ir::logical::OutputAction& output_a
   PL_RETURN_IF_ERROR(
       PopulateOutputTypes(outputs_, output_action_in.output_name(), struct_type_name));
 
-  // Create and initialize a struct variable.
-  auto* struct_var = output_probe->add_vars()->mutable_struct_var();
-  struct_var->set_type(struct_type_name);
-  struct_var->set_name(variable_name);
-  struct_var->set_is_output(true);
+  auto* struct_var =
+      GenerateDataBufferVariable(struct_type_name, variable_name, output_probe, output_program);
 
   // The Struct generated in above step is always the last element.
   const ir::physical::Struct& output_struct = *output_program->structs().rbegin();

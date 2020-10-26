@@ -165,6 +165,11 @@ TEST(GenStructVariableTest, Variables) {
   ASSERT_OK_AND_THAT(GenStructVariable(st_var),
                      ElementsAre("struct socket_data_event_t st_var = {};", "st_var.i32 = foo;",
                                  "st_var.i64 = bar;"));
+
+  st_var.set_is_pointer(true);
+  ASSERT_OK_AND_THAT(GenStructVariable(st_var),
+                     ElementsAre("struct socket_data_event_t st_var = {};", "st_var->i32 = foo;",
+                                 "st_var->i64 = bar;"));
 }
 
 TEST(GenMapStashActionTest, StashMap) {
@@ -408,7 +413,7 @@ TEST(GenProgramTest, SpecsAndCode) {
       "struct struct_blob64 {",
       "  uint64_t len;",
       "  int8_t decoder_idx;",
-      "  uint8_t buf[64-sizeof(uint64_t)-1];",
+      "  uint8_t buf[64-sizeof(uint64_t)-2];",
       "  // To keep 4.14 kernel verifier happy, we copy an extra byte.",
       "  // Keep a dummy character to absorb this garbage.",
       "  // We also use this extra byte to track if data has been truncated.",
@@ -436,7 +441,7 @@ TEST(GenProgramTest, SpecsAndCode) {
       "struct socket_data_event_t st_var = {};",
       "st_var.i32 = var;",
       "struct value_t* map_var = map.lookup(&key);",
-      "const int32_t index = 0;",
+      "int32_t index = 0;",
       "struct socket_data_event_t* array_var = array.lookup(&index);",
       "if (key == var) {",
       "struct_blob.len = 8;",

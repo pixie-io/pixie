@@ -30,6 +30,9 @@ constexpr size_t kStructStringSize = 32;
 constexpr size_t kStructByteArraySize = 64;
 
 // Fixed size for tracing structs.
+// TODO(yzhao): This size must match that of the dynamic generated struct during compilation.
+// That has to be managed manually in the code. We should think about deriving size from the
+// generated types.
 constexpr size_t kStructBlobSize = 64;
 
 struct BCCProgram {

@@ -664,6 +664,21 @@ probes {
     }
   }
   vars {
+    scalar_var {
+      name: "out_table_value_idx"
+      type: UINT32
+      constant: "0"
+    }
+  }
+  vars {
+    map_var {
+      name: "out_table_value"
+      type: "out_table_value_t"
+      map_name: "out_table_value_array"
+      key_variable_name: "out_table_value_idx"
+    }
+  }
+  vars {
     struct_var {
       name: "out_table_value"
       type: "out_table_value_t"
@@ -695,7 +710,9 @@ probes {
         field_name: "arg2"
         variable_name: "arg2"
       }
+      op: ASSIGN_ONLY
       is_output: true
+      is_pointer: true
     }
   }
   map_stash_actions {
@@ -708,6 +725,14 @@ probes {
   output_actions {
     perf_buffer_name: "out_table"
     variable_name: "out_table_value"
+  }
+  cond_blocks {
+    cond {
+      op: EQUAL
+      vars: "out_table_value"
+      vars: "NULL"
+    }
+    return_value: "0"
   }
 }
 probes {
@@ -788,6 +813,21 @@ probes {
     }
   }
   vars {
+    scalar_var {
+      name: "out_table2_value_idx"
+      type: UINT32
+      constant: "0"
+    }
+  }
+  vars {
+    map_var {
+      name: "out_table2_value"
+      type: "out_table2_value_t"
+      map_name: "out_table2_value_array"
+      key_variable_name: "out_table2_value_idx"
+    }
+  }
+  vars {
     struct_var {
       name: "out_table2_value"
       type: "out_table2_value_t"
@@ -815,17 +855,41 @@ probes {
         field_name: "arg1"
         variable_name: "arg1"
       }
+      op: ASSIGN_ONLY
       is_output: true
+      is_pointer: true
     }
-  }
-  map_delete_actions {
-    map_name: "my_stash"
-    key_variable_name: "goid_"
   }
   output_actions {
     perf_buffer_name: "out_table2"
     variable_name: "out_table2_value"
   }
+  map_delete_actions {
+    map_name: "my_stash"
+    key_variable_name: "goid_"
+  }
+  cond_blocks {
+    cond {
+      op: EQUAL
+      vars: "out_table2_value"
+      vars: "NULL"
+    }
+    return_value: "0"
+  }
+}
+arrays {
+  name: "out_table_value_array"
+  type {
+    struct_type: "out_table_value_t"
+  }
+  capacity: 1
+}
+arrays {
+  name: "out_table2_value_array"
+  type {
+    struct_type: "out_table2_value_t"
+  }
+  capacity: 1
 }
 )";
 
@@ -999,6 +1063,21 @@ probes {
     }
   }
   vars {
+    scalar_var {
+      name: "out_table_value_idx"
+      type: UINT32
+      constant: "0"
+    }
+  }
+  vars {
+    map_var {
+      name: "out_table_value"
+      type: "out_table_value_t"
+      map_name: "out_table_value_array"
+      key_variable_name: "out_table_value_idx"
+    }
+  }
+  vars {
     struct_var {
       name: "out_table_value"
       type: "out_table_value_t"
@@ -1022,13 +1101,30 @@ probes {
         field_name: "out"
         variable_name: "arg0"
       }
+      op: ASSIGN_ONLY
       is_output: true
+      is_pointer: true
     }
   }
   output_actions {
     perf_buffer_name: "out_table"
     variable_name: "out_table_value"
   }
+  cond_blocks {
+    cond {
+      op: EQUAL
+      vars: "out_table_value"
+      vars: "NULL"
+    }
+    return_value: "0"
+  }
+}
+arrays {
+  name: "out_table_value_array"
+  type {
+    struct_type: "out_table_value_t"
+  }
+  capacity: 1
 }
 )";
 
@@ -1220,6 +1316,21 @@ probes {
     }
   }
   vars {
+    scalar_var {
+      name: "out_table_value_idx"
+      type: UINT32
+      constant: "0"
+    }
+  }
+  vars {
+    map_var {
+      name: "out_table_value"
+      type: "out_table_value_t"
+      map_name: "out_table_value_array"
+      key_variable_name: "out_table_value_idx"
+    }
+  }
+  vars {
     struct_var {
       name: "out_table_value"
       type: "out_table_value_t"
@@ -1243,7 +1354,9 @@ probes {
         field_name: "error"
         variable_name: "retval"
       }
+      op: ASSIGN_ONLY
       is_output: true
+      is_pointer: true
     }
   }
   output_actions {
@@ -1287,8 +1400,23 @@ probes {
       }
     }
   }
+  cond_blocks {
+    cond {
+      op: EQUAL
+      vars: "out_table_value"
+      vars: "NULL"
+    }
+    return_value: "0"
+  }
 }
 language: GOLANG
+arrays {
+  name: "out_table_value_array"
+  type {
+    struct_type: "out_table_value_t"
+  }
+  capacity: 1
+}
 )";
 
 struct DwarfInfoTestParam {

@@ -234,7 +234,7 @@ class StructDecoder {
     PL_ASSIGN_OR_RETURN(int8_t idx, ExtractField<int8_t>());
 
     std::string_view bytes = buf_.substr(0, len);
-    buf_.remove_prefix(dynamic_tracing::kStructBlobSize - sizeof(size_t));
+    buf_.remove_prefix(dynamic_tracing::kStructBlobSize - sizeof(size_t) - sizeof(int8_t));
 
     if (idx < 0) {
       // BPF could not figure out the correct index to the implementation type of an interface.

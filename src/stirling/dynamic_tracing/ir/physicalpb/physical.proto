@@ -209,6 +209,8 @@ message PtrLenVariable {
 
 // Describes a variable returned from reading a map.
 // The variable is a pointer to the type held by the map.
+//
+// NOTE: MapVariable results into a pointer in BCC code.
 message MapVariable {
   // Name must be unique in the scope of a Probe.
   string name = 1;
@@ -237,6 +239,9 @@ message StructVariable {
 
   // The struct that holds all values defined below.
   string type = 2;
+
+  // If this variable is a pointer.
+  bool is_pointer = 6;
 
   // Describe an expression to assign variable_name to the specified field.
   message FieldAssignment {

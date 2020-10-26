@@ -54,14 +54,13 @@ using ::pl::stirling::elf_tools::ElfReader;
 namespace {
 
 // NOLINTNEXTLINE: runtime/string
-const std::string kStructString = absl::StrCat("struct blob", std::to_string(kStructStringSize));
+const std::string kStructString = absl::StrCat("struct blob", kStructStringSize);
 
 // NOLINTNEXTLINE: runtime/string
-const std::string kStructByteArray =
-    absl::StrCat("struct blob", std::to_string(kStructByteArraySize));
+const std::string kStructByteArray = absl::StrCat("struct blob", kStructByteArraySize);
 
 // NOLINTNEXTLINE: runtime/string
-const std::string kStructBlob = absl::StrCat("struct struct_blob", std::to_string(kStructBlobSize));
+const std::string kStructBlob = absl::StrCat("struct struct_blob", kStructBlobSize);
 
 // clang-format off
 const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypeToCType = {
@@ -156,7 +155,6 @@ class BCCCodeGenerator {
                      std::vector<std::string>* code_lines) const;
 
   StatusOr<std::vector<std::string>> GenerateConditionalBlock(
-      const absl::flat_hash_map<std::string_view, const Variable*>& outer_vars,
       const ir::physical::ConditionalBlock& cond_block) const;
 
   // Generates the code for a physical probe.
@@ -368,9 +366,7 @@ std::string GenBPFHelper(const ScalarVariable& var) {
 }
 
 std::string GenConstant(const ScalarVariable& var) {
-  // TODO(yzhao): Need to remove 'const' from the generated statement, because the generated
-  // variable might be used as index to BPF maps, which cannot be const.
-  return absl::Substitute("const $0 $1 = $2;", GetScalarTypeCName(var.type()), var.name(),
+  return absl::Substitute("$0 $1 = $2;", GetScalarTypeCName(var.type()), var.name(),
                           var.constant());
 }
 
@@ -454,16 +450,21 @@ StatusOr<std::vector<std::string>> GenStructVariable(const StructVariable& st_va
     code_lines.push_back(absl::Substitute("struct $0 $1 = {};", st_var.type(), st_var.name()));
   }
 
+  constexpr char kDot[] = ".";
+  constexpr char kArrow[] = "->";
+
+  const char* access_operator = st_var.is_pointer() ? kArrow : kDot;
+
   if (st_var.op() != ir::physical::DEFINE_ONLY) {
     for (const auto& fa : st_var.field_assignments()) {
       switch (fa.value_oneof_case()) {
         case StructVariable::FieldAssignment::kVariableName:
-          code_lines.push_back(
-              absl::Substitute("$0.$1 = $2;", st_var.name(), fa.field_name(), fa.variable_name()));
+          code_lines.push_back(absl::Substitute("$0$1$2 = $3;", st_var.name(), access_operator,
+                                                fa.field_name(), fa.variable_name()));
           break;
         case StructVariable::FieldAssignment::kValue:
-          code_lines.push_back(
-              absl::Substitute("$0.$1 = $2;", st_var.name(), fa.field_name(), fa.value()));
+          code_lines.push_back(absl::Substitute("$0$1$2 = $3;", st_var.name(), access_operator,
+                                                fa.field_name(), fa.value()));
           break;
         case StructVariable::FieldAssignment::VALUE_ONEOF_NOT_SET:
           return error::InvalidArgument(
@@ -535,9 +536,25 @@ std::string GenPerfBufferOutput(const PerfBufferOutput& output) {
 
 namespace {
 
-std::string GenPerfBufferOutputAction(const PerfBufferOutputAction& action) {
-  return absl::Substitute("$0.perf_submit(ctx, &$1, sizeof($1));", action.perf_buffer_name(),
-                          action.variable_name());
+StatusOr<std::string> GenPerfBufferOutputAction(
+    const absl::flat_hash_map<std::string_view, const Variable*>& vars,
+    const PerfBufferOutputAction& action) {
+  auto iter = vars.find(action.variable_name());
+
+  if (iter == vars.end()) {
+    return error::NotFound("Perf buffer output variable '$0' was not defined",
+                           action.variable_name());
+  }
+
+  const auto& output_var = iter->second;
+
+  if (output_var->has_struct_var() && output_var->struct_var().is_pointer()) {
+    return absl::Substitute("$0.perf_submit(ctx, $1, sizeof(*$1));", action.perf_buffer_name(),
+                            action.variable_name());
+  } else {
+    return absl::Substitute("$0.perf_submit(ctx, &$1, sizeof($1));", action.perf_buffer_name(),
+                            action.variable_name());
+  }
 }
 
 ScalarType GetScalarVariableType(const Variable& var) {
@@ -674,16 +691,16 @@ std::string_view GetVariableName(const Variable& var) {
 }
 
 StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateConditionalBlock(
-    const absl::flat_hash_map<std::string_view, const Variable*>& outer_vars,
     const ir::physical::ConditionalBlock& cond_block) const {
-  for (const auto& var_name : cond_block.cond().vars()) {
-    PL_RETURN_IF_ERROR(
-        CheckVarExists(outer_vars, var_name, "Conditional variables were not defined."));
-  }
-
   std::vector<std::string> code_lines;
 
   absl::flat_hash_map<std::string_view, const Variable*> vars;
+
+  // NOTE: We do not check if these vars are defined prior. This is a lazy workaround of the fact
+  // that the vars could be variable names or literal values. "NULL" is a case where the var being
+  // a literal value.
+  //
+  // TODO(yzhao): Consider refining it to be more structured.
 
   for (const auto& var : cond_block.vars()) {
     std::string_view var_name = GetVariableName(var);
@@ -737,8 +754,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
   }
 
   for (const auto& block : probe.cond_blocks()) {
-    PL_ASSIGN_OR_RETURN(std::vector<std::string> cond_code_lines,
-                        GenerateConditionalBlock(vars, block));
+    PL_ASSIGN_OR_RETURN(std::vector<std::string> cond_code_lines, GenerateConditionalBlock(block));
 
     code_lines.insert(code_lines.end(), std::move_iterator(cond_code_lines.begin()),
                       std::move_iterator(cond_code_lines.end()));
@@ -781,10 +797,8 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
   }
 
   for (const auto& action : probe.output_actions()) {
-    PL_RETURN_IF_ERROR(
-        CheckVarExists(vars, action.variable_name(),
-                       absl::Substitute("Perf buffer '$0'", action.perf_buffer_name())));
-    code_lines.push_back(GenPerfBufferOutputAction(action));
+    PL_ASSIGN_OR_RETURN(std::string code_line, GenPerfBufferOutputAction(vars, action));
+    code_lines.push_back(std::move(code_line));
   }
 
   for (const auto& printk : probe.printks()) {
@@ -894,20 +908,25 @@ std::vector<std::string> GenBlobType(std::string_view type_name, int size,
       // during decoding.
       absl::Substitute("$0 {", type_name), "  uint64_t len;"};
 
+  // This by default accounts for the dummy byte.
+  int overhead_size = sizeof(uint8_t);
+
   if (include_decoder_index) {
     // TODO(yzhao): Change to use uint16_t.
     code_lines.push_back("  int8_t decoder_idx;");
+    overhead_size += sizeof(int8_t);
   }
 
-  code_lines.insert(code_lines.end(),
-                    {
-                        absl::Substitute("  uint8_t buf[$0-sizeof(uint64_t)-1];", size),
-                        "  // To keep 4.14 kernel verifier happy, we copy an extra byte.",
-                        "  // Keep a dummy character to absorb this garbage.",
-                        "  // We also use this extra byte to track if data has been truncated.",
-                        "  uint8_t dummy;",
-                        "};",
-                    });
+  code_lines.insert(
+      code_lines.end(),
+      {
+          absl::Substitute("  uint8_t buf[$0-sizeof(uint64_t)-$1];", size, overhead_size),
+          "  // To keep 4.14 kernel verifier happy, we copy an extra byte.",
+          "  // Keep a dummy character to absorb this garbage.",
+          "  // We also use this extra byte to track if data has been truncated.",
+          "  uint8_t dummy;",
+          "};",
+      });
 
   return code_lines;
 }
