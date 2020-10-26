@@ -1,5 +1,10 @@
 package main
 
+/****************************************
+ * We need to manually add some functionality to the gobpf so we can add by address.
+ * This is simply a copy paste of those files.
+ ****************************************/
+
 /*
 #cgo CFLAGS: -I/usr/include/bcc/compat
 #cgo LDFLAGS: -lbcc
@@ -13,10 +18,6 @@ import (
 	"unsafe"
 )
 
-/****************************************
- * We need to manually add some functionality to the gobpf so we can add by address.
- * This is simply a copy paste of those files.
- */
 type bccSymbol struct {
 	name         *C.char
 	demangleName *C.char
