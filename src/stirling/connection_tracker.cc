@@ -126,6 +126,9 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   SetConnID(event->attr.conn_id);
   SetTrafficClass(event->attr.traffic_class);
 
+  CheckTracker();
+  UpdateTimestamps(event->attr.timestamp_ns);
+
   // Only export metric to conn_stats_ after remote_endpoint has been resolved.
   if (ShouldExportToConnStats()) {
     // Export stats to ConnectionStats object.
@@ -134,23 +137,20 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
 
   UpdateDataStats(*event);
 
+  CONN_TRACE(1) << absl::Substitute(
+      "data=$0 [length=$1]", BytesToString<bytes_format::HexAsciiMix>(event->msg.substr(0, 10)),
+      event->msg.size());
+
   // TODO(yzhao): Change to let userspace resolve the connection type and signal back to BPF.
   // Then we need at least one data event to let ConnectionTracker know the field descriptor.
   if (event->attr.traffic_class.protocol == kProtocolUnknown) {
     return;
   }
 
-  CONN_TRACE(1) << absl::Substitute(
-      "data=$0 [length=$1]", BytesToString<bytes_format::HexAsciiMix>(event->msg.substr(0, 10)),
-      event->msg.size());
-
   // A disabled tracker doesn't collect data events.
   if (state() == State::kDisabled) {
     return;
   }
-
-  CheckTracker();
-  UpdateTimestamps(event->attr.timestamp_ns);
 
   switch (event->attr.direction) {
     case TrafficDirection::kEgress: {
@@ -456,6 +456,10 @@ void ConnectionTracker::SetConnID(struct conn_id_t conn_id) {
                           ToString(conn_id));
 
   conn_id_ = conn_id;
+
+  if (conn_id_.upid.pid == FLAGS_stirling_conn_trace_pid) {
+    SetDebugTrace(2);
+  }
 }
 
 void ConnectionTracker::SetTrafficClass(struct traffic_class_t traffic_class) {
@@ -496,10 +500,6 @@ void ConnectionTracker::CheckTracker() {
     LOG_FIRST_N(WARNING, 10) << absl::Substitute(
         "Did not expect new event more than 1 sampling iteration after Close. Connection=$0.",
         ToString(conn_id_));
-  }
-
-  if (conn_id_.upid.pid == FLAGS_stirling_conn_trace_pid) {
-    SetDebugTrace(2);
   }
 }
 
@@ -822,16 +822,15 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
     return;
   }
 
-  std::optional<std::string_view> fd_link_or_nullopt =
-      conn_resolver_->InferFDLink(last_update_timestamp_);
-  if (!fd_link_or_nullopt) {
+  std::optional<std::string_view> fd_link_opt = conn_resolver_->InferFDLink(last_update_timestamp_);
+  if (!fd_link_opt.has_value()) {
     // This is not a conn resolution failure. We just need more time to figure out the right link.
     return;
   }
 
   // At this point we have something like "socket:[32431]" or "/dev/null" or "pipe:[2342]"
   // Next we extract the inode number, if it is a socket type..
-  auto socket_inode_num_status = fs::ExtractInodeNum(fs::kSocketInodePrefix, *fd_link_or_nullopt);
+  auto socket_inode_num_status = fs::ExtractInodeNum(fs::kSocketInodePrefix, fd_link_opt.value());
 
   // After resolving the FD, it may turn out to be non-socket data.
   // This is possible when the BPF read()/write() probes have inferred a protocol,
@@ -855,17 +854,24 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
                                       socket_info_status.msg());
     return;
   }
-  const system::SocketInfo* socket_info = socket_info_status.ValueOrDie();
+  const system::SocketInfo& socket_info = *socket_info_status.ValueOrDie();
 
   // Success! Now copy the inferred socket information into the ConnectionTracker.
 
-  Status s = ParseSocketInfoRemoteAddr(*socket_info, &open_info_.remote_addr);
+  Status s = ParseSocketInfoRemoteAddr(socket_info, &open_info_.remote_addr);
   if (!s.ok()) {
     conn_resolver_.reset();
     conn_resolution_failed_ = true;
     LOG(ERROR) << absl::Substitute("Remote address (type=$0) parsing failed. Message: $1",
-                                   socket_info->family, s.msg());
+                                   socket_info.family, s.msg());
     return;
+  }
+
+  if (traffic_class_.role == kRoleNone) {
+    traffic_class_.role =
+        socket_info.role == system::ClientServerRole::kClient
+            ? kRoleClient
+            : socket_info.role == system::ClientServerRole::kServer ? kRoleServer : kRoleNone;
   }
 
   CONN_TRACE(1) << absl::Substitute("Inferred connection dest=$0:$1",

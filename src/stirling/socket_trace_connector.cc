@@ -156,7 +156,8 @@ Status SocketTraceConnector::InitImpl() {
   }
 
   StatusOr<std::unique_ptr<system::SocketInfoManager>> s =
-      system::SocketInfoManager::Create(system::Config::GetInstance().proc_path());
+      system::SocketInfoManager::Create(system::Config::GetInstance().proc_path(),
+                                        system::kTCPEstablishedState | system::kTCPListeningState);
   if (!s.ok()) {
     LOG(WARNING) << absl::Substitute("Failed to set up socket prober manager. Message: $0",
                                      s.msg());

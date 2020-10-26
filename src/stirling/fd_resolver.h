@@ -61,6 +61,12 @@ class FDResolver {
    */
   bool IsActive() { return active_; }
 
+  std::string DebugInfo() {
+    return absl::Substitute("pid=$0 fd=$1 t=$2-$3 active=$4 fdlink=$5", pid_, fd_,
+                            first_timestamp_.time_since_epoch().count(),
+                            last_timestamp_.time_since_epoch().count(), active_, fd_link_);
+  }
+
  private:
   system::ProcParser* proc_parser_;
   int pid_;
