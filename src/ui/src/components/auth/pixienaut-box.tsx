@@ -21,12 +21,13 @@ const styles = ({ spacing, palette, breakpoints }: Theme) => createStyles({
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'flex-start',
-    padding: spacing(1),
+    padding: spacing(3),
   },
   pixienautContainer: {
     // The Pixienaut is still kinda close to Earth (this component's content)
     // This + splash container padding + relative Pixienaut position = spacing(4) under its foot
-    marginBottom: spacing(-7),
+    marginBottom: spacing(-9),
+    marginTop: spacing(-2),
   },
   pixienautImage: {
     // The balloons raise the Pixienaut up out of the container
@@ -41,6 +42,8 @@ const styles = ({ spacing, palette, breakpoints }: Theme) => createStyles({
     flexFlow: 'column nowrap',
     alignItems: 'center',
     justifyContent: 'flex-start',
+    width: '100%',
+    textAlign: 'center',
   },
 });
 
