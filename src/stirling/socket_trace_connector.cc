@@ -57,7 +57,7 @@ DEFINE_bool(stirling_enable_pgsql_tracing, true,
             "If true, stirling will trace and process PostgreSQL messages.");
 DEFINE_bool(stirling_enable_cass_tracing, true,
             "If true, stirling will trace and process Cassandra messages.");
-DEFINE_bool(stirling_enable_dns_tracing, false,
+DEFINE_bool(stirling_enable_dns_tracing, true,
             "If true, stirling will trace and process DNS messages.");
 
 DEFINE_bool(stirling_disable_self_tracing, true,

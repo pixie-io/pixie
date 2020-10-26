@@ -328,9 +328,8 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
     inferred_message.protocol = kProtocolPGSQL;
   } else if ((inferred_message.type = infer_mysql_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolMySQL;
-    // TODO(oazizi): Enable DNS protocol inference.
-    //} else if ((inferred_message.type = infer_dns_message(buf, count)) != kUnknown) {
-    //  inferred_message.protocol = kProtocolDNS;
+  } else if ((inferred_message.type = infer_dns_message(buf, count)) != kUnknown) {
+    inferred_message.protocol = kProtocolDNS;
   }
 
   return inferred_message;
