@@ -66,9 +66,6 @@ DEFINE_string(stirling_role_to_trace, "kRoleAll",
               "Must be one of [kRoleClient|kRoleServer|kRoleAll]. Specifies which role(s) will be "
               "traced by BPF.");
 
-DEFINE_bool(stirling_bpf_allow_unknown_protocol, true,
-            "If true, BPF filters out unclassified data events.");
-
 BCC_SRC_STRVIEW(socket_trace_bcc_script, socket_trace);
 
 namespace pl {
@@ -134,12 +131,8 @@ Status SocketTraceConnector::InitImpl() {
   PL_ASSIGN_OR_RETURN(utils::KernelVersion kernel_version, utils::GetKernelVersion());
   std::string linux_header_macro =
       absl::Substitute("-DLINUX_VERSION_CODE=$0", kernel_version.code());
-  std::string allow_unknown_protocol_macro =
-      absl::Substitute("-DALLOW_UNKNOWN_PROTOCOL=$0", FLAGS_stirling_bpf_allow_unknown_protocol);
 
-  PL_RETURN_IF_ERROR(
-      InitBPFProgram(socket_trace_bcc_script,
-                     {std::move(linux_header_macro), std::move(allow_unknown_protocol_macro)}));
+  PL_RETURN_IF_ERROR(InitBPFProgram(socket_trace_bcc_script, {std::move(linux_header_macro)}));
   PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
   LOG(INFO) << absl::Substitute("Number of kprobes deployed = $0", kProbeSpecs.size());
   LOG(INFO) << "Probes successfully deployed.";

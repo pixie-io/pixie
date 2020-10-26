@@ -660,6 +660,11 @@ void ConnectionTracker::IterationPreTick(const std::vector<CIDRBlock>& cluster_c
   // Attempt to infer the connection information, to populate remote_addr.
   if (open_info_.remote_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr != nullptr) {
     InferConnInfo(proc_parser, socket_info_mgr);
+
+    // TODO(oazizi): If connection resolves to SockAddr type "Other",
+    //               we should mark the state in BPF to Other too, so BPF stops tracing.
+    //               We should also mark the ConnectionTracker for death.
+
     if (open_info_.remote_addr.family != SockAddrFamily::kUnspecified &&
         ShouldExportToConnStats()) {
       ExportInitialConnStats();

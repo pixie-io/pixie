@@ -12,14 +12,7 @@
 #include "src/stirling/bcc_bpf/utils.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 
-// TODO(yzhao): Investigate the performance overhead of active_*_info_map.delete(id), when id is not
-// in the map. If it's significant, change to only call delete() after knowing that id is in the
-// map.
-
 // This keeps instruction count below BPF's limit of 4096 per probe.
-// TODO(yzhao): Investigate using tail call to reuse stack space to support loop.
-// TODO(PL-914): 4.13 and older kernel versions need smaller number, 10 is tested to work.
-// See the referenced Jira issue for more details.
 #define LOOP_LIMIT 45
 
 // Determines what percentage of events must be inferred as a certain type for us to consider the
@@ -167,18 +160,33 @@ static __inline struct conn_info_t* get_conn_info(uint32_t tgid, uint32_t fd) {
   return conn_info;
 }
 
+static __inline struct socket_data_event_t* fill_event(enum TrafficDirection direction,
+                                                       const struct conn_info_t* conn_info) {
+  uint32_t kZero = 0;
+  struct socket_data_event_t* event = data_buffer_heap.lookup(&kZero);
+  if (event == NULL) {
+    return NULL;
+  }
+  event->attr.timestamp_ns = bpf_ktime_get_ns();
+  event->attr.ssl = conn_info->ssl;
+  event->attr.direction = direction;
+  event->attr.conn_id = conn_info->conn_id;
+  event->attr.traffic_class = conn_info->traffic_class;
+  return event;
+}
+
 /***********************************************************
  * Trace filtering functions
  ***********************************************************/
 
-static __inline bool should_trace_classified(const struct traffic_class_t* traffic_class) {
-  uint32_t protocol = traffic_class->protocol;
-  uint64_t kZero = 0;
-  // TODO(yzhao): BCC doc states BPF_PERCPU_ARRAY: all array elements are **pre-allocated with zero
-  // values** (https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md). That suggests
-  // lookup() suffices. But this seems more robust, as BCC behavior is often not intuitive.
-  uint64_t control = *control_map.lookup_or_init(&protocol, &kZero);
-  return control & traffic_class->role;
+static __inline bool is_inet_family(sa_family_t sa_family) {
+  return sa_family == AF_INET || sa_family == AF_INET6;
+}
+
+static __inline bool should_trace_sockaddr_family(sa_family_t sa_family) {
+  // AF_UNKNOWN means we never traced the accept/connect, and we don't know the sockaddr family.
+  // Trace these because they *may* be a sockaddr of interest.
+  return sa_family == AF_UNKNOWN || sa_family == AF_UNIX || is_inet_family(sa_family);
 }
 
 // Returns true if detection passes threshold. Right now this is only used for PGSQL.
@@ -197,39 +205,26 @@ static __inline bool protocol_detection_passes_threshold(const struct conn_info_
   return true;
 }
 
-static __inline bool is_inet_family(sa_family_t sa_family) {
-  return sa_family == AF_INET || sa_family == AF_INET6;
-}
-
-// Returns true if the input conn_info should be traced.
-// The protocol of the input conn_info must be kProtocolUnknown.
-//
-// TODO(oazizi/yzhao): Remove this after we implement connections of interests through tgid + fd.
-// NOTE: This check is covered by control_map below too, but keeping it around for explicitness.
-//
-// TODO(yzhao): A connection can have the initial events unclassified, but later being classified
-// into a known protocol. Investigate its impact.
-static __inline bool should_trace_unclassified(const struct conn_info_t* conn_info) {
-  // ALLOW_UNKNOWN_PROTOCOL must be a macro (with bool value) defined when initializing BPF program.
-  return ALLOW_UNKNOWN_PROTOCOL && conn_info->addr_valid &&
-         is_inet_family(conn_info->addr.sin6_family);
-}
-
-static __inline bool should_trace_conn(const struct conn_info_t* conn_info) {
-  if (conn_info->traffic_class.protocol == kProtocolUnknown) {
-    return should_trace_unclassified(conn_info);
+// If this returns false, we still will trace summary stats.
+static __inline bool should_trace_protocol_data(const struct conn_info_t* conn_info) {
+  if (conn_info->traffic_class.protocol == kProtocolUnknown ||
+      !protocol_detection_passes_threshold(conn_info)) {
+    return false;
   }
-  return protocol_detection_passes_threshold(conn_info) &&
-         should_trace_classified(&conn_info->traffic_class);
+
+  uint32_t protocol = conn_info->traffic_class.protocol;
+  uint64_t kZero = 0;
+  uint64_t control = *control_map.lookup_or_init(&protocol, &kZero);
+  return control & conn_info->traffic_class.role;
 }
 
 static __inline bool is_stirling_tgid(const uint32_t tgid) {
   int idx = kStirlingTGIDIndex;
-  int64_t* target_tgid = control_values.lookup(&idx);
-  if (target_tgid == NULL) {
+  int64_t* stirling_tgid = control_values.lookup(&idx);
+  if (stirling_tgid == NULL) {
     return false;
   }
-  return *target_tgid == tgid;
+  return *stirling_tgid == tgid;
 }
 
 static __inline bool should_trace_tgid(const uint32_t tgid) {
@@ -242,21 +237,6 @@ static __inline bool should_trace_tgid(const uint32_t tgid) {
     return true;
   }
   return *target_tgid == tgid;
-}
-
-static __inline struct socket_data_event_t* fill_event(enum TrafficDirection direction,
-                                                       const struct conn_info_t* conn_info) {
-  uint32_t kZero = 0;
-  struct socket_data_event_t* event = data_buffer_heap.lookup(&kZero);
-  if (event == NULL) {
-    return NULL;
-  }
-  event->attr.timestamp_ns = bpf_ktime_get_ns();
-  event->attr.ssl = conn_info->ssl;
-  event->attr.direction = direction;
-  event->attr.conn_id = conn_info->conn_id;
-  event->attr.traffic_class = conn_info->traffic_class;
-  return event;
 }
 
 // TODO(oazizi): This function should go away once the protocol is identified externally.
@@ -307,10 +287,6 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
 /***********************************************************
  * Perf submit functions
  ***********************************************************/
-
-static __inline bool should_trace_sockaddr_family(sa_family_t sa_family) {
-  return sa_family == AF_UNKNOWN || sa_family == AF_UNIX || is_inet_family(sa_family);
-}
 
 static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_t fd,
                                      const struct sockaddr* addr, enum EndpointRole role) {
@@ -522,6 +498,21 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const enum TrafficD
  * BPF syscall processing functions
  ***********************************************************/
 
+// Table of what events to send to user-space:
+//
+// SockAddr   | Protocol   ||  Connect/Accept   |   Data      | Close
+// -----------|------------||-------------------|-------------|-------
+// INET/UNIX  | Unknown    ||  Yes              |   Summary   | Yes
+// INET/UNIX  | Known      ||  N/A              |   Full      | Yes
+// Other      | Unknown    ||  No               |   No        | No
+// Other      | Known      ||  N/A              |   No        | No
+// Unknown    | Unknown    ||  No*              |   Summary   | Yes
+// Unknown    | Known      ||  N/A              |   Full      | Yes
+//
+// *: Only applicable to accept() syscalls where addr is nullptr. We won't know the remote addr.
+//    Since no useful information is traced, just skip it. Will be treated as a case where we
+//    missed the accept.
+
 // TODO(oazizi): For consistency, may want to pull reading the return value out
 //               to the outer layer, just like the args.
 
@@ -657,6 +648,14 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
     return;
   }
 
+  if (conn_info->ssl && !ssl) {
+    // This connection is tracking SSL now.
+    // Don't report encrypted data.
+    // Also, note this is a special case. We don't delete conn_info_map entry,
+    // because we are still tracking the connection.
+    return;
+  }
+
   // Note: From this point on, if exiting early, and conn_info->addr_valid == 0,
   // then call conn_info_map.delete(&tgid_fd) to avoid a BPF map leak.
 
@@ -669,14 +668,6 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
     if (!conn_info->addr_valid) {
       conn_info_map.delete(&tgid_fd);
     }
-    return;
-  }
-
-  if (conn_info->ssl && !ssl) {
-    // This connection is tracking SSL now.
-    // Don't report encrypted data.
-    // Also, note this is a special case. We don't delete conn_info_map entry,
-    // because we are still tracking the connection.
     return;
   }
 
@@ -693,24 +684,16 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
     update_traffic_class(conn_info, direction, iov_cpy.iov_base, buf_size);
   }
 
-  // Filter for request or response based on control flags and protocol type.
-  if (!should_trace_conn(conn_info)) {
-    if (!conn_info->addr_valid) {
-      conn_info_map.delete(&tgid_fd);
-    }
-    return;
-  }
+  bool send_data = !is_stirling_tgid(tgid) && should_trace_protocol_data(conn_info);
 
   struct socket_data_event_t* event = fill_event(direction, conn_info);
   if (event == NULL) {
+    // event == NULL not expected to ever happen.
     if (!conn_info->addr_valid) {
       conn_info_map.delete(&tgid_fd);
     }
     return;
   }
-
-  bool send_data =
-      event->attr.traffic_class.protocol != kProtocolUnknown && !is_stirling_tgid(tgid);
 
   // TODO(yzhao): Same TODO for split the interface.
   if (!vecs) {
@@ -776,7 +759,8 @@ static __inline void process_syscall_close(struct pt_regs* ctx, uint64_t id,
 
   // Only submit event to user-space if there was a corresponding open or data event reported.
   // This is to avoid polluting the perf buffer.
-  if (conn_info->addr.sin6_family != 0 || conn_info->wr_bytes != 0 || conn_info->rd_bytes != 0) {
+  if (conn_info->addr.sin6_family != AF_UNKNOWN || conn_info->wr_bytes != 0 ||
+      conn_info->rd_bytes != 0) {
     submit_close_event(ctx, conn_info);
   }
 
@@ -901,7 +885,8 @@ int syscall__probe_ret_write(struct pt_regs* ctx) {
 
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
-  if (write_args != NULL) {
+  // Don't process FD 0-2 to avoid STDIN, STDOUT, STDERR.
+  if (write_args != NULL && write_args->fd > 2) {
     process_syscall_data(ctx, id, kEgress, write_args, bytes_count);
   }
 
@@ -953,7 +938,8 @@ int syscall__probe_ret_read(struct pt_regs* ctx) {
 
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
-  if (read_args != NULL) {
+  // Don't process FD 0-2 to avoid STDIN, STDOUT, STDERR.
+  if (read_args != NULL && read_args->fd > 2) {
     process_syscall_data(ctx, id, kIngress, read_args, bytes_count);
   }
 
