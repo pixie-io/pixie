@@ -79,7 +79,8 @@ TEST_F(CGroupMetadataReaderTest, cgroup_proc_file_path) {
 
 TEST_F(CGroupMetadataReaderTest, cgroup_pod_exists) {
   PodInfo pod_info("abcd", "namespace", "pod-name", PodQOSClass::kBestEffort, PodPhase::kRunning,
-                   "pod status message", "pod status reason", "testnode", "testpod", "1.1.1.1");
+                   {{PodConditionType::kReady, PodConditionStatus::kTrue}}, "pod status message",
+                   "pod status reason", "testnode", "testpod", "1.1.1.1");
   EXPECT_TRUE(md_reader_->PodDirExists(pod_info));
 }
 

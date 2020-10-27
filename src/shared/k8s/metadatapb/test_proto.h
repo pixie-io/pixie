@@ -40,6 +40,10 @@ pod_ip: "1.1.1.1"
 phase: RUNNING
 message: "Running message"
 reason: "Running reason"
+conditions {
+  type: 2
+  status: 1
+}
 )";
 
 const char* kToBeTerminatedPodUpdatePbTxt = R"(
@@ -67,6 +71,10 @@ qos_class: QOS_CLASS_BEST_EFFORT
 phase: FAILED
 message: "Failed message terminated"
 reason: "Failed reason terminated"
+conditions {
+  type: 2
+  status: 2
+}
 )";
 
 /*

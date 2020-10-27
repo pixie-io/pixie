@@ -440,6 +440,18 @@ TEST_F(MetadataOpsTest, pod_name_to_pod_status) {
   EXPECT_EQ("Failed reason terminated", std::string(failed["reason"].GetString()));
 }
 
+TEST_F(MetadataOpsTest, pod_name_to_pod_ready) {
+  PodNameToPodReadyUDF ready_udf;
+
+  updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedPodUpdatePB());
+  EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
+                                                               &md_filter_, updates_.get()));
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  EXPECT_EQ(ready_udf.Exec(function_ctx.get(), "pl/running_pod"), true);
+  EXPECT_EQ(ready_udf.Exec(function_ctx.get(), "pl/terminating_pod"), false);
+  EXPECT_EQ(ready_udf.Exec(function_ctx.get(), "pl/nonexistent_pod"), false);
+}
+
 TEST_F(MetadataOpsTest, container_id_to_container_status) {
   ContainerIDToContainerStatusUDF status_udf;
 

@@ -123,6 +123,61 @@ inline PodPhase ConvertToPodPhase(pl::shared::k8s::metadatapb::PodPhase pb_enum)
   }
 }
 
+enum class PodConditionType : uint8_t {
+  kUnknown = 0,
+  kPodScheduled,
+  kReady,
+  kInitialized,
+  kUnschedulable,
+  kContainersReady
+};
+enum class PodConditionStatus : uint8_t { kUnknown = 0, kTrue, kFalse };
+
+inline PodConditionType ConvertToPodConditionType(
+    pl::shared::k8s::metadatapb::PodConditionType pb_enum) {
+  using type_pb = pl::shared::k8s::metadatapb::PodConditionType;
+  switch (pb_enum) {
+    case type_pb::POD_SCHEDULED:
+      return PodConditionType::kPodScheduled;
+    case type_pb::READY:
+      return PodConditionType::kReady;
+    case type_pb::INITIALIZED:
+      return PodConditionType::kInitialized;
+    case type_pb::UNSCHEDULABLE:
+      return PodConditionType::kUnschedulable;
+    case type_pb::CONTAINERS_READY:
+      return PodConditionType::kContainersReady;
+    default:
+      return PodConditionType::kUnknown;
+  }
+}
+
+inline PodConditionStatus ConvertToPodConditionStatus(
+    pl::shared::k8s::metadatapb::PodConditionStatus pb_enum) {
+  using status_pb = pl::shared::k8s::metadatapb::PodConditionStatus;
+  switch (pb_enum) {
+    case status_pb::STATUS_TRUE:
+      return PodConditionStatus::kTrue;
+    case status_pb::STATUS_FALSE:
+      return PodConditionStatus::kFalse;
+    default:
+      return PodConditionStatus::kUnknown;
+  }
+}
+
+using PodConditions = absl::flat_hash_map<PodConditionType, PodConditionStatus>;
+
+inline PodConditions ConvertToPodConditions(
+    const google::protobuf::RepeatedPtrField<pl::shared::k8s::metadatapb::PodCondition>&
+        pod_conditions) {
+  PodConditions conditions;
+  for (const auto& condition : pod_conditions) {
+    conditions.try_emplace(ConvertToPodConditionType(condition.type()),
+                           ConvertToPodConditionStatus(condition.status()));
+  }
+  return conditions;
+}
+
 enum class ContainerState : uint8_t { kUnknown = 0, kRunning, kTerminated, kWaiting };
 
 inline ContainerState ConvertToContainerState(pl::shared::k8s::metadatapb::ContainerState pb_enum) {
@@ -146,13 +201,14 @@ inline ContainerState ConvertToContainerState(pl::shared::k8s::metadatapb::Conta
 class PodInfo : public K8sMetadataObject {
  public:
   PodInfo(UID uid, std::string_view ns, std::string_view name, PodQOSClass qos_class,
-          PodPhase phase, std::string_view phase_message, std::string_view phase_reason,
-          std::string_view node_name, std::string_view hostname, std::string_view pod_ip,
-          int64_t start_timestamp_ns = 0, int64_t stop_timestamp_ns = 0)
+          PodPhase phase, PodConditions conditions, std::string_view phase_message,
+          std::string_view phase_reason, std::string_view node_name, std::string_view hostname,
+          std::string_view pod_ip, int64_t start_timestamp_ns = 0, int64_t stop_timestamp_ns = 0)
       : K8sMetadataObject(K8sObjectType::kPod, uid, ns, name, start_timestamp_ns,
                           stop_timestamp_ns),
         qos_class_(qos_class),
         phase_(phase),
+        conditions_(conditions),
         phase_message_(phase_message),
         phase_reason_(phase_reason),
         node_name_(node_name),
@@ -162,7 +218,8 @@ class PodInfo : public K8sMetadataObject {
   explicit PodInfo(const pl::shared::k8s::metadatapb::PodUpdate& pod_update_info)
       : PodInfo(pod_update_info.uid(), pod_update_info.namespace_(), pod_update_info.name(),
                 ConvertToPodQOsClass(pod_update_info.qos_class()),
-                ConvertToPodPhase(pod_update_info.phase()), pod_update_info.message(),
+                ConvertToPodPhase(pod_update_info.phase()),
+                ConvertToPodConditions(pod_update_info.conditions()), pod_update_info.message(),
                 pod_update_info.reason(), pod_update_info.node_name(), pod_update_info.hostname(),
                 pod_update_info.pod_ip(), pod_update_info.start_timestamp_ns(),
                 pod_update_info.stop_timestamp_ns()) {}
@@ -177,6 +234,9 @@ class PodInfo : public K8sMetadataObject {
   PodQOSClass qos_class() const { return qos_class_; }
   PodPhase phase() const { return phase_; }
   void set_phase(PodPhase phase) { phase_ = phase; }
+
+  PodConditions conditions() const { return conditions_; }
+  void set_conditions(PodConditions conditions) { conditions_ = conditions; }
 
   const std::string& phase_message() const { return phase_message_; }
   void set_phase_message(std::string_view phase_message) { phase_message_ = phase_message; }
@@ -207,6 +267,7 @@ class PodInfo : public K8sMetadataObject {
  private:
   PodQOSClass qos_class_;
   PodPhase phase_;
+  PodConditions conditions_;
   // The message for why the pod is in its current status.
   std::string phase_message_;
   // A brief CamelCase message indicating details about why the pod is in this state.

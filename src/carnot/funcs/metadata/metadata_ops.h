@@ -1050,6 +1050,39 @@ class PodNameToPodStatusUDF : public ScalarUDF {
   }
 };
 
+class PodNameToPodReadyUDF : public ScalarUDF {
+ public:
+  BoolValue Exec(FunctionContext* ctx, StringValue pod_name) {
+    auto md = GetMetadataState(ctx);
+    StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
+    auto pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return false;
+    }
+    auto pod_conditions = pod_info->conditions();
+    auto ready_status = pod_conditions.find(md::PodConditionType::kReady);
+    if (ready_status == pod_conditions.end()) {
+      return false;
+    }
+    return ready_status->second == md::PodConditionStatus::kTrue;
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get readiness information about the given pod.")
+        .Details(
+            "Gets the Kubernetes service ready state of pod. "
+            "The ready state is truthy is the pod ready condition is true."
+            "If the pod ready condition is false or unknown, this will return false."
+            "See "
+            "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#pod-conditions"
+            "for more info about how we determine this. ")
+        .Example("df.pod_read = px.pod_name_to_ready(df.pod_name)")
+        .Arg("pod_name", "The name of the pod to get the Pod readiness for.")
+        .Returns(
+            "A value denoting whether the service state of the pod passed in is ready or not.");
+  }
+};
+
 class PodNameToPodStatusMessageUDF : public ScalarUDF {
  public:
   /**

@@ -248,7 +248,7 @@ start_timestamp_ns: 2
 columns {
   name: "column_1"
   data_type: 2
-  semantic_type: 1200  
+  semantic_type: 1200
 }
 columns {
   name: "column_2"
@@ -565,7 +565,10 @@ metadata {
 status {
   message: "this is message"
   phase: 2
-  conditions: 2
+  conditions {
+    type: 2
+    status: 1
+  }
 }
 spec {
   node_name: "test"
@@ -593,7 +596,10 @@ status {
   message: "this is message"
   reason: "this is reason"
   phase: RUNNING
-  conditions: 2
+  conditions {
+    type: 2
+    status: 1
+  }
   container_statuses {
     name: "container1"
     container_id: "docker://test"
@@ -630,7 +636,10 @@ status {
   message: "this is message"
   reason: "this is reason"
   phase: 1
-  conditions: 2
+  conditions {
+    type: 2
+    status: 2
+  }
   container_statuses {
     name: "container1"
     container_state: 0

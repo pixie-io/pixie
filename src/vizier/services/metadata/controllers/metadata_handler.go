@@ -476,6 +476,7 @@ func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
 				ContainerIDs:     containerIDs,
 				ContainerNames:   containerNames,
 				Phase:            pod.Status.Phase,
+				Conditions:       pod.Status.Conditions,
 				NodeName:         podName,
 				Hostname:         hostname,
 				PodIP:            pod.Status.PodIP,

@@ -38,18 +38,30 @@ var podPhasePbToObjMap = map[metadatapb.PodPhase]v1.PodPhase{
 	metadatapb.PHASE_UNKNOWN: v1.PodUnknown,
 }
 
-var podConditionObjToPbMap = map[v1.PodConditionType]metadatapb.PodConditionType{
+var podConditionTypeObjToPbMap = map[v1.PodConditionType]metadatapb.PodConditionType{
 	v1.ContainersReady: metadatapb.CONTAINERS_READY,
 	v1.PodInitialized:  metadatapb.INITIALIZED,
 	v1.PodReady:        metadatapb.READY,
 	v1.PodScheduled:    metadatapb.POD_SCHEDULED,
 }
 
-var podConditionPbToObjMap = map[metadatapb.PodConditionType]v1.PodConditionType{
+var podConditionTypePbToObjMap = map[metadatapb.PodConditionType]v1.PodConditionType{
 	metadatapb.CONTAINERS_READY: v1.ContainersReady,
 	metadatapb.INITIALIZED:      v1.PodInitialized,
 	metadatapb.READY:            v1.PodReady,
 	metadatapb.POD_SCHEDULED:    v1.PodScheduled,
+}
+
+var podConditionStatusObjToPbMap = map[v1.ConditionStatus]metadatapb.PodConditionStatus{
+	v1.ConditionTrue:    metadatapb.STATUS_TRUE,
+	v1.ConditionFalse:   metadatapb.STATUS_FALSE,
+	v1.ConditionUnknown: metadatapb.STATUS_UNKNOWN,
+}
+
+var podConditionStatusPbToObjMap = map[metadatapb.PodConditionStatus]v1.ConditionStatus{
+	metadatapb.STATUS_TRUE:    v1.ConditionTrue,
+	metadatapb.STATUS_FALSE:   v1.ConditionFalse,
+	metadatapb.STATUS_UNKNOWN: v1.ConditionUnknown,
 }
 
 var ipProtocolObjToPbMap = map[v1.Protocol]metadatapb.IPProtocol{
@@ -232,9 +244,12 @@ func PodSpecFromProto(pb *metadatapb.PodSpec) (*v1.PodSpec, error) {
 
 // PodStatusToProto converts an PodStatus into a proto.
 func PodStatusToProto(ps *v1.PodStatus) (*metadatapb.PodStatus, error) {
-	conditions := make([]metadatapb.PodConditionType, len(ps.Conditions))
+	conditions := make([]*metadatapb.PodCondition, len(ps.Conditions))
 	for i, c := range ps.Conditions {
-		conditions[i] = podConditionObjToPbMap[c.Type]
+		conditions[i] = &metadatapb.PodCondition{
+			Type:   podConditionTypeObjToPbMap[c.Type],
+			Status: podConditionStatusObjToPbMap[c.Status],
+		}
 	}
 
 	containers := make([]*metadatapb.ContainerStatus, len(ps.ContainerStatuses))
@@ -265,7 +280,8 @@ func PodStatusFromProto(pb *metadatapb.PodStatus) (*v1.PodStatus, error) {
 	conditions := make([]v1.PodCondition, len(pb.Conditions))
 	for i, c := range pb.Conditions {
 		podCond := v1.PodCondition{
-			Type: podConditionPbToObjMap[c],
+			Type:   podConditionTypePbToObjMap[c.Type],
+			Status: podConditionStatusPbToObjMap[c.Status],
 		}
 		conditions[i] = podCond
 	}

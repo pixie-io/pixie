@@ -15,7 +15,7 @@ import (
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
+	mock_controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 )
 
@@ -453,7 +453,8 @@ func TestObjectToPodProto(t *testing.T) {
 
 	conditions := make([]v1.PodCondition, 1)
 	conditions[0] = v1.PodCondition{
-		Type: v1.PodReady,
+		Type:   v1.PodReady,
+		Status: v1.ConditionTrue,
 	}
 
 	containers := make([]v1.ContainerStatus, 1)

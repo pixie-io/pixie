@@ -75,13 +75,16 @@ dns_policy: 2
 const podStatusPb = `
 message: "this is message"
 phase: 2
-conditions: 2
+conditions {
+	type: 2
+	status: 1
+}
 qos_class: 3
 container_statuses {
    name: "test_container_2"
    container_id: "test_id_2"
    container_state: 1
-   start_timestamp_ns: 4	
+   start_timestamp_ns: 4
 }
 container_statuses {
    name: "test_container"
@@ -109,12 +112,15 @@ metadata {
 status {
 	message: "this is message"
 	phase: 2
-	conditions: 2
+	conditions {
+		type: 2
+		status: 2
+	}
 	container_statuses {
 	   name: "test_container_2"
 	   container_id: "test_id_2"
 	   container_state: 1
-	   start_timestamp_ns: 4	
+	   start_timestamp_ns: 4
 	}
 	container_statuses {
 	   name: "test_container"
@@ -531,7 +537,8 @@ func TestPodSpecFromProto(t *testing.T) {
 func TestPodStatusToProto(t *testing.T) {
 	conditions := make([]v1.PodCondition, 1)
 	conditions[0] = v1.PodCondition{
-		Type: v1.PodReady,
+		Type:   v1.PodReady,
+		Status: v1.ConditionTrue,
 	}
 
 	containers := make([]v1.ContainerStatus, 2)
@@ -612,7 +619,8 @@ func TestPodToProto(t *testing.T) {
 
 	conditions := make([]v1.PodCondition, 1)
 	conditions[0] = v1.PodCondition{
-		Type: v1.PodReady,
+		Type:   v1.PodReady,
+		Status: v1.ConditionFalse,
 	}
 
 	containers := make([]v1.ContainerStatus, 2)

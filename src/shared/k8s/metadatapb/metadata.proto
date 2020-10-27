@@ -189,7 +189,7 @@ message PodStatus {
   PodPhase phase = 1;
 
   // Current service state of pod.
-  repeated PodConditionType conditions = 2;
+  repeated PodCondition conditions = 9;
 
   // A human readable message indicating details about why the pod is in this condition.
   string message = 3;
@@ -214,6 +214,14 @@ message PodStatus {
                   ];
 
   repeated ContainerStatus container_statuses = 8;
+
+  // Deprecated.
+  reserved 2;
+}
+
+message PodCondition {
+  PodConditionType type = 1;
+  PodConditionStatus status = 2;
 }
 
 enum PodConditionType {
@@ -223,6 +231,12 @@ enum PodConditionType {
   INITIALIZED = 3;
   UNSCHEDULABLE = 4;
   CONTAINERS_READY = 5;
+}
+
+enum PodConditionStatus {
+  STATUS_UNKNOWN = 0;
+  STATUS_TRUE = 1;
+  STATUS_FALSE = 2;
 }
 
 message Endpoints {
@@ -472,6 +486,8 @@ message PodUpdate {
 
   // The pod's current phase.
   PodPhase phase = 8;
+
+  repeated PodCondition conditions = 16;
 
   // According to https://godoc.org/k8s.io/api/core/v1#PodSpec,
   // "NodeName is a request to schedule this pod onto a specific node."
