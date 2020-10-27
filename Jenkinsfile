@@ -565,13 +565,14 @@ builders['Build & Test (bpf tests - opt)'] = {
 }
 
 
-builders['Build & Test (bpf tests - asan)'] = {
-  WithSourceCode {
-    dockerStep(dockerArgsForBPFTest, {
-      bazelCCCICmd('build-bpf-asan', 'bpf_asan', 'dbg')
-    })
-  }
-}
+// TODO(oazizi): PP-2276 Fix the BPF asan tests.
+// builders['Build & Test (bpf tests - asan)'] = {
+//   WithSourceCode {
+//     dockerStep(dockerArgsForBPFTest, {
+//       bazelCCCICmd('build-bpf-asan', 'bpf_asan', 'dbg')
+//     })
+//   }
+// }
 
 // Disabling TSAN on bpf runs, but leaving code here for future reference.
 if (runBPFWithTSAN) {

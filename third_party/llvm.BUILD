@@ -34,7 +34,6 @@ cc_library(
         "lib/libLLVMBitstreamReader.a",
         "lib/libclangASTMatchers.a",
         "lib/libLLVMRemarks.a",
-        "lib/libLLVMX86Utils.a",
         "lib/libLLVMGlobalISel.a",
         "lib/libLLVMPasses.a",
         "lib/libPolly.a",

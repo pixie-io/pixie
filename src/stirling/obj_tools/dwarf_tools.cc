@@ -334,7 +334,7 @@ StatusOr<SimpleBlock> DecodeSimpleBlock(const llvm::ArrayRef<uint8_t>& block) {
   llvm::DataExtractor data(
       llvm::StringRef(reinterpret_cast<const char*>(block.data()), block.size()),
       /* isLittleEndian */ true, /* AddressSize */ 0);
-  llvm::DWARFExpression expr(data, llvm::DWARFExpression::Operation::Dwarf4, kAddressSize);
+  llvm::DWARFExpression expr(data, kAddressSize, llvm::dwarf::DwarfFormat::DWARF64);
 
   auto iter = expr.begin();
   auto& operation = *iter;

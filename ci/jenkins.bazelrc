@@ -28,5 +28,5 @@ test --test_output=errors
 # Other test args.
 test --verbose_failures
 
-build:clang --action_env=CC=/opt/clang-10.0/bin/clang
-build:clang --action_env=CXX=/opt/clang-10.0/bin/clang++
+build:clang --action_env=CC=/opt/clang-11.0/bin/clang
+build:clang --action_env=CXX=/opt/clang-11.0/bin/clang++
