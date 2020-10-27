@@ -740,7 +740,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
 
     if (IsVariableDefinition(var) && vars.contains(var_name)) {
       return error::InvalidArgument("Variable '$0' in Probe '$1' was already defined",
-                                    var.ShortDebugString(), probe.ShortDebugString());
+                                    var.ShortDebugString(), probe.name());
     }
 
     if (var.has_struct_var() && var.struct_var().is_output()) {
@@ -748,7 +748,10 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
       continue;
     }
 
-    vars[var_name] = &var;
+    if (IsVariableDefinition(var)) {
+      // Only index defined variable.
+      vars[var_name] = &var;
+    }
 
     PL_RETURN_IF_ERROR(GenVariable(var, vars, &code_lines));
   }
@@ -788,7 +791,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
 
     if (IsVariableDefinition(var) && vars.contains(var_name)) {
       return error::InvalidArgument("Output variable '$0' in Probe '$1' was already defined.",
-                                    var.ShortDebugString(), probe.ShortDebugString());
+                                    var.ShortDebugString(), probe.name());
     }
 
     vars[var_name] = &var;

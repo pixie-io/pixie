@@ -127,6 +127,10 @@ func FooReturnsDummyError() error {
 	return IntStruct{3, 4}
 }
 
+func FooReturnsNilError() error {
+	return nil
+}
+
 func main() {
 	for true {
 		v := Vertex{3, 4}
@@ -175,6 +179,8 @@ func main() {
 		// This allows directly examine the value of err in gdb or dlv.
 		err := FooReturnsDummyError()
 		fmt.Println(err)
+
+		FooReturnsNilError()
 
 		time.Sleep(time.Second)
 	}

@@ -651,8 +651,6 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
   iface_data_var->mutable_memory()->set_base(base);
   iface_data_var->mutable_memory()->set_offset(offset + data_mem_info.offset);
 
-  // TODO(yzhao): Add a variable that reads the value of the runtime.iface.tab.
-
   // TODO(yzhao): In case this is reused elsewhere, let Dwarvifier manage the return value, to avoid
   // duplicate computation.
   PL_ASSIGN_OR_RETURN(const auto intf_impl_map, elf_tools::ExtractGolangInterfaces(elf_reader_));
@@ -665,12 +663,20 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
         var_name, type_info.decl_type);
   }
 
-  RepeatedPtrField<ir::physical::StructSpec> struct_spec;
-
-  if (iter->second.size() > std::numeric_limits<int8_t>::max()) {
+  if (iter->second.size() + 1 > std::numeric_limits<int8_t>::max()) {
     return error::Internal("The number of implementation types '$0' exceeds limit '$1'",
                            iter->second.size(), std::numeric_limits<int8_t>::max());
   }
+
+  RepeatedPtrField<ir::physical::StructSpec> struct_spec;
+
+  // Insert the interface itself as the first decoder. By default, the interface itself is output,
+  // if it's nil or the type could not be identified.
+  PL_ASSIGN_OR_RETURN(std::vector<StructSpecEntry> struct_spec_entires,
+                      dwarf_reader_->GetStructSpec(type_info.type_name));
+  PL_ASSIGN_OR_RETURN(ir::physical::StructSpec struct_spec_proto,
+                      CreateStructSpecProto(struct_spec_entires, language_));
+  struct_spec.Add(std::move(struct_spec_proto));
 
   for (size_t decoder_idx = 0; decoder_idx < iter->second.size(); ++decoder_idx) {
     const elf_tools::IntfImplTypeInfo& info = iter->second[decoder_idx];
@@ -720,7 +726,8 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
     scalar_var->set_name(var_name);
     scalar_var->set_type(ir::shared::ScalarType::STRUCT_BLOB);
     scalar_var->mutable_memory()->set_op(ir::physical::ASSIGN_ONLY);
-    scalar_var->mutable_memory()->set_decoder_idx(decoder_idx);
+    // Decoder index +1 to accommodate the implicit added runtime.iface.
+    scalar_var->mutable_memory()->set_decoder_idx(decoder_idx + 1);
     scalar_var->mutable_memory()->set_base(iface_data_var_name);
     scalar_var->mutable_memory()->set_offset(0);
     scalar_var->mutable_memory()->set_size(struct_byte_size_or.ValueOrDie());
@@ -731,17 +738,23 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
   // affect the processing order, i.e., the below code is generated before the ConditionalBlock.
   //
   // NOTE: It is more convenient to collect StructSpec in the above loop.
-  auto var = AddVariable<ScalarVariable>(
+  auto* var = AddVariable<ScalarVariable>(
       output_probe, var_name, ir::shared::ScalarType::STRUCT_BLOB, std::move(struct_spec));
   var->mutable_memory()->set_op(ir::physical::DEFINE_ONLY);
 
-  // TODO(yzhao): Should have overloaded functions for different sub-types.
-  auto assigned_var = AddVariable<StructVariable>(output_probe, var_name, ir::shared::UNKNOWN);
-  assigned_var->set_op(ir::physical::ASSIGN_ONLY);
+  // Assign this particular type to the output variable.
+  PL_ASSIGN_OR_RETURN(uint64_t struct_byte_size,
+                      dwarf_reader_->GetStructByteSize(type_info.type_name));
 
-  auto* field_assign = assigned_var->add_field_assignments();
-  field_assign->set_field_name("decoder_idx");
-  field_assign->set_value("-1");
+  auto* scalar_var = output_probe->add_vars()->mutable_scalar_var();
+  scalar_var->set_name(var_name);
+  scalar_var->set_type(ir::shared::ScalarType::STRUCT_BLOB);
+  scalar_var->mutable_memory()->set_op(ir::physical::ASSIGN_ONLY);
+  // Decoder index +1 to accommodate the implicit added runtime.iface.
+  scalar_var->mutable_memory()->set_decoder_idx(0);
+  scalar_var->mutable_memory()->set_base(base);
+  scalar_var->mutable_memory()->set_offset(offset);
+  scalar_var->mutable_memory()->set_size(struct_byte_size);
 
   return Status::OK();
 }
@@ -761,7 +774,7 @@ Status Dwarvifier::ProcessStructBlob(const std::string& base, uint64_t offset,
   RepeatedPtrField<ir::physical::StructSpec> struct_spec;
   struct_spec.Add(std::move(struct_spec_proto));
 
-  auto var = AddVariable<ScalarVariable>(
+  auto* var = AddVariable<ScalarVariable>(
       output_probe, var_name, ir::shared::ScalarType::STRUCT_BLOB, std::move(struct_spec));
   // For StuctBlob with one single schema, the index is always 0.
   var->mutable_memory()->set_decoder_idx(0);

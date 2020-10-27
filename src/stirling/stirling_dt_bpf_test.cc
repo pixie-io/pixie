@@ -463,14 +463,41 @@ tracepoints {
   EXPECT_EQ(rb[ret_field_idx]->Get<types::StringValue>(0), R"({"X":3,"Y":4})");
 }
 
-TEST_F(DynamicTraceGolangTest, TraceError) {
+struct ReturnedErrorInterfaceTestCase {
+  std::string logical_program;
+  std::string expected_output;
+};
+
+class ReturnedErrorInterfaceTest
+    : public DynamicTraceGolangTest,
+      public ::testing::WithParamInterface<ReturnedErrorInterfaceTestCase> {};
+
+TEST_P(ReturnedErrorInterfaceTest, TraceError) {
   BinaryRunner trace_target;
   trace_target.Run(kBinaryPath);
 
-  constexpr std::string_view kProgram = R"(
-  deployment_spec {
-    path: "$0"
+  std::string logical_program = GetParam().logical_program;
+  std::string expected_output = GetParam().expected_output;
+
+  auto tracepoint_deployment =
+      std::make_unique<dynamic_tracing::ir::logical::TracepointDeployment>();
+  ASSERT_TRUE(
+      google::protobuf::TextFormat::ParseFromString(logical_program, tracepoint_deployment.get()));
+
+  tracepoint_deployment->mutable_deployment_spec()->set_path(kBinaryPath);
+
+  DeployTracepoint(std::move(tracepoint_deployment));
+
+  ASSERT_HAS_VALUE_AND_ASSIGN(int err_field_idx, FindFieldIndex(info_class_.schema(), "err"));
+
+  EXPECT_THAT(record_batches_, SizeIs(1));
+  const auto& rb = *record_batches_[0];
+  for (size_t i = 0; i < rb[err_field_idx]->Size(); ++i) {
+    EXPECT_THAT(std::string(rb[err_field_idx]->Get<types::StringValue>(i)), StrEq(expected_output));
   }
+}
+
+constexpr char kProgramTmpl[] = R"(
   tracepoints {
     program {
       language: GOLANG
@@ -481,7 +508,7 @@ TEST_F(DynamicTraceGolangTest, TraceError) {
       probes {
         name: "probe0"
         tracepoint {
-          symbol: "main.FooReturnsDummyError"
+          symbol: "$0"
           type: LOGICAL
         }
         ret_vals {
@@ -497,19 +524,13 @@ TEST_F(DynamicTraceGolangTest, TraceError) {
   }
   )";
 
-  auto trace_program = Prepare(kProgram, kBinaryPath);
-  DeployTracepoint(std::move(trace_program));
-
-  // Get field indexes for the columns we want.
-  // ASSERT_HAS_VALUE_AND_ASSIGN(int arg_field_idx, FindFieldIndex(info_class_.schema(), "arg"));
-  ASSERT_HAS_VALUE_AND_ASSIGN(int err_field_idx, FindFieldIndex(info_class_.schema(), "err"));
-
-  EXPECT_THAT(record_batches_, SizeIs(1));
-  const auto& rb = *record_batches_[0];
-  for (size_t i = 0; i < rb[err_field_idx]->Size(); ++i) {
-    EXPECT_THAT(rb[err_field_idx]->Get<types::StringValue>(i), StrEq(R"({"X":3,"Y":4})"));
-  }
-}
+INSTANTIATE_TEST_SUITE_P(
+    NilAndNonNilError, ReturnedErrorInterfaceTest,
+    ::testing::Values(
+        ReturnedErrorInterfaceTestCase{absl::Substitute(kProgramTmpl, "main.FooReturnsDummyError"),
+                                       "{\"X\":3,\"Y\":4}"},
+        ReturnedErrorInterfaceTestCase{absl::Substitute(kProgramTmpl, "main.FooReturnsNilError"),
+                                       "{\"tab\":0,\"data\":0}"}));
 
 struct TestParam {
   std::string function_symbol;

@@ -1185,6 +1185,19 @@ structs {
     blob_decoder {
       entries {
         size: 8
+        type: VOID_POINTER
+        path: "/tab"
+      }
+      entries {
+        offset: 8
+        size: 8
+        type: VOID_POINTER
+        path: "/data"
+      }
+    }
+    blob_decoder {
+      entries {
+        size: 8
         type: INT
         path: "/X"
       }
@@ -1306,13 +1319,15 @@ probes {
     }
   }
   vars {
-    struct_var {
+    scalar_var {
       name: "retval"
-      field_assignments {
-        field_name: "decoder_idx"
-        value: "-1"
+      type: STRUCT_BLOB
+      memory {
+        base: "sp_"
+        offset: 8
+        size: 16
+        op: ASSIGN_ONLY
       }
-      op: ASSIGN_ONLY
     }
   }
   vars {
@@ -1376,6 +1391,7 @@ probes {
         memory {
           base: "retval_intf_data"
           size: 16
+          decoder_idx: 1
           op: ASSIGN_ONLY
         }
       }
@@ -1394,7 +1410,7 @@ probes {
         memory {
           base: "retval_intf_data"
           size: 16
-          decoder_idx: 1
+          decoder_idx: 2
           op: ASSIGN_ONLY
         }
       }
