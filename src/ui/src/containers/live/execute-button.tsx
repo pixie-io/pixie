@@ -35,7 +35,7 @@ const CANCELLABILITY_DELAY_MS = 1000;
 
 const ExecuteScriptButtonBare = ({ classes }: ExecuteScriptButtonProps) => {
   const { healthy } = React.useContext(ClientContext);
-  const { loading } = React.useContext(ResultsContext);
+  const { loading, streaming } = React.useContext(ResultsContext);
   const { saveEditorAndExecute, cancelExecution } = React.useContext(ScriptContext);
 
   const [cancellable, setCancellable] = React.useState<boolean>(false);
@@ -43,9 +43,9 @@ const ExecuteScriptButtonBare = ({ classes }: ExecuteScriptButtonProps) => {
 
   React.useEffect(() => {
     window.clearTimeout(cancellabilityTimer);
-    if (loading && healthy) {
+    if ((loading || streaming) && healthy) {
       setCancellabilityTimer(window.setTimeout(() => {
-        setCancellable(loading && healthy);
+        setCancellable((loading || streaming) && healthy);
       }, CANCELLABILITY_DELAY_MS));
     } else {
       setCancellable(false);
@@ -53,10 +53,10 @@ const ExecuteScriptButtonBare = ({ classes }: ExecuteScriptButtonProps) => {
 
     // cancellabilityTimer must not appear in this hook's deps. Infinite loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, healthy, cancelExecution]);
+  }, [loading, streaming, healthy, cancelExecution]);
 
   let tooltipTitle;
-  if (loading) {
+  if (loading || streaming) {
     tooltipTitle = 'Executing';
   } else if (!healthy) {
     tooltipTitle = 'Cluster Disconnected';
@@ -70,7 +70,7 @@ const ExecuteScriptButtonBare = ({ classes }: ExecuteScriptButtonProps) => {
         <StyledButton
           variant={cancellable ? 'outlined' : 'contained'}
           color='primary'
-          disabled={!healthy || (loading && !cancellable)}
+          disabled={!healthy || ((loading || streaming) && !cancellable)}
           onClick={cancellable ? cancelExecution : saveEditorAndExecute}
           size='small'
           startIcon={<PlayIcon />}

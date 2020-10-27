@@ -19,7 +19,9 @@ interface ResultsContextProps extends Results {
   clearResults: () => void;
   setResults: SetStateFunc<Results>;
   loading: boolean;
+  streaming: boolean;
   setLoading: SetStateFunc<boolean>;
+  setStreaming: SetStateFunc<boolean>;
 }
 
 export const ResultsContext = React.createContext<ResultsContextProps>(null);
@@ -27,7 +29,7 @@ export const ResultsContext = React.createContext<ResultsContextProps>(null);
 export const ResultsContextProvider = (props) => {
   const [results, setResults] = React.useState<Results>({ tables: {} });
   const [loading, setLoading] = React.useState(false);
-
+  const [streaming, setStreaming] = React.useState(false);
   const clearResults = () => {
     setResults({ tables: {} });
   };
@@ -38,7 +40,9 @@ export const ResultsContextProvider = (props) => {
       setResults,
       clearResults,
       loading,
+      streaming,
       setLoading,
+      setStreaming,
     }}
     >
       {props.children}

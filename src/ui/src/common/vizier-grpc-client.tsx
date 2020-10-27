@@ -48,6 +48,13 @@ export interface VizierQueryFunc {
   args: VizierQueryArg[];
 }
 
+export interface BatchDataUpdate {
+  id: string;
+  name: string;
+  relation: Relation;
+  batch: RowBatchData;
+}
+
 function getExecutionErrors(errList: ErrorDetails[]): string[] {
   return errList.map((error) => {
     switch (error.getErrorCase()) {
@@ -61,11 +68,10 @@ function getExecutionErrors(errList: ErrorDetails[]): string[] {
   });
 }
 
-const EXECUTE_SCRIPT_TIMEOUT = 5000; // 5 seconds
 const HEALTHCHECK_TIMEOUT = 10000; // 10 seconds
 
 export class VizierGRPCClient {
-  private client: VizierServiceClient;
+  private readonly client: VizierServiceClient;
 
   constructor(
     addr: string,
@@ -110,7 +116,14 @@ export class VizierGRPCClient {
 
   // Use a generator to produce the VizierQueryFunc to remove the dependency on vis.tsx.
   // funcsGenerator should correspond to getQueryFuncs in vis.tsx.
-  executeScript(script: string, funcs: VizierQueryFunc[], mutation: boolean, onData, onError) {
+  executeScript(
+    script: string,
+    funcs: VizierQueryFunc[],
+    mutation: boolean,
+    onUpdate: (updates: BatchDataUpdate[]) => void,
+    onResults: (results: VizierQueryResult) => void,
+    onError: (error: VizierQueryError) => void,
+  ): () => (() => void) {
     const headers = {
       ...(this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` }),
     };
@@ -120,7 +133,7 @@ export class VizierGRPCClient {
       req = this.buildRequest(script, funcs, mutation);
     } catch (err) {
       onError(err);
-      return () => { };
+      return () => () => {};
     }
 
     const call = this.client.executeScript(req, headers);
@@ -128,7 +141,14 @@ export class VizierGRPCClient {
     const results: VizierQueryResult = { tables: [] };
     let resolved = false;
 
-    let lastFlush = new Date();
+    let awaitingUpdates: BatchDataUpdate[] = [];
+
+    const interval = setInterval(() => {
+      if (awaitingUpdates.length) {
+        onUpdate(awaitingUpdates);
+        awaitingUpdates = [];
+      }
+    }, 1000);
 
     call.on('data', (resp) => {
       if (!results.queryId) {
@@ -150,7 +170,7 @@ export class VizierGRPCClient {
         }
 
         results.status = status;
-        onData(results);
+        onResults(results);
         return;
       }
 
@@ -164,7 +184,7 @@ export class VizierGRPCClient {
         const table = tablesMap.get(id);
         results.tables.push(table);
         results.schemaOnly = true;
-        onData(results);
+        onResults(results);
       } else if (resp.hasMutationInfo()) {
         results.mutationInfo = resp.getMutationInfo();
       } else if (resp.hasData()) {
@@ -175,27 +195,24 @@ export class VizierGRPCClient {
           const batch = data.getBatch();
           const id = batch.getTableId();
           const table = tablesMap.get(id);
+          const { name, relation } = table;
           table.data.push(batch);
 
-          // Only flush every 1s, to avoid excessive rerenders in the UI.
-          if (new Date().getTime() - lastFlush.getTime() > 1000) {
-            // TODO: This resends all batches to onData. In the future, we will want this to only send
-            // the latest batch. This will require more extensive changes that require us to track the
-            // full set of batches elsewhere. For now, updating to a subscription/callback model gets a
-            // step closer to that point.
-            onData(results);
-            lastFlush = new Date();
-          }
+          // These get flushed on an interval, so as not to flood the UI with expensive re-renders
+          awaitingUpdates.push({
+            id, name, relation, batch,
+          });
         } else if (data.hasExecutionStats()) {
           // The query finished executing, and all the data has been received.
           results.executionStats = data.getExecutionStats();
-          onData(results);
+          onResults(results);
           resolved = true;
         }
       }
     });
 
     call.on('end', () => {
+      clearInterval(interval);
       if (!resolved) {
         onError(new VizierQueryError('execution', 'Execution ended with incomplete results'));
       }
@@ -203,6 +220,7 @@ export class VizierGRPCClient {
 
     call.on('error', (err) => {
       resolved = true;
+      clearInterval(interval);
       onError(new VizierQueryError('server', err.message));
     });
     call.on('status', (status) => {
@@ -213,6 +231,7 @@ export class VizierGRPCClient {
     });
 
     return () => (() => {
+      clearInterval(interval);
       call.cancel();
     });
   }

@@ -31,7 +31,6 @@ import {
   StyledRightTableCell, StyledSmallLeftTableCell, StyledSmallRightTableCell,
   StyledTab, StyledTableCell, StyledTableHeaderCell, StyledTabs,
 } from './utils';
-import { formatUInt128Protobuf } from '../../utils/format-data';
 
 const StyledBreadcrumbLink = withStyles((theme: Theme) => ({
   root: {
@@ -146,7 +145,7 @@ const AgentsTable = () => {
       return () => { }; // noop
     }
     const fetchAgentStatus = () => {
-      const onData = (results) => {
+      const onResults = (results) => {
         if (!results.schemaOnly) {
           if (results.tables.length !== 1) {
             if (results.status) {
@@ -161,7 +160,7 @@ const AgentsTable = () => {
       const onError = (error) => {
         setState({ data: [], error: error?.message });
       };
-      client.executeScript(AGENT_STATUS_SCRIPT, [], false, onData, onError);
+      client.executeScript(AGENT_STATUS_SCRIPT, [], false, () => {}, onResults, onError);
     };
 
     fetchAgentStatus(); // Fetch the agent status initially, before starting the timer for AGENTS_POLL_INTERVAL.

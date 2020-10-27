@@ -21,19 +21,18 @@ import {
 import urlParams from 'utils/url-params';
 import { useSnackbar } from 'components/snackbar/snackbar';
 
-import { SetStateFunc } from './common';
 import {
   EntityURLParams, getLiveViewTitle, LiveViewEntityParams, LiveViewPage,
   LiveViewPageScriptIds, matchLiveViewEntity, toEntityPathname,
-} from '../components/live-widgets/utils/live-view-params';
+} from 'components/live-widgets/utils/live-view-params';
+import { BatchDataUpdate, Table } from 'common/vizier-grpc-client';
+import { SetStateFunc } from './common';
 
 import { ResultsContext } from './results-context';
 import { LayoutContext } from './layout-context';
 
 // The amount of time we should wait in between mutation retries, in ms.
 const mutationRetryMs = 5000; // 5s.
-// The maximum amount of time we should retry the mutation.
-const maxMutationRetryMs = 30000; // 30s.
 
 export interface ExecuteArguments {
   pxl: string;
@@ -117,7 +116,7 @@ const ScriptContextProvider = (props) => {
   const { selectedClusterName, setClusterByName, selectedClusterPrettyName } = React.useContext(ClusterContext);
   const { client, healthy } = React.useContext(ClientContext);
   const {
-    setResults, setLoading, clearResults,
+    setResults, setLoading, setStreaming, clearResults, tables: currentResultTables,
   } = React.useContext(ResultsContext);
   const { editorPanelOpen } = React.useContext(LayoutContext);
   const showSnackbar = useSnackbar();
@@ -281,14 +280,14 @@ const ScriptContextProvider = (props) => {
       return;
     }
 
-    setLoading(true);
-
     let errMsg: string;
     let queryId: string;
     let loaded = false;
 
     const mutation = ContainsMutation(execArgs.pxl);
     const isStreaming = IsStreaming(execArgs.pxl);
+    setLoading(true);
+    setStreaming(isStreaming);
 
     if (!execArgs.skipURLUpdate) {
       commitURL(execArgs.liveViewPage, execArgs.id, execArgs.args);
@@ -315,10 +314,20 @@ const ScriptContextProvider = (props) => {
       return;
     }
 
-    const onData = (queryResults) => {
-      // If the query is not streaming, we should only set the results when the query has completed.
-      // This is to prevent unnecessary re-renders of graphs. This should be fixed when we refactor all of
-      // our widgets to properly handle streaming queries.
+    const onUpdate = (updates: BatchDataUpdate[]) => {
+      for (const update of updates) {
+        const table: Table = currentResultTables[update.id];
+        if (!table) {
+          currentResultTables[update.id] = { ...update, data: [update.batch] };
+        } else {
+          table.data.push(update.batch);
+        }
+      }
+      // Tell React that something changed so that it will re-render
+      setResults((results) => ({ ...results }));
+    };
+
+    const onResults = (queryResults) => {
       if (queryResults && (isStreaming || queryResults.executionStats)) {
         const newTables = {};
         ({ queryId } = queryResults);
@@ -390,7 +399,7 @@ const ScriptContextProvider = (props) => {
           let resolveMutationExecution = null;
           const queryPromise = new Promise((resolve) => { resolveMutationExecution = resolve; });
 
-          const onMutationData = (queryResults) => {
+          const onMutationResults = (queryResults) => {
             if (cancelled) {
               resolveMutationExecution();
               return;
@@ -401,7 +410,7 @@ const ScriptContextProvider = (props) => {
               resolveMutationExecution();
               setResults({ tables: {}, mutationInfo: queryResults.mutationInfo });
             } else {
-              onData(queryResults);
+              onResults(queryResults);
               mutationComplete = true;
             }
           };
@@ -420,7 +429,8 @@ const ScriptContextProvider = (props) => {
             execArgs.pxl,
             getQueryFuncs(execArgs.vis, execArgs.args),
             mutation,
-            onMutationData,
+            onUpdate,
+            onMutationResults,
             onMutationError,
           );
           queryCancelFn = newQueryCancelFn;
@@ -430,6 +440,7 @@ const ScriptContextProvider = (props) => {
           const cancelPromise = new Promise((resolve) => {
             const cancelFn = () => (() => {
               newQueryCancelFn();
+              setStreaming(false);
               resolve(true);
             });
             setCancelExecution(cancelFn);
@@ -467,10 +478,15 @@ const ScriptContextProvider = (props) => {
         execArgs.pxl,
         getQueryFuncs(execArgs.vis, execArgs.args),
         mutation,
-        onData,
+        onUpdate,
+        onResults,
         onError,
       );
-      setCancelExecution(cancelFn);
+      setCancelExecution(() => () => {
+        cancelFn()();
+        setStreaming(false);
+        setLoading(false);
+      });
     }
   };
 
