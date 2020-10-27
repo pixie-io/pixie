@@ -59,8 +59,23 @@ func main() {
 	// We ideally want to patch return of net/http.(*response).finishRequest, but this
 	// does not work with Go. Lookup for a fix for this soon. For now,
 	// we manually patch the correct address which is at the end of the function.
+	//
+	// The simplest way to get this address after the main part of the function is executed. You can run:
+	//    objdump -d app
+	// Find the net/http.(*response).finishRequest function, and then pick the address
+	// after the call to bufio.(*Writer).Flush.
+	//
+	// 0000000000632be0 <net/http.(*response).finishRequest>:
+	//      632be0:       64 48 8b 0c 25 f8 ff    mov    %fs:0xfffffffffffffff8,%rcx
+	//      ...
+	//      632c5c:       e8 ef e9 ed ff          callq  511650 <bufio.(*Writer).Flush>
+	//  --> 632c61:       48 8b 44 24 28          mov    0x28(%rsp),%rax
+	//      ...
+	//
+	//
+	probeAddr := uint64(0x0000000000632c61)
 	evName := "gobpf_uprobe"
-	err = AttachUProbeWithAddr(evName, bcc.BPF_PROBE_ENTRY, binaryProg, 0x0000000000632c61, uprobeFD, -1)
+	err = AttachUProbeWithAddr(evName, bcc.BPF_PROBE_ENTRY, binaryProg, probeAddr, uprobeFD, -1)
 	if err != nil {
 		panic(err)
 	}
@@ -70,6 +85,7 @@ func main() {
 		C.bpf_detach_uprobe(evNameCS)
 		C.free(unsafe.Pointer(evNameCS))
 	}()
+
 	// Create the output table named "golang_http_response_events" that the BPF program writes to.
 	table := bcc.NewTable(bccMod.TableId("golang_http_response_events"), bccMod)
 	ch := make(chan []byte)
