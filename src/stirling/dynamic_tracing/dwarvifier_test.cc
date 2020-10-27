@@ -1284,14 +1284,14 @@ probes {
   }
   vars {
     scalar_var {
-      name: "main__IntStruct_sym_addr"
+      name: "main__IntStruct_sym_addr0"
       type: UINT64
       constant: "5112064"
     }
   }
   vars {
     scalar_var {
-      name: "runtime__errorString_sym_addr"
+      name: "runtime__errorString_sym_addr1"
       type: UINT64
       constant: "5112096"
     }
@@ -1367,7 +1367,7 @@ probes {
     cond {
       op: EQUAL
       vars: "retval_intf_tab"
-      vars: "main__IntStruct_sym_addr"
+      vars: "main__IntStruct_sym_addr0"
     }
     vars {
       scalar_var {
@@ -1385,7 +1385,7 @@ probes {
     cond {
       op: EQUAL
       vars: "retval_intf_tab"
-      vars: "runtime__errorString_sym_addr"
+      vars: "runtime__errorString_sym_addr1"
     }
     vars {
       scalar_var {

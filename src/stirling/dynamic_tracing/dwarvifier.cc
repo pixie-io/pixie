@@ -602,6 +602,16 @@ bool IsGolangPointerType(std::string_view type_name) { return absl::StartsWith(t
 
 constexpr char kGolangInterfaceTypeName[] = "runtime.iface";
 
+// Returns a C variable name that corresponds to the input variable name.
+std::string GetCVariableName(std::string_view name) {
+  std::string substituted_name = absl::StrReplaceAll(name, {{".", "__"}, {"/", "___"}});
+  // Remove any other chars that is not allowed in C variable substituted_name.
+  substituted_name.erase(std::remove_if(substituted_name.begin(), substituted_name.end(),
+                                        [](char c) { return !std::isalnum(c) && (c != '_'); }),
+                         substituted_name.end());
+  return substituted_name;
+}
+
 }  // namespace
 
 Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t offset,
@@ -690,7 +700,7 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
     }
 
     std::string intf_tab_addr_constant_name =
-        absl::StrCat(absl::StrReplaceAll(info.type_name, {{".", "__"}}), "_sym_addr");
+        absl::StrCat(GetCVariableName(info.type_name), "_sym_addr", decoder_idx);
 
     auto* intf_tab_addr_constant = AddVariable<ScalarVariable>(
         output_probe, intf_tab_addr_constant_name, ir::shared::ScalarType::UINT64);
