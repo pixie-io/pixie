@@ -261,6 +261,8 @@ func (s *Server) CheckHealth(ctx context.Context) error {
 	var wg sync.WaitGroup
 	receivedRowBatches := 0
 	receivedRows := int64(0)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	wg.Add(1)
 
@@ -272,6 +274,7 @@ func (s *Server) CheckHealth(ctx context.Context) error {
 			select {
 			case <-time.After(healthCheckInterval):
 				wg.Done()
+				cancel()
 				return
 			case <-doneCh:
 				wg.Done()
