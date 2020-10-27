@@ -35,7 +35,7 @@ TCPSocket::~TCPSocket() { Close(); }
 
 void TCPSocket::BindAndListen(int port) {
   addr_.sin_family = AF_INET;
-  addr_.sin_addr.s_addr = INADDR_ANY;
+  addr_.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
   addr_.sin_port = htons(port);
   CHECK(bind(sockfd_, reinterpret_cast<const struct sockaddr*>(&addr_),
              sizeof(struct sockaddr_in)) == 0)

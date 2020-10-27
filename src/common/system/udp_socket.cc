@@ -27,7 +27,7 @@ UDPSocket::~UDPSocket() { Close(); }
 
 void UDPSocket::BindAndListen(int port) {
   addr_.sin_family = AF_INET;
-  addr_.sin_addr.s_addr = INADDR_ANY;
+  addr_.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
   addr_.sin_port = htons(port);
   CHECK(bind(sockfd_, reinterpret_cast<const struct sockaddr*>(&addr_),
              sizeof(struct sockaddr_in)) == 0)
@@ -48,12 +48,12 @@ void UDPSocket::Close() {
   }
 }
 
-ssize_t UDPSocket::SendTo(std::string_view data, const struct sockaddr_in& dst) const {
-  return sendto(sockfd_, data.data(), data.size(), /*flags*/ 0,
+ssize_t UDPSocket::SendTo(std::string_view data, const struct sockaddr_in& dst, int flags) const {
+  return sendto(sockfd_, data.data(), data.size(), flags,
                 reinterpret_cast<const struct sockaddr*>(&dst), sizeof(struct sockaddr_in));
 }
 
-ssize_t UDPSocket::SendMsg(std::string_view data, const struct sockaddr_in& dst) const {
+ssize_t UDPSocket::SendMsg(std::string_view data, const struct sockaddr_in& dst, int flags) const {
   struct iovec msg_iov = {};
   msg_iov.iov_len = data.size();
   msg_iov.iov_base = const_cast<void*>(reinterpret_cast<const void*>(data.data()));
@@ -64,10 +64,10 @@ ssize_t UDPSocket::SendMsg(std::string_view data, const struct sockaddr_in& dst)
   msg.msg_iovlen = 1;
   msg.msg_iov = &msg_iov;
 
-  return sendmsg(sockfd_, &msg, /*flags*/ 0);
+  return sendmsg(sockfd_, &msg, flags);
 }
 
-ssize_t UDPSocket::SendMMsg(std::string_view data, const struct sockaddr_in& dst) const {
+ssize_t UDPSocket::SendMMsg(std::string_view data, const struct sockaddr_in& dst, int flags) const {
   struct iovec msg_iov;
   msg_iov.iov_len = data.size();
   msg_iov.iov_base = const_cast<void*>(reinterpret_cast<const void*>(data.data()));
@@ -78,16 +78,16 @@ ssize_t UDPSocket::SendMMsg(std::string_view data, const struct sockaddr_in& dst
   msg.msg_hdr.msg_iovlen = 1;
   msg.msg_hdr.msg_iov = &msg_iov;
 
-  int retval = sendmmsg(sockfd_, &msg, 1, /*flags*/ 0);
+  int retval = sendmmsg(sockfd_, &msg, 1, flags);
 
   return (retval < 0) ? retval : msg.msg_len;
 }
 
-struct sockaddr_in UDPSocket::RecvFrom(std::string* data) const {
+struct sockaddr_in UDPSocket::RecvFrom(std::string* data, int flags) const {
   struct sockaddr_in src;
   socklen_t len = sizeof(struct sockaddr_in);
   char buf[kBufSize];
-  ssize_t size = recvfrom(sockfd_, static_cast<void*>(buf), sizeof(buf), /*flags*/ 0,
+  ssize_t size = recvfrom(sockfd_, static_cast<void*>(buf), sizeof(buf), flags,
                           reinterpret_cast<struct sockaddr*>(&src), &len);
   if (size <= 0) {
     return {};
@@ -97,7 +97,7 @@ struct sockaddr_in UDPSocket::RecvFrom(std::string* data) const {
   return src;
 }
 
-struct sockaddr_in UDPSocket::RecvMsg(std::string* data) const {
+struct sockaddr_in UDPSocket::RecvMsg(std::string* data, int flags) const {
   struct sockaddr_in src;
   char buf[kBufSize];
 
@@ -111,7 +111,7 @@ struct sockaddr_in UDPSocket::RecvMsg(std::string* data) const {
   msg.msg_iovlen = 1;
   msg.msg_iov = &msg_iov;
 
-  ssize_t size = recvmsg(sockfd_, &msg, /*flags*/ 0);
+  ssize_t size = recvmsg(sockfd_, &msg, flags);
   if (size <= 0) {
     return {};
   }
@@ -119,7 +119,7 @@ struct sockaddr_in UDPSocket::RecvMsg(std::string* data) const {
   return src;
 }
 
-struct sockaddr_in UDPSocket::RecvMMsg(std::string* data) const {
+struct sockaddr_in UDPSocket::RecvMMsg(std::string* data, int flags) const {
   struct sockaddr_in src;
   char buf[kBufSize];
 
@@ -133,7 +133,7 @@ struct sockaddr_in UDPSocket::RecvMMsg(std::string* data) const {
   msg.msg_hdr.msg_iovlen = 1;
   msg.msg_hdr.msg_iov = &msg_iov;
 
-  ssize_t num_msg = recvmmsg(sockfd_, &msg, 1, /*flags*/ 0, nullptr);
+  ssize_t num_msg = recvmmsg(sockfd_, &msg, 1, flags, nullptr);
   if (num_msg <= 0) {
     return {};
   }

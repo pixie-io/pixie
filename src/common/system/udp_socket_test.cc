@@ -86,7 +86,7 @@ TEST(UDPSocketTest, AddrAndPort) {
     uint16_t server_port = ntohs(server.port());
 
     EXPECT_GT(server_port, 0);
-    EXPECT_EQ(server_addr, "0.0.0.0");
+    EXPECT_EQ(server_addr, "127.0.0.1");
   }
 
   {

@@ -104,7 +104,7 @@ TEST(TCPSocketTest, ServerAddrAndPort) {
     uint16_t server_port = ntohs(server.port());
 
     EXPECT_GT(server_port, 0);
-    EXPECT_EQ(server_addr, "0.0.0.0");
+    EXPECT_EQ(server_addr, "127.0.0.1");
   }
 
   // Check the client address and port.

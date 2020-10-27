@@ -383,7 +383,7 @@ TEST_F(SocketTraceBPFTest, UDPSendToRecvFrom) {
 
     ASSERT_EQ(server.SendTo(kHTTPRespMsg1, server_remote), kHTTPRespMsg1.size());
     struct sockaddr_in client_remote = client.RecvFrom(&recv_data);
-    ASSERT_NE(client_remote.sin_addr.s_addr, server.addr().s_addr);
+    ASSERT_EQ(client_remote.sin_addr.s_addr, server.addr().s_addr);
     ASSERT_EQ(client_remote.sin_port, server.port());
     EXPECT_EQ(recv_data, kHTTPRespMsg1);
 
@@ -426,7 +426,7 @@ TEST_F(SocketTraceBPFTest, UDPSendMsgRecvMsg) {
 
     ASSERT_EQ(server.SendMsg(kHTTPRespMsg1, server_remote), kHTTPRespMsg1.size());
     struct sockaddr_in client_remote = client.RecvMsg(&recv_data);
-    ASSERT_NE(client_remote.sin_addr.s_addr, server.addr().s_addr);
+    ASSERT_EQ(client_remote.sin_addr.s_addr, server.addr().s_addr);
     ASSERT_EQ(client_remote.sin_port, server.port());
     EXPECT_EQ(recv_data, kHTTPRespMsg1);
 
@@ -469,7 +469,7 @@ TEST_F(SocketTraceBPFTest, UDPSendMMsgRecvMMsg) {
 
     ASSERT_EQ(server.SendMMsg(kHTTPRespMsg1, server_remote), kHTTPRespMsg1.size());
     struct sockaddr_in client_remote = client.RecvMMsg(&recv_data);
-    ASSERT_NE(client_remote.sin_addr.s_addr, server.addr().s_addr);
+    ASSERT_EQ(client_remote.sin_addr.s_addr, server.addr().s_addr);
     ASSERT_EQ(client_remote.sin_port, server.port());
     EXPECT_EQ(recv_data, kHTTPRespMsg1);
 
@@ -489,6 +489,68 @@ TEST_F(SocketTraceBPFTest, UDPSendMMsgRecvMMsg) {
   EXPECT_EQ(200, records[kHTTPRespStatusIdx]->Get<types::Int64Value>(0).val);
   EXPECT_THAT(std::string(records[kHTTPRespBodyIdx]->Get<types::StringValue>(0)), StrEq(""));
   EXPECT_THAT(std::string(records[kHTTPRespMessageIdx]->Get<types::StringValue>(0)), StrEq("OK"));
+}
+
+// A failed non-blocking receive call shouldn't interfere with tracing.
+TEST_F(SocketTraceBPFTest, NonBlockingRecv) {
+  using ::pl::system::UDPSocket;
+
+  ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
+
+  int server_port = 0;
+
+  // Run a UDP-based client-server system.
+  {
+    UDPSocket server;
+    server.BindAndListen();
+
+    UDPSocket client;
+    std::string recv_data;
+
+    // This receive will fail with with EAGAIN, since there's no data to receive.
+    struct sockaddr_in failed_recv_remote = client.RecvFrom(&recv_data, MSG_DONTWAIT);
+    ASSERT_EQ(failed_recv_remote.sin_addr.s_addr, 0);
+    ASSERT_EQ(failed_recv_remote.sin_port, 0);
+    ASSERT_TRUE(recv_data.empty());
+
+    ASSERT_EQ(client.SendTo(kHTTPReqMsg1, server.sockaddr()), kHTTPReqMsg1.size());
+    struct sockaddr_in server_remote = server.RecvFrom(&recv_data);
+    ASSERT_NE(server_remote.sin_addr.s_addr, 0);
+    ASSERT_NE(server_remote.sin_port, 0);
+    EXPECT_EQ(recv_data, kHTTPReqMsg1);
+
+    ASSERT_EQ(server.SendTo(kHTTPRespMsg1, server_remote), kHTTPRespMsg1.size());
+    struct sockaddr_in client_remote = client.RecvFrom(&recv_data);
+    ASSERT_EQ(client_remote.sin_addr.s_addr, server.addr().s_addr);
+    ASSERT_EQ(client_remote.sin_port, server.port());
+    EXPECT_EQ(recv_data, kHTTPRespMsg1);
+
+    server_port = htons(server.port());
+
+    client.Close();
+    server.Close();
+  }
+
+  DataTable data_table(kHTTPTable);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  ASSERT_FALSE(tablets.empty());
+  types::ColumnWrapperRecordBatch records =
+      FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, getpid());
+
+  ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
+
+  int resp_status = records[kHTTPRespStatusIdx]->Get<types::Int64Value>(0).val;
+  const std::string& resp_body = records[kHTTPRespBodyIdx]->Get<types::StringValue>(0);
+  const std::string& resp_msg = records[kHTTPRespMessageIdx]->Get<types::StringValue>(0);
+  const std::string& remote_addr = records[kHTTPRemoteAddrIdx]->Get<types::StringValue>(0);
+  const int remote_port = records[kHTTPRemotePortIdx]->Get<types::Int64Value>(0).val;
+
+  EXPECT_EQ(resp_status, 200);
+  EXPECT_EQ(resp_body, "");
+  EXPECT_EQ(resp_msg, "OK");
+  EXPECT_EQ(remote_addr, "127.0.0.1");
+  EXPECT_EQ(remote_port, server_port);
 }
 
 }  // namespace stirling
