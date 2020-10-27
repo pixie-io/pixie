@@ -61,8 +61,9 @@ struct Frame : public FrameBase {
 
 struct Request {
   // TODO(oazizi): Capture queries.
+  std::string query;
 
-  // Timestamp of the request packet.
+  // Timestamp of the request.
   uint64_t timestamp_ns = 0;
 };
 
@@ -70,12 +71,12 @@ struct Response {
   // Query Answers.
   std::string msg;
 
-  // Timestamp of the response packet.
+  // Timestamp of the response.
   uint64_t timestamp_ns = 0;
 };
 
 /**
- *  Record is the primary output of the mysql parser.
+ *  Record is the primary output of the dns parser.
  */
 struct Record {
   Request req;

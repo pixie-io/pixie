@@ -3,6 +3,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "src/common/base/inet_utils.h"
 #include "src/stirling/protocols/dns/dns_stitcher.h"
 
 using ::testing::HasSubstr;
@@ -50,6 +51,42 @@ Frame CreateRespFrame(uint64_t timestamp_ns, uint16_t txid, std::vector<DNSRecor
 //-----------------------------------------------------------------------------
 // Test Cases
 //-----------------------------------------------------------------------------
+
+TEST(DnsStitcherTest, RecordOutput) {
+  std::deque<Frame> req_frames;
+  std::deque<Frame> resp_frames;
+  RecordsWithErrorCount<Record> result;
+
+  InetAddr ip_addr;
+  ip_addr.family = InetAddrFamily::kIPv4;
+  struct in_addr addr_tmp;
+  PL_CHECK_OK(ParseIPv4Addr("1.2.3.4", &addr_tmp));
+  ip_addr.addr = addr_tmp;
+
+  std::vector<DNSRecord> dns_records;
+  dns_records.push_back(DNSRecord{ip_addr, "pixie.ai", ""});
+
+  int t = 0;
+  Frame req0_frame = CreateReqFrame(++t, 0);
+  Frame resp0_frame = CreateRespFrame(++t, 0, dns_records);
+
+  req_frames.push_back(req0_frame);
+  resp_frames.push_back(resp0_frame);
+
+  result = ProcessFrames(&req_frames, &resp_frames);
+  EXPECT_TRUE(resp_frames.empty());
+  EXPECT_EQ(req_frames.size(), 0);
+  EXPECT_EQ(result.error_count, 0);
+  ASSERT_EQ(result.records.size(), 1);
+
+  Record& record = result.records.front();
+
+  EXPECT_EQ(record.req.query, "");
+  EXPECT_EQ(record.req.timestamp_ns, 1);
+
+  EXPECT_EQ(record.resp.msg, R"({"answers":[{"name":"pixie.ai","addr":"1.2.3.4"}]})");
+  EXPECT_EQ(record.resp.timestamp_ns, 2);
+}
 
 TEST(DnsStitcherTest, OutOfOrderMatching) {
   std::deque<Frame> req_frames;

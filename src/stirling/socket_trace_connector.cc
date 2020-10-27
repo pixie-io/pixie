@@ -1186,8 +1186,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
   r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
-  r.Append<r.ColIndex("req")>("");
-  r.Append<r.ColIndex("resp")>("");
+  r.Append<r.ColIndex("req")>(entry.req.query);
+  r.Append<r.ColIndex("resp")>(entry.resp.msg);
   r.Append<r.ColIndex("latency_ns")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG

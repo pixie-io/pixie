@@ -1,5 +1,9 @@
 #include "src/stirling/protocols/dns/dns_stitcher.h"
 
+#include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+
 #include <deque>
 #include <string>
 #include <utility>
@@ -20,11 +24,33 @@ void ProcessResp(const Frame& resp_frame, Response* resp) {
   resp->timestamp_ns = resp_frame.timestamp_ns;
 
   resp->msg.clear();
-  absl::StrAppend(&resp->msg, "Queries: [\n");
+
+  rapidjson::Document d;
+  d.SetObject();
+
+  // Since rapidjson only maintains references, we must pin the address strings in memory,
+  // until the final json is printed out. We do that with this vector.
+  std::vector<std::string> addr_strs;
+
+  rapidjson::Value answers(rapidjson::kArrayType);
   for (const auto& r : resp_frame.records) {
-    absl::StrAppend(&resp->msg, r.name, r.addr.AddrStr());
+    const std::string& name = r.name;
+    addr_strs.push_back(r.addr.AddrStr());
+    const std::string& addr = addr_strs.back();
+
+    rapidjson::Value answer(rapidjson::kObjectType);
+    answer.AddMember("name", rapidjson::StringRef(name.data(), name.size()), d.GetAllocator());
+    answer.AddMember("addr", rapidjson::StringRef(addr.data(), addr.size()), d.GetAllocator());
+
+    answers.PushBack(answer, d.GetAllocator());
   }
-  absl::StrAppend(&resp->msg, "]\n");
+
+  d.AddMember("answers", answers, d.GetAllocator());
+
+  rapidjson::StringBuffer sb;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+  d.Accept(writer);
+  resp->msg = std::string(sb.GetString());
 }
 
 StatusOr<Record> ProcessReqRespPair(const Frame& req_frame, const Frame& resp_frame) {

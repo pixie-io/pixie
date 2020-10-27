@@ -81,8 +81,12 @@ TEST_F(DNSTraceTest, Capture) {
         FindRecordsMatchingPID(tablets[0].records, kDNSUPIDIdx, container_.process_pid());
 
     ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
-    EXPECT_THAT(records[kDNSReq]->Get<types::StringValue>(0), "");
-    EXPECT_THAT(records[kDNSResp]->Get<types::StringValue>(0), "");
+
+    const std::string& req = records[kDNSReq]->Get<types::StringValue>(0);
+    const std::string& resp = records[kDNSResp]->Get<types::StringValue>(0);
+
+    EXPECT_EQ(req, "");
+    EXPECT_EQ(resp, R"({"answers":[{"name":"server.dnstest.com","addr":"192.168.32.200"}]})");
   }
 }
 
