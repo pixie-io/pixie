@@ -407,7 +407,8 @@ StatusOr<QLObjectPtr> SubscriptHandler::Eval(IR* graph, OperatorIR* op, const py
     return EvalColumn(graph, op, ast, static_cast<StringIR*>(key->node()), visitor);
   }
   if (CollectionObject::IsCollection(key)) {
-    return EvalKeep(graph, op, ast, std::static_pointer_cast<CollectionObject>(key), visitor);
+    PL_ASSIGN_OR_RETURN(std::vector<StringIR*> keep_cols, ParseAsListOf<StringIR>(key, "key"));
+    return EvalKeep(graph, op, ast, keep_cols, visitor);
   }
   if (key->HasNode() && key->node()->IsExpression()) {
     return EvalFilter(graph, op, ast, static_cast<ExpressionIR*>(key->node()), visitor);
@@ -432,16 +433,24 @@ StatusOr<QLObjectPtr> SubscriptHandler::EvalColumn(IR* graph, OperatorIR*, const
 }
 
 StatusOr<QLObjectPtr> SubscriptHandler::EvalKeep(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                                 std::shared_ptr<CollectionObject> key,
+                                                 std::vector<StringIR*> keep_cols,
                                                  ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> keep_column_names, ParseAsListOfStrings(key, "key"));
-
+  absl::flat_hash_set<std::string> keep_cols_seen;
   ColExpressionVector keep_exprs;
-  for (const auto& col_name : keep_column_names) {
+  for (const auto& keep_col : keep_cols) {
+    auto col_name = keep_col->str();
+    if (keep_cols_seen.contains(col_name)) {
+      return keep_col->CreateIRNodeError(
+          "cannot specify the same column name more than once when filtering by cols. '$0' "
+          "specified more than once",
+          col_name);
+    }
+    keep_cols_seen.insert(col_name);
+
     // parent_op_idx is 0 because we only have one parent for a map.
-    PL_ASSIGN_OR_RETURN(ColumnIR * keep_col,
+    PL_ASSIGN_OR_RETURN(ColumnIR * column,
                         graph->CreateNode<ColumnIR>(ast, col_name, /* parent_op_idx */ 0));
-    keep_exprs.emplace_back(col_name, keep_col);
+    keep_exprs.emplace_back(col_name, column);
   }
 
   PL_ASSIGN_OR_RETURN(MapIR * map_op, graph->CreateNode<MapIR>(ast, op, keep_exprs,

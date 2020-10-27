@@ -2046,6 +2046,18 @@ TEST_F(ASTVisitorTest, compile_time_string_concat) {
   ASSERT_OK(CompileGraph(kCompileTimeStringConcat, {}, {}));
 }
 
+TEST_F(ASTVisitorTest, keep_duplicate_test) {
+  std::string keep_duplicates_expr = R"pxl(import px
+queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'upid'])
+queryDF = queryDF['upid', 'cpu1', 'upid', 'cpu0']
+)pxl";
+
+  EXPECT_COMPILER_ERROR_AT(
+      CompileGraph(keep_duplicates_expr), 3, 35,
+      "cannot specify the same column name more than once when filtering by cols. 'upid' "
+      "specified more than once");
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

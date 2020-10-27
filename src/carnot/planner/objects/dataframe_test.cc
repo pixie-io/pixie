@@ -448,6 +448,17 @@ TEST_F(SubscriptTest, KeepTest) {
   EXPECT_EQ(map_ir->col_exprs()[1].name, "bar");
 }
 
+TEST_F(SubscriptTest, KeepMultipleOccurancesTest) {
+  ParsedArgs parsed_args;
+  parsed_args.AddArg("key", MakeListObj(MakeString("foo"), MakeString("bar"), MakeString("foo")));
+
+  auto status = SubscriptHandler::Eval(graph.get(), src, ast, parsed_args, ast_visitor.get());
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(),
+              HasCompilerError("cannot specify the same column name more than once when filtering "
+                               "by cols. 'foo' specified more than once"));
+}
+
 TEST_F(SubscriptTest, DataframeHasKeepAsGetItem) {
   auto keep_list = MakeListObj(MakeString("foo"), MakeString("bar"));
   ArgMap args{{}, {keep_list}};

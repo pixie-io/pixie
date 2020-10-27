@@ -316,8 +316,11 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
 }
 
 struct CompilerErrorMatcher {
-  explicit CompilerErrorMatcher(std::string expected_compiler_error)
-      : expected_compiler_error_(std::move(expected_compiler_error)) {}
+  explicit CompilerErrorMatcher(std::string expected_compiler_error, int expected_line,
+                                int expected_column)
+      : expected_compiler_error_(std::move(expected_compiler_error)),
+        expected_line_(expected_line),
+        expected_column_(expected_column) {}
 
   bool MatchAndExplain(const Status& status, ::testing::MatchResultListener* listener) const {
     if (status.ok()) {
@@ -348,6 +351,8 @@ struct CompilerErrorMatcher {
       return false;
     }
 
+    bool regex_matched = false;
+    int matched_line, matched_col;
     std::vector<std::string> error_messages;
     std::regex re(expected_compiler_error_);
     for (int64_t i = 0; i < error_group.errors_size(); i++) {
@@ -355,12 +360,30 @@ struct CompilerErrorMatcher {
       std::string msg = error.message();
       std::smatch match;
       if (std::regex_search(msg, match, re)) {
+        regex_matched = true;
+        matched_line = error.line();
+        matched_col = error.column();
+        if (expected_line_ != -1 && expected_line_ != matched_line) {
+          // We have an error, but it's not at the expected line.
+          continue;
+        }
+        if (expected_line_ != -1 && expected_column_ != -1 && expected_column_ != matched_col) {
+          // We have an error, but it's not at the expected column.
+          continue;
+        }
         return true;
       }
       error_messages.push_back(msg);
     }
-    (*listener) << absl::Substitute("Regex '$0' not matched in compiler errors: '$1'",
-                                    expected_compiler_error_, absl::StrJoin(error_messages, ","));
+    if (!regex_matched) {
+      (*listener) << absl::Substitute("Regex '$0' not matched in compiler errors: '$1'",
+                                      expected_compiler_error_, absl::StrJoin(error_messages, ","));
+    } else {
+      (*listener) << absl::Substitute(
+          "Regex matched in compiler errors, but the expected line/col"
+          "values are different. Error at $0:$1",
+          matched_line, matched_col);
+    }
     return false;
   }
 
@@ -373,6 +396,8 @@ struct CompilerErrorMatcher {
   }
 
   std::string expected_compiler_error_;
+  int expected_line_;
+  int expected_column_;
 };
 
 struct UnorderedRelationMatcher {
@@ -422,7 +447,14 @@ template <typename... Args>
 inline ::testing::PolymorphicMatcher<CompilerErrorMatcher> HasCompilerError(
     Args... substitute_args) {
   return ::testing::MakePolymorphicMatcher(
-      CompilerErrorMatcher(std::move(absl::Substitute(substitute_args...))));
+      CompilerErrorMatcher(std::move(absl::Substitute(substitute_args...)), -1, -1));
+}
+
+template <typename... Args>
+inline ::testing::PolymorphicMatcher<CompilerErrorMatcher> HasCompilerErrorAt(
+    int line, int col, Args... substitute_args) {
+  return ::testing::MakePolymorphicMatcher(
+      CompilerErrorMatcher(std::move(absl::Substitute(substitute_args...)), line, col));
 }
 
 // Checks whether two relations match, but agnostic to column order.
@@ -1302,6 +1334,12 @@ void CompareClone(IRNode* new_ir, IRNode* old_ir, const std::string& err_string)
 
 #define ASSERT_COMPILER_ERROR(status, ...) \
   ASSERT_THAT(StatusAdapter(status), HasCompilerError(__VA_ARGS__))
+
+#define EXPECT_COMPILER_ERROR_AT(status, line, col, ...) \
+  EXPECT_THAT(StatusAdapter(status), HasCompilerErrorAt(line, col, __VA_ARGS__))
+
+#define ASSERT_COMPILER_ERROR_AT(status, line, col, ...) \
+  ASSERT_THAT(StatusAdapter(status), HasCompilerErrorAt(line, col, __VA_ARGS__))
 
 }  // namespace planner
 }  // namespace carnot

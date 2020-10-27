@@ -498,8 +498,7 @@ class SubscriptHandler {
   static StatusOr<QLObjectPtr> EvalFilter(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                           ExpressionIR* expr, ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> EvalKeep(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                        std::shared_ptr<CollectionObject> cols,
-                                        ASTVisitor* visitor);
+                                        std::vector<StringIR*> keep_cols, ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> EvalColumn(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                           StringIR* cols, ASTVisitor* visitor);
 };
