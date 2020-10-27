@@ -874,6 +874,110 @@ class PodNameToPodStopTimeUDF : public ScalarUDF {
   }
 };
 
+class ContainerNameToContainerIDUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue container_name) {
+    auto md = GetMetadataState(ctx);
+    return md->k8s_metadata_state().ContainerIDByName(container_name);
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the id of a container from its name.")
+        .Details("Gets the kubernetes ID for the container from its name.")
+        .Example("df.container_id = px.container_name_to_container_id(df.container_name)")
+        .Arg("container_name", "The name of the container to get the ID for.")
+        .Returns("The k8s container ID for the container name passed in.");
+  }
+};
+
+class ContainerIDToContainerStartTimeUDF : public ScalarUDF {
+ public:
+  Time64NSValue Exec(FunctionContext* ctx, StringValue container_id) {
+    auto md = GetMetadataState(ctx);
+    const pl::md::ContainerInfo* container_info =
+        md->k8s_metadata_state().ContainerInfoByID(container_id);
+    if (container_info == nullptr) {
+      return 0;
+    }
+    return container_info->start_time_ns();
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the start time of a container from its ID.")
+        .Details(
+            "Gets the start time (in nanosecond unix time format) of a container from its "
+            "container ID.")
+        .Example("df.container_start_time = px.container_id_to_start_time(df.container_id)")
+        .Arg("container_id", "The Container ID of the Container to get the start time for.")
+        .Returns("The start time (as an integer) for the Container ID passed in.");
+  }
+};
+
+class ContainerIDToContainerStopTimeUDF : public ScalarUDF {
+ public:
+  Time64NSValue Exec(FunctionContext* ctx, StringValue container_id) {
+    auto md = GetMetadataState(ctx);
+    const pl::md::ContainerInfo* container_info =
+        md->k8s_metadata_state().ContainerInfoByID(container_id);
+    if (container_info == nullptr) {
+      return 0;
+    }
+    return container_info->stop_time_ns();
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the stop time of a container from its ID.")
+        .Details(
+            "Gets the stop time (in nanosecond unix time format) of a container from its container "
+            "ID.")
+        .Example("df.container_stop_time = px.container_id_to_stop_time(df.container_id)")
+        .Arg("container_id", "The Container ID of the Container to get the stop time for.")
+        .Returns("The stop time (as an integer) for the Container ID passed in.");
+  }
+};
+
+class ContainerNameToContainerStartTimeUDF : public ScalarUDF {
+ public:
+  Time64NSValue Exec(FunctionContext* ctx, StringValue container_name) {
+    auto md = GetMetadataState(ctx);
+    StringValue container_id = md->k8s_metadata_state().ContainerIDByName(container_name);
+    const pl::md::ContainerInfo* container_info =
+        md->k8s_metadata_state().ContainerInfoByID(container_id);
+    if (container_info == nullptr) {
+      return 0;
+    }
+    return container_info->start_time_ns();
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the start time of a container from its name.")
+        .Details(
+            "Gets the start time (in nanosecond unix time format) of a container from its name.")
+        .Example("df.container_start_time = px.container_name_to_start_time(df.container_name)")
+        .Arg("container_name", "The name of the Container to get the start time for.")
+        .Returns("The start time (as an integer) for the Container name passed in.");
+  }
+};
+
+class ContainerNameToContainerStopTimeUDF : public ScalarUDF {
+ public:
+  Time64NSValue Exec(FunctionContext* ctx, StringValue container_name) {
+    auto md = GetMetadataState(ctx);
+    StringValue container_id = md->k8s_metadata_state().ContainerIDByName(container_name);
+    const pl::md::ContainerInfo* container_info =
+        md->k8s_metadata_state().ContainerInfoByID(container_id);
+    if (container_info == nullptr) {
+      return 0;
+    }
+    return container_info->stop_time_ns();
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the stop time of a container from its name.")
+        .Details(
+            "Gets the stop time (in nanosecond unix time format) of a container from its name.")
+        .Example("df.container_stop_time = px.container_name_to_stop_time(df.container_name)")
+        .Arg("container_name", "The name of the Container to get the stop time for.")
+        .Returns("The stop time (as an integer) for the Container name passed in.");
+  }
+};
+
 inline std::string PodPhaseToString(const pl::md::PodPhase& pod_phase) {
   switch (pod_phase) {
     case md::PodPhase::kRunning:

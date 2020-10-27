@@ -77,6 +77,7 @@ class K8sMetadataState : NotCopyable {
 
   using ServicesByNameMap = PodsByNameMap;
   using NamespacesByNameMap = PodsByNameMap;
+  using ContainersByNameMap = absl::flat_hash_map<std::string, CID>;
   using PodsByPodIpMap = absl::flat_hash_map<std::string, UID>;
 
   void set_service_cidr(CIDRBlock cidr) {
@@ -125,6 +126,15 @@ class K8sMetadataState : NotCopyable {
   const ServicesByNameMap& services_by_name() const { return services_by_name_; }
 
   const NamespacesByNameMap& namespaces_by_name() const { return namespaces_by_name_; }
+
+  const ContainersByNameMap& containers_by_name() const { return containers_by_name_; }
+
+  /**
+   * ContainerIDByName returns the ContainerID for the container of the given name.
+   * @param container_name the container name
+   * @return the container id or empty string if the container does not exist.
+   */
+  CID ContainerIDByName(std::string_view container_name) const;
 
   /**
    * ServiceInfoByID gets an unowned pointer to the Service. This pointer will remain active
@@ -191,6 +201,11 @@ class K8sMetadataState : NotCopyable {
    * Mapping of namespaces by name.
    */
   NamespacesByNameMap namespaces_by_name_;
+
+  /**
+   * Mapping of containers by name.
+   */
+  ContainersByNameMap containers_by_name_;
 
   /**
    * Mapping of Pods by host ip.

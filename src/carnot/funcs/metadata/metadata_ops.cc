@@ -16,6 +16,11 @@ void RegisterMetadataOpsOrDie(pl::carnot::udf::Registry* registry) {
    *****************************************/
   registry->RegisterOrDie<ASIDUDF>("asid");
   registry->RegisterOrDie<ContainerIDToContainerStatusUDF>("container_id_to_status");
+  registry->RegisterOrDie<ContainerIDToContainerStartTimeUDF>("container_id_to_start_time");
+  registry->RegisterOrDie<ContainerIDToContainerStopTimeUDF>("container_id_to_stop_time");
+  registry->RegisterOrDie<ContainerNameToContainerIDUDF>("container_name_to_container_id");
+  registry->RegisterOrDie<ContainerNameToContainerStartTimeUDF>("container_name_to_start_time");
+  registry->RegisterOrDie<ContainerNameToContainerStopTimeUDF>("container_name_to_stop_time");
   registry->RegisterOrDie<PodIPToPodIDUDF>("ip_to_pod_id");
   registry->RegisterOrDie<PodIDToPodNameUDF>("pod_id_to_pod_name");
   registry->RegisterOrDie<PodIDToNamespaceUDF>("pod_id_to_namespace");

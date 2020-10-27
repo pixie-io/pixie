@@ -364,6 +364,58 @@ TEST_F(MetadataOpsTest, pod_name_to_stop_time) {
   EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/blah").val, 0);
 }
 
+TEST_F(MetadataOpsTest, container_name_to_container_id_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester =
+      pl::carnot::udf::UDFTester<ContainerNameToContainerIDUDF>(std::move(function_ctx));
+  udf_tester.ForInput("running_container").Expect("pod1_container_1");
+  udf_tester.ForInput("terminating_container").Expect("pod2_container_1");
+}
+
+TEST_F(MetadataOpsTest, container_id_to_start_time) {
+  ContainerIDToContainerStartTimeUDF udf;
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  // pod1_container_1 is the container id for the currently running container.
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "pod1_container_1").val, 6);
+  // pod1_container_987654 is a nonexistant container id, should return 0.
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "pod1_container_987654").val, 0);
+}
+
+TEST_F(MetadataOpsTest, container_id_to_stop_time) {
+  ContainerIDToContainerStopTimeUDF udf;
+  updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedContainerUpdatePB());
+  EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
+                                                               &md_filter_, updates_.get()));
+
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  // pod2_container_1 is the container id for a terminated container.
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "pod2_container_1").val, 14);
+  // pod1_container_987654 is a nonexistant container id, should return 0.
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "pod1_container_987654").val, 0);
+}
+
+TEST_F(MetadataOpsTest, container_name_to_start_time) {
+  ContainerNameToContainerStartTimeUDF udf;
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  // running_container is the container name for the currently running container.
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "running_container").val, 6);
+  // blah_container is a nonexistant container, should return 0.
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "blah_container").val, 0);
+}
+
+TEST_F(MetadataOpsTest, container_name_to_stop_time) {
+  ContainerNameToContainerStopTimeUDF udf;
+  updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedContainerUpdatePB());
+  EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
+                                                               &md_filter_, updates_.get()));
+
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  // terminating_container is the container name for a terminated container.
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "terminating_container").val, 14);
+  // blah_container is a nonexistant container, should return 0.
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "blah_container").val, 0);
+}
+
 TEST_F(MetadataOpsTest, pod_name_to_pod_status) {
   PodNameToPodStatusUDF status_udf;
 

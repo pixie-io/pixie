@@ -14,8 +14,8 @@ std::string PodInfo::DebugString(int indent) const {
 
 std::string ContainerInfo::DebugString(int indent) const {
   std::string state = stop_time_ns() != 0 ? "S" : "R";
-  return absl::Substitute("$0<Container:cid=$1:pod_id=$2:state=$3>", Indent(indent), cid(),
-                          pod_id(), state);
+  return absl::Substitute("$0<Container:cid=$1:name=$2:pod_id=$3:state=$4>", Indent(indent), cid(),
+                          name(), pod_id(), state);
 }
 
 std::string ServiceInfo::DebugString(int indent) const {

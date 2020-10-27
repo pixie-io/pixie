@@ -55,6 +55,11 @@ UID K8sMetadataState::PodIDByIP(std::string_view pod_ip) const {
   return (it == pods_by_ip_.end()) ? "" : it->second;
 }
 
+CID K8sMetadataState::ContainerIDByName(std::string_view container_name) const {
+  auto it = containers_by_name_.find(container_name);
+  return (it == containers_by_name_.end()) ? "" : it->second;
+}
+
 UID K8sMetadataState::ServiceIDByName(K8sNameIdentView service_name) const {
   auto it = services_by_name_.find(service_name);
   return (it == services_by_name_.end()) ? "" : it->second;
@@ -104,6 +109,11 @@ std::unique_ptr<K8sMetadataState> K8sMetadataState::Clone() const {
   other->namespaces_by_name_.reserve(namespaces_by_name_.size());
   for (const auto& [k, v] : namespaces_by_name_) {
     other->namespaces_by_name_[k] = v;
+  }
+
+  other->containers_by_name_.reserve(containers_by_name_.size());
+  for (const auto& [k, v] : containers_by_name_) {
+    other->containers_by_name_[k] = v;
   }
   return other;
 }
@@ -206,6 +216,8 @@ Status K8sMetadataState::HandleContainerUpdate(const ContainerUpdate& update) {
   container_info->set_state(ConvertToContainerState(update.container_state()));
   container_info->set_state_message(update.message());
   container_info->set_state_reason(update.reason());
+
+  containers_by_name_[update.name()] = cid;
 
   return Status::OK();
 }

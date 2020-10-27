@@ -94,12 +94,13 @@ TEST(ContainerInfo, debug_string) {
   ContainerInfo cinfo("container1", "containername", ContainerState::kRunning,
                       "container state message", "container state reason", 128);
   for (int i = 0; i < 5; ++i) {
-    EXPECT_EQ(absl::Substitute("$0<Container:cid=container1:pod_id=:state=R>", Indent(i)),
+    EXPECT_EQ(absl::Substitute("$0<Container:cid=container1:name=containername:pod_id=:state=R>",
+                               Indent(i)),
               cinfo.DebugString(i));
   }
 
   cinfo.set_stop_time_ns(1000);
-  EXPECT_EQ("<Container:cid=container1:pod_id=:state=S>", cinfo.DebugString());
+  EXPECT_EQ("<Container:cid=container1:name=containername:pod_id=:state=S>", cinfo.DebugString());
 }
 
 TEST(ContainerInfo, add_delete_pids) {
