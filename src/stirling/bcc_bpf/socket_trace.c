@@ -1014,7 +1014,7 @@ int syscall__probe_ret_sendto(struct pt_regs* ctx) {
 
   // Unstash arguments, and process syscall.
   const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
-  if (connect_args != NULL) {
+  if (connect_args != NULL && bytes_count > 0) {
     process_implicit_conn(ctx, id, connect_args);
   }
   active_connect_args_map.delete(&id);
@@ -1057,7 +1057,7 @@ int syscall__probe_ret_recvfrom(struct pt_regs* ctx) {
 
   // Unstash arguments, and process syscall.
   const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
-  if (connect_args != NULL) {
+  if (connect_args != NULL && bytes_count > 0) {
     process_implicit_conn(ctx, id, connect_args);
   }
   active_connect_args_map.delete(&id);
@@ -1102,7 +1102,7 @@ int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
 
   // Unstash arguments, and process syscall.
   const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
-  if (connect_args != NULL) {
+  if (connect_args != NULL && bytes_count > 0) {
     process_implicit_conn(ctx, id, connect_args);
   }
   active_connect_args_map.delete(&id);
@@ -1149,7 +1149,7 @@ int syscall__probe_ret_sendmmsg(struct pt_regs* ctx) {
 
   // Unstash arguments, and process syscall.
   const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
-  if (connect_args != NULL) {
+  if (connect_args != NULL && num_msgs > 0) {
     process_implicit_conn(ctx, id, connect_args);
   }
   active_connect_args_map.delete(&id);
@@ -1195,7 +1195,7 @@ int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
 
   // Unstash arguments, and process syscall.
   const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
-  if (connect_args != NULL) {
+  if (connect_args != NULL && bytes_count > 0) {
     process_implicit_conn(ctx, id, connect_args);
   }
   active_connect_args_map.delete(&id);
@@ -1242,7 +1242,7 @@ int syscall__probe_ret_recvmmsg(struct pt_regs* ctx) {
 
   // Unstash arguments, and process syscall.
   const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
-  if (connect_args != NULL) {
+  if (connect_args != NULL && num_msgs > 0) {
     process_implicit_conn(ctx, id, connect_args);
   }
   active_connect_args_map.delete(&id);

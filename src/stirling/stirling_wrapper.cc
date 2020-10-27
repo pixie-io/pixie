@@ -19,6 +19,7 @@
 
 #include "src/stirling/cass_table.h"
 #include "src/stirling/conn_stats_table.h"
+#include "src/stirling/dns_table.h"
 #include "src/stirling/http_table.h"
 #include "src/stirling/mysql_table.h"
 #include "src/stirling/pgsql_table.h"
@@ -43,6 +44,7 @@ using pl::types::TabletID;
 
 using pl::stirling::kConnStatsTable;
 using pl::stirling::kCQLTable;
+using pl::stirling::kDNSTable;
 using pl::stirling::kHTTPTable;
 using pl::stirling::kMySQLTable;
 using pl::stirling::kPGSQLTable;
@@ -50,7 +52,8 @@ using pl::stirling::kPGSQLTable;
 DEFINE_string(sources, "kProd", "[kAll|kProd|kMetrics|kTracers] Choose sources to enable.");
 DEFINE_string(trace, "", "Dynamic trace to deploy.");
 DEFINE_string(print_record_batches,
-              absl::Substitute("$0,$1,$2", kHTTPTable.name(), kMySQLTable.name(), kCQLTable.name()),
+              absl::Substitute("$0,$1,$2,$3", kHTTPTable.name(), kMySQLTable.name(),
+                               kCQLTable.name(), kDNSTable.name()),
               "Comma-separated list of tables to print. Defaults to tracers if not specified. Use "
               "'None' for none.");
 DEFINE_bool(init_only, false, "If true, only runs the init phase and exits. For testing.");

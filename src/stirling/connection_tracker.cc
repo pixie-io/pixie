@@ -582,7 +582,9 @@ void ConnectionTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs)
     case EndpointRole::kRoleClient: {
       // Workaround: Server-side MySQL tracing seems to be busted, likely because of inference code.
       // TODO(oazizi/PL-1498): Remove this once service-side MySQL tracing is fixed.
-      if (traffic_class().protocol == kProtocolMySQL) {
+      // TODO(oazizi): Remove DNS from this as well. Just keeping it in here for the demo,
+      //               so we have more data in the tables.
+      if (traffic_class().protocol == kProtocolMySQL || traffic_class().protocol == kProtocolDNS) {
         state_ = State::kTransferring;
         break;
       }

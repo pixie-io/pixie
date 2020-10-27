@@ -92,6 +92,12 @@ RecordsWithErrorCount<Record> ProcessFrames(std::deque<Frame>* req_frames,
 
     // Search for matching req frame
     for (auto& req_frame : *req_frames) {
+      // If the request timestamp is after the response, then it can't be the match.
+      // Nor can any subsequent requests either, so stop searching.
+      if (req_frame.timestamp_ns > resp_frame.timestamp_ns) {
+        break;
+      }
+
       if (resp_frame.header.txid == req_frame.header.txid) {
         StatusOr<Record> record_status = ProcessReqRespPair(req_frame, resp_frame);
         if (record_status.ok()) {

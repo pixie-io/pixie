@@ -177,4 +177,9 @@ TEST(ProtocolInferenceTest, DNS) {
             kRequest);
   EXPECT_EQ(infer_dns_message(reinterpret_cast<const char*>(kRespFrame2), sizeof(kRespFrame2)),
             kResponse);
+
+  constexpr uint8_t kQueryFrame3[] = "\7\300\1\0\0\1\0\0\0\0\0\0\3www\3cbc\2ca\0\0\1\0\1";
+
+  EXPECT_EQ(infer_dns_message(reinterpret_cast<const char*>(kQueryFrame3), sizeof(kQueryFrame3)),
+            kRequest);
 }
