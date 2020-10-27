@@ -16,14 +16,30 @@ namespace stirling {
 namespace protocols {
 namespace dns {
 
+std::string HeaderToJSONString(const DNSHeader& header) {
+  rapidjson::Document d(rapidjson::kObjectType);
+
+  d.AddMember("txid", header.txid, d.GetAllocator());
+  d.AddMember("flags", header.flags, d.GetAllocator());
+  d.AddMember("num_queries", header.num_queries, d.GetAllocator());
+  d.AddMember("num_answers", header.num_answers, d.GetAllocator());
+  d.AddMember("num_auth", header.num_auth, d.GetAllocator());
+  d.AddMember("num_addl", header.num_addl, d.GetAllocator());
+
+  rapidjson::StringBuffer sb;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+  d.Accept(writer);
+  return std::string(sb.GetString());
+}
+
 void ProcessReq(const Frame& req_frame, Request* req) {
   req->timestamp_ns = req_frame.timestamp_ns;
+  req->header = HeaderToJSONString(req_frame.header);
 }
 
 void ProcessResp(const Frame& resp_frame, Response* resp) {
   resp->timestamp_ns = resp_frame.timestamp_ns;
-
-  resp->msg.clear();
+  resp->header = HeaderToJSONString(resp_frame.header);
 
   rapidjson::Document d;
   d.SetObject();

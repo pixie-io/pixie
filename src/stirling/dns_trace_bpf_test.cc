@@ -19,6 +19,7 @@ using ::pl::stirling::testing::SocketTraceBPFTest;
 using ::pl::testing::BazelBinTestFilePath;
 
 using ::testing::Each;
+using ::testing::MatchesRegex;
 
 // A DNS server using the bind9 DNS server image.
 class DNSServerContainer : public ContainerRunner {
@@ -82,11 +83,21 @@ TEST_F(DNSTraceTest, Capture) {
 
     ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
 
-    const std::string& req = records[kDNSReq]->Get<types::StringValue>(0);
-    const std::string& resp = records[kDNSResp]->Get<types::StringValue>(0);
+    const std::string& req_hdr = records[kDNSReqHdrIdx]->Get<types::StringValue>(0);
+    const std::string& req_body = records[kDNSReqBodyIdx]->Get<types::StringValue>(0);
+    const std::string& resp_hdr = records[kDNSRespHdrIdx]->Get<types::StringValue>(0);
+    const std::string& resp_body = records[kDNSRespBodyIdx]->Get<types::StringValue>(0);
 
-    EXPECT_EQ(req, "");
-    EXPECT_EQ(resp, R"({"answers":[{"name":"server.dnstest.com","addr":"192.168.32.200"}]})");
+    EXPECT_THAT(
+        req_hdr,
+        MatchesRegex(
+            R"(\{"txid":[0-9]+,"flags":288,"num_queries":1,"num_answers":0,"num_auth":0,"num_addl":1\})"));
+    EXPECT_EQ(req_body, "");
+    EXPECT_THAT(
+        resp_hdr,
+        MatchesRegex(
+            R"(\{"txid":[0-9]+,"flags":34176,"num_queries":1,"num_answers":1,"num_auth":0,"num_addl":1\})"));
+    EXPECT_EQ(resp_body, R"({"answers":[{"name":"server.dnstest.com","addr":"192.168.32.200"}]})");
   }
 }
 

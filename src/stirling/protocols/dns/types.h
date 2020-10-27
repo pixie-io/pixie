@@ -60,6 +60,9 @@ struct Frame : public FrameBase {
 //-----------------------------------------------------------------------------
 
 struct Request {
+  // DNS header (txid, flags, num queries/answers, etc.) as a JSON string.
+  std::string header;
+
   // TODO(oazizi): Capture queries.
   std::string query;
 
@@ -68,6 +71,9 @@ struct Request {
 };
 
 struct Response {
+  // DNS header (txid, flags, num queries/answers, etc.) as a JSON string.
+  std::string header;
+
   // Query Answers.
   std::string msg;
 

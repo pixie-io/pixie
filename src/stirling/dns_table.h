@@ -16,11 +16,19 @@ static constexpr DataElement kDNSElements[] = {
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
         canonical_data_elements::kTraceRole,
-        {"req", "Request",
+        {"req_header", "Request header",
          types::DataType::STRING,
          types::SemanticType::ST_NONE,
          types::PatternType::GENERAL},
-        {"resp", "Response",
+        {"req_body", "Request",
+         types::DataType::STRING,
+         types::SemanticType::ST_NONE,
+         types::PatternType::GENERAL},
+        {"resp_header", "Response header",
+         types::DataType::STRING,
+         types::SemanticType::ST_NONE,
+         types::PatternType::GENERAL},
+        {"resp_body", "Response",
          types::DataType::STRING,
          types::SemanticType::ST_NONE,
          types::PatternType::GENERAL},
@@ -41,8 +49,10 @@ static constexpr auto kDNSTable = DataTableSchema(
     "dns_events", kDNSElements, std::chrono::milliseconds{100}, std::chrono::milliseconds{1000});
 
 static constexpr int kDNSUPIDIdx = kDNSTable.ColIndex("upid");
-static constexpr int kDNSReq = kDNSTable.ColIndex("req");
-static constexpr int kDNSResp = kDNSTable.ColIndex("resp");
+static constexpr int kDNSReqHdrIdx = kDNSTable.ColIndex("req_header");
+static constexpr int kDNSReqBodyIdx = kDNSTable.ColIndex("req_body");
+static constexpr int kDNSRespHdrIdx = kDNSTable.ColIndex("resp_header");
+static constexpr int kDNSRespBodyIdx = kDNSTable.ColIndex("resp_body");
 
 }  // namespace stirling
 }  // namespace pl

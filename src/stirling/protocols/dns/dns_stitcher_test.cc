@@ -81,11 +81,17 @@ TEST(DnsStitcherTest, RecordOutput) {
 
   Record& record = result.records.front();
 
-  EXPECT_EQ(record.req.query, "");
   EXPECT_EQ(record.req.timestamp_ns, 1);
+  EXPECT_EQ(
+      record.resp.header,
+      R"({"txid":0,"flags":33152,"num_queries":1,"num_answers":1,"num_auth":0,"num_addl":0})");
+  EXPECT_EQ(record.req.query, "");
 
-  EXPECT_EQ(record.resp.msg, R"({"answers":[{"name":"pixie.ai","addr":"1.2.3.4"}]})");
   EXPECT_EQ(record.resp.timestamp_ns, 2);
+  EXPECT_EQ(
+      record.resp.header,
+      R"({"txid":0,"flags":33152,"num_queries":1,"num_answers":1,"num_auth":0,"num_addl":0})");
+  EXPECT_EQ(record.resp.msg, R"({"answers":[{"name":"pixie.ai","addr":"1.2.3.4"}]})");
 }
 
 TEST(DnsStitcherTest, OutOfOrderMatching) {
