@@ -7,11 +7,7 @@ Shows summary DNS requests in the cluster, with some latency information.
 
 import px
 
-def format_nslookup_name(df):
-    df.idx1 = px.find(df.to_entity, '.svc.cluster')
-    df.idx2 = px.find(px.substring(df.to_entity, df.idx1+1, px.length(df.to_entity)), '.') + df.idx1
-    df.to_entity = px.Service(px.substring(df.to_entity, 0, df.idx1+1))
-    return df
+# kube-dns.kube-system.svc.cluster.local -> kube-dns.kube-system
 def format_nslookup_name(df):
     df.idx1 = px.find(df.to_entity, '.svc.cluster')
     leftovers = df[df.idx1 < 0] 
@@ -19,6 +15,7 @@ def format_nslookup_name(df):
     df.to_entity = px.Service(px.substring(df.to_entity, 0, df.idx1))
     return df.append(leftovers)
 
+# kube-system/kube-dns-asjdkfhds-32nej -> kube-dns.kube-system
 def format_service_name_as_dns(df):
     no_service = df[df.service == '']
     df = df[df.service != '']
@@ -34,21 +31,25 @@ def dns_flow_graph(start: str):
     df = df[df.trace_role == 1]
     df = df.drop(['trace_role'])
 
-    # Add the grouping entity column.
+    # Add context.
     df.pod = df.ctx['pod']
-    df.from_entity = df.ctx['pod']
     df.service = df.ctx['service']
     df.namespace = df.ctx['namespace']
+
+    # Specify from and to entities.
+    df.from_entity = df.ctx['pod']
     df.to_entity = px.Service(px.nslookup(df.remote_addr))
-    df.to_entity_og = df.to_entity
+
+    # Reformat to_entity and from_entity for consistency between pods and services.
     df = format_nslookup_name(df)
     df = format_service_name_as_dns(df)
 
     # Aggregate the connections.
-    df = df.groupby(['from_entity','pod', 'to_entity', 'to_entity_og']).agg(
+    df = df.groupby(['from_entity', 'pod', 'to_entity']).agg(
        latency_avg=('latency_ns', px.mean),
        latency_max=('latency_ns', px.max),
        count=('latency_ns', px.count)
     )
     return df
+
 
