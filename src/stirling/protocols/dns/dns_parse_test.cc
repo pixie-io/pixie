@@ -45,6 +45,101 @@ constexpr uint8_t kRespFrame[] = {
     0x00, 0x01, 0xc0, 0x0c, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x01, 0x24, 0x00, 0x04, 0xd8, 0x3a,
     0xc2, 0xb4, 0x00, 0x00, 0x29, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
+// Domain Name System (query)
+// Transaction ID: 0xfeae
+// Flags: 0x0100 Standard query
+// 0... .... .... .... = Response: Message is a query
+// .000 0... .... .... = Opcode: Standard query (0)
+// .... ..0. .... .... = Truncated: Message is not truncated
+// .... ...1 .... .... = Recursion desired: Do query recursively
+// .... .... .0.. .... = Z: reserved (0)
+// .... .... ...0 .... = Non-authenticated data: Unacceptable
+//         Questions: 1
+// Answer RRs: 0
+// Authority RRs: 0
+// Additional RRs: 0
+// Queries
+//         www.yahoo.com: type A, class IN
+//         Name: www.yahoo.com
+// [Name Length: 13]
+// [Label Count: 3]
+// Type: A (Host Address) (1)
+// Class: IN (0x0001)
+constexpr uint8_t kReqFrame2[] = {0xfe, 0xae, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                  0x00, 0x03, 0x77, 0x77, 0x77, 0x05, 0x79, 0x61, 0x68, 0x6f, 0x6f,
+                                  0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00, 0x01};
+
+// Domain Name System (response)
+// Transaction ID: 0xfeae
+// Flags: 0x8180 Standard query response, No error
+// 1... .... .... .... = Response: Message is a response
+// .000 0... .... .... = Opcode: Standard query (0)
+// .... .0.. .... .... = Authoritative: Server is not an authority for domain
+// .... ..0. .... .... = Truncated: Message is not truncated
+// .... ...1 .... .... = Recursion desired: Do query recursively
+// .... .... 1... .... = Recursion available: Server can do recursive queries
+// .... .... .0.. .... = Z: reserved (0)
+// .... .... ..0. .... = Answer authenticated: Answer/authority portion was not authenticated by the
+// server
+// .... .... ...0 .... = Non-authenticated data: Unacceptable
+// .... .... .... 0000 = Reply code: No error (0)
+// Questions: 1
+// Answer RRs: 5
+// Authority RRs: 0
+// Additional RRs: 0
+// Queries
+//         www.yahoo.com: type A, class IN
+//         Name: www.yahoo.com
+// [Name Length: 13]
+// [Label Count: 3]
+// Type: A (Host Address) (1)
+// Class: IN (0x0001)
+// Answers
+//         www.yahoo.com: type CNAME, class IN, cname new-fp-shed.wg1.b.yahoo.com
+//         Name: www.yahoo.com
+//         Type: CNAME (Canonical NAME for an alias) (5)
+// Class: IN (0x0001)
+// Time to live: 57 (57 seconds)
+// Data length: 20
+// CNAME: new-fp-shed.wg1.b.yahoo.com
+// new-fp-shed.wg1.b.yahoo.com: type A, class IN, addr 98.137.11.164
+// Name: new-fp-shed.wg1.b.yahoo.com
+//         Type: A (Host Address) (1)
+// Class: IN (0x0001)
+// Time to live: 57 (57 seconds)
+// Data length: 4
+// Address: 98.137.11.164
+// new-fp-shed.wg1.b.yahoo.com: type A, class IN, addr 74.6.231.20
+// Name: new-fp-shed.wg1.b.yahoo.com
+//         Type: A (Host Address) (1)
+// Class: IN (0x0001)
+// Time to live: 57 (57 seconds)
+// Data length: 4
+// Address: 74.6.231.20
+// new-fp-shed.wg1.b.yahoo.com: type A, class IN, addr 74.6.231.21
+// Name: new-fp-shed.wg1.b.yahoo.com
+//         Type: A (Host Address) (1)
+// Class: IN (0x0001)
+// Time to live: 57 (57 seconds)
+// Data length: 4
+// Address: 74.6.231.21
+// new-fp-shed.wg1.b.yahoo.com: type A, class IN, addr 98.137.11.163
+// Name: new-fp-shed.wg1.b.yahoo.com
+//         Type: A (Host Address) (1)
+// Class: IN (0x0001)
+// Time to live: 57 (57 seconds)
+// Data length: 4
+// Address: 98.137.11.163
+constexpr uint8_t kRespFrame2[] = {
+    0xfe, 0xae, 0x81, 0x80, 0x00, 0x01, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x03, 0x77, 0x77, 0x77,
+    0x05, 0x79, 0x61, 0x68, 0x6f, 0x6f, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00, 0x01, 0xc0,
+    0x0c, 0x00, 0x05, 0x00, 0x01, 0x00, 0x00, 0x00, 0x39, 0x00, 0x14, 0x0b, 0x6e, 0x65, 0x77, 0x2d,
+    0x66, 0x70, 0x2d, 0x73, 0x68, 0x65, 0x64, 0x03, 0x77, 0x67, 0x31, 0x01, 0x62, 0xc0, 0x10, 0xc0,
+    0x2b, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x39, 0x00, 0x04, 0x62, 0x89, 0x0b, 0xa4, 0xc0,
+    0x2b, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x39, 0x00, 0x04, 0x4a, 0x06, 0xe7, 0x14, 0xc0,
+    0x2b, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x39, 0x00, 0x04, 0x4a, 0x06, 0xe7, 0x15, 0xc0,
+    0x2b, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x39, 0x00, 0x04, 0x62, 0x89, 0x0b, 0xa3};
+
 class DNSParserTest : public ::testing::Test {
  protected:
   EventParser parser_;
@@ -90,6 +185,61 @@ TEST_F(DNSParserTest, BasicResp) {
   EXPECT_EQ(frames[0].records[0].name, "intellij-experiments.appspot.com");
   EXPECT_EQ(frames[0].records[0].addr.family, InetAddrFamily::kIPv4);
   EXPECT_EQ(frames[0].records[0].addr.AddrStr(), "216.58.194.180");
+}
+
+TEST_F(DNSParserTest, BasicReq2) {
+  auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kReqFrame2));
+
+  std::deque<Frame> frames;
+  ParseResult<size_t> parse_result =
+      parser_.ParseFramesLoop(MessageType::kResponse, frame_view, &frames);
+
+  ASSERT_EQ(parse_result.state, ParseState::kSuccess);
+  ASSERT_EQ(frames.size(), 1);
+  EXPECT_EQ(frames[0].header.txid, 0xfeae);
+  EXPECT_EQ(frames[0].header.flags, 0x0100);
+  EXPECT_EQ(frames[0].header.num_queries, 1);
+  EXPECT_EQ(frames[0].header.num_answers, 0);
+  EXPECT_EQ(frames[0].header.num_auth, 0);
+  EXPECT_EQ(frames[0].header.num_addl, 0);
+  EXPECT_EQ(frames[0].records.size(), 1);
+  EXPECT_EQ(frames[0].records[0].name, "www.yahoo.com");
+  EXPECT_EQ(frames[0].records[0].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records[0].addr.AddrStr(), "0.0.0.0");
+}
+
+TEST_F(DNSParserTest, MultipleResponses) {
+  auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kRespFrame2));
+
+  std::deque<Frame> frames;
+  ParseResult<size_t> parse_result =
+      parser_.ParseFramesLoop(MessageType::kResponse, frame_view, &frames);
+
+  ASSERT_EQ(parse_result.state, ParseState::kSuccess);
+  ASSERT_EQ(frames.size(), 1);
+  EXPECT_EQ(frames[0].header.txid, 0xfeae);
+  EXPECT_EQ(frames[0].header.flags, 0x8180);
+  EXPECT_EQ(frames[0].header.num_queries, 1);
+  EXPECT_EQ(frames[0].header.num_answers, 5);
+  EXPECT_EQ(frames[0].header.num_auth, 0);
+  EXPECT_EQ(frames[0].header.num_addl, 0);
+  EXPECT_EQ(frames[0].records.size(), 4);
+
+  EXPECT_EQ(frames[0].records[0].name, "www.yahoo.com");
+  EXPECT_EQ(frames[0].records[0].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records[0].addr.AddrStr(), "98.137.11.164");
+
+  EXPECT_EQ(frames[0].records[1].name, "www.yahoo.com");
+  EXPECT_EQ(frames[0].records[1].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records[1].addr.AddrStr(), "74.6.231.20");
+
+  EXPECT_EQ(frames[0].records[2].name, "www.yahoo.com");
+  EXPECT_EQ(frames[0].records[2].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records[2].addr.AddrStr(), "74.6.231.21");
+
+  EXPECT_EQ(frames[0].records[3].name, "www.yahoo.com");
+  EXPECT_EQ(frames[0].records[3].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records[3].addr.AddrStr(), "98.137.11.163");
 }
 
 TEST_F(DNSParserTest, IncompleteHeader) {
