@@ -37,7 +37,7 @@
           "fromColumn": "from_entity",
           "toColumn": "to_entity"
         },
-        "edgeWeightColumn": "latency",
+        "edgeWeightColumn": "latency_avg",
         "edgeHoverInfo": [
           "latency_avg",
           "latency_max",
