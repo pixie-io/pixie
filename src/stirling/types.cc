@@ -106,8 +106,14 @@ BackedDataElements CreateDataElements(
       data_type = types::DataType::TIME64NS;
     }
 
+    // TODO(yzhao): Pipe latency semantic from pxtrace.FunctionLatency().
+    types::SemanticType semantic_type = types::SemanticType::ST_NONE;
+    if (field.name() == "latency") {
+      semantic_type = types::SemanticType::ST_DURATION_NS;
+    }
+
     // TODO(oazizi): See if we need to find a way to define SemanticTypes and PatternTypes.
-    elements.emplace_back(field.name(), "", data_type);
+    elements.emplace_back(field.name(), "", data_type, semantic_type);
   }
 
   return elements;
