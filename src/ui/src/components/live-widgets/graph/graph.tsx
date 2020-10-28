@@ -263,6 +263,10 @@ export const Graph = (props: GraphProps) => {
     }
     const n = new Network(ref.current, graph, graphOpts);
     n.on('doubleClick', doubleClickCallback);
+
+    n.on('stabilizationIterationsDone', () => {
+      n.setOptions({ physics: false });
+    });
     setNetwork(n);
   }, [graph, doubleClickCallback]);
 

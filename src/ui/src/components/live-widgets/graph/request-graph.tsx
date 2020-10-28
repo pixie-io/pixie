@@ -254,6 +254,10 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
         edges: graph.edges,
       };
       const n = new Network(ref.current, d, graphOpts);
+
+      n.on('stabilizationIterationsDone', () => {
+        n.setOptions({ physics: false });
+      });
       setNetwork(n);
     }
     // To list all exhaustive deps, we also have to list theme and graphOpts, which will never change.
