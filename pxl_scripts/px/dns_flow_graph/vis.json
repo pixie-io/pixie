@@ -1,0 +1,63 @@
+{
+  "variables": [
+    {
+      "name": "start",
+      "type": "PX_STRING",
+      "description": "The start time of the window in time units before now.",
+      "defaultValue": "-5m"
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "dns_flow",
+      "func": {
+        "name": "dns_flow_graph",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Net Flow Graph",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 4
+      },
+      "globalFuncOutputName": "dns_flow",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Graph",
+        "adjacencyList": {
+          "fromColumn": "from_entity",
+          "toColumn": "to_entity"
+        },
+        "edgeWeightColumn": "latency",
+        "edgeHoverInfo": [
+          "latency_avg",
+          "latency_max",
+          "count"
+        ],
+        "edgeLength": 500
+      }
+    },
+    {
+      "name": "Table",
+      "position": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 4
+      },
+      "globalFuncOutputName": "dns_flow",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    }
+  ]
+}
