@@ -19,13 +19,14 @@ final class FileCheckerTest {
         # Note that this check is only enforced after first check-in.
         # The initial check-in is not enforced, because generating a pb.go is optional.
 
-        if (in_array($fileToCheck, $this->files) && file_exists($this->project_root . '/' . $fileToCheck)) {   
+        if (in_array($fileToCheck, $this->files) && file_exists($this->project_root . '/' . $fileToCheck)) {
             $updatedRes = new ArcanistUnitTestResult();
-            $updatedRes->setName($fileToCheck . ' is older than the ' . $fileExt . ' file from which it was generated');
             if (filemtime($this->project_root . '/' . $fileToCheck) >= filemtime($this->project_root . '/' . $file)) {
+                $updatedRes->setName($fileToCheck . ' is newer than the ' . $fileExt . ' file from which it was generated');
                 $updatedRes->setResult(ArcanistUnitTestResult::RESULT_PASS);
             } else {
                 $updatedRes->setUserData($instructions);
+                $updatedRes->setName($fileToCheck . ' is older than the ' . $fileExt . ' file from which it was generated');
                 $updatedRes->setResult(ArcanistUnitTestResult::RESULT_FAIL);
             }
             $res[] = $updatedRes;
@@ -37,7 +38,7 @@ final class FileCheckerTest {
             $existRes->setUserData($fileToCheck . ' has not been added to the diff.');
             $res[] = $existRes;
         }
-        
+
         return $res;
     }
 
@@ -57,7 +58,7 @@ final class FileCheckerTest {
                 preg_match('/name = "(.*?)"/', $line, $matches);
                 $target = '//' . $pbDir . ':' . $matches[1];
 
-                // Check the dependencies of the grpc_web_library target and verify whether 
+                // Check the dependencies of the grpc_web_library target and verify whether
                 // the current file is a source.
                 exec('bazel query \'kind("source file", deps(\'' . $target . '\'))\'', $file_output, $return_var);
                 foreach ($file_output as $srcFile) {
@@ -77,9 +78,9 @@ final class FileCheckerTest {
                 $searchName = true;
             }
           }
-        fclose($readFile);  
+        fclose($readFile);
 
-        return $isGRPCProto;    
+        return $isGRPCProto;
     }
 
     public function run() {
