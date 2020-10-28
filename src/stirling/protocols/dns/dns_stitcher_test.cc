@@ -85,7 +85,7 @@ TEST(DnsStitcherTest, RecordOutput) {
   EXPECT_EQ(
       record.resp.header,
       R"({"txid":0,"flags":33152,"num_queries":1,"num_answers":1,"num_auth":0,"num_addl":0})");
-  EXPECT_EQ(record.req.query, "");
+  EXPECT_EQ(record.req.query, R"({"queries":[]})");
 
   EXPECT_EQ(record.resp.timestamp_ns, 2);
   EXPECT_EQ(

@@ -35,6 +35,30 @@ std::string HeaderToJSONString(const DNSHeader& header) {
 void ProcessReq(const Frame& req_frame, Request* req) {
   req->timestamp_ns = req_frame.timestamp_ns;
   req->header = HeaderToJSONString(req_frame.header);
+
+  rapidjson::Document d;
+  d.SetObject();
+
+  // Since rapidjson only maintains references, we must pin the address strings in memory,
+  // until the final json is printed out. We do that with this vector.
+  std::vector<std::string> addr_strs;
+
+  rapidjson::Value queries(rapidjson::kArrayType);
+  for (const auto& r : req_frame.records) {
+    const std::string& name = r.name;
+
+    rapidjson::Value query(rapidjson::kObjectType);
+    query.AddMember("name", rapidjson::StringRef(name.data(), name.size()), d.GetAllocator());
+
+    queries.PushBack(query, d.GetAllocator());
+  }
+
+  d.AddMember("queries", queries, d.GetAllocator());
+
+  rapidjson::StringBuffer sb;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+  d.Accept(writer);
+  req->query = std::string(sb.GetString());
 }
 
 void ProcessResp(const Frame& resp_frame, Response* resp) {

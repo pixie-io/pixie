@@ -63,7 +63,7 @@ struct Request {
   // DNS header (txid, flags, num queries/answers, etc.) as a JSON string.
   std::string header;
 
-  // TODO(oazizi): Capture queries.
+  // DNS queries.
   std::string query;
 
   // Timestamp of the request.

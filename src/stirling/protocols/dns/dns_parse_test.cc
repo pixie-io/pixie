@@ -45,12 +45,12 @@ constexpr uint8_t kRespFrame[] = {
     0x00, 0x01, 0xc0, 0x0c, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x01, 0x24, 0x00, 0x04, 0xd8, 0x3a,
     0xc2, 0xb4, 0x00, 0x00, 0x29, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-class CQLParserTest : public ::testing::Test {
+class DNSParserTest : public ::testing::Test {
  protected:
   EventParser parser_;
 };
 
-TEST_F(CQLParserTest, BasicReq) {
+TEST_F(DNSParserTest, BasicReq) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kQueryFrame));
 
   std::deque<Frame> frames;
@@ -65,10 +65,13 @@ TEST_F(CQLParserTest, BasicReq) {
   EXPECT_EQ(frames[0].header.num_answers, 0);
   EXPECT_EQ(frames[0].header.num_auth, 0);
   EXPECT_EQ(frames[0].header.num_addl, 1);
-  EXPECT_EQ(frames[0].records.size(), 0);
+  EXPECT_EQ(frames[0].records.size(), 1);
+  EXPECT_EQ(frames[0].records[0].name, "intellij-experiments.appspot.com");
+  EXPECT_EQ(frames[0].records[0].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(frames[0].records[0].addr.AddrStr(), "0.0.0.0");
 }
 
-TEST_F(CQLParserTest, BasicResp) {
+TEST_F(DNSParserTest, BasicResp) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kRespFrame));
 
   std::deque<Frame> frames;
@@ -89,7 +92,7 @@ TEST_F(CQLParserTest, BasicResp) {
   EXPECT_EQ(frames[0].records[0].addr.AddrStr(), "216.58.194.180");
 }
 
-TEST_F(CQLParserTest, IncompleteHeader) {
+TEST_F(DNSParserTest, IncompleteHeader) {
   constexpr uint8_t kIncompleteHeader[] = {0xc6, 0xfa, 0x01, 0x00, 0x00, 0x01,
                                            0x00, 0x00, 0x00, 0x00, 0x00};
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kIncompleteHeader));
@@ -103,7 +106,7 @@ TEST_F(CQLParserTest, IncompleteHeader) {
 
 // NOTE that some partial records parse correctly, while others don't.
 // Should modify the submodule so that all are reported as invalid.
-TEST_F(CQLParserTest, PartialRecords) {
+TEST_F(DNSParserTest, PartialRecords) {
   {
     auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kRespFrame));
     frame_view.remove_suffix(10);

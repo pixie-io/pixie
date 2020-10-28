@@ -92,7 +92,7 @@ TEST_F(DNSTraceTest, Capture) {
         req_hdr,
         MatchesRegex(
             R"(\{"txid":[0-9]+,"flags":288,"num_queries":1,"num_answers":0,"num_auth":0,"num_addl":1\})"));
-    EXPECT_EQ(req_body, "");
+    EXPECT_EQ(req_body, R"({"queries":[{"name":"server.dnstest.com"}]})");
     EXPECT_THAT(
         resp_hdr,
         MatchesRegex(
