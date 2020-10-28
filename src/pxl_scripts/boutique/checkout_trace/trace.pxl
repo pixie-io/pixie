@@ -1,24 +1,26 @@
 import pxtrace
 import px
 
-checkout_upid = "0000000c-002a-e83c-0000-000070366e78"
-
 
 # func Sum(l, r pb.Money) (pb.Money, error)
 @pxtrace.probe('github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money.Sum')
 def probe_func():
-    return [{'lUnits': pxtrace.ArgExpr('l.Units')},
-            {'lNanos': pxtrace.ArgExpr('l.Nanos')},
-            {'rUnits': pxtrace.ArgExpr('r.Units')},
-            {'rNanos': pxtrace.ArgExpr('r.Nanos')},
-            {'retUnits': pxtrace.RetExpr('$2.Units')},
-            {'retNanos': pxtrace.RetExpr('$2.Nanos')}]
+    return [{'l': pxtrace.ArgExpr('l')},
+            {'r': pxtrace.ArgExpr('r')},
+            {'result': pxtrace.RetExpr('$2')},
+            {'error': pxtrace.RetExpr('$3')},
+            {'latency': pxtrace.FunctionLatency()}]
 
 
-pxtrace.UpsertTracepoint('money_sum_trace5',
-                         'money_sum_table',
+trace_name = 'checkout_probe'
+table_name = 'checkout_table'
+
+# Change to the Pod you want to trace.
+pod_name = 'online-boutique/checkoutservice-5bd999cd7c-7pp55'
+
+pxtrace.UpsertTracepoint(trace_name, table_name,
                          probe_func,
-                         px.uint128(checkout_upid),
-                         '60m')
+                         pxtrace.PodProcess(pod_name),
+                         ttl='10m')
 
-px.display(px.DataFrame('money_sum_table'))
+px.display(px.DataFrame(table_name))
