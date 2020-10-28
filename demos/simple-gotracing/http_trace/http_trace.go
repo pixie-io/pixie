@@ -36,10 +36,15 @@ type GoHTTPResponseEvent struct {
 	Msg    [128]byte
 }
 
-var binaryProg string
+var (
+	binaryProg string
+	printEnabled bool
+)
 
 func init() {
 	flag.StringVar(&binaryProg, "binary", "", "The binary to probe")
+	flag.BoolVar(&printEnabled, "print", true, "Print output")
+
 }
 
 func main() {
@@ -111,7 +116,7 @@ func main() {
 			var parsed GoHTTPResponseEvent
 			if err := binary.Read(bytes.NewBuffer(v), bcc.GetHostByteOrder(), &parsed); err != nil {
 				fmt.Printf("Failed to decode struct\n")
-			} else {
+			} else if printEnabled {
 				fmt.Printf("Method: %s, URI: %s, Status: %s, ReturnMsg: %s\n",
 					color.GreenString("%s", string(parsed.Method[:])),
 					color.GreenString("%s", string(parsed.URI[:])),

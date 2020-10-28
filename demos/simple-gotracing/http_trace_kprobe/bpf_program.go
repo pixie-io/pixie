@@ -32,7 +32,7 @@ struct syscall_write_event_t {
     int event_type;
     int fd;
     int bytes;
-    // Care needs to be take as only msg_size bytes of msg are guaranteed
+    // Care needs to be taken as only msg_size bytes of msg are guaranteed
     // to be valid.
     int msg_size;
   } attr;
@@ -59,6 +59,7 @@ BPF_HASH(active_sock_addr, u64, struct addr_info_t);
 int syscall__probe_entry_accept4(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, size_t *addrlen, int flags) {
   u64 id = bpf_get_current_pid_tgid();
   u32 pid = id >> 32;
+  // $PID is substituted with PID before probe is inserted.
   if (pid != $PID) {
       return 0;
   }
@@ -76,6 +77,7 @@ int syscall__probe_entry_accept4(struct pt_regs *ctx, int sockfd, struct sockadd
 int syscall__probe_ret_accept4(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, size_t *addrlen, int flags) {
   u64 id = bpf_get_current_pid_tgid();
   u32 pid = id >> 32;
+  // $PID is substituted with PID before probe is inserted.
   if (pid != $PID) {
       return 0;
   }
@@ -115,15 +117,15 @@ int syscall__probe_ret_accept4(struct pt_regs *ctx, int sockfd, struct sockaddr 
 }
 
 int syscall__probe_write(struct pt_regs *ctx, int fd, const void* buf, size_t count) {
-  bpf_trace_printk("FD: %d\n", fd);
   int zero = 0;
   struct syscall_write_event_t *event = write_buffer_heap.lookup(&zero);
-  if (event == 0) {
+  if (event == NULL) {
     return 0;
   }
 
   u64 id = bpf_get_current_pid_tgid();
   u32 pid = id >> 32;
+  // $PID is substituted with PID before probe is inserted.
   if (pid != $PID) {
       return 0;
   }
@@ -151,13 +153,14 @@ int syscall__probe_write(struct pt_regs *ctx, int fd, const void* buf, size_t co
 int syscall__probe_close(struct pt_regs *ctx, int fd) {
   u64 id = bpf_get_current_pid_tgid();
   u32 pid = id >> 32;
+  // $PID is substituted with PID before probe is inserted.
   if (pid != $PID) {
       return 0;
   }
 
   int zero = 0;
   struct syscall_write_event_t *event = write_buffer_heap.lookup(&zero);
-  if (event == 0) {
+  if (event == NULL) {
     return 0;
   }
   
