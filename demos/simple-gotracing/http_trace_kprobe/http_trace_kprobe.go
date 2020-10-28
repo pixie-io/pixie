@@ -144,22 +144,26 @@ func main() {
 					fmt.Fprintf(os.Stderr, "Missing request with FD: %d", ev.Attr.Fd)
 				}
 
-				// We have the complete request so we try to parse the actual HTTP request.
-				resp, err := http.ReadResponse(bufio.NewReader(&msgInfo.Buf), nil)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Failed to parse request\n")
-					continue
-				}
-
-				body := resp.Body
-				b, _ := ioutil.ReadAll(body)
-				body.Close()
-				fmt.Printf("StatusCode: %s, Len: %s, ContentType: %s, Body: %s\n",
-					color.GreenString("%d", resp.StatusCode),
-					color.GreenString("%d", resp.ContentLength),
-					color.GreenString("%s", resp.Header["Content-Type"]),
-					color.GreenString("%s", string(b)))
 				delete(fdMap, ev.Attr.Fd)
+
+				// Decode in a go routine to avoid blocking the perf buffer read.
+				go func() {
+					// We have the complete request so we try to parse the actual HTTP request.
+					resp, err := http.ReadResponse(bufio.NewReader(&msgInfo.Buf), nil)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Failed to parse request\n")
+						return
+					}
+
+					body := resp.Body
+					b, _ := ioutil.ReadAll(body)
+					body.Close()
+					fmt.Printf("StatusCode: %s, Len: %s, ContentType: %s, Body: %s\n",
+						color.GreenString("%d", resp.StatusCode),
+						color.GreenString("%d", resp.ContentLength),
+						color.GreenString("%s", resp.Header["Content-Type"]),
+						color.GreenString("%s", string(b)))
+				}()
 			}
 		}
 	}
