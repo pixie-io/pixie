@@ -172,8 +172,8 @@ type Bridge struct {
 	wg     sync.WaitGroup // Tracks all the active goroutines.
 	wdWg   sync.WaitGroup // Tracks all the active goroutines.
 
-	updateRunning bool // True if an update is running.
-	updateFailed  bool // True if an update has failed (sticky).
+	updateRunning atomic.Value // True if an update is running
+	updateFailed  bool         // True if an update has failed (sticky).
 
 	droppedMessagesBeforeResume int64 // Number of messages dropped before successful resume.
 }
@@ -226,7 +226,7 @@ func (s *Bridge) WatchDog() {
 // WaitForUpdater waits for the update job to complete, if any.
 func (s *Bridge) WaitForUpdater() {
 	defer func() {
-		s.updateRunning = false
+		s.updateRunning.Store(false)
 	}()
 	ok, err := s.vzInfo.WaitForJobCompletion(upgradeJobName)
 	if err != nil {
@@ -265,6 +265,8 @@ func (s *Bridge) RegisterDeployment() error {
 
 // RunStream manages starting and restarting the stream to VZConn.
 func (s *Bridge) RunStream() {
+	s.updateRunning.Store(false)
+
 	if s.vzConnClient == nil {
 		var vzClient vzconnpb.VZConnServiceClient
 		var err error
@@ -341,7 +343,7 @@ func (s *Bridge) RunStream() {
 		log.WithError(err).Fatal("Could not check for upgrade job")
 	}
 	if err == nil { // There is an upgrade job running.
-		s.updateRunning = true
+		s.updateRunning.Store(true)
 		go s.WaitForUpdater()
 	}
 
@@ -406,6 +408,14 @@ func (s *Bridge) handleUpdateMessage(msg *types.Any) error {
 		log.WithError(err).Error("Could not launch job")
 		return err
 	}
+	// Set the update status to true while the update job is running.
+	s.updateRunning.Store(true)
+	// This goroutine waits for the update job to complete. When it does, it sets
+	// the updateRunning boolean to false. Normally, if the update has successfully completed,
+	// this goroutine won't actually complete because this cloudconnector instance should be
+	// replaced by a new cloudconnector instance. This case is here to handle when the
+	// update job has failed.
+	go s.WaitForUpdater()
 
 	// Send response message to indicate update job has started.
 	m := cvmsgspb.UpdateOrInstallVizierResponse{
@@ -972,7 +982,7 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.Vizie
 }
 
 func (s *Bridge) currentStatus() cvmsgspb.VizierStatus {
-	if s.updateRunning && !s.updateFailed {
+	if s.updateRunning.Load().(bool) && !s.updateFailed {
 		return cvmsgspb.VZ_ST_UPDATING
 	} else if s.updateFailed {
 		return cvmsgspb.VZ_ST_UPDATE_FAILED
