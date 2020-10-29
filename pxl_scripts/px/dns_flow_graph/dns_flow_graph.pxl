@@ -28,7 +28,7 @@ def format_service_name_as_dns(df):
 
 
 def dns_flow_graph(start: str):
-    df = px.DataFrame('dns_events', select=['upid', 'remote_addr', 'latency_ns', 'trace_role'], start_time=start)
+    df = px.DataFrame('dns_events', start_time=start)
 
     # Client-side tracing only.
     df = df[df.trace_role == 1]
@@ -38,9 +38,16 @@ def dns_flow_graph(start: str):
     df.pod = df.ctx['pod']
     df.service = df.ctx['service']
     df.namespace = df.ctx['namespace']
+    df = df.drop(['upid'])
+
+    # Create table in drawer.
+    px.debug(df, "dns_events")
+
+    # Filter nodes for graph.
+    df = df[not px.contains(df.pod, "pl")]
 
     # Specify from and to entities.
-    df.from_entity = df.ctx['pod']
+    df.from_entity = df.pod
     df.to_entity = px.Service(px.nslookup(df.remote_addr))
 
     # Reformat to_entity and from_entity for consistency between pods and services.

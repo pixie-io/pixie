@@ -23,7 +23,7 @@
   ],
   "widgets": [
     {
-      "name": "Net Flow Graph",
+      "name": "DNS Flow Graph",
       "position": {
         "x": 0,
         "y": 0,
