@@ -16,6 +16,7 @@ import {
 import { useHistory } from 'react-router';
 import ClusterContext from 'common/cluster-context';
 import { Arguments } from 'utils/args-utils';
+import Button from '@material-ui/core/Button';
 import { DataType, Relation, SemanticType } from '../../../types/generated/vizier_pb';
 import {
   getGraphOptions, semTypeToShapeConfig, colInfoFromName, ColInfo,
@@ -151,12 +152,12 @@ export const Graph = (props: GraphProps) => {
     nodeWeightColumn, edgeColorColumn, edgeThresholds, edgeHoverInfo, edgeLength,
   } = props;
   const theme = useTheme();
-  const graphOpts = getGraphOptions(theme, edgeLength);
 
   // TODO(zasgar/michelle/nserrino): Remove the context information from here and elsewhere.
   const { selectedClusterName } = React.useContext(ClusterContext);
   const history = useHistory();
 
+  const [hierarchyEnabled, setHierarchyEnabled] = React.useState<boolean>(false);
   const [focused, setFocused] = React.useState<boolean>(false);
   const toggleFocus = React.useCallback(() => setFocused((enabled) => !enabled), []);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -177,6 +178,10 @@ export const Graph = (props: GraphProps) => {
   }, [graph, history, selectedClusterName]);
 
   const ref = React.useRef<HTMLDivElement>();
+
+  const toggleHierarchy = React.useCallback(() => {
+    setHierarchyEnabled(!hierarchyEnabled);
+  }, [hierarchyEnabled]);
 
   // Load the graph.
   React.useEffect(() => {
@@ -261,19 +266,42 @@ export const Graph = (props: GraphProps) => {
     if (!graph) {
       return;
     }
-    const n = new Network(ref.current, graph, graphOpts);
+    const opts = getGraphOptions(theme, edgeLength);
+
+    if (hierarchyEnabled) {
+      opts.layout.hierarchical = {
+        enabled: true,
+        levelSeparation: 400,
+        nodeSpacing: 10,
+        treeSpacing: 50,
+        direction: 'LR',
+        sortMethod: 'directed',
+      };
+    }
+
+    const n = new Network(ref.current, graph, opts);
     n.on('doubleClick', doubleClickCallback);
 
     n.on('stabilizationIterationsDone', () => {
       n.setOptions({ physics: false });
     });
     setNetwork(n);
-  }, [graph, doubleClickCallback]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [graph, doubleClickCallback, hierarchyEnabled]);
 
   const classes = useStyles();
   return (
     <div className={`${classes.root} ${focused ? 'focus' : ''}`} onFocus={toggleFocus} onBlur={toggleFocus}>
       <div className={classes.container} ref={ref} />
+      <div>
+        <Button
+          size='small'
+          onClick={toggleHierarchy}
+        >
+          {hierarchyEnabled ? 'Disable hierarchy' : 'Enable hierarchy'}
+        </Button>
+      </div>
     </div>
   );
 };
