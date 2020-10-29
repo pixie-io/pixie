@@ -14,14 +14,5 @@ A walk through of this demo is located [here](https://docs.pixielabs.ai/tutorial
 
 ## Building the code.
 
-1. Run `make` in each of the sub-directories to build the underlying binaries.
-2. On a Linux machine with [bcc](https://github.com/iovisor/bcc/blob/master/INSTALL.md) installer, run the http server `app` binary.
-3. In a new terminal window, run the kprobe with PID
-```
-sudo ./http_trace_kprobe --pid=<your_PID>
-```
-4. In a another new terminal window, use curl to make an http request
-```
-curl http://localhost:9090/e\?iters\=100
-```
-Docker build coming soon!
+Simply run `make` in each of the sub-directories to build those underlying binaries.
+You will need to run these on a Linux machine with [bcc](https://github.com/iovisor/bcc/blob/master/INSTALL.md) installed.
