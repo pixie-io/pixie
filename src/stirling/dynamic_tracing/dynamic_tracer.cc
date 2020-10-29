@@ -358,24 +358,44 @@ Status ResolvePodUPIDs(const md::K8sMetadataState& k8s_mds,
   return Status::OK();
 }
 
+// TODO(oazizi/yzhao): Support deployments rather than Pods. (1) make sure it is more sophisticated
+// than a prefix match (to avoid false matches), and (2) Allow deployments to multiple pods within
+// the same deployment.
 StatusOr<const md::PodInfo*> ResolvePod(const md::K8sMetadataState& k8s_mds,
                                         std::string_view pod_name) {
   PL_ASSIGN_OR_RETURN(K8sNameIdentView name_ident_view, GetPodNameIdent(pod_name));
 
-  std::string pod_uid = k8s_mds.PodIDByName(name_ident_view);
-  if (pod_uid.empty()) {
+  std::vector<std::string> pod_names;
+  std::vector<const md::PodInfo*> pod_infos;
+
+  for (const auto& [name_ident, uid] : k8s_mds.pods_by_name()) {
+    if (name_ident.first != name_ident_view.first) {
+      continue;
+    }
+    if (!absl::StartsWith(name_ident.second, name_ident_view.second)) {
+      continue;
+    }
+    const auto* pod_info = k8s_mds.PodInfoByID(uid);
+    if (pod_info == nullptr) {
+      return error::InvalidArgument("Pod '$0' is recognized, but PodInfo is not found", pod_name);
+    }
+    if (pod_info->stop_time_ns() > 0) {
+      return error::InvalidArgument("Pod '$0' has died", pod_name);
+    }
+    pod_names.push_back(absl::StrCat(name_ident.first, "/", name_ident.second));
+    pod_infos.push_back(pod_info);
+  }
+
+  if (pod_names.empty()) {
     return error::InvalidArgument("Could not find Pod for name '$0'", pod_name);
   }
 
-  const auto* pod_info = k8s_mds.PodInfoByID(pod_uid);
-  if (pod_info == nullptr) {
-    return error::InvalidArgument("Pod '$0' is recognized, but PodInfo is not found", pod_name);
-  }
-  if (pod_info->stop_time_ns() > 0) {
-    return error::InvalidArgument("Pod '$0' has died", pod_name);
+  if (pod_names.size() > 1) {
+    return error::InvalidArgument("Pod name prefix '$0' matches multiple Pods: '$1'", pod_name,
+                                  absl::StrJoin(pod_names, ","));
   }
 
-  return pod_info;
+  return pod_infos.front();
 }
 
 StatusOr<const md::ContainerInfo*> ResolveContainer(const md::K8sMetadataState& k8s_mds,
