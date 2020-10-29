@@ -138,6 +138,7 @@
     "spelling": {
       "type": "spelling",
       "exclude": [
+        "(^src/ui/tools/licenses/.*\\.json$)",
         "(.*\\.crt)",
         "(.*\\.key)"
       ]

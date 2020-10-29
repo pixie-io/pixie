@@ -1,21 +1,22 @@
 # Licenses
-This directory contains the logic to extract and compile our license notice release document. 
+This directory contains the logic to extract and compile our license notice release document.
 
 ## All licenses
 To get all of the licenses, run the following commands
 ```
 bash tools/licenses/get_go_licenses.sh
-bazel build //tools/licenses:all_licenes
+bazel build //tools/licenses:all_licenses
 ```
 And copy the file output by the bazel build command into wherever you need it.
 
 ## Go licenses
 
-Go licenses must be ran manually as the program must be run on the actual source of the 
+Go licenses must be ran manually as the program must be run on the actual source of the
 directory - something that would slow down the overall build. To run it, call
 ```
 bash tools/licenses/get_go_licenses.sh
 ```
+Note: This tool is strongly dependent on having the Pixie repo checked out under `$GOPATH/src/pixielabs.ai/pixielabs`
 
 
 ### Github API Key
