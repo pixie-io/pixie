@@ -678,9 +678,10 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
                       CreateStructSpecProto(struct_spec_entires, language_));
   struct_spec.Add(std::move(struct_spec_proto));
 
-  for (size_t decoder_idx = 0; decoder_idx < iter->second.size(); ++decoder_idx) {
-    const elf_tools::IntfImplTypeInfo& info = iter->second[decoder_idx];
+  // The first decoder is the one for runtime.iface itself, so the index starts from 1.
+  size_t decoder_idx = 1;
 
+  for (const elf_tools::IntfImplTypeInfo& info : iter->second) {
     if (IsGolangPointerType(info.type_name)) {
       LOG(WARNING) << absl::Substitute(
           "Does not support pointer type as interface implementation type yet, "
@@ -727,10 +728,13 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
     scalar_var->set_type(ir::shared::ScalarType::STRUCT_BLOB);
     scalar_var->mutable_memory()->set_op(ir::physical::ASSIGN_ONLY);
     // Decoder index +1 to accommodate the implicit added runtime.iface.
-    scalar_var->mutable_memory()->set_decoder_idx(decoder_idx + 1);
+    scalar_var->mutable_memory()->set_decoder_idx(decoder_idx);
     scalar_var->mutable_memory()->set_base(iface_data_var_name);
     scalar_var->mutable_memory()->set_offset(0);
     scalar_var->mutable_memory()->set_size(struct_byte_size_or.ValueOrDie());
+
+    // Increment decoder index after each successfully-resolved implementation type.
+    ++decoder_idx;
   }
 
   // NOTE: Logically this should appear before the ConditionalBlock generation code above.
