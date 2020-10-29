@@ -1,9 +1,9 @@
 # Copyright (c) Pixie Labs, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License")
 
-''' HTTP Data Tracer
+''' DNS Traffic Tracer
 
-This script traces all HTTP/HTTP2 data on the cluster for a specified amount of time.
+This script traces all DNS traffic on the cluster for a specified amount of time.
 '''
 
 import px
@@ -12,16 +12,16 @@ import px
 # Script variables
 # ----------------------------------------------------------------
 start_time = '-30s'
-max_num_records = 100
+max_num_records = 1000
 
 # ----------------------------------------------------------------
 # Implementation
 # ----------------------------------------------------------------
 
-df = px.DataFrame(table='http_events', start_time=start_time)
+df = px.DataFrame(table='dns_events', start_time=start_time)
 
 df.pod = df.ctx['pod']
-df = df.drop(['upid', 'trace_role', 'http_minor_version', 'http_content_type', 'http_resp_message'])
+df = df.drop(['upid', 'trace_role'])
 df = df.head(n=max_num_records)
 
 px.display(df)
