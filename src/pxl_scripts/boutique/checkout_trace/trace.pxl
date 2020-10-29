@@ -16,11 +16,29 @@ trace_name = 'checkout_probe'
 table_name = 'checkout_table'
 
 # Change to the Pod you want to trace.
-pod_name = 'online-boutique/checkoutservice-5bd999cd7c-7pp55'
+pod_name = 'px-online-boutique/checkoutservice'
 
 pxtrace.UpsertTracepoint(trace_name, table_name,
                          probe_func,
                          pxtrace.PodProcess(pod_name),
                          ttl='10m')
 
-px.display(px.DataFrame(table_name))
+df = px.DataFrame(table_name)
+
+# nil interface have both 'tab' and 'data' being 0, which means the function finishes successfully.
+df_success = df[px.pluck(df.error, 'data') == '0']
+df_success.error = 'nil'
+px.display(df_success)
+
+df_failed = df[px.pluck(df.error, 'data') != '0']
+df_failed.error = px.pluck_int64(df.error, 'code')
+
+# Error code 13 means invalid value.
+df_failed_13 = df_failed[df_failed.error == 13]
+df_failed_13.error = "Invalid value"
+
+df_failed_other = df_failed[df_failed.error != 13]
+df_failed_other.error = "Other"
+
+# Concatenate 2 parts to form the full list.
+px.display(df_failed_13.append(df_failed_other))
