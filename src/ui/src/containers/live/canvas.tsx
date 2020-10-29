@@ -125,6 +125,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   blur: {
     filter: `blur(${theme.spacing(0.2)}px)`,
   },
+  graphContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+  },
 }));
 
 const WidgetDisplay = ({
@@ -154,7 +159,7 @@ const WidgetDisplay = ({
 
   if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
     return (
-      <>
+      <div className={classes.graphContainer}>
         <div className={classes.widgetTitle}>{widgetName}</div>
         <GraphWidget
           display={display as GraphDisplay}
@@ -162,7 +167,7 @@ const WidgetDisplay = ({
           relation={table.relation}
           propagatedArgs={propagatedArgs}
         />
-      </>
+      </div>
     );
   }
 
