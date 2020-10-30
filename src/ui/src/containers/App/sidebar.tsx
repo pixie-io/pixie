@@ -24,6 +24,7 @@ import gql from 'graphql-tag';
 import ClusterContext from 'common/cluster-context';
 import UserContext from 'common/user-context';
 import ClusterIcon from 'components/icons/cluster';
+import CodeIcon from 'components/icons/code';
 import DocsIcon from 'components/icons/docs';
 import KeyboardIcon from '@material-ui/icons/Keyboard';
 import LogoutIcon from 'components/icons/logout';
@@ -271,6 +272,12 @@ const ProfileItem = ({
             </MenuItem>
           )
         }
+        <MenuItem key='credits' button component={Link} to='/credits'>
+          <StyledListItemIcon>
+            <CodeIcon />
+          </StyledListItemIcon>
+          <StyledListItemText primary='Credits' />
+        </MenuItem>
         <MenuItem key='logout' button component={Link} to='/logout'>
           <StyledListItemIcon>
             <LogoutIcon />
