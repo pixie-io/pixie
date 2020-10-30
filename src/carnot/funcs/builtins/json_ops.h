@@ -46,9 +46,8 @@ class PluckUDF : public udf::ScalarUDF {
             "This function returns the value as a string. If you want an int, use "
             "`px.pluck_int64`. If you want a float, use `px.pluck_float64`.")
         .Example(R"doc(
-        | # df.quantiles holds "{'p50': 5.1, 'p90': 10}" on row 1.
-        | df.p50 = px.pluck(df.quantiles, 'p50')
-        | # df.p50 holds "5.1" as a string.
+        | df.quantiles = '{"p50": 5.1, "p90": 10}'
+        | df.p50 = px.pluck(df.quantiles, 'p50') # "5.1", as a string.
         )doc")
         .Arg("json_str", "JSON data serialized as a string.")
         .Arg("key", "The key to get the value for.")
@@ -79,9 +78,8 @@ class PluckAsInt64UDF : public udf::ScalarUDF {
             "This function returns the value as an int. If you want a string, use `px.pluck`. If "
             "you want a float, use `px.pluck_float64`.")
         .Example(R"doc(
-        | # df.http_data holds "{'status_code': 200, 'p50_latency': 5.1}" on row 1.
-        | df.status_code = px.pluck_int64(df.http_data, 'status_code')
-        | # df.status_code holds `200` as an int.
+        | df.http_data = '{"status_code": 200, "p50_latency": 5.1}'
+        | df.status_code = px.pluck_int64(df.http_data, 'status_code') # 200
         )doc")
         .Arg("json_str", "JSON data serialized as a string.")
         .Arg("key", "The key to get the value for.")
@@ -115,9 +113,8 @@ class PluckAsFloat64UDF : public udf::ScalarUDF {
             "If "
             "you want an int, use `px.pluck_int64`.")
         .Example(R"doc(
-        | # df.http_data holds "{'status_code': 200, 'p50_latency': 5.1}" on row 1.
-        | df.p50_latency = px.pluck_float64(df.http_data, 'p50_latency')
-        | # df.p50_latency holds `5.1` as a float.
+        | df.http_data = '{"status_code": 200, "p50_latency": 5.1}'
+        | df.p50_latency = px.pluck_float64(df.http_data, 'p50_latency') # 5.1
         )doc")
         .Arg("json_str", "JSON data serialized as a string.")
         .Arg("key", "The key to get the value for.")

@@ -5,11 +5,27 @@
 namespace pl {
 namespace carnot {
 namespace builtins {
+udf::ScalarUDFDocBuilder AddDoc() {
+  return udf::ScalarUDFDocBuilder("Arithmetically add the arguments or concatenate the strings.")
+      .Details(R"(This function is implicitly invoked by the + operator.
+      If both types are strings, then will concate the strings. Trying to
+      add any other type to a string will cause an error)")
+      .Example(R"doc(# Implicit call.
+        | df.sum = df.a + df.b
+        | Explicit call.
+        | df.sum = px.add(df.a, df.b))doc")
+      .Arg("a", "The value to be added to.")
+      .Arg("b", "The value to add to the first argument.")
+      .Returns("The sum of a and b.");
+}
 
 udf::ScalarUDFDocBuilder BinDoc() {
   return udf::ScalarUDFDocBuilder("Rounds value to the nearest multiple.")
       .Details("Takes the passed in value(s) and bin them to the nearest multiple of a bin.")
-      .Example("# bin column b to multiples of 50\\ndf.a = px.bin(df.b, 50)")
+      .Example(R"doc(
+      | # bin column b to multiples of 50
+      | df.a = px.bin(df.b, 50)
+      )doc")
       .Arg("value", "The value to bin.")
       .Arg("bin", "The bin value to clip to.")
       .Returns("The value rounded down to the nearest multiple of bin.");

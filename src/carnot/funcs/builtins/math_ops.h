@@ -11,6 +11,7 @@ namespace pl {
 namespace carnot {
 namespace builtins {
 
+udf::ScalarUDFDocBuilder AddDoc();
 template <typename TReturn, typename TArg1, typename TArg2>
 class AddUDF : public udf::ScalarUDF {
  public:
@@ -23,14 +24,7 @@ class AddUDF : public udf::ScalarUDF {
     };
   }
 
-  static udf::ScalarUDFDocBuilder Doc() {
-    return udf::ScalarUDFDocBuilder("Arithmetically add the two arguments.")
-        .Details("This function is implicitly invoked by the + operator.")
-        .Example("df.sum = df.a + df.b")
-        .Arg("a", "The value to be added to.")
-        .Arg("b", "The value to add to the first argument.")
-        .Returns("The sum of a and b.");
-  }
+  static udf::ScalarUDFDocBuilder Doc() { return AddDoc(); }
 };
 
 template <>
@@ -40,14 +34,7 @@ class AddUDF<types::StringValue, types::StringValue, types::StringValue> : publi
     return b1 + b2;
   }
 
-  static udf::ScalarUDFDocBuilder Doc() {
-    return udf::ScalarUDFDocBuilder("Concatenate two strings.")
-        .Details("This function is implicitly invoked by the + operator.")
-        .Example("df.concat = df.str1 + df.str2")
-        .Arg("a", "The first string.")
-        .Arg("b", "The string to append to the first string.")
-        .Returns("The concatenation of arg1 and arg2.");
-  }
+  static udf::ScalarUDFDocBuilder Doc() { return AddDoc(); }
 };
 
 template <typename TReturn, typename TArg1, typename TArg2>
@@ -65,7 +52,11 @@ class SubtractUDF : public udf::ScalarUDF {
     return udf::ScalarUDFDocBuilder(
                "Arithmetically subtract the first argument by the second argument.")
         .Details("This function is implicitly invoked by the - operator.")
-        .Example("df.subtracted = df.a - df.b")
+        .Example(R"doc(# Implicit call.
+        | df.subtracted = df.a - df.b
+        | # Explicit call.
+        | df.subtracted = px.subtract(df.a, df.b)
+        )doc")
         .Arg("a", "The value to be subtracted from.")
         .Arg("b", "The value to subtract.")
         .Returns("`a` with `b` subtracted from it.");
@@ -91,7 +82,10 @@ class DivideUDF : public udf::ScalarUDF {
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Arithmetically divide the two arguments.")
         .Details("This function is implicitly invoked by the / operator.")
-        .Example("df.div = df.a / df.b")
+        .Example(R"doc(# Implicit call.
+        | df.div = df.a / df.b
+        | # Explicit call.
+        | df.div = px.divide(df.a, df.b))doc")
         .Arg("arg1", "The value to divide.")
         .Arg("arg2", "The value to divide the first argument by.")
         .Returns("The value of arg1 divided by arg2.");
@@ -105,8 +99,7 @@ class MultiplyUDF : public udf::ScalarUDF {
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Multiplies the arguments.")
         .Details("Multiplies the two values together. Accessible using the `*` operator syntax.")
-        .Example(R"doc(
-        | # Implicit operator.
+        .Example(R"doc(# Implicit call.
         | df.mult = df.duration * 2
         | # Explicit call.
         | df.mult = px.multiply(df.duration, 2)
@@ -124,10 +117,10 @@ class ModuloUDF : public udf::ScalarUDF {
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Calculates the remainder of the division of the two numbers")
         .Details(
-            "Calculates the remainder of dividing the first argument by the second argument. Same "
+            "Calculates the remainder of dividing the first argument by the second argument. "
+            "Same "
             "results as the C++ modulo operator. Accessible using the `%` syntax.")
-        .Example(R"doc(
-        | # Implicit operator.
+        .Example(R"doc(# Implicit call.
         | df.duration_mod_5s = df.duration % px.seconds(5)
         | # Explicit call.
         | df.duration_mod_5s = px.modulo(df.duration, px.seconds(5))
@@ -144,8 +137,7 @@ class LogicalOrUDF : public udf::ScalarUDF {
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val || b2.val; }
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Boolean ORs the passed in values.")
-        .Example(R"doc(
-        | # Implicit operator.
+        .Example(R"doc(# Implicit call.
         | df.can_filter_or_has_data = df.can_filter or df.has_data
         | # Explicit call.
         | df.can_filter_or_has_data = px.logicalOr(df.can_filter, df.has_data)
@@ -153,7 +145,8 @@ class LogicalOrUDF : public udf::ScalarUDF {
         .Arg("b1", "Left side of the OR.")
         .Arg("b2", "Right side of the OR.")
         .Returns(
-            "True if either expression is Truthy or both expressions are Truthy, otherwise False.");
+            "True if either expression is Truthy or both expressions are Truthy, otherwise "
+            "False.");
   }
 };
 
@@ -163,8 +156,7 @@ class LogicalAndUDF : public udf::ScalarUDF {
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val && b2.val; }
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Boolean ANDs the passed in values.")
-        .Example(R"doc(
-        | # Implicit operator.
+        .Example(R"doc(# Implicit call.
         | df.can_filter_and_has_data = df.can_filter and df.has_data
         | # Explicit call.
         | df.can_filter_and_has_data = px.logicalAnd(df.can_filter, df.has_data)
@@ -181,8 +173,7 @@ class LogicalNotUDF : public udf::ScalarUDF {
   BoolValue Exec(FunctionContext*, TArg1 b1) { return !b1.val; }
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Boolean NOTs the passed in value.")
-        .Example(R"doc(
-        | # Implicit operator.
+        .Example(R"doc(# Implicit call.
         | df.not_can_filter = not df.can_filter
         | # Explicit call.
         | df.not_can_filter = px.logicalNot(df.can_filter)
@@ -198,7 +189,10 @@ class NegateUDF : public udf::ScalarUDF {
   TArg1 Exec(FunctionContext*, TArg1 b1) { return -b1.val; }
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Negates the passed in value.")
-        .Example("df.negative_latency_ms = -df.latency_ms")
+        .Example(R"doc(# Implicit call.
+        | df.negative_latency_ms = -df.latency_ms
+        | # Explicit call.
+        | df.negative_latency_ms = px.negate(df.latency_ms))doc")
         .Arg("b1", "The value to negate.")
         .Returns("`b1` with a flipped negative sign.");
   }
@@ -252,9 +246,13 @@ class EqualUDF : public udf::ScalarUDF {
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Returns whether the values are equal.")
         .Details(
-            "Determines whether the values are equal. Passing in floating-point values might lead "
+            "Determines whether the values are equal. Passing in floating-point values might "
+            "lead "
             "to false negatives. Use `px.approxEqual(b1, b2)` to compare floats instead.")
-        .Example("df.failed_http_req = df.http_status == 200")
+        .Example(R"doc(# Implicit call.
+        | df.success_http = df.http_status == 200
+        | # Explicit call.
+        | df.success_http = px.equal(df.http_status, 200))doc")
         .Arg("b1", "")
         .Arg("b2", "")
         .Returns("True if `b1` is equal to `b2`, False otherwise.");
@@ -271,7 +269,10 @@ class NotEqualUDF : public udf::ScalarUDF {
             "Determines whether the values are not equal. Passing in floating-point values might "
             "lead "
             "to false positives. Use `not px.approxEqual(b1, b2)` to compare floats instead.")
-        .Example("df.failed_http_req = df.http_status != 200")
+        .Example(R"doc(# Implicit call.
+        | df.failed_http = df.http_status != 200
+        | # Explicit call.
+        | df.failed_http = px.notEqual(df.http_status, 200))doc")
         .Arg("b1", "")
         .Arg("b2", "")
         .Returns("True if `b1` is not equal to `b2`, False otherwise.");
@@ -314,7 +315,10 @@ class GreaterThanUDF : public udf::ScalarUDF {
     return udf::ScalarUDFDocBuilder(
                "Compare whether the first argument is greater than the second argument.")
         .Details("This function is implicitly invoked by the > operator.")
-        .Example("df.greater = df.a > df.b")
+        .Example(R"doc(# Implict call.
+        | df.gt = df.a > df.b
+        | Explicit call.
+        | df.gt = px.greaterThan(df.a, df.b))doc")
         .Arg("arg1", "The value to be compared to.")
         .Arg("arg2", "The value to check if it is greater than the first argument.")
         .Returns("Boolean of whether arg1 is greater than arg2.");
@@ -331,7 +335,10 @@ class GreaterThanEqualUDF : public udf::ScalarUDF {
                "Compare whether the first argument is greater than or equal to the second "
                "argument.")
         .Details("This function is implicitly invoked by the >= operator.")
-        .Example("df.geq = df.a >= df.b")
+        .Example(R"doc(# Implict call.
+        | df.gte = df.a >= df.b
+        | Explicit call.
+        | df.gte = px.greaterThanEqual(df.a, df.b))doc")
         .Arg("arg1", "The value to be compared to.")
         .Arg("arg2", "The value to check if it is greater than or equal to the first argument.")
         .Returns("Boolean of whether arg1 is greater than or equal to arg2.");
@@ -344,7 +351,10 @@ class LessThanUDF : public udf::ScalarUDF {
   BoolValue Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1 < b2; }
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Returns which value is less than the other.")
-        .Example("df.cpu1_lessthan_cpu2 = df.cpu1 < df.cpu2")
+        .Example(R"doc(# Implict call.
+        | df.lt = df.a < df.b
+        | Explicit call.
+        | df.lt = px.lessThan(df.a, df.b))doc")
         .Arg("b1", "Left side of the expression.")
         .Arg("b2", "Right side of the expression.")
         .Returns("Whether the left side is less than the right.");
@@ -358,10 +368,10 @@ class LessThanEqualUDF : public udf::ScalarUDF {
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Returns which value is less than or equal to the the other.")
         .Example(R"doc(
-        | # Implicit operator.
-        | df.cpu1_lessthanequal_cpu2 = df.cpu1 <= df.cpu2
+        | # Implicit call.
+        | df.lte = df.cpu1 <= df.cpu2
         | # Explicit call.
-        | df.cpu1_lessthanequal_cpu2 = px.lessThanOrEqual(df.cpu1, df.cup2)
+        | df.lte = px.lessThanOrEqual(df.cpu1, df.cup2)
         )doc")
         .Arg("b1", "Left side of the expression.")
         .Arg("b2", "Right side of the expression.")
@@ -397,7 +407,8 @@ class RoundUDF : public udf::ScalarUDF {
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Rounds the float to the nearest decimal places.")
         .Details(
-            "Rounds the float to the nearest decimal place and returns value as a string. Used to "
+            "Rounds the float to the nearest decimal place and returns value as a string. Used "
+            "to "
             "clean up the data shown in tables. Set decimals to `0` if you want to round to the "
             "nearest int value.")
         .Example(R"doc(

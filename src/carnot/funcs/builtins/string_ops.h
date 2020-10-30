@@ -32,7 +32,7 @@ class LengthUDF : public udf::ScalarUDF {
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Returns the length of the string")
         .Example(R"doc(df.service = 'checkout'
-        | df.length = px.length(df.service)
+        | df.length = px.length(df.service) # 8
         )doc")
         .Arg("s", "The string to get the length of")
         .Returns("The length of the string.");
@@ -50,7 +50,8 @@ class FindUDF : public udf::ScalarUDF {
         .Details(
             "Returns the index of the first occurrence of the substring in the given string. If no "
             "match is found, returns -1.")
-        .Example("df.found = px.Find(df.svc_name, 'pixie-')")
+        .Example(R"doc(df.svc_name = "pixie-labs"
+        | df.found = px.find(df.svc_name, '-labs') # 5)doc")
         .Arg("arg1", "The string to search through.")
         .Arg("arg2", "The substring to find.")
         .Returns("The index of the first occurence of the substring. -1 if no match is found.");
@@ -73,7 +74,7 @@ class SubstringUDF : public udf::ScalarUDF {
             "empty string. If `pos < len(string)` but `pos + length > len(string)`, `px.substr` "
             "returns the maximum length substring starting at `pos`")
         .Example(R"doc(df.service = 'checkout'
-        | df.length = px.length(df.service)
+        | df.str = px.substring(df.service, 1, 5) # 'hecko'
         )doc")
         .Arg("string", "The string to get the substring from.")
         .Arg("pos", "The position to start the substring, inclusive.")
@@ -91,7 +92,7 @@ class ToLowerUDF : public udf::ScalarUDF {
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder(
                "Transforms all uppercase ascii characters in the string to lowercase.")
-        .Example(R"doc(# df.service is `Kelvin`
+        .Example(R"doc(df.service  = "Kelvin"
         | df.lower = px.tolower(df.service) # "kelvin"
         )doc")
         .Arg("string", "The string to transform.")
@@ -108,7 +109,7 @@ class ToUpperUDF : public udf::ScalarUDF {
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder(
                "Transforms all lowercase ascii characters in the string to uppercase.")
-        .Example(R"doc(# df.service is `Kelvin`
+        .Example(R"doc(df.service = Kelvin
         | df.upper = px.toupper(df.service) # "KELVIN"
         )doc")
         .Arg("string", "The string to transform.")
@@ -129,7 +130,7 @@ class TrimUDF : public udf::ScalarUDF {
         .Details(
             "Returns a copy of the string with the white space before and after the string trimmed "
             "away. Does not affect whitespace in between words.")
-        .Example(R"doc(# df.service is `        pl/kelvin `
+        .Example(R"doc(df.service = "        pl/kelvin "
         | df.trimmed = px.trim(df.service) # "pl/kelvin"
         )doc")
         .Arg("string", "The string to transform.")
