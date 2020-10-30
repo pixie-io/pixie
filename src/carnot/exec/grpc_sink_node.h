@@ -21,6 +21,14 @@ namespace carnot {
 namespace exec {
 
 constexpr std::chrono::milliseconds kDefaultConnectionCheckTimeoutMS{2000};
+// Max request size is 1MB.
+constexpr size_t kMaxBatchSize = 1024 * 1024;
+// BatchSizeFactor is the size of kMaxBatchSize to split into to assure that we limit number of
+// splits. We must split batches across row lines, not byte lines. Row batches aren't guaranteed to
+// be uniformly distributed, so splitting a rowbatch will likely lead to one part of the split being
+// larger than the other. This parameter can be tuned in the future depending on what we learn about
+// the distributions of the row batches.
+constexpr float kBatchSizeFactor = 0.5;
 
 class GRPCSinkNode : public SinkNode {
  public:
@@ -45,6 +53,8 @@ class GRPCSinkNode : public SinkNode {
   Status CloseImpl(ExecState* exec_state) override;
   Status ConsumeNextImpl(ExecState* exec_state, const table_store::schema::RowBatch& rb,
                          size_t parent_index) override;
+  Status SplitAndSendBatch(ExecState* exec_state, const table_store::schema::RowBatch& rb,
+                           size_t parent_index, size_t request_size);
 
  private:
   Status CloseWriter(ExecState* exec_state);

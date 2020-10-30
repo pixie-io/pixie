@@ -144,11 +144,45 @@ Status GRPCSinkNode::CloseImpl(ExecState* exec_state) {
   return Status::OK();
 }
 
-Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t) {
+Status GRPCSinkNode::SplitAndSendBatch(ExecState* exec_state, const RowBatch& rb, size_t parent_idx,
+                                       size_t request_size_bytes) {
+  // We split this batch into many batches depending on the desired batch_size.
+  // Given that a row-batches are not unformly distributed, we must assume that splitting
+  // a row batch evenly into request_size / MaxBatchSize batches w/ the same number of rows
+  // would always lead to requests that are < than kMaxBatchSize and that means we'd have to run
+  // this splitting process again.
+  int64_t desired_batch_size_bytes = static_cast<int64_t>(kMaxBatchSize * kBatchSizeFactor);
+  int64_t num_batches = request_size_bytes / (desired_batch_size_bytes);
+
+  // The number of rows per batch.
+  size_t main_rb_rows = rb.num_rows() / num_batches;
+  // The number of rows leftover after all the batches.
+  size_t leftover_rb_rows = rb.num_rows() % num_batches;
+
+  // Run the first N - 1 batches because they are all the same size.
+  for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
+    PL_ASSIGN_OR_RETURN(std::unique_ptr<RowBatch> output_rb,
+                        rb.Slice(batch_idx * main_rb_rows, main_rb_rows));
+    PL_RETURN_IF_ERROR(ConsumeNextImpl(exec_state, *output_rb, parent_idx));
+  }
+
+  // Handle the final batch.
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<RowBatch> output_rb,
+                      rb.Slice(rb.num_rows() - leftover_rb_rows, leftover_rb_rows));
+  output_rb->set_eos(rb.eos());
+  output_rb->set_eow(rb.eow());
+  return ConsumeNextImpl(exec_state, *output_rb, parent_idx);
+}
+
+Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t parent_idx) {
   PL_ASSIGN_OR_RETURN(auto req, RequestWithMetadata(plan_node_.get(), exec_state));
 
   // Serialize the RowBatch.
   PL_RETURN_IF_ERROR(rb.ToProto(req.mutable_query_result()->mutable_row_batch()));
+  size_t request_size = req.ByteSizeLong();
+  if (request_size > kMaxBatchSize) {
+    return SplitAndSendBatch(exec_state, rb, parent_idx, request_size);
+  }
 
   if (!writer_->Write(req)) {
     cancelled_ = true;

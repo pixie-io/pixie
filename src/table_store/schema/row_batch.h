@@ -50,6 +50,19 @@ class RowBatch {
                                                           bool eos);
 
   /**
+   * @brief Returns a slice of the specified `length` starting at the `offset` from the RowBatch.
+   *
+   * RowBatch Slice has the same columns as this rowbatch, just of length `length` and starting at
+   * `offset`. Does not set eow and eos.
+   *
+   *
+   * @param offset The starting position of the slice.
+   * @param offset The length of the slice to grab.
+   * @return StatusOr<std::unique_ptr<RowBatch>>
+   */
+  StatusOr<std::unique_ptr<RowBatch>> Slice(int64_t offset, int64_t length) const;
+
+  /**
    * Adds the given column to the row batch, given that it correctly fits the schema.
    * param col ptr to the arrow array that should be added to the row batch.
    */

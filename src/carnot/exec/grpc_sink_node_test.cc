@@ -380,6 +380,164 @@ TEST_F(GRPCSinkNodeTest, update_connection_time) {
   EXPECT_GT(after_flush_time, before_flush_time);
 }
 
+TEST_F(GRPCSinkNodeTest, break_up_batch_no_leftover) {
+  auto op_proto = planpb::testutils::CreateTestGRPCSink1PB();
+  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1);
+  auto s = plan_node->Init(op_proto.grpc_sink_op());
+  RowDescriptor input_rd({types::DataType::INT64});
+  RowDescriptor output_rd({types::DataType::INT64});
+
+  google::protobuf::util::MessageDifferencer differ;
+
+  TransferResultChunkResponse resp;
+  resp.set_success(true);
+
+  std::vector<TransferResultChunkRequest> actual_protos(6);
+
+  auto writer = new grpc::testing::MockClientWriter<TransferResultChunkRequest>();
+
+  EXPECT_CALL(*writer, Write(_, _))
+      .Times(6)
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[0]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[1]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[2]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[3]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[4]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[5]), Return(true)));
+
+  EXPECT_CALL(*writer, WritesDone());
+  EXPECT_CALL(*writer, Finish()).WillOnce(Return(grpc::Status::OK));
+  EXPECT_CALL(*mock_, TransferResultChunkRaw(_, _))
+      .WillOnce(DoAll(SetArgPointee<1>(resp), Return(writer)));
+
+  auto tester = exec::ExecNodeTester<GRPCSinkNode, plan::GRPCSinkOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+
+  int64_t num_rows = 1024 * 1024 * 2;
+  std::vector<types::Int64Value> data(num_rows, 1);
+  auto rb = RowBatchBuilder(output_rd, num_rows, /*eow*/ true, /*eos*/ true)
+                .AddColumn<types::Int64Value>(data)
+                .get();
+  tester.ConsumeNext(rb, 5, 0);
+
+  int64_t num_main_batches = 4;
+  int64_t row_size = num_rows / num_main_batches;
+  // i = 0 batch is a init batch. We have num_main_batches + 1 batches. + 1 => the leftover batch.
+  for (int64_t i = 1; i < num_main_batches + 1; ++i) {
+    EXPECT_EQ(actual_protos[i].query_result().row_batch().num_rows(), row_size);
+    EXPECT_EQ(actual_protos[i].query_result().row_batch().eow(), false);
+    EXPECT_EQ(actual_protos[i].query_result().row_batch().eos(), false);
+  }
+
+  // This last batch should only return 0 rows, but should have eos and eow true.
+  EXPECT_EQ(actual_protos[num_main_batches + 1].query_result().row_batch().num_rows(),
+            num_rows - num_main_batches * row_size);
+  EXPECT_EQ(actual_protos[num_main_batches + 1].query_result().row_batch().num_rows(), 0);
+  EXPECT_EQ(actual_protos[num_main_batches + 1].query_result().row_batch().eow(), true);
+  EXPECT_EQ(actual_protos[num_main_batches + 1].query_result().row_batch().eos(), true);
+
+  tester.Close();
+}
+
+TEST_F(GRPCSinkNodeTest, break_up_batch_with_leftover) {
+  auto op_proto = planpb::testutils::CreateTestGRPCSink1PB();
+  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1);
+  auto s = plan_node->Init(op_proto.grpc_sink_op());
+  RowDescriptor input_rd({types::DataType::INT64});
+  RowDescriptor output_rd({types::DataType::INT64});
+
+  google::protobuf::util::MessageDifferencer differ;
+
+  std::vector<TransferResultChunkRequest> actual_protos(5);
+
+  auto writer = new grpc::testing::MockClientWriter<TransferResultChunkRequest>();
+
+  EXPECT_CALL(*writer, Write(_, _))
+      .Times(5)
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[0]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[1]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[2]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[3]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[4]), Return(true)));
+
+  EXPECT_CALL(*writer, WritesDone());
+  EXPECT_CALL(*writer, Finish()).WillOnce(Return(grpc::Status::OK));
+  TransferResultChunkResponse resp;
+  resp.set_success(true);
+  EXPECT_CALL(*mock_, TransferResultChunkRaw(_, _))
+      .WillOnce(DoAll(SetArgPointee<1>(resp), Return(writer)));
+
+  auto tester = exec::ExecNodeTester<GRPCSinkNode, plan::GRPCSinkOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+
+  int64_t num_rows = static_cast<int64_t>(kMaxBatchSize * 1.5) + 8;
+  std::vector<types::Int64Value> data(num_rows, 1);
+  auto rb = RowBatchBuilder(output_rd, num_rows, /*eow*/ true, /*eos*/ true)
+                .AddColumn<types::Int64Value>(data)
+                .get();
+  tester.ConsumeNext(rb, 5, 0);
+
+  int64_t num_main_batches = num_rows / static_cast<int64_t>(kMaxBatchSize * kBatchSizeFactor);
+  int64_t row_size = num_rows / num_main_batches;
+  // i = 0 batch is a init batch. We have num_main_batches + 1 batches. + 1 => the leftover batch.
+  for (int64_t i = 1; i < num_main_batches + 1; ++i) {
+    EXPECT_EQ(actual_protos[i].query_result().row_batch().num_rows(), row_size);
+    EXPECT_EQ(actual_protos[i].query_result().row_batch().eow(), false);
+    EXPECT_EQ(actual_protos[i].query_result().row_batch().eos(), false);
+  }
+
+  // This last batch should only return 0 rows, but should have eos and eow true.
+  EXPECT_EQ(actual_protos[num_main_batches + 1].query_result().row_batch().num_rows(),
+            num_rows - num_main_batches * row_size);
+  EXPECT_EQ(actual_protos[num_main_batches + 1].query_result().row_batch().num_rows(),
+            num_rows % num_main_batches);
+  EXPECT_EQ(actual_protos[num_main_batches + 1].query_result().row_batch().eow(), true);
+  EXPECT_EQ(actual_protos[num_main_batches + 1].query_result().row_batch().eos(), true);
+
+  tester.Close();
+}
+
+// Test to make sure we don't always output eow and eos on last split up row batch.
+TEST_F(GRPCSinkNodeTest, break_up_row_batch_that_isnt_eow_eos) {
+  auto op_proto = planpb::testutils::CreateTestGRPCSink1PB();
+  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1);
+  auto s = plan_node->Init(op_proto.grpc_sink_op());
+  RowDescriptor input_rd({types::DataType::INT64});
+  RowDescriptor output_rd({types::DataType::INT64});
+
+  google::protobuf::util::MessageDifferencer differ;
+
+  std::vector<TransferResultChunkRequest> actual_protos(5);
+
+  auto writer = new grpc::testing::MockClientWriter<TransferResultChunkRequest>();
+
+  EXPECT_CALL(*writer, Write(_, _))
+      .Times(5)
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[0]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[1]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[2]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[3]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[4]), Return(true)));
+
+  EXPECT_CALL(*mock_, TransferResultChunkRaw(_, _)).WillOnce(Return(writer));
+
+  auto tester = exec::ExecNodeTester<GRPCSinkNode, plan::GRPCSinkOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+
+  int64_t num_rows = static_cast<int64_t>(kMaxBatchSize * 1.5) + 8;
+  std::vector<types::Int64Value> data(num_rows, 1);
+  auto rb = RowBatchBuilder(output_rd, num_rows, /*eow*/ false, /*eos*/ false)
+                .AddColumn<types::Int64Value>(data)
+                .get();
+  tester.ConsumeNext(rb, 5, 0);
+
+  int64_t num_main_batches = num_rows / static_cast<int64_t>(kMaxBatchSize * kBatchSizeFactor);
+  EXPECT_EQ(actual_protos[num_main_batches + 1].query_result().row_batch().eow(), false);
+  EXPECT_EQ(actual_protos[num_main_batches + 1].query_result().row_batch().eos(), false);
+
+  tester.Close();
+}
+
 }  // namespace exec
 }  // namespace carnot
 }  // namespace pl

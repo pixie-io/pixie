@@ -106,8 +106,7 @@ TEST_F(RowBatchTest, num_bytes) {
   EXPECT_EQ(expected_bytes, rb->NumBytes());
 }
 
-TEST_F(RowBatchTest, to_from_proto) {
-  std::string input_proto_string = R"(
+constexpr char kTestRowBatchProto[] = R"(
 cols {
   uint128_data {
     data {
@@ -142,9 +141,9 @@ eow: true
 eos: false
 num_rows: 3
 )";
-
+TEST_F(RowBatchTest, to_from_proto) {
   table_store::schemapb::RowBatchData input_proto;
-  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(input_proto_string, &input_proto));
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kTestRowBatchProto, &input_proto));
 
   auto rb = RowBatch::FromProto(input_proto).ConsumeValueOrDie();
   EXPECT_TRUE(rb->eow());
@@ -171,6 +170,47 @@ TEST_F(RowBatchTest, with_zero_rows) {
   EXPECT_EQ(*rd_, rb->desc());
   EXPECT_EQ(eow, rb->eow());
   EXPECT_EQ(eos, rb->eos());
+}
+
+TEST_F(RowBatchTest, slice) {
+  EXPECT_EQ(3, rb_->num_rows());
+
+  ASSERT_OK_AND_ASSIGN(auto output_rb1, rb_->Slice(1, 2));
+  EXPECT_EQ(2, output_rb1->num_rows());
+  EXPECT_EQ(
+      "RowBatch(eow=0, eos=0):\n  [\n  false,\n  true\n]\n  [\n  4,\n  5\n]\n  [\n  "
+      "4.1,\n  5.6\n]\n",
+      output_rb1->DebugString());
+
+  ASSERT_OK_AND_ASSIGN(auto output_rb2, rb_->Slice(1, 1));
+  EXPECT_EQ(1, output_rb2->num_rows());
+  EXPECT_EQ("RowBatch(eow=0, eos=0):\n  [\n  false\n]\n  [\n  4\n]\n  [\n  4.1\n]\n",
+            output_rb2->DebugString());
+
+  ASSERT_OK_AND_ASSIGN(auto output_rb3, rb_->Slice(0, 1));
+  EXPECT_EQ(1, output_rb3->num_rows());
+  EXPECT_EQ("RowBatch(eow=0, eos=0):\n  [\n  true\n]\n  [\n  3\n]\n  [\n  3.3\n]\n",
+            output_rb3->DebugString());
+  // EOS and EOW don't propagate.
+  rb_->set_eos(true);
+  rb_->set_eow(true);
+
+  EXPECT_TRUE(rb_->eos());
+  EXPECT_TRUE(rb_->eow());
+
+  ASSERT_OK_AND_ASSIGN(auto output_rb4, rb_->Slice(0, 1));
+  EXPECT_FALSE(output_rb4->eow());
+  EXPECT_FALSE(output_rb4->eos());
+  EXPECT_EQ(output_rb4->DebugString(), output_rb3->DebugString());
+
+  // Error out if the slice doesn't fit the bounds.
+  auto status1 = rb_->Slice(1, 3);
+  ASSERT_NOT_OK(status1);
+  ASSERT_EQ(status1.msg(), "Slice(offset=1, length=3) on rowbatch of length 3 is invalid");
+
+  auto status2 = rb_->Slice(-1, 3);
+  ASSERT_NOT_OK(status2);
+  ASSERT_EQ(status2.msg(), "Slice(offset=-1, length=3) on rowbatch of length 3 is invalid");
 }
 
 }  // namespace schema

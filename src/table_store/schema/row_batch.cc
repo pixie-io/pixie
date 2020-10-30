@@ -236,6 +236,19 @@ StatusOr<std::unique_ptr<RowBatch>> RowBatch::WithZeroRows(const RowDescriptor& 
   return RowBatch::FromColumnBuilders(desc, eow, eos, &builders);
 }
 
+StatusOr<std::unique_ptr<RowBatch>> RowBatch::Slice(int64_t offset, int64_t length) const {
+  if (offset + length > num_rows() || offset < 0) {
+    return error::InvalidArgument("Slice(offset=$0, length=$1) on rowbatch of length $2 is invalid",
+                                  offset, length, num_rows());
+  }
+  std::unique_ptr<RowBatch> output_rb = std::make_unique<RowBatch>(desc(), length);
+  for (int64_t input_col_idx = 0; input_col_idx < num_columns(); ++input_col_idx) {
+    auto col = ColumnAt(input_col_idx);
+    PL_RETURN_IF_ERROR(output_rb->AddColumn(col->Slice(offset, length)));
+  }
+  return output_rb;
+}
+
 }  // namespace schema
 }  // namespace table_store
 }  // namespace pl
