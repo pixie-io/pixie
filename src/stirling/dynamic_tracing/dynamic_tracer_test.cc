@@ -146,8 +146,7 @@ TEST_F(ResolveTargetObjPathTest, ResolvePodProcessMultiplePods) {
   TextFormat::ParseFromString(kDeploymentSpecTxt, &deployment_spec);
   EXPECT_THAT(ResolveTargetObjPath(k8s_mds_, &deployment_spec),
               StatusIs(pl::statuspb::INVALID_ARGUMENT,
-                       HasSubstr("Pod name prefix 'ns0/pod' matches multiple Pods: "
-                                 "'ns0/pod0,ns0/pod1'")));
+                       HasSubstr("Pod name prefix 'ns0/pod' matches multiple Pods:")));
 }
 
 // Tests that empty container name results into failure when there are multiple containers in Pod.
