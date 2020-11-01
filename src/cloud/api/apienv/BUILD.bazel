@@ -21,10 +21,10 @@ go_library(
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
         "//src/shared/services:go_default_library",
         "//src/shared/services/env:go_default_library",
+        "@com_github_boj_redistore//:go_default_library",
         "@com_github_gorilla_sessions//:go_default_library",
         "@com_github_spf13_pflag//:go_default_library",
         "@com_github_spf13_viper//:go_default_library",
-        "@in_gopkg_boj_redistore_v1//:go_default_library",
         "@org_golang_google_grpc//:go_default_library",
     ],
 )
