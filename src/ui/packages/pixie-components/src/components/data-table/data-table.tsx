@@ -16,7 +16,6 @@ import {
   TableRowProps,
   TableRowRenderer,
 } from 'react-virtualized';
-import withAutoSizer, { WithAutoSizerProps } from '../../utils/autosizer';
 
 import {
   createStyles, fade, makeStyles, Theme, useTheme,
@@ -24,14 +23,19 @@ import {
 import Tooltip from '@material-ui/core/Tooltip';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
+import { CSSProperties, MutableRefObject } from 'react';
+import { clamp } from 'utils/math';
+import withAutoSizer, { WithAutoSizerProps } from 'utils/autosizer';
 import { ExpandedIcon } from '../icons/expanded';
 import { UnexpandedIcon } from '../icons/unexpanded';
-import { CSSProperties, MutableRefObject } from 'react';
+import {
+  MAX_COL_PX_WIDTH,
+  MIN_COL_PX_WIDTH,
+  userResizeColumn,
+  StartingRatios, ColWidthOverrides, tableWidthLimits,
+} from './table-resizer';
 
 const EXPANDED_ROW_HEIGHT = 300;
-// Prevent any one column from dominating the viewport or becoming too thin to show its contents
-const MIN_COL_CHAR_WIDTH = 90;
-const MAX_COL_CHAR_WIDTH = 400;
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   table: {
@@ -216,10 +220,6 @@ export interface SortState {
   direction: SortDirectionType;
 }
 
-export interface ColWidthOverrides {
-  [dataKey: string]: number;
-}
-
 // eslint-disable-next-line react/display-name
 const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerProps<DataTableProps>>((props) => {
   const { width, height } = props;
@@ -261,26 +261,28 @@ const InternalDataTable = ({
   const colTextWidthRatio = React.useMemo<{[dataKey: string]: number}>(() => {
     totalWidth.current = 0;
     const colsWidth: {[dataKey: string]: number} = {};
+    const measuringContext = document.createElement('canvas').getContext('2d');
     columns.forEach((col) => {
       let w = col.width || null;
       if (!w) {
         const row = rowGetter(0);
-        w = Math.min(Math.max(w, String(row[col.dataKey]).length, MIN_COL_CHAR_WIDTH), MAX_COL_CHAR_WIDTH);
+        const text = String(row[col.dataKey]);
+        const textWidth = measuringContext.measureText(text).width;
+        w = clamp(textWidth, MIN_COL_PX_WIDTH, MAX_COL_PX_WIDTH);
       }
 
       // We add 2 to the header width to accommodate type/sort icons.
       const headerWidth = col.label.length + 2;
-      colsWidth[col.dataKey] = Math.min(Math.max(headerWidth, w, MIN_COL_CHAR_WIDTH), MAX_COL_CHAR_WIDTH);
+      colsWidth[col.dataKey] = clamp(Math.max(headerWidth, w), MIN_COL_PX_WIDTH, MAX_COL_PX_WIDTH);
       totalWidth.current += colsWidth[col.dataKey];
     });
     // Ensure the total is at least as wide as the available space, and not so wide as to violate column max widths.
-    const minTotal = Math.max(MIN_COL_CHAR_WIDTH * columns.length, width);
-    const maxTotal = Math.max(MAX_COL_CHAR_WIDTH * columns.length, width);
-    const clamped = Math.max(minTotal, Math.min(totalWidth.current, maxTotal));
-    const scale = clamped / totalWidth.current;
-    totalWidth.current = clamped;
+    const [minTotal, maxTotal] = tableWidthLimits(columns.length, width);
+    const clampedTotal = clamp(totalWidth.current, minTotal, maxTotal);
+    totalWidth.current = clampedTotal;
 
     const ratio: {[dataKey: string]: number} = {};
+    const scale = clampedTotal / totalWidth.current;
     Object.keys(colsWidth).forEach((colsWidthKey) => {
       ratio[colsWidthKey] = scale * colsWidth[colsWidthKey] / totalWidth.current;
     });
@@ -362,45 +364,18 @@ const InternalDataTable = ({
 
   const resizeColumn = React.useCallback(({ dataKey, deltaX }) => {
     setColumnWidthOverride((state) => {
-      const colIdx = columns.findIndex((col) => col.dataKey === dataKey);
-      if (colIdx === -1) {
-        return state;
-      }
-
-      const nextColKey = columns[colIdx + 1].dataKey;
-      let leftPercent = state[dataKey] || (colTextWidthRatio[dataKey]);
-      let rightPercent = state[nextColKey] || (colTextWidthRatio[nextColKey]);
-
-      const deltaPercent = deltaX / totalWidth.current;
-      // How large/small is a column allowed to get?
-      const minPercent = MIN_COL_CHAR_WIDTH / totalWidth.current;
-      const maxPercent = MAX_COL_CHAR_WIDTH / totalWidth.current;
-
-      // How far can we move the drag handle either direction before either column would be too thin/wide?
-      const minDeltaPercent = Math.max(minPercent - leftPercent, rightPercent - maxPercent);
-      const maxDeltaPercent = Math.min(maxPercent - leftPercent, rightPercent - minPercent);
-
-      // Don't allow pushing either column further away from min/maxWidth, do allow pulling back into bounds.
-      // If the table isn't the same width as its container, it will absorb excess delta that would help fix it.
-      const clampedDeltaPercent = Math.max(minDeltaPercent, Math.min(deltaPercent, maxDeltaPercent));
-      if ((minDeltaPercent < 0 && deltaPercent < 0) || (maxDeltaPercent > 0 && deltaPercent > 0)) {
-        leftPercent += clampedDeltaPercent;
-        rightPercent -= clampedDeltaPercent;
-
-        /*
-         * TODO(nick): Scenarios that should resize other cells or the entire table.
-         *  If the delta was clamped in the intended direction, but not in the other, try modifying the size of the
-         *  other column. The change in its width should be given to / taken from other cells that can accommodate it.
-         *  If there is still "leftover" delta, check if the table itself can grow or shrink to handle it. When doing
-         *  this, recalculate width limits on every column. This is complex enough for its own module.
-         */
-      }
-
-      return {
-        ...state,
-        [dataKey]: leftPercent,
-        [nextColKey]: rightPercent,
-      };
+      const startingRatios: StartingRatios = columns.map((col) => {
+        const key = col.dataKey;
+        const isDefault = state[key] == null;
+        return {
+          key,
+          isDefault,
+          ratio: state[key] || colTextWidthRatio[key],
+        };
+      });
+      const { newTotal, sizes } = userResizeColumn(dataKey, deltaX, startingRatios, totalWidth.current, width);
+      totalWidth.current = newTotal;
+      return sizes;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [width, colTextWidthRatio, columns]);

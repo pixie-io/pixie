@@ -33,6 +33,7 @@
     "react-monaco-editor": "^0.36.0",
     "react-split": "^2.0.7",
     "react-vega": "^7.3.0",
+    "react-virtualized": "^9.21.2",
     "vega-embed": "^6.9.0",
     "vega-tooltip": "^0.23.0"
   },
@@ -49,6 +50,7 @@
     "@types/jest": "24.0.18",
     "@types/react": "^16.9.11",
     "@types/react-dom": "^16.9.4",
+    "@types/react-virtualized": "^9.21.8",
     "@typescript-eslint/eslint-plugin": "^2.30.0",
     "@typescript-eslint/parser": "^2.30.0",
     "enzyme": "^3.10.0",
