@@ -4,11 +4,11 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.21.1/bazel-gazelle-v0.21.1.tar.gz"],
     ),
     io_bazel_rules_go = dict(
-        sha256 = "2d536797707dd1697441876b2e862c58839f975c8fc2f0f96636cbd428f45866",
+        sha256 = "d1ffd055969c8f8d431e2d439813e42326961d0942bdf734d2c95dc30c369566",
         urls = [
             "https://mirror.bazel.build/github.com/bazelbuild/rules_go" +
-            "/releases/download/v0.23.5/rules_go-v0.23.5.tar.gz",
-            "https://github.com/bazelbuild/rules_go/releases/download/v0.23.5/rules_go-v0.23.5.tar.gz",
+            "/releases/download/v0.24.5/rules_go-v0.24.5.tar.gz",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.24.5/rules_go-v0.24.5.tar.gz",
         ],
     ),
     io_bazel_rules_k8s = dict(

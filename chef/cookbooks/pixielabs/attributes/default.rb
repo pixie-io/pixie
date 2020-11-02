@@ -30,9 +30,9 @@ if node[:platform] == 'ubuntu'
     '1a64c807716e10c872f1618852d95f4893d81667fe6e691ef696489103c9b460'
 
   default['golang']['download_path'] =
-    'https://dl.google.com/go/go1.13.8.linux-amd64.tar.gz'
+    'https://dl.google.com/go/go1.15.3.linux-amd64.tar.gz'
   default['golang']['sha256'] =
-    '0567734d558aef19112f2b2873caa0c600f1b4a5827930eb5a7f35235219e9d8'
+    '010a88df924a81ec21b293b5da8f9b11c176d27c0ee3962dc1738d2352d3c02d'
 
   default['skaffold']['download_path'] =
     'https://storage.googleapis.com/skaffold/releases/v1.12.1/skaffold-linux-amd64'
@@ -93,9 +93,9 @@ elsif node[:platform] == 'mac_os_x'
     '23ea93e5ef9f381babd7f658bbbf12d366510f0a719e816fea90bcbe9737aef2'
 
   default['golang']['download_path'] =
-    'https://dl.google.com/go/go1.13.8.darwin-amd64.tar.gz'
+    'https://dl.google.com/go/go1.15.3.darwin-amd64.tar.gz'
   default['golang']['sha256'] =
-    'e7bad54950e1d18c716ac9202b5406e7d4aca9aa4ca9e334a9742f75c2167a9c'
+    '2e045043a28a2834e10edeb64c0cffd080a3525016fab1898d5624b57312a698'
 
   default['skaffold']['download_path'] =
     'https://storage.googleapis.com/skaffold/releases/v1.12.1/skaffold-darwin-amd64'
