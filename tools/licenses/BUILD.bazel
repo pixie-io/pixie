@@ -44,7 +44,6 @@ genrule(
     srcs = [
         ":cpp_licenses",
         ":manual_cpp_licenses",
-        ":go_licenses.json",
     ],
     outs = ["CREDITS.md"],
     cmd = "python3 $(location :render_licenses_as_markdown.py) $@ $(SRCS)",
