@@ -468,11 +468,14 @@ void ConnectionTracker::SetTrafficClass(struct traffic_class_t traffic_class) {
   if (traffic_class_.protocol == kProtocolUnknown) {
     traffic_class_.protocol = traffic_class.protocol;
   } else if (traffic_class.protocol != kProtocolUnknown) {
-    DCHECK_EQ(traffic_class_.protocol, traffic_class.protocol) << absl::Substitute(
-        "Not allowed to change the protocol of an active ConnectionTracker: $0, old protocol: $1, "
-        "new protocol $2",
-        ToString(conn_id_), magic_enum::enum_name(traffic_class_.protocol),
-        magic_enum::enum_name(traffic_class.protocol));
+    if (traffic_class_.protocol != traffic_class.protocol) {
+      CONN_TRACE(1) << absl::Substitute(
+          "Not allowed to change the protocol of an active ConnectionTracker: $0, old protocol: "
+          "$1, "
+          "new protocol $2",
+          ToString(conn_id_), magic_enum::enum_name(traffic_class_.protocol),
+          magic_enum::enum_name(traffic_class.protocol));
+    }
   }
 
   if (traffic_class_.role == kRoleNone) {
@@ -481,11 +484,12 @@ void ConnectionTracker::SetTrafficClass(struct traffic_class_t traffic_class) {
       ExportInitialConnStats();
     }
   } else if (traffic_class.role != kRoleNone) {
-    DCHECK_EQ(traffic_class_.role, traffic_class.role) << absl::Substitute(
-        "Not allowed to change the role of an active ConnectionTracker: $0, old role: $1, new "
-        "role: $2",
-        ToString(conn_id_), magic_enum::enum_name(traffic_class_.role),
-        magic_enum::enum_name(traffic_class.role));
+    if (traffic_class_.role != traffic_class.role) {
+      CONN_TRACE(1) << absl::Substitute(
+          "Not allowed to change the role of an active ConnectionTracker: old role: $0, new "
+          "role: $1",
+          magic_enum::enum_name(traffic_class_.role), magic_enum::enum_name(traffic_class.role));
+    }
   }
 }
 
@@ -870,10 +874,9 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   }
 
   if (traffic_class_.role == kRoleNone) {
-    traffic_class_.role =
-        socket_info.role == system::ClientServerRole::kClient
-            ? kRoleClient
-            : socket_info.role == system::ClientServerRole::kServer ? kRoleServer : kRoleNone;
+    traffic_class_.role = socket_info.role == system::ClientServerRole::kClient   ? kRoleClient
+                          : socket_info.role == system::ClientServerRole::kServer ? kRoleServer
+                                                                                  : kRoleNone;
   }
 
   CONN_TRACE(1) << absl::Substitute("Inferred connection dest=$0:$1",
