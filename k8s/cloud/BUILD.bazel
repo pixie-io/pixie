@@ -1,0 +1,24 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@io_bazel_rules_docker//container:container.bzl", "container_bundle", "container_image", "container_pull")
+load("//k8s/vizier:images.bzl", "image_map_with_bundle_version")
+
+CLOUD_IMAGE_MAP = {
+    "gcr.io/pl-dev-infra/cloud/api_server_image": "//src/cloud/api:api_server_image",
+    "gcr.io/pl-dev-infra/cloud/auth_server_image": "//src/cloud/auth:auth_server_image",
+    "gcr.io/pl-dev-infra/cloud/profile_server_image": "//src/cloud/profile:profile_server_image",
+    "gcr.io/pl-dev-infra/cloud/proxy_server_image": "//src/cloud/proxy:proxy_prod_server_image",
+    "gcr.io/pl-dev-infra/cloud/project_manager_server_image": "//src/cloud/project_manager:project_manager_server_image",
+    "gcr.io/pl-dev-infra/cloud/vzconn_server_image": "//src/cloud/vzconn:vzconn_server_image",
+    "gcr.io/pl-dev-infra/cloud/vzmgr_server_image": "//src/cloud/vzmgr:vzmgr_server_image",
+    "gcr.io/pl-dev-infra/cloud/dnsmgr_server_image": "//src/cloud/dnsmgr:dnsmgr_server_image",
+    "gcr.io/pl-dev-infra/cloud/indexer_server_image": "//src/cloud/indexer:indexer_server_image",
+    "gcr.io/pl-dev-infra/cloud/artifact_tracker_server_image": "//src/cloud/artifact_tracker:artifact_tracker_server_image",
+    "gcr.io/pl-dev-infra/cloud/log_collector_server_image": "//src/cloud/log_collector:log_collector_server_image",
+    "gcr.io/pl-dev-infra/cloud/scriptmgr_server_image": "//src/cloud/scriptmgr:scriptmgr_server_image"
+}
+
+container_bundle(
+    name = "cloud_images_bundle",
+    images = image_map_with_bundle_version(CLOUD_IMAGE_MAP, False),
+)
