@@ -66,7 +66,7 @@ func (s *server) SayHelloBidirStreaming(stream pb.StreamingGreeter_SayHelloBidir
 }
 
 func main() {
-	var port = flag.Int("port", 0, "The port to listen.")
+	var port = flag.Int("port", 50051, "The port to listen.")
 	var https = flag.Bool("https", false, "Whether or not to use https")
 	var cert = flag.String("cert", "", "Path to the .crt file.")
 	var key = flag.String("key", "", "Path to the .key file.")

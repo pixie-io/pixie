@@ -97,16 +97,13 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program,
 }
 
 Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
-  VLOG(1) << absl::Substitute("Deploying kprobe:\n   type=$0\n   kernel_fn=$1\n   trace_fn=$2",
-                              magic_enum::enum_name(probe.attach_type), probe.kernel_fn,
-                              probe.probe_fn);
+  VLOG(1) << "Deploying kprobe: " << probe.ToString();
   DCHECK(probe.attach_type != BPFProbeAttachType::kReturnInsts);
   ebpf::StatusTuple attach_status = bpf_.attach_kprobe(
       bpf_.get_syscall_fnname(std::string(probe.kernel_fn)), std::string(probe.probe_fn),
       0 /* offset */, static_cast<bpf_probe_attach_type>(probe.attach_type), kKprobeMaxActive);
   if (attach_status.code() != 0) {
-    return error::Internal("Failed to attach kprobe to kernel function: $0, error message: $1",
-                           probe.kernel_fn, attach_status.msg());
+    return error::Internal("Failed to attach kprobe: $0", probe.ToString());
   }
   kprobes_.push_back(probe);
   ++num_attached_kprobes_;
@@ -114,10 +111,7 @@ Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
 }
 
 Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
-  VLOG(1) << absl::Substitute(
-      "Deploying uprobe:\n   type=$0\n   binary=$1\n   symbol=$2\n   address=$3\n   trace_fn=$4",
-      magic_enum::enum_name(probe.attach_type), probe.binary_path.string(), probe.symbol,
-      probe.address, probe.probe_fn);
+  VLOG(1) << "Deploying uprobe: " << probe.ToString();
   // TODO(oazizi): Natively support this attach type in BCCWrapper.
   DCHECK(probe.attach_type != BPFProbeAttachType::kReturnInsts);
   DCHECK((probe.symbol.empty() && probe.address != 0) ||
@@ -127,8 +121,7 @@ Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
       probe.binary_path, probe.symbol, std::string(probe.probe_fn), probe.address,
       static_cast<bpf_probe_attach_type>(probe.attach_type), probe.pid);
   if (attach_status.code() != 0) {
-    return error::Internal("Failed to attach uprobe to binary $0 at symbol $1, error message: $2",
-                           probe.binary_path.string(), probe.symbol, attach_status.msg());
+    return error::Internal("Failed to attach uprobe: $0", probe.ToString());
   }
   uprobes_.push_back(probe);
   ++num_attached_uprobes_;
@@ -151,34 +144,30 @@ Status BCCWrapper::AttachUProbes(const ArrayView<UProbeSpec>& probes) {
 
 // TODO(PL-1294): This can fail in rare cases. See the cited issue. Find the root cause.
 Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
-  VLOG(1) << absl::Substitute("Detaching kprobe:\n   kernel_fn=$0\n   trace_fn=$1", probe.kernel_fn,
-                              probe.probe_fn);
+  VLOG(1) << "Detaching kprobe: " << probe.ToString();
   ebpf::StatusTuple detach_status =
       bpf().detach_kprobe(bpf_.get_syscall_fnname(std::string(probe.kernel_fn)),
                           static_cast<bpf_probe_attach_type>(probe.attach_type));
 
   if (detach_status.code() != 0) {
-    return error::Internal("Failed to detach kprobe to kernel function: $0, error message: $1",
-                           probe.kernel_fn, detach_status.msg());
+    return error::Internal("Failed to detach kprobe: $0, error message: $1", probe.ToString(),
+                           detach_status.msg());
   }
   --num_attached_kprobes_;
   return Status::OK();
 }
 
 Status BCCWrapper::DetachUProbe(const UProbeSpec& probe) {
-  VLOG(1) << absl::Substitute(
-      "Detaching uprobe:\n   binary=$0\n   symbol=$1\n   address=$2   trace_fn=$3",
-      probe.binary_path.string(), probe.symbol, probe.address, probe.probe_fn);
+  VLOG(1) << "Detaching uprobe " << probe.ToString();
 
   if (fs::Exists(probe.binary_path).ok()) {
     ebpf::StatusTuple detach_status =
         bpf().detach_uprobe(probe.binary_path, probe.symbol, probe.address,
-                            static_cast<bpf_probe_attach_type>(probe.attach_type));
+                            static_cast<bpf_probe_attach_type>(probe.attach_type), probe.pid);
 
     if (detach_status.code() != 0) {
-      return error::Internal(
-          "Failed to detach uprobe from binary $0 on symbol $1, error message: $2",
-          probe.binary_path.string(), probe.symbol, detach_status.msg());
+      return error::Internal("Failed to detach uprobe $0, error message: $1", probe.ToString(),
+                             detach_status.msg());
     }
   }
   --num_attached_uprobes_;
