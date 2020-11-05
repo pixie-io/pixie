@@ -112,11 +112,6 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
     FLAGS_stirling_enable_parsing_protobufs = true;
   }
 
-  ~HTTP2TraceTest() {
-    client_.Stop();
-    server_.Stop();
-  }
-
   GRPCServerContainer server_;
   GRPCClientContainer client_;
 };
@@ -244,11 +239,6 @@ class ProductCatalogServiceTraceTest
     PL_CHECK_OK(server_.Run(60, {}));
 
     FLAGS_stirling_enable_parsing_protobufs = true;
-  }
-
-  ~ProductCatalogServiceTraceTest() {
-    server_.Stop();
-    client_.Stop();
   }
 
   ProductCatalogService server_;

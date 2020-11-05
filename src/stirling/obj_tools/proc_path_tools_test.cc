@@ -34,9 +34,6 @@ TEST(ObjToolsContainerTest, ResolveFunctions) {
   ASSERT_OK_AND_ASSIGN(std::filesystem::path pid_binary, ResolvePIDBinary(container.process_pid()));
   EXPECT_THAT(pid_binary, StartsWith("/var/lib/docker/overlay2/"));
   EXPECT_THAT(pid_binary, EndsWith("/merged/usr/local/bin/python3.7"));
-
-  // Stop the container (even though destructor will also take care of this).
-  container.Stop();
 }
 
 // Disabled because on Jenkins, proc_path_tools discovers the Jenkins container,

@@ -72,7 +72,6 @@ class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> 
     // Sleep an additional second, just to be safe.
     sleep(1);
   }
-  ~MySQLTraceTest() { container_.Stop(); }
 
   StatusOr<int32_t> RunSQLScript(std::string_view script_path) {
     std::string absl_script_path = TestFilePath(script_path);

@@ -50,11 +50,6 @@ class ContainerRunner {
   StatusOr<std::string> Run(int timeout = 60, const std::vector<std::string>& options = {});
 
   /**
-   * Stops the container by sending it an interrupt signal.
-   */
-  void Stop();
-
-  /**
    * Wait for container to terminate.
    */
   void Wait();
@@ -77,6 +72,11 @@ class ContainerRunner {
   std::string_view container_name() { return std::string_view(container_name_); }
 
  private:
+  /**
+   * Stops the container by sending it an interrupt signal.
+   */
+  void Stop();
+
   // Image to run.
   std::string image_;
 

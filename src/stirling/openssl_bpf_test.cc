@@ -66,7 +66,6 @@ class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ fals
     // Sleep an additional second, just to be safe.
     sleep(1);
   }
-  ~OpenSSLTraceTest() { container_.Stop(); }
 
   NginxContainer container_;
   std::string container_out_;

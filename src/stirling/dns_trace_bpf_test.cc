@@ -43,7 +43,6 @@ class DNSTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
     // Note that this step will make an access to docker hub to download the bind image.
     PL_CHECK_OK(container_.Run(150, {}));
   }
-  ~DNSTraceTest() { container_.Stop(); }
 
   DNSServerContainer container_;
 };

@@ -56,7 +56,6 @@ class CQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
     // Note that this step will make an access to docker hub to  download the Cassandra image.
     PL_CHECK_OK(container_.Run(150, {"--env=DS_LICENSE=accept"}));
   }
-  ~CQLTraceTest() { container_.Stop(); }
 
   CassandraContainer container_;
 };

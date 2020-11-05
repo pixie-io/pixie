@@ -15,7 +15,6 @@ namespace system {
 class NetNamespaceTest : public ::testing::Test {
  protected:
   void SetUp() override { ASSERT_OK(container_.Run()); }
-  void TearDown() override { container_.Stop(); }
 
   DummyTestContainer container_;
 };

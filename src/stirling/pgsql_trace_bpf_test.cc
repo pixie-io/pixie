@@ -55,7 +55,6 @@ class GolangSQLxContainer : public ContainerRunner {
 class PostgreSQLTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ true> {
  protected:
   PostgreSQLTraceTest() { PL_CHECK_OK(container_.Run(150, {"--env=POSTGRES_PASSWORD=docker"})); }
-  ~PostgreSQLTraceTest() { container_.Stop(); }
 
   DataTable data_table_{kPGSQLTable};
 
