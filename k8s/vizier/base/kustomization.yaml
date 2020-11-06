@@ -7,7 +7,6 @@ kind: Kustomization
 namespace: pl
 patchesStrategicMerge:
 - patch_pem_daemonset.yaml
-- patch_logging_pem_daemonset.yaml
 patches:
 - path: patch_sentry.yaml
   target:
@@ -19,7 +18,6 @@ resources:
 - certmgr_role.yaml
 - certmgr_deployment.yaml
 - certmgr_service.yaml
-- fluentbit
 - kelvin_deployment.yaml
 - kelvin_service.yaml
 - metadata_deployment.yaml
