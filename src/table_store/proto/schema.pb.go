@@ -712,7 +712,9 @@ func init() {
 	proto.RegisterMapType((map[string]*Relation)(nil), "pl.table_store.schemapb.Schema.RelationMapEntry")
 }
 
-func init() { proto.RegisterFile("src/table_store/proto/schema.proto", fileDescriptor_ce184cc4e6678cf8) }
+func init() {
+	proto.RegisterFile("src/table_store/proto/schema.proto", fileDescriptor_ce184cc4e6678cf8)
+}
 
 var fileDescriptor_ce184cc4e6678cf8 = []byte{
 	// 796 bytes of a gzipped FileDescriptorProto

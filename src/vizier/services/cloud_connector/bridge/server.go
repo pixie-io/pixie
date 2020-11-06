@@ -127,7 +127,7 @@ type VizierInfo interface {
 	GetJob(string) (*batchv1.Job, error)
 	GetClusterUID() (string, error)
 	UpdateClusterID(string) error
-	GetPodLogs(string, bool) (string, error)
+	GetPodLogs(string, bool, string) (string, error)
 }
 
 // VizierHealthChecker is the interface that gets information on health of a Vizier.
@@ -480,7 +480,7 @@ func (s *Bridge) handleDebugLogRequest(msg *cvmsgspb.C2VAPIStreamRequest) error 
 	topic := fmt.Sprintf("v2c.reply-%s", reqID)
 	debugReq := msg.GetDebugLogReq()
 
-	logs, err := s.vzInfo.GetPodLogs(debugReq.PodName, debugReq.Previous)
+	logs, err := s.vzInfo.GetPodLogs(debugReq.PodName, debugReq.Previous, debugReq.Container)
 	if err != nil {
 		s.sendPTStatusMessage(reqID, codes.NotFound, err.Error())
 		return err

@@ -6380,7 +6380,8 @@ proto.pl.api.vizierpb.DebugLogRequest.toObject = function(includeInstance, msg) 
   var f, obj = {
     clusterId: jspb.Message.getFieldWithDefault(msg, 1, ""),
     podName: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    previous: jspb.Message.getBooleanFieldWithDefault(msg, 3, false)
+    previous: jspb.Message.getBooleanFieldWithDefault(msg, 3, false),
+    container: jspb.Message.getFieldWithDefault(msg, 4, "")
   };
 
   if (includeInstance) {
@@ -6429,6 +6430,10 @@ proto.pl.api.vizierpb.DebugLogRequest.deserializeBinaryFromReader = function(msg
       var value = /** @type {boolean} */ (reader.readBool());
       msg.setPrevious(value);
       break;
+    case 4:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setContainer(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -6476,6 +6481,13 @@ proto.pl.api.vizierpb.DebugLogRequest.serializeBinaryToWriter = function(message
   if (f) {
     writer.writeBool(
       3,
+      f
+    );
+  }
+  f = message.getContainer();
+  if (f.length > 0) {
+    writer.writeString(
+      4,
       f
     );
   }
@@ -6533,6 +6545,24 @@ proto.pl.api.vizierpb.DebugLogRequest.prototype.getPrevious = function() {
  */
 proto.pl.api.vizierpb.DebugLogRequest.prototype.setPrevious = function(value) {
   return jspb.Message.setProto3BooleanField(this, 3, value);
+};
+
+
+/**
+ * optional string container = 4;
+ * @return {string}
+ */
+proto.pl.api.vizierpb.DebugLogRequest.prototype.getContainer = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 4, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.pl.api.vizierpb.DebugLogRequest} returns this
+ */
+proto.pl.api.vizierpb.DebugLogRequest.prototype.setContainer = function(value) {
+  return jspb.Message.setProto3StringField(this, 4, value);
 };
 
 

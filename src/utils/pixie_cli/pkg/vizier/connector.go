@@ -252,11 +252,12 @@ type DebugLogResponse struct {
 }
 
 // DebugLogRequest sends a debug log request and returns data in a chan.
-func (c *Connector) DebugLogRequest(ctx context.Context, podName string, prev bool) (chan *DebugLogResponse, error) {
+func (c *Connector) DebugLogRequest(ctx context.Context, podName string, prev bool, container string) (chan *DebugLogResponse, error) {
 	reqPB := &pl_api_vizierpb.DebugLogRequest{
 		ClusterID: c.id.String(),
 		PodName:   podName,
 		Previous:  prev,
+		Container: container,
 	}
 	if c.passthroughEnabled {
 		var err error

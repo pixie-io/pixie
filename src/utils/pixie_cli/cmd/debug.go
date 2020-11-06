@@ -19,6 +19,7 @@ func init() {
 	DebugCmd.PersistentFlags().StringP("cluster", "c", "", "Run only on selected cluster")
 
 	DebugLogCmd.Flags().BoolP("previous", "p", false, "Show log from previous pod instead.")
+	DebugLogCmd.Flags().StringP("container", "n", "", "The container to get logs from.")
 }
 
 // DebugCmd has internal debug functionality.
@@ -44,6 +45,7 @@ var DebugLogCmd = &cobra.Command{
 		cloudAddr := viper.GetString("cloud_addr")
 		selectedCluster, _ := cmd.Flags().GetString("cluster")
 		clusterID := uuid.FromStringOrNil(selectedCluster)
+		container, _ := cmd.Flags().GetString("container")
 
 		if clusterID == uuid.Nil {
 			clusterID, err = vizier.FirstHealthyVizier(cloudAddr)
@@ -55,6 +57,7 @@ var DebugLogCmd = &cobra.Command{
 
 		fmt.Printf("Pod Name: %s\n", podName)
 		fmt.Printf("Cluster ID : %s\n", clusterID.String())
+		fmt.Printf("Container: %s\n", container)
 
 		conn, err := vizier.ConnectionToVizierByID(cloudAddr, clusterID)
 		if err != nil {
@@ -63,7 +66,7 @@ var DebugLogCmd = &cobra.Command{
 		}
 
 		prev, _ := cmd.Flags().GetBool("previous")
-		resp, err := conn.DebugLogRequest(context.Background(), podName, prev)
+		resp, err := conn.DebugLogRequest(context.Background(), podName, prev, container)
 		if err != nil {
 			cliLog.WithError(err).Error("Logging failed")
 			os.Exit(1)

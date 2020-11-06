@@ -305,6 +305,9 @@ message DebugLogRequest {
   string pod_name = 2;
   // Return the log for the previous instance instead of the current active one.
   bool previous = 3;
+  // The name of the container to get logs from. If none is specified and there is only a
+  // single container on the pod, then that one is chosen.
+  string container = 4;
 }
 
 message DebugLogResponse {

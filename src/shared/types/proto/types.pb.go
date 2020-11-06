@@ -245,7 +245,9 @@ func init() {
 	proto.RegisterType((*UInt128)(nil), "pl.types.UInt128")
 }
 
-func init() { proto.RegisterFile("src/shared/types/proto/types.proto", fileDescriptor_6a0f3bae72116e90) }
+func init() {
+	proto.RegisterFile("src/shared/types/proto/types.proto", fileDescriptor_6a0f3bae72116e90)
+}
 
 var fileDescriptor_6a0f3bae72116e90 = []byte{
 	// 672 bytes of a gzipped FileDescriptorProto

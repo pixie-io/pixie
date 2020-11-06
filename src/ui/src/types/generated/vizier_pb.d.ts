@@ -768,6 +768,9 @@ export class DebugLogRequest extends jspb.Message {
   getPrevious(): boolean;
   setPrevious(value: boolean): void;
 
+  getContainer(): string;
+  setContainer(value: string): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): DebugLogRequest.AsObject;
   static toObject(includeInstance: boolean, msg: DebugLogRequest): DebugLogRequest.AsObject;
@@ -781,6 +784,7 @@ export namespace DebugLogRequest {
     clusterId: string,
     podName: string,
     previous: boolean,
+    container: string,
   }
 }
 

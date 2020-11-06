@@ -353,7 +353,9 @@ func init() {
 	proto.RegisterType((*MainFuncSpecResult)(nil), "pl.shared.scriptspb.MainFuncSpecResult")
 }
 
-func init() { proto.RegisterFile("src/shared/scriptspb/scripts.proto", fileDescriptor_4aa89baec43fda2f) }
+func init() {
+	proto.RegisterFile("src/shared/scriptspb/scripts.proto", fileDescriptor_4aa89baec43fda2f)
+}
 
 var fileDescriptor_4aa89baec43fda2f = []byte{
 	// 617 bytes of a gzipped FileDescriptorProto

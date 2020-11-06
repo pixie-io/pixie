@@ -199,8 +199,8 @@ func nanosToTimestampProto(nanos int64) *types.Timestamp {
 }
 
 // GetPodLogs gets the k8s logs for the pod with the given name.
-func (v *K8sVizierInfo) GetPodLogs(podName string, previous bool) (string, error) {
-	resp := v.clientset.CoreV1().Pods(plNamespace).GetLogs(podName, &corev1.PodLogOptions{Previous: previous}).Do(context.Background())
+func (v *K8sVizierInfo) GetPodLogs(podName string, previous bool, container string) (string, error) {
+	resp := v.clientset.CoreV1().Pods(plNamespace).GetLogs(podName, &corev1.PodLogOptions{Previous: previous, Container: container}).Do(context.Background())
 	rawResp, err := resp.Raw()
 	if err != nil {
 		return "", err
