@@ -45,6 +45,9 @@ class ASIDUDF : public ScalarUDF {
         .Example("df.agent = px.asid()")
         .Returns("The agent ID.");
   }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<ASIDUDF>(types::ST_ASID, {types::ST_NONE})};
+  }
 };
 
 class UPIDToASIDUDF : public ScalarUDF {
@@ -58,6 +61,9 @@ class UPIDToASIDUDF : public ScalarUDF {
         .Example("df.agent_id = px.upid_to_asid(df.upid)")
         .Arg("upid", "The UPID of the process to get the Pixie Agent ID for.")
         .Returns("The Pixie Agent ID for the UPID passed in.");
+  }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<UPIDToASIDUDF>(types::ST_ASID, {types::ST_NONE})};
   }
 };
 
