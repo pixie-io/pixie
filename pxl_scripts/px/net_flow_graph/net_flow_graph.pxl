@@ -1,29 +1,47 @@
 # Copyright (c) Pixie Labs, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License")
 
-''' Connections to a list of remote IPs
-Finds services that have traffic to a list of IP addresses
-Calculates total bandwidth for the lifetime of the connection.
-'''
 import px
 
 
-def net_flow_graph(start: str, ips: list, grouping_entity: str):
+def net_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_entity_filter: str):
     df = px.DataFrame('conn_stats', start_time=start)
-    df = df[px.equals_any(df.remote_addr, ips)]
 
-    # Add the grouping entity column.
-    df['from_entity'] = df.ctx[grouping_entity]
+    # Filter on namespace.
+    df = df[df.ctx['namespace'] == ns]
 
-    # Insert the cmdline.
-    df.cmdline = df.ctx['cmd']
-    # Aggregate the connections.
-    df = df.groupby(['from_entity', 'upid', 'cmdline', 'remote_addr']).agg(
+    # Filter for client side requests.
+    df = df[df['role'] == 1]
+
+    # Store the pod. Ideally this would be done after the aggregate,
+    # but that's not working right now.
+    df['pod'] = df.ctx['pod']
+
+    # Filter out any non k8s sources.
+    df = df[df['pod'] != '']
+
+    # Use aggregate to pick the latest sample for any given client-server pair.
+    # We do this by picking the max of the stats, since they are all counters.
+    df = df.groupby(['pod', 'upid', 'remote_addr']).agg(
         bytes_sent=('bytes_sent', px.max),
         bytes_recv=('bytes_recv', px.max),
     )
-    df = df[df['from_entity'] != '']
-    # Look up the names of the remote address.
-    df.to_entity = px.nslookup(df.remote_addr)
     df.bytes_total = df.bytes_sent + df.bytes_recv
-    return df.drop(['remote_addr'])
+
+    # To create a graph, add 'from' and 'to' entities.
+    df['from_entity'] = df.pod
+    df['to_entity'] = px.nslookup(df.remote_addr)
+
+    # Filter out entities as specified by the user.
+    df = df[px.contains(df.from_entity, from_entity_filter)]
+    df = df[px.contains(df.to_entity, to_entity_filter)]
+
+    # Since there may be multiple processes per pod,
+    # perform an additional aggregation to consolidate those into one entry.
+    df = df.groupby(['from_entity', 'to_entity']).agg(
+        bytes_sent=('bytes_sent', px.sum),
+        bytes_recv=('bytes_recv', px.sum),
+        bytes_total=('bytes_total', px.sum)
+    )
+
+    return df
