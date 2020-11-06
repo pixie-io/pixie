@@ -24,14 +24,11 @@ using pl::shared::scriptspb::MainFuncSpecResult;
 using pl::shared::scriptspb::VisFuncsInfoResult;
 
 PlannerPtr PlannerNew(const char* udf_info_data, int udf_info_len) {
-  std::string udf_info_str(udf_info_data, udf_info_data + udf_info_len);
+  std::string udf_info_pb_str(udf_info_data, udf_info_data + udf_info_len);
   pl::carnot::udfspb::UDFInfo udf_info_pb;
 
-  bool did_udf_info_pb_load =
-      google::protobuf::TextFormat::MergeFromString(udf_info_str, &udf_info_pb);
-
-  CHECK(did_udf_info_pb_load) << absl::Substitute("Couldn't process the udf_info: $0.",
-                                                  udf_info_str);
+  bool did_udf_info_pb_load = udf_info_pb.ParseFromString(udf_info_pb_str);
+  CHECK(did_udf_info_pb_load) << "Couldn't process the udf_info";
 
   auto planner_or_s = pl::carnot::planner::LogicalPlanner::Create(udf_info_pb);
   if (!planner_or_s.ok()) {
@@ -52,12 +49,10 @@ PlannerPtr PlannerNew(const char* udf_info_data, int udf_info_len) {
 
 pl::Status LoadProto(const std::string& serialized_proto, google::protobuf::Message* output,
                      const std::string& error_msg) {
-  // TODO(philkuz) convert this to read serialized calls instead of human readable.
-  bool merge_success = google::protobuf::TextFormat::MergeFromString(serialized_proto, output);
-  if (!merge_success) {
-    std::string err = absl::Substitute("$1, serialize_input: '$0'", serialized_proto, error_msg);
-    LOG(ERROR) << err;
-    return pl::Status(pl::statuspb::INVALID_ARGUMENT, err);
+  bool success = output->ParseFromString(serialized_proto);
+  if (!success) {
+    LOG(ERROR) << error_msg;
+    return pl::Status(pl::statuspb::INVALID_ARGUMENT, error_msg);
   }
   return pl::Status::OK();
 }
@@ -79,15 +74,9 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
 
   // Load in the query request protobuf.
   pl::carnot::planner::plannerpb::QueryRequest query_request_pb;
-  // TODO(philkuz) convert this to read serialized calls instead of human readable.
-  bool query_request_merge_success =
-      google::protobuf::TextFormat::MergeFromString(query_request_pb_str, &query_request_pb);
-  if (!query_request_merge_success) {
-    std::string err =
-        absl::Substitute("Failed to process the query request: $0.", query_request_pb_str);
-    LOG(ERROR) << err;
-    return ExitEarly<LogicalPlannerResult>(err, resultLen);
-  }
+  PLANNER_RETURN_IF_ERROR(
+      LogicalPlannerResult, resultLen,
+      LoadProto(query_request_pb_str, &query_request_pb, "Failed to process the query request"));
 
   auto planner = reinterpret_cast<pl::carnot::planner::LogicalPlanner*>(planner_ptr);
 
@@ -127,20 +116,20 @@ char* PlannerCompileMutations(PlannerPtr planner_ptr, const char* planner_state_
                                       mutation_request_str_c + mutation_request_str_len);
 
   // Load in the planner state protobuf.
-  pl::carnot::planner::distributedpb::LogicalPlannerState planner_state;
-  PLANNER_RETURN_IF_ERROR(
-      CompileMutationsResponse, resultLen,
-      LoadProto(planner_state_pb_str, &planner_state, "Failed to parse the logical planner state"));
+  pl::carnot::planner::distributedpb::LogicalPlannerState planner_state_pb;
+  PLANNER_RETURN_IF_ERROR(CompileMutationsResponse, resultLen,
+                          LoadProto(planner_state_pb_str, &planner_state_pb,
+                                    "Failed to parse the logical planner state"));
 
   // Load in the mutation request protobuf.
-  pl::carnot::planner::plannerpb::CompileMutationsRequest mutation_request;
+  pl::carnot::planner::plannerpb::CompileMutationsRequest mutation_request_pb;
   PLANNER_RETURN_IF_ERROR(CompileMutationsResponse, resultLen,
-                          LoadProto(mutation_request_pb_str, &mutation_request,
+                          LoadProto(mutation_request_pb_str, &mutation_request_pb,
                                     "Failed to parse the mutation request"));
 
   auto planner = reinterpret_cast<pl::carnot::planner::LogicalPlanner*>(planner_ptr);
 
-  auto dynamic_trace_or_s = planner->CompileTrace(planner_state, mutation_request);
+  auto dynamic_trace_or_s = planner->CompileTrace(planner_state_pb, mutation_request_pb);
   if (!dynamic_trace_or_s.ok()) {
     return ExitEarly<CompileMutationsResponse>(dynamic_trace_or_s.status(), resultLen);
   }
@@ -164,14 +153,9 @@ char* PlannerGetMainFuncArgsSpec(PlannerPtr planner_ptr, const char* query_reque
   std::string query_request_pb_str(query_request_str_c,
                                    query_request_str_c + query_request_str_len);
   pl::carnot::planner::plannerpb::QueryRequest query_request_pb;
-  bool query_request_merge_success =
-      google::protobuf::TextFormat::MergeFromString(query_request_pb_str, &query_request_pb);
-  if (!query_request_merge_success) {
-    std::string err =
-        absl::Substitute("Failed to process the query request: $0.", query_request_pb_str);
-    LOG(ERROR) << err;
-    return ExitEarly<MainFuncSpecResult>(err, resultLen);
-  }
+  PLANNER_RETURN_IF_ERROR(
+      MainFuncSpecResult, resultLen,
+      LoadProto(query_request_pb_str, &query_request_pb, "Failed to process the query request"));
 
   auto planner = reinterpret_cast<pl::carnot::planner::LogicalPlanner*>(planner_ptr);
 

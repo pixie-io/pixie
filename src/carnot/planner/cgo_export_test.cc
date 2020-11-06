@@ -31,7 +31,7 @@ class PlannerExportTest : public ::testing::Test {
   void SetUp() override {
     // TODO(philkuz/zasgar) need to import the udf_info str here once we have the genrule.
     // or figure out a different way to handle this.
-    udf_info_str_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb().DebugString();
+    udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb().SerializeToString(&udf_info_str_);
   }
 
   plannerpb::QueryRequest MakeQueryRequest(const std::string& query) {
@@ -52,76 +52,26 @@ class PlannerExportTest : public ::testing::Test {
   std::string udf_info_str_;
 };
 
-StatusOr<std::string> PlannerPlanGoStr(PlannerPtr planner_ptr, std::string planner_state,
-                                       std::string query_result, int* resultLen) {
-  char* result = PlannerPlan(planner_ptr, planner_state.c_str(), planner_state.length(),
-                             query_result.c_str(), query_result.length(), resultLen);
-  if (*resultLen == 0) {
-    return error::InvalidArgument("Planner failed to return.");
-  }
-
-  std::string lp_str(result, result + *resultLen);
-  delete[] result;
-  return lp_str;
-}
-
-StatusOr<std::string> PlannerCompileMutationsGoStr(PlannerPtr planner_ptr,
-                                                   std::string planner_state,
-                                                   std::string compile_mutation_request,
-                                                   int* resultLen) {
-  char* result = PlannerCompileMutations(planner_ptr, planner_state.c_str(), planner_state.length(),
-                                         compile_mutation_request.c_str(),
-                                         compile_mutation_request.length(), resultLen);
-  if (*resultLen == 0) {
-    return error::InvalidArgument("Planner failed to return.");
-  }
-
-  std::string lp_str(result, result + *resultLen);
-  delete[] result;
-  return lp_str;
-}
-
-StatusOr<std::string> PlannerGetMainFuncArgsSpecGoStr(PlannerPtr planner_ptr,
-                                                      std::string query_request, int* resultLen) {
-  char* result = PlannerGetMainFuncArgsSpec(planner_ptr, query_request.c_str(),
-                                            query_request.length(), resultLen);
-
-  if (*resultLen == 0) {
-    return error::InvalidArgument("GetMainFuncArgsSpec failed to return");
-  }
-
-  std::string flags_spec_str(result, result + *resultLen);
-  delete[] result;
-  return flags_spec_str;
-}
-
-StatusOr<std::string> PlannerVisFuncsInfoGoStr(PlannerPtr planner_ptr, std::string query,
-                                               int* resultLen) {
-  char* result = PlannerVisFuncsInfo(planner_ptr, query.c_str(), query.length(), resultLen);
-
-  if (*resultLen == 0) {
-    return error::InvalidArgument("VisFuncsInfo failed to return");
-  }
-
-  std::string result_str(result, result + *resultLen);
-  delete[] result;
-  return result_str;
-}
-
 // TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
 TEST_F(PlannerExportTest, DISABLED_one_pem_one_kelvin_query_test) {
   planner_ = MakePlanner();
   int result_len;
+  std::string logical_planner_state;
+  ASSERT_TRUE(
+      testutils::CreateTwoPEMsOneKelvinPlannerState().SerializeToString(&logical_planner_state));
   std::string query = "import px\ndf = px.DataFrame(table='table1')\npx.display(df, 'out')";
-  auto query_request = MakeQueryRequest(query);
+  std::string query_request;
+  ASSERT_TRUE(MakeQueryRequest(query).SerializeToString(&query_request));
 
-  auto logical_planner_state = testutils::CreateTwoPEMsOneKelvinPlannerState();
-  auto interface_result = PlannerPlanGoStr(planner_, logical_planner_state.DebugString(),
-                                           query_request.DebugString(), &result_len);
-  ASSERT_OK(interface_result);
+  auto interface_result =
+      PlannerPlan(planner_, logical_planner_state.c_str(), logical_planner_state.length(),
+                  query_request.c_str(), query_request.length(), &result_len);
+  ASSERT_GT(result_len, 0);
 
   distributedpb::LogicalPlannerResult planner_result;
-  ASSERT_TRUE(planner_result.ParseFromString(interface_result.ConsumeValueOrDie()));
+  ASSERT_TRUE(
+      planner_result.ParseFromString(std::string(interface_result, interface_result + result_len)));
+  delete[] interface_result;
   ASSERT_OK(planner_result.status());
   std::string expected_planner_result_str =
       absl::Substitute("plan {$0}", testutils::kExpectedPlanTwoPEMOneKelvin);
@@ -132,19 +82,24 @@ TEST_F(PlannerExportTest, DISABLED_one_pem_one_kelvin_query_test) {
 TEST_F(PlannerExportTest, bad_queries) {
   planner_ = MakePlanner();
   int result_len;
+  std::string logical_planner_state;
+  ASSERT_TRUE(testutils::CreateTwoPEMsPlannerState().SerializeToString(&logical_planner_state));
   // Bad table name query that should yield a compiler error.
   std::string bad_table_query =
       "import px\n"
       "df = px.DataFrame(table='bad_table_name')\n"
       "px.display(df, 'out')";
-  auto logical_planner_state = testutils::CreateTwoPEMsPlannerState();
-  auto query_request = MakeQueryRequest(bad_table_query);
-  auto interface_result = PlannerPlanGoStr(planner_, logical_planner_state.DebugString(),
-                                           query_request.DebugString(), &result_len);
+  std::string query_request;
+  ASSERT_TRUE(MakeQueryRequest(bad_table_query).SerializeToString(&query_request));
+  auto interface_result =
+      PlannerPlan(planner_, logical_planner_state.c_str(), logical_planner_state.length(),
+                  query_request.c_str(), query_request.length(), &result_len);
   // The compiler should successfully compile and a proto should be returned.
-  ASSERT_OK(interface_result);
+  ASSERT_GT(result_len, 0);
   distributedpb::LogicalPlannerResult planner_result_pb;
-  ASSERT_TRUE(planner_result_pb.ParseFromString(interface_result.ConsumeValueOrDie()));
+  ASSERT_TRUE(planner_result_pb.ParseFromString(
+      std::string(interface_result, interface_result + result_len)));
+  delete[] interface_result;
   EXPECT_NOT_OK(planner_result_pb.status());
   EXPECT_THAT(planner_result_pb.status(), HasCompilerError("Table 'bad_table_name' not found."));
 }
@@ -160,29 +115,40 @@ px.display(t1)
 // would cause a segfault. If this unit test passes, then that bug should be gone.
 TEST_F(PlannerExportTest, udf_in_query) {
   planner_ = MakePlanner();
-  auto logical_planner_state = testutils::CreateTwoPEMsOneKelvinPlannerState();
   int result_len;
-  auto query_request = MakeQueryRequest(kUDFQuery);
-  auto interface_result = PlannerPlanGoStr(planner_, logical_planner_state.DebugString(),
-                                           query_request.DebugString(), &result_len);
+  std::string logical_planner_state;
+  ASSERT_TRUE(
+      testutils::CreateTwoPEMsOneKelvinPlannerState().SerializeToString(&logical_planner_state));
+  std::string query_request;
+  ASSERT_TRUE(MakeQueryRequest(kUDFQuery).SerializeToString(&query_request));
+  auto interface_result =
+      PlannerPlan(planner_, logical_planner_state.c_str(), logical_planner_state.length(),
+                  query_request.c_str(), query_request.length(), &result_len);
   // The compiler should successfully compile and a proto should be returned.
-  ASSERT_OK(interface_result);
+  ASSERT_GT(result_len, 0);
   distributedpb::LogicalPlannerResult planner_result_pb;
-  ASSERT_TRUE(planner_result_pb.ParseFromString(interface_result.ConsumeValueOrDie()));
+  ASSERT_TRUE(planner_result_pb.ParseFromString(
+      std::string(interface_result, interface_result + result_len)));
+  delete[] interface_result;
   EXPECT_OK(planner_result_pb.status());
 }
 
 TEST_F(PlannerExportTest, pass_query_string_instead_of_req_should_fail) {
   planner_ = MakePlanner();
-  auto logical_planner_state = testutils::CreateTwoPEMsOneKelvinPlannerState();
+  std::string logical_planner_state;
+  ASSERT_TRUE(
+      testutils::CreateTwoPEMsOneKelvinPlannerState().SerializeToString(&logical_planner_state));
   int result_len;
   // Pass in kUDFQuery instead of query_request object here.
   auto interface_result =
-      PlannerPlanGoStr(planner_, logical_planner_state.DebugString(), kUDFQuery, &result_len);
+      PlannerPlan(planner_, logical_planner_state.c_str(), logical_planner_state.length(),
+                  kUDFQuery, sizeof(kUDFQuery), &result_len);
   // The compiler should successfully compile and a proto should be returned.
-  ASSERT_OK(interface_result);
+  ASSERT_GT(result_len, 0);
   distributedpb::LogicalPlannerResult planner_result_pb;
-  ASSERT_TRUE(planner_result_pb.ParseFromString(interface_result.ConsumeValueOrDie()));
+  ASSERT_TRUE(planner_result_pb.ParseFromString(
+      std::string(interface_result, interface_result + result_len)));
+  delete[] interface_result;
   ASSERT_NOT_OK(planner_result_pb.status());
   EXPECT_THAT(planner_result_pb.status().msg(),
               ::testing::ContainsRegex("Failed to process the query request.*"));
@@ -208,13 +174,16 @@ args {
 TEST_F(PlannerExportTest, GetMainFuncArgsSpec) {
   planner_ = MakePlanner();
   int result_len;
-  auto query_request = MakeQueryRequest(kMainFuncArgsQuery);
-  auto interface_result =
-      PlannerGetMainFuncArgsSpecGoStr(planner_, query_request.DebugString(), &result_len);
+  std::string query_request;
+  ASSERT_TRUE(MakeQueryRequest(kMainFuncArgsQuery).SerializeToString(&query_request));
+  auto interface_result = PlannerGetMainFuncArgsSpec(planner_, query_request.c_str(),
+                                                     query_request.length(), &result_len);
 
-  ASSERT_OK(interface_result);
+  ASSERT_GT(result_len, 0);
   pl::shared::scriptspb::MainFuncSpecResult main_funcs_info_result;
-  ASSERT_TRUE(main_funcs_info_result.ParseFromString(interface_result.ConsumeValueOrDie()));
+  ASSERT_TRUE(main_funcs_info_result.ParseFromString(
+      std::string(interface_result, interface_result + result_len)));
+  delete[] interface_result;
   EXPECT_OK(main_funcs_info_result.status());
   EXPECT_THAT(main_funcs_info_result.main_func_spec(), EqualsProto(kMainFuncArgs));
 }
@@ -293,11 +262,14 @@ fn_args_map {
 TEST_F(PlannerExportTest, get_vis_funcs_info) {
   planner_ = MakePlanner();
   int result_len;
-  auto interface_result = PlannerVisFuncsInfoGoStr(planner_, kVisFuncsQuery, &result_len);
+  auto interface_result =
+      PlannerVisFuncsInfo(planner_, kVisFuncsQuery, sizeof(kVisFuncsQuery), &result_len);
 
-  ASSERT_OK(interface_result);
+  ASSERT_GT(result_len, 0);
   pl::shared::scriptspb::VisFuncsInfoResult vis_funcs_result;
-  ASSERT_TRUE(vis_funcs_result.ParseFromString(interface_result.ConsumeValueOrDie()));
+  ASSERT_TRUE(vis_funcs_result.ParseFromString(
+      std::string(interface_result, interface_result + result_len)));
+  delete[] interface_result;
   EXPECT_OK(vis_funcs_result.status());
   EXPECT_THAT(vis_funcs_result.info(), EqualsProto(kExpectedVisFuncsInfoPb));
 }
@@ -368,15 +340,21 @@ tracepoints {
 
 TEST_F(PlannerExportTest, compile_probe_def) {
   planner_ = MakePlanner();
-  auto logical_planner_state = testutils::CreateTwoPEMsOneKelvinPlannerState();
   int result_len;
-  auto interface_result = PlannerCompileMutationsGoStr(
-      planner_, logical_planner_state.DebugString(),
-      MakeCompileMutationsRequest(kPxTraceQuery).DebugString(), &result_len);
+  std::string logical_planner_state;
+  ASSERT_TRUE(
+      testutils::CreateTwoPEMsOneKelvinPlannerState().SerializeToString(&logical_planner_state));
+  std::string mutation_request;
+  ASSERT_TRUE(MakeCompileMutationsRequest(kPxTraceQuery).SerializeToString(&mutation_request));
+  auto interface_result = PlannerCompileMutations(
+      planner_, logical_planner_state.c_str(), logical_planner_state.length(),
+      mutation_request.c_str(), mutation_request.length(), &result_len);
 
-  ASSERT_OK(interface_result);
+  ASSERT_GT(result_len, 0);
   plannerpb::CompileMutationsResponse mutations_response_pb;
-  ASSERT_TRUE(mutations_response_pb.ParseFromString(interface_result.ConsumeValueOrDie()));
+  ASSERT_TRUE(mutations_response_pb.ParseFromString(
+      std::string(interface_result, interface_result + result_len)));
+  delete[] interface_result;
   ASSERT_OK(mutations_response_pb.status());
   ASSERT_EQ(mutations_response_pb.mutations().size(), 1);
   EXPECT_THAT(mutations_response_pb.mutations()[0].trace(), EqualsProto(kExpectedTracePb));
@@ -403,15 +381,22 @@ mutations {
 
 TEST_F(PlannerExportTest, compile_delete_tracepoint) {
   planner_ = MakePlanner();
-  auto logical_planner_state = testutils::CreateTwoPEMsOneKelvinPlannerState();
   int result_len;
-  auto interface_result = PlannerCompileMutationsGoStr(
-      planner_, logical_planner_state.DebugString(),
-      MakeCompileMutationsRequest(kExpectedDeleteTracepointsPxl).DebugString(), &result_len);
+  std::string logical_planner_state;
+  ASSERT_TRUE(
+      testutils::CreateTwoPEMsOneKelvinPlannerState().SerializeToString(&logical_planner_state));
+  std::string mutation_request;
+  ASSERT_TRUE(MakeCompileMutationsRequest(kExpectedDeleteTracepointsPxl)
+                  .SerializeToString(&mutation_request));
+  auto interface_result = PlannerCompileMutations(
+      planner_, logical_planner_state.c_str(), logical_planner_state.length(),
+      mutation_request.c_str(), mutation_request.length(), &result_len);
 
-  ASSERT_OK(interface_result);
+  ASSERT_GT(result_len, 0);
   plannerpb::CompileMutationsResponse mutations_response_pb;
-  ASSERT_TRUE(mutations_response_pb.ParseFromString(interface_result.ConsumeValueOrDie()));
+  ASSERT_TRUE(mutations_response_pb.ParseFromString(
+      std::string(interface_result, interface_result + result_len)));
+  delete[] interface_result;
   ASSERT_OK(mutations_response_pb.status());
   EXPECT_THAT(mutations_response_pb, EqualsProto(kExpectedDeleteTracepointsMutationPb));
 }

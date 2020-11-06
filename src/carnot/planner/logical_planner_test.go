@@ -107,7 +107,10 @@ func TestPlanner_Simple(t *testing.T) {
 	if !assert.Nil(t, err) {
 		t.FailNow()
 	}
-	c := logicalplanner.New(&udfInfoPb)
+	c, err := logicalplanner.New(&udfInfoPb)
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
 	query := "import px\ndf = px.DataFrame(table='table1')\npx.display(df, 'out')"
@@ -170,7 +173,10 @@ func TestPlanner_Simple(t *testing.T) {
 
 func TestPlanner_MissingTable(t *testing.T) {
 	// Create the compiler.
-	c := logicalplanner.New(&udfspb.UDFInfo{})
+	c, err := logicalplanner.New(&udfspb.UDFInfo{})
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
 	query := "import px\ndf = px.DataFrame(table='bad_table')\npx.display(df, 'out')"
@@ -209,7 +215,10 @@ func TestPlanner_MissingTable(t *testing.T) {
 // This test makes sure the logicalplanner actually works if an empty string is passed in.
 func TestPlanner_EmptyString(t *testing.T) {
 	// Create the compiler.
-	c := logicalplanner.New(&udfspb.UDFInfo{})
+	c, err := logicalplanner.New(&udfspb.UDFInfo{})
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
 	defer c.Free()
 	// Empty string should yield a status error not a CHECK failure in cgo_export.
 	query := ""
@@ -247,7 +256,10 @@ const mainFuncArgsPBStr = `
 
 func TestPlanner_GetMainFuncArgsSpec(t *testing.T) {
 	// Create the planner.
-	c := logicalplanner.New(&udfspb.UDFInfo{})
+	c, err := logicalplanner.New(&udfspb.UDFInfo{})
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
 	defer c.Free()
 	// Note that the string can't be empty since the cgo interface treats an empty string
 	// as an error
@@ -283,7 +295,10 @@ func TestPlanner_GetMainFuncArgsSpec(t *testing.T) {
 
 func TestPlanner_GetMainFuncArgsSpec_BadQuery(t *testing.T) {
 	// Create the compiler.
-	c := logicalplanner.New(&udfspb.UDFInfo{})
+	c, err := logicalplanner.New(&udfspb.UDFInfo{})
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
 	defer c.Free()
 	// query doesn't have a main function so should throw error.
 	query := "import px\npx.display(px.DataFrame('http_events'))"
@@ -374,7 +389,10 @@ fn_args_map {
 `
 
 func TestPlanner_ExtractVisFuncsInfo(t *testing.T) {
-	c := logicalplanner.New(&udfspb.UDFInfo{})
+	c, err := logicalplanner.New(&udfspb.UDFInfo{})
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
 	defer c.Free()
 
 	visFuncsResult, err := c.ExtractVisFuncsInfo(visFuncsQuery)
@@ -474,7 +492,10 @@ func TestPlanner_CompileRequest(t *testing.T) {
 	if !assert.Nil(t, err) {
 		t.FailNow()
 	}
-	c := logicalplanner.New(&udfInfoPb)
+	c, err := logicalplanner.New(&udfInfoPb)
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
 	plannerStatePB := new(distributedpb.LogicalPlannerState)

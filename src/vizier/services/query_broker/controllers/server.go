@@ -90,9 +90,13 @@ func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker,
 	if err := loadUDFInfo(&udfInfo); err != nil {
 		return nil, err
 	}
+	c, err := logicalplanner.New(&udfInfo)
+	if err != nil {
+		return nil, err
+	}
 
 	return NewServerWithForwarderAndPlanner(env, agentsTracker, NewQueryResultForwarder(), mds,
-		natsConn, logicalplanner.New(&udfInfo))
+		natsConn, c)
 }
 
 // NewServerWithForwarderAndPlanner is NewServer with a QueryResultForwarder and a planner generating func.

@@ -2,52 +2,8 @@ package logicalplanner
 
 // // The following is live code even though it is commented out.
 // // If you delete it, the planner will break.
+// #include <stdlib.h>
 // #include "src/carnot/planner/cgo_export.h"
-//
-// PlannerPtr PlannerNewGoStr(_GoString_ udf_info) {
-//   return PlannerNew(_GoStringPtr(udf_info), _GoStringLen(udf_info));
-// }
-//
-// char* PlannerPlanGoStr(PlannerPtr planner_ptr,
-// 													 _GoString_ planner_state,
-// 													 _GoString_ query_request,
-// 													 int* resultLen) {
-//   return PlannerPlan(planner_ptr,
-//   											 _GoStringPtr(planner_state),
-//   											 _GoStringLen(planner_state),
-//   											 _GoStringPtr(query_request),
-//   											 _GoStringLen(query_request),
-//   											 resultLen);
-// }
-//
-// char* PlannerVisFuncsInfoGoStr(PlannerPtr planner_ptr,
-//														_GoString_ script,
-//														int* resultLen) {
-// 	return PlannerVisFuncsInfo(planner_ptr,
-//															_GoStringPtr(script),
-//															_GoStringLen(script),
-//															resultLen);
-// }
-//
-// char* PlannerGetMainFuncArgsSpecGoStr(PlannerPtr planner_ptr,
-// 																			_GoString_ queryRequest, int* resultLen) {
-// 	return PlannerGetMainFuncArgsSpec(planner_ptr,
-// 																	_GoStringPtr(queryRequest),
-// 																	_GoStringLen(queryRequest),
-// 																	resultLen);
-// }
-//
-// char* PlannerCompileMutationsGoStr(PlannerPtr planner_ptr,
-// 						         							  _GoString_ planner_state,
-// 						         							  _GoString_ compile_mutation_request,
-// 						         							  int* result_len) {
-//   return PlannerCompileMutations(planner_ptr,
-//   									            	_GoStringPtr(planner_state),
-//   									            	_GoStringLen(planner_state),
-//   									            	_GoStringPtr(compile_mutation_request),
-//   									            	_GoStringLen(compile_mutation_request),
-//   									            	result_len);
-// }
 import "C"
 import (
 	"errors"
@@ -56,6 +12,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
+
 	// Blank Import required by package.
 	_ "github.com/ianlancetaylor/cgosymbolizer"
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
@@ -72,21 +29,37 @@ type GoPlanner struct {
 }
 
 // New creates a new GoPlanner object.
-func New(udfInfo *udfspb.UDFInfo) GoPlanner {
+func New(udfInfo *udfspb.UDFInfo) (GoPlanner, error) {
 	var ret GoPlanner
-	udfInfoStr := proto.MarshalTextString(udfInfo)
-	ret.planner = C.PlannerNewGoStr(udfInfoStr)
+	udfInfoBytes, err := proto.Marshal(udfInfo)
+	if err != nil {
+		return ret, err
+	}
+	udfInfoData := C.CBytes(udfInfoBytes)
+	defer C.free(udfInfoData)
+	ret.planner = C.PlannerNew((*C.char)(udfInfoData), C.int(len(udfInfoBytes)))
 
-	return ret
+	return ret, nil
 }
 
 // Plan the query with the passed in state, then return the result as a planner result protobuf.
 func (cm GoPlanner) Plan(planState *distributedpb.LogicalPlannerState, queryRequest *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error) {
 	var resultLen C.int
-	// TODO(philkuz) change this into the serialized (not human readable version) and figure out bytes[] passing.
-	stateStr := proto.MarshalTextString(planState)
-	queryRequestStr := proto.MarshalTextString(queryRequest)
-	res := C.PlannerPlanGoStr(cm.planner, stateStr, queryRequestStr, &resultLen)
+	stateBytes, err := proto.Marshal(planState)
+	if err != nil {
+		return nil, err
+	}
+	stateData := C.CBytes(stateBytes)
+	defer C.free(stateData)
+
+	queryRequestBytes, err := proto.Marshal(queryRequest)
+	if err != nil {
+		return nil, err
+	}
+	queryRequestData := C.CBytes(queryRequestBytes)
+	defer C.free(queryRequestData)
+
+	res := C.PlannerPlan(cm.planner, (*C.char)(stateData), C.int(len(stateBytes)), (*C.char)(queryRequestData), C.int(len(queryRequestBytes)), &resultLen)
 	defer C.StrFree(res)
 	lp := C.GoBytes(unsafe.Pointer(res), resultLen)
 	if resultLen == 0 {
@@ -103,8 +76,14 @@ func (cm GoPlanner) Plan(planState *distributedpb.LogicalPlannerState, queryRequ
 // GetMainFuncArgsSpec returns the FuncArgSpec of the main function if it exists, otherwise throws a Compiler Error.
 func (cm GoPlanner) GetMainFuncArgsSpec(queryRequest *plannerpb.QueryRequest) (*scriptspb.MainFuncSpecResult, error) {
 	var resultLen C.int
-	queryRequestStr := proto.MarshalTextString(queryRequest)
-	res := C.PlannerGetMainFuncArgsSpecGoStr(cm.planner, queryRequestStr, &resultLen)
+	queryRequestBytes, err := proto.Marshal(queryRequest)
+	if err != nil {
+		return nil, err
+	}
+	queryRequestData := C.CBytes(queryRequestBytes)
+	defer C.free(queryRequestData)
+
+	res := C.PlannerGetMainFuncArgsSpec(cm.planner, (*C.char)(queryRequestData), C.int(len(queryRequestBytes)), &resultLen)
 	defer C.StrFree(res)
 	resultBytes := C.GoBytes(unsafe.Pointer(res), resultLen)
 	if resultLen == 0 {
@@ -122,7 +101,9 @@ func (cm GoPlanner) GetMainFuncArgsSpec(queryRequest *plannerpb.QueryRequest) (*
 // ExtractVisFuncsInfo parses a script for misc info such as func args, vega specs, and docstrings.
 func (cm GoPlanner) ExtractVisFuncsInfo(script string) (*scriptspb.VisFuncsInfoResult, error) {
 	var resultLen C.int
-	res := C.PlannerVisFuncsInfoGoStr(cm.planner, script, &resultLen)
+	scriptData := C.CString(script)
+	defer C.free(unsafe.Pointer(scriptData))
+	res := C.PlannerVisFuncsInfo(cm.planner, scriptData, C.int(len(script)), &resultLen)
 	defer C.StrFree(res)
 
 	resultBytes := C.GoBytes(unsafe.Pointer(res), resultLen)
@@ -141,9 +122,21 @@ func (cm GoPlanner) ExtractVisFuncsInfo(script string) (*scriptspb.VisFuncsInfoR
 // CompileMutations compiles the query into a mutation of Pixie Data Table.
 func (cm GoPlanner) CompileMutations(planState *distributedpb.LogicalPlannerState, request *plannerpb.CompileMutationsRequest) (*plannerpb.CompileMutationsResponse, error) {
 	var resultLen C.int
-	stateStr := proto.MarshalTextString(planState)
-	requestStr := proto.MarshalTextString(request)
-	res := C.PlannerCompileMutationsGoStr(cm.planner, stateStr, requestStr, &resultLen)
+	stateBytes, err := proto.Marshal(planState)
+	if err != nil {
+		return nil, err
+	}
+	stateData := C.CBytes(stateBytes)
+	defer C.free(stateData)
+
+	requestBytes, err := proto.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+	requestData := C.CBytes(requestBytes)
+	defer C.free(requestData)
+
+	res := C.PlannerCompileMutations(cm.planner, (*C.char)(stateData), C.int(len(stateBytes)), (*C.char)(requestData), C.int(len(requestBytes)), &resultLen)
 	defer C.StrFree(res)
 	resultBytes := C.GoBytes(unsafe.Pointer(res), resultLen)
 	if resultLen == 0 {
