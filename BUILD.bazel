@@ -1,6 +1,7 @@
 licenses(["restricted"])
 
 load("@bazel_gazelle//:def.bzl", "gazelle")
+load("//bazel:repositories.bzl", "list_pl_deps")
 
 exports_files(["LICENSE"])
 
@@ -175,5 +176,25 @@ alias(
         "//bazel:use_libcpp": "@com_llvm_lib_libcpp//:llvm",
         "//conditions:default": "@com_llvm_lib//:llvm",
     }),
+    visibility = ["//visibility:public"],
+)
+
+list_pl_deps(
+    name = "pl_3p_deps",
+)
+
+genrule(
+    name = "pl_3p_submodules",
+    srcs = [".gitmodules"],
+    outs = ["pl_3p_submodules.out"],
+    cmd = "git config --file $< --get-regexp url | cut -d' ' -f2 > $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "pl_3p_go_sum",
+    srcs = ["go.sum"],
+    outs = ["pl_3p_go_sum.out"],
+    cmd = "cat $< | cut -d' ' -f1 > $@",
     visibility = ["//visibility:public"],
 )

@@ -1,66 +1,63 @@
-[submodule "chef/site-cookbooks/ark"]
-	path = chef/site-cookbooks/ark
-	url = https://github.com/chef-cookbooks/ark.git
-[submodule "chef/site-cookbooks/build-essential"]
-	path = chef/site-cookbooks/build-essential
-	url = https://github.com/chef-cookbooks/build-essential.git
-[submodule "chef/site-cookbooks/git"]
-	path = chef/site-cookbooks/git
-	url = https://github.com/chef-cookbooks/git.git
-[submodule "chef/site-cookbooks/homebrew"]
-	path = chef/site-cookbooks/homebrew
-	url = https://github.com/chef-cookbooks/homebrew.git
-[submodule "chef/site-cookbooks/mingw"]
-	path = chef/site-cookbooks/mingw
-	url = https://github.com/chef-cookbooks/mingw.git
-[submodule "chef/site-cookbooks/tar"]
-	path = chef/site-cookbooks/tar
-	url = https://github.com/chef-cookbooks/tar.git
-[submodule "chef/site-cookbooks/windows"]
-	path = chef/site-cookbooks/windows
-	url = https://github.com/chef-cookbooks/windows.git
-[submodule "chef/site-cookbooks/seven_zip"]
-	path = chef/site-cookbooks/seven_zip
-	url = https://github.com/windowschefcookbooks/seven_zip.git
-[submodule "linters/cpplint"]
-	path = linters/cpplint
-	url = git@github.com:pixie-labs/cpplint.git
-[submodule "third_party/arrow"]
-	path = third_party/arrow
-	url = git@github.com:pixie-labs/arrow.git
-[submodule "third_party/libpypa"]
-	path = third_party/libpypa
-	url = git@github.com:pixie-labs/libpypa.git
-[submodule "third_party/bpftrace"]
-	path = third_party/bpftrace
-	url = git@github.com:pixie-labs/bpftrace.git
-[submodule "third_party/tdigest"]
-	path = third_party/tdigest
-	url = git@github.com:pixie-labs/tdigest.git
-[submodule "third_party/bcc"]
-	path = third_party/bcc
-	url = git@github.com:pixie-labs/bcc.git
-[submodule "third_party/protobuf"]
-	path = third_party/protobuf
-	url = git@github.com:pixie-labs/protobuf.git
-[submodule "third_party/glice"]
-	path = third_party/glice
-	url = git@github.com:pixie-labs/glice.git
-[submodule "third_party/threadstacks"]
-	path = third_party/threadstacks
-	url = git@github.com:pixie-labs/threadstacks.git
-[submodule "third_party/aes-min"]
-	path = third_party/aes-min
-	url = git@github.com:pixie-labs/aes-min.git
-[submodule "third_party/ELFIO"]
-	path = third_party/ELFIO
-	url = git@github.com:pixie-labs/ELFIO.git
-[submodule "third_party/kuberesolver"]
-	path = third_party/kuberesolver
-	url = https://github.com/pixie-labs/kuberesolver
 [submodule "chef/site-cookbooks/alternatives"]
 	path = chef/site-cookbooks/alternatives
 	url = https://github.com/vkhatri/chef-alternatives
+[submodule "chef/site-cookbooks/ark"]
+	path = chef/site-cookbooks/ark
+	url = https://github.com/chef-cookbooks/ark
+[submodule "chef/site-cookbooks/build-essential"]
+	path = chef/site-cookbooks/build-essential
+	url = https://github.com/chef-cookbooks/build-essential
+[submodule "chef/site-cookbooks/git"]
+	path = chef/site-cookbooks/git
+	url = https://github.com/chef-cookbooks/git
+[submodule "chef/site-cookbooks/homebrew"]
+	path = chef/site-cookbooks/homebrew
+	url = https://github.com/chef-cookbooks/homebrew
+[submodule "chef/site-cookbooks/mingw"]
+	path = chef/site-cookbooks/mingw
+	url = https://github.com/chef-cookbooks/mingw
+[submodule "chef/site-cookbooks/seven_zip"]
+	path = chef/site-cookbooks/seven_zip
+	url = https://github.com/windowschefcookbooks/seven_zip
+[submodule "chef/site-cookbooks/tar"]
+	path = chef/site-cookbooks/tar
+	url = https://github.com/chef-cookbooks/tar
+[submodule "chef/site-cookbooks/windows"]
+	path = chef/site-cookbooks/windows
+	url = https://github.com/chef-cookbooks/windows
+[submodule "linters/cpplint"]
+	path = linters/cpplint
+	url = git@github.com:pixie-labs/cpplint.git
+[submodule "third_party/aes-min"]
+	path = third_party/aes-min
+	url = git@github.com:pixie-labs/aes-min.git
+[submodule "third_party/arrow"]
+	path = third_party/arrow
+	url = git@github.com:pixie-labs/arrow.git
+[submodule "third_party/bcc"]
+	path = third_party/bcc
+	url = git@github.com:pixie-labs/bcc.git
+[submodule "third_party/bpftrace"]
+	path = third_party/bpftrace
+	url = git@github.com:pixie-labs/bpftrace.git
 [submodule "third_party/dnsparser"]
 	path = third_party/dnsparser
 	url = git@github.com:pixie-labs/dnsparser.git
+[submodule "third_party/kuberesolver"]
+	path = third_party/kuberesolver
+	url = git@github.com:pixie-labs/kuberesolver.git
+[submodule "third_party/libpypa"]
+	path = third_party/libpypa
+	url = git@github.com:pixie-labs/libpypa.git
+[submodule "third_party/protobuf"]
+	path = third_party/protobuf
+	url = git@github.com:pixie-labs/protobuf.git
+[submodule "third_party/tdigest"]
+	path = third_party/tdigest
+	url = git@github.com:pixie-labs/tdigest.git
+[submodule "third_party/threadstacks"]
+	path = third_party/threadstacks
+	url = git@github.com:pixie-labs/threadstacks.git
+[submodule "third_party/ELFIO"]
+	path = third_party/ELFIO
+	url = git@github.com:pixie-labs/ELFIO.git

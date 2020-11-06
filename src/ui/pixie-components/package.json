@@ -2,6 +2,7 @@
   "name": "pixie-components",
   "version": "1.0.0",
   "description": "Pixie shared UI components",
+  "private": true,
   "author": "malthusyau",
   "main": "dist/index.js",
   "module": "dist/index.es.js",

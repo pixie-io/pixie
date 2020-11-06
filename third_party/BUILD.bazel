@@ -186,39 +186,6 @@ pl_cc_library(
     visibility = ["//visibility:public"],
 )
 
-go_library(
-    name = "glice_api_library",
-    srcs = ["glice/api/repo.go"],
-    importpath = "github.com/ribice/glice/api",
-    visibility = ["//visibility:public"],
-    deps = [
-        "@com_github_google_go_github//github:go_default_library",
-        "@org_golang_x_oauth2//:go_default_library",
-    ],
-)
-
-go_library(
-    name = "glice_library",
-    srcs = [
-        "glice/main.go",
-        "glice/other.go",
-    ],
-    importpath = "github.com/ribice/glice",
-    visibility = ["//visibility:private"],
-    deps = [
-        ":glice_api_library",
-        "@com_github_keighl_metabolize//:go_default_library",
-        "@com_github_google_go_github//github:go_default_library",
-        "@com_github_olekukonko_tablewriter//:go_default_library",
-    ],
-)
-
-go_binary(
-    name = "glice",
-    embed = [":glice_library"],
-    visibility = ["//visibility:public"],
-)
-
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(

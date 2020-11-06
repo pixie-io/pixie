@@ -1436,20 +1436,6 @@ go_repository(
 )
 
 go_repository(
-    name = "com_github_google_go_github",
-    importpath = "github.com/google/go-github",
-    sum = "h1:N0LgJ1j65A7kfXrZnUDaYCs/Sf4rEjNlfyDHW9dolSY=",
-    version = "v17.0.0+incompatible",
-)
-
-go_repository(
-    name = "com_github_keighl_metabolize",
-    importpath = "github.com/keighl/metabolize",
-    sum = "h1:1ijjWJbbN7za3tZ7eXUO5fVcC9ogGYShQh+zM6YiCYE=",
-    version = "v0.0.0-20150915210303-97ab655d4034",
-)
-
-go_repository(
     name = "com_github_googleapis_google_cloud_go_testing",
     importpath = "github.com/googleapis/google-cloud-go-testing",
     sum = "h1:YBqybTXA//1pltKcwyntNQdgDw6AnA5oHZCXFOiZhoo=",
@@ -2948,4 +2934,25 @@ go_repository(
     importpath = "github.com/boj/redistore",
     sum = "h1:RmdPFa+slIr4SCBg4st/l/vZWVe9QJKMXGO60Bxbe04=",
     version = "v0.0.0-20180917114910-cd5dcc76aeff",
+)
+
+go_repository(
+    name = "com_github_andybalholm_cascadia",
+    importpath = "github.com/andybalholm/cascadia",
+    sum = "h1:BuuO6sSfQNFRu1LppgbD25Hr2vLYW25JvxHs5zzsLTo=",
+    version = "v1.1.0",
+)
+
+go_repository(
+    name = "com_github_puerkitobio_goquery",
+    importpath = "github.com/PuerkitoBio/goquery",
+    sum = "h1:j7taAbelrdcsOlGeMenZxc2AWXD5fieT1/znArdnx94=",
+    version = "v1.6.0",
+)
+
+go_repository(
+    name = "com_github_google_go_github_v32",
+    importpath = "github.com/google/go-github/v32",
+    sum = "h1:GWkQOdXqviCPx7Q7Fj+KyPoGm4SwHRh8rheoPhd27II=",
+    version = "v32.1.0",
 )

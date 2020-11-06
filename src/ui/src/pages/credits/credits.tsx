@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { scrollbarStyles } from 'common/mui-theme';
 import { StyleRulesCallback, Theme, withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
@@ -65,6 +66,9 @@ const styles: StyleRulesCallback<Theme, {}> = (theme: Theme) => ({
   },
   button: {
     padding: 0,
+    '&.hidden': {
+      visibility: 'hidden',
+    },
   },
 });
 
@@ -83,7 +87,7 @@ const CreditsPage = withStyles(styles)(({ children, classes }: any) => (
 ));
 
 const LicenseEntryRow = withStyles(styles)(({
-  name, content, url, classes,
+  name, url, licenseText, classes,
 }: LicenseEntry & { classes }) => {
   const [showLicense, setShowLicense] = React.useState(false);
   return (
@@ -92,20 +96,24 @@ const LicenseEntryRow = withStyles(styles)(({
         {name}
       </div>
       <div className={classes.creditsShow}>
-        <Button color='primary' onClick={() => setShowLicense((show) => !show)} className={classes.button}>
+        <Button
+          color='primary'
+          onClick={() => setShowLicense((show) => !show)}
+          className={clsx(classes.button, !licenseText && 'hidden')}
+        >
           <div>
             {showLicense ? 'hide' : 'show'}
             {' '}
           </div>
         </Button>
-        <Button href={url} color='primary' className={classes.button}>homepage</Button>
+        <Button href={url} color='primary' className={clsx(classes.button, !url && 'hidden')}>homepage</Button>
       </div>
       {showLicense
         ? (
           <div className={classes.licenseBody}>
             <br />
             <pre>
-              {content}
+              {licenseText}
             </pre>
           </div>
         ) : null}
@@ -116,7 +124,7 @@ const LicenseEntryRow = withStyles(styles)(({
 interface LicenseEntry {
   name: string;
   url: string;
-  content: string;
+  licenseText: string;
 }
 
 const Credits = withStyles(styles)(({ licenses, classes }: any) => {

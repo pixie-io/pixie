@@ -114,6 +114,23 @@ def _go_deps():
     # Add go specific imports here when necessary.
     pass
 
+def list_pl_deps(name):
+    repo_urls = list()
+    for repo_name, repo_config in REPOSITORY_LOCATIONS.items():
+        urls = repo_config["urls"]
+        best_url = None
+        for url in urls:
+            if url.startswith("https://github.com") or best_url == None:
+                best_url = url
+        repo_urls.append(url)
+
+    native.genrule(
+        name = name,
+        outs = ["{}.out".format(name)],
+        cmd = 'echo "{}" > $@'.format("\n".join(repo_urls)),
+        visibility = ["//visibility:public"],
+    )
+
 def pl_deps():
     _com_llvm_lib()
 

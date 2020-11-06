@@ -330,7 +330,7 @@ def bazelCmd(String bazelCmd, String name) {
 
 
 def bazelCCCICmd(String name, String targetConfig='clang', String targetCompilationMode='opt') {
-    bazelCICmd(name, targetConfig, targetCompilationMode, BAZEL_CC_KIND_CLAUSE)
+    bazelCICmd(name, targetConfig, targetCompilationMode, BAZEL_CC_KIND_CLAUSE, '')
 }
 
 /**
@@ -339,11 +339,12 @@ def bazelCCCICmd(String name, String targetConfig='clang', String targetCompilat
   * The targetFilter can either be a bazel filter clause, or bazel path (//..., etc.), but not a list of paths.
   */
 def bazelCICmd(String name, String targetConfig='clang', String targetCompilationMode='opt',
-               String targetFilter=BAZEL_SRC_FILES_PATH) {
+               String targetFilter=BAZEL_SRC_FILES_PATH, String bazelRunExtraArgs='') {
   warnError('Bazel command failed') {
     if (isMainCodeReviewRun) {
       def targetPattern = targetFilter
       sh """
+        BAZEL_RUN_EXTRA_ARGS='${bazelRunExtraArgs}' \
         TARGET_PATTERN='${targetPattern}' CONFIG=${targetConfig} \
         COMPILATION_MODE=${targetCompilationMode} ./ci/bazel_ci.sh
       """
@@ -354,7 +355,10 @@ def bazelCICmd(String name, String targetConfig='clang', String targetCompilatio
       if (!targets.startsWith('//')) {
         targets = "`bazel query '${targets} except ${BAZEL_EXCEPT_CLAUSE}'`"
       }
-      sh "bazel test --config=${targetConfig} --compilation_mode=${targetCompilationMode} ${targets}"
+      sh """
+        bazel test --config=${targetConfig} --compilation_mode=${targetCompilationMode} \
+        ${bazelRunExtraArgs} ${targets}
+      """
     }
   }
   createBazelStash("${name}-testlogs")
@@ -521,26 +525,32 @@ builders['Build & Test (sanitizers)'] = {
 builders['Build & Test All (opt + UI)'] = {
   WithSourceCode {
     dockerStep {
-      // Intercept bazel failure to make sure we continue to archive files.
-      warnError('Bazel test failed') {
-        bazelCICmd('build-opt')
-      }
+      withCredentials([
+        file(
+          credentialsId: 'pl-dev-infra-jenkins-sa-json',
+          variable: 'GOOGLE_APPLICATION_CREDENTIALS')
+      ]) {
+        // Intercept bazel failure to make sure we continue to archive files.
+        warnError('Bazel test failed') {
+          bazelCICmd('build-opt', 'clang', 'opt', BAZEL_SRC_FILES_PATH, '--action_env=GOOGLE_APPLICATION_CREDENTIALS')
+        }
 
-      // File might not always exist because of test run caching.
-      // TODO(zasgar): Make sure this file is fetched for main run, otherwise we
-      // might have issues with coverage.
-      def uiTestResults = 'bazel-testlogs-archive/src/ui/ui-tests/test.outputs/outputs.zip'
-      if (shFileExists(uiTestResults)) {
-          sh "unzip ${uiTestResults} -d testlogs"
-          stashOnGCS('build-ui-testlogs', 'testlogs')
-          stashList.add('build-ui-testlogs')
-      }
+        // File might not always exist because of test run caching.
+        // TODO(zasgar): Make sure this file is fetched for main run, otherwise we
+        // might have issues with coverage.
+        def uiTestResults = 'bazel-testlogs-archive/src/ui/ui-tests/test.outputs/outputs.zip'
+        if (shFileExists(uiTestResults)) {
+            sh "unzip ${uiTestResults} -d testlogs"
+            stashOnGCS('build-ui-testlogs', 'testlogs')
+            stashList.add('build-ui-testlogs')
+        }
 
-      def storybookBundle = 'bazel-bin/src/ui/ui-storybook-bundle.tar.gz'
-      if (shFileExists(storybookBundle)) {
-        sh "tar -zxf ${storybookBundle}"
-        stashOnGCS('build-ui-storybook-static', 'storybook_static')
-        stashList.add('build-ui-storybook-static')
+        def storybookBundle = 'bazel-bin/src/ui/ui-storybook-bundle.tar.gz'
+        if (shFileExists(storybookBundle)) {
+          sh "tar -zxf ${storybookBundle}"
+          stashOnGCS('build-ui-storybook-static', 'storybook_static')
+          stashList.add('build-ui-storybook-static')
+        }
       }
     }
   }

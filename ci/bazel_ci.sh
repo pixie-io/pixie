@@ -52,8 +52,6 @@ COMMIT_RANGE=${COMMIT_RANGE:-$(git merge-base origin/main HEAD)".."}
 TARGET_PATTERN=${TARGET_PATTERN:-"//..."}
 # Always exclude experimental from CI builds.
 TARGET_PATTERN="${TARGET_PATTERN} -//experimental/..."
-BAZEL_RUN_EXTRA_ARGS=
-BAZEL_QUERY_EXTRA_ARGS=
 
 if [ -n "${COMPILATION_MODE}" ]; then
   BAZEL_RUN_EXTRA_ARGS="${BAZEL_RUN_EXTRA_ARGS} --compilation_mode=${COMPILATION_MODE}"

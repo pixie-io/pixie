@@ -1,51 +1,114 @@
 # Packaging licenses for the entire pixie repository.
 # This includes the C API, Java API, and protocol buffer files.
 
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
 package(default_visibility = ["//visibility:private"])
 
-exports_files(["manual_license_map.json"])
-
-genrule(
-    name = "manual_cpp_licenses",
-    srcs = [
-        ":manual_license_map.json",
+go_library(
+    name = "go_default_library",
+    srcs = ["fetch_licenses.go"],
+    importpath = "pixielabs.ai/pixielabs/tools/licenses",
+    visibility = ["//visibility:private"],
+    deps = [
+        "@com_github_google_go_github_v32//github:go_default_library",
+        "@com_github_puerkitobio_goquery//:go_default_library",
+        "@org_golang_x_oauth2//:go_default_library",
     ],
-    outs = ["MANUAL_CPP_LICENSES"],
-    cmd = "python3 $(location :assemble_manual_licenses.py) $@ $(SRCS)",
-    tools = [":assemble_manual_licenses.py"],
+)
+
+go_binary(
+    name = "fetch_licenses",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
 )
 
 genrule(
-    name = "cpp_licenses",
+    name = "go_licenses",
     srcs = [
-        "@com_google_protobuf//:LICENSE",
-        "@com_github_ariafallah_csv_parser//:LICENSE",
-        "@com_github_grpc_grpc//:LICENSE",
-        "@com_github_grpc_grpc//third_party/address_sorting:LICENSE",
-        "@com_efficient_libcuckoo//:LICENSE",
-        "@com_github_cameron314_concurrentqueue//:LICENSE.md",
-        "@com_github_rlyeh_sole//:LICENSE",
-        "@com_github_gflags_gflags//:COPYING.txt",
-        "@com_github_tencent_rapidjson//:license.txt",
-        "@com_google_farmhash//:COPYING",
-        "@com_google_double_conversion//:LICENSE",
-        "//third_party/tdigest:LICENSE",
-        "//third_party:libpypa/COPYING",
-        "//third_party:arrow/LICENSE.txt",
-        "@boringssl//:LICENSE",
+        "//credentials/dev_infra:github_key",
+        ":fetch_licenses",
+        "//:pl_3p_go_sum",
+        "manual_licenses.json",
     ],
-    outs = ["CPP_LICENSES"],
-    cmd = "python3 $(location :combine_bazel_licenses.py) $@ $(SRCS)",
-    tools = [":combine_bazel_licenses.py"],
+    outs = [
+        "go_licenses.json",
+    ],
+    cmd = """
+        GITHUB_API_KEY=$$(cat $(location //credentials/dev_infra:github_key))
+
+        $(location :fetch_licenses) \
+            --github_token "$${GITHUB_API_KEY}" \
+            --modules="$(location //:pl_3p_go_sum)" \
+            --try_pkg_dev_go=true \
+            --json_manual_input="$(location manual_licenses.json)" \
+            --json_output="$(location go_licenses.json)"
+    """,
+)
+
+genrule(
+    name = "submodule_licenses",
+    srcs = [
+        "//credentials/dev_infra:github_key",
+        ":fetch_licenses",
+        "//:pl_3p_submodules",
+        "manual_licenses.json",
+    ],
+    outs = [
+        "submodule_licenses.json",
+    ],
+    cmd = """
+        GITHUB_API_KEY=$$(cat $(location //credentials/dev_infra:github_key))
+
+        $(location :fetch_licenses) \
+            --github_token "$${GITHUB_API_KEY}" \
+            --modules="$(location //:pl_3p_submodules)" \
+            --json_manual_input="$(location manual_licenses.json)" \
+            --json_output="$(location submodule_licenses.json)"
+    """,
+)
+
+genrule(
+    name = "deps_licenses",
+    srcs = [
+        "//credentials/dev_infra:github_key",
+        ":fetch_licenses",
+        "//:pl_3p_deps",
+        "manual_licenses.json",
+    ],
+    outs = [
+        "deps_licenses.json",
+    ],
+    cmd = """
+        GITHUB_API_KEY=$$(cat $(location //credentials/dev_infra:github_key))
+
+        $(location :fetch_licenses) \
+            --github_token "$${GITHUB_API_KEY}" \
+            --modules="$(location //:pl_3p_deps)" \
+            --json_manual_input="$(location manual_licenses.json)" \
+            --json_output="$(location deps_licenses.json)"
+    """,
 )
 
 genrule(
     name = "all_licenses",
     srcs = [
-        ":cpp_licenses",
-        ":manual_cpp_licenses",
+        "combine_licenses.py",
+        ":go_licenses",
+        ":submodule_licenses",
+        ":deps_licenses",
+        "//src/ui:npm_licenses",
     ],
-    outs = ["CREDITS.md"],
-    cmd = "python3 $(location :render_licenses_as_markdown.py) $@ $(SRCS)",
-    tools = [":render_licenses_as_markdown.py"],
+    outs = [
+        "all_licenses.json",
+    ],
+    cmd = """
+        python3 $(location combine_licenses.py) \
+            $(location :go_licenses) \
+            $(location :submodule_licenses) \
+            $(location :deps_licenses) \
+            $(location //src/ui:npm_licenses) \
+            --output $(location all_licenses.json)
+    """,
+    visibility = ["//visibility:public"],
 )

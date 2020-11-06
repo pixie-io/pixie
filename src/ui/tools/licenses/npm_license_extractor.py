@@ -1,200 +1,147 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # Parses the output of npm license-checker into the license format we use to generate our OSS
 # license notice page.
 import argparse
-from collections import OrderedDict
+from collections import defaultdict, OrderedDict
 import json
-import urllib.request
 import re
-import os
-import prepared_licenses
 
 # Constant key values
+LICENSES_KEY = 'licenses'
+PATH_KEY = 'path'
 REPOSITORY_KEY = 'repository'
-PUBLISHER_KEY = 'publisher'
-LICENSES_KEYS = 'licenses'
+LICENSE_FILE_KEY = 'licenseFile'
 
 
-def get_file_at_url(url):
-    r = urllib.request.urlopen(url)
-    return r.read()
+# This isn't exhaustive, just a quick easy way to pick one of many licenses.
+# Larger is better.
+PREFERRED_LICENSES_DICT = defaultdict(int, {
+    'CC0-1.0': 10,
+    'Apache-2.0': 9,
+    'MIT': 8,
+})
 
 
-def read_file(fname):
-    with open(fname, encoding='utf-8') as f:
+GITHUB_MATCHER = re.compile("github.com[:/](.*?/[^/]*)")
+
+
+def get_name(project_name: str, license_details: dict) -> str:
+    if REPOSITORY_KEY in license_details:
+        matches = GITHUB_MATCHER.findall(license_details[REPOSITORY_KEY])
+        if len(matches) > 0:
+            return matches[0]
+
+    # print('No repo, falling back to path for project {}'.format(project_name))
+    path = license_details[PATH_KEY]
+    splits = path.split('/node_modules/')
+    if len(splits) > 1:
+        return splits[1]
+
+    # print('No path, falling back to project name for project {}'.format(project_name))
+    splits = project_name.split('@')
+    return splits[0]
+
+
+def get_clean_repo(project_name: str, license_details: dict) -> str:
+    if REPOSITORY_KEY not in license_details:
+        return ''
+
+    matches = GITHUB_MATCHER.findall(license_details[REPOSITORY_KEY])
+    if len(matches) > 0:
+        return "https://github.com/{}".format(matches[0])
+
+
+def get_spdx_id(repo: str, details: dict) -> str:
+    if LICENSES_KEY not in details:
+        # print('Missing licenses ids for repo {}'.format(repo))
+        return ''
+
+    licenses = details[LICENSES_KEY]
+    licenses = licenses.replace('AND', 'and')
+    licenses = licenses.replace('OR', 'or')
+
+    license_options = licenses.split(' or ')
+    if len(license_options) == 1:
+        return license_options[0]
+
+    # Trim the leading paren
+    license_options[0] = license_options[0][1:]
+    # Trim the trailing paren
+    license_options[-1] = license_options[-1][:-1]
+
+    best_license = license_options[0]
+    best_license_score = PREFERRED_LICENSES_DICT[best_license]
+    for lic in license_options:
+        if PREFERRED_LICENSES_DICT[lic] > best_license_score:
+            best_license = lic
+            best_license_score = PREFERRED_LICENSES_DICT[lic]
+
+    if best_license_score == 0:
+        # print('Couldn\'t determine a license to pick for repo {}'.format(repo))
+        return ' or '.join(license_options)
+
+    return best_license
+
+
+def get_license_text(repo: str, details: dict) -> str:
+    if LICENSE_FILE_KEY not in details:
+        # print('Missing license file for repo {}'.format(repo))
+        return ''
+
+    with open(details[LICENSE_FILE_KEY], encoding='utf-8') as f:
         return f.read()
 
 
-def get_package_name_from_url(license_url):
-    matches = re.findall("github.com[:/](.*?/[^/]*)", license_url)
-    if len(matches) == 0:
-        return None
-    return matches[0]
+class Dependency(dict):
+    def __init__(self) -> None:
+        dict.__init__(self)
 
+    # Keep these in sync with tools/licenses/fetch_licenses.go
+    def set_name(self, name: str) -> None:
+        dict.__setitem__(self, "name", name)
 
-OWNER_MAPPING_DICT = {
-    "facebook": "Facebook, Inc. and its affiliates",
-}
+    def set_url(self, url: str) -> None:
+        dict.__setitem__(self, "url", url)
 
+    def set_spdx_id(self, spdx_id: str) -> None:
+        dict.__setitem__(self, "spdxID", spdx_id)
 
-def get_project_name(project_name, license_details):
-
-    if REPOSITORY_KEY not in license_details:
-        return project_name
-
-    new_project_name = get_package_name_from_url(
-        license_details[REPOSITORY_KEY])
-    if not new_project_name:
-        return project_name
-
-    return new_project_name
-
-
-def special_owner_mapping(name):
-    if name in OWNER_MAPPING_DICT:
-        return OWNER_MAPPING_DICT[name]
-    return name
-
-
-def _find_owner_impl(license_details):
-    if PUBLISHER_KEY in license_details:
-        owner = license_details[PUBLISHER_KEY]
-        return owner.encode('ascii', errors='ignore')
-
-    if REPOSITORY_KEY not in license_details:
-        return ''
-
-    # work around to Guess at who the owner is.
-    repository = license_details[REPOSITORY_KEY]
-    matches = re.findall('github.com/(.*?)/', repository)
-    if len(matches) == 0:
-        return ""
-    return matches[0]
-
-
-def find_owner(license_details):
-    owner = _find_owner_impl(license_details)
-    return special_owner_mapping(owner)
-
-
-def make_license(license_details):
-    if LICENSES_KEYS not in license_details:
-        print(license_details['path'], 'no license options found')
-        return ''
-
-    licenses = license_details[LICENSES_KEYS]
-    owner = find_owner(license_details)
-
-    if 'MIT' in licenses:
-        return prepared_licenses.mit_license(year(), owner)
-    elif 'Apache-2.0' in licenses or 'Apache License, Version 2.0' in licenses:
-        return prepared_licenses.APACHE_LICENSE
-    elif 'ISC' in licenses:
-        return prepared_licenses.isc_license(year(), owner)
-    elif 'GPL-3.0' in licenses:
-        return prepared_licenses.gpl3_license(year(), owner)
-    elif 'BSD-2' in licenses:
-        return prepared_licenses.bsd2_license(year(), owner)
-    elif 'BSD' in licenses:
-        return prepared_licenses.bsd3_license(year(), owner)
-    elif 'Public Domain' in licenses:
-        return prepared_licenses.public_domain_license(year(), owner)
-    elif 'CC0' in licenses:
-        return prepared_licenses.cc0_license(year(), owner)
-    elif 'CC-BY-3.0' in licenses:
-        return prepared_licenses.cc3_license(year(), owner)
-
-    print(license_details['path'], 'no license options found', licenses)
-    return ''
-
-
-def year():
-    from datetime import datetime
-    return datetime.today().year
-
-
-def get_license(project_name, license_details, override_license):
-    if project_name in override_license:
-        return override_license[project_name]
-    if 'licenseFile' not in license_details:
-        return make_license(license_details)
-
-    license_file = license_details['licenseFile']
-
-    # Override the suggested license because README files tend to break the rendering.
-    if "readme" in os.path.basename(license_file).lower():
-        return make_license(license_details)
-
-    # If license file is something else, might as well try to render it.
-    return read_file(license_file)
-
-
-def process_license(project_name, license_details, override_license={}):
-    '''
-    Processes the license into the json object used by the final setup to interpret everything.
-    '''
-    license_dict = {
-        "name": get_project_name(project_name, license_details),
-        "content": get_license(project_name, license_details, override_license)
-    }
-
-    if 'licenses' in license_details:
-        license_dict['type'] = license_details['licenses']
-    if 'repository' in license_details:
-        license_dict['url'] = license_details['repository']
-    return license_dict
-
-
-def format_project_name(project_name):
-    return re.sub("(?<!^)@.*", '', project_name)
+    def set_license_text(self, license_text: str) -> None:
+        dict.__setitem__(self, "licenseText", license_text)
 
 
 def main():
     parser = argparse.ArgumentParser(
         description='Combines the license files into a map to be used.')
-    parser.add_argument('out_fname', type=str,
-                        help='The markdown file to write.')
-    parser.add_argument('npm_json_file', metavar='N', type=str,
-                        help='the output of license-checker to read in ')
-    parser.add_argument('--override_license',
-                        help='file containing json that overrides package pointers.')
-    parser.add_argument('--pl_pkg_name', default="pl_ui",
-                        help="The name of the pl ui package to ignore")
+    parser.add_argument('--input', type=str,
+                        help='The output of license-checker to read in.')
+    parser.add_argument('--output', type=str,
+                        help='The output json file to write.')
     args = parser.parse_args()
 
-    with open(args.npm_json_file, encoding='utf-8') as f:
+    with open(args.input, encoding='utf-8') as f:
         npm_license_map = json.load(f, object_pairs_hook=OrderedDict)
 
-    override_license = {}
-    if args.override_license:
-        with open(args.override_license, encoding='utf-8') as f:
-            override_license = json.load(f)
+    npm_unique = OrderedDict({})
+    for project_name, license_details in npm_license_map.items():
+        name = get_name(project_name, license_details)
+        repo = get_clean_repo(project_name, license_details)
+        if repo != '':
+            if repo not in npm_unique:
+                npm_unique[repo] = Dependency()
+            contents = npm_unique[repo]
+            contents.set_url(repo)
+        else:
+            if name not in npm_unique:
+                npm_unique[name] = Dependency()
+            contents = npm_unique[name]
+        contents.set_name(name)
+        contents.set_spdx_id(get_spdx_id(project_name, license_details))
+        contents.set_license_text(get_license_text(project_name, license_details))
 
-    license_contents = OrderedDict({})
-    failed_packages = []
-    for unformatted_project_name, license_details in npm_license_map.items():
-        # Because license names can have versions, we only take one of the versions.
-        project_name = format_project_name(unformatted_project_name)
-
-        # Ignore the license that maps to the PL pkg.
-        if project_name == args.pl_pkg_name:
-            continue
-
-        # Skip license if it's already been added.
-        if project_name in license_contents:
-            continue
-
-        # Save the license for output.
-        license_contents[project_name] = process_license(
-            project_name, license_details, override_license)
-
-    if failed_packages:
-        print('Failed packges')
-        print(json.dumps(failed_packages, indent=4))
-
-    with open(args.out_fname, 'w') as f:
-        json.dump(license_contents, f, indent=4)
+    with open(args.output, 'w') as f:
+        json.dump(list(npm_unique.values()), f, indent=4)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

@@ -2,6 +2,7 @@ package(default_visibility = ["//visibility:public"])
 
 load(
     "//bazel:ui.bzl",
+    "pl_deps_licenses",
     "pl_storybook_binary",
     "pl_ui_test",
     "pl_webpack_binary",
@@ -30,6 +31,10 @@ STORYBOOK_SRCS = glob([
     "stories/**",
 ])
 
+LICENSES_SRCS = [
+    "tools/licenses/npm_license_extractor.py",
+]
+
 pl_webpack_deps(
     name = "ui-deps",
     srcs = UI_DEP_PACKAGES,
@@ -40,6 +45,7 @@ pl_webpack_binary(
     name = "ui-bundle",
     srcs = UI_SRCS,
     deps = ":ui-deps",
+    licenses = "//tools/licenses:all_licenses",
     stamp = True,
     uilib_base = "src/ui",
 )
@@ -56,5 +62,12 @@ pl_storybook_binary(
     srcs = UI_SRCS + STORYBOOK_SRCS,
     deps = ":ui-deps",
     stamp = True,
+    uilib_base = "src/ui",
+)
+
+pl_deps_licenses(
+    name = "npm_licenses",
+    srcs = UI_DEP_PACKAGES + LICENSES_SRCS,
+    deps = ":ui-deps",
     uilib_base = "src/ui",
 )

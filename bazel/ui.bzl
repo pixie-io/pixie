@@ -55,12 +55,13 @@ def _webpack_binary_impl(ctx):
     cmd = ui_shared_cmds_start + [
         "export OUTPUT_PATH=" + ctx.outputs.out.path,
         "tar -zxf ${BASE_PATH}/" + ctx.file.deps.path,
+        "mv -f ${BASE_PATH}/" + ctx.file.licenses.path + " src/pages/credits/licenses.json",
         "./node_modules/.bin/webpack -p",
         "cp dist/bundle.tar.gz ${BASE_PATH}/${OUTPUT_PATH}",
     ] + ui_shared_cmds_finish
 
     ctx.actions.run_shell(
-        inputs = all_files + ctx.files.deps,
+        inputs = all_files + ctx.files.deps + ctx.files.licenses,
         outputs = [ctx.outputs.out],
         command = " && ".join(cmd),
         env = {
@@ -124,6 +125,29 @@ def _pl_storybook_binary_impl(ctx):
             "Generating storybook bundle %s" % ctx.outputs.out.short_path,
     )
 
+def _deps_licenses_impl(ctx):
+    all_files = list(ctx.files.srcs)
+
+    cmd = ui_shared_cmds_start + [
+        "export OUTPUT_PATH=" + ctx.outputs.out.path,
+        "tar -zxf ${BASE_PATH}/" + ctx.file.deps.path,
+        "yarn license-checker --excludePrivatePackages --production --json --out ${TMPPATH}/checker.json",
+        "python3 tools/licenses/npm_license_extractor.py " +
+        "--input=${TMPPATH}/checker.json --output=${BASE_PATH}/${OUTPUT_PATH}",
+    ] + ui_shared_cmds_finish
+
+    ctx.actions.run_shell(
+        inputs = all_files + ctx.files.deps,
+        outputs = [ctx.outputs.out],
+        command = " && ".join(cmd),
+        env = {
+            "BASE_PATH": "$$PWD",
+            "UILIB_PATH": ctx.attr.uilib_base,
+        },
+        progress_message =
+            "Generating licenses %s" % ctx.outputs.out.short_path,
+    )
+
 pl_webpack_deps = rule(
     implementation = _webpack_deps_impl,
     attrs = dict({
@@ -148,6 +172,7 @@ pl_webpack_binary = rule(
             allow_files = True,
         ),
         "deps": attr.label(allow_single_file = True),
+        "licenses": attr.label(allow_single_file = True),
         "stamp": attr.bool(mandatory = True),
         "uilib_base": attr.string(
             doc = "This is a slight hack that requires the basepath to package.json relative to TOT to be specified",
@@ -188,5 +213,22 @@ pl_storybook_binary = rule(
     }),
     outputs = {
         "out": "%{name}.tar.gz",
+    },
+)
+
+pl_deps_licenses = rule(
+    implementation = _deps_licenses_impl,
+    attrs = dict({
+        "srcs": attr.label_list(
+            mandatory = True,
+            allow_files = True,
+        ),
+        "deps": attr.label(allow_single_file = True),
+        "uilib_base": attr.string(
+            doc = "This is a slight hack that requires the basepath to package.json relative to TOT to be specified",
+        ),
+    }),
+    outputs = {
+        "out": "%{name}.json",
     },
 )
