@@ -14,8 +14,8 @@ Status TypeObject::Init() {
   }
 
   auto func_name = absl::StrJoin(
-      std::vector<std::string>({std::string(magic_enum::enum_name(data_type_)),
-                                std::string(magic_enum::enum_name(semantic_type_)), "cast"}),
+      std::vector<std::string>({std::string(types::ToString(data_type_)),
+                                std::string(types::ToString(semantic_type_)), "cast"}),
       "_");
   PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> constructor_fn,
                       FuncObject::Create(func_name, {"expr"}, {},

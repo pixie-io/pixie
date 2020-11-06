@@ -841,7 +841,7 @@ StatusOr<DataIR*> DataIR::FromProto(IR* ir, std::string_view name,
     }
     default: {
       return error::InvalidArgument("Error processing $0: $1 not handled as a default data type.",
-                                    name, magic_enum::enum_name(value.data_type()));
+                                    name, types::ToString(value.data_type()));
     }
   }
 }
@@ -2114,7 +2114,7 @@ StatusOr<IRNodeType> DataTypeToIRNodeType(types::DataType type) {
     }
     default: {
       return error::InvalidArgument("data type: '$0' cannot be converted into an IRNodeType",
-                                    magic_enum::enum_name(type));
+                                    types::ToString(type));
     }
   }
 }
@@ -2142,7 +2142,7 @@ Status CheckTypeCast(ExpressionIR* expr, std::shared_ptr<ValueType> from_type,
   if (from_type->data_type() != to_type->data_type()) {
     return expr->CreateIRNodeError(
         "Cannot cast from '$0' to '$1'. Only semantic type casts are allowed.",
-        magic_enum::enum_name(from_type->data_type()), magic_enum::enum_name(to_type->data_type()));
+        types::ToString(from_type->data_type()), types::ToString(to_type->data_type()));
   }
   // TODO(james): Add check that semantic type cast is valid. For now, all semantic type casts are
   // treated as valid.

@@ -11,7 +11,7 @@
 #include <absl/strings/substitute.h>
 
 #include "src/common/base/statusor.h"
-#include "src/shared/types/magic_enum.h"
+#include "src/shared/types/type_utils.h"
 #include "src/shared/types/types.h"
 #include "src/table_store/schema/relation.h"
 
@@ -50,8 +50,8 @@ class ValueType : public BaseType {
   }
 
   std::string DebugString() const override {
-    return absl::Substitute("ValueType($0, $1)", magic_enum::enum_name(data_type_),
-                            magic_enum::enum_name(semantic_type_));
+    return absl::Substitute("ValueType($0, $1)", types::ToString(data_type_),
+                            types::ToString(semantic_type_));
   }
 
   static std::shared_ptr<ValueType> Create(DataType data_type, SemanticType semantic_type) {

@@ -75,7 +75,7 @@ StatusOr<std::string> PrepareDefaultUDTFArg(const planpb::ScalarValue& scalar_va
     }
     default: {
       return error::InvalidArgument("$0 not handled as a default value",
-                                    magic_enum::enum_name(scalar_value.data_type()));
+                                    types::ToString(scalar_value.data_type()));
     }
   }
 }
@@ -453,8 +453,8 @@ StatusOr<ExpressionIR*> UDTFSourceHandler::EvaluateExpression(
     case types::ST_NONE: {
       if (data_node->EvaluatedDataType() != arg.arg_type()) {
         return arg_node->CreateIRNodeError("Expected '$0' to be a $1, received a $2", arg.name(),
-                                           magic_enum::enum_name(arg.arg_type()),
-                                           magic_enum::enum_name(data_node->EvaluatedDataType()));
+                                           types::ToString(arg.arg_type()),
+                                           types::ToString(data_node->EvaluatedDataType()));
       }
       return data_node;
     }
@@ -463,7 +463,7 @@ StatusOr<ExpressionIR*> UDTFSourceHandler::EvaluateExpression(
       if (!Match(data_node, UInt128Value()) && !Match(data_node, String())) {
         return arg_node->CreateIRNodeError(
             "UPID must be a uint128 or str that converts to UUID, received a $0",
-            magic_enum::enum_name(arg.arg_type()));
+            types::ToString(arg.arg_type()));
       }
       if (Match(data_node, String())) {
         // If the parse fails, then we don't have a properly formatted upid.

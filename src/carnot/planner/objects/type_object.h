@@ -64,8 +64,8 @@ class TypeObject : public QLObject {
     // specification to make args semantic args somehow.
     if (node->EvaluatedDataType() != data_type_) {
       return node->CreateIRNodeError(
-          "Expected '$0', received '$1'", absl::AsciiStrToLower(magic_enum::enum_name(data_type_)),
-          absl::AsciiStrToLower(magic_enum::enum_name(node->EvaluatedDataType())));
+          "Expected '$0', received '$1'", absl::AsciiStrToLower(types::ToString(data_type_)),
+          absl::AsciiStrToLower(types::ToString(node->EvaluatedDataType())));
     }
     return Status::OK();
   }
@@ -99,9 +99,9 @@ class TypeObject : public QLObject {
       return absl::AsciiStrToLower(magic_enum::enum_name(ql_object_type_));
     }
     if (semantic_type_ == types::ST_NONE) {
-      return absl::AsciiStrToLower(magic_enum::enum_name(data_type_));
+      return absl::AsciiStrToLower(types::ToString(data_type_));
     }
-    return absl::AsciiStrToLower(magic_enum::enum_name(semantic_type_));
+    return absl::AsciiStrToLower(types::ToString(semantic_type_));
   }
 
  protected:
