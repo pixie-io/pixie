@@ -1,15 +1,15 @@
 # Copyright (c) Pixie Labs, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License")
 
-''' CQL Data Tracer
+''' MySQL Data Tracer
 
-This script traces all CQL (Cassandra) data on the cluster.
+This script traces all MySQL data on the cluster.
 '''
 
 import px
 
-def cql_data(start: str, num_head: int):
-    df = px.DataFrame(table='cql_events', start_time=start)
+def pgsql_data(start: str, num_head: int):
+    df = px.DataFrame(table='pgsql_events', start_time=start)
 
     # Replace UPID with pod.
     df.pod = df.ctx['pod']

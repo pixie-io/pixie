@@ -1,12 +1,21 @@
 # Copyright (c) Pixie Labs, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License")
 
+''' MySQL Data Tracer
+
+This script traces all MySQL data on the cluster.
+'''
+
 import px
 
-t1 = px.DataFrame(table='mysql_events', select=['time_', 'remote_addr', 'remote_port',
-                                                'req_cmd', 'req_body', 'resp_status',
-                                                'resp_body', 'latency_ns'], start_time='-30s')
+def mysql_data(start: str, num_head: int):
+    df = px.DataFrame(table='mysql_events', start_time=start)
 
-t2 = t1.head(n=100)
+    # Replace UPID with pod.
+    df.pod = df.ctx['pod']
+    df = df.drop(['upid', 'trace_role'])
 
-px.display(t2)
+    # Restrict number of results.
+    df = df.head(num_head)
+
+    return df
