@@ -25,6 +25,9 @@ import TableRow from '@material-ui/core/TableRow';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 
+import { ExecutionStateUpdate } from 'common/vizier-grpc-client';
+import { BehaviorSubject } from 'rxjs';
+import { filter, tap } from 'rxjs/operators';
 import {
   AdminTooltip, agentStatusGroup, clusterStatusGroup, containerStatusGroup,
   convertHeartbeatMS, getClusterDetailsURL, podStatusGroup, StyledLeftTableCell,
@@ -144,6 +147,7 @@ const AgentsTable = () => {
     if (!client) {
       return () => { }; // noop
     }
+    const executionSubject = new BehaviorSubject<ExecutionStateUpdate|null>(null);
     const fetchAgentStatus = () => {
       const onResults = (results) => {
         if (!results.schemaOnly) {
@@ -160,14 +164,27 @@ const AgentsTable = () => {
       const onError = (error) => {
         setState({ data: [], error: error?.message });
       };
-      client.executeScript(AGENT_STATUS_SCRIPT, [], false, () => {}, onResults, onError);
+      client.executeScript(AGENT_STATUS_SCRIPT, [], false).pipe(
+        filter((update) => !['data', 'cancel'].includes(update.event.type)),
+        tap((update) => {
+          if (update.event.type === 'error') {
+            onError(update.event.error);
+          } else {
+            onResults(update.results);
+          }
+        }),
+      ).subscribe(executionSubject);
     };
 
     fetchAgentStatus(); // Fetch the agent status initially, before starting the timer for AGENTS_POLL_INTERVAL.
     const interval = setInterval(() => {
       fetchAgentStatus();
     }, AGENTS_POLL_INTERVAL);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      executionSubject.value?.cancel();
+      executionSubject.unsubscribe();
+    };
   }, [client]);
 
   if (state.error) {
@@ -408,7 +425,7 @@ const ClusterDetailsNavigation = ({ selectedClusterName }) => {
     selectable: true,
     omitKey: true,
     // eslint-disable-next-line
-    getListItems: async (input) => (data.clusters.filter((c) => c.status !== CLUSTER_STATUS_DISCONNECTED)
+    getListItems: async () => (data.clusters.filter((c) => c.status !== CLUSTER_STATUS_DISCONNECTED)
       .map((c) => ({ value: c.prettyClusterName }))
     ),
     onSelect: (input) => {

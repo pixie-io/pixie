@@ -55,6 +55,68 @@ export interface BatchDataUpdate {
   batch: RowBatchData;
 }
 
+interface ExecutionStartEvent {
+  type: 'start';
+}
+
+interface ExecutionErrorEvent {
+  type: 'error';
+  error: VizierQueryError;
+}
+
+interface ExecutionMetadataEvent {
+  type: 'metadata';
+  table: Table;
+}
+
+interface ExecutionMutationInfoEvent {
+  type: 'mutation-info';
+  mutationInfo: MutationInfo;
+}
+
+interface ExecutionDataEvent {
+  type: 'data';
+  data: BatchDataUpdate[];
+}
+
+interface ExecutionCancelEvent {
+  type: 'cancel';
+}
+
+interface ExecutionStatusEvent {
+  type: 'status';
+  status: Status;
+}
+
+interface ExecutionStatsEvent {
+  type: 'stats';
+  stats: QueryExecutionStats;
+}
+
+export type ExecutionEvent =
+    ExecutionStartEvent
+    | ExecutionErrorEvent
+    | ExecutionMetadataEvent
+    | ExecutionMutationInfoEvent
+    | ExecutionDataEvent
+    | ExecutionCancelEvent
+    | ExecutionStatusEvent
+    | ExecutionStatsEvent;
+
+/** The latest state of an executeScript, streamed from an observable */
+export interface ExecutionStateUpdate {
+  /** The event that generated this state update */
+  event: ExecutionEvent;
+  /** If `completionReason` is not set, this result can be partial */
+  results: VizierQueryResult;
+  /** Cancels the execution, if it is still running */
+  cancel: () => void;
+  /** If set, execution has halted for this reason */
+  completionReason?: 'complete'|'cancelled'|'error';
+  /** If set, execution has been halted by this error */
+  error?: VizierQueryError;
+}
+
 function getExecutionErrors(errList: ErrorDetails[]): string[] {
   return errList.map((error) => {
     switch (error.getErrorCase()) {
@@ -120,10 +182,7 @@ export class VizierGRPCClient {
     script: string,
     funcs: VizierQueryFunc[],
     mutation: boolean,
-    onUpdate: (updates: BatchDataUpdate[]) => void,
-    onResults: (results: VizierQueryResult) => void,
-    onError: (error: VizierQueryError) => void,
-  ): () => (() => void) {
+  ): Observable<ExecutionStateUpdate> {
     const headers = {
       ...(this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` }),
     };
@@ -132,107 +191,141 @@ export class VizierGRPCClient {
     try {
       req = this.buildRequest(script, funcs, mutation);
     } catch (err) {
-      onError(err);
-      return () => () => {};
+      return throwError(err);
     }
 
-    const call = this.client.executeScript(req, headers);
-    const tablesMap = new Map<string, Table>();
-    const results: VizierQueryResult = { tables: [] };
-    let resolved = false;
+    return new Observable<ExecutionStateUpdate>((subscriber) => {
+      const call = this.client.executeScript(req, headers);
+      const tablesMap = new Map<string, Table>();
+      const results: VizierQueryResult = { tables: [] };
+      let resolved = false;
 
-    let awaitingUpdates: BatchDataUpdate[] = [];
+      let awaitingUpdates: BatchDataUpdate[] = [];
+      let updateInterval: number;
 
-    const interval = setInterval(() => {
-      if (awaitingUpdates.length) {
-        onUpdate(awaitingUpdates);
-        awaitingUpdates = [];
-      }
-    }, 1000);
-
-    call.on('data', (resp) => {
-      if (!results.queryId) {
-        results.queryId = resp.getQueryId();
-      }
-
-      if (resp.hasStatus()) {
-        const status = resp.getStatus();
-        const errList = status.getErrorDetailsList();
-        resolved = true;
-        if (errList.length > 0) {
-          onError(new VizierQueryError('execution', getExecutionErrors(errList), status));
-          return;
-        }
-        const errMsg = status.getMessage();
-        if (errMsg) {
-          onError(new VizierQueryError('execution', errMsg, status));
-          return;
-        }
-
-        results.status = status;
-        onResults(results);
-        return;
-      }
-
-      if (resp.hasMetaData()) {
-        const relation = resp.getMetaData().getRelation();
-        const id = resp.getMetaData().getId();
-        const name = resp.getMetaData().getName();
-        tablesMap.set(id, {
-          relation, id, name, data: [],
+      const cancel = () => {
+        clearInterval(updateInterval);
+        call.cancel();
+        subscriber.next({
+          event: { type: 'cancel' },
+          results,
+          cancel,
+          completionReason: 'cancelled',
         });
-        const table = tablesMap.get(id);
-        results.tables.push(table);
-        results.schemaOnly = true;
-        onResults(results);
-      } else if (resp.hasMutationInfo()) {
-        results.mutationInfo = resp.getMutationInfo();
-      } else if (resp.hasData()) {
-        const data = resp.getData();
-        if (data.hasBatch()) {
-          results.schemaOnly = false;
+        subscriber.complete();
+        subscriber.unsubscribe();
+      };
 
-          const batch = data.getBatch();
-          const id = batch.getTableId();
-          const table = tablesMap.get(id);
-          const { name, relation } = table;
-          table.data.push(batch);
+      const emit = (
+        event: ExecutionEvent,
+        completionReason?: ExecutionStateUpdate['completionReason'],
+        error?: VizierQueryError,
+      ) => {
+        subscriber.next({
+          event, results, cancel, completionReason, error,
+        });
+      };
 
-          // These get flushed on an interval, so as not to flood the UI with expensive re-renders
-          awaitingUpdates.push({
-            id, name, relation, batch,
-          });
-        } else if (data.hasExecutionStats()) {
-          // The query finished executing, and all the data has been received.
-          results.executionStats = data.getExecutionStats();
-          onResults(results);
-          resolved = true;
+      const emitError = (error: VizierQueryError) => {
+        clearInterval(updateInterval);
+        call.cancel();
+        emit({ type: 'error', error }, 'error', error);
+        subscriber.complete();
+        subscriber.unsubscribe();
+      };
+
+      updateInterval = window.setInterval(() => {
+        if (awaitingUpdates.length) {
+          emit({ type: 'data', data: awaitingUpdates });
+          awaitingUpdates = [];
         }
-      }
-    });
+      }, 1000);
 
-    call.on('end', () => {
-      clearInterval(interval);
-      if (!resolved) {
-        onError(new VizierQueryError('execution', 'Execution ended with incomplete results'));
-      }
-    });
+      // To provide a cancel method immediately
+      emit({ type: 'start' });
 
-    call.on('error', (err) => {
-      resolved = true;
-      clearInterval(interval);
-      onError(new VizierQueryError('server', err.message));
-    });
-    call.on('status', (status) => {
-      if (status.code > 0) {
+      call.on('data', (resp) => {
+        if (!results.queryId) {
+          results.queryId = resp.getQueryId();
+        }
+
+        if (resp.hasStatus()) {
+          const status = resp.getStatus();
+          const errList = status.getErrorDetailsList();
+          resolved = true;
+          if (errList.length > 0) {
+            emitError(new VizierQueryError('execution', getExecutionErrors(errList), status));
+            return;
+          }
+          const errMsg = status.getMessage();
+          if (errMsg) {
+            emitError(new VizierQueryError('execution', errMsg, status));
+            return;
+          }
+
+          results.status = status;
+          emit({ type: 'status', status });
+          return;
+        }
+
+        if (resp.hasMetaData()) {
+          const relation = resp.getMetaData().getRelation();
+          const id = resp.getMetaData().getId();
+          const name = resp.getMetaData().getName();
+          tablesMap.set(id, {
+            relation, id, name, data: [],
+          });
+          const table = tablesMap.get(id);
+          results.tables.push(table);
+          results.schemaOnly = true;
+          emit({ type: 'metadata', table });
+        } else if (resp.hasMutationInfo()) {
+          results.mutationInfo = resp.getMutationInfo();
+          emit({ type: 'mutation-info', mutationInfo: results.mutationInfo });
+        } else if (resp.hasData()) {
+          const data = resp.getData();
+          if (data.hasBatch()) {
+            results.schemaOnly = false;
+
+            const batch = data.getBatch();
+            const id = batch.getTableId();
+            const table = tablesMap.get(id);
+            const { name, relation } = table;
+            table.data.push(batch);
+
+            // These get flushed on an interval, so as not to flood the UI with expensive re-renders
+            awaitingUpdates.push({
+              id, name, relation, batch,
+            });
+          } else if (data.hasExecutionStats()) {
+            // The query finished executing, and all the data has been received.
+            results.executionStats = data.getExecutionStats();
+            emit({ type: 'stats', stats: results.executionStats }, 'complete');
+            subscriber.complete();
+            subscriber.unsubscribe();
+            resolved = true;
+          }
+        }
+      });
+
+      call.on('end', () => {
+        clearInterval(updateInterval);
+        if (!resolved) {
+          emitError(new VizierQueryError('execution', 'Execution ended with incomplete results'));
+        }
+      });
+
+      call.on('error', (err) => {
         resolved = true;
-        onError(new VizierQueryError('server', status.details));
-      }
-    });
-
-    return () => (() => {
-      clearInterval(interval);
-      call.cancel();
+        clearInterval(updateInterval);
+        emitError(new VizierQueryError('server', err.message));
+      });
+      call.on('status', (status) => {
+        if (status.code > 0) {
+          resolved = true;
+          emitError(new VizierQueryError('server', status.details));
+        }
+      });
     });
   }
 

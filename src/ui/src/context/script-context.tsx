@@ -26,6 +26,7 @@ import {
   LiveViewPageScriptIds, matchLiveViewEntity, toEntityPathname,
 } from 'components/live-widgets/utils/live-view-params';
 import { BatchDataUpdate, Table } from 'common/vizier-grpc-client';
+import { checkExhaustive } from 'utils/check-exhaustive';
 import { SetStateFunc } from './common';
 
 import { ResultsContext } from './results-context';
@@ -219,6 +220,7 @@ const ScriptContextProvider = (props) => {
     };
     urlParams.setPathname(toEntityPathname(entityURL));
     // DO NOT ADD clearResults() it destroys the UI.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClusterName, liveViewPage, args]);
 
   React.useEffect(() => {
@@ -386,11 +388,10 @@ const ScriptContextProvider = (props) => {
     if (mutation) {
       const runMutation = async () => {
         let numTries = 5;
-        let queryCancelFn = null;
 
         while (numTries > 0) {
-          if (queryCancelFn != null) {
-            queryCancelFn()();
+          if (cancelExecution != null) {
+            cancelExecution();
           }
 
           let mutationComplete = false;
@@ -425,24 +426,42 @@ const ScriptContextProvider = (props) => {
             onError(error);
           };
 
-          const newQueryCancelFn = client.executeScript(
+          client.executeScript(
             execArgs.pxl,
             getQueryFuncs(execArgs.vis, execArgs.args),
             mutation,
-            onUpdate,
-            onMutationResults,
-            onMutationError,
-          );
-          queryCancelFn = newQueryCancelFn;
-          setCancelExecution(newQueryCancelFn);
+          ).subscribe((update) => {
+            switch (update.event.type) {
+              case 'start':
+                setCancelExecution(update.cancel);
+                break;
+              case 'metadata':
+              case 'mutation-info':
+              case 'stats':
+              case 'status':
+                onMutationResults(update.results);
+                break;
+              case 'error':
+                onMutationError(update.event.error);
+                break;
+              case 'data':
+              case 'cancel':
+                break;
+              default:
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                checkExhaustive(update.event!.type);
+                break;
+            }
+          });
 
           // Wait for the query to get a mutation response before retrying.
           const cancelPromise = new Promise((resolve) => {
-            const cancelFn = () => (() => {
-              newQueryCancelFn();
+            const unwrapped = cancelExecution;
+            const cancelFn = () => {
+              unwrapped?.();
               setStreaming(false);
               resolve(true);
-            });
+            };
             setCancelExecution(cancelFn);
           });
 
@@ -472,20 +491,43 @@ const ScriptContextProvider = (props) => {
 
         setResults({ tables: {}, error: new VizierQueryError('execution', 'Deploying tracepoints failed') });
       };
-      runMutation();
+      runMutation().then();
     } else {
-      const cancelFn = client.executeScript(
+      client.executeScript(
         execArgs.pxl,
         getQueryFuncs(execArgs.vis, execArgs.args),
         mutation,
-        onUpdate,
-        onResults,
-        onError,
-      );
-      setCancelExecution(() => () => {
-        cancelFn()();
-        setStreaming(false);
-        setLoading(false);
+      ).subscribe((update) => {
+        switch (update.event.type) {
+          case 'start':
+            setCancelExecution(() => {
+              update.cancel();
+              // Timeout so as not to modify one context while rendering another
+              setTimeout(() => {
+                setStreaming(false);
+                setLoading(false);
+              });
+            });
+            break;
+          case 'data':
+            onUpdate(update.event.data);
+            break;
+          case 'metadata':
+          case 'mutation-info':
+          case 'status':
+          case 'stats':
+            onResults(update.results);
+            break;
+          case 'error':
+            onError(update.event.error);
+            break;
+          case 'cancel':
+            break;
+          default:
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            checkExhaustive(update.event!.type);
+            break;
+        }
       });
     }
   };
