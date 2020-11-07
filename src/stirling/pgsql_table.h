@@ -23,7 +23,7 @@ static constexpr DataElement kPGSQLElements[] = {
          types::PatternType::GENERAL},
         {"latency_ns", "Request-response latency in nanoseconds",
          types::DataType::INT64,
-         types::SemanticType::ST_NONE,
+         types::SemanticType::ST_DURATION_NS,
          types::PatternType::METRIC_GAUGE},
 #ifndef NDEBUG
         {"px_info_", "Pixie messages regarding the record (e.g. warnings)",
