@@ -7,9 +7,6 @@
   "version": "0.0.1",
   "description": "Pixie Labs Interface Components",
   "private": true,
-  "workspaces": [
-    "pixie-components"
-  ],
   "devDependencies": {
     "@apollo/react-testing": "^3.1.4",
     "@babel/core": "^7.0.0-rc.2",
@@ -140,7 +137,6 @@
     "moment": "^2.24.0",
     "monaco-editor": "0.20.0",
     "numeral": "^2.0.6",
-    "pixie-components": "1.0.0",
     "prism-react-renderer": "^1.0.2",
     "prop-types": "^15.5.4",
     "query-string": "^6.8.2",

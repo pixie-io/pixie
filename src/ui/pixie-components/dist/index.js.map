@@ -1,1 +1,0 @@
-{"version":3,"file":"index.js","sources":["../src/components/hello/hello.tsx"],"sourcesContent":["import * as React from 'react';\n\nexport const Hello = () => <div>Hello Pixie</div>;\n"],"names":["React.createElement"],"mappings":";;;;;;IAEa,KAAK,GAAG,cAAM,OAAAA,+CAAsB,GAAA;;;;"}
