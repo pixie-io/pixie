@@ -204,6 +204,7 @@
     "postinstall": "patch-package"
   },
   "resolutions": {
+    "http-proxy-middleware": "0.19.2",
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
     "selfsigned": "^1.10.8"
