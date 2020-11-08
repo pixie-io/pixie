@@ -2,6 +2,7 @@
 # This includes the C API, Java API, and protocol buffer files.
 
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("//bazel:licenses.bzl", "fetch_licenses")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -23,90 +24,68 @@ go_binary(
     visibility = ["//visibility:public"],
 )
 
-genrule(
+fetch_licenses(
     name = "go_licenses",
-    srcs = [
-        "//credentials/dev_infra:github_key",
-        ":fetch_licenses",
-        "//:pl_3p_go_sum",
-        "manual_licenses.json",
-    ],
-    outs = [
-        "go_licenses.json",
-    ],
-    cmd = """
-        GITHUB_API_KEY=$$(cat $(location //credentials/dev_infra:github_key))
-
-        $(location :fetch_licenses) \
-            --github_token "$${GITHUB_API_KEY}" \
-            --modules="$(location //:pl_3p_go_sum)" \
-            --try_pkg_dev_go=true \
-            --json_manual_input="$(location manual_licenses.json)" \
-            --json_output="$(location go_licenses.json)"
-    """,
+    src = "//:pl_3p_go_sum",
+    oauth_token = "//credentials/dev_infra:github_key",
+    manual_licenses = "manual_licenses.json",
+    fetch_tool = ":fetch_licenses",
+    use_pkg_dev_go = True,
+    disallow_missing = select({
+        "//bazel:stamped": True,
+        "//conditions:default": False,
+    }),
+    out_found = "go_licenses.json",
+    out_missing = "go_licenses_missing.json",
 )
 
-genrule(
+fetch_licenses(
     name = "submodule_licenses",
-    srcs = [
-        "//credentials/dev_infra:github_key",
-        ":fetch_licenses",
-        "//:pl_3p_submodules",
-        "manual_licenses.json",
-    ],
-    outs = [
-        "submodule_licenses.json",
-    ],
-    cmd = """
-        GITHUB_API_KEY=$$(cat $(location //credentials/dev_infra:github_key))
-
-        $(location :fetch_licenses) \
-            --github_token "$${GITHUB_API_KEY}" \
-            --modules="$(location //:pl_3p_submodules)" \
-            --json_manual_input="$(location manual_licenses.json)" \
-            --json_output="$(location submodule_licenses.json)"
-    """,
+    src = "//:pl_3p_submodules",
+    oauth_token = "//credentials/dev_infra:github_key",
+    manual_licenses = "manual_licenses.json",
+    fetch_tool = ":fetch_licenses",
+    disallow_missing = select({
+        "//bazel:stamped": True,
+        "//conditions:default": False,
+    }),
+    out_found = "submodule_licenses.json",
+    out_missing = "submodule_licenses_missing.json",
 )
 
-genrule(
+fetch_licenses(
     name = "deps_licenses",
-    srcs = [
-        "//credentials/dev_infra:github_key",
-        ":fetch_licenses",
-        "//:pl_3p_deps",
-        "manual_licenses.json",
-    ],
-    outs = [
-        "deps_licenses.json",
-    ],
-    cmd = """
-        GITHUB_API_KEY=$$(cat $(location //credentials/dev_infra:github_key))
-
-        $(location :fetch_licenses) \
-            --github_token "$${GITHUB_API_KEY}" \
-            --modules="$(location //:pl_3p_deps)" \
-            --json_manual_input="$(location manual_licenses.json)" \
-            --json_output="$(location deps_licenses.json)"
-    """,
+    src = "//:pl_3p_deps",
+    oauth_token = "//credentials/dev_infra:github_key",
+    manual_licenses = "manual_licenses.json",
+    fetch_tool = ":fetch_licenses",
+    disallow_missing = select({
+        "//bazel:stamped": True,
+        "//conditions:default": False,
+    }),
+    out_found = "deps_licenses.json",
+    out_missing = "deps_licenses_missing.json",
 )
 
 genrule(
     name = "all_licenses",
     srcs = [
-        "combine_licenses.py",
-        ":go_licenses",
-        ":submodule_licenses",
-        ":deps_licenses",
+        "go_licenses.json",
+        "submodule_licenses.json",
+        "deps_licenses.json",
         "//src/ui:npm_licenses",
     ],
     outs = [
         "all_licenses.json",
     ],
+    tools = [
+        "combine_licenses.py",
+    ],
     cmd = """
         python3 $(location combine_licenses.py) \
-            $(location :go_licenses) \
-            $(location :submodule_licenses) \
-            $(location :deps_licenses) \
+            $(location go_licenses.json) \
+            $(location submodule_licenses.json) \
+            $(location deps_licenses.json) \
             $(location //src/ui:npm_licenses) \
             --output $(location all_licenses.json)
     """,

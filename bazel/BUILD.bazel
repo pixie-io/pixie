@@ -41,6 +41,11 @@ config_setting(
     values = {"compilation_mode": "dbg"},
 )
 
+config_setting(
+    name = "stamped",
+    values = {"stamp": "true"},
+)
+
 # Jenkins uses `bazel query` to find the reverse dependencies of a changed file.
 # Without this, that query on pl_build_system.bzl will fail, in the case of changing its content.
 exports_files(["pl_build_system.bzl"])
