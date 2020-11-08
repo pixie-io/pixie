@@ -1,6 +1,5 @@
 #include "src/carnot/planner/objects/type_object.h"
 #include "src/carnot/planner/objects/funcobject.h"
-#include "src/shared/types/magic_enum.h"
 
 namespace pl {
 namespace carnot {

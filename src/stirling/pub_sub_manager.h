@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/shared/types/proto/types.pb.h"
+#include "src/shared/types/proto/types_pb_wrapper.h"
 #include "src/stirling/info_class_manager.h"
 #include "src/stirling/proto/stirling.pb.h"
 

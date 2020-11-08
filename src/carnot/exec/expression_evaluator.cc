@@ -16,7 +16,7 @@
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/udf/udf_definition.h"
 #include "src/shared/types/arrow_adapter.h"
-#include "src/shared/types/proto/types.pb.h"
+#include "src/shared/types/proto/types_pb_wrapper.h"
 #include "src/shared/types/types.h"
 
 namespace pl {

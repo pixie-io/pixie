@@ -80,7 +80,8 @@ def _cc_deps():
     _bazel_repo("com_github_google_glog")
     _bazel_repo("com_google_absl")
     _bazel_repo("com_google_flatbuffers")
-    _repo_impl("org_tensorflow")
+    _bazel_repo("org_tensorflow")
+    _bazel_repo("com_github_neargye_magic_enum")
 
     _include_all_repo("com_github_gperftools_gperftools", patch_cmds = ["./autogen.sh"])
     _include_all_repo("com_github_nats_io_natsc", patches = ["//third_party:natsc.patch"], patch_args = ["-p1"])
@@ -94,7 +95,6 @@ def _cc_deps():
     _repo_impl("com_github_ariafallah_csv_parser", build_file = "//third_party:csv_parser.BUILD")
     _repo_impl("com_github_cameron314_concurrentqueue", build_file = "//third_party:concurrentqueue.BUILD")
     _repo_impl("com_github_skystrife_cpptoml", build_file = "//third_party:cpptoml.BUILD")
-    _repo_impl("com_github_neargye_magic_enum", build_file = "//third_party:magic_enum.BUILD")
     _repo_impl("com_github_arun11299_cpp_jwt", build_file = "//third_party:cpp_jwt.BUILD")
     _repo_impl("com_github_cyan4973_xxhash", build_file = "//third_party:xxhash.BUILD")
     _repo_impl("com_github_nlohmann_json", build_file = "//third_party:nlohmann_json.BUILD")

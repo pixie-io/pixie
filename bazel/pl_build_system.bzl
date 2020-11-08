@@ -66,6 +66,9 @@ def pl_common_linkopts():
         "//conditions:default": ["-lstdc++fs"],
     })
 
+def pl_defines():
+    return ["MAGIC_ENUM_RANGE_MIN=0", "MAGIC_ENUM_RANGE_MAX=256"]
+
 def _default_external_deps():
     return [
         "@com_github_gflags_gflags//:gflags",
@@ -124,7 +127,7 @@ def pl_cc_library_internal(
         linkstatic = 1,
         linkstamp = linkstamp,
         linkopts = linkopts,
-        defines = defines,
+        defines = pl_defines() + defines,
         testonly = testonly,
         strip_include_prefix = strip_include_prefix,
     )
@@ -168,7 +171,7 @@ def pl_cc_binary(
         stamp = 1,
         tags = tags,
         deps = deps + _default_external_deps() + _default_internal_deps(),
-        defines = defines,
+        defines = pl_defines() + defines,
     )
 
 # PL C++ test targets should be specified with this function.
@@ -249,7 +252,7 @@ def pl_cc_test_library(
             repository + "//src/common/testing:cc_library",
         ] + _default_external_deps(),
         tags = tags,
-        defines = defines,
+        defines = pl_defines() + defines,
         visibility = visibility,
         alwayslink = 1,
         linkstatic = 1,

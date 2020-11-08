@@ -8,6 +8,9 @@
 enum class Color { RED = 2, BLUE = 4, GREEN = 8 };
 constexpr std::size_t kColorCount = magic_enum::enum_count<Color>();
 
+// Tests values that go beyond MAGIC_ENUM_RANGE_MAX.
+enum class WideColor { INFRARED = -1, RED = 2, VIOLET = 256, ULTRAVIOLET = 1024 };
+
 TEST(MagicEnum, num_elements) { EXPECT_EQ(kColorCount, 3); }
 
 TEST(MagicEnum, enum_to_string) {
@@ -20,6 +23,30 @@ TEST(MagicEnum, unknown_enum_to_string) {
   Color color = static_cast<Color>(1);
   std::string_view color_name = magic_enum::enum_name(color);
   EXPECT_EQ(color_name, "");
+}
+
+// This tests that we have MAGIC_ENUM_RANGE_MAX set properly.
+TEST(MagicEnum, large_enum_to_string) {
+  // We can see VIOLET because its value is exactly MAGIC_ENUM_RANGE_MAX.
+  {
+    WideColor color = WideColor::VIOLET;
+    std::string_view color_name = magic_enum::enum_name(color);
+    EXPECT_EQ(color_name, "VIOLET");
+  }
+
+  // We can't see ULTRAVIOLET because the value is beyond MAGIC_ENUM_RANGE_MAX.
+  {
+    WideColor color = WideColor::ULTRAVIOLET;
+    std::string_view color_name = magic_enum::enum_name(color);
+    EXPECT_EQ(color_name, "");
+  }
+
+  // We can't see INFRARED because the value is below MAGIC_ENUM_RANGE_MIN.
+  {
+    WideColor color = WideColor::INFRARED;
+    std::string_view color_name = magic_enum::enum_name(color);
+    EXPECT_EQ(color_name, "");
+  }
 }
 
 // Like enum_to_string above, but passing name through template parameter.

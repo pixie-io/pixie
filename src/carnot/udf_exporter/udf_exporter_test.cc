@@ -9,7 +9,7 @@
 
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/testing/testing.h"
-#include "src/shared/types/proto/types.pb.h"
+#include "src/shared/types/proto/types_pb_wrapper.h"
 
 namespace pl {
 namespace carnot {

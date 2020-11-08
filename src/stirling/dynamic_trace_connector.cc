@@ -6,7 +6,7 @@
 #include <rapidjson/writer.h>
 
 #include "src/common/base/base.h"
-#include "src/shared/types/proto/types.pb.h"
+#include "src/shared/types/proto/types_pb_wrapper.h"
 #include "src/stirling/dynamic_tracing/dynamic_tracer.h"
 
 namespace pl {

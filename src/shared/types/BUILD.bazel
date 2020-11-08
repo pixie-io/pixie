@@ -15,7 +15,7 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
-        "//src/shared/types/proto:types_pl_cc_proto",
+        "//src/shared/types/proto:cc_library",
         "//third_party:arrow",
         "@com_google_farmhash//:farmhash",
     ],

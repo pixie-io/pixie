@@ -12,9 +12,7 @@ config_setting(
 
 config_setting(
     name = "coverage_enabled",
-    values = {
-        "define": "PL_COVERAGE=true",
-    },
+    values = {"define": "PL_COVERAGE=true"},
 )
 
 config_setting(

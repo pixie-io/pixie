@@ -7,7 +7,7 @@
 
 #include <absl/strings/str_format.h>
 #include "src/common/base/base.h"
-#include "src/shared/types/proto/types.pb.h"
+#include "src/shared/types/proto/types_pb_wrapper.h"
 
 namespace pl {
 namespace types {

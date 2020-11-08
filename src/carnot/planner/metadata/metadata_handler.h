@@ -10,7 +10,7 @@
 #include "src/common/base/status.h"
 #include "src/common/base/statusor.h"
 #include "src/shared/metadatapb/metadata.pb.h"
-#include "src/shared/types/proto/types.pb.h"
+#include "src/shared/types/proto/types_pb_wrapper.h"
 
 namespace pl {
 namespace carnot {

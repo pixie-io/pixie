@@ -8,7 +8,7 @@
 #include <absl/memory/memory.h>
 #include <absl/strings/ascii.h>
 
-#include "src/shared/types/proto/types.pb.h"
+#include "src/shared/types/proto/types_pb_wrapper.h"
 #include "third_party/bpftrace/src/ast/async_event_types.h"
 
 namespace pl {

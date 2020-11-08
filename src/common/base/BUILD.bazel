@@ -109,7 +109,7 @@ pl_cc_test(
 pl_cc_test(
     name = "magic_enum_test",
     srcs = ["magic_enum_test.cc"],
-    deps = [":cc_library"],
+    deps = [":cc_library", "//src/common/base/testproto:test_pl_cc_proto"],
 )
 
 pl_cc_test(

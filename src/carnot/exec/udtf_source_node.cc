@@ -14,7 +14,7 @@
 #include "src/common/base/base.h"
 #include "src/common/memory/object_pool.h"
 #include "src/shared/types/arrow_adapter.h"
-#include "src/shared/types/proto/types.pb.h"
+#include "src/shared/types/proto/types_pb_wrapper.h"
 #include "src/shared/types/types.h"
 #include "src/table_store/table_store.h"
 

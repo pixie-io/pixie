@@ -1,5 +1,6 @@
 # gazelle:ignore
 load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
 pl_proto_library(
     name = "types_pl_proto",
@@ -10,7 +11,9 @@ pl_proto_library(
 pl_cc_proto_library(
     name = "types_pl_cc_proto",
     proto = ":types_pl_proto",
-    visibility = ["//visibility:public"],
+    # Intentionally private. In general, use :cc_library instead,
+    # which provides an extra wrapper that customizes magic_enum.
+    visibility = ["//src/stirling/dynamic_tracing/ir/sharedpb:__subpackages__"],
 )
 
 pl_go_proto_library(
@@ -18,4 +21,17 @@ pl_go_proto_library(
     importpath = "pixielabs.ai/pixielabs/src/shared/types/proto",
     proto = ":types_pl_proto",
     visibility = ["//visibility:public"],
+)
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = ["types_pb_wrapper.h"],
+    visibility = ["//visibility:public"],
+    deps = ["types_pl_cc_proto"],
+)
+
+pl_cc_test(
+    name = "types_pb_wrapper_test",
+    srcs = ["types_pb_wrapper_test.cc"],
+    deps = [":cc_library"],
 )
