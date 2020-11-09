@@ -30,11 +30,6 @@ cc_library(
         "lib/libLLVMCFGuard.a",
         "lib/libLLVMX86Desc.a",
         "lib/libLLVMX86Info.a",
-        "lib/libLLVMARMCodeGen.a",
-        "lib/libLLVMARMDesc.a",
-        "lib/libLLVMARMInfo.a",
-        "lib/libLLVMARMAsmParser.a",
-        "lib/libLLVMARMUtils.a",
         "lib/libLLVMMCDisassembler.a",
         "lib/libLLVMBitstreamReader.a",
         "lib/libclangASTMatchers.a",
@@ -85,11 +80,6 @@ cc_library(
         "lib/libLLVMSupport.a",
         "lib/libLLVMDemangle.a",
         "lib/libLLVMX86Disassembler.a",
-        "lib/libLLVMWebAssemblyAsmParser.a",
-        "lib/libLLVMWebAssemblyCodeGen.a",
-        "lib/libLLVMWebAssemblyDesc.a",
-        "lib/libLLVMWebAssemblyDisassembler.a",
-        "lib/libLLVMWebAssemblyInfo.a",
         "lib/libLLVMOrcError.a",
 
         # WARNING HACK: This adds a stub so that we don't have to include all of

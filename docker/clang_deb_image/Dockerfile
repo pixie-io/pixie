@@ -19,7 +19,7 @@ WORKDIR /llvm_all/build
 RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
     cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
     -DLLVM_BUILD_DOCS=OFF -DCMAKE_INSTALL_PREFIX=/opt/clang-11.0 \
-    -DLLVM_TARGETS_TO_BUILD="ARM;BPF;X86;WebAssembly" \
+    -DLLVM_TARGETS_TO_BUILD="BPF;X86" \
     -DLLVM_ENABLE_SPHINX=Off \
     -DLLVM_ENABLE_DOXYGEN=OFF \
     -DLLVM_ENABLE_RTTI=ON \
@@ -60,6 +60,6 @@ RUN rm -rf /opt/clang-11.0-libc++/src
 
 WORKDIR /opt
 VOLUME /image
-ENV deb_name clang-11.0-pl2.deb
+ENV deb_name clang-11.0-pl3.deb
 CMD ["sh", "-c",  "fpm -p /image/${deb_name} \
-        -s dir -t deb -n clang-11.0 -v 11.0-pl2 --prefix /opt clang-11.0 clang-11.0-libc++"]
+        -s dir -t deb -n clang-11.0 -v 11.0-pl3 --prefix /opt clang-11.0 clang-11.0-libc++"]
