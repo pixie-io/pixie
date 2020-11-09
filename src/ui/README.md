@@ -2,10 +2,10 @@
 
 ## Export environment variables for webpack
 ```
-export PL_GATEWAY_URL="https://$(dig +short staging.withpixie.dev @8.8.8.8)"
-export PL_BUILD_TYPE=staging
-export SELFSIGN_CERT_FILE="$HOME/.staging.cert"
-export SELFSIGN_CERT_KEY="$HOME/.staging.key"
+export PL_GATEWAY_URL="https://$(dig +short prod.withpixie.ai @8.8.8.8)"
+export PL_BUILD_TYPE=prod
+export SELFSIGN_CERT_FILE="$HOME/.prod.cert"
+export SELFSIGN_CERT_KEY="$HOME/.prod.key"
 ```
 
 

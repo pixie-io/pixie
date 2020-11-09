@@ -1,37 +1,11 @@
 import * as React from 'react';
 
-import { storiesOf } from '@storybook/react';
+import { CodeEditor } from 'components/code-editor/code-editor';
 
-import { CodeEditor } from '../src/components/code-editor/code-editor';
+export default {
+  title: 'CodeEditor',
+  component: CodeEditor,
+  decorators: [(Story) => <div style={{ height: '150px' }}><Story /></div>],
+};
 
-class EditorWrapper extends React.Component<{}, { code: string }> {
-  constructor(props) {
-    super(props);
-    this.state = {
-      code: '',
-    };
-  }
-
-  render() {
-    return (
-      <CodeEditor
-        onChange={(newCode) => { this.setState({ code: newCode }); }}
-      />
-    );
-  }
-}
-
-storiesOf('CodeEditor', module)
-  .add('Basic', () => (
-    <CodeEditor
-    />
-  ), {
-    info: { inline: true },
-    notes: 'Code editor component. This component is a wrapper around react-codemirror2. The '
-      + 'component is uncontrolled, meaning it does not manage state on it\'s own, subscribe to '
-      + 'code changes using the onChange callback.',
-  })
-  .add('With Wrapper', () => <EditorWrapper />, {
-    info: { inline: true },
-    notes: 'Example with a wrapper component that binds the code changes to the state.',
-  });
+export const Basic = () => <CodeEditor />;

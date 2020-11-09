@@ -1,11 +1,10 @@
 import * as React from 'react';
 
-import { storiesOf } from '@storybook/react';
+import { Spinner } from 'components/spinner/spinner';
 
-import { Spinner } from '../src/components/spinner/spinner';
+export default {
+  title: 'Spinner',
+  component: Spinner,
+};
 
-storiesOf('Spinner', module)
-  .add('Circular', () => (<Spinner />), {
-    info: { inline: true },
-    notes: 'Spinner component that spins, for use in loading states of components.',
-  });
+export const Circular = () => <Spinner />;
