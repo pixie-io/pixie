@@ -48,6 +48,15 @@ struct Message : public FrameBase {
   size_t ByteSize() const override {
     return sizeof(Message) + headers_byte_size + body.size() + resp_message.size();
   }
+
+  std::string ToString() const {
+    return absl::Substitute(
+        "[type=$0 minor_version=$1 headers=[$2] req_method=$3 "
+        "req_path=$4 resp_status=$5 resp_message=$6 body=$7]",
+        magic_enum::enum_name(type), minor_version,
+        absl::StrJoin(headers, ",", absl::PairFormatter(":")), req_method, req_path, resp_status,
+        resp_message, body);
+  }
 };
 
 //-----------------------------------------------------------------------------
@@ -65,6 +74,10 @@ struct Record {
   // Used to record info/warnings.
   // Only pushed to table store on debug builds.
   std::string px_info = "";
+
+  std::string ToString() const {
+    return absl::Substitute("[req=$0 resp=$1]", req.ToString(), resp.ToString());
+  }
 };
 
 struct ProtocolTraits {

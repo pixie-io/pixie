@@ -191,14 +191,7 @@ TEST_F(HTTP2TraceTest, Basic) {
         AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kBytesRecv, indices[0])
             .val;
     EXPECT_THAT(conn_open, 1);
-    // TODO(yzhao): This should be 1. This fails because:
-    // * SocketTraceConnector reads perf buffers in the order:
-    //   "socket_control_events" "socket_data_events".
-    // * conn_event_t is completely ignored, because its traffic_class cannot be resolved until
-    // socket_data_event_t is received.
-    // * When close_event_t is received, it is also ignored, as the conn_event_t is ignored,
-    // and the socket_data_event_t has not arrived yet,
-    EXPECT_THAT(conn_close, 0);
+    EXPECT_THAT(conn_close, 1);
     EXPECT_THAT(bytes_sent, Gt(2000));
     EXPECT_THAT(bytes_rcvd, Gt(900));
   }
