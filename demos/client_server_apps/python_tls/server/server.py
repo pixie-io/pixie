@@ -6,8 +6,7 @@ listen_addr = '127.0.0.1'
 listen_port = 8082
 server_cert = 'server.crt'
 server_key = 'server.key'
-# TODO(chengruizhe): Pass the cert implicitly
-client_certs = '../python_tls_client/client.crt'
+client_certs = '../client/client.crt'
 
 context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 context.verify_mode = ssl.CERT_REQUIRED

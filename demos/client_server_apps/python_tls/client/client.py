@@ -8,8 +8,7 @@ host_port = 8082
 server_sni_hostname = 'example.com'
 client_cert = 'client.crt'
 client_key = 'client.key'
-# TODO(chengruizhe): Pass the cert implicitly
-server_cert = '../python_tls_server/server.crt'
+server_cert = '../server/server.crt'
 
 context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=server_cert)
 context.load_cert_chain(certfile=client_cert, keyfile=client_key)
