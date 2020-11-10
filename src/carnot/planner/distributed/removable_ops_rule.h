@@ -23,6 +23,105 @@ namespace carnot {
 namespace planner {
 namespace distributed {
 
+/**
+ * @brief FilterExpressionMatcher is an interface for logic that removes agents that don't match a
+ * particular filter (sub-)expression. The front-facing interface consists of MatchExpr which
+ * returns whether this FilterExpressionMatcher can be applied and AgentsPruned
+ * which returns the set of Agents that do *not* match the expression.
+ *
+ * TODO(philkuz) figure out how to ensure Match and Create are checked by the parent class.
+ * Users can handle new filter expressions by implementing this interface and adding
+ * Match and Create static function.
+ */
+class FilterExpressionMatcher {
+ public:
+  virtual ~FilterExpressionMatcher() = default;
+
+  /**
+   * @brief AgentsPruned returns the set of Agents that do *not* match the filter
+   * expression. This outer function contains the logic that uses the the virtual functions
+   * ParseExpression and CanAgentRun to handle a particular category of filter
+   * expressions. For most implementations, the ParseExpression function should parse the expression
+   * for data that will be used in CanAgentRun.
+   *
+   * @param expr the expression (that should already be matched) to evaluate.
+   * @param agents the agents which to check the expression on.
+   * @param plan the distributed plan that the agents are a part of.
+   * @return StatusOr<AgentSet> the set of agents that do *not* match the filter expression.
+   */
+  StatusOr<AgentSet> AgentsPruned(ExpressionIR* expr, const absl::flat_hash_set<int64_t>& agents,
+                                  DistributedPlan* plan);
+
+ protected:
+  /**
+   * @brief ParseExpression parses the expression for values that are necessary for comparisons.
+   * Implementations should store these extracted values on the object.
+   *
+   * @param expr The expression to parse.
+   */
+  virtual void ParseExpression(ExpressionIR* expr) = 0;
+
+  /**
+   * @brief CanAgentRun takes a single CarnotInstance then returns true if
+   * the CarnotInstance can run the expression evaluated in ParseExpression.
+   *
+   * @param carnot the data about Carnot running on an agent.
+   * @return true if the carnot instance can run the expression.
+   * @return false otherwise
+   */
+  virtual bool CanAgentRun(CarnotInstance* carnot) const = 0;
+};
+
+class MatcherFactory {
+  using ExprMatcherFn = std::function<bool(ExpressionIR*)>;
+  using CreateFn = std::function<std::unique_ptr<FilterExpressionMatcher>()>;
+
+ public:
+  /**
+   * @brief Adds the new Matcher Function to this factory. The order with which Add() is called
+   * determines the order the expressions are evaluated.
+   *
+   * @tparam Val the matcher type.
+   */
+  template <typename Val>
+  void Add() {
+    matchers.push_back(&Val::MatchExpr);
+    create.push_back(&Val::Create);
+  }
+
+  /**
+   * @brief Compares the value to all of the FilterExpressionMatcher objects found in this Factory.
+   * If the expression matches any of the matchers, we evaluate the corresponding
+   * FilterExpressionMatcher on that expression. Otherwise returns an empty set.
+   *
+   * The method iterates through the matchers in the order that Add() was called, using only the
+   * first matching FilterExpressionMatcher if there is one.
+   *
+   * @param expr the expression to evaluate.
+   * @param agents the agents which to check the expression on.
+   * @param plan the distributed plan that the agents are a part of.
+   * @return StatusOr<AgentSet> the set of agents that cannot run this expression or an error if one
+   * occurs.
+   */
+  StatusOr<AgentSet> AgentsPrunedByFilterExpression(ExpressionIR* expr,
+                                                    const absl::flat_hash_set<int64_t>& agents,
+                                                    DistributedPlan* plan) const {
+    DCHECK_EQ(matchers.size(), create.size());
+    for (const auto& [i, match_fn] : Enumerate(matchers)) {
+      if (match_fn(expr)) {
+        auto handler = create[i]();
+        return handler->AgentsPruned(expr, agents, plan);
+      }
+    }
+    return AgentSet();
+  }
+
+  // The matcher functions to evaluate per expression.
+  std::vector<ExprMatcherFn> matchers;
+  // The functions to create the matcher objects in case an expression matches one.
+  std::vector<CreateFn> create;
+};
+
 class MapRemovableOperatorsRule : public Rule {
  public:
   /**
@@ -45,11 +144,7 @@ class MapRemovableOperatorsRule : public Rule {
  protected:
   MapRemovableOperatorsRule(DistributedPlan* plan,
                             const absl::flat_hash_set<int64_t>& pem_instances,
-                            const SchemaToAgentsMap& schema_map)
-      : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false),
-        plan_(plan),
-        pem_instances_(pem_instances),
-        schema_map_(schema_map) {}
+                            const SchemaToAgentsMap& schema_map);
 
   StatusOr<bool> Apply(IRNode* node) override;
 
@@ -74,6 +169,8 @@ class MapRemovableOperatorsRule : public Rule {
   DistributedPlan* plan_;
   const absl::flat_hash_set<int64_t>& pem_instances_;
   const SchemaToAgentsMap& schema_map_;
+
+  MatcherFactory matchers_factory_;
 };
 
 }  // namespace distributed

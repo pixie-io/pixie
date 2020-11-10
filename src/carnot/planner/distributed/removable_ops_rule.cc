@@ -39,18 +39,107 @@ StatusOr<bool> MapRemovableOperatorsRule::Apply(IRNode* node) {
   return false;
 }
 
-StatusOr<AgentSet> MapRemovableOperatorsRule::FilterExpressionMayProduceData(ExpressionIR* expr) {
-  if (!Match(expr, Func())) {
-    return AgentSet();
+StatusOr<AgentSet> FilterExpressionMatcher::AgentsPruned(ExpressionIR* expr,
+                                                         const absl::flat_hash_set<int64_t>& agents,
+                                                         DistributedPlan* plan) {
+  AgentSet agents_that_remove_op;
+  ParseExpression(expr);
+  for (int64_t agent : agents) {
+    auto carnot = plan->Get(agent);
+    if (!carnot) {
+      return error::InvalidArgument("Cannot find agent $0 in distributed plan", agent);
+    }
+    if (!CanAgentRun(carnot)) {
+      agents_that_remove_op.agents.insert(agent);
+    }
   }
-  auto func = static_cast<FuncIR*>(expr);
-  if (func->args().size() != 2) {
-    return AgentSet();
+  return agents_that_remove_op;
+}
+
+class ASIDMatcher : public FilterExpressionMatcher {
+ public:
+  static bool MatchExpr(ExpressionIR* expr) {
+    return Match(expr, Equals(ASID(), Int())) && Match(expr, Equals(Func("asid"), Int()));
   }
 
+  static std::unique_ptr<FilterExpressionMatcher> Create() {
+    return std::make_unique<ASIDMatcher>();
+  }
+
+  bool CanAgentRun(CarnotInstance* carnot) const override {
+    return carnot->carnot_info().asid() == asid_;
+  }
+
+  void ParseExpression(ExpressionIR* expr) override {
+    auto func = static_cast<FuncIR*>(expr);
+    int64_t arg_idx = 0;
+    if (Match(func->args()[1], Int())) {
+      arg_idx = 1;
+    }
+    asid_ = static_cast<IntIR*>(func->args()[arg_idx])->val();
+  }
+
+ private:
+  int64_t asid_;
+};
+
+class StringBloomFilterMatcher : public FilterExpressionMatcher {
+ public:
+  static bool MatchExpr(ExpressionIR* expr) {
+    return Match(expr, Equals(MetadataExpression(), String()));
+  }
+
+  static std::unique_ptr<FilterExpressionMatcher> Create() {
+    return std::make_unique<StringBloomFilterMatcher>();
+  }
+
+  bool CanAgentRun(CarnotInstance* carnot) const override {
+    auto* md_filter = carnot->metadata_filter();
+    if (md_filter == nullptr) {
+      return false;
+    }
+    // The filter is kept if the metadata type is missing.
+    if (!md_filter->metadata_types().contains(md_type_)) {
+      return true;
+    }
+    // The filter is removed if we don't contain the entity.
+    return md_filter->ContainsEntity(md_type_, val_);
+  }
+
+  void ParseExpression(ExpressionIR* expr) override {
+    auto func = static_cast<FuncIR*>(expr);
+    int64_t val_idx = 0;
+    int64_t md_idx = 1;
+    if (Match(func->args()[1], String())) {
+      val_idx = 1;
+      md_idx = 0;
+    }
+    val_ = static_cast<StringIR*>(func->args()[val_idx])->str();
+    md_type_ = static_cast<ExpressionIR*>(func->args()[md_idx])->annotations().metadata_type;
+  }
+
+ private:
+  std::string val_;
+  MetadataType md_type_;
+};
+
+MapRemovableOperatorsRule::MapRemovableOperatorsRule(
+    DistributedPlan* plan, const absl::flat_hash_set<int64_t>& pem_instances,
+    const SchemaToAgentsMap& schema_map)
+    : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false),
+      plan_(plan),
+      pem_instances_(pem_instances),
+      schema_map_(schema_map) {
+  matchers_factory_.Add<ASIDMatcher>();
+  matchers_factory_.Add<StringBloomFilterMatcher>();
+}
+
+StatusOr<AgentSet> MapRemovableOperatorsRule::FilterExpressionMayProduceData(ExpressionIR* expr) {
+  // Check for nested expressions.
   auto logical_and = Match(expr, LogicalAnd(Value(), Value()));
   auto logical_or = Match(expr, LogicalOr(Value(), Value()));
   if (logical_and || logical_or) {
+    FuncIR* func = static_cast<FuncIR*>(expr);
     PL_ASSIGN_OR_RETURN(auto lhs, FilterExpressionMayProduceData(func->args()[0]));
     PL_ASSIGN_OR_RETURN(auto rhs, FilterExpressionMayProduceData(func->args()[1]));
     // If the expression is AND, we union the agents we want to remove.
@@ -58,43 +147,8 @@ StatusOr<AgentSet> MapRemovableOperatorsRule::FilterExpressionMayProduceData(Exp
     return logical_and ? lhs.Union(rhs) : lhs.Intersection(rhs);
   }
 
-  // We only care about those expressions that match df.ctx['pod'] == 'pl/pod_name'.
-  if (!Match(expr, Equals(MetadataExpression(), String()))) {
-    return AgentSet();
-  }
-  ExpressionIR* metadata_expr;
-  StringIR* value;
-
-  if (Match(func->args()[0], String())) {
-    value = static_cast<StringIR*>(func->args()[0]);
-    metadata_expr = func->args()[1];
-  } else {
-    metadata_expr = func->args()[0];
-    value = static_cast<StringIR*>(func->args()[1]);
-  }
-
-  auto metadata_type = metadata_expr->annotations().metadata_type;
-  AgentSet agents_that_remove_op;
-  for (int64_t pem : pem_instances_) {
-    auto pem_carnot = plan_->Get(pem);
-    if (!pem_carnot) {
-      return error::InvalidArgument("Cannot find pem $0 in distributed plan", pem);
-    }
-    auto* md_filter = pem_carnot->metadata_filter();
-    if (md_filter == nullptr) {
-      agents_that_remove_op.agents.insert(pem);
-      continue;
-    }
-    // The Filter is kept if the metadata type is missing.
-    if (!md_filter->metadata_types().contains(metadata_type)) {
-      continue;
-    }
-    // The Filter is removed if we don't contain the entity.
-    if (!md_filter->ContainsEntity(metadata_type, value->str())) {
-      agents_that_remove_op.agents.insert(pem);
-    }
-  }
-  return agents_that_remove_op;
+  // Check expressions that exist in the metadata factory.
+  return matchers_factory_.AgentsPrunedByFilterExpression(expr, pem_instances_, plan_);
 }
 
 StatusOr<bool> MapRemovableOperatorsRule::CheckFilter(FilterIR* filter_ir) {

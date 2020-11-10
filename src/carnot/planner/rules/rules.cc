@@ -1356,7 +1356,7 @@ StatusOr<bool> ResolveMetadataPropertyRule::Apply(IRNode* ir_node) {
 
   // Check to see whether metadata is valid.
   if (!md_handler_->HasProperty(metadata->name())) {
-    return metadata->CreateIRNodeError("No such key '$0' available", metadata->name());
+    return metadata->CreateIRNodeError("'$0' unavailable metadata key.", metadata->name());
   }
 
   PL_ASSIGN_OR_RETURN(MetadataProperty * md_property, md_handler_->GetProperty(metadata->name()));

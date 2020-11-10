@@ -46,7 +46,7 @@ class ASIDUDF : public ScalarUDF {
         .Returns("The agent ID.");
   }
   static udf::InfRuleVec SemanticInferenceRules() {
-    return {udf::ExplicitRule::Create<ASIDUDF>(types::ST_ASID, {types::ST_NONE})};
+    return {udf::ExplicitRule::Create<ASIDUDF>(types::ST_ASID, {})};
   }
 };
 

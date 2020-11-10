@@ -258,6 +258,71 @@ TEST_F(RemovableOpsRuleTest, filter_or_with_nonexistant) {
   EXPECT_THAT(removable_ops_to_agents[filter], UnorderedElementsAre(1, 2));
 }
 
+constexpr char kASIDFilterExpression[] = R"pxl(
+import px
+df = px.DataFrame(table='http_events')
+df = df[px.asid() == $0]
+px.display(df, 'df')
+)pxl";
+
+TEST_F(RemovableOpsRuleTest, asid_filter) {
+  auto distributed_state = ThreeAgentOneKelvinStateWithMetadataInfo();
+  // PEM ID is 123.
+  auto logical_plan = CompileSingleNodePlan(absl::Substitute(kASIDFilterExpression, "123"));
+  auto distributed_plan = AssembleDistributedPlan(distributed_state);
+  auto split_plan = SplitPlan(logical_plan.get());
+
+  absl::flat_hash_set<int64_t> source_node_ids = SourceNodeIds(distributed_plan.get());
+
+  ASSERT_OK_AND_ASSIGN(auto agent_schema_map,
+                       LoadSchemaMap(distributed_state, distributed_plan->uuid_to_id_map()));
+
+  ASSERT_OK_AND_ASSIGN(OperatorToAgentSet removable_ops_to_agents,
+                       MapRemovableOperatorsRule::GetRemovableOperators(
+                           distributed_plan.get(), agent_schema_map, source_node_ids,
+                           split_plan->before_blocking.get()));
+
+  EXPECT_EQ(removable_ops_to_agents.size(), 1);
+
+  FilterIR* filter = nullptr;
+  for (const auto& [op, agents] : removable_ops_to_agents) {
+    ASSERT_MATCH(op, Filter());
+    filter = static_cast<FilterIR*>(op);
+  }
+  ASSERT_NE(filter, nullptr);
+  // All agents delete.
+  EXPECT_THAT(removable_ops_to_agents[filter], UnorderedElementsAre(1, 2));
+}
+
+constexpr char kFilterOnASIDExpression[] = R"pxl(
+import px
+df = px.DataFrame(table='http_events')
+df.asid = px.asid()
+df = df[df.asid == $0]
+px.display(df, 'df')
+)pxl";
+
+TEST_F(RemovableOpsRuleTest, asid_filter_does_not_work_on_column) {
+  auto distributed_state = ThreeAgentOneKelvinStateWithMetadataInfo();
+  auto logical_plan = CompileSingleNodePlan(absl::Substitute(kFilterOnASIDExpression, "123"));
+  auto distributed_plan = AssembleDistributedPlan(distributed_state);
+  auto split_plan = SplitPlan(logical_plan.get());
+
+  absl::flat_hash_set<int64_t> source_node_ids = SourceNodeIds(distributed_plan.get());
+
+  ASSERT_OK_AND_ASSIGN(auto agent_schema_map,
+                       LoadSchemaMap(distributed_state, distributed_plan->uuid_to_id_map()));
+
+  ASSERT_OK_AND_ASSIGN(OperatorToAgentSet removable_ops_to_agents,
+                       MapRemovableOperatorsRule::GetRemovableOperators(
+                           distributed_plan.get(), agent_schema_map, source_node_ids,
+                           split_plan->before_blocking.get()));
+
+  // We don'twant to always remove asid semantic types, only when we see the explicit expression
+  // px.asid() == 123.
+  EXPECT_EQ(removable_ops_to_agents.size(), 0);
+}
+
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot

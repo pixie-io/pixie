@@ -30,6 +30,12 @@ Status MemorySinkIR::ResolveType(CompilerState* /* compiler_state */) {
   return SetResolvedType(table);
 }
 
+Status FilterIR::ResolveType(CompilerState* compiler_state) {
+  PL_RETURN_IF_ERROR(ResolveExpressionType(filter_expr_, compiler_state, parent_types()));
+  PL_ASSIGN_OR_RETURN(auto type_ptr, OperatorIR::DefaultResolveType(parent_types()));
+  return SetResolvedType(type_ptr);
+}
+
 Status GRPCSinkIR::ResolveType(CompilerState* /* compiler_state */) {
   if (!has_output_table()) {
     return CreateIRNodeError(
@@ -173,7 +179,6 @@ Status FuncIR::ResolveType(CompilerState* compiler_state,
     auto primitive_type = std::static_pointer_cast<ValueType>(arg->resolved_type());
     arg_types.push_back(primitive_type);
   }
-
   PL_ASSIGN_OR_RETURN(auto type_,
                       compiler_state->registry_info()->ResolveUDFType(func_name(), arg_types));
   return SetResolvedType(type_);

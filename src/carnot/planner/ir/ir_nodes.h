@@ -1624,6 +1624,7 @@ class FilterIR : public OperatorIR {
   ExpressionIR* filter_expr() const { return filter_expr_; }
   Status SetFilterExpr(ExpressionIR* expr);
   Status ToProto(planpb::Operator*) const override;
+  Status ResolveType(CompilerState* compiler_state);
 
   Status Init(OperatorIR* parent, ExpressionIR* expr);
 

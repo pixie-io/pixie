@@ -685,25 +685,38 @@ struct AnyFuncAllArgsMatch : public ParentMatch {
   Arg_t argMatcher_;
 };
 
+struct FuncNameMatch : public ParentMatch {
+  explicit FuncNameMatch(const std::string& name) : ParentMatch(IRNodeType::kFunc), name_(name) {}
+
+  bool Match(const IRNode* node) const override {
+    if (!Func().Match(node)) {
+      return false;
+    }
+    auto* func = static_cast<const FuncIR*>(node);
+    return func->func_name() == name_;
+  }
+
+  std::string name_;
+};
+
+inline FuncNameMatch Func(const std::string& name) { return FuncNameMatch(name); }
+
 template <typename Arg_t>
 struct FuncNameAllArgsMatch : public ParentMatch {
-  explicit FuncNameAllArgsMatch(const std::string& name, const Arg_t& argMatcher)
+  FuncNameAllArgsMatch(const std::string& name, const Arg_t& argMatcher)
       : ParentMatch(IRNodeType::kFunc), name_(name), argMatcher_(argMatcher) {}
 
   bool Match(const IRNode* node) const override {
-    if (node->type() == type) {
-      auto* F = static_cast<const FuncIR*>(node);
-      if (F->func_name() != name_) {
+    if (!Func(name_).Match(node)) {
+      return false;
+    }
+    auto* func = static_cast<const FuncIR*>(node);
+    for (const auto a : func->args()) {
+      if (!argMatcher_.Match(a)) {
         return false;
       }
-      for (const auto a : F->args()) {
-        if (!argMatcher_.Match(a)) {
-          return false;
-        }
-      }
-      return true;
     }
-    return false;
+    return true;
   }
 
   std::string name_;
@@ -1181,6 +1194,24 @@ struct LimitValueMatch : public ParentMatch {
 };
 
 inline LimitValueMatch Limit(int64_t limit_value) { return LimitValueMatch(limit_value); }
+
+// Match types::SemanticType in an expression.
+struct SemanticTypeMatch : public ParentMatch {
+  explicit SemanticTypeMatch(types::SemanticType st) : ParentMatch(IRNodeType::kAny), st_(st) {}
+
+  bool Match(const IRNode* node) const override {
+    if (!Expression().Match(node) && !node->is_type_resolved()) {
+      return false;
+    }
+    DCHECK(node->resolved_type()->IsValueType());
+    auto value_type = static_cast<ValueType*>(node->resolved_type().get());
+    return value_type->semantic_type() == st_;
+  }
+
+  types::SemanticType st_;
+};
+
+inline SemanticTypeMatch ASID() { return SemanticTypeMatch(types::ST_ASID); }
 
 }  // namespace planner
 }  // namespace carnot
