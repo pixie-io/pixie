@@ -8,6 +8,7 @@ This script traces all CQL (Cassandra) data on the cluster.
 
 import px
 
+
 def cql_data(start: str, num_head: int):
     df = px.DataFrame(table='cql_events', start_time=start)
 

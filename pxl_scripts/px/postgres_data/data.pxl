@@ -8,6 +8,7 @@ This script traces all MySQL data on the cluster.
 
 import px
 
+
 def pgsql_data(start: str, num_head: int):
     df = px.DataFrame(table='pgsql_events', start_time=start)
 

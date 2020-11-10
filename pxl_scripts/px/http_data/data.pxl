@@ -8,6 +8,7 @@ This script traces all HTTP/HTTP2 data on the cluster.
 
 import px
 
+
 def http_data(start: str, num_head: int):
     df = px.DataFrame(table='http_events', start_time=start)
 
