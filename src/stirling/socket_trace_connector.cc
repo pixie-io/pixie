@@ -574,9 +574,9 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   return Status::OK();
 }
 
-StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(
-    const ArrayView<bpf_tools::UProbeTmpl>& probe_tmpls, const std::string& binary,
-    elf_tools::ElfReader* elf_reader) {
+StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe_tmpls,
+                                                     const std::string& binary,
+                                                     elf_tools::ElfReader* elf_reader) {
   using bpf_tools::BPFProbeAttachType;
 
   int uprobe_count = 0;

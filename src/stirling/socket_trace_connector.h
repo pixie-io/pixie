@@ -59,6 +59,16 @@ DECLARE_string(stirling_role_to_trace);
 namespace pl {
 namespace stirling {
 
+/**
+ * Describes a uprobe template.
+ */
+struct UProbeTmpl {
+  std::string_view symbol;
+  elf_tools::SymbolMatchType match_type;
+  std::string_view probe_fn;
+  bpf_tools::BPFProbeAttachType attach_type = bpf_tools::BPFProbeAttachType::kEntry;
+};
+
 class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
   static constexpr auto kTables =
@@ -152,33 +162,33 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {"close", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_close"},
   });
 
-  inline static constexpr auto kHTTP2ProbeTmpls = MakeArray<bpf_tools::UProbeTmpl>({
+  inline static constexpr auto kHTTP2ProbeTmpls = MakeArray<UProbeTmpl>({
       // Probes on Golang net/http2 library.
-      bpf_tools::UProbeTmpl{
+      UProbeTmpl{
           .symbol = "google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders",
           .match_type = elf_tools::SymbolMatchType::kSuffix,
           .probe_fn = "probe_http2_client_operate_headers",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
       },
-      bpf_tools::UProbeTmpl{
+      UProbeTmpl{
           .symbol = "google.golang.org/grpc/internal/transport.(*http2Server).operateHeaders",
           .match_type = elf_tools::SymbolMatchType::kSuffix,
           .probe_fn = "probe_http2_server_operate_headers",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
       },
-      bpf_tools::UProbeTmpl{
+      UProbeTmpl{
           .symbol = "google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader",
           .match_type = elf_tools::SymbolMatchType::kSuffix,
           .probe_fn = "probe_loopy_writer_write_header",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
       },
-      bpf_tools::UProbeTmpl{
+      UProbeTmpl{
           .symbol = "golang.org/x/net/http2.(*Framer).WriteDataPadded",
           .match_type = elf_tools::SymbolMatchType::kSuffix,
           .probe_fn = "probe_http2_framer_write_data",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
       },
-      bpf_tools::UProbeTmpl{
+      UProbeTmpl{
           .symbol = "golang.org/x/net/http2.(*Framer).checkFrameOrder",
           .match_type = elf_tools::SymbolMatchType::kSuffix,
           .probe_fn = "probe_http2_framer_check_frame_order",
@@ -186,31 +196,31 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       },
 
       // Probes on Golang net/http's implementation of http2.
-      bpf_tools::UProbeTmpl{
+      UProbeTmpl{
           .symbol = "net/http.(*http2Framer).WriteDataPadded",
           .match_type = elf_tools::SymbolMatchType::kSuffix,
           .probe_fn = "probe_http_http2framer_write_data",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
       },
-      bpf_tools::UProbeTmpl{
+      UProbeTmpl{
           .symbol = "net/http.(*http2Framer).checkFrameOrder",
           .match_type = elf_tools::SymbolMatchType::kSuffix,
           .probe_fn = "probe_http_http2framer_check_frame_order",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
       },
-      bpf_tools::UProbeTmpl{
+      UProbeTmpl{
           .symbol = "net/http.(*http2writeResHeaders).writeFrame",
           .match_type = elf_tools::SymbolMatchType::kSuffix,
           .probe_fn = "probe_http_http2writeResHeaders_write_frame",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
       },
-      bpf_tools::UProbeTmpl{
+      UProbeTmpl{
           .symbol = "golang.org/x/net/http2/hpack.(*Encoder).WriteField",
           .match_type = elf_tools::SymbolMatchType::kSuffix,
           .probe_fn = "probe_hpack_header_encoder",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
       },
-      bpf_tools::UProbeTmpl{
+      UProbeTmpl{
           .symbol = "net/http.(*http2serverConn).processHeaders",
           .match_type = elf_tools::SymbolMatchType::kSuffix,
           .probe_fn = "probe_http_http2serverConn_processHeaders",
@@ -290,7 +300,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   Status UpdateHTTP2DebugSymbols(std::string_view binary, std::string_view vendor_prefix,
                                  struct conn_symaddrs_t* symaddrs);
 
-  StatusOr<int> AttachUProbeTmpl(const ArrayView<bpf_tools::UProbeTmpl>& probe_tmpls,
+  StatusOr<int> AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe_tmpls,
                                  const std::string& binary, elf_tools::ElfReader* elf_reader);
 
   StatusOr<int> AttachHTTP2Probes(
