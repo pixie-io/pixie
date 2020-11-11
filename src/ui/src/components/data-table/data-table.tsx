@@ -439,15 +439,29 @@ const InternalDataTable = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tableWrapper.current, width, totalWidth.current, colTextWidthRatio, widthOverrides, columns]);
 
+  const [wasAtTop, setWasAtTop] = React.useState<boolean>(false);
+  const [wasAtBottom, setWasAtBottom] = React.useState<boolean>(false);
+
+  const scroller = React.useMemo(
+    () => tableWrapper.current?.querySelector('.ReactVirtualized__Table__Grid'),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tableWrapper.current]);
+
   React.useEffect(() => {
     // Using direct DOM manipulation as we're messing with internals of a third-party component that doesn't expose refs
     const header: HTMLDivElement = tableWrapper.current?.querySelector('.ReactVirtualized__Table__headerRow');
-    const scroller = tableWrapper.current?.querySelector('.ReactVirtualized__Table__Grid');
     if (!header || !scroller) return () => {};
 
     const listener = () => {
       if (header && scroller) {
-        header.style.left = `${-1 * scroller.scrollLeft ?? 0}px`;
+        header.style.left = `${-1 * (scroller.scrollLeft ?? 0)}px`;
+      }
+      if (scroller) {
+        // For convenience, snap into head/tail mode when the user scrolls close enough to the edge.
+        // This also works around the react-virtualized tendency to flicker the scroll position right after changing it.
+        setWasAtTop(scroller.scrollTop < defaultCellHeight / 2);
+        const scrollBottomLimit = scroller.scrollHeight - scroller.clientHeight - (defaultCellHeight / 2);
+        setWasAtBottom(scroller.scrollTop >= scrollBottomLimit);
       }
     };
 
@@ -455,7 +469,27 @@ const InternalDataTable = ({
     return () => {
       if (scroller) scroller.removeEventListener('scroll', listener);
     };
-  }, [tableWrapper]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableWrapper.current, computeRowHeight, rowCount, scroller]);
+
+  React.useEffect(() => {
+    // If the table is already scrolled to the top or the bottom, keep it that way when the data changes
+    if (!scroller) return;
+    /* TODO(nick): On long renders (like adding a thousand results at once), the scrollHeight seen here lags a bit
+     *  behind the actual value painted on screen briefly. If that happens, we incorrectly scroll out of head/tail mode.
+     *  When implementing streaming window rendering, check if the performance improvement there fixes this.
+     *  If it doesn't, the first suspect is the windowing logic in <Table> - it might have a race condition.
+     */
+    if (wasAtTop) {
+      scroller.scrollTo(scroller.scrollLeft, 0);
+    } else if (wasAtBottom) {
+      scroller.scrollTo({
+        left: scroller.scrollLeft,
+        top: scroller.scrollHeight - scroller.clientHeight,
+        behavior: 'auto',
+      });
+    }
+  }, [scroller?.clientHeight, scroller?.scrollHeight, scroller, wasAtBottom, wasAtTop]);
 
   const headerRendererCommon: TableHeaderRenderer = React.useCallback((props) => {
     const sort = () => onSortWrapper({
@@ -557,6 +591,7 @@ const InternalDataTable = ({
         </React.Fragment>
       </>
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classes, headerRendererCommon, resizeColumn]);
   const gutterClass = clsx(
     compact && classes.compact,
