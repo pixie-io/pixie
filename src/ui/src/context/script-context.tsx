@@ -288,8 +288,12 @@ const ScriptContextProvider = (props) => {
 
     const mutation = ContainsMutation(execArgs.pxl);
     const isStreaming = IsStreaming(execArgs.pxl);
-    setLoading(true);
-    setStreaming(isStreaming);
+    // The cancellation above sets a timeout to mark these both as false, to get around a context update timing issue.
+    // In so doing, it pushes that issue downstream, to here, so do the same trick to fix it.
+    setTimeout(() => {
+      setLoading(true);
+      setStreaming(isStreaming);
+    });
 
     if (!execArgs.skipURLUpdate) {
       commitURL(execArgs.liveViewPage, execArgs.id, execArgs.args);
