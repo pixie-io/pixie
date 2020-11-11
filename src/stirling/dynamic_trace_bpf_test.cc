@@ -144,7 +144,7 @@ tracepoints {
       }
       ret_vals {
         id: "frame_header_valid"
-        expr: "$2.valid"
+        expr: "$0.valid"
       }
       output_actions {
         output_name: "probe_readFrameHeader"
@@ -156,7 +156,7 @@ tracepoints {
 )";
 
 TEST_F(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
-  InitTestFixturesAndRunTestProgram(kGRPCTraceProgram);
+  ASSERT_NO_FATAL_FAILURE(InitTestFixturesAndRunTestProgram(kGRPCTraceProgram));
   std::vector<TaggedRecordBatch> tablets = GetRecords();
 
   ASSERT_FALSE(tablets.empty());
@@ -180,7 +180,7 @@ TEST_F(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
 }
 
 TEST_F(GoHTTPDynamicTraceTest, TraceReturnValue) {
-  InitTestFixturesAndRunTestProgram(kReturnValueTraceProgram);
+  ASSERT_NO_FATAL_FAILURE(InitTestFixturesAndRunTestProgram(kReturnValueTraceProgram));
   std::vector<TaggedRecordBatch> tablets = GetRecords();
 
   ASSERT_FALSE(tablets.empty());
@@ -257,7 +257,7 @@ tracepoints {
 
 TEST_F(CPPDynamicTraceTest, DISABLED_TraceDummyExe) {
   // TODO(yzhao): This does not work yet.
-  InitTestFixturesAndRunTestProgram(kDummyExeTraceProgram);
+  ASSERT_NO_FATAL_FAILURE(InitTestFixturesAndRunTestProgram(kDummyExeTraceProgram));
   std::vector<TaggedRecordBatch> tablets = GetRecords();
   PL_UNUSED(tablets);
 }

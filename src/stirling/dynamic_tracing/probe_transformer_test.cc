@@ -64,11 +64,11 @@ tracepoints {
       }
       ret_vals {
         id: "retval0"
-        expr: "$$6"
+        expr: "$$0"
       }
       ret_vals {
         id: "retval1"
-        expr: "$$7"
+        expr: "$$1"
       }
       function_latency { id: "fn_latency" }
       output_actions {
@@ -205,11 +205,11 @@ tracepoints {
       }
       ret_vals {
         id: "retval0"
-        expr: "$$6"
+        expr: "$$0"
       }
       ret_vals {
         id: "retval1"
-        expr: "$$7"
+        expr: "$$1"
       }
       output_actions {
         output_name: "probe0_table"

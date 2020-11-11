@@ -184,11 +184,11 @@ tracepoints {
       }
       ret_vals {
         id: "retval0"
-        expr: "$$6"
+        expr: "$$0"
       }
       ret_vals {
         id: "retval1"
-        expr: "$$7.B1"
+        expr: "$$1.B1"
       }
     }
   }

@@ -199,7 +199,7 @@ tracepoints {
       }
       ret_vals {
         id: "retval0"
-        expr: "$$6"
+        expr: "$$0"
       }
       function_latency { id: "latency" }
       output_actions {

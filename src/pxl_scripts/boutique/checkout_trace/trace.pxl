@@ -7,8 +7,8 @@ import px
 def probe_func():
     return [{'l': pxtrace.ArgExpr('l')},
             {'r': pxtrace.ArgExpr('r')},
-            {'result': pxtrace.RetExpr('$2')},
-            {'error': pxtrace.RetExpr('$3')},
+            {'result': pxtrace.RetExpr('$0')},
+            {'error': pxtrace.RetExpr('$1')},
             {'latency': pxtrace.FunctionLatency()}]
 
 

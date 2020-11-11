@@ -436,7 +436,7 @@ tracepoints {
       }
       ret_vals {
         id: "retval0"
-        expr: "$$1"
+        expr: "$$0"
       }
       output_actions {
         output_name: "output_table"

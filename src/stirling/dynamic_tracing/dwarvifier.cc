@@ -937,6 +937,28 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
   }
 }
 
+namespace {
+StatusOr<int> GolangReturnValueIndex(const std::map<std::string, dwarf_tools::ArgInfo>& args_map) {
+  // Search for the first argument that has a name that fits the pattern ~rX, where X is a number.
+  const std::string kRetValPrefix = "~r";
+
+  auto iter = args_map.upper_bound(kRetValPrefix);
+  if (iter == args_map.end() || !absl::StartsWith(iter->first, kRetValPrefix)) {
+    return error::Internal("Could not find any return arguments");
+  }
+
+  std::string_view s = iter->first;
+  s.remove_prefix(kRetValPrefix.size());
+
+  int index = 0;
+  if (!absl::SimpleAtoi(s, &index)) {
+    return error::Internal("Could not extract return value index from $0", iter->first);
+  }
+
+  return index;
+}
+}  // namespace
+
 Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
                                      ir::physical::Probe* output_probe) {
   if (ret_val.expr().empty()) {
@@ -960,9 +982,11 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
       // For example Foo(a int, b int) (int, int) would have ~r2 and ~r3 as return variables.
       // One additional nuance is that the receiver, although an argument for dwarf purposes,
       // is not counted in the indexing.
-      // For now, we throw the burden of finding the index to the user,
-      // so if they want the first return argument above, they would have to specify and index of 2.
-      // TODO(oazizi): Make indexing of return value based on number of return arguments only.
+      // To address this problem, we search for the first ~r<n> that we can find,
+      // then we apply the index offset to all indices from the user.
+      PL_ASSIGN_OR_RETURN(int first_index, GolangReturnValueIndex(args_map_));
+      index += first_index;
+
       std::string ret_val_name = absl::StrCat("~r", std::to_string(index));
 
       // Reset the first component.
