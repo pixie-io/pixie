@@ -6,26 +6,14 @@
 
 import px
 
-# Prep
+# Trigger a DNS request by deploying a dnsutils pod, and issuing a DNS request.
 # kubectl apply -f https://k8s.io/examples/admin/dns/dnsutils.yaml
-
-# Then trigger a DNS request
 # kubectl exec -i -t dnsutils -- nslookup news.ycombinator.com
-
-# ----------------------------------------------------------------
-# Script variables
-# ----------------------------------------------------------------
-max_num_records = 1000
-
-# ----------------------------------------------------------------
-# Implementation
-# ----------------------------------------------------------------
 
 def ndots(start:str, hostname:str):
     df = px.DataFrame(table='dns_events', start_time=start)
 
     df.pod = df.ctx['pod']
-    df = df.head(n=max_num_records)
     df.target = px.Service(px.nslookup(df.remote_addr))
 
     df = df[px.contains(df.req_body, hostname)]
