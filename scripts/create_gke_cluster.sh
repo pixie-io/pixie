@@ -143,7 +143,8 @@ gcloud beta container --project "${PROJECT}" clusters create ${CLUSTER_NAME} \
  --no-enable-autoupgrade \
  --no-enable-autorepair \
  --labels k8s-dev-cluster=\
- --security-group="gke-security-groups@pixielabs.ai"
+ --security-group="gke-security-groups@pixielabs.ai" \
+ --no-enable-stackdriver-kubernetes
 
 
 if [ $? -ne 0 ]; then
