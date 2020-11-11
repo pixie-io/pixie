@@ -33,5 +33,6 @@ def ndots(start:str, hostname:str):
     df.query = px.pluck(df.req_body, 'queries')
     df.answer = px.pluck(df.resp_body, 'answers')
     df = df.drop(['resp_body','req_body', 'req_header', 'resp_header', 'remote_port', 'pod', 'upid', 'trace_role'])
+    df = df[['time_', 'remote_addr', 'target', 'query', 'answer', 'latency_ns']]
 
     return df

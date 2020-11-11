@@ -13,6 +13,23 @@
       "defaultValue": "news.ycombinator.com"
     }
   ],
-  "widgets": [],
-  "globalFuncs": []
+  "globalFuncs": [
+    {
+      "outputName": "ndots",
+      "func": {
+        "name": "ndots",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "hostname",
+            "variable": "hostname"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": []
 }
