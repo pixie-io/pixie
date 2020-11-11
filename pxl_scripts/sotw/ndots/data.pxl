@@ -15,23 +15,23 @@ import px
 # ----------------------------------------------------------------
 # Script variables
 # ----------------------------------------------------------------
-start_time = '-3m'
 max_num_records = 1000
 
 # ----------------------------------------------------------------
 # Implementation
 # ----------------------------------------------------------------
 
-df = px.DataFrame(table='dns_events', start_time=start_time)
+def ndots(start:str, hostname:str):
+    df = px.DataFrame(table='dns_events', start_time=start)
 
-df.pod = df.ctx['pod']
-df = df.head(n=max_num_records)
-df.target = px.Service(px.nslookup(df.remote_addr))
+    df.pod = df.ctx['pod']
+    df = df.head(n=max_num_records)
+    df.target = px.Service(px.nslookup(df.remote_addr))
 
-df = df[px.contains(df.req_body, "news.ycombinator.com")]
+    df = df[px.contains(df.req_body, hostname)]
 
-df.query = px.pluck(df.req_body, 'queries')
-df.answer = px.pluck(df.resp_body, 'answers')
-df = df.drop(['resp_body','req_body', 'req_header', 'resp_header', 'remote_port', 'pod', 'upid', 'trace_role'])
+    df.query = px.pluck(df.req_body, 'queries')
+    df.answer = px.pluck(df.resp_body, 'answers')
+    df = df.drop(['resp_body','req_body', 'req_header', 'resp_header', 'remote_port', 'pod', 'upid', 'trace_role'])
 
-px.display(df)
+    return df
