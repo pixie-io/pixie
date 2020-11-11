@@ -6,6 +6,7 @@ import { DARK_THEME } from 'common/mui-theme';
 import { SnackbarProvider } from 'components/snackbar/snackbar';
 import VersionInfo from 'components/version-info/version-info';
 import Vizier from 'containers/App/vizier';
+import PixieCookieBanner from 'common/cookie-banner';
 import { LD_CLIENT_ID } from 'containers/constants';
 import {
   Redirect, Route, Router, Switch,
@@ -104,6 +105,7 @@ export class App extends React.Component {
             </Router>
             {!isProd() ? <VersionInfo /> : null}
           </SnackbarProvider>
+          <PixieCookieBanner />
         </CloudClientContext.Provider>
       );
   }
