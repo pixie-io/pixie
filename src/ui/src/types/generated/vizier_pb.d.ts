@@ -818,6 +818,7 @@ export enum DataType {
 export enum SemanticType { 
   ST_UNSPECIFIED = 0,
   ST_NONE = 1,
+  ST_TIME_NS = 2,
   ST_AGENT_UID = 100,
   ST_ASID = 101,
   ST_UPID = 200,

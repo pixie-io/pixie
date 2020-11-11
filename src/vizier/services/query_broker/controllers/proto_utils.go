@@ -36,7 +36,9 @@ var dataTypeToVizierDataType = map[typespb.DataType]vizierpb.DataType{
 var semanticTypeToVizierSemanticType = map[typespb.SemanticType]vizierpb.SemanticType{
 	typespb.ST_UNSPECIFIED:             vizierpb.ST_UNSPECIFIED,
 	typespb.ST_NONE:                    vizierpb.ST_NONE,
+	typespb.ST_TIME_NS:                 vizierpb.ST_TIME_NS,
 	typespb.ST_AGENT_UID:               vizierpb.ST_AGENT_UID,
+	typespb.ST_ASID:                    vizierpb.ST_ASID,
 	typespb.ST_UPID:                    vizierpb.ST_UPID,
 	typespb.ST_SERVICE_NAME:            vizierpb.ST_SERVICE_NAME,
 	typespb.ST_POD_NAME:                vizierpb.ST_POD_NAME,
