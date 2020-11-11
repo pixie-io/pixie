@@ -433,7 +433,7 @@ const ScriptContextProvider = (props) => {
           ).subscribe((update) => {
             switch (update.event.type) {
               case 'start':
-                setCancelExecution(update.cancel);
+                setCancelExecution(() => update.cancel);
                 break;
               case 'metadata':
               case 'mutation-info':
@@ -462,7 +462,7 @@ const ScriptContextProvider = (props) => {
               setStreaming(false);
               resolve(true);
             };
-            setCancelExecution(cancelFn);
+            setCancelExecution(() => cancelFn);
           });
 
           // eslint-disable-next-line
@@ -500,7 +500,7 @@ const ScriptContextProvider = (props) => {
       ).subscribe((update) => {
         switch (update.event.type) {
           case 'start':
-            setCancelExecution(() => {
+            setCancelExecution(() => () => {
               update.cancel();
               // Timeout so as not to modify one context while rendering another
               setTimeout(() => {
