@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
 import {
-  Column, Relation, RowBatchData,
+  Column, Relation, RowBatchData, SemanticType,
 } from 'types/generated/vizier_pb';
 import { formatUInt128Protobuf } from './format-data';
 import { nanoToMilliSeconds } from './time';
@@ -34,9 +34,15 @@ export function ResultsToCsv(results) {
   return csvStr;
 }
 
-export function columnFromProto(column: Column): any[] {
+export function columnFromProto(column: Column, semType: SemanticType): any[] {
   if (column.hasBooleanData()) {
     return column.getBooleanData().getDataList();
+  } if (column.hasTime64nsData()) {
+    const data = column.getTime64nsData().getDataList();
+    return data.map(nanoToMilliSeconds);
+  } if (column.hasInt64Data() && semType === SemanticType.ST_TIME_NS) {
+    const data = column.getInt64Data().getDataList();
+    return data.map(nanoToMilliSeconds);
   } if (column.hasInt64Data()) {
     return column.getInt64Data().getDataList();
   } if (column.hasUint128Data()) {
@@ -45,9 +51,6 @@ export function columnFromProto(column: Column): any[] {
     return column.getFloat64Data().getDataList();
   } if (column.hasStringData()) {
     return column.getStringData().getDataList();
-  } if (column.hasTime64nsData()) {
-    const data = column.getTime64nsData().getDataList();
-    return data.map(nanoToMilliSeconds);
   }
   throw (new Error(`Unsupported data type: ${column.getColDataCase()}`));
 }
@@ -68,7 +71,8 @@ export function dataFromProto(
     const cols = batch.getColsList();
     cols.forEach((col, i) => {
       const name = colRelations[i].getColumnName();
-      columnFromProto(col).forEach((d, j) => {
+      const semType = colRelations[i].getColumnSemanticType();
+      columnFromProto(col, semType).forEach((d, j) => {
         rows[j][name] = d;
       });
     });

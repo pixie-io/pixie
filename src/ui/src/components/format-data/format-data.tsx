@@ -271,6 +271,14 @@ const RenderValueWithUnits = withStyles(() => ({
   },
 }))(RenderValueWithUnitsBase);
 
+export const TimeRenderer = ({ data }: { data: number }) => (
+  <>
+    <span>
+      {new Date(data).toLocaleString()}
+    </span>
+  </>
+);
+
 export const BytesRenderer = ({ data }: { data: number }) => <RenderValueWithUnits data={formatBytes(data)} />;
 export const DurationRenderer = ({ data }: { data: number }) => (
   <GaugeData
