@@ -94,14 +94,14 @@ interface ExecutionStatsEvent {
 }
 
 export type ExecutionEvent =
-    ExecutionStartEvent
-    | ExecutionErrorEvent
-    | ExecutionMetadataEvent
-    | ExecutionMutationInfoEvent
-    | ExecutionDataEvent
-    | ExecutionCancelEvent
-    | ExecutionStatusEvent
-    | ExecutionStatsEvent;
+  ExecutionStartEvent
+  | ExecutionErrorEvent
+  | ExecutionMetadataEvent
+  | ExecutionMutationInfoEvent
+  | ExecutionDataEvent
+  | ExecutionCancelEvent
+  | ExecutionStatusEvent
+  | ExecutionStatsEvent;
 
 /** The latest state of an executeScript, streamed from an observable */
 export interface ExecutionStateUpdate {
@@ -112,7 +112,7 @@ export interface ExecutionStateUpdate {
   /** Cancels the execution, if it is still running */
   cancel: () => void;
   /** If set, execution has halted for this reason */
-  completionReason?: 'complete'|'cancelled'|'error';
+  completionReason?: 'complete' | 'cancelled' | 'error';
   /** If set, execution has been halted by this error */
   error?: VizierQueryError;
 }
@@ -348,8 +348,14 @@ export class VizierGRPCClient {
       input.args.forEach((arg) => {
         const argValPb = new ExecuteScriptRequest.FuncToExecute.ArgValue();
         argValPb.setName(arg.name);
-        if (typeof arg.value !== 'string') {
+        if (typeof arg.value === 'undefined') {
           errors.push(new VizierQueryError('vis', `No value provided for arg ${arg.name}.`));
+          return;
+        }
+        if (typeof arg.value !== 'string') {
+          errors.push(
+            new VizierQueryError('vis', 'All args must be strings.'
+              + `Received '${typeof arg.value}' for arg '${arg.name}'.`));
           return;
         }
         argValPb.setValue(arg.value);
