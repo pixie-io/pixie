@@ -467,12 +467,12 @@ class MeanUDA : public udf::UDA {
   MeanInfo info_;
 };
 
-template <typename TArg>
+template <typename TArg, typename TAggType = TArg>
 class SumUDA : public udf::UDA {
  public:
   void Update(FunctionContext*, TArg arg) { sum_ = sum_.val + arg.val; }
   void Merge(FunctionContext*, const SumUDA& other) { sum_ = sum_.val + other.sum_.val; }
-  TArg Finalize(FunctionContext*) { return sum_; }
+  TAggType Finalize(FunctionContext*) { return sum_; }
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::InheritTypeFromArgs<SumUDA>::Create(
         {types::ST_BYTES, types::ST_THROUGHPUT_PER_NS, types::ST_THROUGHPUT_BYTES_PER_NS})};
@@ -482,8 +482,8 @@ class SumUDA : public udf::UDA {
   }
 
   Status Deserialize(FunctionContext*, const StringValue& data) {
-    sum_ =
-        *reinterpret_cast<const typename types::ValueTypeTraits<TArg>::native_type*>(data.data());
+    sum_ = *reinterpret_cast<const typename types::ValueTypeTraits<TAggType>::native_type*>(
+        data.data());
     return Status::OK();
   }
 
@@ -495,7 +495,7 @@ class SumUDA : public udf::UDA {
   }
 
  protected:
-  TArg sum_ = 0;
+  TAggType sum_ = 0;
 };
 
 template <typename TArg>

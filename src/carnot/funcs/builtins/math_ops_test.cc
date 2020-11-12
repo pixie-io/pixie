@@ -482,7 +482,7 @@ TEST(MathOps, basic_bool_sum_uda_test) {
   int64_t expected_sum = std::accumulate(std::begin(inputs), std::end(inputs), 0,
                                          [&](int64_t memo, bool val) { return memo + val; });
 
-  auto uda_tester = udf::UDATester<SumUDA<types::BoolValue>>();
+  auto uda_tester = udf::UDATester<SumUDA<types::BoolValue, types::Int64Value>>();
   uda_tester.ForInput(0).ForInput(1).ForInput(1).ForInput(0).ForInput(0).Expect(expected_sum);
 }
 
