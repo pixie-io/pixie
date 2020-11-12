@@ -187,17 +187,22 @@ export class VizierGRPCClient {
       ...(this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` }),
     };
 
-    let req: ExecuteScriptRequest;
-    try {
-      req = this.buildRequest(script, funcs, mutation);
-    } catch (err) {
-      return throwError(err);
-    }
-
     return new Observable<ExecutionStateUpdate>((subscriber) => {
+      let req: ExecuteScriptRequest;
+      const results: VizierQueryResult = { tables: [] };
+      try {
+        req = this.buildRequest(script, funcs, mutation);
+      } catch (error) {
+        subscriber.next({
+          event: { type: 'error', error }, results, cancel: () => { }, error, completionReason: 'error',
+        });
+        subscriber.complete();
+        subscriber.unsubscribe();
+        return;
+      }
+
       const call = this.client.executeScript(req, headers);
       const tablesMap = new Map<string, Table>();
-      const results: VizierQueryResult = { tables: [] };
       let resolved = false;
 
       let awaitingUpdates: BatchDataUpdate[] = [];
