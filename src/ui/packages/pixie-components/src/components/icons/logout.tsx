@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
-const LogoutIcon = (props: SvgIconProps) => (
+export const LogoutIcon = (props: SvgIconProps) => (
   <SvgIcon {...props} viewBox='0 0 32 32'>
     <path
       fillRule='evenodd'
@@ -19,5 +19,3 @@ const LogoutIcon = (props: SvgIconProps) => (
     />
   </SvgIcon>
 );
-
-export default LogoutIcon;

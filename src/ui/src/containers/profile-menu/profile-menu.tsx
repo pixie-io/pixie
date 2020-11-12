@@ -1,6 +1,4 @@
-import DocsIcon from 'components/icons/docs';
-import LogoutIcon from 'components/icons/logout';
-import SettingsIcon from 'components/icons/settings';
+import { DocsIcon, LogoutIcon, SettingsIcon } from 'pixie-components';
 import KeyboardIcon from '@material-ui/icons/Keyboard';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { DOMAIN_NAME } from 'containers/constants';
@@ -9,11 +7,9 @@ import * as React from 'react';
 import { Link } from 'react-router-dom';
 
 import { useQuery } from '@apollo/react-hooks';
-import BaseAvatar from '@material-ui/core/Avatar';
 import IconButton from '@material-ui/core/IconButton';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
-import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import {
   createStyles, makeStyles, Theme, withStyles,

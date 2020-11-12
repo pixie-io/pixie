@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
-const PixieLogo = (props: SvgIconProps) => (
+export const PixieLogo = (props: SvgIconProps) => (
   <SvgIcon {...props} viewBox='0 0 47 13'>
     <g>
       <path d={`M17.1401 1.97813C17.0109 1.84812 17.0109 1.63812 17.1401 1.50811L18.5419 0.098294C18.6723 -0.0327648
@@ -42,5 +42,3 @@ const PixieLogo = (props: SvgIconProps) => (
     </g>
   </SvgIcon>
 );
-
-export default PixieLogo;

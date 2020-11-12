@@ -2,11 +2,11 @@ import * as React from 'react';
 import {
   Grid, WithStyles, withStyles, createStyles, Theme, Typography, Container, fade,
 } from '@material-ui/core';
+import { PixieLogo } from 'pixie-components';
 import * as rustSVG from '../../../assets/images/icons/rust.svg';
 import * as cppSVG from '../../../assets/images/icons/cpp.svg';
 import * as golangSVG from '../../../assets/images/icons/golang.svg';
 import * as heartSVG from '../../../assets/images/icons/heart.svg';
-import PixieLogo from '../icons/pixie-logo';
 
 const styles = ({ palette, spacing }: Theme) => createStyles({
   root: {

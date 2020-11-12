@@ -1,8 +1,7 @@
 import clsx from 'clsx';
 import * as React from 'react';
 import { isInView } from 'utils/bbox';
-import ServiceIcon from 'components/icons/service';
-import PodIcon from 'components/icons/pod';
+import { PodIcon, ServiceIcon } from 'pixie-components';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 

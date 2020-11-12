@@ -2,10 +2,9 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
-const NamespaceIcon = (props) => {
-  const { classes, ...otherProps } = props;
+export const NamespaceIcon = (classes: any, props: SvgIconProps) => {
   return (
-    <SvgIcon {...otherProps} viewBox='0 0 26 25'>
+    <SvgIcon {...props} viewBox='0 0 26 25'>
       <path
         className={classes.border}
         d='M25 1H1V24H25V1Z'
@@ -48,5 +47,3 @@ const NamespaceIcon = (props) => {
     </SvgIcon>
   );
 };
-
-export default NamespaceIcon;

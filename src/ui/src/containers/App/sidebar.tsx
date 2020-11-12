@@ -18,19 +18,17 @@ import Menu from '@material-ui/icons/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import Tooltip from '@material-ui/core/Tooltip';
 
-import SettingsIcon from 'components/icons/settings';
 import { Link } from 'react-router-dom';
 import gql from 'graphql-tag';
 
 import ClusterContext from 'common/cluster-context';
 import UserContext from 'common/user-context';
-import ClusterIcon from 'components/icons/cluster';
-import CodeIcon from 'components/icons/code';
-import DocsIcon from 'components/icons/docs';
 import KeyboardIcon from '@material-ui/icons/Keyboard';
-import LogoutIcon from 'components/icons/logout';
-import NamespaceIcon from 'components/icons/namespace';
-import PixieLogo from 'components/icons/pixie-logo';
+import {
+  ClusterIcon, CodeIcon, DocsIcon,
+  LogoutIcon, NamespaceIcon, SettingsIcon,
+  PixieLogo,
+} from 'pixie-components';
 import { Avatar, ProfileMenuWrapper } from 'components/profile/profile';
 import { toEntityPathname, LiveViewPage } from 'components/live-widgets/utils/live-view-params';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
-const PodIcon = (props: SvgIconProps) => (
+export const PodIcon = (props: SvgIconProps) => (
   <SvgIcon {...props} viewBox='0 0 32 32'>
     <path
       d={
@@ -13,5 +13,3 @@ const PodIcon = (props: SvgIconProps) => (
     />
   </SvgIcon>
 );
-
-export default PodIcon;

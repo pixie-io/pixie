@@ -10,7 +10,7 @@ import {
   WithStyles,
 } from '@material-ui/core';
 import { PixienautBox } from 'components/auth/pixienaut-box';
-import { GoogleIcon } from '../icons/google';
+import { GoogleIcon } from 'pixie-components';
 
 const styles = ({ spacing, palette }: Theme) => createStyles({
   bodyText: {

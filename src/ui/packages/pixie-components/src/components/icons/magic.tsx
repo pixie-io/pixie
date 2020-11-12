@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
-const MagicIcon = (props: SvgIconProps) => (
+export const MagicIcon = (props: SvgIconProps) => (
   <SvgIcon {...props} viewBox='0 0 17.91 19.38'>
     <path d='M6 3V5H7V3H9V2H7V0H6V2H4V3H6Z' />
     <path
@@ -14,5 +14,3 @@ const MagicIcon = (props: SvgIconProps) => (
     <path d='M17 13.5V12.5H16V12H17V11H17.5V12H18.5V12.5H17.5V13.5H17Z' />
   </SvgIcon>
 );
-
-export default MagicIcon;

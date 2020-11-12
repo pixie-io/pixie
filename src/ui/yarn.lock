@@ -7918,6 +7918,13 @@ eslint-module-utils@^2.6.0:
     debug "^2.6.9"
     pkg-dir "^2.0.0"
 
+eslint-plugin-enzyme@^0.1.1:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-enzyme/-/eslint-plugin-enzyme-0.1.2.tgz#4cf92d3dfea817e5ef41bdc426d9479aa1d27b15"
+  integrity sha512-duZJflObtfERygqu6vxUXyalB613xbnBjryBlt4nY8pn1LwbJNPlGkLX+OwAaw6l79E6AZTk5yKZLuX0y0ubtg==
+  dependencies:
+    requireindex "^1.2.0"
+
 eslint-plugin-enzyme@^0.2.0:
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/eslint-plugin-enzyme/-/eslint-plugin-enzyme-0.2.0.tgz#baace5e58d51d1297bcd450fc7d0571dd7e70923"

@@ -2,7 +2,6 @@ import { scrollbarStyles } from 'common/mui-theme';
 import VizierGRPCClientContext, { ClusterStatus, CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
 import ClusterContext from 'common/cluster-context';
 import MoveIcon from '@material-ui/icons/OpenWith';
-import PixieCommandIcon from 'components/icons/pixie-command';
 import { ClusterInstructions } from 'containers/App/deploy-instructions';
 import * as React from 'react';
 
@@ -13,7 +12,7 @@ import {
   createStyles, makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
-import EditIcon from 'components/icons/edit';
+import { EditIcon } from 'pixie-components';
 
 import Canvas from 'containers/live/canvas';
 import CommandInput from 'containers/command-input/command-input';
@@ -28,7 +27,6 @@ import LiveViewShortcutsProvider from 'containers/live/shortcuts';
 import LiveViewTitle from 'containers/live/title';
 import LiveViewBreadcrumbs from 'containers/live/breadcrumbs';
 import NavBars from 'containers/App/nav-bars';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({

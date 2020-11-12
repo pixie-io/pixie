@@ -1,7 +1,8 @@
-import { SvgIcon } from '@material-ui/core';
 import * as React from 'react';
 
-export const GoogleIcon = (props) => (
+import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
+
+export const GoogleIcon = (props: SvgIconProps) => (
   <SvgIcon {...props} width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'>
     <path
       d='M9.88619 4.97263L11.8299 3.38131C10.7908 2.51858 9.45597

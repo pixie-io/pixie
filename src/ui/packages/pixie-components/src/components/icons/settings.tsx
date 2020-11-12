@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
-const SettingsIcon = (props: SvgIconProps) => (
+export const SettingsIcon = (props: SvgIconProps) => (
   <SvgIcon {...props} viewBox='0 0 24 24'>
     <path
       fillRule='evenodd'
@@ -25,5 +25,3 @@ const SettingsIcon = (props: SvgIconProps) => (
     />
   </SvgIcon>
 );
-
-export default SettingsIcon;
