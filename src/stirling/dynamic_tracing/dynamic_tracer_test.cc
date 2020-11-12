@@ -1,9 +1,11 @@
+#include "src/stirling/dynamic_tracing/dynamic_tracer.h"
+
 #include <string>
+#include <vector>
 
 #include "src/common/exec/subprocess.h"
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/testing.h"
-#include "src/stirling/dynamic_tracing/dynamic_tracer.h"
 #include "src/stirling/testing/testing.h"
 
 constexpr std::string_view kBinaryPath =
@@ -216,7 +218,7 @@ tracepoints {
 }
 )";
 
-constexpr std::string_view kExpectedBCC[] = {
+const std::vector<std::string> kExpectedBCC = {
     "#include <linux/ptrace.h>",
     "#include <linux/sched.h>",
     "#ifndef __inline",
@@ -285,7 +287,7 @@ constexpr std::string_view kExpectedBCC[] = {
     "} __attribute__((packed, aligned(1)));",
     "BPF_HASH(pid_goid_map, uint64_t, struct pid_goid_map_value_t);",
     "BPF_HASH(probe0_argstash, uint64_t, struct probe0_argstash_value_t);",
-    "BPF_PERCPU_ARRAY(probe_output_value_array, struct probe_output_value_t, 1);",
+    "BPF_PERCPU_ARRAY(probe_output_data_buffer_array, struct probe_output_value_t, 1);",
     "static __inline int64_t pl_goid() {",
     "uint64_t current_pid_tgid = bpf_get_current_pid_tgid();",
     "const struct pid_goid_map_value_t* goid_ptr = pid_goid_map.lookup(&current_pid_tgid);",
@@ -353,13 +355,11 @@ constexpr std::string_view kExpectedBCC[] = {
     "if (probe0_argstash_ptr == NULL) { return 0; }",
     "uint64_t start_ktime_ns = probe0_argstash_ptr->time_;",
     "int64_t latency = time_ - start_ktime_ns;",
+    "probe0_argstash.delete(&goid_);",
     "uint32_t probe_output_value_idx = 0;",
     "struct probe_output_value_t* probe_output_value = "
-    "probe_output_value_array.lookup(&probe_output_value_idx);",
-    "if (probe_output_value == NULL) {",
-    "return 0;",
-    "}",
-    "probe0_argstash.delete(&goid_);",
+    "probe_output_data_buffer_array.lookup(&probe_output_value_idx);",
+    "if (probe_output_value == NULL) { return 0; }",
     "probe_output_value->tgid_ = tgid_;",
     "probe_output_value->tgid_start_time_ = tgid_start_time_;",
     "probe_output_value->time_ = time_;",
@@ -371,7 +371,8 @@ constexpr std::string_view kExpectedBCC[] = {
     "probe_output_value->latency = latency;",
     "probe_output.perf_submit(ctx, probe_output_value, sizeof(*probe_output_value));",
     "return 0;",
-    "}"};
+    "}",
+};
 
 TEST(DynamicTracerTest, Compile) {
   std::string input_program_str = absl::Substitute(
@@ -436,7 +437,9 @@ TEST(DynamicTracerTest, Compile) {
                                         type: INT64
                                       }
                                       )proto"));
-  EXPECT_THAT(absl::StrSplit(bcc_program.code, "\n"), ElementsAreArray(kExpectedBCC));
+  std::vector<std::string> code_lines = absl::StrSplit(bcc_program.code, "\n");
+
+  EXPECT_THAT(code_lines, ElementsAreArray(kExpectedBCC));
 }
 
 }  // namespace dynamic_tracing

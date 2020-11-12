@@ -536,25 +536,30 @@ std::string GenPerfBufferOutput(const PerfBufferOutput& output) {
 
 namespace {
 
-StatusOr<std::string> GenPerfBufferOutputAction(
-    const absl::flat_hash_map<std::string_view, const Variable*>& vars,
-    const PerfBufferOutputAction& action) {
-  auto iter = vars.find(action.variable_name());
+StatusOr<std::vector<std::string>> GenPerfBufferOutputAction(
+    const ir::physical::Struct& output_struct, const PerfBufferOutputAction& action) {
+  std::string output_var_name = absl::StrCat(action.perf_buffer_name(), "_value");
 
-  if (iter == vars.end()) {
-    return error::NotFound("Perf buffer output variable '$0' was not defined",
-                           action.variable_name());
+  std::vector<std::string> code_lines;
+
+  // Generate a temporary variable in a BPF map, to avoid crossing the BPF stack size limit.
+  std::string arr_idx_var_name = absl::StrCat(output_var_name, "_idx");
+  code_lines.push_back(absl::Substitute("uint32_t $0 = 0;", arr_idx_var_name));
+  code_lines.push_back(absl::Substitute("struct $0* $1 = $2.lookup(&$3);",
+                                        action.output_struct_name(), output_var_name,
+                                        action.data_buffer_array_name(), arr_idx_var_name));
+  code_lines.push_back(absl::Substitute("if ($0 == NULL) { return 0; }", output_var_name));
+
+  int struct_field_index = 0;
+  for (const auto& f : action.variable_names()) {
+    code_lines.push_back(absl::Substitute("$0->$1 = $2;", output_var_name,
+                                          output_struct.fields(struct_field_index++).name(), f));
   }
 
-  const auto& output_var = iter->second;
+  code_lines.push_back(absl::Substitute("$0.perf_submit(ctx, $1, sizeof(*$1));",
+                                        action.perf_buffer_name(), output_var_name));
 
-  if (output_var->has_struct_var() && output_var->struct_var().is_pointer()) {
-    return absl::Substitute("$0.perf_submit(ctx, $1, sizeof(*$1));", action.perf_buffer_name(),
-                            action.variable_name());
-  } else {
-    return absl::Substitute("$0.perf_submit(ctx, &$1, sizeof($1));", action.perf_buffer_name(),
-                            action.variable_name());
-  }
+  return code_lines;
 }
 
 ScalarType GetScalarVariableType(const Variable& var) {
@@ -800,8 +805,11 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
   }
 
   for (const auto& action : probe.output_actions()) {
-    PL_ASSIGN_OR_RETURN(std::string code_line, GenPerfBufferOutputAction(vars, action));
-    code_lines.push_back(std::move(code_line));
+    auto iter = structs_.find(action.output_struct_name());
+    if (iter == structs_.end()) {
+      return error::InvalidArgument("Output struct '$0' is undefined", action.output_struct_name());
+    }
+    MOVE_BACK_STR_VEC(GenPerfBufferOutputAction(*iter->second, action), &code_lines);
   }
 
   for (const auto& printk : probe.printks()) {

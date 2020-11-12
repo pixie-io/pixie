@@ -23,6 +23,7 @@ using ::pl::stirling::dynamic_tracing::ir::physical::StructVariable;
 using ::pl::stirling::dynamic_tracing::ir::shared::BPFHelper;
 using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
 using ::testing::ElementsAre;
+using ::testing::ElementsAreArray;
 using ::testing::StrEq;
 
 TEST(GenStructTest, Output) {
@@ -334,7 +335,9 @@ TEST(GenProgramTest, SpecsAndCode) {
                                          }
                                          output_actions {
                                            perf_buffer_name: "data_events"
-                                           variable_name: "st_var"
+                                           data_buffer_array_name: "data_events_value_array"
+                                           output_struct_name: "socket_data_event_t"
+                                           variable_names: "inner_var"
                                          }
                                          printks { scalar: "var" }
                                        }
@@ -453,7 +456,12 @@ TEST(GenProgramTest, SpecsAndCode) {
       "return 0;",
       "}",
       "test.update(&key, &var);",
-      "data_events.perf_submit(ctx, &st_var, sizeof(st_var));",
+      "uint32_t data_events_value_idx = 0;",
+      "struct socket_data_event_t* data_events_value = "
+      "data_events_value_array.lookup(&data_events_value_idx);",
+      "if (data_events_value == NULL) { return 0; }",
+      "data_events_value->i32 = inner_var;",
+      "data_events.perf_submit(ctx, data_events_value, sizeof(*data_events_value));",
       R"(bpf_trace_printk("var: %d\n", var);)",
       "return 0;",
       "}",
@@ -464,8 +472,8 @@ TEST(GenProgramTest, SpecsAndCode) {
       "return 0;",
       "}"};
 
-  std::string expected_code = absl::StrJoin(expected_code_lines, "\n");
-  EXPECT_EQ(bcc_code, expected_code);
+  std::vector<std::string> bcc_code_lines = absl::StrSplit(bcc_code, "\n");
+  EXPECT_THAT(bcc_code_lines, ElementsAreArray(expected_code_lines));
 }
 
 }  // namespace dynamic_tracing

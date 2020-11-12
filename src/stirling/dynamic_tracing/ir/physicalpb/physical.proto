@@ -302,8 +302,16 @@ message PerfBufferOutputAction {
   // The name of the perf buffer.
   string perf_buffer_name = 1;
 
+  // The name of the data buffer array that holds the output variable.
+  string data_buffer_array_name = 5;
+
+  // The output Struct to wrap the output variables.
+  string output_struct_name = 3;
+
   // The names of the variables to be submitted to the perf buffer.
-  string variable_name = 2;
+  // They were assigned to the fields of a wrapper struct variable.
+  // The wrapper struct variable is then submitted to the perf buffer as a whole.
+  repeated string variable_names = 4;
 }
 
 message MapDeleteAction {

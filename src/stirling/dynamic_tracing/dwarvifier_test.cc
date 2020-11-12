@@ -480,7 +480,6 @@ constexpr std::string_view kActionProbeOut = R"(
 deployment_spec {
   path: "$0"
 }
-language: GOLANG
 structs {
   name: "my_stash_value_t"
   fields {
@@ -663,58 +662,6 @@ probes {
       }
     }
   }
-  vars {
-    scalar_var {
-      name: "out_table_value_idx"
-      type: UINT32
-      constant: "0"
-    }
-  }
-  vars {
-    map_var {
-      name: "out_table_value"
-      type: "out_table_value_t"
-      map_name: "out_table_value_array"
-      key_variable_name: "out_table_value_idx"
-    }
-  }
-  vars {
-    struct_var {
-      name: "out_table_value"
-      type: "out_table_value_t"
-      field_assignments {
-        field_name: "tgid_"
-        variable_name: "tgid_"
-      }
-      field_assignments {
-        field_name: "tgid_start_time_"
-        variable_name: "tgid_start_time_"
-      }
-      field_assignments {
-        field_name: "time_"
-        variable_name: "time_"
-      }
-      field_assignments {
-        field_name: "goid_"
-        variable_name: "goid_"
-      }
-      field_assignments {
-        field_name: "arg0"
-        variable_name: "arg0"
-      }
-      field_assignments {
-        field_name: "arg1"
-        variable_name: "arg1"
-      }
-      field_assignments {
-        field_name: "arg2"
-        variable_name: "arg2"
-      }
-      op: ASSIGN_ONLY
-      is_output: true
-      is_pointer: true
-    }
-  }
   map_stash_actions {
     map_name: "my_stash"
     key_variable_name: "goid_"
@@ -724,15 +671,15 @@ probes {
   }
   output_actions {
     perf_buffer_name: "out_table"
-    variable_name: "out_table_value"
-  }
-  cond_blocks {
-    cond {
-      op: EQUAL
-      vars: "out_table_value"
-      vars: "NULL"
-    }
-    return_value: "0"
+    data_buffer_array_name: "out_table_data_buffer_array"
+    output_struct_name: "out_table_value_t"
+    variable_names: "tgid_"
+    variable_names: "tgid_start_time_"
+    variable_names: "time_"
+    variable_names: "goid_"
+    variable_names: "arg0"
+    variable_names: "arg1"
+    variable_names: "arg2"
   }
 }
 probes {
@@ -812,80 +759,32 @@ probes {
       }
     }
   }
-  vars {
-    scalar_var {
-      name: "out_table2_value_idx"
-      type: UINT32
-      constant: "0"
-    }
-  }
-  vars {
-    map_var {
-      name: "out_table2_value"
-      type: "out_table2_value_t"
-      map_name: "out_table2_value_array"
-      key_variable_name: "out_table2_value_idx"
-    }
-  }
-  vars {
-    struct_var {
-      name: "out_table2_value"
-      type: "out_table2_value_t"
-      field_assignments {
-        field_name: "tgid_"
-        variable_name: "tgid_"
-      }
-      field_assignments {
-        field_name: "tgid_start_time_"
-        variable_name: "tgid_start_time_"
-      }
-      field_assignments {
-        field_name: "time_"
-        variable_name: "time_"
-      }
-      field_assignments {
-        field_name: "goid_"
-        variable_name: "goid_"
-      }
-      field_assignments {
-        field_name: "arg0"
-        variable_name: "arg0"
-      }
-      field_assignments {
-        field_name: "arg1"
-        variable_name: "arg1"
-      }
-      op: ASSIGN_ONLY
-      is_output: true
-      is_pointer: true
-    }
-  }
   output_actions {
     perf_buffer_name: "out_table2"
-    variable_name: "out_table2_value"
+    data_buffer_array_name: "out_table2_data_buffer_array"
+    output_struct_name: "out_table2_value_t"
+    variable_names: "tgid_"
+    variable_names: "tgid_start_time_"
+    variable_names: "time_"
+    variable_names: "goid_"
+    variable_names: "arg0"
+    variable_names: "arg1"
   }
   map_delete_actions {
     map_name: "my_stash"
     key_variable_name: "goid_"
   }
-  cond_blocks {
-    cond {
-      op: EQUAL
-      vars: "out_table2_value"
-      vars: "NULL"
-    }
-    return_value: "0"
-  }
 }
+language: GOLANG
 arrays {
-  name: "out_table_value_array"
+  name: "out_table_data_buffer_array"
   type {
     struct_type: "out_table_value_t"
   }
   capacity: 1
 }
 arrays {
-  name: "out_table2_value_array"
+  name: "out_table2_data_buffer_array"
   type {
     struct_type: "out_table2_value_t"
   }
@@ -926,7 +825,6 @@ constexpr std::string_view kStructProbeOut = R"(
 deployment_spec {
   path: "$0"
 }
-language: GOLANG
 structs {
   name: "out_table_value_t"
   fields {
@@ -1062,65 +960,20 @@ probes {
       }
     }
   }
-  vars {
-    scalar_var {
-      name: "out_table_value_idx"
-      type: UINT32
-      constant: "0"
-    }
-  }
-  vars {
-    map_var {
-      name: "out_table_value"
-      type: "out_table_value_t"
-      map_name: "out_table_value_array"
-      key_variable_name: "out_table_value_idx"
-    }
-  }
-  vars {
-    struct_var {
-      name: "out_table_value"
-      type: "out_table_value_t"
-      field_assignments {
-        field_name: "tgid_"
-        variable_name: "tgid_"
-      }
-      field_assignments {
-        field_name: "tgid_start_time_"
-        variable_name: "tgid_start_time_"
-      }
-      field_assignments {
-        field_name: "time_"
-        variable_name: "time_"
-      }
-      field_assignments {
-        field_name: "goid_"
-        variable_name: "goid_"
-      }
-      field_assignments {
-        field_name: "out"
-        variable_name: "arg0"
-      }
-      op: ASSIGN_ONLY
-      is_output: true
-      is_pointer: true
-    }
-  }
   output_actions {
     perf_buffer_name: "out_table"
-    variable_name: "out_table_value"
-  }
-  cond_blocks {
-    cond {
-      op: EQUAL
-      vars: "out_table_value"
-      vars: "NULL"
-    }
-    return_value: "0"
+    data_buffer_array_name: "out_table_data_buffer_array"
+    output_struct_name: "out_table_value_t"
+    variable_names: "tgid_"
+    variable_names: "tgid_start_time_"
+    variable_names: "time_"
+    variable_names: "goid_"
+    variable_names: "arg0"
   }
 }
+language: GOLANG
 arrays {
-  name: "out_table_value_array"
+  name: "out_table_data_buffer_array"
   type {
     struct_type: "out_table_value_t"
   }
@@ -1330,53 +1183,15 @@ probes {
       }
     }
   }
-  vars {
-    scalar_var {
-      name: "out_table_value_idx"
-      type: UINT32
-      constant: "0"
-    }
-  }
-  vars {
-    map_var {
-      name: "out_table_value"
-      type: "out_table_value_t"
-      map_name: "out_table_value_array"
-      key_variable_name: "out_table_value_idx"
-    }
-  }
-  vars {
-    struct_var {
-      name: "out_table_value"
-      type: "out_table_value_t"
-      field_assignments {
-        field_name: "tgid_"
-        variable_name: "tgid_"
-      }
-      field_assignments {
-        field_name: "tgid_start_time_"
-        variable_name: "tgid_start_time_"
-      }
-      field_assignments {
-        field_name: "time_"
-        variable_name: "time_"
-      }
-      field_assignments {
-        field_name: "goid_"
-        variable_name: "goid_"
-      }
-      field_assignments {
-        field_name: "error"
-        variable_name: "retval"
-      }
-      op: ASSIGN_ONLY
-      is_output: true
-      is_pointer: true
-    }
-  }
   output_actions {
     perf_buffer_name: "out_table"
-    variable_name: "out_table_value"
+    data_buffer_array_name: "out_table_data_buffer_array"
+    output_struct_name: "out_table_value_t"
+    variable_names: "tgid_"
+    variable_names: "tgid_start_time_"
+    variable_names: "time_"
+    variable_names: "goid_"
+    variable_names: "retval"
   }
   cond_blocks {
     cond {
@@ -1416,18 +1231,10 @@ probes {
       }
     }
   }
-  cond_blocks {
-    cond {
-      op: EQUAL
-      vars: "out_table_value"
-      vars: "NULL"
-    }
-    return_value: "0"
-  }
 }
 language: GOLANG
 arrays {
-  name: "out_table_value_array"
+  name: "out_table_data_buffer_array"
   type {
     struct_type: "out_table_value_t"
   }
