@@ -82,6 +82,7 @@ const char* kInfoClass1 = R"(
   }
   sampling_period_millis: 100
   push_period_millis: 1000
+  type: DYNAMIC
 )";
 
 // A test source connector to be used for testing.
@@ -153,7 +154,8 @@ class PubSubManagerTest : public ::testing::Test {
     {
       std::string name = "source1";
       std::unique_ptr<SourceConnector> source = TestSourceConnector2::Create(name);
-      auto info_class_mgr = std::make_unique<InfoClassManager>(TestSourceConnector2::kTable);
+      auto info_class_mgr =
+          std::make_unique<InfoClassManager>(TestSourceConnector2::kTable, stirlingpb::DYNAMIC);
       info_class_mgr->SetSourceConnector(source.get(), /* table_num */ 0);
       info_class_mgrs_.push_back(std::move(info_class_mgr));
       sources_.push_back(std::move(source));

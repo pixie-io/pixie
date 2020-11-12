@@ -43,8 +43,10 @@ class InfoClassManager final : public NotCopyable {
    * This is required to identify an InfoClassManager parent source and also to generate
    * the publish proto.
    */
-  explicit InfoClassManager(const DataTableSchema& schema)
-      : schema_(schema),
+  explicit InfoClassManager(const DataTableSchema& schema,
+                            stirlingpb::SourceType type = stirlingpb::STATIC)
+      : type_(type),
+        schema_(schema),
         sampling_period_(schema.default_sampling_period()),
         push_period_(schema.default_push_period()) {
     id_ = global_id_++;
@@ -180,6 +182,8 @@ class InfoClassManager final : public NotCopyable {
 
  private:
   inline static std::atomic<uint64_t> global_id_ = 0;
+
+  stirlingpb::SourceType type_;
 
   // Unique ID of the InfoClassManager instance. ID must never repeat, even after destruction.
   uint64_t id_;

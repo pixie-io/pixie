@@ -155,7 +155,7 @@ class StirlingImpl final : public Stirling {
   Status CreateSourceConnectors();
 
   // Adds a source to Stirling, and updates all state accordingly.
-  Status AddSource(std::unique_ptr<SourceConnector> source);
+  Status AddSource(std::unique_ptr<SourceConnector> source, bool dynamic = false);
 
   // Removes a source and all its info classes from stirling.
   Status RemoveSource(std::string_view source_name);
@@ -256,7 +256,7 @@ std::unique_ptr<ConnectorContext> StirlingImpl::GetContext() {
   return std::unique_ptr<ConnectorContext>(new StandaloneContext());
 }
 
-Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
+Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source, bool dynamic) {
   // Step 1: Init the source.
   PL_RETURN_IF_ERROR(source->Init());
 
@@ -267,7 +267,8 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
     LOG(INFO) << "Adding info class " << schema.name();
 
     // Step 2: Create the info class manager.
-    auto mgr = std::make_unique<InfoClassManager>(schema);
+    auto mgr = std::make_unique<InfoClassManager>(
+        schema, dynamic ? stirlingpb::DYNAMIC : stirlingpb::STATIC);
     mgr->SetSourceConnector(source.get(), i);
 
     // Step 3: Setup the manager.
@@ -384,7 +385,7 @@ void StirlingImpl::DeployDynamicTraceConnector(
   timer.Start();
   // Next, try adding the source (this actually tries to deploy BPF code).
   // On failure, set status and exit, but do this outside the lock for efficiency reasons.
-  RETURN_IF_ERROR(AddSource(std::move(source)));
+  RETURN_IF_ERROR(AddSource(std::move(source), /*dynamic*/ true));
   LOG(INFO) << absl::Substitute("DynamicTrace [$0]: Deployed BPF program in $1 ms.", trace_id.str(),
                                 timer.ElapsedTime_us() / 1000.0);
 
