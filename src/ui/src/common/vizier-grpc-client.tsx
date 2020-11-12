@@ -214,7 +214,7 @@ export class VizierGRPCClient {
         subscriber.next({
           event: { type: 'cancel' },
           results,
-          cancel,
+          cancel: () => {},
           completionReason: 'cancelled',
         });
         subscriber.complete();
@@ -226,9 +226,11 @@ export class VizierGRPCClient {
         completionReason?: ExecutionStateUpdate['completionReason'],
         error?: VizierQueryError,
       ) => {
-        subscriber.next({
-          event, results, cancel, completionReason, error,
-        });
+        if (!subscriber.closed) {
+          subscriber.next({
+            event, results, cancel, completionReason, error,
+          });
+        }
       };
 
       const emitError = (error: VizierQueryError) => {

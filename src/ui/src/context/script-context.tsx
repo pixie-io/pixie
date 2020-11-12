@@ -335,12 +335,12 @@ const ScriptContextProvider = (props) => {
 
     const onResults = (queryResults) => {
       if (queryResults && (isStreaming || queryResults.executionStats)) {
-        const newTables = {};
         ({ queryId } = queryResults);
+        const newTables = {};
         queryResults.tables.forEach((table) => {
           newTables[table.name] = table;
         });
-        setResults((results) => ({ tables: newTables, stats: queryResults.executionStats, error: results.error }));
+        setResults((results) => ({ ...queryResults, tables: newTables, error: results.error }));
         if (!loaded) {
           setLoading(false);
           loaded = true;
@@ -394,9 +394,7 @@ const ScriptContextProvider = (props) => {
         let numTries = 5;
 
         while (numTries > 0) {
-          if (cancelExecution != null) {
-            cancelExecution();
-          }
+          cancelExecution?.();
 
           let mutationComplete = false;
           let cancelled = false;
@@ -410,8 +408,7 @@ const ScriptContextProvider = (props) => {
               return;
             }
 
-            if (queryResults.mutationInfo
-              && queryResults.mutationInfo.getStatus().getCode() === GRPCStatusCode.Unavailable) {
+            if (queryResults.mutationInfo?.getStatus().getCode() === GRPCStatusCode.Unavailable) {
               resolveMutationExecution();
               setResults({ tables: {}, mutationInfo: queryResults.mutationInfo });
             } else {
@@ -506,6 +503,7 @@ const ScriptContextProvider = (props) => {
           case 'start':
             setCancelExecution(() => () => {
               update.cancel();
+              setCancelExecution(() => () => {});
               // Timeout so as not to modify one context while rendering another
               setTimeout(() => {
                 setStreaming(false);
