@@ -36,9 +36,9 @@ enum http2_probe_type_t {
   k_probe_hpack_header_encoder,
   k_probe_http_http2writeResHeaders_write_frame,
   k_probe_http2_framer_check_frame_order,
-  k_probe_http_http2framer_check_frame_order,
-  k_probe_probe_http2_framer_write_data,
-  k_probe_http_http2framer_write_data,
+  k_probe_http_http2Framer_check_frame_order,
+  k_probe_http2_framer_write_data,
+  k_probe_http_http2Framer_write_data,
 };
 
 enum HeaderEventType { kHeaderEventUnknown, kHeaderEventRead, kHeaderEventWrite };

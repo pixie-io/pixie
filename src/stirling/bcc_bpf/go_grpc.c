@@ -755,9 +755,9 @@ int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
 // HTTP2 Data Tracing Functions
 //-----------------------------------------------------------------------------
 
-static __inline void submit_data(struct pt_regs* ctx, uint32_t tgid, int32_t fd,
-                                 enum DataFrameEventType type, uint32_t stream_id, bool end_stream,
-                                 struct go_byte_array data) {
+static __inline void submit_data(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
+                                 uint32_t tgid, int32_t fd, enum DataFrameEventType type,
+                                 uint32_t stream_id, bool end_stream, struct go_byte_array data) {
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
   if (conn_info == NULL) {
     return;
@@ -771,6 +771,7 @@ static __inline void submit_data(struct pt_regs* ctx, uint32_t tgid, int32_t fd,
 
   info->attr.conn_id = conn_info->conn_id;
   info->attr.timestamp_ns = bpf_ktime_get_ns();
+  info->attr.probe_type = probe_type;
   info->attr.type = type;
   info->attr.stream_id = stream_id;
   info->attr.end_stream = end_stream;
@@ -873,7 +874,8 @@ int probe_http2_framer_check_frame_order(struct pt_regs* ctx) {
   // Submit
   // ------------------------------------------------------
 
-  submit_data(ctx, tgid, fd, kDataFrameEventRead, stream_id, end_stream, data);
+  submit_data(ctx, k_probe_http2_framer_check_frame_order, tgid, fd, kDataFrameEventRead, stream_id,
+              end_stream, data);
   return 0;
 }
 
@@ -970,7 +972,8 @@ int probe_http_http2framer_check_frame_order(struct pt_regs* ctx) {
   // Submit
   // ------------------------------------------------------
 
-  submit_data(ctx, tgid, fd, kDataFrameEventRead, stream_id, end_stream, data);
+  submit_data(ctx, k_probe_http_http2Framer_check_frame_order, tgid, fd, kDataFrameEventRead,
+              stream_id, end_stream, data);
   return 0;
 }
 
@@ -1029,7 +1032,8 @@ int probe_http2_framer_write_data(struct pt_regs* ctx) {
   // Submit
   // ---------------------------------------------
 
-  submit_data(ctx, tgid, fd, kDataFrameEventWrite, stream_id, end_stream, data);
+  submit_data(ctx, k_probe_http2_framer_write_data, tgid, fd, kDataFrameEventWrite, stream_id,
+              end_stream, data);
 
   return 0;
 }
@@ -1090,7 +1094,7 @@ int probe_http_http2framer_write_data(struct pt_regs* ctx) {
   // Submit
   // ---------------------------------------------
 
-  submit_data(ctx, tgid, fd, kDataFrameEventWrite, stream_id, end_stream, data);
-
+  submit_data(ctx, k_probe_http_http2Framer_write_data, tgid, fd, kDataFrameEventWrite, stream_id,
+              end_stream, data);
   return 0;
 }

@@ -41,7 +41,7 @@ class NVMap : public std::multimap<std::string, std::string> {
     return default_value;
   }
 
-  std::string DebugString() const { return absl::StrJoin(*this, ", ", absl::PairFormatter(":")); }
+  std::string ToString() const { return absl::StrJoin(*this, ", ", absl::PairFormatter(":")); }
 };
 
 // This struct represents the frames of interest transmitted on an HTTP2 stream.
@@ -72,9 +72,9 @@ struct HalfStream {
     return absl::StrContains(headers.ValueByKey(headers::kContentType), headers::kContentTypeGRPC);
   }
 
-  std::string DebugString() const {
+  std::string ToString() const {
     return absl::Substitute("[headers=$0] [data=$1] [trailers=$2] [end_stream=$3]",
-                            headers.DebugString(), data, trailers.DebugString(), end_stream);
+                            headers.ToString(), data, trailers.ToString(), end_stream);
   }
 };
 
@@ -91,8 +91,8 @@ struct Stream {
 
   size_t ByteSize() const { return send.ByteSize() + recv.ByteSize(); }
 
-  std::string DebugString() const {
-    return absl::Substitute("[send=$0] [recv=$1]", send.DebugString(), recv.DebugString());
+  std::string ToString() const {
+    return absl::Substitute("[send=$0] [recv=$1]", send.ToString(), recv.ToString());
   }
 };
 
