@@ -19,7 +19,7 @@ import {
   argsEquals, argsForVis, Arguments, validateArgValues,
 } from 'utils/args-utils';
 import urlParams from 'utils/url-params';
-import { useSnackbar } from 'components/snackbar/snackbar';
+import { useSnackbar } from 'pixie-components';
 
 import {
   EntityURLParams, getLiveViewTitle, LiveViewEntityParams, LiveViewPage,

@@ -1,6 +1,12 @@
 export { FixedSizeDrawer } from './components/drawer/drawer';
 export { ResizableDrawer } from './components/drawer/resizable-drawer';
 
+export { Avatar, ProfileMenuWrapper } from './components/profile/profile';
+
+export { SnackbarProvider, useSnackbar } from './components/snackbar/snackbar';
+
+export { Spinner } from './components/spinner/spinner';
+
 export { StatusGroup, StatusCell } from './components/status/status';
 
 export { ClusterIcon } from './components/icons/cluster'

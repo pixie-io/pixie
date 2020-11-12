@@ -4,7 +4,7 @@ import 'react-resizable/css/styles.css';
 import clsx from 'clsx';
 import { GraphDisplay, GraphWidget } from 'components/live-widgets/graph/graph';
 import { RequestGraphDisplay, RequestGraphWidget } from 'components/live-widgets/graph/request-graph';
-import { Spinner } from 'components/spinner/spinner';
+import { Spinner } from 'pixie-components';
 import { TimeSeriesContext, withTimeSeriesContextProvider } from 'components/live-widgets/context/time-series-context';
 import { QueryResultTable } from 'components/live-widgets/table/query-result-viewer';
 import * as React from 'react';

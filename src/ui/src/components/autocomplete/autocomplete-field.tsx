@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { CompletionItem } from 'components/autocomplete/completions';
 import useAutocomplete, { GetCompletionsFunc } from 'components/autocomplete/use-autocomplete';
-import { Spinner } from 'components/spinner/spinner';
+import { Spinner } from 'pixie-components';
 import * as React from 'react';
 import { isInView } from 'utils/bbox';
 

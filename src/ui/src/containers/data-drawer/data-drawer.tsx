@@ -1,10 +1,9 @@
 import LazyPanel from 'components/lazy-panel';
-import { Spinner } from 'components/spinner/spinner';
+import { ResizableDrawer, Spinner } from 'pixie-components';
 import { DataDrawerContext } from 'context/data-drawer-context';
 import { LayoutContext } from 'context/layout-context';
 import { ResultsContext } from 'context/results-context';
 import * as React from 'react';
-import { ResizableDrawer } from 'pixie-components';
 import { VizierDataTableWithDetails } from 'components/vizier-data-table/vizier-data-table';
 
 import {

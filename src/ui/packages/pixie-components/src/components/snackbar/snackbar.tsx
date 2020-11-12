@@ -1,11 +1,12 @@
 import * as React from 'react';
-import noop from 'utils/noop';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core';
 import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
 import Snackbar from '@material-ui/core/Snackbar';
 import CloseIcon from '@material-ui/icons/Close';
+
+const noop = () => {};
 
 interface ShowArgs {
   message: string;

@@ -1,4 +1,7 @@
-import { DocsIcon, LogoutIcon, SettingsIcon } from 'pixie-components';
+import {
+  DocsIcon, LogoutIcon, SettingsIcon,
+  Avatar, ProfileMenuWrapper,
+} from 'pixie-components';
 import KeyboardIcon from '@material-ui/icons/Keyboard';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { DOMAIN_NAME } from 'containers/constants';
@@ -15,7 +18,6 @@ import {
   createStyles, makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
 import { useContext } from 'react';
-import { Avatar, ProfileMenuWrapper } from 'components/profile/profile';
 import { LiveShortcutsContext } from '../live/shortcuts';
 
 export const GET_USER_INFO = gql`

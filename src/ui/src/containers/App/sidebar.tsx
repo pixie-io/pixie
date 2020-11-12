@@ -25,11 +25,11 @@ import ClusterContext from 'common/cluster-context';
 import UserContext from 'common/user-context';
 import KeyboardIcon from '@material-ui/icons/Keyboard';
 import {
+  Avatar, ProfileMenuWrapper,
   ClusterIcon, CodeIcon, DocsIcon,
   LogoutIcon, NamespaceIcon, SettingsIcon,
   PixieLogo,
 } from 'pixie-components';
-import { Avatar, ProfileMenuWrapper } from 'components/profile/profile';
 import { toEntityPathname, LiveViewPage } from 'components/live-widgets/utils/live-view-params';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { DOMAIN_NAME } from 'containers/constants';

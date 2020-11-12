@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { Spinner } from 'components/spinner/spinner';
+import { Spinner } from 'pixie-components';
 
 export default {
   title: 'Spinner',

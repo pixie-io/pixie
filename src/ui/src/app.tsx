@@ -2,8 +2,7 @@ import './wdyr';
 
 import Axios from 'axios';
 import { CloudClient } from 'common/cloud-gql-client';
-import { DARK_THEME } from 'pixie-components';
-import { SnackbarProvider } from 'components/snackbar/snackbar';
+import { DARK_THEME, SnackbarProvider } from 'pixie-components';
 import VersionInfo from 'components/version-info/version-info';
 import Vizier from 'containers/App/vizier';
 import PixieCookieBanner from 'common/cookie-banner';

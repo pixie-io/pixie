@@ -4,7 +4,7 @@ import * as _ from 'lodash';
 import * as React from 'react';
 
 import { getKeyMap } from 'containers/live/shortcuts';
-import { Spinner } from 'components/spinner/spinner';
+import { Spinner } from 'pixie-components';
 import { editor as MonacoEditorTypes } from 'monaco-editor';
 import ICodeEditor = MonacoEditorTypes.ICodeEditor;
 
