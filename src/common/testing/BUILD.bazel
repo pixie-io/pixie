@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
 pl_cc_library(
     name = "cc_library",
@@ -27,4 +27,9 @@ pl_cc_library(
     deps = [
         "@com_google_googletest//:gtest",
     ],
+)
+
+pl_cc_test(
+    name = "line_diff_test",
+    srcs = ["line_diff_test.cc"],
 )

@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "src/common/base/logging.h"
+#include "src/common/testing/line_diff.h"
 
 namespace pl {
 namespace testing {
@@ -28,13 +29,19 @@ struct ProtoMatcher {
       (*listener) << "The input cannot be parsed as protobuf, got:\n" << pb.DebugString();
       return false;
     }
+    // diff_report were not used, instead we use line-based text diffing below.
     std::string diff_report;
     differencer_->ReportDifferencesToString(&diff_report);
+
     if (optional_scope_.has_value()) {
       differencer_->set_scope(optional_scope_.value());
     }
+
     if (!differencer_->Compare(*expected_pb, pb)) {
-      (*listener) << "got:\n" << pb.DebugString() << "diff:\n" << diff_report;
+      std::string pb_text;
+      google::protobuf::TextFormat::PrintToString(pb, &pb_text);
+      (*listener) << "diff:\n"
+                  << DiffLines(pb_text, expected_text_pb_, DiffPolicy::kIgnoreBlankLines);
       return false;
     }
     return true;
