@@ -82,15 +82,15 @@ TEST(DnsStitcherTest, RecordOutput) {
   Record& record = result.records.front();
 
   EXPECT_EQ(record.req.timestamp_ns, 1);
-  EXPECT_EQ(
-      record.resp.header,
-      R"({"txid":0,"flags":33152,"num_queries":1,"num_answers":1,"num_auth":0,"num_addl":0})");
+  EXPECT_EQ(record.req.header,
+            R"({"txid":0,"qr":0,"opcode":0,"aa":0,"tc":0,"rd":1,"ra":0,"ad":0,"cd":0,"rcode":0,)"
+            R"("num_queries":1,"num_answers":0,"num_auth":0,"num_addl":0})");
   EXPECT_EQ(record.req.query, R"({"queries":[]})");
 
   EXPECT_EQ(record.resp.timestamp_ns, 2);
-  EXPECT_EQ(
-      record.resp.header,
-      R"({"txid":0,"flags":33152,"num_queries":1,"num_answers":1,"num_auth":0,"num_addl":0})");
+  EXPECT_EQ(record.resp.header,
+            R"({"txid":0,"qr":1,"opcode":0,"aa":0,"tc":0,"rd":1,"ra":1,"ad":0,"cd":0,"rcode":0,)"
+            R"("num_queries":1,"num_answers":1,"num_auth":0,"num_addl":0})");
   EXPECT_EQ(record.resp.msg, R"({"answers":[{"name":"pixie.ai","addr":"1.2.3.4"}]})");
 }
 

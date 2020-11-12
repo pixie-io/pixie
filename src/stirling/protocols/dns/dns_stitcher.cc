@@ -19,8 +19,26 @@ namespace dns {
 std::string HeaderToJSONString(const DNSHeader& header) {
   rapidjson::Document d(rapidjson::kObjectType);
 
+  int qr = EXTRACT_DNS_FLAG(header.flags, kQRPos, kQRWidth);
+  int opcode = EXTRACT_DNS_FLAG(header.flags, kOpcodePos, kOpcodeWidth);
+  int aa = EXTRACT_DNS_FLAG(header.flags, kAAPos, kAAWidth);
+  int tc = EXTRACT_DNS_FLAG(header.flags, kTCPos, kTCWidth);
+  int rd = EXTRACT_DNS_FLAG(header.flags, kRDPos, kRDWidth);
+  int ra = EXTRACT_DNS_FLAG(header.flags, kRAPos, kRAWidth);
+  int ad = EXTRACT_DNS_FLAG(header.flags, kADPos, kADWidth);
+  int cd = EXTRACT_DNS_FLAG(header.flags, kCDPos, kCDWidth);
+  int rcode = EXTRACT_DNS_FLAG(header.flags, kRcodePos, kRcodeWidth);
+
   d.AddMember("txid", header.txid, d.GetAllocator());
-  d.AddMember("flags", header.flags, d.GetAllocator());
+  d.AddMember("qr", qr, d.GetAllocator());
+  d.AddMember("opcode", opcode, d.GetAllocator());
+  d.AddMember("aa", aa, d.GetAllocator());
+  d.AddMember("tc", tc, d.GetAllocator());
+  d.AddMember("rd", rd, d.GetAllocator());
+  d.AddMember("ra", ra, d.GetAllocator());
+  d.AddMember("ad", ad, d.GetAllocator());
+  d.AddMember("cd", cd, d.GetAllocator());
+  d.AddMember("rcode", rcode, d.GetAllocator());
   d.AddMember("num_queries", header.num_queries, d.GetAllocator());
   d.AddMember("num_answers", header.num_answers, d.GetAllocator());
   d.AddMember("num_auth", header.num_auth, d.GetAllocator());

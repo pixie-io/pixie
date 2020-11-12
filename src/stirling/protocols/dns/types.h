@@ -16,7 +16,7 @@ namespace protocols {
 namespace dns {
 
 //-----------------------------------------------------------------------------
-// Cassandra Frame
+// DNS Frame
 //-----------------------------------------------------------------------------
 
 struct DNSHeader {
@@ -34,6 +34,33 @@ constexpr int kNumQueriesOffset = 4;
 constexpr int kNumAnswersOffset = 6;
 constexpr int kNumAuthOffset = 8;
 constexpr int kNumAddlOffset = 10;
+
+// Flags in the DNS header:
+// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+// |QR|   Opcode  |AA|TC|RD|RA| Z|AD|CD|   RCODE   |
+// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+#define EXTRACT_DNS_FLAG(flags, pos, width) ((flags >> pos) & ((1 << width) - 1))
+
+constexpr int kQRPos = 15;
+constexpr int kOpcodePos = 11;
+constexpr int kAAPos = 10;
+constexpr int kTCPos = 9;
+constexpr int kRDPos = 8;
+constexpr int kRAPos = 7;
+constexpr int kADPos = 5;
+constexpr int kCDPos = 4;
+constexpr int kRcodePos = 0;
+
+constexpr int kQRWidth = 1;
+constexpr int kOpcodeWidth = 4;
+constexpr int kAAWidth = 1;
+constexpr int kTCWidth = 1;
+constexpr int kRDWidth = 1;
+constexpr int kRAWidth = 1;
+constexpr int kADWidth = 1;
+constexpr int kCDWidth = 1;
+constexpr int kRcodeWidth = 4;
 
 // A DNSRecord represents a DNS resource record
 // Typically it is the answer to a query (e.g. from name->addr).
