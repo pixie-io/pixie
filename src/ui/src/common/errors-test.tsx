@@ -11,7 +11,7 @@ describe('<VizierErrorDetails/> test', () => {
       }
       />,
     );
-    expect(wrapper.find('div').text()).toBe('a well formated server error');
+    expect(wrapper.find('div').at(0).text()).toBe('a well formated server error');
   });
 
   it('renders a list of errors if the details is a list', () => {
@@ -21,7 +21,7 @@ describe('<VizierErrorDetails/> test', () => {
       }
       />,
     );
-    expect(wrapper.find('div').length).toBe(3);
+    expect(wrapper.find('div').length).toBe(4);
   });
 
   it('renders the message for other errors', () => {
@@ -31,6 +31,6 @@ describe('<VizierErrorDetails/> test', () => {
       }
       />,
     );
-    expect(wrapper.find('div').text()).toBe('generic error');
+    expect(wrapper.find('div').at(0).text()).toBe('generic error');
   });
 });

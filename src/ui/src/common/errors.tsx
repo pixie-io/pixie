@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Status } from 'types/generated/vizier_pb';
 
+import Link from '@material-ui/core/Link';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 export type VizierQueryErrorType = 'script' | 'vis' | 'execution' | 'server';
@@ -57,6 +58,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     marginLeft: `-${theme.spacing(3.3)}px`,
     paddingBottom: theme.spacing(0.5),
   },
+  link: {
+    cursor: 'pointer',
+  },
 }));
 
 export const VizierErrorDetails = (props: { error: Error }) => {
@@ -64,17 +68,29 @@ export const VizierErrorDetails = (props: { error: Error }) => {
   const classes = useStyles();
   const { details } = error as VizierQueryError;
 
+  let errorDetails = null;
+
   if (typeof details === 'string') {
-    return <div className={classes.errorRow}>{details}</div>;
-  }
-  if (Array.isArray(details)) {
-    return (
+    errorDetails = <div className={classes.errorRow}>{details}</div>;
+  } else if (Array.isArray(details)) {
+    errorDetails = (
       <>
         {
           details.map((err, i) => <div key={i} className={classes.errorRow}>{err}</div>)
         }
       </>
     );
+  } else {
+    errorDetails = <div className={classes.errorRow}>{error.message}</div>;
   }
-  return <div className={classes.errorRow}>{error.message}</div>;
+  return (
+    <>
+      {errorDetails}
+      <div className={classes.errorRow}>
+        Need help?&nbsp;
+        <Link className={classes.link} id='intercom-trigger'>Chat with us</Link>
+        .
+      </div>
+    </>
+  );
 };

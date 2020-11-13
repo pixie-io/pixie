@@ -6,6 +6,7 @@ import PixieCommandIcon from 'components/icons/pixie-command';
 import { ClusterInstructions } from 'containers/App/deploy-instructions';
 import * as React from 'react';
 
+import Link from '@material-ui/core/Link';
 import IconButton from '@material-ui/core/IconButton';
 import { Alert, AlertTitle } from '@material-ui/lab';
 import {
@@ -158,12 +159,10 @@ const ClusterLoadingComponent = (props: ClusterLoadingProps) => {
       return (
         <div>
           <div>
-            If this issue continues, please send a message to the
-            <span> </span>
-            <a href='https://slackin.withpixie.ai/' target='_blank' rel='noreferrer'>community slack</a>
+            Need help?&nbsp;
+            <Link id='intercom-trigger'>Chat with us</Link>
             .
           </div>
-          <div>{`Include your cluster ID "${props.clusterUID}" in the message.`}</div>
         </div>
       );
     },

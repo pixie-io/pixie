@@ -8,6 +8,7 @@ import {
   createStyles, fade, WithStyles, withStyles, Theme,
 } from '@material-ui/core/styles';
 
+import HelpIcon from '@material-ui/icons/Help';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
@@ -378,6 +379,12 @@ const SideBar = ({ classes }) => {
             link={`https://docs.${DOMAIN_NAME}`}
             text='Docs'
           />
+          <Tooltip title='Help'>
+            <ListItem button id='intercom-trigger' className={classes.listIcon}>
+              <ListItemIcon><HelpIcon className={classes.icon} /></ListItemIcon>
+              <ListItemText primary='Help' />
+            </ListItem>
+          </Tooltip>
           <ProfileItem classes={classes} data={data} />
         </List>
       </Drawer>
