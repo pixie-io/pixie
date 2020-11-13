@@ -8,7 +8,7 @@ import {
   createStyles, Theme, withStyles, WithStyles,
 } from '@material-ui/core/styles';
 import { MutationInfo, LifeCycleState } from 'types/generated/vizier_pb';
-import { StatusCell } from 'components/status/status';
+import { StatusCell } from 'pixie-components';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';

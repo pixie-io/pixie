@@ -6,7 +6,7 @@ import {
 import gql from 'graphql-tag';
 import { useQuery, useApolloClient } from '@apollo/react-hooks';
 
-import { PixieCommandIcon } from 'pixie-components';
+import { PixieCommandIcon, StatusCell } from 'pixie-components';
 import Breadcrumbs, { BreadcrumbOptions } from 'components/breadcrumbs/breadcrumbs';
 import ClusterContext from 'common/cluster-context';
 import { CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
@@ -17,7 +17,6 @@ import { ScriptsContext } from 'containers/App/scripts-context';
 import { ScriptContext } from 'context/script-context';
 import { entityPageForScriptId, optionallyGetNamespace } from 'components/live-widgets/utils/live-view-params';
 import { EntityType, pxTypetoEntityType, entityStatusGroup } from 'containers/new-command-input/autocomplete-utils';
-import { StatusCell } from 'components/status/status';
 import { clusterStatusGroup } from 'containers/admin/utils';
 import { ContainsMutation } from 'utils/pxl';
 import IconButton from '@material-ui/core/IconButton';

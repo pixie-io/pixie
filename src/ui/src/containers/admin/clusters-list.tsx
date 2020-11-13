@@ -1,4 +1,4 @@
-import { StatusCell, StatusGroup } from 'components/status/status';
+import { StatusCell, StatusGroup } from 'pixie-components';
 import { useQuery } from '@apollo/react-hooks';
 import { Theme, withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';

@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { scrollbarStyles } from 'common/mui-theme';
+import { scrollbarStyles } from 'pixie-components';
 import * as React from 'react';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';

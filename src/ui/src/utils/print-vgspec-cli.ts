@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { DARK_THEME } from 'common/mui-theme';
+import { DARK_THEME } from 'pixie-components';
 import { Data } from 'vega';
 
 import {

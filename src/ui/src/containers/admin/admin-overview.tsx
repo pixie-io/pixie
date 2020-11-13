@@ -14,7 +14,7 @@ import Add from '@material-ui/icons/Add';
 import { CREATE_DEPLOYMENT_KEY, DeploymentKeysTable } from 'containers/admin/deployment-keys';
 import { ClustersTable } from 'containers/admin/clusters-list';
 import { StyledTab, StyledTabs } from 'containers/admin/utils';
-import { scrollbarStyles } from 'common/mui-theme';
+import { scrollbarStyles } from 'pixie-components';
 
 export const AdminOverview = withStyles((theme: Theme) => createStyles({
   createButton: {

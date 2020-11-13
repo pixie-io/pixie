@@ -35,3 +35,9 @@ Object.defineProperty(window, '__PIXIE_FLAGS__', { value: mockPixieFlags });
 // This is because jest ignores the "module" option in clsx package option.
 // https://github.com/facebook/jest/issues/2702
 jest.mock('clsx', () => ({ default: jest.requireActual('clsx') }));
+
+// This prevents console errors about the use of useLayoutEffect on the server
+jest.mock('react', () => ({
+  ...jest.requireActual('react'),
+  useLayoutEffect: jest.requireActual('react').useEffect,
+}));

@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { scrollbarStyles } from 'common/mui-theme';
+import { scrollbarStyles } from 'pixie-components';
 import { StyleRulesCallback, Theme, withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 

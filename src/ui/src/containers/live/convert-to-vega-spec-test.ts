@@ -1,4 +1,4 @@
-import { DARK_THEME } from 'common/mui-theme';
+import { DARK_THEME } from 'pixie-components';
 import { Relation, SemanticType } from 'types/generated/vizier_pb';
 import { Spec } from 'vega';
 import {

@@ -1,13 +1,15 @@
 import * as React from 'react';
 import { render } from 'enzyme';
 import { MuiThemeProvider } from '@material-ui/core';
-import { DARK_THEME } from 'common/mui-theme';
+import { DARK_THEME } from 'pixie-components';
 import Breadcrumbs from './breadcrumbs';
 
-jest.mock('clsx', () => ({ default: jest.fn() }));
+jest.mock('clsx', () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
 
-// TODO(michelle): Currently doesn't work with the clsx import. Enable when we've solved that problem.
-xdescribe('<Breadcrumbs/>', () => {
+describe('<Breadcrumbs/>', () => {
   it('renders correctly', () => {
     const breadcrumbs = [
       {

@@ -1,4 +1,4 @@
-import { scrollbarStyles } from 'common/mui-theme';
+import { scrollbarStyles } from 'pixie-components';
 import {
   withStyles,
   Theme,

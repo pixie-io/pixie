@@ -1,4 +1,4 @@
-import { DARK_THEME } from 'common/mui-theme';
+import { DARK_THEME } from 'pixie-components';
 import * as React from 'react';
 
 import { ThemeProvider } from '@material-ui/core/styles';

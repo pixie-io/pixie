@@ -1,4 +1,4 @@
-import { scrollbarStyles } from 'common/mui-theme';
+import { scrollbarStyles, EditIcon } from 'pixie-components';
 import VizierGRPCClientContext, { ClusterStatus, CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
 import ClusterContext from 'common/cluster-context';
 import MoveIcon from '@material-ui/icons/OpenWith';
@@ -12,7 +12,6 @@ import {
   createStyles, makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
-import { EditIcon } from 'pixie-components';
 
 import Canvas from 'containers/live/canvas';
 import CommandInput from 'containers/command-input/command-input';

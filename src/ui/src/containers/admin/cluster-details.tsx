@@ -4,7 +4,7 @@ import ClientContext, {
   VizierGRPCClientProvider, CLUSTER_STATUS_DISCONNECTED,
 } from 'common/vizier-grpc-client-context';
 import PixieBreadcrumbs from 'components/breadcrumbs/breadcrumbs';
-import { StatusCell, StatusGroup } from 'components/status/status';
+import { StatusCell, StatusGroup } from 'pixie-components';
 import { distanceInWords } from 'date-fns';
 import gql from 'graphql-tag';
 import { useHistory, useParams } from 'react-router';

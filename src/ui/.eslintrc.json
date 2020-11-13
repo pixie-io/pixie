@@ -28,6 +28,17 @@
       {
         "code": 120
       }
+    ],
+    "import/no-extraneous-dependencies": [
+      "error",
+      {
+        "devDependencies": [
+          "**/*-test.ts",
+          "**/*-test.tsx",
+          "**/*.test.ts",
+          "**/*.test.tsx"
+        ]
+      }
     ]
   },
   "overrides": [

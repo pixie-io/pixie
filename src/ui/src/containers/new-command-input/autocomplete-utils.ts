@@ -1,4 +1,4 @@
-import { StatusGroup } from 'components/status/status';
+import { StatusGroup } from 'pixie-components';
 
 export type EntityType = 'AEK_UNKNOWN' | 'AEK_POD' | 'AEK_SVC' | 'AEK_SCRIPT' | 'AEK_NAMESPACE';
 

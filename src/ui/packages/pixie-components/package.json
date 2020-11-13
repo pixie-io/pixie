@@ -23,6 +23,7 @@
   },
   "peerDependencies": {
     "@material-ui/core": "^4.9.0",
+    "@material-ui/icons": "^4.5.1",
     "prop-types": "^15.5.4",
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@babel/core": "^7.0.0-rc.2",
     "@material-ui/core": "^4.9.0",
+    "@material-ui/icons": "^4.5.1",
     "@rollup/plugin-babel": "^5.2.1",
     "@rollup/plugin-commonjs": "^16.0.0",
     "@rollup/plugin-node-resolve": "^10.0.0",

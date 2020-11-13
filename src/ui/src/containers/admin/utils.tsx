@@ -1,4 +1,4 @@
-import { StatusGroup } from 'components/status/status';
+import { StatusGroup } from 'pixie-components';
 import {
   createStyles, makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
