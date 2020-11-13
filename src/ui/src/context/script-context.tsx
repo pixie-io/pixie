@@ -340,7 +340,7 @@ const ScriptContextProvider = (props) => {
         queryResults.tables.forEach((table) => {
           newTables[table.name] = table;
         });
-        setResults((results) => ({ ...queryResults, tables: newTables, error: results.error }));
+        setResults((results) => ({ tables: newTables, stats: queryResults.executionStats, error: results.error }));
         if (!loaded) {
           setLoading(false);
           loaded = true;
