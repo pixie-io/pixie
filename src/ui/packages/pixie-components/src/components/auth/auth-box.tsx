@@ -9,8 +9,8 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import { PixienautBox } from 'components/auth/pixienaut-box';
-import { GoogleIcon } from 'pixie-components';
+import { PixienautBox } from './pixienaut-box';
+import { GoogleIcon } from '../icons/google';
 
 const styles = ({ spacing, palette }: Theme) => createStyles({
   bodyText: {
@@ -75,8 +75,7 @@ const textByVariant = {
   },
 };
 
-export
-const AuthBox = withStyles(styles)((props: AuthBoxProps) => {
+export const AuthBox = withStyles(styles)((props: AuthBoxProps) => {
   const {
     onPrimaryButtonClick,
     toggleURL,

@@ -5,7 +5,7 @@ import * as QueryString from 'querystring';
 import Axios, { AxiosError } from 'axios';
 import * as RedirectUtils from 'utils/redirect-utils';
 import { isValidAnalytics } from 'utils/env';
-import { MessageBox } from 'components/auth/message';
+import { AuthMessageBox } from 'pixie-components';
 import { BasePage } from './base';
 import { AuthCallbackMode } from './utils';
 
@@ -40,7 +40,7 @@ interface CallbackConfig {
 }
 
 const CLICodeBox = ({ code }) => (
-  <MessageBox
+  <AuthMessageBox
     title='Pixie Auth Token'
     message='Please copy this code, switch to the CLI and paste it there:'
     code={code}
@@ -222,7 +222,7 @@ export const AuthCallbackPage = () => {
     }
 
     return (
-      <MessageBox
+      <AuthMessageBox
         error
         title={title}
         message={message}
@@ -231,7 +231,7 @@ export const AuthCallbackPage = () => {
     );
   };
   const renderLoadingMessage = () => (
-    <MessageBox
+    <AuthMessageBox
       title='Authenticating'
       message={
         (config && config.signup) ? 'Signing up ...' : 'Logging in...'

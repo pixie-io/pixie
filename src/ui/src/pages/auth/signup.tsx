@@ -2,8 +2,7 @@ import {
   createStyles, Theme, WithStyles, withStyles,
 } from '@material-ui/core';
 import * as React from 'react';
-import { SignupMarcom } from 'components/auth/signup-marcom';
-import { AuthBox } from 'components/auth/auth-box';
+import { AuthBox, SignupMarcom } from 'pixie-components';
 import { BasePage } from './base';
 import { auth0SignupRequest } from './utils';
 

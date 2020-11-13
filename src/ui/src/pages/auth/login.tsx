@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { AuthBox } from 'components/auth/auth-box';
+import { AuthBox } from 'pixie-components';
 import { BasePage } from './base';
 import { auth0LoginRequest } from './utils';
 

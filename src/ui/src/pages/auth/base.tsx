@@ -4,7 +4,7 @@ import * as React from 'react';
 import {
   createStyles, Theme, WithStyles, withStyles,
 } from '@material-ui/core';
-import { Footer } from 'components/auth/footer';
+import { AuthFooter } from 'pixie-components';
 import * as pixieLogo from '../../../assets/images/pixie-logo.svg';
 import * as StarsPNG from './stars.png';
 
@@ -61,6 +61,6 @@ export const BasePage = withStyles(styles)(({ children, classes }: BasePageProps
     <div className={classes.content}>
       {children}
     </div>
-    <Footer />
+    <AuthFooter />
   </div>
 ));

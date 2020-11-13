@@ -32,7 +32,10 @@ export default {
     url(),
     svgr(),
     resolve(),
-    typescript({ useTsconfigDeclarationDir: true }),
+    typescript({
+      allowNonTsExtensions: true,
+      useTsconfigDeclarationDir: true,
+    }),
     commonjs(),
   ],
 };

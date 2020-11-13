@@ -2,9 +2,9 @@ import * as React from 'react';
 import {
   createStyles, fade, Theme, Typography, withStyles, WithStyles,
 } from '@material-ui/core';
-import { PixienautBox } from 'components/auth/pixienaut-box';
-import { CodeRenderer } from 'pixie-components';
-import * as authErrorSVG from './auth-error.svg';
+import { AuthErrorSvg } from './auth-error';
+import { PixienautBox } from './pixienaut-box';
+import { CodeRenderer } from '../code-renderer/code-renderer';
 
 const styles = ({ palette, spacing }: Theme) => createStyles({
   root: {
@@ -33,7 +33,7 @@ const styles = ({ palette, spacing }: Theme) => createStyles({
   },
 });
 
-export interface MessageBoxProps extends WithStyles<typeof styles> {
+export interface AuthMessageBoxProps extends WithStyles<typeof styles> {
   error?: boolean;
   title: string;
   message: string;
@@ -41,7 +41,7 @@ export interface MessageBoxProps extends WithStyles<typeof styles> {
   code?: string;
 }
 
-export const MessageBox = withStyles(styles)((props: MessageBoxProps) => {
+export const AuthMessageBox = withStyles(styles)((props: AuthMessageBoxProps) => {
   const {
     error,
     errorDetails,
@@ -50,7 +50,7 @@ export const MessageBox = withStyles(styles)((props: MessageBoxProps) => {
     code,
     classes,
   } = props;
-  const errorImage = <img src={authErrorSVG} alt='error' />;
+  const errorImage = <AuthErrorSvg />;
   return (
     <PixienautBox overrideImage={error ? errorImage : undefined}>
       <Typography variant='h1' className={classes.title}>

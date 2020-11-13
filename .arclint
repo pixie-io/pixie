@@ -160,6 +160,8 @@
         "(demos/applications/sockshop/monitoring_manifests/grafana/.*\\.json$)",
         "(src/ui/src/pages/credits/licenses.json)",
         "(^src/ui/tools/licenses/.*\\.json$)",
+        "(src/ui/packages/pixie-components/src/components/auth/pixienaut-balloon\\.tsx)",
+        "(src/ui/packages/pixie-components/src/components/logos/.*)",
         "(^tools/licenses/.*\\.json$)",
         "(^credentials/.*\\.json$)",
         "(Gopkg\\.lock)",

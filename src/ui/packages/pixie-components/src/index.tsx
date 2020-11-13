@@ -1,3 +1,9 @@
+export { AuthBox } from './components/auth/auth-box';
+export { AuthFooter } from './components/auth/footer';
+export { AuthMessageBoxProps, AuthMessageBox } from './components/auth/message';
+export { PixienautBoxProps, PixienautBox } from './components/auth/pixienaut-box';
+export { SignupMarcom } from './components/auth/signup-marcom';
+
 export { CodeRenderer } from './components/code-renderer/code-renderer';
 
 export { FixedSizeDrawer } from './components/drawer/drawer';
@@ -12,6 +18,8 @@ export { Avatar, ProfileMenuWrapper } from './components/profile/profile';
 export { SnackbarProvider, useSnackbar } from './components/snackbar/snackbar';
 
 export { Spinner } from './components/spinner/spinner';
+
+export { SplitContainer, SplitPane } from './components/split-pane/split-pane';
 
 export { StatusGroup, StatusCell } from './components/status/status';
 

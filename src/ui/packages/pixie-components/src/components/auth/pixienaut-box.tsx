@@ -1,8 +1,8 @@
-import React from 'react';
+import * as React from 'react';
 import {
   createStyles, fade, Theme, WithStyles, withStyles,
 } from '@material-ui/core';
-import pixienautBalloonSvg from 'components/auth/pixienaut-balloon.svg';
+import { PixienautBalloonSvg } from './pixienaut-balloon';
 
 const styles = ({ spacing, palette, breakpoints }: Theme) => createStyles({
   root: {
@@ -57,7 +57,7 @@ export const PixienautBox = withStyles(styles)(({ classes, children, overrideIma
     <div className={classes.splashImageContainer}>
       {overrideImage ?? (
         <div className={classes.pixienautContainer}>
-          <img src={pixienautBalloonSvg} alt='pixienaut' className={classes.pixienautImage} />
+          <PixienautBalloonSvg className={classes.pixienautImage} />
         </div>
       )}
     </div>

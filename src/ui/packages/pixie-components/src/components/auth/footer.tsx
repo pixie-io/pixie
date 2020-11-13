@@ -38,9 +38,9 @@ const styles = ({ spacing, breakpoints, palette }: Theme) => createStyles({
   },
 });
 
-type FooterProps = WithStyles<typeof styles>;
+type AuthFooterProps = WithStyles<typeof styles>;
 
-export const Footer = withStyles(styles)(({ classes }: FooterProps) => (
+export const AuthFooter = withStyles(styles)(({ classes }: AuthFooterProps) => (
   <div className={classes.root}>
     <div className={classes.left}>
       <a

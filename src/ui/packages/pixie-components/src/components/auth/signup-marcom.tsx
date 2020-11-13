@@ -2,11 +2,12 @@ import * as React from 'react';
 import {
   Grid, WithStyles, withStyles, createStyles, Theme, Typography, Container, fade,
 } from '@material-ui/core';
-import { PixieLogo } from 'pixie-components';
-import * as rustSVG from '../../../assets/images/icons/rust.svg';
-import * as cppSVG from '../../../assets/images/icons/cpp.svg';
-import * as golangSVG from '../../../assets/images/icons/golang.svg';
-import * as heartSVG from '../../../assets/images/icons/heart.svg';
+
+import { CPPIcon } from '../logos/cpp';
+import { GolangIcon } from '../logos/golang';
+import { HeartIcon } from '../logos/heart';
+import { PixieLogo } from '../icons/pixie-logo';
+import { RustIcon } from '../logos/rust';
 
 const styles = ({ palette, spacing }: Theme) => createStyles({
   root: {
@@ -61,16 +62,16 @@ export const SignupMarcom = withStyles(styles)(({ classes }: WithStyles<typeof s
           <div className={classes.pixieLove}>
             <PixieLogo fontSize='large' />
             <div className={classes.pixieLoveItem}>
-              <img src={heartSVG} alt='Loves' />
+              <HeartIcon />
             </div>
             <div className={classes.pixieLoveItem}>
-              <img src={golangSVG} alt='Golang' />
+              <GolangIcon />
             </div>
             <div className={classes.pixieLoveItem}>
-              <img src={cppSVG} alt='C++' />
+              <CPPIcon />
             </div>
             <div className={classes.pixieLoveItem}>
-              <img src={rustSVG} alt='Rust' />
+              <RustIcon />
             </div>
           </div>
         </Grid>

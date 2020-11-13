@@ -1,12 +1,12 @@
 import * as React from 'react';
 
-import { Footer } from 'components/auth/footer';
+import { AuthFooter } from 'pixie-components';
 import { FrameElement } from './frame-utils';
 
 export default {
   title: 'Auth/Footer',
-  component: Footer,
+  component: AuthFooter,
   decorators: [(Story) => <FrameElement width={500}><Story /></FrameElement>],
 };
 
-export const Basic = () => <Footer />;
+export const Basic = () => <AuthFooter />;

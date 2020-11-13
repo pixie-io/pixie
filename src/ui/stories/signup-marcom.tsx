@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { SignupMarcom } from 'components/auth/signup-marcom';
+import { SignupMarcom } from 'pixie-components';
 import { FrameElement } from './frame-utils';
 
 export default {

@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { SplitContainer, SplitPane } from 'components/split-pane/split-pane';
+import { SplitContainer, SplitPane } from 'pixie-components';
 
 export default {
   title: 'SplitContainer',

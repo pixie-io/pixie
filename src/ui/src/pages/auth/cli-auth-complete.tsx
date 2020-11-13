@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Grid } from '@material-ui/core';
 import * as QueryString from 'querystring';
-import { MessageBox } from 'components/auth/message';
+import { AuthMessageBox } from 'pixie-components';
 import { BasePage } from './base';
 
 export const CLIAuthCompletePage = () => {
@@ -22,7 +22,7 @@ export const CLIAuthCompletePage = () => {
           alignItems='center'
         >
           <Grid item>
-            <MessageBox
+            <AuthMessageBox
               title={title}
               message={message}
             />
