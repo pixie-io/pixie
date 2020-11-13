@@ -19,7 +19,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/shared/version"
+	"pixielabs.ai/pixielabs/src/shared/version/go"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )

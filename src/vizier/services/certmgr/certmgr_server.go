@@ -7,7 +7,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"pixielabs.ai/pixielabs/src/shared/version"
+	"pixielabs.ai/pixielabs/src/shared/version/go"
 	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrenv"
 	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
 	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/controller"

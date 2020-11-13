@@ -21,7 +21,7 @@ import (
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/utils"
-	funcs "pixielabs.ai/pixielabs/src/vizier/funcs/export"
+	funcs "pixielabs.ai/pixielabs/src/vizier/funcs/go"
 	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 

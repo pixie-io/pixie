@@ -10,7 +10,7 @@
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/testing/testing.h"
-#include "src/shared/types/proto/types_pb_wrapper.h"
+#include "src/shared/types/proto/wrapper/types_pb_wrapper.h"
 
 namespace pl {
 namespace carnot {

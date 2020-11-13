@@ -16,7 +16,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"gopkg.in/segmentio/analytics-go.v3"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/shared/version"
+	"pixielabs.ai/pixielabs/src/shared/version/go"
 	utils2 "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"

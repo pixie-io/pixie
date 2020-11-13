@@ -27,7 +27,7 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	"pixielabs.ai/pixielabs/src/utils"
-	funcs "pixielabs.ai/pixielabs/src/vizier/funcs/export"
+	funcs "pixielabs.ai/pixielabs/src/vizier/funcs/go"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )

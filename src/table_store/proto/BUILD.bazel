@@ -17,7 +17,7 @@ pl_cc_proto_library(
     proto = ":schema_pl_proto",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/shared/types/proto:cc_library",
+        "//src/shared/types/proto/wrapper:cc_library",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
     ],
 )

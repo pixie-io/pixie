@@ -17,7 +17,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
-	"pixielabs.ai/pixielabs/src/shared/version"
+	"pixielabs.ai/pixielabs/src/shared/version/go"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/bridge"
 	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/vizhealth"
 	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"

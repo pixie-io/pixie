@@ -8,7 +8,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/utils/pixie_cli",
     visibility = ["//visibility:private"],
     deps = [
-        "//src/shared/version:go_default_library",
+        "//src/shared/version/go:go_default_library",
         "//src/utils/pixie_cli/cmd:go_default_library",
         "//src/utils/pixie_cli/pkg/pxanalytics:go_default_library",
         "//src/utils/pixie_cli/pkg/pxconfig:go_default_library",

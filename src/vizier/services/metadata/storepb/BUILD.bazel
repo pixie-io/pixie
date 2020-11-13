@@ -21,7 +21,7 @@ pl_cc_proto_library(
     deps = [
         "//src/common/base/proto:status_pl_cc_proto",
         "//src/common/uuid/proto:uuid_pl_cc_proto",
-        "//src/shared/types/proto:cc_library",
+        "//src/shared/types/proto/wrapper:cc_library",
         "//src/stirling/dynamic_tracing/ir/logicalpb:logical_pl_cc_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
     ],

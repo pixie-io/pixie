@@ -90,15 +90,25 @@ final class ArcanistGoVetLinter extends ArcanistLinter {
       $matches = explode(':', $line, 6);
 
       if (count($matches) === 6) {
+        if (is_numeric($matches[2]) && is_numeric($matches[3])) {
+          $line = $matches[2];
+          $char = $matches[3];
+          $code = "E00";
+          $desc = ucfirst(trim($matches[4]));
 
-        $line = $matches[2];
-        $char = $matches[3];
-        $code = "E00";
-        $desc = ucfirst(trim($matches[4]));
+          $this->raiseLintAtLine(
+            $line, $char, $code, $desc
+          );
+        } else if (is_numeric($matches[1]) && is_numeric($matches[2])) {
+          $line = $matches[1];
+          $char = $matches[2];
+          $code = "E02";
+          $desc = ucfirst(trim(implode(": ", array_slice($matches, 4))));
 
-        $this->raiseLintAtLine(
-          $line, $char, $code, $desc
-        );
+          $this->raiseLintAtLine(
+            $line, $char, $code, $desc
+          );
+        }
       }
 
       if (count($matches) === 3) {

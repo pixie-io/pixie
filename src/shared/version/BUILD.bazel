@@ -1,24 +1,6 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
-
 package(default_visibility = ["//visibility:public"])
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library")
-
-stamped_xdefs = {
-    "buildSCMRevision": "{BUILD_SCM_REVISION}",
-    "buildSCMStatus": "{BUILD_SCM_STATUS}",
-    "buildTimeStamp": "{BUILD_TIMESTAMP}",
-    "buildSemver": "{BUILD_TAG}",
-    "buildNumber": "{BUILD_NUMBER}",
-}
-
-unstamped_xdefs = {
-    "buildSCMRevision": "0000000",
-    "buildSCMStatus": "Modified",
-    "buildTimeStamp": "0",
-    "buildSemver": "0.0.0-dev",
-    "buildNumber": "0",
-}
 
 # https://github.com/bazelbuild/bazel/issues/1992
 # Borrowed from envoy build.
@@ -61,23 +43,9 @@ pl_cc_library(
     ],
     hdrs = ["version.h"],
     deps = [
-        "//src/shared/types/proto:cc_library",
+        "//src/shared/types/proto/wrapper:cc_library",
         "//third_party:arrow",
         "@com_google_absl//absl/time",
         "@com_google_farmhash//:farmhash",
     ],
-)
-
-go_library(
-    name = "go_default_library",
-    srcs = [
-        "version.go",
-        "version.h",
-    ],
-    importpath = "pixielabs.ai/pixielabs/src/shared/version",
-    x_defs = select({
-        "//bazel:stamped": stamped_xdefs,
-        "//conditions:default": unstamped_xdefs,
-    }),
-    deps = ["@com_github_blang_semver//:go_default_library"],
 )

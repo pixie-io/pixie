@@ -1,0 +1,30 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+package(default_visibility = ["//visibility:public"])
+
+stamped_xdefs = {
+    "buildSCMRevision": "{BUILD_SCM_REVISION}",
+    "buildSCMStatus": "{BUILD_SCM_STATUS}",
+    "buildTimeStamp": "{BUILD_TIMESTAMP}",
+    "buildSemver": "{BUILD_TAG}",
+    "buildNumber": "{BUILD_NUMBER}",
+}
+
+unstamped_xdefs = {
+    "buildSCMRevision": "0000000",
+    "buildSCMStatus": "Modified",
+    "buildTimeStamp": "0",
+    "buildSemver": "0.0.0-dev",
+    "buildNumber": "0",
+}
+
+go_library(
+    name = "go_default_library",
+    srcs = ["version.go"],
+    importpath = "pixielabs.ai/pixielabs/src/shared/version/go",
+    x_defs = select({
+        "//bazel:stamped": stamped_xdefs,
+        "//conditions:default": unstamped_xdefs,
+    }),
+    deps = ["@com_github_blang_semver//:go_default_library"],
+)

@@ -18,7 +18,7 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
-	funcs "pixielabs.ai/pixielabs/src/vizier/funcs/export"
+	funcs "pixielabs.ai/pixielabs/src/vizier/funcs/go"
 )
 
 const plannerStatePBStr = `

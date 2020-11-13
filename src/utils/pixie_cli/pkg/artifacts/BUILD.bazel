@@ -10,7 +10,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
-        "//src/shared/version:go_default_library",
+        "//src/shared/version/go:go_default_library",
         "//src/utils/pixie_cli/pkg/utils:go_default_library",
         "//src/utils/shared/k8s:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",

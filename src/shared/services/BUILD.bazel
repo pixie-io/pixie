@@ -19,7 +19,7 @@ go_library(
         "//src/shared/services/env:go_default_library",
         "//src/shared/services/handler:go_default_library",
         "//src/shared/services/sentryhook:go_default_library",
-        "//src/shared/version:go_default_library",
+        "//src/shared/version/go:go_default_library",
         "//third_party:kuberesolver_library",
         "@com_github_getsentry_sentry_go//:go_default_library",
         "@com_github_gorilla_handlers//:go_default_library",

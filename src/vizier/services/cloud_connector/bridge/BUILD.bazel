@@ -15,7 +15,7 @@ go_library(
         "//src/shared/k8s:go_default_library",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
         "//src/shared/services:go_default_library",
-        "//src/shared/version:go_default_library",
+        "//src/shared/version/go:go_default_library",
         "//src/utils:go_default_library",
         "//src/vizier/utils/messagebus:go_default_library",
         "//src/vizier/vizierpb:vizier_pl_go_proto",

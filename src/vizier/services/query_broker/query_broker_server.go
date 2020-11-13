@@ -15,7 +15,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
-	"pixielabs.ai/pixielabs/src/shared/version"
+	"pixielabs.ai/pixielabs/src/shared/version/go"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/ptproxy"

@@ -9,7 +9,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	"pixielabs.ai/pixielabs/src/shared/types"
+	"pixielabs.ai/pixielabs/src/shared/types/go"
 	"pixielabs.ai/pixielabs/src/utils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	metadata_servicepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"

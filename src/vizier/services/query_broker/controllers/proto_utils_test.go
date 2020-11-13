@@ -121,7 +121,7 @@ execution_stats {
 	timing {
 		execution_time_ns: 10
 		compilation_time_ns: 4
-	}	
+	}
 	bytes_processed: 100
 	records_processed: 50
 }
@@ -195,7 +195,7 @@ nodes: {
 				column_types: TIME64NS
 				column_types: INT64
 				column_types: UINT128
-				tablet: "1"							
+				tablet: "1"
 			}
 		}
 	}

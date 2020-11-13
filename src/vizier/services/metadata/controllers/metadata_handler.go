@@ -15,7 +15,7 @@ import (
 
 	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	"pixielabs.ai/pixielabs/src/shared/types"
+	"pixielabs.ai/pixielabs/src/shared/types/go"
 	"pixielabs.ai/pixielabs/src/utils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"

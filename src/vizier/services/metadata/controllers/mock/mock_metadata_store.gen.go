@@ -8,7 +8,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	go_uuid "github.com/satori/go.uuid"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	types "pixielabs.ai/pixielabs/src/shared/types"
+	types "pixielabs.ai/pixielabs/src/shared/types/go"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"

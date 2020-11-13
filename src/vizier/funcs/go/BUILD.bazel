@@ -15,6 +15,6 @@ go_library(
     # Note we only import the bindata rule not the bindata file that's kept in this dir.
     # keep
     srcs = [":udf_info_bindata"],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/funcs/export",
+    importpath = "pixielabs.ai/pixielabs/src/vizier/funcs/go",
     visibility = ["//visibility:public"],
 )

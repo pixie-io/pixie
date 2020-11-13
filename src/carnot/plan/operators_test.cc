@@ -9,7 +9,7 @@
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 #include "src/common/base/test_utils.h"
-#include "src/shared/types/proto/types_pb_wrapper.h"
+#include "src/shared/types/proto/wrapper/types_pb_wrapper.h"
 #include "src/shared/types/types.h"
 #include "src/table_store/table_store.h"
 

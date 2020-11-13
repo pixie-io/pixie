@@ -5,7 +5,7 @@
 
 #include "src/common/testing/testing.h"
 #include "src/shared/types/arrow_adapter.h"
-#include "src/shared/types/proto/types_pb_wrapper.h"
+#include "src/shared/types/proto/wrapper/types_pb_wrapper.h"
 #include "src/shared/types/types.h"
 #include "src/table_store/proto/schema.pb.h"
 #include "src/table_store/schema/row_batch.h"

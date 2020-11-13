@@ -13,7 +13,7 @@ go_library(
         "//src/shared/services:go_default_library",
         "//src/shared/services/healthz:go_default_library",
         "//src/shared/services/httpmiddleware:go_default_library",
-        "//src/shared/version:go_default_library",
+        "//src/shared/version/go:go_default_library",
         "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
         "//src/vizier/services/query_broker/controllers:go_default_library",
         "//src/vizier/services/query_broker/ptproxy:go_default_library",

@@ -25,7 +25,7 @@ pl_cc_library(
     ),
     deps = [
         "//src/shared/types:cc_library",
-        "//src/shared/types/proto:cc_library",
+        "//src/shared/types/proto/wrapper:cc_library",
         "//src/shared/metadata:cc_library",
         "//src/common/grpcutils:cc_library",
         "//src/common/protobufs:cc_library",

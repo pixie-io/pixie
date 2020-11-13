@@ -12,7 +12,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/segmentio/analytics-go.v3"
-	"pixielabs.ai/pixielabs/src/shared/version"
+	"pixielabs.ai/pixielabs/src/shared/version/go"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/cmd"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"

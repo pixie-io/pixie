@@ -1,6 +1,6 @@
 #include "src/stirling/source_registry.h"
 #include "src/common/testing/testing.h"
-#include "src/shared/types/proto/types_pb_wrapper.h"
+#include "src/shared/types/proto/wrapper/types_pb_wrapper.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/proc_stat_connector.h"
 

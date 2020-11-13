@@ -1,7 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//bazel:pl_build_system.bzl", "pl_bindata", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 pl_cc_library(
     name = "cc_library",
@@ -40,13 +39,4 @@ genrule(
     srcs = [":export_funcs"],
     outs = ["data/udf.pb"],
     cmd = "$(location :export_funcs) --out_file_path $@",
-)
-
-go_library(
-    name = "go_default_library",
-    srcs = [
-        "funcs.h",
-        "udf_info_bindata.gen.go",
-    ],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/funcs",
 )
