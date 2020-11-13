@@ -6,7 +6,7 @@ export type Handlers<T extends Action, E extends UIEvent = KeyboardEvent> = {
 
 export type KeyMap<T extends Action> = {
   [action in T]: {
-    sequence: string | string[];
+    sequence: string;
     displaySequence: string | string[];
     description: string;
   }

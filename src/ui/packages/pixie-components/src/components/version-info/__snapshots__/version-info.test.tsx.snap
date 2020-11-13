@@ -4,7 +4,7 @@ exports[`<VersionInfo/> renders correctly 1`] = `
 initialize {
   "0": Object {
     "attribs": Object {
-      "class": "VersionInfo-root-1",
+      "class": "VersionInfoImpl-root-1",
     },
     "children": Array [
       Object {

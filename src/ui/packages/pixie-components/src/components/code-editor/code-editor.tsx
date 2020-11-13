@@ -1,10 +1,7 @@
-/* eslint-disable no-underscore-dangle */
 import clsx from 'clsx';
-import * as _ from 'lodash';
 import * as React from 'react';
 
-import { getKeyMap } from 'containers/live/shortcuts';
-import { Spinner } from 'pixie-components';
+import { Spinner } from '../spinner/spinner';
 import { editor as MonacoEditorTypes } from 'monaco-editor';
 import ICodeEditor = MonacoEditorTypes.ICodeEditor;
 
@@ -17,6 +14,7 @@ interface CodeEditorProps {
   className?: string;
   spinnerClass?: string;
   language?: string;
+  shortcutKeys: string[];
 }
 
 function removeKeybindings(editor, keys: string[]) {
@@ -88,8 +86,7 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
     if (this.editorRef && this.props.visible) {
       this.editorRef.focus();
     }
-    const shortcutKeys = _.flatMap(Object.values(getKeyMap()), (keybinding) => keybinding.sequence)
-      .map((key) => key.toLowerCase().replace('control', 'ctrl'));
+    const shortcutKeys = this.props.shortcutKeys.map((key) => key.toLowerCase().replace('control', 'ctrl'));
     removeKeybindings(editor, shortcutKeys);
     if (this.code) {
       this.changeEditorValue(this.code);

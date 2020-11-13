@@ -24,11 +24,13 @@
   "peerDependencies": {
     "@material-ui/core": "^4.9.0",
     "@material-ui/icons": "^4.5.1",
+    "monaco-editor": "0.20.0",
     "prism-react-renderer": "^1.0.2",
     "prop-types": "^15.5.4",
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
     "react-draggable": "^4.0.3",
+    "react-monaco-editor": "^0.36.0",
     "react-split": "^2.0.7"
   },
   "devDependencies": {
@@ -57,11 +59,13 @@
     "eslint-plugin-react-hooks": "^4.0.4",
     "jest": "^26.6.3",
     "jest-canvas-mock": "^2.2.0",
+    "monaco-editor": "0.20.0",
     "prism-react-renderer": "^1.0.2",
     "prop-types": "^15.5.4",
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
     "react-draggable": "^4.0.3",
+    "react-monaco-editor": "^0.36.0",
     "react-split": "^2.0.7",
     "rollup": "^2.33.1",
     "rollup-plugin-peer-deps-external": "^2.2.4",

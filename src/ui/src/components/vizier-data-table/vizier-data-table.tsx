@@ -1,7 +1,7 @@
 import { Table } from 'common/vizier-grpc-client';
 import {
   CellAlignment, ColumnProps, DataTable, SortState,
-} from 'components/data-table';
+} from 'pixie-components';
 import { JSONData } from 'components/format-data/format-data';
 import * as React from 'react';
 import { DataType, SemanticType } from 'types/generated/vizier_pb';

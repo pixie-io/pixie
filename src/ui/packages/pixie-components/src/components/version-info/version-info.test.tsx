@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { render } from 'enzyme';
-import VersionInfo from './version-info';
+import { VersionInfo } from './version-info';
 
 describe('<VersionInfo/>', () => {
   it('renders correctly', () => {

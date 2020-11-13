@@ -4,7 +4,14 @@ export { AuthMessageBoxProps, AuthMessageBox } from './components/auth/message';
 export { PixienautBoxProps, PixienautBox } from './components/auth/pixienaut-box';
 export { SignupMarcom } from './components/auth/signup-marcom';
 
+export { CodeEditor } from './components/code-editor/code-editor';
+
 export { CodeRenderer } from './components/code-renderer/code-renderer';
+
+export {
+  CellAlignment, ColWidthOverrides, ColumnProps,
+  ExpandedRows, SortState, DataTable,
+} from './components/data-table/data-table';
 
 export { FixedSizeDrawer } from './components/drawer/drawer';
 export { ResizableDrawer } from './components/drawer/resizable-drawer';
@@ -22,6 +29,8 @@ export { Spinner } from './components/spinner/spinner';
 export { SplitContainer, SplitPane } from './components/split-pane/split-pane';
 
 export { StatusGroup, StatusCell } from './components/status/status';
+
+export { VersionInfo } from './components/version-info/version-info';
 
 export { ClusterIcon } from './components/icons/cluster'
 export { CodeIcon } from './components/icons/code'

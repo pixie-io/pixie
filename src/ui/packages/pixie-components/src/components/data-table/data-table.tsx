@@ -16,8 +16,7 @@ import {
   TableRowProps,
   TableRowRenderer,
 } from 'react-virtualized';
-import withAutoSizer, { WithAutoSizerProps } from 'utils/autosizer';
-import noop from 'utils/noop';
+import withAutoSizer, { WithAutoSizerProps } from '../../utils/autosizer';
 
 import {
   createStyles, fade, makeStyles, Theme, useTheme,
@@ -25,8 +24,8 @@ import {
 import Tooltip from '@material-ui/core/Tooltip';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
-import * as expanded from 'images/icons/expanded.svg';
-import * as unexpanded from 'images/icons/unexpanded.svg';
+import { ExpandedIcon } from '../icons/expanded';
+import { UnexpandedIcon } from '../icons/unexpanded';
 import { CSSProperties, MutableRefObject } from 'react';
 
 const EXPANDED_ROW_HEIGHT = 300;
@@ -236,7 +235,7 @@ export { DataTable };
 
 const InternalDataTable = ({
   columns,
-  onRowClick = noop,
+  onRowClick = () => {},
   rowCount,
   width,
   height,
@@ -245,7 +244,7 @@ const InternalDataTable = ({
   resizableColumns = false,
   expandable = false,
   expandedRenderer = () => <></>,
-  onSort = noop,
+  onSort = () => {},
   highlightedRow = -1,
   onRowsRendered = () => {},
 }: WithAutoSizerProps<DataTableProps>) => {
@@ -541,11 +540,11 @@ const InternalDataTable = ({
       classes.gutterCell,
       !(highlightedRow === props.rowIndex || expandedRowState[props.rowIndex]) && classes.hidden,
     );
-    const icon = expandedRowState[props.rowIndex] ? expanded : unexpanded;
+    const icon = expandedRowState[props.rowIndex] ? <ExpandedIcon /> : <UnexpandedIcon />;
     return (
       <>
         <div className={cls}>
-          <img alt='' src={icon} />
+          {icon}
         </div>
       </>
     );

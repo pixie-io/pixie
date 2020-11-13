@@ -2,15 +2,14 @@ import './wdyr';
 
 import Axios from 'axios';
 import { CloudClient } from 'common/cloud-gql-client';
-import { DARK_THEME, SnackbarProvider } from 'pixie-components';
-import VersionInfo from 'components/version-info/version-info';
+import { DARK_THEME, SnackbarProvider, VersionInfo } from 'pixie-components';
 import Vizier from 'containers/App/vizier';
 import PixieCookieBanner from 'common/cookie-banner';
 import { LD_CLIENT_ID } from 'containers/constants';
 import {
   Redirect, Route, Router, Switch,
 } from 'react-router-dom';
-import { isProd } from 'utils/env';
+import { isProd, PIXIE_CLOUD_VERSION } from 'utils/env';
 import history from 'utils/pl-history';
 
 import { ApolloProvider } from '@apollo/react-hooks';
@@ -102,7 +101,7 @@ export class App extends React.Component {
                 </div>
               </ApolloProvider>
             </Router>
-            {!isProd() ? <VersionInfo /> : null}
+            {!isProd() ? <VersionInfo cloudVersion={PIXIE_CLOUD_VERSION} /> : null}
           </SnackbarProvider>
           <PixieCookieBanner />
         </CloudClientContext.Provider>

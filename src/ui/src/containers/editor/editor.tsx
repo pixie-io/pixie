@@ -1,6 +1,5 @@
-import { CodeEditor } from 'components/code-editor';
 import * as React from 'react';
-import { LazyPanel, ResizableDrawer } from 'pixie-components';
+import { CodeEditor, LazyPanel, ResizableDrawer } from 'pixie-components';
 
 import {
   createStyles, makeStyles, Theme, withStyles,
@@ -9,6 +8,7 @@ import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 import ChevronRight from '@material-ui/icons/ChevronRight';
 
+import { getKeyMap } from 'containers/live/shortcuts';
 import { LayoutContext } from 'context/layout-context';
 import { ScriptContext } from 'context/script-context';
 
@@ -55,6 +55,8 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
+const shortcutKeys = Object.values(getKeyMap()).map((keyBinding) => keyBinding.sequence);
+
 const VisEditor = ({ visible }: {visible: boolean}) => {
   const classes = useStyles();
   const { visJSON, setVisEditorText } = React.useContext(ScriptContext);
@@ -81,6 +83,7 @@ const VisEditor = ({ visible }: {visible: boolean}) => {
       className={classes.editor}
       visible={visible}
       spinnerClass={classes.spinner}
+      shortcutKeys={shortcutKeys}
       language='json'
     />
   );
@@ -111,6 +114,7 @@ const ScriptEditor = ({ visible }: {visible: boolean}) => {
       className={classes.editor}
       visible={visible}
       spinnerClass={classes.spinner}
+      shortcutKeys={shortcutKeys}
       language='python'
     />
   );

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ColumnProps, DataTable } from 'components/data-table';
+import { ColumnProps, DataTable } from 'pixie-components';
 
 type Sample = [string, number, number, number, number];
 
