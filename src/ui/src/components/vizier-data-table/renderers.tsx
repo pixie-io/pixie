@@ -9,7 +9,7 @@ import {
   HTTPStatusCodeRenderer,
   JSONData,
   PercentRenderer,
-  PortRenderer, ThroughputBytesRenderer, ThroughputRenderer, TimeRenderer,
+  PortRenderer, ThroughputBytesRenderer, ThroughputRenderer,
 } from 'components/format-data/format-data';
 import {
   EntityLink,
@@ -157,18 +157,18 @@ const serviceRendererFuncGen = (clusterName: string, propagatedArgs?: Arguments)
       return (
         <>
           {
-            parsedArray.map((entity, i) => (
-              <span key={i}>
-                {i > 0 && ', '}
-                <EntityLink
-                  entity={entity}
-                  semanticType={SemanticType.ST_SERVICE_NAME}
-                  clusterName={clusterName}
-                  propagatedParams={propagatedArgs}
-                />
-              </span>
-            ))
-          }
+              parsedArray.map((entity, i) => (
+                <span key={i}>
+                  {i > 0 && ', '}
+                  <EntityLink
+                    entity={entity}
+                    semanticType={SemanticType.ST_SERVICE_NAME}
+                    clusterName={clusterName}
+                    propagatedParams={propagatedArgs}
+                  />
+                </span>
+              ))
+            }
         </>
       );
     }
@@ -218,8 +218,6 @@ export const prettyCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (C
       return renderWrapper(DurationRenderer);
     case SemanticType.ST_BYTES:
       return renderWrapper(BytesRenderer);
-    case SemanticType.ST_TIME_NS:
-      return renderWrapper(TimeRenderer);
     case SemanticType.ST_HTTP_RESP_STATUS:
       return renderWrapper(HTTPStatusCodeRenderer);
     case SemanticType.ST_PERCENT:
