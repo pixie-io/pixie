@@ -1,0 +1,4 @@
+---
+short: DNS Queries Overview
+long: >
+  Overview of DNS queries from pods in a namespace, grouped by the name being resolved and the rates of success.

@@ -1,0 +1,68 @@
+# Copyright (c) Pixie Labs, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+
+''' DNS Overview Map
+Shows summary DNS requests in the cluster, with some latency information.
+'''
+
+import px
+
+def dns_queries(start: str, namespace: str, pod_filter: str, query_filter: str, dns_server_filter: str):
+    df = px.DataFrame('dns_events', start_time=start)
+
+    # Client-side tracing only.
+    df = df[df.trace_role == 1]
+    df = df.drop(['trace_role'])
+
+    # Add context.
+    df.pod = df.ctx['pod']
+    df.service = df.ctx['service']
+    df.namespace = df.ctx['namespace']
+    df = df.drop(['upid'])
+
+    # Filter by namesapce
+    df = df[px.contains(df.namespace, namespace)]
+
+    # Extract some fields into their own columns for convenience.
+    df.req_body = px.pluck(df.req_body, "queries")
+    df.resp_body = px.pluck(df.resp_body, "answers")
+    df.rcode = px.pluck_int64(df.resp_header, "rcode")
+    df.resolved = px.contains(df.resp_body, "name")
+
+    # Get the query prefix up to the first "."
+    df.idxa = px.find(df.req_body, "\"name\":")
+    df.idxz = px.find(df.req_body, ".")
+    df.qname = px.substring(df.req_body, df.idxa+8, df.idxz-df.idxa-8)
+    df = df.drop(['idxa', 'idxz'])
+
+    # Convert DNS IP to string.
+    df.dns_server = px.Service(px.nslookup(df.remote_addr))
+
+    # Apply user-filters on the data.
+    df = df[px.contains(df.pod, pod_filter)]
+    df = df[px.contains(df.dns_server, query_filter)]
+    df = df[px.contains(df.qname, dns_server_filter)]
+
+    # Before aggregating, output individual requests to drawer.
+    px.debug(df, "events")
+
+    # Aggregate by each pod making a query to a particular DNS.
+    df.rcode0 = df.rcode == 0
+    df.rcode3 = df.rcode == 3
+    df = df.groupby(['pod', 'dns_server', 'qname']).agg(
+        total=('resolved', px.count),
+        resolved=('resolved', px.sum),
+        rcode0=('rcode0', px.sum),
+        rcode3=('rcode3', px.sum),
+    )
+
+    # Compute percentages
+    df.unresolved = 100 * (df.total - df.resolved) / df.total
+    df.nx_domain = 100 * (df.rcode3) / df.total
+    df.qgroup = df.qname + " @" + df.dns_server
+
+    df = df.drop(['rcode0', 'rcode3', 'resolved'])
+
+    return df
+
+
