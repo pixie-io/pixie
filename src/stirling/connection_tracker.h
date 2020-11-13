@@ -29,6 +29,7 @@
 
 DECLARE_bool(enable_unix_domain_sockets);
 DECLARE_int64(stirling_conn_trace_pid);
+DECLARE_bool(stirling_conn_disable_to_bpf);
 
 #define CONN_TRACE(level)                                        \
   LOG_IF(INFO, level <= debug_trace_level_) << absl::Substitute( \

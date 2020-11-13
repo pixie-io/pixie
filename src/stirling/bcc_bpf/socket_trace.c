@@ -72,6 +72,14 @@ BPF_PERCPU_ARRAY(control_map, uint64_t, kNumProtocols);
 // Key is {tgid, fd}.
 BPF_HASH(conn_info_map, uint64_t, struct conn_info_t);
 
+// Map to indicate which connections (TGID+FD), user-space has disabled.
+// This is tracked separately from conn_info_map to avoid any read-write races.
+// This particular map is only written from user-space, and only read from BPF.
+// The value is a TSID indicating the last TSID to be disabled. Any newer
+// TSIDs should still be pushed out to user space. Events on older TSIDs is not possible.
+// Key is {tgid, fd}; Value is TSID.
+BPF_HASH(conn_disabled_map, uint64_t, uint64_t);
+
 // Map from user-space file descriptors to open files obtained from open() syscall.
 // Used to filter out file read/writes.
 // Tracks connection from open() -> close().
@@ -685,7 +693,10 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
     update_traffic_class(conn_info, direction, iov_cpy.iov_base, buf_size);
   }
 
-  bool send_data = !is_stirling_tgid(tgid) && should_trace_protocol_data(conn_info);
+  uint64_t* conn_disabled_tsid = conn_disabled_map.lookup(&tgid_fd);
+
+  bool send_data = !is_stirling_tgid(tgid) && should_trace_protocol_data(conn_info) &&
+                   (conn_disabled_tsid == NULL || conn_info->conn_id.tsid > *conn_disabled_tsid);
 
   struct socket_data_event_t* event = fill_event(direction, conn_info);
   if (event == NULL) {

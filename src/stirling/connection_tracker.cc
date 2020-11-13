@@ -33,6 +33,9 @@ DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
               "If a stream ID jumps by this many spots or more, an error is assumed and the entire "
               "connection info is cleared.");
 DEFINE_int64(stirling_conn_trace_pid, -1, "Trace activity on this pid.");
+DEFINE_bool(
+    stirling_conn_disable_to_bpf, true,
+    "Send information about connection tracking disablement to BPF, so it can stop sending data.");
 
 namespace pl {
 namespace stirling {
@@ -424,6 +427,9 @@ void ConnectionTracker::Reset() {
 
 void ConnectionTracker::Disable(std::string_view reason) {
   if (state_ != State::kDisabled) {
+    if (conn_info_map_mgr_ != nullptr && FLAGS_stirling_conn_disable_to_bpf) {
+      conn_info_map_mgr_->Disable(conn_id_);
+    }
     CONN_TRACE(1) << absl::Substitute("Disabling connection dest=$0:$1 reason=$2",
                                       open_info_.remote_addr.AddrStr(),
                                       open_info_.remote_addr.port(), reason);
@@ -433,8 +439,6 @@ void ConnectionTracker::Disable(std::string_view reason) {
   disable_reason_ = reason;
 
   Reset();
-
-  // TODO(oazizi): Propagate the disable back to BPF, so it doesn't even send the data.
 }
 
 bool ConnectionTracker::AllEventsReceived() const {

@@ -553,5 +553,47 @@ TEST_F(SocketTraceBPFTest, NonBlockingRecv) {
   EXPECT_EQ(remote_port, server_port);
 }
 
+class SocketTraceServerSideBPFTest
+    : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {};
+
+TEST_F(SocketTraceServerSideBPFTest, BPFDisable) {
+  auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
+
+  ConfigureBPFCapture(kProtocolHTTP, kRoleAll);
+  DataTable data_table(kHTTPTable);
+
+  TCPSocket client;
+  TCPSocket server;
+
+  server.BindAndListen();
+  client.Connect(server);
+
+  // First write.
+  // BPF should trace the write due to `ConfigureBPFCapture(kProtocolHTTP, kRoleAll)` above.
+  // Then TransferData should disable the client-side tracing in user-space,
+  // and propagate the information back to BPF.
+  client.Write(kHTTPReqMsg1);
+  sleep(1);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  const ConnectionTracker* tracker =
+      socket_trace_connector->GetConnectionTracker(getpid(), client.sockfd());
+  ASSERT_NE(tracker, nullptr);
+  uint64_t count = tracker->stats().Get(ConnectionTracker::Stats::Key::kBytesSentTransferred);
+  ASSERT_GT(count, 0);
+
+  // Second write.
+  // BPF should not even trace the write, because it should have been disabled from user-space.
+  client.Write(kHTTPReqMsg1);
+  sleep(1);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  uint64_t count2 = tracker->stats().Get(ConnectionTracker::Stats::Key::kBytesSentTransferred);
+
+  // Not expecting any additional bytes to get transferred after the tracker is disabled.
+  ASSERT_EQ(count, count2);
+
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  ASSERT_TRUE(tablets.empty());
+}
+
 }  // namespace stirling
 }  // namespace pl

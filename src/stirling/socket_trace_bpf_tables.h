@@ -22,7 +22,8 @@ namespace stirling {
 class ConnInfoMapManager {
  public:
   explicit ConnInfoMapManager(ebpf::BPF* bpf)
-      : conn_info_map_(bpf->get_hash_table<uint64_t, struct conn_info_t>("conn_info_map")) {}
+      : conn_info_map_(bpf->get_hash_table<uint64_t, struct conn_info_t>("conn_info_map")),
+        conn_disabled_map_(bpf->get_hash_table<uint64_t, uint64_t>("conn_disabled_map")) {}
 
   void ReleaseResources(struct conn_id_t conn_id) {
     uint64_t key = id(conn_id);
@@ -45,10 +46,26 @@ class ConnInfoMapManager {
         }
       }
     }
+
+    uint64_t tsid;
+    if (conn_disabled_map_.get_value(key, tsid).code() == 0) {
+      if (tsid <= conn_id.tsid) {
+        conn_disabled_map_.remove_value(key);
+      }
+    }
+  }
+
+  void Disable(struct conn_id_t conn_id) {
+    uint64_t key = id(conn_id);
+
+    if (conn_disabled_map_.update_value(key, conn_id.tsid).code() != 0) {
+      VLOG(1) << absl::Substitute("$0 Updating conn_disable_map entry failed.", ToString(conn_id));
+    }
   }
 
  private:
   ebpf::BPFHashTable<uint64_t, struct conn_info_t> conn_info_map_;
+  ebpf::BPFHashTable<uint64_t, uint64_t> conn_disabled_map_;
 
   // TODO(oazizi): Can we share this with the similar function in socket_trace.c?
   uint64_t id(struct conn_id_t conn_id) const {
