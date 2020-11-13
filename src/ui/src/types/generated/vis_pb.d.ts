@@ -568,6 +568,9 @@ export class Graph extends jspb.Message {
   getEdgeLength(): number;
   setEdgeLength(value: number): void;
 
+  getEnableDefaultHierarchy(): boolean;
+  setEnableDefaultHierarchy(value: boolean): void;
+
   getInputCase(): Graph.InputCase;
 
   serializeBinary(): Uint8Array;
@@ -588,6 +591,7 @@ export namespace Graph {
     edgeThresholds?: Graph.EdgeThresholds.AsObject,
     edgeHoverInfoList: Array<string>,
     edgeLength: number,
+    enableDefaultHierarchy: boolean,
   }
 
   export class AdjacencyList extends jspb.Message {

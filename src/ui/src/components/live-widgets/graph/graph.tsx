@@ -44,6 +44,7 @@ export interface GraphDisplay extends WidgetDisplay {
   readonly edgeThresholds?: EdgeThresholds;
   readonly edgeHoverInfo?: string[];
   readonly edgeLength?: number;
+  readonly enableDefaultHierarchy?: boolean;
 }
 
 interface GraphWidgetProps {
@@ -107,6 +108,7 @@ interface GraphProps {
   edgeThresholds?: EdgeThresholds;
   edgeHoverInfo?: ColInfo[];
   edgeLength?: number;
+  enableDefaultHierarchy?: boolean;
 }
 
 const useStyles = makeStyles(() => createStyles({
@@ -150,7 +152,7 @@ function getColorForEdge(val: number, theme: Theme, thresholds: EdgeThresholds):
 export const Graph = (props: GraphProps) => {
   const {
     dot, toCol, fromCol, data, propagatedArgs, edgeWeightColumn,
-    nodeWeightColumn, edgeColorColumn, edgeThresholds, edgeHoverInfo, edgeLength,
+    nodeWeightColumn, edgeColorColumn, edgeThresholds, edgeHoverInfo, edgeLength, enableDefaultHierarchy,
   } = props;
   const theme = useTheme();
 
@@ -158,7 +160,7 @@ export const Graph = (props: GraphProps) => {
   const { selectedClusterName } = React.useContext(ClusterContext);
   const history = useHistory();
 
-  const [hierarchyEnabled, setHierarchyEnabled] = React.useState<boolean>(false);
+  const [hierarchyEnabled, setHierarchyEnabled] = React.useState<boolean>(enableDefaultHierarchy);
   const [focused, setFocused] = React.useState<boolean>(false);
   const toggleFocus = React.useCallback(() => setFocused((enabled) => !enabled), []);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

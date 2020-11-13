@@ -338,6 +338,8 @@ message Graph {
   repeated string edge_hover_info = 7;
   // The length of the edge. Default is 100.
   int64 edge_length = 8;
+  // Whether the graph should start in hierarchy mode as a default.
+  bool enable_default_hierarchy = 9;
 }
 
 // Display traffic between pods or services as a graph.

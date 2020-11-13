@@ -4507,7 +4507,8 @@ proto.pl.vispb.Graph.toObject = function(includeInstance, msg) {
     edgeColorColumn: jspb.Message.getFieldWithDefault(msg, 5, ""),
     edgeThresholds: (f = msg.getEdgeThresholds()) && proto.pl.vispb.Graph.EdgeThresholds.toObject(includeInstance, f),
     edgeHoverInfoList: (f = jspb.Message.getRepeatedField(msg, 7)) == null ? undefined : f,
-    edgeLength: jspb.Message.getFieldWithDefault(msg, 8, 0)
+    edgeLength: jspb.Message.getFieldWithDefault(msg, 8, 0),
+    enableDefaultHierarchy: jspb.Message.getBooleanFieldWithDefault(msg, 9, false)
   };
 
   if (includeInstance) {
@@ -4577,6 +4578,10 @@ proto.pl.vispb.Graph.deserializeBinaryFromReader = function(msg, reader) {
     case 8:
       var value = /** @type {number} */ (reader.readInt64());
       msg.setEdgeLength(value);
+      break;
+    case 9:
+      var value = /** @type {boolean} */ (reader.readBool());
+      msg.setEnableDefaultHierarchy(value);
       break;
     default:
       reader.skipField();
@@ -4662,6 +4667,13 @@ proto.pl.vispb.Graph.serializeBinaryToWriter = function(message, writer) {
   if (f !== 0) {
     writer.writeInt64(
       8,
+      f
+    );
+  }
+  f = message.getEnableDefaultHierarchy();
+  if (f) {
+    writer.writeBool(
+      9,
       f
     );
   }
@@ -5204,6 +5216,24 @@ proto.pl.vispb.Graph.prototype.getEdgeLength = function() {
  */
 proto.pl.vispb.Graph.prototype.setEdgeLength = function(value) {
   return jspb.Message.setProto3IntField(this, 8, value);
+};
+
+
+/**
+ * optional bool enable_default_hierarchy = 9;
+ * @return {boolean}
+ */
+proto.pl.vispb.Graph.prototype.getEnableDefaultHierarchy = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 9, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.pl.vispb.Graph} returns this
+ */
+proto.pl.vispb.Graph.prototype.setEnableDefaultHierarchy = function(value) {
+  return jspb.Message.setProto3BooleanField(this, 9, value);
 };
 
 
