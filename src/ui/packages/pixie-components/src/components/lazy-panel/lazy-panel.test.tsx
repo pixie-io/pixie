@@ -1,7 +1,7 @@
 import { shallow } from 'enzyme';
 import * as React from 'react';
 
-import LazyPanel from './lazy-panel';
+import { LazyPanel } from './lazy-panel';
 
 describe('<LazyPanel/> test', () => {
   it('renders null when show is false', () => {

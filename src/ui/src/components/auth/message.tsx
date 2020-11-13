@@ -3,8 +3,8 @@ import {
   createStyles, fade, Theme, Typography, withStyles, WithStyles,
 } from '@material-ui/core';
 import { PixienautBox } from 'components/auth/pixienaut-box';
+import { CodeRenderer } from 'pixie-components';
 import * as authErrorSVG from './auth-error.svg';
-import CodeRenderer from '../code-renderer/code-renderer';
 
 const styles = ({ palette, spacing }: Theme) => createStyles({
   root: {

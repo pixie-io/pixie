@@ -1,13 +1,13 @@
-import * as copyBtn from 'images/icons/copy-btn.svg';
 import Highlight, { defaultProps } from 'prism-react-renderer';
 import * as React from 'react';
-import { Theme } from '@material-ui/core/styles';
+import { CopyIcon } from '../icons/copy';
 
 import { Box } from '@material-ui/core';
+import { Theme } from '@material-ui/core/styles';
 import IconButton from '@material-ui/core/IconButton';
 import withStyles from '@material-ui/core/styles/withStyles';
 
-const CodeRenderer = withStyles((theme: Theme) => ({
+export const CodeRenderer = withStyles((theme: Theme) => ({
   code: {
     backgroundColor: theme.palette.foreground.grey3,
     borderRadius: '5px',
@@ -65,12 +65,7 @@ const CodeRenderer = withStyles((theme: Theme) => ({
       className={classes.copyBtn}
       onClick={() => { navigator.clipboard.writeText(code); }}
     >
-      <img
-
-        src={copyBtn}
-        alt=''
-      />
+      <CopyIcon />
     </IconButton>
   </div>
 ));
-export default CodeRenderer;

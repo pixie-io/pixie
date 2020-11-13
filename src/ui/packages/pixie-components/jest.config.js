@@ -6,6 +6,9 @@ module.exports = {
     '<rootDir>/src/testing/enzyme-setup.ts',
     'jest-canvas-mock',
   ],
+  setupFilesAfterEnv: [
+    '<rootDir>/src/testing/jest-test-setup.js',
+  ],
   moduleFileExtensions: [
     'js',
     'json',

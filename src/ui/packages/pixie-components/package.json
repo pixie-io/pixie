@@ -24,6 +24,7 @@
   "peerDependencies": {
     "@material-ui/core": "^4.9.0",
     "@material-ui/icons": "^4.5.1",
+    "prism-react-renderer": "^1.0.2",
     "prop-types": "^15.5.4",
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
@@ -55,6 +56,7 @@
     "eslint-plugin-react-hooks": "^4.0.4",
     "jest": "^26.6.3",
     "jest-canvas-mock": "^2.2.0",
+    "prism-react-renderer": "^1.0.2",
     "prop-types": "^15.5.4",
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
@@ -67,5 +69,6 @@
     "typescript": "^3.7.2"
   },
   "dependencies": {
+    "clsx": "^1.0.4"
   }
 }

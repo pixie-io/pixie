@@ -1,5 +1,11 @@
+export { CodeRenderer } from './components/code-renderer/code-renderer';
+
 export { FixedSizeDrawer } from './components/drawer/drawer';
 export { ResizableDrawer } from './components/drawer/resizable-drawer';
+
+export { LazyPanel } from './components/lazy-panel/lazy-panel';
+
+export { ModalTrigger } from './components/modal/modal';
 
 export { Avatar, ProfileMenuWrapper } from './components/profile/profile';
 
@@ -11,6 +17,7 @@ export { StatusGroup, StatusCell } from './components/status/status';
 
 export { ClusterIcon } from './components/icons/cluster'
 export { CodeIcon } from './components/icons/code'
+export { CopyIcon } from './components/icons/copy'
 export { DocsIcon } from './components/icons/docs'
 export { EditIcon } from './components/icons/edit'
 export { GoogleIcon } from './components/icons/google'

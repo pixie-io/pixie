@@ -1,8 +1,19 @@
 import clsx from 'clsx';
 import * as React from 'react';
-import { triggerResize } from 'utils/resize';
 
 import { createStyles, makeStyles } from '@material-ui/core/styles';
+
+let called = false;
+function triggerResize() {
+  if (called) {
+    return;
+  }
+  called = true;
+  setTimeout(() => {
+    window.dispatchEvent(new Event('resize'));
+    called = false;
+  });
+}
 
 interface LazyPanelProps {
   show: boolean;
@@ -19,7 +30,7 @@ const useStyles = makeStyles(() => createStyles({
 }));
 
 // LazyPanel is a component that renders the content lazily.
-const LazyPanel = (props: LazyPanelProps) => {
+export const LazyPanel = (props: LazyPanelProps) => {
   const { show, className, children } = props;
   const [rendered, setRendered] = React.useState(false);
   const classes = useStyles();
@@ -41,5 +52,3 @@ const LazyPanel = (props: LazyPanelProps) => {
     </div>
   );
 };
-
-export default LazyPanel;
