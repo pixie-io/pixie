@@ -79,7 +79,7 @@ export const AuthCallbackPage = () => {
     const performSignup = async (accessToken: string) => {
       try {
         const response = await Axios.post('/api/auth/signup', { accessToken });
-        analytics.identify(response.data.userInfo.userID);
+        analytics.identify(response.data.userInfo.userID, { email: response.data.userInfo.email });
         analytics.track('User signed up');
         return true;
       } catch (err) {
@@ -95,7 +95,7 @@ export const AuthCallbackPage = () => {
           accessToken,
           orgName,
         });
-        analytics.identify(response.data.userInfo.userID);
+        analytics.identify(response.data.userInfo.userID, { email: response.data.userInfo.email });
         if (isValidAnalytics()) {
           await Promise.race([
             new Promise((resolve, reject) => { // Wait for analytics to be sent out before redirecting.
