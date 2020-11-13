@@ -1,0 +1,69 @@
+{
+  "name": "pixie-components",
+  "version": "1.0.0",
+  "description": "Pixie shared UI components",
+  "private": true,
+  "main": "dist/index.js",
+  "module": "dist/index.es.js",
+  "files": [
+    "dist"
+  ],
+  "jsnext:main": "dist/index.es.js",
+  "engines": {
+    "node": ">=8",
+    "npm": ">=5"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "start": "rollup -c -w",
+    "lint": "eslint '*/**/*.{js,ts,tsx}'",
+    "test": "jest",
+    "install": "rollup -c",
+    "coverage": "jest --coverage"
+  },
+  "peerDependencies": {
+    "@material-ui/core": "^4.9.0",
+    "prop-types": "^15.5.4",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0",
+    "react-draggable": "^4.0.3"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.0.0-rc.2",
+    "@material-ui/core": "^4.9.0",
+    "@rollup/plugin-babel": "^5.2.1",
+    "@rollup/plugin-commonjs": "^16.0.0",
+    "@rollup/plugin-node-resolve": "^10.0.0",
+    "@rollup/plugin-url": "^5.0.1",
+    "@svgr/rollup": "^5.4.0",
+    "@types/jest": "24.0.18",
+    "@types/react": "^16.9.11",
+    "@types/react-dom": "^16.9.4",
+    "@typescript-eslint/eslint-plugin": "^2.30.0",
+    "@typescript-eslint/parser": "^2.30.0",
+    "enzyme": "^3.10.0",
+    "enzyme-adapter-react-16": "^1.15.1",
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-typescript": "^8.0.2",
+    "eslint-plugin-enzyme": "^0.1.1",
+    "eslint-plugin-import": "^2.20.2",
+    "eslint-plugin-jest": "^23.8.2",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-react": "^7.19.0",
+    "eslint-plugin-react-hooks": "^4.0.4",
+    "jest": "^26.6.3",
+    "jest-canvas-mock": "^2.2.0",
+    "prop-types": "^15.5.4",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0",
+    "react-draggable": "^4.0.3",
+    "rollup": "^2.33.1",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "rollup-plugin-postcss": "^3.1.8",
+    "rollup-plugin-typescript2": "^0.29.0",
+    "tslib": "^2.0.3",
+    "typescript": "^3.7.2"
+  },
+  "dependencies": {
+  }
+}

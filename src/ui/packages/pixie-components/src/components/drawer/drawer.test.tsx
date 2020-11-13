@@ -3,8 +3,7 @@ import { render } from 'enzyme';
 import { createMuiTheme, MuiThemeProvider } from '@material-ui/core';
 import { FixedSizeDrawer } from './drawer';
 
-// TODO(michelle): Currently doesn't work with the clsx import. Enable when we've solved that problem.
-xdescribe('<FixedSizeDrawer/>', () => {
+describe('<FixedSizeDrawer/>', () => {
   it('renders correctly when closed', () => {
     const otherContent = (
       <div>

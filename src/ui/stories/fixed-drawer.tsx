@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import Button from '@material-ui/core/Button';
-import { FixedSizeDrawer } from '../src/components/drawer/drawer';
+import { FixedSizeDrawer } from 'pixie-components';
 
 export default {
   title: 'Drawer/Fixed',

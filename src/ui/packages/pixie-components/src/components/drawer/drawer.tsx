@@ -46,7 +46,7 @@ interface FixedSizeDrawerProps extends WithStyles<typeof styles> {
   overlay: boolean;
 }
 
-const InternalFixedSizeDrawer = ({
+const FixedSizeDrawerImpl = ({
   classes, children, otherContent, drawerDirection, drawerSize, open, overlay,
 }: FixedSizeDrawerProps) => {
   const drawerStyle = drawerDirection === 'top' || drawerDirection === 'bottom' ? { height: drawerSize }
@@ -89,5 +89,4 @@ const InternalFixedSizeDrawer = ({
   );
 };
 
-const FixedSizeDrawer = withStyles(styles)(InternalFixedSizeDrawer);
-export { FixedSizeDrawer };
+export const FixedSizeDrawer = withStyles(styles)(FixedSizeDrawerImpl);

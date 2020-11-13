@@ -535,6 +535,12 @@ builders['Build & Test All (opt + UI)'] = {
           bazelCICmd('build-opt', 'clang', 'opt', BAZEL_SRC_FILES_PATH, '--action_env=GOOGLE_APPLICATION_CREDENTIALS')
         }
 
+        def uiTestFailures = 'bazel-out/k8-opt/testlogs/src/ui/ui-tests/test.log'
+        if (shFileExists(uiTestFailures)) {
+            stashOnGCS('build-ui-failures', 'bazel-out')
+            stashList.add('build-ui-failures')
+        }
+
         // File might not always exist because of test run caching.
         // TODO(zasgar): Make sure this file is fetched for main run, otherwise we
         // might have issues with coverage.

@@ -4,7 +4,7 @@ import { DataDrawerContext } from 'context/data-drawer-context';
 import { LayoutContext } from 'context/layout-context';
 import { ResultsContext } from 'context/results-context';
 import * as React from 'react';
-import ResizableDrawer from 'components/drawer/resizable-drawer';
+import { ResizableDrawer } from 'pixie-components';
 import { VizierDataTableWithDetails } from 'components/vizier-data-table/vizier-data-table';
 
 import {

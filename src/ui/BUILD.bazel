@@ -15,6 +15,7 @@ UI_DEP_PACKAGES = [
     ".yarnrc",
 ] + glob([
     "offline_package_cache/**",
+    "packages/**",
     "patches/**",
 ])
 

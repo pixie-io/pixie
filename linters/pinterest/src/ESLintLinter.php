@@ -172,8 +172,12 @@ final class ESLintLinter extends ArcanistExternalLinter {
         $message->setSeverity($this->mapSeverity($offense['severity']));
         $message->setName($offense['ruleId'] || 'unknown');
         $message->setDescription($offense['message']);
-        $message->setLine($offense['line']);
-        $message->setChar($offense['column']);
+        if (isset($offense['line'])) {
+          $message->setLine($offense['line']);
+        }
+        if (isset($offense['column'])) {
+          $message->setChar($offense['column']);
+        }
         $message->setCode($this->getLinterName());
         $messages[] = $message;
       }

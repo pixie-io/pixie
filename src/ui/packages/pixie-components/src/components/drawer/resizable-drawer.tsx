@@ -40,7 +40,7 @@ interface ResizableDrawerProps extends WithStyles<typeof styles> {
   overlay: boolean;
 }
 
-const ResizableDrawer = ({
+const ResizableDrawerImpl = ({
   classes, children, otherContent, drawerDirection, open, overlay, initialSize,
 }: ResizableDrawerProps) => {
   const [drawerSize, setDrawerSize] = React.useState(initialSize);
@@ -97,7 +97,7 @@ const ResizableDrawer = ({
 
   const dragHandle = (
     <DraggableCore
-      onDrag={(event, { deltaX, deltaY }) => {
+      onDrag={(_, { deltaX, deltaY }) => {
         resize({
           deltaY,
           deltaX,
@@ -146,4 +146,4 @@ const ResizableDrawer = ({
   );
 };
 
-export default withStyles(styles)(ResizableDrawer);
+export const ResizableDrawer = withStyles(styles)(ResizableDrawerImpl);

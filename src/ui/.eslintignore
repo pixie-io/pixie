@@ -1,4 +1,4 @@
-node_modules/*
-pixie-components/*
-src/types/generated/*
+node_modules
+packages
+src/types/generated
 src/segment.js

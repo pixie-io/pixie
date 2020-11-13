@@ -1,7 +1,7 @@
 import { CodeEditor } from 'components/code-editor';
 import LazyPanel from 'components/lazy-panel';
 import * as React from 'react';
-import ResizableDrawer from 'components/drawer/resizable-drawer';
+import { ResizableDrawer } from 'pixie-components';
 
 import {
   createStyles, makeStyles, Theme, withStyles,

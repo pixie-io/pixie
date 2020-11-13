@@ -26,6 +26,7 @@
     "(src/ui/src/types/generated/.*)",
     "(spinnaker/hal/.*)",
     "(credentials/dev_infra/.*)",
+    "(src/ui/pixie-components/dist/.*)",
     "(^src\/stirling\/mysql\/testing\/.*\\.json)"
   ],
   "linters": {
