@@ -19,6 +19,8 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
 	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
+	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
+	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/handler"
 	pbutils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
@@ -49,6 +51,7 @@ func TestAuthSignupHandler(t *testing.T) {
 	expectedAuthServiceReq := &authpb.SignupRequest{
 		AccessToken: "the-token",
 	}
+
 	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
 	testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()
 	signupReply := &authpb.SignupReply{
@@ -60,10 +63,18 @@ func TestAuthSignupHandler(t *testing.T) {
 			LastName:  "last",
 			Email:     "abc@defg.com",
 		},
+		OrgID: pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c9"),
 	}
 	mockClients.MockAuth.EXPECT().Signup(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.SignupRequest) {
 		assert.Equal(t, "the-token", in.AccessToken)
 	}).Return(signupReply, nil)
+
+	getOrgReply := &profilepb.OrgInfo{
+		OrgName: "defg.com",
+	}
+	mockClients.MockProfile.EXPECT().GetOrg(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, in *uuidpb.UUID) {
+		assert.Equal(t, pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c9"), in)
+	}).Return(getOrgReply, nil)
 
 	rr := httptest.NewRecorder()
 	h := handler.New(env, controller.AuthSignupHandler)
