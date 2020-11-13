@@ -17,7 +17,7 @@ interface AutocompleteState {
 
 // Hook for managing autocomplete states.
 // TODO(malthus): Combine this with the autocomplete component.
-const useAutocomplete = (getCompletions: GetCompletionsFunc, input: string): AutocompleteState => {
+export const useAutocomplete = (getCompletions: GetCompletionsFunc, input: string): AutocompleteState => {
   const [completions, setCompletions] = React.useState<CompletionItems>([]);
   const [activeIndex, setActiveIndex] = React.useState<number>(-1);
   const [loading, setLoading] = React.useState<boolean>(false);
@@ -84,5 +84,3 @@ const useAutocomplete = (getCompletions: GetCompletionsFunc, input: string): Aut
     selectById,
   };
 };
-
-export default useAutocomplete;

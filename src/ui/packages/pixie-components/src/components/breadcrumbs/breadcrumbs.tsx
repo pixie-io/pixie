@@ -6,10 +6,10 @@ import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
 import { Card, Popover } from '@material-ui/core';
 import createTypography from '@material-ui/core/styles/createTypography';
 import createSpacing from '@material-ui/core/styles/createSpacing';
-import { CompletionItem } from 'components/autocomplete/completions';
-import Autocomplete from 'components/autocomplete';
-import { AutocompleteContext } from 'components/autocomplete/autocomplete';
-import useIsMounted from 'utils/use-is-mounted';
+
+import { CompletionItem } from '../autocomplete/completions';
+import { Autocomplete, AutocompleteContext } from '../autocomplete/autocomplete';
+import useIsMounted from '../../utils/use-is-mounted';
 
 const styles = ({
   spacing, typography, palette, breakpoints,
@@ -321,7 +321,7 @@ interface BreadcrumbsProps extends WithStyles<typeof styles> {
 
 // TODO(nserrino/michelle): Support links (non-menu) as a type of breadcrumb,
 // replace breadcrumbs in cluster details page with that new type of breadcrumb.
-const Breadcrumbs = ({
+const BreadcrumbsImpl = ({
   classes, breadcrumbs,
 }: BreadcrumbsProps) => {
   // In case a breadcrumb doesn't override, give it the nearest context's values.
@@ -351,4 +351,4 @@ const Breadcrumbs = ({
   );
 };
 
-export default withStyles(styles)(Breadcrumbs);
+export const Breadcrumbs = withStyles(styles)(BreadcrumbsImpl);

@@ -4,27 +4,27 @@ exports[`<Breadcrumbs/> renders correctly 1`] = `
 initialize {
   "0": Object {
     "attribs": Object {
-      "class": "Breadcrumbs-breadcrumbs-1",
+      "class": "BreadcrumbsImpl-breadcrumbs-1",
     },
     "children": Array [
       Object {
         "attribs": Object {
-          "class": "Breadcrumbs-breadcrumb-2",
+          "class": "BreadcrumbsImpl-breadcrumb-2",
         },
         "children": Array [
           Object {
             "attribs": Object {
-              "class": "Breadcrumbs-body-7",
+              "class": "BreadcrumbsImpl-body-7",
             },
             "children": Array [
               Object {
                 "attribs": Object {
-                  "class": "Breadcrumbs-content-8",
+                  "class": "BreadcrumbsImpl-content-8",
                 },
                 "children": Array [
                   Object {
                     "attribs": Object {
-                      "class": "Breadcrumbs-title-3",
+                      "class": "BreadcrumbsImpl-title-3",
                     },
                     "children": Array [
                       Object {
@@ -39,7 +39,7 @@ initialize {
                     "namespace": "http://www.w3.org/1999/xhtml",
                     "next": Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-value-6",
+                        "class": "BreadcrumbsImpl-value-6",
                       },
                       "children": Array [
                         Object {
@@ -54,7 +54,7 @@ initialize {
                       "namespace": "http://www.w3.org/1999/xhtml",
                       "next": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-dropdownArrow-9",
+                          "class": "BreadcrumbsImpl-dropdownArrow-9",
                         },
                         "children": Array [
                           Object {
@@ -136,7 +136,7 @@ initialize {
                   },
                   Object {
                     "attribs": Object {
-                      "class": "Breadcrumbs-value-6",
+                      "class": "BreadcrumbsImpl-value-6",
                     },
                     "children": Array [
                       Object {
@@ -151,7 +151,7 @@ initialize {
                     "namespace": "http://www.w3.org/1999/xhtml",
                     "next": Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-dropdownArrow-9",
+                        "class": "BreadcrumbsImpl-dropdownArrow-9",
                       },
                       "children": Array [
                         Object {
@@ -214,7 +214,7 @@ initialize {
                     "parent": [Circular],
                     "prev": Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-title-3",
+                        "class": "BreadcrumbsImpl-title-3",
                       },
                       "children": Array [
                         Object {
@@ -248,7 +248,7 @@ initialize {
                   },
                   Object {
                     "attribs": Object {
-                      "class": "Breadcrumbs-dropdownArrow-9",
+                      "class": "BreadcrumbsImpl-dropdownArrow-9",
                     },
                     "children": Array [
                       Object {
@@ -301,7 +301,7 @@ initialize {
                     "parent": [Circular],
                     "prev": Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-value-6",
+                        "class": "BreadcrumbsImpl-value-6",
                       },
                       "children": Array [
                         Object {
@@ -318,7 +318,7 @@ initialize {
                       "parent": [Circular],
                       "prev": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-title-3",
+                          "class": "BreadcrumbsImpl-title-3",
                         },
                         "children": Array [
                           Object {
@@ -391,22 +391,22 @@ initialize {
         "namespace": "http://www.w3.org/1999/xhtml",
         "next": Object {
           "attribs": Object {
-            "class": "Breadcrumbs-breadcrumb-2",
+            "class": "BreadcrumbsImpl-breadcrumb-2",
           },
           "children": Array [
             Object {
               "attribs": Object {
-                "class": "Breadcrumbs-body-7",
+                "class": "BreadcrumbsImpl-body-7",
               },
               "children": Array [
                 Object {
                   "attribs": Object {
-                    "class": "Breadcrumbs-content-8",
+                    "class": "BreadcrumbsImpl-content-8",
                   },
                   "children": Array [
                     Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-title-3",
+                        "class": "BreadcrumbsImpl-title-3",
                       },
                       "children": Array [
                         Object {
@@ -421,7 +421,7 @@ initialize {
                       "namespace": "http://www.w3.org/1999/xhtml",
                       "next": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-value-6",
+                          "class": "BreadcrumbsImpl-value-6",
                         },
                         "children": Array [
                           Object {
@@ -436,7 +436,7 @@ initialize {
                         "namespace": "http://www.w3.org/1999/xhtml",
                         "next": Object {
                           "attribs": Object {
-                            "class": "Breadcrumbs-dropdownArrow-9",
+                            "class": "BreadcrumbsImpl-dropdownArrow-9",
                           },
                           "children": Array [
                             Object {
@@ -518,7 +518,7 @@ initialize {
                     },
                     Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-value-6",
+                        "class": "BreadcrumbsImpl-value-6",
                       },
                       "children": Array [
                         Object {
@@ -533,7 +533,7 @@ initialize {
                       "namespace": "http://www.w3.org/1999/xhtml",
                       "next": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-dropdownArrow-9",
+                          "class": "BreadcrumbsImpl-dropdownArrow-9",
                         },
                         "children": Array [
                           Object {
@@ -596,7 +596,7 @@ initialize {
                       "parent": [Circular],
                       "prev": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-title-3",
+                          "class": "BreadcrumbsImpl-title-3",
                         },
                         "children": Array [
                           Object {
@@ -630,7 +630,7 @@ initialize {
                     },
                     Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-dropdownArrow-9",
+                        "class": "BreadcrumbsImpl-dropdownArrow-9",
                       },
                       "children": Array [
                         Object {
@@ -683,7 +683,7 @@ initialize {
                       "parent": [Circular],
                       "prev": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-value-6",
+                          "class": "BreadcrumbsImpl-value-6",
                         },
                         "children": Array [
                           Object {
@@ -700,7 +700,7 @@ initialize {
                         "parent": [Circular],
                         "prev": Object {
                           "attribs": Object {
-                            "class": "Breadcrumbs-title-3",
+                            "class": "BreadcrumbsImpl-title-3",
                           },
                           "children": Array [
                             Object {
@@ -773,22 +773,22 @@ initialize {
           "namespace": "http://www.w3.org/1999/xhtml",
           "next": Object {
             "attribs": Object {
-              "class": "Breadcrumbs-breadcrumb-2",
+              "class": "BreadcrumbsImpl-breadcrumb-2",
             },
             "children": Array [
               Object {
                 "attribs": Object {
-                  "class": "Breadcrumbs-body-7",
+                  "class": "BreadcrumbsImpl-body-7",
                 },
                 "children": Array [
                   Object {
                     "attribs": Object {
-                      "class": "Breadcrumbs-content-8",
+                      "class": "BreadcrumbsImpl-content-8",
                     },
                     "children": Array [
                       Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-title-3",
+                          "class": "BreadcrumbsImpl-title-3",
                         },
                         "children": Array [
                           Object {
@@ -803,7 +803,7 @@ initialize {
                         "namespace": "http://www.w3.org/1999/xhtml",
                         "next": Object {
                           "attribs": Object {
-                            "class": "Breadcrumbs-value-6",
+                            "class": "BreadcrumbsImpl-value-6",
                           },
                           "children": Array [
                             Object {
@@ -818,7 +818,7 @@ initialize {
                           "namespace": "http://www.w3.org/1999/xhtml",
                           "next": Object {
                             "attribs": Object {
-                              "class": "Breadcrumbs-spacer-10",
+                              "class": "BreadcrumbsImpl-spacer-10",
                             },
                             "children": Array [],
                             "name": "div",
@@ -856,7 +856,7 @@ initialize {
                       },
                       Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-value-6",
+                          "class": "BreadcrumbsImpl-value-6",
                         },
                         "children": Array [
                           Object {
@@ -871,7 +871,7 @@ initialize {
                         "namespace": "http://www.w3.org/1999/xhtml",
                         "next": Object {
                           "attribs": Object {
-                            "class": "Breadcrumbs-spacer-10",
+                            "class": "BreadcrumbsImpl-spacer-10",
                           },
                           "children": Array [],
                           "name": "div",
@@ -890,7 +890,7 @@ initialize {
                         "parent": [Circular],
                         "prev": Object {
                           "attribs": Object {
-                            "class": "Breadcrumbs-title-3",
+                            "class": "BreadcrumbsImpl-title-3",
                           },
                           "children": Array [
                             Object {
@@ -924,7 +924,7 @@ initialize {
                       },
                       Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-spacer-10",
+                          "class": "BreadcrumbsImpl-spacer-10",
                         },
                         "children": Array [],
                         "name": "div",
@@ -933,7 +933,7 @@ initialize {
                         "parent": [Circular],
                         "prev": Object {
                           "attribs": Object {
-                            "class": "Breadcrumbs-value-6",
+                            "class": "BreadcrumbsImpl-value-6",
                           },
                           "children": Array [
                             Object {
@@ -950,7 +950,7 @@ initialize {
                           "parent": [Circular],
                           "prev": Object {
                             "attribs": Object {
-                              "class": "Breadcrumbs-title-3",
+                              "class": "BreadcrumbsImpl-title-3",
                             },
                             "children": Array [
                               Object {
@@ -1054,22 +1054,22 @@ initialize {
       },
       Object {
         "attribs": Object {
-          "class": "Breadcrumbs-breadcrumb-2",
+          "class": "BreadcrumbsImpl-breadcrumb-2",
         },
         "children": Array [
           Object {
             "attribs": Object {
-              "class": "Breadcrumbs-body-7",
+              "class": "BreadcrumbsImpl-body-7",
             },
             "children": Array [
               Object {
                 "attribs": Object {
-                  "class": "Breadcrumbs-content-8",
+                  "class": "BreadcrumbsImpl-content-8",
                 },
                 "children": Array [
                   Object {
                     "attribs": Object {
-                      "class": "Breadcrumbs-title-3",
+                      "class": "BreadcrumbsImpl-title-3",
                     },
                     "children": Array [
                       Object {
@@ -1084,7 +1084,7 @@ initialize {
                     "namespace": "http://www.w3.org/1999/xhtml",
                     "next": Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-value-6",
+                        "class": "BreadcrumbsImpl-value-6",
                       },
                       "children": Array [
                         Object {
@@ -1099,7 +1099,7 @@ initialize {
                       "namespace": "http://www.w3.org/1999/xhtml",
                       "next": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-dropdownArrow-9",
+                          "class": "BreadcrumbsImpl-dropdownArrow-9",
                         },
                         "children": Array [
                           Object {
@@ -1181,7 +1181,7 @@ initialize {
                   },
                   Object {
                     "attribs": Object {
-                      "class": "Breadcrumbs-value-6",
+                      "class": "BreadcrumbsImpl-value-6",
                     },
                     "children": Array [
                       Object {
@@ -1196,7 +1196,7 @@ initialize {
                     "namespace": "http://www.w3.org/1999/xhtml",
                     "next": Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-dropdownArrow-9",
+                        "class": "BreadcrumbsImpl-dropdownArrow-9",
                       },
                       "children": Array [
                         Object {
@@ -1259,7 +1259,7 @@ initialize {
                     "parent": [Circular],
                     "prev": Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-title-3",
+                        "class": "BreadcrumbsImpl-title-3",
                       },
                       "children": Array [
                         Object {
@@ -1293,7 +1293,7 @@ initialize {
                   },
                   Object {
                     "attribs": Object {
-                      "class": "Breadcrumbs-dropdownArrow-9",
+                      "class": "BreadcrumbsImpl-dropdownArrow-9",
                     },
                     "children": Array [
                       Object {
@@ -1346,7 +1346,7 @@ initialize {
                     "parent": [Circular],
                     "prev": Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-value-6",
+                        "class": "BreadcrumbsImpl-value-6",
                       },
                       "children": Array [
                         Object {
@@ -1363,7 +1363,7 @@ initialize {
                       "parent": [Circular],
                       "prev": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-title-3",
+                          "class": "BreadcrumbsImpl-title-3",
                         },
                         "children": Array [
                           Object {
@@ -1436,22 +1436,22 @@ initialize {
         "namespace": "http://www.w3.org/1999/xhtml",
         "next": Object {
           "attribs": Object {
-            "class": "Breadcrumbs-breadcrumb-2",
+            "class": "BreadcrumbsImpl-breadcrumb-2",
           },
           "children": Array [
             Object {
               "attribs": Object {
-                "class": "Breadcrumbs-body-7",
+                "class": "BreadcrumbsImpl-body-7",
               },
               "children": Array [
                 Object {
                   "attribs": Object {
-                    "class": "Breadcrumbs-content-8",
+                    "class": "BreadcrumbsImpl-content-8",
                   },
                   "children": Array [
                     Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-title-3",
+                        "class": "BreadcrumbsImpl-title-3",
                       },
                       "children": Array [
                         Object {
@@ -1466,7 +1466,7 @@ initialize {
                       "namespace": "http://www.w3.org/1999/xhtml",
                       "next": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-value-6",
+                          "class": "BreadcrumbsImpl-value-6",
                         },
                         "children": Array [
                           Object {
@@ -1481,7 +1481,7 @@ initialize {
                         "namespace": "http://www.w3.org/1999/xhtml",
                         "next": Object {
                           "attribs": Object {
-                            "class": "Breadcrumbs-spacer-10",
+                            "class": "BreadcrumbsImpl-spacer-10",
                           },
                           "children": Array [],
                           "name": "div",
@@ -1519,7 +1519,7 @@ initialize {
                     },
                     Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-value-6",
+                        "class": "BreadcrumbsImpl-value-6",
                       },
                       "children": Array [
                         Object {
@@ -1534,7 +1534,7 @@ initialize {
                       "namespace": "http://www.w3.org/1999/xhtml",
                       "next": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-spacer-10",
+                          "class": "BreadcrumbsImpl-spacer-10",
                         },
                         "children": Array [],
                         "name": "div",
@@ -1553,7 +1553,7 @@ initialize {
                       "parent": [Circular],
                       "prev": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-title-3",
+                          "class": "BreadcrumbsImpl-title-3",
                         },
                         "children": Array [
                           Object {
@@ -1587,7 +1587,7 @@ initialize {
                     },
                     Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-spacer-10",
+                        "class": "BreadcrumbsImpl-spacer-10",
                       },
                       "children": Array [],
                       "name": "div",
@@ -1596,7 +1596,7 @@ initialize {
                       "parent": [Circular],
                       "prev": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-value-6",
+                          "class": "BreadcrumbsImpl-value-6",
                         },
                         "children": Array [
                           Object {
@@ -1613,7 +1613,7 @@ initialize {
                         "parent": [Circular],
                         "prev": Object {
                           "attribs": Object {
-                            "class": "Breadcrumbs-title-3",
+                            "class": "BreadcrumbsImpl-title-3",
                           },
                           "children": Array [
                             Object {
@@ -1698,22 +1698,22 @@ initialize {
         "parent": [Circular],
         "prev": Object {
           "attribs": Object {
-            "class": "Breadcrumbs-breadcrumb-2",
+            "class": "BreadcrumbsImpl-breadcrumb-2",
           },
           "children": Array [
             Object {
               "attribs": Object {
-                "class": "Breadcrumbs-body-7",
+                "class": "BreadcrumbsImpl-body-7",
               },
               "children": Array [
                 Object {
                   "attribs": Object {
-                    "class": "Breadcrumbs-content-8",
+                    "class": "BreadcrumbsImpl-content-8",
                   },
                   "children": Array [
                     Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-title-3",
+                        "class": "BreadcrumbsImpl-title-3",
                       },
                       "children": Array [
                         Object {
@@ -1728,7 +1728,7 @@ initialize {
                       "namespace": "http://www.w3.org/1999/xhtml",
                       "next": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-value-6",
+                          "class": "BreadcrumbsImpl-value-6",
                         },
                         "children": Array [
                           Object {
@@ -1743,7 +1743,7 @@ initialize {
                         "namespace": "http://www.w3.org/1999/xhtml",
                         "next": Object {
                           "attribs": Object {
-                            "class": "Breadcrumbs-dropdownArrow-9",
+                            "class": "BreadcrumbsImpl-dropdownArrow-9",
                           },
                           "children": Array [
                             Object {
@@ -1825,7 +1825,7 @@ initialize {
                     },
                     Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-value-6",
+                        "class": "BreadcrumbsImpl-value-6",
                       },
                       "children": Array [
                         Object {
@@ -1840,7 +1840,7 @@ initialize {
                       "namespace": "http://www.w3.org/1999/xhtml",
                       "next": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-dropdownArrow-9",
+                          "class": "BreadcrumbsImpl-dropdownArrow-9",
                         },
                         "children": Array [
                           Object {
@@ -1903,7 +1903,7 @@ initialize {
                       "parent": [Circular],
                       "prev": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-title-3",
+                          "class": "BreadcrumbsImpl-title-3",
                         },
                         "children": Array [
                           Object {
@@ -1937,7 +1937,7 @@ initialize {
                     },
                     Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-dropdownArrow-9",
+                        "class": "BreadcrumbsImpl-dropdownArrow-9",
                       },
                       "children": Array [
                         Object {
@@ -1990,7 +1990,7 @@ initialize {
                       "parent": [Circular],
                       "prev": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-value-6",
+                          "class": "BreadcrumbsImpl-value-6",
                         },
                         "children": Array [
                           Object {
@@ -2007,7 +2007,7 @@ initialize {
                         "parent": [Circular],
                         "prev": Object {
                           "attribs": Object {
-                            "class": "Breadcrumbs-title-3",
+                            "class": "BreadcrumbsImpl-title-3",
                           },
                           "children": Array [
                             Object {
@@ -2099,22 +2099,22 @@ initialize {
       },
       Object {
         "attribs": Object {
-          "class": "Breadcrumbs-breadcrumb-2",
+          "class": "BreadcrumbsImpl-breadcrumb-2",
         },
         "children": Array [
           Object {
             "attribs": Object {
-              "class": "Breadcrumbs-body-7",
+              "class": "BreadcrumbsImpl-body-7",
             },
             "children": Array [
               Object {
                 "attribs": Object {
-                  "class": "Breadcrumbs-content-8",
+                  "class": "BreadcrumbsImpl-content-8",
                 },
                 "children": Array [
                   Object {
                     "attribs": Object {
-                      "class": "Breadcrumbs-title-3",
+                      "class": "BreadcrumbsImpl-title-3",
                     },
                     "children": Array [
                       Object {
@@ -2129,7 +2129,7 @@ initialize {
                     "namespace": "http://www.w3.org/1999/xhtml",
                     "next": Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-value-6",
+                        "class": "BreadcrumbsImpl-value-6",
                       },
                       "children": Array [
                         Object {
@@ -2144,7 +2144,7 @@ initialize {
                       "namespace": "http://www.w3.org/1999/xhtml",
                       "next": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-spacer-10",
+                          "class": "BreadcrumbsImpl-spacer-10",
                         },
                         "children": Array [],
                         "name": "div",
@@ -2182,7 +2182,7 @@ initialize {
                   },
                   Object {
                     "attribs": Object {
-                      "class": "Breadcrumbs-value-6",
+                      "class": "BreadcrumbsImpl-value-6",
                     },
                     "children": Array [
                       Object {
@@ -2197,7 +2197,7 @@ initialize {
                     "namespace": "http://www.w3.org/1999/xhtml",
                     "next": Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-spacer-10",
+                        "class": "BreadcrumbsImpl-spacer-10",
                       },
                       "children": Array [],
                       "name": "div",
@@ -2216,7 +2216,7 @@ initialize {
                     "parent": [Circular],
                     "prev": Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-title-3",
+                        "class": "BreadcrumbsImpl-title-3",
                       },
                       "children": Array [
                         Object {
@@ -2250,7 +2250,7 @@ initialize {
                   },
                   Object {
                     "attribs": Object {
-                      "class": "Breadcrumbs-spacer-10",
+                      "class": "BreadcrumbsImpl-spacer-10",
                     },
                     "children": Array [],
                     "name": "div",
@@ -2259,7 +2259,7 @@ initialize {
                     "parent": [Circular],
                     "prev": Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-value-6",
+                        "class": "BreadcrumbsImpl-value-6",
                       },
                       "children": Array [
                         Object {
@@ -2276,7 +2276,7 @@ initialize {
                       "parent": [Circular],
                       "prev": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-title-3",
+                          "class": "BreadcrumbsImpl-title-3",
                         },
                         "children": Array [
                           Object {
@@ -2351,22 +2351,22 @@ initialize {
         "parent": [Circular],
         "prev": Object {
           "attribs": Object {
-            "class": "Breadcrumbs-breadcrumb-2",
+            "class": "BreadcrumbsImpl-breadcrumb-2",
           },
           "children": Array [
             Object {
               "attribs": Object {
-                "class": "Breadcrumbs-body-7",
+                "class": "BreadcrumbsImpl-body-7",
               },
               "children": Array [
                 Object {
                   "attribs": Object {
-                    "class": "Breadcrumbs-content-8",
+                    "class": "BreadcrumbsImpl-content-8",
                   },
                   "children": Array [
                     Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-title-3",
+                        "class": "BreadcrumbsImpl-title-3",
                       },
                       "children": Array [
                         Object {
@@ -2381,7 +2381,7 @@ initialize {
                       "namespace": "http://www.w3.org/1999/xhtml",
                       "next": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-value-6",
+                          "class": "BreadcrumbsImpl-value-6",
                         },
                         "children": Array [
                           Object {
@@ -2396,7 +2396,7 @@ initialize {
                         "namespace": "http://www.w3.org/1999/xhtml",
                         "next": Object {
                           "attribs": Object {
-                            "class": "Breadcrumbs-dropdownArrow-9",
+                            "class": "BreadcrumbsImpl-dropdownArrow-9",
                           },
                           "children": Array [
                             Object {
@@ -2478,7 +2478,7 @@ initialize {
                     },
                     Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-value-6",
+                        "class": "BreadcrumbsImpl-value-6",
                       },
                       "children": Array [
                         Object {
@@ -2493,7 +2493,7 @@ initialize {
                       "namespace": "http://www.w3.org/1999/xhtml",
                       "next": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-dropdownArrow-9",
+                          "class": "BreadcrumbsImpl-dropdownArrow-9",
                         },
                         "children": Array [
                           Object {
@@ -2556,7 +2556,7 @@ initialize {
                       "parent": [Circular],
                       "prev": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-title-3",
+                          "class": "BreadcrumbsImpl-title-3",
                         },
                         "children": Array [
                           Object {
@@ -2590,7 +2590,7 @@ initialize {
                     },
                     Object {
                       "attribs": Object {
-                        "class": "Breadcrumbs-dropdownArrow-9",
+                        "class": "BreadcrumbsImpl-dropdownArrow-9",
                       },
                       "children": Array [
                         Object {
@@ -2643,7 +2643,7 @@ initialize {
                       "parent": [Circular],
                       "prev": Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-value-6",
+                          "class": "BreadcrumbsImpl-value-6",
                         },
                         "children": Array [
                           Object {
@@ -2660,7 +2660,7 @@ initialize {
                         "parent": [Circular],
                         "prev": Object {
                           "attribs": Object {
-                            "class": "Breadcrumbs-title-3",
+                            "class": "BreadcrumbsImpl-title-3",
                           },
                           "children": Array [
                             Object {
@@ -2735,22 +2735,22 @@ initialize {
           "parent": [Circular],
           "prev": Object {
             "attribs": Object {
-              "class": "Breadcrumbs-breadcrumb-2",
+              "class": "BreadcrumbsImpl-breadcrumb-2",
             },
             "children": Array [
               Object {
                 "attribs": Object {
-                  "class": "Breadcrumbs-body-7",
+                  "class": "BreadcrumbsImpl-body-7",
                 },
                 "children": Array [
                   Object {
                     "attribs": Object {
-                      "class": "Breadcrumbs-content-8",
+                      "class": "BreadcrumbsImpl-content-8",
                     },
                     "children": Array [
                       Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-title-3",
+                          "class": "BreadcrumbsImpl-title-3",
                         },
                         "children": Array [
                           Object {
@@ -2765,7 +2765,7 @@ initialize {
                         "namespace": "http://www.w3.org/1999/xhtml",
                         "next": Object {
                           "attribs": Object {
-                            "class": "Breadcrumbs-value-6",
+                            "class": "BreadcrumbsImpl-value-6",
                           },
                           "children": Array [
                             Object {
@@ -2780,7 +2780,7 @@ initialize {
                           "namespace": "http://www.w3.org/1999/xhtml",
                           "next": Object {
                             "attribs": Object {
-                              "class": "Breadcrumbs-dropdownArrow-9",
+                              "class": "BreadcrumbsImpl-dropdownArrow-9",
                             },
                             "children": Array [
                               Object {
@@ -2862,7 +2862,7 @@ initialize {
                       },
                       Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-value-6",
+                          "class": "BreadcrumbsImpl-value-6",
                         },
                         "children": Array [
                           Object {
@@ -2877,7 +2877,7 @@ initialize {
                         "namespace": "http://www.w3.org/1999/xhtml",
                         "next": Object {
                           "attribs": Object {
-                            "class": "Breadcrumbs-dropdownArrow-9",
+                            "class": "BreadcrumbsImpl-dropdownArrow-9",
                           },
                           "children": Array [
                             Object {
@@ -2940,7 +2940,7 @@ initialize {
                         "parent": [Circular],
                         "prev": Object {
                           "attribs": Object {
-                            "class": "Breadcrumbs-title-3",
+                            "class": "BreadcrumbsImpl-title-3",
                           },
                           "children": Array [
                             Object {
@@ -2974,7 +2974,7 @@ initialize {
                       },
                       Object {
                         "attribs": Object {
-                          "class": "Breadcrumbs-dropdownArrow-9",
+                          "class": "BreadcrumbsImpl-dropdownArrow-9",
                         },
                         "children": Array [
                           Object {
@@ -3027,7 +3027,7 @@ initialize {
                         "parent": [Circular],
                         "prev": Object {
                           "attribs": Object {
-                            "class": "Breadcrumbs-value-6",
+                            "class": "BreadcrumbsImpl-value-6",
                           },
                           "children": Array [
                             Object {
@@ -3044,7 +3044,7 @@ initialize {
                           "parent": [Circular],
                           "prev": Object {
                             "attribs": Object {
-                              "class": "Breadcrumbs-title-3",
+                              "class": "BreadcrumbsImpl-title-3",
                             },
                             "children": Array [
                               Object {

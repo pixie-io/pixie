@@ -1,7 +1,6 @@
 import * as React from 'react';
 
-import Breadcrumbs from 'components/breadcrumbs/breadcrumbs';
-import { StatusCell } from 'pixie-components';
+import { Breadcrumbs, StatusCell } from 'pixie-components';
 
 export default {
   title: 'Breadcrumbs',

@@ -1,6 +1,5 @@
 import * as React from 'react';
-import { AutocompleteInput } from 'components/autocomplete/new-autocomplete-input';
-import { NewAutocomplete } from 'components/autocomplete/new-autocomplete';
+import { AutocompleteInput, NewAutocomplete } from 'pixie-components';
 
 export default {
   title: 'Autocomplete/v2',

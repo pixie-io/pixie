@@ -1,15 +1,15 @@
 import clsx from 'clsx';
-import { scrollbarStyles } from 'pixie-components';
 import * as React from 'react';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
-import Completions, { CompletionId, CompletionItem } from './completions';
+import { Completions, CompletionId, CompletionItem } from './completions';
 import { AutocompleteInput } from './new-autocomplete-input';
 import {
   TabStop, findNextItem, ItemsMap, TabStopParser,
 } from './utils';
 import { Key } from './key';
+import { scrollbarStyles } from '../../mui-theme';
 
 const useStyles = makeStyles((theme: Theme) => (
   createStyles({

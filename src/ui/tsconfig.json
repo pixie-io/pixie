@@ -27,6 +27,6 @@
     "__mocks__/**/*",
     "*.js",
     "./stories/**/*",
-    "./.storybook/**/*"
+    "./.storybook/**/*", "packages/pixie-components/src/components/breadcrumbs"
   ]
 }

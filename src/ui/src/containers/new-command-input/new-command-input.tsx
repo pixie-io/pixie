@@ -1,6 +1,7 @@
-import { NewAutocomplete, TabSuggestion } from 'components/autocomplete/new-autocomplete';
-import { TabStop } from 'components/autocomplete/utils';
-import { PixieCommandIcon } from 'pixie-components';
+import {
+  NewAutocomplete, TabSuggestion,
+  TabStop, PixieCommandIcon,
+} from 'pixie-components';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
 import gql from 'graphql-tag';

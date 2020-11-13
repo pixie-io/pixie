@@ -3,8 +3,7 @@ import * as React from 'react';
 import ClientContext, {
   VizierGRPCClientProvider, CLUSTER_STATUS_DISCONNECTED,
 } from 'common/vizier-grpc-client-context';
-import PixieBreadcrumbs from 'components/breadcrumbs/breadcrumbs';
-import { StatusCell, StatusGroup } from 'pixie-components';
+import { Breadcrumbs, StatusCell, StatusGroup } from 'pixie-components';
 import { distanceInWords } from 'date-fns';
 import gql from 'graphql-tag';
 import { useHistory, useParams } from 'react-router';
@@ -14,7 +13,7 @@ import { dataFromProto } from 'utils/result-data-utils';
 import { useQuery } from '@apollo/react-hooks';
 
 import { Theme, withStyles } from '@material-ui/core/styles';
-import Breadcrumbs from '@material-ui/core/Breadcrumbs';
+import MaterialBreadcrumbs from '@material-ui/core/Breadcrumbs';
 import IconButton from '@material-ui/core/IconButton';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
@@ -66,9 +65,9 @@ const StyledBreadcrumbs = withStyles((theme: Theme) => ({
     width: theme.spacing(1),
   },
 }))(({ classes, children }: any) => (
-  <Breadcrumbs classes={classes}>
+  <MaterialBreadcrumbs classes={classes}>
     {children}
-  </Breadcrumbs>
+  </MaterialBreadcrumbs>
 ));
 
 const AGENT_STATUS_SCRIPT = `import px
@@ -436,7 +435,7 @@ const ClusterDetailsNavigation = ({ selectedClusterName }) => {
     <StyledBreadcrumbs>
       <StyledBreadcrumbLink to='/admin'>Admin</StyledBreadcrumbLink>
       <StyledBreadcrumbLink to='/admin'>Clusters</StyledBreadcrumbLink>
-      <PixieBreadcrumbs breadcrumbs={breadcrumbs} />
+      <Breadcrumbs breadcrumbs={breadcrumbs} />
     </StyledBreadcrumbs>
   );
 };

@@ -6,8 +6,10 @@ import {
 import gql from 'graphql-tag';
 import { useQuery, useApolloClient } from '@apollo/react-hooks';
 
-import { PixieCommandIcon, StatusCell } from 'pixie-components';
-import Breadcrumbs, { BreadcrumbOptions } from 'components/breadcrumbs/breadcrumbs';
+import {
+  Breadcrumbs, BreadcrumbOptions,
+  PixieCommandIcon, StatusCell,
+} from 'pixie-components';
 import ClusterContext from 'common/cluster-context';
 import { CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
 import {

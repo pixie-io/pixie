@@ -1,9 +1,11 @@
 import clsx from 'clsx';
 import * as React from 'react';
-import { isInView } from 'utils/bbox';
-import { PodIcon, ServiceIcon } from 'pixie-components';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+
+import { PodIcon } from '../icons/pod';
+import { ServiceIcon } from '../icons/service';
+import { isInView } from '../../utils/bbox';
 
 interface CompletionsProps {
   items: CompletionItems;
@@ -113,7 +115,7 @@ const useStyles = makeStyles((theme: Theme) => (
     },
   })));
 
-const Completions: React.FC<CompletionsProps> = (props) => {
+export const Completions: React.FC<CompletionsProps> = (props) => {
   const {
     items, activeItem, onActiveChange, onSelection, className,
   } = props;
@@ -269,5 +271,3 @@ const CompletionInternal = (props: CompletionProps) => {
   );
 };
 CompletionInternal.displayName = 'CompletionInternal';
-
-export default Completions;

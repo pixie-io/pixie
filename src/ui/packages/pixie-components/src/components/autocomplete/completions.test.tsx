@@ -1,8 +1,9 @@
 import { shallow } from 'enzyme';
 import * as React from 'react';
-import { noop } from 'utils/testing';
 
-import Completions, { Completion } from './completions';
+import { Completion, Completions } from './completions';
+
+const noop = () => {};
 
 jest.mock('clsx', () => ({ default: jest.fn() }));
 

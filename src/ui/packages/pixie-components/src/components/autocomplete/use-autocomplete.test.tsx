@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react-hooks';
 
 import { CompletionItems } from './completions';
-import useAutocomplete from './use-autocomplete';
+import { useAutocomplete } from './use-autocomplete';
 
 const MOCK_COMPLETIONS: CompletionItems = [
   { type: 'header', header: 'header1' },

@@ -1,8 +1,9 @@
 import { shallow } from 'enzyme';
 import * as React from 'react';
-import { noop } from 'utils/testing';
 
-import { AutocompleteInput } from 'components/autocomplete/new-autocomplete-input';
+import { AutocompleteInput } from './new-autocomplete-input';
+
+const noop = () => {};
 
 describe('<AutcompleteInput/> test', () => {
   it('renders the correct spans', () => {

@@ -2,17 +2,16 @@ import * as React from 'react';
 
 import Axios from 'axios';
 
-import Autocomplete from 'components/autocomplete';
-import AutocompleteInputField from 'components/autocomplete/autocomplete-field';
-import Completions from 'components/autocomplete/completions';
-import FormInput from 'components/autocomplete/form';
-import Input from 'components/autocomplete/input';
+import {
+  Autocomplete, AutocompleteInputField,
+  Completions, FormFieldInput, Input,
+} from 'pixie-components';
 
 export default {
   title: 'Autocomplete/v1',
   component: Autocomplete,
   subcomponents: {
-    AutocompleteInputField, Completions, FormInput, Input,
+    AutocompleteInputField, Completions, FormFieldInput, Input,
   },
 };
 
@@ -113,7 +112,7 @@ export const InputWithHint = () => {
 export const BasicFormInput = () => {
   const [form, setForm] = React.useState({ field1: 'value1', field2: 'value2', field3: 'value3' });
   return (
-    <FormInput
+    <FormFieldInput
       form={form}
       onValueChange={([field, value]) => {
         setForm((oldForm) => ({

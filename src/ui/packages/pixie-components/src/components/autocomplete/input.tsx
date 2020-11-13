@@ -74,7 +74,7 @@ interface InputProps {
   preSelect?: boolean;
 }
 
-const Input: React.FC<InputProps> = ({
+export const Input: React.FC<InputProps> = ({
   onChange,
   onKey,
   suggestion,
@@ -185,5 +185,3 @@ export const FormInput: React.FC<InputFormProps> = ({ form }) => {
     <textarea className={classes.textArea} ref={ref} value={value} />
   );
 };
-
-export default Input;

@@ -67,6 +67,21 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
+const BLINK_INTERVAL = 500; // 500ms = .5s
+
+const Caret: React.FC<{ active: boolean }> = ({ active }) => {
+  const classes = useStyles();
+  const [visible, setVisible] = React.useState(true);
+  React.useEffect(() => {
+    if (!active) { return; }
+    setInterval(() => {
+      setVisible((show) => !show);
+    }, BLINK_INTERVAL);
+  }, [active]);
+  return (
+    <div className={clsx(classes.caret, active && visible && 'visible')}>&nbsp;</div>);
+};
+
 export interface AutocompleteField {
   type: 'key' | 'value'; // The type signifies what color the text should be.
   value: string;
@@ -199,19 +214,4 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
       { suffix && <div>{suffix}</div>}
     </div>
   );
-};
-
-const BLINK_INTERVAL = 500; // 500ms = .5s
-
-const Caret: React.FC<{ active: boolean }> = ({ active }) => {
-  const classes = useStyles();
-  const [visible, setVisible] = React.useState(true);
-  React.useEffect(() => {
-    if (!active) { return; }
-    setInterval(() => {
-      setVisible((show) => !show);
-    }, BLINK_INTERVAL);
-  }, [active]);
-  return (
-    <div className={clsx(classes.caret, active && visible && 'visible')}>&nbsp;</div>);
 };

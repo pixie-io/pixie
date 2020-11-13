@@ -1,14 +1,16 @@
 import clsx from 'clsx';
-import { scrollbarStyles } from 'pixie-components';
 import * as React from 'react';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
-import useIsMounted from 'utils/use-is-mounted';
-import Completions, {
+import { scrollbarStyles } from '../../mui-theme';
+import useIsMounted from '../../utils/use-is-mounted';
+
+import {
   CompletionId, CompletionItem, CompletionItems, CompletionTitle,
+  Completions,
 } from './completions';
-import Input from './input';
+import { Input } from './input';
 import { Key } from './key';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -75,7 +77,7 @@ CompletionId {
   return activeItem;
 }
 
-const Autocomplete: React.FC<AutoCompleteProps> = ({
+export const Autocomplete: React.FC<AutoCompleteProps> = ({
   onSelection,
   getCompletions,
   placeholder,
@@ -171,5 +173,3 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
     </div>
   );
 };
-
-export default Autocomplete;

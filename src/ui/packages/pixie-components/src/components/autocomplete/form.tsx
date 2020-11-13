@@ -26,11 +26,6 @@ interface Form {
 
 type FieldValuePair = [string, string];
 
-interface FormInputProps {
-  onValueChange: (val: FieldValuePair) => void;
-  form: Form;
-}
-
 function useTabIndexReducer(numElements: number) {
   const reducer = (state, action) => {
     switch (action) {
@@ -44,36 +39,6 @@ function useTabIndexReducer(numElements: number) {
   };
   return React.useReducer(reducer, 0);
 }
-
-const FormInput: React.FC<FormInputProps> = ({
-  onValueChange,
-  form,
-}) => {
-  const classes = useStyles();
-  const formFields = Object.keys(form).map((field) => [field, form[field]]);
-  const [focusIndex, dispatch] = useTabIndexReducer(formFields.length);
-  const handleKeypress = React.useCallback((event) => {
-    if (event.key === 'Tab') {
-      event.preventDefault();
-      dispatch(event.shiftKey ? 'prev' : 'next');
-    }
-  }, [dispatch]);
-
-  return (
-    <div className={classes.form} onKeyDown={handleKeypress}>
-      {formFields.map(([field, value], i) => (
-        <FormField
-          key={field}
-          field={field}
-          value={value}
-          onValueChange={onValueChange}
-          dispatch={dispatch}
-          focus={focusIndex === i}
-        />
-      ))}
-    </div>
-  );
-};
 
 interface FormFieldProps {
   field: string;
@@ -127,4 +92,37 @@ const FormField: React.FC<FormFieldProps> = ({
   );
 };
 
-export default FormInput;
+interface FormFieldInputProps {
+  onValueChange: (val: FieldValuePair) => void;
+  form: Form;
+}
+
+export const FormFieldInput: React.FC<FormFieldInputProps> = ({
+  onValueChange,
+  form,
+}) => {
+  const classes = useStyles();
+  const formFields = Object.keys(form).map((field) => [field, form[field]]);
+  const [focusIndex, dispatch] = useTabIndexReducer(formFields.length);
+  const handleKeypress = React.useCallback((event) => {
+    if (event.key === 'Tab') {
+      event.preventDefault();
+      dispatch(event.shiftKey ? 'prev' : 'next');
+    }
+  }, [dispatch]);
+
+  return (
+    <div className={classes.form} onKeyDown={handleKeypress}>
+      {formFields.map(([field, value], i) => (
+        <FormField
+          key={field}
+          field={field}
+          value={value}
+          onValueChange={onValueChange}
+          dispatch={dispatch}
+          focus={focusIndex === i}
+        />
+      ))}
+    </div>
+  );
+};

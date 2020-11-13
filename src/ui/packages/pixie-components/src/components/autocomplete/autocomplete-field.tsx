@@ -1,9 +1,10 @@
 import clsx from 'clsx';
-import { CompletionItem } from 'components/autocomplete/completions';
-import useAutocomplete, { GetCompletionsFunc } from 'components/autocomplete/use-autocomplete';
-import { Spinner } from 'pixie-components';
 import * as React from 'react';
-import { isInView } from 'utils/bbox';
+
+import { CompletionItem } from './completions';
+import { useAutocomplete, GetCompletionsFunc } from './use-autocomplete';
+import { Spinner } from '../spinner/spinner';
+import { isInView } from '../../utils/bbox';
 
 import Card from '@material-ui/core/Card';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
@@ -85,7 +86,7 @@ interface AutocompleteArgumentFieldProps {
   getCompletions: GetCompletionsFunc;
 }
 
-const AutocompleteInputField = (props: AutocompleteArgumentFieldProps) => {
+export const AutocompleteInputField = (props: AutocompleteArgumentFieldProps) => {
   const {
     name, value, onEnterKey, onValueChange, getCompletions,
   } = props;
@@ -225,5 +226,3 @@ const FieldCompletion = (props: FieldCompletionProps) => {
     </div>
   );
 };
-
-export default AutocompleteInputField;

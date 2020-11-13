@@ -4,6 +4,25 @@ export { AuthMessageBoxProps, AuthMessageBox } from './components/auth/message';
 export { PixienautBoxProps, PixienautBox } from './components/auth/pixienaut-box';
 export { SignupMarcom } from './components/auth/signup-marcom';
 
+export { AutocompleteInputField } from './components/autocomplete/autocomplete-field';
+export { AutocompleteContextProps, AutocompleteContext, Autocomplete } from './components/autocomplete/autocomplete';
+export {
+  CompletionHeader, CompletionId, CompletionTitle,
+  CompletionItem, CompletionItems, Completion, Completions,
+} from './components/autocomplete/completions';
+export { FormFieldInput } from './components/autocomplete/form';
+export { FormInput, Input } from './components/autocomplete/input';
+export { AutocompleteField, AutocompleteInput } from './components/autocomplete/new-autocomplete-input';
+export { NewAutocomplete, TabSuggestion } from './components/autocomplete/new-autocomplete';
+export { useAutocomplete, GetCompletionsFunc } from './components/autocomplete/use-autocomplete';
+export {
+  ItemsMap, findNextItem,
+  TabStop, getDisplayStringFromTabStops,
+  TabStopParser,
+} from './components/autocomplete/utils';
+
+export { BreadcrumbOptions, Breadcrumbs } from './components/breadcrumbs/breadcrumbs';
+
 export { CodeEditor } from './components/code-editor/code-editor';
 
 export { CodeRenderer } from './components/code-renderer/code-renderer';

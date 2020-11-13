@@ -1,6 +1,7 @@
-import Autocomplete from 'components/autocomplete/autocomplete';
-import { CompletionHeader, CompletionItem } from 'components/autocomplete/completions';
-import { PixieCommandIcon } from 'pixie-components';
+import {
+  Autocomplete, CompletionHeader, CompletionItem,
+  PixieCommandIcon,
+} from 'pixie-components';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
 import { argsForVis } from 'utils/args-utils';
