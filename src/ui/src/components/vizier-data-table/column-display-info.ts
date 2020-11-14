@@ -1,4 +1,4 @@
-import { SelectedPercentile } from 'components/quantiles-box-whisker/quantiles-box-whisker';
+import { SelectedPercentile } from 'pixie-components';
 import { DataType, Relation, SemanticType } from 'types/generated/vizier_pb';
 
 export interface QuantilesDisplayState {

@@ -17,7 +17,7 @@ import {
   STATUS_TYPES,
   toStatusIndicator,
 } from 'components/live-widgets/utils';
-import QuantilesBoxWhisker, { SelectedPercentile } from 'components/quantiles-box-whisker/quantiles-box-whisker';
+import { QuantilesBoxWhisker, SelectedPercentile } from 'pixie-components';
 import { DataType, SemanticType } from 'types/generated/vizier_pb';
 import { Arguments } from 'utils/args-utils';
 import {
@@ -26,7 +26,8 @@ import {
   looksLikeCPUCol,
   looksLikeLatencyCol,
 } from 'utils/format-data';
-import { GaugeLevel, getLatencyNSLevel } from 'utils/metric-thresholds';
+import { getLatencyNSLevel, getColor } from 'utils/metric-thresholds';
+import { Theme } from '@material-ui/core/styles';
 import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info';
 
 // Expects a p99 field in colName.
@@ -49,7 +50,7 @@ export function getMaxQuantile(rows: any[], colName: string): number {
 }
 
 // Expects data to contain floats in p50, p90, and p99 fields.
-export function quantilesRenderer(display: ColumnDisplayInfo,
+export function quantilesRenderer(display: ColumnDisplayInfo, theme: Theme,
   updateDisplay: (ColumnDisplayInfo) => void, rows: any[]) {
   const max = getMaxQuantile(rows, display.columnName);
 
@@ -72,9 +73,9 @@ export function quantilesRenderer(display: ColumnDisplayInfo,
         p50Display={p50Display}
         p90Display={p90Display}
         p99Display={p99Display}
-        p50Level='none'
-        p90Level='none'
-        p99Level='none'
+        p50HoverFill={getColor('none', theme)}
+        p90HoverFill={getColor('none', theme)}
+        p99HoverFill={getColor('none', theme)}
         selectedPercentile={selectedPercentile}
         onChangePercentile={(newPercentile: SelectedPercentile) => {
           updateDisplay({
@@ -94,7 +95,7 @@ function dataWithUnitsToString(dataWithUnits: DataWithUnits): string {
 }
 
 // Expects data to contain p50, p90, and p99 fields.
-export function durationQuantilesRenderer(display: ColumnDisplayInfo,
+export function durationQuantilesRenderer(display: ColumnDisplayInfo, theme: Theme,
   updateDisplay: (ColumnDisplayInfo) => void, rows: any[]) {
   const max = getMaxQuantile(rows, display.columnName);
 
@@ -102,15 +103,15 @@ export function durationQuantilesRenderer(display: ColumnDisplayInfo,
     const { p50, p90, p99 } = val;
     const quantilesDisplay = display.displayState as QuantilesDisplayState;
     const selectedPercentile = quantilesDisplay.selectedPercentile || 'p99';
-    let p50Level: GaugeLevel = 'none';
-    let p90Level: GaugeLevel = 'none';
-    let p99Level: GaugeLevel = 'none';
+    let p50HoverFill = getColor('none', theme);
+    let p90HoverFill = getColor('none', theme);
+    let p99HoverFill = getColor('none', theme);
 
     // individual keys in ST_DURATION_NS_QUANTILES are FLOAT64 ST_DURATION_NS.
     if (looksLikeLatencyCol(display.columnName, SemanticType.ST_DURATION_NS, DataType.FLOAT64)) {
-      p50Level = getLatencyNSLevel(p50);
-      p90Level = getLatencyNSLevel(p90);
-      p99Level = getLatencyNSLevel(p99);
+      p50HoverFill = getColor(getLatencyNSLevel(p50), theme);
+      p90HoverFill = getColor(getLatencyNSLevel(p90), theme);
+      p99HoverFill = getColor(getLatencyNSLevel(p99), theme);
     }
 
     const p50Display = dataWithUnitsToString(formatDuration(p50));
@@ -126,9 +127,9 @@ export function durationQuantilesRenderer(display: ColumnDisplayInfo,
         p50Display={p50Display}
         p90Display={p90Display}
         p99Display={p99Display}
-        p50Level={p50Level}
-        p90Level={p90Level}
-        p99Level={p99Level}
+        p50HoverFill={p50HoverFill}
+        p90HoverFill={p90HoverFill}
+        p99HoverFill={p99HoverFill}
         selectedPercentile={selectedPercentile}
         onChangePercentile={(newPercentile: SelectedPercentile) => {
           updateDisplay({
@@ -197,7 +198,7 @@ const CPUDataWrapper = (data: any) => <CPUData data={data} />;
 const AlertDataWrapper = (data: any) => <AlertData data={data} />;
 
 export const prettyCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (ColumnDisplayInfo) => void,
-  clusterName: string, rows: any[], propagatedArgs?: Arguments) => {
+  clusterName: string, rows: any[], theme: Theme, propagatedArgs?: Arguments) => {
   const dt = display.type;
   const st = display.semanticType;
   const name = display.columnName;
@@ -209,9 +210,9 @@ export const prettyCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (C
 
   switch (st) {
     case SemanticType.ST_QUANTILES:
-      return quantilesRenderer(display, updateDisplay, rows);
+      return quantilesRenderer(display, theme, updateDisplay, rows);
     case SemanticType.ST_DURATION_NS_QUANTILES:
-      return durationQuantilesRenderer(display, updateDisplay, rows);
+      return durationQuantilesRenderer(display, theme, updateDisplay, rows);
     case SemanticType.ST_PORT:
       return renderWrapper(PortRenderer);
     case SemanticType.ST_DURATION_NS:
@@ -261,9 +262,9 @@ export const prettyCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (C
 };
 
 export const vizierCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (ColumnDisplayInfo) => void,
-  prettyRender: boolean, clusterName: string, rows: any[], propagatedArgs?: Arguments) => {
+  prettyRender: boolean, theme: Theme, clusterName: string, rows: any[], propagatedArgs?: Arguments) => {
   if (prettyRender) {
-    return prettyCellRenderer(display, updateDisplay, clusterName, rows, propagatedArgs);
+    return prettyCellRenderer(display, updateDisplay, clusterName, rows, theme, propagatedArgs);
   }
   return getDataRenderer(display.type);
 };

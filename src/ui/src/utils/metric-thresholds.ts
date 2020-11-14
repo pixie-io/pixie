@@ -1,3 +1,5 @@
+import { Theme } from '@material-ui/core/styles';
+
 const LATENCY_HIGH_THRESHOLD = 300;
 const LATENCY_MED_THRESHOLD = 150;
 
@@ -24,4 +26,17 @@ export function getLatencyNSLevel(val: number): GaugeLevel {
     return 'med';
   }
   return 'high';
+}
+
+export function getColor(level: GaugeLevel, theme: Theme): string {
+  switch (level) {
+    case 'low':
+      return theme.palette.success.main;
+    case 'med':
+      return theme.palette.warning.main;
+    case 'high':
+      return theme.palette.error.main;
+    default:
+      return theme.palette.text.primary;
+  }
 }

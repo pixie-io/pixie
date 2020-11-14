@@ -1,25 +1,10 @@
 import * as React from 'react';
-import { Vega as ReactVega } from 'react-vega';
+import { Vega } from 'react-vega';
 import { VisualizationSpec } from 'vega-embed';
 import { Handler } from 'vega-tooltip';
-import { GaugeLevel } from 'utils/metric-thresholds';
 import {
   createStyles, Theme, useTheme, withStyles, WithStyles,
 } from '@material-ui/core/styles';
-import clsx from 'clsx';
-
-function getColor(level: GaugeLevel, theme: Theme): string {
-  switch (level) {
-    case 'low':
-      return theme.palette.success.main;
-    case 'med':
-      return theme.palette.warning.main;
-    case 'high':
-      return theme.palette.error.main;
-    default:
-      return theme.palette.text.primary;
-  }
-}
 
 interface QuantilesBoxWhiskerFields {
   p50: number;
@@ -279,15 +264,6 @@ const styles = (theme: Theme) => createStyles({
     marginLeft: 5,
     marginRight: 10,
   },
-  low: {
-    color: getColor('low', theme),
-  },
-  med: {
-    color: getColor('med', theme),
-  },
-  high: {
-    color: getColor('high', theme),
-  },
 });
 
 export type SelectedPercentile = 'p50' | 'p90' | 'p99';
@@ -300,29 +276,26 @@ interface QuantilesBoxWhiskerProps extends WithStyles<typeof styles> {
   p50Display: string;
   p90Display: string;
   p99Display: string;
-  p50Level: GaugeLevel;
-  p90Level: GaugeLevel;
-  p99Level: GaugeLevel;
+  p50HoverFill: string;
+  p90HoverFill: string;
+  p99HoverFill: string;
   selectedPercentile: SelectedPercentile;
   // Function to call when the selected percentile is updated.
   onChangePercentile?: (percentile: SelectedPercentile) => void;
 }
 
-const QuantilesBoxWhisker = (props: QuantilesBoxWhiskerProps) => {
+const QuantilesBoxWhiskerImpl = (props: QuantilesBoxWhiskerProps) => {
   const {
-    classes, p50, p90, p99, max, p50Level, p90Level, p99Level, p50Display, p90Display, p99Display,
+    classes, p50, p90, p99, max, p50HoverFill, p90HoverFill, p99HoverFill, p50Display, p90Display, p99Display,
     selectedPercentile, onChangePercentile,
   } = props;
   const theme = useTheme();
-  const p50HoverFill = getColor(p50Level, theme);
-  const p90HoverFill = getColor(p90Level, theme);
-  const p99HoverFill = getColor(p99Level, theme);
   let p50Fill = theme.palette.text.secondary;
   let p90Fill = theme.palette.text.secondary;
   let p99Fill = theme.palette.text.secondary;
   let percentileValue;
   let selectedPercentileDisplay;
-  let selectedPercentileLevel;
+  let selectedPercentileFill;
 
   const changePercentileIfDifferent = (percentile: SelectedPercentile) => {
     if (percentile !== selectedPercentile) {
@@ -335,14 +308,14 @@ const QuantilesBoxWhisker = (props: QuantilesBoxWhiskerProps) => {
       p50Fill = p50HoverFill;
       percentileValue = p50;
       selectedPercentileDisplay = p50Display;
-      selectedPercentileLevel = p50Level;
+      selectedPercentileFill = p50HoverFill;
       break;
     }
     case 'p90': {
       p90Fill = p90HoverFill;
       percentileValue = p90;
       selectedPercentileDisplay = p90Display;
-      selectedPercentileLevel = p90Level;
+      selectedPercentileFill = p90HoverFill;
       break;
     }
     case 'p99':
@@ -350,7 +323,7 @@ const QuantilesBoxWhisker = (props: QuantilesBoxWhiskerProps) => {
       p99Fill = p99HoverFill;
       percentileValue = p99;
       selectedPercentileDisplay = p99Display;
-      selectedPercentileLevel = p99Level;
+      selectedPercentileFill = p99HoverFill;
     }
   }
 
@@ -379,7 +352,7 @@ const QuantilesBoxWhisker = (props: QuantilesBoxWhiskerProps) => {
 
   return (
     <div className={classes.root}>
-      <ReactVega
+      <Vega
         className={classes.vegaWrapper}
         signalListeners={{
           p50Click: () => changePercentileIfDifferent('p50'),
@@ -390,11 +363,11 @@ const QuantilesBoxWhisker = (props: QuantilesBoxWhiskerProps) => {
         actions={false}
         tooltip={tooltipHandler}
       />
-      <span className={clsx(classes.label, classes[selectedPercentileLevel])}>
+      <span className={classes.label} style={{color: selectedPercentileFill}}>
         {selectedPercentileDisplay}
       </span>
     </div>
   );
 };
 
-export default withStyles(styles)(QuantilesBoxWhisker);
+export const QuantilesBoxWhisker = withStyles(styles)(QuantilesBoxWhiskerImpl);

@@ -7,7 +7,10 @@ import * as React from 'react';
 import { DataType, SemanticType } from 'types/generated/vizier_pb';
 import noop from 'utils/noop';
 import { dataFromProto } from 'utils/result-data-utils';
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import {
+  createStyles, makeStyles,
+  useTheme, Theme,
+} from '@material-ui/core/styles';
 import { IndexRange } from 'react-virtualized';
 import { Arguments } from 'utils/args-utils';
 import { ColumnDisplayInfo, displayInfoFromColumn, titleFromInfo } from './column-display-info';
@@ -103,6 +106,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
     setColumnDisplayInfos(displayInfos);
   }, [table, dataLength, clusterName, prettyRender]);
 
+  const theme = useTheme();
   const dataTableCols = React.useMemo((): ColumnProps[] => (
     [...columnDisplayInfos.values()].map((displayInfo: ColumnDisplayInfo) => {
       // Some cells give the power to update the display state for the whole column.
@@ -118,7 +122,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
         label: titleFromInfo(displayInfo),
         align: DataAlignmentMap.get(displayInfo.type) || 'start',
         cellRenderer: vizierCellRenderer(displayInfo, updateColumnDisplay, prettyRender,
-          clusterName, rows, propagatedArgs),
+          theme, clusterName, rows, propagatedArgs),
       };
       if (hasWidthOverride(displayInfo.semanticType, displayInfo.type)) {
         colProps.width = getWidthOverride(displayInfo.semanticType, displayInfo.type);

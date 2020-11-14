@@ -1,6 +1,9 @@
 import * as React from 'react';
 
-import QuantilesBoxWhisker, { SelectedPercentile } from 'components/quantiles-box-whisker/quantiles-box-whisker';
+import { useTheme } from '@material-ui/core/styles';
+
+import { QuantilesBoxWhisker, SelectedPercentile } from 'pixie-components';
+import { getColor } from 'utils/metric-thresholds';
 
 export default {
   title: 'QuantilesBoxWhisker',
@@ -17,9 +20,9 @@ export const Basic = () => {
         p90={200.234}
         p99={500.789}
         max={600}
-        p50Level='low'
-        p90Level='med'
-        p99Level='high'
+        p50HoverFill={getColor('low', useTheme())}
+        p90HoverFill={getColor('med', useTheme())}
+        p99HoverFill={getColor('high', useTheme())}
         p50Display='100 ms'
         p90Display='200 ms'
         p99Display='500 ms'

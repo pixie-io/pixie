@@ -41,6 +41,8 @@ export { ModalTrigger } from './components/modal/modal';
 
 export { Avatar, ProfileMenuWrapper } from './components/profile/profile';
 
+export { SelectedPercentile, QuantilesBoxWhisker } from './components/quantiles-box-whisker/quantiles-box-whisker';
+
 export { SnackbarProvider, useSnackbar } from './components/snackbar/snackbar';
 
 export { Spinner } from './components/spinner/spinner';

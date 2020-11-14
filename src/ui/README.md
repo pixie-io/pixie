@@ -1,4 +1,4 @@
-# Steps to run the UI locally and point to the staging cloud backend:
+# Steps to run the UI locally and point to the prod cloud backend:
 
 ## Export environment variables for webpack
 ```
@@ -16,13 +16,13 @@ mkcert -install
 mkcert \
     -cert-file $SELFSIGN_CERT_FILE \
     -key-file $SELFSIGN_CERT_KEY \
-    staging.withpixie.dev "*.staging.withpixie.dev" localhost 127.0.0.1 ::1
+    prod.withpixie.ai "*.prod.withpixie.ai" localhost 127.0.0.1 ::1
 ```
 
 ## Add the following domain to /etc/hosts, or /private/etc/hosts for Mac
 Replace site-name with your test site name.
 ```
-127.0.0.1 staging.withpixie.dev <site-name>.staging.withpixie.dev id.staging.withpixie.dev
+127.0.0.1 prod.withpixie.ai <site-name>.prod.withpixie.ai id.prod.withpixie.ai
 ```
 
 ## Run the webpack devserver
@@ -31,3 +31,8 @@ cd src/ui
 yarn install
 ./node_modules/.bin/webpack-dev-server
 ```
+
+## Access the frontend on the browser
+Navigate to https://prod.withpixie.ai:8080/
+Note the https and port. If you are not logged in, log in at work.withpixie.ai because
+as of writing this, auth0 doesn't accept callbacks to prod.withpixie.ai:8080
