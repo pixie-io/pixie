@@ -357,7 +357,7 @@ export class VizierGRPCClient {
         if (typeof arg.value !== 'string') {
           errors.push(
             new VizierQueryError('vis', 'All args must be strings.'
-              + `Received '${typeof arg.value}' for arg '${arg.name}'.`));
+              + ` Received '${typeof arg.value}' for arg '${arg.name}'.`));
           return;
         }
         argValPb.setValue(arg.value);
