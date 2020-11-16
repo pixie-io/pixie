@@ -32,7 +32,7 @@ module.exports = {
     '^.+\\.tsx?$': 'ts-jest',
     '^.+\\.toml$': 'jest-raw-loader',
   },
-  testRegex: '.*-test\\.(ts|tsx|js|jsx)$',
+  testRegex: '.*test\\.(ts|tsx|js|jsx)$',
   reporters: [
     'default',
     'jest-junit',

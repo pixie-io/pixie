@@ -4,11 +4,6 @@ import { MuiThemeProvider } from '@material-ui/core';
 import { Breadcrumbs } from './breadcrumbs';
 import { DARK_THEME } from '../../mui-theme';
 
-jest.mock('clsx', () => ({
-  __esModule: true,
-  default: jest.fn(),
-}));
-
 describe('<Breadcrumbs/>', () => {
   it('renders correctly', () => {
     const breadcrumbs = [

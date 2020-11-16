@@ -60,6 +60,7 @@ initialize {
                           Object {
                             "attribs": Object {
                               "aria-hidden": "true",
+                              "class": "MuiSvgIcon-root",
                               "focusable": "false",
                               "viewBox": "0 0 24 24",
                             },
@@ -91,11 +92,13 @@ initialize {
                             "type": "tag",
                             "x-attribsNamespace": Object {
                               "aria-hidden": undefined,
+                              "class": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
                             "x-attribsPrefix": Object {
                               "aria-hidden": undefined,
+                              "class": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
@@ -157,6 +160,7 @@ initialize {
                         Object {
                           "attribs": Object {
                             "aria-hidden": "true",
+                            "class": "MuiSvgIcon-root",
                             "focusable": "false",
                             "viewBox": "0 0 24 24",
                           },
@@ -188,11 +192,13 @@ initialize {
                           "type": "tag",
                           "x-attribsNamespace": Object {
                             "aria-hidden": undefined,
+                            "class": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
                           "x-attribsPrefix": Object {
                             "aria-hidden": undefined,
+                            "class": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
@@ -254,6 +260,7 @@ initialize {
                       Object {
                         "attribs": Object {
                           "aria-hidden": "true",
+                          "class": "MuiSvgIcon-root",
                           "focusable": "false",
                           "viewBox": "0 0 24 24",
                         },
@@ -285,11 +292,13 @@ initialize {
                         "type": "tag",
                         "x-attribsNamespace": Object {
                           "aria-hidden": undefined,
+                          "class": undefined,
                           "focusable": undefined,
                           "viewBox": undefined,
                         },
                         "x-attribsPrefix": Object {
                           "aria-hidden": undefined,
+                          "class": undefined,
                           "focusable": undefined,
                           "viewBox": undefined,
                         },
@@ -442,6 +451,7 @@ initialize {
                             Object {
                               "attribs": Object {
                                 "aria-hidden": "true",
+                                "class": "MuiSvgIcon-root",
                                 "focusable": "false",
                                 "viewBox": "0 0 24 24",
                               },
@@ -473,11 +483,13 @@ initialize {
                               "type": "tag",
                               "x-attribsNamespace": Object {
                                 "aria-hidden": undefined,
+                                "class": undefined,
                                 "focusable": undefined,
                                 "viewBox": undefined,
                               },
                               "x-attribsPrefix": Object {
                                 "aria-hidden": undefined,
+                                "class": undefined,
                                 "focusable": undefined,
                                 "viewBox": undefined,
                               },
@@ -539,6 +551,7 @@ initialize {
                           Object {
                             "attribs": Object {
                               "aria-hidden": "true",
+                              "class": "MuiSvgIcon-root",
                               "focusable": "false",
                               "viewBox": "0 0 24 24",
                             },
@@ -570,11 +583,13 @@ initialize {
                             "type": "tag",
                             "x-attribsNamespace": Object {
                               "aria-hidden": undefined,
+                              "class": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
                             "x-attribsPrefix": Object {
                               "aria-hidden": undefined,
+                              "class": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
@@ -636,6 +651,7 @@ initialize {
                         Object {
                           "attribs": Object {
                             "aria-hidden": "true",
+                            "class": "MuiSvgIcon-root",
                             "focusable": "false",
                             "viewBox": "0 0 24 24",
                           },
@@ -667,11 +683,13 @@ initialize {
                           "type": "tag",
                           "x-attribsNamespace": Object {
                             "aria-hidden": undefined,
+                            "class": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
                           "x-attribsPrefix": Object {
                             "aria-hidden": undefined,
+                            "class": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
@@ -1105,6 +1123,7 @@ initialize {
                           Object {
                             "attribs": Object {
                               "aria-hidden": "true",
+                              "class": "MuiSvgIcon-root",
                               "focusable": "false",
                               "viewBox": "0 0 24 24",
                             },
@@ -1136,11 +1155,13 @@ initialize {
                             "type": "tag",
                             "x-attribsNamespace": Object {
                               "aria-hidden": undefined,
+                              "class": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
                             "x-attribsPrefix": Object {
                               "aria-hidden": undefined,
+                              "class": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
@@ -1202,6 +1223,7 @@ initialize {
                         Object {
                           "attribs": Object {
                             "aria-hidden": "true",
+                            "class": "MuiSvgIcon-root",
                             "focusable": "false",
                             "viewBox": "0 0 24 24",
                           },
@@ -1233,11 +1255,13 @@ initialize {
                           "type": "tag",
                           "x-attribsNamespace": Object {
                             "aria-hidden": undefined,
+                            "class": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
                           "x-attribsPrefix": Object {
                             "aria-hidden": undefined,
+                            "class": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
@@ -1299,6 +1323,7 @@ initialize {
                       Object {
                         "attribs": Object {
                           "aria-hidden": "true",
+                          "class": "MuiSvgIcon-root",
                           "focusable": "false",
                           "viewBox": "0 0 24 24",
                         },
@@ -1330,11 +1355,13 @@ initialize {
                         "type": "tag",
                         "x-attribsNamespace": Object {
                           "aria-hidden": undefined,
+                          "class": undefined,
                           "focusable": undefined,
                           "viewBox": undefined,
                         },
                         "x-attribsPrefix": Object {
                           "aria-hidden": undefined,
+                          "class": undefined,
                           "focusable": undefined,
                           "viewBox": undefined,
                         },
@@ -1749,6 +1776,7 @@ initialize {
                             Object {
                               "attribs": Object {
                                 "aria-hidden": "true",
+                                "class": "MuiSvgIcon-root",
                                 "focusable": "false",
                                 "viewBox": "0 0 24 24",
                               },
@@ -1780,11 +1808,13 @@ initialize {
                               "type": "tag",
                               "x-attribsNamespace": Object {
                                 "aria-hidden": undefined,
+                                "class": undefined,
                                 "focusable": undefined,
                                 "viewBox": undefined,
                               },
                               "x-attribsPrefix": Object {
                                 "aria-hidden": undefined,
+                                "class": undefined,
                                 "focusable": undefined,
                                 "viewBox": undefined,
                               },
@@ -1846,6 +1876,7 @@ initialize {
                           Object {
                             "attribs": Object {
                               "aria-hidden": "true",
+                              "class": "MuiSvgIcon-root",
                               "focusable": "false",
                               "viewBox": "0 0 24 24",
                             },
@@ -1877,11 +1908,13 @@ initialize {
                             "type": "tag",
                             "x-attribsNamespace": Object {
                               "aria-hidden": undefined,
+                              "class": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
                             "x-attribsPrefix": Object {
                               "aria-hidden": undefined,
+                              "class": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
@@ -1943,6 +1976,7 @@ initialize {
                         Object {
                           "attribs": Object {
                             "aria-hidden": "true",
+                            "class": "MuiSvgIcon-root",
                             "focusable": "false",
                             "viewBox": "0 0 24 24",
                           },
@@ -1974,11 +2008,13 @@ initialize {
                           "type": "tag",
                           "x-attribsNamespace": Object {
                             "aria-hidden": undefined,
+                            "class": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
                           "x-attribsPrefix": Object {
                             "aria-hidden": undefined,
+                            "class": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
@@ -2402,6 +2438,7 @@ initialize {
                             Object {
                               "attribs": Object {
                                 "aria-hidden": "true",
+                                "class": "MuiSvgIcon-root",
                                 "focusable": "false",
                                 "viewBox": "0 0 24 24",
                               },
@@ -2433,11 +2470,13 @@ initialize {
                               "type": "tag",
                               "x-attribsNamespace": Object {
                                 "aria-hidden": undefined,
+                                "class": undefined,
                                 "focusable": undefined,
                                 "viewBox": undefined,
                               },
                               "x-attribsPrefix": Object {
                                 "aria-hidden": undefined,
+                                "class": undefined,
                                 "focusable": undefined,
                                 "viewBox": undefined,
                               },
@@ -2499,6 +2538,7 @@ initialize {
                           Object {
                             "attribs": Object {
                               "aria-hidden": "true",
+                              "class": "MuiSvgIcon-root",
                               "focusable": "false",
                               "viewBox": "0 0 24 24",
                             },
@@ -2530,11 +2570,13 @@ initialize {
                             "type": "tag",
                             "x-attribsNamespace": Object {
                               "aria-hidden": undefined,
+                              "class": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
                             "x-attribsPrefix": Object {
                               "aria-hidden": undefined,
+                              "class": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
@@ -2596,6 +2638,7 @@ initialize {
                         Object {
                           "attribs": Object {
                             "aria-hidden": "true",
+                            "class": "MuiSvgIcon-root",
                             "focusable": "false",
                             "viewBox": "0 0 24 24",
                           },
@@ -2627,11 +2670,13 @@ initialize {
                           "type": "tag",
                           "x-attribsNamespace": Object {
                             "aria-hidden": undefined,
+                            "class": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
                           "x-attribsPrefix": Object {
                             "aria-hidden": undefined,
+                            "class": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
@@ -2786,6 +2831,7 @@ initialize {
                               Object {
                                 "attribs": Object {
                                   "aria-hidden": "true",
+                                  "class": "MuiSvgIcon-root",
                                   "focusable": "false",
                                   "viewBox": "0 0 24 24",
                                 },
@@ -2817,11 +2863,13 @@ initialize {
                                 "type": "tag",
                                 "x-attribsNamespace": Object {
                                   "aria-hidden": undefined,
+                                  "class": undefined,
                                   "focusable": undefined,
                                   "viewBox": undefined,
                                 },
                                 "x-attribsPrefix": Object {
                                   "aria-hidden": undefined,
+                                  "class": undefined,
                                   "focusable": undefined,
                                   "viewBox": undefined,
                                 },
@@ -2883,6 +2931,7 @@ initialize {
                             Object {
                               "attribs": Object {
                                 "aria-hidden": "true",
+                                "class": "MuiSvgIcon-root",
                                 "focusable": "false",
                                 "viewBox": "0 0 24 24",
                               },
@@ -2914,11 +2963,13 @@ initialize {
                               "type": "tag",
                               "x-attribsNamespace": Object {
                                 "aria-hidden": undefined,
+                                "class": undefined,
                                 "focusable": undefined,
                                 "viewBox": undefined,
                               },
                               "x-attribsPrefix": Object {
                                 "aria-hidden": undefined,
+                                "class": undefined,
                                 "focusable": undefined,
                                 "viewBox": undefined,
                               },
@@ -2980,6 +3031,7 @@ initialize {
                           Object {
                             "attribs": Object {
                               "aria-hidden": "true",
+                              "class": "MuiSvgIcon-root",
                               "focusable": "false",
                               "viewBox": "0 0 24 24",
                             },
@@ -3011,11 +3063,13 @@ initialize {
                             "type": "tag",
                             "x-attribsNamespace": Object {
                               "aria-hidden": undefined,
+                              "class": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
                             "x-attribsPrefix": Object {
                               "aria-hidden": undefined,
+                              "class": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },

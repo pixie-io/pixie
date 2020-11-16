@@ -5,8 +5,6 @@ import { Completion, Completions } from './completions';
 
 const noop = () => {};
 
-jest.mock('clsx', () => ({ default: jest.fn() }));
-
 describe('<Completions/> test', () => {
   it('renders', () => {
     const wrapper = shallow(
