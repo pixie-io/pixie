@@ -161,7 +161,6 @@ message DeploymentSpec {
     string process = 3;
   }
 
-  // TODO(yzhao): Rename this field to selector_oneof.
   oneof target_oneof {
     // The path of the object file (may be executable or shared library).
     string path = 1;
@@ -180,31 +179,6 @@ message DeploymentSpec {
     // Describes the target process to attach.
     PodProcess pod_process = 10;
   }
-
-  // Processes with exe path that matches this pattern are the target of this deployment.
-  // The exe path is the one recorded in the process's exe path as seen inside the container,
-  // not the one resolved through overlay FS.
-  //
-  // TODO(yzhao): This field is not used right now. Figure out its use and remove this TODO.
-  string path_regexp = 4;
-
-  // Selector is used to select the target processes. All selected processes are subject to
-  // filtering with path_regexp.
-  //
-  // TODO(yzhao): Remove this oneof field, which is not used.
-  oneof selector_oneof {
-      // All processes running inside the pod are target processes.
-      string pod_name = 5;
-
-      // A specific upid.
-      // TODO(yzhao): Rename to upid, after removing target_oneof.
-      UPID upid1 = 6;
-  }
-
-  // The finalized process list for attachment. PEM/Stirling only uses this field.
-  //
-  // TODO(yzhao): This field is not used right now. Figure out its use and remove this TODO.
-  repeated UPID selected_upids = 7;
 }
 
 // Wraps an oneof field which can be either scalar or struct.
