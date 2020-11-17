@@ -7,6 +7,8 @@ namespace pl {
 namespace carnot {
 namespace builtins {
 
+using types::StringValue;
+
 constexpr char kTestJSONStr[] = R"(
 {
   "str_key": {"abc": "def"},
@@ -48,6 +50,61 @@ TEST(JSONOps, PluckAsFloat64UDF_bad_input_return_empty) {
   auto udf_tester = udf::UDFTester<PluckAsFloat64UDF>();
   udf_tester.ForInput("sdadasd", "float64_key").Expect(0.0);
 }
+
+TEST(JSONOps, ScriptReferenceUDF_no_args) {
+  auto udf_tester = udf::UDFTester<ScriptReferenceUDF<>>();
+  auto res = udf_tester.ForInput("text", "px/script").Result();
+
+  rapidjson::Document d;
+  d.Parse(res.data());
+
+  EXPECT_TRUE(d.IsObject());
+  auto elements = std::distance(d.MemberBegin(), d.MemberEnd());
+  EXPECT_EQ(elements, 3);
+
+  EXPECT_TRUE(d["label"].IsString());
+  EXPECT_STREQ(d["label"].GetString(), "text");
+
+  EXPECT_TRUE(d["script"].IsString());
+  EXPECT_STREQ(d["script"].GetString(), "px/script");
+
+  EXPECT_TRUE(d["args"].IsObject());
+  auto args = std::distance(d["args"].MemberBegin(), d["args"].MemberEnd());
+  EXPECT_EQ(args, 0);
+}
+
+TEST(JSONOps, ScriptReferenceUDF_with_args) {
+  auto udf_tester =
+      udf::UDFTester<ScriptReferenceUDF<StringValue, StringValue, StringValue, StringValue>>();
+  auto res = udf_tester
+                 .ForInput("text", "px/script", "my_arg_name", "my_arg_value", "my_arg_name2",
+                           "my_arg_value2")
+                 .Result();
+
+  rapidjson::Document d;
+  d.Parse(res.data());
+
+  EXPECT_TRUE(d.IsObject());
+  auto elements = std::distance(d.MemberBegin(), d.MemberEnd());
+  EXPECT_EQ(elements, 3);
+
+  EXPECT_TRUE(d["label"].IsString());
+  EXPECT_STREQ(d["label"].GetString(), "text");
+
+  EXPECT_TRUE(d["script"].IsString());
+  EXPECT_STREQ(d["script"].GetString(), "px/script");
+
+  EXPECT_TRUE(d["args"].IsObject());
+  auto args = std::distance(d["args"].MemberBegin(), d["args"].MemberEnd());
+  EXPECT_EQ(args, 2);
+
+  EXPECT_TRUE(d["args"]["my_arg_name"].IsString());
+  EXPECT_STREQ(d["args"]["my_arg_name"].GetString(), "my_arg_value");
+
+  EXPECT_TRUE(d["args"]["my_arg_name2"].IsString());
+  EXPECT_STREQ(d["args"]["my_arg_name2"].GetString(), "my_arg_value2");
+}
+
 }  // namespace builtins
 }  // namespace carnot
 }  // namespace pl

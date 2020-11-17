@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <utility>
+
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
@@ -119,6 +122,61 @@ class PluckAsFloat64UDF : public udf::ScalarUDF {
         .Arg("json_str", "JSON data serialized as a string.")
         .Arg("key", "The key to get the value for.")
         .Returns("The value for the key as a float");
+  }
+};
+
+/**
+  DocString intentionally omitted, this is a non-public function.
+  This function creates a custom deep link by creating a "script reference" from a label,
+  script name, and input script arguments. The compiler translates the public API into this UDF,
+  and the public API will be documented in the compile time functions.
+
+  ScriptReferenceUDF takes in a label, script, and set of variadic script args.
+  These script args passed in the alternating form argname0, argval0, argname1., argval1.
+  Since script args are always expressed as strings in vis specs, these arg values are
+  also passed in as strings. (When a script is executed, its script args are parsed by
+  the compiler into their proper data type).
+  TODO(nserrino, philkuz): Update this logic when we add support for object types.
+ */
+template <typename... T>
+class ScriptReferenceUDF : public udf::ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext*, StringValue label, StringValue script, T... args) {
+    return ExecImpl(label, script, {std::forward<T>(args)...});
+  }
+
+ private:
+  StringValue ExecImpl(StringValue label, StringValue script,
+                       std::initializer_list<StringValue> values) {
+    rapidjson::Document d;
+    d.SetObject();
+    d.AddMember("label", rapidjson::Value().SetString(label.c_str(), d.GetAllocator()).Move(),
+                d.GetAllocator());
+    d.AddMember("script", rapidjson::Value().SetString(script.c_str(), d.GetAllocator()).Move(),
+                d.GetAllocator());
+
+    // Construct the args object
+    rapidjson::Value argsObj;
+    argsObj.SetObject();
+
+    std::string arg_name;
+    int32_t counter = 0;
+    for (const auto& arg_val : values) {
+      if (counter % 2) {
+        argsObj.AddMember(rapidjson::Value().SetString(arg_name.c_str(), d.GetAllocator()).Move(),
+                          rapidjson::Value().SetString(arg_val.c_str(), d.GetAllocator()).Move(),
+                          d.GetAllocator());
+      } else {
+        arg_name = arg_val;
+      }
+      counter++;
+    }
+    d.AddMember("args", argsObj.Move(), d.GetAllocator());
+
+    rapidjson::StringBuffer sb;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+    d.Accept(writer);
+    return sb.GetString();
   }
 };
 

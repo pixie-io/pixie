@@ -80,6 +80,8 @@ class UDFTester {
     return *this;
   }
 
+  typename types::DataTypeTraits<udf_data_type>::value_type Result() { return res_; }
+
  private:
   TUDF udf_;
   std::unique_ptr<udf::FunctionContext> function_ctx_ = nullptr;
