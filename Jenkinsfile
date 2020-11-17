@@ -273,46 +273,11 @@ def WithSourceCodeFatalError(String stashName = SRC_STASH_NAME, Closure body) {
   */
 def dockerStep(String dockerConfig = '', String dockerImage = devDockerImageWithTag, Closure body) {
   docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-    // Check to see if there is a local cache we can use for the downloads and pass that in
-    // to docker so that Bazel can access it.
-    // This change speeds up the build considerably but prevents us from running more than
-    // one executor on a jenkins worker. This is because multiple Bazel instances running in docker
-    // containers will concurrently write to the cache and cause breakages.
-    // If more than one worker is present we
-    // automatically disable the cache.
-    //
-    // The cache is located on the GCP Jenkins image and will contain data from when it
-    // was snapshotted. The more up to date this data is the faster the instance warm-up
-    // will be. Stale data in this cache does not cause any breakages though. Data in the
-    // cache is presisted across runs, but does not persist if the worker is deleted.
-    //
-    // We also can have the worker and cache located either on the local SSD (/mnt/jenkins),
-    // or the persistent SSD (/root/cache). We prefer to use the local SSD version if available
-    // since it's a lot faster.
-    cacheString = ''
-    // TODO(zasgar): When the Bazel repository cache is better we should consider using that
-    // to cache the downloads. Disabling the cache currently leads to a 1-2 min increase in
-    // runtime for each bazel job.
-    if (params.LOCAL_CACHE_DISABLED || Jenkins.getInstance().getNumExecutors() > 1) {
-      cacheString = ''
-    } else if (fileExists("/mnt/jenkins/cache")) {
-      cacheString = ' -v /mnt/jenkins/cache:/root/.cache'
-    } else if (fileExists('/root/cache')) {
-      cacheString = ' -v /root/cache:/root/.cache'
-    }
-    print "Cache String ${cacheString}"
-
     jenkinsMnt = ' -v /mnt/jenkins/sharedDir:/mnt/jenkins/sharedDir'
-
-    // This allows us to create sibling docker containers which we need to
-    // run tests that need to launch docker containers (for example DB tests).
-    // We also mount /var/lib/docker, because Stirling accesses it.
-    // Since we use the host docker.sock, we must also use the host's /var/lib/docker,
-    // to maintain a consistent view.
     dockerSock = ' -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/docker:/var/lib/docker'
     // TODO(zasgar): We should be able to run this in isolated networks. We need --net=host
     // because dockertest needs to be able to access sibling containers.
-    docker.image(dockerImage).inside(dockerConfig + cacheString + dockerSock + jenkinsMnt + ' --net=host') {
+    docker.image(dockerImage).inside(dockerConfig + dockerSock + jenkinsMnt + ' --net=host') {
       body()
     }
   }
