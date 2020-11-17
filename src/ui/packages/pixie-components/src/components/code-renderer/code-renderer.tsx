@@ -1,6 +1,6 @@
 import Highlight, { defaultProps } from 'prism-react-renderer';
 import * as React from 'react';
-import { CopyIcon } from '../icons/copy';
+import { CopyIcon } from 'components/icons/copy';
 
 import { Box } from '@material-ui/core';
 import { Theme } from '@material-ui/core/styles';
@@ -32,18 +32,11 @@ export const CodeRenderer = withStyles((theme: Theme) => ({
     right: '0',
     cursor: 'pointer',
   },
-
 }))(({ classes, code, language = 'javascript' }: any) => (
   <div className={classes.code}>
     <Box className={`${classes.codeHighlight} small-scroll`}>
-      <Highlight
-        {...defaultProps}
-        code={code.trim()}
-        language={language}
-      >
-        {({
-          className, style, tokens, getLineProps, getTokenProps,
-        }) => (
+      <Highlight {...defaultProps} code={code.trim()} language={language}>
+        {({ className, style, tokens, getLineProps, getTokenProps }) => (
           <pre
             className={className}
             style={{ ...style, backgroundColor: 'transparent' }}
@@ -63,7 +56,9 @@ export const CodeRenderer = withStyles((theme: Theme) => ({
       edge='start'
       color='inherit'
       className={classes.copyBtn}
-      onClick={() => { navigator.clipboard.writeText(code); }}
+      onClick={() => {
+        navigator.clipboard.writeText(code);
+      }}
     >
       <CopyIcon />
     </IconButton>

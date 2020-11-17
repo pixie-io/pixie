@@ -24,12 +24,14 @@ type SnackbarState = {
   opened: boolean;
 } & Required<ShowArgs>;
 
-const useStyles = makeStyles((theme: Theme) => createStyles({
-  snackbar: {
-    backgroundColor: theme.palette.background.three,
-    color: theme.palette.text.secondary,
-  },
-}));
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    snackbar: {
+      backgroundColor: theme.palette.background.three,
+      color: theme.palette.text.secondary,
+    },
+  })
+);
 
 export const SnackbarProvider: React.FC = (props) => {
   const classes = useStyles();
@@ -67,10 +69,10 @@ export const SnackbarProvider: React.FC = (props) => {
     }));
   }, []);
 
-  const snackbarAction = React.useMemo(() => (
-    <>
-      {
-        state.action !== noop && state.actionTitle && (
+  const snackbarAction = React.useMemo(
+    () => (
+      <>
+        {state.action !== noop && state.actionTitle && (
           <Button
             onClick={() => {
               state.action();
@@ -80,17 +82,16 @@ export const SnackbarProvider: React.FC = (props) => {
           >
             {state.actionTitle}
           </Button>
-        )
-      }
-      {
-        state.dismissible && (
+        )}
+        {state.dismissible && (
           <IconButton onClick={hideSnackbar} color='inherit'>
             <CloseIcon />
           </IconButton>
-        )
-      }
-    </>
-  ), [state, hideSnackbar]);
+        )}
+      </>
+    ),
+    [state, hideSnackbar]
+  );
   return (
     <>
       <SnackbarContext.Provider value={showSnackbar}>

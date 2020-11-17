@@ -5,7 +5,7 @@ import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 import { Key } from './key';
 
-const useStyles = makeStyles((theme: Theme) => (
+const useStyles = makeStyles((theme: Theme) =>
   // TODO(malthus): Make use of the theme styles.
   createStyles({
     root: {
@@ -60,7 +60,8 @@ const useStyles = makeStyles((theme: Theme) => (
     prefix: {
       paddingRight: theme.spacing(2),
     },
-  })));
+  })
+);
 
 interface InputProps {
   onChange: (val: string) => void;
@@ -100,30 +101,36 @@ export const Input: React.FC<InputProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preSelect, inputRef]);
 
-  const handleChange = React.useCallback((e) => {
-    const val = e.target.value;
-    onChange(val);
-  }, [onChange]);
+  const handleChange = React.useCallback(
+    (e) => {
+      const val = e.target.value;
+      onChange(val);
+    },
+    [onChange]
+  );
 
-  const handleKey = React.useCallback((e) => {
-    switch (e.key) {
-      case 'Tab':
-        e.preventDefault();
-        onKey('TAB');
-        break;
-      case 'Enter':
-        onKey('ENTER');
-        break;
-      case 'ArrowUp':
-        onKey('UP');
-        break;
-      case 'ArrowDown':
-        onKey('DOWN');
-        break;
-      default:
-      // noop
-    }
-  }, [onKey]);
+  const handleKey = React.useCallback(
+    (e) => {
+      switch (e.key) {
+        case 'Tab':
+          e.preventDefault();
+          onKey('TAB');
+          break;
+        case 'Enter':
+          onKey('ENTER');
+          break;
+        case 'ArrowUp':
+          onKey('UP');
+          break;
+        case 'ArrowDown':
+          onKey('DOWN');
+          break;
+        default:
+        // noop
+      }
+    },
+    [onKey]
+  );
 
   const focusInput = React.useCallback(() => {
     inputRef.current?.focus();
@@ -141,13 +148,16 @@ export const Input: React.FC<InputProps> = ({
       return placeholder;
     }
     return suggestion && suggestion.startsWith(value)
-      ? suggestion.slice(value.length) : '';
+      ? suggestion.slice(value.length)
+      : '';
   }, [value, suggestion, placeholder]);
 
   return (
     <div className={clsx(classes.root, className)} onClick={focusInput}>
       <span className={classes.inputWrapper}>
-        <span className={classes.dummy} ref={dummyElement}>{value}</span>
+        <span className={classes.dummy} ref={dummyElement}>
+          {value}
+        </span>
         <input
           type='text'
           className={classes.inputElem}
@@ -159,7 +169,9 @@ export const Input: React.FC<InputProps> = ({
         />
       </span>
       {prefix ? <div className={classes.prefix}>{prefix}</div> : null}
-      <span className={classes.hint} tabIndex={-1}>{hint}</span>
+      <span className={classes.hint} tabIndex={-1}>
+        {hint}
+      </span>
     </div>
   );
 };
@@ -181,7 +193,5 @@ export const FormInput: React.FC<InputFormProps> = ({ form }) => {
     setValue(combined);
   }, [form]);
 
-  return (
-    <textarea className={classes.textArea} ref={ref} value={value} />
-  );
+  return <textarea className={classes.textArea} ref={ref} value={value} />;
 };

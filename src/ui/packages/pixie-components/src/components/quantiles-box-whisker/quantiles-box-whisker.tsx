@@ -3,7 +3,11 @@ import { Vega } from 'react-vega';
 import { VisualizationSpec } from 'vega-embed';
 import { Handler } from 'vega-tooltip';
 import {
-  createStyles, Theme, useTheme, withStyles, WithStyles,
+  createStyles,
+  Theme,
+  useTheme,
+  withStyles,
+  WithStyles,
 } from '@material-ui/core/styles';
 
 interface QuantilesBoxWhiskerFields {
@@ -26,8 +30,21 @@ interface QuantilesBoxWhiskerFields {
 
 const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
   const {
-    p50, p90, p99, max, p50Display, p90Display, p99Display, p50Fill, p90Fill, p99Fill,
-    p50HoverFill, p90HoverFill, p99HoverFill, barFill, whiskerFill,
+    p50,
+    p90,
+    p99,
+    max,
+    p50Display,
+    p90Display,
+    p99Display,
+    p50Fill,
+    p90Fill,
+    p99Fill,
+    p50HoverFill,
+    p90HoverFill,
+    p99HoverFill,
+    barFill,
+    whiskerFill,
   } = fields;
 
   return {
@@ -56,7 +73,8 @@ const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
         transform: [
           {
             type: 'filter',
-            expr: 'isValid(datum["whiskerMax"]) && isFinite(+datum["whiskerMax"])',
+            expr:
+              'isValid(datum["whiskerMax"]) && isFinite(+datum["whiskerMax"])',
           },
         ],
       },
@@ -192,9 +210,12 @@ const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
         name: 'x',
         type: 'sqrt',
         domain: [0, max],
-        range: [0, {
-          signal: 'width',
-        }],
+        range: [
+          0,
+          {
+            signal: 'width',
+          },
+        ],
         nice: true,
         zero: true,
       },
@@ -206,65 +227,76 @@ const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
         },
       },
     },
-    signals: [{
-      name: 'p50Click',
-      on: [{
-        events: { type: 'click', markname: 'p50' },
-        update: '{}',
-      }],
-    }, {
-      name: 'p90Click',
-      on: [{
-        events: { type: 'click', markname: 'p90' },
-        update: '{}',
-      }],
-    }, {
-      name: 'p99Click',
-      on: [{
-        events: { type: 'click', markname: 'p99' },
-        update: '{}',
-      }],
-    }],
+    signals: [
+      {
+        name: 'p50Click',
+        on: [
+          {
+            events: { type: 'click', markname: 'p50' },
+            update: '{}',
+          },
+        ],
+      },
+      {
+        name: 'p90Click',
+        on: [
+          {
+            events: { type: 'click', markname: 'p90' },
+            update: '{}',
+          },
+        ],
+      },
+      {
+        name: 'p99Click',
+        on: [
+          {
+            events: { type: 'click', markname: 'p99' },
+            update: '{}',
+          },
+        ],
+      },
+    ],
   };
 };
 
-const styles = (theme: Theme) => createStyles({
-  '@global': {
-    // This style is used to override vega-tooltip default style.
-    // ...custom-theme maps to theme: 'custom' in the options below.
-    // This mirrors the default style in our existing Material UI tooltips for consistency.
-    '#vg-tooltip-element.vg-tooltip.custom-theme': {
-      borderWidth: 0,
-      color: theme.palette.foreground.white,
-      padding: '4px 8px',
-      fontSize: '0.625rem',
-      maxWidth: 300,
-      wordWrap: 'break-word',
-      fontFamily: 'Roboto',
-      fontWeight: 500,
-      lineHeight: '1.4em',
-      borderRadius: '4px',
-      backgroundColor: theme.palette.foreground.grey1,
-      opacity: 0.9,
+const styles = (theme: Theme) =>
+  createStyles({
+    '@global': {
+      // This style is used to override vega-tooltip default style.
+      // ...custom-theme maps to theme: 'custom' in the options below.
+      // This mirrors the default style in our existing Material UI tooltips for consistency.
+      '#vg-tooltip-element.vg-tooltip.custom-theme': {
+        borderWidth: 0,
+        color: theme.palette.foreground.white,
+        padding: '4px 8px',
+        fontSize: '0.625rem',
+        maxWidth: 300,
+        wordWrap: 'break-word',
+        fontFamily: 'Roboto',
+        fontWeight: 500,
+        lineHeight: '1.4em',
+        borderRadius: '4px',
+        backgroundColor: theme.palette.foreground.grey1,
+        opacity: 0.9,
+      },
     },
-  },
-  root: {
-    display: 'flex',
-    alignItems: 'center',
-  },
-  vegaWrapper: {
-    // It seems like ReactVega automatically inserts 5 px padding on the bottom of charts,
-    // and there isn't a clear way to turn this off.
-    marginTop: 5,
-  },
-  label: {
-    textAlign: 'right',
-    justifyContent: 'flex-end',
-    width: 100,
-    marginLeft: 5,
-    marginRight: 10,
-  },
-});
+    root: {
+      display: 'flex',
+      alignItems: 'center',
+    },
+    vegaWrapper: {
+      // It seems like ReactVega automatically inserts 5 px padding on the bottom of charts,
+      // and there isn't a clear way to turn this off.
+      marginTop: 5,
+    },
+    label: {
+      textAlign: 'right',
+      justifyContent: 'flex-end',
+      width: 100,
+      marginLeft: 5,
+      marginRight: 10,
+    },
+  });
 
 export type SelectedPercentile = 'p50' | 'p90' | 'p99';
 
@@ -286,8 +318,19 @@ interface QuantilesBoxWhiskerProps extends WithStyles<typeof styles> {
 
 const QuantilesBoxWhiskerImpl = (props: QuantilesBoxWhiskerProps) => {
   const {
-    classes, p50, p90, p99, max, p50HoverFill, p90HoverFill, p99HoverFill, p50Display, p90Display, p99Display,
-    selectedPercentile, onChangePercentile,
+    classes,
+    p50,
+    p90,
+    p99,
+    max,
+    p50HoverFill,
+    p90HoverFill,
+    p99HoverFill,
+    p50Display,
+    p90Display,
+    p99Display,
+    selectedPercentile,
+    onChangePercentile,
   } = props;
   const theme = useTheme();
   let p50Fill = theme.palette.text.secondary;
@@ -363,7 +406,7 @@ const QuantilesBoxWhiskerImpl = (props: QuantilesBoxWhiskerProps) => {
         actions={false}
         tooltip={tooltipHandler}
       />
-      <span className={classes.label} style={{color: selectedPercentileFill}}>
+      <span className={classes.label} style={{ color: selectedPercentileFill }}>
         {selectedPercentileDisplay}
       </span>
     </div>

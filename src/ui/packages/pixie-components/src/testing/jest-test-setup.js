@@ -16,11 +16,15 @@ const localStorageMock = (() => {
 })();
 
 const analyticsMock = (() => ({
-  page: () => { },
+  page: () => {},
 }))();
 
 const mockPixieFlags = {
-  AUTH0_DOMAIN: '', AUTH0_CLIENT_ID: '', DOMAIN_NAME: '', SEGMENT_UI_WRITE_KEY: '', LD_CLIENT_ID: '',
+  AUTH0_DOMAIN: '',
+  AUTH0_CLIENT_ID: '',
+  DOMAIN_NAME: '',
+  SEGMENT_UI_WRITE_KEY: '',
+  LD_CLIENT_ID: '',
 };
 
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
@@ -30,7 +34,7 @@ Object.defineProperty(window, '__PIXIE_FLAGS__', { value: mockPixieFlags });
 // This is a hack to get clsx to actually work in the test.
 jest.mock('clsx', () => ({
   __esModule: true,
-  default: jest.requireActual('clsx')
+  default: jest.requireActual('clsx'),
 }));
 
 // This prevents console errors about the use of useLayoutEffect on the server

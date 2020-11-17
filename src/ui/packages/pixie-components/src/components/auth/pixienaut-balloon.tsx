@@ -1,4 +1,4 @@
-import * as React from 'react'
+import * as React from 'react';
 
 export const PixienautBalloonSvg = (props) => (
   <svg width={129} height={179} viewBox='0 0 129 179' fill='none' {...props}>

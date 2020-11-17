@@ -1,4 +1,8 @@
-import { MAX_COL_PX_WIDTH, MIN_COL_PX_WIDTH, userResizeColumn } from './table-resizer';
+import {
+  MAX_COL_PX_WIDTH,
+  MIN_COL_PX_WIDTH,
+  userResizeColumn,
+} from './table-resizer';
 
 describe('Table resizing logic', () => {
   const CONTAINER_WIDTH = MAX_COL_PX_WIDTH * 1.25;
@@ -9,30 +13,42 @@ describe('Table resizing logic', () => {
 
   function widthsToSizes(widths: number[]) {
     const total = sum(widths);
-    return widths.map((v, i) => ({ key: String(i), ratio: v / total, isDefault: true }));
+    return widths.map((v, i) => ({
+      key: String(i),
+      ratio: v / total,
+      isDefault: true,
+    }));
   }
 
   function overflowingMinWidthColumns() {
     const numColumns = Math.ceil(CONTAINER_WIDTH / MIN_COL_PX_WIDTH) + 1; // 13
-    const initialSizes = widthsToSizes(Array(numColumns).fill(MIN_COL_PX_WIDTH)); // 90x13 = 1170
+    const initialSizes = widthsToSizes(
+      Array(numColumns).fill(MIN_COL_PX_WIDTH)
+    ); // 90x13 = 1170
     return { initialSizes, total: MIN_COL_PX_WIDTH * numColumns };
   }
 
   function underflowingMinWidthColumns() {
-    const numColumns = Math.ceil(CONTAINER_WIDTH * 0.5 / MIN_COL_PX_WIDTH); // 5
-    const initialSizes = widthsToSizes(Array(numColumns).fill(MIN_COL_PX_WIDTH)); // 90x5 = 450
+    const numColumns = Math.ceil((CONTAINER_WIDTH * 0.5) / MIN_COL_PX_WIDTH); // 5
+    const initialSizes = widthsToSizes(
+      Array(numColumns).fill(MIN_COL_PX_WIDTH)
+    ); // 90x5 = 450
     return { initialSizes, total: MIN_COL_PX_WIDTH * numColumns };
   }
 
   function underflowingMaxWidthColumns() {
-    const numColumns = Math.ceil(CONTAINER_WIDTH * 0.5 / MAX_COL_PX_WIDTH); // 1 - tests too few columns as well
-    const initialSizes = widthsToSizes(Array(numColumns).fill(MAX_COL_PX_WIDTH)); // 800x1 = 800
+    const numColumns = Math.ceil((CONTAINER_WIDTH * 0.5) / MAX_COL_PX_WIDTH); // 1 - tests too few columns as well
+    const initialSizes = widthsToSizes(
+      Array(numColumns).fill(MAX_COL_PX_WIDTH)
+    ); // 800x1 = 800
     return { initialSizes, total: MAX_COL_PX_WIDTH * numColumns };
   }
 
   function overflowingMaxWidthColumns() {
-    const numColumns = Math.ceil(CONTAINER_WIDTH * 4 / MAX_COL_PX_WIDTH); // 5
-    const initialSizes = widthsToSizes(Array(numColumns).fill(MAX_COL_PX_WIDTH)); // 800x5 = 4000
+    const numColumns = Math.ceil((CONTAINER_WIDTH * 4) / MAX_COL_PX_WIDTH); // 5
+    const initialSizes = widthsToSizes(
+      Array(numColumns).fill(MAX_COL_PX_WIDTH)
+    ); // 800x5 = 4000
     return { initialSizes, total: MAX_COL_PX_WIDTH * numColumns };
   }
 
@@ -44,23 +60,35 @@ describe('Table resizing logic', () => {
 
   function overflowingFlexibleColumns() {
     const flexWidth = (MIN_COL_PX_WIDTH + MAX_COL_PX_WIDTH) / 2; // 485
-    const numColumns = Math.ceil(CONTAINER_WIDTH * 2 / flexWidth); // 5
+    const numColumns = Math.ceil((CONTAINER_WIDTH * 2) / flexWidth); // 5
     const initialSizes = widthsToSizes(Array(numColumns).fill(flexWidth)); // 485 x 5 = 2425
     return { initialSizes, total: flexWidth * numColumns };
   }
 
   it('shrinks the total width before far columns, if table is wider than minimum', () => {
     const { initialSizes, total } = overflowingFlexibleColumns();
-    const { newTotal, sizes: overrides } = userResizeColumn('1', -10, initialSizes, total, CONTAINER_WIDTH);
+    const { newTotal, sizes: overrides } = userResizeColumn(
+      '1',
+      -10,
+      initialSizes,
+      total,
+      CONTAINER_WIDTH
+    );
     expect(newTotal).toBeCloseTo(total - 10);
     expect(overrides[0]).toBeCloseTo(initialSizes[0].ratio);
-    expect(overrides[1]).toBeCloseTo(((overrides['0'] * total) - 10) / newTotal);
+    expect(overrides[1]).toBeCloseTo((overrides['0'] * total - 10) / newTotal);
     expect(overrides[2]).toBeCloseTo(initialSizes[2].ratio);
   });
 
   it('trades width between the two nearest columns before considering others', () => {
     const { initialSizes, total, colWidth } = fittedFlexibleColumns();
-    const { newTotal, sizes: overrides } = userResizeColumn('1', 10, initialSizes, total, CONTAINER_WIDTH);
+    const { newTotal, sizes: overrides } = userResizeColumn(
+      '1',
+      10,
+      initialSizes,
+      total,
+      CONTAINER_WIDTH
+    );
     const newWidths = Object.keys(overrides).map((key) => overrides[key]);
     expect(newTotal).toBeCloseTo(total);
     expect(newWidths).toEqual([
@@ -80,11 +108,27 @@ describe('Table resizing logic', () => {
       MIN_COL_PX_WIDTH + 20,
       MIN_COL_PX_WIDTH + 10,
     ]);
-    const total = (MIN_COL_PX_WIDTH * 6 + 60);
-    const { newTotal: leftTotal, sizes: leftOverrides } = userResizeColumn('2', -3, initialSizes, total, total);
-    const { newTotal: rightTotal, sizes: rightOverrides } = userResizeColumn('2', 3, initialSizes, total, total);
-    const leftWidths = Object.keys(leftOverrides).map((key) => leftOverrides[key] * leftTotal);
-    const rightWidths = Object.keys(rightOverrides).map((key) => rightOverrides[key] * rightTotal);
+    const total = MIN_COL_PX_WIDTH * 6 + 60;
+    const { newTotal: leftTotal, sizes: leftOverrides } = userResizeColumn(
+      '2',
+      -3,
+      initialSizes,
+      total,
+      total
+    );
+    const { newTotal: rightTotal, sizes: rightOverrides } = userResizeColumn(
+      '2',
+      3,
+      initialSizes,
+      total,
+      total
+    );
+    const leftWidths = Object.keys(leftOverrides).map(
+      (key) => leftOverrides[key] * leftTotal
+    );
+    const rightWidths = Object.keys(rightOverrides).map(
+      (key) => rightOverrides[key] * rightTotal
+    );
     const expectedLeft = [
       MIN_COL_PX_WIDTH + 9,
       MIN_COL_PX_WIDTH + 18,
@@ -113,9 +157,17 @@ describe('Table resizing logic', () => {
     const { initialSizes, total } = overflowingMinWidthColumns();
     const nextToLast = String(initialSizes.length - 2);
     const delta = 10; // As every column is already at its minimum width, this will force the table to grow to make room
-    const { newTotal, sizes: overrides } = userResizeColumn(nextToLast, delta, initialSizes, total, CONTAINER_WIDTH);
+    const { newTotal, sizes: overrides } = userResizeColumn(
+      nextToLast,
+      delta,
+      initialSizes,
+      total,
+      CONTAINER_WIDTH
+    );
     expect(newTotal).toBeCloseTo(total + 10);
-    expect(overrides[nextToLast]).toBeCloseTo((MIN_COL_PX_WIDTH + 10) / newTotal);
+    expect(overrides[nextToLast]).toBeCloseTo(
+      (MIN_COL_PX_WIDTH + 10) / newTotal
+    );
     for (const key of Object.keys(overrides)) {
       if (key !== nextToLast) {
         expect(overrides[key]).toBeCloseTo(initialSizes[key].ratio);
@@ -125,7 +177,13 @@ describe('Table resizing logic', () => {
 
   it('does not shrink any column below its minimum width', () => {
     const { initialSizes, total } = overflowingMinWidthColumns();
-    const { newTotal, sizes: overrides } = userResizeColumn('0', -1, initialSizes, total, CONTAINER_WIDTH);
+    const { newTotal, sizes: overrides } = userResizeColumn(
+      '0',
+      -1,
+      initialSizes,
+      total,
+      CONTAINER_WIDTH
+    );
     expect(newTotal).toBeCloseTo(total);
     for (const key of Object.keys(overrides)) {
       expect(overrides[key]).toBeCloseTo(initialSizes[Number(key)].ratio);
@@ -134,7 +192,13 @@ describe('Table resizing logic', () => {
 
   it('grows columns if needed to meet the minimum total width', () => {
     const { initialSizes, total } = underflowingMinWidthColumns();
-    const { newTotal, sizes: overrides } = userResizeColumn('0', 0, initialSizes, total, CONTAINER_WIDTH);
+    const { newTotal, sizes: overrides } = userResizeColumn(
+      '0',
+      0,
+      initialSizes,
+      total,
+      CONTAINER_WIDTH
+    );
     expect(newTotal).toBeCloseTo(CONTAINER_WIDTH);
     const numColumns = Object.keys(overrides).length;
     for (const key of Object.keys(overrides)) {
@@ -144,7 +208,13 @@ describe('Table resizing logic', () => {
 
   it('when growing columns to meet the minimum total, increases individual maximums', () => {
     const { initialSizes, total } = underflowingMaxWidthColumns();
-    const { newTotal, sizes: overrides } = userResizeColumn('0', 0, initialSizes, total, CONTAINER_WIDTH);
+    const { newTotal, sizes: overrides } = userResizeColumn(
+      '0',
+      0,
+      initialSizes,
+      total,
+      CONTAINER_WIDTH
+    );
     expect(newTotal).toBeCloseTo(CONTAINER_WIDTH);
     const numColumns = Object.keys(overrides).length;
     for (const key of Object.keys(overrides)) {
@@ -154,7 +224,13 @@ describe('Table resizing logic', () => {
 
   it('does not let any column nor the table grow past their maximums', () => {
     const { initialSizes, total } = overflowingMaxWidthColumns();
-    const { newTotal, sizes: overrides } = userResizeColumn('1', 10, initialSizes, total, CONTAINER_WIDTH);
+    const { newTotal, sizes: overrides } = userResizeColumn(
+      '1',
+      10,
+      initialSizes,
+      total,
+      CONTAINER_WIDTH
+    );
     expect(newTotal).toBe(total);
     for (const key of Object.keys(overrides)) {
       expect(overrides[key]).toBeCloseTo(initialSizes[Number(key)].ratio);

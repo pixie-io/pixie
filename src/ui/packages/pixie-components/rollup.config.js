@@ -22,7 +22,7 @@ export default {
       format: 'es',
       exports: 'named',
       sourcemap: true,
-    }
+    },
   ],
   plugins: [
     peerDepsExternal(),

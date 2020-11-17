@@ -8,7 +8,7 @@ describe('<LazyPanel/> test', () => {
     const wrapper = shallow(
       <LazyPanel show={false}>
         <div className='content'>test content</div>
-      </LazyPanel>,
+      </LazyPanel>
     );
 
     expect(wrapper.getElement()).toBe(null);
@@ -19,18 +19,18 @@ describe('<LazyPanel/> test', () => {
     const wrapper = shallow(
       <LazyPanel show>
         <div className='content'>test content</div>
-      </LazyPanel>,
+      </LazyPanel>
     );
 
     expect(wrapper.find('.content')).toHaveLength(1);
     expect(wrapper.find('.visible')).toHaveLength(1);
   });
 
-  it('doesn\'t destroy the element if show becomes false', () => {
+  it("doesn't destroy the element if show becomes false", () => {
     const wrapper = shallow(
       <LazyPanel show>
         <div className='content'>test content</div>
-      </LazyPanel>,
+      </LazyPanel>
     );
 
     wrapper.setProps({ show: false });

@@ -1,35 +1,64 @@
 export { AuthBox } from './components/auth/auth-box';
 export { AuthFooter } from './components/auth/footer';
 export { AuthMessageBoxProps, AuthMessageBox } from './components/auth/message';
-export { PixienautBoxProps, PixienautBox } from './components/auth/pixienaut-box';
+export {
+  PixienautBoxProps,
+  PixienautBox,
+} from './components/auth/pixienaut-box';
 export { SignupMarcom } from './components/auth/signup-marcom';
 
 export { AutocompleteInputField } from './components/autocomplete/autocomplete-field';
-export { AutocompleteContextProps, AutocompleteContext, Autocomplete } from './components/autocomplete/autocomplete';
 export {
-  CompletionHeader, CompletionId, CompletionTitle,
-  CompletionItem, CompletionItems, Completion, Completions,
+  AutocompleteContextProps,
+  AutocompleteContext,
+  Autocomplete,
+} from './components/autocomplete/autocomplete';
+export {
+  CompletionHeader,
+  CompletionId,
+  CompletionTitle,
+  CompletionItem,
+  CompletionItems,
+  Completion,
+  Completions,
 } from './components/autocomplete/completions';
 export { FormFieldInput } from './components/autocomplete/form';
 export { FormInput, Input } from './components/autocomplete/input';
-export { AutocompleteField, AutocompleteInput } from './components/autocomplete/new-autocomplete-input';
-export { NewAutocomplete, TabSuggestion } from './components/autocomplete/new-autocomplete';
-export { useAutocomplete, GetCompletionsFunc } from './components/autocomplete/use-autocomplete';
 export {
-  ItemsMap, findNextItem,
-  TabStop, getDisplayStringFromTabStops,
+  AutocompleteField,
+  AutocompleteInput,
+} from './components/autocomplete/new-autocomplete-input';
+export {
+  NewAutocomplete,
+  TabSuggestion,
+} from './components/autocomplete/new-autocomplete';
+export {
+  useAutocomplete,
+  GetCompletionsFunc,
+} from './components/autocomplete/use-autocomplete';
+export {
+  ItemsMap,
+  findNextItem,
+  TabStop,
+  getDisplayStringFromTabStops,
   TabStopParser,
 } from './components/autocomplete/utils';
 
-export { BreadcrumbOptions, Breadcrumbs } from './components/breadcrumbs/breadcrumbs';
+export {
+  BreadcrumbOptions,
+  Breadcrumbs,
+} from './components/breadcrumbs/breadcrumbs';
 
 export { CodeEditor } from './components/code-editor/code-editor';
 
 export { CodeRenderer } from './components/code-renderer/code-renderer';
 
 export {
-  CellAlignment, ColumnProps,
-  ExpandedRows, SortState, DataTable,
+  CellAlignment,
+  ColumnProps,
+  ExpandedRows,
+  SortState,
+  DataTable,
 } from './components/data-table/data-table';
 export { ColWidthOverrides } from './components/data-table/table-resizer';
 
@@ -42,7 +71,10 @@ export { ModalTrigger } from './components/modal/modal';
 
 export { Avatar, ProfileMenuWrapper } from './components/profile/profile';
 
-export { SelectedPercentile, QuantilesBoxWhisker } from './components/quantiles-box-whisker/quantiles-box-whisker';
+export {
+  SelectedPercentile,
+  QuantilesBoxWhisker,
+} from './components/quantiles-box-whisker/quantiles-box-whisker';
 
 export { SnackbarProvider, useSnackbar } from './components/snackbar/snackbar';
 

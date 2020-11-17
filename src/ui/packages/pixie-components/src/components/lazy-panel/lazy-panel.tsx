@@ -21,13 +21,15 @@ interface LazyPanelProps {
   children: React.ReactNode;
 }
 
-const useStyles = makeStyles(() => createStyles({
-  panel: {
-    '&:not(.visible)': {
-      display: 'none',
+const useStyles = makeStyles(() =>
+  createStyles({
+    panel: {
+      '&:not(.visible)': {
+        display: 'none',
+      },
     },
-  },
-}));
+  })
+);
 
 // LazyPanel is a component that renders the content lazily.
 export const LazyPanel = (props: LazyPanelProps) => {

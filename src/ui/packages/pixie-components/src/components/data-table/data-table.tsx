@@ -18,7 +18,11 @@ import {
 } from 'react-virtualized';
 
 import {
-  createStyles, fade, makeStyles, Theme, useTheme,
+  createStyles,
+  fade,
+  makeStyles,
+  Theme,
+  useTheme,
 } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
@@ -26,166 +30,170 @@ import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 import { CSSProperties, MutableRefObject } from 'react';
 import { clamp } from 'utils/math';
 import withAutoSizer, { WithAutoSizerProps } from 'utils/autosizer';
-import { ExpandedIcon } from '../icons/expanded';
-import { UnexpandedIcon } from '../icons/unexpanded';
+import { ExpandedIcon } from 'components/icons/expanded';
+import { UnexpandedIcon } from 'components/icons/unexpanded';
 import {
   MAX_COL_PX_WIDTH,
   MIN_COL_PX_WIDTH,
   userResizeColumn,
-  StartingRatios, ColWidthOverrides, tableWidthLimits,
+  StartingRatios,
+  ColWidthOverrides,
+  tableWidthLimits,
 } from './table-resizer';
 
 const EXPANDED_ROW_HEIGHT = 300;
 
-const useStyles = makeStyles((theme: Theme) => createStyles({
-  table: {
-    color: theme.palette.text.primary,
-    '& > .ReactVirtualized__Table__headerRow': {
-      ...theme.typography.caption,
-      backgroundColor: theme.palette.foreground.grey2,
-      display: 'flex',
-      width: 'var(--header-width) !important',
-      position: 'relative',
-    },
-    '& > .ReactVirtualized__Table__Grid': {
-      overflowX: 'auto !important',
-      '& > .ReactVirtualized__Grid__innerScrollContainer': {
-        maxWidth: 'var(--table-width) !important',
-        width: 'var(--table-width) !important',
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    table: {
+      color: theme.palette.text.primary,
+      '& > .ReactVirtualized__Table__headerRow': {
+        ...theme.typography.caption,
+        backgroundColor: theme.palette.foreground.grey2,
+        display: 'flex',
+        width: 'var(--header-width) !important',
+        position: 'relative',
+      },
+      '& > .ReactVirtualized__Table__Grid': {
+        overflowX: 'auto !important',
+        '& > .ReactVirtualized__Grid__innerScrollContainer': {
+          maxWidth: 'var(--table-width) !important',
+          width: 'var(--table-width) !important',
+        },
       },
     },
-  },
-  row: {
-    borderBottom: `solid 2px ${theme.palette.background.three}`,
-    '& > .ReactVirtualized__Table__rowColumn:first-of-type': {
-      marginLeft: 0,
-      marginRight: 0,
+    row: {
+      borderBottom: `solid 2px ${theme.palette.background.three}`,
+      '& > .ReactVirtualized__Table__rowColumn:first-of-type': {
+        marginLeft: 0,
+        marginRight: 0,
+      },
+      '&:hover $hidden': {
+        display: 'flex',
+      },
+      '& > .ReactVirtualized__Table__rowColumn': {
+        borderRight: `solid 1px ${theme.palette.background.three}`,
+      },
+      '& > .ReactVirtualized__Table__rowColumn:last-child': {
+        borderRight: 'none',
+      },
+      display: 'flex',
+      fontSize: '15px',
     },
-    '&:hover $hidden': {
+    rowContainer: {
+      borderBottom: `solid 1px ${theme.palette.foreground.grey3}`,
+      display: 'flex',
+      flexDirection: 'column',
+      paddingRight: '0 !important',
+    },
+    cell: {
+      paddingLeft: theme.spacing(3),
+      paddingRight: theme.spacing(3),
+      backgroundColor: 'transparent',
+      display: 'flex',
+      alignItems: 'baseline',
+      height: theme.spacing(6),
+      lineHeight: `${theme.spacing(6)}px`,
+      margin: '0 !important',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+    },
+    cellText: {
+      overflow: 'hidden',
+      whiteSpace: 'nowrap',
+      textOverflow: 'ellipsis',
+    },
+    compact: {
+      paddingLeft: theme.spacing(1.5),
+      paddingRight: 0,
+      height: theme.spacing(5),
+      lineHeight: `${theme.spacing(5)}px`,
+    },
+    clickable: {
+      cursor: 'pointer',
+    },
+    highlighted: {
+      backgroundColor: theme.palette.foreground.grey3,
+    },
+    highlightable: {
+      '&:hover': {
+        backgroundColor: `${fade(theme.palette.foreground.grey2, 0.42)}`,
+      },
+    },
+    center: {
+      justifyContent: 'center',
+    },
+    start: {
+      justifyContent: 'flex-start',
+    },
+    end: {
+      justifyContent: 'flex-end',
+    },
+    sortIcon: {
+      width: theme.spacing(3),
+      paddingLeft: theme.spacing(1),
+    },
+    sortIconHidden: {
+      width: theme.spacing(3),
+      opacity: '0.2',
+      paddingLeft: theme.spacing(1),
+    },
+    headerTitle: {
+      ...theme.typography.h4,
+      height: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      flex: 'auto',
+      overflow: 'hidden',
+      background: 'transparent',
+      border: 'none',
+      color: 'inherit',
+      cursor: 'pointer',
+      textTransform: 'uppercase',
+    },
+    gutterCell: {
+      paddingLeft: '0px',
+      flex: 'auto',
+      alignItems: 'center',
+      // TODO(michelle/zasgar): Fix this.
+      overflow: 'visible',
+      minWidth: theme.spacing(2.5),
+      display: 'flex',
+      height: '100%',
+      borderRight: 'none !important',
+    },
+    dragHandle: {
+      flex: '0 0 12px',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      cursor: 'col-resize',
+      // Move the handle's center, rather than its right edge, to line up with the column's right border
+      transform: 'translate(50%, -1px)',
+      '&:hover': {
+        color: theme.palette.foreground.white,
+      },
+    },
+    expandedCell: {
+      overflow: 'auto',
+      flex: 1,
+      paddingLeft: '20px',
+    },
+    hidden: {
+      display: 'none',
+    },
+    cellWrapper: {
+      paddingRight: theme.spacing(1.5),
+      width: '100%',
       display: 'flex',
     },
-    '& > .ReactVirtualized__Table__rowColumn': {
-      borderRight: `solid 1px ${theme.palette.background.three}`,
+    innerCell: {
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
     },
-    '& > .ReactVirtualized__Table__rowColumn:last-child': {
-      borderRight: 'none',
-    },
-    display: 'flex',
-    fontSize: '15px',
-  },
-  rowContainer: {
-    borderBottom: `solid 1px ${theme.palette.foreground.grey3}`,
-    display: 'flex',
-    flexDirection: 'column',
-    paddingRight: '0 !important',
-  },
-  cell: {
-    paddingLeft: theme.spacing(3),
-    paddingRight: theme.spacing(3),
-    backgroundColor: 'transparent',
-    display: 'flex',
-    alignItems: 'baseline',
-    height: theme.spacing(6),
-    lineHeight: `${theme.spacing(6)}px`,
-    margin: '0 !important',
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-  },
-  cellText: {
-    overflow: 'hidden',
-    whiteSpace: 'nowrap',
-    textOverflow: 'ellipsis',
-  },
-  compact: {
-    paddingLeft: theme.spacing(1.5),
-    paddingRight: 0,
-    height: theme.spacing(5),
-    lineHeight: `${theme.spacing(5)}px`,
-  },
-  clickable: {
-    cursor: 'pointer',
-  },
-  highlighted: {
-    backgroundColor: theme.palette.foreground.grey3,
-  },
-  highlightable: {
-    '&:hover': {
-      backgroundColor: `${fade(theme.palette.foreground.grey2, 0.42)}`,
-    },
-  },
-  center: {
-    justifyContent: 'center',
-  },
-  start: {
-    justifyContent: 'flex-start',
-  },
-  end: {
-    justifyContent: 'flex-end',
-  },
-  sortIcon: {
-    width: theme.spacing(3),
-    paddingLeft: theme.spacing(1),
-  },
-  sortIconHidden: {
-    width: theme.spacing(3),
-    opacity: '0.2',
-    paddingLeft: theme.spacing(1),
-  },
-  headerTitle: {
-    ...theme.typography.h4,
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    flex: 'auto',
-    overflow: 'hidden',
-    background: 'transparent',
-    border: 'none',
-    color: 'inherit',
-    cursor: 'pointer',
-    textTransform: 'uppercase',
-  },
-  gutterCell: {
-    paddingLeft: '0px',
-    flex: 'auto',
-    alignItems: 'center',
-    // TODO(michelle/zasgar): Fix this.
-    overflow: 'visible',
-    minWidth: theme.spacing(2.5),
-    display: 'flex',
-    height: '100%',
-    borderRight: 'none !important',
-  },
-  dragHandle: {
-    flex: '0 0 12px',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    cursor: 'col-resize',
-    // Move the handle's center, rather than its right edge, to line up with the column's right border
-    transform: 'translate(50%, -1px)',
-    '&:hover': {
-      color: theme.palette.foreground.white,
-    },
-  },
-  expandedCell: {
-    overflow: 'auto',
-    flex: 1,
-    paddingLeft: '20px',
-  },
-  hidden: {
-    display: 'none',
-  },
-  cellWrapper: {
-    paddingRight: theme.spacing(1.5),
-    width: '100%',
-    display: 'flex',
-  },
-  innerCell: {
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-  },
-}));
+  })
+);
 
 export interface ExpandedRows {
   [key: number]: boolean;
@@ -221,13 +229,15 @@ export interface SortState {
 }
 
 // eslint-disable-next-line react/display-name
-const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerProps<DataTableProps>>((props) => {
-  const { width, height } = props;
-  if (width === 0 || height === 0) {
-    return null;
-  }
-  return <InternalDataTable {...props} />;
-}));
+const DataTable = withAutoSizer<DataTableProps>(
+  React.memo<WithAutoSizerProps<DataTableProps>>((props) => {
+    const { width, height } = props;
+    if (width === 0 || height === 0) {
+      return null;
+    }
+    return <InternalDataTable {...props} />;
+  })
+);
 
 (DataTable as React.FC).displayName = 'DataTable';
 
@@ -251,16 +261,23 @@ const InternalDataTable = ({
   const classes = useStyles();
   const theme = useTheme();
 
-  const [widthOverrides, setColumnWidthOverride] = React.useState<ColWidthOverrides>({});
+  const [widthOverrides, setColumnWidthOverride] = React.useState<
+    ColWidthOverrides
+  >({});
   const tableRef: MutableRefObject<Table> = React.useRef(null);
 
-  const [sortState, setSortState] = React.useState<SortState>({ dataKey: '', direction: SortDirection.DESC });
-  const [expandedRowState, setExpandedRowState] = React.useState<ExpandedRows>({});
+  const [sortState, setSortState] = React.useState<SortState>({
+    dataKey: '',
+    direction: SortDirection.DESC,
+  });
+  const [expandedRowState, setExpandedRowState] = React.useState<ExpandedRows>(
+    {}
+  );
 
   const totalWidth = React.useRef<number>(0);
-  const colTextWidthRatio = React.useMemo<{[dataKey: string]: number}>(() => {
+  const colTextWidthRatio = React.useMemo<{ [dataKey: string]: number }>(() => {
     totalWidth.current = 0;
-    const colsWidth: {[dataKey: string]: number} = {};
+    const colsWidth: { [dataKey: string]: number } = {};
     const measuringContext = document.createElement('canvas').getContext('2d');
     columns.forEach((col) => {
       let w = col.width || null;
@@ -273,7 +290,11 @@ const InternalDataTable = ({
 
       // We add 2 to the header width to accommodate type/sort icons.
       const headerWidth = col.label.length + 2;
-      colsWidth[col.dataKey] = clamp(Math.max(headerWidth, w), MIN_COL_PX_WIDTH, MAX_COL_PX_WIDTH);
+      colsWidth[col.dataKey] = clamp(
+        Math.max(headerWidth, w),
+        MIN_COL_PX_WIDTH,
+        MAX_COL_PX_WIDTH
+      );
       totalWidth.current += colsWidth[col.dataKey];
     });
     // Ensure the total is at least as wide as the available space, and not so wide as to violate column max widths.
@@ -281,41 +302,60 @@ const InternalDataTable = ({
     const clampedTotal = clamp(totalWidth.current, minTotal, maxTotal);
     totalWidth.current = clampedTotal;
 
-    const ratio: {[dataKey: string]: number} = {};
+    const ratio: { [dataKey: string]: number } = {};
     const scale = clampedTotal / totalWidth.current;
     Object.keys(colsWidth).forEach((colsWidthKey) => {
-      ratio[colsWidthKey] = scale * colsWidth[colsWidthKey] / totalWidth.current;
+      ratio[colsWidthKey] =
+        (scale * colsWidth[colsWidthKey]) / totalWidth.current;
     });
     return ratio;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [columns, rowGetter, rowCount, width]);
 
-  const rowGetterWrapper = React.useCallback(({ index }) => rowGetter(index), [rowGetter]);
+  const rowGetterWrapper = React.useCallback(({ index }) => rowGetter(index), [
+    rowGetter,
+  ]);
 
-  const cellRenderer: TableCellRenderer = React.useCallback((props: TableCellProps) => (
-    <div className={clsx(classes.cellWrapper, classes[props.columnData.align])}>
-      <div className={classes.innerCell}>
-        {props.columnData.cellRenderer && props.columnData.cellRenderer(props.cellData)}
-        {!props.columnData.cellRenderer && <span className={classes.cellText}>{String(props.cellData)}</span>}
+  const cellRenderer: TableCellRenderer = React.useCallback(
+    (props: TableCellProps) => (
+      <div
+        className={clsx(classes.cellWrapper, classes[props.columnData.align])}
+      >
+        <div className={classes.innerCell}>
+          {props.columnData.cellRenderer &&
+            props.columnData.cellRenderer(props.cellData)}
+          {!props.columnData.cellRenderer && (
+            <span className={classes.cellText}>{String(props.cellData)}</span>
+          )}
+        </div>
       </div>
-    </div>
-  ), [classes]);
+    ),
+    [classes]
+  );
 
   const defaultCellHeight = compact ? theme.spacing(5) : theme.spacing(6);
-  const computeRowHeight = React.useCallback(({ index }) => (expandedRowState[index]
-    ? EXPANDED_ROW_HEIGHT
-    : defaultCellHeight), [defaultCellHeight, expandedRowState]);
+  const computeRowHeight = React.useCallback(
+    ({ index }) =>
+      expandedRowState[index] ? EXPANDED_ROW_HEIGHT : defaultCellHeight,
+    [defaultCellHeight, expandedRowState]
+  );
 
-  const onSortWrapper = React.useCallback(({ sortBy, sortDirection }) => {
-    if (sortBy) {
-      const nextSortState = { dataKey: sortBy, direction: sortDirection };
-      if (sortState.dataKey !== sortBy || sortState.direction !== sortDirection) {
-        setSortState(nextSortState);
+  const onSortWrapper = React.useCallback(
+    ({ sortBy, sortDirection }) => {
+      if (sortBy) {
+        const nextSortState = { dataKey: sortBy, direction: sortDirection };
+        if (
+          sortState.dataKey !== sortBy ||
+          sortState.direction !== sortDirection
+        ) {
+          setSortState(nextSortState);
+        }
+        onSort(nextSortState);
+        tableRef.current.forceUpdateGrid();
       }
-      onSort(nextSortState);
-      tableRef.current.forceUpdateGrid();
-    }
-  }, [onSort, sortState]);
+    },
+    [onSort, sortState]
+  );
 
   React.useEffect(() => {
     let sortKey;
@@ -329,58 +369,77 @@ const InternalDataTable = ({
     if (sortKey && !sortState.dataKey) {
       onSortWrapper({ sortBy: sortKey, sortDirection: SortDirection.ASC });
     } else {
-      onSortWrapper({ sortBy: sortState.dataKey, sortDirection: sortState.direction });
+      onSortWrapper({
+        sortBy: sortState.dataKey,
+        sortDirection: sortState.direction,
+      });
     }
   }, [columns, onSortWrapper, sortState]);
 
-  const onRowClickWrapper = React.useCallback(({ index }) => {
-    if (expandable) {
-      setExpandedRowState((state) => {
-        const expandedRows = { ...state };
-        if (expandedRows[index]) {
-          delete expandedRows[index];
-        } else {
-          expandedRows[index] = true;
-        }
-        return expandedRows;
+  const onRowClickWrapper = React.useCallback(
+    ({ index }) => {
+      if (expandable) {
+        setExpandedRowState((state) => {
+          const expandedRows = { ...state };
+          if (expandedRows[index]) {
+            delete expandedRows[index];
+          } else {
+            expandedRows[index] = true;
+          }
+          return expandedRows;
+        });
+      }
+      tableRef.current.recomputeRowHeights();
+      tableRef.current.forceUpdate();
+      onRowClick(index);
+    },
+    [onRowClick, expandable]
+  );
+
+  const getRowClass = React.useCallback(
+    ({ index }) => {
+      if (index === -1) {
+        return null;
+      }
+      return clsx(
+        classes.row,
+        onRowClick && classes.clickable,
+        onRowClick && classes.highlightable,
+        index === highlightedRow && classes.highlighted
+      );
+    },
+    [highlightedRow, onRowClick, classes]
+  );
+
+  const resizeColumn = React.useCallback(
+    ({ dataKey, deltaX }) => {
+      setColumnWidthOverride((state) => {
+        const startingRatios: StartingRatios = columns.map((col) => {
+          const key = col.dataKey;
+          const isDefault = state[key] == null;
+          return {
+            key,
+            isDefault,
+            ratio: state[key] || colTextWidthRatio[key],
+          };
+        });
+        const { newTotal, sizes } = userResizeColumn(
+          dataKey,
+          deltaX,
+          startingRatios,
+          totalWidth.current,
+          width
+        );
+        totalWidth.current = newTotal;
+        return sizes;
       });
-    }
-    tableRef.current.recomputeRowHeights();
-    tableRef.current.forceUpdate();
-    onRowClick(index);
-  }, [onRowClick, expandable]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [width, colTextWidthRatio, columns]
+  );
 
-  const getRowClass = React.useCallback(({ index }) => {
-    if (index === -1) {
-      return null;
-    }
-    return clsx(
-      classes.row,
-      onRowClick && classes.clickable,
-      onRowClick && classes.highlightable,
-      index === highlightedRow && classes.highlighted,
-    );
-  }, [highlightedRow, onRowClick, classes]);
-
-  const resizeColumn = React.useCallback(({ dataKey, deltaX }) => {
-    setColumnWidthOverride((state) => {
-      const startingRatios: StartingRatios = columns.map((col) => {
-        const key = col.dataKey;
-        const isDefault = state[key] == null;
-        return {
-          key,
-          isDefault,
-          ratio: state[key] || colTextWidthRatio[key],
-        };
-      });
-      const { newTotal, sizes } = userResizeColumn(dataKey, deltaX, startingRatios, totalWidth.current, width);
-      totalWidth.current = newTotal;
-      return sizes;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [width, colTextWidthRatio, columns]);
-
-  const colIsResizable = (idx: number): boolean => (resizableColumns || true) && (idx !== columns.length - 1);
+  const colIsResizable = (idx: number): boolean =>
+    (resizableColumns || true) && idx !== columns.length - 1;
 
   const resetColumn = (dataKey: string) => {
     setColumnWidthOverride((overrides) => {
@@ -407,11 +466,20 @@ const InternalDataTable = ({
   // Note that on mobile devices, Safari, and Chrome (by default but configurable), the scrollbar is an overlay that
   // doesn't affect the geometry of the element it scrolls. In that case, the scrollbar has a width of 0.
   const scrollbarWidth = React.useMemo<number>(() => {
-    const scroller: HTMLElement = tableWrapper.current?.querySelector('.ReactVirtualized__Table__Grid');
+    const scroller: HTMLElement = tableWrapper.current?.querySelector(
+      '.ReactVirtualized__Table__Grid'
+    );
     if (!scroller) return 0;
     return scroller.offsetWidth - scroller.clientWidth;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tableWrapper.current, width, totalWidth.current, colTextWidthRatio, widthOverrides, columns]);
+  }, [
+    tableWrapper.current,
+    width,
+    totalWidth.current,
+    colTextWidthRatio,
+    widthOverrides,
+    columns,
+  ]);
 
   const [wasAtTop, setWasAtTop] = React.useState<boolean>(false);
   const [wasAtBottom, setWasAtBottom] = React.useState<boolean>(false);
@@ -419,11 +487,14 @@ const InternalDataTable = ({
   const scroller = React.useMemo(
     () => tableWrapper.current?.querySelector('.ReactVirtualized__Table__Grid'),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tableWrapper.current]);
+    [tableWrapper.current]
+  );
 
   React.useEffect(() => {
     // Using direct DOM manipulation as we're messing with internals of a third-party component that doesn't expose refs
-    const header: HTMLDivElement = tableWrapper.current?.querySelector('.ReactVirtualized__Table__headerRow');
+    const header: HTMLDivElement = tableWrapper.current?.querySelector(
+      '.ReactVirtualized__Table__headerRow'
+    );
     if (!header || !scroller) return () => {};
 
     const listener = () => {
@@ -434,7 +505,8 @@ const InternalDataTable = ({
         // For convenience, snap into head/tail mode when the user scrolls close enough to the edge.
         // This also works around the react-virtualized tendency to flicker the scroll position right after changing it.
         setWasAtTop(scroller.scrollTop < defaultCellHeight / 2);
-        const scrollBottomLimit = scroller.scrollHeight - scroller.clientHeight - (defaultCellHeight / 2);
+        const scrollBottomLimit =
+          scroller.scrollHeight - scroller.clientHeight - defaultCellHeight / 2;
         setWasAtBottom(scroller.scrollTop >= scrollBottomLimit);
       }
     };
@@ -463,114 +535,162 @@ const InternalDataTable = ({
         behavior: 'auto',
       });
     }
-  }, [scroller?.clientHeight, scroller?.scrollHeight, scroller, wasAtBottom, wasAtTop]);
+  }, [
+    scroller?.clientHeight,
+    scroller?.scrollHeight,
+    scroller,
+    wasAtBottom,
+    wasAtTop,
+  ]);
 
-  const headerRendererCommon: TableHeaderRenderer = React.useCallback((props) => {
-    const sort = () => onSortWrapper({
-      sortBy: props.dataKey,
-      sortDirection: props.sortDirection === SortDirection.ASC ? SortDirection.DESC : SortDirection.ASC,
-    });
+  const headerRendererCommon: TableHeaderRenderer = React.useCallback(
+    (props) => {
+      const sort = () =>
+        onSortWrapper({
+          sortBy: props.dataKey,
+          sortDirection:
+            props.sortDirection === SortDirection.ASC
+              ? SortDirection.DESC
+              : SortDirection.ASC,
+        });
 
-    let sortIcon = <UpIcon className={classes.sortIconHidden} />;
-    if (props.sortBy === props.dataKey && props.sortDirection === SortDirection.ASC) {
-      sortIcon = <UpIcon className={classes.sortIcon} />;
-    } else if (props.sortBy === props.dataKey && props.sortDirection === SortDirection.DESC) {
-      sortIcon = <DownIcon className={classes.sortIcon} />;
-    }
+      let sortIcon = <UpIcon className={classes.sortIconHidden} />;
+      if (
+        props.sortBy === props.dataKey &&
+        props.sortDirection === SortDirection.ASC
+      ) {
+        sortIcon = <UpIcon className={classes.sortIcon} />;
+      } else if (
+        props.sortBy === props.dataKey &&
+        props.sortDirection === SortDirection.DESC
+      ) {
+        sortIcon = <DownIcon className={classes.sortIcon} />;
+      }
 
-    const headerStyle = clsx(
-      [classes.headerTitle],
-      [classes[props.columnData.align]],
-    );
+      const headerStyle = clsx(
+        [classes.headerTitle],
+        [classes[props.columnData.align]]
+      );
 
-    return (
-      <button type='button' className={headerStyle} onClick={sort}>
-        <Tooltip title={props.label}>
-          <span className={classes.cellText}>{props.label}</span>
-        </Tooltip>
-        {sortIcon}
-      </button>
-    );
-  }, [classes, onSortWrapper]);
+      return (
+        <button type='button' className={headerStyle} onClick={sort}>
+          <Tooltip title={props.label}>
+            <span className={classes.cellText}>{props.label}</span>
+          </Tooltip>
+          {sortIcon}
+        </button>
+      );
+    },
+    [classes, onSortWrapper]
+  );
 
-  const headerRenderer: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => (
-    <>
-      <React.Fragment key={props.dataKey}>
-        {headerRendererCommon(props)}
-      </React.Fragment>
-    </>
-  ), [headerRendererCommon]);
-
-  const gutterHeaderRenderer: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => (
-    <>
-      <React.Fragment key={props.dataKey} />
-    </>
-  ), []);
-
-  const gutterCellRenderer: TableCellRenderer = React.useCallback((props: TableCellProps) => {
-    // Hide the icon by default unless:
-    //  1. It's been expanded.
-    //  2. The row has been highlighted.
-    const cls = clsx(
-      classes.gutterCell,
-      !(highlightedRow === props.rowIndex || expandedRowState[props.rowIndex]) && classes.hidden,
-    );
-    const icon = expandedRowState[props.rowIndex] ? <ExpandedIcon /> : <UnexpandedIcon />;
-    return (
+  const headerRenderer: TableHeaderRenderer = React.useCallback(
+    (props: TableHeaderProps) => (
       <>
-        <div className={cls}>
-          {icon}
-        </div>
-      </>
-    );
-  }, [highlightedRow, expandedRowState, classes]);
-
-  const rowRenderer: TableRowRenderer = React.useCallback((props: TableRowProps) => {
-    const { style } = props;
-    style.width = '100%';
-    return (
-      <div
-        className={classes.rowContainer}
-        key={props.key}
-        style={style}
-      >
-        {defaultTableRowRenderer({ ...props, key: '', style: { height: defaultCellHeight } })}
-
-        {expandable && expandedRowState[props.index]
-         && (
-         <div className={classes.expandedCell}>
-           {expandedRenderer(rowGetter(props.index))}
-         </div>
-         )}
-      </div>
-    );
-  }, [classes, defaultCellHeight, expandedRowState, expandedRenderer, expandable, rowGetter]);
-
-  const headerRendererWithDrag: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => {
-    const { dataKey } = props;
-    return (
-      <>
-        <React.Fragment key={dataKey}>
+        <React.Fragment key={props.dataKey}>
           {headerRendererCommon(props)}
-          <DraggableCore
-            onDrag={(event, { deltaX }) => {
-              resizeColumn({
-                dataKey,
-                deltaX,
-              });
-            }}
-          >
-            <span className={classes.dragHandle} onDoubleClick={() => { resetColumn(dataKey); }}>&#8942;</span>
-          </DraggableCore>
         </React.Fragment>
       </>
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [classes, headerRendererCommon, resizeColumn]);
-  const gutterClass = clsx(
-    compact && classes.compact,
-    classes.gutterCell,
+    ),
+    [headerRendererCommon]
   );
+
+  const gutterHeaderRenderer: TableHeaderRenderer = React.useCallback(
+    (props: TableHeaderProps) => (
+      <>
+        <React.Fragment key={props.dataKey} />
+      </>
+    ),
+    []
+  );
+
+  const gutterCellRenderer: TableCellRenderer = React.useCallback(
+    (props: TableCellProps) => {
+      // Hide the icon by default unless:
+      //  1. It's been expanded.
+      //  2. The row has been highlighted.
+      const cls = clsx(
+        classes.gutterCell,
+        !(
+          highlightedRow === props.rowIndex || expandedRowState[props.rowIndex]
+        ) && classes.hidden
+      );
+      const icon = expandedRowState[props.rowIndex] ? (
+        <ExpandedIcon />
+      ) : (
+        <UnexpandedIcon />
+      );
+      return (
+        <>
+          <div className={cls}>{icon}</div>
+        </>
+      );
+    },
+    [highlightedRow, expandedRowState, classes]
+  );
+
+  const rowRenderer: TableRowRenderer = React.useCallback(
+    (props: TableRowProps) => {
+      const { style } = props;
+      style.width = '100%';
+      return (
+        <div className={classes.rowContainer} key={props.key} style={style}>
+          {defaultTableRowRenderer({
+            ...props,
+            key: '',
+            style: { height: defaultCellHeight },
+          })}
+
+          {expandable && expandedRowState[props.index] && (
+            <div className={classes.expandedCell}>
+              {expandedRenderer(rowGetter(props.index))}
+            </div>
+          )}
+        </div>
+      );
+    },
+    [
+      classes,
+      defaultCellHeight,
+      expandedRowState,
+      expandedRenderer,
+      expandable,
+      rowGetter,
+    ]
+  );
+
+  const headerRendererWithDrag: TableHeaderRenderer = React.useCallback(
+    (props: TableHeaderProps) => {
+      const { dataKey } = props;
+      return (
+        <>
+          <React.Fragment key={dataKey}>
+            {headerRendererCommon(props)}
+            <DraggableCore
+              onDrag={(event, { deltaX }) => {
+                resizeColumn({
+                  dataKey,
+                  deltaX,
+                });
+              }}
+            >
+              <span
+                className={classes.dragHandle}
+                onDoubleClick={() => {
+                  resetColumn(dataKey);
+                }}
+              >
+                &#8942;
+              </span>
+            </DraggableCore>
+          </React.Fragment>
+        </>
+      );
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [classes, headerRendererCommon, resizeColumn]
+  );
+  const gutterClass = clsx(compact && classes.compact, classes.gutterCell);
   return (
     <div ref={tableWrapper}>
       <Table
@@ -586,17 +706,17 @@ const InternalDataTable = ({
         rowRenderer={rowRenderer}
         height={height}
         width={width}
-        style={{
-          '--table-width': `${totalWidth.current - scrollbarWidth}px`,
-          '--header-width': `${totalWidth.current}px`,
-        } as (CSSProperties & Record<string, string>)}
+        style={
+          {
+            '--table-width': `${totalWidth.current - scrollbarWidth}px`,
+            '--header-width': `${totalWidth.current}px`,
+          } as CSSProperties & Record<string, string>
+        }
         sortDirection={sortState.direction}
         sortBy={sortState.dataKey}
         onRowsRendered={onRowsRendered}
       >
-        {
-          expandable
-          && (
+        {expandable && (
           <Column
             key='gutter'
             dataKey='gutter'
@@ -608,30 +728,32 @@ const InternalDataTable = ({
             width={4 /* width for chevron */}
             columnData={null}
           />
-          )
-        }
-        {
-          columns.map((col, i) => {
-            const className = clsx(
-              classes.cell,
-              classes[col.align],
-              compact && classes.compact,
-            );
-            return (
-              <Column
-                key={col.dataKey}
-                dataKey={col.dataKey}
-                label={col.label}
-                headerClassName={className}
-                className={className}
-                headerRenderer={colIsResizable(i) ? headerRendererWithDrag : headerRenderer}
-                cellRenderer={cellRenderer}
-                width={(widthOverrides[col.dataKey] || colTextWidthRatio[col.dataKey]) * totalWidth.current}
-                columnData={col}
-              />
-            );
-          })
-        }
+        )}
+        {columns.map((col, i) => {
+          const className = clsx(
+            classes.cell,
+            classes[col.align],
+            compact && classes.compact
+          );
+          return (
+            <Column
+              key={col.dataKey}
+              dataKey={col.dataKey}
+              label={col.label}
+              headerClassName={className}
+              className={className}
+              headerRenderer={
+                colIsResizable(i) ? headerRendererWithDrag : headerRenderer
+              }
+              cellRenderer={cellRenderer}
+              width={
+                (widthOverrides[col.dataKey] ||
+                  colTextWidthRatio[col.dataKey]) * totalWidth.current
+              }
+              columnData={col}
+            />
+          );
+        })}
       </Table>
     </div>
   );

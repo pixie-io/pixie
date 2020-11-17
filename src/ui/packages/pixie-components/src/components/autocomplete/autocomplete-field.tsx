@@ -3,80 +3,82 @@ import * as React from 'react';
 
 import { CompletionItem } from './completions';
 import { useAutocomplete, GetCompletionsFunc } from './use-autocomplete';
-import { Spinner } from '../spinner/spinner';
-import { isInView } from '../../utils/bbox';
+import { Spinner } from 'components/spinner/spinner';
+import { isInView } from 'utils/bbox';
 
 import Card from '@material-ui/core/Card';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
-const useStyles = makeStyles((theme: Theme) => createStyles({
-  root: {
-    marginLeft: theme.spacing(1),
-    display: 'flex',
-    flexDirection: 'row',
-    height: theme.spacing(3),
-  },
-  input: {
-    backgroundColor: 'transparent',
-    border: 'none',
-    padding: 0,
-    color: theme.palette.foreground.two,
-    borderBottom: `1px solid ${theme.palette.foreground.one}`,
-    marginLeft: theme.spacing(0.5),
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    width: '100%',
-    ...theme.typography.subtitle2,
-    fontWeight: theme.typography.fontWeightLight,
-    '&:focus': {
-      outline: 'none',
-      borderBottom: `1px solid ${theme.palette.primary.main}`,
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    root: {
+      marginLeft: theme.spacing(1),
+      display: 'flex',
+      flexDirection: 'row',
+      height: theme.spacing(3),
     },
-  },
-  measurer: {
-    position: 'relative',
-  },
-  measurerContent: {
-    opacity: 0,
-    minWidth: theme.spacing(2),
-    paddingRight: theme.spacing(1),
-  },
-  completions: {
-    position: 'absolute',
-    zIndex: theme.zIndex.modal,
-    top: theme.spacing(3), // height of the input
-    left: theme.spacing(0.5),
-    width: 'max(100%, 120px)',
-    minWidth: '120px',
-    maxHeight: '200px',
-    overflow: 'auto',
-    display: 'none',
-    '&.visible': {
-      display: 'unset',
+    input: {
+      backgroundColor: 'transparent',
+      border: 'none',
+      padding: 0,
+      color: theme.palette.foreground.two,
+      borderBottom: `1px solid ${theme.palette.foreground.one}`,
+      marginLeft: theme.spacing(0.5),
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      width: '100%',
+      ...theme.typography.subtitle2,
+      fontWeight: theme.typography.fontWeightLight,
+      '&:focus': {
+        outline: 'none',
+        borderBottom: `1px solid ${theme.palette.primary.main}`,
+      },
     },
-  },
-  completion: {
-    cursor: 'pointer',
-    padding: theme.spacing(0.5),
-  },
-  activeCompletion: {
-    color: 'white',
-    backgroundColor: theme.palette.action.active,
-  },
-  spinner: {
-    height: '100px',
-    display: 'flex',
-    flexDirection: 'row',
-    overflow: 'hidden',
-    '& > *': {
-      margin: 'auto',
+    measurer: {
+      position: 'relative',
     },
-  },
-  highlight: {
-    fontWeight: 600,
-  },
-}));
+    measurerContent: {
+      opacity: 0,
+      minWidth: theme.spacing(2),
+      paddingRight: theme.spacing(1),
+    },
+    completions: {
+      position: 'absolute',
+      zIndex: theme.zIndex.modal,
+      top: theme.spacing(3), // height of the input
+      left: theme.spacing(0.5),
+      width: 'max(100%, 120px)',
+      minWidth: '120px',
+      maxHeight: '200px',
+      overflow: 'auto',
+      display: 'none',
+      '&.visible': {
+        display: 'unset',
+      },
+    },
+    completion: {
+      cursor: 'pointer',
+      padding: theme.spacing(0.5),
+    },
+    activeCompletion: {
+      color: 'white',
+      backgroundColor: theme.palette.action.active,
+    },
+    spinner: {
+      height: '100px',
+      display: 'flex',
+      flexDirection: 'row',
+      overflow: 'hidden',
+      '& > *': {
+        margin: 'auto',
+      },
+    },
+    highlight: {
+      fontWeight: 600,
+    },
+  })
+);
 
 interface AutocompleteArgumentFieldProps {
   name: string;
@@ -86,10 +88,10 @@ interface AutocompleteArgumentFieldProps {
   getCompletions: GetCompletionsFunc;
 }
 
-export const AutocompleteInputField = (props: AutocompleteArgumentFieldProps) => {
-  const {
-    name, value, onEnterKey, onValueChange, getCompletions,
-  } = props;
+export const AutocompleteInputField = (
+  props: AutocompleteArgumentFieldProps
+) => {
+  const { name, value, onEnterKey, onValueChange, getCompletions } = props;
   const classes = useStyles();
   const ref = React.useRef<HTMLInputElement>(null);
   const [opened, setOpened] = React.useState<boolean>(false);
@@ -132,7 +134,10 @@ export const AutocompleteInputField = (props: AutocompleteArgumentFieldProps) =>
     }
   };
 
-  const onCompletionClicked = (event: React.MouseEvent, completion: CompletionItem) => {
+  const onCompletionClicked = (
+    event: React.MouseEvent,
+    completion: CompletionItem
+  ) => {
     // When the completion is clicked, preventDefault to keep the input focused.
     event.preventDefault();
     onValueChange(completion.title);
@@ -141,7 +146,13 @@ export const AutocompleteInputField = (props: AutocompleteArgumentFieldProps) =>
 
   return (
     <div className={classes.root}>
-      <span onClick={() => { ref.current.focus(); }}>{name}</span>
+      <span
+        onClick={() => {
+          ref.current.focus();
+        }}
+      >
+        {name}
+      </span>
       :
       <div className={classes.measurer}>
         <div className={classes.measurerContent}>{value}</div>
@@ -155,25 +166,27 @@ export const AutocompleteInputField = (props: AutocompleteArgumentFieldProps) =>
           onKeyDown={keyHandler}
         />
         <Card className={clsx(classes.completions, opened && 'visible')}>
-          {
-            loading
-              ? <div className={classes.spinner}><Spinner /></div>
-              : completions.map((completion) => {
-                if (completion.type === 'header') {
-                  return null;
-                }
-                return (
-                  <FieldCompletion
-                    key={completion.id}
-                    active={activeCompletion?.id === completion.id}
-                    onHover={() => highlightById(completion.id)}
-                    onClick={(event) => onCompletionClicked(event, completion)}
-                    value={completion.title}
-                    highlightedIndexes={completion.highlights}
-                  />
-                );
-              })
-          }
+          {loading ? (
+            <div className={classes.spinner}>
+              <Spinner />
+            </div>
+          ) : (
+            completions.map((completion) => {
+              if (completion.type === 'header') {
+                return null;
+              }
+              return (
+                <FieldCompletion
+                  key={completion.id}
+                  active={activeCompletion?.id === completion.id}
+                  onHover={() => highlightById(completion.id)}
+                  onClick={(event) => onCompletionClicked(event, completion)}
+                  value={completion.title}
+                  highlightedIndexes={completion.highlights}
+                />
+              );
+            })
+          )}
         </Card>
       </div>
     </div>
@@ -190,14 +203,12 @@ interface FieldCompletionProps {
 
 const FieldCompletion = (props: FieldCompletionProps) => {
   const ref = React.useRef(null);
-  const {
-    active, onClick, onHover, value, highlightedIndexes,
-  } = props;
+  const { active, onClick, onHover, value, highlightedIndexes } = props;
   const classes = useStyles();
 
   const className = clsx(
     classes.completion,
-    active && classes.activeCompletion,
+    active && classes.activeCompletion
   );
 
   React.useEffect(() => {
@@ -211,7 +222,8 @@ const FieldCompletion = (props: FieldCompletionProps) => {
     highlightedString.push(
       <span className={highlightedIndexes.includes(i) ? classes.highlight : ''}>
         {value.charAt(i)}
-      </span>);
+      </span>
+    );
   }
 
   return (

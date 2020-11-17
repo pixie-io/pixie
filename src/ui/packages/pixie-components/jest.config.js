@@ -2,41 +2,16 @@ module.exports = {
   globals: {
     window: true,
   },
-  setupFiles: [
-    '<rootDir>/src/testing/enzyme-setup.ts',
-    'jest-canvas-mock',
-  ],
-  setupFilesAfterEnv: [
-    '<rootDir>/src/testing/jest-test-setup.js',
-  ],
-  moduleFileExtensions: [
-    'js',
-    'json',
-    'jsx',
-    'mjs',
-    'ts',
-    'tsx',
-  ],
-  moduleDirectories: [
-    'node_modules',
-    '<rootDir>/src',
-  ],
-  moduleNameMapper: {
-    '^.+.(jpg|jpeg|png|gif|svg)$': '<rootDir>/src/testing/file-mock.js',
-    '(\\.css|\\.scss$)|(normalize.css/normalize)|(^exports-loader)': 'identity-obj-proxy',
-    'monaco-editor': '<rootDir>/node_modules/react-monaco-editor',
-  },
+  setupFiles: ['<rootDir>/src/testing/enzyme-setup.ts', 'jest-canvas-mock'],
+  setupFilesAfterEnv: ['<rootDir>/src/testing/jest-test-setup.js'],
+  moduleFileExtensions: ['ts', 'tsx', 'js'],
+  moduleDirectories: ['node_modules', '<rootDir>/src'],
   resolver: null,
   transform: {
-    '^.+\\.jsx?$': 'babel-jest',
     '^.+\\.tsx?$': 'ts-jest',
-    '^.+\\.toml$': 'jest-raw-loader',
   },
   testRegex: '.*\\.test\\.(ts|tsx|js|jsx)$',
-  reporters: [
-    'default',
-    'jest-junit',
-  ],
+  reporters: ['default', 'jest-junit'],
   collectCoverageFrom: [
     'src/**/*.ts',
     'src/**/*.tsx',

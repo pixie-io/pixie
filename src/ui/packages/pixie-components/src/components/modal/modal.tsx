@@ -13,19 +13,24 @@ interface ModalTrigerProps {
   contentClassName?: string;
 }
 
-const useStyles = makeStyles((theme: Theme) => createStyles({
-  content: {
-    background: theme.palette.background.default,
-  },
-  closeButton: {
-    position: 'absolute',
-    top: theme.spacing(2),
-    right: theme.spacing(2),
-  },
-}));
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    content: {
+      background: theme.palette.background.default,
+    },
+    closeButton: {
+      position: 'absolute',
+      top: theme.spacing(2),
+      right: theme.spacing(2),
+    },
+  })
+);
 
 export const ModalTrigger: React.FC<ModalTrigerProps> = ({
-  trigger, triggerClassName, content, contentClassName,
+  trigger,
+  triggerClassName,
+  content,
+  contentClassName,
 }) => {
   const [open, setOpen] = React.useState(false);
   const openModal = React.useCallback(() => setOpen(true), []);
@@ -37,7 +42,11 @@ export const ModalTrigger: React.FC<ModalTrigerProps> = ({
       <div onClick={openModal} className={clsx(triggerClassName)}>
         {trigger}
       </div>
-      <MUIModal open={open} onClose={closeModal} className={clsx(classes.content, contentClassName)}>
+      <MUIModal
+        open={open}
+        onClose={closeModal}
+        className={clsx(classes.content, contentClassName)}
+      >
         <div>
           <IconButton onClick={closeModal} className={classes.closeButton}>
             <CloseButton />

@@ -12,13 +12,22 @@ describe('<Completions/> test', () => {
         items={[
           { type: 'header', header: 'Recently used' },
           {
-            type: 'item', title: 'px/script1', id: 'px-0', highlights: [3, 4, 5],
+            type: 'item',
+            title: 'px/script1',
+            id: 'px-0',
+            highlights: [3, 4, 5],
           },
           {
-            type: 'item', title: 'px/script2', id: 'px-1', highlights: [3, 4, 5],
+            type: 'item',
+            title: 'px/script2',
+            id: 'px-1',
+            highlights: [3, 4, 5],
           },
           {
-            type: 'item', title: 'px/script3', id: 'px-2', highlights: [3, 4, 5],
+            type: 'item',
+            title: 'px/script3',
+            id: 'px-2',
+            highlights: [3, 4, 5],
           },
           { type: 'header', header: 'Org scripts' },
           { type: 'item', title: 'hulu/script1', id: 'hulu-4' },
@@ -27,10 +36,12 @@ describe('<Completions/> test', () => {
         onActiveChange={noop}
         activeItem='px-1'
         onSelection={noop}
-      />,
+      />
     );
     expect(wrapper.find(Completion)).toHaveLength(5);
-    expect(wrapper.findWhere((node) => node.prop('active')).prop('id')).toBe('px-1');
+    expect(wrapper.findWhere((node) => node.prop('active')).prop('id')).toBe(
+      'px-1'
+    );
   });
 });
 
@@ -45,7 +56,7 @@ describe('<Completion> test', () => {
           active={false}
           onActiveChange={noop}
           onSelection={noop}
-        />,
+        />
       );
       const child = wrapper.find('CompletionInternal').shallow();
       expect(child.find('span').at(0).hasClass(/highlight/)).toEqual(true);
@@ -65,7 +76,7 @@ describe('<Completion> test', () => {
           active={false}
           onActiveChange={noop}
           onSelection={noop}
-        />,
+        />
       );
       const child = wrapper.find('CompletionInternal').shallow();
       expect(child.find('span').at(0).hasClass(/highlight/)).toEqual(false);

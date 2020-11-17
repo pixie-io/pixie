@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import * as React from 'react';
 
-import { Spinner } from '../spinner/spinner';
+import { Spinner } from 'components/spinner/spinner';
 import { editor as MonacoEditorTypes } from 'monaco-editor';
 import ICodeEditor = MonacoEditorTypes.ICodeEditor;
 
@@ -20,11 +20,17 @@ interface CodeEditorProps {
 function removeKeybindings(editor, keys: string[]) {
   // Only way to disable default keybindings is through this private api according to:
   // https://github.com/microsoft/monaco-editor/issues/287.
-  const bindings = editor._standaloneKeybindingService._getResolver()._defaultKeybindings;
+  const bindings = editor._standaloneKeybindingService._getResolver()
+    ._defaultKeybindings;
   bindings.forEach((bind) => {
     keys.forEach((key) => {
-      if (bind.keypressParts && bind.keypressParts[0].toLowerCase().includes(key.toLowerCase())) {
-        editor._standaloneKeybindingService.addDynamicKeybinding(`-${bind.command}`);
+      if (
+        bind.keypressParts &&
+        bind.keypressParts[0].toLowerCase().includes(key.toLowerCase())
+      ) {
+        editor._standaloneKeybindingService.addDynamicKeybinding(
+          `-${bind.command}`
+        );
       }
     });
   });
@@ -63,9 +69,11 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
   }
 
   componentDidMount() {
-    return import(/* webpackPrefetch: true */ 'react-monaco-editor').then(({ default: MonacoEditor }) => {
-      this.setState({ editorModule: MonacoEditor });
-    });
+    return import(/* webpackPrefetch: true */ 'react-monaco-editor').then(
+      ({ default: MonacoEditor }) => {
+        this.setState({ editorModule: MonacoEditor });
+      }
+    );
   }
 
   componentDidUpdate(prevProps) {
@@ -86,7 +94,9 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
     if (this.editorRef && this.props.visible) {
       this.editorRef.focus();
     }
-    const shortcutKeys = this.props.shortcutKeys.map((key) => key.toLowerCase().replace('control', 'ctrl'));
+    const shortcutKeys = this.props.shortcutKeys.map((key) =>
+      key.toLowerCase().replace('control', 'ctrl')
+    );
     removeKeybindings(editor, shortcutKeys);
     if (this.code) {
       this.changeEditorValue(this.code);
@@ -123,7 +133,11 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
 
   render() {
     if (!this.state.editorModule) {
-      return <div className={this.props.spinnerClass}><Spinner /></div>;
+      return (
+        <div className={this.props.spinnerClass}>
+          <Spinner />
+        </div>
+      );
     }
     return (
       <this.state.editorModule

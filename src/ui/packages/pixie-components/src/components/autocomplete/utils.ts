@@ -1,12 +1,22 @@
 import {
-  CompletionId, CompletionItem, CompletionItems, CompletionTitle,
+  CompletionId,
+  CompletionItem,
+  CompletionItems,
+  CompletionTitle,
 } from './completions';
 
-export type ItemsMap = Map<CompletionId, { title: CompletionTitle; index: number; type: string }>;
+export type ItemsMap = Map<
+  CompletionId,
+  { title: CompletionTitle; index: number; type: string }
+>;
 
 // Finds the next completion item in the list, given the id of the completion that is currently active.
-export const findNextItem = (activeItem: CompletionId, itemsMap: ItemsMap, completions: CompletionItems, direction = 1):
-CompletionId => {
+export const findNextItem = (
+  activeItem: CompletionId,
+  itemsMap: ItemsMap,
+  completions: CompletionItems,
+  direction = 1
+): CompletionId => {
   if (completions.length === 0) {
     return '';
   }
@@ -18,7 +28,7 @@ CompletionId => {
   }
   const { length } = completions;
   for (let i = 1; i <= length; i++) {
-    const nextIndex = (index + (i * direction) + length) % length;
+    const nextIndex = (index + i * direction + length) % length;
     const next = completions[nextIndex] as CompletionItem;
     if (next.title && next.id) {
       return next.id;
@@ -103,11 +113,11 @@ export class TabStopParser {
     this.initialCursor = cursorPos;
   };
 
-  public getInitialCursor = () => (this.initialCursor);
+  public getInitialCursor = () => this.initialCursor;
 
-  public getTabBoundaries = () => (this.tabBoundaries);
+  public getTabBoundaries = () => this.tabBoundaries;
 
-  public getInput = () => (this.input);
+  public getInput = () => this.input;
 
   // Find the tabstop that the cursor is currently in.
   public getActiveTab = (cursorPos: number): number => {
@@ -124,7 +134,10 @@ export class TabStopParser {
   // handleCompletionSelection returns what the new display string should look like
   // if the completion was made for the given activeTab. It does not actually
   // mutate the contents of the current tabstops.
-  public handleCompletionSelection = (cursorPos: number, completion): [string, number] => {
+  public handleCompletionSelection = (
+    cursorPos: number,
+    completion
+  ): [string, number] => {
     const activeTab = this.getActiveTab(cursorPos);
 
     const newTStops = [];
@@ -163,7 +176,9 @@ export class TabStopParser {
   // handleBackspace returns what the new display string should look like
   // if a backspace was made. It does not actually mutate the contents of the
   // current tabstop.
-  public handleBackspace = (cursorPos: number): [string, number, Array<TabStop>, boolean] => {
+  public handleBackspace = (
+    cursorPos: number
+  ): [string, number, Array<TabStop>, boolean] => {
     const activeTab = this.getActiveTab(cursorPos);
 
     const newTStops = [];
@@ -176,9 +191,11 @@ export class TabStopParser {
 
         if (activeTab !== 0 && pos === 0) {
           // User is trying to delete a label. We should move the cursor to the previous tabstop.
-          newTStops[i - 1].CursorPosition = newTStops[i - 1].Value == null ? 0 : newTStops[i - 1].Value.length;
+          newTStops[i - 1].CursorPosition =
+            newTStops[i - 1].Value == null ? 0 : newTStops[i - 1].Value.length;
           // Subtract 1, for tabstop with no label, or 2 for colon and space between tabstops.
-          newCursor = ts.Label == null ? cursorPos - 1 : cursorPos - ts.Label.length - 2;
+          newCursor =
+            ts.Label == null ? cursorPos - 1 : cursorPos - ts.Label.length - 2;
           tabstopDeleted = true;
         } else if (activeTab === 0 && pos === 0) {
           newCursor = 0;
@@ -186,7 +203,8 @@ export class TabStopParser {
             Index: ts.Index,
             CursorPosition: 0,
           } as TabStop;
-          if (ts.Label == null) { // If the user just deleted a label, we should also clear the value.
+          if (ts.Label == null) {
+            // If the user just deleted a label, we should also clear the value.
             newTS.Value = ts.Value;
           }
           newTStops.push(newTS);
@@ -210,7 +228,12 @@ export class TabStopParser {
       }
     });
 
-    return [getDisplayStringFromTabStops(newTStops), newCursor, newTStops, tabstopDeleted];
+    return [
+      getDisplayStringFromTabStops(newTStops),
+      newCursor,
+      newTStops,
+      tabstopDeleted,
+    ];
   };
 
   // handleBackspace returns what the new display string should look like
@@ -224,7 +247,7 @@ export class TabStopParser {
       if (i === activeTab) {
         let value = ts.Value;
         let tsCursor = -1;
-        const pos = (cursorPos - 1) - this.tabBoundaries[i][0];
+        const pos = cursorPos - 1 - this.tabBoundaries[i][0];
         if (value != null) {
           value = ts.Value.substring(0, pos) + char + ts.Value.substring(pos);
           tsCursor = pos + 1;
@@ -233,7 +256,10 @@ export class TabStopParser {
           tsCursor = 1;
         }
         newTStops.push({
-          Index: ts.Index, Label: ts.Label, CursorPosition: tsCursor, Value: value,
+          Index: ts.Index,
+          Label: ts.Label,
+          CursorPosition: tsCursor,
+          Value: value,
         });
       } else {
         newTStops.push({

@@ -5,11 +5,7 @@ import { FixedSizeDrawer } from './drawer';
 
 describe('<FixedSizeDrawer/>', () => {
   it('renders correctly when closed', () => {
-    const otherContent = (
-      <div>
-        Other content. Some text goes here.
-      </div>
-    );
+    const otherContent = <div>Other content. Some text goes here.</div>;
 
     const wrapper = render(
       <MuiThemeProvider theme={createMuiTheme()}>
@@ -20,11 +16,9 @@ describe('<FixedSizeDrawer/>', () => {
           otherContent={otherContent}
           overlay={false}
         >
-          <div>
-            Drawer contents
-          </div>
+          <div>Drawer contents</div>
         </FixedSizeDrawer>
-      </MuiThemeProvider>,
+      </MuiThemeProvider>
     );
     expect(wrapper).toMatchSnapshot();
   });

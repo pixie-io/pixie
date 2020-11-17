@@ -18,11 +18,7 @@
     "SharedArrayBuffer": "readonly"
   },
   "rules": {
-    "quotes": [
-      "error",
-      "single",
-      "avoid-escape"
-    ],
+    "quotes": ["error", "single", "avoid-escape"],
     "max-len": [
       "error",
       {
@@ -32,22 +28,14 @@
   },
   "overrides": [
     {
-      "files": [
-        "*-test.ts",
-        "*-test.tsx",
-        "./*.js",
-        "src/testing/*"
-      ],
+      "files": ["*-test.ts", "*-test.tsx", "./*.js", "src/testing/*"],
       "env": {
         "node": true,
         "jest/globals": true
       }
     },
     {
-      "files": [
-        "*.ts",
-        "*.tsx"
-      ],
+      "files": ["*.ts", "*.tsx"],
       "extends": [
         "plugin:react/recommended",
         "plugin:@typescript-eslint/recommended"
@@ -61,23 +49,19 @@
         "sourceType": "module",
         "project": "./tsconfig.json"
       },
-      "plugins": [
-        "jest",
-        "react",
-        "@typescript-eslint"
-      ],
+      "plugins": ["jest", "react", "@typescript-eslint"],
       "rules": {
         "import/extensions": 0,
         "no-mixed-operators": [
-            "error",
-            {
-                "groups": [
-                    ["&", "|", "^", "~", "<<", ">>", ">>>"],
-                    ["==", "!=", "===", "!==", ">", ">=", "<", "<="],
-                    ["&&", "||"],
-                    ["in", "instanceof"]
-                ]
-            }
+          "error",
+          {
+            "groups": [
+              ["&", "|", "^", "~", "<<", ">>", ">>>"],
+              ["==", "!=", "===", "!==", ">", ">=", "<", "<="],
+              ["&&", "||"],
+              ["in", "instanceof"]
+            ]
+          }
         ],
         "no-restricted-syntax": 0,
         "no-continue": 0,
@@ -87,13 +71,11 @@
         "react/destructuring-assignment": 0,
         "react/no-array-index-key": 0,
         "import/prefer-default-export": 0,
-        "prefer-destructuring": ["error", {"object": true, "array": false}],
+        "prefer-destructuring": ["error", { "object": true, "array": false }],
         "react/jsx-filename-extension": [
           "warn",
           {
-            "extensions": [
-              ".tsx"
-            ]
+            "extensions": [".tsx"]
           }
         ],
         "react/prop-types": [
@@ -102,10 +84,7 @@
             "skipUndeclared": true
           }
         ],
-        "jsx-quotes": [
-          "error",
-          "prefer-single"
-        ],
+        "jsx-quotes": ["error", "prefer-single"],
         "@typescript-eslint/explicit-function-return-type": "off",
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-unused-vars": [

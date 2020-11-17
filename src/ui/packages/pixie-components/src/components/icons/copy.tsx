@@ -3,7 +3,14 @@ import * as React from 'react';
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
 export const CopyIcon = (props: SvgIconProps) => (
-  <SvgIcon {...props}  width='32' height='32' viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'>
+  <SvgIcon
+    {...props}
+    width='32'
+    height='32'
+    viewBox='0 0 32 32'
+    fill='none'
+    xmlns='http://www.w3.org/2000/svg'
+  >
     <path
       fillRule='evenodd'
       clipRule='evenodd'

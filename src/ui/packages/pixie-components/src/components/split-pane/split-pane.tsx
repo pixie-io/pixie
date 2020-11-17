@@ -3,43 +3,52 @@ import * as React from 'react';
 import Split from 'react-split';
 
 import {
-  createStyles, makeStyles, Theme, useTheme,
+  createStyles,
+  makeStyles,
+  Theme,
+  useTheme,
 } from '@material-ui/core/styles';
 
 interface SplitPaneContextProps {
   togglePane: (id: string) => void;
 }
 
-const SplitPaneContext = React.createContext<Partial<SplitPaneContextProps>>({});
+const SplitPaneContext = React.createContext<Partial<SplitPaneContextProps>>(
+  {}
+);
 
-const useStyles = makeStyles((theme: Theme) => createStyles({
-  root: {
-    height: '100%',
-    '& .gutter': {
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    root: {
+      height: '100%',
+      '& .gutter': {
+        backgroundColor: theme.palette.background.three,
+      },
+    },
+    pane: {
+      display: 'flex',
+      flexDirection: 'column',
+    },
+    header: {
+      ...theme.typography.subtitle1,
+      fontWeight: theme.typography.fontWeightMedium,
+      padding: theme.spacing(0.75, 3),
+      cursor: 'pointer',
       backgroundColor: theme.palette.background.three,
     },
-  },
-  pane: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  header: {
-    ...theme.typography.subtitle1,
-    fontWeight: theme.typography.fontWeightMedium,
-    padding: theme.spacing(0.75, 3),
-    cursor: 'pointer',
-    backgroundColor: theme.palette.background.three,
-  },
-  paneContent: {
-    flex: '1',
-    minHeight: '0',
-    overflow: 'auto',
-  },
-}));
+    paneContent: {
+      flex: '1',
+      minHeight: '0',
+      overflow: 'auto',
+    },
+  })
+);
 
 interface SplitContainerProps {
   initialSizes?: number[];
-  children?: React.ReactElement<SplitPaneProps> | Array<React.ReactElement<SplitPaneProps>>;
+  children?:
+    | React.ReactElement<SplitPaneProps>
+    | Array<React.ReactElement<SplitPaneProps>>;
   className?: string;
   onSizeChange?: (splits: number[]) => void;
 }
@@ -51,13 +60,21 @@ interface SplitContainerState {
 
 // Split pane component that supports resizing of vertial panes and headers for collapsing panes.
 // Currently this component only supports 2 panes (only 1 pane is collapsed at a time).
-export const SplitContainer = (props: React.PropsWithChildren<SplitContainerProps>) => {
+export const SplitContainer = (
+  props: React.PropsWithChildren<SplitContainerProps>
+) => {
   const classes = useStyles();
   const theme = useTheme();
   const splitRef = React.useRef(null);
   const minPaneHeight = theme.spacing(5);
-  const children = Array.isArray(props.children) ? props.children : [props.children];
-  const onSizeChange = props.onSizeChange || (() => { /* noop */ });
+  const children = Array.isArray(props.children)
+    ? props.children
+    : [props.children];
+  const onSizeChange =
+    props.onSizeChange ||
+    (() => {
+      /* noop */
+    });
   const initialSizes = React.useMemo(() => {
     if (props.initialSizes && props.initialSizes.length === children.length) {
       let sum = 0;
@@ -77,32 +94,38 @@ export const SplitContainer = (props: React.PropsWithChildren<SplitContainerProp
     prevSizes: initialSizes,
   });
 
-  const handleDrag = React.useCallback((sizes) => {
-    onSizeChange(sizes);
-    setState({ collapsed: -1, prevSizes: sizes });
-  }, [onSizeChange]);
-
-  const context = React.useMemo(() => ({
-    togglePane: (id) => {
-      const i = children.findIndex((child: any) => child.props.id === id);
-      if (i === -1) {
-        return;
-      }
-
-      setState((prevState) => {
-        if (prevState.collapsed === i) {
-          return {
-            ...prevState,
-            collapsed: -1,
-          };
-        }
-        return {
-          prevSizes: splitRef.current.split.getSizes(),
-          collapsed: i,
-        };
-      });
+  const handleDrag = React.useCallback(
+    (sizes) => {
+      onSizeChange(sizes);
+      setState({ collapsed: -1, prevSizes: sizes });
     },
-  }), [children]);
+    [onSizeChange]
+  );
+
+  const context = React.useMemo(
+    () => ({
+      togglePane: (id) => {
+        const i = children.findIndex((child: any) => child.props.id === id);
+        if (i === -1) {
+          return;
+        }
+
+        setState((prevState) => {
+          if (prevState.collapsed === i) {
+            return {
+              ...prevState,
+              collapsed: -1,
+            };
+          }
+          return {
+            prevSizes: splitRef.current.split.getSizes(),
+            collapsed: i,
+          };
+        });
+      },
+    }),
+    [children]
+  );
 
   React.useEffect(() => {
     if (state.collapsed === -1) {
@@ -136,7 +159,11 @@ interface SplitPaneProps {
   title: string;
 }
 
-export const SplitPane: React.FC<SplitPaneProps> = ({ title, id, children }) => {
+export const SplitPane: React.FC<SplitPaneProps> = ({
+  title,
+  id,
+  children,
+}) => {
   const classes = useStyles();
   const { togglePane } = React.useContext(SplitPaneContext);
   const headerClickHandler = React.useCallback(() => {
@@ -148,9 +175,7 @@ export const SplitPane: React.FC<SplitPaneProps> = ({ title, id, children }) => 
       <div className={classes.header} onClick={headerClickHandler}>
         {title}
       </div>
-      <div className={classes.paneContent}>
-        {children}
-      </div>
+      <div className={classes.paneContent}>{children}</div>
     </div>
   );
 };

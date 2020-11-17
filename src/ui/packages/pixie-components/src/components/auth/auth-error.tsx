@@ -1,4 +1,4 @@
-import * as React from 'react'
+import * as React from 'react';
 
 export const AuthErrorSvg = (props) => (
   <svg {...props} width={77} height={69} viewBox='0 0 77 69' fill='none'>

@@ -1,6 +1,12 @@
 {
   "compilerOptions": {
     "baseUrl": "./src",
+    "paths": {
+      "*": [
+        "*",
+        "../packages/pixie-components/src/*"
+      ]
+    },
     "outDir": "./dist/",
     "sourceMap": true,
     "noImplicitAny": false,

@@ -1,7 +1,14 @@
 import * as React from 'react';
 
 export const CPPIcon = (props) => (
-  <svg {...props} width='20' height='22' viewBox='0 0 20 22' fill='none' xmlns='http://www.w3.org/2000/svg'>
+  <svg
+    {...props}
+    width='20'
+    height='22'
+    viewBox='0 0 20 22'
+    fill='none'
+    xmlns='http://www.w3.org/2000/svg'
+  >
     <g clipPath='url(#clip0)'>
       <path
         d={`M19.7456 16.4999C19.9025 16.2342 20 15.9348 20 15.666V6.33387C20 6.06503 19.9026 5.76571
@@ -39,7 +46,7 @@ export const CPPIcon = (props) => (
     </g>
     <defs>
       <clipPath id='clip0'>
-        <rect width='20' height='22' fill='white'/>
+        <rect width='20' height='22' fill='white' />
       </clipPath>
     </defs>
   </svg>

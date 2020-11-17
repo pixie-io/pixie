@@ -8,12 +8,13 @@ enzyme.configure({ adapter: new Adapter() });
 // Jest uses jsdom, where document.createRange is not specified. This is used
 // in some of our external dependencies. Mock this out so tests don't fail.
 if (globalAny.document) {
-  document.createRange = () => ({
-    setStart: () => {},
-    setEnd: () => {},
-    commonAncestorContainer: {
-      nodeName: 'BODY',
-      ownerDocument: document,
-    },
-  } as any);
+  document.createRange = () =>
+    ({
+      setStart: () => {},
+      setEnd: () => {},
+      commonAncestorContainer: {
+        nodeName: 'BODY',
+        ownerDocument: document,
+      },
+    } as any);
 }

@@ -17,11 +17,25 @@ export const Avatar = (props: AvatarProps) => {
   if (!props.picture && props.name.length > 0) {
     return <BaseAvatar className={props.className}>{props.name[0]}</BaseAvatar>;
   }
-  return <BaseAvatar src={props.picture} alt={props.name} className={props.className} />;
+  return (
+    <BaseAvatar
+      src={props.picture}
+      alt={props.name}
+      className={props.className}
+    />
+  );
 };
 
 export const ProfileMenuWrapper = ({
-  classes, children, anchorOrigin, open, onCloseMenu, anchorEl, name, picture, email,
+  classes,
+  children,
+  anchorOrigin,
+  open,
+  onCloseMenu,
+  anchorEl,
+  name,
+  picture,
+  email,
 }) => (
   <Menu
     open={open}
@@ -31,15 +45,23 @@ export const ProfileMenuWrapper = ({
     getContentAnchorEl={null}
     anchorOrigin={anchorOrigin}
   >
-    <MenuItem key='profile' alignItems='center' button={false} className={classes.expandedProfile}>
+    <MenuItem
+      key='profile'
+      alignItems='center'
+      button={false}
+      className={classes.expandedProfile}
+    >
       <Avatar name={name} picture={picture} className={classes.avatarLg} />
       <ListItemText
         primary={name}
         secondary={email}
-        classes={{ primary: classes.listItemHeader, secondary: classes.listItemText }}
+        classes={{
+          primary: classes.listItemHeader,
+          secondary: classes.listItemText,
+        }}
         className={classes.centeredListItemText}
       />
     </MenuItem>
-    { children }
+    {children}
   </Menu>
 );

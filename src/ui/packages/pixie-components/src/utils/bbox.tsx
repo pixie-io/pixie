@@ -4,6 +4,5 @@
 export function isInView(parent: HTMLElement, elem: HTMLElement): boolean {
   const pbbox = parent.getBoundingClientRect();
   const ebbox = elem.getBoundingClientRect();
-  return pbbox.top <= ebbox.top
-    && pbbox.bottom >= ebbox.bottom;
+  return pbbox.top <= ebbox.top && pbbox.bottom >= ebbox.bottom;
 }

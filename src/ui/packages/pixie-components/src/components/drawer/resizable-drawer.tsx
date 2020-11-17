@@ -1,7 +1,10 @@
 import * as React from 'react';
 import { DraggableCore } from 'react-draggable';
 import {
-  createStyles, Theme, WithStyles, withStyles,
+  createStyles,
+  Theme,
+  WithStyles,
+  withStyles,
 } from '@material-ui/core/styles';
 
 import { FixedSizeDrawer, DrawerDirection } from './drawer';
@@ -9,27 +12,28 @@ import { FixedSizeDrawer, DrawerDirection } from './drawer';
 // The amount of time elasped since a user has last resized the drawer.
 const RESIZE_WAIT_INTERVAL_MS = 100;
 
-const styles = ({ spacing }: Theme) => createStyles({
-  draggableContent: {
-    flex: 1,
-    minHeight: 0,
-    minWidth: 0,
-  },
-  verticalDragHandle: {
-    cursor: 'row-resize',
-    width: '100%',
-    height: spacing(1),
-    zIndex: 1500,
-    position: 'absolute',
-  },
-  horizontalDragHandle: {
-    cursor: 'col-resize',
-    height: '100%',
-    width: spacing(1),
-    zIndex: 1500,
-    position: 'absolute',
-  },
-});
+const styles = ({ spacing }: Theme) =>
+  createStyles({
+    draggableContent: {
+      flex: 1,
+      minHeight: 0,
+      minWidth: 0,
+    },
+    verticalDragHandle: {
+      cursor: 'row-resize',
+      width: '100%',
+      height: spacing(1),
+      zIndex: 1500,
+      position: 'absolute',
+    },
+    horizontalDragHandle: {
+      cursor: 'col-resize',
+      height: '100%',
+      width: spacing(1),
+      zIndex: 1500,
+      position: 'absolute',
+    },
+  });
 
 interface ResizableDrawerProps extends WithStyles<typeof styles> {
   children?: React.ReactNode; // The contents of the drawer.
@@ -41,36 +45,45 @@ interface ResizableDrawerProps extends WithStyles<typeof styles> {
 }
 
 const ResizableDrawerImpl = ({
-  classes, children, otherContent, drawerDirection, open, overlay, initialSize,
+  classes,
+  children,
+  otherContent,
+  drawerDirection,
+  open,
+  overlay,
+  initialSize,
 }: ResizableDrawerProps) => {
   const [drawerSize, setDrawerSize] = React.useState(initialSize);
   // State responsible for tracking whether the user is actively resizing. This is used for debouncing.
   const [timer, setTimer] = React.useState(null);
 
-  const resize = React.useCallback(({ deltaY, deltaX }) => {
-    clearTimeout(timer);
-    const newTimer = setTimeout(() => {
-      window.dispatchEvent(new Event('resize'));
-    }, RESIZE_WAIT_INTERVAL_MS);
-    setTimer(newTimer);
+  const resize = React.useCallback(
+    ({ deltaY, deltaX }) => {
+      clearTimeout(timer);
+      const newTimer = setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, RESIZE_WAIT_INTERVAL_MS);
+      setTimer(newTimer);
 
-    switch (drawerDirection) {
-      case 'top':
-        setDrawerSize(drawerSize + deltaY);
-        break;
-      case 'bottom':
-        setDrawerSize(drawerSize - deltaY);
-        break;
-      case 'left':
-        setDrawerSize(drawerSize + deltaX);
-        break;
-      case 'right':
-        setDrawerSize(drawerSize - deltaX);
-        break;
-      default:
-        break;
-    }
-  }, [drawerDirection, drawerSize, timer]);
+      switch (drawerDirection) {
+        case 'top':
+          setDrawerSize(drawerSize + deltaY);
+          break;
+        case 'bottom':
+          setDrawerSize(drawerSize - deltaY);
+          break;
+        case 'left':
+          setDrawerSize(drawerSize + deltaX);
+          break;
+        case 'right':
+          setDrawerSize(drawerSize - deltaX);
+          break;
+        default:
+          break;
+      }
+    },
+    [drawerDirection, drawerSize, timer]
+  );
 
   let dragHandleStyle = {};
   // If the drawer is in overlay mode, we need additional styling to place the drag
@@ -106,8 +119,11 @@ const ResizableDrawerImpl = ({
     >
       <div
         style={dragHandleStyle}
-        className={drawerDirection === 'top' || drawerDirection === 'bottom'
-          ? classes.verticalDragHandle : classes.horizontalDragHandle}
+        className={
+          drawerDirection === 'top' || drawerDirection === 'bottom'
+            ? classes.verticalDragHandle
+            : classes.horizontalDragHandle
+        }
       />
     </DraggableCore>
   );
@@ -119,15 +135,13 @@ const ResizableDrawerImpl = ({
 
   const draggableContent = (
     <div className={classes.draggableContent} style={dragFlex}>
-      {
-        (drawerDirection === 'top' || drawerDirection === 'left') && open
-        && dragHandle
-      }
+      {(drawerDirection === 'top' || drawerDirection === 'left') &&
+        open &&
+        dragHandle}
       {otherContent}
-      {
-        (drawerDirection === 'bottom' || drawerDirection === 'right') && open
-        && dragHandle
-      }
+      {(drawerDirection === 'bottom' || drawerDirection === 'right') &&
+        open &&
+        dragHandle}
     </div>
   );
 

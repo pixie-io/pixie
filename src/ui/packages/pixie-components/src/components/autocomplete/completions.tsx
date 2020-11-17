@@ -3,9 +3,9 @@ import * as React from 'react';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
-import { PodIcon } from '../icons/pod';
-import { ServiceIcon } from '../icons/service';
-import { isInView } from '../../utils/bbox';
+import { PodIcon } from 'components/icons/pod';
+import { ServiceIcon } from 'components/icons/service';
+import { isInView } from 'utils/bbox';
 
 interface CompletionsProps {
   items: CompletionItems;
@@ -36,7 +36,7 @@ export interface CompletionItem {
   icon?: React.ReactNode;
 }
 
-const useStyles = makeStyles((theme: Theme) => (
+const useStyles = makeStyles((theme: Theme) =>
   // TODO(malthus): Make use of the theme styles.
   createStyles({
     root: {
@@ -113,12 +113,11 @@ const useStyles = makeStyles((theme: Theme) => (
         fill: theme.palette.foreground?.grey1,
       },
     },
-  })));
+  })
+);
 
 export const Completions: React.FC<CompletionsProps> = (props) => {
-  const {
-    items, activeItem, onActiveChange, onSelection, className,
-  } = props;
+  const { items, activeItem, onActiveChange, onSelection, className } = props;
   const classes = useStyles();
 
   const description = (() => {
@@ -134,36 +133,35 @@ export const Completions: React.FC<CompletionsProps> = (props) => {
   return (
     <div className={clsx(classes.root, className)}>
       <div className={classes.items}>
-        {
-          items.map((item, i) => {
-            switch (item.type) {
-              case 'header':
-                return <div key={`header-${i}`} className={classes.header}>{item.header}</div>;
-              case 'item':
-                return (
-                  <Completion
-                    key={item.id}
-                    active={item.id === activeItem}
-                    onSelection={onSelection}
-                    onActiveChange={onActiveChange}
-                    {...item}
-                  />
-                );
-              default:
-                throw new Error('unknown type');
-            }
-          })
-        }
+        {items.map((item, i) => {
+          switch (item.type) {
+            case 'header':
+              return (
+                <div key={`header-${i}`} className={classes.header}>
+                  {item.header}
+                </div>
+              );
+            case 'item':
+              return (
+                <Completion
+                  key={item.id}
+                  active={item.id === activeItem}
+                  onSelection={onSelection}
+                  onActiveChange={onActiveChange}
+                  {...item}
+                />
+              );
+            default:
+              throw new Error('unknown type');
+          }
+        })}
       </div>
-      {
-        description
-        && (
+      {description && (
         <div className={classes.description}>
           <div className={classes.header}>Description</div>
           {description}
         </div>
-        )
-      }
+      )}
     </div>
   );
 };
@@ -211,15 +209,17 @@ const CompletionInternal = (props: CompletionProps) => {
     }
     const highlight = title.substring(start, start + 1);
     if (highlight) {
-      parts.push(<span key={`title-${start}`} className={classes.highlight}>{highlight}</span>);
+      parts.push(
+        <span key={`title-${start}`} className={classes.highlight}>
+          {highlight}
+        </span>
+      );
     }
     remainingIdx = start + 1;
   });
   if (remainingIdx < title.length) {
     parts.push(
-      <span key={`title-${remainingIdx}`}>
-        {title.substring(remainingIdx)}
-      </span>,
+      <span key={`title-${remainingIdx}`}>{title.substring(remainingIdx)}</span>
     );
   }
   React.useEffect(() => {
@@ -248,10 +248,10 @@ const CompletionInternal = (props: CompletionProps) => {
   let entityIcon = null;
   switch (itemType) {
     case 'svc':
-      entityIcon = (<ServiceIcon />);
+      entityIcon = <ServiceIcon />;
       break;
     case 'pod':
-      entityIcon = (<PodIcon />);
+      entityIcon = <PodIcon />;
       break;
     default:
   }
