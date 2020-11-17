@@ -11,14 +11,14 @@ def net_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_ent
     df = df[df.ctx['namespace'] == ns]
 
     # Filter for client side requests.
-    df = df[df['role'] == 1]
+    df = df[df.role == 1]
 
     # Store the pod. Ideally this would be done after the aggregate,
     # but that's not working right now.
-    df['pod'] = df.ctx['pod']
+    df.pod = df.ctx['pod']
 
     # Filter out any non k8s sources.
-    df = df[df['pod'] != '']
+    df = df[df.pod != '']
 
     # Use aggregate to pick the latest sample for any given client-server pair.
     # We do this by picking the max of the stats, since they are all counters.
@@ -29,8 +29,8 @@ def net_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_ent
     df.bytes_total = df.bytes_sent + df.bytes_recv
 
     # To create a graph, add 'from' and 'to' entities.
-    df['from_entity'] = df.pod
-    df['to_entity'] = px.nslookup(df.remote_addr)
+    df.from_entity = df.pod
+    df.to_entity = px.nslookup(df.remote_addr)
 
     # Filter out entities as specified by the user.
     df = df[px.contains(df.from_entity, from_entity_filter)]
