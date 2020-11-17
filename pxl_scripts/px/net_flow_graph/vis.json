@@ -23,6 +23,12 @@
       "type": "PX_STRING",
       "description": "The partial string to match the 'to_entity' (destination service).",
       "defaultValue": ""
+    },
+    {
+      "name": "throughput_filter",
+      "type": "PX_FLOAT64",
+      "description": "Filters out connections with total throughput less than the specified amount.",
+      "defaultValue": "0.0"
     }
   ],
   "globalFuncs": [
@@ -46,6 +52,10 @@
           {
             "name": "to_entity_filter",
             "variable": "to_entity_filter"
+          },
+          {
+            "name": "throughput_filter",
+            "variable": "throughput_filter"
           }
         ]
       }
