@@ -1,5 +1,0 @@
----
-short: Network Flow Graph
-long: >
-  The set of k8s pods that talk to the specified IPs. Shows a graph and a table of the connections.
-  Calculates total bandwidth for the lifetime of the connection.
