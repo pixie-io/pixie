@@ -4,7 +4,8 @@
 import px
 
 
-def net_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_entity_filter: str, throughput_filter: float):
+def net_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_entity_filter: str,
+                   throughput_filter: float):
     df = px.DataFrame('conn_stats', start_time=start)
 
     # Filter on namespace.
@@ -71,6 +72,6 @@ def net_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_ent
     df = df.drop(['time_delta'])
 
     # Apply rate filter.
-    df = df[df.bytes_total > throughput_filter/1000000000]
+    df = df[df.bytes_total > throughput_filter / 1000000000]
 
     return df
