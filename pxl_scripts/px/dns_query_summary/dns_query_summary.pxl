@@ -2,10 +2,11 @@
 # Licensed under the Apache License, Version 2.0 (the "License")
 
 ''' DNS Overview Map
-Shows summary DNS requests in the cluster, with some latency information.
+Shows DNS requests made by pods, clustered by name prefix.
 '''
 
 import px
+
 
 def dns_queries(start: str, namespace: str, pod_filter: str, query_filter: str, dns_server_filter: str):
     df = px.DataFrame('dns_events', start_time=start)
@@ -32,7 +33,7 @@ def dns_queries(start: str, namespace: str, pod_filter: str, query_filter: str, 
     # Get the query prefix up to the first "."
     df.idxa = px.find(df.req_body, "\"name\":")
     df.idxz = px.find(df.req_body, ".")
-    df.qname = px.substring(df.req_body, df.idxa+8, df.idxz-df.idxa-8)
+    df.qname = px.substring(df.req_body, df.idxa + 8, df.idxz - df.idxa - 8)
     df = df.drop(['idxa', 'idxz'])
 
     # Convert DNS IP to string.
@@ -54,11 +55,9 @@ def dns_queries(start: str, namespace: str, pod_filter: str, query_filter: str, 
         num_nxdomain=('nxdomain', px.sum),
     )
 
-    # Compute percentages
+    # Compute percentages.
     df.unresolved_rate = px.Percent((df.num_requests - df.num_resolved) / df.num_requests)
     df.nxdomain_rate = px.Percent((df.num_nxdomain) / df.num_requests)
     df.qgroup = df.qname + " @" + df.dns_server
 
     return df
-
-
