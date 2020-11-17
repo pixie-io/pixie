@@ -27,7 +27,7 @@ def format_service_name_as_dns(df):
     return df.drop(['service_stripped', 'idx']).append(no_service)
 
 
-def dns_flow_graph(start: str):
+def dns_flow_graph(start: str, from_entity_filter: str, to_entity_filter: str):
     df = px.DataFrame('dns_events', start_time=start)
 
     # Client-side tracing only.
@@ -45,6 +45,8 @@ def dns_flow_graph(start: str):
 
     # Filter nodes for graph.
     df = df[not px.contains(df.pod, "pl")]
+    df = df[not df.pod == ""]
+    df = df[not df.remote_addr == "-"]
 
     # Specify from and to entities.
     df.from_entity = df.pod
@@ -60,4 +62,9 @@ def dns_flow_graph(start: str):
         latency_max=('latency_ns', px.max),
         count=('latency_ns', px.count)
     )
+
+    # Filter out entities as specified by the user.
+    df = df[px.contains(df.from_entity, from_entity_filter)]
+    df = df[px.contains(df.to_entity, to_entity_filter)]
+
     return df
