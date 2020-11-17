@@ -27,7 +27,7 @@
     {
       "name": "throughput_filter",
       "type": "PX_FLOAT64",
-      "description": "Filters out connections with total throughput less than the specified amount.",
+      "description": "Filters out connections with total throughput less than the specified amount. Specified in B/sec.",
       "defaultValue": "0.0"
     }
   ],
