@@ -4,7 +4,7 @@
 import px
 
 
-def net_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_entity_filter: str):
+def net_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_entity_filter: str, throughput_filter: float):
     df = px.DataFrame('conn_stats', start_time=start)
 
     # Filter on namespace.
@@ -20,17 +20,30 @@ def net_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_ent
     # Filter out any non k8s sources.
     df = df[df.pod != '']
 
-    # Use aggregate to pick the latest sample for any given client-server pair.
-    # We do this by picking the max of the stats, since they are all counters.
-    df = df.groupby(['pod', 'upid', 'remote_addr']).agg(
-        bytes_sent=('bytes_sent', px.max),
-        bytes_recv=('bytes_recv', px.max),
+    # Find the time window
+    time_window = df.agg(
+        time_min=('time_', px.min),
+        time_max=('time_', px.max),
     )
+    time_window.time_delta = px.DurationNanos(time_window.time_max - time_window.time_min)
+    time_window = time_window.drop(['time_min', 'time_max'])
+
+    # Use aggregate to pick the first and last sample for any given client-server pair.
+    # We do this by picking the min/max of the stats, since they are all counters.
+    df = df.groupby(['pod', 'upid', 'remote_addr']).agg(
+        bytes_sent_min=('bytes_sent', px.min),
+        bytes_sent_max=('bytes_sent', px.max),
+        bytes_recv_min=('bytes_recv', px.min),
+        bytes_recv_max=('bytes_recv', px.max),
+    )
+    df.bytes_sent = df.bytes_sent_max - df.bytes_sent_min
+    df.bytes_recv = df.bytes_recv_max - df.bytes_recv_min
     df.bytes_total = df.bytes_sent + df.bytes_recv
+    df = df.drop(['bytes_sent_max', 'bytes_sent_min', 'bytes_recv_max', 'bytes_recv_min'])
 
     # To create a graph, add 'from' and 'to' entities.
-    df.from_entity = df.pod
-    df.to_entity = px.nslookup(df.remote_addr)
+    df['from_entity'] = df.pod
+    df['to_entity'] = px.nslookup(df.remote_addr)
 
     # Filter out entities as specified by the user.
     df = df[px.contains(df.from_entity, from_entity_filter)]
@@ -41,7 +54,24 @@ def net_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_ent
     df = df.groupby(['from_entity', 'to_entity']).agg(
         bytes_sent=('bytes_sent', px.sum),
         bytes_recv=('bytes_recv', px.sum),
-        bytes_total=('bytes_total', px.sum)
+        bytes_total=('bytes_total', px.sum),
     )
 
+    # Add time_delta to every row. Use a join to do this.
+    # Future syntax will support: df.time_delta = time_window.at[0, 'time_delta']
+    df.join_key = 1
+    time_window.join_key = 1
+    df = df.merge(time_window, how='inner', left_on='join_key', right_on='join_key')
+    df = df.drop(['join_key_x', 'join_key_y'])
+
+    # Compute as rates.
+    df.bytes_sent = df.bytes_sent / df.time_delta
+    df.bytes_recv = df.bytes_recv / df.time_delta
+    df.bytes_total = df.bytes_total / df.time_delta
+    df = df.drop(['time_delta'])
+
+    # Apply rate filter.
+    df = df[df.bytes_total > throughput_filter/1000000000]
+
     return df
+
