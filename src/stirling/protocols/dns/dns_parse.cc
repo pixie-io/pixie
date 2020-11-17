@@ -21,13 +21,14 @@ namespace dns {
 
 class PxDnsParserListener : public DnsParserListener {
  public:
-  void onDnsRec(in_addr addr, std::string name, std::string path) override {
-    records_.emplace_back(
-        DNSRecord{{InetAddrFamily::kIPv4, addr}, std::move(name), std::move(path)});
+  void onDnsRec(std::string name, in_addr addr) override {
+    records_.emplace_back(DNSRecord{std::move(name), "", {InetAddrFamily::kIPv4, addr}});
   }
-  void onDnsRec(in6_addr addr, std::string name, std::string path) override {
-    records_.emplace_back(
-        DNSRecord{{InetAddrFamily::kIPv6, addr}, std::move(name), std::move(path)});
+  void onDnsRec(std::string name, in6_addr addr) override {
+    records_.emplace_back(DNSRecord{std::move(name), "", {InetAddrFamily::kIPv6, addr}});
+  }
+  void onDnsRec(std::string name, std::string cname) override {
+    records_.emplace_back(DNSRecord{std::move(name), std::move(cname), {}});
   }
 
   std::vector<DNSRecord> records_;

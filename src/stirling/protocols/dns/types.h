@@ -66,9 +66,13 @@ constexpr int kRcodeWidth = 4;
 // Typically it is the answer to a query (e.g. from name->addr).
 // Spec: https://www.ietf.org/rfc/rfc1035.txt
 struct DNSRecord {
-  InetAddr addr;
   std::string name;
-  std::string path;
+
+  // cname and addr are mutually exclusive.
+  // Either a record provdes a cname (an alias to another record), or it resolves the address.
+  // TODO(oazizi): Consider using std::variant.
+  std::string cname;
+  InetAddr addr;
 };
 
 struct Frame : public FrameBase {

@@ -92,13 +92,14 @@ TEST_F(DNSTraceTest, Capture) {
         MatchesRegex(
             R"(\{"txid":[0-9]+,"qr":0,"opcode":0,"aa":0,"tc":0,"rd":1,"ra":0,"ad":1,"cd":0,"rcode":0,)"
             R"("num_queries":1,"num_answers":0,"num_auth":0,"num_addl":1\})"));
-    EXPECT_EQ(req_body, R"({"queries":[{"name":"server.dnstest.com"}]})");
+    EXPECT_EQ(req_body, R"({"queries":[{"name":"server.dnstest.com","type":"A"}]})");
     EXPECT_THAT(
         resp_hdr,
         MatchesRegex(
             R"(\{"txid":[0-9]+,"qr":1,"opcode":0,"aa":1,"tc":0,"rd":1,"ra":1,"ad":0,"cd":0,"rcode":0,)"
             R"("num_queries":1,"num_answers":1,"num_auth":0,"num_addl":1\})"));
-    EXPECT_EQ(resp_body, R"({"answers":[{"name":"server.dnstest.com","addr":"192.168.32.200"}]})");
+    EXPECT_EQ(resp_body,
+              R"({"answers":[{"name":"server.dnstest.com","type":"A","addr":"192.168.32.200"}]})");
   }
 }
 

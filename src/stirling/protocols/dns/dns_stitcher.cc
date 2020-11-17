@@ -50,6 +50,26 @@ std::string HeaderToJSONString(const DNSHeader& header) {
   return std::string(sb.GetString());
 }
 
+std::string_view DNSRecordTypeName(InetAddrFamily addr_family) {
+  constexpr std::string_view kDNSRecordTypeA = "A";
+  constexpr std::string_view kDNSRecordTypeAAAA = "AAAA";
+  constexpr std::string_view kDNSRecordTypeUnknown = "";
+
+  std::string_view type_name = "";
+  switch (addr_family) {
+    case InetAddrFamily::kIPv4:
+      type_name = kDNSRecordTypeA;
+      break;
+    case InetAddrFamily::kIPv6:
+      type_name = kDNSRecordTypeAAAA;
+      break;
+    default:
+      type_name = kDNSRecordTypeUnknown;
+  }
+
+  return type_name;
+}
+
 void ProcessReq(const Frame& req_frame, Request* req) {
   req->timestamp_ns = req_frame.timestamp_ns;
   req->header = HeaderToJSONString(req_frame.header);
@@ -64,9 +84,12 @@ void ProcessReq(const Frame& req_frame, Request* req) {
   rapidjson::Value queries(rapidjson::kArrayType);
   for (const auto& r : req_frame.records) {
     const std::string& name = r.name;
+    std::string_view type_name = DNSRecordTypeName(r.addr.family);
 
     rapidjson::Value query(rapidjson::kObjectType);
     query.AddMember("name", rapidjson::StringRef(name.data(), name.size()), d.GetAllocator());
+    query.AddMember("type", rapidjson::StringRef(type_name.data(), type_name.size()),
+                    d.GetAllocator());
 
     queries.PushBack(query, d.GetAllocator());
   }
@@ -93,12 +116,26 @@ void ProcessResp(const Frame& resp_frame, Response* resp) {
   rapidjson::Value answers(rapidjson::kArrayType);
   for (const auto& r : resp_frame.records) {
     const std::string& name = r.name;
-    addr_strs.push_back(r.addr.AddrStr());
-    const std::string& addr = addr_strs.back();
+    std::string_view type_name;
 
     rapidjson::Value answer(rapidjson::kObjectType);
     answer.AddMember("name", rapidjson::StringRef(name.data(), name.size()), d.GetAllocator());
-    answer.AddMember("addr", rapidjson::StringRef(addr.data(), addr.size()), d.GetAllocator());
+
+    if (!r.cname.empty()) {
+      type_name = "CNAME";
+      answer.AddMember("type", rapidjson::StringRef(type_name.data(), type_name.size()),
+                       d.GetAllocator());
+      answer.AddMember("cname", rapidjson::StringRef(r.cname.data(), r.cname.size()),
+                       d.GetAllocator());
+    } else {
+      addr_strs.push_back(r.addr.AddrStr());
+      const std::string& addr = addr_strs.back();
+      std::string_view type_name = DNSRecordTypeName(r.addr.family);
+
+      answer.AddMember("type", rapidjson::StringRef(type_name.data(), type_name.size()),
+                       d.GetAllocator());
+      answer.AddMember("addr", rapidjson::StringRef(addr.data(), addr.size()), d.GetAllocator());
+    }
 
     answers.PushBack(answer, d.GetAllocator());
   }

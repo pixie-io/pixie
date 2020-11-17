@@ -64,7 +64,7 @@ TEST(DnsStitcherTest, RecordOutput) {
   ip_addr.addr = addr_tmp;
 
   std::vector<DNSRecord> dns_records;
-  dns_records.push_back(DNSRecord{ip_addr, "pixie.ai", ""});
+  dns_records.push_back(DNSRecord{"pixie.ai", "", ip_addr});
 
   int t = 0;
   Frame req0_frame = CreateReqFrame(++t, 0);
@@ -91,7 +91,7 @@ TEST(DnsStitcherTest, RecordOutput) {
   EXPECT_EQ(record.resp.header,
             R"({"txid":0,"qr":1,"opcode":0,"aa":0,"tc":0,"rd":1,"ra":1,"ad":0,"cd":0,"rcode":0,)"
             R"("num_queries":1,"num_answers":1,"num_auth":0,"num_addl":0})");
-  EXPECT_EQ(record.resp.msg, R"({"answers":[{"name":"pixie.ai","addr":"1.2.3.4"}]})");
+  EXPECT_EQ(record.resp.msg, R"({"answers":[{"name":"pixie.ai","type":"A","addr":"1.2.3.4"}]})");
 }
 
 TEST(DnsStitcherTest, OutOfOrderMatching) {
