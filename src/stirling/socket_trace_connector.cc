@@ -299,14 +299,14 @@ StatusOr<std::string> InferHTTP2SymAddrVendorPrefix(ElfReader* elf_reader) {
 }
 
 Status SocketTraceConnector::UpdateHTTP2SymAddrs(
-    std::string_view binary, ElfReader* elf_reader, const std::vector<int32_t>& pids,
+    ElfReader* elf_reader, DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
     ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map) {
   struct conn_symaddrs_t symaddrs;
 
   PL_ASSIGN_OR_RETURN(std::string vendor_prefix, InferHTTP2SymAddrVendorPrefix(elf_reader));
 
   PL_RETURN_IF_ERROR(UpdateHTTP2TypeAddrs(elf_reader, vendor_prefix, &symaddrs));
-  PL_RETURN_IF_ERROR(UpdateHTTP2DebugSymbols(binary, vendor_prefix, &symaddrs));
+  PL_RETURN_IF_ERROR(UpdateHTTP2DebugSymbols(dwarf_reader, vendor_prefix, &symaddrs));
 
   for (auto& pid : pids) {
     ebpf::StatusTuple s = http2_symaddrs_map->update_value(pid, symaddrs);
@@ -350,11 +350,9 @@ Status SocketTraceConnector::UpdateHTTP2TypeAddrs(ElfReader* elf_reader,
   return Status::OK();
 }
 
-Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
+Status SocketTraceConnector::UpdateHTTP2DebugSymbols(DwarfReader* dwarf_reader,
                                                      std::string_view vendor_prefix,
                                                      struct conn_symaddrs_t* symaddrs) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<DwarfReader> dwarf_reader, DwarfReader::Create(binary));
-
   // Note: we only return error if a *mandatory* symbol is missing. Currently none are mandatory,
   // because these multiple probes for multiple HTTP2/GRPC libraries. Even if a symbol for one
   // is missing it doesn't mean the other library's probes should not be deployed.
@@ -639,10 +637,10 @@ StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(const ArrayView<UProbeTmpl>
 // because of the mixed & duplicate data events from these 2 sources.
 StatusOr<int> SocketTraceConnector::AttachHTTP2Probes(
     const std::string& binary, elf_tools::ElfReader* elf_reader,
-    const std::vector<int32_t>& new_pids,
+    dwarf_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& new_pids,
     ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map) {
   // Step 1: Update BPF symbols_map on all new PIDs.
-  Status s = UpdateHTTP2SymAddrs(binary, elf_reader, new_pids, http2_symaddrs_map);
+  Status s = UpdateHTTP2SymAddrs(elf_reader, dwarf_reader, new_pids, http2_symaddrs_map);
   if (!s.ok()) {
     // Doesn't appear to be a binary with the mandatory symbols (e.g. TCPConn).
     // Might not even be a golang binary.
@@ -800,19 +798,20 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
     }
     std::unique_ptr<ElfReader> elf_reader = elf_reader_status.ConsumeValueOrDie();
 
-    // Temporary start.
-    StatusOr<std::unique_ptr<DwarfReader>> dwarf_reader_status =
-        DwarfReader::Create(binary, /* index */ false);
-    bool is_go_binary = elf_reader->SymbolAddress("runtime.buildVersion").has_value();
-    bool has_dwarf = dwarf_reader_status.ok() && dwarf_reader_status.ValueOrDie()->IsValid();
-    VLOG(1) << absl::Substitute("binary=$0 has_dwarf=$1 is_go_binary=$2", binary, has_dwarf,
-                                is_go_binary);
-    // Temporary end.
+    StatusOr<std::unique_ptr<DwarfReader>> dwarf_reader_status = DwarfReader::Create(binary);
+    if (!dwarf_reader_status.ok()) {
+      VLOG(1) << absl::Substitute(
+          "Failed to get binary $0 debug symbols. Cannot deploy uprobes. "
+          "Message = $1",
+          binary, dwarf_reader_status.msg());
+      continue;
+    }
+    std::unique_ptr<DwarfReader> dwarf_reader = dwarf_reader_status.ConsumeValueOrDie();
 
     // HTTP2 Probes.
     if (protocol_transfer_specs_[kProtocolHTTP2].enabled) {
-      StatusOr<int> attach_status =
-          AttachHTTP2Probes(binary, elf_reader.get(), pid_vec, http2_symaddrs_map_.get());
+      StatusOr<int> attach_status = AttachHTTP2Probes(binary, elf_reader.get(), dwarf_reader.get(),
+                                                      pid_vec, http2_symaddrs_map_.get());
       if (!attach_status.ok()) {
         LOG_FIRST_N(WARNING, 10) << absl::Substitute("Failed to attach HTTP2 Uprobes to $0: $1",
                                                      binary, attach_status.ToString());

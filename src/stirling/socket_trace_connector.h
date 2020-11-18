@@ -30,6 +30,8 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/common/grpcutils/service_descriptor_database.h"
 #include "src/common/system/socket_info.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
+#include "src/stirling/obj_tools/dwarf_tools.h"
+#include "src/stirling/obj_tools/elf_tools.h"
 
 #include "src/stirling/common/socket_trace.h"
 #include "src/stirling/conn_stats_table.h"
@@ -293,19 +295,20 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Helper functions for dynamically deploying uprobes:
 
   Status UpdateHTTP2SymAddrs(
-      std::string_view binary, elf_tools::ElfReader* elf_reader, const std::vector<int32_t>& pids,
+      elf_tools::ElfReader* elf_reader, dwarf_tools::DwarfReader* dwarf_reader,
+      const std::vector<int32_t>& pids,
       ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map);
   Status UpdateHTTP2TypeAddrs(elf_tools::ElfReader* elf_reader, std::string_view vendor_prefix,
                               struct conn_symaddrs_t* symaddrs);
-  Status UpdateHTTP2DebugSymbols(std::string_view binary, std::string_view vendor_prefix,
-                                 struct conn_symaddrs_t* symaddrs);
+  Status UpdateHTTP2DebugSymbols(dwarf_tools::DwarfReader* dwarf_reader,
+                                 std::string_view vendor_prefix, struct conn_symaddrs_t* symaddrs);
 
   StatusOr<int> AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe_tmpls,
                                  const std::string& binary, elf_tools::ElfReader* elf_reader);
 
   StatusOr<int> AttachHTTP2Probes(
       const std::string& binary, elf_tools::ElfReader* elf_reader,
-      const std::vector<int32_t>& new_pids,
+      dwarf_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& new_pids,
       ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map);
 
   StatusOr<int> AttachOpenSSLUProbes(const std::string& binary,
