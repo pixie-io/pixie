@@ -345,7 +345,7 @@ StatusOr<Record> ProcessSolitaryResp(Frame* resp_frame) {
   return r;
 }
 
-// Currently ProcessFrames() uses a response-led matching algorithm.
+// Currently StitchFrames() uses a response-led matching algorithm.
 // For each response that is at the head of the deque, there should exist a previous request with
 // the same stream. Find it, and consume both frames.
 // TODO(oazizi): Does it make sense to sort to help the matching?
@@ -353,8 +353,8 @@ StatusOr<Record> ProcessSolitaryResp(Frame* resp_frame) {
 //  - Request and response deques are likely (confirm?) to be mostly ordered.
 //  - Stream values can be re-used, so sorting would have to consider times too.
 //  - Stream values need not be in any sequential order.
-RecordsWithErrorCount<Record> ProcessFrames(std::deque<Frame>* req_frames,
-                                            std::deque<Frame>* resp_frames) {
+RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
+                                           std::deque<Frame>* resp_frames) {
   std::vector<Record> entries;
   int error_count = 0;
 

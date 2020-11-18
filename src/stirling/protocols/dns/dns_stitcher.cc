@@ -154,11 +154,11 @@ StatusOr<Record> ProcessReqRespPair(const Frame& req_frame, const Frame& resp_fr
   return r;
 }
 
-// Currently ProcessFrames() uses a response-led matching algorithm.
+// Currently StitchFrames() uses a response-led matching algorithm.
 // For each response that is at the head of the deque, there should exist a previous request with
 // the same txid. Find it, and consume both frames.
-RecordsWithErrorCount<Record> ProcessFrames(std::deque<Frame>* req_frames,
-                                            std::deque<Frame>* resp_frames) {
+RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
+                                           std::deque<Frame>* resp_frames) {
   std::vector<Record> entries;
   int error_count = 0;
 

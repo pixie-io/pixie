@@ -76,12 +76,12 @@ StatusOr<std::deque<RegularMessage>> ParseRegularMessages(std::string_view data)
   return msgs;
 }
 
-class ProcessFramesTest : public ::testing::Test {
+class StitchFramesTest : public ::testing::Test {
  protected:
   State state_;
 };
 
-TEST_F(ProcessFramesTest, VerifySingleOutputMessage) {
+TEST_F(StitchFramesTest, VerifySingleOutputMessage) {
   ASSERT_OK_AND_ASSIGN(
       std::deque<RegularMessage> reqs,
       ParseRegularMessages(absl::StrCat(kParseData1, kDescData, kBindData, kExecData,
@@ -99,8 +99,7 @@ TEST_F(ProcessFramesTest, VerifySingleOutputMessage) {
     resp.timestamp_ns += 10;
   }
 
-  RecordsWithErrorCount<pgsql::Record> records_and_err_count =
-      ProcessFrames(&reqs, &resps, &state_);
+  RecordsWithErrorCount<pgsql::Record> records_and_err_count = StitchFrames(&reqs, &resps, &state_);
   EXPECT_THAT(reqs, IsEmpty());
   EXPECT_THAT(resps, IsEmpty());
   EXPECT_NE(0, records_and_err_count.records.front().req.payload.size());
@@ -147,7 +146,7 @@ TEST_F(ProcessFramesTest, VerifySingleOutputMessage) {
   EXPECT_EQ(0, records_and_err_count.error_count);
 }
 
-TEST_F(ProcessFramesTest, HandleParseErrResp) {
+TEST_F(StitchFramesTest, HandleParseErrResp) {
   ASSERT_OK_AND_ASSIGN(std::deque<RegularMessage> reqs, ParseRegularMessages(kParseData1));
   ASSERT_OK_AND_ASSIGN(std::deque<RegularMessage> resps, ParseRegularMessages(kErrRespData));
 

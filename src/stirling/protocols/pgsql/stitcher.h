@@ -32,15 +32,17 @@ Status HandleBind(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDeq
 Status HandleExecute(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDeqIter& end,
                      ExecReqResp* req_resp, State* state);
 
-RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMessage>* reqs,
-                                                   std::deque<pgsql::RegularMessage>* resps,
-                                                   State* state);
+RecordsWithErrorCount<Record> StitchFrames(std::deque<RegularMessage>* reqs,
+                                           std::deque<RegularMessage>* resps, State* state);
 
 }  // namespace pgsql
 
-RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMessage>* reqs,
-                                                   std::deque<pgsql::RegularMessage>* resps,
-                                                   pgsql::StateWrapper* state);
+template <>
+inline RecordsWithErrorCount<pgsql::Record> StitchFrames(std::deque<pgsql::RegularMessage>* reqs,
+                                                         std::deque<pgsql::RegularMessage>* resps,
+                                                         pgsql::StateWrapper* state) {
+  return pgsql::StitchFrames(reqs, resps, &state->global);
+}
 
 }  // namespace protocols
 }  // namespace stirling

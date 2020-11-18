@@ -200,7 +200,7 @@ TEST(CassStitcherTest, OutOfOrderMatching) {
   Frame req2_frame = CreateFrame(2, Opcode::kQuery, kBadQueryReq, ++t);
   Frame resp2_frame = CreateFrame(2, Opcode::kError, kBadQueryErrorResp, ++t);
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);
@@ -209,7 +209,7 @@ TEST(CassStitcherTest, OutOfOrderMatching) {
   req_frames.push_back(req0_frame);
   req_frames.push_back(req1_frame);
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 2);
   EXPECT_EQ(result.error_count, 0);
@@ -217,7 +217,7 @@ TEST(CassStitcherTest, OutOfOrderMatching) {
 
   resp_frames.push_back(resp1_frame);
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 2);
   EXPECT_EQ(result.error_count, 0);
@@ -226,7 +226,7 @@ TEST(CassStitcherTest, OutOfOrderMatching) {
   req_frames.push_back(req2_frame);
   resp_frames.push_back(resp0_frame);
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 1);
   EXPECT_EQ(result.error_count, 0);
@@ -234,13 +234,13 @@ TEST(CassStitcherTest, OutOfOrderMatching) {
 
   resp_frames.push_back(resp2_frame);
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(resp_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);
   EXPECT_EQ(result.records.size(), 1);
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(resp_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);
@@ -263,7 +263,7 @@ TEST(CassStitcherTest, NonCQLFrames) {
   req_frames = {req0_frame, req1_frame};
   resp_frames = {resp0_frame, resp1_frame};
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
   EXPECT_EQ(result.error_count, 2);
@@ -277,7 +277,7 @@ TEST(CassStitcherTest, OpEvent) {
 
   resp_frames.push_back(CreateFrame(-1, Opcode::kEvent, kEventResp, 3));
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);
@@ -303,7 +303,7 @@ TEST(CassStitcherTest, StartupReady) {
   req_frames.push_back(CreateFrame(0, Opcode::kStartup, kStartupReq, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kReady, 2));
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);
@@ -326,7 +326,7 @@ TEST(CassStitcherTest, RegisterReady) {
   req_frames.push_back(CreateFrame(0, Opcode::kRegister, kRegisterReq, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kReady, 2));
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);
@@ -349,7 +349,7 @@ TEST(CassStitcherTest, OptionsSupported) {
   req_frames.push_back(CreateFrame(0, Opcode::kOptions, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kSupported, kSupportedResp, 2));
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);
@@ -374,7 +374,7 @@ TEST(CassStitcherTest, QueryResult) {
   req_frames.push_back(CreateFrame(0, Opcode::kQuery, kQueryReq, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kResult, kResultResp, 2));
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);
@@ -400,7 +400,7 @@ TEST(CassStitcherTest, QueryError) {
   std::deque<Frame> resp_frames;
   RecordsWithErrorCount<Record> result;
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);
@@ -409,7 +409,7 @@ TEST(CassStitcherTest, QueryError) {
   req_frames.push_back(CreateFrame(0, Opcode::kQuery, kBadQueryReq, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kError, kBadQueryErrorResp, 2));
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);
@@ -432,7 +432,7 @@ TEST(CassStitcherTest, PrepareResult) {
   req_frames.push_back(CreateFrame(0, Opcode::kPrepare, kPrepareReq, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kResult, kPrepareResultResp, 2));
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);
@@ -458,7 +458,7 @@ TEST(CassStitcherTest, ExecuteResult) {
   req_frames.push_back(CreateFrame(0, Opcode::kExecute, kExecuteReq, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kResult, kExecuteResultResp, 2));
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);
@@ -487,7 +487,7 @@ TEST(CassStitcherTest, StartupAuthenticate) {
   req_frames.push_back(CreateFrame(0, Opcode::kStartup, kStartupReq, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kAuthenticate, kAuthenticateResp, 2));
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);
@@ -510,7 +510,7 @@ TEST(CassStitcherTest, AuthResponseAuthSuccess) {
   req_frames.push_back(CreateFrame(0, Opcode::kAuthResponse, kAuthResponseReq, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kAuthSuccess, kAuthSuccessResp, 2));
 
-  result = ProcessFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);

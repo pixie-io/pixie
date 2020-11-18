@@ -7,6 +7,7 @@
 #include <absl/strings/str_replace.h>
 
 #include "src/stirling/common/binary_decoder.h"
+#include "src/stirling/protocols/common/stitcher.h"
 #include "src/stirling/protocols/pgsql/parse.h"
 
 namespace pl {
@@ -368,9 +369,9 @@ Status HandleExecute(const RegularMessage& msg, MsgDeqIter* resps_begin,
     ++error_count;                                        \
   }
 
-RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMessage>* reqs,
-                                                   std::deque<pgsql::RegularMessage>* resps,
-                                                   State* state) {
+RecordsWithErrorCount<pgsql::Record> StitchFrames(std::deque<pgsql::RegularMessage>* reqs,
+                                                  std::deque<pgsql::RegularMessage>* resps,
+                                                  State* state) {
   std::vector<pgsql::Record> records;
   int error_count = 0;
   auto req_iter = reqs->begin();
@@ -443,13 +444,6 @@ RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMess
 }
 
 }  // namespace pgsql
-
-RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMessage>* reqs,
-                                                   std::deque<pgsql::RegularMessage>* resps,
-                                                   pgsql::StateWrapper* state) {
-  return pgsql::ProcessFrames(reqs, resps, &state->global);
-}
-
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace pl

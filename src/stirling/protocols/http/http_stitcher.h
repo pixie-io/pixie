@@ -32,9 +32,10 @@ void PreProcessMessage(Message* message);
 
 }  // namespace http
 
-inline RecordsWithErrorCount<http::Record> ProcessFrames(std::deque<http::Message>* req_messages,
-                                                         std::deque<http::Message>* resp_messages,
-                                                         NoState* /* state */) {
+template <>
+inline RecordsWithErrorCount<http::Record> StitchFrames(std::deque<http::Message>* req_messages,
+                                                        std::deque<http::Message>* resp_messages,
+                                                        NoState* /* state */) {
   return http::ProcessMessages(req_messages, resp_messages);
 }
 

@@ -201,7 +201,9 @@ class ConnectionTracker {
     CONN_TRACE(1) << absl::Substitute("req_frames=$0 resp_frames=$1", req_frames.size(),
                                       resp_frames.size());
 
-    RecordsWithErrorCount<TRecordType> result = ProcessFrames(&req_frames, &resp_frames, state_ptr);
+    protocols::RecordsWithErrorCount<TRecordType> result =
+        protocols::StitchFrames<TRecordType, TFrameType, TStateType>(&req_frames, &resp_frames,
+                                                                     state_ptr);
 
     CONN_TRACE(1) << absl::Substitute("records=$0", result.records.size());
 

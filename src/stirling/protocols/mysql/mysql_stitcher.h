@@ -82,9 +82,10 @@ StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet, b
 
 }  // namespace mysql
 
-inline RecordsWithErrorCount<mysql::Record> ProcessFrames(std::deque<mysql::Packet>* req_packets,
-                                                          std::deque<mysql::Packet>* resp_packets,
-                                                          mysql::StateWrapper* state) {
+template <>
+inline RecordsWithErrorCount<mysql::Record> StitchFrames(std::deque<mysql::Packet>* req_packets,
+                                                         std::deque<mysql::Packet>* resp_packets,
+                                                         mysql::StateWrapper* state) {
   return mysql::ProcessMySQLPackets(req_packets, resp_packets, &state->global);
 }
 
