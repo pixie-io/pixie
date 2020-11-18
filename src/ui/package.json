@@ -37,6 +37,7 @@
     "@types/segment-analytics": "^0.0.32",
     "@typescript-eslint/eslint-plugin": "^2.30.0",
     "@typescript-eslint/parser": "^2.30.0",
+    "@webpack-cli/serve": "^1.1.0",
     "apollo-utilities": "^1.3.4",
     "archiver": "^5.0.2",
     "awesome-typescript-loader": "^5.2.0",

@@ -24,15 +24,15 @@ export const Completed = () => (
 
 export const Error = () => (
   <AuthMessageBox
-    error
+    error='recoverable'
     title='Auth Failed'
-    message='Login to this org is not allowed.'
+    message='Check your spelling and try again.'
   />
 );
 
 export const ErrorDetails = () => (
   <AuthMessageBox
-    error
+    error='fatal'
     errorDetails='Internal error: bad things happened'
     title='Auth Failed'
     message='Login to this org is not allowed.'

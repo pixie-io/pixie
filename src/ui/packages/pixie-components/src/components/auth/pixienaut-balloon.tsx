@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 export const PixienautBalloonSvg = (props) => (
+  /* eslint-disable max-len */
   <svg width={129} height={179} viewBox='0 0 129 179' fill='none' {...props}>
     <path
       fillRule='evenodd'
@@ -700,4 +701,5 @@ export const PixienautBalloonSvg = (props) => (
       </linearGradient>
     </defs>
   </svg>
+  /* eslint-enable max-len */
 );

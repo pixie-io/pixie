@@ -6,6 +6,10 @@ import Axios, { AxiosError } from 'axios';
 import * as RedirectUtils from 'utils/redirect-utils';
 import { isValidAnalytics } from 'utils/env';
 import { AuthMessageBox } from 'pixie-components';
+import { Link } from 'react-router-dom';
+import {
+  Button, createStyles, makeStyles, Theme,
+} from '@material-ui/core';
 import { BasePage } from './base';
 import { AuthCallbackMode } from './utils';
 
@@ -47,6 +51,15 @@ const CLICodeBox = ({ code }) => (
   />
 );
 
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  ctaGutter: {
+    marginTop: theme.spacing(3),
+    paddingTop: theme.spacing(3),
+    borderTop: `1px solid ${theme.palette.foreground.grey1}`,
+    width: '80%',
+  },
+}));
+
 /**
  * This is the main component to handle the callback from auth.
  *
@@ -55,6 +68,7 @@ const CLICodeBox = ({ code }) => (
  */
 export const AuthCallbackPage = () => {
   const [config, setConfig] = React.useState<CallbackConfig>(null);
+  const classes = useStyles();
 
   React.useEffect(() => {
     const setErr = (errType: ErrorType, errMsg: string) => {
@@ -199,34 +213,43 @@ export const AuthCallbackPage = () => {
   }, []);
 
   const renderError = () => {
-    let title: string;
-    let errorDetails: string;
-    let message: string;
-    if (config.signup) {
-      title = 'Failed to Signup user';
-      if (config.err.errorType === 'internal') {
-        message = 'Sorry we hit a snag failed to create an account. Please try again later.';
-        errorDetails = config.err.errMessage;
+    const title = config.signup ? 'Failed to Sign Up' : 'Failed to Log In';
+    const errorDetails = config.err.errorType === 'internal' ? config.err.errMessage : undefined;
+
+    let ctaMessage: string;
+    let ctaDestination: string;
+    let errorMessage: string;
+    if (config.err.errorType === 'internal') {
+      if (config.signup) {
+        errorMessage = 'We hit a snag in creating an account. Please try again later.';
+        ctaMessage = 'Back to Sign Up';
+        ctaDestination = '/auth/signup';
       } else {
-        message = config.err.errMessage;
+        errorMessage = 'We hit a snag trying to authenticate you. Please try again later.';
+        ctaMessage = 'Back to Log In';
+        ctaDestination = '/auth/login';
       }
     } else {
-      // Login.
-      title = 'Failed to authenticate';
-      if (config.err.errorType === 'internal') {
-        message = 'Sorry we hit a snag failed to authenticate you. Please try again later.';
-        errorDetails = config.err.errMessage;
-      } else {
-        message = config.err.errMessage;
-      }
+      errorMessage = config.err.errMessage;
+      ctaMessage = 'Go Back';
+      ctaDestination = '/';
     }
+
+    const cta = (
+      <div className={classes.ctaGutter}>
+        <Link to={ctaDestination} component={Button} color='primary' variant='contained'>
+          { ctaMessage }
+        </Link>
+      </div>
+    );
 
     return (
       <AuthMessageBox
-        error
+        error='recoverable'
         title={title}
-        message={message}
+        message={errorMessage}
         errorDetails={errorDetails}
+        cta={cta}
       />
     );
   };
