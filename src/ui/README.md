@@ -29,7 +29,7 @@ Replace site-name with your test site name.
 ```
 cd src/ui
 yarn install
-./node_modules/.bin/webpack-dev-server
+yarn dev
 ```
 
 ## Access the frontend on the browser

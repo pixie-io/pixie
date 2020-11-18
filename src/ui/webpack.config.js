@@ -6,7 +6,6 @@ const { CheckerPlugin } = require('awesome-typescript-loader');
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
 const HtmlWebpackHarddiskPlugin = require('html-webpack-harddisk-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const ReplacePlugin = require('webpack-plugin-replace');
 const YAML = require('yaml');
 const fs = require('fs');
 const CompressionPlugin = require('compression-webpack-plugin');
@@ -15,7 +14,7 @@ const FaviconsWebpackPlugin = require('favicons-webpack-plugin');
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 const utils = require('./webpack-utils');
 
-const isDevServer = process.argv.find((v) => v.includes('webpack-dev-server'));
+const isDevServer = process.argv.find((v) => v.includes('serve'));
 let topLevelDir = '';
 if (isDevServer) {
   topLevelDir = execSync('git rev-parse --show-toplevel').toString().trim();
@@ -33,20 +32,15 @@ const plugins = [
     filename: 'index.html',
   }),
   new HtmlWebpackHarddiskPlugin(),
-  new webpack.EnvironmentPlugin([
-    'BUILD_ENV',
-    'BUILD_NUMBER',
-    'BUILD_SCM_REVISION',
-    'BUILD_SCM_STATUS',
-    'BUILD_TIMESTAMP',
-  ]),
+  new webpack.EnvironmentPlugin({
+    BUILD_NUMBER: '0',
+    BUILD_SCM_REVISION: '0000000',
+    BUILD_SCM_STATUS: 'Modified',
+    BUILD_TIMESTAMP: '0',
+  }),
   new webpack.ContextReplacementPlugin(
     /highlight.js[/\\]lib[/\\]languages$/, /javascript|bash|python/,
   ),
-  new MiniCssExtractPlugin({
-    filename: '[name].[hash].css',
-    chunkFilename: '[id].[hash].css',
-  }),
   // Uncomment to enabled bundle analysis.
   // new (require('webpack-bundle-analyzer').BundleAnalyzerPlugin),
   new MonacoWebpackPlugin({
@@ -55,16 +49,15 @@ const plugins = [
 ];
 
 if (isDevServer) {
-  // enable HMR globally
-  plugins.push(new webpack.HotModuleReplacementPlugin());
-  // prints more readable module names in the browser console on HMR updates
-  plugins.push(new webpack.NamedModulesPlugin());
-
   plugins.push(new webpack.SourceMapDevToolPlugin({
     filename: 'sourcemaps/[file].map',
     exclude: [/node_modules/, /vendor/, /vendor\.chunk\.js/, /vendor\.js/],
   }));
 } else {
+  plugins.push(new MiniCssExtractPlugin({
+    filename: isDevServer ? '[name].css' : '[name].[contenthash].css',
+    chunkFilename: isDevServer ? '[id].css' : '[id].[contenthash].css',
+  }));
   // Archive plugin has problems with dev server.
   plugins.push(
     new CompressionPlugin({
@@ -140,15 +133,8 @@ const webpackConfig = {
       {
         test: /\.css$/,
         use: [
-          {
-            loader: MiniCssExtractPlugin.loader,
-            options: {
-              hmr: isDevServer,
-            },
-          },
-          {
-            loader: 'css-loader',
-          },
+          isDevServer ? 'style-loader' : MiniCssExtractPlugin.loader,
+          'css-loader',
         ],
       },
       {
@@ -166,9 +152,8 @@ const webpackConfig = {
     ],
   },
   output: {
-    filename: '[name].[hash].js',
-    chunkFilename: '[name].[hash].chunk.js',
-    path: resolve(__dirname, 'dist'),
+    filename: '[name].[contenthash].js',
+    chunkFilename: '[name].[contenthash].chunk.js',
     publicPath: '/static/',
   },
   plugins,
@@ -189,8 +174,8 @@ const webpackConfig = {
       cacheGroups: {
         commons: {
           chunks: 'initial',
-          test(module, chunks) {
-            return !chunks.find((c) => c.name === 'config');
+          test(module) {
+            return !module.getChunks().find((c) => c.name === 'config');
           },
           minChunks: 2,
           maxInitialRequests: 5, // The default limit is too small to showcase the effect
@@ -248,18 +233,12 @@ module.exports = (env) => {
   const domainYAML = YAML.parse(domainYamlReq.toString());
 
   webpackConfig.plugins.push(
-    new ReplacePlugin({
-      include: [
-        'flags.js',
-        'segment.js',
-      ],
-      values: {
-        __CONFIG_AUTH0_DOMAIN__: 'pixie-labs.auth0.com',
-        __CONFIG_AUTH0_CLIENT_ID__: auth0YAML.data.PL_AUTH0_CLIENT_ID,
-        __CONFIG_DOMAIN_NAME__: domainYAML.data.PL_DOMAIN_NAME,
-        __SEGMENT_ANALYTICS_JS_DOMAIN__: `segment.${domainYAML.data.PL_DOMAIN_NAME}`,
-        __CONFIG_LD_CLIENT_ID__: ldYAML.data.PL_LD_CLIENT_ID,
-      },
+    new webpack.DefinePlugin({
+      __CONFIG_AUTH0_DOMAIN__: 'pixie-labs.auth0.com',
+      __CONFIG_AUTH0_CLIENT_ID__: auth0YAML.data.PL_AUTH0_CLIENT_ID,
+      __CONFIG_DOMAIN_NAME__: domainYAML.data.PL_DOMAIN_NAME,
+      __SEGMENT_ANALYTICS_JS_DOMAIN__: `segment.${domainYAML.data.PL_DOMAIN_NAME}`,
+      __CONFIG_LD_CLIENT_ID__: ldYAML.data.PL_LD_CLIENT_ID,
     }),
   );
 

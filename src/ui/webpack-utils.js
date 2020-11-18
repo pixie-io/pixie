@@ -43,8 +43,8 @@ class ArchivePlugin {
       this.archiverStream.pipe(fs.createWriteStream(this.options.output));
     });
 
-    compiler.hooks.assetEmitted.tap('ArchivePlugin', (file, content) => {
-      this.archiverStream.append(content, { name: file });
+    compiler.hooks.assetEmitted.tap('ArchivePlugin', (file, info) => {
+      this.archiverStream.append(info.content, { name: file });
     });
 
     compiler.hooks.afterEmit.tap('ArchivePlugin', () => {
