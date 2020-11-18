@@ -59,12 +59,42 @@ describe('<Completion> test', () => {
         />
       );
       const child = wrapper.find('CompletionInternal').shallow();
-      expect(child.find('span').at(0).hasClass(/highlight/)).toEqual(true);
-      expect(child.find('span').at(1).hasClass(/highlight/)).toEqual(true);
-      expect(child.find('span').at(2).hasClass(/highlight/)).toEqual(true);
-      expect(child.find('span').at(3).hasClass(/highlight/)).toEqual(false);
-      expect(child.find('span').at(4).hasClass(/highlight/)).toEqual(true);
-      expect(child.find('span').at(5).hasClass(/highlight/)).toEqual(false);
+      expect(
+        child
+          .find('span')
+          .at(0)
+          .hasClass(/highlight/)
+      ).toEqual(true);
+      expect(
+        child
+          .find('span')
+          .at(1)
+          .hasClass(/highlight/)
+      ).toEqual(true);
+      expect(
+        child
+          .find('span')
+          .at(2)
+          .hasClass(/highlight/)
+      ).toEqual(true);
+      expect(
+        child
+          .find('span')
+          .at(3)
+          .hasClass(/highlight/)
+      ).toEqual(false);
+      expect(
+        child
+          .find('span')
+          .at(4)
+          .hasClass(/highlight/)
+      ).toEqual(true);
+      expect(
+        child
+          .find('span')
+          .at(5)
+          .hasClass(/highlight/)
+      ).toEqual(false);
     });
 
     it('in the middle', () => {
@@ -79,10 +109,30 @@ describe('<Completion> test', () => {
         />
       );
       const child = wrapper.find('CompletionInternal').shallow();
-      expect(child.find('span').at(0).hasClass(/highlight/)).toEqual(false);
-      expect(child.find('span').at(1).hasClass(/highlight/)).toEqual(true);
-      expect(child.find('span').at(2).hasClass(/highlight/)).toEqual(true);
-      expect(child.find('span').at(3).hasClass(/highlight/)).toEqual(false);
+      expect(
+        child
+          .find('span')
+          .at(0)
+          .hasClass(/highlight/)
+      ).toEqual(false);
+      expect(
+        child
+          .find('span')
+          .at(1)
+          .hasClass(/highlight/)
+      ).toEqual(true);
+      expect(
+        child
+          .find('span')
+          .at(2)
+          .hasClass(/highlight/)
+      ).toEqual(true);
+      expect(
+        child
+          .find('span')
+          .at(3)
+          .hasClass(/highlight/)
+      ).toEqual(false);
     });
   });
 });

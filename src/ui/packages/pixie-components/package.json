@@ -5,6 +5,12 @@
   "private": true,
   "main": "dist/index.js",
   "module": "dist/index.es.js",
+  "workspaces": {
+    "nohoist": [
+      "@storybook/*",
+      "**/@storybook/*"
+    ]
+  },
   "files": [
     "dist"
   ],
@@ -19,6 +25,8 @@
     "lint": "eslint '*/**/*.{js,ts,tsx}'",
     "test": "jest",
     "install": "rollup -c",
+    "storybook": "start-storybook -p 9001",
+    "storybook_static": "build-storybook -o storybook_static",
     "coverage": "jest --coverage"
   },
   "peerDependencies": {
@@ -45,6 +53,11 @@
     "@rollup/plugin-commonjs": "^16.0.0",
     "@rollup/plugin-node-resolve": "^10.0.0",
     "@rollup/plugin-url": "^5.0.1",
+    "@storybook/addon-essentials": "^6.0.28",
+    "@storybook/addons": "^6.0.28",
+    "@storybook/react": "^6.0.28",
+    "@storybook/source-loader": "^6.0.28",
+    "@storybook/theming": "^6.0.28",
     "@svgr/rollup": "^5.4.0",
     "@types/jest": "24.0.18",
     "@types/node": "^14.0.14",
@@ -53,6 +66,8 @@
     "@types/react-virtualized": "^9.21.8",
     "@typescript-eslint/eslint-plugin": "^2.30.0",
     "@typescript-eslint/parser": "^2.30.0",
+    "babel-loader": "^8.2.1",
+    "babel-preset-react-app": "^10.0.0",
     "enzyme": "^3.10.0",
     "enzyme-adapter-react-16": "^1.15.1",
     "eslint": "^6.8.0",
@@ -72,10 +87,11 @@
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
     "react-draggable": "^4.0.3",
+    "react-is": "^17.0.1",
     "react-monaco-editor": "^0.36.0",
     "react-split": "^2.0.7",
     "react-vega": "^7.3.0",
-    "react-virtualized": "^9.22.2",
+    "react-virtualized": "^9.21.2",
     "rollup": "^2.33.1",
     "rollup-plugin-peer-deps-external": "^2.2.4",
     "rollup-plugin-postcss": "^3.1.8",

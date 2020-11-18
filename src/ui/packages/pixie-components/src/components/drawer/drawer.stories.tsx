@@ -1,11 +1,11 @@
 import * as React from 'react';
 
 import Button from '@material-ui/core/Button';
-import { ResizableDrawer } from 'pixie-components';
+import { FixedSizeDrawer } from './drawer';
 
 export default {
-  title: 'Drawer/Resizable',
-  component: ResizableDrawer,
+  title: 'Drawer/Fixed',
+  component: FixedSizeDrawer,
 };
 
 export const Basic = () => {
@@ -15,25 +15,21 @@ export const Basic = () => {
   const otherContent = (
     <div>
       <Button onClick={toggleOpen} color='primary'>
-        { open ? 'Close' : 'Open'}
+        {open ? 'Close' : 'Open'}
       </Button>
-      <div>
-        Other content. Some text goes here.
-      </div>
+      <div>Other content. Some text goes here.</div>
     </div>
   );
 
   return (
-    <ResizableDrawer
+    <FixedSizeDrawer
       drawerDirection='left'
+      drawerSize='250px'
       open={open}
       otherContent={otherContent}
-      initialSize={200}
       overlay={false}
     >
-      <div>
-        Drawer contents
-      </div>
-    </ResizableDrawer>
+      <div>Drawer contents</div>
+    </FixedSizeDrawer>
   );
 };

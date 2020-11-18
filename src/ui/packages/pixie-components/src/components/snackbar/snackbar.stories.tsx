@@ -1,12 +1,18 @@
 import * as React from 'react';
 
 import Button from '@material-ui/core/Button';
-import { SnackbarProvider, useSnackbar } from 'pixie-components';
+import { SnackbarProvider, useSnackbar } from './snackbar';
 
 export default {
   title: 'Snackbar',
   component: SnackbarProvider,
-  decorators: [(Story) => <SnackbarProvider><Story /></SnackbarProvider>],
+  decorators: [
+    (Story) => (
+      <SnackbarProvider>
+        <Story />
+      </SnackbarProvider>
+    ),
+  ],
 };
 
 export const Basic = () => {
@@ -17,7 +23,11 @@ export const Basic = () => {
       message: 'this is a snackbar',
     });
   };
-  return <Button color='primary' onClick={click}>Click me</Button>;
+  return (
+    <Button color='primary' onClick={click}>
+      Click me
+    </Button>
+  );
 };
 
 export const WithAction = () => {
@@ -30,5 +40,9 @@ export const WithAction = () => {
       actionTitle: 'Again',
     });
   };
-  return <Button color='primary' onClick={click}>Click me</Button>;
+  return (
+    <Button color='primary' onClick={click}>
+      Click me
+    </Button>
+  );
 };

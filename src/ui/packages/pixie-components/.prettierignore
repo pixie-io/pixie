@@ -1,2 +1,3 @@
 # Ignore artifacts:
 dist
+storybook_static

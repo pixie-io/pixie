@@ -6,6 +6,7 @@ import withTheme from './mui-theme-decorator';
 addDecorator(withTheme);
 
 export const parameters = {
+  actions: { argTypesRegex: '^on[A-Z].*' },
   docs: {
     theme: themes.dark,
   },

@@ -56,7 +56,7 @@ def _webpack_binary_impl(ctx):
         "export OUTPUT_PATH=" + ctx.outputs.out.path,
         "tar -zxf ${BASE_PATH}/" + ctx.file.deps.path,
         "mv -f ${BASE_PATH}/" + ctx.file.licenses.path + " src/pages/credits/licenses.json",
-        "./node_modules/.bin/webpack -p",
+        "yarn build_prod",
         "cp dist/bundle.tar.gz ${BASE_PATH}/${OUTPUT_PATH}",
     ] + ui_shared_cmds_finish
 
@@ -83,7 +83,7 @@ def _pl_ui_test_impl(ctx):
         "export OUTPUT_PATH_JUNIT=${TEST_UNDECLARED_OUTPUTS_DIR}/junit.xml",
         "printenv",
         "tar -zxf ${BASE_PATH}/" + ctx.file.deps.short_path,
-        "./node_modules/.bin/jest --coverage &> build.log",
+        "yarn coverage &> build.log",
         "cp coverage/lcov.info ${OUTPUT_PATH_LCOV}",
         "cp junit.xml ${OUTPUT_PATH_JUNIT}",
     ] + ui_shared_cmds_finish
@@ -108,9 +108,11 @@ def _pl_storybook_binary_impl(ctx):
     cmd = ui_shared_cmds_start + [
         "export OUTPUT_PATH=" + ctx.outputs.out.path,
         "tar -zxf ${BASE_PATH}/" + ctx.file.deps.path,
-        "./node_modules/.bin/build-storybook -c .storybook -o storybook_static",
+        "yarn workspace pixie-components storybook_static",
         # Write the outputs to the correct location so Bazel can find them.
+        "pushd packages/pixie-components",
         "tar -czf ${BASE_PATH}/${OUTPUT_PATH} storybook_static",
+        "popd",
     ] + ui_shared_cmds_finish
 
     ctx.actions.run_shell(

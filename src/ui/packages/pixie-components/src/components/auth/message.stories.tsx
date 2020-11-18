@@ -1,12 +1,18 @@
 import * as React from 'react';
 
-import { AuthMessageBox } from 'pixie-components';
-import { FrameElement } from './frame-utils';
+import { AuthMessageBox } from './message';
+import { FrameElement } from 'utils/frame-utils';
 
 export default {
   title: 'Auth/Message Box',
   component: AuthMessageBox,
-  decorators: [(Story) => <FrameElement width={500}><Story /></FrameElement>],
+  decorators: [
+    (Story) => (
+      <FrameElement width={500}>
+        <Story />
+      </FrameElement>
+    ),
+  ],
 };
 
 export const Completed = () => (

@@ -2,16 +2,20 @@ import * as React from 'react';
 
 import Axios from 'axios';
 
-import {
-  Autocomplete, AutocompleteInputField,
-  Completions, FormFieldInput, Input,
-} from 'pixie-components';
+import { Autocomplete } from './autocomplete';
+import { AutocompleteInputField } from './autocomplete-field';
+import { Completions } from './completions';
+import { FormFieldInput } from './form';
+import { Input } from './input';
 
 export default {
   title: 'Autocomplete/v1',
   component: Autocomplete,
   subcomponents: {
-    AutocompleteInputField, Completions, FormFieldInput, Input,
+    AutocompleteInputField,
+    Completions,
+    FormFieldInput,
+    Input,
   },
 };
 
@@ -51,7 +55,7 @@ export const InputField = () => {
     <AutocompleteInputField
       name='An autocomplete input'
       value={value}
-      onEnterKey={() => { }}
+      onEnterKey={() => {}}
       onValueChange={setValue}
       getCompletions={async (input) => {
         // Add some fake delay to the API call.
@@ -110,7 +114,11 @@ export const InputWithHint = () => {
 };
 
 export const BasicFormInput = () => {
-  const [form, setForm] = React.useState({ field1: 'value1', field2: 'value2', field3: 'value3' });
+  const [form, setForm] = React.useState({
+    field1: 'value1',
+    field2: 'value2',
+    field3: 'value3',
+  });
   return (
     <FormFieldInput
       form={form}
@@ -131,23 +139,41 @@ export const BasicCompletions = () => {
       items={[
         { type: 'header', header: 'Recently used' },
         {
-          type: 'item', title: 'px/script1', id: 'px-0', highlights: [3, 4, 5],
+          type: 'item',
+          title: 'px/script1',
+          id: 'px-0',
+          highlights: [3, 4, 5],
         },
         {
-          type: 'item', title: 'px/script2', id: 'px-1', highlights: [3, 4, 5],
+          type: 'item',
+          title: 'px/script2',
+          id: 'px-1',
+          highlights: [3, 4, 5],
         },
         {
-          type: 'item', title: 'px/script3', id: 'px-2', highlights: [3, 4, 5],
+          type: 'item',
+          title: 'px/script3',
+          id: 'px-2',
+          highlights: [3, 4, 5],
         },
         {
-          type: 'item', title: 'px/script4', id: 'px-3', highlights: [3, 4, 5],
+          type: 'item',
+          title: 'px/script4',
+          id: 'px-3',
+          highlights: [3, 4, 5],
         },
         { type: 'header', header: 'Org scripts' },
         {
-          type: 'item', title: 'hulu/script1', id: 'hulu-4', description: 'cool script',
+          type: 'item',
+          title: 'hulu/script1',
+          id: 'hulu-4',
+          description: 'cool script',
         },
         {
-          type: 'item', title: 'hulu/script2', id: 'hulu-5', description: 'another cool script',
+          type: 'item',
+          title: 'hulu/script2',
+          id: 'hulu-5',
+          description: 'another cool script',
         },
         { type: 'item', title: 'hulu/script3', id: 'hulu-6' },
         { type: 'item', title: 'hulu/script4', id: 'hulu-7' },

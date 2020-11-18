@@ -4,9 +4,6 @@ dist/*
 # Coverage results.
 coverage/
 
-# For produced storybook_static.
-storybook_static/*
-
 # For Jenkins test results.
 junit.xml
 

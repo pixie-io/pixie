@@ -3,7 +3,6 @@ import * as React from 'react';
 
 import { Spinner } from 'components/spinner/spinner';
 import { editor as MonacoEditorTypes } from 'monaco-editor';
-import ICodeEditor = MonacoEditorTypes.ICodeEditor;
 
 interface CodeEditorProps {
   code?: string;
@@ -37,7 +36,7 @@ function removeKeybindings(editor, keys: string[]) {
 }
 
 export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
-  private editorRef: ICodeEditor;
+  private editorRef: MonacoEditorTypes.ICodeEditor;
 
   // Holder for code in the editor.
   private code;

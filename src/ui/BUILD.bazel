@@ -15,7 +15,6 @@ UI_DEP_PACKAGES = [
     ".yarnrc",
 ] + glob([
     "offline_package_cache/**",
-    "packages/**",
     "patches/**",
 ])
 
@@ -26,9 +25,8 @@ UI_SRCS = glob([
     "src/**",
 ])
 
-STORYBOOK_SRCS = glob([
-    ".storybook/**",
-    "stories/**",
+COMPONENT_SRCS = glob([
+    "packages/**",
 ])
 
 LICENSES_SRCS = [
@@ -37,13 +35,13 @@ LICENSES_SRCS = [
 
 pl_webpack_deps(
     name = "ui-deps",
-    srcs = UI_DEP_PACKAGES,
+    srcs = UI_DEP_PACKAGES + COMPONENT_SRCS,
     uilib_base = "src/ui",
 )
 
 pl_webpack_binary(
     name = "ui-bundle",
-    srcs = UI_SRCS,
+    srcs = UI_SRCS + COMPONENT_SRCS,
     deps = ":ui-deps",
     licenses = "//tools/licenses:all_licenses",
     stamp = True,
@@ -52,14 +50,14 @@ pl_webpack_binary(
 
 pl_ui_test(
     name = "ui-tests",
-    srcs = UI_SRCS,
+    srcs = UI_SRCS + COMPONENT_SRCS,
     deps = ":ui-deps",
     uilib_base = "src/ui",
 )
 
 pl_storybook_binary(
     name = "ui-storybook-bundle",
-    srcs = UI_SRCS + STORYBOOK_SRCS,
+    srcs = COMPONENT_SRCS,
     deps = ":ui-deps",
     stamp = True,
     uilib_base = "src/ui",

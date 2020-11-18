@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ColumnProps, DataTable } from 'pixie-components';
+import { ColumnProps, DataTable } from './data-table';
 
 type Sample = [string, number, number, number, number];
 
@@ -17,10 +17,15 @@ function createData(
   calories: number,
   fat: number,
   carbs: number,
-  protein: number,
+  protein: number
 ) {
   return {
-    id, dessert, calories, fat, carbs, protein,
+    id,
+    dessert,
+    calories,
+    fat,
+    carbs,
+    protein,
   };
 }
 
@@ -69,15 +74,17 @@ const columns: ColumnProps[] = [
 export default {
   title: 'DataTable',
   component: DataTable,
-  decorators: [(Story) => <div style={{ height: '500px' }}><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div style={{ height: '500px' }}>
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 export const Basic = () => (
-  <DataTable
-    columns={columns}
-    rowGetter={getRow}
-    rowCount={rows.length}
-  />
+  <DataTable columns={columns} rowGetter={getRow} rowCount={rows.length} />
 );
 
 export const Compact = () => (
