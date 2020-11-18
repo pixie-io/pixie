@@ -160,7 +160,7 @@ pl_webpack_deps = rule(
         ),
     }),
     outputs = {
-        "out": "%{name}.tar",
+        "out": "%{name}.tar.gz",
     },
 )
 

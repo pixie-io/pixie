@@ -36,7 +36,9 @@
           "**/*-test.ts",
           "**/*-test.tsx",
           "**/*.test.ts",
-          "**/*.test.tsx"
+          "**/*.test.tsx",
+          "webpack.config.js",
+          "webpack-utils.js"
         ]
       }
     ]

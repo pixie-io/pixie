@@ -3,7 +3,6 @@ const { execSync } = require('child_process');
 
 const webpack = require('webpack');
 const { CheckerPlugin } = require('awesome-typescript-loader');
-const ArchivePlugin = require('webpack-archive-plugin');
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
 const HtmlWebpackHarddiskPlugin = require('html-webpack-harddisk-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -73,9 +72,8 @@ if (isDevServer) {
       threshold: 1024,
       exclude: /config\.js/,
     }),
-    new ArchivePlugin({
-      output: join(resolve(__dirname, 'dist'), 'bundle'),
-      format: ['tar'],
+    new utils.ArchivePlugin({
+      output: join(resolve(__dirname, 'dist'), 'bundle.tar.gz'),
     }),
   );
 }
