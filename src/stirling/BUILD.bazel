@@ -508,6 +508,18 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "redis_trace_bpf_test",
+    timeout = "long",
+    srcs = ["redis_trace_bpf_test.cc"],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+        "//src/common/testing/test_utils:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "fd_resolver_test",
     srcs = ["fd_resolver_test.cc"],
     deps = [
