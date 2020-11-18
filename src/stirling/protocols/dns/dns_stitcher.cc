@@ -77,10 +77,6 @@ void ProcessReq(const Frame& req_frame, Request* req) {
   rapidjson::Document d;
   d.SetObject();
 
-  // Since rapidjson only maintains references, we must pin the address strings in memory,
-  // until the final json is printed out. We do that with this vector.
-  std::vector<std::string> addr_strs;
-
   rapidjson::Value queries(rapidjson::kArrayType);
   for (const auto& r : req_frame.records) {
     const std::string& name = r.name;
