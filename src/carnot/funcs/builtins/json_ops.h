@@ -2,6 +2,7 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
@@ -143,6 +144,16 @@ class ScriptReferenceUDF : public udf::ScalarUDF {
  public:
   StringValue Exec(FunctionContext*, StringValue label, StringValue script, T... args) {
     return ExecImpl(label, script, {std::forward<T>(args)...});
+  }
+
+  // Some hacky stuff due to variadic args....
+  static udf::InfRuleVec SemanticInferenceRules() {
+    const std::size_t num_script_args = sizeof...(T);
+    auto num_input_args = num_script_args + 2;  // add 1 each for script and label.
+    std::vector<types::SemanticType> input_st(num_input_args, types::SemanticType::ST_NONE);
+
+    return {udf::ExplicitRule::Create<ScriptReferenceUDF<T...>>(
+        types::SemanticType::ST_SCRIPT_REFERENCE, input_st)};
   }
 
  private:

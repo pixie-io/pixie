@@ -61,6 +61,7 @@ var semanticTypeToVizierSemanticType = map[typespb.SemanticType]vizierpb.Semanti
 	typespb.ST_HTTP_REQ_METHOD:         vizierpb.ST_HTTP_REQ_METHOD,
 	typespb.ST_HTTP_RESP_STATUS:        vizierpb.ST_HTTP_RESP_STATUS,
 	typespb.ST_HTTP_RESP_MESSAGE:       vizierpb.ST_HTTP_RESP_MESSAGE,
+	typespb.ST_SCRIPT_REFERENCE:        vizierpb.ST_SCRIPT_REFERENCE,
 }
 
 // These codes are taken from https://godoc.org/google.golang.org/grpc/codes#Code.

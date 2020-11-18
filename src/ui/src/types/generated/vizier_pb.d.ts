@@ -843,6 +843,7 @@ export enum SemanticType {
   ST_HTTP_REQ_METHOD = 1300,
   ST_HTTP_RESP_STATUS = 1400,
   ST_HTTP_RESP_MESSAGE = 1500,
+  ST_SCRIPT_REFERENCE = 3000,
 }
 export enum LifeCycleState { 
   UNKNOWN_STATE = 0,
