@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 # This script is use to create a K8s cluster in either the dev/prod/skylab environments.
 
@@ -6,9 +6,14 @@
 # Arguments
 ##################
 
+# These are used by pixie devs (pixies) for running k8s clusters for
+# development purposes
 set_default_values() {
   CLUSTER_NAME="dev-cluster-${USER}"
+  AUTOSCALING=true
   NUM_NODES=2
+  MIN_NODES=1
+  MAX_NODES=5
   MACHINE_TYPE=e2-standard-4
   IMAGE_NAME=UBUNTU
   DISK_SIZE=100
@@ -16,6 +21,15 @@ set_default_values() {
 
   PROD_MODE=false
   SKYLAB_MODE=false
+  PROJECT=pl-pixies
+  NETWORK=projects/pl-pixies/global/networks/dev
+  SUBNETWORK=projects/pl-pixies/regions/us-west1/subnetworks/us-west1-0
+}
+
+# These are used for running devinfra clusters -- jenkins, bazel remote builds,
+# bazel caching etc.
+set_default_devinfra_values() {
+  DEVINFRA_MODE=true
   PROJECT=pl-dev-infra
   NETWORK=projects/pl-dev-infra/global/networks/dev
   SUBNETWORK=projects/pl-dev-infra/regions/us-west1/subnetworks/us-west1-0
@@ -38,6 +52,7 @@ set_default_skylab_values() {
 print_config() {
   echo "Config: "
   echo "  PROD_MODE        : ${PROD_MODE}"
+  echo "  DEVINFRA_MODE    : ${DEVINFRA_MODE}"
   echo "  SKYLAB_MODE      : ${SKYLAB_MODE}"
   echo "  PROJECT          : ${PROJECT}"
   echo "  CLUSTER_NAME     : ${CLUSTER_NAME}"
@@ -56,7 +71,9 @@ usage() {
 
   echo "Usage: $0 [-p] [-c <cluster_name>] [-b] [-m <machine_type>] [-n <num_nodes>] [-i <image>]"
   echo " -p          : Prod cluster config, must appear as first argument. [default: ${PROD_MODE}]"
+  echo " -b          : DevInfra cluster config, must appear as first argument. [default: ${DEVINFRA_MODE}]"
   echo " -s          : Skylab cluster config, must appear as first argument. [default: ${SKYLAB_MODE}]"
+  echo " -f          : Disable autoscaling of the node pool."
   echo " -c <string> : name of your cluster. [default: ${CLUSTER_NAME}]"
   echo " -n <int>    : number of nodes in the cluster [default: ${NUM_NODES}]"
   echo " -m <string> : machine type [default: ${MACHINE_TYPE}]"
@@ -73,6 +90,12 @@ parse_args() {
     shift
   fi
 
+  # Check to see if dev infra flag is specified so that we can change the defaults.
+  if [ "$1" = "-b" ] ; then
+    set_default_devinfra_values
+    shift
+  fi
+
   # Check to see if skylaab  flag is specified so that we can change the defaults.
   if [ "$1" = "-s" ] ; then
     set_default_skylab_values
@@ -81,8 +104,13 @@ parse_args() {
 
   local OPTIND
   # Process the command line arguments.
-  while getopts "c:n:m:i:d:" opt; do
+  while getopts "fc:n:m:i:d:" opt; do
     case ${opt} in
+      f)
+        AUTOSCALING=false
+        unset MIN_NODES
+        unset MAX_NODES
+        ;;
       c)
         CLUSTER_NAME=$OPTARG
         ;;
@@ -116,6 +144,11 @@ set_default_values
 parse_args "$@"
 print_config
 
+AUTOSCALING_ARGS=()
+if [[ $AUTOSCALING == true ]]; then
+  AUTOSCALING_ARGS=(--enable-autoscaling --min-nodes "${MIN_NODES}" --max-nodes "${MAX_NODES}")
+fi
+
 ##################
 # Start the cluster
 ##################
@@ -136,6 +169,7 @@ gcloud beta container --project "${PROJECT}" clusters create ${CLUSTER_NAME} \
 "https://www.googleapis.com/auth/service.management",\
 "https://www.googleapis.com/auth/servicecontrol" \
  --num-nodes ${NUM_NODES} \
+ "${AUTOSCALING_ARGS[@]}" \
  --enable-ip-alias \
  --network "${NETWORK}" \
  --subnetwork "${SUBNETWORK}" \
