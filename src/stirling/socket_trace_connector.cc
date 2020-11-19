@@ -87,35 +87,44 @@ using ::pl::stirling::utils::ToJSONString;
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
     : SourceConnector(source_name, kTables), bpf_tools::BCCWrapper() {
   proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
-  InitProtocols();
+  InitProtocolTransferSpecs();
 }
 
-void SocketTraceConnector::InitProtocols() {
-  std::array<TrafficProtocol, kNumProtocols> protocols = TrafficProtocolEnumValues();
-
-  // Make sure a protocol transfer spec exists for each protocol.
-  for (const auto& p : protocols) {
-    DCHECK(protocol_transfer_specs_.find(p) != protocol_transfer_specs_.end());
-  }
-
-  // Populate `enabled` from flags.
+void SocketTraceConnector::InitProtocolTransferSpecs() {
+#define TRANSER_STREAM_PROTOCOL(protocol_name) \
+  &SocketTraceConnector::TransferStream<protocols::protocol_name::ProtocolTraits>
   // PROTOCOL_LIST: Requires update on new protocols.
-  protocol_transfer_specs_[kProtocolHTTP].enabled = FLAGS_stirling_enable_http_tracing;
-  protocol_transfer_specs_[kProtocolHTTP2].enabled = FLAGS_stirling_enable_grpc_tracing;
-  protocol_transfer_specs_[kProtocolMySQL].enabled = FLAGS_stirling_enable_mysql_tracing;
-  protocol_transfer_specs_[kProtocolCQL].enabled = FLAGS_stirling_enable_cass_tracing;
-  protocol_transfer_specs_[kProtocolPGSQL].enabled = FLAGS_stirling_enable_pgsql_tracing;
-  protocol_transfer_specs_[kProtocolDNS].enabled = FLAGS_stirling_enable_dns_tracing;
+  protocol_transfer_specs_ = {
+      {kProtocolHTTP,
+       {kHTTPTableNum, TRANSER_STREAM_PROTOCOL(http), FLAGS_stirling_enable_http_tracing}},
+      {kProtocolHTTP2,
+       {kHTTPTableNum, TRANSER_STREAM_PROTOCOL(http2), FLAGS_stirling_enable_grpc_tracing}},
+      {kProtocolMySQL,
+       {kMySQLTableNum, TRANSER_STREAM_PROTOCOL(mysql), FLAGS_stirling_enable_mysql_tracing}},
+      {kProtocolCQL,
+       {kCQLTableNum, TRANSER_STREAM_PROTOCOL(cass), FLAGS_stirling_enable_cass_tracing}},
+      {kProtocolPGSQL,
+       {kPGSQLTableNum, TRANSER_STREAM_PROTOCOL(pgsql), FLAGS_stirling_enable_pgsql_tracing}},
+      {kProtocolDNS,
+       {kDNSTableNum, TRANSER_STREAM_PROTOCOL(dns), FLAGS_stirling_enable_dns_tracing}},
+      // Unknown protocols attached to HTTP table so that they run their cleanup functions,
+      // but the use of nullptr transfer_fn means it won't actually transfer data to the HTTP table.
+      {kProtocolUnknown, {kHTTPTableNum, nullptr}},
+  };
+#undef TRANSER_STREAM_PROTOCOL
 
   // Populate `role_to_trace` from flags.
   std::optional<EndpointRole> role_to_trace =
       magic_enum::enum_cast<EndpointRole>(FLAGS_stirling_role_to_trace);
   if (!role_to_trace.has_value()) {
-    LOG(ERROR) << absl::Substitute("$0 is not a valid trace role specifier",
-                                   FLAGS_stirling_role_to_trace);
+    LOG(ERROR) << absl::Substitute(
+        "--stirling_role_to_trace=$0 is not a valid trace role specifier",
+        FLAGS_stirling_role_to_trace);
   }
 
-  for (const auto& p : protocols) {
+  for (const auto& p : TrafficProtocolEnumValues()) {
+    DCHECK(protocol_transfer_specs_.find(p) != protocol_transfer_specs_.end())
+        << "Missing transfer spec for protocol: " << magic_enum::enum_name(p);
     if (role_to_trace.has_value()) {
       protocol_transfer_specs_[p].role_to_trace = role_to_trace.value();
     }
