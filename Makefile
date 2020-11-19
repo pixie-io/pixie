@@ -53,7 +53,7 @@ gazelle-repos: go.mod
 
 .PHONY: gazelle
 gazelle: gazelle-repos
-	$(BAZEL) run //:gazelle
+	$(BAZEL) run //:gazelle -- fix
 
 .PHONY: go-setup
 go-setup: go-mod-ensure gazelle ## Run go setup to regenrate modules/build files.

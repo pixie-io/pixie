@@ -7,7 +7,6 @@ exports_files(["LICENSE"])
 
 gazelle(
     name = "gazelle",
-    mode = "fix",
     prefix = "pixielabs.ai/pixielabs",
 )
 
