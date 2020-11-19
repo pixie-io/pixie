@@ -406,9 +406,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   std::shared_ptr<ConnInfoMapManager> conn_info_map_mgr_;
 
-  // BPF maps through which the addresses of symbols for a given pid are communicated to the
-  // uprobes.
-  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_common_symaddrs_t> > common_symaddrs_map_;
+  // BPF maps through which the addresses of symbols for a given pid are communicated to uprobes.
+  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_common_symaddrs_t> >
+      go_common_symaddrs_map_;
   std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t> > http2_symaddrs_map_;
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);

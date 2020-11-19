@@ -338,6 +338,47 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   return Status::OK();
 }
 
+Status PopulateGoTLSDebugSymbols(DwarfReader* dwarf_reader, struct go_tls_symaddrs_t* symaddrs) {
+  // The information from DWARF assumes SP is 8 bytes larger than the SP
+  // we get from BPF code, so add the correction factor here.
+  // This is due to the return address being on the stack.
+  constexpr int32_t kSPOffset = 8;
+  const std::map<std::string, dwarf_tools::ArgInfo> kEmptyMap;
+
+#define GET_ARG_OFFSET(symaddr, fn_args_map, arg)                                        \
+  {                                                                                      \
+    auto it = fn_args_map.find(arg);                                                     \
+    symaddr = (it != fn_args_map.end()) ? (it->second.location.offset + kSPOffset) : -1; \
+    VLOG(1) << absl::Substitute(#symaddr " = $0", symaddr);                              \
+  }
+
+  // Arguments of crypto/tls.(*Conn).Write.
+  {
+    std::string_view fn = "crypto/tls.(*Conn).Write";
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap);
+    GET_ARG_OFFSET(symaddrs->Write_c_offset, args_map, "c");
+    GET_ARG_OFFSET(symaddrs->Write_b_offset, args_map, "b");
+  }
+
+  // Arguments of crypto/tls.(*Conn).Read.
+  {
+    std::string fn = "crypto/tls.(*Conn).Read";
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
+    GET_ARG_OFFSET(symaddrs->Read_c_offset, args_map, "c");
+    GET_ARG_OFFSET(symaddrs->Read_b_offset, args_map, "b");
+  }
+
+#undef GET_ARG_OFFSET
+
+  // List mandatory symaddrs here (symaddrs without which all probes become useless).
+  // Returning an error will prevent the probes from deploying.
+  if (symaddrs->Write_b_offset == -1 || symaddrs->Read_b_offset == -1) {
+    return error::Internal("Go TLS Read/Write arguments not found.");
+  }
+
+  return Status::OK();
+}
+
 }  // namespace
 
 StatusOr<struct go_common_symaddrs_t> GoCommonSymAddrs(ElfReader* elf_reader,
@@ -360,6 +401,16 @@ StatusOr<struct go_http2_symaddrs_t> GoHTTP2SymAddrs(ElfReader* elf_reader,
 
   PL_RETURN_IF_ERROR(PopulateHTTP2TypeAddrs(elf_reader, vendor_prefix, &symaddrs));
   PL_RETURN_IF_ERROR(PopulateHTTP2DebugSymbols(dwarf_reader, vendor_prefix, &symaddrs));
+
+  return symaddrs;
+}
+
+StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(ElfReader* elf_reader, DwarfReader* dwarf_reader) {
+  struct go_tls_symaddrs_t symaddrs;
+
+  PL_UNUSED(elf_reader);
+
+  PL_RETURN_IF_ERROR(PopulateGoTLSDebugSymbols(dwarf_reader, &symaddrs));
 
   return symaddrs;
 }

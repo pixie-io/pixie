@@ -19,7 +19,7 @@ static __inline struct go_grpc_data_event_t* get_data_event() {
 // Maps that communicate the location of symbols within a binary.
 //   Key: TGID
 //   Value: Symbol addresses for the binary with that TGID.
-BPF_HASH(common_symaddrs_map, uint32_t, struct go_common_symaddrs_t);
+BPF_HASH(go_common_symaddrs_map, uint32_t, struct go_common_symaddrs_t);
 BPF_HASH(http2_symaddrs_map, uint32_t, struct go_http2_symaddrs_t);
 
 // This map is used to help extract HTTP2 headers from the net/http library.
@@ -120,7 +120,7 @@ static __inline int32_t get_fd_from_conn_intf_core(struct go_interface conn_intf
 
 static __inline int32_t get_fd_from_conn_intf(struct go_interface conn_intf) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  struct go_common_symaddrs_t* symaddrs = common_symaddrs_map.lookup(&tgid);
+  struct go_common_symaddrs_t* symaddrs = go_common_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
     return 0;
   }
@@ -142,7 +142,7 @@ static __inline int32_t get_fd_from_io_writer_intf(void* io_writer_intf_ptr) {
   // we're not seeing the expected interface type.
 
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  struct go_common_symaddrs_t* symaddrs = common_symaddrs_map.lookup(&tgid);
+  struct go_common_symaddrs_t* symaddrs = go_common_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
     return 0;
   }

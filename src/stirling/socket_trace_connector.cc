@@ -170,9 +170,9 @@ Status SocketTraceConnector::InitImpl() {
   conn_info_map_mgr_ = std::make_shared<ConnInfoMapManager>(&bpf());
   ConnectionTracker::SetConnInfoMapManager(conn_info_map_mgr_);
 
-  common_symaddrs_map_ =
+  go_common_symaddrs_map_ =
       std::make_unique<ebpf::BPFHashTable<uint32_t, struct go_common_symaddrs_t>>(
-          bpf().get_hash_table<uint32_t, struct go_common_symaddrs_t>("common_symaddrs_map"));
+          bpf().get_hash_table<uint32_t, struct go_common_symaddrs_t>("go_common_symaddrs_map"));
   http2_symaddrs_map_ = std::make_unique<ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t>>(
       bpf().get_hash_table<uint32_t, struct go_http2_symaddrs_t>("http2_symaddrs_map"));
 
@@ -339,14 +339,14 @@ StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(const ArrayView<UProbeTmpl>
 namespace {
 Status UpdateGoCommonSymAddrs(
     ElfReader* elf_reader, DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
-    ebpf::BPFHashTable<uint32_t, struct go_common_symaddrs_t>* common_symaddrs_map) {
+    ebpf::BPFHashTable<uint32_t, struct go_common_symaddrs_t>* go_common_symaddrs_map) {
   PL_ASSIGN_OR_RETURN(struct go_common_symaddrs_t symaddrs,
                       GoCommonSymAddrs(elf_reader, dwarf_reader));
 
   for (auto& pid : pids) {
-    ebpf::StatusTuple s = common_symaddrs_map->update_value(pid, symaddrs);
+    ebpf::StatusTuple s = go_common_symaddrs_map->update_value(pid, symaddrs);
     LOG_IF(WARNING, s.code() != 0)
-        << absl::StrCat("Could not update common_symaddrs_map. Message=", s.msg());
+        << absl::StrCat("Could not update go_common_symaddrs_map. Message=", s.msg());
   }
 
   return Status::OK();
@@ -543,7 +543,7 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
     std::unique_ptr<DwarfReader> dwarf_reader = dwarf_reader_status.ConsumeValueOrDie();
 
     Status s = UpdateGoCommonSymAddrs(elf_reader.get(), dwarf_reader.get(), pid_vec,
-                                      common_symaddrs_map_.get());
+                                      go_common_symaddrs_map_.get());
     if (!s.ok()) {
       // Doesn't appear to be a binary with the mandatory symbols (e.g. TCPConn).
       // Might not even be a golang binary.

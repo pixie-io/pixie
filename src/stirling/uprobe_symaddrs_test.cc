@@ -60,5 +60,18 @@ TEST_F(UprobeSymaddrsTest, GoHTTP2SymAddrs) {
   EXPECT_EQ(symaddrs.writeHeader_hf_offset, 24);
 }
 
+TEST_F(UprobeSymaddrsTest, GoTLSSymAddrs) {
+  ASSERT_OK_AND_ASSIGN(struct go_tls_symaddrs_t symaddrs,
+                       GoTLSSymAddrs(elf_reader_.get(), dwarf_reader_.get()));
+
+  // Check some member offsets.
+  // The values may change when golang version is updated.
+  // If the test breaks because of that, just update the numbers here.
+  EXPECT_EQ(symaddrs.Write_c_offset, 8);
+  EXPECT_EQ(symaddrs.Write_b_offset, 16);
+  EXPECT_EQ(symaddrs.Read_c_offset, 8);
+  EXPECT_EQ(symaddrs.Read_b_offset, 16);
+}
+
 }  // namespace stirling
 }  // namespace pl

@@ -4,26 +4,36 @@
 // Symbol address structs
 //-----------------------------------------------------------------------------
 
-// These structs hold symbol addresses for various different uprobes.
-// The structs are used to communicate these addresses from user-space back to the kernel uprobes.
+// These structs hold information to enable tracing of statically linked libraries.
+// In particular two types of information is recorded:
+//   (1) Golang itable symbol addresses - to resolve types that underlie interfaces.
+//   (2) Struct member offsets - so we can access the required struct members.
+// This information is then communicated from user-space back to the kernel uprobes.
 
-// Currently, the uprobes that require symbol addresses are the golang HTTP2 probes.
-// In the future we will probe golang applications for TLS as well.
+// Currently, the tracers that require these addresses/offsets are the golang HTTP2 and TLS probes.
+// In the future, we may have libraries in other languages too (e.g. boringssl).
+
+// A note about the naming convention of Golang information:
+//  - Itable symbol address: represents the type in the itable (not the interface type).
+//  - Member offsets: <library>_<function>_<argument>_offset
+//  - library/function/argument all use golang symbol naming and case.
+
+// Note: number values in comments represent known offsets, in case we need to fall back.
+//       Eventually, they can be removed, because they are not reliable.
 
 // A set of symbols that are useful for various different uprobes.
 // Currently, this includes mostly connection related items,
 // which applies to any network protocol tracing (HTTP2, TLS, etc.).
 struct go_common_symaddrs_t {
+  // ---- itable symbols ----
+
   // net.Conn interface types.
   // go.itab.*google.golang.org/grpc/credentials/internal.syscallConn,net.Conn
   int64_t internal_syscallConn;
   int64_t tls_Conn;     // go.itab.*crypto/tls.Conn,net.Conn
   int64_t net_TCPConn;  // go.itab.*net.TCPConn,net.Conn
 
-  // Struct member offsets.
-  // Naming maintains golang style: <struct>_<member>_offset
-  // Note: values in comments represent known offsets, in case we need to fall back.
-  //       Eventually, they should be removed, because they are not reliable.
+  // ---- struct member offsets ----
 
   // Members of internal/poll.FD.
   int32_t FD_Sysfd_offset;  // 16
@@ -36,12 +46,13 @@ struct go_common_symaddrs_t {
 };
 
 struct go_http2_symaddrs_t {
+  // ---- itable symbols ----
+
   // io.Writer interface types.
   int64_t http_http2bufferedWriter;  // "go.itab.*net/http.http2bufferedWriter,io.Writer
   int64_t transport_bufWriter;  // "google.golang.org/grpc/internal/transport.bufWriter,io.Writer
 
-  // Argument offsets.
-  // Naming maintains golang style <library>_<function>_<argument>_offset
+  // ---- struct member offsets ----
 
   // Arguments of net/http.(*http2Framer).WriteDataPadded.
   int32_t http2Framer_WriteDataPadded_f_offset;          // 8
@@ -158,6 +169,19 @@ struct go_http2_symaddrs_t {
   int32_t http2bufferedWriter_w_offset;  // 0
 };
 
+struct go_tls_symaddrs_t {
+  // ---- struct member offsets ----
+
+  // Arguments of crypto/tls.(*Conn).Write.
+  int32_t Write_c_offset;  // 8
+  int32_t Write_b_offset;  // 16
+
+  // Arguments of crypto/tls.(*Conn).Read.
+  int32_t Read_c_offset;  // 8
+  int32_t Read_b_offset;  // 16
+};
+
+// Utility macro for use in BPF code, so the probe can exit if the symbol doesn't exist.
 #define REQUIRE_SYMADDR(symaddr, retval) \
   if (symaddr == -1) {                   \
     return retval;                       \
