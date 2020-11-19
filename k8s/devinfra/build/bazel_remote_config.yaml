@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bazel-remote-config
+data:
+# yamllint disable
+  config.yaml: |
+    dir: /mnt/data
+    max_size: 180
+    host: localhost
+    port: 10100
+    grpc_port: 10200
+    gcs_proxy:
+      bucket: bazel-cache-pl
+      use_default_credentials: true
+# yamllint enable

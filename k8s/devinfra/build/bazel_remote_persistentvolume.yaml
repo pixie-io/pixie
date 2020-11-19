@@ -1,0 +1,29 @@
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: bazel-remote-pv
+  labels:
+    type: local
+spec:
+  storageClassName: ssd
+  capacity:
+    storage: 200G
+  accessModes:
+  - ReadWriteOnce
+  hostPath:
+    path: /mnt/data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: bazel-remote-cache
+  name: bazel-remote-cache-pv-claim
+spec:
+  storageClassName: ssd
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200G
