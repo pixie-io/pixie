@@ -217,6 +217,8 @@ func (v *VizierClusterInfo) GetClusterInfo(ctx context.Context, request *cloudap
 
 func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []*uuidpb.UUID) (*cloudapipb.GetClusterInfoResponse, error) {
 	resp := &cloudapipb.GetClusterInfoResponse{}
+
+	cNames := make(map[string]int)
 	for _, id := range ids {
 		// TODO(zasgar/michelle): Make these requests parallel
 		vzInfo, err := v.VzMgr.GetVizierInfo(ctx, id)
@@ -257,6 +259,14 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 		}
 
 		s := vzStatusToClusterStatus(vzInfo.Status)
+		prettyName := PrettifyClusterName(vzInfo.ClusterName, false)
+
+		if val, ok := cNames[prettyName]; ok {
+			cNames[prettyName] = val + 1
+		} else {
+			cNames[prettyName] = 1
+		}
+
 		resp.Clusters = append(resp.Clusters, &cloudapipb.ClusterInfo{
 			ID:              id,
 			Status:          s,
@@ -266,7 +276,7 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 			},
 			ClusterUID:              vzInfo.ClusterUID,
 			ClusterName:             vzInfo.ClusterName,
-			PrettyClusterName:       PrettifyClusterName(vzInfo.ClusterName),
+			PrettyClusterName:       prettyName,
 			ClusterVersion:          vzInfo.ClusterVersion,
 			VizierVersion:           vzInfo.VizierVersion,
 			ControlPlanePodStatuses: podStatuses,
@@ -274,6 +284,14 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 			NumInstrumentedNodes:    vzInfo.NumInstrumentedNodes,
 		})
 	}
+
+	// For duplicate prettyNames, update the prettyNames to have more context.
+	for i, c := range resp.Clusters {
+		if cNames[c.PrettyClusterName] > 1 {
+			resp.Clusters[i].PrettyClusterName = PrettifyClusterName(c.ClusterName, true)
+		}
+	}
+
 	return resp, nil
 }
 

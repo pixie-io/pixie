@@ -6,13 +6,18 @@ import (
 )
 
 // PrettifyClusterName uses heuristics to try to generate a better looking cluster name.
-func PrettifyClusterName(name string) string {
+func PrettifyClusterName(name string, expanded bool) string {
 	name = strings.ToLower(name)
 	if strings.HasPrefix(name, "gke") {
 		splits := strings.Split(name, "_")
 		// GKE names are <gke>_<project>_<region>_<cluster_name>_<our suffix>
 		if len(splits) > 3 && len(splits[3]) > 0 {
-			return fmt.Sprintf("gke:%s", strings.Join(splits[3:], "_"))
+			project := splits[1]
+			name := fmt.Sprintf("gke:%s", strings.Join(splits[3:], "_"))
+			if expanded {
+				return fmt.Sprintf("%s (%s)", name, project)
+			}
+			return name
 		}
 	} else if strings.HasPrefix(name, "arn") {
 		// EKS names are "ARN::::CLUSTER/NAME"

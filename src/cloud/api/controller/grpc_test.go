@@ -214,6 +214,65 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 	assert.Equal(t, int32(3), cluster.NumInstrumentedNodes)
 }
 
+func TestVizierClusterInfo_GetClusterInfoDuplicates(t *testing.T) {
+	orgID := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	assert.NotNil(t, clusterID)
+	clusterID2 := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c9")
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockClients.MockVzMgr.EXPECT().GetViziersByOrg(gomock.Any(), orgID).Return(&vzmgrpb.GetViziersByOrgResponse{
+		VizierIDs: []*uuidpb.UUID{clusterID, clusterID2},
+	}, nil)
+
+	mockClients.MockVzMgr.EXPECT().GetVizierInfo(gomock.Any(), clusterID).Return(&cvmsgspb.VizierInfo{
+		VizierID:        clusterID,
+		Status:          cvmsgspb.VZ_ST_HEALTHY,
+		LastHeartbeatNs: int64(1305646598000000000),
+		Config: &cvmsgspb.VizierConfig{
+			PassthroughEnabled: false,
+		},
+		VizierVersion:        "1.2.3",
+		ClusterUID:           "a UID",
+		ClusterName:          "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar",
+		ClusterVersion:       "5.6.7",
+		NumNodes:             5,
+		NumInstrumentedNodes: 3,
+	}, nil)
+
+	mockClients.MockVzMgr.EXPECT().GetVizierInfo(gomock.Any(), clusterID2).Return(&cvmsgspb.VizierInfo{
+		VizierID:        clusterID,
+		Status:          cvmsgspb.VZ_ST_HEALTHY,
+		LastHeartbeatNs: int64(1305646598000000000),
+		Config: &cvmsgspb.VizierConfig{
+			PassthroughEnabled: false,
+		},
+		VizierVersion:        "1.2.3",
+		ClusterUID:           "a UID2",
+		ClusterName:          "gke_pl-pixies_us-west1-a_dev-cluster-zasgar",
+		ClusterVersion:       "5.6.7",
+		NumNodes:             5,
+		NumInstrumentedNodes: 3,
+	}, nil)
+
+	vzClusterInfoServer := &controller.VizierClusterInfo{
+		VzMgr: mockClients.MockVzMgr,
+	}
+
+	resp, err := vzClusterInfoServer.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
+
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(resp.Clusters))
+	assert.Equal(t, "gke:dev-cluster-zasgar (pl-dev-infra)", resp.Clusters[0].PrettyClusterName)
+	assert.Equal(t, "gke:dev-cluster-zasgar (pl-pixies)", resp.Clusters[1].PrettyClusterName)
+}
+
 func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	assert.NotNil(t, clusterID)
