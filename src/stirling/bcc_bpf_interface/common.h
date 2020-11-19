@@ -106,13 +106,40 @@ enum ControlValueIndex {
   kNumControlValues,
 };
 
-struct conn_symaddrs_t {
+//-----------------------------------------------------------------------------
+// Symbol address structs
+//-----------------------------------------------------------------------------
+
+// These structs hold symbol addresses for various different uprobes.
+// Currently we uprobe golang applications for HTTP2.
+// In the future we will probe golang applications for TLS as well.
+
+// A set of symbols that are useful for various different uprobes.
+// Currently, this includes mostly connection related items,
+// which applies to any network protocol tracing (HTTP2, TLS, etc.).
+struct common_symaddrs_t {
   // net.Conn interface types.
   // go.itab.*google.golang.org/grpc/credentials/internal.syscallConn,net.Conn
   int64_t internal_syscallConn;
   int64_t tls_Conn;     // go.itab.*crypto/tls.Conn,net.Conn
   int64_t net_TCPConn;  // go.itab.*net.TCPConn,net.Conn
 
+  // Struct member offsets.
+  // Naming maintains golang style: <struct>_<member>_offset
+  // Note: values in comments represent known offsets, in case we need to fall back.
+  //       Eventually, they should be removed, because they are not reliable.
+
+  // Members of internal/poll.FD.
+  int32_t FD_Sysfd_offset;  // 16
+
+  // Members of crypto/tls.Conn.
+  int32_t tlsConn_conn_offset;  // 0
+
+  // Members of google.golang.org/grpc/credentials/internal.syscallConn
+  int32_t syscallConn_conn_offset;  // 0
+};
+
+struct http2_symaddrs_t {
   // io.Writer interface types.
   int64_t http_http2bufferedWriter;  // "go.itab.*net/http.http2bufferedWriter,io.Writer
   int64_t transport_bufWriter;  // "google.golang.org/grpc/internal/transport.bufWriter,io.Writer
@@ -170,15 +197,6 @@ struct conn_symaddrs_t {
   // Naming maintains golang style: <struct>_<member>_offset
   // Note: values in comments represent known offsets, in case we need to fall back.
   //       Eventually, they should be removed, because they are not reliable.
-
-  // Members of internal/poll.FD.
-  int32_t FD_Sysfd_offset;  // 16
-
-  // Members of crypto/tls.Conn.
-  int32_t tlsConn_conn_offset;  // 0
-
-  // Members of google.golang.org/grpc/credentials/internal.syscallConn
-  int32_t syscallConn_conn_offset;  // 0
 
   // Members of golang.org/x/net/http2/hpack.HeaderField.
   int32_t HeaderField_Name_offset;   // 0
@@ -243,3 +261,8 @@ struct conn_symaddrs_t {
   // Members of net/http.http2bufferedWriter
   int32_t http2bufferedWriter_w_offset;  // 0
 };
+
+#define REQUIRE_SYMADDR(symaddr, retval) \
+  if (symaddr == -1) {                   \
+    return retval;                       \
+  }

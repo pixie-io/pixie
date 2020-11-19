@@ -168,9 +168,10 @@ Status SocketTraceConnector::InitImpl() {
   conn_info_map_mgr_ = std::make_shared<ConnInfoMapManager>(&bpf());
   ConnectionTracker::SetConnInfoMapManager(conn_info_map_mgr_);
 
-  http2_symaddrs_map_ = std::make_unique<ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>>(
-      bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("http2_symaddrs_map"));
-  // http2_symaddrs_map_mgr_ = std::make_unique<HTTP2SymAddrsMapManager>(&bpf());
+  common_symaddrs_map_ = std::make_unique<ebpf::BPFHashTable<uint32_t, struct common_symaddrs_t>>(
+      bpf().get_hash_table<uint32_t, struct common_symaddrs_t>("common_symaddrs_map"));
+  http2_symaddrs_map_ = std::make_unique<ebpf::BPFHashTable<uint32_t, struct http2_symaddrs_t>>(
+      bpf().get_hash_table<uint32_t, struct http2_symaddrs_t>("http2_symaddrs_map"));
 
   return Status::OK();
 }
@@ -269,6 +270,17 @@ Status SocketTraceConnector::DisableSelfTracing() {
   return UpdatePerCPUArrayValue(kStirlingTGIDIndex, self_pid, &control_map_handle);
 }
 
+//-----------------------------------------------------------------------------
+// Symbol Population Functions
+//-----------------------------------------------------------------------------
+
+// The functions in this section populate structs that contain locations of necessary symbols,
+// which are then passed through a BPF map to the uprobe.
+// For example, locations of required struct members are communicated through this fasion.
+// TODO(oazizi): Move this section into its own file.
+
+namespace {
+
 StatusOr<std::string> InferHTTP2SymAddrVendorPrefix(ElfReader* elf_reader) {
   // We now want to infer the vendor prefix directory. Use the list of symbols below as samples to
   // help infer. The iteration will stop after the first inference.
@@ -298,28 +310,8 @@ StatusOr<std::string> InferHTTP2SymAddrVendorPrefix(ElfReader* elf_reader) {
   return vendor_prefix;
 }
 
-Status SocketTraceConnector::UpdateHTTP2SymAddrs(
-    ElfReader* elf_reader, DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
-    ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map) {
-  struct conn_symaddrs_t symaddrs;
-
-  PL_ASSIGN_OR_RETURN(std::string vendor_prefix, InferHTTP2SymAddrVendorPrefix(elf_reader));
-
-  PL_RETURN_IF_ERROR(UpdateHTTP2TypeAddrs(elf_reader, vendor_prefix, &symaddrs));
-  PL_RETURN_IF_ERROR(UpdateHTTP2DebugSymbols(dwarf_reader, vendor_prefix, &symaddrs));
-
-  for (auto& pid : pids) {
-    ebpf::StatusTuple s = http2_symaddrs_map->update_value(pid, symaddrs);
-    LOG_IF(WARNING, s.code() != 0)
-        << absl::StrCat("Could not update http2_symaddrs_map. Message=", s.msg());
-  }
-
-  return Status::OK();
-}
-
-Status SocketTraceConnector::UpdateHTTP2TypeAddrs(ElfReader* elf_reader,
-                                                  std::string_view vendor_prefix,
-                                                  struct conn_symaddrs_t* symaddrs) {
+Status UpdateCommonTypeAddrs(ElfReader* elf_reader, std::string_view vendor_prefix,
+                             struct common_symaddrs_t* symaddrs) {
   // Note: we only return error if a *mandatory* symbol is missing. Only TCPConn is mandatory.
   // Without TCPConn, the uprobe cannot resolve the FD, and becomes pointless.
 
@@ -332,11 +324,6 @@ Status SocketTraceConnector::UpdateHTTP2TypeAddrs(ElfReader* elf_reader,
                            "google.golang.org/grpc/credentials/internal.syscallConn,net.Conn"));
   GET_SYMADDR(symaddrs->tls_Conn, "go.itab.*crypto/tls.Conn,net.Conn");
   GET_SYMADDR(symaddrs->net_TCPConn, "go.itab.*net.TCPConn,net.Conn");
-  GET_SYMADDR(symaddrs->http_http2bufferedWriter,
-              "go.itab.*net/http.http2bufferedWriter,io.Writer");
-  GET_SYMADDR(symaddrs->transport_bufWriter,
-              absl::StrCat("go.itab.*", vendor_prefix,
-                           "google.golang.org/grpc/internal/transport.bufWriter,io.Writer"));
 
 #undef GET_SYMADDR
 
@@ -350,13 +337,8 @@ Status SocketTraceConnector::UpdateHTTP2TypeAddrs(ElfReader* elf_reader,
   return Status::OK();
 }
 
-Status SocketTraceConnector::UpdateHTTP2DebugSymbols(DwarfReader* dwarf_reader,
-                                                     std::string_view vendor_prefix,
-                                                     struct conn_symaddrs_t* symaddrs) {
-  // Note: we only return error if a *mandatory* symbol is missing. Currently none are mandatory,
-  // because these multiple probes for multiple HTTP2/GRPC libraries. Even if a symbol for one
-  // is missing it doesn't mean the other library's probes should not be deployed.
-
+Status UpdateCommonDebugSymbols(DwarfReader* dwarf_reader, std::string_view vendor_prefix,
+                                struct common_symaddrs_t* symaddrs) {
 #define VENDOR_SYMBOL(symbol) absl::StrCat(vendor_prefix, symbol)
 
 #define GET_MEMBER_OFFSET(symaddr, type, member)                                        \
@@ -373,6 +355,72 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(DwarfReader* dwarf_reader,
   GET_MEMBER_OFFSET(symaddrs->syscallConn_conn_offset,
                     VENDOR_SYMBOL("google.golang.org/grpc/credentials/internal.syscallConn"),
                     "conn");
+  // clang-format on
+
+#undef GET_MEMBER_OFFSET
+#undef VENDOR_SYMBOL
+
+  // List mandatory symaddrs here (symaddrs without which all probes become useless).
+  // Returning an error will prevent the probes from deploying.
+  if (symaddrs->FD_Sysfd_offset == -1) {
+    return error::Internal("FD_Sysfd_offset not found");
+  }
+
+  return Status::OK();
+}
+
+Status UpdateCommonSymAddrs(
+    ElfReader* elf_reader, DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
+    ebpf::BPFHashTable<uint32_t, struct common_symaddrs_t>* common_symaddrs_map) {
+  struct common_symaddrs_t symaddrs;
+
+  PL_ASSIGN_OR_RETURN(std::string vendor_prefix, InferHTTP2SymAddrVendorPrefix(elf_reader));
+
+  PL_RETURN_IF_ERROR(UpdateCommonTypeAddrs(elf_reader, vendor_prefix, &symaddrs));
+  PL_RETURN_IF_ERROR(UpdateCommonDebugSymbols(dwarf_reader, vendor_prefix, &symaddrs));
+
+  for (auto& pid : pids) {
+    ebpf::StatusTuple s = common_symaddrs_map->update_value(pid, symaddrs);
+    LOG_IF(WARNING, s.code() != 0)
+        << absl::StrCat("Could not update common_symaddrs_map. Message=", s.msg());
+  }
+
+  return Status::OK();
+}
+
+Status UpdateHTTP2TypeAddrs(ElfReader* elf_reader, std::string_view vendor_prefix,
+                            struct http2_symaddrs_t* symaddrs) {
+  // Note: we only return error if a *mandatory* symbol is missing. Only TCPConn is mandatory.
+  // Without TCPConn, the uprobe cannot resolve the FD, and becomes pointless.
+
+#define GET_SYMADDR(symaddr, name)                        \
+  symaddr = elf_reader->SymbolAddress(name).value_or(-1); \
+  VLOG(1) << absl::Substitute(#symaddr " = $0", symaddr);
+
+  GET_SYMADDR(symaddrs->http_http2bufferedWriter,
+              "go.itab.*net/http.http2bufferedWriter,io.Writer");
+  GET_SYMADDR(symaddrs->transport_bufWriter,
+              absl::StrCat("go.itab.*", vendor_prefix,
+                           "google.golang.org/grpc/internal/transport.bufWriter,io.Writer"));
+
+#undef GET_SYMADDR
+
+  return Status::OK();
+}
+
+Status UpdateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view vendor_prefix,
+                               struct http2_symaddrs_t* symaddrs) {
+  // Note: we only return error if a *mandatory* symbol is missing. Currently none are mandatory,
+  // because these multiple probes for multiple HTTP2/GRPC libraries. Even if a symbol for one
+  // is missing it doesn't mean the other library's probes should not be deployed.
+
+#define VENDOR_SYMBOL(symbol) absl::StrCat(vendor_prefix, symbol)
+
+#define GET_MEMBER_OFFSET(symaddr, type, member)                                        \
+  PL_ASSIGN_OR(symaddr, dwarf_reader->GetStructMemberOffset(type, member), __s__ = -1); \
+  VLOG(1) << absl::Substitute(#symaddr " = $0", symaddr);
+
+  // clang-format off
   GET_MEMBER_OFFSET(symaddrs->HeaderField_Name_offset,
                     VENDOR_SYMBOL("golang.org/x/net/http2/hpack.HeaderField"),
                     "Name");
@@ -563,14 +611,32 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(DwarfReader* dwarf_reader,
 
 #undef VENDOR_SYMBOL
 
-  // List mandatory symaddrs here (symaddrs without which all probes become useless).
-  // Returning an error will prevent the probes from deploying.
-  if (symaddrs->FD_Sysfd_offset == -1) {
-    return error::Internal("FD_Sysfd_offset not found");
+  return Status::OK();
+}
+
+Status UpdateHTTP2SymAddrs(
+    ElfReader* elf_reader, DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
+    ebpf::BPFHashTable<uint32_t, struct http2_symaddrs_t>* http2_symaddrs_map) {
+  struct http2_symaddrs_t symaddrs;
+
+  PL_ASSIGN_OR_RETURN(std::string vendor_prefix, InferHTTP2SymAddrVendorPrefix(elf_reader));
+
+  PL_RETURN_IF_ERROR(UpdateHTTP2TypeAddrs(elf_reader, vendor_prefix, &symaddrs));
+  PL_RETURN_IF_ERROR(UpdateHTTP2DebugSymbols(dwarf_reader, vendor_prefix, &symaddrs));
+
+  for (auto& pid : pids) {
+    ebpf::StatusTuple s = http2_symaddrs_map->update_value(pid, symaddrs);
+    LOG_IF(WARNING, s.code() != 0)
+        << absl::StrCat("Could not update http2_symaddrs_map. Message=", s.msg());
   }
 
   return Status::OK();
 }
+}  // namespace
+
+//-----------------------------------------------------------------------------
+// Uprobe Management Functions
+//-----------------------------------------------------------------------------
 
 StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe_tmpls,
                                                      const std::string& binary,
@@ -638,13 +704,10 @@ StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(const ArrayView<UProbeTmpl>
 StatusOr<int> SocketTraceConnector::AttachHTTP2Probes(
     const std::string& binary, elf_tools::ElfReader* elf_reader,
     dwarf_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& new_pids,
-    ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map) {
-  // Step 1: Update BPF symbols_map on all new PIDs.
+    ebpf::BPFHashTable<uint32_t, struct http2_symaddrs_t>* http2_symaddrs_map) {
+  // Step 1: Update BPF symaddrs for this binary.
   Status s = UpdateHTTP2SymAddrs(elf_reader, dwarf_reader, new_pids, http2_symaddrs_map);
   if (!s.ok()) {
-    // Doesn't appear to be a binary with the mandatory symbols (e.g. TCPConn).
-    // Might not even be a golang binary.
-    // Either way, not of interest to probe.
     return 0;
   }
 
@@ -807,6 +870,15 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
       continue;
     }
     std::unique_ptr<DwarfReader> dwarf_reader = dwarf_reader_status.ConsumeValueOrDie();
+
+    Status s = UpdateCommonSymAddrs(elf_reader.get(), dwarf_reader.get(), pid_vec,
+                                    common_symaddrs_map_.get());
+    if (!s.ok()) {
+      // Doesn't appear to be a binary with the mandatory symbols (e.g. TCPConn).
+      // Might not even be a golang binary.
+      // Either way, not of interest to probe.
+      continue;
+    }
 
     // HTTP2 Probes.
     if (protocol_transfer_specs_[kProtocolHTTP2].enabled) {
