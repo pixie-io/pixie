@@ -1,7 +1,8 @@
 import { SemanticType } from 'types/generated/vizier_pb';
 import {
   entityPageForScriptId, getLiveViewTitle, LiveViewPage, matchLiveViewEntity,
-  optionallyGetNamespace, toEntityPathname, toEntityURL, toSingleEntityPage,
+  optionallyGetNamespace, scriptToEntityURL, toEntityPathname, toEntityURL,
+  toSingleEntityPage,
 } from './live-view-params';
 
 describe('matchLiveViewEntity test', () => {
@@ -258,7 +259,7 @@ describe('toEntityURL test', () => {
     };
     expect(toEntityURL(entity, {
       propagatedParam: 'foo',
-    })).toEqual('/live/clusters/gke%3Afoobar/script');
+    })).toEqual('/live/clusters/gke%3Afoobar/script?propagatedParam=foo');
   });
 });
 
@@ -410,6 +411,22 @@ describe('entityPageForScriptId', () => {
 
   it('should return the right enum for a non-entity script id', () => {
     expect(entityPageForScriptId('px/http_data')).toEqual(LiveViewPage.Default);
+  });
+});
+
+describe('scriptToEntityURL', () => {
+  it('should return an entity URL for an entity script', () => {
+    expect(scriptToEntityURL('px/namespace', 'aClusterName', {
+      namespace: 'foobar',
+      anotherArg: '-30s',
+    })).toEqual('/live/clusters/aClusterName/namespaces/foobar?anotherArg=-30s');
+  });
+
+  it('should return a non entity URL for a non entity script', () => {
+    expect(scriptToEntityURL('px/http_data', 'aClusterName', {
+      namespace: 'foobar',
+      anotherArg: '-30s',
+    })).toEqual('/live/clusters/aClusterName/script?anotherArg=-30s&namespace=foobar&script=px%2Fhttp_data');
   });
 });
 

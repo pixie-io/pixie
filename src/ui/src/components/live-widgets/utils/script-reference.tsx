@@ -5,7 +5,7 @@ import {
 } from '@material-ui/core';
 import { Arguments } from 'utils/args-utils';
 import { SemanticType } from '../../../types/generated/vizier_pb';
-import { toEntityURL, toSingleEntityPage } from './live-view-params';
+import { scriptToEntityURL, toEntityURL, toSingleEntityPage } from './live-view-params';
 
 const styles = ({ palette }: Theme) => createStyles({
   root: {
@@ -19,6 +19,8 @@ const styles = ({ palette }: Theme) => createStyles({
   },
 });
 
+// EntityLink is used when we are creating a deep link to an entity's script
+// based on its semantic type.
 export interface EntityLinkProps extends WithStyles<typeof styles>{
   entity: string;
   semanticType: SemanticType;
@@ -49,3 +51,22 @@ export function isEntityType(semanticType: SemanticType): boolean {
       return false;
   }
 }
+
+// ScriptReference is used when we are creating a deep link from a script name.
+export interface ScriptReferenceProps extends WithStyles<typeof styles>{
+  label: string;
+  script: string;
+  clusterName: string;
+  args: Arguments;
+}
+
+const ScriptReferencePlain = ({
+  label, script, args, clusterName, classes,
+}: ScriptReferenceProps) => {
+  const path = scriptToEntityURL(script, clusterName, args);
+  return (
+    <Link to={path} className={classes.root}>{label}</Link>
+  );
+};
+
+export const ScriptReference = withStyles(styles)(ScriptReferencePlain);

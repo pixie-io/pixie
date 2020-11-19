@@ -14,6 +14,7 @@ import {
 import {
   EntityLink,
   isEntityType,
+  ScriptReference,
   STATUS_TYPES,
   toStatusIndicator,
 } from 'components/live-widgets/utils';
@@ -194,6 +195,13 @@ const entityRenderer = (st: SemanticType, clusterName: string, propagatedArgs?: 
   return entity;
 };
 
+const scriptReferenceRenderer = (clusterName: string) => ((v) => {
+  const { script, label, args } = v;
+  return (
+    <ScriptReference label={label} script={script} args={args} clusterName={clusterName} />
+  );
+});
+
 const CPUDataWrapper = (data: any) => <CPUData data={data} />;
 const AlertDataWrapper = (data: any) => <AlertData data={data} />;
 
@@ -227,6 +235,8 @@ export const prettyCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (C
       return renderWrapper(ThroughputRenderer);
     case SemanticType.ST_THROUGHPUT_BYTES_PER_NS:
       return renderWrapper(ThroughputBytesRenderer);
+    case SemanticType.ST_SCRIPT_REFERENCE:
+      return scriptReferenceRenderer(clusterName);
     default:
       break;
   }

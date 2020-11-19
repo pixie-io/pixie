@@ -18,6 +18,12 @@ export interface PodStatus {
   message: string;
 }
 
+export interface ScriptReference {
+  label: string;
+  script: string;
+  args: { [arg: string]: string };
+}
+
 // Parses a JSON string as a quantile, so that downstream sort and renderers don't
 // have to reparse the JSON every time they handle a quantiles value.
 function parseQuantile(val: any): Quantile {
@@ -50,6 +56,16 @@ function parsePodStatus(val: any): PodStatus {
   }
 }
 
+function parseScriptReference(val: any): ScriptReference {
+  try {
+    const parsed = JSON.parse(val);
+    const { label, script, args } = parsed;
+    return { label, script, args };
+  } catch (error) {
+    return null;
+  }
+}
+
 // Parses the rows based on their semantic type.
 export function parseRows(semanticTypeMap: Map<string, SemanticType>, rows: any[]): any[] {
   const parsers = new Map();
@@ -64,6 +80,9 @@ export function parseRows(semanticTypeMap: Map<string, SemanticType>, rows: any[
       case SemanticType.ST_QUANTILES:
       case SemanticType.ST_DURATION_NS_QUANTILES:
         parsers.set(dataKey, parseQuantile);
+        break;
+      case SemanticType.ST_SCRIPT_REFERENCE:
+        parsers.set(dataKey, parseScriptReference);
         break;
       default:
         break;

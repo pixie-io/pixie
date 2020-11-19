@@ -292,17 +292,53 @@ export function toEntityPathname(entity: EntityPage): string {
 }
 
 export function toEntityURL(entity: EntityPage, propagatedArgs?: Arguments): string {
-  // Don't propagate args for a non entity page because we don't know whether those view share
-  // args with the entity pages (for now, start_time).
-  if (entity.page === LiveViewPage.Default) {
-    return toEntityPathname(entity);
-  }
   const pathname = toEntityPathname(entity);
   let queryString = '';
   if (propagatedArgs) {
     queryString = QueryString.stringify(propagatedArgs);
   }
   return queryString ? `${pathname}?${queryString}` : pathname;
+}
+
+// Gets the arguments that are entity-specific (and should go in the URL path).
+export function getEntityParams(liveViewPage: LiveViewPage, args: Arguments): EntityURLParams {
+  const entityParamNames = LiveViewEntityParams.get(liveViewPage) || new Set();
+  const entityParams = {};
+  entityParamNames.forEach((paramName: string) => {
+    if (args[paramName] != null) {
+      entityParams[paramName] = args[paramName];
+    }
+  });
+  return entityParams;
+}
+
+// Gets the arguments that are not entity-specific (and should go in the query string).
+export function getNonEntityParams(liveViewPage: LiveViewPage, args: Arguments): Arguments {
+  const entityParamNames = LiveViewEntityParams.get(liveViewPage) || new Set();
+  const nonEntityParams = {};
+  Object.keys(args).forEach((argName: string) => {
+    if (!entityParamNames.has(argName)) {
+      nonEntityParams[argName] = args[argName];
+    }
+  });
+  return nonEntityParams;
+}
+
+// Takes a script and arguments and formats it as an entity URL if applicable.
+export function scriptToEntityURL(script: string, clusterName: string, args: Arguments): string {
+  const liveViewPage = entityPageForScriptId(script);
+  const entityParams = getEntityParams(liveViewPage, args);
+  const nonEntityParams = getNonEntityParams(liveViewPage, args);
+  const entityPage = {
+    clusterName,
+    page: liveViewPage,
+    params: entityParams,
+  };
+  return toEntityURL(entityPage, liveViewPage === LiveViewPage.Default ? {
+    ...nonEntityParams,
+    // non-entity pages require a script query parameter.
+    script,
+  } : nonEntityParams);
 }
 
 export function toSingleEntityPage(entityName: string, semanticType: SemanticType, clusterName: string): EntityPage {

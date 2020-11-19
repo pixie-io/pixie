@@ -22,7 +22,7 @@ import urlParams from 'utils/url-params';
 import { useSnackbar } from 'pixie-components';
 
 import {
-  EntityURLParams, getLiveViewTitle, LiveViewEntityParams, LiveViewPage,
+  getEntityParams, getLiveViewTitle, getNonEntityParams, LiveViewPage,
   LiveViewPageScriptIds, matchLiveViewEntity, toEntityPathname,
 } from 'components/live-widgets/utils/live-view-params';
 import { BatchDataUpdate, Table } from 'common/vizier-grpc-client';
@@ -86,28 +86,6 @@ function getTitleOfScript(scriptId: string, scripts: Map<string, Script>): strin
     return scripts.get(scriptId).title;
   }
   return scriptId;
-}
-
-function getEntityParams(liveViewPage: LiveViewPage, args: Arguments): EntityURLParams {
-  const entityParamNames = LiveViewEntityParams.get(liveViewPage) || new Set();
-  const entityParams = {};
-  entityParamNames.forEach((paramName: string) => {
-    if (args[paramName] != null) {
-      entityParams[paramName] = args[paramName];
-    }
-  });
-  return entityParams;
-}
-
-function getNonEntityParams(liveViewPage: LiveViewPage, args: Arguments): Arguments {
-  const entityParamNames = LiveViewEntityParams.get(liveViewPage) || new Set();
-  const nonEntityParams = {};
-  Object.keys(args).forEach((argName: string) => {
-    if (!entityParamNames.has(argName)) {
-      nonEntityParams[argName] = args[argName];
-    }
-  });
-  return nonEntityParams;
 }
 
 const ScriptContextProvider = (props) => {

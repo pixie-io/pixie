@@ -48,6 +48,21 @@ describe('parseRows', () => {
       ]);
   });
 
+  it('correctly parses a row with script references', () => {
+    const semanticTypes = new Map([
+      ['ref', SemanticType.ST_SCRIPT_REFERENCE],
+    ]);
+
+    expect(parseRows(semanticTypes, [
+      { ref: '{"label": "clickable", "script": "px/namespaces", "args": {"bar": "abc"}}' },
+      { ref: 'notcorrect' },
+    ]))
+      .toStrictEqual([
+        { ref: { label: 'clickable', script: 'px/namespaces', args: { bar: 'abc' } } },
+        { ref: null },
+      ]);
+  });
+
   it('correctly returns unchanged rows with no types in need of special parsing', () => {
     const semanticTypes = new Map([
       ['quantileCol', SemanticType.ST_NONE],

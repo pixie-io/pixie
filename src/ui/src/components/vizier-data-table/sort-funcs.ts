@@ -40,6 +40,9 @@ export function getSortFunc(display: ColumnDisplayInfo, direction: SortDirection
     case SemanticType.ST_CONTAINER_STATUS:
       f = fieldSortFunc('state', ascending);
       break;
+    case SemanticType.ST_SCRIPT_REFERENCE:
+      f = fieldSortFunc('label', ascending);
+      break;
     default:
       f = getDataSortFunc(display.type, ascending);
       break;
