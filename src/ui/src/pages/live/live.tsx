@@ -9,13 +9,12 @@ import Link from '@material-ui/core/Link';
 import IconButton from '@material-ui/core/IconButton';
 import { Alert, AlertTitle } from '@material-ui/lab';
 import {
-  createStyles, makeStyles, Theme, withStyles,
+  createStyles, makeStyles, Theme,
 } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 
 import Canvas from 'containers/live/canvas';
 import CommandInput from 'containers/command-input/command-input';
-import NewCommandInput from 'containers/new-command-input/new-command-input';
 import { withLiveViewContext } from 'containers/live/context';
 import { LayoutContext } from 'context/layout-context';
 import { ScriptContext } from 'context/script-context';
@@ -26,7 +25,6 @@ import LiveViewShortcutsProvider from 'containers/live/shortcuts';
 import LiveViewTitle from 'containers/live/title';
 import LiveViewBreadcrumbs from 'containers/live/breadcrumbs';
 import NavBars from 'containers/App/nav-bars';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -163,6 +161,7 @@ const ClusterLoadingComponent = (props: ClusterLoadingProps) => {
         </div>
       );
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [props.clusterStatus, props.clusterUID]);
 
   return (
@@ -191,7 +190,6 @@ const UNHEALTHY_CLUSTER_TIMEOUT = 5000;
 
 const LiveView = () => {
   const classes = useStyles();
-  const { newAutoComplete } = useFlags();
 
   const {
     pxl, id, saveEditorAndExecute, cancelExecution,
@@ -301,9 +299,7 @@ const LiveView = () => {
                         <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
                       </div>
                     </DataDrawerSplitPanel>
-                    {newAutoComplete
-                      ? <NewCommandInput open={commandOpen} onClose={toggleCommandOpen} />
-                      : <CommandInput open={commandOpen} onClose={toggleCommandOpen} />}
+                    <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
                   </>
                 )
               }

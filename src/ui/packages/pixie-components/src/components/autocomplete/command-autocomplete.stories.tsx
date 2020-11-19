@@ -1,19 +1,19 @@
 import * as React from 'react';
-import { AutocompleteInput } from './new-autocomplete-input';
-import { NewAutocomplete } from './new-autocomplete';
+import { CommandAutocompleteInput } from './command-autocomplete-input';
+import { CommandAutocomplete } from './command-autocomplete';
 
 export default {
   title: 'Autocomplete/v2',
-  component: NewAutocomplete,
-  subcomponents: { AutocompleteInput },
+  component: CommandAutocomplete,
+  subcomponents: { AutocompleteInput: CommandAutocompleteInput },
 };
 
 export const Basic = () => (
-  <NewAutocomplete
+  <CommandAutocomplete
     isValid={false}
     onSubmit={() => {}}
     // eslint-disable-next-line
-    onChange={(input, cursor, action, updatedTabStops) => {}}
+    onChange={() => {}}
     completions={[
       {
         index: 2,
@@ -79,11 +79,11 @@ export const Basic = () => (
 export const InputOnly = () => {
   const [cursor, setCursor] = React.useState(0);
   return (
-    <AutocompleteInput
+    <CommandAutocompleteInput
       // eslint-disable-next-line
-      onKey={(key) => {}}
+      onKey={() => {}}
       // eslint-disable-next-line
-      onChange={(val, cursor) => {}}
+      onChange={() => {}}
       setCursor={(pos) => {
         setCursor(pos);
       }}

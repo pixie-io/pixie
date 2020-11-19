@@ -3,7 +3,6 @@ import * as React from 'react';
 import Axios from 'axios';
 
 import { Autocomplete } from './autocomplete';
-import { AutocompleteInputField } from './autocomplete-field';
 import { Completions } from './completions';
 import { FormFieldInput } from './form';
 import { Input } from './input';
@@ -12,7 +11,6 @@ export default {
   title: 'Autocomplete/v1',
   component: Autocomplete,
   subcomponents: {
-    AutocompleteInputField,
     Completions,
     FormFieldInput,
     Input,
@@ -48,40 +46,6 @@ export const Basic = () => (
     }}
   />
 );
-
-export const InputField = () => {
-  const [value, setValue] = React.useState('');
-  return (
-    <AutocompleteInputField
-      name='An autocomplete input'
-      value={value}
-      onEnterKey={() => {}}
-      onValueChange={setValue}
-      getCompletions={async (input) => {
-        // Add some fake delay to the API call.
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        if (!input) {
-          return [];
-        }
-        return [
-          { type: 'header', header: 'suggestions' },
-          {
-            type: 'item',
-            title: 'some suggestion',
-            id: '1',
-            highlights: [0, 1],
-          },
-          {
-            type: 'item',
-            title: 'awesome',
-            id: '2',
-            highlights: [3, 4],
-          },
-        ];
-      }}
-    />
-  );
-};
 
 export const InputWithHint = () => {
   const [suggestion, setSuggestion] = React.useState('');

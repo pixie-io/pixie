@@ -7,7 +7,6 @@ export {
 } from './components/auth/pixienaut-box';
 export { SignupMarcom } from './components/auth/signup-marcom';
 
-export { AutocompleteInputField } from './components/autocomplete/autocomplete-field';
 export {
   AutocompleteContextProps,
   AutocompleteContext,
@@ -26,12 +25,12 @@ export { FormFieldInput } from './components/autocomplete/form';
 export { FormInput, Input } from './components/autocomplete/input';
 export {
   AutocompleteField,
-  AutocompleteInput,
-} from './components/autocomplete/new-autocomplete-input';
+  CommandAutocompleteInput,
+} from 'components/autocomplete/command-autocomplete-input';
 export {
-  NewAutocomplete,
+  CommandAutocomplete,
   TabSuggestion,
-} from './components/autocomplete/new-autocomplete';
+} from 'components/autocomplete/command-autocomplete';
 export {
   useAutocomplete,
   GetCompletionsFunc,

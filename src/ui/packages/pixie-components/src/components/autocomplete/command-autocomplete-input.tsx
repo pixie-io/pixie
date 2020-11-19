@@ -5,68 +5,67 @@ import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 import { Key } from './key';
 
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    root: {
-      ...theme.typography.h6,
-      cursor: 'text',
-      padding: theme.spacing(2.5),
-      fontWeight: theme.typography.fontWeightLight,
-      display: 'flex',
-      flexDirection: 'row',
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    ...theme.typography.h6,
+    cursor: 'text',
+    padding: theme.spacing(2.5),
+    fontWeight: theme.typography.fontWeightLight,
+    display: 'flex',
+    flexDirection: 'row',
+  },
+  inputElem: {
+    flex: 1,
+    ...theme.typography.h6,
+    position: 'absolute',
+    opacity: 0,
+    width: '100%',
+    border: 0,
+    fontWeight: theme.typography.fontWeightLight,
+  },
+  fixedInput: {
+    width: '100%',
+    overflow: 'hidden',
+  },
+  caret: {
+    display: 'inline-block',
+    width: 0,
+    height: 'auto',
+    borderRight: '1px solid white',
+    visibility: 'hidden',
+    '&.visible': {
+      visibility: 'visible',
     },
-    inputElem: {
-      flex: 1,
-      ...theme.typography.h6,
-      position: 'absolute',
-      opacity: 0,
-      width: '100%',
-      border: 0,
-      fontWeight: theme.typography.fontWeightLight,
-    },
-    fixedInput: {
-      width: '100%',
-      overflow: 'hidden',
-    },
-    caret: {
-      display: 'inline-block',
-      width: 0,
-      height: 'auto',
-      borderRight: '1px solid white',
-      visibility: 'hidden',
-      '&.visible': {
-        visibility: 'visible',
-      },
-      position: 'absolute',
-    },
-    inputValue: {
-      flex: 1,
-      whiteSpace: 'nowrap',
-      display: 'inline-block',
-      position: 'relative',
-      height: '100%',
-    },
-    prefix: {
-      paddingRight: theme.spacing(2),
-      display: 'flex',
-      alignSelf: 'center',
-    },
-    inputKey: {
-      color: `${theme.palette.success.main}`,
-    },
-    hint: {
-      opacity: 0.2,
-      position: 'absolute',
-    },
-    valid: {
-      border: theme.palette.success.main,
-      borderStyle: 'solid',
-    },
-    invalid: {
-      border: theme.palette.background.two,
-      borderStyle: 'solid',
-    },
-  })
+    position: 'absolute',
+  },
+  inputValue: {
+    flex: 1,
+    whiteSpace: 'nowrap',
+    display: 'inline-block',
+    position: 'relative',
+    height: '100%',
+  },
+  prefix: {
+    paddingRight: theme.spacing(2),
+    display: 'flex',
+    alignSelf: 'center',
+  },
+  inputKey: {
+    color: `${theme.palette.success.main}`,
+  },
+  hint: {
+    opacity: 0.2,
+    position: 'absolute',
+  },
+  valid: {
+    border: theme.palette.success.main,
+    borderStyle: 'solid',
+  },
+  invalid: {
+    border: theme.palette.background.two,
+    borderStyle: 'solid',
+  },
+}),
 );
 
 const BLINK_INTERVAL = 500; // 500ms = .5s
@@ -109,7 +108,7 @@ interface AutocompleteInputProps {
   isValid: boolean;
 }
 
-export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
+export const CommandAutocompleteInput: React.FC<AutocompleteInputProps> = ({
   onChange,
   onKey,
   className,
@@ -129,7 +128,7 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
     (e) => {
       onChange(e.target.value, e.target.selectionStart);
     },
-    [onChange]
+    [onChange],
   );
 
   const handleKey = React.useCallback(
@@ -162,7 +161,7 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
           e.target.setSelectionRange(cursorPos, cursorPos);
       }
     },
-    [onKey, cursorPos]
+    [onKey, cursorPos],
   );
 
   const handleFocus = React.useCallback(() => {
@@ -191,8 +190,8 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   value.forEach((v, index) => {
     const valueClassName = v.type === 'value' ? '' : classes.inputKey;
     if (
-      cursorPos > displayText.length &&
-      cursorPos <= displayText.length + v.value.length
+      cursorPos > displayText.length
+      && cursorPos <= displayText.length + v.value.length
     ) {
       // The cursor should be displayed in this field.
       // We need to split this field into two spans so we can add the cursor in between.
@@ -203,19 +202,19 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
       fieldSpans.push(
         <span key={`${index}-1`} className={valueClassName}>
           {fspan1 === ' ' ? '\u00A0' : fspan1}
-        </span>
+        </span>,
       );
       fieldSpans.push(<Caret key={`${index}-caret`} active={focused} />);
       fieldSpans.push(
         <span key={`${index}-2`} className={valueClassName}>
           {fspan2 === ' ' ? '\u00A0' : fspan2}
-        </span>
+        </span>,
       );
     } else {
       fieldSpans.push(
         <span key={index} className={valueClassName}>
           {v.value === ' ' ? '\u00A0' : v.value}
-        </span>
+        </span>,
       );
     }
     displayText += v.value;
@@ -226,7 +225,7 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
       className={clsx(
         classes.root,
         className,
-        isValid ? classes.valid : classes.invalid
+        isValid ? classes.valid : classes.invalid,
       )}
       onClick={focusInput}
     >

@@ -10,6 +10,7 @@
       <excludeFolder url="file://$MODULE_DIR$/bazel-pixielabs" />
       <excludeFolder url="file://$MODULE_DIR$/bazel-testlogs" />
       <excludeFolder url="file://$MODULE_DIR$/src/ui/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/src/ui/packages/pixie-components/dist" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

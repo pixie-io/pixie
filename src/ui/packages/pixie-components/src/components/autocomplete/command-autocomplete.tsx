@@ -3,31 +3,32 @@ import * as React from 'react';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
-import { Completions, CompletionId, CompletionItem } from './completions';
-import { AutocompleteInput } from './new-autocomplete-input';
-import { TabStop, findNextItem, ItemsMap, TabStopParser } from './utils';
-import { Key } from './key';
+import { CommandAutocompleteInput } from 'components/autocomplete/command-autocomplete-input';
 import { scrollbarStyles } from 'mui-theme';
+import { Completions, CompletionId, CompletionItem } from './completions';
+import {
+  TabStop, findNextItem, ItemsMap, TabStopParser,
+} from './utils';
+import { Key } from './key';
 
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    root: {
-      backgroundColor: theme.palette.background.three,
-      cursor: 'text',
-      display: 'flex',
-      flexDirection: 'column',
-      // TODO(malthus): remove this once the scrollbar theme is set at global level.
-      ...scrollbarStyles(theme),
-    },
-    input: {
-      backgroundColor: theme.palette.background.two,
-    },
-    completions: {
-      flex: 1,
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    backgroundColor: theme.palette.background.three,
+    cursor: 'text',
+    display: 'flex',
+    flexDirection: 'column',
+    // TODO(malthus): remove this once the scrollbar theme is set at global level.
+    ...scrollbarStyles(theme),
+  },
+  input: {
+    backgroundColor: theme.palette.background.two,
+  },
+  completions: {
+    flex: 1,
 
-      minHeight: 0,
-    },
-  })
+    minHeight: 0,
+  },
+}),
 );
 
 // Each tabstop is associated with a list of suggestions. These are the suggestions that
@@ -59,7 +60,7 @@ interface NewAutoCompleteProps {
   isValid: boolean;
 }
 
-export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
+export const CommandAutocomplete: React.FC<NewAutoCompleteProps> = ({
   onSubmit,
   onChange,
   tabStops,
@@ -116,11 +117,11 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
       const item = itemsMap.get(id);
       const [newStr, newCursorPos] = tsInfo.handleCompletionSelection(
         cursorPos,
-        item
+        item,
       );
       onChange(newStr, newCursorPos, 'SELECT', null);
     },
-    [itemsMap, cursorPos, tsInfo, onChange]
+    [itemsMap, cursorPos, tsInfo, onChange],
   );
 
   const handleBackspace = React.useCallback(
@@ -136,11 +137,11 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
           newStr,
           newCursorPos,
           'EDIT',
-          deletedTabStop ? null : newTabStops
+          deletedTabStop ? null : newTabStops,
         );
       }
     },
-    [tsInfo, onChange]
+    [tsInfo, onChange],
   );
 
   const handleLeftKey = React.useCallback(
@@ -155,7 +156,7 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
         setCursorPos(tabBoundaries[activeTab - 1][1] - 1);
       }
     },
-    [tsInfo]
+    [tsInfo],
   );
 
   const handleRightKey = React.useCallback(
@@ -171,14 +172,14 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
         setCursorPos(tabBoundaries[activeTab + 1][0]);
       }
     },
-    [tsInfo, tabStops.length]
+    [tsInfo, tabStops.length],
   );
 
   const handleKey = (key: Key) => {
     switch (key) {
       case 'UP':
         setActiveItem(
-          findNextItem(activeItem, itemsMap, activeCompletions, -1)
+          findNextItem(activeItem, itemsMap, activeCompletions, -1),
         );
         break;
       case 'DOWN':
@@ -212,12 +213,12 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
     (input: string, pos: number) => {
       onChange(input, pos, 'EDIT', tsInfo.handleChange(input, pos));
     },
-    [onChange, tsInfo]
+    [onChange, tsInfo],
   );
 
   return (
     <div className={clsx(classes.root, className)}>
-      <AutocompleteInput
+      <CommandAutocompleteInput
         className={classes.input}
         cursorPos={cursorPos}
         setCursor={setCursorPos}

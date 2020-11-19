@@ -1,14 +1,14 @@
 import { shallow } from 'enzyme';
 import * as React from 'react';
 
-import { AutocompleteInput } from './new-autocomplete-input';
+import { CommandAutocompleteInput } from 'components/autocomplete/command-autocomplete-input';
 
 const noop = () => {};
 
 describe('<AutcompleteInput/> test', () => {
   it('renders the correct spans', () => {
     const wrapper = shallow(
-      <AutocompleteInput
+      <CommandAutocompleteInput
         onKey={noop}
         onChange={noop}
         setCursor={noop}
@@ -36,7 +36,7 @@ describe('<AutcompleteInput/> test', () => {
 
   it('renders placeholder', () => {
     const wrapper = shallow(
-      <AutocompleteInput
+      <CommandAutocompleteInput
         onKey={noop}
         onChange={noop}
         setCursor={noop}
