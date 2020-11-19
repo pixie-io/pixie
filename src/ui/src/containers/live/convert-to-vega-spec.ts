@@ -84,6 +84,8 @@ interface TimeseriesDisplay extends WidgetDisplay, DisplayWithLabels {
   readonly timeseries: Timeseries[];
 }
 
+type PatchedMark = Mark & { propEventsToOverlapped?: boolean };
+
 // TODO(philkuz) A bit of a hack to get the column from the display,
 // fix when you fix the heterogenous timeseries types fix.
 export function getColumnFromDisplay(display: ChartDisplay): string {
@@ -136,12 +138,6 @@ export interface VegaSpecWithProps {
   hasLegend: boolean;
   legendColumnName: string;
   error?: Error;
-}
-
-interface VegaLabelFormatFunction {
-  functionName: string;
-  semType: SemanticType;
-  formatter: (number) => string;
 }
 
 export function wrapFormatFn(fn: (data: number) => DataWithUnits) {
@@ -242,7 +238,7 @@ function addDataSource(spec: VgSpec, dataSpec: Data): Data {
   return dataSpec;
 }
 
-function addMark(spec: VgSpec | GroupMark, markSpec: Mark): Mark {
+function addMark(spec: VgSpec | GroupMark, markSpec: PatchedMark): PatchedMark {
   if (!spec.marks) {
     spec.marks = [];
   }
@@ -377,7 +373,7 @@ function stackBySeriesTransform(
 }
 
 /* Mark Functions */
-function extendMarkEncoding(mark: Mark, encodeEntryName: EncodeEntryName, entry: Partial<TrailEncodeEntry>) {
+function extendMarkEncoding(mark: PatchedMark, encodeEntryName: EncodeEntryName, entry: Partial<TrailEncodeEntry>) {
   if (!mark.encode) {
     mark.encode = {};
   }
@@ -549,7 +545,7 @@ function extendReverseSignalsWithHitBox(
   ]);
 }
 
-function addInteractivityHitBox(spec: VgSpec | GroupMark, lineMark: TimeseriesMark, name: string): Mark {
+function addInteractivityHitBox(spec: VgSpec | GroupMark, lineMark: TimeseriesMark, name: string): PatchedMark {
   return addMark(spec, {
     ...lineMark,
     name,
@@ -570,7 +566,7 @@ function addInteractivityHitBox(spec: VgSpec | GroupMark, lineMark: TimeseriesMa
   });
 }
 
-function addLegendInteractivityEncodings(mark: Mark, ts: Timeseries, interactivitySelector: string) {
+function addLegendInteractivityEncodings(mark: PatchedMark, ts: Timeseries, interactivitySelector: string) {
   extendMarkEncoding(mark, 'update', {
     opacity: [
       {

@@ -8,7 +8,7 @@ import { isValidAnalytics } from 'utils/env';
 import { AuthMessageBox } from 'pixie-components';
 import { Link } from 'react-router-dom';
 import {
-  Button, createStyles, makeStyles, Theme,
+  Button, ButtonProps, createStyles, makeStyles, Theme,
 } from '@material-ui/core';
 import { BasePage } from './base';
 import { AuthCallbackMode } from './utils';
@@ -59,6 +59,10 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     width: '80%',
   },
 }));
+
+const CtaButton = ({ children, ...props }: ButtonProps) => (
+  <Button color='primary' variant='contained' {...props}>{children}</Button>
+);
 
 /**
  * This is the main component to handle the callback from auth.
@@ -237,7 +241,7 @@ export const AuthCallbackPage = () => {
 
     const cta = (
       <div className={classes.ctaGutter}>
-        <Link to={ctaDestination} component={Button} color='primary' variant='contained'>
+        <Link to={ctaDestination} component={CtaButton}>
           { ctaMessage }
         </Link>
       </div>
