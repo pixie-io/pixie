@@ -3,7 +3,8 @@
 #include <deque>
 #include <string>
 #include <vector>
-#include "src/stirling/protocols/common/event_parser.h"
+
+#include "src/stirling/protocols/common/interface.h"
 #include "src/stirling/protocols/mysql/types.h"
 
 namespace pl {

@@ -5,9 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "src/stirling/common/parse_state.h"
-#include "src/stirling/protocols/common/protocol_traits.h"
-#include "src/stirling/protocols/common/stitcher.h"
+#include "src/stirling/protocols/common/interface.h"
 #include "src/stirling/protocols/http/types.h"
 
 DECLARE_string(http_response_header_filters);

@@ -3,7 +3,7 @@
 #include <deque>
 #include <string>
 
-#include "src/stirling/protocols/common/event_parser.h"
+#include "src/stirling/protocols/common/interface.h"
 #include "src/stirling/protocols/http/types.h"
 
 namespace pl {

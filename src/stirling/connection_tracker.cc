@@ -18,7 +18,6 @@
 #include "src/common/system/system.h"
 #include "src/stirling/common/go_grpc_types.h"
 #include "src/stirling/connection_stats.h"
-#include "src/stirling/protocols/common/protocol_traits.h"
 #include "src/stirling/protocols/cql/cql_stitcher.h"
 #include "src/stirling/protocols/cql/types.h"
 #include "src/stirling/protocols/http/http_stitcher.h"

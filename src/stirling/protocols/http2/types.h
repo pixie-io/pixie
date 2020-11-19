@@ -7,7 +7,7 @@
 #include <absl/strings/str_join.h>
 
 #include "src/stirling/common/utils.h"
-#include "src/stirling/protocols/common/protocol_traits.h"
+#include "src/stirling/protocols/common/interface.h"
 
 namespace pl {
 namespace stirling {

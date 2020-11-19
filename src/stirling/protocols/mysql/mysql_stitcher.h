@@ -6,9 +6,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/stirling/common/parse_state.h"
-#include "src/stirling/protocols/common/protocol_traits.h"
-#include "src/stirling/protocols/common/stitcher.h"
+#include "src/stirling/protocols/common/interface.h"
 #include "src/stirling/protocols/mysql/types.h"
 
 namespace pl {

@@ -14,6 +14,7 @@
 #include "src/stirling/common/parse_state.h"
 #include "src/stirling/common/socket_trace.h"
 #include "src/stirling/common/utils.h"
+#include "src/stirling/protocols/common/interface.h"
 
 namespace pl {
 namespace stirling {
@@ -74,35 +75,6 @@ struct ParseResult {
   // Number of invalid frames that were discarded.
   int invalid_frames;
 };
-
-// NOTE: FindFrameBoundary() and ParseFrame() must be implemented per protocol.
-
-/**
- * Attempt to find the next frame boundary.
- *
- * @tparam TFrameType Message type to search for.
- * @param type request or response.
- * @param buf the buffer in which to search for a frame boundary.
- * @param start_pos A start position from which to search.
- * @return Either the position of a frame start, if found (must be > start_pos),
- * or std::string::npos if no such frame start was found.
- */
-template <typename TFrameType>
-size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_pos);
-
-/**
- * Parses the input string to extract a single frame of the specified protocol.
- *
- * @tparam TFrameType Type of frame to parse.
- * @param type Whether to process frame as a request or response.
- * @param buf The raw data to be parsed. Any processed bytes are removed from the buffer, if parsing
- * succeeded.
- * @param frame The parsed frame if parsing succeeded.
- *
- * @return ParseState Indicates whether the parsing succeeded or not.
- */
-template <typename TFrameType>
-ParseState ParseFrame(MessageType type, std::string_view* buf, TFrameType* frame);
 
 /**
  * Utility to convert positions from a position within a set of combined buffers,

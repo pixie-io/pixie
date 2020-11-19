@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/stirling/protocols/common/stitcher.h"
+#include "src/stirling/protocols/common/interface.h"
 #include "src/stirling/protocols/pgsql/types.h"
 
 namespace pl {

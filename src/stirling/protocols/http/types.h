@@ -6,7 +6,6 @@
 #include "src/common/base/utils.h"
 #include "src/stirling/bcc_bpf_interface/common.h"
 #include "src/stirling/protocols/common/event_parser.h"  // For FrameBase
-#include "src/stirling/protocols/common/protocol_traits.h"
 
 namespace pl {
 namespace stirling {

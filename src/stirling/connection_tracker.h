@@ -16,7 +16,7 @@
 #include "src/stirling/common/socket_trace.h"
 #include "src/stirling/data_stream.h"
 #include "src/stirling/fd_resolver.h"
-#include "src/stirling/protocols/common/protocol_traits.h"
+#include "src/stirling/protocols/common/interface.h"
 #include "src/stirling/socket_trace_bpf_tables.h"
 
 // PROTOCOL_LIST: Requires update on new protocols.
@@ -423,7 +423,7 @@ class ConnectionTracker {
     // As an optimization, we don't call std::make_unique in such cases.
     // No need to create an object on the heap for protocols that don't have state.
     // Note that protocol_state() has the same `if constexpr`, for this optimization to work.
-    if constexpr (!std::is_same_v<TStateType, NoState>) {
+    if constexpr (!std::is_same_v<TStateType, protocols::NoState>) {
       TStateType* state_types_ptr = std::any_cast<TStateType>(&protocol_state_);
       if (state_types_ptr == nullptr) {
         protocol_state_.emplace<TStateType>();
@@ -437,7 +437,7 @@ class ConnectionTracker {
   template <typename TStateType>
   TStateType* protocol_state() {
     // See note in InitProtocolState about this `if constexpr`.
-    if constexpr (std::is_same_v<TStateType, NoState>) {
+    if constexpr (std::is_same_v<TStateType, protocols::NoState>) {
       return nullptr;
     } else {
       TStateType* ptr = std::any_cast<TStateType>(&protocol_state_);

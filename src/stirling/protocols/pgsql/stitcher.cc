@@ -7,7 +7,7 @@
 #include <absl/strings/str_replace.h>
 
 #include "src/stirling/common/binary_decoder.h"
-#include "src/stirling/protocols/common/stitcher.h"
+#include "src/stirling/protocols/common/interface.h"
 #include "src/stirling/protocols/pgsql/parse.h"
 
 namespace pl {

@@ -6,8 +6,7 @@
 
 #include "src/common/base/base.h"
 #include "src/stirling/bcc_bpf_interface/common.h"
-#include "src/stirling/common/parse_state.h"
-#include "src/stirling/protocols/common/event_parser.h"
+#include "src/stirling/protocols/common/interface.h"
 #include "src/stirling/protocols/pgsql/types.h"
 
 namespace pl {

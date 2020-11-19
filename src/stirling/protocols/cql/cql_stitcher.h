@@ -5,8 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "src/stirling/protocols/common/protocol_traits.h"
-#include "src/stirling/protocols/common/stitcher.h"
+#include "src/stirling/protocols/common/interface.h"
 #include "src/stirling/protocols/cql/types.h"
 
 namespace pl {

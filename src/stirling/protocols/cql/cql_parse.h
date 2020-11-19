@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "src/stirling/protocols/common/event_parser.h"
+#include "src/stirling/protocols/common/interface.h"
 #include "src/stirling/protocols/cql/types.h"
 
 namespace pl {

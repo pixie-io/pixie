@@ -4,7 +4,6 @@
 #include <utility>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/protocols/common/stitcher.h"
 #include "src/stirling/protocols/pgsql/types.h"
 
 namespace pl {

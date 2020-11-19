@@ -10,7 +10,6 @@
 
 #include "src/stirling/common/utils.h"
 #include "src/stirling/protocols/common/event_parser.h"
-#include "src/stirling/protocols/common/protocol_traits.h"
 
 namespace pl {
 namespace stirling {

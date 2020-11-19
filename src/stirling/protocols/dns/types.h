@@ -8,7 +8,6 @@
 #include <magic_enum.hpp>
 
 #include "src/stirling/protocols/common/event_parser.h"  // For FrameBase.
-#include "src/stirling/protocols/common/protocol_traits.h"
 
 namespace pl {
 namespace stirling {
