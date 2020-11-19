@@ -141,7 +141,10 @@ TEST_F(DistributedPlannerTest, three_agents_one_kelvin) {
   std::unique_ptr<DistributedPlan> physical_plan =
       physical_planner->Plan(ps_pb, compiler_state_.get(), graph.get()).ConsumeValueOrDie();
 
-  ASSERT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(3, 2, 1, 0));
+  auto topo_sort = physical_plan->dag().TopologicalSort();
+  // Last item should be kelvin, id 0.
+  ASSERT_EQ(topo_sort.size(), 4);
+  ASSERT_EQ(topo_sort[3], 0);
 
   std::vector<int64_t> grpc_sink_destinations;
   absl::flat_hash_set<IR*> seen_plans;

@@ -221,8 +221,9 @@ TEST_F(StitcherTest, one_pem_one_kelvin) {
 TEST_F(StitcherTest, three_pems_one_kelvin) {
   auto ps = LoadDistributedStatePb(kThreePEMsOneKelvinDistributedState);
   auto physical_plan = MakeDistributedPlan(ps);
-
-  EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(3, 2, 1, 0));
+  auto topo_sort = physical_plan->dag().TopologicalSort();
+  ASSERT_EQ(topo_sort.size(), 4);
+  ASSERT_EQ(topo_sort[3], 0);
 
   CarnotInstance* kelvin = physical_plan->Get(0);
   std::string kelvin_qb_address = "kelvin";

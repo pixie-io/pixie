@@ -325,9 +325,6 @@ constexpr char kTabletValueTpl[] = R"proto(
 tablets: "$0"
 )proto";
 
-constexpr char kQueryForTwoPEMs[] =
-    "import px\ndf = px.DataFrame(table = 'table1')\npx.display(df, 'out')";
-
 constexpr char kHttpRequestStats[] = R"pxl(
 import px
 
@@ -714,214 +711,6 @@ dag {
 )proto";
 
 constexpr char kExpectedPlanTwoPEMOneKelvin[] = R"proto(
-  qb_address_to_plan {
-  key: "pem1"
-  value {
-    dag {
-      nodes {
-        id: 1
-      }
-    }
-    nodes {
-      id: 1
-      dag {
-        nodes {
-          id: 12
-          sorted_children: 13
-        }
-        nodes {
-          id: 11
-          sorted_children: 13
-        }
-        nodes {
-          id: 13
-          sorted_children: 9
-          sorted_parents: 11
-          sorted_parents: 12
-        }
-        nodes {
-          id: 9
-          sorted_parents: 13
-        }
-      }
-      nodes {
-        id: 12
-        op {
-          op_type: MEMORY_SOURCE_OPERATOR
-          mem_source_op {
-            name: "table1"
-            column_idxs: 0
-            column_idxs: 1
-            column_idxs: 2
-            column_names: "time_"
-            column_names: "cpu_cycles"
-            column_names: "upid"
-            column_types: TIME64NS
-            column_types: INT64
-            column_types: UINT128
-            tablet: "2"
-          }
-        }
-      }
-      nodes {
-        id: 11
-        op {
-          op_type: MEMORY_SOURCE_OPERATOR
-          mem_source_op {
-            name: "table1"
-            column_idxs: 0
-            column_idxs: 1
-            column_idxs: 2
-            column_names: "time_"
-            column_names: "cpu_cycles"
-            column_names: "upid"
-            column_types: TIME64NS
-            column_types: INT64
-            column_types: UINT128
-            tablet: "1"
-          }
-        }
-      }
-      nodes {
-        id: 13
-        op {
-          op_type: UNION_OPERATOR
-          union_op {
-            column_names: "time_"
-            column_names: "cpu_cycles"
-            column_names: "upid"
-            column_mappings {
-              column_indexes: 0
-              column_indexes: 1
-              column_indexes: 2
-            }
-            column_mappings {
-              column_indexes: 0
-              column_indexes: 1
-              column_indexes: 2
-            }
-          }
-        }
-      }
-      nodes {
-        id: 9
-        op {
-          op_type: GRPC_SINK_OPERATOR
-          grpc_sink_op {
-            address: "1111"
-            grpc_source_id: 12
-          }
-        }
-      }
-    }
-    plan_options {
-    }
-  }
-}
-qb_address_to_plan {
-  key: "pem2"
-  value {
-    dag {
-      nodes {
-        id: 1
-      }
-    }
-    nodes {
-      id: 1
-      dag {
-        nodes {
-          id: 12
-          sorted_children: 13
-        }
-        nodes {
-          id: 11
-          sorted_children: 13
-        }
-        nodes {
-          id: 13
-          sorted_children: 9
-          sorted_parents: 11
-          sorted_parents: 12
-        }
-        nodes {
-          id: 9
-          sorted_parents: 13
-        }
-      }
-      nodes {
-        id: 12
-        op {
-          op_type: MEMORY_SOURCE_OPERATOR
-          mem_source_op {
-            name: "table1"
-            column_idxs: 0
-            column_idxs: 1
-            column_idxs: 2
-            column_names: "time_"
-            column_names: "cpu_cycles"
-            column_names: "upid"
-            column_types: TIME64NS
-            column_types: INT64
-            column_types: UINT128
-            tablet: "4"
-          }
-        }
-      }
-      nodes {
-        id: 11
-        op {
-          op_type: MEMORY_SOURCE_OPERATOR
-          mem_source_op {
-            name: "table1"
-            column_idxs: 0
-            column_idxs: 1
-            column_idxs: 2
-            column_names: "time_"
-            column_names: "cpu_cycles"
-            column_names: "upid"
-            column_types: TIME64NS
-            column_types: INT64
-            column_types: UINT128
-            tablet: "3"
-          }
-        }
-      }
-      nodes {
-        id: 13
-        op {
-          op_type: UNION_OPERATOR
-          union_op {
-            column_names: "time_"
-            column_names: "cpu_cycles"
-            column_names: "upid"
-            column_mappings {
-              column_indexes: 0
-              column_indexes: 1
-              column_indexes: 2
-            }
-            column_mappings {
-              column_indexes: 0
-              column_indexes: 1
-              column_indexes: 2
-            }
-          }
-        }
-      }
-      nodes {
-        id: 9
-        op {
-          op_type: GRPC_SINK_OPERATOR
-          grpc_sink_op {
-            address: "1111"
-            grpc_source_id: 11
-          }
-        }
-      }
-    }
-    plan_options {
-    }
-  }
-}
 qb_address_to_plan {
   key: "kelvin"
   value {
@@ -1006,6 +795,7 @@ qb_address_to_plan {
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
+            address: "query-broker-ip:50300"
             output_table {
               table_name: "out"
               column_types: TIME64NS
@@ -1018,9 +808,126 @@ qb_address_to_plan {
               column_semantic_types: ST_NONE
               column_semantic_types: ST_NONE
             }
-            address: "query-broker-ip:50300"
             connection_options {
               ssl_targetname: "query-broker-hostname"
+            }
+          }
+        }
+      }
+    }
+    plan_options {
+    }
+    incoming_agent_ids {
+      data: "00000001-0000-0000-0000-000000000001"
+    }
+    incoming_agent_ids {
+      data: "00000001-0000-0000-0000-000000000002"
+    }
+  }
+}
+qb_address_to_plan {
+  key: "pem1"
+  value {
+    dag {
+      nodes {
+        id: 1
+      }
+    }
+    nodes {
+      id: 1
+      dag {
+        nodes {
+          id: 6
+          sorted_children: 9
+        }
+        nodes {
+          id: 9
+          sorted_parents: 6
+        }
+      }
+      nodes {
+        id: 6
+        op {
+          op_type: MEMORY_SOURCE_OPERATOR
+          mem_source_op {
+            name: "table1"
+            column_idxs: 0
+            column_idxs: 1
+            column_idxs: 2
+            column_names: "time_"
+            column_names: "cpu_cycles"
+            column_names: "upid"
+            column_types: TIME64NS
+            column_types: INT64
+            column_types: UINT128
+          }
+        }
+      }
+      nodes {
+        id: 9
+        op {
+          op_type: GRPC_SINK_OPERATOR
+          grpc_sink_op {
+            address: "1111"
+            grpc_source_id: 12
+            connection_options {
+              ssl_targetname: "kelvin.pl.svc"
+            }
+          }
+        }
+      }
+    }
+    plan_options {
+    }
+  }
+}
+qb_address_to_plan {
+  key: "pem2"
+  value {
+    dag {
+      nodes {
+        id: 1
+      }
+    }
+    nodes {
+      id: 1
+      dag {
+        nodes {
+          id: 6
+          sorted_children: 9
+        }
+        nodes {
+          id: 9
+          sorted_parents: 6
+        }
+      }
+      nodes {
+        id: 6
+        op {
+          op_type: MEMORY_SOURCE_OPERATOR
+          mem_source_op {
+            name: "table1"
+            column_idxs: 0
+            column_idxs: 1
+            column_idxs: 2
+            column_names: "time_"
+            column_names: "cpu_cycles"
+            column_names: "upid"
+            column_types: TIME64NS
+            column_types: INT64
+            column_types: UINT128
+          }
+        }
+      }
+      nodes {
+        id: 9
+        op {
+          op_type: GRPC_SINK_OPERATOR
+          grpc_sink_op {
+            address: "1111"
+            grpc_source_id: 11
+            connection_options {
+              ssl_targetname: "kelvin.pl.svc"
             }
           }
         }
@@ -1031,6 +938,10 @@ qb_address_to_plan {
   }
 }
 qb_address_to_dag_id {
+  key: "kelvin"
+  value: 0
+}
+qb_address_to_dag_id {
   key: "pem1"
   value: 1
 }
@@ -1038,17 +949,11 @@ qb_address_to_dag_id {
   key: "pem2"
   value: 2
 }
-qb_address_to_dag_id {
-  key: "kelvin"
-  value: 0
-}
 dag {
   nodes {
-    id: 2
     sorted_children: 0
   }
   nodes {
-    id: 1
     sorted_children: 0
   }
   nodes {
@@ -1056,7 +961,6 @@ dag {
     sorted_parents: 2
   }
 }
-
 )proto";
 
 constexpr char kThreePEMsOneKelvinDistributedState[] = R"proto(

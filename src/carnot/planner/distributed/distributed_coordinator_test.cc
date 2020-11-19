@@ -99,8 +99,12 @@ TEST_F(CoordinatorTest, three_pems_one_kelvin) {
 
   MakeGraph();
   auto physical_plan = coordinator->Coordinate(graph.get()).ConsumeValueOrDie();
-  ASSERT_EQ(physical_plan->dag().nodes().size(), 4UL);
-  ASSERT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(3, 2, 1, 0));
+
+  auto topo_sort = physical_plan->dag().TopologicalSort();
+  // Last item should be kelvin, id 0.
+  ASSERT_EQ(topo_sort.size(), 4);
+  ASSERT_EQ(topo_sort[3], 0);
+
   auto kelvin_instance = physical_plan->Get(0);
   EXPECT_THAT(kelvin_instance->carnot_info().query_broker_address(), ContainsRegex("kelvin"));
   {

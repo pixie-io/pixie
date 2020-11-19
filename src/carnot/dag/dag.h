@@ -70,7 +70,7 @@ class DAG {
     return {};
   }
 
-  const std::unordered_set<int64_t>& nodes() const { return nodes_; }
+  const absl::flat_hash_set<int64_t>& nodes() const { return nodes_; }
 
   /**
    * @brief Returns the sets that compose the independent graphs.
@@ -87,14 +87,14 @@ class DAG {
   void DeleteDependentEdges(int64_t from_node);
 
   // Store all the integer id's as nodes.
-  std::unordered_set<int64_t> nodes_;
+  absl::flat_hash_set<int64_t> nodes_;
 
   // This is much more efficient to do in a fstar/rstar structure, but the dual adjacency
   // list is much simpler to update and this is likely not on the critical path.
   // These are the orderered edges from this node to others.
-  std::unordered_map<int64_t, std::vector<int64_t>> forward_edges_by_node_;
+  absl::flat_hash_map<int64_t, std::vector<int64_t>> forward_edges_by_node_;
   // These are ids of the predecesors nodes.
-  std::unordered_map<int64_t, std::vector<int64_t>> reverse_edges_by_node_;
+  absl::flat_hash_map<int64_t, std::vector<int64_t>> reverse_edges_by_node_;
   // Used for quick lookups of edges which get really expensive at scale.
   absl::flat_hash_map<int64_t, absl::flat_hash_set<int64_t>> forward_edges_map_;
 };

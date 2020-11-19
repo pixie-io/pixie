@@ -297,7 +297,7 @@ vector<int64_t> DAG::TopologicalSort() const {
   std::vector<int64_t> ordered;
   ordered.reserve(nodes_.size());
   std::queue<int64_t> q;
-  std::unordered_map<int64_t, unsigned int> visited_count;
+  absl::flat_hash_map<int64_t, unsigned int> visited_count;
 
   // Find nodes that don't have any incoming edges.
   for (auto node : nodes_) {

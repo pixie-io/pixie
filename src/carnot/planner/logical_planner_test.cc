@@ -32,6 +32,18 @@ class LogicalPlannerTest : public ::testing::Test {
   udfspb::UDFInfo info_;
 };
 
+TEST_F(LogicalPlannerTest, two_pems_one_kelvin) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  auto plan = planner
+                  ->Plan(testutils::CreateTwoPEMsOneKelvinPlannerState(),
+                         MakeQueryRequest("import px\npx.display(px.DataFrame('table1'), 'out')"))
+                  .ConsumeValueOrDie();
+  auto out_pb = plan->ToProto().ConsumeValueOrDie();
+  LOG(INFO) << out_pb.DebugString();
+  // EXPECT_THAT(out_pb, Partially(EqualsProto(testutils::kExpectedPlanTwoPEMOneKelvin)))
+  //     << out_pb.DebugString();
+}
+
 TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto ps = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
@@ -579,9 +591,6 @@ TEST_F(LogicalPlannerTest, pem_only_limit) {
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
   EXPECT_OK(plan->ToProto());
-  std::string out;
-  google::protobuf::TextFormat::PrintToString(plan->ToProto().ConsumeValueOrDie(), &out);
-  LOG(INFO) << out;
 }
 
 }  // namespace planner

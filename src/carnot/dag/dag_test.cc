@@ -1,6 +1,7 @@
 #include "src/carnot/dag/dag.h"
 
 #include <algorithm>
+#include <memory>
 #include <unordered_set>
 
 #include <gmock/gmock.h>
@@ -14,6 +15,7 @@ namespace carnot {
 namespace plan {
 
 using ::pl::testing::proto::EqualsProto;
+using ::testing::AnyOf;
 using ::testing::ElementsAre;
 using ::testing::UnorderedElementsAre;
 
@@ -35,25 +37,25 @@ class DAGTest : public ::testing::Test {
 };
 
 TEST_F(DAGTest, basic_test) {
-  EXPECT_EQ(std::unordered_set<int64_t>({5, 8, 3, 6, 20}), dag_.nodes());
-  EXPECT_EQ(std::vector<int64_t>({8, 3}), dag_.DependenciesOf(5));
-  EXPECT_EQ(std::vector<int64_t>({}), dag_.DependenciesOf(1));
+  EXPECT_THAT(dag_.nodes(), UnorderedElementsAre(5, 8, 3, 6, 20));
+  EXPECT_THAT(dag_.DependenciesOf(5), ElementsAre(8, 3));
+  EXPECT_THAT(dag_.DependenciesOf(1), ElementsAre());
   EXPECT_TRUE(dag_.HasNode(5));
   EXPECT_FALSE(dag_.HasNode(36));
 }
 
 TEST_F(DAGTest, check_delete) {
   dag_.DeleteEdge(5, 8);
-  EXPECT_EQ(std::vector<int64_t>({3}), dag_.DependenciesOf(5));
+  EXPECT_THAT(dag_.DependenciesOf(5), ElementsAre(3));
 }
 
-TEST_F(DAGTest, orphans) { EXPECT_EQ(std::unordered_set<int64_t>({20}), dag_.Orphans()); }
+TEST_F(DAGTest, orphans) { EXPECT_THAT(dag_.Orphans(), UnorderedElementsAre(20)); }
 
 TEST_F(DAGTest, delete_node) {
   dag_.DeleteNode(8);
-  EXPECT_EQ(std::vector<int64_t>({}), dag_.DependenciesOf(8));
-  EXPECT_EQ(std::vector<int64_t>({}), dag_.ParentsOf(8));
-  EXPECT_EQ(std::vector<int64_t>({3}), dag_.DependenciesOf(5));
+  EXPECT_THAT(dag_.DependenciesOf(8), ElementsAre());
+  EXPECT_THAT(dag_.ParentsOf(8), ElementsAre());
+  EXPECT_THAT(dag_.DependenciesOf(5), ElementsAre(3));
 }
 
 TEST_F(DAGTest, check_delete_add) {
@@ -64,19 +66,20 @@ TEST_F(DAGTest, check_delete_add) {
 }
 
 TEST_F(DAGTest, transitive_deps) {
-  EXPECT_EQ(std::unordered_set<int64_t>({8, 3, 6}), dag_.TransitiveDepsFrom(5));
-  EXPECT_EQ(std::unordered_set<int64_t>({6}), dag_.TransitiveDepsFrom(3));
-  EXPECT_EQ(std::unordered_set<int64_t>({}), dag_.TransitiveDepsFrom(6));
+  EXPECT_THAT(dag_.TransitiveDepsFrom(5), UnorderedElementsAre(8, 3, 6));
+  EXPECT_THAT(dag_.TransitiveDepsFrom(3), UnorderedElementsAre(6));
+  EXPECT_THAT(dag_.TransitiveDepsFrom(6), UnorderedElementsAre());
 }
 
 TEST_F(DAGTest, topological_sort) {
-  EXPECT_EQ(std::vector<int64_t>({20, 5, 8, 3, 6}), dag_.TopologicalSort());
+  EXPECT_THAT(dag_.TopologicalSort(),
+              AnyOf(ElementsAre(20, 5, 8, 3, 6), ElementsAre(5, 20, 8, 3, 6)));
 
   dag_.DeleteNode(20);
-  EXPECT_EQ(std::vector<int64_t>({5, 8, 3, 6}), dag_.TopologicalSort());
+  EXPECT_THAT(dag_.TopologicalSort(), ElementsAre(5, 8, 3, 6));
 
   dag_.DeleteNode(8);
-  EXPECT_EQ(std::vector<int64_t>({5, 3, 6}), dag_.TopologicalSort());
+  EXPECT_THAT(dag_.TopologicalSort(), ElementsAre(5, 3, 6));
 }
 
 using DAGDeathTest = DAGTest;
@@ -174,9 +177,6 @@ TEST_F(DAGTest, replace_parent_node_edges_test) {
 
 constexpr char kDAGProto[] = R"proto(
 nodes {
-  id: 20
-}
-nodes {
   id: 5
   sorted_children: 8
   sorted_children: 3
@@ -185,6 +185,9 @@ nodes {
   id: 8
   sorted_parents: 5
   sorted_children: 3
+}
+nodes {
+  id: 20
 }
 nodes {
   id: 3
@@ -202,7 +205,9 @@ nodes {
 TEST_F(DAGTest, to_proto) {
   planpb::DAG pb;
   dag_.ToProto(&pb);
-  EXPECT_THAT(pb, EqualsProto(kDAGProto));
+  google::protobuf::util::MessageDifferencer differencer;
+  differencer.TreatAsSet(pb.GetDescriptor()->FindFieldByName("nodes"));
+  EXPECT_THAT(pb, WithDifferencer(&differencer, EqualsProto(kDAGProto)));
 }
 
 constexpr char kDAGProtoIgnoreIds[] = R"proto(
@@ -245,7 +250,9 @@ TEST_F(DAGTest, from_proto) {
 
   EXPECT_TRUE(dag_.HasNode(5));
   EXPECT_FALSE(dag_.HasNode(36));
-  EXPECT_THAT(dag_.TopologicalSort(), ElementsAre(20, 5, 8, 3, 6));
+
+  EXPECT_THAT(dag_.TopologicalSort(),
+              AnyOf(ElementsAre(20, 5, 8, 3, 6), ElementsAre(5, 20, 8, 3, 6)));
 }
 
 }  // namespace plan

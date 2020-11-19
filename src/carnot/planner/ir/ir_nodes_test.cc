@@ -955,15 +955,11 @@ TEST_F(CloneTests, join_clone) {
       MakeJoin({mem_src1, mem_src2}, "inner", relation0, relation1,
                std::vector<std::string>{"col1", "col3"}, std::vector<std::string>{"col2", "col4"});
 
-  auto out = graph->Clone();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<IR> cloned_ir, graph->Clone());
 
-  EXPECT_OK(out.status());
-  std::unique_ptr<IR> cloned_ir = out.ConsumeValueOrDie();
-  ASSERT_EQ(graph->dag().TopologicalSort(), cloned_ir->dag().TopologicalSort());
-
-  graph->Get(join_op->id());
+  EXPECT_NE(graph->Get(join_op->id()), nullptr);
   IRNode* maybe_join_clone = cloned_ir->Get(join_op->id());
-  ASSERT_EQ(maybe_join_clone->type(), IRNodeType::kJoin);
+  ASSERT_MATCH(maybe_join_clone, Join());
   JoinIR* join_clone = static_cast<JoinIR*>(maybe_join_clone);
 
   CompareClone(join_clone, join_op, "");
@@ -980,7 +976,13 @@ TEST_F(CloneTests, union_clone) {
 
   EXPECT_OK(out.status());
   std::unique_ptr<IR> cloned_ir = out.ConsumeValueOrDie();
-  ASSERT_EQ(graph->dag().TopologicalSort(), cloned_ir->dag().TopologicalSort());
+
+  // Check the memory sources.
+  for (const auto& mem : cloned_ir->FindNodesThatMatch(MemorySource())) {
+    auto mem_src_child = static_cast<MemorySourceIR*>(mem)->Children()[0];
+    EXPECT_MATCH(mem_src_child, Union());
+    EXPECT_EQ(mem_src_child->id(), union_op->id());
+  }
 
   graph->Get(union_op->id());
   IRNode* maybe_union_clone = cloned_ir->Get(union_op->id());

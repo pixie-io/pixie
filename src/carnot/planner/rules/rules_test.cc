@@ -28,6 +28,7 @@ using ::testing::UnorderedElementsAreArray;
 class RulesTest : public OperatorTests {
  protected:
   void SetUpRegistryInfo() { info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie(); }
+
   void SetUpImpl() override {
     SetUpRegistryInfo();
 
@@ -45,30 +46,34 @@ class RulesTest : public OperatorTests {
                                                       "result_addr", "result_ssl_targetname");
     md_handler = MetadataHandler::Create();
   }
+
   FilterIR* MakeFilter(OperatorIR* parent) {
     auto constant1 = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
     auto column = MakeColumn("column", 0);
 
     auto filter_func = graph
-                           ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::eq, "==", "equals"},
+                           ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::eq, "==", "equal"},
                                                 std::vector<ExpressionIR*>{constant1, column})
                            .ValueOrDie();
     filter_func->SetOutputDataType(types::DataType::BOOLEAN);
 
     return graph->CreateNode<FilterIR>(ast, parent, filter_func).ValueOrDie();
   }
+
   FilterIR* MakeFilter(OperatorIR* parent, ColumnIR* filter_value) {
     auto constant1 = graph->CreateNode<StringIR>(ast, "value").ValueOrDie();
     FuncIR* filter_func =
         graph
-            ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::eq, "==", "equals"},
+            ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::eq, "==", "equal"},
                                  std::vector<ExpressionIR*>{constant1, filter_value})
             .ValueOrDie();
     return graph->CreateNode<FilterIR>(ast, parent, filter_func).ValueOrDie();
   }
+
   FilterIR* MakeFilter(OperatorIR* parent, FuncIR* filter_expr) {
     return graph->CreateNode<FilterIR>(ast, parent, filter_expr).ValueOrDie();
   }
+
   using OperatorTests::MakeBlockingAgg;
   BlockingAggIR* MakeBlockingAgg(OperatorIR* parent, ColumnIR* by_column, ColumnIR* fn_column) {
     auto agg_func = graph
@@ -132,19 +137,12 @@ TEST_F(DataTypeRuleTest, map_function) {
 
   // Expect the data_rule to change something.
   DataTypeRule data_rule(compiler_state_.get());
-  auto result = data_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ValueOrDie());
-
-  // Function shouldn't be updated, it had unresolved dependencies.
-  EXPECT_FALSE(func->IsDataTypeEvaluated());
-  // Column should be updated, it had unresolved dependencies.
-  EXPECT_TRUE(col->IsDataTypeEvaluated());
-
-  // Expect the data_rule to change something.
-  result = data_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ValueOrDie());
+  bool did_change;
+  do {
+    auto result = data_rule.Execute(graph.get());
+    ASSERT_OK(result.status());
+    did_change = result.ConsumeValueOrDie();
+  } while (did_change);
 
   // The function should now be evaluated, the column should stay evaluated.
   EXPECT_TRUE(func->IsDataTypeEvaluated());
@@ -155,7 +153,7 @@ TEST_F(DataTypeRuleTest, map_function) {
   EXPECT_EQ(func->EvaluatedDataType(), types::DataType::INT64);
 
   // Expect the data_rule to do nothing, no more work left.
-  result = data_rule.Execute(graph.get());
+  auto result = data_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_FALSE(result.ValueOrDie());
 
@@ -202,13 +200,13 @@ TEST_F(DataTypeRuleTest, missing_udf_name) {
                                      /* keep_input_columns */ false));
   // Expect the data_rule to successfully change columnir.
   DataTypeRule data_rule(compiler_state_.get());
-  auto result = data_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ValueOrDie());
+  Status s;
+  do {
+    auto result = data_rule.Execute(graph.get());
+    s = result.status();
+  } while (s.ok());
 
-  // Expect the data_rule to change something.
-  result = data_rule.Execute(graph.get());
-  EXPECT_NOT_OK(result);
+  EXPECT_NOT_OK(s);
 
   // The function should not be evaluated, the function was not matched.
   EXPECT_FALSE(func->IsDataTypeEvaluated());
@@ -229,19 +227,15 @@ TEST_F(DataTypeRuleTest, function_in_agg) {
 
   // Expect the data_rule to successfully evaluate the column.
   DataTypeRule data_rule(compiler_state_.get());
-  auto result = data_rule.Execute(graph.get());
-  EXPECT_OK(result);
-  EXPECT_TRUE(result.ValueOrDie());
-
-  EXPECT_TRUE(col->IsDataTypeEvaluated());
-  EXPECT_FALSE(func->IsDataTypeEvaluated());
-
-  // Expect the data_rule to change the function.
-  result = data_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ValueOrDie());
+  bool did_change;
+  do {
+    auto result = data_rule.Execute(graph.get());
+    ASSERT_OK(result.status());
+    did_change = result.ConsumeValueOrDie();
+  } while (did_change);
 
   // The function should be evaluated.
+  EXPECT_TRUE(col->IsDataTypeEvaluated());
   EXPECT_TRUE(func->IsDataTypeEvaluated());
   EXPECT_EQ(func->EvaluatedDataType(), types::DataType::FLOAT64);
 }
@@ -268,30 +262,17 @@ TEST_F(DataTypeRuleTest, nested_functions) {
 
   // Expect the data_rule to change something.
   DataTypeRule data_rule(compiler_state_.get());
-  auto result = data_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ValueOrDie());
 
-  // Functions shouldn't be updated, they have unresolved dependencies.
-  EXPECT_FALSE(func->IsDataTypeEvaluated());
-  EXPECT_FALSE(func2->IsDataTypeEvaluated());
-  // Column should be updated, it had no dependencies.
-  EXPECT_TRUE(col->IsDataTypeEvaluated());
+  bool did_change;
+  int64_t number_changes = 0;
+  do {
+    auto result = data_rule.Execute(graph.get());
+    ASSERT_OK(result.status());
+    did_change = result.ConsumeValueOrDie();
+    ++number_changes;
+  } while (did_change);
 
-  // Expect the data_rule to change something.
-  result = data_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ValueOrDie());
-
-  // func1 should now be evaluated, the column should stay evaluated, func2 is not evaluated.
-  EXPECT_TRUE(func->IsDataTypeEvaluated());
-  EXPECT_FALSE(func2->IsDataTypeEvaluated());
-  EXPECT_TRUE(col->IsDataTypeEvaluated());
-
-  // Everything should be evaluated, func2 changes.
-  result = data_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ValueOrDie());
+  EXPECT_LE(number_changes, 4);
 
   // All should be evaluated.
   EXPECT_TRUE(func->IsDataTypeEvaluated());
@@ -304,7 +285,7 @@ TEST_F(DataTypeRuleTest, nested_functions) {
   EXPECT_EQ(func2->EvaluatedDataType(), types::DataType::INT64);
 
   // Expect the data_rule to do nothing, no more work left.
-  result = data_rule.Execute(graph.get());
+  auto result = data_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_FALSE(result.ValueOrDie());
 }
@@ -320,8 +301,9 @@ TEST_F(DataTypeRuleTest, metadata_column) {
 
   DataTypeRule data_rule(compiler_state_.get());
   auto result = data_rule.Execute(graph.get());
+  LOG(INFO) << graph->DebugString();
   ASSERT_OK(result);
-  EXPECT_TRUE(result.ValueOrDie());
+  EXPECT_TRUE(result.ConsumeValueOrDie());
   EXPECT_TRUE(metadata_ir->IsDataTypeEvaluated());
   EXPECT_EQ(metadata_ir->EvaluatedDataType(), types::DataType::STRING);
 }
@@ -537,7 +519,8 @@ TEST_F(MapRuleTest, successful_resolve) {
   EXPECT_EQ(result_relation, expected_relation);
 }
 
-// Relation should resolve, all expressions in operator are resolved, and add the previous columns.
+// Relation should resolve, all expressions in operator are resolved, and add the previous
+// columns.
 TEST_F(MapRuleTest, successful_resolve_keep_input_columns) {
   SetUpGraph(true /* resolve_map_func */, true /* keep_input_columns */);
   OperatorRelationRule op_rel_rule(compiler_state_.get());
@@ -1646,8 +1629,8 @@ TEST_F(RulesTest, RemoveGroupByRule_FailOnBadGroupBy) {
   // Error on groupbys() that have sinks or follow up nodes.
   MemorySourceIR* mem_source = MakeMemSource();
   GroupByIR* group_by = MakeGroupBy(mem_source, {MakeColumn("col1", 0), MakeColumn("col2", 0)});
-  // Note that mem sink is conect to a groupby. Anything that has a group by as a parent should fail
-  // at this point.
+  // Note that mem sink is conect to a groupby. Anything that has a group by as a parent should
+  // fail at this point.
   MakeMemSink(group_by, "");
   RemoveGroupByRule rule;
   auto result = rule.Execute(graph.get());
