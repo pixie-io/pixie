@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+data:
+  config.yaml: "# N.B. This file is bundled and distributed in the enterprise docker
+                image.\ndatabase:\n  data_source: \"sqlite3:///data/buildbuddy.db\"\nssl: \n  enable_ssl:
+                true\n  use_acme: true\nstorage:\n  ttl_seconds: 2592000  # 30 days\n  chunk_file_size_bytes:
+                3000000  # 3 MB\n  disk:\n    root_directory: \"/data/buildbuddy/\"\n"
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: config

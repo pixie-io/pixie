@@ -1,0 +1,8 @@
+---
+apiVersion: networking.gke.io/v1beta1
+kind: ManagedCertificate
+metadata:
+  name: buildbuddy-cert
+spec:
+  domains:
+  - buildbuddy.corp.pixielabs.ai

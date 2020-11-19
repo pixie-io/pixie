@@ -1,0 +1,14 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+commonLabels:
+  app: buildbuddy
+namespace: buildbuddy
+resources:
+- buildbuddy_namespace.yaml
+- buildbuddy_config.yaml
+- buildbuddy_statefulset.yaml
+- buildbuddy_service.yaml
+- buildbuddy_be_config.yaml
+- buildbuddy_ingress.yaml
+- buildbuddy_managedcert.yaml

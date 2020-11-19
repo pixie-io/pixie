@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: buildbuddy-app
+spec:
+  replicas: 1
+  serviceName: buildbuddy-app
+  selector:
+    matchLabels:
+      app: buildbuddy-app
+  template:
+    metadata:
+      labels:
+        app: buildbuddy-app
+    spec:
+      containers:
+      - name: buildbuddy-app
+        image: gcr.io/flame-public/buildbuddy-app-onprem:latest
+        imagePullPolicy: Always
+        env:
+        - name: ENV
+          value: "onprem"
+        - name: SERVICE_NAME
+          value: "app-backend"
+        - name: VERSION
+          value: "prod-1.0"
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: grpc
+          containerPort: 1985
+        volumeMounts:
+        - mountPath: /data
+          name: data
+        - mountPath: "/config.yaml"
+          name: config
+          subPath: "config.yaml"
+      volumes:
+      - name: "config"
+        configMap:
+          name: "config"
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
