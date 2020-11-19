@@ -95,32 +95,32 @@ fi
 
 
 # Clang:opt
-${bazel_query} "${buildables_kind} ${bpf_excludes}" > bazel_buildables_clang_opt
-${bazel_query} "${tests_kind} ${bpf_excludes}" > bazel_tests_clang_opt
+${bazel_query} "${buildables_kind} ${bpf_excludes}" > bazel_buildables_clang_opt 2>/dev/null
+${bazel_query} "${tests_kind} ${bpf_excludes}" > bazel_tests_clang_opt 2>/dev/null
 
 # Clang:dbg
-${bazel_query} "kind(cc_binary, ${buildables_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_buildables_clang_dbg
-${bazel_query} "kind(cc_test, ${tests_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_tests_clang_dbg
+${bazel_query} "kind(cc_binary, ${buildables_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_buildables_clang_dbg 2>/dev/null
+${bazel_query} "kind(cc_test, ${tests_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_tests_clang_dbg 2>/dev/null
 
 # GCC:opt
-${bazel_query} "kind(cc_binary, ${buildables_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_buildables_gcc_opt
-${bazel_query} "kind(cc_test, ${tests_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_tests_gcc_opt
+${bazel_query} "kind(cc_binary, ${buildables_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_buildables_gcc_opt 2>/dev/null
+${bazel_query} "kind(cc_test, ${tests_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_tests_gcc_opt 2>/dev/null
 
 # Sanitizer (Limit to C++ only).
 ${bazel_query} "kind(cc_binary, ${buildables_kind}) ${ui_excludes} ${bpf_excludes} \
-  ${sanitizer_only}" > bazel_buildables_sanitizer
+  ${sanitizer_only}" > bazel_buildables_sanitizer 2>/dev/null
 ${bazel_query} "kind(cc_test, ${tests_kind}) ${ui_excludes} ${bpf_excludes} \
-  ${sanitizer_only}" > bazel_tests_sanitizer
+  ${sanitizer_only}" > bazel_tests_sanitizer 2>/dev/null
 
 # BPF.
-${bazel_query} "attr('tags', 'requires_bpf', ${buildables_kind})" > bazel_buildables_bpf
-${bazel_query} "attr('tags', 'requires_bpf', ${tests_kind})" > bazel_tests_bpf
+${bazel_query} "attr('tags', 'requires_bpf', ${buildables_kind})" > bazel_buildables_bpf 2>/dev/null
+${bazel_query} "attr('tags', 'requires_bpf', ${tests_kind})" > bazel_tests_bpf 2>/dev/null
 
 # BPF Sanitizer (C/C++ Only).
 ${bazel_query} "kind(cc_binary, attr('tags', 'requires_bpf', ${buildables_kind})) \
-  ${sanitizer_only}" > bazel_buildables_bpf_sanitizer
+  ${sanitizer_only}" > bazel_buildables_bpf_sanitizer 2>/dev/null
 ${bazel_query} "kind(cc_test, attr('tags', 'requires_bpf', ${tests_kind})) \
-  ${sanitizer_only}" > bazel_tests_bpf_sanitizer
+  ${sanitizer_only}" > bazel_tests_bpf_sanitizer 2>/dev/null
 
 if [[ -s bazel_buildables_clang_dbg ]]; then
   touch bazel_cc_changed
