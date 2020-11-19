@@ -1,10 +1,10 @@
 {
   "variables": [
     {
-      "name": "ips",
-      "type": "PX_STRING_LIST",
-      "description": "The IP addresses you wish to get the network flow into.",
-      "defaultValue": "10.16.0.1"
+      "name": "namespace",
+      "type": "PX_NAMESPACE",
+      "description": "The namespace to filter on",
+      "defaultValue": "pl"
     },
     {
       "name": "start",
@@ -13,16 +13,22 @@
       "defaultValue": "-5m"
     },
     {
-      "name": "grouping_entity",
+      "name": "from_entity_filter",
       "type": "PX_STRING",
-      "description": "The k8s object to group connections by.",
-      "defaultValue": "pod",
-      "validValues": [
-        "node",
-        "service",
-        "pod",
-        "namespace"
-      ]
+      "description": "The partial string to match the 'from_entity' (source pod).",
+      "defaultValue": ""
+    },
+    {
+      "name": "to_entity_filter",
+      "type": "PX_STRING",
+      "description": "The partial string to match the 'to_entity' (destination service).",
+      "defaultValue": ""
+    },
+    {
+      "name": "throughput_filter",
+      "type": "PX_FLOAT64",
+      "description": "Filters out connections with total throughput less than the specified amount. Specified in B/sec.",
+      "defaultValue": "0.0"
     }
   ],
   "globalFuncs": [
@@ -36,12 +42,20 @@
             "variable": "start"
           },
           {
-            "name": "ips",
-            "variable": "ips"
+            "name": "ns",
+            "variable": "namespace"
           },
           {
-            "name": "grouping_entity",
-            "variable": "grouping_entity"
+            "name": "from_entity_filter",
+            "variable": "from_entity_filter"
+          },
+          {
+            "name": "to_entity_filter",
+            "variable": "to_entity_filter"
+          },
+          {
+            "name": "throughput_filter",
+            "variable": "throughput_filter"
           }
         ]
       }
@@ -64,12 +78,13 @@
           "toColumn": "to_entity"
         },
         "edgeWeightColumn": "bytes_total",
+        "edgeColorColumn": "bytes_total",
         "edgeHoverInfo": [
           "bytes_total",
           "bytes_sent",
           "bytes_recv"
         ],
-        "edgeLength": 100
+        "edgeLength": 500
       }
     },
     {
