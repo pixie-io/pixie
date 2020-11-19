@@ -1353,7 +1353,7 @@ int syscall__probe_ret_close(struct pt_regs* ctx) {
 // sendto and send?
 
 // Include HTTP2 tracing probes.
-#include "src/stirling/bcc_bpf/go_grpc.c"
+#include "src/stirling/bcc_bpf/go_http2_trace.c"
 
 // Include OpenSSL tracing probes.
 #include "src/stirling/bcc_bpf/openssl_trace.c"
