@@ -84,15 +84,7 @@ void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   PopulateSockAddr(reinterpret_cast<const struct sockaddr*>(&conn_event.addr),
                    &open_info_.remote_addr);
 
-  if (traffic_class_.role == kRoleNone) {
-    traffic_class_.role = conn_event.role;
-  } else if (conn_event.role != kRoleNone) {
-    DCHECK_EQ(traffic_class_.role, conn_event.role) << absl::Substitute(
-        "Not allowed to change the role of an active ConnectionTracker: $0, old role: $1, new "
-        "role: $2",
-        ToString(conn_id_), magic_enum::enum_name(traffic_class_.role),
-        magic_enum::enum_name(conn_event.role));
-  }
+  SetRole(conn_event.role);
 
   CONN_TRACE(1) << absl::Substitute("conn_open af=$0 addr=$1",
                                     magic_enum::enum_name(open_info_.remote_addr.family),
@@ -127,7 +119,13 @@ void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {
 void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   // Make sure update conn_id traffic_class before exporting stats, which uses these fields.
   SetConnID(event->attr.conn_id);
-  SetTrafficClass(event->attr.traffic_class);
+  bool role_changed = SetRole(event->attr.traffic_class.role);
+  SetProtocol(event->attr.traffic_class.protocol);
+
+  // If role has just resolved, it may be time to inform conn stats.
+  if (role_changed && ShouldExportToConnStats()) {
+    ExportInitialConnStats();
+  }
 
   CheckTracker();
   UpdateTimestamps(event->attr.timestamp_ns);
@@ -466,35 +464,51 @@ void ConnectionTracker::SetConnID(struct conn_id_t conn_id) {
   }
 }
 
-void ConnectionTracker::SetTrafficClass(struct traffic_class_t traffic_class) {
-  // Don't allow changing active protocols or roles, unless it is from unknown to something else.
-
-  if (traffic_class_.protocol == kProtocolUnknown) {
-    traffic_class_.protocol = traffic_class.protocol;
-  } else if (traffic_class.protocol != kProtocolUnknown) {
-    if (traffic_class_.protocol != traffic_class.protocol) {
+bool ConnectionTracker::SetRole(EndpointRole role) {
+  // Don't allow changing active role, unless it is from unknown to something else.
+  if (traffic_class_.role != kRoleNone) {
+    if (role != kRoleNone && traffic_class_.role != role) {
       CONN_TRACE(1) << absl::Substitute(
-          "Not allowed to change the protocol of an active ConnectionTracker: $0, old protocol: "
-          "$1, "
-          "new protocol $2",
+          "Not allowed to change the role of an active ConnectionTracker: $0, old role: $1, new "
+          "role: $2",
+          ToString(conn_id_), magic_enum::enum_name(traffic_class_.role),
+          magic_enum::enum_name(role));
+    }
+
+    // Role did not change.
+    return false;
+  }
+
+  if (role != kRoleNone) {
+    traffic_class_.role = role;
+    return true;
+  }
+
+  // Role did not change.
+  return false;
+}
+
+// Returns true if protocol state changed.
+bool ConnectionTracker::SetProtocol(TrafficProtocol protocol) {
+  // Don't allow changing active protocol, unless it is from unknown to something else.
+  if (traffic_class_.protocol != kProtocolUnknown) {
+    if (protocol != kProtocolUnknown && traffic_class_.protocol != protocol) {
+      CONN_TRACE(1) << absl::Substitute(
+          "Not allowed to change the protocol of an active ConnectionTracker: $0, old "
+          "protocol: $1, new protocol $2",
           ToString(conn_id_), magic_enum::enum_name(traffic_class_.protocol),
-          magic_enum::enum_name(traffic_class.protocol));
+          magic_enum::enum_name(protocol));
     }
+    return false;
   }
 
-  if (traffic_class_.role == kRoleNone) {
-    traffic_class_.role = traffic_class.role;
-    if (ShouldExportToConnStats()) {
-      ExportInitialConnStats();
-    }
-  } else if (traffic_class.role != kRoleNone) {
-    if (traffic_class_.role != traffic_class.role) {
-      CONN_TRACE(1) << absl::Substitute(
-          "Not allowed to change the role of an active ConnectionTracker: old role: $0, new "
-          "role: $1",
-          magic_enum::enum_name(traffic_class_.role), magic_enum::enum_name(traffic_class.role));
-    }
+  if (protocol != kProtocolUnknown) {
+    traffic_class_.protocol = protocol;
+    return true;
   }
+
+  // Protocol did not change.
+  return false;
 }
 
 void ConnectionTracker::UpdateTimestamps(uint64_t bpf_timestamp) {

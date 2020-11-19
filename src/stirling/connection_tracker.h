@@ -482,8 +482,11 @@ class ConnectionTracker {
     conn_info_map_mgr_ = conn_info_map_mgr;
   }
 
+  // These functions return true if the state was changed.
+  bool SetProtocol(TrafficProtocol protocol);
+  bool SetRole(EndpointRole role);
+
   void SetDebugTrace(int level) { debug_trace_level_ = level; }
-  void SetTrafficClass(struct traffic_class_t traffic_class);
 
  private:
   /**
@@ -540,6 +543,11 @@ class ConnectionTracker {
   bool conn_resolution_failed_ = false;
 
   struct conn_id_t conn_id_ = {};
+  // TODO(oazizi): Protocol and role are getting decoupled, as role now may come from conn event,
+  //               and protocol comes from data.
+  //               So flatten traffic_class_:
+  //                    TrafficProtocol protocol_ = kProtocolUnknown;
+  //                    EndpointRole role_ = kRoleNone;
   struct traffic_class_t traffic_class_ {
     kProtocolUnknown, kRoleNone
   };

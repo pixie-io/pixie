@@ -430,7 +430,8 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
 
   ConnectionTracker tracker;
   tracker.AddControlEvent(conn);
-  tracker.SetTrafficClass({.protocol = kProtocolHTTP, .role = kRoleClient});
+  tracker.SetProtocol(kProtocolHTTP);
+  tracker.SetRole(kRoleClient);
   tracker.IterationPreTick(cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
 }
@@ -443,7 +444,8 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForClientSideTracingWithNoCIDR) {
 
   ConnectionTracker tracker;
   tracker.AddControlEvent(conn);
-  tracker.SetTrafficClass({.protocol = kProtocolHTTP, .role = kRoleClient});
+  tracker.SetProtocol(kProtocolHTTP);
+  tracker.SetRole(kRoleClient);
   tracker.IterationPreTick({}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
 }
@@ -493,7 +495,8 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledAfterMapping) {
 
     ConnectionTracker tracker;
     tracker.AddControlEvent(conn);
-    tracker.SetTrafficClass({.protocol = kProtocolHTTP, .role = kRoleClient});
+    tracker.SetProtocol(kProtocolHTTP);
+    tracker.SetRole(kRoleClient);
     tracker.IterationPreTick({cidr}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
     EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state())
         << "Got: " << magic_enum::enum_name(tracker.state());
@@ -508,7 +511,8 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledAfterMapping) {
 
     ConnectionTracker tracker;
     tracker.AddControlEvent(conn);
-    tracker.SetTrafficClass({.protocol = kProtocolHTTP, .role = kRoleClient});
+    tracker.SetProtocol(kProtocolHTTP);
+    tracker.SetRole(kRoleClient);
     tracker.IterationPreTick({cidr}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
     EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state())
         << "Got: " << magic_enum::enum_name(tracker.state());
@@ -748,7 +752,7 @@ TEST_P(ConnectionTrackerStatsTest, NoConnOpen) {
               UnorderedElementsAre(Pair(AggKeyIs(12345, "0.0.0.0"), StatsIs(1, 1, 4, 4))));
 }
 
-// Tests that receiving conn_ope and conn_close before any data event results into correct stats.
+// Tests that receiving conn_open and conn_close before any data event results into correct stats.
 TEST_P(ConnectionTrackerStatsTest, OnlyDataEvents) {
   TrafficProtocol protocol;
   EndpointRole role;
