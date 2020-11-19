@@ -188,8 +188,8 @@
     "node": ">=10.0.0"
   },
   "scripts": {
-    "build_dev": "webpack --mode=development",
-    "build_prod": "webpack --mode=production --stats=verbose --progress",
+    "build_dev": "webpack --mode=development --stats=verbose --progress",
+    "build_prod": "webpack --mode=production",
     "dev": "webpack serve --mode=development --hot",
     "test": "jest",
     "coverage": "jest --coverage",
@@ -199,6 +199,7 @@
     "postinstall": "patch-package"
   },
   "resolutions": {
+    "html-webpack-plugin": "^5.0.0-alpha.9",
     "http-proxy-middleware": "0.19.2",
     "jimp": "^0.10.3",
     "resize-img": "^2.0.0",
