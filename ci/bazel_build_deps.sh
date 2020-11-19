@@ -1,7 +1,5 @@
-#!/bin/bash
+#!/bin/bash -e
 # This script finds all the Bazel targets based on which files are changed and flags passed in.
-
-set -e
 
 # Go to the root of the repo
 cd "$(git rev-parse --show-toplevel)" || exit
@@ -101,12 +99,12 @@ ${bazel_query} "${buildables_kind} ${bpf_excludes}" > bazel_buildables_clang_opt
 ${bazel_query} "${tests_kind} ${bpf_excludes}" > bazel_tests_clang_opt
 
 # Clang:dbg
-${bazel_query} "${buildables_kind} ${ui_excludes} ${bpf_excludes}" > bazel_buildables_clang_dbg
-${bazel_query} "${tests_kind} ${ui_excludes} ${bpf_excludes}" > bazel_tests_clang_dbg
+${bazel_query} "kind(cc_binary, ${buildables_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_buildables_clang_dbg
+${bazel_query} "kind(cc_test, ${tests_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_tests_clang_dbg
 
 # GCC:opt
-${bazel_query} "${buildables_kind} ${ui_excludes} ${bpf_excludes}" > bazel_buildables_gcc_opt
-${bazel_query} "${tests_kind} ${ui_excludes} ${bpf_excludes}" > bazel_tests_gcc_opt
+${bazel_query} "kind(cc_binary, ${buildables_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_buildables_gcc_opt
+${bazel_query} "kind(cc_test, ${tests_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_tests_gcc_opt
 
 # Sanitizer (Limit to C++ only).
 ${bazel_query} "kind(cc_binary, ${buildables_kind}) ${ui_excludes} ${bpf_excludes} \
@@ -123,3 +121,7 @@ ${bazel_query} "kind(cc_binary, attr('tags', 'requires_bpf', ${buildables_kind})
   ${sanitizer_only}" > bazel_buildables_bpf_sanitizer
 ${bazel_query} "kind(cc_test, attr('tags', 'requires_bpf', ${tests_kind})) \
   ${sanitizer_only}" > bazel_tests_bpf_sanitizer
+
+if [[ -s bazel_buildables_clang_dbg ]]; then
+  touch bazel_cc_changed
+fi
