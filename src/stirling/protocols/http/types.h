@@ -86,7 +86,7 @@ struct ProtocolTraits {
   using state_type = NoState;
 };
 
-};  // namespace http
+}  // namespace http
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace pl
