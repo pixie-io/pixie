@@ -1,4 +1,5 @@
 #include "src/carnot/planner/objects/pixie_module.h"
+#include "src/carnot/planner/objects/dict_object.h"
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/test_utils.h"
 #include "src/carnot/planner/objects/type_object.h"
@@ -218,7 +219,7 @@ TEST_F(PixieModuleTest, uuint128_conversion) {
   ASSERT_OK(uuint128_or_s) << "uuint128 should be valid.";
   auto expected_uuint128 = uuint128_or_s.ConsumeValueOrDie();
 
-  auto method_or_s = module_->GetMethod(PixieModule::kUInt128ConversionId);
+  auto method_or_s = module_->GetMethod(PixieModule::kUInt128ConversionID);
   ASSERT_OK(method_or_s);
 
   QLObjectPtr method_object = method_or_s.ConsumeValueOrDie();
@@ -238,7 +239,7 @@ TEST_F(PixieModuleTest, uuint128_conversion) {
 TEST_F(PixieModuleTest, uuint128_conversion_fails_on_invalid_string) {
   std::string upid_str = "bad_uuid";
 
-  auto method_or_s = module_->GetMethod(PixieModule::kUInt128ConversionId);
+  auto method_or_s = module_->GetMethod(PixieModule::kUInt128ConversionID);
   ASSERT_OK(method_or_s);
 
   QLObjectPtr method_object = method_or_s.ConsumeValueOrDie();
@@ -307,7 +308,7 @@ TEST_F(PixieModuleTest, abs_time_test_expected_time_zone) {
 }
 
 TEST_F(PixieModuleTest, upid_constructor_test) {
-  auto make_upid_or_s = module_->GetMethod(PixieModule::kMakeUPIDId);
+  auto make_upid_or_s = module_->GetMethod(PixieModule::kMakeUPIDID);
   ASSERT_OK(make_upid_or_s);
 
   std::shared_ptr<FuncObject> fn = make_upid_or_s.ConsumeValueOrDie();
@@ -326,6 +327,74 @@ TEST_F(PixieModuleTest, upid_constructor_test) {
   EXPECT_EQ(upid.asid(), 123);
   EXPECT_EQ(upid.pid(), 456);
   EXPECT_EQ(upid.start_ts(), 789);
+}
+
+TEST_F(PixieModuleTest, script_reference_test_no_args) {
+  auto script_reference_or_s = module_->GetMethod(PixieModule::kScriptReferenceID);
+  ASSERT_OK(script_reference_or_s);
+
+  std::shared_ptr<FuncObject> fn = script_reference_or_s.ConsumeValueOrDie();
+
+  // Test to show that our time zone is UTC.
+  auto result_or_s = fn->Call(
+      {{}, {ToQLObject(MakeColumn("label", 0)), ToQLObject(MakeString("px/namespace"))}}, ast);
+
+  ASSERT_OK(result_or_s);
+  QLObjectPtr result = result_or_s.ConsumeValueOrDie();
+  ASSERT_EQ(result->type(), QLObjectType::kExpr);
+  auto expr = static_cast<ExpressionIR*>(result->node());
+  EXPECT_MATCH(expr, Func());
+  auto func = static_cast<FuncIR*>(expr);
+  EXPECT_EQ(FuncIR::Opcode::non_op, func->opcode());
+  EXPECT_EQ("_script_reference", func->func_name());
+  auto args = func->args();
+  ASSERT_EQ(2, args.size());
+  EXPECT_MATCH(args[0], ColumnNode("label"));
+  EXPECT_MATCH(args[1], String("px/namespace"));
+}
+
+TEST_F(PixieModuleTest, script_reference_test_with_args) {
+  auto script_reference_or_s = module_->GetMethod(PixieModule::kScriptReferenceID);
+  ASSERT_OK(script_reference_or_s);
+
+  std::shared_ptr<FuncObject> fn = script_reference_or_s.ConsumeValueOrDie();
+
+  std::vector<QLObjectPtr> keys = {
+      ToQLObject(MakeString("start_time")),
+      ToQLObject(MakeString("namespace")),
+  };
+
+  std::vector<QLObjectPtr> vals = {
+      ToQLObject(MakeString("-30s")),
+      ToQLObject(MakeColumn("namespace_col", 0)),
+  };
+
+  auto args_dictionary = DictObject::Create(keys, vals, ast_visitor.get()).ConsumeValueOrDie();
+
+  // Test to show that our time zone is UTC.
+  auto result_or_s = fn->Call({{},
+                               {ToQLObject(MakeColumn("label", 0)),
+                                ToQLObject(MakeString("px/namespace")), args_dictionary}},
+                              ast);
+
+  ASSERT_OK(result_or_s);
+  QLObjectPtr result = result_or_s.ConsumeValueOrDie();
+  ASSERT_EQ(result->type(), QLObjectType::kExpr);
+  auto expr = static_cast<ExpressionIR*>(result->node());
+  EXPECT_MATCH(expr, Func());
+  auto func = static_cast<FuncIR*>(expr);
+  EXPECT_EQ(FuncIR::Opcode::non_op, func->opcode());
+  EXPECT_EQ("_script_reference", func->func_name());
+  auto args = func->args();
+  ASSERT_EQ(6, args.size());
+  EXPECT_MATCH(args[0], ColumnNode("label"));
+  EXPECT_MATCH(args[1], String("px/namespace"));
+
+  std::vector<ExpressionIR*> script_args(args.begin() + 2, args.end());
+  EXPECT_MATCH(args[2], String("start_time"));
+  EXPECT_MATCH(args[3], String("-30s"));
+  EXPECT_MATCH(args[4], String("namespace"));
+  EXPECT_MATCH(args[5], ColumnNode("namespace_col"));
 }
 
 }  // namespace compiler

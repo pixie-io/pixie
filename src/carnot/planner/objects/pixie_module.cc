@@ -4,6 +4,7 @@
 
 #include "src/carnot/planner/ir/time.h"
 #include "src/carnot/planner/objects/dataframe.h"
+#include "src/carnot/planner/objects/dict_object.h"
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/none_object.h"
 #include "src/carnot/planner/objects/viz_object.h"
@@ -70,7 +71,7 @@ StatusOr<std::string> PrepareDefaultUDTFArg(const planpb::ScalarValue& scalar_va
           sole::rebuild(scalar_value.uint128_value().high(), scalar_value.uint128_value().low())
               .str();
       return absl::Substitute("$0.$1('$2')", PixieModule::kPixieModuleObjName,
-                              PixieModule::kUInt128ConversionId, upid_as_str);
+                              PixieModule::kUInt128ConversionID, upid_as_str);
     }
     default: {
       return error::InvalidArgument("$0 not handled as a default value",
@@ -122,24 +123,24 @@ Status PixieModule::RegisterCompileTimeFuncs() {
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> uuid_str_fn,
       FuncObject::Create(
-          kUInt128ConversionId, {"uuid"}, {},
+          kUInt128ConversionID, {"uuid"}, {},
           /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
           std::bind(&CompileTimeFuncHandler::UInt128Conversion, graph_, std::placeholders::_1,
                     std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
   PL_RETURN_IF_ERROR(uuid_str_fn->SetDocString(kUInt128ConversionDocstring));
-  AddMethod(kUInt128ConversionId, uuid_str_fn);
+  AddMethod(kUInt128ConversionID, uuid_str_fn);
 
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> upid_constructor_fn,
       FuncObject::Create(
-          kMakeUPIDId, {"asid", "pid", "ts_ns"}, {},
+          kMakeUPIDID, {"asid", "pid", "ts_ns"}, {},
           /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
           std::bind(&CompileTimeFuncHandler::UPIDConstructor, graph_, std::placeholders::_1,
                     std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
   PL_RETURN_IF_ERROR(upid_constructor_fn->SetDocString(kMakeUPIDDocstring));
-  AddMethod(kMakeUPIDId, upid_constructor_fn);
+  AddMethod(kMakeUPIDID, upid_constructor_fn);
 
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> abs_time_fn,
@@ -163,6 +164,19 @@ Status PixieModule::RegisterCompileTimeFuncs() {
 
   PL_RETURN_IF_ERROR(equals_any_fn->SetDocString(kEqualsAnyDocstring));
   AddMethod(kEqualsAnyID, equals_any_fn);
+
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> script_reference_fn,
+      FuncObject::Create(
+          kScriptReferenceID, {"label", "script", "args"}, {{"args", "{}"}},
+          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
+          std::bind(&CompileTimeFuncHandler::ScriptReference, graph_, std::placeholders::_1,
+                    std::placeholders::_2, std::placeholders::_3),
+          ast_visitor()));
+
+  PL_RETURN_IF_ERROR(equals_any_fn->SetDocString(kScriptReferenceDocstring));
+  AddMethod(kScriptReferenceID, script_reference_fn);
+
   return Status::OK();
 }
 
@@ -267,7 +281,7 @@ Status PixieModule::Init() {
   PL_ASSIGN_OR_RETURN(auto base_df, Dataframe::Create(graph_, ast_visitor()));
   PL_RETURN_IF_ERROR(AssignAttribute(kDataframeOpID, base_df));
   PL_ASSIGN_OR_RETURN(auto viz, VisualizationObject::Create(ast_visitor()));
-  return AssignAttribute(kVisAttrId, viz);
+  return AssignAttribute(kVisAttrID, viz);
 }
 
 StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, CompilerState* compiler_state,
@@ -419,6 +433,66 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::EqualsAny(IR* graph, const pypa::A
   }
   DCHECK(or_expr);
   return StatusOr<QLObjectPtr>(ExprObject::Create(or_expr, visitor));
+}
+
+// px.script_reference is parsed and converted to a call to the private method px._script_reference.
+// This is so that we can support a cleaner, dictionary-based representation for script args, which
+// is not currently supported in Carnot.
+StatusOr<QLObjectPtr> CompileTimeFuncHandler::ScriptReference(IR* graph, const pypa::AstPtr& ast,
+                                                              const ParsedArgs& args,
+                                                              ASTVisitor* visitor) {
+  std::vector<ExpressionIR*> udf_args;
+
+  PL_ASSIGN_OR_RETURN(ExpressionIR * label_ir, GetArgAs<ExpressionIR>(ast, args, "label"));
+  if (!Match(label_ir, Func()) && !Match(label_ir, String()) && !Match(label_ir, ColumnNode())) {
+    return label_ir->CreateIRNodeError(
+        "Expected first argument 'label' of function 'script_reference' to be of type string, "
+        "column, or function, received $0",
+        label_ir->type_string());
+  }
+
+  PL_ASSIGN_OR_RETURN(ExpressionIR * script_ir, GetArgAs<ExpressionIR>(ast, args, "script"));
+  if (!Match(script_ir, Func()) && !Match(script_ir, String()) && !Match(script_ir, ColumnNode())) {
+    return script_ir->CreateIRNodeError(
+        "Expected first argument 'script' of function 'script_reference' to be of type string, "
+        "column, or function, received $0",
+        script_ir->type_string());
+  }
+
+  udf_args.push_back(label_ir);
+  udf_args.push_back(script_ir);
+
+  QLObjectPtr script_args = args.GetArg("args");
+  if (!DictObject::IsDict(script_args)) {
+    return script_args->CreateError(
+        "Expected third arguemnt 'args' of function 'script_reference' to be a dictionary, "
+        "received "
+        "$0",
+        script_args->name());
+  }
+  auto dict = static_cast<DictObject*>(script_args.get());
+  auto values = dict->values();
+  auto keys = dict->keys();
+  CHECK_EQ(values.size(), keys.size());
+
+  for (const auto& [idx, key] : Enumerate(keys)) {
+    PL_ASSIGN_OR_RETURN(StringIR * key_str_ir, GetArgAs<StringIR>(ast, key, "key"));
+    PL_ASSIGN_OR_RETURN(ExpressionIR * val_ir, GetArgAs<ExpressionIR>(ast, values[idx], "label"));
+
+    if (!Match(val_ir, Func()) && !Match(val_ir, String()) && !Match(val_ir, ColumnNode())) {
+      return val_ir->CreateIRNodeError(
+          "Expected dictionary values to be of type string, column, or function in third argument "
+          "'args' to function 'script_reference', received $0",
+          val_ir->type_string());
+    }
+
+    udf_args.push_back(key_str_ir);
+    udf_args.push_back(val_ir);
+  }
+
+  FuncIR::Op op{FuncIR::Opcode::non_op, "", "_script_reference"};
+  PL_ASSIGN_OR_RETURN(FuncIR * node, graph->CreateNode<FuncIR>(ast, op, udf_args));
+  return ExprObject::Create(node, visitor);
 }
 
 StatusOr<QLObjectPtr> UDFHandler::Eval(IR* graph, std::string name, const pypa::AstPtr& ast,

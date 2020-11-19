@@ -91,7 +91,7 @@ class PixieModule : public QLObject {
 
   )doc";
 
-  inline static constexpr char kUInt128ConversionId[] = "uint128";
+  inline static constexpr char kUInt128ConversionID[] = "uint128";
   inline static constexpr char kUInt128ConversionDocstring[] = R"doc(
   Parse the UUID string into a UInt128.
 
@@ -109,7 +109,7 @@ class PixieModule : public QLObject {
   Returns:
     uint128: The uuid as a uint128.
   )doc";
-  inline static constexpr char kMakeUPIDId[] = "make_upid";
+  inline static constexpr char kMakeUPIDID[] = "make_upid";
   inline static constexpr char kMakeUPIDDocstring[] = R"doc(
   Create a UPID from its components to represent a process.
 
@@ -155,6 +155,29 @@ class PixieModule : public QLObject {
     px.Time: The time value represented in the data.
   )doc";
 
+  inline static constexpr char kScriptReferenceID[] = "script_reference";
+  inline static constexpr char kScriptReferenceDocstring[] = R"doc(
+  Create a reference to a PxL script.
+
+  Create a reference to a PxL script with specified script arguments.
+  These values are displayed in the UI as a clickable link to execute that PxL script.
+
+  Examples:
+    df.script = px.script_reference(df.namespace, 'px/namespace', {
+      'namespace': df.namespace,
+      'start_time': '-5m'
+    })
+
+  Args:
+    label (string): A value containing the label text for the output deep link.
+    script (string): The script ID to execute, such as 'px/namespace'.
+    args (dictionary): A dictionary containing the script argument values.
+
+  Returns:
+    string: A stringified JSON representing the script, shown in the UI as a link.
+
+  )doc";
+
   inline static constexpr char kTimeFuncDocstringTpl[] = R"doc(
   Gets the specified number of $0.
 
@@ -185,7 +208,7 @@ class PixieModule : public QLObject {
   inline static constexpr char kPercentTypeName[] = "Percent";
 
   // Submodules of Px.
-  inline static constexpr char kVisAttrId[] = "vis";
+  inline static constexpr char kVisAttrID[] = "vis";
 
  protected:
   explicit PixieModule(IR* graph, CompilerState* compiler_state, ASTVisitor* ast_visitor,
@@ -256,12 +279,12 @@ class CompileTimeFuncHandler {
                                                  const ParsedArgs& args, ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> UPIDConstructor(IR* graph, const pypa::AstPtr& ast,
                                                const ParsedArgs& args, ASTVisitor* visitor);
-
   static StatusOr<QLObjectPtr> AbsTime(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
                                        ASTVisitor* visitor);
-
   static StatusOr<QLObjectPtr> EqualsAny(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
                                          ASTVisitor* visitor);
+  static StatusOr<QLObjectPtr> ScriptReference(IR* graph, const pypa::AstPtr& ast,
+                                               const ParsedArgs& args, ASTVisitor* visitor);
 };
 
 /**
