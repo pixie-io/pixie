@@ -1,4 +1,6 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_layer")
 
 go_library(
     name = "go_default_library",
@@ -14,5 +16,36 @@ go_library(
 go_binary(
     name = "https_server",
     embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "server_cert_files",
+    srcs = [
+        "https-server.crt",
+        "https-server.key",
+    ],
+)
+
+container_layer(
+    name = "server_certs",
+    directory = "/certs",
+    files = [":server_cert_files"],
+)
+
+container_image(
+    name = "server_image_base",
+    base = "@go_image_base//image",
+    layers = [":server_certs"],
+)
+
+go_image(
+    name = "https_server_image",
+    args = [
+        "--cert=/certs/https-server.crt",
+        "--key=/certs/https-server.key",
+    ],
+    base = ":server_image_base",
+    binary = ":https_server",
     visibility = ["//visibility:public"],
 )

@@ -477,6 +477,28 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "go_tls_trace_bpf_test",
+    timeout = "moderate",
+    srcs = ["go_tls_trace_bpf_test.cc"],
+    data = [
+        "//demos/client_server_apps/go_https/client:https_client_image.tar",
+        "//demos/client_server_apps/go_https/server:https_server_image.tar",
+    ],
+    flaky = True,
+    tags = [
+        "requires_bpf",
+        "exclusive",
+        "no_asan",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "dns_trace_bpf_test",
     timeout = "moderate",
     srcs = [
