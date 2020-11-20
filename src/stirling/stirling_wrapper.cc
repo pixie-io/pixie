@@ -50,7 +50,9 @@ using pl::stirling::kMySQLTable;
 using pl::stirling::kPGSQLTable;
 
 DEFINE_string(sources, "kProd", "[kAll|kProd|kMetrics|kTracers] Choose sources to enable.");
-DEFINE_string(trace, "", "Dynamic trace to deploy.");
+DEFINE_string(trace, "",
+              "Dynamic trace to deploy. Either (1) the path to a file containing PxL or IR trace "
+              "spec, or (2) <path to object file>:<symbol_name> for full-function tracing.");
 DEFINE_string(print_record_batches,
               absl::Substitute("$0,$1,$2,$3", kHTTPTable.name(), kMySQLTable.name(),
                                kCQLTable.name(), kDNSTable.name()),
@@ -108,6 +110,23 @@ struct TraceProgram {
   TracepointFormat format = TracepointFormat::kUnknown;
 };
 
+constexpr std::string_view kFunctionTraceTemplate = R"(
+deployment_spec {
+  path: "$0"
+}
+tracepoints {
+  program {
+    probes {
+      name: "probe0"
+      tracepoint {
+        symbol: "$1"
+        type: LOGICAL
+      }
+    }
+  }
+}
+)";
+
 // Get dynamic tracing program from either flags or enviornment variable.
 std::optional<TraceProgram> GetTraceProgram() {
   std::string env_tracepoint(gflags::StringFromEnv("STIRLING_AUTO_TRACE", ""));
@@ -119,9 +138,19 @@ std::optional<TraceProgram> GetTraceProgram() {
 
   if (!FLAGS_trace.empty()) {
     TraceProgram trace_program;
-    trace_program.format =
-        (absl::EndsWith(FLAGS_trace, ".pxl")) ? TracepointFormat::kPXL : TracepointFormat::kIR;
-    PL_ASSIGN_OR_EXIT(trace_program.text, pl::ReadFileToString(FLAGS_trace));
+    if (absl::StrContains(FLAGS_trace, ":")) {
+      std::vector<std::string_view> split = absl::StrSplit(FLAGS_trace, ":");
+      if (split.size() > 2) {
+        LOG(ERROR) << "Inline tracing should be of the format <path to object file>:<symbol_name>";
+        exit(1);
+      }
+      trace_program.format = TracepointFormat::kIR;
+      trace_program.text = absl::Substitute(kFunctionTraceTemplate, split[0], split[1]);
+    } else {
+      trace_program.format =
+          (absl::EndsWith(FLAGS_trace, ".pxl")) ? TracepointFormat::kPXL : TracepointFormat::kIR;
+      PL_ASSIGN_OR_EXIT(trace_program.text, pl::ReadFileToString(FLAGS_trace));
+    }
     return trace_program;
   }
 
@@ -185,6 +214,13 @@ int main(int argc, char** argv) {
   pl::EnvironmentGuard env_guard(&argc, argv);
 
   LOG(INFO) << "Stirling Wrapper PID: " << getpid() << " TID: " << gettid();
+
+  if (!FLAGS_trace.empty()) {
+    // In dynamic tracing mode, don't load any other sources.
+    // Presumably, user only wants their dynamic trace.
+    LOG(INFO) << "Dynamic Trace provided. All other data sources will be disabled.";
+    FLAGS_sources = "kNone";
+  }
 
   std::optional<SourceRegistrySpecifier> sources =
       magic_enum::enum_cast<SourceRegistrySpecifier>(FLAGS_sources);

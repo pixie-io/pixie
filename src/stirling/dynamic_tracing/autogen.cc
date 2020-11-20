@@ -1,0 +1,152 @@
+#include "src/stirling/dynamic_tracing/autogen.h"
+
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "src/stirling/dynamic_tracing/ir/sharedpb/shared.pb.h"
+#include "src/stirling/dynamic_tracing/types.h"
+
+namespace pl {
+namespace stirling {
+namespace dynamic_tracing {
+
+namespace {
+
+StatusOr<ir::shared::Language> TransformSourceLanguage(
+    const llvm::dwarf::SourceLanguage& source_language) {
+  switch (source_language) {
+    case llvm::dwarf::DW_LANG_Go:
+      return ir::shared::Language::GOLANG;
+    case llvm::dwarf::DW_LANG_C:
+    case llvm::dwarf::DW_LANG_C_plus_plus:
+    case llvm::dwarf::DW_LANG_C_plus_plus_03:
+    case llvm::dwarf::DW_LANG_C_plus_plus_11:
+    case llvm::dwarf::DW_LANG_C_plus_plus_14:
+      return ir::shared::Language::CPP;
+    default:
+      return error::Internal("Detected language $0 is not supported",
+                             magic_enum::enum_name(source_language));
+  }
+}
+
+}  // namespace
+
+void DetectSourceLanguage(elf_tools::ElfReader* elf_reader, dwarf_tools::DwarfReader* dwarf_reader,
+                          ir::logical::TracepointDeployment* input_program) {
+  ir::shared::Language detected_language = ir::shared::Language::LANG_UNKNOWN;
+
+  // Primary detection mechanism is DWARF info, when available.
+  if (dwarf_reader != nullptr) {
+    detected_language = TransformSourceLanguage(dwarf_reader->source_language())
+                            .ConsumeValueOr(ir::shared::Language::LANG_UNKNOWN);
+  } else {
+    // Back-up detection policy looks for certain language-specific symbols
+    if (elf_reader->SymbolAddress("runtime.buildVersion").has_value()) {
+      detected_language = ir::shared::Language::GOLANG;
+    }
+
+    // TODO(oazizi): Make this stronger by adding more elf-based tests.
+  }
+
+  if (detected_language != ir::shared::Language::LANG_UNKNOWN) {
+    LOG(INFO) << absl::Substitute("Using language $0 for object $1",
+                                  magic_enum::enum_name(dwarf_reader->source_language()),
+                                  input_program->deployment_spec().path());
+
+    // Since we only support tracing of a single object, all tracepoints have the same language.
+    for (auto& tracepoint : *input_program->mutable_tracepoints()) {
+      tracepoint.mutable_program()->set_language(detected_language);
+    }
+  } else {
+    // For now, just print a warning, and let the probe proceed.
+    // This is so we can use things like function argument tracing even when other features may not
+    // work.
+    LOG(WARNING) << absl::Substitute(
+        "Language for object $0 is unknown or unsupported, so assuming C/C++ ABI. "
+        "Some dynamic tracing features may not work, or may produce unexpected results.",
+        input_program->deployment_spec().path());
+  }
+}
+
+Status ResolveProbeSymbol(elf_tools::ElfReader* elf_reader,
+                          ir::logical::TracepointDeployment* input_program) {
+  // Expand symbol
+  for (auto& t : *input_program->mutable_tracepoints()) {
+    for (auto& probe : *t.mutable_program()->mutable_probes()) {
+      PL_ASSIGN_OR_RETURN(
+          std::vector<elf_tools::ElfReader::SymbolInfo> symbol_matches,
+          elf_reader->SearchSymbols(probe.tracepoint().symbol(),
+                                    elf_tools::SymbolMatchType::kSuffix, ELFIO::STT_FUNC));
+      if (symbol_matches.empty()) {
+        return error::Internal("Could not find symbol");
+      }
+      if (symbol_matches.size() > 2) {
+        return error::Internal("Too many symbol matches");
+      }
+
+      const std::string& symbol_name = symbol_matches.front().name;
+      LOG(INFO) << symbol_name;
+      *probe.mutable_tracepoint()->mutable_symbol() = symbol_name;
+    }
+  }
+
+  return Status::OK();
+}
+
+Status AutoTraceExpansion(dwarf_tools::DwarfReader* dwarf_reader,
+                          ir::logical::TracepointDeployment* input_program) {
+  for (auto& t : *input_program->mutable_tracepoints()) {
+    for (auto& probe : *t.mutable_program()->mutable_probes()) {
+      if ((probe.args_size() != 0) || (probe.ret_vals_size() != 0) ||
+          probe.has_function_latency()) {
+        // A probe specification is explicitly provided, so use it.
+        continue;
+      }
+
+      // For probes without anything to trace, we automatically trace everything:
+      // args, return values and latency.
+      PL_ASSIGN_OR_RETURN(auto args_map,
+                          dwarf_reader->GetFunctionArgInfo(probe.tracepoint().symbol()));
+
+      const std::string table_name = probe.tracepoint().symbol() + "_table";
+
+      auto* output = t.mutable_program()->add_outputs();
+      output->set_name(table_name);
+
+      auto* output_action = probe.add_output_actions();
+      output_action->set_output_name(table_name);
+
+      int i = 0;
+      for (auto& [arg_name, arg_info] : args_map) {
+        if (!arg_info.retarg) {
+          auto* arg = probe.add_args();
+          arg->set_id("arg" + std::to_string(i));
+          arg->set_expr(arg_name);
+
+          output_action->add_variable_name(arg->id());
+          output->add_fields(arg_name);
+        } else {
+          auto* arg = probe.add_ret_vals();
+          arg->set_id("retval" + std::to_string(i));
+          arg->set_expr(arg_name);
+
+          output_action->add_variable_name(arg->id());
+          output->add_fields(arg_name);
+        }
+        ++i;
+      }
+
+      *probe.mutable_function_latency()->mutable_id() = "fn_latency";
+      *output_action->add_variable_name() = probe.function_latency().id();
+      *output->add_fields() = "latency";
+    }
+  }
+
+  return Status::OK();
+}
+
+}  // namespace dynamic_tracing
+}  // namespace stirling
+}  // namespace pl

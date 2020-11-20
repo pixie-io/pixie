@@ -80,6 +80,8 @@ std::unique_ptr<SourceRegistry> CreateMetricsSourceRegistry() {
 
 std::unique_ptr<SourceRegistry> CreateSourceRegistry(SourceRegistrySpecifier sources) {
   switch (sources) {
+    case SourceRegistrySpecifier::kNone:
+      return std::make_unique<SourceRegistry>();
     case SourceRegistrySpecifier::kTracers:
       return pl::stirling::CreateTracerSourceRegistry();
     case SourceRegistrySpecifier::kMetrics:

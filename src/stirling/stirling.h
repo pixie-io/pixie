@@ -39,6 +39,9 @@ stirlingpb::Subscribe SubscribeToInfoClass(const stirlingpb::Publish& publish_pr
  * Specifies a set of sources to initialize as part of a source registry.
  */
 enum class SourceRegistrySpecifier {
+  // No static sources.
+  kNone,
+
   // All available sources (including deprecated and test sources).
   kAll,
 

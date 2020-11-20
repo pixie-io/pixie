@@ -61,6 +61,18 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "autogen_test",
+    srcs = ["autogen_test.cc"],
+    data = [
+        "//src/stirling/obj_tools/testdata:dummy_go_binary",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "dynamic_tracer_test",
     srcs = ["dynamic_tracer_test.cc"],
     data = [

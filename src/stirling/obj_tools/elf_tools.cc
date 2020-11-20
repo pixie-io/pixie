@@ -184,6 +184,10 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
       symtab_section = psec;
       break;
     }
+    if (psec->get_type() == ELFIO::SHT_DYNSYM) {
+      symtab_section = psec;
+      // Dynsym is a fall-back, so don't break. We might still find the symtab section.
+    }
   }
   if (symtab_section == nullptr) {
     return error::NotFound("Could not find symtab section in binary=$0", binary_path_);

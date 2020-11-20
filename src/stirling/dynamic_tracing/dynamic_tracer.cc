@@ -13,6 +13,7 @@
 #include "src/shared/metadata/k8s_objects.h"
 
 #include "src/stirling/bpf_tools/utils.h"
+#include "src/stirling/dynamic_tracing/autogen.h"
 #include "src/stirling/dynamic_tracing/code_gen.h"
 #include "src/stirling/dynamic_tracing/dwarvifier.h"
 #include "src/stirling/dynamic_tracing/ir/sharedpb/shared.pb.h"
@@ -73,61 +74,6 @@ StatusOr<BCCProgram::PerfBufferSpec> GetPerfBufferSpec(
   return pf_spec;
 }
 
-StatusOr<ir::shared::Language> TransformSourceLanguage(
-    const llvm::dwarf::SourceLanguage& source_language) {
-  switch (source_language) {
-    case llvm::dwarf::DW_LANG_Go:
-      return ir::shared::Language::GOLANG;
-    case llvm::dwarf::DW_LANG_C:
-    case llvm::dwarf::DW_LANG_C_plus_plus:
-    case llvm::dwarf::DW_LANG_C_plus_plus_03:
-    case llvm::dwarf::DW_LANG_C_plus_plus_11:
-    case llvm::dwarf::DW_LANG_C_plus_plus_14:
-      return ir::shared::Language::CPP;
-    default:
-      return error::Internal("Detected language $0 is not supported",
-                             magic_enum::enum_name(source_language));
-  }
-}
-
-void DetectSourceLanguage(ElfReader* elf_reader, DwarfReader* dwarf_reader,
-                          ir::logical::TracepointDeployment* input_program) {
-  // AUTO implies unknown, so use that to mean unknown.
-  ir::shared::Language detected_language = ir::shared::Language::LANG_UNKNOWN;
-
-  // Primary detection mechanism is DWARF info, when available.
-  if (dwarf_reader != nullptr) {
-    detected_language = TransformSourceLanguage(dwarf_reader->source_language())
-                            .ConsumeValueOr(ir::shared::Language::LANG_UNKNOWN);
-  } else {
-    // Back-up detection policy looks for certain language-specific symbols
-    if (elf_reader->SymbolAddress("runtime.buildVersion").has_value()) {
-      detected_language = ir::shared::Language::GOLANG;
-    }
-
-    // TODO(oazizi): Make this stronger by adding more elf-based tests.
-  }
-
-  if (detected_language != ir::shared::Language::LANG_UNKNOWN) {
-    LOG(INFO) << absl::Substitute("Using language $0 for object $1",
-                                  magic_enum::enum_name(dwarf_reader->source_language()),
-                                  input_program->deployment_spec().path());
-
-    // Since we only support tracing of a single object, all tracepoints have the same language.
-    for (auto& tracepoint : *input_program->mutable_tracepoints()) {
-      tracepoint.mutable_program()->set_language(detected_language);
-    }
-  } else {
-    // For now, just print a warning, and let the probe proceed.
-    // This is so we can use things like function argument tracing even when other features may not
-    // work.
-    LOG(WARNING) << absl::Substitute(
-        "Language for object $0 is unknown or unsupported, so assuming C/C++ ABI. "
-        "Some dynamic tracing features may not work, or may produce unexpected results.",
-        input_program->deployment_spec().path());
-  }
-}
-
 // Return value for Prepare(), so we can return multiple pointers.
 struct ObjInfo {
   std::unique_ptr<ElfReader> elf_reader;
@@ -137,11 +83,10 @@ struct ObjInfo {
 // Prepares the input program for compilation by:
 // 1) Resolving the tracepoint target specification into an object path (e.g. UPID->path).
 // 2) Preparing the Elf and Dwarf info for the binary.
-// 3) Auto-detecting the source language.
-StatusOr<ObjInfo> Prepare(ir::logical::TracepointDeployment* input_program) {
+StatusOr<ObjInfo> Prepare(const ir::logical::TracepointDeployment& input_program) {
   ObjInfo obj_info;
 
-  const auto& binary_path = input_program->deployment_spec().path();
+  const auto& binary_path = input_program.deployment_spec().path();
   LOG(INFO) << absl::Substitute("Tracepoint binary: $0", binary_path);
 
   PL_ASSIGN_OR_RETURN(obj_info.elf_reader, ElfReader::Create(binary_path));
@@ -149,8 +94,6 @@ StatusOr<ObjInfo> Prepare(ir::logical::TracepointDeployment* input_program) {
   const auto& debug_symbols_path = obj_info.elf_reader->debug_symbols_path().string();
 
   obj_info.dwarf_reader = DwarfReader::Create(debug_symbols_path).ConsumeValueOr(nullptr);
-
-  DetectSourceLanguage(obj_info.elf_reader.get(), obj_info.dwarf_reader.get(), input_program);
 
   return obj_info;
 }
@@ -167,13 +110,21 @@ StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_pro
                                   input_program->tracepoints_size());
   }
 
+  // Get the ELF and DWARF readers for the program.
+  PL_ASSIGN_OR_RETURN(ObjInfo obj_info, Prepare(*input_program));
+
   // --------------------------
-  // Pre-processing
+  // Pre-processing pipeline
   // --------------------------
 
-  // Prepares the input program by making adjustments to the input program,
-  // and also returning the ELF and DWARF readers for the program.
-  PL_ASSIGN_OR_RETURN(ObjInfo obj_info, Prepare(input_program));
+  // Populate source language.
+  DetectSourceLanguage(obj_info.elf_reader.get(), obj_info.dwarf_reader.get(), input_program);
+
+  // Expand symbol.
+  PL_RETURN_IF_ERROR(ResolveProbeSymbol(obj_info.elf_reader.get(), input_program));
+
+  // Auto-gen probe variables
+  PL_RETURN_IF_ERROR(AutoTraceExpansion(obj_info.dwarf_reader.get(), input_program));
 
   // --------------------------
   // Main compilation pipeline
