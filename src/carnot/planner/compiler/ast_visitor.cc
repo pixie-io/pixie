@@ -42,11 +42,11 @@ StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
     const absl::flat_hash_map<std::string, std::string>& module_map) {
   std::shared_ptr<ASTVisitorImpl> ast_visitor = std::shared_ptr<ASTVisitorImpl>(
       new ASTVisitorImpl(graph, dynamic_trace, compiler_state, VarTable::Create(), func_based_exec,
-                         reserved_names, module_handler));
+                         reserved_names, module_handler, std::make_shared<udf::Registry>("udcf")));
 
   PL_RETURN_IF_ERROR(ast_visitor->InitGlobals());
   PL_RETURN_IF_ERROR(ast_visitor->SetupModules(module_map));
-  builtins::RegisterMathOpsOrDie(&(ast_visitor->udf_registry_));
+  builtins::RegisterMathOpsOrDie(ast_visitor->udf_registry_.get());
   return ast_visitor;
 }
 
@@ -64,7 +64,7 @@ std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChildImpl(
   // The flag values should come from the parent var table, not be copied here.
   auto visitor = std::shared_ptr<ASTVisitorImpl>(
       new ASTVisitorImpl(ir_graph_, dynamic_trace_, compiler_state_, var_table, func_based_exec_,
-                         {}, module_handler_));
+                         {}, module_handler_, udf_registry_));
   return visitor;
 }
 
@@ -928,7 +928,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessNumber(const pypa::AstNumberPtr& no
   }
 }
 
-StatusOr<udf::ScalarUDFDefinition*> GetUDFDefinition(const udf::Registry& registry,
+StatusOr<udf::ScalarUDFDefinition*> GetUDFDefinition(const std::shared_ptr<udf::Registry>& registry,
                                                      const std::string& name,
                                                      const std::vector<ExpressionIR*>& args) {
   std::vector<types::DataType> arg_types;
@@ -939,8 +939,8 @@ StatusOr<udf::ScalarUDFDefinition*> GetUDFDefinition(const udf::Registry& regist
     DCHECK(arg->IsDataTypeEvaluated());
     arg_types.push_back(arg->EvaluatedDataType());
   }
-  auto udf_or_s = registry.GetScalarUDFDefinition(name, arg_types);
-  if (udf_or_s.code() == statuspb::NOT_FOUND) {
+  auto udf_or_s = registry->GetScalarUDFDefinition(name, arg_types);
+  if (!udf_or_s.ok() && udf_or_s.code() == statuspb::NOT_FOUND) {
     return nullptr;
   }
   return udf_or_s;

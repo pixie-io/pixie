@@ -2042,6 +2042,20 @@ TEST_F(ASTVisitorTest, compile_time_string_concat) {
   ASSERT_OK(CompileGraph(kCompileTimeStringConcat, {}, {}));
 }
 
+// Previously compile time only worked outside of function defs. This makes sure it works in
+// function defs.
+constexpr char kCompileTimeInFunction[] = R"pxl(
+import px
+def fn():
+  return px.DataFrame(table='http' + '_events')
+px.display(fn())
+)pxl";
+TEST_F(ASTVisitorTest, compile_time_string_concat_in_function) {
+  ASSERT_OK_AND_ASSIGN(auto graph, CompileGraph(kCompileTimeInFunction, {}, {}));
+  auto mem_src = static_cast<MemorySourceIR*>(graph->FindNodesThatMatch(MemorySource())[0]);
+  EXPECT_EQ(mem_src->table_name(), "http_events");
+}
+
 TEST_F(ASTVisitorTest, keep_duplicate_test) {
   std::string keep_duplicates_expr = R"pxl(import px
 queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'upid'])

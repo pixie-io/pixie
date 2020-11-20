@@ -158,7 +158,7 @@ class ASTVisitorImpl : public ASTVisitor {
   ASTVisitorImpl(IR* ir_graph, MutationsIR* dynamic_trace, CompilerState* compiler_state,
                  std::shared_ptr<VarTable> var_table, bool func_based_exec,
                  const absl::flat_hash_set<std::string>& reserved_names,
-                 ModuleHandler* module_handler)
+                 ModuleHandler* module_handler, const std::shared_ptr<udf::Registry>& udf_registry)
       : ir_graph_(ir_graph),
         compiler_state_(compiler_state),
         var_table_(var_table),
@@ -166,7 +166,7 @@ class ASTVisitorImpl : public ASTVisitor {
         reserved_names_(reserved_names),
         module_handler_(module_handler),
         dynamic_trace_(dynamic_trace),
-        udf_registry_("udcf") {}
+        udf_registry_(udf_registry) {}
 
   Status InitGlobals();
   Status CreateBoolLiterals();
@@ -573,7 +573,7 @@ class ASTVisitorImpl : public ASTVisitor {
   MutationsIR* dynamic_trace_;
   // Compile time registry for udfs. Used to execute constant expressions which simplifies
   // expression management for arguments.
-  udf::Registry udf_registry_;
+  std::shared_ptr<udf::Registry> udf_registry_;
 };
 
 }  // namespace compiler
