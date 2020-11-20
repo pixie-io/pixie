@@ -157,5 +157,8 @@ build --define BUNDLE_VERSION={STABLE_BUILD_TAG}
 try-import %workspace%/jenkins.bazelrc
 try-import %workspace%/user.bazelrc
 
+# Import a machine specific bazelrc. This can be used to enable caching.
+try-import /etc/bazelrc
+
 # Tensorflow requires this option
 common --experimental_repo_remote_exec
