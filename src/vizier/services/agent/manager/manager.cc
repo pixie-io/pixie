@@ -280,7 +280,7 @@ void Manager::HandleRegisterAgentResponse(std::unique_ptr<messages::VizierMessag
   info_.asid = msg->register_agent_response().asid();
 
   mds_manager_ = std::make_unique<pl::md::AgentMetadataStateManager>(
-      info_.hostname, info_.asid, info_.agent_id, info_.capabilities.collects_data(),
+      info_.hostname, info_.asid, pod_name_, info_.agent_id, info_.capabilities.collects_data(),
       pl::system::Config::GetInstance(), agent_metadata_filter_.get());
   relation_info_manager_ = std::make_unique<RelationInfoManager>();
 

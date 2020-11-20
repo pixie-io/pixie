@@ -42,16 +42,19 @@ class AgentMetadataStateManager {
   using ServiceUpdate = pl::shared::k8s::metadatapb::ServiceUpdate;
   using NamespaceUpdate = pl::shared::k8s::metadatapb::NamespaceUpdate;
 
-  explicit AgentMetadataStateManager(std::string_view hostname, uint32_t asid, sole::uuid agent_id,
-                                     bool collects_data, const pl::system::Config& config,
+  explicit AgentMetadataStateManager(std::string_view hostname, uint32_t asid, std::string pod_name,
+                                     sole::uuid agent_id, bool collects_data,
+                                     const pl::system::Config& config,
                                      AgentMetadataFilter* metadata_filter)
       : asid_(asid),
+        pod_name_(pod_name),
         agent_id_(agent_id),
         proc_parser_(config),
         collects_data_(collects_data),
         metadata_filter_(metadata_filter) {
     md_reader_ = std::make_unique<CGroupMetadataReader>(config);
-    agent_metadata_state_ = std::make_shared<AgentMetadataState>(hostname, asid, agent_id);
+    agent_metadata_state_ =
+        std::make_shared<AgentMetadataState>(hostname, asid, agent_id, pod_name);
   }
 
   uint32_t asid() const { return asid_; }
@@ -127,6 +130,7 @@ class AgentMetadataStateManager {
 
  private:
   uint32_t asid_;
+  std::string pod_name_;
   sole::uuid agent_id_;
 
   system::ProcParser proc_parser_;

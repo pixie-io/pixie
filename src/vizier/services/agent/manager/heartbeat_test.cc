@@ -91,7 +91,7 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
                      100, 0.01, md::AgentMetadataStateManager::MetadataFilterEntities())
                      .ConsumeValueOrDie();
     mds_manager_ = std::make_unique<md::AgentMetadataStateManager>(
-        "host", 1, /* agent_id */ sole::uuid4(), true, sys_config, md_filter_.get());
+        "host", 1, "pod", /* agent_id */ sole::uuid4(), true, sys_config, md_filter_.get());
 
     // Relation info with no tabletization.
     Relation relation0({types::TIME64NS, types::INT64}, {"time_", "count"});

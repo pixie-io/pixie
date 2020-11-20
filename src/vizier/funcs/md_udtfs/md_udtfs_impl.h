@@ -447,12 +447,15 @@ class GetDebugMDState final : public carnot::udf::UDTF<GetDebugMDState> {
   static constexpr auto OutputRelation() {
     return MakeArray(ColInfo("asid", types::DataType::INT64, types::PatternType::GENERAL,
                              "The short ID of the agent"),
+                     ColInfo("pod_name", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The pod name of the agent"),
                      ColInfo("debug_state", types::DataType::STRING, types::PatternType::GENERAL,
                              "The debug state of metadata on the agent"));
   }
 
   bool NextRecord(FunctionContext* ctx, RecordWriter* rw) {
     rw->Append<IndexOf("asid")>(ctx->metadata_state()->asid());
+    rw->Append<IndexOf("pod_name")>(ctx->metadata_state()->pod_name());
     rw->Append<IndexOf("debug_state")>(ctx->metadata_state()->DebugString());
     // no more records.
     return false;

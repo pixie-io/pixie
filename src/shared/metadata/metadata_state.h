@@ -222,16 +222,20 @@ class AgentMetadataState : NotCopyable {
  public:
   AgentMetadataState() = delete;
   explicit AgentMetadataState(uint32_t asid)
-      : AgentMetadataState(/* hostname */ "unknown", asid, sole::uuid()) {}
+      : AgentMetadataState(/* hostname */ "unknown", asid, sole::uuid(), /* pod_name */ "unknown") {
+  }
 
-  AgentMetadataState(std::string_view hostname, uint32_t asid, AgentID agent_id)
+  AgentMetadataState(std::string_view hostname, uint32_t asid, AgentID agent_id,
+                     std::string_view pod_name)
       : hostname_(std::string(hostname)),
+        pod_name_(std::string(pod_name)),
         asid_(asid),
         agent_id_(agent_id),
         k8s_metadata_state_(new K8sMetadataState()) {}
 
   const std::string& hostname() const { return hostname_; }
   uint32_t asid() const { return asid_; }
+  const std::string& pod_name() const { return pod_name_; }
   const sole::uuid& agent_id() const { return agent_id_; }
 
   int64_t last_update_ts_ns() const { return last_update_ts_ns_; }
@@ -296,6 +300,7 @@ class AgentMetadataState : NotCopyable {
   uint64_t epoch_id_ = 0;
 
   std::string hostname_;
+  std::string pod_name_;
   uint32_t asid_;
   AgentID agent_id_;
 
