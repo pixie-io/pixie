@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "src/carnot/planner/compiler_state/compiler_state.h"
@@ -192,8 +193,13 @@ class PixieModule : public QLObject {
   Returns:
     px.Duration: Duration representing `unit` $0.
   )doc";
-  static const constexpr char* const kTimeFuncs[] = {"minutes", "hours",        "seconds",
-                                                     "days",    "microseconds", "milliseconds"};
+  static constexpr std::array<std::pair<const char*, std::chrono::nanoseconds>, 6> kTimeFuncValues =
+      {{{"minutes", std::chrono::minutes(1)},
+        {"hours", std::chrono::hours(1)},
+        {"seconds", std::chrono::seconds(1)},
+        {"days", std::chrono::hours(24)},
+        {"microseconds", std::chrono::microseconds(1)},
+        {"milliseconds", std::chrono::milliseconds(1)}}};
 
   // Type constants.
   inline static constexpr char kTimeTypeName[] = "Time";
@@ -222,7 +228,7 @@ class PixieModule : public QLObject {
   Status RegisterUDFFuncs();
   Status RegisterUDTFs();
   Status RegisterCompileTimeFuncs();
-  Status RegisterCompileTimeUnitFunction(std::string name);
+  Status RegisterCompileTimeUnitFunction(const std::string& name, std::chrono::nanoseconds unit_ns);
   Status RegisterTypeObjs();
 
  private:
@@ -274,8 +280,9 @@ class CompileTimeFuncHandler {
   static StatusOr<QLObjectPtr> NowEval(CompilerState* compiler_state, IR* graph,
                                        const pypa::AstPtr& ast, const ParsedArgs& args,
                                        ASTVisitor* visitor);
-  static StatusOr<QLObjectPtr> TimeEval(IR* graph, std::string name, const pypa::AstPtr& ast,
-                                        const ParsedArgs& args, ASTVisitor* visitor);
+  static StatusOr<QLObjectPtr> TimeEval(IR* graph, std::chrono::nanoseconds scale,
+                                        const pypa::AstPtr& ast, const ParsedArgs& args,
+                                        ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> UInt128Conversion(IR* graph, const pypa::AstPtr& ast,
                                                  const ParsedArgs& args, ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> UPIDConstructor(IR* graph, const pypa::AstPtr& ast,

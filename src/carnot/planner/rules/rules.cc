@@ -828,8 +828,8 @@ StatusOr<bool> VerifyFilterExpressionRule::Apply(IRNode* ir_node) {
     ExpressionIR* expr = filter->filter_expr();
     types::DataType expr_type = expr->EvaluatedDataType();
     if (expr_type != types::DataType::BOOLEAN) {
-      return ir_node->CreateIRNodeError("Expected Boolean for Filter expression, got $0",
-                                        types::DataType_Name(expr_type));
+      return ir_node->CreateIRNodeError("Expected Boolean for Filter expression '$1', got $0",
+                                        types::DataType_Name(expr_type), expr->DebugString());
     }
   }
   return false;

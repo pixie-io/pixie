@@ -920,12 +920,10 @@ TEST_F(ASTVisitorTest, test_repeated_exprs) {
   std::vector<IRNode*> maps = ir_graph->FindNodesOfType(IRNodeType::kMap);
   EXPECT_EQ(maps.size(), 1);
   auto expr3 = static_cast<MapIR*>(maps[0])->col_exprs()[0].node;
-  ASSERT_MATCH(expr3, Func());
-  auto expr3_args = static_cast<FuncIR*>(expr3)->args();
-  // Make sure the clones are identical but distinct
-  EXPECT_EQ(2, expr3_args.size());
-  EXPECT_NE(expr3_args[0]->id(), expr3_args[1]->id());
-  CompareClone(expr3_args[0], expr3_args[1], "Column expression in Map node");
+  std::chrono::nanoseconds min2 = std::chrono::minutes(2);
+  std::chrono::nanoseconds hr1 = std::chrono::hours(1);
+  double foo_constant_value = static_cast<double>(min2.count()) / static_cast<double>(hr1.count());
+  EXPECT_MATCH(expr3, Float(foo_constant_value * 2));
 }
 
 TEST_F(ASTVisitorTest, CanAccessUDTF) {

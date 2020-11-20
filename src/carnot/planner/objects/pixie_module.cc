@@ -14,7 +14,6 @@ namespace pl {
 namespace carnot {
 namespace planner {
 namespace compiler {
-constexpr const char* const PixieModule::kTimeFuncs[];
 
 StatusOr<std::shared_ptr<PixieModule>> PixieModule::Create(
     IR* graph, CompilerState* compiler_state, ASTVisitor* ast_visitor, bool func_based_exec,
@@ -117,8 +116,9 @@ Status PixieModule::RegisterCompileTimeFuncs() {
           ast_visitor()));
   PL_RETURN_IF_ERROR(now_fn->SetDocString(kNowOpDocstring));
   AddMethod(kNowOpID, now_fn);
-  for (const auto& time : kTimeFuncs) {
-    PL_RETURN_IF_ERROR(RegisterCompileTimeUnitFunction(time));
+
+  for (const auto& [timeFnID, timeScaleNS] : kTimeFuncValues) {
+    PL_RETURN_IF_ERROR(RegisterCompileTimeUnitFunction(timeFnID, timeScaleNS));
   }
 
   PL_ASSIGN_OR_RETURN(
@@ -181,13 +181,14 @@ Status PixieModule::RegisterCompileTimeFuncs() {
   return Status::OK();
 }
 
-Status PixieModule::RegisterCompileTimeUnitFunction(std::string name) {
+Status PixieModule::RegisterCompileTimeUnitFunction(const std::string& name,
+                                                    std::chrono::nanoseconds unit_ns) {
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> time_fn,
       FuncObject::Create(
           name, {"unit"}, {},
           /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
-          std::bind(&CompileTimeFuncHandler::TimeEval, graph_, name, std::placeholders::_1,
+          std::bind(&CompileTimeFuncHandler::TimeEval, graph_, unit_ns, std::placeholders::_1,
                     std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
   PL_RETURN_IF_ERROR(time_fn->SetDocString(absl::Substitute(kTimeFuncDocstringTpl, name)));
@@ -334,17 +335,18 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::NowEval(CompilerState* compiler_st
   return ExprObject::Create(time_now, visitor);
 }
 
-StatusOr<QLObjectPtr> CompileTimeFuncHandler::TimeEval(IR* graph, std::string time_name,
+StatusOr<QLObjectPtr> CompileTimeFuncHandler::TimeEval(IR* graph, std::chrono::nanoseconds scale_ns,
                                                        const pypa::AstPtr& ast,
                                                        const ParsedArgs& args,
                                                        ASTVisitor* visitor) {
   // TODO(philkuz/nserrino) maybe just convert this into an Integer because we have the info here.
   std::vector<ExpressionIR*> expr_args;
-  PL_ASSIGN_OR_RETURN(ExpressionIR * unit, GetArgAs<ExpressionIR>(ast, args, "unit"));
-  expr_args.push_back(unit);
-  FuncIR::Op op{FuncIR::Opcode::non_op, "", time_name};
-  PL_ASSIGN_OR_RETURN(FuncIR * node, graph->CreateNode<FuncIR>(ast, op, expr_args));
-  return ExprObject::Create(node, visitor);
+
+  PL_ASSIGN_OR_RETURN(IntIR * unit, GetArgAs<IntIR>(ast, args, "unit"));
+  // TODO(philkuz) cast as durationnanos.
+  PL_ASSIGN_OR_RETURN(IntIR * duration_nanos,
+                      graph->CreateNode<IntIR>(ast, unit->val() * scale_ns.count()));
+  return ExprObject::Create(duration_nanos, visitor);
 }
 
 StatusOr<QLObjectPtr> CompileTimeFuncHandler::UInt128Conversion(IR* graph, const pypa::AstPtr& ast,

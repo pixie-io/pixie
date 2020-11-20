@@ -1126,6 +1126,9 @@ class FloatIR : public DataIR {
     auto data = static_cast<FloatIR*>(expr);
     return data->val() == val();
   }
+  std::string DebugString() const override {
+    return absl::Substitute("$0, $1)", DataIR::DebugString(), val());
+  }
 
  private:
   double val_;
