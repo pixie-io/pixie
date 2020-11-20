@@ -154,6 +154,14 @@ const webpackConfig = {
   output: {
     filename: '[name].[contenthash].js',
     chunkFilename: '[name].[contenthash].chunk.js',
+    // There's some jankiness with the HtmlWebpackPlugin where the asset
+    // shows up on disk before the compiler tries to emit it.
+    // compareBeforeEmit makes it so that this asset isn't emitted if it's
+    // on the output file system and then we end up not including it in
+    // archive bundle.
+    // Unset compareBeforeEmit to make it such that all assets are always
+    // emitted to fix this issue.
+    compareBeforeEmit: false,
     publicPath: '/static/',
   },
   plugins,
