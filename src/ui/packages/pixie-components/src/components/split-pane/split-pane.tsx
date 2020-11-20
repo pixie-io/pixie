@@ -14,41 +14,39 @@ interface SplitPaneContextProps {
 }
 
 const SplitPaneContext = React.createContext<Partial<SplitPaneContextProps>>(
-  {}
+  {},
 );
 
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    root: {
-      height: '100%',
-      '& .gutter': {
-        backgroundColor: theme.palette.background.three,
-      },
-    },
-    pane: {
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    header: {
-      ...theme.typography.subtitle1,
-      fontWeight: theme.typography.fontWeightMedium,
-      padding: theme.spacing(0.75, 3),
-      cursor: 'pointer',
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    height: '100%',
+    '& .gutter': {
       backgroundColor: theme.palette.background.three,
     },
-    paneContent: {
-      flex: '1',
-      minHeight: '0',
-      overflow: 'auto',
-    },
-  })
-);
+  },
+  pane: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  header: {
+    ...theme.typography.subtitle1,
+    fontWeight: theme.typography.fontWeightMedium,
+    padding: theme.spacing(0.75, 3),
+    cursor: 'pointer',
+    backgroundColor: theme.palette.background.three,
+  },
+  paneContent: {
+    flex: '1',
+    minHeight: '0',
+    overflow: 'auto',
+  },
+}));
 
 interface SplitContainerProps {
   initialSizes?: number[];
   children?:
-    | React.ReactElement<SplitPaneProps>
-    | Array<React.ReactElement<SplitPaneProps>>;
+  | React.ReactElement<SplitPaneProps>
+  | Array<React.ReactElement<SplitPaneProps>>;
   className?: string;
   onSizeChange?: (splits: number[]) => void;
 }
@@ -61,7 +59,7 @@ interface SplitContainerState {
 // Split pane component that supports resizing of vertial panes and headers for collapsing panes.
 // Currently this component only supports 2 panes (only 1 pane is collapsed at a time).
 export const SplitContainer = (
-  props: React.PropsWithChildren<SplitContainerProps>
+  props: React.PropsWithChildren<SplitContainerProps>,
 ) => {
   const classes = useStyles();
   const theme = useTheme();
@@ -70,9 +68,8 @@ export const SplitContainer = (
   const children = Array.isArray(props.children)
     ? props.children
     : [props.children];
-  const onSizeChange =
-    props.onSizeChange ||
-    (() => {
+  const onSizeChange = props.onSizeChange
+    || (() => {
       /* noop */
     });
   const initialSizes = React.useMemo(() => {
@@ -99,7 +96,7 @@ export const SplitContainer = (
       onSizeChange(sizes);
       setState({ collapsed: -1, prevSizes: sizes });
     },
-    [onSizeChange]
+    [onSizeChange],
   );
 
   const context = React.useMemo(
@@ -124,7 +121,7 @@ export const SplitContainer = (
         });
       },
     }),
-    [children]
+    [children],
   );
 
   React.useEffect(() => {

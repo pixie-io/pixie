@@ -28,8 +28,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 
     minHeight: 0,
   },
-}),
-);
+}));
 
 // Each tabstop is associated with a list of suggestions. These are the suggestions that
 // should be shown when the cursor position is on a specific tabstop.

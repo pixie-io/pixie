@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 export const HeartIcon = (props) => (
+  /* eslint-disable max-len */
   <svg
     {...props}
     width='15'
@@ -31,4 +32,5 @@ export const HeartIcon = (props) => (
       />
     </defs>
   </svg>
+  /* eslint-enable max-len */
 );

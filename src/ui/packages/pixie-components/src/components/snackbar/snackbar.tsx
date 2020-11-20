@@ -24,14 +24,12 @@ type SnackbarState = {
   opened: boolean;
 } & Required<ShowArgs>;
 
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    snackbar: {
-      backgroundColor: theme.palette.background.three,
-      color: theme.palette.text.secondary,
-    },
-  })
-);
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  snackbar: {
+    backgroundColor: theme.palette.background.three,
+    color: theme.palette.text.secondary,
+  },
+}));
 
 export const SnackbarProvider: React.FC = (props) => {
   const classes = useStyles();
@@ -90,7 +88,7 @@ export const SnackbarProvider: React.FC = (props) => {
         )}
       </>
     ),
-    [state, hideSnackbar]
+    [state, hideSnackbar],
   );
   return (
     <>

@@ -43,157 +43,155 @@ import {
 
 const EXPANDED_ROW_HEIGHT = 300;
 
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    table: {
-      color: theme.palette.text.primary,
-      '& > .ReactVirtualized__Table__headerRow': {
-        ...theme.typography.caption,
-        backgroundColor: theme.palette.foreground.grey2,
-        display: 'flex',
-        width: 'var(--header-width) !important',
-        position: 'relative',
-      },
-      '& > .ReactVirtualized__Table__Grid': {
-        overflowX: 'auto !important',
-        '& > .ReactVirtualized__Grid__innerScrollContainer': {
-          maxWidth: 'var(--table-width) !important',
-          width: 'var(--table-width) !important',
-        },
-      },
-    },
-    row: {
-      borderBottom: `solid 2px ${theme.palette.background.three}`,
-      '& > .ReactVirtualized__Table__rowColumn:first-of-type': {
-        marginLeft: 0,
-        marginRight: 0,
-      },
-      '&:hover $hidden': {
-        display: 'flex',
-      },
-      '& > .ReactVirtualized__Table__rowColumn': {
-        borderRight: `solid 1px ${theme.palette.background.three}`,
-      },
-      '& > .ReactVirtualized__Table__rowColumn:last-child': {
-        borderRight: 'none',
-      },
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  table: {
+    color: theme.palette.text.primary,
+    '& > .ReactVirtualized__Table__headerRow': {
+      ...theme.typography.caption,
+      backgroundColor: theme.palette.foreground.grey2,
       display: 'flex',
-      fontSize: '15px',
+      width: 'var(--header-width) !important',
+      position: 'relative',
     },
-    rowContainer: {
-      borderBottom: `solid 1px ${theme.palette.foreground.grey3}`,
-      display: 'flex',
-      flexDirection: 'column',
-      paddingRight: '0 !important',
-    },
-    cell: {
-      paddingLeft: theme.spacing(3),
-      paddingRight: theme.spacing(3),
-      backgroundColor: 'transparent',
-      display: 'flex',
-      alignItems: 'baseline',
-      height: theme.spacing(6),
-      lineHeight: `${theme.spacing(6)}px`,
-      margin: '0 !important',
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-    },
-    cellText: {
-      overflow: 'hidden',
-      whiteSpace: 'nowrap',
-      textOverflow: 'ellipsis',
-    },
-    compact: {
-      paddingLeft: theme.spacing(1.5),
-      paddingRight: 0,
-      height: theme.spacing(5),
-      lineHeight: `${theme.spacing(5)}px`,
-    },
-    clickable: {
-      cursor: 'pointer',
-    },
-    highlighted: {
-      backgroundColor: theme.palette.foreground.grey3,
-    },
-    highlightable: {
-      '&:hover': {
-        backgroundColor: `${fade(theme.palette.foreground.grey2, 0.42)}`,
+    '& > .ReactVirtualized__Table__Grid': {
+      overflowX: 'auto !important',
+      '& > .ReactVirtualized__Grid__innerScrollContainer': {
+        maxWidth: 'var(--table-width) !important',
+        width: 'var(--table-width) !important',
       },
     },
-    center: {
-      justifyContent: 'center',
+  },
+  row: {
+    borderBottom: `solid 2px ${theme.palette.background.three}`,
+    '& > .ReactVirtualized__Table__rowColumn:first-of-type': {
+      marginLeft: 0,
+      marginRight: 0,
     },
-    start: {
-      justifyContent: 'flex-start',
-    },
-    end: {
-      justifyContent: 'flex-end',
-    },
-    sortIcon: {
-      width: theme.spacing(3),
-      paddingLeft: theme.spacing(1),
-    },
-    sortIconHidden: {
-      width: theme.spacing(3),
-      opacity: '0.2',
-      paddingLeft: theme.spacing(1),
-    },
-    headerTitle: {
-      ...theme.typography.h4,
-      height: '100%',
-      display: 'flex',
-      alignItems: 'center',
-      flex: 'auto',
-      overflow: 'hidden',
-      background: 'transparent',
-      border: 'none',
-      color: 'inherit',
-      cursor: 'pointer',
-      textTransform: 'uppercase',
-    },
-    gutterCell: {
-      paddingLeft: '0px',
-      flex: 'auto',
-      alignItems: 'center',
-      // TODO(michelle/zasgar): Fix this.
-      overflow: 'visible',
-      minWidth: theme.spacing(2.5),
-      display: 'flex',
-      height: '100%',
-      borderRight: 'none !important',
-    },
-    dragHandle: {
-      flex: '0 0 12px',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      cursor: 'col-resize',
-      // Move the handle's center, rather than its right edge, to line up with the column's right border
-      transform: 'translate(50%, -1px)',
-      '&:hover': {
-        color: theme.palette.foreground.white,
-      },
-    },
-    expandedCell: {
-      overflow: 'auto',
-      flex: 1,
-      paddingLeft: '20px',
-    },
-    hidden: {
-      display: 'none',
-    },
-    cellWrapper: {
-      paddingRight: theme.spacing(1.5),
-      width: '100%',
+    '&:hover $hidden': {
       display: 'flex',
     },
-    innerCell: {
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
+    '& > .ReactVirtualized__Table__rowColumn': {
+      borderRight: `solid 1px ${theme.palette.background.three}`,
     },
-  })
-);
+    '& > .ReactVirtualized__Table__rowColumn:last-child': {
+      borderRight: 'none',
+    },
+    display: 'flex',
+    fontSize: '15px',
+  },
+  rowContainer: {
+    borderBottom: `solid 1px ${theme.palette.foreground.grey3}`,
+    display: 'flex',
+    flexDirection: 'column',
+    paddingRight: '0 !important',
+  },
+  cell: {
+    paddingLeft: theme.spacing(3),
+    paddingRight: theme.spacing(3),
+    backgroundColor: 'transparent',
+    display: 'flex',
+    alignItems: 'baseline',
+    height: theme.spacing(6),
+    lineHeight: `${theme.spacing(6)}px`,
+    margin: '0 !important',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+  },
+  cellText: {
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+    textOverflow: 'ellipsis',
+  },
+  compact: {
+    paddingLeft: theme.spacing(1.5),
+    paddingRight: 0,
+    height: theme.spacing(5),
+    lineHeight: `${theme.spacing(5)}px`,
+  },
+  clickable: {
+    cursor: 'pointer',
+  },
+  highlighted: {
+    backgroundColor: theme.palette.foreground.grey3,
+  },
+  highlightable: {
+    '&:hover': {
+      backgroundColor: `${fade(theme.palette.foreground.grey2, 0.42)}`,
+    },
+  },
+  center: {
+    justifyContent: 'center',
+  },
+  start: {
+    justifyContent: 'flex-start',
+  },
+  end: {
+    justifyContent: 'flex-end',
+  },
+  sortIcon: {
+    width: theme.spacing(3),
+    paddingLeft: theme.spacing(1),
+  },
+  sortIconHidden: {
+    width: theme.spacing(3),
+    opacity: '0.2',
+    paddingLeft: theme.spacing(1),
+  },
+  headerTitle: {
+    ...theme.typography.h4,
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    flex: 'auto',
+    overflow: 'hidden',
+    background: 'transparent',
+    border: 'none',
+    color: 'inherit',
+    cursor: 'pointer',
+    textTransform: 'uppercase',
+  },
+  gutterCell: {
+    paddingLeft: '0px',
+    flex: 'auto',
+    alignItems: 'center',
+    // TODO(michelle/zasgar): Fix this.
+    overflow: 'visible',
+    minWidth: theme.spacing(2.5),
+    display: 'flex',
+    height: '100%',
+    borderRight: 'none !important',
+  },
+  dragHandle: {
+    flex: '0 0 12px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    cursor: 'col-resize',
+    // Move the handle's center, rather than its right edge, to line up with the column's right border
+    transform: 'translate(50%, -1px)',
+    '&:hover': {
+      color: theme.palette.foreground.white,
+    },
+  },
+  expandedCell: {
+    overflow: 'auto',
+    flex: 1,
+    paddingLeft: '20px',
+  },
+  hidden: {
+    display: 'none',
+  },
+  cellWrapper: {
+    paddingRight: theme.spacing(1.5),
+    width: '100%',
+    display: 'flex',
+  },
+  innerCell: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+}));
 
 export interface ExpandedRows {
   [key: number]: boolean;
@@ -228,16 +226,15 @@ export interface SortState {
   direction: SortDirectionType;
 }
 
-// eslint-disable-next-line react/display-name
 const DataTable = withAutoSizer<DataTableProps>(
+  // eslint-disable-next-line react/display-name
   React.memo<WithAutoSizerProps<DataTableProps>>((props) => {
     const { width, height } = props;
     if (width === 0 || height === 0) {
       return null;
     }
     return <InternalDataTable {...props} />;
-  })
-);
+  }));
 
 (DataTable as React.FC).displayName = 'DataTable';
 
@@ -262,7 +259,7 @@ const InternalDataTable = ({
   const theme = useTheme();
 
   const [widthOverrides, setColumnWidthOverride] = React.useState<
-    ColWidthOverrides
+  ColWidthOverrides
   >({});
   const tableRef: MutableRefObject<Table> = React.useRef(null);
 
@@ -271,7 +268,7 @@ const InternalDataTable = ({
     direction: SortDirection.DESC,
   });
   const [expandedRowState, setExpandedRowState] = React.useState<ExpandedRows>(
-    {}
+    {},
   );
 
   const totalWidth = React.useRef<number>(0);
@@ -293,7 +290,7 @@ const InternalDataTable = ({
       colsWidth[col.dataKey] = clamp(
         Math.max(headerWidth, w),
         MIN_COL_PX_WIDTH,
-        MAX_COL_PX_WIDTH
+        MAX_COL_PX_WIDTH,
       );
       totalWidth.current += colsWidth[col.dataKey];
     });
@@ -305,8 +302,7 @@ const InternalDataTable = ({
     const ratio: { [dataKey: string]: number } = {};
     const scale = clampedTotal / totalWidth.current;
     Object.keys(colsWidth).forEach((colsWidthKey) => {
-      ratio[colsWidthKey] =
-        (scale * colsWidth[colsWidthKey]) / totalWidth.current;
+      ratio[colsWidthKey] = (scale * colsWidth[colsWidthKey]) / totalWidth.current;
     });
     return ratio;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -322,22 +318,21 @@ const InternalDataTable = ({
         className={clsx(classes.cellWrapper, classes[props.columnData.align])}
       >
         <div className={classes.innerCell}>
-          {props.columnData.cellRenderer &&
-            props.columnData.cellRenderer(props.cellData)}
+          {props.columnData.cellRenderer
+            && props.columnData.cellRenderer(props.cellData)}
           {!props.columnData.cellRenderer && (
             <span className={classes.cellText}>{String(props.cellData)}</span>
           )}
         </div>
       </div>
     ),
-    [classes]
+    [classes],
   );
 
   const defaultCellHeight = compact ? theme.spacing(5) : theme.spacing(6);
   const computeRowHeight = React.useCallback(
-    ({ index }) =>
-      expandedRowState[index] ? EXPANDED_ROW_HEIGHT : defaultCellHeight,
-    [defaultCellHeight, expandedRowState]
+    ({ index }) => (expandedRowState[index] ? EXPANDED_ROW_HEIGHT : defaultCellHeight),
+    [defaultCellHeight, expandedRowState],
   );
 
   const onSortWrapper = React.useCallback(
@@ -345,8 +340,8 @@ const InternalDataTable = ({
       if (sortBy) {
         const nextSortState = { dataKey: sortBy, direction: sortDirection };
         if (
-          sortState.dataKey !== sortBy ||
-          sortState.direction !== sortDirection
+          sortState.dataKey !== sortBy
+          || sortState.direction !== sortDirection
         ) {
           setSortState(nextSortState);
         }
@@ -354,7 +349,7 @@ const InternalDataTable = ({
         tableRef.current.forceUpdateGrid();
       }
     },
-    [onSort, sortState]
+    [onSort, sortState],
   );
 
   React.useEffect(() => {
@@ -393,7 +388,7 @@ const InternalDataTable = ({
       tableRef.current.forceUpdate();
       onRowClick(index);
     },
-    [onRowClick, expandable]
+    [onRowClick, expandable],
   );
 
   const getRowClass = React.useCallback(
@@ -405,10 +400,10 @@ const InternalDataTable = ({
         classes.row,
         onRowClick && classes.clickable,
         onRowClick && classes.highlightable,
-        index === highlightedRow && classes.highlighted
+        index === highlightedRow && classes.highlighted,
       );
     },
-    [highlightedRow, onRowClick, classes]
+    [highlightedRow, onRowClick, classes],
   );
 
   const resizeColumn = React.useCallback(
@@ -428,18 +423,17 @@ const InternalDataTable = ({
           deltaX,
           startingRatios,
           totalWidth.current,
-          width
+          width,
         );
         totalWidth.current = newTotal;
         return sizes;
       });
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [width, colTextWidthRatio, columns]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [width, colTextWidthRatio, columns],
   );
 
-  const colIsResizable = (idx: number): boolean =>
-    (resizableColumns || true) && idx !== columns.length - 1;
+  const colIsResizable = (idx: number): boolean => (resizableColumns || true) && idx !== columns.length - 1;
 
   const resetColumn = (dataKey: string) => {
     setColumnWidthOverride((overrides) => {
@@ -487,7 +481,7 @@ const InternalDataTable = ({
   const scroller = React.useMemo(
     () => tableWrapper.current?.querySelector('.ReactVirtualized__Table__Grid'),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tableWrapper.current]
+    [tableWrapper.current],
   );
 
   React.useEffect(() => {
@@ -505,8 +499,7 @@ const InternalDataTable = ({
         // For convenience, snap into head/tail mode when the user scrolls close enough to the edge.
         // This also works around the react-virtualized tendency to flicker the scroll position right after changing it.
         setWasAtTop(scroller.scrollTop < defaultCellHeight / 2);
-        const scrollBottomLimit =
-          scroller.scrollHeight - scroller.clientHeight - defaultCellHeight / 2;
+        const scrollBottomLimit = scroller.scrollHeight - scroller.clientHeight - defaultCellHeight / 2;
         setWasAtBottom(scroller.scrollTop >= scrollBottomLimit);
       }
     };
@@ -545,31 +538,30 @@ const InternalDataTable = ({
 
   const headerRendererCommon: TableHeaderRenderer = React.useCallback(
     (props) => {
-      const sort = () =>
-        onSortWrapper({
-          sortBy: props.dataKey,
-          sortDirection:
+      const sort = () => onSortWrapper({
+        sortBy: props.dataKey,
+        sortDirection:
             props.sortDirection === SortDirection.ASC
               ? SortDirection.DESC
               : SortDirection.ASC,
-        });
+      });
 
       let sortIcon = <UpIcon className={classes.sortIconHidden} />;
       if (
-        props.sortBy === props.dataKey &&
-        props.sortDirection === SortDirection.ASC
+        props.sortBy === props.dataKey
+        && props.sortDirection === SortDirection.ASC
       ) {
         sortIcon = <UpIcon className={classes.sortIcon} />;
       } else if (
-        props.sortBy === props.dataKey &&
-        props.sortDirection === SortDirection.DESC
+        props.sortBy === props.dataKey
+        && props.sortDirection === SortDirection.DESC
       ) {
         sortIcon = <DownIcon className={classes.sortIcon} />;
       }
 
       const headerStyle = clsx(
         [classes.headerTitle],
-        [classes[props.columnData.align]]
+        [classes[props.columnData.align]],
       );
 
       return (
@@ -581,7 +573,7 @@ const InternalDataTable = ({
         </button>
       );
     },
-    [classes, onSortWrapper]
+    [classes, onSortWrapper],
   );
 
   const headerRenderer: TableHeaderRenderer = React.useCallback(
@@ -592,7 +584,7 @@ const InternalDataTable = ({
         </React.Fragment>
       </>
     ),
-    [headerRendererCommon]
+    [headerRendererCommon],
   );
 
   const gutterHeaderRenderer: TableHeaderRenderer = React.useCallback(
@@ -601,7 +593,7 @@ const InternalDataTable = ({
         <React.Fragment key={props.dataKey} />
       </>
     ),
-    []
+    [],
   );
 
   const gutterCellRenderer: TableCellRenderer = React.useCallback(
@@ -613,7 +605,7 @@ const InternalDataTable = ({
         classes.gutterCell,
         !(
           highlightedRow === props.rowIndex || expandedRowState[props.rowIndex]
-        ) && classes.hidden
+        ) && classes.hidden,
       );
       const icon = expandedRowState[props.rowIndex] ? (
         <ExpandedIcon />
@@ -626,7 +618,7 @@ const InternalDataTable = ({
         </>
       );
     },
-    [highlightedRow, expandedRowState, classes]
+    [highlightedRow, expandedRowState, classes],
   );
 
   const rowRenderer: TableRowRenderer = React.useCallback(
@@ -656,7 +648,7 @@ const InternalDataTable = ({
       expandedRenderer,
       expandable,
       rowGetter,
-    ]
+    ],
   );
 
   const headerRendererWithDrag: TableHeaderRenderer = React.useCallback(
@@ -686,9 +678,9 @@ const InternalDataTable = ({
           </React.Fragment>
         </>
       );
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [classes, headerRendererCommon, resizeColumn]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [classes, headerRendererCommon, resizeColumn],
   );
   const gutterClass = clsx(compact && classes.compact, classes.gutterCell);
   return (
@@ -733,7 +725,7 @@ const InternalDataTable = ({
           const className = clsx(
             classes.cell,
             classes[col.align],
-            compact && classes.compact
+            compact && classes.compact,
           );
           return (
             <Column
@@ -747,8 +739,8 @@ const InternalDataTable = ({
               }
               cellRenderer={cellRenderer}
               width={
-                (widthOverrides[col.dataKey] ||
-                  colTextWidthRatio[col.dataKey]) * totalWidth.current
+                (widthOverrides[col.dataKey]
+                  || colTextWidthRatio[col.dataKey]) * totalWidth.current
               }
               columnData={col}
             />

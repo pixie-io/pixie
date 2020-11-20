@@ -12,28 +12,27 @@ import { FixedSizeDrawer, DrawerDirection } from './drawer';
 // The amount of time elasped since a user has last resized the drawer.
 const RESIZE_WAIT_INTERVAL_MS = 100;
 
-const styles = ({ spacing }: Theme) =>
-  createStyles({
-    draggableContent: {
-      flex: 1,
-      minHeight: 0,
-      minWidth: 0,
-    },
-    verticalDragHandle: {
-      cursor: 'row-resize',
-      width: '100%',
-      height: spacing(1),
-      zIndex: 1500,
-      position: 'absolute',
-    },
-    horizontalDragHandle: {
-      cursor: 'col-resize',
-      height: '100%',
-      width: spacing(1),
-      zIndex: 1500,
-      position: 'absolute',
-    },
-  });
+const styles = ({ spacing }: Theme) => createStyles({
+  draggableContent: {
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+  },
+  verticalDragHandle: {
+    cursor: 'row-resize',
+    width: '100%',
+    height: spacing(1),
+    zIndex: 1500,
+    position: 'absolute',
+  },
+  horizontalDragHandle: {
+    cursor: 'col-resize',
+    height: '100%',
+    width: spacing(1),
+    zIndex: 1500,
+    position: 'absolute',
+  },
+});
 
 interface ResizableDrawerProps extends WithStyles<typeof styles> {
   children?: React.ReactNode; // The contents of the drawer.
@@ -82,7 +81,7 @@ const ResizableDrawerImpl = ({
           break;
       }
     },
-    [drawerDirection, drawerSize, timer]
+    [drawerDirection, drawerSize, timer],
   );
 
   let dragHandleStyle = {};
@@ -135,13 +134,13 @@ const ResizableDrawerImpl = ({
 
   const draggableContent = (
     <div className={classes.draggableContent} style={dragFlex}>
-      {(drawerDirection === 'top' || drawerDirection === 'left') &&
-        open &&
-        dragHandle}
+      {(drawerDirection === 'top' || drawerDirection === 'left')
+        && open
+        && dragHandle}
       {otherContent}
-      {(drawerDirection === 'bottom' || drawerDirection === 'right') &&
-        open &&
-        dragHandle}
+      {(drawerDirection === 'bottom' || drawerDirection === 'right')
+        && open
+        && dragHandle}
     </div>
   );
 

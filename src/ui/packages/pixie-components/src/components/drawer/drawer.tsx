@@ -4,37 +4,36 @@ import { createStyles, WithStyles, withStyles } from '@material-ui/core/styles';
 
 export type DrawerDirection = 'top' | 'bottom' | 'left' | 'right';
 
-const styles = () =>
-  createStyles({
-    root: {
-      display: 'flex',
-      flex: 1,
-      minHeight: 0,
-      minWidth: 0,
-      position: 'relative',
-    },
-    otherContent: {
-      flex: 1,
-      display: 'flex',
-      width: '100%',
-    },
-    drawerContents: {
-      display: 'flex',
-      width: '100%',
-      height: '100%',
-    },
-    drawerPaper: {
-      position: 'absolute',
-    },
-    dockedVertical: {
-      width: 0,
-      flex: 0,
-    },
-    dockedHorizontal: {
-      height: 0,
-      flex: 0,
-    },
-  });
+const styles = () => createStyles({
+  root: {
+    display: 'flex',
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+    position: 'relative',
+  },
+  otherContent: {
+    flex: 1,
+    display: 'flex',
+    width: '100%',
+  },
+  drawerContents: {
+    display: 'flex',
+    width: '100%',
+    height: '100%',
+  },
+  drawerPaper: {
+    position: 'absolute',
+  },
+  dockedVertical: {
+    width: 0,
+    flex: 0,
+  },
+  dockedHorizontal: {
+    height: 0,
+    flex: 0,
+  },
+});
 
 interface FixedSizeDrawerProps extends WithStyles<typeof styles> {
   children?: React.ReactNode; // The contents of the drawer.
@@ -54,10 +53,9 @@ const FixedSizeDrawerImpl = ({
   open,
   overlay,
 }: FixedSizeDrawerProps) => {
-  const drawerStyle =
-    drawerDirection === 'top' || drawerDirection === 'bottom'
-      ? { height: drawerSize }
-      : { width: drawerSize };
+  const drawerStyle = drawerDirection === 'top' || drawerDirection === 'bottom'
+    ? { height: drawerSize }
+    : { width: drawerSize };
 
   let contentStyle = {};
   if (open && !overlay) {

@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 export const GolangIcon = (props) => (
+  /* eslint-disable max-len */
   <svg
     {...props}
     width='17'
@@ -150,4 +151,5 @@ export const GolangIcon = (props) => (
       fill='#010101'
     />
   </svg>
+  /* eslint-enable max-len */
 );

@@ -6,8 +6,8 @@ import {
 } from './completions';
 
 export type ItemsMap = Map<
-  CompletionId,
-  { title: CompletionTitle; index: number; type: string }
+CompletionId,
+{ title: CompletionTitle; index: number; type: string }
 >;
 
 // Finds the next completion item in the list, given the id of the completion that is currently active.
@@ -15,7 +15,7 @@ export const findNextItem = (
   activeItem: CompletionId,
   itemsMap: ItemsMap,
   completions: CompletionItems,
-  direction = 1
+  direction = 1,
 ): CompletionId => {
   if (completions.length === 0) {
     return '';
@@ -136,7 +136,7 @@ export class TabStopParser {
   // mutate the contents of the current tabstops.
   public handleCompletionSelection = (
     cursorPos: number,
-    completion
+    completion,
   ): [string, number] => {
     const activeTab = this.getActiveTab(cursorPos);
 
@@ -177,7 +177,7 @@ export class TabStopParser {
   // if a backspace was made. It does not actually mutate the contents of the
   // current tabstop.
   public handleBackspace = (
-    cursorPos: number
+    cursorPos: number,
   ): [string, number, Array<TabStop>, boolean] => {
     const activeTab = this.getActiveTab(cursorPos);
 
@@ -191,11 +191,9 @@ export class TabStopParser {
 
         if (activeTab !== 0 && pos === 0) {
           // User is trying to delete a label. We should move the cursor to the previous tabstop.
-          newTStops[i - 1].CursorPosition =
-            newTStops[i - 1].Value == null ? 0 : newTStops[i - 1].Value.length;
+          newTStops[i - 1].CursorPosition = newTStops[i - 1].Value == null ? 0 : newTStops[i - 1].Value.length;
           // Subtract 1, for tabstop with no label, or 2 for colon and space between tabstops.
-          newCursor =
-            ts.Label == null ? cursorPos - 1 : cursorPos - ts.Label.length - 2;
+          newCursor = ts.Label == null ? cursorPos - 1 : cursorPos - ts.Label.length - 2;
           tabstopDeleted = true;
         } else if (activeTab === 0 && pos === 0) {
           newCursor = 0;

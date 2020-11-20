@@ -7,41 +7,40 @@ import {
   WithStyles,
 } from '@material-ui/core';
 
-const styles = ({ spacing, breakpoints, palette }: Theme) =>
-  createStyles({
-    root: {
+const styles = ({ spacing, breakpoints, palette }: Theme) => createStyles({
+  root: {
+    display: 'flex',
+    flexFlow: 'row wrap',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    width: '100%',
+    margin: 0,
+    marginTop: spacing(3),
+    [breakpoints.only('xs')]: {
+      justifyContent: 'center',
+    },
+
+    '& > *': {
       display: 'flex',
       flexFlow: 'row wrap',
-      justifyContent: 'space-between',
-      alignItems: 'flex-end',
-      width: '100%',
-      margin: 0,
-      marginTop: spacing(3),
+      paddingBottom: spacing(3),
       [breakpoints.only('xs')]: {
         justifyContent: 'center',
       },
-
-      '& > *': {
-        display: 'flex',
-        flexFlow: 'row wrap',
-        paddingBottom: spacing(3),
-        [breakpoints.only('xs')]: {
-          justifyContent: 'center',
-        },
-      },
     },
-    left: {
-      justifyContent: 'flex-start',
-    },
-    right: {
-      justifyContent: 'flex-end',
-    },
-    text: {
-      padding: `0 ${spacing(3)}px`,
-      color: palette.foreground.three,
-      textDecoration: 'none',
-    },
-  });
+  },
+  left: {
+    justifyContent: 'flex-start',
+  },
+  right: {
+    justifyContent: 'flex-end',
+  },
+  text: {
+    padding: `0 ${spacing(3)}px`,
+    color: palette.foreground.three,
+    textDecoration: 'none',
+  },
+});
 
 type AuthFooterProps = WithStyles<typeof styles>;
 

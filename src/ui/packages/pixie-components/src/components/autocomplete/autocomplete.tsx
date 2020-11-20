@@ -16,25 +16,23 @@ import {
 import { Input } from './input';
 import { Key } from './key';
 
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    root: {
-      backgroundColor: theme.palette.background.three,
-      cursor: 'text',
-      display: 'flex',
-      flexDirection: 'column',
-      // TODO(malthus): remove this once the scrollbar theme is set at global level.
-      ...scrollbarStyles(theme),
-    },
-    input: {
-      backgroundColor: theme.palette.background.two,
-    },
-    completions: {
-      flex: 1,
-      minHeight: 0,
-    },
-  })
-);
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    backgroundColor: theme.palette.background.three,
+    cursor: 'text',
+    display: 'flex',
+    flexDirection: 'column',
+    // TODO(malthus): remove this once the scrollbar theme is set at global level.
+    ...scrollbarStyles(theme),
+  },
+  input: {
+    backgroundColor: theme.palette.background.two,
+  },
+  completions: {
+    flex: 1,
+    minHeight: 0,
+  },
+}));
 
 export interface AutocompleteContextProps {
   /** @default true */
@@ -50,7 +48,7 @@ export interface AutocompleteContextProps {
 }
 
 export const AutocompleteContext = React.createContext<
-  AutocompleteContextProps
+AutocompleteContextProps
 >({
   allowTyping: true,
   requireCompletion: true,
@@ -71,7 +69,7 @@ function findNextItem(
   activeItem: CompletionId,
   itemsMap: ItemsMap,
   completions: CompletionItems,
-  direction = 1
+  direction = 1,
 ): CompletionId {
   if (!activeItem || completions.length === 0) {
     return '';
@@ -146,7 +144,7 @@ export const Autocomplete: React.FC<AutoCompleteProps> = ({
         onSelection(inputValue);
       }
     },
-    [inputValue, requireCompletion, itemsMap, onSelection]
+    [inputValue, requireCompletion, itemsMap, onSelection],
   );
 
   const handleKey = (key: Key) => {

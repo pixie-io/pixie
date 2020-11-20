@@ -2,21 +2,20 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
-export const NamespaceIcon = (classes: any, props: SvgIconProps) => {
-  return (
-    <SvgIcon {...props} viewBox='0 0 26 25'>
-      <path
-        className={classes.border}
-        d='M25 1H1V24H25V1Z'
-        fill='none'
-        strokeWidth='1.04071'
-        strokeMiterlimit='10'
-        strokeLinejoin='round'
-        strokeDasharray='2.08 1.04'
-      />
-      <path
-        className={classes.namespace}
-        d={`M9.12613 9.7168L9.15543 10.3809C9.55907 9.87305 10.0864 9.61914
+export const NamespaceIcon = (classes: any, props: SvgIconProps) => (
+  <SvgIcon {...props} viewBox='0 0 26 25'>
+    <path
+      className={classes.border}
+      d='M25 1H1V24H25V1Z'
+      fill='none'
+      strokeWidth='1.04071'
+      strokeMiterlimit='10'
+      strokeLinejoin='round'
+      strokeDasharray='2.08 1.04'
+    />
+    <path
+      className={classes.namespace}
+      d={`M9.12613 9.7168L9.15543 10.3809C9.55907 9.87305 10.0864 9.61914
           10.7375 9.61914C11.854 9.61914 12.4171 10.249 12.4269
           11.5088V15H11.5236V11.5039C11.5203 11.123 11.4324 10.8415 11.2599
           10.6592C11.0907 10.4769 10.8254 10.3857 10.464 10.3857C10.1711
@@ -43,7 +42,6 @@ export const NamespaceIcon = (classes: any, props: SvgIconProps) => {
           14.9842 14.0967C15.2121 14.2725 15.5116 14.3604 15.8827
           14.3604C16.2245 14.3604 16.4979 14.292 16.703 14.1553C16.9113
           14.0153 17.0155 13.8298 17.0155 13.5986Z`}
-      />
-    </SvgIcon>
-  );
-};
+    />
+  </SvgIcon>
+);

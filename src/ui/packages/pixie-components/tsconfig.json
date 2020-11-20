@@ -16,10 +16,8 @@
   },
   "include": ["src"],
   "exclude": [
-    "build",
+    "dist",
     "node_modules",
-    "src/**/*.stories.tsx",
-    "src/**/*.test.tsx",
-    "src/testing"
+    "storybook_static"
   ]
 }

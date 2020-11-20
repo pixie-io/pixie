@@ -19,14 +19,14 @@ interface AutocompleteState {
 // TODO(malthus): Combine this with the autocomplete component.
 export const useAutocomplete = (
   getCompletions: GetCompletionsFunc,
-  input: string
+  input: string,
 ): AutocompleteState => {
   const [completions, setCompletions] = React.useState<CompletionItems>([]);
   const [activeIndex, setActiveIndex] = React.useState<number>(-1);
   const [loading, setLoading] = React.useState<boolean>(false);
   const completionItems: CompletionItem[] = React.useMemo(
     () => completions.filter((c) => c.type === 'item') as CompletionItem[],
-    [completions]
+    [completions],
   );
   const completionsMap = React.useMemo(() => {
     const map = new Map<string, number>();
@@ -75,10 +75,9 @@ export const useAutocomplete = (
     return null;
   };
 
-  const activeCompletion =
-    activeIndex >= 0 && activeIndex < length
-      ? completionItems[activeIndex]
-      : null;
+  const activeCompletion = activeIndex >= 0 && activeIndex < length
+    ? completionItems[activeIndex]
+    : null;
 
   return {
     loading,

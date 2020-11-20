@@ -18,131 +18,132 @@ import {
 } from 'components/autocomplete/autocomplete';
 import useIsMounted from 'utils/use-is-mounted';
 
-const styles = ({ spacing, typography, palette, breakpoints }: Theme) =>
-  createStyles({
-    breadcrumbs: {
-      height: '100%',
-      scrollbarWidth: 'none', // Firefox
-      '&::-webkit-scrollbar': {
-        display: 'none',
-      },
-      display: 'inline-block',
-      [breakpoints.down('sm')]: {
-        overflowX: 'scroll',
-        display: 'flex',
-      },
+const styles = ({
+  spacing, typography, palette, breakpoints,
+}: Theme) => createStyles({
+  breadcrumbs: {
+    height: '100%',
+    scrollbarWidth: 'none', // Firefox
+    '&::-webkit-scrollbar': {
+      display: 'none',
     },
-    breadcrumb: {
-      display: 'inline-flex',
-      paddingRight: spacing(0.5),
-      alignItems: 'center',
-    },
-    title: {
-      fontWeight: typography.fontWeightMedium,
-      paddingRight: spacing(0.5),
-      paddingLeft: spacing(0.5),
-      fontFamily: '"Roboto Mono", Monospace',
-    },
-    card: {
-      width: '608px',
-    },
-    autocomplete: {
-      maxHeight: '60vh',
-    },
-    value: {
-      color: palette.primary.main,
-      whiteSpace: 'nowrap',
-      fontFamily: '"Roboto Mono", Monospace',
-    },
-    body: {
-      ...typography.body2,
-      display: 'inline-block',
-      color: palette.text.primary,
-      height: spacing(3),
-    },
-    content: {
+    display: 'inline-block',
+    [breakpoints.down('sm')]: {
+      overflowX: 'scroll',
       display: 'flex',
-      alignItems: 'center',
-      paddingLeft: spacing(1),
-      height: spacing(3),
     },
-    dropdownArrow: {
-      cursor: 'pointer',
-      height: spacing(3),
+  },
+  breadcrumb: {
+    display: 'inline-flex',
+    paddingRight: spacing(0.5),
+    alignItems: 'center',
+  },
+  title: {
+    fontWeight: typography.fontWeightMedium,
+    paddingRight: spacing(0.5),
+    paddingLeft: spacing(0.5),
+    fontFamily: '"Roboto Mono", Monospace',
+  },
+  card: {
+    width: '608px',
+  },
+  autocomplete: {
+    maxHeight: '60vh',
+  },
+  value: {
+    color: palette.primary.main,
+    whiteSpace: 'nowrap',
+    fontFamily: '"Roboto Mono", Monospace',
+  },
+  body: {
+    ...typography.body2,
+    display: 'inline-block',
+    color: palette.text.primary,
+    height: spacing(3),
+  },
+  content: {
+    display: 'flex',
+    alignItems: 'center',
+    paddingLeft: spacing(1),
+    height: spacing(3),
+  },
+  dropdownArrow: {
+    cursor: 'pointer',
+    height: spacing(3),
+  },
+  spacer: {
+    width: spacing(2),
+  },
+  input: {
+    padding: `0 ${spacing(1)}px ${spacing(1)}px ${spacing(1)}px`,
+  },
+  completionsContainer: {
+    // 80% as wide as the Command Input, and using 80% of the fontSize and 80% of the spacing
+    maxWidth: '608px',
+    maxHeight: '60vh',
+  },
+  // CSS for the front/back of the breadcrumb element.
+  triangle: {
+    position: 'absolute',
+    height: spacing(3),
+    width: spacing(3),
+    overflow: 'hidden',
+  },
+  angle: {
+    float: 'right', // Take the triangle out of the DOM, so it can overlap with other breadcrumbs.
+  },
+  tail: {
+    width: spacing(2.4),
+    height: spacing(3),
+  },
+  topArrow: {
+    position: 'absolute',
+    width: spacing(3),
+    height: spacing(3),
+    top: -1 * spacing(1.5),
+    right: -1 * spacing(1.6),
+    background: palette.foreground.grey3,
+    transform: 'rotate(45deg)',
+    borderRadius: spacing(0.4),
+  },
+  bottomArrow: {
+    position: 'absolute',
+    width: spacing(3),
+    height: spacing(3),
+    bottom: `-${spacing(1.5)}px`,
+    right: `-${spacing(1.6)}px`,
+    background: palette.foreground.grey3,
+    transform: 'rotate(45deg)',
+    borderRadius: spacing(0.4),
+  },
+  arrow: {
+    position: 'absolute',
+    width: spacing(3),
+    height: spacing(3),
+    left: `-${spacing(1.5)}px`,
+    background: palette.foreground.grey3,
+    transform: 'rotate(45deg)',
+    borderRadius: spacing(0.4),
+  },
+  inputItem: {
+    '&:hover': {
+      backgroundColor: 'initial',
     },
-    spacer: {
-      width: spacing(2),
+    '&.Mui-focusVisible': {
+      backgroundColor: 'initial',
     },
-    input: {
-      padding: `0 ${spacing(1)}px ${spacing(1)}px ${spacing(1)}px`,
-    },
-    completionsContainer: {
-      // 80% as wide as the Command Input, and using 80% of the fontSize and 80% of the spacing
-      maxWidth: '608px',
-      maxHeight: '60vh',
-    },
-    // CSS for the front/back of the breadcrumb element.
-    triangle: {
-      position: 'absolute',
-      height: spacing(3),
-      width: spacing(3),
-      overflow: 'hidden',
-    },
-    angle: {
-      float: 'right', // Take the triangle out of the DOM, so it can overlap with other breadcrumbs.
-    },
-    tail: {
-      width: spacing(2.4),
-      height: spacing(3),
-    },
-    topArrow: {
-      position: 'absolute',
-      width: spacing(3),
-      height: spacing(3),
-      top: -1 * spacing(1.5),
-      right: -1 * spacing(1.6),
-      background: palette.foreground.grey3,
-      transform: 'rotate(45deg)',
-      borderRadius: spacing(0.4),
-    },
-    bottomArrow: {
-      position: 'absolute',
-      width: spacing(3),
-      height: spacing(3),
-      bottom: `-${spacing(1.5)}px`,
-      right: `-${spacing(1.6)}px`,
-      background: palette.foreground.grey3,
-      transform: 'rotate(45deg)',
-      borderRadius: spacing(0.4),
-    },
-    arrow: {
-      position: 'absolute',
-      width: spacing(3),
-      height: spacing(3),
-      left: `-${spacing(1.5)}px`,
-      background: palette.foreground.grey3,
-      transform: 'rotate(45deg)',
-      borderRadius: spacing(0.4),
-    },
-    inputItem: {
-      '&:hover': {
-        backgroundColor: 'initial',
-      },
-      '&.Mui-focusVisible': {
-        backgroundColor: 'initial',
-      },
-    },
-    separator: {
-      display: 'flex',
-      alignItems: 'center',
-      color: palette.foreground.one,
-      fontWeight: 1000,
-      width: spacing(1),
-    },
-    icon: {
-      minWidth: spacing(4),
-    },
-  });
+  },
+  separator: {
+    display: 'flex',
+    alignItems: 'center',
+    color: palette.foreground.one,
+    fontWeight: 1000,
+    width: spacing(1),
+  },
+  icon: {
+    minWidth: spacing(4),
+  },
+});
 
 interface DialogDropdownProps extends WithStyles<typeof styles> {
   onSelect: (input: string) => void;
@@ -160,7 +161,7 @@ const DialogDropdown = ({
 }: DialogDropdownProps) => {
   const mounted = useIsMounted();
   const { allowTyping, requireCompletion, preSelect } = React.useContext(
-    AutocompleteContext
+    AutocompleteContext,
   );
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -175,13 +176,13 @@ const DialogDropdown = ({
       if (requireCompletion) {
         // Completion required, refresh the valid options and verify that the user picked one of them.
         // As getListItems is async, we refresh it so that the check is run atomically and can't be out of date.
-        if (typeof getListItems !== 'function')
+        if (typeof getListItems !== 'function') {
           throw new Error(
-            `List items not gettable when selecting "${itemValue}"!`
+            `List items not gettable when selecting "${itemValue}"!`,
           );
+        }
         getListItems(itemValue).then((items) => {
-          if (items.length < 1)
-            throw new Error('Failed to match the input to a valid choice!');
+          if (items.length < 1) throw new Error('Failed to match the input to a valid choice!');
           if (mounted.current) {
             onSelect(itemValue);
           }
@@ -196,10 +197,10 @@ const DialogDropdown = ({
         onSelect(itemValue);
         onClose();
       }
-      // `mounted` is not in this array because changing it should ONLY affect whether the resolved promise acts.
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [requireCompletion, getListItems, onClose, onSelect]
+    // `mounted` is not in this array because changing it should ONLY affect whether the resolved promise acts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [requireCompletion, getListItems, onClose, onSelect],
   );
 
   const getCompletions = React.useCallback(
@@ -228,7 +229,7 @@ const DialogDropdown = ({
 
       return Promise.resolve([]);
     },
-    [getListItems]
+    [getListItems],
   );
 
   // Used to shrink the <Autocomplete/>'s fonts and negative space, to not be as huge / central as the Command Input.
@@ -240,7 +241,7 @@ const DialogDropdown = ({
       }),
       spacing: createSpacing((factor) => factor * 0.8 * theme.spacing(1)),
     }),
-    []
+  [],
   );
 
   return (
@@ -308,7 +309,7 @@ const Breadcrumb = ({
     (event: React.MouseEvent<HTMLElement>) => {
       setAnchorEl(event.currentTarget.parentElement);
     },
-    [setAnchorEl]
+    [setAnchorEl],
   );
 
   const onClose = React.useCallback(() => {
@@ -365,7 +366,7 @@ interface BreadcrumbsProps extends WithStyles<typeof styles> {
 const BreadcrumbsImpl = ({ classes, breadcrumbs }: BreadcrumbsProps) => {
   // In case a breadcrumb doesn't override, give it the nearest context's values.
   const { allowTyping, requireCompletion } = React.useContext(
-    AutocompleteContext
+    AutocompleteContext,
   );
   return (
     <div className={classes.breadcrumbs}>

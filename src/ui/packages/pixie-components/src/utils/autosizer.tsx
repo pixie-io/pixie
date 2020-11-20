@@ -9,7 +9,7 @@ interface AutoSizerProps {
 export type WithAutoSizerProps<T> = T & AutoSizerProps;
 
 export default function withAutoSizer<T>(
-  WrappedComponent: React.ComponentType<T & AutoSizerProps>
+  WrappedComponent: React.ComponentType<T & AutoSizerProps>,
 ) {
   return function AutoSizerWrapper(props: T) {
     return (

@@ -9,49 +9,48 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import { PixienautBox } from './pixienaut-box';
 import { GoogleIcon } from 'components/icons/google';
+import { PixienautBox } from './pixienaut-box';
 
-const styles = ({ spacing, palette }: Theme) =>
-  createStyles({
-    bodyText: {
-      margin: 0,
-    },
-    account: {
-      color: palette.foreground.grey4,
-      textAlign: 'center',
-    },
-    button: {
-      paddingTop: spacing(1),
-      paddingBottom: spacing(1),
-      textTransform: 'capitalize',
-    },
-    title: {
-      color: palette.foreground.two,
-      paddingTop: spacing(1),
-      paddingBottom: spacing(3),
-      marginBottom: spacing(1.25),
-    },
-    subtitle: {
-      color: palette.foreground.two,
-      paddingTop: spacing(1.25),
-      paddingBottom: spacing(5.25),
-      marginBottom: spacing(1.25),
-      textAlign: 'center',
-    },
-    gutter: {
-      display: 'flex',
-      flexFlow: 'row nowrap',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginTop: spacing(3),
-      paddingTop: spacing(1),
-      borderTop: `1px solid ${palette.foreground.grey1}`,
-    },
-    centerSelf: {
-      alignSelf: 'center',
-    },
-  });
+const styles = ({ spacing, palette }: Theme) => createStyles({
+  bodyText: {
+    margin: 0,
+  },
+  account: {
+    color: palette.foreground.grey4,
+    textAlign: 'center',
+  },
+  button: {
+    paddingTop: spacing(1),
+    paddingBottom: spacing(1),
+    textTransform: 'capitalize',
+  },
+  title: {
+    color: palette.foreground.two,
+    paddingTop: spacing(1),
+    paddingBottom: spacing(3),
+    marginBottom: spacing(1.25),
+  },
+  subtitle: {
+    color: palette.foreground.two,
+    paddingTop: spacing(1.25),
+    paddingBottom: spacing(5.25),
+    marginBottom: spacing(1.25),
+    textAlign: 'center',
+  },
+  gutter: {
+    display: 'flex',
+    flexFlow: 'row nowrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing(3),
+    paddingTop: spacing(1),
+    borderTop: `1px solid ${palette.foreground.grey1}`,
+  },
+  centerSelf: {
+    alignSelf: 'center',
+  },
+});
 
 export interface AuthBoxProps extends WithStyles<typeof styles> {
   variant: 'login' | 'signup';
@@ -77,7 +76,9 @@ const textByVariant = {
 };
 
 export const AuthBox = withStyles(styles)((props: AuthBoxProps) => {
-  const { onPrimaryButtonClick, toggleURL, variant, classes } = props;
+  const {
+    onPrimaryButtonClick, toggleURL, variant, classes,
+  } = props;
   return (
     <PixienautBox>
       <Typography variant='h1' className={classes.title}>

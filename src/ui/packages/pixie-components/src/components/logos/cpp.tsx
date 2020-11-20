@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 export const CPPIcon = (props) => (
+  /* eslint-disable max-len */
   <svg
     {...props}
     width='20'
@@ -36,11 +37,11 @@ export const CPPIcon = (props) => (
         fill='white'
       />
       <path
-        d={`M16.6666 10.6379H15.9258V9.91382H15.1851V10.6379H14.4443V11.3619H15.1851V12.086H15.9258V11.3619H16.6666V10.6379Z`}
+        d='M16.6666 10.6379H15.9258V9.91382H15.1851V10.6379H14.4443V11.3619H15.1851V12.086H15.9258V11.3619H16.6666V10.6379Z'
         fill='white'
       />
       <path
-        d={`M19.4444 10.6379H18.7036V9.91382H17.963V10.6379H17.2222V11.3619H17.963V12.086H18.7036V11.3619H19.4444V10.6379Z`}
+        d='M19.4444 10.6379H18.7036V9.91382H17.963V10.6379H17.2222V11.3619H17.963V12.086H18.7036V11.3619H19.4444V10.6379Z'
         fill='white'
       />
     </g>
@@ -50,4 +51,5 @@ export const CPPIcon = (props) => (
       </clipPath>
     </defs>
   </svg>
+  /* eslint-enable max-len */
 );

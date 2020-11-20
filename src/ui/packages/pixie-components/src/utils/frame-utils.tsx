@@ -8,13 +8,12 @@ import {
   withStyles,
 } from '@material-ui/core';
 
-const styles = ({ palette, spacing }: Theme) =>
-  createStyles({
-    root: {
-      backgroundColor: palette.background.default,
-      padding: spacing(12),
-    },
-  });
+const styles = ({ palette, spacing }: Theme) => createStyles({
+  root: {
+    backgroundColor: palette.background.default,
+    padding: spacing(12),
+  },
+});
 
 export interface FrameElementProps extends WithStyles<typeof styles> {
   width?: number;
@@ -26,5 +25,5 @@ export const FrameElement = withStyles(styles)(
     <Box width={width} className={classes.root}>
       {children}
     </Box>
-  )
+  ),
 );

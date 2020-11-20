@@ -18,7 +18,7 @@ describe('<FixedSizeDrawer/>', () => {
         >
           <div>Drawer contents</div>
         </FixedSizeDrawer>
-      </MuiThemeProvider>
+      </MuiThemeProvider>,
     );
     expect(wrapper).toMatchSnapshot();
   });

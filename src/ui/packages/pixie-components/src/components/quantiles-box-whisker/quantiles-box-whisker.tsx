@@ -259,44 +259,43 @@ const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
   };
 };
 
-const styles = (theme: Theme) =>
-  createStyles({
-    '@global': {
-      // This style is used to override vega-tooltip default style.
-      // ...custom-theme maps to theme: 'custom' in the options below.
-      // This mirrors the default style in our existing Material UI tooltips for consistency.
-      '#vg-tooltip-element.vg-tooltip.custom-theme': {
-        borderWidth: 0,
-        color: theme.palette.foreground.white,
-        padding: '4px 8px',
-        fontSize: '0.625rem',
-        maxWidth: 300,
-        wordWrap: 'break-word',
-        fontFamily: 'Roboto',
-        fontWeight: 500,
-        lineHeight: '1.4em',
-        borderRadius: '4px',
-        backgroundColor: theme.palette.foreground.grey1,
-        opacity: 0.9,
-      },
+const styles = (theme: Theme) => createStyles({
+  '@global': {
+    // This style is used to override vega-tooltip default style.
+    // ...custom-theme maps to theme: 'custom' in the options below.
+    // This mirrors the default style in our existing Material UI tooltips for consistency.
+    '#vg-tooltip-element.vg-tooltip.custom-theme': {
+      borderWidth: 0,
+      color: theme.palette.foreground.white,
+      padding: '4px 8px',
+      fontSize: '0.625rem',
+      maxWidth: 300,
+      wordWrap: 'break-word',
+      fontFamily: 'Roboto',
+      fontWeight: 500,
+      lineHeight: '1.4em',
+      borderRadius: '4px',
+      backgroundColor: theme.palette.foreground.grey1,
+      opacity: 0.9,
     },
-    root: {
-      display: 'flex',
-      alignItems: 'center',
-    },
-    vegaWrapper: {
-      // It seems like ReactVega automatically inserts 5 px padding on the bottom of charts,
-      // and there isn't a clear way to turn this off.
-      marginTop: 5,
-    },
-    label: {
-      textAlign: 'right',
-      justifyContent: 'flex-end',
-      width: 100,
-      marginLeft: 5,
-      marginRight: 10,
-    },
-  });
+  },
+  root: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  vegaWrapper: {
+    // It seems like ReactVega automatically inserts 5 px padding on the bottom of charts,
+    // and there isn't a clear way to turn this off.
+    marginTop: 5,
+  },
+  label: {
+    textAlign: 'right',
+    justifyContent: 'flex-end',
+    width: 100,
+    marginLeft: 5,
+    marginRight: 10,
+  },
+});
 
 export type SelectedPercentile = 'p50' | 'p90' | 'p99';
 
@@ -336,7 +335,6 @@ const QuantilesBoxWhiskerImpl = (props: QuantilesBoxWhiskerProps) => {
   let p50Fill = theme.palette.text.secondary;
   let p90Fill = theme.palette.text.secondary;
   let p99Fill = theme.palette.text.secondary;
-  let percentileValue;
   let selectedPercentileDisplay;
   let selectedPercentileFill;
 
@@ -349,14 +347,12 @@ const QuantilesBoxWhiskerImpl = (props: QuantilesBoxWhiskerProps) => {
   switch (selectedPercentile) {
     case 'p50': {
       p50Fill = p50HoverFill;
-      percentileValue = p50;
       selectedPercentileDisplay = p50Display;
       selectedPercentileFill = p50HoverFill;
       break;
     }
     case 'p90': {
       p90Fill = p90HoverFill;
-      percentileValue = p90;
       selectedPercentileDisplay = p90Display;
       selectedPercentileFill = p90HoverFill;
       break;
@@ -364,7 +360,6 @@ const QuantilesBoxWhiskerImpl = (props: QuantilesBoxWhiskerProps) => {
     case 'p99':
     default: {
       p99Fill = p99HoverFill;
-      percentileValue = p99;
       selectedPercentileDisplay = p99Display;
       selectedPercentileFill = p99HoverFill;
     }

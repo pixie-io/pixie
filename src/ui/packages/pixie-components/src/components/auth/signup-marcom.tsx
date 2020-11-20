@@ -16,38 +16,37 @@ import { HeartIcon } from 'components/logos/heart';
 import { PixieLogo } from 'components/icons/pixie-logo';
 import { RustIcon } from 'components/logos/rust';
 
-const styles = ({ palette, spacing }: Theme) =>
-  createStyles({
-    root: {
-      backgroundColor: palette.background.default,
-    },
-    heading: {
-      color: palette.foreground.white,
-      textAlign: 'center',
-    },
-    message: {
-      color: palette.primary.light,
-      textAlign: 'center',
-    },
-    pixieLove: {
-      display: 'flex',
-      marginTop: spacing(5),
-      alignItems: 'center',
-      background: `linear-gradient(180deg, ${fade(
-        palette.background.two,
-        0.87
-      )},
+const styles = ({ palette, spacing }: Theme) => createStyles({
+  root: {
+    backgroundColor: palette.background.default,
+  },
+  heading: {
+    color: palette.foreground.white,
+    textAlign: 'center',
+  },
+  message: {
+    color: palette.primary.light,
+    textAlign: 'center',
+  },
+  pixieLove: {
+    display: 'flex',
+    marginTop: spacing(5),
+    alignItems: 'center',
+    background: `linear-gradient(180deg, ${fade(
+      palette.background.two,
+      0.87,
+    )},
     ${fade(palette.background.three, 0.22)})`,
-      boxShadow: `2px 2px 2px 0px ${palette.background.default}`,
-      paddingLeft: spacing(2),
-      paddingRight: spacing(2),
-    },
-    pixieLoveItem: {
-      display: 'flex',
-      paddingLeft: spacing(1),
-      paddingRight: spacing(1),
-    },
-  });
+    boxShadow: `2px 2px 2px 0px ${palette.background.default}`,
+    paddingLeft: spacing(2),
+    paddingRight: spacing(2),
+  },
+  pixieLoveItem: {
+    display: 'flex',
+    paddingLeft: spacing(1),
+    paddingRight: spacing(1),
+  },
+});
 
 export const SignupMarcom = withStyles(styles)(
   ({ classes }: WithStyles<typeof styles>) => (
@@ -90,5 +89,5 @@ export const SignupMarcom = withStyles(styles)(
         </Grid>
       </Container>
     </>
-  )
+  ),
 );

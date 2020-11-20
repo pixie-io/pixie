@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { render } from 'enzyme';
 import { MuiThemeProvider } from '@material-ui/core';
-import { Breadcrumbs } from './breadcrumbs';
 import { DARK_THEME } from 'mui-theme';
+import { Breadcrumbs } from './breadcrumbs';
 
 describe('<Breadcrumbs/>', () => {
   it('renders correctly', () => {
@@ -53,7 +53,7 @@ describe('<Breadcrumbs/>', () => {
     const wrapper = render(
       <MuiThemeProvider theme={DARK_THEME}>
         <Breadcrumbs breadcrumbs={breadcrumbs} />
-      </MuiThemeProvider>
+      </MuiThemeProvider>,
     );
     expect(wrapper).toMatchSnapshot();
   });

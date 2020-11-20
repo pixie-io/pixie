@@ -25,7 +25,7 @@ describe('<AutcompleteInput/> test', () => {
             value: 'pl/test',
           },
         ]}
-      />
+      />,
     );
     expect(wrapper.find('span')).toHaveLength(4);
     expect(wrapper.find('span').at(0).text()).toBe('svc: ');
@@ -44,7 +44,7 @@ describe('<AutcompleteInput/> test', () => {
         placeholder='test'
         value={[]}
         isValid={false}
-      />
+      />,
     );
     expect(wrapper.find('span')).toHaveLength(1);
     expect(wrapper.find('span').at(0).text()).toBe('test'); // Placeholder span.

@@ -65,8 +65,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     border: theme.palette.background.two,
     borderStyle: 'solid',
   },
-}),
-);
+}));
 
 const BLINK_INTERVAL = 500; // 500ms = .5s
 

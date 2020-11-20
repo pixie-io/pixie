@@ -1,4 +1,6 @@
-import { clamp, rescaleSum, smallest, sumColumn } from 'utils/math';
+import {
+  clamp, rescaleSum, smallest, sumColumn,
+} from 'utils/math';
 
 export type StartingRatios = Array<{
   key: string;
@@ -37,7 +39,7 @@ function giveTake(
   tableDeltaLimit: [number, number],
   takeCloseIndex: number,
   takeFarRange: [number, number],
-  giveCloseIndex: number
+  giveCloseIndex: number,
 ): number[] {
   // Made absolute to keep math consistent (which side is give and which is take is decided in the inputs)
   const absDelta = Math.abs(targetDelta);
@@ -52,12 +54,12 @@ function giveTake(
   const maxTake = clamp(
     sumColumn(0, [...takeFarLims, takeCloseLim]),
     -1 * absDelta,
-    0
+    0,
   );
   const maxGive = clamp(
     sumColumn(1, [giveCloseLim, tableDeltaLimit]),
     0,
-    smallest(absDelta, maxTake)
+    smallest(absDelta, maxTake),
   );
   let remainingTake = clamp(maxTake, -1 * maxGive, 0);
 
@@ -84,22 +86,22 @@ function giveTake(
   const immediateGive = smallest(
     giveCloseLim[1],
     absDelta,
-    maxGive - Math.abs(takeFromTable)
+    maxGive - Math.abs(takeFromTable),
   );
   newWidths[giveCloseIndex] += immediateGive;
   giveCloseLim[0] += immediateGive;
   giveCloseLim[1] -= immediateGive;
   if (
-    targetDelta > 0 &&
-    absDelta - immediateGive > 0 &&
-    tableDeltaLimit[1] - immediateGive > 0
+    targetDelta > 0
+    && absDelta - immediateGive > 0
+    && tableDeltaLimit[1] - immediateGive > 0
   ) {
     // There is more delta requested, and the table has room to grow. If the giveClose target still has room to grow,
     // give it as much as possible that doesn't exceed the table's growth limit.
     const giveToTable = smallest(
       absDelta - immediateGive,
       giveCloseLim[1],
-      tableDeltaLimit[1] - immediateGive
+      tableDeltaLimit[1] - immediateGive,
     );
     newWidths[giveCloseIndex] += giveToTable;
   }
@@ -114,28 +116,28 @@ function ratiosToOverrides(ratios: StartingRatios): ColWidthOverrides {
       ...out,
       [current.key]: current.isDefault ? undefined : current.ratio,
     }),
-    {}
+    {},
   );
 }
 
 function widthsToOverrides(
   total: number,
   oldRatios: StartingRatios,
-  widths: number[]
+  widths: number[],
 ) {
   return oldRatios.reduce(
     (result, old, i) => ({
       ...result,
       [old.key]: widths[i] / total,
     }),
-    {}
+    {},
   );
 }
 
 function enforceMinimumTotal(
   total: number,
   maxEach: number,
-  startingValues: number[]
+  startingValues: number[],
 ): number[] {
   const finalValues = [...startingValues];
   let currentTotal = startingValues.reduce((t, v) => t + v, 0);
@@ -159,7 +161,7 @@ function enforceMinimumTotal(
  */
 export function tableWidthLimits(
   numColumns: number,
-  containerWidth: number
+  containerWidth: number,
 ): [number, number] {
   const minTotal = Math.max(MIN_COL_PX_WIDTH * numColumns, containerWidth, 0);
   const maxTotal = Math.max(MAX_COL_PX_WIDTH * numColumns, containerWidth, 0);
@@ -191,7 +193,7 @@ export function userResizeColumn(
   deltaX: number,
   ratios: StartingRatios,
   startingTotal: number,
-  containerWidth: number
+  containerWidth: number,
 ): { newTotal: number; sizes: ColWidthOverrides } {
   // TODO(nick) Known issue: the first resize of any column on a table with fewer columns than needed to fill the space
   //  causes all columns to snap into a more equally distributed arrangement (this only happens once). Not sure why yet.
@@ -203,21 +205,12 @@ export function userResizeColumn(
   // Enforce that the table is at least as wide as its container, and adjust column width limits accordingly.
   const [minTotal, maxTotal] = tableWidthLimits(ratios.length, containerWidth);
   const clampedTotal = clamp(startingTotal, minTotal, maxTotal);
-  const contextualMaxColWidth = Math.max(
-    maxTotal / ratios.length,
-    MAX_COL_PX_WIDTH
-  );
+  const contextualMaxColWidth = Math.max(maxTotal / ratios.length, MAX_COL_PX_WIDTH);
 
   // Transform the ratios into pixel widths for simpler logic and math. They get converted back at the end.
-  const columnWidths = rescaleSum(
-    ratios.map((r) => r.ratio),
-    clampedTotal
-  );
+  const columnWidths = rescaleSum(ratios.map((r) => r.ratio), clampedTotal);
   // How much is the table allowed to shrink or grow before hitting an overall limit? [negative, positive]
-  const tableDeltaLimit: [number, number] = [
-    minTotal - clampedTotal,
-    maxTotal - clampedTotal,
-  ];
+  const tableDeltaLimit: [number, number] = [minTotal - clampedTotal, maxTotal - clampedTotal];
   // Same deal for individual columns. These limits may individually sum to more than the total delta limit.
   // The maximum limit may be overridden if it needs to be higher to meet the table's minimum width.
   const columnDeltaLimits: Array<[number, number]> = columnWidths.map((w) => [
@@ -229,7 +222,7 @@ export function userResizeColumn(
   let newWidths = enforceMinimumTotal(
     startingTotal,
     contextualMaxColWidth,
-    columnWidths
+    columnWidths,
   );
 
   if (deltaX < 0) {
@@ -245,7 +238,7 @@ export function userResizeColumn(
       leftwardTableDeltaLimit,
       takeCloseIndex,
       takeFarRange,
-      giveCloseIndex
+      giveCloseIndex,
     );
   } else if (deltaX > 0) {
     const takeCloseIndex = colIdx + 1;
@@ -260,15 +253,11 @@ export function userResizeColumn(
       rightwardTableDeltaLimit,
       takeCloseIndex,
       takeFarRange,
-      giveCloseIndex
+      giveCloseIndex,
     );
   }
 
-  const finalTotal = clamp(
-    newWidths.reduce((t, w) => t + w, 0),
-    minTotal,
-    maxTotal
-  );
+  const finalTotal = clamp(newWidths.reduce((t, w) => t + w, 0), minTotal, maxTotal);
 
   // At this point, if remainingDelta is still nonzero, there was no way to accommodate it within width constraints.
   // Return the closest we could get, with overrides rescaled as ratios out of 1.

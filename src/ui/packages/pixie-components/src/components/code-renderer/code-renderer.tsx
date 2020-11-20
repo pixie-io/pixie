@@ -36,7 +36,9 @@ export const CodeRenderer = withStyles((theme: Theme) => ({
   <div className={classes.code}>
     <Box className={`${classes.codeHighlight} small-scroll`}>
       <Highlight {...defaultProps} code={code.trim()} language={language}>
-        {({ className, style, tokens, getLineProps, getTokenProps }) => (
+        {({
+          className, style, tokens, getLineProps, getTokenProps,
+        }) => (
           <pre
             className={className}
             style={{ ...style, backgroundColor: 'transparent' }}

@@ -22,7 +22,7 @@ describe('GetDisplayStringFromTabStops', () => {
       },
     ];
     expect(utils.getDisplayStringFromTabStops(ts)).toEqual(
-      'svc_name:pl/test pod:pl/pod test'
+      'svc_name:pl/test pod:pl/pod test',
     );
   });
 });
@@ -75,24 +75,18 @@ describe('TabStopParser', () => {
   });
 
   it('should handleCompletionSelection', () => {
-    expect(
-      parsedTS.handleCompletionSelection(9, {
-        type: 'script',
-        title: 'testScript',
-      })
-    ).toEqual(['svc_name:testScript pod:pl/pod test', 18]);
-    expect(
-      parsedTS.handleCompletionSelection(23, {
-        type: 'script',
-        title: 'testScript',
-      })
-    ).toEqual(['svc_name:pl/test pod:testScript test', 31]);
-    expect(
-      parsedTS.handleCompletionSelection(29, {
-        type: 'script',
-        title: 'testScript',
-      })
-    ).toEqual(['svc_name:pl/test pod:pl/pod script:testScript', 45]);
+    expect(parsedTS.handleCompletionSelection(9, {
+      type: 'script',
+      title: 'testScript',
+    })).toEqual(['svc_name:testScript pod:pl/pod test', 18]);
+    expect(parsedTS.handleCompletionSelection(23, {
+      type: 'script',
+      title: 'testScript',
+    })).toEqual(['svc_name:pl/test pod:testScript test', 31]);
+    expect(parsedTS.handleCompletionSelection(29, {
+      type: 'script',
+      title: 'testScript',
+    })).toEqual(['svc_name:pl/test pod:pl/pod script:testScript', 45]);
   });
 
   it('should backspace', () => {
@@ -183,7 +177,7 @@ describe('TabStopParser', () => {
 
   it('should handleChange', () => {
     expect(
-      parsedTS.handleChange('svc_name:apl/test pod:pl/pod test', 10)
+      parsedTS.handleChange('svc_name:apl/test pod:pl/pod test', 10),
     ).toEqual([
       {
         Index: 2,

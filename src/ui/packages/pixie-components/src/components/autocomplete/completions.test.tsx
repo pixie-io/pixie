@@ -36,11 +36,11 @@ describe('<Completions/> test', () => {
         onActiveChange={noop}
         activeItem='px-1'
         onSelection={noop}
-      />
+      />,
     );
     expect(wrapper.find(Completion)).toHaveLength(5);
     expect(wrapper.findWhere((node) => node.prop('active')).prop('id')).toBe(
-      'px-1'
+      'px-1',
     );
   });
 });
@@ -56,45 +56,15 @@ describe('<Completion> test', () => {
           active={false}
           onActiveChange={noop}
           onSelection={noop}
-        />
+        />,
       );
       const child = wrapper.find('CompletionInternal').shallow();
-      expect(
-        child
-          .find('span')
-          .at(0)
-          .hasClass(/highlight/)
-      ).toEqual(true);
-      expect(
-        child
-          .find('span')
-          .at(1)
-          .hasClass(/highlight/)
-      ).toEqual(true);
-      expect(
-        child
-          .find('span')
-          .at(2)
-          .hasClass(/highlight/)
-      ).toEqual(true);
-      expect(
-        child
-          .find('span')
-          .at(3)
-          .hasClass(/highlight/)
-      ).toEqual(false);
-      expect(
-        child
-          .find('span')
-          .at(4)
-          .hasClass(/highlight/)
-      ).toEqual(true);
-      expect(
-        child
-          .find('span')
-          .at(5)
-          .hasClass(/highlight/)
-      ).toEqual(false);
+      expect(child.find('span').at(0).hasClass(/highlight/)).toEqual(true);
+      expect(child.find('span').at(1).hasClass(/highlight/)).toEqual(true);
+      expect(child.find('span').at(2).hasClass(/highlight/)).toEqual(true);
+      expect(child.find('span').at(3).hasClass(/highlight/)).toEqual(false);
+      expect(child.find('span').at(4).hasClass(/highlight/)).toEqual(true);
+      expect(child.find('span').at(5).hasClass(/highlight/)).toEqual(false);
     });
 
     it('in the middle', () => {
@@ -106,33 +76,13 @@ describe('<Completion> test', () => {
           active={false}
           onActiveChange={noop}
           onSelection={noop}
-        />
+        />,
       );
       const child = wrapper.find('CompletionInternal').shallow();
-      expect(
-        child
-          .find('span')
-          .at(0)
-          .hasClass(/highlight/)
-      ).toEqual(false);
-      expect(
-        child
-          .find('span')
-          .at(1)
-          .hasClass(/highlight/)
-      ).toEqual(true);
-      expect(
-        child
-          .find('span')
-          .at(2)
-          .hasClass(/highlight/)
-      ).toEqual(true);
-      expect(
-        child
-          .find('span')
-          .at(3)
-          .hasClass(/highlight/)
-      ).toEqual(false);
+      expect(child.find('span').at(0).hasClass(/highlight/)).toEqual(false);
+      expect(child.find('span').at(1).hasClass(/highlight/)).toEqual(true);
+      expect(child.find('span').at(2).hasClass(/highlight/)).toEqual(true);
+      expect(child.find('span').at(3).hasClass(/highlight/)).toEqual(false);
     });
   });
 });

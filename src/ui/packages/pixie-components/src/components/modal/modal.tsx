@@ -13,18 +13,16 @@ interface ModalTrigerProps {
   contentClassName?: string;
 }
 
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    content: {
-      background: theme.palette.background.default,
-    },
-    closeButton: {
-      position: 'absolute',
-      top: theme.spacing(2),
-      right: theme.spacing(2),
-    },
-  })
-);
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  content: {
+    background: theme.palette.background.default,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: theme.spacing(2),
+    right: theme.spacing(2),
+  },
+}));
 
 export const ModalTrigger: React.FC<ModalTrigerProps> = ({
   trigger,

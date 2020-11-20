@@ -36,88 +36,88 @@ export interface CompletionItem {
   icon?: React.ReactNode;
 }
 
-const useStyles = makeStyles((theme: Theme) =>
-  // TODO(malthus): Make use of the theme styles.
-  createStyles({
-    root: {
-      display: 'flex',
-      flexDirection: 'row',
+// TODO(malthus): Make use of the theme styles.
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    display: 'flex',
+    flexDirection: 'row',
+  },
+  items: {
+    overflow: 'auto',
+    flex: 3,
+    '& > *': {
+      paddingLeft: theme.spacing(2),
     },
-    items: {
-      overflow: 'auto',
-      flex: 3,
-      '& > *': {
-        paddingLeft: theme.spacing(2),
-      },
-    },
-    description: {
-      flex: 2,
+  },
+  description: {
+    flex: 2,
+    borderLeftStyle: 'solid',
+    borderLeftWidth: '1px',
+    borderLeftColor: theme.palette.divider,
+    paddingLeft: theme.spacing(3),
+    paddingRight: theme.spacing(3),
+    paddingBottom: theme.spacing(3),
+    overflow: 'hidden',
+  },
+  header: {
+    ...theme.typography.overline,
+    paddingTop: theme.spacing(1),
+    opacity: 0.3,
+  },
+  completion: {
+    ...theme.typography.body1,
+    paddingTop: theme.spacing(1),
+    paddingBottom: theme.spacing(1),
+    cursor: 'pointer',
+    '&.active': {
+      backgroundColor: theme.palette.action.active,
+      color: theme.palette.text.secondary,
       borderLeftStyle: 'solid',
-      borderLeftWidth: '1px',
-      borderLeftColor: theme.palette.divider,
-      paddingLeft: theme.spacing(3),
-      paddingRight: theme.spacing(3),
-      paddingBottom: theme.spacing(3),
-      overflow: 'hidden',
+      borderLeftWidth: theme.spacing(0.5),
+      borderLeftColor: theme.palette.primary.main,
+      paddingLeft: theme.spacing(1.5),
     },
-    header: {
-      ...theme.typography.overline,
-      paddingTop: theme.spacing(1),
-      opacity: 0.3,
+    display: 'flex',
+    alignItems: 'center',
+  },
+  highlight: {
+    fontWeight: 600,
+  },
+  status: {
+    width: theme.spacing(4),
+    display: 'inline-block',
+    paddingLeft: theme.spacing(1),
+  },
+  itemType: {
+    width: theme.spacing(4),
+    display: 'inline-block',
+  },
+  healthy: {
+    '& svg': {
+      fill: theme.palette.success.main,
     },
-    completion: {
-      ...theme.typography.body1,
-      paddingTop: theme.spacing(1),
-      paddingBottom: theme.spacing(1),
-      cursor: 'pointer',
-      '&.active': {
-        backgroundColor: theme.palette.action.active,
-        color: theme.palette.text.secondary,
-        borderLeftStyle: 'solid',
-        borderLeftWidth: theme.spacing(0.5),
-        borderLeftColor: theme.palette.primary.main,
-        paddingLeft: theme.spacing(1.5),
-      },
-      display: 'flex',
-      alignItems: 'center',
+  },
+  unhealthy: {
+    '& svg': {
+      fill: theme.palette.error.main,
     },
-    highlight: {
-      fontWeight: 600,
+  },
+  pending: {
+    '& svg': {
+      fill: theme.palette.warning.main,
     },
-    status: {
-      width: theme.spacing(4),
-      display: 'inline-block',
-      paddingLeft: theme.spacing(1),
+  },
+  terminated: {
+    '& svg': {
+      fill: theme.palette.foreground?.grey1,
     },
-    itemType: {
-      width: theme.spacing(4),
-      display: 'inline-block',
-    },
-    healthy: {
-      '& svg': {
-        fill: theme.palette.success.main,
-      },
-    },
-    unhealthy: {
-      '& svg': {
-        fill: theme.palette.error.main,
-      },
-    },
-    pending: {
-      '& svg': {
-        fill: theme.palette.warning.main,
-      },
-    },
-    terminated: {
-      '& svg': {
-        fill: theme.palette.foreground?.grey1,
-      },
-    },
-  })
-);
+  },
+}));
 
 export const Completions: React.FC<CompletionsProps> = (props) => {
-  const { items, activeItem, onActiveChange, onSelection, className } = props;
+  const {
+    items, activeItem, onActiveChange, onSelection, className,
+  } = props;
   const classes = useStyles();
 
   const description = (() => {
@@ -212,14 +212,14 @@ const CompletionInternal = (props: CompletionProps) => {
       parts.push(
         <span key={`title-${start}`} className={classes.highlight}>
           {highlight}
-        </span>
+        </span>,
       );
     }
     remainingIdx = start + 1;
   });
   if (remainingIdx < title.length) {
     parts.push(
-      <span key={`title-${remainingIdx}`}>{title.substring(remainingIdx)}</span>
+      <span key={`title-${remainingIdx}`}>{title.substring(remainingIdx)}</span>,
     );
   }
   React.useEffect(() => {

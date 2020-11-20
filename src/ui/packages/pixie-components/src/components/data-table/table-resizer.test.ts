@@ -22,33 +22,25 @@ describe('Table resizing logic', () => {
 
   function overflowingMinWidthColumns() {
     const numColumns = Math.ceil(CONTAINER_WIDTH / MIN_COL_PX_WIDTH) + 1; // 13
-    const initialSizes = widthsToSizes(
-      Array(numColumns).fill(MIN_COL_PX_WIDTH)
-    ); // 90x13 = 1170
+    const initialSizes = widthsToSizes(Array(numColumns).fill(MIN_COL_PX_WIDTH)); // 90x13 = 1170
     return { initialSizes, total: MIN_COL_PX_WIDTH * numColumns };
   }
 
   function underflowingMinWidthColumns() {
     const numColumns = Math.ceil((CONTAINER_WIDTH * 0.5) / MIN_COL_PX_WIDTH); // 5
-    const initialSizes = widthsToSizes(
-      Array(numColumns).fill(MIN_COL_PX_WIDTH)
-    ); // 90x5 = 450
+    const initialSizes = widthsToSizes(Array(numColumns).fill(MIN_COL_PX_WIDTH)); // 90x5 = 450
     return { initialSizes, total: MIN_COL_PX_WIDTH * numColumns };
   }
 
   function underflowingMaxWidthColumns() {
     const numColumns = Math.ceil((CONTAINER_WIDTH * 0.5) / MAX_COL_PX_WIDTH); // 1 - tests too few columns as well
-    const initialSizes = widthsToSizes(
-      Array(numColumns).fill(MAX_COL_PX_WIDTH)
-    ); // 800x1 = 800
+    const initialSizes = widthsToSizes(Array(numColumns).fill(MAX_COL_PX_WIDTH)); // 800x1 = 800
     return { initialSizes, total: MAX_COL_PX_WIDTH * numColumns };
   }
 
   function overflowingMaxWidthColumns() {
     const numColumns = Math.ceil((CONTAINER_WIDTH * 4) / MAX_COL_PX_WIDTH); // 5
-    const initialSizes = widthsToSizes(
-      Array(numColumns).fill(MAX_COL_PX_WIDTH)
-    ); // 800x5 = 4000
+    const initialSizes = widthsToSizes(Array(numColumns).fill(MAX_COL_PX_WIDTH)); // 800x5 = 4000
     return { initialSizes, total: MAX_COL_PX_WIDTH * numColumns };
   }
 
@@ -72,7 +64,7 @@ describe('Table resizing logic', () => {
       -10,
       initialSizes,
       total,
-      CONTAINER_WIDTH
+      CONTAINER_WIDTH,
     );
     expect(newTotal).toBeCloseTo(total - 10);
     expect(overrides[0]).toBeCloseTo(initialSizes[0].ratio);
@@ -87,7 +79,7 @@ describe('Table resizing logic', () => {
       10,
       initialSizes,
       total,
-      CONTAINER_WIDTH
+      CONTAINER_WIDTH,
     );
     const newWidths = Object.keys(overrides).map((key) => overrides[key]);
     expect(newTotal).toBeCloseTo(total);
@@ -114,20 +106,20 @@ describe('Table resizing logic', () => {
       -3,
       initialSizes,
       total,
-      total
+      total,
     );
     const { newTotal: rightTotal, sizes: rightOverrides } = userResizeColumn(
       '2',
       3,
       initialSizes,
       total,
-      total
+      total,
     );
     const leftWidths = Object.keys(leftOverrides).map(
-      (key) => leftOverrides[key] * leftTotal
+      (key) => leftOverrides[key] * leftTotal,
     );
     const rightWidths = Object.keys(rightOverrides).map(
-      (key) => rightOverrides[key] * rightTotal
+      (key) => rightOverrides[key] * rightTotal,
     );
     const expectedLeft = [
       MIN_COL_PX_WIDTH + 9,
@@ -162,11 +154,11 @@ describe('Table resizing logic', () => {
       delta,
       initialSizes,
       total,
-      CONTAINER_WIDTH
+      CONTAINER_WIDTH,
     );
     expect(newTotal).toBeCloseTo(total + 10);
     expect(overrides[nextToLast]).toBeCloseTo(
-      (MIN_COL_PX_WIDTH + 10) / newTotal
+      (MIN_COL_PX_WIDTH + 10) / newTotal,
     );
     for (const key of Object.keys(overrides)) {
       if (key !== nextToLast) {
@@ -182,7 +174,7 @@ describe('Table resizing logic', () => {
       -1,
       initialSizes,
       total,
-      CONTAINER_WIDTH
+      CONTAINER_WIDTH,
     );
     expect(newTotal).toBeCloseTo(total);
     for (const key of Object.keys(overrides)) {
@@ -197,7 +189,7 @@ describe('Table resizing logic', () => {
       0,
       initialSizes,
       total,
-      CONTAINER_WIDTH
+      CONTAINER_WIDTH,
     );
     expect(newTotal).toBeCloseTo(CONTAINER_WIDTH);
     const numColumns = Object.keys(overrides).length;
@@ -213,7 +205,7 @@ describe('Table resizing logic', () => {
       0,
       initialSizes,
       total,
-      CONTAINER_WIDTH
+      CONTAINER_WIDTH,
     );
     expect(newTotal).toBeCloseTo(CONTAINER_WIDTH);
     const numColumns = Object.keys(overrides).length;
@@ -229,7 +221,7 @@ describe('Table resizing logic', () => {
       10,
       initialSizes,
       total,
-      CONTAINER_WIDTH
+      CONTAINER_WIDTH,
     );
     expect(newTotal).toBe(total);
     for (const key of Object.keys(overrides)) {

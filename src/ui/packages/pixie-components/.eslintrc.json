@@ -12,30 +12,45 @@
   "settings": {
     "import/extensions": [".js", ".jsx", ".ts", ".tsx", ".mjs"]
   },
-  "globals": {
-    "BigInt": true,
-    "Atomics": "readonly",
-    "SharedArrayBuffer": "readonly"
-  },
   "rules": {
-    "quotes": ["error", "single", "avoid-escape"],
+    "quotes": [
+      "error",
+      "single",
+      "avoid-escape"
+    ],
     "max-len": [
       "error",
       {
         "code": 120
       }
+    ],
+    "import/no-extraneous-dependencies": [
+      "error",
+      {
+        "devDependencies": [
+          "**/*.test.ts",
+          "**/*.test.tsx"
+        ]
+      }
     ]
   },
   "overrides": [
     {
-      "files": ["*-test.ts", "*-test.tsx", "./*.js", "src/testing/*"],
+      "files": [
+        "*.test.ts",
+        "*.test.tsx",
+        "src/testing/*"
+      ],
       "env": {
         "node": true,
         "jest/globals": true
       }
     },
     {
-      "files": ["*.ts", "*.tsx"],
+      "files": [
+        "*.ts",
+        "*.tsx"
+      ],
       "extends": [
         "plugin:react/recommended",
         "plugin:@typescript-eslint/recommended"
@@ -49,7 +64,11 @@
         "sourceType": "module",
         "project": "./tsconfig.json"
       },
-      "plugins": ["jest", "react", "@typescript-eslint"],
+      "plugins": [
+        "jest",
+        "react",
+        "@typescript-eslint"
+      ],
       "rules": {
         "import/extensions": 0,
         "no-mixed-operators": [
