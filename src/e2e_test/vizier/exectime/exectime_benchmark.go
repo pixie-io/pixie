@@ -154,10 +154,10 @@ func executeScript(v []*vizier.Connector, execScript *script.ExecutableScript) (
 	execRes.externalExecTime = time.Now().Sub(start)
 	if err != nil {
 		log.WithError(err).Infof("Error '%s' on '%s'", vizier.FormatErrorMessage(err), execScript.ScriptName)
+		// Store any error that comes up during execution.
+		execRes.scriptErr = err
+		return &execRes, nil
 	}
-
-	// Store any error that comes up during execution.
-	execRes.scriptErr = err
 
 	// Get the exec stats collected during the stream accumulation.
 	execStats, err := tw.ExecStats()
