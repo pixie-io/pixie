@@ -296,13 +296,12 @@ const InternalDataTable = ({
     });
     // Ensure the total is at least as wide as the available space, and not so wide as to violate column max widths.
     const [minTotal, maxTotal] = tableWidthLimits(columns.length, width);
-    const clampedTotal = clamp(totalWidth.current, minTotal, maxTotal);
-    totalWidth.current = clampedTotal;
+    totalWidth.current = clamp(totalWidth.current, minTotal, maxTotal);
 
     const ratio: { [dataKey: string]: number } = {};
-    const scale = clampedTotal / totalWidth.current;
+    const prevSum = Object.values(colsWidth).reduce((a, c) => a + c, 0);
     Object.keys(colsWidth).forEach((colsWidthKey) => {
-      ratio[colsWidthKey] = (scale * colsWidth[colsWidthKey]) / totalWidth.current;
+      ratio[colsWidthKey] = colsWidth[colsWidthKey] / (prevSum || 1);
     });
     return ratio;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -452,6 +451,9 @@ const InternalDataTable = ({
 
       return newOverrides;
     });
+    // The reset above can cause the total width not to add up anymore, so force a rescale of the sum.
+    // This results in only the columns on either side of the drag handle resetting, with the rest not moving.
+    resizeColumn({ dataKey, deltaX: 0 });
   };
 
   const tableWrapper = React.useRef<HTMLDivElement>(null);
