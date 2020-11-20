@@ -208,6 +208,18 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "uprobe_symaddrs_test",
+    srcs = ["uprobe_symaddrs_test.cc"],
+    data = [
+        "//demos/client_server_apps/go_grpc_tls_pl/server",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "jvm_stats_connector_test",
     srcs = ["jvm_stats_connector_test.cc"],
     data = [
@@ -514,8 +526,8 @@ pl_cc_test(
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
-        "//src/stirling/testing:cc_library",
         "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/testing:cc_library",
     ],
 )
 

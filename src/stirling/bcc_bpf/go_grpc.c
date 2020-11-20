@@ -1,6 +1,7 @@
 // LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
 
 #include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
+#include "src/stirling/bcc_bpf_interface/symaddrs.h"
 
 #define MAX_HEADER_COUNT 64
 
@@ -18,8 +19,8 @@ static __inline struct go_grpc_data_event_t* get_data_event() {
 // Maps that communicate the location of symbols within a binary.
 //   Key: TGID
 //   Value: Symbol addresses for the binary with that TGID.
-BPF_HASH(common_symaddrs_map, uint32_t, struct common_symaddrs_t);
-BPF_HASH(http2_symaddrs_map, uint32_t, struct http2_symaddrs_t);
+BPF_HASH(common_symaddrs_map, uint32_t, struct go_common_symaddrs_t);
+BPF_HASH(http2_symaddrs_map, uint32_t, struct go_http2_symaddrs_t);
 
 // This map is used to help extract HTTP2 headers from the net/http library.
 // The tracing process requires multiple probes:
@@ -89,7 +90,7 @@ const int32_t kInvalidFD = -1;
 //     }
 //   }
 static __inline int32_t get_fd_from_conn_intf_core(struct go_interface conn_intf,
-                                                   const struct common_symaddrs_t* symaddrs) {
+                                                   const struct go_common_symaddrs_t* symaddrs) {
   REQUIRE_SYMADDR(symaddrs->FD_Sysfd_offset, kInvalidFD);
 
   if (conn_intf.type == symaddrs->internal_syscallConn) {
@@ -119,7 +120,7 @@ static __inline int32_t get_fd_from_conn_intf_core(struct go_interface conn_intf
 
 static __inline int32_t get_fd_from_conn_intf(struct go_interface conn_intf) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  struct common_symaddrs_t* symaddrs = common_symaddrs_map.lookup(&tgid);
+  struct go_common_symaddrs_t* symaddrs = common_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
     return 0;
   }
@@ -141,7 +142,7 @@ static __inline int32_t get_fd_from_io_writer_intf(void* io_writer_intf_ptr) {
   // we're not seeing the expected interface type.
 
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  struct common_symaddrs_t* symaddrs = common_symaddrs_map.lookup(&tgid);
+  struct go_common_symaddrs_t* symaddrs = common_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
     return 0;
   }
@@ -156,7 +157,7 @@ static __inline int32_t get_fd_from_io_writer_intf(void* io_writer_intf_ptr) {
 
 // Returns the file descriptor from a http2.Framer object.
 static __inline int32_t get_fd_from_http2_Framer(const void* framer_ptr,
-                                                 const struct http2_symaddrs_t* symaddrs) {
+                                                 const struct go_http2_symaddrs_t* symaddrs) {
   REQUIRE_SYMADDR(symaddrs->Framer_w_offset, kInvalidFD);
   REQUIRE_SYMADDR(symaddrs->bufWriter_conn_offset, kInvalidFD);
 
@@ -180,7 +181,7 @@ static __inline int32_t get_fd_from_http2_Framer(const void* framer_ptr,
 // Returns the file descriptor from a http.http2Framer object.
 // Essentially accesses framer_ptr.w.w.conn.
 static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr,
-                                                     const struct http2_symaddrs_t* symaddrs) {
+                                                     const struct go_http2_symaddrs_t* symaddrs) {
   REQUIRE_SYMADDR(symaddrs->http2Framer_w_offset, kInvalidFD);
   REQUIRE_SYMADDR(symaddrs->http2bufferedWriter_w_offset, kInvalidFD);
 
@@ -207,7 +208,7 @@ static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr,
 
 static __inline void fill_header_field(struct go_grpc_http2_header_event_t* event,
                                        const void* header_field_ptr,
-                                       const struct http2_symaddrs_t* symaddrs) {
+                                       const struct go_http2_symaddrs_t* symaddrs) {
   struct gostring name;
   bpf_probe_read(&name, sizeof(struct gostring),
                  header_field_ptr + symaddrs->HeaderField_Name_offset);
@@ -230,7 +231,7 @@ static __inline void fill_header_field(struct go_grpc_http2_header_event_t* even
 static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
                                     enum HeaderEventType type, int32_t fd, uint32_t stream_id,
                                     bool end_stream, struct go_ptr_array fields,
-                                    const struct http2_symaddrs_t* symaddrs) {
+                                    const struct go_http2_symaddrs_t* symaddrs) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
   if (conn_info == NULL) {
@@ -267,7 +268,7 @@ static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t
 static __inline void submit_header(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
                                    enum HeaderEventType type, void* encoder_ptr,
                                    const void* header_field_ptr,
-                                   const struct http2_symaddrs_t* symaddrs) {
+                                   const struct go_http2_symaddrs_t* symaddrs) {
   struct header_attr_t* attr = active_write_headers_frame_map.lookup(&encoder_ptr);
   if (attr == NULL) {
     return;
@@ -300,7 +301,7 @@ struct go_grpc_framer_t {
 //   google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader
 int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  struct http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  struct go_http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
     return 0;
   }
@@ -363,7 +364,7 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
 static __inline void probe_http2_operate_headers(struct pt_regs* ctx,
                                                  enum http2_probe_type_t probe_type, int32_t fd,
                                                  const void* MetaHeadersFrame_ptr,
-                                                 const struct http2_symaddrs_t* symaddrs) {
+                                                 const struct go_http2_symaddrs_t* symaddrs) {
   // Required member offsets.
   REQUIRE_SYMADDR(symaddrs->MetaHeadersFrame_HeadersFrame_offset, /* none */);
   REQUIRE_SYMADDR(symaddrs->MetaHeadersFrame_Fields_offset, /* none */);
@@ -426,7 +427,7 @@ static __inline void probe_http2_operate_headers(struct pt_regs* ctx,
 //   google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders
 int probe_http2_client_operate_headers(struct pt_regs* ctx) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  struct http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  struct go_http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
     return 0;
   }
@@ -479,7 +480,7 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
 //   google.golang.org/grpc/internal/transport.(*http2Server).operateHeaders
 int probe_http2_server_operate_headers(struct pt_regs* ctx) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  struct http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  struct go_http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
     return 0;
   }
@@ -533,7 +534,7 @@ int probe_http2_server_operate_headers(struct pt_regs* ctx) {
 // Verified to be stable from go1.?? to t go.1.13.
 int probe_http_http2serverConn_processHeaders(struct pt_regs* ctx) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  struct http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  struct go_http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
     return 0;
   }
@@ -625,7 +626,7 @@ int probe_http_http2serverConn_processHeaders(struct pt_regs* ctx) {
 // Verified to be stable from at least go1.6 to t go.1.13.
 int probe_hpack_header_encoder(struct pt_regs* ctx) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  struct http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  struct go_http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
     return 0;
   }
@@ -666,7 +667,7 @@ int probe_hpack_header_encoder(struct pt_regs* ctx) {
 // Verified to be stable from go1.?? to t go.1.13.
 int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  struct http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  struct go_http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
     return 0;
   }
@@ -814,7 +815,7 @@ static __inline void go_http2_submit_data(struct pt_regs* ctx, enum http2_probe_
 // Verified to be stable from at least go1.6 to t go.1.13.
 int probe_http2_framer_check_frame_order(struct pt_regs* ctx) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  struct http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  struct go_http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
     return 0;
   }
@@ -911,7 +912,7 @@ int probe_http2_framer_check_frame_order(struct pt_regs* ctx) {
 // Verified to be stable from at least go1.?? to go.1.13.
 int probe_http_http2framer_check_frame_order(struct pt_regs* ctx) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  struct http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  struct go_http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
     return 0;
   }
@@ -1006,7 +1007,7 @@ int probe_http_http2framer_check_frame_order(struct pt_regs* ctx) {
 // Verified to be stable from go1.7 to t go.1.13.
 int probe_http2_framer_write_data(struct pt_regs* ctx) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  struct http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  struct go_http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
     return 0;
   }
@@ -1067,7 +1068,7 @@ int probe_http2_framer_write_data(struct pt_regs* ctx) {
 // Verified to be stable from go1.?? to t go.1.13.
 int probe_http_http2framer_write_data(struct pt_regs* ctx) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  struct http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  struct go_http2_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
     return 0;
   }

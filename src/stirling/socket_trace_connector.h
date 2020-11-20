@@ -29,6 +29,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "demos/applications/hipster_shop/reflection.h"
 #include "src/common/grpcutils/service_descriptor_database.h"
 #include "src/common/system/socket_info.h"
+#include "src/stirling/bcc_bpf_interface/symaddrs.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
 #include "src/stirling/obj_tools/elf_tools.h"
@@ -301,7 +302,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   StatusOr<int> AttachHTTP2Probes(
       const std::string& binary, elf_tools::ElfReader* elf_reader,
       dwarf_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& new_pids,
-      ebpf::BPFHashTable<uint32_t, struct http2_symaddrs_t>* http2_symaddrs_map);
+      ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t>* http2_symaddrs_map);
 
   // Attaches the required probes for SSL tracing to the specified binary.
   StatusOr<int> AttachOpenSSLUProbes(const std::string& binary,
@@ -407,8 +408,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   // BPF maps through which the addresses of symbols for a given pid are communicated to the
   // uprobes.
-  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct common_symaddrs_t> > common_symaddrs_map_;
-  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct http2_symaddrs_t> > http2_symaddrs_map_;
+  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_common_symaddrs_t> > common_symaddrs_map_;
+  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t> > http2_symaddrs_map_;
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);
