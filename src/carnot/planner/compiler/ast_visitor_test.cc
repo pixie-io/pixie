@@ -756,9 +756,7 @@ TEST_F(ASTVisitorTest, MemorySourceStartAndDefaultStop) {
   EXPECT_TRUE(mem_src->HasTimeExpressions());
   EXPECT_MATCH(mem_src->start_time_expr(), String());
   EXPECT_EQ(static_cast<StringIR*>(mem_src->start_time_expr())->str(), "-1m");
-  EXPECT_MATCH(mem_src->end_time_expr(), Func());
-  auto stop_time_func = static_cast<FuncIR*>(mem_src->end_time_expr());
-  EXPECT_EQ(stop_time_func->func_name(), "now");
+  EXPECT_MATCH(mem_src->end_time_expr(), Int(time_now));
 }
 
 TEST_F(ASTVisitorTest, MemorySourceDefaultStartAndStop) {

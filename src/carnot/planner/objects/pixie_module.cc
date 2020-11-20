@@ -109,11 +109,12 @@ Status PixieModule::RegisterUDTFs() {
 Status PixieModule::RegisterCompileTimeFuncs() {
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> now_fn,
-      FuncObject::Create(kNowOpID, {}, {},
-                         /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
-                         std::bind(&CompileTimeFuncHandler::NowEval, graph_, std::placeholders::_1,
-                                   std::placeholders::_2, std::placeholders::_3),
-                         ast_visitor()));
+      FuncObject::Create(
+          kNowOpID, {}, {},
+          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
+          std::bind(&CompileTimeFuncHandler::NowEval, compiler_state_, graph_,
+                    std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+          ast_visitor()));
   PL_RETURN_IF_ERROR(now_fn->SetDocString(kNowOpDocstring));
   AddMethod(kNowOpID, now_fn);
   for (const auto& time : kTimeFuncs) {
@@ -324,13 +325,13 @@ StatusOr<QLObjectPtr> DebugDisplayHandler::Eval(
   return StatusOr(std::make_shared<NoneObject>(visitor));
 }
 
-StatusOr<QLObjectPtr> CompileTimeFuncHandler::NowEval(IR* graph, const pypa::AstPtr& ast,
-                                                      const ParsedArgs&, ASTVisitor* visitor) {
-  // TODO(philkuz/nserrino) maybe just convert this into an Integer because we have the info here.
-  FuncIR::Op op{FuncIR::Opcode::non_op, "", PixieModule::kNowOpID};
-  PL_ASSIGN_OR_RETURN(FuncIR * node,
-                      graph->CreateNode<FuncIR>(ast, op, std::vector<ExpressionIR*>{}));
-  return ExprObject::Create(node, visitor);
+StatusOr<QLObjectPtr> CompileTimeFuncHandler::NowEval(CompilerState* compiler_state, IR* graph,
+                                                      const pypa::AstPtr& ast, const ParsedArgs&,
+                                                      ASTVisitor* visitor) {
+  // TODO(philkuz) switch to use TimeIR.
+  PL_ASSIGN_OR_RETURN(IntIR * time_now,
+                      graph->CreateNode<IntIR>(ast, compiler_state->time_now().val));
+  return ExprObject::Create(time_now, visitor);
 }
 
 StatusOr<QLObjectPtr> CompileTimeFuncHandler::TimeEval(IR* graph, std::string time_name,

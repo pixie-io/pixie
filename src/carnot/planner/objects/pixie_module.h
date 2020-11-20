@@ -271,7 +271,8 @@ class DebugDisplayHandler {
  */
 class CompileTimeFuncHandler {
  public:
-  static StatusOr<QLObjectPtr> NowEval(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
+  static StatusOr<QLObjectPtr> NowEval(CompilerState* compiler_state, IR* graph,
+                                       const pypa::AstPtr& ast, const ParsedArgs& args,
                                        ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> TimeEval(IR* graph, std::string name, const pypa::AstPtr& ast,
                                         const ParsedArgs& args, ASTVisitor* visitor);

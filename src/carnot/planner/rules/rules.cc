@@ -813,8 +813,9 @@ StatusOr<bool> SetMemSourceNsTimesRule::Apply(IRNode* node) {
     return false;
   }
 
-  DCHECK(Match(mem_src->start_time_expr(), Int()));
-  DCHECK(Match(mem_src->end_time_expr(), Int()));
+  // TODO(philkuz) switch to use TimeIR.
+  DCHECK(Match(mem_src->start_time_expr(), Int())) << mem_src->start_time_expr()->DebugString();
+  DCHECK(Match(mem_src->end_time_expr(), Int())) << mem_src->end_time_expr()->DebugString();
   mem_src->SetTimeValuesNS(static_cast<IntIR*>(mem_src->start_time_expr())->val(),
                            static_cast<IntIR*>(mem_src->end_time_expr())->val());
   return true;
