@@ -1,0 +1,28 @@
+--- a/repo/remote.go
++++ b/repo/remote.go
+@@ -421,11 +421,7 @@
+ 	cmd.Env = append(os.Environ(), "GO111MODULE=on")
+ 	out, err := cmd.Output()
+ 	if err != nil {
+-		var stdErr []byte
+-		if e, ok := err.(*exec.ExitError); ok {
+-			stdErr = e.Stderr
+-		}
+-		return "", fmt.Errorf("finding module path for import %s: %v: %s", importPath, err, stdErr)
++		return "", fmt.Errorf("finding module path for import %s: %v", importPath, err)
+ 	}
+ 	return strings.TrimSpace(string(out)), nil
+ }
+@@ -479,11 +475,7 @@
+ 	cmd.Env = append(os.Environ(), "GO111MODULE=on")
+ 	out, err := cmd.Output()
+ 	if err != nil {
+-		var stdErr []byte
+-		if e, ok := err.(*exec.ExitError); ok {
+-			stdErr = e.Stderr
+-		}
+-		return "", "", fmt.Errorf("finding module version and sum for %s@%s: %v: %s", modPath, query, err, stdErr)
++		return "", "", fmt.Errorf("finding module version and sum for %s@%s: %v", modPath, query, err)
+ 	}
+
+ 	var result struct{ Version, Sum string }
