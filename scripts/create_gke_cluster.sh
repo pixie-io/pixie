@@ -1,13 +1,11 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 
-# This script is use to create a K8s cluster in either the dev/prod/skylab environments.
+# This script creates a K8s cluster for various environments.
 
 ##################
 # Arguments
 ##################
 
-# These are used by pixie devs (pixies) for running k8s clusters for
-# development purposes
 set_default_values() {
   CLUSTER_NAME="dev-cluster-${USER}"
   AUTOSCALING=true
@@ -17,49 +15,49 @@ set_default_values() {
   MACHINE_TYPE=e2-standard-4
   IMAGE_NAME=UBUNTU
   DISK_SIZE=100
-  ZONE=us-west1-a
+}
 
-  PROD_MODE=false
-  SKYLAB_MODE=false
+# Configuration for personal Pixie dev clusters.
+set_pixies_cluster_config() {
   PROJECT=pl-pixies
+  ZONE=us-west1-a
   NETWORK=projects/pl-pixies/global/networks/dev
   SUBNETWORK=projects/pl-pixies/regions/us-west1/subnetworks/us-west1-0
 }
 
-# These are used for running devinfra clusters -- jenkins, bazel remote builds,
+# Configuration for devinfra clusters -- jenkins, bazel remote builds,
 # bazel caching etc.
-set_default_devinfra_values() {
-  DEVINFRA_MODE=true
+set_devinfra_cluster_config() {
   PROJECT=pl-dev-infra
+  ZONE=us-west1-a
   NETWORK=projects/pl-dev-infra/global/networks/dev
   SUBNETWORK=projects/pl-dev-infra/regions/us-west1/subnetworks/us-west1-0
 }
 
-set_default_prod_values() {
-  PROD_MODE=true
+# Configuration for Pixie cloud (prod) cluster.
+set_prod_cluster_config() {
   PROJECT=pixie-prod
+  ZONE=us-west1-a
   NETWORK=projects/pixie-prod/global/networks/prod
   SUBNETWORK=projects/pixie-prod/regions/us-west1/subnetworks/us-west-1-0
 }
 
-set_default_skylab_values() {
-  SKYLAB_MODE=true
+set_skylab_cluster_conig() {
   PROJECT=pixie-skylab
+  ZONE=us-west1-a
   NETWORK=projects/pixie-skylab/global/networks/default
   SUBNETWORK=projects/pixie-skylab/regions/us-west1/subnetworks/default
 }
 
 print_config() {
   echo "Config: "
-  echo "  PROD_MODE        : ${PROD_MODE}"
-  echo "  DEVINFRA_MODE    : ${DEVINFRA_MODE}"
-  echo "  SKYLAB_MODE      : ${SKYLAB_MODE}"
   echo "  PROJECT          : ${PROJECT}"
   echo "  CLUSTER_NAME     : ${CLUSTER_NAME}"
   echo "  NUM_NODES        : ${NUM_NODES}"
   echo "  MACHINE_TYPE     : ${MACHINE_TYPE}"
   echo "  IMAGE_NAME       : ${IMAGE_NAME}"
   echo "  DISK_SIZE        : ${DISK_SIZE}"
+  echo "  ZONE             : ${ZONE}"
   echo "  NETWORK          : ${NETWORK}"
   echo "  SUBNETWORK       : ${SUBNETWORK}"
   echo ""
@@ -69,10 +67,10 @@ usage() {
   # Reset to default values, so we can print them.
   set_default_values
 
-  echo "Usage: $0 [-p] [-c <cluster_name>] [-b] [-m <machine_type>] [-n <num_nodes>] [-i <image>]"
-  echo " -p          : Prod cluster config, must appear as first argument. [default: ${PROD_MODE}]"
-  echo " -b          : DevInfra cluster config, must appear as first argument. [default: ${DEVINFRA_MODE}]"
-  echo " -s          : Skylab cluster config, must appear as first argument. [default: ${SKYLAB_MODE}]"
+  echo "Usage: $0 [-c <cluster_name>] [-p|-b|-s] [-m <machine_type>] [-n <num_nodes>] [-i <image>]"
+  echo " -p          : Prod cluster config."
+  echo " -b          : DevInfra cluster config."
+  echo " -s          : Skylab cluster config."
   echo " -f          : Disable autoscaling of the node pool."
   echo " -c <string> : name of your cluster. [default: ${CLUSTER_NAME}]"
   echo " -n <int>    : number of nodes in the cluster [default: ${NUM_NODES}]"
@@ -84,27 +82,15 @@ usage() {
 }
 
 parse_args() {
-  # Check to see if prod flag is specified so that we can change the defaults.
-  if [ "$1" = "-p" ] ; then
-    set_default_prod_values
-    shift
-  fi
+  set_default_values
 
-  # Check to see if dev infra flag is specified so that we can change the defaults.
-  if [ "$1" = "-b" ] ; then
-    set_default_devinfra_values
-    shift
-  fi
-
-  # Check to see if skylaab  flag is specified so that we can change the defaults.
-  if [ "$1" = "-s" ] ; then
-    set_default_skylab_values
-    shift
-  fi
+  # Default is to create a cluster for pixie developers.
+  # This can be overridden by the -p/-b/-s flags.
+  set_pixies_cluster_config
 
   local OPTIND
   # Process the command line arguments.
-  while getopts "fc:n:m:i:d:" opt; do
+  while getopts "pbsfc:n:m:i:d:" opt; do
     case ${opt} in
       f)
         AUTOSCALING=false
@@ -126,6 +112,15 @@ parse_args() {
       d)
         DISK_SIZE=$OPTARG
         ;;
+      p)
+        set_prod_cluster_config
+        ;;
+      b)
+        set_devinfra_cluster_config
+        ;;
+      s)
+        set_skylab_cluster_config
+        ;;
       :)
         echo "Invalid option: $OPTARG requires an argument" 1>&2
         ;;
@@ -140,7 +135,6 @@ parse_args() {
   shift $((OPTIND -1))
 }
 
-set_default_values
 parse_args "$@"
 print_config
 
@@ -179,7 +173,6 @@ gcloud beta container --project "${PROJECT}" clusters create ${CLUSTER_NAME} \
  --labels k8s-dev-cluster=\
  --security-group="gke-security-groups@pixielabs.ai" \
  --no-enable-stackdriver-kubernetes
-
 
 if [ $? -ne 0 ]; then
   exit
