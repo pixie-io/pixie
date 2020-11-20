@@ -43,7 +43,7 @@
         idleCallback(() => {
           setTimeout(() => {
             var n = document.createElement('script');
-            const domain = WEBPACK_REPLACE ? WEBPACK_SEGMENT_ANALYTICS_JS_DOMAIN : '__SEGMENT_ANALYTICS_JS_DOMAIN__';
+            const domain = __SEGMENT_ANALYTICS_JS_DOMAIN__;
             n.type = 'text/javascript';
             n.async = !0;
             n.src = 'https://' + domain + '/analytics.js/v1/' + t + '/analytics.min.js';

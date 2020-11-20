@@ -242,12 +242,12 @@ module.exports = (env) => {
 
   webpackConfig.plugins.unshift(
     new webpack.DefinePlugin({
-      WEBPACK_AUTH0_DOMAIN: JSON.stringify('pixie-labs.auth0.com'),
-      WEBPACK_AUTH0_CLIENT_ID: JSON.stringify(auth0YAML.data.PL_AUTH0_CLIENT_ID),
-      WEBPACK_DOMAIN_NAME: JSON.stringify(domainYAML.data.PL_DOMAIN_NAME),
-      WEBPACK_LD_CLIENT_ID: JSON.stringify(ldYAML.data.PL_LD_CLIENT_ID),
-      WEBPACK_SEGMENT_ANALYTICS_JS_DOMAIN: `segment.${domainYAML.data.PL_DOMAIN_NAME}`,
-      WEBPACK_REPLACE: true,
+      __SEGMENT_UI_WRITE_KEY__: '""',
+      __CONFIG_AUTH0_DOMAIN__: JSON.stringify('pixie-labs.auth0.com'),
+      __CONFIG_AUTH0_CLIENT_ID__: JSON.stringify(auth0YAML.data.PL_AUTH0_CLIENT_ID),
+      __CONFIG_DOMAIN_NAME__: JSON.stringify(domainYAML.data.PL_DOMAIN_NAME),
+      __CONFIG_LD_CLIENT_ID__: JSON.stringify(ldYAML.data.PL_LD_CLIENT_ID),
+      __SEGMENT_ANALYTICS_JS_DOMAIN__: `segment.${domainYAML.data.PL_DOMAIN_NAME}`,
     }),
   );
 
