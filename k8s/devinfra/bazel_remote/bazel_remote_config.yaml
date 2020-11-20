@@ -8,9 +8,9 @@ data:
   config.yaml: |
     dir: /mnt/data
     max_size: 180
-    host: localhost
-    port: 10100
-    grpc_port: 10200
+    host: 0.0.0.0
+    port: 8080
+    grpc_port: 9092
     gcs_proxy:
       bucket: bazel-cache-pl
       use_default_credentials: true
