@@ -2,19 +2,18 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
-export const NamespaceIcon = (classes: any, props: SvgIconProps) => (
+export const NamespaceIcon = (props: SvgIconProps) => (
   <SvgIcon {...props} viewBox='0 0 26 25'>
     <path
-      className={classes.border}
       d='M25 1H1V24H25V1Z'
       fill='none'
+      stroke='currentColor'
       strokeWidth='1.04071'
       strokeMiterlimit='10'
       strokeLinejoin='round'
       strokeDasharray='2.08 1.04'
     />
     <path
-      className={classes.namespace}
       d={`M9.12613 9.7168L9.15543 10.3809C9.55907 9.87305 10.0864 9.61914
           10.7375 9.61914C11.854 9.61914 12.4171 10.249 12.4269
           11.5088V15H11.5236V11.5039C11.5203 11.123 11.4324 10.8415 11.2599

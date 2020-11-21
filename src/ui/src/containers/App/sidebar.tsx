@@ -116,12 +116,6 @@ const styles = (
     color: palette.foreground.white,
     fill: palette.foreground.white,
   },
-  namespace: {
-    fill: palette.foreground.white,
-  },
-  namespaceBorder: {
-    stroke: palette.foreground.white,
-  },
   listIcon: {
     paddingLeft: spacing(1.5),
     paddingTop: spacing(1),
@@ -342,7 +336,7 @@ const SideBar = ({ classes }) => {
       text: 'Cluster',
     },
     {
-      icon: <NamespaceIcon classes={{ border: classes.namespaceBorder, namespace: classes.namespace }} />,
+      icon: <NamespaceIcon className={classes.icon} />,
       link: toEntityPathname({ params: {}, clusterName: selectedClusterName, page: LiveViewPage.Namespaces }),
       text: 'Namespaces',
     }]
