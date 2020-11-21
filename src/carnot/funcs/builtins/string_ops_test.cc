@@ -33,7 +33,17 @@ TEST(StringOps, basic_string_substr_test) {
   auto udf_tester = udf::UDFTester<SubstringUDF>();
   udf_tester.ForInput("pixielabs", 3, 4).Expect("iela");
   udf_tester.ForInput("pixielabs", 5, 10).Expect("labs");
+  udf_tester.ForInput("pixielabs", 5, 0).Expect("");
+}
+
+TEST(StringOps, substring_edge_cases) {
+  auto udf_tester = udf::UDFTester<SubstringUDF>();
+  // Start pos > length.
   udf_tester.ForInput("pixielabs", 9, 20).Expect("");
+  // -1 starting position.
+  udf_tester.ForInput("pixielabs", -1, 2).Expect("");
+  // -1 length.
+  udf_tester.ForInput("pixielabs", 0, -1).Expect("");
 }
 
 TEST(StringOps, basic_string_tolower_test) {

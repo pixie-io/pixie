@@ -61,7 +61,8 @@ class FindUDF : public udf::ScalarUDF {
 class SubstringUDF : public udf::ScalarUDF {
  public:
   StringValue Exec(FunctionContext*, StringValue b1, Int64Value pos, Int64Value length) {
-    if (pos > static_cast<int64_t>(b1.length())) {
+    // If the pos is "erroneous" then just return empty string.
+    if (pos < 0 || pos > static_cast<int64_t>(b1.length()) || length < 0) {
       return "";
     }
     return b1.substr(static_cast<size_t>(pos.val), static_cast<size_t>(length.val));
