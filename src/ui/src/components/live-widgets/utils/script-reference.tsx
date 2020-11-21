@@ -10,12 +10,9 @@ import { scriptToEntityURL, toEntityURL, toSingleEntityPage } from './live-view-
 const styles = ({ palette }: Theme) => createStyles({
   root: {
     color: palette.secondary.main,
-    textDecoration: 'none',
+    textDecoration: 'underline',
     backgroundColor: 'transparent',
     opacity: 0.7,
-    '&:hover': {
-      textDecoration: 'underline',
-    },
   },
 });
 
