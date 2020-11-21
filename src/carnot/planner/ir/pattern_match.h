@@ -661,7 +661,7 @@ struct ContainsCompileTimeFunc : public ParentMatch {
  * @tparam false
  * @tparam false
  */
-template <typename Arg_t, bool Resolved = false, bool CompileTime = false>
+template <typename Arg_t, bool Resolved = false>
 struct AnyFuncAllArgsMatch : public ParentMatch {
   explicit AnyFuncAllArgsMatch(const Arg_t& argMatcher)
       : ParentMatch(IRNodeType::kFunc), argMatcher_(argMatcher) {}
@@ -669,8 +669,7 @@ struct AnyFuncAllArgsMatch : public ParentMatch {
   bool Match(const IRNode* node) const override {
     if (node->type() == type) {
       auto* F = static_cast<const FuncIR*>(node);
-      CompileTimeFuncMatch<CompileTime> compile_or_rt_matcher;
-      if (Resolved == F->IsDataTypeEvaluated() && compile_or_rt_matcher.Match(F)) {
+      if (Resolved == F->IsDataTypeEvaluated()) {
         for (const auto a : F->args()) {
           if (!argMatcher_.Match(a)) {
             return false;
@@ -737,7 +736,7 @@ inline FuncNameAllArgsMatch<Arg_t> Func(const std::string& name, const Arg_t& ar
  */
 template <typename Arg_t>
 inline AnyFuncAllArgsMatch<Arg_t, false> UnresolvedRTFuncMatchAllArgs(const Arg_t& argMatcher) {
-  return AnyFuncAllArgsMatch<Arg_t, false, false>(argMatcher);
+  return AnyFuncAllArgsMatch<Arg_t, false>(argMatcher);
 }
 
 /**

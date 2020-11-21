@@ -196,7 +196,7 @@ class Registry {
   StatusOr<UDTFDefinition*> GetUDTFDefinition(
       const std::string& name, const std::vector<types::DataType>& registry_arg_types = {}) const;
 
-  std::string DebugString();
+  std::string DebugString() const;
   udfspb::UDFInfo ToProto();
 
   const RegistryMap& map() const { return map_; }

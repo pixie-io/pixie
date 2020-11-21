@@ -230,52 +230,6 @@ class OperatorRelationRule : public Rule {
                              const std::string& left_column, const std::string& right_column) const;
 };
 
-class EvaluateCompileTimeExpr {
-  /**
-   * @brief Takes an ExpressionIR node and traverses it to evaluate certain expressions at compile
-   * time.
-   * TODO(nserrino, philkuz) Generalize this beyond a few special cases.
-   */
-
- public:
-  explicit EvaluateCompileTimeExpr(CompilerState* compiler_state)
-      : compiler_state_(compiler_state) {}
-
-  StatusOr<ExpressionIR*> Evaluate(ExpressionIR* ir_node);
-
- private:
-  StatusOr<IntIR*> EvalArithmetic(FuncIR* ir_node);
-  StatusOr<IntIR*> EvalTimeNow(FuncIR* ir_node);
-  StatusOr<IntIR*> EvalUnitTime(FuncIR* ir_node);
-
-  CompilerState* compiler_state_;
-};
-
-class OperatorCompileTimeExpressionRule : public Rule {
-  /**
-   * @brief OperatorCompileTimeExpressionRule handles basic constant folding.
-   *
-   * ie
-   * df['foo'] = pl.not_compile_time(pl.now() - pl.minutes(2))
-   * should be evaluated to the following.
-   * df['foo'] = pl.not_compile_time(15191289803)
-   *
-   */
- public:
-  explicit OperatorCompileTimeExpressionRule(CompilerState* compiler_state)
-      : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
-
- protected:
-  StatusOr<bool> Apply(IRNode* ir_node) override;
-  StatusOr<bool> EvalMap(MapIR* expr);
-  StatusOr<bool> EvalFilter(FilterIR* expr);
-  StatusOr<bool> EvalMemorySource(MemorySourceIR* expr);
-  StatusOr<bool> EvalRolling(RollingIR* rolling);
-  StatusOr<ExpressionIR*> EvalCompileTimeSubExpressions(ExpressionIR* expr);
-
-  StatusOr<IntIR*> EvalExpression(IRNode* ir_node, bool convert_string_times);
-};
-
 class ConvertStringTimesRule : public Rule {
   /**
    * @brief ConverStringTimesRuleUsed to support taking strings like "-2m"

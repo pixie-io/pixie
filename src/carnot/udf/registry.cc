@@ -126,7 +126,7 @@ void Registry::ToProto(const UDTFDefinition& def, udfspb::UDTFSourceSpec* spec) 
   }
 }
 
-std::string Registry::DebugString() {
+std::string Registry::DebugString() const {
   std::string debug_string;
   debug_string += absl::Substitute("udf::Registry: $0\n", name_);
   for (const auto& entry : map_) {
