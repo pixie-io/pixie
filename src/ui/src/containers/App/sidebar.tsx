@@ -277,20 +277,24 @@ const ProfileItem = ({
         </MenuItem>
         {
           inLiveView && (
-          <>
-            <MenuItem key='tour' button component='button' onClick={openTour} className={classes.hideOnMobile}>
-              <StyledListItemIcon>
-                <ExploreIcon />
-              </StyledListItemIcon>
-              <StyledListItemText primary='Tour' />
-            </MenuItem>
-            <MenuItem key='shortcuts' button component='button' onClick={() => shortcuts['show-help'].handler()}>
-              <StyledListItemIcon>
-                <KeyboardIcon />
-              </StyledListItemIcon>
-              <StyledListItemText primary='Keyboard Shortcuts' />
-            </MenuItem>
-          </>
+            [
+              (
+                <MenuItem key='tour' button component='button' onClick={openTour} className={classes.hideOnMobile}>
+                  <StyledListItemIcon>
+                    <ExploreIcon />
+                  </StyledListItemIcon>
+                  <StyledListItemText primary='Tour' />
+                </MenuItem>
+              ),
+              (
+                <MenuItem key='shortcuts' button component='button' onClick={() => shortcuts['show-help'].handler()}>
+                  <StyledListItemIcon>
+                    <KeyboardIcon />
+                  </StyledListItemIcon>
+                  <StyledListItemText primary='Keyboard Shortcuts' />
+                </MenuItem>
+              ),
+            ]
           )
         }
         <MenuItem key='credits' button component={Link} to='/credits'>
