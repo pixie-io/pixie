@@ -19,6 +19,11 @@ type UserInfo {
   orgName: String!
 }
 
+type UserSetting {
+  key: String!
+  value: String!
+}
+
 enum ArtifactType {
     AT_UNKNOWN
     AT_LINUX_AMD64
@@ -62,6 +67,7 @@ type DeploymentKey {
 
 type Query {
   user: UserInfo!
+  userSettings(keys: [String]!): [UserSetting]!
   # TODO(nserrino): Make ID required once UI moves over to multi-cluster support.
   cluster(id: ID): ClusterInfo!
   clusters: [ClusterInfo!]!
@@ -181,6 +187,7 @@ type Mutation {
   UpdateVizierConfig(clusterID: ID!, passthroughEnabled: Boolean): Boolean!
   CreateDeploymentKey: DeploymentKey!
   DeleteDeploymentKey(id: ID!): Boolean!
+  UpdateUserSettings(keys: [String!]!, values: [String!]!): Boolean!
 }
 
 type CLIArtifact {

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/graph-gophers/graphql-go"
@@ -69,4 +70,37 @@ func (u *UserInfoResolver) OrgName() string {
 	}
 
 	return org.OrgName
+}
+
+// UserSettingResolver resolves a user setting.
+type UserSettingResolver struct {
+}
+
+// Key gets the key for the user setting.
+func (u *UserSettingResolver) Key() string {
+	return ""
+}
+
+// Value gets the value for the user setting.
+func (u *UserSettingResolver) Value() string {
+	return ""
+}
+
+type userSettingsArgs struct {
+	Keys []*string
+}
+
+// UserSettings resolves user settings information.
+func (q *QueryResolver) UserSettings(ctx context.Context, args *userSettingsArgs) ([]*UserSettingResolver, error) {
+	return nil, errors.New("Not yet implemented")
+}
+
+type updateUserSettingsArgs struct {
+	Keys   []*string
+	Values []*string
+}
+
+// UpdateUserSettings updates the user settings for the current user.
+func (q *QueryResolver) UpdateUserSettings(ctx context.Context, args *updateUserSettingsArgs) (bool, error) {
+	return false, errors.New("Not yet implemented")
 }
