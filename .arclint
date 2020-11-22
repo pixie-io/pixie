@@ -1,33 +1,30 @@
 {
   "exclude": [
-    "(Doxyfile$)",
-    "(^docs/customer/.*)",
-    "(src/ui/src/segment.js$)",
-    "(chef/site-cookbooks/.*$)",
-    "(experimental/users/.*$)",
-    "(^linters/.*$)",
-    "(^src/ui/offline_package_cache)",
-    "(^src/stirling/bcc_bpf/system-headers)",
-    "(\\.pb\\.gw\\.go$)",
-    "(\\.pb\\.go$)",
+    "(/testdata/)",
     "(\\.gen\\.go$)",
-    "(\\.pbtxt$)",
-    "(mocks/.*\\.go$)",
-    "(^third_party)",
-    "(\\.idea/.*$)",
-    "(\\.sublime-project$)",
     "(\\.gitmodules$)",
-    "(.*/testdata/.*)",
-    "(c_cpp_properties.json$)",
+    "(\\.idea/)",
+    "(\\.patch$)",
+    "(\\.pb\\.go$)",
+    "(\\.pbtxt$)",
+    "(\\.sublime-project$)",
+    "(^chef/site-cookbooks/)",
+    "(^credentials/dev_infra/)",
     "(^credentials\/.*\\.yaml)",
+    "(^docs/customer/)",
+    "(^experimental/users/)",
+    "(^linters/)",
+    "(^src/stirling/bcc_bpf/system-headers)",
+    "(^src/stirling/mysql/testing/.*\\.json$)",
+    "(^src/ui/offline_package_cache)",
+    "(^src/ui/src/segment.js$)",
+    "(^src/ui/src/types/generated/)",
+    "(^third_party)",
+    "(c_cpp_properties.json$)",
+    "(Doxyfile$)",
     "(go\\.mod$)",
     "(go\\.sum$)",
-    "(.*\\.patch$)",
-    "(src/ui/src/types/generated/.*)",
-    "(spinnaker/hal/.*)",
-    "(credentials/dev_infra/.*)",
-    "(src/ui/pixie-components/dist/.*)",
-    "(^src\/stirling\/mysql\/testing\/.*\\.json)"
+    "(spinnaker/hal/)"
   ],
   "linters": {
     "build-linter": {
@@ -46,8 +43,12 @@
     },
     "cpplint": {
       "type": "cpplint",
-      "include": ["(\\.c$)", "(\\.cc$)", "(\\.h$)"],
-      "exclude": ["(_objc\\.h)"],
+      "include": [
+        "(\\.(c|cc|h)$)"
+      ],
+      "exclude": [
+        "(_objc\\.h$)"
+      ],
       "bin": "./linters/cpplint/cpplint.py",
       "flags": [
         "--filter=-build/c++11",
@@ -58,40 +59,36 @@
     },
     "clang-format": {
       "type": "clang-format",
-      "include": "(\\.(m|h|mm|c|cc)$)"
+      "include": [
+        "(\\.(m|h|mm|c|cc)$)"
+      ]
     },
     "filename": {
       "type": "filename"
     },
     "gofmt": {
-      "include": [
-          "(\\.go$)"
-      ],
-      "type": "gofmt"
-    },
-    "golint": {
-      "include": [
-          "(\\.go$)"
-      ],
-      "exclude": [
-          "(experimental/users/.*\\.go$)"
-      ],
-      "type": "golint"
-    },
-    "govet": {
+      "type": "gofmt",
       "include": [
         "(\\.go$)"
-      ],
-      "exclude": [
-          "(experimental/users/.*\\.go$)"
-      ],
-      "type": "govet"
+      ]
+    },
+    "golint": {
+      "type": "golint",
+      "include": [
+        "(\\.go$)"
+      ]
+    },
+    "govet": {
+      "type": "govet",
+      "include": [
+        "(\\.go$)"
+      ]
     },
     "jshint-ui": {
       "type": "jshint",
       "jshint.jshintrc": "./src/ui/.jshintrc",
       "include": [
-        "(src/ui/.*\\.js)"
+        "(src/ui/.*\\.js$)"
       ]
     },
     "json": {
@@ -108,12 +105,6 @@
     "merge-conflict": {
       "type": "merge-conflict"
     },
-    "nolint": {
-      "type": "nolint",
-      "include": [
-        "(src/ui/dist/.*$)"
-      ]
-    },
     "flake8": {
       "type": "flake8",
       "flags": [
@@ -121,9 +112,6 @@
       ],
       "include": [
         "(\\.py$)"
-      ],
-      "exclude": [
-        "(migrations/versions/.*\\.py$)"
       ]
     },
     "flake8-pxl": {
@@ -138,9 +126,8 @@
     "spelling": {
       "type": "spelling",
       "exclude": [
-        "(^src/ui/tools/licenses/.*\\.json$)",
-        "(.*\\.crt)",
-        "(.*\\.key)"
+        "(.*\\.crt$)",
+        "(.*\\.key$)"
       ]
     },
     "shellcheck": {
@@ -165,9 +152,7 @@
       "type": "eslint",
       "eslint.config": ".eslintrc.json",
       "include": [
-        "(src/ui/.*\\.(tsx)$)",
-        "(src/ui/.*\\.(ts)$)",
-        "(src/ui/.*\\.(js)$)"
+        "(^src/ui/.*\\.(tsx|ts|js)$)"
       ]
     }
   }
