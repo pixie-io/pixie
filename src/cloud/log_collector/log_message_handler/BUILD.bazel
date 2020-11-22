@@ -18,6 +18,7 @@ go_test(
     name = "go_default_test",
     srcs = ["log_message_handler_test.go"],
     embed = [":go_default_library"],
+    flaky = True,
     deps = [
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/utils/testingutils:go_default_library",
