@@ -163,7 +163,6 @@
     },
     "eslint-ui": {
       "type": "eslint",
-      "bin": "./linters/eslint_ui.sh",
       "eslint.config": ".eslintrc.json",
       "include": [
         "(src/ui/.*\\.(tsx)$)",

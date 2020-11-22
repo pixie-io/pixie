@@ -30,16 +30,31 @@ spec:
           containerPort: 8080
         - name: grpc
           containerPort: 1985
+        - name: grpcs
+          containerPort: 1986
         volumeMounts:
         - mountPath: /data
           name: data
         - mountPath: "/config.yaml"
           name: config
           subPath: "config.yaml"
+        - mountPath: /certs
+          name: certs
+        - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          name: default-token-dpnwl
+          readOnly: true
       volumes:
       - name: "config"
         configMap:
           name: "config"
+      - name: certs
+        secret:
+          defaultMode: 420
+          secretName: ca-key-pair
+      - name: default-token-dpnwl
+        secret:
+          defaultMode: 420
+          secretName: default-token-dpnwl
   volumeClaimTemplates:
   - metadata:
       name: data
