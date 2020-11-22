@@ -28,6 +28,8 @@ spec:
         ports:
         - name: http
           containerPort: 8080
+        - name: grpcs
+          containerPort: 1986
         - name: grpc
           containerPort: 1985
         volumeMounts:
@@ -36,10 +38,15 @@ spec:
         - mountPath: "/config.yaml"
           name: config
           subPath: "config.yaml"
+        - mountPath: "/certs"
+          name: certs
       volumes:
       - name: "config"
         configMap:
           name: "config"
+      - name: "certs"
+        secret:
+          secretName: ca-key-pair
   volumeClaimTemplates:
   - metadata:
       name: data
@@ -48,4 +55,4 @@ spec:
       - ReadWriteOnce
       resources:
         requests:
-          storage: 10Gi
+          storage: 1000Gi

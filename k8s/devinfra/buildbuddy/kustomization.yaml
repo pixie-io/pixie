@@ -12,3 +12,4 @@ resources:
 - buildbuddy_be_config.yaml
 - buildbuddy_ingress.yaml
 - buildbuddy_managedcert.yaml
+- buildbuddy_cert_issuer.yaml
