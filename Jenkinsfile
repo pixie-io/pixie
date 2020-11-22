@@ -681,9 +681,9 @@ def generateTestTargets = {
       builders['Build & Test (gcc:opt)'] = buildGCC
     }
 
-  // enableForTargets('bpf') {
-  //   builders['Build & Test (bpf tests - opt)'] = buildAndTestBPFOpt
-  // }
+    enableForTargets('bpf') {
+      builders['Build & Test (bpf tests - opt)'] = buildAndTestBPFOpt
+    }
   }
 }
 
