@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"testing"
-	"time"
 
 	"github.com/olivere/elastic/v7"
 	"github.com/stretchr/testify/assert"
@@ -95,111 +94,6 @@ func TestManagedIndexMigrate(t *testing.T) {
 
 			assert.Equal(t, expectedAliases, resp.Aliases)
 
-		})
-	}
-}
-
-// This test is really slow because I have to wait for elastic to do certain things.
-func TestManagedIndexRollover(t *testing.T) {
-	testCases := []struct {
-		name                     string
-		managedIndName           string
-		maxIndexSize             string
-		maxSizeBytes             int64
-		timeBeforeDelete         string
-		timeBeforeDeleteDuration time.Duration
-	}{
-		{
-			name:                     "index rollsover after maxIndexSize reached",
-			managedIndName:           "test_managed_rollover_max_index_size",
-			maxIndexSize:             "50kb",
-			maxSizeBytes:             50 * 1024,
-			timeBeforeDelete:         "3s",
-			timeBeforeDeleteDuration: 3 * time.Second,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			indexJSON := `
-			{
-				"mappings": {
-					"properties": {
-						"test_field": {
-							"type": "text"
-						}
-					}
-				},
-				"settings": {
-					"index": {
-						"number_of_shards": 10
-					}
-				}
-			}`
-			err := esutils.NewManagedIndex(elasticClient, tc.managedIndName).
-				IndexFromJSONString(indexJSON).
-				MaxIndexSize(tc.maxIndexSize).
-				TimeBeforeDelete(tc.timeBeforeDelete).
-				Migrate(context.Background())
-			if err != nil {
-				t.Logf("ErrorDetails: %v", err.(*elastic.Error).Details)
-			}
-			require.Nil(t, err)
-			defer cleanupManagedIndex(t, tc.managedIndName)
-
-			currentSize := int64(0)
-			for currentSize < tc.maxSizeBytes {
-				fiveKbStr := randStringRunes(5 * 1024)
-				docToIndex := fmt.Sprintf(`{"test_field": "%s"}`, fiveKbStr)
-				_, err = elasticClient.Index().Index(tc.managedIndName).BodyString(docToIndex).Do(context.Background())
-				require.Nil(t, err)
-				stats, err := elasticClient.IndexStats(tc.managedIndName).Do(context.Background())
-				require.Nil(t, err)
-				currentSize = stats.All.Total.Store.SizeInBytes
-			}
-
-			// Wait for ILM poll_interval which is set to 5s in //src/utils/testingutils/elastic.go
-			time.Sleep(5 * time.Second)
-			start := time.Now()
-			aliases, err := elasticClient.Aliases().Alias(tc.managedIndName).Do(context.Background())
-			require.Nil(t, err)
-			aliasCallDuration := time.Since(start)
-
-			if aliasCallDuration < tc.timeBeforeDeleteDuration {
-				_, ok := aliases.Indices[fmt.Sprintf("%s-000000", tc.managedIndName)]
-				assert.Truef(t, ok, "Old index shouldn't be deleted before timeBeforeDelete")
-			}
-			alias, ok := aliases.Indices[fmt.Sprintf("%s-000001", tc.managedIndName)]
-			assert.Truef(t, ok, "New rollover index should've been created")
-
-			type aliasResult struct {
-				AliasName    string
-				IsWriteIndex bool
-			}
-			aliasResults := make([]aliasResult, len(alias.Aliases))
-			for i, a := range alias.Aliases {
-				aliasResults[i] = aliasResult{
-					AliasName:    a.AliasName,
-					IsWriteIndex: a.IsWriteIndex,
-				}
-			}
-			assert.Contains(t, aliasResults, aliasResult{
-				AliasName:    tc.managedIndName,
-				IsWriteIndex: true,
-			})
-
-			time.Sleep(tc.timeBeforeDeleteDuration - aliasCallDuration)
-
-			aliases, err = elasticClient.Aliases().Alias(tc.managedIndName).Do(context.Background())
-			require.Nil(t, err)
-
-			indexName := fmt.Sprintf("%s-000001", tc.managedIndName)
-			respMap, err := elasticClient.IndexGet(indexName).Do(context.Background())
-			require.Nil(t, err)
-			resp, ok := respMap[indexName]
-			require.True(t, ok)
-
-			assertHasAllExpected(t, indexJSON, resp)
 		})
 	}
 }
