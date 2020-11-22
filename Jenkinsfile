@@ -1,8 +1,7 @@
 /**
  * Jenkins build definition. This file defines the entire build pipeline.
  */
-import java.net.URLEncoder;
-import groovy.json.JsonBuilder
+import java.net.URLEncoder
 import jenkins.model.Jenkins
 
 // Choose a label from configuration here:
@@ -14,21 +13,21 @@ import jenkins.model.Jenkins
 // Technically, only the BPF jobs need this kind of worker node,
 // but all jobs currently use this node for simplicity and
 // to maintain better node utilization (minimize GCP dollars).
-WORKER_NODE='jenkins-worker-with-4.14-kernel'
-
+WORKER_NODE = 'jenkins-worker-with-4.14-kernel'
 
 /**
   * PhabConnector handles all communication with phabricator if the build
   * was triggered by a phabricator run.
   */
 class PhabConnector {
+
   def jenkinsCtx
   def URL
   def repository
   def apiToken
   def phid
 
-  def PhabConnector(jenkinsCtx, URL, repository, apiToken, phid) {
+  PhabConnector(jenkinsCtx, URL, repository, apiToken, phid) {
     this.jenkinsCtx = jenkinsCtx
     this.URL = URL
     this.repository = repository
@@ -43,7 +42,7 @@ class PhabConnector {
   }
 
   def sendBuildStatus(build_status) {
-    def url = this.harborMasterUrl("harbormaster.sendmessage")
+    def url = this.harborMasterUrl('harbormaster.sendmessage')
     def body = "type=${build_status}"
     jenkinsCtx.httpRequest consoleLogResponseBody: true,
       contentType: 'APPLICATION_FORM',
@@ -56,8 +55,8 @@ class PhabConnector {
 
   def addArtifactLink(linkURL, artifactKey, artifactName) {
     def encodedDisplayUrl = URLEncoder.encode(linkURL, 'UTF-8')
-    def url = this.harborMasterUrl("harbormaster.createartifact")
-    def body = ""
+    def url = this.harborMasterUrl('harbormaster.createartifact')
+    def body = ''
     body += "&buildTargetPHID=${phid}"
     body += "&artifactKey=${artifactKey}"
     body += '&artifactType=uri'
@@ -73,6 +72,7 @@ class PhabConnector {
       url: url,
       validResponseCodes: '200'
   }
+
 }
 
 /**
@@ -88,42 +88,37 @@ class PhabConnector {
 phabConnector = PhabConnector.newInstance(this, 'https://phab.corp.pixielabs.ai' /*url*/,
                                           'PLM' /*repository*/, params.API_TOKEN, params.PHID)
 
-BAZEL_SRC_FILES_PATH = "//..."
-// ASAN/TSAN only work for CC code. This will find all the CC code and exclude manual tags from the list.
-// TODO(zasgar): This query selects only cc binaries. After GO ASAN/TSAN works, we can update the ASAN/TSAN builds
-// to include all binaries.
-BAZEL_EXCEPT_CLAUSE='attr(\"tags\", \"manual\", //...)'
-BAZEL_CC_KIND_CLAUSE='kind(\"cc_(binary|test) rule\", //... -//third_party/... -//experimental/...)'
-BAZEL_CC_QUERY = "`bazel query '${BAZEL_CC_KIND_CLAUSE} except ${BAZEL_EXCEPT_CLAUSE}'`"
 SRC_STASH_NAME = 'src'
-DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image'
+TARGETS_STASH_NAME = 'targets'
+// TODO(zasgar); Make this pl-dev-infra/dev_image after adding skaffold container.
+DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image_with_extras'
 DEV_DOCKER_IMAGE_EXTRAS = 'pl-dev-infra/dev_image_with_extras'
 GCLOUD_DOCKER_IMAGE = 'google/cloud-sdk:287.0.0'
-GCS_STASH_BUCKET='px-jenkins-build-temp'
+GCS_STASH_BUCKET = 'px-jenkins-build-temp'
 
-K8S_PROD_CLUSTER='https://cloud-prod.internal.corp.pixielabs.ai'
-K8S_PROD_CREDS='cloud-staging'
+K8S_PROD_CLUSTER = 'https://cloud-prod.internal.corp.pixielabs.ai'
+K8S_PROD_CREDS = 'cloud-staging'
 
 // PXL Docs variables.
-PXL_DOCS_BINARY="//src/carnot/docstring:docstring_integration"
-PXL_DOCS_FILE='pxl-docs.json'
-PXL_DOCS_BUCKET='pl-docs'
-PXL_DOCS_GCS_PATH="gs://${PXL_DOCS_BUCKET}/${PXL_DOCS_FILE}"
+PXL_DOCS_BINARY = '//src/carnot/docstring:docstring_integration'
+PXL_DOCS_FILE = 'pxl-docs.json'
+PXL_DOCS_BUCKET = 'pl-docs'
+PXL_DOCS_GCS_PATH = "gs://${PXL_DOCS_BUCKET}/${PXL_DOCS_FILE}"
 
 // This variable store the dev docker image that we need to parse before running any docker steps.
 devDockerImageWithTag = ''
 devDockerImageExtrasWithTag = ''
 
-stashList = [];
+stashList = []
 
 // Flag controlling if coverage job is enabled.
-isMainCodeReviewRun =  (env.JOB_NAME == "pixielabs-main-phab-test")
-isMainRun =  (env.JOB_NAME == "pixielabs-main")
-isNightlyTestRegressionRun = (env.JOB_NAME == "pixielabs-main-nightly-test-regression")
-isCLIBuildRun =  env.JOB_NAME.startsWith("pixielabs-main-cli-release-build/")
-isVizierBuildRun = env.JOB_NAME.startsWith("pixielabs-main-vizier-release-build/")
-isCloudStagingBuildRun = env.JOB_NAME.startsWith("pixielabs-main-cloud-staging-build/")
-isCloudProdBuildRun = env.JOB_NAME.startsWith("pixielabs-main-cloud-release-build/")
+isMainCodeReviewRun =  (env.JOB_NAME == 'pixielabs-main-phab-test')
+isMainRun =  (env.JOB_NAME == 'pixielabs-main')
+isNightlyTestRegressionRun = (env.JOB_NAME == 'pixielabs-main-nightly-test-regression')
+isCLIBuildRun =  env.JOB_NAME.startsWith('pixielabs-main-cli-release-build/')
+isVizierBuildRun = env.JOB_NAME.startsWith('pixielabs-main-vizier-release-build/')
+isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixielabs-main-cloud-staging-build/')
+isCloudProdBuildRun = env.JOB_NAME.startsWith('pixielabs-main-cloud-release-build/')
 
 runCoverageJob = isMainRun
 
@@ -132,15 +127,26 @@ runCoverageJob = isMainRun
 //    https://pixie-labs.atlassian.net/browse/PL-1329
 // The benefit of TSAN on such runs is marginal anyways, because the tests
 // are mostly single-threaded.
-runBPFWithTSAN = false;
+runBPFWithTSAN = false
 
+def WithGCloud(Closure body) {
+  if (env.KUBERNETES_SERVICE_HOST) {
+    container('gcloud') {
+      body()
+    }
+  } else {
+    docker.image(GCLOUD_DOCKER_IMAGE).inside {
+      body()
+    }
+  }
+}
 
 def gsutilCopy(String src, String dest) {
-  docker.image(GCLOUD_DOCKER_IMAGE).inside() {
+    WithGCloud {
     sh """
-    gsutil cp ${src} ${dest}
+    gsutil -o GSUtil:parallel_composite_upload_threshold=150M cp ${src} ${dest}
     """
-  }
+    }
 }
 
 def stashOnGCS(String name, String pattern, String excludes = '') {
@@ -159,7 +165,7 @@ def stashOnGCS(String name, String pattern, String excludes = '') {
 
 def unstashFromGCS(String name) {
   def srcFile = "${name}.tar.gz"
-  sh "mkdir -p .archive"
+  sh 'mkdir -p .archive'
 
   gsutilCopy("gs://${GCS_STASH_BUCKET}/${env.BUILD_TAG}/${srcFile}", ".archive/${srcFile}")
 
@@ -172,17 +178,22 @@ def unstashFromGCS(String name) {
 def shFileExists(String f) {
   return sh(
     script: "test -f ${f}",
-    returnStatus: true) == 0;
+    returnStatus: true) == 0
 }
 
+def shFileEmpty(String f) {
+  return sh(
+    script: "test -s ${f}",
+    returnStatus: true) != 0
+}
 /**
   * @brief Add build info to harbormaster and badge to Jenkins.
   */
 def addBuildInfo = {
   phabConnector.addArtifactLink(env.RUN_DISPLAY_URL, 'jenkins.uri', 'Jenkins')
 
-  def text = ""
-  def link = ""
+  def text = ''
+  def link = ''
   // Either a revision of a commit to main.
   if (params.REVISION) {
     def revisionId = "D${REVISION}"
@@ -193,10 +204,10 @@ def addBuildInfo = {
     link = "${phabConnector.URL}/r${phabConnector.repository}${env.PHAB_COMMIT}"
   }
   addShortText(text: text,
-    background: "transparent",
+    background: 'transparent',
     border: 0,
-    borderColor: "transparent",
-    color: "#1FBAD6",
+    borderColor: 'transparent',
+    color: '#1FBAD6',
     link: link)
 }
 
@@ -205,7 +216,7 @@ def addBuildInfo = {
  *  This could either be code review build or main commit.
  */
 def isPhabricatorTriggeredBuild() {
-  return params.PHID != null && params.PHID != ""
+  return params.PHID != null && params.PHID != ''
 }
 
 def codeReviewPreBuild = {
@@ -214,7 +225,7 @@ def codeReviewPreBuild = {
 }
 
 def codeReviewPostBuild = {
-  if (currentBuild.result == "SUCCESS") {
+  if (currentBuild.result == 'SUCCESS' || currentBuild.result == null) {
     phabConnector.sendBuildStatus('pass')
   } else {
     phabConnector.sendBuildStatus('fail')
@@ -222,15 +233,19 @@ def codeReviewPostBuild = {
   phabConnector.addArtifactLink(env.BUILD_URL + '/ui-storybook', 'storybook.uri', 'Storybook')
 
   phabConnector.addArtifactLink(env.BUILD_URL + '/doxygen', 'doxygen.uri', 'Doxygen')
-
 }
 
 def writeBazelRCFile() {
   sh 'cp ci/jenkins.bazelrc jenkins.bazelrc'
+  if (!isMainCodeReviewRun) {
+    sh '''
+    echo "build --remote_upload_local_results=false" >> jenkins.bazelrc
+    '''
+  }
 }
 
 def createBazelStash(String stashName) {
-  if (!isMainCodeReviewRun || shFileExists("bazel-testlogs-archive")) {
+  if (!isMainCodeReviewRun || shFileExists('bazel-testlogs-archive')) {
     sh 'rm -rf bazel-testlogs-archive'
     sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
     stashOnGCS(stashName, 'bazel-testlogs-archive/**')
@@ -238,19 +253,56 @@ def createBazelStash(String stashName) {
   }
 }
 
-/**
-  * This function checks out the source code and wraps the builds steps.
-  */
-def WithSourceCode(String stashName = SRC_STASH_NAME, Closure body) {
+def RetryOnK8sDownscale(Closure body, int times=5) {
+  for (int retryCount = 0; retryCount < times; retryCount++) {
+    try {
+      body()
+      return
+    } catch (io.fabric8.kubernetes.client.KubernetesClientException e) {
+      println("Caught ${e}, assuming K8s cluster downscaled, will retry.")
+      // Sleep an extra 5 seconds for each retry attempt.
+      def interval = (retryCount + 1) * 5
+      sleep interval
+      continue
+    } catch (Exception e) {
+      println("Unhandled ${e}, assuming fatal error.")
+      throw e
+    }
+  }
+}
+
+def WithSourceCodeK8s(String suffix="${UUID.randomUUID()}", Closure body) {
   warnError('Script failed') {
-    timeout(time: 60, unit: 'MINUTES') {
-      node(WORKER_NODE) {
-        sh 'hostname'
-        deleteDir()
-        unstashFromGCS(stashName)
+    DefaultBuildPodTemplate(suffix) {
+      timeout(time: 60, unit: 'MINUTES') {
+        container('gcloud') {
+          unstashFromGCS(SRC_STASH_NAME)
+        }
         body()
       }
     }
+  }
+}
+
+def WithSourceCodeAndTargetsK8s(String suffix="${UUID.randomUUID()}", Closure body) {
+  WithSourceCodeK8s(suffix) {
+    container('gcloud') {
+      unstashFromGCS(TARGETS_STASH_NAME)
+    }
+    body()
+  }
+}
+
+def WithSourceCodeDocker(String stashName = SRC_STASH_NAME, Closure body) {
+  warnError('Script failed') {
+    WithSourceCodeFatalError(stashName, body)
+  }
+}
+
+def WithSourceCodeAndTargetsDocker(String stashName = SRC_STASH_NAME, Closure body) {
+  WithSourceCodeFatalError(stashName) {
+    unstashFromGCS(TARGETS_STASH_NAME)
+    body()
   }
 }
 
@@ -258,11 +310,13 @@ def WithSourceCode(String stashName = SRC_STASH_NAME, Closure body) {
   * This function checks out the source code and wraps the builds steps.
   */
 def WithSourceCodeFatalError(String stashName = SRC_STASH_NAME, Closure body) {
-  node(WORKER_NODE) {
-    sh 'hostname'
-    deleteDir()
-    unstashFromGCS(stashName)
-    body()
+  timeout(time: 60, unit: 'MINUTES') {
+    node(WORKER_NODE) {
+      sh 'hostname'
+      deleteDir()
+      unstashFromGCS(stashName)
+      body()
+    }
   }
 }
 
@@ -284,50 +338,24 @@ def dockerStep(String dockerConfig = '', String dockerImage = devDockerImageWith
 }
 
 /**
-  * Runs bazel and creates a stash of the test output
-  */
-def bazelCmd(String bazelCmd, String name) {
-  warnError('Bazel command failed') {
-    sh "${bazelCmd}"
-  }
-  createBazelStash("${name}-testlogs")
-}
-
-
-def bazelCCCICmd(String name, String targetConfig='clang', String targetCompilationMode='opt') {
-    bazelCICmd(name, targetConfig, targetCompilationMode, BAZEL_CC_KIND_CLAUSE, '')
-}
-
-/**
   * Runs bazel CI mode for main/phab builds.
   *
   * The targetFilter can either be a bazel filter clause, or bazel path (//..., etc.), but not a list of paths.
   */
 def bazelCICmd(String name, String targetConfig='clang', String targetCompilationMode='opt',
-               String targetFilter=BAZEL_SRC_FILES_PATH, String bazelRunExtraArgs='') {
+               String targetsSuffix, String bazelRunExtraArgs='') {
   warnError('Bazel command failed') {
-    if (isMainCodeReviewRun) {
-      def targetPattern = targetFilter
-      sh """
-        BAZEL_RUN_EXTRA_ARGS='${bazelRunExtraArgs}' \
-        TARGET_PATTERN='${targetPattern}' CONFIG=${targetConfig} \
-        COMPILATION_MODE=${targetCompilationMode} ./ci/bazel_ci.sh
-      """
-    } else {
-      def targets = targetFilter
-      // The CI script needs a query, but we can pass that into bazel directly.
-      // This translates a non-path query into bazel query that returns paths.
-      if (!targets.startsWith('//')) {
-        targets = "`bazel query '${targets} except ${BAZEL_EXCEPT_CLAUSE}'`"
-      }
-      sh """
-        bazel test --config=${targetConfig} --compilation_mode=${targetCompilationMode} \
-        ${bazelRunExtraArgs} ${targets}
-      """
-    }
+    sh """
+      bazel build ${bazelRunExtraArgs} -c ${targetCompilationMode} --config=${targetConfig} \
+        --target_pattern_file bazel_buildables_${targetsSuffix}
+    """
+    sh """
+      bazel test  ${bazelRunExtraArgs} -c ${targetCompilationMode} --config=${targetConfig}  \
+        --target_pattern_file bazel_tests_${targetsSuffix}
+    """
   }
   createBazelStash("${name}-testlogs")
-}
+               }
 
 def processBazelLogs(String logBase) {
   step([
@@ -349,7 +377,7 @@ def processBazelLogs(String logBase) {
 }
 
 def processAllExtractedBazelLogs() {
-  stashList.each({stashName ->
+  stashList.each({ stashName ->
     if (stashName.endsWith('testlogs') && !stashName.contains('-ui-')) {
       processBazelLogs(stashName)
     }
@@ -369,7 +397,7 @@ def archiveUILogs() {
       [
         $class: 'JUnitType',
         skipNoTestFiles: true,
-        pattern: "build-ui-testlogs/junit.xml"
+        pattern: 'build-ui-testlogs/junit.xml'
       ]
     ]
   ])
@@ -400,9 +428,9 @@ def sendSlackNotification() {
     slackSend color: '#FF0000', message: "FAILED: Build - ${env.BUILD_TAG} -- URL: ${env.BUILD_URL}."
   }
   else if (currentBuild.getPreviousBuild() &&
-            currentBuild.getPreviousBuild().getResult().toString() != "SUCCESS") {
+            currentBuild.getPreviousBuild().getResult().toString() != 'SUCCESS') {
     slackSend color: '#00FF00', message: "PASSED(Recovered): Build - ${env.BUILD_TAG} -- URL: ${env.BUILD_URL}."
-  }
+            }
 }
 
 def sendCloudReleaseSlackNotification(String profile) {
@@ -425,7 +453,6 @@ def postBuildActions = {
   }
 }
 
-
 def InitializeRepoState(String stashName = SRC_STASH_NAME) {
   sh './ci/save_version_info.sh'
   writeBazelRCFile()
@@ -438,67 +465,92 @@ def InitializeRepoState(String stashName = SRC_STASH_NAME) {
   stashOnGCS(SRC_STASH_NAME, '.')
 }
 
+def DefaultGCloudPodTemplate(String suffix, Closure body) {
+  RetryOnK8sDownscale {
+    def label = "worker-${env.BUILD_TAG}-${suffix}"
+    podTemplate(label: label, cloud: 'devinfra-cluster', containers: [
+      containerTemplate(name: 'gcloud', image: GCLOUD_DOCKER_IMAGE, command: 'cat', ttyEnabled: true)]) {
+      node(label) {
+        body()
+      }
+      }
+  }
+}
+
+def DefaultBuildPodTemplate(String suffix, Closure body) {
+  RetryOnK8sDownscale {
+    def label = "worker-${env.BUILD_TAG}-${suffix}"
+    podTemplate(label: label, cloud: 'devinfra-cluster', containers: [
+      containerTemplate(name: 'pxbuild', image: 'gcr.io/' + devDockerImageWithTag,
+                        command: 'cat', ttyEnabled: true,
+                        resourceRequestMemory: '20480Mi',
+                        resourceRequestCpu: '14500m',
+      ),
+      containerTemplate(name: 'gcloud', image: GCLOUD_DOCKER_IMAGE, command: 'cat', ttyEnabled: true),
+      ],
+      yaml:'''
+spec:
+  dnsPolicy: ClusterFirstWithHostNet
+  containers:
+    - name: pxbuild
+      securityContext:
+        capabilities:
+          add:
+            - SYS_PTRACE
+''',
+      yamlMergeStrategy: merge(),
+      hostNetwork: true,
+      volumes: [
+        hostPathVolume(mountPath: '/var/run/docker.sock', hostPath: '/var/run/docker.sock'),
+        hostPathVolume(mountPath: '/var/lib/docker', hostPath: '/var/lib/docker')
+      ]) {
+      node(label) {
+        body()
+      }
+      }
+  }
+}
+
 /**
  * Checkout the source code, record git info and stash sources.
  */
 def checkoutAndInitialize() {
-  deleteDir()
-  checkout scm
-  InitializeRepoState()
+  DefaultGCloudPodTemplate('init') {
+    container('gcloud') {
+      deleteDir()
+      checkout scm
+      InitializeRepoState()
+    }
+  }
+}
+
+def enableForCC(Closure body) {
+  if (shFileExists('bazel_cc_changed')) {
+    body()
+  }
+}
+
+def enableForTargets(String targetName, Closure body) {
+  if (!shFileEmpty("bazel_buildables_${targetName}") || !shFileEmpty("bazel_tests_${targetName}")) {
+    body()
+  }
 }
 
 /*****************************************************************************
  * BUILDERS: This sections defines all the build steps that will happen in parallel.
  *****************************************************************************/
+def preBuild = [:]
 def builders = [:]
 
-builders['Build & Test (dbg)'] = {
-  WithSourceCode {
-    dockerStep {
-      bazelCCCICmd('build-dbg', 'clang', 'dbg')
-    }
-  }
-}
-
-builders['Clang-tidy'] = {
-  WithSourceCode {
-    dockerStep {
-      def stashName = 'build-clang-tidy-logs'
-      if (isMainRun) {
-        // For main builds we run clang tidy on changes files in the past 10 revisions,
-        // this gives us a good balance of speed and coverage.
-        sh 'scripts/run_clang_tidy.sh -f diff_head_cc'
-      } else {
-        // For code review builds only run on diff.
-        sh 'scripts/run_clang_tidy.sh -f diff_origin_main_cc'
-      }
-      stashOnGCS(stashName, 'clang_tidy.log')
-      stashList.add(stashName)
-    }
-  }
-}
-
-builders['Build & Test (sanitizers)'] = {
-  WithSourceCode {
-    dockerStep('--cap-add=SYS_PTRACE', {
-      bazelCCCICmd('build-asan', 'asan', 'dbg')
-      bazelCCCICmd('build-tsan', 'tsan', 'dbg')
-    })
-  }
-}
-
-builders['Build & Test All (opt + UI)'] = {
-  WithSourceCode {
-    dockerStep {
+def buildAndTestOptWithUI = {
+  WithSourceCodeAndTargetsK8s('build-opt') {
+    container('pxbuild') {
       withCredentials([
         file(
           credentialsId: 'pl-dev-infra-jenkins-sa-json',
           variable: 'GOOGLE_APPLICATION_CREDENTIALS')
       ]) {
-        // Intercept bazel failure to make sure we continue to archive files.
-        warnError('Bazel test failed') {
-          bazelCICmd('build-opt', 'clang', 'opt', BAZEL_SRC_FILES_PATH, '--action_env=GOOGLE_APPLICATION_CREDENTIALS')
-        }
+        bazelCICmd('build-opt', 'clang', 'opt', 'clang_opt', '--action_env=GOOGLE_APPLICATION_CREDENTIALS')
 
         def uiTestFailures = 'bazel-out/k8-opt/testlogs/src/ui/ui-tests/test.log'
         if (shFileExists(uiTestFailures)) {
@@ -527,24 +579,64 @@ builders['Build & Test All (opt + UI)'] = {
   }
 }
 
-builders['Build & Test (gcc:opt)'] = {
-  WithSourceCode {
-    dockerStep {
-      bazelCCCICmd('build-gcc-opt', 'gcc', 'opt')
+def buildClangTidy = {
+  WithSourceCodeK8s('clang-tidy') {
+    container('pxbuild') {
+      def stashName = 'build-clang-tidy-logs'
+      if (isMainRun) {
+        // For main builds we run clang tidy on changes files in the past 10 revisions,
+        // this gives us a good balance of speed and coverage.
+        sh 'scripts/run_clang_tidy.sh -f diff_head_cc'
+      } else {
+        // For code review builds only run on diff.
+        sh 'scripts/run_clang_tidy.sh -f diff_origin_main_cc'
+      }
+      stashOnGCS(stashName, 'clang_tidy.log')
+      stashList.add(stashName)
+    }
+  }
+}
+
+def buildDbg = {
+  WithSourceCodeAndTargetsK8s('build-dbg') {
+    container('pxbuild') {
+      bazelCICmd('build-dbg', 'clang', 'dbg', 'clang_dbg', '--action_env=GOOGLE_APPLICATION_CREDENTIALS')
+    }
+  }
+}
+
+def buildASAN = {
+  WithSourceCodeAndTargetsK8s('build-san') {
+    container('pxbuild') {
+      bazelCICmd('build-asan', 'asan', 'dbg', 'sanitizer')
+    }
+  }
+}
+
+def buildTSAN = {
+  WithSourceCodeAndTargetsK8s('build-san') {
+    container('pxbuild') {
+      bazelCICmd('build-tsan', 'tsan', 'dbg', 'sanitizer')
+    }
+  }
+}
+
+def buildGCC = {
+  WithSourceCodeAndTargetsK8s('build-gcc-opt') {
+    container('pxbuild') {
+      bazelCICmd('build-gcc-opt', 'gcc', 'opt', 'gcc_opt')
     }
   }
 }
 
 def dockerArgsForBPFTest = '--privileged --pid=host -v /:/host -v /sys:/sys --env PL_HOST_PATH=/host'
-
-builders['Build & Test (bpf tests - opt)'] = {
-  WithSourceCode {
+buildAndTestBPFOpt = {
+  WithSourceCodeAndTargetsDocker {
     dockerStep(dockerArgsForBPFTest, {
-      bazelCCCICmd('build-bpf', 'bpf', 'opt')
+      bazelCICmd('build-bpf', 'bpf', 'opt', 'bpf')
     })
   }
 }
-
 
 // TODO(oazizi): PP-2276 Fix the BPF asan tests.
 // builders['Build & Test (bpf tests - asan)'] = {
@@ -558,10 +650,59 @@ builders['Build & Test (bpf tests - opt)'] = {
 // Disabling TSAN on bpf runs, but leaving code here for future reference.
 if (runBPFWithTSAN) {
   builders['Build & Test (bpf tests - tsan)'] = {
-    WithSourceCode {
+    WithSourceCodeAndTargetsDocker {
       dockerStep(dockerArgsForBPFTest, {
-         bazelCCCICmd('build-bpf-tsan', 'bpf_tsan', 'dbg')
+        bazelCICmd('build-bpf', 'bpf', 'bpf_tsan', 'dbg', 'bpf')
       })
+    }
+  }
+}
+
+def generateTestTargets = {
+  enableForTargets('clang_opt') {
+      builders['Build & Test (clang:opt + UI)'] = buildAndTestOptWithUI
+  }
+
+  enableForCC {
+    builders['Clang-Tidy'] = buildClangTidy
+
+    enableForTargets('clang_dbg') {
+      builders['Build & Test (dbg)'] = buildDbg
+    }
+
+    enableForTargets('sanitizer') {
+      builders['Build & Test (asan)'] = buildASAN
+    }
+
+    enableForTargets('sanitizer') {
+      builders['Build & Test (tsan)'] = buildTSAN
+    }
+    enableForTargets('gcc_opt') {
+      builders['Build & Test (gcc:opt)'] = buildGCC
+    }
+
+  // enableForTargets('bpf') {
+  //   builders['Build & Test (bpf tests - opt)'] = buildAndTestBPFOpt
+  // }
+  }
+}
+
+preBuild['Process Dependencies'] = {
+  WithSourceCodeK8s('process-deps') {
+    container('pxbuild') {
+      if (isMainRun || isNightlyTestRegressionRun) {
+        sh '''
+        ./ci/bazel_build_deps.sh -a
+        wc -l bazel_*
+        '''
+      } else {
+        sh '''
+        ./ci/bazel_build_deps.sh
+        wc -l bazel_*
+        '''
+      }
+      stashOnGCS(TARGETS_STASH_NAME, 'bazel_*')
+      generateTestTargets()
     }
   }
 }
@@ -569,191 +710,205 @@ if (runBPFWithTSAN) {
 // Only run coverage on main test.
 if (runCoverageJob) {
   builders['Build & Test (gcc:coverage)'] = {
-    WithSourceCode {
-      dockerStep {
-        sh "scripts/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b main -c `cat GIT_COMMIT`"
+    WithSourceCodeAndTargetsK8s('coverage') {
+      container('pxbuild') {
+        warnError('Bazel command failed') {
+          sh "scripts/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b main -c `cat GIT_COMMIT`"
+        }
         createBazelStash('build-gcc-coverage-testlogs')
       }
     }
   }
 }
 
-/********************************************
- * For now restrict the ASAN and TSAN builds to carnot. There is a bug in go(or llvm) preventing linking:
- * https://github.com/golang/go/issues/27110
- * TODO(zasgar): Fix after above is resolved.
- ********************************************/
-
 builders['Lint & Docs'] = {
-  WithSourceCode {
-    dockerStep {
-      sh 'arc lint'
+  WithSourceCodeAndTargetsK8s('lint') {
+    container('pxbuild') {
+      sh 'arc lint --trace'
     }
 
-    def stashName = 'doxygen-docs'
-    dockerStep {
-      sh 'doxygen'
+    enableForCC {
+      def stashName = 'doxygen-docs'
+      container('pxbuild') {
+        sh 'doxygen'
+      }
+      container('gcloud') {
+        stashOnGCS(stashName, 'docs/html')
+        stashList.add(stashName)
+      }
     }
-    stashOnGCS(stashName, 'docs/html')
-    stashList.add(stashName)
   }
 }
-
 
 /*****************************************************************************
  * END BUILDERS
  *****************************************************************************/
 
+def archiveBuildArtifacts = {
+  DefaultGCloudPodTemplate('archive') {
+    container('gcloud') {
+      // Unstash the build artifacts.
+      stashList.each({ stashName ->
+        dir(stashName) {
+          unstashFromGCS(stashName)
+        }
+      })
+
+      // Remove the tests attempts directory because it
+      // causes the test publisher to mark as failed.
+      sh 'find . -name test_attempts -type d -exec rm -rf {} +'
+
+      publishStoryBook()
+      publishDoxygenDocs()
+
+      // Archive clang-tidy logs.
+      //archiveArtifacts artifacts: 'build-clang-tidy-logs/**', fingerprint: true
+
+      // Actually process the bazel logs to look for test failures.
+      processAllExtractedBazelLogs()
+
+      archiveUILogs()
+    }
+  }
+}
 
 /********************************************
  * The build script starts here.
  ********************************************/
 def buildScriptForCommits = {
-  if (isMainRun) {
-    // If there is a later build queued up, we want to stop the current build so
-    // we can execute the later build instead.
-    def q = Jenkins.instance.queue
-    abortBuild = false
-    q.items.each {
-      if (it.task.name == "pixielabs-main") {
-        abortBuild = true
+  DefaultGCloudPodTemplate('root') {
+    if (isMainRun) {
+      // If there is a later build queued up, we want to stop the current build so
+      // we can execute the later build instead.
+      def q = Jenkins.instance.queue
+      abortBuild = false
+      q.items.each {
+        if (it.task.name == 'pixielabs-main') {
+          abortBuild = true
+        }
+      }
+
+      if (abortBuild) {
+        echo 'Stopping current build because a later build is already enqueued'
+        return
       }
     }
 
-    if (abortBuild) {
-      echo "Stopping current build because a later build is already enqueued"
-      return
+    if (isPhabricatorTriggeredBuild()) {
+      codeReviewPreBuild()
     }
-  }
 
-  if (isPhabricatorTriggeredBuild()) {
-    codeReviewPreBuild()
-  }
-
-  node(WORKER_NODE) {
-    currentBuild.result = 'SUCCESS'
-    deleteDir()
     try {
       stage('Checkout code') {
         checkoutAndInitialize()
+      }
+      stage('Pre-Build') {
+        parallel(preBuild)
       }
       stage('Build Steps') {
         parallel(builders)
       }
-
       stage('Archive') {
-        deleteDir()
-         // Unstash the build artifacts.
-        stashList.each({stashName ->
-          dir(stashName) {
-            unstashFromGCS(stashName)
-          }
-        })
-
-        // Remove the tests attempts directory because it
-        // causes the test publisher to mark as failed.
-        sh 'find . -name test_attempts -type d -exec rm -rf {} +'
-
-        publishStoryBook()
-        publishDoxygenDocs()
-
-        // Archive clang-tidy logs.
-        archiveArtifacts artifacts: 'build-clang-tidy-logs/**', fingerprint: true
-
-        // Actually process the bazel logs to look for test failures.
-        processAllExtractedBazelLogs()
-
-        archiveUILogs()
+        archiveBuildArtifacts()
       }
     }
-    catch(err) {
+    catch (err) {
       currentBuild.result = 'FAILURE'
       echo "Exception thrown:\n ${err}"
-      echo "Stacktrace:"
+      echo 'Stacktrace:'
       err.printStackTrace()
     }
+
     postBuildActions()
   }
 }
 
+  /*****************************************************************************
+  * REGRESSION_BUILDERS: This sections defines all the test regressions steps
+  * that will happen in parallel.
+  *****************************************************************************/
+  def regressionBuilders = [:]
 
-/*****************************************************************************
- * REGRESSION_BUILDERS: This sections defines all the test regressions steps
- * that will happen in parallel.
- *****************************************************************************/
-def regressionBuilders = [:]
+  TEST_ITERATIONS = 10
 
-TEST_ITERATIONS=10
-
-regressionBuilders['Test (opt)'] = {
-  WithSourceCode {
-    dockerStep {
-      bazelCmd(
-        "bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH} --runs_per_test ${TEST_ITERATIONS}",
-        'build-opt')
+  regressionBuilders['Test (opt)'] = {
+    WithSourceCodeAndTargetsK8s {
+      container('pxbuild') {
+        sh """
+        bazel test -c opt  --runs_per_test ${TEST_ITERATIONS} \
+          --target_pattern_file bazel_tests_clang_opt
+        """
+        createBazelStash('build-opt-testlogs')
+      }
     }
   }
-}
 
-regressionBuilders['Test (ASAN)'] = {
-  WithSourceCode {
-    dockerStep('--cap-add=SYS_PTRACE', {
-      bazelCmd("bazel test --config=asan ${BAZEL_CC_QUERY} --runs_per_test ${TEST_ITERATIONS}", 'build-asan')
-    })
+  regressionBuilders['Test (ASAN)'] = {
+    WithSourceCodeAndTargetsK8s {
+      container('pxbuild') {
+        sh """
+        bazel test --config asan  --runs_per_test ${TEST_ITERATIONS} \
+          --target_pattern_file bazel_tests_sanitizer
+        """
+        createBazelStash('build-asan-testlogs')
+      }
+    }
   }
-}
 
-regressionBuilders['Test (TSAN)'] = {
-  WithSourceCode {
-    dockerStep('--cap-add=SYS_PTRACE', {
-      bazelCmd("bazel test --config=tsan ${BAZEL_CC_QUERY} --runs_per_test ${TEST_ITERATIONS}", 'build-tsan')
-    })
+  regressionBuilders['Test (TSAN)'] = {
+    WithSourceCodeAndTargetsK8s {
+      container('pxbuild') {
+        sh """
+        bazel test --config tsan  --runs_per_test ${TEST_ITERATIONS} \
+          --target_pattern_file bazel_tests_sanitizer
+        """
+        createBazelStash('build-tsan-testlogs')
+      }
+    }
   }
-}
 
-/*****************************************************************************
- * END REGRESSION_BUILDERS
- *****************************************************************************/
+  /*****************************************************************************
+  * END REGRESSION_BUILDERS
+  *****************************************************************************/
 
 def buildScriptForNightlyTestRegression = {
-  node(WORKER_NODE) {
-    currentBuild.result = 'SUCCESS'
-    deleteDir()
-    try {
-      stage('Checkout code') {
-        checkoutAndInitialize()
-      }
-      stage('Testing') {
-        parallel(regressionBuilders)
-      }
-      stage('Archive') {
-        // Unstash and save the builds logs.
-        stashList.each({stashName ->
-          dir(stashName) {
-            unstashFromGCS(stashName)
-          }
-          archiveBazelLogs(stashName);
-        })
-
-        // Actually process the bazel logs to look for test failures.
-        processAllExtractedBazelLogs()
-      }
+  try {
+    stage('Checkout code') {
+      checkoutAndInitialize()
     }
-    catch(err) {
-      currentBuild.result = 'FAILURE'
-      echo "Exception thrown:\n ${err}"
-      echo "Stacktrace:"
-      err.printStackTrace()
+    stage('Pre-Build') {
+      parallel(preBuild)
     }
+    stage('Testing') {
+      parallel(regressionBuilders)
+    }
+    stage('Archive') {
+      // Unstash and save the builds logs.
+      stashList.each({ stashName ->
+        dir(stashName) {
+          unstashFromGCS(stashName)
+        }
+        archiveBazelLogs(stashName)
+      })
 
-    postBuildActions()
+      // Actually process the bazel logs to look for test failures.
+      processAllExtractedBazelLogs()
+    }
   }
+  catch (err) {
+    currentBuild.result = 'FAILURE'
+    echo "Exception thrown:\n ${err}"
+    echo 'Stacktrace:'
+    err.printStackTrace()
+  }
+
+  postBuildActions()
 }
 
 def updateVersionsDB(String credsName, String clusterURL, String namespace) {
-  WithSourceCodeFatalError {
-    dockerStep('', devDockerImageExtrasWithTag) {
-      unstash "versions"
+  WithSourceCodeK8s {
+    container('pxbuild') {
+      unstash 'versions'
       withKubeConfig([credentialsId: credsName,
                     serverUrl: clusterURL, namespace: namespace]) {
         sh './ci/update_artifact_db.sh'
@@ -763,9 +918,7 @@ def updateVersionsDB(String credsName, String clusterURL, String namespace) {
 }
 
 def  buildScriptForCLIRelease = {
-  node(WORKER_NODE) {
-    currentBuild.result = 'SUCCESS'
-    deleteDir()
+  DefaultGCloudPodTemplate('root') {
     withCredentials([
       string(
         credentialsId: 'docker_access_token',
@@ -776,23 +929,23 @@ def  buildScriptForCLIRelease = {
           checkoutAndInitialize()
         }
         stage('Build & Push Artifacts') {
-          WithSourceCodeFatalError {
-            dockerStep('', devDockerImageExtrasWithTag) {
+          WithSourceCodeK8s {
+            container('pxbuild') {
               sh 'docker login -u pixielabs -p $DOCKER_TOKEN'
               sh './ci/cli_build_release.sh'
               stash name: 'ci_scripts_signing', includes: 'ci/**'
-              stash name: "versions", includes: "src/utils/artifacts/artifact_db_updater/VERSIONS.json"
+              stash name: 'versions', includes: 'src/utils/artifacts/artifact_db_updater/VERSIONS.json'
             }
           }
         }
         stage('Sign Mac Binary') {
           node('macos') {
             deleteDir()
-            unstash "ci_scripts_signing"
+            unstash 'ci_scripts_signing'
             withCredentials([string(credentialsId: 'pl_ac_passwd', variable: 'AC_PASSWD'),
               string(credentialsId: 'jenkins_keychain_pw', variable: 'JENKINSKEY')]) {
               sh './ci/cli_sign.sh'
-            }
+              }
             stash name: 'cli_darwin_amd64_signed', includes: 'cli_darwin_amd64*'
           }
         }
@@ -807,16 +960,16 @@ def  buildScriptForCLIRelease = {
           }
         }
         stage('Update versions database (staging)') {
-          updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, "plc-staging")
+          updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc-staging')
         }
         stage('Update versions database (prod)') {
-          updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, "plc")
+          updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc')
         }
       }
-      catch(err) {
+      catch (err) {
         currentBuild.result = 'FAILURE'
         echo "Exception thrown:\n ${err}"
-        echo "Stacktrace:"
+        echo 'Stacktrace:'
         err.printStackTrace()
       }
     }
@@ -826,8 +979,8 @@ def  buildScriptForCLIRelease = {
 }
 
 def updatePxlDocs() {
-  WithSourceCode {
-    dockerStep('', devDockerImageExtrasWithTag) {
+  WithSourceCodeK8s {
+    container('pxbuild') {
       def pxlDocsOut = "/tmp/${PXL_DOCS_FILE}"
       sh "bazel run ${PXL_DOCS_BINARY} ${pxlDocsOut}"
       sh "gsutil cp ${pxlDocsOut} ${PXL_DOCS_GCS_PATH}"
@@ -838,60 +991,55 @@ def updatePxlDocs() {
 def vizierReleaseBuilders = [:]
 
 vizierReleaseBuilders['Build & Push Artifacts'] = {
-  WithSourceCodeFatalError {
-    dockerStep('', devDockerImageExtrasWithTag) {
+  WithSourceCodeK8s {
+    container('pxbuild') {
       sh './ci/vizier_build_release.sh'
-      stash name: "versions", includes: "src/utils/artifacts/artifact_db_updater/VERSIONS.json"
+      stash name: 'versions', includes: 'src/utils/artifacts/artifact_db_updater/VERSIONS.json'
     }
   }
 }
 
-vizierReleaseBuilders["Build & Export Docs"] = {
+vizierReleaseBuilders['Build & Export Docs'] = {
   updatePxlDocs()
 }
 
 def buildScriptForVizierRelease = {
-  node(WORKER_NODE) {
-    currentBuild.result = 'SUCCESS'
-    deleteDir()
-    try {
-      stage('Checkout code') {
-        checkoutAndInitialize()
-      }
-      stage('Build & Push Artifacts') {
-        parallel(vizierReleaseBuilders)
-      }
-      stage('Update versions database (staging)') {
-        updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, "plc-staging")
-      }
-      stage('Update versions database (prod)') {
-        updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, "plc")
-      }
+  try {
+    stage('Checkout code') {
+      checkoutAndInitialize()
     }
-    catch(err) {
-      currentBuild.result = 'FAILURE'
-      echo "Exception thrown:\n ${err}"
-      echo "Stacktrace:"
-      err.printStackTrace()
+    stage('Build & Push Artifacts') {
+      parallel(vizierReleaseBuilders)
     }
-
-    postBuildActions()
+    stage('Update versions database (staging)') {
+      updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc-staging')
+    }
+    stage('Update versions database (prod)') {
+      updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc')
+    }
   }
+  catch (err) {
+    currentBuild.result = 'FAILURE'
+    echo "Exception thrown:\n ${err}"
+    echo 'Stacktrace:'
+    err.printStackTrace()
+  }
+
+  postBuildActions()
 }
 
-
 def deployWithSkaffold(String profile, String namespace, String skaffoldFile) {
-  WithSourceCodeFatalError {
-    dockerStep('', devDockerImageExtrasWithTag) {
+  WithSourceCodeK8s {
+    container('pxbuild') {
       withKubeConfig([credentialsId: K8S_PROD_CREDS,
                     serverUrl: K8S_PROD_CLUSTER, namespace: namespace]) {
         sh "skaffold build -q -o '{{json .}}' -p ${profile} -f ${skaffoldFile} --cache-artifacts=false > manifest.json"
         sh "skaffold deploy -p ${profile} --build-artifacts=manifest.json -f ${skaffoldFile}"
-        sh "bazel build //src/utils/pixie_cli:px"
-        sh "mv bazel-bin/src/utils/pixie_cli/px_/px /usr/local/bin/"
+        sh 'bazel build //src/utils/pixie_cli:px'
+        sh 'mv bazel-bin/src/utils/pixie_cli/px_/px /usr/local/bin/'
         dir ('src/pxl_scripts') {
-          if (profile == "prod") {
-            sh "make update_bundle"
+          if (profile == 'prod') {
+            sh 'make update_bundle'
           }
         }
       }
@@ -900,56 +1048,48 @@ def deployWithSkaffold(String profile, String namespace, String skaffoldFile) {
 }
 
 def buildScriptForCloudStagingRelease = {
-  node(WORKER_NODE) {
-    currentBuild.result = 'SUCCESS'
-    deleteDir()
-    try {
-      stage('Checkout code') {
-        checkoutAndInitialize()
-      }
-      stage('Build & Push Artifacts') {
-        deployWithSkaffold('staging', 'plc-staging', 'skaffold/skaffold_cloud.yaml')
-      }
+  try {
+    stage('Checkout code') {
+      checkoutAndInitialize()
     }
-    catch(err) {
-      currentBuild.result = 'FAILURE'
-      echo "Exception thrown:\n ${err}"
-      echo "Stacktrace:"
-      err.printStackTrace()
+    stage('Build & Push Artifacts') {
+      deployWithSkaffold('staging', 'plc-staging', 'skaffold/skaffold_cloud.yaml')
     }
-    sendCloudReleaseSlackNotification("Staging")
-    postBuildActions()
   }
+  catch (err) {
+    currentBuild.result = 'FAILURE'
+    echo "Exception thrown:\n ${err}"
+    echo 'Stacktrace:'
+    err.printStackTrace()
+  }
+  sendCloudReleaseSlackNotification('Staging')
+  postBuildActions()
 }
 
 def buildScriptForCloudProdRelease = {
-  node(WORKER_NODE) {
-    currentBuild.result = 'SUCCESS'
-    deleteDir()
-    try {
-      stage('Checkout code') {
-        checkoutAndInitialize()
-      }
-      stage('Build & Push Artifacts') {
-        deployWithSkaffold('prod', 'plc', 'skaffold/skaffold_cloud.yaml')
-      }
+  try {
+    stage('Checkout code') {
+      checkoutAndInitialize()
     }
-    catch(err) {
-      currentBuild.result = 'FAILURE'
-      echo "Exception thrown:\n ${err}"
-      echo "Stacktrace:"
-      err.printStackTrace()
+    stage('Build & Push Artifacts') {
+      deployWithSkaffold('prod', 'plc', 'skaffold/skaffold_cloud.yaml')
     }
-    sendCloudReleaseSlackNotification("Prod")
-    postBuildActions()
   }
+  catch (err) {
+    currentBuild.result = 'FAILURE'
+    echo "Exception thrown:\n ${err}"
+    echo 'Stacktrace:'
+    err.printStackTrace()
+  }
+  sendCloudReleaseSlackNotification('Prod')
+  postBuildActions()
 }
 
-if(isNightlyTestRegressionRun) {
+if (isNightlyTestRegressionRun) {
   buildScriptForNightlyTestRegression()
-} else if(isCLIBuildRun) {
+} else if (isCLIBuildRun) {
   buildScriptForCLIRelease()
-} else if(isVizierBuildRun) {
+} else if (isVizierBuildRun) {
   buildScriptForVizierRelease()
 } else if (isCloudStagingBuildRun) {
   buildScriptForCloudStagingRelease()

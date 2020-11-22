@@ -2,6 +2,8 @@
 
 # This is to flush bazel cache for new version of clang/gcc.
 build --action_env=CLANG_COMPILER_VERSION=11.0_1
+build:clang --action_env=CC=/opt/clang-11.0/bin/clang
+build:clang --action_env=CXX=/opt/clang-11.0/bin/clang++
 
 # Get version information into the build.
 build --workspace_status_command=bazel/get_workspace_status

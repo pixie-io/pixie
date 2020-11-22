@@ -1,32 +1,47 @@
 common --color=yes
-# Build arguments.
-build --announce_rc
-build --verbose_failures
---experimental_remote_download_outputs=toplevel
---experimental_inmemory_jdeps_files
---experimental_inmemory_dotd_files
---remote_max_connections=256
-
-# Build remote jobs setup.
-build --google_default_credentials
-
-# Use GCS as cache as this is more scalable than our machine.
-build --remote_http_cache="https://storage.googleapis.com/bazel-cache-pl"
-build --remote_timeout=5
-build --remote_retries=2
+common --announce_rc
 
 # Keep the build going even with failures.
 # This makes it easier to find multiple issues in
 # a given Jenkins runs.
-build --keep_going
-test --keep_going
+common --keep_going
 
-# Test remote jobs setup.
-test --remote_timeout=5
-test --remote_retries=2
-test --test_output=errors
-# Other test args.
+# TODO(zasgar): Add build event service.
+# build --bes_results_url=https://buildbuddy.corp.pixielabs.ai/invocation/
+# build --bes_backend=grpcs://buildbuddy-app-service.buildbuddy:1988
+# build --remote_header=x-buildbuddy-api-key=
+
+# Build Cache arguments.
+build --google_default_credentials
+build --announce_rc
+build --verbose_failures
+build --experimental_inmemory_jdeps_files
+build --experimental_inmemory_dotd_files
+build --remote_max_connections=128
+build --bes_timeout=30s
+# Cluster local cache (disabled for now).
+#build --remote_cache="grpc://bazel-remote-service.bazel-remote:1883"
+build --remote_http_cache="https://storage.googleapis.com/bazel-cache-pl"
+build --remote_timeout=30
+build --remote_retries=2
+build --remote_download_toplevel
+
+# test Cache arguments.
+test --google_default_credentials
+test --announce_rc
 test --verbose_failures
+test --experimental_inmemory_jdeps_files
+test --experimental_inmemory_dotd_files
+test --remote_max_connections=128
+test --bes_timeout=30s
+# Cluster local cache (disabled for now).
+#test --remote_cache="grpc://bazel-remote-service.bazel-remote:1883"
+test --remote_http_cache="https://storage.googleapis.com/bazel-cache-pl"
+test --remote_timeout=30
+test --remote_retries=2
+test --remote_download_toplevel
 
-build:clang --action_env=CC=/opt/clang-11.0/bin/clang
-build:clang --action_env=CXX=/opt/clang-11.0/bin/clang++
+
+# Limit resources, this is needed to stay under the K8s resource allocations.
+build --local_ram_resources=16384
+test --local_ram_resources=16384
