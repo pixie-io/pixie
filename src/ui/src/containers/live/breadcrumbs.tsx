@@ -136,7 +136,7 @@ const LiveViewBreadcrumbs = ({ classes, commandOpen, toggleCommandOpen }) => {
     onSelect: (input) => {
       setCluster(clusterNameToID[input]);
     },
-    requireCompletion: false,
+    requireCompletion: true,
   });
 
   // Add args to breadcrumbs.
@@ -147,6 +147,10 @@ const LiveViewBreadcrumbs = ({ classes, commandOpen, toggleCommandOpen }) => {
   // TODO(michelle): We may want to separate non-entity args from the entity args and put them in separate
   // breadcrumbs. For now, they will all go in the same breadcrumbs object.
   Object.entries(args).filter(([argName]) => argName !== 'script').forEach(([argName, argVal]) => {
+    // Only add suggestions if validValues are specified. Otherwise, the dropdown is populated with autocomplete
+    // entities or has no elements and the user must manually type in values.
+    const variable: Variable = argVariableMap[argName];
+
     const argProps = {
       title: argName,
       value: argVal,
@@ -161,11 +165,9 @@ const LiveViewBreadcrumbs = ({ classes, commandOpen, toggleCommandOpen }) => {
       },
       getListItems: null,
       requireCompletion: false,
+      placeholder: variable?.description,
     };
 
-    // Only add suggestions if validValues are specified. Otherwise, the dropdown is populated with autocomplete
-    // entities or has no elements and the user must manually type in values.
-    const variable: Variable = argVariableMap[argName];
     if (variable && variable.validValues && variable.validValues.length) {
       argProps.getListItems = async (input) => (variable.validValues
         .filter((suggestion) => input === '' || suggestion.indexOf(input) >= 0)

@@ -150,10 +150,12 @@ interface DialogDropdownProps extends WithStyles<typeof styles> {
   getListItems: (input: string) => Promise<BreadcrumbListItem[]>;
   onClose: () => void;
   anchorEl: HTMLElement;
+  placeholder: string;
 }
 
 const DialogDropdown = ({
   classes,
+  placeholder,
   onSelect,
   onClose,
   getListItems,
@@ -223,13 +225,27 @@ const DialogDropdown = ({
             icon: item.icon,
             title: item.value,
           }));
+
+          // If we don't require that the final result be one of the suggested items,
+          // then add the user's current input as the first option, unless they have
+          // already typed an existing option.
+          if (!requireCompletion && !seenNames.has(input)) {
+            mapped.unshift({
+              type: 'item' as 'item',
+              id: input,
+              description: '',
+              icon: '',
+              title: input,
+            })
+          }
+
           return mapped;
         });
       }
 
       return Promise.resolve([]);
     },
-    [getListItems],
+    [getListItems, requireCompletion],
   );
 
   // Used to shrink the <Autocomplete/>'s fonts and negative space, to not be as huge / central as the Command Input.
@@ -274,7 +290,7 @@ const DialogDropdown = ({
           >
             <Autocomplete
               className={classes.autocomplete}
-              placeholder='Filter...'
+              placeholder={placeholder}
               onSelection={onCompletionSelected}
               getCompletions={getCompletions}
             />
@@ -292,6 +308,7 @@ interface BreadcrumbProps extends WithStyles<typeof styles> {
   getListItems?: (input: string) => Promise<Array<BreadcrumbListItem>>;
   onSelect?: (input: string) => void;
   omitKey?: boolean;
+  placeholder?: string;
 }
 
 const Breadcrumb = ({
@@ -302,6 +319,7 @@ const Breadcrumb = ({
   getListItems,
   onSelect,
   omitKey,
+  placeholder,
 }: BreadcrumbProps) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
@@ -330,6 +348,7 @@ const Breadcrumb = ({
           {!selectable && <div className={classes.spacer} />}
           <DialogDropdown
             classes={classes}
+            placeholder={placeholder ? placeholder : 'Filter...'}
             onSelect={onSelect}
             onClose={onClose}
             getListItems={getListItems}
@@ -355,6 +374,7 @@ export interface BreadcrumbOptions {
   getListItems?: (input: string) => Promise<Array<BreadcrumbListItem>>;
   onSelect?: (input: string) => void;
   requireCompletion?: boolean;
+  placeholder?: string;
 }
 
 interface BreadcrumbsProps extends WithStyles<typeof styles> {
