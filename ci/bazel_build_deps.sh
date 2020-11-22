@@ -6,6 +6,8 @@ cd "$(git rev-parse --show-toplevel)" || exit
 
 bazel_query="bazel query --keep_going --noshow_progress"
 
+# A list of patterns that will trigger a full build.
+poison_patterns=('^Jenkinsfile' '^ci\/' '^docker\.properties')
 
 # Set the default values for the flags.
 all_targets=false
@@ -78,6 +80,18 @@ done
 
 buildables_kind="kind(.*_binary, //...) ${default_excludes}"
 tests_kind="kind(test, //...) ${default_excludes}"
+
+if [ "${all_targets}" = "false" ]; then
+  for file in $(git diff --name-only "${commit_range}" ); do
+    for pat in "${poison_patterns[@]}"; do
+      if [[ "$file" =~ ${pat} ]]; then
+        echo "File ${file} with ${pat} modified. Triggering full build"
+        all_targets=true
+        break 2
+      fi
+    done
+  done
+fi
 
 if [ "${all_targets}" = "false" ]; then
   # Get a list of the current files in package form by querying Bazel.
