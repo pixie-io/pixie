@@ -621,6 +621,9 @@ TEST_F(YieldingExecGraphTest, yield) {
 }
 
 TEST_F(YieldingExecGraphTest, continue_yield) {
+// TODO(nserrino): PP-2202: Re-enable after identifying TSAN issue.
+// Possibly related to https://github.com/google/sanitizers/issues/1259
+#if !__has_feature(thread_sanitizer)
   ExecutionGraph e;
   e.testing_set_exec_state(exec_state_.get());
 
@@ -631,6 +634,7 @@ TEST_F(YieldingExecGraphTest, continue_yield) {
 
   e.Continue();
   exec_thread.join();
+#endif
 }
 
 TEST_F(YieldingExecGraphTest, yield_timeout) {
