@@ -17,8 +17,4 @@ spec:
     protocol: 'TCP'
     port: 1985
     targetPort: 1985
-  - name: grpcs
-    protocol: 'TCP'
-    port: 1988
-    targetPort: 1986
   type: NodePort
