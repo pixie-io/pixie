@@ -91,13 +91,41 @@ StatusOr<std::string> GetProcVersionSignature() {
   return error::NotFound("Could not parse /proc/version_signature file");
 }
 
+StatusOr<std::string> GetProcSysKernelVersion() {
+  std::filesystem::path proc_sys_kernel_version =
+      system::Config::GetInstance().proc_path() / "sys/kernel/version";
+  PL_ASSIGN_OR_RETURN(std::string version_string, ReadFileToString(proc_sys_kernel_version));
+
+  LOG(INFO) << absl::Substitute("Obtained Linux version string from $0: $1",
+                                proc_sys_kernel_version.string(), version_string);
+
+  // Example contents:
+  // #1 SMP Debian 4.19.152-1 (2020-10-18)
+
+  std::regex version_regex(R"([0-9]+\.[0-9]+\.[0-9]+)");
+  std::smatch matches;
+  bool match_found = std::regex_search(version_string, matches, version_regex);
+  if (match_found) {
+    return std::string(matches[0]);
+  }
+
+  return error::NotFound("Could not find version number in /proc/sys/kernel/version file.");
+}
+
 StatusOr<KernelVersion> GetKernelVersion() {
-  // First option is to check /proc/version_signature, which exists on Ubuntu distributions.
-  // This has to be higher priority because uname -r does not include the minor rev number with
-  // uname.
+  // First option is to check /proc/version_signature.
+  // Required for Ubuntu distributions.
   StatusOr<std::string> version_string_status = GetProcVersionSignature();
 
-  // Second option is to use `uname -r`.
+  // Second option is to use /proc/sys/kernel/version.
+  // Required for Debian distributions.
+  if (!version_string_status.ok()) {
+    version_string_status = GetProcSysKernelVersion();
+  }
+
+  // Last option is to use `uname -r`.
+  // This must be the last option, because on Debian and Ubuntu, the uname does
+  // not provide the correct minor version.
   if (!version_string_status.ok()) {
     version_string_status = GetUname();
   }
@@ -409,11 +437,7 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir)
   LOG(INFO) << absl::Substitute("Using packaged header: $0", packaged_headers.path.string());
   PL_RETURN_IF_ERROR(ExtractPackagedHeaders(&packaged_headers));
   PL_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers.path, kernel_version.code()));
-  Status s = ApplyConfigPatches(packaged_headers.path);
-  LOG_IF(WARNING, !s.ok()) << absl::Substitute(
-      "Unable to apply correct config to packaged linux headers. Message = $0.\n"
-      "Forging on, but BPF probes may produce unexpected values (bogus UPIDs in particular)!",
-      s.msg());
+  PL_RETURN_IF_ERROR(ApplyConfigPatches(packaged_headers.path));
   PL_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(packaged_headers.path, lib_modules_build_dir));
   LOG(INFO) << absl::Substitute("Successfully installed packaged copy of headers at $0",
                                 lib_modules_build_dir.string());

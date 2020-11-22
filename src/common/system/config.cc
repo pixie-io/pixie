@@ -4,7 +4,6 @@
 
 #include "src/common/base/base.h"
 #include "src/common/fs/fs_wrapper.h"
-#include "src/common/system/system.h"
 
 namespace pl {
 namespace system {
@@ -56,7 +55,7 @@ class ConfigImpl final : public Config {
 
   // Utility function to convert time as recorded by in monotonic clock (aka steady_clock)
   // to real time (aka system_clock).
-  // TODO(oazizi): if machine is ever suspended, this Init would have to be called again.
+  // TODO(oazizi): if machine is ever suspended, this function would have to be called again.
   void InitClockRealTimeOffset() {
     static constexpr uint64_t kSecToNanosecFactor = 1000000000;
 
@@ -100,10 +99,18 @@ class ConfigImpl final : public Config {
 
 #endif
 
-const Config& Config::GetInstance() {
-  static ConfigImpl instance;
-  return instance;
+namespace {
+std::unique_ptr<ConfigImpl> g_instance;
 }
+
+const Config& Config::GetInstance() {
+  if (g_instance == nullptr) {
+    ResetInstance();
+  }
+  return *g_instance;
+}
+
+void Config::ResetInstance() { g_instance = std::make_unique<ConfigImpl>(); }
 
 }  // namespace system
 }  // namespace pl

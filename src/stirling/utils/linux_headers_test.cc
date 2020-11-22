@@ -1,5 +1,6 @@
 #include <fstream>
 
+#include "src/common/system/config.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/utils/linux_headers.h"
 
@@ -37,6 +38,40 @@ TEST(LinuxHeadersUtils, GetKernelVersion) {
   // Yes, we're being very generous here, but we want this test to pass the test of time.
   EXPECT_GE(kernel_version.code(), 0x030000);
   EXPECT_LE(kernel_version.code(), 0x090000);
+}
+
+TEST(LinuxHeadersUtils, GetKernelVersionUbuntu) {
+  // Setup: Point to a custom /proc filesystem.
+  std::string orig_host_path = system::Config::GetInstance().host_path();
+  system::FLAGS_host_path = testing::TestFilePath("src/stirling/utils/testdata/dummy_host_ubuntu");
+  system::Config::ResetInstance();
+
+  // Main test.
+  StatusOr<KernelVersion> kernel_version_status = GetKernelVersion();
+  ASSERT_OK(kernel_version_status);
+  KernelVersion kernel_version = kernel_version_status.ValueOrDie();
+  EXPECT_EQ(kernel_version.code(), 0x050441);
+
+  // Restore config for other tests.
+  system::FLAGS_host_path = orig_host_path;
+  system::Config::ResetInstance();
+}
+
+TEST(LinuxHeadersUtils, GetKernelVersionDebian) {
+  // Setup: Point to a custom /proc filesystem.
+  std::string orig_host_path = system::Config::GetInstance().host_path();
+  system::FLAGS_host_path = testing::TestFilePath("src/stirling/utils/testdata/dummy_host_debian");
+  system::Config::ResetInstance();
+
+  // Main test.
+  StatusOr<KernelVersion> kernel_version_status = GetKernelVersion();
+  ASSERT_OK(kernel_version_status);
+  KernelVersion kernel_version = kernel_version_status.ValueOrDie();
+  EXPECT_EQ(kernel_version.code(), 0x041398);
+
+  // Restore config for other tests.
+  system::FLAGS_host_path = orig_host_path;
+  system::Config::ResetInstance();
 }
 
 TEST(LinuxHeadersUtils, KernelHeadersDistance) {

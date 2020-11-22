@@ -9,6 +9,8 @@
 namespace pl {
 namespace system {
 
+DECLARE_string(host_path);
+
 /**
  * This interface provides access to global system config.
  */
@@ -19,6 +21,11 @@ class Config : public NotCopyable {
    * @return const reference to SystemConfig.
    */
   static const Config& GetInstance();
+
+  /**
+   * Resets the underlying static instance. Used for testing purposes.
+   */
+  static void ResetInstance();
 
   virtual ~Config() {}
 
