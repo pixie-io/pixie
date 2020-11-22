@@ -1,5 +1,6 @@
 const archiver = require('archiver');
 const fs = require('fs');
+const { dirname } = require('path');
 const shell = require('shelljs');
 
 // Executes the passed in command. On non-zero exit code an exception
@@ -36,11 +37,17 @@ class ArchivePlugin {
   }
 
   apply(compiler) {
-    compiler.hooks.emit.tap('ArchivePlugin', () => {
-      this.archiverStream = archiver('tar', {
-        gzip: true,
+    compiler.hooks.emit.tapAsync('ArchivePlugin', (compilation, callback) => {
+      fs.mkdir(dirname(this.options.output), { recursive: true }, (err) => {
+        if (err) {
+          callback(err);
+        }
+        this.archiverStream = archiver('tar', {
+          gzip: true,
+        });
+        this.archiverStream.pipe(fs.createWriteStream(this.options.output));
+        callback();
       });
-      this.archiverStream.pipe(fs.createWriteStream(this.options.output));
     });
 
     compiler.hooks.assetEmitted.tap('ArchivePlugin', (file, info) => {

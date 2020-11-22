@@ -4,7 +4,6 @@ const { execSync } = require('child_process');
 const webpack = require('webpack');
 const { CheckerPlugin } = require('awesome-typescript-loader');
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
-const HtmlWebpackHarddiskPlugin = require('html-webpack-harddisk-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const YAML = require('yaml');
 const fs = require('fs');
@@ -31,7 +30,6 @@ const plugins = [
     template: 'index.html',
     filename: 'index.html',
   }),
-  new HtmlWebpackHarddiskPlugin(),
   new webpack.EnvironmentPlugin({
     BUILD_NUMBER: '0',
     BUILD_SCM_REVISION: '0000000',
@@ -54,12 +52,11 @@ if (isDevServer) {
     exclude: [/node_modules/, /vendor/, /vendor\.chunk\.js/, /vendor\.js/],
   }));
 } else {
-  plugins.push(new MiniCssExtractPlugin({
-    filename: isDevServer ? '[name].css' : '[name].[contenthash].css',
-    chunkFilename: isDevServer ? '[id].css' : '[id].[contenthash].css',
-  }));
-  // Archive plugin has problems with dev server.
   plugins.push(
+    new MiniCssExtractPlugin({
+      filename: isDevServer ? '[name].css' : '[name].[contenthash].css',
+      chunkFilename: isDevServer ? '[id].css' : '[id].[contenthash].css',
+    }),
     new CompressionPlugin({
       algorithm: 'gzip',
       threshold: 1024,
@@ -88,7 +85,6 @@ const webpackConfig = {
     main: 'app.tsx',
     config: ['flags.js', 'segment.js'],
   },
-  mode: isDevServer ? 'development' : 'production',
   module: {
     rules: [
       {
@@ -154,14 +150,6 @@ const webpackConfig = {
   output: {
     filename: '[name].[contenthash].js',
     chunkFilename: '[name].[contenthash].chunk.js',
-    // There's some jankiness with the HtmlWebpackPlugin where the asset
-    // shows up on disk before the compiler tries to emit it.
-    // compareBeforeEmit makes it so that this asset isn't emitted if it's
-    // on the output file system and then we end up not including it in
-    // archive bundle.
-    // Unset compareBeforeEmit to make it such that all assets are always
-    // emitted to fix this issue.
-    compareBeforeEmit: false,
     publicPath: '/static/',
   },
   plugins,
@@ -200,7 +188,10 @@ const webpackConfig = {
   },
 };
 
-module.exports = (env) => {
+module.exports = (env, argv) => {
+  // Always emit files in production mode.
+  webpackConfig.output.compareBeforeEmit = argv.mode !== 'production';
+
   if (!isDevServer) {
     return webpackConfig;
   }

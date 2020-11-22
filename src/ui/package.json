@@ -59,7 +59,6 @@
     "eslint-plugin-react-hooks": "^4.0.4",
     "favicons-webpack-plugin": "^5.0.0-alpha.3",
     "file-loader": "^6.2.0",
-    "html-webpack-harddisk-plugin": "^1.0.2",
     "html-webpack-plugin": "^5.0.0-alpha.9",
     "identity-obj-proxy": "^3.0.0",
     "image-webpack-loader": "^6.0.0",
