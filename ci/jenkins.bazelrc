@@ -43,5 +43,5 @@ test --remote_download_toplevel
 
 
 # Limit resources, this is needed to stay under the K8s resource allocations.
-build --local_ram_resources=16384
-test --local_ram_resources=16384
+build --local_ram_resources=49152
+test --local_ram_resources=49152

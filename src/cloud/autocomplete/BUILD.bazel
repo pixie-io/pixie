@@ -44,4 +44,5 @@ go_test(
         "@com_github_satori_go_uuid//:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
     ],
+    flaky = True,
 )

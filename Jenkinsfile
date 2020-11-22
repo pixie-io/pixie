@@ -483,7 +483,7 @@ def DefaultBuildPodTemplate(String suffix, Closure body) {
     podTemplate(label: label, cloud: 'devinfra-cluster', containers: [
       containerTemplate(name: 'pxbuild', image: 'gcr.io/' + devDockerImageWithTag,
                         command: 'cat', ttyEnabled: true,
-                        resourceRequestMemory: '20480Mi',
+                        resourceRequestMemory: '58368Mi',
                         resourceRequestCpu: '14500m',
       ),
       containerTemplate(name: 'gcloud', image: GCLOUD_DOCKER_IMAGE, command: 'cat', ttyEnabled: true),
