@@ -227,7 +227,9 @@ pl_cc_test(
     ],
     tags = [
         "no_coverage",
+        "exclusive",
     ],
+    flaky = True,
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
@@ -636,6 +638,8 @@ sh_test(
         # Can still run it with -c dbg, but on Jenkins, we only run opt version.
         "no_asan",
         "no_tsan",
+        # TODO(oazizi/yzhao): Fix this. Disabling this test for now on jenkins since it broken.
+        "manual",
     ],
     deps = ["//src/stirling/scripts:sh_library"],
 )

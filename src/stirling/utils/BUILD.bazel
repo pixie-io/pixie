@@ -34,6 +34,7 @@ pl_cc_test(
         "testdata/dummy_header_packages/linux-headers-5.3.18.tar.gz",
     ],
     deps = [":cc_library"],
+    flaky = True,
 )
 
 pl_cc_test(
@@ -55,6 +56,7 @@ pl_cc_test(
     tags = [
         "no_coverage",
     ],
+    flaky = True,
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",

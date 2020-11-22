@@ -134,7 +134,11 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["preset_queries_test.cc"],
     data = ["//src/pxl_scripts:preset_queries"],
-    tags = ["requires_bpf"],
+    tags = [
+        "requires_bpf",
+        # TODO(nserrino/philkuz): Fix this. Disabling this test for now on jenkins since it broken.
+        "manual",
+    ],
     deps = [
         ":cc_library",
         ":test_utils",

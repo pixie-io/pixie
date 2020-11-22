@@ -84,6 +84,9 @@ pl_cc_test(
         "//src/common/exec:cc_library",
         "//src/stirling/testing:cc_library",
     ],
+    tags = [
+        "exclusive",
+    ],
 )
 
 pl_cc_test(
