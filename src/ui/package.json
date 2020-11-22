@@ -45,6 +45,7 @@
     "babel-loader": "^8.2.1",
     "case-sensitive-paths-webpack-plugin": "^2.1.2",
     "compression-webpack-plugin": "^4.0.0",
+    "concurrently": "^5.3.0",
     "copy-webpack-plugin": "^5.0.5",
     "css-loader": "^3.6.0",
     "enzyme": "^3.10.0",
@@ -188,7 +189,7 @@
   "scripts": {
     "build_dev": "webpack --mode=development --stats=verbose --progress",
     "build_prod": "webpack --mode=production",
-    "dev": "webpack serve --mode=development --hot",
+    "dev": "concurrently \"yarn workspace pixie-components start\" \"webpack serve --mode=development --hot\"",
     "test": "jest",
     "coverage": "jest --coverage",
     "license_check": "./node_modules/license-checker/bin/license-checker",
