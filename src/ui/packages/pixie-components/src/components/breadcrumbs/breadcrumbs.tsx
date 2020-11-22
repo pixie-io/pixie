@@ -236,7 +236,7 @@ const DialogDropdown = ({
               description: '',
               icon: '',
               title: input,
-            })
+            });
           }
 
           return mapped;
@@ -348,7 +348,7 @@ const Breadcrumb = ({
           {!selectable && <div className={classes.spacer} />}
           <DialogDropdown
             classes={classes}
-            placeholder={placeholder ? placeholder : 'Filter...'}
+            placeholder={placeholder || 'Filter...'}
             onSelect={onSelect}
             onClose={onClose}
             getListItems={getListItems}

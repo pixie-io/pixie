@@ -33,10 +33,11 @@
       "error",
       {
         "devDependencies": [
-          "**/*-test.ts",
-          "**/*-test.tsx",
-          "**/*.test.ts",
-          "**/*.test.tsx",
+          "**/*test.ts",
+          "**/*test.tsx",
+          "src/testing/*",
+          "packages/**/src/testing/*",
+          "**/*stories.tsx",
           "webpack.config.js",
           "webpack-utils.js"
         ]
@@ -47,10 +48,11 @@
     {
       "files": [
         "src/utils/env.tsx",
-        "*-test.ts",
-        "*-test.tsx",
+        "*test.ts",
+        "*test.tsx",
         "./*.js",
-        "src/testing/*"
+        "src/testing/*",
+        "packages/**/src/testing/*"
       ],
       "env": {
         "node": true,
@@ -73,7 +75,7 @@
         },
         "ecmaVersion": 2020,
         "sourceType": "module",
-        "project": "./tsconfig.json"
+        "project": ["./tsconfig.json", "./packages/**/tsconfig.json"]
       },
       "plugins": [
         "jest",

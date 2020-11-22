@@ -1,7 +1,7 @@
 import * as React from 'react';
 
-import { AuthMessageBox } from './message';
 import { FrameElement } from 'utils/frame-utils';
+import { AuthMessageBox } from './message';
 
 export default {
   title: 'Auth/Message Box',

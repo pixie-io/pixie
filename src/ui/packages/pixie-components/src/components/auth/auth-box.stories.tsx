@@ -1,7 +1,7 @@
 import * as React from 'react';
 
-import { AuthBox } from './auth-box';
 import { FrameElement } from 'utils/frame-utils';
+import { AuthBox } from './auth-box';
 
 export default {
   title: 'Auth/AuthBox',

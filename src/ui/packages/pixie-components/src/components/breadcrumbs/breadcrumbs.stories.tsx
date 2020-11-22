@@ -1,7 +1,7 @@
 import * as React from 'react';
 
-import { Breadcrumbs } from './breadcrumbs';
 import { StatusCell } from 'components/status/status';
+import { Breadcrumbs } from './breadcrumbs';
 
 export default {
   title: 'Breadcrumbs',

@@ -14,7 +14,7 @@ export default {
 
 export const Basic = () => {
   const [selectedPercentile, setSelectedPercentile] = React.useState<
-    SelectedPercentile
+  SelectedPercentile
   >('p99');
   const theme = useTheme();
 

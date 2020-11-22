@@ -1,7 +1,7 @@
 import * as React from 'react';
 
-import { AuthFooter } from './footer';
 import { FrameElement } from 'utils/frame-utils';
+import { AuthFooter } from './footer';
 
 export default {
   title: 'Auth/Footer',

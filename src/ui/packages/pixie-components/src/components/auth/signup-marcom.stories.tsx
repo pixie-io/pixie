@@ -1,7 +1,7 @@
 import * as React from 'react';
 
-import { SignupMarcom } from './signup-marcom';
 import { FrameElement } from 'utils/frame-utils';
+import { SignupMarcom } from './signup-marcom';
 
 export default {
   title: 'Auth/Signup Marcom',
