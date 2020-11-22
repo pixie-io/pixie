@@ -19,11 +19,13 @@ func connectElastic(esURL string, esUser string, esPass string) (*elastic.Client
 }
 
 // SetupElastic starts up an embedded elastic server on some free ports.
-func SetupElastic() (*elastic.Client, func()) {
+func SetupElastic() (*elastic.Client, func(), error) {
+	cleanup := func() {}
 	pool, err := dockertest.NewPool("")
 	if err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
+		return nil, cleanup, fmt.Errorf("Could not connect to docker: %s", err)
 	}
+
 	esPass := "password"
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "elasticsearch",
@@ -36,31 +38,31 @@ func SetupElastic() (*elastic.Client, func()) {
 			"indices.lifecycle.poll_interval=5s",
 		},
 	})
-
-	clientPort := resource.GetPort("9200/tcp")
 	if err != nil {
-		log.Fatal(err)
+		pool.Purge(resource)
+		return nil, cleanup, err
 	}
 
+	clientPort := resource.GetPort("9200/tcp")
 	var client *elastic.Client
-	if err = pool.Retry(func() (err error) {
+	err = pool.Retry(func() (err error) {
 		client, err = connectElastic(fmt.Sprintf("http://localhost:%s", clientPort), "elastic", esPass)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to connect to elasticsearch.")
 		}
 		return err
-	}); err != nil {
-		log.Fatal("Cannot start elasticsearch")
+	})
+	if err != nil {
+		pool.Purge(resource)
+		return nil, cleanup, fmt.Errorf("Cannot start elasticsearch: %s", err)
 	}
 
 	log.Info("Successfully connected to elastic.")
 
-	cleanup := func() {
+	cleanup = func() {
 		client.Stop()
-		if err := pool.Purge(resource); err != nil {
-			log.Fatalf("Could not purge resource: %s", err)
-		}
+		pool.Purge(resource)
 	}
 
-	return client, cleanup
+	return client, cleanup, nil
 }

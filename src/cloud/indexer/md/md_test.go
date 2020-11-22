@@ -21,16 +21,22 @@ var vzID uuid.UUID
 var orgID uuid.UUID
 
 func TestMain(m *testing.M) {
-	es, cleanup := testingutils.SetupElastic()
-	elasticClient = es
+	es, cleanup, err := testingutils.SetupElastic()
+	if err != nil {
+		cleanup()
+		log.Fatal(err)
+	}
+
 	vzID = uuid.NewV4()
 	orgID = uuid.NewV4()
 
-	err := md.InitializeMapping(es)
+	err = md.InitializeMapping(es)
 	if err != nil {
+		cleanup()
 		log.WithError(err).Fatal("Could not initialize indexes in elastic")
 	}
 
+	elasticClient = es
 	code := m.Run()
 	// Can't be deferred b/c of os.Exit.
 	cleanup()

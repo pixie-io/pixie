@@ -2,6 +2,7 @@ package controller_test
 
 import (
 	"context"
+	"log"
 	"os"
 	"testing"
 
@@ -16,7 +17,11 @@ import (
 var elasticClient *elastic.Client
 
 func TestMain(m *testing.M) {
-	es, cleanup := testingutils.SetupElastic()
+	es, cleanup, err := testingutils.SetupElastic()
+	if err != nil {
+		cleanup()
+		log.Fatal(err)
+	}
 	elasticClient = es
 	code := m.Run()
 	// Can't be deferred b/c of os.Exit.

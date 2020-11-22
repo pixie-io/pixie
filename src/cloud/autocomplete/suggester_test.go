@@ -2,6 +2,7 @@ package autocomplete_test
 
 import (
 	"context"
+	"log"
 	"os"
 	"testing"
 
@@ -75,19 +76,25 @@ var mdEntities = []md.EsMDEntity{
 var elasticClient *elastic.Client
 
 func TestMain(m *testing.M) {
-	es, cleanup := testingutils.SetupElastic()
+	es, cleanup, err := testingutils.SetupElastic()
+	if err != nil {
+		cleanup()
+		log.Fatal(err)
+	}
 	elasticClient = es
 
 	// Set up elastic indexes.
-	_, err := es.CreateIndex("md_entities_1").Body(md.IndexMapping).Do(context.Background())
+	_, err = es.CreateIndex("md_entities_1").Body(md.IndexMapping).Do(context.Background())
 	if err != nil {
-		panic(err)
+		cleanup()
+		log.Fatal(err)
 	}
 
 	for _, e := range mdEntities {
 		err = insertIntoIndex("md_entities_1", e.UID, e)
 		if err != nil {
-			panic(err)
+			cleanup()
+			log.Fatal(err)
 		}
 	}
 

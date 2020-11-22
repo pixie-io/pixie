@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"testing"
 
@@ -99,7 +100,11 @@ func TestLogMessagesSingleVizier(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	es, cleanup := testingutils.SetupElastic()
+	es, cleanup, err := testingutils.SetupElastic()
+	if err != nil {
+		cleanup()
+		log.Fatal(err)
+	}
 	elasticClient = es
 	code := m.Run()
 	// Can't be deferred b/c of os.Exit.
@@ -141,19 +146,19 @@ var logMessages = []string{
 	"stream": "stdout",
 	"time": "2020-03-03T19:48:51Z146319624Z"
 }`,
-	`{                                   
+	`{
 	"test_id": "2",
-	"k8s_annotations": {                    
+	"k8s_annotations": {
 					"fluentbit.io/parser": "logfmt"
-	},                                           
+	},
 	"k8s_container_hash": "a9477d7e4da583c53aacae7e47a22cec2cda9ff71bd53036a9d73fac3905e928",
-	"k8s_container_name": "vizier-query-broker",                          
+	"k8s_container_name": "vizier-query-broker",
 	"k8s_docker_id": "ce1233182b13ea49bb5c531a2dca60c6dbfb831a9851ac219dd59e314e7f8bb9",
 	"k8s_host": "gke-dev-cluster-james-default-pool-fefebf2e-g2vt",
 	"k8s_labels": {
 					"app": "pl-monitoring",
 					"app.kubernetes.io/managed-by": "skaffold-v1.3.1-12-g84eafe1cb",
-					"component": "vizier",               
+					"component": "vizier",
 					"name": "vizier-query-broker",
 					"pod-template-hash": "779f8dc59b",
 					"skaffold.dev/builder": "local",
@@ -163,22 +168,22 @@ var logMessages = []string{
 					"skaffold.dev/run-id": "de5f4c42-0ef3-44b0-b200-09bdf3a9d8ea",
 					"skaffold.dev/tag-policy": "dateTimeTagger",
 					"skaffold.dev/tail": "true"
-	},                                    
+	},
 	"k8s_namespace_name": "pl",
 	"k8s_pod_id": "4b5d2e18-5d90-11ea-b88e-42010a8a00a9",
 	"k8s_pod_name": "vizier-query-broker-779f8dc59b-m8h9h",
 	"log_processed": {
-					"grpc.code": "OK",                        
-					"grpc.method": "GetAgentInfo",            
+					"grpc.code": "OK",
+					"grpc.method": "GetAgentInfo",
 					"grpc.service": "pl.vizier.services.query_broker.querybrokerpb.QueryBrokerService",
 					"grpc.start_time": "2020-03-03T20:50:01Z",
 					"level": "info",
 					"msg": "finished unary call with code OK",
 					"peer.address": "10.40.1.131:51952",
-					"span.kind": "server",                                                           
-					"system": "grpc",    
-					"time": "3.14217ms"                                              
-	},                                                             
+					"span.kind": "server",
+					"system": "grpc",
+					"time": "3.14217ms"
+	},
 	"stream": "stdout",
 	"time": "2020-03-03T20:50:01.785901442Z"
 }`,
