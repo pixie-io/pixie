@@ -193,6 +193,7 @@ TEST_F(HTTP2TraceTest, Basic) {
     EXPECT_THAT(conn_open, 1);
     // TODO(oazizi/yzhao): Causing flakiness. Investigate.
     // EXPECT_THAT(conn_close, 1);
+    PL_UNUSED(conn_close);
     EXPECT_THAT(bytes_sent, Gt(2000));
     EXPECT_THAT(bytes_rcvd, Gt(900));
   }
