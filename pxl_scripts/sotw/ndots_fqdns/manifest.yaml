@@ -1,0 +1,3 @@
+---
+short: Lists FQDNs from DNS traffic. 
+long: Lists external, fully qualified domain names (FQDNs) from all DNS traffic on the cluster for a specified amount of time.

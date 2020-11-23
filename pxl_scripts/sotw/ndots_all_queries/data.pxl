@@ -1,0 +1,44 @@
+ # Copyright (c) Pixie Labs, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+
+''' DNS Queries filtered by query name. 
+Lists all DNS queries filtered by a specific query name. 
+'''
+
+import px
+
+def fqdns(start: str, hostname: str):
+
+    # The dns_events table pairs DNS requests with their responses.
+	df = px.DataFrame(table='dns_events', start_time=start)
+
+	# Add context
+	df.pod = df.ctx['pod']
+
+	# Convert DNS IP to string.
+	df.dns_server = px.Service(px.nslookup(df.remote_addr))
+
+	# Parse the DNS respoonse to determine if it was successfully resolved.
+	df.resp_body = px.pluck(df.resp_body, 'answers')
+	df.request_resolved = px.contains(df.resp_body, 'name')
+
+	# Parse the DNS request for query name.
+	df.req_body = px.pluck(df.req_body, 'queries')
+	df.idx1 = px.find(df.req_body, '\"name\":')
+	df.query_name_partial = px.substring(df.req_body, df.idx1 + 8, px.length(df.req_body) - (df.idx1 + 8) - 3)
+	df.idx2 = px.find(df.query_name_partial, ',')
+	df.query_name = px.substring(df.query_name_partial, 0, df.idx2 - 1)
+	df = df.drop(['idx1', 'idx2'])  
+
+	## Step 2: All pod / dns_server pairings containing FQDN as substring
+	df = df[px.contains(df.query_name, hostname)]
+	df = df.groupby(['pod', 'dns_server', 'query_name']).agg(
+	    num_requests=('request_resolved', px.count),
+	    num_resolved=('request_resolved', px.mean),
+	    latency=('latency_ns', px.quantiles) 
+	)
+
+	df.num_resolved = px.Percent(df.num_resolved)
+
+	return df
+

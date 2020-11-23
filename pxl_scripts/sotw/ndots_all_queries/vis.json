@@ -4,7 +4,7 @@
       "name": "start",
       "type": "PX_STRING",
       "description": "The start time of the window in time units before now.",
-      "defaultValue": "-5m"
+      "defaultValue": "-3h"
     },
     {
       "name": "hostname",
@@ -15,9 +15,9 @@
   ],
   "globalFuncs": [
     {
-      "outputName": "ndots",
+      "outputName": "fqdns",
       "func": {
-        "name": "ndots",
+        "name": "fqdns",
         "args": [
           {
             "name": "start",
