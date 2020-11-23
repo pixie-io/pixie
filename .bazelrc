@@ -29,6 +29,14 @@ build --apple_platform_type=macos
 # TODO(oazizi): Remove after upgrading io_bazel_rules_go.
 build --strip=never
 
+
+# Give each sandbox its own tmp directory.
+# This is important for //src/stirling/utils:java_test, which otherwise creates conflicting writes
+# when multiple instances are running simultaneously.
+# It is also generally not a bad idea, since it improves heremeticity.
+# For more context, see: https://github.com/bazelbuild/bazel/issues/3236
+test --sandbox_tmpfs_path=/tmp
+
 # Build for Clang:
 build:clang --linkopt -fuse-ld=lld
 build:clang --action_env=BAZEL_LINKLIBS=-l%:libstdc++.a

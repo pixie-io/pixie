@@ -7,6 +7,8 @@
 #include <string>
 #include <string_view>
 
+#include <absl/strings/match.h>
+
 #include "src/common/base/test_utils.h"
 #include "src/common/exec/subprocess.h"
 #include "src/common/testing/test_environment.h"
@@ -15,7 +17,7 @@ namespace pl {
 namespace stirling {
 
 // Tests that values are calculated correctly.
-TEST(StatsTest, CommoneValues) {
+TEST(StatsTest, CommonValues) {
   std::vector<Stats::Stat> stat_vec = {
       {"sun.gc.collector.0.time", 1},
       {"sun.gc.collector.1.time", 1},
@@ -45,12 +47,14 @@ TEST(HsperfdataPathTest, ResultIsAsExpected) {
   SubProcess hello_world;
   ASSERT_OK(hello_world.Start({"java", "-cp", class_path, "HelloWorld"}));
 
-  // Give some time for the JVM process to write the data file.
-  sleep(2);
+  // Give some time for the JVM process to start.
+  std::string s;
+  while (!absl::StartsWith(s, "Hello, World")) {
+    ASSERT_OK(hello_world.Stdout(&s));
+  }
 
-  auto hsperfdata_path_or = HsperfdataPath(hello_world.child_pid());
-  EXPECT_OK(hsperfdata_path_or);
-  EXPECT_TRUE(std::filesystem::exists(hsperfdata_path_or.ValueOrDie()));
+  ASSERT_OK_AND_ASSIGN(auto hsperfdata_path, HsperfdataPath(hello_world.child_pid()));
+  EXPECT_TRUE(std::filesystem::exists(hsperfdata_path));
   hello_world.Kill();
   EXPECT_EQ(9, hello_world.Wait()) << "Server should have been killed.";
 }

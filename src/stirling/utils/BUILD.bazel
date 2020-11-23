@@ -55,7 +55,6 @@ pl_cc_test(
     data = [
         "//src/stirling/testing/java:HelloWorld",
     ],
-    flaky = True,
     tags = [
         "no_coverage",
     ],
