@@ -44,7 +44,10 @@ pl_webpack_binary(
     srcs = UI_SRCS + COMPONENT_SRCS,
     deps = ":ui-deps",
     licenses = "//tools/licenses:all_licenses",
-    stamp = True,
+    stamp = select({
+        "//bazel:stamped": True,
+        "//conditions:default": False,
+    }),
     uilib_base = "src/ui",
 )
 
