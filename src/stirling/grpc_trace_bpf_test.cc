@@ -60,7 +60,7 @@ HelloRequest GetHelloRequest(const ColumnWrapperRecordBatch& record_batch, const
 
 class GRPCTraceGoTest : public ::testing::Test {
  protected:
-  GRPCTraceGoTest() : data_table_(kHTTPTable), ctx_(std::make_unique<StandaloneContext>()) {}
+  GRPCTraceGoTest() : data_table_(kHTTPTable) {}
 
   void LaunchServer(bool use_https) {
     client_path_ = pl::testing::BazelBinTestFilePath(kClientPath).string();
@@ -92,7 +92,6 @@ class GRPCTraceGoTest : public ::testing::Test {
     // when fork() and execvp().
     connector_ = SocketTraceConnector::Create("socket_trace_connector");
     PL_CHECK_OK(connector_->Init());
-    connector_->InitContext(ctx_.get());
   }
 
   void TearDown() override {
@@ -110,7 +109,6 @@ class GRPCTraceGoTest : public ::testing::Test {
   DataTable data_table_;
   SubProcess s_;
   int s_port_ = -1;
-  std::unique_ptr<StandaloneContext> ctx_;
   std::unique_ptr<SourceConnector> connector_;
 };
 
@@ -124,7 +122,8 @@ TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
   // are dynamically attached.
   GRPCTraceGoTest::LaunchServer(GetParam());
 
-  connector_->InitContext(ctx_.get());
+  std::unique_ptr<StandaloneContext> ctx = std::make_unique<StandaloneContext>();
+  connector_->InitContext(ctx.get());
 
   SubProcess c;
   const std::string https_flag = GetParam() ? "--https=true" : "--https=false";
@@ -133,7 +132,8 @@ TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
   LOG(INFO) << "Client PID: " << c.child_pid();
   EXPECT_EQ(0, c.Wait());
 
-  connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
+  ctx = std::make_unique<StandaloneContext>();
+  connector_->TransferData(ctx.get(), kHTTPTableNum, &data_table_);
 
   std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());

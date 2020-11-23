@@ -43,13 +43,11 @@ class JVMStatsConnectorTest : public ::testing::Test {
   void SetUp() override {
     connector_ = JVMStatsConnector::Create("jvm_stats_connector");
     ASSERT_OK(connector_->Init());
-    ctx_ = std::make_unique<StandaloneContext>();
   }
 
   void TearDown() override { EXPECT_OK(connector_->Stop()); }
 
   std::unique_ptr<SourceConnector> connector_;
-  std::unique_ptr<StandaloneContext> ctx_;
   DataTable data_table_{kJVMStatsTable};
 };
 
@@ -63,13 +61,15 @@ class JVMStatsConnectorTest : public ::testing::Test {
 //
 // Tests that java processes are detected and data is collected.
 TEST_F(JVMStatsConnectorTest, CaptureData) {
+  std::unique_ptr<StandaloneContext> ctx;
   JavaHelloWorld hello_world1;
   ASSERT_OK(hello_world1.Start());
 
   std::vector<TaggedRecordBatch> tablets;
   types::ColumnWrapperRecordBatch record_batch;
 
-  connector_->TransferData(ctx_.get(), JVMStatsConnector::kTableNum, &data_table_);
+  ctx = std::make_unique<StandaloneContext>();
+  connector_->TransferData(ctx.get(), JVMStatsConnector::kTableNum, &data_table_);
   tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;
@@ -96,7 +96,8 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
   ASSERT_OK(hello_world2.Start());
   std::this_thread::sleep_for(std::chrono::seconds(2));
 
-  connector_->TransferData(ctx_.get(), JVMStatsConnector::kTableNum, &data_table_);
+  ctx = std::make_unique<StandaloneContext>();
+  connector_->TransferData(ctx.get(), JVMStatsConnector::kTableNum, &data_table_);
   tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;

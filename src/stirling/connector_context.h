@@ -28,7 +28,7 @@ class ConnectorContext {
   /**
    * Return current set of active UPIDs.
    */
-  virtual absl::flat_hash_set<md::UPID> GetUPIDs() const = 0;
+  virtual const absl::flat_hash_set<md::UPID>& GetUPIDs() const = 0;
 
   /**
    * Return detailed information on UPIDs.
@@ -63,11 +63,12 @@ class AgentContext : public ConnectorContext {
   explicit AgentContext(std::shared_ptr<const md::AgentMetadataState> agent_metadata_state)
       : agent_metadata_state_(std::move(agent_metadata_state)) {
     DCHECK(agent_metadata_state_ != nullptr);
+    upids_ = agent_metadata_state_->upids();
   }
 
   uint32_t GetASID() const override { return agent_metadata_state_->asid(); }
 
-  absl::flat_hash_set<md::UPID> GetUPIDs() const override { return agent_metadata_state_->upids(); }
+  const absl::flat_hash_set<md::UPID>& GetUPIDs() const override { return upids_; }
 
   const absl::flat_hash_map<md::UPID, md::PIDInfoUPtr>& GetPIDInfoMap() const override {
     return agent_metadata_state_->pids_by_upid();
@@ -81,6 +82,7 @@ class AgentContext : public ConnectorContext {
 
  private:
   std::shared_ptr<const md::AgentMetadataState> agent_metadata_state_;
+  absl::flat_hash_set<md::UPID> upids_;
 };
 
 /**
@@ -89,15 +91,11 @@ class AgentContext : public ConnectorContext {
  */
 class StandaloneContext : public ConnectorContext {
  public:
-  StandaloneContext() {}
+  StandaloneContext() { upids_ = ListUPIDs(system::Config::GetInstance().proc_path(), 0); }
 
   uint32_t GetASID() const override { return 0; }
 
-  absl::flat_hash_set<md::UPID> GetUPIDs() const override {
-    // TODO(oazizi): Consider moving the ListUPIDs into the constructor so that the context is
-    // constant.
-    return ListUPIDs(system::Config::GetInstance().proc_path(), 0);
-  }
+  const absl::flat_hash_set<md::UPID>& GetUPIDs() const override { return upids_; }
 
   const absl::flat_hash_map<md::UPID, md::PIDInfoUPtr>& GetPIDInfoMap() const override {
     static const absl::flat_hash_map<md::UPID, md::PIDInfoUPtr> kEmpty;
@@ -114,7 +112,8 @@ class StandaloneContext : public ConnectorContext {
   Status SetClusterCIDR(std::string_view cidr_str);
 
  private:
-  std::vector<CIDRBlock> cidrs_ = {};
+  std::vector<CIDRBlock> cidrs_;
+  absl::flat_hash_set<md::UPID> upids_;
 };
 
 }  // namespace stirling
