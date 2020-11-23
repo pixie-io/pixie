@@ -315,6 +315,42 @@ static __inline enum MessageType infer_dns_message(const char* buf, size_t count
   return (qr == 0) ? kRequest : kResponse;
 }
 
+// Redis request and response messages share the same format.
+// See https://redis.io/topics/protocol for the REDIS protocol spec.
+//
+// TODO(yzhao): Apply simplified parsing to read the content to distinguished request & response.
+static __inline bool is_redis_message(const char* buf, size_t count) {
+  // Redis messages start with an one-byte type marker, and end with \r\n terminal sequence.
+  if (count < 3) {
+    return false;
+  }
+
+  const char first_byte = buf[0];
+
+  if (  // Simple strings start with +
+      first_byte != '+' &&
+      // Errors start with -
+      first_byte != '-' &&
+      // Integers start with :
+      first_byte != ':' &&
+      // Bulk strings start with $
+      first_byte != '$' &&
+      // Arrays start with *
+      first_byte != '*') {
+    return false;
+  }
+
+  // The last two chars are \r\n, the terminal sequence of all Redis messages.
+  if (buf[count - 2] != '\r') {
+    return false;
+  }
+  if (buf[count - 1] != '\n') {
+    return false;
+  }
+
+  return true;
+}
+
 static __inline struct protocol_message_t infer_protocol(const char* buf, size_t count) {
   struct protocol_message_t inferred_message;
   inferred_message.protocol = kProtocolUnknown;
@@ -330,6 +366,9 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
     inferred_message.protocol = kProtocolMySQL;
   } else if ((inferred_message.type = infer_dns_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolDNS;
+  } else if (is_redis_message(buf, count)) {
+    inferred_message.protocol = kProtocolRedis;
+    // For Redis, the message type is left to be kUnknown.
   }
 
   return inferred_message;

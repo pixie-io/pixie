@@ -183,3 +183,16 @@ TEST(ProtocolInferenceTest, DNS) {
   EXPECT_EQ(infer_dns_message(reinterpret_cast<const char*>(kQueryFrame3), sizeof(kQueryFrame3)),
             kRequest);
 }
+
+TEST(ProtocolInferenceTest, Redis) {
+  // Captured via ngrep:
+  // sudo ngrep -d any port 6379 -x
+
+  constexpr char kReqFrame[] = {0x2a, 0x31, 0x0d, 0x0a, 0x24, 0x38, 0x0d, 0x0a, 0x66,
+                                0x6c, 0x75, 0x73, 0x68, 0x61, 0x6c, 0x6c, 0x0d, 0x0a};
+
+  constexpr char kRespFrame[] = {0x2b, 0x4f, 0x4b, 0x0d, 0x0a};
+
+  EXPECT_TRUE(is_redis_message(kReqFrame, sizeof(kReqFrame)));
+  EXPECT_TRUE(is_redis_message(kRespFrame, sizeof(kRespFrame)));
+}

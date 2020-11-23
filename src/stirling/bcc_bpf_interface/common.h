@@ -27,6 +27,7 @@ enum TrafficProtocol {
   kProtocolCQL,
   kProtocolPGSQL,
   kProtocolDNS,
+  kProtocolRedis,
   kNumProtocols
 };
 
@@ -105,4 +106,3 @@ enum ControlValueIndex {
   kStirlingTGIDIndex,
   kNumControlValues,
 };
-

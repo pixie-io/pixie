@@ -1,5 +1,7 @@
 #ifdef __linux__
 
+#include "src/stirling/socket_trace_connector.h"
+
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -28,11 +30,7 @@
 #include "src/stirling/obj_tools/proc_path_tools.h"
 #include "src/stirling/proto/sock_event.pb.h"
 #include "src/stirling/protocols/common/event_parser.h"
-#include "src/stirling/protocols/cql/types.h"
-#include "src/stirling/protocols/http/http_stitcher.h"
 #include "src/stirling/protocols/http2/grpc.h"
-#include "src/stirling/protocols/mysql/mysql_parse.h"
-#include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/uprobe_symaddrs.h"
 #include "src/stirling/utils/linux_headers.h"
 
@@ -61,6 +59,8 @@ DEFINE_bool(stirling_enable_cass_tracing, true,
             "If true, stirling will trace and process Cassandra messages.");
 DEFINE_bool(stirling_enable_dns_tracing, true,
             "If true, stirling will trace and process DNS messages.");
+DEFINE_bool(stirling_enable_redis_tracing, false,
+            "If true, stirling will trace and process Redis messages.");
 
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will not trace and process syscalls made by itself.");
@@ -107,6 +107,8 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
        {kPGSQLTableNum, TRANSER_STREAM_PROTOCOL(pgsql), FLAGS_stirling_enable_pgsql_tracing}},
       {kProtocolDNS,
        {kDNSTableNum, TRANSER_STREAM_PROTOCOL(dns), FLAGS_stirling_enable_dns_tracing}},
+      {kProtocolRedis,
+       {kRedisTableNum, TRANSER_STREAM_PROTOCOL(redis), FLAGS_stirling_enable_redis_tracing}},
       // Unknown protocols attached to HTTP table so that they run their cleanup functions,
       // but the use of nullptr transfer_fn means it won't actually transfer data to the HTTP table.
       {kProtocolUnknown, {kHTTPTableNum, nullptr}},
@@ -963,6 +965,28 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
   r.Append<r.ColIndex("req")>(std::move(entry.req.payload));
   r.Append<r.ColIndex("resp")>(std::move(entry.resp.payload));
+  r.Append<r.ColIndex("latency_ns")>(
+      CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
+#ifndef NDEBUG
+  r.Append<r.ColIndex("px_info_")>("");
+#endif
+}
+
+template <>
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
+                                         const ConnectionTracker& conn_tracker,
+                                         protocols::redis::Record entry, DataTable* data_table) {
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
+
+  DataTable::RecordBuilder<&kRedisTable> r(data_table, entry.resp.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
+  r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
+  r.Append<r.ColIndex("req")>(std::string(entry.req.payload));
+  r.Append<r.ColIndex("resp")>(std::string(entry.resp.payload));
   r.Append<r.ColIndex("latency_ns")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG

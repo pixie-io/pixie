@@ -7,14 +7,7 @@
 #include <string>
 
 #include "src/stirling/common/socket_trace.h"
-
-// PROTOCOL_LIST: Requires update on new protocols.
-#include "src/stirling/protocols/cql/types.h"
-#include "src/stirling/protocols/dns/types.h"
-#include "src/stirling/protocols/http/types.h"
-#include "src/stirling/protocols/http2/types.h"
-#include "src/stirling/protocols/mysql/types.h"
-#include "src/stirling/protocols/pgsql/types.h"
+#include "src/stirling/protocols/types.h"
 
 DECLARE_uint32(messages_expiration_duration_secs);
 DECLARE_uint32(messages_size_limit_bytes);
@@ -260,11 +253,7 @@ class DataStream {
   //
   // Additionally, ConnectionTracker must not switch type during runtime, which indicates serious
   // bug, so we add std::monostate as the default type. And switch to the right time in runtime.
-  // PROTOCOL_LIST: Requires update on new protocols.
-  std::variant<std::monostate, std::deque<protocols::http::Message>,
-               std::deque<protocols::mysql::Packet>, std::deque<protocols::cass::Frame>,
-               std::deque<protocols::pgsql::RegularMessage>, std::deque<protocols::dns::Frame>>
-      frames_;
+  protocols::FrameDequeVariant frames_;
 
   // Used by Uprobe-based HTTP2 only.
   std::deque<protocols::http2::Stream> http2_streams_;

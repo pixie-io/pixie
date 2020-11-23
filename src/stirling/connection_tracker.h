@@ -26,6 +26,7 @@
 #include "src/stirling/protocols/http2/stitcher.h"
 #include "src/stirling/protocols/mysql/mysql_stitcher.h"
 #include "src/stirling/protocols/pgsql/stitcher.h"
+#include "src/stirling/protocols/redis/stitcher.h"
 
 DECLARE_bool(enable_unix_domain_sockets);
 DECLARE_int64(stirling_conn_trace_pid);

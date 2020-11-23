@@ -3,6 +3,9 @@
 #include <utility>
 
 #include "src/stirling/protocols/pgsql/types.h"
+// TODO(yzhao): Without this line :stirling_wrapper fails to link redis template specializations
+// of FindFrameBoundary() and ParseFrames().
+#include "src/stirling/protocols/redis/parse.h"
 
 DEFINE_uint32(messages_expiration_duration_secs, 10 * 60,
               "The duration for which a cached message to be erased.");
@@ -261,6 +264,7 @@ template void DataStream::ProcessBytesToFrames<protocols::mysql::Packet>(Message
 template void DataStream::ProcessBytesToFrames<protocols::cass::Frame>(MessageType type);
 template void DataStream::ProcessBytesToFrames<protocols::pgsql::RegularMessage>(MessageType type);
 template void DataStream::ProcessBytesToFrames<protocols::dns::Frame>(MessageType type);
+template void DataStream::ProcessBytesToFrames<protocols::redis::Message>(MessageType type);
 
 void DataStream::Reset() {
   next_pos_ = 0;

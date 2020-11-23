@@ -17,6 +17,7 @@ pl_cc_library(
     ),
     deps = [
         "//src/stirling/bcc_bpf_interface:cc_library",
+        "//src/stirling/common:cc_library",
     ],
 )
 
