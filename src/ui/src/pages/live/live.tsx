@@ -215,9 +215,7 @@ const LiveView = () => {
 
   React.useEffect(() => {
     const listener = () => {
-      if (cancelExecution != null) {
-        cancelExecution();
-      }
+      cancelExecution?.();
     };
 
     window.addEventListener('beforeunload', listener);

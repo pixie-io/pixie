@@ -55,7 +55,7 @@ interface ScriptContextProps {
   setVis: SetStateFunc<Vis>;
 
   setCancelExecution: SetStateFunc<() => void>;
-  cancelExecution: () => void;
+  cancelExecution?: () => void;
 
   pxlEditorText: string;
   visEditorText: string;
@@ -247,9 +247,7 @@ const ScriptContextProvider = (props) => {
   };
 
   const execute = (execArgs: ExecuteArguments) => {
-    if (cancelExecution != null) {
-      cancelExecution();
-    }
+    cancelExecution?.();
 
     if (!healthy || !client) {
       // TODO(philkuz): Maybe link to the admin page to show what is wrong.
@@ -326,6 +324,7 @@ const ScriptContextProvider = (props) => {
       }
 
       if (queryResults.executionStats) { // For non-streaming queries, the query is complete. Log analytics.
+        setCancelExecution(undefined);
         analytics.track('Query Execution', {
           status: 'success',
           query: execArgs.pxl,
@@ -410,9 +409,9 @@ const ScriptContextProvider = (props) => {
             getQueryFuncs(execArgs.vis, execArgs.args),
             mutation,
           ).subscribe((update) => {
+            setCancelExecution(() => update.cancel);
             switch (update.event.type) {
               case 'start':
-                setCancelExecution(() => update.cancel);
                 break;
               case 'metadata':
               case 'mutation-info':
@@ -481,7 +480,7 @@ const ScriptContextProvider = (props) => {
           case 'start':
             setCancelExecution(() => () => {
               update.cancel();
-              setCancelExecution(() => () => {});
+              setCancelExecution(undefined);
               // Timeout so as not to modify one context while rendering another
               setTimeout(() => {
                 setStreaming(false);

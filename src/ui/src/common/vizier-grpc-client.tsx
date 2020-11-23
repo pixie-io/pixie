@@ -109,8 +109,8 @@ export interface ExecutionStateUpdate {
   event: ExecutionEvent;
   /** If `completionReason` is not set, this result can be partial */
   results: VizierQueryResult;
-  /** Cancels the execution, if it is still running */
-  cancel: () => void;
+  /** If set, cancels the execution. Gets unset when the query completes for any reason (including error or cancel).  */
+  cancel?: () => void;
   /** If set, execution has halted for this reason */
   completionReason?: 'complete' | 'cancelled' | 'error';
   /** If set, execution has been halted by this error */
@@ -194,7 +194,7 @@ export class VizierGRPCClient {
         req = this.buildRequest(script, funcs, mutation);
       } catch (error) {
         subscriber.next({
-          event: { type: 'error', error }, results, cancel: () => { }, error, completionReason: 'error',
+          event: { type: 'error', error }, results, cancel: undefined, error, completionReason: 'error',
         });
         subscriber.complete();
         subscriber.unsubscribe();
@@ -209,12 +209,13 @@ export class VizierGRPCClient {
       let updateInterval: number;
 
       const cancel = () => {
+        if (subscriber.closed) return;
         clearInterval(updateInterval);
         call.cancel();
         subscriber.next({
           event: { type: 'cancel' },
           results,
-          cancel: () => {},
+          cancel: undefined,
           completionReason: 'cancelled',
         });
         subscriber.complete();
@@ -226,19 +227,21 @@ export class VizierGRPCClient {
         completionReason?: ExecutionStateUpdate['completionReason'],
         error?: VizierQueryError,
       ) => {
-        if (!subscriber.closed) {
-          subscriber.next({
-            event, results, cancel, completionReason, error,
-          });
+        if (subscriber.closed) return;
+        const cancelIfNotDone = (error || completionReason) ? null : cancel;
+        subscriber.next({
+          event, results, cancel: cancelIfNotDone, completionReason, error,
+        });
+        if (error || completionReason) {
+          clearInterval(updateInterval);
+          call.cancel();
+          subscriber.complete();
+          subscriber.unsubscribe();
         }
       };
 
       const emitError = (error: VizierQueryError) => {
-        clearInterval(updateInterval);
-        call.cancel();
         emit({ type: 'error', error }, 'error', error);
-        subscriber.complete();
-        subscriber.unsubscribe();
       };
 
       updateInterval = window.setInterval(() => {
