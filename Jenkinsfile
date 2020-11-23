@@ -337,6 +337,21 @@ def dockerStep(String dockerConfig = '', String dockerImage = devDockerImageWith
   }
 }
 
+def runBazelCmd(String f) {
+  def retval = sh(
+    script: "bazel ${f}",
+    returnStatus: true)
+  // 4 means that tests not present.
+  // 38 means that bes update failed/
+  // Both are not fatal.
+  if (retval == 0 || retval == 4 || retval == 38) {
+    if (retval != 0) {
+      println("Bazel returned ${retval}, ignoring...")
+    }
+    return 0
+  }
+  return retval
+}
 /**
   * Runs bazel CI mode for main/phab builds.
   *
@@ -345,17 +360,17 @@ def dockerStep(String dockerConfig = '', String dockerImage = devDockerImageWith
 def bazelCICmd(String name, String targetConfig='clang', String targetCompilationMode='opt',
                String targetsSuffix, String bazelRunExtraArgs='') {
   warnError('Bazel command failed') {
-    sh """
-      bazel build ${bazelRunExtraArgs} -c ${targetCompilationMode} --config=${targetConfig} \
-        --target_pattern_file bazel_buildables_${targetsSuffix}
-    """
-    sh """
-      bazel test  ${bazelRunExtraArgs} -c ${targetCompilationMode} --config=${targetConfig}  \
-        --target_pattern_file bazel_tests_${targetsSuffix}
-    """
+    def buildableFile = "bazel_buildables_${targetsSuffix}"
+    def testFile = "bazel_tests_${targetsSuffix}"
+    if (runBazelCmd("build ${bazelRunExtraArgs} -c ${targetCompilationMode} --config=${targetConfig} --target_pattern_file ${buildableFile}") != 0) {
+      throw new Exception('Bazel run failed')
+    }
+    if (runBazelCmd("build ${bazelRunExtraArgs} -c ${targetCompilationMode} --config=${targetConfig} --target_pattern_file ${testFile}") != 0) {
+      throw new Exception('Bazel test failed')
+    }
   }
   createBazelStash("${name}-testlogs")
-               }
+}
 
 def processBazelLogs(String logBase) {
   step([
