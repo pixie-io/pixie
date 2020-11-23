@@ -14,6 +14,8 @@ namespace fs {
 // These are wrappers around std::filesystem functions to convert error codes to Status.
 // More functions should be added as needed.
 
+std::filesystem::path TempDirectoryPath();
+
 Status CreateSymlink(const std::filesystem::path& target, const std::filesystem::path& link);
 
 Status CreateDirectories(const std::filesystem::path& dir);

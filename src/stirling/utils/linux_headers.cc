@@ -6,6 +6,7 @@
 
 #include <fstream>
 #include <limits>
+#include <memory>
 #include <sstream>
 #include <vector>
 
@@ -14,6 +15,7 @@
 
 #include "src/common/base/file.h"
 #include "src/common/fs/fs_wrapper.h"
+#include "src/common/fs/temp_file.h"
 #include "src/common/minitar/minitar.h"
 #include "src/common/system/config.h"
 #include "src/common/zlib/zlib_wrapper.h"
@@ -192,11 +194,13 @@ Status GenAutoConf(const std::filesystem::path& linux_headers_base,
 
   // If file is gzipped, then unzip it and read that instead.
   if (config_file.extension() == ".gz") {
-    const std::string kConfigPath = "/tmp/proc_config";
     PL_ASSIGN_OR_RETURN(std::string config_gzip_contents, ReadFileToString(config_file));
     PL_ASSIGN_OR_RETURN(std::string config_contents, pl::zlib::Inflate(config_gzip_contents));
-    PL_RETURN_IF_ERROR(WriteFileFromString(kConfigPath, config_contents));
-    fin = std::ifstream(kConfigPath);
+
+    std::unique_ptr<fs::TempFile> tmp_file = fs::TempFile::Create();
+    std::filesystem::path tmp_file_path = tmp_file->path();
+    PL_RETURN_IF_ERROR(WriteFileFromString(tmp_file_path, config_contents));
+    fin = std::ifstream(tmp_file_path);
   }
 
   std::filesystem::path autoconf_file_path = linux_headers_base / "include/generated/autoconf.h";

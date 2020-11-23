@@ -31,6 +31,12 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "temp_file_test",
+    srcs = ["temp_file_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "inode_utils_test",
     srcs = ["inode_utils_test.cc"],
     deps = [":cc_library"],

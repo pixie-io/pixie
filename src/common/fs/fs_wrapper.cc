@@ -7,6 +7,17 @@
 namespace pl {
 namespace fs {
 
+std::filesystem::path TempDirectoryPath() {
+  std::error_code ec;
+  std::filesystem::path tmp_dir = std::filesystem::temp_directory_path(ec);
+  if (ec) {
+    LOG(WARNING) << absl::Substitute(
+        "Could not find temp directory from OS. Using /tmp instead. Message: $0", ec.message());
+    tmp_dir = "/tmp";
+  }
+  return tmp_dir;
+}
+
 Status CreateSymlink(const std::filesystem::path& target, const std::filesystem::path& link) {
   std::error_code ec;
   std::filesystem::create_symlink(target, link, ec);

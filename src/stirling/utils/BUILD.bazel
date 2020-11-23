@@ -37,7 +37,6 @@ pl_cc_test(
         ":cc_library",
         "//src/common/system:cc_library",
     ],
-    flaky = True,
 )
 
 pl_cc_test(
@@ -56,10 +55,10 @@ pl_cc_test(
     data = [
         "//src/stirling/testing/java:HelloWorld",
     ],
+    flaky = True,
     tags = [
         "no_coverage",
     ],
-    flaky = True,
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
