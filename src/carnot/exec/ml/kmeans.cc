@@ -1,4 +1,5 @@
 #include "src/carnot/exec/ml/kmeans.h"
+#include <random>
 
 #include "src/carnot/exec/ml/sampling.h"
 
@@ -59,7 +60,8 @@ bool KMeans::LloydsIteration(const Eigen::MatrixXf& points, const Eigen::VectorX
 }
 
 void KMeans::KMeansPlusPlusInit(const Eigen::MatrixXf& points, const Eigen::VectorXf& weights) {
-  auto firstCentroid = randint(points.rows());
+  std::uniform_int_distribution<> dist(0, points.rows() - 1);
+  auto firstCentroid = dist(random_gen_);
   centroids_(0, Eigen::all) = points(firstCentroid, Eigen::all);
 
   Eigen::VectorXf probDist(points.rows());
@@ -73,12 +75,9 @@ void KMeans::KMeansPlusPlusInit(const Eigen::MatrixXf& points, const Eigen::Vect
                       .minCoeff(&closestCentroid);
       probDist(j) = weights(j) * dist;
     }
-    probDist = probDist / probDist.sum();
-    // TODO(james): change sample_from_probs api to make sample_size 1 more efficient/ergonomic
-    // here.
-    Eigen::ArrayXi ind(1);
-    sample_from_probs(probDist, &ind, 1);
-    centroids_(i, Eigen::all) = points(ind(0), Eigen::all);
+    std::discrete_distribution<> pointDist(probDist.begin(), probDist.end());
+    auto ind = pointDist(random_gen_);
+    centroids_(i, Eigen::all) = points(ind, Eigen::all);
   }
 }
 

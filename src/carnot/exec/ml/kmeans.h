@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <random>
 #include <string>
 
 #include "src/carnot/exec/ml/coreset.h"
@@ -15,8 +16,9 @@ class KMeans {
   enum KMeansInitType {
     kKMeansPlusPlus = 0,
   };
-  explicit KMeans(int k, int max_iters = 10, KMeansInitType init_type = kKMeansPlusPlus)
-      : k_(k), max_iters_(max_iters), init_type_(init_type) {}
+  explicit KMeans(int k, int max_iters = 10, KMeansInitType init_type = kKMeansPlusPlus,
+                  unsigned int seed = 42)
+      : k_(k), max_iters_(max_iters), init_type_(init_type), random_gen_(seed) {}
 
   /**
    * Run kmeans on a weighted set of points.
@@ -44,6 +46,7 @@ class KMeans {
   int max_iters_;
   KMeansInitType init_type_;
   Eigen::MatrixXf centroids_;
+  std::mt19937 random_gen_;
 };
 
 }  // namespace ml
