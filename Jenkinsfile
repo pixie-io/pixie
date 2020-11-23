@@ -424,7 +424,7 @@ def publishDoxygenDocs() {
 }
 
 def sendSlackNotification() {
-  if (currentBuild.result != 'SUCCESS') {
+  if (currentBuild.result != 'SUCCESS' || currentBuild.result != null) {
     slackSend color: '#FF0000', message: "FAILED: Build - ${env.BUILD_TAG} -- URL: ${env.BUILD_URL}."
   }
   else if (currentBuild.getPreviousBuild() &&
@@ -434,7 +434,7 @@ def sendSlackNotification() {
 }
 
 def sendCloudReleaseSlackNotification(String profile) {
-  if (currentBuild.result == 'SUCCESS') {
+  if (currentBuild.result == 'SUCCESS' || currentBuild.result == null) {
     slackSend color: '#00FF00', message: "${profile} Cloud deployed - ${env.BUILD_TAG} -- URL: ${env.BUILD_URL}."
   } else {
     slackSend color: '#FF0000', message: "${profile} Cloud deployed FAILED - ${env.BUILD_TAG} -- URL: ${env.BUILD_URL}."
