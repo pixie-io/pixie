@@ -3,9 +3,12 @@ import gql from 'graphql-tag';
 import * as uuid from 'uuid';
 
 export const localGQLTypeDef = gql`
+  # Apollo defines this already, but it needs to be declared here for tooling to pick it up
+  directive @client on FIELD
+
   extend type Mutation {
     updateDrawer(drawerOpened: Boolean!): Boolean
-    appendHistory(history: ScriptExecution!): ID
+    appendHistory(history: ScriptExecutionIn!): ID
   }
 
   extend type Query {
@@ -16,9 +19,18 @@ export const localGQLTypeDef = gql`
   type ScriptExecution {
     id: ID!
     time: Date!
-    code: string
-    title: string
+    code: String
+    title: String
     status: ExecutionStatus!
+  }
+
+  # A single GraphQL field cannot be both an input and an output type. Even if identical, there must be two types.
+  input ScriptExecutionIn {
+      id: ID!
+      time: Date!
+      code: String
+      title: String
+      status: ExecutionStatus!
   }
 
   enum ExecutionStatus {
@@ -45,7 +57,7 @@ function updateDrawer(_, { drawerOpened }, { cache }) {
 }
 
 export const APPEND_HISTORY = gql`
-  mutation AppendHistory($history: ScriptExecution!) {
+  mutation AppendHistory($history: ScriptExecutionIn!) {
     appendHistory(history: $history) @client
   }
 `;
