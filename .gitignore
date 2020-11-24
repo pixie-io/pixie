@@ -64,3 +64,6 @@ skaffold_build/
 
 compile_commands.json
 clang_tidy.log
+
+# LSIF data for code intel
+dump.lsif

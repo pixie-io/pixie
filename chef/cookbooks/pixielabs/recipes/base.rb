@@ -19,7 +19,8 @@ include_recipe 'pixielabs::golang'
 
 execute 'install node packages' do
   command %(/opt/node/bin/npm install -g \
-            tslint@5.11.0 typescript@3.0.1 yarn@1.22.4 webpack@4.42.0 jshint@2.11.0 jest@23.4.2)
+            tslint@5.11.0 typescript@3.0.1 yarn@1.22.4 webpack@4.42.0 \
+            jshint@2.11.0 jest@23.4.2 @sourcegraph/lsif-tsc@0.6.6)
 end
 
 directory '/opt/pixielabs' do
@@ -88,6 +89,17 @@ remote_file '/opt/pixielabs/bin/yq' do
   checksum node['yq']['sha256']
 end
 
+remote_file '/opt/pixielabs/bin/src' do
+  source node['src']['download_path']
+  mode 0755
+  checksum node['src']['sha256']
+end
+
+remote_file '/opt/pixielabs/bin/lsif-go' do
+  source node['lsif-go']['download_path']
+  mode 0755
+  checksum node['lsif-go']['sha256']
+end
 
 remote_file '/tmp/gsutil.tar.gz' do
   source node['gsutil']['download_path']

@@ -84,6 +84,16 @@ if node[:platform] == 'ubuntu'
   default['yq']['sha256']        =
     '11a830ffb72aad0eaa7640ef69637068f36469be4f68a93da822fbe454e998f8'
 
+  default['src']['download_path'] =
+    'https://github.com/sourcegraph/src-cli/releases/download/3.22.3/src_linux_amd64'
+  default['src']['sha256']        =
+    '4bf9cf9756bc2b117eccbd4bb259a8187066833bf9babf9086577907563bbaec'
+
+  default['lsif-go']['download_path'] =
+    'https://github.com/sourcegraph/lsif-go/releases/download/v1.2.0/src_linux_amd64'
+  default['lsif-go']['sha256']            =
+    '35902e7dd483ca5961d866de143e0cadf73b7e55a25ca45db64cfafa6025e8bd'
+
   default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil_4.54.tar.gz'
   default['gsutil']['sha256']        = 'a6698479af8dc26e2ed809102e9e5d813f475bca44ce7007ed4e25ee79a3289c'
 elsif node[:platform] == 'mac_os_x'
@@ -144,6 +154,16 @@ elsif node[:platform] == 'mac_os_x'
     'https://github.com/mikefarah/yq/releases/download/3.2.1/yq_darwin_amd64'
   default['yq']['sha256']        =
     '116f74a384d0b4fa31a58dd01cfcdeffa6fcd21c066de223cbb0ebc042a8bc28'
+
+  default['src']['download_path'] =
+    'https://github.com/sourcegraph/src-cli/releases/download/3.22.3/src_darwin_amd64'
+  default['src']['sha256']        =
+    '6d3ff2d9222b90248ca8311f6ffbcd050a3a7484fd94b71f49ecf2866a38b315'
+
+  default['lsif-go']['download_path'] =
+    'https://github.com/sourcegraph/lsif-go/releases/download/v1.2.0/src_darwin_amd64'
+  default['lsif-go']['sha256']            =
+    'b0b07e806ae39e0a8494bfd51a41027671d28e67f122ed3a26958ae07337a337'
 
   default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil_4.54.tar.gz'
   default['gsutil']['sha256']        = 'a6698479af8dc26e2ed809102e9e5d813f475bca44ce7007ed4e25ee79a3289c'
