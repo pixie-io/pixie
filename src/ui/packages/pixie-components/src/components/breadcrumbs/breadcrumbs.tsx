@@ -37,6 +37,7 @@ const styles = ({
     display: 'inline-flex',
     paddingRight: spacing(0.5),
     alignItems: 'center',
+    height: '100%',
   },
   title: {
     fontWeight: typography.fontWeightMedium,
