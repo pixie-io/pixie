@@ -136,6 +136,10 @@ ${bazel_query} "kind(cc_binary, attr('tags', 'requires_bpf', ${buildables_kind})
 ${bazel_query} "kind(cc_test, attr('tags', 'requires_bpf', ${tests_kind})) \
   ${sanitizer_only}" > bazel_tests_bpf_sanitizer
 
-if [[ -s bazel_buildables_clang_dbg ]]; then
+# Should we run clang-tidy?
+${bazel_query} "kind(cc_binary, ${buildables_kind})" > bazel_buildables_cc
+${bazel_query} "kind(cc_test, ${tests_kind})" > bazel_tests_cc
+
+if [ "${all_targets}" = "true" ] || [[ -s bazel_buildables_cc ]] || [[ -s bazel_tests_cc ]]; then
   touch bazel_cc_changed
 fi
