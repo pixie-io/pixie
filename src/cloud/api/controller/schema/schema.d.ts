@@ -881,8 +881,8 @@ export interface MutationToDeleteDeploymentKeyResolver<TParent = any, TResult = 
 }
 
 export interface MutationToUpdateUserSettingsArgs {
-  keys: Array<string>;
-  values: Array<string>;
+  keys: Array<string | null>;
+  values: Array<string | null>;
 }
 export interface MutationToUpdateUserSettingsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: MutationToUpdateUserSettingsArgs, context: any, info: GraphQLResolveInfo): TResult;

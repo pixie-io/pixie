@@ -22,7 +22,7 @@ import (
 
 func CreateTestContext() context.Context {
 	sCtx := authcontext.New()
-	sCtx.Claims = svcutils.GenerateJWTForUser("abcdef", "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "test@test.com", time.Now())
+	sCtx.Claims = svcutils.GenerateJWTForUser("6ba7b810-9dad-11d1-80b4-00c04fd430c9", "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "test@test.com", time.Now())
 	return authcontext.NewContext(context.Background(), sCtx)
 }
 

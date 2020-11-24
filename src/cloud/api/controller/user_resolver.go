@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/graph-gophers/graphql-go"
@@ -74,16 +73,18 @@ func (u *UserInfoResolver) OrgName() string {
 
 // UserSettingResolver resolves a user setting.
 type UserSettingResolver struct {
+	key   string
+	value string
 }
 
 // Key gets the key for the user setting.
 func (u *UserSettingResolver) Key() string {
-	return ""
+	return u.key
 }
 
 // Value gets the value for the user setting.
 func (u *UserSettingResolver) Value() string {
-	return ""
+	return u.value
 }
 
 type userSettingsArgs struct {
@@ -92,7 +93,31 @@ type userSettingsArgs struct {
 
 // UserSettings resolves user settings information.
 func (q *QueryResolver) UserSettings(ctx context.Context, args *userSettingsArgs) ([]*UserSettingResolver, error) {
-	return nil, errors.New("Not yet implemented")
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	keys := make([]string, len(args.Keys))
+	for i := range args.Keys {
+		keys[i] = *args.Keys[i]
+	}
+
+	grpcAPI := q.Env.ProfileServiceClient
+	resp, err := grpcAPI.GetUserSettings(ctx, &profilepb.GetUserSettingsRequest{
+		ID:   pbutils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
+		Keys: keys,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	resolvers := make([]*UserSettingResolver, len(args.Keys))
+	for i, k := range resp.Keys {
+		resolvers[i] = &UserSettingResolver{k, resp.Values[i]}
+	}
+
+	return resolvers, nil
 }
 
 type updateUserSettingsArgs struct {
@@ -102,5 +127,29 @@ type updateUserSettingsArgs struct {
 
 // UpdateUserSettings updates the user settings for the current user.
 func (q *QueryResolver) UpdateUserSettings(ctx context.Context, args *updateUserSettingsArgs) (bool, error) {
-	return false, errors.New("Not yet implemented")
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	grpcAPI := q.Env.ProfileServiceClient
+
+	keys := make([]string, len(args.Keys))
+	for i := range args.Keys {
+		keys[i] = *args.Keys[i]
+	}
+	values := make([]string, len(args.Values))
+	for i := range args.Values {
+		values[i] = *args.Values[i]
+	}
+
+	resp, err := grpcAPI.UpdateUserSettings(ctx, &profilepb.UpdateUserSettingsRequest{
+		ID:     pbutils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
+		Keys:   keys,
+		Values: values,
+	})
+	if err != nil {
+		return false, err
+	}
+
+	return resp.OK, nil
 }

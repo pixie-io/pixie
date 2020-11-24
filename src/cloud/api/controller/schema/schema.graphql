@@ -187,7 +187,7 @@ type Mutation {
   UpdateVizierConfig(clusterID: ID!, passthroughEnabled: Boolean): Boolean!
   CreateDeploymentKey: DeploymentKey!
   DeleteDeploymentKey(id: ID!): Boolean!
-  UpdateUserSettings(keys: [String!]!, values: [String!]!): Boolean!
+  UpdateUserSettings(keys: [String]!, values: [String]!): Boolean!
 }
 
 type CLIArtifact {
