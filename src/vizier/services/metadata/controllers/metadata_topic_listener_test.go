@@ -37,7 +37,7 @@ func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
 		Return(nil)
 
 	isLeader := true
-	mdh, _ := controllers.NewMetadataHandler(mockMdStore, &isLeader)
+	mdh, _ := controllers.NewMetadataHandler(mockMdStore, &isLeader, nil)
 
 	updates := make([][]byte, 0)
 	// Create Metadata Service controller.
@@ -163,7 +163,7 @@ func TestMetadataTopicListener_ProcessMessage(t *testing.T) {
 		UpdateSubscriberResourceVersion("cloud", "")
 
 	isLeader := true
-	mdh, _ := controllers.NewMetadataHandler(mockMdStore, &isLeader)
+	mdh, _ := controllers.NewMetadataHandler(mockMdStore, &isLeader, nil)
 	updates := make([][]byte, 0)
 	// Create Metadata Service controller.
 	mdl, err := controllers.NewMetadataTopicListener(mockMdStore, mdh, func(topic string, b []byte) error {
@@ -251,7 +251,7 @@ func TestMetadataTopicListener_ProcessMessageBatch(t *testing.T) {
 				UpdateSubscriberResourceVersion("cloud", "")
 
 			isLeader := true
-			mdh, _ := controllers.NewMetadataHandler(mockMdStore, &isLeader)
+			mdh, _ := controllers.NewMetadataHandler(mockMdStore, &isLeader, nil)
 			updates := make([]*metadatapb.ResourceUpdate, 0)
 			// Create Metadata Service controller.
 			numBatches := 0

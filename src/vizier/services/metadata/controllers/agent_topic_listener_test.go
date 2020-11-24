@@ -56,7 +56,7 @@ func setup(t *testing.T, sendMsgFn func(topic string, b []byte) error) (*control
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
-	atl, _ := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, tracepointMgr, mockMdStore, sendMsgFn, clock)
+	atl, _ := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, tracepointMgr, mockMdStore, sendMsgFn, nil, clock)
 
 	cleanup := func() {
 		ctrl.Finish()

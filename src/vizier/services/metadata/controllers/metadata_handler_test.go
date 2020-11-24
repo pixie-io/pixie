@@ -212,7 +212,7 @@ func TestObjectToEndpointsProto(t *testing.T) {
 	}
 
 	isLeader := true
-	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader)
+	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader, nil)
 	assert.Nil(t, err)
 	mh.AddSubscriber(mockSubscriber)
 
@@ -287,7 +287,7 @@ func TestKubernetesEndpointHandler(t *testing.T) {
 	}
 
 	isLeader := true
-	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader)
+	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader, nil)
 	assert.Nil(t, err)
 
 	ch := mh.GetChannel()
@@ -371,7 +371,7 @@ func TestObjectToServiceProto(t *testing.T) {
 	}
 
 	isLeader := true
-	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader)
+	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader, nil)
 	assert.Nil(t, err)
 
 	ch := mh.GetChannel()
@@ -494,7 +494,7 @@ func TestObjectToPodProto(t *testing.T) {
 	}
 
 	isLeader := true
-	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader)
+	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader, nil)
 	assert.Nil(t, err)
 	mh.AddSubscriber(mockSubscriber)
 
@@ -792,7 +792,7 @@ func TestSyncPodData(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 	isLeader := true
-	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, nil, clock)
 	assert.Nil(t, err)
 
 	mh.SyncPodData(&podList)
@@ -875,7 +875,7 @@ func TestSyncEndpointsData(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 	isLeader := true
-	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, nil, clock)
 	assert.Nil(t, err)
 
 	mh.SyncEndpointsData(&epList)
@@ -958,7 +958,7 @@ func TestSyncServicesData(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 	isLeader := true
-	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, nil, clock)
 	assert.Nil(t, err)
 
 	mh.SyncServiceData(&sList)
@@ -1041,7 +1041,7 @@ func TestSyncNamespacesData(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 	isLeader := true
-	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, nil, clock)
 	assert.Nil(t, err)
 
 	mh.SyncNamespaceData(&nList)
@@ -1123,7 +1123,7 @@ func TestSyncNodesData(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 	isLeader := true
-	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, nil, clock)
 	assert.Nil(t, err)
 
 	mh.SyncNodeData(&nList)

@@ -179,8 +179,11 @@ func main() {
 		keepAlive = false
 	}()
 
+	// Create a stats handler to track internal metadata statistics.
+	statsHandler := controllers.NewStatsHandler()
+
 	// Listen for K8s metadata updates.
-	mdHandler, err := controllers.NewMetadataHandler(mds, &isLeader)
+	mdHandler, err := controllers.NewMetadataHandler(mds, &isLeader, statsHandler)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create metadata handler")
 	}
@@ -188,7 +191,8 @@ func main() {
 
 	mdHandler.ProcessSubscriberUpdates()
 
-	mc, err := controllers.NewMessageBusController(nc, "update_agent", agtMgr, tracepointMgr, mds, mdHandler, &isLeader)
+	mc, err := controllers.NewMessageBusController(nc, "update_agent", agtMgr, tracepointMgr, mds,
+		mdHandler, statsHandler, &isLeader)
 
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to message bus")
@@ -224,4 +228,5 @@ func main() {
 
 	s.Start()
 	s.StopOnInterrupt()
+	statsHandler.Stop()
 }

@@ -97,10 +97,13 @@ type MetadataHandler struct {
 
 	// This is a cache of all the leader election message.
 	leaderMsgs map[k8stypes.UID]*v1.Endpoints
+	// computes internal stats
+	statsHandler *StatsHandler
 }
 
 // NewMetadataHandlerWithClock creates a new metadata handler with a clock.
-func NewMetadataHandlerWithClock(mds MetadataStore, isLeader *bool, clock utils.Clock) (*MetadataHandler, error) {
+func NewMetadataHandlerWithClock(mds MetadataStore, isLeader *bool, statsHandler *StatsHandler,
+	clock utils.Clock) (*MetadataHandler, error) {
 	c := make(chan *K8sMessage)
 	subscriberUpdates := make(chan *UpdateMessage, maxSubscriberUpdates)
 
@@ -112,6 +115,7 @@ func NewMetadataHandlerWithClock(mds MetadataStore, isLeader *bool, clock utils.
 		isLeader:          isLeader,
 		leaderMsgs:        make(map[k8stypes.UID]*v1.Endpoints),
 		subscribers:       make([]MetadataSubscriber, 0),
+		statsHandler:      statsHandler,
 	}
 
 	go mh.MetadataListener()
@@ -120,9 +124,9 @@ func NewMetadataHandlerWithClock(mds MetadataStore, isLeader *bool, clock utils.
 }
 
 // NewMetadataHandler creates a new metadata handler.
-func NewMetadataHandler(mds MetadataStore, isLeader *bool) (*MetadataHandler, error) {
+func NewMetadataHandler(mds MetadataStore, isLeader *bool, statsHandler *StatsHandler) (*MetadataHandler, error) {
 	clock := utils.SystemClock{}
-	return NewMetadataHandlerWithClock(mds, isLeader, clock)
+	return NewMetadataHandlerWithClock(mds, isLeader, statsHandler, clock)
 }
 
 // GetChannel returns the channel the MetadataHandler is listening to.
@@ -180,6 +184,10 @@ func (mh *MetadataHandler) MetadataListener() {
 		msg, more := <-mh.ch
 		if !more {
 			return
+		}
+
+		if mh.statsHandler != nil {
+			mh.statsHandler.HandleK8sUpdate(msg)
 		}
 
 		switch msg.ObjectType {

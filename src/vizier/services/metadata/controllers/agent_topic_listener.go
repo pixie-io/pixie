@@ -29,6 +29,8 @@ type AgentTopicListener struct {
 	agentMap map[uuid.UUID]*AgentHandler
 	// Mutex that should be locked when acessing or deleting from the agent map.
 	mapMu sync.Mutex
+	// computes internal stats
+	statsHandler *StatsHandler
 }
 
 // AgentHandler is responsible for handling messages for a specific agent.
@@ -49,13 +51,15 @@ type AgentHandler struct {
 }
 
 // NewAgentTopicListener creates a new agent topic listener.
-func NewAgentTopicListener(agentManager AgentManager, tracepointManager *TracepointManager, mdStore MetadataStore, sendMsgFn SendMessageFn) (*AgentTopicListener, error) {
+func NewAgentTopicListener(agentManager AgentManager, tracepointManager *TracepointManager, mdStore MetadataStore,
+	sendMsgFn SendMessageFn, statsHandler *StatsHandler) (*AgentTopicListener, error) {
 	clock := utils.SystemClock{}
-	return NewAgentTopicListenerWithClock(agentManager, tracepointManager, mdStore, sendMsgFn, clock)
+	return NewAgentTopicListenerWithClock(agentManager, tracepointManager, mdStore, sendMsgFn, statsHandler, clock)
 }
 
 // NewAgentTopicListenerWithClock creates a new agent topic listener with a clock.
-func NewAgentTopicListenerWithClock(agentManager AgentManager, tracepointManager *TracepointManager, mdStore MetadataStore, sendMsgFn SendMessageFn, clock utils.Clock) (*AgentTopicListener, error) {
+func NewAgentTopicListenerWithClock(agentManager AgentManager, tracepointManager *TracepointManager, mdStore MetadataStore,
+	sendMsgFn SendMessageFn, statsHandler *StatsHandler, clock utils.Clock) (*AgentTopicListener, error) {
 	atl := &AgentTopicListener{
 		clock:             clock,
 		agentManager:      agentManager,
@@ -63,6 +67,7 @@ func NewAgentTopicListenerWithClock(agentManager AgentManager, tracepointManager
 		sendMessage:       sendMsgFn,
 		mdStore:           mdStore,
 		agentMap:          make(map[uuid.UUID]*AgentHandler),
+		statsHandler:      statsHandler,
 	}
 
 	// Initialize map with existing agents.
@@ -169,6 +174,10 @@ func (a *AgentTopicListener) createAgentHandler(agentID uuid.UUID) *AgentHandler
 }
 
 func (a *AgentTopicListener) forwardAgentHeartBeat(m *messages.Heartbeat, msg *nats.Msg) {
+	if a.statsHandler != nil {
+		a.statsHandler.HandleAgentHeartbeat(m)
+	}
+
 	// Check if this is a known agent and forward it to that agentHandler if it exists.
 	// Otherwise, send back a NACK because the agent doesn't exist.
 	agentID, err := utils.UUIDFromProto(m.AgentID)

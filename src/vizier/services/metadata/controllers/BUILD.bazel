@@ -15,6 +15,7 @@ go_library(
         "metadata_topic_listener.go",
         "mock.go",
         "server.go",
+        "stats.go",
         "tracepoint.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers",
