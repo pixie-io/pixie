@@ -723,6 +723,75 @@ func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.
 	return nil
 }
 
+// PruneComputedSchema cleans any dead agents from the computed schema. This is a temporary fix, to address a larger
+// consistency and race-condition problem that will be addressed by the upcoming extensive refactor of the metadata service.
+func (mds *KVMetadataStore) PruneComputedSchema() error {
+	// Fetch all existing agents.
+	agents, err := mds.GetAgents()
+	if err != nil {
+		return err
+	}
+	// Make a map from the agent IDs.
+	existingAgents := make(map[uuid.UUID]bool)
+	for _, agent := range agents {
+		existingAgents[utils.UUIDFromProtoOrNil(agent.Info.AgentID)] = true
+	}
+
+	// Fetch current computed schema.
+	computedSchemaPb, err := mds.GetComputedSchema()
+	if err != nil {
+		return err
+	}
+
+	if computedSchemaPb == nil {
+		return nil
+	}
+	computedSchemaPb = initializeComputedSchema(computedSchemaPb)
+
+	tableInfos := make([]*storepb.TableInfo, 0)
+	tableToAgents := make(map[string]*storepb.ComputedSchema_AgentIDs)
+
+	existingTables := make(map[string]bool)
+
+	// Filter out any dead agents from the table -> agent mapping.
+	for tableName, agentIDs := range computedSchemaPb.TableNameToAgentIDs {
+		prunedIDs := []*uuidpb.UUID{}
+		for i, agentID := range agentIDs.AgentID {
+			if _, ok := existingAgents[utils.UUIDFromProtoOrNil(agentID)]; ok {
+				prunedIDs = append(prunedIDs, agentIDs.AgentID[i])
+			}
+		}
+		if len(prunedIDs) > 0 {
+			tableToAgents[tableName] = &storepb.ComputedSchema_AgentIDs{
+				AgentID: prunedIDs,
+			}
+			existingTables[tableName] = true
+		}
+	}
+
+	// Filter out any tables that should now be deleted.
+	for i, table := range computedSchemaPb.Tables {
+		if _, ok := existingTables[table.Name]; ok {
+			tableInfos = append(tableInfos, computedSchemaPb.Tables[i])
+		}
+	}
+
+	// Write pruned schema to the datastore.
+	newComputedSchemaPb := &storepb.ComputedSchema{
+		Tables:              tableInfos,
+		TableNameToAgentIDs: tableToAgents,
+	}
+	computedSchema, err := newComputedSchemaPb.Marshal()
+	if err != nil {
+		log.WithError(err).Error("Could not marshal computed schema update message.")
+		return err
+	}
+
+	mds.cache.Set(getComputedSchemasKey(), string(computedSchema))
+
+	return nil
+}
+
 /* =============== Process Operations ============== */
 
 // UpdateProcesses updates the given processes in the metadata store.

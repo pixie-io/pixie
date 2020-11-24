@@ -730,6 +730,103 @@ func TestKVMetadataStore_UpdateProcesses(t *testing.T) {
 	assert.Equal(t, "new name", p2Pb.Name)
 }
 
+func TestKVMetadataStore_PruneComputedSchema(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	liveAgent := utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000")
+	deadAgent := utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001")
+	anotherLiveAgent := utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440002")
+
+	tableToAgentsMap := make(map[string]*storepb.ComputedSchema_AgentIDs)
+	tableToAgentsMap["testTable"] = &storepb.ComputedSchema_AgentIDs{
+		AgentID: []*uuidpb.UUID{
+			liveAgent,
+			deadAgent,
+		},
+	}
+	tableToAgentsMap["tableToBeDeleted"] = &storepb.ComputedSchema_AgentIDs{
+		AgentID: []*uuidpb.UUID{
+			deadAgent,
+		},
+	}
+	tableToAgentsMap["anotherTable"] = &storepb.ComputedSchema_AgentIDs{
+		AgentID: []*uuidpb.UUID{
+			anotherLiveAgent,
+			liveAgent,
+		},
+	}
+
+	origSchema := &storepb.ComputedSchema{
+		Tables: []*storepb.TableInfo{
+			&storepb.TableInfo{Name: "testTable"},
+			&storepb.TableInfo{Name: "tableToBeDeleted"},
+			&storepb.TableInfo{Name: "anotherTable"},
+		},
+		TableNameToAgentIDs: tableToAgentsMap,
+	}
+	origSchemaBytes, _ := origSchema.Marshal()
+
+	mockDs.
+		EXPECT().
+		Get("/computedSchema").
+		Return(origSchemaBytes, nil)
+
+	agent1 := &agentpb.Agent{
+		Info: &agentpb.AgentInfo{
+			AgentID: liveAgent,
+		},
+	}
+	agent1Bytes, _ := agent1.Marshal()
+	agent2 := &agentpb.Agent{
+		Info: &agentpb.AgentInfo{
+			AgentID: anotherLiveAgent,
+		},
+	}
+	agent2Bytes, _ := agent2.Marshal()
+
+	mockDs.
+		EXPECT().GetWithPrefix("/agent/").
+		Return(
+			[]string{"/agent/123e4567-e89b-12d3-a456-426655440000", "/agent/123e4567-e89b-12d3-a456-426655440002"},
+			[][]byte{agent1Bytes, agent2Bytes}, nil)
+
+	expectedTableToAgentsMap := make(map[string]*storepb.ComputedSchema_AgentIDs)
+	expectedTableToAgentsMap["testTable"] = &storepb.ComputedSchema_AgentIDs{
+		AgentID: []*uuidpb.UUID{
+			liveAgent,
+		},
+	}
+	expectedTableToAgentsMap["anotherTable"] = &storepb.ComputedSchema_AgentIDs{
+		AgentID: []*uuidpb.UUID{
+			anotherLiveAgent,
+			liveAgent,
+		},
+	}
+
+	expectedSchema := &storepb.ComputedSchema{
+		Tables: []*storepb.TableInfo{
+			&storepb.TableInfo{Name: "testTable"},
+			&storepb.TableInfo{Name: "anotherTable"},
+		},
+		TableNameToAgentIDs: expectedTableToAgentsMap,
+	}
+
+	expectedSchemaBytes, _ := expectedSchema.Marshal()
+	err = mds.PruneComputedSchema()
+	assert.Nil(t, err)
+
+	schema, err := c.Get("/computedSchema")
+	assert.Nil(t, err)
+	assert.Equal(t, string(expectedSchemaBytes), string(schema))
+}
+
 func TestKVMetadataStore_GetProcesses(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

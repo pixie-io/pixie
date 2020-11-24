@@ -147,6 +147,23 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Could not create metadata store")
 	}
+	schemaQuitCh := make(chan bool)
+	defer func() { schemaQuitCh <- true }()
+	go func() {
+		schemaTimer := time.NewTicker(1 * time.Minute)
+		defer schemaTimer.Stop()
+		for {
+			select {
+			case <-schemaQuitCh:
+				return
+			case <-schemaTimer.C:
+				schemaErr := mds.PruneComputedSchema()
+				if schemaErr != nil {
+					log.WithError(schemaErr).Info("Failed to prune computed schema")
+				}
+			}
+		}
+	}()
 
 	// Initialize tracepoint handler.
 	tracepointMgr := controllers.NewTracepointManager(nc, mds)
