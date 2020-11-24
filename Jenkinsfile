@@ -365,7 +365,7 @@ def bazelCICmd(String name, String targetConfig='clang', String targetCompilatio
     if (runBazelCmd("build ${bazelRunExtraArgs} -c ${targetCompilationMode} --config=${targetConfig} --target_pattern_file ${buildableFile}") != 0) {
       throw new Exception('Bazel run failed')
     }
-    if (runBazelCmd("build ${bazelRunExtraArgs} -c ${targetCompilationMode} --config=${targetConfig} --target_pattern_file ${testFile}") != 0) {
+    if (runBazelCmd("test ${bazelRunExtraArgs} -c ${targetCompilationMode} --config=${targetConfig} --target_pattern_file ${testFile}") != 0) {
       throw new Exception('Bazel test failed')
     }
   }
