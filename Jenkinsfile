@@ -245,12 +245,11 @@ def writeBazelRCFile() {
 }
 
 def createBazelStash(String stashName) {
-  if (!isMainCodeReviewRun || shFileExists('bazel-testlogs-archive')) {
-    sh 'rm -rf bazel-testlogs-archive'
-    sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-    stashOnGCS(stashName, 'bazel-testlogs-archive/**')
-    stashList.add(stashName)
-  }
+  sh 'rm -rf bazel-testlogs-archive'
+  sh 'mkdir -p bazel-testlogs-archive'
+  sh 'cp -a bazel-testlogs/ bazel-testlogs-archive || true'
+  stashOnGCS(stashName, 'bazel-testlogs-archive/**')
+  stashList.add(stashName)
 }
 
 def RetryOnK8sDownscale(Closure body, int times=5) {
