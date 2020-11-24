@@ -31,7 +31,7 @@ def fqdn_list(start: str):
     df = df[not px.contains(df.fqdn,'.internal')]
 
     # Add link to script that will show all requests for specific query.
-    df.link = px.script_reference('All DNS requests containing FQDN as substring', 'sotw/ndots_all_queries', {
+    df.link = px.script_reference('All DNS requests containing FQDN as substring', 'sotw/dns_queries_filtered', {
         'start_time': start,
         'query_name_filter': df.fqdn
     })
