@@ -9,9 +9,9 @@
   ],
   "globalFuncs": [
     {
-      "outputName": "fqdns",
+      "outputName": "fqdn_list",
       "func": {
-        "name": "fqdns",
+        "name": "fqdn_list",
         "args": [
           {
             "name": "start",

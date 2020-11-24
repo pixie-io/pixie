@@ -21,24 +21,23 @@ def fqdns(start: str):
     df.idx1 = px.find(df.req_body, '\"name\":')
     df.query_name_partial = px.substring(df.req_body, df.idx1 + 8, px.length(df.req_body) - (df.idx1 + 8) - 3)
     df.idx2 = px.find(df.query_name_partial, ',')
-    df.query_name = px.substring(df.query_name_partial, 0, df.idx2 - 1)
-    df = df.drop(['idx1', 'idx2'])
+    df.name = px.substring(df.query_name_partial, 0, df.idx2 - 1)
 
     # Filter for resolved requests
     df = df[df.request_resolved == True]
 
     # Filter out queries for local domain names
-    df = df[not px.contains(df.query_name,'.local')]
+    df = df[not px.contains(df.name,'.local')]
 
     # Add link to script that will show all requests for specific query.
     df.link = px.script_reference('Link to all DNS requests', 'sotw/ndots_all_queries', {
         'start_time': start,
-        'hostname': df.query_name
+        'hostname': df.name
     })
 
     # Group by query name and aggregate count of requests
-    df = df.groupby(['query_name', 'link']).agg(
-        num_requests_test=('request_resolved', px.count)
+    df = df.groupby(['name', 'link']).agg(
+        num_requests=('request_resolved', px.count)
     )
 
     return df
