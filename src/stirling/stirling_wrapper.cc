@@ -295,7 +295,7 @@ int main(int argc, char** argv) {
   if (FLAGS_timeout_secs > 0) {
     // Run for the specified amount of time, then terminate.
     LOG(INFO) << absl::Substitute("Running for $0 seconds.", FLAGS_timeout_secs);
-    std::this_thread::sleep_for(std::chrono::milliseconds(FLAGS_timeout_secs));
+    std::this_thread::sleep_for(std::chrono::seconds(FLAGS_timeout_secs));
     stirling->Stop();
   }
 

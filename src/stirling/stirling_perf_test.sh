@@ -1,5 +1,16 @@
 #!/bin/bash -e
 
+# This test checks the performance overhead of stirling_wrapper.
+# Two ways to run this test:
+# 1) Locally. It will build in -c opt mode and prompt for password to run with sudo.
+#   ./src/stirling/stirling_perf_test.sh
+# 2) Through bazel.
+#    sudo echo # To prime sudo password, so it doesn't prompt again.
+#    bazel run -c opt //src/stirling:stirling_perf_test
+# Note that Jenkins uses the bazel approach, but doesn't need the sudo prompt,
+# because it already has privileges.
+
+
 # Clean-up any spawned background processes on exit.
 trap 'kill $(jobs -p) &> /dev/null || true' SIGINT SIGTERM EXIT
 
@@ -19,16 +30,19 @@ if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
 else
     # If the script was run through bazel, the locations are passed as arguments.
     stirling_wrapper=$1
+
+    # Check that sudo won't block. If it does, this will error and the script will exit.
+    echo "If trying to run this locally, use: sudo ./src/stirling/stirling_perf_test.sh"
+    sudo -n echo
 fi
 
 ###############################################################################
 # Main test: Run stirling_wrapper.
 ###############################################################################
 
-
 TIMEOUT_SECS=60
 echo "Running stirling_wrapper for $TIMEOUT_SECS seconds after init."
-flags="--timeout_secs=$TIMEOUT_SECS"
+flags="--timeout_secs=$TIMEOUT_SECS --sources=kProd --print_record_batches="
 out=$(run_prompt_sudo "$stirling_wrapper" $flags 2>&1)
 
 ###############################################################################
