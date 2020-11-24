@@ -180,6 +180,42 @@ func (mr *MockProfileServiceClientMockRecorder) GetOrgs(ctx, in interface{}, opt
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgs", reflect.TypeOf((*MockProfileServiceClient)(nil).GetOrgs), varargs...)
 }
 
+// GetUserSettings mocks base method
+func (m *MockProfileServiceClient) GetUserSettings(ctx context.Context, in *profilepb.GetUserSettingsRequest, opts ...grpc.CallOption) (*profilepb.GetUserSettingsResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetUserSettings", varargs...)
+	ret0, _ := ret[0].(*profilepb.GetUserSettingsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserSettings indicates an expected call of GetUserSettings
+func (mr *MockProfileServiceClientMockRecorder) GetUserSettings(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserSettings", reflect.TypeOf((*MockProfileServiceClient)(nil).GetUserSettings), varargs...)
+}
+
+// UpdateUserSettings mocks base method
+func (m *MockProfileServiceClient) UpdateUserSettings(ctx context.Context, in *profilepb.UpdateUserSettingsRequest, opts ...grpc.CallOption) (*profilepb.UpdateUserSettingsResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateUserSettings", varargs...)
+	ret0, _ := ret[0].(*profilepb.UpdateUserSettingsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateUserSettings indicates an expected call of UpdateUserSettings
+func (mr *MockProfileServiceClientMockRecorder) UpdateUserSettings(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserSettings", reflect.TypeOf((*MockProfileServiceClient)(nil).UpdateUserSettings), varargs...)
+}
+
 // MockProfileServiceServer is a mock of ProfileServiceServer interface
 type MockProfileServiceServer struct {
 	ctrl     *gomock.Controller
@@ -305,4 +341,30 @@ func (m *MockProfileServiceServer) GetOrgs(arg0 context.Context, arg1 *profilepb
 // GetOrgs indicates an expected call of GetOrgs
 func (mr *MockProfileServiceServerMockRecorder) GetOrgs(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgs", reflect.TypeOf((*MockProfileServiceServer)(nil).GetOrgs), arg0, arg1)
+}
+
+// GetUserSettings mocks base method
+func (m *MockProfileServiceServer) GetUserSettings(arg0 context.Context, arg1 *profilepb.GetUserSettingsRequest) (*profilepb.GetUserSettingsResponse, error) {
+	ret := m.ctrl.Call(m, "GetUserSettings", arg0, arg1)
+	ret0, _ := ret[0].(*profilepb.GetUserSettingsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserSettings indicates an expected call of GetUserSettings
+func (mr *MockProfileServiceServerMockRecorder) GetUserSettings(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserSettings", reflect.TypeOf((*MockProfileServiceServer)(nil).GetUserSettings), arg0, arg1)
+}
+
+// UpdateUserSettings mocks base method
+func (m *MockProfileServiceServer) UpdateUserSettings(arg0 context.Context, arg1 *profilepb.UpdateUserSettingsRequest) (*profilepb.UpdateUserSettingsResponse, error) {
+	ret := m.ctrl.Call(m, "UpdateUserSettings", arg0, arg1)
+	ret0, _ := ret[0].(*profilepb.UpdateUserSettingsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateUserSettings indicates an expected call of UpdateUserSettings
+func (mr *MockProfileServiceServerMockRecorder) UpdateUserSettings(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserSettings", reflect.TypeOf((*MockProfileServiceServer)(nil).UpdateUserSettings), arg0, arg1)
 }

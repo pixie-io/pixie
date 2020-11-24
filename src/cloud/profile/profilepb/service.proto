@@ -20,6 +20,10 @@ service ProfileService {
     rpc GetOrgByDomain(GetOrgByDomainRequest) returns (OrgInfo) {}
     rpc UpdateUser(UpdateUserRequest) returns (UserInfo) {}
     rpc GetOrgs(GetOrgsRequest) returns (GetOrgsResponse) {}
+
+    // Calls for handling user settings.
+    rpc GetUserSettings(GetUserSettingsRequest) returns (GetUserSettingsResponse) {}
+    rpc UpdateUserSettings(UpdateUserSettingsRequest) returns (UpdateUserSettingsResponse) {}
 }
 
 
@@ -109,4 +113,42 @@ message UpdateUserRequest {
                         (gogoproto.customname) = "ID"
                         ];
   string profile_picture = 2;
+}
+
+// A request to get the user settings for a particular user.
+message GetUserSettingsRequest {
+  // The ID of the user.
+  pl.uuidpb.UUID id = 1 [
+                        (gogoproto.customname) = "ID"
+                        ];
+  // The user setting keys to fetch.
+  repeated string keys = 2; 
+}
+
+// The response for a UserSettingsRequest.
+message GetUserSettingsResponse {
+  // The keys fetched in the user settings request.
+  repeated string keys = 1;
+  // The corresponding values to the user settings keys.
+  repeated string values = 2; 
+}
+
+// A request to update the user settings for a particular user.
+message UpdateUserSettingsRequest {
+  // The ID of the user.
+  pl.uuidpb.UUID id = 1 [
+                        (gogoproto.customname) = "ID"
+                        ];
+  // The user setting keys to set.
+  repeated string keys = 2;
+  // The corresponding values to set. Must be the same length as the number of keys.
+  repeated string values = 3;
+}
+
+// UpdateUserSettingsResponse is the response to an UpdateUserSettingsRequest.
+message UpdateUserSettingsResponse {
+  // Whether the update was successful.
+  bool ok = 1 [
+              (gogoproto.customname) = "OK"
+              ];
 }

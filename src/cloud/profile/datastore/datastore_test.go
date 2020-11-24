@@ -20,6 +20,10 @@ func loadTestData(t *testing.T, db *sqlx.DB) {
 	db.MustExec(insertOrgQuery, "123e4567-e89b-12d3-a456-426655440000", "hulu", "hulu.com")
 	insertUserQuery := `INSERT INTO users (id, org_id, username, first_name, last_name, email) VALUES ($1, $2, $3, $4, $5, $6)`
 	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440001", "123e4567-e89b-12d3-a456-426655440000", "person@hulu.com", "first", "last", "person@hulu.com")
+
+	insertUserSetting := `INSERT INTO user_settings (user_id, key, value) VALUES ($1, $2, $3)`
+	db.MustExec(insertUserSetting, "123e4567-e89b-12d3-a456-426655440001", "some_setting", "test")
+	db.MustExec(insertUserSetting, "123e4567-e89b-12d3-a456-426655440001", "another_setting", "true")
 }
 
 func TestDatastore(t *testing.T) {
@@ -257,5 +261,44 @@ func TestDatastore(t *testing.T) {
 		require.NotNil(t, userInfoFetched)
 		assert.Equal(t, "http://somepicture", *userInfoFetched.ProfilePicture)
 
+	})
+
+	t.Run("Get user settings", func(t *testing.T) {
+		db, teardown := pgtest.SetupTestDB(t, s)
+		defer teardown()
+
+		loadTestData(t, db)
+		d := datastore.NewDatastore(db)
+
+		userSettingsFetched, err := d.GetUserSettings(uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440001"), []string{"another_setting", "doesnt_exist", "some_setting"})
+		assert.Nil(t, err)
+		assert.Equal(t, []string{"true", "", "test"}, userSettingsFetched)
+	})
+
+	t.Run("Update user settings", func(t *testing.T) {
+		db, teardown := pgtest.SetupTestDB(t, s)
+		defer teardown()
+
+		id := "123e4567-e89b-12d3-a456-426655440001"
+
+		loadTestData(t, db)
+		d := datastore.NewDatastore(db)
+
+		err := d.UpdateUserSettings(uuid.FromStringOrNil(id), []string{"new_setting", "another_setting"}, []string{"some_val", "new_value"})
+		assert.Nil(t, err)
+
+		query := `SELECT * from user_settings WHERE user_id=$1 AND key=$2`
+		expectedKeyValues := [][]string{{"new_setting", "some_val"}, {"another_setting", "new_value"}, {"some_setting", "test"}}
+
+		for _, kv := range expectedKeyValues {
+			rows, err := db.Queryx(query, id, kv[0])
+			assert.Nil(t, err)
+			defer rows.Close()
+			var userSetting datastore.UserSetting
+			assert.True(t, rows.Next())
+			err = rows.StructScan(&userSetting)
+			assert.Nil(t, err)
+			assert.Equal(t, kv[1], userSetting.Value)
+		}
 	})
 }

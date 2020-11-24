@@ -690,6 +690,210 @@ func (m *UpdateUserRequest) GetProfilePicture() string {
 	return ""
 }
 
+type GetUserSettingsRequest struct {
+	ID   *proto1.UUID `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Keys []string     `protobuf:"bytes,2,rep,name=keys,proto3" json:"keys,omitempty"`
+}
+
+func (m *GetUserSettingsRequest) Reset()      { *m = GetUserSettingsRequest{} }
+func (*GetUserSettingsRequest) ProtoMessage() {}
+func (*GetUserSettingsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b1fc6e171c8059b, []int{10}
+}
+func (m *GetUserSettingsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetUserSettingsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetUserSettingsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetUserSettingsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetUserSettingsRequest.Merge(m, src)
+}
+func (m *GetUserSettingsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetUserSettingsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetUserSettingsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetUserSettingsRequest proto.InternalMessageInfo
+
+func (m *GetUserSettingsRequest) GetID() *proto1.UUID {
+	if m != nil {
+		return m.ID
+	}
+	return nil
+}
+
+func (m *GetUserSettingsRequest) GetKeys() []string {
+	if m != nil {
+		return m.Keys
+	}
+	return nil
+}
+
+type GetUserSettingsResponse struct {
+	Keys   []string `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys,omitempty"`
+	Values []string `protobuf:"bytes,2,rep,name=values,proto3" json:"values,omitempty"`
+}
+
+func (m *GetUserSettingsResponse) Reset()      { *m = GetUserSettingsResponse{} }
+func (*GetUserSettingsResponse) ProtoMessage() {}
+func (*GetUserSettingsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b1fc6e171c8059b, []int{11}
+}
+func (m *GetUserSettingsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetUserSettingsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetUserSettingsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetUserSettingsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetUserSettingsResponse.Merge(m, src)
+}
+func (m *GetUserSettingsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetUserSettingsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetUserSettingsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetUserSettingsResponse proto.InternalMessageInfo
+
+func (m *GetUserSettingsResponse) GetKeys() []string {
+	if m != nil {
+		return m.Keys
+	}
+	return nil
+}
+
+func (m *GetUserSettingsResponse) GetValues() []string {
+	if m != nil {
+		return m.Values
+	}
+	return nil
+}
+
+type UpdateUserSettingsRequest struct {
+	ID     *proto1.UUID `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Keys   []string     `protobuf:"bytes,2,rep,name=keys,proto3" json:"keys,omitempty"`
+	Values []string     `protobuf:"bytes,3,rep,name=values,proto3" json:"values,omitempty"`
+}
+
+func (m *UpdateUserSettingsRequest) Reset()      { *m = UpdateUserSettingsRequest{} }
+func (*UpdateUserSettingsRequest) ProtoMessage() {}
+func (*UpdateUserSettingsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b1fc6e171c8059b, []int{12}
+}
+func (m *UpdateUserSettingsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UpdateUserSettingsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UpdateUserSettingsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UpdateUserSettingsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateUserSettingsRequest.Merge(m, src)
+}
+func (m *UpdateUserSettingsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *UpdateUserSettingsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateUserSettingsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateUserSettingsRequest proto.InternalMessageInfo
+
+func (m *UpdateUserSettingsRequest) GetID() *proto1.UUID {
+	if m != nil {
+		return m.ID
+	}
+	return nil
+}
+
+func (m *UpdateUserSettingsRequest) GetKeys() []string {
+	if m != nil {
+		return m.Keys
+	}
+	return nil
+}
+
+func (m *UpdateUserSettingsRequest) GetValues() []string {
+	if m != nil {
+		return m.Values
+	}
+	return nil
+}
+
+type UpdateUserSettingsResponse struct {
+	OK bool `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+}
+
+func (m *UpdateUserSettingsResponse) Reset()      { *m = UpdateUserSettingsResponse{} }
+func (*UpdateUserSettingsResponse) ProtoMessage() {}
+func (*UpdateUserSettingsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b1fc6e171c8059b, []int{13}
+}
+func (m *UpdateUserSettingsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UpdateUserSettingsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UpdateUserSettingsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UpdateUserSettingsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateUserSettingsResponse.Merge(m, src)
+}
+func (m *UpdateUserSettingsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *UpdateUserSettingsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateUserSettingsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateUserSettingsResponse proto.InternalMessageInfo
+
+func (m *UpdateUserSettingsResponse) GetOK() bool {
+	if m != nil {
+		return m.OK
+	}
+	return false
+}
+
 func init() {
 	proto.RegisterType((*UserInfo)(nil), "pl.services.UserInfo")
 	proto.RegisterType((*GetUserByEmailRequest)(nil), "pl.services.GetUserByEmailRequest")
@@ -703,6 +907,10 @@ func init() {
 	proto.RegisterType((*GetOrgsRequest)(nil), "pl.services.GetOrgsRequest")
 	proto.RegisterType((*GetOrgsResponse)(nil), "pl.services.GetOrgsResponse")
 	proto.RegisterType((*UpdateUserRequest)(nil), "pl.services.UpdateUserRequest")
+	proto.RegisterType((*GetUserSettingsRequest)(nil), "pl.services.GetUserSettingsRequest")
+	proto.RegisterType((*GetUserSettingsResponse)(nil), "pl.services.GetUserSettingsResponse")
+	proto.RegisterType((*UpdateUserSettingsRequest)(nil), "pl.services.UpdateUserSettingsRequest")
+	proto.RegisterType((*UpdateUserSettingsResponse)(nil), "pl.services.UpdateUserSettingsResponse")
 }
 
 func init() {
@@ -710,57 +918,65 @@ func init() {
 }
 
 var fileDescriptor_7b1fc6e171c8059b = []byte{
-	// 790 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x56, 0xcb, 0x6e, 0xf3, 0x44,
-	0x14, 0xf6, 0x38, 0xb7, 0xe6, 0x44, 0xea, 0x65, 0xd4, 0x8a, 0xe0, 0x82, 0x13, 0x59, 0xa0, 0xa6,
-	0x8b, 0xda, 0xa2, 0x45, 0x08, 0x51, 0x21, 0xd4, 0x90, 0x82, 0x22, 0x01, 0xa9, 0x82, 0xb2, 0x61,
-	0x13, 0x39, 0xf1, 0xc4, 0x58, 0x72, 0x32, 0x66, 0x6c, 0x23, 0xba, 0x43, 0xe2, 0x05, 0x78, 0x0c,
-	0x1e, 0x80, 0x87, 0xe8, 0x06, 0xa9, 0xcb, 0xae, 0x2a, 0xea, 0x6e, 0x58, 0xf6, 0x05, 0x90, 0x7e,
-	0xcd, 0xd8, 0x6e, 0x9c, 0xc4, 0xc9, 0xdf, 0xbf, 0xab, 0xfa, 0x5c, 0xfb, 0xcd, 0x77, 0xbe, 0x73,
-	0x14, 0x38, 0xf6, 0xd9, 0xd8, 0x18, 0xbb, 0x34, 0xb4, 0x0c, 0x8f, 0xd1, 0x89, 0xe3, 0x92, 0xf4,
-	0xaf, 0x37, 0x32, 0x7c, 0xc2, 0x7e, 0x75, 0xc6, 0x44, 0xf7, 0x18, 0x0d, 0x28, 0xae, 0x79, 0xae,
-	0x9e, 0x78, 0x7c, 0xe5, 0xc4, 0x76, 0x82, 0x9f, 0xc3, 0x91, 0x3e, 0xa6, 0x53, 0xc3, 0xa6, 0x36,
-	0x35, 0x44, 0xce, 0x28, 0x9c, 0x08, 0x4b, 0x18, 0xe2, 0x2b, 0xae, 0x55, 0x9a, 0xe2, 0xdf, 0xd0,
-	0xe9, 0x94, 0xce, 0x8c, 0x30, 0x74, 0xac, 0x38, 0x5d, 0x7c, 0xc6, 0x19, 0xda, 0xff, 0x08, 0xb6,
-	0x06, 0x3e, 0x61, 0xdd, 0xd9, 0x84, 0xe2, 0x23, 0x90, 0x1d, 0xab, 0x8e, 0x9a, 0xa8, 0x55, 0x3b,
-	0xdd, 0xd1, 0x3d, 0x57, 0xe7, 0x89, 0xde, 0x48, 0x1f, 0x0c, 0xba, 0x9d, 0x76, 0x39, 0xba, 0x6f,
-	0xc8, 0xdd, 0x4e, 0x5f, 0x76, 0x2c, 0xfc, 0x09, 0x94, 0x29, 0xb3, 0x87, 0x8e, 0x55, 0x97, 0xf3,
-	0x93, 0xab, 0xd1, 0x7d, 0xa3, 0xd4, 0x63, 0x76, 0xb7, 0xd3, 0x2f, 0x51, 0x66, 0x77, 0x2d, 0xac,
-	0xc0, 0x56, 0xe8, 0x13, 0x36, 0x33, 0xa7, 0xa4, 0x5e, 0x68, 0xa2, 0x56, 0xb5, 0xff, 0x6c, 0xe3,
-	0x0f, 0x01, 0x26, 0x0e, 0xf3, 0x83, 0xa1, 0x88, 0x16, 0x45, 0xb4, 0x2a, 0x3c, 0x3f, 0xf0, 0xf0,
-	0x21, 0x54, 0x5d, 0x33, 0x8d, 0x96, 0xe2, 0x5a, 0xee, 0x10, 0xc1, 0x7d, 0x28, 0x91, 0xa9, 0xe9,
-	0xb8, 0xf5, 0xb2, 0x08, 0xc4, 0x06, 0x3e, 0x82, 0x9d, 0x84, 0xcf, 0xa1, 0xe7, 0x8c, 0x83, 0x90,
-	0x91, 0x7a, 0x45, 0xc4, 0xb7, 0x13, 0xf7, 0x55, 0xec, 0xd5, 0x4e, 0xe0, 0xe0, 0x5b, 0x12, 0x70,
-	0x06, 0xda, 0xd7, 0x97, 0xbc, 0xb4, 0x4f, 0x7e, 0x09, 0x89, 0x1f, 0xcc, 0xfb, 0xa2, 0x4c, 0x5f,
-	0x6d, 0x06, 0x15, 0xfe, 0xaa, 0x77, 0x22, 0xeb, 0x7d, 0xd8, 0xe2, 0x64, 0x09, 0xf4, 0xb2, 0x68,
-	0x56, 0xa1, 0xcc, 0x16, 0xe0, 0x1b, 0x50, 0xb3, 0xe8, 0xd4, 0x74, 0x66, 0xc3, 0x0c, 0x2f, 0x10,
-	0xbb, 0x78, 0x82, 0xf6, 0x37, 0x82, 0xbd, 0xaf, 0x19, 0x31, 0x03, 0xc2, 0x21, 0xa6, 0xd8, 0xe6,
-	0xf4, 0xa3, 0xd7, 0xd0, 0x2f, 0x6f, 0xa4, 0xbf, 0xb0, 0x91, 0xfe, 0xe2, 0x3a, 0xfa, 0x4b, 0x59,
-	0x9a, 0xfe, 0x91, 0xe1, 0xbd, 0x18, 0x76, 0x8f, 0xd9, 0x17, 0x33, 0x2b, 0x0b, 0xfe, 0x0b, 0x28,
-	0x50, 0x66, 0x27, 0xc8, 0x5b, 0x7a, 0x46, 0xdd, 0xfa, 0x9a, 0x12, 0xbd, 0xc7, 0xec, 0x3e, 0x2f,
-	0xc2, 0x5f, 0x42, 0x91, 0xa3, 0x4e, 0x54, 0x77, 0xfc, 0xa2, 0x62, 0xf1, 0x2d, 0xca, 0x94, 0x0b,
-	0x28, 0xf4, 0x98, 0xbd, 0x30, 0x10, 0xb4, 0x71, 0x20, 0xf2, 0xf2, 0x40, 0x94, 0x00, 0x8a, 0xbc,
-	0xe1, 0x02, 0x9f, 0x68, 0x23, 0x9f, 0xf2, 0x46, 0x3e, 0x0b, 0xeb, 0xf8, 0x2c, 0x66, 0xf9, 0xfc,
-	0x03, 0x41, 0x7d, 0xf5, 0x7d, 0xbe, 0x47, 0x67, 0x3e, 0x79, 0x8d, 0x1a, 0x3e, 0x85, 0x0a, 0x47,
-	0xbb, 0x61, 0x81, 0x21, 0xba, 0x6f, 0x94, 0xc5, 0x61, 0xe8, 0xf4, 0xcb, 0x3c, 0xb7, 0x6b, 0x69,
-	0x9f, 0x8b, 0x5d, 0xe9, 0x31, 0xbb, 0x7d, 0xdd, 0x11, 0x8c, 0xa4, 0x23, 0x5d, 0x62, 0x0d, 0xad,
-	0xc8, 0x78, 0x17, 0xb6, 0xe3, 0x4a, 0x3f, 0x29, 0xd1, 0xce, 0x61, 0xe7, 0xd9, 0x93, 0xbc, 0xa3,
-	0x05, 0x45, 0xca, 0x6c, 0xbf, 0x8e, 0x9a, 0x85, 0x56, 0xed, 0x74, 0x7f, 0x61, 0xb8, 0xc9, 0xd2,
-	0xf5, 0x45, 0x86, 0x46, 0x60, 0x6f, 0xe0, 0x59, 0x4b, 0x4b, 0xf1, 0xe2, 0x7d, 0xcc, 0xb9, 0x0d,
-	0x72, 0xde, 0x6d, 0x38, 0xbd, 0x29, 0xc2, 0xf6, 0x55, 0xec, 0xfa, 0x31, 0x06, 0x82, 0xbf, 0x02,
-	0x98, 0xaf, 0x23, 0x56, 0x73, 0x04, 0x98, 0x81, 0xa4, 0x2c, 0xc3, 0xd0, 0x24, 0x7c, 0x06, 0x95,
-	0xe4, 0xde, 0xe0, 0xe5, 0xa8, 0x72, 0xb0, 0xd0, 0x2e, 0xbd, 0xca, 0x9a, 0x84, 0xbf, 0x17, 0xf4,
-	0x65, 0x8e, 0x14, 0xd6, 0x16, 0x52, 0x73, 0x2f, 0xd8, 0xfa, 0x76, 0x26, 0xec, 0x2e, 0x8b, 0x09,
-	0x7f, 0xf4, 0x92, 0x5d, 0x52, 0x3e, 0x7e, 0x4b, 0x56, 0x3c, 0x49, 0x4d, 0xe2, 0x9a, 0x8c, 0xc7,
-	0xbb, 0xfa, 0xca, 0xdc, 0xc1, 0x6a, 0x12, 0xfe, 0x2e, 0xd5, 0x48, 0xaa, 0xae, 0xd5, 0x47, 0xae,
-	0x4a, 0x6f, 0x6d, 0xb7, 0x4b, 0x80, 0xb9, 0x44, 0x96, 0x06, 0xb5, 0xa2, 0x9d, 0xf5, 0x54, 0x7d,
-	0x23, 0xc6, 0xc5, 0x65, 0x8a, 0x0f, 0x73, 0xd0, 0xa4, 0x72, 0x56, 0x3e, 0xc8, 0x0f, 0xa6, 0x7c,
-	0xb4, 0xdd, 0xdb, 0x07, 0x55, 0xba, 0x7b, 0x50, 0xa5, 0xa7, 0x07, 0x15, 0xfd, 0x1e, 0xa9, 0xe8,
-	0xaf, 0x48, 0x45, 0x37, 0x91, 0x8a, 0x6e, 0x23, 0x15, 0xfd, 0x1b, 0xa9, 0xe8, 0xbf, 0x48, 0x95,
-	0x9e, 0x22, 0x15, 0xfd, 0xf9, 0xa8, 0x4a, 0xb7, 0x8f, 0xaa, 0x74, 0xf7, 0xa8, 0x4a, 0x3f, 0x7d,
-	0xe6, 0x39, 0xbf, 0x39, 0xc4, 0x35, 0x47, 0xbe, 0x6e, 0x3a, 0xc6, 0xb3, 0x61, 0xe4, 0xfe, 0x78,
-	0x08, 0xe8, 0x79, 0x62, 0x8d, 0xca, 0xc2, 0x3c, 0x7b, 0x13, 0x00, 0x00, 0xff, 0xff, 0xd7, 0x92,
-	0xba, 0xb9, 0x66, 0x08, 0x00, 0x00,
+	// 917 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x56, 0xcd, 0x6e, 0xdb, 0x46,
+	0x10, 0xe6, 0x52, 0x7f, 0xd6, 0x18, 0xb0, 0x93, 0x45, 0xe2, 0x28, 0x4c, 0x4b, 0x0b, 0x6c, 0x5a,
+	0x2b, 0x87, 0x50, 0xa8, 0x13, 0x14, 0x45, 0x83, 0xa2, 0x88, 0x2b, 0xb7, 0x10, 0xfa, 0xa3, 0x80,
+	0x81, 0x2e, 0x3d, 0xd4, 0xa0, 0xc4, 0x35, 0x4b, 0x98, 0xe2, 0xb2, 0x4b, 0x32, 0xa8, 0x6f, 0x05,
+	0xfa, 0x02, 0xed, 0x5b, 0xf4, 0x01, 0xfa, 0x10, 0xbd, 0x14, 0xf0, 0x31, 0x27, 0xa3, 0xa6, 0x2f,
+	0x3d, 0xe6, 0x05, 0x0a, 0x14, 0xbb, 0x24, 0x25, 0x8a, 0xa4, 0x14, 0x35, 0xc8, 0x49, 0x3b, 0x3b,
+	0xbf, 0xfb, 0xcd, 0x7c, 0x43, 0xc1, 0x83, 0x80, 0x4d, 0xfb, 0x53, 0x97, 0x46, 0x56, 0xdf, 0x67,
+	0xf4, 0xd4, 0x71, 0x49, 0xf6, 0xeb, 0x4f, 0xfa, 0x01, 0x61, 0x2f, 0x9c, 0x29, 0xd1, 0x7d, 0x46,
+	0x43, 0x8a, 0xb7, 0x7d, 0x57, 0x4f, 0x6f, 0x02, 0xe5, 0xa1, 0xed, 0x84, 0x3f, 0x44, 0x13, 0x7d,
+	0x4a, 0x67, 0x7d, 0x9b, 0xda, 0xb4, 0x2f, 0x6c, 0x26, 0xd1, 0xa9, 0x90, 0x84, 0x20, 0x4e, 0x89,
+	0xaf, 0xd2, 0x15, 0x69, 0xe8, 0x6c, 0x46, 0xbd, 0x7e, 0x14, 0x39, 0x56, 0x62, 0x2e, 0x8e, 0x89,
+	0x85, 0xf6, 0x2f, 0x82, 0xad, 0x71, 0x40, 0xd8, 0xd0, 0x3b, 0xa5, 0xf8, 0x00, 0x64, 0xc7, 0xea,
+	0xa0, 0x2e, 0xea, 0x6d, 0x1f, 0xee, 0xea, 0xbe, 0xab, 0x73, 0x43, 0x7f, 0xa2, 0x8f, 0xc7, 0xc3,
+	0xc1, 0x51, 0x33, 0xbe, 0xdc, 0x97, 0x87, 0x03, 0x43, 0x76, 0x2c, 0xfc, 0x21, 0x34, 0x29, 0xb3,
+	0x4f, 0x1c, 0xab, 0x23, 0x57, 0x1b, 0xb7, 0xe3, 0xcb, 0xfd, 0xc6, 0x88, 0xd9, 0xc3, 0x81, 0xd1,
+	0xa0, 0xcc, 0x1e, 0x5a, 0x58, 0x81, 0xad, 0x28, 0x20, 0xcc, 0x33, 0x67, 0xa4, 0x53, 0xeb, 0xa2,
+	0x5e, 0xdb, 0x98, 0xcb, 0xf8, 0x5d, 0x80, 0x53, 0x87, 0x05, 0xe1, 0x89, 0xd0, 0xd6, 0x85, 0xb6,
+	0x2d, 0x6e, 0xbe, 0xe5, 0xea, 0x7b, 0xd0, 0x76, 0xcd, 0x4c, 0xdb, 0x48, 0x7c, 0xf9, 0x85, 0x50,
+	0xde, 0x82, 0x06, 0x99, 0x99, 0x8e, 0xdb, 0x69, 0x0a, 0x45, 0x22, 0xe0, 0x03, 0xd8, 0x4d, 0xf1,
+	0x3c, 0xf1, 0x9d, 0x69, 0x18, 0x31, 0xd2, 0x69, 0x09, 0xfd, 0x4e, 0x7a, 0xfd, 0x2c, 0xb9, 0xd5,
+	0x1e, 0xc2, 0xed, 0x2f, 0x49, 0xc8, 0x11, 0x38, 0x3a, 0x3f, 0xe6, 0xae, 0x06, 0xf9, 0x31, 0x22,
+	0x41, 0xb8, 0x88, 0x8b, 0x72, 0x71, 0x35, 0x0f, 0x5a, 0xfc, 0x55, 0xff, 0x0b, 0xac, 0xbb, 0xb0,
+	0xc5, 0xc1, 0x12, 0xd5, 0xcb, 0x22, 0x58, 0x8b, 0x32, 0x5b, 0x14, 0xbf, 0x0f, 0xdb, 0x16, 0x9d,
+	0x99, 0x8e, 0x77, 0x92, 0xc3, 0x05, 0x92, 0x2b, 0x6e, 0xa0, 0xfd, 0x81, 0xe0, 0xe6, 0xe7, 0x8c,
+	0x98, 0x21, 0xe1, 0x25, 0x66, 0xb5, 0x2d, 0xe0, 0x47, 0x6f, 0x02, 0xbf, 0xbc, 0x16, 0xfe, 0xda,
+	0x5a, 0xf8, 0xeb, 0xab, 0xe0, 0x6f, 0xe4, 0x61, 0xfa, 0x4b, 0x86, 0x3b, 0x49, 0xd9, 0x23, 0x66,
+	0x3f, 0xf5, 0xac, 0x7c, 0xf1, 0x9f, 0x40, 0x8d, 0x32, 0x3b, 0xad, 0xbc, 0xa7, 0xe7, 0xa6, 0x5b,
+	0x5f, 0xe1, 0xa2, 0x8f, 0x98, 0x6d, 0x70, 0x27, 0xfc, 0x29, 0xd4, 0x79, 0xd5, 0xe9, 0xd4, 0x3d,
+	0xd8, 0xc8, 0x59, 0x9c, 0x85, 0x9b, 0xf2, 0x14, 0x6a, 0x23, 0x66, 0x2f, 0x35, 0x04, 0xad, 0x6d,
+	0x88, 0x5c, 0x6c, 0x88, 0x12, 0x42, 0x9d, 0x07, 0x5c, 0xc2, 0x13, 0xad, 0xc5, 0x53, 0x5e, 0x8b,
+	0x67, 0x6d, 0x15, 0x9e, 0xf5, 0x3c, 0x9e, 0xbf, 0x20, 0xe8, 0x94, 0xdf, 0x17, 0xf8, 0xd4, 0x0b,
+	0xc8, 0x9b, 0x4c, 0xc3, 0x63, 0x68, 0xf1, 0x6a, 0xd7, 0x10, 0x18, 0xe2, 0xcb, 0xfd, 0xa6, 0x58,
+	0x0c, 0x03, 0xa3, 0xc9, 0x6d, 0x87, 0x96, 0xf6, 0xb1, 0xe0, 0xca, 0x88, 0xd9, 0x47, 0xe7, 0x03,
+	0x81, 0x48, 0xd6, 0xd2, 0x02, 0x6a, 0xa8, 0x34, 0xc6, 0x37, 0x60, 0x27, 0xf1, 0x0c, 0x52, 0x17,
+	0xed, 0x09, 0xec, 0xce, 0x6f, 0xd2, 0x77, 0xf4, 0xa0, 0x4e, 0x99, 0x1d, 0x74, 0x50, 0xb7, 0xd6,
+	0xdb, 0x3e, 0xbc, 0xb5, 0xd4, 0xdc, 0x94, 0x74, 0x86, 0xb0, 0xd0, 0x08, 0xdc, 0x1c, 0xfb, 0x56,
+	0x81, 0x14, 0x1b, 0xf3, 0xb1, 0x62, 0x37, 0xc8, 0x95, 0xbb, 0x61, 0x0c, 0x7b, 0xe9, 0x6e, 0x78,
+	0x4e, 0xc2, 0xd0, 0xf1, 0xe6, 0xd5, 0x6f, 0x9e, 0x0b, 0x43, 0xfd, 0x8c, 0x9c, 0x07, 0x1d, 0xb9,
+	0x5b, 0xeb, 0xb5, 0x0d, 0x71, 0xd6, 0x8e, 0xe1, 0x4e, 0x29, 0x6c, 0x0a, 0x41, 0x66, 0x8e, 0x16,
+	0xe6, 0x78, 0x0f, 0x9a, 0x2f, 0x4c, 0x37, 0x22, 0x59, 0x90, 0x54, 0xd2, 0x7c, 0xb8, 0xbb, 0x00,
+	0xe1, 0x6d, 0x16, 0x98, 0xcb, 0x58, 0x5b, 0xca, 0xf8, 0x18, 0x94, 0xaa, 0x8c, 0x69, 0xed, 0x7b,
+	0x20, 0xd3, 0x33, 0x91, 0x72, 0x2b, 0xc9, 0x30, 0xfa, 0xca, 0x90, 0xe9, 0xd9, 0xe1, 0x6f, 0x4d,
+	0xd8, 0x79, 0x96, 0x00, 0xfb, 0x3c, 0x69, 0x27, 0xfe, 0x0c, 0x60, 0xb1, 0xd4, 0xb0, 0x5a, 0x41,
+	0xe3, 0x5c, 0x63, 0x95, 0x62, 0xfd, 0x9a, 0x84, 0x1f, 0x41, 0x2b, 0x85, 0x10, 0x17, 0xb5, 0xca,
+	0xed, 0xa5, 0x70, 0xd9, 0xb7, 0x4d, 0x93, 0xf0, 0x37, 0x62, 0x08, 0x73, 0xab, 0x1e, 0x6b, 0x4b,
+	0xa6, 0x95, 0xdf, 0x81, 0xd5, 0xe1, 0x4c, 0xb8, 0x51, 0xa4, 0x24, 0xbe, 0xbf, 0xc9, 0x46, 0x52,
+	0xde, 0x7f, 0x8d, 0x55, 0x02, 0xa8, 0x26, 0x71, 0x66, 0x27, 0x24, 0x29, 0xbf, 0xb2, 0x92, 0x1e,
+	0x9a, 0x84, 0xbf, 0xce, 0x98, 0x96, 0x71, 0xb4, 0xfc, 0xc8, 0x32, 0x81, 0x57, 0x46, 0x3b, 0x06,
+	0x58, 0x74, 0xbc, 0xd0, 0xa8, 0x12, 0x03, 0x57, 0x43, 0xf5, 0x85, 0x68, 0x17, 0x27, 0x3b, 0xbe,
+	0x57, 0x51, 0x4d, 0x36, 0xb5, 0xca, 0x3b, 0xd5, 0xca, 0x39, 0x1e, 0xdf, 0x8b, 0xa5, 0x91, 0x9f,
+	0x3e, 0xfc, 0x5e, 0x55, 0x0b, 0x0b, 0x6c, 0x50, 0xee, 0xaf, 0x37, 0x9a, 0xc7, 0xb7, 0x01, 0x97,
+	0x07, 0x1c, 0x7f, 0xb0, 0xe2, 0xd9, 0xc5, 0x2c, 0x07, 0xaf, 0xb5, 0xcb, 0x12, 0x1d, 0xb9, 0x17,
+	0x57, 0xaa, 0xf4, 0xf2, 0x4a, 0x95, 0x5e, 0x5d, 0xa9, 0xe8, 0xe7, 0x58, 0x45, 0xbf, 0xc7, 0x2a,
+	0xfa, 0x33, 0x56, 0xd1, 0x45, 0xac, 0xa2, 0xbf, 0x63, 0x15, 0xfd, 0x13, 0xab, 0xd2, 0xab, 0x58,
+	0x45, 0xbf, 0x5e, 0xab, 0xd2, 0xc5, 0xb5, 0x2a, 0xbd, 0xbc, 0x56, 0xa5, 0xef, 0x3e, 0xf2, 0x9d,
+	0x9f, 0x1c, 0xe2, 0x9a, 0x93, 0x40, 0x37, 0x9d, 0xfe, 0x5c, 0xe8, 0x57, 0xfe, 0x97, 0x0c, 0xe9,
+	0x93, 0x54, 0x9a, 0x34, 0x85, 0xf8, 0xe8, 0xbf, 0x00, 0x00, 0x00, 0xff, 0xff, 0x7b, 0x20, 0xce,
+	0x0d, 0x75, 0x0a, 0x00, 0x00,
 }
 
 func (this *UserInfo) Equal(that interface{}) bool {
@@ -1110,6 +1326,139 @@ func (this *UpdateUserRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *GetUserSettingsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetUserSettingsRequest)
+	if !ok {
+		that2, ok := that.(GetUserSettingsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ID.Equal(that1.ID) {
+		return false
+	}
+	if len(this.Keys) != len(that1.Keys) {
+		return false
+	}
+	for i := range this.Keys {
+		if this.Keys[i] != that1.Keys[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *GetUserSettingsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetUserSettingsResponse)
+	if !ok {
+		that2, ok := that.(GetUserSettingsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Keys) != len(that1.Keys) {
+		return false
+	}
+	for i := range this.Keys {
+		if this.Keys[i] != that1.Keys[i] {
+			return false
+		}
+	}
+	if len(this.Values) != len(that1.Values) {
+		return false
+	}
+	for i := range this.Values {
+		if this.Values[i] != that1.Values[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *UpdateUserSettingsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*UpdateUserSettingsRequest)
+	if !ok {
+		that2, ok := that.(UpdateUserSettingsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ID.Equal(that1.ID) {
+		return false
+	}
+	if len(this.Keys) != len(that1.Keys) {
+		return false
+	}
+	for i := range this.Keys {
+		if this.Keys[i] != that1.Keys[i] {
+			return false
+		}
+	}
+	if len(this.Values) != len(that1.Values) {
+		return false
+	}
+	for i := range this.Values {
+		if this.Values[i] != that1.Values[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *UpdateUserSettingsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*UpdateUserSettingsResponse)
+	if !ok {
+		that2, ok := that.(UpdateUserSettingsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.OK != that1.OK {
+		return false
+	}
+	return true
+}
 func (this *UserInfo) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1268,6 +1617,54 @@ func (this *UpdateUserRequest) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *GetUserSettingsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&profile.GetUserSettingsRequest{")
+	if this.ID != nil {
+		s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	}
+	s = append(s, "Keys: "+fmt.Sprintf("%#v", this.Keys)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetUserSettingsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&profile.GetUserSettingsResponse{")
+	s = append(s, "Keys: "+fmt.Sprintf("%#v", this.Keys)+",\n")
+	s = append(s, "Values: "+fmt.Sprintf("%#v", this.Values)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *UpdateUserSettingsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&profile.UpdateUserSettingsRequest{")
+	if this.ID != nil {
+		s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	}
+	s = append(s, "Keys: "+fmt.Sprintf("%#v", this.Keys)+",\n")
+	s = append(s, "Values: "+fmt.Sprintf("%#v", this.Values)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *UpdateUserSettingsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&profile.UpdateUserSettingsResponse{")
+	s = append(s, "OK: "+fmt.Sprintf("%#v", this.OK)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringService(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -1297,6 +1694,8 @@ type ProfileServiceClient interface {
 	GetOrgByDomain(ctx context.Context, in *GetOrgByDomainRequest, opts ...grpc.CallOption) (*OrgInfo, error)
 	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UserInfo, error)
 	GetOrgs(ctx context.Context, in *GetOrgsRequest, opts ...grpc.CallOption) (*GetOrgsResponse, error)
+	GetUserSettings(ctx context.Context, in *GetUserSettingsRequest, opts ...grpc.CallOption) (*GetUserSettingsResponse, error)
+	UpdateUserSettings(ctx context.Context, in *UpdateUserSettingsRequest, opts ...grpc.CallOption) (*UpdateUserSettingsResponse, error)
 }
 
 type profileServiceClient struct {
@@ -1379,6 +1778,24 @@ func (c *profileServiceClient) GetOrgs(ctx context.Context, in *GetOrgsRequest, 
 	return out, nil
 }
 
+func (c *profileServiceClient) GetUserSettings(ctx context.Context, in *GetUserSettingsRequest, opts ...grpc.CallOption) (*GetUserSettingsResponse, error) {
+	out := new(GetUserSettingsResponse)
+	err := c.cc.Invoke(ctx, "/pl.services.ProfileService/GetUserSettings", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *profileServiceClient) UpdateUserSettings(ctx context.Context, in *UpdateUserSettingsRequest, opts ...grpc.CallOption) (*UpdateUserSettingsResponse, error) {
+	out := new(UpdateUserSettingsResponse)
+	err := c.cc.Invoke(ctx, "/pl.services.ProfileService/UpdateUserSettings", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProfileServiceServer is the server API for ProfileService service.
 type ProfileServiceServer interface {
 	CreateUser(context.Context, *CreateUserRequest) (*proto1.UUID, error)
@@ -1389,6 +1806,8 @@ type ProfileServiceServer interface {
 	GetOrgByDomain(context.Context, *GetOrgByDomainRequest) (*OrgInfo, error)
 	UpdateUser(context.Context, *UpdateUserRequest) (*UserInfo, error)
 	GetOrgs(context.Context, *GetOrgsRequest) (*GetOrgsResponse, error)
+	GetUserSettings(context.Context, *GetUserSettingsRequest) (*GetUserSettingsResponse, error)
+	UpdateUserSettings(context.Context, *UpdateUserSettingsRequest) (*UpdateUserSettingsResponse, error)
 }
 
 // UnimplementedProfileServiceServer can be embedded to have forward compatible implementations.
@@ -1418,6 +1837,12 @@ func (*UnimplementedProfileServiceServer) UpdateUser(ctx context.Context, req *U
 }
 func (*UnimplementedProfileServiceServer) GetOrgs(ctx context.Context, req *GetOrgsRequest) (*GetOrgsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetOrgs not implemented")
+}
+func (*UnimplementedProfileServiceServer) GetUserSettings(ctx context.Context, req *GetUserSettingsRequest) (*GetUserSettingsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserSettings not implemented")
+}
+func (*UnimplementedProfileServiceServer) UpdateUserSettings(ctx context.Context, req *UpdateUserSettingsRequest) (*UpdateUserSettingsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateUserSettings not implemented")
 }
 
 func RegisterProfileServiceServer(s *grpc.Server, srv ProfileServiceServer) {
@@ -1568,6 +1993,42 @@ func _ProfileService_GetOrgs_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProfileService_GetUserSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProfileServiceServer).GetUserSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.services.ProfileService/GetUserSettings",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProfileServiceServer).GetUserSettings(ctx, req.(*GetUserSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProfileService_UpdateUserSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProfileServiceServer).UpdateUserSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.services.ProfileService/UpdateUserSettings",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProfileServiceServer).UpdateUserSettings(ctx, req.(*UpdateUserSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _ProfileService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "pl.services.ProfileService",
 	HandlerType: (*ProfileServiceServer)(nil),
@@ -1603,6 +2064,14 @@ var _ProfileService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetOrgs",
 			Handler:    _ProfileService_GetOrgs_Handler,
+		},
+		{
+			MethodName: "GetUserSettings",
+			Handler:    _ProfileService_GetUserSettings_Handler,
+		},
+		{
+			MethodName: "UpdateUserSettings",
+			Handler:    _ProfileService_UpdateUserSettings_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -2147,6 +2616,177 @@ func (m *UpdateUserRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *GetUserSettingsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetUserSettingsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetUserSettingsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Keys) > 0 {
+		for iNdEx := len(m.Keys) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Keys[iNdEx])
+			copy(dAtA[i:], m.Keys[iNdEx])
+			i = encodeVarintService(dAtA, i, uint64(len(m.Keys[iNdEx])))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if m.ID != nil {
+		{
+			size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetUserSettingsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetUserSettingsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetUserSettingsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Values) > 0 {
+		for iNdEx := len(m.Values) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Values[iNdEx])
+			copy(dAtA[i:], m.Values[iNdEx])
+			i = encodeVarintService(dAtA, i, uint64(len(m.Values[iNdEx])))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Keys) > 0 {
+		for iNdEx := len(m.Keys) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Keys[iNdEx])
+			copy(dAtA[i:], m.Keys[iNdEx])
+			i = encodeVarintService(dAtA, i, uint64(len(m.Keys[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *UpdateUserSettingsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UpdateUserSettingsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UpdateUserSettingsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Values) > 0 {
+		for iNdEx := len(m.Values) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Values[iNdEx])
+			copy(dAtA[i:], m.Values[iNdEx])
+			i = encodeVarintService(dAtA, i, uint64(len(m.Values[iNdEx])))
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.Keys) > 0 {
+		for iNdEx := len(m.Keys) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Keys[iNdEx])
+			copy(dAtA[i:], m.Keys[iNdEx])
+			i = encodeVarintService(dAtA, i, uint64(len(m.Keys[iNdEx])))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if m.ID != nil {
+		{
+			size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *UpdateUserSettingsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UpdateUserSettingsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UpdateUserSettingsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.OK {
+		i--
+		if m.OK {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintService(dAtA []byte, offset int, v uint64) int {
 	offset -= sovService(v)
 	base := offset
@@ -2388,6 +3028,83 @@ func (m *UpdateUserRequest) Size() (n int) {
 	return n
 }
 
+func (m *GetUserSettingsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ID != nil {
+		l = m.ID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if len(m.Keys) > 0 {
+		for _, s := range m.Keys {
+			l = len(s)
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *GetUserSettingsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Keys) > 0 {
+		for _, s := range m.Keys {
+			l = len(s)
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	if len(m.Values) > 0 {
+		for _, s := range m.Values {
+			l = len(s)
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *UpdateUserSettingsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ID != nil {
+		l = m.ID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if len(m.Keys) > 0 {
+		for _, s := range m.Keys {
+			l = len(s)
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	if len(m.Values) > 0 {
+		for _, s := range m.Values {
+			l = len(s)
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *UpdateUserSettingsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.OK {
+		n += 2
+	}
+	return n
+}
+
 func sovService(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
@@ -2533,6 +3250,50 @@ func (this *UpdateUserRequest) String() string {
 	s := strings.Join([]string{`&UpdateUserRequest{`,
 		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "proto1.UUID", 1) + `,`,
 		`ProfilePicture:` + fmt.Sprintf("%v", this.ProfilePicture) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetUserSettingsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetUserSettingsRequest{`,
+		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "proto1.UUID", 1) + `,`,
+		`Keys:` + fmt.Sprintf("%v", this.Keys) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetUserSettingsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetUserSettingsResponse{`,
+		`Keys:` + fmt.Sprintf("%v", this.Keys) + `,`,
+		`Values:` + fmt.Sprintf("%v", this.Values) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *UpdateUserSettingsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&UpdateUserSettingsRequest{`,
+		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "proto1.UUID", 1) + `,`,
+		`Keys:` + fmt.Sprintf("%v", this.Keys) + `,`,
+		`Values:` + fmt.Sprintf("%v", this.Values) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *UpdateUserSettingsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&UpdateUserSettingsResponse{`,
+		`OK:` + fmt.Sprintf("%v", this.OK) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -4155,6 +4916,470 @@ func (m *UpdateUserRequest) Unmarshal(dAtA []byte) error {
 			}
 			m.ProfilePicture = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetUserSettingsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetUserSettingsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetUserSettingsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ID == nil {
+				m.ID = &proto1.UUID{}
+			}
+			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Keys", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Keys = append(m.Keys, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetUserSettingsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetUserSettingsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetUserSettingsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Keys", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Keys = append(m.Keys, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Values", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Values = append(m.Values, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UpdateUserSettingsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UpdateUserSettingsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UpdateUserSettingsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ID == nil {
+				m.ID = &proto1.UUID{}
+			}
+			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Keys", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Keys = append(m.Keys, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Values", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Values = append(m.Values, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UpdateUserSettingsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UpdateUserSettingsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UpdateUserSettingsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OK", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.OK = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipService(dAtA[iNdEx:])

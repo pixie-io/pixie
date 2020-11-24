@@ -157,7 +157,7 @@ func TestServer_CreateUser(t *testing.T) {
 
 	for _, tc := range createUsertests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := controller.NewServer(nil, d)
+			s := controller.NewServer(nil, d, nil)
 			if tc.makesCall {
 				req := &datastore.UserInfo{
 					OrgID:     testOrgUUID,
@@ -192,7 +192,7 @@ func TestServer_GetUser(t *testing.T) {
 
 	userUUID := uuid.NewV4()
 	orgUUID := uuid.NewV4()
-	s := controller.NewServer(nil, d)
+	s := controller.NewServer(nil, d, nil)
 
 	mockReply := &datastore.UserInfo{
 		ID:        userUUID,
@@ -225,7 +225,7 @@ func TestServer_GetUser_MissingUser(t *testing.T) {
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	userUUID := uuid.NewV4()
-	s := controller.NewServer(nil, d)
+	s := controller.NewServer(nil, d, nil)
 	d.EXPECT().
 		GetUser(userUUID).
 		Return(nil, nil)
@@ -244,7 +244,7 @@ func TestServer_GetUserByEmail(t *testing.T) {
 
 	userUUID := uuid.NewV4()
 	orgUUID := uuid.NewV4()
-	s := controller.NewServer(nil, d)
+	s := controller.NewServer(nil, d, nil)
 
 	mockReply := &datastore.UserInfo{
 		ID:        userUUID,
@@ -275,7 +275,7 @@ func TestServer_GetUserByEmail_MissingEmail(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	s := controller.NewServer(nil, d)
+	s := controller.NewServer(nil, d, nil)
 
 	d.EXPECT().
 		GetUserByEmail("foo@bar.com").
@@ -356,7 +356,7 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 
 			env := profileenv.New(pm)
 
-			s := controller.NewServer(env, d)
+			s := controller.NewServer(env, d, nil)
 			exUserInfo := &datastore.UserInfo{
 				Username:  tc.req.User.Username,
 				FirstName: tc.req.User.FirstName,
@@ -483,7 +483,7 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			pm := mock_projectmanager.NewMockProjectManagerServiceClient(ctrl)
 			env := profileenv.New(pm)
-			s := controller.NewServer(env, d)
+			s := controller.NewServer(env, d, nil)
 			resp, err := s.CreateOrgAndUser(context.Background(), tc.req)
 			assert.NotNil(t, err)
 			assert.Nil(t, resp)
@@ -525,7 +525,7 @@ func TestServer_CreateOrgAndUser_CreateProjectFailed(t *testing.T) {
 		},
 	}
 
-	s := controller.NewServer(env, d)
+	s := controller.NewServer(env, d, nil)
 	exUserInfo := &datastore.UserInfo{
 		Username:  req.User.Username,
 		FirstName: req.User.FirstName,
@@ -556,7 +556,7 @@ func TestServer_GetOrg(t *testing.T) {
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	orgUUID := uuid.NewV4()
-	s := controller.NewServer(nil, d)
+	s := controller.NewServer(nil, d, nil)
 
 	mockReply := &datastore.OrgInfo{
 		ID:         orgUUID,
@@ -585,7 +585,7 @@ func TestServer_GetOrgs(t *testing.T) {
 	orgUUID := uuid.NewV4()
 	org2UUID := uuid.NewV4()
 
-	s := controller.NewServer(nil, d)
+	s := controller.NewServer(nil, d, nil)
 
 	mockReply := []*datastore.OrgInfo{&datastore.OrgInfo{
 		ID:         orgUUID,
@@ -621,7 +621,7 @@ func TestServer_GetOrg_MissingOrg(t *testing.T) {
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	orgUUID := uuid.NewV4()
-	s := controller.NewServer(nil, d)
+	s := controller.NewServer(nil, d, nil)
 
 	d.EXPECT().
 		GetOrg(orgUUID).
@@ -640,7 +640,7 @@ func TestServer_GetOrgByDomain(t *testing.T) {
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	orgUUID := uuid.NewV4()
-	s := controller.NewServer(nil, d)
+	s := controller.NewServer(nil, d, nil)
 
 	mockReply := &datastore.OrgInfo{
 		ID:         orgUUID,
@@ -668,7 +668,7 @@ func TestServer_GetOrgByDomain_MissingOrg(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	s := controller.NewServer(nil, d)
+	s := controller.NewServer(nil, d, nil)
 
 	d.EXPECT().
 		GetOrgByDomain("hulu.com").
@@ -689,7 +689,7 @@ func TestServer_DeleteOrgAndUsers(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	s := controller.NewServer(nil, d)
+	s := controller.NewServer(nil, d, nil)
 
 	orgUUID := uuid.NewV4()
 
@@ -711,7 +711,7 @@ func TestServer_DeleteOrgAndUsers_MissingOrg(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	s := controller.NewServer(nil, d)
+	s := controller.NewServer(nil, d, nil)
 
 	orgUUID := uuid.NewV4()
 	d.EXPECT().
@@ -730,7 +730,7 @@ func TestServer_UpdateUser(t *testing.T) {
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	userID := uuid.NewV4()
-	s := controller.NewServer(nil, d)
+	s := controller.NewServer(nil, d, nil)
 
 	profilePicture := "something"
 	newProfilePicture := "new"
@@ -763,4 +763,88 @@ func TestServer_UpdateUser(t *testing.T) {
 	require.Nil(t, err)
 	assert.Equal(t, resp.ID, utils.ProtoFromUUID(&userID))
 	assert.Equal(t, resp.ProfilePicture, "new")
+}
+
+func TestServer_GetUserSettings(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockUserSettingsDatastore(ctrl)
+
+	s := controller.NewServer(nil, nil, d)
+
+	userID := uuid.NewV4()
+	d.EXPECT().
+		GetUserSettings(userID, []string{"test", "another_key"}).
+		Return([]string{"a", "b"}, nil)
+
+	resp, err := s.GetUserSettings(context.Background(), &profile.GetUserSettingsRequest{
+		ID:   utils.ProtoFromUUID(&userID),
+		Keys: []string{"test", "another_key"},
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"test", "another_key"}, resp.Keys)
+	assert.Equal(t, []string{"a", "b"}, resp.Values)
+}
+
+func TestServer_UpdateUserSettings(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockUserSettingsDatastore(ctrl)
+
+	s := controller.NewServer(nil, nil, d)
+
+	userID := uuid.NewV4()
+
+	tests := []struct {
+		name string
+
+		keys   []string
+		values []string
+
+		expectCall   bool
+		expectErr    bool
+		expectedCode codes.Code
+	}{
+		{
+			name:       "valid",
+			keys:       []string{"test1", "test2"},
+			values:     []string{"val1", "val2"},
+			expectCall: true,
+			expectErr:  false,
+		},
+		{
+			name:         "mismatched length",
+			keys:         []string{"test1", "test2"},
+			values:       []string{"val1"},
+			expectCall:   false,
+			expectErr:    true,
+			expectedCode: codes.InvalidArgument,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.expectCall {
+				d.EXPECT().
+					UpdateUserSettings(userID, tc.keys, tc.values).
+					Return(nil)
+			}
+
+			resp, err := s.UpdateUserSettings(context.Background(), &profile.UpdateUserSettingsRequest{
+				ID:     utils.ProtoFromUUID(&userID),
+				Keys:   tc.keys,
+				Values: tc.values,
+			})
+			if tc.expectErr {
+				assert.NotNil(t, err)
+				assert.Equal(t, tc.expectedCode, status.Code(err))
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, resp)
+				assert.Equal(t, true, resp.OK)
+			}
+		})
+	}
 }

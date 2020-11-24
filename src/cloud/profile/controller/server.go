@@ -51,15 +51,24 @@ type Datastore interface {
 	GetOrgs() ([]*datastore.OrgInfo, error)
 }
 
+// UserSettingsDatastore is the interface used to the backing store for user settings.
+type UserSettingsDatastore interface {
+	// GetUserSettings gets the user settings for the given user and keys.
+	GetUserSettings(uuid.UUID, []string) ([]string, error)
+	// UpdateUserSettings updates the keys and values for the given user.
+	UpdateUserSettings(uuid.UUID, []string, []string) error
+}
+
 // Server is an implementation of GRPC server for profile service.
 type Server struct {
 	env profileenv.ProfileEnv
 	d   Datastore
+	uds UserSettingsDatastore
 }
 
 // NewServer creates a new GRPC profile server.
-func NewServer(env profileenv.ProfileEnv, d Datastore) *Server {
-	return &Server{env: env, d: d}
+func NewServer(env profileenv.ProfileEnv, d Datastore, uds UserSettingsDatastore) *Server {
+	return &Server{env: env, d: d, uds: uds}
 }
 
 func userInfoToProto(u *datastore.UserInfo) *profile.UserInfo {
@@ -289,4 +298,37 @@ func (s *Server) UpdateUser(ctx context.Context, req *profile.UpdateUserRequest)
 	}
 
 	return userInfoToProto(userInfo), nil
+}
+
+// GetUserSettings gets the user settings for the given user.
+func (s *Server) GetUserSettings(ctx context.Context, req *profile.GetUserSettingsRequest) (*profile.GetUserSettingsResponse, error) {
+	userID := utils.UUIDFromProtoOrNil(req.ID)
+
+	values, err := s.uds.GetUserSettings(userID, req.Keys)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &profile.GetUserSettingsResponse{
+		Keys:   req.Keys,
+		Values: values,
+	}
+
+	return resp, nil
+}
+
+// UpdateUserSettings updates the given keys and values for the specified user.
+func (s *Server) UpdateUserSettings(ctx context.Context, req *profile.UpdateUserSettingsRequest) (*profile.UpdateUserSettingsResponse, error) {
+	userID := utils.UUIDFromProtoOrNil(req.ID)
+
+	if len(req.Keys) != len(req.Values) {
+		return nil, status.Error(codes.InvalidArgument, "keys and values lengths must be equal")
+	}
+
+	err := s.uds.UpdateUserSettings(userID, req.Keys, req.Values)
+	if err != nil {
+		return nil, err
+	}
+
+	return &profile.UpdateUserSettingsResponse{OK: true}, nil
 }

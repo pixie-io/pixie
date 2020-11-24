@@ -56,7 +56,7 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to set up profileenv")
 	}
-	server := controller.NewServer(env, datastore)
+	server := controller.NewServer(env, datastore, datastore)
 
 	s := services.NewPLServer(env, mux)
 	profile.RegisterProfileServiceServer(s.GRPCServer(), server)

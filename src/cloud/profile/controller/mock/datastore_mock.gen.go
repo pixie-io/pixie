@@ -149,3 +149,51 @@ func (m *MockDatastore) GetOrgs() ([]*datastore.OrgInfo, error) {
 func (mr *MockDatastoreMockRecorder) GetOrgs() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgs", reflect.TypeOf((*MockDatastore)(nil).GetOrgs))
 }
+
+// MockUserSettingsDatastore is a mock of UserSettingsDatastore interface
+type MockUserSettingsDatastore struct {
+	ctrl     *gomock.Controller
+	recorder *MockUserSettingsDatastoreMockRecorder
+}
+
+// MockUserSettingsDatastoreMockRecorder is the mock recorder for MockUserSettingsDatastore
+type MockUserSettingsDatastoreMockRecorder struct {
+	mock *MockUserSettingsDatastore
+}
+
+// NewMockUserSettingsDatastore creates a new mock instance
+func NewMockUserSettingsDatastore(ctrl *gomock.Controller) *MockUserSettingsDatastore {
+	mock := &MockUserSettingsDatastore{ctrl: ctrl}
+	mock.recorder = &MockUserSettingsDatastoreMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockUserSettingsDatastore) EXPECT() *MockUserSettingsDatastoreMockRecorder {
+	return m.recorder
+}
+
+// GetUserSettings mocks base method
+func (m *MockUserSettingsDatastore) GetUserSettings(arg0 go_uuid.UUID, arg1 []string) ([]string, error) {
+	ret := m.ctrl.Call(m, "GetUserSettings", arg0, arg1)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserSettings indicates an expected call of GetUserSettings
+func (mr *MockUserSettingsDatastoreMockRecorder) GetUserSettings(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserSettings", reflect.TypeOf((*MockUserSettingsDatastore)(nil).GetUserSettings), arg0, arg1)
+}
+
+// UpdateUserSettings mocks base method
+func (m *MockUserSettingsDatastore) UpdateUserSettings(arg0 go_uuid.UUID, arg1, arg2 []string) error {
+	ret := m.ctrl.Call(m, "UpdateUserSettings", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateUserSettings indicates an expected call of UpdateUserSettings
+func (mr *MockUserSettingsDatastoreMockRecorder) UpdateUserSettings(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserSettings", reflect.TypeOf((*MockUserSettingsDatastore)(nil).UpdateUserSettings), arg0, arg1, arg2)
+}

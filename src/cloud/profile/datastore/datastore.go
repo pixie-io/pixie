@@ -257,3 +257,76 @@ func (d *Datastore) UpdateUser(userInfo *UserInfo) error {
 
 	return nil
 }
+
+// UserSetting is a key-value setting for a user configuration.
+type UserSetting struct {
+	UserID uuid.UUID `db:"user_id"`
+	Key    string    `db:"key"`
+	Value  string    `db:"value"`
+}
+
+// GetUserSettings fetches the settings for the given user and keys.
+func (d *Datastore) GetUserSettings(id uuid.UUID, keys []string) ([]string, error) {
+	arg := map[string]interface{}{
+		"id":   id,
+		"keys": keys,
+	}
+	query, args, err := sqlx.Named("SELECT * from user_settings WHERE user_id=:id AND key IN (:keys)", arg)
+	query, args, err = sqlx.In(query, args...)
+	query = d.db.Rebind(query)
+	rows, err := d.db.Queryx(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Make a map of key -> value.
+	settings := make(map[string]string)
+	for rows.Next() {
+		var userSetting UserSetting
+		err := rows.StructScan(&userSetting)
+		if err != nil {
+			return nil, err
+		}
+		settings[userSetting.Key] = userSetting.Value
+	}
+
+	// Return settings in the requested order.
+	values := make([]string, len(keys))
+	for i, k := range keys {
+		if val, ok := settings[k]; ok {
+			values[i] = val
+		} else {
+			values[i] = ""
+		}
+	}
+
+	return values, nil
+}
+
+// UpdateUserSettings updates the user settings for the given user.
+func (d *Datastore) UpdateUserSettings(id uuid.UUID, keys []string, values []string) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	for i, k := range keys {
+		userSetting := UserSetting{id, k, values[i]}
+		query := `INSERT INTO user_settings ("user_id", "key", "value") VALUES (:user_id, :key, :value) ON CONFLICT ("user_id", "key") DO UPDATE SET "value" = EXCLUDED.value`
+		row, err := d.db.NamedQuery(query, userSetting)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		defer row.Close()
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
