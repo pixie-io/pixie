@@ -75,6 +75,72 @@ TEST_F(ParserTest, FuncWithTypedArgs) {
   ASSERT_OK(ast_or_s);
 }
 
+constexpr const char* kMixedSpacesThenTabs = R"pxl(
+# Spacing will be obvious if you have render whitespace in your editor.
+def func():
+    # couple of normal lines
+    df = px.DataFrame('http_events')
+    df = df[['http_resp_body']]
+    # indent with a tab instead
+	df.abc = 1
+    return 'test'
+)pxl";
+
+constexpr const char* kMixedTabsThenSpaces = R"pxl(
+# Spacing will be obvious if you have render whitespace in your editor.
+def func():
+	# couple of normal lines
+	df = px.DataFrame('http_events')
+	df = df[['http_resp_body']]
+	# indent with a tab instead
+    df.abc = 1
+    return 'test'
+)pxl";
+
+constexpr const char* kUnexpectedIndent = R"pxl(
+def func():
+    # couple of normal lines
+    df = px.DataFrame('http_events')
+    df = df[['http_resp_body']]
+    # indent with a tab instead
+      df.abc = 1
+    return 'test'
+)pxl";
+
+constexpr const char* kUnexpectedDedent = R"pxl(
+def func():
+    # couple of normal lines
+    df = px.DataFrame('http_events')
+    df = df[['http_resp_body']]
+    # indent with a tab instead
+   df.abc = 1
+    return 'test'
+)pxl";
+
+TEST_F(ParserTest, mixed_indent_styles) {
+  Parser parser;
+  auto ast_or_s = parser.Parse(kMixedSpacesThenTabs);
+  EXPECT_THAT(ast_or_s.status(),
+              HasCompilerErrorAt(
+                  8, 1, "IndentationError: inconsistent use of tabs and spaces in indentation"));
+
+  ast_or_s = parser.Parse(kMixedTabsThenSpaces);
+  EXPECT_THAT(ast_or_s.status(),
+              HasCompilerErrorAt(
+                  8, 4, "IndentationError: unindent does not match any outer indentation level"));
+}
+
+TEST_F(ParserTest, indent_dedent_error) {
+  Parser parser;
+  auto ast_or_s = parser.Parse(kUnexpectedIndent);
+  EXPECT_THAT(ast_or_s.status(), HasCompilerErrorAt(7, 7, "IndentationError: unexpected indent"));
+
+  ast_or_s = parser.Parse(kUnexpectedDedent);
+  EXPECT_THAT(ast_or_s.status(),
+              HasCompilerErrorAt(
+                  7, 3, "IndentationError: unindent does not match any outer indentation level"));
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl

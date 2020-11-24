@@ -24,7 +24,7 @@ class PypaErrorHandler {
    *
    * @param err
    */
-  void HandlerFunc(pypa::Error err) { errs_.push_back(err); }
+  void HandlerFunc(const pypa::Error& err) { errs_.push_back(err); }
 
   /**
    *
@@ -46,7 +46,7 @@ class PypaErrorHandler {
   bool HasErrors() { return errs_.size() > 0; }
 
  private:
-  void CreateLineColError(compilerpb::LineColError* line_col_err_pb, pypa::Error err) {
+  void CreateLineColError(compilerpb::LineColError* line_col_err_pb, const pypa::Error& err) {
     int64_t line = err.cur.line;
     int64_t column = err.cur.column;
     std::string error_name = absl::StrCat(magic_enum::enum_name(err.type), ":");
@@ -75,6 +75,7 @@ StatusOr<pypa::AstModulePtr> Parser::Parse(std::string_view query, bool parse_do
   options.error_handler =
       std::bind(&PypaErrorHandler::HandlerFunc, &pypa_error_handler, std::placeholders::_1);
   pypa::Lexer lexer(std::make_unique<StringReader>(query));
+  lexer.set_ignore_altindent_errors(false);
 
   pypa::parse(lexer, ast, symbols, options);
   if (pypa_error_handler.HasErrors()) {
