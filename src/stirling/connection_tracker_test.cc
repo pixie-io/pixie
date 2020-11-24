@@ -791,7 +791,8 @@ TEST_P(ConnectionTrackerStatsTest, OnlyDataEvents) {
               UnorderedElementsAre(Pair(AggKeyIs(12345, "0.0.0.0"), StatsIs(1, 1, 4, 4))));
 }
 
-// PROTOCOL_LIST: Requires update on new protocols.
+// Only instantiate tests for a partial list of protocols. As the code for computing the stats for
+// different protocols are the same.
 INSTANTIATE_TEST_SUITE_P(AllProtocols, ConnectionTrackerStatsTest,
                          ::testing::Combine(::testing::Values(kProtocolUnknown, kProtocolHTTP,
                                                               kProtocolMySQL, kProtocolCQL,

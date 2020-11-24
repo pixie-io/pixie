@@ -18,15 +18,8 @@
 #include "src/stirling/fd_resolver.h"
 #include "src/stirling/protocols/common/interface.h"
 #include "src/stirling/socket_trace_bpf_tables.h"
-
-// PROTOCOL_LIST: Requires update on new protocols.
-#include "src/stirling/protocols/cql/cql_stitcher.h"
-#include "src/stirling/protocols/dns/dns_stitcher.h"
-#include "src/stirling/protocols/http/http_stitcher.h"
-#include "src/stirling/protocols/http2/stitcher.h"
-#include "src/stirling/protocols/mysql/mysql_stitcher.h"
-#include "src/stirling/protocols/pgsql/stitcher.h"
-#include "src/stirling/protocols/redis/stitcher.h"
+// Include all specializations of the StitchFrames() template specializations for all protocols.
+#include "src/stirling/protocols/stitchers.h"
 
 DECLARE_bool(enable_unix_domain_sockets);
 DECLARE_int64(stirling_conn_trace_pid);

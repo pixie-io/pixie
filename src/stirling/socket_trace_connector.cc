@@ -153,7 +153,7 @@ Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
   LOG(INFO) << absl::Substitute("Number of perf buffers opened = $0", kPerfBufferSpecs.size());
 
-  // Apply protocol_transfer_specs.
+  // Set trace role to BPF probes.
   for (const auto& p : TrafficProtocolEnumValues()) {
     if (protocol_transfer_specs_[p].enabled) {
       PL_RETURN_IF_ERROR(UpdateBPFProtocolTraceRole(p, protocol_transfer_specs_[p].role_to_trace));
