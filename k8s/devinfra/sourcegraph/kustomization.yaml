@@ -1,0 +1,9 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: sourcegraph
+resources:
+- storageclass.yaml
+- ingress.yaml
+- managedcert.yaml
+- frontend_service.yaml

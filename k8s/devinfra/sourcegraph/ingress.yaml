@@ -1,0 +1,18 @@
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: sourcegraph-ingress
+  annotations:
+    # If the class annotation is not specified it defaults to "gce"
+    kubernetes.io/ingress.class: "gce"
+    networking.gke.io/managed-certificates: "sourcegraph-cert"
+    kubernetes.io/ingress.global-static-ip-name: "sourcegraph-static-ip"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /*
+        backend:
+          serviceName: sourcegraph-frontend
+          servicePort: 3080
