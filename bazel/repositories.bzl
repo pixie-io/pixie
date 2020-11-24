@@ -62,17 +62,6 @@ def _com_github_threadstacks():
         path = "third_party/threadstacks",
     )
 
-def _com_github_fluent_fluentbit():
-    name = "com_github_fluent_fluentbit"
-    location = REPOSITORY_LOCATIONS[name]
-    http_archive(
-        name = name,
-        build_file_content = BUILD_ALL_CONTENT,
-        patches = ["//third_party:fluent-bit.patch"],
-        patch_args = ["-p1"],
-        **location
-    )
-
 def _cc_deps():
     _bazel_repo("com_google_benchmark")
     _bazel_repo("com_google_googletest")
@@ -108,7 +97,6 @@ def _cc_deps():
 
     _com_github_nghttp2_nghttp2()
     _com_github_threadstacks()
-    _com_github_fluent_fluentbit()
 
 def _go_deps():
     # Add go specific imports here when necessary.

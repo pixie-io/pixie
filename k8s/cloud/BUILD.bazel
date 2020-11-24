@@ -14,7 +14,6 @@ CLOUD_IMAGE_MAP = {
     "gcr.io/pl-dev-infra/cloud/dnsmgr_server_image": "//src/cloud/dnsmgr:dnsmgr_server_image",
     "gcr.io/pl-dev-infra/cloud/indexer_server_image": "//src/cloud/indexer:indexer_server_image",
     "gcr.io/pl-dev-infra/cloud/artifact_tracker_server_image": "//src/cloud/artifact_tracker:artifact_tracker_server_image",
-    "gcr.io/pl-dev-infra/cloud/log_collector_server_image": "//src/cloud/log_collector:log_collector_server_image",
     "gcr.io/pl-dev-infra/cloud/scriptmgr_server_image": "//src/cloud/scriptmgr:scriptmgr_server_image",
 }
 

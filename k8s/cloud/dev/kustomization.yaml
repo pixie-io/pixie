@@ -26,4 +26,3 @@ patchesStrategicMerge:
 - db_config.yaml
 - service_config.yaml
 - proxy_envoy.yaml
-- log_collector_config.yaml

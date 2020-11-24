@@ -13,8 +13,6 @@ spec:
       labels:
         name: vizier-proxy
         plane: control
-      annotations:
-        fluentbit.io/parser: envoy
     spec:
       imagePullSecrets:
       - name: pl-image-secret

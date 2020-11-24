@@ -16,8 +16,6 @@
        labels:
          name: simple-service
          plane: control
-       annotations:
-         fluentbit.io/parser: logfmt
      spec:
        containers:
        - name: app

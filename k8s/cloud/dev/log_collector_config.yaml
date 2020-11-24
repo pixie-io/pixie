@@ -1,8 +1,0 @@
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: pl-log-collector-config
-data:
-  PL_LOGS_MAX_INDEX_SIZE: "1gb"
-  PL_LOGS_TIME_BEFORE_DELETE: "1d"

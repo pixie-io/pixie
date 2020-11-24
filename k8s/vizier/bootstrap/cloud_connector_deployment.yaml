@@ -13,8 +13,6 @@ spec:
       labels:
         name: vizier-cloud-connector
         plane: control
-      annotations:
-        fluentbit.io/parser: logfmt
     spec:
       serviceAccountName: cloud-conn-service-account
       containers:

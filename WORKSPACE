@@ -89,9 +89,10 @@ load("@org_tensorflow//tensorflow:workspace.bzl", "tf_repositories")
 
 tf_repositories()
 
-# Download model files
 load("@io_bazel_toolchains//rules:gcs.bzl", "gcs_file")
+load("@bazel_gazelle//:deps.bzl", "go_repository")
 
+# Download model files
 # TODO(james): add some sort of versioning for models.
 gcs_file(
     name = "embedding_model",
@@ -107,21 +108,6 @@ gcs_file(
     file = "models/current-sentencepiece-model.proto",
     sha256 = "7e17e04ecc207d9204dc8755357f988bf77c135f7a34a88984943c8649d6a790",
     downloaded_file_path = "sentencepiece.proto",
-)
-
-##########################################################
-# Manual GO dependencies (those we patch)
-##########################################################
-
-load("@bazel_gazelle//:deps.bzl", "go_repository")
-
-go_repository(
-    name = "com_github_fluent_fluent_bit_go",
-    importpath = "github.com/fluent/fluent-bit-go",
-    patch_args = ["-p1"],
-    patches = ["//third_party:fluent-bit-go.patch"],
-    sum = "h1:ni2Qs4+h7Ps6bRPYJe7sF3MVQU1d8IXUTZBXFIegE7g=",
-    version = "v0.0.0-20200304012558-215d6804159a",
 )
 
 # gazelle:repo bazel_gazelle

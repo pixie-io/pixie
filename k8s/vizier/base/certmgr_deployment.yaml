@@ -13,8 +13,6 @@ spec:
       labels:
         name: vizier-certmgr
         plane: control
-      annotations:
-        fluentbit.io/parser: logfmt
     spec:
       containers:
       - name: app

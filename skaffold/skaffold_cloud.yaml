@@ -42,10 +42,6 @@ build:
     context: .
     bazel:
       target: //src/cloud/artifact_tracker:artifact_tracker_server_image.tar
-  - image: gcr.io/pl-dev-infra/cloud/log_collector_server_image
-    context: .
-    bazel:
-      target: //src/cloud/log_collector:log_collector_server_image.tar
   - image: gcr.io/pl-dev-infra/cloud/scriptmgr_server_image
     context: .
     bazel:

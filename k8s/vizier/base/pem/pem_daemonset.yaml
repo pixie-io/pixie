@@ -16,8 +16,6 @@ spec:
       labels:
         name: vizier-pem
         plane: data
-      annotations:
-        fluentbit.io/parser: glog
     spec:
       tolerations:
       - key: node-role.kubernetes.io/master

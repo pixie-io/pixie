@@ -191,12 +191,6 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "cpp-jwt-1.1.1",
         urls = ["https://github.com/arun11299/cpp-jwt/archive/v1.1.1.tar.gz"],
     ),
-    # March 5, 2020.
-    com_github_fluent_fluentbit = dict(
-        sha256 = "b67a1963ddef82c9fa3cc57867840813f1b261051fed5dbb3734267bc0b05cf9",
-        strip_prefix = "fluent-bit-1.5.0",
-        urls = ["https://github.com/fluent/fluent-bit/archive/v1.5.0.tar.gz"],
-    ),
     # April 21, 2020.
     com_github_cyan4973_xxhash = dict(
         sha256 = "952ebbf5b11fbf59ae5d760a562d1e9112278f244340ad7714e8556cbe54f7f7",

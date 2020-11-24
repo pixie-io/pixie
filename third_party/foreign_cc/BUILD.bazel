@@ -142,38 +142,3 @@ cmake_external(
     lib_source = "@com_github_nghttp2_nghttp2//:all",
     deps = ["@boringssl//:ssl"],
 )
-
-cmake_external(
-    name = "fluentbit",
-    binaries = ["fluent-bit"],
-    cache_entries = {
-        "FLB_EXAMPLES": "No",
-        "FLB_LUAJIT": "No",
-        "FLB_JEMALLOC": "No",
-    },
-    generate_crosstool_file = True,
-    install_prefix = ".",
-    lib_name = "fluent-bit",
-    lib_source = "@com_github_fluent_fluentbit//:all",
-    make_commands = ["make -j${nproc} fluent-bit-bin"],
-)
-
-filegroup(
-    name = "fluentbit_binary",
-    srcs = [":fluentbit"],
-    output_group = "fluent-bit",
-)
-
-container_image(
-    name = "fluentbit_base_image",
-    base = "//:pl_cc_base_image",
-    debs = [
-        packages["libc6"],
-        packages["zlib1g"],
-        packages["libsasl2-2"],
-        packages["libssl1.1"],
-        packages["libgcc1"],
-    ],
-    files = [":fluentbit_binary"],
-    visibility = ["//visibility:public"],
-)

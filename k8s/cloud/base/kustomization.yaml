@@ -31,9 +31,6 @@ resources:
 - artifact_tracker_service.yaml
 - artifact_config.yaml
 - indexer_deployment.yaml
-- log_collector_deployment.yaml
-- log_collector_service.yaml
-- log_collector_config.yaml
 - scriptmgr_deployment.yaml
 - scriptmgr_service.yaml
 - scriptmgr_config.yaml
