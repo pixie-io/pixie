@@ -438,7 +438,7 @@ def publishDoxygenDocs() {
 }
 
 def sendSlackNotification() {
-  if (currentBuild.result != 'SUCCESS' || currentBuild.result != null) {
+  if (currentBuild.result != 'SUCCESS' && currentBuild.result != null) {
     slackSend color: '#FF0000', message: "FAILED: Build - ${env.BUILD_TAG} -- URL: ${env.BUILD_URL}."
   }
   else if (currentBuild.getPreviousBuild() &&
