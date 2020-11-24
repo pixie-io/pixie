@@ -7,12 +7,12 @@ Lists all DNS queries filtered by a specific query name.
 
 import px
 
-def fqdns(start: str, hostname: str):
+def dns_requests(start: str, query_name_filter: str):
 
     # The dns_events table pairs DNS requests with their responses.
 	df = px.DataFrame(table='dns_events', start_time=start)
 
-	# Add context
+	# Add context.
 	df.pod = df.ctx['pod']
 
 	# Convert DNS IP to string.
@@ -27,18 +27,18 @@ def fqdns(start: str, hostname: str):
 	df.idx1 = px.find(df.req_body, '\"name\":')
 	df.query_name_partial = px.substring(df.req_body, df.idx1 + 8, px.length(df.req_body) - (df.idx1 + 8) - 3)
 	df.idx2 = px.find(df.query_name_partial, ',')
-	df.query_name = px.substring(df.query_name_partial, 0, df.idx2 - 1)
+	df.dns_query_name = px.substring(df.query_name_partial, 0, df.idx2 - 1)
 	df = df.drop(['idx1', 'idx2'])  
 
-	## Step 2: All pod / dns_server pairings containing FQDN as substring
-	df = df[px.contains(df.query_name, hostname)]
-	df = df.groupby(['pod', 'dns_server', 'query_name']).agg(
+	## Step 2: All pod / dns_server pairings containing FQDN as substring.
+	df = df[px.contains(df.dns_query_name, query_name_filter)]
+	df = df.groupby(['pod', 'dns_server', 'dns_query_name']).agg(
 	    num_requests=('request_resolved', px.count),
-	    num_resolved=('request_resolved', px.mean),
+	    resolved=('request_resolved', px.mean),
 	    latency=('latency_ns', px.quantiles) 
 	)
 
-	df.num_resolved = px.Percent(df.num_resolved)
+	df.resolved = px.Percent(df.resolved)
 
-	return df
+	return df[['pod', 'dns_server', 'dns_query_name', 'num_requests', 'resolved', 'latency']]
 

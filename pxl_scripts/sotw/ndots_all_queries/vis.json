@@ -7,25 +7,25 @@
       "defaultValue": "-3h"
     },
     {
-      "name": "hostname",
+      "name": "query_name_filter",
       "type": "PX_STRING",
-      "description": "The hostname used to filter the DNS requests by.",
+      "description": "The partial query name used to filter the DNS requests by.",
       "defaultValue": "news.ycombinator.com"
     }
   ],
   "globalFuncs": [
     {
-      "outputName": "fqdns",
+      "outputName": "dns_requests",
       "func": {
-        "name": "fqdns",
+        "name": "dns_requests",
         "args": [
           {
             "name": "start",
             "variable": "start"
           },
           {
-            "name": "hostname",
-            "variable": "hostname"
+            "name": "query_name_filter",
+            "variable": "query_name_filter"
           }
         ]
       }

@@ -7,7 +7,7 @@ Lists external, fully qualified domain names (FQDNs) from all DNS traffic on the
 
 import px
 
-def fqdns(start: str):
+def fqdn_list(start: str):
 
     # The dns_events table pairs DNS requests with their responses.
     df = px.DataFrame(table='dns_events', start_time=start)
@@ -19,24 +19,25 @@ def fqdns(start: str):
     # Parse the DNS request for query name.
     df.req_body = px.pluck(df.req_body, 'queries')
     df.idx1 = px.find(df.req_body, '\"name\":')
-    df.query_name_partial = px.substring(df.req_body, df.idx1 + 8, px.length(df.req_body) - (df.idx1 + 8) - 3)
-    df.idx2 = px.find(df.query_name_partial, ',')
-    df.name = px.substring(df.query_name_partial, 0, df.idx2 - 1)
+    df.fqdn_partial = px.substring(df.req_body, df.idx1 + 8, px.length(df.req_body) - (df.idx1 + 8) - 3)
+    df.idx2 = px.find(df.fqdn_partial, ',')
+    df.fqdn = px.substring(df.fqdn_partial, 0, df.idx2 - 1)
 
-    # Filter for resolved requests
+    # Filter for resolved requests.
     df = df[df.request_resolved == True]
 
-    # Filter out queries for local domain names
-    df = df[not px.contains(df.name,'.local')]
+    # Filter out queries for local domain names.
+    df = df[not px.contains(df.fqdn,'.local')]
+    df = df[not px.contains(df.fqdn,'.internal')]
 
     # Add link to script that will show all requests for specific query.
-    df.link = px.script_reference('Link to all DNS requests', 'sotw/ndots_all_queries', {
+    df.link = px.script_reference('All DNS requests containing FQDN as substring', 'sotw/ndots_all_queries', {
         'start_time': start,
-        'hostname': df.name
+        'query_name_filter': df.fqdn
     })
 
-    # Group by query name and aggregate count of requests
-    df = df.groupby(['name', 'link']).agg(
+    # Group by (fqdn, link) and count number of requests.
+    df = df.groupby(['fqdn', 'link']).agg(
         num_requests=('request_resolved', px.count)
     )
 
