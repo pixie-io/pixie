@@ -818,13 +818,14 @@ func TestKVMetadataStore_PruneComputedSchema(t *testing.T) {
 		TableNameToAgentIDs: expectedTableToAgentsMap,
 	}
 
-	expectedSchemaBytes, _ := expectedSchema.Marshal()
 	err = mds.PruneComputedSchema()
 	assert.Nil(t, err)
 
 	schema, err := c.Get("/computedSchema")
 	assert.Nil(t, err)
-	assert.Equal(t, string(expectedSchemaBytes), string(schema))
+	newSchema := &storepb.ComputedSchema{}
+	err = proto.Unmarshal(schema, newSchema)
+	assert.Equal(t, expectedSchema, newSchema)
 }
 
 func TestKVMetadataStore_GetProcesses(t *testing.T) {
