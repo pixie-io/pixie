@@ -69,4 +69,23 @@ lsif-tsc --out "${LSIF_TS_OUT}" -p src/ui
   -ignore-upload-failure \
   -no-progress
 
+LSIF_CPP_OUT="cpp.dump.lsif"
+
+./scripts/gen_compilation_database.py \
+  --run_bazel_build \
+  --include_genfiles \
+  "$(bazel query 'kind("cc_(binary|test) rule",//... -//third_party/... -//demos/... -//experimental/...) except attr("tags", "manual", //...)')"
+
+lsif-clang \
+  --extra-arg="-resource-dir=$(clang -print-resource-dir)" \
+  --out="${LSIF_CPP_OUT}" \
+  compile_commands.json
+
+/opt/pixielabs/bin/src lsif upload \
+  -repo=github.com/pixie-labs/pixielabs \
+  -file="${LSIF_CPP_OUT}" \
+  -commit="${GIT_COMMIT}" \
+  -ignore-upload-failure \
+  -no-progress
+
 popd
