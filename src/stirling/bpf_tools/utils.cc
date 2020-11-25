@@ -7,8 +7,8 @@ namespace stirling {
 namespace bpf_tools {
 
 StatusOr<std::vector<UProbeSpec>> TransformGolangReturnProbe(
-    const UProbeSpec& spec, const elf_tools::ElfReader::SymbolInfo& target,
-    elf_tools::ElfReader* elf_reader) {
+    const UProbeSpec& spec, const obj_tools::ElfReader::SymbolInfo& target,
+    obj_tools::ElfReader* elf_reader) {
   DCHECK(spec.attach_type == BPFProbeAttachType::kReturn);
 
   PL_ASSIGN_OR_RETURN(std::vector<uint64_t> ret_inst_addrs, elf_reader->FuncRetInstAddrs(target));
@@ -28,9 +28,9 @@ StatusOr<std::vector<UProbeSpec>> TransformGolangReturnProbe(
 }
 
 StatusOr<std::vector<UProbeSpec>> TransformGolangReturnProbe(const UProbeSpec& spec,
-                                                             elf_tools::ElfReader* elf_reader) {
-  PL_ASSIGN_OR_RETURN(const std::vector<elf_tools::ElfReader::SymbolInfo> symbol_infos,
-                      elf_reader->ListFuncSymbols(spec.symbol, elf_tools::SymbolMatchType::kExact));
+                                                             obj_tools::ElfReader* elf_reader) {
+  PL_ASSIGN_OR_RETURN(const std::vector<obj_tools::ElfReader::SymbolInfo> symbol_infos,
+                      elf_reader->ListFuncSymbols(spec.symbol, obj_tools::SymbolMatchType::kExact));
 
   if (symbol_infos.empty()) {
     return error::NotFound("Symbol '$0' was not found", spec.symbol);

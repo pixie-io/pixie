@@ -14,7 +14,7 @@ namespace dynamic_tracing {
  * Uses ELF or DWARF information to detect the source language.
  * Populates the tracepoint program's language field in input_program.
  */
-void DetectSourceLanguage(elf_tools::ElfReader* elf_reader, dwarf_tools::DwarfReader* dwarf_reader,
+void DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfReader* dwarf_reader,
                           ir::logical::TracepointDeployment* input_program);
 
 /**
@@ -23,7 +23,7 @@ void DetectSourceLanguage(elf_tools::ElfReader* elf_reader, dwarf_tools::DwarfRe
  * If it is a short-hand reference to a symbol, the symbol is replaced with the full-form.
  * Potentially modifies each tracepoint's symbol field in input_program.
  */
-Status ResolveProbeSymbol(elf_tools::ElfReader* elf_reader,
+Status ResolveProbeSymbol(obj_tools::ElfReader* elf_reader,
                           ir::logical::TracepointDeployment* input_program);
 
 /**
@@ -31,7 +31,7 @@ Status ResolveProbeSymbol(elf_tools::ElfReader* elf_reader,
  * to automatically add (1) all arguments, (2) all response values, and (3) function latency
  * to the tracepoint specifications in input_program.
  */
-Status AutoTraceExpansion(dwarf_tools::DwarfReader* dwarf_reader,
+Status AutoTraceExpansion(obj_tools::DwarfReader* dwarf_reader,
                           ir::logical::TracepointDeployment* input_program);
 
 }  // namespace dynamic_tracing

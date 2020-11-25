@@ -21,12 +21,12 @@ namespace dynamic_tracing {
 
 using ::google::protobuf::RepeatedPtrField;
 
-using ::pl::stirling::dwarf_tools::ArgInfo;
-using ::pl::stirling::dwarf_tools::LocationType;
-using ::pl::stirling::dwarf_tools::StructMemberInfo;
-using ::pl::stirling::dwarf_tools::StructSpecEntry;
-using ::pl::stirling::dwarf_tools::TypeInfo;
-using ::pl::stirling::dwarf_tools::VarType;
+using ::pl::stirling::obj_tools::ArgInfo;
+using ::pl::stirling::obj_tools::LocationType;
+using ::pl::stirling::obj_tools::StructMemberInfo;
+using ::pl::stirling::obj_tools::StructSpecEntry;
+using ::pl::stirling::obj_tools::TypeInfo;
+using ::pl::stirling::obj_tools::VarType;
 
 using ::pl::stirling::dynamic_tracing::ir::physical::MapVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::PtrLenVariable;
@@ -48,7 +48,7 @@ using ::pl::stirling::dynamic_tracing::ir::physical::Variable;
  */
 class Dwarvifier {
  public:
-  Dwarvifier(dwarf_tools::DwarfReader* dwarf_reader, elf_tools::ElfReader* elf_reader,
+  Dwarvifier(obj_tools::DwarfReader* dwarf_reader, obj_tools::ElfReader* elf_reader,
              ir::shared::Language language);
   Status Generate(const ir::logical::TracepointSpec& input_program,
                   ir::physical::Program* output_program);
@@ -125,11 +125,11 @@ class Dwarvifier {
   std::map<std::string, ir::physical::PerfBufferOutput*> outputs_;
   std::map<std::string, ir::physical::Struct*> structs_;
 
-  dwarf_tools::DwarfReader* dwarf_reader_ = nullptr;
-  elf_tools::ElfReader* elf_reader_ = nullptr;
+  obj_tools::DwarfReader* dwarf_reader_ = nullptr;
+  obj_tools::ElfReader* elf_reader_ = nullptr;
 
-  std::map<std::string, dwarf_tools::ArgInfo> args_map_;
-  dwarf_tools::RetValInfo retval_info_;
+  std::map<std::string, obj_tools::ArgInfo> args_map_;
+  obj_tools::RetValInfo retval_info_;
 
   // All defined variables.
   absl::flat_hash_map<std::string, ir::physical::Field> variables_;
@@ -140,8 +140,8 @@ class Dwarvifier {
 
 // GeneratePhysicalProgram is the main entry point.
 StatusOr<ir::physical::Program> GeneratePhysicalProgram(
-    const ir::logical::TracepointDeployment& input, dwarf_tools::DwarfReader* dwarf_reader,
-    elf_tools::ElfReader* elf_reader) {
+    const ir::logical::TracepointDeployment& input, obj_tools::DwarfReader* dwarf_reader,
+    obj_tools::ElfReader* elf_reader) {
   if (input.tracepoints_size() != 1) {
     return error::InvalidArgument("Right now only support exactly 1 Tracepoint, got '$0'",
                                   input.tracepoints_size());
@@ -306,7 +306,7 @@ StatusOr<ArgInfo> GetArgInfo(const std::map<std::string, ArgInfo>& args_map,
 // Dwarvifier
 //-----------------------------------------------------------------------------
 
-Dwarvifier::Dwarvifier(dwarf_tools::DwarfReader* dwarf_reader, elf_tools::ElfReader* elf_reader,
+Dwarvifier::Dwarvifier(obj_tools::DwarfReader* dwarf_reader, obj_tools::ElfReader* elf_reader,
                        ir::shared::Language language)
     : dwarf_reader_(dwarf_reader), elf_reader_(elf_reader), language_(language) {
   implicit_columns_ = {kTGIDVarName, kTGIDStartTimeVarName, kKTimeVarName};
@@ -647,7 +647,7 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
 
   // TODO(yzhao): In case this is reused elsewhere, let Dwarvifier manage the return value, to avoid
   // duplicate computation.
-  PL_ASSIGN_OR_RETURN(const auto intf_impl_map, elf_tools::ExtractGolangInterfaces(elf_reader_));
+  PL_ASSIGN_OR_RETURN(const auto intf_impl_map, obj_tools::ExtractGolangInterfaces(elf_reader_));
 
   auto iter = intf_impl_map.find(type_info.decl_type);
 
@@ -675,7 +675,7 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
   // The first decoder is the one for runtime.iface itself, so the index starts from 1.
   size_t decoder_idx = 1;
 
-  for (const elf_tools::IntfImplTypeInfo& info : iter->second) {
+  for (const obj_tools::IntfImplTypeInfo& info : iter->second) {
     if (IsGolangPointerType(info.type_name)) {
       LOG(WARNING) << absl::Substitute(
           "Does not support pointer type as interface implementation type yet, "
@@ -932,7 +932,7 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
 }
 
 namespace {
-StatusOr<int> GolangReturnValueIndex(const std::map<std::string, dwarf_tools::ArgInfo>& args_map) {
+StatusOr<int> GolangReturnValueIndex(const std::map<std::string, obj_tools::ArgInfo>& args_map) {
   // Search for the first argument that has a name that fits the pattern ~rX, where X is a number.
   const std::string kRetValPrefix = "~r";
 

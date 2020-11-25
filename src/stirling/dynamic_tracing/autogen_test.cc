@@ -14,8 +14,8 @@ namespace dynamic_tracing {
 using ::google::protobuf::TextFormat;
 using ::pl::testing::proto::EqualsProto;
 
-using ::pl::stirling::dwarf_tools::DwarfReader;
-using ::pl::stirling::elf_tools::ElfReader;
+using ::pl::stirling::obj_tools::DwarfReader;
+using ::pl::stirling::obj_tools::ElfReader;
 
 constexpr std::string_view kInputProgram = R"(
 deployment_spec {

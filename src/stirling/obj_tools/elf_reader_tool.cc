@@ -6,8 +6,8 @@
 DEFINE_string(binary, "", "Filename to list symbols");
 DEFINE_string(filter, "", "Symbol matching substring used to select symbols to print.");
 
-using ::pl::stirling::elf_tools::ElfReader;
-using ::pl::stirling::elf_tools::SymbolMatchType;
+using ::pl::stirling::obj_tools::ElfReader;
+using ::pl::stirling::obj_tools::SymbolMatchType;
 
 constexpr char kProgramDescription[] =
     "A tool that lists all the function symbols in a binary (similar to nm).";

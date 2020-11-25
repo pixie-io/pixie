@@ -7,12 +7,12 @@
 
 namespace pl {
 namespace stirling {
-namespace elf_tools {
+namespace obj_tools {
 
 const DummyExeFixture kDummyExeFixture;
 
-using ::pl::stirling::elf_tools::ElfReader;
-using ::pl::stirling::elf_tools::SymbolMatchType;
+using ::pl::stirling::obj_tools::ElfReader;
+using ::pl::stirling::obj_tools::SymbolMatchType;
 using ::testing::ElementsAre;
 using ::testing::Field;
 using ::testing::IsEmpty;
@@ -21,7 +21,7 @@ using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
 TEST(ElfReaderTest, NonExistentPath) {
-  auto s = pl::stirling::elf_tools::ElfReader::Create("/bogus");
+  auto s = pl::stirling::obj_tools::ElfReader::Create("/bogus");
   ASSERT_NOT_OK(s);
 }
 
@@ -205,6 +205,6 @@ TEST(ElfGolangItableTest, ExtractInterfaceTypes) {
 #endif
 }
 
-}  // namespace elf_tools
+}  // namespace obj_tools
 }  // namespace stirling
 }  // namespace pl

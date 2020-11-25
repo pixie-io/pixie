@@ -12,22 +12,22 @@ namespace stirling {
  * Uses ELF and DWARF information to return the locations of all relevant symbols for general Go
  * uprobe deployment.
  */
-StatusOr<struct go_common_symaddrs_t> GoCommonSymAddrs(elf_tools::ElfReader* elf_reader,
-                                                       dwarf_tools::DwarfReader* dwarf_reader);
+StatusOr<struct go_common_symaddrs_t> GoCommonSymAddrs(obj_tools::ElfReader* elf_reader,
+                                                       obj_tools::DwarfReader* dwarf_reader);
 
 /**
  * Uses ELF and DWARF information to return the locations of all relevant symbols for Go HTTP2
  * uprobe deployment.
  */
-StatusOr<struct go_http2_symaddrs_t> GoHTTP2SymAddrs(elf_tools::ElfReader* elf_reader,
-                                                     dwarf_tools::DwarfReader* dwarf_reader);
+StatusOr<struct go_http2_symaddrs_t> GoHTTP2SymAddrs(obj_tools::ElfReader* elf_reader,
+                                                     obj_tools::DwarfReader* dwarf_reader);
 
 /**
  * Uses ELF and DWARF information to return the locations of all relevant symbols for Go TLS
  * uprobe deployment.
  */
-StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(elf_tools::ElfReader* elf_reader,
-                                                 dwarf_tools::DwarfReader* dwarf_reader);
+StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(obj_tools::ElfReader* elf_reader,
+                                                 obj_tools::DwarfReader* dwarf_reader);
 
 }  // namespace stirling
 }  // namespace pl

@@ -222,7 +222,7 @@ class CPPDynamicTraceTest : public ::testing::Test {
   }
 
   // Need debug build to include the dwarf info.
-  elf_tools::DummyExeFixture dummy_exe_fixture_;
+  obj_tools::DummyExeFixture dummy_exe_fixture_;
 
   LogicalProgram logical_program_;
   std::unique_ptr<SourceConnector> connector_;

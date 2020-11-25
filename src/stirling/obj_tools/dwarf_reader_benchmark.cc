@@ -4,7 +4,7 @@
 #include "src/common/testing/test_environment.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
 
-using pl::stirling::dwarf_tools::DwarfReader;
+using pl::stirling::obj_tools::DwarfReader;
 using pl::testing::BazelBinTestFilePath;
 
 // NOTE: This benchmark only works with `-c opt`, but that's how we want it to run anyways.

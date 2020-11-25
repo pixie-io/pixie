@@ -15,7 +15,7 @@
 
 namespace pl {
 namespace stirling {
-namespace elf_tools {
+namespace obj_tools {
 
 // See http://elfio.sourceforge.net/elfio.pdf for examples of how to use ELFIO.
 
@@ -429,6 +429,6 @@ StatusOr<absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>>> Extrac
   return interface_types;
 }
 
-}  // namespace elf_tools
+}  // namespace obj_tools
 }  // namespace stirling
 }  // namespace pl

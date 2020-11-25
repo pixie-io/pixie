@@ -14,8 +14,8 @@ namespace dynamic_tracing {
 
 StatusOr<ir::physical::Program> GeneratePhysicalProgram(
     const ir::logical::TracepointDeployment& input_program,
-    ::pl::stirling::dwarf_tools::DwarfReader* dwarf_reader,
-    ::pl::stirling::elf_tools::ElfReader* elf_reader);
+    ::pl::stirling::obj_tools::DwarfReader* dwarf_reader,
+    ::pl::stirling::obj_tools::ElfReader* elf_reader);
 
 }  // namespace dynamic_tracing
 }  // namespace stirling

@@ -78,9 +78,9 @@ using ::pl::grpc::MethodInputOutput;
 using ::pl::stirling::kCQLTable;
 using ::pl::stirling::kHTTPTable;
 using ::pl::stirling::kMySQLTable;
-using ::pl::stirling::dwarf_tools::DwarfReader;
-using ::pl::stirling::elf_tools::ElfReader;
 using ::pl::stirling::grpc::ParsePB;
+using ::pl::stirling::obj_tools::DwarfReader;
+using ::pl::stirling::obj_tools::ElfReader;
 using ::pl::stirling::obj_tools::ResolveProcessPath;
 using ::pl::stirling::utils::ToJSONString;
 
@@ -290,7 +290,7 @@ Status SocketTraceConnector::DisableSelfTracing() {
 
 StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe_tmpls,
                                                      const std::string& binary,
-                                                     elf_tools::ElfReader* elf_reader) {
+                                                     obj_tools::ElfReader* elf_reader) {
   using bpf_tools::BPFProbeAttachType;
 
   int uprobe_count = 0;
@@ -384,8 +384,8 @@ Status UpdateGoHTTP2SymAddrs(
 // cleanly. For example, right now, enabling uprobe & kprobe simultaneously can crash Stirling,
 // because of the mixed & duplicate data events from these 2 sources.
 StatusOr<int> SocketTraceConnector::AttachHTTP2Probes(
-    const std::string& binary, elf_tools::ElfReader* elf_reader,
-    dwarf_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& new_pids,
+    const std::string& binary, obj_tools::ElfReader* elf_reader,
+    obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& new_pids,
     ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t>* http2_symaddrs_map) {
   // Step 1: Update BPF symaddrs for this binary.
   Status s = UpdateGoHTTP2SymAddrs(elf_reader, dwarf_reader, new_pids, http2_symaddrs_map);

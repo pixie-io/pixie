@@ -8,8 +8,8 @@
 #include "src/stirling/obj_tools/dwarf_tools.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 
-using ::pl::stirling::dwarf_tools::DwarfReader;
-using ::pl::stirling::elf_tools::ElfReader;
+using ::pl::stirling::obj_tools::DwarfReader;
+using ::pl::stirling::obj_tools::ElfReader;
 
 namespace pl {
 namespace stirling {
@@ -34,7 +34,7 @@ StatusOr<std::string> InferHTTP2SymAddrVendorPrefix(ElfReader* elf_reader) {
   std::string vendor_prefix;
   for (std::string_view s : kSampleSymbols) {
     PL_ASSIGN_OR(std::vector<ElfReader::SymbolInfo> symbol_matches,
-                 elf_reader->ListFuncSymbols(s, elf_tools::SymbolMatchType::kSuffix), continue);
+                 elf_reader->ListFuncSymbols(s, obj_tools::SymbolMatchType::kSuffix), continue);
     if (symbol_matches.size() > 1) {
       VLOG(1) << absl::Substitute(
           "Found multiple symbol matches for $0. Cannot infer vendor prefix.", s);
@@ -233,7 +233,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   // The information from DWARF assumes SP is 8 bytes larger than the SP
   // we get from BPF code, so add the correction factor here.
   constexpr int32_t kSPOffset = 8;
-  const std::map<std::string, dwarf_tools::ArgInfo> kEmptyMap;
+  const std::map<std::string, obj_tools::ArgInfo> kEmptyMap;
 
 #define GET_ARG_OFFSET(symaddr, fn_args_map, arg)                                        \
   {                                                                                      \
@@ -343,7 +343,7 @@ Status PopulateGoTLSDebugSymbols(DwarfReader* dwarf_reader, struct go_tls_symadd
   // we get from BPF code, so add the correction factor here.
   // This is due to the return address being on the stack.
   constexpr int32_t kSPOffset = 8;
-  const std::map<std::string, dwarf_tools::ArgInfo> kEmptyMap;
+  const std::map<std::string, obj_tools::ArgInfo> kEmptyMap;
 
 #define GET_ARG_OFFSET(symaddr, fn_args_map, arg)                                        \
   {                                                                                      \

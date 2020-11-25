@@ -29,15 +29,15 @@ namespace dynamic_tracing {
 using ::pl::stirling::bpf_tools::BPFProbeAttachType;
 using ::pl::stirling::bpf_tools::UProbeSpec;
 
-using ::pl::stirling::dwarf_tools::DwarfReader;
-using ::pl::stirling::elf_tools::ElfReader;
+using ::pl::stirling::obj_tools::DwarfReader;
+using ::pl::stirling::obj_tools::ElfReader;
 
 namespace {
 
 StatusOr<std::vector<UProbeSpec>> GetUProbeSpec(std::string_view binary_path,
                                                 ir::shared::Language language,
                                                 const ir::physical::Probe& probe,
-                                                elf_tools::ElfReader* elf_reader) {
+                                                obj_tools::ElfReader* elf_reader) {
   UProbeSpec spec;
 
   spec.binary_path = binary_path;

@@ -7,7 +7,7 @@
 
 namespace pl {
 namespace stirling {
-namespace elf_tools {
+namespace obj_tools {
 
 // Holds a reference to the :dummy_exe, so that it's easier for tests to invoke the binary.
 class DummyExeFixture {
@@ -27,6 +27,6 @@ class DummyExeFixture {
   const std::filesystem::path dummy_exe_path_ = testing::BazelBinTestFilePath(kDummyExePath);
 };
 
-}  // namespace elf_tools
+}  // namespace obj_tools
 }  // namespace stirling
 }  // namespace pl

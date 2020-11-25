@@ -11,7 +11,7 @@
 
 namespace pl {
 namespace stirling {
-namespace dwarf_tools {
+namespace obj_tools {
 
 using llvm::DWARFContext;
 using llvm::DWARFDie;
@@ -843,6 +843,6 @@ StatusOr<RetValInfo> DwarfReader::GetFunctionRetValInfo(std::string_view functio
   return ret_val_info;
 }
 
-}  // namespace dwarf_tools
+}  // namespace obj_tools
 }  // namespace stirling
 }  // namespace pl

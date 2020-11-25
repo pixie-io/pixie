@@ -13,7 +13,7 @@
 
 namespace pl {
 namespace stirling {
-namespace elf_tools {
+namespace obj_tools {
 
 enum class SymbolMatchType {
   // Search for a symbol that is an exact match of the search string.
@@ -123,8 +123,8 @@ struct IntfImplTypeInfo {
  * Returns a map of all interfaces, and types that implement that interface in a go binary
  */
 StatusOr<absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>>> ExtractGolangInterfaces(
-    elf_tools::ElfReader* elf_reader);
+    obj_tools::ElfReader* elf_reader);
 
-}  // namespace elf_tools
+}  // namespace obj_tools
 }  // namespace stirling
 }  // namespace pl

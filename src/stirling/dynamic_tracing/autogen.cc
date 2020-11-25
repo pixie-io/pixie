@@ -33,7 +33,7 @@ StatusOr<ir::shared::Language> TransformSourceLanguage(
 
 }  // namespace
 
-void DetectSourceLanguage(elf_tools::ElfReader* elf_reader, dwarf_tools::DwarfReader* dwarf_reader,
+void DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfReader* dwarf_reader,
                           ir::logical::TracepointDeployment* input_program) {
   ir::shared::Language detected_language = ir::shared::Language::LANG_UNKNOWN;
 
@@ -70,15 +70,15 @@ void DetectSourceLanguage(elf_tools::ElfReader* elf_reader, dwarf_tools::DwarfRe
   }
 }
 
-Status ResolveProbeSymbol(elf_tools::ElfReader* elf_reader,
+Status ResolveProbeSymbol(obj_tools::ElfReader* elf_reader,
                           ir::logical::TracepointDeployment* input_program) {
   // Expand symbol
   for (auto& t : *input_program->mutable_tracepoints()) {
     for (auto& probe : *t.mutable_program()->mutable_probes()) {
       PL_ASSIGN_OR_RETURN(
-          std::vector<elf_tools::ElfReader::SymbolInfo> symbol_matches,
+          std::vector<obj_tools::ElfReader::SymbolInfo> symbol_matches,
           elf_reader->SearchSymbols(probe.tracepoint().symbol(),
-                                    elf_tools::SymbolMatchType::kSuffix, ELFIO::STT_FUNC));
+                                    obj_tools::SymbolMatchType::kSuffix, ELFIO::STT_FUNC));
       if (symbol_matches.empty()) {
         return error::Internal("Could not find symbol");
       }
@@ -95,7 +95,7 @@ Status ResolveProbeSymbol(elf_tools::ElfReader* elf_reader,
   return Status::OK();
 }
 
-Status AutoTraceExpansion(dwarf_tools::DwarfReader* dwarf_reader,
+Status AutoTraceExpansion(obj_tools::DwarfReader* dwarf_reader,
                           ir::logical::TracepointDeployment* input_program) {
   for (auto& t : *input_program->mutable_tracepoints()) {
     for (auto& probe : *t.mutable_program()->mutable_probes()) {

@@ -12,8 +12,8 @@
 namespace pl {
 namespace stirling {
 
-using dwarf_tools::DwarfReader;
-using elf_tools::ElfReader;
+using obj_tools::DwarfReader;
+using obj_tools::ElfReader;
 
 class UprobeSymaddrsTest : public ::testing::Test {
  protected:

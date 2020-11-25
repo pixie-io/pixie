@@ -16,15 +16,15 @@ namespace bpf_tools {
  * binary.
  */
 StatusOr<std::vector<UProbeSpec>> TransformGolangReturnProbe(
-    const UProbeSpec& spec, const elf_tools::ElfReader::SymbolInfo& target,
-    elf_tools::ElfReader* elf_reader);
+    const UProbeSpec& spec, const obj_tools::ElfReader::SymbolInfo& target,
+    obj_tools::ElfReader* elf_reader);
 
 /**
  * Wraps the above function. The additional functionality is to obtain SymbolInfo from the symbol
  * address of the input spec.
  */
 StatusOr<std::vector<UProbeSpec>> TransformGolangReturnProbe(const UProbeSpec& spec,
-                                                             elf_tools::ElfReader* elf_reader);
+                                                             obj_tools::ElfReader* elf_reader);
 
 }  // namespace bpf_tools
 }  // namespace stirling

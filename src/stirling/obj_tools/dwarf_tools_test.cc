@@ -13,10 +13,10 @@ constexpr std::string_view kGoBinaryUnconventional =
 
 namespace pl {
 namespace stirling {
-namespace dwarf_tools {
+namespace obj_tools {
 
 using ::llvm::DWARFDie;
-using ::pl::stirling::dwarf_tools::DwarfReader;
+using ::pl::stirling::obj_tools::DwarfReader;
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::testing::Pair;
@@ -42,7 +42,7 @@ class DwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam> {
 };
 
 TEST_F(DwarfReaderTest, NonExistentPath) {
-  auto s = pl::stirling::dwarf_tools::DwarfReader::Create("/bogus");
+  auto s = pl::stirling::obj_tools::DwarfReader::Create("/bogus");
   ASSERT_NOT_OK(s);
 }
 
@@ -451,6 +451,6 @@ INSTANTIATE_TEST_SUITE_P(DwarfReaderParameterizedTest, DwarfReaderTest,
                          ::testing::Values(DwarfReaderTestParam{true},
                                            DwarfReaderTestParam{false}));
 
-}  // namespace dwarf_tools
+}  // namespace obj_tools
 }  // namespace stirling
 }  // namespace pl

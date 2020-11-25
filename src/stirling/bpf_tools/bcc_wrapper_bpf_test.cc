@@ -15,7 +15,7 @@ using ::pl::testing::TempDir;
 
 class BCCWrapperTest : public ::testing::Test {
  protected:
-  inline static const elf_tools::DummyExeFixture kDummyExeFixture;
+  inline static const obj_tools::DummyExeFixture kDummyExeFixture;
   static constexpr char kSymbol[] = "CanYouFindThis";
   static constexpr char kBCC[] = R"BCC(
       int foo(struct pt_regs* ctx) {

@@ -41,7 +41,7 @@ using ::pl::stirling::dynamic_tracing::ir::shared::Printk;
 using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
 using ::pl::stirling::dynamic_tracing::ir::shared::Tracepoint;
 using ::pl::stirling::dynamic_tracing::ir::shared::VariableType;
-using ::pl::stirling::elf_tools::ElfReader;
+using ::pl::stirling::obj_tools::ElfReader;
 
 #define PB_ENUM_SENTINEL_SWITCH_CLAUSE                             \
   LOG(DFATAL) << "Cannot happen. Needed to avoid default clause."; \
