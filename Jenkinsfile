@@ -742,7 +742,7 @@ if (isMainRun) {
               credentialsId: 'sourcegraph-api-token',
               variable: 'SOURCEGRAPH_TOKEN')
           ]) {
-            sh "scripts/collect_and_upload_lsif.sh -t ${SOURCEGRAPH_TOKEN} -c `cat GIT_COMMIT`"
+            sh 'scripts/collect_and_upload_lsif.sh -t ${SOURCEGRAPH_TOKEN} -c `cat GIT_COMMIT`'
           }
         }
       }

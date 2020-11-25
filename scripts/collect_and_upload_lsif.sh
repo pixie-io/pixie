@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 
 SOURCEGRAPH_ENDPOINT="https://cs.corp.pixielabs.ai"
 
@@ -42,50 +42,41 @@ parse_args "$@"
 export SRC_ENDPOINT="${SOURCEGRAPH_ENDPOINT}"
 export SRC_ACCESS_TOKEN="${SOURCEGRAPH_ACCESS_TOKEN}"
 
+upload_to_sourcegraph() {
+  /opt/pixielabs/bin/src lsif upload \
+  -repo=github.com/pixie-labs/pixielabs \
+  -file="$1" \
+  -commit="${GIT_COMMIT}" \
+  -ignore-upload-failure \
+  -no-progress
+}
+
 pushd "$(bazel info workspace)"
 
 LSIF_GO_OUT="go.dump.lsif"
-
 /opt/pixielabs/bin/lsif-go \
   --verbose \
   --no-animation \
   --output="${LSIF_GO_OUT}"
-
-/opt/pixielabs/bin/src lsif upload \
-  -repo=github.com/pixie-labs/pixielabs \
-  -file="${LSIF_GO_OUT}" \
-  -commit="${GIT_COMMIT}" \
-  -ignore-upload-failure \
-  -no-progress
+upload_to_sourcegraph "${LSIF_GO_OUT}"
 
 LSIF_TS_OUT="ts.dump.lsif"
-
 lsif-tsc --out "${LSIF_TS_OUT}" -p src/ui
-
-/opt/pixielabs/bin/src lsif upload \
-  -repo=github.com/pixie-labs/pixielabs \
-  -file="${LSIF_TS_OUT}" \
-  -commit="${GIT_COMMIT}" \
-  -ignore-upload-failure \
-  -no-progress
+upload_to_sourcegraph "${LSIF_TS_OUT}"
 
 LSIF_CPP_OUT="cpp.dump.lsif"
-
+mapfile -t < <(bazel query \
+  --noshow_progress \
+  --noshow_loading_progress \
+  'kind("cc_(library|binary|test|proto_library) rule",//... -//third_party/... -//demos/... -//experimental/...) except attr("tags", "manual", //...)')
 ./scripts/gen_compilation_database.py \
   --run_bazel_build \
   --include_genfiles \
-  "$(bazel query 'kind("cc_(binary|test) rule",//... -//third_party/... -//demos/... -//experimental/...) except attr("tags", "manual", //...)')"
-
+  "${MAPFILE[@]}"
 lsif-clang \
   --extra-arg="-resource-dir=$(clang -print-resource-dir)" \
   --out="${LSIF_CPP_OUT}" \
   compile_commands.json
-
-/opt/pixielabs/bin/src lsif upload \
-  -repo=github.com/pixie-labs/pixielabs \
-  -file="${LSIF_CPP_OUT}" \
-  -commit="${GIT_COMMIT}" \
-  -ignore-upload-failure \
-  -no-progress
+upload_to_sourcegraph "${LSIF_CPP_OUT}"
 
 popd
