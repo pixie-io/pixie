@@ -124,7 +124,6 @@
     "graphql": "^14.5.8",
     "graphql-tag": "^2.10.1",
     "grpc-web": "^1.0.7",
-    "highlight.js": "9.15.10",
     "history": "^4.10.1",
     "immutable-tuple": "^0.4.8",
     "keycharm": "^0.3.0",
@@ -200,8 +199,6 @@
   "resolutions": {
     "http-proxy-middleware": "0.19.2",
     "jimp": "^0.10.3",
-    "resize-img": "^2.0.0",
-    "react": "^16.12.0",
-    "react-dom": "^16.12.0"
+    "resize-img": "^2.0.0"
   }
 }
