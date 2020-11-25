@@ -198,7 +198,6 @@
     "postinstall": "patch-package"
   },
   "resolutions": {
-    "html-webpack-plugin": "^5.0.0-alpha.9",
     "http-proxy-middleware": "0.19.2",
     "jimp": "^0.10.3",
     "resize-img": "^2.0.0",

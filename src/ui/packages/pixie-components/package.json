@@ -105,8 +105,5 @@
   },
   "dependencies": {
     "clsx": "^1.0.4"
-  },
-  "resolutions": {
-    "html-webpack-plugin": "^5.0.0-alpha.9"
   }
 }
