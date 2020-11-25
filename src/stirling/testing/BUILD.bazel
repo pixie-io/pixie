@@ -6,16 +6,10 @@ pl_cc_library(
     name = "cc_library",
     srcs = glob(
         ["*.cc"],
-        exclude = ["forker.c"],
     ),
     hdrs = glob(["*.h"]),
     deps = [
         "//src/common/system:cc_library",
         "//src/stirling:cc_library",
     ],
-)
-
-pl_cc_binary(
-    name = "forker",
-    srcs = ["forker.c"],
 )
