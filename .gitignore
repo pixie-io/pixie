@@ -66,4 +66,5 @@ compile_commands.json
 clang_tidy.log
 
 # LSIF data for code intel
+*.dump.lsif
 dump.lsif

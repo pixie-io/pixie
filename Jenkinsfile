@@ -120,8 +120,6 @@ isVizierBuildRun = env.JOB_NAME.startsWith('pixielabs-main-vizier-release-build/
 isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixielabs-main-cloud-staging-build/')
 isCloudProdBuildRun = env.JOB_NAME.startsWith('pixielabs-main-cloud-release-build/')
 
-runCoverageJob = isMainRun
-
 // Currently disabling TSAN on BPF builds because it runs too slow.
 // In particular, the uprobe deployment takes far too long. See issue:
 //    https://pixie-labs.atlassian.net/browse/PL-1329
@@ -721,15 +719,32 @@ preBuild['Process Dependencies'] = {
   }
 }
 
-// Only run coverage on main test.
-if (runCoverageJob) {
+if (isMainRun) {
+  // Only run coverage on main runs.
   builders['Build & Test (gcc:coverage)'] = {
     WithSourceCodeAndTargetsK8s('coverage') {
       container('pxbuild') {
-        warnError('Bazel command failed') {
+        warnError('Coverage command failed') {
           sh "scripts/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b main -c `cat GIT_COMMIT`"
         }
         createBazelStash('build-gcc-coverage-testlogs')
+      }
+    }
+  }
+
+  // Only run LSIF on main runs.
+  builders['LSIF (sourcegraph)'] = {
+    WithSourceCodeAndTargetsK8s('lsif') {
+      container('pxbuild') {
+        warnError('LSIF command failed') {
+          withCredentials([
+            string(
+              credentialsId: 'sourcegraph-api-token',
+              variable: 'SOURCEGRAPH_TOKEN')
+          ]) {
+            sh "scripts/collect_and_upload_lsif.sh -t ${SOURCEGRAPH_TOKEN} -c `cat GIT_COMMIT`"
+          }
+        }
       }
     }
   }
