@@ -181,7 +181,9 @@ const AgentsTable = () => {
     }, AGENTS_POLL_INTERVAL);
     return () => {
       clearInterval(interval);
-      executionSubject.value?.cancel();
+      if (executionSubject.value?.cancel) {
+        executionSubject.value?.cancel();
+      }
       executionSubject.unsubscribe();
     };
   }, [client]);
