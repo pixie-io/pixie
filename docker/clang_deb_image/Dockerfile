@@ -58,8 +58,18 @@ RUN rm -rf /opt/clang-11.0-libc++/src
 #RUN patch -p1 < msan.patch
 #RUN ./install-clang -j $(nproc) -A /opt/clang-11.0-libc++-msan -C
 
+# Add clang-lsif for our image. This needs to be patched for the version of clang being used.
+WORKDIR /tmp
+RUN git clone https://github.com/pixie-labs/lsif-clang.git
+
+WORKDIR /tmp/lsif-clang
+RUN git checkout llvm-11
+RUN cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/clang-11.0
+RUN make -C build -j $(nproc)
+RUN make -C build install
+
 WORKDIR /opt
 VOLUME /image
-ENV deb_name clang-11.0-pl3.deb
+ENV deb_name clang-11.0-pl4.deb
 CMD ["sh", "-c",  "fpm -p /image/${deb_name} \
-        -s dir -t deb -n clang-11.0 -v 11.0-pl3 --prefix /opt clang-11.0 clang-11.0-libc++"]
+        -s dir -t deb -n clang-11.0 -v 11.0-pl4 --prefix /opt clang-11.0 clang-11.0-libc++"]
