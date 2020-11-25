@@ -1,0 +1,12 @@
+--- a/generate.sh
++++ b/generate.sh
+@@ -48,8 +48,7 @@
+   --noshow_progress \
+   --noshow_loading_progress \
+   --output_groups="${OUTPUT_GROUPS}" \
+-  "$@" \
+-  $("${QUERY_CMD[@]}") > /dev/null
++  "$@" > /dev/null
+
+ echo "[" > "${COMPDB_FILE}"
+ find "${EXEC_ROOT}" -name '*.compile_commands.json' -exec bash -c 'cat "$1" && echo ,' _ {} \; \
