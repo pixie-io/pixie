@@ -1,3 +1,5 @@
+#ifdef PL_IR_NODE
+
 PL_IR_NODE(MemorySource)
 PL_IR_NODE(MemorySink)
 PL_IR_NODE(Map)
@@ -16,3 +18,5 @@ PL_IR_NODE(UDTFSource)
 PL_IR_NODE(Rolling)
 PL_IR_NODE(Stream)
 PL_IR_NODE(EmptySource)
+
+#endif
