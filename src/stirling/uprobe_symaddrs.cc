@@ -84,8 +84,8 @@ Status PopulateCommonDebugSymbols(DwarfReader* dwarf_reader, std::string_view ve
                                   struct go_common_symaddrs_t* symaddrs) {
 #define VENDOR_SYMBOL(symbol) absl::StrCat(vendor_prefix, symbol)
 
-#define GET_MEMBER_OFFSET(symaddr, type, member)                                        \
-  PL_ASSIGN_OR(symaddr, dwarf_reader->GetStructMemberOffset(type, member), __s__ = -1); \
+#define GET_MEMBER_OFFSET(symaddr, type, member)                           \
+  symaddr = dwarf_reader->GetStructMemberOffset(type, member).ValueOr(-1); \
   VLOG(1) << absl::Substitute(#symaddr " = $0", symaddr);
 
   // clang-format off
@@ -140,8 +140,8 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
 
 #define VENDOR_SYMBOL(symbol) absl::StrCat(vendor_prefix, symbol)
 
-#define GET_MEMBER_OFFSET(symaddr, type, member)                                        \
-  PL_ASSIGN_OR(symaddr, dwarf_reader->GetStructMemberOffset(type, member), __s__ = -1); \
+#define GET_MEMBER_OFFSET(symaddr, type, member)                           \
+  symaddr = dwarf_reader->GetStructMemberOffset(type, member).ValueOr(-1); \
   VLOG(1) << absl::Substitute(#symaddr " = $0", symaddr);
 
   // clang-format off
@@ -245,7 +245,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   // Arguments of net/http.(*http2Framer).WriteDataPadded.
   {
     std::string_view fn = "net/http.(*http2Framer).WriteDataPadded";
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap);
+    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     GET_ARG_OFFSET(symaddrs->http2Framer_WriteDataPadded_f_offset, args_map, "f");
     GET_ARG_OFFSET(symaddrs->http2Framer_WriteDataPadded_streamID_offset, args_map, "streamID");
     GET_ARG_OFFSET(symaddrs->http2Framer_WriteDataPadded_endStream_offset, args_map, "endStream");
@@ -255,7 +255,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   // Arguments of golang.org/x/net/http2.(*Framer).WriteDataPadded.
   {
     std::string fn = VENDOR_SYMBOL("golang.org/x/net/http2.(*Framer).WriteDataPadded");
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
+    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     GET_ARG_OFFSET(symaddrs->http2_WriteDataPadded_f_offset, args_map, "f");
     GET_ARG_OFFSET(symaddrs->http2_WriteDataPadded_streamID_offset, args_map, "streamID");
     GET_ARG_OFFSET(symaddrs->http2_WriteDataPadded_endStream_offset, args_map, "endStream");
@@ -265,7 +265,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   // Arguments of net/http.(*http2Framer).checkFrameOrder.
   {
     std::string_view fn = "net/http.(*http2Framer).checkFrameOrder";
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
+    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     GET_ARG_OFFSET(symaddrs->http2Framer_checkFrameOrder_fr_offset, args_map, "fr");
     GET_ARG_OFFSET(symaddrs->http2Framer_checkFrameOrder_f_offset, args_map, "f");
   }
@@ -273,7 +273,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   // Arguments of golang.org/x/net/http2.(*Framer).checkFrameOrder.
   {
     std::string fn = VENDOR_SYMBOL("golang.org/x/net/http2.(*Framer).checkFrameOrder");
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
+    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     GET_ARG_OFFSET(symaddrs->http2_checkFrameOrder_fr_offset, args_map, "fr");
     GET_ARG_OFFSET(symaddrs->http2_checkFrameOrder_f_offset, args_map, "f");
   }
@@ -281,7 +281,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   // Arguments of net/http.(*http2writeResHeaders).writeFrame.
   {
     std::string_view fn = "net/http.(*http2writeResHeaders).writeFrame";
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
+    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     GET_ARG_OFFSET(symaddrs->writeFrame_w_offset, args_map, "w");
     GET_ARG_OFFSET(symaddrs->writeFrame_ctx_offset, args_map, "ctx");
   }
@@ -289,7 +289,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   // Arguments of golang.org/x/net/http2/hpack.(*Encoder).WriteField.
   {
     std::string fn = VENDOR_SYMBOL("golang.org/x/net/http2/hpack.(*Encoder).WriteField");
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
+    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     GET_ARG_OFFSET(symaddrs->WriteField_e_offset, args_map, "e");
     GET_ARG_OFFSET(symaddrs->WriteField_f_offset, args_map, "f");
   }
@@ -297,7 +297,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   // Arguments of net/http.(*http2serverConn).processHeaders.
   {
     std::string_view fn = "net/http.(*http2serverConn).processHeaders";
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
+    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     GET_ARG_OFFSET(symaddrs->processHeaders_sc_offset, args_map, "sc");
     GET_ARG_OFFSET(symaddrs->processHeaders_f_offset, args_map, "f");
   }
@@ -306,7 +306,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   {
     std::string fn =
         VENDOR_SYMBOL("google.golang.org/grpc/internal/transport.(*http2Server).operateHeaders");
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
+    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     GET_ARG_OFFSET(symaddrs->http2Server_operateHeaders_t_offset, args_map, "t");
     GET_ARG_OFFSET(symaddrs->http2Server_operateHeaders_frame_offset, args_map, "frame");
   }
@@ -315,7 +315,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   {
     std::string fn =
         VENDOR_SYMBOL("google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders");
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
+    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     GET_ARG_OFFSET(symaddrs->http2Client_operateHeaders_t_offset, args_map, "t");
     GET_ARG_OFFSET(symaddrs->http2Client_operateHeaders_frame_offset, args_map, "frame");
   }
@@ -324,7 +324,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
   {
     std::string fn =
         VENDOR_SYMBOL("google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader");
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
+    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     GET_ARG_OFFSET(symaddrs->writeHeader_l_offset, args_map, "l");
     GET_ARG_OFFSET(symaddrs->writeHeader_streamID_offset, args_map, "streamID");
     GET_ARG_OFFSET(symaddrs->writeHeader_endStream_offset, args_map, "endStream");
@@ -355,7 +355,7 @@ Status PopulateGoTLSDebugSymbols(DwarfReader* dwarf_reader, struct go_tls_symadd
   // Arguments of crypto/tls.(*Conn).Write.
   {
     std::string_view fn = "crypto/tls.(*Conn).Write";
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap);
+    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     GET_ARG_OFFSET(symaddrs->Write_c_offset, args_map, "c");
     GET_ARG_OFFSET(symaddrs->Write_b_offset, args_map, "b");
   }
@@ -363,7 +363,7 @@ Status PopulateGoTLSDebugSymbols(DwarfReader* dwarf_reader, struct go_tls_symadd
   // Arguments of crypto/tls.(*Conn).Read.
   {
     std::string fn = "crypto/tls.(*Conn).Read";
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
+    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
     GET_ARG_OFFSET(symaddrs->Read_c_offset, args_map, "c");
     GET_ARG_OFFSET(symaddrs->Read_b_offset, args_map, "b");
   }

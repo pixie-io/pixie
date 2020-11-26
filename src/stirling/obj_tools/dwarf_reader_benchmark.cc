@@ -34,7 +34,7 @@ struct SymAddrs {
 
 void GetSymAddrs(DwarfReader* dwarf_reader, SymAddrs* symaddrs) {
 #define GET_SYMADDR(symaddr, type, member) \
-  PL_ASSIGN_OR(symaddr, dwarf_reader->GetStructMemberOffset(type, member), __s__ = -1);
+  symaddr = dwarf_reader->GetStructMemberOffset(type, member).ValueOr(-1);
 
   GET_SYMADDR(symaddrs->http2serverConn_conn_offset, "net/http.http2serverConn", "conn");
   GET_SYMADDR(symaddrs->http2serverConn_hpackEncoder_offset, "net/http.http2serverConn",

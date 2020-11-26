@@ -817,7 +817,7 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
     }
 
     if (source_language_ == llvm::dwarf::DW_LANG_Go) {
-      PL_ASSIGN_OR(arg.retarg, IsGolangRetArg(die), __s__ = false;);
+      arg.retarg = IsGolangRetArg(die).ValueOr(false);
     }
   }
 
