@@ -66,7 +66,6 @@ constexpr std::string_view kNoProtocolMsg = R"(This is not an HTTP message)";
 
 // This test requires docker container with --pid=host so that the container's PID and the
 // host machine are identical.
-// See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
 
 // TODO(yzhao): Apply this pattern to other syscall pairs. An issue is that other syscalls do not
 // use scatter buffer. One approach would be to concatenate inner vector to a single string, and

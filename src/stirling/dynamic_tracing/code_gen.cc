@@ -283,7 +283,10 @@ StatusOr<std::vector<std::string>> GenPtrLenVariable(const PtrLenVariable& var) 
 
   // Make sure we don't overrun the buffer by capping the length (also required for verifier).
   // Below, we want the size of blobXX->buf. We can do that with this trick:
-  // https://stackoverflow.com/questions/3553296/sizeof-single-struct-member-in-c
+  //   sizeof(((struct blobXX)0)->buf)
+  // This trick won't cause a null dereference because it's just for the compiler
+  // to find the size of the member; there is no real data access at run-time.
+  // See https://stackoverflow.com/questions/3553296/sizeof-single-struct-member-in-c
   code_lines.push_back(absl::Substitute(
       "uint8_t $0_truncate__ = $0 > sizeof(((struct blob$1*)0)->buf);", var.len_var_name(), size));
   code_lines.push_back(absl::Substitute(

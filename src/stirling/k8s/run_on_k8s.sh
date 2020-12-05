@@ -97,7 +97,6 @@ rm -rf ${LOGDIR:?}/*
 timestamp=$(date +%s)
 for pod in $pods; do
   # xargs removes the leading and trailing white spaces.
-  # See https://stackoverflow.com/a/12973694
   node_name="$(kubectl get pod "${pod}" -n "${NAMESPACE}" -o=custom-columns=:.spec.nodeName | xargs)"
   filename="${LOGDIR}/log$timestamp.$pod.${node_name}"
   kubectl logs -n "${NAMESPACE}" "$pod" > "$filename"

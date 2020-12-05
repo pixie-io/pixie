@@ -46,14 +46,16 @@ namespace {
 // Note 2: There are different ways to define the reorder indexes.
 // Here we use the form where the result, idx, is used to sort x according to:
 //    { x[idx[0]], x[idx[1]], x[idx[2]], ... }
-// From https://stackoverflow.com/questions/1577475/c-sorting-and-keeping-track-of-indexes
-std::vector<size_t> SortedIndexes(const std::vector<uint64_t> v) {
-  // Initialize original index locations.
+std::vector<size_t> SortedIndexes(const std::vector<uint64_t>& v) {
+  // Create indices corresponding to v.
   std::vector<size_t> idx(v.size());
-  std::iota(idx.begin(), idx.end(), 0);
+  // Initialize idx = {0, 1, 2, 3, ... }
+  for (size_t i = 0; i < idx.size(); ++i) {
+    idx[i] = i;
+  }
 
-  // Sort indexes based on comparing values in v using std::stable_sort instead of std::sort
-  // to avoid unnecessary index re-orderings when v contains elements of equal values.
+  // Find the sorted indices by running a sort on idx, but using the values of v.
+  // Use std::stable_sort instead of std::sort to minimize churn in indices.
   std::stable_sort(idx.begin(), idx.end(), [&v](size_t i1, size_t i2) { return v[i1] < v[i2]; });
 
   return idx;

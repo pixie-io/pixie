@@ -271,13 +271,16 @@ static __inline enum MessageType infer_http2_message(const char* buf, size_t cou
 }
 
 static __inline enum MessageType infer_dns_message(const char* buf, size_t count) {
-  // https://stackoverflow.com/questions/6794926/how-many-a-records-can-fit-in-a-single-dns-response
-
   const int kDNSHeaderSize = 12;
 
   // Use the maximum *guaranteed* UDP packet size as the max DNS message size.
   // UDP packets can be larger, but this is the typical maximum size for DNS.
   const int kMaxDNSMessageSize = 512;
+
+  // Maximum number of resource records.
+  // https://stackoverflow.com/questions/6794926/how-many-a-records-can-fit-in-a-single-dns-response
+  const int kMaxNumRR = 25;
+
   if (count < kDNSHeaderSize || count > kMaxDNSMessageSize) {
     return kUnknown;
   }
@@ -306,9 +309,8 @@ static __inline enum MessageType infer_dns_message(const char* buf, size_t count
     return kUnknown;
   }
 
-  // https://stackoverflow.com/questions/6794926/how-many-a-records-can-fit-in-a-single-dns-response
   uint32_t num_rr = num_questions + num_answers + num_auth + num_addl;
-  if (num_rr > 25) {
+  if (num_rr > kMaxNumRR) {
     return kUnknown;
   }
 

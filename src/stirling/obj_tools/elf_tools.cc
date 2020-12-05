@@ -325,7 +325,7 @@ std::vector<uint64_t> FindRetInsts(utils::u8string_view byte_code) {
   // code, we just provide a small buffer.
   // (Unfortunately, nullptr and 0 crashes.)
   constexpr int kBufSize = 32;
-  // Initialize array to zero. See more details at: https://stackoverflow.com/a/5591516.
+  // Initialize array to zero.
   char buf[kBufSize] = {};
 
   uint64_t pc = 0;
