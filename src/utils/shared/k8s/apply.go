@@ -52,8 +52,6 @@ func ApplyYAML(clientset *kubernetes.Clientset, config *rest.Config, namespace s
 }
 
 // ApplyYAMLForResourceTypes only applies the specified types in the given YAML file.
-// This function is copied from https://stackoverflow.com/a/47139247 with major updates with
-// respect to API changes and some clean up work.
 func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader, allowedResources []string, allowUpdate bool) error {
 	decodedYAML := yaml.NewYAMLOrJSONDecoder(yamlFile, 4096)
 	discoveryClient := clientset.Discovery()
@@ -66,10 +64,11 @@ func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Con
 
 	for {
 		ext := runtime.RawExtension{}
-		if err := decodedYAML.Decode(&ext); err != nil {
-			if err == io.EOF {
-				break
-			}
+		err := decodedYAML.Decode(&ext)
+
+		if err != nil && err == io.EOF {
+			break
+		} else if err != nil {
 			return err
 		}
 
@@ -107,14 +106,16 @@ func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Con
 			return err
 		}
 
-		var unstruct unstructured.Unstructured
-		unstruct.Object = make(map[string]interface{})
-		var blob interface{}
-		if err := json.Unmarshal(ext.Raw, &blob); err != nil {
+		var unstructRes unstructured.Unstructured
+		unstructRes.Object = make(map[string]interface{})
+		var unstructBlob interface{}
+
+		err = json.Unmarshal(ext.Raw, &unstructBlob)
+		if err != nil {
 			return err
 		}
 
-		unstruct.Object = blob.(map[string]interface{})
+		unstructRes.Object = unstructBlob.(map[string]interface{})
 
 		res := dynamicClient.Resource(k8sRes)
 		nsRes := res.Namespace(namespace)
@@ -124,12 +125,12 @@ func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Con
 			createRes = res
 		}
 
-		_, err = createRes.Create(context.Background(), &unstruct, metav1.CreateOptions{})
+		_, err = createRes.Create(context.Background(), &unstructRes, metav1.CreateOptions{})
 		if err != nil {
 			if !errors.IsAlreadyExists(err) {
 				return err
 			} else if (k8sRes.Resource == "clusterroles" || k8sRes.Resource == "cronjobs") || allowUpdate {
-				_, err = createRes.Update(context.Background(), &unstruct, metav1.UpdateOptions{})
+				_, err = createRes.Update(context.Background(), &unstructRes, metav1.UpdateOptions{})
 			}
 		}
 	}
