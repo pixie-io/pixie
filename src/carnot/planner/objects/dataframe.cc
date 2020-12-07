@@ -347,7 +347,7 @@ StatusOr<FuncIR*> AggHandler::ParseNameTuple(IR* ir, const pypa::AstPtr& ast,
     auto name_or_s =
         GetArgAs<StringIR>(tuple->items()[i], absl::Substitute("$0-th tuple argument", i + 1));
     if (!name_or_s.ok()) {
-      return tuple->items()[i]->node()->CreateIRNodeError(
+      return tuple->items()[i]->CreateError(
           "All elements of the agg tuple must be column names, except the last which should be a "
           "function");
     }

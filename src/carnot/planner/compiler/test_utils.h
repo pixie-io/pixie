@@ -388,11 +388,11 @@ struct CompilerErrorMatcher {
   }
 
   void DescribeTo(::std::ostream* os) const {
-    *os << "equals message: " << expected_compiler_error_;
+    *os << "regex matches message: " << expected_compiler_error_;
   }
 
   void DescribeNegationTo(::std::ostream* os) const {
-    *os << "does not equal message: " << expected_compiler_error_;
+    *os << "does not regex match message: " << expected_compiler_error_;
   }
 
   std::string expected_compiler_error_;

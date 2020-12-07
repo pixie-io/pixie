@@ -2068,6 +2068,28 @@ queryDF = queryDF['upid', 'cpu1', 'upid', 'cpu0']
       "specified more than once");
 }
 
+constexpr char kAggSegfaultScript[] = R"pxl(
+import px
+# ----------------------------------------------------------------
+# Script variables
+# ----------------------------------------------------------------
+start_time = '-30s'
+max_num_records = 100
+# ----------------------------------------------------------------
+# Implementation
+# ----------------------------------------------------------------
+df = px.DataFrame(table='http_events', start_time=start_time)
+df.pod = df.ctx['pod']
+df = df.drop(['upid', 'trace_role', 'http_minor_version', 'http_content_type', 'http_resp_message'])
+df = df.groupby(['pod']).agg(count=(px.count, 'upid'))
+df = df.head(n=max_num_records)
+px.display(df)
+)pxl";
+TEST_F(ASTVisitorTest, agg_segfault) {
+  EXPECT_THAT(CompileGraph(kAggSegfaultScript).status().msg(),
+              ::testing::ContainsRegex(".*?All elements of the agg tuple must be column names.*?"));
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
