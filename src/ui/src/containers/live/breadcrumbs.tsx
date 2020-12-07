@@ -17,7 +17,7 @@ import {
 } from 'utils/args-utils';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import { ScriptContext } from 'context/script-context';
-import { entityPageForScriptId, optionallyGetNamespace } from 'components/live-widgets/utils/live-view-params';
+import { entityPageForScriptId, optionallyGetNamespace } from 'containers/live-widgets/utils/live-view-params';
 import { EntityType, pxTypetoEntityType, entityStatusGroup } from 'containers/command-input/autocomplete-utils';
 import { clusterStatusGroup } from 'containers/admin/utils';
 import { ContainsMutation } from 'utils/pxl';

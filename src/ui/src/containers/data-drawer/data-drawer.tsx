@@ -3,7 +3,7 @@ import { DataDrawerContext } from 'context/data-drawer-context';
 import { LayoutContext } from 'context/layout-context';
 import { ResultsContext } from 'context/results-context';
 import * as React from 'react';
-import { VizierDataTableWithDetails } from 'components/vizier-data-table/vizier-data-table';
+import { VizierDataTableWithDetails } from 'containers/vizier-data-table/vizier-data-table';
 
 import {
   createStyles, makeStyles, Theme,

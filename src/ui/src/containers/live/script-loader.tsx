@@ -10,7 +10,7 @@ import {
   LiveViewPage,
   LiveViewPageScriptIds,
   matchLiveViewEntity,
-} from '../../components/live-widgets/utils/live-view-params';
+} from 'containers/live-widgets/utils/live-view-params';
 
 type LoadScriptState = 'unloaded' | 'url-loaded' | 'url-skipped' | 'context-loaded';
 

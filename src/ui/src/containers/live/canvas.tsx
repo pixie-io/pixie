@@ -2,11 +2,11 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
 import clsx from 'clsx';
-import { GraphDisplay, GraphWidget } from 'components/live-widgets/graph/graph';
-import { RequestGraphDisplay, RequestGraphWidget } from 'components/live-widgets/graph/request-graph';
+import { GraphDisplay, GraphWidget } from 'containers/live-widgets/graph/graph';
+import { RequestGraphDisplay, RequestGraphWidget } from 'containers/live-widgets/graph/request-graph';
 import { Spinner } from 'pixie-components';
-import { TimeSeriesContext, withTimeSeriesContextProvider } from 'components/live-widgets/context/time-series-context';
-import { QueryResultTable } from 'components/live-widgets/table/query-result-viewer';
+import { TimeSeriesContext, withTimeSeriesContextProvider } from 'containers/live-widgets/context/time-series-context';
+import { QueryResultTable } from 'containers/live-widgets/table/query-result-viewer';
 import * as React from 'react';
 import * as GridLayout from 'react-grid-layout';
 import { resizeEvent, triggerResize } from 'utils/resize';
@@ -19,7 +19,7 @@ import {
   createStyles, fade, makeStyles, Theme, useTheme,
 } from '@material-ui/core/styles';
 
-import Vega from 'components/live-widgets/vega/vega';
+import Vega from 'containers/live-widgets/vega/vega';
 import MutationModal from './mutation-modal';
 import { LayoutContext } from '../../context/layout-context';
 import { ResultsContext } from '../../context/results-context';

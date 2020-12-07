@@ -1,8 +1,8 @@
 /* eslint-disable no-underscore-dangle */
-import Legend, { LegendInteractState } from 'components/legend/legend';
+import Legend, { LegendInteractState } from 'containers/legend/legend';
 import {
   buildHoverDataCache, formatLegendData, HoverDataCache, LegendData,
-} from 'components/legend/legend-data';
+} from 'containers/legend/legend-data';
 import {
   ChartDisplay, convertWidgetDisplayToVegaSpec, EXTERNAL_HOVER_SIGNAL, EXTERNAL_TS_DOMAIN_SIGNAL,
   getColumnFromDisplay,

@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable no-param-reassign */
 import { Theme } from '@material-ui/core/styles';
-import { getFormatFnMetadata, DataWithUnits, FormatFnMetadata } from 'components/format-data/format-data';
-import { addPxTimeFormatExpression } from 'components/live-widgets/vega/timeseries-axis';
+import { getFormatFnMetadata, DataWithUnits, FormatFnMetadata } from 'containers/format-data/format-data';
+import { addPxTimeFormatExpression } from 'containers/live-widgets/vega/timeseries-axis';
 import { Relation, SemanticType } from 'types/generated/vizier_pb';
 import {
   Axis,
@@ -1823,4 +1823,5 @@ function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
   };
 }
 
+/* eslint-enable no-param-reassign */
 /* eslint-enable @typescript-eslint/no-use-before-define */

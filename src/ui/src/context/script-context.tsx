@@ -24,7 +24,7 @@ import { useSnackbar } from 'pixie-components';
 import {
   getEntityParams, getLiveViewTitle, getNonEntityParams, LiveViewPage,
   LiveViewPageScriptIds, matchLiveViewEntity, toEntityPathname,
-} from 'components/live-widgets/utils/live-view-params';
+} from 'containers/live-widgets/utils/live-view-params';
 import { BatchDataUpdate, Table } from 'common/vizier-grpc-client';
 import { checkExhaustive } from 'utils/check-exhaustive';
 import { SetStateFunc } from './common';

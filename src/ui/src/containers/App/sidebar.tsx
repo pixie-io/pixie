@@ -29,7 +29,7 @@ import {
   LogoutIcon, NamespaceIcon, SettingsIcon,
   PixieLogo,
 } from 'pixie-components';
-import { toEntityPathname, LiveViewPage } from 'components/live-widgets/utils/live-view-params';
+import { toEntityPathname, LiveViewPage } from 'containers/live-widgets/utils/live-view-params';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { DOMAIN_NAME } from 'containers/constants';
 import { LiveShortcutsContext } from 'containers/live/shortcuts';

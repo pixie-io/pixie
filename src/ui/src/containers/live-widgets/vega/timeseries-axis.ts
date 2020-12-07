@@ -50,10 +50,12 @@ function hasOverlap(textConfig: TextConfig, labels: Label[], overlapBuffer: numb
 }
 
 function applyFormat(formatter: LabelsFormatter, labels: Label[]) {
+  /* eslint-disable no-param-reassign */
   formatter.find(labels).forEach((l) => {
     l.label = formatter.format(l);
     l.formatter = formatter;
   });
+  /* eslint-enable no-param-reassign */
 }
 
 // Filters our every other label for overlap testing.
@@ -63,6 +65,7 @@ function applyFormat(formatter: LabelsFormatter, labels: Label[]) {
 // is preserved.
 function parityReduce(labels: Label[]): Label[] {
   const specialFormatters = [];
+  /* eslint-disable no-param-reassign */
   const newLabels = labels.filter((l, i) => {
     // Keep every other entry.
     if (i % 2 === 0) {
@@ -76,6 +79,7 @@ function parityReduce(labels: Label[]): Label[] {
     }
     return false;
   });
+  /* eslint-enable no-param-reassign */
   // Apply any special formatters that were found.
   specialFormatters.forEach((formatterFn) => { applyFormat(formatterFn, newLabels); });
   return newLabels;

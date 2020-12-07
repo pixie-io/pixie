@@ -14,7 +14,7 @@ import Modal from '@material-ui/core/Modal';
 
 import { ScriptContext, ExecuteArguments } from 'context/script-context';
 import { ContainsMutation } from 'utils/pxl';
-import { entityPageForScriptId } from 'components/live-widgets/utils/live-view-params';
+import { entityPageForScriptId } from 'containers/live-widgets/utils/live-view-params';
 import { ParseFormatStringToTabStops } from './autocomplete-parser';
 import { entityTypeToString } from './autocomplete-utils';
 

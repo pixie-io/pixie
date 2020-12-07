@@ -10,14 +10,14 @@ import {
   JSONData,
   PercentRenderer,
   PortRenderer, ThroughputBytesRenderer, ThroughputRenderer,
-} from 'components/format-data/format-data';
+} from 'containers/format-data/format-data';
 import {
   EntityLink,
   isEntityType,
   ScriptReference,
   STATUS_TYPES,
   toStatusIndicator,
-} from 'components/live-widgets/utils';
+} from 'containers/live-widgets/utils';
 import { QuantilesBoxWhisker, SelectedPercentile } from 'pixie-components';
 import { DataType, SemanticType } from 'types/generated/vizier_pb';
 import { Arguments } from 'utils/args-utils';
