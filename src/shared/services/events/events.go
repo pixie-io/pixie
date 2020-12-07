@@ -10,6 +10,8 @@ const (
 	UserSignedUp = "Signed Up"
 	// OrgCreated is the event for a new Org.
 	OrgCreated = "Org Created"
-	// SiteCreated is the evnet for a new site.
+	// SiteCreated is the event for a new site.
 	SiteCreated = "Site Created"
+	// ClusterStatusChange is an event for when a Vizier cluster's status changes.
+	ClusterStatusChange = "Cluster Status Change"
 )

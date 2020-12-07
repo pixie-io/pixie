@@ -21,6 +21,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"gopkg.in/segmentio/analytics-go.v3"
+
 	dnsmgr "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
 	"pixielabs.ai/pixielabs/src/cloud/shared/messages"
 	messagespb "pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
@@ -30,6 +32,7 @@ import (
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
+	"pixielabs.ai/pixielabs/src/shared/services/events"
 	jwtutils "pixielabs.ai/pixielabs/src/shared/services/utils"
 	"pixielabs.ai/pixielabs/src/utils"
 )
@@ -662,6 +665,17 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 			return
 		}
 		vzStatus = s.(string)
+	}
+
+	// Send analytics event for cluster status changes.
+	if vzStatus != prevInfo.Status {
+		events.Client().Enqueue(&analytics.Track{
+			UserId: vizierID.String(),
+			Event:  events.ClusterStatusChange,
+			Properties: analytics.NewProperties().
+				Set("cluster_id", vizierID.String()).
+				Set("status", vzStatus),
+		})
 	}
 
 	_, err = s.db.Exec(query, vzStatus, addr, PodStatuses(req.PodStatuses), req.NumNodes,

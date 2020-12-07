@@ -65,6 +65,11 @@ spec:
             secretKeyRef:
               name: pl-db-secrets
               key: PL_POSTGRES_PASSWORD
+        - name: PL_SEGMENT_WRITE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: segment-secrets
+              key: write-key
         volumeMounts:
         - name: certs
           mountPath: /certs
