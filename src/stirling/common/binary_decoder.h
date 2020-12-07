@@ -65,6 +65,25 @@ class BinaryDecoder {
     return tbuf.substr(0, pos);
   }
 
+  // An overloaded version to look for sentinel string instead of a char.
+  template <typename TCharType = char>
+  StatusOr<std::basic_string_view<TCharType>> ExtractStringUntil(
+      std::basic_string_view<TCharType> sentinel) {
+    static_assert(sizeof(TCharType) == 1);
+    auto tbuf = CreateStringView<TCharType>(buf_);
+    size_t pos = tbuf.find(sentinel);
+    if (pos == std::string_view::npos) {
+      return error::NotFound("Could not find sentinel character");
+    }
+    buf_.remove_prefix(pos + sentinel.size());
+    return tbuf.substr(0, pos);
+  }
+
+  template <typename TCharType = char>
+  StatusOr<std::basic_string_view<TCharType>> ExtractStringUntil(const TCharType* sentinel) {
+    return ExtractStringUntil<TCharType>(std::basic_string_view<TCharType>(sentinel));
+  }
+
  private:
   std::string_view buf_;
 };

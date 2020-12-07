@@ -18,8 +18,10 @@ enum class DataType {
   kArrays,
 };
 
+constexpr char kSimpleStringMarker = '+';
+constexpr char kErrorMarker = '-';
 // This is Redis' universal terminating sequence.
-constexpr std::string_view kCRLF = "\r\n";
+constexpr std::string_view kTerminalSequence = "\r\n";
 
 // Represents a generic Redis message.
 struct Message : public FrameBase {
