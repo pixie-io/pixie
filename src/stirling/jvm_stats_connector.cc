@@ -30,21 +30,7 @@ namespace {
 
 StatusOr<std::filesystem::path> ResolveHsperfDataPath(pid_t pid) {
   PL_ASSIGN_OR_RETURN(const std::filesystem::path hsperf_data_path, HsperfdataPath(pid));
-
-  const auto& config = system::Config::GetInstance();
-
-  system::ProcParser proc_parser(config);
-
-  // Find the longest parent path that is accessible of the hsperfdata file, by resolving mount
-  // point starting from the immediate parent through the root.
-  for (const fs::PathSplit& path_split : fs::EnumerateParentPaths(hsperf_data_path)) {
-    auto resolved_mount_path_or = proc_parser.ResolveMountPoint(pid, path_split.parent);
-    if (resolved_mount_path_or.ok()) {
-      const std::filesystem::path& host_path = system::Config::GetInstance().host_path();
-      return fs::JoinPath({&host_path, &resolved_mount_path_or.ValueOrDie(), &path_split.child});
-    }
-  }
-  return error::Internal("Could not resolve hsperfdata path for pid=$0", pid);
+  return ResolvePidPath(pid, hsperf_data_path);
 }
 
 }  // namespace

@@ -46,6 +46,12 @@ class Stats {
 };
 
 /**
+ * Resolve the given path in the context of the process, which may be in a namespace.
+ * If the process is in a namespace, the path will be resolved to the host path.
+ */
+StatusOr<std::filesystem::path> ResolvePidPath(pid_t pid, const std::filesystem::path& path);
+
+/**
  * Returns the path of the hsperfdata for a JVM process.
  */
 StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid);

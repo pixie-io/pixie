@@ -81,6 +81,24 @@ uint64_t Stats::SumStatsForSuffixes(const std::vector<std::string_view>& suffixe
   return sum;
 }
 
+StatusOr<std::filesystem::path> ResolvePidPath(pid_t pid, const std::filesystem::path& path) {
+  const auto& config = system::Config::GetInstance();
+  const std::filesystem::path& host_path = config.host_path();
+
+  ProcParser proc_parser(config);
+
+  // Find the longest parent path that is accessible of the file, by resolving mount
+  // point starting from the immediate parent through the root.
+  for (const fs::PathSplit& path_split : fs::EnumerateParentPaths(path)) {
+    auto resolved_mount_path_or = proc_parser.ResolveMountPoint(pid, path_split.parent);
+    if (resolved_mount_path_or.ok()) {
+      return fs::JoinPath({&host_path, &resolved_mount_path_or.ValueOrDie(), &path_split.child});
+    }
+  }
+
+  return error::Internal("Could not resolve $0 for pid=$1", path.string(), pid);
+}
+
 StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
   ProcParser parser(system::Config::GetInstance());
 
@@ -93,18 +111,7 @@ StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
   }
 
   const std::filesystem::path etc_passwd_path("/etc/passwd");
-  std::filesystem::path passwd_path;
-  for (const fs::PathSplit& path_split : fs::EnumerateParentPaths(etc_passwd_path)) {
-    auto passwd_path_or = parser.ResolveMountPoint(pid, path_split.parent);
-    if (passwd_path_or.ok()) {
-      const std::filesystem::path& host_path = system::Config::GetInstance().host_path();
-      passwd_path = fs::JoinPath({&host_path, &passwd_path_or.ValueOrDie(), &path_split.child});
-      break;
-    }
-  }
-  if (passwd_path.empty()) {
-    return error::InvalidArgument("Could not find mount point of /etc/passwd for pid=$0", pid);
-  }
+  PL_ASSIGN_OR_RETURN(std::filesystem::path passwd_path, ResolvePidPath(pid, etc_passwd_path));
 
   PL_ASSIGN_OR_RETURN(const std::string passwd_content, ReadFileToString(passwd_path));
   std::map<uid_t, std::string> uid_user_map = ParsePasswd(passwd_content);
