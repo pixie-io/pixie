@@ -14,6 +14,12 @@ genrule(
       docker build -t alpine_dns -f $(location :Dockerfile) .
       docker save alpine_dns > $@
     """,
+    # Disable sandbox for genrules that run docker to avoid a warning.
+    # See: https://github.com/bazelbuild/bazel/issues/11596
+    tags = [
+        "no-sandbox",
+        "no-remote",
+    ],
 )
 
 pkg_tar(
