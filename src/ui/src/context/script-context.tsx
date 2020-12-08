@@ -409,9 +409,17 @@ const ScriptContextProvider = (props) => {
             getQueryFuncs(execArgs.vis, execArgs.args),
             mutation,
           ).subscribe((update) => {
-            setCancelExecution(() => update.cancel);
             switch (update.event.type) {
               case 'start':
+                setCancelExecution(() => () => {
+                  update.cancel();
+                  setCancelExecution(undefined);
+                  // Timeout so as not to modify one context while rendering another
+                  setTimeout(() => {
+                    setStreaming(false);
+                    setLoading(false);
+                  });
+                });
                 break;
               case 'metadata':
               case 'mutation-info':
