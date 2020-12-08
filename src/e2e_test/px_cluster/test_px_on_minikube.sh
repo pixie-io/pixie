@@ -20,7 +20,7 @@ fi
 cluster_name="test-cluster-${RANDOM}"
 
 # Create the cluster
-minikube start -p "$cluster_name"
+minikube start --driver=kvm2 -p "$cluster_name"
 
 # Delete cluster on exit (covers error cases too).
 trap 'minikube stop -p "$cluster_name"' EXIT
