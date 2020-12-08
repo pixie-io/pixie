@@ -1,4 +1,5 @@
 #include "src/carnot/planner/probes/probes.h"
+#include "external/gogo_grpc_proto/github.com/gogo/protobuf/gogoproto/gogo.pb.h"
 
 #include <utility>
 
@@ -95,55 +96,66 @@ std::shared_ptr<TracepointIR> MutationsIR::StartProbe(
 
 StatusOr<TracepointDeployment*> MutationsIR::CreateTracepointDeployment(
     const std::string& tracepoint_name, const md::UPID& upid, int64_t ttl_ns) {
-  if (!upid_to_program_map_.empty() && upid_to_program_map_.contains(upid)) {
-    return error::InvalidArgument(
-        "Cannot UpsertTracepoint on the same binary. Use UpsertTracepoints instead.");
-  }
   std::unique_ptr<TracepointDeployment> program =
       std::make_unique<TracepointDeployment>(tracepoint_name, ttl_ns);
   TracepointDeployment* raw = program.get();
-  upid_to_program_map_[upid] = std::move(program);
+
+  stirling::dynamic_tracing::ir::shared::DeploymentSpec deployment_spec;
+  auto upid_pb = deployment_spec.mutable_upid();
+  upid_pb->set_asid(upid.asid());
+  upid_pb->set_pid(upid.pid());
+  upid_pb->set_ts_ns(upid.start_ts());
+
+  deployments_.emplace_back(deployment_spec, std::move(program));
   return raw;
 }
 
 StatusOr<TracepointDeployment*> MutationsIR::CreateTracepointDeployment(
-    const std::string& tracepoint_name, const SharedObject& shared_obj, int64_t ttl_ns) {
-  if (!shared_object_to_program_map_.empty() &&
-      shared_object_to_program_map_.contains(shared_obj)) {
-    return error::InvalidArgument(
-        "Cannot UpsertTracepoint on the same binary. Use UpsertTracepoints instead.");
-  }
+    const std::string& tracepoint_name, const SharedObject& shared_object, int64_t ttl_ns) {
   std::unique_ptr<TracepointDeployment> program =
       std::make_unique<TracepointDeployment>(tracepoint_name, ttl_ns);
   TracepointDeployment* raw = program.get();
-  shared_object_to_program_map_[shared_obj] = std::move(program);
+
+  stirling::dynamic_tracing::ir::shared::DeploymentSpec deployment_spec;
+  auto shared_object_pb = deployment_spec.mutable_shared_object();
+
+  shared_object_pb->set_name(shared_object.name());
+
+  auto upid_pb = shared_object_pb->mutable_upid();
+  upid_pb->set_asid(shared_object.upid().asid());
+  upid_pb->set_pid(shared_object.upid().pid());
+  upid_pb->set_ts_ns(shared_object.upid().start_ts());
+  deployments_.emplace_back(deployment_spec, std::move(program));
+
   return raw;
 }
 
 StatusOr<TracepointDeployment*> MutationsIR::CreateTracepointDeploymentOnPod(
     const std::string& tracepoint_name, const std::string& pod_target, int64_t ttl_ns) {
-  if (!pod_name_to_program_map_.empty() && pod_name_to_program_map_.contains(pod_target)) {
-    return error::InvalidArgument(
-        "Cannot UpsertTracepoint on the same binary. Use UpsertTracepoints instead.");
-  }
   std::unique_ptr<TracepointDeployment> program =
       std::make_unique<TracepointDeployment>(tracepoint_name, ttl_ns);
   TracepointDeployment* raw = program.get();
-  pod_name_to_program_map_[pod_target] = std::move(program);
+
+  stirling::dynamic_tracing::ir::shared::DeploymentSpec deployment_spec;
+  deployment_spec.set_pod(pod_target);
+  deployments_.emplace_back(deployment_spec, std::move(program));
+
   return raw;
 }
 
 StatusOr<TracepointDeployment*> MutationsIR::CreateTracepointDeploymentOnProcessSpec(
     const std::string& tracepoint_name, const ProcessSpec& process_spec, int64_t ttl_ns) {
-  if (!process_target_to_program_map_.empty() &&
-      process_target_to_program_map_.contains(process_spec)) {
-    return error::InvalidArgument(
-        "Cannot UpsertTracepoint on the same binary. Use UpsertTracepoints instead.");
-  }
   std::unique_ptr<TracepointDeployment> program =
       std::make_unique<TracepointDeployment>(tracepoint_name, ttl_ns);
   TracepointDeployment* raw = program.get();
-  process_target_to_program_map_[process_spec] = std::move(program);
+
+  stirling::dynamic_tracing::ir::shared::DeploymentSpec deployment_spec;
+  auto pod_process = deployment_spec.mutable_pod_process();
+  pod_process->set_pod(process_spec.pod_name_);
+  pod_process->set_container(process_spec.container_name_);
+  pod_process->set_process(process_spec.process_);
+  deployments_.emplace_back(deployment_spec, std::move(program));
+
   return raw;
 }
 
@@ -152,7 +164,9 @@ StatusOr<TracepointDeployment*> MutationsIR::CreateKProbeTracepointDeployment(
   std::unique_ptr<TracepointDeployment> program =
       std::make_unique<TracepointDeployment>(tracepoint_name, ttl_ns);
   TracepointDeployment* raw = program.get();
-  bpftrace_programs_.push_back(std::move(program));
+
+  deployments_.emplace_back(stirling::dynamic_tracing::ir::shared::DeploymentSpec(),
+                            std::move(program));
   return raw;
 }
 
@@ -231,50 +245,10 @@ Status TracepointDeployment::ToProto(
 }
 
 Status MutationsIR::ToProto(plannerpb::CompileMutationsResponse* pb) {
-  for (const auto& [upid, program] : upid_to_program_map_) {
+  for (const auto& [spec, program] : deployments_) {
     auto program_pb = pb->add_mutations()->mutable_trace();
     PL_RETURN_IF_ERROR(program->ToProto(program_pb));
-    auto deployment_spec = program_pb->mutable_deployment_spec();
-    auto upid_pb = deployment_spec->mutable_upid();
-    upid_pb->set_asid(upid.asid());
-    upid_pb->set_pid(upid.pid());
-    upid_pb->set_ts_ns(upid.start_ts());
-  }
-
-  for (const auto& [shared_object, program] : shared_object_to_program_map_) {
-    auto program_pb = pb->add_mutations()->mutable_trace();
-    PL_RETURN_IF_ERROR(program->ToProto(program_pb));
-    auto deployment_spec = program_pb->mutable_deployment_spec();
-    auto shared_object_pb = deployment_spec->mutable_shared_object();
-
-    shared_object_pb->set_name(shared_object.name());
-
-    auto upid_pb = shared_object_pb->mutable_upid();
-    upid_pb->set_asid(shared_object.upid().asid());
-    upid_pb->set_pid(shared_object.upid().pid());
-    upid_pb->set_ts_ns(shared_object.upid().start_ts());
-  }
-
-  for (const auto& [pod_name, program] : pod_name_to_program_map_) {
-    auto program_pb = pb->add_mutations()->mutable_trace();
-    PL_RETURN_IF_ERROR(program->ToProto(program_pb));
-    auto deployment_spec = program_pb->mutable_deployment_spec();
-    deployment_spec->set_pod(pod_name);
-  }
-
-  for (const auto& [target, program] : process_target_to_program_map_) {
-    auto program_pb = pb->add_mutations()->mutable_trace();
-    PL_RETURN_IF_ERROR(program->ToProto(program_pb));
-    auto deployment_spec = program_pb->mutable_deployment_spec();
-    auto pod_process = deployment_spec->mutable_pod_process();
-    pod_process->set_pod(target.pod_name_);
-    pod_process->set_container(target.container_name_);
-    pod_process->set_process(target.process_);
-  }
-
-  for (const auto& program : bpftrace_programs_) {
-    auto program_pb = pb->add_mutations()->mutable_trace();
-    PL_RETURN_IF_ERROR(program->ToProto(program_pb));
+    *(program_pb->mutable_deployment_spec()) = spec;
   }
 
   for (const auto& tracepoint_to_delete : TracepointsToDelete()) {

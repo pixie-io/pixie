@@ -1,9 +1,9 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
-#include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/objects/funcobject.h"
 #include "src/carnot/planner/plannerpb/func_args.pb.h"
 #include "src/carnot/planner/probes/process_target.h"
@@ -11,6 +11,7 @@
 #include "src/common/uuid/uuid.h"
 #include "src/shared/metadata/base_types.h"
 #include "src/stirling/dynamic_tracing/ir/logicalpb/logical.pb.h"
+#include "src/stirling/dynamic_tracing/ir/sharedpb/shared.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -289,14 +290,13 @@ class MutationsIR {
   TracepointIR* current_probe() { return current_tracepoint_.get(); }
 
  private:
-  absl::flat_hash_map<std::string, TracepointDeployment> binary_to_program_map_;
-  absl::flat_hash_map<md::UPID, std::unique_ptr<TracepointDeployment>> upid_to_program_map_;
-  absl::flat_hash_map<SharedObject, std::unique_ptr<TracepointDeployment>>
-      shared_object_to_program_map_;
-  absl::flat_hash_map<std::string, std::unique_ptr<TracepointDeployment>> pod_name_to_program_map_;
-  absl::flat_hash_map<ProcessSpec, std::unique_ptr<TracepointDeployment>>
-      process_target_to_program_map_;
-  std::vector<std::unique_ptr<TracepointDeployment>> bpftrace_programs_;
+  // All the new tracepoints added as part of this mutation. DeploymentSpecs are protobufs because
+  // we only modify these upon inserting the new tracepoint, while the Tracepoint definition is
+  // still modified aftered adding the tracepoint.
+  std::vector<std::pair<stirling::dynamic_tracing::ir::shared::DeploymentSpec,
+                        std::unique_ptr<TracepointDeployment>>>
+      deployments_;
+
   std::vector<std::shared_ptr<TracepointIR>> probes_pool_;
   std::shared_ptr<TracepointIR> current_tracepoint_;
 

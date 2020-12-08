@@ -504,7 +504,7 @@ def probe_func():
 pxtrace.UpsertTracepoint('http_return',
                          'http_return_table',
                          probe_func,
-                         px.uint128("$0"),
+                         $0,
                          "5m")
 
 
@@ -517,7 +517,7 @@ def http_body_probe():
 pxtrace.UpsertTracepoint('http_body',
                          'http_body_table',
                          http_body_probe,
-                         px.uint128("$1"),
+                         $1,
                          "5m")
 
 )pxl";
@@ -528,10 +528,10 @@ inline std::string WrapTraceMessage(std::string_view program) {
 
 TEST_F(ProbeCompilerTest, probes_with_multiple_binaries) {
   // Test to make sure a probe definition doesn't add a probe.
-  ASSERT_OK_AND_ASSIGN(
-      auto probe_ir, CompileProbeScript(absl::Substitute(kMultipleUpsertsInOneScriptTpl,
-                                                         "123e4567-e89b-12d3-a456-426655440000",
-                                                         "7654e321-e89b-12d3-a456-426655440000")));
+  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(absl::Substitute(
+                                          kMultipleUpsertsInOneScriptTpl,
+                                          "px.uint128('123e4567-e89b-12d3-a456-426655440000')",
+                                          "px.uint128('7654e321-e89b-12d3-a456-426655440000')")));
   plannerpb::CompileMutationsResponse pb;
   ASSERT_OK(probe_ir->ToProto(&pb));
   auto returnPb = pb.mutations()[0].trace();
@@ -546,16 +546,13 @@ TEST_F(ProbeCompilerTest, probes_with_multiple_binaries) {
   EXPECT_THAT(bodyPb, testing::proto::EqualsProto(kHTTPBodyTracepointPb));
 }
 
-TEST_F(ProbeCompilerTest, probes_with_same_binary_fails) {
+TEST_F(ProbeCompilerTest, probes_with_same_binary_succeeds) {
   // Test that makes sure we fail if we UpsertTracepoint > 1 time w/ same UPID then we fail.
   // The plan is to add another API endpoint.
-  auto probe_ir_or_s = CompileProbeScript(absl::Substitute(kMultipleUpsertsInOneScriptTpl,
-                                                           "123e4567-e89b-12d3-a456-426655440000",
-                                                           "123e4567-e89b-12d3-a456-426655440000"));
-  ASSERT_NOT_OK(probe_ir_or_s);
-  EXPECT_THAT(probe_ir_or_s.status(),
-              HasCompilerError(
-                  "Cannot UpsertTracepoint on the same binary. Use UpsertTracepoints instead"));
+  auto probe_ir_or_s = CompileProbeScript(absl::Substitute(
+      kMultipleUpsertsInOneScriptTpl, "px.uint128('123e4567-e89b-12d3-a456-426655440000')",
+      "px.uint128('123e4567-e89b-12d3-a456-426655440000')"));
+  ASSERT_OK(probe_ir_or_s);
 }
 
 constexpr char kProbeNoReturn[] = R"pxl(
@@ -722,9 +719,11 @@ name: "syscall_write_bpftrace"
 ttl {
   seconds: 300
 }
+deployment_spec {
+}
 tracepoints{
   table_name: "output_table"
-  bpftrace: {
+  bpftrace {
     program: "$0"
   }
 }
