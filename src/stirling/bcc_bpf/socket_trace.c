@@ -147,7 +147,6 @@ static __inline void clear_open_file(uint64_t id, int fd) {
   open_file_map.delete(&tgid_fd);
 }
 
-// The caller must memset conn_info to '0', otherwise the behavior is undefined.
 static __inline void init_conn_id(uint32_t tgid, uint32_t fd, struct conn_id_t* conn_id) {
   conn_id->upid.tgid = tgid;
   conn_id->upid.start_time_ticks = get_tgid_start_time();
@@ -155,17 +154,16 @@ static __inline void init_conn_id(uint32_t tgid, uint32_t fd, struct conn_id_t* 
   conn_id->tsid = bpf_ktime_get_ns();
 }
 
-static __inline struct conn_info_t* get_conn_info(uint32_t tgid, uint32_t fd) {
+// Be careful calling this function. The automatic creation of BPF map entries can result in a
+// BPF map leak if called on unwanted probes.
+// How do we make sure we don't leak then? ConnInfoMapManager.ReleaseResources() will clean-up
+// the relevant map entries every time a ConnectionTracker is destroyed.
+static __inline struct conn_info_t* get_or_create_conn_info(uint32_t tgid, uint32_t fd) {
   uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   struct conn_info_t new_conn_info = {};
   new_conn_info.addr.sin6_family = AF_UNKNOWN;
-  new_conn_info.addr_valid = false;
-  struct conn_info_t* conn_info = conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
-  // Use TGID zero to detect that a new conn_info needs to be initialized.
-  if (conn_info->conn_id.upid.tgid == 0) {
-    init_conn_id(tgid, fd, &conn_info->conn_id);
-  }
-  return conn_info;
+  init_conn_id(tgid, fd, &new_conn_info.conn_id);
+  return conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
 }
 
 static __inline struct socket_data_event_t* fill_event(enum TrafficDirection direction,
@@ -299,7 +297,6 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
 static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_t fd,
                                      const struct sockaddr* addr, enum EndpointRole role) {
   struct conn_info_t conn_info = {};
-  conn_info.addr_valid = true;
   conn_info.addr = *((struct sockaddr_in6*)addr);
   conn_info.traffic_class.role = role;
   init_conn_id(tgid, fd, &conn_info.conn_id);
@@ -652,7 +649,7 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
     return;
   }
 
-  struct conn_info_t* conn_info = get_conn_info(tgid, args->fd);
+  struct conn_info_t* conn_info = get_or_create_conn_info(tgid, args->fd);
   if (conn_info == NULL) {
     return;
   }
@@ -665,18 +662,14 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
     return;
   }
 
-  // Note: From this point on, if exiting early, and conn_info->addr_valid == 0,
-  // then call conn_info_map.delete(&tgid_fd) to avoid a BPF map leak.
-
   uint64_t tgid_fd = gen_tgid_fd(tgid, args->fd);
 
   // While we keep all sa_family types in conn_info_map,
   // we only send connections on INET/UNIX or UNKNOWN to user-space.
   // Why UNKNOWN? Because we may have failed to trace the initial connection.
+  // Also, it's very important to send the UNKNOWN cases to user-space,
+  // otherwise we may have a BPF map leak from the earlier call to get_or_create_conn_info().
   if (!should_trace_sockaddr_family(conn_info->addr.sin6_family)) {
-    if (!conn_info->addr_valid) {
-      conn_info_map.delete(&tgid_fd);
-    }
     return;
   }
 
@@ -701,9 +694,6 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
   struct socket_data_event_t* event = fill_event(direction, conn_info);
   if (event == NULL) {
     // event == NULL not expected to ever happen.
-    if (!conn_info->addr_valid) {
-      conn_info_map.delete(&tgid_fd);
-    }
     return;
   }
 
@@ -717,6 +707,7 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
     perf_submit_iovecs(ctx, direction, args->iov, args->iovlen, bytes_count, conn_info, event,
                        send_data);
   }
+
   return;
 }
 

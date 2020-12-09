@@ -21,7 +21,6 @@ struct conn_info_t {
   struct conn_id_t conn_id;
 
   // IP address of the remote endpoint.
-  bool addr_valid;
   struct sockaddr_in6 addr;
 
   // The protocol and message type of traffic on the connection (HTTP/Req, HTTP/Resp, MySQL/Req,

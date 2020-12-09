@@ -233,11 +233,10 @@ static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t
                                     bool end_stream, struct go_ptr_array fields,
                                     const struct go_http2_symaddrs_t* symaddrs) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  struct conn_info_t* conn_info = get_conn_info(tgid, fd);
+  struct conn_info_t* conn_info = get_or_create_conn_info(tgid, fd);
   if (conn_info == NULL) {
     return;
   }
-  conn_info->addr_valid = true;
 
   struct go_grpc_http2_header_event_t event = {};
   event.attr.probe_type = probe_type;
@@ -730,11 +729,10 @@ int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
   // Prepare to submit headers to perf buffer
   // ------------------------------------------------------
 
-  struct conn_info_t* conn_info = get_conn_info(tgid, fd);
+  struct conn_info_t* conn_info = get_or_create_conn_info(tgid, fd);
   if (conn_info == NULL) {
     return 0;
   }
-  conn_info->addr_valid = true;
 
   struct header_attr_t attr = {};
   attr.conn_id = conn_info->conn_id;
@@ -777,11 +775,10 @@ static __inline void go_http2_submit_data(struct pt_regs* ctx, enum http2_probe_
                                           uint32_t tgid, int32_t fd, enum DataFrameEventType type,
                                           uint32_t stream_id, bool end_stream,
                                           struct go_byte_array data) {
-  struct conn_info_t* conn_info = get_conn_info(tgid, fd);
+  struct conn_info_t* conn_info = get_or_create_conn_info(tgid, fd);
   if (conn_info == NULL) {
     return;
   }
-  conn_info->addr_valid = true;
 
   struct go_grpc_data_event_t* info = get_data_event();
   if (info == NULL) {
