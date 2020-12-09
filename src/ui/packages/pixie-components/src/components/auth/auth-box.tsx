@@ -50,12 +50,22 @@ const styles = ({ spacing, palette }: Theme) => createStyles({
   centerSelf: {
     alignSelf: 'center',
   },
+  disclaimer: {
+    fontStyle: 'italic',
+  },
+  disclaimerLink: {
+    color: palette.primary.main,
+    '&:visited': {
+      color: palette.primary.main,
+    },
+  },
 });
 
 export interface AuthBoxProps extends WithStyles<typeof styles> {
   variant: 'login' | 'signup';
   onPrimaryButtonClick?: () => void;
   toggleURL?: string;
+  showTOSDisclaimer?: boolean;
 }
 
 const textByVariant = {
@@ -77,7 +87,7 @@ const textByVariant = {
 
 export const AuthBox = withStyles(styles)((props: AuthBoxProps) => {
   const {
-    onPrimaryButtonClick, toggleURL, variant, classes,
+    onPrimaryButtonClick, toggleURL, variant, classes, showTOSDisclaimer,
   } = props;
   return (
     <PixienautBox>
@@ -93,6 +103,21 @@ export const AuthBox = withStyles(styles)((props: AuthBoxProps) => {
           ))}
         </span>
       </Typography>
+      {
+        showTOSDisclaimer
+          && (
+            <>
+              <Typography variant='subtitle2' className={classes.disclaimer}>
+                By signing up, you&apos;re agreeing to&nbsp;
+                <a href='https://pixielabs.ai/terms/' className={classes.disclaimerLink}>Terms of Service</a>
+                &nbsp;and&nbsp;
+                <a href='https://pixielabs.ai/privacy' className={classes.disclaimerLink}>Privacy Policy</a>
+                .
+              </Typography>
+              <br />
+            </>
+          )
+      }
       <Button
         variant='contained'
         color='primary'

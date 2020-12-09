@@ -32,6 +32,7 @@ export const SignupPage = withStyles(styles)(({ classes }: WithStyles<typeof sty
           variant='signup'
           toggleURL={`/auth/login${window.location.search}`}
           onPrimaryButtonClick={auth0SignupRequest}
+          showTOSDisclaimer
         />
       </div>
     </div>
