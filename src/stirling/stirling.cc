@@ -17,12 +17,12 @@
 
 #include "src/stirling/bpf_tools/probe_cleaner.h"
 #include "src/stirling/data_table.h"
-#include "src/stirling/obj_tools/proc_path_tools.h"
 #include "src/stirling/proto/stirling.pb.h"
 #include "src/stirling/pub_sub_manager.h"
 #include "src/stirling/source_connector.h"
 #include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"
+#include "src/stirling/utils/proc_path_tools.h"
 
 #include "src/stirling/dynamic_bpftrace_connector.h"
 #include "src/stirling/dynamic_trace_connector.h"

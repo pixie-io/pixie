@@ -59,18 +59,6 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
-    name = "proc_path_tools_test",
-    # Set timeout to moderate because this test downloads a container image.
-    timeout = "moderate",
-    srcs = ["proc_path_tools_test.cc"],
-    tags = ["requires_root"],
-    deps = [
-        ":cc_library",
-        "//src/common/testing/test_utils:cc_library",
-    ],
-)
-
 pl_cc_binary(
     name = "elf_reader_tool",
     srcs = ["elf_reader_tool.cc"],

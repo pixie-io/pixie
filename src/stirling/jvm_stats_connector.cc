@@ -11,9 +11,9 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
 #include "src/stirling/jvm_stats_table.h"
-#include "src/stirling/obj_tools/proc_path_tools.h"
 #include "src/stirling/utils/hsperfdata.h"
 #include "src/stirling/utils/java.h"
+#include "src/stirling/utils/proc_path_tools.h"
 #include "src/stirling/utils/proc_tracker.h"
 
 DEFINE_int32(
@@ -26,29 +26,17 @@ namespace stirling {
 using ::pl::fs::Exists;
 using ::pl::utils::LEndianBytesToInt;
 
-namespace {
-
-StatusOr<std::filesystem::path> ResolveHsperfDataPath(pid_t pid) {
-  PL_ASSIGN_OR_RETURN(const std::filesystem::path hsperf_data_path, HsperfdataPath(pid));
-  return ResolvePidPath(pid, hsperf_data_path);
-}
-
-}  // namespace
-
 void JVMStatsConnector::FindJavaUPIDs(const ConnectorContext& ctx) {
   proc_tracker_.Update(ctx.GetUPIDs());
 
   for (const auto& upid : proc_tracker_.new_upids()) {
-    // The host PID 1 is not a Java app. But ProcParser::ResolveMountPoint() is confused.
+    // The host PID 1 is not a Java app. But ResolveMountPoint() is confused.
     // TODO(yzhao): Look for more robust mechanism.
     if (upid.pid() == 1) {
       continue;
     }
-    auto hsperf_data_path_or = ResolveHsperfDataPath(upid.pid());
-    if (!hsperf_data_path_or.ok()) {
-      continue;
-    }
-    java_procs_[upid].hsperf_data_path = hsperf_data_path_or.ConsumeValueOrDie();
+    PL_ASSIGN_OR(auto hsperf_data_path, HsperfdataPath(upid.pid()), continue);
+    java_procs_[upid].hsperf_data_path = hsperf_data_path;
   }
 }
 

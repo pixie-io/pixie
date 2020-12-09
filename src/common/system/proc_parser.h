@@ -226,14 +226,6 @@ class ProcParser {
   Status ReadMountInfos(pid_t pid, std::vector<MountInfo>* mount_infos) const;
 
   /**
-   * Returns a path to an existent file (or directory) that is mounted to the input mount point
-   * of the process specified by the pid. The process could belong to a different mount namespace
-   * than the caller.
-   */
-  StatusOr<std::filesystem::path> ResolveMountPoint(pid_t pid,
-                                                    std::filesystem::path mount_point) const;
-
-  /**
    * Returns all mapped paths found in /proc/<pid>/maps.
    *
    * For example, given /proc/<pid>/maps:

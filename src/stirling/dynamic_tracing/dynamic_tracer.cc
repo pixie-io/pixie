@@ -20,7 +20,7 @@
 #include "src/stirling/dynamic_tracing/probe_transformer.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
 #include "src/stirling/obj_tools/elf_tools.h"
-#include "src/stirling/obj_tools/proc_path_tools.h"
+#include "src/stirling/utils/proc_path_tools.h"
 
 namespace pl {
 namespace stirling {
@@ -185,8 +185,7 @@ StatusOr<std::filesystem::path> ResolveUPID(const ir::shared::DeploymentSpec& de
     start_time = deployment_spec.upid().ts_ns();
   }
 
-  PL_ASSIGN_OR_RETURN(std::filesystem::path pid_binary,
-                      obj_tools::ResolvePIDBinary(pid, start_time));
+  PL_ASSIGN_OR_RETURN(std::filesystem::path pid_binary, ResolvePIDBinary(pid, start_time));
   pid_binary = system::Config::GetInstance().ToHostPath(pid_binary);
   PL_RETURN_IF_ERROR(fs::Exists(pid_binary));
   return pid_binary;
@@ -222,8 +221,7 @@ StatusOr<std::filesystem::path> ResolveSharedObject(
     std::string lib_path_filename = std::filesystem::path(lib).filename().string();
     if (absl::StartsWith(lib_path_filename, absl::StrCat(lib_name, ".")) ||
         absl::StartsWith(lib_path_filename, absl::StrCat(lib_name, "-"))) {
-      PL_ASSIGN_OR_RETURN(std::filesystem::path lib_path,
-                          obj_tools::ResolveProcessPath(proc_pid_path, lib));
+      PL_ASSIGN_OR_RETURN(std::filesystem::path lib_path, ResolveProcessPath(proc_pid_path, lib));
       lib_path = sysconfig.ToHostPath(lib_path);
       PL_RETURN_IF_ERROR(fs::Exists(lib_path));
       return lib_path;

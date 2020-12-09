@@ -70,3 +70,15 @@ pl_cc_test(
     data = ["//src/common/system/testdata:proc_fs"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "proc_path_tools_test",
+    # Set timeout to moderate because this test downloads a container image.
+    timeout = "moderate",
+    srcs = ["proc_path_tools_test.cc"],
+    tags = ["requires_root"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+    ],
+)

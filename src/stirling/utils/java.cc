@@ -1,7 +1,9 @@
 #include "src/stirling/utils/java.h"
 
 #include <absl/strings/match.h>
+
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -11,6 +13,7 @@
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/uid.h"
 #include "src/stirling/utils/hsperfdata.h"
+#include "src/stirling/utils/proc_path_tools.h"
 
 namespace pl {
 namespace stirling {
@@ -81,26 +84,13 @@ uint64_t Stats::SumStatsForSuffixes(const std::vector<std::string_view>& suffixe
   return sum;
 }
 
-StatusOr<std::filesystem::path> ResolvePidPath(pid_t pid, const std::filesystem::path& path) {
-  const auto& config = system::Config::GetInstance();
-  const std::filesystem::path& host_path = config.host_path();
-
-  ProcParser proc_parser(config);
-
-  // Find the longest parent path that is accessible of the file, by resolving mount
-  // point starting from the immediate parent through the root.
-  for (const fs::PathSplit& path_split : fs::EnumerateParentPaths(path)) {
-    auto resolved_mount_path_or = proc_parser.ResolveMountPoint(pid, path_split.parent);
-    if (resolved_mount_path_or.ok()) {
-      return fs::JoinPath({&host_path, &resolved_mount_path_or.ValueOrDie(), &path_split.child});
-    }
-  }
-
-  return error::Internal("Could not resolve $0 for pid=$1", path.string(), pid);
-}
-
 StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
-  ProcParser parser(system::Config::GetInstance());
+  const system::Config& sysconfig = system::Config::GetInstance();
+  const std::filesystem::path& host_path = sysconfig.host_path();
+  ProcParser parser(sysconfig);
+
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<FileSystemResolver> fs_resolver,
+                      FileSystemResolver::Create(pid));
 
   ProcParser::ProcUIDs uids;
   PL_RETURN_IF_ERROR(parser.ReadUIDs(pid, &uids));
@@ -110,8 +100,8 @@ StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
     return error::InvalidArgument("Invalid uid: '$0'", uids.effective);
   }
 
-  const std::filesystem::path etc_passwd_path("/etc/passwd");
-  PL_ASSIGN_OR_RETURN(std::filesystem::path passwd_path, ResolvePidPath(pid, etc_passwd_path));
+  PL_ASSIGN_OR_RETURN(std::filesystem::path passwd_path, fs_resolver->ResolvePath("/etc/passwd"));
+  passwd_path = fs::JoinPath({&host_path, &passwd_path});
 
   PL_ASSIGN_OR_RETURN(const std::string passwd_content, ReadFileToString(passwd_path));
   std::map<uid_t, std::string> uid_user_map = ParsePasswd(passwd_content);
@@ -125,10 +115,14 @@ StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
   std::vector<std::string> ns_pids;
   PL_RETURN_IF_ERROR(parser.ReadNSPid(pid, &ns_pids));
   const char kHspefdataPrefix[] = "hsperfdata_";
-  return std::filesystem::path("/tmp") / absl::StrCat(kHspefdataPrefix, effective_user) /
-         // The right-most pid is the PID of the same process inside the most-nested namespace.
-         // That will be the filename chosen by the running process.
-         ns_pids.back();
+  // The right-most pid is the PID of the same process inside the most-nested namespace.
+  // That will be the filename chosen by the running process.
+  const std::string& ns_pid = ns_pids.back();
+  std::filesystem::path hsperf_data_path =
+      std::filesystem::path("/tmp") / absl::StrCat(kHspefdataPrefix, effective_user) / ns_pid;
+
+  PL_ASSIGN_OR_RETURN(hsperf_data_path, fs_resolver->ResolvePath(hsperf_data_path));
+  return fs::JoinPath({&host_path, &hsperf_data_path});
 }
 
 }  // namespace stirling

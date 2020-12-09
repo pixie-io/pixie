@@ -580,55 +580,6 @@ Status ProcParser::ReadMountInfos(pid_t pid,
   return Status::OK();
 }
 
-StatusOr<std::filesystem::path> ProcParser::ResolveMountPoint(
-    pid_t pid, std::filesystem::path mount_point) const {
-  std::vector<MountInfo> mount_infos;
-  PL_RETURN_IF_ERROR(ReadMountInfos(pid, &mount_infos));
-
-  std::string device_number;
-  std::string device_root;
-  for (const auto& mount_info : mount_infos) {
-    if (mount_info.mount_point == mount_point.string()) {
-      device_number = mount_info.dev;
-      device_root = mount_info.root;
-      break;
-    }
-  }
-  if (device_number.empty() || device_root.empty()) {
-    return error::InvalidArgument("Input pid=$0 does not have the requested mount_point=$1", pid,
-                                  mount_point.string());
-  }
-
-  std::vector<MountInfo> pid1_mount_infos;
-  PL_RETURN_IF_ERROR(ReadMountInfos(1, &pid1_mount_infos));
-
-  // Now looks for the mount point of any of the devices' filesystem that can be the parent of
-  // the device root path of the requested mount point.
-  //
-  // For example, assuming the input pid has a MountInfo as follows:
-  // {0:1, /foo/bar, /tmp}
-  //
-  // To look for an accessible mount point for '/tmp', we look for mount points of any one of
-  // {/, /foo, /foo/bar} on device 0:1's filesystem. Assuming pid 1 has a MountInfo like this:
-  // {0:1, /, /tmp}
-  //
-  // We can access device 0:1's root through /tmp, and should return /tmp/foo/bar, through which
-  // the input pid's '/tmp' can be accessed.
-  for (const auto& mount_info : pid1_mount_infos) {
-    if (mount_info.dev != device_number) {
-      continue;
-    }
-    auto rel_path_or = fs::GetChildRelPath(device_root, mount_info.root);
-    if (!rel_path_or.ok()) {
-      continue;
-    }
-    const std::filesystem::path device_mount_point(mount_info.mount_point);
-    return fs::JoinPath({&device_mount_point, &rel_path_or.ValueOrDie()});
-  }
-  return error::InvalidArgument("Could not find mount point for to device=$0 root=$1",
-                                device_number, device_root);
-}
-
 StatusOr<absl::flat_hash_set<std::string>> ProcParser::GetMapPaths(pid_t pid) {
   static constexpr int kProcMapNumFields = 6;
   absl::flat_hash_set<std::string> map_paths;

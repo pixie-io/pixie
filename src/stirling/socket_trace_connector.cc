@@ -27,12 +27,12 @@
 #include "src/stirling/common/go_grpc_types.h"
 #include "src/stirling/connection_stats.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
-#include "src/stirling/obj_tools/proc_path_tools.h"
 #include "src/stirling/proto/sock_event.pb.h"
 #include "src/stirling/protocols/common/event_parser.h"
 #include "src/stirling/protocols/http2/grpc.h"
 #include "src/stirling/uprobe_symaddrs.h"
 #include "src/stirling/utils/linux_headers.h"
+#include "src/stirling/utils/proc_path_tools.h"
 
 DEFINE_bool(stirling_enable_parsing_protobufs, false,
             "If true, parses binary protobufs captured in gRPC messages. "
@@ -81,7 +81,6 @@ using ::pl::stirling::kMySQLTable;
 using ::pl::stirling::grpc::ParsePB;
 using ::pl::stirling::obj_tools::DwarfReader;
 using ::pl::stirling::obj_tools::ElfReader;
-using ::pl::stirling::obj_tools::ResolveProcessPath;
 using ::pl::stirling::utils::ToJSONString;
 
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
@@ -465,8 +464,6 @@ namespace {
 // Convert PID list from list of UPIDs to a map with key=binary name, value=PIDs
 std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
     const absl::flat_hash_set<md::UPID>& upids) {
-  using ::pl::stirling::obj_tools::ResolvePIDBinary;
-
   const system::Config& sysconfig = system::Config::GetInstance();
 
   // Convert to a map of binaries, with the upids that are instances of that binary.

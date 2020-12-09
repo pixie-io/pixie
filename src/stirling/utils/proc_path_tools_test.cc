@@ -1,4 +1,4 @@
-#include "src/stirling/obj_tools/proc_path_tools.h"
+#include "src/stirling/utils/proc_path_tools.h"
 
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/test_utils/test_container.h"
@@ -6,13 +6,12 @@
 
 namespace pl {
 namespace stirling {
-namespace obj_tools {
 
 using ::testing::Contains;
 using ::testing::EndsWith;
 using ::testing::StartsWith;
 
-TEST(ObjToolsContainerTest, ResolveFunctions) {
+TEST(ProcPathToolsContainerTest, ResolveFunctions) {
   DummyTestContainer container;
   ASSERT_OK(container.Run());
 
@@ -39,20 +38,40 @@ TEST(ObjToolsContainerTest, ResolveFunctions) {
 // Disabled because on Jenkins, proc_path_tools discovers the Jenkins container,
 // and this test fails. This test should only be run locally outside a container.
 // TODO(oazizi): Investigate a fix.
-TEST(ObjToolsNonContainerTest, DISABLED_ResolveFunctions) {
+TEST(ProcPathToolsNonContainerTest, DISABLED_ResolveFunctions) {
   std::filesystem::path proc_pid = "/proc/self";
 
   EXPECT_OK_AND_THAT(ResolveProcessRootDir(proc_pid), "");
 
   EXPECT_OK_AND_THAT(ResolveProcessPath(proc_pid, "/app/foo"), "/app/foo");
 
-  EXPECT_OK_AND_THAT(ResolveProcExe(proc_pid),
-                     EndsWith("src/stirling/obj_tools/proc_path_tools_test"));
+  EXPECT_OK_AND_THAT(ResolveProcExe(proc_pid), EndsWith("src/stirling/utils/proc_path_tools_test"));
 
   EXPECT_OK_AND_THAT(ResolvePIDBinary(getpid()),
-                     EndsWith("src/stirling/obj_tools/proc_path_tools_test"));
+                     EndsWith("src/stirling/utils/proc_path_tools_test"));
 }
 
-}  // namespace obj_tools
+TEST(FileSystemResolver, Resolve) {
+  DummyTestContainer container;
+  ASSERT_OK(container.Run());
+
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<FileSystemResolver> fs_resolver,
+                       FileSystemResolver::Create(container.process_pid()));
+
+  {
+    ASSERT_OK_AND_ASSIGN(std::filesystem::path path, fs_resolver->ResolveMountPoint("/"));
+    EXPECT_THAT(path, StartsWith("/var/lib/docker/overlay2/"));
+    EXPECT_THAT(path, EndsWith("/merged"));
+  }
+
+  {
+    ASSERT_OK_AND_ASSIGN(std::filesystem::path path, fs_resolver->ResolvePath("/app/foo"));
+    EXPECT_THAT(path, StartsWith("/var/lib/docker/overlay2/"));
+    EXPECT_THAT(path, EndsWith("/merged/app/foo"));
+  }
+
+  { ASSERT_NOT_OK(fs_resolver->ResolveMountPoint("/bogus")); }
+}
+
 }  // namespace stirling
 }  // namespace pl

@@ -2,15 +2,16 @@
 
 #include <filesystem>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "src/common/base/base.h"
+#include "src/common/system/proc_parser.h"
 #include "src/stirling/bcc_bpf_interface/common.h"
 
 namespace pl {
 namespace stirling {
-namespace obj_tools {
 
 // This file deals with process path resolution, handling cases when these paths are within
 // containers.
@@ -88,6 +89,25 @@ pl::StatusOr<std::filesystem::path> ResolveProcExe(const std::filesystem::path& 
 pl::StatusOr<std::filesystem::path> ResolvePIDBinary(
     uint32_t pid, std::optional<int64_t> start_time = std::nullopt);
 
-}  // namespace obj_tools
+/**
+ * Resolves a path from within a pid namespace to the path on the host.
+ * Implemented as a class, so the state of creation can be saved for multiple resolutions.
+ * Otherwise, parsing /proc becomes very expensive.
+ */
+class FileSystemResolver {
+ public:
+  static StatusOr<std::unique_ptr<FileSystemResolver>> Create(pid_t pid);
+
+  StatusOr<std::filesystem::path> ResolveMountPoint(const std::filesystem::path& mount_point);
+
+  StatusOr<std::filesystem::path> ResolvePath(const std::filesystem::path& path);
+
+ private:
+  FileSystemResolver() {}
+
+  std::vector<system::ProcParser::MountInfo> mount_infos_;
+  std::vector<system::ProcParser::MountInfo> root_mount_infos_;
+};
+
 }  // namespace stirling
 }  // namespace pl

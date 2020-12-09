@@ -208,11 +208,6 @@ TEST_F(ProcParserTest, ReadMountInfos) {
   }
 }
 
-TEST_F(ProcParserTest, ResolveMountPoint) {
-  ASSERT_OK_AND_EQ(parser_->ResolveMountPoint(123, "/foo"), "/tmp/test_foo");
-  EXPECT_NOT_OK(parser_->ResolveMountPoint(123, "/bar"));
-}
-
 TEST_F(ProcParserTest, GetMapPaths) {
   {
     EXPECT_OK_AND_THAT(
