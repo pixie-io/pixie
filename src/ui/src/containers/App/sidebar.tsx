@@ -36,6 +36,7 @@ import { LiveShortcutsContext } from 'containers/live/shortcuts';
 import { SidebarContext } from 'context/sidebar-context';
 import { LiveTourDialog } from 'containers/App/live-tour';
 import ExploreIcon from '@material-ui/icons/Explore';
+import { useSetting } from 'common/use-setting';
 
 const styles = (
   {
@@ -209,6 +210,7 @@ const ProfileItem = ({
 }) => {
   const [open, setOpen] = React.useState<boolean>(false);
   const [tourOpen, setTourOpen] = React.useState<boolean>(false);
+  const [tourSeen, setTourSeen, loadingTourSeen] = useSetting('tourSeen');
   const [wasSidebarOpenBeforeTour, setWasSidebarOpenBeforeTour] = React.useState<boolean>(false);
   const [anchorEl, setAnchorEl] = React.useState(null);
   const shortcuts = React.useContext(LiveShortcutsContext);
@@ -236,6 +238,14 @@ const ProfileItem = ({
     setTourOpen(false);
     setSidebarOpen(wasSidebarOpenBeforeTour);
   };
+
+  React.useEffect(() => {
+    if (!loadingTourSeen && tourSeen !== true) {
+      openTour();
+      setTourSeen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingTourSeen, tourSeen]);
 
   let name = '';
   let picture = '';
@@ -390,7 +400,7 @@ const SideBar = ({ classes }) => {
                   }
                 }
               >
-                <ListItem button key='annoucements' className={classes.listIcon}>
+                <ListItem button key='announcements' className={classes.listIcon}>
                   <ListItemIcon><AnnouncementIcon className={classes.icon} /></ListItemIcon>
                   <ListItemText primary='Announcements' />
                 </ListItem>

@@ -17,7 +17,7 @@ export const DEFAULT_USER_SETTINGS: UserSettings = Object.freeze({
 /** Exported only for test mocks */
 export const GET_ALL_USER_SETTINGS = gql`
 {
-  userSettings(keys: [${Object.keys(DEFAULT_USER_SETTINGS).join(', ')}]) {
+  userSettings(keys: [${Object.keys(DEFAULT_USER_SETTINGS).map((k) => JSON.stringify(k)).join(', ')}]) {
     key
     value
   }
@@ -51,9 +51,9 @@ export function useSetting(
 
   // Upstream, settings are stored as strings no matter what they contain. Since the data type is not stored there, we
   // make some compromises at runtime when trying to parse them out.
-  const storedString = !loading && !error && data.userSettings.find((s) => s.key === key).value;
   let stored: ValueType|undefined;
   if (!loading && !error) {
+    const storedString = data.userSettings.find((s) => s.key === key)?.value;
     try {
       // Compromise 1: Strings that happen to look like valid JSON (for example, 'false') are treated as such
       stored = JSON.parse(storedString);
@@ -81,5 +81,7 @@ export function useSetting(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, stored]);
 
-  return [setting, setter, loading];
+  // The loading state becomes false before the stored and state values are synchronized. From the consumer's viewpoint,
+  // that intermediate state should not be visible. Instead, they should see both values update at the same time.
+  return [setting, setter, loading || setting !== stored];
 }
