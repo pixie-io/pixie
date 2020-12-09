@@ -71,11 +71,6 @@ kprobe:tcp_retransmit_skb
       $statestr);
   }
 }
-
-END
-{
-  clear(@tcp_states);
-}
 """
 
 

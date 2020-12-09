@@ -68,11 +68,6 @@ kprobe:tcp_drop
       $statestr);
   }
 }
-
-END
-{
-  clear(@tcp_states);
-}
 """
 
 
