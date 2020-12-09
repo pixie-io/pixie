@@ -51,7 +51,7 @@ spec:
         - /bin/sh
         - -c
         - |
-            PEERS="etcd-0=http://etcd-0.etcd:2380"
+            PEERS="etcd-0=http://${HOSTNAME}:2380"
             exec etcd --name ${HOSTNAME} \
             --listen-peer-urls http://0.0.0.0:2380 \
             --listen-client-urls https://0.0.0.0:2379 \
