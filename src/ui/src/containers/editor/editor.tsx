@@ -152,7 +152,7 @@ const LiveViewEditor = ({ visible }: {visible: boolean}) => {
             value={tab}
             onChange={(event, newTab) => setTab(newTab)}
           >
-            <StyledTab value='pixie' label='PXL Script' />
+            <StyledTab value='pixie' label='PxL Script' />
             <StyledTab value='vis' label='Vis Spec' />
           </StyledTabs>
           <div className={classes.closer} onClick={closeEditor}>
