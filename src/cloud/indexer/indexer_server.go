@@ -25,7 +25,7 @@ import (
 
 func init() {
 	pflag.String("nats_url", "pl-nats", "The URL of NATS")
-	pflag.String("stan_cluster", "pl-stan", "The name of the Stan cluster")
+	pflag.String("stan_cluster", "pl-stan", "The name of the STAN cluster")
 	pflag.String("es_url", "https://pl-elastic-es-http:9200", "The URL for the elastic cluster")
 	pflag.String("es_ca_cert", "/es-certs/tls.crt", "The CA cert for elastic")
 	pflag.String("es_user", "elastic", "The user for elastic")
@@ -52,9 +52,13 @@ func createStanNatsConnection(clientID string) (nc *nats.Conn, sc stan.Conn, err
 		nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
 		nats.RootCAs(viper.GetString("tls_ca_cert")))
 	if err != nil {
+		log.WithError(err).Error("NATS connection failed")
 		return
 	}
 	sc, err = stan.Connect(viper.GetString("stan_cluster"), clientID, stan.NatsConn(nc))
+	if err != nil {
+		log.WithError(err).Error("STAN connection failed")
+	}
 	return
 }
 
@@ -113,7 +117,7 @@ func main() {
 	s := services.NewPLServer(env.New(), mux)
 	nc, sc, err := createStanNatsConnection(uuid.NewV4().String())
 	if err != nil {
-		log.WithError(err).Fatal("Could not connect to NATS/Stan")
+		log.Fatal("Could not connect to NATS/STAN")
 	}
 
 	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {

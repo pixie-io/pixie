@@ -22,7 +22,7 @@ import (
 func init() {
 	pflag.String("vzmgr_service", "kubernetes:///vzmgr-service.plc:51800", "The profile service url (load balancer/list is ok)")
 	pflag.String("nats_url", "pl-nats", "The URL of NATS")
-	pflag.String("stan_cluster", "pl-stan", "The name of the Stan cluster")
+	pflag.String("stan_cluster", "pl-stan", "The name of the STAN cluster")
 }
 
 func newVZMgrClients() (vzmgrpb.VZMgrServiceClient, vzmgrpb.VZDeploymentServiceClient, error) {
@@ -44,9 +44,13 @@ func createStanNatsConnection(clientID string) (nc *nats.Conn, sc stan.Conn, err
 		nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
 		nats.RootCAs(viper.GetString("tls_ca_cert")))
 	if err != nil {
+		log.WithError(err).Error("NATS connection failed")
 		return
 	}
 	sc, err = stan.Connect(viper.GetString("stan_cluster"), clientID, stan.NatsConn(nc))
+	if err != nil {
+		log.WithError(err).Error("STAN connection failed")
+	}
 	return
 }
 
@@ -74,7 +78,7 @@ func main() {
 	s := services.NewPLServerWithOptions(env.New(), mux, serverOpts)
 	nc, sc, err := createStanNatsConnection(uuid.NewV4().String())
 	if err != nil {
-		log.WithError(err).Error("Could not connect to Nats/Stan")
+		log.Error("Could not connect to NATS/STAN")
 	}
 
 	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {

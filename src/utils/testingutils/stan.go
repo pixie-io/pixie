@@ -9,7 +9,7 @@ import (
 	"github.com/phayes/freeport"
 )
 
-// StartStan starts up a Stan server with given ID and return client with given ID..
+// StartStan starts up a STAN server with given ID and return client with given ID..
 func StartStan(t *testing.T, clusterID, clientID string) (*server.StanServer, stan.Conn, func()) {
 	// Find available port.
 	port, err := freeport.GetFreePort()
