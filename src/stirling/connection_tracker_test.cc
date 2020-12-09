@@ -796,8 +796,7 @@ TEST_P(ConnectionTrackerStatsTest, OnlyDataEvents) {
 INSTANTIATE_TEST_SUITE_P(AllProtocols, ConnectionTrackerStatsTest,
                          ::testing::Combine(::testing::Values(kProtocolUnknown, kProtocolHTTP,
                                                               kProtocolMySQL, kProtocolCQL,
-                                                              kProtocolPGSQL, kProtocolDNS,
-                                                              kProtocolRedis),
+                                                              kProtocolPGSQL, kProtocolDNS),
                                             ::testing::Values(kRoleClient, kRoleServer)));
 
 }  // namespace stirling

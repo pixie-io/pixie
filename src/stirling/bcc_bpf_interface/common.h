@@ -27,7 +27,6 @@ enum TrafficProtocol {
   kProtocolCQL,
   kProtocolPGSQL,
   kProtocolDNS,
-  kProtocolRedis,
   kNumProtocols
 };
 
