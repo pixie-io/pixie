@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { PropsWithChildren } from 'react';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 import { Dialog } from '@material-ui/core';
@@ -6,6 +6,17 @@ import CloseButton from '@material-ui/icons/Close';
 import IconButton from '@material-ui/core/IconButton';
 import 'typeface-walter-turncoat';
 import { Spacing } from '@material-ui/core/styles/createSpacing';
+import { SetStateFunc } from 'context/common';
+
+interface LiveTourContextProps {
+  tourOpen: boolean;
+  setTourOpen: SetStateFunc<boolean>;
+}
+export const LiveTourContext = React.createContext<LiveTourContextProps>(null);
+export const LiveTourContextProvider = ({ children }: PropsWithChildren<{}>) => {
+  const [tourOpen, setTourOpen] = React.useState<boolean>(false);
+  return <LiveTourContext.Provider value={{ tourOpen, setTourOpen }}>{children}</LiveTourContext.Provider>;
+};
 
 /**
  * Generates the CSS properties needed to punch holes in the backdrop
@@ -273,15 +284,15 @@ const LiveTourBackdrop = () => {
 };
 
 interface LiveTourDialogProps {
-  open: boolean;
   onClose: () => void;
 }
 
-export const LiveTourDialog = ({ open, onClose }: LiveTourDialogProps) => {
+export const LiveTourDialog = ({ onClose }: LiveTourDialogProps) => {
   const classes = useStyles();
+  const { tourOpen } = React.useContext(LiveTourContext);
   return (
     <Dialog
-      open={open}
+      open={tourOpen}
       onClose={onClose}
       classes={{
         paperFullScreen: classes.tourModal,

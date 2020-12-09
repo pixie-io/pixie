@@ -34,7 +34,7 @@ import { toEntityPathname, LiveViewPage } from 'containers/live-widgets/utils/li
 import { DOMAIN_NAME } from 'containers/constants';
 import { LiveShortcutsContext } from 'containers/live/shortcuts';
 import { SidebarContext } from 'context/sidebar-context';
-import { LiveTourDialog } from 'containers/App/live-tour';
+import { LiveTourContext, LiveTourDialog } from 'containers/App/live-tour';
 import ExploreIcon from '@material-ui/icons/Explore';
 import { useSetting } from 'common/use-setting';
 
@@ -209,7 +209,7 @@ const ProfileItem = ({
   classes, data, setSidebarOpen,
 }) => {
   const [open, setOpen] = React.useState<boolean>(false);
-  const [tourOpen, setTourOpen] = React.useState<boolean>(false);
+  const { setTourOpen } = React.useContext(LiveTourContext);
   const [tourSeen, setTourSeen, loadingTourSeen] = useSetting('tourSeen');
   const [wasSidebarOpenBeforeTour, setWasSidebarOpenBeforeTour] = React.useState<boolean>(false);
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -256,7 +256,7 @@ const ProfileItem = ({
 
   return (
     <ListItem button onClick={openMenu} key='Profile' className={classes.profileIcon}>
-      <LiveTourDialog open={tourOpen} onClose={closeTour} />
+      <LiveTourDialog onClose={closeTour} />
       <ListItemIcon>
         <Avatar
           name={name}

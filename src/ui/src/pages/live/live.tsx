@@ -18,6 +18,7 @@ import CommandInput from 'containers/command-input/command-input';
 import { withLiveViewContext } from 'containers/live/context';
 import { LayoutContext } from 'context/layout-context';
 import { ScriptContext } from 'context/script-context';
+import { LiveTourContext } from 'containers/App/live-tour';
 import { DataDrawerSplitPanel } from 'containers/data-drawer/data-drawer';
 import { EditorSplitPanel } from 'containers/editor/editor';
 import { ScriptLoader } from 'containers/live/script-loader';
@@ -202,6 +203,8 @@ const LiveView = () => {
   const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
 
   const [commandOpen, setCommandOpen] = React.useState<boolean>(false);
+  const { tourOpen } = React.useContext(LiveTourContext);
+  const commandReallyOpen = commandOpen && !tourOpen;
   const toggleCommandOpen = React.useCallback(() => setCommandOpen((opened) => !opened), []);
   const { selectedClusterPrettyName, selectedCluster } = React.useContext(ClusterContext);
   const [unhealthyClusterName, setUnhealthyCluster] = React.useState<string | null>(null);
@@ -267,7 +270,7 @@ const LiveView = () => {
       <LiveViewShortcutsProvider handlers={hotkeyHandlers}>
         <NavBars />
         <div className={classes.content}>
-          <LiveViewBreadcrumbs toggleCommandOpen={toggleCommandOpen} commandOpen={commandOpen} />
+          <LiveViewBreadcrumbs toggleCommandOpen={toggleCommandOpen} commandOpen={commandReallyOpen} />
           <EditorSplitPanel className={classes.editorPanel}>
             <>
               <LiveViewTitle className={classes.title} />
@@ -297,7 +300,7 @@ const LiveView = () => {
                         <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
                       </div>
                     </DataDrawerSplitPanel>
-                    <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
+                    <CommandInput open={commandReallyOpen} onClose={toggleCommandOpen} />
                   </>
                 )
               }
