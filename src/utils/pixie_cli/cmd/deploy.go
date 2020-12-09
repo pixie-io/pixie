@@ -115,9 +115,6 @@ func init() {
 	DeployCmd.Flags().StringP("namespace", "n", "pl", "The namespace to install K8s secrets to")
 	viper.BindPFlag("namespace", DeployCmd.Flags().Lookup("namespace"))
 
-	DeployCmd.Flags().BoolP("deps_only", "d", false, "Deploy only the cluster dependencies, not the agents")
-	viper.BindPFlag("deps_only", DeployCmd.Flags().Lookup("deps_only"))
-
 	DeployCmd.Flags().StringP("dev_cloud_namespace", "m", "", "The namespace of Pixie Cloud, if running Cloud on minikube")
 	viper.BindPFlag("dev_cloud_namespace", DeployCmd.Flags().Lookup("dev_cloud_namespace"))
 
@@ -391,15 +388,13 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		log.Fatal("Failed to deploy Vizier")
 	}
 
-	depsOnly, _ := cmd.Flags().GetBool("deps_only")
-
 	bootstrapYAML, err := yamlGenerator.GetBootstrapYAML(yamlArgs)
 	if err != nil {
 		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 		log.WithError(err).Fatal("Could not get bootstrap yaml")
 	}
 
-	clusterID := deploy(cloudConn, versionString, clientset, kubeConfig, bootstrapYAML, namespace, depsOnly)
+	clusterID := deploy(cloudConn, versionString, clientset, kubeConfig, bootstrapYAML, namespace)
 
 	waitForHealthCheck(cloudAddr, clusterID, clientset, namespace, numNodes)
 }
@@ -579,10 +574,7 @@ func initiateUpdate(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.
 	return nil
 }
 
-func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Clientset, config *rest.Config, yamlContents string, namespace string, depsOnly bool) uuid.UUID {
-	if depsOnly {
-		return uuid.Nil
-	}
+func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Clientset, config *rest.Config, yamlContents string, namespace string) uuid.UUID {
 	var clusterID uuid.UUID
 	deployJob := []utils.Task{
 		newTaskWrapper("Deploying Cloud Connector", func() error {
