@@ -94,8 +94,8 @@ std::vector<TaggedRecordBatch> DataTable::ConsumeRecords() {
     }
 
     // Case 1: Expired records. Just print a message.
-    LOG_IF(WARNING, num_expired != 0)
-        << absl::Substitute("$0 records dropped due to late arrival", num_expired);
+    LOG_IF(WARNING, num_expired != 0) << absl::Substitute(
+        "$0 records for table $1 dropped due to late arrival", num_expired, table_schema_.name());
 
     // Case 2: Pushable records. Copy to output.
     if (num_pushable > 0) {
