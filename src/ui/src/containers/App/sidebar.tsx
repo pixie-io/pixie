@@ -265,72 +265,74 @@ const ProfileItem = ({
   }, [id, email]);
 
   return (
-    <ListItem button onClick={openMenu} key='Profile' className={classes.profileIcon}>
+    <>
       <LiveTourDialog onClose={closeTour} />
-      <ListItemIcon>
-        <Avatar
-          name={name}
-          picture={picture}
-          className={classes.avatarSm}
+      <ListItem button onClick={openMenu} key='Profile' className={classes.profileIcon}>
+        <ListItemIcon>
+          <Avatar
+            name={name}
+            picture={picture}
+            className={classes.avatarSm}
+          />
+        </ListItemIcon>
+        <ListItemText
+          primary={name}
+          secondary={email}
+          classes={{ primary: classes.profileText, secondary: classes.profileText }}
         />
-      </ListItemIcon>
-      <ListItemText
-        primary={name}
-        secondary={email}
-        classes={{ primary: classes.profileText, secondary: classes.profileText }}
-      />
-      <ProfileMenuWrapper
-        classes={classes}
-        open={open}
-        onCloseMenu={closeMenu}
-        anchorEl={anchorEl}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        name={name}
-        email={email}
-        picture={picture}
-      >
-        <MenuItem key='admin' button component={Link} to='/admin'>
-          <StyledListItemIcon>
-            <SettingsIcon />
-          </StyledListItemIcon>
-          <StyledListItemText primary='Admin' />
-        </MenuItem>
-        {
-          inLiveView && (
-            [
-              (
-                <MenuItem key='tour' button component='button' onClick={openTour} className={classes.hideOnMobile}>
-                  <StyledListItemIcon>
-                    <ExploreIcon />
-                  </StyledListItemIcon>
-                  <StyledListItemText primary='Tour' />
-                </MenuItem>
-              ),
-              (
-                <MenuItem key='shortcuts' button component='button' onClick={() => shortcuts['show-help'].handler()}>
-                  <StyledListItemIcon>
-                    <KeyboardIcon />
-                  </StyledListItemIcon>
-                  <StyledListItemText primary='Keyboard Shortcuts' />
-                </MenuItem>
-              ),
-            ]
-          )
-        }
-        <MenuItem key='credits' button component={Link} to='/credits'>
-          <StyledListItemIcon>
-            <CodeIcon />
-          </StyledListItemIcon>
-          <StyledListItemText primary='Credits' />
-        </MenuItem>
-        <MenuItem key='logout' button component={Link} to='/logout'>
-          <StyledListItemIcon>
-            <LogoutIcon />
-          </StyledListItemIcon>
-          <StyledListItemText primary='Logout' />
-        </MenuItem>
-      </ProfileMenuWrapper>
-    </ListItem>
+        <ProfileMenuWrapper
+          classes={classes}
+          open={open}
+          onCloseMenu={closeMenu}
+          anchorEl={anchorEl}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          name={name}
+          email={email}
+          picture={picture}
+        >
+          <MenuItem key='admin' button component={Link} to='/admin'>
+            <StyledListItemIcon>
+              <SettingsIcon />
+            </StyledListItemIcon>
+            <StyledListItemText primary='Admin' />
+          </MenuItem>
+          {
+            inLiveView && (
+              [
+                (
+                  <MenuItem key='tour' button component='button' onClick={openTour} className={classes.hideOnMobile}>
+                    <StyledListItemIcon>
+                      <ExploreIcon />
+                    </StyledListItemIcon>
+                    <StyledListItemText primary='Tour' />
+                  </MenuItem>
+                ),
+                (
+                  <MenuItem key='shortcuts' button component='button' onClick={() => shortcuts['show-help'].handler()}>
+                    <StyledListItemIcon>
+                      <KeyboardIcon />
+                    </StyledListItemIcon>
+                    <StyledListItemText primary='Keyboard Shortcuts' />
+                  </MenuItem>
+                ),
+              ]
+            )
+          }
+          <MenuItem key='credits' button component={Link} to='/credits'>
+            <StyledListItemIcon>
+              <CodeIcon />
+            </StyledListItemIcon>
+            <StyledListItemText primary='Credits' />
+          </MenuItem>
+          <MenuItem key='logout' button component={Link} to='/logout'>
+            <StyledListItemIcon>
+              <LogoutIcon />
+            </StyledListItemIcon>
+            <StyledListItemText primary='Logout' />
+          </MenuItem>
+        </ProfileMenuWrapper>
+      </ListItem>
+    </>
   );
 };
 
