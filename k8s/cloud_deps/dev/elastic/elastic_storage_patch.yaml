@@ -2,3 +2,7 @@
 - op: replace
   path: /spec/nodeSets/0/volumeClaimTemplates/0/spec/resources/requests/storage
   value: 5Gi
+
+- op: replace
+  path: /spec/nodeSets/0/volumeClaimTemplates/0/spec/storageClassName
+  value: standard

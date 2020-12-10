@@ -22,6 +22,7 @@ spec:
           value: pl
         volumeMounts:
         - mountPath: /var/lib/postgresql/data
+          subPath: data
           name: postgres-pv-claim
       volumes:
       - name: postgres-pv-claim

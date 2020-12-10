@@ -4,7 +4,15 @@
   path: /spec/nodeSets/0/volumeClaimTemplates/0/spec/resources/requests/storage
   value: 50Gi
 
+- op: replace
+  path: /spec/nodeSets/0/volumeClaimTemplates/0/spec/storageClassName
+  value: ssd
+
 # Data node.
 - op: replace
   path: /spec/nodeSets/1/volumeClaimTemplates/0/spec/resources/requests/storage
   value: 100Gi
+
+- op: replace
+  path: /spec/nodeSets/1/volumeClaimTemplates/0/spec/storageClassName
+  value: ssd
