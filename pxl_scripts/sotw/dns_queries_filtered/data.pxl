@@ -23,6 +23,7 @@ def dns_requests(start: str, query_name_filter: str):
 	df.request_resolved = px.contains(df.resp_body, 'name')
 
 	# Parse the DNS request for query name.
+	# TODO: cleanup this logic when we support object types
 	df.req_body = px.pluck(df.req_body, 'queries')
 	df.idx1 = px.find(df.req_body, '\"name\":')
 	df.query_name_partial = px.substring(df.req_body, df.idx1 + 8, px.length(df.req_body) - (df.idx1 + 8) - 3)

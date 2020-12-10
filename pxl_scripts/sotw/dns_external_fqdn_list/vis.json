@@ -4,7 +4,7 @@
       "name": "start",
       "type": "PX_STRING",
       "description": "The start time of the window in time units before now.",
-      "defaultValue": "-3h"
+      "defaultValue": "-5m"
     }
   ],
   "globalFuncs": [
