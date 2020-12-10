@@ -81,12 +81,22 @@ func generateCertificate(certPath string, certName string, caCert *x509.Certific
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		BasicConstraintsValid: true,
 		// Localhost must be here because etcd relies on it.
-		DNSNames: []string{"*.local", "*.plc.svc.cluster.local", "*.pl.svc.cluster.local", "localhost", "pl-nats", "pl-etcd", "*.pl-etcd.pl.svc", "*.pl-etcd.pl.svc.cluster.local", "*.pl.svc", "*.plc",
+		DNSNames: []string{
+			"*.local",
+			"*.pl.svc",
+			"*.pl.svc.cluster.local",
+			"*.plc",
+			"*.plc.svc.cluster.local",
 			"*.plc-dev",
 			"*.plc-dev.svc.cluster.local",
 			"*.plc-staging",
 			"*.plc-testing",
-			"*.plc.svc.cluster.local",
+			"pl-etcd",
+			"*.pl-etcd.pl.svc",
+			"*.pl-etcd.pl.svc.cluster.local",
+			"pl-nats",
+			"*.pl-nats",
+			"localhost",
 		},
 	}
 	privateKey, err := rsa.GenerateKey(rand.Reader, bitsize)
