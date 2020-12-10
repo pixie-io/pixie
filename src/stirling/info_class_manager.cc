@@ -9,7 +9,9 @@
 namespace pl {
 namespace stirling {
 
-bool InfoClassManager::SamplingRequired() const { return CurrentTime() > NextSamplingTime(); }
+bool InfoClassManager::SamplingRequired() const {
+  return std::chrono::steady_clock::now() > NextSamplingTime();
+}
 
 bool InfoClassManager::PushRequired() const {
   // Note: It's okay to exercise an early Push, by returning true before the final return,
@@ -23,7 +25,7 @@ bool InfoClassManager::PushRequired() const {
     return true;
   }
 
-  return CurrentTime() > NextPushTime();
+  return std::chrono::steady_clock::now() > NextPushTime();
 }
 
 void InfoClassManager::InitContext(ConnectorContext* ctx) { source_->InitContext(ctx); }
@@ -32,7 +34,7 @@ void InfoClassManager::SampleData(ConnectorContext* ctx) {
   source_->TransferData(ctx, source_table_num_, data_table_);
 
   // Update the last sampling time.
-  last_sampled_ = CurrentTime();
+  last_sampled_ = std::chrono::steady_clock::now();
 
   sampling_count_++;
 }
@@ -49,7 +51,7 @@ void InfoClassManager::PushData(DataPushCallback agent_callback) {
   }
 
   // Update the last pushed time.
-  last_pushed_ = CurrentTime();
+  last_pushed_ = std::chrono::steady_clock::now();
 
   push_count_++;
 }

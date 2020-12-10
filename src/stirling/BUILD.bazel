@@ -227,11 +227,11 @@ pl_cc_test(
     data = [
         "//src/stirling/testing/java:HelloWorld",
     ],
-    tags = [
-        "no_coverage",
-        "exclusive",
-    ],
     flaky = True,
+    tags = [
+        "exclusive",
+        "no_coverage",
+    ],
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",

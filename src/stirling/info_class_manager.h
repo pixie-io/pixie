@@ -160,15 +160,6 @@ class InfoClassManager final : public NotCopyable {
   std::chrono::steady_clock::time_point NextPushTime() const { return last_pushed_ + push_period_; }
 
   /**
-   * Convenience function to return current time in Milliseconds.
-   *
-   * @return milliseconds
-   */
-  static std::chrono::steady_clock::time_point CurrentTime() {
-    return std::chrono::steady_clock::now();
-  }
-
-  /**
    * Set the Subscription for the InfoClass.
    *
    * @param subscription
