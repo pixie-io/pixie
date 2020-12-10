@@ -189,6 +189,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   table: {
     flex: 3,
+    overflowX: 'hidden',
   },
   close: {
     position: 'absolute',
