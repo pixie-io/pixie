@@ -12,16 +12,11 @@ namespace redis {
 // Represents data types defined in the Redis protocol.
 enum class DataType {
   kSimpleString,
-  kErrors,
-  kIntegers,
-  kBulkStrings,
-  kArrays,
+  kError,
+  kInteger,
+  kBulkString,
+  kArray,
 };
-
-constexpr char kSimpleStringMarker = '+';
-constexpr char kErrorMarker = '-';
-// This is Redis' universal terminating sequence.
-constexpr std::string_view kTerminalSequence = "\r\n";
 
 // Represents a generic Redis message.
 struct Message : public FrameBase {
