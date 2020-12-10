@@ -3,9 +3,17 @@
 
 import px
 
-# Regular functions.
-px.display(px.GetUDFList(), "map funcs")
-# Aggregate functions.
-px.display(px.GetUDAList(), "agg funcs")
-# Table generationg functions.
-px.display(px.GetUDTFList(), "table_funcs")
+
+def map_funcs():
+    # Gets a list of the regular functions.
+    return px.GetUDFList()
+
+
+def agg_funcs():
+    # Gets a list of the aggregate functions.
+    return px.GetUDAList()
+
+
+def table_funcs():
+    # Gets a list of the table generating functions.
+    return px.GetUDTFList()
