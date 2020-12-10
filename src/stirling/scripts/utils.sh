@@ -25,13 +25,23 @@ function bazel_build() {
   flags=$2
   # shellcheck disable=SC2086
   bazel_out=$(bazel build $flags "$target" 2>&1)
+  retval=$?
+
+  # If compile failed, log and abort.
+  if [ $retval -ne 0 ]; then
+    echo "$bazel_out" > /tmp/bazel_build.out
+    # Echo to stderr, so it gets printed even when invoked inside a sub-shell.
+    >&2 echo "Failed to build stirling_wrapper. See logs in /tmp/bazel_build.out."
+    return $retval
+  fi
 
   # This funky command looks for and parses out the binary from a output like the following:
   # ...
   # Target //src/stirling:stirling_wrapper up-to-date:
   #   bazel-bin/src/stirling/stirling_wrapper
   # ...
-  echo "$bazel_out" | grep -A1 "^Target" | tail -1 | sed -e 's/^[[:space:]]*//'
+  binary=$(echo "$bazel_out" | grep -A1 "^Target .* up-to-date" | tail -1 | sed -e 's/^[[:space:]]*//')
+  echo "$binary"
 }
 
 function docker_stop() {

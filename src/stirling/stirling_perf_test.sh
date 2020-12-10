@@ -31,9 +31,14 @@ else
     # If the script was run through bazel, the locations are passed as arguments.
     stirling_wrapper=$1
 
-    # Check that sudo won't block. If it does, this will error and the script will exit.
-    echo "If trying to run this locally, use: sudo ./src/stirling/stirling_perf_test.sh"
-    sudo -n echo
+    # If not running with admin privileges, check if sudo will work.
+    if [[ $EUID -ne 0 ]]; then
+      echo "If trying to run this locally, use: sudo ./src/stirling/stirling_perf_test.sh"
+      echo "(or run 'sudo echo', enter password and try again)"
+
+      # Check that sudo won't block, otherwise this will error and the script will exit.
+      sudo -n echo
+    fi
 fi
 
 ###############################################################################
