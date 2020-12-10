@@ -19,7 +19,6 @@ max_num_records = 10
 # Implementation
 # ----------------------------------------------------------------
 
-#f = px.DataFrame(table='http_events', start_time=start_time)
 df = px.DataFrame(
     table='http_events',
     select=[
