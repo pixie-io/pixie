@@ -71,12 +71,35 @@ pl_cc_test(
     deps = [":cc_library"],
 )
 
+# Meant to be run directly on the OS (not inside a container).
 pl_cc_test(
     name = "proc_path_tools_test",
     # Set timeout to moderate because this test downloads a container image.
     timeout = "moderate",
     srcs = ["proc_path_tools_test.cc"],
-    tags = ["requires_root"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+    ],
+)
+
+# A version of the previous test meant to run inside a container with the required Stirling flags (e.g. PL_HOST_PATH).
+# This mimics how the PEM/Stirling runs on k8s.
+# One can test the container environment by running this test after executing $PIXIE_ROOT/scripts/run_docker.sh.
+# Also works directly on the OS, but should also be run inside a container for coverage purposes.
+pl_cc_test(
+    name = "proc_path_tools_container_test",
+    # Set timeout to moderate because this test downloads a container image.
+    timeout = "moderate",
+    srcs = ["proc_path_tools_test.cc"],
+    defines = [
+        "CONTAINER_ENV",
+    ],
+    # Doesn't really need BPF, but this ensures that we run inside a container with the right flags.
+    # Specifically, we require the `--pid=host -v /:/host -v /sys:/sys --env PL_HOST_PATH=/host`
+    # which only the BPF jenkins jobs provide.
+    # Locally, this test can be run without sudo_run_bazel.sh, unlike other BPF tests.
+    tags = ["requires_bpf"],
     deps = [
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",

@@ -185,7 +185,9 @@ StatusOr<std::filesystem::path> ResolveUPID(const ir::shared::DeploymentSpec& de
     start_time = deployment_spec.upid().ts_ns();
   }
 
-  PL_ASSIGN_OR_RETURN(std::filesystem::path pid_binary, ResolvePIDBinary(pid, start_time));
+  PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, ProcExe(pid, start_time));
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create(pid));
+  PL_ASSIGN_OR_RETURN(std::filesystem::path pid_binary, fp_resolver->ResolvePath(proc_exe));
   pid_binary = system::Config::GetInstance().ToHostPath(pid_binary);
   PL_RETURN_IF_ERROR(fs::Exists(pid_binary));
   return pid_binary;
@@ -215,13 +217,15 @@ StatusOr<std::filesystem::path> ResolveSharedObject(
   system::ProcParser proc_parser(sysconfig);
   PL_ASSIGN_OR_RETURN(absl::flat_hash_set<std::string> libs_status, proc_parser.GetMapPaths(pid));
 
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create(pid));
+
   for (const auto& lib : libs_status) {
     // Look for a library name such as /lib/libc.so.6 or /lib/libc-2.32.so.
     // The name is assumed to end with either a '.' or a '-'.
     std::string lib_path_filename = std::filesystem::path(lib).filename().string();
     if (absl::StartsWith(lib_path_filename, absl::StrCat(lib_name, ".")) ||
         absl::StartsWith(lib_path_filename, absl::StrCat(lib_name, "-"))) {
-      PL_ASSIGN_OR_RETURN(std::filesystem::path lib_path, ResolveProcessPath(proc_pid_path, lib));
+      PL_ASSIGN_OR_RETURN(std::filesystem::path lib_path, fp_resolver->ResolvePath(lib));
       lib_path = sysconfig.ToHostPath(lib_path);
       PL_RETURN_IF_ERROR(fs::Exists(lib_path));
       return lib_path;

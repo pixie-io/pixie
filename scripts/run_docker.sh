@@ -44,6 +44,7 @@ docker run --rm -it \
        -v /var/run/docker.sock:/var/run/docker.sock \
        -v /var/lib/docker:/var/lib/docker \
        -v "$HOME/.minikube:$HOME/.minikube" \
+       --pid=host -v /:/host -v /sys:/sys --env PL_HOST_PATH=/host \
        -v "$GOPATH/src/pixielabs.ai:/pl/src/pixielabs.ai" \
        ${extra_args} \
        "gcr.io/pl-dev-infra/dev_image_with_extras:$DOCKER_IMAGE_TAG" \

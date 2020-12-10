@@ -12,41 +12,10 @@ using ::pl::system::ProcParser;
 namespace pl {
 namespace stirling {
 
-// Example #1: regular process not in container
-//   ResolveProcessRootDir():   <empty>
-//
-// Example #2: container with an overlay on / (as discovered through /proc/pid/mounts)
-//   ResolveProcessRootDir():   /var/lib/docker/overlay2/402fe2...be0/merged
-pl::StatusOr<std::filesystem::path> ResolveProcessRootDir(const std::filesystem::path& proc_pid) {
-  pid_t pid = 0;
-  if (!absl::SimpleAtoi(proc_pid.filename().string(), &pid)) {
-    return error::InvalidArgument(
-        "Input is not a /proc/<pid> path, because <pid> is not a number, got: $0",
-        proc_pid.string());
-  }
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<FileSystemResolver> resolver,
-                      FileSystemResolver::Create(pid));
-  return resolver->ResolveMountPoint("/");
-}
+StatusOr<std::filesystem::path> ProcExe(const std::filesystem::path& proc_pid) {
+  std::filesystem::path proc_exe_path = proc_pid / "exe";
 
-// Example #1: regular process not in container
-//   ResolveProcessPath("/proc/123", "/usr/bin/server") -> /usr/bin/server
-//
-// Example #2: container with an overlay on /
-//   ResolveProcessPath("/proc/123", "/app/server") ->
-//   /var/lib/docker/overlay2/402fe2...be0/merged/app/server
-pl::StatusOr<std::filesystem::path> ResolveProcessPath(const std::filesystem::path& proc_pid,
-                                                       const std::filesystem::path& path) {
-  PL_ASSIGN_OR_RETURN(std::filesystem::path process_root_dir, ResolveProcessRootDir(proc_pid));
-
-  // Warning: must use JoinPath, because we are dealing with two absolute paths.
-  std::filesystem::path host_path = fs::JoinPath({&process_root_dir, &path});
-
-  return host_path;
-}
-
-pl::StatusOr<std::filesystem::path> ResolveProcExe(const std::filesystem::path& proc_pid) {
-  PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, fs::ReadSymlink(proc_pid / "exe"));
+  PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, fs::ReadSymlink(proc_exe_path));
   if (proc_exe.empty() || proc_exe == "/") {
     // Not sure what causes this, but sometimes get symlinks that point to "/".
     // Seems to happen with PIDs that are short-lived, because I can never catch it in the act.
@@ -55,17 +24,16 @@ pl::StatusOr<std::filesystem::path> ResolveProcExe(const std::filesystem::path& 
     // filter these out.
     return error::Internal("Symlink appears malformed.");
   }
-  return ResolveProcessPath(proc_pid, proc_exe);
+
+  return proc_exe;
 }
 
-pl::StatusOr<std::filesystem::path> ResolvePIDBinary(uint32_t pid,
-                                                     std::optional<int64_t> start_time) {
+StatusOr<std::filesystem::path> ProcExe(uint32_t pid, std::optional<int64_t> start_time) {
   const system::Config& sysconfig = system::Config::GetInstance();
-
-  std::filesystem::path pid_path = sysconfig.proc_path() / std::to_string(pid);
+  std::filesystem::path proc_pid = sysconfig.proc_path() / std::to_string(pid);
 
   if (start_time.has_value()) {
-    StatusOr<int64_t> pid_start_time = system::GetPIDStartTimeTicks(pid_path);
+    StatusOr<int64_t> pid_start_time = system::GetPIDStartTimeTicks(proc_pid);
     if (!pid_start_time.ok()) {
       return error::Internal("Could not determine start time of PID $0: '$1'", pid,
                              pid_start_time.status().ToString());
@@ -78,19 +46,23 @@ pl::StatusOr<std::filesystem::path> ResolvePIDBinary(uint32_t pid,
     }
   }
 
-  return ResolveProcExe(pid_path);
+  return ProcExe(proc_pid);
 }
 
 namespace {
 
 /**
- * Returns a path to an existent file (or directory) that is mounted to the input mount point
- * of the process specified by the pid. The process could belong to a different mount namespace
- * than the caller.
+ * Maps the given mount_point within a process to a mount point within the host.
+ * These mount points can be different if the process is a container.
+ *
+ * @param mount_infos Mount info for the process, which may be in a namespace.
+ * @param root_mount_infos Mount info for the host.
+ * @param mount_point The mount point to resolve.
+ * @return The mount point resolved to the host.
  */
 StatusOr<std::filesystem::path> ResolveMountPointImpl(
     const std::vector<ProcParser::MountInfo>& mount_infos,
-    const std::vector<ProcParser::MountInfo>& root_mount_info,
+    const std::vector<ProcParser::MountInfo>& root_mount_infos,
     const std::filesystem::path& mount_point) {
   std::string device_number;
   std::string device_root;
@@ -118,7 +90,7 @@ StatusOr<std::filesystem::path> ResolveMountPointImpl(
   //
   // We can access device 0:1's root through /tmp, and should return /tmp/foo/bar, through which
   // the input pid's '/tmp' can be accessed.
-  for (const auto& mount_info : root_mount_info) {
+  for (const auto& mount_info : root_mount_infos) {
     if (mount_info.dev != device_number) {
       continue;
     }
@@ -135,22 +107,43 @@ StatusOr<std::filesystem::path> ResolveMountPointImpl(
 
 }  // namespace
 
-StatusOr<std::unique_ptr<FileSystemResolver>> FileSystemResolver::Create(pid_t pid) {
+StatusOr<std::unique_ptr<FilePathResolver>> FilePathResolver::Create(pid_t pid) {
   system::ProcParser proc_parser(system::Config::GetInstance());
 
-  auto mount_resolver = std::unique_ptr<FileSystemResolver>(new FileSystemResolver());
-  PL_RETURN_IF_ERROR(proc_parser.ReadMountInfos(pid, &mount_resolver->mount_infos_));
-  PL_RETURN_IF_ERROR(proc_parser.ReadMountInfos(1, &mount_resolver->root_mount_infos_));
+  auto fp_resolver = std::unique_ptr<FilePathResolver>(new FilePathResolver());
+  PL_RETURN_IF_ERROR(proc_parser.ReadMountInfos(1, &fp_resolver->root_mount_infos_));
 
-  return mount_resolver;
+  if (pid == 1) {
+    fp_resolver->mount_infos_ = fp_resolver->root_mount_infos_;
+  } else {
+    PL_RETURN_IF_ERROR(fp_resolver->SetMountNamespace(pid));
+  }
+
+  return fp_resolver;
 }
 
-StatusOr<std::filesystem::path> FileSystemResolver::ResolveMountPoint(
+Status FilePathResolver::SetMountNamespace(pid_t pid) {
+  system::ProcParser proc_parser(system::Config::GetInstance());
+
+  if (pid_ == pid) {
+    return Status::OK();
+  }
+
+  // Set to -1 in case ReadMountInfos() fails; otherwise we'd be in a weird state.
+  pid_ = -1;
+  mount_infos_.clear();
+  PL_RETURN_IF_ERROR(proc_parser.ReadMountInfos(pid, &mount_infos_));
+  pid_ = pid;
+
+  return Status::OK();
+}
+
+StatusOr<std::filesystem::path> FilePathResolver::ResolveMountPoint(
     const std::filesystem::path& mount_point) {
   return ResolveMountPointImpl(mount_infos_, root_mount_infos_, mount_point);
 }
 
-StatusOr<std::filesystem::path> FileSystemResolver::ResolvePath(const std::filesystem::path& path) {
+StatusOr<std::filesystem::path> FilePathResolver::ResolvePath(const std::filesystem::path& path) {
   // Find the longest parent path that is accessible of the file, by resolving mount
   // point starting from the immediate parent through the root.
   for (const fs::PathSplit& path_split : fs::EnumerateParentPaths(path)) {

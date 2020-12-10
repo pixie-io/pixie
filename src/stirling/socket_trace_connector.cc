@@ -413,6 +413,8 @@ StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(const std::string& bina
   const system::Config& sysconfig = system::Config::GetInstance();
   std::filesystem::path container_lib;
 
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create());
+
   // Find the path to libssl for this binary, which may be inside a container.
   for (const auto& pid : new_pids) {
     StatusOr<absl::flat_hash_set<std::string>> libs_status = proc_parser_->GetMapPaths(pid);
@@ -421,11 +423,17 @@ StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(const std::string& bina
                                   libs_status.msg());
       continue;
     }
-    std::filesystem::path proc_pid_path = sysconfig.proc_path() / std::to_string(pid);
+
+    Status s = fp_resolver->SetMountNamespace(pid);
+    if (!s.ok()) {
+      VLOG(1) << absl::Substitute("Could not set pid namespace. Did the pid terminate?");
+      continue;
+    }
+
     for (const auto& lib : libs_status.ValueOrDie()) {
       if (absl::EndsWith(lib, kLibSSL)) {
-        StatusOr<std::filesystem::path> container_lib_status =
-            ResolveProcessPath(proc_pid_path, lib);
+        StatusOr<std::filesystem::path> container_lib_status = fp_resolver->ResolvePath(lib);
+
         if (!container_lib_status.ok()) {
           VLOG(1) << absl::Substitute("Unable to resolve libssl.so path for $0. Message: $1",
                                       binary, container_lib_status.msg());
@@ -469,9 +477,21 @@ std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
   // Convert to a map of binaries, with the upids that are instances of that binary.
   std::map<std::string, std::vector<int32_t>> new_pids;
 
+  PL_ASSIGN_OR(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create(),
+               return {});
+
   // Consider new UPIDs only.
   for (const auto& upid : upids) {
-    PL_ASSIGN_OR(std::filesystem::path exe_path, ResolvePIDBinary(upid.pid()), continue);
+    PL_ASSIGN_OR(std::filesystem::path proc_exe, ProcExe(upid.pid()), continue);
+
+    Status s = fp_resolver->SetMountNamespace(upid.pid());
+    if (!s.ok()) {
+      VLOG(1) << absl::Substitute("Could not set pid namespace. Did the pid terminate?");
+      continue;
+    }
+
+    PL_ASSIGN_OR(std::filesystem::path exe_path, fp_resolver->ResolvePath(proc_exe), continue);
+
     std::filesystem::path host_exe_path = sysconfig.ToHostPath(exe_path);
     if (!fs::Exists(host_exe_path).ok()) {
       continue;

@@ -57,7 +57,7 @@ Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_st
       exit(1);
     }
   } else {
-    // We wanted to wait until the execution has started.
+    // Wait until the execution has started.
     // Test code might still want to wait for the child process actually initiated and one can
     // interact with it.
     system::ProcParser proc_parser(system::Config::GetInstance());

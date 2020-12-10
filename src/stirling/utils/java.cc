@@ -89,8 +89,7 @@ StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
   const std::filesystem::path& host_path = sysconfig.host_path();
   ProcParser parser(sysconfig);
 
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<FileSystemResolver> fs_resolver,
-                      FileSystemResolver::Create(pid));
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create(pid));
 
   ProcParser::ProcUIDs uids;
   PL_RETURN_IF_ERROR(parser.ReadUIDs(pid, &uids));
@@ -100,7 +99,7 @@ StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
     return error::InvalidArgument("Invalid uid: '$0'", uids.effective);
   }
 
-  PL_ASSIGN_OR_RETURN(std::filesystem::path passwd_path, fs_resolver->ResolvePath("/etc/passwd"));
+  PL_ASSIGN_OR_RETURN(std::filesystem::path passwd_path, fp_resolver->ResolvePath("/etc/passwd"));
   passwd_path = fs::JoinPath({&host_path, &passwd_path});
 
   PL_ASSIGN_OR_RETURN(const std::string passwd_content, ReadFileToString(passwd_path));
@@ -121,7 +120,7 @@ StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
   std::filesystem::path hsperf_data_path =
       std::filesystem::path("/tmp") / absl::StrCat(kHspefdataPrefix, effective_user) / ns_pid;
 
-  PL_ASSIGN_OR_RETURN(hsperf_data_path, fs_resolver->ResolvePath(hsperf_data_path));
+  PL_ASSIGN_OR_RETURN(hsperf_data_path, fp_resolver->ResolvePath(hsperf_data_path));
   return fs::JoinPath({&host_path, &hsperf_data_path});
 }
 

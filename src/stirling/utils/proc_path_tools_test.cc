@@ -7,71 +7,67 @@
 namespace pl {
 namespace stirling {
 
-using ::testing::Contains;
 using ::testing::EndsWith;
-using ::testing::StartsWith;
+using ::testing::MatchesRegex;
 
-TEST(ProcPathToolsContainerTest, ResolveFunctions) {
-  DummyTestContainer container;
-  ASSERT_OK(container.Run());
-
-  std::filesystem::path proc_pid = absl::Substitute("/proc/$0", container.process_pid());
-
-  ASSERT_OK_AND_ASSIGN(std::filesystem::path root_dir, ResolveProcessRootDir(proc_pid));
-  EXPECT_THAT(root_dir, StartsWith("/var/lib/docker/overlay2/"));
-  EXPECT_THAT(root_dir, EndsWith("/merged"));
-
-  ASSERT_OK_AND_ASSIGN(std::filesystem::path process_path,
-                       ResolveProcessPath(proc_pid, "/app/foo"));
-  EXPECT_THAT(process_path, StartsWith("/var/lib/docker/overlay2/"));
-  EXPECT_THAT(process_path, EndsWith("/merged/app/foo"));
-
-  ASSERT_OK_AND_ASSIGN(std::filesystem::path proc_exe, ResolveProcExe(proc_pid));
-  EXPECT_THAT(proc_exe, StartsWith("/var/lib/docker/overlay2/"));
-  EXPECT_THAT(proc_exe, EndsWith("/merged/usr/local/bin/python3.7"));
-
-  ASSERT_OK_AND_ASSIGN(std::filesystem::path pid_binary, ResolvePIDBinary(container.process_pid()));
-  EXPECT_THAT(pid_binary, StartsWith("/var/lib/docker/overlay2/"));
-  EXPECT_THAT(pid_binary, EndsWith("/merged/usr/local/bin/python3.7"));
-}
-
-// Disabled because on Jenkins, proc_path_tools discovers the Jenkins container,
-// and this test fails. This test should only be run locally outside a container.
-// TODO(oazizi): Investigate a fix.
-TEST(ProcPathToolsNonContainerTest, DISABLED_ResolveFunctions) {
+TEST(ProcExeTest, Basic) {
   std::filesystem::path proc_pid = "/proc/self";
 
-  EXPECT_OK_AND_THAT(ResolveProcessRootDir(proc_pid), "");
+  // We expect that ProcExe resolves proc_pid to this test.
+  // The regex accounts for the fact that this source code is referenced by two tests:
+  //   1) proc_path_tools_test
+  //   2) proc_path_tools_container_test
+  const std::string kExpectedPathRegex = ".*/src/stirling/utils/proc_path_tools.*_test";
 
-  EXPECT_OK_AND_THAT(ResolveProcessPath(proc_pid, "/app/foo"), "/app/foo");
+  {
+    ASSERT_OK_AND_ASSIGN(std::filesystem::path proc_exe, ProcExe(proc_pid));
+    EXPECT_THAT(proc_exe.string(), MatchesRegex(kExpectedPathRegex));
+  }
 
-  EXPECT_OK_AND_THAT(ResolveProcExe(proc_pid), EndsWith("src/stirling/utils/proc_path_tools_test"));
-
-  EXPECT_OK_AND_THAT(ResolvePIDBinary(getpid()),
-                     EndsWith("src/stirling/utils/proc_path_tools_test"));
+  {
+    ASSERT_OK_AND_ASSIGN(std::filesystem::path proc_exe, ProcExe(getpid()));
+    EXPECT_THAT(proc_exe.string(), MatchesRegex(kExpectedPathRegex));
+  }
 }
 
-TEST(FileSystemResolver, Resolve) {
+// Don't run this test if bazel is in a container environment with PL_HOST_PATH,
+// because it will fail. This test is meant for non-container environments,
+// to ensure FilePathResolver is robust.
+#ifndef CONTAINER_ENV
+TEST(FilePathResolver, ResolveNonContainerPaths) {
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<FilePathResolver> fp_resolver,
+                       FilePathResolver::Create(getpid()));
+
+  // ResolveMountPoint
+  ASSERT_OK_AND_EQ(fp_resolver->ResolveMountPoint("/"), "/");
+  ASSERT_NOT_OK(fp_resolver->ResolveMountPoint("/bogus"));
+
+  // ResolvePath
+  ASSERT_OK_AND_EQ(fp_resolver->ResolvePath("/app/foo"), "/app/foo");
+}
+#endif
+
+// This test works on local machines.
+// If bazel is itself in a container, that container must have the following options
+//    `--pid=host -v /:/host -v /sys:/sys --env PL_HOST_PATH=/host`
+#ifdef CONTAINER_ENV
+TEST(FilePathResolver, ResolveContainerPaths) {
   DummyTestContainer container;
   ASSERT_OK(container.Run());
 
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<FileSystemResolver> fs_resolver,
-                       FileSystemResolver::Create(container.process_pid()));
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<FilePathResolver> fp_resolver,
+                       FilePathResolver::Create(container.process_pid()));
 
-  {
-    ASSERT_OK_AND_ASSIGN(std::filesystem::path path, fs_resolver->ResolveMountPoint("/"));
-    EXPECT_THAT(path, StartsWith("/var/lib/docker/overlay2/"));
-    EXPECT_THAT(path, EndsWith("/merged"));
-  }
+  // ResolveMountPoint
+  ASSERT_OK_AND_THAT(fp_resolver->ResolveMountPoint("/"),
+                     MatchesRegex("/var/lib/docker/overlay2/.*/merged"));
+  ASSERT_NOT_OK(fp_resolver->ResolveMountPoint("/bogus"));
 
-  {
-    ASSERT_OK_AND_ASSIGN(std::filesystem::path path, fs_resolver->ResolvePath("/app/foo"));
-    EXPECT_THAT(path, StartsWith("/var/lib/docker/overlay2/"));
-    EXPECT_THAT(path, EndsWith("/merged/app/foo"));
-  }
-
-  { ASSERT_NOT_OK(fs_resolver->ResolveMountPoint("/bogus")); }
+  // ResolvePath
+  ASSERT_OK_AND_THAT(fp_resolver->ResolvePath("/app/foo"),
+                     MatchesRegex("/var/lib/docker/overlay2/.*/merged/app/foo"));
 }
+#endif
 
 }  // namespace stirling
 }  // namespace pl

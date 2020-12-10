@@ -221,6 +221,11 @@ class ProcParser {
     std::string fs_type;
     // Per-superblock options (see mount(2)).
     std::string options;
+
+    std::string ToString() const {
+      return absl::Substitute("dev=$0 root=$1 mount_point=$2 fs_type=$3 options=$4", dev, root,
+                              mount_point, fs_type, options);
+    }
   };
 
   Status ReadMountInfos(pid_t pid, std::vector<MountInfo>* mount_infos) const;
