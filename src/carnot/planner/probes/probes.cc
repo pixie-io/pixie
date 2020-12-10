@@ -165,8 +165,7 @@ StatusOr<TracepointDeployment*> MutationsIR::CreateKProbeTracepointDeployment(
       std::make_unique<TracepointDeployment>(tracepoint_name, ttl_ns);
   TracepointDeployment* raw = program.get();
 
-  deployments_.emplace_back(stirling::dynamic_tracing::ir::shared::DeploymentSpec(),
-                            std::move(program));
+  bpftrace_programs_.push_back(std::move(program));
   return raw;
 }
 
@@ -249,6 +248,11 @@ Status MutationsIR::ToProto(plannerpb::CompileMutationsResponse* pb) {
     auto program_pb = pb->add_mutations()->mutable_trace();
     PL_RETURN_IF_ERROR(program->ToProto(program_pb));
     *(program_pb->mutable_deployment_spec()) = spec;
+  }
+
+  for (const auto& program : bpftrace_programs_) {
+    auto program_pb = pb->add_mutations()->mutable_trace();
+    PL_RETURN_IF_ERROR(program->ToProto(program_pb));
   }
 
   for (const auto& tracepoint_to_delete : TracepointsToDelete()) {

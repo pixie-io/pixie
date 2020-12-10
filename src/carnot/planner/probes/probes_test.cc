@@ -719,8 +719,6 @@ name: "syscall_write_bpftrace"
 ttl {
   seconds: 300
 }
-deployment_spec {
-}
 tracepoints{
   table_name: "output_table"
   bpftrace {

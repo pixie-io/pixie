@@ -297,6 +297,8 @@ class MutationsIR {
                         std::unique_ptr<TracepointDeployment>>>
       deployments_;
 
+  std::vector<std::unique_ptr<TracepointDeployment>> bpftrace_programs_;
+
   std::vector<std::shared_ptr<TracepointIR>> probes_pool_;
   std::shared_ptr<TracepointIR> current_tracepoint_;
 
