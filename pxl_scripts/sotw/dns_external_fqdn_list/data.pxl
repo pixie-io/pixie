@@ -27,7 +27,7 @@ def fqdn_list(start: str):
     df.idx2 = px.find(df.fqdn_partial, ',')
     df.fqdn = px.substring(df.fqdn_partial, 0, df.idx2 - 1)
 
-    # Filter out queries for local domain names.
+    # Filter out local domains quieres by excluding fqdns with known local domain postfix.
     df = df[not px.contains(df.fqdn,'.local')]
     df = df[not px.contains(df.fqdn,'.internal')]
 
