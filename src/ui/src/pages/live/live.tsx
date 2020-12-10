@@ -229,12 +229,6 @@ const LiveView = () => {
   }, [cancelExecution]);
 
   React.useEffect(() => {
-    if (!pxl && !id) {
-      setCommandOpen(true);
-    }
-  }, [id, pxl]);
-
-  React.useEffect(() => {
     if (isMobile) {
       setWidgetsMoveable(false);
     }

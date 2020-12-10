@@ -53,8 +53,20 @@ export function ScriptLoader() {
       const urlArgs = urlInfo.args;
       const urlScriptId = urlInfo.scriptId;
       scriptPromise.then((scripts) => {
-        const entity = matchLiveViewEntity(pathname);
-        const selectedId = entity.page === LiveViewPage.Default ? urlScriptId : LiveViewPageScriptIds.get(entity.page);
+        let entityPage;
+        let entityParams;
+
+        // default live view page should be px/cluster.
+        if ((pathname === '/live' || pathname === '/') && !pxl) {
+          entityPage = LiveViewPage.Cluster;
+          entityParams = {};
+        } else {
+          const entity = matchLiveViewEntity(pathname);
+          entityPage = entity.page;
+          entityParams = entity.params;
+        }
+
+        const selectedId = entityPage === LiveViewPage.Default ? urlScriptId : LiveViewPageScriptIds.get(entityPage);
 
         if (!scripts.has(selectedId)) {
           setLoadState((state) => {
@@ -68,13 +80,13 @@ export function ScriptLoader() {
 
         const script = scripts.get(selectedId);
         const parsedVis = parseVisOrShowError(script.vis);
-        const parsedArgs = argsForVis(parsedVis, { ...urlArgs, ...entity.params }, selectedId);
+        const parsedArgs = argsForVis(parsedVis, { ...urlArgs, ...entityParams }, selectedId);
         if (!parsedVis && !parsedArgs) {
           return;
         }
 
         const execArgs = {
-          liveViewPage: entity.page,
+          liveViewPage: entityPage,
           pxl: script.code,
           vis: parsedVis,
           args: parsedArgs,
@@ -84,7 +96,7 @@ export function ScriptLoader() {
         clearResults();
         setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
         // Use this hack because otherwise args are not set when you first load a page.
-        if (!argsForVisOrShowError(parsedVis, { ...urlArgs, ...entity.params }, selectedId)) {
+        if (!argsForVisOrShowError(parsedVis, { ...urlArgs, ...entityParams }, selectedId)) {
           return;
         }
         if (!ContainsMutation(execArgs.pxl)) {
