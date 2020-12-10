@@ -1,10 +1,22 @@
 # Copyright (c) Pixie Labs, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License")
 
+''' CQL Data Tracer
+
+This script traces all CQL (Cassandra) data on the cluster.
+'''
+
 import px
 
-t1 = px.DataFrame(table='cql_events', start_time='-30s')
 
-t2 = t1.head(n=100)
+def cql_data(start: str, num_head: int):
+    df = px.DataFrame(table='cql_events', start_time=start)
 
-px.display(t2)
+    # Replace UPID with pod.
+    df.pod = df.ctx['pod']
+    df = df.drop(['upid', 'trace_role'])
+
+    # Restrict number of results.
+    df = df.head(num_head)
+
+    return df
