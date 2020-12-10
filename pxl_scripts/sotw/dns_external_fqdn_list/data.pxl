@@ -1,0 +1,46 @@
+# Copyright (c) Pixie Labs, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+
+''' DNS Traffic FQDN List
+Lists external, fully qualified domain names (FQDNs) from all DNS traffic on the cluster for a specified amount of time.
+'''
+
+import px
+
+def fqdn_list(start: str):
+
+    # The dns_events table pairs DNS requests with their responses.
+    df = px.DataFrame(table='dns_events', start_time=start)
+
+    # Parse the DNS response to determine if it was successfully resolved.
+    df.resp_body = px.pluck(df.resp_body, 'answers')
+    df.request_resolved = px.contains(df.resp_body, 'name')
+
+    # Filter for resolved requests.
+    df = df[df.request_resolved == True]
+
+    # Parse the DNS request for query name.
+    # TODO: cleanup this logic when we support object types.
+    df.req_body = px.pluck(df.req_body, 'queries')
+    df.idx1 = px.find(df.req_body, '\"name\":')
+    df.fqdn_partial = px.substring(df.req_body, df.idx1 + 8, px.length(df.req_body) - (df.idx1 + 8) - 3)
+    df.idx2 = px.find(df.fqdn_partial, ',')
+    df.fqdn = px.substring(df.fqdn_partial, 0, df.idx2 - 1)
+
+    # Filter out local domain queries:
+    # If your k8s cluster uses a different internal domain suffix, add it here.
+    df = df[not px.contains(df.fqdn,'.local')]
+    df = df[not px.contains(df.fqdn,'.internal')]
+
+    # Add link to script that will show all requests for specific query.
+    df.link = px.script_reference('All DNS requests containing FQDN as substring', 'sotw/dns_queries_filtered', {
+        'start_time': start,
+        'query_name_filter': df.fqdn
+    })
+
+    # Group by (fqdn, link) and count number of requests.
+    df = df.groupby(['fqdn', 'link']).agg(
+        num_requests=('request_resolved', px.count)
+    )
+
+    return df

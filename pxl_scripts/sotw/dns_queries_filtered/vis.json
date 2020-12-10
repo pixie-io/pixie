@@ -1,0 +1,35 @@
+{
+  "variables": [
+    {
+      "name": "start",
+      "type": "PX_STRING",
+      "description": "The start time of the window in time units before now.",
+      "defaultValue": "-5m"
+    },
+    {
+      "name": "query_name_filter",
+      "type": "PX_STRING",
+      "description": "The partial query name used to filter the DNS requests by.",
+      "defaultValue": "your.domain.name"
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "dns_requests",
+      "func": {
+        "name": "dns_requests",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "query_name_filter",
+            "variable": "query_name_filter"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": []
+}

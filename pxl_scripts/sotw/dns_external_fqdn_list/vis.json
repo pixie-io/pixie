@@ -1,0 +1,25 @@
+{
+  "variables": [
+    {
+      "name": "start",
+      "type": "PX_STRING",
+      "description": "The start time of the window in time units before now.",
+      "defaultValue": "-5m"
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "fqdn_list",
+      "func": {
+        "name": "fqdn_list",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": []
+}
