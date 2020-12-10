@@ -240,12 +240,12 @@ const ProfileItem = ({
   };
 
   React.useEffect(() => {
-    if (!loadingTourSeen && tourSeen !== true) {
+    if (!loadingTourSeen && tourSeen !== true && inLiveView) {
       openTour();
       setTourSeen(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadingTourSeen, tourSeen]);
+  }, [loadingTourSeen, tourSeen, inLiveView]);
 
   let name = '';
   let picture = '';

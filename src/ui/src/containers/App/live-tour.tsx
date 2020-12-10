@@ -12,7 +12,10 @@ interface LiveTourContextProps {
   tourOpen: boolean;
   setTourOpen: SetStateFunc<boolean>;
 }
-export const LiveTourContext = React.createContext<LiveTourContextProps>(null);
+export const LiveTourContext = React.createContext<LiveTourContextProps>({
+  tourOpen: false,
+  setTourOpen: () => {},
+});
 export const LiveTourContextProvider = ({ children }: PropsWithChildren<{}>) => {
   const [tourOpen, setTourOpen] = React.useState<boolean>(false);
   return <LiveTourContext.Provider value={{ tourOpen, setTourOpen }}>{children}</LiveTourContext.Provider>;
