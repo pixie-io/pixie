@@ -64,6 +64,28 @@ const CtaButton = ({ children, ...props }: ButtonProps) => (
   <Button color='primary' variant='contained' {...props}>{children}</Button>
 );
 
+const trackAuthEvent = (event: string, id: string, email: string) => {
+  if (isValidAnalytics()) {
+    return Promise.race([
+      new Promise((resolve, reject) => { // Wait for analytics to be sent out before redirecting.
+        analytics.track(event, (err) => {
+          if (err) {
+            reject();
+          }
+          analytics.identify(id, { email }, {}, () => {
+            resolve();
+          });
+        });
+      }),
+      // Wait a maximum of 4s before redirecting. If it takes this long, it probably means that
+      // something in Segment failed to initialize/send.
+      new Promise((resolve) => setTimeout(resolve, 4000)),
+    ]);
+  }
+
+  return Promise.resolve();
+};
+
 /**
  * This is the main component to handle the callback from auth.
  *
@@ -97,8 +119,7 @@ export const AuthCallbackPage = () => {
     const performSignup = async (accessToken: string) => {
       try {
         const response = await Axios.post('/api/auth/signup', { accessToken });
-        analytics.identify(response.data.userInfo.userID, { email: response.data.userInfo.email });
-        analytics.track('User signed up');
+        await trackAuthEvent('User signed up', response.data.userInfo.userID, response.data.userInfo.email);
         return true;
       } catch (err) {
         analytics.track('User signup failed', { error: err.response.data });
@@ -113,22 +134,7 @@ export const AuthCallbackPage = () => {
           accessToken,
           orgName,
         });
-        analytics.identify(response.data.userInfo.userID, { email: response.data.userInfo.email });
-        if (isValidAnalytics()) {
-          await Promise.race([
-            new Promise((resolve, reject) => { // Wait for analytics to be sent out before redirecting.
-              analytics.track('User logged up', (err) => {
-                if (err) {
-                  reject();
-                }
-                resolve();
-              });
-            }),
-            // Wait a maximum of 6s before redirecting. If it takes this long, it probably means that
-            // something in Segment failed to initialize/send.
-            new Promise((resolve) => setTimeout(resolve, 6000)),
-          ]);
-        }
+        await trackAuthEvent('User logged in', response.data.userInfo.userID, response.data.userInfo.email);
         return true;
       } catch (err) {
         analytics.track('User signup failed', { error: err.response.data });

@@ -10,6 +10,7 @@ export const LogoutPage = () => {
     Axios.post('/api/auth/logout').then(() => {
       localStorage.clear();
       sessionStorage.clear();
+      analytics.reset();
       RedirectUtils.redirect('', {});
     });
   }, []);

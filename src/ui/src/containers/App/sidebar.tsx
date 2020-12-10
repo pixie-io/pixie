@@ -163,6 +163,7 @@ const styles = (
 export const GET_USER_INFO = gql`
 {
   user {
+    id
     email
     name
     picture
@@ -250,9 +251,18 @@ const ProfileItem = ({
   let name = '';
   let picture = '';
   let email = '';
+  let id = '';
   if (data?.user) {
-    ({ name, picture, email } = data.user);
+    ({
+      name, picture, email, id,
+    } = data.user);
   }
+
+  React.useEffect(() => {
+    if (id) {
+      analytics.identify(id, { email });
+    }
+  }, [id, email]);
 
   return (
     <ListItem button onClick={openMenu} key='Profile' className={classes.profileIcon}>
