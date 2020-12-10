@@ -37,6 +37,7 @@ import { SidebarContext } from 'context/sidebar-context';
 import { LiveTourContext, LiveTourDialog } from 'containers/App/live-tour';
 import ExploreIcon from '@material-ui/icons/Explore';
 import { useSetting } from 'common/use-setting';
+import { LayoutContext } from 'context/layout-context';
 
 const styles = (
   {
@@ -213,6 +214,8 @@ const ProfileItem = ({
   const { setTourOpen } = React.useContext(LiveTourContext);
   const [tourSeen, setTourSeen, loadingTourSeen] = useSetting('tourSeen');
   const [wasSidebarOpenBeforeTour, setWasSidebarOpenBeforeTour] = React.useState<boolean>(false);
+  const [wasDrawerOpenBeforeTour, setWasDrawerOpenBeforeTour] = React.useState<boolean>(false);
+  const { setDataDrawerOpen } = React.useContext(LayoutContext);
   const [anchorEl, setAnchorEl] = React.useState(null);
   const shortcuts = React.useContext(LiveShortcutsContext);
   const { inLiveView } = React.useContext(SidebarContext);
@@ -233,11 +236,16 @@ const ProfileItem = ({
       setWasSidebarOpenBeforeTour(current);
       return false;
     });
+    setDataDrawerOpen((current) => {
+      setWasDrawerOpenBeforeTour(current);
+      return false;
+    });
   };
 
   const closeTour = () => {
     setTourOpen(false);
     setSidebarOpen(wasSidebarOpenBeforeTour);
+    setDataDrawerOpen(wasDrawerOpenBeforeTour);
   };
 
   React.useEffect(() => {
