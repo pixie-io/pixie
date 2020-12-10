@@ -55,6 +55,17 @@ size_t DataStream::AppendEvents(protocols::EventParser* parser) const {
     if (pos + next_offset != next_pos) {
       // If not expected, it should be a missing event,
       // not a position that goes backwards, which would imply overlapping events.
+#ifndef NDEBUG
+      if (pos + next_offset < next_pos) {
+        LOG(ERROR) << absl::Substitute(
+            "Event appears to go backwards. [pos=$0 next_offset=$1 next_pos=$2]", pos, next_offset,
+            next_pos);
+        for (const auto& [pos, event] : events_) {
+          LOG(ERROR) << absl::Substitute("[conn_id=$0] pos=$1", ToString(event->attr.conn_id), pos);
+        }
+      }
+#endif
+
       DCHECK_GT(pos + next_offset, next_pos);
       break;
     }
