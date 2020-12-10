@@ -167,7 +167,6 @@ func (s *StatsHandler) HandleK8sUpdate(msg *K8sMessage) {
 	case "endpoints":
 		e, ok := msg.Object.(*v1.Endpoints)
 		if !ok {
-			log.Errorf("stats: unexpected value for endpoint")
 			return
 		}
 		size = proto.Size(e)
@@ -175,7 +174,6 @@ func (s *StatsHandler) HandleK8sUpdate(msg *K8sMessage) {
 	case "namespaces":
 		e, ok := msg.Object.(*v1.Namespace)
 		if !ok {
-			log.Errorf("stats: unexpected value for namespace")
 			return
 		}
 		size = proto.Size(e)
@@ -183,7 +181,6 @@ func (s *StatsHandler) HandleK8sUpdate(msg *K8sMessage) {
 	case "nodes":
 		e, ok := msg.Object.(*v1.Node)
 		if !ok {
-			log.Errorf("stats: unexpected value for node")
 			return
 		}
 		size = proto.Size(e)
@@ -191,7 +188,6 @@ func (s *StatsHandler) HandleK8sUpdate(msg *K8sMessage) {
 	case "pods":
 		e, ok := msg.Object.(*v1.Pod)
 		if !ok {
-			log.Errorf("stats: unexpected value for pod")
 			return
 		}
 		size = proto.Size(e)
@@ -199,7 +195,6 @@ func (s *StatsHandler) HandleK8sUpdate(msg *K8sMessage) {
 	case "services":
 		e, ok := msg.Object.(*v1.Service)
 		if !ok {
-			log.Errorf("stats: unexpected value for service")
 			return
 		}
 		size = proto.Size(e)

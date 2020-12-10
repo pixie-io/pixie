@@ -30,6 +30,9 @@ const MaxUpdatesToDequeue int = 100
 // MaxBytesToDequeue is the maximum number of bytes we should dequeue at a time. We can dequeue .9MB.
 const MaxBytesToDequeue int = 900000
 
+// ErrAgentQueueFull is an error that occurs when the agent update queue is full and no more updates can be queued.
+var ErrAgentQueueFull = errors.New("Agent queue full, could not add to queue")
+
 // AgentUpdate describes the update info for a given agent.
 type AgentUpdate struct {
 	UpdateInfo *messagespb.AgentUpdateInfo
@@ -519,7 +522,7 @@ func (m *AgentManagerImpl) AddToFrontOfAgentQueue(agentID string, value *metadat
 	defer currQueue.Mu.Unlock()
 
 	if len(currQueue.FailedQueue) >= MaxAgentUpdates {
-		return errors.New("Agent queue full, could not add to queue")
+		return ErrAgentQueueFull
 	}
 	currQueue.FailedQueue <- value
 	return nil
@@ -610,7 +613,7 @@ func (m *AgentManagerImpl) HandleUpdate(update *UpdateMessage) {
 
 	for _, agent := range allAgents {
 		err = m.AddUpdatesToAgentQueue(agent, []*metadatapb.ResourceUpdate{updatePb})
-		if err != nil {
+		if err != nil && err != ErrAgentQueueFull {
 			log.WithError(err).Error("Could not write service update to agent update queue.")
 		}
 	}
@@ -623,7 +626,7 @@ func (m *AgentManagerImpl) AddUpdatesToAgentQueue(agentID string, updates []*met
 	defer currQueue.Mu.Unlock()
 
 	if len(currQueue.Queue)+len(updates) >= MaxAgentUpdates {
-		return errors.New("Agent queue full, could not add to queue")
+		return ErrAgentQueueFull
 	}
 	for _, update := range updates {
 		currQueue.Queue <- update
