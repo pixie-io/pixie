@@ -1,6 +1,8 @@
 import clsx from 'clsx';
 import * as React from 'react';
 import { DraggableCore } from 'react-draggable';
+import Menu from '@material-ui/core/Menu';
+import MenuItem from '@material-ui/core/MenuItem';
 
 import {
   Column,
@@ -27,11 +29,13 @@ import {
 import Tooltip from '@material-ui/core/Tooltip';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
+import MenuIcon from '@material-ui/icons/Menu';
 import { CSSProperties, MutableRefObject } from 'react';
 import { clamp } from 'utils/math';
 import withAutoSizer, { WithAutoSizerProps } from 'utils/autosizer';
 import { ExpandedIcon } from 'components/icons/expanded';
 import { UnexpandedIcon } from 'components/icons/unexpanded';
+import { Button, Checkbox, FormControlLabel } from '@material-ui/core';
 import {
   MAX_COL_PX_WIDTH,
   MIN_COL_PX_WIDTH,
@@ -150,6 +154,20 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     cursor: 'pointer',
     textTransform: 'uppercase',
   },
+  gutterHeader: {
+    display: 'flex',
+    justifyContent: 'center',
+    position: 'relative',
+    width: '100%',
+    overflow: 'hidden',
+
+    '& svg': {
+      fontSize: theme.typography.h3.fontSize,
+    },
+  },
+  noPointerEvents: {
+    pointerEvents: 'none',
+  },
   gutterCell: {
     paddingLeft: '0px',
     flex: 'auto',
@@ -240,6 +258,46 @@ const DataTable = withAutoSizer<DataTableProps>(
 
 export { DataTable };
 
+interface ColumnDisplaySelectorProps {
+  options: string[];
+  selected: string[];
+  onChange: React.Dispatch<React.SetStateAction<string[]>>;
+}
+
+const ColumnDisplaySelector: React.FC<ColumnDisplaySelectorProps> = ({ options, selected, onChange }) => {
+  const classes = useStyles();
+  const [open, setOpen] = React.useState<boolean>(false);
+  const anchorEl = React.useRef<HTMLButtonElement>(null);
+  const toggleOption = (dataKey: string) => {
+    if (selected.includes(dataKey)) {
+      // Don't allow deselecting every column, at least one must always be available or the table breaks.
+      if (selected.length > 1) {
+        onChange(selected.filter((k) => k !== dataKey));
+      }
+    } else {
+      onChange([...selected, dataKey]);
+    }
+  };
+  return (
+    <>
+      <Menu open={open} anchorEl={anchorEl.current} onBackdropClick={() => setOpen(false)}>
+        {options.map((dataKey) => (
+          <MenuItem key={dataKey} button onClick={() => toggleOption(dataKey)}>
+            <FormControlLabel
+              className={classes.noPointerEvents}
+              control={<Checkbox disableRipple checked={selected.includes(dataKey)} />}
+              label={dataKey}
+            />
+          </MenuItem>
+        ))}
+      </Menu>
+      <Button onClick={() => setOpen(!open)} ref={anchorEl}>
+        <MenuIcon />
+      </Button>
+    </>
+  );
+};
+
 const InternalDataTable = ({
   columns,
   onRowClick = () => {},
@@ -271,12 +329,17 @@ const InternalDataTable = ({
     {},
   );
 
+  const [shownColumns, setShownColumns] = React.useState<string[]>([]);
+  React.useEffect(() => {
+    setShownColumns(columns.map((c) => c.dataKey));
+  }, [columns]);
+
   const totalWidth = React.useRef<number>(0);
   const colTextWidthRatio = React.useMemo<{ [dataKey: string]: number }>(() => {
     totalWidth.current = 0;
     const colsWidth: { [dataKey: string]: number } = {};
     const measuringContext = document.createElement('canvas').getContext('2d');
-    columns.forEach((col) => {
+    columns.filter((c) => shownColumns.includes(c.dataKey)).forEach((col) => {
       let w = col.width || null;
       if (!w) {
         const row = rowGetter(0);
@@ -295,7 +358,7 @@ const InternalDataTable = ({
       totalWidth.current += colsWidth[col.dataKey];
     });
     // Ensure the total is at least as wide as the available space, and not so wide as to violate column max widths.
-    const [minTotal, maxTotal] = tableWidthLimits(columns.length, width);
+    const [minTotal, maxTotal] = tableWidthLimits(shownColumns.length, width);
     totalWidth.current = clamp(totalWidth.current, minTotal, maxTotal);
 
     const ratio: { [dataKey: string]: number } = {};
@@ -305,7 +368,7 @@ const InternalDataTable = ({
     });
     return ratio;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [columns, rowGetter, rowCount, width]);
+  }, [columns, shownColumns, rowGetter, rowCount, width]);
 
   const rowGetterWrapper = React.useCallback(({ index }) => rowGetter(index), [
     rowGetter,
@@ -368,7 +431,7 @@ const InternalDataTable = ({
         sortDirection: sortState.direction,
       });
     }
-  }, [columns, onSortWrapper, sortState]);
+  }, [columns, shownColumns, onSortWrapper, sortState]);
 
   const onRowClickWrapper = React.useCallback(
     ({ index }) => {
@@ -408,15 +471,17 @@ const InternalDataTable = ({
   const resizeColumn = React.useCallback(
     ({ dataKey, deltaX }) => {
       setColumnWidthOverride((state) => {
-        const startingRatios: StartingRatios = columns.map((col) => {
-          const key = col.dataKey;
-          const isDefault = state[key] == null;
-          return {
-            key,
-            isDefault,
-            ratio: state[key] || colTextWidthRatio[key],
-          };
-        });
+        const startingRatios: StartingRatios = columns
+          .filter((c) => shownColumns.includes(c.dataKey))
+          .map((col) => {
+            const key = col.dataKey;
+            const isDefault = state[key] == null;
+            return {
+              key,
+              isDefault,
+              ratio: state[key] || colTextWidthRatio[key],
+            };
+          });
         const { newTotal, sizes } = userResizeColumn(
           dataKey,
           deltaX,
@@ -429,10 +494,10 @@ const InternalDataTable = ({
       });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [width, colTextWidthRatio, columns],
+    [width, colTextWidthRatio, columns, shownColumns],
   );
 
-  const colIsResizable = (idx: number): boolean => (resizableColumns || true) && idx !== columns.length - 1;
+  const colIsResizable = (idx: number): boolean => (resizableColumns || true) && idx !== shownColumns.length - 1;
 
   const resetColumn = (dataKey: string) => {
     setColumnWidthOverride((overrides) => {
@@ -475,6 +540,7 @@ const InternalDataTable = ({
     colTextWidthRatio,
     widthOverrides,
     columns,
+    shownColumns,
   ]);
 
   const [wasAtTop, setWasAtTop] = React.useState<boolean>(false);
@@ -580,22 +646,24 @@ const InternalDataTable = ({
 
   const headerRenderer: TableHeaderRenderer = React.useCallback(
     (props: TableHeaderProps) => (
-      <>
-        <React.Fragment key={props.dataKey}>
-          {headerRendererCommon(props)}
-        </React.Fragment>
-      </>
+      <React.Fragment key={props.dataKey}>
+        {headerRendererCommon(props)}
+      </React.Fragment>
     ),
     [headerRendererCommon],
   );
 
   const gutterHeaderRenderer: TableHeaderRenderer = React.useCallback(
     (props: TableHeaderProps) => (
-      <>
-        <React.Fragment key={props.dataKey} />
-      </>
+      <div key={props.dataKey} className={classes.gutterHeader}>
+        <ColumnDisplaySelector
+          options={columns.map((c) => c.dataKey)}
+          selected={shownColumns}
+          onChange={setShownColumns}
+        />
+      </div>
     ),
-    [],
+    [columns, shownColumns, classes.gutterHeader],
   );
 
   const gutterCellRenderer: TableCellRenderer = React.useCallback(
@@ -657,28 +725,26 @@ const InternalDataTable = ({
     (props: TableHeaderProps) => {
       const { dataKey } = props;
       return (
-        <>
-          <React.Fragment key={dataKey}>
-            {headerRendererCommon(props)}
-            <DraggableCore
-              onDrag={(event, { deltaX }) => {
-                resizeColumn({
-                  dataKey,
-                  deltaX,
-                });
+        <React.Fragment key={dataKey}>
+          {headerRendererCommon(props)}
+          <DraggableCore
+            onDrag={(event, { deltaX }) => {
+              resizeColumn({
+                dataKey,
+                deltaX,
+              });
+            }}
+          >
+            <span
+              className={classes.dragHandle}
+              onDoubleClick={() => {
+                resetColumn(dataKey);
               }}
             >
-              <span
-                className={classes.dragHandle}
-                onDoubleClick={() => {
-                  resetColumn(dataKey);
-                }}
-              >
-                &#8942;
-              </span>
-            </DraggableCore>
-          </React.Fragment>
-        </>
+              &#8942;
+            </span>
+          </DraggableCore>
+        </React.Fragment>
       );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -723,7 +789,7 @@ const InternalDataTable = ({
             columnData={null}
           />
         )}
-        {columns.map((col, i) => {
+        {columns.filter((col) => shownColumns.includes(col.dataKey)).map((col, i) => {
           const className = clsx(
             classes.cell,
             classes[col.align],
