@@ -12,20 +12,20 @@ def fqdn_list(start: str):
     # The dns_events table pairs DNS requests with their responses.
     df = px.DataFrame(table='dns_events', start_time=start)
 
-    # Parse the DNS respoonse to determine if it was successfully resolved.
+    # Parse the DNS response to determine if it was successfully resolved.
     df.resp_body = px.pluck(df.resp_body, 'answers')
     df.request_resolved = px.contains(df.resp_body, 'name')
 
+    # Filter for resolved requests.
+    df = df[df.request_resolved == True]
+
     # Parse the DNS request for query name.
-    # TODO: cleanup this logic when we support object types
+    # TODO: cleanup this logic when we support object types.
     df.req_body = px.pluck(df.req_body, 'queries')
     df.idx1 = px.find(df.req_body, '\"name\":')
     df.fqdn_partial = px.substring(df.req_body, df.idx1 + 8, px.length(df.req_body) - (df.idx1 + 8) - 3)
     df.idx2 = px.find(df.fqdn_partial, ',')
     df.fqdn = px.substring(df.fqdn_partial, 0, df.idx2 - 1)
-
-    # Filter for resolved requests.
-    df = df[df.request_resolved == True]
 
     # Filter out queries for local domain names.
     df = df[not px.contains(df.fqdn,'.local')]
