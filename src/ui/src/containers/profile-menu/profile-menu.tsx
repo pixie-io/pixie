@@ -23,6 +23,7 @@ import { LiveShortcutsContext } from '../live/shortcuts';
 export const GET_USER_INFO = gql`
 {
   user {
+    id
     email
     name
     picture

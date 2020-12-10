@@ -7,6 +7,7 @@ import { useApolloClient } from '@apollo/react-hooks';
 const GET_USER_ORG = gql`
 {
   user {
+    id
     orgName
   }
 }

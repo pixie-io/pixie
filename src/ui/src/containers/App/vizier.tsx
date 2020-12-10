@@ -34,6 +34,7 @@ export const LIST_CLUSTERS = gql`
 const GET_USER = gql`
 {
   user {
+    id
     email
     orgName
   }
