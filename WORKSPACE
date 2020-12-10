@@ -320,8 +320,8 @@ go_repository(
 go_repository(
     name = "com_github_sirupsen_logrus",
     importpath = "github.com/sirupsen/logrus",
-    sum = "h1:SPIRibHv4MatM3XXNO2BJeFLZwZ2LvZgfQ5+UNI2im4=",
-    version = "v1.4.2",
+    sum = "h1:ShrD1U9pZB12TX0cVy0DtePoCH97K8EtX+mg7ZARUtM=",
+    version = "v1.7.0",
 )
 
 go_repository(
@@ -364,20 +364,6 @@ go_repository(
     importpath = "github.com/mattn/go-isatty",
     sum = "h1:d5US/mDsogSGW37IV293h//ZFaeajb69h+EHFsv2xGg=",
     version = "v0.0.9",
-)
-
-go_repository(
-    name = "com_github_mgutz_ansi",
-    importpath = "github.com/mgutz/ansi",
-    sum = "h1:j7+1HpAFS1zy5+Q4qx1fWh90gTKwiN4QCGoY9TWyyO4=",
-    version = "v0.0.0-20170206155736-9520e82c474b",
-)
-
-go_repository(
-    name = "com_github_x_cray_logrus_prefixed_formatter",
-    importpath = "github.com/x-cray/logrus-prefixed-formatter",
-    sum = "h1:00txxvfBM9muc0jiLIEAkAcIMJzfthRT6usrui8uGmg=",
-    version = "v0.5.2",
 )
 
 go_repository(

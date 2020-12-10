@@ -6,13 +6,14 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"github.com/zenazn/goji/web/mutil"
+	version "pixielabs.ai/pixielabs/src/shared/version/go"
 )
 
 func init() {
-	formatter := new(prefixed.TextFormatter)
-	log.SetFormatter(formatter)
+	if version.GetVersion().IsDev() {
+		log.SetReportCaller(true)
+	}
 }
 
 // SetupServiceLogging sets up a consistent logging env for all services.

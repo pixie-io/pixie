@@ -58,7 +58,6 @@ require (
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lib/pq v1.3.0
 	github.com/mattn/go-runewidth v0.0.8
-	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/nats-io/nats-server/v2 v2.1.4
 	github.com/nats-io/nats-streaming-server v0.17.0
@@ -77,7 +76,7 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c // indirect
 	github.com/shopspring/decimal v0.0.0-20190905144223-a36b5d85f337 // indirect
-	github.com/sirupsen/logrus v1.4.2
+	github.com/sirupsen/logrus v1.7.0
 	github.com/skratchdot/open-golang v0.0.0-20190402232053-79abb63cd66e
 	github.com/spf13/cast v1.3.0
 	github.com/spf13/cobra v1.0.0
@@ -86,7 +85,6 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/txn2/txeh v1.2.1
 	github.com/vbauerster/mpb/v4 v4.11.0
-	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	github.com/zenazn/goji v0.9.1-0.20160507202103-64eb34159fe5
 	golang.org/x/image v0.0.0-20190321063152-3fc05d484e9f // indirect
