@@ -1,7 +1,7 @@
 # Copyright (c) Pixie Labs, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License")
 
-''' HTTP Data Tracer
+''' HTTP Data Tracer Demo Script
 
 This script traces all HTTP/HTTP2 data on the cluster,
 and displays a very terse synopsis.
