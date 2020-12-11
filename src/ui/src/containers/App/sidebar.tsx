@@ -215,7 +215,7 @@ const ProfileItem = ({
   const [tourSeen, setTourSeen, loadingTourSeen] = useSetting('tourSeen');
   const [wasSidebarOpenBeforeTour, setWasSidebarOpenBeforeTour] = React.useState<boolean>(false);
   const [wasDrawerOpenBeforeTour, setWasDrawerOpenBeforeTour] = React.useState<boolean>(false);
-  const { setDataDrawerOpen } = React.useContext(LayoutContext);
+  const { setDataDrawerOpen } = React.useContext(LayoutContext) ?? { setDataDrawerOpen: () => {} };
   const [anchorEl, setAnchorEl] = React.useState(null);
   const shortcuts = React.useContext(LiveShortcutsContext);
   const { inLiveView } = React.useContext(SidebarContext);
