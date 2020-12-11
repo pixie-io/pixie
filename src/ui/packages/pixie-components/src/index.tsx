@@ -100,6 +100,7 @@ export { ServiceIcon } from './components/icons/service';
 export { SettingsIcon } from './components/icons/settings';
 
 export { PixieCommandIcon } from './components/icons/pixie-command';
+export { PixieCommandHint } from './components/icons/pixie-command-hint';
 export { PixieLogo } from './components/icons/pixie-logo';
 
 export { scrollbarStyles, DARK_THEME } from './mui-theme';

@@ -1,6 +1,6 @@
 import {
   CommandAutocomplete, TabSuggestion,
-  TabStop, PixieCommandIcon,
+  TabStop, PixieCommandIcon, PixieCommandHint,
 } from 'pixie-components';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
@@ -8,7 +8,9 @@ import gql from 'graphql-tag';
 import { useApolloClient } from '@apollo/react-hooks';
 import ClusterContext from 'common/cluster-context';
 
-import { createStyles, makeStyles, Theme } from '@material-ui/core';
+import {
+  Button, createStyles, makeStyles, Theme, Tooltip,
+} from '@material-ui/core';
 import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 
@@ -49,35 +51,46 @@ interface CurrentInput {
 
 const useHintStyles = makeStyles((theme: Theme) => (createStyles({
   hotkeyHint: {
+    color: theme.typography.h3.color,
     opacity: 0.6,
-    fontSize: '75%',
     flex: '0 0 auto',
     position: 'relative',
     bottom: theme.spacing(0.25), // Vertically aligns the shift/enter symbols with lowercase letters
-    pointerEvents: 'none',
     userSelect: 'none',
     paddingLeft: theme.spacing(1.25),
 
-    '& code': {
-      border: '1px rgba(255, 255, 255, 0.5) solid',
-      borderRadius: theme.spacing(0.25),
-      padding: `${theme.spacing(0.625)}px ${theme.spacing(1)}px`,
-    },
+    '& svg': {
+      pointerEvents: 'none',
+      fill: 'transparent',
+      stroke: 'currentColor',
+      width: 'auto',
 
-    '& span': {
-      margin: '0 0.5em',
+      '& > *': {
+        strokeWidth: '15',
+      },
     },
   },
 })));
 
-const PixieCommandSubmitHint: React.FC = () => {
+const PixieCommandSubmitHint: React.FC<{execute: () => void; disabled: boolean}> = ({ execute, disabled }) => {
   const classes = useHintStyles();
+  const disabledHint = 'Enter a valid command, then click or press Shift+Enter';
+  const activeHint = 'Click or press Shift+Enter to run';
+  // The extra wrapper div is to prevent the tooltip from disabling itself when the button is disabled (MUI feature).
   return (
-    <span className={classes.hotkeyHint} tabIndex={-1} aria-label='Press Shift+Enter to run this command'>
-      <code>{'\u21E7' /* Shift as shown on many older keyboards */}</code>
-      <span>+</span>
-      <code>{'\u23CE' /* Enter as shown on many older keyboards */}</code>
-    </span>
+    <Tooltip title={disabled ? disabledHint : activeHint} enterDelay={200}>
+      <div>
+        <Button
+          onClick={execute}
+          className={classes.hotkeyHint}
+          tabIndex={-1}
+          disabled={disabled}
+          aria-label={disabled ? disabledHint : activeHint}
+        >
+          <PixieCommandHint />
+        </Button>
+      </div>
+    </Tooltip>
   );
 };
 
@@ -129,14 +142,14 @@ const CommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
         setIsValid(data.autocomplete.isExecutable);
         setTabStops(ParseFormatStringToTabStops(data.autocomplete.formattedInput));
         const completions = data.autocomplete.tabSuggestions.map((s) => {
-          const suggestions = s.suggestions.map((sugg, i) => ({
+          const suggestions = s.suggestions.map((suggestion, i) => ({
             type: 'item',
-            id: sugg.name + i,
-            title: sugg.name,
-            itemType: entityTypeToString(sugg.kind),
-            description: sugg.description,
-            highlights: sugg.matchedIndexes,
-            state: sugg.state,
+            id: suggestion.name + i,
+            title: suggestion.name,
+            itemType: entityTypeToString(suggestion.kind),
+            description: suggestion.description,
+            highlights: suggestion.matchedIndexes,
+            state: suggestion.state,
           }));
 
           return {
@@ -152,7 +165,7 @@ const CommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
 
   // Make an API call to get a list of initial suggestions when the command input is first loaded.
   React.useEffect(() => {
-    onChange('', 0, 'EDIT', null);
+    onChange('', 0, 'EDIT', null).then();
     // We only want this useEffect to be called the first time the command input is loaded.
     // eslint-disable-next-line
   }, []);
@@ -201,7 +214,7 @@ const CommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
           placeholder='Type a script or entity...'
           isValid={isValid}
           prefix={<PixieCommandIcon />}
-          suffix={<PixieCommandSubmitHint />}
+          suffix={<PixieCommandSubmitHint execute={onSubmit} disabled={!isValid} />}
         />
       </Card>
     </Modal>
