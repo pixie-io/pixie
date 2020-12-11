@@ -13,6 +13,7 @@ import {
 } from '@material-ui/core/styles';
 import { IndexRange } from 'react-virtualized';
 import { Arguments } from 'utils/args-utils';
+import clsx from 'clsx';
 import { ColumnDisplayInfo, displayInfoFromColumn, titleFromInfo } from './column-display-info';
 import { parseRows } from './parsers';
 import { vizierCellRenderer } from './renderers';
@@ -72,7 +73,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
     table, prettyRender = false, expandable = false, expandedRenderer,
     clusterName = null,
     onRowSelectionChanged = noop,
-    onRowsRendered = () => {},
+    onRowsRendered = () => { },
     propagatedArgs = null,
   } = props;
   const [rows, setRows] = React.useState([]);
@@ -204,8 +205,13 @@ export const VizierDataTableWithDetails = (props: { table: Table }) => {
   }, [setDetails]);
 
   const classes = useStyles();
+  const dataTableClass = clsx(
+    'fs-exclude',
+    classes.root,
+  );
+
   return (
-    <div className={classes.root}>
+    <div className={dataTableClass}>
       <div className={classes.table}>
         <VizierDataTable prettyRender expandable={false} table={props.table} onRowSelectionChanged={onRowSelection} />
       </div>
