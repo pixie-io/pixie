@@ -536,12 +536,6 @@ def checkoutAndInitialize() {
   }
 }
 
-def enableForCC(Closure body) {
-  if (shFileExists('bazel_cc_changed')) {
-    body()
-  }
-}
-
 def enableForTargets(String targetName, Closure body) {
   if (!shFileEmpty("bazel_buildables_${targetName}") || !shFileEmpty("bazel_tests_${targetName}")) {
     body()
@@ -672,30 +666,31 @@ if (runBPFWithTSAN) {
 
 def generateTestTargets = {
   enableForTargets('clang_opt') {
-      builders['Build & Test (clang:opt + UI)'] = buildAndTestOptWithUI
+    builders['Build & Test (clang:opt + UI)'] = buildAndTestOptWithUI
   }
 
-  enableForCC {
+  enableForTargets('clang_tidy') {
     builders['Clang-Tidy'] = buildClangTidy
+  }
 
-    enableForTargets('clang_dbg') {
-      builders['Build & Test (dbg)'] = buildDbg
-    }
+  enableForTargets('clang_dbg') {
+    builders['Build & Test (dbg)'] = buildDbg
+  }
 
-    enableForTargets('sanitizer') {
-      builders['Build & Test (asan)'] = buildASAN
-    }
+  enableForTargets('sanitizer') {
+    builders['Build & Test (asan)'] = buildASAN
+  }
 
-    enableForTargets('sanitizer') {
-      builders['Build & Test (tsan)'] = buildTSAN
-    }
-    enableForTargets('gcc_opt') {
-      builders['Build & Test (gcc:opt)'] = buildGCC
-    }
+  enableForTargets('sanitizer') {
+    builders['Build & Test (tsan)'] = buildTSAN
+  }
 
-    enableForTargets('bpf') {
-      builders['Build & Test (bpf tests - opt)'] = buildAndTestBPFOpt
-    }
+  enableForTargets('gcc_opt') {
+    builders['Build & Test (gcc:opt)'] = buildGCC
+  }
+
+  enableForTargets('bpf') {
+    builders['Build & Test (bpf tests - opt)'] = buildAndTestBPFOpt
   }
 }
 
@@ -756,7 +751,7 @@ builders['Lint & Docs'] = {
       sh 'arc lint --trace'
     }
 
-    enableForCC {
+    if (shFileExists('run_doxygen')) {
       def stashName = 'doxygen-docs'
       container('pxbuild') {
         sh 'doxygen'

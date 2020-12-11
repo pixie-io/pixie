@@ -137,9 +137,12 @@ ${bazel_query} "kind(cc_test, attr('tags', 'requires_bpf', ${tests_kind})) \
   ${sanitizer_only}" > bazel_tests_bpf_sanitizer
 
 # Should we run clang-tidy?
-${bazel_query} "kind(cc_binary, ${buildables_kind})" > bazel_buildables_cc
-${bazel_query} "kind(cc_test, ${tests_kind})" > bazel_tests_cc
+${bazel_query} "kind(cc_binary, ${buildables_kind})" > bazel_buildables_clang_tidy
+${bazel_query} "kind(cc_test, ${tests_kind})" > bazel_tests_clang_tidy
 
-if [ "${all_targets}" = "true" ] || [[ -s bazel_buildables_cc ]] || [[ -s bazel_tests_cc ]]; then
-  touch bazel_cc_changed
+# Should we run doxygen?
+bazel_buildables_cc=$(${bazel_query} "kind(cc_binary, ${buildables_kind})")
+bazel_tests_cc=$(${bazel_query} "kind(cc_binary, ${buildables_kind})")
+if [ "${all_targets}" = "true" ] || [[ -z $bazel_buildables_cc ]] || [[ -z $bazel_tests_cc ]]; then
+  touch run_doxygen
 fi
