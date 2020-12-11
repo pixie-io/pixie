@@ -54,7 +54,6 @@ spec:
             optional: true
         ports:
         - containerPort: 50800
-          hostPort: 50800
         volumeMounts:
         - mountPath: /certs
           name: certs
