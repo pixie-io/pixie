@@ -486,9 +486,9 @@ pl_cc_test(
     ],
     flaky = True,
     tags = [
-        "requires_bpf",
         "exclusive",
         "no_asan",
+        "requires_bpf",
     ],
     deps = [
         ":cc_library",
@@ -617,6 +617,28 @@ sh_test(
         "exclusive",
     ],
     deps = ["//src/stirling/scripts:sh_library"],
+)
+
+sh_test(
+    name = "stirling_wrapper_bpftrace_test",
+    srcs = ["stirling_wrapper_bpftrace_test.sh"],
+    args = [
+        "$(location :stirling_wrapper)",
+        "$(location //src/stirling/testing:tcpdrop_bpftrace_script)",
+    ],
+    data = [
+        ":stirling_wrapper",
+        "//src/stirling/testing:tcpdrop_bpftrace_script",
+    ],
+    tags = [
+        "requires_bpf",
+        # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
+        # which will emit warnings, that will then be considered a test failure.
+        "exclusive",
+    ],
+    deps = [
+        "//src/stirling/scripts:sh_library",
+    ],
 )
 
 sh_test(

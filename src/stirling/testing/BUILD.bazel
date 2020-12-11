@@ -13,3 +13,8 @@ pl_cc_library(
         "//src/stirling:cc_library",
     ],
 )
+
+filegroup(
+    name = "tcpdrop_bpftrace_script",
+    srcs = ["tcpdrop.bpftrace.pxl"],
+)
