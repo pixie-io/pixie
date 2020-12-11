@@ -160,9 +160,10 @@ inline std::string ToString(const traffic_class_t& tcls) {
 }
 
 inline std::string ToString(const socket_data_event_t::attr_t& attr) {
-  return absl::Substitute("[ts=$0 conn_id=$1 tcls=$2 dir=$3 ssl=$4 pos=$5 size=$6]",
+  return absl::Substitute("[ts=$0 conn_id=$1 tcls=$2 dir=$3 ssl=$4 pos=$5 size=$6 buf_size=$7]",
                           attr.timestamp_ns, ToString(attr.conn_id), ToString(attr.traffic_class),
-                          magic_enum::enum_name(attr.direction), attr.ssl, attr.pos, attr.msg_size);
+                          magic_enum::enum_name(attr.direction), attr.ssl, attr.pos, attr.msg_size,
+                          attr.msg_buf_size);
 }
 
 inline std::string ToString(const close_event_t& event) {

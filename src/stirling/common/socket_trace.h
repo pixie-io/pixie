@@ -44,6 +44,11 @@ struct SocketDataEvent {
     msg.assign(static_cast<const char*>(data) + offsetof(socket_data_event_t, msg),
                attr.msg_buf_size);
   }
+
+  std::string ToString() const {
+    return absl::Substitute("attr:[$0] msg_size:$1 msg:[$2]", ::ToString(attr), msg.size(), msg);
+  }
+
   socket_data_event_t::attr_t attr;
   // TODO(oazizi/yzhao): Eventually, we will write the data into a buffer that can be used for later
   // parsing. By then, msg can be changed to string_view.
