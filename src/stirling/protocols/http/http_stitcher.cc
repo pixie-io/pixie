@@ -73,7 +73,7 @@ RecordsWithErrorCount<Record> ProcessMessages(std::deque<Message>* req_messages,
   req_messages->erase(req_messages->begin(), req_iter);
   resp_messages->erase(resp_messages->begin(), resp_iter);
 
-  return {records, 0};
+  return {std::move(records), 0};
 }
 
 void PreProcessMessage(Message* message) {
