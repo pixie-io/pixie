@@ -14,4 +14,6 @@ const (
 	SiteCreated = "Site Created"
 	// ClusterStatusChange is an event for when a Vizier cluster's status changes.
 	ClusterStatusChange = "Cluster Status Change"
+	// VizierHeartbeat is an event for when Vizier sends a heartbeat to the cloud.
+	VizierHeartbeat = "Vizier Heartbeat"
 )

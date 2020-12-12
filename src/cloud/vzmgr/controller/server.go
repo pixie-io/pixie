@@ -627,10 +627,13 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	}
 
 	// Fetch previous status.
-	statusQuery := `SELECT status, vizier_version from vizier_cluster_info WHERE vizier_cluster_id=$1`
+	statusQuery := `SELECT i.status, i.vizier_version, c.cluster_name, c.cluster_version, c.org_id from vizier_cluster_info AS i INNER JOIN vizier_cluster as c ON c.id = i.vizier_cluster_id WHERE i.vizier_cluster_id=$1`
 	var prevInfo struct {
-		Status  string `db:"status"`
-		Version string `db:"vizier_version"`
+		Status         string    `db:"status"`
+		Version        string    `db:"vizier_version"`
+		ClusterVersion string    `db:"cluster_version"`
+		ClusterName    string    `db:"cluster_name"`
+		OrgID          uuid.UUID `db:"org_id"`
 	}
 	rows, err := s.db.Queryx(statusQuery, vizierID)
 	if err != nil {
@@ -666,6 +669,21 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		}
 		vzStatus = s.(string)
 	}
+
+	// Send cluster-level info.
+	events.Client().Enqueue(&analytics.Track{
+		UserId: vizierID.String(),
+		Event:  events.VizierHeartbeat,
+		Properties: analytics.NewProperties().
+			Set("cluster_id", vizierID.String()).
+			Set("status", vzStatus).
+			Set("num_nodes", req.NumNodes).
+			Set("num_instrumented_nodes", req.NumInstrumentedNodes).
+			Set("cluster_name", prevInfo.ClusterName).
+			Set("k8s_version", prevInfo.ClusterVersion).
+			Set("vizier_version", prevInfo.Version).
+			Set("org_id", prevInfo.OrgID.String()),
+	})
 
 	// Send analytics event for cluster status changes.
 	if vzStatus != prevInfo.Status {
