@@ -205,6 +205,7 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
   registry->RegisterOrDie<CountUDA<types::Time64NSValue>>("count");
   registry->RegisterOrDie<CountUDA<types::BoolValue>>("count");
   registry->RegisterOrDie<CountUDA<types::StringValue>>("count");
+  registry->RegisterOrDie<CountUDA<types::UInt128Value>>("count");
 }
 
 }  // namespace builtins
