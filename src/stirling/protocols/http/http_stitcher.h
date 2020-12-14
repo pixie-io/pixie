@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "src/stirling/protocols/common/interface.h"
+#include "src/stirling/protocols/common/timestamp_stitcher.h"
 #include "src/stirling/protocols/http/types.h"
 
 DECLARE_string(http_response_header_filters);
@@ -34,7 +35,8 @@ template <>
 inline RecordsWithErrorCount<http::Record> StitchFrames(std::deque<http::Message>* req_messages,
                                                         std::deque<http::Message>* resp_messages,
                                                         NoState* /* state */) {
-  return http::ProcessMessages(req_messages, resp_messages);
+  // NOTE: This cannot handle HTTP pipelining.
+  return StitchMessagesWithTimestampOrder<http::Record>(req_messages, resp_messages);
 }
 
 }  // namespace protocols
