@@ -165,8 +165,8 @@ Status TraceModule::Init() {
 
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> process_target_constructor,
-      FuncObject::Create(kProcessTargetID, {"pod_name", "container_name", "process_path"},
-                         {{"process_path", "''"}, {"container_name", "''"}},
+      FuncObject::Create(kProcessTargetID, {"pod_name", "container_name", "process_name"},
+                         {{"process_name", "''"}, {"container_name", "''"}},
                          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
                          std::bind(ProcessTargetHandler, std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
@@ -413,7 +413,7 @@ StatusOr<QLObjectPtr> ProcessTargetHandler(const pypa::AstPtr& ast, const Parsed
                                            ASTVisitor* visitor) {
   PL_ASSIGN_OR_RETURN(auto pod_name_ir, GetArgAs<StringIR>(ast, args, "pod_name"));
   PL_ASSIGN_OR_RETURN(auto container_name_ir, GetArgAs<StringIR>(ast, args, "container_name"));
-  PL_ASSIGN_OR_RETURN(auto process_path_ir, GetArgAs<StringIR>(ast, args, "process_path"));
+  PL_ASSIGN_OR_RETURN(auto process_path_ir, GetArgAs<StringIR>(ast, args, "process_name"));
   return ProcessTarget::Create(visitor, pod_name_ir->str(), container_name_ir->str(),
                                process_path_ir->str());
 }
