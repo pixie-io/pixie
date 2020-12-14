@@ -11,7 +11,10 @@ upid = 'replace-me-with-upid'
 
 # This is the basic trace function. Every function call of
 # `main.computeE` is traced and the values are recorded into
-# a table as specified by the return value.
+# a table as specified by the return value. 
+#
+# To probe struct functions, see the notes here: 
+# https://docs.pixielabs.ai/tutorials/simple-go-tracing/#formatting-the-pxtrace.probe-path
 @pxtrace.probe("main.computeE")
 def probe_func():
     return [{
