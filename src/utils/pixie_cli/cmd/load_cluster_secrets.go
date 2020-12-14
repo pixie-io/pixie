@@ -11,7 +11,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 
 	// Blank import necessary for kubeConfig to work.
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/artifacts"
 )
