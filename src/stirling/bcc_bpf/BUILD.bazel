@@ -36,6 +36,7 @@ pl_bpf_cc_resource(
     src = "socket_trace.c",
     hdrs = [
         "go_http2_trace.c",
+        "go_trace_common.h",
         "openssl_trace.c",
         "protocol_inference.h",
         "utils.h",
@@ -52,6 +53,7 @@ pl_bpf_preprocess(
     src = "socket_trace.c",
     hdrs = [
         "go_http2_trace.c",
+        "go_trace_common.h",
         "openssl_trace.c",
         "protocol_inference.h",
         "utils.h",

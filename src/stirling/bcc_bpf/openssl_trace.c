@@ -11,16 +11,6 @@ static __inline void process_openssl_data(struct pt_regs* ctx, uint64_t id,
   process_data(/* vecs */ false, ctx, id, direction, args, bytes_count, /* ssl */ true);
 }
 
-static __inline void set_conn_as_ssl(uint64_t id, uint32_t fd) {
-  uint32_t tgid = id >> 32;
-  // Update conn_info, so that encrypted data data can be filtered out.
-  struct conn_info_t* conn_info = get_or_create_conn_info(tgid, fd);
-  if (conn_info == NULL) {
-    return;
-  }
-  conn_info->ssl = true;
-}
-
 /***********************************************************
  * Argument parsing helpers
  ***********************************************************/

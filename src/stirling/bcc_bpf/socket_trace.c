@@ -166,6 +166,16 @@ static __inline struct conn_info_t* get_or_create_conn_info(uint32_t tgid, uint3
   return conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
 }
 
+static __inline void set_conn_as_ssl(uint64_t id, uint32_t fd) {
+  uint32_t tgid = id >> 32;
+  // Update conn_info, so that encrypted data data can be filtered out.
+  struct conn_info_t* conn_info = get_or_create_conn_info(tgid, fd);
+  if (conn_info == NULL) {
+    return;
+  }
+  conn_info->ssl = true;
+}
+
 static __inline struct socket_data_event_t* fill_event(enum TrafficDirection direction,
                                                        const struct conn_info_t* conn_info) {
   uint32_t kZero = 0;
