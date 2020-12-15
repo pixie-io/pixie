@@ -17,7 +17,7 @@ function get_cluster_id() {
 # Run a simple script. Could add more scripts to expand coverage.
 function run_script() {
   cluster_id=$1
-  px -c "$cluster_id" script run px/http_data
+  px -c "$cluster_id" script run px/demo_script
 }
 
 function check_results() {
