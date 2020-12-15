@@ -4,6 +4,8 @@ package pl.services;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/common/uuid/proto/uuid.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/cloud/auth/proto;auth";
 
@@ -112,4 +114,58 @@ message GetAugmentedAuthTokenResponse {
 
   // When this login expires.
   int64 expires_at      = 2;
+}
+
+//////////////////////////////////////////////////////////////
+// API Key Service
+//////////////////////////////////////////////////////////////
+
+// The service that handles API keys. 
+service APIKeyService {
+    // Create a new API key.
+    rpc Create(CreateAPIKeyRequest) returns (APIKey) {}
+    // List all keys for the user/org.
+    rpc List(ListAPIKeyRequest) returns(ListAPIKeyResponse) {}
+    // Get the key specified by ID.
+    rpc Get(GetAPIKeyRequest) returns (GetAPIKeyResponse) {}
+    // Delete the Key specified by ID.
+    rpc Delete(uuidpb.UUID) returns (google.protobuf.Empty) {}
+}
+
+// A key that can be used to access the Pixie API. This is value of the key
+// is added to the PIXIE-API-KEY requests.
+message APIKey {
+    // They ID of the key.
+    uuidpb.UUID id = 1  [
+                        (gogoproto.customname) = "ID"
+                        ];
+    // The value of the key.
+    string key = 2;
+    google.protobuf.Timestamp created_at = 3;
+    // Description for the key.
+    string desc = 4;
+}
+
+// Create a API key.
+message CreateAPIKeyRequest {
+    // Description for the key.
+    string desc = 1;
+}
+
+message ListAPIKeyRequest {
+    // Empty message on purpose so we can extend with attributes easily if needed.
+}
+
+message ListAPIKeyResponse {
+    repeated APIKey keys = 1;
+}
+
+message GetAPIKeyRequest {
+    uuidpb.UUID id = 1  [
+                        (gogoproto.customname) = "ID"
+                        ];
+}
+
+message GetAPIKeyResponse {
+    APIKey key = 1;
 }

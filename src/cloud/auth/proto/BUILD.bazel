@@ -11,6 +11,8 @@ proto_library(
         "//src/common/uuid/proto:uuid_pl_proto",
         "//src/shared/services/proto:jwt_proto",
         "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
+        "@com_google_protobuf//:empty_proto",
+        "@com_google_protobuf//:timestamp_proto",
     ],
 )
 

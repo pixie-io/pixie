@@ -8,6 +8,7 @@ import (
 	fmt "fmt"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	types "github.com/gogo/protobuf/types"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -519,6 +520,280 @@ func (m *GetAugmentedAuthTokenResponse) GetExpiresAt() int64 {
 	return 0
 }
 
+type APIKey struct {
+	ID        *proto1.UUID     `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Key       string           `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	CreatedAt *types.Timestamp `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	Desc      string           `protobuf:"bytes,4,opt,name=desc,proto3" json:"desc,omitempty"`
+}
+
+func (m *APIKey) Reset()      { *m = APIKey{} }
+func (*APIKey) ProtoMessage() {}
+func (*APIKey) Descriptor() ([]byte, []int) {
+	return fileDescriptor_65c67b365074056c, []int{7}
+}
+func (m *APIKey) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *APIKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_APIKey.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *APIKey) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_APIKey.Merge(m, src)
+}
+func (m *APIKey) XXX_Size() int {
+	return m.Size()
+}
+func (m *APIKey) XXX_DiscardUnknown() {
+	xxx_messageInfo_APIKey.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_APIKey proto.InternalMessageInfo
+
+func (m *APIKey) GetID() *proto1.UUID {
+	if m != nil {
+		return m.ID
+	}
+	return nil
+}
+
+func (m *APIKey) GetKey() string {
+	if m != nil {
+		return m.Key
+	}
+	return ""
+}
+
+func (m *APIKey) GetCreatedAt() *types.Timestamp {
+	if m != nil {
+		return m.CreatedAt
+	}
+	return nil
+}
+
+func (m *APIKey) GetDesc() string {
+	if m != nil {
+		return m.Desc
+	}
+	return ""
+}
+
+type CreateAPIKeyRequest struct {
+	Desc string `protobuf:"bytes,1,opt,name=desc,proto3" json:"desc,omitempty"`
+}
+
+func (m *CreateAPIKeyRequest) Reset()      { *m = CreateAPIKeyRequest{} }
+func (*CreateAPIKeyRequest) ProtoMessage() {}
+func (*CreateAPIKeyRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_65c67b365074056c, []int{8}
+}
+func (m *CreateAPIKeyRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *CreateAPIKeyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_CreateAPIKeyRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *CreateAPIKeyRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateAPIKeyRequest.Merge(m, src)
+}
+func (m *CreateAPIKeyRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *CreateAPIKeyRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateAPIKeyRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateAPIKeyRequest proto.InternalMessageInfo
+
+func (m *CreateAPIKeyRequest) GetDesc() string {
+	if m != nil {
+		return m.Desc
+	}
+	return ""
+}
+
+type ListAPIKeyRequest struct {
+}
+
+func (m *ListAPIKeyRequest) Reset()      { *m = ListAPIKeyRequest{} }
+func (*ListAPIKeyRequest) ProtoMessage() {}
+func (*ListAPIKeyRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_65c67b365074056c, []int{9}
+}
+func (m *ListAPIKeyRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ListAPIKeyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ListAPIKeyRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ListAPIKeyRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListAPIKeyRequest.Merge(m, src)
+}
+func (m *ListAPIKeyRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *ListAPIKeyRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListAPIKeyRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListAPIKeyRequest proto.InternalMessageInfo
+
+type ListAPIKeyResponse struct {
+	Keys []*APIKey `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys,omitempty"`
+}
+
+func (m *ListAPIKeyResponse) Reset()      { *m = ListAPIKeyResponse{} }
+func (*ListAPIKeyResponse) ProtoMessage() {}
+func (*ListAPIKeyResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_65c67b365074056c, []int{10}
+}
+func (m *ListAPIKeyResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ListAPIKeyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ListAPIKeyResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ListAPIKeyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListAPIKeyResponse.Merge(m, src)
+}
+func (m *ListAPIKeyResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *ListAPIKeyResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListAPIKeyResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListAPIKeyResponse proto.InternalMessageInfo
+
+func (m *ListAPIKeyResponse) GetKeys() []*APIKey {
+	if m != nil {
+		return m.Keys
+	}
+	return nil
+}
+
+type GetAPIKeyRequest struct {
+	ID *proto1.UUID `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (m *GetAPIKeyRequest) Reset()      { *m = GetAPIKeyRequest{} }
+func (*GetAPIKeyRequest) ProtoMessage() {}
+func (*GetAPIKeyRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_65c67b365074056c, []int{11}
+}
+func (m *GetAPIKeyRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetAPIKeyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetAPIKeyRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetAPIKeyRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetAPIKeyRequest.Merge(m, src)
+}
+func (m *GetAPIKeyRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetAPIKeyRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetAPIKeyRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetAPIKeyRequest proto.InternalMessageInfo
+
+func (m *GetAPIKeyRequest) GetID() *proto1.UUID {
+	if m != nil {
+		return m.ID
+	}
+	return nil
+}
+
+type GetAPIKeyResponse struct {
+	Key *APIKey `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+}
+
+func (m *GetAPIKeyResponse) Reset()      { *m = GetAPIKeyResponse{} }
+func (*GetAPIKeyResponse) ProtoMessage() {}
+func (*GetAPIKeyResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_65c67b365074056c, []int{12}
+}
+func (m *GetAPIKeyResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetAPIKeyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetAPIKeyResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetAPIKeyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetAPIKeyResponse.Merge(m, src)
+}
+func (m *GetAPIKeyResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetAPIKeyResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetAPIKeyResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetAPIKeyResponse proto.InternalMessageInfo
+
+func (m *GetAPIKeyResponse) GetKey() *APIKey {
+	if m != nil {
+		return m.Key
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*AuthenticatedUserInfo)(nil), "pl.services.AuthenticatedUserInfo")
 	proto.RegisterType((*LoginRequest)(nil), "pl.services.LoginRequest")
@@ -528,56 +803,78 @@ func init() {
 	proto.RegisterType((*SignupReply)(nil), "pl.services.SignupReply")
 	proto.RegisterType((*GetAugmentedAuthTokenRequest)(nil), "pl.services.GetAugmentedAuthTokenRequest")
 	proto.RegisterType((*GetAugmentedAuthTokenResponse)(nil), "pl.services.GetAugmentedAuthTokenResponse")
+	proto.RegisterType((*APIKey)(nil), "pl.services.APIKey")
+	proto.RegisterType((*CreateAPIKeyRequest)(nil), "pl.services.CreateAPIKeyRequest")
+	proto.RegisterType((*ListAPIKeyRequest)(nil), "pl.services.ListAPIKeyRequest")
+	proto.RegisterType((*ListAPIKeyResponse)(nil), "pl.services.ListAPIKeyResponse")
+	proto.RegisterType((*GetAPIKeyRequest)(nil), "pl.services.GetAPIKeyRequest")
+	proto.RegisterType((*GetAPIKeyResponse)(nil), "pl.services.GetAPIKeyResponse")
 }
 
 func init() { proto.RegisterFile("src/cloud/auth/proto/auth.proto", fileDescriptor_65c67b365074056c) }
 
 var fileDescriptor_65c67b365074056c = []byte{
-	// 701 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x55, 0x41, 0x6f, 0xd3, 0x4a,
-	0x10, 0xb6, 0xd3, 0x26, 0x8d, 0x27, 0x7d, 0x7a, 0x7a, 0xd6, 0xab, 0x48, 0x03, 0x75, 0x52, 0x9f,
-	0x0a, 0x12, 0x0e, 0x94, 0x1e, 0x10, 0x08, 0x41, 0x43, 0x0b, 0xaa, 0x84, 0x8a, 0xe4, 0x36, 0x17,
-	0x2e, 0x91, 0x63, 0x6f, 0xdc, 0x15, 0x8e, 0xd7, 0x78, 0xd7, 0xa8, 0xdc, 0x38, 0x71, 0x43, 0xe2,
-	0x1f, 0x70, 0xe5, 0xa7, 0x70, 0xec, 0xb1, 0xa7, 0x42, 0xdd, 0x0b, 0xc7, 0xfe, 0x00, 0x0e, 0x68,
-	0x67, 0x93, 0x12, 0x8b, 0x14, 0x95, 0x5e, 0xb8, 0xcd, 0xce, 0xcc, 0x37, 0xf3, 0xcd, 0x37, 0x23,
-	0x2d, 0x34, 0x79, 0xea, 0xb7, 0xfd, 0x88, 0x65, 0x41, 0xdb, 0xcb, 0xc4, 0x5e, 0x3b, 0x49, 0x99,
-	0x60, 0x68, 0x3a, 0x68, 0x9a, 0xb5, 0x24, 0x72, 0x38, 0x49, 0x5f, 0x53, 0x9f, 0xf0, 0xc6, 0xcd,
-	0x90, 0x8a, 0xbd, 0xac, 0xef, 0xf8, 0x6c, 0xd8, 0x0e, 0x59, 0xc8, 0x54, 0x7a, 0x3f, 0x1b, 0xe0,
-	0x4b, 0x61, 0xa5, 0xa5, 0xb0, 0x8d, 0x16, 0x16, 0x67, 0xc3, 0x21, 0x8b, 0xdb, 0x59, 0x46, 0x83,
-	0x51, 0x75, 0x69, 0xaa, 0x0c, 0xfb, 0xa3, 0x0e, 0x0b, 0xeb, 0x99, 0xd8, 0x23, 0xb1, 0xa0, 0xbe,
-	0x27, 0x48, 0xd0, 0xe5, 0x24, 0xdd, 0x8a, 0x07, 0xcc, 0x5c, 0x83, 0xb9, 0x8c, 0x93, 0xb4, 0x47,
-	0x83, 0xba, 0xde, 0xd2, 0x57, 0x6a, 0xab, 0xff, 0x3a, 0x49, 0xe4, 0x48, 0x68, 0xd2, 0x77, 0xba,
-	0xdd, 0xad, 0x8d, 0x0e, 0xe4, 0x47, 0xcd, 0x0a, 0xe6, 0x6f, 0xb8, 0x15, 0x99, 0xbb, 0x15, 0x98,
-	0x4b, 0x00, 0x03, 0x9a, 0x72, 0xd1, 0x8b, 0xbd, 0x21, 0xa9, 0x97, 0x5a, 0xfa, 0x8a, 0xe1, 0x1a,
-	0xe8, 0xd9, 0xf6, 0x86, 0xc4, 0xbc, 0x0a, 0x46, 0xe4, 0x8d, 0xa3, 0x33, 0x18, 0xad, 0x4a, 0x07,
-	0x06, 0xff, 0x87, 0x32, 0x19, 0x7a, 0x34, 0xaa, 0xcf, 0x62, 0x40, 0x3d, 0xec, 0x77, 0x3a, 0xcc,
-	0x3f, 0x63, 0x21, 0x8d, 0x5d, 0xf2, 0x2a, 0x23, 0x5c, 0x98, 0xcb, 0x30, 0xef, 0xf9, 0x3e, 0xe1,
-	0xbc, 0x27, 0xd8, 0x4b, 0x12, 0x23, 0x3b, 0xc3, 0xad, 0x29, 0xdf, 0xae, 0x74, 0x99, 0x77, 0x61,
-	0xd1, 0x4f, 0x89, 0x27, 0x48, 0x4f, 0x8d, 0x30, 0xe8, 0xc5, 0x4c, 0xf4, 0xc8, 0x3e, 0xe5, 0x82,
-	0x63, 0xdb, 0xaa, 0xbb, 0xa0, 0x12, 0x90, 0xfe, 0x60, 0x9b, 0x89, 0x4d, 0x0c, 0x9a, 0x8b, 0x50,
-	0x65, 0x69, 0xa8, 0xf8, 0x29, 0x1a, 0x73, 0x2c, 0x0d, 0x25, 0x3d, 0xfb, 0x4b, 0x09, 0x60, 0x44,
-	0x24, 0x89, 0xde, 0x48, 0xb6, 0x93, 0xfd, 0xd5, 0x43, 0xce, 0x4f, 0xf6, 0x13, 0x9a, 0x12, 0xde,
-	0xf3, 0x04, 0xce, 0x3f, 0xe3, 0x1a, 0x23, 0xcf, 0x3a, 0x72, 0x47, 0x46, 0xaa, 0x79, 0x30, 0xe2,
-	0x52, 0x93, 0xbe, 0xc7, 0xca, 0x35, 0xa9, 0xfb, 0xec, 0xc5, 0x75, 0x7f, 0x08, 0x86, 0x42, 0xc5,
-	0x03, 0x56, 0x2f, 0x23, 0xce, 0x76, 0x26, 0x2e, 0xc7, 0x99, 0xba, 0x64, 0xb7, 0x9a, 0x8d, 0xd7,
-	0x7d, 0x4f, 0x0d, 0x8e, 0xf8, 0x0a, 0xe2, 0x9b, 0x05, 0xfc, 0xcf, 0xc9, 0x9d, 0xe7, 0x69, 0x88,
-	0x60, 0xa9, 0x8c, 0x34, 0x1a, 0x4f, 0x60, 0x6e, 0xe4, 0x33, 0x5b, 0x50, 0xc1, 0x32, 0xea, 0x68,
-	0x8c, 0x8e, 0x91, 0x1f, 0x35, 0xcb, 0x32, 0xb8, 0xe1, 0x96, 0x65, 0x7a, 0x50, 0x50, 0xb8, 0x54,
-	0x54, 0xb8, 0x0b, 0xff, 0xec, 0xd0, 0x30, 0xce, 0x92, 0x3f, 0x58, 0xf5, 0x32, 0x00, 0x0e, 0xae,
-	0x2e, 0x07, 0x0b, 0x76, 0x4a, 0x75, 0xdd, 0x45, 0x39, 0x36, 0xf1, 0x82, 0xde, 0x97, 0xa0, 0x36,
-	0xae, 0x7b, 0xe9, 0xcd, 0x35, 0xa1, 0x26, 0x69, 0x17, 0x17, 0x07, 0x2c, 0x0d, 0xff, 0xf2, 0xde,
-	0x6e, 0x9f, 0x09, 0x5e, 0x99, 0xde, 0xf5, 0x97, 0x0d, 0xd8, 0x6b, 0x70, 0xed, 0x29, 0x11, 0xeb,
-	0x59, 0x38, 0x24, 0xb1, 0x20, 0x81, 0xec, 0x80, 0x5a, 0x8e, 0x55, 0x9f, 0xaa, 0x8f, 0xbd, 0x0b,
-	0x4b, 0xe7, 0xa0, 0x78, 0xc2, 0x62, 0x4e, 0x2e, 0x25, 0xeb, 0xea, 0x77, 0x1d, 0x6a, 0xb2, 0xd4,
-	0x8e, 0x9a, 0xd7, 0x7c, 0x00, 0x65, 0xbc, 0x34, 0x73, 0x71, 0xda, 0xf5, 0x21, 0xbf, 0xc6, 0x95,
-	0x73, 0x0e, 0xd3, 0xd6, 0xcc, 0x47, 0x50, 0x51, 0x9b, 0x36, 0x1b, 0x85, 0xa4, 0xc2, 0x59, 0x35,
-	0xea, 0x53, 0x63, 0xaa, 0x42, 0x04, 0xff, 0x4d, 0x8e, 0xa9, 0x8e, 0xec, 0x7a, 0x01, 0xf0, 0x3b,
-	0xf1, 0x1a, 0x37, 0x2e, 0x92, 0xaa, 0x14, 0xb3, 0xb5, 0xce, 0xe0, 0xe0, 0xd8, 0xd2, 0x0e, 0x8f,
-	0x2d, 0xed, 0xf4, 0xd8, 0xd2, 0xdf, 0xe6, 0x96, 0xfe, 0x29, 0xb7, 0xf4, 0xcf, 0xb9, 0xa5, 0x1f,
-	0xe4, 0x96, 0xfe, 0x35, 0xb7, 0xf4, 0x6f, 0xb9, 0xa5, 0x9d, 0xe6, 0x96, 0xfe, 0xe1, 0xc4, 0xd2,
-	0x0e, 0x4e, 0x2c, 0xed, 0xf0, 0xc4, 0xd2, 0x5e, 0xdc, 0x4a, 0xe8, 0x3e, 0x25, 0x91, 0xd7, 0xe7,
-	0x8e, 0x47, 0xdb, 0x67, 0x8f, 0xf6, 0xb4, 0xaf, 0xe4, 0xbe, 0x34, 0xfb, 0x15, 0xb4, 0xef, 0xfc,
-	0x08, 0x00, 0x00, 0xff, 0xff, 0xe8, 0x46, 0x8a, 0x1a, 0x6e, 0x06, 0x00, 0x00,
+	// 956 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x56, 0x41, 0x6f, 0xdc, 0x44,
+	0x14, 0xb6, 0x77, 0xb3, 0x4e, 0xf6, 0x6d, 0x2b, 0xda, 0x09, 0x85, 0x8d, 0x4b, 0xbc, 0x5b, 0x4b,
+	0xa8, 0x29, 0x12, 0x5e, 0x48, 0x7b, 0x80, 0x56, 0x15, 0x6c, 0xd8, 0xb4, 0x5a, 0x51, 0x15, 0xe4,
+	0x26, 0x17, 0x2e, 0x2b, 0xaf, 0x3d, 0xeb, 0x58, 0xb1, 0x3d, 0xc6, 0x33, 0x46, 0xd9, 0x1b, 0x27,
+	0x6e, 0x48, 0x88, 0x23, 0x17, 0xae, 0xfc, 0x14, 0x8e, 0x39, 0xf6, 0x14, 0x88, 0x73, 0xe1, 0xd8,
+	0x1f, 0xc0, 0x01, 0xcd, 0x8c, 0x9d, 0xae, 0x13, 0x2f, 0x0a, 0xbd, 0x70, 0x7b, 0x7e, 0xef, 0x7b,
+	0xef, 0x7d, 0xf3, 0xbd, 0x37, 0x23, 0x43, 0x8f, 0xa6, 0xee, 0xc0, 0x0d, 0x49, 0xe6, 0x0d, 0x9c,
+	0x8c, 0x1d, 0x0c, 0x92, 0x94, 0x30, 0x22, 0x4c, 0x4b, 0x98, 0xa8, 0x93, 0x84, 0x16, 0xc5, 0xe9,
+	0x77, 0x81, 0x8b, 0xa9, 0xfe, 0xa1, 0x1f, 0xb0, 0x83, 0x6c, 0x6a, 0xb9, 0x24, 0x1a, 0xf8, 0xc4,
+	0x27, 0x12, 0x3e, 0xcd, 0x66, 0xe2, 0x4b, 0xe6, 0x72, 0x4b, 0xe6, 0xea, 0x7d, 0x51, 0x9c, 0x44,
+	0x11, 0x89, 0x07, 0x59, 0x16, 0x78, 0x45, 0x75, 0x6e, 0x16, 0x88, 0xdb, 0x3e, 0x21, 0x7e, 0x88,
+	0x5f, 0xd7, 0xc1, 0x51, 0xc2, 0xe6, 0x45, 0xb0, 0x77, 0x31, 0xc8, 0x82, 0x08, 0x53, 0xe6, 0x44,
+	0x89, 0x04, 0x98, 0xbf, 0xaa, 0x70, 0x6b, 0x98, 0xb1, 0x03, 0x1c, 0xb3, 0xc0, 0x75, 0x18, 0xf6,
+	0xf6, 0x29, 0x4e, 0xc7, 0xf1, 0x8c, 0xa0, 0x07, 0xb0, 0x9a, 0x51, 0x9c, 0x4e, 0x02, 0xaf, 0xab,
+	0xf6, 0xd5, 0xad, 0xce, 0xf6, 0x5b, 0x56, 0x12, 0x5a, 0xbc, 0x71, 0x32, 0xb5, 0xf6, 0xf7, 0xc7,
+	0xa3, 0x1d, 0xc8, 0x4f, 0x7a, 0x9a, 0xc0, 0x8f, 0x6c, 0x8d, 0x63, 0xc7, 0x1e, 0xda, 0x04, 0x98,
+	0x05, 0x29, 0x65, 0x93, 0xd8, 0x89, 0x70, 0xb7, 0xd1, 0x57, 0xb7, 0xda, 0x76, 0x5b, 0x78, 0x9e,
+	0x3b, 0x11, 0x46, 0xb7, 0xa1, 0x1d, 0x3a, 0x65, 0xb4, 0x29, 0xa2, 0x6b, 0xdc, 0x21, 0x82, 0x6f,
+	0x43, 0x0b, 0x47, 0x4e, 0x10, 0x76, 0x57, 0x44, 0x40, 0x7e, 0x98, 0x3f, 0xa8, 0x70, 0xed, 0x19,
+	0xf1, 0x83, 0xd8, 0xc6, 0xdf, 0x66, 0x98, 0x32, 0x74, 0x07, 0xae, 0x39, 0xae, 0x8b, 0x29, 0x9d,
+	0x30, 0x72, 0x88, 0x63, 0xc1, 0xae, 0x6d, 0x77, 0xa4, 0x6f, 0x8f, 0xbb, 0xd0, 0x27, 0xb0, 0xe1,
+	0xa6, 0xd8, 0x61, 0x78, 0x22, 0x8f, 0x30, 0x9b, 0xc4, 0x84, 0x4d, 0xf0, 0x51, 0x40, 0x19, 0x15,
+	0x6d, 0xd7, 0xec, 0x5b, 0x12, 0x20, 0xe8, 0xcf, 0x9e, 0x13, 0xb6, 0x2b, 0x82, 0x68, 0x03, 0xd6,
+	0x48, 0xea, 0x4b, 0x7e, 0x92, 0xc6, 0x2a, 0x49, 0x7d, 0x4e, 0xcf, 0xfc, 0xa3, 0x01, 0x50, 0x10,
+	0x49, 0xc2, 0x39, 0x67, 0xbb, 0xd8, 0x5f, 0x7e, 0xf0, 0xf3, 0xe3, 0xa3, 0x24, 0x48, 0x31, 0x9d,
+	0x38, 0x4c, 0x9c, 0xbf, 0x69, 0xb7, 0x0b, 0xcf, 0x50, 0x70, 0x17, 0x8c, 0x64, 0x73, 0xaf, 0xe0,
+	0xd2, 0xe1, 0xbe, 0x2f, 0xa4, 0x6b, 0x51, 0xf7, 0x95, 0xab, 0xeb, 0xfe, 0x19, 0xb4, 0x65, 0x56,
+	0x3c, 0x23, 0xdd, 0x96, 0xc8, 0x33, 0xad, 0x85, 0xbd, 0xb3, 0x6a, 0x87, 0x6c, 0xaf, 0x65, 0xe5,
+	0xb8, 0x1f, 0xca, 0x83, 0x8b, 0x7c, 0x4d, 0xe4, 0xf7, 0x2a, 0xf9, 0xaf, 0x4f, 0x6e, 0x7d, 0x95,
+	0xfa, 0x22, 0x99, 0x2b, 0xc3, 0x0d, 0xfd, 0x09, 0xac, 0x16, 0x3e, 0xd4, 0x07, 0x4d, 0x94, 0x91,
+	0x4b, 0xd3, 0xde, 0x69, 0xe7, 0x27, 0xbd, 0x16, 0x0f, 0x8e, 0xec, 0x16, 0x87, 0x7b, 0x15, 0x85,
+	0x1b, 0x55, 0x85, 0xf7, 0xe1, 0xfa, 0x8b, 0xc0, 0x8f, 0xb3, 0xe4, 0x3f, 0x8c, 0xfa, 0x0e, 0x80,
+	0x38, 0xb8, 0xdc, 0x1c, 0x51, 0x70, 0xa7, 0xd1, 0x55, 0x6d, 0x21, 0xc7, 0xae, 0xd8, 0xa0, 0x1f,
+	0x1b, 0xd0, 0x29, 0xeb, 0xbe, 0xf1, 0xe4, 0x7a, 0xd0, 0xe1, 0xb4, 0xab, 0x83, 0x03, 0x92, 0xfa,
+	0xff, 0xf3, 0xdc, 0x3e, 0x3e, 0x17, 0x5c, 0xab, 0xef, 0x7a, 0x69, 0x02, 0xe6, 0x03, 0x78, 0xef,
+	0x29, 0x66, 0xc3, 0xcc, 0x8f, 0x70, 0xcc, 0xb0, 0xc7, 0x3b, 0x08, 0x2d, 0x4b, 0xd5, 0x6b, 0xf5,
+	0x31, 0xf7, 0x60, 0x73, 0x49, 0x16, 0x4d, 0x48, 0x4c, 0xf1, 0x1b, 0xc9, 0x6a, 0xfe, 0xac, 0x82,
+	0x36, 0xfc, 0x7a, 0xfc, 0x25, 0x9e, 0xa3, 0xbb, 0xd0, 0x58, 0xfe, 0xd6, 0x68, 0xf9, 0x49, 0xaf,
+	0x31, 0x1e, 0xd9, 0x8d, 0xc0, 0x43, 0x37, 0xa0, 0x79, 0x88, 0xe7, 0xc5, 0xf2, 0x70, 0x13, 0x7d,
+	0x0a, 0x50, 0x0c, 0x86, 0x37, 0x69, 0x8a, 0x12, 0xba, 0x25, 0xdf, 0x3e, 0xab, 0x7c, 0xfb, 0xac,
+	0xbd, 0xf2, 0xed, 0xb3, 0xdb, 0x05, 0x7a, 0xc8, 0x10, 0x82, 0x15, 0x0f, 0x53, 0xb7, 0xb8, 0xec,
+	0xc2, 0x36, 0xef, 0xc1, 0xba, 0x9c, 0xaa, 0x64, 0x56, 0xea, 0x52, 0x42, 0xd5, 0x05, 0xe8, 0x3a,
+	0xdc, 0x7c, 0x16, 0x50, 0x56, 0x01, 0x9a, 0x8f, 0x01, 0x2d, 0x3a, 0x0b, 0x7d, 0xee, 0xc2, 0xca,
+	0x21, 0x9e, 0xd3, 0xae, 0xda, 0x6f, 0x6e, 0x75, 0xb6, 0xd7, 0xab, 0x53, 0x96, 0x50, 0x01, 0x30,
+	0x1f, 0xc1, 0x0d, 0xae, 0x74, 0xa5, 0xf7, 0x55, 0xc5, 0x31, 0x1f, 0xc2, 0xcd, 0x85, 0xe4, 0xa2,
+	0xf5, 0xfb, 0x52, 0x31, 0x99, 0x5e, 0xdb, 0x99, 0xc7, 0xb7, 0xff, 0x56, 0xa1, 0xc3, 0xe7, 0xfa,
+	0x42, 0x06, 0xd1, 0x63, 0x68, 0x89, 0x6b, 0x8f, 0x36, 0xea, 0x9e, 0x02, 0x41, 0x4c, 0x7f, 0x77,
+	0xc9, 0x2b, 0x61, 0x2a, 0xe8, 0x73, 0xd0, 0xe4, 0xb5, 0x43, 0x7a, 0x05, 0x54, 0xb9, 0xe3, 0x7a,
+	0xb7, 0x36, 0x26, 0x2b, 0x84, 0xf2, 0x30, 0xe5, 0xce, 0xc9, 0x1b, 0x7f, 0xaf, 0x92, 0xf0, 0x6f,
+	0x9b, 0xac, 0x7f, 0x70, 0x15, 0xa8, 0xd4, 0xc8, 0x54, 0xb6, 0x7f, 0x69, 0xc0, 0x75, 0x29, 0x47,
+	0x29, 0xc0, 0x10, 0x34, 0xb9, 0x08, 0xa8, 0x5f, 0xa9, 0x54, 0xb3, 0x1d, 0x7a, 0x9d, 0xac, 0xa6,
+	0x82, 0xc6, 0xb0, 0xc2, 0x77, 0x01, 0x19, 0x55, 0x9d, 0x2e, 0xee, 0x8c, 0xde, 0x5b, 0x1a, 0x2f,
+	0xf9, 0xa1, 0x27, 0xd0, 0x7c, 0x8a, 0x19, 0xda, 0xbc, 0x74, 0xa8, 0x4a, 0x21, 0x63, 0x59, 0xf8,
+	0xbc, 0xce, 0x7d, 0xd0, 0x46, 0x38, 0xc4, 0x0c, 0xa3, 0x8b, 0x9b, 0xa4, 0xbf, 0x73, 0xe9, 0xd2,
+	0xec, 0xf2, 0xbf, 0x09, 0x53, 0xd9, 0x99, 0x1d, 0x9f, 0x1a, 0xca, 0xcb, 0x53, 0x43, 0x79, 0x75,
+	0x6a, 0xa8, 0xdf, 0xe7, 0x86, 0xfa, 0x5b, 0x6e, 0xa8, 0xbf, 0xe7, 0x86, 0x7a, 0x9c, 0x1b, 0xea,
+	0x9f, 0xb9, 0xa1, 0xfe, 0x95, 0x1b, 0xca, 0xab, 0xdc, 0x50, 0x7f, 0x3a, 0x33, 0x94, 0xe3, 0x33,
+	0x43, 0x79, 0x79, 0x66, 0x28, 0xdf, 0x7c, 0x94, 0x04, 0x47, 0x01, 0x0e, 0x9d, 0x29, 0xb5, 0x9c,
+	0x60, 0x70, 0xfe, 0x31, 0xa8, 0xfb, 0x65, 0x7a, 0xc4, 0xcd, 0xa9, 0x26, 0xec, 0xfb, 0xff, 0x04,
+	0x00, 0x00, 0xff, 0xff, 0x17, 0xa7, 0xf8, 0x62, 0x56, 0x09, 0x00, 0x00,
 }
 
 func (this *AuthenticatedUserInfo) Equal(that interface{}) bool {
@@ -826,6 +1123,161 @@ func (this *GetAugmentedAuthTokenResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *APIKey) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*APIKey)
+	if !ok {
+		that2, ok := that.(APIKey)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ID.Equal(that1.ID) {
+		return false
+	}
+	if this.Key != that1.Key {
+		return false
+	}
+	if !this.CreatedAt.Equal(that1.CreatedAt) {
+		return false
+	}
+	if this.Desc != that1.Desc {
+		return false
+	}
+	return true
+}
+func (this *CreateAPIKeyRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*CreateAPIKeyRequest)
+	if !ok {
+		that2, ok := that.(CreateAPIKeyRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Desc != that1.Desc {
+		return false
+	}
+	return true
+}
+func (this *ListAPIKeyRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ListAPIKeyRequest)
+	if !ok {
+		that2, ok := that.(ListAPIKeyRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *ListAPIKeyResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ListAPIKeyResponse)
+	if !ok {
+		that2, ok := that.(ListAPIKeyResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Keys) != len(that1.Keys) {
+		return false
+	}
+	for i := range this.Keys {
+		if !this.Keys[i].Equal(that1.Keys[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *GetAPIKeyRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetAPIKeyRequest)
+	if !ok {
+		that2, ok := that.(GetAPIKeyRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ID.Equal(that1.ID) {
+		return false
+	}
+	return true
+}
+func (this *GetAPIKeyResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetAPIKeyResponse)
+	if !ok {
+		that2, ok := that.(GetAPIKeyResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Key.Equal(that1.Key) {
+		return false
+	}
+	return true
+}
 func (this *AuthenticatedUserInfo) GoString() string {
 	if this == nil {
 		return "nil"
@@ -935,6 +1387,78 @@ func (this *GetAugmentedAuthTokenResponse) GoString() string {
 	s = append(s, "&auth.GetAugmentedAuthTokenResponse{")
 	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
 	s = append(s, "ExpiresAt: "+fmt.Sprintf("%#v", this.ExpiresAt)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *APIKey) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&auth.APIKey{")
+	if this.ID != nil {
+		s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	}
+	s = append(s, "Key: "+fmt.Sprintf("%#v", this.Key)+",\n")
+	if this.CreatedAt != nil {
+		s = append(s, "CreatedAt: "+fmt.Sprintf("%#v", this.CreatedAt)+",\n")
+	}
+	s = append(s, "Desc: "+fmt.Sprintf("%#v", this.Desc)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateAPIKeyRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&auth.CreateAPIKeyRequest{")
+	s = append(s, "Desc: "+fmt.Sprintf("%#v", this.Desc)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ListAPIKeyRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&auth.ListAPIKeyRequest{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ListAPIKeyResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&auth.ListAPIKeyResponse{")
+	if this.Keys != nil {
+		s = append(s, "Keys: "+fmt.Sprintf("%#v", this.Keys)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetAPIKeyRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&auth.GetAPIKeyRequest{")
+	if this.ID != nil {
+		s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetAPIKeyResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&auth.GetAPIKeyResponse{")
+	if this.Key != nil {
+		s = append(s, "Key: "+fmt.Sprintf("%#v", this.Key)+",\n")
+	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1093,6 +1617,186 @@ var _AuthService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAugmentedToken",
 			Handler:    _AuthService_GetAugmentedToken_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "src/cloud/auth/proto/auth.proto",
+}
+
+// APIKeyServiceClient is the client API for APIKeyService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type APIKeyServiceClient interface {
+	Create(ctx context.Context, in *CreateAPIKeyRequest, opts ...grpc.CallOption) (*APIKey, error)
+	List(ctx context.Context, in *ListAPIKeyRequest, opts ...grpc.CallOption) (*ListAPIKeyResponse, error)
+	Get(ctx context.Context, in *GetAPIKeyRequest, opts ...grpc.CallOption) (*GetAPIKeyResponse, error)
+	Delete(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*types.Empty, error)
+}
+
+type aPIKeyServiceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewAPIKeyServiceClient(cc *grpc.ClientConn) APIKeyServiceClient {
+	return &aPIKeyServiceClient{cc}
+}
+
+func (c *aPIKeyServiceClient) Create(ctx context.Context, in *CreateAPIKeyRequest, opts ...grpc.CallOption) (*APIKey, error) {
+	out := new(APIKey)
+	err := c.cc.Invoke(ctx, "/pl.services.APIKeyService/Create", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aPIKeyServiceClient) List(ctx context.Context, in *ListAPIKeyRequest, opts ...grpc.CallOption) (*ListAPIKeyResponse, error) {
+	out := new(ListAPIKeyResponse)
+	err := c.cc.Invoke(ctx, "/pl.services.APIKeyService/List", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aPIKeyServiceClient) Get(ctx context.Context, in *GetAPIKeyRequest, opts ...grpc.CallOption) (*GetAPIKeyResponse, error) {
+	out := new(GetAPIKeyResponse)
+	err := c.cc.Invoke(ctx, "/pl.services.APIKeyService/Get", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aPIKeyServiceClient) Delete(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*types.Empty, error) {
+	out := new(types.Empty)
+	err := c.cc.Invoke(ctx, "/pl.services.APIKeyService/Delete", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// APIKeyServiceServer is the server API for APIKeyService service.
+type APIKeyServiceServer interface {
+	Create(context.Context, *CreateAPIKeyRequest) (*APIKey, error)
+	List(context.Context, *ListAPIKeyRequest) (*ListAPIKeyResponse, error)
+	Get(context.Context, *GetAPIKeyRequest) (*GetAPIKeyResponse, error)
+	Delete(context.Context, *proto1.UUID) (*types.Empty, error)
+}
+
+// UnimplementedAPIKeyServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedAPIKeyServiceServer struct {
+}
+
+func (*UnimplementedAPIKeyServiceServer) Create(ctx context.Context, req *CreateAPIKeyRequest) (*APIKey, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+}
+func (*UnimplementedAPIKeyServiceServer) List(ctx context.Context, req *ListAPIKeyRequest) (*ListAPIKeyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+}
+func (*UnimplementedAPIKeyServiceServer) Get(ctx context.Context, req *GetAPIKeyRequest) (*GetAPIKeyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+}
+func (*UnimplementedAPIKeyServiceServer) Delete(ctx context.Context, req *proto1.UUID) (*types.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+
+func RegisterAPIKeyServiceServer(s *grpc.Server, srv APIKeyServiceServer) {
+	s.RegisterService(&_APIKeyService_serviceDesc, srv)
+}
+
+func _APIKeyService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAPIKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIKeyServiceServer).Create(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.services.APIKeyService/Create",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIKeyServiceServer).Create(ctx, req.(*CreateAPIKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _APIKeyService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAPIKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIKeyServiceServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.services.APIKeyService/List",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIKeyServiceServer).List(ctx, req.(*ListAPIKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _APIKeyService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAPIKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIKeyServiceServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.services.APIKeyService/Get",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIKeyServiceServer).Get(ctx, req.(*GetAPIKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _APIKeyService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(proto1.UUID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIKeyServiceServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.services.APIKeyService/Delete",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIKeyServiceServer).Delete(ctx, req.(*proto1.UUID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _APIKeyService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "pl.services.APIKeyService",
+	HandlerType: (*APIKeyServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Create",
+			Handler:    _APIKeyService_Create_Handler,
+		},
+		{
+			MethodName: "List",
+			Handler:    _APIKeyService_List_Handler,
+		},
+		{
+			MethodName: "Get",
+			Handler:    _APIKeyService_Get_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _APIKeyService_Delete_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -1503,6 +2207,227 @@ func (m *GetAugmentedAuthTokenResponse) MarshalToSizedBuffer(dAtA []byte) (int, 
 	return len(dAtA) - i, nil
 }
 
+func (m *APIKey) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *APIKey) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *APIKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Desc) > 0 {
+		i -= len(m.Desc)
+		copy(dAtA[i:], m.Desc)
+		i = encodeVarintAuth(dAtA, i, uint64(len(m.Desc)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.CreatedAt != nil {
+		{
+			size, err := m.CreatedAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAuth(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Key) > 0 {
+		i -= len(m.Key)
+		copy(dAtA[i:], m.Key)
+		i = encodeVarintAuth(dAtA, i, uint64(len(m.Key)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.ID != nil {
+		{
+			size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAuth(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *CreateAPIKeyRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CreateAPIKeyRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CreateAPIKeyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Desc) > 0 {
+		i -= len(m.Desc)
+		copy(dAtA[i:], m.Desc)
+		i = encodeVarintAuth(dAtA, i, uint64(len(m.Desc)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ListAPIKeyRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ListAPIKeyRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ListAPIKeyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *ListAPIKeyResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ListAPIKeyResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ListAPIKeyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Keys) > 0 {
+		for iNdEx := len(m.Keys) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Keys[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintAuth(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetAPIKeyRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetAPIKeyRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetAPIKeyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ID != nil {
+		{
+			size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAuth(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetAPIKeyResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetAPIKeyResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetAPIKeyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Key != nil {
+		{
+			size, err := m.Key.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAuth(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintAuth(dAtA []byte, offset int, v uint64) int {
 	offset -= sovAuth(v)
 	base := offset
@@ -1684,6 +2609,94 @@ func (m *GetAugmentedAuthTokenResponse) Size() (n int) {
 	return n
 }
 
+func (m *APIKey) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ID != nil {
+		l = m.ID.Size()
+		n += 1 + l + sovAuth(uint64(l))
+	}
+	l = len(m.Key)
+	if l > 0 {
+		n += 1 + l + sovAuth(uint64(l))
+	}
+	if m.CreatedAt != nil {
+		l = m.CreatedAt.Size()
+		n += 1 + l + sovAuth(uint64(l))
+	}
+	l = len(m.Desc)
+	if l > 0 {
+		n += 1 + l + sovAuth(uint64(l))
+	}
+	return n
+}
+
+func (m *CreateAPIKeyRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Desc)
+	if l > 0 {
+		n += 1 + l + sovAuth(uint64(l))
+	}
+	return n
+}
+
+func (m *ListAPIKeyRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *ListAPIKeyResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Keys) > 0 {
+		for _, e := range m.Keys {
+			l = e.Size()
+			n += 1 + l + sovAuth(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *GetAPIKeyRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ID != nil {
+		l = m.ID.Size()
+		n += 1 + l + sovAuth(uint64(l))
+	}
+	return n
+}
+
+func (m *GetAPIKeyResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Key != nil {
+		l = m.Key.Size()
+		n += 1 + l + sovAuth(uint64(l))
+	}
+	return n
+}
+
 func sovAuth(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
@@ -1784,6 +2797,73 @@ func (this *GetAugmentedAuthTokenResponse) String() string {
 	s := strings.Join([]string{`&GetAugmentedAuthTokenResponse{`,
 		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
 		`ExpiresAt:` + fmt.Sprintf("%v", this.ExpiresAt) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *APIKey) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&APIKey{`,
+		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "proto1.UUID", 1) + `,`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`CreatedAt:` + strings.Replace(fmt.Sprintf("%v", this.CreatedAt), "Timestamp", "types.Timestamp", 1) + `,`,
+		`Desc:` + fmt.Sprintf("%v", this.Desc) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateAPIKeyRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateAPIKeyRequest{`,
+		`Desc:` + fmt.Sprintf("%v", this.Desc) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ListAPIKeyRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ListAPIKeyRequest{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ListAPIKeyResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForKeys := "[]*APIKey{"
+	for _, f := range this.Keys {
+		repeatedStringForKeys += strings.Replace(f.String(), "APIKey", "APIKey", 1) + ","
+	}
+	repeatedStringForKeys += "}"
+	s := strings.Join([]string{`&ListAPIKeyResponse{`,
+		`Keys:` + repeatedStringForKeys + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetAPIKeyRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetAPIKeyRequest{`,
+		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "proto1.UUID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetAPIKeyResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetAPIKeyResponse{`,
+		`Key:` + strings.Replace(this.Key.String(), "APIKey", "APIKey", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2981,6 +4061,598 @@ func (m *GetAugmentedAuthTokenResponse) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAuth(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *APIKey) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAuth
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: APIKey: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: APIKey: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAuth
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAuth
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ID == nil {
+				m.ID = &proto1.UUID{}
+			}
+			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAuth
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAuth
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Key = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreatedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAuth
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAuth
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.CreatedAt == nil {
+				m.CreatedAt = &types.Timestamp{}
+			}
+			if err := m.CreatedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Desc", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAuth
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAuth
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Desc = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAuth(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateAPIKeyRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAuth
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateAPIKeyRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateAPIKeyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Desc", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAuth
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAuth
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Desc = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAuth(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ListAPIKeyRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAuth
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ListAPIKeyRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ListAPIKeyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAuth(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ListAPIKeyResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAuth
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ListAPIKeyResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ListAPIKeyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Keys", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAuth
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAuth
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Keys = append(m.Keys, &APIKey{})
+			if err := m.Keys[len(m.Keys)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAuth(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetAPIKeyRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAuth
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetAPIKeyRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetAPIKeyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAuth
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAuth
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ID == nil {
+				m.ID = &proto1.UUID{}
+			}
+			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAuth(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetAPIKeyResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAuth
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetAPIKeyResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetAPIKeyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAuth
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAuth
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAuth
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Key == nil {
+				m.Key = &APIKey{}
+			}
+			if err := m.Key.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipAuth(dAtA[iNdEx:])
