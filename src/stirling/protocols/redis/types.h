@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <string_view>
 
 #include "src/stirling/protocols/common/event_parser.h"  // For FrameBase
@@ -24,7 +25,7 @@ struct Message : public FrameBase {
   DataType data_type;
 
   // Actual payload, not including the data type marker, and trailing \r\n.
-  std::string_view payload;
+  std::string payload;
 
   size_t ByteSize() const override { return payload.size(); }
 };
