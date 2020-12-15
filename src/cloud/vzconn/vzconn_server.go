@@ -47,7 +47,11 @@ func createStanNatsConnection(clientID string) (nc *nats.Conn, sc stan.Conn, err
 		log.WithError(err).Error("NATS connection failed")
 		return
 	}
-	sc, err = stan.Connect(viper.GetString("stan_cluster"), clientID, stan.NatsConn(nc))
+	sc, err = stan.Connect(viper.GetString("stan_cluster"),
+		clientID, stan.NatsConn(nc),
+		stan.SetConnectionLostHandler(func(_ stan.Conn, err error) {
+			log.WithError(err).Fatal("STAN Connection Lost")
+		}))
 	if err != nil {
 		log.WithError(err).Error("STAN connection failed")
 	}
