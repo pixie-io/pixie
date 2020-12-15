@@ -1,6 +1,7 @@
 import * as jspb from "google-protobuf"
 
 import * as google_protobuf_any_pb from 'google-protobuf/google/protobuf/any_pb';
+import * as google_protobuf_wrappers_pb from 'google-protobuf/google/protobuf/wrappers_pb';
 
 export class Vis extends jspb.Message {
   getVariablesList(): Array<Vis.Variable>;
@@ -40,8 +41,10 @@ export namespace Vis {
     getType(): PXType;
     setType(value: PXType): void;
 
-    getDefaultValue(): string;
-    setDefaultValue(value: string): void;
+    getDefaultValue(): google_protobuf_wrappers_pb.StringValue | undefined;
+    setDefaultValue(value?: google_protobuf_wrappers_pb.StringValue): void;
+    hasDefaultValue(): boolean;
+    clearDefaultValue(): void;
 
     getDescription(): string;
     setDescription(value: string): void;
@@ -63,7 +66,7 @@ export namespace Vis {
     export type AsObject = {
       name: string,
       type: PXType,
-      defaultValue: string,
+      defaultValue?: google_protobuf_wrappers_pb.StringValue.AsObject,
       description: string,
       validValuesList: Array<string>,
     }

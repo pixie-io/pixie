@@ -88,7 +88,7 @@ func (e *ExecutableScript) UpdateFlags(fs *flag.FlagSet) {
 	for _, v := range e.Vis.Variables {
 		f := fs.Lookup(v.Name)
 		if f == nil {
-			e.Args[v.Name] = Arg{v.Name, v.DefaultValue}
+			e.Args[v.Name] = Arg{v.Name, v.DefaultValue.Value}
 		} else {
 			e.Args[v.Name] = Arg{v.Name, f.Value.String()}
 		}
@@ -106,7 +106,7 @@ func (e *ExecutableScript) ComputedArgs() []Arg {
 		if ok {
 			args = append(args, arg)
 		} else {
-			args = append(args, Arg{v.Name, v.DefaultValue})
+			args = append(args, Arg{v.Name, v.DefaultValue.Value})
 		}
 	}
 	return args
@@ -119,7 +119,7 @@ func (e *ExecutableScript) GetFlagSet() *flag.FlagSet {
 	}
 	fs := flag.NewFlagSet(e.ScriptName, flag.ContinueOnError)
 	for _, v := range e.Vis.Variables {
-		fs.String(v.Name, v.DefaultValue, fmt.Sprintf("Type: %s", v.Type))
+		fs.String(v.Name, v.DefaultValue.Value, fmt.Sprintf("Type: %s", v.Type))
 	}
 	return fs
 }

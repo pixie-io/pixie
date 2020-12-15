@@ -14,6 +14,8 @@ var global = Function('return this')();
 
 var google_protobuf_any_pb = require('google-protobuf/google/protobuf/any_pb.js');
 goog.object.extend(proto, google_protobuf_any_pb);
+var google_protobuf_wrappers_pb = require('google-protobuf/google/protobuf/wrappers_pb.js');
+goog.object.extend(proto, google_protobuf_wrappers_pb);
 goog.exportSymbol('proto.pl.vispb.Axis', null, global);
 goog.exportSymbol('proto.pl.vispb.BarChart', null, global);
 goog.exportSymbol('proto.pl.vispb.BarChart.Bar', null, global);
@@ -675,7 +677,7 @@ proto.pl.vispb.Vis.Variable.toObject = function(includeInstance, msg) {
   var f, obj = {
     name: jspb.Message.getFieldWithDefault(msg, 1, ""),
     type: jspb.Message.getFieldWithDefault(msg, 2, 0),
-    defaultValue: jspb.Message.getFieldWithDefault(msg, 3, ""),
+    defaultValue: (f = msg.getDefaultValue()) && google_protobuf_wrappers_pb.StringValue.toObject(includeInstance, f),
     description: jspb.Message.getFieldWithDefault(msg, 4, ""),
     validValuesList: (f = jspb.Message.getRepeatedField(msg, 5)) == null ? undefined : f
   };
@@ -723,7 +725,8 @@ proto.pl.vispb.Vis.Variable.deserializeBinaryFromReader = function(msg, reader) 
       msg.setType(value);
       break;
     case 3:
-      var value = /** @type {string} */ (reader.readString());
+      var value = new google_protobuf_wrappers_pb.StringValue;
+      reader.readMessage(value,google_protobuf_wrappers_pb.StringValue.deserializeBinaryFromReader);
       msg.setDefaultValue(value);
       break;
     case 4:
@@ -778,10 +781,11 @@ proto.pl.vispb.Vis.Variable.serializeBinaryToWriter = function(message, writer) 
     );
   }
   f = message.getDefaultValue();
-  if (f.length > 0) {
-    writer.writeString(
+  if (f != null) {
+    writer.writeMessage(
       3,
-      f
+      f,
+      google_protobuf_wrappers_pb.StringValue.serializeBinaryToWriter
     );
   }
   f = message.getDescription();
@@ -838,20 +842,39 @@ proto.pl.vispb.Vis.Variable.prototype.setType = function(value) {
 
 
 /**
- * optional string default_value = 3;
- * @return {string}
+ * optional google.protobuf.StringValue default_value = 3;
+ * @return {?proto.google.protobuf.StringValue}
  */
 proto.pl.vispb.Vis.Variable.prototype.getDefaultValue = function() {
-  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
+  return /** @type{?proto.google.protobuf.StringValue} */ (
+    jspb.Message.getWrapperField(this, google_protobuf_wrappers_pb.StringValue, 3));
 };
 
 
 /**
- * @param {string} value
+ * @param {?proto.google.protobuf.StringValue|undefined} value
+ * @return {!proto.pl.vispb.Vis.Variable} returns this
+*/
+proto.pl.vispb.Vis.Variable.prototype.setDefaultValue = function(value) {
+  return jspb.Message.setWrapperField(this, 3, value);
+};
+
+
+/**
+ * Clears the message field making it undefined.
  * @return {!proto.pl.vispb.Vis.Variable} returns this
  */
-proto.pl.vispb.Vis.Variable.prototype.setDefaultValue = function(value) {
-  return jspb.Message.setProto3StringField(this, 3, value);
+proto.pl.vispb.Vis.Variable.prototype.clearDefaultValue = function() {
+  return this.setDefaultValue(undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.pl.vispb.Vis.Variable.prototype.hasDefaultValue = function() {
+  return jspb.Message.getField(this, 3) != null;
 };
 
 

@@ -3,6 +3,7 @@ syntax = "proto3";
 package pl.vispb;
 
 import "google/protobuf/any.proto";
+import "google/protobuf/wrappers.proto";
 
 // PXType represents the data type of an argument that a pxl script can take.
 // For example, with a func like def my_func(arg1: px.Service, arg2: int),
@@ -45,10 +46,15 @@ message Vis {
     // type is the type of the value that the variable belongs to. It can be a semantic type like PX_SERVICE,
     // which maps to the pxl type px.Service, or it can be a basic type like INT64.
     PXType type = 2;
-    // default_value is the default value for the variable if it isn't specified elsewhere.
-    // It is always represented as a string, but it will be parsed by the pxl script based on the type field.
-    // so for type=PX_STRING, default_value could be "foo", and for type=PX_INT64, default_value could be "123".
-    string default_value = 3;
+
+    // Whether this arg's value is provided by the user, is provided by a default value, or is truly optional.
+    // If default_value is omitted, then the user must always provide a value for this arg and it is required.
+    // If default_value is the empty string, then this arg is optional. The user may omit it, and it'll be "".
+    // If default_value is set and is not the empty string, this arg is required BUT the user need not set it.
+    // default_value gets serialized to a string, but pxl scripts will still parse it based on the type field.
+    // Example: for type=PX_STRING, default_value may be "foo"; for type=PX_INT64, default_value may be "123".
+    google.protobuf.StringValue default_value = 3;
+
     // description provides a description of the variable to help the user fill it in.
     string description = 4;
 
