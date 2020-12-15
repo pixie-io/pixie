@@ -44,6 +44,12 @@ export interface GQLQuery {
    */
   deploymentKeys: Array<GQLDeploymentKey>;
   deploymentKey: GQLDeploymentKey;
+  
+  /**
+   * API keys
+   */
+  apiKeys: Array<GQLAPIKey>;
+  apiKey: GQLAPIKey;
 }
 
 export interface GQLUserInfo {
@@ -282,6 +288,13 @@ export interface GQLDeploymentKey {
   desc: string;
 }
 
+export interface GQLAPIKey {
+  id: string;
+  key: string;
+  createdAtMs: number;
+  desc: string;
+}
+
 export interface GQLMutation {
   
   /**
@@ -292,6 +305,8 @@ export interface GQLMutation {
   UpdateVizierConfig: boolean;
   CreateDeploymentKey: GQLDeploymentKey;
   DeleteDeploymentKey: boolean;
+  CreateAPIKey: GQLAPIKey;
+  DeleteAPIKey: boolean;
   UpdateUserSettings: boolean;
 }
 
@@ -326,6 +341,7 @@ export interface GQLResolver {
   ScriptMetadata?: GQLScriptMetadataTypeResolver;
   ScriptContents?: GQLScriptContentsTypeResolver;
   DeploymentKey?: GQLDeploymentKeyTypeResolver;
+  APIKey?: GQLAPIKeyTypeResolver;
   Mutation?: GQLMutationTypeResolver;
 }
 export interface GQLQueryTypeResolver<TParent = any> {
@@ -344,6 +360,8 @@ export interface GQLQueryTypeResolver<TParent = any> {
   scriptContents?: QueryToScriptContentsResolver<TParent>;
   deploymentKeys?: QueryToDeploymentKeysResolver<TParent>;
   deploymentKey?: QueryToDeploymentKeyResolver<TParent>;
+  apiKeys?: QueryToApiKeysResolver<TParent>;
+  apiKey?: QueryToApiKeyResolver<TParent>;
 }
 
 export interface QueryToUserResolver<TParent = any, TResult = any> {
@@ -440,6 +458,17 @@ export interface QueryToDeploymentKeyArgs {
 }
 export interface QueryToDeploymentKeyResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToDeploymentKeyArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToApiKeysResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToApiKeyArgs {
+  id: string;
+}
+export interface QueryToApiKeyResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToApiKeyArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface GQLUserInfoTypeResolver<TParent = any> {
@@ -849,11 +878,36 @@ export interface DeploymentKeyToDescResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
+export interface GQLAPIKeyTypeResolver<TParent = any> {
+  id?: APIKeyToIdResolver<TParent>;
+  key?: APIKeyToKeyResolver<TParent>;
+  createdAtMs?: APIKeyToCreatedAtMsResolver<TParent>;
+  desc?: APIKeyToDescResolver<TParent>;
+}
+
+export interface APIKeyToIdResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface APIKeyToKeyResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface APIKeyToCreatedAtMsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface APIKeyToDescResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
 export interface GQLMutationTypeResolver<TParent = any> {
   CreateCluster?: MutationToCreateClusterResolver<TParent>;
   UpdateVizierConfig?: MutationToUpdateVizierConfigResolver<TParent>;
   CreateDeploymentKey?: MutationToCreateDeploymentKeyResolver<TParent>;
   DeleteDeploymentKey?: MutationToDeleteDeploymentKeyResolver<TParent>;
+  CreateAPIKey?: MutationToCreateAPIKeyResolver<TParent>;
+  DeleteAPIKey?: MutationToDeleteAPIKeyResolver<TParent>;
   UpdateUserSettings?: MutationToUpdateUserSettingsResolver<TParent>;
 }
 
@@ -878,6 +932,17 @@ export interface MutationToDeleteDeploymentKeyArgs {
 }
 export interface MutationToDeleteDeploymentKeyResolver<TParent = any, TResult = any> {
   (parent: TParent, args: MutationToDeleteDeploymentKeyArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToCreateAPIKeyResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToDeleteAPIKeyArgs {
+  id: string;
+}
+export interface MutationToDeleteAPIKeyResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToDeleteAPIKeyArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface MutationToUpdateUserSettingsArgs {

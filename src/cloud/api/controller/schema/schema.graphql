@@ -65,6 +65,13 @@ type DeploymentKey {
   desc: String!
 }
 
+type APIKey {
+  id: ID!
+  key: String!
+  createdAtMs: Float!
+  desc: String!
+}
+
 type Query {
   user: UserInfo!
   userSettings(keys: [String]!): [UserSetting]!
@@ -88,6 +95,10 @@ type Query {
   # Deploy keys
   deploymentKeys: [DeploymentKey!]!
   deploymentKey(id: ID!): DeploymentKey!
+
+  # API keys
+  apiKeys: [APIKey!]!
+  apiKey(id: ID!): APIKey!
 }
 
 type AutocompleteResult {
@@ -187,6 +198,8 @@ type Mutation {
   UpdateVizierConfig(clusterID: ID!, passthroughEnabled: Boolean): Boolean!
   CreateDeploymentKey: DeploymentKey!
   DeleteDeploymentKey(id: ID!): Boolean!
+  CreateAPIKey: APIKey!
+  DeleteAPIKey(id: ID!): Boolean!
   UpdateUserSettings(keys: [String]!, values: [String]!): Boolean!
 }
 
