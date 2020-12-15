@@ -244,9 +244,7 @@ const LiveViewBreadcrumbs = ({ classes, commandOpen, toggleCommandOpen }) => {
   return (
     <div className={classes.root}>
       <Tooltip title='Pixie Command'>
-        <IconButton disabled={commandOpen} onClick={toggleCommandOpen} className={classes.iconContainer}>
-          <PixieCommandIcon fontSize='large' className={classes.pixieIcon} />
-        </IconButton>
+        <PixieCommandIcon fontSize='large' className={classes.pixieIcon} />
       </Tooltip>
       <div className={classes.verticalLine} />
       <div className={classes.breadcrumbs}>
