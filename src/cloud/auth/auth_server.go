@@ -3,13 +3,56 @@ package main
 import (
 	"net/http"
 
+	"github.com/golang-migrate/migrate"
+	"github.com/golang-migrate/migrate/database/postgres"
+	bindata "github.com/golang-migrate/migrate/source/go_bindata"
+	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+
+	"pixielabs.ai/pixielabs/src/cloud/auth/apikey"
 	"pixielabs.ai/pixielabs/src/cloud/auth/authenv"
 	"pixielabs.ai/pixielabs/src/cloud/auth/controllers"
 	auth "pixielabs.ai/pixielabs/src/cloud/auth/proto"
+	"pixielabs.ai/pixielabs/src/cloud/auth/schema"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services/pg"
 )
+
+func init() {
+	pflag.String("database_key", "", "The encryption key to use for the database")
+}
+
+func connectToPostgres() (*sqlx.DB, string) {
+	db := pg.MustConnectDefaultPostgresDB()
+
+	driver, err := postgres.WithInstance(db.DB, &postgres.Config{
+		MigrationsTable: "auth_service_migrations",
+	})
+
+	sc := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
+		return schema.Asset(name)
+	})
+
+	d, err := bindata.WithInstance(sc)
+
+	mg, err := migrate.NewWithInstance(
+		"go-bindata",
+		d, "postgres", driver)
+
+	if err = mg.Up(); err != nil {
+		log.WithError(err).Info("migrations failed: %s", err)
+	}
+
+	dbKey := viper.GetString("database_key")
+	if dbKey == "" {
+		log.Fatal("Database encryption key is required")
+	}
+
+	return db, dbKey
+}
 
 func main() {
 	log.WithField("service", "auth-service").Info("Starting service")
@@ -38,8 +81,13 @@ func main() {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}
 
+	db, dbKey := connectToPostgres()
+	apiKeyMgr := apikey.New(db, dbKey)
+
 	s := services.NewPLServer(env, mux)
 	auth.RegisterAuthServiceServer(s.GRPCServer(), server)
+	auth.RegisterAPIKeyServiceServer(s.GRPCServer(), apiKeyMgr)
+
 	s.Start()
 	s.StopOnInterrupt()
 }

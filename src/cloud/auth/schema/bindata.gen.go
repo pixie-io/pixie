@@ -2,6 +2,8 @@
 // sources:
 // 000001_add_api_keys.down.sql
 // 000001_add_api_keys.up.sql
+// 000002_create_pgcrypto_extension.down.sql
+// 000002_create_pgcrypto_extension.up.sql
 package schema
 
 import (
@@ -93,7 +95,7 @@ func _000001_add_api_keysDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_add_api_keys.down.sql", size: 31, mode: os.FileMode(436), modTime: time.Unix(1607989256, 0)}
+	info := bindataFileInfo{name: "000001_add_api_keys.down.sql", size: 31, mode: os.FileMode(436), modTime: time.Unix(1608057649, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -113,7 +115,47 @@ func _000001_add_api_keysUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_add_api_keys.up.sql", size: 624, mode: os.FileMode(436), modTime: time.Unix(1607989248, 0)}
+	info := bindataFileInfo{name: "000001_add_api_keys.up.sql", size: 624, mode: os.FileMode(436), modTime: time.Unix(1608057649, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000002_create_pgcrypto_extensionDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\x70\x8d\x08\x71\xf5\x0b\xf6\xf4\xf7\x53\xf0\x74\x53\x70\x8d\xf0\x0c\x0e\x09\x56\x50\x2a\x48\x4f\x2e\xaa\x2c\x28\xc9\x57\xb2\xe6\x02\x04\x00\x00\xff\xff\x57\x85\x06\xc2\x25\x00\x00\x00")
+
+func _000002_create_pgcrypto_extensionDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000002_create_pgcrypto_extensionDownSql,
+		"000002_create_pgcrypto_extension.down.sql",
+	)
+}
+
+func _000002_create_pgcrypto_extensionDownSql() (*asset, error) {
+	bytes, err := _000002_create_pgcrypto_extensionDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000002_create_pgcrypto_extension.down.sql", size: 37, mode: os.FileMode(436), modTime: time.Unix(1570640344, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000002_create_pgcrypto_extensionUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x0e\x72\x75\x0c\x71\x55\x70\x8d\x08\x71\xf5\x0b\xf6\xf4\xf7\x53\xf0\x74\x53\xf0\xf3\x0f\x51\x70\x8d\xf0\x0c\x0e\x09\x56\x50\x2a\x48\x4f\x2e\xaa\x2c\x28\xc9\x57\xb2\xe6\x02\x04\x00\x00\xff\xff\x29\x5f\xd6\xbb\x2b\x00\x00\x00")
+
+func _000002_create_pgcrypto_extensionUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000002_create_pgcrypto_extensionUpSql,
+		"000002_create_pgcrypto_extension.up.sql",
+	)
+}
+
+func _000002_create_pgcrypto_extensionUpSql() (*asset, error) {
+	bytes, err := _000002_create_pgcrypto_extensionUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000002_create_pgcrypto_extension.up.sql", size: 43, mode: os.FileMode(436), modTime: time.Unix(1570640344, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -170,8 +212,10 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"000001_add_api_keys.down.sql": _000001_add_api_keysDownSql,
-	"000001_add_api_keys.up.sql":   _000001_add_api_keysUpSql,
+	"000001_add_api_keys.down.sql":              _000001_add_api_keysDownSql,
+	"000001_add_api_keys.up.sql":                _000001_add_api_keysUpSql,
+	"000002_create_pgcrypto_extension.down.sql": _000002_create_pgcrypto_extensionDownSql,
+	"000002_create_pgcrypto_extension.up.sql":   _000002_create_pgcrypto_extensionUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -215,8 +259,10 @@ type bintree struct {
 }
 
 var _bintree = &bintree{nil, map[string]*bintree{
-	"000001_add_api_keys.down.sql": &bintree{_000001_add_api_keysDownSql, map[string]*bintree{}},
-	"000001_add_api_keys.up.sql":   &bintree{_000001_add_api_keysUpSql, map[string]*bintree{}},
+	"000001_add_api_keys.down.sql":              &bintree{_000001_add_api_keysDownSql, map[string]*bintree{}},
+	"000001_add_api_keys.up.sql":                &bintree{_000001_add_api_keysUpSql, map[string]*bintree{}},
+	"000002_create_pgcrypto_extension.down.sql": &bintree{_000002_create_pgcrypto_extensionDownSql, map[string]*bintree{}},
+	"000002_create_pgcrypto_extension.up.sql":   &bintree{_000002_create_pgcrypto_extensionUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
