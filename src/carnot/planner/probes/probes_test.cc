@@ -144,50 +144,6 @@ pod_process: {
 }
 )pxl";
 
-constexpr char kSingleProbeProgramOnPodPb[] = R"pxl(
-name: "http_return"
-ttl {
-  seconds: 300
-}
-deployment_spec {
-  pod: "pl/vizier-query-broker-85dc9bc4d-jzw4s"
-}
-tracepoints {
-  table_name: "http_return_table"
-  program {
-    outputs {
-      name: "http_return_table"
-      fields: "id"
-      fields: "err"
-      fields: "latency"
-    }
-    probes {
-      name: "http_return"
-      tracepoint {
-        symbol: "MyFunc"
-      }
-      args {
-        id: "arg0"
-        expr: "id"
-      }
-      ret_vals {
-        id: "ret0"
-        expr: "$0.a"
-      }
-      function_latency {
-        id: "lat0"
-      }
-      output_actions {
-        output_name: "http_return_table"
-        variable_name: "arg0"
-        variable_name: "ret0"
-        variable_name: "lat0"
-      }
-    }
-  }
-}
-)pxl";
-
 constexpr char kSingleProbeUpsertSharedObjectProgramPb[] = R"pxl(
 name: "http_return"
 ttl {
@@ -245,37 +201,6 @@ TEST_F(ProbeCompilerTest, parse_single_probe) {
   EXPECT_OK(probe_ir->ToProto(&pb));
   ASSERT_EQ(pb.mutations_size(), 1);
   EXPECT_THAT(pb.mutations()[0].trace(), testing::proto::EqualsProto(kSingleProbeProgramOnUPIDPb));
-}
-
-TEST_F(ProbeCompilerTest, parse_probe_pod_spec) {
-  std::string query = absl::Substitute(kSingleProbeUpsertPxlTpl, "$0",
-                                       "px.Pod('pl/vizier-query-broker-85dc9bc4d-jzw4s')");
-  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(query));
-  plannerpb::CompileMutationsResponse pb;
-  EXPECT_OK(probe_ir->ToProto(&pb));
-  ASSERT_EQ(pb.mutations_size(), 1);
-  EXPECT_THAT(pb.mutations()[0].trace(), testing::proto::EqualsProto(kSingleProbeProgramOnPodPb));
-  EXPECT_THAT(pb.mutations()[0].trace(),
-              Not(testing::proto::EqualsProto(kSingleProbeProgramOnUPIDPb)));
-}
-
-TEST_F(ProbeCompilerTest, parse_probe_pod_spec_non_pod) {
-  // No pod specification.
-  EXPECT_COMPILER_ERROR(CompileProbeScript(absl::Substitute(kSingleProbeUpsertPxlTpl, "$0",
-                                                            "'pl/vizier-query-broker'")),
-                        "Expected 'pod', received 'String'");
-
-  // Using a Service specification.
-  EXPECT_COMPILER_ERROR(
-      CompileProbeScript(
-          absl::Substitute(kSingleProbeUpsertPxlTpl, "$0", "px.Service('pl/vizier-query-broker')")),
-      "Expected 'pod', received 'service'");
-
-  // Using a namespace specification.
-  EXPECT_COMPILER_ERROR(
-      CompileProbeScript(absl::Substitute(kSingleProbeUpsertPxlTpl, "$0",
-                                          "px.Namespace('pl/vizier-query-broker')")),
-      "Expected 'pod', received 'namespace'");
 }
 
 TEST_F(ProbeCompilerTest, parse_process_spec_just_pod) {

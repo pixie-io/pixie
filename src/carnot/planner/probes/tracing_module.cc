@@ -359,24 +359,6 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
           mutations_ir->CreateTracepointDeployment(tp_deployment_name, upid, ttl_ns);
       PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
       trace_program = trace_program_or_s.ConsumeValueOrDie();
-    } else if (Match(expr_object->node(), String())) {
-      PL_ASSIGN_OR_RETURN(StringIR * string_ir, GetArgAs<StringIR>(ast, args, "target"));
-      if (string_ir->type_cast() == nullptr) {
-        return string_ir->CreateIRNodeError("Expected 'pod', received '$0'",
-                                            string_ir->type_string());
-      }
-      if (string_ir->type_cast()->semantic_type() != types::ST_POD_NAME) {
-        return string_ir->CreateIRNodeError(
-            "Expected 'pod', received '$0'",
-            absl::StripSuffix(absl::StripPrefix(absl::AsciiStrToLower(types::SemanticType_Name(
-                                                    string_ir->type_cast()->semantic_type())),
-                                                "st_"),
-                              "_name"));
-      }
-      auto trace_program_or_s = mutations_ir->CreateTracepointDeploymentOnPod(
-          tp_deployment_name, string_ir->str(), ttl_ns);
-      PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
-      trace_program = trace_program_or_s.ConsumeValueOrDie();
     } else {
       return CreateAstError(ast, "Unexpected type '$0' for arg '$1'",
                             expr_object->node()->type_string(), "target");

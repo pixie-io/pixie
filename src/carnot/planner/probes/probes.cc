@@ -130,19 +130,6 @@ StatusOr<TracepointDeployment*> MutationsIR::CreateTracepointDeployment(
   return raw;
 }
 
-StatusOr<TracepointDeployment*> MutationsIR::CreateTracepointDeploymentOnPod(
-    const std::string& tracepoint_name, const std::string& pod_target, int64_t ttl_ns) {
-  std::unique_ptr<TracepointDeployment> program =
-      std::make_unique<TracepointDeployment>(tracepoint_name, ttl_ns);
-  TracepointDeployment* raw = program.get();
-
-  stirling::dynamic_tracing::ir::shared::DeploymentSpec deployment_spec;
-  deployment_spec.set_pod(pod_target);
-  deployments_.emplace_back(deployment_spec, std::move(program));
-
-  return raw;
-}
-
 StatusOr<TracepointDeployment*> MutationsIR::CreateTracepointDeploymentOnProcessSpec(
     const std::string& tracepoint_name, const ProcessSpec& process_spec, int64_t ttl_ns) {
   std::unique_ptr<TracepointDeployment> program =

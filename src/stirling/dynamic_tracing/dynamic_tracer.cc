@@ -249,37 +249,6 @@ StatusOr<K8sNameIdentView> GetPodNameIdent(std::string_view pod_name) {
   return K8sNameIdentView(ns_and_name.front(), ns_and_name.back());
 }
 
-// Returns a list of UPIDs belong to the Pod with the specified name.
-StatusOr<std::vector<md::UPID>> GetPodUPIDs(const md::K8sMetadataState& k8s_mds,
-                                            std::string_view pod_name) {
-  PL_ASSIGN_OR_RETURN(K8sNameIdentView name_ident_view, GetPodNameIdent(pod_name));
-
-  std::string pod_uid = k8s_mds.PodIDByName(name_ident_view);
-  if (pod_uid.empty()) {
-    return error::InvalidArgument("Could not find Pod for name '$0'", pod_name);
-  }
-
-  auto* pod_info = k8s_mds.PodInfoByID(pod_uid);
-  if (pod_info == nullptr) {
-    return error::InvalidArgument("Pod '$0' is recognized, but PodInfo is not found", pod_name);
-  }
-  if (pod_info->stop_time_ns() > 0) {
-    return error::InvalidArgument("Pod '$0' has died", pod_name);
-  }
-
-  std::vector<md::UPID> res;
-  for (const auto& container_id : pod_info->containers()) {
-    auto* container_info = k8s_mds.ContainerInfoByID(container_id);
-    if (container_info == nullptr || container_info->stop_time_ns() > 0) {
-      continue;
-    }
-    for (const auto& upid : container_info->active_upids()) {
-      res.push_back(upid);
-    }
-  }
-  return res;
-}
-
 // Returns a protobuf message from the corresponding native object.
 ir::shared::UPID UPIDToProto(const md::UPID& upid) {
   dynamic_tracing::ir::shared::UPID res;
@@ -287,28 +256,6 @@ ir::shared::UPID UPIDToProto(const md::UPID& upid) {
   res.set_pid(upid.pid());
   res.set_ts_ns(upid.start_ts());
   return res;
-}
-
-// Given a TracepointDeployment that specifies a Pod as the target, resolves the UPIDs, and writes
-// them into the input protobuf.
-//
-// TODO(yzhao): Remove this.
-Status ResolvePodUPIDs(const md::K8sMetadataState& k8s_mds,
-                       dynamic_tracing::ir::shared::DeploymentSpec* deployment_spec) {
-  std::string_view pod_name = deployment_spec->pod();
-
-  PL_ASSIGN_OR_RETURN(std::vector<md::UPID> pod_upids, GetPodUPIDs(k8s_mds, pod_name));
-
-  if (pod_upids.empty()) {
-    return error::NotFound("Found no UPIDs for Pod '$0'", pod_name);
-  }
-  if (pod_upids.size() > 1) {
-    return error::Internal("Found more than 1 UPIDs for Pod '$0'", pod_name);
-  }
-  // Target oneof now clears the pod.
-  deployment_spec->mutable_upid()->CopyFrom(UPIDToProto(pod_upids.front()));
-
-  return Status::OK();
 }
 
 // TODO(oazizi/yzhao): Support deployments rather than Pods. (1) make sure it is more sophisticated
@@ -385,7 +332,7 @@ StatusOr<const md::ContainerInfo*> ResolveContainer(const md::K8sMetadataState& 
   } else {
     auto iter = name_to_container_info.find(container_name);
     if (iter == name_to_container_info.end()) {
-      return error::NotFound("Could not found live container for Pod: $0", pod_info.name());
+      return error::NotFound("Could not find live container for Pod: $0", pod_info.name());
     }
     container_info = iter->second;
   }
@@ -452,11 +399,6 @@ Status ResolvePodProcess(const md::K8sMetadataState& k8s_mds,
 
 Status ResolveTargetObjPath(const md::K8sMetadataState& k8s_mds,
                             ir::shared::DeploymentSpec* deployment_spec) {
-  // Write Pod UPID to deployment_spec.upid.
-  if (!deployment_spec->pod().empty()) {
-    PL_RETURN_IF_ERROR(ResolvePodUPIDs(k8s_mds, deployment_spec));
-  }
-
   // Write PodProcess to deployment_spec.upid.
   if (deployment_spec->has_pod_process()) {
     PL_RETURN_IF_ERROR(ResolvePodProcess(k8s_mds, deployment_spec));
@@ -479,11 +421,6 @@ Status ResolveTargetObjPath(const md::K8sMetadataState& k8s_mds,
     // Populate path based on shared object identifier.
     case ir::shared::DeploymentSpec::TargetOneofCase::kSharedObject: {
       PL_ASSIGN_OR_RETURN(target_obj_path, ResolveSharedObject(*deployment_spec));
-      break;
-    }
-    // Populate UPIDs based on Pod name.
-    case ir::shared::DeploymentSpec::TargetOneofCase::kPod: {
-      LOG(DFATAL) << "This should never happen, pod must have been rewritten to UPID.";
       break;
     }
     case ir::shared::DeploymentSpec::TargetOneofCase::kPodProcess: {
