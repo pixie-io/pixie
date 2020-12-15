@@ -40,10 +40,14 @@ export interface AutocompleteContextProps {
   /** @default true */
   requireCompletion?: boolean;
   /**
-   * If true, existing contents will be selected when this autocomplete is opened.
-   * @default false
+   * What to do when an associated input is "opened" - like first being created, or being revealed in a dropdown.
+   * 'none': don't respond to the input being opened
+   * 'focus': moves tab focus to the input
+   * 'select': moves tab focus to the input, then selects its contents as if Ctrl/Cmd+A had been pressed.
+   * 'clear': moves tab focus to the input, and sets its value to the empty string.
+   * @default focus
    */
-  preSelect?: boolean;
+  openMode?: 'none'|'focus'|'select'|'clear';
   inputRef?: React.MutableRefObject<HTMLInputElement>;
 }
 
@@ -52,7 +56,7 @@ AutocompleteContextProps
 >({
   allowTyping: true,
   requireCompletion: true,
-  preSelect: false,
+  openMode: 'none',
 });
 
 interface AutoCompleteProps {
@@ -99,7 +103,6 @@ export const Autocomplete: React.FC<AutoCompleteProps> = ({
     allowTyping,
     requireCompletion,
     inputRef,
-    preSelect,
   } = React.useContext(AutocompleteContext);
   const [inputValue, setInputValue] = React.useState('');
   const [completions, setCompletions] = React.useState([]);
@@ -175,7 +178,6 @@ export const Autocomplete: React.FC<AutoCompleteProps> = ({
           prefix={prefix}
           suggestion={itemsMap.get(activeItem)?.title || ''}
           customRef={inputRef}
-          preSelect={preSelect}
         />
       )}
       <Completions

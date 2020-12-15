@@ -3,6 +3,7 @@ import * as React from 'react';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
+import { AutocompleteContext } from 'components/autocomplete/autocomplete';
 import { Key } from './key';
 
 // TODO(malthus): Make use of the theme styles.
@@ -70,7 +71,6 @@ interface InputProps {
   className?: string;
   value: string;
   customRef?: React.MutableRefObject<HTMLInputElement>;
-  preSelect?: boolean;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -82,22 +82,24 @@ export const Input: React.FC<InputProps> = ({
   prefix = null,
   value,
   customRef,
-  preSelect,
 }) => {
   const classes = useStyles();
+  const { openMode } = React.useContext(AutocompleteContext);
   const dummyElement = React.useRef<HTMLSpanElement>(null);
   const defaultRef = React.useRef<HTMLInputElement>(null);
   const inputRef = customRef || defaultRef;
 
   React.useEffect(() => {
-    if (preSelect && inputRef.current) {
+    if (openMode !== 'none' && inputRef.current) {
       // Need to wait for the value to propagate, so let the render complete before manipulating the selection directly.
       setTimeout(() => {
-        inputRef.current.setSelectionRange(0, inputRef.current.value.length);
+        if (openMode === 'select') inputRef.current.setSelectionRange(0, inputRef.current.value.length);
+        if (openMode === 'clear') inputRef.current.value = '';
+        inputRef.current.focus();
       }, 0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [preSelect, inputRef]);
+  }, [openMode, inputRef]);
 
   const handleChange = React.useCallback(
     (e) => {

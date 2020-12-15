@@ -163,7 +163,7 @@ const DialogDropdown = ({
   anchorEl,
 }: DialogDropdownProps) => {
   const mounted = useIsMounted();
-  const { allowTyping, requireCompletion, preSelect } = React.useContext(
+  const { allowTyping, requireCompletion } = React.useContext(
     AutocompleteContext,
   );
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -286,7 +286,7 @@ const DialogDropdown = ({
               allowTyping,
               requireCompletion,
               inputRef,
-              preSelect: !!(preSelect && anchorEl),
+              openMode: anchorEl ? 'focus' : 'none',
             }}
           >
             <Autocomplete
@@ -399,7 +399,7 @@ const BreadcrumbsImpl = ({ classes, breadcrumbs }: BreadcrumbsProps) => {
             allowTyping: breadcrumb.allowTyping ?? allowTyping,
             requireCompletion:
               breadcrumb.requireCompletion ?? requireCompletion,
-            preSelect: true,
+            openMode: 'clear',
           }}
         >
           <Breadcrumb key={i} classes={classes} {...breadcrumb} />
