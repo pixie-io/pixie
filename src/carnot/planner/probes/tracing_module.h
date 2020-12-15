@@ -218,14 +218,14 @@ class TraceModule : public QLObject {
   :topic: tracepoint_fields
 
   Args:
-    pod_name (str): The name of the pod that's running the process to target.
-    container_name (str, optional): The name of the container that's running
-      the process. Specify this argument if a pod has more than one container. The
-      compiler will error out if a Pod has mulitple container_names and this is
-      not specified.
-    process_name (str, optional): The name of the process as you might find in top.
-      Specify this if a container has more than one process. The compiler will
-      error out if a container has multiple cmdlines and this is not specified.
+    pod_name (str): The name of the pod running the target process. Must be of the format <namespace>/<pod>.
+      You may also use the prefix of the pod name to avoid writing the kubernetes generated check-sum.
+    container_name (str, optional): The name of the container that's running the process.
+      Specify this argument if a pod has more than one containers. The compiler will error out
+      if a pod has multiple containers and this is not specified.
+    process_name (str, optional): A regexp that matches any substrings of the command line of
+      the target process. Specify this if a container has more than one process. The compiler will
+      error out if a container has multiple processes and this is not specified.
 
   Returns:
     ProcessTarget: A pointer to that Process that can be passed as a target

@@ -399,6 +399,11 @@ Status ResolvePodProcess(const md::K8sMetadataState& k8s_mds,
 
 Status ResolveTargetObjPath(const md::K8sMetadataState& k8s_mds,
                             ir::shared::DeploymentSpec* deployment_spec) {
+  // Write Pod UPID to deployment_spec.upid.
+  if (!deployment_spec->pod().empty()) {
+    PL_RETURN_IF_ERROR(ResolvePodUPIDs(k8s_mds, deployment_spec));
+  }
+
   // Write PodProcess to deployment_spec.upid.
   if (deployment_spec->has_pod_process()) {
     PL_RETURN_IF_ERROR(ResolvePodProcess(k8s_mds, deployment_spec));
