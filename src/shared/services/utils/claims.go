@@ -187,7 +187,9 @@ func GenerateJWTForCluster(clusterID string) *jwt2.JWTClaims {
 	pbClaims := jwt2.JWTClaims{
 		Audience:  "pixielabs.ai",
 		ExpiresAt: time.Now().Add(time.Hour).Unix(),
-		IssuedAt:  time.Now().Unix(),
+		// The IssuedAt begins earlier, to give leeway for user's clusters
+		// which may have some clock skew.
+		IssuedAt:  time.Now().Add(-2 * time.Minute).Unix(),
 		NotBefore: time.Now().Add(-2 * time.Minute).Unix(),
 		Issuer:    "pixielabs.ai",
 		Subject:   "pixielabs.ai/vizier",
