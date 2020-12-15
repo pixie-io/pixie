@@ -348,6 +348,57 @@ message GetDeploymentKeyResponse {
     DeploymentKey key = 1;
 }
 
+// APIKeyManager is the service that manages API keys.
+service APIKeyManager {
+    // Create a new API key.
+    rpc Create(CreateAPIKeyRequest) returns (APIKey) {}
+    // List all keys for the user/org.
+    // TODO(zasgar): Update when we have RBAC.
+    rpc List(ListAPIKeyRequest) returns(ListAPIKeyResponse) {}
+    // Get the key specified by ID.
+    rpc Get(GetAPIKeyRequest) returns (GetAPIKeyResponse) {}
+    // Delete the Key specified by ID.
+    rpc Delete(uuidpb.UUID) returns (google.protobuf.Empty) {}
+}
+
+// A key that can be used to deploy a new vizier cluster. This is value of the key
+// is added to the PIXIE-API-KEY requests from API requests.
+message APIKey {
+    // They ID of the key.
+    uuidpb.UUID id = 1  [
+                        (gogoproto.customname) = "ID"
+                        ];
+    // The value of the key.
+    string key = 2;
+    google.protobuf.Timestamp created_at = 3;
+    // Description for the key.
+    string desc = 4;
+}
+
+// Create a API key.
+message CreateAPIKeyRequest {
+    // Description for the key.
+    string desc = 1;
+}
+
+message ListAPIKeyRequest {
+    // Empty message on purpose so we can extend with attributes easily if needed.
+}
+
+message ListAPIKeyResponse {
+    repeated APIKey keys = 1;
+}
+
+message GetAPIKeyRequest {
+    uuidpb.UUID id = 1  [
+                        (gogoproto.customname) = "ID"
+                        ];
+}
+
+message GetAPIKeyResponse {
+    APIKey key = 1;
+}
+
 service ScriptMgr {
   // GetLiveViews returns a list of all available live views.
   rpc GetLiveViews(GetLiveViewsReq) returns (GetLiveViewsResp) {}
