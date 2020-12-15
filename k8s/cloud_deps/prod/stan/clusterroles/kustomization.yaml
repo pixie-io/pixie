@@ -4,10 +4,7 @@ kind: Kustomization
 commonLabels:
   app: pl-cloud
   component: cloud-deps
-namespace: plc-dev
+namespace: plc
+namePrefix: "plc:"
 resources:
-- clusterroles
-- ../../base/stan
-patchesStrategicMerge:
-- config_patch.yaml
-- replica_patch.yaml
+- ../../../base/stan/clusterroles

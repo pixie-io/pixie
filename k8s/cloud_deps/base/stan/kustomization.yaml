@@ -4,13 +4,13 @@ kind: Kustomization
 commonLabels:
   app: pl-cloud
 resources:
-- operator
-- cluster
+- service_accounts.yaml
+- deployment.yaml
 vars:
 - name: STAN_SERVICEACCOUNT_NAMESPACE
   objref:
     kind: ServiceAccount
-    name: nats-streaming-operator
+    name: stan
     apiVersion: v1
   fieldref:
     fieldpath: metadata.namespace

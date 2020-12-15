@@ -1,0 +1,163 @@
+# Copyright 2020 The NATS Authors
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+# http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# File modified from the original to use our specific names/namespaces
+# and to set some other config options.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stan-config
+data:
+# yamllint disable
+  stan.conf: |
+    port: 4222
+    http: 8222
+
+    tls: {
+      ca_file: "/etc/nats/certs/ca.crt",
+      cert_file: "/etc/nats/certs/server.crt",
+      key_file: "/etc/nats/certs/server.key",
+      timeout: 3
+    }
+
+    streaming {
+     id: pl-stan
+     ns: "nats://pl-nats:4222"
+     store: file
+     dir: /data/stan/store
+     store_limits {
+      max_age: "168h"
+      max_channels: 1000
+      max_subscriptions: 1000
+    }
+     tls: {
+        client_ca: "/etc/nats/certs/ca.crt",
+        client_cert: "/etc/nats/certs/server.crt",
+        client_key: "/etc/nats/certs/server.key",
+        timeout: 3
+      }
+      cluster {
+        node_id: $POD_NAME
+        log_path: /data/stan/log
+        # Explicit names of resulting peers
+        peers: ["pl-stan-0", "pl-stan-1", "pl-stan-2", "pl-stan-3", "pl-stan-4"]
+      }
+    }
+# yamllint enable
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pl-stan
+  labels:
+    app: stan
+spec:
+  selector:
+    app: stan
+  clusterIP: None
+  ports:
+  - name: metrics
+    port: 7777
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pl-stan
+  labels:
+    app: stan
+spec:
+  selector:
+    matchLabels:
+      app: stan
+  serviceName: pl-stan
+  replicas: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: stan-sts-vol
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      volumeMode: "Filesystem"
+      resources:
+        requests:
+          storage: 1Gi
+  template:
+    metadata:
+      labels:
+        app: stan
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              topologyKey: "kubernetes.io/hostname"
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - stan
+      # STAN Server
+      containers:
+      - name: pl-stan
+        image: nats-streaming:0.16.2
+        ports:
+        - containerPort: 8222
+          name: monitor
+        - containerPort: 7777
+          name: metrics
+        args:
+        - "-sc"
+        - "/etc/stan-config/stan.conf"
+
+        # Required to be able to define an environment variable
+        # that refers to other environment variables.  This env var
+        # is later used as part of the configuration file.
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/stan-config
+        - name: stan-sts-vol
+          mountPath: /data/stan
+        - name: nats-server-tls-volume
+          mountPath: /etc/nats/certs
+
+        # Disable CPU limits.
+        resources:
+          requests:
+            cpu: 0
+
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8222
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+      volumes:
+      - name: config-volume
+        configMap:
+          name: stan-config
+      - name: nats-server-tls-volume
+        secret:
+          secretName: service-tls-certs

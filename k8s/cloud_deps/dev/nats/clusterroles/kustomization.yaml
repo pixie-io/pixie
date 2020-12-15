@@ -5,9 +5,6 @@ commonLabels:
   app: pl-cloud
   component: cloud-deps
 namespace: plc-dev
+namePrefix: "plc-dev:"
 resources:
-- clusterroles
-- ../../base/stan
-patchesStrategicMerge:
-- config_patch.yaml
-- replica_patch.yaml
+- ../../../base/nats/clusterroles

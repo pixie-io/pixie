@@ -6,7 +6,5 @@ commonLabels:
   component: cloud-deps
 namespace: plc
 resources:
-- operator/clusterroles
+- clusterroles
 - ../../base/nats
-patchesStrategicMerge:
-- cluster_patch.yaml
