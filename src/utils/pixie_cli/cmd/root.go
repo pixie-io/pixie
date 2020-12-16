@@ -46,6 +46,7 @@ func init() {
 	RootCmd.AddCommand(CreateBundle)
 
 	RootCmd.AddCommand(DeployKeyCmd)
+	RootCmd.AddCommand(APIKeyCmd)
 
 	RootCmd.AddCommand(DebugCmd)
 	// Super secret flags for Pixies.
