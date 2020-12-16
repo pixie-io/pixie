@@ -22,9 +22,9 @@ import {
   UseKeyListStyles, KeyListItemIcon, KeyListItemText, KeyListMenu,
 } from './key-list';
 
-const LIST_DEPLOYMENT_KEYS = gql`
+const LIST_API_KEYS = gql`
 {
-  deploymentKeys {
+  apiKeys {
     id
     key
     desc
@@ -32,21 +32,21 @@ const LIST_DEPLOYMENT_KEYS = gql`
   }
 }`;
 
-const DELETE_DEPLOY_KEY = gql`
+const DELETE_API_KEY = gql`
   mutation deleteKey($id: ID!) {
-    DeleteDeploymentKey(id: $id)
+    DeleteAPIKey(id: $id)
   }
 `;
 
-export const CREATE_DEPLOYMENT_KEY = gql`
+export const CREATE_API_KEY = gql`
   mutation {
-    CreateDeploymentKey {
+    CreateAPIKey {
       id
     }
   }
 `;
 
-interface DeploymentKeyDisplay {
+interface APIKeyDisplay {
   id: string;
   idShort: string;
   createdAt: string;
@@ -54,25 +54,25 @@ interface DeploymentKeyDisplay {
   desc: string;
 }
 
-export function formatDeploymentKey(depKey): DeploymentKeyDisplay {
+export function formatAPIKey(apiKey): APIKeyDisplay {
   const now = new Date();
   return {
-    id: depKey.id,
-    idShort: depKey.id.split('-').pop(),
-    createdAt: `${distanceInWords(new Date(depKey.createdAtMs), now, { addSuffix: false })} ago`,
-    key: depKey.key,
-    desc: depKey.desc,
+    id: apiKey.id,
+    idShort: apiKey.id.split('-').pop(),
+    createdAt: `${distanceInWords(new Date(apiKey.createdAtMs), now, { addSuffix: false })} ago`,
+    key: apiKey.key,
+    desc: apiKey.desc,
   };
 }
 
-export const DeploymentKeyRow = ({ deploymentKey }) => {
+export const APIKeyRow = ({ apiKey }) => {
   const classes = UseKeyListStyles();
   const [showKey, setShowKey] = React.useState(false);
 
   const [open, setOpen] = React.useState<boolean>(false);
   const [anchorEl, setAnchorEl] = React.useState(null);
 
-  const [deleteDeployKey] = useMutation(DELETE_DEPLOY_KEY);
+  const [deleteAPIKey] = useMutation(DELETE_API_KEY);
 
   const openMenu = React.useCallback((event) => {
     setOpen(true);
@@ -85,21 +85,21 @@ export const DeploymentKeyRow = ({ deploymentKey }) => {
   }, []);
 
   return (
-    <TableRow key={deploymentKey.id}>
-      <AdminTooltip title={deploymentKey.id}>
-        <StyledLeftTableCell>{deploymentKey.idShort}</StyledLeftTableCell>
+    <TableRow key={apiKey.id}>
+      <AdminTooltip title={apiKey.id}>
+        <StyledLeftTableCell>{apiKey.idShort}</StyledLeftTableCell>
       </AdminTooltip>
-      <StyledTableCell>{deploymentKey.createdAt}</StyledTableCell>
-      <StyledTableCell>{deploymentKey.desc}</StyledTableCell>
+      <StyledTableCell>{apiKey.createdAt}</StyledTableCell>
+      <StyledTableCell>{apiKey.desc}</StyledTableCell>
       <StyledTableCell>
         <Input
           className={classes.keyValue}
-          id='deployment-key'
+          id='api-key'
           fullWidth
           readOnly
           disableUnderline
           type={showKey ? 'text' : 'password'}
-          value={deploymentKey.key}
+          value={apiKey.key}
         />
       </StyledTableCell>
       <StyledRightTableCell>
@@ -126,7 +126,7 @@ export const DeploymentKeyRow = ({ deploymentKey }) => {
           <MenuItem
             key='copy'
             alignItems='center'
-            onClick={() => navigator.clipboard.writeText(deploymentKey.key)}
+            onClick={() => navigator.clipboard.writeText(apiKey.key)}
           >
             <KeyListItemIcon className={classes.copyBtn}>
               <Copy />
@@ -136,7 +136,7 @@ export const DeploymentKeyRow = ({ deploymentKey }) => {
           <MenuItem
             key='delete'
             alignItems='center'
-            onClick={() => deleteDeployKey({ variables: { id: deploymentKey.id } })}
+            onClick={() => deleteAPIKey({ variables: { id: apiKey.id } })}
           >
             <KeyListItemIcon className={classes.copyBtn}>
               <Delete />
@@ -149,9 +149,9 @@ export const DeploymentKeyRow = ({ deploymentKey }) => {
   );
 };
 
-export const DeploymentKeysTable = () => {
+export const APIKeysTable = () => {
   const classes = UseKeyListStyles();
-  const { loading, error, data } = useQuery(LIST_DEPLOYMENT_KEYS, { pollInterval: 2000 });
+  const { loading, error, data } = useQuery(LIST_API_KEYS, { pollInterval: 2000 });
   if (loading) {
     return <div className={classes.error}>Loading...</div>;
   }
@@ -159,7 +159,7 @@ export const DeploymentKeysTable = () => {
     return <div className={classes.error}>{error.toString()}</div>;
   }
 
-  const deploymentKeys = (data?.deploymentKeys || []).map((key) => formatDeploymentKey(key));
+  const apiKeys = (data?.apiKeys || []).map((key) => formatAPIKey(key));
   return (
     <>
       <Table>
@@ -173,8 +173,8 @@ export const DeploymentKeysTable = () => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {deploymentKeys.map((deploymentKey: DeploymentKeyDisplay) => (
-            <DeploymentKeyRow key={deploymentKey.id} deploymentKey={deploymentKey} />
+          {apiKeys.map((apiKey: APIKeyDisplay) => (
+            <APIKeyRow key={apiKey.id} apiKey={apiKey} />
           ))}
         </TableBody>
       </Table>

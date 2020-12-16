@@ -12,6 +12,7 @@ import TableContainer from '@material-ui/core/TableContainer';
 import Add from '@material-ui/icons/Add';
 
 import { CREATE_DEPLOYMENT_KEY, DeploymentKeysTable } from 'containers/admin/deployment-keys';
+import { CREATE_API_KEY, APIKeysTable } from 'containers/admin/api-keys';
 import { ClustersTable } from 'containers/admin/clusters-list';
 import { StyledTab, StyledTabs } from 'containers/admin/utils';
 import { scrollbarStyles } from 'pixie-components';
@@ -41,6 +42,7 @@ export const AdminOverview = withStyles((theme: Theme) => createStyles({
   },
 }))(({ classes }: WithStyles) => {
   const [createDeployKey] = useMutation(CREATE_DEPLOYMENT_KEY);
+  const [createAPIKey] = useMutation(CREATE_API_KEY);
   const [tab, setTab] = React.useState('clusters');
 
   return (
@@ -52,6 +54,7 @@ export const AdminOverview = withStyles((theme: Theme) => createStyles({
         >
           <StyledTab value='clusters' label='Clusters' />
           <StyledTab value='deployment-keys' label='Deployment Keys' />
+          <StyledTab value='api-keys' label='API Keys' />
         </StyledTabs>
         {tab === 'deployment-keys'
           && (
@@ -65,11 +68,24 @@ export const AdminOverview = withStyles((theme: Theme) => createStyles({
             New key
           </Button>
           )}
+        {tab === 'api-keys'
+          && (
+          <Button
+            onClick={() => createAPIKey()}
+            className={classes.createButton}
+            variant='outlined'
+            startIcon={<Add />}
+            color='primary'
+          >
+            New key
+          </Button>
+          )}
       </div>
       <div className={classes.tabContents}>
         <TableContainer className={classes.table}>
           {tab === 'clusters' && <ClustersTable />}
           {tab === 'deployment-keys' && <DeploymentKeysTable />}
+          {tab === 'api-keys' && <APIKeysTable />}
         </TableContainer>
       </div>
     </div>
