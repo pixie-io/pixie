@@ -24,7 +24,6 @@ resources:
 - vzconn_backend_config.yaml
 - ../base
 - ../overlays/exposed_services_gclb
-- new_relic.yaml
 patchesStrategicMerge:
 - auth0_config.yaml
 - db_config.yaml
