@@ -91,6 +91,24 @@ func (mr *MockAuthServiceClientMockRecorder) GetAugmentedToken(ctx, in interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAugmentedToken", reflect.TypeOf((*MockAuthServiceClient)(nil).GetAugmentedToken), varargs...)
 }
 
+// GetAugmentedTokenForAPIKey mocks base method
+func (m *MockAuthServiceClient) GetAugmentedTokenForAPIKey(ctx context.Context, in *proto.GetAugmentedTokenForAPIKeyRequest, opts ...grpc.CallOption) (*proto.GetAugmentedTokenForAPIKeyResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetAugmentedTokenForAPIKey", varargs...)
+	ret0, _ := ret[0].(*proto.GetAugmentedTokenForAPIKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAugmentedTokenForAPIKey indicates an expected call of GetAugmentedTokenForAPIKey
+func (mr *MockAuthServiceClientMockRecorder) GetAugmentedTokenForAPIKey(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAugmentedTokenForAPIKey", reflect.TypeOf((*MockAuthServiceClient)(nil).GetAugmentedTokenForAPIKey), varargs...)
+}
+
 // MockAuthServiceServer is a mock of AuthServiceServer interface
 type MockAuthServiceServer struct {
 	ctrl     *gomock.Controller
@@ -151,6 +169,19 @@ func (m *MockAuthServiceServer) GetAugmentedToken(arg0 context.Context, arg1 *pr
 // GetAugmentedToken indicates an expected call of GetAugmentedToken
 func (mr *MockAuthServiceServerMockRecorder) GetAugmentedToken(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAugmentedToken", reflect.TypeOf((*MockAuthServiceServer)(nil).GetAugmentedToken), arg0, arg1)
+}
+
+// GetAugmentedTokenForAPIKey mocks base method
+func (m *MockAuthServiceServer) GetAugmentedTokenForAPIKey(arg0 context.Context, arg1 *proto.GetAugmentedTokenForAPIKeyRequest) (*proto.GetAugmentedTokenForAPIKeyResponse, error) {
+	ret := m.ctrl.Call(m, "GetAugmentedTokenForAPIKey", arg0, arg1)
+	ret0, _ := ret[0].(*proto.GetAugmentedTokenForAPIKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAugmentedTokenForAPIKey indicates an expected call of GetAugmentedTokenForAPIKey
+func (mr *MockAuthServiceServerMockRecorder) GetAugmentedTokenForAPIKey(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAugmentedTokenForAPIKey", reflect.TypeOf((*MockAuthServiceServer)(nil).GetAugmentedTokenForAPIKey), arg0, arg1)
 }
 
 // MockAPIKeyServiceClient is a mock of APIKeyServiceClient interface

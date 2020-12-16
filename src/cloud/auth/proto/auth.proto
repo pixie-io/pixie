@@ -30,6 +30,9 @@ service AuthService {
 
   // Takes an opaque identifier (from above) and produces a token with user details.
   rpc GetAugmentedToken(GetAugmentedAuthTokenRequest) returns (GetAugmentedAuthTokenResponse) {}
+
+  // Takes an API key and produces a token with user details.
+  rpc GetAugmentedTokenForAPIKey(GetAugmentedTokenForAPIKeyRequest) returns (GetAugmentedTokenForAPIKeyResponse) {}
 }
 
 message LoginRequest {
@@ -107,6 +110,23 @@ message GetAugmentedAuthTokenRequest {
 }
 
 message GetAugmentedAuthTokenResponse {
+  // The signed token augmented with user information. This can contain additional information about
+  // the user such as permissions, etc. This allows us to keep the initial token small.
+  // This token will have a short lifetime of ~30 mins.
+  string token = 1;
+
+  // When this login expires.
+  int64 expires_at      = 2;
+}
+
+message GetAugmentedTokenForAPIKeyRequest {
+  // An API Key that can be linked to a particular user/org. 
+  string api_key = 1 [
+    (gogoproto.customname) = "APIKey"
+  ];
+}
+
+message GetAugmentedTokenForAPIKeyResponse {
   // The signed token augmented with user information. This can contain additional information about
   // the user such as permissions, etc. This allows us to keep the initial token small.
   // This token will have a short lifetime of ~30 mins.

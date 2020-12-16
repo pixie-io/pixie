@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	uuid "github.com/satori/go.uuid"
@@ -283,6 +284,11 @@ func (s *Server) createUserAndOptionallyOrg(ctx context.Context, domainName stri
 
 	userInfo, err = s.updateAuth0User(userID, pbutils.UUIDFromProtoOrNil(orgID).String(), pbutils.UUIDFromProtoOrNil(userIDpb).String())
 	return userInfo, orgID, err
+}
+
+// GetAugmentedTokenForAPIKey produces an augmented token for the user given a API key.
+func (s *Server) GetAugmentedTokenForAPIKey(ctx context.Context, in *pb.GetAugmentedTokenForAPIKeyRequest) (*pb.GetAugmentedTokenForAPIKeyResponse, error) {
+	return nil, errors.New("Not yet implemented")
 }
 
 // GetAugmentedToken produces augmented tokens for the user based on passed in credentials.
