@@ -29,6 +29,7 @@ type APIEnv interface {
 	ProfileClient() profilepb.ProfileServiceClient
 	VZMgrClient() vzmgrpb.VZMgrServiceClient
 	VZDeploymentKeyClient() vzmgrpb.VZDeploymentKeyServiceClient
+	APIKeyClient() authpb.APIKeyServiceClient
 	ArtifactTrackerClient() artifacttrackerpb.ArtifactTrackerClient
 }
 
@@ -39,13 +40,14 @@ type Impl struct {
 	authClient            authpb.AuthServiceClient
 	profileClient         profilepb.ProfileServiceClient
 	vzDeployKeyClient     vzmgrpb.VZDeploymentKeyServiceClient
+	apiKeyClient          authpb.APIKeyServiceClient
 	vzMgrClient           vzmgrpb.VZMgrServiceClient
 	artifactTrackerClient artifacttrackerpb.ArtifactTrackerClient
 }
 
 // New creates a new api env.
 func New(ac authpb.AuthServiceClient, pc profilepb.ProfileServiceClient,
-	vk vzmgrpb.VZDeploymentKeyServiceClient, vc vzmgrpb.VZMgrServiceClient,
+	vk vzmgrpb.VZDeploymentKeyServiceClient, ak authpb.APIKeyServiceClient, vc vzmgrpb.VZMgrServiceClient,
 	at artifacttrackerpb.ArtifactTrackerClient) (APIEnv, error) {
 	sessionKey := viper.GetString("session_key")
 	if len(sessionKey) == 0 {
@@ -66,7 +68,7 @@ func New(ac authpb.AuthServiceClient, pc profilepb.ProfileServiceClient,
 		sessionStore = store
 	}
 
-	return &Impl{env.New(), sessionStore, ac, pc, vk, vc, at}, nil
+	return &Impl{env.New(), sessionStore, ac, pc, vk, ak, vc, at}, nil
 }
 
 // CookieStore returns the CookieStore from the environment.
@@ -87,6 +89,11 @@ func (e *Impl) ProfileClient() profilepb.ProfileServiceClient {
 // VZDeploymentKeyClient returns a Vizier deploy key client.
 func (e *Impl) VZDeploymentKeyClient() vzmgrpb.VZDeploymentKeyServiceClient {
 	return e.vzDeployKeyClient
+}
+
+// APIKeyClient returns a API key client.
+func (e *Impl) APIKeyClient() authpb.APIKeyServiceClient {
+	return e.apiKeyClient
 }
 
 // VZMgrClient returns a vzmgr client.

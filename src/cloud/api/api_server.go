@@ -77,7 +77,12 @@ func main() {
 		log.WithError(err).Fatal("Failed to init artifact tracker client")
 	}
 
-	env, err := apienv.New(ac, pc, vk, vc, at)
+	ak, err := controller.NewAPIKeyClient()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to init API key client")
+	}
+
+	env, err := apienv.New(ac, pc, vk, ak, vc, at)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment")
 	}
@@ -143,6 +148,9 @@ func main() {
 
 	vdks := &controller.VizierDeploymentKeyServer{VzDeploymentKey: vk}
 	cloudapipb.RegisterVizierDeploymentKeyManagerServer(s.GRPCServer(), vdks)
+
+	aks := &controller.APIKeyServer{APIKeyClient: ak}
+	cloudapipb.RegisterAPIKeyManagerServer(s.GRPCServer(), aks)
 
 	vpt := ptproxy.NewVizierPassThroughProxy(nc, vc)
 	pl_api_vizierpb.RegisterVizierServiceServer(s.GRPCServer(), vpt)

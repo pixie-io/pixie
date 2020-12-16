@@ -26,3 +26,18 @@ func NewAuthClient() (authpb.AuthServiceClient, error) {
 
 	return authpb.NewAuthServiceClient(authChannel), nil
 }
+
+// NewAPIKeyClient creates a new API key client.
+func NewAPIKeyClient() (authpb.APIKeyServiceClient, error) {
+	dialOpts, err := services.GetGRPCClientDialOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	authChannel, err := grpc.Dial(viper.GetString("auth_service"), dialOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return authpb.NewAPIKeyServiceClient(authChannel), nil
+}

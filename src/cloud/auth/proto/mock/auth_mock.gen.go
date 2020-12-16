@@ -6,9 +6,11 @@ package mock_auth
 
 import (
 	context "context"
+	types "github.com/gogo/protobuf/types"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 	proto "pixielabs.ai/pixielabs/src/cloud/auth/proto"
+	proto0 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	reflect "reflect"
 )
 
@@ -149,4 +151,174 @@ func (m *MockAuthServiceServer) GetAugmentedToken(arg0 context.Context, arg1 *pr
 // GetAugmentedToken indicates an expected call of GetAugmentedToken
 func (mr *MockAuthServiceServerMockRecorder) GetAugmentedToken(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAugmentedToken", reflect.TypeOf((*MockAuthServiceServer)(nil).GetAugmentedToken), arg0, arg1)
+}
+
+// MockAPIKeyServiceClient is a mock of APIKeyServiceClient interface
+type MockAPIKeyServiceClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockAPIKeyServiceClientMockRecorder
+}
+
+// MockAPIKeyServiceClientMockRecorder is the mock recorder for MockAPIKeyServiceClient
+type MockAPIKeyServiceClientMockRecorder struct {
+	mock *MockAPIKeyServiceClient
+}
+
+// NewMockAPIKeyServiceClient creates a new mock instance
+func NewMockAPIKeyServiceClient(ctrl *gomock.Controller) *MockAPIKeyServiceClient {
+	mock := &MockAPIKeyServiceClient{ctrl: ctrl}
+	mock.recorder = &MockAPIKeyServiceClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockAPIKeyServiceClient) EXPECT() *MockAPIKeyServiceClientMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method
+func (m *MockAPIKeyServiceClient) Create(ctx context.Context, in *proto.CreateAPIKeyRequest, opts ...grpc.CallOption) (*proto.APIKey, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Create", varargs...)
+	ret0, _ := ret[0].(*proto.APIKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create
+func (mr *MockAPIKeyServiceClientMockRecorder) Create(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockAPIKeyServiceClient)(nil).Create), varargs...)
+}
+
+// List mocks base method
+func (m *MockAPIKeyServiceClient) List(ctx context.Context, in *proto.ListAPIKeyRequest, opts ...grpc.CallOption) (*proto.ListAPIKeyResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "List", varargs...)
+	ret0, _ := ret[0].(*proto.ListAPIKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List
+func (mr *MockAPIKeyServiceClientMockRecorder) List(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockAPIKeyServiceClient)(nil).List), varargs...)
+}
+
+// Get mocks base method
+func (m *MockAPIKeyServiceClient) Get(ctx context.Context, in *proto.GetAPIKeyRequest, opts ...grpc.CallOption) (*proto.GetAPIKeyResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Get", varargs...)
+	ret0, _ := ret[0].(*proto.GetAPIKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get
+func (mr *MockAPIKeyServiceClientMockRecorder) Get(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAPIKeyServiceClient)(nil).Get), varargs...)
+}
+
+// Delete mocks base method
+func (m *MockAPIKeyServiceClient) Delete(ctx context.Context, in *proto0.UUID, opts ...grpc.CallOption) (*types.Empty, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Delete", varargs...)
+	ret0, _ := ret[0].(*types.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Delete indicates an expected call of Delete
+func (mr *MockAPIKeyServiceClientMockRecorder) Delete(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockAPIKeyServiceClient)(nil).Delete), varargs...)
+}
+
+// MockAPIKeyServiceServer is a mock of APIKeyServiceServer interface
+type MockAPIKeyServiceServer struct {
+	ctrl     *gomock.Controller
+	recorder *MockAPIKeyServiceServerMockRecorder
+}
+
+// MockAPIKeyServiceServerMockRecorder is the mock recorder for MockAPIKeyServiceServer
+type MockAPIKeyServiceServerMockRecorder struct {
+	mock *MockAPIKeyServiceServer
+}
+
+// NewMockAPIKeyServiceServer creates a new mock instance
+func NewMockAPIKeyServiceServer(ctrl *gomock.Controller) *MockAPIKeyServiceServer {
+	mock := &MockAPIKeyServiceServer{ctrl: ctrl}
+	mock.recorder = &MockAPIKeyServiceServerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockAPIKeyServiceServer) EXPECT() *MockAPIKeyServiceServerMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method
+func (m *MockAPIKeyServiceServer) Create(arg0 context.Context, arg1 *proto.CreateAPIKeyRequest) (*proto.APIKey, error) {
+	ret := m.ctrl.Call(m, "Create", arg0, arg1)
+	ret0, _ := ret[0].(*proto.APIKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create
+func (mr *MockAPIKeyServiceServerMockRecorder) Create(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockAPIKeyServiceServer)(nil).Create), arg0, arg1)
+}
+
+// List mocks base method
+func (m *MockAPIKeyServiceServer) List(arg0 context.Context, arg1 *proto.ListAPIKeyRequest) (*proto.ListAPIKeyResponse, error) {
+	ret := m.ctrl.Call(m, "List", arg0, arg1)
+	ret0, _ := ret[0].(*proto.ListAPIKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List
+func (mr *MockAPIKeyServiceServerMockRecorder) List(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockAPIKeyServiceServer)(nil).List), arg0, arg1)
+}
+
+// Get mocks base method
+func (m *MockAPIKeyServiceServer) Get(arg0 context.Context, arg1 *proto.GetAPIKeyRequest) (*proto.GetAPIKeyResponse, error) {
+	ret := m.ctrl.Call(m, "Get", arg0, arg1)
+	ret0, _ := ret[0].(*proto.GetAPIKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get
+func (mr *MockAPIKeyServiceServerMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAPIKeyServiceServer)(nil).Get), arg0, arg1)
+}
+
+// Delete mocks base method
+func (m *MockAPIKeyServiceServer) Delete(arg0 context.Context, arg1 *proto0.UUID) (*types.Empty, error) {
+	ret := m.ctrl.Call(m, "Delete", arg0, arg1)
+	ret0, _ := ret[0].(*types.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Delete indicates an expected call of Delete
+func (mr *MockAPIKeyServiceServerMockRecorder) Delete(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockAPIKeyServiceServer)(nil).Delete), arg0, arg1)
 }

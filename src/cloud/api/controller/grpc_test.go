@@ -15,6 +15,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
+	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	mock_autocomplete "pixielabs.ai/pixielabs/src/cloud/autocomplete/mock"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
@@ -509,6 +510,131 @@ func TestVizierDeploymentKeyServer_Delete(t *testing.T) {
 		VzDeploymentKey: mockClients.MockVzDeployKey,
 	}
 	resp, err := vzDeployKeyServer.Delete(ctx, id)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, resp, vzresp)
+}
+
+func TestAPIKeyServer_Create(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	vzreq := &authpb.CreateAPIKeyRequest{Desc: "test key"}
+	vzresp := &authpb.APIKey{
+		ID:        pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		Key:       "foobar",
+		CreatedAt: types.TimestampNow(),
+	}
+	mockClients.MockAPIKey.EXPECT().
+		Create(gomock.Any(), vzreq).Return(vzresp, nil)
+
+	vzAPIKeyServer := &controller.APIKeyServer{
+		APIKeyClient: mockClients.MockAPIKey,
+	}
+
+	resp, err := vzAPIKeyServer.Create(ctx, &cloudapipb.CreateAPIKeyRequest{Desc: "test key"})
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, resp.ID, vzresp.ID)
+	assert.Equal(t, resp.Key, vzresp.Key)
+	assert.Equal(t, resp.CreatedAt, vzresp.CreatedAt)
+}
+
+func TestAPIKeyServer_List(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	vzreq := &authpb.ListAPIKeyRequest{}
+	vzresp := &authpb.ListAPIKeyResponse{
+		Keys: []*authpb.APIKey{
+			&authpb.APIKey{
+				ID:        pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+				Key:       "foobar",
+				CreatedAt: types.TimestampNow(),
+				Desc:      "this is a key",
+			},
+		},
+	}
+	mockClients.MockAPIKey.EXPECT().
+		List(gomock.Any(), vzreq).Return(vzresp, nil)
+
+	vzAPIKeyServer := &controller.APIKeyServer{
+		APIKeyClient: mockClients.MockAPIKey,
+	}
+
+	resp, err := vzAPIKeyServer.List(ctx, &cloudapipb.ListAPIKeyRequest{})
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	for i, key := range resp.Keys {
+		assert.Equal(t, key.ID, vzresp.Keys[i].ID)
+		assert.Equal(t, key.Key, vzresp.Keys[i].Key)
+		assert.Equal(t, key.CreatedAt, vzresp.Keys[i].CreatedAt)
+		assert.Equal(t, key.Desc, vzresp.Keys[i].Desc)
+	}
+}
+
+func TestAPIKeyServer_Get(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	id := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	vzreq := &authpb.GetAPIKeyRequest{
+		ID: id,
+	}
+	vzresp := &authpb.GetAPIKeyResponse{
+		Key: &authpb.APIKey{
+			ID:        id,
+			Key:       "foobar",
+			CreatedAt: types.TimestampNow(),
+			Desc:      "this is a key",
+		},
+	}
+	mockClients.MockAPIKey.EXPECT().
+		Get(gomock.Any(), vzreq).Return(vzresp, nil)
+
+	vzAPIKeyServer := &controller.APIKeyServer{
+		APIKeyClient: mockClients.MockAPIKey,
+	}
+	resp, err := vzAPIKeyServer.Get(ctx, &cloudapipb.GetAPIKeyRequest{
+		ID: id,
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, resp.Key.ID, vzresp.Key.ID)
+	assert.Equal(t, resp.Key.Key, vzresp.Key.Key)
+	assert.Equal(t, resp.Key.CreatedAt, vzresp.Key.CreatedAt)
+	assert.Equal(t, resp.Key.Desc, vzresp.Key.Desc)
+}
+
+func TestAPIKeyServer_Delete(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	id := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	vzresp := &types.Empty{}
+	mockClients.MockAPIKey.EXPECT().
+		Delete(gomock.Any(), id).Return(vzresp, nil)
+
+	vzAPIKeyServer := &controller.APIKeyServer{
+		APIKeyClient: mockClients.MockAPIKey,
+	}
+	resp, err := vzAPIKeyServer.Delete(ctx, id)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, resp, vzresp)

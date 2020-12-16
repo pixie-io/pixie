@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
+	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
@@ -463,6 +464,81 @@ func (v *VizierDeploymentKeyServer) Delete(ctx context.Context, uuid *uuidpb.UUI
 		return nil, err
 	}
 	return v.VzDeploymentKey.Delete(ctx, uuid)
+}
+
+// APIKeyServer is the server that implements the APIKeyManager gRPC service.
+type APIKeyServer struct {
+	APIKeyClient authpb.APIKeyServiceClient
+}
+
+func apiKeyToCloudAPI(key *authpb.APIKey) *cloudapipb.APIKey {
+	return &cloudapipb.APIKey{
+		ID:        key.ID,
+		Key:       key.Key,
+		CreatedAt: key.CreatedAt,
+		Desc:      key.Desc,
+	}
+}
+
+// Create creates a new API key.
+func (v *APIKeyServer) Create(ctx context.Context, req *cloudapipb.CreateAPIKeyRequest) (*cloudapipb.APIKey, error) {
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := v.APIKeyClient.Create(ctx, &authpb.CreateAPIKeyRequest{Desc: req.Desc})
+	if err != nil {
+		return nil, err
+	}
+	return apiKeyToCloudAPI(resp), nil
+}
+
+// List lists all of the API keys in vzmgr.
+func (v *APIKeyServer) List(ctx context.Context, req *cloudapipb.ListAPIKeyRequest) (*cloudapipb.ListAPIKeyResponse, error) {
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := v.APIKeyClient.List(ctx, &authpb.ListAPIKeyRequest{})
+	if err != nil {
+		return nil, err
+	}
+	var keys []*cloudapipb.APIKey
+	for _, key := range resp.Keys {
+		keys = append(keys, apiKeyToCloudAPI(key))
+	}
+	return &cloudapipb.ListAPIKeyResponse{
+		Keys: keys,
+	}, nil
+}
+
+// Get fetches a specific API key.
+func (v *APIKeyServer) Get(ctx context.Context, req *cloudapipb.GetAPIKeyRequest) (*cloudapipb.GetAPIKeyResponse, error) {
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := v.APIKeyClient.Get(ctx, &authpb.GetAPIKeyRequest{
+		ID: req.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &cloudapipb.GetAPIKeyResponse{
+		Key: apiKeyToCloudAPI(resp.Key),
+	}, nil
+}
+
+// Delete deletes a specific API key.
+func (v *APIKeyServer) Delete(ctx context.Context, uuid *uuidpb.UUID) (*types.Empty, error) {
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return v.APIKeyClient.Delete(ctx, uuid)
 }
 
 // AutocompleteServer is the server that implements the Autocomplete gRPC service.
