@@ -22,6 +22,7 @@ type MockCloudClients struct {
 	MockVizierDeployKey   *mock_cloudapipb.MockVizierDeploymentKeyManagerServer
 	MockScriptMgr         *mock_cloudapipb.MockScriptMgrServer
 	MockAutocomplete      *mock_cloudapipb.MockAutocompleteServiceServer
+	MockAPIKey            *mock_cloudapipb.MockAPIKeyManagerServer
 }
 
 // CreateTestGraphQLEnv creates a test graphql environment and mock clients.

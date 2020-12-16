@@ -210,6 +210,7 @@ func main() {
 		ArtifactTrackerServer: artifactTrackerServer,
 		VizierClusterInfo:     cis,
 		VizierDeployKeyMgr:    vdks,
+		APIKeyMgr:             aks,
 		ScriptMgrServer:       sms,
 		AutocompleteServer:    as,
 		ProfileServiceClient:  pc,

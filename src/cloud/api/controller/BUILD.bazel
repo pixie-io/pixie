@@ -62,6 +62,7 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = [
+        "api_key_resolver_test.go",
         "artifact_resolver_test.go",
         "auth_test.go",
         "autocomplete_resolver_test.go",

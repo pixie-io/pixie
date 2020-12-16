@@ -2,10 +2,13 @@ package controller
 
 import (
 	"context"
-	"errors"
+	"sort"
 
 	"github.com/graph-gophers/graphql-go"
 	uuid "github.com/satori/go.uuid"
+
+	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	"pixielabs.ai/pixielabs/src/utils"
 )
 
 // APIKeyResolver is the resolver responsible for API keys.
@@ -38,12 +41,46 @@ func (d *APIKeyResolver) Desc() string {
 
 // CreateAPIKey creates a new API key.
 func (q *QueryResolver) CreateAPIKey(ctx context.Context) (*APIKeyResolver, error) {
-	return nil, errors.New("Not yet implemented")
+	grpcAPI := q.Env.APIKeyMgr
+	res, err := grpcAPI.Create(ctx, &cloudapipb.CreateAPIKeyRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return apiKeyToResolver(res)
+}
+
+func apiKeyToResolver(key *cloudapipb.APIKey) (*APIKeyResolver, error) {
+	keyID, err := utils.UUIDFromProto(key.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &APIKeyResolver{
+		id:          keyID,
+		key:         key.Key,
+		createdAtNs: key.CreatedAt.Seconds*NanosPerSecond + int64(key.CreatedAt.Nanos),
+		desc:        key.Desc,
+	}, nil
 }
 
 // APIKeys lists all of the API keys.
 func (q *QueryResolver) APIKeys(ctx context.Context) ([]*APIKeyResolver, error) {
-	return nil, errors.New("Not yet implemented")
+	grpcAPI := q.Env.APIKeyMgr
+	res, err := grpcAPI.List(ctx, &cloudapipb.ListAPIKeyRequest{})
+	if err != nil {
+		return nil, err
+	}
+	var keys []*APIKeyResolver
+	for _, key := range res.Keys {
+		resolvedKey, err := apiKeyToResolver(key)
+		if err != nil {
+			return nil, err
+		}
+		keys = append(keys, resolvedKey)
+	}
+	// Sort by descending time
+	sort.Slice(keys, func(i, j int) bool { return keys[i].createdAtNs > keys[j].createdAtNs })
+	return keys, nil
 }
 
 type getOrDeleteAPIKeyArgs struct {
@@ -52,10 +89,22 @@ type getOrDeleteAPIKeyArgs struct {
 
 // APIKey gets a specific API key.
 func (q *QueryResolver) APIKey(ctx context.Context, args *getOrDeleteAPIKeyArgs) (*APIKeyResolver, error) {
-	return nil, errors.New("Not yet implemented")
+	grpcAPI := q.Env.APIKeyMgr
+	res, err := grpcAPI.Get(ctx, &cloudapipb.GetAPIKeyRequest{
+		ID: utils.ProtoFromUUIDStrOrNil(string(args.ID)),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return apiKeyToResolver(res.Key)
 }
 
 // DeleteAPIKey deletes a specific API key.
 func (q *QueryResolver) DeleteAPIKey(ctx context.Context, args *getOrDeleteAPIKeyArgs) (bool, error) {
-	return false, errors.New("Not yet implemented")
+	grpcAPI := q.Env.APIKeyMgr
+	_, err := grpcAPI.Delete(ctx, utils.ProtoFromUUIDStrOrNil(string(args.ID)))
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
