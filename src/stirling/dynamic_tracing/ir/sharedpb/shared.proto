@@ -172,10 +172,6 @@ message DeploymentSpec {
     // An way to specify a shared object to be traced.
     SharedObject shared_object = 8;
 
-    // The name of the pod whose processes are the targets to be traced.
-    // TODO(yzhao): Remove this after pod_process is supported.
-    string pod = 9;
-
     // Describes the target process to attach.
     PodProcess pod_process = 10;
   }
