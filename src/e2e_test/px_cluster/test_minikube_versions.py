@@ -3,6 +3,7 @@ import os
 import argparse
 import platform
 import subprocess
+from itertools import cycle
 ################################################################################
 ################################################################################
 
@@ -111,14 +112,17 @@ def get_minikubes(versions):
         sys_check(chmod_cmd)
 
 
-def test_minikubes(versions):
-    num_versions = len(versions)
-    for idx, v in enumerate(versions):
+def test_minikubes(version_runtime_tuples):
+    num_tests = len(version_runtime_tuples)
+    for idx, (version, runtime) in enumerate(version_runtime_tuples):
         n = 1 + idx
-        minikube_path = local_minikube_path_by_version(v)
+        minikube_path = local_minikube_path_by_version(version)
         log_file_path = os.path.join(os.path.dirname(minikube_path), 'px.test.log')
-        print(f'Testing minikube {v} ({n} of {num_versions}), writing log to file {log_file_path}')
-        test_cmd = f'./test_px_on_minikube.sh {minikube_path} 1> {log_file_path} 2>&1'
+        test_msg = f'Testing minikube {version} ({n} of {num_tests})'
+        logf_msg = f'writing log to file {log_file_path}'
+        runt_msg = f'using container runtime {runtime}'
+        print(', '.join([test_msg, logf_msg, runt_msg]) + '.')
+        test_cmd = f'./test_px_on_minikube.sh {minikube_path} {runtime} 1> {log_file_path} 2>&1'
         sys_check(test_cmd)
 
 ################################################################################
@@ -127,6 +131,7 @@ def test_minikubes(versions):
 
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument('--num-tests', type=int, default=0)
+parser.add_argument('--runtimes', nargs='+', default=['containerd', 'docker', 'cri-o'])
 args = parser.parse_args()
 
 versions = get_minikube_versions()
@@ -136,5 +141,11 @@ versions = filter_out_minor_versions(versions)
 # if num_tests is given on the cmd. line, pick up first N tests only:
 versions = versions[:args.num_tests] if args.num_tests > 0 else versions
 
+# Create a list of tuples like [('v1.15.1', 'containerd'), ('v1.14.2', 'docker'), ...].
+# This list will include all the versions, subject to N (command line arg '--num-tests'),
+# and will cycle through the runtimes. If N < len(args.runtimes), then N takes
+# priority and some runtimes will *not* be tested.
+version_runtime_tuples = list(zip(versions, cycle(args.runtimes)))
+
 get_minikubes(versions)
-test_minikubes(versions)
+test_minikubes(version_runtime_tuples)
