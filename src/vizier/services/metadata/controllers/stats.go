@@ -70,9 +70,11 @@ func (s *StatsHandler) Stop() {
 }
 
 func (s *StatsHandler) periodicallyLogStats(period time.Duration) {
+	t := time.NewTicker(period)
+	defer t.Stop()
 	for {
 		select {
-		case <-time.After(60 * time.Second):
+		case <-t.C:
 			s.logAndFlushStats()
 		case <-s.doneCh:
 			return

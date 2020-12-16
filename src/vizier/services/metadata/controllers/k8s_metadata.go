@@ -143,6 +143,7 @@ func (mc *K8sMetadataController) startWatcher(resource string, resourceVersion i
 		log.WithField("resource", resource).Info("K8s watcher channel closed. Retrying")
 		runWatcher = true
 
+		// Wait 5 minutes before retrying, however if stop is called, just return.
 		select {
 		case <-mc.quitCh:
 			return
