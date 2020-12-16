@@ -28,6 +28,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/utils/pixie_cli/cmd",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/cloud/api/ptproxy:go_default_library",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
         "//src/shared/version/go:go_default_library",
         "//src/utils:go_default_library",
