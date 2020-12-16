@@ -119,6 +119,27 @@ class PodNameToPodIDUDF : public ScalarUDF {
   }
 };
 
+class PodNameToPodIPUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue pod_name) {
+    auto md = GetMetadataState(ctx);
+    StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
+    const pl::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return 0;
+    }
+    return pod_info->pod_ip();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the IP address of a pod from its name.")
+        .Details("Gets the IP address for the pod from its name.")
+        .Example("df.pod_ip = px.pod_name_to_pod_ip(df.pod_name)")
+        .Arg("pod_name", "The name of the pod to get the IP for.")
+        .Returns("The pod IP for the pod name passed in.");
+  }
+};
+
 class PodIDToNamespaceUDF : public ScalarUDF {
  public:
   StringValue Exec(FunctionContext* ctx, StringValue pod_id) {

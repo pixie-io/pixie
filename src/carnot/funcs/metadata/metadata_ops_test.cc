@@ -441,6 +441,13 @@ TEST_F(MetadataOpsTest, pod_name_to_pod_status) {
   EXPECT_EQ("Failed reason terminated", std::string(failed["reason"].GetString()));
 }
 
+TEST_F(MetadataOpsTest, pod_name_to_pod_ip) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = pl::carnot::udf::UDFTester<PodNameToPodIPUDF>(std::move(function_ctx));
+  udf_tester.ForInput("pl/running_pod").Expect("1.1.1.1");
+  udf_tester.ForInput("pl/terminating_pod").Expect("");
+}
+
 TEST_F(MetadataOpsTest, pod_name_to_pod_ready) {
   PodNameToPodReadyUDF ready_udf;
 
