@@ -92,7 +92,7 @@ func TestRegisterAgent(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
-	upb := utils.ProtoFromUUID(&u)
+	upb := utils.ProtoFromUUID(u)
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -138,7 +138,7 @@ func TestRegisterKelvinAgent(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
-	upb := utils.ProtoFromUUID(&u)
+	upb := utils.ProtoFromUUID(u)
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -192,7 +192,7 @@ func TestRegisterExistingAgent(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
-	upb := utils.ProtoFromUUID(&u)
+	upb := utils.ProtoFromUUID(u)
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -641,7 +641,7 @@ func TestAgent_AddToFrontOfAgentQueue(t *testing.T) {
 	_, agtMgr := setupAgentManager(t)
 
 	u1 := uuid.NewV4()
-	upb := utils.ProtoFromUUID(&u1)
+	upb := utils.ProtoFromUUID(u1)
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -715,7 +715,7 @@ func TestAgent_AddUpdatesToAgentQueue(t *testing.T) {
 	}
 
 	u1 := uuid.NewV4()
-	upb := utils.ProtoFromUUID(&u1)
+	upb := utils.ProtoFromUUID(u1)
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -757,7 +757,7 @@ func TestAgent_GetFromAgentQueue(t *testing.T) {
 	}
 
 	u1 := uuid.NewV4()
-	upb := utils.ProtoFromUUID(&u1)
+	upb := utils.ProtoFromUUID(u1)
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -854,7 +854,7 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 				Hostname: "localhost",
 				HostIP:   "127.0.0.7",
 			},
-			AgentID: utils.ProtoFromUUID(&agUUID3),
+			AgentID: utils.ProtoFromUUID(agUUID3),
 			Capabilities: &agentpb.AgentCapabilities{
 				CollectsData: true,
 			},

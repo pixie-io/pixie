@@ -345,7 +345,7 @@ func TestNATSGRPCBridge_RegisterVizierDeployment(t *testing.T) {
 			K8sClusterName:    "some name",
 			K8sClusterVersion: "1.1",
 		}).
-		Return(&vzmgrpb.RegisterVizierDeploymentResponse{VizierID: utils.ProtoFromUUID(&vizierID)}, nil)
+		Return(&vzmgrpb.RegisterVizierDeploymentResponse{VizierID: utils.ProtoFromUUID(vizierID)}, nil)
 
 	// Make some GRPC Requests.
 	ctx := context.Background()
@@ -358,7 +358,7 @@ func TestNATSGRPCBridge_RegisterVizierDeployment(t *testing.T) {
 		K8sClusterVersion: "1.1",
 	})
 	assert.Nil(t, err)
-	assert.Equal(t, utils.ProtoFromUUID(&vizierID), resp.VizierID)
+	assert.Equal(t, utils.ProtoFromUUID(vizierID), resp.VizierID)
 
 }
 

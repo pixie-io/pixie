@@ -260,7 +260,7 @@ nodes: {
 
 const expectedPlannerResult = `
 status: {}
-plan: {	
+plan: {
 	qb_address_to_plan: {
 		key: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 		value: {
@@ -295,7 +295,7 @@ plan: {
 							column_types: TIME64NS
 							column_types: INT64
 							column_types: UINT128
-							tablet: "1"							
+							tablet: "1"
 						}
 					}
 				}
@@ -350,7 +350,7 @@ plan: {
 							column_idxs: 0
 							column_names: "time_"
 							column_types: TIME64NS
-							tablet: "1"							
+							tablet: "1"
 						}
 					}
 				}
@@ -370,7 +370,7 @@ plan: {
 				}
 			}
 		}
-	}	
+	}
 	qb_address_to_dag_id: {
 		key: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 		value: 0
@@ -378,14 +378,14 @@ plan: {
 	qb_address_to_dag_id: {
 		key: "31285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 		value: 1
-	}	
+	}
 	dag: {
 		nodes: {
 			id: 0
 		}
 		nodes: {
 			id: 1
-		}		
+		}
 	}
 }
 `
@@ -998,7 +998,7 @@ func TestTransferResultChunk_AgentStreamComplete(t *testing.T) {
 	}
 
 	queryID := uuid.NewV4()
-	queryIDpb := pbutils.ProtoFromUUID(&queryID)
+	queryIDpb := pbutils.ProtoFromUUID(queryID)
 
 	msg1 := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
@@ -1100,7 +1100,7 @@ func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
 	sv.Eos = false
 
 	queryID := uuid.NewV4()
-	queryIDpb := pbutils.ProtoFromUUID(&queryID)
+	queryIDpb := pbutils.ProtoFromUUID(queryID)
 
 	msg1 := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
@@ -1181,7 +1181,7 @@ func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 	}
 
 	queryID := uuid.NewV4()
-	queryIDpb := pbutils.ProtoFromUUID(&queryID)
+	queryIDpb := pbutils.ProtoFromUUID(queryID)
 
 	msg1 := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
@@ -1259,7 +1259,7 @@ func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
 	}
 
 	queryID := uuid.NewV4()
-	queryIDpb := pbutils.ProtoFromUUID(&queryID)
+	queryIDpb := pbutils.ProtoFromUUID(queryID)
 
 	msg1 := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",

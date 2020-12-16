@@ -23,7 +23,7 @@ import (
 func makeInitiateTableRequest(queryID uuid.UUID, tableName string) *carnotpb.TransferResultChunkRequest {
 	return &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
-		QueryID: pbutils.ProtoFromUUID(&queryID),
+		QueryID: pbutils.ProtoFromUUID(queryID),
 		Result: &carnotpb.TransferResultChunkRequest_QueryResult{
 			QueryResult: &carnotpb.TransferResultChunkRequest_SinkResult{
 				ResultContents: &carnotpb.TransferResultChunkRequest_SinkResult_InitiateResultStream{
@@ -52,7 +52,7 @@ func makeRowBatchResult(t *testing.T, queryID uuid.UUID, tableName string, table
 
 	return expected, &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
-		QueryID: pbutils.ProtoFromUUID(&queryID),
+		QueryID: pbutils.ProtoFromUUID(queryID),
 		Result: &carnotpb.TransferResultChunkRequest_QueryResult{
 			QueryResult: &carnotpb.TransferResultChunkRequest_SinkResult{
 				ResultContents: &carnotpb.TransferResultChunkRequest_SinkResult_RowBatch{
@@ -81,7 +81,7 @@ func makeExecStatsResult(t *testing.T, queryID uuid.UUID) (*vizierpb.QueryExecut
 
 	return expected, &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
-		QueryID: pbutils.ProtoFromUUID(&queryID),
+		QueryID: pbutils.ProtoFromUUID(queryID),
 		Result: &carnotpb.TransferResultChunkRequest_ExecutionAndTimingInfo{
 			ExecutionAndTimingInfo: &carnotpb.TransferResultChunkRequest_QueryExecutionAndTimingInfo{
 				ExecutionStats:      execStats,

@@ -19,7 +19,7 @@ func UUIDFromProtoOrNil(pb *pb.UUID) uuid.UUID {
 }
 
 // ProtoFromUUID converts a UUID to proto.
-func ProtoFromUUID(u *uuid.UUID) *pb.UUID {
+func ProtoFromUUID(u uuid.UUID) *pb.UUID {
 	p := &pb.UUID{
 		Data: []byte(u.String()),
 	}
@@ -29,5 +29,5 @@ func ProtoFromUUID(u *uuid.UUID) *pb.UUID {
 // ProtoFromUUIDStrOrNil generates proto from string representation of a UUID (nil value is used if parsing fails).
 func ProtoFromUUIDStrOrNil(u string) *pb.UUID {
 	uid := uuid.FromStringOrNil(u)
-	return ProtoFromUUID(&uid)
+	return ProtoFromUUID(uid)
 }

@@ -206,7 +206,7 @@ func (v *VizierClusterInfo) GetClusterInfo(ctx context.Context, request *cloudap
 	if request.ID != nil {
 		vzIDs = append(vzIDs, request.ID)
 	} else {
-		viziers, err := v.VzMgr.GetViziersByOrg(ctx, pbutils.ProtoFromUUID(&orgID))
+		viziers, err := v.VzMgr.GetViziersByOrg(ctx, pbutils.ProtoFromUUID(orgID))
 		if err != nil {
 			return nil, err
 		}

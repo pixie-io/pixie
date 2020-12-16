@@ -379,7 +379,7 @@ func TestBuildExecuteScriptResponse_RowBatch(t *testing.T) {
 	convertedRB.TableID = "output_table_1_id"
 
 	queryID := uuid.NewV4()
-	queryIDpb := pbutils.ProtoFromUUID(&queryID)
+	queryIDpb := pbutils.ProtoFromUUID(queryID)
 
 	msg := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
@@ -412,7 +412,7 @@ func TestBuildExecuteScriptResponse_RowBatch(t *testing.T) {
 
 func TestBuildExecuteScriptResponse_InitiateResultStream(t *testing.T) {
 	queryID := uuid.NewV4()
-	queryIDpb := pbutils.ProtoFromUUID(&queryID)
+	queryIDpb := pbutils.ProtoFromUUID(queryID)
 
 	msg := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
@@ -439,7 +439,7 @@ func TestBuildExecuteScriptResponse_InitiateResultStream(t *testing.T) {
 
 func TestBuildExecuteScriptResponse_ExecutionStats(t *testing.T) {
 	queryID := uuid.NewV4()
-	queryIDpb := pbutils.ProtoFromUUID(&queryID)
+	queryIDpb := pbutils.ProtoFromUUID(queryID)
 
 	msg := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
@@ -518,7 +518,7 @@ func TestQueryPlanResponse(t *testing.T) {
 
 	agentStats := []*queryresultspb.AgentExecutionStats{
 		&queryresultspb.AgentExecutionStats{
-			AgentID:          pbutils.ProtoFromUUID(&agentID),
+			AgentID:          pbutils.ProtoFromUUID(agentID),
 			ExecutionTimeNs:  123,
 			BytesProcessed:   456,
 			RecordsProcessed: 12,

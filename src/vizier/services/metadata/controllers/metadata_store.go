@@ -645,7 +645,7 @@ func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.
 	// will have the entry deleted.
 	previousAgentTableTracker := make(map[string]bool)
 
-	agentIDPb := utils.ProtoFromUUID(&agentID)
+	agentIDPb := utils.ProtoFromUUID(agentID)
 
 	// Build up a table map so that we can update tables by name.
 	tableMap := make(map[string]*storepb.TableInfo)
@@ -1467,7 +1467,7 @@ func (mds *KVMetadataStore) GetTracepointsWithNames(tracepointNames []string) ([
 
 // SetTracepointWithName associates the tracepoint with the given name with the one with the provided ID.
 func (mds *KVMetadataStore) SetTracepointWithName(tracepointName string, tracepointID uuid.UUID) error {
-	tracepointIDpb := utils.ProtoFromUUID(&tracepointID)
+	tracepointIDpb := utils.ProtoFromUUID(tracepointID)
 	val, err := tracepointIDpb.Marshal()
 	if err != nil {
 		return err

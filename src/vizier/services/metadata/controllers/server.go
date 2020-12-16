@@ -306,7 +306,7 @@ func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.Registe
 		}
 		if err == ErrTracepointAlreadyExists {
 			responses[i] = &metadatapb.RegisterTracepointResponse_TracepointStatus{
-				ID: utils.ProtoFromUUID(tracepointID),
+				ID: utils.ProtoFromUUID(*tracepointID),
 				Status: &statuspb.Status{
 					ErrCode: statuspb.ALREADY_EXISTS,
 				},
@@ -316,7 +316,7 @@ func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.Registe
 		}
 
 		responses[i] = &metadatapb.RegisterTracepointResponse_TracepointStatus{
-			ID: utils.ProtoFromUUID(tracepointID),
+			ID: utils.ProtoFromUUID(*tracepointID),
 			Status: &statuspb.Status{
 				ErrCode: statuspb.OK,
 			},

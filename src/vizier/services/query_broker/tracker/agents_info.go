@@ -169,7 +169,7 @@ func (a *AgentsInfoImpl) DistributedState() distributedpb.DistributedState {
 func makeAgentCarnotInfo(agentID uuid.UUID, asid uint32, agentMetadata *distributedpb.MetadataInfo) *distributedpb.CarnotInfo {
 	return &distributedpb.CarnotInfo{
 		QueryBrokerAddress:   agentID.String(),
-		AgentID:              utils.ProtoFromUUID(&agentID),
+		AgentID:              utils.ProtoFromUUID(agentID),
 		ASID:                 asid,
 		HasGRPCServer:        false,
 		HasDataStore:         true,
@@ -182,7 +182,7 @@ func makeAgentCarnotInfo(agentID uuid.UUID, asid uint32, agentMetadata *distribu
 func makeKelvinCarnotInfo(agentID uuid.UUID, grpcAddress string, asid uint32) *distributedpb.CarnotInfo {
 	return &distributedpb.CarnotInfo{
 		QueryBrokerAddress:   agentID.String(),
-		AgentID:              utils.ProtoFromUUID(&agentID),
+		AgentID:              utils.ProtoFromUUID(agentID),
 		ASID:                 asid,
 		HasGRPCServer:        true,
 		GRPCAddress:          grpcAddress,

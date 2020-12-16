@@ -1227,7 +1227,7 @@ func makePlannerState(numPEM int) *distributedpb.LogicalPlannerState {
 	for i := 1; i < numPEM+1; i++ {
 		pem := baseCarnot
 		u := uuid.NewV4()
-		pem.AgentID = utils.ProtoFromUUID(&u)
+		pem.AgentID = utils.ProtoFromUUID(u)
 		pem.ASID = uint32(i)
 
 		plannerStatePB.DistributedState.CarnotInfo = append(plannerStatePB.DistributedState.CarnotInfo, &pem)

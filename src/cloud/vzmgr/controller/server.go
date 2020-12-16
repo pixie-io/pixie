@@ -292,7 +292,7 @@ func (s *Server) GetViziersByOrg(ctx context.Context, orgID *uuidpb.UUID) (*vzmg
 		if err != nil {
 			return nil, status.Error(codes.Internal, "failed to read ids")
 		}
-		ids = append(ids, utils.ProtoFromUUID(&id))
+		ids = append(ids, utils.ProtoFromUUID(id))
 	}
 	return &vzmgrpb.GetViziersByOrgResponse{VizierIDs: ids}, nil
 }
@@ -362,7 +362,7 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 		}
 
 		return &cvmsgspb.VizierInfo{
-			VizierID:        utils.ProtoFromUUID(&val.ID),
+			VizierID:        utils.ProtoFromUUID(val.ID),
 			Status:          val.Status.ToProto(),
 			LastHeartbeatNs: lastHearbeat,
 			Config: &cvmsgspb.VizierConfig{
@@ -502,8 +502,8 @@ func (s *Server) GetViziersByShard(ctx context.Context, req *vzmgrpb.GetViziersB
 			return nil, status.Error(codes.Internal, "failed to read vizier info")
 		}
 		results = append(results, &vzmgrpb.GetViziersByShardResponse_VizierInfo{
-			VizierID:        utils.ProtoFromUUID(&result.VizierID),
-			OrgID:           utils.ProtoFromUUID(&result.OrgID),
+			VizierID:        utils.ProtoFromUUID(result.VizierID),
+			OrgID:           utils.ProtoFromUUID(result.OrgID),
 			ResourceVersion: result.ResourceVersion,
 			K8sUID:          result.K8sUID,
 		})
@@ -574,9 +574,9 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 	}
 
 	connMsg := messagespb.VizierConnected{
-		VizierID:        utils.ProtoFromUUID(&vizierID),
+		VizierID:        utils.ProtoFromUUID(vizierID),
 		ResourceVersion: val.ResourceVersion,
-		OrgID:           utils.ProtoFromUUID(&val.OrgID),
+		OrgID:           utils.ProtoFromUUID(val.OrgID),
 		K8sUID:          clusterUID,
 	}
 	b, err := connMsg.Marshal()
@@ -784,7 +784,7 @@ func (s *Server) UpdateOrInstallVizier(ctx context.Context, req *cvmsgspb.Update
 
 func findVizierWithUID(ctx context.Context, tx *sqlx.Tx, orgID uuid.UUID, clusterUID string) (uuid.UUID, vizierStatus, error) {
 	query := `
-       SELECT vizier_cluster.id, status from vizier_cluster, vizier_cluster_info 
+       SELECT vizier_cluster.id, status from vizier_cluster, vizier_cluster_info
        WHERE vizier_cluster.id = vizier_cluster_info.vizier_cluster_id
        AND vizier_cluster.org_id = $1
        AND vizier_cluster.cluster_uid = $2
@@ -804,10 +804,10 @@ func findVizierWithUID(ctx context.Context, tx *sqlx.Tx, orgID uuid.UUID, cluste
 
 func findVizierWithEmptyUID(ctx context.Context, tx *sqlx.Tx, orgID uuid.UUID) (uuid.UUID, vizierStatus, error) {
 	query := `
-       SELECT vizier_cluster.id, status from vizier_cluster, vizier_cluster_info 
+       SELECT vizier_cluster.id, status from vizier_cluster, vizier_cluster_info
        WHERE vizier_cluster.id = vizier_cluster_info.vizier_cluster_id
        AND vizier_cluster.org_id = $1
-       AND (vizier_cluster.cluster_uid = '' 
+       AND (vizier_cluster.cluster_uid = ''
             OR vizier_cluster.cluster_uid IS NULL)
     `
 

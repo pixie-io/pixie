@@ -121,7 +121,7 @@ func (s *Server) GetProjectForOrg(ctx context.Context, req *uuidpb.UUID) (*proje
 
 	resp := &projectmanagerpb.ProjectInfo{}
 	resp.ProjectName = projectInfo.ProjectName
-	resp.OrgID = utils.ProtoFromUUID(&projectInfo.OrgID)
+	resp.OrgID = utils.ProtoFromUUID(projectInfo.OrgID)
 
 	return resp, nil
 }
@@ -154,7 +154,7 @@ func (s *Server) GetProjectByName(ctx context.Context, req *projectmanagerpb.Get
 		return nil, status.Error(codes.Internal, "mismatched org id for GetProjectByName")
 	}
 
-	resp.OrgID = utils.ProtoFromUUID(&projectInfo.OrgID)
+	resp.OrgID = utils.ProtoFromUUID(projectInfo.OrgID)
 
 	return resp, nil
 }

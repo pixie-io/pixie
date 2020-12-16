@@ -74,7 +74,7 @@ func (fs *FakeVZConnServer) RegisterVizierDeployment(ctx context.Context, req *v
 	assert.Equal(fs.t, "v1.14.10-gke.27", req.K8sClusterVersion)
 	newID := uuid.NewV4()
 	return &vzconnpb.RegisterVizierDeploymentResponse{
-		VizierID: utils.ProtoFromUUID(&newID),
+		VizierID: utils.ProtoFromUUID(newID),
 	}, nil
 }
 

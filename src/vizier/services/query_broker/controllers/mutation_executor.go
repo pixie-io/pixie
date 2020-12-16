@@ -178,7 +178,7 @@ func (m *MutationExecutor) MutationInfo(ctx context.Context) (*vizierpb.Mutation
 		IDs: make([]*uuidpb.UUID, 0),
 	}
 	for _, tp := range m.activeTracepoints {
-		req.IDs = append(req.IDs, utils.ProtoFromUUID(&tp.ID))
+		req.IDs = append(req.IDs, utils.ProtoFromUUID(tp.ID))
 	}
 	aCtx, err := authcontext.FromContext(ctx)
 	if err != nil {

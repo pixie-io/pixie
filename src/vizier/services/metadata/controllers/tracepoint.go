@@ -138,7 +138,7 @@ func (m *TracepointManager) terminateTracepoint(id uuid.UUID) error {
 			TracepointMessage: &messages.TracepointMessage{
 				Msg: &messages.TracepointMessage_RemoveTracepointRequest{
 					RemoveTracepointRequest: &messages.RemoveTracepointRequest{
-						ID: utils.ProtoFromUUID(&id),
+						ID: utils.ProtoFromUUID(id),
 					},
 				},
 			},
@@ -227,7 +227,7 @@ func (m *TracepointManager) CreateTracepoint(tracepointName string, tracepointDe
 
 	tpID := uuid.NewV4()
 	newTracepoint := &storepb.TracepointInfo{
-		ID:            utils.ProtoFromUUID(&tpID),
+		ID:            utils.ProtoFromUUID(tpID),
 		Tracepoint:    tracepointDeployment,
 		Name:          tracepointName,
 		ExpectedState: statuspb.RUNNING_STATE,
@@ -285,7 +285,7 @@ func (m *TracepointManager) RegisterTracepoint(agentIDs []uuid.UUID, tracepointI
 				Msg: &messages.TracepointMessage_RegisterTracepointRequest{
 					RegisterTracepointRequest: &messages.RegisterTracepointRequest{
 						TracepointDeployment: tracepointDeployment,
-						ID:                   utils.ProtoFromUUID(&tracepointID),
+						ID:                   utils.ProtoFromUUID(tracepointID),
 					},
 				},
 			},

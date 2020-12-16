@@ -103,7 +103,7 @@ func newRequestProxyer(vzmgr vzmgrClient, nc *nats.Conn, debugMode bool, r Clust
 }
 
 func (p requestProxyer) validateRequestAndFetchCreds(ctx context.Context, debugMode bool, vzmgr vzmgrClient) (signingKey string, err error) {
-	clusterIDProto := utils.ProtoFromUUID(&p.clusterID)
+	clusterIDProto := utils.ProtoFromUUID(p.clusterID)
 
 	eg := errgroup.Group{}
 	eg.Go(func() error {

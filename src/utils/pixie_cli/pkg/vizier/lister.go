@@ -92,7 +92,7 @@ func (l *Lister) GetVizierInfo(id uuid.UUID) ([]*cloudapipb.ClusterInfo, error) 
 	if err != nil {
 		return nil, err
 	}
-	clusterIDPb := utils.ProtoFromUUID(&id)
+	clusterIDPb := utils.ProtoFromUUID(id)
 
 	c, err := l.vc.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{ID: clusterIDPb})
 	if err != nil {
@@ -109,7 +109,7 @@ func (l *Lister) GetVizierConnection(id uuid.UUID) (*ConnectionInfo, error) {
 	}
 
 	ci, err := l.vc.GetClusterConnectionInfo(ctx, &cloudapipb.GetClusterConnectionInfoRequest{
-		ID: utils.ProtoFromUUID(&id),
+		ID: utils.ProtoFromUUID(id),
 	})
 	if err != nil {
 		return nil, err

@@ -89,14 +89,14 @@ func TestGetAgentInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
-	u1pb := utils.ProtoFromUUID(&u1)
+	u1pb := utils.ProtoFromUUID(u1)
 
 	agent2IDStr := "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 	u2, err := uuid.FromString(agent2IDStr)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
-	u2pb := utils.ProtoFromUUID(&u2)
+	u2pb := utils.ProtoFromUUID(u2)
 
 	agents := []*agentpb.Agent{
 		&agentpb.Agent{
@@ -487,7 +487,7 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, 1, len(resp.Tracepoints))
-	assert.Equal(t, utils.ProtoFromUUID(&tpID), resp.Tracepoints[0].ID)
+	assert.Equal(t, utils.ProtoFromUUID(tpID), resp.Tracepoints[0].ID)
 	assert.Equal(t, statuspb.OK, resp.Tracepoints[0].Status.ErrCode)
 }
 
@@ -632,12 +632,12 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 					mockTracepointStore.
 						EXPECT().
 						GetTracepoints().
-						Return([]*storepb.TracepointInfo{&storepb.TracepointInfo{ID: utils.ProtoFromUUID(&tID), Tracepoint: program, ExpectedState: statuspb.RUNNING_STATE}}, nil)
+						Return([]*storepb.TracepointInfo{&storepb.TracepointInfo{ID: utils.ProtoFromUUID(tID), Tracepoint: program, ExpectedState: statuspb.RUNNING_STATE}}, nil)
 				} else {
 					mockTracepointStore.
 						EXPECT().
 						GetTracepointsForIDs([]uuid.UUID{tID}).
-						Return([]*storepb.TracepointInfo{&storepb.TracepointInfo{ID: utils.ProtoFromUUID(&tID), Tracepoint: program, ExpectedState: statuspb.RUNNING_STATE}}, nil)
+						Return([]*storepb.TracepointInfo{&storepb.TracepointInfo{ID: utils.ProtoFromUUID(tID), Tracepoint: program, ExpectedState: statuspb.RUNNING_STATE}}, nil)
 				}
 
 				mockTracepointStore.
@@ -656,7 +656,7 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 
 			s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, mockMds, clock)
 			req := metadatapb.GetTracepointInfoRequest{
-				IDs: []*uuidpb.UUID{utils.ProtoFromUUID(&tID)},
+				IDs: []*uuidpb.UUID{utils.ProtoFromUUID(tID)},
 			}
 			if test.expectAll {
 				req = metadatapb.GetTracepointInfoRequest{
@@ -667,7 +667,7 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			resp, err := s.GetTracepointInfo(context.Background(), &req)
 			assert.Nil(t, err)
 			assert.Equal(t, 1, len(resp.Tracepoints))
-			assert.Equal(t, utils.ProtoFromUUID(&tID), resp.Tracepoints[0].ID)
+			assert.Equal(t, utils.ProtoFromUUID(tID), resp.Tracepoints[0].ID)
 			assert.Equal(t, test.expectedState, resp.Tracepoints[0].State)
 			var status *statuspb.Status
 			if len(resp.Tracepoints[0].Statuses) > 0 {
@@ -747,21 +747,21 @@ func TestGetAgentUpdates(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
-	u1pb := utils.ProtoFromUUID(&u1)
+	u1pb := utils.ProtoFromUUID(u1)
 
 	agent2IDStr := "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 	u2, err := uuid.FromString(agent2IDStr)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
-	u2pb := utils.ProtoFromUUID(&u2)
+	u2pb := utils.ProtoFromUUID(u2)
 
 	agent3IDStr := "61123ced-1de9-4ab1-ae6a-0ba08c8c676c"
 	u3, err := uuid.FromString(agent3IDStr)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
-	u3pb := utils.ProtoFromUUID(&u3)
+	u3pb := utils.ProtoFromUUID(u3)
 
 	updates1 := []*metadatapb.AgentUpdate{
 		&metadatapb.AgentUpdate{

@@ -31,7 +31,7 @@ var ConfigCmd = &cobra.Command{
 			cliLog.Errorf("Invalid cluster ID: %s\n", err.Error())
 			return
 		}
-		clusterIDPb := utils.ProtoFromUUID(&clusterUUID)
+		clusterIDPb := utils.ProtoFromUUID(clusterUUID)
 
 		cloudAddr := viper.GetString("cloud_addr")
 		l, err := vizier.NewLister(cloudAddr)

@@ -124,7 +124,7 @@ func (s *Server) Close() {
 }
 
 func failedStatusQueryResponse(queryID uuid.UUID, status *statuspb.Status) *querybrokerpb.VizierQueryResponse {
-	queryIDPB := utils.ProtoFromUUID(&queryID)
+	queryIDPB := utils.ProtoFromUUID(queryID)
 	queryResponse := &querybrokerpb.VizierQueryResponse{
 		QueryID: queryIDPB,
 		Status:  status,

@@ -54,8 +54,8 @@ func TestVzWatcher(t *testing.T) {
 				Return(&vzmgrpb.GetViziersByShardResponse{
 					Viziers: []*vzmgrpb.GetViziersByShardResponse_VizierInfo{
 						&vzmgrpb.GetViziersByShardResponse_VizierInfo{
-							VizierID:        utils.ProtoFromUUID(&existingVzID),
-							OrgID:           utils.ProtoFromUUID(&existingOrgID),
+							VizierID:        utils.ProtoFromUUID(existingVzID),
+							OrgID:           utils.ProtoFromUUID(existingOrgID),
 							ResourceVersion: existingResourceVersion,
 							K8sUID:          existingK8sUID,
 						},
@@ -115,8 +115,8 @@ func TestVzWatcher(t *testing.T) {
 			})
 
 			msg := &messagespb.VizierConnected{
-				VizierID:        utils.ProtoFromUUID(&newVzID),
-				OrgID:           utils.ProtoFromUUID(&newOrgID),
+				VizierID:        utils.ProtoFromUUID(newVzID),
+				OrgID:           utils.ProtoFromUUID(newOrgID),
 				ResourceVersion: newResourceVersion,
 				K8sUID:          newK8sUID,
 			}

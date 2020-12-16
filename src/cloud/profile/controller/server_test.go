@@ -45,7 +45,7 @@ func TestServer_CreateUser(t *testing.T) {
 			name:      "valid request",
 			makesCall: true,
 			userInfo: &profile.CreateUserRequest{
-				OrgID:     utils.ProtoFromUUID(&testOrgUUID),
+				OrgID:     utils.ProtoFromUUID(testOrgUUID),
 				Username:  "foobar",
 				FirstName: "foo",
 				LastName:  "bar",
@@ -53,7 +53,7 @@ func TestServer_CreateUser(t *testing.T) {
 			},
 			expectErr:  false,
 			expectCode: codes.OK,
-			respID:     utils.ProtoFromUUID(&testUUID),
+			respID:     utils.ProtoFromUUID(testUUID),
 		},
 		{
 			name:      "invalid orgid",
@@ -73,7 +73,7 @@ func TestServer_CreateUser(t *testing.T) {
 			name:      "invalid username",
 			makesCall: false,
 			userInfo: &profile.CreateUserRequest{
-				OrgID:     utils.ProtoFromUUID(&testOrgUUID),
+				OrgID:     utils.ProtoFromUUID(testOrgUUID),
 				Username:  "",
 				FirstName: "foo",
 				LastName:  "bar",
@@ -87,7 +87,7 @@ func TestServer_CreateUser(t *testing.T) {
 			name:      "invalid first name",
 			makesCall: false,
 			userInfo: &profile.CreateUserRequest{
-				OrgID:     utils.ProtoFromUUID(&testOrgUUID),
+				OrgID:     utils.ProtoFromUUID(testOrgUUID),
 				Username:  "foobar",
 				FirstName: "",
 				LastName:  "bar",
@@ -101,7 +101,7 @@ func TestServer_CreateUser(t *testing.T) {
 			name:      "empty email",
 			makesCall: false,
 			userInfo: &profile.CreateUserRequest{
-				OrgID:     utils.ProtoFromUUID(&testOrgUUID),
+				OrgID:     utils.ProtoFromUUID(testOrgUUID),
 				Username:  "foobar",
 				FirstName: "foo",
 				LastName:  "bar",
@@ -115,7 +115,7 @@ func TestServer_CreateUser(t *testing.T) {
 			name:      "banned email",
 			makesCall: false,
 			userInfo: &profile.CreateUserRequest{
-				OrgID:     utils.ProtoFromUUID(&testOrgUUID),
+				OrgID:     utils.ProtoFromUUID(testOrgUUID),
 				Username:  "foobar",
 				FirstName: "foo",
 				LastName:  "bar",
@@ -129,7 +129,7 @@ func TestServer_CreateUser(t *testing.T) {
 			name:      "allowed email",
 			makesCall: true,
 			userInfo: &profile.CreateUserRequest{
-				OrgID:     utils.ProtoFromUUID(&testOrgUUID),
+				OrgID:     utils.ProtoFromUUID(testOrgUUID),
 				Username:  "foobar",
 				FirstName: "foo",
 				LastName:  "bar",
@@ -137,13 +137,13 @@ func TestServer_CreateUser(t *testing.T) {
 			},
 			expectErr:  false,
 			expectCode: codes.OK,
-			respID:     utils.ProtoFromUUID(&testUUID),
+			respID:     utils.ProtoFromUUID(testUUID),
 		},
 		{
 			name:      "invalid email",
 			makesCall: false,
 			userInfo: &profile.CreateUserRequest{
-				OrgID:     utils.ProtoFromUUID(&testOrgUUID),
+				OrgID:     utils.ProtoFromUUID(testOrgUUID),
 				Username:  "foobar",
 				FirstName: "foo",
 				LastName:  "bar",
@@ -207,11 +207,11 @@ func TestServer_GetUser(t *testing.T) {
 		GetUser(userUUID).
 		Return(mockReply, nil)
 
-	resp, err := s.GetUser(context.Background(), utils.ProtoFromUUID(&userUUID))
+	resp, err := s.GetUser(context.Background(), utils.ProtoFromUUID(userUUID))
 
 	require.Nil(t, err)
-	assert.Equal(t, resp.ID, utils.ProtoFromUUID(&userUUID))
-	assert.Equal(t, resp.OrgID, utils.ProtoFromUUID(&orgUUID))
+	assert.Equal(t, resp.ID, utils.ProtoFromUUID(userUUID))
+	assert.Equal(t, resp.OrgID, utils.ProtoFromUUID(orgUUID))
 	assert.Equal(t, resp.Username, "foobar")
 	assert.Equal(t, resp.FirstName, "foo")
 	assert.Equal(t, resp.LastName, "bar")
@@ -230,7 +230,7 @@ func TestServer_GetUser_MissingUser(t *testing.T) {
 		GetUser(userUUID).
 		Return(nil, nil)
 
-	resp, err := s.GetUser(context.Background(), utils.ProtoFromUUID(&userUUID))
+	resp, err := s.GetUser(context.Background(), utils.ProtoFromUUID(userUUID))
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
 	assert.Equal(t, status.Code(err), codes.NotFound)
@@ -264,9 +264,9 @@ func TestServer_GetUserByEmail(t *testing.T) {
 		&profile.GetUserByEmailRequest{Email: "foo@bar.com"})
 
 	require.Nil(t, err)
-	assert.Equal(t, resp.ID, utils.ProtoFromUUID(&userUUID))
+	assert.Equal(t, resp.ID, utils.ProtoFromUUID(userUUID))
 	assert.Equal(t, resp.Email, "foo@bar.com")
-	assert.Equal(t, resp.OrgID, utils.ProtoFromUUID(&orgUUID))
+	assert.Equal(t, resp.OrgID, utils.ProtoFromUUID(orgUUID))
 }
 
 func TestServer_GetUserByEmail_MissingEmail(t *testing.T) {
@@ -318,8 +318,8 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 				},
 			},
 			resp: &profile.CreateOrgAndUserResponse{
-				OrgID:  utils.ProtoFromUUID(&testOrgUUID),
-				UserID: utils.ProtoFromUUID(&testUUID),
+				OrgID:  utils.ProtoFromUUID(testOrgUUID),
+				UserID: utils.ProtoFromUUID(testUUID),
 			},
 		}, {
 			name: "allowed email",
@@ -336,8 +336,8 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 				},
 			},
 			resp: &profile.CreateOrgAndUserResponse{
-				OrgID:  utils.ProtoFromUUID(&testOrgUUID),
-				UserID: utils.ProtoFromUUID(&testUUID),
+				OrgID:  utils.ProtoFromUUID(testOrgUUID),
+				UserID: utils.ProtoFromUUID(testUUID),
 			},
 		},
 	}
@@ -347,7 +347,7 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 			pm := mock_projectmanager.NewMockProjectManagerServiceClient(ctrl)
 			req := &projectmanagerpb.RegisterProjectRequest{
 				ProjectName: controller.DefaultProjectName,
-				OrgID:       utils.ProtoFromUUID(&testOrgUUID),
+				OrgID:       utils.ProtoFromUUID(testOrgUUID),
 			}
 			resp := &projectmanagerpb.RegisterProjectResponse{
 				ProjectRegistered: true,
@@ -505,7 +505,7 @@ func TestServer_CreateOrgAndUser_CreateProjectFailed(t *testing.T) {
 	pm := mock_projectmanager.NewMockProjectManagerServiceClient(ctrl)
 	projectReq := &projectmanagerpb.RegisterProjectRequest{
 		ProjectName: controller.DefaultProjectName,
-		OrgID:       utils.ProtoFromUUID(&testOrgUUID),
+		OrgID:       utils.ProtoFromUUID(testOrgUUID),
 	}
 
 	pm.EXPECT().RegisterProject(gomock.Any(), projectReq).Return(nil, fmt.Errorf("an error"))
@@ -568,10 +568,10 @@ func TestServer_GetOrg(t *testing.T) {
 		GetOrg(orgUUID).
 		Return(mockReply, nil)
 
-	resp, err := s.GetOrg(context.Background(), utils.ProtoFromUUID(&orgUUID))
+	resp, err := s.GetOrg(context.Background(), utils.ProtoFromUUID(orgUUID))
 
 	require.Nil(t, err)
-	assert.Equal(t, resp.ID, utils.ProtoFromUUID(&orgUUID))
+	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgUUID))
 	assert.Equal(t, resp.DomainName, "hulu.com")
 	assert.Equal(t, resp.OrgName, "hulu")
 }
@@ -606,10 +606,10 @@ func TestServer_GetOrgs(t *testing.T) {
 
 	require.Nil(t, err)
 	assert.Equal(t, 2, len(resp.Orgs))
-	assert.Equal(t, utils.ProtoFromUUID(&orgUUID), resp.Orgs[0].ID)
+	assert.Equal(t, utils.ProtoFromUUID(orgUUID), resp.Orgs[0].ID)
 	assert.Equal(t, "hulu.com", resp.Orgs[0].DomainName)
 	assert.Equal(t, "hulu", resp.Orgs[0].OrgName)
-	assert.Equal(t, utils.ProtoFromUUID(&org2UUID), resp.Orgs[1].ID)
+	assert.Equal(t, utils.ProtoFromUUID(org2UUID), resp.Orgs[1].ID)
 	assert.Equal(t, "pixie.com", resp.Orgs[1].DomainName)
 	assert.Equal(t, "pixie", resp.Orgs[1].OrgName)
 }
@@ -627,7 +627,7 @@ func TestServer_GetOrg_MissingOrg(t *testing.T) {
 		GetOrg(orgUUID).
 		Return(nil, nil)
 
-	resp, err := s.GetOrg(context.Background(), utils.ProtoFromUUID(&orgUUID))
+	resp, err := s.GetOrg(context.Background(), utils.ProtoFromUUID(orgUUID))
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
 	assert.Equal(t, status.Code(err), codes.NotFound)
@@ -657,7 +657,7 @@ func TestServer_GetOrgByDomain(t *testing.T) {
 		&profile.GetOrgByDomainRequest{DomainName: "hulu.com"})
 
 	require.Nil(t, err)
-	assert.Equal(t, resp.ID, utils.ProtoFromUUID(&orgUUID))
+	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgUUID))
 	assert.Equal(t, resp.DomainName, "hulu.com")
 	assert.Equal(t, resp.OrgName, "hulu")
 }
@@ -701,7 +701,7 @@ func TestServer_DeleteOrgAndUsers(t *testing.T) {
 	d.EXPECT().GetOrg(orgUUID).Return(mockReply, nil)
 	d.EXPECT().DeleteOrgAndUsers(orgUUID).Return(nil)
 
-	err := s.DeleteOrgAndUsers(context.Background(), utils.ProtoFromUUID(&orgUUID))
+	err := s.DeleteOrgAndUsers(context.Background(), utils.ProtoFromUUID(orgUUID))
 	assert.Nil(t, err)
 }
 
@@ -718,7 +718,7 @@ func TestServer_DeleteOrgAndUsers_MissingOrg(t *testing.T) {
 		GetOrg(orgUUID).
 		Return(nil, nil)
 
-	err := s.DeleteOrgAndUsers(context.Background(), utils.ProtoFromUUID(&orgUUID))
+	err := s.DeleteOrgAndUsers(context.Background(), utils.ProtoFromUUID(orgUUID))
 	assert.NotNil(t, err)
 	assert.Equal(t, status.Code(err), codes.NotFound)
 }
@@ -758,10 +758,10 @@ func TestServer_UpdateUser(t *testing.T) {
 
 	resp, err := s.UpdateUser(
 		context.Background(),
-		&profile.UpdateUserRequest{ID: utils.ProtoFromUUID(&userID), ProfilePicture: "new"})
+		&profile.UpdateUserRequest{ID: utils.ProtoFromUUID(userID), ProfilePicture: "new"})
 
 	require.Nil(t, err)
-	assert.Equal(t, resp.ID, utils.ProtoFromUUID(&userID))
+	assert.Equal(t, resp.ID, utils.ProtoFromUUID(userID))
 	assert.Equal(t, resp.ProfilePicture, "new")
 }
 
@@ -779,7 +779,7 @@ func TestServer_GetUserSettings(t *testing.T) {
 		Return([]string{"a", "b"}, nil)
 
 	resp, err := s.GetUserSettings(context.Background(), &profile.GetUserSettingsRequest{
-		ID:   utils.ProtoFromUUID(&userID),
+		ID:   utils.ProtoFromUUID(userID),
 		Keys: []string{"test", "another_key"},
 	})
 	assert.Nil(t, err)
@@ -833,7 +833,7 @@ func TestServer_UpdateUserSettings(t *testing.T) {
 			}
 
 			resp, err := s.UpdateUserSettings(context.Background(), &profile.UpdateUserSettingsRequest{
-				ID:     utils.ProtoFromUUID(&userID),
+				ID:     utils.ProtoFromUUID(userID),
 				Keys:   tc.keys,
 				Values: tc.values,
 			})

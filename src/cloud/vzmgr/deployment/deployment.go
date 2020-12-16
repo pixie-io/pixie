@@ -55,5 +55,5 @@ func (s *Service) RegisterVizierDeployment(ctx context.Context, req *vzmgrpb.Reg
 		return nil, vzerrors.ToGRPCError(err)
 
 	}
-	return &vzmgrpb.RegisterVizierDeploymentResponse{VizierID: utils.ProtoFromUUID(&clusterID)}, nil
+	return &vzmgrpb.RegisterVizierDeploymentResponse{VizierID: utils.ProtoFromUUID(clusterID)}, nil
 }

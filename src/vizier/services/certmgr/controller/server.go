@@ -77,7 +77,7 @@ func (s *Server) UpdateCerts(ctx context.Context, req *certmgrpb.UpdateCertsRequ
 func (s *Server) sendSSLCertRequest() error {
 	// Send over a request for SSL certs.
 	regReq := &cvmsgspb.VizierSSLCertRequest{
-		VizierID: utils.ProtoFromUUID(&s.clusterID),
+		VizierID: utils.ProtoFromUUID(s.clusterID),
 	}
 
 	regReqAny, err := types.MarshalAny(regReq)

@@ -37,9 +37,9 @@ func makeTestAgentIDs(t *testing.T) []*uuidpb.UUID {
 		t.Fatal("Could not generate UUID.")
 	}
 	return []*uuidpb.UUID{
-		utils.ProtoFromUUID(&u1),
-		utils.ProtoFromUUID(&u2),
-		utils.ProtoFromUUID(&u3),
+		utils.ProtoFromUUID(u1),
+		utils.ProtoFromUUID(u2),
+		utils.ProtoFromUUID(u3),
 	}
 }
 

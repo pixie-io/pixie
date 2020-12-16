@@ -135,7 +135,7 @@ func TestDeploymentKeyService_Get(t *testing.T) {
 	svc := New(db, testDBKey)
 
 	resp, err := svc.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
-		ID: utils.ProtoFromUUID(&testKey1ID),
+		ID: utils.ProtoFromUUID(testKey1ID),
 	})
 
 	assert.Nil(t, err)
@@ -163,7 +163,7 @@ func TestDeploymentKeyService_Get_UnownedID(t *testing.T) {
 	svc := New(db, testDBKey)
 
 	resp, err := svc.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
-		ID: utils.ProtoFromUUID(&testNonAuthUserKeyID),
+		ID: utils.ProtoFromUUID(testNonAuthUserKeyID),
 	})
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
@@ -181,7 +181,7 @@ func TestDeploymentKeyService_Get_NonExistentID(t *testing.T) {
 
 	u := uuid.NewV4()
 	resp, err := svc.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
-		ID: utils.ProtoFromUUID(&u),
+		ID: utils.ProtoFromUUID(u),
 	})
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
@@ -197,7 +197,7 @@ func TestDeploymentKeyService_Delete(t *testing.T) {
 	ctx := createTestContext()
 	svc := New(db, testDBKey)
 
-	u := utils.ProtoFromUUID(&testKey1ID)
+	u := utils.ProtoFromUUID(testKey1ID)
 	resp, err := svc.Delete(ctx, u)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
@@ -216,7 +216,7 @@ func TestDeploymentKeyService_Delete_UnownedKey(t *testing.T) {
 	ctx := createTestContext()
 	svc := New(db, testDBKey)
 
-	u := utils.ProtoFromUUID(&testNonAuthUserKeyID)
+	u := utils.ProtoFromUUID(testNonAuthUserKeyID)
 	resp, err := svc.Delete(ctx, u)
 	assert.NotNil(t, err)
 	assert.Nil(t, resp)
@@ -240,7 +240,7 @@ func TestDeploymentKeyService_Delete_NonExistentKey(t *testing.T) {
 	svc := New(db, testDBKey)
 
 	u := uuid.NewV4()
-	resp, err := svc.Delete(ctx, utils.ProtoFromUUID(&u))
+	resp, err := svc.Delete(ctx, utils.ProtoFromUUID(u))
 	assert.NotNil(t, err)
 	assert.Nil(t, resp)
 	assert.Equal(t, codes.NotFound, status.Code(err))

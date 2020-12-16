@@ -198,7 +198,7 @@ func (m *AgentManagerImpl) deleteAgentWrapper(agentID uuid.UUID) error {
 
 	// Create a single update object so we don't make one for each tracker.
 	update := &metadata_servicepb.AgentUpdate{
-		AgentID: utils.ProtoFromUUID(&agentID),
+		AgentID: utils.ProtoFromUUID(agentID),
 		Update: &metadata_servicepb.AgentUpdate_Deleted{
 			Deleted: true,
 		},
@@ -232,7 +232,7 @@ func (m *AgentManagerImpl) createAgentWrapper(agentID uuid.UUID, agentInfo *agen
 
 	// Create a single update object so we don't make one for each tracker.
 	update := &metadata_servicepb.AgentUpdate{
-		AgentID: utils.ProtoFromUUID(&agentID),
+		AgentID: utils.ProtoFromUUID(agentID),
 		Update: &metadata_servicepb.AgentUpdate_Agent{
 			Agent: agentInfo,
 		},
@@ -266,7 +266,7 @@ func (m *AgentManagerImpl) updateAgentWrapper(agentID uuid.UUID, agentInfo *agen
 
 	// Create a single update object so we don't make one for each tracker.
 	update := &metadata_servicepb.AgentUpdate{
-		AgentID: utils.ProtoFromUUID(&agentID),
+		AgentID: utils.ProtoFromUUID(agentID),
 		Update: &metadata_servicepb.AgentUpdate_Agent{
 			Agent: agentInfo,
 		},
@@ -300,7 +300,7 @@ func (m *AgentManagerImpl) updateAgentDataInfoWrapper(agentID uuid.UUID, agentDa
 
 	// Create a single update object so we don't make one for each tracker.
 	update := &metadata_servicepb.AgentUpdate{
-		AgentID: utils.ProtoFromUUID(&agentID),
+		AgentID: utils.ProtoFromUUID(agentID),
 		Update: &metadata_servicepb.AgentUpdate_DataInfo{
 			DataInfo: agentDataInfo,
 		},
@@ -719,7 +719,7 @@ func (m *AgentManagerImpl) GetAgentUpdates(cursorID uuid.UUID) ([]*metadata_serv
 		}
 		for agentID, agentDataInfo := range updatedAgentsDataInfo {
 			agentUpdates = append(agentUpdates, &metadata_servicepb.AgentUpdate{
-				AgentID: utils.ProtoFromUUID(&agentID),
+				AgentID: utils.ProtoFromUUID(agentID),
 				Update: &metadata_servicepb.AgentUpdate_DataInfo{
 					DataInfo: agentDataInfo,
 				},

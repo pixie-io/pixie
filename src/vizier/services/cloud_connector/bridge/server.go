@@ -534,7 +534,7 @@ func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridg
 	}
 	// Send over a registration request and wait for ACK.
 	regReq := &cvmsgspb.RegisterVizierRequest{
-		VizierID:    utils.ProtoFromUUID(&s.vizierID),
+		VizierID:    utils.ProtoFromUUID(s.vizierID),
 		JwtKey:      s.jwtSigningKey,
 		Address:     addr,
 		ClusterInfo: clusterInfo,
@@ -933,7 +933,7 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.Vizie
 		}
 		podStatuses, numNodes, numInstrumentedNodes, updatedTime := s.vzInfo.GetK8sState()
 		hbMsg := &cvmsgspb.VizierHeartbeat{
-			VizierID:               utils.ProtoFromUUID(&s.vizierID),
+			VizierID:               utils.ProtoFromUUID(s.vizierID),
 			Time:                   time.Now().UnixNano(),
 			SequenceNumber:         atomic.LoadInt64(&s.hbSeqNum),
 			Address:                addr,

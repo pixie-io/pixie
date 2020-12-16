@@ -14,7 +14,7 @@ import (
 
 // LaunchQuery launches a query by sending query fragments to relevant agents.
 func LaunchQuery(queryID uuid.UUID, natsConn *nats.Conn, planMap map[uuid.UUID]*planpb.Plan, analyze bool) error {
-	queryIDPB := utils.ProtoFromUUID(&queryID)
+	queryIDPB := utils.ProtoFromUUID(queryID)
 	// Accumulate failures.
 	errs := make(chan error)
 	defer close(errs)

@@ -514,7 +514,7 @@ func getCurrentCluster() string {
 	return out.String()
 }
 
-func waitForCluster(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.UUID) error {
+func waitForCluster(ctx context.Context, conn *grpc.ClientConn, clusterID uuid.UUID) error {
 	client := cloudapipb.NewVizierClusterInfoClient(conn)
 
 	creds, err := auth.MustLoadDefaultCredentials()
@@ -547,7 +547,7 @@ func waitForCluster(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.
 	}
 }
 
-func initiateUpdate(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.UUID, version string, redeployEtcd bool) error {
+func initiateUpdate(ctx context.Context, conn *grpc.ClientConn, clusterID uuid.UUID, version string, redeployEtcd bool) error {
 	client := cloudapipb.NewVizierClusterInfoClient(conn)
 
 	creds, err := auth.MustLoadDefaultCredentials()
@@ -602,7 +602,7 @@ func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Cl
 				}
 			}
 
-			return waitForCluster(ctx, cloudConn, &clusterID)
+			return waitForCluster(ctx, cloudConn, clusterID)
 		}),
 	}
 

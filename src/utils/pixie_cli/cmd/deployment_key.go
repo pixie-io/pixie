@@ -155,7 +155,7 @@ func deleteDeployKey(cloudAddr string, keyID uuid.UUID) error {
 		return err
 	}
 
-	_, err = deployMgrClient.Delete(ctxWithCreds, utils2.ProtoFromUUID(&keyID))
+	_, err = deployMgrClient.Delete(ctxWithCreds, utils2.ProtoFromUUID(keyID))
 	return err
 }
 

@@ -99,7 +99,7 @@ func TestLaunchQuery(t *testing.T) {
 	}
 
 	// Check that each agent received the correct message.
-	queryUUIDPb := utils.ProtoFromUUID(&queryUUID)
+	queryUUIDPb := utils.ProtoFromUUID(queryUUID)
 	if err != nil {
 		t.Fatal("Could not convert UUID to proto.")
 	}

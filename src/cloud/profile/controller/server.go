@@ -77,8 +77,8 @@ func userInfoToProto(u *datastore.UserInfo) *profile.UserInfo {
 		profilePicture = *u.ProfilePicture
 	}
 	return &profile.UserInfo{
-		ID:             utils.ProtoFromUUID(&u.ID),
-		OrgID:          utils.ProtoFromUUID(&u.OrgID),
+		ID:             utils.ProtoFromUUID(u.ID),
+		OrgID:          utils.ProtoFromUUID(u.OrgID),
 		Username:       u.Username,
 		FirstName:      u.FirstName,
 		LastName:       u.LastName,
@@ -89,7 +89,7 @@ func userInfoToProto(u *datastore.UserInfo) *profile.UserInfo {
 
 func orgInfoToProto(o *datastore.OrgInfo) *profile.OrgInfo {
 	return &profile.OrgInfo{
-		ID:         utils.ProtoFromUUID(&o.ID),
+		ID:         utils.ProtoFromUUID(o.ID),
 		OrgName:    o.OrgName,
 		DomainName: o.DomainName,
 	}
@@ -146,7 +146,7 @@ func (s *Server) CreateUser(ctx context.Context, req *profile.CreateUserRequest)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	uid, err := s.d.CreateUser(userInfo)
-	return utils.ProtoFromUUID(&uid), err
+	return utils.ProtoFromUUID(uid), err
 }
 
 // GetUser is the GRPC method to get a user.
@@ -209,7 +209,7 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profile.CreateOrgAnd
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	projectResp, err := s.env.ProjectManagerClient().RegisterProject(ctx, &projectmanagerpb.RegisterProjectRequest{
-		OrgID:       utils.ProtoFromUUID(&orgID),
+		OrgID:       utils.ProtoFromUUID(orgID),
 		ProjectName: DefaultProjectName,
 	})
 
@@ -226,8 +226,8 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profile.CreateOrgAnd
 	}
 
 	resp := &profile.CreateOrgAndUserResponse{
-		UserID: utils.ProtoFromUUID(&userID),
-		OrgID:  utils.ProtoFromUUID(&orgID),
+		UserID: utils.ProtoFromUUID(userID),
+		OrgID:  utils.ProtoFromUUID(orgID),
 	}
 
 	return resp, nil

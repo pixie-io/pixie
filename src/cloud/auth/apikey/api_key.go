@@ -58,7 +58,7 @@ func (s *Service) Create(ctx context.Context, req *authpb.CreateAPIKeyRequest) (
 
 	tp, _ := types.TimestampProto(ts)
 	return &authpb.APIKey{
-		ID:        utils.ProtoFromUUID(&id),
+		ID:        utils.ProtoFromUUID(id),
 		Key:       key,
 		CreatedAt: tp,
 	}, nil

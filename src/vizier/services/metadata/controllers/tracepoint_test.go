@@ -252,7 +252,7 @@ func TestCreateTracepoint(t *testing.T) {
 						assert.Equal(t, &storepb.TracepointInfo{
 							Tracepoint:    test.newTracepoint,
 							Name:          "test_tracepoint",
-							ID:            utils.ProtoFromUUID(&id),
+							ID:            utils.ProtoFromUUID(id),
 							ExpectedState: statuspb.RUNNING_STATE,
 						}, tpInfo)
 						return nil
@@ -299,10 +299,10 @@ func TestGetTracepoints(t *testing.T) {
 	tID2 := uuid.NewV4()
 	expectedTracepointInfo := []*storepb.TracepointInfo{
 		&storepb.TracepointInfo{
-			ID: utils.ProtoFromUUID(&tID1),
+			ID: utils.ProtoFromUUID(tID1),
 		},
 		&storepb.TracepointInfo{
-			ID: utils.ProtoFromUUID(&tID2),
+			ID: utils.ProtoFromUUID(tID2),
 		},
 	}
 
@@ -326,7 +326,7 @@ func TestGetTracepointInfo(t *testing.T) {
 	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
 	expectedTracepointInfo := &storepb.TracepointInfo{
-		ID: utils.ProtoFromUUID(&tID1),
+		ID: utils.ProtoFromUUID(tID1),
 	}
 
 	mockTracepointStore.
@@ -350,15 +350,15 @@ func TestGetTracepointStates(t *testing.T) {
 	agentUUID1 := uuid.NewV4()
 	tID1 := uuid.NewV4()
 	expectedTracepointStatus1 := &storepb.AgentTracepointStatus{
-		ID:      utils.ProtoFromUUID(&tID1),
-		AgentID: utils.ProtoFromUUID(&agentUUID1),
+		ID:      utils.ProtoFromUUID(tID1),
+		AgentID: utils.ProtoFromUUID(agentUUID1),
 		State:   statuspb.RUNNING_STATE,
 	}
 
 	agentUUID2 := uuid.NewV4()
 	expectedTracepointStatus2 := &storepb.AgentTracepointStatus{
-		ID:      utils.ProtoFromUUID(&tID1),
-		AgentID: utils.ProtoFromUUID(&agentUUID2),
+		ID:      utils.ProtoFromUUID(tID1),
+		AgentID: utils.ProtoFromUUID(agentUUID2),
 		State:   statuspb.PENDING_STATE,
 	}
 
@@ -409,7 +409,7 @@ func TestRegisterTracepoint(t *testing.T) {
 		proto.Unmarshal(msg.Data, vzMsg)
 		req := vzMsg.GetTracepointMessage().GetRegisterTracepointRequest()
 		assert.NotNil(t, req)
-		assert.Equal(t, utils.ProtoFromUUID(&tracepointID), req.ID)
+		assert.Equal(t, utils.ProtoFromUUID(tracepointID), req.ID)
 		assert.Equal(t, program, req.TracepointDeployment)
 		wg.Done()
 	})
@@ -432,8 +432,8 @@ func TestUpdateAgentTracepointStatus(t *testing.T) {
 	agentUUID1 := uuid.NewV4()
 	tpID := uuid.NewV4()
 	expectedTracepointState := &storepb.AgentTracepointStatus{
-		ID:      utils.ProtoFromUUID(&tpID),
-		AgentID: utils.ProtoFromUUID(&agentUUID1),
+		ID:      utils.ProtoFromUUID(tpID),
+		AgentID: utils.ProtoFromUUID(agentUUID1),
 		State:   statuspb.RUNNING_STATE,
 	}
 
@@ -442,7 +442,7 @@ func TestUpdateAgentTracepointStatus(t *testing.T) {
 		UpdateTracepointState(expectedTracepointState).
 		Return(nil)
 
-	tracepointMgr.UpdateAgentTracepointStatus(utils.ProtoFromUUID(&tpID), utils.ProtoFromUUID(&agentUUID1), statuspb.RUNNING_STATE, nil)
+	tracepointMgr.UpdateAgentTracepointStatus(utils.ProtoFromUUID(tpID), utils.ProtoFromUUID(agentUUID1), statuspb.RUNNING_STATE, nil)
 }
 
 func TestUpdateAgentTracepointStatus_Terminated(t *testing.T) {
@@ -461,8 +461,8 @@ func TestUpdateAgentTracepointStatus_Terminated(t *testing.T) {
 		EXPECT().
 		GetTracepointStates(tpID).
 		Return([]*storepb.AgentTracepointStatus{
-			&storepb.AgentTracepointStatus{AgentID: utils.ProtoFromUUID(&agentUUID1), State: statuspb.TERMINATED_STATE},
-			&storepb.AgentTracepointStatus{AgentID: utils.ProtoFromUUID(&agentUUID2), State: statuspb.RUNNING_STATE},
+			&storepb.AgentTracepointStatus{AgentID: utils.ProtoFromUUID(agentUUID1), State: statuspb.TERMINATED_STATE},
+			&storepb.AgentTracepointStatus{AgentID: utils.ProtoFromUUID(agentUUID2), State: statuspb.RUNNING_STATE},
 		}, nil)
 
 	mockTracepointStore.
@@ -470,7 +470,7 @@ func TestUpdateAgentTracepointStatus_Terminated(t *testing.T) {
 		DeleteTracepoint(tpID).
 		Return(nil)
 
-	tracepointMgr.UpdateAgentTracepointStatus(utils.ProtoFromUUID(&tpID), utils.ProtoFromUUID(&agentUUID2), statuspb.TERMINATED_STATE, nil)
+	tracepointMgr.UpdateAgentTracepointStatus(utils.ProtoFromUUID(tpID), utils.ProtoFromUUID(agentUUID2), statuspb.TERMINATED_STATE, nil)
 }
 
 func TestWatchTTLs(t *testing.T) {
@@ -514,7 +514,7 @@ func TestWatchTTLs(t *testing.T) {
 	mockTracepointStore.
 		EXPECT().
 		GetAgents().
-		Return([]*agentpb.Agent{&agentpb.Agent{Info: &agentpb.AgentInfo{AgentID: utils.ProtoFromUUID(&agentID)}}}, nil)
+		Return([]*agentpb.Agent{&agentpb.Agent{Info: &agentpb.AgentInfo{AgentID: utils.ProtoFromUUID(agentID)}}}, nil)
 
 	go func() {
 		fakeEvCh <- tpID1
@@ -530,7 +530,7 @@ func TestWatchTTLs(t *testing.T) {
 		proto.Unmarshal(msg.Data, vzMsg)
 		req := vzMsg.GetTracepointMessage().GetRemoveTracepointRequest()
 		assert.NotNil(t, req)
-		assert.Equal(t, utils.ProtoFromUUID(&tpID1), req.ID)
+		assert.Equal(t, utils.ProtoFromUUID(tpID1), req.ID)
 		wg.Done()
 	})
 	assert.Nil(t, err)
@@ -562,10 +562,10 @@ func TestUpdateAgentTracepointStatus_SyncTracepoints(t *testing.T) {
 		GetTracepoints().
 		Return([]*storepb.TracepointInfo{
 			&storepb.TracepointInfo{
-				ID: utils.ProtoFromUUID(&tpID1),
+				ID: utils.ProtoFromUUID(tpID1),
 			},
 			&storepb.TracepointInfo{
-				ID: utils.ProtoFromUUID(&tpID2),
+				ID: utils.ProtoFromUUID(tpID2),
 			},
 		}, nil)
 

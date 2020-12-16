@@ -171,7 +171,7 @@ func (s *Server) loginSupportUser(ctx context.Context, in *pb.LoginRequest, user
 		ExpiresAt:   expiresAt.Unix(),
 		UserCreated: false,
 		UserInfo: &pb.AuthenticatedUserInfo{
-			UserID:    pbutils.ProtoFromUUID(&userID),
+			UserID:    pbutils.ProtoFromUUID(userID),
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,

@@ -53,7 +53,7 @@ func (s *Service) Create(ctx context.Context, req *vzmgrpb.CreateDeploymentKeyRe
 
 	tp, _ := types.TimestampProto(ts)
 	return &vzmgrpb.DeploymentKey{
-		ID:        utils.ProtoFromUUID(&id),
+		ID:        utils.ProtoFromUUID(id),
 		Key:       key,
 		CreatedAt: tp,
 	}, nil

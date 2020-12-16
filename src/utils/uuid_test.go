@@ -12,7 +12,7 @@ import (
 func TestProtoFromUUID_BaseCaseValidUUID(t *testing.T) {
 	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 	u, _ := uuid.FromString(uuidStr)
-	proto := utils.ProtoFromUUID(&u)
+	proto := utils.ProtoFromUUID(u)
 	expected := []byte(uuidStr)
 	assert.Equal(t, expected,
 		proto.Data, "must have correct value")
@@ -21,7 +21,7 @@ func TestProtoFromUUID_BaseCaseValidUUID(t *testing.T) {
 func TestProtoFromUUID_NilUUID(t *testing.T) {
 	u := uuid.Nil
 
-	proto := utils.ProtoFromUUID(&u)
+	proto := utils.ProtoFromUUID(u)
 	assert.Equal(t, []byte(uuid.Nil.String()),
 		proto.Data, "must have correct value")
 }

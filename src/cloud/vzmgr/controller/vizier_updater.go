@@ -159,7 +159,7 @@ func (u *Updater) updateOrInstallVizier(vizierID uuid.UUID, version string, rede
 
 	// Send a message to the correct vizier that it should be updated.
 	req := &cvmsgspb.UpdateOrInstallVizierRequest{
-		VizierID:     utils.ProtoFromUUID(&vizierID),
+		VizierID:     utils.ProtoFromUUID(vizierID),
 		Version:      version,
 		Token:        tokenString,
 		RedeployEtcd: redeployEtcd,

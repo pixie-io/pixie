@@ -831,12 +831,12 @@ func TestScriptMgr(t *testing.T) {
 			smResp: &scriptmgrpb.GetLiveViewsResp{
 				LiveViews: []*scriptmgrpb.LiveViewMetadata{
 					&scriptmgrpb.LiveViewMetadata{
-						ID:   pbutils.ProtoFromUUID(&ID1),
+						ID:   pbutils.ProtoFromUUID(ID1),
 						Name: "liveview1",
 						Desc: "liveview1 desc",
 					},
 					&scriptmgrpb.LiveViewMetadata{
-						ID:   pbutils.ProtoFromUUID(&ID2),
+						ID:   pbutils.ProtoFromUUID(ID2),
 						Name: "liveview2",
 						Desc: "liveview2 desc",
 					},
@@ -862,11 +862,11 @@ func TestScriptMgr(t *testing.T) {
 			name:     "GetLiveViewContents correctly translates between scriptmgr and cloudapipb.",
 			endpoint: "GetLiveViewContents",
 			smReq: &scriptmgrpb.GetLiveViewContentsReq{
-				LiveViewID: pbutils.ProtoFromUUID(&ID1),
+				LiveViewID: pbutils.ProtoFromUUID(ID1),
 			},
 			smResp: &scriptmgrpb.GetLiveViewContentsResp{
 				Metadata: &scriptmgrpb.LiveViewMetadata{
-					ID:   pbutils.ProtoFromUUID(&ID1),
+					ID:   pbutils.ProtoFromUUID(ID1),
 					Name: "liveview1",
 					Desc: "liveview1 desc",
 				},
@@ -893,13 +893,13 @@ func TestScriptMgr(t *testing.T) {
 			smResp: &scriptmgrpb.GetScriptsResp{
 				Scripts: []*scriptmgrpb.ScriptMetadata{
 					&scriptmgrpb.ScriptMetadata{
-						ID:          pbutils.ProtoFromUUID(&ID1),
+						ID:          pbutils.ProtoFromUUID(ID1),
 						Name:        "script1",
 						Desc:        "script1 desc",
 						HasLiveView: false,
 					},
 					&scriptmgrpb.ScriptMetadata{
-						ID:          pbutils.ProtoFromUUID(&ID2),
+						ID:          pbutils.ProtoFromUUID(ID2),
 						Name:        "liveview1",
 						Desc:        "liveview1 desc",
 						HasLiveView: true,
@@ -928,11 +928,11 @@ func TestScriptMgr(t *testing.T) {
 			name:     "GetScriptContents correctly translates between scriptmgr and cloudapipb.",
 			endpoint: "GetScriptContents",
 			smReq: &scriptmgrpb.GetScriptContentsReq{
-				ScriptID: pbutils.ProtoFromUUID(&ID1),
+				ScriptID: pbutils.ProtoFromUUID(ID1),
 			},
 			smResp: &scriptmgrpb.GetScriptContentsResp{
 				Metadata: &scriptmgrpb.ScriptMetadata{
-					ID:          pbutils.ProtoFromUUID(&ID1),
+					ID:          pbutils.ProtoFromUUID(ID1),
 					Name:        "Script1",
 					Desc:        "Script1 desc",
 					HasLiveView: false,
