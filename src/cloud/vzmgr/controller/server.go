@@ -235,6 +235,9 @@ func validateOrgID(ctx context.Context, providedOrgIDPB *uuidpb.UUID) error {
 
 func (s *Server) validateOrgOwnsCluster(ctx context.Context, clusterID *uuidpb.UUID) error {
 	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return err
+	}
 	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
 
 	query := `SELECT org_id from vizier_cluster WHERE id=$1`
@@ -445,6 +448,33 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 	return nil, status.Error(codes.NotFound, "vizier not found")
 }
 
+// getVizierConfig returns the current Vizier config.
+// WARNING: This doesn't check validateOrgOwnsCluster since
+// the certmgr usecase cannot get a valid authcontext from the passed in
+// context.
+func (s *Server) getVizierConfig(ctx context.Context, vizierIDPb *uuidpb.UUID) (*cvmsgspb.VizierConfig, error) {
+	vizierID := utils.UUIDFromProtoOrNil(vizierIDPb)
+
+	query := `
+		SELECT passthrough_enabled
+		FROM vizier_cluster_info
+		WHERE vizier_cluster_id = $1`
+	var val struct {
+		PassthroughEnabled bool `db:"passthrough_enabled"`
+	}
+
+	err := s.db.Get(&val, query, vizierID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, status.Error(codes.NotFound, "no such cluster")
+		}
+		return nil, err
+	}
+	return &cvmsgspb.VizierConfig{
+		PassthroughEnabled: val.PassthroughEnabled,
+	}, nil
+}
+
 // UpdateVizierConfig supports updating of the Vizier config.
 func (s *Server) UpdateVizierConfig(ctx context.Context, req *cvmsgspb.UpdateVizierConfigRequest) (*cvmsgspb.UpdateVizierConfigResponse, error) {
 	if err := s.validateOrgOwnsCluster(ctx, req.VizierID); err != nil {
@@ -470,6 +500,16 @@ func (s *Server) UpdateVizierConfig(ctx context.Context, req *cvmsgspb.UpdateViz
 	if count, _ := res.RowsAffected(); count == 0 {
 		return nil, status.Error(codes.NotFound, "no such cluster")
 	}
+
+	anyMsg, err := types.MarshalAny(&cvmsgspb.VizierConfig{
+		PassthroughEnabled: passthroughEnabled,
+	})
+	if err != nil {
+		log.WithError(err).Error("Could not marshal proto to any")
+	}
+	// Tell certmgr about the vizier config
+	s.sendNATSMessage("sslVizierConfigResp", anyMsg, vizierID)
+
 	return &cvmsgspb.UpdateVizierConfigResponse{}, nil
 }
 
@@ -802,7 +842,25 @@ func (s *Server) HandleSSLRequest(v2cMsg *cvmsgspb.V2CMessage) {
 	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
 		fmt.Sprintf("bearer %s", serviceAuthToken))
 
+	vizierConf, err := s.getVizierConfig(ctx, req.VizierID)
+	if err != nil {
+		log.WithError(err).Error("Could not get vizier config")
+		return
+	}
+	respAnyMsg, err := types.MarshalAny(vizierConf)
+	if err != nil {
+		log.WithError(err).Error("Could not marshal proto to any")
+		return
+	}
+
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
+	// Tell certmgr about the vizier config
+	s.sendNATSMessage("sslVizierConfigResp", respAnyMsg, vizierID)
+
+	if vizierConf.GetPassthroughEnabled() {
+		// We don't need SSL certs for the cluster if it is running in passthrough mode.
+		return
+	}
 
 	dnsMgrReq := &dnsmgr.GetSSLCertsRequest{ClusterID: req.VizierID}
 	resp, err := s.dnsMgrClient.GetSSLCerts(ctx, dnsMgrReq)
@@ -815,7 +873,7 @@ func (s *Server) HandleSSLRequest(v2cMsg *cvmsgspb.V2CMessage) {
 		Cert: resp.Cert,
 	}
 
-	respAnyMsg, err := types.MarshalAny(natsResp)
+	respAnyMsg, err = types.MarshalAny(natsResp)
 	if err != nil {
 		log.WithError(err).Error("Could not marshal proto to any")
 		return
