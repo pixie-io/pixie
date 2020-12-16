@@ -117,48 +117,52 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 		VizierIDs: []*uuidpb.UUID{clusterID},
 	}, nil)
 
-	mockClients.MockVzMgr.EXPECT().GetVizierInfo(gomock.Any(), clusterID).Return(&cvmsgspb.VizierInfo{
-		VizierID:        clusterID,
-		Status:          cvmsgspb.VZ_ST_HEALTHY,
-		LastHeartbeatNs: int64(1305646598000000000),
-		Config: &cvmsgspb.VizierConfig{
-			PassthroughEnabled: false,
-		},
-		VizierVersion:  "1.2.3",
-		ClusterUID:     "a UID",
-		ClusterName:    "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar-3",
-		ClusterVersion: "5.6.7",
-		ControlPlanePodStatuses: map[string]*cvmsgspb.PodStatus{
-			"vizier-proxy": &cvmsgspb.PodStatus{
-				Name:   "vizier-proxy",
-				Status: metadatapb.RUNNING,
-				Containers: []*cvmsgspb.ContainerStatus{
-					&cvmsgspb.ContainerStatus{
-						Name:      "my-proxy-container",
-						State:     metadatapb.CONTAINER_STATE_RUNNING,
-						Message:   "container message",
-						Reason:    "container reason",
-						CreatedAt: &types.Timestamp{Seconds: 1561230620},
-					},
-				},
-				Events: []*cvmsgspb.K8SEvent{
-					&cvmsgspb.K8SEvent{
-						Message:   "this is a test event",
-						FirstTime: &types.Timestamp{Seconds: 1561230620},
-						LastTime:  &types.Timestamp{Seconds: 1561230625},
-					},
-				},
-				StatusMessage: "pod message",
-				Reason:        "pod reason",
-				CreatedAt:     &types.Timestamp{Seconds: 1561230621},
+	mockClients.MockVzMgr.EXPECT().GetVizierInfos(gomock.Any(), &vzmgrpb.GetVizierInfosRequest{
+		VizierIDs: []*uuidpb.UUID{clusterID},
+	}).Return(&vzmgrpb.GetVizierInfosResponse{
+		VizierInfos: []*cvmsgspb.VizierInfo{&cvmsgspb.VizierInfo{
+			VizierID:        clusterID,
+			Status:          cvmsgspb.VZ_ST_HEALTHY,
+			LastHeartbeatNs: int64(1305646598000000000),
+			Config: &cvmsgspb.VizierConfig{
+				PassthroughEnabled: false,
 			},
-			"vizier-query-broker": &cvmsgspb.PodStatus{
-				Name:   "vizier-query-broker",
-				Status: metadatapb.RUNNING,
+			VizierVersion:  "1.2.3",
+			ClusterUID:     "a UID",
+			ClusterName:    "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar-3",
+			ClusterVersion: "5.6.7",
+			ControlPlanePodStatuses: map[string]*cvmsgspb.PodStatus{
+				"vizier-proxy": &cvmsgspb.PodStatus{
+					Name:   "vizier-proxy",
+					Status: metadatapb.RUNNING,
+					Containers: []*cvmsgspb.ContainerStatus{
+						&cvmsgspb.ContainerStatus{
+							Name:      "my-proxy-container",
+							State:     metadatapb.CONTAINER_STATE_RUNNING,
+							Message:   "container message",
+							Reason:    "container reason",
+							CreatedAt: &types.Timestamp{Seconds: 1561230620},
+						},
+					},
+					Events: []*cvmsgspb.K8SEvent{
+						&cvmsgspb.K8SEvent{
+							Message:   "this is a test event",
+							FirstTime: &types.Timestamp{Seconds: 1561230620},
+							LastTime:  &types.Timestamp{Seconds: 1561230625},
+						},
+					},
+					StatusMessage: "pod message",
+					Reason:        "pod reason",
+					CreatedAt:     &types.Timestamp{Seconds: 1561230621},
+				},
+				"vizier-query-broker": &cvmsgspb.PodStatus{
+					Name:   "vizier-query-broker",
+					Status: metadatapb.RUNNING,
+				},
 			},
-		},
-		NumNodes:             5,
-		NumInstrumentedNodes: 3,
+			NumNodes:             5,
+			NumInstrumentedNodes: 3,
+		}},
 	}, nil)
 
 	vzClusterInfoServer := &controller.VizierClusterInfo{
@@ -232,34 +236,38 @@ func TestVizierClusterInfo_GetClusterInfoDuplicates(t *testing.T) {
 		VizierIDs: []*uuidpb.UUID{clusterID, clusterID2},
 	}, nil)
 
-	mockClients.MockVzMgr.EXPECT().GetVizierInfo(gomock.Any(), clusterID).Return(&cvmsgspb.VizierInfo{
-		VizierID:        clusterID,
-		Status:          cvmsgspb.VZ_ST_HEALTHY,
-		LastHeartbeatNs: int64(1305646598000000000),
-		Config: &cvmsgspb.VizierConfig{
-			PassthroughEnabled: false,
+	mockClients.MockVzMgr.EXPECT().GetVizierInfos(gomock.Any(), &vzmgrpb.GetVizierInfosRequest{
+		VizierIDs: []*uuidpb.UUID{clusterID, clusterID2},
+	}).Return(&vzmgrpb.GetVizierInfosResponse{
+		VizierInfos: []*cvmsgspb.VizierInfo{&cvmsgspb.VizierInfo{
+			VizierID:        clusterID,
+			Status:          cvmsgspb.VZ_ST_HEALTHY,
+			LastHeartbeatNs: int64(1305646598000000000),
+			Config: &cvmsgspb.VizierConfig{
+				PassthroughEnabled: false,
+			},
+			VizierVersion:        "1.2.3",
+			ClusterUID:           "a UID",
+			ClusterName:          "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar",
+			ClusterVersion:       "5.6.7",
+			NumNodes:             5,
+			NumInstrumentedNodes: 3,
 		},
-		VizierVersion:        "1.2.3",
-		ClusterUID:           "a UID",
-		ClusterName:          "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar",
-		ClusterVersion:       "5.6.7",
-		NumNodes:             5,
-		NumInstrumentedNodes: 3,
-	}, nil)
-
-	mockClients.MockVzMgr.EXPECT().GetVizierInfo(gomock.Any(), clusterID2).Return(&cvmsgspb.VizierInfo{
-		VizierID:        clusterID,
-		Status:          cvmsgspb.VZ_ST_HEALTHY,
-		LastHeartbeatNs: int64(1305646598000000000),
-		Config: &cvmsgspb.VizierConfig{
-			PassthroughEnabled: false,
+			&cvmsgspb.VizierInfo{
+				VizierID:        clusterID,
+				Status:          cvmsgspb.VZ_ST_HEALTHY,
+				LastHeartbeatNs: int64(1305646598000000000),
+				Config: &cvmsgspb.VizierConfig{
+					PassthroughEnabled: false,
+				},
+				VizierVersion:        "1.2.3",
+				ClusterUID:           "a UID2",
+				ClusterName:          "gke_pl-pixies_us-west1-a_dev-cluster-zasgar",
+				ClusterVersion:       "5.6.7",
+				NumNodes:             5,
+				NumInstrumentedNodes: 3,
+			},
 		},
-		VizierVersion:        "1.2.3",
-		ClusterUID:           "a UID2",
-		ClusterName:          "gke_pl-pixies_us-west1-a_dev-cluster-zasgar",
-		ClusterVersion:       "5.6.7",
-		NumNodes:             5,
-		NumInstrumentedNodes: 3,
 	}, nil)
 
 	vzClusterInfoServer := &controller.VizierClusterInfo{
@@ -285,17 +293,22 @@ func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	mockClients.MockVzMgr.EXPECT().GetVizierInfo(gomock.Any(), clusterID).Return(&cvmsgspb.VizierInfo{
-		VizierID:        clusterID,
-		Status:          cvmsgspb.VZ_ST_HEALTHY,
-		LastHeartbeatNs: int64(1305646598000000000),
-		Config: &cvmsgspb.VizierConfig{
-			PassthroughEnabled: false,
+	mockClients.MockVzMgr.EXPECT().GetVizierInfos(gomock.Any(), &vzmgrpb.GetVizierInfosRequest{
+		VizierIDs: []*uuidpb.UUID{clusterID},
+	}).Return(&vzmgrpb.GetVizierInfosResponse{
+		VizierInfos: []*cvmsgspb.VizierInfo{&cvmsgspb.VizierInfo{
+			VizierID:        clusterID,
+			Status:          cvmsgspb.VZ_ST_HEALTHY,
+			LastHeartbeatNs: int64(1305646598000000000),
+			Config: &cvmsgspb.VizierConfig{
+				PassthroughEnabled: false,
+			},
+			VizierVersion:  "1.2.3",
+			ClusterUID:     "a UID",
+			ClusterName:    "some cluster",
+			ClusterVersion: "5.6.7",
 		},
-		VizierVersion:  "1.2.3",
-		ClusterUID:     "a UID",
-		ClusterName:    "some cluster",
-		ClusterVersion: "5.6.7",
+		},
 	}, nil)
 
 	vzClusterInfoServer := &controller.VizierClusterInfo{

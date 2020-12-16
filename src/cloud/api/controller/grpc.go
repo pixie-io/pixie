@@ -220,13 +220,18 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 	resp := &cloudapipb.GetClusterInfoResponse{}
 
 	cNames := make(map[string]int)
-	for _, id := range ids {
-		// TODO(zasgar/michelle): Make these requests parallel
-		vzInfo, err := v.VzMgr.GetVizierInfo(ctx, id)
-		if err != nil {
-			return nil, err
-		}
+	vzInfoResp, err := v.VzMgr.GetVizierInfos(ctx, &vzmgrpb.GetVizierInfosRequest{
+		VizierIDs: ids,
+	})
 
+	if err != nil {
+		return nil, err
+	}
+
+	for _, vzInfo := range vzInfoResp.VizierInfos {
+		if vzInfo == nil {
+			continue
+		}
 		podStatuses := make(map[string]*cloudapipb.PodStatus)
 		for podName, status := range vzInfo.ControlPlanePodStatuses {
 			var containers []*cloudapipb.ContainerStatus
@@ -269,7 +274,7 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 		}
 
 		resp.Clusters = append(resp.Clusters, &cloudapipb.ClusterInfo{
-			ID:              id,
+			ID:              vzInfo.VizierID,
 			Status:          s,
 			LastHeartbeatNs: vzInfo.LastHeartbeatNs,
 			Config: &cloudapipb.VizierConfig{

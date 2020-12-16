@@ -128,6 +128,24 @@ func (mr *MockVZMgrServiceClientMockRecorder) GetVizierConnectionInfo(ctx, in in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVizierConnectionInfo", reflect.TypeOf((*MockVZMgrServiceClient)(nil).GetVizierConnectionInfo), varargs...)
 }
 
+// GetVizierInfos mocks base method
+func (m *MockVZMgrServiceClient) GetVizierInfos(ctx context.Context, in *vzmgrpb.GetVizierInfosRequest, opts ...grpc.CallOption) (*vzmgrpb.GetVizierInfosResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetVizierInfos", varargs...)
+	ret0, _ := ret[0].(*vzmgrpb.GetVizierInfosResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVizierInfos indicates an expected call of GetVizierInfos
+func (mr *MockVZMgrServiceClientMockRecorder) GetVizierInfos(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVizierInfos", reflect.TypeOf((*MockVZMgrServiceClient)(nil).GetVizierInfos), varargs...)
+}
+
 // VizierConnected mocks base method
 func (m *MockVZMgrServiceClient) VizierConnected(ctx context.Context, in *cvmsgspb.RegisterVizierRequest, opts ...grpc.CallOption) (*cvmsgspb.RegisterVizierAck, error) {
 	varargs := []interface{}{ctx, in}
@@ -268,6 +286,19 @@ func (m *MockVZMgrServiceServer) GetVizierConnectionInfo(arg0 context.Context, a
 // GetVizierConnectionInfo indicates an expected call of GetVizierConnectionInfo
 func (mr *MockVZMgrServiceServerMockRecorder) GetVizierConnectionInfo(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVizierConnectionInfo", reflect.TypeOf((*MockVZMgrServiceServer)(nil).GetVizierConnectionInfo), arg0, arg1)
+}
+
+// GetVizierInfos mocks base method
+func (m *MockVZMgrServiceServer) GetVizierInfos(arg0 context.Context, arg1 *vzmgrpb.GetVizierInfosRequest) (*vzmgrpb.GetVizierInfosResponse, error) {
+	ret := m.ctrl.Call(m, "GetVizierInfos", arg0, arg1)
+	ret0, _ := ret[0].(*vzmgrpb.GetVizierInfosResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVizierInfos indicates an expected call of GetVizierInfos
+func (mr *MockVZMgrServiceServerMockRecorder) GetVizierInfos(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVizierInfos", reflect.TypeOf((*MockVZMgrServiceServer)(nil).GetVizierInfos), arg0, arg1)
 }
 
 // VizierConnected mocks base method

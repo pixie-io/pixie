@@ -29,6 +29,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/schema"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzerrors"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
+	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
@@ -216,6 +217,38 @@ func TestServer_GetVizierInfo(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	assert.Equal(t, testPodStatuses, controller.PodStatuses(resp.ControlPlanePodStatuses))
+}
+
+func TestServer_GetVizierInfos(t *testing.T) {
+	db, teardown := setupTestDB(t)
+	defer teardown()
+	loadTestData(t, db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
+
+	requestedIDs := []*uuidpb.UUID{
+		utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"), // Vizier from current org.
+		utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"), // Vizier from another org.
+		utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440012"), // Invalid vizier ID.
+		utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"), // Vizier from current org.
+	}
+
+	s := controller.New(db, "test", mockDNSClient, nil, nil)
+	resp, err := s.GetVizierInfos(CreateTestContext(), &vzmgrpb.GetVizierInfosRequest{
+		VizierIDs: requestedIDs,
+	})
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+
+	assert.Equal(t, 4, len(resp.VizierInfos))
+	assert.Equal(t, utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"), resp.VizierInfos[0].VizierID)
+	assert.Equal(t, "vzVers", resp.VizierInfos[0].VizierVersion)
+	assert.Nil(t, resp.VizierInfos[1])
+	assert.Nil(t, resp.VizierInfos[2])
+	assert.Equal(t, utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"), resp.VizierInfos[3].VizierID)
+	assert.Equal(t, "k8sID", resp.VizierInfos[3].ClusterUID)
 }
 
 func TestServer_UpdateVizierConfig(t *testing.T) {

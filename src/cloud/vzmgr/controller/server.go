@@ -297,6 +297,117 @@ func (s *Server) GetViziersByOrg(ctx context.Context, orgID *uuidpb.UUID) (*vzmg
 	return &vzmgrpb.GetViziersByOrgResponse{VizierIDs: ids}, nil
 }
 
+// VizierInfo represents all info we want to fetch about a Vizier.
+type VizierInfo struct {
+	ID                      uuid.UUID    `db:"vizier_cluster_id"`
+	Status                  vizierStatus `db:"status"`
+	LastHeartbeat           *int64       `db:"last_heartbeat"`
+	PassthroughEnabled      bool         `db:"passthrough_enabled"`
+	ClusterUID              *string      `db:"cluster_uid"`
+	ClusterName             *string      `db:"cluster_name"`
+	ClusterVersion          *string      `db:"cluster_version"`
+	VizierVersion           *string      `db:"vizier_version"`
+	ControlPlanePodStatuses PodStatuses  `db:"control_plane_pod_statuses"`
+	NumNodes                int32        `db:"num_nodes"`
+	NumInstrumentedNodes    int32        `db:"num_instrumented_nodes"`
+	OrgID                   uuid.UUID    `db:"org_id"`
+}
+
+func vizierInfoToProto(vzInfo VizierInfo) *cvmsgspb.VizierInfo {
+	clusterUID := ""
+	clusterName := ""
+	clusterVersion := ""
+	vizierVersion := ""
+
+	lastHearbeat := int64(-1)
+	if vzInfo.LastHeartbeat != nil {
+		lastHearbeat = *vzInfo.LastHeartbeat
+	}
+
+	if vzInfo.ClusterUID != nil {
+		clusterUID = *vzInfo.ClusterUID
+	}
+	if vzInfo.ClusterName != nil {
+		clusterName = *vzInfo.ClusterName
+	}
+	if vzInfo.ClusterVersion != nil {
+		clusterVersion = *vzInfo.ClusterVersion
+	}
+	if vzInfo.VizierVersion != nil {
+		vizierVersion = *vzInfo.VizierVersion
+	}
+
+	return &cvmsgspb.VizierInfo{
+		VizierID:        utils.ProtoFromUUID(vzInfo.ID),
+		Status:          vzInfo.Status.ToProto(),
+		LastHeartbeatNs: lastHearbeat,
+		Config: &cvmsgspb.VizierConfig{
+			PassthroughEnabled: vzInfo.PassthroughEnabled,
+		},
+		ClusterUID:              clusterUID,
+		ClusterName:             clusterName,
+		ClusterVersion:          clusterVersion,
+		VizierVersion:           vizierVersion,
+		ControlPlanePodStatuses: vzInfo.ControlPlanePodStatuses,
+		NumNodes:                vzInfo.NumNodes,
+		NumInstrumentedNodes:    vzInfo.NumInstrumentedNodes,
+	}
+}
+
+// GetVizierInfos gets the vizier info for multiple viziers.
+func (s *Server) GetVizierInfos(ctx context.Context, req *vzmgrpb.GetVizierInfosRequest) (*vzmgrpb.GetVizierInfosResponse, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
+
+	ids := make([]uuid.UUID, len(req.VizierIDs))
+	for i, id := range req.VizierIDs {
+		ids[i] = utils.UUIDFromProtoOrNil(id)
+	}
+
+	strQuery := `SELECT i.vizier_cluster_id, c.cluster_uid, c.cluster_name, c.cluster_version, i.vizier_version, c.org_id,
+			  i.status, (EXTRACT(EPOCH FROM age(now(), i.last_heartbeat))*1E9)::bigint as last_heartbeat,
+              i.passthrough_enabled, i.control_plane_pod_statuses, num_nodes, num_instrumented_nodes
+              from vizier_cluster_info as i, vizier_cluster as c
+              WHERE i.vizier_cluster_id=c.id AND i.vizier_cluster_id IN (?) AND c.org_id='%s'`
+	strQuery = fmt.Sprintf(strQuery, orgIDstr)
+
+	query, args, err := sqlx.In(strQuery, ids)
+	if err != nil {
+		return nil, err
+	}
+	query = s.db.Rebind(query)
+	rows, err := s.db.Queryx(query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create map of Vizier ID -> VizierInfo, which we can use to return the VizierInfos in the
+	// requested order.
+	defer rows.Close()
+	vzInfoMap := make(map[uuid.UUID]*cvmsgspb.VizierInfo)
+	for rows.Next() {
+		var vzInfo VizierInfo
+		err := rows.StructScan(&vzInfo)
+		if err != nil {
+			return nil, err
+		}
+
+		vzInfoPb := vizierInfoToProto(vzInfo)
+		vzInfoMap[vzInfo.ID] = vzInfoPb
+	}
+
+	vzInfos := make([]*cvmsgspb.VizierInfo, len(req.VizierIDs))
+	for i, id := range ids {
+		if val, ok := vzInfoMap[id]; ok {
+			vzInfos[i] = val
+		}
+	}
+
+	return &vzmgrpb.GetVizierInfosResponse{
+		VizierInfos: vzInfos,
+	}, nil
+}
+
 // GetVizierInfo returns info for the specified Vizier.
 func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb.VizierInfo, error) {
 	if err := s.validateOrgOwnsCluster(ctx, req); err != nil {
@@ -308,19 +419,7 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
               i.passthrough_enabled, i.control_plane_pod_statuses, num_nodes, num_instrumented_nodes
               from vizier_cluster_info as i, vizier_cluster as c
               WHERE i.vizier_cluster_id=$1 AND i.vizier_cluster_id=c.id`
-	var val struct {
-		ID                      uuid.UUID    `db:"vizier_cluster_id"`
-		Status                  vizierStatus `db:"status"`
-		LastHeartbeat           *int64       `db:"last_heartbeat"`
-		PassthroughEnabled      bool         `db:"passthrough_enabled"`
-		ClusterUID              *string      `db:"cluster_uid"`
-		ClusterName             *string      `db:"cluster_name"`
-		ClusterVersion          *string      `db:"cluster_version"`
-		VizierVersion           *string      `db:"vizier_version"`
-		ControlPlanePodStatuses PodStatuses  `db:"control_plane_pod_statuses"`
-		NumNodes                int32        `db:"num_nodes"`
-		NumInstrumentedNodes    int32        `db:"num_instrumented_nodes"`
-	}
+	vzInfo := VizierInfo{}
 	clusterID, err := utils.UUIDFromProto(req)
 	if err != nil {
 		return nil, err
@@ -332,50 +431,16 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 		return nil, status.Error(codes.Internal, "could not query for viziers")
 	}
 	defer rows.Close()
-	clusterUID := ""
-	clusterName := ""
-	clusterVersion := ""
-	vizierVersion := ""
 
 	if rows.Next() {
-		err := rows.StructScan(&val)
+		err := rows.StructScan(&vzInfo)
 		if err != nil {
 			log.WithError(err).Error("Could not query Vizier info")
 			return nil, status.Error(codes.Internal, "could not query for viziers")
 		}
-		lastHearbeat := int64(-1)
-		if val.LastHeartbeat != nil {
-			lastHearbeat = *val.LastHeartbeat
-		}
 
-		if val.ClusterUID != nil {
-			clusterUID = *val.ClusterUID
-		}
-		if val.ClusterName != nil {
-			clusterName = *val.ClusterName
-		}
-		if val.ClusterVersion != nil {
-			clusterVersion = *val.ClusterVersion
-		}
-		if val.VizierVersion != nil {
-			vizierVersion = *val.VizierVersion
-		}
-
-		return &cvmsgspb.VizierInfo{
-			VizierID:        utils.ProtoFromUUID(val.ID),
-			Status:          val.Status.ToProto(),
-			LastHeartbeatNs: lastHearbeat,
-			Config: &cvmsgspb.VizierConfig{
-				PassthroughEnabled: val.PassthroughEnabled,
-			},
-			ClusterUID:              clusterUID,
-			ClusterName:             clusterName,
-			ClusterVersion:          clusterVersion,
-			VizierVersion:           vizierVersion,
-			ControlPlanePodStatuses: val.ControlPlanePodStatuses,
-			NumNodes:                val.NumNodes,
-			NumInstrumentedNodes:    val.NumInstrumentedNodes,
-		}, nil
+		vzInfoPb := vizierInfoToProto(vzInfo)
+		return vzInfoPb, nil
 	}
 	return nil, status.Error(codes.NotFound, "vizier not found")
 }

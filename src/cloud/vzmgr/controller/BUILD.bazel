@@ -67,6 +67,7 @@ go_test(
         "//src/cloud/vzmgr/schema:go_default_library",
         "//src/cloud/vzmgr/vzerrors:go_default_library",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
+        "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/artifacts/versionspb:versions_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",

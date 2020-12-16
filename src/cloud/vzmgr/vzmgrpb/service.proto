@@ -16,6 +16,8 @@ service VZMgrService {
   rpc GetVizierInfo(uuidpb.UUID) returns (cvmsgspb.VizierInfo) {}
   rpc GetViziersByShard(GetViziersByShardRequest) returns (GetViziersByShardResponse) {}
   rpc GetVizierConnectionInfo(uuidpb.UUID) returns (cvmsgspb.VizierConnectionInfo) {}
+  // Fetch vizier infos for multiple viziers.
+  rpc GetVizierInfos(GetVizierInfosRequest) returns (GetVizierInfosResponse) {}
   // Call to acknowledge connection of a vizier.
   rpc VizierConnected(cvmsgspb.RegisterVizierRequest) returns (cvmsgspb.RegisterVizierAck) {}
   rpc UpdateVizierConfig(cvmsgspb.UpdateVizierConfigRequest) returns (cvmsgspb.UpdateVizierConfigResponse) {}
@@ -66,7 +68,17 @@ message GetViziersByShardResponse {
     repeated VizierInfo viziers = 1;
 }
 
+// GetVizierInfosRequest, get information about all the given viziers.
+message GetVizierInfosRequest {
+  repeated uuidpb.UUID vizier_ids = 1 [
+                                       (gogoproto.customname) = "VizierIDs"
+                                      ];
+}
 
+// GetVizierInfosResponse is the response to a GetVizierInfosRequest.
+message GetVizierInfosResponse {
+  repeated cvmsgspb.VizierInfo vizier_infos = 1; 
+}
 
 //////////////////////////////////////////////////////////////
 // Deployment Key Service
