@@ -1113,13 +1113,15 @@ interface BarChartProps {
   stackBy?: string;
   horizontal: boolean;
   value: string;
+  valueFmtFn?: FormatFnMetadata;
+  barFmtFn?: FormatFnMetadata;
   transformedDataSrc: Data;
   labelScale: InternalScale;
   display: DisplayWithLabels;
 }
 
 // The internal function to render barCharts.
-function barChartInternal(chart: BarChartProps, spec: VgSpec, formatFuncMD: FormatFnMetadata): VegaSpecWithProps {
+function barChartInternal(chart: BarChartProps, spec: VgSpec): VegaSpecWithProps {
   if (!chart.groupBy) {
     addAutosize(spec);
   }
@@ -1367,16 +1369,24 @@ function barChartInternal(chart: BarChartProps, spec: VgSpec, formatFuncMD: Form
 
   let xFormatAxis = {};
   let yFormatAxis = {};
-  if (formatFuncMD) {
-    const formatAxis = {
-      encode: {
-        labels: { update: { text: { signal: `${formatFuncMD.name}(datum.value)` } } },
-      },
-    };
+
+  const applyMetadataFnToAxis = (name) => ({
+    encode: {
+      labels: { update: { text: { signal: `${name}(datum.value)` } } },
+    },
+  });
+  if (chart.valueFmtFn) {
     if (horizontalBars) {
-      yFormatAxis = formatAxis;
+      xFormatAxis = applyMetadataFnToAxis(chart.valueFmtFn.name);
     } else {
-      xFormatAxis = formatAxis;
+      yFormatAxis = applyMetadataFnToAxis(chart.valueFmtFn.name);
+    }
+  }
+  if (chart.barFmtFn) {
+    if (horizontalBars) {
+      yFormatAxis = applyMetadataFnToAxis(chart.barFmtFn.name);
+    } else {
+      xFormatAxis = applyMetadataFnToAxis(chart.barFmtFn.name);
     }
   }
   const xAxis = addAxis((horizontalBars) ? groupForValueAxis : groupForLabelAxis, {
@@ -1462,6 +1472,7 @@ function convertToBarChart(display: BarDisplay, source: string, relation?: Relat
     barStart: display.bar.label,
     horizontal: horizontalBars,
     value: display.bar.value,
+    valueFmtFn: formatFuncMD,
     transformedDataSrc,
     groupBy: display.bar.groupBy,
     stackBy: display.bar.stackBy,
@@ -1475,7 +1486,7 @@ function convertToBarChart(display: BarDisplay, source: string, relation?: Relat
       type: 'band',
     },
     display,
-  }, spec, formatFuncMD);
+  }, spec);
 }
 
 function convertToHistogramChart(display: HistogramDisplay, source: string, relation?: Relation): VegaSpecWithProps {
@@ -1542,6 +1553,7 @@ function convertToHistogramChart(display: HistogramDisplay, source: string, rela
     barEnd: binEnd,
     horizontal: display.histogram.horizontal,
     value: countField,
+    barFmtFn: formatFuncMD,
     transformedDataSrc,
     labelScale: {
       domain: {
@@ -1551,7 +1563,7 @@ function convertToHistogramChart(display: HistogramDisplay, source: string, rela
       bins: { signal: binSignal },
     },
     display,
-  }, spec, formatFuncMD);
+  }, spec);
 }
 
 function convertToVegaChart(display: VegaDisplay): VegaSpecWithProps {
