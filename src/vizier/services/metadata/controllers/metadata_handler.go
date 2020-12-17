@@ -210,7 +210,6 @@ func (mh *MetadataHandler) MetadataListener() {
 func (mh *MetadataHandler) updateEndpoints(e *v1.Endpoints, deleted bool) (*metadatapb.Endpoints, error) {
 	// Don't record the endpoint if there is no nodename.
 	if len(e.Subsets) > 0 && len(e.Subsets[0].Addresses) > 0 && e.Subsets[0].Addresses[0].NodeName == nil {
-		log.Info("Received endpoint with no nodename: " + e.String())
 		return nil, nil
 	}
 
