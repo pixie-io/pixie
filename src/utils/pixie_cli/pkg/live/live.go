@@ -422,7 +422,7 @@ func (v *View) createTviewTable(t components.TableView, sortState []sortType) *t
 	handleLargeBlobView := func(row, column int) {
 		v.closeModal()
 
-		if row < 1 || column < 0 {
+		if row <= 1 || column < 0 {
 			return
 		}
 
