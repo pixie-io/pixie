@@ -76,13 +76,13 @@ func main() {
 		log.WithError(err).Fatal("Failed to initialize auth env")
 	}
 
-	server, err := controllers.NewServer(env, a)
+	db, dbKey := connectToPostgres()
+	apiKeyMgr := apikey.New(db, dbKey)
+
+	server, err := controllers.NewServer(env, a, apiKeyMgr)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}
-
-	db, dbKey := connectToPostgres()
-	apiKeyMgr := apikey.New(db, dbKey)
 
 	s := services.NewPLServer(env, mux)
 	auth.RegisterAuthServiceServer(s.GRPCServer(), server)

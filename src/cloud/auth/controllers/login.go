@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"time"
 
 	uuid "github.com/satori/go.uuid"
@@ -288,7 +288,40 @@ func (s *Server) createUserAndOptionallyOrg(ctx context.Context, domainName stri
 
 // GetAugmentedTokenForAPIKey produces an augmented token for the user given a API key.
 func (s *Server) GetAugmentedTokenForAPIKey(ctx context.Context, in *pb.GetAugmentedTokenForAPIKeyRequest) (*pb.GetAugmentedTokenForAPIKeyResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	// Find the org/user associated with the token.
+	orgID, userID, err := s.apiKeyMgr.FetchOrgUserIDUsingAPIKey(ctx, in.APIKey)
+	if err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "Invalid API key")
+	}
+
+	// Generate service token, so that we can make a call to the Profile service.
+	svcJWT := utils.GenerateJWTForService("AuthService")
+	svcClaims, err := utils.SignJWTClaims(svcJWT, s.env.JWTSigningKey())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to generate auth token")
+	}
+	ctxWithSvcCreds := metadata.AppendToOutgoingContext(ctx, "authorization",
+		fmt.Sprintf("bearer %s", svcClaims))
+
+	// Fetch user's email.
+	pc := s.env.ProfileClient()
+	user, err := pc.GetUser(ctxWithSvcCreds, pbutils.ProtoFromUUID(userID))
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to generate auth token")
+	}
+
+	// Create JWT for user/org.
+	claims := utils.GenerateJWTForUser(userID.String(), orgID.String(), user.Email, time.Now().Add(AugmentedTokenValidDuration))
+	token, err := utils.SignJWTClaims(claims, s.env.JWTSigningKey())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to generate auth token")
+	}
+
+	resp := &pb.GetAugmentedTokenForAPIKeyResponse{
+		Token:     token,
+		ExpiresAt: claims.ExpiresAt,
+	}
+	return resp, nil
 }
 
 // GetAugmentedToken produces augmented tokens for the user based on passed in credentials.

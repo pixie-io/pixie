@@ -2,11 +2,15 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["auth0_mock.gen.go"],
+    srcs = [
+        "auth0_mock.gen.go",
+        "mock_apikeymgr.gen.go",
+    ],
     importpath = "pixielabs.ai/pixielabs/src/cloud/auth/controllers/mock",
     visibility = ["//visibility:public"],
     deps = [
         "//src/cloud/auth/controllers:go_default_library",
         "@com_github_golang_mock//gomock:go_default_library",
+        "@com_github_satori_go_uuid//:go_default_library",
     ],
 )

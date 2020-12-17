@@ -99,7 +99,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
@@ -141,7 +141,7 @@ func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	resp, err := doLoginRequestNoAutoCreate(getTestContext(), t, s)
@@ -171,7 +171,7 @@ func TestServer_Login_OrgNameSpecified(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "testorg")
@@ -208,7 +208,7 @@ func TestServer_Login_MissingOrgError(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
@@ -238,7 +238,7 @@ func TestServer_LoginNewUser_InvalidEmail(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
@@ -268,7 +268,7 @@ func TestServer_LoginNewUser_SupportUserNoOrg(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
@@ -310,7 +310,7 @@ func TestServer_LoginNewUser_SupportUser(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "hulu.com")
@@ -355,7 +355,7 @@ func TestServer_LoginNewUser_InvalidOrg(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
@@ -404,7 +404,7 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
@@ -424,7 +424,7 @@ func TestServer_Login_BadToken(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
@@ -480,7 +480,7 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
@@ -570,7 +570,7 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
@@ -607,7 +607,7 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	claims := testingutils.GenerateTestClaims(t)
@@ -639,7 +639,7 @@ func TestServer_GetAugmentedToken_Service(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	claims := testingutils.GenerateTestServiceClaims(t, "vzmgr")
@@ -681,7 +681,7 @@ func TestServer_GetAugmentedToken_NoOrg(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	claims := testingutils.GenerateTestClaims(t)
@@ -720,7 +720,7 @@ func TestServer_GetAugmentedToken_NoUser(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	claims := testingutils.GenerateTestClaims(t)
@@ -763,7 +763,7 @@ func TestServer_GetAugmentedToken_MismatchedOrg(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	claims := testingutils.GenerateTestClaims(t)
@@ -792,7 +792,7 @@ func TestServer_GetAugmentedTokenBadSigningKey(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	claims := testingutils.GenerateTestClaims(t)
@@ -819,7 +819,7 @@ func TestServer_GetAugmentedTokenBadToken(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	claims := testingutils.GenerateTestClaims(t)
@@ -852,7 +852,7 @@ func TestServer_GetAugmentedTokenSupportAccount(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	claims := testingutils.GenerateTestClaimsWithEmail(t, "test@pixie.support")
@@ -863,6 +863,45 @@ func TestServer_GetAugmentedTokenSupportAccount(t *testing.T) {
 	sCtx := authcontext.New()
 	sCtx.Claims = claims
 	resp, err := s.GetAugmentedToken(context.Background(), req)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+
+	// Make sure expiry time is in the future & > 0.
+	currentTime := time.Now().Unix()
+	maxExpiryTime := time.Now().Add(60 * time.Minute).Unix()
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
+	assert.True(t, resp.ExpiresAt > 0)
+
+	verifyToken(t, resp.Token, testingutils.TestUserID, testingutils.TestOrgID, resp.ExpiresAt, "jwtkey")
+}
+
+func TestServer_GetAugmentedTokenFromAPIKey(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	apiKeyServer := mock_controllers.NewMockAPIKeyMgr(ctrl)
+	apiKeyServer.EXPECT().FetchOrgUserIDUsingAPIKey(gomock.Any(), "test_api").Return(uuid.FromStringOrNil(testingutils.TestOrgID), uuid.FromStringOrNil(testingutils.TestUserID), nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockUserInfo := &profilepb.UserInfo{
+		ID:    pbutils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
+		OrgID: pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+		Email: "testUser@pixielabs.ai",
+	}
+	mockProfile.EXPECT().
+		GetUser(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
+		Return(mockUserInfo, nil)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New(mockProfile)
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a, apiKeyServer)
+	assert.Nil(t, err)
+
+	req := &pb.GetAugmentedTokenForAPIKeyRequest{
+		APIKey: "test_api",
+	}
+	resp, err := s.GetAugmentedTokenForAPIKey(context.Background(), req)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
@@ -938,7 +977,7 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	resp, err := doSignupRequest(getTestContext(), t, s)
@@ -1025,7 +1064,7 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	resp, err := doSignupRequest(getTestContext(), t, s)
@@ -1089,7 +1128,7 @@ func TestServer_Signup_CreateUserOrgFailed(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	resp, err := doSignupRequest(getTestContext(), t, s)
@@ -1123,7 +1162,7 @@ func TestServer_Signup_UserAlreadyExists(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
+	s, err := controllers.NewServer(env, a, nil)
 	assert.Nil(t, err)
 
 	resp, err := doSignupRequest(getTestContext(), t, s)

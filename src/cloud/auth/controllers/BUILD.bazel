@@ -6,6 +6,7 @@ go_library(
         "auth0.go",
         "domain.go",
         "login.go",
+        "mock.go",
         "server.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/cloud/auth/controllers",

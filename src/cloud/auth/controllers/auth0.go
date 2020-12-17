@@ -1,5 +1,3 @@
-//go:generate mockgen -source=auth0.go -destination=mock/auth0_mock.gen.go
-
 package controllers
 
 import (
