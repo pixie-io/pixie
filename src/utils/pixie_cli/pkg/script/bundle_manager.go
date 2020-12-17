@@ -20,16 +20,20 @@ type BundleManager struct {
 	scripts map[string]*pixieScript
 }
 
-func pixieScriptToExecutableScript(scriptName string, script *pixieScript) *ExecutableScript {
+func pixieScriptToExecutableScript(scriptName string, script *pixieScript) (*ExecutableScript, error) {
+	vs, err := ParseVisSpec(script.Vis)
+	if err != nil {
+		return nil, err
+	}
 	return &ExecutableScript{
 		ScriptName:   scriptName,
 		ShortDoc:     script.ShortDoc,
 		LongDoc:      script.LongDoc,
-		Vis:          ParseVisSpec(script.Vis),
+		Vis:          vs,
 		ScriptString: script.Pxl,
 		OrgName:      script.OrgName,
 		Hidden:       script.Hidden,
-	}
+	}, nil
 }
 
 func isValidURL(toTest string) bool {
@@ -120,10 +124,15 @@ func NewBundleManager(bundleFiles []string) (*BundleManager, error) {
 
 // GetScriptMetadata returns metadata about available scripts.
 func (b BundleManager) GetScripts() []*ExecutableScript {
-	s := make([]*ExecutableScript, len(b.scripts))
+	s := make([]*ExecutableScript, 0)
 	i := 0
 	for k, val := range b.scripts {
-		s[i] = pixieScriptToExecutableScript(k, val)
+		pixieScript, err := pixieScriptToExecutableScript(k, val)
+		if err != nil {
+			cliLog.WithError(err).Error("Failed to parse script, skipping...")
+			continue
+		}
+		s = append(s, pixieScript)
 		i++
 	}
 	return s
@@ -144,7 +153,7 @@ func (b BundleManager) GetScript(scriptName string) (*ExecutableScript, error) {
 	if !ok {
 		return nil, ErrScriptNotFound
 	}
-	return pixieScriptToExecutableScript(scriptName, script), nil
+	return pixieScriptToExecutableScript(scriptName, script)
 }
 
 // MustGetScript is GetScript with fatal on error.

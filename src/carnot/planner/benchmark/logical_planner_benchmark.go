@@ -1,7 +1,6 @@
 package logicalplanner_test
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -1319,12 +1318,12 @@ func BenchmarkSimple1000Agents(b *testing.B) {
 }
 
 func getExecRequest(pxlScript, visJSON string) (*plannerpb.QueryRequest, error) {
-	j := script.ParseVisSpec(visJSON)
-	if j == nil {
-		return nil, fmt.Errorf("JSON not parsed")
+	vs, err := script.ParseVisSpec(visJSON)
+	if err != nil {
+		return nil, err
 
 	}
-	funcs, err := vizier.GetFuncsToExecute(&script.ExecutableScript{Vis: j})
+	funcs, err := vizier.GetFuncsToExecute(&script.ExecutableScript{Vis: vs})
 	if err != nil {
 		return nil, err
 	}

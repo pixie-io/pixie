@@ -3,6 +3,7 @@ package script
 import (
 	"flag"
 	"fmt"
+	"io"
 	"net/url"
 
 	"github.com/gogo/protobuf/jsonpb"
@@ -64,12 +65,12 @@ func (e ExecutableScript) LiveViewLink(clusterID *string) string {
 }
 
 // parses the spec return nil on failure.
-func ParseVisSpec(specJSON string) *vispb.Vis {
+func ParseVisSpec(specJSON string) (*vispb.Vis, error) {
 	var pb vispb.Vis
-	if err := jsonpb.UnmarshalString(specJSON, &pb); err != nil {
-		return nil
+	if err := jsonpb.UnmarshalString(specJSON, &pb); err != nil && err != io.EOF {
+		return nil, err
 	}
-	return &pb
+	return &pb, nil
 }
 
 // UpdateFlags updates the flags based on the passed in flag set.

@@ -124,7 +124,9 @@ func loadScriptFromDir(scriptPath string) (*script.ExecutableScript, error) {
 		if err != nil {
 			return nil, err
 		}
-		s.Vis = script.ParseVisSpec(string(vis))
+		if s.Vis, err = script.ParseVisSpec(string(vis)); err != nil {
+			return nil, err
+		}
 	}
 	return s, nil
 }
