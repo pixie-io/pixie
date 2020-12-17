@@ -20,6 +20,17 @@ interface ScriptsContextProps {
 
 export const ScriptsContext = React.createContext<ScriptsContextProps>(null);
 
+export const SCRATCH_SCRIPT: Script = {
+  id: 'Scratch Pad',
+  title: 'Scratch Pad',
+  description: 'A clean slate for one-off scripts.\n'
+    + 'This is ephemeral; it disappears upon changing scripts.',
+  vis: '',
+  code: '# Use this scratch pad to write and run one-off scripts.\n'
+    + '# If you switch to another script, refresh, or close this browser tab, this script will disappear.\n\n',
+  hidden: false,
+};
+
 export const ScriptsContextProvider = (props) => {
   const client = useApolloClient();
   const [scripts, setScripts] = React.useState<Map<string, Script>>(new Map([['initial', {} as Script]]));
@@ -33,7 +44,10 @@ export const ScriptsContextProvider = (props) => {
 
   React.useEffect(() => {
     // Do this only once.
-    promise.then(setScripts);
+    promise.then((availableScripts) => {
+      availableScripts.set(SCRATCH_SCRIPT.id, SCRATCH_SCRIPT);
+      setScripts(availableScripts);
+    });
   }, [promise]);
 
   const context = React.useMemo(() => ({ scripts, promise }), [scripts, promise]);

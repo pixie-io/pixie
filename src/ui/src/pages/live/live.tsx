@@ -193,7 +193,7 @@ const LiveView = () => {
   const classes = useStyles();
 
   const {
-    pxl, id, saveEditorAndExecute, cancelExecution,
+    saveEditorAndExecute, cancelExecution,
   } = React.useContext(ScriptContext);
   const { loading, clusterStatus } = React.useContext(VizierGRPCClientContext);
   const {
@@ -264,7 +264,7 @@ const LiveView = () => {
       <LiveViewShortcutsProvider handlers={hotkeyHandlers}>
         <NavBars />
         <div className={classes.content}>
-          <LiveViewBreadcrumbs toggleCommandOpen={toggleCommandOpen} commandOpen={commandReallyOpen} />
+          <LiveViewBreadcrumbs />
           <EditorSplitPanel className={classes.editorPanel}>
             <>
               <LiveViewTitle className={classes.title} />

@@ -15,13 +15,12 @@ import { CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
 import {
   getArgTypesForVis, getArgVariableMap,
 } from 'utils/args-utils';
-import { ScriptsContext } from 'containers/App/scripts-context';
+import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
 import { ScriptContext } from 'context/script-context';
 import { entityPageForScriptId, optionallyGetNamespace } from 'containers/live-widgets/utils/live-view-params';
 import { EntityType, pxTypetoEntityType, entityStatusGroup } from 'containers/command-input/autocomplete-utils';
 import { clusterStatusGroup } from 'containers/admin/utils';
 import { ContainsMutation } from 'utils/pxl';
-import IconButton from '@material-ui/core/IconButton';
 import Tooltip from '@material-ui/core/Tooltip';
 import ExecuteScriptButton from './execute-button';
 import { Variable } from './vis';
@@ -88,7 +87,7 @@ const styles = (({ shape, palette, spacing }: Theme) => createStyles({
   },
 }));
 
-const LiveViewBreadcrumbs = ({ classes, commandOpen, toggleCommandOpen }) => {
+const LiveViewBreadcrumbs = ({ classes }) => {
   const { loading, data } = useQuery(LIST_CLUSTERS);
   const { selectedCluster, setCluster, selectedClusterUID } = React.useContext(ClusterContext);
   const { scripts } = React.useContext(ScriptsContext);
@@ -208,12 +207,29 @@ const LiveViewBreadcrumbs = ({ classes, commandOpen, toggleCommandOpen }) => {
     selectable: true,
     allowTyping: true,
     getListItems: async (input) => {
-      if (!input) {
-        return scriptIds.map((scriptId) => ({ value: scriptId, description: scripts.get(scriptId).description }));
+      // Turns "  px/be_spoke-  " into "px/bespoke"
+      const normalize = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9/]+/gi, '');
+      const normalizedInput = normalize(input);
+      const normalizedScratchId = normalize(SCRATCH_SCRIPT.id);
+
+      const ids = !input ? [...scriptIds] : scriptIds.filter((s) => {
+        const ns = normalize(s);
+        return ns === normalizedScratchId || ns.indexOf(normalizedInput) >= 0;
+      });
+
+      // The scratch script should always appear at the top of the list for visibility. It doesn't get auto-selected
+      // unless it's the only thing in the list.
+      const scratchIndex = scriptIds.indexOf(SCRATCH_SCRIPT.id);
+      if (scratchIndex !== -1) {
+        scriptIds.splice(scratchIndex, 1);
+        scriptIds.unshift(SCRATCH_SCRIPT.id);
       }
-      return scriptIds
-        .filter((scriptId) => scriptId.indexOf(input) >= 0)
-        .map((scriptId) => ({ value: scriptId, description: scripts.get(scriptId).description }));
+
+      return ids.map((scriptId) => ({
+        value: scriptId,
+        description: scripts.get(scriptId).description,
+        autoSelectPriority: scriptId === SCRATCH_SCRIPT.id ? -1 : 0,
+      }));
     },
     onSelect: (newVal) => {
       const script = scripts.get(newVal);
@@ -235,6 +251,7 @@ const LiveViewBreadcrumbs = ({ classes, commandOpen, toggleCommandOpen }) => {
         vis: selectedVis,
       };
       setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
+      if (newVal === SCRATCH_SCRIPT.id) return; // Otherwise we would run an empty script, which shows nasty errors.
       if (!ContainsMutation(execArgs.pxl)) {
         execute(execArgs);
       }

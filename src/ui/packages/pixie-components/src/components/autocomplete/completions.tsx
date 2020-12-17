@@ -34,6 +34,11 @@ export interface CompletionItem {
   itemType?: string;
   state?: string;
   icon?: React.ReactNode;
+  /**
+   * As the user types, the first match is often preselected for them. Instead of using the very first match, this can
+   * select the first match that has the highest or is tied for the highest autoSelectPriority. Default 0.
+   */
+  autoSelectPriority?: number;
 }
 
 // TODO(malthus): Make use of the theme styles.

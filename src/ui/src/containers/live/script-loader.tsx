@@ -1,4 +1,4 @@
-import { ScriptsContext } from 'containers/App/scripts-context';
+import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
 import urlParams from 'utils/url-params';
 import { ContainsMutation } from 'utils/pxl';
@@ -43,6 +43,7 @@ export function ScriptLoader() {
         setLoadState('context-loaded');
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [execute, loadState, pxl, vis]);
 
   React.useEffect(() => {
@@ -95,10 +96,14 @@ export function ScriptLoader() {
         };
         clearResults();
         setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
+
         // Use this hack because otherwise args are not set when you first load a page.
         if (!argsForVisOrShowError(parsedVis, { ...urlArgs, ...entityParams }, selectedId)) {
           return;
         }
+        // The Scratch Pad script starts with just comments and no code. Running that would be an error.
+        if (script.id === SCRATCH_SCRIPT.id) return;
+
         if (!ContainsMutation(execArgs.pxl)) {
           ref.current.execute(execArgs);
         }
@@ -113,6 +118,7 @@ export function ScriptLoader() {
     return () => {
       subscription.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scriptPromise]);
   return null;
 }

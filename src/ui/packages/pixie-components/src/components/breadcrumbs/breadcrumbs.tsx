@@ -225,6 +225,7 @@ const DialogDropdown = ({
             description: item.description,
             icon: item.icon,
             title: item.value,
+            autoSelectPriority: item.autoSelectPriority ?? 0,
           }));
 
           // If we don't require that the final result be one of the suggested items,
@@ -237,6 +238,7 @@ const DialogDropdown = ({
               description: '',
               icon: '',
               title: input,
+              autoSelectPriority: 1,
             });
           }
 
@@ -365,6 +367,8 @@ interface BreadcrumbListItem {
   value: string;
   description?: string;
   icon?: React.ReactNode;
+  /** @see{CompletionItem} */
+  autoSelectPriority?: number;
 }
 
 export interface BreadcrumbOptions {
@@ -372,7 +376,7 @@ export interface BreadcrumbOptions {
   value: string;
   selectable: boolean;
   allowTyping?: boolean;
-  getListItems?: (input: string) => Promise<Array<BreadcrumbListItem>>;
+  getListItems?: (input: string) => Promise<BreadcrumbListItem[]>;
   onSelect?: (input: string) => void;
   requireCompletion?: boolean;
   placeholder?: string;

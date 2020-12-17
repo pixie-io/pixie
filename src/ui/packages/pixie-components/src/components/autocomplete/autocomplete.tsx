@@ -69,6 +69,7 @@ interface AutoCompleteProps {
 
 type ItemsMap = Map<CompletionId, { title: CompletionTitle; index: number }>;
 
+// Scrolls through the list, ignoring autoSelectPriority as the user is interacting directly.
 function findNextItem(
   activeItem: CompletionId,
   itemsMap: ItemsMap,
@@ -88,6 +89,14 @@ function findNextItem(
     }
   }
   return activeItem;
+}
+
+// Honors autoSelectPriority
+function autoSelectItem(completions: CompletionItems): CompletionItem|null {
+  const items: CompletionItem[] = completions.filter((c) => c.type === 'item') as CompletionItem[];
+  const highestPriority = items.reduce((hi, cmpl) => Math.max(hi, cmpl.autoSelectPriority ?? 0), -Infinity);
+  const selectable = items.filter((c) => (c.autoSelectPriority ?? 0) === highestPriority);
+  return selectable[0] ?? null;
 }
 
 export const Autocomplete: React.FC<AutoCompleteProps> = ({
@@ -121,14 +130,8 @@ export const Autocomplete: React.FC<AutoCompleteProps> = ({
     getCompletions(inputValue).then((cmpls) => {
       if (!mounted.current) return;
       setCompletions(cmpls);
-      for (let i = 0; i < cmpls.length; ++i) {
-        const completion = cmpls[i];
-        const cmpl = completion as CompletionItem;
-        if (cmpl.title && cmpl.id) {
-          setActiveItem(cmpl.id);
-          return;
-        }
-      }
+      const selection = autoSelectItem(cmpls);
+      if (selection?.title && selection?.id) setActiveItem(selection.id);
     });
     // `mounted` is not in this array because changing it should ONLY affect whether the resolved promise acts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
