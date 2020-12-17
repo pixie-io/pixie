@@ -155,6 +155,22 @@ func (v *VizierStreamOutputAdapter) Views() ([]components.TableView, error) {
 	return views, nil
 }
 
+// Formatters gets all the data formatters. This function is only valid with format = inmemory and after Finish.
+func (v *VizierStreamOutputAdapter) Formatters() ([]DataFormatter, error) {
+	if v.err != nil {
+		return nil, v.err
+	}
+	// This function only works for in memory format.
+	if v.format != FormatInMemory {
+		return nil, errors.New("invalid format")
+	}
+	formatters := make([]DataFormatter, 0)
+	for _, ti := range v.tableNameToInfo {
+		formatters = append(formatters, NewDataFormatterForTable(ti.relation))
+	}
+	return formatters, nil
+}
+
 func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream chan *VizierExecData) {
 	defer v.wg.Done()
 	for {

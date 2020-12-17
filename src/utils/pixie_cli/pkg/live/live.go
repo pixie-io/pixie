@@ -60,7 +60,8 @@ type appState struct {
 	// The last script that was executed. If nil, nothing was executed.
 	execScript *script.ExecutableScript
 	// The view of all the tables in the current execution.
-	tables []components.TableView
+	tables          []components.TableView
+	tableFormatters []vizier.DataFormatter
 	// Sort state is tracked on a per table basis for each column. It is cleared when a new
 	// script is executed.
 	sortState [][]sortType
@@ -257,6 +258,13 @@ func (v *View) runScript(execScript *script.ExecutableScript) {
 		v.execCompleteWithError(err)
 		return
 	}
+
+	v.s.tableFormatters, err = tw.Formatters()
+	if err != nil {
+		v.execCompleteWithError(err)
+		return
+	}
+
 	// Reset sort state.
 	v.s.sortState = make([][]sortType, len(v.s.tables))
 	for i, t := range v.s.tables {
@@ -346,7 +354,8 @@ func (v *View) renderCurrentTable() {
 		return
 	}
 	table := v.s.tables[v.s.selectedTable]
-	v.tvTable = v.createTviewTable(table, v.s.sortState[v.s.selectedTable])
+	formatter := v.s.tableFormatters[v.s.selectedTable]
+	v.tvTable = v.createTviewTable(table, formatter, v.s.sortState[v.s.selectedTable])
 	v.pages.AddAndSwitchToPage("table", v.tvTable, true)
 	v.app.SetFocus(v.pages)
 }
@@ -367,7 +376,7 @@ func (v *View) selectPrevTable() {
 	v.selectTableAndHighlight(v.s.selectedTable - 1)
 }
 
-func (v *View) createTviewTable(t components.TableView, sortState []sortType) *tview.Table {
+func (v *View) createTviewTable(t components.TableView, formatter vizier.DataFormatter, sortState []sortType) *tview.Table {
 	table := tview.NewTable().
 		SetBorders(true).
 		SetSelectable(true, true).
@@ -401,14 +410,13 @@ func (v *View) createTviewTable(t components.TableView, sortState []sortType) *t
 		}
 	}
 
-	// Sort the data according to the
 	for rowIdx, row := range data {
-		for colIdx, val := range stringifyRow(row) {
-			if len(val) > maxCellSize {
-				val = val[:maxCellSize-1] + "\u2026"
+		for colIdx, val := range row {
+			s := formatter.FormatValue(colIdx, val).(string)
+			if len(s) > maxCellSize {
+				s = s[:maxCellSize-1] + "\u2026"
 			}
-
-			tableCell := tview.NewTableCell(tview.TranslateANSI(val)).
+			tableCell := tview.NewTableCell(tview.TranslateANSI(s)).
 				SetTextColor(tcell.ColorWhite).
 				SetAlign(tview.AlignLeft).
 				SetSelectable(true).

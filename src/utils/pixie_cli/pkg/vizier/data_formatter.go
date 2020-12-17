@@ -8,9 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/dustin/go-humanize"
 	"github.com/fatih/color"
 	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
@@ -20,6 +18,85 @@ var latencyRegex = regexp.MustCompile(`(?i)^latency`)
 var cpuRegex = regexp.MustCompile(`(?i)^cpu`)
 
 const nanosPerSecond = float64(1000 * 1000 * 1000)
+
+var faintColor = color.New(color.Faint)
+
+// Byte formatter.
+// TODO(zasgar): We had to pull this out to separate the units from the values.
+// Figure out if we can do this with a library instead.
+const (
+	Byte = 1 << (iota * 10)
+	KiByte
+	MiByte
+	GiByte
+	TiByte
+	PiByte
+	EiByte
+)
+
+var bytesSizeTable = map[string]uint64{
+	"b":   Byte,
+	"kib": KiByte,
+	"mib": MiByte,
+	"gib": GiByte,
+	"tib": TiByte,
+	"pib": PiByte,
+	"eib": EiByte,
+	// Without suffix
+	"":   Byte,
+	"ki": KiByte,
+	"mi": MiByte,
+	"gi": GiByte,
+	"ti": TiByte,
+	"pi": PiByte,
+	"ei": EiByte,
+}
+
+func logn(n, b float64) float64 {
+	return math.Log(n) / math.Log(b)
+}
+
+func humanate(s uint64, base float64, sizes []string, baseUnit string) (string, string) {
+	if s < 10 {
+		return fmt.Sprintf("%d", s), baseUnit
+	}
+	e := math.Floor(logn(float64(s), base))
+	if int(e) >= len(sizes) {
+		e = float64(len(sizes)) - 1
+	}
+	suffix := sizes[int(e)]
+	val := math.Floor(float64(s)/math.Pow(base, e)*10+0.5) / 10
+	f := "%.0f"
+	if val < base/10 {
+		f = "%.1f"
+	}
+
+	return fmt.Sprintf(f, val), suffix
+}
+
+func iBytes(s uint64) (string, string) {
+	sizes := []string{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"}
+	return humanate(s, 1024, sizes, "B")
+}
+
+const (
+	nanos   = 1
+	micros  = nanos * 1000
+	millis  = micros * 1000
+	seconds = millis * 1000
+)
+
+var durationSizeTable = map[string]uint64{
+	"ns": nanos,
+	"µs": micros,
+	"ms": millis,
+	"s":  seconds,
+}
+
+func humanizeDuration(t uint64) (string, string) {
+	sizes := []string{"ns", "µs", "ms", "s"}
+	return humanate(t, 1000, sizes, "s")
+}
 
 // DataFormatter formats data for a given Relation.
 type DataFormatter interface {
@@ -127,7 +204,8 @@ func withSign(neg bool, val string) string {
 }
 
 func formatBytesInternal(val float64) string {
-	return withSign(val < 0, humanize.IBytes(uint64(math.Abs(val))))
+	s, units := iBytes(uint64(math.Abs(val)))
+	return withSign(val < 0, fmt.Sprintf("%s %s", s, formatUnits(units)))
 }
 
 func formatBytes(val interface{}) string {
@@ -143,7 +221,17 @@ func formatBytes(val interface{}) string {
 }
 
 func formatDurationInt(val int64) string {
-	return time.Duration(val).String()
+	v := uint64(val)
+	if val < 0 {
+		v = uint64(-1 * val)
+	}
+
+	s, units := humanizeDuration(v)
+	return withSign(val < 0, fmt.Sprintf("%s %s", s, formatUnits(units)))
+}
+
+func formatUnits(unit string) string {
+	return faintColor.Sprintf("%s", unit)
 }
 
 func formatDuration(val interface{}) string {
@@ -165,7 +253,7 @@ func formatThroughput(val interface{}) string {
 		return str
 	}
 	perS := floatVal * nanosPerSecond
-	return fmt.Sprintf("%f /sec", perS)
+	return fmt.Sprintf("%f %s", perS, formatUnits("/sec"))
 }
 
 func formatThroughputBytes(val interface{}) string {
@@ -175,7 +263,7 @@ func formatThroughputBytes(val interface{}) string {
 		return str
 	}
 	perS := floatVal * nanosPerSecond
-	return fmt.Sprintf("%s/sec", formatBytes(perS))
+	return fmt.Sprintf("%s%s", formatBytes(perS), formatUnits("/sec"))
 }
 
 func formatPercent(val interface{}) string {
@@ -184,7 +272,7 @@ func formatPercent(val interface{}) string {
 	if !ok {
 		return str
 	}
-	return fmt.Sprintf("%.2f%%", floatVal*100)
+	return fmt.Sprintf("%.2f %s", floatVal*100, formatUnits("%"))
 }
 
 func (d *dataFormatterImpl) formatKV(valueDataType vizierpb.DataType, valueSemanticType vizierpb.SemanticType, val interface{}) string {

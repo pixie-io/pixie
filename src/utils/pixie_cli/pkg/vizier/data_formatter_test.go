@@ -83,13 +83,13 @@ func TestDuration(t *testing.T) {
 
 	formatter := vizier.NewDataFormatterForTable(relation)
 
-	assert.Equal(t, "144ns", formatter.FormatValue(1, int64(144)))
-	assert.Equal(t, "5.144µs", formatter.FormatValue(1, int64(5144)))
-	assert.Equal(t, "5ms", formatter.FormatValue(1, int64(5*1000*1000)))
-	assert.Equal(t, "13.000001242s", formatter.FormatValue(1, int64(13*1000*1000*1000+1242)))
-	assert.Equal(t, "5m0.000001334s", formatter.FormatValue(1, int64(5*60*1000*1000*1000+1334)))
-	assert.Equal(t, "12h0m0.001335144s", formatter.FormatValue(1, int64(12*60*60*1000*1000*1000+1335144)))
-	assert.Equal(t, "600h0m0.133514124s", formatter.FormatValue(1, int64(25*24*60*60*1000*1000*1000+133514124)))
+	assert.Equal(t, "144 ns", formatter.FormatValue(1, int64(144)))
+	assert.Equal(t, "5.1 µs", formatter.FormatValue(1, int64(5144)))
+	assert.Equal(t, "5.0 ms", formatter.FormatValue(1, int64(5*1000*1000)))
+	assert.Equal(t, "13.0 s", formatter.FormatValue(1, int64(13*1000*1000*1000+1242)))
+	assert.Equal(t, "300 s", formatter.FormatValue(1, int64(5*60*1000*1000*1000+1334)))
+	assert.Equal(t, "43200 s", formatter.FormatValue(1, int64(12*60*60*1000*1000*1000+1335144)))
+	assert.Equal(t, "2160000 s", formatter.FormatValue(1, int64(25*24*60*60*1000*1000*1000+133514124)))
 }
 
 func TestBytes(t *testing.T) {
@@ -108,8 +108,8 @@ func TestBytes(t *testing.T) {
 	assert.Equal(t, "144 B", formatter.FormatValue(0, int64(144)))
 	assert.Equal(t, "5.0 KiB", formatter.FormatValue(0, int64(5144)))
 	assert.Equal(t, "4.8 MiB", formatter.FormatValue(0, int64(5*1000*1000)))
-	assert.Equal(t, "12 GiB", formatter.FormatValue(0, int64(13*1000*1000*1000+1242)))
-	assert.Equal(t, "39 TiB", formatter.FormatValue(0, int64(12*60*60*1000*1000*1000+1335144)))
+	assert.Equal(t, "12.1 GiB", formatter.FormatValue(0, int64(13*1000*1000*1000+1242)))
+	assert.Equal(t, "39.3 TiB", formatter.FormatValue(0, int64(12*60*60*1000*1000*1000+1335144)))
 }
 
 func TestThroughput(t *testing.T) {
@@ -150,9 +150,9 @@ func TestPercent(t *testing.T) {
 
 	formatter := vizier.NewDataFormatterForTable(relation)
 
-	assert.Equal(t, "-23.44%", formatter.FormatValue(0, float64(-0.2344)))
-	assert.Equal(t, "1223.40%", formatter.FormatValue(0, float64(12.234)))
-	assert.Equal(t, "14.00%", formatter.FormatValue(0, float64(0.140000)))
+	assert.Equal(t, "-23.44 %", formatter.FormatValue(0, float64(-0.2344)))
+	assert.Equal(t, "1223.40 %", formatter.FormatValue(0, float64(12.234)))
+	assert.Equal(t, "14.00 %", formatter.FormatValue(0, float64(0.140000)))
 }
 
 func TestQuantiles(t *testing.T) {
@@ -198,6 +198,6 @@ func TestQuantiles(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	assert.Equal(t, "p50: -12.313µs, p99: 0s", formatter.FormatValue(1, string(duration1)))
-	assert.Equal(t, "p50: 23.409234ms, p99: 3m54.092234234s", formatter.FormatValue(1, string(duration2)))
+	assert.Equal(t, "p50: -12.3 µs, p99: 0 s", formatter.FormatValue(1, string(duration1)))
+	assert.Equal(t, "p50: 23.4 ms, p99: 234 s", formatter.FormatValue(1, string(duration2)))
 }
