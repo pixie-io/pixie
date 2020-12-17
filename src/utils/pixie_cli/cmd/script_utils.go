@@ -88,7 +88,7 @@ func loadScriptFromStdin() (*script.ExecutableScript, error) {
 	if len(query) == 0 {
 		return nil, errors.New("script string is empty")
 	}
-	s.ScriptName = "stdin_script"
+	s.ScriptName = "<stdin_script>"
 	s.ScriptString = string(query)
 	return s, nil
 }
@@ -106,18 +106,14 @@ func isDir(scriptPath string) bool {
 }
 
 func loadScriptFromDir(scriptPath string) (*script.ExecutableScript, error) {
-	s := baseScript()
-	s.IsLocal = true
-
 	pxlFiles, err := doublestar.Glob(path.Join(scriptPath, "*.pxl"))
 	if len(pxlFiles) != 1 {
 		return nil, fmt.Errorf("Expected 1 pxl file, got %d", len(pxlFiles))
 	}
-	query, err := ioutil.ReadFile(pxlFiles[0])
+	s, err := loadScriptFromFile(pxlFiles[0])
 	if err != nil {
 		return nil, err
 	}
-	s.ScriptString = string(query)
 	visFile := path.Join(scriptPath, "vis.json")
 	if fileExists(visFile) {
 		vis, err := ioutil.ReadFile(visFile)
@@ -146,10 +142,13 @@ func loadScriptFromFile(scriptPath string) (*script.ExecutableScript, error) {
 	}
 
 	s := baseScript()
+	s.IsLocal = true
 	query, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
 	s.ScriptString = string(query)
+	s.ScriptName = fmt.Sprintf("%s<local>", scriptPath)
+
 	return s, nil
 }

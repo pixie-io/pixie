@@ -321,7 +321,7 @@ func (v *View) updateScriptInfoView() {
 		clusterName = &(vzInfo[0].ClusterName)
 	}
 
-	fmt.Fprintf(v.infoView, "%s %s", withAccent("Script:"),
+	fmt.Fprintf(v.infoView, "%s : %s", withAccent("Script"),
 		v.s.execScript.ScriptName)
 	args := v.s.execScript.ComputedArgs()
 	if len(args) > 0 {
@@ -483,7 +483,7 @@ func (v *View) showScriptView() {
 		highlighted := strings.Builder{}
 		quick.Highlight(&highlighted, v.s.execScript.ScriptString, "python",
 			"terminal16m", "monokai")
-		fmt.Fprintf(tv, "%s :\n\n", withAccent("Script"))
+		fmt.Fprintf(tv, "%s :\n\n", withAccent("Script View"))
 		fmt.Fprint(tv, tview.TranslateANSI(highlighted.String()))
 	} else {
 		fmt.Fprintf(tv, "[red]Script Not Found[white]")
