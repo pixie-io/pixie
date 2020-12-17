@@ -1,7 +1,6 @@
 import { CloudClientContext } from 'context/app-context';
 import * as React from 'react';
-import { operation, RetryOperation } from 'retry';
-import { Subscription } from 'rxjs';
+import { operation } from 'retry';
 import { isDev } from 'utils/env';
 
 import { CloudClient } from './cloud-gql-client';

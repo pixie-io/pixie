@@ -264,8 +264,7 @@ const ScriptContextProvider = (props) => {
 
     const mutation = ContainsMutation(execArgs.pxl);
     const isStreaming = IsStreaming(execArgs.pxl);
-    // The cancellation above sets a timeout to mark these both as false, to get around a context update timing issue.
-    // In so doing, it pushes that issue downstream, to here, so do the same trick to fix it.
+    // See the 'start' event handler in this file for why this is in a timeout
     setTimeout(() => {
       setLoading(true);
       setStreaming(isStreaming);
@@ -318,8 +317,11 @@ const ScriptContextProvider = (props) => {
         });
         setResults((results) => ({ tables: newTables, stats: queryResults.executionStats, error: results.error }));
         if (!loaded) {
-          setLoading(false);
-          loaded = true;
+          // See the 'start' event handler in this file for why this is in a timeout
+          setTimeout(() => {
+            setLoading(false);
+            loaded = true;
+          });
         }
       }
 
@@ -361,8 +363,11 @@ const ScriptContextProvider = (props) => {
         });
       }
       if (!loaded) {
-        setLoading(false);
-        loaded = true;
+        // See the 'start' event handler in this file for why this is in a timeout
+        setTimeout(() => {
+          setLoading(false);
+          loaded = true;
+        });
       }
     };
 
@@ -414,7 +419,7 @@ const ScriptContextProvider = (props) => {
                 setCancelExecution(() => () => {
                   update.cancel();
                   setCancelExecution(undefined);
-                  // Timeout so as not to modify one context while rendering another
+                  // See the 'start' event handler in this file for why this is in a timeout
                   setTimeout(() => {
                     setStreaming(false);
                     setLoading(false);
@@ -471,8 +476,11 @@ const ScriptContextProvider = (props) => {
           numTries--;
         }
         if (!loaded) {
-          setLoading(false);
-          loaded = true;
+          // See the 'start' event handler in this file for why this is in a timeout
+          setTimeout(() => {
+            setLoading(false);
+            loaded = true;
+          });
         }
 
         setResults({ tables: {}, error: new VizierQueryError('execution', 'Deploying tracepoints failed') });
@@ -489,7 +497,12 @@ const ScriptContextProvider = (props) => {
             setCancelExecution(() => () => {
               update.cancel();
               setCancelExecution(undefined);
-              // Timeout so as not to modify one context while rendering another
+              // Timeout so as not to modify one context while rendering another. Unfortunately, this creates a cascade
+              // of timing issues. Everything else that sets streaming/loading has to be in a timeout as well, or else
+              // a rapidly-returning query (like cached response or instant errors) can set loading to false BEFORE the
+              // execute sets it to true, causing infinite spinners. The other timeouts have comments pointing here.
+              // TODO(nick): Deduplicate code between paths in execute and unify on one observable to stop this from
+              //  happening. The current structure creates this mess by way of wacky mixing state with observables.
               setTimeout(() => {
                 setStreaming(false);
                 setLoading(false);
