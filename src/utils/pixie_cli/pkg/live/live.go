@@ -619,6 +619,8 @@ func (v *View) searchClear() {
 func (v *View) search(s string) {
 	v.s.searchString = s
 	v.searchNext(false, false)
+	v.app.SetFocus(v.searchBox)
+
 }
 
 func (v *View) searchNext(searchBackwards bool, advance bool) {
@@ -731,6 +733,8 @@ func (v *View) searchInputCapture(event *tcell.EventKey) *tcell.EventKey {
 			}
 			return nil
 		}
+	case tcell.KeyCtrlG:
+		fallthrough
 	case tcell.KeyEscape:
 		v.searchClear()
 		v.showTableNav()
@@ -765,7 +769,10 @@ func (v *View) keyHandler(event *tcell.EventKey) *tcell.EventKey {
 	}
 
 	if v.s.searchBoxEnabled {
-		if event.Key() == tcell.KeyCtrlK {
+		switch event.Key() {
+		case tcell.KeyCtrlK:
+			v.showTableNav()
+			v.searchClear()
 			v.showAutcompleteModal()
 		}
 		return event
@@ -791,10 +798,6 @@ func (v *View) keyHandler(event *tcell.EventKey) *tcell.EventKey {
 			return nil
 		}
 		if string(r) == "/" {
-			if v.s.searchBoxEnabled {
-				v.showTableNav()
-				return nil
-			}
 			v.showSearchBox()
 			return nil
 		}
