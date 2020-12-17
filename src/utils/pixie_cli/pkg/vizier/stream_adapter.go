@@ -211,7 +211,7 @@ func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream cha
 			case *pl_api_vizierpb.ExecuteScriptResponse_MetaData:
 				err = v.handleMetadata(ctx, res)
 			case *pl_api_vizierpb.ExecuteScriptResponse_Data:
-				err = v.handleData(ctx, msg.ClusterID.String(), res)
+				err = v.handleData(ctx, res)
 			default:
 				panic("unhandled response type" + reflect.TypeOf(msg.Resp.Result).String())
 			}
@@ -319,7 +319,7 @@ func (v *VizierStreamOutputAdapter) handleMutationInfo(ctx context.Context, mi *
 	v.mutationInfo = mi
 }
 
-func (v *VizierStreamOutputAdapter) handleData(ctx context.Context, cid string, d *pl_api_vizierpb.ExecuteScriptResponse_Data) error {
+func (v *VizierStreamOutputAdapter) handleData(ctx context.Context, d *pl_api_vizierpb.ExecuteScriptResponse_Data) error {
 	if d.Data.ExecutionStats != nil {
 		err := v.handleExecutionStats(ctx, d.Data.ExecutionStats)
 		if err != nil {
@@ -351,14 +351,13 @@ func (v *VizierStreamOutputAdapter) handleData(ctx context.Context, cid string, 
 	cols := d.Data.Batch.Cols
 	for rowIdx := 0; rowIdx < numRows; rowIdx++ {
 		// Add the cluster ID to the output colums.
-		rec := make([]interface{}, len(cols)+1)
-		rec[0] = cid
+		rec := make([]interface{}, len(cols))
 		for colIdx, col := range cols {
 			val := v.getNativeTypedValue(tableInfo, rowIdx, colIdx, col.ColData)
 			if v.enableFormat {
-				rec[colIdx+1] = formatter.FormatValue(colIdx, val)
+				rec[colIdx] = formatter.FormatValue(colIdx, val)
 			} else {
-				rec[colIdx+1] = val
+				rec[colIdx] = val
 			}
 		}
 		ti, _ := v.tableNameToInfo[tableName]
@@ -395,10 +394,9 @@ func (v *VizierStreamOutputAdapter) handleMetadata(ctx context.Context, md *pl_a
 	}
 
 	// Write out the header keys in the order specified by the relation.
-	headerKeys := make([]string, len(relation.Columns)+1)
-	headerKeys[0] = "_clusterID_"
+	headerKeys := make([]string, len(relation.Columns))
 	for i, col := range relation.Columns {
-		headerKeys[i+1] = col.ColumnName
+		headerKeys[i] = col.ColumnName
 	}
 	newWriter.SetHeader(md.MetaData.Name, headerKeys)
 
