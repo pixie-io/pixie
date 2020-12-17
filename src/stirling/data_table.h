@@ -26,7 +26,7 @@ struct TaggedRecordBatch {
 
 struct Tablet {
   types::TabletID tablet_id;
-  // TODO(oazizi): Convert his vector into a heap of {time, index} objects.
+  // TODO(oazizi): Convert this vector into a heap of {time, index} objects.
   std::vector<uint64_t> times;
   types::ColumnWrapperRecordBatch records;
 };

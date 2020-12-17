@@ -220,5 +220,50 @@ TEST(ColumnWrapperTest, CopyIndexes) {
   }
 }
 
+// Similar to CopyIndexes test, except we make a new source column each time,
+// since MoveIndexes() is destructive on the source.
+TEST(ColumnWrapperTest, MoveIndexes) {
+  using ::testing::ElementsAreArray;
+
+  // Test reordering all indexes.
+  {
+    auto col = ColumnWrapper::Make(DataType::TIME64NS, 0);
+    col->AppendFromVector(std::vector<Time64NSValue>{5, 8, 1, 9, 0, 6, 3, 7, 2, 4});
+
+    // This reorder sequence should cause the values above to become sorted.
+    std::vector<size_t> indexes = {4, 2, 8, 6, 9, 0, 5, 7, 1, 3};
+
+    auto new_col = col->MoveIndexes(indexes);
+    for (int i = 0; i < 10; ++i) {
+      EXPECT_EQ(new_col->Get<Time64NSValue>(i), i);
+    }
+  }
+
+  // Test subset selection (unlike CopyIndexes, no replication is allowed).
+  {
+    auto col = ColumnWrapper::Make(DataType::TIME64NS, 0);
+    col->AppendFromVector(std::vector<Time64NSValue>{5, 8, 1, 9, 0, 6, 3, 7, 2, 4});
+
+    std::vector<size_t> indexes = {6, 2, 7};
+
+    auto new_col = col->MoveIndexes(indexes);
+    ASSERT_EQ(new_col->Size(), indexes.size());
+    EXPECT_EQ(new_col->Get<Time64NSValue>(0), 3);
+    EXPECT_EQ(new_col->Get<Time64NSValue>(1), 1);
+    EXPECT_EQ(new_col->Get<Time64NSValue>(2), 7);
+  }
+
+  // Test empty reorder index.
+  {
+    auto col = ColumnWrapper::Make(DataType::TIME64NS, 0);
+    col->AppendFromVector(std::vector<Time64NSValue>{5, 8, 1, 9, 0, 6, 3, 7, 2, 4});
+
+    std::vector<size_t> indexes = {};
+
+    auto new_col = col->MoveIndexes(indexes);
+    ASSERT_EQ(new_col->Size(), 0);
+  }
+}
+
 }  // namespace types
 }  // namespace pl

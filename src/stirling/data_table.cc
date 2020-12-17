@@ -104,7 +104,7 @@ std::vector<TaggedRecordBatch> DataTable::ConsumeRecords() {
                                        sort_indexes.end() - num_carryover);
       types::ColumnWrapperRecordBatch pushable_records;
       for (auto& col : tablet.records) {
-        pushable_records.push_back(col->CopyIndexes(push_indexes));
+        pushable_records.push_back(col->MoveIndexes(push_indexes));
       }
       uint64_t last_time = tablet.times[push_indexes.back()];
       next_start_time = std::max(next_start_time, last_time);
@@ -118,7 +118,7 @@ std::vector<TaggedRecordBatch> DataTable::ConsumeRecords() {
                                             sort_indexes.end());
       types::ColumnWrapperRecordBatch carryover_records;
       for (auto& col : tablet.records) {
-        carryover_records.push_back(col->CopyIndexes(carryover_indexes));
+        carryover_records.push_back(col->MoveIndexes(carryover_indexes));
       }
 
       std::vector<uint64_t> times(carryover_indexes.size());

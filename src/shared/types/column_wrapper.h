@@ -69,7 +69,11 @@ class ColumnWrapper {
   template <class TValueType>
   void AppendFromVector(const std::vector<TValueType>& value_vector);
 
-  virtual SharedColumnWrapper CopyIndexes(const std::vector<size_t>& indexes) = 0;
+  // Return a new SharedColumnWrapper with values according to the spec:
+  //    { data[idx[0]], data[idx[1]], data[idx[2]], ... }
+  // CopyIndexes leaves the original untouched, while MoveIndexes destroys the moved indexes.
+  virtual SharedColumnWrapper CopyIndexes(const std::vector<size_t>& indexes) const = 0;
+  virtual SharedColumnWrapper MoveIndexes(const std::vector<size_t>& indexes) = 0;
 };
 
 /**
@@ -120,13 +124,26 @@ class ColumnWrapperTmpl : public ColumnWrapper {
 
   // Return a new SharedColumnWrapper with values according to the spec:
   //    { data[idx[0]], data[idx[1]], data[idx[2]], ... }
-  SharedColumnWrapper CopyIndexes(const std::vector<size_t>& indexes) override {
+  SharedColumnWrapper CopyIndexes(const std::vector<size_t>& indexes) const override {
     DCHECK_LE(indexes.size(), data_.size());
     auto copy = std::make_shared<ColumnWrapperTmpl<T>>(indexes.size());
     for (size_t i = 0; i < indexes.size(); ++i) {
       copy->data_[i] = data_[indexes[i]];
     }
     return copy;
+  }
+
+  // Return a new SharedColumnWrapper with values according to the spec:
+  //    { data[idx[0]], data[idx[1]], data[idx[2]], ... }
+  // Warning: Indexes in "this" ColumnWrapper have their contents moved,
+  // so "this" should be discarded.
+  SharedColumnWrapper MoveIndexes(const std::vector<size_t>& indexes) override {
+    DCHECK_LE(indexes.size(), data_.size());
+    auto col = std::make_shared<ColumnWrapperTmpl<T>>(indexes.size());
+    for (size_t i = 0; i < indexes.size(); ++i) {
+      col->data_[i] = std::move(data_[indexes[i]]);
+    }
+    return col;
   }
 
  private:
