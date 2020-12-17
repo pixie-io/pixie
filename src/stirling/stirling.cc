@@ -445,8 +445,11 @@ void StirlingImpl::RegisterTracepoint(
     if (!s.ok()) {
       LOG(ERROR) << s.ToString();
       absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
-      dynamic_trace_status_map_[trace_id] =
-          error::FailedPrecondition("Target binary/UPID not found");
+      // Most failures of ResolveTargetObjPath() are caused by incorrect/incomplete user input.
+      // So the error message is sent back directly to the UI.
+      dynamic_trace_status_map_[trace_id] = error::FailedPrecondition(
+          "Target binary/UPID not found, error message: $0",
+          error::IsInternal(s) ? "internal error, chat with us on Intercom" : s.ToString());
       return;
     }
   }

@@ -135,7 +135,7 @@ TEST_F(ResolveTargetObjPathTest, ResolvePodProcessNonMatchingProcessRegexp) {
   TextFormat::ParseFromString(kDeploymentSpecTxt, &deployment_spec);
   EXPECT_THAT(
       ResolveTargetObjPath(k8s_mds_, &deployment_spec),
-      StatusIs(pl::statuspb::NOT_FOUND, HasSubstr("Found no UPIDs for Container: 'container0'")));
+      StatusIs(pl::statuspb::NOT_FOUND, HasSubstr("Found no UPIDs in Container: 'container0'")));
 }
 
 // Tests that a given pod name prefix matches multiple Pods.
@@ -148,8 +148,8 @@ TEST_F(ResolveTargetObjPathTest, ResolvePodProcessMultiplePods) {
   )";
   TextFormat::ParseFromString(kDeploymentSpecTxt, &deployment_spec);
   EXPECT_THAT(ResolveTargetObjPath(k8s_mds_, &deployment_spec),
-              StatusIs(pl::statuspb::INVALID_ARGUMENT,
-                       HasSubstr("Pod name prefix 'ns0/pod' matches multiple Pods:")));
+              StatusIs(pl::statuspb::FAILED_PRECONDITION,
+                       HasSubstr("Pod name 'ns0/pod' matches multiple Pods")));
 }
 
 // Tests that empty container name results into failure when there are multiple containers in Pod.
@@ -162,8 +162,8 @@ TEST_F(ResolveTargetObjPathTest, ResolvePodProcessMissingContainerName) {
   )";
   TextFormat::ParseFromString(kDeploymentSpecTxt, &deployment_spec);
   EXPECT_THAT(ResolveTargetObjPath(k8s_mds_, &deployment_spec),
-              StatusIs(pl::statuspb::INVALID_ARGUMENT,
-                       HasSubstr("Container not specified, but Pod 'pod0' has multiple "
+              StatusIs(pl::statuspb::FAILED_PRECONDITION,
+                       HasSubstr("Container name not specified, but Pod 'pod0' has multiple "
                                  "containers 'container0,container1'")));
 }
 

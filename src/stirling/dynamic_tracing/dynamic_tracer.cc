@@ -277,22 +277,22 @@ StatusOr<const md::PodInfo*> ResolvePod(const md::K8sMetadataState& k8s_mds,
     }
     const auto* pod_info = k8s_mds.PodInfoByID(uid);
     if (pod_info == nullptr) {
-      return error::InvalidArgument("Pod '$0' is recognized, but PodInfo is not found", pod_name);
+      return error::Internal("Pod name '$0' is recognized, but PodInfo is not found", pod_name);
     }
     if (pod_info->stop_time_ns() > 0) {
-      return error::InvalidArgument("Pod '$0' has died", pod_name);
+      return error::NotFound("Pod '$0' has died", pod_name);
     }
     pod_names.push_back(absl::StrCat(name_ident.first, "/", name_ident.second));
     pod_infos.push_back(pod_info);
   }
 
   if (pod_names.empty()) {
-    return error::InvalidArgument("Could not find Pod for name '$0'", pod_name);
+    return error::NotFound("Could not find Pod for name '$0'", pod_name);
   }
 
   if (pod_names.size() > 1) {
-    return error::InvalidArgument("Pod name prefix '$0' matches multiple Pods: '$1'", pod_name,
-                                  absl::StrJoin(pod_names, ","));
+    return error::FailedPrecondition("Pod name '$0' matches multiple Pods: '$1'", pod_name,
+                                     absl::StrJoin(pod_names, ","));
   }
 
   return pod_infos.front();
@@ -314,13 +314,13 @@ StatusOr<const md::ContainerInfo*> ResolveContainer(const md::K8sMetadataState& 
   }
 
   if (name_to_container_info.empty()) {
-    return error::Internal("There is no live container in Pod '$0'", pod_info.name());
+    return error::FailedPrecondition("There is no live container in Pod '$0'", pod_info.name());
   }
 
   if (name_to_container_info.size() > 1 && container_name.empty()) {
     std::sort(container_names.begin(), container_names.end());
-    return error::InvalidArgument(
-        "Container not specified, but Pod '$0' has multiple containers '$1'", pod_info.name(),
+    return error::FailedPrecondition(
+        "Container name not specified, but Pod '$0' has multiple containers '$1'", pod_info.name(),
         absl::StrJoin(container_names, ","));
   }
 
@@ -332,7 +332,8 @@ StatusOr<const md::ContainerInfo*> ResolveContainer(const md::K8sMetadataState& 
   } else {
     auto iter = name_to_container_info.find(container_name);
     if (iter == name_to_container_info.end()) {
-      return error::NotFound("Could not find live container for Pod: $0", pod_info.name());
+      return error::NotFound("Could not find live container '$0' in Pod: '$1'", container_name,
+                             pod_info.name());
     }
     container_info = iter->second;
   }
@@ -343,8 +344,11 @@ StatusOr<const md::ContainerInfo*> ResolveContainer(const md::K8sMetadataState& 
 StatusOr<md::UPID> ResolveProcess(const md::ContainerInfo& container_info,
                                   std::string_view process_regexp) {
   if (container_info.active_upids().size() > 1 && process_regexp.empty()) {
-    return error::InvalidArgument(
-        "Process not specified, but Container '$0' has multiple processes", container_info.name());
+    // TODO(yzhao): Consider resolve UPID's command line, so that we can include them in the error
+    // message, which helps users to update their pxtrace.PodProcess().
+    return error::FailedPrecondition(
+        "Process name regexp not specified, but Container '$0' has multiple processes",
+        container_info.name());
   }
 
   std::vector<md::UPID> upids;
@@ -363,9 +367,11 @@ StatusOr<md::UPID> ResolveProcess(const md::ContainerInfo& container_info,
   }
 
   if (upids.empty()) {
-    return error::NotFound("Found no UPIDs for Container: '$0'", container_info.name());
+    return error::NotFound("Found no UPIDs in Container: '$0'", container_info.name());
   }
   if (upids.size() > 1) {
+    // TODO(yzhao): Consider resolve UPID's command line, so that we can include them in the error
+    // message, which helps users to update their pxtrace.PodProcess().
     return error::Internal("Found more than 1 UPIDs for Container: '$0'", container_info.name());
   }
 

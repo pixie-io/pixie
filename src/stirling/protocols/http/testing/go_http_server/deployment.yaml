@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: go-http-server
-  namespace: pl-http-test
+  namespace: px-http-test
   labels:
     name: go-http-server
 spec:
@@ -38,7 +38,7 @@ metadata:
   name: fe
   labels:
     name: fe
-  namespace: pl-http-test
+  namespace: px-http-test
   annotations:
     cloud.google.com/load-balancer-type: "internal"
 spec:

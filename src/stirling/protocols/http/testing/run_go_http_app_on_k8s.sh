@@ -3,7 +3,7 @@
 bazel run src/stirling/protocols/http/testing/go_http_client:push_image
 bazel run src/stirling/protocols/http/testing/go_http_server:push_image
 
-namespace_name="pl-http-test"
+namespace_name="px-http-test"
 
 kubectl create namespace "${namespace_name}"
 
