@@ -35,11 +35,12 @@ if [[ ! "$release_tag" == *"-"* ]]; then
     cp -RaL "${linux_binary}" "${tmp_dir}"
     mv "${tmp_dir}" /mnt/jenkins/sharedDir
     tmp_subpath="$(echo "${tmp_dir}" | cut -d'/' -f3-)"
+    mkdir -p /mnt/jenkins/sharedDir/image
 
     # Create rpm package.
     docker run -i --rm \
            -v "/mnt/jenkins/sharedDir/${tmp_subpath}:/src/" \
-           -v "${repo_path}:/image" \
+           -v "/mnt/jenkins/sharedDir/image:/image" \
            cdrx/fpm-fedora:24 \
            fpm \
            -f \
@@ -54,7 +55,7 @@ if [[ ! "$release_tag" == *"-"* ]]; then
     # Create deb package.
     docker run -i --rm \
            -v "/mnt/jenkins/sharedDir/${tmp_subpath}:/src/" \
-           -v "${repo_path}:/image" \
+           -v "/mnt/jenkins/sharedDir/image:/image" \
            cdrx/fpm-ubuntu:18.04 \
            fpm \
            -f \
@@ -83,8 +84,8 @@ write_artifacts_to_gcs() {
 
     if [[ ! "$release_tag" == *"-"* ]]; then
         # RPM/DEB only exists for release builds.
-        copy_artifact_to_gcs "$output_path" "${repo_path}/${pkg_prefix}.deb" "pixie-px.${arch}.deb"
-        copy_artifact_to_gcs "$output_path" "${repo_path}/${pkg_prefix}.rpm" "pixie-px.${arch}.rpm"
+        copy_artifact_to_gcs "$output_path" "/mnt/jenkins/sharedDir/image/${pkg_prefix}.deb" "pixie-px.${arch}.deb"
+        copy_artifact_to_gcs "$output_path" "/mnt/jenkins/sharedDir/image/${pkg_prefix}.rpm" "pixie-px.${arch}.rpm"
     fi
 }
 
