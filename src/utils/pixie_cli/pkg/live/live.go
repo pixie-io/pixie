@@ -391,16 +391,14 @@ func (v *View) createTviewTable(t components.TableView, sortState []sortType) *t
 		}
 	}
 	if sorting {
-		sort.SliceStable(data, func(i, j int) bool {
-			// TODO(zasgar): Clean this up when we have properly type columns.
-			for idx, order := range sortState {
-				if order == stUnsorted {
-					continue
-				}
-				return colCompare(data[i][idx], data[j][idx], order)
+		for idx, order := range sortState {
+			if order == stUnsorted {
+				continue
 			}
-			return false
-		})
+			sort.SliceStable(data, func(i, j int) bool {
+				return colCompare(data[i][idx], data[j][idx], order)
+			})
+		}
 	}
 
 	// Sort the data according to the
