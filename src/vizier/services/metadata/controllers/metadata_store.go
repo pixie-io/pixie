@@ -17,7 +17,7 @@ import (
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	"pixielabs.ai/pixielabs/src/shared/types/go"
+	types "pixielabs.ai/pixielabs/src/shared/types/go"
 	"pixielabs.ai/pixielabs/src/utils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
@@ -739,13 +739,14 @@ func (mds *KVMetadataStore) PruneComputedSchema() error {
 
 	// Fetch current computed schema.
 	computedSchemaPb, err := mds.GetComputedSchema()
+	// If there are no computed schemas, that means we don't have to do anything.
+	if err == errNoComputedSchemas || computedSchemaPb == nil {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
 
-	if computedSchemaPb == nil {
-		return nil
-	}
 	computedSchemaPb = initializeComputedSchema(computedSchemaPb)
 
 	tableInfos := make([]*storepb.TableInfo, 0)

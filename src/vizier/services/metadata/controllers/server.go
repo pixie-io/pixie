@@ -208,6 +208,11 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 		}
 
 		updates, newComputedSchema, err := s.agentManager.GetAgentUpdates(cursor)
+		if err == errNoComputedSchemas {
+			// We need to wait until we have computed schemas
+			time.Sleep(agentUpdatePeriod)
+			continue
+		}
 
 		if err != nil {
 			return err
@@ -283,8 +288,6 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 		log.Infof("Sent %d agent updates", len(updates))
 		time.Sleep(agentUpdatePeriod)
 	}
-
-	return nil
 }
 
 // RegisterTracepoint is a request to register the tracepoints specified in the TracepointDeployment on all agents.
