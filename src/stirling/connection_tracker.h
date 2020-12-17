@@ -611,10 +611,6 @@ class ConnectionTracker {
   //    similar way as std::variant.
   std::any protocol_state_;
 
-  // Records how many transfer iterations has been performed on this ConnectionTracker.
-  // This is used to wait before exposing connections stats.
-  int64_t iteration_count_ = 0;
-
   template <typename TProtocolTraits>
   friend std::string DebugString(const ConnectionTracker& c, std::string_view prefix);
 };
