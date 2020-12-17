@@ -25,13 +25,15 @@ type ExecutableScript struct {
 	Vis          *vispb.Vis
 	OrgName      string
 	Hidden       bool
+	// Marks if this script is local rather than hosted.
+	IsLocal bool
 	// Args contains a map from name to argument info.
 	Args map[string]Arg
 }
 
 // LiveViewLink returns the fully qualified URL for the live view.
 func (e ExecutableScript) LiveViewLink(clusterID *string) string {
-	if e.Vis == nil {
+	if e.Vis == nil || e.IsLocal {
 		return ""
 	}
 	cloudAddr := viper.GetString("cloud_addr")

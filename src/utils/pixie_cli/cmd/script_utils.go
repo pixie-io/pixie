@@ -79,6 +79,7 @@ func baseScript() *script.ExecutableScript {
 
 func loadScriptFromStdin() (*script.ExecutableScript, error) {
 	s := baseScript()
+	s.IsLocal = true
 	// Read from STDIN.
 	query, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
@@ -106,6 +107,7 @@ func isDir(scriptPath string) bool {
 
 func loadScriptFromDir(scriptPath string) (*script.ExecutableScript, error) {
 	s := baseScript()
+	s.IsLocal = true
 
 	pxlFiles, err := doublestar.Glob(path.Join(scriptPath, "*.pxl"))
 	if len(pxlFiles) != 1 {
