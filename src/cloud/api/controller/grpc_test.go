@@ -1004,7 +1004,7 @@ func TestScriptMgr(t *testing.T) {
 func TestProfileServer_GetOrgInfo(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	orgID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	orgID := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
 	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()

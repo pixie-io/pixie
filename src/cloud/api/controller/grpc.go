@@ -744,6 +744,16 @@ func (p *ProfileServer) GetOrgInfo(ctx context.Context, req *uuidpb.UUID) (*clou
 		return nil, err
 	}
 
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	claimsOrgID := sCtx.Claims.GetUserClaims().OrgID
+	orgID := pbutils.UUIDFromProtoOrNil(req)
+	if claimsOrgID != orgID.String() {
+		return nil, status.Error(codes.Unauthenticated, "Unable to fetch org info")
+	}
+
 	resp, err := p.ProfileServiceClient.GetOrg(ctx, req)
 	if err != nil {
 		return nil, err

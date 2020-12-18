@@ -891,6 +891,10 @@ func getServiceCredentials(signingKey string) (string, error) {
 
 // UpdateOrInstallVizier updates or installs the given vizier cluster to the specified version.
 func (s *Server) UpdateOrInstallVizier(ctx context.Context, req *cvmsgspb.UpdateOrInstallVizierRequest) (*cvmsgspb.UpdateOrInstallVizierResponse, error) {
+	if err := s.validateOrgOwnsCluster(ctx, req.VizierID); err != nil {
+		return nil, err
+	}
+
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 
 	v2cMsg, err := s.updater.UpdateOrInstallVizier(vizierID, req.Version, req.RedeployEtcd)
