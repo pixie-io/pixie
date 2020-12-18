@@ -107,6 +107,7 @@ func (t *TableStreamWriter) Finish() {
 	table.SetHeader(t.headerValues)
 
 	table.SetAutoFormatHeaders(true)
+	table.SetAutoWrapText(false)
 	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	table.SetColWidth(30)
