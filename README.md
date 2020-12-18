@@ -51,24 +51,29 @@ Run the command below:
 
 `bash -c "$(curl -fsSL https://withpixie.ai/install.sh)"`
 
+Or see our [Installation Docs](https://docs.pixielabs.ai/installing-pixie/quick-start/#2.-install-the-cli) to install Pixie using Docker, Debian, RPM or with the latest binary. 
 
 #### (optional) Setup a sandbox
 
-If you don't already have a K8s cluster available you can:
+If you don't already have a K8s cluster available, you can use Minikube to set-up a local environment:
 
-- Set-up a local K8s environment
-  - [Install Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) and run `kind create cluster`
-  - [Install Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) and run `minikube start`
-  - Review our [docs](https://docs.pixielabs.ai/installing-pixie/quick-start/) for alternate options.
-- Start a demo-app
-  - Deploy [Weaveworks'](https://www.weave.works/) [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by running `px demo deploy px-sock-shop`
+- On Linux, run `minikube start --cpus=4 --memory=6000 --driver=kvm2 -p=<cluster-name>`. The default `docker` driver is not currently supported, so using the `kvm2` driver is important.
 
+- On Mac, run `minikube start --cpus=4 --memory=6000 -p=<cluster-name>`.
+
+More detailed instructions are available [here](https://docs.pixielabs.ai/installing-pixie/install-guides/minikube-setup/).
+
+Start a demo-app:
+- Deploy [Weaveworks'](https://www.weave.works/) [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by running `px demo deploy px-sock-shop`
 
 #### 🚀 Deploy Pixie
 
-Deploy the Pixie Platform in your K8s cluster by running:
+Use the CLI to deploy the Pixie Platform in your K8s cluster by running:
 
-`px deploy`
+px deploy
+
+Alternatively, you can deploy with [YAML](https://docs.pixielabs.ai/installing-pixie/install-schemes/yaml/) or [Helm](https://docs.pixielabs.ai/installing-pixie/install-schemes/helm/).
+
 <br>
 
 Check out our [install guides](https://docs.pixielabs.ai/installing-pixie/install-guides/) and [walkthrough videos](https://www.youtube.com/watch?v=iMh2f8abTYU) for alternate install schemes.
