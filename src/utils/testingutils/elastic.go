@@ -39,9 +39,10 @@ func SetupElastic() (*elastic.Client, func(), error) {
 		},
 	})
 	if err != nil {
-		pool.Purge(resource)
 		return nil, cleanup, err
 	}
+	// Set a 5 minute expiration on resources.
+	resource.Expire(300)
 
 	clientPort := resource.GetPort("9200/tcp")
 	var client *elastic.Client

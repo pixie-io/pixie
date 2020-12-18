@@ -27,6 +27,11 @@ func SetupTestDB(t *testing.T, schemaSource *bindata.AssetSource) (*sqlx.DB, fun
 
 	const dbName = "testdb"
 	resource, err := pool.Run("postgres", "11.1", []string{"POSTGRES_PASSWORD=secret", "POSTGRES_DB=" + dbName})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Set a 5 minute expiration on resources.
+	resource.Expire(300)
 	require.Nil(t, err)
 
 	viper.Set("postgres_port", resource.GetPort("5432/tcp"))

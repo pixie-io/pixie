@@ -29,11 +29,13 @@ func SetupEtcd() (*clientv3.Client, func()) {
 			"--initial-cluster=node1=http://0.0.0.0:2380",
 		},
 	})
-
-	clientPort := resource.GetPort("2379/tcp")
 	if err != nil {
 		log.Fatal(err)
 	}
+	// Set a 5 minute expiration on resources.
+	resource.Expire(300)
+
+	clientPort := resource.GetPort("2379/tcp")
 
 	var client *clientv3.Client
 	if err = pool.Retry(func() (err error) {
