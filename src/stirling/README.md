@@ -73,7 +73,7 @@ First, lets create a copy.
 sudo cp /usr/sbin/profile-bpfcc /usr/sbin/profile-bpfcc.pixie
 ```
 
-Next edit the new file and make the following modifications. 
+Next edit the new file and make the following modifications.
 
 1) Add the following to the top of the BPF code.
 ```
@@ -97,10 +97,22 @@ As long as the node doesn't reboot (which GKE nodes don't), the value of __PAGE_
 
 #### Running the profiler
 
-To run the profiler, run:
+To run the profiler:
 
 ```
 /usr/sbin/profile-bpfcc.pixie -p <target_pid> > profile.out
+```
+
+#### Creating a flamegraph graphic
+Get the flamegraph repo and script flamegraph.pl, then follow these steps:
+```
+/usr/sbin/profile-bpfcc.pixie -p <target_pid> -f -F 101 300 > profile.out # 300 seconds, 101 Hz sampling, -f for flamegraph compat.
+# gcloud compute scp & scp the file profile.out to your local machine, or eventual destination
+flamegraph.pl profile.out > profile.svg
+rsvg-convert profile.svg -f pdf > profile.pdf  # create pdf
+rsvg-convert profile.svg -f eps > profile.eps  # create eps
+convert -density 600 -quality 100 profile.eps profile.jpg  # create jpg based on eps
+```
 
 
 ## JVM stats
