@@ -13,6 +13,7 @@ import (
 	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
+	"pixielabs.ai/pixielabs/src/shared/services/utils"
 )
 
 var (
@@ -62,9 +63,28 @@ func WithAugmentedAuthMiddleware(env apienv.APIEnv, next http.Handler) http.Hand
 
 func getAugmentedToken(env apienv.APIEnv, r *http.Request) (string, error) {
 	// Steps:
-	// 1. Try to get the token out of session.
-	// 2. If not try to get the session out bearer
-	// 3. Generate augmented auth.
+	// 1. Check if header contains a pixie-api-key. If so, generate augmented auth from the API Key.
+	// 2. Try to get the token out of session.
+	// 3. If not try to get the session out bearer
+	// 4. Generate augmented auth.
+	apiHeader := r.Header.Get("pixie-api-key")
+	if apiHeader != "" {
+		// Try to get augmented token.
+		svcJWT := utils.GenerateJWTForService("APIService")
+		svcClaims, err := utils.SignJWTClaims(svcJWT, env.JWTSigningKey())
+		if err != nil {
+			return "", ErrGetAuthTokenFailed
+		}
+		ctxWithCreds := metadata.AppendToOutgoingContext(r.Context(), "authorization",
+			fmt.Sprintf("bearer %s", svcClaims))
+
+		apiKeyResp, err := env.AuthClient().GetAugmentedTokenForAPIKey(ctxWithCreds, &authpb.GetAugmentedTokenForAPIKeyRequest{
+			APIKey: apiHeader,
+		})
+		if err == nil {
+			return apiKeyResp.Token, nil
+		}
+	}
 
 	token, ok := GetTokenFromSession(env, r)
 	if !ok {

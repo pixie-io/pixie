@@ -143,3 +143,43 @@ func TestWithAugmentedAuthMiddlewareFailedAugmentation(t *testing.T) {
 
 	failedRequestCheckHelper(t, env, mockClients.MockAuth, req)
 }
+
+func TestWithAugmentedAuthMiddlewareWithAPIKey(t *testing.T) {
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+
+	testAugmentedToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
+
+	mockClients.MockAuth.EXPECT().GetAugmentedTokenForAPIKey(
+		gomock.Any(), gomock.Any()).Do(
+		func(c context.Context, request *authpb.GetAugmentedTokenForAPIKeyRequest) {
+			assert.Equal(t, "test-api-key", request.APIKey)
+		}).Return(
+		&authpb.GetAugmentedTokenForAPIKeyResponse{
+			Token: testAugmentedToken,
+		}, nil)
+
+	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
+	assert.Nil(t, err)
+	req.Header.Add("pixie-api-key", "test-api-key")
+
+	validateAuthInfo := func(w http.ResponseWriter, r *http.Request) {
+		aCtx, err := authcontext.FromContext(r.Context())
+		assert.Nil(t, err)
+		assert.Equal(t, testingutils.TestUserID, aCtx.Claims.GetUserClaims().UserID)
+		assert.Equal(t, "test@test.com", aCtx.Claims.GetUserClaims().Email)
+		assert.Equal(t, testAugmentedToken, aCtx.AuthToken)
+
+		md, ok := metadata.FromOutgoingContext(r.Context())
+		assert.Equal(t, true, ok)
+		assert.Equal(t, 1, len(md["authorization"]))
+		assert.Equal(t, fmt.Sprintf("bearer %s", testAugmentedToken), md["authorization"][0])
+
+		callOKTestHandler(t).ServeHTTP(w, r)
+	}
+
+	rr := httptest.NewRecorder()
+	handler := controller.WithAugmentedAuthMiddleware(env, http.HandlerFunc(validateAuthInfo))
+	handler.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+}
