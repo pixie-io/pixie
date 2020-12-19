@@ -1,0 +1,5 @@
+---
+short: Vizier PEM Resource Usage
+long: >
+  Traces the CPU, memory usage of Vizier PEM Pods.
+org_name: pixielabs.ai

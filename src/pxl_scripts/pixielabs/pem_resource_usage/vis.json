@@ -1,0 +1,98 @@
+{
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "description": "The relative start time of the window. Current time is assumed to be now",
+      "defaultValue": "-60m"
+    },
+    {
+      "name": "namespace",
+      "type": "PX_NAMESPACE",
+      "description": "The namespace to filter on",
+      "defaultValue": "pl"
+    },
+    {
+      "name": "name_substr",
+      "type": "PX_STRING",
+      "description": "The name substring to filter on",
+      "defaultValue": "vizier-pem"
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "resource_timeseries",
+      "func": {
+        "name": "resource_timeseries",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "namespace",
+            "variable": "namespace"
+          },
+          {
+            "name": "name_substr",
+            "variable": "name_substr"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "CPU Usage",
+      "globalFuncOutputName": "resource_timeseries",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "cpu_usage",
+            "series": "pod",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "CPU usage"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 10,
+        "h": 3
+      }
+    },
+    {
+      "name": "Resident Set Size",
+      "globalFuncOutputName": "resource_timeseries",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "rss",
+            "series": "pod",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "RSS Size"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 10,
+        "h": 3
+      }
+    }
+  ]
+}

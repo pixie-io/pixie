@@ -1,0 +1,67 @@
+# Copyright (c) Pixie Labs, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+
+'''PEM Overhead
+
+List of Vizier PEM Pods and their CPU and Memory usage.
+This is extracted from px/pods.
+
+'''
+
+import px
+
+
+ns_per_s = 1000 * 1000 * 1000
+# Window size to use on time_ column for bucketing.
+window_ns = px.DurationNanos(10 * ns_per_s)
+
+
+def resource_timeseries(start_time: str, namespace: px.Namespace, name_substr: str):
+    ''' Compute the resource usage as a timeseries for pods in `namespace`,
+    whose names contain `name_substr`.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @namespace: The name of the namespace to filter on.
+    @name_substr: The name substring of the Pod to filter on.
+
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df = df[df.ctx['namespace'] == namespace]
+    df.pod = df.ctx['pod_name']
+    df = df[px.contains(df.pod, name_substr)]
+    df.timestamp = px.bin(df.time_, window_ns)
+
+    # First calculate CPU usage by process (UPID) in each k8s_object over all windows.
+    df = df.groupby(['upid', 'pod', 'timestamp']).agg(
+        rss=('rss_bytes', px.mean),
+        vsize=('vsize_bytes', px.mean),
+        # The fields below are counters, so we take the min and the max to subtract them.
+        # TODO(yzhao): Max - min inside a time window is actually not correct as the usage data at
+        # the right side time stamp of the time window. The `groupby` takes a min and a max of
+        # the activity within the group. The next group will do the same thing. Suppose there is a
+        # CPU spike in between the last time of group 0 and the first time of group 1, then this
+        # approach will miss it. Essentially, our windows need an overlap of 1 sample. The lead/lag
+        # operators could help with.
+        cpu_utime_ns_max=('cpu_utime_ns', px.max),
+        cpu_utime_ns_min=('cpu_utime_ns', px.min),
+        cpu_ktime_ns_max=('cpu_ktime_ns', px.max),
+        cpu_ktime_ns_min=('cpu_ktime_ns', px.min),
+    )
+
+    # Next calculate cpu usage and memory stats per window.
+    df.cpu_utime_ns = df.cpu_utime_ns_max - df.cpu_utime_ns_min
+    df.cpu_ktime_ns = df.cpu_ktime_ns_max - df.cpu_ktime_ns_min
+
+    # Then aggregate process individual process metrics.
+    df = df.groupby(['pod', 'timestamp']).agg(
+        cpu_ktime_ns=('cpu_ktime_ns', px.sum),
+        cpu_utime_ns=('cpu_utime_ns', px.sum),
+        rss=('rss', px.sum),
+        vsize=('vsize', px.sum),
+    )
+
+    # Finally, calculate total (kernel + user time)  percentage used over window.
+    df.cpu_usage = px.Percent((df.cpu_ktime_ns + df.cpu_utime_ns) / window_ns)
+    df['time_'] = df['timestamp']
+    return df.drop(['cpu_ktime_ns', 'cpu_utime_ns', 'timestamp'])
