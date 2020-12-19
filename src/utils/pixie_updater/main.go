@@ -105,7 +105,7 @@ func main() {
 	}
 
 	// Update update role first.
-	err = k8s.ApplyYAMLForResourceTypes(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierBootstrapYAMLPath]), []string{"clusterroles"}, true)
+	err = k8s.ApplyYAMLForResourceTypes(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierBootstrapYAMLPath]), []string{"clusterroles"}, true, make(map[string]string))
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to install vizier bootstrap for updater roles")
 	}
