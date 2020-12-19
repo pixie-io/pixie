@@ -392,7 +392,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // This map controls how each protocol is processed and transferred.
   // The table num identifies which data the collected data is transferred.
   // The transfer_fn defines which function is called to process the data for transfer.
-  std::map<TrafficProtocol, TransferSpec> protocol_transfer_specs_;
+  std::vector<TransferSpec> protocol_transfer_specs_;
 
   // Keep track of when the last perf buffer drain event was triggered.
   // Perf buffer draining is not atomic nor synchronous, so we want the time before draining.

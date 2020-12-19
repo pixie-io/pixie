@@ -93,27 +93,41 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
 void SocketTraceConnector::InitProtocolTransferSpecs() {
 #define TRANSER_STREAM_PROTOCOL(protocol_name) \
   &SocketTraceConnector::TransferStream<protocols::protocol_name::ProtocolTraits>
+
   // PROTOCOL_LIST: Requires update on new protocols.
-  protocol_transfer_specs_ = {
-      {kProtocolHTTP,
-       {kHTTPTableNum, TRANSER_STREAM_PROTOCOL(http), FLAGS_stirling_enable_http_tracing}},
-      {kProtocolHTTP2,
-       {kHTTPTableNum, TRANSER_STREAM_PROTOCOL(http2), FLAGS_stirling_enable_grpc_tracing}},
-      {kProtocolMySQL,
-       {kMySQLTableNum, TRANSER_STREAM_PROTOCOL(mysql), FLAGS_stirling_enable_mysql_tracing}},
-      {kProtocolCQL,
-       {kCQLTableNum, TRANSER_STREAM_PROTOCOL(cass), FLAGS_stirling_enable_cass_tracing}},
-      {kProtocolPGSQL,
-       {kPGSQLTableNum, TRANSER_STREAM_PROTOCOL(pgsql), FLAGS_stirling_enable_pgsql_tracing}},
+
+  // We popluate transfer_spec_generators (with generator functions for TransferSpecs)
+  // so that we guarantee the protocol_transfer_specs_
+  // is stuffed in the *correct* order.
+  // Also, this will fail fast (when we stuff the vector) if we forget a protocol.
+  absl::flat_hash_map<TrafficProtocol, TransferSpec> transfer_specs_by_protocol = {
+      {kProtocolHTTP, TransferSpec{kHTTPTableNum, TRANSER_STREAM_PROTOCOL(http),
+                                   FLAGS_stirling_enable_http_tracing}},
+      {kProtocolHTTP2, TransferSpec{kHTTPTableNum, TRANSER_STREAM_PROTOCOL(http2),
+                                    FLAGS_stirling_enable_grpc_tracing}},
+      {kProtocolMySQL, TransferSpec{kMySQLTableNum, TRANSER_STREAM_PROTOCOL(mysql),
+                                    FLAGS_stirling_enable_mysql_tracing}},
+      {kProtocolCQL, TransferSpec{kCQLTableNum, TRANSER_STREAM_PROTOCOL(cass),
+                                  FLAGS_stirling_enable_cass_tracing}},
+      {kProtocolPGSQL, TransferSpec{kPGSQLTableNum, TRANSER_STREAM_PROTOCOL(pgsql),
+                                    FLAGS_stirling_enable_pgsql_tracing}},
       {kProtocolDNS,
-       {kDNSTableNum, TRANSER_STREAM_PROTOCOL(dns), FLAGS_stirling_enable_dns_tracing}},
-      {kProtocolRedis,
-       {kRedisTableNum, TRANSER_STREAM_PROTOCOL(redis), FLAGS_stirling_enable_redis_tracing}},
+       TransferSpec{kDNSTableNum, TRANSER_STREAM_PROTOCOL(dns), FLAGS_stirling_enable_dns_tracing}},
+      {kProtocolRedis, TransferSpec{kRedisTableNum, TRANSER_STREAM_PROTOCOL(redis),
+                                    FLAGS_stirling_enable_redis_tracing}},
       // Unknown protocols attached to HTTP table so that they run their cleanup functions,
       // but the use of nullptr transfer_fn means it won't actually transfer data to the HTTP table.
-      {kProtocolUnknown, {kHTTPTableNum, nullptr}},
-  };
+      {kProtocolUnknown, TransferSpec{kHTTPTableNum, nullptr}}};
 #undef TRANSER_STREAM_PROTOCOL
+
+  for (uint64_t i = 0; i < kNumProtocols; ++i) {
+    // First, we double check that we have a transfer spec for the protocol in question.
+    // Next, we stuff the vector of transfer specs,
+    // by indexing into the transfer_specs_by_protocol map.
+    DCHECK(transfer_specs_by_protocol.contains(TrafficProtocol(i))) << absl::Substitute(
+        "Protocol $0 is not mapped in transfer_specs_by_protocol.", TrafficProtocol(i));
+    protocol_transfer_specs_.push_back(transfer_specs_by_protocol[TrafficProtocol(i)]);
+  }
 
   // Populate `role_to_trace` from flags.
   std::optional<EndpointRole> role_to_trace =
@@ -125,7 +139,7 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
   }
 
   for (const auto& p : TrafficProtocolEnumValues()) {
-    DCHECK(protocol_transfer_specs_.find(p) != protocol_transfer_specs_.end())
+    DCHECK_LT(p, protocol_transfer_specs_.size())
         << "Missing transfer spec for protocol: " << magic_enum::enum_name(p);
     if (role_to_trace.has_value()) {
       protocol_transfer_specs_[p].role_to_trace = role_to_trace.value();
@@ -1155,8 +1169,7 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
                                   ToString(tracker.conn_id()),
                                   magic_enum::enum_name(tracker.traffic_class().protocol));
 
-      DCHECK(protocol_transfer_specs_.find(tracker.traffic_class().protocol) !=
-             protocol_transfer_specs_.end())
+      DCHECK_LT(tracker.traffic_class().protocol, protocol_transfer_specs_.size())
           << absl::Substitute("Protocol=$0 not in protocol_transfer_specs_.",
                               tracker.traffic_class().protocol);
 
