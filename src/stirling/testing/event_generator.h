@@ -20,14 +20,15 @@ constexpr uint64_t kPIDStartTimeTicks = 112358;
 // Convenience functions and predefined data for generating events expected from BPF socket probes.
 class EventGenerator {
  public:
-  explicit EventGenerator(Clock* clock) : clock_(clock) {}
+  explicit EventGenerator(Clock* clock, uint32_t pid = kPID, uint32_t fd = kFD)
+      : clock_(clock), pid_(pid), fd_(fd) {}
 
   struct socket_control_event_t InitConn(EndpointRole role = kRoleNone) {
     struct socket_control_event_t conn_event {};
     conn_event.type = kConnOpen;
     conn_event.open.timestamp_ns = clock_->now();
-    conn_event.open.conn_id.upid.pid = kPID;
-    conn_event.open.conn_id.fd = kFD;
+    conn_event.open.conn_id.upid.pid = pid_;
+    conn_event.open.conn_id.fd = fd_;
     conn_event.open.conn_id.tsid = ++tsid_;
     conn_event.open.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
     conn_event.open.addr.sin6_family = AF_INET;
@@ -53,8 +54,8 @@ class EventGenerator {
     event.attr.traffic_class.protocol = TProtocol;
     event.attr.traffic_class.role = TRole;
     event.attr.timestamp_ns = clock_->now();
-    event.attr.conn_id.upid.pid = kPID;
-    event.attr.conn_id.fd = kFD;
+    event.attr.conn_id.upid.pid = pid_;
+    event.attr.conn_id.fd = fd_;
     event.attr.conn_id.tsid = tsid_;
     event.attr.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
     event.attr.pos = *pos;
@@ -89,8 +90,8 @@ class EventGenerator {
     struct socket_control_event_t close_event {};
     close_event.type = kConnClose;
     close_event.close.timestamp_ns = clock_->now();
-    close_event.close.conn_id.upid.pid = kPID;
-    close_event.close.conn_id.fd = kFD;
+    close_event.close.conn_id.upid.pid = pid_;
+    close_event.close.conn_id.fd = fd_;
     close_event.close.conn_id.tsid = tsid_;
     close_event.close.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
     close_event.close.rd_bytes = recv_pos_;
@@ -100,6 +101,8 @@ class EventGenerator {
 
  private:
   Clock* clock_;
+  uint32_t pid_ = 0;
+  uint32_t fd_ = 0;
   uint64_t tsid_ = 0;
   uint64_t send_pos_ = 0;
   uint64_t recv_pos_ = 0;

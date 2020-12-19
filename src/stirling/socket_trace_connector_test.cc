@@ -724,16 +724,13 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
   // Note that max PID bits in Linux is 22 bits.
   const uint32_t impossible_pid = 1 << 23;
 
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&mock_clock_, impossible_pid, 1);
   struct socket_control_event_t conn0 = event_gen.InitConn();
-  conn0.open.conn_id.upid.pid = impossible_pid;
 
   std::unique_ptr<SocketDataEvent> conn0_req_event = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
-  conn0_req_event->attr.conn_id.upid.pid = impossible_pid;
 
   std::unique_ptr<SocketDataEvent> conn0_resp_event =
       event_gen.InitRecvEvent<kProtocolHTTP>(kResp0);
-  conn0_resp_event->attr.conn_id.upid.pid = impossible_pid;
 
   DataTable data_table(kHTTPTable);
 
@@ -774,16 +771,12 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   uint32_t real_pid = getpid();
   uint32_t real_fd = 1;
 
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&mock_clock_, real_pid, real_fd);
   struct socket_control_event_t conn0 = event_gen.InitConn();
-  conn0.open.conn_id.upid.pid = real_pid;
-  conn0.open.conn_id.fd = real_fd;
 
   // An incomplete message means it shouldn't be parseable (we don't want TranfserData to succeed).
   std::unique_ptr<SocketDataEvent> conn0_req_event =
       event_gen.InitSendEvent<kProtocolHTTP>("GET /index.html HTTP/1.1\r\n");
-  conn0_req_event->attr.conn_id.upid.pid = real_pid;
-  conn0_req_event->attr.conn_id.fd = real_fd;
 
   DataTable data_table(kHTTPTable);
   std::vector<TaggedRecordBatch> tablets;
