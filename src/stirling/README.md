@@ -46,6 +46,10 @@ src/stirling/scripts/profile_stirling_wrapper.sh
 Perf doesn't run on GCE/GKE because the node is virtualized. Instead, we'll use a BPF based profiler.
 See the link here for a basic overview: http://www.brendangregg.com/blog/2016-10-21/linux-efficient-profiler.html
 
+[PEM resource usage](
+https://work.withpixie.ai/live/clusters/gke_pl-pixies_us-west1-a_dev-cluster-stirling-perf/script?pem_resource_usage)
+on `dev-cluster-stirling-perf`.
+
 #### Dependencies
 
 First, you'll need some prerequisite tools installed on the node:
@@ -104,6 +108,7 @@ To run the profiler:
 ```
 
 #### Creating a flamegraph graphic
+
 Get the flamegraph repo and script flamegraph.pl, then follow these steps:
 ```
 /usr/sbin/profile-bpfcc.pixie -p <target_pid> -f -F 101 300 > profile.out # 300 seconds, 101 Hz sampling, -f for flamegraph compat.
