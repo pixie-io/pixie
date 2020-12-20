@@ -37,3 +37,11 @@ pl_cc_test(
         "//src/stirling/testing:cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "index_sorted_vector_test",
+    srcs = ["index_sorted_vector_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)

@@ -5,6 +5,7 @@
 
 #include "src/common/base/base.h"
 #include "src/shared/types/type_utils.h"
+#include "src/stirling/common/index_sorted_vector.h"
 #include "src/stirling/data_table.h"
 #include "src/stirling/types.h"
 
@@ -40,104 +41,6 @@ Tablet* DataTable::GetTablet(types::TabletIDView tablet_id) {
   return &tablet;
 }
 
-namespace {
-// Computes a reorder vector that specifies the sorted order.
-// Note 1: ColumnWrapper itself is not modified.
-// Note 2: There are different ways to define the reorder indexes.
-// Here we use the form where the result, idx, is used to sort x according to:
-//    { x[idx[0]], x[idx[1]], x[idx[2]], ... }
-std::vector<size_t> SortedIndexes(const std::vector<uint64_t>& v) {
-  // Create indices corresponding to v.
-  std::vector<size_t> idx(v.size());
-  // Initialize idx = {0, 1, 2, 3, ... }
-  for (size_t i = 0; i < idx.size(); ++i) {
-    idx[i] = i;
-  }
-
-  // Find the sorted indices by running a sort on idx, but using the values of v.
-  // Use std::stable_sort instead of std::sort to minimize churn in indices.
-  std::stable_sort(idx.begin(), idx.end(), [&v](size_t i1, size_t i2) { return v[i1] < v[i2]; });
-
-  return idx;
-}
-
-// An iterator that walks over a vector according to provided indexes.
-// Used in conjunction with SortedIndexes to iterate through an unsorted vector in sorted order.
-template <typename T>
-class indexed_vector_iterator {
- public:
-  typedef int difference_type;
-  typedef T value_type;
-  typedef const T& reference;
-  typedef const T* pointer;
-  typedef std::forward_iterator_tag iterator_category;
-
-  indexed_vector_iterator(const std::vector<T>& data,
-                          std::vector<size_t>::const_iterator index_iter)
-      : data_(&data), iter_(index_iter) {}
-
-  indexed_vector_iterator operator++() {
-    indexed_vector_iterator i = *this;
-    iter_++;
-    return i;
-  }
-
-  indexed_vector_iterator operator++(int) {
-    iter_++;
-    return *this;
-  }
-
-  indexed_vector_iterator operator+(int n) {
-    iter_ = iter_ + n;
-    return *this;
-  }
-
-  reference operator*() { return (*data_)[*iter_]; }
-
-  pointer operator->() { return (*data_)[*iter_]; }
-
-  bool operator==(const indexed_vector_iterator& rhs) { return iter_ == rhs.iter_; }
-
-  bool operator!=(const indexed_vector_iterator& rhs) { return iter_ != rhs.iter_; }
-
-  difference_type operator-(const indexed_vector_iterator<T>& other) {
-    return std::distance(other.iter_, iter_);
-  }
-
- private:
-  const std::vector<T>* data_;
-  std::vector<size_t>::const_iterator iter_;
-};
-
-}  // namespace
-
-// Searches for multiple values in a vector,
-// returning the lowest positions that are greater than or equal to the search value.
-// Both vectors must be sorted.
-// Uses std::lower_bound, which is a binary search for efficiency.
-template <size_t N>
-std::array<size_t, N> SplitSortedVector(const std::vector<uint64_t>& vec,
-                                        const std::vector<size_t> sort_indexes,
-                                        std::array<uint64_t, N> split_vals) {
-  std::array<size_t, N> out;
-
-  auto begin = indexed_vector_iterator(vec, sort_indexes.begin());
-  auto end = indexed_vector_iterator(vec, sort_indexes.end());
-
-  auto iter = begin;
-  for (size_t i = 0; i < N; ++i) {
-    iter = std::lower_bound(iter, end, split_vals[i]);
-    out[i] = iter - begin;
-  }
-
-  return out;
-}
-
-// Make sure the version with N=2 exists in the library.
-template std::array<size_t, 2> SplitSortedVector(const std::vector<uint64_t>& vec,
-                                                 const std::vector<size_t> sort_indexes,
-                                                 std::array<uint64_t, 2> split_vals);
-
 std::vector<TaggedRecordBatch> DataTable::ConsumeRecords() {
   std::vector<TaggedRecordBatch> tablets_out;
   absl::flat_hash_map<types::TabletID, Tablet> carryover_tablets;
@@ -147,7 +50,7 @@ std::vector<TaggedRecordBatch> DataTable::ConsumeRecords() {
     // Sort based on times.
     // TODO(oazizi): Could keep track of whether tablet is already sorted to avoid some work.
     //               Many tables will naturally be in sorted order.
-    std::vector<size_t> sort_indexes = SortedIndexes(tablet.times);
+    std::vector<size_t> sort_indexes = utils::SortedIndexes(tablet.times);
 
     // End time is cutoff time + 1, so call to SplitSortedVector() produces the following
     // classification: which classified according to:
@@ -160,7 +63,8 @@ std::vector<TaggedRecordBatch> DataTable::ConsumeRecords() {
     // 1) Expired indexes: these are too old to return.
     // 2) Pushable indexes: these are the ones that we return.
     // 3) Carryover indexes: these are too new to return, so hold on to them until the next round.
-    auto positions = SplitSortedVector<2>(tablet.times, sort_indexes, {start_time_, end_time});
+    auto positions =
+        utils::SplitSortedVector<2>(tablet.times, sort_indexes, {start_time_, end_time});
     int num_expired = positions[0];
     int num_pushable = positions[1] - positions[0];
     int num_carryover = tablet.times.size() - positions[1];

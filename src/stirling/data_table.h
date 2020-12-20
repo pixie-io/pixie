@@ -265,15 +265,5 @@ class DataTable : public NotCopyable {
   std::optional<uint64_t> cutoff_time_;
 };
 
-// Splits the input vector into sections based on split_vals.
-// The input vector must be in sorted order after applying sort_indexes.
-// Under the hood, does something very similar to an std::lower_bound for each split_val,
-// but this is a custom implementation that handles the sort_indexes.
-// Implementation uses a binary search for O(log n) efficiency.
-template <size_t N>
-std::array<size_t, N> SplitSortedVector(const std::vector<uint64_t>& vec,
-                                        const std::vector<size_t> sort_indexes,
-                                        std::array<uint64_t, N> split_vals);
-
 }  // namespace stirling
 }  // namespace pl
