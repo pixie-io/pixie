@@ -52,6 +52,16 @@ class NginxContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "";
 };
 
+class CurlContainer : public ContainerRunner {
+ public:
+  CurlContainer() : ContainerRunner(kImageName, kContainerNamePrefix, kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kImageName = "curlimages/curl:7.74.0";
+  static constexpr std::string_view kContainerNamePrefix = "curl";
+  static constexpr std::string_view kReadyMessage = "";
+};
+
 class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false> {
  protected:
   OpenSSLTraceTest() {
@@ -59,16 +69,15 @@ class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ fals
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
     // Note that this step will make an access to docker hub to download the container image.
-    StatusOr<std::string> run_result = container_.Run(60, {"-p=9090:443"});
+    StatusOr<std::string> run_result = server_.Run(60);
     PL_CHECK_OK(run_result);
-    container_out_ = run_result.ValueOrDie();
 
     // Sleep an additional second, just to be safe.
     sleep(1);
   }
 
-  NginxContainer container_;
-  std::string container_out_;
+  NginxContainer server_;
+  CurlContainer client_;
 };
 
 //-----------------------------------------------------------------------------
@@ -121,8 +130,12 @@ TEST_F(OpenSSLTraceTest, ssl_capture) {
     // Because the server uses a self-signed certificate, curl will normally refuse to connect.
     // This is similar to the warning pages that Firefox/Chrome would display.
     // To take an exception and make the SSL connection anyways, we use the --insecure flag.
-    StatusOr<std::string> out = pl::Exec("curl --insecure -s -S https://localhost:9090/index.html");
-    LOG(INFO) << out.ValueOrDie();
+
+    // Run the client in the network of the server, so they can connect to each other.
+    PL_CHECK_OK(client_.Run(10,
+                            {absl::Substitute("--network=container:$0", server_.container_name())},
+                            {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
+    client_.Wait();
 
     // Grab the data from Stirling.
     DataTable data_table(kHTTPTable);
@@ -142,7 +155,7 @@ TEST_F(OpenSSLTraceTest, ssl_capture) {
       // Nginx has a master process and a worker process. We need the PID of the worker process.
       int worker_pid;
       std::string pid_str =
-          pl::Exec(absl::Substitute("pgrep -P $0", container_.process_pid())).ValueOrDie();
+          pl::Exec(absl::Substitute("pgrep -P $0", server_.process_pid())).ValueOrDie();
       ASSERT_TRUE(absl::SimpleAtoi(pid_str, &worker_pid));
       LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
 

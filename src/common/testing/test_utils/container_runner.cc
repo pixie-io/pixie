@@ -42,7 +42,8 @@ ContainerRunner::~ContainerRunner() {
   }
 }
 
-StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::string>& options) {
+StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::string>& options,
+                                           const std::vector<std::string>& args) {
   // Now run the container.
   // Run with timeout, as a backup in case we don't clean things up properly.
   container_name_ = absl::StrCat(instance_name_prefix_, "_",
@@ -61,6 +62,9 @@ StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::s
   docker_run_cmd.push_back("--name");
   docker_run_cmd.push_back(container_name_);
   docker_run_cmd.push_back(image_);
+  for (const auto& arg : args) {
+    docker_run_cmd.push_back(arg);
+  }
 
   LOG(INFO) << docker_run_cmd;
   PL_RETURN_IF_ERROR(container_.Start(docker_run_cmd, /* stderr_to_stdout */ true));
