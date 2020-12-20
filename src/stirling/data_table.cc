@@ -60,7 +60,83 @@ std::vector<size_t> SortedIndexes(const std::vector<uint64_t>& v) {
 
   return idx;
 }
+
+// An iterator that walks over a vector according to provided indexes.
+// Used in conjunction with SortedIndexes to iterate through an unsorted vector in sorted order.
+template <typename T>
+class indexed_vector_iterator {
+ public:
+  typedef int difference_type;
+  typedef T value_type;
+  typedef const T& reference;
+  typedef const T* pointer;
+  typedef std::forward_iterator_tag iterator_category;
+
+  indexed_vector_iterator(const std::vector<T>& data,
+                          std::vector<size_t>::const_iterator index_iter)
+      : data_(&data), iter_(index_iter) {}
+
+  indexed_vector_iterator operator++() {
+    indexed_vector_iterator i = *this;
+    iter_++;
+    return i;
+  }
+
+  indexed_vector_iterator operator++(int) {
+    iter_++;
+    return *this;
+  }
+
+  indexed_vector_iterator operator+(int n) {
+    iter_ = iter_ + n;
+    return *this;
+  }
+
+  reference operator*() { return (*data_)[*iter_]; }
+
+  pointer operator->() { return (*data_)[*iter_]; }
+
+  bool operator==(const indexed_vector_iterator& rhs) { return iter_ == rhs.iter_; }
+
+  bool operator!=(const indexed_vector_iterator& rhs) { return iter_ != rhs.iter_; }
+
+  difference_type operator-(const indexed_vector_iterator<T>& other) {
+    return std::distance(other.iter_, iter_);
+  }
+
+ private:
+  const std::vector<T>* data_;
+  std::vector<size_t>::const_iterator iter_;
+};
+
 }  // namespace
+
+// Searches for multiple values in a vector,
+// returning the lowest positions that are greater than or equal to the search value.
+// Both vectors must be sorted.
+// Uses std::lower_bound, which is a binary search for efficiency.
+template <size_t N>
+std::array<size_t, N> SplitSortedVector(const std::vector<uint64_t>& vec,
+                                        const std::vector<size_t> sort_indexes,
+                                        std::array<uint64_t, N> split_vals) {
+  std::array<size_t, N> out;
+
+  auto begin = indexed_vector_iterator(vec, sort_indexes.begin());
+  auto end = indexed_vector_iterator(vec, sort_indexes.end());
+
+  auto iter = begin;
+  for (size_t i = 0; i < N; ++i) {
+    iter = std::lower_bound(iter, end, split_vals[i]);
+    out[i] = iter - begin;
+  }
+
+  return out;
+}
+
+// Make sure the version with N=2 exists in the library.
+template std::array<size_t, 2> SplitSortedVector(const std::vector<uint64_t>& vec,
+                                                 const std::vector<size_t> sort_indexes,
+                                                 std::array<uint64_t, 2> split_vals);
 
 std::vector<TaggedRecordBatch> DataTable::ConsumeRecords() {
   std::vector<TaggedRecordBatch> tablets_out;
@@ -73,25 +149,21 @@ std::vector<TaggedRecordBatch> DataTable::ConsumeRecords() {
     //               Many tables will naturally be in sorted order.
     std::vector<size_t> sort_indexes = SortedIndexes(tablet.times);
 
-    uint64_t end_time = cutoff_time_.value_or(std::numeric_limits<uint64_t>::max());
+    // End time is cutoff time + 1, so call to SplitSortedVector() produces the following
+    // classification: which classified according to:
+    //   expired < start_time
+    //   pushable <= end_time
+    uint64_t end_time = cutoff_time_.has_value() ? (cutoff_time_.value() + 1)
+                                                 : std::numeric_limits<uint64_t>::max();
 
     // Split the indexes into three groups:
     // 1) Expired indexes: these are too old to return.
     // 2) Pushable indexes: these are the ones that we return.
     // 3) Carryover indexes: these are too new to return, so hold on to them until the next round.
-    // TODO(oazizi): Switch to binary search.
-    int num_expired = 0;
-    int num_pushable = 0;
-    int num_carryover = 0;
-    for (const auto& t : tablet.times) {
-      if (t < start_time_) {
-        ++num_expired;
-      } else if (t <= end_time) {
-        ++num_pushable;
-      } else {
-        ++num_carryover;
-      }
-    }
+    auto positions = SplitSortedVector<2>(tablet.times, sort_indexes, {start_time_, end_time});
+    int num_expired = positions[0];
+    int num_pushable = positions[1] - positions[0];
+    int num_carryover = tablet.times.size() - positions[1];
 
     // Case 1: Expired records. Just print a message.
     LOG_IF(WARNING, num_expired != 0) << absl::Substitute(

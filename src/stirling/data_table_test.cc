@@ -491,5 +491,70 @@ TEST_F(DataTableStressTest, column_wrapper_read_write) {
   }
 }
 
+TEST(SplitSortedVector, Basic) {
+  // Corresponds to {0, 2, 4, 6, 8, 10} after applying sort_indexes
+  std::vector<uint64_t> data = {2, 0, 4, 10, 8, 6};
+  std::vector<size_t> sort_indexes = {1, 0, 2, 5, 4, 3};
+
+  EXPECT_EQ(SplitSortedVector(data, sort_indexes, std::array<uint64_t, 2>{0, 8}),
+            (std::array<size_t, 2>({0, 4})));
+  EXPECT_EQ(SplitSortedVector(data, sort_indexes, std::array<uint64_t, 2>{0, 9}),
+            (std::array<size_t, 2>({0, 5})));
+  EXPECT_EQ(SplitSortedVector(data, sort_indexes, std::array<uint64_t, 2>{1, 7}),
+            (std::array<size_t, 2>({1, 4})));
+  EXPECT_EQ(SplitSortedVector(data, sort_indexes, std::array<uint64_t, 2>{4, 7}),
+            (std::array<size_t, 2>({2, 4})));
+  EXPECT_EQ(SplitSortedVector(data, sort_indexes, std::array<uint64_t, 2>{3, 8}),
+            (std::array<size_t, 2>({2, 4})));
+  EXPECT_EQ(SplitSortedVector(data, sort_indexes, std::array<uint64_t, 2>{3, 7}),
+            (std::array<size_t, 2>({2, 4})));
+  EXPECT_EQ(SplitSortedVector(data, sort_indexes, std::array<uint64_t, 2>{3, 20}),
+            (std::array<size_t, 2>({2, 6})));
+}
+
+void CheckAgainstReferenceModel(std::vector<uint64_t> vec, uint64_t t1, uint64_t t2,
+                                std::array<size_t, 2> split_positions) {
+  int num_left = 0;
+  int num_middle = 0;
+  int num_right = 0;
+
+  for (const auto& t : vec) {
+    if (t < t1) {
+      ++num_left;
+    } else if (t < t2) {
+      ++num_middle;
+    } else {
+      ++num_right;
+    }
+  }
+
+  EXPECT_EQ(num_left, split_positions[0]);
+  EXPECT_EQ(num_middle, split_positions[1] - split_positions[0]);
+  EXPECT_EQ(num_right, vec.size() - split_positions[1]);
+}
+
+TEST(SplitSortedVector, ReferenceModelComparison) {
+  // Corresponds to {0, 2, 4, 6, 8, 10} after applying sort_indexes
+  std::vector<uint64_t> data = {2, 0, 4, 10, 8, 6};
+  std::vector<size_t> sort_indexes = {1, 0, 2, 5, 4, 3};
+
+  // Max value in data.
+  const uint64_t kMaxVal = *std::max_element(data.begin(), data.end());
+
+  std::array<uint64_t, 2> search_vals;
+  for (uint64_t i = 0; i < kMaxVal + 2; ++i) {
+    search_vals[0] = i;
+    for (uint64_t j = i; j < kMaxVal + 2; ++j) {
+      search_vals[1] = j;
+
+      CheckAgainstReferenceModel(data, i, j, SplitSortedVector(data, sort_indexes, search_vals));
+    }
+
+    uint64_t j = std::numeric_limits<uint64_t>::max();
+    search_vals[1] = j;
+    CheckAgainstReferenceModel(data, i, j, SplitSortedVector(data, sort_indexes, search_vals));
+  }
+}
+
 }  // namespace stirling
 }  // namespace pl
