@@ -433,12 +433,14 @@ TEST_F(MetadataOpsTest, pod_name_to_pod_status) {
   EXPECT_EQ("Running", std::string(running["phase"].GetString()));
   EXPECT_EQ("Running message", std::string(running["message"].GetString()));
   EXPECT_EQ("Running reason", std::string(running["reason"].GetString()));
+  EXPECT_EQ(true, running["ready"].GetBool());
 
   rapidjson::Document failed;
   failed.Parse(failed_res.data());
   EXPECT_EQ("Failed", std::string(failed["phase"].GetString()));
   EXPECT_EQ("Failed message terminated", std::string(failed["message"].GetString()));
   EXPECT_EQ("Failed reason terminated", std::string(failed["reason"].GetString()));
+  EXPECT_EQ(false, failed["ready"].GetBool());
 }
 
 TEST_F(MetadataOpsTest, pod_name_to_pod_ip) {
@@ -446,18 +448,6 @@ TEST_F(MetadataOpsTest, pod_name_to_pod_ip) {
   auto udf_tester = pl::carnot::udf::UDFTester<PodNameToPodIPUDF>(std::move(function_ctx));
   udf_tester.ForInput("pl/running_pod").Expect("1.1.1.1");
   udf_tester.ForInput("pl/terminating_pod").Expect("");
-}
-
-TEST_F(MetadataOpsTest, pod_name_to_pod_ready) {
-  PodNameToPodReadyUDF ready_udf;
-
-  updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedPodUpdatePB());
-  EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
-                                                               &md_filter_, updates_.get()));
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
-  EXPECT_EQ(ready_udf.Exec(function_ctx.get(), "pl/running_pod"), true);
-  EXPECT_EQ(ready_udf.Exec(function_ctx.get(), "pl/terminating_pod"), false);
-  EXPECT_EQ(ready_udf.Exec(function_ctx.get(), "pl/nonexistent_pod"), false);
 }
 
 TEST_F(MetadataOpsTest, container_id_to_container_status) {

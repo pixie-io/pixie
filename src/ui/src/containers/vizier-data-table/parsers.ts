@@ -16,6 +16,7 @@ export interface PodStatus {
   phase: string;
   reason: string;
   message: string;
+  ready: boolean;
 }
 
 export interface ScriptReference {
@@ -49,8 +50,12 @@ function parseContainerStatus(val: any): ContainerStatus {
 function parsePodStatus(val: any): PodStatus {
   try {
     const parsed = JSON.parse(val);
-    const { phase, reason, message } = parsed;
-    return { phase, reason, message };
+    const {
+      phase, reason, message, ready,
+    } = parsed;
+    return {
+      phase, reason, message, ready,
+    };
   } catch (error) {
     return null;
   }

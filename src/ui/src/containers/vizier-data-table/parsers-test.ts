@@ -24,11 +24,15 @@ describe('parseRows', () => {
     ]);
 
     expect(parseRows(semanticTypes, [
-      { status: '{"phase": "RUNNING", "reason": "foo", "message": "bar"}' },
+      { status: '{"phase": "RUNNING", "reason": "foo", "message": "bar", "ready": true}' },
       { status: 'notcorrect' },
     ]))
       .toStrictEqual([
-        { status: { phase: 'RUNNING', reason: 'foo', message: 'bar' } },
+        {
+          status: {
+            phase: 'RUNNING', reason: 'foo', message: 'bar', ready: true,
+          },
+        },
         { status: null },
       ]);
   });

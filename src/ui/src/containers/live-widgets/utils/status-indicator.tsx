@@ -28,11 +28,11 @@ function containerStateToStatusGroup(status: string, reason?: string): StatusGro
   }
 }
 
-function podPhaseToStatusGroup(status: string): StatusGroup {
+function podPhaseToStatusGroup(status: string, ready: boolean): StatusGroup {
   switch (status) {
     case 'Running':
     case 'Succeeded':
-      return 'healthy';
+      return (ready == null || ready) ? 'healthy' : 'pending';
     case 'Failed':
       return 'unhealthy';
     case 'Pending':
@@ -64,16 +64,18 @@ export function toStatusIndicator(status: any, semanticType: SemanticType) {
       break;
     }
     case SemanticType.ST_POD_PHASE: {
-      statusGroup = podPhaseToStatusGroup(status);
+      statusGroup = podPhaseToStatusGroup(status, true);
       break;
     }
     case SemanticType.ST_POD_STATUS: {
       if (status != null) {
-        const { phase, reason, message } = status;
+        const {
+          phase, reason, message, ready,
+        } = status;
         if (phase != null && reason != null && message != null) {
-          statusGroup = podPhaseToStatusGroup(phase);
+          statusGroup = podPhaseToStatusGroup(phase, ready);
           tooltipMsg = `Phase: ${phase}. Message: ${message || '<none>'}. `
-            + `Reason: ${reason || '<none>'}`;
+            + `Reason: ${reason || '<none>'}. Ready: ${ready || '<none>'}.`;
         }
       }
       break;
