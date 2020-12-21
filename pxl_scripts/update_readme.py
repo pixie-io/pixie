@@ -56,5 +56,3 @@ with open("./README.md", "w") as f:
     for line in get_script_list(args.github_url):
         f.write(line + "\n")
     f.write(footer_text)
-
-
