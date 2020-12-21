@@ -51,6 +51,8 @@ Visualize these in three separate time series charts.
 - px/[tcp_retransmits](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/tcp_retransmits): Shows TCP retransmission counts in the cluster.
 - px/[tracepoint_status](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/tracepoint_status): Returns information about tracepoints running on the cluster.
 - px/[upids](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/upids): Shows a list of UPIDs running in a given namespace.
+- sotw/[dns_external_fqdn_list](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/sotw/dns_external_fqdn_list): Lists external, fully qualified domain names (FQDNs) from all DNS traffic on the cluster for a specified amount of time.
+- sotw/[dns_queries_filtered](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/sotw/dns_queries_filtered): Lists all DNS queries filtered by a specific query name.
 
 
 ## Contributing
