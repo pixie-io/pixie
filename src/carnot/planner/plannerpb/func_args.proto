@@ -68,6 +68,16 @@ message DeleteTracepoint {
   string name = 1;
 }
 
+// ConfigUpdate contains info about an update for a particular agent in Vizier.
+message ConfigUpdate {
+  // Key is the attribute of the config to update with the value.
+  string key = 1;
+  // Value to set for the key in the config.
+  string value = 2;
+  // The pod name of the agent that will receive this config update.
+  string agent_pod_name = 3;
+}
+
 // The definition of a mutation to perfom on Vizier. Mutatons include operations
 // that add and delete tables to the database.
 message CompileMutation {
@@ -78,6 +88,9 @@ message CompileMutation {
 
     // Mutation that deletes a tracepoint.
     DeleteTracepoint delete_tracepoint = 3;
+
+    // Mutation that sets a config.
+    ConfigUpdate config_update = 4;
   }
 }
 

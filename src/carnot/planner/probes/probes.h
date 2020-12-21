@@ -289,6 +289,15 @@ class MutationsIR {
 
   TracepointIR* current_probe() { return current_tracepoint_.get(); }
 
+  /**
+   * @brief Add a config value for the particular asid.
+   *
+   * @param asid
+   * @param key
+   * @param value
+   */
+  void AddConfig(const std::string& pem_pod_name, const std::string& key, const std::string& value);
+
  private:
   // All the new tracepoints added as part of this mutation. DeploymentSpecs are protobufs because
   // we only modify these upon inserting the new tracepoint, while the Tracepoint definition is
@@ -303,6 +312,9 @@ class MutationsIR {
   std::shared_ptr<TracepointIR> current_tracepoint_;
 
   std::vector<std::string> tracepoints_to_delete_;
+
+  // The updates to internal config that need to be done.
+  std::vector<plannerpb::ConfigUpdate> config_updates_;
 };
 
 }  // namespace compiler

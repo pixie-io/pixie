@@ -229,6 +229,14 @@ Status TracepointDeployment::ToProto(
   pb->mutable_ttl()->set_nanos(ttl_ns_ % one_sec.count());
   return Status::OK();
 }
+void MutationsIR::AddConfig(const std::string& pem_pod_name, const std::string& key,
+                            const std::string& value) {
+  plannerpb::ConfigUpdate update;
+  update.set_key(key);
+  update.set_value(value);
+  update.set_agent_pod_name(pem_pod_name);
+  config_updates_.push_back(update);
+}
 
 Status MutationsIR::ToProto(plannerpb::CompileMutationsResponse* pb) {
   for (const auto& [spec, program] : deployments_) {
@@ -244,6 +252,10 @@ Status MutationsIR::ToProto(plannerpb::CompileMutationsResponse* pb) {
 
   for (const auto& tracepoint_to_delete : TracepointsToDelete()) {
     pb->add_mutations()->mutable_delete_tracepoint()->set_name(tracepoint_to_delete);
+  }
+
+  for (const auto& update : config_updates_) {
+    *(pb->add_mutations()->mutable_config_update()) = update;
   }
 
   return Status::OK();

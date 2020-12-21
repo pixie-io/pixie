@@ -10,6 +10,7 @@
 #include "src/carnot/planner/objects/pixie_module.h"
 #include "src/carnot/planner/objects/type_object.h"
 #include "src/carnot/planner/parser/parser.h"
+#include "src/carnot/planner/probes/config_module.h"
 
 namespace pl {
 namespace carnot {
@@ -36,12 +37,11 @@ StatusOr<FuncIR::Op> ASTVisitorImpl::GetUnaryOp(const std::string& python_op,
 }
 
 StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
-    IR* graph, MutationsIR* dynamic_trace, CompilerState* compiler_state,
-    ModuleHandler* module_handler, bool func_based_exec,
-    const absl::flat_hash_set<std::string>& reserved_names,
+    IR* graph, MutationsIR* mutations, CompilerState* compiler_state, ModuleHandler* module_handler,
+    bool func_based_exec, const absl::flat_hash_set<std::string>& reserved_names,
     const absl::flat_hash_map<std::string, std::string>& module_map) {
   std::shared_ptr<ASTVisitorImpl> ast_visitor = std::shared_ptr<ASTVisitorImpl>(
-      new ASTVisitorImpl(graph, dynamic_trace, compiler_state, VarTable::Create(), func_based_exec,
+      new ASTVisitorImpl(graph, mutations, compiler_state, VarTable::Create(), func_based_exec,
                          reserved_names, module_handler, std::make_shared<udf::Registry>("udcf")));
 
   PL_RETURN_IF_ERROR(ast_visitor->InitGlobals());
@@ -63,8 +63,8 @@ std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChildImpl(
     std::shared_ptr<VarTable> var_table) {
   // The flag values should come from the parent var table, not be copied here.
   auto visitor = std::shared_ptr<ASTVisitorImpl>(
-      new ASTVisitorImpl(ir_graph_, dynamic_trace_, compiler_state_, var_table, func_based_exec_,
-                         {}, module_handler_, udf_registry_));
+      new ASTVisitorImpl(ir_graph_, mutations_, compiler_state_, var_table, func_based_exec_, {},
+                         module_handler_, udf_registry_));
   return visitor;
 }
 
@@ -75,7 +75,9 @@ Status ASTVisitorImpl::SetupModules(
       (*module_handler_)[PixieModule::kPixieModuleObjName],
       PixieModule::Create(ir_graph_, compiler_state_, this, func_based_exec_, reserved_names_));
   PL_ASSIGN_OR_RETURN((*module_handler_)[TraceModule::kTraceModuleObjName],
-                      TraceModule::Create(dynamic_trace_, this));
+                      TraceModule::Create(mutations_, this));
+  PL_ASSIGN_OR_RETURN((*module_handler_)[ConfigModule::kConfigModuleObjName],
+                      ConfigModule::Create(mutations_, this));
   for (const auto& [module_name, module_text] : module_name_to_pxl_map) {
     PL_ASSIGN_OR_RETURN((*module_handler_)[module_name], Module::Create(module_text, this));
   }

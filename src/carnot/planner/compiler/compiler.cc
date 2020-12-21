@@ -111,17 +111,17 @@ StatusOr<std::unique_ptr<MutationsIR>> Compiler::CompileTrace(const std::string&
   for (const auto& func : exec_funcs) {
     reserved_names.insert(func.output_table_prefix());
   }
-  std::unique_ptr<MutationsIR> dynamic_trace = std::make_unique<MutationsIR>();
+  std::unique_ptr<MutationsIR> mutations = std::make_unique<MutationsIR>();
   ModuleHandler module_handler;
   PL_ASSIGN_OR_RETURN(auto ast_walker,
-                      ASTVisitorImpl::Create(&ir, dynamic_trace.get(), compiler_state,
-                                             &module_handler, func_based_exec, reserved_names));
+                      ASTVisitorImpl::Create(&ir, mutations.get(), compiler_state, &module_handler,
+                                             func_based_exec, reserved_names));
 
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
   if (func_based_exec) {
     PL_RETURN_IF_ERROR(ast_walker->ProcessExecFuncs(exec_funcs));
   }
-  return dynamic_trace;
+  return mutations;
 }
 
 StatusOr<pl::shared::scriptspb::VisFuncsInfo> Compiler::GetVisFuncsInfo(

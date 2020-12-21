@@ -668,6 +668,30 @@ TEST_F(ProbeCompilerTest, parse_bpftrace) {
               testing::proto::EqualsProto(absl::Substitute(kBPFTraceProgramPb, literal_bpf_trace)));
 }
 
+constexpr char kConfigChangePxl[] = R"pxl(
+import pxconfig
+import px
+
+pxconfig.set_agent_config("pl/vizier-pem-8xd7f", "gprof", "true")
+
+)pxl";
+constexpr char kConfigMutationPb[] = R"proto(
+config_update {
+  key: "gprof"
+  value: "true"
+  agent_pod_name: "pl/vizier-pem-8xd7f"
+}
+)proto";
+
+TEST_F(ProbeCompilerTest, config_update) {
+  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(kConfigChangePxl));
+  plannerpb::CompileMutationsResponse pb;
+  EXPECT_OK(probe_ir->ToProto(&pb));
+  ASSERT_EQ(pb.mutations_size(), 1);
+
+  EXPECT_THAT(pb.mutations()[0], testing::proto::EqualsProto(kConfigMutationPb));
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
