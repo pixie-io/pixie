@@ -31,6 +31,12 @@ service MetadataTracepointService {
   rpc RemoveTracepoint(RemoveTracepointRequest) returns (RemoveTracepointResponse) {}
 }
 
+// MetadataConfigService is responsible for delegating config changes to PEMs.
+service MetadataConfigService {
+  // UpdateConfig updates the PEM config for the given key/value setting.
+  rpc UpdateConfig(UpdateConfigRequest) returns (UpdateConfigResponse) {}
+}
+
 // The schema request for each agent's schema.
 message SchemaByAgentRequest {
   // IDs of the agents to get schemas from. If no IDs are specified,
@@ -168,4 +174,20 @@ message RemoveTracepointRequest {
 message RemoveTracepointResponse {
   // Status of whether the tracepoint removal request was initiated with/without errors.
   pl.statuspb.Status status = 1;
+}
+
+// The request to update a config setting on a PEM. 
+message UpdateConfigRequest {
+  // The key of the setting that should be updated.
+  string key = 1; 
+  // The new value of the updated setting.
+  string value = 2;
+  // The name of the agent pod to update.
+  string agent_pod_name = 3;
+}
+
+// The response to the request to update a config setting on a PEM.
+message UpdateConfigResponse {
+  // Overall status of whether the config update was initiated with/without errors.
+  pl.statuspb.Status status = 1; 
 }

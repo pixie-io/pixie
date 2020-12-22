@@ -26,6 +26,7 @@ message VizierMessage {
         HeartbeatNack heartbeat_nack = 7;
         ExecuteQueryRequest execute_query_request = 8;
         TracepointMessage tracepoint_message = 10;
+        ConfigUpdateMessage config_update_message = 11;
     }
 }
 
@@ -35,6 +36,13 @@ message TracepointMessage {
         TracepointInfoUpdate tracepoint_info_update = 1;
         RemoveTracepointRequest remove_tracepoint_request = 2;
         RegisterTracepointRequest register_tracepoint_request = 3;
+    }
+}
+
+// A wrapper around all PEM-config-related messages that can be sent over the message bus.
+message ConfigUpdateMessage {
+    oneof msg {
+        ConfigUpdateRequest config_update_request = 1;
     }
 }
 
@@ -137,4 +145,12 @@ message TracepointInfoUpdate {
 
 message RemoveTracepointRequest {
     uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
+}
+
+// A request to update a config setting on a PEM.
+message ConfigUpdateRequest {
+  // The key of the setting that should be updated.
+  string key = 1; 
+  // The new value of the updated setting.
+  string value = 2;
 }
