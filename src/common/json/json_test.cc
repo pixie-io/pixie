@@ -8,7 +8,6 @@
 #include <vector>
 
 namespace pl {
-namespace stirling {
 namespace utils {
 
 using ::testing::StrEq;
@@ -54,5 +53,4 @@ TEST(ToJSONStringTest, Nested) {
 // Note: if making a test using std::unordered_map, ensure that the test is robust to ordering.
 
 }  // namespace utils
-}  // namespace stirling
 }  // namespace pl

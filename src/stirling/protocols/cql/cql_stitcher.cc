@@ -14,6 +14,8 @@ namespace stirling {
 namespace protocols {
 namespace cass {
 
+using ::pl::utils::ToJSONString;
+
 namespace {
 std::string BytesToString(std::basic_string_view<uint8_t> x) {
   return pl::BytesToString<bytes_format::HexCompact>(CreateStringView<char>(x));
@@ -24,7 +26,7 @@ Status ProcessStartupReq(Frame* req_frame, Request* req) {
   PL_ASSIGN_OR_RETURN(StartupReq r, ParseStartupReq(req_frame));
 
   DCHECK(req->msg.empty());
-  req->msg = utils::ToJSONString(r.options);
+  req->msg = ToJSONString(r.options);
 
   return Status::OK();
 }
@@ -53,7 +55,7 @@ Status ProcessRegisterReq(Frame* req_frame, Request* req) {
   PL_ASSIGN_OR_RETURN(RegisterReq r, ParseRegisterReq(req_frame));
 
   DCHECK(req->msg.empty());
-  req->msg = utils::ToJSONString(r.event_types);
+  req->msg = ToJSONString(r.event_types);
 
   return Status::OK();
 }
@@ -76,7 +78,7 @@ Status ProcessQueryReq(Frame* req_frame, Request* req) {
   // TODO(oazizi): Make this prettier.
   if (!hex_values.empty()) {
     absl::StrAppend(&req->msg, "\n");
-    absl::StrAppend(&req->msg, utils::ToJSONString(hex_values));
+    absl::StrAppend(&req->msg, ToJSONString(hex_values));
   }
 
   return Status::OK();
@@ -103,7 +105,7 @@ Status ProcessExecuteReq(Frame* req_frame, Request* req) {
   }
 
   DCHECK(req->msg.empty());
-  req->msg = utils::ToJSONString(hex_values);
+  req->msg = ToJSONString(hex_values);
 
   return Status::OK();
 }
@@ -128,7 +130,7 @@ Status ProcessBatchReq(Frame* req_frame, Request* req) {
         LOG(DFATAL) << absl::Substitute("Unrecognized BatchQueryKind $0", static_cast<int>(q.kind));
     }
   }
-  req->msg = utils::ToJSONString(tmp);
+  req->msg = ToJSONString(tmp);
 
   return Status::OK();
 }
@@ -155,7 +157,7 @@ Status ProcessSupportedResp(Frame* resp_frame, Response* resp) {
   PL_ASSIGN_OR_RETURN(SupportedResp r, ParseSupportedResp(resp_frame));
 
   DCHECK(resp->msg.empty());
-  resp->msg = utils::ToJSONString(r.options);
+  resp->msg = ToJSONString(r.options);
 
   return Status::OK();
 }
@@ -212,9 +214,9 @@ Status ProcessResultResp(Frame* resp_frame, Response* resp) {
         names.push_back(std::move(c.name));
       }
 
-      resp->msg = absl::StrCat(
-          "Response type = ROWS\n", "Number of columns = ", r_resp.metadata.columns_count, "\n",
-          utils::ToJSONString(names), "\n", "Number of rows = ", r_resp.rows_count);
+      resp->msg = absl::StrCat("Response type = ROWS\n",
+                               "Number of columns = ", r_resp.metadata.columns_count, "\n",
+                               ToJSONString(names), "\n", "Number of rows = ", r_resp.rows_count);
       // TODO(oazizi): Consider which other parts of metadata would be interesting to record into
       // resp.
       break;

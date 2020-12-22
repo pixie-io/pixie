@@ -12,7 +12,6 @@
 #include "src/common/base/utils.h"
 
 namespace pl {
-namespace stirling {
 namespace utils {
 
 namespace internal {
@@ -109,5 +108,4 @@ std::string ToJSONString(const T& x) {
 }
 
 }  // namespace utils
-}  // namespace stirling
 }  // namespace pl

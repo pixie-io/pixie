@@ -81,7 +81,7 @@ using ::pl::stirling::kMySQLTable;
 using ::pl::stirling::grpc::ParsePB;
 using ::pl::stirling::obj_tools::DwarfReader;
 using ::pl::stirling::obj_tools::ElfReader;
-using ::pl::stirling::utils::ToJSONString;
+using ::pl::utils::ToJSONString;
 
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
     : SourceConnector(source_name, kTables), bpf_tools::BCCWrapper() {
