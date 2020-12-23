@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: slackin-server
-        image: gcr.io/pl-dev-infra/slackin/slackin-server:20200412
+        image: gcr.io/pl-dev-infra/slackin/slackin-server:20201222_1
         ports:
         - containerPort: 58000
         readinessProbe:
