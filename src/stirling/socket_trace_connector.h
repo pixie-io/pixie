@@ -94,6 +94,13 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   void InitContextImpl(ConnectorContext* ctx) override;
   void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
 
+  // Perform actions that are not specifically targeting a table.
+  // For example, drain perf buffers, deploy new uprobes, and update socket info manager.
+  // If these were performed on every TransferData(), they would occur too frequently,
+  // because TransferData() gets called for every table in the connector.
+  // That would then cause performance overheads.
+  void UpdateCommonState(ConnectorContext* ctx);
+
   // Updates control map value for protocol, which specifies which role(s) to trace for the given
   // protocol's traffic.
   Status UpdateBPFProtocolTraceRole(TrafficProtocol protocol, EndpointRole role_to_trace);
@@ -342,8 +349,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Writes data event to the specified output file.
   void WriteDataEvent(const SocketDataEvent& event);
 
-  // TODO(oazizi/yzhao): Change to use std::unique_ptr.
-
   // Note that the inner map cannot be a vector, because there is no guaranteed order
   // in which events are read from perf buffers.
   // Inner map could be a priority_queue, but benchmarks showed better performance with a std::map.
@@ -365,6 +370,12 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // The table num identifies which data the collected data is transferred.
   // The transfer_fn defines which function is called to process the data for transfer.
   std::map<TrafficProtocol, TransferSpec> protocol_transfer_specs_;
+
+  // Keep track of when the last perf buffer drain event was triggered.
+  // Perf buffer draining is not atomic nor synchronous, so we want the time before draining.
+  // The time is used by DataTable to produce records in sorted order across iterations.
+  //   Example: data_table->SetConsumeRecordsCutoffTime(perf_buffer_drain_time_);
+  uint64_t perf_buffer_drain_time_ = 0;
 
   // If not a nullptr, writes the events received from perf buffers to this stream.
   std::unique_ptr<std::ofstream> perf_buffer_events_output_stream_;

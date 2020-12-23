@@ -14,6 +14,9 @@
 namespace pl {
 namespace stirling {
 
+// Automatically converts ToString() to stream operator for gtest.
+using ::pl::operator<<;
+
 namespace http = protocols::http;
 namespace mysql = protocols::mysql;
 

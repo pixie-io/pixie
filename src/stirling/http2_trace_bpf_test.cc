@@ -173,23 +173,21 @@ TEST_F(HTTP2TraceTest, Basic) {
     source_->TransferData(ctx_.get(), SocketTraceConnector::kConnStatsTableNum, &data_table);
     std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
 
-    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+    ASSERT_FALSE(tablets.empty());
 
-    auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, server_.process_pid());
+    const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
+
+    auto indices = FindRecordIdxMatchesPID(rb, kPGSQLUPIDIdx, server_.process_pid());
     ASSERT_THAT(indices, SizeIs(1));
 
     int conn_open =
-        AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kConnOpen, indices[0])
-            .val;
+        AccessRecordBatch<types::Int64Value>(rb, conn_stats_idx::kConnOpen, indices[0]).val;
     int conn_close =
-        AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kConnClose, indices[0])
-            .val;
+        AccessRecordBatch<types::Int64Value>(rb, conn_stats_idx::kConnClose, indices[0]).val;
     int bytes_sent =
-        AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kBytesSent, indices[0])
-            .val;
+        AccessRecordBatch<types::Int64Value>(rb, conn_stats_idx::kBytesSent, indices[0]).val;
     int bytes_rcvd =
-        AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kBytesRecv, indices[0])
-            .val;
+        AccessRecordBatch<types::Int64Value>(rb, conn_stats_idx::kBytesRecv, indices[0]).val;
     EXPECT_THAT(conn_open, 1);
     // TODO(oazizi/yzhao): Causing flakiness. Investigate.
     // EXPECT_THAT(conn_close, 1);
@@ -254,27 +252,27 @@ TEST_F(ProductCatalogServiceTraceTest, Basic) {
   source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
   std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
 
   {
     const std::vector<size_t> target_record_indices =
-        FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, server_.process_pid());
+        FindRecordIdxMatchesPID(rb, kHTTPUPIDIdx, server_.process_pid());
 
     // For Debug:
     for (const auto& idx : target_record_indices) {
-      uint32_t pid = record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(idx).High64();
-      std::string req_path = record_batch[kHTTPReqPathIdx]->Get<types::StringValue>(idx);
-      std::string req_method = record_batch[kHTTPReqMethodIdx]->Get<types::StringValue>(idx);
-      std::string req_body = record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(idx);
+      uint32_t pid = rb[kHTTPUPIDIdx]->Get<types::UInt128Value>(idx).High64();
+      std::string req_path = rb[kHTTPReqPathIdx]->Get<types::StringValue>(idx);
+      std::string req_method = rb[kHTTPReqMethodIdx]->Get<types::StringValue>(idx);
+      std::string req_body = rb[kHTTPReqBodyIdx]->Get<types::StringValue>(idx);
 
-      int resp_status = record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(idx).val;
-      std::string resp_message = record_batch[kHTTPRespMessageIdx]->Get<types::StringValue>(idx);
-      std::string resp_body = record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(idx);
+      int resp_status = rb[kHTTPRespStatusIdx]->Get<types::Int64Value>(idx).val;
+      std::string resp_message = rb[kHTTPRespMessageIdx]->Get<types::StringValue>(idx);
+      std::string resp_body = rb[kHTTPRespBodyIdx]->Get<types::StringValue>(idx);
       LOG(INFO) << absl::Substitute("$0 $1 $2 $3 $4 $5 $6", pid, req_method, req_path, req_body,
                                     resp_status, resp_message, resp_body);
     }
 
-    std::vector<http::Record> records = ToRecordVector(record_batch, target_record_indices);
+    std::vector<http::Record> records = ToRecordVector(rb, target_record_indices);
 
     EXPECT_EQ(records.size(), 3);
 

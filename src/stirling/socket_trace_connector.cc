@@ -212,17 +212,10 @@ Status SocketTraceConnector::StopImpl() {
   return Status::OK();
 }
 
-void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
-                                            DataTable* data_table) {
-  DCHECK_LT(table_num, kTables.size())
-      << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
-  DCHECK(data_table != nullptr);
-
+void SocketTraceConnector::UpdateCommonState(ConnectorContext* ctx) {
   // Since events may be pushed into the perf buffer while reading it,
   // we establish a cutoff time before draining the perf buffer.
-  if (table_num != kConnStatsTableNum) {
-    data_table->SetConsumeRecordsCutoffTime(AdjustedSteadyClockNowNS());
-  }
+  perf_buffer_drain_time_ = AdjustedSteadyClockNowNS();
 
   // This drains all perf buffers, and causes Handle() callback functions to get called.
   // Note that it drains *all* perf buffers, not just those that are required for this table,
@@ -236,19 +229,30 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
     socket_info_mgr_->Flush();
   }
 
-  if (table_num == kConnStatsTableNum) {
-    // Connection stats table does not follow the convention of tables for data streams.
-    // So we handle it separately.
-    TransferConnectionStats(ctx, data_table);
-  } else {
-    TransferStreams(ctx, table_num, data_table);
-  }
-
   // Deploy uprobes on newly discovered PIDs.
   std::thread thread = RunDeployUProbesThread(ctx->GetUPIDs());
   // Let it run in the background.
   if (thread.joinable()) {
     thread.detach();
+  }
+}
+
+void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
+                                            DataTable* data_table) {
+  DCHECK_LT(table_num, kTables.size())
+      << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
+  DCHECK(data_table != nullptr);
+
+  UpdateCommonState(ctx);
+
+  if (table_num == kConnStatsTableNum) {
+    // Connection stats table does not follow the convention of tables for data streams.
+    // So we handle it separately.
+    TransferConnectionStats(ctx, data_table);
+  } else {
+    data_table->SetConsumeRecordsCutoffTime(perf_buffer_drain_time_);
+
+    TransferStreams(ctx, table_num, data_table);
   }
 }
 
