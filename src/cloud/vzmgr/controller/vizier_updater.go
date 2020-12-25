@@ -224,7 +224,11 @@ func (u *Updater) sendNATSMessage(topic string, msg *types.Any, vizierID uuid.UU
 // VersionUpToDate checks if the given version string is up to date with the current vizier version.
 func (u *Updater) VersionUpToDate(version string) bool {
 	latestVersion := semver.MustParse(u.latestVersion)
-	vzVersion := semver.MustParse(version)
+	vzVersion, err := semver.Parse(version)
+	if err != nil {
+		log.WithError(err).Error("Invalid version string reported")
+		return true
+	}
 	devVersionRange, _ := semver.ParseRange("<=0.0.0")
 	if devVersionRange(vzVersion) {
 		return true // We should not update dev versions.
