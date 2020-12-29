@@ -14,18 +14,18 @@ pkg_prefix="pixie-px-${release_tag}.${arch}"
 versions_file="${repo_path}/src/utils/artifacts/artifact_db_updater/VERSIONS.json"
 
 echo "The release tag is: ${release_tag}"
-linux_binary=bazel-bin/src/utils/pixie_cli/px_/px
+linux_binary=bazel-bin/src/pixie_cli/px_/px
 docker_repo="pixielabs/px"
 
 bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
       --repo_path "${repo_path}" --artifact_name cli --versions_file "${versions_file}"
 
-bazel build -c opt --build_event_text_file=/tmp/darwin_build --stamp //src/utils/pixie_cli:px_darwin
+bazel build -c opt --build_event_text_file=/tmp/darwin_build --stamp //src/pixie_cli:px_darwin
 
-bazel build -c opt --stamp //src/utils/pixie_cli:px
+bazel build -c opt --stamp //src/pixie_cli:px
 
 # Create and push docker image.
-bazel run -c opt --stamp //src/utils/pixie_cli:push_px_image
+bazel run -c opt --stamp //src/pixie_cli:push_px_image
 
 if [[ ! "$release_tag" == *"-"* ]]; then
     # Make tmp directory, because the binary path is a symlink.
@@ -68,7 +68,7 @@ if [[ ! "$release_tag" == *"-"* ]]; then
            px
 
     # Push officially releases to docker hub.
-    bazel run -c opt --stamp //src/utils/pixie_cli:push_px_image_to_docker
+    bazel run -c opt --stamp //src/pixie_cli:push_px_image_to_docker
 
     # Update latest tag.
     docker pull "${docker_repo}:${release_tag}"

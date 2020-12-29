@@ -1,0 +1,13 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["analytics.go"],
+    importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/shared/version/go:go_default_library",
+        "@com_github_satori_go_uuid//:go_default_library",
+        "@in_gopkg_segmentio_analytics_go_v3//:go_default_library",
+    ],
+)

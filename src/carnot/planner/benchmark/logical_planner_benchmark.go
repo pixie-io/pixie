@@ -7,9 +7,9 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/vizier"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 
 	"github.com/gogo/protobuf/proto"

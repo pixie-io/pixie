@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["cli.go"],
+    importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/update",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
+        "//src/pixie_cli/pkg/auth:go_default_library",
+        "//src/pixie_cli/pkg/utils:go_default_library",
+        "//src/shared/services:go_default_library",
+        "//src/shared/version/go:go_default_library",
+        "@com_github_blang_semver//:go_default_library",
+        "@com_github_inconshreveable_go_update//:go_default_library",
+        "@com_github_kardianos_osext//:go_default_library",
+        "@com_github_vbauerster_mpb_v4//:go_default_library",
+        "@com_github_vbauerster_mpb_v4//decor:go_default_library",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//metadata:go_default_library",
+        "@org_golang_x_sys//unix:go_default_library",
+    ],
+)

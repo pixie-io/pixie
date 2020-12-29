@@ -1,0 +1,26 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "dragon.go",
+        "input_field.go",
+        "prompts.go",
+        "spinner.go",
+        "status.go",
+        "table_renderer.go",
+    ],
+    importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/components",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_fatih_color//:go_default_library",
+        "@com_github_gdamore_tcell//:go_default_library",
+        "@com_github_mattn_go_runewidth//:go_default_library",
+        "@com_github_olekukonko_tablewriter//:go_default_library",
+        "@com_github_rivo_tview//:go_default_library",
+        "@com_github_rivo_uniseg//:go_default_library",
+        "@com_github_spf13_viper//:go_default_library",
+        "@com_github_vbauerster_mpb_v4//:go_default_library",
+        "@com_github_vbauerster_mpb_v4//decor:go_default_library",
+    ],
+)

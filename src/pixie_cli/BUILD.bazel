@@ -1,0 +1,65 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["px.go"],
+    importpath = "pixielabs.ai/pixielabs/src/pixie_cli",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//src/pixie_cli/cmd:go_default_library",
+        "//src/pixie_cli/pkg/pxanalytics:go_default_library",
+        "//src/pixie_cli/pkg/pxconfig:go_default_library",
+        "//src/pixie_cli/pkg/sentryhook:go_default_library",
+        "//src/pixie_cli/pkg/utils:go_default_library",
+        "//src/shared/version/go:go_default_library",
+        "@com_github_getsentry_sentry_go//:go_default_library",
+        "@com_github_sirupsen_logrus//:go_default_library",
+        "@in_gopkg_segmentio_analytics_go_v3//:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "px",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+go_binary(
+    name = "px_darwin",
+    goos = "darwin",
+    goarch = "amd64",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "installer_script",
+    srcs = ["install.sh"],
+    visibility = ["//visibility:public"],
+)
+
+go_image(
+    name = "px_image",
+    binary = ":px",
+    importpath = "pixielabs.ai/pixielabs",
+)
+
+container_push(
+    name = "push_px_image",
+    format = "Docker",
+    image = ":px_image",
+    registry = "gcr.io",
+    repository = "pixie-prod/pixie-prod-artifacts/px",
+    tag = "{STABLE_BUILD_TAG}",
+)
+
+container_push(
+    name = "push_px_image_to_docker",
+    format = "Docker",
+    image = ":px_image",
+    registry = "index.docker.io",
+    repository = "pixielabs/px",
+    tag = "{STABLE_BUILD_TAG}",
+)

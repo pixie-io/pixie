@@ -22,11 +22,11 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/shared/esutils"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	svcEnv "pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/handler"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 )
 
 const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-core.json"

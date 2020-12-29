@@ -8,5 +8,5 @@ fi
 
 workspace=$(bazel info workspace 2> /dev/null)
 
-cd ${workspace}/src/utils/pixie_cli/
+cd ${workspace}/src/pixie_cli/
 bazel run :px -- install-certs --namespace="$namespace" 2>/dev/null

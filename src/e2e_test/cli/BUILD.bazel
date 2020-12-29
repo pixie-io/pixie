@@ -4,9 +4,9 @@ go_test(
     name = "go_default_test",
     srcs = ["cli_e2e_test.go"],
     args = [
-        "--px_cli $(location //src/utils/pixie_cli:px)",
+        "--px_cli $(location //src/pixie_cli:px)",
     ],
-    data = ["//src/utils/pixie_cli:px"],
+    data = ["//src/pixie_cli:px"],
     tags = [
         "no-sandbox",
         "local",

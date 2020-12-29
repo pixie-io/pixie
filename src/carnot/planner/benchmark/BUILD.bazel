@@ -8,8 +8,8 @@ go_test(
     srcs = ["logical_planner_benchmark.go", "proto.go"],
     deps = [
         "//src/carnot/planner:go_default_library",
-        "//src/utils/pixie_cli/pkg/script:go_default_library",
-        "//src/utils/pixie_cli/pkg/vizier:go_default_library",
+        "//src/pixie_cli/pkg/script:go_default_library",
+        "//src/pixie_cli/pkg/vizier:go_default_library",
         "//src/shared/vispb:vis_pl_go_proto",
         "//src/vizier/services/query_broker/controllers:go_default_library",
         "//src/vizier/vizierpb:vizier_pl_go_proto",

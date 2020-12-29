@@ -16,9 +16,9 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/cloud/indexer/md"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
 	pbutils "pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 )
 
 // ElasticSuggester provides suggestions based on the given index in Elastic.
