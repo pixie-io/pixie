@@ -26,7 +26,7 @@ go_library(
         "update.go",
         "version.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/pixie_cli/cmd",
+    importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/cmd",
     visibility = ["//visibility:public"],
     deps = [
         "//src/cloud/api/ptproxy:go_default_library",

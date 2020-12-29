@@ -8,7 +8,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/pixie_cli",
     visibility = ["//visibility:private"],
     deps = [
-        "//src/pixie_cli/cmd:go_default_library",
+        "//src/pixie_cli/pkg/cmd:go_default_library",
         "//src/pixie_cli/pkg/pxanalytics:go_default_library",
         "//src/pixie_cli/pkg/pxconfig:go_default_library",
         "//src/pixie_cli/pkg/sentryhook:go_default_library",
