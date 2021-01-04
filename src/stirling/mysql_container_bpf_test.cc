@@ -13,7 +13,7 @@
 #include "src/common/testing/testing.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
-#include "src/stirling/data_table.h"
+#include "src/stirling/core/data_table.h"
 #include "src/stirling/protocols/mysql/types.h"
 #include "src/stirling/protocols/test_output_generator/test_utils.h"
 #include "src/stirling/socket_trace_connector.h"

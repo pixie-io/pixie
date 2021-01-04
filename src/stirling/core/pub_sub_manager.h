@@ -7,7 +7,7 @@
 
 #include "src/common/base/base.h"
 #include "src/shared/types/proto/wrapper/types_pb_wrapper.h"
-#include "src/stirling/info_class_manager.h"
+#include "src/stirling/core/info_class_manager.h"
 #include "src/stirling/proto/stirling.pb.h"
 
 namespace pl {
@@ -52,6 +52,17 @@ inline void IndexPublication(const stirlingpb::Publish& pub,
     (*map)[info_class.id()] = info_class;
   }
 }
+
+/**
+ * Convenience function to subscribe to all info classes of a published proto message.
+ */
+stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publish_proto);
+
+/**
+ * Convenience function to subscribe to a single info classes of a published proto message.
+ */
+stirlingpb::Subscribe SubscribeToInfoClass(const stirlingpb::Publish& publish_proto,
+                                           std::string_view name);
 
 }  // namespace stirling
 }  // namespace pl

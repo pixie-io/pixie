@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "src/common/testing/testing.h"
 
-#include "src/stirling/types.h"
+#include "src/stirling/core/types.h"
 
 using ::pl::types::DataType;
 using ::pl::types::PatternType;

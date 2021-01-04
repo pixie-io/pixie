@@ -2,7 +2,7 @@
 
 #ifndef __linux__
 
-#include "src/stirling/source_connector.h"
+#include "src/stirling/core/source_connector.h"
 
 namespace pl {
 namespace stirling {
@@ -22,8 +22,8 @@ DUMMY_SOURCE_CONNECTOR(JVMStatsConnector);
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
 #include "src/shared/metadata/base_types.h"
+#include "src/stirling/core/source_connector.h"
 #include "src/stirling/jvm_stats_table.h"
-#include "src/stirling/source_connector.h"
 #include "src/stirling/utils/java.h"
 #include "src/stirling/utils/proc_tracker.h"
 

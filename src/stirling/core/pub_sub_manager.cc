@@ -1,7 +1,7 @@
 #include <algorithm>
 
 #include "src/common/base/base.h"
-#include "src/stirling/pub_sub_manager.h"
+#include "src/stirling/core/pub_sub_manager.h"
 
 namespace pl {
 namespace stirling {
@@ -53,6 +53,31 @@ Status PubSubManager::UpdateSchemaFromSubscribe(const Subscribe& subscribe_proto
     (*it)->SetPushPeriod(std::chrono::milliseconds{info_class_proto.push_period_millis()});
   }
   return Status::OK();
+}
+
+stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publish_proto) {
+  stirlingpb::Subscribe subscribe_proto;
+
+  for (const auto& info_class : publish_proto.published_info_classes()) {
+    auto sub_info_class = subscribe_proto.add_subscribed_info_classes();
+    sub_info_class->MergeFrom(info_class);
+    sub_info_class->set_subscribed(true);
+  }
+  return subscribe_proto;
+}
+
+stirlingpb::Subscribe SubscribeToInfoClass(const stirlingpb::Publish& publish_proto,
+                                           std::string_view name) {
+  stirlingpb::Subscribe subscribe_proto;
+
+  for (const auto& info_class : publish_proto.published_info_classes()) {
+    auto sub_info_class = subscribe_proto.add_subscribed_info_classes();
+    sub_info_class->CopyFrom(info_class);
+    if (sub_info_class->schema().name() == name) {
+      sub_info_class->set_subscribed(true);
+    }
+  }
+  return subscribe_proto;
 }
 
 }  // namespace stirling

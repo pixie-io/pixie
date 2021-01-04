@@ -2,8 +2,8 @@
 #include <random>
 #include <string>
 
-#include "src/stirling/data_table.h"
-#include "src/stirling/sequence_generator.h"
+#include "src/stirling/core/data_table.h"
+#include "src/stirling/core/sequence_generator.h"
 
 namespace pl {
 namespace stirling {

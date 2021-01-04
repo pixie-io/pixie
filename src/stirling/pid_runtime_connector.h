@@ -2,7 +2,7 @@
 
 #ifndef __linux__
 
-#include "src/stirling/source_connector.h"
+#include "src/stirling/core/source_connector.h"
 
 namespace pl {
 namespace stirling {
@@ -24,7 +24,7 @@ DUMMY_SOURCE_CONNECTOR(PIDRuntimeConnector);
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/canonical_types.h"
 #include "src/stirling/common/utils.h"
-#include "src/stirling/source_connector.h"
+#include "src/stirling/core/source_connector.h"
 
 namespace pl {
 namespace stirling {

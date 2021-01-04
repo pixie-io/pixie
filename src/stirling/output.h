@@ -5,7 +5,7 @@
 
 #include "src/common/base/base.h"
 #include "src/shared/types/column_wrapper.h"
-#include "src/stirling/types.h"
+#include "src/stirling/core/types.h"
 
 namespace pl {
 namespace stirling {

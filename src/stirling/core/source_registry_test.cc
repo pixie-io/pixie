@@ -1,8 +1,7 @@
-#include "src/stirling/source_registry.h"
+#include "src/stirling/core/source_registry.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/types/proto/wrapper/types_pb_wrapper.h"
-#include "src/stirling/bpf_tools/bcc_wrapper.h"
-#include "src/stirling/proc_stat_connector.h"
+#include "src/stirling/core/seq_gen_connector.h"
 
 namespace pl {
 namespace stirling {
@@ -10,8 +9,8 @@ namespace stirling {
 DUMMY_SOURCE_CONNECTOR(DummyUnavailableConnector);
 
 void RegisterTestSources(SourceRegistry* registry) {
-  registry->RegisterOrDie<FakeProcStatConnector>("test_fake_proc_cpu_source");
-  registry->RegisterOrDie<ProcStatConnector>("test_proc_stat_source");
+  registry->RegisterOrDie<SeqGenConnector>("source_0");
+  registry->RegisterOrDie<SeqGenConnector>("source_1");
   registry->RegisterOrDie<DummyUnavailableConnector>("unavailable_source");
 }
 
@@ -26,7 +25,7 @@ TEST_F(SourceRegistryTest, register_sources) {
   std::string name;
   {
     name = "fake_proc_stat";
-    auto iter = registry_.sources().find("test_fake_proc_cpu_source");
+    auto iter = registry_.sources().find("source_0");
     auto element = iter->second;
     ASSERT_NE(registry_.sources().end(), iter);
     auto source_fn = element.create_source_fn;
@@ -36,7 +35,7 @@ TEST_F(SourceRegistryTest, register_sources) {
 
   {
     name = "proc_stat";
-    auto iter = registry_.sources().find("test_proc_stat_source");
+    auto iter = registry_.sources().find("source_1");
     ASSERT_NE(registry_.sources().end(), iter);
     auto element = iter->second;
     auto source_fn = element.create_source_fn;

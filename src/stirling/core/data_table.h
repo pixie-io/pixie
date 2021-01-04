@@ -11,7 +11,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/base/mixins.h"
-#include "src/stirling/types.h"
+#include "src/stirling/core/types.h"
 
 namespace pl {
 namespace stirling {

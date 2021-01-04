@@ -1,4 +1,4 @@
-#include "src/stirling/connector_context.h"
+#include "src/stirling/core/connector_context.h"
 
 namespace pl {
 namespace stirling {

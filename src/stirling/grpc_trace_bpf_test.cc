@@ -8,7 +8,7 @@
 
 #include "src/common/exec/subprocess.h"
 #include "src/common/testing/testing.h"
-#include "src/stirling/data_table.h"
+#include "src/stirling/core/data_table.h"
 #include "src/stirling/protocols/http2/grpc.h"
 #include "src/stirling/protocols/http2/testing/greeter_server.h"
 #include "src/stirling/protocols/http2/testing/proto/greet.grpc.pb.h"

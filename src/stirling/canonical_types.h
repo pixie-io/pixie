@@ -4,7 +4,7 @@
 #include <string_view>
 
 #include "src/stirling/bcc_bpf_interface/common.h"
-#include "src/stirling/types.h"
+#include "src/stirling/core/types.h"
 
 namespace pl {
 namespace stirling {

@@ -1,4 +1,4 @@
-#include "src/stirling/types.h"
+#include "src/stirling/core/types.h"
 
 namespace pl {
 namespace stirling {

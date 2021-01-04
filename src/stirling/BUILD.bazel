@@ -31,6 +31,7 @@ pl_cc_library(
         "//src/common/protobufs:cc_library",
         "//src/common/fs:cc_library",
         "//src/common/json:cc_library",
+        "//src/stirling/core:cc_library",
         "//src/stirling/common:cc_library",
         "//src/stirling/utils:cc_library",
         "//src/stirling/proto:stirling_pl_cc_proto",
@@ -83,45 +84,6 @@ pl_cc_test(
         ":cc_library",
         "//src/stirling/testing:cc_library",
     ],
-)
-
-pl_cc_test(
-    name = "types_test",
-    srcs = ["types_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
-    name = "info_class_manager_test",
-    srcs = ["info_class_manager_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
-    name = "data_table_test",
-    srcs = ["data_table_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
-    name = "record_builder_test",
-    srcs = ["record_builder_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/stirling/testing:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "pub_sub_manager_test",
-    srcs = ["pub_sub_manager_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
-    name = "source_registry_test",
-    srcs = ["source_registry_test.cc"],
-    deps = [":cc_library"],
 )
 
 pl_cc_test(

@@ -7,10 +7,9 @@
 #include <vector>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/info_class_manager.h"
-#include "src/stirling/pub_sub_manager.h"
-#include "src/stirling/source_connector.h"
-#include "src/stirling/stirling.h"
+#include "src/stirling/core/info_class_manager.h"
+#include "src/stirling/core/pub_sub_manager.h"
+#include "src/stirling/core/source_connector.h"
 
 namespace pl {
 namespace stirling {

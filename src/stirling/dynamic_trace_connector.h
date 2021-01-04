@@ -6,8 +6,8 @@
 #include <utility>
 
 #include "src/common/base/base.h"
+#include "src/stirling/core/source_connector.h"
 #include "src/stirling/dynamic_tracing/dynamic_tracer.h"
-#include "src/stirling/source_connector.h"
 
 namespace pl {
 namespace stirling {

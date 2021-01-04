@@ -3,8 +3,8 @@
 
 #include "src/common/base/base.h"
 
-#include "src/stirling/info_class_manager.h"
-#include "src/stirling/source_connector.h"
+#include "src/stirling/core/info_class_manager.h"
+#include "src/stirling/core/source_connector.h"
 
 namespace pl {
 namespace stirling {

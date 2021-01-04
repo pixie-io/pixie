@@ -6,8 +6,8 @@
 #include "src/common/base/base.h"
 #include "src/shared/types/type_utils.h"
 #include "src/stirling/common/index_sorted_vector.h"
-#include "src/stirling/data_table.h"
-#include "src/stirling/types.h"
+#include "src/stirling/core/data_table.h"
+#include "src/stirling/core/types.h"
 
 namespace pl {
 namespace stirling {

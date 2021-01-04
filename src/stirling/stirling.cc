@@ -16,20 +16,20 @@
 #include "src/common/system/system_info.h"
 
 #include "src/stirling/bpf_tools/probe_cleaner.h"
-#include "src/stirling/data_table.h"
+#include "src/stirling/core/data_table.h"
+#include "src/stirling/core/pub_sub_manager.h"
+#include "src/stirling/core/source_connector.h"
+#include "src/stirling/core/source_registry.h"
 #include "src/stirling/proto/stirling.pb.h"
-#include "src/stirling/pub_sub_manager.h"
-#include "src/stirling/source_connector.h"
-#include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
+#include "src/stirling/core/seq_gen_connector.h"
 #include "src/stirling/dynamic_bpftrace_connector.h"
 #include "src/stirling/dynamic_trace_connector.h"
 #include "src/stirling/jvm_stats_connector.h"
 #include "src/stirling/pid_runtime_connector.h"
 #include "src/stirling/proc_stat_connector.h"
-#include "src/stirling/seq_gen_connector.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/system_stats_connector.h"
 
@@ -95,32 +95,6 @@ std::unique_ptr<SourceRegistry> CreateSourceRegistry(SourceRegistrySpecifier sou
       DCHECK(false);
       return nullptr;
   }
-}
-
-// TODO(oazizi/kgandhi): Is there a better place for this function?
-stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publish_proto) {
-  stirlingpb::Subscribe subscribe_proto;
-
-  for (const auto& info_class : publish_proto.published_info_classes()) {
-    auto sub_info_class = subscribe_proto.add_subscribed_info_classes();
-    sub_info_class->MergeFrom(info_class);
-    sub_info_class->set_subscribed(true);
-  }
-  return subscribe_proto;
-}
-
-stirlingpb::Subscribe SubscribeToInfoClass(const stirlingpb::Publish& publish_proto,
-                                           std::string_view name) {
-  stirlingpb::Subscribe subscribe_proto;
-
-  for (const auto& info_class : publish_proto.published_info_classes()) {
-    auto sub_info_class = subscribe_proto.add_subscribed_info_classes();
-    sub_info_class->CopyFrom(info_class);
-    if (sub_info_class->schema().name() == name) {
-      sub_info_class->set_subscribed(true);
-    }
-  }
-  return subscribe_proto;
 }
 
 class StirlingImpl final : public Stirling {

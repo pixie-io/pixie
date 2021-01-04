@@ -6,7 +6,7 @@
 #include "src/common/testing/testing.h"
 
 #include "src/stirling/bpftrace_connector.h"
-#include "src/stirling/data_table.h"
+#include "src/stirling/core/data_table.h"
 
 namespace pl {
 namespace stirling {

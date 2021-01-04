@@ -1,6 +1,6 @@
 #pragma once
 
-#include "src/stirling/source_connector.h"
+#include "src/stirling/core/source_connector.h"
 #include "src/stirling/system_stats_table.h"
 
 #ifndef __linux__

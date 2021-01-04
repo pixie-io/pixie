@@ -7,33 +7,13 @@
 #include <sole.hpp>
 
 #include "src/common/base/base.h"
+#include "src/stirling/core/pub_sub_manager.h"
+#include "src/stirling/core/source_registry.h"
 #include "src/stirling/dynamic_tracing/ir/logicalpb/logical.pb.h"
 #include "src/stirling/proto/stirling.pb.h"
-#include "src/stirling/source_registry.h"
 
 namespace pl {
 namespace stirling {
-
-/**
- * Convenience function to subscribe to all info classes of
- * a published proto message. This should actually be in an agent.
- * TODO(kgandhi): Move to agent or common utils for agent when available.
- *
- * @param publish_proto
- * @return stirlingpb::Subscribe
- */
-stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publish_proto);
-
-/**
- * Convenience function to subscribe to a single info classes of
- * a published proto message. This should actually be in an agent.
- * TODO(kgandhi): Move to agent or common utils for agent when available.
- *
- * @param publish_proto
- * @return stirlingpb::Subscribe
- */
-stirlingpb::Subscribe SubscribeToInfoClass(const stirlingpb::Publish& publish_proto,
-                                           std::string_view name);
 
 /**
  * Specifies a set of sources to initialize as part of a source registry.

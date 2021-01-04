@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/data_table.h"
+#include "src/stirling/core/data_table.h"
+#include "src/stirling/core/types.h"
 #include "src/stirling/testing/common.h"
-#include "src/stirling/types.h"
 
 namespace pl {
 namespace stirling {

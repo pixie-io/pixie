@@ -4,10 +4,10 @@
 
 #include "src/common/base/base.h"
 #include "src/common/testing/testing.h"
+#include "src/stirling/core/source_registry.h"
+#include "src/stirling/core/types.h"
 #include "src/stirling/socket_trace_connector.h"
-#include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"
-#include "src/stirling/types.h"
 
 namespace pl {
 namespace stirling {

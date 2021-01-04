@@ -6,9 +6,8 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/stirling/canonical_types.h"
-#include "src/stirling/sequence_generator.h"
-#include "src/stirling/source_connector.h"
+#include "src/stirling/core/sequence_generator.h"
+#include "src/stirling/core/source_connector.h"
 
 namespace pl {
 namespace stirling {
@@ -22,7 +21,11 @@ class SeqGenConnector : public SourceConnector {
 
   // clang-format off
   static constexpr DataElement kElementsSeq0[] = {
-      canonical_data_elements::kTime,
+      {"time_",
+       "Timestamp when the data record was collected.",
+       types::DataType::TIME64NS,
+       types::SemanticType::ST_NONE,
+       types::PatternType::METRIC_COUNTER},
       {"x",
        "A sequence number.",
        types::DataType::INT64,
@@ -54,7 +57,12 @@ class SeqGenConnector : public SourceConnector {
 
   // clang-format off
   static constexpr DataElement kElementsSeq1[] = {
-      canonical_data_elements::kTime,
+      {"time_",
+       "Timestamp when the data record was collected.",
+       types::DataType::TIME64NS,
+       types::SemanticType::ST_NONE,
+       types::PatternType::METRIC_COUNTER},
+
       {"x",
        "A sequence number.",
        types::DataType::INT64,

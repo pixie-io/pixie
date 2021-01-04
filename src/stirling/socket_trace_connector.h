@@ -2,7 +2,7 @@
 
 #ifndef __linux__
 
-#include "src/stirling/source_connector.h"
+#include "src/stirling/core/source_connector.h"
 
 namespace pl {
 namespace stirling {
@@ -39,9 +39,9 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/stirling/conn_stats_table.h"
 #include "src/stirling/connection_stats.h"
 #include "src/stirling/connection_tracker.h"
+#include "src/stirling/core/source_connector.h"
 #include "src/stirling/protocols/http/utils.h"
 #include "src/stirling/socket_trace_bpf_tables.h"
-#include "src/stirling/source_connector.h"
 #include "src/stirling/utils/proc_tracker.h"
 
 // PROTOCOL_LIST: Requires update on new protocols.

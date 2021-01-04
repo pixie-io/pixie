@@ -4,7 +4,7 @@
 
 #include <magic_enum.hpp>
 
-#include "src/stirling/source_connector.h"
+#include "src/stirling/core/source_connector.h"
 
 namespace pl {
 namespace stirling {

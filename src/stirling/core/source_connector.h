@@ -6,8 +6,8 @@
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
 #include "src/shared/types/types.h"
-#include "src/stirling/connector_context.h"
-#include "src/stirling/data_table.h"
+#include "src/stirling/core/connector_context.h"
+#include "src/stirling/core/data_table.h"
 
 /**
  * These are the steps to follow to add a new data source connector.

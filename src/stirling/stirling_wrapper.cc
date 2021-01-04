@@ -11,10 +11,10 @@
 #include <google/protobuf/text_format.h>
 
 #include "src/common/base/base.h"
+#include "src/stirling/core/pub_sub_manager.h"
+#include "src/stirling/core/source_registry.h"
 #include "src/stirling/dynamic_tracing/dynamic_tracer.h"
 #include "src/stirling/output.h"
-#include "src/stirling/pub_sub_manager.h"
-#include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"
 
 #include "src/stirling/cass_table.h"
