@@ -30,6 +30,10 @@ DUMMY_SOURCE_CONNECTOR(JVMStatsConnector);
 namespace pl {
 namespace stirling {
 
+// Reads and parses the hsperfdata file created by JVM, and exports them into a data table.
+//
+// Hsperfdata is a JVM feature that exports JVM performance stats into a memory-mapped file under
+// /tmp directory. It's supported by almost all JVM from major vendors.
 class JVMStatsConnector : public SourceConnector {
  public:
   static constexpr auto kTables = MakeArray(kJVMStatsTable);
@@ -38,6 +42,7 @@ class JVMStatsConnector : public SourceConnector {
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new JVMStatsConnector(name));
   }
+
   Status InitImpl() override { return Status::OK(); }
   Status StopImpl() override { return Status::OK(); }
 
@@ -47,12 +52,14 @@ class JVMStatsConnector : public SourceConnector {
   explicit JVMStatsConnector(std::string_view source_name)
       : SourceConnector(source_name, kTables) {}
 
-  // Adds UPIDs of newly-created processes to java_procs_.
+  // Finds the UPIDs of newly-created processes as monitoring targets.
   void FindJavaUPIDs(const ConnectorContext& ctx);
 
+  // Exports JVM performance metrics to data table.
   Status ExportStats(const md::UPID& upid, const std::filesystem::path& hsperf_data_path,
                      DataTable* data_table) const;
 
+  // Keeps track of the currently-running processes. Used to find the newly-created processes.
   ProcTracker proc_tracker_;
 
   // Records the PIDs of previously scanned Java processes, and their hsperfdata file path.

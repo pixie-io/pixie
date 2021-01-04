@@ -30,7 +30,10 @@ void JVMStatsConnector::FindJavaUPIDs(const ConnectorContext& ctx) {
   proc_tracker_.Update(ctx.GetUPIDs());
 
   for (const auto& upid : proc_tracker_.new_upids()) {
-    // The host PID 1 is not a Java app. But ResolveMountPoint() is confused.
+    // The host PID 1 is not a Java app. However, when later invoking HsperfdataPath(), it could be
+    // confused to conclude that there is a hsperfdata file for PID 1, because of the limitations
+    // of ResolveMountPoint().
+    //
     // TODO(yzhao): Look for more robust mechanism.
     if (upid.pid() == 1) {
       continue;
@@ -46,7 +49,7 @@ Status JVMStatsConnector::ExportStats(const md::UPID& upid,
   PL_ASSIGN_OR_RETURN(std::string hsperf_data_str, ReadFileToString(hsperf_data_path));
 
   if (hsperf_data_str.empty()) {
-    // Assumes only file reading failed, and is transient.
+    // Assume this is a transient failure.
     return Status::OK();
   }
 
