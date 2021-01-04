@@ -60,8 +60,8 @@ TEST_F(BPFMapLeakTest, unclosed_connection) {
 
   sleep(1);
 
-  // At this point, server should have been traced, and--because it was killed--leaked a BPF map
-  // entry.
+  // At this point, server should have been traced.
+  // And because it was killed, it should have leaked a BPF map entry.
 
   DataTable data_table(kHTTPTable);
   auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());

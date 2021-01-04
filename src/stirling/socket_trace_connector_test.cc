@@ -169,6 +169,8 @@ class SocketTraceConnectorTest : public ::testing::Test {
 
     // Because some tests change the inactivity duration, make sure to reset it here for each test.
     ConnectionTracker::set_inactivity_duration(ConnectionTracker::kDefaultInactivityDuration);
+
+    FLAGS_stirling_check_proc_for_conn_close = false;
   }
 
   std::unique_ptr<SourceConnector> connector_;
@@ -719,6 +721,8 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupNoProtocol) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
+  FLAGS_stirling_check_proc_for_conn_close = true;
+
   // Inactive dead connections are determined by checking the /proc filesystem.
   // Here we create a PID that is a valid number, but non-existent on any Linux system.
   // Note that max PID bits in Linux is 22 bits.
@@ -739,29 +743,24 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
   source_->AcceptDataEvent(std::move(conn0_req_event));
   source_->AcceptDataEvent(std::move(conn0_resp_event));
 
-  // Note that close event was not recorded, so this connection remain open before reaching the
-  // inactivity threshold.
+  // Note that close event was not recorded, so this connection remains open.
 
-  // First set the inactive duration threshold to be artificially large, so that the next loop
-  // checking the number of active connections is robust.
-  ConnectionTracker::set_inactivity_duration(std::chrono::seconds(1000));
+  // Start with an active connection.
+  EXPECT_EQ(1, source_->NumActiveConnections());
+
+  // A bunch of iterations to trigger the idleness check.
   for (int i = 0; i < 100; ++i) {
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    EXPECT_EQ(1, source_->NumActiveConnections());
   }
 
-  // Then reduce the threshold to 0, so that any connections would be considered dead.
-  ConnectionTracker::set_inactivity_duration(std::chrono::seconds(0));
-  sleep(2);
+  // Connection should have been marked as idle by now,
+  // and a check of /proc/<pid>/<fd> will trigger MarkForDeath().
 
-  // Connection should be timed out by now, and should be killed by one more TransferData() call.
-
-  EXPECT_EQ(1, source_->NumActiveConnections());
-  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
+  FLAGS_stirling_check_proc_for_conn_close = true;
   ConnectionTracker::set_inactivity_duration(std::chrono::seconds(1));
 
   // Inactive alive connections are determined by checking the /proc filesystem.

@@ -769,9 +769,8 @@ TEST_P(ConnectionTrackerStatsTest, OnlyDataEvents) {
   EXPECT_THAT(conn_stats_.mutable_agg_stats(),
               UnorderedElementsAre(Pair(AggKeyIs(12345, "0.0.0.0"), StatsIs(1, 0, 4, 4))));
 
-  tracker_.set_inactivity_duration(std::chrono::seconds(0));
-  // This triggers HandleInactivity().
-  tracker_.IterationPostTick();
+  // Trigger an inferred connection close.
+  tracker_.MarkForDeath(0);
 
   EXPECT_THAT(conn_stats_.mutable_agg_stats(),
               UnorderedElementsAre(Pair(AggKeyIs(12345, "0.0.0.0"), StatsIs(1, 1, 4, 4))));

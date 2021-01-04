@@ -35,6 +35,9 @@ DEFINE_int64(stirling_conn_trace_pid, -1, "Trace activity on this pid.");
 DEFINE_bool(
     stirling_conn_disable_to_bpf, true,
     "Send information about connection tracking disablement to BPF, so it can stop sending data.");
+DEFINE_int64(
+    stirling_check_proc_for_conn_close, true,
+    "If enabled, Stirling will check Linux /proc on idle connections to see if they are closed.");
 
 namespace pl {
 namespace stirling {
@@ -514,6 +517,8 @@ void ConnectionTracker::UpdateTimestamps(uint64_t bpf_timestamp) {
   last_bpf_timestamp_ns_ = std::max(last_bpf_timestamp_ns_, bpf_timestamp);
 
   last_update_timestamp_ = std::chrono::steady_clock::now();
+
+  idle_iteration_ = false;
 }
 
 void ConnectionTracker::CheckTracker() {
@@ -693,6 +698,9 @@ void ConnectionTracker::ExportInitialConnStats() {
 void ConnectionTracker::IterationPreTick(const std::vector<CIDRBlock>& cluster_cidrs,
                                          system::ProcParser* proc_parser,
                                          system::SocketInfoManager* socket_info_mgr) {
+  // Assume no activity. This flag will be flipped if there is any activity during the iteration.
+  idle_iteration_ = true;
+
   // Might not always be true, but for now there's nothing IterationPreTick does that
   // should be applied to a disabled tracker. This is in contrast to IterationPostTick.
   if (state_ == State::kDisabled) {
@@ -722,11 +730,16 @@ void ConnectionTracker::IterationPostTick() {
     death_countdown_--;
   }
 
-  if (std::chrono::steady_clock::now() > last_update_timestamp_ + InactivityDuration()) {
-    HandleInactivity();
+  HandleInactivity();
+
+  // The rest of this function checks if if tracker should be disabled.
+
+  // Nothing to do if it's already disabled.
+  if (state() == State::kDisabled) {
+    return;
   }
 
-  if (state() != State::kDisabled && (send_data().IsEOS() || recv_data().IsEOS())) {
+  if ((send_data().IsEOS() || recv_data().IsEOS())) {
     Disable("End-of-stream");
   }
 
@@ -751,18 +764,47 @@ void ConnectionTracker::IterationPostTick() {
   }
 }
 
-void ConnectionTracker::HandleInactivity() {
-  static const auto& sysconfig = system::Config::GetInstance();
+void ConnectionTracker::CheckProcForConnClose() {
+  const auto& sysconfig = system::Config::GetInstance();
   std::filesystem::path fd_file = sysconfig.proc_path() / std::to_string(conn_id().upid.pid) /
                                   "fd" / std::to_string(conn_id().fd);
 
   if (!fs::Exists(fd_file).ok()) {
-    // Connection seems to be dead. Mark for immediate death.
+    CONN_TRACE(1) << "Connection is closed. Marking for death";
     MarkForDeath(0);
-  } else {
-    // Connection may still be alive (though inactive), so flush the data buffers.
-    // It is unlikely any new data is a continuation of existing data in in any meaningful way.
+  }
+}
+
+void ConnectionTracker::HandleInactivity() {
+  idle_iteration_count_ = (idle_iteration_) ? idle_iteration_count_ + 1 : 0;
+
+  // If the tracker is already marked for death, then no need to do anything.
+  if (IsZombie()) {
+    return;
+  }
+
+  // If the flag is set, we check proc more aggressively for close connections.
+  // But only do this after a certain number of idle iterations.
+  // Use exponential backoff on the idle_iterations to ensure we don't do this too frequently.
+  if (FLAGS_stirling_check_proc_for_conn_close &&
+      (idle_iteration_count_ >= idle_iteration_threshold_)) {
+    CheckProcForConnClose();
+
+    // Connection was idle, but not closed. Use exponential backoff for next idle check.
+    // Max out the exponential backoff and go periodic once it's infrequent enough.
+    // TODO(oazizi): Make kMinCheckPeriod related to sampling frequency.
+    constexpr int kMinCheckPeriod = 100;
+    idle_iteration_threshold_ += std::min(idle_iteration_threshold_, kMinCheckPeriod);
+  }
+
+  auto now = std::chrono::steady_clock::now();
+  if (now > last_update_timestamp_ + InactivityDuration()) {
+    // Flush the data buffers. Even if connection is still alive,
+    // it is unlikely that any new data is a continuation of existing data in any meaningful way.
     Reset();
+
+    // Reset timestamp so we don't enter this loop if statement again for some time.
+    last_update_timestamp_ = now;
   }
 }
 

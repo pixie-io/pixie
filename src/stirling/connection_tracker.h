@@ -24,6 +24,7 @@
 DECLARE_bool(enable_unix_domain_sockets);
 DECLARE_int64(stirling_conn_trace_pid);
 DECLARE_bool(stirling_conn_disable_to_bpf);
+DECLARE_int64(stirling_check_proc_for_conn_close);
 
 #define CONN_TRACE(level)                                        \
   LOG_IF(INFO, level <= debug_trace_level_) << absl::Substitute( \
@@ -511,6 +512,7 @@ class ConnectionTracker {
   void SetConnID(struct conn_id_t conn_id);
   void UpdateTimestamps(uint64_t bpf_timestamp);
   void CheckTracker();
+  void CheckProcForConnClose();
   void HandleInactivity();
   bool IsRemoteAddrInCluster(const std::vector<CIDRBlock>& cluster_cidrs);
   void UpdateState(const std::vector<CIDRBlock>& cluster_cidrs);
@@ -583,6 +585,12 @@ class ConnectionTracker {
   // Currently using steady clock, so cannot be used meaningfully for logging real times.
   // This can be changed in the future if required.
   std::chrono::time_point<std::chrono::steady_clock> last_update_timestamp_;
+
+  // Some idleness checks used to trigger checks for closed connections.
+  // The threshold undergoes an exponential backoff if connection is not closed.
+  bool idle_iteration_ = false;
+  int idle_iteration_count_ = 0;
+  int idle_iteration_threshold_ = 2;
 
   State state_ = State::kCollecting;
 
