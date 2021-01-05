@@ -25,6 +25,9 @@ update_bundle: bundle-oss.json.gz
 # Readable by everyone
 	gsutil acl ch -u allUsers:READER $(BUNDLE)
 
+update_readme: 
+	./update_readme.py . https://github.com/pixie-labs/pixie/tree/main/pxl_scripts
+
 .PHONY: dev
 dev:
 	./watch.sh
