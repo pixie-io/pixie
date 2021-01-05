@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { buildClass } from 'utils/build-class';
 import * as React from 'react';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
@@ -216,7 +216,7 @@ export const CommandAutocomplete: React.FC<NewAutoCompleteProps> = ({
   );
 
   return (
-    <div className={clsx(classes.root, className)}>
+    <div className={buildClass(classes.root, className)}>
       <CommandAutocompleteInput
         className={classes.input}
         cursorPos={cursorPos}

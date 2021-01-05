@@ -82,6 +82,8 @@ export { StatusGroup, StatusCell } from './components/status/status';
 
 export { VersionInfo } from './components/version-info/version-info';
 
+export { buildClass } from 'utils/build-class';
+
 export { ClusterIcon } from './components/icons/cluster';
 export { CodeIcon } from './components/icons/code';
 export { CopyIcon } from './components/icons/copy';

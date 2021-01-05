@@ -1,6 +1,7 @@
 import { Table } from 'common/vizier-grpc-client';
 import {
   CellAlignment, ColumnProps, DataTable, SortState,
+  buildClass,
 } from 'pixie-components';
 import { JSONData } from 'containers/format-data/format-data';
 import * as React from 'react';
@@ -13,7 +14,7 @@ import {
 } from '@material-ui/core/styles';
 import { IndexRange } from 'react-virtualized';
 import { Arguments } from 'utils/args-utils';
-import clsx from 'clsx';
+
 import { ColumnDisplayInfo, displayInfoFromColumn, titleFromInfo } from './column-display-info';
 import { parseRows } from './parsers';
 import { vizierCellRenderer } from './renderers';
@@ -205,7 +206,7 @@ export const VizierDataTableWithDetails = (props: { table: Table }) => {
   }, [setDetails]);
 
   const classes = useStyles();
-  const dataTableClass = clsx(
+  const dataTableClass = buildClass(
     'fs-exclude',
     classes.root,
   );

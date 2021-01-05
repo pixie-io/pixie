@@ -1,10 +1,10 @@
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
-import clsx from 'clsx';
+import { buildClass, Spinner } from 'pixie-components';
 import { GraphDisplay, GraphWidget } from 'containers/live-widgets/graph/graph';
 import { RequestGraphDisplay, RequestGraphWidget } from 'containers/live-widgets/graph/request-graph';
-import { Spinner } from 'pixie-components';
+
 import { TimeSeriesContext, withTimeSeriesContextProvider } from 'containers/live-widgets/context/time-series-context';
 import { QueryResultTable } from 'containers/live-widgets/table/query-result-viewer';
 import * as React from 'react';
@@ -320,7 +320,7 @@ const Canvas = (props: CanvasProps) => {
     triggerResize();
   }, []);
 
-  const className = clsx(
+  const className = buildClass(
     'fs-exclude',
     classes.gridItem,
     props.editable && classes.editable,
@@ -392,7 +392,7 @@ const Canvas = (props: CanvasProps) => {
         layout={tableLayout.layout}
         rowHeight={tableLayout.rowHeight - theme.spacing(5)}
         cols={tableLayout.numCols}
-        className={clsx(classes.grid, errorOpen && error && classes.blur)}
+        className={buildClass(classes.grid, errorOpen && error && classes.blur)}
         onLayoutChange={updateDefaultLayout}
         isDraggable={props.editable}
         isResizable={props.editable}
@@ -413,7 +413,7 @@ const Canvas = (props: CanvasProps) => {
       <Grid
         layout={layout}
         cols={getGridWidth(isMobile)}
-        className={clsx(classes.grid, errorOpen && error && classes.blur)}
+        className={buildClass(classes.grid, errorOpen && error && classes.blur)}
         onLayoutChange={updateLayoutInVis}
         isDraggable={props.editable}
         isResizable={props.editable}

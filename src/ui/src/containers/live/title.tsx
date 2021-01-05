@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { buildClass } from 'pixie-components';
 import * as React from 'react';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
@@ -29,7 +29,7 @@ const LiveViewTitle = (props) => {
   const desc = title || 'untitled';
 
   return (
-    <div className={clsx(props.className, classes.root)}>
+    <div className={buildClass(props.className, classes.root)}>
       <div className={classes.title}>{desc}</div>
     </div>
   );

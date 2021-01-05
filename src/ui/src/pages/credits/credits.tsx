@@ -1,5 +1,5 @@
-import clsx from 'clsx';
-import { scrollbarStyles } from 'pixie-components';
+import { buildClass, scrollbarStyles } from 'pixie-components';
+
 import { StyleRulesCallback, Theme, withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 
@@ -99,14 +99,14 @@ const LicenseEntryRow = withStyles(styles)(({
         <Button
           color='primary'
           onClick={() => setShowLicense((show) => !show)}
-          className={clsx(classes.button, !licenseText && 'hidden')}
+          className={buildClass(classes.button, !licenseText && 'hidden')}
         >
           <div>
             {showLicense ? 'hide' : 'show'}
             {' '}
           </div>
         </Button>
-        <Button href={url} color='primary' className={clsx(classes.button, !url && 'hidden')}>homepage</Button>
+        <Button href={url} color='primary' className={buildClass(classes.button, !url && 'hidden')}>homepage</Button>
       </div>
       {showLicense
         ? (

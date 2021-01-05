@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { buildClass } from 'utils/build-class';
 import * as React from 'react';
 import Split from 'react-split';
 
@@ -138,7 +138,7 @@ export const SplitContainer = (
       <Split
         ref={splitRef}
         sizes={initialSizes}
-        className={clsx(classes.root, props.className)}
+        className={buildClass(classes.root, props.className)}
         direction='vertical'
         minSize={minPaneHeight}
         onDragEnd={handleDrag}

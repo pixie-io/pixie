@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { buildClass } from 'utils/build-class';
 import * as React from 'react';
 import { DraggableCore } from 'react-draggable';
 import Menu from '@material-ui/core/Menu';
@@ -377,7 +377,7 @@ const InternalDataTable = ({
   const cellRenderer: TableCellRenderer = React.useCallback(
     (props: TableCellProps) => (
       <div
-        className={clsx(classes.cellWrapper, classes[props.columnData.align])}
+        className={buildClass(classes.cellWrapper, classes[props.columnData.align])}
       >
         <div className={classes.innerCell}>
           {props.columnData.cellRenderer
@@ -458,7 +458,7 @@ const InternalDataTable = ({
       if (index === -1) {
         return null;
       }
-      return clsx(
+      return buildClass(
         classes.row,
         onRowClick && classes.clickable,
         onRowClick && classes.highlightable,
@@ -627,7 +627,7 @@ const InternalDataTable = ({
         sortIcon = <DownIcon className={classes.sortIcon} />;
       }
 
-      const headerStyle = clsx(
+      const headerStyle = buildClass(
         [classes.headerTitle],
         [classes[props.columnData.align]],
       );
@@ -671,7 +671,7 @@ const InternalDataTable = ({
       // Hide the icon by default unless:
       //  1. It's been expanded.
       //  2. The row has been highlighted.
-      const cls = clsx(
+      const cls = buildClass(
         classes.gutterCell,
         !(
           highlightedRow === props.rowIndex || expandedRowState[props.rowIndex]
@@ -750,7 +750,7 @@ const InternalDataTable = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [classes, headerRendererCommon, resizeColumn],
   );
-  const gutterClass = clsx(compact && classes.compact, classes.gutterCell);
+  const gutterClass = buildClass(compact && classes.compact, classes.gutterCell);
   return (
     <div ref={tableWrapper}>
       <Table
@@ -790,7 +790,7 @@ const InternalDataTable = ({
           />
         )}
         {columns.filter((col) => shownColumns.includes(col.dataKey)).map((col, i) => {
-          const className = clsx(
+          const className = buildClass(
             classes.cell,
             classes[col.align],
             compact && classes.compact,

@@ -11,7 +11,7 @@ import {
   getCPULevel,
   getLatencyNSLevel,
 } from 'utils/metric-thresholds';
-import clsx from 'clsx';
+import { buildClass } from 'pixie-components';
 import { DataType, SemanticType } from '../../types/generated/vizier_pb';
 
 const JSON_INDENT_PX = 16;
@@ -308,7 +308,7 @@ interface HTTPStatusCodeRendererProps extends WithStyles<typeof httpStatusCodeRe
 export const HTTPStatusCodeRenderer = withStyles(httpStatusCodeRendererStyles)(
   ({ classes, data }: HTTPStatusCodeRendererProps) => {
     const intVal = parseInt(data, 10);
-    const cls = clsx(
+    const cls = buildClass(
       classes.root,
       intVal < 0 && classes.unknown,
       intVal > 0 && intVal < 200 && classes.oneHundredLevel,

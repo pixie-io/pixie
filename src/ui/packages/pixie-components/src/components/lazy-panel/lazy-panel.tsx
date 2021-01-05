@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { buildClass } from 'utils/build-class';
 import * as React from 'react';
 
 import { createStyles, makeStyles } from '@material-ui/core/styles';
@@ -47,7 +47,7 @@ export const LazyPanel = (props: LazyPanelProps) => {
   }
 
   return (
-    <div className={clsx(className, classes.panel, show && 'visible')}>
+    <div className={buildClass(className, classes.panel, show && 'visible')}>
       {children}
     </div>
   );

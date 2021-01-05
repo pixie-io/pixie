@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { buildClass } from 'utils/build-class';
 import * as React from 'react';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
@@ -153,7 +153,7 @@ export const Input: React.FC<InputProps> = ({
   }, [value, suggestion, placeholder]);
 
   return (
-    <div className={clsx(classes.root, className)} onClick={focusInput}>
+    <div className={buildClass(classes.root, className)} onClick={focusInput}>
       <span className={classes.inputWrapper}>
         <span className={classes.dummy} ref={dummyElement}>
           {value}

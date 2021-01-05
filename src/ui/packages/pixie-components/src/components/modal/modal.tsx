@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { buildClass } from 'utils/build-class';
 import * as React from 'react';
 
 import IconButton from '@material-ui/core/IconButton';
@@ -37,13 +37,13 @@ export const ModalTrigger: React.FC<ModalTrigerProps> = ({
 
   return (
     <>
-      <div onClick={openModal} className={clsx(triggerClassName)}>
+      <div onClick={openModal} className={buildClass(triggerClassName)}>
         {trigger}
       </div>
       <MUIModal
         open={open}
         onClose={closeModal}
-        className={clsx(classes.content, contentClassName)}
+        className={buildClass(classes.content, contentClassName)}
       >
         <div>
           <IconButton onClick={closeModal} className={classes.closeButton}>

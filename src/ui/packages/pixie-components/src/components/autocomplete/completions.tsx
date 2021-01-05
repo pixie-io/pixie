@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { buildClass } from 'utils/build-class';
 import * as React from 'react';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
@@ -136,7 +136,7 @@ export const Completions: React.FC<CompletionsProps> = (props) => {
   })();
 
   return (
-    <div className={clsx(classes.root, className)}>
+    <div className={buildClass(classes.root, className)}>
       <div className={classes.items}>
         {items.map((item, i) => {
           switch (item.type) {
@@ -264,11 +264,11 @@ const CompletionInternal = (props: CompletionProps) => {
   return (
     <div
       ref={ref}
-      className={clsx(classes.completion, active && 'active')}
+      className={buildClass(classes.completion, active && 'active')}
       onClick={() => onSelection(id)}
       onMouseOver={() => onActiveChange(id)}
     >
-      <div className={clsx(classes.itemType, stateClass)}>
+      <div className={buildClass(classes.itemType, stateClass)}>
         {icon ?? entityIcon ?? null}
       </div>
       {parts}

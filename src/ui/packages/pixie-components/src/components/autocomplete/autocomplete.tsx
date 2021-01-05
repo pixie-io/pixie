@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { buildClass } from 'utils/build-class';
 import * as React from 'react';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
@@ -146,7 +146,7 @@ export const Autocomplete: React.FC<AutoCompleteProps> = ({
   };
 
   return (
-    <div className={clsx(classes.root, className)}>
+    <div className={buildClass(classes.root, className)}>
       {allowTyping !== false && (
         <Input
           className={classes.input}

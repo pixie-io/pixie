@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { buildClass } from 'utils/build-class';
 import * as React from 'react';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
@@ -81,7 +81,7 @@ const Caret: React.FC<{ active: boolean }> = ({ active }) => {
     }, BLINK_INTERVAL);
   }, [active]);
   return (
-    <div className={clsx(classes.caret, active && visible && 'visible')}>
+    <div className={buildClass(classes.caret, active && visible && 'visible')}>
       &nbsp;
     </div>
   );
@@ -221,7 +221,7 @@ export const CommandAutocompleteInput: React.FC<AutocompleteInputProps> = ({
 
   return (
     <div
-      className={clsx(
+      className={buildClass(
         classes.root,
         className,
         isValid ? classes.valid : classes.invalid,

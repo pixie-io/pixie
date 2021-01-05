@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { buildClass } from 'utils/build-class';
 import * as React from 'react';
 
 import { Spinner } from 'components/spinner/spinner';
@@ -47,7 +47,7 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
     super(props);
     this.state = {
       // eslint-disable-next-line react/no-unused-state
-      extraEditorClassName: clsx(this.props.className),
+      extraEditorClassName: buildClass(this.props.className),
       // eslint-disable-next-line react/no-unused-state
       lineDecorationsWidth: 0,
       // eslint-disable-next-line react/no-unused-state
