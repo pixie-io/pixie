@@ -691,7 +691,6 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {
   // Death countdown period: keep calling Transfer Data to increment iterations.
   for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    EXPECT_EQ(1, source_->NumActiveConnections());
   }
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);

@@ -739,8 +739,33 @@ void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event
 ConnectionTracker& SocketTraceConnector::GetMutableConnTracker(struct conn_id_t conn_id) {
   const uint64_t conn_map_key = GetConnMapKey(conn_id.upid.pid, conn_id.fd);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
-  auto& conn_tracker = connection_trackers_[conn_map_key][conn_id.tsid];
-  conn_tracker.set_conn_stats(&connection_stats_);
+
+  auto& conn_trackers = connection_trackers_[conn_map_key];
+  ConnectionTracker& conn_tracker = conn_trackers[conn_id.tsid];
+
+  bool new_tracker = (conn_tracker.conn_id().tsid == 0);
+  if (new_tracker) {
+    conn_tracker.set_conn_stats(&connection_stats_);
+
+    // If there is a another generation for this conn map key,
+    // one of them needs to be marked for death.
+    if (conn_trackers.size() > 1) {
+      auto last_tracker_iter = --conn_trackers.end();
+
+      // If the inserted conn_tracker is not the last generation, then mark it for death.
+      // This can happen because the events draining from the perf buffers are not ordered.
+      if (last_tracker_iter->second.conn_id().tsid != 0) {
+        VLOG(1) << "Marking for death because not last generation.";
+        conn_tracker.MarkForDeath();
+      } else {
+        // New tracker was the last, so the previous last should be marked for death.
+        --last_tracker_iter;
+        VLOG(1) << "Marking previous generation for death.";
+        last_tracker_iter->second.MarkForDeath();
+      }
+    }
+  }
+
   return conn_tracker;
 }
 
@@ -1098,12 +1123,6 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
       }
 
       tracker.IterationPostTick();
-
-      // Only the most recent generation of a connection on a PID+FD should be active.
-      // Mark all others for death (after having their data processed, of course).
-      if (generation_it != --tracker_generations.end()) {
-        tracker.MarkForDeath();
-      }
 
       // Update iterator, handling deletions as we go. This must be the last line in the loop.
       generation_it = tracker.ReadyForDestruction() ? tracker_generations.erase(generation_it)
