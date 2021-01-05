@@ -183,6 +183,8 @@ Status SocketTraceConnector::InitImpl() {
           bpf().get_hash_table<uint32_t, struct go_common_symaddrs_t>("go_common_symaddrs_map"));
   http2_symaddrs_map_ = std::make_unique<ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t>>(
       bpf().get_hash_table<uint32_t, struct go_http2_symaddrs_t>("http2_symaddrs_map"));
+  go_tls_symaddrs_map_ = std::make_unique<ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t>>(
+      bpf().get_hash_table<uint32_t, struct go_tls_symaddrs_t>("go_tls_symaddrs_map"));
 
   return Status::OK();
 }
@@ -378,6 +380,20 @@ Status UpdateGoHTTP2SymAddrs(
 
   return Status::OK();
 }
+
+Status UpdateGoTLSSymAddrs(
+    ElfReader* elf_reader, DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
+    ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t>* go_tls_symaddrs_map) {
+  PL_ASSIGN_OR_RETURN(struct go_tls_symaddrs_t symaddrs, GoTLSSymAddrs(elf_reader, dwarf_reader));
+
+  for (auto& pid : pids) {
+    ebpf::StatusTuple s = go_tls_symaddrs_map->update_value(pid, symaddrs);
+    LOG_IF(WARNING, s.code() != 0)
+        << absl::StrCat("Could not update go_tls_symaddrs_map. Message=", s.msg());
+  }
+
+  return Status::OK();
+}
 }  // namespace
 
 // TODO(oazizi/yzhao): Should HTTP uprobes use a different set of perf buffers than the kprobes?
@@ -469,6 +485,28 @@ StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(const std::string& bina
     PL_RETURN_IF_ERROR(AttachUProbe(spec));
   }
   return kOpenSSLUProbes.size();
+}
+
+StatusOr<int> SocketTraceConnector::AttachGoTLSUProbes(
+    const std::string& binary, obj_tools::ElfReader* elf_reader,
+    obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& new_pids,
+    ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t>* go_tls_symaddrs_map) {
+  // Step 1: Update BPF symbols_map on all new PIDs.
+  Status s = UpdateGoTLSSymAddrs(elf_reader, dwarf_reader, new_pids, go_tls_symaddrs_map);
+  if (!s.ok()) {
+    // Doesn't appear to be a binary with the mandatory symbols.
+    // Might not even be a golang binary.
+    // Either way, not of interest to probe.
+    return 0;
+  }
+
+  // Step 2: Deploy uprobes on all new binaries.
+  auto result = go_tls_probed_binaries_.insert(binary);
+  if (!result.second) {
+    // This is not a new binary, so nothing more to do.
+    return 0;
+  }
+  return AttachUProbeTmpl(kGoTLSUProbeTmpls, binary, elf_reader);
 }
 
 namespace {
@@ -579,6 +617,18 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
       // Might not even be a golang binary.
       // Either way, not of interest to probe.
       continue;
+    }
+
+    // GoTLS Probes.
+    {
+      StatusOr<int> attach_status = AttachGoTLSUProbes(binary, elf_reader.get(), dwarf_reader.get(),
+                                                       pid_vec, go_tls_symaddrs_map_.get());
+      if (!attach_status.ok()) {
+        LOG_FIRST_N(WARNING, 10) << absl::Substitute("Failed to attach GoTLS Uprobes to $0: $1",
+                                                     binary, attach_status.ToString());
+      } else {
+        uprobe_count += attach_status.ValueOrDie();
+      }
     }
 
     // HTTP2 Probes.

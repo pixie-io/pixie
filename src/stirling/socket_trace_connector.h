@@ -239,38 +239,55 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       },
   });
 
-  inline static const auto kOpenSSLUProbes = MakeArray<bpf_tools::UProbeSpec>(
-      {// A probe on entry of SSL_write
-       bpf_tools::UProbeSpec{
-           .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
-           .symbol = "SSL_write",
-           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-           .probe_fn = "probe_entry_SSL_write",
-       },
+  inline static const auto kGoTLSUProbeTmpls = MakeArray<UProbeTmpl>({
+      // Probes on Golang crypto/tls library.
+      UProbeTmpl{
+          .symbol = "crypto/tls.(*Conn).Write",
+          .match_type = obj_tools::SymbolMatchType::kSuffix,
+          .probe_fn = "probe_tls_conn_write",
+          .attach_type = bpf_tools::BPFProbeAttachType::kReturnInsts,
+      },
+      UProbeTmpl{
+          .symbol = "crypto/tls.(*Conn).Read",
+          .match_type = obj_tools::SymbolMatchType::kSuffix,
+          .probe_fn = "probe_tls_conn_read",
+          .attach_type = bpf_tools::BPFProbeAttachType::kReturnInsts,
+      },
+  });
 
-       // A probe on return of SSL_write
-       bpf_tools::UProbeSpec{
-           .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
-           .symbol = "SSL_write",
-           .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
-           .probe_fn = "probe_ret_SSL_write",
-       },
+  inline static const auto kOpenSSLUProbes = MakeArray<bpf_tools::UProbeSpec>({
+      // A probe on entry of SSL_write
+      bpf_tools::UProbeSpec{
+          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
+          .symbol = "SSL_write",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          .probe_fn = "probe_entry_SSL_write",
+      },
 
-       // A probe on entry of SSL_read
-       bpf_tools::UProbeSpec{
-           .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
-           .symbol = "SSL_read",
-           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-           .probe_fn = "probe_entry_SSL_read",
-       },
+      // A probe on return of SSL_write
+      bpf_tools::UProbeSpec{
+          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
+          .symbol = "SSL_write",
+          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+          .probe_fn = "probe_ret_SSL_write",
+      },
 
-       // A probe on return of SSL_read
-       bpf_tools::UProbeSpec{
-           .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
-           .symbol = "SSL_read",
-           .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
-           .probe_fn = "probe_ret_SSL_read",
-       }});
+      // A probe on entry of SSL_read
+      bpf_tools::UProbeSpec{
+          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
+          .symbol = "SSL_read",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          .probe_fn = "probe_entry_SSL_read",
+      },
+
+      // A probe on return of SSL_read
+      bpf_tools::UProbeSpec{
+          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
+          .symbol = "SSL_read",
+          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+          .probe_fn = "probe_ret_SSL_read",
+      },
+  });
 
   // TODO(oazizi): Remove send and recv probes once we are confident that they don't trace anything.
   //               Note that send/recv are not in the syscall table
@@ -316,6 +333,11 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Attaches the required probes for SSL tracing to the specified binary.
   StatusOr<int> AttachOpenSSLUProbes(const std::string& binary,
                                      const std::vector<int32_t>& new_pids);
+
+  StatusOr<int> AttachGoTLSUProbes(
+      const std::string& binary, obj_tools::ElfReader* elf_reader,
+      obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& new_pids,
+      ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t>* go_tls_symaddrs_map);
 
   // Deploys uprobes for all purposes (HTTP2, OpenSSL, etc.) on new processes.
   void DeployUProbes(const absl::flat_hash_set<md::UPID>& pids);
@@ -397,8 +419,10 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   ProcTracker proc_tracker_;
 
   // Records the binaries that have been attached uprobes.
+  // TODO(oazizi): How should these sets be cleaned up of old binaries?
   absl::flat_hash_set<std::string> http2_probed_binaries_;
   absl::flat_hash_set<std::string> openssl_probed_binaries_;
+  absl::flat_hash_set<std::string> go_tls_probed_binaries_;
 
   std::shared_ptr<ConnInfoMapManager> conn_info_map_mgr_;
 
@@ -406,6 +430,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_common_symaddrs_t> >
       go_common_symaddrs_map_;
   std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t> > http2_symaddrs_map_;
+  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t> > go_tls_symaddrs_map_;
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);

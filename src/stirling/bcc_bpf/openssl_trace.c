@@ -92,7 +92,7 @@ int probe_entry_SSL_write(struct pt_regs* ctx) {
   active_ssl_write_args_map.update(&id, &write_args);
 
   // Mark connection as SSL right away, so encrypted traffic does not get traced.
-  set_conn_as_ssl(id >> 32, write_args.fd);
+  set_conn_as_ssl(id, write_args.fd);
 
   return 0;
 }
@@ -123,7 +123,7 @@ int probe_entry_SSL_read(struct pt_regs* ctx) {
   active_ssl_read_args_map.update(&id, &read_args);
 
   // Mark connection as SSL right away, so encrypted traffic does not get traced.
-  set_conn_as_ssl(id >> 32, read_args.fd);
+  set_conn_as_ssl(id, read_args.fd);
 
   return 0;
 }

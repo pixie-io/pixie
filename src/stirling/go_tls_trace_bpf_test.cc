@@ -10,7 +10,23 @@
 namespace pl {
 namespace stirling {
 
+// Automatically converts ToString() to stream operator for gtest.
+using ::pl::operator<<;
+
+namespace http = protocols::http;
+
+using ::pl::stirling::testing::AccessRecordBatch;
+using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::testing::BazelBinTestFilePath;
+
+using ::testing::AllOf;
+using ::testing::Eq;
+using ::testing::Field;
+using ::testing::Gt;
+using ::testing::IsEmpty;
+using ::testing::SizeIs;
+using ::testing::StrEq;
+using ::testing::UnorderedElementsAre;
 
 //-----------------------------------------------------------------------------
 // Test Stimulus: Server and Client
@@ -37,7 +53,7 @@ class GoTLSClientContainer : public ContainerRunner {
   static constexpr std::string_view kBazelImageTar =
       "demos/client_server_apps/go_https/client/https_client_image.tar";
   static constexpr std::string_view kInstanceNamePrefix = "https_client";
-  static constexpr std::string_view kReadyMessage = "";
+  static constexpr std::string_view kReadyMessage = R"({"status":"ok"})";
 };
 
 //-----------------------------------------------------------------------------
@@ -58,6 +74,46 @@ class GoTLSTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
   GoTLSClientContainer client_;
 };
 
+//-----------------------------------------------------------------------------
+// Result Checking: Helper Functions and Matchers
+//-----------------------------------------------------------------------------
+
+std::vector<http::Record> ToRecordVector(const types::ColumnWrapperRecordBatch& rb,
+                                         const std::vector<size_t>& indices) {
+  std::vector<http::Record> result;
+
+  for (const auto& idx : indices) {
+    http::Record r;
+    r.req.req_path = rb[kHTTPReqPathIdx]->Get<types::StringValue>(idx);
+    r.req.req_method = rb[kHTTPReqMethodIdx]->Get<types::StringValue>(idx);
+    r.req.body = rb[kHTTPReqBodyIdx]->Get<types::StringValue>(idx);
+
+    r.resp.resp_status = rb[kHTTPRespStatusIdx]->Get<types::Int64Value>(idx).val;
+    r.resp.resp_message = rb[kHTTPRespMessageIdx]->Get<types::StringValue>(idx);
+    r.resp.body = rb[kHTTPRespBodyIdx]->Get<types::StringValue>(idx);
+
+    result.push_back(r);
+  }
+  return result;
+}
+
+auto EqHTTPReq(const http::Message& x) {
+  return AllOf(Field(&http::Message::req_path, Eq(x.req_path)),
+               Field(&http::Message::req_method, StrEq(x.req_method)),
+               Field(&http::Message::body, StrEq(x.body)));
+}
+
+auto EqHTTPResp(const http::Message& x) {
+  return AllOf(Field(&http::Message::resp_status, Eq(x.resp_status)),
+               Field(&http::Message::resp_message, StrEq(x.resp_message)),
+               Field(&http::Message::body, StrEq(x.body)));
+}
+
+auto EqHTTPRecord(const http::Record& x) {
+  return AllOf(Field(&http::Record::req, EqHTTPReq(x.req)),
+               Field(&http::Record::resp, EqHTTPResp(x.resp)));
+}
+
 TEST_F(GoTLSTraceTest, Basic) {
   // Run the client in the network of the server, so they can connect to each other.
   PL_CHECK_OK(
@@ -67,6 +123,45 @@ TEST_F(GoTLSTraceTest, Basic) {
   // We do not expect this sleep to be required, but it appears to be necessary for Jenkins.
   // TODO(oazizi): Figure out why.
   sleep(3);
+
+  // Grab the data from Stirling.
+  DataTable data_table(kHTTPTable);
+  source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  ASSERT_FALSE(tablets.empty());
+  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+
+  {
+    const std::vector<size_t> target_record_indices =
+        FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, server_.process_pid());
+
+    // For Debug:
+    for (const auto& idx : target_record_indices) {
+      uint32_t pid = record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(idx).High64();
+      std::string req_path = record_batch[kHTTPReqPathIdx]->Get<types::StringValue>(idx);
+      std::string req_method = record_batch[kHTTPReqMethodIdx]->Get<types::StringValue>(idx);
+      std::string req_body = record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(idx);
+
+      int resp_status = record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(idx).val;
+      std::string resp_message = record_batch[kHTTPRespMessageIdx]->Get<types::StringValue>(idx);
+      std::string resp_body = record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(idx);
+      LOG(INFO) << absl::Substitute("$0 $1 $2 $3 $4 $5 $6", pid, req_method, req_path, req_body,
+                                    resp_status, resp_message, resp_body);
+    }
+
+    std::vector<http::Record> records = ToRecordVector(record_batch, target_record_indices);
+
+    // TODO(oazizi): Add headers checking too.
+    http::Record expected_record = {};
+    expected_record.req.req_path = "/";
+    expected_record.req.req_method = "GET";
+    expected_record.req.body = R"()";
+    expected_record.resp.resp_status = 200;
+    expected_record.resp.resp_message = "OK";
+    expected_record.resp.body = R"({"status":"ok"})";
+
+    EXPECT_THAT(records, Contains(EqHTTPRecord(expected_record)));
+  }
 }
 
 }  // namespace stirling

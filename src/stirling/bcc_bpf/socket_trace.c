@@ -1358,3 +1358,6 @@ int syscall__probe_ret_close(struct pt_regs* ctx) {
 
 // Include OpenSSL tracing probes.
 #include "src/stirling/bcc_bpf/openssl_trace.c"
+
+// Include GoTLS tracing probes.
+#include "src/stirling/bcc_bpf/go_tls_trace.c"
