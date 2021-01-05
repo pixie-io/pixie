@@ -133,10 +133,8 @@ spec:
         ports:
         - containerPort: 4222
           name: client
-          hostPort: 4222
         - containerPort: 7422
           name: leafnodes
-          hostPort: 7422
         - containerPort: 6222
           name: cluster
         - containerPort: 8222
