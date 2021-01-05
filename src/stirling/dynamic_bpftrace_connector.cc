@@ -66,10 +66,9 @@ std::vector<std::string_view> GetColumnNamesFromFmtStr(std::string_view printf_f
   return res;
 }
 
-StatusOr<std::vector<ColumnSpec>> ConvertFields(const std::vector<bpftrace::Field> fields,
-                                                std::string_view format_str) {
-  std::vector<ColumnSpec> columns;
-  columns.reserve(fields.size());
+StatusOr<BackedDataElements> ConvertFields(const std::vector<bpftrace::Field> fields,
+                                           std::string_view format_str) {
+  BackedDataElements columns(fields.size());
 
   std::vector<std::string_view> column_names = GetColumnNamesFromFmtStr(format_str);
 
@@ -97,20 +96,21 @@ StatusOr<std::vector<ColumnSpec>> ConvertFields(const std::vector<bpftrace::Fiel
       }
     }
 
-    ColumnSpec col;
-    PL_ASSIGN_OR_RETURN(col.type, BPFTraceTypeToDataType(bpftrace_type));
-    col.name = column_names[i].empty() ? absl::StrCat("Column_", i) : column_names[i];
+    PL_ASSIGN_OR_RETURN(types::DataType col_type, BPFTraceTypeToDataType(bpftrace_type));
+    std::string col_name =
+        column_names[i].empty() ? absl::StrCat("Column_", i) : std::string(column_names[i]);
     // No way to set a description from BPFTrace code.
-    col.desc = "";
+    std::string col_desc = "";
 
-    if (col.name == "time_") {
-      if (col.type != types::DataType::INT64) {
+    // Special case adjustment for time.
+    if (col_name == "time_") {
+      if (col_type != types::DataType::INT64) {
         return error::Internal("time_ must be an integer type");
       }
-      col.type = types::DataType::TIME64NS;
+      col_type = types::DataType::TIME64NS;
     }
 
-    columns.push_back(std::move(col));
+    columns.emplace_back(std::move(col_name), std::move(col_desc), col_type);
   }
 
   return columns;
@@ -130,10 +130,10 @@ StatusOr<std::unique_ptr<SourceConnector>> DynamicBPFTraceConnector::Create(
   PL_RETURN_IF_ERROR(bpftrace.CompileForPrintfOutput(tracepoint.bpftrace().program(), {}));
   const std::vector<bpftrace::Field>& fields = bpftrace.OutputFields();
   std::string_view format_str = bpftrace.OutputFmtStr();
-  PL_ASSIGN_OR_RETURN(std::vector<ColumnSpec> columns, ConvertFields(fields, format_str));
+  PL_ASSIGN_OR_RETURN(BackedDataElements columns, ConvertFields(fields, format_str));
 
   std::unique_ptr<DynamicDataTableSchema> table_schema =
-      DynamicDataTableSchema::Create(tracepoint.table_name(), columns);
+      DynamicDataTableSchema::Create(tracepoint.table_name(), std::move(columns));
 
   return std::unique_ptr<SourceConnector>(new DynamicBPFTraceConnector(
       source_name, std::move(table_schema), tracepoint.bpftrace().program()));
@@ -172,9 +172,10 @@ Status CheckOutputFields(const std::vector<bpftrace::Field>& fields,
 
     // Check #1: Type must be consistent with specified schema.
     if (table_type != expected_type) {
-      return error::Internal("Column $0 does not match expected output type ($1 vs $2).", i,
-                             magic_enum::enum_name(bpftrace_type),
-                             magic_enum::enum_name(table_type));
+      return error::Internal(
+          "Column $0, name=$1 (bpftrace type = $2) does not match expected output type ($3 vs $4).",
+          i, table_schema_elements[i].name(), magic_enum::enum_name(bpftrace_type),
+          magic_enum::enum_name(table_type), magic_enum::enum_name(expected_type));
     }
 
     // Check #2: Any integers must be an expected size.

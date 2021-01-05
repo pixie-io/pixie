@@ -6,12 +6,13 @@
 #include <utility>
 
 #include "src/common/base/base.h"
+#include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/bpftrace_connector.h"
 
 // The following are string_views into BT files that are included in the binary by the linker.
 // The BT files are permanently resident in memory, so the string view is permanent too.
-BCC_SRC_STRVIEW(kCPUStatBTScript, cpustat);
-BCC_SRC_STRVIEW(kPIDRuntimeBTScript, pidruntime);
+BPF_SRC_STRVIEW(kCPUStatBTScript, cpustat);
+BPF_SRC_STRVIEW(kPIDRuntimeBTScript, pidruntime);
 
 namespace pl {
 namespace stirling {

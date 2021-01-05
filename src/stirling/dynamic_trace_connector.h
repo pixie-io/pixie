@@ -52,5 +52,11 @@ class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapp
   std::deque<std::string> data_items_;
 };
 
+// Converts proto specification of columns into the form that is used by TableSchema.
+// Only public for testing purposes.
+BackedDataElements ConvertFields(
+    const google::protobuf::RepeatedPtrField<dynamic_tracing::ir::physical::Field>&
+        repeated_fields);
+
 }  // namespace stirling
 }  // namespace pl

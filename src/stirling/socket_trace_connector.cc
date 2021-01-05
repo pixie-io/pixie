@@ -24,6 +24,7 @@
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 #include "src/stirling/bcc_bpf_interface/symaddrs.h"
+#include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/common/go_grpc_types.h"
 #include "src/stirling/connection_stats.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
@@ -68,7 +69,7 @@ DEFINE_string(stirling_role_to_trace, "kRoleAll",
               "Must be one of [kRoleClient|kRoleServer|kRoleAll]. Specifies which role(s) will be "
               "traced by BPF.");
 
-BCC_SRC_STRVIEW(socket_trace_bcc_script, socket_trace);
+BPF_SRC_STRVIEW(socket_trace_bcc_script, socket_trace);
 
 namespace pl {
 namespace stirling {

@@ -5,6 +5,8 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
+#include <map>
+
 #include "src/common/base/base.h"
 #include "src/shared/types/proto/wrapper/types_pb_wrapper.h"
 #include "src/stirling/dynamic_tracing/dynamic_tracer.h"
@@ -14,6 +16,7 @@ namespace stirling {
 
 using ::google::protobuf::RepeatedPtrField;
 
+using ::pl::stirling::dynamic_tracing::ir::physical::Field;
 using ::pl::stirling::dynamic_tracing::ir::physical::Struct;
 using ::pl::stirling::dynamic_tracing::ir::physical::StructSpec;
 using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
@@ -44,6 +47,86 @@ void GenericHandleEventLoss(void* cb_cookie, uint64_t lost) {
 
 }  // namespace
 
+BackedDataElements ConvertFields(const google::protobuf::RepeatedPtrField<Field>& repeated_fields) {
+  using dynamic_tracing::ir::shared::ScalarType;
+
+  // clang-format off
+  static const std::map<ScalarType, types::DataType> kTypeMap = {
+          {ScalarType::BOOL, types::DataType::BOOLEAN},
+
+          {ScalarType::SHORT, types::DataType::INT64},
+          {ScalarType::USHORT, types::DataType::INT64},
+          {ScalarType::INT, types::DataType::INT64},
+          {ScalarType::UINT, types::DataType::INT64},
+          {ScalarType::LONG, types::DataType::INT64},
+          {ScalarType::ULONG, types::DataType::INT64},
+          {ScalarType::LONGLONG, types::DataType::INT64},
+          {ScalarType::ULONGLONG, types::DataType::INT64},
+
+          {ScalarType::INT8, types::DataType::INT64},
+          {ScalarType::INT16, types::DataType::INT64},
+          {ScalarType::INT32, types::DataType::INT64},
+          {ScalarType::INT64, types::DataType::INT64},
+          {ScalarType::UINT8, types::DataType::INT64},
+          {ScalarType::UINT16, types::DataType::INT64},
+          {ScalarType::UINT32, types::DataType::INT64},
+          {ScalarType::UINT64, types::DataType::INT64},
+
+          {ScalarType::FLOAT, types::DataType::FLOAT64},
+          {ScalarType::DOUBLE, types::DataType::FLOAT64},
+
+          {ScalarType::STRING, types::DataType::STRING},
+
+          // Will be converted to a hex string.
+          {ScalarType::BYTE_ARRAY, types::DataType::STRING},
+
+          // Will be converted to JSON string.
+          {ScalarType::STRUCT_BLOB, types::DataType::STRING},
+  };
+  // clang-format on
+
+  BackedDataElements elements(repeated_fields.size());
+
+  // Insert the special upid column.
+  // TODO(yzhao): Make sure to have a structured way to let the IR to express the upid.
+  elements.emplace_back("upid", "", types::DataType::UINT128);
+
+  for (int i = 0; i < repeated_fields.size(); ++i) {
+    const auto& field = repeated_fields[i];
+
+    if (field.name() == "tgid_" || field.name() == "tgid_start_time_") {
+      // We already automatically added the upid column.
+      // These will get merged into the UPID, so skip.
+      continue;
+    }
+
+    types::DataType data_type;
+
+    auto iter = kTypeMap.find(field.type());
+    if (iter == kTypeMap.end()) {
+      LOG(DFATAL) << absl::Substitute("Unrecognized base type: $0", field.type());
+      data_type = types::DataType::DATA_TYPE_UNKNOWN;
+    } else {
+      data_type = iter->second;
+    }
+
+    if (field.name() == "time_") {
+      data_type = types::DataType::TIME64NS;
+    }
+
+    // TODO(yzhao): Pipe latency semantic from pxtrace.FunctionLatency().
+    types::SemanticType semantic_type = types::SemanticType::ST_NONE;
+    if (field.name() == "latency") {
+      semantic_type = types::SemanticType::ST_DURATION_NS;
+    }
+
+    // TODO(oazizi): See if we need to find a way to define SemanticTypes and PatternTypes.
+    elements.emplace_back(field.name(), "", data_type, semantic_type);
+  }
+
+  return elements;
+}
+
 StatusOr<std::unique_ptr<SourceConnector>> DynamicTraceConnector::Create(
     std::string_view name, dynamic_tracing::ir::logical::TracepointDeployment* program) {
   PL_ASSIGN_OR_RETURN(dynamic_tracing::BCCProgram bcc_program,
@@ -57,8 +140,11 @@ StatusOr<std::unique_ptr<SourceConnector>> DynamicTraceConnector::Create(
 
   const auto& output = bcc_program.perf_buffer_specs[0];
 
-  return std::unique_ptr<SourceConnector>(new DynamicTraceConnector(
-      name, DynamicDataTableSchema::Create(output), std::move(bcc_program)));
+  std::unique_ptr<DynamicDataTableSchema> table_schema =
+      DynamicDataTableSchema::Create(output.name, ConvertFields(output.output.fields()));
+
+  return std::unique_ptr<SourceConnector>(
+      new DynamicTraceConnector(name, std::move(table_schema), std::move(bcc_program)));
 }
 
 Status DynamicTraceConnector::InitImpl() {

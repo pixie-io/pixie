@@ -10,7 +10,6 @@
 #include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/type_utils.h"
-#include "src/stirling/dynamic_tracing/types.h"
 #include "src/stirling/proto/stirling.pb.h"
 
 namespace pl {
@@ -179,36 +178,27 @@ class DataTableSchema {
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 };
 
-struct ColumnSpec {
-  std::string name;
-  std::string desc;
-  types::DataType type = types::DataType::DATA_TYPE_UNKNOWN;
-};
-
 class BackedDataElements {
  public:
-  explicit BackedDataElements(size_t size) : size_(size) {
-    // Constructor forces an initial size. It is critical to size names_ and descriptions_
-    // up-front, otherwise a reallocation will cause the string_views from elements_ into these
-    // structures to become invalid.
-    names_.resize(size_);
-    descriptions_.resize(size_);
+  // Default constructor is for compatibility with StatusOr only.
+  // Do not use. A DCHECK will fire if emplace_back is called.
+  BackedDataElements() : size_(0) {}
 
-    elements_.reserve(size_);
-  }
+  explicit BackedDataElements(size_t size);
+
+  // Disallow copies: the pointers in elements_ would be invalid.
+  BackedDataElements(const BackedDataElements& other) = delete;
+  BackedDataElements& operator=(const BackedDataElements& other) = delete;
+
+  // Move operators are safe. These are used by DynamicDataTableSchema and StatusOr.
+  BackedDataElements(BackedDataElements&& other) = default;
+  BackedDataElements& operator=(BackedDataElements&& other) = default;
+
+  void emplace_back(std::string name, std::string description, types::DataType type,
+                    types::SemanticType stype = types::SemanticType::ST_NONE,
+                    types::PatternType ptype = types::PatternType::UNSPECIFIED);
 
   const std::vector<DataElement>& elements() const { return elements_; }
-
-  void emplace_back(std::string_view name, std::string_view description, types::DataType type,
-                    types::SemanticType stype = types::SemanticType::ST_NONE,
-                    types::PatternType ptype = types::PatternType::UNSPECIFIED) {
-    DCHECK(pos_ < size_);
-
-    names_[pos_] = name;
-    descriptions_[pos_] = description;
-    elements_.emplace_back(names_[pos_], descriptions_[pos_], type, stype, ptype);
-    ++pos_;
-  }
 
  private:
   std::vector<DataElement> elements_;
@@ -229,10 +219,8 @@ class BackedDataElements {
  */
 class DynamicDataTableSchema {
  public:
-  static std::unique_ptr<DynamicDataTableSchema> Create(
-      const dynamic_tracing::BCCProgram::PerfBufferSpec& output_spec);
   static std::unique_ptr<DynamicDataTableSchema> Create(std::string_view output_name,
-                                                        const std::vector<ColumnSpec>& columns);
+                                                        BackedDataElements elements);
 
   const DataTableSchema& Get() { return table_schema_; }
 

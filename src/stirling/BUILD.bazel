@@ -240,6 +240,15 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "dynamic_trace_connector_test",
+    srcs = ["dynamic_trace_connector_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "dynamic_bpftrace_connector_test",
     srcs = ["dynamic_bpftrace_connector_test.cc"],
     tags = ["requires_bpf"],

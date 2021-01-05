@@ -5,8 +5,9 @@
 #include <string>
 
 #include "src/common/base/base.h"
+#include "src/stirling/bpf_tools/macros.h"
 
-BCC_SRC_STRVIEW(pidruntime_bcc_script, pidruntime);
+BPF_SRC_STRVIEW(pidruntime_bcc_script, pidruntime);
 
 namespace pl {
 namespace stirling {

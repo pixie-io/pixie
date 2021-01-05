@@ -1,8 +1,5 @@
 #include "src/stirling/types.h"
 
-#include <google/protobuf/repeated_field.h>
-#include "src/stirling/dynamic_tracing/ir/physicalpb/physical.pb.h"
-
 namespace pl {
 namespace stirling {
 
@@ -35,111 +32,29 @@ stirlingpb::TableSchema DataTableSchema::ToProto() const {
   return table_schema_proto;
 }
 
-namespace {
-
-BackedDataElements CreateDataElements(
-    const google::protobuf::RepeatedPtrField<::pl::stirling::dynamic_tracing::ir::physical::Field>&
-        repeated_fields) {
-  using dynamic_tracing::ir::shared::ScalarType;
-
-  // clang-format off
-  static const std::map<ScalarType, types::DataType> kTypeMap = {
-          {ScalarType::BOOL, types::DataType::BOOLEAN},
-
-          {ScalarType::SHORT, types::DataType::INT64},
-          {ScalarType::USHORT, types::DataType::INT64},
-          {ScalarType::INT, types::DataType::INT64},
-          {ScalarType::UINT, types::DataType::INT64},
-          {ScalarType::LONG, types::DataType::INT64},
-          {ScalarType::ULONG, types::DataType::INT64},
-          {ScalarType::LONGLONG, types::DataType::INT64},
-          {ScalarType::ULONGLONG, types::DataType::INT64},
-
-          {ScalarType::INT8, types::DataType::INT64},
-          {ScalarType::INT16, types::DataType::INT64},
-          {ScalarType::INT32, types::DataType::INT64},
-          {ScalarType::INT64, types::DataType::INT64},
-          {ScalarType::UINT8, types::DataType::INT64},
-          {ScalarType::UINT16, types::DataType::INT64},
-          {ScalarType::UINT32, types::DataType::INT64},
-          {ScalarType::UINT64, types::DataType::INT64},
-
-          {ScalarType::FLOAT, types::DataType::FLOAT64},
-          {ScalarType::DOUBLE, types::DataType::FLOAT64},
-
-          {ScalarType::STRING, types::DataType::STRING},
-
-          // Will be converted to a hex string.
-          {ScalarType::BYTE_ARRAY, types::DataType::STRING},
-
-          // Will be converted to JSON string.
-          {ScalarType::STRUCT_BLOB, types::DataType::STRING},
-  };
-  // clang-format on
-
-  BackedDataElements elements(repeated_fields.size());
-
-  // Insert the special upid column.
-  // TODO(yzhao): Make sure to have a structured way to let the IR to express the upid.
-  elements.emplace_back("upid", "", types::DataType::UINT128);
-
-  for (int i = 0; i < repeated_fields.size(); ++i) {
-    const auto& field = repeated_fields[i];
-
-    if (field.name() == "tgid_" || field.name() == "tgid_start_time_") {
-      // We already automatically added the upid column.
-      // These will get merged into the UPID, so skip.
-      continue;
-    }
-
-    types::DataType data_type;
-
-    auto iter = kTypeMap.find(field.type());
-    if (iter == kTypeMap.end()) {
-      LOG(DFATAL) << absl::Substitute("Unrecognized base type: $0", field.type());
-      data_type = types::DataType::DATA_TYPE_UNKNOWN;
-    } else {
-      data_type = iter->second;
-    }
-
-    if (field.name() == "time_") {
-      data_type = types::DataType::TIME64NS;
-    }
-
-    // TODO(yzhao): Pipe latency semantic from pxtrace.FunctionLatency().
-    types::SemanticType semantic_type = types::SemanticType::ST_NONE;
-    if (field.name() == "latency") {
-      semantic_type = types::SemanticType::ST_DURATION_NS;
-    }
-
-    // TODO(oazizi): See if we need to find a way to define SemanticTypes and PatternTypes.
-    elements.emplace_back(field.name(), "", data_type, semantic_type);
-  }
-
-  return elements;
-}
-
-BackedDataElements CreateDataElements(const std::vector<ColumnSpec>& columns) {
-  BackedDataElements elements(columns.size());
-
-  for (const auto& col : columns) {
-    elements.emplace_back(col.name, col.desc, col.type);
-  }
-
-  return elements;
-}
-
-}  // namespace
-
 std::unique_ptr<DynamicDataTableSchema> DynamicDataTableSchema::Create(
-    const dynamic_tracing::BCCProgram::PerfBufferSpec& output_spec) {
-  return absl::WrapUnique(new DynamicDataTableSchema(
-      output_spec.name, CreateDataElements(output_spec.output.fields())));
+    std::string_view output_name, BackedDataElements elements) {
+  return absl::WrapUnique(new DynamicDataTableSchema(output_name, std::move(elements)));
 }
 
-std::unique_ptr<DynamicDataTableSchema> DynamicDataTableSchema::Create(
-    std::string_view output_name, const std::vector<ColumnSpec>& columns) {
-  return absl::WrapUnique(new DynamicDataTableSchema(output_name, CreateDataElements(columns)));
+BackedDataElements::BackedDataElements(size_t size) : size_(size), pos_(0) {
+  // Constructor forces an initial size. It is critical to size names_ and descriptions_
+  // up-front, otherwise a reallocation will cause the string_views from elements_ into these
+  // structures to become invalid.
+  names_.resize(size_);
+  descriptions_.resize(size_);
+  elements_.reserve(size_);
+}
+
+void BackedDataElements::emplace_back(std::string name, std::string description,
+                                      types::DataType type, types::SemanticType stype,
+                                      types::PatternType ptype) {
+  DCHECK(pos_ < size_);
+
+  names_[pos_] = std::move(name);
+  descriptions_[pos_] = std::move(description);
+  elements_.emplace_back(names_[pos_], descriptions_[pos_], type, stype, ptype);
+  ++pos_;
 }
 
 }  // namespace stirling
