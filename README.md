@@ -40,6 +40,8 @@ We're building up Pixie for broad use by the end of 2020. If you are interested,
 
 ## Quick Start
 
+Review Pixie's [requirements](https://docs.pixielabs.ai/installing-pixie/requirements/) to make sure that your Kubernetes cluster is supported. 
+
 #### Signup
 
 Visit our [product page](https://work.withpixie.ai/) and signup with your google account.
