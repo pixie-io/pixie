@@ -7,11 +7,8 @@ export {
 } from './components/auth/pixienaut-box';
 export { SignupMarcom } from './components/auth/signup-marcom';
 
-export {
-  AutocompleteContextProps,
-  AutocompleteContext,
-  Autocomplete,
-} from './components/autocomplete/autocomplete';
+export { Autocomplete } from './components/autocomplete/autocomplete';
+export { AutocompleteContextProps, AutocompleteContext } from 'components/autocomplete/autocomplete-context';
 export {
   CompletionHeader,
   CompletionId,

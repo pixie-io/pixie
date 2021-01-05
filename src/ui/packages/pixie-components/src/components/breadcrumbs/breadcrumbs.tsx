@@ -12,11 +12,9 @@ import createTypography from '@material-ui/core/styles/createTypography';
 import createSpacing from '@material-ui/core/styles/createSpacing';
 
 import { CompletionItem } from 'components/autocomplete/completions';
-import {
-  Autocomplete,
-  AutocompleteContext,
-} from 'components/autocomplete/autocomplete';
+import { Autocomplete } from 'components/autocomplete/autocomplete';
 import useIsMounted from 'utils/use-is-mounted';
+import { AutocompleteContext } from 'components/autocomplete/autocomplete-context';
 
 const styles = ({
   spacing, typography, palette, breakpoints,
@@ -163,9 +161,7 @@ const DialogDropdown = ({
   anchorEl,
 }: DialogDropdownProps) => {
   const mounted = useIsMounted();
-  const { allowTyping, requireCompletion } = React.useContext(
-    AutocompleteContext,
-  );
+  const { allowTyping, requireCompletion } = React.useContext(AutocompleteContext);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   if (anchorEl && inputRef.current) {
