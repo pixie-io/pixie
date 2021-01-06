@@ -5,7 +5,7 @@ function usage() {
 }
 
 # Read variables from docker.properties file.
-dockerPropertiesFile="$GOPATH/src/pixielabs.ai/pixielabs/docker.properties"
+dockerPropertiesFile="docker.properties"
 if [ -f "$dockerPropertiesFile" ]
 then
   while IFS='=' read -r key value
@@ -33,18 +33,25 @@ while [ "$1" != "" ]; do
     shift
 done
 
+stirling_flags="-v /:/host
+                -v /sys:/sys
+                -v /var/lib/docker:/var/lib/docker
+                --pid=host
+                --env PL_HOST_PATH=/host"
+
+# Disable quoting check to use stirling_flags, otherwise the flag values are treated as one string.
+# shellcheck disable=SC2086
 docker run --rm -it \
-       --network host \
-       -v ~/.config:/root/.config \
+       --network=host \
+       ${stirling_flags} \
+       -v /var/run/docker.sock:/var/run/docker.sock \
+       -v "$HOME/.config:/root/.config" \
        -v "$HOME/.ssh:/root/.ssh" \
        -v "$HOME/.minikube:/root/.minikube" \
+       -v "$HOME/.minikube:$HOME/.minikube" \
        -v "$HOME/.kube:/root/.kube" \
        -v "$HOME/.gitconfig:/root/.gitconfig" \
        -v "$HOME/.arcrc:/root/.arcrc" \
-       -v /var/run/docker.sock:/var/run/docker.sock \
-       -v /var/lib/docker:/var/lib/docker \
-       -v "$HOME/.minikube:$HOME/.minikube" \
-       --pid=host -v /:/host -v /sys:/sys --env PL_HOST_PATH=/host \
        -v "$GOPATH/src/pixielabs.ai:/pl/src/pixielabs.ai" \
        ${extra_args} \
        "gcr.io/pl-dev-infra/dev_image_with_extras:$DOCKER_IMAGE_TAG" \
