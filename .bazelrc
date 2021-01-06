@@ -163,8 +163,11 @@ coverage --test_tag_filters=-requires_root,-requires_bpf,-no_coverage,-disabled
 # Use stable GIT build tag by default.
 build --define BUNDLE_VERSION={STABLE_BUILD_TAG}
 
-# Import other bazelrc files
+# jenkins.bazelrc is copied from ci/jenkins.bazelrc by Jenkins workers during the build.
+# The intention is to avoid polluting configurations of bazel for developers.
 try-import %workspace%/jenkins.bazelrc
+
+# Put your own configurations into user.bazelrc, which is ignored by git.
 try-import %workspace%/user.bazelrc
 
 # Import a machine specific bazelrc. This can be used to enable caching.
