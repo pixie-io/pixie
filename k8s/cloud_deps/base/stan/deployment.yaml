@@ -92,7 +92,7 @@ spec:
       volumeMode: "Filesystem"
       resources:
         requests:
-          storage: 1Gi
+          storage: 50Gi
   template:
     metadata:
       labels:
