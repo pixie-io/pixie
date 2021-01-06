@@ -60,7 +60,7 @@ DEFINE_bool(stirling_enable_cass_tracing, true,
             "If true, stirling will trace and process Cassandra messages.");
 DEFINE_bool(stirling_enable_dns_tracing, true,
             "If true, stirling will trace and process DNS messages.");
-DEFINE_bool(stirling_enable_redis_tracing, false,
+DEFINE_bool(stirling_enable_redis_tracing, true,
             "If true, stirling will trace and process Redis messages.");
 
 DEFINE_bool(stirling_disable_self_tracing, true,
@@ -107,6 +107,8 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
        {kPGSQLTableNum, TRANSER_STREAM_PROTOCOL(pgsql), FLAGS_stirling_enable_pgsql_tracing}},
       {kProtocolDNS,
        {kDNSTableNum, TRANSER_STREAM_PROTOCOL(dns), FLAGS_stirling_enable_dns_tracing}},
+      {kProtocolRedis,
+       {kRedisTableNum, TRANSER_STREAM_PROTOCOL(redis), FLAGS_stirling_enable_redis_tracing}},
       // Unknown protocols attached to HTTP table so that they run their cleanup functions,
       // but the use of nullptr transfer_fn means it won't actually transfer data to the HTTP table.
       {kProtocolUnknown, {kHTTPTableNum, nullptr}},

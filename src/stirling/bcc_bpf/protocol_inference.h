@@ -368,6 +368,10 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
     inferred_message.protocol = kProtocolMySQL;
   } else if ((inferred_message.type = infer_dns_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolDNS;
+  } else if (is_redis_message(buf, count)) {
+    // For Redis, the message type is left to be kUnknown.
+    // The message types are then inferred via traffic direction and client/server role.
+    inferred_message.protocol = kProtocolRedis;
   }
 
   return inferred_message;

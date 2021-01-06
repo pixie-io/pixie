@@ -75,8 +75,8 @@ struct UProbeTmpl {
 
 class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
-  static constexpr auto kTables =
-      MakeArray(kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable, kPGSQLTable, kDNSTable);
+  static constexpr auto kTables = MakeArray(kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable,
+                                            kPGSQLTable, kDNSTable, kRedisTable);
 
   static constexpr uint32_t kConnStatsTableNum = TableNum(kTables, kConnStatsTable);
   static constexpr uint32_t kHTTPTableNum = TableNum(kTables, kHTTPTable);
@@ -84,6 +84,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr uint32_t kCQLTableNum = TableNum(kTables, kCQLTable);
   static constexpr uint32_t kPGSQLTableNum = TableNum(kTables, kPGSQLTable);
   static constexpr uint32_t kDNSTableNum = TableNum(kTables, kDNSTable);
+  static constexpr uint32_t kRedisTableNum = TableNum(kTables, kRedisTable);
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new SocketTraceConnector(name));

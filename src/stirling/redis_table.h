@@ -41,5 +41,9 @@ static constexpr auto kRedisTable =
     DataTableSchema("redis_events", kRedisElements, std::chrono::milliseconds{100},
                     std::chrono::milliseconds{1000});
 
+constexpr int kRedisUPIDIdx = kRedisTable.ColIndex("upid");
+constexpr int kRedisReqIdx = kRedisTable.ColIndex("req");
+constexpr int kRedisRespIdx = kRedisTable.ColIndex("resp");
+
 }  // namespace stirling
 }  // namespace pl
