@@ -1,0 +1,3 @@
+---
+ignore:
+- "src/ui/src/types/generated"
