@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"io"
 	"io/ioutil"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -47,8 +49,22 @@ func ConvertResourceToYAML(obj runtime.Object) (string, error) {
 
 // ApplyYAML does the equivalent of a kubectl apply for the given yaml. If allowUpdate is true, then we update the resource
 // if it already exists.
-func ApplyYAML(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader, allowUpdate bool) error {
-	return ApplyYAMLForResourceTypes(clientset, config, namespace, yamlFile, []string{}, allowUpdate, make(map[string]string))
+func ApplyYAML(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader, allowUpdate bool, labels map[string]string) error {
+	return ApplyYAMLForResourceTypes(clientset, config, namespace, yamlFile, []string{}, allowUpdate, labels)
+}
+
+// LabelStringToMap converts a user-inputted label string (label1=value,label2=value2) into a string map.
+func LabelStringToMap(labels string) (map[string]string, error) {
+	labelMap := make(map[string]string)
+	splitString := strings.Split(labels, ",")
+	for _, labelPair := range splitString {
+		splitLabel := strings.Split(labelPair, "=")
+		if len(splitLabel) != 2 || splitLabel[0] == "" || splitLabel[1] == "" {
+			return nil, errors.New("Label string is malformed")
+		}
+		labelMap[splitLabel[0]] = splitLabel[1]
+	}
+	return labelMap, nil
 }
 
 // addLabelsToResource adds the given labels to the K8s resource.
@@ -96,6 +112,10 @@ func addLabelsToResource(labels map[string]string, res map[string]interface{}) m
 
 // ApplyYAMLForResourceTypes only applies the specified types in the given YAML file.
 func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader, allowedResources []string, allowUpdate bool, labels map[string]string) error {
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+
 	decodedYAML := yaml.NewYAMLOrJSONDecoder(yamlFile, 4096)
 	discoveryClient := clientset.Discovery()
 
@@ -173,7 +193,7 @@ func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Con
 
 		_, err = createRes.Create(context.Background(), &unstructRes, metav1.CreateOptions{})
 		if err != nil {
-			if !errors.IsAlreadyExists(err) {
+			if !k8serrors.IsAlreadyExists(err) {
 				return err
 			} else if (k8sRes.Resource == "clusterroles" || k8sRes.Resource == "cronjobs") || allowUpdate {
 				_, err = createRes.Update(context.Background(), &unstructRes, metav1.UpdateOptions{})

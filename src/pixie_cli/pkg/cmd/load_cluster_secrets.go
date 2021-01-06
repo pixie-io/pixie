@@ -63,5 +63,5 @@ func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, deplo
 		return err
 	}
 
-	return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamls), false)
+	return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamls), false, nil)
 }

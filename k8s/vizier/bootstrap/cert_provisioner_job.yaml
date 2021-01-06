@@ -14,6 +14,9 @@ spec:
         envFrom:
         - configMapRef:
             name: pl-cloud-config
+        - configMapRef:
+            name: pl-cluster-config
+            optional: true
       imagePullSecrets:
       - name: pl-image-secret
       restartPolicy: "Never"

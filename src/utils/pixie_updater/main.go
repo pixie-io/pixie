@@ -33,6 +33,7 @@ func init() {
 	pflag.String("update_cloud_addr", "", "The pixie cloud address to use.")
 	pflag.Bool("etcd_operator_enabled", false, "Whether the etcd operator should be used instead of the statefulset")
 	pflag.String("cloud_addr", "withpixie.ai:443", "The pixie cloud address to use.")
+	pflag.String("custom_labels", "", "Custom labels that should be attached to the vizier resources")
 }
 
 func getCloudClientConnection(cloudAddr string) (*grpc.ClientConn, error) {
@@ -104,8 +105,13 @@ func main() {
 		Timeout:    deleteTimeout,
 	}
 
+	labels, err := k8s.LabelStringToMap(viper.GetString("custom_labels"))
+	if err != nil {
+		log.WithError(err).Info("Could not apply custom labels")
+	}
+
 	// Update update role first.
-	err = k8s.ApplyYAMLForResourceTypes(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierBootstrapYAMLPath]), []string{"clusterroles"}, true, make(map[string]string))
+	err = k8s.ApplyYAMLForResourceTypes(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierBootstrapYAMLPath]), []string{"clusterroles"}, true, labels)
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to install vizier bootstrap for updater roles")
 	}
@@ -137,13 +143,13 @@ func main() {
 	if viper.GetBool("bootstrap_mode") {
 		log.Info("Deploying NATS")
 
-		err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[natsYAMLPath])
+		err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[natsYAMLPath], labels)
 		if err != nil {
 			log.WithError(err).Fatalf("Failed to deploy NATS")
 		}
 
 		log.Info("Deploying etcd")
-		err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[etcdPath])
+		err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[etcdPath], labels)
 		if err != nil {
 			log.WithError(err).Fatalf("Failed to deploy etcd")
 		}
@@ -191,13 +197,13 @@ func main() {
 			}
 		}
 
-		err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[etcdPath])
+		err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[etcdPath], labels)
 		if err != nil {
 			log.WithError(err).Fatalf("Failed to redeploy etcd")
 		}
 	}
 
-	err = k8s.ApplyYAML(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierYAMLPath]), true)
+	err = k8s.ApplyYAML(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierYAMLPath]), true, labels)
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to install vizier")
 	}
@@ -213,11 +219,11 @@ func main() {
 	log.Info("Done with update/install!")
 }
 
-func retryDeploy(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlContents string) error {
+func retryDeploy(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlContents string, labels map[string]string) error {
 	tries := 12
 	var err error
 	for tries > 0 {
-		err = k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents), false)
+		err = k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents), false, labels)
 		if err == nil {
 			return nil
 		}

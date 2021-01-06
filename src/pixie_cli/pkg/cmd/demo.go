@@ -404,7 +404,7 @@ func setupDemoApp(appName string, yamls map[string][]byte) error {
 		newTaskWrapper(fmt.Sprintf("Deploying %s YAMLs", appName), func() error {
 			for _, yamlBytes := range yamls {
 				yamlBytes := yamlBytes
-				err := k8s.ApplyYAML(clientset, kubeConfig, appName, bytes.NewReader(yamlBytes), false)
+				err := k8s.ApplyYAML(clientset, kubeConfig, appName, bytes.NewReader(yamlBytes), false, nil)
 				if err != nil {
 					return err
 				}
