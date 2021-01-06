@@ -23,16 +23,21 @@ metadata:
   creationTimestamp: null
   name: pl-cloud-config
   namespace: pl
+  labels:
+    __PL_CUSTOM_LABEL_STRING__
 ---
 apiVersion: v1
 data:
   PL_ETCD_OPERATOR_ENABLED: "__PL_ETCD_OPERATOR_ENABLED__"
   PL_MD_ETCD_SERVER: __PL_MD_ETCD_SERVER__
+  PL_CUSTOM_LABELS: "__PL_CUSTOM_LABELS__"
 kind: ConfigMap
 metadata:
   creationTimestamp: null
   name: pl-cluster-config
   namespace: pl
+  labels:
+    __PL_CUSTOM_LABEL_STRING__
 ---
 apiVersion: v1
 stringData:
@@ -42,6 +47,8 @@ metadata:
   creationTimestamp: null
   name: pl-cluster-secrets
   namespace: pl
+  labels:
+    __PL_CUSTOM_LABEL_STRING__
 ---
 apiVersion: v1
 data:
@@ -52,6 +59,7 @@ metadata:
   creationTimestamp: null
   labels:
     component: vizier
+    __PL_CUSTOM_LABEL_STRING__
   name: pl-cloud-connector-bootstrap-config
   namespace: pl
 ---
@@ -63,6 +71,8 @@ metadata:
   creationTimestamp: null
   name: pl-deploy-secrets
   namespace: pl
+  labels:
+    __PL_CUSTOM_LABEL_STRING__
 `
 
 func getK8sVersion(kubeConfig *rest.Config) (string, error) {
@@ -88,7 +98,7 @@ func getCurrentCluster() string {
 }
 
 // GenerateClusterSecretYAMLs generates YAMLs for the cluster secrets.
-func GenerateClusterSecretYAMLs(cloudAddr string, deployKey string, namespace string, devCloudNamespace string, kubeConfig *rest.Config, sentryDSN string, version string, useEtcdOperator bool) (string, error) {
+func GenerateClusterSecretYAMLs(cloudAddr string, deployKey string, namespace string, devCloudNamespace string, kubeConfig *rest.Config, sentryDSN string, version string, useEtcdOperator bool, labels string) (string, error) {
 	// devCloudNamespace implies we are running in a dev enivironment and we should attach to
 	// vzconn in that namespace.
 	updateCloudAddr := cloudAddr
@@ -108,6 +118,14 @@ func GenerateClusterSecretYAMLs(cloudAddr string, deployKey string, namespace st
 		etcdAddr = "https://pl-etcd-client.pl.svc:2379"
 	}
 
+	labelString := ""
+	lm, _ := k8s.LabelStringToMap(labels)
+	if lm != nil {
+		for k, v := range lm {
+			labelString += fmt.Sprintf("%s: %s\n    ", k, v)
+		}
+	}
+
 	// Perform substitutions.
 	r := strings.NewReplacer(
 		"__PL_CLOUD_ADDR__", cloudAddr,
@@ -117,6 +135,8 @@ func GenerateClusterSecretYAMLs(cloudAddr string, deployKey string, namespace st
 		"__PL_MD_ETCD_SERVER__", etcdAddr,
 		"__PL_SENTRY_DSN__", sentryDSN,
 		"__PL_BOOTSTRAP_VERSION__", version,
+		"__PL_CUSTOM_LABELS__", labels,
+		"__PL_CUSTOM_LABEL_STRING__", labelString,
 	)
 	return r.Replace(secretsYAML), nil
 }

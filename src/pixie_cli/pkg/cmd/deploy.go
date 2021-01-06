@@ -39,6 +39,15 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )
 
+// BlockListedLabels are labels that we won't allow users to specify, since these are labels that we
+// specify ourselves. Changing these may break the vizier update job.
+var BlockListedLabels = []string{
+	"vizier-bootstrap",
+	"component",
+	"vizier-updater-dep",
+	"app",
+}
+
 // DeployCmd is the "deploy" command.
 var DeployCmd = &cobra.Command{
 	Use:   "deploy",
@@ -124,6 +133,9 @@ func init() {
 	DeployCmd.Flags().BoolP("use_etcd_operator", "o", false, "Whether to use the operator for etcd instead of the statefulset")
 	viper.BindPFlag("use_etcd_operator", DeployCmd.Flags().Lookup("use_etcd_operator"))
 
+	DeployCmd.Flags().StringP("labels", "l", "", "Custom labels to apply to Pixie resources")
+	viper.BindPFlag("labels", DeployCmd.Flags().Lookup("labels"))
+
 	// Super secret flags for Pixies.
 	DeployCmd.Flags().MarkHidden("namespace")
 	DeployCmd.Flags().MarkHidden("dev_cloud_namespace")
@@ -200,6 +212,25 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	extractPath, _ := cmd.Flags().GetString("extract_yaml")
 	deployKey, _ := cmd.Flags().GetString("deploy_key")
 	useEtcdOperator, _ := cmd.Flags().GetBool("use_etcd_operator")
+	customLabels, _ := cmd.Flags().GetString("labels")
+
+	labelMap := make(map[string]string)
+	if customLabels != "" {
+		lm, err := k8s.LabelStringToMap(customLabels)
+		if err != nil {
+			utils.Error("--labels must be specified through the following format: label1=value1,label2=value2")
+			os.Exit(1)
+		}
+		labelMap = lm
+	}
+	// Check that none of the labels override ours.
+	for _, l := range BlockListedLabels {
+		if _, ok := labelMap[l]; ok {
+			joinedLabels := strings.Join(BlockListedLabels, ", ")
+			utils.Error(fmt.Sprintf("Custom labels must not be one of: %s.", joinedLabels))
+			os.Exit(1)
+		}
+	}
 
 	if deployKey == "" && extractPath != "" {
 		utils.Error("--deploy_key must be specified when running with --extract_yaml. Please run px deploy-key create.")
@@ -293,6 +324,8 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		DevCloudNS:          devCloudNS,
 		KubeConfig:          kubeConfig,
 		UseEtcdOperator:     useEtcdOperator,
+		Labels:              customLabels,
+		LabelMap:            labelMap,
 	}
 
 	yamlArgs := &artifacts.YAMLTmplArguments{
