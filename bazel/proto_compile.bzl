@@ -6,6 +6,8 @@
 load("@com_github_grpc_grpc//bazel:generate_cc.bzl", "generate_cc")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load("//bazel:pl_build_system.bzl", "pl_cc_library_internal")
+load("@rules_python//python:defs.bzl", "py_library")
+load("@com_github_grpc_grpc//bazel:python_rules.bzl", "py_grpc_library", "py_proto_library")
 
 def pl_proto_library(name, srcs, deps = [], **kwargs):
     """
@@ -89,6 +91,29 @@ def pl_go_proto_library(name, proto, importpath, deps = [], **kwargs):
         compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
         importpath = importpath,
         deps = deps,
+        **kwargs
+    )
+
+def pl_py_grpc_library(name, proto, **kwargs):
+    if not name.endswith("_pl_py_proto"):
+        fail("Expected pl_py_proto_library name to end with '_pl_py_proto'.")
+
+    codegen_py_pb_target = "_" + name + "_codegen"
+    codegen_py_grpc_target = "_" + name + "_codegen_grpc"
+    py_proto_library(
+        name = codegen_py_pb_target,
+        deps = [proto],
+        **kwargs
+    )
+    py_grpc_library(
+        name = codegen_py_grpc_target,
+        srcs = [proto],
+        deps = [codegen_py_pb_target],
+        **kwargs
+    )
+    py_library(
+        name = name,
+        srcs = [codegen_py_pb_target, codegen_py_grpc_target],
         **kwargs
     )
 

@@ -110,6 +110,14 @@ gcs_file(
     downloaded_file_path = "sentencepiece.proto",
 )
 
+# Setup the environment for the open-source python API.
+load("@rules_python//python:pip.bzl", "pip_install")
+
+pip_install(
+    name = "vizier_api_python_deps",
+    requirements = "//src/vizier/vizierpb:requirements.txt",
+)
+
 # gazelle:repo bazel_gazelle
 ##########################################################
 # Auto-generated GO dependencies (DO NOT EDIT).

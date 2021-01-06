@@ -1,0 +1,5 @@
+gogo-python==0.0.1
+grpcio==1.34.0
+grpcio-tools==1.34.0
+protobuf==3.14.0
+six==1.15.0
