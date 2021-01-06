@@ -5,3 +5,13 @@ metadata:
   name: pl-stan
 spec:
   replicas: 2
+  volumeClaimTemplates:
+  - metadata:
+      name: stan-sts-vol
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      volumeMode: "Filesystem"
+      resources:
+        requests:
+          storage: 1Gi
