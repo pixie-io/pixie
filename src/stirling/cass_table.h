@@ -2,7 +2,7 @@
 
 #include <map>
 
-#include "src/stirling/canonical_types.h"
+#include "src/stirling/core/canonical_types.h"
 #include "src/stirling/core/types.h"
 #include "src/stirling/protocols/cql/types.h"
 

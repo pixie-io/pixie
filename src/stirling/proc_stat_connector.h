@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "src/stirling/canonical_types.h"
+#include "src/stirling/core/canonical_types.h"
 #include "src/stirling/core/source_connector.h"
 
 namespace pl {

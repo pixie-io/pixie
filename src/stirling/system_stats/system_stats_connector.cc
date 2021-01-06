@@ -1,5 +1,5 @@
 #ifdef __linux__
-#include "src/stirling/system_stats_connector.h"
+#include "src/stirling/system_stats/system_stats_connector.h"
 
 #include <chrono>
 #include <filesystem>

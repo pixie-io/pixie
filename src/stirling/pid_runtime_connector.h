@@ -22,8 +22,8 @@ DUMMY_SOURCE_CONNECTOR(PIDRuntimeConnector);
 #include "src/common/base/base.h"
 #include "src/stirling/bcc_bpf_interface/pidruntime.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
-#include "src/stirling/canonical_types.h"
 #include "src/stirling/common/utils.h"
+#include "src/stirling/core/canonical_types.h"
 #include "src/stirling/core/source_connector.h"
 
 namespace pl {

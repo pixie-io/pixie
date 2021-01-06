@@ -1,6 +1,6 @@
 #pragma once
 
-#include "src/stirling/canonical_types.h"
+#include "src/stirling/core/canonical_types.h"
 
 namespace pl {
 namespace stirling {

@@ -22,7 +22,7 @@ DUMMY_SOURCE_CONNECTOR(SystemStatsConnector);
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
 #include "src/shared/metadata/metadata.h"
-#include "src/stirling/canonical_types.h"
+#include "src/stirling/core/canonical_types.h"
 
 namespace pl {
 namespace stirling {

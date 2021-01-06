@@ -31,7 +31,7 @@
 #include "src/stirling/pid_runtime_connector.h"
 #include "src/stirling/proc_stat_connector.h"
 #include "src/stirling/socket_trace_connector.h"
-#include "src/stirling/system_stats_connector.h"
+#include "src/stirling/system_stats/system_stats_connector.h"
 
 #include "src/stirling/dynamic_tracing/dynamic_tracer.h"
 

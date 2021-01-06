@@ -44,6 +44,7 @@ pl_cc_library(
         "//src/stirling/protocols/http2:cc_library",
         "//src/stirling/protocols/redis:cc_library",
         "//src/stirling/proto:sock_event_pl_cc_proto",
+        "//src/stirling/system_stats:cc_library",
         "//src/stirling/bcc_bpf_interface:cc_library",
         "//src/stirling/bpf_tools:cc_library",
         "//src/stirling/dynamic_tracing:cc_library",
