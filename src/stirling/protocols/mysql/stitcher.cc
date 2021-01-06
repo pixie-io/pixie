@@ -1,10 +1,10 @@
-#include "src/stirling/protocols/mysql/mysql_stitcher.h"
+#include "src/stirling/protocols/mysql/stitcher.h"
 
 #include <deque>
 #include <string>
 #include <utility>
 
-#include "src/stirling/protocols/mysql/mysql_handler.h"
+#include "src/stirling/protocols/mysql/handler.h"
 #include "src/stirling/protocols/mysql/packet_utils.h"
 #include "src/stirling/protocols/mysql/types.h"
 

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/protocols/mysql/mysql_stitcher.h"
+#include "src/stirling/protocols/mysql/stitcher.h"
 #include "src/stirling/protocols/mysql/test_data.h"
 #include "src/stirling/protocols/mysql/test_utils.h"
 #include "src/stirling/protocols/mysql/types.h"

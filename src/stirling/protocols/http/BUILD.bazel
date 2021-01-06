@@ -28,7 +28,7 @@ pl_cc_library(
 
 pl_cc_test(
     name = "http_parse_test",
-    srcs = ["http_parse_test.cc"],
+    srcs = ["parse_test.cc"],
     deps = [
         ":cc_library",
         "//src/stirling/testing:cc_library",
@@ -37,7 +37,7 @@ pl_cc_test(
 
 pl_cc_test(
     name = "http_stitcher_test",
-    srcs = ["http_stitcher_test.cc"],
+    srcs = ["stitcher_test.cc"],
     deps = [
         ":cc_library",
         "//src/stirling/testing:cc_library",

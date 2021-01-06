@@ -1,7 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "src/stirling/protocols/http/http_stitcher.h"
+#include "src/stirling/protocols/http/stitcher.h"
 
 namespace pl {
 namespace stirling {

@@ -1,4 +1,4 @@
-#include "src/stirling/protocols/dns/dns_stitcher.h"
+#include "src/stirling/protocols/dns/stitcher.h"
 
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>

@@ -6,7 +6,7 @@
 #include <random>
 
 #include "src/stirling/protocols/common/event_parser.h"
-#include "src/stirling/protocols/mysql/mysql_parse.h"
+#include "src/stirling/protocols/mysql/parse.h"
 #include "src/stirling/protocols/mysql/test_data.h"
 #include "src/stirling/protocols/mysql/test_utils.h"
 
@@ -35,7 +35,7 @@ bool operator==(const Packet& lhs, const Packet& rhs) {
 }
 
 // TODO(yzhao/oazizi): Fix this test:
-//   src/stirling/protocols/mysql/mysql_parse_test.cc:47:35: error:
+//   src/stirling/protocols/mysql/parse_test.cc:47:35: error:
 //   object backing the pointer will be destroyed at the end of the full-expression
 // TEST(MySQLParseFrame, Basics) {
 //   Packet packet;

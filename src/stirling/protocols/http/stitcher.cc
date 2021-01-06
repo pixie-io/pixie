@@ -1,4 +1,4 @@
-#include "src/stirling/protocols/http/http_stitcher.h"
+#include "src/stirling/protocols/http/stitcher.h"
 
 #include <deque>
 #include <limits>

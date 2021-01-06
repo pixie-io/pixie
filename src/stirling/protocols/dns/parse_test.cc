@@ -1,7 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "src/stirling/protocols/dns/dns_parse.h"
+#include "src/stirling/protocols/dns/parse.h"
 
 namespace pl {
 namespace stirling {

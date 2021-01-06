@@ -1,4 +1,4 @@
-#include "src/stirling/protocols/dns/dns_parse.h"
+#include "src/stirling/protocols/dns/parse.h"
 
 #include <arpa/inet.h>
 #include <dnsparser.h>

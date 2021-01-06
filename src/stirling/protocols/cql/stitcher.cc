@@ -1,4 +1,4 @@
-#include "src/stirling/protocols/cql/cql_stitcher.h"
+#include "src/stirling/protocols/cql/stitcher.h"
 
 #include <deque>
 #include <string>

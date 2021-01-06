@@ -1,4 +1,4 @@
-#include "src/stirling/protocols/http/http_parse.h"
+#include "src/stirling/protocols/http/parse.h"
 
 #include <picohttpparser.h>
 

@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "src/stirling/protocols/common/test_utils.h"
-#include "src/stirling/protocols/http/http_parse.h"
+#include "src/stirling/protocols/http/parse.h"
 
 namespace pl {
 namespace stirling {

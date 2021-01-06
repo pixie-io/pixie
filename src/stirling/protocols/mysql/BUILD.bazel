@@ -37,18 +37,18 @@ pl_cc_test(
 
 pl_cc_test(
     name = "mysql_handler_test",
-    srcs = ["mysql_handler_test.cc"],
+    srcs = ["handler_test.cc"],
     deps = [":cc_library"],
 )
 
 pl_cc_test(
     name = "mysql_stitcher_test",
-    srcs = ["mysql_stitcher_test.cc"],
+    srcs = ["stitcher_test.cc"],
     deps = [":cc_library"],
 )
 
 pl_cc_test(
     name = "mysql_parse_test",
-    srcs = ["mysql_parse_test.cc"],
+    srcs = ["parse_test.cc"],
     deps = [":cc_library"],
 )

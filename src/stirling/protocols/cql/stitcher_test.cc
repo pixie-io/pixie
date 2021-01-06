@@ -1,8 +1,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "src/stirling/protocols/cql/cql_parse.h"
-#include "src/stirling/protocols/cql/cql_stitcher.h"
+#include "src/stirling/protocols/cql/parse.h"
+#include "src/stirling/protocols/cql/stitcher.h"
 
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;

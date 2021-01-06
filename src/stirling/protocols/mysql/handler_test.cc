@@ -2,7 +2,7 @@
 #include <utility>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/protocols/mysql/mysql_handler.h"
+#include "src/stirling/protocols/mysql/handler.h"
 #include "src/stirling/protocols/mysql/test_data.h"
 #include "src/stirling/protocols/mysql/test_utils.h"
 #include "src/stirling/protocols/mysql/types.h"

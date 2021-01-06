@@ -1,4 +1,4 @@
-#include "src/stirling/protocols/mysql/mysql_handler.h"
+#include "src/stirling/protocols/mysql/handler.h"
 
 #include <string>
 #include <utility>

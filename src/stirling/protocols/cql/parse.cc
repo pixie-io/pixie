@@ -1,4 +1,4 @@
-#include "src/stirling/protocols/cql/cql_parse.h"
+#include "src/stirling/protocols/cql/parse.h"
 
 #include <arpa/inet.h>
 #include <deque>

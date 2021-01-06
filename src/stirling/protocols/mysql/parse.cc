@@ -1,4 +1,4 @@
-#include "src/stirling/protocols/mysql/mysql_parse.h"
+#include "src/stirling/protocols/mysql/parse.h"
 
 #include <arpa/inet.h>
 #include <deque>

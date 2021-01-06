@@ -31,18 +31,20 @@ filegroup(
 # Leaving the bl_bpf_preprocess targets in here only for debug/observability, but keep
 # in mind that they are not actively used targets.
 
+socket_trace_hdrs = [
+    "go_http2_trace.c",
+    "go_tls_trace.c",
+    "go_trace_common.h",
+    "openssl_trace.c",
+    "protocol_inference.h",
+    "utils.h",
+    "//src/stirling/bcc_bpf_interface:headers",
+]
+
 pl_bpf_cc_resource(
     name = "socket_trace",
     src = "socket_trace.c",
-    hdrs = [
-        "go_http2_trace.c",
-        "go_tls_trace.c",
-        "go_trace_common.h",
-        "openssl_trace.c",
-        "protocol_inference.h",
-        "utils.h",
-        "//src/stirling/bcc_bpf_interface:headers",
-    ],
+    hdrs = socket_trace_hdrs,
     syshdrs = ":dummy_system_headers",
 )
 
@@ -52,14 +54,7 @@ pl_bpf_cc_resource(
 pl_bpf_preprocess(
     name = "socket_trace_preprocess_debug",
     src = "socket_trace.c",
-    hdrs = [
-        "go_http2_trace.c",
-        "go_tls_trace.c",
-        "openssl_trace.c",
-        "protocol_inference.h",
-        "utils.h",
-        "//src/stirling/bcc_bpf_interface:headers",
-    ],
+    hdrs = socket_trace_hdrs,
     syshdrs = ":dummy_system_headers",
 )
 

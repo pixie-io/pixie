@@ -18,13 +18,13 @@
 #include "src/common/system/system.h"
 #include "src/stirling/common/go_grpc_types.h"
 #include "src/stirling/connection_stats.h"
-#include "src/stirling/protocols/cql/cql_stitcher.h"
+#include "src/stirling/protocols/cql/stitcher.h"
 #include "src/stirling/protocols/cql/types.h"
-#include "src/stirling/protocols/http/http_stitcher.h"
+#include "src/stirling/protocols/http/stitcher.h"
 #include "src/stirling/protocols/http/types.h"
 #include "src/stirling/protocols/http2/stitcher.h"
 #include "src/stirling/protocols/http2/types.h"
-#include "src/stirling/protocols/mysql/mysql_stitcher.h"
+#include "src/stirling/protocols/mysql/stitcher.h"
 #include "src/stirling/protocols/mysql/types.h"
 
 DEFINE_bool(enable_unix_domain_sockets, false, "Whether Unix domain sockets are traced or not.");

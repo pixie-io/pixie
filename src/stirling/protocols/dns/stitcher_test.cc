@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "src/common/base/inet_utils.h"
-#include "src/stirling/protocols/dns/dns_stitcher.h"
+#include "src/stirling/protocols/dns/stitcher.h"
 
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
