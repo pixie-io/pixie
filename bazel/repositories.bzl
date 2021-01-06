@@ -71,6 +71,7 @@ def _cc_deps():
     _bazel_repo("com_google_flatbuffers")
     _bazel_repo("org_tensorflow")
     _bazel_repo("com_github_neargye_magic_enum")
+    _bazel_repo("rules_python")
 
     _include_all_repo("com_github_gperftools_gperftools", patch_cmds = ["./autogen.sh"])
     _include_all_repo("com_github_nats_io_natsc", patches = ["//third_party:natsc.patch"], patch_args = ["-p1"])
@@ -125,7 +126,10 @@ def pl_deps():
     _bazel_repo("io_bazel_rules_go")
     _bazel_repo("com_github_bazelbuild_buildtools")
     _bazel_repo("bazel_skylib")
-    _bazel_repo("io_bazel_rules_docker")
+
+    # Added 01/05/2020 to support newer rules_python,
+    # see https://github.com/bazelbuild/rules_python/releases/tag/0.1.0.
+    _repo_impl("io_bazel_rules_docker", patches = ["//third_party:rules_docker.pr1650.patch"])
     _bazel_repo("io_bazel_toolchains")
     _bazel_repo("distroless")
     _bazel_repo("com_google_boringssl")
