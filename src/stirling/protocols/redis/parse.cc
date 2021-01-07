@@ -23,9 +23,15 @@ constexpr char kArrayMarker = '*';
 constexpr std::string_view kTerminalSequence = "\r\n";
 constexpr int kNullSize = -1;
 
-// Bulk string is formatted as <length>\r\n<actual string, up to 512MB>\r\n
 StatusOr<int> ParseSize(BinaryDecoder* decoder) {
   PL_ASSIGN_OR_RETURN(std::string_view size_str, decoder->ExtractStringUntil(kTerminalSequence));
+
+  constexpr size_t kSizeStrMaxLen = 16;
+  if (size_str.size() > kSizeStrMaxLen) {
+    return error::InvalidArgument(
+        "Redis size string is longer than $0, which indicates traffic is misclassified as Redis.",
+        kSizeStrMaxLen);
+  }
 
   // Length could be -1, which stands for NULL, and means the value is not set.
   // That's different than an empty string, which length is 0.
@@ -65,7 +71,13 @@ StatusOr<std::string_view> ParseBulkString(BinaryDecoder* decoder) {
   return payload;
 }
 
-Status ParseNonArray(const char type_marker, BinaryDecoder* decoder, Message* msg) {
+// This calls ParseMessage(), which eventually calls ParseArray() and are both recursive functions.
+// This is because Array message can include nested array messages.
+Status ParseArray(BinaryDecoder* decoder, Message* msg);
+
+Status ParseMessage(BinaryDecoder* decoder, Message* msg) {
+  PL_ASSIGN_OR_RETURN(const char type_marker, decoder->ExtractChar());
+
   switch (type_marker) {
     case kSimpleStringMarker: {
       msg->data_type = DataType::kSimpleString;
@@ -88,9 +100,14 @@ Status ParseNonArray(const char type_marker, BinaryDecoder* decoder, Message* ms
       PL_ASSIGN_OR_RETURN(msg->payload, ParseBulkString(decoder));
       break;
     }
-    default:
-      LOG(DFATAL) << "Unexpected type marker: " << type_marker;
+    case kArrayMarker: {
+      msg->data_type = DataType::kArray;
+      PL_RETURN_IF_ERROR(ParseArray(decoder, msg));
       break;
+    }
+    default:
+      return error::InvalidArgument("Unexpected Redis type marker char (displayed as integer): %d",
+                                    type_marker);
   }
   // This is needed for GCC build.
   return Status::OK();
@@ -109,9 +126,8 @@ Status ParseArray(BinaryDecoder* decoder, Message* msg) {
   std::vector<std::string> payloads;
 
   for (int i = 0; i < len; ++i) {
-    PL_ASSIGN_OR_RETURN(const char first_char, decoder->ExtractChar());
     Message msg;
-    PL_RETURN_IF_ERROR(ParseNonArray(first_char, decoder, &msg));
+    PL_RETURN_IF_ERROR(ParseMessage(decoder, &msg));
     payloads.push_back(std::move(msg.payload));
   }
 
@@ -151,22 +167,10 @@ size_t FindMessageBoundary(MessageType /*type*/, std::string_view buf, size_t st
 ParseState ParseMessage(std::string_view* buf, Message* msg) {
   BinaryDecoder decoder(*buf);
 
-  PL_ASSIGN_OR(const char first_char, decoder.ExtractChar(), return ParseState::kInvalid);
+  auto status = ParseMessage(&decoder, msg);
 
-  if (first_char == kArrayMarker) {
-    msg->data_type = DataType::kArray;
-    auto status = ParseArray(&decoder, msg);
-    if (!status.ok()) {
-      return TranslateErrorStatus(status);
-    }
-  } else if (first_char == kSimpleStringMarker || first_char == kErrorMarker ||
-             first_char == kIntegerMarker || first_char == kBulkStringsMarker) {
-    auto status = ParseNonArray(first_char, &decoder, msg);
-    if (!status.ok()) {
-      return TranslateErrorStatus(status);
-    }
-  } else {
-    return ParseState::kInvalid;
+  if (!status.ok()) {
+    return TranslateErrorStatus(status);
   }
 
   *buf = decoder.Buf();

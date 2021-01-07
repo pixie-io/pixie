@@ -92,7 +92,6 @@ Status StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
 }
 
 void SignalHandler(int signum) {
-  std::cerr << "\n\nStopping, might take a few seconds ..." << std::endl;
   // Important to call Stop(), because it releases BPF resources,
   // which would otherwise leak.
   if (g_stirling != nullptr) {
