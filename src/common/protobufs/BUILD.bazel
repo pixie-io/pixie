@@ -20,6 +20,6 @@ pl_cc_test(
     deps = [
         ":cc_library",
         # TODO(yzhao): Create a test .proto separate from stirling's own proto.
-        "//src/stirling/protocols/http2/testing/proto:greet_pl_cc_proto",
+        "//src/stirling/socket_tracer/protocols/http2/testing/proto:greet_pl_cc_proto",
     ],
 )

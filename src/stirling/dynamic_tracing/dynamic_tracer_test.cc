@@ -27,7 +27,8 @@ using ::testing::HasSubstr;
 using ::testing::SizeIs;
 
 constexpr char kServerPath[] =
-    "src/stirling/protocols/http2/testing/go_grpc_server/go_grpc_server_/go_grpc_server";
+    "src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server/go_grpc_server_/"
+    "go_grpc_server";
 
 constexpr char kPod0UpdateTxt[] = R"(
   uid: "pod0"

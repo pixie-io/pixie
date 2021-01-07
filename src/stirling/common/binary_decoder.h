@@ -10,7 +10,8 @@ namespace stirling {
 /**
  * Provides functions to extract bytes from a bytes buffer.
  */
-// TODO(yzhao): Merge with code in src/stirling/protocols/cql/frame_body_decoder.{h,cc}.
+// TODO(yzhao): Merge with code in
+// src/stirling/socket_tracer/protocols/cql/frame_body_decoder.{h,cc}.
 class BinaryDecoder {
  public:
   explicit BinaryDecoder(std::string_view buf) : buf_(buf) {}

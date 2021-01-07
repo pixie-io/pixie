@@ -13,7 +13,7 @@
 #include "src/shared/types/types.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 #include "src/stirling/core/data_table.h"
-#include "src/stirling/socket_trace_connector.h"
+#include "src/stirling/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/testing/client_server_system.h"
 #include "src/stirling/testing/common.h"
 #include "src/stirling/testing/socket_trace_bpf_test_fixture.h"

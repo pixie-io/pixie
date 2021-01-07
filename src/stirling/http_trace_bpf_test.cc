@@ -2,8 +2,8 @@
 
 #include "src/common/testing/testing.h"
 #include "src/stirling/core/data_table.h"
-#include "src/stirling/protocols/http/testing/go_http_fixture.h"
-#include "src/stirling/socket_trace_connector.h"
+#include "src/stirling/socket_tracer/protocols/http/testing/go_http_fixture.h"
+#include "src/stirling/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/testing/testing.h"
 
 namespace pl {

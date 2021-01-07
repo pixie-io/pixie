@@ -6,7 +6,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/core/source_registry.h"
 #include "src/stirling/core/types.h"
-#include "src/stirling/socket_trace_connector.h"
+#include "src/stirling/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/stirling.h"
 
 namespace pl {

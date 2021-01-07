@@ -4,7 +4,7 @@
 #include <sstream>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/protocols/http2/testing/proto/greet.pb.h"
+#include "src/stirling/socket_tracer/protocols/http2/testing/proto/greet.pb.h"
 
 namespace pl {
 namespace rio {

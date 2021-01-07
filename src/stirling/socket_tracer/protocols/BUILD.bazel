@@ -1,0 +1,29 @@
+package(default_visibility = ["//src/stirling:__subpackages__"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.cc",
+        ],
+        exclude = [
+            "**/*_test.cc",
+        ],
+    ),
+    hdrs = glob(
+        [
+            "*.h",
+        ],
+    ),
+    deps = [
+        "//src/stirling/socket_tracer/protocols/cql:cc_library",
+        "//src/stirling/socket_tracer/protocols/dns:cc_library",
+        "//src/stirling/socket_tracer/protocols/http:cc_library",
+        "//src/stirling/socket_tracer/protocols/http2:cc_library",
+        "//src/stirling/socket_tracer/protocols/mysql:cc_library",
+        "//src/stirling/socket_tracer/protocols/pgsql:cc_library",
+        "//src/stirling/socket_tracer/protocols/redis:cc_library",
+    ],
+)

@@ -1,0 +1,54 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.cc",
+        ],
+        exclude = [
+            "**/*_test.cc",
+        ],
+    ),
+    hdrs = glob(
+        [
+            "*.h",
+        ],
+    ),
+    deps = [
+        "//src/common/json:cc_library",
+        "//src/common/zlib:cc_library",
+        "//src/stirling/socket_tracer/protocols/common:cc_library",
+        "//src/stirling/utils:cc_library",
+        "@com_github_h2o_picohttpparser//:picohttpparser",
+    ],
+)
+
+pl_cc_test(
+    name = "http_parse_test",
+    srcs = ["parse_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "http_stitcher_test",
+    srcs = ["stitcher_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "utils_test",
+    srcs = ["utils_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)

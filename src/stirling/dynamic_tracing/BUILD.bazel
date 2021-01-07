@@ -77,15 +77,15 @@ pl_cc_test(
     srcs = ["dynamic_tracer_test.cc"],
     data = [
         "//src/stirling/obj_tools/testdata:dummy_go_binary",
-        "//src/stirling/protocols/http2/testing/go_grpc_server",
+        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server",
+    ],
+    tags = [
+        "exclusive",
     ],
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
         "//src/stirling/testing:cc_library",
-    ],
-    tags = [
-        "exclusive",
     ],
 )
 

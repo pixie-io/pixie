@@ -11,7 +11,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	pb "pixielabs.ai/pixielabs/src/stirling/protocols/http2/testing/proto"
+	pb "pixielabs.ai/pixielabs/src/stirling/socket_tracer/protocols/http2/testing/proto"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"

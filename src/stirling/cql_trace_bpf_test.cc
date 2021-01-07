@@ -13,8 +13,8 @@
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
 #include "src/stirling/core/data_table.h"
-#include "src/stirling/protocols/cql/types.h"
-#include "src/stirling/socket_trace_connector.h"
+#include "src/stirling/socket_tracer/protocols/cql/types.h"
+#include "src/stirling/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/testing/common.h"
 #include "src/stirling/testing/socket_trace_bpf_test_fixture.h"
 

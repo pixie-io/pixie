@@ -1,6 +1,5 @@
 #include "src/common/exec/subprocess.h"
 #include "src/common/testing/testing.h"
-#include "src/stirling/conn_stats_table.h"
 #include "src/stirling/output.h"
 #include "src/stirling/testing/client_server_system.h"
 #include "src/stirling/testing/common.h"

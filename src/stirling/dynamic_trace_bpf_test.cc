@@ -14,9 +14,11 @@
 #include "src/stirling/proto/stirling.pb.h"
 
 constexpr std::string_view kClientPath =
-    "src/stirling/protocols/http2/testing/go_grpc_client/go_grpc_client_/go_grpc_client";
+    "src/stirling/socket_tracer/protocols/http2/testing/go_grpc_client/go_grpc_client_/"
+    "go_grpc_client";
 constexpr std::string_view kServerPath =
-    "src/stirling/protocols/http2/testing/go_grpc_server/go_grpc_server_/go_grpc_server";
+    "src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server/go_grpc_server_/"
+    "go_grpc_server";
 
 namespace pl {
 namespace stirling {

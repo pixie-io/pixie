@@ -9,16 +9,18 @@
 #include "src/common/exec/subprocess.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/core/data_table.h"
-#include "src/stirling/protocols/http2/grpc.h"
-#include "src/stirling/protocols/http2/testing/greeter_server.h"
-#include "src/stirling/protocols/http2/testing/proto/greet.grpc.pb.h"
-#include "src/stirling/socket_trace_connector.h"
+#include "src/stirling/socket_tracer/protocols/http2/grpc.h"
+#include "src/stirling/socket_tracer/protocols/http2/testing/greeter_server.h"
+#include "src/stirling/socket_tracer/protocols/http2/testing/proto/greet.grpc.pb.h"
+#include "src/stirling/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/testing/common.h"
 
 constexpr std::string_view kClientPath =
-    "src/stirling/protocols/http2/testing/go_grpc_client/go_grpc_client_/go_grpc_client";
+    "src/stirling/socket_tracer/protocols/http2/testing/go_grpc_client/go_grpc_client_/"
+    "go_grpc_client";
 constexpr std::string_view kServerPath =
-    "src/stirling/protocols/http2/testing/go_grpc_server/go_grpc_server_/go_grpc_server";
+    "src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server/go_grpc_server_/"
+    "go_grpc_server";
 
 namespace pl {
 namespace stirling {

@@ -17,12 +17,7 @@
 #include "src/stirling/output.h"
 #include "src/stirling/stirling.h"
 
-#include "src/stirling/cass_table.h"
-#include "src/stirling/conn_stats_table.h"
-#include "src/stirling/dns_table.h"
-#include "src/stirling/http_table.h"
-#include "src/stirling/mysql_table.h"
-#include "src/stirling/pgsql_table.h"
+#include "src/stirling/socket_tracer/socket_trace_tables.h"
 
 #include "src/carnot/planner/probes/tracepoint_generator.h"
 

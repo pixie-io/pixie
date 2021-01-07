@@ -9,7 +9,6 @@
 #include "src/common/exec/exec.h"
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/stirling/output.h"
-#include "src/stirling/pgsql_table.h"
 #include "src/stirling/testing/common.h"
 #include "src/stirling/testing/socket_trace_bpf_test_fixture.h"
 
@@ -47,7 +46,7 @@ class GolangSQLxContainer : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/protocols/pgsql/testing/demo_image.tar";
+      "src/stirling/socket_tracer/protocols/pgsql/testing/demo_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "pgsql_demo";
   static constexpr std::string_view kReadyMessage = "";
 };

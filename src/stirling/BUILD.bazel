@@ -35,14 +35,7 @@ pl_cc_library(
         "//src/stirling/common:cc_library",
         "//src/stirling/utils:cc_library",
         "//src/stirling/proto:stirling_pl_cc_proto",
-        "//src/stirling/protocols:cc_library",
-        "//src/stirling/protocols/cql:cc_library",
-        "//src/stirling/protocols/dns:cc_library",
-        "//src/stirling/protocols/mysql:cc_library",
-        "//src/stirling/protocols/pgsql:cc_library",
-        "//src/stirling/protocols/http:cc_library",
-        "//src/stirling/protocols/http2:cc_library",
-        "//src/stirling/protocols/redis:cc_library",
+        "//src/stirling/socket_tracer:cc_library",
         "//src/stirling/proto:sock_event_pl_cc_proto",
         "//src/stirling/system_stats:cc_library",
         "//src/stirling/bcc_bpf_interface:cc_library",
@@ -136,8 +129,8 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["dynamic_trace_bpf_test.cc"],
     data = [
-        "//src/stirling/protocols/http2/testing/go_grpc_client",
-        "//src/stirling/protocols/http2/testing/go_grpc_server",
+        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_client",
+        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server",
     ],
     tags = ["requires_bpf"],
     deps = [
@@ -161,27 +154,6 @@ container_push(
     registry = "gcr.io",
     repository = "pl-dev-infra/stirling_wrapper",
     tag = "{BUILD_USER}",
-)
-
-pl_cc_test(
-    name = "socket_trace_connector_test",
-    srcs = ["socket_trace_connector_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/stirling/testing:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "uprobe_symaddrs_test",
-    srcs = ["uprobe_symaddrs_test.cc"],
-    data = [
-        "//demos/client_server_apps/go_grpc_tls_pl/server",
-    ],
-    deps = [
-        ":cc_library",
-        "//src/stirling/testing:cc_library",
-    ],
 )
 
 pl_cc_test(
@@ -222,42 +194,6 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "data_stream_test",
-    srcs = ["data_stream_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/stirling/testing:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "connection_tracker_test",
-    srcs = ["connection_tracker_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/stirling/testing:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "connection_tracker_http2_test",
-    srcs = ["connection_tracker_http2_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/stirling/testing:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "connection_stats_test",
-    srcs = ["connection_stats_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/stirling/testing:cc_library",
-    ],
-)
-
-pl_cc_test(
     name = "socket_trace_bpf_test",
     timeout = "long",
     srcs = ["socket_trace_bpf_test.cc"],
@@ -284,7 +220,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
-        "//src/stirling/protocols/http/testing:go_http_fixture",
+        "//src/stirling/socket_tracer/protocols/http/testing:go_http_fixture",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -310,8 +246,8 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["mysql_container_bpf_test.cc"],
     data = [
-        "//src/stirling/protocols/mysql/testing:expected_outputs",
-        "//src/stirling/protocols/mysql/testing:scripts",
+        "//src/stirling/socket_tracer/protocols/mysql/testing:expected_outputs",
+        "//src/stirling/socket_tracer/protocols/mysql/testing:scripts",
     ],
     flaky = True,
     tags = [
@@ -321,7 +257,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",
-        "//src/stirling/protocols/test_output_generator:cc_library",
+        "//src/stirling/socket_tracer/protocols/test_output_generator:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -347,7 +283,7 @@ pl_cc_test(
     name = "bpf_map_leak_test",
     timeout = "moderate",
     srcs = ["bpf_map_leak_test.cc"],
-    data = ["//src/stirling/protocols/http/testing/leaky_cpp_http_server:leaky_http_server"],
+    data = ["//src/stirling/socket_tracer/protocols/http/testing/leaky_cpp_http_server:leaky_http_server"],
     tags = [
         "requires_bpf",
         # TODO(oazizi): Re-enable. Broken by D7023.
@@ -367,7 +303,7 @@ pl_cc_test(
         "pgsql_trace_bpf_test.cc",
     ],
     data = [
-        "//src/stirling/protocols/pgsql/testing:demo_image.tar",
+        "//src/stirling/socket_tracer/protocols/pgsql/testing:demo_image.tar",
     ],
     flaky = True,
     shard_count = 2,
@@ -405,8 +341,8 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["grpc_trace_bpf_test.cc"],
     data = [
-        "//src/stirling/protocols/http2/testing/go_grpc_client",
-        "//src/stirling/protocols/http2/testing/go_grpc_server",
+        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_client",
+        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server",
     ],
     # TODO(PL-1412): GRPCTraceUprobingTest.CaptureRPCTraceRecord sometimes captures no data.
     flaky = True,
@@ -421,8 +357,8 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
-        "//src/stirling/protocols/http2/testing:cc_library",
-        "//src/stirling/protocols/http2/testing/proto:greet_pl_cc_proto",
+        "//src/stirling/socket_tracer/protocols/http2/testing:cc_library",
+        "//src/stirling/socket_tracer/protocols/http2/testing/proto:greet_pl_cc_proto",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -534,15 +470,6 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "fd_resolver_test",
-    srcs = ["fd_resolver_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/common/system:cc_library",
-    ],
-)
-
-pl_cc_test(
     name = "stirling_wrapper_size_test",
     srcs = ["stirling_wrapper_size_test.cc"],
     data = [":stirling_wrapper"],
@@ -558,8 +485,8 @@ sh_test(
     srcs = ["stirling_wrapper_kprobe_leak_test.sh"],
     data = [
         ":stirling_wrapper",
-        "//src/stirling/protocols/http2/testing/go_grpc_client",
-        "//src/stirling/protocols/http2/testing/go_grpc_server",
+        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_client",
+        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server",
     ],
     # Sometimes stirling_wrapper gets stuck after receiving SIGHUP, the test waits for
     # stirling_wrapper process to exit and eventually times out.
@@ -576,13 +503,13 @@ sh_test(
     srcs = ["stirling_wrapper_test.sh"],
     args = [
         "$(location :stirling_wrapper)",
-        "$(location //src/stirling/protocols/http2/testing/go_grpc_server:go_grpc_server)",
-        "$(location //src/stirling/protocols/http2/testing/go_grpc_client:go_grpc_client)",
+        "$(location //src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server:go_grpc_server)",
+        "$(location //src/stirling/socket_tracer/protocols/http2/testing/go_grpc_client:go_grpc_client)",
     ],
     data = [
         ":stirling_wrapper",
-        "//src/stirling/protocols/http2/testing/go_grpc_client",
-        "//src/stirling/protocols/http2/testing/go_grpc_server",
+        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_client",
+        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server",
     ],
     # TODO(PL-1462): Uprobe attaching sometimes fails.
     flaky = True,
@@ -622,13 +549,13 @@ sh_test(
     srcs = ["stirling_wrapper_container_test.sh"],
     args = [
         "$(location :stirling_wrapper_image.tar)",
-        "$(location //src/stirling/protocols/http2/testing/go_grpc_server:go_grpc_server)",
-        "$(location //src/stirling/protocols/http2/testing/go_grpc_client:go_grpc_client)",
+        "$(location //src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server:go_grpc_server)",
+        "$(location //src/stirling/socket_tracer/protocols/http2/testing/go_grpc_client:go_grpc_client)",
     ],
     data = [
         ":stirling_wrapper_image.tar",
-        "//src/stirling/protocols/http2/testing/go_grpc_client",
-        "//src/stirling/protocols/http2/testing/go_grpc_server",
+        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_client",
+        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server",
     ],
     tags = [
         "requires_bpf",

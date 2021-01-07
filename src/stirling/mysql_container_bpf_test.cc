@@ -14,9 +14,9 @@
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
 #include "src/stirling/core/data_table.h"
-#include "src/stirling/protocols/mysql/types.h"
-#include "src/stirling/protocols/test_output_generator/test_utils.h"
-#include "src/stirling/socket_trace_connector.h"
+#include "src/stirling/socket_tracer/protocols/mysql/types.h"
+#include "src/stirling/socket_tracer/protocols/test_output_generator/test_utils.h"
+#include "src/stirling/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/testing/common.h"
 #include "src/stirling/testing/socket_trace_bpf_test_fixture.h"
 
@@ -58,7 +58,8 @@ class MySQLContainer : public ContainerRunner {
 class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
  protected:
   MySQLTraceTest() {
-    std::string script_path = TestFilePath("src/stirling/protocols/mysql/testing/script.sql");
+    std::string script_path =
+        TestFilePath("src/stirling/socket_tracer/protocols/mysql/testing/script.sql");
     LOG(INFO) << script_path;
 
     // Run the MySQL server.
@@ -379,8 +380,9 @@ std::vector<mysql::Record> GetTargetRecords(const types::ColumnWrapperRecordBatc
 
 TEST_F(MySQLTraceTest, mysql_capture) {
   {
-    ASSERT_OK_AND_ASSIGN(int32_t client_pid,
-                         RunSQLScript("src/stirling/protocols/mysql/testing/script.sql"));
+    ASSERT_OK_AND_ASSIGN(
+        int32_t client_pid,
+        RunSQLScript("src/stirling/socket_tracer/protocols/mysql/testing/script.sql"));
 
     // Grab the data from Stirling.
     DataTable data_table(kMySQLTable);
@@ -404,8 +406,9 @@ TEST_F(MySQLTraceTest, mysql_capture) {
   }
 
   {
-    ASSERT_OK_AND_ASSIGN(int32_t client_pid,
-                         RunSQLScript("src/stirling/protocols/mysql/testing/prepare_execute.sql"));
+    ASSERT_OK_AND_ASSIGN(
+        int32_t client_pid,
+        RunSQLScript("src/stirling/socket_tracer/protocols/mysql/testing/prepare_execute.sql"));
 
     // Grab the data from Stirling.
     DataTable data_table(kMySQLTable);
@@ -430,8 +433,9 @@ TEST_F(MySQLTraceTest, mysql_capture) {
   }
 
   {
-    ASSERT_OK_AND_ASSIGN(int32_t client_pid,
-                         RunPythonScript("src/stirling/protocols/mysql/testing/script.py"));
+    ASSERT_OK_AND_ASSIGN(
+        int32_t client_pid,
+        RunPythonScript("src/stirling/socket_tracer/protocols/mysql/testing/script.py"));
 
     // Sleep a little more, just to be safe.
     sleep(1);
@@ -448,7 +452,7 @@ TEST_F(MySQLTraceTest, mysql_capture) {
       std::vector<mysql::Record> records = GetTargetRecords(record_batch, client_pid);
 
       auto expected_records = mysql::JSONtoMySQLRecord(
-          "src/stirling/protocols/mysql/testing/mysql_container_bpf_test.json");
+          "src/stirling/socket_tracer/protocols/mysql/testing/mysql_container_bpf_test.json");
 
       std::vector<Matcher<mysql::Record>> expected_matchers;
 
