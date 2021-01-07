@@ -26,6 +26,7 @@ type TracepointMap map[string]*TracepointInfo
 type MutationExecutor struct {
 	planner           Planner
 	mdtp              metadatapb.MetadataTracepointServiceClient
+	mdconf            metadatapb.MetadataConfigServiceClient
 	activeTracepoints TracepointMap
 	outputTables      []string
 	distributedState  *distributedpb.DistributedState
@@ -42,10 +43,12 @@ type TracepointInfo struct {
 func NewMutationExecutor(
 	planner Planner,
 	mdtp metadatapb.MetadataTracepointServiceClient,
+	mdconf metadatapb.MetadataConfigServiceClient,
 	distributedState *distributedpb.DistributedState) *MutationExecutor {
 	return &MutationExecutor{
 		planner:           planner,
 		mdtp:              mdtp,
+		mdconf:            mdconf,
 		distributedState:  distributedState,
 		activeTracepoints: make(TracepointMap, 0),
 	}
@@ -88,6 +91,7 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScr
 	deleteTracepointsReq := &metadatapb.RemoveTracepointRequest{
 		Names: make([]string, 0),
 	}
+	configmapReqs := make([]*metadatapb.UpdateConfigRequest, 0)
 
 	outputTablesMap := make(map[string]bool, 0)
 	// TODO(zasgar): We should make sure that we don't simultaneosly add nd delete the tracepoint.
@@ -120,6 +124,14 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScr
 		case *plannerpb.CompileMutation_DeleteTracepoint:
 			{
 				deleteTracepointsReq.Names = append(deleteTracepointsReq.Names, mut.DeleteTracepoint.Name)
+			}
+		case *plannerpb.CompileMutation_ConfigUpdate:
+			{
+				configmapReqs = append(configmapReqs, &metadatapb.UpdateConfigRequest{
+					Key:          mut.ConfigUpdate.Key,
+					Value:        mut.ConfigUpdate.Value,
+					AgentPodName: mut.ConfigUpdate.AgentPodName,
+				})
 			}
 		}
 	}
@@ -164,6 +176,16 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScr
 			}
 		}
 	}
+
+	if len(configmapReqs) > 0 {
+		for _, configmapReq := range configmapReqs {
+			resp, err := m.mdconf.UpdateConfig(ctx, configmapReq)
+			if err != nil || (resp.Status != nil && resp.Status.ErrCode != statuspb.OK) {
+				return nil, ErrConfigUpdateFailed
+			}
+		}
+	}
+
 	m.outputTables = make([]string, 0)
 	for k := range outputTablesMap {
 		m.outputTables = append(m.outputTables, k)

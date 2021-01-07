@@ -98,6 +98,7 @@ func main() {
 	}
 	mdsClient := metadatapb.NewMetadataServiceClient(mdsConn)
 	mdtpClient := metadatapb.NewMetadataTracepointServiceClient(mdsConn)
+	mdconfClient := metadatapb.NewMetadataConfigServiceClient(mdsConn)
 
 	// Connect to NATS.
 	var natsConn *nats.Conn
@@ -120,7 +121,7 @@ func main() {
 	agentTracker := tracker.NewAgents(mdsClient, viper.GetString("jwt_signing_key"))
 	agentTracker.Start()
 	defer agentTracker.Stop()
-	server, err := controllers.NewServer(env, agentTracker, mdtpClient, natsConn)
+	server, err := controllers.NewServer(env, agentTracker, mdtpClient, mdconfClient, natsConn)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs.")
 	}

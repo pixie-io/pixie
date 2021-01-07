@@ -76,6 +76,7 @@ type Server struct {
 	hcTime   time.Time
 
 	mdtp            metadatapb.MetadataTracepointServiceClient
+	mdconf          metadatapb.MetadataConfigServiceClient
 	resultForwarder QueryResultForwarder
 
 	planner Planner
@@ -83,7 +84,7 @@ type Server struct {
 
 // NewServer creates GRPC handlers.
 func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker,
-	mds metadatapb.MetadataTracepointServiceClient,
+	mds metadatapb.MetadataTracepointServiceClient, mdconf metadatapb.MetadataConfigServiceClient,
 	natsConn *nats.Conn) (*Server, error) {
 
 	var udfInfo udfspb.UDFInfo
@@ -95,7 +96,7 @@ func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker,
 		return nil, err
 	}
 
-	return NewServerWithForwarderAndPlanner(env, agentsTracker, NewQueryResultForwarder(), mds,
+	return NewServerWithForwarderAndPlanner(env, agentsTracker, NewQueryResultForwarder(), mds, mdconf,
 		natsConn, c)
 }
 
@@ -104,6 +105,7 @@ func NewServerWithForwarderAndPlanner(env querybrokerenv.QueryBrokerEnv,
 	agentsTracker AgentsTracker,
 	resultForwarder QueryResultForwarder,
 	mds metadatapb.MetadataTracepointServiceClient,
+	mdconf metadatapb.MetadataConfigServiceClient,
 	natsConn *nats.Conn,
 	planner Planner) (*Server, error) {
 
@@ -113,6 +115,7 @@ func NewServerWithForwarderAndPlanner(env querybrokerenv.QueryBrokerEnv,
 		resultForwarder: resultForwarder,
 		natsConn:        natsConn,
 		mdtp:            mds,
+		mdconf:          mdconf,
 		planner:         planner,
 	}
 	return s, nil
@@ -376,7 +379,7 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 	distributedState := s.agentsTracker.GetAgentInfo().DistributedState()
 
 	if req.Mutation {
-		mutationExec := NewMutationExecutor(s.planner, s.mdtp, &distributedState)
+		mutationExec := NewMutationExecutor(s.planner, s.mdtp, s.mdconf, &distributedState)
 
 		status, err := mutationExec.Execute(ctx, req, planOpts)
 		if err != nil {

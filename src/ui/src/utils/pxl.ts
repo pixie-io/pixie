@@ -2,6 +2,7 @@
 const pxlMutations = [
   'from pxtrace',
   'import pxtrace',
+  'import pxconfig',
 ];
 
 export const ContainsMutation = (pxl): boolean => (

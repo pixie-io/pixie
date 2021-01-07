@@ -573,7 +573,7 @@ func TestCheckHealth_Success(t *testing.T) {
 		Plan(plannerStatePB, gomock.Any()).
 		Return(plannerResultPB, nil)
 
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nc, planner)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
 	err = s.CheckHealth(context.Background())
 	// Should pass.
 	assert.Nil(t, err)
@@ -617,7 +617,7 @@ func TestCheckHealth_CompilationError(t *testing.T) {
 		Plan(plannerStatePB, gomock.Any()).
 		Return(nil, fmt.Errorf("some compiler error"))
 
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nc, planner)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
 	err = s.CheckHealth(context.Background())
 	// Should not pass.
 	assert.NotNil(t, err)
@@ -669,7 +669,7 @@ func TestHealthCheck_ExecutionError(t *testing.T) {
 		Plan(plannerStatePB, gomock.Any()).
 		Return(plannerResultPB, nil)
 
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nc, planner)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
 	err = s.CheckHealth(context.Background())
 	// Should not pass.
 	assert.NotNil(t, err)
@@ -762,7 +762,7 @@ func TestExecuteScript_Success(t *testing.T) {
 		Plan(plannerStatePB, gomock.Any()).
 		Return(plannerResultPB, nil)
 
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nc, planner)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
 
 	srv := mock_vizierpb.NewMockVizierService_ExecuteScriptServer(ctrl)
 	auth := authcontext.New()
@@ -845,7 +845,7 @@ func TestExecuteScript_PlannerErrorResult(t *testing.T) {
 		Plan(plannerStatePB, gomock.Any()).
 		Return(badPlannerResultPB, nil)
 
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nc, planner)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
 
 	srv := mock_vizierpb.NewMockVizierService_ExecuteScriptServer(ctrl)
 	auth := authcontext.New()
@@ -932,7 +932,7 @@ func TestExecuteScript_ErrorInStatusResult(t *testing.T) {
 		Plan(plannerStatePB, gomock.Any()).
 		Return(badPlannerResultPB, nil)
 
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nc, planner)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
 
 	srv := mock_vizierpb.NewMockVizierService_ExecuteScriptServer(ctrl)
 	auth := authcontext.New()
@@ -989,7 +989,7 @@ func TestTransferResultChunk_AgentStreamComplete(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nc, nil)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil)
 	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
 
 	sv := new(schemapb.RowBatchData)
@@ -1090,7 +1090,7 @@ func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nc, nil)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil)
 	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
 
 	sv := new(schemapb.RowBatchData)
@@ -1172,7 +1172,7 @@ func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nc, nil)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil)
 	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
 
 	sv := new(schemapb.RowBatchData)
@@ -1250,7 +1250,7 @@ func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nc, nil)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil)
 	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
 
 	sv := new(schemapb.RowBatchData)
