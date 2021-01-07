@@ -33,6 +33,26 @@ spec:
           value: ""
         - name: PROTOCOL
           value: "http"
+      initContainers:
+      - name: etcd-wait
+        image: byrnedo/alpine-curl:0.1.8
+        # yamllint disable
+        command: ['sh', '-c', 'set -xe;
+          URL="${PL_MD_ETCD_SERVER}${HEALTH_PATH}";
+          until [ $(curl --cacert /certs/ca.crt --key /certs/client.key --cert /certs/client.crt -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
+            echo "waiting for ${URL}";
+            sleep 2;
+          done;']
+        env:
+        - name: HEALTH_PATH
+          value: "/health"
+        envFrom:
+        - configMapRef:
+            name: pl-cluster-config
+            optional: true
+        volumeMounts:
+        - mountPath: /certs
+          name: certs
       containers:
       - name: app
         image: gcr.io/pl-dev-infra/vizier/metadata_server_image:latest
