@@ -16,6 +16,7 @@
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/funcs/funcs.h"
 #include "src/vizier/services/agent/manager/chan_cache.h"
+#include "src/vizier/services/agent/manager/config_manager.h"
 #include "src/vizier/services/agent/manager/exec.h"
 #include "src/vizier/services/agent/manager/heartbeat.h"
 #include "src/vizier/services/agent/manager/ssl.h"
@@ -231,6 +232,12 @@ Status Manager::RegisterBackgroundHelpers() {
       RegisterMessageHandler(messages::VizierMessage::MsgCase::kHeartbeatAck, heartbeat_handler));
   PL_CHECK_OK(
       RegisterMessageHandler(messages::VizierMessage::MsgCase::kHeartbeatNack, heartbeat_handler));
+
+  // Attach message handler for config updates.
+  auto config_manager =
+      std::make_shared<ConfigManager>(dispatcher_.get(), &info_, nats_connector_.get());
+  PL_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kConfigUpdateMessage,
+                                            config_manager));
 
   return Status::OK();
 }
