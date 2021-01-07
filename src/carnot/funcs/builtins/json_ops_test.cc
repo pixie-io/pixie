@@ -31,6 +31,11 @@ TEST(JSONOps, PluckUDF_bad_input_return_empty) {
   udf_tester.ForInput("asdad", "str_key").Expect("");
 }
 
+TEST(JSONOps, PluckUDF_non_object_input_return_empty) {
+  auto udf_tester = udf::UDFTester<PluckUDF>();
+  udf_tester.ForInput("[\"asdad\"]", "str_key").Expect("");
+}
+
 TEST(JSONOps, PluckAsInt64UDF) {
   auto udf_tester = udf::UDFTester<PluckAsInt64UDF>();
   udf_tester.ForInput(kTestJSONStr, "int64_key").Expect(34243242341);
@@ -41,6 +46,11 @@ TEST(JSONOps, PluckAsInt64UDF_bad_input_return_empty) {
   udf_tester.ForInput("sdasdsa", "int64_key").Expect(0);
 }
 
+TEST(JSONOps, PluckAsIntUDF_non_object_input_return_empty) {
+  auto udf_tester = udf::UDFTester<PluckAsInt64UDF>();
+  udf_tester.ForInput("[\"asdad\"]", "int64_key").Expect(0);
+}
+
 TEST(JSONOps, PluckAsFloat64UDF) {
   auto udf_tester = udf::UDFTester<PluckAsFloat64UDF>();
   udf_tester.ForInput(kTestJSONStr, "float64_key").Expect(123423.5234);
@@ -49,6 +59,11 @@ TEST(JSONOps, PluckAsFloat64UDF) {
 TEST(JSONOps, PluckAsFloat64UDF_bad_input_return_empty) {
   auto udf_tester = udf::UDFTester<PluckAsFloat64UDF>();
   udf_tester.ForInput("sdadasd", "float64_key").Expect(0.0);
+}
+
+TEST(JSONOps, PluckAsFloatUDF_non_object_input_return_empty) {
+  auto udf_tester = udf::UDFTester<PluckAsFloat64UDF>();
+  udf_tester.ForInput("[\"asdad\"]", "float64_key").Expect(0.0);
 }
 
 TEST(JSONOps, ScriptReferenceUDF_no_args) {

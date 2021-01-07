@@ -26,6 +26,9 @@ class PluckUDF : public udf::ScalarUDF {
     if (ok == nullptr) {
       return "";
     }
+    if (!d.IsObject()) {
+      return "";
+    }
     if (!d.HasMember(key.data())) {
       return "";
     }
@@ -68,6 +71,9 @@ class PluckAsInt64UDF : public udf::ScalarUDF {
     if (ok == nullptr) {
       return 0;
     }
+    if (!d.IsObject()) {
+      return 0;
+    }
     const auto& plucked_value = d[key.data()];
     return plucked_value.GetInt64();
   }
@@ -98,6 +104,9 @@ class PluckAsFloat64UDF : public udf::ScalarUDF {
     rapidjson::ParseResult ok = d.Parse(in.data());
     // TODO(zasgar/michelle): Replace with null when available.
     if (ok == nullptr) {
+      return 0.0;
+    }
+    if (!d.IsObject()) {
       return 0.0;
     }
     const auto& plucked_value = d[key.data()];
