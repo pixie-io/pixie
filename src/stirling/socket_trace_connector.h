@@ -102,6 +102,13 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // That would then cause performance overheads.
   void UpdateCommonState(ConnectorContext* ctx);
 
+  // A wrapper around UpdateCommonState that filters out calls to UpdateCommonState()
+  // if the state had already been updated for a different table.
+  // A second call to this function for any table will trigger a call to UpdateCommonState(),
+  // so this effectively means that UpdateCommonState() runs as frequently as the most frequently
+  // transferred table.
+  void CachedUpdateCommonState(ConnectorContext* ctx, uint32_t table_num);
+
   // Updates control map value for protocol, which specifies which role(s) to trace for the given
   // protocol's traffic.
   Status UpdateBPFProtocolTraceRole(TrafficProtocol protocol, EndpointRole role_to_trace);
@@ -393,6 +400,14 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // The table num identifies which data the collected data is transferred.
   // The transfer_fn defines which function is called to process the data for transfer.
   std::vector<TransferSpec> protocol_transfer_specs_;
+
+  // Keep track of which tables have had data transferred via TransferData()
+  // since the last UpdateCommonState().
+  // Used as a performance optimization to avoid too many calls to UpdateCommonState().
+  // Essentially, we allow a TransferData() for one table to piggy-back on the UpdateCommonState()
+  // of another table.
+  // A bit being set means that the table in question should skip a call to UpdateCommonState().
+  std::bitset<kTables.size()> table_access_history_;
 
   // Keep track of when the last perf buffer drain event was triggered.
   // Perf buffer draining is not atomic nor synchronous, so we want the time before draining.

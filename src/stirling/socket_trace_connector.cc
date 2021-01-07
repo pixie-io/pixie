@@ -256,13 +256,32 @@ void SocketTraceConnector::UpdateCommonState(ConnectorContext* ctx) {
   }
 }
 
+void SocketTraceConnector::CachedUpdateCommonState(ConnectorContext* ctx, uint32_t table_num) {
+  // Check if UpdateCommonState() is required.
+  // As a performance optimization, we skip this update if a TransferData on a previous table
+  // has already made this call.
+  // Note that a second call to TransferData() for any given table will trigger UpdateCommonState(),
+  // so, in effect, UpdateCommonState() runs as frequently as the most frequently sampled table.
+  if (table_access_history_.test(table_num) == 0) {
+    UpdateCommonState(ctx);
+
+    // After calling UpdateCommonState(), set bits for all tables to 1,
+    // representing the fact that they can piggy-back on the UpdateCommonState() just called.
+    table_access_history_.set();
+  }
+
+  // Reset the bit for the current table, so that a future call to TransferData() on this table
+  // will trigger UpdateCommonState().
+  table_access_history_.reset(table_num);
+}
+
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
                                             DataTable* data_table) {
   DCHECK_LT(table_num, kTables.size())
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
   DCHECK(data_table != nullptr);
 
-  UpdateCommonState(ctx);
+  CachedUpdateCommonState(ctx, table_num);
 
   if (table_num == kConnStatsTableNum) {
     // Connection stats table does not follow the convention of tables for data streams.
