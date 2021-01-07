@@ -7,7 +7,7 @@
 
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 #include "src/stirling/common/socket_trace.h"
-#include "src/stirling/testing/clock.h"
+#include "src/stirling/socket_tracer/testing/clock.h"
 
 namespace pl {
 namespace stirling {

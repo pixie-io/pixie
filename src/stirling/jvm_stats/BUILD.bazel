@@ -1,0 +1,36 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test", "pl_cc_test_library")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = ["**/*_test.cc"],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//src/common/fs:cc_library",
+        "//src/shared/metadata:cc_library",
+        "//src/shared/types:cc_library",
+        "//src/shared/types/proto/wrapper:cc_library",
+        "//src/stirling/core:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "jvm_stats_connector_test",
+    srcs = ["jvm_stats_connector_test.cc"],
+    data = [
+        "//src/stirling/testing/java:HelloWorld",
+    ],
+    tags = [
+        "exclusive",
+        "no_coverage",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)

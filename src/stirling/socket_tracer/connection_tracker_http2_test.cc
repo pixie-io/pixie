@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "src/common/base/types.h"
-#include "src/stirling/testing/http2_stream_generator.h"
+#include "src/stirling/socket_tracer/testing/http2_stream_generator.h"
 
 namespace pl {
 namespace stirling {

@@ -10,11 +10,5 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/common/system:cc_library",
-        "//src/stirling/core:cc_library",
     ],
-)
-
-filegroup(
-    name = "tcpdrop_bpftrace_script",
-    srcs = ["tcpdrop.bpftrace.pxl"],
 )

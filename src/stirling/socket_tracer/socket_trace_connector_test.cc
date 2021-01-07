@@ -14,9 +14,9 @@
 #include "src/stirling/socket_tracer/protocols/cql/test_utils.h"
 #include "src/stirling/socket_tracer/protocols/mysql/test_data.h"
 #include "src/stirling/socket_tracer/protocols/mysql/test_utils.h"
+#include "src/stirling/socket_tracer/testing/event_generator.h"
+#include "src/stirling/socket_tracer/testing/http2_stream_generator.h"
 #include "src/stirling/testing/common.h"
-#include "src/stirling/testing/event_generator.h"
-#include "src/stirling/testing/http2_stream_generator.h"
 
 namespace pl {
 namespace stirling {

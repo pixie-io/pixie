@@ -1,6 +1,6 @@
 #ifdef __linux__
 
-#include "src/stirling/jvm_stats_connector.h"
+#include "src/stirling/jvm_stats/jvm_stats_connector.h"
 
 #include <string>
 #include <utility>
@@ -10,7 +10,7 @@
 #include "src/common/base/byte_utils.h"
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
-#include "src/stirling/jvm_stats_table.h"
+#include "src/stirling/jvm_stats/jvm_stats_table.h"
 #include "src/stirling/utils/hsperfdata.h"
 #include "src/stirling/utils/java.h"
 #include "src/stirling/utils/proc_path_tools.h"

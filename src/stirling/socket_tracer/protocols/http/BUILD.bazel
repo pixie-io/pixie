@@ -31,7 +31,6 @@ pl_cc_test(
     srcs = ["parse_test.cc"],
     deps = [
         ":cc_library",
-        "//src/stirling/testing:cc_library",
     ],
 )
 
@@ -40,7 +39,6 @@ pl_cc_test(
     srcs = ["stitcher_test.cc"],
     deps = [
         ":cc_library",
-        "//src/stirling/testing:cc_library",
     ],
 )
 
@@ -49,6 +47,5 @@ pl_cc_test(
     srcs = ["utils_test.cc"],
     deps = [
         ":cc_library",
-        "//src/stirling/testing:cc_library",
     ],
 )

@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/testing/event_generator.h"
+#include "src/stirling/socket_tracer/testing/event_generator.h"
 
 namespace pl {
 namespace stirling {

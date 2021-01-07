@@ -1,7 +1,7 @@
 #include "src/common/exec/exec.h"
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
-#include "src/stirling/testing/testing.h"
+#include "src/stirling/testing/socket_trace_bpf_test_fixture.h"
 
 namespace pl {
 namespace stirling {

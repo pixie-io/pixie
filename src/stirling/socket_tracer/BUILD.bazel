@@ -10,15 +10,7 @@ pl_cc_library(
             "**/*_test.cc",
         ],
     ),
-    hdrs = glob(
-        [
-            "*.h",
-            "bcc_bpf_interface/*.h",
-        ],
-        exclude = [
-            "**/*_mock.h",
-        ],
-    ),
+    hdrs = glob(["*.h"]),
     deps = [
         "//src/common/grpcutils:cc_library",
         "//src/common/protobufs:cc_library",
@@ -45,6 +37,7 @@ pl_cc_test(
     srcs = ["socket_trace_connector_test.cc"],
     deps = [
         ":cc_library",
+        "//src/stirling/socket_tracer/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -57,7 +50,7 @@ pl_cc_test(
     ],
     deps = [
         ":cc_library",
-        "//src/stirling/testing:cc_library",
+        "//src/stirling/socket_tracer/testing:cc_library",
     ],
 )
 
@@ -66,7 +59,7 @@ pl_cc_test(
     srcs = ["data_stream_test.cc"],
     deps = [
         ":cc_library",
-        "//src/stirling/testing:cc_library",
+        "//src/stirling/socket_tracer/testing:cc_library",
     ],
 )
 
@@ -75,7 +68,7 @@ pl_cc_test(
     srcs = ["connection_tracker_test.cc"],
     deps = [
         ":cc_library",
-        "//src/stirling/testing:cc_library",
+        "//src/stirling/socket_tracer/testing:cc_library",
     ],
 )
 
@@ -84,7 +77,7 @@ pl_cc_test(
     srcs = ["connection_tracker_http2_test.cc"],
     deps = [
         ":cc_library",
-        "//src/stirling/testing:cc_library",
+        "//src/stirling/socket_tracer/testing:cc_library",
     ],
 )
 
@@ -93,7 +86,7 @@ pl_cc_test(
     srcs = ["connection_stats_test.cc"],
     deps = [
         ":cc_library",
-        "//src/stirling/testing:cc_library",
+        "//src/stirling/socket_tracer/testing:cc_library",
     ],
 )
 

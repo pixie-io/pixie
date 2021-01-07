@@ -1,4 +1,4 @@
-#include "src/stirling/jvm_stats_connector.h"
+#include "src/stirling/jvm_stats/jvm_stats_connector.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -9,7 +9,7 @@
 #include "src/common/base/test_utils.h"
 #include "src/common/exec/subprocess.h"
 #include "src/common/testing/test_environment.h"
-#include "src/stirling/jvm_stats_table.h"
+#include "src/stirling/jvm_stats/jvm_stats_table.h"
 #include "src/stirling/testing/common.h"
 
 namespace pl {

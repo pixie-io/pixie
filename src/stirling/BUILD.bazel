@@ -35,9 +35,10 @@ pl_cc_library(
         "//src/stirling/common:cc_library",
         "//src/stirling/utils:cc_library",
         "//src/stirling/proto:stirling_pl_cc_proto",
+        "//src/stirling/jvm_stats:cc_library",
         "//src/stirling/socket_tracer:cc_library",
-        "//src/stirling/proto:sock_event_pl_cc_proto",
         "//src/stirling/system_stats:cc_library",
+        "//src/stirling/proto:sock_event_pl_cc_proto",
         "//src/stirling/bcc_bpf_interface:cc_library",
         "//src/stirling/bpf_tools:cc_library",
         "//src/stirling/dynamic_tracing:cc_library",
@@ -154,24 +155,6 @@ container_push(
     registry = "gcr.io",
     repository = "pl-dev-infra/stirling_wrapper",
     tag = "{BUILD_USER}",
-)
-
-pl_cc_test(
-    name = "jvm_stats_connector_test",
-    srcs = ["jvm_stats_connector_test.cc"],
-    data = [
-        "//src/stirling/testing/java:HelloWorld",
-    ],
-    flaky = True,
-    tags = [
-        "exclusive",
-        "no_coverage",
-    ],
-    deps = [
-        ":cc_library",
-        "//src/common/exec:cc_library",
-        "//src/stirling/testing:cc_library",
-    ],
 )
 
 pl_cc_test(

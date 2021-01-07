@@ -1,5 +1,6 @@
 #include "src/stirling/socket_tracer/protocols/mysql/test_data.h"
 #include "src/stirling/socket_tracer/protocols/mysql/test_utils.h"
+#include "src/stirling/testing/client_server_system.h"
 #include "src/stirling/testing/common.h"
 #include "src/stirling/testing/socket_trace_bpf_test_fixture.h"
 

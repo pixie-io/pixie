@@ -4,7 +4,7 @@
 
 #include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
 #include "src/stirling/common/go_grpc_types.h"
-#include "src/stirling/testing/clock.h"
+#include "src/stirling/socket_tracer/testing/clock.h"
 
 namespace pl {
 namespace stirling {

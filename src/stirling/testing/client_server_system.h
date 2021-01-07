@@ -80,7 +80,7 @@ class ClientServerSystem {
   template <ssize_t (TCPSocket::*TSendFn)(std::string_view) const>
   static void SendData(const TCPSocket& socket, const std::vector<std::string_view>& data) {
     for (auto d : data) {
-      ASSERT_EQ(d.length(), (socket.*TSendFn)(d));
+      CHECK_EQ(d.length(), (socket.*TSendFn)(d));
     }
   }
 

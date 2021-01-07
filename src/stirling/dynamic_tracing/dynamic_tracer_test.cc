@@ -6,7 +6,7 @@
 #include "src/common/exec/subprocess.h"
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/testing.h"
-#include "src/stirling/testing/testing.h"
+#include "src/stirling/testing/common.h"
 
 constexpr std::string_view kBinaryPath =
     "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary";

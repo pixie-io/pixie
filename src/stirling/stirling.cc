@@ -27,7 +27,7 @@
 #include "src/stirling/core/seq_gen_connector.h"
 #include "src/stirling/dynamic_bpftrace_connector.h"
 #include "src/stirling/dynamic_trace_connector.h"
-#include "src/stirling/jvm_stats_connector.h"
+#include "src/stirling/jvm_stats/jvm_stats_connector.h"
 #include "src/stirling/pid_runtime_connector.h"
 #include "src/stirling/proc_stat_connector.h"
 #include "src/stirling/socket_tracer/socket_trace_connector.h"
