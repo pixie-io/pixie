@@ -38,28 +38,6 @@ func (m *MockAgentManager) EXPECT() *MockAgentManagerMockRecorder {
 	return m.recorder
 }
 
-// NewAgentUpdateCursor mocks base method
-func (m *MockAgentManager) NewAgentUpdateCursor() go_uuid.UUID {
-	ret := m.ctrl.Call(m, "NewAgentUpdateCursor")
-	ret0, _ := ret[0].(go_uuid.UUID)
-	return ret0
-}
-
-// NewAgentUpdateCursor indicates an expected call of NewAgentUpdateCursor
-func (mr *MockAgentManagerMockRecorder) NewAgentUpdateCursor() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewAgentUpdateCursor", reflect.TypeOf((*MockAgentManager)(nil).NewAgentUpdateCursor))
-}
-
-// DeleteAgentUpdateCursor mocks base method
-func (m *MockAgentManager) DeleteAgentUpdateCursor(cursorID go_uuid.UUID) {
-	m.ctrl.Call(m, "DeleteAgentUpdateCursor", cursorID)
-}
-
-// DeleteAgentUpdateCursor indicates an expected call of DeleteAgentUpdateCursor
-func (mr *MockAgentManagerMockRecorder) DeleteAgentUpdateCursor(cursorID interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAgentUpdateCursor", reflect.TypeOf((*MockAgentManager)(nil).DeleteAgentUpdateCursor), cursorID)
-}
-
 // RegisterAgent mocks base method
 func (m *MockAgentManager) RegisterAgent(info *agentpb.Agent) (uint32, error) {
 	ret := m.ctrl.Call(m, "RegisterAgent", info)
@@ -192,6 +170,28 @@ func (m *MockAgentManager) HandleUpdate(arg0 *controllers.UpdateMessage) {
 // HandleUpdate indicates an expected call of HandleUpdate
 func (mr *MockAgentManagerMockRecorder) HandleUpdate(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleUpdate", reflect.TypeOf((*MockAgentManager)(nil).HandleUpdate), arg0)
+}
+
+// NewAgentUpdateCursor mocks base method
+func (m *MockAgentManager) NewAgentUpdateCursor() go_uuid.UUID {
+	ret := m.ctrl.Call(m, "NewAgentUpdateCursor")
+	ret0, _ := ret[0].(go_uuid.UUID)
+	return ret0
+}
+
+// NewAgentUpdateCursor indicates an expected call of NewAgentUpdateCursor
+func (mr *MockAgentManagerMockRecorder) NewAgentUpdateCursor() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewAgentUpdateCursor", reflect.TypeOf((*MockAgentManager)(nil).NewAgentUpdateCursor))
+}
+
+// DeleteAgentUpdateCursor mocks base method
+func (m *MockAgentManager) DeleteAgentUpdateCursor(cursorID go_uuid.UUID) {
+	m.ctrl.Call(m, "DeleteAgentUpdateCursor", cursorID)
+}
+
+// DeleteAgentUpdateCursor indicates an expected call of DeleteAgentUpdateCursor
+func (mr *MockAgentManagerMockRecorder) DeleteAgentUpdateCursor(cursorID interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAgentUpdateCursor", reflect.TypeOf((*MockAgentManager)(nil).DeleteAgentUpdateCursor), cursorID)
 }
 
 // GetAgentUpdates mocks base method

@@ -321,6 +321,7 @@ func TestGetActiveAgents(t *testing.T) {
 		Info: &agentpb.AgentInfo{
 			AgentID: &uuidpb.UUID{Data: []byte("7ba7b8109dad11d180b400c04fd430c8")},
 			HostInfo: &agentpb.HostInfo{
+				PodName:  "pem-existing",
 				Hostname: "testhost",
 				HostIP:   "127.0.0.1",
 			},

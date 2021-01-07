@@ -39,6 +39,7 @@ func createAgent(t *testing.T, c *kvstore.Cache, agentID string, agentPb string)
 		t.Fatal("Unable to marshal agentData pb.")
 	}
 	c.Set("/agent/"+agentID, string(i))
+	c.Set("/podToAgentID/"+info.Info.HostInfo.PodName, agentID)
 	c.Set("/hostnameIP/"+info.Info.HostInfo.Hostname+"-127.0.0.1"+"/agent", agentID)
 	if !info.Info.Capabilities.CollectsData {
 		c.Set("/kelvin/"+agentID, agentID)
@@ -88,6 +89,35 @@ func TestKVMetadataStore_GetAgent(t *testing.T) {
 	agent, err = mds.GetAgent(newAgUUID)
 	assert.Nil(t, err)
 	assert.Nil(t, agent)
+}
+
+func TestKVMetadataStore_GetAgentIDFromPodName(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		Get("/podToAgentID/pem-1234").
+		Return(nil, nil)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	// Add an existing agent in the cache.
+	createAgent(t, c, testutils.ExistingAgentUUID, testutils.ExistingAgentInfo)
+
+	// Get existing agent.
+	agent, err := mds.GetAgentIDFromPodName("pem-existing")
+	assert.Nil(t, err)
+	assert.Equal(t, testutils.ExistingAgentUUID, agent)
+
+	// Get non-existent agent.
+	agent, err = mds.GetAgentIDFromPodName("pem-1234")
+	assert.Nil(t, err)
+	assert.Equal(t, "", agent)
 }
 
 func TestKVMetadataStore_GetAgentIDForHostname(t *testing.T) {
@@ -171,6 +201,8 @@ func TestKVMetadataStore_DeleteAgent(t *testing.T) {
 	assert.Nil(t, err)
 	hostnameVal, _ := c.Get("/hostnameIP/-127.0.0.1/agent")
 	assert.Equal(t, []byte(""), hostnameVal)
+	podNameVal, _ := c.Get("/podToAgentID/pem-existing")
+	assert.Equal(t, []byte(""), podNameVal)
 	agentVal, _ := c.Get("/agent/" + testutils.ExistingAgentUUID)
 	assert.Equal(t, []byte(""), agentVal)
 	tpState, _ := c.Get("/tracepointStates/" + tpID.String() + "/" + testutils.ExistingAgentUUID)
@@ -236,6 +268,8 @@ func TestKVMetadataStore_CreateAgent(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, existingAgUUID, utils.UUIDFromProtoOrNil(agent.Info.AgentID))
 	assert.Equal(t, "testhost", agent.Info.HostInfo.Hostname)
+	podNameVal, _ := c.Get("/podToAgentID/pem-existing")
+	assert.Equal(t, []byte(testutils.ExistingAgentUUID), podNameVal)
 }
 
 func TestKVMetadataStore_UpdateAgentDataInfo(t *testing.T) {

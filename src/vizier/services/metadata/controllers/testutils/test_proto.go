@@ -33,6 +33,7 @@ info {
   host_info {
     hostname: "testhost"
     host_ip: "127.0.0.1"
+    pod_name: "pem-existing"
   }
   capabilities {
     collects_data: true

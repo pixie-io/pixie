@@ -110,6 +110,10 @@ func getAgentKey(agentID uuid.UUID) string {
 	return path.Join("/", "agent", agentID.String())
 }
 
+func getPodNameToAgentIDKey(podName string) string {
+	return path.Join("/", "podToAgentID", podName)
+}
+
 // GetHostnamePairAgentKey gets the key for the hostname pair's agent.
 func GetHostnamePairAgentKey(pair *HostnameIPPair) string {
 	return path.Join("/", "hostnameIP", fmt.Sprintf("%s-%s", pair.Hostname, pair.IP), "agent")
@@ -290,6 +294,20 @@ func (mds *KVMetadataStore) GetKelvinIDs() ([]string, error) {
 	return ids, nil
 }
 
+// GetAgentIDFromPodName gets the agent ID for the agent with the given name.
+func (mds *KVMetadataStore) GetAgentIDFromPodName(podName string) (string, error) {
+	id, err := mds.cache.Get(getPodNameToAgentIDKey(podName))
+	if err != nil {
+		return "", err
+	}
+
+	if id == nil {
+		return "", nil
+	}
+
+	return string(id), nil
+}
+
 // GetAgentIDForHostnamePair gets the agent for the given hostnamePair, if it exists.
 func (mds *KVMetadataStore) GetAgentIDForHostnamePair(hnPair *HostnameIPPair) (string, error) {
 	id, err := mds.cache.Get(GetHostnamePairAgentKey(hnPair))
@@ -355,7 +373,7 @@ func (mds *KVMetadataStore) DeleteAgent(agentID uuid.UUID) error {
 		Hostname: hostname,
 		IP:       aPb.Info.HostInfo.HostIP,
 	}
-	delKeys := []string{getAgentKey(agentID), GetHostnamePairAgentKey(hnPair)}
+	delKeys := []string{getAgentKey(agentID), GetHostnamePairAgentKey(hnPair), getPodNameToAgentIDKey(aPb.Info.HostInfo.PodName)}
 
 	// Info.Capabiltiies should never be nil with our new PEMs/Kelvin. If it is nil,
 	// this means that the protobuf we retrieved from etcd belongs to an older agent.
@@ -401,6 +419,7 @@ func (mds *KVMetadataStore) CreateAgent(agentID uuid.UUID, a *agentpb.Agent) err
 
 	mds.cache.Set(GetHostnamePairAgentKey(hnPair), agentID.String())
 	mds.cache.Set(getAgentKey(agentID), string(i))
+	mds.cache.Set(getPodNameToAgentIDKey(a.Info.HostInfo.PodName), agentID.String())
 
 	collectsData := a.Info.Capabilities == nil || a.Info.Capabilities.CollectsData
 	if !collectsData {

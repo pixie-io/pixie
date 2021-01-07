@@ -32,6 +32,7 @@ type MetadataStore interface {
 	GetASID() (uint32, error)
 	GetAgent(agentID uuid.UUID) (*agentpb.Agent, error)
 	GetAgentIDForHostnamePair(hnPair *HostnameIPPair) (string, error)
+	GetAgentIDFromPodName(string) (string, error)
 	GetAgents() ([]*agentpb.Agent, error)
 	GetAgentsDataInfo() (map[uuid.UUID]*messagespb.AgentDataInfo, error)
 	GetAgentDataInfo(agentID uuid.UUID) (*messagespb.AgentDataInfo, error)

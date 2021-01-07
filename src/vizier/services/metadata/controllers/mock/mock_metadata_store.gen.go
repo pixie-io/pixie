@@ -8,7 +8,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	go_uuid "github.com/satori/go.uuid"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	types "pixielabs.ai/pixielabs/src/shared/types/go"
+	go0 "pixielabs.ai/pixielabs/src/shared/types/go"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
@@ -112,6 +112,19 @@ func (m *MockMetadataStore) GetAgentIDForHostnamePair(hnPair *controllers.Hostna
 // GetAgentIDForHostnamePair indicates an expected call of GetAgentIDForHostnamePair
 func (mr *MockMetadataStoreMockRecorder) GetAgentIDForHostnamePair(hnPair interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentIDForHostnamePair", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentIDForHostnamePair), hnPair)
+}
+
+// GetAgentIDFromPodName mocks base method
+func (m *MockMetadataStore) GetAgentIDFromPodName(arg0 string) (string, error) {
+	ret := m.ctrl.Call(m, "GetAgentIDFromPodName", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgentIDFromPodName indicates an expected call of GetAgentIDFromPodName
+func (mr *MockMetadataStoreMockRecorder) GetAgentIDFromPodName(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentIDFromPodName", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentIDFromPodName), arg0)
 }
 
 // GetAgents mocks base method
@@ -335,7 +348,7 @@ func (mr *MockMetadataStoreMockRecorder) GetPods() *gomock.Call {
 }
 
 // GetProcesses mocks base method
-func (m *MockMetadataStore) GetProcesses(upids []*types.UInt128) ([]*metadatapb.ProcessInfo, error) {
+func (m *MockMetadataStore) GetProcesses(upids []*go0.UInt128) ([]*metadatapb.ProcessInfo, error) {
 	ret := m.ctrl.Call(m, "GetProcesses", upids)
 	ret0, _ := ret[0].([]*metadatapb.ProcessInfo)
 	ret1, _ := ret[1].(error)
