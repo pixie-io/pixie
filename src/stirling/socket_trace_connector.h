@@ -16,6 +16,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 
 #include <deque>
 #include <fstream>
+#include <list>
 #include <map>
 #include <memory>
 #include <set>
@@ -114,13 +115,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   Status UpdateBPFProtocolTraceRole(TrafficProtocol protocol, EndpointRole role_to_trace);
   Status TestOnlySetTargetPID(int64_t pid);
   Status DisableSelfTracing();
-
-  /**
-   * Returns number of active ConnectionTrackers.
-   *
-   * Note: Multiple ConnectionTrackers on same TGID+FD are counted as one.
-   */
-  size_t NumActiveConnections() const { return connection_trackers_.size(); }
 
   ConnectionTracker& GetMutableConnTracker(struct conn_id_t conn_id);
 
@@ -367,6 +361,16 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   template <typename TProtocolTraits>
   void TransferStream(ConnectorContext* ctx, ConnectionTracker* tracker, DataTable* data_table);
 
+  // Deletes trackers that are ReadyForDestruction().
+  // We do this only after accumulating enough trackers to clean-up, to avoid the performance
+  // impact of scanning through all trackers every iteration.
+  void CleanupTrackers();
+
+  // Debug utility to dump information about connection trackers.
+  // If verbose is false, prints summary stats per protocol.
+  // If verbose is true, it also prints information per connection tracker.
+  void DumpTrackerInfo(bool verbose);
+
   template <typename TRecordType>
   static void AppendMessage(ConnectorContext* ctx, const ConnectionTracker& conn_tracker,
                             TRecordType record, DataTable* data_table);
@@ -379,11 +383,23 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Writes data event to the specified output file.
   void WriteDataEvent(const SocketDataEvent& event);
 
+  void AddTrackerToProtocolList(ConnectionTracker* tracker);
+
   // Note that the inner map cannot be a vector, because there is no guaranteed order
   // in which events are read from perf buffers.
   // Inner map could be a priority_queue, but benchmarks showed better performance with a std::map.
-  // Key is {PID, FD} for outer map (see GetStreamId()), and tsid for inner map.
-  std::unordered_map<uint64_t, std::map<uint64_t, ConnectionTracker> > connection_trackers_;
+  // Key is {PID, FD} for outer map, and tsid for inner map.
+  absl::flat_hash_map<uint64_t, std::map<uint64_t, ConnectionTracker> > connection_trackers_;
+
+  // Key is protocol.
+  // TODO(jps): Convert to vector?
+  absl::flat_hash_map<TrafficProtocol, std::list<ConnectionTracker*> > conn_trackers_by_protocol_;
+
+  // Keep track of total number of trackers, and the number ready for destruction.
+  // This state is used to trigger clean-up.
+  int num_trackers_ = 0;
+  int num_trackers_ready_for_destruction_ = 0;
+
   ConnectionStats connection_stats_;
 
   struct TransferSpec {

@@ -96,8 +96,7 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
 
   // PROTOCOL_LIST: Requires update on new protocols.
 
-  // We popluate transfer_spec_generators (with generator functions for TransferSpecs)
-  // so that we guarantee the protocol_transfer_specs_
+  // We popluate transfer_specs_by_protocol so that we guarantee the protocol_transfer_specs_
   // is stuffed in the *correct* order.
   // Also, this will fail fast (when we stuff the vector) if we forget a protocol.
   absl::flat_hash_map<TrafficProtocol, TransferSpec> transfer_specs_by_protocol = {
@@ -784,6 +783,12 @@ void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEv
 
 }  // namespace
 
+void SocketTraceConnector::AddTrackerToProtocolList(ConnectionTracker* tracker) {
+  conn_trackers_by_protocol_[tracker->traffic_class().protocol].push_back(tracker);
+  // If this tracker was already part of another protocol list,
+  // we'll remove the tracker from the original protocols list during TransferStreams().
+}
+
 void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> event) {
   event->attr.timestamp_ns += ClockRealTimeOffset();
 
@@ -793,7 +798,12 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
 
   ConnectionTracker& tracker = GetMutableConnTracker(event->attr.conn_id);
 
+  TrafficProtocol orig_protocol = tracker.traffic_class().protocol;
   tracker.AddDataEvent(std::move(event));
+
+  if (tracker.traffic_class().protocol != orig_protocol) {
+    AddTrackerToProtocolList(&tracker);
+  }
 }
 
 void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
@@ -803,7 +813,12 @@ void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
   // conn_id is a common field of open & close.
   ConnectionTracker& tracker = GetMutableConnTracker(event.open.conn_id);
 
+  TrafficProtocol orig_protocol = tracker.traffic_class().protocol;
   tracker.AddControlEvent(event);
+
+  if (tracker.traffic_class().protocol != orig_protocol) {
+    AddTrackerToProtocolList(&tracker);
+  }
 }
 
 void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> event) {
@@ -811,7 +826,12 @@ void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> e
 
   ConnectionTracker& tracker = GetMutableConnTracker(event->attr.conn_id);
 
+  TrafficProtocol orig_protocol = tracker.traffic_class().protocol;
   tracker.AddHTTP2Header(std::move(event));
+
+  if (tracker.traffic_class().protocol != orig_protocol) {
+    AddTrackerToProtocolList(&tracker);
+  }
 }
 
 void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event) {
@@ -819,7 +839,12 @@ void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event
 
   ConnectionTracker& tracker = GetMutableConnTracker(event->attr.conn_id);
 
+  TrafficProtocol orig_protocol = tracker.traffic_class().protocol;
   tracker.AddHTTP2Data(std::move(event));
+
+  if (tracker.traffic_class().protocol != orig_protocol) {
+    AddTrackerToProtocolList(&tracker);
+  }
 }
 
 ConnectionTracker& SocketTraceConnector::GetMutableConnTracker(struct conn_id_t conn_id) {
@@ -831,7 +856,11 @@ ConnectionTracker& SocketTraceConnector::GetMutableConnTracker(struct conn_id_t 
 
   bool new_tracker = (conn_tracker.conn_id().tsid == 0);
   if (new_tracker) {
+    conn_trackers_by_protocol_[kProtocolUnknown].push_back(&conn_tracker);
+
     conn_tracker.set_conn_stats(&connection_stats_);
+
+    ++num_trackers_;
 
     // If there is a another generation for this conn map key,
     // one of them needs to be marked for death.
@@ -874,6 +903,12 @@ const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(uint32_t pid
   // Return last connection.
   auto tracker_it = tracker_generations.end();
   --tracker_it;
+
+  // Don't return trackers that are about to be destroyed.
+  if (tracker_it->second.ReadyForDestruction()) {
+    return nullptr;
+  }
+
   return &tracker_it->second;
 }
 
@@ -1165,15 +1200,92 @@ void SocketTraceConnector::WriteDataEvent(const SocketDataEvent& event) {
 
 void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table_num,
                                            DataTable* data_table) {
-  // TODO(oazizi): TransferStreams() is slightly inefficient because it loops through all
-  //               connection trackers, but processing a mutually exclusive subset each time.
-  //               This is because trackers for different tables are mixed together
-  //               in a single pool. This is not a big concern as long as the number of tables
-  //               is small (currently only 2).
-  //               Possible solutions: 1) different pools, 2) auxiliary pool of pointers.
-
   std::vector<CIDRBlock> cluster_cidrs = ctx->GetClusterCIDRs();
 
+  // Iterate through protocols to find protocols that belong to this table.
+  // This is more efficient than going through all trackers, because
+  // we can choose to only go through the relevant protocol tracker lists.
+  for (size_t i = 0; i < protocol_transfer_specs_.size(); ++i) {
+    const auto& transfer_spec = protocol_transfer_specs_[i];
+    auto protocol = magic_enum::enum_cast<TrafficProtocol>(i);
+    DCHECK(protocol.has_value());
+    auto& conn_trackers_list = conn_trackers_by_protocol_[protocol.value()];
+
+    if (transfer_spec.table_num != table_num) {
+      continue;
+    }
+
+    for (auto iter = conn_trackers_list.begin(); iter != conn_trackers_list.end();) {
+      ConnectionTracker* tracker = *iter;
+
+      // Tracker has moved to another list.
+      if (tracker->traffic_class().protocol != protocol.value()) {
+        DCHECK_EQ(protocol.value(), kProtocolUnknown);
+        conn_trackers_list.erase(iter++);
+        continue;
+      }
+
+      VLOG(1) << absl::Substitute("Connection conn_id=$0 protocol=$1 state=$2\n",
+                                  ToString(tracker->conn_id()),
+                                  magic_enum::enum_name(tracker->traffic_class().protocol),
+                                  magic_enum::enum_name(tracker->state()));
+
+      tracker->IterationPreTick(cluster_cidrs, proc_parser_.get(), socket_info_mgr_.get());
+
+      if (transfer_spec.transfer_fn && transfer_spec.enabled) {
+        transfer_spec.transfer_fn(*this, ctx, tracker, data_table);
+      }
+
+      tracker->IterationPostTick();
+
+      if (tracker->ReadyForDestruction()) {
+        conn_trackers_list.erase(iter++);
+        ++num_trackers_ready_for_destruction_;
+        continue;
+      }
+
+      ++iter;
+    }
+  }
+
+  // Periodically run a full clean-up to reclaim memory.
+  constexpr double kPercentZombiesThreshold = 0.2;
+  if (1.0 * num_trackers_ready_for_destruction_ / num_trackers_ > kPercentZombiesThreshold &&
+      num_trackers_ready_for_destruction_ > 100) {
+    CleanupTrackers();
+  }
+}
+
+void SocketTraceConnector::DumpTrackerInfo(bool verbose) {
+  int count = 0;
+  for (size_t i = 0; i < protocol_transfer_specs_.size(); ++i) {
+    auto protocol = magic_enum::enum_cast<TrafficProtocol>(i);
+    DCHECK(protocol.has_value());
+    auto& conn_trackers_list = conn_trackers_by_protocol_[protocol.value()];
+
+    LOG(INFO) << absl::Substitute("protocol=$0 num_trackers=$1", protocol.value(),
+                                  conn_trackers_list.size());
+
+    count += conn_trackers_list.size();
+
+    if (verbose) {
+      for (auto iter = conn_trackers_list.begin(); iter != conn_trackers_list.end(); ++iter) {
+        ConnectionTracker* tracker = *iter;
+
+        if (verbose) {
+          LOG(INFO) << absl::Substitute("Connection conn_id=$0 protocol=$1 state=$2\n",
+                                        ToString(tracker->conn_id()),
+                                        magic_enum::enum_name(tracker->traffic_class().protocol),
+                                        magic_enum::enum_name(tracker->state()));
+        }
+      }
+    }
+  }
+
+  LOG(INFO) << absl::Substitute("num_trackers=$0 num_trackers_allocated=$1", count, num_trackers_);
+}
+
+void SocketTraceConnector::CleanupTrackers() {
   // Outer loop iterates through tracker sets (keyed by PID+FD),
   // while inner loop iterates through generations of trackers for that PID+FD pair.
   auto tracker_set_it = connection_trackers_.begin();
@@ -1184,39 +1296,24 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
     while (generation_it != tracker_generations.end()) {
       auto& tracker = generation_it->second;
 
-      VLOG(2) << absl::Substitute("Connection conn_id=$0 protocol=$1\n",
-                                  ToString(tracker.conn_id()),
-                                  magic_enum::enum_name(tracker.traffic_class().protocol));
-
-      DCHECK_LT(tracker.traffic_class().protocol, protocol_transfer_specs_.size())
-          << absl::Substitute("Protocol=$0 not in protocol_transfer_specs_.",
-                              tracker.traffic_class().protocol);
-
-      const TransferSpec& transfer_spec =
-          protocol_transfer_specs_[tracker.traffic_class().protocol];
-
-      // Don't process trackers meant for a different table_num.
-      if (transfer_spec.table_num != table_num) {
+      // Remove any trackers that are no longer required.
+      if (tracker.ReadyForDestruction()) {
+        tracker_generations.erase(generation_it++);
+        --num_trackers_;
+        --num_trackers_ready_for_destruction_;
+      } else {
         ++generation_it;
-        continue;
       }
-
-      tracker.IterationPreTick(cluster_cidrs, proc_parser_.get(), socket_info_mgr_.get());
-
-      if (transfer_spec.transfer_fn && transfer_spec.enabled) {
-        transfer_spec.transfer_fn(*this, ctx, &tracker, data_table);
-      }
-
-      tracker.IterationPostTick();
-
-      // Update iterator, handling deletions as we go. This must be the last line in the loop.
-      generation_it = tracker.ReadyForDestruction() ? tracker_generations.erase(generation_it)
-                                                    : ++generation_it;
     }
 
-    tracker_set_it =
-        tracker_generations.empty() ? connection_trackers_.erase(tracker_set_it) : ++tracker_set_it;
+    if (tracker_generations.empty()) {
+      connection_trackers_.erase(tracker_set_it++);
+    } else {
+      ++tracker_set_it;
+    }
   }
+
+  DCHECK_EQ(num_trackers_ready_for_destruction_, 0);
 }
 
 template <typename TProtocolTraits>
