@@ -1,0 +1,30 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test", "pl_cc_test_library")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = [
+            "**/*_test.cc",
+        ],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//src/stirling/bpf_tools:cc_library",
+        "//src/stirling/common:cc_library",
+        "//src/stirling/core:cc_library",
+        "//src/stirling/obj_tools:cc_library",
+        "//src/stirling/utils:cc_library",
+        "//src/stirling/dynamic_tracer/dynamic_tracing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "dynamic_trace_connector_test",
+    srcs = ["dynamic_trace_connector_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)

@@ -16,7 +16,7 @@
 #include "src/stirling/core/types.h"
 #include "src/stirling/stirling.h"
 
-#include "src/stirling/dynamic_tracing/dynamic_tracer.h"
+#include "src/stirling/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 
 #include "src/stirling/proto/stirling.pb.h"
 

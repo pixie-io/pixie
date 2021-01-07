@@ -6,7 +6,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/core/types.h"
-#include "src/stirling/dynamic_trace_connector.h"
+#include "src/stirling/dynamic_tracer/dynamic_trace_connector.h"
 #include "src/stirling/obj_tools/testdata/dummy_exe_fixture.h"
 #include "src/stirling/stirling.h"
 #include "src/stirling/testing/common.h"

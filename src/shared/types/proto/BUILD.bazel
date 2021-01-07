@@ -13,8 +13,8 @@ pl_cc_proto_library(
     # Intentionally private. In general, use :cc_library instead,
     # which provides an extra wrapper that customizes magic_enum.
     visibility = [
-        "//src/stirling/dynamic_tracing/ir/sharedpb:__subpackages__",
         "//src/shared/types/proto/wrapper:__subpackages__",
+        "//src/stirling/dynamic_tracer/dynamic_tracing/ir/sharedpb:__subpackages__",
     ],
 )
 

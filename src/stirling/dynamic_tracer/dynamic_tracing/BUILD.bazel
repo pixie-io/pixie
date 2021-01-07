@@ -1,0 +1,95 @@
+package(default_visibility = ["//src/stirling:__subpackages__"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = [
+            "**/*_test.cc",
+        ],
+    ),
+    hdrs = glob(
+        [
+            "*.h",
+        ],
+    ),
+    deps = [
+        "//src/shared/metadata:cc_library",
+        "//src/shared/types:cc_library",
+        "//src/stirling/bpf_tools:cc_library",
+        "//src/stirling/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_cc_proto",
+        "//src/stirling/dynamic_tracer/dynamic_tracing/ir/physicalpb:physical_pl_cc_proto",
+        "//src/stirling/obj_tools:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "code_gen_test",
+    srcs = ["code_gen_test.cc"],
+    data = [
+        "//src/stirling/obj_tools/testdata:dummy_go_binary",
+    ],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "dwarvifier_test",
+    srcs = ["dwarvifier_test.cc"],
+    data = [
+        "//src/stirling/obj_tools/testdata:dummy_go_binary",
+    ],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "probe_transformer_test",
+    srcs = ["probe_transformer_test.cc"],
+    data = [
+        "//src/stirling/obj_tools/testdata:dummy_go_binary",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "autogen_test",
+    srcs = ["autogen_test.cc"],
+    data = [
+        "//src/stirling/obj_tools/testdata:dummy_go_binary",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "dynamic_tracer_test",
+    srcs = ["dynamic_tracer_test.cc"],
+    data = [
+        "//src/stirling/obj_tools/testdata:dummy_go_binary",
+        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server",
+    ],
+    tags = [
+        "exclusive",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "goid_test",
+    srcs = ["goid_test.cc"],
+    deps = [":cc_library"],
+)

@@ -19,7 +19,7 @@ DUMMY_SOURCE_CONNECTOR(DynamicBPFTraceConnector);
 #include <vector>
 
 #include "src/stirling/bpf_tools/bpftrace_wrapper.h"
-#include "src/stirling/dynamic_tracing/ir/logicalpb/logical.pb.h"
+#include "src/stirling/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.pb.h"
 
 namespace pl {
 namespace stirling {

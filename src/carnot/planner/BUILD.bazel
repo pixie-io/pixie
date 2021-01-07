@@ -82,7 +82,6 @@ pl_cgo_library(
     cgo = True,
     importpath = "pixielabs.ai/pixielabs/src/carnot/planner",
     deps = [
-        "@com_github_ianlancetaylor_cgosymbolizer//:go_default_library",
         "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
         "//src/carnot/planner/plannerpb:func_args_pl_go_proto",
@@ -92,6 +91,7 @@ pl_cgo_library(
         "//src/table_store/proto:schema_pl_go_proto",
         "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
+        "@com_github_ianlancetaylor_cgosymbolizer//:go_default_library",
     ],
 )
 
@@ -103,15 +103,15 @@ go_test(
         "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
         "//src/carnot/planner/plannerpb:func_args_pl_go_proto",
-        "//src/stirling/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",
         "//src/carnot/planpb:plan_pl_go_proto",
         "//src/carnot/udfspb:udfs_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",
         "//src/shared/scriptspb:scripts_pl_go_proto",
+        "//src/stirling/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",
         "//src/table_store/proto:schema_pl_go_proto",
         "//src/vizier/funcs/go:go_default_library",
-        "@com_github_sirupsen_logrus//:go_default_library",
         "@com_github_gogo_protobuf//proto:go_default_library",
+        "@com_github_sirupsen_logrus//:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
     ],
 )
@@ -145,22 +145,22 @@ pl_cc_test(
         "//src/carnot/planpb:plan_testutils",
         "//src/carnot/udf_exporter:cc_library",
         "//src/shared/schema:cc_library",
-        "//src/stirling:cc_library",
         "//src/shared/vispb:vis_pl_cc_proto",
+        "//src/stirling:cc_library",
     ],
 )
 
 sh_test(
     name = "preset_queries_oss_test",
     srcs = ["preset_queries_test.sh"],
-    deps = ["@bazel_tools//tools/bash/runfiles"],
+    data = [
+        ":preset_queries_test",
+        "//src/pxl_scripts:preset_queries",
+    ],
     tags = [
         "requires_bpf",
         # TODO(nserrino/philkuz): Fix this. Disabling this test for now on jenkins since it broken.
         "manual",
     ],
-    data = [
-        ":preset_queries_test",
-        "//src/pxl_scripts:preset_queries",
-    ],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
 )

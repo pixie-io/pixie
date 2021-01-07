@@ -13,7 +13,7 @@
 #include "src/common/base/base.h"
 #include "src/stirling/core/pub_sub_manager.h"
 #include "src/stirling/core/source_registry.h"
-#include "src/stirling/dynamic_tracing/dynamic_tracer.h"
+#include "src/stirling/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 #include "src/stirling/output.h"
 #include "src/stirling/stirling.h"
 

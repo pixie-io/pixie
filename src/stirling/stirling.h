@@ -9,7 +9,7 @@
 #include "src/common/base/base.h"
 #include "src/stirling/core/pub_sub_manager.h"
 #include "src/stirling/core/source_registry.h"
-#include "src/stirling/dynamic_tracing/ir/logicalpb/logical.pb.h"
+#include "src/stirling/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.pb.h"
 #include "src/stirling/proto/stirling.pb.h"
 
 namespace pl {
