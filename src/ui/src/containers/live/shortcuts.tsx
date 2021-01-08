@@ -66,23 +66,19 @@ const handlerWrapper = (handler) => (e?: KeyboardEvent) => {
   const editable = active?.tagName === 'INPUT'
       || active?.tagName === 'TEXTAREA'
       || (active as HTMLElement|null)?.isContentEditable;
-  // Of note: this means the Tab key, if bound, will do its bound function unless tabbing away from an editable element.
-  // Recommendation: don't bind Tab in a global shortcut. That isn't a very nice thing to do.
-  if (!editable) {
-    e?.preventDefault();
-    handler();
-    return;
-  }
+
+  const allowedComboInEditable = (e?.ctrlKey || e?.metaKey || e?.altKey)
+      && !['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight', 'Home', 'End', 'PageDown', 'PageUp'].includes(e?.key);
 
   /*
-   * The element IS editable. At this point, the handler has been suppressed. We use a heuristic to check if the combo
-   * most likely would affect the current text, selection, or focus of the element. If it would, the handler remains
-   * suppressed and the element receives the event normally. Otherwise, we run the handler. This is imperfect: users can
-   * change their OS shortcuts. However, these assumptions cover the typical defaults for a US-ASCII keyboard layout.
+   * The shortcut handler is run UNLESS any of the following are true:
+   * - The key combination pressed would alter the value of the focused editable element
+   * - It would move focus out of the currently-focused editable element
+   * - It would move the cursor or selection within the currently-focused editable element
+   * The heuristic for this is imperfect, as users can change their OS hotkeys. This covers many common setups, though.
    */
-  if ((e?.ctrlKey || e?.metaKey || e?.altKey)
-      && !['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight', 'Home', 'End', 'PageDown', 'PageUp'].includes(e?.key)) {
-    e?.preventDefault();
+  if (!editable || allowedComboInEditable) {
+    e?.preventDefault?.();
     handler();
   }
 };

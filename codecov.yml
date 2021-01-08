@@ -1,3 +1,4 @@
 ---
 ignore:
 - "src/ui/src/types/generated"
+- "src/ui/src/testing"
