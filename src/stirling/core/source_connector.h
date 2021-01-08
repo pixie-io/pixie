@@ -35,7 +35,7 @@ namespace stirling {
 class SourceConnector : public NotCopyable {
  public:
   /**
-   * @brief Defines whether the SourceConnector has an implementation.
+   * Defines whether the SourceConnector has an implementation.
    *
    * Default in the base class is true, and normally should not be changed in the derived class.
    *
@@ -49,7 +49,7 @@ class SourceConnector : public NotCopyable {
   virtual ~SourceConnector() = default;
 
   /**
-   * @brief Initializes the source connector. Can only be called once.
+   * Initializes the source connector. Can only be called once.
    * @return Status of whether initialization was successful.
    */
   Status Init();
@@ -61,15 +61,16 @@ class SourceConnector : public NotCopyable {
   void InitContext(ConnectorContext* ctx);
 
   /**
-   * @brief Transfers any collected data, for the specified table, into the provided record_batch.
+   * Transfers any collected data, for the specified table, into the provided record_batch.
+   * @param ctx Shared context, e.g. ASID & tracked PIDs.
    * @param table_num The table number (id) of the data. See DataTableSchemas in individual
    * connectors.
-   * @param record_batch The target to move the data into.
+   * @param data_table Destination for the data.
    */
   void TransferData(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table);
 
   /**
-   * @brief Stops the source connector and releases any acquired resources.
+   * Stops the source connector and releases any acquired resources.
    * May only be called after a successful Init().
    *
    * @return Status of whether stop was successful.
@@ -103,7 +104,7 @@ class SourceConnector : public NotCopyable {
   }
 
   /**
-   * @brief Utility function to convert time as recorded by in monotonic clock to real time.
+   * Utility function to convert time as recorded by in monotonic clock to real time.
    * This is especially useful for converting times from BPF, which are all in monotonic clock.
    */
   uint64_t ClockRealTimeOffset() const { return sysconfig_.ClockRealTimeOffset(); }
