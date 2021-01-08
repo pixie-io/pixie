@@ -2,7 +2,9 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -470,6 +472,25 @@ func (s *Server) RemoveTracepoint(ctx context.Context, req *metadatapb.RemoveTra
 	}
 
 	return &metadatapb.RemoveTracepointResponse{
+		Status: &statuspb.Status{
+			ErrCode: statuspb.OK,
+		},
+	}, nil
+}
+
+// UpdateConfig updates the config for the specified agent.
+func (s *Server) UpdateConfig(ctx context.Context, req *metadatapb.UpdateConfigRequest) (*metadatapb.UpdateConfigResponse, error) {
+	splitName := strings.Split(req.AgentPodName, "/")
+	if len(splitName) != 2 {
+		return nil, errors.New("Incorrectly formatted pod name. Must be of the form '<ns>/<podName>'")
+	}
+
+	err := s.agentManager.UpdateConfig(splitName[0], splitName[1], req.Key, req.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	return &metadatapb.UpdateConfigResponse{
 		Status: &statuspb.Status{
 			ErrCode: statuspb.OK,
 		},

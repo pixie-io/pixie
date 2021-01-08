@@ -207,3 +207,15 @@ func (m *MockAgentManager) GetAgentUpdates(cursorID go_uuid.UUID) ([]*metadatapb
 func (mr *MockAgentManagerMockRecorder) GetAgentUpdates(cursorID interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentUpdates", reflect.TypeOf((*MockAgentManager)(nil).GetAgentUpdates), cursorID)
 }
+
+// UpdateConfig mocks base method
+func (m *MockAgentManager) UpdateConfig(arg0, arg1, arg2, arg3 string) error {
+	ret := m.ctrl.Call(m, "UpdateConfig", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateConfig indicates an expected call of UpdateConfig
+func (mr *MockAgentManagerMockRecorder) UpdateConfig(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfig", reflect.TypeOf((*MockAgentManager)(nil).UpdateConfig), arg0, arg1, arg2, arg3)
+}

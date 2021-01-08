@@ -1035,3 +1035,50 @@ func TestGetAgentUpdates(t *testing.T) {
 	assert.Equal(t, 1, len(r4.AgentUpdates))
 	assert.Equal(t, updates2[0], r4.AgentUpdates[0])
 }
+
+func Test_Server_UpdateConfig(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
+	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
+
+	mockAgtMgr.
+		EXPECT().
+		UpdateConfig("pl", "pem-1234", "gprof", "true").
+		Return(nil)
+
+	// Set up server.
+	env, err := metadataenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	clock := testingutils.NewTestClock(time.Unix(0, 70))
+
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, mockMds, clock)
+
+	req := metadatapb.UpdateConfigRequest{
+		AgentPodName: "pl/pem-1234",
+		Key:          "gprof",
+		Value:        "true",
+	}
+
+	resp, err := s.UpdateConfig(context.Background(), &req)
+
+	assert.NotNil(t, resp)
+	assert.Nil(t, err)
+	assert.Equal(t, statuspb.OK, resp.Status.ErrCode)
+
+	// This is an invalid request because AgentPodName must contain the namespace.
+	invalidReq := metadatapb.UpdateConfigRequest{
+		AgentPodName: "pem-1234",
+		Key:          "gprof",
+		Value:        "true",
+	}
+	resp, err = s.UpdateConfig(context.Background(), &invalidReq)
+	assert.NotNil(t, err)
+	assert.Nil(t, resp)
+}

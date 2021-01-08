@@ -1,11 +1,13 @@
 package controllers_test
 
 import (
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
+	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
@@ -26,9 +28,8 @@ import (
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
-func setupAgentManager(t *testing.T) (controllers.MetadataStore, controllers.AgentManager) {
+func setupAgentManager(t *testing.T) (controllers.MetadataStore, controllers.AgentManager, *nats.Conn, func()) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
 	mockDs.
 		EXPECT().
@@ -46,6 +47,18 @@ func setupAgentManager(t *testing.T) (controllers.MetadataStore, controllers.Age
 		Return(nil, nil, nil).
 		AnyTimes()
 
+	// Setup NATS.
+	natsPort, natsCleanup := testingutils.StartNATS(t)
+	nc, err := nats.Connect(testingutils.GetNATSURL(natsPort))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cleanupFn := func() {
+		ctrl.Finish()
+		natsCleanup()
+	}
+
 	clock := testingutils.NewTestClock(time.Unix(0, testutils.ClockNowNS))
 	c := kvstore.NewCache(mockDs)
 	mds, err := controllers.NewKVMetadataStore(c)
@@ -57,9 +70,9 @@ func setupAgentManager(t *testing.T) (controllers.MetadataStore, controllers.Age
 	createAgentInMDS(t, testutils.UnhealthyAgentUUID, mds, testutils.UnhealthyAgentInfo)
 	createAgentInMDS(t, testutils.UnhealthyKelvinAgentUUID, mds, testutils.UnhealthyKelvinAgentInfo)
 
-	agtMgr := controllers.NewAgentManagerWithClock(mds, clock)
+	agtMgr := controllers.NewAgentManagerWithClock(mds, nc, clock)
 
-	return mds, agtMgr
+	return mds, agtMgr, nc, cleanupFn
 }
 
 func createAgentInMDS(t *testing.T, agentID string, mds controllers.MetadataStore, agentPb string) {
@@ -86,7 +99,8 @@ func createAgentInMDS(t *testing.T, agentID string, mds controllers.MetadataStor
 }
 
 func TestRegisterAgent(t *testing.T) {
-	mds, agtMgr := setupAgentManager(t)
+	mds, agtMgr, _, cleanup := setupAgentManager(t)
+	defer cleanup()
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
 	if err != nil {
@@ -132,7 +146,8 @@ func TestRegisterAgent(t *testing.T) {
 }
 
 func TestRegisterKelvinAgent(t *testing.T) {
-	mds, agtMgr := setupAgentManager(t)
+	mds, agtMgr, _, cleanup := setupAgentManager(t)
+	defer cleanup()
 
 	u, err := uuid.FromString(testutils.KelvinAgentUUID)
 	if err != nil {
@@ -186,7 +201,8 @@ func TestRegisterKelvinAgent(t *testing.T) {
 }
 
 func TestRegisterExistingAgent(t *testing.T) {
-	mds, agtMgr := setupAgentManager(t)
+	mds, agtMgr, _, cleanup := setupAgentManager(t)
+	defer cleanup()
 
 	u, err := uuid.FromString(testutils.ExistingAgentUUID)
 	if err != nil {
@@ -222,7 +238,9 @@ func TestRegisterExistingAgent(t *testing.T) {
 }
 
 func TestUpdateHeartbeat(t *testing.T) {
-	mds, agtMgr := setupAgentManager(t)
+	mds, agtMgr, _, cleanup := setupAgentManager(t)
+	defer cleanup()
+
 	u, err := uuid.FromString(testutils.ExistingAgentUUID)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
@@ -245,7 +263,8 @@ func TestUpdateHeartbeat(t *testing.T) {
 }
 
 func TestUpdateHeartbeatForNonExistingAgent(t *testing.T) {
-	_, agtMgr := setupAgentManager(t)
+	_, agtMgr, _, cleanup := setupAgentManager(t)
+	defer cleanup()
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
 	if err != nil {
@@ -257,7 +276,8 @@ func TestUpdateHeartbeatForNonExistingAgent(t *testing.T) {
 }
 
 func TestUpdateAgentDelete(t *testing.T) {
-	mds, agtMgr := setupAgentManager(t)
+	mds, agtMgr, _, cleanup := setupAgentManager(t)
+	defer cleanup()
 
 	u, err := uuid.FromString(testutils.UnhealthyAgentUUID)
 	if err != nil {
@@ -291,7 +311,8 @@ func TestUpdateAgentDelete(t *testing.T) {
 }
 
 func TestGetActiveAgents(t *testing.T) {
-	_, agtMgr := setupAgentManager(t)
+	_, agtMgr, _, cleanup := setupAgentManager(t)
+	defer cleanup()
 
 	agents, err := agtMgr.GetActiveAgents()
 	assert.Nil(t, err)
@@ -352,7 +373,8 @@ func TestGetActiveAgents(t *testing.T) {
 }
 
 func TestAddToUpdateQueue(t *testing.T) {
-	mds, agtMgr := setupAgentManager(t)
+	mds, agtMgr, _, cleanup := setupAgentManager(t)
+	defer cleanup()
 
 	u, err := uuid.FromString(testutils.ExistingAgentUUID)
 	if err != nil {
@@ -447,7 +469,8 @@ func TestAddToUpdateQueue(t *testing.T) {
 }
 
 func TestAddToUpdateQueueDeleted(t *testing.T) {
-	mds, agtMgr := setupAgentManager(t)
+	mds, agtMgr, _, cleanup := setupAgentManager(t)
+	defer cleanup()
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
 	if err != nil {
@@ -541,7 +564,8 @@ func TestAddToUpdateQueueDeleted(t *testing.T) {
 }
 
 func TestAgentQueueTerminatedProcesses(t *testing.T) {
-	mds, agtMgr := setupAgentManager(t)
+	mds, agtMgr, _, cleanup := setupAgentManager(t)
+	defer cleanup()
 
 	u, err := uuid.FromString(testutils.ExistingAgentUUID)
 	if err != nil {
@@ -639,7 +663,8 @@ func TestAgentQueueTerminatedProcesses(t *testing.T) {
 }
 
 func TestAgent_AddToFrontOfAgentQueue(t *testing.T) {
-	_, agtMgr := setupAgentManager(t)
+	_, agtMgr, _, cleanup := setupAgentManager(t)
+	defer cleanup()
 
 	u1 := uuid.NewV4()
 	upb := utils.ProtoFromUUID(u1)
@@ -695,7 +720,8 @@ func TestAgent_AddToFrontOfAgentQueue(t *testing.T) {
 }
 
 func TestAgent_AddUpdatesToAgentQueue(t *testing.T) {
-	_, agtMgr := setupAgentManager(t)
+	_, agtMgr, _, cleanup := setupAgentManager(t)
+	defer cleanup()
 
 	updatePb1 := &k8s_metadatapb.ResourceUpdate{
 		Update: &k8s_metadatapb.ResourceUpdate_PodUpdate{
@@ -746,7 +772,8 @@ func TestAgent_AddUpdatesToAgentQueue(t *testing.T) {
 }
 
 func TestAgent_GetFromAgentQueue(t *testing.T) {
-	_, agtMgr := setupAgentManager(t)
+	_, agtMgr, _, cleanup := setupAgentManager(t)
+	defer cleanup()
 
 	updatePb := &k8s_metadatapb.ResourceUpdate{
 		Update: &k8s_metadatapb.ResourceUpdate_PodUpdate{
@@ -791,7 +818,8 @@ func TestAgent_GetFromAgentQueue(t *testing.T) {
 }
 
 func TestAgent_HandleUpdate(t *testing.T) {
-	_, agtMgr := setupAgentManager(t)
+	_, agtMgr, _, cleanup := setupAgentManager(t)
+	defer cleanup()
 
 	update := &controllers.UpdateMessage{
 		Hostnames:    []*controllers.HostnameIPPair{&controllers.HostnameIPPair{"", "127.0.0.1"}},
@@ -823,7 +851,8 @@ func TestAgent_HandleUpdate(t *testing.T) {
 }
 
 func TestAgent_GetAgentUpdate(t *testing.T) {
-	_, agtMgr := setupAgentManager(t)
+	_, agtMgr, _, cleanup := setupAgentManager(t)
+	defer cleanup()
 
 	agUUID0, err := uuid.FromString(testutils.UnhealthyKelvinAgentUUID)
 	assert.Nil(t, err)
@@ -934,4 +963,29 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	// This should throw an error because the cursor has been deleted.
 	updates, schema, err = agtMgr.GetAgentUpdates(cursor)
 	assert.NotNil(t, err)
+}
+
+func TestAgent_UpdateConfig(t *testing.T) {
+	_, agtMgr, nc, cleanup := setupAgentManager(t)
+	defer cleanup()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	mdSub, err := nc.Subscribe("/agent/"+testutils.ExistingAgentUUID, func(msg *nats.Msg) {
+		vzMsg := &messagespb.VizierMessage{}
+		proto.Unmarshal(msg.Data, vzMsg)
+		req := vzMsg.GetConfigUpdateMessage().GetConfigUpdateRequest()
+		assert.NotNil(t, req)
+		assert.Equal(t, "gprof", req.Key)
+		assert.Equal(t, "true", req.Value)
+		wg.Done()
+	})
+	assert.Nil(t, err)
+	defer mdSub.Unsubscribe()
+
+	err = agtMgr.UpdateConfig("pl", "pem-existing", "gprof", "true")
+	assert.Nil(t, err)
+
+	defer wg.Wait()
 }

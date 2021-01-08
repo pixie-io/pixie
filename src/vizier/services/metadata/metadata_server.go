@@ -175,7 +175,7 @@ func main() {
 	defer func() { tpQuitCh <- true }()
 	go tracepointMgr.WatchTTLs(tpQuitCh)
 
-	agtMgr := controllers.NewAgentManager(mds)
+	agtMgr := controllers.NewAgentManager(mds, nc)
 	keepAlive := true
 	go func() {
 		for keepAlive {
@@ -242,6 +242,7 @@ func main() {
 		httpmiddleware.WithBearerAuthMiddleware(env, mux), maxMsgSize)
 	metadatapb.RegisterMetadataServiceServer(s.GRPCServer(), server)
 	metadatapb.RegisterMetadataTracepointServiceServer(s.GRPCServer(), server)
+	metadatapb.RegisterMetadataConfigServiceServer(s.GRPCServer(), server)
 
 	s.Start()
 	s.StopOnInterrupt()

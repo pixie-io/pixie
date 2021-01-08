@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
@@ -86,6 +87,9 @@ type AgentManager interface {
 	// the last invocation of GetAgentUpdates. If GetAgentUpdates has never been called for
 	// a given cursorID, the full initial state will be read first.
 	GetAgentUpdates(cursorID uuid.UUID) ([]*metadata_servicepb.AgentUpdate, *storepb.ComputedSchema, error)
+
+	// UpdateConfig updates the config for the specified agent.
+	UpdateConfig(string, string, string, string) error
 }
 
 // AgentUpdateTracker stores the updates (in order) for agents for GetAgentUpdates.
@@ -116,6 +120,7 @@ type AgentManagerImpl struct {
 	mds         MetadataStore
 	agentQueues map[string]AgentQueue
 	queueMu     sync.Mutex
+	conn        *nats.Conn
 
 	// The agent manager may have multiple clients requesting updates to the current agent state
 	// compared to the state they last saw. This map keeps all of the various trackers (per client)
@@ -125,10 +130,11 @@ type AgentManagerImpl struct {
 }
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
-func NewAgentManagerWithClock(mds MetadataStore, clock utils.Clock) *AgentManagerImpl {
+func NewAgentManagerWithClock(mds MetadataStore, conn *nats.Conn, clock utils.Clock) *AgentManagerImpl {
 	agentManager := &AgentManagerImpl{
 		clock:               clock,
 		mds:                 mds,
+		conn:                conn,
 		agentQueues:         make(map[string]AgentQueue),
 		agentUpdateTrackers: make(map[uuid.UUID]*AgentUpdateTracker),
 	}
@@ -394,9 +400,9 @@ func (m *AgentManagerImpl) handleTerminatedProcesses(processes []*metadatapb.Pro
 }
 
 // NewAgentManager creates a new agent manager.
-func NewAgentManager(mds MetadataStore) *AgentManagerImpl {
+func NewAgentManager(mds MetadataStore, conn *nats.Conn) *AgentManagerImpl {
 	clock := utils.SystemClock{}
-	return NewAgentManagerWithClock(mds, clock)
+	return NewAgentManagerWithClock(mds, conn, clock)
 }
 
 // RegisterAgent creates a new agent.
@@ -638,6 +644,39 @@ func (m *AgentManagerImpl) AddUpdatesToAgentQueue(agentID string, updates []*met
 // regardless of hostname.
 func (m *AgentManagerImpl) GetMetadataUpdates(hostname *HostnameIPPair) ([]*metadatapb.ResourceUpdate, error) {
 	return m.mds.GetMetadataUpdates(hostname)
+}
+
+// UpdateConfig updates the config key and value for the specified agent.
+func (m *AgentManagerImpl) UpdateConfig(ns string, podName string, key string, value string) error {
+	// Find the agent ID for the agent with the given name.
+	agentID, err := m.mds.GetAgentIDFromPodName(podName)
+	if err != nil || agentID == "" {
+		return errors.New("Could not find agent with the given name")
+	}
+
+	// Send the config update to the agent over NATS.
+	updateReq := messagespb.VizierMessage{
+		Msg: &messagespb.VizierMessage_ConfigUpdateMessage{
+			ConfigUpdateMessage: &messagespb.ConfigUpdateMessage{
+				Msg: &messagespb.ConfigUpdateMessage_ConfigUpdateRequest{
+					ConfigUpdateRequest: &messagespb.ConfigUpdateRequest{
+						Key:   key,
+						Value: value,
+					},
+				},
+			},
+		},
+	}
+	msg, err := updateReq.Marshal()
+	if err != nil {
+		return err
+	}
+	topic := GetAgentTopicFromUUID(uuid.FromStringOrNil(agentID))
+	err = m.conn.Publish(topic, msg)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // GetAgentUpdates returns the latest agent status since the last call to GetAgentUpdates().
