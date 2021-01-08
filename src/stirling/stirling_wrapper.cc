@@ -57,7 +57,7 @@ DEFINE_bool(init_only, false, "If true, only runs the init phase and exits. For 
 DEFINE_int32(timeout_secs, 0,
              "If greater than 0, only runs for the specified amount of time and exits.");
 
-std::vector<std::string> g_table_print_enables;
+absl::flat_hash_set<std::string> g_table_print_enables;
 
 // Put this in global space, so we can kill it in the signal handler.
 Stirling* g_stirling = nullptr;
@@ -76,13 +76,11 @@ Status StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
   }
   const pl::stirling::stirlingpb::InfoClass& table_info = iter->second;
 
-  // Only output enabled tables (lookup by name).
-  if (std::find(g_table_print_enables.begin(), g_table_print_enables.end(),
-                table_info.schema().name()) == g_table_print_enables.end()) {
-    return Status::OK();
+  if (g_table_print_enables.contains(table_info.schema().name())) {
+    // Only output enabled tables (lookup by name).
+    PrintRecordBatch(table_info.schema().name(), table_info.schema(), *record_batch);
   }
 
-  PrintRecordBatch(table_info.schema().name(), table_info.schema(), *record_batch);
   return Status::OK();
 }
 
@@ -178,7 +176,7 @@ StatusOr<Publish> DeployTrace(Stirling* stirling, TraceProgram trace_program_str
 
   // Automatically enable printing of this table.
   for (const auto& tracepoint : trace_program->tracepoints()) {
-    g_table_print_enables.push_back(tracepoint.table_name());
+    g_table_print_enables.insert(tracepoint.table_name());
   }
 
   sole::uuid trace_id = sole::uuid4();
@@ -222,12 +220,13 @@ int main(int argc, char** argv) {
   if (!sources.has_value()) {
     LOG(ERROR) << absl::Substitute("$0 is not a valid source register specifier", FLAGS_sources);
   }
+  std::unique_ptr<SourceRegistry> registry = pl::stirling::CreateSourceRegistry(sources.value());
 
   if (!FLAGS_print_record_batches.empty()) {
+    // controls which tables are dumped to STDOUT
+    // this concept is specific to stirling wrapper (otherwise everything goes to the table store)
     g_table_print_enables = absl::StrSplit(FLAGS_print_record_batches, ",", absl::SkipWhitespace());
   }
-
-  std::unique_ptr<SourceRegistry> registry = pl::stirling::CreateSourceRegistry(sources.value());
 
   // Make Stirling.
   std::unique_ptr<Stirling> stirling = Stirling::Create(std::move(registry));
