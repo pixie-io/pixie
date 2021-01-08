@@ -28,6 +28,10 @@ linux_headers_gs_path := gs://pl-infra-dev-artifacts/$(linux_headers_fname)
 linux_headers_trimmed_fname := linux-headers-$(LINUX_KERNEL_VERSION)-trimmed-$(LINUX_HEADERS_REV).tar.gz
 linux_headers_trimmed_gs_path := gs://pl-infra-dev-artifacts/$(linux_headers_trimmed_fname)
 
+## Curl image parameters.
+CURL_IMAGE_VERSION := 1.0
+curl_image_tag := "gcr.io/pixie-prod/pixie-prod-artifacts/curl:$(CURL_IMAGE_VERSION)"
+
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
 
@@ -81,6 +85,12 @@ upload_linux_headers: build_linux_headers_image ## Target to build and upload li
 	@echo "SHA: "
 	sha256sum $(linux_headers_trimmed_fname)
 	rm -f $(linux_headers_trimmed_fname)
+
+.PHONY: build_and_upload_curl_image
+build_and_upload_curl_image:
+	cd $(mkfile_dir)/curl_image && \
+	$(DOCKER) build . -t $(curl_image_tag)
+	$(DOCKER) push $(curl_image_tag)
 
 help: ## Print help for targets with comments.
 	@echo "Usage:"

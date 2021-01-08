@@ -16,7 +16,7 @@ spec:
     spec:
       initContainers:
       - name: nats-wait
-        image: byrnedo/alpine-curl:0.1.8
+        image: gcr.io/pixie-prod/pixie-prod-artifacts/curl:1.0
         # yamllint disable
         command: ['sh', '-c', 'set -xe;
           URL="${PROTOCOL}://${SERVICE_NAME}:${SERVICE_PORT}${HEALTH_PATH}";
@@ -35,7 +35,7 @@ spec:
           value: "http"
       initContainers:
       - name: etcd-wait
-        image: byrnedo/alpine-curl:0.1.8
+        image: gcr.io/pixie-prod/pixie-prod-artifacts/curl:1.0
         # yamllint disable
         command: ['sh', '-c', 'set -xe;
           URL="${PL_MD_ETCD_SERVER}${HEALTH_PATH}";

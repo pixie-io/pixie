@@ -28,7 +28,7 @@ spec:
       - name: pl-image-secret
       initContainers:
       - name: qb-wait
-        image: byrnedo/alpine-curl:0.1.8
+        image: gcr.io/pixie-prod/pixie-prod-artifacts/curl:1.0
         # yamllint disable
         command: ['sh', '-c', 'set -x;
           URL="https://${SERVICE_NAME}:${SERVICE_PORT}/healthz";
