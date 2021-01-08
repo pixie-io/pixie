@@ -1,0 +1,15 @@
+# gazelle:ignore
+
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_proto_library")
+
+pl_proto_library(
+    name = "sock_event_pl_proto",
+    srcs = ["sock_event.proto"],
+    visibility = ["//src/stirling:__pkg__"],
+)
+
+pl_cc_proto_library(
+    name = "sock_event_pl_cc_proto",
+    proto = ":sock_event_pl_proto",
+    visibility = ["//visibility:public"],
+)

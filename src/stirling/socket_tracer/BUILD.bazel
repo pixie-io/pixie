@@ -19,7 +19,7 @@ pl_cc_library(
         "//src/stirling/utils:cc_library",
         "//src/stirling/proto:stirling_pl_cc_proto",
         "//src/stirling/socket_tracer/protocols:cc_library",
-        "//src/stirling/proto:sock_event_pl_cc_proto",
+        "//src/stirling/socket_tracer/proto:sock_event_pl_cc_proto",
         "//src/stirling/bcc_bpf_interface:cc_library",
         "//src/stirling/bpf_tools:cc_library",
         "//src/stirling/obj_tools:cc_library",

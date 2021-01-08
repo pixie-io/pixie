@@ -38,11 +38,10 @@ pl_cc_library(
         "//src/stirling/jvm_stats:cc_library",
         "//src/stirling/socket_tracer:cc_library",
         "//src/stirling/dynamic_tracer:cc_library",
+        "//src/stirling/dynamic_bpftrace:cc_library",
         "//src/stirling/system_stats:cc_library",
-        "//src/stirling/proto:sock_event_pl_cc_proto",
         "//src/stirling/bcc_bpf_interface:cc_library",
         "//src/stirling/bpf_tools:cc_library",
-        "//src/stirling/dynamic_tracer/dynamic_tracing:cc_library",
         "//src/stirling/obj_tools:cc_library",
         "//demos/applications/hipster_shop:cc_library",
     ] + select({
@@ -156,16 +155,6 @@ container_push(
     registry = "gcr.io",
     repository = "pl-dev-infra/stirling_wrapper",
     tag = "{BUILD_USER}",
-)
-
-pl_cc_test(
-    name = "dynamic_bpftrace_connector_test",
-    srcs = ["dynamic_bpftrace_connector_test.cc"],
-    tags = ["requires_bpf"],
-    deps = [
-        ":cc_library",
-        "//src/stirling/testing:cc_library",
-    ],
 )
 
 pl_cc_test(

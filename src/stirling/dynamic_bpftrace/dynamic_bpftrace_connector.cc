@@ -1,6 +1,6 @@
 #ifdef __linux__
 
-#include "src/stirling/dynamic_bpftrace_connector.h"
+#include "src/stirling/dynamic_bpftrace/dynamic_bpftrace_connector.h"
 
 #include <utility>
 #include <vector>

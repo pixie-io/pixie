@@ -4,7 +4,7 @@
 #include <gmock/gmock.h>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/dynamic_bpftrace_connector.h"
+#include "src/stirling/dynamic_bpftrace/dynamic_bpftrace_connector.h"
 
 namespace pl {
 namespace stirling {

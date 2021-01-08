@@ -1,3 +1,5 @@
+#include "src/stirling/stirling.h"
+
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -21,11 +23,9 @@
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/core/source_registry.h"
 #include "src/stirling/proto/stirling.pb.h"
-#include "src/stirling/stirling.h"
-#include "src/stirling/utils/proc_path_tools.h"
 
 #include "src/stirling/core/seq_gen_connector.h"
-#include "src/stirling/dynamic_bpftrace_connector.h"
+#include "src/stirling/dynamic_bpftrace/dynamic_bpftrace_connector.h"
 #include "src/stirling/dynamic_tracer/dynamic_trace_connector.h"
 #include "src/stirling/jvm_stats/jvm_stats_connector.h"
 #include "src/stirling/pid_runtime_connector.h"
