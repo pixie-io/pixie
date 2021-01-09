@@ -44,20 +44,24 @@ func deletePixie(ns string, clobberAll bool) {
 		Timeout:    2 * time.Minute,
 	}
 
-	var deleteJob utils.Task
+	tasks := make([]utils.Task, 0)
 
 	if clobberAll {
-		deleteJob = newTaskWrapper("Deleting namespace", func() error {
+		tasks = append(tasks, newTaskWrapper("Deleting namespace", func() error {
 			return od.DeleteNamespace()
-		})
+		}))
+		tasks = append(tasks, newTaskWrapper("Deleting cluster-scoped resources", func() error {
+			_, err := od.DeleteByLabel("app=pl-monitoring", k8s.AllResourceKinds...)
+			return err
+		}))
 	} else {
-		deleteJob = newTaskWrapper("Deleting Vizier pods/services", func() error {
+		tasks = append(tasks, newTaskWrapper("Deleting Vizier pods/services", func() error {
 			_, err := od.DeleteByLabel("component=vizier", k8s.AllResourceKinds...)
 			return err
-		})
+		}))
 	}
 
-	delJr := utils.NewSerialTaskRunner([]utils.Task{deleteJob})
+	delJr := utils.NewSerialTaskRunner(tasks)
 	err := delJr.RunAndMonitor()
 	if err != nil {
 		os.Exit(1)
