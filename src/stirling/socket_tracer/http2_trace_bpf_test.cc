@@ -5,7 +5,7 @@
 #include "src/common/exec/subprocess.h"
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
-#include "src/stirling/output.h"
+#include "src/stirling/core/output.h"
 #include "src/stirling/testing/common.h"
 #include "src/stirling/testing/socket_trace_bpf_test_fixture.h"
 

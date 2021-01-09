@@ -1,4 +1,4 @@
-#include "src/stirling/output.h"
+#include "src/stirling/core/output.h"
 
 #include "src/common/testing/testing.h"
 #include "src/stirling/testing/dummy_table.h"

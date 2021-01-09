@@ -61,3 +61,12 @@ pl_cc_test(
     srcs = ["source_registry_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "output_test",
+    srcs = ["output_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)

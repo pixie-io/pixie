@@ -1,4 +1,4 @@
-#include "src/stirling/output.h"
+#include "src/stirling/core/output.h"
 
 #include "src/shared/metadata/base_types.h"
 

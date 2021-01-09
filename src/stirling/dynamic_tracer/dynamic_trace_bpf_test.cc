@@ -8,7 +8,6 @@
 #include "src/stirling/core/types.h"
 #include "src/stirling/dynamic_tracer/dynamic_trace_connector.h"
 #include "src/stirling/obj_tools/testdata/dummy_exe_fixture.h"
-#include "src/stirling/stirling.h"
 #include "src/stirling/testing/common.h"
 
 #include "src/stirling/proto/stirling.pb.h"

@@ -28,3 +28,40 @@ pl_cc_test(
         ":cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "dynamic_trace_bpf_test",
+    timeout = "moderate",
+    srcs = ["dynamic_trace_bpf_test.cc"],
+    data = [
+        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_client",
+        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server",
+    ],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+        "//src/stirling/obj_tools/testdata:dummy_exe_fixture",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "stirling_dt_bpf_test",
+    timeout = "long",
+    srcs = ["stirling_dt_bpf_test.cc"],
+    data = [
+        "//src/stirling/obj_tools/testdata:dummy_cc_binary",
+        "//src/stirling/obj_tools/testdata:dummy_go_binary",
+        "//src/stirling/testing/dns:dns_hammer",
+        "//src/stirling/testing/dns:dns_hammer_image.tar",
+    ],
+    flaky = True,
+    shard_count = 8,
+    tags = ["requires_bpf"],
+    deps = [
+        "//src/stirling:cc_library",
+        "//src/common/exec:cc_library",
+        "//src/common/testing/test_utils:cc_library",
+    ],
+)

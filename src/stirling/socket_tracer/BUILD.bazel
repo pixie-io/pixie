@@ -17,7 +17,6 @@ pl_cc_library(
         "//src/stirling/core:cc_library",
         "//src/stirling/common:cc_library",
         "//src/stirling/utils:cc_library",
-        "//src/stirling/proto:stirling_pl_cc_proto",
         "//src/stirling/socket_tracer/protocols:cc_library",
         "//src/stirling/socket_tracer/proto:sock_event_pl_cc_proto",
         "//src/stirling/bcc_bpf_interface:cc_library",
@@ -96,5 +95,256 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/system:cc_library",
+    ],
+)
+
+###############################################################################
+# BPF Tests
+###############################################################################
+
+pl_cc_test(
+    name = "socket_trace_bpf_test",
+    timeout = "long",
+    srcs = ["socket_trace_bpf_test.cc"],
+    flaky = True,
+    shard_count = 5,
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "conn_stats_bpf_test",
+    timeout = "moderate",
+    srcs = ["conn_stats_bpf_test.cc"],
+    flaky = True,
+    shard_count = 2,
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "http_trace_bpf_test",
+    timeout = "moderate",
+    srcs = ["http_trace_bpf_test.cc"],
+    # This test sometimes times out.
+    flaky = True,
+    shard_count = 3,
+    tags = [
+        "no_asan",
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+        "//src/stirling/socket_tracer/protocols/http/testing:go_http_fixture",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "mysql_trace_bpf_test",
+    timeout = "moderate",
+    srcs = ["mysql_trace_bpf_test.cc"],
+    flaky = True,
+    shard_count = 2,
+    tags = [
+        "no_asan",
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "mysql_container_bpf_test",
+    timeout = "moderate",
+    srcs = ["mysql_container_bpf_test.cc"],
+    data = [
+        "//src/stirling/socket_tracer/protocols/mysql/testing:expected_outputs",
+        "//src/stirling/socket_tracer/protocols/mysql/testing:scripts",
+    ],
+    flaky = True,
+    tags = [
+        "no_asan",
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/socket_tracer/protocols/test_output_generator:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "cql_trace_bpf_test",
+    timeout = "moderate",
+    srcs = [
+        "cql_trace_bpf_test.cc",
+    ],
+    flaky = True,
+    tags = [
+        "no_asan",
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "pgsql_trace_bpf_test",
+    timeout = "moderate",
+    srcs = [
+        "pgsql_trace_bpf_test.cc",
+    ],
+    data = [
+        "//src/stirling/socket_tracer/protocols/pgsql/testing:demo_image.tar",
+    ],
+    flaky = True,
+    shard_count = 2,
+    tags = [
+        "no_asan",
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "grpc_trace_bpf_test",
+    timeout = "moderate",
+    srcs = ["grpc_trace_bpf_test.cc"],
+    data = [
+        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_client",
+        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server",
+    ],
+    # TODO(PL-1412): GRPCTraceUprobingTest.CaptureRPCTraceRecord sometimes captures no data.
+    flaky = True,
+    shard_count = 3,
+    tags = [
+        "requires_bpf",
+        # This test runs Go gRPC client & server, which causes other tests to attach & detach
+        # uprobes and slowed down significantly.
+        "exclusive",
+        "no_asan",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+        "//src/stirling/socket_tracer/protocols/http2/testing:cc_library",
+        "//src/stirling/socket_tracer/protocols/http2/testing/proto:greet_pl_cc_proto",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "http2_trace_bpf_test",
+    timeout = "moderate",
+    srcs = ["http2_trace_bpf_test.cc"],
+    data = [
+        "//demos/applications/hipster_shop/productcatalogservice_client:productcatalogservice_client_image.tar",
+        "//demos/client_server_apps/go_grpc_tls_pl/client:client_image.tar",
+        "//demos/client_server_apps/go_grpc_tls_pl/server:server_image.tar",
+    ],
+    flaky = True,
+    tags = [
+        "requires_bpf",
+        # This test runs Go gRPC client & server, which causes other tests to attach & detach
+        # uprobes, slowing them down significantly.
+        "exclusive",
+        "no_asan",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "dns_trace_bpf_test",
+    timeout = "moderate",
+    srcs = [
+        "dns_trace_bpf_test.cc",
+    ],
+    data = [
+        "//src/stirling/testing/dns2:dns_server_image.tar",
+    ],
+    flaky = True,
+    tags = [
+        "no_asan",
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "redis_trace_bpf_test",
+    timeout = "long",
+    srcs = ["redis_trace_bpf_test.cc"],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "openssl_bpf_test",
+    timeout = "moderate",
+    srcs = ["openssl_bpf_test.cc"],
+    data = ["//src/stirling/testing/ssl:nginx_ssl_image.tar"],
+    flaky = True,
+    tags = [
+        "no_asan",
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "go_tls_trace_bpf_test",
+    timeout = "moderate",
+    srcs = ["go_tls_trace_bpf_test.cc"],
+    data = [
+        "//demos/client_server_apps/go_https/client:https_client_image.tar",
+        "//demos/client_server_apps/go_https/server:https_server_image.tar",
+    ],
+    flaky = True,
+    tags = [
+        "exclusive",
+        "no_asan",
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/testing:cc_library",
     ],
 )
