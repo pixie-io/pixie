@@ -76,8 +76,13 @@ TEST_F(BPFMapLeakTest, unclosed_connection) {
 
   sleep(kInactivitySeconds);
 
-  // Now that enough time has passed, check that the leaked BPF map entry is removed.
+  // This TranfserData should cause the connection tracker to be marked for death.
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+
+  // One more iteration for the tracker to be destroyed and to release the BPF map entry.
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+
+  // Check that the leaked BPF map entry is removed.
   entries = conn_info_map.get_table_offline();
   EXPECT_THAT(entries, Not(Contains(Key(server_bpf_map_key))));
 }

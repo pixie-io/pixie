@@ -253,6 +253,10 @@ void SocketTraceConnector::UpdateCommonState(ConnectorContext* ctx) {
   if (thread.joinable()) {
     thread.detach();
   }
+
+  // Can call this less frequently if it becomes a performance issue.
+  // Trade-off is just how quickly we release memory and BPF map entries.
+  CleanupTrackers();
 }
 
 void SocketTraceConnector::CachedUpdateCommonState(ConnectorContext* ctx, uint32_t table_num) {
@@ -1246,13 +1250,6 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
 
       ++iter;
     }
-  }
-
-  // Periodically run a full clean-up to reclaim memory.
-  constexpr double kPercentZombiesThreshold = 0.2;
-  if (1.0 * num_trackers_ready_for_destruction_ / num_trackers_ > kPercentZombiesThreshold &&
-      num_trackers_ready_for_destruction_ > 100) {
-    CleanupTrackers();
   }
 }
 
