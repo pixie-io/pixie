@@ -13,7 +13,7 @@ const GET_USER_ORG = gql`
 }
 `;
 
-interface ScriptsContextProps {
+export interface ScriptsContextProps {
   scripts: Map<string, Script>;
   promise: Promise<Map<string, Script>>;
 }

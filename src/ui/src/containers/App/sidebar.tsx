@@ -20,7 +20,7 @@ import Tooltip from '@material-ui/core/Tooltip';
 import { Link } from 'react-router-dom';
 import gql from 'graphql-tag';
 
-import ClusterContext from 'common/cluster-context';
+import { ClusterContext } from 'common/cluster-context';
 import UserContext from 'common/user-context';
 import KeyboardIcon from '@material-ui/icons/Keyboard';
 import {

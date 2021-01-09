@@ -4,7 +4,7 @@ import { WidgetDisplay } from 'containers/live/vis';
 import { data as visData, Network } from 'vis-network/standalone';
 import { createStyles, makeStyles, useTheme } from '@material-ui/core/styles';
 import { toEntityURL, toSingleEntityPage } from 'containers/live-widgets/utils/live-view-params';
-import ClusterContext from 'common/cluster-context';
+import { ClusterContext } from 'common/cluster-context';
 import { SemanticType, Relation } from 'types/generated/vizier_pb';
 import Button from '@material-ui/core/Button';
 import { useHistory } from 'react-router-dom';

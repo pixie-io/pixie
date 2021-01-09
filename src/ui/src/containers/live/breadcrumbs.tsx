@@ -10,7 +10,7 @@ import {
   Breadcrumbs, BreadcrumbOptions,
   PixieCommandIcon, StatusCell,
 } from 'pixie-components';
-import ClusterContext from 'common/cluster-context';
+import { ClusterContext } from 'common/cluster-context';
 import { CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
 import {
   getArgTypesForVis, getArgVariableMap,

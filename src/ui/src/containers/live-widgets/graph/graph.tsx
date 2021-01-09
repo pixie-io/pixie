@@ -14,10 +14,10 @@ import {
   useTheme,
 } from '@material-ui/core/styles';
 import { useHistory } from 'react-router';
-import ClusterContext from 'common/cluster-context';
+import { ClusterContext } from 'common/cluster-context';
 import { Arguments } from 'utils/args-utils';
 import Button from '@material-ui/core/Button';
-import { DataType, Relation, SemanticType } from '../../../types/generated/vizier_pb';
+import { Relation, SemanticType } from 'types/generated/vizier_pb';
 import {
   getGraphOptions, semTypeToShapeConfig, colInfoFromName, ColInfo,
 } from './graph-utils';

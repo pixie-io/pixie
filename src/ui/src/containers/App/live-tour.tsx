@@ -1,4 +1,5 @@
-import React, { PropsWithChildren } from 'react';
+import * as React from 'react';
+import { PropsWithChildren } from 'react';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 import { Dialog } from '@material-ui/core';
@@ -8,7 +9,7 @@ import 'typeface-walter-turncoat';
 import { Spacing } from '@material-ui/core/styles/createSpacing';
 import { SetStateFunc } from 'context/common';
 
-interface LiveTourContextProps {
+export interface LiveTourContextProps {
   tourOpen: boolean;
   setTourOpen: SetStateFunc<boolean>;
 }

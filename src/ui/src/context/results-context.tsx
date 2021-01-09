@@ -15,7 +15,7 @@ interface Results {
   mutationInfo?: MutationInfo;
 }
 
-interface ResultsContextProps extends Results {
+export interface ResultsContextProps extends Results {
   clearResults: () => void;
   setResults: SetStateFunc<Results>;
   loading: boolean;

@@ -1,4 +1,4 @@
-import ClusterContext from 'common/cluster-context';
+import { ClusterContext } from 'common/cluster-context';
 import { Table } from 'common/vizier-grpc-client';
 import * as React from 'react';
 import {

@@ -1,4 +1,4 @@
-import ClusterContext from 'common/cluster-context';
+import { ClusterContext } from 'common/cluster-context';
 import UserContext from 'common/user-context';
 import * as storage from 'common/storage';
 import { ClusterStatus, VizierGRPCClientProvider, CLUSTER_STATUS_UNKNOWN } from 'common/vizier-grpc-client-context';

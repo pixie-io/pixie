@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-interface ClusterContextProps {
+export interface ClusterContextProps {
   selectedCluster: string;
   selectedClusterName: string;
   selectedClusterPrettyName: string;
@@ -9,4 +9,4 @@ interface ClusterContextProps {
   setClusterByName: (name: string) => void;
 }
 
-export default React.createContext<ClusterContextProps>(null);
+export const ClusterContext = React.createContext<ClusterContextProps>(null);

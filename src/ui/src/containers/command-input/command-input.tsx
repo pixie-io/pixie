@@ -6,7 +6,7 @@ import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
 import gql from 'graphql-tag';
 import { useApolloClient } from '@apollo/react-hooks';
-import ClusterContext from 'common/cluster-context';
+import { ClusterContext } from 'common/cluster-context';
 
 import {
   Button, createStyles, makeStyles, Theme, Tooltip,

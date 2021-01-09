@@ -8,7 +8,7 @@ type SetSplitSizesFunc = (sizes: [number, number]) => void;
 type SetOpenFunc = React.Dispatch<React.SetStateAction<boolean>>;
 type Splits = [number, number];
 
-interface LayoutContextProps {
+export interface LayoutContextProps {
   editorSplitsSizes: [number, number];
   editorPanelOpen: boolean;
   setEditorSplitSizes: SetSplitSizesFunc;

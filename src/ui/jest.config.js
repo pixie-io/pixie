@@ -24,7 +24,7 @@ module.exports = {
   ],
   moduleNameMapper: {
     '^.+.(jpg|jpeg|png|gif|svg)$': '<rootDir>/src/testing/file-mock.js',
-    '(\\.css|\\.scss$)|(normalize.css/normalize)|(^exports-loader)': 'identity-obj-proxy',
+    '(\\.css|\\.scss$)|(normalize.css/normalize)|(^typeface)|(^exports-loader)': 'identity-obj-proxy',
     'monaco-editor': '<rootDir>/node_modules/react-monaco-editor',
   },
   resolver: null,

@@ -1,6 +1,6 @@
 import { scrollbarStyles, EditIcon } from 'pixie-components';
 import VizierGRPCClientContext, { ClusterStatus, CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
-import ClusterContext from 'common/cluster-context';
+import { ClusterContext } from 'common/cluster-context';
 import MoveIcon from '@material-ui/icons/OpenWith';
 import { ClusterInstructions } from 'containers/App/deploy-instructions';
 import * as React from 'react';

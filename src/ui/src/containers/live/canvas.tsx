@@ -20,10 +20,10 @@ import {
 } from '@material-ui/core/styles';
 
 import Vega from 'containers/live-widgets/vega/vega';
+import { LayoutContext } from 'context/layout-context';
+import { ResultsContext } from 'context/results-context';
+import { ScriptContext } from 'context/script-context';
 import MutationModal from './mutation-modal';
-import { LayoutContext } from '../../context/layout-context';
-import { ResultsContext } from '../../context/results-context';
-import { ScriptContext } from '../../context/script-context';
 import {
   addLayout, addTableLayout, getGridWidth, Layout, toLayout, updatePositions,
 } from './layout';

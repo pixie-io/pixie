@@ -1,4 +1,4 @@
-import ClusterContext from 'common/cluster-context';
+import { ClusterContext } from 'common/cluster-context';
 import { Script } from 'utils/script-bundle';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import {
@@ -44,7 +44,7 @@ export interface ExecuteArguments {
   skipURLUpdate?: boolean;
 }
 
-interface ScriptContextProps {
+export interface ScriptContextProps {
   liveViewPage: LiveViewPage;
 
   args: Arguments;

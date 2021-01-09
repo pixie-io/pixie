@@ -35,7 +35,7 @@
         "devDependencies": [
           "**/*test.ts",
           "**/*test.tsx",
-          "src/testing/*",
+          "src/testing/**/*",
           "packages/**/src/testing/*",
           "**/*stories.tsx",
           "webpack.config.js",
@@ -51,7 +51,7 @@
         "*test.ts",
         "*test.tsx",
         "./*.js",
-        "src/testing/*",
+        "src/testing/**/*",
         "packages/**/src/testing/*"
       ],
       "env": {
