@@ -11,50 +11,29 @@ pl_cc_library(
         exclude = [
             "**/*_test.cc",
             "stirling_wrapper.cc",
-            "stirling_mock.h",
         ],
     ),
     hdrs = glob(
-        [
-            "*.h",
-            "bcc_bpf_interface/*.h",
-        ],
+        ["*.h"],
         exclude = [
             "**/*_mock.h",
         ],
     ),
     deps = [
-        "//src/shared/types:cc_library",
         "//src/shared/types/proto/wrapper:cc_library",
-        "//src/shared/metadata:cc_library",
-        "//src/common/grpcutils:cc_library",
-        "//src/common/protobufs:cc_library",
-        "//src/common/fs:cc_library",
-        "//src/common/json:cc_library",
-        "//src/stirling/core:cc_library",
-        "//src/stirling/common:cc_library",
-        "//src/stirling/utils:cc_library",
-        "//src/stirling/proto:stirling_pl_cc_proto",
-        "//src/stirling/jvm_stats:cc_library",
-        "//src/stirling/socket_tracer:cc_library",
-        "//src/stirling/dynamic_tracer:cc_library",
-        "//src/stirling/dynamic_bpftrace:cc_library",
-        "//src/stirling/system_stats:cc_library",
-        "//src/stirling/bcc_bpf_interface:cc_library",
         "//src/stirling/bpf_tools:cc_library",
-        "//src/stirling/obj_tools:cc_library",
-        "//demos/applications/hipster_shop:cc_library",
-    ] + select({
-        "@bazel_tools//src/conditions:linux_x86_64": [
-            "//third_party:bpftrace",
-            "//src/stirling/bcc_bpf:socket_trace",
-            "//src/stirling/bcc_bpf:pidruntime",
-            "//src/stirling/bcc_bpf:proc_trace",
-            "//src/stirling/bt:cpustat",
-            "//src/stirling/bt:pidruntime",
-        ],
-        "//conditions:default": [],
-    }),
+        "//src/stirling/common:cc_library",
+        "//src/stirling/core:cc_library",
+        "//src/stirling/dynamic_bpftrace:cc_library",
+        "//src/stirling/dynamic_tracer:cc_library",
+        "//src/stirling/jvm_stats:cc_library",
+        "//src/stirling/pid_runtime:cc_library",
+        "//src/stirling/proc_stat:cc_library",
+        "//src/stirling/proto:stirling_pl_cc_proto",
+        "//src/stirling/socket_tracer:cc_library",
+        "//src/stirling/seq_gen:cc_library",
+        "//src/stirling/system_stats:cc_library",
+    ],
 )
 
 pl_cc_test_library(
@@ -122,18 +101,6 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",
-        "//src/stirling/testing:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "bpftrace_connector_bpf_test",
-    timeout = "long",
-    srcs = ["bpftrace_connector_bpf_test.cc"],
-    flaky = True,
-    tags = ["requires_bpf"],
-    deps = [
-        ":cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )

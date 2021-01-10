@@ -1,7 +1,7 @@
 #include "src/stirling/core/source_registry.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/types/proto/wrapper/types_pb_wrapper.h"
-#include "src/stirling/core/seq_gen_connector.h"
+#include "src/stirling/seq_gen/seq_gen_connector.h"
 
 namespace pl {
 namespace stirling {

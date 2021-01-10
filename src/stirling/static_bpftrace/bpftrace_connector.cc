@@ -7,7 +7,7 @@
 
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/macros.h"
-#include "src/stirling/bpftrace_connector.h"
+#include "src/stirling/static_bpftrace/bpftrace_connector.h"
 
 // The following are string_views into BT files that are included in the binary by the linker.
 // The BT files are permanently resident in memory, so the string view is permanent too.

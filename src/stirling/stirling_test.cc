@@ -10,10 +10,10 @@
 #include "src/common/base/hash_utils.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/core/info_class_manager.h"
-#include "src/stirling/core/seq_gen_connector.h"
-#include "src/stirling/core/sequence_generator.h"
 #include "src/stirling/core/source_registry.h"
 #include "src/stirling/core/types.h"
+#include "src/stirling/seq_gen/seq_gen_connector.h"
+#include "src/stirling/seq_gen/sequence_generator.h"
 #include "src/stirling/stirling.h"
 
 #include "src/stirling/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"

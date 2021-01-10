@@ -12,8 +12,6 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
-        "//src/common/fs:cc_library",
-        "//src/common/protobufs:cc_library",
         "//src/shared/metadata:cc_library",
         "//src/shared/types:cc_library",
         "//src/shared/types/proto/wrapper:cc_library",
@@ -32,13 +30,19 @@ pl_cc_test(
 pl_cc_test(
     name = "info_class_manager_test",
     srcs = ["info_class_manager_test.cc"],
-    deps = [":cc_library"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/seq_gen:cc_library",
+    ],
 )
 
 pl_cc_test(
     name = "data_table_test",
     srcs = ["data_table_test.cc"],
-    deps = [":cc_library"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/seq_gen:cc_library",
+    ],
 )
 
 pl_cc_test(
@@ -59,7 +63,10 @@ pl_cc_test(
 pl_cc_test(
     name = "source_registry_test",
     srcs = ["source_registry_test.cc"],
-    deps = [":cc_library"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/seq_gen:cc_library",
+    ],
 )
 
 pl_cc_test(

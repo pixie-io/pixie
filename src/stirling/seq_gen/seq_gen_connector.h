@@ -6,8 +6,8 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/stirling/core/sequence_generator.h"
 #include "src/stirling/core/source_connector.h"
+#include "src/stirling/seq_gen/sequence_generator.h"
 
 namespace pl {
 namespace stirling {

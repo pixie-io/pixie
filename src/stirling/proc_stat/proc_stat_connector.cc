@@ -1,4 +1,4 @@
-#include "src/stirling/proc_stat_connector.h"
+#include "src/stirling/proc_stat/proc_stat_connector.h"
 
 #include <fstream>
 

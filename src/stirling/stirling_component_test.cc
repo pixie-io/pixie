@@ -5,7 +5,7 @@
 #include "src/stirling/core/data_table.h"
 #include "src/stirling/core/pub_sub_manager.h"
 #include "src/stirling/core/types.h"
-#include "src/stirling/proc_stat_connector.h"
+#include "src/stirling/proc_stat/proc_stat_connector.h"
 #include "src/stirling/proto/stirling.pb.h"
 #include "src/stirling/stirling.h"
 

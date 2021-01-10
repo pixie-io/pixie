@@ -12,15 +12,18 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
-        "//src/stirling/bpf_tools:cc_library",
         "//src/stirling/core:cc_library",
-        "//src/stirling/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_cc_proto",
+        "//src/stirling/bpf_tools:cc_library",
+        "//src/stirling/static_bpftrace/bt:cpustat",
+        "//src/stirling/static_bpftrace/bt:pidruntime",
     ],
 )
 
 pl_cc_test(
-    name = "dynamic_bpftrace_connector_test",
-    srcs = ["dynamic_bpftrace_connector_test.cc"],
+    name = "bpftrace_connector_bpf_test",
+    timeout = "long",
+    srcs = ["bpftrace_connector_bpf_test.cc"],
+    flaky = True,
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",

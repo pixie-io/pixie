@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "src/common/base/base.h"
+#include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 

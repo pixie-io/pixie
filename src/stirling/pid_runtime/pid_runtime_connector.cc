@@ -1,6 +1,6 @@
 #ifdef __linux__
 
-#include "src/stirling/pid_runtime_connector.h"
+#include "src/stirling/pid_runtime/pid_runtime_connector.h"
 
 #include <string>
 
