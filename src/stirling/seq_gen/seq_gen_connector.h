@@ -62,7 +62,6 @@ class SeqGenConnector : public SourceConnector {
        types::DataType::TIME64NS,
        types::SemanticType::ST_NONE,
        types::PatternType::METRIC_COUNTER},
-
       {"x",
        "A sequence number.",
        types::DataType::INT64,

@@ -96,21 +96,5 @@ void ProcStatConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t t
   r.Append<r.ColIndex("idle_percent")>(cpu_usage_.idle_percent);
 }
 
-Status FakeProcStatConnector::InitImpl() {
-  auto parsed_str = GetProcParams();
-  return GetProcStat(parsed_str);
-}
-
-std::vector<std::string> FakeProcStatConnector::GetProcParams() {
-  std::string stats = "cpu  ";
-  std::vector<std::string> parsed_str;
-  for (int i = 0; i < kNumCPUStatFields; ++i) {
-    stats += std::to_string(fake_stat_ + i) + " ";
-  }
-  fake_stat_++;
-  parsed_str = absl::StrSplit(stats, ' ', absl::SkipWhitespace());
-  return parsed_str;
-}
-
 }  // namespace stirling
 }  // namespace pl

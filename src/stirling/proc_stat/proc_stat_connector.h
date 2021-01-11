@@ -80,30 +80,5 @@ class ProcStatConnector : public SourceConnector {
   const int kNumCPUStatFields = 10;
 };
 
-/**
- * @brief Fake proc stat connector used for testing. It generates data in the
- * same format as we expect in /proc/stat on linux systems but with fake data.
- *
- */
-class FakeProcStatConnector : public ProcStatConnector {
- public:
-  FakeProcStatConnector() = delete;
-  ~FakeProcStatConnector() override = default;
-
-  static std::unique_ptr<SourceConnector> Create(std::string_view name) {
-    return std::unique_ptr<SourceConnector>(new FakeProcStatConnector(name));
-  }
-
- protected:
-  explicit FakeProcStatConnector(std::string_view name) : ProcStatConnector(name) {}
-
-  Status InitImpl() override;
-
-  std::vector<std::string> GetProcParams() override;
-
- private:
-  int fake_stat_ = 0;
-};
-
 }  // namespace stirling
 }  // namespace pl

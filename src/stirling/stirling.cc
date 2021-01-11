@@ -44,7 +44,6 @@ namespace {
 std::unique_ptr<SourceRegistry> CreateAllSourceRegistry() {
   auto registry = std::make_unique<SourceRegistry>();
   registry->RegisterOrDie<JVMStatsConnector>("jvm_stats");
-  registry->RegisterOrDie<FakeProcStatConnector>("fake_proc_stat");
   registry->RegisterOrDie<PIDRuntimeConnector>("bcc_cpu_stat");
   registry->RegisterOrDie<ProcStatConnector>("proc_stat");
   registry->RegisterOrDie<SeqGenConnector>("sequences");
