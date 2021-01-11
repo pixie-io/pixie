@@ -84,22 +84,18 @@ export const Input: React.FC<InputProps> = ({
   customRef,
 }) => {
   const classes = useStyles();
-  const { openMode } = React.useContext(AutocompleteContext);
+  const { onOpen, hidden } = React.useContext(AutocompleteContext);
   const dummyElement = React.useRef<HTMLSpanElement>(null);
   const defaultRef = React.useRef<HTMLInputElement>(null);
   const inputRef = customRef || defaultRef;
 
   React.useEffect(() => {
-    if (openMode !== 'none' && inputRef.current) {
-      // Need to wait for the value to propagate, so let the render complete before manipulating the selection directly.
-      setTimeout(() => {
-        if (openMode === 'select') inputRef.current.setSelectionRange(0, inputRef.current.value.length);
-        if (openMode === 'clear') inputRef.current.value = '';
-        inputRef.current.focus();
-      }, 0);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openMode, inputRef]);
+    if (hidden || onOpen === 'none' || !inputRef.current) return;
+
+    if (onOpen === 'select') inputRef.current.setSelectionRange(0, inputRef.current.value.length);
+    if (onOpen === 'clear') onChange('');
+    inputRef.current.focus();
+  }, [onChange, onOpen, inputRef, hidden]);
 
   const handleChange = React.useCallback(
     (e) => {

@@ -284,7 +284,8 @@ const DialogDropdown = ({
               allowTyping,
               requireCompletion,
               inputRef,
-              openMode: anchorEl ? 'focus' : 'none',
+              onOpen: 'clear',
+              hidden: !anchorEl,
             }}
           >
             <Autocomplete
@@ -399,7 +400,7 @@ const BreadcrumbsImpl = ({ classes, breadcrumbs }: BreadcrumbsProps) => {
             allowTyping: breadcrumb.allowTyping ?? allowTyping,
             requireCompletion:
               breadcrumb.requireCompletion ?? requireCompletion,
-            openMode: 'clear',
+            onOpen: 'clear',
           }}
         >
           <Breadcrumb key={i} classes={classes} {...breadcrumb} />

@@ -13,12 +13,14 @@ export interface AutocompleteContextProps {
    * 'clear': moves tab focus to the input, and sets its value to the empty string.
    * @default focus
    */
-  openMode?: 'none'|'focus'|'select'|'clear';
+  onOpen?: 'none'|'focus'|'select'|'clear';
+  hidden?: boolean;
   inputRef?: React.MutableRefObject<HTMLInputElement>;
 }
 
 export const AutocompleteContext = React.createContext<AutocompleteContextProps>({
   allowTyping: true,
   requireCompletion: true,
-  openMode: 'none',
+  onOpen: 'none',
+  hidden: false,
 });

@@ -88,6 +88,7 @@ export const Autocomplete: React.FC<AutoCompleteProps> = ({
     allowTyping,
     requireCompletion,
     inputRef,
+    hidden,
   } = React.useContext(AutocompleteContext);
   const [inputValue, setInputValue] = React.useState('');
   const [completions, setCompletions] = React.useState([]);
@@ -110,8 +111,9 @@ export const Autocomplete: React.FC<AutoCompleteProps> = ({
       if (selection?.title && selection?.id) setActiveItem(selection.id);
     });
     // `mounted` is not in this array because changing it should ONLY affect whether the resolved promise acts.
+    // `hidden` IS in it to ensure we update upon revealing the dropdown.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inputValue, getCompletions]);
+  }, [inputValue, getCompletions, hidden]);
 
   const handleSelection = React.useCallback(
     (id) => {
