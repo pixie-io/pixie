@@ -38,6 +38,7 @@ import { LiveTourContext, LiveTourDialog } from 'containers/App/live-tour';
 import ExploreIcon from '@material-ui/icons/Explore';
 import { useSetting } from 'common/use-setting';
 import { LayoutContext } from 'context/layout-context';
+import { Button } from '@material-ui/core';
 
 const styles = (
   {
@@ -344,13 +345,20 @@ const ProfileItem = ({
   );
 };
 
-const HamburgerMenu = ({ classes, onClick }) => (
-  <ListItem button onClick={onClick} key='Menu' className={classes.listIcon}>
+const HamburgerMenu = ({ classes, onToggle, logoLinkTo }) => (
+  <ListItem button onClick={onToggle} key='Menu' className={classes.listIcon}>
     <ListItemIcon>
       <Menu className={classes.icon} />
     </ListItemIcon>
     <ListItemIcon>
-      <PixieLogo className={classes.pixieLogo} />
+      <Button
+        component={Link}
+        disabled={window.location.pathname.startsWith(logoLinkTo)}
+        to={logoLinkTo}
+        variant='text'
+      >
+        <PixieLogo className={classes.pixieLogo} />
+      </Button>
     </ListItemIcon>
   </ListItem>
 );
@@ -395,7 +403,7 @@ const SideBar = ({ classes }) => {
         }}
       >
         <List>
-          <HamburgerMenu key='Menu' classes={classes} onClick={toggleSidebar} />
+          <HamburgerMenu key='Menu' classes={classes} onToggle={toggleSidebar} logoLinkTo='/live' />
         </List>
         <List>
           {navItems.map(({ icon, link, text }) => (

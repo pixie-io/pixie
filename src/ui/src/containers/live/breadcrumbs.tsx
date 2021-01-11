@@ -21,7 +21,6 @@ import { entityPageForScriptId, optionallyGetNamespace } from 'containers/live-w
 import { EntityType, pxTypetoEntityType, entityStatusGroup } from 'containers/command-input/autocomplete-utils';
 import { clusterStatusGroup } from 'containers/admin/utils';
 import { ContainsMutation } from 'utils/pxl';
-import Tooltip from '@material-ui/core/Tooltip';
 import { LayoutContext } from 'context/layout-context';
 import ExecuteScriptButton from './execute-button';
 import { Variable } from './vis';
@@ -267,9 +266,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
 
   return (
     <div className={classes.root}>
-      <Tooltip title='Pixie Command'>
-        <PixieCommandIcon fontSize='large' className={classes.pixieIcon} />
-      </Tooltip>
+      <PixieCommandIcon fontSize='large' className={classes.pixieIcon} />
       <div className={classes.verticalLine} />
       <div className={classes.breadcrumbs}>
         <Breadcrumbs
