@@ -77,3 +77,16 @@ pl_cc_test(
         "//src/stirling/testing:cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "stirling_component_test",
+    srcs = ["stirling_component_test.cc"],
+    deps = ["//src/stirling:cc_library"],
+)
+
+pl_cc_test(
+    name = "stirling_test",
+    size = "medium",
+    srcs = ["stirling_test.cc"],
+    deps = ["//src/stirling:cc_library"],
+)
