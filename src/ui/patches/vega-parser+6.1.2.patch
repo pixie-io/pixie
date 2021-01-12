@@ -1,8 +1,8 @@
 diff --git a/node_modules/vega-parser/src/parsers/mark.js b/node_modules/vega-parser/src/parsers/mark.js
-index b4a238eb..54104089 100644
+index 89c5ca8..2982320 100644
 --- a/node_modules/vega-parser/src/parsers/mark.js
 +++ b/node_modules/vega-parser/src/parsers/mark.js
-@@ -43,6 +43,7 @@ export default function(spec, scope) {
+@@ -44,6 +44,7 @@ export default function(spec, scope) {
    op = scope.add(Mark({
      markdef:     definition(spec),
      interactive: interactive(spec.interactive, scope),

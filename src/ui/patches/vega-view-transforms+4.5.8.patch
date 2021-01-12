@@ -1,0 +1,12 @@
+diff --git a/node_modules/vega-view-transforms/src/Mark.js b/node_modules/vega-view-transforms/src/Mark.js
+index 2909668..51f5afd 100644
+--- a/node_modules/vega-view-transforms/src/Mark.js
++++ b/node_modules/vega-view-transforms/src/Mark.js
+@@ -27,6 +27,7 @@ inherits(Mark, Transform, {
+       mark.source = this.source; // point to upstream collector
+       mark.clip = _.clip;
+       mark.interactive = _.interactive;
++      mark.propEventsToOverlapped = _.propEventsToOverlapped;
+       this.value = mark;
+     }
+ 

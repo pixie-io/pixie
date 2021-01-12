@@ -1,5 +1,5 @@
 diff --git a/node_modules/vega-scenegraph/src/CanvasHandler.js b/node_modules/vega-scenegraph/src/CanvasHandler.js
-index c856ecd0..9bed61ea 100644
+index f1b132b..215f2b8 100644
 --- a/node_modules/vega-scenegraph/src/CanvasHandler.js
 +++ b/node_modules/vega-scenegraph/src/CanvasHandler.js
 @@ -12,10 +12,11 @@ import {inherits} from 'vega-util';
@@ -15,8 +15,8 @@ index c856ecd0..9bed61ea 100644
 +  this._actives = [];
  }
  
- const prototype = inherits(CanvasHandler, Handler);
-@@ -69,36 +70,45 @@ prototype.events = Events;
+ const eventBundle = type => (
+@@ -44,30 +45,39 @@ function addEventListener(handler, type) {
  
  function move(moveEvent, overEvent, outEvent) {
    return function(evt) {
@@ -74,104 +74,106 @@ index c856ecd0..9bed61ea 100644
    };
  }
  
- // to keep old versions of firefox happy
- prototype.DOMMouseScroll = function(evt) {
--  this.fire(MouseWheelEvent, evt);
-+  this._actives.forEach((item) => this.fire(MouseWheelEvent, evt, item));
- };
+@@ -97,7 +107,7 @@ inherits(CanvasHandler, Handler, {
  
- prototype.mousemove = move(MouseMoveEvent, MouseOverEvent, MouseOutEvent);
-@@ -108,56 +118,57 @@ prototype.mouseout  = inactive(MouseOutEvent);
- prototype.dragleave = inactive(DragLeaveEvent);
+   // to keep old versions of firefox happy
+   DOMMouseScroll(evt) {
+-    this.fire(MouseWheelEvent, evt);
++    this._actives.forEach((item) => this.fire(MouseWheelEvent, evt, item));
+   },
  
- prototype.mousedown = function(evt) {
--  this._down = this._active;
--  this.fire(MouseDownEvent, evt);
-+  this._down = this._actives;
-+  this._actives.forEach((item) => this.fire(MouseDownEvent, evt, item));
- };
+   mousemove: move(MouseMoveEvent, MouseOverEvent, MouseOutEvent),
+@@ -107,56 +117,57 @@ inherits(CanvasHandler, Handler, {
+   dragleave: inactive(DragLeaveEvent),
  
- prototype.click = function(evt) {
--  if (this._down === this._active) {
--    this.fire(ClickEvent, evt);
--    this._down = null;
--  }
-+  this._actives.forEach((item) => {
-+    if (this._down.some(i => i === item)) {
-+      this.fire(ClickEvent, evt, item);
-+    }
-+  });
-+  this._down = [];
- };
+   mousedown(evt) {
+-    this._down = this._active;
+-    this.fire(MouseDownEvent, evt);
++    this._down = this._actives;
++    this._actives.forEach((item) => this.fire(MouseDownEvent, evt, item));
+   },
  
- prototype.touchstart = function(evt) {
-   this._touch = this.pickEvent(evt.changedTouches[0]);
+   click(evt) {
+-    if (this._down === this._active) {
+-      this.fire(ClickEvent, evt);
+-      this._down = null;
+-    }
++    this._actives.forEach((item) => {
++      if (this._down.some(i => i === item)) {
++        this.fire(ClickEvent, evt, item);
++      }
++    });
++    this._down = [];
+   },
  
-   if (this._first) {
--    this._active = this._touch;
-+    this._actives = this._touch;
-     this._first = false;
-   }
+   touchstart(evt) {
+     this._touch = this.pickEvent(evt.changedTouches[0]);
  
--  this.fire(TouchStartEvent, evt, true);
-+  this._touch.forEach(item => this.fire(TouchStartEvent, evt, item));
- };
- 
- prototype.touchmove = function(evt) {
--  this.fire(TouchMoveEvent, evt, true);
-+  this._touch.forEach(item => this.fire(TouchMoveEvent, evt, item));
- };
- 
- prototype.touchend = function(evt) {
--  this.fire(TouchEndEvent, evt, true);
--  this._touch = null;
-+  this._touch.forEach(item => this.fire(TouchEndEvent, evt, item));
-+  this._touch = [];
- };
- 
- // fire an event
--prototype.fire = function(type, evt, touch) {
--  const a = touch ? this._touch : this._active,
--        h = this._handlers[type];
-+prototype.fire = function(type, evt, item) {
-+  const h = this._handlers[type];
- 
-   // set event type relative to scenegraph items
-   evt.vegaType = type;
- 
-   // handle hyperlinks and tooltips first
--  if (type === HrefEvent && a && a.href) {
--    this.handleHref(evt, a, a.href);
-+  if (type === HrefEvent && item && item.href) {
-+    this.handleHref(evt, item, item.href);
-   } else if (type === TooltipShowEvent || type === TooltipHideEvent) {
--    this.handleTooltip(evt, a, type !== TooltipHideEvent);
-+    this.handleTooltip(evt, item, type !== TooltipHideEvent);
-   }
- 
-   // invoke all registered handlers
-   if (h) {
-     for (let i=0, len=h.length; i<len; ++i) {
--      h[i].handler.call(this._obj, evt, a);
-+      h[i].handler.call(this._obj, evt, item);
+     if (this._first) {
+-      this._active = this._touch;
++      this._actives = this._touch;
+       this._first = false;
      }
-   }
- };
-@@ -195,7 +206,8 @@ prototype.off = function(type, handler) {
- prototype.pickEvent = function(evt) {
-   const p = point(evt, this._canvas),
-         o = this._origin;
--  return this.pick(this._scene, p[0], p[1], p[0] - o[0], p[1] - o[1]);
-+  const picked = this.pick(this._scene, p[0], p[1], p[0] - o[0], p[1] - o[1]);
-+  return (picked && typeof picked.length !== 'undefined') ? picked : [picked];
- };
  
- // find the scenegraph item at the current mouse position
+-    this.fire(TouchStartEvent, evt, true);
++    this._touch.forEach(item => this.fire(TouchStartEvent, evt, item));
+   },
+ 
+   touchmove(evt) {
+-    this.fire(TouchMoveEvent, evt, true);
++    this._touch.forEach(item => this.fire(TouchMoveEvent, evt, item));
+   },
+ 
+   touchend(evt) {
+-    this.fire(TouchEndEvent, evt, true);
+-    this._touch = null;
++    this._touch.forEach(item => this.fire(TouchEndEvent, evt, item));
++    this._touch = [];
+   },
+ 
+   // fire an event
+-  fire(type, evt, touch) {
+-    const a = touch ? this._touch : this._active,
+-          h = this._handlers[type];
++  fire(type, evt, item) {
++    const h = this._handlers[type];
+ 
+     // set event type relative to scenegraph items
+     evt.vegaType = type;
+ 
+     // handle hyperlinks and tooltips first
+-    if (type === HrefEvent && a && a.href) {
+-      this.handleHref(evt, a, a.href);
++    if (type === HrefEvent && item && item.href) {
++      this.handleHref(evt, item, item.href);
+     } else if (type === TooltipShowEvent || type === TooltipHideEvent) {
+-      this.handleTooltip(evt, a, type !== TooltipHideEvent);
++      this.handleTooltip(evt, item, type !== TooltipHideEvent);
+     }
+ 
+     // invoke all registered handlers
+     if (h) {
+       for (let i=0, len=h.length; i<len; ++i) {
+-        h[i].handler.call(this._obj, evt, a);
++        h[i].handler.call(this._obj, evt, item);
+       }
+     }
+   },
+@@ -194,7 +205,8 @@ inherits(CanvasHandler, Handler, {
+   pickEvent(evt) {
+     const p = point(evt, this._canvas),
+           o = this._origin;
+-    return this.pick(this._scene, p[0], p[1], p[0] - o[0], p[1] - o[1]);
++    const picked = this.pick(this._scene, p[0], p[1], p[0] - o[0], p[1] - o[1]);
++    return (picked && typeof picked.length !== 'undefined') ? picked : [picked];
+   },
+ 
+   // find the scenegraph item at the current mouse position
 diff --git a/node_modules/vega-scenegraph/src/marks/group.js b/node_modules/vega-scenegraph/src/marks/group.js
-index ae243f82..a3426a6e 100644
+index b59d055..2ef0528 100644
 --- a/node_modules/vega-scenegraph/src/marks/group.js
 +++ b/node_modules/vega-scenegraph/src/marks/group.js
-@@ -167,7 +167,8 @@ function pick(context, scene, x, y, gx, gy) {
+@@ -168,7 +168,8 @@ function pick(context, scene, x, y, gx, gy) {
      // hit test against contained marks
      hit = pickVisit(group, mark => pickMark(mark, dx, dy)
        ? this.pick(mark, x, y, dx, dy)
@@ -182,7 +184,7 @@ index ae243f82..a3426a6e 100644
  
      // hit test against group background
 diff --git a/node_modules/vega-scenegraph/src/util/visit.js b/node_modules/vega-scenegraph/src/util/visit.js
-index b92441d2..0ca69ac2 100644
+index 4cb8978..1ddf7b7 100644
 --- a/node_modules/vega-scenegraph/src/util/visit.js
 +++ b/node_modules/vega-scenegraph/src/util/visit.js
 @@ -36,24 +36,38 @@ export function visit(scene, visitor) {
@@ -195,7 +197,7 @@ index b92441d2..0ca69ac2 100644
 +  var items = scene.items, hit, i, allhits = [];
    if (!items || !items.length) return null;
  
-   var zitems = zorder(scene);
+   const zitems = zorder(scene);
    if (zitems && zitems.length) items = zitems;
  
    for (i=items.length; --i >= 0;) {
