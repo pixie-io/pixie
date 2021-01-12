@@ -9,9 +9,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"gopkg.in/segmentio/analytics-go.v3"
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
+	"pixielabs.ai/pixielabs/src/shared/services/events"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
 )
@@ -82,6 +84,24 @@ func getAugmentedToken(env apienv.APIEnv, r *http.Request) (string, error) {
 			APIKey: apiHeader,
 		})
 		if err == nil {
+			// Get user/org info from augmented token.
+			aCtx := authcontext.New()
+			if err := aCtx.UseJWTAuth(env.JWTSigningKey(), apiKeyResp.Token); err != nil {
+				return "", ErrGetAuthTokenFailed
+			}
+
+			url := ""
+			if r.URL != nil {
+				url = r.URL.String()
+			}
+			events.Client().Enqueue(&analytics.Track{
+				UserId: aCtx.Claims.GetUserClaims().UserID,
+				Event:  events.APIRequest,
+				Properties: analytics.NewProperties().
+					Set("url", url).
+					Set("api-client", r.Header.Get("pixie-api-client")),
+			})
+
 			return apiKeyResp.Token, nil
 		}
 	}
