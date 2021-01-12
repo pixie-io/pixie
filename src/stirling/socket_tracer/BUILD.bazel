@@ -302,6 +302,7 @@ pl_cc_test(
     name = "redis_trace_bpf_test",
     timeout = "long",
     srcs = ["redis_trace_bpf_test.cc"],
+    flaky = True,
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",

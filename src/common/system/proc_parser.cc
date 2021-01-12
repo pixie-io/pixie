@@ -19,12 +19,19 @@ namespace system {
 constexpr char kFieldSeparators[] = "\t ";
 
 /**
- * These constants are used to ignore virtual and local network interfaces.
+ * Only local network interfaces with these prefixes are included in rx/tx computations.
+ * See for conventional prefixes:
+ *  https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/
+ *  https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/configuring_and_managing_networking/consistent-network-interface-device-naming_configuring-and-managing-networking
  */
-const std::vector<std::string> kNetIFaceIgnorePrefix = {
-    "v",
-    "docker",
-    "lo",
+const std::vector<std::string> kNetIFacePrefix = {
+    // Ethernet interfaces. "en" covers ens, eno, enx, enp.
+    "eth",
+    "en",
+    // Wireless interfaces.
+    "wlan",
+    "wl",
+    "ww",
 };
 
 /*************************************************
@@ -122,9 +129,9 @@ Status ProcParser::ParseNetworkStatAccumulateIFaceData(
   return Status::OK();
 }
 
-bool ShouldSkipNetIFace(const std::string_view iface) {
-  // TODO(zasgar): We might want to make this configurable at some point.
-  for (const auto& prefix : kNetIFaceIgnorePrefix) {
+bool ShouldIncludeNetIFace(const std::string_view iface) {
+  // TODO(oazizi): Need a better way to know which interfaces to include.
+  for (const auto& prefix : kNetIFacePrefix) {
     if (absl::StartsWith(iface, prefix)) {
       return true;
     }
@@ -166,7 +173,7 @@ Status ProcParser::ParseProcPIDNetDev(int32_t pid, NetworkStats* out) const {
       return error::Internal("failed to parse net dev file, incorrect number of fields");
     }
 
-    if (ShouldSkipNetIFace(split[kProcNetDevIFaceField])) {
+    if (!ShouldIncludeNetIFace(split[kProcNetDevIFaceField])) {
       continue;
     }
 
