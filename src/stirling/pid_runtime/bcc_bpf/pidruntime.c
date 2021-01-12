@@ -3,7 +3,7 @@
 #include <linux/ptrace.h>
 #include <linux/sched.h>
 
-#include "src/stirling/bcc_bpf_interface/pidruntime.h"
+#include "src/stirling/pid_runtime/bcc_bpf_intf/pidruntime.h"
 
 BPF_HASH(pid_cpu_time, uint16_t, struct pidruntime_val_t);
 

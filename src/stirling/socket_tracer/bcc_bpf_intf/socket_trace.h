@@ -2,7 +2,7 @@
 
 #include <linux/in6.h>
 
-#include "src/stirling/bcc_bpf_interface/common.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/common.h"
 
 #define AF_UNKNOWN 0xff
 

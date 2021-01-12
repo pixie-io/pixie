@@ -1,9 +1,9 @@
 #pragma once
 
 #include "src/common/base/base.h"
-#include "src/stirling/bcc_bpf_interface/symaddrs.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
 #include "src/stirling/obj_tools/elf_tools.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/symaddrs.h"
 
 namespace pl {
 namespace stirling {

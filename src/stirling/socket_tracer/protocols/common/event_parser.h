@@ -10,10 +10,10 @@
 #include <absl/base/macros.h>
 
 #include "src/common/base/base.h"
-#include "src/stirling/bcc_bpf_interface/common.h"
 #include "src/stirling/common/parse_state.h"
-#include "src/stirling/common/socket_trace.h"
 #include "src/stirling/common/utils.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/common.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/socket_tracer/protocols/common/interface.h"
 
 namespace pl {

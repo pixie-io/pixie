@@ -4,7 +4,7 @@
 #include <linux/sched.h>  // NOLINT
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/bcc_bpf/protocol_inference.h"
+#include "src/stirling/socket_tracer/bcc_bpf/protocol_inference.h"
 
 TEST(ProtocolInferenceTest, Postgres) {
   constexpr char kStartupMessage[] =

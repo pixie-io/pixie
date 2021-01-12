@@ -1,7 +1,7 @@
 // LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
 
-#include "src/stirling/bcc_bpf/go_trace_common.h"
-#include "src/stirling/bcc_bpf_interface/symaddrs.h"
+#include "src/stirling/socket_tracer/bcc_bpf/go_trace_common.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/symaddrs.h"
 
 // Key: TGID
 // Value: Symbol addresses for the binary with that TGID.

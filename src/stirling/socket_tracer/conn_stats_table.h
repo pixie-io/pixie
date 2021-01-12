@@ -1,7 +1,7 @@
 #pragma once
 
-#include "src/stirling/core/canonical_types.h"
 #include "src/stirling/core/types.h"
+#include "src/stirling/socket_tracer/canonical_types.h"
 
 namespace pl {
 namespace stirling {

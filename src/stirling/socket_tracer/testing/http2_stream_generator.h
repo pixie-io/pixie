@@ -2,8 +2,7 @@
 
 #include <memory>
 
-#include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
-#include "src/stirling/common/go_grpc_types.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"
 #include "src/stirling/socket_tracer/testing/clock.h"
 
 namespace pl {

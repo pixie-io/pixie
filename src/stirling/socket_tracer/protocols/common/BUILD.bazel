@@ -16,7 +16,7 @@ pl_cc_library(
         ],
     ),
     deps = [
-        "//src/stirling/bcc_bpf_interface:cc_library",
+        "//src/stirling/socket_tracer/bcc_bpf_intf:cc_library",
         "//src/stirling/common:cc_library",
     ],
 )

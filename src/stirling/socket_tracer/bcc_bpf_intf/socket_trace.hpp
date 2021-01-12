@@ -9,7 +9,7 @@
 
 #include <absl/hash/hash.h>
 
-#include "src/stirling/bcc_bpf_interface/socket_trace.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/socket_trace.h"
 
 // This header defines the C++ counterparts of the BPF data structures.
 // The file name is kept identical to its BPF counterpart as well.

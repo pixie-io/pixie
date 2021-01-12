@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/stirling/bcc_bpf_interface/common.h"
 #include "src/stirling/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/socket_tracer/protocols/pgsql/types.h"
 

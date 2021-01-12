@@ -8,9 +8,9 @@
 
 #define socklen_t size_t
 
-#include "src/stirling/bcc_bpf/protocol_inference.h"
 #include "src/stirling/bcc_bpf/utils.h"
-#include "src/stirling/bcc_bpf_interface/socket_trace.h"
+#include "src/stirling/socket_tracer/bcc_bpf/protocol_inference.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/socket_trace.h"
 
 // This keeps instruction count below BPF's limit of 4096 per probe.
 #define LOOP_LIMIT 45
@@ -1354,10 +1354,10 @@ int syscall__probe_ret_close(struct pt_regs* ctx) {
 // sendto and send?
 
 // Include HTTP2 tracing probes.
-#include "src/stirling/bcc_bpf/go_http2_trace.c"
+#include "src/stirling/socket_tracer/bcc_bpf/go_http2_trace.c"
 
 // Include OpenSSL tracing probes.
-#include "src/stirling/bcc_bpf/openssl_trace.c"
+#include "src/stirling/socket_tracer/bcc_bpf/openssl_trace.c"
 
 // Include GoTLS tracing probes.
-#include "src/stirling/bcc_bpf/go_tls_trace.c"
+#include "src/stirling/socket_tracer/bcc_bpf/go_tls_trace.c"

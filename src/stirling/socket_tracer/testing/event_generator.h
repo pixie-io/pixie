@@ -5,8 +5,7 @@
 #include <memory>
 #include <string>
 
-#include "src/stirling/bcc_bpf_interface/socket_trace.h"
-#include "src/stirling/common/socket_trace.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/socket_tracer/testing/clock.h"
 
 namespace pl {

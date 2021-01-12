@@ -4,8 +4,8 @@
 #include <variant>
 #include <vector>
 
-#include "src/stirling/bcc_bpf_interface/common.h"
 #include "src/stirling/common/parse_state.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/common.h"
 
 namespace pl {
 namespace stirling {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "src/stirling/bcc_bpf_interface/common.h"
-#include "src/stirling/bcc_bpf_interface/go_types.h"
+#include "src/stirling/bcc_bpf_intf/go_types.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/common.h"
 
 // Must be a power of two, otherwise masking will break.
 #define HEADER_FIELD_STR_SIZE 128

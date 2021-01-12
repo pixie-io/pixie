@@ -7,7 +7,7 @@
 #include <memory>
 
 #include "src/shared/metadata/metadata.h"
-#include "src/stirling/bcc_bpf_interface/socket_trace.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 
 #include "src/common/testing/testing.h"
 #include "src/stirling/core/data_table.h"

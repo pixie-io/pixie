@@ -13,7 +13,7 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/common/system:cc_library",
-        "//src/stirling:cc_library",
+        "//src/stirling/socket_tracer/protocols:cc_library",
     ],
 )
 

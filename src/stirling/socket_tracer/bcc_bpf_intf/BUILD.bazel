@@ -1,23 +1,16 @@
-package(default_visibility = [
-    "//src/stirling:__subpackages__",
-])
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
 filegroup(
     name = "headers",
-    srcs = glob(["*.h"]),
+    srcs = glob(["*.h", "*.hpp"]),
 )
 
 pl_cc_library(
     name = "cc_library",
-    srcs = glob(
-        ["*.cc"],
-        exclude = [
-            "**/*_test.cc",
-        ],
-    ),
-    hdrs = [":headers"],
+    srcs = [],
+    hdrs = [":headers", "//src/stirling/bcc_bpf_intf:headers"],
 )
 
 pl_cc_test(

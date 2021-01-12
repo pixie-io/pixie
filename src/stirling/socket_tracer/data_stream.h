@@ -6,7 +6,7 @@
 #include <memory>
 #include <string>
 
-#include "src/stirling/common/socket_trace.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/socket_tracer/protocols/types.h"
 
 DECLARE_uint32(messages_expiration_duration_secs);

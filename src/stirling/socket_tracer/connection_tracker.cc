@@ -16,7 +16,7 @@
 #include "src/common/base/inet_utils.h"
 #include "src/common/system/socket_info.h"
 #include "src/common/system/system.h"
-#include "src/stirling/common/go_grpc_types.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"
 #include "src/stirling/socket_tracer/connection_stats.h"
 #include "src/stirling/socket_tracer/protocols/cql/stitcher.h"
 #include "src/stirling/socket_tracer/protocols/cql/types.h"

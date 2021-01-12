@@ -8,7 +8,7 @@
 
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/socket_info.h"
-#include "src/stirling/common/socket_trace.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 
 namespace pl {
 namespace stirling {

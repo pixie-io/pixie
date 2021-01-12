@@ -8,7 +8,6 @@
 
 #include "src/common/base/base.h"
 #include "src/common/system/proc_parser.h"
-#include "src/stirling/bcc_bpf_interface/common.h"
 
 // This file deals with process path resolution.
 // In particular, FilePathResolver handles cases when these paths are within containers.

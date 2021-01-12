@@ -11,9 +11,8 @@
 
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/socket_info.h"
-#include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
-#include "src/stirling/common/go_grpc_types.h"
-#include "src/stirling/common/socket_trace.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/socket_tracer/data_stream.h"
 #include "src/stirling/socket_tracer/fd_resolver.h"
 #include "src/stirling/socket_tracer/protocols/common/interface.h"
@@ -39,7 +38,7 @@ class ConnectionStats;
 
 /**
  * @brief Describes a connection from user space. This corresponds to struct conn_info_t in
- * src/stirling/bcc_bpf_interface/socket_trace.h.
+ * src/stirling/socket_tracer/bcc_bpf_intf/socket_trace.h.
  */
 struct SocketOpen {
   uint64_t timestamp_ns = 0;

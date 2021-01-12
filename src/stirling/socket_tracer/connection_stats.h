@@ -9,10 +9,8 @@
 #include <absl/hash/hash.h>
 
 #include "src/shared/metadata/base_types.h"
-#include "src/stirling/bcc_bpf_interface/common.h"
-#include "src/stirling/bcc_bpf_interface/socket_trace.h"
-#include "src/stirling/common/go_grpc_types.h"
-#include "src/stirling/common/socket_trace.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/socket_tracer/connection_tracker.h"
 
 namespace pl {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "src/stirling/bcc_bpf_interface/go_types.h"
-#include "src/stirling/bcc_bpf_interface/symaddrs.h"
+#include "src/stirling/bcc_bpf_intf/go_types.h"
+#include "src/stirling/socket_tracer/bcc_bpf_intf/symaddrs.h"
 
 // A map that communicates the location of symbols within a binary.
 // This particular map has symbols that are common across golang probes.

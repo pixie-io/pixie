@@ -15,9 +15,6 @@ pl_cc_library(
             "*.h",
         ],
     ),
-    deps = [
-        "//src/stirling/bcc_bpf_interface:cc_library",
-    ],
 )
 
 pl_cc_test(

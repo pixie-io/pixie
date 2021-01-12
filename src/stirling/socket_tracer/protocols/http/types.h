@@ -4,7 +4,6 @@
 #include <string>
 
 #include "src/common/base/utils.h"
-#include "src/stirling/bcc_bpf_interface/common.h"
 #include "src/stirling/socket_tracer/protocols/common/event_parser.h"  // For FrameBase
 
 namespace pl {
