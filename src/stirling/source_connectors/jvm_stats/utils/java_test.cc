@@ -1,4 +1,4 @@
-#include "src/stirling/utils/java.h"
+#include "src/stirling/source_connectors/jvm_stats/utils/java.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -15,6 +15,7 @@
 
 namespace pl {
 namespace stirling {
+namespace java {
 
 // Tests that values are calculated correctly.
 TEST(StatsTest, CommonValues) {
@@ -59,5 +60,6 @@ TEST(HsperfdataPathTest, ResultIsAsExpected) {
   EXPECT_EQ(9, hello_world.Wait()) << "Server should have been killed.";
 }
 
+}  // namespace java
 }  // namespace stirling
 }  // namespace pl

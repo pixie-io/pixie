@@ -10,6 +10,7 @@
 
 namespace pl {
 namespace stirling {
+namespace java {
 
 /**
  * Stats holds a map of name and value, and computes meaningful stats to be exported to Stirling.
@@ -50,5 +51,6 @@ class Stats {
  */
 StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid);
 
+}  // namespace java
 }  // namespace stirling
 }  // namespace pl

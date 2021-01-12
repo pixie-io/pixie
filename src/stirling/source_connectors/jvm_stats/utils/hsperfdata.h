@@ -9,6 +9,7 @@
 
 namespace pl {
 namespace stirling {
+namespace java {
 namespace hsperf {
 
 // src/java.management/share/classes/sun/management/counter/perf/Prologue.java
@@ -82,5 +83,6 @@ struct HsperfData {
 Status ParseHsperfData(std::string_view buf_view, HsperfData* data);
 
 }  // namespace hsperf
+}  // namespace java
 }  // namespace stirling
 }  // namespace pl

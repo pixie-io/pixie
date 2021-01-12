@@ -11,8 +11,8 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
 #include "src/stirling/source_connectors/jvm_stats/jvm_stats_table.h"
-#include "src/stirling/utils/hsperfdata.h"
-#include "src/stirling/utils/java.h"
+#include "src/stirling/source_connectors/jvm_stats/utils/hsperfdata.h"
+#include "src/stirling/source_connectors/jvm_stats/utils/java.h"
 #include "src/stirling/utils/proc_path_tools.h"
 #include "src/stirling/utils/proc_tracker.h"
 
@@ -38,7 +38,7 @@ void JVMStatsConnector::FindJavaUPIDs(const ConnectorContext& ctx) {
     if (upid.pid() == 1) {
       continue;
     }
-    PL_ASSIGN_OR(auto hsperf_data_path, HsperfdataPath(upid.pid()), continue);
+    PL_ASSIGN_OR(auto hsperf_data_path, java::HsperfdataPath(upid.pid()), continue);
     java_procs_[upid].hsperf_data_path = hsperf_data_path;
   }
 }
@@ -53,7 +53,7 @@ Status JVMStatsConnector::ExportStats(const md::UPID& upid,
     return Status::OK();
   }
 
-  Stats stats(std::move(hsperf_data_str));
+  java::Stats stats(std::move(hsperf_data_str));
   if (!stats.Parse().ok()) {
     // Assumes this is a transient failure.
     return Status::OK();

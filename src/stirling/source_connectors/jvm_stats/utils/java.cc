@@ -1,4 +1,4 @@
-#include "src/stirling/utils/java.h"
+#include "src/stirling/source_connectors/jvm_stats/utils/java.h"
 
 #include <absl/strings/match.h>
 
@@ -12,17 +12,19 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/uid.h"
-#include "src/stirling/utils/hsperfdata.h"
+#include "src/stirling/source_connectors/jvm_stats/utils/hsperfdata.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
 namespace pl {
 namespace stirling {
+namespace java {
 
-using ::pl::stirling::hsperf::ParseHsperfData;
+using ::pl::stirling::java::hsperf::ParseHsperfData;
 using ::pl::system::ProcParser;
 using ::pl::utils::LEndianBytesToInt;
 
 Stats::Stats(std::vector<Stat> stats) : stats_(std::move(stats)) {}
+
 Stats::Stats(std::string hsperf_data_str) : hsperf_data_(std::move(hsperf_data_str)) {}
 
 Status Stats::Parse() {
@@ -124,5 +126,6 @@ StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
   return fs::JoinPath({&host_path, &hsperf_data_path});
 }
 
+}  // namespace java
 }  // namespace stirling
 }  // namespace pl

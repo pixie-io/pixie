@@ -1,4 +1,4 @@
-#include "src/stirling/utils/hsperfdata.h"
+#include "src/stirling/source_connectors/jvm_stats/utils/hsperfdata.h"
 
 #include <arpa/inet.h>
 #include <gmock/gmock.h>
@@ -13,6 +13,7 @@
 
 namespace pl {
 namespace stirling {
+namespace java {
 namespace hsperf {
 
 using ::pl::testing::TestFilePath;
@@ -21,7 +22,8 @@ using ::testing::StrEq;
 
 TEST(PerfDataHeaderTest, ReadFromBytes) {
   ASSERT_OK_AND_ASSIGN(const std::string content,
-                       ReadFileToString(TestFilePath("src/stirling/utils/test_hsperfdata")));
+                       ReadFileToString(TestFilePath(
+                           "src/stirling/source_connectors/jvm_stats/utils/test_hsperfdata")));
 
   HsperfData data;
   EXPECT_OK(ParseHsperfData(std::move(content), &data));
@@ -75,5 +77,6 @@ TEST(PerfDataHeaderTest, NotEnoughData) {
 }
 
 }  // namespace hsperf
+}  // namespace java
 }  // namespace stirling
 }  // namespace pl

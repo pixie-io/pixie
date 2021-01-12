@@ -1,4 +1,4 @@
-#include "src/stirling/utils/hsperfdata.h"
+#include "src/stirling/source_connectors/jvm_stats/utils/hsperfdata.h"
 
 #include <arpa/inet.h>
 
@@ -10,6 +10,7 @@
 
 namespace pl {
 namespace stirling {
+namespace java {
 namespace hsperf {
 
 constexpr uint8_t kExpectedMagic[] = {0xCA, 0xFE, 0xC0, 0xC0};
@@ -88,5 +89,6 @@ Status ParseHsperfData(std::string_view buf_view, HsperfData* data) {
 }
 
 }  // namespace hsperf
+}  // namespace java
 }  // namespace stirling
 }  // namespace pl
