@@ -21,6 +21,11 @@ data:
      ns: "nats://pl-nats:4222"
      store: file
      dir: /data/stan/store
+     store_limits {
+      max_age: "24h"
+      max_channels: 0
+      max_subscriptions: 0
+    }
      tls: {
         client_ca: "/etc/nats/certs/ca.crt",
         client_cert: "/etc/nats/certs/server.crt",
