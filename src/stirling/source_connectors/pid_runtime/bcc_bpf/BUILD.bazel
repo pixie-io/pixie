@@ -16,7 +16,7 @@ pl_bpf_cc_resource(
     name = "pidruntime",
     src = "pidruntime.c",
     hdrs = ["//src/stirling/source_connectors/pid_runtime/bcc_bpf_intf:headers"],
-    syshdrs = "//src/stirling/bcc_bpf:dummy_system_headers",
+    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
 )
 
 # Debug target, so output of preprocessing can be viewed.
@@ -26,5 +26,5 @@ pl_bpf_preprocess(
     name = "pidruntime_preprocess_debug",
     src = "pidruntime.c",
     hdrs = ["//src/stirling/source_connectors/pid_runtime/bcc_bpf_intf:headers"],
-    syshdrs = "//src/stirling/bcc_bpf:dummy_system_headers",
+    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
 )

@@ -1,0 +1,14 @@
+package(default_visibility = [
+    "//experimental/bpf:__subpackages__",
+    "//src/stirling:__subpackages__",
+])
+
+# We use this as a directory target, so the name must be same name as the directory.
+# See pl_bpf_preprocess.bzl for a note about why this must be the case.
+filegroup(
+    name = "system-headers",
+    srcs = glob(
+        ["**"],
+        exclude = ["BUILD.bazel"],
+    ),
+)

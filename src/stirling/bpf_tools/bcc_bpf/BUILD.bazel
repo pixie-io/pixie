@@ -1,0 +1,9 @@
+package(default_visibility = [
+    "//experimental/bpf:__subpackages__",
+    "//src/stirling:__subpackages__",
+])
+
+filegroup(
+    name = "headers",
+    srcs = glob(["*.h"]),
+)

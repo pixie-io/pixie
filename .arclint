@@ -14,7 +14,7 @@
     "(^docs/customer/)",
     "(^experimental/users/)",
     "(^linters/)",
-    "(^src/stirling/bcc_bpf/system-headers)",
+    "(^src/stirling/bpf_tools/bcc_bpf/system-headers)",
     "(^src/stirling/mysql/testing/.*\\.json$)",
     "(^src/ui/offline_package_cache)",
     "(^src/ui/src/segment.js$)",

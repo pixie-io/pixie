@@ -12,6 +12,12 @@
 # @param src: The location of the BPF source code.
 # @param hdrs: Any user defined headers required by the BPF program (src).
 # @param syshdrs: The location of the fake system headers to bypass system includes.
+#                 The syshdrs variable must be a path directory (i.e. not a target with a colon).
+#                 For example, "//src/stirling/bpf_tools/bcc_bpf/system-headers",
+#                 instead of "//src/stirling/bpf_tools/bcc_bpf/system-headers:system-headers".
+#                 To make this work, the directory must have a BUILD.bazel with a target
+#                 that has the same name as the directory.
+#                 This enables automatic generation of the preprocessor -I flag internally.
 def pl_bpf_preprocess(
         name,
         src,
@@ -21,8 +27,13 @@ def pl_bpf_preprocess(
         *kwargs):
     out_file = name
 
-    # TODO(oazizi): -Isrc/stirling/bcc_bpf/system-headers should not be hard-coded, should come from syshdrs instead.
-    cmd = "cpp -U linux -Dinclude=#include -I. -Isrc/stirling/bcc_bpf/system-headers $(location {}) -o $@".format(src)
+    # Hacky: Extract the name of the directory by removing the leading "//".
+    # There might be Bazel-esque way of doing this, but since filegroups can't have $location
+    # applied to it, we use this hack instead.
+    # For more details, see note about syshdrs above.
+    syshdrs_dir = syshdrs[2:]
+
+    cmd = "cpp -U linux -Dinclude=#include -I. -I{} $(location {}) -o $@".format(syshdrs_dir, src)
 
     native.genrule(
         name = name + "_preprocess_rule",

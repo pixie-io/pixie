@@ -6,12 +6,12 @@ pl_bpf_cc_resource(
     name = "cpustat",
     src = "cpustat.bt",
     hdrs = [],
-    syshdrs = "//src/stirling/bcc_bpf:dummy_system_headers",
+    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
 )
 
 pl_bpf_cc_resource(
     name = "pidruntime",
     src = "pidruntime.bt",
     hdrs = [],
-    syshdrs = "//src/stirling/bcc_bpf:dummy_system_headers",
+    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
 )

@@ -18,8 +18,8 @@ socket_trace_hdrs = [
     "go_trace_common.h",
     "openssl_trace.c",
     "protocol_inference.h",
-    "//src/stirling/bcc_bpf:headers",
-    "//src/stirling/bcc_bpf_intf:headers",
+    "//src/stirling/bpf_tools/bcc_bpf:headers",
+    "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
     "//src/stirling/source_connectors/socket_tracer/bcc_bpf_intf:headers",
 ]
 
@@ -27,7 +27,7 @@ pl_bpf_cc_resource(
     name = "socket_trace",
     src = "socket_trace.c",
     hdrs = socket_trace_hdrs,
-    syshdrs = "//src/stirling/bcc_bpf:dummy_system_headers",
+    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
 )
 
 # Debug target, so output of preprocessing can be viewed.
@@ -37,7 +37,7 @@ pl_bpf_preprocess(
     name = "socket_trace_preprocess_debug",
     src = "socket_trace.c",
     hdrs = socket_trace_hdrs,
-    syshdrs = "//src/stirling/bcc_bpf:dummy_system_headers",
+    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
 )
 
 pl_cc_test(
@@ -45,7 +45,7 @@ pl_cc_test(
     srcs = [
         "protocol_inference.h",
         "protocol_inference_test.cc",
-        "//src/stirling/bcc_bpf:headers",
+        "//src/stirling/bpf_tools/bcc_bpf:headers",
         "//src/stirling/source_connectors/socket_tracer/bcc_bpf_intf:headers",
     ],
     deps = [

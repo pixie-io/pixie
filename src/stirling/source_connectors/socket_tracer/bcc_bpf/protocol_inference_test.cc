@@ -1,5 +1,5 @@
 // This must be the first include.
-#include "src/stirling/bcc_bpf/stubs.h"
+#include "src/stirling/bpf_tools/bcc_bpf/stubs.h"
 
 #include <linux/sched.h>  // NOLINT
 

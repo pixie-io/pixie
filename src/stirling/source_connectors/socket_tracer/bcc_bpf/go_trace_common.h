@@ -1,6 +1,6 @@
 #pragma once
 
-#include "src/stirling/bcc_bpf_intf/go_types.h"
+#include "src/stirling/bpf_tools/bcc_bpf_intf/go_types.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
 
 // A map that communicates the location of symbols within a binary.
