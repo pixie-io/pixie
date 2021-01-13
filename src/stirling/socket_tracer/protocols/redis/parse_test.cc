@@ -49,13 +49,13 @@ TEST_P(ParseTest, ResultsAreAsExpected) {
 
 INSTANTIATE_TEST_SUITE_P(
     AllDataTypes, ParseTest,
-    ::testing::Values(WellFormedTestCase{kSimpleStringMsg, DataType::kSimpleString, "OK"},
-                      WellFormedTestCase{kErrorMsg, DataType::kError, "Error message"},
-                      WellFormedTestCase{kBulkStringMsg, DataType::kBulkString, "bulk string"},
-                      WellFormedTestCase{"$0\r\n\r\n", DataType::kBulkString, ""},
+    ::testing::Values(WellFormedTestCase{kSimpleStringMsg, DataType::kSimpleString, R"("OK")"},
+                      WellFormedTestCase{kErrorMsg, DataType::kError, R"("Error message")"},
+                      WellFormedTestCase{kBulkStringMsg, DataType::kBulkString, R"("bulk string")"},
+                      WellFormedTestCase{"$0\r\n\r\n", DataType::kBulkString, R"("")"},
                       WellFormedTestCase{"$-1\r\n", DataType::kBulkString, "<NULL>"},
                       WellFormedTestCase{kArrayMsg, DataType::kArray,
-                                         "[OK, Error message, bulk string]"},
+                                         R"(["OK", "Error message", "bulk string"])"},
                       WellFormedTestCase{"*1\r\n$-1\r\n", DataType::kArray, "[<NULL>]"},
                       WellFormedTestCase{"*-1\r\n", DataType::kArray, "[NULL]"},
                       WellFormedTestCase{"*0\r\n", DataType::kArray, "[]"}));

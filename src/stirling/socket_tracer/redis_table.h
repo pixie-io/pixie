@@ -16,11 +16,16 @@ static constexpr DataElement kRedisElements[] = {
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
         canonical_data_elements::kTraceRole,
-        {"req", "Request",
+        {"req", "Request message sent from client to server. Parsing follows the official spec "
+                "(https://redis.io/topics/protocol). "
+                "1) Strings and error messages are quoted with \"; "
+                "2) Arrays are braced in [ ], whose elements are separated by ','; NULL arrays "
+                "are represented as [NULL] without quotations; "
+                "3) NULL values are represented as <NULL> without quotations.",
          types::DataType::STRING,
          types::SemanticType::ST_NONE,
          types::PatternType::GENERAL},
-        {"resp", "Response",
+        {"resp", "Response message sent from server to client. The format is identical to 'REQ'.",
          types::DataType::STRING,
          types::SemanticType::ST_NONE,
          types::PatternType::GENERAL},

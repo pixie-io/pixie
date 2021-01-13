@@ -48,8 +48,15 @@ StatusOr<int> ParseSize(BinaryDecoder* decoder) {
   return size;
 }
 
+std::string Quote(std::string_view text) {
+  constexpr std::string_view kQuotationMark = "\"";
+  return absl::StrCat(kQuotationMark, text, kQuotationMark);
+}
+
 // Bulk string is formatted as <length>\r\n<actual string, up to 512MB>\r\n
-StatusOr<std::string_view> ParseBulkString(BinaryDecoder* decoder) {
+Status ParseBulkString(BinaryDecoder* decoder, Message* msg) {
+  msg->data_type = DataType::kBulkString;
+
   PL_ASSIGN_OR_RETURN(int len, ParseSize(decoder));
 
   constexpr int kMaxLen = 512 * 1024 * 1024;
@@ -59,7 +66,8 @@ StatusOr<std::string_view> ParseBulkString(BinaryDecoder* decoder) {
 
   if (len == kNullSize) {
     constexpr std::string_view kNullBulkString = "<NULL>";
-    return kNullBulkString;
+    msg->payload = kNullBulkString;
+    return Status::OK();
   }
 
   PL_ASSIGN_OR_RETURN(std::string_view payload,
@@ -68,7 +76,8 @@ StatusOr<std::string_view> ParseBulkString(BinaryDecoder* decoder) {
     return error::InvalidArgument("Bulk string should be terminated by '$0'", kTerminalSequence);
   }
   payload.remove_suffix(kTerminalSequence.size());
-  return payload;
+  msg->payload = Quote(payload);
+  return Status::OK();
 }
 
 // This calls ParseMessage(), which eventually calls ParseArray() and are both recursive functions.
@@ -81,23 +90,24 @@ Status ParseMessage(BinaryDecoder* decoder, Message* msg) {
   switch (type_marker) {
     case kSimpleStringMarker: {
       msg->data_type = DataType::kSimpleString;
-      PL_ASSIGN_OR_RETURN(msg->payload, decoder->ExtractStringUntil(kTerminalSequence));
+      PL_ASSIGN_OR_RETURN(std::string_view str, decoder->ExtractStringUntil(kTerminalSequence));
+      msg->payload = Quote(str);
+      break;
+    }
+    case kBulkStringsMarker: {
+      PL_RETURN_IF_ERROR(ParseBulkString(decoder, msg));
       break;
     }
     case kErrorMarker: {
       msg->data_type = DataType::kError;
-      PL_ASSIGN_OR_RETURN(msg->payload, decoder->ExtractStringUntil(kTerminalSequence));
+      PL_ASSIGN_OR_RETURN(std::string_view str, decoder->ExtractStringUntil(kTerminalSequence));
+      msg->payload = Quote(str);
       break;
     }
     case kIntegerMarker: {
       msg->data_type = DataType::kInteger;
       // TODO(yzhao): Consider include integer value directly in Message.
       PL_ASSIGN_OR_RETURN(msg->payload, decoder->ExtractStringUntil(kTerminalSequence));
-      break;
-    }
-    case kBulkStringsMarker: {
-      msg->data_type = DataType::kBulkString;
-      PL_ASSIGN_OR_RETURN(msg->payload, ParseBulkString(decoder));
       break;
     }
     case kArrayMarker: {

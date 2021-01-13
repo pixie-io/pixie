@@ -40,7 +40,7 @@ struct RedisTraceRecord {
 };
 
 std::ostream& operator<<(std::ostream& os, const RedisTraceRecord& record) {
-  os << "req: " << record.req << " resp: " << record.resp << std::endl;
+  os << "req: " << record.req << " resp: " << record.resp;
   return os;
 }
 
@@ -88,11 +88,12 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
   // The response is too long to test meaningfully, so we ignore them.
   redis_trace_records.erase(redis_trace_records.begin());
 
-  EXPECT_THAT(redis_trace_records, ElementsAre(RedisTraceRecord{"[set, foo, 100]", "OK"},
-                                               RedisTraceRecord{"[bitcount, foo, 0, 0]", "3"},
-                                               RedisTraceRecord{"[incr, foo]", "101"},
-                                               RedisTraceRecord{"[append, foo, xxx]", "6"},
-                                               RedisTraceRecord{"[get, foo]", "101xxx"}));
+  EXPECT_THAT(redis_trace_records,
+              ElementsAre(RedisTraceRecord{R"(["set", "foo", "100"])", R"("OK")"},
+                          RedisTraceRecord{R"(["bitcount", "foo", "0", "0"])", "3"},
+                          RedisTraceRecord{R"(["incr", "foo"])", "101"},
+                          RedisTraceRecord{R"(["append", "foo", "xxx"])", "6"},
+                          RedisTraceRecord{R"(["get", "foo"])", R"("101xxx")"}));
 }
 
 // Verifies individual commands.
@@ -120,10 +121,11 @@ TEST_P(RedisTraceBPFTest, VerifyCommand) {
 INSTANTIATE_TEST_SUITE_P(
     Commands, RedisTraceBPFTest,
     // Add new commands here.
-    ::testing::Values(RedisTraceTestCase{"lpush ilist 100", "[lpush, ilist, 100]", "1"},
-                      RedisTraceTestCase{"rpush ilist 200", "[rpush, ilist, 200]", "1"},
-                      RedisTraceTestCase{"lrange ilist 0 1", "[lrange, ilist, 0, 1]", "[]"},
-                      RedisTraceTestCase{"flushall", "[flushall]", "OK"}));
+    ::testing::Values(RedisTraceTestCase{"lpush ilist 100", R"(["lpush", "ilist", "100"])", "1"},
+                      RedisTraceTestCase{"rpush ilist 200", R"(["rpush", "ilist", "200"])", "1"},
+                      RedisTraceTestCase{"lrange ilist 0 1", R"(["lrange", "ilist", "0", "1"])",
+                                         "[]"},
+                      RedisTraceTestCase{"flushall", R"(["flushall"])", R"("OK")"}));
 
 }  // namespace stirling
 }  // namespace pl
