@@ -122,7 +122,7 @@ func GenerateClusterSecretYAMLs(cloudAddr string, deployKey string, namespace st
 	lm, _ := k8s.LabelStringToMap(labels)
 	if lm != nil {
 		for k, v := range lm {
-			labelString += fmt.Sprintf("%s: %s\n    ", k, v)
+			labelString += fmt.Sprintf("%s: \"%s\"\n    ", k, v)
 		}
 	}
 
