@@ -8,7 +8,7 @@ import "src/table_store/proto/schema.proto";
 import "src/carnot/planner/distributedpb/distributed_plan.proto";
 import "src/vizier/messages/messagespb/messages.proto";
 import "src/vizier/services/shared/agentpb/agent.proto";
-import "src/stirling/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.proto";
+import "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.proto";
 import "src/common/base/proto/status.proto";
 import "google/protobuf/duration.proto";
 

@@ -10,7 +10,7 @@ excludes:
 - docs
 - src/ui
 # Exclude stirling's dynamic tracing physical IR, since it is not a public proto.
-- src/stirling/dynamic_tracer/dynamic_tracing/ir/physicalpb
+- src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/physicalpb
 protoc:
   version: 3.8.0
   includes:

@@ -4,7 +4,7 @@ package pl.vizier.services.metadata;
 
 import "src/common/base/proto/status.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "src/stirling/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.proto";
+import "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.proto";
 import "src/common/uuid/proto/uuid.proto";
 import "src/shared/types/proto/types.proto";
 

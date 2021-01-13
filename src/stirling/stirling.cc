@@ -24,16 +24,16 @@
 #include "src/stirling/core/source_registry.h"
 #include "src/stirling/proto/stirling.pb.h"
 
-#include "src/stirling/dynamic_bpftrace/dynamic_bpftrace_connector.h"
-#include "src/stirling/dynamic_tracer/dynamic_trace_connector.h"
-#include "src/stirling/jvm_stats/jvm_stats_connector.h"
-#include "src/stirling/pid_runtime/pid_runtime_connector.h"
-#include "src/stirling/proc_stat/proc_stat_connector.h"
-#include "src/stirling/seq_gen/seq_gen_connector.h"
-#include "src/stirling/socket_tracer/socket_trace_connector.h"
-#include "src/stirling/system_stats/system_stats_connector.h"
+#include "src/stirling/source_connectors/dynamic_bpftrace/dynamic_bpftrace_connector.h"
+#include "src/stirling/source_connectors/dynamic_tracer/dynamic_trace_connector.h"
+#include "src/stirling/source_connectors/jvm_stats/jvm_stats_connector.h"
+#include "src/stirling/source_connectors/pid_runtime/pid_runtime_connector.h"
+#include "src/stirling/source_connectors/proc_stat/proc_stat_connector.h"
+#include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
+#include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
+#include "src/stirling/source_connectors/system_stats/system_stats_connector.h"
 
-#include "src/stirling/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
+#include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 
 namespace pl {
 namespace stirling {

@@ -1,0 +1,30 @@
+package(default_visibility = ["//src/stirling:__subpackages__"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource", "pl_cc_resource", "pl_cc_resource_impl")
+load("//bazel:pl_bpf_preprocess.bzl", "pl_bpf_preprocess")
+
+# TODO(oazizi): Ideally, we would use pl_bpf_preprocess and feed it to pl_cc_resource
+# as an input, but that turns out to be a bit more tricky, since bl_cc_resource would
+# then have to understand both labels and sources as inputs. So for now, use bl_bpf_cc_resource
+# which automatically calls pl_bpf_preprocess under the hood.
+
+# Leaving the bl_bpf_preprocess targets in here only for debug/observability, but keep
+# in mind that they are not actively used targets.
+
+pl_bpf_cc_resource(
+    name = "pidruntime",
+    src = "pidruntime.c",
+    hdrs = ["//src/stirling/source_connectors/pid_runtime/bcc_bpf_intf:headers"],
+    syshdrs = "//src/stirling/bcc_bpf:dummy_system_headers",
+)
+
+# Debug target, so output of preprocessing can be viewed.
+# Must keep in sync with :socket_trace.
+# Do not use as a dependency.
+pl_bpf_preprocess(
+    name = "pidruntime_preprocess_debug",
+    src = "pidruntime.c",
+    hdrs = ["//src/stirling/source_connectors/pid_runtime/bcc_bpf_intf:headers"],
+    syshdrs = "//src/stirling/bcc_bpf:dummy_system_headers",
+)

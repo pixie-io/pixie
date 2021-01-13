@@ -12,11 +12,11 @@
 #include "src/stirling/core/info_class_manager.h"
 #include "src/stirling/core/source_registry.h"
 #include "src/stirling/core/types.h"
-#include "src/stirling/seq_gen/seq_gen_connector.h"
-#include "src/stirling/seq_gen/sequence_generator.h"
+#include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
+#include "src/stirling/source_connectors/seq_gen/sequence_generator.h"
 #include "src/stirling/stirling.h"
 
-#include "src/stirling/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
+#include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 
 #include "src/stirling/proto/stirling.pb.h"
 

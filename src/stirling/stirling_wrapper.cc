@@ -14,10 +14,10 @@
 #include "src/stirling/core/output.h"
 #include "src/stirling/core/pub_sub_manager.h"
 #include "src/stirling/core/source_registry.h"
-#include "src/stirling/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
+#include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 #include "src/stirling/stirling.h"
 
-#include "src/stirling/socket_tracer/socket_trace_tables.h"
+#include "src/stirling/source_connectors/socket_tracer/socket_trace_tables.h"
 
 #include "src/carnot/planner/probes/tracepoint_generator.h"
 

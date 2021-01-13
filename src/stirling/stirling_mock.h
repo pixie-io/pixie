@@ -6,8 +6,8 @@
 
 #include "src/common/uuid/uuid.h"
 #include "src/stirling/core/source_registry.h"
-#include "src/stirling/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.pb.h"
 #include "src/stirling/proto/stirling.pb.h"
+#include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.pb.h"
 #include "src/stirling/stirling.h"
 
 namespace pl {

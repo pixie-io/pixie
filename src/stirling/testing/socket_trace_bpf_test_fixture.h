@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/socket_tracer/socket_trace_connector.h"
+#include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/testing/common.h"
 
 namespace pl {

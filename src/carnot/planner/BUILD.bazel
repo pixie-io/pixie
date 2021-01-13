@@ -107,7 +107,7 @@ go_test(
         "//src/carnot/udfspb:udfs_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",
         "//src/shared/scriptspb:scripts_pl_go_proto",
-        "//src/stirling/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",
+        "//src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",
         "//src/table_store/proto:schema_pl_go_proto",
         "//src/vizier/funcs/go:go_default_library",
         "@com_github_gogo_protobuf//proto:go_default_library",

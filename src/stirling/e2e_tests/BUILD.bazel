@@ -17,7 +17,7 @@ pl_cc_test(
     name = "bpf_map_leak_test",
     timeout = "moderate",
     srcs = ["bpf_map_leak_test.cc"],
-    data = ["//src/stirling/socket_tracer/protocols/http/testing/leaky_cpp_http_server:leaky_http_server"],
+    data = ["//src/stirling/source_connectors/socket_tracer/protocols/http/testing/leaky_cpp_http_server:leaky_http_server"],
     tags = [
         "requires_bpf",
         # TODO(oazizi): Re-enable. Broken by D7023.
@@ -65,13 +65,13 @@ sh_test(
     srcs = ["stirling_wrapper_test.sh"],
     args = [
         "$(location //src/stirling:stirling_wrapper)",
-        "$(location //src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server:go_grpc_server)",
-        "$(location //src/stirling/socket_tracer/protocols/http2/testing/go_grpc_client:go_grpc_client)",
+        "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:go_grpc_server)",
+        "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:go_grpc_client)",
     ],
     data = [
         "//src/stirling:stirling_wrapper",
-        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_client",
-        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server",
     ],
     # TODO(PL-1462): Uprobe attaching sometimes fails.
     flaky = True,
@@ -111,13 +111,13 @@ sh_test(
     srcs = ["stirling_wrapper_container_test.sh"],
     args = [
         "$(location //src/stirling:stirling_wrapper_image.tar)",
-        "$(location //src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server:go_grpc_server)",
-        "$(location //src/stirling/socket_tracer/protocols/http2/testing/go_grpc_client:go_grpc_client)",
+        "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:go_grpc_server)",
+        "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:go_grpc_client)",
     ],
     data = [
         "//src/stirling:stirling_wrapper_image.tar",
-        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_client",
-        "//src/stirling/socket_tracer/protocols/http2/testing/go_grpc_server",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server",
     ],
     tags = [
         "requires_bpf",

@@ -8,7 +8,7 @@
 #include "src/common/exec/exec.h"
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
-#include "src/stirling/socket_tracer/socket_trace_connector.h"
+#include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/testing/common.h"
 #include "src/stirling/testing/socket_trace_bpf_test_fixture.h"
 
@@ -24,7 +24,8 @@ using ::testing::Key;
 using ::testing::Not;
 
 constexpr std::string_view kServerPath =
-    "src/stirling/socket_tracer/protocols/http/testing/leaky_cpp_http_server/leaky_http_server";
+    "src/stirling/source_connectors/socket_tracer/protocols/http/testing/leaky_cpp_http_server/"
+    "leaky_http_server";
 
 using BPFMapLeakTest = SocketTraceBPFTest<>;
 

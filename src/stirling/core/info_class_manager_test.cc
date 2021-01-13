@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "src/stirling/core/info_class_manager.h"
-#include "src/stirling/seq_gen/seq_gen_connector.h"
+#include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
 
 namespace pl {
 namespace stirling {

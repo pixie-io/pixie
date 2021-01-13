@@ -22,7 +22,7 @@ go_test(
         "//src/pixie_cli/pkg/vizier:go_default_library",
         "//src/shared/scriptspb:scripts_pl_go_proto",
         "//src/shared/vispb:vis_pl_go_proto",
-        "//src/stirling/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",
+        "//src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",
         "//src/table_store/proto:schema_pl_go_proto",
         "//src/utils:go_default_library",
         "//src/vizier/funcs/go:go_default_library",

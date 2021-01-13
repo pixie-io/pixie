@@ -12,7 +12,7 @@
 #include <benchmark/benchmark.h>
 
 #include "src/common/base/base.h"
-#include "src/stirling/socket_tracer/connection_tracker.h"
+#include "src/stirling/source_connectors/socket_tracer/connection_tracker.h"
 
 using pl::stirling::ConnectionTracker;
 

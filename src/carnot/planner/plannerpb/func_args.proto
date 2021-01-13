@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 import "src/common/base/proto/status.proto";
-import "src/stirling/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.proto";
+import "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.proto";
 
 package pl.carnot.planner.plannerpb;
 

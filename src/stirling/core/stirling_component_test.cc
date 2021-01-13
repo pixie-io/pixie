@@ -6,7 +6,7 @@
 #include "src/stirling/core/pub_sub_manager.h"
 #include "src/stirling/core/types.h"
 #include "src/stirling/proto/stirling.pb.h"
-#include "src/stirling/seq_gen/seq_gen_connector.h"
+#include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
 #include "src/stirling/stirling.h"
 
 namespace pl {

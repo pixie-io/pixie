@@ -32,7 +32,7 @@ pl_cc_test(
     srcs = ["info_class_manager_test.cc"],
     deps = [
         ":cc_library",
-        "//src/stirling/seq_gen:cc_library",
+        "//src/stirling/source_connectors/seq_gen:cc_library",
     ],
 )
 
@@ -41,7 +41,7 @@ pl_cc_test(
     srcs = ["data_table_test.cc"],
     deps = [
         ":cc_library",
-        "//src/stirling/seq_gen:cc_library",
+        "//src/stirling/source_connectors/seq_gen:cc_library",
     ],
 )
 
@@ -65,7 +65,7 @@ pl_cc_test(
     srcs = ["source_registry_test.cc"],
     deps = [
         ":cc_library",
-        "//src/stirling/seq_gen:cc_library",
+        "//src/stirling/source_connectors/seq_gen:cc_library",
     ],
 )
 
