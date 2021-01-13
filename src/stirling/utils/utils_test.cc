@@ -1,4 +1,4 @@
-#include "src/stirling/common/utils.h"
+#include "src/stirling/utils/utils.h"
 
 #include "src/common/base/base.h"
 #include "src/common/testing/testing.h"

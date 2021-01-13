@@ -15,7 +15,6 @@ pl_cc_library(
     deps = [
         "//src/common/fs:cc_library",
         "//src/common/system:cc_library",
-        "//src/stirling/common:cc_library",
         "//src/stirling/utils:cc_library",
     ],
 )

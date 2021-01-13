@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/stirling/common/parse_state.h"
+#include "src/stirling/utils/parse_state.h"
 
 namespace pl {
 namespace stirling {

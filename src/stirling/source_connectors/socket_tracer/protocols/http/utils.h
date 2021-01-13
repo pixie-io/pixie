@@ -5,8 +5,8 @@
 #include <string>
 #include <vector>
 
-#include "src/stirling/common/parse_state.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
+#include "src/stirling/utils/parse_state.h"
 
 namespace pl {
 namespace stirling {

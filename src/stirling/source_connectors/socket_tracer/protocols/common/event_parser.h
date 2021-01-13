@@ -10,11 +10,11 @@
 #include <absl/base/macros.h>
 
 #include "src/common/base/base.h"
-#include "src/stirling/common/parse_state.h"
-#include "src/stirling/common/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/common.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
+#include "src/stirling/utils/parse_state.h"
+#include "src/stirling/utils/utils.h"
 
 namespace pl {
 namespace stirling {

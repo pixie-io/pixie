@@ -2,7 +2,7 @@
 
 #include <limits>
 
-#include "src/stirling/common/index_sorted_vector.h"
+#include "src/stirling/utils/index_sorted_vector.h"
 
 namespace pl {
 namespace stirling {

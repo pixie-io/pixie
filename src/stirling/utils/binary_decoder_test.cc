@@ -1,4 +1,4 @@
-#include "src/stirling/common/binary_decoder.h"
+#include "src/stirling/utils/binary_decoder.h"
 
 #include <string>
 

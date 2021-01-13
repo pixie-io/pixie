@@ -16,7 +16,6 @@ pl_cc_library(
         "//src/common/grpcutils:cc_library",
         "//src/common/protobufs:cc_library",
         "//src/stirling/bpf_tools:cc_library",
-        "//src/stirling/common:cc_library",
         "//src/stirling/core:cc_library",
         "//src/stirling/obj_tools:cc_library",
         "//src/stirling/source_connectors/socket_tracer/bcc_bpf:socket_trace",

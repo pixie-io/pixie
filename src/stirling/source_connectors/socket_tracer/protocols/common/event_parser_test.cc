@@ -5,8 +5,8 @@
 
 #include <deque>
 
-#include "src/stirling/common/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/test_utils.h"
+#include "src/stirling/utils/utils.h"
 
 namespace pl {
 namespace stirling {

@@ -10,7 +10,7 @@
 #include <magic_enum.hpp>
 
 #include "src/common/base/base.h"
-#include "src/stirling/common/binary_decoder.h"
+#include "src/stirling/utils/binary_decoder.h"
 
 namespace pl {
 namespace stirling {

@@ -15,7 +15,6 @@ pl_cc_library(
         "//src/shared/metadata:cc_library",
         "//src/shared/types:cc_library",
         "//src/shared/types/proto/wrapper:cc_library",
-        "//src/stirling/common:cc_library",
         "//src/stirling/proto:stirling_pl_cc_proto",
         "//src/stirling/utils:cc_library",
     ],

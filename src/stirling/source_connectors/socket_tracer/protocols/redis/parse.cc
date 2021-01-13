@@ -4,8 +4,8 @@
 #include <utility>
 #include <vector>
 
-#include "src/stirling/common/binary_decoder.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/redis/types.h"
+#include "src/stirling/utils/binary_decoder.h"
 
 namespace pl {
 namespace stirling {

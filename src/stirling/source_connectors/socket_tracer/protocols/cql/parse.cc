@@ -7,8 +7,8 @@
 
 #include "src/common/base/byte_utils.h"
 #include "src/common/base/types.h"
-#include "src/stirling/common/parse_state.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/types.h"
+#include "src/stirling/utils/parse_state.h"
 
 // TODO(oazizi): Consider splitting this file into public and private pieces. The public one would
 // have the template implementations, while the private one would have functions in the cass

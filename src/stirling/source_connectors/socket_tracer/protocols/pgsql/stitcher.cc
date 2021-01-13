@@ -6,9 +6,9 @@
 
 #include <absl/strings/str_replace.h>
 
-#include "src/stirling/common/binary_decoder.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/parse.h"
+#include "src/stirling/utils/binary_decoder.h"
 
 namespace pl {
 namespace stirling {

@@ -8,7 +8,7 @@
 #include <google/protobuf/util/json_util.h>
 
 #include "src/common/base/base.h"
-#include "src/stirling/common/binary_decoder.h"
+#include "src/stirling/utils/binary_decoder.h"
 
 namespace pl {
 namespace stirling {

@@ -10,9 +10,9 @@
 #include "src/common/base/byte_utils.h"
 #include "src/common/base/inet_utils.h"
 #include "src/common/base/types.h"
-#include "src/stirling/common/binary_decoder.h"
-#include "src/stirling/common/parse_state.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/dns/types.h"
+#include "src/stirling/utils/binary_decoder.h"
+#include "src/stirling/utils/parse_state.h"
 
 namespace pl {
 namespace stirling {
