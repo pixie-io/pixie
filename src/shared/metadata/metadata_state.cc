@@ -179,6 +179,7 @@ Status K8sMetadataState::HandlePodUpdate(const PodUpdate& update) {
   pod_info->set_hostname(update.hostname());
   pod_info->set_pod_ip(update.pod_ip());
   pod_info->set_phase(ConvertToPodPhase(update.phase()));
+  pod_info->set_conditions(ConvertToPodConditions(update.conditions()));
   pod_info->set_phase_message(update.message());
   pod_info->set_phase_reason(update.reason());
 

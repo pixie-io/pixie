@@ -1033,8 +1033,8 @@ inline types::StringValue PodInfoToPodStatus(const pl::md::PodInfo* pod_info) {
 
   auto pod_conditions = pod_info->conditions();
   auto ready_status = pod_conditions.find(md::PodConditionType::kReady);
-  bool ready_condition =
-      ready_status != pod_conditions.end() && ready_status->second == md::PodConditionStatus::kTrue;
+  bool ready_condition = ready_status != pod_conditions.end() &&
+                         (ready_status->second == md::PodConditionStatus::kTrue);
 
   rapidjson::Document d;
   d.SetObject();
