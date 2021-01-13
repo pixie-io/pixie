@@ -7,58 +7,25 @@
 
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/macros.h"
-#include "src/stirling/source_connectors/static_bpftrace/bpftrace_connector.h"
+#include "src/stirling/source_connectors/pid_runtime_bpftrace/pid_runtime_bpftrace_connector.h"
 
-// The following are string_views into BT files that are included in the binary by the linker.
+// The following is a string_view into a BT file that is included in the binary by the linker.
 // The BT files are permanently resident in memory, so the string view is permanent too.
-BPF_SRC_STRVIEW(kCPUStatBTScript, cpustat);
 BPF_SRC_STRVIEW(kPIDRuntimeBTScript, pidruntime);
 
 namespace pl {
 namespace stirling {
 
-BPFTraceConnector::BPFTraceConnector(std::string_view source_name,
-                                     const ArrayView<DataTableSchema>& table_schemas,
-                                     const std::string_view script, std::vector<std::string> params)
-    : SourceConnector(source_name, table_schemas), script_(script), params_(std::move(params)) {}
-
-Status BPFTraceConnector::InitImpl() {
-  PL_RETURN_IF_ERROR(CompileForMapOutput(script_, params_));
+Status PIDCPUUseBPFTraceConnector::InitImpl() {
+  PL_RETURN_IF_ERROR(CompileForMapOutput(kPIDRuntimeBTScript, std::vector<std::string>({})));
   PL_RETURN_IF_ERROR(Deploy());
 
   return Status::OK();
 }
 
-CPUStatBPFTraceConnector::CPUStatBPFTraceConnector(std::string_view name, uint64_t cpu_id)
-    : BPFTraceConnector(name, kTables, kCPUStatBTScript,
-                        std::vector<std::string>({std::to_string(cpu_id)})) {}
-
-void CPUStatBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t table_num,
-                                                DataTable* data_table) {
-  CHECK_LT(table_num, kTables.size())
-      << absl::StrFormat("Trying to access unexpected table: table_num=%d", table_num);
-
-  auto cpustat_map = GetBPFMap("@retval");
-
-  // If kernel hasn't populated BPF map yet, then we have no data to return.
-  constexpr size_t kElementsSize = sizeof(kElements) / sizeof(kElements[0]);
-  if (cpustat_map.size() != kElementsSize) {
-    return;
-  }
-
-  DataTable::RecordBuilder<&kTable> r(data_table);
-  r.Append<r.ColIndex("time_")>(*(reinterpret_cast<int64_t*>(cpustat_map[0].second.data())) +
-                                ClockRealTimeOffset());
-  r.Append<r.ColIndex("cpustat_user")>(*(reinterpret_cast<int64_t*>(cpustat_map[1].second.data())));
-  r.Append<r.ColIndex("cpustat_nice")>(*(reinterpret_cast<int64_t*>(cpustat_map[2].second.data())));
-  r.Append<r.ColIndex("cpustat_system")>(
-      *(reinterpret_cast<int64_t*>(cpustat_map[3].second.data())));
-  r.Append<r.ColIndex("cpustat_idle")>(*(reinterpret_cast<int64_t*>(cpustat_map[4].second.data())));
-  r.Append<r.ColIndex("cpustat_iowait")>(
-      *(reinterpret_cast<int64_t*>(cpustat_map[5].second.data())));
-  r.Append<r.ColIndex("cpustat_irq")>(*(reinterpret_cast<int64_t*>(cpustat_map[6].second.data())));
-  r.Append<r.ColIndex("cpustat_softirq")>(
-      *(reinterpret_cast<int64_t*>(cpustat_map[7].second.data())));
+Status PIDCPUUseBPFTraceConnector::StopImpl() {
+  BPFTraceWrapper::Stop();
+  return Status::OK();
 }
 
 // Helper function for searching through a BPFTraceMap vector of key-value pairs.
@@ -79,9 +46,6 @@ bpftrace::BPFTraceMap::iterator PIDCPUUseBPFTraceConnector::BPFTraceMapSearch(
                    });
   return next_it;
 }
-
-PIDCPUUseBPFTraceConnector::PIDCPUUseBPFTraceConnector(std::string_view name)
-    : BPFTraceConnector(name, kTables, kPIDRuntimeBTScript, std::vector<std::string>({})) {}
 
 void PIDCPUUseBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t table_num,
                                                   DataTable* data_table) {
@@ -140,11 +104,6 @@ void PIDCPUUseBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, u
 
   // Keep this, because we will want to compute deltas next time.
   last_result_times_ = std::move(pid_time_pairs);
-}
-
-Status BPFTraceConnector::StopImpl() {
-  BPFTraceWrapper::Stop();
-  return Status::OK();
 }
 
 }  // namespace stirling
