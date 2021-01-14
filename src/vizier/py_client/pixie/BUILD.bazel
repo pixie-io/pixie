@@ -1,0 +1,30 @@
+# gazelle:ignore
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("@vizier_api_python_deps//:requirements.bzl", "requirement")
+
+py_library(
+    name = "vizier_py_lib",
+    srcs = glob(["*.py"], exclude = ["*_test.py", "test_utils.py"]),
+    deps = [
+        "//src/vizier/vizierpb:vizier_pl_py_proto",
+        requirement("gogo-python"),
+        requirement("grpcio"),
+        requirement("grpcio-tools"),
+        requirement("protobuf"),
+    ],
+    visibility = ["//visibility:public"],
+)
+
+py_library(
+    name = "vizier_py_test_lib",
+    srcs = ["test_utils.py"],
+    deps = [":vizier_py_lib"],
+    visibility = ["//visibility:public"],
+)
+
+py_test(
+    name = "data_test",
+    srcs = ["data_test.py"],
+    deps = [":vizier_py_test_lib"],
+    visibility = ["//visibility:public"],
+)

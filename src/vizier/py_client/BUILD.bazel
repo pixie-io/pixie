@@ -1,0 +1,10 @@
+# gazelle:ignore
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("@vizier_api_python_deps//:requirements.bzl", "requirement")
+
+py_test(
+    name = "api_test",
+    srcs = ["api_test.py"],
+    deps = ["//src/vizier/py_client/pixie:vizier_py_lib", "//src/vizier/py_client/pixie:vizier_py_test_lib"],
+    visibility = ["//visibility:public"],
+)
