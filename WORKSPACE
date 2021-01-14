@@ -115,7 +115,7 @@ load("@rules_python//python:pip.bzl", "pip_install")
 
 pip_install(
     name = "vizier_api_python_deps",
-    requirements = "//src/vizier/vizierpb:requirements.txt",
+    requirements = "//src/vizier/py_client:requirements.txt",
 )
 
 # gazelle:repo bazel_gazelle
