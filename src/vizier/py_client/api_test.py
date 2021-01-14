@@ -41,11 +41,16 @@ class VizierServiceFake:
     def __init__(self) -> None:
         self.cluster_id_to_fake_data: Dict[str,
                                            List[vpb.ExecuteScriptResponse]] = {}
+        self.cluster_id_to_error: Dict[str, Exception] = {}
 
     def add_fake_data(self, cluster_id: str, data: List[vpb.ExecuteScriptResponse]) -> None:
         if cluster_id not in self.cluster_id_to_fake_data:
             self.cluster_id_to_fake_data[cluster_id] = []
         self.cluster_id_to_fake_data[cluster_id].extend(data)
+
+    def trigger_error(self, cluster_id: str, exc: Exception) -> None:
+        """ Adds an error that triggers after the data is yielded. """
+        self.cluster_id_to_error[cluster_id] = exc
 
     def ExecuteScript(self, request: vpb.ExecuteScriptRequest, context: Any) -> Any:
         cluster_id = request.cluster_id
@@ -53,6 +58,9 @@ class VizierServiceFake:
         data = self.cluster_id_to_fake_data[cluster_id]
         for d in data:
             yield d
+        # Trigger an error for the cluster ID if the user added one.
+        if cluster_id in self.cluster_id_to_error:
+            raise self.cluster_id_to_error[cluster_id]
 
     def HealthCheck(self, request: Any, context: Any) -> Any:
         yield vpb.Status(code=1, message="fail")
@@ -693,6 +701,35 @@ class TestClient(unittest.TestCase):
         # Run the query and process_table concurrently.
         loop = asyncio.get_event_loop()
         with self.assertRaisesRegex(ValueError, "More clusters closed than received eos."):
+            loop.run_until_complete(
+                run_query_and_tasks(query, [utils.iterate_and_pass(http_tb)]))
+
+    def test_handle_server_side_errors(self) -> None:
+        # Test to make sure server side errors are handled somewhat.
+        px_client = pixie.Client(token=ACCESS_TOKEN, server_url=self.url())
+        # Connect to a single fake cluster.
+        conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
+
+        http_table1 = self.http_table_factory.create_table(utils.table_id1)
+        self.service.add_fake_data(utils.cluster_uuid1, [
+            # Initialize the table on the stream with the metadata.
+            http_table1.metadata_response(),
+            # Send over a single-row batch.
+            http_table1.row_batch_response([["foo"], [200]]),
+            # NOTE: don't send over the eos -> simulating error midway through
+            # stream.
+
+        ])
+        self.service.trigger_error(utils.cluster_uuid1, ValueError('hi'))
+
+        # Create the query object.
+        query = px_client.query(conns, query_str)
+        # Subscribe to the http table.
+        http_tb = query.subscribe("http")
+
+        # Run the query and process_table concurrently.
+        loop = asyncio.get_event_loop()
+        with self.assertRaisesRegex(grpc.aio.AioRpcError, "hi"):
             loop.run_until_complete(
                 run_query_and_tasks(query, [utils.iterate_and_pass(http_tb)]))
 
