@@ -16,17 +16,17 @@ constexpr std::string_view kSimpleStringMsg = "+OK\r\n";
 constexpr std::string_view kErrorMsg = "-Error message\r\n";
 constexpr std::string_view kBulkStringMsg = "$11\r\nbulk string\r\n";
 constexpr std::string_view kArrayMsg = "*3\r\n+OK\r\n-Error message\r\n$11\r\nbulk string\r\n";
+constexpr std::string_view kCmdMsg = "*2\r\n+ACL\r\n+LOAD\r\n";
 
 struct WellFormedTestCase {
   std::string_view input;
-  DataType expected_data_type;
   std::string_view expected_payload;
+  std::string_view expected_command;
 };
 
 std::ostream& operator<<(std::ostream& os, const WellFormedTestCase& test_case) {
-  os << "input: " << test_case.input
-     << " data_type: " << magic_enum::enum_name(test_case.expected_data_type)
-     << " payload: " << test_case.expected_payload;
+  os << "input: " << test_case.input << " payload: " << test_case.expected_payload
+     << " command: " << test_case.expected_command;
   return os;
 }
 
@@ -41,24 +41,23 @@ TEST_P(ParseTest, ResultsAreAsExpected) {
   std::string_view req = GetParam().input;
   Message msg;
 
-  EXPECT_EQ(ParseMessage(&req, &msg), ParseState::kSuccess);
+  EXPECT_EQ(ParseMessage(MessageType::kRequest, &req, &msg), ParseState::kSuccess);
   EXPECT_THAT(req, IsEmpty());
-  EXPECT_EQ(msg.data_type, GetParam().expected_data_type);
   EXPECT_THAT(msg.payload, StrEq(std::string(GetParam().expected_payload)));
+  EXPECT_THAT(std::string(msg.command), StrEq(std::string(GetParam().expected_command)));
 }
 
 INSTANTIATE_TEST_SUITE_P(
     AllDataTypes, ParseTest,
-    ::testing::Values(WellFormedTestCase{kSimpleStringMsg, DataType::kSimpleString, R"("OK")"},
-                      WellFormedTestCase{kErrorMsg, DataType::kError, R"("Error message")"},
-                      WellFormedTestCase{kBulkStringMsg, DataType::kBulkString, R"("bulk string")"},
-                      WellFormedTestCase{"$0\r\n\r\n", DataType::kBulkString, R"("")"},
-                      WellFormedTestCase{"$-1\r\n", DataType::kBulkString, "<NULL>"},
-                      WellFormedTestCase{kArrayMsg, DataType::kArray,
-                                         R"(["OK", "Error message", "bulk string"])"},
-                      WellFormedTestCase{"*1\r\n$-1\r\n", DataType::kArray, "[<NULL>]"},
-                      WellFormedTestCase{"*-1\r\n", DataType::kArray, "[NULL]"},
-                      WellFormedTestCase{"*0\r\n", DataType::kArray, "[]"}));
+    ::testing::Values(
+        WellFormedTestCase{kSimpleStringMsg, R"("OK")", ""},
+        WellFormedTestCase{kErrorMsg, R"("Error message")", ""},
+        WellFormedTestCase{kBulkStringMsg, R"("bulk string")", ""},
+        WellFormedTestCase{"$0\r\n\r\n", R"("")", ""}, WellFormedTestCase{"$-1\r\n", "<NULL>", ""},
+        WellFormedTestCase{kArrayMsg, R"(["OK", "Error message", "bulk string"])", ""},
+        WellFormedTestCase{kCmdMsg, R"(["ACL", "LOAD"])", "ACL LOAD"},
+        WellFormedTestCase{"*1\r\n$-1\r\n", "[<NULL>]", ""},
+        WellFormedTestCase{"*-1\r\n", "[NULL]", ""}, WellFormedTestCase{"*0\r\n", "[]", ""}));
 
 class ParseIncompleteInputTest : public ::testing::TestWithParam<std::string> {};
 
@@ -67,7 +66,7 @@ TEST_P(ParseIncompleteInputTest, IncompleteInput) {
   std::string_view input = GetParam();
   Message msg;
 
-  EXPECT_EQ(ParseMessage(&input, &msg), ParseState::kNeedsMoreData);
+  EXPECT_EQ(ParseMessage(MessageType::kRequest, &input, &msg), ParseState::kNeedsMoreData);
   EXPECT_THAT(std::string(input), StrEq(original_input));
 }
 
@@ -91,7 +90,7 @@ TEST_P(ParseInvalidInputTest, InvalidInput) {
   std::string_view input = GetParam();
   Message msg;
 
-  EXPECT_EQ(ParseMessage(&input, &msg), ParseState::kInvalid);
+  EXPECT_EQ(ParseMessage(MessageType::kRequest, &input, &msg), ParseState::kInvalid);
   EXPECT_THAT(std::string(input), StrEq(original_input));
 }
 

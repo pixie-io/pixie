@@ -16,6 +16,10 @@ static constexpr DataElement kRedisElements[] = {
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
         canonical_data_elements::kTraceRole,
+        {"cmd", "Request command. Could be one of https://redis.io/commands.",
+         types::DataType::STRING,
+         types::SemanticType::ST_NONE,
+         types::PatternType::GENERAL},
         {"req", "Request message sent from client to server. Parsing follows the official spec "
                 "(https://redis.io/topics/protocol). "
                 "1) Strings and error messages are quoted with \"; "
@@ -47,6 +51,7 @@ static constexpr auto kRedisTable =
                     std::chrono::milliseconds{1000});
 
 constexpr int kRedisUPIDIdx = kRedisTable.ColIndex("upid");
+constexpr int kRedisCmdIdx = kRedisTable.ColIndex("cmd");
 constexpr int kRedisReqIdx = kRedisTable.ColIndex("req");
 constexpr int kRedisRespIdx = kRedisTable.ColIndex("resp");
 

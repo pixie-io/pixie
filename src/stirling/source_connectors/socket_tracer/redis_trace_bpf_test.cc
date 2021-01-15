@@ -22,8 +22,9 @@ class RedisContainer : public ContainerRunner {
 
 struct RedisTraceTestCase {
   std::string cmd;
-  std::string req;
-  std::string resp;
+  std::string exp_cmd;
+  std::string exp_req;
+  std::string exp_resp;
 };
 
 class RedisTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false>,
@@ -35,17 +36,18 @@ class RedisTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTraci
 };
 
 struct RedisTraceRecord {
+  std::string cmd;
   std::string req;
   std::string resp;
 };
 
 std::ostream& operator<<(std::ostream& os, const RedisTraceRecord& record) {
-  os << "req: " << record.req << " resp: " << record.resp;
+  os << "cmd: " << record.cmd << " req: " << record.req << " resp: " << record.resp;
   return os;
 }
 
 bool operator==(const RedisTraceRecord& lhs, const RedisTraceRecord& rhs) {
-  return lhs.req == rhs.req && lhs.resp == rhs.resp;
+  return lhs.cmd == rhs.cmd && lhs.req == rhs.req && lhs.resp == rhs.resp;
 }
 
 std::vector<RedisTraceRecord> GetRedisTraceRecords(
@@ -53,7 +55,8 @@ std::vector<RedisTraceRecord> GetRedisTraceRecords(
   std::vector<RedisTraceRecord> res;
   for (size_t i = 0; i < record_batch[kRedisReqIdx]->Size(); ++i) {
     res.push_back(
-        RedisTraceRecord{std::string(record_batch[kRedisReqIdx]->Get<types::StringValue>(i)),
+        RedisTraceRecord{std::string(record_batch[kRedisCmdIdx]->Get<types::StringValue>(i)),
+                         std::string(record_batch[kRedisReqIdx]->Get<types::StringValue>(i)),
                          std::string(record_batch[kRedisRespIdx]->Get<types::StringValue>(i))});
   }
   return res;
@@ -89,11 +92,11 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
   redis_trace_records.erase(redis_trace_records.begin());
 
   EXPECT_THAT(redis_trace_records,
-              ElementsAre(RedisTraceRecord{R"(["set", "foo", "100"])", R"("OK")"},
-                          RedisTraceRecord{R"(["bitcount", "foo", "0", "0"])", "3"},
-                          RedisTraceRecord{R"(["incr", "foo"])", "101"},
-                          RedisTraceRecord{R"(["append", "foo", "xxx"])", "6"},
-                          RedisTraceRecord{R"(["get", "foo"])", R"("101xxx")"}));
+              ElementsAre(RedisTraceRecord{"SET", R"(["set", "foo", "100"])", R"("OK")"},
+                          RedisTraceRecord{"BITCOUNT", R"(["bitcount", "foo", "0", "0"])", "3"},
+                          RedisTraceRecord{"INCR", R"(["incr", "foo"])", "101"},
+                          RedisTraceRecord{"APPEND", R"(["append", "foo", "xxx"])", "6"},
+                          RedisTraceRecord{"GET", R"(["get", "foo"])", R"("101xxx")"}));
 }
 
 // Verifies individual commands.
@@ -114,18 +117,19 @@ TEST_P(RedisTraceBPFTest, VerifyCommand) {
 
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
-  EXPECT_THAT(GetRedisTraceRecords(record_batch),
-              ElementsAre(RedisTraceRecord{GetParam().req, GetParam().resp}));
+  EXPECT_THAT(
+      GetRedisTraceRecords(record_batch),
+      ElementsAre(RedisTraceRecord{GetParam().exp_cmd, GetParam().exp_req, GetParam().exp_resp}));
 }
 
 INSTANTIATE_TEST_SUITE_P(
     Commands, RedisTraceBPFTest,
     // Add new commands here.
-    ::testing::Values(RedisTraceTestCase{"lpush ilist 100", R"(["lpush", "ilist", "100"])", "1"},
-                      RedisTraceTestCase{"rpush ilist 200", R"(["rpush", "ilist", "200"])", "1"},
-                      RedisTraceTestCase{"lrange ilist 0 1", R"(["lrange", "ilist", "0", "1"])",
-                                         "[]"},
-                      RedisTraceTestCase{"flushall", R"(["flushall"])", R"("OK")"}));
+    ::testing::Values(
+        RedisTraceTestCase{"lpush ilist 100", "LPUSH", R"(["lpush", "ilist", "100"])", "1"},
+        RedisTraceTestCase{"rpush ilist 200", "RPUSH", R"(["rpush", "ilist", "200"])", "1"},
+        RedisTraceTestCase{"lrange ilist 0 1", "LRANGE", R"(["lrange", "ilist", "0", "1"])", "[]"},
+        RedisTraceTestCase{"flushall", "FLUSHALL", R"(["flushall"])", R"("OK")"}));
 
 }  // namespace stirling
 }  // namespace pl
