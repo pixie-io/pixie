@@ -843,6 +843,20 @@ Status ParseSocketInfoRemoteAddr(const system::SocketInfo& socket_info, SockAddr
 
   return Status::OK();
 }
+
+EndpointRole TranslateRole(system::ClientServerRole role) {
+  switch (role) {
+    case system::ClientServerRole::kClient:
+      return kRoleClient;
+    case system::ClientServerRole::kServer:
+      return kRoleServer;
+    case system::ClientServerRole::kUnknown:
+      return kRoleNone;
+  }
+  // Needed for GCC build.
+  return {};
+}
+
 }  // namespace
 
 void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
@@ -929,10 +943,12 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
     return;
   }
 
-  if (traffic_class_.role == kRoleNone) {
-    traffic_class_.role = socket_info.role == system::ClientServerRole::kClient   ? kRoleClient
-                          : socket_info.role == system::ClientServerRole::kServer ? kRoleServer
-                                                                                  : kRoleNone;
+  EndpointRole inferred_role = TranslateRole(socket_info.role);
+
+  if (traffic_class_.role == kRoleNone && inferred_role != kRoleNone) {
+    traffic_class_.role = inferred_role;
+    CONN_TRACE(1) << absl::Substitute("Role updated [kRoleNone -> $0]",
+                                      magic_enum::enum_name(traffic_class_.role));
   }
 
   CONN_TRACE(1) << absl::Substitute("Inferred connection dest=$0:$1",
