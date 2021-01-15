@@ -47,8 +47,8 @@ static constexpr DataElement kRedisElements[] = {
 // clang-format on
 
 static constexpr auto kRedisTable =
-    DataTableSchema("redis_events", kRedisElements, std::chrono::milliseconds{100},
-                    std::chrono::milliseconds{1000});
+    DataTableSchema("redis_events", "Redis request-response pair events", kRedisElements,
+                    std::chrono::milliseconds{100}, std::chrono::milliseconds{1000});
 
 constexpr int kRedisUPIDIdx = kRedisTable.ColIndex("upid");
 constexpr int kRedisCmdIdx = kRedisTable.ColIndex("cmd");

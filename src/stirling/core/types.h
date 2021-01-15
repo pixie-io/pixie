@@ -78,10 +78,11 @@ class DataTableSchema {
   // TODO(oazizi): This constructor should only be called at compile-time. Need to enforce this.
   template <std::size_t N>
   constexpr DataTableSchema(
-      std::string_view name, const DataElement (&elements)[N],
+      std::string_view name, std::string_view desc, const DataElement (&elements)[N],
       std::chrono::milliseconds default_sampling_period = kDefaultSamplingPeriod,
       std::chrono::milliseconds default_push_period = kDefaultPushPeriod)
       : name_(name),
+        desc_(desc),
         elements_(elements),
         tabletized_(false),
         default_sampling_period_(default_sampling_period),
@@ -91,11 +92,12 @@ class DataTableSchema {
 
   template <std::size_t N>
   constexpr DataTableSchema(
-      std::string_view name, const DataElement (&elements)[N],
+      std::string_view name, std::string_view desc, const DataElement (&elements)[N],
       std::string_view tabletization_key_name,
       std::chrono::milliseconds default_sampling_period = kDefaultSamplingPeriod,
       std::chrono::milliseconds default_push_period = kDefaultPushPeriod)
       : name_(name),
+        desc_(desc),
         elements_(elements),
         tabletized_(true),
         tabletization_key_(ColIndex(tabletization_key_name)),
@@ -104,10 +106,12 @@ class DataTableSchema {
     CheckSchema();
   }
 
-  DataTableSchema(std::string_view name, const std::vector<DataElement>& elements,
+  DataTableSchema(std::string_view name, std::string_view desc,
+                  const std::vector<DataElement>& elements,
                   std::chrono::milliseconds default_sampling_period = kDefaultSamplingPeriod,
                   std::chrono::milliseconds default_push_period = kDefaultPushPeriod)
       : name_(name),
+        desc_(desc),
         elements_(elements.data(), elements.size()),
         tabletized_(false),
         default_sampling_period_(default_sampling_period),
@@ -116,6 +120,7 @@ class DataTableSchema {
   }
 
   constexpr std::string_view name() const { return name_; }
+  constexpr std::string_view desc() const { return desc_; }
   constexpr bool tabletized() const { return tabletized_; }
   constexpr size_t tabletization_key() const { return tabletization_key_; }
   constexpr ArrayView<DataElement> elements() const { return elements_; }
@@ -168,6 +173,7 @@ class DataTableSchema {
   }
 
   const std::string_view name_;
+  const std::string_view desc_;
   const ArrayView<DataElement> elements_;
   const bool tabletized_ = false;
   size_t tabletization_key_ = std::numeric_limits<size_t>::max();
@@ -219,16 +225,21 @@ class BackedDataElements {
  */
 class DynamicDataTableSchema {
  public:
-  static std::unique_ptr<DynamicDataTableSchema> Create(std::string_view output_name,
+  static std::unique_ptr<DynamicDataTableSchema> Create(std::string_view name,
+                                                        std::string_view desc,
                                                         BackedDataElements elements);
 
   const DataTableSchema& Get() { return table_schema_; }
 
  private:
-  DynamicDataTableSchema(std::string_view name, BackedDataElements elements)
-      : name_(name), elements_(std::move(elements)), table_schema_(name_, elements_.elements()) {}
+  DynamicDataTableSchema(std::string_view name, std::string_view desc, BackedDataElements elements)
+      : name_(name),
+        desc_(desc),
+        elements_(std::move(elements)),
+        table_schema_(name_, desc, elements_.elements()) {}
 
   std::string name_;
+  std::string desc_;
 
   // Keep the copy of the elements, because table_schema_ has views into this data,
   // particularly the name and description (i.e. strings).

@@ -25,6 +25,7 @@ message Element {
 
 message TableSchema {
   string name = 1;
+  string desc = 5;
   repeated Element elements = 2;
   bool tabletized = 3;
   uint64 tabletization_key = 4;

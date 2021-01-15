@@ -57,14 +57,15 @@ static constexpr DataElement kProcessStatsElements[] = {
          types::DataType::INT64, types::SemanticType::ST_BYTES, types::PatternType::METRIC_COUNTER},
 };
 // clang-format on
-static constexpr auto kProcessStatsTable =
-    DataTableSchema("process_stats", kProcessStatsElements, std::chrono::milliseconds{1000},
-                    std::chrono::milliseconds{1000});
+static constexpr auto kProcessStatsTable = DataTableSchema(
+    "process_stats", "CPU, memory and IO metrics for processes", kProcessStatsElements,
+    std::chrono::milliseconds{1000}, std::chrono::milliseconds{1000});
 // TODO(oazizi): Enable version below, once rest of the agent supports tabletization.
 //               Can't enable yet because it would result in time-scrambling.
 //  static constexpr std::string_view kProcessStatsTabletizationKey = "upid";
 //  static constexpr auto kProcessStatsTable =
-//      DataTableSchema("process_stats", kProcessStatsElements, kProcessStatsTabletizationKey);
+//      DataTableSchema("process_stats", "CPU, memory and IO metrics for processes",
+//      kProcessStatsElements, kProcessStatsTabletizationKey);
 
 // clang-format off
 static constexpr DataElement kNetworkStatsElements[] = {
@@ -90,8 +91,8 @@ static constexpr DataElement kNetworkStatsElements[] = {
 };
 // clang-format on
 static constexpr auto kNetworkStatsTable =
-    DataTableSchema("network_stats", kNetworkStatsElements, std::chrono::milliseconds{1000},
-                    std::chrono::milliseconds{1000});
+    DataTableSchema("network_stats", "Network metrics for pods.", kNetworkStatsElements,
+                    std::chrono::milliseconds{1000}, std::chrono::milliseconds{1000});
 
 }  // namespace stirling
 }  // namespace pl

@@ -43,9 +43,10 @@ class PIDRuntimeConnector : public SourceConnector, public bpf_tools::BCCWrapper
        types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
   };
   // clang-format on
+
   static constexpr auto kTable =
-      DataTableSchema("bcc_pid_cpu_usage", kElements, std::chrono::milliseconds{100},
-                      std::chrono::milliseconds{1000});
+      DataTableSchema("bcc_pid_cpu_usage", "CPU usage metrics for processes (obtained via BPF)",
+                      kElements, std::chrono::milliseconds{100}, std::chrono::milliseconds{1000});
 
   static constexpr auto kTables = MakeArray(kTable);
 

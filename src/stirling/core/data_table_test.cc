@@ -19,7 +19,8 @@ class DataTableTest : public ::testing::Test {
       {"s", "a string", types::DataType::STRING, types::SemanticType::ST_NONE,
        types::PatternType::GENERAL},
   };
-  static constexpr auto kSchema = DataTableSchema("test_table", kElements);
+  static constexpr auto kSchema =
+      DataTableSchema("test_table", "This is the table description", kElements);
 
   DataTableTest() : data_table_(std::make_unique<DataTable>(kSchema)) {}
 
@@ -308,7 +309,7 @@ class DataTableStressTest : public ::testing::Test {
       {"f2", "f(x) = x % 10", types::DataType::INT64, types::SemanticType::ST_NONE,
        types::PatternType::GENERAL_ENUM},
   };
-  static constexpr auto kSchema = DataTableSchema("test_table", kElements);
+  static constexpr auto kSchema = DataTableSchema("test_table", "A table of sequences", kElements);
 
   // Test parameter: number of records to write.
   size_t num_records_ = 0;

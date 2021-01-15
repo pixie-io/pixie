@@ -20,7 +20,8 @@ static constexpr DataElement kElements[] = {
     {"b", "", types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
     {"c", "", types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
 };
-static constexpr auto kTableSchema = DataTableSchema("abc_table", kElements);
+static constexpr auto kTableSchema =
+    DataTableSchema("abc_table", "A table with A, B and C", kElements);
 
 TEST(RecordBuilder, StringMaxSize) {
   DataTable data_table(kTableSchema);

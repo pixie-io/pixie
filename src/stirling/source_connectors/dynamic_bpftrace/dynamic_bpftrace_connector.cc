@@ -132,8 +132,12 @@ StatusOr<std::unique_ptr<SourceConnector>> DynamicBPFTraceConnector::Create(
   std::string_view format_str = bpftrace.OutputFmtStr();
   PL_ASSIGN_OR_RETURN(BackedDataElements columns, ConvertFields(fields, format_str));
 
+  // Could consider making a better description, but may require more user input,
+  // so punting on that for now.
+  std::string desc = absl::StrCat("Dynamic table for ", tracepoint.table_name());
+
   std::unique_ptr<DynamicDataTableSchema> table_schema =
-      DynamicDataTableSchema::Create(tracepoint.table_name(), std::move(columns));
+      DynamicDataTableSchema::Create(tracepoint.table_name(), desc, std::move(columns));
 
   return std::unique_ptr<SourceConnector>(new DynamicBPFTraceConnector(
       source_name, std::move(table_schema), tracepoint.bpftrace().program()));

@@ -53,8 +53,8 @@ static constexpr DataElement kMySQLElements[] = {
 // clang-format on
 
 static constexpr auto kMySQLTable =
-    DataTableSchema("mysql_events", kMySQLElements, std::chrono::milliseconds{100},
-                    std::chrono::milliseconds{1000});
+    DataTableSchema("mysql_events", "MySQL resquest-response pair events", kMySQLElements,
+                    std::chrono::milliseconds{100}, std::chrono::milliseconds{1000});
 
 constexpr int kMySQLTimeIdx = kMySQLTable.ColIndex("time_");
 constexpr int kMySQLUPIDIdx = kMySQLTable.ColIndex("upid");

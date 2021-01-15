@@ -24,6 +24,7 @@ using types::SemanticType;
 const char* kInfoClass0 = R"(
   schema {
     name: "cpu"
+    desc: "CPU usage metrics"
     elements {
       name: "user_percentage"
       type: FLOAT64
@@ -55,6 +56,7 @@ const char* kInfoClass0 = R"(
 const char* kInfoClass1 = R"(
   schema {
     name: "my_table"
+    desc: "Mine, mine, mine!"
     elements {
       name: "a"
       type: FLOAT64
@@ -95,8 +97,9 @@ class TestSourceConnector : public SourceConnector {
       {"io_percentage", "IO percentage", DataType::FLOAT64, SemanticType::ST_NONE,
        PatternType::METRIC_GAUGE}};
 
-  static constexpr auto kTable = DataTableSchema("cpu", kElements, std::chrono::milliseconds{100},
-                                                 std::chrono::milliseconds{1000});
+  static constexpr auto kTable =
+      DataTableSchema("cpu", "CPU usage metrics", kElements, std::chrono::milliseconds{100},
+                      std::chrono::milliseconds{1000});
   static constexpr auto kTables = MakeArray(kTable);
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
@@ -120,8 +123,9 @@ class TestSourceConnector2 : public SourceConnector {
       {"b", "", DataType::FLOAT64, SemanticType::ST_NONE, PatternType::METRIC_GAUGE},
       {"c", "", DataType::FLOAT64, SemanticType::ST_NONE, PatternType::METRIC_GAUGE}};
 
-  static constexpr auto kTable = DataTableSchema(
-      "my_table", kElements, std::chrono::milliseconds{100}, std::chrono::milliseconds{1000});
+  static constexpr auto kTable =
+      DataTableSchema("my_table", "Mine, mine, mine!", kElements, std::chrono::milliseconds{100},
+                      std::chrono::milliseconds{1000});
   static constexpr auto kTables = MakeArray(kTable);
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {

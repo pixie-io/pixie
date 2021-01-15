@@ -40,8 +40,8 @@ constexpr DataElement kJVMStatsElements[] = {
 };
 // clang-format on
 
-constexpr DataTableSchema kJVMStatsTable("jvm_stats", kJVMStatsElements,
-                                         std::chrono::milliseconds{1000},
+constexpr DataTableSchema kJVMStatsTable("jvm_stats", "JVM memory management metrics",
+                                         kJVMStatsElements, std::chrono::milliseconds{1000},
                                          std::chrono::milliseconds{1000});
 
 #define DEFINE_IDX(col_name) constexpr int col_name##Idx = kJVMStatsTable.ColIndex(col_name)

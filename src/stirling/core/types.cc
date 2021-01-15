@@ -26,6 +26,7 @@ stirlingpb::TableSchema DataTableSchema::ToProto() const {
     element_proto_ptr->MergeFrom(element.ToProto());
   }
   table_schema_proto.set_name(std::string(name_));
+  table_schema_proto.set_desc(std::string(desc_));
   table_schema_proto.set_tabletized(tabletized_);
   table_schema_proto.set_tabletization_key(tabletization_key_);
 
@@ -33,8 +34,8 @@ stirlingpb::TableSchema DataTableSchema::ToProto() const {
 }
 
 std::unique_ptr<DynamicDataTableSchema> DynamicDataTableSchema::Create(
-    std::string_view output_name, BackedDataElements elements) {
-  return absl::WrapUnique(new DynamicDataTableSchema(output_name, std::move(elements)));
+    std::string_view name, std::string_view desc, BackedDataElements elements) {
+  return absl::WrapUnique(new DynamicDataTableSchema(name, desc, std::move(elements)));
 }
 
 BackedDataElements::BackedDataElements(size_t size) : size_(size), pos_(0) {

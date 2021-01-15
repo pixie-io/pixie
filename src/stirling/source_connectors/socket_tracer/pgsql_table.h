@@ -35,8 +35,8 @@ static constexpr DataElement kPGSQLElements[] = {
 // clang-format on
 
 static constexpr auto kPGSQLTable =
-    DataTableSchema("pgsql_events", kPGSQLElements, std::chrono::milliseconds{100},
-                    std::chrono::milliseconds{1000});
+    DataTableSchema("pgsql_events", "Postgres (pgsql) request-response pair events", kPGSQLElements,
+                    std::chrono::milliseconds{100}, std::chrono::milliseconds{1000});
 
 constexpr int kPGSQLUPIDIdx = kPGSQLTable.ColIndex("upid");
 constexpr int kPGSQLReqIdx = kPGSQLTable.ColIndex("req");

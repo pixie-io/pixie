@@ -24,7 +24,7 @@ constexpr DataElement kDummyElements[] = {
 };
 // clang-format on
 
-constexpr auto kDummyTable = DataTableSchema("dummy", kDummyElements);
+constexpr auto kDummyTable = DataTableSchema("dummy", "A dummy table for testing", kDummyElements);
 
 template <const DataTableSchema* schema>
 struct TableFixture {

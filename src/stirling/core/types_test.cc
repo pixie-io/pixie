@@ -38,11 +38,12 @@ TEST(DataTableSchemaTest, table_schema_proto_getters_test) {
       {"d", "", DataType::INT64, SemanticType::ST_NONE, PatternType::GENERAL},
       {"e", "", DataType::FLOAT64, SemanticType::ST_NONE, PatternType::GENERAL},
   };
-  auto table_schema = DataTableSchema("table", elements);
+  auto table_schema = DataTableSchema("table", "this is the table description", elements);
 
+  EXPECT_EQ("table", table_schema.name());
+  EXPECT_EQ("this is the table description", table_schema.desc());
   EXPECT_EQ(1, table_schema.ColIndex("a"));
   EXPECT_EQ("a", table_schema.ColName(1));
-  EXPECT_EQ("table", table_schema.name());
   EXPECT_EQ(false, table_schema.tabletized());
   EXPECT_EQ(6, table_schema.elements().size());
   EXPECT_EQ("c", table_schema.elements()[3].name());
@@ -52,6 +53,7 @@ TEST(DataTableSchemaTest, table_schema_proto_getters_test) {
   stirlingpb::TableSchema table_schema_pb;
   table_schema_pb = table_schema.ToProto();
   EXPECT_EQ("table", table_schema_pb.name());
+  EXPECT_EQ("this is the table description", table_schema_pb.desc());
   EXPECT_EQ(false, table_schema_pb.tabletized());
   EXPECT_EQ(6, table_schema_pb.elements().size());
   EXPECT_EQ("c", table_schema_pb.elements(3).name());
@@ -66,11 +68,13 @@ TEST(DynamicDataTableSchemaTest, Create) {
   columns.emplace_back("b", "this is column b", types::DataType::STRING);
   columns.emplace_back("c", "this is column c", types::DataType::INT64);
 
-  auto data_table_schema = DynamicDataTableSchema::Create("out_table", std::move(columns));
+  auto data_table_schema = DynamicDataTableSchema::Create(
+      "out_table", "this is a table description", std::move(columns));
 
   const DataTableSchema& table_schema = data_table_schema->Get();
 
   EXPECT_EQ(table_schema.name(), "out_table");
+  EXPECT_EQ(table_schema.desc(), "this is a table description");
   ASSERT_EQ(table_schema.elements().size(), 3);
   EXPECT_EQ(table_schema.tabletized(), false);
   EXPECT_EQ(table_schema.elements()[0].type(), DataType::INT64);

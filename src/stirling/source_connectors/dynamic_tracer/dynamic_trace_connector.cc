@@ -140,8 +140,12 @@ StatusOr<std::unique_ptr<SourceConnector>> DynamicTraceConnector::Create(
 
   const auto& output = bcc_program.perf_buffer_specs[0];
 
+  // Could consider making a better description, but may require more user input,
+  // so punting on that for now.
+  std::string desc = absl::StrCat("Dynamic table for ", output.name);
+
   std::unique_ptr<DynamicDataTableSchema> table_schema =
-      DynamicDataTableSchema::Create(output.name, ConvertFields(output.output.fields()));
+      DynamicDataTableSchema::Create(output.name, desc, ConvertFields(output.output.fields()));
 
   return std::unique_ptr<SourceConnector>(
       new DynamicTraceConnector(name, std::move(table_schema), std::move(bcc_program)));
