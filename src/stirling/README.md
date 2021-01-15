@@ -30,7 +30,6 @@ stirling.cc         # Top-level Stirling source code.
 stirling.h          # Top-level Stirling header file.
 stirling_mock.h     # Mock definition for testing.
 stirling_wrapper.cc # Source code for stand-alone (command-line) version of Stirling binary.
-table_enums         # More proto messages for mapping certain table column values to strings.
 testing             # Testing utilities.
 utils               # Utilities.
 ```
