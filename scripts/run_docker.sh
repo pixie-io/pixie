@@ -33,7 +33,8 @@ while [ "$1" != "" ]; do
     shift
 done
 
-stirling_flags="-v /:/host
+stirling_flags="--privileged
+                -v /:/host
                 -v /sys:/sys
                 -v /var/lib/docker:/var/lib/docker
                 --pid=host
