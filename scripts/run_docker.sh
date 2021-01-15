@@ -33,6 +33,8 @@ while [ "$1" != "" ]; do
     shift
 done
 
+# See src/stirling/README.md, under "Stirling docker container environment" for
+# an explanation of Stirling requirements.
 stirling_flags="--privileged
                 -v /:/host
                 -v /sys:/sys

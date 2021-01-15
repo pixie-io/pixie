@@ -1,137 +1,140 @@
 # Stirling
 
-Pixie's data collector on nodes. Stirling uses [eBPF](https://www.iovisor.org/technology/ebpf) to
-snoop application metrics from inside Linux kernel. Particularly,
-[BCC](https://github.com/iovisor/bcc) is used to write the BPF C code and manage the runtime.
+Stirling is Pixie's data collector on nodes. Stirling uses Linux APIs, including [eBPF technology](https://www.iovisor.org/technology/ebpf) to gather application metrics and events from the Linux kernel, system libraries, or the application itself.
 
-## Testing Stirling on GKE with stirling_wrapper
+Some of the primary data collected by Stirling includes:
 
-`//src/stirling:stirling_wrapper` is a thin wrapper of Stirling's core library. It writes collected
-data to STDIN, instead of exporting them into Carnot tables, which is the designated behavior.
+- Application CPU, memory and network utilization.
+- Application network messaging events for a variety of protocols (e.g. HTTP, MySQL, Postgres, ...).
 
-`src/stirling/yaml/run_on_gke.sh` is a script to run `stirling_wrapper` on a GKE cluster.
+The Stirling architecture consists of a core infrastructure into which "source connectors" can be added to extract information from different data sources. The source connectors export data tables which are published via the Stirling API.
 
-## Testing PEM on GKE
+## Directory Structure
 
-After deploying Pixie on your test cluster, remove the deployed vizier:
-`skaffold delete -f skaffold/skaffold_vizier.yaml`
-And then redeploy it once again with your local changes:
-`PL_BUILD_TYPE=dev skaffold run -f skaffold/skaffold_vizier.yaml`
+The Stirling directory structure is as follows:
+
+```
+bpf_tools           # Tools for managing the compilation and deployment of BPF code.
+BUILD.bazel         # Top-level build file.
+core                # Core Stirling infrastructure, without data source connectors.
+docs                # Documents for developers.
+e2e_tests           # Top-level stirling tests (mostly shell tests).
+k8s                 # Scripts for deploying to k8s.
+LICENSE.txt         # Stirling specific license
+obj_tools           # Tools for managing binary objects (e.g. ELF and DWARF information).
+proto               # Public messages for publishing data tables.
+README.md           # This README.
+scripts             # Utility scripts.
+source_connectors   # Directory containing all source connectors, which are responsible for gathering data.
+stirling.cc         # Top-level Stirling source code.
+stirling.h          # Top-level Stirling header file.
+stirling_mock.h     # Mock definition for testing.
+stirling_wrapper.cc # Source code for stand-alone (command-line) version of Stirling binary.
+table_enums         # More proto messages for mapping certain table column values to strings.
+testing             # Testing utilities.
+utils               # Utilities.
+```
+
+### BPF code
+
+Many of the `source_connectors` use BPF (managed by BCC) to collect their data.
+
+We use [BCC](https://github.com/iovisor/bcc) to write the BPF C code and manage the runtime of the source connectors that use BPF.
+
+For each of these BPF based `source_connectors`, there should be at least two subdirectories:
+
+- `bcc_bpf`: Contains all the BPF code that is compiled by BCC. This code is licensed differently than the rest of Stirling and is intentionally kept isolated. No code outside the directory should `#include` or link to the code in this directory. All data transfers are done through BPF maps or buffers, data structures for which are described in `bcc_bpf_intf`.
+- `bcc_bpf_intf`: Contains public data structures that are used to transport data out from the kernel to user-space. The headers in this file are typically `#include`d by both the BPF code and our user-space C++ code. 
+
+## Building & Testing
+
+The Stirling code base can be build with the following command:
+
+```
+bazel build //src/stirling/...
+```
+
+Certain Stirling tests use BPF, whic requires root privileges.
+Those tests are marked with the bazel tag `requires_bpf`. When you run the standard `bazel test`, only those tests that do not require BPF are run.
+```
+bazel test //src/stirling/...
+```
+
+To run an individual BPF test, you can use the `sudo_bazel_run.sh` convenience script. For example:
+```
+sudo_bazel_run.sh //src/stirling/source_connectors/socket_tracer:socket_trace_bpf_test
+
+```
+The `sudo_bazel_run.sh` builds the target, and then uses sudo to run the script directory.
+
+Note: if a test uses sharding, `--test_sharding_strategy=disabled` is required to run the test.
+
+### Running BPF test suite
+
+To run the entire BPF test suite, you can deploy to Jenkins, which will run these tests with the appropriate priveleges and environment.
+
+To run the tests locally, you can also use a container:
+
+```
+$PIXIE_ROOT/scripts/run_docker.sh
+
+bazel test --config=bpf //path/to:test
+```
+
+## Stirling Wrapper
+
+`stirling_wrapper` is a stand-alone version of Stirling that one can run locally. It does not require the rest of the PEM, or even k8s. It will collect the data from its sources and print the results directly to STDOUT.
+
+You can run `stirling_wrapper` via the following command, which builds `stirling_wrapper` and runs the executable with a sudo prompt.
+```
+$PIXIE_ROOT/src/stirling/scripts/stirling_wrapper.sh
+```
+
+### Running Stirling Wrapper on K8s (e.g. GKE)
+
+`src/stirling/k8s/run_on_k8s.sh` is a convenience script that will deploy a `stirling_wrapper` pod to your current k8s cluster (as pointed to by `kubectl`).
 
 ## Stirling docker container environment
 
-Stirling operates across kernel (through BPF), and user-space; and the user-space portion runs
-inside container. Special cares are required to configure Stirling's docker container environment:
+Because Stirling uses the Linux kernel APIs (including BPF), special flags are required to make sure Stirling runs properly when Stirling is itself inside a container. Since the kernel is not part of the container, Stirling's view is that it should be tracing the host. For example, the BPF probes will naturally be on the host and not confined to the container.
 
-*   `--privileged`: As BPF requires root permission.
+To make sure Stirling runs properly in a container environment, the following flags are required:
+
+*   `--privileged`: BPF requires root permissions.
+*   `--volume=/sys:/sys`: Required for BPF probes to function correctly.
 *   `--pid=host`: [OPTIONAL] Uses host's PID namespace. Used in tests to easily find the target PID
     and ensure it's same as what BPF sees. This is used inside `Jenkinsfile`.
 *   `--volume=/:/host`: Make the entire host file system to `/host` inside container. Stirling needs
     this to access all of the data files on the host. One of them is the system headers, which is
-    used by BCC to compile C code.
-*   `--volume=/sys:/sys`: As BCC runtime requires to access this directory.
-
-## Profiling Stirling
-
-### Locally
-
-There's a script to automate profiling stirling on your local machine, using perf.
-
-```
-src/stirling/scripts/profile_stirling_wrapper.sh
+    used by BCC to compile C code. Also required for accessing debug info of binaries in other containers.
+*   `--env PL_HOST_PATH=/host": Related to the line above.
 ```
 
-### Profiling on GCE (including GKE nodes)
+If any additional flags become required, be sure to udpate at least the following files:
+ - `scripts/run_docker.sh`
+ - `k8s/pem/pem_daemonset.yaml`
+ - `src/stirling/k8s`: all yaml files
+ - `src/stirling/scripts/docker_run_stirling_wrapper.sh`
+ - `src/stirling/e2e_tests`: files that run stirling in a container
 
-Perf doesn't run on GCE/GKE because the node is virtualized. Instead, we'll use a BPF based profiler.
-See the link here for a basic overview: http://www.brendangregg.com/blog/2016-10-21/linux-efficient-profiler.html
+## Testing Stirling via PEM on GKE
 
-[PEM resource usage](
-https://work.withpixie.ai/live/clusters/gke_pl-pixies_us-west1-a_dev-cluster-stirling-perf/script?pem_resource_usage)
-on `dev-cluster-stirling-perf`.
+If using a brand new cluster with no Pixie deployments, start by deploying standard Pixie:
+`px deploy`
 
-#### Dependencies
+The standard deploy will install some prerequisites. It only needs to be run once.
 
-First, you'll need some prerequisite tools installed on the node:
+You can then deploy a development version based on your local changes using `skaffold`:
+`skaffold run -p opt -f skaffold/skaffold_vizier.yaml`
 
-```
-sudo apt install linux-tools-common linux-tools-generic linux-tools-`uname -r`
-sudo apt install bpfcc-tools linux-headers-$(uname -r)
-sudo apt install gdb
 
-sudo snap install --devmode bpftrace
-sudo snap connect bpftrace:system-trace
-```
 
-There should now be a program called `/usr/sbin/profile-bpfcc` on your host machine.
 
-Unfortunately, the program doesn't work out of the box, so we'll hack a few things to get it working.
 
-#### Hacking the profiler
 
-WARNING: The rest of this process is SUPER HACKY. I just don't have the patience to investigate the right fix yet.
 
-First, lets create a copy.
 
-```
-sudo cp /usr/sbin/profile-bpfcc /usr/sbin/profile-bpfcc.pixie
-```
 
-Next edit the new file and make the following modifications.
 
-1) Add the following to the top of the BPF code.
-```
-#ifdef asm_volatile_goto
-#undef asm_volatile_goto
-#define asm_volatile_goto(x...)
-#endif
-```
 
-2) Hard-code `__PAGE_OFFSET_BASE`
-
-To get the value of `__PAGE_OFFSET_BASE`, run this script:
-```
-sudo bpftrace -e 'BEGIN { $pob = kaddr("page_offset_base"); print($pob); }'
-
-```
-
-Finally, replace `__PAGE_OFFSET_BASE` with the value extracted from the bpftrace script above. Note that you should convert the value to hex first.
-
-As long as the node doesn't reboot (which GKE nodes don't), the value of __PAGE_OFFSET_BASE shouldn't change and you should be okay.
-
-#### Running the profiler
-
-To run the profiler:
-
-```
-/usr/sbin/profile-bpfcc.pixie -p <target_pid> > profile.out
-```
-
-#### Creating a flamegraph graphic
-
-Get the flamegraph repo and script flamegraph.pl, then follow these steps:
-```
-/usr/sbin/profile-bpfcc.pixie -p <target_pid> -f -F 101 300 > profile.out # 300 seconds, 101 Hz sampling, -f for flamegraph compat.
-# gcloud compute scp & scp the file profile.out to your local machine, or eventual destination
-flamegraph.pl profile.out > profile.svg
-rsvg-convert profile.svg -f pdf > profile.pdf  # create pdf
-rsvg-convert profile.svg -f eps > profile.eps  # create eps
-convert -density 600 -quality 100 profile.eps profile.jpg  # create jpg based on eps
-```
-
-## BPF Tests
-
-To test these programs, add tag `requires_bpf` to your test, and Jenkins will run these tests with
-appropriate privileges and environment.
-
-To run the tests locally, you can use `docker` or `sudo (i)bazel test`:
-
-*   docker run -it --privileged --rm -v /sys:/sys -v /lib/modules:/lib/modules \
-        -v /usr/src:/usr/src -v /home/{{user}}:/pl \
-        gcr.io/pl-dev-infra/dev_image:201904181416 bash
-    ibazel test //path/to:test --config=bpf
-*   sudo ($which ibazel) test //path/to:test --config=bpf --strategy=TestRunner=standalone
-    *   You need `--strategy=TestRunner=standalone` to disable bazel's own sandbox, which will
-        prevent BPF to load the C code.
-*   The `--config=bpf` reset the `--test_tag_filters` filter, so that the test can be selected.
 
