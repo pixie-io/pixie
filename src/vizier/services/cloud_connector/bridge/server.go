@@ -654,18 +654,6 @@ func (s *Bridge) startStreamGRPCWriter(stream vzconnpb.VZConnService_NATSBridgeC
 	defer log.Trace("Closing GRPC writer stream")
 
 	sendMsg := func(m *vzconnpb.V2CBridgeMessage) {
-		s.pendingGRPCOutMsg = m
-		// Write message to GRPC if it exists.
-		err := stream.Send(s.pendingGRPCOutMsg)
-		if err != nil {
-			// Need to resend this message.
-			return
-		}
-		s.pendingGRPCOutMsg = nil
-		return
-	}
-
-	for {
 		// Pending message try to send it first.
 		if s.pendingGRPCOutMsg != nil {
 			err := stream.Send(s.pendingGRPCOutMsg)
@@ -682,6 +670,22 @@ func (s *Bridge) startStreamGRPCWriter(stream vzconnpb.VZConnService_NATSBridgeC
 			}
 			s.pendingGRPCOutMsg = nil
 		}
+
+		if m != nil {
+			// Write message to GRPC if it exists.
+			err := stream.Send(m)
+			if err != nil {
+				// Need to resend this message.
+				s.pendingGRPCOutMsg = m
+				return
+			}
+		}
+	}
+
+	for {
+		// If there's a pending message, send it.
+		sendMsg(nil)
+
 		// Try to send PT traffic first.
 		select {
 		case <-s.quitCh:
@@ -696,11 +700,13 @@ func (s *Bridge) startStreamGRPCWriter(stream vzconnpb.VZConnService_NATSBridgeC
 			return
 		case m := <-s.ptOutCh:
 			sendMsg(m)
-			break
+			continue
 		default:
 		}
 
 		select {
+		case <-s.quitCh:
+			return
 		case <-stream.Context().Done():
 			log.Trace("Write stream has closed")
 			return
