@@ -639,7 +639,7 @@ func (s *Bridge) startStreamGRPCReader(stream vzconnpb.VZConnService_NATSBridgeC
 				return
 			}
 			if err != nil {
-				log.WithError(err).Error("Got a stream read error")
+				log.WithError(err).Trace("Got a stream read error")
 				return
 			}
 			s.grpcInCh <- msg
