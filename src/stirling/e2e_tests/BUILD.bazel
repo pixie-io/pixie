@@ -20,8 +20,6 @@ pl_cc_test(
     data = ["//src/stirling/source_connectors/socket_tracer/protocols/http/testing/leaky_cpp_http_server:leaky_http_server"],
     tags = [
         "requires_bpf",
-        # TODO(oazizi): Re-enable. Broken by D7023.
-        "manual",
     ],
     deps = [
         "//src/common/testing/test_utils:cc_library",
@@ -149,8 +147,6 @@ sh_test(
         # Can still run it with -c dbg, but on Jenkins, we only run opt version.
         "no_asan",
         "no_tsan",
-        # TODO(oazizi/yzhao): Fix this. Disabling this test for now on jenkins since it broken.
-        "manual",
     ],
     deps = ["//src/stirling/scripts:sh_library"],
 )

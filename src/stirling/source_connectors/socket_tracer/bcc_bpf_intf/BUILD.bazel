@@ -20,15 +20,6 @@ pl_cc_library(
 )
 
 pl_cc_test(
-    name = "http2_test",
-    srcs = ["http2_test.cc"],
-    # This test always fails in Jenkins build because of unable to unroll loop.
-    # TODO(yzhao): Fix and remove this 'manual' tag.
-    tags = ["manual"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
     name = "socket_trace_test",
     srcs = ["socket_trace_test.cc"],
     deps = [":cc_library"],
