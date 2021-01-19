@@ -40,7 +40,7 @@ echo "-------------------------------------------"
 echo "Building and pushing stirling_wrapper image"
 echo "-------------------------------------------"
 
-bazel build //src/stirling:stirling_wrapper_image
+bazel build //src/stirling/binaries:stirling_wrapper_image
 bazel run //src/stirling:push_stirling_wrapper_image
 
 echo ""

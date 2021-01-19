@@ -37,8 +37,8 @@ function bazel_build() {
 
   # This funky command looks for and parses out the binary from a output like the following:
   # ...
-  # Target //src/stirling:stirling_wrapper up-to-date:
-  #   bazel-bin/src/stirling/stirling_wrapper
+  # Target //src/stirling/binaries:stirling_wrapper up-to-date:
+  #   bazel-bin/src/stirling/binaries/stirling_wrapper
   # ...
   binary=$(echo "$bazel_out" | grep -A1 "^Target .* up-to-date" | tail -1 | sed -e 's/^[[:space:]]*//')
   echo "$binary"

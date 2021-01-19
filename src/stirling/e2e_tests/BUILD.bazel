@@ -33,7 +33,7 @@ pl_cc_test(
 pl_cc_test(
     name = "stirling_wrapper_size_test",
     srcs = ["stirling_wrapper_size_test.cc"],
-    data = ["//src/stirling:stirling_wrapper"],
+    data = ["//src/stirling/binaries:stirling_wrapper_core"],
     tags = [
         "no_asan",
         "no_tsan",
@@ -45,10 +45,10 @@ sh_test(
     name = "stirling_wrapper_kprobe_leak_test",
     srcs = ["stirling_wrapper_kprobe_leak_test.sh"],
     args = [
-        "$(location //src/stirling:stirling_wrapper)",
+        "$(location //src/stirling/binaries:stirling_wrapper)",
     ],
     data = [
-        "//src/stirling:stirling_wrapper",
+        "//src/stirling/binaries:stirling_wrapper",
     ],
     # Sometimes stirling_wrapper gets stuck after receiving SIGHUP, the test waits for
     # stirling_wrapper process to exit and eventually times out.
@@ -64,12 +64,12 @@ sh_test(
     name = "stirling_wrapper_test",
     srcs = ["stirling_wrapper_test.sh"],
     args = [
-        "$(location //src/stirling:stirling_wrapper)",
+        "$(location //src/stirling/binaries:stirling_wrapper)",
         "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:go_grpc_server)",
         "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:go_grpc_client)",
     ],
     data = [
-        "//src/stirling:stirling_wrapper",
+        "//src/stirling/binaries:stirling_wrapper",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server",
     ],
@@ -88,11 +88,11 @@ sh_test(
     name = "stirling_wrapper_bpftrace_test",
     srcs = ["stirling_wrapper_bpftrace_test.sh"],
     args = [
-        "$(location //src/stirling:stirling_wrapper)",
+        "$(location //src/stirling/binaries:stirling_wrapper)",
         "$(location //src/stirling/testing:tcpdrop_bpftrace_script)",
     ],
     data = [
-        "//src/stirling:stirling_wrapper",
+        "//src/stirling/binaries:stirling_wrapper",
         "//src/stirling/testing:tcpdrop_bpftrace_script",
     ],
     tags = [
@@ -110,12 +110,12 @@ sh_test(
     name = "stirling_wrapper_container_test",
     srcs = ["stirling_wrapper_container_test.sh"],
     args = [
-        "$(location //src/stirling:stirling_wrapper_image.tar)",
+        "$(location //src/stirling/binaries:stirling_wrapper_image.tar)",
         "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:go_grpc_server)",
         "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:go_grpc_client)",
     ],
     data = [
-        "//src/stirling:stirling_wrapper_image.tar",
+        "//src/stirling/binaries:stirling_wrapper_image.tar",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server",
     ],
@@ -135,10 +135,10 @@ sh_test(
     name = "stirling_perf_test",
     srcs = ["stirling_perf_test.sh"],
     args = [
-        "$(location //src/stirling:stirling_wrapper)",
+        "$(location //src/stirling/binaries:stirling_wrapper)",
     ],
     data = [
-        "//src/stirling:stirling_wrapper",
+        "//src/stirling/binaries:stirling_wrapper",
     ],
     flaky = True,
     tags = [
@@ -159,12 +159,12 @@ sh_test(
     name = "stirling_wrapper_jvm_stats_test",
     srcs = ["stirling_wrapper_jvm_stats_test.sh"],
     args = [
-        "$(location //src/stirling:stirling_wrapper_image.tar)",
+        "$(location //src/stirling/binaries:stirling_wrapper_image.tar)",
         "$(location //src/stirling/testing/java:hello_world_image.tar)",
         "$(location //src/stirling/testing/java:HelloWorld)",
     ],
     data = [
-        "//src/stirling:stirling_wrapper_image.tar",
+        "//src/stirling/binaries:stirling_wrapper_image.tar",
         "//src/stirling/testing/java:HelloWorld",
         "//src/stirling/testing/java:hello_world_image.tar",
     ],

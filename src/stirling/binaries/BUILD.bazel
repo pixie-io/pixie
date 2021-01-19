@@ -1,0 +1,50 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary")
+load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+
+pl_cc_binary(
+    name = "stirling_wrapper",
+    srcs = ["stirling_wrapper.cc"],
+    defines = [
+        "PXL_SUPPORT",
+    ],
+    deps = [
+        "//src/stirling:cc_library",
+        "//src/carnot/planner/probes:tracepoint_generator_lib",
+    ],
+)
+
+# A version of stirling_wrapper without the compiler.
+# Used in //src/stirling/e2e_tests:stirling_wrapper_size_test
+pl_cc_binary(
+    name = "stirling_wrapper_core",
+    srcs = ["stirling_wrapper.cc"],
+    deps = [
+        "//src/stirling:cc_library",
+    ],
+)
+
+pl_cc_binary(
+    name = "stirling_dt",
+    srcs = ["stirling_dt.cc"],
+    deps = [
+        "//src/stirling:cc_library",
+    ],
+)
+
+cc_image(
+    name = "stirling_wrapper_image",
+    base = "//:pl_cc_bpf_debug_image",
+    binary = ":stirling_wrapper",
+)
+
+container_push(
+    name = "push_stirling_wrapper_image",
+    format = "Docker",
+    image = ":stirling_wrapper_image",
+    registry = "gcr.io",
+    repository = "pl-dev-infra/stirling_wrapper",
+    tag = "{BUILD_USER}",
+)

@@ -7,7 +7,7 @@
 # Then it runs the cleaner to clean those probes up.
 
 if [ -z "$1" ]; then
-    stirling_wrapper_bin=$(bazel info bazel-bin)/src/stirling/stirling_wrapper
+    stirling_wrapper_bin=$(bazel info bazel-bin)/src/stirling/binaries/stirling_wrapper
     probe_cleaner_bin=$(bazel info bazel-bin)/src/stirling/utils/probe_cleaner_standalone
 else
     stirling_wrapper_bin=$1

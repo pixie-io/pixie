@@ -11,7 +11,7 @@ source "$pixie_root"/src/stirling/scripts/utils.sh
 
 if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
     echo "Building stirling_wrapper_image ..."
-    stirling_image=$pixie_root/$(bazel_build //src/stirling:stirling_wrapper_image.tar)
+    stirling_image=$pixie_root/$(bazel_build //src/stirling/binaries:stirling_wrapper_image.tar)
     echo "Building java_image ..."
     java_image=$pixie_root/$(bazel_build //src/stirling/testing/java:hello_world_image.tar)
     echo "Building java_app ..."

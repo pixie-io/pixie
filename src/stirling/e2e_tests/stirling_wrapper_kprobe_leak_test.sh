@@ -8,7 +8,7 @@ source "$pixie_root"/src/stirling/scripts/utils.sh
 
 if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
   # If the script was run in a stand-alone way, then build and set paths.
-  stirling_wrapper=$pixie_root/$(bazel_build //src/stirling:stirling_wrapper)
+  stirling_wrapper=$pixie_root/$(bazel_build //src/stirling/binaries:stirling_wrapper)
 else
   # If the script was run through bazel, the locations are passed as arguments.
   stirling_wrapper=$1

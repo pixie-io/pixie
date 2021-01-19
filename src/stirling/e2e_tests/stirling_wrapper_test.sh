@@ -14,7 +14,7 @@ source "$pixie_root"/src/stirling/scripts/test_utils.sh
 
 if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
     # If the script was run in a stand-alone way, then build and set paths.
-    stirling_wrapper=$pixie_root/$(bazel_build //src/stirling:stirling_wrapper)
+    stirling_wrapper=$pixie_root/$(bazel_build //src/stirling/binaries:stirling_wrapper)
     go_grpc_server=$pixie_root/$(bazel_build //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:go_grpc_server)
     go_grpc_client=$pixie_root/$(bazel_build //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:go_grpc_client)
 else

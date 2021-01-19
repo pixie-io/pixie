@@ -59,10 +59,10 @@ shift $((OPTIND -1))
 bazel_flags="-c opt"
 
 # shellcheck disable=SC2086
-bazel build $bazel_flags //src/stirling:stirling_wrapper
+bazel build $bazel_flags //src/stirling/binaries:stirling_wrapper
 
 # shellcheck disable=SC2086
-cmd=$(bazel info $bazel_flags bazel-bin)/src/stirling/stirling_wrapper
+cmd=$(bazel info $bazel_flags bazel-bin)/src/stirling/binaries/stirling_wrapper
 
 ###############################################################################
 # Run Stirling

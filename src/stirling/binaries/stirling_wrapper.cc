@@ -17,9 +17,9 @@
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 #include "src/stirling/stirling.h"
 
-#include "src/stirling/source_connectors/socket_tracer/socket_trace_tables.h"
-
+#ifdef PXL_SUPPORT
 #include "src/carnot/planner/probes/tracepoint_generator.h"
+#endif
 
 using pl::Status;
 using pl::StatusOr;
@@ -37,20 +37,11 @@ using DynamicTracepointDeployment =
 using pl::types::ColumnWrapperRecordBatch;
 using pl::types::TabletID;
 
-using pl::stirling::kConnStatsTable;
-using pl::stirling::kCQLTable;
-using pl::stirling::kDNSTable;
-using pl::stirling::kHTTPTable;
-using pl::stirling::kMySQLTable;
-using pl::stirling::kPGSQLTable;
-
 DEFINE_string(sources, "kProd", "[kAll|kProd|kMetrics|kTracers] Choose sources to enable.");
 DEFINE_string(trace, "",
               "Dynamic trace to deploy. Either (1) the path to a file containing PxL or IR trace "
               "spec, or (2) <path to object file>:<symbol_name> for full-function tracing.");
-DEFINE_string(print_record_batches,
-              absl::Substitute("$0,$1,$2,$3", kHTTPTable.name(), kMySQLTable.name(),
-                               kCQLTable.name(), kDNSTable.name()),
+DEFINE_string(print_record_batches, "http_events,mysql_events,cql_events,dns_events",
               "Comma-separated list of tables to print. Defaults to tracers if not specified. Use "
               "'None' for none.");
 DEFINE_bool(init_only, false, "If true, only runs the init phase and exits. For testing.");
@@ -162,10 +153,15 @@ StatusOr<Publish> DeployTrace(Stirling* stirling, TraceProgram trace_program_str
   std::unique_ptr<DynamicTracepointDeployment> trace_program;
 
   if (trace_program_str.format == TracepointFormat::kPXL) {
+#ifdef PXL_SUPPORT
     PL_ASSIGN_OR_RETURN(DynamicTracepointDeployment compiled_tracepoint,
                         pl::carnot::planner::compiler::CompileTracepoint(trace_program_str.text));
     LOG(INFO) << compiled_tracepoint.DebugString();
     trace_program = std::make_unique<DynamicTracepointDeployment>(std::move(compiled_tracepoint));
+#else
+    return pl::error::Internal(
+        "Cannot deploy tracepoint. stirling_wrapper was not built with PxL support.");
+#endif
   } else {
     trace_program = std::make_unique<DynamicTracepointDeployment>();
     bool success =
@@ -193,8 +189,6 @@ StatusOr<Publish> DeployTrace(Stirling* stirling, TraceProgram trace_program_str
   return s;
 }
 
-// A simple wrapper that shows how the data collector is to be hooked up
-// In this case, agent and sources are fake.
 int main(int argc, char** argv) {
   // Register signal handlers to clean-up on exit.
   // TODO(oazizi): Create a separate signal handling thread.

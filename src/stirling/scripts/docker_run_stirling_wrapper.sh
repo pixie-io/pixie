@@ -47,8 +47,8 @@ if [ "$USE_GCR" -eq "1" ]; then
   image_name=gcr.io/pl-dev-infra/stirling_wrapper:${USER}
   docker pull "$image_name"
 else
-  bazel run //src/stirling:stirling_wrapper_image -- --norun
-  image_name=bazel/src/stirling:stirling_wrapper_image
+  bazel run //src/stirling/binaries:stirling_wrapper_image -- --norun
+  image_name=bazel/src/stirling/binaries:stirling_wrapper_image
 fi
 
 flags=""
