@@ -209,11 +209,11 @@ tracepoints {
       function_latency { id: "latency" }
       output_actions {
         output_name: "probe_output"
-        variable_name: "arg0"
-        variable_name: "arg1"
-        variable_name: "arg2"
-        variable_name: "retval0"
-        variable_name: "latency"
+        variable_names: "arg0"
+        variable_names: "arg1"
+        variable_names: "arg2"
+        variable_names: "retval0"
+        variable_names: "latency"
       }
     }
   }

@@ -329,9 +329,9 @@ tracepoints {
       }
       output_actions {
         output_name: "http_return_table"
-        variable_name: "arg0"
-        variable_name: "ret0"
-        variable_name: "lat0"
+        variable_names: "arg0"
+        variable_names: "ret0"
+        variable_names: "lat0"
       }
     }
   }

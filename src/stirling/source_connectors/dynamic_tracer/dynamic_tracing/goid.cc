@@ -47,7 +47,7 @@ ir::logical::Probe GenGOIDProbe() {
 
   map_stash_action->set_map_name("pid_goid_map");
   map_stash_action->set_key(ir::shared::BPFHelper::TGID_PID);
-  map_stash_action->add_value_variable_name("goid");
+  map_stash_action->add_value_variable_names("goid");
   map_stash_action->mutable_cond()->set_op(ir::shared::Condition::EQUAL);
   map_stash_action->mutable_cond()->add_vars("newval");
   map_stash_action->mutable_cond()->add_vars("kGRunningState");

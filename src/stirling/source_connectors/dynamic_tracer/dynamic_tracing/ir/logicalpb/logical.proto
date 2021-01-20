@@ -66,7 +66,7 @@ message MapStashAction {
   shared.BPFHelper key = 2;
 
   // The name of the variable to be inserted into this map.
-  repeated string value_variable_name = 3;
+  repeated string value_variable_names = 3;
 
   // If set, this decide the condition which this map stash should be executed.
   shared.Condition cond = 4;
@@ -89,7 +89,7 @@ message OutputAction {
   string output_name = 1;
 
   // The name of the variables to be output.
-  repeated string variable_name = 3;
+  repeated string variable_names = 3;
 }
 
 // Corresponds to a logical probe.

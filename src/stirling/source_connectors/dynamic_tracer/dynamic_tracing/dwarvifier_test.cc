@@ -641,15 +641,15 @@ tracepoints {
       map_stash_actions {
         map_name: "my_stash"
         key: GOID
-        value_variable_name: "arg0"
-        value_variable_name: "arg1"
+        value_variable_names: "arg0"
+        value_variable_names: "arg1"
         cond {}
       }
       output_actions {
         output_name: "out_table"
-        variable_name: "arg0"
-        variable_name: "arg1"
-        variable_name: "arg2"
+        variable_names: "arg0"
+        variable_names: "arg1"
+        variable_names: "arg2"
       }
     }
     probes: {
@@ -669,8 +669,8 @@ tracepoints {
       }
       output_actions {
         output_name: "out_table2"
-        variable_name: "arg0"
-        variable_name: "arg1"
+        variable_names: "arg0"
+        variable_names: "arg1"
       }
     }
   }
@@ -1015,7 +1015,7 @@ tracepoints {
       }
       output_actions {
         output_name: "out_table"
-        variable_name: "arg0"
+        variable_names: "arg0"
       }
     }
   }
@@ -1047,7 +1047,7 @@ structs {
   fields {
     name: "out"
     type: STRUCT_BLOB
-    blob_decoder {
+    blob_decoders {
       entries {
         size: 8
         type: INT64
@@ -1204,7 +1204,7 @@ tracepoints {
       }
       output_actions {
         output_name: "out_table"
-        variable_name: "retval"
+        variable_names: "retval"
       }
     }
   }
@@ -1236,7 +1236,7 @@ structs {
   fields {
     name: "error"
     type: STRUCT_BLOB
-    blob_decoder {
+    blob_decoders {
       entries {
         size: 8
         type: VOID_POINTER
@@ -1249,7 +1249,7 @@ structs {
         path: "/data"
       }
     }
-    blob_decoder {
+    blob_decoders {
       entries {
         size: 8
         type: INT
@@ -1262,7 +1262,7 @@ structs {
         path: "/Y"
       }
     }
-    blob_decoder {
+    blob_decoders {
       entries {
         size: 8
         type: VOID_POINTER

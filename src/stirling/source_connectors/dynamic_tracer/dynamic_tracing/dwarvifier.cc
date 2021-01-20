@@ -370,7 +370,7 @@ TVarType* Dwarvifier::AddVariable(ir::physical::Probe* probe, const std::string&
 
   // Decoder should be present if and only if type is STRUCT_BLOB.
   DCHECK_EQ(type == ir::shared::ScalarType::STRUCT_BLOB, !decoder.empty());
-  v.mutable_blob_decoder()->CopyFrom(std::move(decoder));
+  v.mutable_blob_decoders()->CopyFrom(std::move(decoder));
 
   return var;
 }
@@ -1083,7 +1083,7 @@ Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
     const auto& field = struct_decl->fields(i++);
 
     auto* var =
-        AddVariable<ScalarVariable>(output_probe, value_id, field.type(), field.blob_decoder());
+        AddVariable<ScalarVariable>(output_probe, value_id, field.type(), field.blob_decoders());
 
     auto* src = var->mutable_member();
     src->set_struct_base(map_var_name);
@@ -1117,7 +1117,7 @@ Status Dwarvifier::GenerateMapValueStruct(const ir::logical::MapStashAction& sta
   auto* struct_decl = output_program->add_structs();
   struct_decl->set_name(struct_type_name);
 
-  for (const auto& var_name : stash_action_in.value_variable_name()) {
+  for (const auto& var_name : stash_action_in.value_variable_names()) {
     auto iter = variables_.find(var_name);
     if (iter == variables_.end()) {
       return error::Internal(
@@ -1166,7 +1166,7 @@ Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_a
   struct_var->set_name(variable_name);
   struct_var->set_type(struct_type_name);
 
-  for (const auto& f : stash_action_in.value_variable_name()) {
+  for (const auto& f : stash_action_in.value_variable_names()) {
     auto* fa = struct_var->add_field_assignments();
     fa->set_field_name(f);
     fa->set_variable_name(f);
@@ -1222,15 +1222,15 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
 
   const ir::physical::PerfBufferOutput* output = output_iter->second;
 
-  if (output->fields_size() != output_action_in.variable_name_size()) {
+  if (output->fields_size() != output_action_in.variable_names_size()) {
     return error::InvalidArgument(
         "OutputAction to '$0' writes $1 variables, but the Output has $2 fields",
-        output_action_in.output_name(), output_action_in.variable_name_size(),
+        output_action_in.output_name(), output_action_in.variable_names_size(),
         output->fields_size());
   }
 
-  for (int i = 0; i < output_action_in.variable_name_size(); ++i) {
-    const std::string& var_name = output_action_in.variable_name(i);
+  for (int i = 0; i < output_action_in.variable_names_size(); ++i) {
+    const std::string& var_name = output_action_in.variable_names(i);
 
     auto iter = variables_.find(var_name);
     if (iter == variables_.end()) {
@@ -1310,7 +1310,7 @@ Status Dwarvifier::ProcessOutputAction(const ir::logical::OutputAction& output_a
     output_action_out->add_variable_names(std::string(f));
   }
 
-  for (const auto& f : output_action_in.variable_name()) {
+  for (const auto& f : output_action_in.variable_names()) {
     output_action_out->add_variable_names(std::string(f));
   }
 

@@ -46,7 +46,7 @@ Status TracepointIR::ToProto(stirling::dynamic_tracing::ir::logical::TracepointS
 Status ProbeOutput::ToActionProto(stirling::dynamic_tracing::ir::logical::OutputAction* pb) {
   pb->set_output_name(output_name_);
   for (const auto& var : var_names_) {
-    pb->add_variable_name(var);
+    pb->add_variable_names(var);
   }
   return Status::OK();
 }

@@ -83,7 +83,7 @@ message Field {
   //
   // For example, this is used for Golang interface tracing to specify the actual implementation
   // type of the traced interface.
-  repeated StructSpec blob_decoder = 3;
+  repeated StructSpec blob_decoders = 3;
 }
 
 // Describes a C struct. This is directly converted to a C struct in BCC code.

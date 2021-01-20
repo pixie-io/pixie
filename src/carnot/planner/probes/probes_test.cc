@@ -114,9 +114,9 @@ tracepoints {
       }
       output_actions {
         output_name: "http_return_table"
-        variable_name: "arg0"
-        variable_name: "ret0"
-        variable_name: "lat0"
+        variable_names: "arg0"
+        variable_names: "ret0"
+        variable_names: "lat0"
       }
     }
   }
@@ -184,9 +184,9 @@ tracepoints {
       }
       output_actions {
         output_name: "http_return_table"
-        variable_name: "arg0"
-        variable_name: "ret0"
-        variable_name: "lat0"
+        variable_names: "arg0"
+        variable_names: "ret0"
+        variable_names: "lat0"
       }
     }
   }
@@ -336,9 +336,9 @@ tracepoints {
       }
       output_actions {
         output_name: "cool_func_table"
-        variable_name: "arg0"
-        variable_name: "ret0"
-        variable_name: "lat0"
+        variable_names: "arg0"
+        variable_names: "ret0"
+        variable_names: "lat0"
       }
     }
     probes {
@@ -356,8 +356,8 @@ tracepoints {
       }
       output_actions {
         output_name: "http_table"
-        variable_name: "arg0"
-        variable_name: "arg1"
+        variable_names: "arg0"
+        variable_names: "arg1"
       }
     }
   }
@@ -406,8 +406,8 @@ tracepoints{
       }
       output_actions {
         output_name: "http_body_table"
-        variable_name: "arg0"
-        variable_name: "arg1"
+        variable_names: "arg0"
+        variable_names: "arg1"
       }
     }
   }

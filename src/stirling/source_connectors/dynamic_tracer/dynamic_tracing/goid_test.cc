@@ -40,7 +40,7 @@ TEST(GOIDTest, CheckProbe) {
                                         map_stash_actions {
                                           map_name: "pid_goid_map"
                                           key: TGID_PID
-                                          value_variable_name: "goid"
+                                          value_variable_names: "goid"
                                         }
                                         )proto")));
 }

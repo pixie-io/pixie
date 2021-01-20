@@ -130,15 +130,15 @@ tracepoints {
       function_latency { id: "fn_latency" }
       output_actions {
         output_name: "main__d__MixedArgTypes_table"
-        variable_name: "arg0"
-        variable_name: "arg1"
-        variable_name: "arg2"
-        variable_name: "arg3"
-        variable_name: "arg4"
-        variable_name: "arg5"
-        variable_name: "retval6"
-        variable_name: "retval7"
-        variable_name: "fn_latency"
+        variable_names: "arg0"
+        variable_names: "arg1"
+        variable_names: "arg2"
+        variable_names: "arg3"
+        variable_names: "arg4"
+        variable_names: "arg5"
+        variable_names: "retval6"
+        variable_names: "retval7"
+        variable_names: "fn_latency"
       }
     }
   }

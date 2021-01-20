@@ -122,9 +122,9 @@ tracepoints {
       function_latency { id: "latency" }
       output_actions {
         output_name: "probe_WriteDataPadded_table"
-        variable_name: "stream_id"
-        variable_name: "end_stream"
-        variable_name: "latency"
+        variable_names: "stream_id"
+        variable_names: "end_stream"
+        variable_names: "latency"
       }
     }
   }
@@ -151,7 +151,7 @@ tracepoints {
       }
       output_actions {
         output_name: "probe_readFrameHeader"
-        variable_name: "frame_header_valid"
+        variable_names: "frame_header_valid"
       }
     }
   }
@@ -251,7 +251,7 @@ tracepoints {
       }
       output_actions {
         output_name: "foo_bar_output"
-        variable_name: "foo_bar_arg"
+        variable_names: "foo_bar_arg"
       }
     }
   }

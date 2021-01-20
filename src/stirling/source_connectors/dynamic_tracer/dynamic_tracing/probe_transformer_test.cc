@@ -73,15 +73,15 @@ tracepoints {
       function_latency { id: "fn_latency" }
       output_actions {
         output_name: "probe0_table"
-        variable_name: "arg0"
-        variable_name: "arg1"
-        variable_name: "arg2"
-        variable_name: "arg3"
-        variable_name: "arg4"
-        variable_name: "arg5"
-        variable_name: "retval0"
-        variable_name: "retval1"
-        variable_name: "fn_latency"
+        variable_names: "arg0"
+        variable_names: "arg1"
+        variable_names: "arg2"
+        variable_names: "arg3"
+        variable_names: "arg4"
+        variable_names: "arg5"
+        variable_names: "retval0"
+        variable_names: "retval1"
+        variable_names: "fn_latency"
       }
     }
   }
@@ -135,7 +135,7 @@ tracepoints {
       map_stash_actions {
         map_name: "pid_goid_map"
         key: TGID_PID
-        value_variable_name: "goid"
+        value_variable_names: "goid"
         cond {
           op: EQUAL
           vars: "newval"
@@ -176,13 +176,13 @@ tracepoints {
       map_stash_actions {
         map_name: "probe0_argstash"
         key: GOID
-        value_variable_name: "arg0"
-        value_variable_name: "arg1"
-        value_variable_name: "arg2"
-        value_variable_name: "arg3"
-        value_variable_name: "arg4"
-        value_variable_name: "arg5"
-        value_variable_name: "time_"
+        value_variable_names: "arg0"
+        value_variable_names: "arg1"
+        value_variable_names: "arg2"
+        value_variable_names: "arg3"
+        value_variable_names: "arg4"
+        value_variable_names: "arg5"
+        value_variable_names: "time_"
       }
     }
     probes {
@@ -213,15 +213,15 @@ tracepoints {
       }
       output_actions {
         output_name: "probe0_table"
-        variable_name: "arg0"
-        variable_name: "arg1"
-        variable_name: "arg2"
-        variable_name: "arg3"
-        variable_name: "arg4"
-        variable_name: "arg5"
-        variable_name: "retval0"
-        variable_name: "retval1"
-        variable_name: "fn_latency"
+        variable_names: "arg0"
+        variable_names: "arg1"
+        variable_names: "arg2"
+        variable_names: "arg3"
+        variable_names: "arg4"
+        variable_names: "arg5"
+        variable_names: "retval0"
+        variable_names: "retval1"
+        variable_names: "fn_latency"
       }
       map_delete_actions {
         map_name: "probe0_argstash"

@@ -66,12 +66,12 @@ void CreateEntryProbe(const ir::shared::Language& language, const ir::logical::P
     stash_action->set_key(GetLanguageThreadID(language));
 
     for (const auto& in_arg : input_probe.args()) {
-      stash_action->add_value_variable_name(in_arg.id());
+      stash_action->add_value_variable_names(in_arg.id());
     }
 
     if (IsFunctionLatecySpecified(input_probe)) {
       // Insert the entry time into map, which will be unstashed in the return probe.
-      stash_action->add_value_variable_name("time_");
+      stash_action->add_value_variable_names("time_");
     }
   }
 }
@@ -84,9 +84,9 @@ Status CheckOutputAction(const std::map<std::string_view, ir::logical::Output*>&
   }
   const ir::logical::Output& output = *iter->second;
 
-  if (output_action.variable_name_size() != output.fields_size()) {
+  if (output_action.variable_names_size() != output.fields_size()) {
     return error::Internal("Output action size $0 does not match Output definition size $1",
-                           output_action.variable_name_size(), output.fields_size());
+                           output_action.variable_names_size(), output.fields_size());
   }
 
   return Status::OK();

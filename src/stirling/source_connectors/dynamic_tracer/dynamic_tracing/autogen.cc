@@ -130,21 +130,21 @@ Status AutoTraceExpansion(obj_tools::DwarfReader* dwarf_reader,
           arg->set_id("arg" + std::to_string(i));
           arg->set_expr(arg_name);
 
-          output_action->add_variable_name(arg->id());
+          output_action->add_variable_names(arg->id());
           output->add_fields(arg_name);
         } else {
           auto* arg = probe.add_ret_vals();
           arg->set_id("retval" + std::to_string(i));
           arg->set_expr(arg_name);
 
-          output_action->add_variable_name(arg->id());
+          output_action->add_variable_names(arg->id());
           output->add_fields(absl::StrReplaceAll(arg_name, {{"~", "__tilde__"}}));
         }
         ++i;
       }
 
       *probe.mutable_function_latency()->mutable_id() = "fn_latency";
-      *output_action->add_variable_name() = probe.function_latency().id();
+      *output_action->add_variable_names() = probe.function_latency().id();
       *output->add_fields() = "latency";
     }
   }

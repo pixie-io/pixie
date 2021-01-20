@@ -463,7 +463,7 @@ Status DynamicTraceConnector::AppendRecord(const Struct& st, uint32_t asid, std:
       ++i;
     } else {
       PL_RETURN_IF_ERROR(
-          FillColumn(&struct_decoder, &r, col_idx++, field.type(), field.blob_decoder()));
+          FillColumn(&struct_decoder, &r, col_idx++, field.type(), field.blob_decoders()));
     }
   }
 

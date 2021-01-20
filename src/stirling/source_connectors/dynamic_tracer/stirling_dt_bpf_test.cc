@@ -169,8 +169,8 @@ tracepoints {
       }
       output_actions {
         output_name: "output_table"
-        variable_name: "a"
-        variable_name: "b"
+        variable_names: "a"
+        variable_names: "b"
       }
     }
   }
@@ -241,12 +241,12 @@ TEST_F(DynamicTraceAPITest, InvalidReference) {
   auto trace_program = Prepare(kTracepointDeployment, kBinaryPath);
 
   // Make the tracepoint malformed by making one of the variable references invalid.
-  auto* variable_name = trace_program->mutable_tracepoints(0)
-                            ->mutable_program()
-                            ->mutable_probes(0)
-                            ->mutable_output_actions(0)
-                            ->mutable_variable_name(0);
-  *variable_name = "invref";
+  auto* variable_names = trace_program->mutable_tracepoints(0)
+                             ->mutable_program()
+                             ->mutable_probes(0)
+                             ->mutable_output_actions(0)
+                             ->mutable_variable_names(0);
+  *variable_names = "invref";
 
   stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
 
@@ -288,7 +288,7 @@ tracepoints {
       function_latency { id: "lat0" }
       output_actions {
         output_name: "output_table"
-        variable_name: "lat0"
+        variable_names: "lat0"
       }
     }
   }
@@ -338,8 +338,8 @@ tracepoints {
       }
       output_actions {
         output_name: "output_table"
-        variable_name: "something"
-        variable_name: "name"
+        variable_names: "something"
+        variable_names: "name"
       }
     }
   }
@@ -386,7 +386,7 @@ tracepoints {
       }
       output_actions {
         output_name: "output_table"
-        variable_name: "arg0"
+        variable_names: "arg0"
       }
     }
   }
@@ -440,8 +440,8 @@ tracepoints {
       }
       output_actions {
         output_name: "output_table"
-        variable_name: "arg0"
-        variable_name: "retval0"
+        variable_names: "arg0"
+        variable_names: "retval0"
       }
     }
   }
@@ -517,7 +517,7 @@ constexpr char kProgramTmpl[] = R"(
         }
         output_actions {
           output_name: "output_table"
-          variable_name: "retval0"
+          variable_names: "retval0"
         }
       }
     }
@@ -575,8 +575,8 @@ tracepoints {
       }
       output_actions {
         output_name: "output_table"
-        variable_name: "arg0"
-        variable_name: "arg1"
+        variable_names: "arg0"
+        variable_names: "arg1"
       }
     }
   }
@@ -650,9 +650,9 @@ tracepoints {
       }
       output_actions {
         output_name: "output_table"
-        variable_name: "arg0"
-        variable_name: "arg1"
-        variable_name: "retval0"
+        variable_names: "arg0"
+        variable_names: "arg1"
+        variable_names: "retval0"
       }
     }
   }
@@ -716,9 +716,9 @@ tracepoints {
       }
       output_actions {
         output_name: "output_table"
-        variable_name: "arg0"
-        variable_name: "arg1"
-        variable_name: "retval0"
+        variable_names: "arg0"
+        variable_names: "arg1"
+        variable_names: "retval0"
       }
     }
   }
@@ -820,16 +820,16 @@ tracepoints {
       }
       output_actions {
         output_name: "output_table"
-        variable_name: "arg00"
-        variable_name: "arg01"
-        variable_name: "arg10"
-        variable_name: "arg11"
-        variable_name: "arg20"
-        variable_name: "arg21"
-        variable_name: "arg30"
-        variable_name: "arg31"
-        variable_name: "retval00"
-        variable_name: "retval01"
+        variable_names: "arg00"
+        variable_names: "arg01"
+        variable_names: "arg10"
+        variable_names: "arg11"
+        variable_names: "arg20"
+        variable_names: "arg21"
+        variable_names: "arg30"
+        variable_names: "arg31"
+        variable_names: "retval00"
+        variable_names: "retval01"
       }
     }
   }
@@ -900,7 +900,7 @@ tracepoints {
       }
       output_actions {
         output_name: "dns_latency_table"
-        variable_name: "lat0"
+        variable_names: "lat0"
       }
     }
   }
@@ -964,7 +964,7 @@ tracepoints {
       }
       output_actions {
         output_name: "dns_latency_table"
-        variable_name: "lat0"
+        variable_names: "lat0"
       }
     }
   }
