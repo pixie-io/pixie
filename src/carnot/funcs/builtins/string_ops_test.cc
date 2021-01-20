@@ -79,6 +79,12 @@ TEST(StringOps, HexToASCII) {
   udf_tester.ForInput("333").Expect("");
 }
 
+TEST(StringOps, BytesToHex) {
+  auto udf_tester = udf::UDFTester<BytesToHex>();
+  udf_tester.ForInput("\x01\x02\x03").Expect(R"(\x01\x02\x03)");
+  udf_tester.ForInput("abc").Expect(R"(\x61\x62\x63)");
+}
+
 }  // namespace builtins
 }  // namespace carnot
 }  // namespace pl

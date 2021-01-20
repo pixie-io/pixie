@@ -21,6 +21,7 @@ void RegisterStringOpsOrDie(udf::Registry* registry) {
   registry->RegisterOrDie<TrimUDF>("trim");
   registry->RegisterOrDie<StripPrefixUDF>("strip_prefix");
   registry->RegisterOrDie<HexToASCII>("hex_to_ascii");
+  registry->RegisterOrDie<BytesToHex>("bytes_to_hex");
   /*****************************************
    * Aggregate UDFs.
    *****************************************/

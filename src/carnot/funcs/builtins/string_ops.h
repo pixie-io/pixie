@@ -181,6 +181,19 @@ class HexToASCII : public udf::ScalarUDF {
   }
 };
 
+class BytesToHex : public udf::ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext*, StringValue h) { return BytesToString<bytes_format::Hex>(h); }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert an input bytes in hex string.")
+        .Details("This function converts an input bytes sequence in hex string.")
+        .Example("df.hex = px.bytes_to_hex(df.resp)")
+        .Arg("arg1", "The bytes sequence.")
+        .Returns("The input converted to a hex string.");
+  }
+};
+
 void RegisterStringOpsOrDie(udf::Registry* registry);
 
 }  // namespace builtins
