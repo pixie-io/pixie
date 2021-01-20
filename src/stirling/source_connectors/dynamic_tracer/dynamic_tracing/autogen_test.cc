@@ -78,15 +78,15 @@ tracepoints {
   program {
     language: GOLANG
     outputs {
-      name: "main.MixedArgTypes_table"
+      name: "main__d__MixedArgTypes_table"
       fields: "b1"
       fields: "b2"
       fields: "b3"
       fields: "i1"
       fields: "i2"
       fields: "i3"
-      fields: "~r6"
-      fields: "~r7"
+      fields: "__tilde__r6"
+      fields: "__tilde__r7"
       fields: "latency"
     }
     probes {
@@ -129,7 +129,7 @@ tracepoints {
       }
       function_latency { id: "fn_latency" }
       output_actions {
-        output_name: "main.MixedArgTypes_table"
+        output_name: "main__d__MixedArgTypes_table"
         variable_name: "arg0"
         variable_name: "arg1"
         variable_name: "arg2"

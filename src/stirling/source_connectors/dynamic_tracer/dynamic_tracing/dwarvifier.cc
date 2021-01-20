@@ -961,40 +961,48 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
 
   std::vector<std::string_view> components = absl::StrSplit(ret_val.expr(), ".");
 
-  int index = -1;
-
-  if (!absl::SimpleAtoi(components.front().substr(1), &index)) {
-    return error::InvalidArgument(
-        "ReturnValue '$0' expression invalid, first component must be `$$<index>`", ret_val.expr());
-  }
-
   switch (language_) {
     case ir::shared::GOLANG: {
-      // TODO(oazizi): Support named return variables.
-      // Golang automatically names return variables ~r0, ~r1, etc.
-      // However, it should be noted that the indexing includes function arguments.
-      // For example Foo(a int, b int) (int, int) would have ~r2 and ~r3 as return variables.
-      // One additional nuance is that the receiver, although an argument for dwarf purposes,
-      // is not counted in the indexing.
-      // To address this problem, we search for the first ~r<n> that we can find,
-      // then we apply the index offset to all indices from the user.
-      PL_ASSIGN_OR_RETURN(int first_index, GolangReturnValueIndex(args_map_));
-      index += first_index;
+      // This represents the actualy return value being returned,
+      // without sub-field accesses.
+      std::string ret_val_name(components.front());
 
-      std::string ret_val_name = absl::StrCat("~r", std::to_string(index));
+      // If the expression starts with '$', then we need to resolve the name from the index.
+      // Otherwise, caller is using named return values.
+      if (ret_val_name[0] == '$') {
+        int index = -1;
 
-      // Reset the first component.
-      components.front() = ret_val_name;
+        if (!absl::SimpleAtoi(ret_val_name.substr(1), &index)) {
+          return error::InvalidArgument(
+              "ReturnValue '$0' expression invalid, first component must be `$$<index>`",
+              ret_val.expr());
+        }
+
+        // Golang automatically names return variables ~r0, ~r1, etc.
+        // However, it should be noted that the indexing includes function arguments.
+        // For example Foo(a int, b int) (int, int) would have ~r2 and ~r3 as return variables.
+        // One additional nuance is that the receiver, although an argument for dwarf purposes,
+        // is not counted in the indexing.
+        // To address this problem, we search for the first ~r<n> that we can find,
+        // then we apply the index offset to all indices from the user.
+        PL_ASSIGN_OR_RETURN(int first_index, GolangReturnValueIndex(args_map_));
+        index += first_index;
+
+        ret_val_name = absl::StrCat("~r", std::to_string(index));
+      }
 
       // Golang return values are really arguments located on the stack, so get the arg info.
-      PL_ASSIGN_OR_RETURN(ArgInfo arg_info, GetArgInfo(args_map_, components.front()));
+      PL_ASSIGN_OR_RETURN(ArgInfo arg_info, GetArgInfo(args_map_, ret_val_name));
 
       return ProcessVarExpr(ret_val.id(), arg_info, kSPVarName, components, output_probe);
     }
     case ir::shared::CPP:
     case ir::shared::C: {
-      if (index != 0) {
-        return error::Internal("C/C++ only supports a single return value [index=$0].", index);
+      if (!components.front().empty() && components.front() != "$0") {
+        return error::Internal(
+            "C/C++ only supports a single unnamed return value. Use empty specifier: \"\". "
+            "Received $0",
+            components.front());
       }
 
       if (retval_info_.type_info.type == VarType::kVoid) {

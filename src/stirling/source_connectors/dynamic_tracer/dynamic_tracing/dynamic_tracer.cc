@@ -22,6 +22,8 @@
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/probe_transformer.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
+DEFINE_bool(debug_dt_pipeline, false, "Enable logging of the Dynamic Tracing pipeline IR graphs.");
+
 namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
@@ -123,8 +125,12 @@ StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_pro
   // Expand symbol.
   PL_RETURN_IF_ERROR(ResolveProbeSymbol(obj_info.elf_reader.get(), input_program));
 
+  LOG_IF(INFO, FLAGS_debug_dt_pipeline) << input_program->DebugString();
+
   // Auto-gen probe variables
   PL_RETURN_IF_ERROR(AutoTraceExpansion(obj_info.dwarf_reader.get(), input_program));
+
+  LOG_IF(INFO, FLAGS_debug_dt_pipeline) << input_program->DebugString();
 
   // --------------------------
   // Main compilation pipeline
@@ -133,9 +139,13 @@ StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_pro
   PL_ASSIGN_OR_RETURN(ir::logical::TracepointDeployment intermediate_program,
                       TransformLogicalProgram(*input_program));
 
+  LOG_IF(INFO, FLAGS_debug_dt_pipeline) << input_program->DebugString();
+
   PL_ASSIGN_OR_RETURN(ir::physical::Program physical_program,
                       GeneratePhysicalProgram(intermediate_program, obj_info.dwarf_reader.get(),
                                               obj_info.elf_reader.get()));
+
+  LOG_IF(INFO, FLAGS_debug_dt_pipeline) << physical_program.DebugString();
 
   PL_ASSIGN_OR_RETURN(std::string bcc_code, GenBCCProgram(physical_program));
 

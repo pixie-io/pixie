@@ -270,6 +270,207 @@ probes {
 }
 )";
 
+constexpr std::string_view kImplicitNamedRetvalsIn = R"(
+deployment_spec {
+  path: "$0"
+}
+tracepoints {
+  program {
+    language: GOLANG
+    probes {
+      tracepoint: {
+        symbol: "main.MixedArgTypes"
+        type: RETURN
+      }
+      ret_vals {
+        id: "retval0"
+        expr: "~r6"
+      }
+      ret_vals {
+        id: "retval1"
+        expr: "~r7.B1"
+      }
+    }
+  }
+}
+)";
+
+constexpr std::string_view kImplicitNamedRetvalsOut = R"(
+deployment_spec {
+  path: "$0"
+}
+language: GOLANG
+probes {
+  tracepoint {
+    symbol: "main.MixedArgTypes"
+    type: RETURN
+  }
+  vars {
+    scalar_var {
+      name: "sp_"
+      type: VOID_POINTER
+      reg: SP
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_"
+      type: INT32
+      builtin: TGID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_pid_"
+      type: UINT64
+      builtin: TGID_PID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_start_time_"
+      type: UINT64
+      builtin: TGID_START_TIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "time_"
+      type: UINT64
+      builtin: KTIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "goid_"
+      type: INT64
+      builtin: GOID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "retval0"
+      type: INT
+      memory {
+        base: "sp_"
+        offset: 48
+      }
+    }
+  }
+  vars {
+    scalar_var {
+      name: "retval1"
+      type: BOOL
+      memory {
+        base: "sp_"
+        offset: 57
+      }
+    }
+  }
+}
+)";
+
+constexpr std::string_view kNamedRetvalsIn = R"(
+deployment_spec {
+  path: "$0"
+}
+tracepoints {
+  program {
+    language: GOLANG
+    probes {
+      tracepoint: {
+        symbol: "main.NamedRetvals"
+        type: RETURN
+      }
+      ret_vals {
+        id: "retval0"
+        expr: "int_out"
+      }
+      ret_vals {
+        id: "retval1"
+        expr: "bw_out"
+      }
+    }
+  }
+}
+)";
+
+constexpr std::string_view kNamedRetvalsOut = R"(
+deployment_spec {
+  path: "$0"
+}
+language: GOLANG
+probes {
+  tracepoint {
+    symbol: "main.NamedRetvals"
+    type: RETURN
+  }
+  vars {
+    scalar_var {
+      name: "sp_"
+      type: VOID_POINTER
+      reg: SP
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_"
+      type: INT32
+      builtin: TGID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_pid_"
+      type: UINT64
+      builtin: TGID_PID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_start_time_"
+      type: UINT64
+      builtin: TGID_START_TIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "time_"
+      type: UINT64
+      builtin: KTIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "goid_"
+      type: INT64
+      builtin: GOID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "retval0"
+      type: INT
+      memory {
+        base: "sp_"
+        offset: 48
+      }
+    }
+  }
+  vars {
+    scalar_var {
+      name: "retval1"
+      type: STRUCT_BLOB
+      memory {
+        base: "sp_"
+        offset: 56
+        size: 4
+      }
+    }
+  }
+}
+)";
+
 constexpr std::string_view kNestedArgProbeIn = R"(
 deployment_spec {
   path: "$0"
@@ -1152,14 +1353,14 @@ probes {
     scalar_var {
       name: "main__IntStruct_sym_addr1"
       type: UINT64
-      constant: "5108256"
+      constant: "5112352"
     }
   }
   vars {
     scalar_var {
       name: "runtime__errorString_sym_addr2"
       type: UINT64
-      constant: "5108288"
+      constant: "5112384"
     }
   }
   vars {
@@ -1285,15 +1486,17 @@ TEST_P(DwarfInfoTest, Transform) {
 #endif
 }
 
-INSTANTIATE_TEST_SUITE_P(DwarfInfoTestSuite, DwarfInfoTest,
-                         ::testing::Values(DwarfInfoTestParam{kEntryProbeIn, kEntryProbeOut},
-                                           DwarfInfoTestParam{kReturnProbeIn, kReturnProbeOut},
-                                           DwarfInfoTestParam{kNestedArgProbeIn,
-                                                              kNestedArgProbeOut},
-                                           DwarfInfoTestParam{kActionProbeIn, kActionProbeOut},
-                                           DwarfInfoTestParam{kStructProbeIn, kStructProbeOut},
-                                           DwarfInfoTestParam{kGolangErrorInterfaceProbeIn,
-                                                              kGolangErrorInterfaceProbeOut}));
+INSTANTIATE_TEST_SUITE_P(
+    DwarfInfoTestSuite, DwarfInfoTest,
+    ::testing::Values(DwarfInfoTestParam{kEntryProbeIn, kEntryProbeOut},
+                      DwarfInfoTestParam{kReturnProbeIn, kReturnProbeOut},
+                      DwarfInfoTestParam{kImplicitNamedRetvalsIn, kImplicitNamedRetvalsOut},
+                      DwarfInfoTestParam{kNamedRetvalsIn, kNamedRetvalsOut},
+                      DwarfInfoTestParam{kNestedArgProbeIn, kNestedArgProbeOut},
+                      DwarfInfoTestParam{kActionProbeIn, kActionProbeOut},
+                      DwarfInfoTestParam{kStructProbeIn, kStructProbeOut},
+                      DwarfInfoTestParam{kGolangErrorInterfaceProbeIn,
+                                         kGolangErrorInterfaceProbeOut}));
 
 }  // namespace dynamic_tracing
 }  // namespace stirling

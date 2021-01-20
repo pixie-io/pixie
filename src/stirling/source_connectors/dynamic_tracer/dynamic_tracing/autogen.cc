@@ -1,5 +1,7 @@
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/autogen.h"
 
+#include <absl/strings/str_replace.h>
+
 #include <map>
 #include <string>
 #include <utility>
@@ -110,7 +112,10 @@ Status AutoTraceExpansion(obj_tools::DwarfReader* dwarf_reader,
       PL_ASSIGN_OR_RETURN(auto args_map,
                           dwarf_reader->GetFunctionArgInfo(probe.tracepoint().symbol()));
 
-      const std::string table_name = probe.tracepoint().symbol() + "_table";
+      std::string table_name = probe.tracepoint().symbol() + "_table";
+      table_name = absl::StrReplaceAll(
+          table_name,
+          {{".", "__d__"}, {"/", "__s__;"}, {"(", "__l__"}, {"(", "__r__"}, {"*", "__a__"}});
 
       auto* output = t.mutable_program()->add_outputs();
       output->set_name(table_name);
@@ -119,7 +124,7 @@ Status AutoTraceExpansion(obj_tools::DwarfReader* dwarf_reader,
       output_action->set_output_name(table_name);
 
       int i = 0;
-      for (auto& [arg_name, arg_info] : args_map) {
+      for (const auto& [arg_name, arg_info] : args_map) {
         if (!arg_info.retarg) {
           auto* arg = probe.add_args();
           arg->set_id("arg" + std::to_string(i));
@@ -133,7 +138,7 @@ Status AutoTraceExpansion(obj_tools::DwarfReader* dwarf_reader,
           arg->set_expr(arg_name);
 
           output_action->add_variable_name(arg->id());
-          output->add_fields(arg_name);
+          output->add_fields(absl::StrReplaceAll(arg_name, {{"~", "__tilde__"}}));
         }
         ++i;
       }
