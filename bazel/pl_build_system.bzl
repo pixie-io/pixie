@@ -1,7 +1,6 @@
 # Based on envoy(28d5f41) envoy/bazel/envoy_build_system.bzl
 # Compute the final copts based on various options.
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_context", "go_library", "go_test")
-load("@io_bazel_rules_go//go/private:rules/rule.bzl", "go_rule")
 
 def pl_copts():
     posix_options = [
@@ -356,9 +355,11 @@ def _pl_bindata_impl(ctx):
         ),
     ]
 
-pl_bindata = go_rule(
+pl_bindata = rule(
     _pl_bindata_impl,
+    toolchains = ["@io_bazel_rules_go//go:toolchain"],
     attrs = {
+        "_go_context_data": attr.label(default = "@io_bazel_rules_go//:go_context_data"),
         "srcs": attr.label_list(allow_files = True),
         "package": attr.string(mandatory = True),
         "compress": attr.bool(default = True),

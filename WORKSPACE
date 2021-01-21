@@ -13,7 +13,7 @@ local_repository(
 
 load("//:workspace.bzl", "check_min_bazel_version")
 
-check_min_bazel_version("0.25.0")
+check_min_bazel_version("3.7.1")
 
 load("//bazel:repositories.bzl", "pl_deps")
 
