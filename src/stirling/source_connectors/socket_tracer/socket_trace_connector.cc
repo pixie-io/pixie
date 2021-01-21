@@ -462,15 +462,8 @@ StatusOr<int> SocketTraceConnector::AttachHTTP2Probes(
 }
 
 StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(const std::string& binary,
-                                                         const std::vector<int32_t>& new_pids) {
+                                                         const std::vector<int32_t>& pids) {
   constexpr std::string_view kLibSSL = "libssl.so.1.1";
-
-  // Only search for OpenSSL libraries on newly discovered binaries.
-  // TODO(oazizi): Will this prevent us from discovering dynamically loaded OpenSSL instances?
-  auto result = openssl_probed_binaries_.insert(binary);
-  if (!result.second) {
-    return 0;
-  }
 
   const system::Config& sysconfig = system::Config::GetInstance();
   std::filesystem::path container_lib;
@@ -478,7 +471,7 @@ StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(const std::string& bina
   PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create());
 
   // Find the path to libssl for this binary, which may be inside a container.
-  for (const auto& pid : new_pids) {
+  for (const auto& pid : pids) {
     StatusOr<absl::flat_hash_set<std::string>> libs_status = proc_parser_->GetMapPaths(pid);
     if (!libs_status.ok()) {
       VLOG(1) << absl::Substitute("Unable to check for libssl.so for $0. Message: $1", binary,
@@ -517,7 +510,7 @@ StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(const std::string& bina
   PL_RETURN_IF_ERROR(fs::Exists(container_lib));
 
   // Only try probing .so files that we haven't already set probes on.
-  result = openssl_probed_binaries_.insert(container_lib);
+  auto result = openssl_probed_binaries_.insert(container_lib);
   if (!result.second) {
     return 0;
   }
@@ -592,15 +585,13 @@ std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
 
 std::thread SocketTraceConnector::RunDeployUProbesThread(
     const absl::flat_hash_set<md::UPID>& pids) {
-  proc_tracker_.Update(pids);
-  auto& new_upids = proc_tracker_.new_upids();
   // The check that state is not uninitialized is required for socket_trace_connector_test,
   // which would otherwise try to deploy uprobes (for which it does not have permissions).
-  if (!new_upids.empty() && state() != State::kUninitialized) {
+  if (state() != State::kUninitialized) {
     // Increment before starting thread to avoid race in case thread starts late.
     ++num_deploy_uprobes_threads_;
-    return std::thread([this, new_upids]() {
-      DeployUProbes(new_upids);
+    return std::thread([this, pids]() {
+      DeployUProbes(pids);
       --num_deploy_uprobes_threads_;
     });
   }
@@ -610,6 +601,8 @@ std::thread SocketTraceConnector::RunDeployUProbesThread(
 void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   const std::lock_guard<std::mutex> lock(deploy_uprobes_mutex_);
 
+  proc_tracker_.Update(pids);
+
   // Before deploying new probes, clean-up map entries for old processes that are now dead.
   for (const auto& pid : proc_tracker_.deleted_upids()) {
     ebpf::StatusTuple s = http2_symaddrs_map_->remove_value(pid.pid());
@@ -618,7 +611,7 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
   }
 
   int uprobe_count = 0;
-  for (auto& [binary, pid_vec] : ConvertPIDsListToMap(pids)) {
+  for (auto& [binary, pid_vec] : ConvertPIDsListToMap(proc_tracker_.new_upids())) {
     if (FLAGS_stirling_disable_self_tracing) {
       // Don't try to attach uprobes to self.
       // This speeds up stirling_wrapper initialization significantly.

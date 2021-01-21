@@ -1,12 +1,8 @@
-#include <grpcpp/grpcpp.h>
-#include <algorithm>
-
 #include <sole.hpp>
 
 #include "src/vizier/services/agent/pem/pem_manager.h"
 
 #include "src/common/base/base.h"
-#include "src/common/event/nats.h"
 #include "src/common/signal/signal.h"
 #include "src/shared/version/version.h"
 
