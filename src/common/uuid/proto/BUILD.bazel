@@ -1,6 +1,6 @@
 # gazelle:ignore
 
-load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library", "pl_py_proto_library")
 
 pl_proto_library(
     name = "uuid_pl_proto",
@@ -20,4 +20,11 @@ pl_go_proto_library(
     importpath = "pixielabs.ai/pixielabs/src/common/uuid/proto",
     proto = ":uuid_pl_proto",
     visibility = ["//visibility:public"],
+)
+
+pl_py_proto_library(
+    name = "uuid_pl_py_proto",
+    proto = ":uuid_pl_proto",
+    visibility = ["//visibility:public"],
+    imports = ["../../../"],
 )

@@ -1,5 +1,5 @@
 # gazelle:ignore
-load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library", "pl_py_proto_library")
 load("//bazel:pl_build_system.bzl", "pl_cc_library")
 
 pl_proto_library(
@@ -39,5 +39,15 @@ pl_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":metadata_pl_cc_proto",
+    ],
+)
+
+pl_py_proto_library(
+    name = "metadata_pl_py_proto",
+    proto = ":metadata_pl_proto",
+    visibility = ["//visibility:public"],
+    imports = ["../../../"],
+    deps = [
+        "//src/shared/types/proto:types_pl_py_proto",
     ],
 )

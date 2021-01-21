@@ -6,7 +6,7 @@ py_library(
     name = "vizier_py_lib",
     srcs = glob(["*.py"], exclude = ["*_test.py", "test_utils.py"]),
     deps = [
-        "//src/vizier/vizierpb:vizier_pl_py_proto",
+        "//src/vizier/vizierpb:vizier_pl_py_grpc",
         requirement("gogo-python"),
         requirement("grpcio"),
         requirement("grpcio-tools"),

@@ -94,26 +94,42 @@ def pl_go_proto_library(name, proto, importpath, deps = [], **kwargs):
         **kwargs
     )
 
-def pl_py_grpc_library(name, proto, **kwargs):
-    if not name.endswith("_pl_py_proto"):
-        fail("Expected pl_py_proto_library name to end with '_pl_py_proto'.")
-
+def _py_proto_library(name, proto):
+    """ Internal function that creates the proto library. """
     codegen_py_pb_target = "_" + name + "_codegen"
-    codegen_py_grpc_target = "_" + name + "_codegen_grpc"
     py_proto_library(
         name = codegen_py_pb_target,
         deps = [proto],
+    )
+    return codegen_py_pb_target
+
+def pl_py_proto_library(name, proto, deps = [], **kwargs):
+    if not name.endswith("_pl_py_proto"):
+        fail("Expected pl_py_proto_library name to end with '_pl_py_proto'.")
+    codegen_py_pb_target = _py_proto_library(name, proto)
+
+    py_library(
+        name = name,
+        srcs = [codegen_py_pb_target],
+        deps = deps,
         **kwargs
     )
+
+def pl_py_grpc_library(name, proto, deps = [], **kwargs):
+    if not name.endswith("_pl_py_grpc"):
+        fail("Expected pl_py_grpc_library name to end with '_pl_py_grpc'.")
+
+    codegen_py_pb_target = _py_proto_library(name, proto)
+    codegen_py_grpc_target = "_" + name + "_codegen_grpc"
     py_grpc_library(
         name = codegen_py_grpc_target,
         srcs = [proto],
         deps = [codegen_py_pb_target],
-        **kwargs
     )
     py_library(
         name = name,
         srcs = [codegen_py_pb_target, codegen_py_grpc_target],
+        deps = deps,
         **kwargs
     )
 

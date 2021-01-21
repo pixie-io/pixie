@@ -1,5 +1,5 @@
 # gazelle:ignore
-load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library", "pl_py_proto_library")
 load("//bazel:grpc_web.bzl", "pl_grpc_web_library")
 
 pl_proto_library(
@@ -29,4 +29,11 @@ pl_grpc_web_library(
     proto = ":vis_pl_proto",
     grpc = False,
     visibility = ["//visibility:public"],
+)
+
+pl_py_proto_library(
+    name = "vis_pl_py_proto",
+    proto = ":vis_pl_proto",
+    visibility = ["//visibility:public"],
+    imports = ["../../../"],
 )
