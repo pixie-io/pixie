@@ -18,6 +18,7 @@ TEST(ConvertSubscribeProtoToRelationInfo, test_for_basic_subscription) {
 
   auto* schema = info_class->mutable_schema();
   schema->set_name("rel1");
+  schema->set_desc("a description");
 
   auto* elem0 = schema->add_elements();
   elem0->set_type(types::INT64);
@@ -34,6 +35,7 @@ TEST(ConvertSubscribeProtoToRelationInfo, test_for_basic_subscription) {
 
   schema = info_class->mutable_schema();
   schema->set_name("rel2");
+  schema->set_desc("another description");
 
   elem0 = schema->add_elements();
   elem0->set_type(types::INT64);
@@ -62,6 +64,9 @@ TEST(ConvertSubscribeProtoToRelationInfo, test_for_basic_subscription) {
 
   EXPECT_EQ("rel1", relation_info[0].name);
   EXPECT_EQ("rel2", relation_info[1].name);
+
+  EXPECT_EQ("a description", relation_info[0].desc);
+  EXPECT_EQ("another description", relation_info[1].desc);
 }
 
 TEST(ConvertSubscribeProtoToRelationInfo, empty_subscribe_should_return_empty) {
@@ -80,6 +85,7 @@ TEST(ConvertSubscribeProtoToRelationInfo, test_for_tablets_subscription) {
 
   auto* schema = info_class->mutable_schema();
   schema->set_name("rel1");
+  schema->set_desc("a description");
 
   auto* elem0 = schema->add_elements();
   elem0->set_type(types::INT64);
@@ -99,6 +105,7 @@ TEST(ConvertSubscribeProtoToRelationInfo, test_for_tablets_subscription) {
 
   schema = info_class->mutable_schema();
   schema->set_name("rel2");
+  schema->set_desc("another description");
 
   elem0 = schema->add_elements();
   elem0->set_type(types::INT64);
@@ -117,6 +124,9 @@ TEST(ConvertSubscribeProtoToRelationInfo, test_for_tablets_subscription) {
   EXPECT_FALSE(relation_info[1].tabletized);
 
   EXPECT_EQ(relation_info[0].tabletization_key_idx, 1);
+
+  EXPECT_EQ("a description", relation_info[0].desc);
+  EXPECT_EQ("another description", relation_info[1].desc);
 }
 
 }  // namespace pl

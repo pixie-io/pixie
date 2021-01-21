@@ -55,11 +55,11 @@ schema {
 TEST_F(RelationInfoManagerTest, test_update) {
   // Relation info with no tabletization.
   Relation relation0({types::TIME64NS, types::INT64}, {"time_", "count"});
-  RelationInfo relation_info0("relation0", /* id */ 0, relation0);
+  RelationInfo relation_info0("relation0", /* id */ 0, "desc0", relation0);
 
   // Relation info with no tabletization.
   Relation relation1({types::TIME64NS, types::FLOAT64}, {"time_", "gauge"});
-  RelationInfo relation_info1("relation1", /* id */ 1, relation1);
+  RelationInfo relation_info1("relation1", /* id */ 1, "desc1", relation1);
 
   EXPECT_OK(relation_info_manager_->AddRelationInfo(std::move(relation_info0)));
   EXPECT_OK(relation_info_manager_->AddRelationInfo(std::move(relation_info1)));
@@ -109,11 +109,12 @@ schema {
 TEST_F(RelationInfoManagerTest, test_tabletization_keys) {
   // Relation info with no tabletization.
   Relation relation0({types::TIME64NS, types::INT64}, {"time_", "count"});
-  RelationInfo relation_info0("relation0", /* id */ 0, relation0);
+  RelationInfo relation_info0("relation0", /* id */ 0, "desc0", relation0);
 
   // Relation info with a tablet key ("upid").
   Relation relation1({types::TIME64NS, types::UINT128, types::INT64}, {"time_", "upid", "count"});
-  RelationInfo relation_info1("relation1", /* id */ 1, /* tabletization_key_idx */ 1, relation1);
+  RelationInfo relation_info1("relation1", /* id */ 1, "desc1", /* tabletization_key_idx */ 1,
+                              relation1);
 
   EXPECT_FALSE(relation_info_manager_->has_updates());
 

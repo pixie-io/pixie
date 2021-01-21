@@ -95,10 +95,10 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
 
     // Relation info with no tabletization.
     Relation relation0({types::TIME64NS, types::INT64}, {"time_", "count"});
-    RelationInfo relation_info0("relation0", /* id */ 0, relation0);
+    RelationInfo relation_info0("relation0", /* id */ 0, "desc0", relation0);
     // Relation info with no tabletization.
     Relation relation1({types::TIME64NS, types::FLOAT64}, {"time_", "gauge"});
-    RelationInfo relation_info1("relation1", /* id */ 1, relation1);
+    RelationInfo relation_info1("relation1", /* id */ 1, "desc1", relation1);
     std::vector<RelationInfo> relation_info_vec({relation_info0, relation_info1});
     // Pass relation info to the manager.
     relation_info_manager_ = std::make_unique<RelationInfoManager>();
@@ -244,7 +244,7 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatRelationUpdates) {
 
   auto s = heartbeat_handler_->HandleMessage(std::move(hb_ack));
   Relation relation2({types::TIME64NS, types::FLOAT64}, {"time_", "gauge"});
-  RelationInfo relation_info2("relation2", /* id */ 1, relation2);
+  RelationInfo relation_info2("relation2", /* id */ 1, "desc2", relation2);
   s = relation_info_manager_->AddRelationInfo(relation_info2);
 
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 5000 + 1));
