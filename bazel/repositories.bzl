@@ -127,9 +127,6 @@ def pl_deps():
     _bazel_repo("com_github_bazelbuild_buildtools")
     _bazel_repo("bazel_skylib")
 
-    # Added 01/05/2020 to support newer rules_python,
-    # see https://github.com/bazelbuild/rules_python/releases/tag/0.1.0.
-    _repo_impl("io_bazel_rules_docker", patches = ["//third_party:rules_docker.pr1650.patch"])
     _bazel_repo("io_bazel_toolchains")
     _bazel_repo("distroless")
     _bazel_repo("com_google_boringssl")
@@ -137,6 +134,7 @@ def pl_deps():
     _bazel_repo("io_bazel_rules_k8s")
     _bazel_repo("io_bazel_rules_closure")
 
+    _repo_impl("io_bazel_rules_docker")
     _repo_impl("bazel_gazelle", patches = ["//third_party:bazel_gazelle.patch"], patch_args = ["-p1"])
     _repo_impl("com_github_grpc_grpc", patches = ["//third_party:grpc.patch"], patch_args = ["-p1"])
     _repo_impl("com_intel_tbb", build_file = "@pl//third_party:tbb.BUILD")

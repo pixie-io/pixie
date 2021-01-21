@@ -65,9 +65,9 @@ pl_workspace_setup()
 # The pip_deps rule cannot be loaded until we load all the basic packages in the Pixie
 # workspace. Also, bazel requires that loads are done at the top level (not in a function), so
 # we need to pull it out over here.
-load("@io_bazel_rules_docker//repositories:pip_repositories.bzl", "pip_deps")
+load("@io_bazel_rules_docker//repositories:py_repositories.bzl", "py_deps")
 
-pip_deps()
+py_deps()
 
 # The docker images can't be loaded until all pip_deps are satisfied.
 pl_docker_images()
