@@ -113,7 +113,7 @@ stashList = []
 
 // Flag controlling if coverage job is enabled.
 isMainCodeReviewRun =  (env.JOB_NAME == 'pixielabs-main-phab-test')
-isMainRun =  (env.JOB_NAME == 'pixielabs-main')
+isMainRun =  (env.JOB_NAME == 'pixie-main/build-and-test-all')
 isNightlyTestRegressionRun = (env.JOB_NAME == 'pixielabs-main-nightly-test-regression')
 isCLIBuildRun =  env.JOB_NAME.startsWith('pixielabs-main-cli-release-build/')
 isVizierBuildRun = env.JOB_NAME.startsWith('pixielabs-main-vizier-release-build/')
@@ -808,7 +808,7 @@ def buildScriptForCommits = {
       def q = Jenkins.instance.queue
       abortBuild = false
       q.items.each {
-        if (it.task.name == 'pixielabs-main') {
+        if (it.task.name == 'pixie-main/build-and-test-all') {
           abortBuild = true
         }
       }
