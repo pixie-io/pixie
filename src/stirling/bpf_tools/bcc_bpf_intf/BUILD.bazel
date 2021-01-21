@@ -1,6 +1,6 @@
 package(default_visibility = [
-    "//src/stirling:__subpackages__",
     "//experimental/bpf:__subpackages__",
+    "//src/stirling:__subpackages__",
 ])
 
 filegroup(

@@ -97,17 +97,17 @@ load("@bazel_gazelle//:deps.bzl", "go_repository")
 gcs_file(
     name = "embedding_model",
     bucket = "gs://pl-ml-data",
+    downloaded_file_path = "embedding.proto",
     file = "models/current-embedding-model.proto",
     sha256 = "a23c515c139670e71c0cad5c962f7e2d968fcc57ab251e49f4b5636134628813",
-    downloaded_file_path = "embedding.proto",
 )
 
 gcs_file(
     name = "sentencepiece_model",
     bucket = "gs://pl-ml-data",
+    downloaded_file_path = "sentencepiece.proto",
     file = "models/current-sentencepiece-model.proto",
     sha256 = "7e17e04ecc207d9204dc8755357f988bf77c135f7a34a88984943c8649d6a790",
-    downloaded_file_path = "sentencepiece.proto",
 )
 
 # Setup the environment for the open-source python API.
@@ -146,22 +146,22 @@ go_repository(
 go_repository(
     name = "org_golang_x_net",
     importpath = "golang.org/x/net",
-    sum = "h1:Jcxah/M+oLZ/R4/z5RzfPzGbPXnVDPkEDtf2JnuxN+U=",
-    version = "v0.0.0-20200425230154-ff2c4b7c35a0",
+    sum = "h1:QsnDpLLOKwHBBDa8nDws4DYNc/ryVW2vCpxCs09d4PY=",
+    version = "v0.0.0-20201216054612-986b41b23924",
 )
 
 go_repository(
     name = "org_golang_x_sys",
     importpath = "golang.org/x/sys",
-    sum = "h1:yMbJOvnfYkO1dSAviTu/ZguZWLBTXx4xE3LYrxUCCiA=",
-    version = "v0.0.0-20200428200454-593003d681fa",
+    sum = "h1:nxC68pudNYkKU6jWhgrqdreuFiOQWj1Fs7T3VrH4Pjw=",
+    version = "v0.0.0-20201119102817-f84b799fce68",
 )
 
 go_repository(
     name = "org_golang_x_text",
     importpath = "golang.org/x/text",
-    sum = "h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=",
-    version = "v0.3.2",
+    sum = "h1:cokOdA+Jmi5PJGXLlLllQSgYigAEfHXJAERHVMaCc2k=",
+    version = "v0.3.3",
 )
 
 go_repository(
@@ -286,8 +286,8 @@ go_repository(
 go_repository(
     name = "in_gopkg_yaml_v2",
     importpath = "gopkg.in/yaml.v2",
-    sum = "h1:obN1ZagJSUGI0Ek/LBmuj4SNLPfIny3KsKFopxRdj10=",
-    version = "v2.2.8",
+    sum = "h1:D8xgwECY7CYvx+Y2n4sBz93Jn9JRvxdiyyo8CTfuKaY=",
+    version = "v2.4.0",
 )
 
 go_repository(
@@ -419,8 +419,8 @@ go_repository(
 go_repository(
     name = "com_github_mattn_go_runewidth",
     importpath = "github.com/mattn/go-runewidth",
-    sum = "h1:3tS41NlGYSmhhe/8fhGRzc+z3AYCw1Fe1WAyLuujKs0=",
-    version = "v0.0.8",
+    sum = "h1:Lm995f3rfxdpd6TSmuVCHVb/QhupuXlYr8sCI/QdE+0=",
+    version = "v0.0.9",
 )
 
 go_repository(
@@ -716,8 +716,8 @@ go_repository(
 go_repository(
     name = "com_github_google_go_cmp",
     importpath = "github.com/google/go-cmp",
-    sum = "h1:xsAVV57WRhGj6kEIi8ReJzQlHHqcBYCElAvkovg3B/4=",
-    version = "v0.4.0",
+    sum = "h1:/QaMHBdZ26BB3SSst0Iwl10Epc+xhTquomWX0oZEB6w=",
+    version = "v0.5.0",
 )
 
 go_repository(
@@ -1616,12 +1616,6 @@ go_repository(
     importpath = "github.com/VividCortex/ewma",
     sum = "h1:MnEK4VOv6n0RSY4vtRe3h11qjxL3+t0B8yOL8iMXdcM=",
     version = "v1.1.1",
-)
-
-go_repository(
-    name = "com_github_hpcloud_tail",
-    commit = "a1dbeea552b7c8df4b542c66073e393de198a800",
-    importpath = "github.com/hpcloud/tail",
 )
 
 go_repository(
@@ -2935,4 +2929,11 @@ go_repository(
     importpath = "github.com/google/go-github/v32",
     sum = "h1:GWkQOdXqviCPx7Q7Fj+KyPoGm4SwHRh8rheoPhd27II=",
     version = "v32.1.0",
+)
+
+go_repository(
+    name = "org_golang_x_term",
+    importpath = "golang.org/x/term",
+    sum = "h1:v+OssWQX+hTHEmOBgwxdZxK4zHq3yOs8F9J7mk0PY8E=",
+    version = "v0.0.0-20201126162022-7de9c90e9dd1",
 )

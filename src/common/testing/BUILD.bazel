@@ -16,8 +16,8 @@ pl_cc_library(
     ),
     hdrs = ["testing.h"],
     deps = [
-        "@com_google_googletest//:gtest",
         "//src/common/base:cc_test_library",
+        "@com_google_googletest//:gtest",
     ],
 )
 

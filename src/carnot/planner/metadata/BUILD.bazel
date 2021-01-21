@@ -16,11 +16,11 @@ pl_cc_library(
     ),
     hdrs = ["metadata_handler.h"],
     deps = [
-        "//src/shared/metadatapb:metadata_pl_cc_proto",
-        "//src/carnot/planner/ir:cc_library",
         "//src/carnot/planner/compiler_state:cc_library",
-        "//src/carnot/planner/parser:cc_library",
+        "//src/carnot/planner/ir:cc_library",
         "//src/carnot/planner/objects:cc_library",
+        "//src/carnot/planner/parser:cc_library",
+        "//src/shared/metadatapb:metadata_pl_cc_proto",
     ],
 )
 

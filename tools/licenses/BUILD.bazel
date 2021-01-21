@@ -27,28 +27,28 @@ go_binary(
 fetch_licenses(
     name = "go_licenses",
     src = "//:pl_3p_go_sum",
-    oauth_token = "//credentials/dev_infra:github_key",
-    manual_licenses = "manual_licenses.json",
-    fetch_tool = ":fetch_licenses",
-    use_pkg_dev_go = True,
     disallow_missing = select({
         "//bazel:stamped": True,
         "//conditions:default": False,
     }),
+    fetch_tool = ":fetch_licenses",
+    manual_licenses = "manual_licenses.json",
+    oauth_token = "//credentials/dev_infra:github_key",
     out_found = "go_licenses.json",
     out_missing = "go_licenses_missing.json",
+    use_pkg_dev_go = True,
 )
 
 fetch_licenses(
     name = "submodule_licenses",
     src = "//:pl_3p_submodules",
-    oauth_token = "//credentials/dev_infra:github_key",
-    manual_licenses = "manual_licenses.json",
-    fetch_tool = ":fetch_licenses",
     disallow_missing = select({
         "//bazel:stamped": True,
         "//conditions:default": False,
     }),
+    fetch_tool = ":fetch_licenses",
+    manual_licenses = "manual_licenses.json",
+    oauth_token = "//credentials/dev_infra:github_key",
     out_found = "submodule_licenses.json",
     out_missing = "submodule_licenses_missing.json",
 )
@@ -56,13 +56,13 @@ fetch_licenses(
 fetch_licenses(
     name = "deps_licenses",
     src = "//:pl_3p_deps",
-    oauth_token = "//credentials/dev_infra:github_key",
-    manual_licenses = "manual_licenses.json",
-    fetch_tool = ":fetch_licenses",
     disallow_missing = select({
         "//bazel:stamped": True,
         "//conditions:default": False,
     }),
+    fetch_tool = ":fetch_licenses",
+    manual_licenses = "manual_licenses.json",
+    oauth_token = "//credentials/dev_infra:github_key",
     out_found = "deps_licenses.json",
     out_missing = "deps_licenses_missing.json",
 )
@@ -78,9 +78,6 @@ genrule(
     outs = [
         "all_licenses.json",
     ],
-    tools = [
-        "combine_licenses.py",
-    ],
     cmd = """
         python3 $(location combine_licenses.py) \
             $(location go_licenses.json) \
@@ -89,5 +86,8 @@ genrule(
             $(location //src/ui:npm_licenses) \
             --output $(location all_licenses.json)
     """,
+    tools = [
+        "combine_licenses.py",
+    ],
     visibility = ["//visibility:public"],
 )

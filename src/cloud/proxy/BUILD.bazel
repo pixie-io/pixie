@@ -8,14 +8,14 @@ container_layer(
     name = "conf",
     directory = "/usr/local/openresty/nginx/conf",
     files = [
-        "pixie_compression.conf",
-        "pixie_vars.conf",
-        "pixie_server_defaults.conf",
+        "nginx.conf",
+        "pixie_api.conf",
         "pixie_cache.conf",
+        "pixie_compression.conf",
         "pixie_filter.conf",
         "pixie_health_check.conf",
-        "pixie_api.conf",
-        "nginx.conf",
+        "pixie_server_defaults.conf",
+        "pixie_vars.conf",
     ],
 )
 

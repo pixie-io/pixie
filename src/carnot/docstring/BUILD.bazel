@@ -30,11 +30,11 @@ go_binary(
 sh_binary(
     name = "docstring_integration",
     srcs = ["docstring_integration.sh"],
-    deps = ["@bazel_tools//tools/bash/runfiles"],
     data = [
-        "//src/carnot/planner/docs:doc_extractor",
         ":docstring",
+        "//src/carnot/planner/docs:doc_extractor",
     ],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
 )
 
 # Test to make sure extraction pipeline works. Should be run to verify that docs are formatted correctly.

@@ -74,12 +74,6 @@ config_setting(
 
 pkg_tar(
     name = "vizier_yamls",
-    remap_paths = {
-        "/vizier/private_vizier_bootstrap_prod.yaml": "vizier/vizier_bootstrap_prod.yaml",
-        "/vizier/public_vizier_bootstrap_prod.yaml": "vizier/vizier_bootstrap_prod.yaml",
-        "/vizier/private_vizier_prod.yaml": "vizier/vizier_prod.yaml",
-        "/vizier/public_vizier_prod.yaml": "vizier/vizier_prod.yaml",
-    },
     srcs =
         select({
             "//conditions:default": ["//k8s/vizier:private_vizier_bootstrap_prod.yaml"],
@@ -88,12 +82,17 @@ pkg_tar(
         select({
             "//conditions:default": ["//k8s/vizier:private_vizier_prod.yaml"],
             ":public": ["//k8s/vizier:public_vizier_prod.yaml"],
-        }) +
-        [
+        }) + [
             "//k8s/vizier_deps:etcd_prod",
             "//k8s/vizier_deps:nats_prod",
             "//k8s/vizier_deps:etcd_operator_prod",
         ],
     package_dir = "/yamls",
+    remap_paths = {
+        "/vizier/private_vizier_bootstrap_prod.yaml": "vizier/vizier_bootstrap_prod.yaml",
+        "/vizier/public_vizier_bootstrap_prod.yaml": "vizier/vizier_bootstrap_prod.yaml",
+        "/vizier/private_vizier_prod.yaml": "vizier/vizier_prod.yaml",
+        "/vizier/public_vizier_prod.yaml": "vizier/vizier_prod.yaml",
+    },
     strip_prefix = "/k8s",
 )

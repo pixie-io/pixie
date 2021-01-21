@@ -19,10 +19,10 @@ pl_cc_library(
         "//src/vizier/messages/messagespb:messages_pl_cc_proto",
         "//src/vizier/services/query_broker/querybrokerpb:service_pl_cc_proto",
         "//third_party/foreign_cc:natsc",
+        "@com_github_arun11299_cpp_jwt//:cpp_jwt",
         "@com_github_cameron314_concurrentqueue//:concurrentqueue",
         "@com_github_grpc_grpc//:grpc++",
         "@com_github_rlyeh_sole//:sole",
-        "@com_github_arun11299_cpp_jwt//:cpp_jwt",
     ],
 )
 
@@ -67,9 +67,9 @@ pl_cc_test(
     srcs = ["chan_cache_test.cc"],
     deps = [
         ":cc_library",
-        "//src/common/testing/grpc_utils:cc_library",
         "//src/common/event:cc_library",
         "//src/common/system:cc_library_mock",
         "//src/common/testing/event:cc_library",
+        "//src/common/testing/grpc_utils:cc_library",
     ],
 )

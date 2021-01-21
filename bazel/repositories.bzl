@@ -135,7 +135,7 @@ def pl_deps():
     _bazel_repo("io_bazel_rules_closure")
 
     _repo_impl("io_bazel_rules_docker")
-    _repo_impl("bazel_gazelle", patches = ["//third_party:bazel_gazelle.patch"], patch_args = ["-p1"])
+    _repo_impl("bazel_gazelle")
     _repo_impl("com_github_grpc_grpc", patches = ["//third_party:grpc.patch"], patch_args = ["-p1"])
     _repo_impl("com_intel_tbb", build_file = "@pl//third_party:tbb.BUILD")
     _repo_impl("com_efficient_libcuckoo", build_file = "@pl//third_party:libcuckoo.BUILD")

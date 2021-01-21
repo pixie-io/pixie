@@ -16,13 +16,13 @@ pl_cc_library(
     ),
     hdrs = ["distributed_planner.h"],
     deps = [
-        "//src/carnot/planner/rules:cc_library",
+        "//src/carnot/planner/compiler_state:cc_library",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_cc_proto",
-        "//src/shared/metadatapb:metadata_pl_cc_proto",
+        "//src/carnot/planner/ir:cc_library",
+        "//src/carnot/planner/rules:cc_library",
         "//src/carnot/planpb:plan_pl_cc_proto",
         "//src/common/uuid:cc_library",
-        "//src/carnot/planner/ir:cc_library",
-        "//src/carnot/planner/compiler_state:cc_library",
+        "//src/shared/metadatapb:metadata_pl_cc_proto",
     ],
 )
 
@@ -40,8 +40,8 @@ pl_cc_test(
     srcs = ["distributed_planner_test.cc"],
     deps = [
         ":cc_library",
-        "//src/carnot/udf_exporter:cc_library",
         "//src/carnot/planner:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
     ],
 )
 
@@ -69,8 +69,8 @@ pl_cc_test(
     srcs = ["distributed_coordinator_test.cc"],
     deps = [
         ":cc_library",
-        "//src/carnot/udf_exporter:cc_library",
         "//src/carnot/planner:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
     ],
 )
 
@@ -79,8 +79,8 @@ pl_cc_test(
     srcs = ["removable_ops_rule_test.cc"],
     deps = [
         ":cc_library",
-        "//src/carnot/udf_exporter:cc_library",
         "//src/carnot/planner:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
     ],
 )
 
@@ -89,8 +89,8 @@ pl_cc_test(
     srcs = ["plan_clusters_test.cc"],
     deps = [
         ":cc_library",
-        "//src/carnot/udf_exporter:cc_library",
         "//src/carnot/planner:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
     ],
 )
 
@@ -99,8 +99,8 @@ pl_cc_test(
     srcs = ["distributed_stitcher_rules_test.cc"],
     deps = [
         ":cc_library",
-        "//src/carnot/udf_exporter:cc_library",
         "//src/carnot/planner:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
     ],
 )
 
@@ -109,8 +109,8 @@ pl_cc_test(
     srcs = ["distributed_rules_test.cc"],
     deps = [
         ":cc_library",
-        "//src/carnot/planner/rules:test_utils",
         "//src/carnot/planner:test_utils",
+        "//src/carnot/planner/rules:test_utils",
     ],
 )
 
@@ -127,8 +127,8 @@ pl_cc_test(
     name = "partial_op_mgr_test",
     srcs = ["partial_op_mgr_test.cc"],
     deps = [
-        "//src/carnot/planner/rules:test_utils",
-        "//src/carnot/planner:test_utils",
         ":cc_library",
+        "//src/carnot/planner:test_utils",
+        "//src/carnot/planner/rules:test_utils",
     ],
 )

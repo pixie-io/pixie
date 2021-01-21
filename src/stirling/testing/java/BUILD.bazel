@@ -15,9 +15,9 @@ java_binary(
 
 passwd_entry(
     name = "custom_user",
-    username = "java_hello_world_test_user",
     info = "java_hello_world_test_user",
     uid = 12345,
+    username = "java_hello_world_test_user",
 )
 
 passwd_file(
@@ -42,8 +42,8 @@ container_image(
 java_image(
     name = "hello_world_image",
     srcs = ["HelloWorld.java"],
-    main_class = "HelloWorld",
     base = ":passwd_image",
+    main_class = "HelloWorld",
 )
 
 container_push(

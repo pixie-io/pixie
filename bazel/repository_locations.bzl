@@ -1,23 +1,23 @@
 REPOSITORY_LOCATIONS = dict(
     bazel_gazelle = dict(
-        sha256 = "cdb02a887a7187ea4d5a27452311a75ed8637379a1287d8eeb952138ea485f7d",
-        urls = ["https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.21.1/bazel-gazelle-v0.21.1.tar.gz"],
+        sha256 = "222e49f034ca7a1d1231422cdb67066b885819885c356673cb1f72f748a3c9d4",
+        urls = ["https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.22.3/bazel-gazelle-v0.22.3.tar.gz"],
     ),
     io_bazel_rules_go = dict(
         # NOTE: Many BPF test programs are written in Go, to avoid accidentally breaking them.
         # Run the following command when upgrading Golang version:
-        # scripts/sudo_bazel_run.sh //src/stirling:http2_trace_bpf_test
+        # scripts/sudo_bazel_run.sh //src/stirling/source_connectors/socket_tracer:http2_trace_bpf_test
         #
         # TODO(yzhao): Investigate adding automatic tests when upgrading Golang build toolchain.
         # Today ci/bazel_build_deps.sh does the target search for diffs. It uses bazel query,
         # but cannot look at the content changes. One idea is to have 2 repository_locations.bzl
         # file, one for each language tool chains, and let the language rules declare deps on
         # that .bzl file.
-        sha256 = "d1ffd055969c8f8d431e2d439813e42326961d0942bdf734d2c95dc30c369566",
+        sha256 = "7904dbecbaffd068651916dce77ff3437679f9d20e1a7956bff43826e7645fcc",
         urls = [
             "https://mirror.bazel.build/github.com/bazelbuild/rules_go" +
-            "/releases/download/v0.24.5/rules_go-v0.24.5.tar.gz",
-            "https://github.com/bazelbuild/rules_go/releases/download/v0.24.5/rules_go-v0.24.5.tar.gz",
+            "/releases/download/v0.25.1/rules_go-v0.25.1.tar.gz",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.25.1/rules_go-v0.25.1.tar.gz",
         ],
     ),
     io_bazel_rules_k8s = dict(
@@ -28,9 +28,9 @@ REPOSITORY_LOCATIONS = dict(
         ],
     ),
     com_github_bazelbuild_buildtools = dict(
-        sha256 = "f3ef44916e6be705ae862c0520bac6834dd2ff1d4ac7e5abc61fe9f12ce7a865",
-        strip_prefix = "buildtools-0.29.0",
-        urls = ["https://github.com/bazelbuild/buildtools/archive/0.29.0.tar.gz"],
+        sha256 = "a02ba93b96a8151b5d8d3466580f6c1f7e77212c4eb181cba53eb2cae7752a23",
+        strip_prefix = "buildtools-3.5.0",
+        urls = ["https://github.com/bazelbuild/buildtools/archive/3.5.0.tar.gz"],
     ),
     com_google_benchmark = dict(
         sha256 = "dccbdab796baa1043f04982147e67bb6e118fe610da2c65f88912d73987e700c",

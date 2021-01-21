@@ -61,6 +61,6 @@ k8s_object(
     name = "artifact_db_updater_job",
     images = {"gcr.io/pl-dev-infra/utils/artifact_db_updater_image:latest": ":artifact_db_updater_image"},
     kind = "Job",
-    template = ":artifact_db_updater_job.yaml",
     tags = ["manual"],
+    template = ":artifact_db_updater_job.yaml",
 )

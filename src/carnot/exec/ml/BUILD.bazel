@@ -19,10 +19,10 @@ pl_cc_library(
     ),
     deps = [
         "//src/shared/types:cc_library",
+        "@com_github_google_sentencepiece//:libsentencepiece",
         "@com_github_tencent_rapidjson//:rapidjson",
         "@org_tensorflow//tensorflow/lite:framework",
         "@org_tensorflow//tensorflow/lite/kernels:builtin_ops",
-        "@com_github_google_sentencepiece//:libsentencepiece",
         "@org_tensorflow//third_party/eigen3",
     ],
 )
@@ -49,14 +49,14 @@ pl_cc_test(
 pl_cc_test(
     name = "model_pool_test",
     srcs = ["model_pool_test.cc"],
-    deps = [
-        ":cc_library",
-    ],
     args = [
         "--embedding_dir=$(location //:embedding.proto)",
     ],
     data = [
         "//:embedding.proto",
+    ],
+    deps = [
+        ":cc_library",
     ],
 )
 

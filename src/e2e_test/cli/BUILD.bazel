@@ -8,9 +8,9 @@ go_test(
     ],
     data = ["//src/pixie_cli:px"],
     tags = [
-        "no-sandbox",
         "local",
         "manual",
+        "no-sandbox",
         "nocache",
     ],
     deps = [

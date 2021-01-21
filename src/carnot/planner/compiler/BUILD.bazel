@@ -17,19 +17,19 @@ pl_cc_library(
     ),
     hdrs = ["compiler.h"],
     deps = [
+        "//src/carnot/funcs/builtins:cc_library",
         "//src/carnot/planner/ast:cc_library",
-        "//src/carnot/planner/metadata:cc_library",
-        "//src/carnot/planner/ir:cc_library",
-        "//src/carnot/planner/rules:cc_library",
+        "//src/carnot/planner/compiler/optimizer:cc_library",
         "//src/carnot/planner/compiler_error_context:cc_library",
         "//src/carnot/planner/compiler_state:cc_library",
-        "//src/carnot/planner/parser:cc_library",
-        "//src/carnot/planner/compiler/optimizer:cc_library",
+        "//src/carnot/planner/ir:cc_library",
+        "//src/carnot/planner/metadata:cc_library",
         "//src/carnot/planner/objects:cc_library",
+        "//src/carnot/planner/parser:cc_library",
         "//src/carnot/planner/probes:cc_library",
-        "//src/shared/scriptspb:scripts_pl_cc_proto",
-        "//src/carnot/funcs/builtins:cc_library",
+        "//src/carnot/planner/rules:cc_library",
         "//src/carnot/udf:cc_library",
+        "//src/shared/scriptspb:scripts_pl_cc_proto",
     ],
 )
 
@@ -40,8 +40,8 @@ pl_cc_test_library(
         "test_utils.h",
     ]),
     deps = [
-        "//src/carnot/udf_exporter:cc_library",
         ":cc_library",
+        "//src/carnot/udf_exporter:cc_library",
     ],
 )
 
@@ -68,9 +68,9 @@ pl_cc_test(
     srcs = ["compiler_test.cc"],
     deps = [
         ":cc_library",
+        ":test_utils",
         "//src/carnot/planpb:plan_testutils",
         "//src/carnot/udf_exporter:cc_library",
-        ":test_utils",
     ],
 )
 

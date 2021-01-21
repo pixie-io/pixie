@@ -42,33 +42,33 @@ pl_webpack_deps(
 pl_webpack_binary(
     name = "ui-bundle",
     srcs = UI_SRCS + COMPONENT_SRCS,
-    deps = ":ui-deps",
     licenses = "//tools/licenses:all_licenses",
     stamp = select({
         "//bazel:stamped": True,
         "//conditions:default": False,
     }),
     uilib_base = "src/ui",
+    deps = ":ui-deps",
 )
 
 pl_ui_test(
     name = "ui-tests",
     srcs = UI_SRCS + COMPONENT_SRCS,
-    deps = ":ui-deps",
     uilib_base = "src/ui",
+    deps = ":ui-deps",
 )
 
 pl_storybook_binary(
     name = "ui-storybook-bundle",
     srcs = COMPONENT_SRCS,
-    deps = ":ui-deps",
     stamp = True,
     uilib_base = "src/ui",
+    deps = ":ui-deps",
 )
 
 pl_deps_licenses(
     name = "npm_licenses",
     srcs = UI_DEP_PACKAGES + LICENSES_SRCS,
-    deps = ":ui-deps",
     uilib_base = "src/ui",
+    deps = ":ui-deps",
 )

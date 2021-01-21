@@ -13,11 +13,11 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
-        "//src/carnot/udf:cc_library",
         "//src/carnot/exec/ml:cc_library",
+        "//src/carnot/udf:cc_library",
         "//third_party/tdigest",
-        "@com_github_tencent_rapidjson//:rapidjson",
         "@com_github_google_sentencepiece//:libsentencepiece",
+        "@com_github_tencent_rapidjson//:rapidjson",
     ],
 )
 
@@ -65,18 +65,18 @@ pl_cc_test(
 pl_cc_test(
     name = "ml_ops_test",
     srcs = ["ml_ops_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/carnot/udf:udf_testutils",
-        "//src/carnot/exec/ml:eigen_testutils",
-    ],
     args = [
         "--sentencepiece_dir=$(location //:sentencepiece.proto)",
         "--embedding_dir=$(location //:embedding.proto)",
     ],
     data = [
-        "//:sentencepiece.proto",
         "//:embedding.proto",
+        "//:sentencepiece.proto",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/carnot/exec/ml:eigen_testutils",
+        "//src/carnot/udf:udf_testutils",
     ],
 )
 
@@ -84,17 +84,17 @@ pl_cc_binary(
     name = "ml_ops_benchmark",
     testonly = 1,
     srcs = ["ml_ops_benchmark.cc"],
-    deps = [
-        ":cc_library",
-        "//src/common/benchmark:cc_library",
-        # "@org_tensorflow//tensorflow/lite:tflite_with_xnnpack",
-    ],
     args = [
         "--sentencepiece_dir=$(location //:sentencepiece.proto)",
         "--embedding_dir=$(location //:embedding.proto)",
     ],
     data = [
-        "//:sentencepiece.proto",
         "//:embedding.proto",
+        "//:sentencepiece.proto",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/benchmark:cc_library",
+        # "@org_tensorflow//tensorflow/lite:tflite_with_xnnpack",
     ],
 )

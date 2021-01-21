@@ -22,12 +22,12 @@ pl_cc_library(
         "//src/carnot/planner/distributedpb:distributed_plan_pl_cc_proto",
         "//src/common/system:cc_library",
         "//src/shared/bloomfilter:cc_library",
-        "//src/shared/metadatapb:metadata_pl_cc_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_cc_proto",
+        "//src/shared/metadatapb:metadata_pl_cc_proto",
         "@com_github_cameron314_concurrentqueue//:concurrentqueue",
+        "@com_github_rlyeh_sole//:sole",
         "@com_google_absl//absl/numeric:int128",
         "@com_google_googletest//:gtest_prod",
-        "@com_github_rlyeh_sole//:sole",
     ],
 )
 

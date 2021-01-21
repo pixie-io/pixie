@@ -11,8 +11,8 @@ pl_cc_binary(
         "PXL_SUPPORT",
     ],
     deps = [
-        "//src/stirling:cc_library",
         "//src/carnot/planner/probes:tracepoint_generator_lib",
+        "//src/stirling:cc_library",
     ],
 )
 

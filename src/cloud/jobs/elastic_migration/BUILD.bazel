@@ -57,37 +57,37 @@ k8s_object(
     name = "create_es_index_dev",
     images = {"gcr.io/pl-dev-infra/cloud/elastic_migration_image:latest": ":elastic_migration_image"},
     kind = "job",
-    template = ":elastic_migration_job.yaml",
-    tags = ["manual"],
     substitutions = {
         "{namespace}": "plc-dev",
         "{es_index}": "$(es_index)",
         "{mapping_file}": "$(mapping_file)",
     },
+    tags = ["manual"],
+    template = ":elastic_migration_job.yaml",
 )
 
 k8s_object(
     name = "create_es_index_staging",
     images = {"gcr.io/pl-dev-infra/cloud/elastic_migration_image:latest": ":elastic_migration_image"},
     kind = "job",
-    template = ":elastic_migration_job.yaml",
-    tags = ["manual"],
     substitutions = {
         "{namespace}": "plc-staging",
         "{es_index}": "$(es_index)",
         "{mapping_file}": "$(mapping_file)",
     },
+    tags = ["manual"],
+    template = ":elastic_migration_job.yaml",
 )
 
 k8s_object(
     name = "create_es_index_prod",
     images = {"gcr.io/pl-dev-infra/cloud/elastic_migration_image:latest": ":elastic_migration_image"},
     kind = "job",
-    template = ":elastic_migration_job.yaml",
-    tags = ["manual"],
     substitutions = {
         "{namespace}": "plc",
         "{es_index}": "$(es_index)",
         "{mapping_file}": "$(mapping_file)",
     },
+    tags = ["manual"],
+    template = ":elastic_migration_job.yaml",
 )

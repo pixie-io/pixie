@@ -28,9 +28,9 @@ go_binary(
 
 go_binary(
     name = "px_darwin",
-    goos = "darwin",
-    goarch = "amd64",
     embed = [":go_default_library"],
+    goarch = "amd64",
+    goos = "darwin",
     visibility = ["//visibility:public"],
 )
 
