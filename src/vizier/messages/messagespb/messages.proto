@@ -27,6 +27,7 @@ message VizierMessage {
         ExecuteQueryRequest execute_query_request = 8;
         TracepointMessage tracepoint_message = 10;
         ConfigUpdateMessage config_update_message = 11;
+        K8sMetadataMessage k8s_metadata_message = 12;
     }
 }
 
@@ -43,6 +44,15 @@ message TracepointMessage {
 message ConfigUpdateMessage {
     oneof msg {
         ConfigUpdateRequest config_update_request = 1;
+    }
+}
+
+// A wrapper around all K8s metadata-related messages that can be sent over the message bus.
+message K8sMetadataMessage {
+    oneof msg {
+        pl.shared.k8s.metadatapb.ResourceUpdate k8s_metadata_update = 1;
+        MissingK8sMetadataRequest missing_k8s_metadata_request = 2;
+        MissingK8sMetadataResponse missing_k8s_metadata_response = 3;
     }
 }
 
@@ -153,4 +163,23 @@ message ConfigUpdateRequest {
   string key = 1; 
   // The new value of the updated setting.
   string value = 2;
+}
+
+// A request for all k8s updates relevant to the given IP, starting with the "from" resource version, to the "to" resource version.
+message MissingK8sMetadataRequest {
+    // The IP to use to filter out k8s updates from other nodes. If empty, no updates should be filtered out.
+    string ip = 1 [ (gogoproto.customname) = "IP" ];
+    // The starting range of the resource versions to fetch. Inclusive.
+    // If not specified, start fetching from the earliest known resource version. 
+    string from_resource_version = 3;
+    // The ending range of the resource versions to fetch. Inclusive. 
+    string to_resource_version = 2;
+}
+
+// The response to a request for missing k8s updates. The response to a single MissingK8sMetadataRequest may be batched
+// into multiple MissingK8sMetadataResponses.
+message MissingK8sMetadataResponse {
+    // The k8s updates with resource versions that fall within the "from" and "to" range specified in the MissingK8sMetadataRequest.
+    // The updates within the update array are guaranteed to be in order.
+    repeated pl.shared.k8s.metadatapb.ResourceUpdate updates = 1;
 }
