@@ -48,7 +48,7 @@ func SetupEtcd() (*clientv3.Client, func()) {
 		}
 		return err
 	}); err != nil {
-		log.Fatal("Cannot start etcd")
+		log.Fatalf("Cannot start etcd: %v", err)
 	}
 
 	cleanup := func() {

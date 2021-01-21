@@ -29,6 +29,7 @@ void RelationInfoManager::AddSchemaToUpdateInfo(messages::AgentUpdateInfo* updat
   for (const auto& [name, relation_info] : relation_info_map_) {
     auto* schema = update_info->add_schema();
     schema->set_name(relation_info.name);
+    schema->set_desc(relation_info.desc);
     const table_store::schema::Relation& relation = relation_info.relation;
     if (relation_info.tabletized) {
       schema->set_tabletized(relation_info.tabletized);

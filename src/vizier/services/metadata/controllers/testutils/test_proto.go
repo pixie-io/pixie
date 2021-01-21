@@ -231,6 +231,7 @@ namespace: "ns"
 // SchemaInfoPB is the protobuf for a schema info.
 var SchemaInfoPB = `
 name: "a_table"
+desc: "a description"
 start_timestamp_ns: 2
 columns {
   name: "column_1"
@@ -245,6 +246,7 @@ columns {
 // SchemaInfoWithSemanticTypePB is the protobuf for a schema info with semantic type.
 var SchemaInfoWithSemanticTypePB = `
 name: "a_table"
+desc: "a description"
 start_timestamp_ns: 2
 columns {
   name: "column_1"
@@ -260,6 +262,7 @@ columns {
 // SchemaInfo2PB is the protobuf for another schema info.
 var SchemaInfo2PB = `
 name: "b_table"
+desc: "b description"
 start_timestamp_ns: 2
 columns {
   name: "column_3"
@@ -274,6 +277,7 @@ columns {
 // SchemaInfo3PB is the protobuf for another schema info.
 var SchemaInfo3PB = `
 name: "c_table"
+desc: "c description"
 start_timestamp_ns: 2
 columns {
   name: "column_5"

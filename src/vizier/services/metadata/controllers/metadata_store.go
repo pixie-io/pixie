@@ -638,11 +638,6 @@ func initializeComputedSchema(computedSchemaPb *storepb.ComputedSchema) *storepb
 
 // UpdateSchemas updates the given schemas in the metadata store.
 func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.TableInfo) error {
-	tablenames := ""
-	for _, schema := range schemas {
-		tablenames += schema.Name + ", "
-	}
-
 	computedSchemaPb, err := mds.GetComputedSchema()
 	// If there are no computed schemas, that means we have yet to set one.
 	if err == errNoComputedSchemas {

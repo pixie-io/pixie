@@ -481,6 +481,7 @@ func TestKVMetadataStore_UpdateSchemasBasic(t *testing.T) {
 	proto.Unmarshal(cSchema, computedPb)
 	assert.Equal(t, 1, len(computedPb.Tables))
 	assert.Equal(t, "a_table", computedPb.Tables[0].Name)
+	assert.Equal(t, "a description", computedPb.Tables[0].Desc)
 
 	agentIDs, hasTableName := computedPb.TableNameToAgentIDs["a_table"]
 	assert.True(t, hasTableName)
@@ -527,6 +528,7 @@ func TestKVMetadataStore_UpdateSchemasUpdateExistingTable(t *testing.T) {
 	proto.Unmarshal(cSchema, computedPb)
 	assert.Equal(t, 1, len(computedPb.Tables))
 	assert.Equal(t, "a_table", computedPb.Tables[0].Name)
+	assert.Equal(t, "a description", computedPb.Tables[0].Desc)
 	assert.Equal(t, 2, len(computedPb.Tables[0].Columns))
 	assert.Equal(t, typespb.ST_UNSPECIFIED, computedPb.Tables[0].Columns[0].SemanticType)
 
@@ -546,6 +548,7 @@ func TestKVMetadataStore_UpdateSchemasUpdateExistingTable(t *testing.T) {
 	proto.Unmarshal(cSchema, computedPb)
 	assert.Equal(t, 1, len(computedPb.Tables))
 	assert.Equal(t, "a_table", computedPb.Tables[0].Name)
+	assert.Equal(t, "a description", computedPb.Tables[0].Desc)
 	assert.Equal(t, 2, len(computedPb.Tables[0].Columns))
 	assert.Equal(t, typespb.ST_PORT, computedPb.Tables[0].Columns[0].SemanticType)
 }
@@ -678,11 +681,13 @@ func TestKVMetadataStore_GetComputedSchema(t *testing.T) {
 	// Create schemas.
 	c1 := &storepb.TableInfo{
 		Name:             "table1",
+		Desc:             "table1 desc",
 		StartTimestampNS: 4,
 	}
 
 	c2 := &storepb.TableInfo{
 		Name:             "table2",
+		Desc:             "table2 desc",
 		StartTimestampNS: 5,
 	}
 
@@ -708,6 +713,8 @@ func TestKVMetadataStore_GetComputedSchema(t *testing.T) {
 
 	assert.Equal(t, "table1", (*schemas[0]).Name)
 	assert.Equal(t, "table2", (*schemas[1]).Name)
+	assert.Equal(t, "table1 desc", (*schemas[0]).Desc)
+	assert.Equal(t, "table2 desc", (*schemas[1]).Desc)
 }
 
 func TestKVMetadataStore_UpdateProcesses(t *testing.T) {

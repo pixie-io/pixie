@@ -27,6 +27,7 @@ const char* kAgentUpdateInfoSchemaNoTablets = R"proto(
 does_update_schema: true
 schema {
   name: "relation0"
+  desc: "desc0"  
   columns {
     name: "time_"
     data_type: TIME64NS
@@ -40,6 +41,7 @@ schema {
 }
 schema {
   name: "relation1"
+  desc: "desc1"
   columns {
     name: "time_"
     data_type: TIME64NS
@@ -74,6 +76,7 @@ const char* kAgentUpdateInfoSchemaHasTablets = R"proto(
 does_update_schema: true
 schema {
   name: "relation0"
+  desc: "desc0"  
   columns {
     name: "time_"
     data_type: TIME64NS
@@ -87,6 +90,7 @@ schema {
 }
 schema {
   name: "relation1"
+  desc: "desc1"  
   columns {
     name: "time_"
     data_type: TIME64NS

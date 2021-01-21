@@ -39,6 +39,8 @@ message AgentTracepointStatus {
 message TableInfo {
   // Name of the table.
   string name = 1;
+  // The description of the table.
+  string desc = 7;
 
   // TODO need to move this information to a different message, no need to couple it with ColumnInfo.
   // Maybe in DataInfo?
