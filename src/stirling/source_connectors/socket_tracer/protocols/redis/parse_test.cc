@@ -56,7 +56,7 @@ INSTANTIATE_TEST_SUITE_P(
         WellFormedTestCase{kBulkStringMsg, R"("bulk string")", ""},
         WellFormedTestCase{"$0\r\n\r\n", R"("")", ""}, WellFormedTestCase{"$-1\r\n", "<NULL>", ""},
         WellFormedTestCase{kArrayMsg, R"(["OK", "Error message", "bulk string"])", ""},
-        WellFormedTestCase{kCmdMsg, R"(["ACL", "LOAD"])", "ACL LOAD"},
+        WellFormedTestCase{kCmdMsg, R"([])", "ACL LOAD"},
         WellFormedTestCase{"*1\r\n$-1\r\n", "[<NULL>]", ""},
         WellFormedTestCase{"*-1\r\n", "[NULL]", ""}, WellFormedTestCase{"*0\r\n", "[]", ""}));
 

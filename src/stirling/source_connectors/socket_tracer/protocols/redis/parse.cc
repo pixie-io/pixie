@@ -7,6 +7,7 @@
 
 #include <absl/container/flat_hash_set.h>
 
+#include "src/common/base/base.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/redis/types.h"
 #include "src/stirling/utils/binary_decoder.h"
 
@@ -383,21 +384,26 @@ std::optional<std::string_view> GetCommand(std::string_view payload) {
   return std::nullopt;
 }
 
-std::optional<std::string_view> GetCommand(const std::vector<std::string>& payloads) {
-  if (payloads.empty()) {
-    return {};
+std::optional<std::string_view> GetCommand(VectorView<std::string>* payloads) {
+  if (payloads->empty()) {
+    return std::nullopt;
   }
   // Search the double-words command first.
-  if (payloads.size() >= 2) {
+  if (payloads->size() >= 2) {
     std::string candidate_cmd =
-        absl::AsciiStrToUpper(absl::StrCat(Unquote(payloads[0]), " ", Unquote(payloads[1])));
+        absl::AsciiStrToUpper(absl::StrCat(Unquote((*payloads)[0]), " ", Unquote((*payloads)[1])));
     auto cmd_opt = GetCommand(candidate_cmd);
     if (cmd_opt.has_value()) {
+      payloads->pop_front(2);
       return cmd_opt.value();
     }
   }
-  std::string candidate_cmd = absl::AsciiStrToUpper(Unquote(payloads[0]));
-  return GetCommand(candidate_cmd);
+  std::string candidate_cmd = absl::AsciiStrToUpper(Unquote(payloads->front()));
+  auto cmd_opt = GetCommand(candidate_cmd);
+  if (cmd_opt.has_value()) {
+    payloads->pop_front(1);
+  }
+  return cmd_opt;
 }
 
 bool IsPubMsg(const std::vector<std::string>& payloads) {
@@ -468,13 +474,15 @@ Status ParseArray(MessageType type, BinaryDecoder* decoder, Message* msg) {
     payloads.push_back(std::move(tmp.payload));
   }
 
-  msg->payload = absl::StrCat("[", absl::StrJoin(payloads, ", "), "]");
+  auto payloads_view = VectorView<std::string>(payloads);
 
   // Redis wire protocol said requests are array consisting of bulk strings:
   // https://redis.io/topics/protocol#sending-commands-to-a-redis-server
   if (type == MessageType::kRequest) {
-    msg->command = GetCommand(payloads).value_or(std::string_view{});
+    msg->command = GetCommand(&payloads_view).value_or(std::string_view{});
   }
+
+  msg->payload = absl::StrCat("[", absl::StrJoin(payloads_view, ", "), "]");
 
   if (type == MessageType::kResponse && IsPubMsg(payloads)) {
     msg->is_published_message = true;

@@ -20,8 +20,8 @@ static constexpr DataElement kRedisElements[] = {
          types::DataType::STRING,
          types::SemanticType::ST_NONE,
          types::PatternType::GENERAL},
-        {"req", "Request message sent from client to server. Parsing follows the official spec "
-                "(https://redis.io/topics/protocol). "
+        {"cmd_args", "Request Command arguments sent from client to server. Parsing follows "
+                "the official spec (https://redis.io/topics/protocol). "
                 "1) Strings and error messages are quoted with \"; "
                 "2) Arrays are braced in [ ], whose elements are separated by ','; NULL arrays "
                 "are represented as [NULL] without quotations; "
@@ -52,7 +52,7 @@ static constexpr auto kRedisTable =
 
 constexpr int kRedisUPIDIdx = kRedisTable.ColIndex("upid");
 constexpr int kRedisCmdIdx = kRedisTable.ColIndex("cmd");
-constexpr int kRedisReqIdx = kRedisTable.ColIndex("req");
+constexpr int kRedisReqIdx = kRedisTable.ColIndex("cmd_args");
 constexpr int kRedisRespIdx = kRedisTable.ColIndex("resp");
 
 }  // namespace stirling
