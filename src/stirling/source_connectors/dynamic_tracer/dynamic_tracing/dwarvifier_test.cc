@@ -1353,14 +1353,14 @@ probes {
     scalar_var {
       name: "main__IntStruct_sym_addr1"
       type: UINT64
-      constant: "5112352"
+      constant: "5113024"
     }
   }
   vars {
     scalar_var {
       name: "runtime__errorString_sym_addr2"
       type: UINT64
-      constant: "5112384"
+      constant: "5113056"
     }
   }
   vars {
