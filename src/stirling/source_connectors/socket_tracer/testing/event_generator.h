@@ -22,7 +22,7 @@ class EventGenerator {
   explicit EventGenerator(Clock* clock, uint32_t pid = kPID, uint32_t fd = kFD)
       : clock_(clock), pid_(pid), fd_(fd) {}
 
-  struct socket_control_event_t InitConn(EndpointRole role = kRoleNone) {
+  struct socket_control_event_t InitConn(EndpointRole role = kRoleUnknown) {
     struct socket_control_event_t conn_event {};
     conn_event.type = kConnOpen;
     conn_event.open.timestamp_ns = clock_->now();
@@ -70,7 +70,7 @@ class EventGenerator {
   std::unique_ptr<SocketDataEvent> InitSendEvent(TrafficProtocol protocol, EndpointRole role,
                                                  std::string_view msg) {
     auto res =
-        InitDataEvent<kProtocolUnknown, kRoleNone>(TrafficDirection::kEgress, &send_pos_, msg);
+        InitDataEvent<kProtocolUnknown, kRoleUnknown>(TrafficDirection::kEgress, &send_pos_, msg);
     res->attr.traffic_class.protocol = protocol;
     res->attr.traffic_class.role = role;
     return res;
@@ -79,7 +79,7 @@ class EventGenerator {
   std::unique_ptr<SocketDataEvent> InitRecvEvent(TrafficProtocol protocol, EndpointRole role,
                                                  std::string_view msg) {
     auto res =
-        InitDataEvent<kProtocolUnknown, kRoleNone>(TrafficDirection::kIngress, &recv_pos_, msg);
+        InitDataEvent<kProtocolUnknown, kRoleUnknown>(TrafficDirection::kIngress, &recv_pos_, msg);
     res->attr.traffic_class.protocol = protocol;
     res->attr.traffic_class.role = role;
     return res;

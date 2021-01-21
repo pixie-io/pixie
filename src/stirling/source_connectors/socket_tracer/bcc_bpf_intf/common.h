@@ -48,12 +48,12 @@ inline auto TrafficProtocolEnumValues() {
 }
 #endif
 
-// The direction of traffic expected on a probe. Values are used in bit masks.
+// The direction of traffic expected on a probe.
 enum EndpointRole {
-  kRoleNone = 0,
-  kRoleClient = 1 << 0,
-  kRoleServer = 1 << 1,
-  kRoleAll = kRoleClient | kRoleServer,
+  // Values have single bit set, so that they could be used as bit masks.
+  kRoleUnknown = 1 << 0,
+  kRoleClient = 1 << 1,
+  kRoleServer = 1 << 2,
 };
 
 struct traffic_class_t {

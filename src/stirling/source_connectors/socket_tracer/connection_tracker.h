@@ -542,9 +542,9 @@ class ConnectionTracker {
   //               and protocol comes from data.
   //               So flatten traffic_class_:
   //                    TrafficProtocol protocol_ = kProtocolUnknown;
-  //                    EndpointRole role_ = kRoleNone;
+  //                    EndpointRole role_ = kRoleUnknown;
   struct traffic_class_t traffic_class_ {
-    kProtocolUnknown, kRoleNone
+    kProtocolUnknown, kRoleUnknown
   };
   SocketOpen open_info_;
   SocketClose close_info_;

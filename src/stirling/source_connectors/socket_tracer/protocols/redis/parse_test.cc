@@ -17,6 +17,7 @@ constexpr std::string_view kErrorMsg = "-Error message\r\n";
 constexpr std::string_view kBulkStringMsg = "$11\r\nbulk string\r\n";
 constexpr std::string_view kArrayMsg = "*3\r\n+OK\r\n-Error message\r\n$11\r\nbulk string\r\n";
 constexpr std::string_view kCmdMsg = "*2\r\n+ACL\r\n+LOAD\r\n";
+constexpr std::string_view kPubMsg = "*3\r\n$7\r\nmessage\r\n$3\r\nfoo\r\n$4\r\ntest\r\n";
 
 struct WellFormedTestCase {
   std::string_view input;
@@ -58,6 +59,16 @@ INSTANTIATE_TEST_SUITE_P(
         WellFormedTestCase{kCmdMsg, R"(["ACL", "LOAD"])", "ACL LOAD"},
         WellFormedTestCase{"*1\r\n$-1\r\n", "[<NULL>]", ""},
         WellFormedTestCase{"*-1\r\n", "[NULL]", ""}, WellFormedTestCase{"*0\r\n", "[]", ""}));
+
+TEST(ParsePubMsgTest, DetectPublishedMessage) {
+  std::string_view resp = kPubMsg;
+  Message msg;
+
+  EXPECT_EQ(ParseMessage(MessageType::kResponse, &resp, &msg), ParseState::kSuccess);
+  EXPECT_THAT(resp, IsEmpty());
+  EXPECT_THAT(msg.payload, StrEq(R"(["message", "foo", "test"])"));
+  EXPECT_TRUE(msg.is_published_message);
+}
 
 class ParseIncompleteInputTest : public ::testing::TestWithParam<std::string> {};
 

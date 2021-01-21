@@ -65,9 +65,6 @@ DEFINE_bool(stirling_enable_redis_tracing, true,
 
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will not trace and process syscalls made by itself.");
-DEFINE_string(stirling_role_to_trace, "kRoleAll",
-              "Must be one of [kRoleClient|kRoleServer|kRoleAll]. Specifies which role(s) will be "
-              "traced by BPF.");
 
 BPF_SRC_STRVIEW(socket_trace_bcc_script, socket_trace);
 
@@ -100,23 +97,43 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
   // is stuffed in the *correct* order.
   // Also, this will fail fast (when we stuff the vector) if we forget a protocol.
   absl::flat_hash_map<TrafficProtocol, TransferSpec> transfer_specs_by_protocol = {
-      {kProtocolHTTP, TransferSpec{kHTTPTableNum, TRANSER_STREAM_PROTOCOL(http),
-                                   FLAGS_stirling_enable_http_tracing}},
-      {kProtocolHTTP2, TransferSpec{kHTTPTableNum, TRANSER_STREAM_PROTOCOL(http2),
-                                    FLAGS_stirling_enable_grpc_tracing}},
-      {kProtocolMySQL, TransferSpec{kMySQLTableNum, TRANSER_STREAM_PROTOCOL(mysql),
-                                    FLAGS_stirling_enable_mysql_tracing}},
-      {kProtocolCQL, TransferSpec{kCQLTableNum, TRANSER_STREAM_PROTOCOL(cass),
-                                  FLAGS_stirling_enable_cass_tracing}},
-      {kProtocolPGSQL, TransferSpec{kPGSQLTableNum, TRANSER_STREAM_PROTOCOL(pgsql),
-                                    FLAGS_stirling_enable_pgsql_tracing}},
-      {kProtocolDNS,
-       TransferSpec{kDNSTableNum, TRANSER_STREAM_PROTOCOL(dns), FLAGS_stirling_enable_dns_tracing}},
-      {kProtocolRedis, TransferSpec{kRedisTableNum, TRANSER_STREAM_PROTOCOL(redis),
-                                    FLAGS_stirling_enable_redis_tracing}},
+      {kProtocolHTTP, TransferSpec{FLAGS_stirling_enable_http_tracing,
+                                   kHTTPTableNum,
+                                   {kRoleClient, kRoleServer},
+                                   TRANSER_STREAM_PROTOCOL(http)}},
+      {kProtocolHTTP2, TransferSpec{FLAGS_stirling_enable_grpc_tracing,
+                                    kHTTPTableNum,
+                                    {kRoleClient, kRoleServer},
+                                    TRANSER_STREAM_PROTOCOL(http2)}},
+      {kProtocolCQL, TransferSpec{FLAGS_stirling_enable_cass_tracing,
+                                  kCQLTableNum,
+                                  {kRoleClient, kRoleServer},
+                                  TRANSER_STREAM_PROTOCOL(cass)}},
+      {kProtocolMySQL, TransferSpec{FLAGS_stirling_enable_mysql_tracing,
+                                    kMySQLTableNum,
+                                    {kRoleClient, kRoleServer},
+                                    TRANSER_STREAM_PROTOCOL(mysql)}},
+      {kProtocolPGSQL, TransferSpec{FLAGS_stirling_enable_pgsql_tracing,
+                                    kPGSQLTableNum,
+                                    {kRoleClient, kRoleServer},
+                                    TRANSER_STREAM_PROTOCOL(pgsql)}},
+      {kProtocolDNS, TransferSpec{FLAGS_stirling_enable_dns_tracing,
+                                  kDNSTableNum,
+                                  {kRoleClient, kRoleServer},
+                                  TRANSER_STREAM_PROTOCOL(dns)}},
+      {kProtocolRedis, TransferSpec{FLAGS_stirling_enable_redis_tracing,
+                                    kRedisTableNum,
+                                    // Cannot infer endpoint role from Redis messages, so have to
+                                    // allow such traffic transferred to user-space; and rely on
+                                    // SocketInfo to infer the role.
+                                    {kRoleUnknown, kRoleClient, kRoleServer},
+                                    TRANSER_STREAM_PROTOCOL(redis)}},
       // Unknown protocols attached to HTTP table so that they run their cleanup functions,
       // but the use of nullptr transfer_fn means it won't actually transfer data to the HTTP table.
-      {kProtocolUnknown, TransferSpec{kHTTPTableNum, nullptr}}};
+      {kProtocolUnknown, TransferSpec{false /*enabled*/,
+                                      kHTTPTableNum,
+                                      {kRoleUnknown, kRoleClient, kRoleServer},
+                                      nullptr /*transfer_fn*/}}};
 #undef TRANSER_STREAM_PROTOCOL
 
   for (uint64_t i = 0; i < kNumProtocols; ++i) {
@@ -126,23 +143,6 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
     DCHECK(transfer_specs_by_protocol.contains(TrafficProtocol(i))) << absl::Substitute(
         "Protocol $0 is not mapped in transfer_specs_by_protocol.", TrafficProtocol(i));
     protocol_transfer_specs_.push_back(transfer_specs_by_protocol[TrafficProtocol(i)]);
-  }
-
-  // Populate `role_to_trace` from flags.
-  std::optional<EndpointRole> role_to_trace =
-      magic_enum::enum_cast<EndpointRole>(FLAGS_stirling_role_to_trace);
-  if (!role_to_trace.has_value()) {
-    LOG(ERROR) << absl::Substitute(
-        "--stirling_role_to_trace=$0 is not a valid trace role specifier",
-        FLAGS_stirling_role_to_trace);
-  }
-
-  for (const auto& p : TrafficProtocolEnumValues()) {
-    DCHECK_LT(p, protocol_transfer_specs_.size())
-        << "Missing transfer spec for protocol: " << magic_enum::enum_name(p);
-    if (role_to_trace.has_value()) {
-      protocol_transfer_specs_[p].role_to_trace = role_to_trace.value();
-    }
   }
 }
 
@@ -169,7 +169,11 @@ Status SocketTraceConnector::InitImpl() {
   // Set trace role to BPF probes.
   for (const auto& p : TrafficProtocolEnumValues()) {
     if (protocol_transfer_specs_[p].enabled) {
-      PL_RETURN_IF_ERROR(UpdateBPFProtocolTraceRole(p, protocol_transfer_specs_[p].role_to_trace));
+      uint64_t role_mask = 0;
+      for (auto role : protocol_transfer_specs_[p].trace_roles) {
+        role_mask |= role;
+      }
+      PL_RETURN_IF_ERROR(UpdateBPFProtocolTraceRole(p, role_mask));
     }
   }
 
@@ -309,10 +313,9 @@ Status UpdatePerCPUArrayValue(int idx, TValueType val, ebpf::BPFPercpuArrayTable
 }
 
 Status SocketTraceConnector::UpdateBPFProtocolTraceRole(TrafficProtocol protocol,
-                                                        EndpointRole config_mask) {
+                                                        uint64_t role_mask) {
   auto control_map_handle = bpf().get_percpu_array_table<uint64_t>(kControlMapName);
-  return UpdatePerCPUArrayValue(static_cast<int>(protocol), static_cast<uint64_t>(config_mask),
-                                &control_map_handle);
+  return UpdatePerCPUArrayValue(static_cast<int>(protocol), role_mask, &control_map_handle);
 }
 
 Status SocketTraceConnector::TestOnlySetTargetPID(int64_t pid) {

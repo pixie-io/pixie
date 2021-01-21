@@ -62,7 +62,7 @@ struct close_args_t {
 };
 
 // This control_map is a bit-mask that controls which endpoints are traced in a connection.
-// The bits are defined in EndpointRole enum, kRoleClient or kRoleServer. kRoleNone is not
+// The bits are defined in EndpointRole enum, kRoleClient or kRoleServer. kRoleUnknown is not
 // really used, but is defined for completeness.
 // There is a control map element for each protocol.
 BPF_PERCPU_ARRAY(control_map, uint64_t, kNumProtocols);
@@ -161,6 +161,8 @@ static __inline void init_conn_id(uint32_t tgid, uint32_t fd, struct conn_id_t* 
 static __inline struct conn_info_t* get_or_create_conn_info(uint32_t tgid, uint32_t fd) {
   uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   struct conn_info_t new_conn_info = {};
+  // NOTE: BCC code defaults to 0, because kRoleUnknown is not 0, must explicitly initialize.
+  new_conn_info.traffic_class.role = kRoleUnknown;
   new_conn_info.addr.sin6_family = AF_UNKNOWN;
   init_conn_id(tgid, fd, &new_conn_info.conn_id);
   return conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
@@ -286,7 +288,10 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
   }
 
   // Update role if not set.
-  if (conn_info->traffic_class.role == kRoleNone) {
+  if (conn_info->traffic_class.role == kRoleUnknown &&
+      // As of 2020-01, Redis protocol detection doesn't implement message type detection.
+      // There could be more protocols without message type detection in the future.
+      inferred_protocol.type != kUnknown) {
     // Classify Role as XOR between direction and req_resp_type:
     //    direction  req_resp_type  => role
     //    ------------------------------------
@@ -626,7 +631,7 @@ static __inline void process_implicit_conn(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, (uint32_t)args->fd, args->addr, kRoleNone);
+  submit_new_conn(ctx, tgid, (uint32_t)args->fd, args->addr, kRoleUnknown);
 }
 
 static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t id,

@@ -43,7 +43,7 @@ class SocketTraceBPFTest : public ::testing::Test {
 
   void TearDown() override { ASSERT_OK(source_->Stop()); }
 
-  void ConfigureBPFCapture(TrafficProtocol protocol, EndpointRole role) {
+  void ConfigureBPFCapture(TrafficProtocol protocol, uint64_t role) {
     auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
     ASSERT_OK(socket_trace_connector->UpdateBPFProtocolTraceRole(protocol, role));
   }

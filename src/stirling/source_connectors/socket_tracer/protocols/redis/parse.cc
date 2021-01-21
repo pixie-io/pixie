@@ -400,6 +400,19 @@ std::optional<std::string_view> GetCommand(const std::vector<std::string>& paylo
   return GetCommand(candidate_cmd);
 }
 
+bool IsPubMsg(const std::vector<std::string>& payloads) {
+  // Published message format is at https://redis.io/topics/pubsub#format-of-pushed-messages
+  constexpr size_t kArrayPayloadSize = 3;
+  if (payloads.size() < kArrayPayloadSize) {
+    return false;
+  }
+  constexpr std::string_view kMessageStr = "MESSAGE";
+  if (absl::AsciiStrToUpper(Unquote(payloads.front())) != kMessageStr) {
+    return false;
+  }
+  return true;
+}
+
 // This calls ParseMessage(), which eventually calls ParseArray() and are both recursive functions.
 // This is because Array message can include nested array messages.
 Status ParseArray(MessageType type, BinaryDecoder* decoder, Message* msg);
@@ -461,6 +474,10 @@ Status ParseArray(MessageType type, BinaryDecoder* decoder, Message* msg) {
   // https://redis.io/topics/protocol#sending-commands-to-a-redis-server
   if (type == MessageType::kRequest) {
     msg->command = GetCommand(payloads).value_or(std::string_view{});
+  }
+
+  if (type == MessageType::kResponse && IsPubMsg(payloads)) {
+    msg->is_published_message = true;
   }
 
   return Status::OK();

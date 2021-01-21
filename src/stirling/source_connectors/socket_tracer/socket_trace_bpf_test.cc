@@ -12,6 +12,7 @@
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
 #include "src/stirling/core/data_table.h"
+#include "src/stirling/core/output.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/testing/client_server_system.h"
@@ -81,7 +82,7 @@ enum class SyscallPair {
 
 struct SocketTraceBPFTestParams {
   SyscallPair syscall_pair;
-  EndpointRole trace_role;
+  uint64_t trace_role;
 };
 
 class SocketTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ true> {};
@@ -92,8 +93,7 @@ class NonVecSyscallTests : public SocketTraceBPFTest,
 TEST_P(NonVecSyscallTests, NonVecSyscalls) {
   SocketTraceBPFTestParams p = GetParam();
   LOG(INFO) << absl::Substitute("Test parameters: syscall_pair=$0 trace_role=$1",
-                                magic_enum::enum_name(p.syscall_pair),
-                                magic_enum::enum_name(p.trace_role));
+                                magic_enum::enum_name(p.syscall_pair), p.trace_role);
   ConfigureBPFCapture(kProtocolHTTP, p.trace_role);
 
   testing::SendRecvScript script({
@@ -164,18 +164,17 @@ INSTANTIATE_TEST_SUITE_P(
     NonVecSyscalls, NonVecSyscallTests,
     ::testing::Values(SocketTraceBPFTestParams{SyscallPair::kWriteRead, kRoleClient},
                       SocketTraceBPFTestParams{SyscallPair::kWriteRead, kRoleServer},
-                      SocketTraceBPFTestParams{SyscallPair::kWriteRead, kRoleAll},
+                      SocketTraceBPFTestParams{SyscallPair::kWriteRead, kRoleClient | kRoleServer},
                       SocketTraceBPFTestParams{SyscallPair::kSendRecv, kRoleClient},
                       SocketTraceBPFTestParams{SyscallPair::kSendRecv, kRoleServer},
-                      SocketTraceBPFTestParams{SyscallPair::kSendRecv, kRoleAll}));
+                      SocketTraceBPFTestParams{SyscallPair::kSendRecv, kRoleClient | kRoleServer}));
 
 class IOVecSyscallTests : public SocketTraceBPFTest,
                           public ::testing::WithParamInterface<SocketTraceBPFTestParams> {};
 
 TEST_P(IOVecSyscallTests, IOVecSyscalls) {
   SocketTraceBPFTestParams p = GetParam();
-  LOG(INFO) << absl::Substitute("$0 $1", magic_enum::enum_name(p.syscall_pair),
-                                magic_enum::enum_name(p.trace_role));
+  LOG(INFO) << absl::Substitute("$0 $1", magic_enum::enum_name(p.syscall_pair), p.trace_role);
   ConfigureBPFCapture(kProtocolHTTP, p.trace_role);
 
   testing::SendRecvScript script({
@@ -236,13 +235,14 @@ TEST_P(IOVecSyscallTests, IOVecSyscalls) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    IOVecSyscalls, IOVecSyscallTests,
-    ::testing::Values(SocketTraceBPFTestParams{SyscallPair::kSendMsgRecvMsg, kRoleAll},
-                      SocketTraceBPFTestParams{SyscallPair::kWritevReadv, kRoleAll}));
+INSTANTIATE_TEST_SUITE_P(IOVecSyscalls, IOVecSyscallTests,
+                         ::testing::Values(SocketTraceBPFTestParams{SyscallPair::kSendMsgRecvMsg,
+                                                                    kRoleClient | kRoleServer},
+                                           SocketTraceBPFTestParams{SyscallPair::kWritevReadv,
+                                                                    kRoleClient | kRoleServer}));
 
 TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
-  ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleAll);
+  ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient | kRoleServer);
   ConfigureBPFCapture(TrafficProtocol::kProtocolMySQL, kRoleClient);
 
   testing::SendRecvScript script({
@@ -555,10 +555,58 @@ TEST_F(SocketTraceBPFTest, NonBlockingRecv) {
 class SocketTraceServerSideBPFTest
     : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {};
 
-TEST_F(SocketTraceServerSideBPFTest, BPFDisable) {
+// Returns the number of records that belong to the input pid.
+int GetTargetRecordsCount(DataTable* data_table, int32_t pid) {
+  int res = 0;
+  std::vector<TaggedRecordBatch> tablets = data_table->ConsumeRecords();
+  for (const auto& tablet : tablets) {
+    res += FindRecordIdxMatchesPID(tablet.records, kHTTPUPIDIdx, pid).size();
+  }
+  return res;
+}
+
+uint64_t GetConnStats(const ConnectionTracker& tracker, ConnectionTracker::Stats::Key key) {
+  return tracker.stats().Get(key);
+}
+
+uint64_t GetBytesSentTransferred(const ConnectionTracker& tracker) {
+  return GetConnStats(tracker, ConnectionTracker::Stats::Key::kBytesSentTransferred);
+}
+
+uint64_t GetBytesRecvTransferred(const ConnectionTracker& tracker) {
+  return GetConnStats(tracker, ConnectionTracker::Stats::Key::kBytesRecvTransferred);
+}
+
+uint64_t GetBytesSent(const ConnectionTracker& tracker) {
+  return GetConnStats(tracker, ConnectionTracker::Stats::Key::kBytesSent);
+}
+
+uint64_t GetBytesRecv(const ConnectionTracker& tracker) {
+  return GetConnStats(tracker, ConnectionTracker::Stats::Key::kBytesRecv);
+}
+
+uint64_t GetDataEventSent(const ConnectionTracker& tracker) {
+  return GetConnStats(tracker, ConnectionTracker::Stats::Key::kDataEventSent);
+}
+
+uint64_t GetDataEventRecv(const ConnectionTracker& tracker) {
+  return GetConnStats(tracker, ConnectionTracker::Stats::Key::kDataEventRecv);
+}
+
+uint64_t GetValidRecords(const ConnectionTracker& tracker) {
+  return GetConnStats(tracker, ConnectionTracker::Stats::Key::kValidRecords);
+}
+
+uint64_t GetInvalidRecords(const ConnectionTracker& tracker) {
+  return GetConnStats(tracker, ConnectionTracker::Stats::Key::kInvalidRecords);
+}
+
+// Tests that connection stats are updated after ConnectionTracker is disabled because of being
+// a client.
+TEST_F(SocketTraceServerSideBPFTest, ConnStatsUpdatedAfterConnectionTrackerDisabled) {
   auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
 
-  ConfigureBPFCapture(kProtocolHTTP, kRoleAll);
+  ConfigureBPFCapture(kProtocolHTTP, kRoleClient | kRoleServer);
   DataTable data_table(kHTTPTable);
 
   TCPSocket client;
@@ -566,32 +614,72 @@ TEST_F(SocketTraceServerSideBPFTest, BPFDisable) {
 
   server.BindAndListen();
   client.Connect(server);
+  auto server_endpoint = server.Accept();
 
   // First write.
-  // BPF should trace the write due to `ConfigureBPFCapture(kProtocolHTTP, kRoleAll)` above.
-  // Then TransferData should disable the client-side tracing in user-space,
+  // BPF should trace the write due to `ConfigureBPFCapture(kProtocolHTTP, kRoleClient |
+  // kRoleServer)` above. Then TransferData should disable the client-side tracing in user-space,
   // and propagate the information back to BPF.
-  client.Write(kHTTPReqMsg1);
+  ASSERT_TRUE(client.Write(kHTTPReqMsg1));
+  std::string msg;
+  ASSERT_TRUE(server_endpoint->Recv(&msg));
+
+  ASSERT_TRUE(server_endpoint->Send(kHTTPRespMsg1));
+  ASSERT_TRUE(client.Recv(&msg));
+
   sleep(1);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  const ConnectionTracker* tracker =
+
+  const ConnectionTracker* client_side_tracker =
       socket_trace_connector->GetConnectionTracker(getpid(), client.sockfd());
-  ASSERT_NE(tracker, nullptr);
-  uint64_t count = tracker->stats().Get(ConnectionTracker::Stats::Key::kBytesSentTransferred);
-  ASSERT_GT(count, 0);
+  const ConnectionTracker* server_side_tracker =
+      socket_trace_connector->GetConnectionTracker(getpid(), server_endpoint->sockfd());
+
+  ASSERT_NE(client_side_tracker, nullptr);
+  ASSERT_NE(server_side_tracker, nullptr);
+
+  EXPECT_EQ(GetBytesSent(*client_side_tracker), kHTTPReqMsg1.size());
+  EXPECT_EQ(GetBytesSentTransferred(*client_side_tracker), kHTTPReqMsg1.size());
+  EXPECT_EQ(GetDataEventSent(*client_side_tracker), 1);
+  EXPECT_EQ(GetDataEventRecv(*client_side_tracker), 1);
+  // No records are produced because client-side tracing is disabled in user-space.
+  EXPECT_EQ(GetValidRecords(*client_side_tracker), 0);
+  EXPECT_EQ(GetInvalidRecords(*client_side_tracker), 0);
+
+  EXPECT_EQ(GetBytesRecv(*server_side_tracker), kHTTPReqMsg1.size());
+  EXPECT_EQ(GetBytesRecvTransferred(*server_side_tracker), kHTTPReqMsg1.size());
+  EXPECT_EQ(GetDataEventSent(*server_side_tracker), 1);
+  EXPECT_EQ(GetDataEventRecv(*server_side_tracker), 1);
+  EXPECT_EQ(GetValidRecords(*server_side_tracker), 1);
+  EXPECT_EQ(GetInvalidRecords(*server_side_tracker), 0);
 
   // Second write.
   // BPF should not even trace the write, because it should have been disabled from user-space.
-  client.Write(kHTTPReqMsg1);
+  ASSERT_TRUE(client.Write(kHTTPReqMsg2));
+  ASSERT_TRUE(server_endpoint->Recv(&msg));
+
+  ASSERT_TRUE(server_endpoint->Send(kHTTPRespMsg1));
+  ASSERT_TRUE(client.Recv(&msg));
   sleep(1);
+
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  uint64_t count2 = tracker->stats().Get(ConnectionTracker::Stats::Key::kBytesSentTransferred);
 
-  // Not expecting any additional bytes to get transferred after the tracker is disabled.
-  ASSERT_EQ(count, count2);
+  EXPECT_EQ(GetBytesSent(*client_side_tracker), kHTTPReqMsg1.size() + kHTTPReqMsg2.size())
+      << "Data sent were increased.";
+  EXPECT_EQ(GetBytesSentTransferred(*client_side_tracker), kHTTPReqMsg1.size())
+      << "Data were not transferred to user space, so the counter should be the same.";
+  EXPECT_EQ(GetDataEventSent(*client_side_tracker), 2);
+  EXPECT_EQ(GetDataEventRecv(*client_side_tracker), 2);
+  EXPECT_EQ(GetValidRecords(*client_side_tracker), 0);
+  EXPECT_EQ(GetInvalidRecords(*client_side_tracker), 0);
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
-  ASSERT_TRUE(tablets.empty());
+  EXPECT_EQ(GetBytesRecv(*server_side_tracker), kHTTPReqMsg1.size() + kHTTPReqMsg2.size());
+  EXPECT_EQ(GetBytesRecvTransferred(*server_side_tracker),
+            kHTTPReqMsg1.size() + kHTTPReqMsg2.size());
+  EXPECT_EQ(GetDataEventSent(*server_side_tracker), 2);
+  EXPECT_EQ(GetDataEventRecv(*server_side_tracker), 2);
+  EXPECT_EQ(GetValidRecords(*server_side_tracker), 2);
+  EXPECT_EQ(GetInvalidRecords(*server_side_tracker), 0);
 }
 
 }  // namespace stirling

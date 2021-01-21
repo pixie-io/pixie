@@ -251,7 +251,7 @@ EndpointRole InferHTTP2Role(bool write_event, const std::unique_ptr<HTTP2HeaderE
     return (write_event) ? kRoleServer : kRoleClient;
   }
 
-  return kRoleNone;
+  return kRoleUnknown;
 }
 
 void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
@@ -298,14 +298,14 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   // TODO(oazizi): Once we have more confidence that the ECHECK below doesn't fire, restructure this
   // code so it only calls InferHTTP2Role when the current role is Unknown.
   EndpointRole role = InferHTTP2Role(write_event, hdr);
-  if (traffic_class_.role == kRoleNone) {
+  if (traffic_class_.role == kRoleUnknown) {
     traffic_class_.role = role;
 
     if (ShouldExportToConnStats()) {
       ExportInitialConnStats();
     }
   } else {
-    if (!(role == kRoleNone || role == traffic_class_.role)) {
+    if (!(role == kRoleUnknown || role == traffic_class_.role)) {
       LOG_FIRST_N(ERROR, 10) << absl::Substitute(
           "The role of an active ConnectionTracker was changed: $0 role: $1 -> $2",
           ToString(conn_id_), magic_enum::enum_name(traffic_class_.role),
@@ -468,8 +468,8 @@ void ConnectionTracker::SetConnID(struct conn_id_t conn_id) {
 
 bool ConnectionTracker::SetRole(EndpointRole role) {
   // Don't allow changing active role, unless it is from unknown to something else.
-  if (traffic_class_.role != kRoleNone) {
-    if (role != kRoleNone && traffic_class_.role != role) {
+  if (traffic_class_.role != kRoleUnknown) {
+    if (role != kRoleUnknown && traffic_class_.role != role) {
       CONN_TRACE(1) << absl::Substitute(
           "Not allowed to change the role of an active ConnectionTracker: $0, old role: $1, new "
           "role: $2",
@@ -481,7 +481,7 @@ bool ConnectionTracker::SetRole(EndpointRole role) {
     return false;
   }
 
-  if (role != kRoleNone) {
+  if (role != kRoleUnknown) {
     traffic_class_.role = role;
     return true;
   }
@@ -650,12 +650,15 @@ void ConnectionTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs)
       // Remote endpoint appears to be outside the cluster, so trace it.
       state_ = State::kTransferring;
     } break;
-    case EndpointRole::kRoleNone:
-      LOG_IF(DFATAL, !send_data_.events().empty() || !recv_data_.events().empty())
-          << "Role has not been inferred from BPF events yet. conn_id: " << ToString(conn_id_);
+    case EndpointRole::kRoleUnknown:
+      if (conn_resolution_failed_) {
+        // TODO(yzhao): Incorporate parsing to detect message type, and back fill the role.
+        Disable("Could not determine role for traffic because connection resolution failed.");
+      } else {
+        CONN_TRACE(2)
+            << "Protocol role was not inferred from BPF, waiting for user space inference result.";
+      }
       break;
-    case EndpointRole::kRoleAll:
-      LOG(DFATAL) << "kRoleAll should not be used.";
   }
 }
 
@@ -681,7 +684,7 @@ bool ConnectionTracker::ShouldExportToConnStats() const {
 
   bool endpoint_resolved = remote_endpoint().family == SockAddrFamily::kIPv4 ||
                            remote_endpoint().family == SockAddrFamily::kIPv6;
-  bool role_resolved = (traffic_class_.role != kRoleNone);
+  bool role_resolved = (traffic_class_.role != kRoleUnknown);
 
   return endpoint_resolved && role_resolved;
 }
@@ -851,7 +854,7 @@ EndpointRole TranslateRole(system::ClientServerRole role) {
     case system::ClientServerRole::kServer:
       return kRoleServer;
     case system::ClientServerRole::kUnknown:
-      return kRoleNone;
+      return kRoleUnknown;
   }
   // Needed for GCC build.
   return {};
@@ -945,9 +948,9 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
 
   EndpointRole inferred_role = TranslateRole(socket_info.role);
 
-  if (traffic_class_.role == kRoleNone && inferred_role != kRoleNone) {
+  if (traffic_class_.role == kRoleUnknown && inferred_role != kRoleUnknown) {
     traffic_class_.role = inferred_role;
-    CONN_TRACE(1) << absl::Substitute("Role updated [kRoleNone -> $0]",
+    CONN_TRACE(1) << absl::Substitute("Role updated [kRoleUnknown -> $0]",
                                       magic_enum::enum_name(traffic_class_.role));
   }
 

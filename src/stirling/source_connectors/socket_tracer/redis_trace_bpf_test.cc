@@ -1,4 +1,5 @@
 #include "src/common/exec/exec.h"
+#include "src/common/exec/subprocess.h"
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/testing/socket_trace_bpf_test_fixture.h"
@@ -6,6 +7,7 @@
 namespace pl {
 namespace stirling {
 
+using ::pl::SubProcess;
 using ::testing::ElementsAre;
 using ::testing::SizeIs;
 using ::testing::StrEq;
@@ -97,6 +99,40 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
                           RedisTraceRecord{"INCR", R"(["incr", "foo"])", "101"},
                           RedisTraceRecord{"APPEND", R"(["append", "foo", "xxx"])", "6"},
                           RedisTraceRecord{"GET", R"(["get", "foo"])", R"("101xxx")"}));
+}
+
+// Verifies that pub/sub commands can be traced correctly.
+TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
+  SubProcess sub_proc;
+
+  ASSERT_OK(sub_proc.Start({"docker", "run", "--rm",
+                            absl::Substitute("--network=container:$0", container_.container_name()),
+                            "redis", "redis-cli", "subscribe", "foo"}));
+
+  std::string redis_cli_cmd =
+      absl::Substitute("docker run --rm --network=container:$0 redis redis-cli publish foo test",
+                       container_.container_name());
+  ASSERT_OK_AND_ASSIGN(const std::string output, pl::Exec(redis_cli_cmd));
+  ASSERT_FALSE(output.empty());
+
+  DataTable data_table(kRedisTable);
+  source_->TransferData(ctx_.get(), SocketTraceConnector::kRedisTableNum, &data_table);
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+
+  ASSERT_FALSE(tablets.empty());
+
+  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  std::vector<RedisTraceRecord> redis_trace_records = GetRedisTraceRecords(record_batch);
+
+  // redis-cli sends a 'command' req to query all available commands from server.
+  // The response is too long to test meaningfully, so we ignore them.
+  redis_trace_records.erase(redis_trace_records.begin());
+
+  EXPECT_THAT(redis_trace_records,
+              ElementsAre(RedisTraceRecord{"PUBLISH", R"(["publish", "foo", "test"])", "1"},
+                          RedisTraceRecord{"PUSH PUB", "", R"(["message", "foo", "test"])"}));
+  sub_proc.Kill();
+  EXPECT_EQ(9, sub_proc.Wait()) << "Client should be killed";
 }
 
 // Verifies individual commands.

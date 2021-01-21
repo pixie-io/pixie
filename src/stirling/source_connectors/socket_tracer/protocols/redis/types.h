@@ -18,6 +18,10 @@ struct Message : public FrameBase {
   // Redis command, one of https://redis.io/commands.
   std::string_view command;
 
+  // If true, indicates this is a published message from the server to all of the subscribed
+  // clients.
+  bool is_published_message = false;
+
   size_t ByteSize() const override { return payload.size(); }
 };
 

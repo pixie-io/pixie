@@ -119,7 +119,8 @@ TEST_P(TraceRoleTest, VerifyRecordsCount) {
 }
 
 INSTANTIATE_TEST_SUITE_P(AllTraceRoles, TraceRoleTest,
-                         ::testing::Values(TraceRoleTestParam{kRoleNone, 0, 0},
+                         ::testing::Values(TraceRoleTestParam{kRoleUnknown, 0, 0},
+                                           TraceRoleTestParam{kRoleClient, 0, 0},
                                            TraceRoleTestParam{kRoleServer, 0, 1}));
 
 // TODO(yzhao): Trace role only takes effect in BPF. With user-space filtering, i.e., intra-cluster

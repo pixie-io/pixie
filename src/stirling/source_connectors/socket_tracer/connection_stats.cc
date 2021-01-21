@@ -16,7 +16,7 @@ ConnectionStats::AggKey BuildAggKey(const upid_t& upid, const traffic_class_t& t
   DCHECK_NE(upid.pid, 0);
   DCHECK_NE(upid.start_time_ticks, 0);
   DCHECK(remote_endpoint.family != SockAddrFamily::kUnspecified);
-  DCHECK(traffic_class.role != kRoleNone);
+  DCHECK(traffic_class.role != kRoleUnknown);
   return {
       .upid = upid,
       .remote_addr = remote_endpoint.AddrStr(),
