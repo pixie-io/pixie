@@ -1,4 +1,4 @@
-from pixie import vizier_pb2_grpc, vpb, test_utils as utils
+from pixie import cloudapi_pb2_grpc, cpb, vizier_pb2_grpc, vpb, test_utils as utils
 import pixie
 import unittest
 import grpc
@@ -8,7 +8,6 @@ from typing import List, Any, Coroutine, Dict
 
 
 ACCESS_TOKEN = "12345678-0000-0000-0000-987654321012"
-
 query_str = """
 import px
 px.display(px.DataFrame('http_events')[
@@ -53,7 +52,7 @@ class VizierServiceFake:
 
     def ExecuteScript(self, request: vpb.ExecuteScriptRequest, context: Any) -> Any:
         cluster_id = request.cluster_id
-        assert cluster_id in self.cluster_id_to_fake_data, "need data for cluster_id"
+        assert cluster_id in self.cluster_id_to_fake_data, f"need data for cluster_id {cluster_id}"
         data = self.cluster_id_to_fake_data[cluster_id]
         for d in data:
             yield d
@@ -65,6 +64,51 @@ class VizierServiceFake:
         yield vpb.Status(code=1, message="fail")
 
 
+def create_cluster_info(
+    cluster_id: str,
+    cluster_name: str,
+    status: cpb.ClusterStatus = cpb.CS_HEALTHY,
+    passthrough_enabled: bool = True
+) -> cpb.ClusterInfo:
+    return cpb.ClusterInfo(
+        id=cpb.src_dot_common_dot_uuid_dot_proto_dot_uuid__pb2.UUID(
+            data=cluster_id.encode('utf-8'),
+        ),
+        status=status,
+        config=cpb.VizierConfig(
+            passthrough_enabled=passthrough_enabled,
+        ),
+        pretty_cluster_name=cluster_name,
+    )
+
+
+class CloudServiceFake(cloudapi_pb2_grpc.VizierClusterInfoServicer):
+    def GetClusterInfo(self, request: cpb.GetClusterInfoRequest, context: Any) -> Any:
+        clusters = [
+            create_cluster_info(
+                utils.cluster_uuid1,
+                "cluster1",
+            ),
+            create_cluster_info(
+                utils.cluster_uuid2,
+                "cluster2",
+            ),
+            # One cluster marked as unhealthy.
+            create_cluster_info(
+                utils.cluster_uuid3,
+                "cluster3",
+                status=cpb.CS_UNHEALTHY,
+            ),
+        ]
+        if request.id.data:
+            for c in clusters:
+                if c.id == request.id:
+                    return cpb.GetClusterInfoResponse(clusters=[c])
+            return cpb.GetClusterInfoResponse(clusters=[])
+
+        return cpb.GetClusterInfoResponse(clusters=clusters)
+
+
 class FakeConn(pixie.Conn):
     """
     FakeConn overrides Conn to use an insecure_channel instead
@@ -72,24 +116,30 @@ class FakeConn(pixie.Conn):
     """
 
     def __init__(self, token: str, pixie_url: str, cluster_id: pixie.ClusterID):
+        super().__init__(
+            token,
+            pixie_url,
+            cluster_id,
+            None,
+            lambda url: grpc.aio.insecure_channel(url)
+        )
         self.token = token
         self.url = pixie_url
         self.cluster_id = cluster_id
 
-    def create_grpc_channel(self) -> grpc.aio.Channel:
-        return grpc.aio.insecure_channel(self.url)
-
 
 class TestClient(unittest.TestCase):
-    server_class = VizierServiceFake
-
     def setUp(self) -> None:
         # Create a fake server for the VizierService
         self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
-        self.service = self.server_class()
+        self.fake_vizier_service = VizierServiceFake()
+        self.fake_cloud_service = CloudServiceFake()
 
         vizier_pb2_grpc.add_VizierServiceServicer_to_server(
-            self.service, self.server)
+            self.fake_vizier_service, self.server)
+
+        cloudapi_pb2_grpc.add_VizierClusterInfoServicer_to_server(
+            self.fake_cloud_service, self.server)
         self.port = self.server.add_insecure_port("[::]:0")
         self.server.start()
 
@@ -117,7 +167,7 @@ class TestClient(unittest.TestCase):
 
         # Create table for cluster_uuid1.
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
-        self.service.add_fake_data(utils.cluster_uuid1, [
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
             # Initialize the table on the stream with the metadata.
             http_table1.metadata_response(),
             # Send over a single-row batch.
@@ -159,7 +209,7 @@ class TestClient(unittest.TestCase):
             ["foo", "bar", "baz", "bat"], [200, 500, 301, 404]]
 
         # Here we split the above data into two rowbatches.
-        self.service.add_fake_data(utils.cluster_uuid1, [
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
             # Initialize the table on the stream with the metadata.
             http_table1.metadata_response(),
             # Row batch 1 has data 1-3,
@@ -202,7 +252,7 @@ class TestClient(unittest.TestCase):
 
         # Create table for the first cluster.
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
-        self.service.add_fake_data(utils.cluster_uuid1, [
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
             # Initialize the table on the stream with the metadata.
             http_table1.metadata_response(),
             # Send over a single-row batch.
@@ -214,7 +264,7 @@ class TestClient(unittest.TestCase):
         # Create table for the second cluster. The tables are named the
         # same and should have the same relation.
         http_table2 = self.http_table_factory.create_table(utils.table_id2)
-        self.service.add_fake_data(utils.cluster_uuid2, [
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid2, [
             # Initialize the table on the stream with the metadata. The query
             # handler should recognize this table as the same as the one
             # sent by http_table1.
@@ -269,7 +319,7 @@ class TestClient(unittest.TestCase):
 
         # Create table for the first cluster.
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
-        self.service.add_fake_data(utils.cluster_uuid1, [
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
             # Initialize the table on the stream with the metadata.
             http_table1.metadata_response(),
             http_table1.row_batch_response([["foo"], [200]]),
@@ -284,7 +334,7 @@ class TestClient(unittest.TestCase):
             column_name="extra_col", column_type=vpb.STRING))
         http_table2.relation = extra_col_relation
 
-        self.service.add_fake_data(utils.cluster_uuid2, [
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid2, [
             # Initialize this table, send over the problematic relation above.
             http_table2.metadata_response(),
             # Send data over for the table.
@@ -305,7 +355,7 @@ class TestClient(unittest.TestCase):
         # We will send two tables for this test "http" and "stats".
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
         stats_table1 = self.stats_table_factory.create_table(utils.table_id3)
-        self.service.add_fake_data(utils.cluster_uuid1, [
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
             # Initialize "http" on the stream.
             http_table1.metadata_response(),
             # Send over a row-batch from "http".
@@ -362,7 +412,7 @@ class TestClient(unittest.TestCase):
 
         # Send over an error in the Status field. This is the exact error you would
         # get if you sent over an empty pxl function in the ExecuteScriptRequest.
-        self.service.add_fake_data(utils.cluster_uuid1, [
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
             vpb.ExecuteScriptResponse(status=utils.invalid_argument(
                 message="Query should not be empty."
             ))
@@ -382,7 +432,7 @@ class TestClient(unittest.TestCase):
 
         # Send over an error a line, column error. These kinds of errors come
         # from the compiler pointing to a specific failure in the pxl script.
-        self.service.add_fake_data(utils.cluster_uuid1, [
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
             vpb.ExecuteScriptResponse(status=utils.line_col_error(
                 1,
                 2,
@@ -411,8 +461,10 @@ class TestClient(unittest.TestCase):
         ))
         # Send over an error a line, column error. These kinds of errors come
         # from the compiler pointing to a specific failure in the pxl script.
-        self.service.add_fake_data(utils.cluster_uuid1, [error_resp])
-        self.service.add_fake_data(utils.cluster_uuid2, [error_resp])
+        self.fake_vizier_service.add_fake_data(
+            utils.cluster_uuid1, [error_resp])
+        self.fake_vizier_service.add_fake_data(
+            utils.cluster_uuid2, [error_resp])
 
         # Prepare the query and run synchronously.
         query = px_client.query(conns, "aa")
@@ -428,7 +480,7 @@ class TestClient(unittest.TestCase):
 
         # Only send data for "http".
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
-        self.service.add_fake_data(utils.cluster_uuid1, [
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
             http_table1.metadata_response(),
             http_table1.row_batch_response([["foo"], [200]]),
             http_table1.end(),
@@ -457,7 +509,7 @@ class TestClient(unittest.TestCase):
         # Create two tables: "http" and "stats"
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
         stats_table1 = self.stats_table_factory.create_table(utils.table_id3)
-        self.service.add_fake_data(utils.cluster_uuid1, [
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
             # Init "http".
             http_table1.metadata_response(),
             # Send data for "http".
@@ -514,7 +566,7 @@ class TestClient(unittest.TestCase):
 
         # Create HTTP table and add to the stream.
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
-        self.service.add_fake_data(utils.cluster_uuid1, [
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
             http_table1.metadata_response(),
             http_table1.row_batch_response([["foo"], [200]]),
             http_table1.end(),
@@ -541,7 +593,7 @@ class TestClient(unittest.TestCase):
         # Create two tables and simulate them sent over as part of the ExecuteScript call.
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
         stats_table1 = self.stats_table_factory.create_table(utils.table_id3)
-        self.service.add_fake_data(utils.cluster_uuid1, [
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
             http_table1.metadata_response(),
             http_table1.row_batch_response([["foo"], [200]]),
             stats_table1.metadata_response(),
@@ -612,7 +664,7 @@ class TestClient(unittest.TestCase):
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
         stats_table1 = self.stats_table_factory.create_table(utils.table_id3)
-        self.service.add_fake_data(utils.cluster_uuid1, [
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
             stats_table1.metadata_response(),
             stats_table1.row_batch_response([
                 [vpb.UInt128(high=123, low=456)],
@@ -657,7 +709,7 @@ class TestClient(unittest.TestCase):
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
-        self.service.add_fake_data(utils.cluster_uuid1, [
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
             # Initialize the table on the stream and send over a rowbatch.
             http_table1.metadata_response(),
             http_table1.row_batch_response([["foo"], [200]]),
@@ -684,7 +736,7 @@ class TestClient(unittest.TestCase):
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
-        self.service.add_fake_data(utils.cluster_uuid1, [
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
             # Initialize the table on the stream and send over a rowbatch.
             http_table1.metadata_response(),
             http_table1.row_batch_response([["foo"], [200]]),
@@ -709,7 +761,7 @@ class TestClient(unittest.TestCase):
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
-        self.service.add_fake_data(utils.cluster_uuid1, [
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
             # Initialize the table on the stream with the metadata.
             http_table1.metadata_response(),
             # Send over a single-row batch.
@@ -718,7 +770,8 @@ class TestClient(unittest.TestCase):
             # stream.
 
         ])
-        self.service.trigger_error(utils.cluster_uuid1, ValueError('hi'))
+        self.fake_vizier_service.trigger_error(
+            utils.cluster_uuid1, ValueError('hi'))
 
         # Create the query object.
         query = px_client.query(conns, query_str)
@@ -730,6 +783,53 @@ class TestClient(unittest.TestCase):
         with self.assertRaisesRegex(grpc.aio.AioRpcError, "hi"):
             loop.run_until_complete(
                 run_query_and_tasks(query, [utils.iterate_and_pass(http_tb)]))
+
+    def test_get_healthy_viziers(self) -> None:
+        # Test the callback API. Callback API is a simpler alternative to the TableSub
+        # API that allows you to designate a function that runs on individual rows. Users
+        # can process data without worrying about async processing by using this API.
+        px_client = pixie.Client(
+            token=ACCESS_TOKEN,
+            server_url=self.url(),
+            channel_fn=lambda url: grpc.insecure_channel(url),
+            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
+        )
+
+        conns = px_client.connect_all_clusters()
+        self.assertSetEqual(
+            set([c.name() for c in conns]),
+            {"cluster1", "cluster2"}
+        )
+
+        # Create one http table.
+        http_table1 = self.http_table_factory.create_table(utils.table_id1)
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
+            # Init "http".
+            http_table1.metadata_response(),
+            # Send data for "http".
+            http_table1.row_batch_response([["foo"], [200]]),
+            # End "http".
+            http_table1.end(),
+        ])
+
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid2, [
+            # Init "http".
+            http_table1.metadata_response(),
+            # Send data for "http".
+            http_table1.row_batch_response([["bar"], [404]]),
+            # End "http".
+            http_table1.end(),
+        ])
+
+        query = px_client.query(conns, query_str)
+
+        # Define callback function for "http" table.
+        def http_fn(row: pixie.Row) -> None:
+            pass
+        query.add_callback("http", http_fn)
+
+        # Run the query synchronously.
+        query.run()
 
 
 if __name__ == "__main__":

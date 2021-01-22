@@ -48,24 +48,72 @@ function prepare_src() {
 
   TOOLPATH="src/vizier/py_client"
 
-
-
   cp -LR \
     "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/vizier/py_client/pixie" \
     "${TMPDIR}"
-  cp -LR \
-    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/vizier/vizierpb" \
-    "${TMPDIR}/pixie"
 
-  touch "${TMPDIR}/pixie/vizierpb/__init__.py"
+  PIXIEPKG="${TMPDIR}/pixie"
 
+  # Add README and setup.py
   cp "${TOOLPATH}/README.md" "${TMPDIR}"
   cp "${TOOLPATH}/setup.py" "${TMPDIR}"
+  cp "${TOOLPATH}/requirements.txt" "${TMPDIR}"
 
-  # Redo the paths.
-  sed -i'.original' -e 's/^from .* import vizier_pb2/from . import vizier_pb2/g' "${TMPDIR}/pixie/vizierpb/vizier_pb2_grpc.py"
-  sed -i'.original' -e 's/^from src.vizier.vizierpb/from .vizierpb/g' "${TMPDIR}"/pixie/*.py
+  # vizierpb subpackage setup.
+  cp -LR \
+    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/vizier/vizierpb" \
+    "${PIXIEPKG}"
 
+  # cloudapipb subpackage setup.
+  cp -LR \
+    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/cloud/cloudapipb" \
+    "${PIXIEPKG}"
+
+  # uuidpb subpackage setup.
+  cp -LR \
+    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/common/uuid/proto" \
+    "${PIXIEPKG}/uuidpb"
+
+  # metadatapb subpackage setup.
+  cp -LR \
+    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/shared/k8s/metadatapb" \
+    "${PIXIEPKG}"
+
+  # typespb subpackage setup.
+  cp -LR \
+    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/shared/types/proto" \
+    "${PIXIEPKG}/typespb"
+
+  # vispb subpackage setup.
+  cp -LR \
+    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/shared/vispb" \
+    "${PIXIEPKG}/vispb"
+
+  # Each subpackage needs an __init__.py to be discovered by setuptools.
+  touch "${PIXIEPKG}/vizierpb/__init__.py"
+  touch "${PIXIEPKG}/cloudapipb/__init__.py"
+  touch "${PIXIEPKG}/uuidpb/__init__.py"
+  touch "${PIXIEPKG}/metadatapb/__init__.py"
+  touch "${PIXIEPKG}/typespb/__init__.py"
+  touch "${PIXIEPKG}/vispb/__init__.py"
+
+  # Rewrite the pb package import paths to the new directory structure.
+  replace_pb_paths "${TMPDIR}"/pixie/**/*.py
+  replace_pb_paths "${TMPDIR}"/pixie/*.py
+}
+
+function replace_pb_paths() {
+  # Replaces the import paths for protobufs into the new directory structure.
+  for var in "$@"; do
+    sed -i'.original' \
+        -e 's/^from src.cloud.cloudapipb/from pixie.cloudapipb/g' \
+        -e 's/^from src.vizier.vizierpb/from pixie.vizierpb/g' \
+        -e 's/^from src.common.uuid.proto/from pixie.uuidpb/g' \
+        -e 's/^from src.shared.k8s.metadatapb/from pixie.metadatapb/g' \
+        -e 's/^from src.shared.types.proto/from pixie.typespb/g' \
+        -e 's/^from src.shared.vispb/from pixie.vispb/g' \
+        "${var}"
+      done
 }
 
 function build_wheel() {

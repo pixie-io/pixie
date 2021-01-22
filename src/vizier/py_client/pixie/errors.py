@@ -19,7 +19,7 @@ def _format_line(line_num: int, line: str, column: int, message: str) -> str:
     return TAB + ("\n" + TAB + TAB).join(out)
 
 
-def _line_col_exception(query: str, error_details: vpb.ErrorDetails) -> PxLError:
+def _line_col_exception(query: str, error_details: vpb.ErrorDetails, cluster_id: str) -> PxLError:
     query_lines = query.splitlines()
     combined_message = [""]
 
@@ -34,10 +34,10 @@ def _line_col_exception(query: str, error_details: vpb.ErrorDetails) -> PxLError
             err.message
         ))
 
-    return PxLError("\n".join(combined_message))
+    return PxLError(f"cluster: {cluster_id}\n".join(combined_message))
 
 
-def build_pxl_exception(query: str, err: vpb.Status) -> Exception:
+def build_pxl_exception(query: str, err: vpb.Status, cluster_id: str) -> Exception:
     if not err.error_details:
-        return ValueError(err.message)
-    return _line_col_exception(query, err.error_details)
+        return ValueError(f"On {cluster_id} {err.message}")
+    return _line_col_exception(query, err.error_details, cluster_id)
