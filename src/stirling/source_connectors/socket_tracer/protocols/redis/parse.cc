@@ -308,6 +308,11 @@ const absl::flat_hash_set<std::string_view> kCmdList = {
     "LATENCY LATEST",
     "LATENCY RESET",
     "LATENCY HELP",
+
+    // Additional commands used in Redis sentinel mode.
+    "SENTINEL",
+    // Synchronous replication: http://antirez.com/news/58
+    "REPLCONF ACK",
 };
 
 StatusOr<int> ParseSize(BinaryDecoder* decoder) {
