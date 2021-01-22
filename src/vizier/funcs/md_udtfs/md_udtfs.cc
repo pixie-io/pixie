@@ -11,6 +11,7 @@ namespace funcs {
 namespace md {
 
 void RegisterFuncsOrDie(const VizierFuncFactoryContext& ctx, carnot::udf::Registry* registry) {
+  registry->RegisterFactoryOrDie<GetTables, UDTFWithMDFactory<GetTables>>("GetTables", ctx);
   registry->RegisterFactoryOrDie<GetTableSchemas, UDTFWithMDFactory<GetTableSchemas>>("GetSchemas",
                                                                                       ctx);
   registry->RegisterFactoryOrDie<GetAgentStatus, UDTFWithMDFactory<GetAgentStatus>>(

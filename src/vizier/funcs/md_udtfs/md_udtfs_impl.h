@@ -79,6 +79,68 @@ class UDTFWithTableStoreFactory : public carnot::udf::UDTFFactory {
  private:
   const ::pl::table_store::TableStore* table_store_;
 };
+
+/**
+ * This UDTF fetches all the tables that are available to query from the MDS.
+ */
+class GetTables final : public carnot::udf::UDTF<GetTables> {
+ public:
+  using MDSStub = vizier::services::metadata::MetadataService::Stub;
+  using SchemaResponse = vizier::services::metadata::SchemaResponse;
+  GetTables() = delete;
+  GetTables(std::shared_ptr<MDSStub> stub,
+            std::function<void(grpc::ClientContext*)> add_context_authentication)
+      : idx_(0), stub_(stub), add_context_authentication_func_(add_context_authentication) {}
+
+  static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ONE_KELVIN; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(ColInfo("table_name", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The table name"),
+                     ColInfo("table_desc", types::DataType::STRING, types::PatternType::GENERAL,
+                             "Description of the table"));
+  }
+
+  Status Init(FunctionContext*) {
+    pl::vizier::services::metadata::SchemaRequest req;
+    pl::vizier::services::metadata::SchemaResponse resp;
+
+    grpc::ClientContext ctx;
+    add_context_authentication_func_(&ctx);
+    auto s = stub_->GetSchemas(&ctx, req, &resp);
+    if (!s.ok()) {
+      return error::Internal("Failed to make RPC call to metadata service");
+    }
+
+    for (const auto& [table_name, rel] : resp.schema().relation_map()) {
+      table_info_.emplace_back(table_name, rel.desc());
+    }
+    return Status::OK();
+  }
+
+  bool NextRecord(FunctionContext*, RecordWriter* rw) {
+    const auto& r = table_info_[idx_];
+    rw->Append<IndexOf("table_name")>(r.table_name);
+    rw->Append<IndexOf("table_desc")>(r.table_desc);
+
+    idx_++;
+    return idx_ < static_cast<int>(table_info_.size());
+  }
+
+ private:
+  struct TableInfo {
+    TableInfo(const std::string& table_name, const std::string& table_desc)
+        : table_name(table_name), table_desc(table_desc) {}
+    std::string table_name;
+    std::string table_desc;
+  };
+
+  int idx_ = 0;
+  std::vector<TableInfo> table_info_;
+  std::shared_ptr<MDSStub> stub_;
+  std::function<void(grpc::ClientContext*)> add_context_authentication_func_;
+};
+
 /**
  * This UDTF fetches all the schemas that are available to query from the MDS.
  */
