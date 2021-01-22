@@ -112,7 +112,7 @@ devDockerImageExtrasWithTag = ''
 stashList = []
 
 // Flag controlling if coverage job is enabled.
-isMainCodeReviewRun =  (env.JOB_NAME == 'pixielabs-main-phab-test')
+isMainCodeReviewRun =  (env.JOB_NAME == 'pixie-dev/main-phab-test')
 isMainRun =  (env.JOB_NAME == 'pixie-main/build-and-test-all')
 isNightlyTestRegressionRun = (env.JOB_NAME == 'pixielabs-main-nightly-test-regression')
 isCLIBuildRun =  env.JOB_NAME.startsWith('pixielabs-main-cli-release-build/')
