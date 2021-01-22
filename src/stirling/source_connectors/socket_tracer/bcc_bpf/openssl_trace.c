@@ -7,6 +7,14 @@
 static __inline void process_openssl_data(struct pt_regs* ctx, uint64_t id,
                                           const enum TrafficDirection direction,
                                           const struct data_args_t* args) {
+  // Do not change bytes_count to 'ssize_t' or 'long'.
+  // Using a 64b data type for bytes_count causes negative values,
+  // returned as 'int' from open-ssl, to be aliased into positive
+  // values. This confuses our downstream logic in process_data().
+  // This aliasing would cause process_data() to:
+  // 1. process a message it should not, and
+  // 2. miscalculate the expected next position (with a very large value)
+  // Succinctly, DO NOT MODIFY THE DATATYPE for bytes_count.
   int bytes_count = PT_REGS_RC(ctx);
   process_data(/* vecs */ false, ctx, id, direction, args, bytes_count, /* ssl */ true);
 }
