@@ -36,7 +36,7 @@ require (
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/gdamore/tcell v1.3.0
 	github.com/getsentry/sentry-go v0.5.1
-	github.com/gogo/protobuf v1.3.1
+	github.com/gogo/protobuf v1.3.2
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/golang/mock v1.4.3
 	github.com/golang/protobuf v1.4.2
@@ -61,10 +61,11 @@ require (
 	github.com/lib/pq v1.3.0
 	github.com/mattn/go-runewidth v0.0.9
 	github.com/morikuni/aec v1.0.0 // indirect
+	github.com/nats-io/jwt v1.2.2 // indirect
 	github.com/nats-io/nats-server/v2 v2.1.4
 	github.com/nats-io/nats-streaming-server v0.17.0
-	github.com/nats-io/nats.go v1.9.1
-	github.com/nats-io/stan.go v0.6.0
+	github.com/nats-io/nats.go v1.10.0
+	github.com/nats-io/stan.go v0.8.2
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/olivere/elastic/v7 v7.0.12
 	github.com/opencontainers/image-spec v1.0.1 // indirect
@@ -89,6 +90,7 @@ require (
 	github.com/vbauerster/mpb/v4 v4.11.0
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	github.com/zenazn/goji v0.9.1-0.20160507202103-64eb34159fe5
+	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad // indirect
 	golang.org/x/net v0.0.0-20201216054612-986b41b23924
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
@@ -111,7 +113,11 @@ require (
 	k8s.io/kubectl v0.18.2
 )
 
-// This is a workaround for an API change in gprc-go 1.27.0+ that breaks etcd.
-// See this issue: https://github.com/etcd-io/etcd/pull/11564
-// When etcd is fixed, it should be upgraded and this statement removed.
-replace github.com/coreos/etcd v3.3.18+incompatible => github.com/coreos/etcd v3.3.4+incompatible
+replace (
+	// Fix go mod issues with upper case Sirupsen.
+	github.com/Sirupsen/logrus v1.7.0 => github.com/sirupsen/logrus v1.7.0
+	// This is a workaround for an API change in gprc-go 1.27.0+ that breaks etcd.
+	// See this issue: https://github.com/etcd-io/etcd/pull/11564
+	// When etcd is fixed, it should be upgraded and this statement removed.
+	github.com/coreos/etcd v3.3.18+incompatible => github.com/coreos/etcd v3.3.4+incompatible
+)
