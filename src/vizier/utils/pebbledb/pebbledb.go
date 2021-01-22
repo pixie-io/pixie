@@ -10,8 +10,8 @@ import (
 
 const ttlPrefix = "___ttl___"
 
-// PebbleWrapper wraps a pebbledb datastore.
-type PebbleWrapper struct {
+// DataStore wraps a pebbledb datastore.
+type DataStore struct {
 	db *pebble.DB
 
 	done chan struct{}
@@ -19,13 +19,13 @@ type PebbleWrapper struct {
 }
 
 // New creates a new pebbledb for use as a KVStore.
-func New(location string, opts *pebble.Options, ttlReaperDuration time.Duration) (*PebbleWrapper, error) {
+func New(location string, opts *pebble.Options, ttlReaperDuration time.Duration) (*DataStore, error) {
 	db, err := pebble.Open(location, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	wrap := &PebbleWrapper{
+	wrap := &DataStore{
 		db:   db,
 		done: make(chan struct{}),
 	}
@@ -35,7 +35,7 @@ func New(location string, opts *pebble.Options, ttlReaperDuration time.Duration)
 	return wrap, nil
 }
 
-func (w *PebbleWrapper) ttlWatcher(ttlReaperDuration time.Duration) {
+func (w *DataStore) ttlWatcher(ttlReaperDuration time.Duration) {
 	ticker := time.NewTicker(ttlReaperDuration)
 	defer ticker.Stop()
 	for {
@@ -65,13 +65,13 @@ func (w *PebbleWrapper) ttlWatcher(ttlReaperDuration time.Duration) {
 }
 
 // Set puts the given key and value in the datastore.
-func (w *PebbleWrapper) Set(key string, value string) error {
+func (w *DataStore) Set(key string, value string) error {
 	return w.db.Set([]byte(key), []byte(value), pebble.Sync)
 }
 
 // SetWithTTL puts the given key and value into the datastore with a TTL.
 // Once the TTL expires the datastore is expected to delete the given key and value.
-func (w *PebbleWrapper) SetWithTTL(key string, value string, ttl time.Duration) error {
+func (w *DataStore) SetWithTTL(key string, value string, ttl time.Duration) error {
 	batch := w.db.NewBatch()
 	expiresAt := time.Now().Add(ttl)
 	encodedExpiry, err := expiresAt.MarshalBinary()
@@ -93,7 +93,7 @@ func (w *PebbleWrapper) SetWithTTL(key string, value string, ttl time.Duration) 
 }
 
 // Get gets the value for the given key from the datastore.
-func (w *PebbleWrapper) Get(key string) ([]byte, error) {
+func (w *DataStore) Get(key string) ([]byte, error) {
 	v, closer, err := w.db.Get([]byte(key))
 	if err == pebble.ErrNotFound {
 		return nil, nil
@@ -105,7 +105,7 @@ func (w *PebbleWrapper) Get(key string) ([]byte, error) {
 
 // GetWithRange gets all keys and values within the given range.
 // Treats this as [from, to) i.e. includes the key from, but excludes the key to.
-func (w *PebbleWrapper) GetWithRange(from string, to string) ([]string, [][]byte, error) {
+func (w *DataStore) GetWithRange(from string, to string) ([]string, [][]byte, error) {
 	var keys []string
 	var values [][]byte
 
@@ -126,17 +126,17 @@ func (w *PebbleWrapper) GetWithRange(from string, to string) ([]string, [][]byte
 }
 
 // GetWithPrefix gets all keys and values with the given prefix.
-func (w *PebbleWrapper) GetWithPrefix(prefix string) ([]string, [][]byte, error) {
+func (w *DataStore) GetWithPrefix(prefix string) ([]string, [][]byte, error) {
 	return w.GetWithRange(prefix, string(keyUpperBound([]byte(prefix))))
 }
 
 // Delete deletes the value for the given key from the datastore.
-func (w *PebbleWrapper) Delete(key string) error {
+func (w *DataStore) Delete(key string) error {
 	return w.db.Delete([]byte(key), pebble.Sync)
 }
 
 // DeleteAll deletes all of the given keys and corresponding values in the datastore if they exist.
-func (w *PebbleWrapper) DeleteAll(keys []string) error {
+func (w *DataStore) DeleteAll(keys []string) error {
 	batch := w.db.NewBatch()
 	for _, key := range keys {
 		batch.Delete([]byte(key), pebble.Sync)
@@ -145,13 +145,13 @@ func (w *PebbleWrapper) DeleteAll(keys []string) error {
 }
 
 // DeleteWithPrefix deletes all keys and values with the given prefix.
-func (w *PebbleWrapper) DeleteWithPrefix(prefix string) error {
+func (w *DataStore) DeleteWithPrefix(prefix string) error {
 	return w.db.DeleteRange([]byte(prefix), keyUpperBound([]byte(prefix)), pebble.Sync)
 }
 
 // Close stops the TTL watcher, and closes the underlying datastore.
 // All other operations will fail after calling Close.
-func (w *PebbleWrapper) Close() error {
+func (w *DataStore) Close() error {
 	w.once.Do(func() {
 		close(w.done)
 	})
