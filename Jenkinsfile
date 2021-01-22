@@ -114,11 +114,11 @@ stashList = []
 // Flag controlling if coverage job is enabled.
 isMainCodeReviewRun =  (env.JOB_NAME == 'pixie-dev/main-phab-test')
 isMainRun =  (env.JOB_NAME == 'pixie-main/build-and-test-all')
-isNightlyTestRegressionRun = (env.JOB_NAME == 'pixielabs-main-nightly-test-regression')
-isCLIBuildRun =  env.JOB_NAME.startsWith('pixielabs-main-cli-release-build/')
-isVizierBuildRun = env.JOB_NAME.startsWith('pixielabs-main-vizier-release-build/')
-isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixielabs-main-cloud-staging-build/')
-isCloudProdBuildRun = env.JOB_NAME.startsWith('pixielabs-main-cloud-release-build/')
+isNightlyTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regression')
+isCLIBuildRun =  env.JOB_NAME.startsWith('pixie-release/cli/')
+isVizierBuildRun = env.JOB_NAME.startsWith('pixie-release/vizier/')
+isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-main/cloud-staging/')
+isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-main/cloud/')
 
 // Currently disabling TSAN on BPF builds because it runs too slow.
 // In particular, the uprobe deployment takes far too long. See issue:
