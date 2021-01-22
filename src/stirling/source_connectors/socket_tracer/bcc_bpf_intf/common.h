@@ -49,11 +49,12 @@ inline auto TrafficProtocolEnumValues() {
 #endif
 
 // The direction of traffic expected on a probe.
+// Values have single bit set, so that they could be used as bit masks.
+// WARNING: Do not change the existing mappings (PxL scripts rely on them).
 enum EndpointRole {
-  // Values have single bit set, so that they could be used as bit masks.
-  kRoleUnknown = 1 << 0,
-  kRoleClient = 1 << 1,
-  kRoleServer = 1 << 2,
+  kRoleClient = 1 << 0,
+  kRoleServer = 1 << 1,
+  kRoleUnknown = 1 << 2,
 };
 
 struct traffic_class_t {
