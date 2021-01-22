@@ -160,24 +160,6 @@ func (mr *MockMetadataServiceClientMockRecorder) GetAgentInfo(ctx, in interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentInfo", reflect.TypeOf((*MockMetadataServiceClient)(nil).GetAgentInfo), varargs...)
 }
 
-// GetSchemaByAgent mocks base method
-func (m *MockMetadataServiceClient) GetSchemaByAgent(ctx context.Context, in *metadatapb.SchemaByAgentRequest, opts ...grpc.CallOption) (*metadatapb.SchemaByAgentResponse, error) {
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetSchemaByAgent", varargs...)
-	ret0, _ := ret[0].(*metadatapb.SchemaByAgentResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSchemaByAgent indicates an expected call of GetSchemaByAgent
-func (mr *MockMetadataServiceClientMockRecorder) GetSchemaByAgent(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchemaByAgent", reflect.TypeOf((*MockMetadataServiceClient)(nil).GetSchemaByAgent), varargs...)
-}
-
 // MockMetadataService_GetAgentUpdatesClient is a mock of MetadataService_GetAgentUpdatesClient interface
 type MockMetadataService_GetAgentUpdatesClient struct {
 	ctrl     *gomock.Controller
@@ -346,19 +328,6 @@ func (m *MockMetadataServiceServer) GetAgentInfo(arg0 context.Context, arg1 *met
 // GetAgentInfo indicates an expected call of GetAgentInfo
 func (mr *MockMetadataServiceServerMockRecorder) GetAgentInfo(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentInfo", reflect.TypeOf((*MockMetadataServiceServer)(nil).GetAgentInfo), arg0, arg1)
-}
-
-// GetSchemaByAgent mocks base method
-func (m *MockMetadataServiceServer) GetSchemaByAgent(arg0 context.Context, arg1 *metadatapb.SchemaByAgentRequest) (*metadatapb.SchemaByAgentResponse, error) {
-	ret := m.ctrl.Call(m, "GetSchemaByAgent", arg0, arg1)
-	ret0, _ := ret[0].(*metadatapb.SchemaByAgentResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSchemaByAgent indicates an expected call of GetSchemaByAgent
-func (mr *MockMetadataServiceServerMockRecorder) GetSchemaByAgent(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchemaByAgent", reflect.TypeOf((*MockMetadataServiceServer)(nil).GetSchemaByAgent), arg0, arg1)
 }
 
 // MockMetadataService_GetAgentUpdatesServer is a mock of MetadataService_GetAgentUpdatesServer interface
@@ -603,4 +572,81 @@ func (m *MockMetadataTracepointServiceServer) RemoveTracepoint(arg0 context.Cont
 // RemoveTracepoint indicates an expected call of RemoveTracepoint
 func (mr *MockMetadataTracepointServiceServerMockRecorder) RemoveTracepoint(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveTracepoint", reflect.TypeOf((*MockMetadataTracepointServiceServer)(nil).RemoveTracepoint), arg0, arg1)
+}
+
+// MockMetadataConfigServiceClient is a mock of MetadataConfigServiceClient interface
+type MockMetadataConfigServiceClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockMetadataConfigServiceClientMockRecorder
+}
+
+// MockMetadataConfigServiceClientMockRecorder is the mock recorder for MockMetadataConfigServiceClient
+type MockMetadataConfigServiceClientMockRecorder struct {
+	mock *MockMetadataConfigServiceClient
+}
+
+// NewMockMetadataConfigServiceClient creates a new mock instance
+func NewMockMetadataConfigServiceClient(ctrl *gomock.Controller) *MockMetadataConfigServiceClient {
+	mock := &MockMetadataConfigServiceClient{ctrl: ctrl}
+	mock.recorder = &MockMetadataConfigServiceClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockMetadataConfigServiceClient) EXPECT() *MockMetadataConfigServiceClientMockRecorder {
+	return m.recorder
+}
+
+// UpdateConfig mocks base method
+func (m *MockMetadataConfigServiceClient) UpdateConfig(ctx context.Context, in *metadatapb.UpdateConfigRequest, opts ...grpc.CallOption) (*metadatapb.UpdateConfigResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateConfig", varargs...)
+	ret0, _ := ret[0].(*metadatapb.UpdateConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateConfig indicates an expected call of UpdateConfig
+func (mr *MockMetadataConfigServiceClientMockRecorder) UpdateConfig(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfig", reflect.TypeOf((*MockMetadataConfigServiceClient)(nil).UpdateConfig), varargs...)
+}
+
+// MockMetadataConfigServiceServer is a mock of MetadataConfigServiceServer interface
+type MockMetadataConfigServiceServer struct {
+	ctrl     *gomock.Controller
+	recorder *MockMetadataConfigServiceServerMockRecorder
+}
+
+// MockMetadataConfigServiceServerMockRecorder is the mock recorder for MockMetadataConfigServiceServer
+type MockMetadataConfigServiceServerMockRecorder struct {
+	mock *MockMetadataConfigServiceServer
+}
+
+// NewMockMetadataConfigServiceServer creates a new mock instance
+func NewMockMetadataConfigServiceServer(ctrl *gomock.Controller) *MockMetadataConfigServiceServer {
+	mock := &MockMetadataConfigServiceServer{ctrl: ctrl}
+	mock.recorder = &MockMetadataConfigServiceServerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockMetadataConfigServiceServer) EXPECT() *MockMetadataConfigServiceServerMockRecorder {
+	return m.recorder
+}
+
+// UpdateConfig mocks base method
+func (m *MockMetadataConfigServiceServer) UpdateConfig(arg0 context.Context, arg1 *metadatapb.UpdateConfigRequest) (*metadatapb.UpdateConfigResponse, error) {
+	ret := m.ctrl.Call(m, "UpdateConfig", arg0, arg1)
+	ret0, _ := ret[0].(*metadatapb.UpdateConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateConfig indicates an expected call of UpdateConfig
+func (mr *MockMetadataConfigServiceServerMockRecorder) UpdateConfig(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfig", reflect.TypeOf((*MockMetadataConfigServiceServer)(nil).UpdateConfig), arg0, arg1)
 }

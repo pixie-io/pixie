@@ -132,11 +132,6 @@ func (s *Server) GetSchemas(ctx context.Context, req *metadatapb.SchemaRequest) 
 	return resp, nil
 }
 
-// GetSchemaByAgent returns the schemas in the system.
-func (s *Server) GetSchemaByAgent(ctx context.Context, req *metadatapb.SchemaByAgentRequest) (*metadatapb.SchemaByAgentResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "Not implemented yet")
-}
-
 // GetAgentInfo returns information about registered agents.
 func (s *Server) GetAgentInfo(ctx context.Context, req *metadatapb.AgentInfoRequest) (*metadatapb.AgentInfoResponse, error) {
 	agents, err := s.agentManager.GetActiveAgents()

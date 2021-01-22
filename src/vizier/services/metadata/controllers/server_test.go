@@ -239,31 +239,6 @@ func TestGetSchemas(t *testing.T) {
 	assert.Equal(t, typespb.UINT128, resp.Schema.RelationMap["table2"].Columns[1].ColumnType)
 }
 
-func TestGetSchemaByAgent(t *testing.T) {
-	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
-
-	// Set up server.
-	env, err := metadataenv.New()
-	if err != nil {
-		t.Fatal("Failed to create api environment.")
-	}
-
-	clock := testingutils.NewTestClock(time.Unix(0, 70))
-
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, nil, mockMds, clock)
-
-	req := metadatapb.SchemaByAgentRequest{}
-
-	resp, err := s.GetSchemaByAgent(context.Background(), &req)
-
-	assert.Nil(t, resp)
-	assert.NotNil(t, err)
-}
-
 func Test_Server_RegisterTracepoint(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)

@@ -21,8 +21,6 @@ service MetadataService {
   // These RPC calls are used by UDTFs to fetch metadata.
   rpc GetSchemas(SchemaRequest) returns (SchemaResponse) {}
   rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse) {}
-  // GetSchemaByAgent is currently inimplemented but would be used to fetch the schema for a given agent.
-  rpc GetSchemaByAgent(SchemaByAgentRequest) returns (SchemaByAgentResponse) {}
 }
 
 service MetadataTracepointService {
@@ -35,22 +33,6 @@ service MetadataTracepointService {
 service MetadataConfigService {
   // UpdateConfig updates the PEM config for the given key/value setting.
   rpc UpdateConfig(UpdateConfigRequest) returns (UpdateConfigResponse) {}
-}
-
-// The schema request for each agent's schema.
-message SchemaByAgentRequest {
-  // IDs of the agents to get schemas from. If no IDs are specified,
-  // it is assumed that schemas for all agents are requested.
-  repeated uuidpb.UUID agent_ids = 1;
-}
-
-// The schema response from the metadata service.
-message SchemaByAgentResponse {
-  message SchemaByAgent {
-    uuidpb.UUID agent_id = 1 [ (gogoproto.customname) = "AgentID" ];
-    pl.table_store.schemapb.Schema schema = 2;
-  }
-  repeated SchemaByAgent schema_by_agent = 1;
 }
 
 message SchemaRequest {}
