@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )
@@ -113,6 +114,41 @@ func FirstHealthyVizier(cloudAddr string) (uuid.UUID, error) {
 		}
 	}
 	return uuid.Nil, errors.New("no healthy Viziers available")
+}
+
+// GetCurrentOrFirstHealthyVizier tries to get the vizier from the current context. If unavailable, it gets the ID of
+// the first healthy Vizier.
+func GetCurrentOrFirstHealthyVizier(cloudAddr string) (uuid.UUID, error) {
+	var clusterID uuid.UUID
+	var err error
+	config := k8s.GetConfig()
+	if config != nil {
+		clusterID = GetClusterIDFromKubeConfig(config)
+	}
+	if clusterID != uuid.Nil {
+		clusterInfo, err := GetVizierInfo(cloudAddr, clusterID)
+		if err != nil {
+			cliLog.WithError(err).Error("The current cluster in the kubeconfig not found within this org.")
+			clusterID = uuid.Nil
+		}
+		if clusterInfo.Status != cloudapipb.CS_HEALTHY {
+			cliLog.WithError(err).Errorf("'%s'in the kubeconfig's Pixie instance is unhealthy.", clusterInfo.PrettyClusterName)
+			clusterID = uuid.Nil
+		}
+	}
+	if clusterID == uuid.Nil {
+		clusterID, err = FirstHealthyVizier(cloudAddr)
+		if err != nil {
+			return uuid.Nil, errors.New("Could not fetch healthy vizier")
+		}
+		clusterInfo, err := GetVizierInfo(cloudAddr, clusterID)
+		if err != nil {
+			return uuid.Nil, errors.New("Could not fetch healthy vizier")
+		}
+		cliLog.WithError(err).Infof("Running on '%s' instead.", clusterInfo.PrettyClusterName)
+	}
+
+	return clusterID, nil
 }
 
 // ConnectionToVizierByID connects to the vizier on specified ID.
