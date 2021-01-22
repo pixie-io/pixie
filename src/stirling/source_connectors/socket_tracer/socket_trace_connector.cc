@@ -619,6 +619,14 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
 
   int uprobe_count = 0;
   for (auto& [binary, pid_vec] : ConvertPIDsListToMap(pids)) {
+    if (FLAGS_stirling_disable_self_tracing) {
+      // Don't try to attach uprobes to self.
+      // This speeds up stirling_wrapper initialization significantly.
+      if (pid_vec.size() == 1 && pid_vec[0] == getpid()) {
+        continue;
+      }
+    }
+
     // OpenSSL Probes.
     {
       StatusOr<int> attach_status = AttachOpenSSLUProbes(binary, pid_vec);
