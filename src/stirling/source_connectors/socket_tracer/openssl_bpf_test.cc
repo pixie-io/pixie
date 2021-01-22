@@ -62,6 +62,16 @@ class CurlContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "";
 };
 
+class RubyContainer : public ContainerRunner {
+ public:
+  RubyContainer() : ContainerRunner(kImageName, kContainerNamePrefix, kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kImageName = "ruby:3.0.0-buster";
+  static constexpr std::string_view kContainerNamePrefix = "ruby";
+  static constexpr std::string_view kReadyMessage = "";
+};
+
 class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false> {
  protected:
   OpenSSLTraceTest() {
@@ -77,7 +87,6 @@ class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ fals
   }
 
   NginxContainer server_;
-  CurlContainer client_;
 };
 
 //-----------------------------------------------------------------------------
@@ -124,7 +133,9 @@ std::vector<http::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch
   return ToRecordVector(record_batch, target_record_indices);
 }
 
-TEST_F(OpenSSLTraceTest, ssl_capture) {
+TEST_F(OpenSSLTraceTest, ssl_capture_curl_client) {
+  CurlContainer client;
+
   {
     // Make an SSL request with curl.
     // Because the server uses a self-signed certificate, curl will normally refuse to connect.
@@ -132,10 +143,10 @@ TEST_F(OpenSSLTraceTest, ssl_capture) {
     // To take an exception and make the SSL connection anyways, we use the --insecure flag.
 
     // Run the client in the network of the server, so they can connect to each other.
-    PL_CHECK_OK(client_.Run(10,
-                            {absl::Substitute("--network=container:$0", server_.container_name())},
-                            {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
-    client_.Wait();
+    PL_CHECK_OK(client.Run(10,
+                           {absl::Substitute("--network=container:$0", server_.container_name())},
+                           {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
+    client.Wait();
 
     // Grab the data from Stirling.
     DataTable data_table(kHTTPTable);
@@ -156,6 +167,56 @@ TEST_F(OpenSSLTraceTest, ssl_capture) {
       int worker_pid;
       std::string pid_str =
           pl::Exec(absl::Substitute("pgrep -P $0", server_.process_pid())).ValueOrDie();
+      ASSERT_TRUE(absl::SimpleAtoi(pid_str, &worker_pid));
+      LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
+
+      std::vector<http::Record> records = GetTargetRecords(record_batch, worker_pid);
+
+      http::Record expected_record;
+      expected_record.req.minor_version = 1;
+      expected_record.req.req_path = "/index.html";
+      expected_record.resp.resp_status = 200;
+
+      EXPECT_THAT(records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
+    }
+  }
+}
+
+TEST_F(OpenSSLTraceTest, ssl_capture_ruby_client) {
+  RubyContainer client;
+
+  {
+    std::string rb_script = R"(
+          require 'net/http';
+          require 'uri';
+          uri = URI.parse('https://localhost:443/index.html');
+          http = Net::HTTP.new(uri.host, uri.port);
+          http.use_ssl = true;
+          http.verify_mode = OpenSSL::SSL::VERIFY_NONE;
+          request = Net::HTTP::Get.new(uri.request_uri);
+          response = http.request(request);
+          p response.body;)";
+
+    // Make an SSL request with the client.
+    // Run the client in the network of the server, so they can connect to each other.
+    PL_CHECK_OK(client.Run(10,
+                           {absl::Substitute("--network=container:$0", server_.container_name())},
+                           {"ruby", "-e", rb_script}));
+    client.Wait();
+
+    // Grab the data from Stirling.
+    DataTable data_table(kHTTPTable);
+    source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
+    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+    ASSERT_FALSE(tablets.empty());
+    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+
+    // Check server-side tracing results.
+    {
+      // Nginx has a master process and a worker process. We need the PID of the worker process.
+      int worker_pid;
+      std::string pid_str =
+          pl::Exec(absl::Substitute("pgrep --parent $0", server_.process_pid())).ValueOrDie();
       ASSERT_TRUE(absl::SimpleAtoi(pid_str, &worker_pid));
       LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
 
