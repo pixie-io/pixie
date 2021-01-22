@@ -11,9 +11,8 @@ from .data import (
     RowGenerator,
     Row,
     ClusterID,
-    ConnStatus,
-    Relation,
-    add_cluster_id_to_relation,
+    _Relation,
+    _add_cluster_id_to_relation,
 )
 
 from .errors import (
@@ -34,9 +33,9 @@ class TableSub:
     TableSub is an async generator that yields rows for table.
 
     As a user, you can avoid directly initializing TableSub objects. Instead, you
-    should create a Query object and `subscribe()` to a specific table or `subscribe_all_tables()`.
-    This avoids the complexity of creating a `table_gen` and ties in to the rest of the machinery
-    to query Pixie data.
+    should create a Query object and `subscribe()` to a specific table or
+    `Query.subscribe_all_tables()`. This avoids the complexity of creating a
+    `table_gen` and ties in to the rest of the machinery to query Pixie data.
 
     For more advanced users: the TableSub object is a promise that a table with the specified name
     will be yielded by the `table_gen`. If the table does not get yielded, the async generator will
@@ -108,9 +107,6 @@ class Query:
 
         # The exec stats per query per id.
         self._exec_stats: Dict[ClusterID, vpb.QueryExecutionStats] = {}
-
-        # A queue that will hold info about any failures that occur on the stream(s).
-        self._fail_q: asyncio.Queue[ConnStatus] = asyncio.Queue()
 
         # Tracks whether the query has been run or not.
         self._has_run = False
@@ -223,7 +219,7 @@ class Query:
                                 metadata: vpb.QueryMetadata,
                                 num_conns: int) -> None:
 
-        relation = Relation(add_cluster_id_to_relation(metadata.relation))
+        relation = _Relation(_add_cluster_id_to_relation(metadata.relation))
 
         async with self._tables_lock:
             # Don't create a new table if we've already seen one with the same name.
@@ -318,7 +314,6 @@ class Query:
                 ("pixie-api-client", "python"),
             ]):
                 if res.status.code != 0:
-                    await self._fail_q.put(res.status)
                     self._add_table_to_q(QUERY_ERROR)
                     await self._close_all_tables_for_cluster(conn.cluster_id)
                     raise build_pxl_exception(self._pxl, res.status)

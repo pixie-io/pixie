@@ -4,7 +4,6 @@ from .client import (
     vizier_pb2_grpc,
     Client,
     Query,
-    ConnStatus,
     Conn,
     ClusterID,
     TableSub,

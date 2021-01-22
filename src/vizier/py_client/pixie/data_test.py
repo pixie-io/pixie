@@ -25,7 +25,7 @@ class TestData(unittest.TestCase):
         ])
 
     def test_row(self) -> None:
-        table = data._TableStream("foo", data.Relation(self.relation),
+        table = data._TableStream("foo", data._Relation(self.relation),
                                   expected_num_conns=1, subscribed=True)
 
         # Test __str__().
@@ -50,8 +50,8 @@ class TestData(unittest.TestCase):
     def test_table_stream(self) -> None:
         # Create the table stream.
         table = data._TableStream("foo",
-                                  data.Relation(
-                                      data.add_cluster_id_to_relation(
+                                  data._Relation(
+                                      data._add_cluster_id_to_relation(
                                           self.relation,
                                       )
                                   ),
@@ -90,8 +90,8 @@ class TestData(unittest.TestCase):
     def test_unsubbed_table_stream(self) -> None:
         # Create the table stream, but it should be unsubscribed.
         table = data._TableStream("foo",
-                                  data.Relation(
-                                      data.add_cluster_id_to_relation(
+                                  data._Relation(
+                                      data._add_cluster_id_to_relation(
                                           self.relation,
                                       )
                                   ),

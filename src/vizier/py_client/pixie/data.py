@@ -1,21 +1,15 @@
 import json
 import uuid
 import asyncio
-from typing import Callable, Any, List, Union, AsyncGenerator, Set
+from typing import Callable, Any, List, AsyncGenerator, Set
 
 from collections import OrderedDict
 
 from src.vizier.vizierpb import vizier_pb2 as vpb
 
-DEFAULT_PIXIE_URL = 'work.withpixie.ai'
-
-EOF = None
 
 # Function that transforms a Column, a oneof field in the proto, into the specific data type.
 ColumnFn = Callable[[vpb.Column], Any]
-
-# The Status for a particular connection. If None, that means we're ok.
-ConnStatus = Union[vpb.Status, None]
 
 # The ID of the cluster.
 ClusterID = str
@@ -24,7 +18,7 @@ ClusterID = str
 TableID = str
 
 
-class Relation:
+class _Relation:
     def __init__(self, relation: vpb.Relation) -> None:
         self._columns = relation.columns
         self._col_formatter_cache: List[ColumnFn] = []
@@ -70,7 +64,7 @@ class Relation:
         return self._columns[idx].column_name
 
     def __eq__(self, other: Any) -> bool:
-        if not issubclass(type(other), Relation):
+        if not issubclass(type(other), _Relation):
             return False
 
         if len(self._columns) != len(other._columns):
@@ -83,16 +77,16 @@ class Relation:
         return True
 
 
-def encode_uint128_as_UUID(uint128: vpb.UInt128) -> uuid.UUID:
+def _encode_uint128_as_UUID(uint128: vpb.UInt128) -> uuid.UUID:
     def int_to_bytes(x: int) -> bytes:
         return x.to_bytes(8, byteorder='big')
     return uuid.UUID(bytes=int_to_bytes(uint128.high) + int_to_bytes(uint128.low))
 
 
-class UInt128Encoder(json.JSONEncoder):
+class _UInt128Encoder(json.JSONEncoder):
     def default(self, o: Any) -> str:
         if isinstance(o, vpb.UInt128):
-            return str(encode_uint128_as_UUID(o))
+            return str(_encode_uint128_as_UUID(o))
         return json.JSONEncoder().encode(o)
 
 
@@ -113,11 +107,7 @@ class Row:
       >>> row["colc"]
       "three"
       >>> row
-      {
-        "cola": 1,
-        "colb": 2,
-        "colc": "three"
-      }
+      { "cola": 1, "colb": 2, "colc": "three" }
 
     """
 
@@ -138,13 +128,13 @@ class Row:
         out = OrderedDict()
         for i, c in enumerate(self._data):
             out[self._relation.get_col_name(i)] = c
-        return json.dumps(out, indent=2, cls=UInt128Encoder)
+        return json.dumps(out, indent=2, cls=_UInt128Encoder)
 
 
 RowGenerator = AsyncGenerator[Row, None]
 
 
-class Rowbatch:
+class _Rowbatch:
     def __init__(self, cluster_id: ClusterID, rb: vpb.RowBatchData, close_table: bool = False):
         self.batch = rb
         self.cluster_id = cluster_id
@@ -161,14 +151,14 @@ def _create_cluster_id_col() -> vpb.Relation.ColumnInfo:
     return cluster_id_col
 
 
-def add_cluster_id_to_relation(relation: vpb.Relation) -> vpb.Relation:
+def _add_cluster_id_to_relation(relation: vpb.Relation) -> vpb.Relation:
     cluster_id_relation = vpb.Relation(columns=relation.columns)
     cluster_id_relation.columns.insert(0, _create_cluster_id_col())
     return cluster_id_relation
 
 
 class _TableStream:
-    def __init__(self, name: str, relation: Relation, expected_num_conns: int, subscribed: bool):
+    def __init__(self, name: str, relation: _Relation, expected_num_conns: int, subscribed: bool):
         self.name = name
         self.relation = relation
 
@@ -185,7 +175,7 @@ class _TableStream:
         # The clusters that have called close().
         self._closed_clusters: Set[ClusterID] = set()
 
-        self._rowbatch_q: asyncio.Queue[Rowbatch] = asyncio.Queue()
+        self._rowbatch_q: asyncio.Queue[_Rowbatch] = asyncio.Queue()
         self._subscribed = subscribed
 
     def add_cluster_table_id(self, table_id: TableID, cluster_id: ClusterID) -> None:
@@ -199,18 +189,18 @@ class _TableStream:
     def add_row_batch(self, cluster_id: ClusterID, rowbatch: vpb.RowBatchData) -> None:
         if not self._subscribed:
             return
-        self._rowbatch_q.put_nowait(Rowbatch(cluster_id, rowbatch))
+        self._rowbatch_q.put_nowait(_Rowbatch(cluster_id, rowbatch))
 
     def close(self, cluster_id: ClusterID) -> None:
         self._rowbatch_q.put_nowait(
-            Rowbatch(cluster_id, vpb.RowBatchData(), close_table=True))
+            _Rowbatch(cluster_id, vpb.RowBatchData(), close_table=True))
 
-    async def _row_batches(self) -> AsyncGenerator[Rowbatch, None]:
+    async def _row_batches(self) -> AsyncGenerator[_Rowbatch, None]:
         if not self._subscribed:
             raise ValueError("Table '{}' not subscribed.".format(self.name))
         # Get the batch from somewhere, continue yielding until done.
         while True:
-            rb: Rowbatch = await self._rowbatch_q.get()
+            rb: _Rowbatch = await self._rowbatch_q.get()
             # rb.close_table is how we communicate whether a connection has been closed
             # for a particular cluster. If this happens before we receive eos from each stream,
             # we throw an error.

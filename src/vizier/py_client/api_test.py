@@ -1,12 +1,11 @@
+from pixie import vizier_pb2_grpc, vpb, test_utils as utils
+import pixie
 import unittest
 import grpc
 import asyncio
 from concurrent import futures
 from typing import List, Any, Coroutine, Dict
 
-
-import pixie
-from pixie import vizier_pb2_grpc, vpb, test_utils as utils
 
 ACCESS_TOKEN = "12345678-0000-0000-0000-987654321012"
 
@@ -83,7 +82,6 @@ class FakeConn(pixie.Conn):
 
 class TestClient(unittest.TestCase):
     server_class = VizierServiceFake
-    port = 50051
 
     def setUp(self) -> None:
         # Create a fake server for the VizierService
@@ -92,7 +90,7 @@ class TestClient(unittest.TestCase):
 
         vizier_pb2_grpc.add_VizierServiceServicer_to_server(
             self.service, self.server)
-        self.server.add_insecure_port(f"[::]:{self.port}")
+        self.port = self.server.add_insecure_port("[::]:0")
         self.server.start()
 
         self.http_table_factory = utils.FakeTableFactory("http", vpb.Relation(columns=[
