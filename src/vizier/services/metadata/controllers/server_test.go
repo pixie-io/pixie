@@ -59,6 +59,7 @@ func testTableInfos() []*storepb.TableInfo {
 	tableInfos[0] = &storepb.TableInfo{
 		Name:    "table1",
 		Columns: schema1Cols,
+		Desc:    "table 1 desc",
 	}
 
 	schema2Cols := make([]*storepb.TableInfo_ColumnInfo, 2)
@@ -73,6 +74,7 @@ func testTableInfos() []*storepb.TableInfo {
 	tableInfos[1] = &storepb.TableInfo{
 		Name:    "table2",
 		Columns: schema2Cols,
+		Desc:    "table 2 desc",
 	}
 	return tableInfos
 }
@@ -224,6 +226,7 @@ func TestGetSchemas(t *testing.T) {
 	assert.NotNil(t, resp)
 
 	assert.Equal(t, 2, len(resp.Schema.RelationMap))
+	assert.Equal(t, "table 1 desc", resp.Schema.RelationMap["table1"].Desc)
 	assert.Equal(t, 3, len(resp.Schema.RelationMap["table1"].Columns))
 	assert.Equal(t, "t1Col1", resp.Schema.RelationMap["table1"].Columns[0].ColumnName)
 	assert.Equal(t, typespb.INT64, resp.Schema.RelationMap["table1"].Columns[0].ColumnType)
@@ -232,6 +235,7 @@ func TestGetSchemas(t *testing.T) {
 	assert.Equal(t, "t1Col3", resp.Schema.RelationMap["table1"].Columns[2].ColumnName)
 	assert.Equal(t, typespb.UINT128, resp.Schema.RelationMap["table1"].Columns[2].ColumnType)
 
+	assert.Equal(t, "table 2 desc", resp.Schema.RelationMap["table2"].Desc)
 	assert.Equal(t, 2, len(resp.Schema.RelationMap["table2"].Columns))
 	assert.Equal(t, "t2Col1", resp.Schema.RelationMap["table2"].Columns[0].ColumnName)
 	assert.Equal(t, typespb.BOOLEAN, resp.Schema.RelationMap["table2"].Columns[0].ColumnType)

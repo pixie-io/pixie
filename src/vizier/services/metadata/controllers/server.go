@@ -77,6 +77,7 @@ func convertToRelationMap(computedSchema *storepb.ComputedSchema) (*schemapb.Sch
 		}
 		schemaPb := &schemapb.Relation{
 			Columns: columnPbs,
+			Desc:    schema.Desc,
 		}
 		respSchemaPb.RelationMap[schema.Name] = schemaPb
 	}

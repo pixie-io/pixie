@@ -68,6 +68,8 @@ message Relation {
     pl.types.SemanticType column_semantic_type = 4;
   }
   repeated ColumnInfo columns = 1;
+  // Description of the table.
+  string desc = 2;
 }
 
 // A table serialized as proto.
