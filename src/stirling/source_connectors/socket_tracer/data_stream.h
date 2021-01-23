@@ -56,14 +56,21 @@ class DataStream {
     if (std::holds_alternative<std::monostate>(frames_)) {
       // Reset the type to the expected type.
       frames_ = std::deque<TFrameType>();
+      LOG_IF(ERROR, frames_.valueless_by_exception())
+          << absl::Substitute("valueless_by_exception() triggered by initializing to type: $0",
+                              typeid(TFrameType).name());
     }
+    LOG_IF(ERROR, frames_.valueless_by_exception()) << absl::Substitute(
+        "valueless_by_exception() triggered by type: $0", typeid(TFrameType).name());
     return std::get<std::deque<TFrameType>>(frames_);
   }
 
   template <typename TFrameType>
   const std::deque<TFrameType>& Frames() const {
-    DCHECK(std::holds_alternative<std::deque<TFrameType>>(frames_))
-        << "Must hold the same type as requested.";
+    DCHECK(std::holds_alternative<std::deque<TFrameType>>(frames_)) << absl::Substitute(
+        "Must hold the same type as requested. "
+        "I.e., ConnectionTracker cannot change the type it holds during runtime. $0 -> $1",
+        frames_.index(), typeid(TFrameType).name());
     return std::get<std::deque<TFrameType>>(frames_);
   }
 
