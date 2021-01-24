@@ -2,24 +2,20 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "pebbledb.go",
-        "pebbledb_utils.go",
-    ],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/utils/pebbledb",
+    srcs = ["datastore.go"],
+    importpath = "pixielabs.ai/pixielabs/src/vizier/utils/datastore",
     visibility = ["//visibility:public"],
-    deps = ["@com_github_cockroachdb_pebble//:go_default_library"],
 )
 
 go_test(
     name = "go_default_test",
     size = "small",
-    srcs = [
-        "pebbledb_test.go",
-        "pebbledb_utils_test.go",
-    ],
+    srcs = ["datastore_test.go"],
     embed = [":go_default_library"],
     deps = [
+        "//src/utils/testingutils:go_default_library",
+        "//src/vizier/utils/datastore/etcd:go_default_library",
+        "//src/vizier/utils/datastore/pebbledb:go_default_library",
         "@com_github_cockroachdb_pebble//:go_default_library",
         "@com_github_cockroachdb_pebble//vfs:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",

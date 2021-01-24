@@ -6,7 +6,7 @@ go_library(
         "etcd.go",
         "etcd_utils.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/utils/etcd",
+    importpath = "pixielabs.ai/pixielabs/src/vizier/utils/datastore/etcd",
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_coreos_etcd//clientv3:go_default_library",
@@ -18,13 +18,9 @@ go_library(
 go_test(
     name = "go_default_test",
     size = "small",
-    srcs = [
-        "etcd_test.go",
-        "etcd_utils_test.go",
-    ],
+    srcs = ["etcd_utils_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//src/utils/testingutils:go_default_library",
         "@com_github_coreos_etcd//clientv3:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
     ],

@@ -1,4 +1,4 @@
-package pebbledb
+package datastore
 
 import (
 	"testing"
@@ -7,21 +7,47 @@ import (
 	"github.com/cockroachdb/pebble"
 	"github.com/cockroachdb/pebble/vfs"
 	"github.com/stretchr/testify/assert"
+	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/etcd"
+	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"
 )
 
 func TestPebbleDB(t *testing.T) {
 	memFS := vfs.NewMem()
-	db, err := New("test", &pebble.Options{
+	db, err := pebbledb.New("test", &pebble.Options{
 		FS: memFS,
 	}, 3*time.Second)
 	if err != nil {
 		t.Fatal("failed to initialize a pebbledb")
 	}
 
-	t.Run("Set/Get", func(t *testing.T) {
-		db.Set("key1", "val1")
-		db.Set("key2", "val2")
+	runTests(db, t)
+}
 
+func TestEtcd(t *testing.T) {
+	c, cleanup := testingutils.SetupEtcd()
+	defer cleanup()
+
+	db, err := etcd.New(c)
+	if err != nil {
+		t.Fatal("failed to initialize etcd")
+	}
+
+	runTests(db, t)
+}
+
+func setupDatastore(db Setter) {
+	db.Set("jam1", "neg")
+	db.Set("key1", "val1")
+	db.Set("key2", "val2")
+	db.Set("key3", "val3")
+	db.Set("key9", "val9")
+	db.Set("lim1", "inf")
+}
+
+func runTests(db MultiGetterSetterDeleterCloser, t *testing.T) {
+	t.Run("Set/Get", func(t *testing.T) {
+		setupDatastore(db)
 		v, err := db.Get("key1")
 		if assert.NoError(t, err) {
 			assert.Equal(t, "val1", string(v))
@@ -75,13 +101,7 @@ func TestPebbleDB(t *testing.T) {
 	})
 
 	t.Run("Get", func(t *testing.T) {
-		db.Set("jam1", "nil")
-		db.Set("key1", "val1")
-		db.Set("key2", "val2")
-		db.Set("key3", "val3")
-		db.Set("key9", "val9")
-		db.Set("lim1", "inf")
-
+		setupDatastore(db)
 		t.Run("Range", func(t *testing.T) {
 			keys, vals, err := db.GetWithRange("key1", "key1.1")
 			if assert.NoError(t, err) {
@@ -124,13 +144,7 @@ func TestPebbleDB(t *testing.T) {
 	})
 
 	t.Run("Delete", func(t *testing.T) {
-		db.Set("jam1", "neg")
-		db.Set("key1", "val1")
-		db.Set("key2", "val2")
-		db.Set("key3", "val3")
-		db.Set("key9", "val9")
-		db.Set("lim1", "inf")
-
+		setupDatastore(db)
 		err := db.Delete("key2")
 		if assert.NoError(t, err) {
 			v, err := db.Get("key2")
@@ -146,13 +160,7 @@ func TestPebbleDB(t *testing.T) {
 	})
 
 	t.Run("DeleteAll", func(t *testing.T) {
-		db.Set("jam1", "neg")
-		db.Set("key1", "val1")
-		db.Set("key2", "val2")
-		db.Set("key3", "val3")
-		db.Set("key9", "val9")
-		db.Set("lim1", "inf")
-
+		setupDatastore(db)
 		err := db.DeleteAll([]string{"key1", "key3"})
 		if assert.NoError(t, err) {
 			v, err := db.Get("key1")
@@ -168,13 +176,7 @@ func TestPebbleDB(t *testing.T) {
 	})
 
 	t.Run("DeletePrefix", func(t *testing.T) {
-		db.Set("jam1", "neg")
-		db.Set("key1", "val1")
-		db.Set("key2", "val2")
-		db.Set("key3", "val3")
-		db.Set("key9", "val9")
-		db.Set("lim1", "inf")
-
+		setupDatastore(db)
 		err := db.DeleteWithPrefix("key")
 
 		if assert.NoError(t, err) {
@@ -195,7 +197,7 @@ func TestPebbleDB(t *testing.T) {
 		}
 	})
 
-	err = db.Close()
+	err := db.Close()
 	assert.NoError(t, err)
 
 	// Calling close repeatedly should be fine
