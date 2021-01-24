@@ -138,6 +138,13 @@ func runTests(db MultiGetterSetterDeleterCloser, t *testing.T) {
 				assert.Nil(t, vals)
 			}
 		})
+
+		t.Run("All", func(t *testing.T) {
+			vals, err := db.GetAll([]string{"key1", "key3", "nonexistent", "jam1"})
+			if assert.NoError(t, err) {
+				assert.Equal(t, [][]byte{[]byte("val1"), []byte("val3"), nil, []byte("neg")}, vals)
+			}
+		})
 	})
 
 	t.Run("Delete", func(t *testing.T) {

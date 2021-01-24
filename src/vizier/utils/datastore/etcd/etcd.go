@@ -88,6 +88,29 @@ func (w *DataStore) GetWithPrefix(prefix string) ([]string, [][]byte, error) {
 	return kvsToSlices(resp.Kvs)
 }
 
+// GetAll gets all values for the given keys.
+func (w *DataStore) GetAll(keys []string) ([][]byte, error) {
+	ops := make([]etcd.Op, len(keys))
+	for i, k := range keys {
+		ops[i] = etcd.OpGet(k, etcd.WithSerializable())
+	}
+
+	resp, err := batchOps(context.Background(), w.client, ops)
+	if err != nil {
+		return nil, err
+	}
+
+	vals := make([][]byte, len(keys))
+	for i, r := range resp {
+		rRange := r.GetResponseRange().Kvs
+		if len(rRange) > 0 {
+			vals[i] = rRange[0].Value
+		}
+	}
+
+	return vals, nil
+}
+
 // Delete deletes the value for the given key from the datastore.
 func (w *DataStore) Delete(key string) error {
 	_, err := w.client.Delete(context.Background(), key)

@@ -10,8 +10,7 @@ type Getter interface {
 // MultiGetter is a datastore that implements methods that get multiple keys at once.
 type MultiGetter interface {
 	Getter
-	// TODO(vihang): Decide if we need a GetAll and if so implement it.
-	// GetAll(keys []string) ([][]byte, error)
+	GetAll(keys []string) ([][]byte, error)
 	GetWithRange(from string, to string) ([]string, [][]byte, error)
 	GetWithPrefix(prefix string) ([]string, [][]byte, error)
 }
