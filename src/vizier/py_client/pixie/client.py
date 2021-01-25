@@ -35,10 +35,10 @@ class TableSub:
     """
     TableSub is an async generator that yields rows for table.
 
-    As a user, you can avoid directly initializing TableSub objects. Instead, you
-    should create a Query object and `subscribe()` to a specific table or
-    `Query.subscribe_all_tables()`. This avoids the complexity of creating a
-    `table_gen` and ties in to the rest of the machinery to query Pixie data.
+    You should avoid directly initializing TableSub objects. Instead, you
+    should create a Query object and `Query.subscribe()` to a specific table or
+    `Query.subscribe_all_tables()`. This avoids the complexity involved in creating this
+    object.
 
     For more advanced users: the TableSub object is a promise that a table with the specified name
     will be yielded by the `table_gen`. If the table does not get yielded, the async generator will
@@ -97,17 +97,32 @@ class Conn:
         self._channel_fn = channel_fn
 
     def create_grpc_channel(self) -> grpc.aio.Channel:
+        """ Creates a grpc channel from this connection. """
         if self._channel_fn:
             return self._channel_fn(self.url)
         return grpc.aio.secure_channel(self.url, grpc.ssl_channel_credentials())
 
     def name(self) -> str:
+        """ Get the name of the cluster for this connection. """
         if self.cluster_info is None:
             return self.cluster_id
         return self.cluster_info.pretty_cluster_name
 
 
 class Query:
+    """
+    Query encapsulates the connection logic to Pixie instances.
+
+    If you want to get Pixie data, you will need to initialize `Query` with
+    the clusters and PxL script, `add_callback()` for the desired table,
+    and then `run()` the query.
+
+    Note: you can only invoke `run()` once on a Query object. If you need
+    to run a query multiple times, you must create a new Query object and
+    setup the data processing again. We rely on iterators that must close
+    when a query stops running and cannot allow multiple runs per object.
+    """
+
     def __init__(self, conns: List[Conn], pxl: str):
         self._conns = conns
         if len(self._conns) == 0:
@@ -143,15 +158,11 @@ class Query:
     def subscribe(self, table_name: str) -> TableSub:
         """ Returns an async generator that outputs rows for the table.
 
-        `subscribe()` must be called before `run_async()`, otherwise it will
-        return an error.
-
-        `subscribe()` may only be called once per table name. You can mimic the
-        effect of multiple subscriptions by forwarding the rows to all or your
-        consumers.
-
-        If the table does not exist during the lifetime of the query, the
-        subscription will throw an error.
+        Raises:
+            ValueError: If called on a table that's already been passed as arg to
+                `subscribe` or `add_callback`.
+            ValueError: If called after `run()` or `run_async()` for a particular
+                `Query`
         """
         self._fail_on_multi_run()
         if self._is_table_subscribed(table_name):
@@ -168,7 +179,30 @@ class Query:
         self._tasks.append(task)
 
     def add_callback(self, table_name: str, fn: Callable[[Row], None]) -> None:
-        """ Adds a callback fn that will be invoked on every row of `table_name`. """
+        """
+        Adds a callback fn that will be invoked on every row of `table_name` as
+        they arrive.
+
+        Callbacks are not invoked until you call `run()` (or `run_async()`) on
+        the object.
+
+        If you `add_callback` on a table not produced by the query, `run()`(or `run_async()`) will
+        raise a ValueError when the underlying gRPC channel closes.
+
+
+        The internals of `Query` use the python async api and the callback `fn`
+        will be called concurrently while the Query is running. Note that callbacks
+        themselves should not be async functions.
+
+        Callbacks will block the rest of query execution so expensive and unending
+        callbacks should not be used.
+
+        Raises:
+            ValueError: If called on a table that's already been passed as arg to
+                `subscribe` or `add_callback`.
+            ValueError: If called after `run()` or `run_async()` for a particular
+                `Query`
+        """
         table_sub = self.subscribe(table_name)
 
         async def callback_task() -> None:
@@ -186,7 +220,17 @@ class Query:
         return q
 
     def subscribe_all_tables(self) -> Callable[[], TableSubGenerator]:
-        """ Returns a generator that outputs table subscriptions as they arrive. """
+        """
+        Returns an async generator that outputs table subscriptions as they arrive.
+
+        You can use this generator to call query PxL without knowing the tables
+        that are output beforehand. If you do know the tables beforehand, you should
+        `subscribe` instead as you won't keep data for tables that you don't use.
+
+        This generator will only start iterating after `run_async()` has been
+        called. For the best performance, you will want to call the consumer of
+        the object returned by `subscribe_all_tables` concurrently with `run_async()`
+        """
         self._fail_on_multi_run()
         self._subscribe_all_tables = True
 
@@ -297,9 +341,15 @@ class Query:
         raise ValueError("Query already ran. Cannot perform action.")
 
     async def run_async(self) -> None:
-        """ Executes the query asynchronously.
-        Executes the query across all clusters. Returns any errors that might occur
-        over the connection in a list. If no errors occur, will return a list of all Nones.
+        """ Runs the query asynchronously using asyncio.
+
+        Same as `run()` except you can directly control whether other tasks
+        should be run concurrently while the query is running.
+
+        Raises:
+            ValueError: If any callbacks are on tables that a `Query` never receives.
+            ValueError: If called after `run()` or `run_async()` for a particular
+                `Query`.
         """
         self._fail_on_multi_run()
         self._has_run = True
@@ -308,7 +358,16 @@ class Query:
         ], *[t() for t in self._tasks])
 
     def run(self) -> None:
-        """ Executes the query synchronously """
+        """ Executes the query synchronously.
+
+        Executes the query across all clusters. If any errors occur over the lifetime of
+        any connection, this will raise an error.
+
+        Raises:
+            ValueError: If any callbacks are on tables that a `Query` never receives.
+            ValueError: If called after `run()` or `run_async()` for a particular
+                `Query`.
+        """
         loop = asyncio.get_event_loop()
         return loop.run_until_complete(self.run_async())
 
@@ -352,6 +411,15 @@ class Query:
 
 
 class Client:
+    """
+    Client is the main entry point to the Pixie API.
+
+    To setup the client, you need to generate an API token
+    and pass it in as the first argument.
+    See: https://docs.pixielabs.ai/using-pixie/interfaces/using-api/
+    for more info.
+    """
+
     def __init__(
         self,
         token: str,
@@ -365,6 +433,7 @@ class Client:
         self._conn_channel_fn = conn_channel_fn
 
     def query(self, conns: List[Conn], query_str: str) -> Query:
+        """ Create a new Query object from this client. """
         return Query(conns, query_str)
 
     def _get_cloud_channel(self) -> grpc.Channel:
@@ -427,6 +496,11 @@ class Client:
     def connect_to_cluster(self,
                            cluster_id: ClusterID
                            ) -> Conn:
+        """ Connect to a cluster with the specified ID.
+
+        Returns a connection object that must be passed as an argument to `query()`
+        with the query you wish to send over.
+        """
         # TODO(philkuz) add support for direct connections by making a Cloud API call here.
         cluster_info = self._get_cluster_info(cluster_id)
         return self._create_passthrough_conn(cluster_id, cluster_info)

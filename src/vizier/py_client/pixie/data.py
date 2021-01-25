@@ -113,21 +113,27 @@ class Row:
 
     def __init__(self, table: '_TableStream', data: List[Any]):
         self._data = data
-        self._relation = table.relation
-        if len(self._data) != self._relation.num_cols():
+        self.relation = table.relation
+        if len(self._data) != self.relation.num_cols():
             raise ValueError('Mismatch of row length {} and relation size {}'.format(
-                len(self._data), self._relation.num_cols()))
+                len(self._data), self.relation.num_cols()))
 
-    def __getitem__(self, key: str) -> Any:
-        idx = self._relation.get_key_idx(key)
+    def __getitem__(self, column: str) -> Any:
+        """
+        Returns the value for the specified column.
+
+        Raises:
+            KeyError: If `column` does not exist in `self.relation`.
+        """
+        idx = self.relation.get_key_idx(column)
         if idx == -1:
-            raise KeyError("'{}' not found in relation".format(key))
+            raise KeyError("'{}' not found in relation".format(column))
         return self._data[idx]
 
     def __str__(self) -> str:
         out = OrderedDict()
         for i, c in enumerate(self._data):
-            out[self._relation.get_col_name(i)] = c
+            out[self.relation.get_col_name(i)] = c
         return json.dumps(out, indent=2, cls=_UInt128Encoder)
 
 
