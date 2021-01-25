@@ -784,10 +784,9 @@ class TestClient(unittest.TestCase):
             loop.run_until_complete(
                 run_query_and_tasks(query, [utils.iterate_and_pass(http_tb)]))
 
-    def test_get_healthy_viziers(self) -> None:
-        # Test the callback API. Callback API is a simpler alternative to the TableSub
-        # API that allows you to designate a function that runs on individual rows. Users
-        # can process data without worrying about async processing by using this API.
+    def test_list_healthy_clusters(self) -> None:
+        # Tests that users can list healthy clusters and then
+        # query those clusters.
         px_client = pixie.Client(
             token=ACCESS_TOKEN,
             server_url=self.url(),
@@ -795,9 +794,9 @@ class TestClient(unittest.TestCase):
             conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
         )
 
-        conns = px_client.connect_all_clusters()
+        clusters = px_client.list_healthy_clusters()
         self.assertSetEqual(
-            set([c.name() for c in conns]),
+            set([c.name() for c in clusters]),
             {"cluster1", "cluster2"}
         )
 
@@ -821,7 +820,10 @@ class TestClient(unittest.TestCase):
             http_table1.end(),
         ])
 
-        query = px_client.query(conns, query_str)
+        query = px_client.query([
+            px_client.connect_to_cluster(clusters[0]),
+            px_client.connect_to_cluster(clusters[1]),
+        ], query_str)
 
         # Define callback function for "http" table.
         def http_fn(row: pixie.Row) -> None:

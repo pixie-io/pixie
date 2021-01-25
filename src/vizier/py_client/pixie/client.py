@@ -410,6 +410,24 @@ class Query:
         await self._close_all_tables_for_cluster(conn.cluster_id)
 
 
+class Cluster:
+    """ Cluster contains information users need about a specific cluster.
+
+    Mainly a convenience wrapper around the protobuf message so you
+    can access the name in a simple format.
+    """
+
+    def __init__(self, cluster_id: str, cluster_info: cpb.ClusterInfo):
+        self.id = cluster_id
+        self.info = cluster_info
+
+    def name(self) -> str:
+        """ Returns the name if that info exists, otherwise returns the id. """
+        if self.info is None:
+            return self.id
+        return self.info.pretty_cluster_name
+
+
 class Client:
     """
     Client is the main entry point to the Pixie API.
@@ -451,16 +469,20 @@ class Client:
             ])
             return response.clusters
 
-    def connect_all_clusters(self) -> List[Conn]:
-        healthy_clusters = []
+    def list_healthy_clusters(self) -> List[Cluster]:
+        """ Lists all of the healthy clusters within the Pixie org. """
+        healthy_clusters: List[Cluster] = []
         for c in self._all_clusters():
             if c.status != cpb.CS_HEALTHY:
                 continue
-            if c.config.passthrough_enabled:
-                healthy_clusters.append(
-                    self._create_passthrough_conn(
-                        c.id.data.decode('utf-8'), cluster_info=c)
+            if not c.config.passthrough_enabled:
+                continue
+            healthy_clusters.append(
+                Cluster(
+                    cluster_id=c.id.data.decode('utf-8'),
+                    cluster_info=c,
                 )
+            )
 
         return healthy_clusters
 
@@ -494,13 +516,21 @@ class Client:
         raise NotImplementedError("Direct connection not yet supported")
 
     def connect_to_cluster(self,
-                           cluster_id: ClusterID
+                           cluster: Union[ClusterID, Cluster]
                            ) -> Conn:
-        """ Connect to a cluster with the specified ID.
+        """ Connect to a cluster.
 
         Returns a connection object that must be passed as an argument to `query()`
         with the query you wish to send over.
         """
+        cluster_info: cpb.ClusterInfo = None
+        if isinstance(cluster, ClusterID):
+            cluster_id = cast(ClusterID, cluster)
+        elif isinstance(cluster, Cluster):
+            cluster_id = cluster.id
+        else:
+            raise ValueError("Unexpected type for `cluster`: ", type(cluster))
+
         # TODO(philkuz) add support for direct connections by making a Cloud API call here.
         cluster_info = self._get_cluster_info(cluster_id)
         return self._create_passthrough_conn(cluster_id, cluster_info)
