@@ -33,7 +33,7 @@ StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(obj_tools::ElfReader* elf_reade
  * Detects the version of OpenSSL to return the locations of all relevant symbols for OpenSSL uprobe
  * deployment.
  */
-StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs();
+StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path& openssl_lib);
 
 }  // namespace stirling
 }  // namespace pl

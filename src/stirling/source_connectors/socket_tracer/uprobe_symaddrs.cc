@@ -1,6 +1,7 @@
 #include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -415,9 +416,36 @@ StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(ElfReader* elf_reader, DwarfRea
   return symaddrs;
 }
 
-StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs() {
-  struct openssl_symaddrs_t symaddrs;
+namespace {
 
+// TODO(jps): Change the ElfReader approach to one that uses dlopen() and OpenSSL_version_num.
+StatusOr<int> OpenSSLVersionNum(const std::filesystem::path& openssl_lib) {
+  using ::pl::stirling::obj_tools::SymbolMatchType;
+
+  StatusOr<std::unique_ptr<ElfReader>> elf_reader_status = ElfReader::Create(openssl_lib);
+  if (!elf_reader_status.ok()) {
+    return error::Internal(
+        "Cannot analyze library $0 for uprobe deployment. "
+        "If file is under /var/lib, container may have terminated. "
+        "Message = $1",
+        openssl_lib.string(), elf_reader_status.msg());
+  }
+
+  std::unique_ptr<ElfReader> elf_reader = elf_reader_status.ConsumeValueOrDie();
+
+  if (!elf_reader->SearchSymbols("OPENSSL_1_1_1", SymbolMatchType::kExact).ValueOr({}).empty()) {
+    return 1;
+  }
+
+  if (!elf_reader->SearchSymbols("OPENSSL_1_1_0", SymbolMatchType::kExact).ValueOr({}).empty()) {
+    return 0;
+  }
+
+  return error::Internal("Could not find matching OpenSSL symbol.");
+}
+}  // namespace
+
+StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path& openssl_lib) {
   // Some useful links, for different OpenSSL versions:
   // 1.1.0a:
   // https://github.com/openssl/openssl/blob/ac2c44c6289f9716de4c4beeb284a818eacde517/<filename>
@@ -433,35 +461,52 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs() {
   // Verified to be valid for following versions:
   //  - 1.1.0a to 1.1.0k
   //  - 1.1.1a to 1.1.1e
-  symaddrs.SSL_rbio_offset = 0x10;
+  constexpr int32_t kSSL_RBIO_offset = 0x10;
 
   // Offset of num in struct bio_st.
   // Struct is defined in crypto/bio/bio_lcl.h, crypto/bio/bio_local.h depending on the version.
   //  - In 1.1.1a to 1.1.1e, the offset appears to be 0x30
   //  - In 1.1.0, the value appears to be 0x28.
-  symaddrs.RBIO_num_offset = 0x28;
+  constexpr int32_t kOpenSSL_1_1_0_RBIO_num_offset = 0x28;
+  constexpr int32_t kOpenSSL_1_1_1_RBIO_num_offset = 0x30;
 
-  // Appendix: Using GDB to confirm member offsets on OpenSSL 1.1.1:
-  // (gdb) p s
-  // $18 = (SSL *) 0x55ea646953c0
-  // (gdb) p &s.rbio
-  // $22 = (BIO **) 0x55ea646953d0
-  // (gdb) p s.rbio
-  // $23 = (BIO *) 0x55ea64698b10
-  // (gdb) p &s.rbio.num
-  // $24 = (int *) 0x55ea64698b40
-  // (gdb) p s.rbio.num
-  // $25 = 3
-  // (gdb) p &s.wbio
-  // $26 = (BIO **) 0x55ea646953d8
-  // (gdb) p s.wbio
-  // $27 = (BIO *) 0x55ea64698b10
-  // (gdb) p &s.wbio.num
-  // $28 = (int *) 0x55ea64698b40
-  // (gdb) p s.wbio.num
+  struct openssl_symaddrs_t symaddrs;
+  symaddrs.SSL_rbio_offset = kSSL_RBIO_offset;
+
+  PL_ASSIGN_OR_RETURN(int openssl_minor_version, OpenSSLVersionNum(openssl_lib));
+  switch (openssl_minor_version) {
+    case 0:
+      symaddrs.RBIO_num_offset = kOpenSSL_1_1_0_RBIO_num_offset;
+      break;
+    case 1:
+      symaddrs.RBIO_num_offset = kOpenSSL_1_1_1_RBIO_num_offset;
+      break;
+    default:
+      DCHECK(false);
+      return error::Internal("Unsupported openssl_minor_version: $0", openssl_minor_version);
+  }
 
   return symaddrs;
 }
+
+// Appendix: Using GDB to confirm member offsets on OpenSSL 1.1.1:
+// (gdb) p s
+// $18 = (SSL *) 0x55ea646953c0
+// (gdb) p &s.rbio
+// $22 = (BIO **) 0x55ea646953d0
+// (gdb) p s.rbio
+// $23 = (BIO *) 0x55ea64698b10
+// (gdb) p &s.rbio.num
+// $24 = (int *) 0x55ea64698b40
+// (gdb) p s.rbio.num
+// $25 = 3
+// (gdb) p &s.wbio
+// $26 = (BIO **) 0x55ea646953d8
+// (gdb) p s.wbio
+// $27 = (BIO *) 0x55ea64698b10
+// (gdb) p &s.wbio.num
+// $28 = (int *) 0x55ea64698b40
+// (gdb) p s.wbio.num
 
 }  // namespace stirling
 }  // namespace pl

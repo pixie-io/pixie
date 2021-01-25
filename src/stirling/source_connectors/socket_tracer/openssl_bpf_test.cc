@@ -39,15 +39,30 @@ using ::testing::SizeIs;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
-class NginxContainer : public ContainerRunner {
+class NginxOpenSSL_1_1_0_Container : public ContainerRunner {
  public:
-  NginxContainer()
+  NginxOpenSSL_1_1_0_Container()
       : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
 
  private:
   // Image is a modified nginx image created through bazel rules, and stored as a tar file.
   // It is not pushed to any repo.
-  static constexpr std::string_view kBazelImageTar = "src/stirling/testing/ssl/nginx_ssl_image.tar";
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/testing/ssl/nginx_openssl_1_1_0_image.tar";
+  static constexpr std::string_view kInstanceNamePrefix = "nginx";
+  static constexpr std::string_view kReadyMessage = "";
+};
+
+class NginxOpenSSL_1_1_1_Container : public ContainerRunner {
+ public:
+  NginxOpenSSL_1_1_1_Container()
+      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
+
+ private:
+  // Image is a modified nginx image created through bazel rules, and stored as a tar file.
+  // It is not pushed to any repo.
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/testing/ssl/nginx_openssl_1_1_1_image.tar";
   static constexpr std::string_view kInstanceNamePrefix = "nginx";
   static constexpr std::string_view kReadyMessage = "";
 };
@@ -72,6 +87,7 @@ class RubyContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "";
 };
 
+template <typename NginxContainer>
 class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false> {
  protected:
   OpenSSLTraceTest() {
@@ -88,6 +104,9 @@ class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ fals
 
   NginxContainer server_;
 };
+
+using OpenSSL_1_1_0_TraceTest = OpenSSLTraceTest<NginxOpenSSL_1_1_0_Container>;
+using OpenSSL_1_1_1_TraceTest = OpenSSLTraceTest<NginxOpenSSL_1_1_1_Container>;
 
 //-----------------------------------------------------------------------------
 // Utility Functions and Matchers
@@ -133,7 +152,11 @@ std::vector<http::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch
   return ToRecordVector(record_batch, target_record_indices);
 }
 
-TEST_F(OpenSSLTraceTest, ssl_capture_curl_client) {
+typedef ::testing::Types<NginxOpenSSL_1_1_0_Container, NginxOpenSSL_1_1_1_Container>
+    NginxImplementations;
+TYPED_TEST_SUITE(OpenSSLTraceTest, NginxImplementations);
+
+TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
   CurlContainer client;
 
   {
@@ -143,14 +166,14 @@ TEST_F(OpenSSLTraceTest, ssl_capture_curl_client) {
     // To take an exception and make the SSL connection anyways, we use the --insecure flag.
 
     // Run the client in the network of the server, so they can connect to each other.
-    PL_CHECK_OK(client.Run(10,
-                           {absl::Substitute("--network=container:$0", server_.container_name())},
-                           {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
+    PL_CHECK_OK(
+        client.Run(10, {absl::Substitute("--network=container:$0", this->server_.container_name())},
+                   {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
     client.Wait();
 
     // Grab the data from Stirling.
     DataTable data_table(kHTTPTable);
-    source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
+    this->source_->TransferData(this->ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
     std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
@@ -166,7 +189,7 @@ TEST_F(OpenSSLTraceTest, ssl_capture_curl_client) {
       // Nginx has a master process and a worker process. We need the PID of the worker process.
       int worker_pid;
       std::string pid_str =
-          pl::Exec(absl::Substitute("pgrep -P $0", server_.process_pid())).ValueOrDie();
+          pl::Exec(absl::Substitute("pgrep -P $0", this->server_.process_pid())).ValueOrDie();
       ASSERT_TRUE(absl::SimpleAtoi(pid_str, &worker_pid));
       LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
 
@@ -182,7 +205,7 @@ TEST_F(OpenSSLTraceTest, ssl_capture_curl_client) {
   }
 }
 
-TEST_F(OpenSSLTraceTest, ssl_capture_ruby_client) {
+TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
   RubyContainer client;
 
   {
@@ -199,14 +222,14 @@ TEST_F(OpenSSLTraceTest, ssl_capture_ruby_client) {
 
     // Make an SSL request with the client.
     // Run the client in the network of the server, so they can connect to each other.
-    PL_CHECK_OK(client.Run(10,
-                           {absl::Substitute("--network=container:$0", server_.container_name())},
-                           {"ruby", "-e", rb_script}));
+    PL_CHECK_OK(
+        client.Run(10, {absl::Substitute("--network=container:$0", this->server_.container_name())},
+                   {"ruby", "-e", rb_script}));
     client.Wait();
 
     // Grab the data from Stirling.
     DataTable data_table(kHTTPTable);
-    source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
+    this->source_->TransferData(this->ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
     std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
@@ -216,7 +239,7 @@ TEST_F(OpenSSLTraceTest, ssl_capture_ruby_client) {
       // Nginx has a master process and a worker process. We need the PID of the worker process.
       int worker_pid;
       std::string pid_str =
-          pl::Exec(absl::Substitute("pgrep --parent $0", server_.process_pid())).ValueOrDie();
+          pl::Exec(absl::Substitute("pgrep --parent $0", this->server_.process_pid())).ValueOrDie();
       ASSERT_TRUE(absl::SimpleAtoi(pid_str, &worker_pid));
       LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
 

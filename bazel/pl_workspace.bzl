@@ -54,6 +54,22 @@ def _docker_images_setup():
         repository = "library/nginx",
     )
 
+    # NGINX with OpenSSL 1.1.0, for Stirling tests of OpenSSL tracing.
+    container_pull(
+        name = "nginx_openssl_1_1_0",
+        digest = "sha256:204a9a8e65061b10b92ad361dd6f406248404fe60efd5d6a8f2595f18bb37aad",
+        registry = "index.docker.io",
+        repository = "library/nginx",
+    )
+
+    # NGINX with OpenSSL 1.1.1, for Stirling tests of OpenSSL tracing.
+    container_pull(
+        name = "nginx_openssl_1_1_1",
+        digest = "sha256:0b159cd1ee1203dad901967ac55eee18c24da84ba3be384690304be93538bea8",
+        registry = "index.docker.io",
+        repository = "library/nginx",
+    )
+
     container_pull(
         name = "openresty",
         # Stretch image.

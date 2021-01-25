@@ -26,8 +26,17 @@ container_layer(
 )
 
 container_image(
-    name = "nginx_ssl_image",
-    base = "@nginx_base//image",
+    name = "nginx_openssl_1_1_0_image",
+    base = "@nginx_openssl_1_1_0//image",
+    layers = [
+        ":nginx_conf",
+        ":nginx_ssl_keys",
+    ],
+)
+
+container_image(
+    name = "nginx_openssl_1_1_1_image",
+    base = "@nginx_openssl_1_1_1//image",
     layers = [
         ":nginx_conf",
         ":nginx_ssl_keys",

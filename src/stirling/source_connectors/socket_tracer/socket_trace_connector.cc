@@ -396,9 +396,9 @@ StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(const ArrayView<UProbeTmpl>
 
 namespace {
 Status UpdateOpenSSLSymAddrs(
-    const std::vector<int32_t>& pids,
+    std::filesystem::path container_lib, const std::vector<int32_t>& pids,
     ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>* openssl_symaddrs_map) {
-  PL_ASSIGN_OR_RETURN(struct openssl_symaddrs_t symaddrs, OpenSSLSymAddrs());
+  PL_ASSIGN_OR_RETURN(struct openssl_symaddrs_t symaddrs, OpenSSLSymAddrs(container_lib));
 
   for (auto& pid : pids) {
     ebpf::StatusTuple s = openssl_symaddrs_map->update_value(pid, symaddrs);
@@ -460,10 +460,10 @@ Status UpdateGoTLSSymAddrs(
 // because of the mixed & duplicate data events from these 2 sources.
 StatusOr<int> SocketTraceConnector::AttachHTTP2Probes(
     const std::string& binary, obj_tools::ElfReader* elf_reader,
-    obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& new_pids,
+    obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
     ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t>* http2_symaddrs_map) {
   // Step 1: Update BPF symaddrs for this binary.
-  Status s = UpdateGoHTTP2SymAddrs(elf_reader, dwarf_reader, new_pids, http2_symaddrs_map);
+  Status s = UpdateGoHTTP2SymAddrs(elf_reader, dwarf_reader, pids, http2_symaddrs_map);
   if (!s.ok()) {
     return 0;
   }
@@ -526,8 +526,10 @@ StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(
   container_lib = sysconfig.ToHostPath(container_lib);
   PL_RETURN_IF_ERROR(fs::Exists(container_lib));
 
-  Status s = UpdateOpenSSLSymAddrs(pids, openssl_symaddrs_map);
+  Status s = UpdateOpenSSLSymAddrs(container_lib, pids, openssl_symaddrs_map);
   if (!s.ok()) {
+    LOG(ERROR) << absl::Substitute("Could not set OpenSSL symbol addresses for binary = $0 [$1]",
+                                   binary, s.ToString());
     return 0;
   }
 
@@ -546,10 +548,10 @@ StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(
 
 StatusOr<int> SocketTraceConnector::AttachGoTLSUProbes(
     const std::string& binary, obj_tools::ElfReader* elf_reader,
-    obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& new_pids,
+    obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
     ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t>* go_tls_symaddrs_map) {
   // Step 1: Update BPF symbols_map on all new PIDs.
-  Status s = UpdateGoTLSSymAddrs(elf_reader, dwarf_reader, new_pids, go_tls_symaddrs_map);
+  Status s = UpdateGoTLSSymAddrs(elf_reader, dwarf_reader, pids, go_tls_symaddrs_map);
   if (!s.ok()) {
     // Doesn't appear to be a binary with the mandatory symbols.
     // Might not even be a golang binary.
@@ -574,7 +576,7 @@ std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
   const system::Config& sysconfig = system::Config::GetInstance();
 
   // Convert to a map of binaries, with the upids that are instances of that binary.
-  std::map<std::string, std::vector<int32_t>> new_pids;
+  std::map<std::string, std::vector<int32_t>> pids;
 
   PL_ASSIGN_OR(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create(),
                return {});
@@ -595,12 +597,12 @@ std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
     if (!fs::Exists(host_exe_path).ok()) {
       continue;
     }
-    new_pids[host_exe_path.string()].push_back(upid.pid());
+    pids[host_exe_path.string()].push_back(upid.pid());
   }
 
-  LOG_FIRST_N(INFO, 1) << absl::Substitute("New PIDs count = $0", new_pids.size());
+  LOG_FIRST_N(INFO, 1) << absl::Substitute("New PIDs count = $0", pids.size());
 
-  return new_pids;
+  return pids;
 }
 
 }  // namespace
@@ -697,7 +699,7 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
       }
     }
 
-    // HTTP2 Probes.
+    // Go HTTP2 Probes.
     if (protocol_transfer_specs_[kProtocolHTTP2].enabled) {
       StatusOr<int> attach_status = AttachHTTP2Probes(binary, elf_reader.get(), dwarf_reader.get(),
                                                       pid_vec, http2_symaddrs_map_.get());
