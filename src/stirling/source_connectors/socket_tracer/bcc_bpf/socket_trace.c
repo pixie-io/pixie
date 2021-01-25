@@ -803,7 +803,10 @@ static __inline void process_syscall_close(struct pt_regs* ctx, uint64_t id,
 //    Return probe: responsible for retrieving recorded arguments,
 //                  extracting the return value,
 //                  and processing the syscall with the combined context.
+//
+// Syscall signatures are listed. Look for detailed synopses in man pages.
 
+// int open(const char *pathname, int flags);
 int syscall__probe_ret_open(struct pt_regs* ctx) {
   uint64_t id = bpf_get_current_pid_tgid();
 
@@ -813,6 +816,7 @@ int syscall__probe_ret_open(struct pt_regs* ctx) {
   return 0;
 }
 
+// int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 int syscall__probe_entry_connect(struct pt_regs* ctx, int sockfd, const struct sockaddr* addr,
                                  socklen_t addrlen) {
   uint64_t id = bpf_get_current_pid_tgid();
@@ -839,6 +843,7 @@ int syscall__probe_ret_connect(struct pt_regs* ctx) {
   return 0;
 }
 
+// int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 int syscall__probe_entry_accept(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
                                 socklen_t* addrlen) {
   uint64_t id = bpf_get_current_pid_tgid();
@@ -864,6 +869,7 @@ int syscall__probe_ret_accept(struct pt_regs* ctx) {
   return 0;
 }
 
+// int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags);
 int syscall__probe_entry_accept4(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
                                  socklen_t* addrlen) {
   uint64_t id = bpf_get_current_pid_tgid();
@@ -889,6 +895,7 @@ int syscall__probe_ret_accept4(struct pt_regs* ctx) {
   return 0;
 }
 
+// ssize_t write(int fd, const void *buf, size_t count);
 int syscall__probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   uint64_t id = bpf_get_current_pid_tgid();
 
@@ -917,6 +924,7 @@ int syscall__probe_ret_write(struct pt_regs* ctx) {
   return 0;
 }
 
+// ssize_t send(int sockfd, const void *buf, size_t len, int flags);
 int syscall__probe_entry_send(struct pt_regs* ctx, int sockfd, char* buf, size_t len) {
   uint64_t id = bpf_get_current_pid_tgid();
 
@@ -944,6 +952,7 @@ int syscall__probe_ret_send(struct pt_regs* ctx) {
   return 0;
 }
 
+// ssize_t read(int fd, void *buf, size_t count);
 int syscall__probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   uint64_t id = bpf_get_current_pid_tgid();
 
@@ -972,6 +981,7 @@ int syscall__probe_ret_read(struct pt_regs* ctx) {
   return 0;
 }
 
+// ssize_t recv(int sockfd, void *buf, size_t len, int flags);
 int syscall__probe_entry_recv(struct pt_regs* ctx, int sockfd, char* buf, size_t len) {
   uint64_t id = bpf_get_current_pid_tgid();
 
@@ -999,6 +1009,8 @@ int syscall__probe_ret_recv(struct pt_regs* ctx) {
   return 0;
 }
 
+// ssize_t sendto(int sockfd, const void *buf, size_t len, int flags,
+//                const struct sockaddr *dest_addr, socklen_t addrlen);
 int syscall__probe_entry_sendto(struct pt_regs* ctx, int sockfd, char* buf, size_t len, int flags,
                                 const struct sockaddr* dest_addr, socklen_t addrlen) {
   uint64_t id = bpf_get_current_pid_tgid();
@@ -1056,6 +1068,8 @@ int syscall__probe_ret_sendto(struct pt_regs* ctx) {
   return 0;
 }
 
+// ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
+//                  struct sockaddr *src_addr, socklen_t *addrlen);
 int syscall__probe_entry_recvfrom(struct pt_regs* ctx, int sockfd, char* buf, size_t len, int flags,
                                   struct sockaddr* src_addr, socklen_t* addrlen) {
   uint64_t id = bpf_get_current_pid_tgid();
@@ -1099,6 +1113,7 @@ int syscall__probe_ret_recvfrom(struct pt_regs* ctx) {
   return 0;
 }
 
+// ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags);
 int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int sockfd,
                                  const struct user_msghdr* msghdr) {
   uint64_t id = bpf_get_current_pid_tgid();
@@ -1195,6 +1210,7 @@ int syscall__probe_ret_sendmmsg(struct pt_regs* ctx) {
   return 0;
 }
 
+// ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags);
 int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int sockfd, struct user_msghdr* msghdr) {
   uint64_t id = bpf_get_current_pid_tgid();
 
@@ -1240,6 +1256,8 @@ int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
   return 0;
 }
 
+// int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen,
+//              int flags, struct timespec *timeout);
 int syscall__probe_entry_recvmmsg(struct pt_regs* ctx, int sockfd, struct mmsghdr* msgvec,
                                   unsigned int vlen) {
   uint64_t id = bpf_get_current_pid_tgid();
@@ -1290,6 +1308,7 @@ int syscall__probe_ret_recvmmsg(struct pt_regs* ctx) {
   return 0;
 }
 
+// ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
 int syscall__probe_entry_writev(struct pt_regs* ctx, int fd, const struct iovec* iov, int iovlen) {
   uint64_t id = bpf_get_current_pid_tgid();
 
@@ -1318,6 +1337,7 @@ int syscall__probe_ret_writev(struct pt_regs* ctx) {
   return 0;
 }
 
+// ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
 int syscall__probe_entry_readv(struct pt_regs* ctx, int fd, struct iovec* iov, int iovlen) {
   uint64_t id = bpf_get_current_pid_tgid();
 
@@ -1346,6 +1366,7 @@ int syscall__probe_ret_readv(struct pt_regs* ctx) {
   return 0;
 }
 
+// int close(int fd);
 int syscall__probe_entry_close(struct pt_regs* ctx, unsigned int fd) {
   uint64_t id = bpf_get_current_pid_tgid();
 
