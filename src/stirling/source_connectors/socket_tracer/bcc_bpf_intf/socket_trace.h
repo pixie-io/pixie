@@ -97,6 +97,34 @@ struct close_event_t {
 // and effecitvely makes the maximum message size to be CHUNK_LIMIT*MAX_MSG_SIZE.
 #define CHUNK_LIMIT 4
 
+// Unique ID to all syscalls and a few other notable functions.
+// This applies to all data events sent to socket_data_events perf buffer.
+enum source_function_t {
+  kSourceFunctionUnknown,
+
+  // For syscalls.
+  kSyscallWrite,
+  kSyscallRead,
+  kSyscallSend,
+  kSyscallRecv,
+  kSyscallSendTo,
+  kSyscallRecvFrom,
+  kSyscallSendMsg,
+  kSyscallRecvMsg,
+  kSyscallSendMMsg,
+  kSyscallRecvMMsg,
+  kSyscallWriteV,
+  kSyscallReadV,
+
+  // For Go TLS libraries.
+  kGoTLSConnWrite,
+  kGoTLSConnRead,
+
+  // For SSL libraries.
+  kSSLWrite,
+  kSSLRead,
+};
+
 struct socket_data_event_t {
   // We split attributes into a separate struct, because BPF gets upset if you do lots of
   // size arithmetic. This makes it so that it's attributes followed by message.
@@ -115,6 +143,8 @@ struct socket_data_event_t {
     enum TrafficDirection direction;
     // Whether the traffic was collected from an encrypted channel.
     bool ssl;
+    // Represents the syscall or function that produces this event.
+    enum source_function_t source_fn;
     // A 0-based position number for this event on the connection, in terms of byte position.
     // The position is for the first byte of this message.
     // Note that write/send have separate sequences than read/recv.
@@ -160,10 +190,11 @@ inline std::string ToString(const traffic_class_t& tcls) {
 }
 
 inline std::string ToString(const socket_data_event_t::attr_t& attr) {
-  return absl::Substitute("[ts=$0 conn_id=$1 tcls=$2 dir=$3 ssl=$4 pos=$5 size=$6 buf_size=$7]",
-                          attr.timestamp_ns, ToString(attr.conn_id), ToString(attr.traffic_class),
-                          magic_enum::enum_name(attr.direction), attr.ssl, attr.pos, attr.msg_size,
-                          attr.msg_buf_size);
+  return absl::Substitute(
+      "[ts=$0 conn_id=$1 tcls=$2 dir=$3 ssl=$4 source_fn=$5 pos=$6 size=$7 buf_size=$8]",
+      attr.timestamp_ns, ToString(attr.conn_id), ToString(attr.traffic_class),
+      magic_enum::enum_name(attr.direction), attr.ssl, magic_enum::enum_name(attr.source_fn),
+      attr.pos, attr.msg_size, attr.msg_buf_size);
 }
 
 inline std::string ToString(const close_event_t& event) {

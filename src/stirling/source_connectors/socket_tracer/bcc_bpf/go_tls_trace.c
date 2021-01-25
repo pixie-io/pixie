@@ -65,6 +65,7 @@ int probe_tls_conn_write(struct pt_regs* ctx) {
   set_conn_as_ssl(id, fd);
 
   struct data_args_t args;
+  args.source_fn = kGoTLSConnWrite;
   args.buf = plaintext.ptr;
   args.msg_len = 0;  // Unused.
   args.fd = fd;
@@ -133,6 +134,7 @@ int probe_tls_conn_read(struct pt_regs* ctx) {
   set_conn_as_ssl(id, fd);
 
   struct data_args_t args;
+  args.source_fn = kGoTLSConnRead;
   args.buf = plaintext.ptr;
   args.msg_len = 0;  // Unused.
   args.fd = fd;

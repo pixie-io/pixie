@@ -47,6 +47,8 @@ struct accept_args_t {
 };
 
 struct data_args_t {
+  // Represents the function from which this argument group originates.
+  enum source_function_t source_fn;
   uint32_t fd;
   // For send()/recv()/write()/read().
   const char* buf;
@@ -178,7 +180,8 @@ static __inline void set_conn_as_ssl(uint64_t id, uint32_t fd) {
   conn_info->ssl = true;
 }
 
-static __inline struct socket_data_event_t* fill_event(enum TrafficDirection direction,
+static __inline struct socket_data_event_t* fill_event(enum source_function_t src_fn,
+                                                       enum TrafficDirection direction,
                                                        const struct conn_info_t* conn_info) {
   uint32_t kZero = 0;
   struct socket_data_event_t* event = data_buffer_heap.lookup(&kZero);
@@ -186,6 +189,7 @@ static __inline struct socket_data_event_t* fill_event(enum TrafficDirection dir
     return NULL;
   }
   event->attr.timestamp_ns = bpf_ktime_get_ns();
+  event->attr.source_fn = src_fn;
   event->attr.ssl = conn_info->ssl;
   event->attr.direction = direction;
   event->attr.conn_id = conn_info->conn_id;
@@ -706,7 +710,7 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
   bool send_data = !is_stirling_tgid(tgid) && should_trace_protocol_data(conn_info) &&
                    (conn_disabled_tsid == NULL || conn_info->conn_id.tsid > *conn_disabled_tsid);
 
-  struct socket_data_event_t* event = fill_event(direction, conn_info);
+  struct socket_data_event_t* event = fill_event(args->source_fn, direction, conn_info);
   if (event == NULL) {
     // event == NULL not expected to ever happen.
     return;
@@ -890,6 +894,7 @@ int syscall__probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t co
 
   // Stash arguments.
   struct data_args_t write_args = {};
+  write_args.source_fn = kSyscallWrite;
   write_args.fd = fd;
   write_args.buf = buf;
   active_write_args_map.update(&id, &write_args);
@@ -917,6 +922,7 @@ int syscall__probe_entry_send(struct pt_regs* ctx, int sockfd, char* buf, size_t
 
   // Stash arguments.
   struct data_args_t write_args = {};
+  write_args.source_fn = kSyscallSend;
   write_args.fd = sockfd;
   write_args.buf = buf;
   active_write_args_map.update(&id, &write_args);
@@ -943,6 +949,7 @@ int syscall__probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t cou
 
   // Stash arguments.
   struct data_args_t read_args = {};
+  read_args.source_fn = kSyscallRead;
   read_args.fd = fd;
   read_args.buf = buf;
   active_read_args_map.update(&id, &read_args);
@@ -970,6 +977,7 @@ int syscall__probe_entry_recv(struct pt_regs* ctx, int sockfd, char* buf, size_t
 
   // Stash arguments.
   struct data_args_t read_args = {};
+  read_args.source_fn = kSyscallRecv;
   read_args.fd = sockfd;
   read_args.buf = buf;
   active_read_args_map.update(&id, &read_args);
@@ -1005,6 +1013,7 @@ int syscall__probe_entry_sendto(struct pt_regs* ctx, int sockfd, char* buf, size
 
   // Stash arguments.
   struct data_args_t write_args = {};
+  write_args.source_fn = kSyscallSendTo;
   write_args.fd = sockfd;
   write_args.buf = buf;
   active_write_args_map.update(&id, &write_args);
@@ -1061,6 +1070,7 @@ int syscall__probe_entry_recvfrom(struct pt_regs* ctx, int sockfd, char* buf, si
 
   // Stash arguments.
   struct data_args_t read_args = {};
+  read_args.source_fn = kSyscallRecvFrom;
   read_args.fd = sockfd;
   read_args.buf = buf;
   active_read_args_map.update(&id, &read_args);
@@ -1104,6 +1114,7 @@ int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int sockfd,
 
     // Stash arguments.
     struct data_args_t write_args = {};
+    write_args.source_fn = kSyscallSendMsg;
     write_args.fd = sockfd;
     write_args.iov = msghdr->msg_iov;
     write_args.iovlen = msghdr->msg_iovlen;
@@ -1150,6 +1161,7 @@ int syscall__probe_entry_sendmmsg(struct pt_regs* ctx, int sockfd, struct mmsghd
 
     // Stash arguments.
     struct data_args_t write_args = {};
+    write_args.source_fn = kSyscallSendMMsg;
     write_args.fd = sockfd;
     write_args.iov = msgvec[0].msg_hdr.msg_iov;
     write_args.iovlen = msgvec[0].msg_hdr.msg_iovlen;
@@ -1197,6 +1209,7 @@ int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int sockfd, struct user_ms
 
     // Stash arguments.
     struct data_args_t read_args = {};
+    read_args.source_fn = kSyscallRecvMMsg;
     read_args.fd = sockfd;
     read_args.iov = msghdr->msg_iov;
     read_args.iovlen = msghdr->msg_iovlen;
@@ -1243,6 +1256,7 @@ int syscall__probe_entry_recvmmsg(struct pt_regs* ctx, int sockfd, struct mmsghd
 
     // Stash arguments.
     struct data_args_t read_args = {};
+    read_args.source_fn = kSyscallRecvMMsg;
     read_args.fd = sockfd;
     read_args.iov = msgvec[0].msg_hdr.msg_iov;
     read_args.iovlen = msgvec[0].msg_hdr.msg_iovlen;
@@ -1281,6 +1295,7 @@ int syscall__probe_entry_writev(struct pt_regs* ctx, int fd, const struct iovec*
 
   // Stash arguments.
   struct data_args_t write_args = {};
+  write_args.source_fn = kSyscallWriteV;
   write_args.fd = fd;
   write_args.iov = iov;
   write_args.iovlen = iovlen;
@@ -1308,6 +1323,7 @@ int syscall__probe_entry_readv(struct pt_regs* ctx, int fd, struct iovec* iov, i
 
   // Stash arguments.
   struct data_args_t read_args = {};
+  read_args.source_fn = kSyscallReadV;
   read_args.fd = fd;
   read_args.iov = iov;
   read_args.iovlen = iovlen;

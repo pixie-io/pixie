@@ -95,6 +95,7 @@ int probe_entry_SSL_write(struct pt_regs* ctx) {
   char* buf = (char*)PT_REGS_PARM2(ctx);
 
   struct data_args_t write_args = {};
+  write_args.source_fn = kSSLWrite;
   write_args.fd = get_fd(ssl);
   write_args.buf = buf;
   active_ssl_write_args_map.update(&id, &write_args);
@@ -126,6 +127,7 @@ int probe_entry_SSL_read(struct pt_regs* ctx) {
   char* buf = (char*)PT_REGS_PARM2(ctx);
 
   struct data_args_t read_args = {};
+  read_args.source_fn = kSSLRead;
   read_args.fd = get_fd(ssl);
   read_args.buf = buf;
   active_ssl_read_args_map.update(&id, &read_args);
