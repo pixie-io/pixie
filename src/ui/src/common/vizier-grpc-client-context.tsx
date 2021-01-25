@@ -23,14 +23,14 @@ export type ClusterStatus =
   typeof CLUSTER_STATUS_CONNECTED |
   typeof CLUSTER_STATUS_UPDATE_FAILED;
 
-interface ContextProps {
+export interface VizierGRPCClientContextProps {
   client: VizierGRPCClient | null;
   healthy: boolean;
   loading: boolean;
   clusterStatus: ClusterStatus;
 }
 
-const VizierGRPCClientContext = React.createContext<ContextProps>(null);
+export const VizierGRPCClientContext = React.createContext<VizierGRPCClientContextProps>(null);
 
 interface Props {
   passthroughEnabled: boolean;

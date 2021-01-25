@@ -18,7 +18,7 @@ interface ShowArgs {
 
 type ShowSnackbarFunc = (args: ShowArgs) => void;
 
-const SnackbarContext = React.createContext<ShowSnackbarFunc>(null);
+export const SnackbarContext = React.createContext<ShowSnackbarFunc>(null);
 
 type SnackbarState = {
   opened: boolean;

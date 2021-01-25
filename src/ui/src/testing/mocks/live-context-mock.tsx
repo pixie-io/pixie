@@ -10,10 +10,15 @@ import { ScriptContext, ScriptContextProps } from 'context/script-context';
 import { ScriptsContext, ScriptsContextProps } from 'containers/App/scripts-context';
 import { LiveViewPage } from 'containers/live-widgets/utils/live-view-params';
 import { ClusterContext, ClusterContextProps } from 'common/cluster-context';
+import VizierGRPCClientContext, {
+  CLUSTER_STATUS_HEALTHY,
+  VizierGRPCClientContextProps,
+} from 'common/vizier-grpc-client-context';
 
 interface MockProps {
   theme?: Theme;
   apollo?: MockApolloProps;
+  vizier?: VizierGRPCClientContextProps;
   layout?: LayoutContextProps;
   liveTour?: LiveTourContextProps;
   results?: ResultsContextProps;
@@ -22,15 +27,21 @@ interface MockProps {
   cluster?: ClusterContextProps;
 }
 
-const defaults: Required<MockProps> = {
+export const LIVE_CONTEXT_DEFAULTS: Required<MockProps> = {
   theme: DARK_THEME,
   apollo: {},
+  vizier: {
+    client: null,
+    healthy: true,
+    loading: false,
+    clusterStatus: CLUSTER_STATUS_HEALTHY,
+  },
   layout: {
-    editorSplitsSizes: [50, 50],
+    editorSplitsSizes: [40, 60],
     editorPanelOpen: false,
     setEditorSplitSizes: jest.fn(),
     setEditorPanelOpen: jest.fn(),
-    dataDrawerSplitsSizes: [50, 50],
+    dataDrawerSplitsSizes: [60, 40],
     dataDrawerOpen: false,
     setDataDrawerSplitsSizes: jest.fn(),
     setDataDrawerOpen: jest.fn(),
@@ -53,7 +64,7 @@ const defaults: Required<MockProps> = {
     liveViewPage: LiveViewPage.Default,
     args: {},
     setArgs: jest.fn(),
-    visJSON: '',
+    visJSON: undefined, // Actual default
     vis: {
       variables: [],
       widgets: [],
@@ -61,8 +72,8 @@ const defaults: Required<MockProps> = {
     },
     setVis: jest.fn(),
     setCancelExecution: jest.fn(),
-    pxlEditorText: '',
-    visEditorText: '',
+    pxlEditorText: null, // Actual default
+    visEditorText: null, // Actual default
     setVisEditorText: jest.fn(),
     setPxlEditorText: jest.fn(),
     pxl: '',
@@ -90,7 +101,7 @@ const defaults: Required<MockProps> = {
 };
 
 function get<K extends keyof MockProps>(props: MockProps, context: K): MockProps[K] {
-  return props[context] ?? defaults[context];
+  return props[context] ?? LIVE_CONTEXT_DEFAULTS[context];
 }
 
 type CompType = React.FC<PropsWithChildren<MockProps>>;
@@ -102,19 +113,21 @@ type CompType = React.FC<PropsWithChildren<MockProps>>;
 export const MockLiveContextProvider: CompType = ({ children, ...props }) => (
   <ThemeProvider theme={get(props, 'theme')}>
     <MockApolloProvider {...get(props, 'apollo')}>
-      <LayoutContext.Provider value={get(props, 'layout')}>
-        <LiveTourContext.Provider value={get(props, 'liveTour')}>
-          <ClusterContext.Provider value={get(props, 'cluster')}>
-            <ResultsContext.Provider value={get(props, 'results')}>
-              <ScriptsContext.Provider value={get(props, 'scripts')}>
-                <ScriptContext.Provider value={get(props, 'script')}>
-                  {children}
-                </ScriptContext.Provider>
-              </ScriptsContext.Provider>
-            </ResultsContext.Provider>
-          </ClusterContext.Provider>
-        </LiveTourContext.Provider>
-      </LayoutContext.Provider>
+      <VizierGRPCClientContext.Provider value={get(props, 'vizier')}>
+        <LayoutContext.Provider value={get(props, 'layout')}>
+          <LiveTourContext.Provider value={get(props, 'liveTour')}>
+            <ClusterContext.Provider value={get(props, 'cluster')}>
+              <ResultsContext.Provider value={get(props, 'results')}>
+                <ScriptsContext.Provider value={get(props, 'scripts')}>
+                  <ScriptContext.Provider value={get(props, 'script')}>
+                    {children}
+                  </ScriptContext.Provider>
+                </ScriptsContext.Provider>
+              </ResultsContext.Provider>
+            </ClusterContext.Provider>
+          </LiveTourContext.Provider>
+        </LayoutContext.Provider>
+      </VizierGRPCClientContext.Provider>
     </MockApolloProvider>
   </ThemeProvider>
 );

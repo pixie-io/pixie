@@ -164,7 +164,7 @@ const ScriptContextProvider = (props) => {
     const entityParams = getEntityParams(liveViewPage, args);
     const newTitle = getLiveViewTitle(getTitleOfScript(id, scripts), liveViewPage,
       entityParams, selectedClusterPrettyName);
-    document.querySelector('title').textContent = newTitle;
+    document.title = newTitle;
     return newTitle;
   }, [liveViewPage, scripts, id, args, selectedClusterPrettyName]);
 
