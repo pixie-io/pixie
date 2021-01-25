@@ -13,10 +13,14 @@ fi
 gke_cluster_context="gke_pl-pixies_us-west1-a_dev-cluster-stirling-perf"
 if [[ $(kubectl config current-context) != "${gke_cluster_context}" ]]; then
   echo "Your kubectl context is wrong, should be ${gke_cluster_context}, exit ..."
+  exit 1
 fi
 
-echo "Note down current head commit: "
-git rev-parse HEAD
+echo "Note down information below: "
+echo "commit: $(git rev-parse HEAD)"
+echo "Date & time: $(date "+%F %T")"
+echo
+echo
 
 # TODO(yzhao): We
 if (( $(kubectl get pods -n pl --no-headers | wc -l) < 5 )); then
