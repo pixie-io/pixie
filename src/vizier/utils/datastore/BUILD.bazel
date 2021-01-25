@@ -12,6 +12,7 @@ go_test(
     size = "small",
     srcs = ["datastore_test.go"],
     embed = [":go_default_library"],
+    tags = ["integration"],
     deps = [
         "//src/utils/testingutils:go_default_library",
         "//src/vizier/utils/datastore/etcd:go_default_library",
