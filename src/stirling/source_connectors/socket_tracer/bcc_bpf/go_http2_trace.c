@@ -17,7 +17,7 @@ static __inline struct go_grpc_data_event_t* get_data_event() {
   return data_event_buffer_heap.lookup(&kZero);
 }
 
-// Maps that communicate the location of symbols within a binary.
+// Maps that communicates the location of symbols within a binary.
 //   Key: TGID
 //   Value: Symbol addresses for the binary with that TGID.
 BPF_HASH(http2_symaddrs_map, uint32_t, struct go_http2_symaddrs_t);

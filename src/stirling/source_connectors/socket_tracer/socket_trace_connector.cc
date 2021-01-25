@@ -198,6 +198,8 @@ Status SocketTraceConnector::InitImpl() {
   conn_info_map_mgr_ = std::make_shared<ConnInfoMapManager>(&bpf());
   ConnectionTracker::SetConnInfoMapManager(conn_info_map_mgr_);
 
+  openssl_symaddrs_map_ = std::make_unique<ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>>(
+      bpf().get_hash_table<uint32_t, struct openssl_symaddrs_t>("openssl_symaddrs_map"));
   go_common_symaddrs_map_ =
       std::make_unique<ebpf::BPFHashTable<uint32_t, struct go_common_symaddrs_t>>(
           bpf().get_hash_table<uint32_t, struct go_common_symaddrs_t>("go_common_symaddrs_map"));
@@ -393,6 +395,20 @@ StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(const ArrayView<UProbeTmpl>
 }
 
 namespace {
+Status UpdateOpenSSLSymAddrs(
+    const std::vector<int32_t>& pids,
+    ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>* openssl_symaddrs_map) {
+  PL_ASSIGN_OR_RETURN(struct openssl_symaddrs_t symaddrs, OpenSSLSymAddrs());
+
+  for (auto& pid : pids) {
+    ebpf::StatusTuple s = openssl_symaddrs_map->update_value(pid, symaddrs);
+    LOG_IF(WARNING, s.code() != 0)
+        << absl::StrCat("Could not update openssl_symaddrs_map. Message=", s.msg());
+  }
+
+  return Status::OK();
+}
+
 Status UpdateGoCommonSymAddrs(
     ElfReader* elf_reader, DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
     ebpf::BPFHashTable<uint32_t, struct go_common_symaddrs_t>* go_common_symaddrs_map) {
@@ -461,8 +477,9 @@ StatusOr<int> SocketTraceConnector::AttachHTTP2Probes(
   return AttachUProbeTmpl(kHTTP2ProbeTmpls, binary, elf_reader);
 }
 
-StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(const std::string& binary,
-                                                         const std::vector<int32_t>& pids) {
+StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(
+    const std::string& binary, const std::vector<int32_t>& pids,
+    ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>* openssl_symaddrs_map) {
   constexpr std::string_view kLibSSL = "libssl.so.1.1";
 
   const system::Config& sysconfig = system::Config::GetInstance();
@@ -508,6 +525,11 @@ StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(const std::string& bina
   // Convert to host path, in case we're running inside a container ourselves.
   container_lib = sysconfig.ToHostPath(container_lib);
   PL_RETURN_IF_ERROR(fs::Exists(container_lib));
+
+  Status s = UpdateOpenSSLSymAddrs(pids, openssl_symaddrs_map);
+  if (!s.ok()) {
+    return 0;
+  }
 
   // Only try probing .so files that we haven't already set probes on.
   auto result = openssl_probed_binaries_.insert(container_lib);
@@ -622,7 +644,8 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
 
     // OpenSSL Probes.
     {
-      StatusOr<int> attach_status = AttachOpenSSLUProbes(binary, pid_vec);
+      StatusOr<int> attach_status =
+          AttachOpenSSLUProbes(binary, pid_vec, openssl_symaddrs_map_.get());
       if (!attach_status.ok()) {
         LOG_FIRST_N(WARNING, 10) << absl::Substitute("Failed to attach SSL Uprobes to $0: $1",
                                                      binary, attach_status.ToString());

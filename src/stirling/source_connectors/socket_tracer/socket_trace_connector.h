@@ -328,8 +328,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t>* http2_symaddrs_map);
 
   // Attaches the required probes for SSL tracing to the specified binary.
-  StatusOr<int> AttachOpenSSLUProbes(const std::string& binary,
-                                     const std::vector<int32_t>& new_pids);
+  StatusOr<int> AttachOpenSSLUProbes(
+      const std::string& binary, const std::vector<int32_t>& new_pids,
+      ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>* openssl_symaddrs_map);
 
   StatusOr<int> AttachGoTLSUProbes(
       const std::string& binary, obj_tools::ElfReader* elf_reader,
@@ -452,6 +453,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   std::shared_ptr<ConnInfoMapManager> conn_info_map_mgr_;
 
   // BPF maps through which the addresses of symbols for a given pid are communicated to uprobes.
+  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t> > openssl_symaddrs_map_;
   std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_common_symaddrs_t> >
       go_common_symaddrs_map_;
   std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t> > http2_symaddrs_map_;

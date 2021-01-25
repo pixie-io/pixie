@@ -29,5 +29,11 @@ StatusOr<struct go_http2_symaddrs_t> GoHTTP2SymAddrs(obj_tools::ElfReader* elf_r
 StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(obj_tools::ElfReader* elf_reader,
                                                  obj_tools::DwarfReader* dwarf_reader);
 
+/**
+ * Detects the version of OpenSSL to return the locations of all relevant symbols for OpenSSL uprobe
+ * deployment.
+ */
+StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs();
+
 }  // namespace stirling
 }  // namespace pl

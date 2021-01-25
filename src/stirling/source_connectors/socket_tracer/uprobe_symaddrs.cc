@@ -415,5 +415,53 @@ StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(ElfReader* elf_reader, DwarfRea
   return symaddrs;
 }
 
+StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs() {
+  struct openssl_symaddrs_t symaddrs;
+
+  // Some useful links, for different OpenSSL versions:
+  // 1.1.0a:
+  // https://github.com/openssl/openssl/blob/ac2c44c6289f9716de4c4beeb284a818eacde517/<filename>
+  // 1.1.0l:
+  // https://github.com/openssl/openssl/blob/7ea5bd2b52d0e81eaef3d109b3b12545306f201c/<filename>
+  // 1.1.1a:
+  // https://github.com/openssl/openssl/blob/d1c28d791a7391a8dc101713cd8646df96491d03/<filename>
+  // 1.1.1e:
+  // https://github.com/openssl/openssl/blob/a61eba4814fb748ad67e90e81c005ffb09b67d3d/<filename>
+
+  // Offset of rbio in struct ssl_st.
+  // Struct is defined in ssl/ssl_local.h, ssl/ssl_locl.h, ssl/ssl_lcl.h, depending on the version.
+  // Verified to be valid for following versions:
+  //  - 1.1.0a to 1.1.0k
+  //  - 1.1.1a to 1.1.1e
+  symaddrs.SSL_rbio_offset = 0x10;
+
+  // Offset of num in struct bio_st.
+  // Struct is defined in crypto/bio/bio_lcl.h, crypto/bio/bio_local.h depending on the version.
+  //  - In 1.1.1a to 1.1.1e, the offset appears to be 0x30
+  //  - In 1.1.0, the value appears to be 0x28.
+  symaddrs.RBIO_num_offset = 0x28;
+
+  // Appendix: Using GDB to confirm member offsets on OpenSSL 1.1.1:
+  // (gdb) p s
+  // $18 = (SSL *) 0x55ea646953c0
+  // (gdb) p &s.rbio
+  // $22 = (BIO **) 0x55ea646953d0
+  // (gdb) p s.rbio
+  // $23 = (BIO *) 0x55ea64698b10
+  // (gdb) p &s.rbio.num
+  // $24 = (int *) 0x55ea64698b40
+  // (gdb) p s.rbio.num
+  // $25 = 3
+  // (gdb) p &s.wbio
+  // $26 = (BIO **) 0x55ea646953d8
+  // (gdb) p s.wbio
+  // $27 = (BIO *) 0x55ea64698b10
+  // (gdb) p &s.wbio.num
+  // $28 = (int *) 0x55ea64698b40
+  // (gdb) p s.wbio.num
+
+  return symaddrs;
+}
+
 }  // namespace stirling
 }  // namespace pl

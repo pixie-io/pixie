@@ -181,6 +181,16 @@ struct go_tls_symaddrs_t {
   int32_t Read_b_offset;  // 16
 };
 
+struct openssl_symaddrs_t {
+  // Offset of rbio in struct ssl_st.
+  // Struct is defined in ssl/ssl_local.h, ssl/ssl_locl.h, ssl/ssl_lcl.h, depending on the version.
+  int32_t SSL_rbio_offset;  // 0x10;
+
+  // Offset of num in struct bio_st.
+  // Struct is defined in crypto/bio/bio_lcl.h, crypto/bio/bio_local.h depending on the version.
+  int32_t RBIO_num_offset;  // 0x30 (openssl 1.1.1) or 0x28 (openssl 1.1.0)
+};
+
 // Utility macro for use in BPF code, so the probe can exit if the symbol doesn't exist.
 #define REQUIRE_SYMADDR(symaddr, retval) \
   if (symaddr == -1) {                   \
