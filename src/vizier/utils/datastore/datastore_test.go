@@ -14,13 +14,14 @@ import (
 
 func TestPebbleDB(t *testing.T) {
 	memFS := vfs.NewMem()
-	db, err := pebbledb.New("test", &pebble.Options{
+	c, err := pebble.Open("test", &pebble.Options{
 		FS: memFS,
-	}, 3*time.Second)
+	})
 	if err != nil {
 		t.Fatal("failed to initialize a pebbledb")
 	}
 
+	db := pebbledb.New(c, 3*time.Second)
 	runTests(db, t)
 }
 
@@ -28,11 +29,7 @@ func TestEtcd(t *testing.T) {
 	c, cleanup := testingutils.SetupEtcd()
 	defer cleanup()
 
-	db, err := etcd.New(c)
-	if err != nil {
-		t.Fatal("failed to initialize etcd")
-	}
-
+	db := etcd.New(c)
 	runTests(db, t)
 }
 

@@ -19,12 +19,7 @@ type DataStore struct {
 }
 
 // New creates a new pebbledb for use as a KVStore.
-func New(location string, opts *pebble.Options, ttlReaperDuration time.Duration) (*DataStore, error) {
-	db, err := pebble.Open(location, opts)
-	if err != nil {
-		return nil, err
-	}
-
+func New(db *pebble.DB, ttlReaperDuration time.Duration) *DataStore {
 	wrap := &DataStore{
 		db:   db,
 		done: make(chan struct{}),
@@ -32,7 +27,7 @@ func New(location string, opts *pebble.Options, ttlReaperDuration time.Duration)
 
 	go wrap.ttlWatcher(ttlReaperDuration)
 
-	return wrap, nil
+	return wrap
 }
 
 func (w *DataStore) ttlWatcher(ttlReaperDuration time.Duration) {

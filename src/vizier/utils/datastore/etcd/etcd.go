@@ -16,8 +16,8 @@ type DataStore struct {
 }
 
 // New creates a new etcd for use as a KVStore.
-func New(client *etcd.Client) (*DataStore, error) {
-	return &DataStore{client: client}, nil
+func New(client *etcd.Client) *DataStore {
+	return &DataStore{client: client}
 }
 
 // Set puts the given key and value in the datastore.
