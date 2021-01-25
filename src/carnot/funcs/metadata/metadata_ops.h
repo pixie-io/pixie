@@ -1368,6 +1368,30 @@ class PodIPToPodIDUDF : public ScalarUDF {
   }
 };
 
+class PodIPToServiceIDUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue pod_ip) {
+    auto md = GetMetadataState(ctx);
+    auto pod_id = md->k8s_metadata_state().PodIDByIP(pod_ip);
+    if (pod_id == "") {
+      return "";
+    }
+    PodIDToServiceIDUDF udf;
+    return udf.Exec(ctx, pod_id);
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the service ID for a given pod IP.")
+        .Details(
+            "Converts the IP address into a Kubernetes service ID for the service "
+            "associated to the pod. If there is no service associated with the given IP address, "
+            "return an empty string.")
+        .Example("df.service_id = px.ip_to_service_id(df.remote_addr)")
+        .Arg("pod_ip", "The IP of a pod to convert.")
+        .Returns("The service id if it exists, otherwise an empty string.");
+  }
+};
+
 void RegisterMetadataOpsOrDie(pl::carnot::udf::Registry* registry);
 
 }  // namespace metadata

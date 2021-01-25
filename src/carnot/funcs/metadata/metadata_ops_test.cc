@@ -497,6 +497,13 @@ TEST_F(MetadataOpsTest, pod_ip) {
   EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.1"), "1_uid");
 }
 
+TEST_F(MetadataOpsTest, pod_ip_to_service_id_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  PodIPToServiceIDUDF udf;
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.1"), "3_uid");
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.10"), "");
+}
+
 TEST_F(MetadataOpsTest, upid_to_qos) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<UPIDToPodQoSUDF>(std::move(function_ctx));
