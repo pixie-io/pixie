@@ -8,8 +8,9 @@ from collections import OrderedDict
 from src.vizier.vizierpb import vizier_pb2 as vpb
 
 
-# Function that transforms a Column, a oneof field in the proto, into the specific data type.
-ColumnFn = Callable[[vpb.Column], Any]
+# Function that transforms a Column (a oneof field in the proto)
+# and row index into the specific data type.
+ColumnFn = Callable[[vpb.Column, int], Any]
 
 # The ID of the cluster.
 ClusterID = str
@@ -35,20 +36,26 @@ class _Relation:
         column = self._columns[idx]
         column_type = column.column_type
 
+        # Internal function that will get called by all
+        # Column getters.
+        def get_i(col: Any, i: int) -> Any:
+            return col.data[i]
+
         if column_type == vpb.TIME64NS:
-            return lambda x: x.time64ns_data
+            return lambda x, i: get_i(x.time64ns_data, i)
         if column_type == vpb.FLOAT64:
-            return lambda x: x.float64_data
+            return lambda x, i: get_i(x.float64_data, i)
         if column_type == vpb.INT64:
-            return lambda x: x.int64_data
+            return lambda x, i: get_i(x.int64_data, i)
         if column_type == vpb.STRING:
-            return lambda x: x.string_data
+            return lambda x, i: get_i(x.string_data, i)
         if column_type == vpb.UINT128:
-            return lambda x: x.uint128_data
+            # Encode the UINT128 as UUIDs to be readable.
+            return lambda x, i: _encode_uint128_as_UUID(get_i(x.uint128_data, i))
         if column_type == vpb.BOOLEAN:
-            return lambda x: x.boolean_data
+            return lambda x, i: get_i(x.boolean_data, i)
         raise ValueError("{} type not supported".format(column_type))
-        return lambda x: ''
+        return lambda x, i: ''
 
     def _create_col_formatters(self) -> None:
         for i in range(len(self._columns)):
@@ -128,6 +135,7 @@ class Row:
         idx = self.relation.get_key_idx(column)
         if idx == -1:
             raise KeyError("'{}' not found in relation".format(column))
+
         return self._data[idx]
 
     def __str__(self) -> str:
@@ -235,5 +243,5 @@ class _TableStream:
                     # Adding + 1 because the batches don't contain a cluster ID, but our relation
                     # for this table does contain one.
                     format_fn = self.relation.get_col_formatter(ci + 1)
-                    row.append(format_fn(col).data[i])
+                    row.append(format_fn(col, i))
                 yield Row(self, row)

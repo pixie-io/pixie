@@ -3,6 +3,7 @@ import pixie
 import unittest
 import grpc
 import asyncio
+import uuid
 from concurrent import futures
 from typing import List, Any, Coroutine, Dict
 
@@ -435,7 +436,8 @@ class TestClient(unittest.TestCase):
             num_rows = 0
             async for row in table_sub:
                 self.assertEqual(row["cluster_id"], utils.cluster_uuid1)
-                self.assertEqual(row["upid"], vpb.UInt128(high=123, low=456))
+                self.assertEqual(row["upid"], uuid.UUID(
+                    '00000000-0000-007b-0000-0000000001c8'))
                 self.assertEqual(row["cpu_ktime_ns"], 1000)
                 self.assertEqual(row["rss_bytes"], 999)
                 num_rows += 1
@@ -586,7 +588,8 @@ class TestClient(unittest.TestCase):
             nonlocal stats_counter
             stats_counter += 1
             self.assertEqual(row["cluster_id"], utils.cluster_uuid1)
-            self.assertEqual(row["upid"], vpb.UInt128(high=123, low=456))
+            self.assertEqual(row["upid"], uuid.UUID(
+                '00000000-0000-007b-0000-0000000001c8'))
             self.assertEqual(row["cpu_ktime_ns"], 1000)
             self.assertEqual(row["rss_bytes"], 999)
         query.add_callback("stats", stats_fn)
