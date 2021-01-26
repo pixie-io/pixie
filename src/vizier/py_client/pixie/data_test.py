@@ -36,12 +36,22 @@ class TestData(unittest.TestCase):
         })
 
         # Make sure you can index the columns.
+        self.assertEqual(row[0], "bar")
+        self.assertEqual(row[1], 200)
+
+        # Make sure you can access the columns by name.
         self.assertEqual(row["http_resp_body"], "bar")
         self.assertEqual(row["http_resp_status"], 200)
 
         # Grabbing a column that doesn't exist should fail.
         with self.assertRaisesRegex(KeyError, ".* not found in relation"):
             row["baz"]
+
+        with self.assertRaisesRegex(IndexError, ""):
+            row[2]
+
+        with self.assertRaisesRegex(KeyError, "Unexpected key type"):
+            row[2.2]
 
         # Creating a row that has wrong number of columns should fail.
         with self.assertRaisesRegex(ValueError, "Mismatch of row length 3 and relation size 2"):

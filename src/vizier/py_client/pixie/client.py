@@ -567,7 +567,7 @@ class Client:
         elif isinstance(cluster, Cluster):
             cluster_id = cluster.id
         else:
-            raise ValueError("Unexpected type for `cluster`: ", type(cluster))
+            raise ValueError("Unexpected type for 'cluster': ", type(cluster))
 
         cluster_info = self._get_cluster_info(cluster_id)
         if cluster_info.config.passthrough_enabled:

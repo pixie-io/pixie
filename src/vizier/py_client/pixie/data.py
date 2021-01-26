@@ -1,7 +1,7 @@
 import json
 import uuid
 import asyncio
-from typing import Callable, Any, List, AsyncGenerator, Set
+from typing import Callable, Any, List, AsyncGenerator, Set, Union
 
 from collections import OrderedDict
 
@@ -125,16 +125,22 @@ class Row:
             raise ValueError('Mismatch of row length {} and relation size {}'.format(
                 len(self._data), self.relation.num_cols()))
 
-    def __getitem__(self, column: str) -> Any:
+    def __getitem__(self, column: Union[str, int]) -> Any:
         """
-        Returns the value for the specified column.
+        Returns the value for the specified column. Can specify column by name or by index.
 
         Raises:
-            KeyError: If `column` does not exist in `self.relation`.
+            KeyError: If `column` does not exist in `self.relation` (if hte )
         """
-        idx = self.relation.get_key_idx(column)
-        if idx == -1:
-            raise KeyError("'{}' not found in relation".format(column))
+        if isinstance(column, str):
+            idx = self.relation.get_key_idx(column)
+            if idx == -1:
+                raise KeyError("'{}' not found in relation".format(column))
+        elif isinstance(column, int):
+            idx = column
+        else:
+            raise KeyError(
+                f"Unexpected key type for 'column': {type(column)}")
 
         return self._data[idx]
 
