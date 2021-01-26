@@ -46,13 +46,13 @@ function prepare_src() {
     exit 1
   fi
 
-  TOOLPATH="src/vizier/py_client"
+  TOOLPATH="src/api/python"
 
+  PIXIEPKG="${TMPDIR}/pxapi"
   cp -LR \
-    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/vizier/py_client/pixie" \
-    "${TMPDIR}"
+    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/${TOOLPATH}/pxapi" \
+    "${PIXIEPKG}"
 
-  PIXIEPKG="${TMPDIR}/pixie"
 
   # Add README and setup.py
   cp "${TOOLPATH}/README.md" "${TMPDIR}"
@@ -98,20 +98,20 @@ function prepare_src() {
   touch "${PIXIEPKG}/vispb/__init__.py"
 
   # Rewrite the pb package import paths to the new directory structure.
-  replace_pb_paths "${TMPDIR}"/pixie/**/*.py
-  replace_pb_paths "${TMPDIR}"/pixie/*.py
+  replace_pb_paths "${PIXIEPKG}"/**/*.py
+  replace_pb_paths "${PIXIEPKG}"/*.py
 }
 
 function replace_pb_paths() {
   # Replaces the import paths for protobufs into the new directory structure.
   for var in "$@"; do
     sed -i'.original' \
-        -e 's/^from src.cloud.cloudapipb/from pixie.cloudapipb/g' \
-        -e 's/^from src.vizier.vizierpb/from pixie.vizierpb/g' \
-        -e 's/^from src.common.uuid.proto/from pixie.uuidpb/g' \
-        -e 's/^from src.shared.k8s.metadatapb/from pixie.metadatapb/g' \
-        -e 's/^from src.shared.types.proto/from pixie.typespb/g' \
-        -e 's/^from src.shared.vispb/from pixie.vispb/g' \
+        -e 's/^from src.cloud.cloudapipb/from pxapi.cloudapipb/g' \
+        -e 's/^from src.vizier.vizierpb/from pxapi.vizierpb/g' \
+        -e 's/^from src.common.uuid.proto/from pxapi.uuidpb/g' \
+        -e 's/^from src.shared.k8s.metadatapb/from pxapi.metadatapb/g' \
+        -e 's/^from src.shared.types.proto/from pxapi.typespb/g' \
+        -e 's/^from src.shared.vispb/from pxapi.vispb/g' \
         "${var}"
       done
 }
@@ -135,7 +135,7 @@ function build_wheel() {
 
   rm -f MANIFEST
   echo "$(date) : === Building wheel"
-  "${PYTHON_BIN_PATH:-python}" setup.py bdist_wheel >/dev/null
+  "${PYTHON_BIN_PATH:-python}" setup.py sdist bdist_wheel >/dev/null
   mkdir -p "${DEST}"
   cp dist/* "${DEST}"
   popd > /dev/null

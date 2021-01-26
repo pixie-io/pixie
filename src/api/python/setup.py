@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="pxapi",
-    version="0.0.1",
+    version="0.0.2",
     author="Pixie Labs",
     author_email="help@pixielabs.ai",
     description="The python client for the Pixie API",

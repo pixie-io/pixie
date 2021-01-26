@@ -8,13 +8,13 @@ sh_binary(
     data = [
         "//src/vizier/vizierpb:vizier_pl_py_grpc",
         "//src/cloud/cloudapipb:cloudapi_pl_py_grpc",
-        "//src/vizier/py_client/pxapi:vizier_py_lib",
+        "//src/api/python/pxapi:vizier_py_lib",
     ],
 )
 
 py_test(
     name = "api_test",
     srcs = ["api_test.py"],
-    deps = ["//src/vizier/py_client/pxapi:vizier_py_lib", "//src/vizier/py_client/pxapi:vizier_py_test_lib"],
+    deps = ["//src/api/python/pxapi:vizier_py_lib", "//src/api/python/pxapi:vizier_py_test_lib"],
     visibility = ["//visibility:public"],
 )
