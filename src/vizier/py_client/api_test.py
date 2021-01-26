@@ -71,9 +71,7 @@ def create_cluster_info(
     passthrough_enabled: bool = True
 ) -> cpb.ClusterInfo:
     return cpb.ClusterInfo(
-        id=cpb.src_dot_common_dot_uuid_dot_proto_dot_uuid__pb2.UUID(
-            data=cluster_id.encode('utf-8'),
-        ),
+        id=utils.create_uuid_pb(cluster_id),
         status=status,
         config=cpb.VizierConfig(
             passthrough_enabled=passthrough_enabled,
@@ -83,8 +81,8 @@ def create_cluster_info(
 
 
 class CloudServiceFake(cloudapi_pb2_grpc.VizierClusterInfoServicer):
-    def GetClusterInfo(self, request: cpb.GetClusterInfoRequest, context: Any) -> Any:
-        clusters = [
+    def __init__(self) -> None:
+        self.clusters = [
             create_cluster_info(
                 utils.cluster_uuid1,
                 "cluster1",
@@ -100,13 +98,55 @@ class CloudServiceFake(cloudapi_pb2_grpc.VizierClusterInfoServicer):
                 status=cpb.CS_UNHEALTHY,
             ),
         ]
+        self.direct_conn_info: Dict[str,
+                                    cpb.GetClusterConnectionInfoResponse] = {}
+
+    def add_direct_conn_cluster(
+        self,
+        cluster_id: str,
+        name: str,
+        url: str,
+        token: str,
+    ) -> None:
+        for c in self.clusters:
+            if cluster_id == c.id:
+                raise ValueError(
+                    f"Cluster id {cluster_id} already exists in cloud.")
+
+        self.clusters.append(create_cluster_info(
+            cluster_id,
+            name,
+            passthrough_enabled=False,
+        ))
+
+        self.direct_conn_info[cluster_id] = cpb.GetClusterConnectionInfoResponse(
+            ipAddress=url,
+            token=token,
+        )
+
+    def GetClusterInfo(
+        self,
+        request: cpb.GetClusterInfoRequest,
+        context: Any,
+    ) -> cpb.GetClusterInfoResponse:
         if request.id.data:
-            for c in clusters:
+            for c in self.clusters:
                 if c.id == request.id:
                     return cpb.GetClusterInfoResponse(clusters=[c])
             return cpb.GetClusterInfoResponse(clusters=[])
 
-        return cpb.GetClusterInfoResponse(clusters=clusters)
+        return cpb.GetClusterInfoResponse(clusters=self.clusters)
+
+    def GetClusterConnectionInfo(
+        self,
+        request: cpb.GetClusterConnectionInfoRequest,
+        context: Any,
+    ) -> cpb.GetClusterConnectionInfoResponse:
+        cluster_id = request.id.data.decode('utf-8')
+        if cluster_id not in self.direct_conn_info:
+            raise KeyError(
+                f"Cluster ID {cluster_id} not in conn_info. Must add first.")
+        return self.direct_conn_info[cluster_id]
 
 
 class FakeConn(pixie.Conn):
@@ -828,6 +868,62 @@ class TestClient(unittest.TestCase):
         # Define callback function for "http" table.
         def http_fn(row: pixie.Row) -> None:
             pass
+        query.add_callback("http", http_fn)
+
+        # Run the query synchronously.
+        query.run()
+
+    def test_direct_conns(self) -> None:
+        # Test the direct connections.
+        px_client = pixie.Client(
+            token=ACCESS_TOKEN,
+            server_url=self.url(),
+            channel_fn=lambda url: grpc.insecure_channel(url),
+            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
+        )
+        # Create the direct conn server.
+        dc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
+        fake_dc_service = VizierServiceFake()
+        # Create one http table.
+        http_table1 = self.http_table_factory.create_table(utils.table_id1)
+        cluster_id = "10000000-0000-0000-0000-000000000004"
+        fake_dc_service.add_fake_data(cluster_id, [
+            # Init "http".
+            http_table1.metadata_response(),
+            # Send data for "http".
+            http_table1.row_batch_response([["foo"], [200]]),
+            # End "http".
+            http_table1.end(),
+        ])
+
+        vizier_pb2_grpc.add_VizierServiceServicer_to_server(
+            fake_dc_service, dc_server)
+        port = dc_server.add_insecure_port("[::]:0")
+        dc_server.start()
+
+        url = f"http://[::]:{port}"
+        token = cluster_id
+        self.fake_cloud_service.add_direct_conn_cluster(
+            cluster_id, "dc_cluster", url, token)
+
+        clusters = px_client.list_healthy_clusters()
+        self.assertSetEqual(
+            set([c.name() for c in clusters]),
+            {"cluster1", "cluster2", "dc_cluster"}
+        )
+
+        conns = [
+            px_client.connect_to_cluster(c) for c in clusters if c.name() == 'dc_cluster'
+        ]
+
+        query = px_client.query(conns, query_str)
+
+        # Define callback function for "http" table.
+        def http_fn(row: pixie.Row) -> None:
+            self.assertEqual(row["cluster_id"], cluster_id)
+            self.assertEqual(row["http_resp_body"], "foo")
+            self.assertEqual(row["http_resp_status"], 200)
+
         query.add_callback("http", http_fn)
 
         # Run the query synchronously.

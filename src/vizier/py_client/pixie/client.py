@@ -1,5 +1,6 @@
 import grpc
 import grpc.aio
+from urllib.parse import urlparse
 import asyncio
 from typing import Callable, List, Union, Awaitable, Dict, Set, AsyncGenerator, cast, Literal
 
@@ -9,6 +10,7 @@ from src.vizier.vizierpb import vizier_pb2_grpc
 from src.cloud.cloudapipb import cloudapi_pb2 as cpb
 from src.cloud.cloudapipb import cloudapi_pb2_grpc
 
+from src.common.uuid.proto import uuid_pb2 as uuidpb
 from .data import (
     _TableStream,
     RowGenerator,
@@ -88,6 +90,7 @@ class Conn:
             cluster_id: ClusterID,
             cluster_info: cpb.ClusterInfo = None,
             channel_fn: Callable[[str], grpc.aio.Channel] = None,
+            direct: bool = False,
     ):
         self.token = token
         self.url = pixie_url
@@ -96,11 +99,18 @@ class Conn:
         self.cluster_info = cluster_info
         self._channel_fn = channel_fn
 
+        # Whether the connection is direct connection or not.
+        self._direct = direct
+
     def create_grpc_channel(self) -> grpc.aio.Channel:
         """ Creates a grpc channel from this connection. """
         if self._channel_fn:
             return self._channel_fn(self.url)
-        return grpc.aio.secure_channel(self.url, grpc.ssl_channel_credentials())
+        creds = grpc.ssl_channel_credentials()
+        if self._direct:
+            tok = grpc.access_token_call_credentials(self.token)
+            creds = grpc.composite_channel_credentials(creds, tok)
+        return grpc.aio.secure_channel(self.url, creds)
 
     def name(self) -> str:
         """ Get the name of the cluster for this connection. """
@@ -406,6 +416,7 @@ class Query:
 
         # TODO(philkuz) will cause an error if this is
         # sent in one conn before the other conn has sent its last table metadata.
+        # Bug is unlikely to happen, but should still be covered.
         self._close_table_q()
         await self._close_all_tables_for_cluster(conn.cluster_id)
 
@@ -475,8 +486,6 @@ class Client:
         for c in self._all_clusters():
             if c.status != cpb.CS_HEALTHY:
                 continue
-            if not c.config.passthrough_enabled:
-                continue
             healthy_clusters.append(
                 Cluster(
                     cluster_id=c.id.data.decode('utf-8'),
@@ -486,11 +495,11 @@ class Client:
 
         return healthy_clusters
 
-    def _get_cluster_info(self, cluster_id: str) -> cpb.ClusterInfo:
+    def _get_cluster_info(self, cluster_id: ClusterID) -> cpb.ClusterInfo:
         with self._get_cloud_channel() as channel:
             stub = cloudapi_pb2_grpc.VizierClusterInfoStub(channel)
             request = cpb.GetClusterInfoRequest(
-                id=cpb.src_dot_common_dot_uuid_dot_proto_dot_uuid__pb2.UUID(
+                id=uuidpb.UUID(
                     data=cluster_id.encode('utf-8'))
             )
             response = stub.GetClusterInfo(request, metadata=[
@@ -498,6 +507,22 @@ class Client:
                 ("pixie-api-client", "python")
             ])
             return response.clusters[0]
+
+    def _get_cluster_connection_info(
+            self,
+            cluster_id: ClusterID
+    ) -> cpb.GetClusterConnectionInfoResponse:
+        with self._get_cloud_channel() as channel:
+            stub = cloudapi_pb2_grpc.VizierClusterInfoStub(channel)
+            request = cpb.GetClusterConnectionInfoRequest(
+                id=uuidpb.UUID(
+                    data=cluster_id.encode('utf-8'))
+            )
+            response = stub.GetClusterConnectionInfo(request, metadata=[
+                ("pixie-api-key", self._token),
+                ("pixie-api-client", "python")
+            ])
+            return response
 
     def _create_passthrough_conn(
         self,
@@ -512,8 +537,21 @@ class Client:
             self._conn_channel_fn,
         )
 
-    def _create_direct_connection_conn(self, cluster_id: ClusterID) -> Conn:
-        raise NotImplementedError("Direct connection not yet supported")
+    def _create_direct_connection(
+        self,
+        cluster_id: ClusterID,
+        cluster_info: cpb.ClusterInfo,
+    ) -> Conn:
+        resp = self._get_cluster_connection_info(cluster_id)
+        token, cluster_url = resp.token, urlparse(resp.ipAddress).netloc
+        return Conn(
+            token,
+            cluster_url,
+            cluster_id,
+            cluster_info,
+            self._conn_channel_fn,
+            direct=True,
+        )
 
     def connect_to_cluster(self,
                            cluster: Union[ClusterID, Cluster]
@@ -531,6 +569,8 @@ class Client:
         else:
             raise ValueError("Unexpected type for `cluster`: ", type(cluster))
 
-        # TODO(philkuz) add support for direct connections by making a Cloud API call here.
         cluster_info = self._get_cluster_info(cluster_id)
-        return self._create_passthrough_conn(cluster_id, cluster_info)
+        if cluster_info.config.passthrough_enabled:
+            return self._create_passthrough_conn(cluster_id, cluster_info)
+        else:
+            return self._create_direct_connection(cluster_id, cluster_info)

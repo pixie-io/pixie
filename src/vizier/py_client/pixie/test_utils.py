@@ -1,6 +1,8 @@
 from typing import List, Any
 from src.vizier.py_client.pixie import vpb
 import src.vizier.py_client.pixie as pixie
+from src.common.uuid.proto import uuid_pb2 as uuidpb
+
 import grpc
 
 cluster_uuid1 = "10000000-0000-0000-0000-000000000001"
@@ -164,3 +166,9 @@ async def iterate_and_pass(table_sub: pixie.TableSub) -> None:
     """ Processor that iterates over a subscription and does nothing. """
     async for _ in table_sub:
         pass
+
+
+def create_uuid_pb(id_str: str) -> uuidpb.UUID:
+    return uuidpb.UUID(
+        data=id_str.encode('utf-8'),
+    )
