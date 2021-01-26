@@ -932,6 +932,37 @@ class TestClient(unittest.TestCase):
         # Run the query synchronously.
         query.run()
 
+    def test_ergo_api(self) -> None:
+        # Test the direct connections.
+        px_client = pixie.Client(
+            token=ACCESS_TOKEN,
+            server_url=self.url(),
+            # Channel functions for testing.
+            channel_fn=lambda url: grpc.insecure_channel(url),
+            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
+        )
+        # Create the direct conn server.
+        conns = [px_client.connect_to_cluster(
+            px_client.list_healthy_clusters()[0])]
+
+        query = px_client.query(conns, query_str)
+
+        # Create table for cluster_uuid1.
+        http_table1 = self.http_table_factory.create_table(utils.table_id1)
+        self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
+            # Initialize the table on the stream with the metadata.
+            http_table1.metadata_response(),
+            # Send over a single-row batch.
+            http_table1.row_batch_response([["foo"], [200]]),
+            # Send an end-of-stream for the table.
+            http_table1.end(),
+        ])
+
+        # Use the results API to run and get the data from the http table.
+        for row in query.results("http"):
+            self.assertEqual(row["http_resp_body"], "foo")
+            self.assertEqual(row["http_resp_status"], 200)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -389,6 +389,25 @@ class Query:
             for name, table in self._table_name_to_table_map.items():
                 table.close(cluster_id)
 
+    def results(self, table_name: str) -> List[Row]:
+        """ Runs query and return results for the table.
+        Examples:
+            for row in query.results("http_table"):
+                print(row)
+        Raises:
+            ValueError: If `table_name` is never sent during lifetime of query.
+            ValueError: If called after `run()` or `run_async()` for a particular
+                `Query`.
+        """
+        rows = []
+
+        def _cb(row: Row) -> None:
+            rows.append(row)
+
+        self.add_callback(table_name, _cb)
+        self.run()
+        return rows
+
     async def _run_conn(self, conn: Conn, num_conns: int) -> None:
         """ Executes the query on a single connection. """
         async with conn.create_grpc_channel() as channel:
