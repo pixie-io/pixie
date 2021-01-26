@@ -1,6 +1,6 @@
 from typing import List, Any
-from src.vizier.py_client.pixie import vpb
-import src.vizier.py_client.pixie as pixie
+from src.vizier.py_client.pxapi import vpb
+from src.vizier.py_client import pxapi
 from src.common.uuid.proto import uuid_pb2 as uuidpb
 
 import grpc
@@ -162,7 +162,7 @@ def create_metadata(table_name: str, table_id: str, relation: vpb.Relation) -> v
     return vpb.QueryMetadata()
 
 
-async def iterate_and_pass(table_sub: pixie.TableSub) -> None:
+async def iterate_and_pass(table_sub: pxapi.TableSub) -> None:
     """ Processor that iterates over a subscription and does nothing. """
     async for _ in table_sub:
         pass

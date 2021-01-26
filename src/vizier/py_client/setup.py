@@ -7,7 +7,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
     requirements = fh.read()
 
 setuptools.setup(
-    name="pixie",
+    name="pxapi",
     version="0.0.1",
     author="Pixie Labs",
     author_email="help@pixielabs.ai",

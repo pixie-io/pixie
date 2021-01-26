@@ -1,5 +1,5 @@
-from pixie import cloudapi_pb2_grpc, cpb, vizier_pb2_grpc, vpb, test_utils as utils
-import pixie
+from pxapi import cloudapi_pb2_grpc, cpb, vizier_pb2_grpc, vpb, test_utils as utils
+import pxapi
 import unittest
 import grpc
 import asyncio
@@ -19,7 +19,7 @@ px.display(px.DataFrame('process_stats')[
 
 
 async def run_query_and_tasks(
-    query: pixie.Query,
+    query: pxapi.Query,
     processors: List[Coroutine[Any, Any, Any]]
 ) -> None:
     """
@@ -150,13 +150,13 @@ class CloudServiceFake(cloudapi_pb2_grpc.VizierClusterInfoServicer):
         return self.direct_conn_info[cluster_id]
 
 
-class FakeConn(pixie.Conn):
+class FakeConn(pxapi.Conn):
     """
     FakeConn overrides Conn to use an insecure_channel instead
     of a secure one.
     """
 
-    def __init__(self, token: str, pixie_url: str, cluster_id: pixie.ClusterID):
+    def __init__(self, token: str, pixie_url: str, cluster_id: pxapi.ClusterID):
         super().__init__(
             token,
             pixie_url,
@@ -202,7 +202,7 @@ class TestClient(unittest.TestCase):
         self.server.stop(None)
 
     def test_one_conn_one_table(self) -> None:
-        px_client = pixie.Client(token=ACCESS_TOKEN, server_url=self.url())
+        px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
         # Connect to a single fake cluster.
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
@@ -224,7 +224,7 @@ class TestClient(unittest.TestCase):
 
         # Define an async function that processes the TableSub
         # while the API query can run concurrently.
-        async def process_table(table_sub: pixie.TableSub) -> None:
+        async def process_table(table_sub: pxapi.TableSub) -> None:
             num_rows = 0
             async for row in table_sub:
                 self.assertEqual(row["cluster_id"], utils.cluster_uuid1)
@@ -240,7 +240,7 @@ class TestClient(unittest.TestCase):
             run_query_and_tasks(query, [process_table(http_tb)]))
 
     def test_multiple_rows_and_rowbatches(self) -> None:
-        px_client = pixie.Client(token=ACCESS_TOKEN, server_url=self.url())
+        px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
         # Connect to one fake cluster.
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
@@ -268,7 +268,7 @@ class TestClient(unittest.TestCase):
 
         # Verify that the rows returned by the table_sub match the
         # order and values of the input test data.
-        async def process_table(table_sub: pixie.TableSub) -> None:
+        async def process_table(table_sub: pxapi.TableSub) -> None:
             row_i = 0
             # table_sub hides the batched rows and delivers them in
             # the same order as the batches sent.
@@ -286,7 +286,7 @@ class TestClient(unittest.TestCase):
             run_query_and_tasks(query, [process_table(http_tb)]))
 
     def test_two_conns_one_table(self) -> None:
-        px_client = pixie.Client(token=ACCESS_TOKEN, server_url=self.url())
+        px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
         # Connect to two fake clusters.
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1),
                  FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid2)]
@@ -324,7 +324,7 @@ class TestClient(unittest.TestCase):
 
         # Define an async function that processes the TableSub
         # while the API query can run concurrently.
-        async def process_table(table_sub: pixie.TableSub) -> None:
+        async def process_table(table_sub: pxapi.TableSub) -> None:
             num_rows = 0
             seen_clusters = set()
 
@@ -354,7 +354,7 @@ class TestClient(unittest.TestCase):
         # Tests to make sure we error out early if conns send over mismatching tables.
         # We error out to prevent the propagation of errors down the line.
         # This type of error usually means the cluster versions are vastly different.
-        px_client = pixie.Client(token=ACCESS_TOKEN, server_url=self.url())
+        px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1),
                  FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid2)]
 
@@ -390,7 +390,7 @@ class TestClient(unittest.TestCase):
             query.run()
 
     def test_one_conn_two_tables(self) -> None:
-        px_client = pixie.Client(token=ACCESS_TOKEN, server_url=self.url())
+        px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
         # We will send two tables for this test "http" and "stats".
@@ -421,7 +421,7 @@ class TestClient(unittest.TestCase):
         stats_tb = query.subscribe("stats")
 
         # Async function that makes sure "http" table returns the expected rows.
-        async def process_http_tb(table_sub: pixie.TableSub) -> None:
+        async def process_http_tb(table_sub: pxapi.TableSub) -> None:
             num_rows = 0
             async for row in table_sub:
                 self.assertEqual(row["cluster_id"], utils.cluster_uuid1)
@@ -432,7 +432,7 @@ class TestClient(unittest.TestCase):
             self.assertEqual(num_rows, 1)
 
         # Async function that makes sure "stats" table returns the expected rows.
-        async def process_stats_tb(table_sub: pixie.TableSub) -> None:
+        async def process_stats_tb(table_sub: pxapi.TableSub) -> None:
             num_rows = 0
             async for row in table_sub:
                 self.assertEqual(row["cluster_id"], utils.cluster_uuid1)
@@ -449,7 +449,7 @@ class TestClient(unittest.TestCase):
             run_query_and_tasks(query, [process_http_tb(http_tb), process_stats_tb(stats_tb)]))
 
     def test_run_script_with_invalid_arg_error(self) -> None:
-        px_client = pixie.Client(token=ACCESS_TOKEN, server_url=self.url())
+        px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
         # Send over an error in the Status field. This is the exact error you would
@@ -469,7 +469,7 @@ class TestClient(unittest.TestCase):
             query.run()
 
     def test_run_script_with_line_col_error(self) -> None:
-        px_client = pixie.Client(token=ACCESS_TOKEN, server_url=self.url())
+        px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
         # Send over an error a line, column error. These kinds of errors come
@@ -487,11 +487,11 @@ class TestClient(unittest.TestCase):
         # Although we add a callback, we don't want this to throw an error.
         # Instead the error should be returned by the run function.
         query.add_callback("http_table", lambda row: print(row))
-        with self.assertRaisesRegex(pixie.PxLError, "PxL, line 1.*name 'aa' is not defined"):
+        with self.assertRaisesRegex(pxapi.PxLError, "PxL, line 1.*name 'aa' is not defined"):
             query.run()
 
     def test_compiler_error_from_two_conns(self) -> None:
-        px_client = pixie.Client(token=ACCESS_TOKEN, server_url=self.url())
+        px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
         conns = [
             FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1),
             FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid2),
@@ -513,11 +513,11 @@ class TestClient(unittest.TestCase):
         # Although we add a callback, we don't want this to throw an error.
         # Instead the error should be returned by the run function.
         query.add_callback("http_table", lambda row: print(row))
-        with self.assertRaisesRegex(pixie.PxLError, "name 'aa' is not defined"):
+        with self.assertRaisesRegex(pxapi.PxLError, "name 'aa' is not defined"):
             query.run()
 
     def test_run_script_with_api_errors(self) -> None:
-        px_client = pixie.Client(token=ACCESS_TOKEN, server_url=self.url())
+        px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
         # Only send data for "http".
@@ -544,7 +544,7 @@ class TestClient(unittest.TestCase):
         # Test the callback API. Callback API is a simpler alternative to the TableSub
         # API that allows you to designate a function that runs on individual rows. Users
         # can process data without worrying about async processing by using this API.
-        px_client = pixie.Client(
+        px_client = pxapi.Client(
             token=ACCESS_TOKEN, server_url=self.url())
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
@@ -575,7 +575,7 @@ class TestClient(unittest.TestCase):
         stats_counter = 0
 
         # Define callback function for "http" table.
-        def http_fn(row: pixie.Row) -> None:
+        def http_fn(row: pxapi.Row) -> None:
             nonlocal http_counter
             http_counter += 1
             self.assertEqual(row["cluster_id"], utils.cluster_uuid1)
@@ -584,7 +584,7 @@ class TestClient(unittest.TestCase):
         query.add_callback("http", http_fn)
 
         # Define a callback function for the stats_fn.
-        def stats_fn(row: pixie.Row) -> None:
+        def stats_fn(row: pxapi.Row) -> None:
             nonlocal stats_counter
             stats_counter += 1
             self.assertEqual(row["cluster_id"], utils.cluster_uuid1)
@@ -603,7 +603,7 @@ class TestClient(unittest.TestCase):
 
     def test_run_script_callback_with_error(self) -> None:
         # Test to demonstrate how errors raised in callbacks can be handled.
-        px_client = pixie.Client(
+        px_client = pxapi.Client(
             token=ACCESS_TOKEN, server_url=self.url())
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
@@ -618,7 +618,7 @@ class TestClient(unittest.TestCase):
         query = px_client.query(conns, query_str)
 
         # Add callback function that raises an error.
-        def http_fn(row: pixie.Row) -> None:
+        def http_fn(row: pxapi.Row) -> None:
             raise ValueError("random internal error")
         query.add_callback("http", http_fn)
 
@@ -629,7 +629,7 @@ class TestClient(unittest.TestCase):
     def test_subscribe_all(self) -> None:
         # Tests `subscribe_all_tables()`.
 
-        px_client = pixie.Client(
+        px_client = pxapi.Client(
             token=ACCESS_TOKEN, server_url=self.url())
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
@@ -654,7 +654,7 @@ class TestClient(unittest.TestCase):
         tables = query.subscribe_all_tables()
 
         # Async function to run on the "http" table.
-        async def process_http_tb(table_sub: pixie.TableSub) -> None:
+        async def process_http_tb(table_sub: pxapi.TableSub) -> None:
             num_rows = 0
             async for row in table_sub:
                 self.assertEqual(row["cluster_id"], utils.cluster_uuid1)
@@ -667,7 +667,7 @@ class TestClient(unittest.TestCase):
         # Async function that processes the tables subscription and runs the
         # async function above to process the "http" table when that table shows
         # we see thtparticular table.
-        async def process_all_tables(tables_gen: pixie.TableSubGenerator) -> None:
+        async def process_all_tables(tables_gen: pxapi.TableSubGenerator) -> None:
             table_names = set()
             async for table in tables_gen:
                 table_names.add(table.table_name)
@@ -687,7 +687,7 @@ class TestClient(unittest.TestCase):
         # Only on subscription allowed per table. Users should handle data from
         # the single alloatted subscription to enable the logical equivalent
         # of multiple subscriptions to one table.
-        px_client = pixie.Client(token=ACCESS_TOKEN, server_url=self.url())
+        px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
         query = px_client.query(conns, query_str)
@@ -703,7 +703,7 @@ class TestClient(unittest.TestCase):
         # Tests to show that queries may only be run once. After a query has been
         # run, calling data grabbing methods like subscribe, add_callback, etc. will
         # raise an error.
-        px_client = pixie.Client(token=ACCESS_TOKEN, server_url=self.url())
+        px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
         stats_table1 = self.stats_table_factory.create_table(utils.table_id3)
@@ -720,7 +720,7 @@ class TestClient(unittest.TestCase):
         query = px_client.query(conns, query_str)
 
         # Create a dummy callback.
-        def stats_cb(row: pixie.Row) -> None:
+        def stats_cb(row: pxapi.Row) -> None:
             pass
 
         query.add_callback("stats", stats_cb)
@@ -747,7 +747,7 @@ class TestClient(unittest.TestCase):
 
     def test_send_error_id_table_prop(self) -> None:
         # Sending an error over the stream should cause the table sub to exit.
-        px_client = pixie.Client(token=ACCESS_TOKEN, server_url=self.url())
+        px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
         # Connect to a single fake cluster.
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
@@ -774,7 +774,7 @@ class TestClient(unittest.TestCase):
 
     def test_stop_sending_data_before_eos(self) -> None:
         # If the stream stops before sending over an eos for each table that should be an error.
-        px_client = pixie.Client(token=ACCESS_TOKEN, server_url=self.url())
+        px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
         # Connect to a single fake cluster.
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
@@ -799,7 +799,7 @@ class TestClient(unittest.TestCase):
 
     def test_handle_server_side_errors(self) -> None:
         # Test to make sure server side errors are handled somewhat.
-        px_client = pixie.Client(token=ACCESS_TOKEN, server_url=self.url())
+        px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
         # Connect to a single fake cluster.
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
@@ -830,7 +830,7 @@ class TestClient(unittest.TestCase):
     def test_list_healthy_clusters(self) -> None:
         # Tests that users can list healthy clusters and then
         # query those clusters.
-        px_client = pixie.Client(
+        px_client = pxapi.Client(
             token=ACCESS_TOKEN,
             server_url=self.url(),
             channel_fn=lambda url: grpc.insecure_channel(url),
@@ -869,7 +869,7 @@ class TestClient(unittest.TestCase):
         ], query_str)
 
         # Define callback function for "http" table.
-        def http_fn(row: pixie.Row) -> None:
+        def http_fn(row: pxapi.Row) -> None:
             pass
         query.add_callback("http", http_fn)
 
@@ -878,7 +878,7 @@ class TestClient(unittest.TestCase):
 
     def test_direct_conns(self) -> None:
         # Test the direct connections.
-        px_client = pixie.Client(
+        px_client = pxapi.Client(
             token=ACCESS_TOKEN,
             server_url=self.url(),
             channel_fn=lambda url: grpc.insecure_channel(url),
@@ -922,7 +922,7 @@ class TestClient(unittest.TestCase):
         query = px_client.query(conns, query_str)
 
         # Define callback function for "http" table.
-        def http_fn(row: pixie.Row) -> None:
+        def http_fn(row: pxapi.Row) -> None:
             self.assertEqual(row["cluster_id"], cluster_id)
             self.assertEqual(row["http_resp_body"], "foo")
             self.assertEqual(row["http_resp_status"], 200)
@@ -934,7 +934,7 @@ class TestClient(unittest.TestCase):
 
     def test_ergo_api(self) -> None:
         # Test the direct connections.
-        px_client = pixie.Client(
+        px_client = pxapi.Client(
             token=ACCESS_TOKEN,
             server_url=self.url(),
             # Channel functions for testing.
