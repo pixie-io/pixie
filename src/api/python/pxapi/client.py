@@ -17,7 +17,6 @@ from .data import (
     Row,
     ClusterID,
     _Relation,
-    _add_cluster_id_to_relation,
 )
 
 from .errors import (
@@ -102,6 +101,10 @@ class Conn:
         # Whether the connection is direct connection or not.
         self._direct = direct
 
+    def create_script(self, script_str: str) -> 'Script':
+        """ Create a new script object from this client. """
+        return Script(self, script_str)
+
     def create_grpc_channel(self) -> grpc.aio.Channel:
         """ Creates a grpc channel from this connection. """
         if self._channel_fn:
@@ -133,11 +136,8 @@ class Script:
     when a query stops running and cannot allow multiple runs per object.
     """
 
-    def __init__(self, conns: List[Conn], pxl: str):
-        self._conns = conns
-        if len(self._conns) == 0:
-            raise ValueError("Script needs at least 1 connection to execute.")
-
+    def __init__(self, conn: Conn, pxl: str):
+        self._conn = conn
         self._pxl = pxl
 
         # A mapping of the table ID to a table. The tables in the values aren't guaranteed to be
@@ -151,7 +151,7 @@ class Script:
         self._tables_lock = asyncio.Lock()
 
         # The exec stats per query per id.
-        self._exec_stats: Dict[ClusterID, vpb.QueryExecutionStats] = {}
+        self._exec_stats: vpb.QueryExecutionStats = None
 
         # Tracks whether the query has been run or not.
         self._has_run = False
@@ -289,47 +289,29 @@ class Script:
             q.put_nowait(table)
 
     async def _process_metadata(self,
-                                cluster_id: ClusterID,
-                                metadata: vpb.QueryMetadata,
-                                num_conns: int) -> None:
-
-        relation = _Relation(_add_cluster_id_to_relation(metadata.relation))
+                                metadata: vpb.QueryMetadata) -> None:
+        relation = _Relation(metadata.relation)
 
         async with self._tables_lock:
-            # Don't create a new table if we've already seen one with the same name.
-            if metadata.name in self._table_name_to_table_map:
-                table = self._table_name_to_table_map[metadata.name]
-                if relation != table.relation:
-                    raise ValueError("Table relation '{}' does not match "
-                                     "existing relation '{}' for '{}'".format(
-                                         relation, table.relation, metadata.name))
-                self._table_id_to_table_map[metadata.id] = table
-                table.add_cluster_table_id(metadata.id, cluster_id)
-                return
-
             table = _TableStream(
                 metadata.name,
                 relation,
-                num_conns,
                 subscribed=self._is_table_subscribed(metadata.name)
             )
-            table.add_cluster_table_id(metadata.id, cluster_id)
             self._table_id_to_table_map[metadata.id] = table
             self._table_name_to_table_map[metadata.name] = table
 
         self._add_table_to_q(table)
 
-    async def _process_data(self, cluster_id: ClusterID, data: vpb.QueryData) -> None:
+    async def _process_data(self, data: vpb.QueryData) -> None:
         table_id = data.batch.table_id
         async with self._tables_lock:
             assert table_id in self._table_id_to_table_map, "id is missing " + table_id
-            self._table_id_to_table_map[table_id].add_row_batch(
-                cluster_id, data.batch)
+            self._table_id_to_table_map[table_id].add_row_batch(data.batch)
 
     async def _set_exec_stats(self,
-                              cluster_id: ClusterID,
                               exec_stats: vpb.QueryExecutionStats) -> None:
-        self._exec_stats[cluster_id] = exec_stats
+        self._exec_stats = exec_stats
 
     def _fail_on_multi_run(self) -> None:
         """
@@ -363,9 +345,7 @@ class Script:
         """
         self._fail_on_multi_run()
         self._has_run = True
-        await asyncio.gather(*[
-            self._run_conn(conn, len(self._conns)) for conn in self._conns
-        ], *[t() for t in self._tasks])
+        await asyncio.gather(self._run_conn(self._conn), *[t() for t in self._tasks])
 
     def run(self) -> None:
         """ Executes the query synchronously.
@@ -384,10 +364,10 @@ class Script:
     def _close_table_q(self) -> None:
         self._add_table_to_q(EOF)
 
-    async def _close_all_tables_for_cluster(self, cluster_id: ClusterID) -> None:
+    async def _close_all_tables(self) -> None:
         async with self._tables_lock:
             for name, table in self._table_name_to_table_map.items():
-                table.close(cluster_id)
+                table.close()
 
     def results(self, table_name: str) -> List[Row]:
         """ Runs query and return results for the table.
@@ -408,7 +388,7 @@ class Script:
         self.run()
         return rows
 
-    async def _run_conn(self, conn: Conn, num_conns: int) -> None:
+    async def _run_conn(self, conn: Conn) -> None:
         """ Executes the query on a single connection. """
         async with conn.create_grpc_channel() as channel:
             stub = vizier_pb2_grpc.VizierServiceStub(channel)
@@ -423,21 +403,21 @@ class Script:
             ]):
                 if res.status.code != 0:
                     self._add_table_to_q(QUERY_ERROR)
-                    await self._close_all_tables_for_cluster(conn.cluster_id)
+                    await self._close_all_tables()
                     raise build_pxl_exception(
                         self._pxl, res.status, conn.name())
                 if res.HasField("meta_data"):
-                    await self._process_metadata(conn.cluster_id, res.meta_data, num_conns)
+                    await self._process_metadata(res.meta_data)
                 if res.HasField("data") and res.data.HasField("batch"):
-                    await self._process_data(conn.cluster_id, res.data)
+                    await self._process_data(res.data)
                 elif res.HasField("data") and res.data.HasField("execution_stats"):
-                    await self._set_exec_stats(conn.cluster_id, res.data.execution_stats)
+                    await self._set_exec_stats(res.data.execution_stats)
 
         # TODO(philkuz) will cause an error if this is
         # sent in one conn before the other conn has sent its last table metadata.
         # Bug is unlikely to happen, but should still be covered.
         self._close_table_q()
-        await self._close_all_tables_for_cluster(conn.cluster_id)
+        await self._close_all_tables()
 
 
 class Cluster:
@@ -479,10 +459,6 @@ class Client:
         self._server_url = server_url
         self._channel_fn = channel_fn
         self._conn_channel_fn = conn_channel_fn
-
-    def create_script(self, conns: List[Conn], script_str: str) -> Script:
-        """ Create a new script object from this client. """
-        return Script(conns, script_str)
 
     def _get_cloud_channel(self) -> grpc.Channel:
         if self._channel_fn:

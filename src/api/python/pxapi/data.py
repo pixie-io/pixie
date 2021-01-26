@@ -1,7 +1,7 @@
 import json
 import uuid
 import asyncio
-from typing import Callable, Any, List, AsyncGenerator, Set, Union
+from typing import Callable, Any, List, AsyncGenerator, Union
 
 from collections import OrderedDict
 
@@ -155,65 +155,27 @@ RowGenerator = AsyncGenerator[Row, None]
 
 
 class _Rowbatch:
-    def __init__(self, cluster_id: ClusterID, rb: vpb.RowBatchData, close_table: bool = False):
+    def __init__(self, rb: vpb.RowBatchData, close_table: bool = False):
         self.batch = rb
-        self.cluster_id = cluster_id
         self.close_table = close_table
 
 
-def _create_cluster_id_col() -> vpb.Relation.ColumnInfo:
-    # Create a cluster_id column.
-    cluster_id_col = vpb.Relation.ColumnInfo()
-    cluster_id_col.column_name = "cluster_id"
-    cluster_id_col.column_type = vpb.STRING
-    cluster_id_col.column_desc = "ID of the cluster that this came from."
-    cluster_id_col.column_semantic_type = vpb.ST_NONE
-    return cluster_id_col
-
-
-def _add_cluster_id_to_relation(relation: vpb.Relation) -> vpb.Relation:
-    cluster_id_relation = vpb.Relation(columns=relation.columns)
-    cluster_id_relation.columns.insert(0, _create_cluster_id_col())
-    return cluster_id_relation
-
-
 class _TableStream:
-    def __init__(self, name: str, relation: _Relation, expected_num_conns: int, subscribed: bool):
+    def __init__(self, name: str, relation: _Relation, subscribed: bool):
         self.name = name
         self.relation = relation
-
-        self.table_ids: List[TableID] = []
-        self.cluster_ids: List[ClusterID] = []
-        # Tells you how many clusters you expect to get data from.
-        # Added because len(self.cluster_ids) is unreliable, you might finish
-        # getting data from one cluster before adding another cluster so you would
-        # exit a table early.
-        self.expected_num_conns = expected_num_conns
-        # From how many clusters have sent eos. Use to stop yielding rowbatches.
-        self.received_eos = 0
-
-        # The clusters that have called close().
-        self._closed_clusters: Set[ClusterID] = set()
 
         self._rowbatch_q: asyncio.Queue[_Rowbatch] = asyncio.Queue()
         self._subscribed = subscribed
 
-    def add_cluster_table_id(self, table_id: TableID, cluster_id: ClusterID) -> None:
-        self.table_ids.append(table_id)
-        self.cluster_ids.append(cluster_id)
-
-        if len(self.cluster_ids) > self.expected_num_conns:
-            raise ValueError(
-                "Shouldn't have more clusters than expected number of connections.")
-
-    def add_row_batch(self, cluster_id: ClusterID, rowbatch: vpb.RowBatchData) -> None:
+    def add_row_batch(self, rowbatch: vpb.RowBatchData) -> None:
         if not self._subscribed:
             return
-        self._rowbatch_q.put_nowait(_Rowbatch(cluster_id, rowbatch))
+        self._rowbatch_q.put_nowait(_Rowbatch(rowbatch))
 
-    def close(self, cluster_id: ClusterID) -> None:
+    def close(self) -> None:
         self._rowbatch_q.put_nowait(
-            _Rowbatch(cluster_id, vpb.RowBatchData(), close_table=True))
+            _Rowbatch(vpb.RowBatchData(), close_table=True))
 
     async def _row_batches(self) -> AsyncGenerator[_Rowbatch, None]:
         if not self._subscribed:
@@ -225,29 +187,19 @@ class _TableStream:
             # for a particular cluster. If this happens before we receive eos from each stream,
             # we throw an error.
             if rb.close_table:
-                self._closed_clusters.add(rb.cluster_id)
-                # Should only happen if we haven't received an
-                # `eos` from each cluster_id before close(cluster_id).
-                if len(self._closed_clusters) == self.expected_num_conns:
-                    raise ValueError("More clusters closed than received eos.")
-                continue
+                raise ValueError("Closed before receiving end-of-stream.")
             yield rb
             self._rowbatch_q.task_done()
 
             if rb.batch.eos:
-                self.received_eos += 1
-            # If we've received enough eos, then we end the generator.
-            if self.received_eos == self.expected_num_conns:
                 break
 
     async def __aiter__(self) -> RowGenerator:
         async for rb in self._row_batches():
             batch = rb.batch
             for i in range(batch.num_rows):
-                row = [rb.cluster_id]
+                row = []
                 for ci, col in enumerate(batch.cols):
-                    # Adding + 1 because the batches don't contain a cluster ID, but our relation
-                    # for this table does contain one.
-                    format_fn = self.relation.get_col_formatter(ci + 1)
+                    format_fn = self.relation.get_col_formatter(ci)
                     row.append(format_fn(col, i))
                 yield Row(self, row)

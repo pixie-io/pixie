@@ -26,7 +26,7 @@ class TestData(unittest.TestCase):
 
     def test_row(self) -> None:
         table = data._TableStream("foo", data._Relation(self.relation),
-                                  expected_num_conns=1, subscribed=True)
+                                  subscribed=True)
 
         # Test __str__().
         row = data.Row(table, ["bar", 200])
@@ -61,15 +61,9 @@ class TestData(unittest.TestCase):
         # Create the table stream.
         table = data._TableStream("foo",
                                   data._Relation(
-                                      data._add_cluster_id_to_relation(
-                                          self.relation,
-                                      )
+                                      self.relation,
                                   ),
-                                  expected_num_conns=1,
                                   subscribed=True)
-
-        # Add a new connection that writes to this table stream.
-        table.add_cluster_table_id(utils.table_id1, utils.cluster_uuid1)
 
         foo_factory = utils.FakeTableFactory("foo", self.relation)
         foo_faker = foo_factory.create_table(utils.table_id1)
@@ -83,13 +77,12 @@ class TestData(unittest.TestCase):
         batch2 = foo_faker.row_batch([[], []], eos=True, eow=True)
 
         # Push the rowbatches onto this table stream.
-        table.add_row_batch(utils.cluster_uuid1, batch1)
-        table.add_row_batch(utils.cluster_uuid1, batch2)
+        table.add_row_batch(batch1)
+        table.add_row_batch(batch2)
 
         async def process_rows() -> None:
             i = 0
             async for row in table:
-                self.assertEqual(row["cluster_id"], utils.cluster_uuid1)
                 self.assertEqual(row["http_resp_body"], rb_data[0][i])
                 self.assertEqual(row["http_resp_status"], rb_data[1][i])
                 i += 1
@@ -101,15 +94,9 @@ class TestData(unittest.TestCase):
         # Create the table stream, but it should be unsubscribed.
         table = data._TableStream("foo",
                                   data._Relation(
-                                      data._add_cluster_id_to_relation(
-                                          self.relation,
-                                      )
+                                      self.relation,
                                   ),
-                                  expected_num_conns=1,
                                   subscribed=False)
-
-        # Add a new connection that writes to this table stream.
-        table.add_cluster_table_id(utils.table_id1, utils.cluster_uuid1)
 
         foo_factory = utils.FakeTableFactory("foo", self.relation)
         foo_faker = foo_factory.create_table(utils.table_id1)
@@ -123,8 +110,8 @@ class TestData(unittest.TestCase):
         batch2 = foo_faker.row_batch([[], []], eos=True, eow=True)
 
         # Push the rowbatches onto this table stream.
-        table.add_row_batch(utils.cluster_uuid1, batch1)
-        table.add_row_batch(utils.cluster_uuid1, batch2)
+        table.add_row_batch(batch1)
+        table.add_row_batch(batch2)
 
         loop = asyncio.get_event_loop()
         with self.assertRaisesRegex(ValueError, "Table .* not subscribed"):
