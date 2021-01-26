@@ -9,7 +9,7 @@ from typing import List, Any, Coroutine, Dict
 
 
 ACCESS_TOKEN = "12345678-0000-0000-0000-987654321012"
-query_str = """
+pxl_script = """
 import px
 px.display(px.DataFrame('http_events')[
            ['http_resp_body','http_resp_status']].head(10), 'http')
@@ -18,16 +18,16 @@ px.display(px.DataFrame('process_stats')[
 """
 
 
-async def run_query_and_tasks(
-    query: pxapi.Query,
+async def run_script_and_tasks(
+    script: pxapi.Script,
     processors: List[Coroutine[Any, Any, Any]]
 ) -> None:
     """
-    Runs data processors in parallel with a query, returns the result of the coroutine.
+    Runs data processors in parallel with a script, returns the result of the coroutine.
     """
     tasks = [asyncio.create_task(p) for p in processors]
     try:
-        await query.run_async()
+        await script.run_async()
     except Exception as e:
         for t in tasks:
             t.cancel()
@@ -217,13 +217,13 @@ class TestClient(unittest.TestCase):
             http_table1.end(),
         ])
 
-        # Create the query object.
-        query = px_client.query(conns, query_str)
+        # Create the script object.
+        script = px_client.create_script(conns, pxl_script)
         # Subscribe to the http table.
-        http_tb = query.subscribe("http")
+        http_tb = script.subscribe("http")
 
         # Define an async function that processes the TableSub
-        # while the API query can run concurrently.
+        # while the API script can run concurrently.
         async def process_table(table_sub: pxapi.TableSub) -> None:
             num_rows = 0
             async for row in table_sub:
@@ -234,10 +234,10 @@ class TestClient(unittest.TestCase):
 
             self.assertEqual(num_rows, 1)
 
-        # Run the query and process_table concurrently.
+        # Run the script and process_table concurrently.
         loop = asyncio.get_event_loop()
         loop.run_until_complete(
-            run_query_and_tasks(query, [process_table(http_tb)]))
+            run_script_and_tasks(script, [process_table(http_tb)]))
 
     def test_multiple_rows_and_rowbatches(self) -> None:
         px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
@@ -261,10 +261,10 @@ class TestClient(unittest.TestCase):
             http_table1.end(),
         ])
 
-        # Create the query object.
-        query = px_client.query(conns, query_str)
+        # Create the script object.
+        script = px_client.create_script(conns, pxl_script)
         # Subscribe to the http table.
-        http_tb = query.subscribe("http")
+        http_tb = script.subscribe("http")
 
         # Verify that the rows returned by the table_sub match the
         # order and values of the input test data.
@@ -280,10 +280,10 @@ class TestClient(unittest.TestCase):
 
             self.assertEqual(row_i, 4)
 
-        # Run the query and process_table concurrently.
+        # Run the script and process_table concurrently.
         loop = asyncio.get_event_loop()
         loop.run_until_complete(
-            run_query_and_tasks(query, [process_table(http_tb)]))
+            run_script_and_tasks(script, [process_table(http_tb)]))
 
     def test_two_conns_one_table(self) -> None:
         px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
@@ -306,7 +306,7 @@ class TestClient(unittest.TestCase):
         # same and should have the same relation.
         http_table2 = self.http_table_factory.create_table(utils.table_id2)
         self.fake_vizier_service.add_fake_data(utils.cluster_uuid2, [
-            # Initialize the table on the stream with the metadata. The query
+            # Initialize the table on the stream with the metadata. The script
             # handler should recognize this table as the same as the one
             # sent by http_table1.
             http_table2.metadata_response(),
@@ -316,14 +316,14 @@ class TestClient(unittest.TestCase):
             http_table2.end(),
         ])
 
-        # Create the query obejct.
-        query = px_client.query(conns, query_str)
+        # Create the script obejct.
+        script = px_client.create_script(conns, pxl_script)
         # Subscribe to the http table. We need only one subscription
-        # because the Query merges each connection's table representation.
-        http_tb = query.subscribe("http")
+        # because the Script merges each connection's table representation.
+        http_tb = script.subscribe("http")
 
         # Define an async function that processes the TableSub
-        # while the API query can run concurrently.
+        # while the API script can run concurrently.
         async def process_table(table_sub: pxapi.TableSub) -> None:
             num_rows = 0
             seen_clusters = set()
@@ -345,10 +345,10 @@ class TestClient(unittest.TestCase):
             self.assertEqual(seen_clusters, {
                 utils.cluster_uuid1, utils.cluster_uuid2})
 
-        # Run the query and process_table concurrently.
+        # Run the script and process_table concurrently.
         loop = asyncio.get_event_loop()
         loop.run_until_complete(
-            run_query_and_tasks(query, [process_table(http_tb)]))
+            run_script_and_tasks(script, [process_table(http_tb)]))
 
     def test_mismatching_table_across_conns(self) -> None:
         # Tests to make sure we error out early if conns send over mismatching tables.
@@ -368,7 +368,7 @@ class TestClient(unittest.TestCase):
         ])
 
         # Create table for the second cluster, but modify the relation to have an extra column.
-        # This extra column should trigger an error while query is running.
+        # This extra column should trigger an error while script is running.
         http_table2 = self.http_table_factory.create_table(utils.table_id2)
         extra_col_relation = vpb.Relation(columns=http_table2.relation.columns)
         extra_col_relation.columns.append(vpb.Relation.ColumnInfo(
@@ -384,10 +384,10 @@ class TestClient(unittest.TestCase):
             http_table2.end(),
         ])
 
-        query = px_client.query(conns, query_str)
-        # Run the query and expect an exception to be Raised.
+        script = px_client.create_script(conns, pxl_script)
+        # Run the script and expect an exception to be Raised.
         with self.assertRaisesRegex(ValueError, "Table relation.*does not match.* for 'http'"):
-            query.run()
+            script.run()
 
     def test_one_conn_two_tables(self) -> None:
         px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
@@ -415,10 +415,10 @@ class TestClient(unittest.TestCase):
             stats_table1.end(),
         ])
 
-        query = px_client.query(conns, query_str)
+        script = px_client.create_script(conns, pxl_script)
         # Subscribe to both tables.
-        http_tb = query.subscribe("http")
-        stats_tb = query.subscribe("stats")
+        http_tb = script.subscribe("http")
+        stats_tb = script.subscribe("stats")
 
         # Async function that makes sure "http" table returns the expected rows.
         async def process_http_tb(table_sub: pxapi.TableSub) -> None:
@@ -443,10 +443,10 @@ class TestClient(unittest.TestCase):
                 num_rows += 1
 
             self.assertEqual(num_rows, 1)
-        # Run the query and the processing tasks concurrently.
+        # Run the script and the processing tasks concurrently.
         loop = asyncio.get_event_loop()
         loop.run_until_complete(
-            run_query_and_tasks(query, [process_http_tb(http_tb), process_stats_tb(stats_tb)]))
+            run_script_and_tasks(script, [process_http_tb(http_tb), process_stats_tb(stats_tb)]))
 
     def test_run_script_with_invalid_arg_error(self) -> None:
         px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
@@ -456,17 +456,17 @@ class TestClient(unittest.TestCase):
         # get if you sent over an empty pxl function in the ExecuteScriptRequest.
         self.fake_vizier_service.add_fake_data(utils.cluster_uuid1, [
             vpb.ExecuteScriptResponse(status=utils.invalid_argument(
-                message="Query should not be empty."
+                message="Script should not be empty."
             ))
         ])
 
-        # Prepare the query and run synchronously.
-        query = px_client.query(conns, "")
+        # Prepare the script and run synchronously.
+        script = px_client.create_script(conns, "")
         # Although we add a callback, we don't want this to throw an error.
         # Instead the error should be returned by the run function.
-        query.add_callback("http_table", lambda row: print(row))
-        with self.assertRaisesRegex(ValueError, "Query should not be empty."):
-            query.run()
+        script.add_callback("http_table", lambda row: print(row))
+        with self.assertRaisesRegex(ValueError, "Script should not be empty."):
+            script.run()
 
     def test_run_script_with_line_col_error(self) -> None:
         px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
@@ -482,13 +482,13 @@ class TestClient(unittest.TestCase):
             ))
         ])
 
-        # Prepare the query and run synchronously.
-        query = px_client.query(conns, "aa")
+        # Prepare the script and run synchronously.
+        script = px_client.create_script(conns, "aa")
         # Although we add a callback, we don't want this to throw an error.
         # Instead the error should be returned by the run function.
-        query.add_callback("http_table", lambda row: print(row))
+        script.add_callback("http_table", lambda row: print(row))
         with self.assertRaisesRegex(pxapi.PxLError, "PxL, line 1.*name 'aa' is not defined"):
-            query.run()
+            script.run()
 
     def test_compiler_error_from_two_conns(self) -> None:
         px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
@@ -508,13 +508,13 @@ class TestClient(unittest.TestCase):
         self.fake_vizier_service.add_fake_data(
             utils.cluster_uuid2, [error_resp])
 
-        # Prepare the query and run synchronously.
-        query = px_client.query(conns, "aa")
+        # Prepare the script and run synchronously.
+        script = px_client.create_script(conns, "aa")
         # Although we add a callback, we don't want this to throw an error.
         # Instead the error should be returned by the run function.
-        query.add_callback("http_table", lambda row: print(row))
+        script.add_callback("http_table", lambda row: print(row))
         with self.assertRaisesRegex(pxapi.PxLError, "name 'aa' is not defined"):
-            query.run()
+            script.run()
 
     def test_run_script_with_api_errors(self) -> None:
         px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
@@ -528,17 +528,17 @@ class TestClient(unittest.TestCase):
             http_table1.end(),
         ])
 
-        query = px_client.query(conns, query_str)
+        script = px_client.create_script(conns, pxl_script)
 
         # Subscribe to a table that doesn't exist shoudl throw an error.
-        foobar_tb = query.subscribe("foobar")
+        foobar_tb = script.subscribe("foobar")
 
-        # Try to pull data from the foobar_tb, but error out when the query
+        # Try to pull data from the foobar_tb, but error out when the script
         # never produces that data.
         loop = asyncio.get_event_loop()
-        with self.assertRaisesRegex(ValueError, "'foobar' not sent by query"):
+        with self.assertRaisesRegex(ValueError, "Table 'foobar' not received"):
             loop.run_until_complete(
-                run_query_and_tasks(query, [utils.iterate_and_pass(foobar_tb)]))
+                run_script_and_tasks(script, [utils.iterate_and_pass(foobar_tb)]))
 
     def test_run_script_callback(self) -> None:
         # Test the callback API. Callback API is a simpler alternative to the TableSub
@@ -570,7 +570,7 @@ class TestClient(unittest.TestCase):
             stats_table1.end(),
         ])
 
-        query = px_client.query(conns, query_str)
+        script = px_client.create_script(conns, pxl_script)
         http_counter = 0
         stats_counter = 0
 
@@ -581,7 +581,7 @@ class TestClient(unittest.TestCase):
             self.assertEqual(row["cluster_id"], utils.cluster_uuid1)
             self.assertEqual(row["http_resp_body"], "foo")
             self.assertEqual(row["http_resp_status"], 200)
-        query.add_callback("http", http_fn)
+        script.add_callback("http", http_fn)
 
         # Define a callback function for the stats_fn.
         def stats_fn(row: pxapi.Row) -> None:
@@ -592,10 +592,10 @@ class TestClient(unittest.TestCase):
                 '00000000-0000-007b-0000-0000000001c8'))
             self.assertEqual(row["cpu_ktime_ns"], 1000)
             self.assertEqual(row["rss_bytes"], 999)
-        query.add_callback("stats", stats_fn)
+        script.add_callback("stats", stats_fn)
 
-        # Run the query synchronously.
-        query.run()
+        # Run the script synchronously.
+        script.run()
 
         # We expect each callback function to only be called once.
         self.assertEqual(stats_counter, 1)
@@ -615,16 +615,16 @@ class TestClient(unittest.TestCase):
             http_table1.end(),
         ])
 
-        query = px_client.query(conns, query_str)
+        script = px_client.create_script(conns, pxl_script)
 
         # Add callback function that raises an error.
         def http_fn(row: pxapi.Row) -> None:
             raise ValueError("random internal error")
-        query.add_callback("http", http_fn)
+        script.add_callback("http", http_fn)
 
-        # Run query synchronously, expecting the internal error to propagate up.
+        # Run script synchronously, expecting the internal error to propagate up.
         with self.assertRaisesRegex(ValueError, "random internal error"):
-            query.run()
+            script.run()
 
     def test_subscribe_all(self) -> None:
         # Tests `subscribe_all_tables()`.
@@ -648,10 +648,10 @@ class TestClient(unittest.TestCase):
             http_table1.end(),
             stats_table1.end(),
         ])
-        # Create query.
-        query = px_client.query(conns, query_str)
+        # Create script.
+        script = px_client.create_script(conns, pxl_script)
         # Get a subscription to all of the tables that arrive over the stream.
-        tables = query.subscribe_all_tables()
+        tables = script.subscribe_all_tables()
 
         # Async function to run on the "http" table.
         async def process_http_tb(table_sub: pxapi.TableSub) -> None:
@@ -677,11 +677,11 @@ class TestClient(unittest.TestCase):
             # Make sure we see both tables on the generator.
             self.assertEqual(table_names, {"http", "stats"})
 
-        # Run the query and process_all_tables function concurrently.
+        # Run the script and process_all_tables function concurrently.
         # We expect no errors.
         loop = asyncio.get_event_loop()
         loop.run_until_complete(
-            run_query_and_tasks(query, [process_all_tables(tables())]))
+            run_script_and_tasks(script, [process_all_tables(tables())]))
 
     def test_subscribe_same_table_twice(self) -> None:
         # Only on subscription allowed per table. Users should handle data from
@@ -690,17 +690,17 @@ class TestClient(unittest.TestCase):
         px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
         conns = [FakeConn(ACCESS_TOKEN, self.url(), utils.cluster_uuid1)]
 
-        query = px_client.query(conns, query_str)
+        script = px_client.create_script(conns, pxl_script)
 
         # First subscription is fine.
-        query.subscribe("http")
+        script.subscribe("http")
 
         # Second raises an error.
         with self.assertRaisesRegex(ValueError, "Already subscribed to 'http'"):
-            query.subscribe("http")
+            script.subscribe("http")
 
     def test_fail_on_multi_run(self) -> None:
-        # Tests to show that queries may only be run once. After a query has been
+        # Tests to show that queries may only be run once. After a script has been
         # run, calling data grabbing methods like subscribe, add_callback, etc. will
         # raise an error.
         px_client = pxapi.Client(token=ACCESS_TOKEN, server_url=self.url())
@@ -717,33 +717,33 @@ class TestClient(unittest.TestCase):
             stats_table1.end(),
         ])
 
-        query = px_client.query(conns, query_str)
+        script = px_client.create_script(conns, pxl_script)
 
         # Create a dummy callback.
         def stats_cb(row: pxapi.Row) -> None:
             pass
 
-        query.add_callback("stats", stats_cb)
-        # Run the query for the first time. Should not return an error.
-        query.run()
-        # Each of the following methods should fail if called after query.run()
-        query_ran_message = "Query already ran"
+        script.add_callback("stats", stats_cb)
+        # Run the script for the first time. Should not return an error.
+        script.run()
+        # Each of the following methods should fail if called after script.run()
+        script_ran_message = "Script already ran"
         # Adding a callback should fail.
-        with self.assertRaisesRegex(ValueError, query_ran_message):
-            query.add_callback("stats", stats_cb)
+        with self.assertRaisesRegex(ValueError, script_ran_message):
+            script.add_callback("stats", stats_cb)
         # Subscribing to a table should fail.
-        with self.assertRaisesRegex(ValueError, query_ran_message):
-            query.subscribe("stats")
+        with self.assertRaisesRegex(ValueError, script_ran_message):
+            script.subscribe("stats")
         # Subscribing to all tables should fail.
-        with self.assertRaisesRegex(ValueError, query_ran_message):
-            query.subscribe_all_tables()
+        with self.assertRaisesRegex(ValueError, script_ran_message):
+            script.subscribe_all_tables()
         # Synchronous run should error out.
-        with self.assertRaisesRegex(ValueError, query_ran_message):
-            query.run()
+        with self.assertRaisesRegex(ValueError, script_ran_message):
+            script.run()
         # Async run should error out.
         loop = asyncio.get_event_loop()
-        with self.assertRaisesRegex(ValueError, query_ran_message):
-            loop.run_until_complete(query.run_async())
+        with self.assertRaisesRegex(ValueError, script_ran_message):
+            loop.run_until_complete(script.run_async())
 
     def test_send_error_id_table_prop(self) -> None:
         # Sending an error over the stream should cause the table sub to exit.
@@ -764,13 +764,13 @@ class TestClient(unittest.TestCase):
             ))
         ])
 
-        # Create the query object.
-        query = px_client.query(conns, query_str)
+        # Create the script object.
+        script = px_client.create_script(conns, pxl_script)
         # Add callback for http table.
-        query.add_callback("http", lambda _: None)
+        script.add_callback("http", lambda _: None)
 
         with self.assertRaisesRegex(ValueError, "server error"):
-            query.run()
+            script.run()
 
     def test_stop_sending_data_before_eos(self) -> None:
         # If the stream stops before sending over an eos for each table that should be an error.
@@ -786,16 +786,16 @@ class TestClient(unittest.TestCase):
             # Note: the table does not send an end message over the stream.
         ])
 
-        # Create the query object.
-        query = px_client.query(conns, query_str)
+        # Create the script object.
+        script = px_client.create_script(conns, pxl_script)
         # Subscribe to the http table.
-        http_tb = query.subscribe("http")
+        http_tb = script.subscribe("http")
 
-        # Run the query and process_table concurrently.
+        # Run the script and process_table concurrently.
         loop = asyncio.get_event_loop()
         with self.assertRaisesRegex(ValueError, "More clusters closed than received eos."):
             loop.run_until_complete(
-                run_query_and_tasks(query, [utils.iterate_and_pass(http_tb)]))
+                run_script_and_tasks(script, [utils.iterate_and_pass(http_tb)]))
 
     def test_handle_server_side_errors(self) -> None:
         # Test to make sure server side errors are handled somewhat.
@@ -816,20 +816,20 @@ class TestClient(unittest.TestCase):
         self.fake_vizier_service.trigger_error(
             utils.cluster_uuid1, ValueError('hi'))
 
-        # Create the query object.
-        query = px_client.query(conns, query_str)
+        # Create the script object.
+        script = px_client.create_script(conns, pxl_script)
         # Subscribe to the http table.
-        http_tb = query.subscribe("http")
+        http_tb = script.subscribe("http")
 
-        # Run the query and process_table concurrently.
+        # Run the script and process_table concurrently.
         loop = asyncio.get_event_loop()
         with self.assertRaisesRegex(grpc.aio.AioRpcError, "hi"):
             loop.run_until_complete(
-                run_query_and_tasks(query, [utils.iterate_and_pass(http_tb)]))
+                run_script_and_tasks(script, [utils.iterate_and_pass(http_tb)]))
 
     def test_list_healthy_clusters(self) -> None:
         # Tests that users can list healthy clusters and then
-        # query those clusters.
+        # script those clusters.
         px_client = pxapi.Client(
             token=ACCESS_TOKEN,
             server_url=self.url(),
@@ -863,18 +863,18 @@ class TestClient(unittest.TestCase):
             http_table1.end(),
         ])
 
-        query = px_client.query([
+        script = px_client.create_script([
             px_client.connect_to_cluster(clusters[0]),
             px_client.connect_to_cluster(clusters[1]),
-        ], query_str)
+        ], pxl_script)
 
         # Define callback function for "http" table.
         def http_fn(row: pxapi.Row) -> None:
             pass
-        query.add_callback("http", http_fn)
+        script.add_callback("http", http_fn)
 
-        # Run the query synchronously.
-        query.run()
+        # Run the script synchronously.
+        script.run()
 
     def test_direct_conns(self) -> None:
         # Test the direct connections.
@@ -919,7 +919,7 @@ class TestClient(unittest.TestCase):
             px_client.connect_to_cluster(c) for c in clusters if c.name() == 'dc_cluster'
         ]
 
-        query = px_client.query(conns, query_str)
+        script = px_client.create_script(conns, pxl_script)
 
         # Define callback function for "http" table.
         def http_fn(row: pxapi.Row) -> None:
@@ -927,13 +927,13 @@ class TestClient(unittest.TestCase):
             self.assertEqual(row["http_resp_body"], "foo")
             self.assertEqual(row["http_resp_status"], 200)
 
-        query.add_callback("http", http_fn)
+        script.add_callback("http", http_fn)
 
-        # Run the query synchronously.
-        query.run()
+        # Run the script synchronously.
+        script.run()
 
     def test_ergo_api(self) -> None:
-        # Test the direct connections.
+        # Create a new API where we can run and get results for a table simultaneously.
         px_client = pxapi.Client(
             token=ACCESS_TOKEN,
             server_url=self.url(),
@@ -941,11 +941,12 @@ class TestClient(unittest.TestCase):
             channel_fn=lambda url: grpc.insecure_channel(url),
             conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
         )
-        # Create the direct conn server.
+        # Connect to a cluster.
         conns = [px_client.connect_to_cluster(
             px_client.list_healthy_clusters()[0])]
 
-        query = px_client.query(conns, query_str)
+        # Create the script.
+        script = px_client.create_script(conns, pxl_script)
 
         # Create table for cluster_uuid1.
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
@@ -959,7 +960,7 @@ class TestClient(unittest.TestCase):
         ])
 
         # Use the results API to run and get the data from the http table.
-        for row in query.results("http"):
+        for row in script.results("http"):
             self.assertEqual(row["http_resp_body"], "foo")
             self.assertEqual(row["http_resp_status"], 200)
 

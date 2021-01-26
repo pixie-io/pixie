@@ -38,8 +38,8 @@ class TableSub:
     TableSub is an async generator that yields rows for table.
 
     You should avoid directly initializing TableSub objects. Instead, you
-    should create a Query object and `Query.subscribe()` to a specific table or
-    `Query.subscribe_all_tables()`. This avoids the complexity involved in creating this
+    should create a Script object and `Script.subscribe()` to a specific table or
+    `Script.subscribe_all_tables()`. This avoids the complexity involved in creating this
     object.
 
     For more advanced users: the TableSub object is a promise that a table with the specified name
@@ -65,7 +65,7 @@ class TableSub:
 
         if table_stream is None:
             raise ValueError(
-                "'{}' not sent by query".format(self.table_name))
+                "Table '{}' not received".format(self.table_name))
 
         async for row in table_stream:
             yield row
@@ -119,16 +119,16 @@ class Conn:
         return self.cluster_info.pretty_cluster_name
 
 
-class Query:
+class Script:
     """
-    Query encapsulates the connection logic to Pixie instances.
+    Script encapsulates the connection logic to Pixie instances.
 
-    If you want to get Pixie data, you will need to initialize `Query` with
+    If you want to get Pixie data, you will need to initialize `Script` with
     the clusters and PxL script, `add_callback()` for the desired table,
     and then `run()` the query.
 
-    Note: you can only invoke `run()` once on a Query object. If you need
-    to run a query multiple times, you must create a new Query object and
+    Note: you can only invoke `run()` once on a Script object. If you need
+    to run a query multiple times, you must create a new Script object and
     setup the data processing again. We rely on iterators that must close
     when a query stops running and cannot allow multiple runs per object.
     """
@@ -136,7 +136,7 @@ class Query:
     def __init__(self, conns: List[Conn], pxl: str):
         self._conns = conns
         if len(self._conns) == 0:
-            raise ValueError("Query needs at least 1 connection to execute.")
+            raise ValueError("Script needs at least 1 connection to execute.")
 
         self._pxl = pxl
 
@@ -172,7 +172,7 @@ class Query:
             ValueError: If called on a table that's already been passed as arg to
                 `subscribe` or `add_callback`.
             ValueError: If called after `run()` or `run_async()` for a particular
-                `Query`
+                `Script`
         """
         self._fail_on_multi_run()
         if self._is_table_subscribed(table_name):
@@ -200,8 +200,8 @@ class Query:
         raise a ValueError when the underlying gRPC channel closes.
 
 
-        The internals of `Query` use the python async api and the callback `fn`
-        will be called concurrently while the Query is running. Note that callbacks
+        The internals of `Script` use the python async api and the callback `fn`
+        will be called concurrently while the Script is running. Note that callbacks
         themselves should not be async functions.
 
         Callbacks will block the rest of query execution so expensive and unending
@@ -211,7 +211,7 @@ class Query:
             ValueError: If called on a table that's already been passed as arg to
                 `subscribe` or `add_callback`.
             ValueError: If called after `run()` or `run_async()` for a particular
-                `Query`
+                `Script`
         """
         table_sub = self.subscribe(table_name)
 
@@ -244,7 +244,7 @@ class Query:
         self._fail_on_multi_run()
         self._subscribe_all_tables = True
 
-        # You can only call create a table generator before Query.run_async(), therefore
+        # You can only call create a table generator before Script.run_async(), therefore
         # we declare it outside of the TableSubGenerator.
         tables = self._tables()
 
@@ -335,7 +335,7 @@ class Query:
         """
         Raise an error if run() has been called on this object.
 
-        Query objects are not setup to be run more than once due to the design of _TableStreams.
+        Script objects are not setup to be run more than once due to the design of _TableStreams.
         _TableStreams belonging to a query are closed when the query finishes executing. If users
         could rerun a query users might expect _TableStreams to continue returning data from
         the new query run.
@@ -348,7 +348,7 @@ class Query:
         if not self._has_run:
             return
 
-        raise ValueError("Query already ran. Cannot perform action.")
+        raise ValueError("Script already ran. Cannot perform action.")
 
     async def run_async(self) -> None:
         """ Runs the query asynchronously using asyncio.
@@ -357,9 +357,9 @@ class Query:
         should be run concurrently while the query is running.
 
         Raises:
-            ValueError: If any callbacks are on tables that a `Query` never receives.
+            ValueError: If any callbacks are on tables that a `Script` never receives.
             ValueError: If called after `run()` or `run_async()` for a particular
-                `Query`.
+                `Script`.
         """
         self._fail_on_multi_run()
         self._has_run = True
@@ -374,9 +374,9 @@ class Query:
         any connection, this will raise an error.
 
         Raises:
-            ValueError: If any callbacks are on tables that a `Query` never receives.
+            ValueError: If any callbacks are on tables that a `Script` never receives.
             ValueError: If called after `run()` or `run_async()` for a particular
-                `Query`.
+                `Script`.
         """
         loop = asyncio.get_event_loop()
         return loop.run_until_complete(self.run_async())
@@ -397,7 +397,7 @@ class Query:
         Raises:
             ValueError: If `table_name` is never sent during lifetime of query.
             ValueError: If called after `run()` or `run_async()` for a particular
-                `Query`.
+                `Script`.
         """
         rows = []
 
@@ -480,9 +480,9 @@ class Client:
         self._channel_fn = channel_fn
         self._conn_channel_fn = conn_channel_fn
 
-    def query(self, conns: List[Conn], query_str: str) -> Query:
-        """ Create a new Query object from this client. """
-        return Query(conns, query_str)
+    def create_script(self, conns: List[Conn], script_str: str) -> Script:
+        """ Create a new script object from this client. """
+        return Script(conns, script_str)
 
     def _get_cloud_channel(self) -> grpc.Channel:
         if self._channel_fn:

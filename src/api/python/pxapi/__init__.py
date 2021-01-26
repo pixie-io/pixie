@@ -6,7 +6,7 @@ from .client import (
     cloudapi_pb2_grpc,
     vizier_pb2_grpc,
     Client,
-    Query,
+    Script,
     Conn,
     ClusterID,
     TableSub,
