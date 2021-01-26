@@ -1,6 +1,6 @@
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
 pl_cc_library(
     name = "cc_library",
@@ -10,6 +10,7 @@ pl_cc_library(
         ],
         exclude = [
             "**/*_test.cc",
+            "redis_cmds_format_generator.cc",
         ],
     ),
     hdrs = glob(
@@ -31,5 +32,11 @@ pl_cc_test(
 pl_cc_test(
     name = "stitcher_test",
     srcs = ["stitcher_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_binary(
+    name = "redis_cmds_format_generator",
+    srcs = ["redis_cmds_format_generator.cc"],
     deps = [":cc_library"],
 )
