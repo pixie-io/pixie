@@ -209,16 +209,26 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
   RubyContainer client;
 
   {
+    // Make multiple requests and make sure we capture all of them.
     std::string rb_script = R"(
-          require 'net/http';
-          require 'uri';
-          uri = URI.parse('https://localhost:443/index.html');
-          http = Net::HTTP.new(uri.host, uri.port);
-          http.use_ssl = true;
-          http.verify_mode = OpenSSL::SSL::VERIFY_NONE;
-          request = Net::HTTP::Get.new(uri.request_uri);
-          response = http.request(request);
-          p response.body;)";
+          require 'net/http'
+          require 'uri'
+
+          $i = 0
+          while $i < 3 do
+            uri = URI.parse('https://localhost:443/index.html')
+            http = Net::HTTP.new(uri.host, uri.port)
+            http.use_ssl = true
+            http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+            request = Net::HTTP::Get.new(uri.request_uri)
+            response = http.request(request)
+            p response.body
+
+            sleep(1)
+
+            $i += 1
+          end
+    )";
 
     // Make an SSL request with the client.
     // Run the client in the network of the server, so they can connect to each other.
@@ -250,7 +260,9 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
       expected_record.req.req_path = "/index.html";
       expected_record.resp.resp_status = 200;
 
-      EXPECT_THAT(records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
+      EXPECT_THAT(records,
+                  UnorderedElementsAre(EqHTTPRecord(expected_record), EqHTTPRecord(expected_record),
+                                       EqHTTPRecord(expected_record)));
     }
   }
 }
