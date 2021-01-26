@@ -19,8 +19,6 @@ message VizierMessage {
     oneof msg {
         RegisterAgentRequest register_agent_request = 1;
         RegisterAgentResponse register_agent_response = 2;
-        UpdateAgentRequest update_agent_request = 3;
-        UpdateAgentResponse update_agent_response = 4;
         Heartbeat heartbeat = 5;
         HeartbeatAck heartbeat_ack = 6;
         HeartbeatNack heartbeat_nack = 7;
@@ -29,6 +27,10 @@ message VizierMessage {
         ConfigUpdateMessage config_update_message = 11;
         K8sMetadataMessage k8s_metadata_message = 12;
     }
+    // DEPRECATED: Formerly used for UpdateAgentRequest.
+    reserved 3;
+    // DEPRECATED: Formerly used for UpdateAgentResponse.
+    reserved 4;    
 }
 
 // A wrapper around all tracepoint-related messages that can be sent over the message bus.
@@ -58,7 +60,8 @@ message K8sMetadataMessage {
 
 message RegisterAgentRequest {
     pl.vizier.services.shared.agent.AgentInfo info = 1;
-    AgentUpdateInfo update_info = 2;
+    // DEPRECATED: This was update info, which are now only included in Heartbeats.
+    reserved 2;
 }
 
 message RegisterAgentResponse {
@@ -69,13 +72,6 @@ message RegisterAgentResponse {
     // DEPRECATED: This was clusterCIDR has been replaced by PodCIDRs in HeartbeatAck.
     reserved 2;
 }
-
-message UpdateAgentRequest {
-    pl.vizier.services.shared.agent.AgentInfo info = 1;
-    AgentUpdateInfo update_info = 2;
-}
-
-message UpdateAgentResponse {}
 
 // Struct representing the data that the agent has available to query.
 // Used by the compiler to selectively run queries on applicable agents only.
