@@ -14,6 +14,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/google/go-github/v32/github"
@@ -162,35 +163,42 @@ func tryFetchGithubLicense(ctx context.Context, client *github.Client, dep *depe
 }
 
 func tryFetchPkgGoDevLicense(ctx context.Context, dep *dependency) {
-	if !*tryPkgDevGo {
-		// Must not be go deps.
-		return
-	}
-	if dep.LicenseSPDX != "" {
-		// We must have fetched from GitHub successfully, so don't do anything here.
-		return
-	}
-	resp, err := http.Get(fmt.Sprintf("https://pkg.go.dev/%s?tab=licenses", dep.Package))
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return
-	}
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
-	if err != nil {
-		return
-	}
-	// Let's hope that the HTML structure of this page never changes ... because,
-	// they somehow still don't have an API to access pkg.go.dev
-	doc.Find(".License").Each(func(_ int, s *goquery.Selection) {
-		if dep.LicenseSPDX != "" {
+	for retryCount := 0; retryCount < 5; retryCount++ {
+		if !*tryPkgDevGo {
+			// Must not be go deps.
 			return
 		}
-		dep.LicenseSPDX = s.Find("h2 div").Text()
-		dep.LicenseText = s.Find(".License-contents").Text()
-	})
+		if dep.LicenseSPDX != "" {
+			// We must have fetched from GitHub successfully, so don't do anything here.
+			return
+		}
+		resp, err := http.Get(fmt.Sprintf("https://pkg.go.dev/%s?tab=licenses", dep.Package))
+		if err != nil {
+			return
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode == 429 {
+			time.Sleep(1 << retryCount * time.Second)
+			continue
+		}
+		if resp.StatusCode != 200 {
+			return
+		}
+		doc, err := goquery.NewDocumentFromReader(resp.Body)
+		if err != nil {
+			time.Sleep(1 << retryCount * time.Second)
+			continue
+		}
+		// Let's hope that the HTML structure of this page never changes ... because,
+		// they somehow still don't have an API to access pkg.go.dev
+		doc.Find(".License").Each(func(_ int, s *goquery.Selection) {
+			if dep.LicenseSPDX != "" {
+				return
+			}
+			dep.LicenseSPDX = s.Find("h2 div").Text()
+			dep.LicenseText = s.Find(".License-contents").Text()
+		})
+	}
 }
 
 func tryFetchJSONManualLicense(dep *dependency, manual map[string]*dependency) {
@@ -302,6 +310,6 @@ func main() {
 		}
 	}
 	if *fatalIfMissing && len(missing) > 0 {
-		log.Fatalf("There are %d repos with missing licenses and no path provided to write the missing licenses output", len(missing))
+		log.Fatalf("There are %d repos with missing licenses and --fatal_if_missing was set", len(missing))
 	}
 }
