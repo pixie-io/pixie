@@ -61,6 +61,27 @@ class HeartbeatMessageHandler : public Manager::MessageHandler {
   static constexpr std::chrono::milliseconds kHeartbeatWaitMillis{5000};
 };
 
+using HeartbeatReregisterHook = std::function<Status()>;
+
+// Handles heartbeat nacks. Needs to be separate from heartbeat handler
+// because heartbeat nacks will cause the heartbeat handler to be deleted
+// and recreated.
+class HeartbeatNackMessageHandler : public Manager::MessageHandler {
+ public:
+  HeartbeatNackMessageHandler() = delete;
+  HeartbeatNackMessageHandler(pl::event::Dispatcher* dispatcher, Info* agent_info,
+                              Manager::VizierNATSConnector* nats_conn,
+                              HeartbeatReregisterHook reregister_hook)
+      : MessageHandler(dispatcher, agent_info, nats_conn), reregister_hook_(reregister_hook) {}
+
+  ~HeartbeatNackMessageHandler() override = default;
+
+  Status HandleMessage(std::unique_ptr<messages::VizierMessage> msg) override;
+
+ private:
+  HeartbeatReregisterHook reregister_hook_;
+};
+
 }  // namespace agent
 }  // namespace vizier
 }  // namespace pl

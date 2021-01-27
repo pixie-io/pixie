@@ -228,10 +228,15 @@ Status Manager::RegisterBackgroundHelpers() {
   auto heartbeat_handler = std::make_shared<HeartbeatMessageHandler>(
       dispatcher_.get(), mds_manager_.get(), relation_info_manager_.get(), &info_,
       nats_connector_.get());
+
+  auto heartbeat_nack_handler = std::make_shared<HeartbeatNackMessageHandler>(
+      dispatcher_.get(), &info_, nats_connector_.get(),
+      []() -> Status { return error::Unimplemented("Reregistration not yet implemented"); });
+
   PL_CHECK_OK(
       RegisterMessageHandler(messages::VizierMessage::MsgCase::kHeartbeatAck, heartbeat_handler));
-  PL_CHECK_OK(
-      RegisterMessageHandler(messages::VizierMessage::MsgCase::kHeartbeatNack, heartbeat_handler));
+  PL_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kHeartbeatNack,
+                                     heartbeat_nack_handler));
 
   // Attach message handler for config updates.
   auto config_manager =

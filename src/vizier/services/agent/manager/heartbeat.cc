@@ -104,11 +104,7 @@ void HeartbeatMessageHandler::HeartbeatWatchdog() {
 }
 
 Status HeartbeatMessageHandler::HandleMessage(std::unique_ptr<messages::VizierMessage> msg) {
-  CHECK(msg->has_heartbeat_ack() || msg->has_heartbeat_nack());
-  if (msg->has_heartbeat_nack()) {
-    LOG(FATAL) << "Got a heartbeat NACK. Terminating... : " << msg->DebugString();
-  }
-
+  CHECK(msg->has_heartbeat_ack());
   auto ack = msg->heartbeat_ack();
   heartbeat_info_.last_ackd_seq_num = ack.sequence_number();
 
@@ -195,6 +191,14 @@ void HeartbeatMessageHandler::ProcessPIDTerminatedEvent(const pl::md::PIDTermina
   auto* mu_pid = process_info->mutable_upid();
   mu_pid->set_high(absl::Uint128High64(upid.value()));
   mu_pid->set_low(absl::Uint128Low64(upid.value()));
+}
+
+Status HeartbeatNackMessageHandler::HandleMessage(std::unique_ptr<messages::VizierMessage> msg) {
+  CHECK(msg->has_heartbeat_nack());
+  if (msg->heartbeat_nack().reregister()) {
+    return reregister_hook_();
+  }
+  LOG(FATAL) << "Got a heartbeat NACK. Terminating... : " << msg->DebugString();
 }
 
 }  // namespace agent

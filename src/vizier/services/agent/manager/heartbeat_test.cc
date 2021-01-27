@@ -148,20 +148,6 @@ TEST_F(HeartbeatMessageHandlerTest, InitialHeartbeatTimeout) {
                "Timeout waiting for heartbeat ACK for seq_num=0");
 }
 
-TEST_F(HeartbeatMessageHandlerTest, ReceivedHeartbeatNack) {
-  dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
-  EXPECT_EQ(1, nats_conn_->published_msgs_.size());
-  auto hb = nats_conn_->published_msgs_[0].mutable_heartbeat();
-  EXPECT_EQ(0, hb->sequence_number());
-
-  auto hb_nack = std::make_unique<messages::VizierMessage>();
-  auto hb_nack_msg = hb_nack->mutable_heartbeat_nack();
-  PL_UNUSED(hb_nack_msg);
-
-  ASSERT_DEATH([&]() { auto s = heartbeat_handler_->HandleMessage(std::move(hb_nack)); }(),
-               "Got a heartbeat NACK.");
-}
-
 TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeat) {
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
   EXPECT_EQ(1, nats_conn_->published_msgs_.size());
@@ -255,6 +241,61 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatRelationUpdates) {
   EXPECT_EQ(1, hb->sequence_number());
   // Since relation info was updated it should publish the entire schema again.
   EXPECT_EQ(3, hb->mutable_update_info()->schema().size());
+}
+
+class HeartbeatNackMessageHandlerTest : public ::testing::Test {
+ protected:
+  void TearDown() override { dispatcher_->Exit(); }
+
+  HeartbeatNackMessageHandlerTest() {
+    start_monotonic_time_ = std::chrono::steady_clock::now();
+    start_system_time_ = std::chrono::system_clock::now();
+    time_system_ =
+        std::make_unique<event::SimulatedTimeSystem>(start_monotonic_time_, start_system_time_);
+    api_ = std::make_unique<pl::event::APIImpl>(time_system_.get());
+    dispatcher_ = api_->AllocateDispatcher("manager");
+    nats_conn_ = std::make_unique<FakeNATSConnector<pl::vizier::messages::VizierMessage>>();
+
+    agent_info_ = agent::Info{};
+    agent_info_.capabilities.set_collects_data(true);
+
+    heartbeat_nack_handler_ = std::make_unique<HeartbeatNackMessageHandler>(
+        dispatcher_.get(), &agent_info_, nats_conn_.get(), [this]() -> Status {
+          called_reregister_++;
+          return Status::OK();
+        });
+  }
+
+  event::MonotonicTimePoint start_monotonic_time_;
+  event::SystemTimePoint start_system_time_;
+  std::unique_ptr<event::SimulatedTimeSystem> time_system_;
+  std::unique_ptr<event::APIImpl> api_;
+  std::unique_ptr<event::Dispatcher> dispatcher_;
+  std::unique_ptr<HeartbeatNackMessageHandler> heartbeat_nack_handler_;
+  std::unique_ptr<FakeNATSConnector<pl::vizier::messages::VizierMessage>> nats_conn_;
+  agent::Info agent_info_;
+  std::unique_ptr<md::AgentMetadataFilter> md_filter_;
+  int32_t called_reregister_ = 0;
+};
+
+TEST_F(HeartbeatNackMessageHandlerTest, ReceivedHeartbeatNack) {
+  auto hb_nack = std::make_unique<messages::VizierMessage>();
+  auto hb_nack_msg = hb_nack->mutable_heartbeat_nack();
+  hb_nack_msg->set_reregister(false);
+
+  ASSERT_DEATH([&]() { auto s = heartbeat_nack_handler_->HandleMessage(std::move(hb_nack)); }(),
+               "Got a heartbeat NACK.");
+}
+
+TEST_F(HeartbeatNackMessageHandlerTest, ReceivedHeartbeatNackReregister) {
+  auto hb_nack = std::make_unique<messages::VizierMessage>();
+  auto hb_nack_msg = hb_nack->mutable_heartbeat_nack();
+  hb_nack_msg->set_reregister(true);
+
+  EXPECT_EQ(0, called_reregister_);
+  auto s = heartbeat_nack_handler_->HandleMessage(std::move(hb_nack));
+  ASSERT_OK(s);
+  EXPECT_EQ(1, called_reregister_);
 }
 
 }  // namespace agent
