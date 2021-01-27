@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { formatAgent } from './cluster-details';
-import { UInt128 } from '../../types/generated/vizier_pb';
 
 describe('formatAgent', () => {
   it('correctly formats agent info', () => {

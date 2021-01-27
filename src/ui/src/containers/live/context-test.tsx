@@ -13,7 +13,7 @@ import { ScriptsContext } from 'containers/App/scripts-context';
 import { ClusterContext } from 'common/cluster-context';
 import { LIVE_CONTEXT_DEFAULTS } from 'testing/mocks/live-context-mock';
 import { ThemeProvider } from '@material-ui/core/styles';
-import VizierGRPCClientContext from 'common/vizier-grpc-client-context';
+import { VizierGRPCClientContext } from 'common/vizier-grpc-client-context';
 import { SnackbarContext } from 'pixie-components';
 
 /**

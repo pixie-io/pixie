@@ -6,7 +6,9 @@ import {
   LIVE_VIEW_VIS_SPEC_KEY, useSessionStorage,
 } from 'common/storage';
 import ClientContext from 'common/vizier-grpc-client-context';
-import { VizierQueryError, GRPCStatusCode } from 'common/errors';
+import {
+  VizierQueryError, GRPCStatusCode, BatchDataUpdate, VizierTable as Table,
+} from 'pixie-api';
 import { ContainsMutation, IsStreaming } from 'utils/pxl';
 
 import * as React from 'react';
@@ -25,7 +27,7 @@ import {
   getEntityParams, getLiveViewTitle, getNonEntityParams, LiveViewPage,
   LiveViewPageScriptIds, matchLiveViewEntity, toEntityPathname,
 } from 'containers/live-widgets/utils/live-view-params';
-import { BatchDataUpdate, Table } from 'common/vizier-grpc-client';
+
 import { checkExhaustive } from 'utils/check-exhaustive';
 import { SetStateFunc } from './common';
 

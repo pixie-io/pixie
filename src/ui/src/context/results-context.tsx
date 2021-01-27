@@ -1,4 +1,4 @@
-import { Table } from 'common/vizier-grpc-client';
+import { VizierTable as Table } from 'pixie-api';
 import * as React from 'react';
 import { QueryExecutionStats, MutationInfo } from 'types/generated/vizier_pb';
 

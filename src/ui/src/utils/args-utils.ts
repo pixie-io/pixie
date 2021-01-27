@@ -1,4 +1,4 @@
-import { VizierQueryError } from 'common/errors';
+import { VizierQueryError } from 'pixie-api';
 import { Variable, Vis } from 'containers/live/vis';
 
 export interface Arguments {

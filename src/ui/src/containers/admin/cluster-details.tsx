@@ -24,7 +24,7 @@ import TableRow from '@material-ui/core/TableRow';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 
-import { ExecutionStateUpdate } from 'common/vizier-grpc-client';
+import { ExecutionStateUpdate } from 'pixie-api';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
 import {

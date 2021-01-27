@@ -1,5 +1,4 @@
 import { DOMAIN_NAME } from 'containers/constants';
-import * as _ from 'lodash';
 
 interface StringMap {
   [s: string]: string;
@@ -11,7 +10,7 @@ export function getRedirectPath(path: string, params: StringMap) {
 
   const paramKeys = Object.keys(params);
   if (paramKeys.length > 0) {
-    const paramStrings = _.map(paramKeys, (key) => `${key}=${params[key]}`);
+    const paramStrings = paramKeys.map((key) => `${key}=${params[key]}`);
     queryParams = `?${paramStrings.join('&')}`;
   }
 

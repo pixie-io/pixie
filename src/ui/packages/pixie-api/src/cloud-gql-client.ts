@@ -7,10 +7,7 @@ import { onError } from 'apollo-link-error';
 import { createHttpLink } from 'apollo-link-http';
 import { ServerError } from 'apollo-link-http-common';
 import gql from 'graphql-tag';
-import * as RedirectUtils from 'utils/redirect-utils';
 import { fetch } from 'whatwg-fetch';
-
-import { localGQLResolvers, localGQLTypeDef } from './local-gql';
 
 // Apollo link that adds cookies in the request.
 const cloudAuthLink = setContext((_, { headers }) => ({
@@ -21,10 +18,9 @@ const cloudAuthLink = setContext((_, { headers }) => ({
 }));
 
 // Apollo link that redirects to login page on HTTP status 401.
-const loginRedirectLink = onError(({ networkError }) => {
+const loginRedirectLink = (on401: (errorMessage: string) => void) => onError(({ networkError }) => {
   if (!!networkError && (networkError as ServerError).statusCode === 401) {
-    // eslint-disable-next-line @typescript-eslint/camelcase
-    RedirectUtils.redirect('/login', { no_cache: 'true' });
+    on401(networkError.message);
   }
 });
 
@@ -46,25 +42,23 @@ query GetClusterConnection($id: ID) {
 }`;
 
 export class CloudClient {
-  graphQL: ApolloClient<NormalizedCacheObject>;
+  graphQl: ApolloClient<NormalizedCacheObject>;
 
-  private persistPromise: Promise<void>;
+  private readonly persistPromise: Promise<void>;
 
-  private cache: InMemoryCache;
+  private readonly cache: InMemoryCache;
 
   private loaded = false;
 
-  constructor() {
+  constructor(private readonly on401: (errorMessage: string) => void) {
     this.cache = new InMemoryCache();
-    this.graphQL = new ApolloClient({
+    this.graphQl = new ApolloClient({
       cache: this.cache,
       link: ApolloLink.from([
         cloudAuthLink,
-        loginRedirectLink,
+        loginRedirectLink(on401),
         createHttpLink({ uri: '/api/graphql', fetch }),
       ]),
-      resolvers: localGQLResolvers,
-      typeDefs: localGQLTypeDef,
     });
 
     this.persistPromise = persistCache({
@@ -75,15 +69,15 @@ export class CloudClient {
     });
   }
 
-  async getGraphQLPersist(): Promise<CloudClient['graphQL']> {
+  async getGraphQLPersist(): Promise<CloudClient['graphQl']> {
     if (!this.loaded) {
       await this.persistPromise;
     }
-    return this.graphQL;
+    return this.graphQl;
   }
 
   async getClusterConnection(id: string, noCache = false) {
-    const { data } = await this.graphQL.query<GetClusterConnResults>({
+    const { data } = await this.graphQl.query<GetClusterConnResults>({
       query: GET_CLUSTER_CONN,
       variables: { id },
       fetchPolicy: noCache ? 'network-only' : 'cache-first',

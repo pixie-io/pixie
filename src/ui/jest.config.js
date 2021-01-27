@@ -21,6 +21,7 @@ module.exports = {
     'node_modules',
     '<rootDir>/src',
     '<rootDir>/packages/pixie-components/src',
+    '<rootDir>/packages/pixie-api/src',
   ],
   moduleNameMapper: {
     '^.+.(jpg|jpeg|png|gif|svg)$': '<rootDir>/src/testing/file-mock.js',

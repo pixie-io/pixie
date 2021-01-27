@@ -12,7 +12,8 @@ import * as GridLayout from 'react-grid-layout';
 import { resizeEvent, triggerResize } from 'utils/resize';
 import { dataFromProto } from 'utils/result-data-utils';
 import { Alert, AlertTitle } from '@material-ui/lab';
-import { VizierErrorDetails, VizierQueryError } from 'common/errors';
+import { VizierErrorDetails } from 'common/errors';
+import { VizierQueryError } from 'pixie-api';
 import { ContainsMutation } from 'utils/pxl';
 
 import {

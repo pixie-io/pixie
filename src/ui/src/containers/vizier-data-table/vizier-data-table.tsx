@@ -1,4 +1,4 @@
-import { Table } from 'common/vizier-grpc-client';
+import { VizierTable as Table } from 'pixie-api';
 import {
   CellAlignment, ColumnProps, DataTable, SortState,
   buildClass,

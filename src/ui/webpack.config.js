@@ -218,16 +218,19 @@ module.exports = (env, argv) => {
 
   // Get Auth0ClientID.
   const authYamlPath = join(topLevelDir, 'k8s', 'cloud', environment, 'auth0_config.yaml').replace(/\//g, '\\/');
+  // Don't try to change this to `fs.readFileSync` to avoid the useless cat: readFileSync can't find this path, cat can.
   const auth0YamlReq = execSync(`cat ${authYamlPath}`);
   const auth0YAML = YAML.parse(auth0YamlReq.toString());
 
   // Get LDClientID.
   const ldYamlPath = join(topLevelDir, 'k8s', 'cloud', environment, 'ld_config.yaml').replace(/\//g, '\\/');
+  // Don't try to change this to `fs.readFileSync` to avoid the useless cat: readFileSync can't find this path, cat can.
   const ldYamlReq = execSync(`cat ${ldYamlPath}`);
   const ldYAML = YAML.parse(ldYamlReq.toString());
 
   // Get domain name.
   const domainYamlPath = join(topLevelDir, 'k8s', 'cloud', environment, 'domain_config.yaml').replace(/\//g, '\\/');
+  // Don't try to change this to `fs.readFileSync` to avoid the useless cat: readFileSync can't find this path, cat can.
   const domainYamlReq = execSync(`cat ${domainYamlPath}`);
   const domainYAML = YAML.parse(domainYamlReq.toString());
 

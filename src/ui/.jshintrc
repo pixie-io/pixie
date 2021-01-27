@@ -1,3 +1,4 @@
 {
-  "esversion": 9
+  "esversion": 9,
+  "laxbreak": true
 }

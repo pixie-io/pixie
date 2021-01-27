@@ -1,7 +1,7 @@
 import './wdyr';
 
 import Axios from 'axios';
-import { CloudClient } from 'common/cloud-gql-client';
+import { CloudClient } from 'pixie-api';
 import { DARK_THEME, SnackbarProvider, VersionInfo } from 'pixie-components';
 import Vizier from 'containers/App/vizier';
 import PixieCookieBanner from 'common/cookie-banner';
@@ -21,6 +21,7 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { CssBaseline } from '@material-ui/core';
 import { withLDProvider } from 'launchdarkly-react-client-sdk';
+import { redirect } from 'utils/redirect-utils';
 import { CloudClientContext } from './context/app-context';
 import { AuthRouter } from './pages/auth/auth';
 import 'typeface-roboto';
@@ -46,7 +47,10 @@ const RedirectWithArgs = (props) => {
 export class App extends React.Component {
   // eslint-disable-next-line react/state-in-constructor
   state = {
-    cloudClient: new CloudClient(),
+    cloudClient: new CloudClient(() => {
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      redirect('/login', { no_cache: 'true' });
+    }),
     gqlClient: null,
     authenticated: false,
     loaded: false,

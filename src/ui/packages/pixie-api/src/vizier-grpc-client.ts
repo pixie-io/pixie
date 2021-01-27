@@ -1,12 +1,15 @@
-import { VizierQueryError } from 'common/errors';
+import { VizierQueryError } from 'vizier';
 import { Observable, throwError } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
+// noinspection ES6PreferShortImport
 import {
   ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation,
   RowBatchData, Status, MutationInfo,
-} from 'types/generated/vizier_pb';
-import { VizierServiceClient } from 'types/generated/VizierServiceClientPb';
-import noop from 'utils/noop';
+} from './types/generated/vizier_pb';
+// noinspection ES6PreferShortImport
+import { VizierServiceClient } from './types/generated/VizierServiceClientPb';
+
+const noop = () => {};
 
 declare global {
   interface Window {
@@ -130,7 +133,7 @@ function getExecutionErrors(errList: ErrorDetails[]): string[] {
   });
 }
 
-const HEALTHCHECK_TIMEOUT = 10000; // 10 seconds
+const HEALTH_CHECK_TIMEOUT = 10000; // 10 seconds
 
 export class VizierGRPCClient {
   private readonly client: VizierServiceClient;
@@ -168,7 +171,7 @@ export class VizierGRPCClient {
         observer.complete();
       });
     }).pipe(
-      timeout(HEALTHCHECK_TIMEOUT),
+      timeout(HEALTH_CHECK_TIMEOUT),
       catchError((err) => {
         call.cancel();
         return throwError(err);
@@ -360,7 +363,8 @@ export class VizierGRPCClient {
         if (typeof arg.value !== 'string') {
           errors.push(
             new VizierQueryError('vis', 'All args must be strings.'
-              + ` Received '${typeof arg.value}' for arg '${arg.name}'.`));
+              + ` Received '${typeof arg.value}' for arg '${arg.name}'.`),
+          );
           return;
         }
         argValPb.setValue(arg.value);

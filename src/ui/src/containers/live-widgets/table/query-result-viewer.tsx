@@ -1,5 +1,5 @@
 import { ClusterContext } from 'common/cluster-context';
-import { Table } from 'common/vizier-grpc-client';
+import { VizierTable as Table } from 'pixie-api';
 import * as React from 'react';
 import {
   createStyles, Theme, Typography,

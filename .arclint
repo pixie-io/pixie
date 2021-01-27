@@ -19,6 +19,7 @@
     "(^src/ui/offline_package_cache)",
     "(^src/ui/src/segment.js$)",
     "(^src/ui/src/types/generated/)",
+    "(^src/ui/packages/pixie-api/src/types/generated/)",
     "(^third_party)",
     "(c_cpp_properties.json$)",
     "(Doxyfile$)",
