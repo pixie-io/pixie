@@ -13,8 +13,8 @@ void ProcessHTTP2Streams(std::deque<http2::Stream>* http2_streams,
   int count_head_consumed = 0;
   bool skipped = false;
   for (auto& stream : *http2_streams) {
-    if (stream.StreamEnded() && !stream.consumed) {
-      trace_records->emplace_back(http2::Record{std::move(stream)});
+    if (!stream.consumed && stream.StreamEnded()) {
+      trace_records->emplace_back(http2::Record{stream});
       stream.consumed = true;
     }
 
