@@ -98,6 +98,8 @@ class Conn:
         self.cluster_info = cluster_info
         self._channel_fn = channel_fn
 
+        self._channel_cache: grpc.aio.Channel = None
+
         # Whether the connection is direct connection or not.
         self._direct = direct
 
@@ -105,8 +107,19 @@ class Conn:
         """ Create a new ScriptExecutor for the script to run on this connection. """
         return ScriptExecutor(self, script_str)
 
-    def create_grpc_channel(self) -> grpc.aio.Channel:
-        """ Creates a grpc channel from this connection. """
+    def _get_grpc_channel(self) -> grpc.aio.Channel:
+        """
+        Gets the grpc_channel for this connection.
+
+        If the channel exists, will grab from the cache. Otherwise will recreate it.
+        """
+        if self._channel_cache is None:
+            self._channel_cache = self._create_grpc_channel()
+
+        return self._channel_cache
+
+    def _create_grpc_channel(self) -> grpc.aio.Channel:
+        """ Creates a grpc channel for this connection. """
         if self._channel_fn:
             return self._channel_fn(self.url)
         creds = grpc.ssl_channel_credentials()
@@ -391,28 +404,28 @@ class ScriptExecutor:
 
     async def _run_conn(self, conn: Conn) -> None:
         """ Executes the query on a single connection. """
-        async with conn.create_grpc_channel() as channel:
-            stub = vizierapi_pb2_grpc.VizierServiceStub(channel)
+        channel = conn._get_grpc_channel()
+        stub = vizierapi_pb2_grpc.VizierServiceStub(channel)
 
-            req = vpb.ExecuteScriptRequest()
-            req.cluster_id = conn.cluster_id
-            req.query_str = self._pxl
+        req = vpb.ExecuteScriptRequest()
+        req.cluster_id = conn.cluster_id
+        req.query_str = self._pxl
 
-            async for res in stub.ExecuteScript(req, metadata=[
-                ("pixie-api-key", conn.token),
-                ("pixie-api-client", "python"),
-            ]):
-                if res.status.code != 0:
-                    self._add_table_to_q(QUERY_ERROR)
-                    await self._close_all_tables()
-                    raise build_pxl_exception(
-                        self._pxl, res.status, conn.name())
-                if res.HasField("meta_data"):
-                    await self._process_metadata(res.meta_data)
-                if res.HasField("data") and res.data.HasField("batch"):
-                    await self._process_data(res.data)
-                elif res.HasField("data") and res.data.HasField("execution_stats"):
-                    await self._set_exec_stats(res.data.execution_stats)
+        async for res in stub.ExecuteScript(req, metadata=[
+            ("pixie-api-key", conn.token),
+            ("pixie-api-client", "python"),
+        ]):
+            if res.status.code != 0:
+                self._add_table_to_q(QUERY_ERROR)
+                await self._close_all_tables()
+                raise build_pxl_exception(
+                    self._pxl, res.status, conn.name())
+            if res.HasField("meta_data"):
+                await self._process_metadata(res.meta_data)
+            if res.HasField("data") and res.data.HasField("batch"):
+                await self._process_data(res.data)
+            elif res.HasField("data") and res.data.HasField("execution_stats"):
+                await self._set_exec_stats(res.data.execution_stats)
 
         # TODO(philkuz) will cause an error if this is
         # sent in one conn before the other conn has sent its last table metadata.
@@ -438,6 +451,9 @@ class Cluster:
             return self.id
         return self.info.cluster_name
 
+    def passthrough(self) -> bool:
+        return self.info.config.passthrough_enabled
+
 
 class Client:
     """
@@ -460,26 +476,32 @@ class Client:
         self._server_url = server_url
         self._channel_fn = channel_fn
         self._conn_channel_fn = conn_channel_fn
+        self._cloud_channel_cache: grpc.Channel = None
 
-    def _get_cloud_channel(self) -> grpc.Channel:
+    def _create_cloud_channel(self) -> grpc.Channel:
         if self._channel_fn:
             return self._channel_fn(self._server_url)
         return grpc.secure_channel(self._server_url, grpc.ssl_channel_credentials())
 
-    def _all_clusters(self) -> cpb.ClusterInfo:
-        with self._get_cloud_channel() as channel:
-            stub = cloudapi_pb2_grpc.ClusterManagerStub(channel)
-            request = cpb.GetClusterRequest()
-            response: cpb.GetClusterResponse = stub.GetCluster(request, metadata=[
-                ("pixie-api-key", self._token),
-                ("pixie-api-client", "python")
-            ])
-            return response.clusters
+    def _get_cloud_channel(self) -> grpc.Channel:
+        if self._cloud_channel_cache is None:
+            # if self._cloud_channel_cache is None:
+            self._cloud_channel_cache = self._create_cloud_channel()
+
+        return self._cloud_channel_cache
+
+    def _get_cluster(self, request: cpb.GetClusterRequest) -> List[cpb.ClusterInfo]:
+        stub = cloudapi_pb2_grpc.ClusterManagerStub(self._get_cloud_channel())
+        response: cpb.GetClusterResponse = stub.GetCluster(request, metadata=[
+            ("pixie-api-key", self._token),
+            ("pixie-api-client", "python")
+        ])
+        return response.clusters
 
     def list_healthy_clusters(self) -> List[Cluster]:
         """ Lists all of the healthy clusters within the Pixie org. """
         healthy_clusters: List[Cluster] = []
-        for c in self._all_clusters():
+        for c in self._get_cluster(cpb.GetClusterConnectionRequest()):
             if c.status != cpb.CS_HEALTHY:
                 continue
             healthy_clusters.append(
@@ -492,33 +514,27 @@ class Client:
         return healthy_clusters
 
     def _get_cluster_info(self, cluster_id: ClusterID) -> cpb.ClusterInfo:
-        with self._get_cloud_channel() as channel:
-            stub = cloudapi_pb2_grpc.ClusterManagerStub(channel)
-            request = cpb.GetClusterRequest(
-                id=uuidpb.UUID(
-                    data=cluster_id.encode('utf-8'))
-            )
-            response = stub.GetCluster(request, metadata=[
-                ("pixie-api-key", self._token),
-                ("pixie-api-client", "python")
-            ])
-            return response.clusters[0]
+        request = cpb.GetClusterRequest(
+            id=uuidpb.UUID(
+                data=cluster_id.encode('utf-8'))
+        )
+        return self._get_cluster(request)[0]
 
     def _get_cluster_connection_info(
             self,
             cluster_id: ClusterID
     ) -> cpb.GetClusterConnectionResponse:
-        with self._get_cloud_channel() as channel:
-            stub = cloudapi_pb2_grpc.ClusterManagerStub(channel)
-            request = cpb.GetClusterConnectionRequest(
-                id=uuidpb.UUID(
-                    data=cluster_id.encode('utf-8'))
-            )
-            response = stub.GetClusterConnection(request, metadata=[
-                ("pixie-api-key", self._token),
-                ("pixie-api-client", "python")
-            ])
-            return response
+        channel = self._get_cloud_channel()
+        stub = cloudapi_pb2_grpc.ClusterManagerStub(channel)
+        request = cpb.GetClusterConnectionRequest(
+            id=uuidpb.UUID(
+                data=cluster_id.encode('utf-8'))
+        )
+        response = stub.GetClusterConnection(request, metadata=[
+            ("pixie-api-key", self._token),
+            ("pixie-api-client", "python")
+        ])
+        return response
 
     def _create_passthrough_conn(
         self,
