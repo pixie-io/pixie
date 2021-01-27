@@ -14,6 +14,9 @@ void ProcessHTTP2Streams(std::deque<http2::Stream>* http2_streams,
   bool skipped = false;
   for (auto& stream : *http2_streams) {
     if (!stream.consumed && stream.StreamEnded()) {
+      // TODO(oazizi): Investigate ways of using std::move(stream) for performance.
+      //               But be careful since the object may still be accessed after the move
+      //               (see HalfStreamPtr in connection_tracker.cc).
       trace_records->emplace_back(http2::Record{stream});
       stream.consumed = true;
     }

@@ -26,7 +26,7 @@ class AgentDeathHandler : public pl::FatalErrorHandlerInterface {
       LOG(INFO) << "Trying to gracefully stop agent manager";
       auto s = manager_->Stop(std::chrono::seconds{5});
       if (!s.ok()) {
-        LOG(ERROR) << "Failed to gracefull stop agent manager, it will terminate shortly.";
+        LOG(ERROR) << "Failed to gracefully stop agent manager, it will terminate shortly.";
       }
     }
   }

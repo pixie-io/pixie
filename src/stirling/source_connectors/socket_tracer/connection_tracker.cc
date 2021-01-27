@@ -189,7 +189,7 @@ protocols::http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_i
 
   size_t index;
   if (stream_id < *oldest_active_stream_id_ptr) {
-    LOG_FIRST_N(WARNING, 100) << absl::Substitute(
+    CONN_TRACE(1) << absl::Substitute(
         "Stream ID ($0) is lower than the current head stream ID ($1). "
         "Not expected, but will handle it anyways. If not a data race, "
         "this could be indicative of a bug that could result in a memory leak.",
@@ -199,7 +199,7 @@ protocols::http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_i
                       ((*oldest_active_stream_id_ptr - stream_id) / kHTTP2StreamIDIncrement);
     // Reset everything for now.
     if (new_size - streams_deque_ptr->size() > FLAGS_stirling_http2_stream_id_gap_threshold) {
-      LOG_FIRST_N(ERROR, 10) << absl::Substitute(
+      CONN_TRACE(1) << absl::Substitute(
           "Encountered a stream ID $0 that is too far from the last known stream ID $1. Resetting "
           "all streams on this connection.",
           stream_id, *oldest_active_stream_id_ptr + streams_deque_ptr->size() * 2);
@@ -221,7 +221,7 @@ protocols::http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_i
     // If we are to grow by more than some threshold, then something appears wrong.
     // Reset everything for now.
     if (new_size - streams_deque_ptr->size() > FLAGS_stirling_http2_stream_id_gap_threshold) {
-      LOG_FIRST_N(ERROR, 10) << absl::Substitute(
+      CONN_TRACE(1) << absl::Substitute(
           "Encountered a stream ID $0 that is too far from the last known stream ID $1. Resetting "
           "all streams on this connection",
           stream_id, *oldest_active_stream_id_ptr + streams_deque_ptr->size() * 2);
@@ -235,6 +235,10 @@ protocols::http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_i
   }
 
   auto& stream = (*streams_deque_ptr)[index];
+
+  if (stream.consumed) {
+    CONN_TRACE(1) << "Trying to access a consumed stream.";
+  }
 
   protocols::http2::HalfStream* half_stream_ptr = write_event ? &stream.send : &stream.recv;
   return half_stream_ptr;
