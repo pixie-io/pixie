@@ -5,6 +5,8 @@
 #include <string_view>
 #include <thread>
 
+#include <magic_enum.hpp>
+
 #include "src/common/system/boot_clock.h"
 #include "src/common/system/tcp_socket.h"
 #include "src/common/system/udp_socket.h"

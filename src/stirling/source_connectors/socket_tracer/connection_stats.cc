@@ -1,7 +1,6 @@
 #include "src/stirling/source_connectors/socket_tracer/connection_stats.h"
 
 #include <absl/strings/substitute.h>
-#include <magic_enum.hpp>
 
 #include "src/common/base/base.h"
 

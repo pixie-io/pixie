@@ -3,8 +3,6 @@
 
 #include <string>
 
-#include <magic_enum.hpp>
-
 #include "src/common/base/base.h"
 #include "src/common/base/test_utils.h"
 #include "src/common/exec/exec.h"

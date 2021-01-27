@@ -6,6 +6,8 @@
 #include <gtest/gtest.h>
 #include <sys/socket.h>
 
+#include <magic_enum.hpp>
+
 #include "src/common/base/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/connection_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_utils.h"

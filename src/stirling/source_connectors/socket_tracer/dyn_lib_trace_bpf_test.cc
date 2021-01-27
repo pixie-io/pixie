@@ -36,9 +36,9 @@ using ::testing::SizeIs;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
-class NginxOpenSSL_1_1_0_Container : public ContainerRunner {
+class NginxContainer : public ContainerRunner {
  public:
-  NginxOpenSSL_1_1_0_Container()
+  NginxContainer()
       : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
 
  private:
@@ -47,30 +47,6 @@ class NginxOpenSSL_1_1_0_Container : public ContainerRunner {
   static constexpr std::string_view kBazelImageTar =
       "src/stirling/testing/ssl/nginx_openssl_1_1_0_image.tar";
   static constexpr std::string_view kInstanceNamePrefix = "nginx";
-  static constexpr std::string_view kReadyMessage = "";
-};
-
-class NginxOpenSSL_1_1_1_Container : public ContainerRunner {
- public:
-  NginxOpenSSL_1_1_1_Container()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
-
- private:
-  // Image is a modified nginx image created through bazel rules, and stored as a tar file.
-  // It is not pushed to any repo.
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/testing/ssl/nginx_openssl_1_1_1_image.tar";
-  static constexpr std::string_view kInstanceNamePrefix = "nginx";
-  static constexpr std::string_view kReadyMessage = "";
-};
-
-class CurlContainer : public ContainerRunner {
- public:
-  CurlContainer() : ContainerRunner(kImageName, kContainerNamePrefix, kReadyMessage) {}
-
- private:
-  static constexpr std::string_view kImageName = "curlimages/curl:7.74.0";
-  static constexpr std::string_view kContainerNamePrefix = "curl";
   static constexpr std::string_view kReadyMessage = "";
 };
 
@@ -84,26 +60,7 @@ class RubyContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "";
 };
 
-template <typename NginxContainer>
-class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false> {
- protected:
-  OpenSSLTraceTest() {
-    // Run the nginx HTTPS server.
-    // The container runner will make sure it is in the ready state before unblocking.
-    // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    // Note that this step will make an access to docker hub to download the container image.
-    StatusOr<std::string> run_result = server_.Run(60);
-    PL_CHECK_OK(run_result);
-
-    // Sleep an additional second, just to be safe.
-    sleep(1);
-  }
-
-  NginxContainer server_;
-};
-
-using OpenSSL_1_1_0_TraceTest = OpenSSLTraceTest<NginxOpenSSL_1_1_0_Container>;
-using OpenSSL_1_1_1_TraceTest = OpenSSLTraceTest<NginxOpenSSL_1_1_1_Container>;
+using DynLibTraceTest = SocketTraceBPFTest</* TClientSideTracing */ true>;
 
 //-----------------------------------------------------------------------------
 // Utility Functions and Matchers
@@ -138,10 +95,6 @@ auto EqHTTPRecord(const http::Record& x) {
                Field(&http::Record::resp, EqHTTPResp(x.resp)));
 }
 
-//-----------------------------------------------------------------------------
-// Test Scenarios
-//-----------------------------------------------------------------------------
-
 std::vector<http::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch& record_batch,
                                            int32_t pid) {
   std::vector<size_t> target_record_indices =
@@ -149,32 +102,84 @@ std::vector<http::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch
   return ToRecordVector(record_batch, target_record_indices);
 }
 
-typedef ::testing::Types<NginxOpenSSL_1_1_0_Container, NginxOpenSSL_1_1_1_Container>
-    NginxImplementations;
-TYPED_TEST_SUITE(OpenSSLTraceTest, NginxImplementations);
+//-----------------------------------------------------------------------------
+// Test Scenarios
+//-----------------------------------------------------------------------------
 
-TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
-  CurlContainer client;
+TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
+  // Note that stirling is deployed before starting this test.
+
+  // Makes the test run much faster.
+  FLAGS_stirling_disable_self_tracing = true;
+
+  NginxContainer server;
+  RubyContainer client;
+  DataTable data_table(kHTTPTable);
 
   {
-    // Make an SSL request with curl.
-    // Because the server uses a self-signed certificate, curl will normally refuse to connect.
-    // This is similar to the warning pages that Firefox/Chrome would display.
-    // To take an exception and make the SSL connection anyways, we use the --insecure flag.
+    // Run the nginx HTTPS server.
+    // The container runner will make sure it is in the ready state before unblocking.
+    StatusOr<std::string> run_result = server.Run(60);
+    PL_CHECK_OK(run_result);
+  }
 
+  // This TransferData will detect nginx for the first time, and deploy uprobes on its libssl.
+  RefreshContext();
+  source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
+  sleep(1);
+
+  {
+    // The key to this test is that Ruby only loads OpenSSL when it's required (i.e. http.request()
+    // call), By sleeping at the beginning of the loop, Stirling will first detect the ruby binary
+    // without OpenSSL.
+    // Then we make multiple requests:
+    //  - The first request will load the OpenSSL library, but won't be traced since the uprobes
+    //  won't be deployed yet.
+    //    This should cause the OpenSSL library to be dynamically loaded and then tracing should
+    //    begin.
+    //  - The subsequent requests should come after the uprobes are deployed and should be traced.
+    std::string rb_script = R"(
+          require 'net/http'
+          require 'uri'
+
+          $i = 0
+          while $i < 3 do
+            sleep(3)
+
+            uri = URI.parse('https://localhost:443/index.html')
+            http = Net::HTTP.new(uri.host, uri.port)
+            http.use_ssl = true
+            http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+            request = Net::HTTP::Get.new(uri.request_uri)
+            response = http.request(request)
+            p response.body
+
+            $i += 1
+          end
+)";
+
+    // Make an SSL request with the client.
     // Run the client in the network of the server, so they can connect to each other.
-    PL_CHECK_OK(
-        client.Run(10, {absl::Substitute("--network=container:$0", this->server_.container_name())},
-                   {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
+    PL_CHECK_OK(client.Run(10,
+                           {absl::Substitute("--network=container:$0", server.container_name())},
+                           {"ruby", "-e", rb_script}));
+
+    // Periodically run TransferData.
+    // Do this at a frequency faster than the sleep in the Ruby script.
+    // This is to detect libssl, and deploy uprobes.
+    for (int i = 0; i < 20; ++i) {
+      RefreshContext();
+      source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
+      sleep(1);
+    }
     client.Wait();
 
-    // Grab the data from Stirling.
-    DataTable data_table(kHTTPTable);
-    this->source_->TransferData(this->ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
     std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
+    // Inspect records for Debug.
     for (size_t i = 0; i < record_batch[0]->Size(); ++i) {
       uint32_t pid = record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(i).High64();
       std::string req_path = record_batch[kHTTPReqPathIdx]->Get<types::StringValue>(i);
@@ -186,67 +191,7 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
       // Nginx has a master process and a worker process. We need the PID of the worker process.
       int worker_pid;
       std::string pid_str =
-          pl::Exec(absl::Substitute("pgrep -P $0", this->server_.process_pid())).ValueOrDie();
-      ASSERT_TRUE(absl::SimpleAtoi(pid_str, &worker_pid));
-      LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
-
-      std::vector<http::Record> records = GetTargetRecords(record_batch, worker_pid);
-
-      http::Record expected_record;
-      expected_record.req.minor_version = 1;
-      expected_record.req.req_path = "/index.html";
-      expected_record.resp.resp_status = 200;
-
-      EXPECT_THAT(records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
-    }
-  }
-}
-
-TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
-  RubyContainer client;
-
-  {
-    // Make multiple requests and make sure we capture all of them.
-    std::string rb_script = R"(
-          require 'net/http'
-          require 'uri'
-
-          $i = 0
-          while $i < 3 do
-            uri = URI.parse('https://localhost:443/index.html')
-            http = Net::HTTP.new(uri.host, uri.port)
-            http.use_ssl = true
-            http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-            request = Net::HTTP::Get.new(uri.request_uri)
-            response = http.request(request)
-            p response.body
-
-            sleep(1)
-
-            $i += 1
-          end
-    )";
-
-    // Make an SSL request with the client.
-    // Run the client in the network of the server, so they can connect to each other.
-    PL_CHECK_OK(
-        client.Run(10, {absl::Substitute("--network=container:$0", this->server_.container_name())},
-                   {"ruby", "-e", rb_script}));
-    client.Wait();
-
-    // Grab the data from Stirling.
-    DataTable data_table(kHTTPTable);
-    this->source_->TransferData(this->ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
-    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
-    ASSERT_FALSE(tablets.empty());
-    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
-
-    // Check server-side tracing results.
-    {
-      // Nginx has a master process and a worker process. We need the PID of the worker process.
-      int worker_pid;
-      std::string pid_str =
-          pl::Exec(absl::Substitute("pgrep --parent $0", this->server_.process_pid())).ValueOrDie();
+          pl::Exec(absl::Substitute("pgrep --parent $0", server.process_pid())).ValueOrDie();
       ASSERT_TRUE(absl::SimpleAtoi(pid_str, &worker_pid));
       LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
 
@@ -260,6 +205,19 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
       EXPECT_THAT(records,
                   UnorderedElementsAre(EqHTTPRecord(expected_record), EqHTTPRecord(expected_record),
                                        EqHTTPRecord(expected_record)));
+    }
+
+    // Check client-side tracing results.
+    {
+      std::vector<http::Record> records = GetTargetRecords(record_batch, client.process_pid());
+
+      http::Record expected_record;
+      expected_record.req.minor_version = 1;
+      expected_record.req.req_path = "/index.html";
+      expected_record.resp.resp_status = 200;
+
+      EXPECT_THAT(records, UnorderedElementsAre(EqHTTPRecord(expected_record),
+                                                EqHTTPRecord(expected_record)));
     }
   }
 }

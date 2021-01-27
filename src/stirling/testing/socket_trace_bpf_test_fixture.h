@@ -23,15 +23,7 @@ class SocketTraceBPFTest : public ::testing::Test {
     source_ = SocketTraceConnector::Create("socket_trace_connector");
     ASSERT_OK(source_->Init());
 
-    ctx_ = std::make_unique<StandaloneContext>();
-
-    // Normally, Stirling will be setup to think that all traffic is within the cluster,
-    // which means only server-side tracing will kick in.
-    if (TEnableClientSideTracing) {
-      // This makes the Stirling interpret all traffic as leaving the cluster,
-      // which means client-side tracing will also apply.
-      PL_CHECK_OK(ctx_->SetClusterCIDR("1.2.3.4/32"));
-    }
+    RefreshContext();
 
     source_->InitContext(ctx_.get());
 
@@ -51,6 +43,18 @@ class SocketTraceBPFTest : public ::testing::Test {
   void TestOnlySetTargetPID(int64_t pid) {
     auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
     ASSERT_OK(socket_trace_connector->TestOnlySetTargetPID(pid));
+  }
+
+  void RefreshContext() {
+    ctx_ = std::make_unique<StandaloneContext>();
+
+    // Normally, Stirling will be setup to think that all traffic is within the cluster,
+    // which means only server-side tracing will kick in.
+    if (TEnableClientSideTracing) {
+      // This makes the Stirling interpret all traffic as leaving the cluster,
+      // which means client-side tracing will also apply.
+      PL_CHECK_OK(ctx_->SetClusterCIDR("1.2.3.4/32"));
+    }
   }
 
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;

@@ -4,7 +4,6 @@
 #include <string>
 
 #include <absl/strings/str_replace.h>
-#include <magic_enum.hpp>
 
 #include "src/common/base/base.h"
 #include "src/common/base/test_utils.h"

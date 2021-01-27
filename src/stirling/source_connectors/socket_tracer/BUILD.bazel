@@ -328,6 +328,23 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "dyn_lib_trace_bpf_test",
+    timeout = "moderate",
+    srcs = ["dyn_lib_trace_bpf_test.cc"],
+    data = ["//src/stirling/testing/ssl:nginx_openssl_1_1_0_image.tar"],
+    flaky = True,
+    tags = [
+        "no_asan",
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "go_tls_trace_bpf_test",
     timeout = "moderate",
     srcs = ["go_tls_trace_bpf_test.cc"],

@@ -208,6 +208,9 @@ Status SocketTraceConnector::InitImpl() {
   go_tls_symaddrs_map_ = std::make_unique<ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t>>(
       bpf().get_hash_table<uint32_t, struct go_tls_symaddrs_t>("go_tls_symaddrs_map"));
 
+  mmap_events_ = std::make_unique<ebpf::BPFHashTable<uint32_t, bool>>(
+      bpf().get_hash_table<uint32_t, bool>("mmap_events"));
+
   return Status::OK();
 }
 
@@ -607,6 +610,22 @@ std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
 
 }  // namespace
 
+absl::flat_hash_set<uint32_t> SocketTraceConnector::MMapEventPIDs() {
+  // Get a snapshot of the events.
+  std::vector<std::pair<uint32_t, bool>> mmap_event_entries = mmap_events_->get_table_offline();
+
+  // Copy the snapshotted pids, and remove the corresponding pids from mmap_events_.
+  // We cannot simply clear mmap_events_ as it may be concurrently accessed from kernel-space.
+  absl::flat_hash_set<uint32_t> pids;
+  for (const auto& event : mmap_event_entries) {
+    const uint32_t& pid = event.first;
+    pids.insert(pid);
+    mmap_events_->remove_value(pid);
+  }
+
+  return pids;
+}
+
 std::thread SocketTraceConnector::RunDeployUProbesThread(
     const absl::flat_hash_set<md::UPID>& pids) {
   // The check that state is not uninitialized is required for socket_trace_connector_test,
@@ -627,6 +646,19 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
 
   proc_tracker_.Update(pids);
 
+  absl::flat_hash_set<md::UPID> pids_to_scan = proc_tracker_.new_upids();
+
+  // Look for any previously scanned processes that have called an mmap,
+  // and add them to pids_to_scan. They may have loaded a shared library
+  // that we need to uprobe.
+  absl::flat_hash_set<uint32_t> mmap_event_pids = MMapEventPIDs();
+  for (const auto& pid : proc_tracker_.upids()) {
+    if (mmap_event_pids.contains(pid.pid())) {
+      VLOG(1) << absl::Substitute("Extra pid to scan: $0", pid.pid());
+      pids_to_scan.insert(pid);
+    }
+  }
+
   // Before deploying new probes, clean-up map entries for old processes that are now dead.
   for (const auto& pid : proc_tracker_.deleted_upids()) {
     ebpf::StatusTuple s = http2_symaddrs_map_->remove_value(pid.pid());
@@ -635,7 +667,7 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
   }
 
   int uprobe_count = 0;
-  for (auto& [binary, pid_vec] : ConvertPIDsListToMap(proc_tracker_.new_upids())) {
+  for (auto& [binary, pid_vec] : ConvertPIDsListToMap(pids_to_scan)) {
     if (FLAGS_stirling_disable_self_tracing) {
       // Don't try to attach uprobes to self.
       // This speeds up stirling_wrapper initialization significantly.

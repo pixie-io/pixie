@@ -9,6 +9,8 @@
 #include <variant>
 #include <vector>
 
+#include <magic_enum.hpp>
+
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/socket_info.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"

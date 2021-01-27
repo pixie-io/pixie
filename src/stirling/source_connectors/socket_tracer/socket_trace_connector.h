@@ -168,6 +168,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {"recvmmsg", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_recvmmsg"},
       {"close", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_close"},
       {"close", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_close"},
+      {"mmap", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_mmap"},
   });
 
   inline static constexpr auto kHTTP2ProbeTmpls = MakeArray<UProbeTmpl>({
@@ -337,6 +338,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& new_pids,
       ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t>* go_tls_symaddrs_map);
 
+  // Returns set of PIDs that have had mmap called on them since the last call.
+  absl::flat_hash_set<uint32_t> MMapEventPIDs();
+
   // Deploys uprobes for all purposes (HTTP2, OpenSSL, etc.) on new processes.
   void DeployUProbes(const absl::flat_hash_set<md::UPID>& pids);
   std::thread RunDeployUProbesThread(const absl::flat_hash_set<md::UPID>& pids);
@@ -458,6 +462,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       go_common_symaddrs_map_;
   std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t> > http2_symaddrs_map_;
   std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t> > go_tls_symaddrs_map_;
+
+  // BPF map through which PIDs that have had mmap calls are communicated.
+  std::unique_ptr<ebpf::BPFHashTable<uint32_t, bool> > mmap_events_;
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);
