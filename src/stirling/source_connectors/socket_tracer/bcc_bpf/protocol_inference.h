@@ -248,28 +248,6 @@ static __inline enum MessageType infer_mysql_message(const char* buf, size_t cou
   return kUnknown;
 }
 
-static __inline enum MessageType infer_http2_message(const char* buf, size_t count) {
-  // Technically, HTTP2 client connection preface is 24 octets [1]. Practically,
-  // the first 3 shall be sufficient. Note this is sent from client,
-  // so it would be captured on server's read()/recvfrom()/recvmsg() or client's
-  // write()/sendto()/sendmsg().
-  //
-  // [1] https://http2.github.io/http2-spec/#ConnectionHeader
-  if (count < 3) {
-    return kUnknown;
-  }
-
-  if (buf[0] == 'P' && buf[1] == 'R' && buf[2] == 'I') {
-    return kRequest;
-  }
-
-  if (looks_like_grpc_req_http2_headers_frame(buf, count)) {
-    return kRequest;
-  }
-
-  return kUnknown;
-}
-
 static __inline enum MessageType infer_dns_message(const char* buf, size_t count) {
   const int kDNSHeaderSize = 12;
 
