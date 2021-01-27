@@ -10,9 +10,9 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	pb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
-	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"

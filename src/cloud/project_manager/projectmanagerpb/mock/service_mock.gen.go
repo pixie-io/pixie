@@ -9,7 +9,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 	projectmanagerpb "pixielabs.ai/pixielabs/src/cloud/project_manager/projectmanagerpb"
-	proto "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	proto "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	reflect "reflect"
 )
 

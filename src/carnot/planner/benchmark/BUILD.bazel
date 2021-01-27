@@ -17,7 +17,7 @@ go_test(
         "//src/carnot/planpb:plan_pl_go_proto",
         "//src/carnot/udfspb:udfs_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",
-        "//src/common/uuid/proto:uuid_pl_go_proto",
+        "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/pixie_cli/pkg/script:go_default_library",
         "//src/pixie_cli/pkg/vizier:go_default_library",
         "//src/shared/scriptspb:scripts_pl_go_proto",

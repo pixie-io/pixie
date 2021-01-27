@@ -6,8 +6,8 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
+	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	bloomfilterpb "pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
 	sharedmetadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"

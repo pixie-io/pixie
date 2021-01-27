@@ -13,6 +13,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/cloud/vzmgr/controller",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/dnsmgr/dnsmgrpb:service_go_proto",
         "//src/cloud/shared/messages:go_default_library",
@@ -20,7 +21,6 @@ go_library(
         "//src/cloud/shared/vzshard:go_default_library",
         "//src/cloud/vzmgr/vzerrors:go_default_library",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
-        "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/artifacts/versionspb:versions_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
@@ -57,6 +57,7 @@ go_test(
     embed = [":go_default_library"],
     flaky = 1,
     deps = [
+        "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/artifact_tracker/artifacttrackerpb/mock:go_default_library",
         "//src/cloud/dnsmgr/dnsmgrpb:service_go_proto",
@@ -67,7 +68,6 @@ go_test(
         "//src/cloud/vzmgr/schema:go_default_library",
         "//src/cloud/vzmgr/vzerrors:go_default_library",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
-        "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/artifacts/versionspb:versions_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",

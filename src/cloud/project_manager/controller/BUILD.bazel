@@ -6,9 +6,9 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/cloud/project_manager/controller",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/cloud/project_manager/datastore:go_default_library",
         "//src/cloud/project_manager/projectmanagerpb:service_go_proto",
-        "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/utils:go_default_library",
         "@com_github_satori_go_uuid//:go_default_library",
         "@org_golang_google_grpc//codes:go_default_library",

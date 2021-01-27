@@ -12,7 +12,7 @@ package pl.public.cloudapi;
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
 
-import "src/common/uuid/proto/uuid.proto";
+import "src/api/public/uuidpb/uuid.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/api/public/cloudapipb;publiccloudapipb";
 

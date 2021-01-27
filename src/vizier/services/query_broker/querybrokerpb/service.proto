@@ -4,7 +4,7 @@ package pl.vizier.services.query_broker.querybrokerpb;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/carnot/queryresultspb/query_results.proto";
-import "src/common/uuid/proto/uuid.proto";
+import "src/api/public/uuidpb/uuid.proto";
 import "src/common/base/proto/status.proto";
 import "src/table_store/proto/schema.proto";
 

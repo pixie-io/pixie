@@ -5,7 +5,7 @@ import (
 
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
-	pb "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	pb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/utils"
 )
 

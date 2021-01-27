@@ -10,8 +10,8 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
+	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
-	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	logicalpb "pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb"
 	"pixielabs.ai/pixielabs/src/utils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"

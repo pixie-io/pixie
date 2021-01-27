@@ -7,7 +7,7 @@ pl_proto_library(
     srcs = ["versions.proto"],
     visibility = ["//visibility:public"],
     deps = [
-        "//src/common/uuid/proto:uuid_pl_proto",
+        "//src/api/public/uuidpb:uuid_pl_proto",
         "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
     ],
 )
@@ -18,7 +18,7 @@ pl_go_proto_library(
     proto = ":versions_pl_proto",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/common/uuid/proto:uuid_pl_go_proto",
+        "//src/api/public/uuidpb:uuid_pl_go_proto",
         "@com_github_gogo_protobuf//gogoproto:go_default_library",
     ],
 )

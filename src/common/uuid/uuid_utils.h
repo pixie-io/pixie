@@ -1,8 +1,8 @@
 #pragma once
 
 #include <sole.hpp>
+#include "src/api/public/uuidpb/uuid.pb.h"
 #include "src/common/base/base.h"
-#include "src/common/uuid/proto/uuid.pb.h"
 
 namespace pl {
 

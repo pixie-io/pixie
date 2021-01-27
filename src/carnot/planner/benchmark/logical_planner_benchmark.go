@@ -14,12 +14,12 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	uuid "github.com/satori/go.uuid"
+	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	logicalplanner "pixielabs.ai/pixielabs/src/carnot/planner"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
-	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 	funcs "pixielabs.ai/pixielabs/src/vizier/funcs/go"
 )

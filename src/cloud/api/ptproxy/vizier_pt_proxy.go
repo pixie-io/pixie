@@ -7,7 +7,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc"
 
-	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	proto1 "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"

@@ -14,7 +14,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
-	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	types "pixielabs.ai/pixielabs/src/shared/types/go"

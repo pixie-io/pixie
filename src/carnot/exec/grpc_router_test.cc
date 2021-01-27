@@ -13,6 +13,7 @@
 #include <grpcpp/server_impl.h>
 #include <gtest/gtest.h>
 
+#include "src/api/public/uuidpb/uuid.pb.h"
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/grpc_source_node.h"
@@ -22,7 +23,6 @@
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
 #include "src/common/testing/testing.h"
-#include "src/common/uuid/proto/uuid.pb.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
 #include "src/table_store/proto/schema.pb.h"

@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/cloud/profile/controller"
 	mock_controller "pixielabs.ai/pixielabs/src/cloud/profile/controller/mock"
 	"pixielabs.ai/pixielabs/src/cloud/profile/datastore"
@@ -20,7 +21,6 @@ import (
 	profile "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	"pixielabs.ai/pixielabs/src/cloud/project_manager/projectmanagerpb"
 	mock_projectmanager "pixielabs.ai/pixielabs/src/cloud/project_manager/projectmanagerpb/mock"
-	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 )
 

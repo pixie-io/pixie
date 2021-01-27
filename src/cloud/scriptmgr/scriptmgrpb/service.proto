@@ -3,7 +3,7 @@ syntax = "proto3";
 package pl.services;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "src/common/uuid/proto/uuid.proto";
+import "src/api/public/uuidpb/uuid.proto";
 import "src/shared/vispb/vis.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb;scriptmgrpb";

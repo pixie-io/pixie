@@ -9,8 +9,8 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	uuid "github.com/satori/go.uuid"
 
+	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 )
 

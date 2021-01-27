@@ -10,8 +10,8 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/cloud/scriptmgr/controller",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/cloud/scriptmgr/scriptmgrpb:service_pl_go_proto",
-        "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/vispb:vis_pl_go_proto",
         "@com_github_gogo_protobuf//jsonpb:go_default_library",
         "@com_github_googleapis_google_cloud_go_testing//storage/stiface:go_default_library",
@@ -30,8 +30,8 @@ go_test(
     ],
     embed = [":go_default_library"],
     deps = [
+        "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/cloud/scriptmgr/scriptmgrpb:service_pl_go_proto",
-        "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/vispb:vis_pl_go_proto",
         "//src/utils/testingutils:go_default_library",
         "@com_github_gogo_protobuf//jsonpb:go_default_library",

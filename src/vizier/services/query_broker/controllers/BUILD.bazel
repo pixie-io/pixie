@@ -16,6 +16,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
         "//src/carnot/planner:go_default_library",
         "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
@@ -26,7 +27,6 @@ go_library(
         "//src/carnot/udfspb:udfs_pl_go_proto",
         "//src/carnotpb:carnot_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",
-        "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/services/authcontext:go_default_library",
         "//src/shared/types/proto:types_pl_go_proto",
         "//src/table_store/proto:schema_pl_go_proto",

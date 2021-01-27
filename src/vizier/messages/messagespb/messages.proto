@@ -5,7 +5,7 @@ package pl.vizier.messages;
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/carnot/planner/distributedpb/distributed_plan.proto";
 import "src/carnot/planpb/plan.proto";
-import "src/common/uuid/proto/uuid.proto";
+import "src/api/public/uuidpb/uuid.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
 import "src/vizier/services/shared/agentpb/agent.proto";
 import "src/vizier/services/metadata/storepb/store.proto";

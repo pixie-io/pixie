@@ -10,7 +10,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	proto "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	proto "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	cvmsgspb "pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	reflect "reflect"
 )

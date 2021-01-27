@@ -3,7 +3,7 @@ syntax = "proto3";
 package pl.vizier.services.metadata;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "src/common/uuid/proto/uuid.proto";
+import "src/api/public/uuidpb/uuid.proto";
 import "src/table_store/proto/schema.proto";
 import "src/carnot/planner/distributedpb/distributed_plan.proto";
 import "src/vizier/messages/messagespb/messages.proto";

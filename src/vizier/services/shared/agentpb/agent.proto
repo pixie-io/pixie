@@ -3,7 +3,7 @@ syntax = "proto3";
 package pl.vizier.services.shared.agent;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "src/common/uuid/proto/uuid.proto";
+import "src/api/public/uuidpb/uuid.proto";
 
 // AgentCapabilities describes functions that the agent has available.
 message AgentCapabilities {

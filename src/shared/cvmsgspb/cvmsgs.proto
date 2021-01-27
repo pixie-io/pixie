@@ -18,7 +18,7 @@ import "google/protobuf/wrappers.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
 import "src/vizier/vizierpb/vizier.proto";
 import "src/api/public/vizierapipb/vizierapi.proto";
-import "src/common/uuid/proto/uuid.proto";
+import "src/api/public/uuidpb/uuid.proto";
 
 
 option go_package = "pixielabs.ai/pixielabs/src/shared/cvmsgspb/messagespb;cvmsgspb";

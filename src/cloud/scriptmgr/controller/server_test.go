@@ -17,9 +17,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/status"
 
+	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/controller"
 	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
-	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	pl_vispb "pixielabs.ai/pixielabs/src/shared/vispb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )

@@ -10,7 +10,7 @@ from src.vizier.vizierpb import vizier_pb2_grpc
 from src.cloud.cloudapipb import cloudapi_pb2 as cpb
 from src.cloud.cloudapipb import cloudapi_pb2_grpc
 
-from src.common.uuid.proto import uuid_pb2 as uuidpb
+from src.api.public.uuidpb import uuid_pb2 as uuidpb
 from .data import (
     _TableStream,
     RowGenerator,

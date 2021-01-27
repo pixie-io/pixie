@@ -22,6 +22,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/api/public/cloudapipb:public_cloudapi_pl_go_proto",
+        "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/cloud/api/apienv:go_default_library",
         "//src/cloud/api/controller/schema:go_default_library",
         "//src/cloud/api/controller/unauthenticated_schema:go_default_library",
@@ -32,7 +33,6 @@ go_library(
         "//src/cloud/profile/profilepb:service_go_proto",
         "//src/cloud/scriptmgr/scriptmgrpb:service_pl_go_proto",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
-        "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/artifacts/versionspb:versions_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/services:go_default_library",
@@ -77,6 +77,7 @@ go_test(
     ],
     embed = [":go_default_library"],
     deps = [
+        "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/cloud/api/apienv:go_default_library",
         "//src/cloud/api/controller/schema:go_default_library",
         "//src/cloud/api/controller/testutils:go_default_library",
@@ -91,7 +92,6 @@ go_test(
         "//src/cloud/scriptmgr/scriptmgrpb:service_pl_go_proto",
         "//src/cloud/scriptmgr/scriptmgrpb/mock:go_default_library",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
-        "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/artifacts/versionspb:versions_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",

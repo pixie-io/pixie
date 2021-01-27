@@ -22,10 +22,10 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
+	proto1 "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	public_vizierpb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/cloud/api/ptproxy"
 	mock_vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb/mock"
-	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	env2 "pixielabs.ai/pixielabs/src/shared/services/env"

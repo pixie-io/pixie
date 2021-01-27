@@ -71,7 +71,7 @@ function prepare_src() {
 
   # uuidpb subpackage setup.
   cp -LR \
-    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/common/uuid/proto" \
+    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/api/public/uuidpb" \
     "${PIXIEPKG}/uuidpb"
 
   # metadatapb subpackage setup.
@@ -108,7 +108,7 @@ function replace_pb_paths() {
     sed -i'.original' \
         -e 's/^from src.cloud.cloudapipb/from pxapi.cloudapipb/g' \
         -e 's/^from src.vizier.vizierpb/from pxapi.vizierpb/g' \
-        -e 's/^from src.common.uuid.proto/from pxapi.uuidpb/g' \
+        -e 's/^from src.api.public.uuidpb/from pxapi.uuidpb/g' \
         -e 's/^from src.shared.k8s.metadatapb/from pxapi.metadatapb/g' \
         -e 's/^from src.shared.types.proto/from pxapi.typespb/g' \
         -e 's/^from src.shared.vispb/from pxapi.vispb/g' \

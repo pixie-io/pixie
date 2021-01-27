@@ -6,7 +6,7 @@ import "src/shared/bloomfilterpb/bloomfilter.proto";
 import "src/shared/metadatapb/metadata.proto";
 import "src/table_store/proto/schema.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "src/common/uuid/proto/uuid.proto";
+import "src/api/public/uuidpb/uuid.proto";
 
 package pl.carnot.planner.distributedpb;
 

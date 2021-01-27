@@ -1,7 +1,7 @@
 from typing import List, Any
 from src.api.python.pxapi import vpb
 from src.api.python import pxapi
-from src.common.uuid.proto import uuid_pb2 as uuidpb
+from src.api.public.uuidpb import uuid_pb2 as uuidpb
 
 import grpc
 

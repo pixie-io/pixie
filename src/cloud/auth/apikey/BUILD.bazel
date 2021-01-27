@@ -6,8 +6,8 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/cloud/auth/apikey",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/cloud/auth/proto:auth_go_proto",
-        "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/services/authcontext:go_default_library",
         "//src/utils:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",

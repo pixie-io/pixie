@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
@@ -23,7 +24,6 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
 	mock_scriptmgr "pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb/mock"
 	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"

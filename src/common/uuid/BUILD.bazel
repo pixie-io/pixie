@@ -22,6 +22,6 @@ pl_cc_test(
     srcs = ["uuid_utils_test.cc"],
     deps = [
         ":cc_library",
-        "//src/common/uuid/proto:uuid_pl_cc_proto",
+        "//src/api/public/uuidpb:uuid_pl_cc_proto",
     ],
 )
