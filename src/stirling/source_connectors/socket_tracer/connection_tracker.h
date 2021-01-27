@@ -477,8 +477,10 @@ class ConnectionTracker : NotCopyMoveable {
     conn_info_map_mgr_ = conn_info_map_mgr;
   }
 
-  // These functions return true if the state was changed.
+  // Returns false if the protocol change is disallowed.
   bool SetProtocol(TrafficProtocol protocol);
+
+  // Returns true if the state was changed.
   bool SetRole(EndpointRole role);
 
   void SetDebugTrace(int level) { debug_trace_level_ = level; }

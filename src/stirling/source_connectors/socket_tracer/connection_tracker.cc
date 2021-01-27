@@ -506,27 +506,23 @@ bool ConnectionTracker::SetRole(EndpointRole role) {
   return false;
 }
 
-// Returns true if protocol state changed.
+// Returns false if protocol change was not allowed.
 bool ConnectionTracker::SetProtocol(TrafficProtocol protocol) {
-  // Don't allow changing active protocol, unless it is from unknown to something else.
-  if (traffic_class_.protocol != kProtocolUnknown) {
-    if (protocol != kProtocolUnknown && traffic_class_.protocol != protocol) {
-      CONN_TRACE(1) << absl::Substitute(
-          "Not allowed to change the protocol of an active ConnectionTracker: $0, old "
-          "protocol: $1, new protocol $2",
-          ToString(conn_id_), magic_enum::enum_name(traffic_class_.protocol),
-          magic_enum::enum_name(protocol));
-    }
-    return false;
-  }
-
-  if (protocol != kProtocolUnknown) {
-    traffic_class_.protocol = protocol;
+  // No change, so we're all good.
+  if (traffic_class_.protocol == protocol) {
     return true;
   }
 
-  // Protocol did not change.
-  return false;
+  // Changing the active protocol of a connection tracker is not allowed.
+  if (traffic_class_.protocol != kProtocolUnknown) {
+    CONN_TRACE(1) << absl::Substitute(
+        "Not allowed to change the protocol of an active ConnectionTracker: $0->$1",
+        magic_enum::enum_name(traffic_class_.protocol), magic_enum::enum_name(protocol));
+    return false;
+  }
+
+  traffic_class_.protocol = protocol;
+  return true;
 }
 
 void ConnectionTracker::UpdateTimestamps(uint64_t bpf_timestamp) {
