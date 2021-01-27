@@ -408,6 +408,22 @@ func (v *VizierClusterInfo) GetCluster(ctx context.Context, req *public_cloudapi
 	}, nil
 }
 
+// GetClusterConnection is the public-facing call to get a cluster's connection info.
+func (v *VizierClusterInfo) GetClusterConnection(ctx context.Context, req *public_cloudapipb.GetClusterConnectionRequest) (*public_cloudapipb.GetClusterConnectionResponse, error) {
+	resp, err := v.GetClusterConnectionInfo(ctx, &cloudapipb.GetClusterConnectionInfoRequest{
+		ID: req.ID,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &public_cloudapipb.GetClusterConnectionResponse{
+		IPAddress: resp.IPAddress,
+		Token:     resp.Token,
+	}, nil
+}
+
 // UpdateOrInstallCluster updates or installs the given vizier cluster to the specified version.
 func (v *VizierClusterInfo) UpdateOrInstallCluster(ctx context.Context, req *cloudapipb.UpdateOrInstallClusterRequest) (*cloudapipb.UpdateOrInstallClusterResponse, error) {
 	if req.Version == "" {

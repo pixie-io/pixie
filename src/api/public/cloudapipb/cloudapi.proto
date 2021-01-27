@@ -19,6 +19,7 @@ option go_package = "pixielabs.ai/pixielabs/src/api/public/cloudapipb;publicclou
 service ClusterManager {
     rpc GetCluster(GetClusterRequest) returns(GetClusterResponse) {}
     rpc UpdateClusterConfig(UpdateClusterConfigRequest) returns(UpdateClusterConfigResponse) {}
+    rpc GetClusterConnection(GetClusterConnectionRequest) returns(GetClusterConnectionResponse) {}
 }
 
 message ClusterConfig {
@@ -34,6 +35,19 @@ message GetClusterRequest {
     pl.uuidpb.UUID id = 1 [
                           (gogoproto.customname) = "ID"
                           ];
+}
+
+message GetClusterConnectionRequest {
+     pl.uuidpb.UUID id = 1 [
+                           (gogoproto.customname) = "ID"
+                           ];
+}
+
+message GetClusterConnectionResponse {
+    string ipAddress = 1 [
+                         (gogoproto.customname) = "IPAddress"
+                         ];
+    string token = 2;
 }
 
 enum ClusterStatus {

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	public_cloudapipb "pixielabs.ai/pixielabs/src/api/public/cloudapipb"
 	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
@@ -99,6 +100,31 @@ func TestArtifactTracker_GetDownloadLink(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "http://localhost", resp.Url)
 	assert.Equal(t, "sha", resp.SHA256)
+}
+
+func TestVizierClusterInfo_GetClusterConnection(t *testing.T) {
+	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockClients.MockVzMgr.EXPECT().GetVizierConnectionInfo(gomock.Any(), clusterID).Return(&cvmsgspb.VizierConnectionInfo{
+		IPAddress: "127.0.0.1",
+		Token:     "hello",
+	}, nil)
+
+	vzClusterInfoServer := &controller.VizierClusterInfo{
+		VzMgr: mockClients.MockVzMgr,
+	}
+
+	resp, err := vzClusterInfoServer.GetClusterConnection(ctx, &public_cloudapipb.GetClusterConnectionRequest{ID: clusterID})
+	assert.Nil(t, err)
+	assert.Equal(t, "127.0.0.1", resp.IPAddress)
+	assert.Equal(t, "hello", resp.Token)
 }
 
 func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
