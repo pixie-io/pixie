@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
+	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/election"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
@@ -20,7 +21,6 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/version/go"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/bridge"
 	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/vizhealth"
-	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 func init() {
@@ -34,7 +34,7 @@ func init() {
 	pflag.String("cluster_name", "", "The name of the user's K8s cluster")
 	pflag.String("deploy_key", "", "The deploy key for the cluster")
 }
-func newVzServiceClient() (pl_api_vizierpb.VizierServiceClient, error) {
+func newVzServiceClient() (public_vizierapipb.VizierServiceClient, error) {
 	dialOpts, err := services.GetGRPCClientDialOpts()
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func newVzServiceClient() (pl_api_vizierpb.VizierServiceClient, error) {
 		return nil, err
 	}
 
-	return pl_api_vizierpb.NewVizierServiceClient(qbChannel), nil
+	return public_vizierapipb.NewVizierServiceClient(qbChannel), nil
 }
 
 func main() {

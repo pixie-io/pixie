@@ -8,6 +8,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
+	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
@@ -19,7 +20,6 @@ import (
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	pbutils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
-	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 var boolScalarValuePb = `
@@ -224,7 +224,7 @@ nodes: {
 `
 
 func TestVizierQueryRequestToPlannerQueryRequest(t *testing.T) {
-	sv := new(vizierpb.ExecuteScriptRequest)
+	sv := new(public_vizierapipb.ExecuteScriptRequest)
 	if err := proto.UnmarshalText(executeScriptReqPb, sv); err != nil {
 		t.Fatalf("Cannot unmarshal proto")
 	}
@@ -295,7 +295,7 @@ func TestRelationFromTable(t *testing.T) {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
-	expectedQm := new(vizierpb.QueryMetadata)
+	expectedQm := new(public_vizierapipb.QueryMetadata)
 	if err := proto.UnmarshalText(tablePb, expectedQm); err != nil {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
@@ -311,7 +311,7 @@ func TestRelationFromTableWithSemanticTypes(t *testing.T) {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
-	expectedQm := new(vizierpb.QueryMetadata)
+	expectedQm := new(public_vizierapipb.QueryMetadata)
 	if err := proto.UnmarshalText(tableSemanticTypePb, expectedQm); err != nil {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
@@ -327,7 +327,7 @@ func TestQueryResultStatsToVizierStats(t *testing.T) {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
-	expectedQd := new(vizierpb.QueryData)
+	expectedQd := new(public_vizierapipb.QueryData)
 	if err := proto.UnmarshalText(vizierTimingStatsPb, expectedQd); err != nil {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
@@ -342,7 +342,7 @@ func TestUInt128ToVizierUInt128(t *testing.T) {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
-	expectedQd := new(vizierpb.UInt128)
+	expectedQd := new(public_vizierapipb.UInt128)
 	if err := proto.UnmarshalText(uint128Pb, expectedQd); err != nil {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
@@ -357,7 +357,7 @@ func TestRowBatchToVizierRowBatch(t *testing.T) {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
-	expectedQd := new(vizierpb.RowBatchData)
+	expectedQd := new(public_vizierapipb.RowBatchData)
 	if err := proto.UnmarshalText(rowBatchPb, expectedQd); err != nil {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
@@ -372,7 +372,7 @@ func TestBuildExecuteScriptResponse_RowBatch(t *testing.T) {
 	if err := proto.UnmarshalText(rowBatchPb, receivedRB); err != nil {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
-	convertedRB := new(vizierpb.RowBatchData)
+	convertedRB := new(public_vizierapipb.RowBatchData)
 	if err := proto.UnmarshalText(rowBatchPb, convertedRB); err != nil {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
@@ -457,8 +457,8 @@ func TestBuildExecuteScriptResponse_ExecutionStats(t *testing.T) {
 		},
 	}
 
-	expectedStats := &vizierpb.QueryExecutionStats{
-		Timing: &vizierpb.QueryTimingInfo{
+	expectedStats := &public_vizierapipb.QueryExecutionStats{
+		Timing: &public_vizierapipb.QueryTimingInfo{
 			ExecutionTimeNs:   5010,
 			CompilationTimeNs: 10,
 		},
@@ -543,16 +543,16 @@ func TestQueryPlanResponse(t *testing.T) {
 		},
 	}
 
-	expected := &vizierpb.ExecuteScriptResponse{
+	expected := &public_vizierapipb.ExecuteScriptResponse{
 		QueryID: queryIDStr,
-		Result: &vizierpb.ExecuteScriptResponse_Data{
-			Data: &vizierpb.QueryData{
-				Batch: &vizierpb.RowBatchData{
+		Result: &public_vizierapipb.ExecuteScriptResponse_Data{
+			Data: &public_vizierapipb.QueryData{
+				Batch: &public_vizierapipb.RowBatchData{
 					TableID: "table_plan_id",
-					Cols: []*vizierpb.Column{
-						&vizierpb.Column{
-							ColData: &vizierpb.Column_StringData{
-								StringData: &vizierpb.StringColumn{
+					Cols: []*public_vizierapipb.Column{
+						&public_vizierapipb.Column{
+							ColData: &public_vizierapipb.Column_StringData{
+								StringData: &public_vizierapipb.StringColumn{
 									Data: []string{
 										"digraph  {\n\tsubgraph cluster_s0 {\n\t\tID = \"cluster_s0\";\n" +
 											"\t\tcolor=\"lightgrey\";label=\"agent::3ca421d4-5f85-4c99-8248-02252204e281\\n" +
@@ -602,27 +602,27 @@ func TestTableRelationResponses(t *testing.T) {
 	planMap[agentUUID1] = planPB1
 	planMap[agentUUID2] = planPB2
 
-	expectedSchemaResults := make(map[string]*vizierpb.ExecuteScriptResponse)
-	actualSchemaResults := make(map[string]*vizierpb.ExecuteScriptResponse)
+	expectedSchemaResults := make(map[string]*public_vizierapipb.ExecuteScriptResponse)
+	actualSchemaResults := make(map[string]*public_vizierapipb.ExecuteScriptResponse)
 
-	expectedSchemaResults["agent1_table"] = &vizierpb.ExecuteScriptResponse{
+	expectedSchemaResults["agent1_table"] = &public_vizierapipb.ExecuteScriptResponse{
 		QueryID: queryID.String(),
-		Result: &vizierpb.ExecuteScriptResponse_MetaData{
-			MetaData: &vizierpb.QueryMetadata{
+		Result: &public_vizierapipb.ExecuteScriptResponse_MetaData{
+			MetaData: &public_vizierapipb.QueryMetadata{
 				Name: "agent1_table",
 				ID:   "agent1_table_id",
-				Relation: &vizierpb.Relation{
-					Columns: []*vizierpb.Relation_ColumnInfo{
-						&vizierpb.Relation_ColumnInfo{ColumnName: "time_",
+				Relation: &public_vizierapipb.Relation{
+					Columns: []*public_vizierapipb.Relation_ColumnInfo{
+						&public_vizierapipb.Relation_ColumnInfo{ColumnName: "time_",
 							ColumnType:         6,
 							ColumnDesc:         "",
 							ColumnSemanticType: 1,
-						}, &vizierpb.Relation_ColumnInfo{
+						}, &public_vizierapipb.Relation_ColumnInfo{
 							ColumnName:         "cpu_cycles",
 							ColumnType:         2,
 							ColumnDesc:         "",
 							ColumnSemanticType: 1,
-						}, &vizierpb.Relation_ColumnInfo{
+						}, &public_vizierapipb.Relation_ColumnInfo{
 							ColumnName:         "upid",
 							ColumnType:         3,
 							ColumnDesc:         "",
@@ -633,15 +633,15 @@ func TestTableRelationResponses(t *testing.T) {
 			},
 		},
 	}
-	expectedSchemaResults["agent2_table"] = &vizierpb.ExecuteScriptResponse{
+	expectedSchemaResults["agent2_table"] = &public_vizierapipb.ExecuteScriptResponse{
 		QueryID: queryID.String(),
-		Result: &vizierpb.ExecuteScriptResponse_MetaData{
-			MetaData: &vizierpb.QueryMetadata{
+		Result: &public_vizierapipb.ExecuteScriptResponse_MetaData{
+			MetaData: &public_vizierapipb.QueryMetadata{
 				Name: "agent2_table",
 				ID:   "agent2_table_id",
-				Relation: &vizierpb.Relation{
-					Columns: []*vizierpb.Relation_ColumnInfo{
-						&vizierpb.Relation_ColumnInfo{ColumnName: "time_",
+				Relation: &public_vizierapipb.Relation{
+					Columns: []*public_vizierapipb.Relation_ColumnInfo{
+						&public_vizierapipb.Relation_ColumnInfo{ColumnName: "time_",
 							ColumnType:         6,
 							ColumnDesc:         "",
 							ColumnSemanticType: 1,

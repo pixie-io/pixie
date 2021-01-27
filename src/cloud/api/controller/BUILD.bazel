@@ -21,6 +21,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/cloud/api/controller",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/api/public/cloudapipb:public_cloudapi_pl_go_proto",
         "//src/cloud/api/apienv:go_default_library",
         "//src/cloud/api/controller/schema:go_default_library",
         "//src/cloud/api/controller/unauthenticated_schema:go_default_library",

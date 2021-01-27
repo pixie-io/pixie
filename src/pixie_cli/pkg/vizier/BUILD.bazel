@@ -15,6 +15,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
         "//src/pixie_cli/pkg/auth:go_default_library",
         "//src/pixie_cli/pkg/components:go_default_library",
@@ -45,7 +46,7 @@ go_test(
     srcs = ["data_formatter_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//src/vizier/vizierpb:vizier_pl_go_proto",
+        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
         "@com_github_stretchr_testify//assert:go_default_library",
     ],
 )

@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
@@ -20,48 +21,47 @@ import (
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
-	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
-var dataTypeToVizierDataType = map[typespb.DataType]vizierpb.DataType{
-	typespb.DATA_TYPE_UNKNOWN: vizierpb.DATA_TYPE_UNKNOWN,
-	typespb.BOOLEAN:           vizierpb.BOOLEAN,
-	typespb.INT64:             vizierpb.INT64,
-	typespb.UINT128:           vizierpb.UINT128,
-	typespb.FLOAT64:           vizierpb.FLOAT64,
-	typespb.STRING:            vizierpb.STRING,
-	typespb.TIME64NS:          vizierpb.TIME64NS,
+var dataTypeToVizierDataType = map[typespb.DataType]public_vizierapipb.DataType{
+	typespb.DATA_TYPE_UNKNOWN: public_vizierapipb.DATA_TYPE_UNKNOWN,
+	typespb.BOOLEAN:           public_vizierapipb.BOOLEAN,
+	typespb.INT64:             public_vizierapipb.INT64,
+	typespb.UINT128:           public_vizierapipb.UINT128,
+	typespb.FLOAT64:           public_vizierapipb.FLOAT64,
+	typespb.STRING:            public_vizierapipb.STRING,
+	typespb.TIME64NS:          public_vizierapipb.TIME64NS,
 }
 
-var semanticTypeToVizierSemanticType = map[typespb.SemanticType]vizierpb.SemanticType{
-	typespb.ST_UNSPECIFIED:             vizierpb.ST_UNSPECIFIED,
-	typespb.ST_NONE:                    vizierpb.ST_NONE,
-	typespb.ST_TIME_NS:                 vizierpb.ST_TIME_NS,
-	typespb.ST_AGENT_UID:               vizierpb.ST_AGENT_UID,
-	typespb.ST_ASID:                    vizierpb.ST_ASID,
-	typespb.ST_UPID:                    vizierpb.ST_UPID,
-	typespb.ST_SERVICE_NAME:            vizierpb.ST_SERVICE_NAME,
-	typespb.ST_POD_NAME:                vizierpb.ST_POD_NAME,
-	typespb.ST_POD_PHASE:               vizierpb.ST_POD_PHASE,
-	typespb.ST_POD_STATUS:              vizierpb.ST_POD_STATUS,
-	typespb.ST_NODE_NAME:               vizierpb.ST_NODE_NAME,
-	typespb.ST_CONTAINER_NAME:          vizierpb.ST_CONTAINER_NAME,
-	typespb.ST_CONTAINER_STATE:         vizierpb.ST_CONTAINER_STATE,
-	typespb.ST_CONTAINER_STATUS:        vizierpb.ST_CONTAINER_STATUS,
-	typespb.ST_NAMESPACE_NAME:          vizierpb.ST_NAMESPACE_NAME,
-	typespb.ST_BYTES:                   vizierpb.ST_BYTES,
-	typespb.ST_PERCENT:                 vizierpb.ST_PERCENT,
-	typespb.ST_DURATION_NS:             vizierpb.ST_DURATION_NS,
-	typespb.ST_THROUGHPUT_PER_NS:       vizierpb.ST_THROUGHPUT_PER_NS,
-	typespb.ST_THROUGHPUT_BYTES_PER_NS: vizierpb.ST_THROUGHPUT_BYTES_PER_NS,
-	typespb.ST_QUANTILES:               vizierpb.ST_QUANTILES,
-	typespb.ST_DURATION_NS_QUANTILES:   vizierpb.ST_DURATION_NS_QUANTILES,
-	typespb.ST_IP_ADDRESS:              vizierpb.ST_IP_ADDRESS,
-	typespb.ST_PORT:                    vizierpb.ST_PORT,
-	typespb.ST_HTTP_REQ_METHOD:         vizierpb.ST_HTTP_REQ_METHOD,
-	typespb.ST_HTTP_RESP_STATUS:        vizierpb.ST_HTTP_RESP_STATUS,
-	typespb.ST_HTTP_RESP_MESSAGE:       vizierpb.ST_HTTP_RESP_MESSAGE,
-	typespb.ST_SCRIPT_REFERENCE:        vizierpb.ST_SCRIPT_REFERENCE,
+var semanticTypeToVizierSemanticType = map[typespb.SemanticType]public_vizierapipb.SemanticType{
+	typespb.ST_UNSPECIFIED:             public_vizierapipb.ST_UNSPECIFIED,
+	typespb.ST_NONE:                    public_vizierapipb.ST_NONE,
+	typespb.ST_TIME_NS:                 public_vizierapipb.ST_TIME_NS,
+	typespb.ST_AGENT_UID:               public_vizierapipb.ST_AGENT_UID,
+	typespb.ST_ASID:                    public_vizierapipb.ST_ASID,
+	typespb.ST_UPID:                    public_vizierapipb.ST_UPID,
+	typespb.ST_SERVICE_NAME:            public_vizierapipb.ST_SERVICE_NAME,
+	typespb.ST_POD_NAME:                public_vizierapipb.ST_POD_NAME,
+	typespb.ST_POD_PHASE:               public_vizierapipb.ST_POD_PHASE,
+	typespb.ST_POD_STATUS:              public_vizierapipb.ST_POD_STATUS,
+	typespb.ST_NODE_NAME:               public_vizierapipb.ST_NODE_NAME,
+	typespb.ST_CONTAINER_NAME:          public_vizierapipb.ST_CONTAINER_NAME,
+	typespb.ST_CONTAINER_STATE:         public_vizierapipb.ST_CONTAINER_STATE,
+	typespb.ST_CONTAINER_STATUS:        public_vizierapipb.ST_CONTAINER_STATUS,
+	typespb.ST_NAMESPACE_NAME:          public_vizierapipb.ST_NAMESPACE_NAME,
+	typespb.ST_BYTES:                   public_vizierapipb.ST_BYTES,
+	typespb.ST_PERCENT:                 public_vizierapipb.ST_PERCENT,
+	typespb.ST_DURATION_NS:             public_vizierapipb.ST_DURATION_NS,
+	typespb.ST_THROUGHPUT_PER_NS:       public_vizierapipb.ST_THROUGHPUT_PER_NS,
+	typespb.ST_THROUGHPUT_BYTES_PER_NS: public_vizierapipb.ST_THROUGHPUT_BYTES_PER_NS,
+	typespb.ST_QUANTILES:               public_vizierapipb.ST_QUANTILES,
+	typespb.ST_DURATION_NS_QUANTILES:   public_vizierapipb.ST_DURATION_NS_QUANTILES,
+	typespb.ST_IP_ADDRESS:              public_vizierapipb.ST_IP_ADDRESS,
+	typespb.ST_PORT:                    public_vizierapipb.ST_PORT,
+	typespb.ST_HTTP_REQ_METHOD:         public_vizierapipb.ST_HTTP_REQ_METHOD,
+	typespb.ST_HTTP_RESP_STATUS:        public_vizierapipb.ST_HTTP_RESP_STATUS,
+	typespb.ST_HTTP_RESP_MESSAGE:       public_vizierapipb.ST_HTTP_RESP_MESSAGE,
+	typespb.ST_SCRIPT_REFERENCE:        public_vizierapipb.ST_SCRIPT_REFERENCE,
 }
 
 // These codes are taken from https://godoc.org/google.golang.org/grpc/codes#Code.
@@ -80,22 +80,22 @@ var statusCodeToGRPCCode = map[statuspb.Code]codes.Code{
 	statuspb.SYSTEM:               codes.Internal,
 }
 
-var lifeCycleStateToVizierLifeCycleStateMap = map[statuspb.LifeCycleState]vizierpb.LifeCycleState{
-	statuspb.UNKNOWN_STATE:    vizierpb.UNKNOWN_STATE,
-	statuspb.PENDING_STATE:    vizierpb.PENDING_STATE,
-	statuspb.RUNNING_STATE:    vizierpb.RUNNING_STATE,
-	statuspb.TERMINATED_STATE: vizierpb.TERMINATED_STATE,
-	statuspb.FAILED_STATE:     vizierpb.FAILED_STATE,
+var lifeCycleStateToVizierLifeCycleStateMap = map[statuspb.LifeCycleState]public_vizierapipb.LifeCycleState{
+	statuspb.UNKNOWN_STATE:    public_vizierapipb.UNKNOWN_STATE,
+	statuspb.PENDING_STATE:    public_vizierapipb.PENDING_STATE,
+	statuspb.RUNNING_STATE:    public_vizierapipb.RUNNING_STATE,
+	statuspb.TERMINATED_STATE: public_vizierapipb.TERMINATED_STATE,
+	statuspb.FAILED_STATE:     public_vizierapipb.FAILED_STATE,
 }
 
-func convertLifeCycleStateToVizierLifeCycleState(state statuspb.LifeCycleState) vizierpb.LifeCycleState {
+func convertLifeCycleStateToVizierLifeCycleState(state statuspb.LifeCycleState) public_vizierapipb.LifeCycleState {
 	if val, ok := lifeCycleStateToVizierLifeCycleStateMap[state]; ok {
 		return val
 	}
-	return vizierpb.UNKNOWN_STATE
+	return public_vizierapipb.UNKNOWN_STATE
 }
 
-func convertExecFuncs(inputFuncs []*vizierpb.ExecuteScriptRequest_FuncToExecute) []*plannerpb.FuncToExecute {
+func convertExecFuncs(inputFuncs []*public_vizierapipb.ExecuteScriptRequest_FuncToExecute) []*plannerpb.FuncToExecute {
 	funcs := make([]*plannerpb.FuncToExecute, len(inputFuncs))
 	for i, f := range inputFuncs {
 		args := make([]*plannerpb.FuncToExecute_ArgValue, len(f.ArgValues))
@@ -115,7 +115,7 @@ func convertExecFuncs(inputFuncs []*vizierpb.ExecuteScriptRequest_FuncToExecute)
 }
 
 // VizierQueryRequestToPlannerMutationRequest maps request to mutation.
-func VizierQueryRequestToPlannerMutationRequest(vpb *vizierpb.ExecuteScriptRequest) (*plannerpb.CompileMutationsRequest, error) {
+func VizierQueryRequestToPlannerMutationRequest(vpb *public_vizierapipb.ExecuteScriptRequest) (*plannerpb.CompileMutationsRequest, error) {
 	return &plannerpb.CompileMutationsRequest{
 		QueryStr:  vpb.QueryStr,
 		ExecFuncs: convertExecFuncs(vpb.ExecFuncs),
@@ -123,7 +123,7 @@ func VizierQueryRequestToPlannerMutationRequest(vpb *vizierpb.ExecuteScriptReque
 }
 
 // VizierQueryRequestToPlannerQueryRequest converts a externally-facing query request to an internal representation.
-func VizierQueryRequestToPlannerQueryRequest(vpb *vizierpb.ExecuteScriptRequest) (*plannerpb.QueryRequest, error) {
+func VizierQueryRequestToPlannerQueryRequest(vpb *public_vizierapipb.ExecuteScriptRequest) (*plannerpb.QueryRequest, error) {
 	return &plannerpb.QueryRequest{
 		QueryStr:  vpb.QueryStr,
 		ExecFuncs: convertExecFuncs(vpb.ExecFuncs),
@@ -131,47 +131,47 @@ func VizierQueryRequestToPlannerQueryRequest(vpb *vizierpb.ExecuteScriptRequest)
 }
 
 // ErrToVizierResponse converts an error to an externally-facing Vizier response message
-func ErrToVizierResponse(id uuid.UUID, err error) *vizierpb.ExecuteScriptResponse {
-	return &vizierpb.ExecuteScriptResponse{
+func ErrToVizierResponse(id uuid.UUID, err error) *public_vizierapipb.ExecuteScriptResponse {
+	return &public_vizierapipb.ExecuteScriptResponse{
 		QueryID: id.String(),
 		Status:  ErrToVizierStatus(err),
 	}
 }
 
 // ErrToVizierStatus converts an error to an externally-facing Vizier status.
-func ErrToVizierStatus(err error) *vizierpb.Status {
+func ErrToVizierStatus(err error) *public_vizierapipb.Status {
 	s, ok := status.FromError(err)
 	if ok {
-		return &vizierpb.Status{
+		return &public_vizierapipb.Status{
 			Code:    int32(s.Code()),
 			Message: s.Message(),
 		}
 	}
 
-	return &vizierpb.Status{
+	return &public_vizierapipb.Status{
 		Code:    int32(codes.Unknown),
 		Message: err.Error(),
 	}
 }
 
 // StatusToVizierResponse converts an error to an externally-facing Vizier response message
-func StatusToVizierResponse(id uuid.UUID, s *statuspb.Status) *vizierpb.ExecuteScriptResponse {
-	return &vizierpb.ExecuteScriptResponse{
+func StatusToVizierResponse(id uuid.UUID, s *statuspb.Status) *public_vizierapipb.ExecuteScriptResponse {
+	return &public_vizierapipb.ExecuteScriptResponse{
 		QueryID: id.String(),
 		Status:  StatusToVizierStatus(s),
 	}
 }
 
 // StatusToVizierStatus converts an internal status to an externally-facing Vizier status.
-func StatusToVizierStatus(s *statuspb.Status) *vizierpb.Status {
-	return &vizierpb.Status{
+func StatusToVizierStatus(s *statuspb.Status) *public_vizierapipb.Status {
+	return &public_vizierapipb.Status{
 		Code:         int32(statusCodeToGRPCCode[s.ErrCode]),
 		Message:      s.Msg,
 		ErrorDetails: getErrorsFromStatusContext(s.Context),
 	}
 }
 
-func getErrorsFromStatusContext(ctx *gogotypes.Any) []*vizierpb.ErrorDetails {
+func getErrorsFromStatusContext(ctx *gogotypes.Any) []*public_vizierapipb.ErrorDetails {
 	errorPB := &compilerpb.CompilerErrorGroup{}
 	if !gogotypes.Is(ctx, errorPB) {
 		return nil
@@ -181,12 +181,12 @@ func getErrorsFromStatusContext(ctx *gogotypes.Any) []*vizierpb.ErrorDetails {
 		return nil
 	}
 
-	errors := make([]*vizierpb.ErrorDetails, len(errorPB.Errors))
+	errors := make([]*public_vizierapipb.ErrorDetails, len(errorPB.Errors))
 	for i, e := range errorPB.Errors {
 		lcErr := e.GetLineColError()
-		errors[i] = &vizierpb.ErrorDetails{
-			Error: &vizierpb.ErrorDetails_CompilerError{
-				CompilerError: &vizierpb.CompilerError{
+		errors[i] = &public_vizierapipb.ErrorDetails{
+			Error: &public_vizierapipb.ErrorDetails_CompilerError{
+				CompilerError: &public_vizierapipb.CompilerError{
 					Line:    lcErr.Line,
 					Column:  lcErr.Column,
 					Message: lcErr.Message,
@@ -198,10 +198,10 @@ func getErrorsFromStatusContext(ctx *gogotypes.Any) []*vizierpb.ErrorDetails {
 }
 
 // RelationFromTable gets the relation from the table.
-func RelationFromTable(table *schemapb.Table) (*vizierpb.QueryMetadata, error) {
-	cols := make([]*vizierpb.Relation_ColumnInfo, len(table.Relation.Columns))
+func RelationFromTable(table *schemapb.Table) (*public_vizierapipb.QueryMetadata, error) {
+	cols := make([]*public_vizierapipb.Relation_ColumnInfo, len(table.Relation.Columns))
 	for i, c := range table.Relation.Columns {
-		newCol := &vizierpb.Relation_ColumnInfo{
+		newCol := &public_vizierapipb.Relation_ColumnInfo{
 			ColumnName:         c.ColumnName,
 			ColumnDesc:         c.ColumnDesc,
 			ColumnType:         dataTypeToVizierDataType[c.ColumnType],
@@ -210,8 +210,8 @@ func RelationFromTable(table *schemapb.Table) (*vizierpb.QueryMetadata, error) {
 		cols[i] = newCol
 	}
 
-	return &vizierpb.QueryMetadata{
-		Relation: &vizierpb.Relation{
+	return &public_vizierapipb.QueryMetadata{
+		Relation: &public_vizierapipb.Relation{
 			Columns: cols,
 		},
 		Name: table.Name,
@@ -219,9 +219,9 @@ func RelationFromTable(table *schemapb.Table) (*vizierpb.QueryMetadata, error) {
 }
 
 // QueryResultStatsToVizierStats gets the execution stats from the query results.
-func QueryResultStatsToVizierStats(e *queryresultspb.QueryExecutionStats, compilationTimeNs int64) *vizierpb.QueryExecutionStats {
-	return &vizierpb.QueryExecutionStats{
-		Timing: &vizierpb.QueryTimingInfo{
+func QueryResultStatsToVizierStats(e *queryresultspb.QueryExecutionStats, compilationTimeNs int64) *public_vizierapipb.QueryExecutionStats {
+	return &public_vizierapipb.QueryExecutionStats{
+		Timing: &public_vizierapipb.QueryTimingInfo{
 			ExecutionTimeNs:   e.Timing.ExecutionTimeNs,
 			CompilationTimeNs: compilationTimeNs,
 		},
@@ -231,56 +231,56 @@ func QueryResultStatsToVizierStats(e *queryresultspb.QueryExecutionStats, compil
 }
 
 // UInt128ToVizierUInt128 converts our internal representation of UInt128 to Vizier's representation of UInt128.
-func UInt128ToVizierUInt128(i *typespb.UInt128) *vizierpb.UInt128 {
-	return &vizierpb.UInt128{
+func UInt128ToVizierUInt128(i *typespb.UInt128) *public_vizierapipb.UInt128 {
+	return &public_vizierapipb.UInt128{
 		Low:  i.Low,
 		High: i.High,
 	}
 }
 
-func colToVizierCol(col *schemapb.Column) (*vizierpb.Column, error) {
+func colToVizierCol(col *schemapb.Column) (*public_vizierapipb.Column, error) {
 	switch c := col.ColData.(type) {
 	case *schemapb.Column_BooleanData:
-		return &vizierpb.Column{
-			ColData: &vizierpb.Column_BooleanData{
-				BooleanData: &vizierpb.BooleanColumn{
+		return &public_vizierapipb.Column{
+			ColData: &public_vizierapipb.Column_BooleanData{
+				BooleanData: &public_vizierapipb.BooleanColumn{
 					Data: c.BooleanData.Data,
 				},
 			},
 		}, nil
 	case *schemapb.Column_Int64Data:
-		return &vizierpb.Column{
-			ColData: &vizierpb.Column_Int64Data{
-				Int64Data: &vizierpb.Int64Column{
+		return &public_vizierapipb.Column{
+			ColData: &public_vizierapipb.Column_Int64Data{
+				Int64Data: &public_vizierapipb.Int64Column{
 					Data: c.Int64Data.Data,
 				},
 			},
 		}, nil
 	case *schemapb.Column_Uint128Data:
-		b := make([]*vizierpb.UInt128, len(c.Uint128Data.Data))
+		b := make([]*public_vizierapipb.UInt128, len(c.Uint128Data.Data))
 		for i, s := range c.Uint128Data.Data {
 			b[i] = UInt128ToVizierUInt128(s)
 		}
 
-		return &vizierpb.Column{
-			ColData: &vizierpb.Column_Uint128Data{
-				Uint128Data: &vizierpb.UInt128Column{
+		return &public_vizierapipb.Column{
+			ColData: &public_vizierapipb.Column_Uint128Data{
+				Uint128Data: &public_vizierapipb.UInt128Column{
 					Data: b,
 				},
 			},
 		}, nil
 	case *schemapb.Column_Time64NsData:
-		return &vizierpb.Column{
-			ColData: &vizierpb.Column_Time64NsData{
-				Time64NsData: &vizierpb.Time64NSColumn{
+		return &public_vizierapipb.Column{
+			ColData: &public_vizierapipb.Column_Time64NsData{
+				Time64NsData: &public_vizierapipb.Time64NSColumn{
 					Data: c.Time64NsData.Data,
 				},
 			},
 		}, nil
 	case *schemapb.Column_Float64Data:
-		return &vizierpb.Column{
-			ColData: &vizierpb.Column_Float64Data{
-				Float64Data: &vizierpb.Float64Column{
+		return &public_vizierapipb.Column{
+			ColData: &public_vizierapipb.Column_Float64Data{
+				Float64Data: &public_vizierapipb.Float64Column{
 					Data: c.Float64Data.Data,
 				},
 			},
@@ -290,9 +290,9 @@ func colToVizierCol(col *schemapb.Column) (*vizierpb.Column, error) {
 		for i, s := range c.StringData.Data {
 			b[i] = string(s)
 		}
-		return &vizierpb.Column{
-			ColData: &vizierpb.Column_StringData{
-				StringData: &vizierpb.StringColumn{
+		return &public_vizierapipb.Column{
+			ColData: &public_vizierapipb.Column_StringData{
+				StringData: &public_vizierapipb.StringColumn{
 					Data: b,
 				},
 			},
@@ -303,8 +303,8 @@ func colToVizierCol(col *schemapb.Column) (*vizierpb.Column, error) {
 }
 
 // RowBatchToVizierRowBatch converts an internal row batch to a vizier row batch.
-func RowBatchToVizierRowBatch(rb *schemapb.RowBatchData, tableID string) (*vizierpb.RowBatchData, error) {
-	cols := make([]*vizierpb.Column, len(rb.Cols))
+func RowBatchToVizierRowBatch(rb *schemapb.RowBatchData, tableID string) (*public_vizierapipb.RowBatchData, error) {
+	cols := make([]*public_vizierapipb.Column, len(rb.Cols))
 	for i, col := range rb.Cols {
 		c, err := colToVizierCol(col)
 		if err != nil {
@@ -313,7 +313,7 @@ func RowBatchToVizierRowBatch(rb *schemapb.RowBatchData, tableID string) (*vizie
 		cols[i] = c
 	}
 
-	return &vizierpb.RowBatchData{
+	return &public_vizierapipb.RowBatchData{
 		TableID: tableID,
 		NumRows: rb.NumRows,
 		Eow:     rb.Eow,
@@ -326,16 +326,16 @@ func RowBatchToVizierRowBatch(rb *schemapb.RowBatchData, tableID string) (*vizie
 func BuildExecuteScriptResponse(r *carnotpb.TransferResultChunkRequest,
 	// Map of the received table names to their table ID on the output proto.
 	tableIDMap map[string]string,
-	compilationTimeNs int64) (*vizierpb.ExecuteScriptResponse, error) {
+	compilationTimeNs int64) (*public_vizierapipb.ExecuteScriptResponse, error) {
 
-	res := &vizierpb.ExecuteScriptResponse{
+	res := &public_vizierapipb.ExecuteScriptResponse{
 		QueryID: utils.UUIDFromProtoOrNil(r.QueryID).String(),
 	}
 
 	if execStats := r.GetExecutionAndTimingInfo(); execStats != nil {
 		stats := QueryResultStatsToVizierStats(execStats.ExecutionStats, compilationTimeNs)
-		res.Result = &vizierpb.ExecuteScriptResponse_Data{
-			Data: &vizierpb.QueryData{
+		res.Result = &public_vizierapipb.ExecuteScriptResponse_Data{
+			Data: &public_vizierapipb.QueryData{
 				ExecutionStats: stats,
 			},
 		}
@@ -359,8 +359,8 @@ func BuildExecuteScriptResponse(r *carnotpb.TransferResultChunkRequest,
 		if err != nil {
 			return nil, err
 		}
-		res.Result = &vizierpb.ExecuteScriptResponse_Data{
-			Data: &vizierpb.QueryData{
+		res.Result = &public_vizierapipb.ExecuteScriptResponse_Data{
+			Data: &public_vizierapipb.QueryData{
 				Batch: batch,
 			},
 		}
@@ -374,7 +374,7 @@ func BuildExecuteScriptResponse(r *carnotpb.TransferResultChunkRequest,
 // QueryPlanResponse returns the query plan as an ExecuteScriptResponse.
 func QueryPlanResponse(queryID uuid.UUID, plan *distributedpb.DistributedPlan, planMap map[uuid.UUID]*planpb.Plan,
 	agentStats *[]*queryresultspb.AgentExecutionStats,
-	planTableID string) (*vizierpb.ExecuteScriptResponse, error) {
+	planTableID string) (*public_vizierapipb.ExecuteScriptResponse, error) {
 
 	queryPlan, err := GetQueryPlanAsDotString(plan, planMap, agentStats)
 	if err != nil {
@@ -382,12 +382,12 @@ func QueryPlanResponse(queryID uuid.UUID, plan *distributedpb.DistributedPlan, p
 		return nil, err
 	}
 
-	batch := &vizierpb.RowBatchData{
+	batch := &public_vizierapipb.RowBatchData{
 		TableID: planTableID,
-		Cols: []*vizierpb.Column{
-			&vizierpb.Column{
-				ColData: &vizierpb.Column_StringData{
-					StringData: &vizierpb.StringColumn{
+		Cols: []*public_vizierapipb.Column{
+			&public_vizierapipb.Column{
+				ColData: &public_vizierapipb.Column_StringData{
+					StringData: &public_vizierapipb.StringColumn{
 						Data: []string{queryPlan},
 					},
 				},
@@ -398,10 +398,10 @@ func QueryPlanResponse(queryID uuid.UUID, plan *distributedpb.DistributedPlan, p
 		Eow:     true,
 	}
 
-	return &vizierpb.ExecuteScriptResponse{
+	return &public_vizierapipb.ExecuteScriptResponse{
 		QueryID: queryID.String(),
-		Result: &vizierpb.ExecuteScriptResponse_Data{
-			Data: &vizierpb.QueryData{
+		Result: &public_vizierapipb.ExecuteScriptResponse_Data{
+			Data: &public_vizierapipb.QueryData{
 				Batch: batch,
 			},
 		},
@@ -409,18 +409,18 @@ func QueryPlanResponse(queryID uuid.UUID, plan *distributedpb.DistributedPlan, p
 }
 
 // QueryPlanRelationResponse returns the relation of the query plan as an ExecuteScriptResponse.
-func QueryPlanRelationResponse(queryID uuid.UUID, planTableID string) *vizierpb.ExecuteScriptResponse {
-	return &vizierpb.ExecuteScriptResponse{
+func QueryPlanRelationResponse(queryID uuid.UUID, planTableID string) *public_vizierapipb.ExecuteScriptResponse {
+	return &public_vizierapipb.ExecuteScriptResponse{
 		QueryID: queryID.String(),
-		Result: &vizierpb.ExecuteScriptResponse_MetaData{
-			MetaData: &vizierpb.QueryMetadata{
+		Result: &public_vizierapipb.ExecuteScriptResponse_MetaData{
+			MetaData: &public_vizierapipb.QueryMetadata{
 				Name: "__query_plan__",
 				ID:   planTableID,
-				Relation: &vizierpb.Relation{
-					Columns: []*vizierpb.Relation_ColumnInfo{
+				Relation: &public_vizierapipb.Relation{
+					Columns: []*public_vizierapipb.Relation_ColumnInfo{
 						{
 							ColumnName: "query_plan",
-							ColumnType: vizierpb.STRING,
+							ColumnType: public_vizierapipb.STRING,
 							ColumnDesc: "The query plan",
 						},
 					},
@@ -463,11 +463,11 @@ func OutputSchemaFromPlan(planMap map[uuid.UUID]*planpb.Plan) map[string]*schema
 }
 
 // AgentRelationToVizierRelation converts the agent relation format to the Vizier relation format.
-func AgentRelationToVizierRelation(relation *schemapb.Relation) *vizierpb.Relation {
-	var cols []*vizierpb.Relation_ColumnInfo
+func AgentRelationToVizierRelation(relation *schemapb.Relation) *public_vizierapipb.Relation {
+	var cols []*public_vizierapipb.Relation_ColumnInfo
 
 	for _, c := range relation.Columns {
-		newCol := &vizierpb.Relation_ColumnInfo{
+		newCol := &public_vizierapipb.Relation_ColumnInfo{
 			ColumnName:         c.ColumnName,
 			ColumnDesc:         c.ColumnDesc,
 			ColumnType:         dataTypeToVizierDataType[c.ColumnType],
@@ -476,16 +476,16 @@ func AgentRelationToVizierRelation(relation *schemapb.Relation) *vizierpb.Relati
 		cols = append(cols, newCol)
 	}
 
-	return &vizierpb.Relation{
+	return &public_vizierapipb.Relation{
 		Columns: cols,
 	}
 }
 
 // TableRelationResponses returns the query metadata table schemas as ExecuteScriptResponses.
 func TableRelationResponses(queryID uuid.UUID, tableIDMap map[string]string,
-	planMap map[uuid.UUID]*planpb.Plan) ([]*vizierpb.ExecuteScriptResponse, error) {
+	planMap map[uuid.UUID]*planpb.Plan) ([]*public_vizierapipb.ExecuteScriptResponse, error) {
 
-	var results []*vizierpb.ExecuteScriptResponse
+	var results []*public_vizierapipb.ExecuteScriptResponse
 	schemas := OutputSchemaFromPlan(planMap)
 
 	for tableName, schema := range schemas {
@@ -495,10 +495,10 @@ func TableRelationResponses(queryID uuid.UUID, tableIDMap map[string]string,
 		}
 
 		convertedRelation := AgentRelationToVizierRelation(schema)
-		results = append(results, &vizierpb.ExecuteScriptResponse{
+		results = append(results, &public_vizierapipb.ExecuteScriptResponse{
 			QueryID: queryID.String(),
-			Result: &vizierpb.ExecuteScriptResponse_MetaData{
-				MetaData: &vizierpb.QueryMetadata{
+			Result: &public_vizierapipb.ExecuteScriptResponse_MetaData{
+				MetaData: &public_vizierapipb.QueryMetadata{
 					Name:     tableName,
 					ID:       tableID,
 					Relation: convertedRelation,

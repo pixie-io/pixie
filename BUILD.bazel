@@ -24,6 +24,8 @@ gazelle(
 # TODO(zasgar): We should keep an eye on fixes to gazelle that make this automatic
 # Make gazelle resolve the proto paths correctly.
 # gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/cloudapipb //src/cloud/cloudapipb:cloudapi_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/api/public/cloudapipb //src/api/public/cloudapipb:public_cloudapi_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/api/public/vizierapipb //src/api/public/vizierapipb:public_vizier_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/artifacts/versionspb //src/shared/artifacts/versionspb:versions_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb //src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb //src/cloud/vzconn/vzconnpb:service_pl_go_proto

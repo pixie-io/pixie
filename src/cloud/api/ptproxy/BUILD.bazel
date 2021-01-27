@@ -9,6 +9,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/cloud/api/ptproxy",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
         "//src/cloud/shared/vzshard:go_default_library",
         "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
@@ -34,6 +35,7 @@ go_test(
     srcs = ["vizier_pt_proxy_test.go"],
     embed = [":go_default_library"],
     deps = [
+        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
         "//src/cloud/shared/vzshard:go_default_library",
         "//src/cloud/vzmgr/vzmgrpb/mock:go_default_library",
         "//src/common/uuid/proto:uuid_pl_go_proto",

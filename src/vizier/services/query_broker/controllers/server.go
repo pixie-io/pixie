@@ -16,10 +16,10 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
 
+	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	"pixielabs.ai/pixielabs/src/carnotpb"
-	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 
 	logicalplanner "pixielabs.ai/pixielabs/src/carnot/planner"
 	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
@@ -139,7 +139,7 @@ func failedStatusQueryResponse(queryID uuid.UUID, status *statuspb.Status) *quer
 // returns a bool for whether the query timed out and an error.
 func (s *Server) runQuery(ctx context.Context, req *plannerpb.QueryRequest, queryID uuid.UUID,
 	planOpts *planpb.PlanOptions, distributedState *distributedpb.DistributedState,
-	resultStream chan *vizierpb.ExecuteScriptResponse, doneCh chan bool) error {
+	resultStream chan *public_vizierapipb.ExecuteScriptResponse, doneCh chan bool) error {
 
 	log.WithField("query_id", queryID).Infof("Running script")
 	start := time.Now()
@@ -262,7 +262,7 @@ func (s *Server) CheckHealth(ctx context.Context) error {
 	queryID := uuid.NewV4()
 	planOpts := flags.GetPlanOptions()
 
-	resultStream := make(chan *vizierpb.ExecuteScriptResponse)
+	resultStream := make(chan *public_vizierapipb.ExecuteScriptResponse)
 	doneCh := make(chan bool)
 
 	var wg sync.WaitGroup
@@ -335,7 +335,7 @@ func (s *Server) checkHealthCached(ctx context.Context) error {
 }
 
 // HealthCheck continually responds with the current health of Vizier.
-func (s *Server) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierpb.VizierService_HealthCheckServer) error {
+func (s *Server) HealthCheck(req *public_vizierapipb.HealthCheckRequest, srv public_vizierapipb.VizierService_HealthCheckServer) error {
 	// For now, just report itself as healthy.
 	for c := time.Tick(healthCheckInterval); ; {
 		hcResult := s.checkHealthCached(srv.Context())
@@ -345,8 +345,8 @@ func (s *Server) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierpb.Vizi
 			log.Infof("Received unhealthy heath check result: %s", hcResult.Error())
 			code = int32(codes.Unavailable)
 		}
-		err := srv.Send(&vizierpb.HealthCheckResponse{
-			Status: &vizierpb.Status{
+		err := srv.Send(&public_vizierapipb.HealthCheckResponse{
+			Status: &public_vizierapipb.Status{
 				Code: code,
 			},
 		})
@@ -364,7 +364,7 @@ func (s *Server) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierpb.Vizi
 }
 
 // ExecuteScript executes the script and sends results through the gRPC stream.
-func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.VizierService_ExecuteScriptServer) error {
+func (s *Server) ExecuteScript(req *public_vizierapipb.ExecuteScriptRequest, srv public_vizierapipb.VizierService_ExecuteScriptServer) error {
 	ctx := context.WithValue(srv.Context(), execStartKey, time.Now())
 	// TODO(philkuz) we should move the query id into the api so we can track how queries propagate through the system.
 	queryID := uuid.NewV4()
@@ -392,7 +392,7 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 		if err != nil {
 			return srv.Send(ErrToVizierResponse(queryID, err))
 		}
-		err = srv.Send(&vizierpb.ExecuteScriptResponse{
+		err = srv.Send(&public_vizierapipb.ExecuteScriptResponse{
 			QueryID:      queryID.String(),
 			MutationInfo: mutationInfo,
 		})
@@ -408,7 +408,7 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 		return err
 	}
 
-	resultStream := make(chan *vizierpb.ExecuteScriptResponse)
+	resultStream := make(chan *public_vizierapipb.ExecuteScriptResponse)
 	doneCh := make(chan bool)
 
 	var wg sync.WaitGroup

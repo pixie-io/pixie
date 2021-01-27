@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/carnotpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
@@ -21,7 +22,6 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/ptproxy"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
-	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 const plMDSAddr = "vizier-metadata.pl.svc:50400"
@@ -35,7 +35,7 @@ func init() {
 }
 
 // NewVizierServiceClient creates a new vz RPC client stub.
-func NewVizierServiceClient(port uint) (vizierpb.VizierServiceClient, error) {
+func NewVizierServiceClient(port uint) (public_vizierapipb.VizierServiceClient, error) {
 	dialOpts, err := services.GetGRPCClientDialOpts()
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func NewVizierServiceClient(port uint) (vizierpb.VizierServiceClient, error) {
 		return nil, err
 	}
 
-	return vizierpb.NewVizierServiceClient(vzChannel), nil
+	return public_vizierapipb.NewVizierServiceClient(vzChannel), nil
 }
 
 func main() {
@@ -134,7 +134,7 @@ func main() {
 		httpmiddleware.WithBearerAuthMiddleware(env, mux), maxMsgSize)
 
 	carnotpb.RegisterResultSinkServiceServer(s.GRPCServer(), server)
-	vizierpb.RegisterVizierServiceServer(s.GRPCServer(), server)
+	public_vizierapipb.RegisterVizierServiceServer(s.GRPCServer(), server)
 
 	// For the passthrough proxy we create a GRPC client to the current server. It appears really
 	// hard to emulate the streaming GRPC connection and this helps keep the API straightforward.

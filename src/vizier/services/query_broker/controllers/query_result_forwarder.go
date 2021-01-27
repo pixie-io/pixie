@@ -10,12 +10,12 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
+	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	"pixielabs.ai/pixielabs/src/carnotpb"
 	"pixielabs.ai/pixielabs/src/utils"
-	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 // QueryPlanOpts contains options for generating and returning the query plan
@@ -159,7 +159,7 @@ type QueryResultForwarder interface {
 	// Blocks until the stream (& the agent stream) has completed, been cancelled, or experienced an error.
 	// Returns error for any error received.
 	StreamResults(ctx context.Context, queryID uuid.UUID,
-		resultCh chan *vizierpb.ExecuteScriptResponse,
+		resultCh chan *public_vizierapipb.ExecuteScriptResponse,
 		compilationTimeNs int64,
 		queryPlanOpts *QueryPlanOpts) error
 
@@ -212,7 +212,7 @@ func (f *QueryResultForwarderImpl) DeleteQuery(queryID uuid.UUID) {
 
 // StreamResults streams results from the agent streams to the client stream.
 func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uuid.UUID,
-	resultCh chan *vizierpb.ExecuteScriptResponse,
+	resultCh chan *public_vizierapipb.ExecuteScriptResponse,
 	compilationTimeNs int64, queryPlanOpts *QueryPlanOpts) error {
 
 	f.activeQueriesMutex.Lock()

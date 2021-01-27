@@ -14,6 +14,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	uuid "github.com/satori/go.uuid"
+	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	logicalplanner "pixielabs.ai/pixielabs/src/carnot/planner"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/udfspb"
@@ -21,7 +22,6 @@ import (
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 	funcs "pixielabs.ai/pixielabs/src/vizier/funcs/go"
-	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 // Base to use. Must set asid and agent_id.
@@ -1327,7 +1327,7 @@ func getExecRequest(pxlScript, visJSON string) (*plannerpb.QueryRequest, error) 
 	if err != nil {
 		return nil, err
 	}
-	vpb := &vizierpb.ExecuteScriptRequest{
+	vpb := &public_vizierapipb.ExecuteScriptRequest{
 		QueryStr:  pxlScript,
 		ExecFuncs: funcs,
 	}

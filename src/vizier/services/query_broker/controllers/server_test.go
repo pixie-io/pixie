@@ -11,6 +11,8 @@ import (
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
+	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
+	mock_public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb/mock"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	carnotpb "pixielabs.ai/pixielabs/src/carnotpb"
@@ -23,8 +25,6 @@ import (
 	mock_controllers "pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
-	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
-	mock_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb/mock"
 )
 
 const getAgentsResponse = `
@@ -445,7 +445,7 @@ func (f *fakeAgentsTracker) GetAgentInfo() tracker.AgentsInfo {
 
 type fakeResultForwarder struct {
 	// Variables to pass in for ExecuteScript testing.
-	ClientResultsToSend []*vizierpb.ExecuteScriptResponse
+	ClientResultsToSend []*public_vizierapipb.ExecuteScriptResponse
 	Error               error
 
 	// Variables that will get set during ExecuteScriptTesting.
@@ -473,7 +473,7 @@ func (f *fakeResultForwarder) DeleteQuery(queryID uuid.UUID) {
 
 // StreamResults streams the results to the resultCh.
 func (f *fakeResultForwarder) StreamResults(ctx context.Context, queryID uuid.UUID,
-	resultCh chan *vizierpb.ExecuteScriptResponse,
+	resultCh chan *public_vizierapipb.ExecuteScriptResponse,
 	compilationTimeNs int64,
 	queryPlanOpts *controllers.QueryPlanOpts) error {
 
@@ -530,16 +530,16 @@ func TestCheckHealth_Success(t *testing.T) {
 	}
 
 	queryID := uuid.NewV4()
-	fakeResult := &vizierpb.ExecuteScriptResponse{
+	fakeResult := &public_vizierapipb.ExecuteScriptResponse{
 		QueryID: queryID.String(),
-		Result: &vizierpb.ExecuteScriptResponse_Data{
-			Data: &vizierpb.QueryData{
-				Batch: &vizierpb.RowBatchData{
+		Result: &public_vizierapipb.ExecuteScriptResponse_Data{
+			Data: &public_vizierapipb.QueryData{
+				Batch: &public_vizierapipb.RowBatchData{
 					TableID: "health_check_unused",
-					Cols: []*vizierpb.Column{
-						&vizierpb.Column{
-							ColData: &vizierpb.Column_StringData{
-								StringData: &vizierpb.StringColumn{
+					Cols: []*public_vizierapipb.Column{
+						&public_vizierapipb.Column{
+							ColData: &public_vizierapipb.Column_StringData{
+								StringData: &public_vizierapipb.StringColumn{
 									Data: []string{
 										"foo",
 									},
@@ -556,7 +556,7 @@ func TestCheckHealth_Success(t *testing.T) {
 	}
 
 	rf := &fakeResultForwarder{
-		ClientResultsToSend: []*vizierpb.ExecuteScriptResponse{
+		ClientResultsToSend: []*public_vizierapipb.ExecuteScriptResponse{
 			fakeResult,
 		},
 	}
@@ -609,7 +609,7 @@ func TestCheckHealth_CompilationError(t *testing.T) {
 	}
 
 	rf := &fakeResultForwarder{
-		ClientResultsToSend: []*vizierpb.ExecuteScriptResponse{},
+		ClientResultsToSend: []*public_vizierapipb.ExecuteScriptResponse{},
 	}
 
 	planner := mock_controllers.NewMockPlanner(ctrl)
@@ -654,7 +654,7 @@ func TestHealthCheck_ExecutionError(t *testing.T) {
 
 	// Receiving no results should cause an error.
 	rf := &fakeResultForwarder{
-		ClientResultsToSend: []*vizierpb.ExecuteScriptResponse{},
+		ClientResultsToSend: []*public_vizierapipb.ExecuteScriptResponse{},
 	}
 
 	// Not the actual health check query, but that's okay for the test since the planner and
@@ -716,25 +716,25 @@ func TestExecuteScript_Success(t *testing.T) {
 
 	queryID := uuid.NewV4()
 
-	fakeBatch := new(vizierpb.RowBatchData)
+	fakeBatch := new(public_vizierapipb.RowBatchData)
 	if err := proto.UnmarshalText(rowBatchPb, fakeBatch); err != nil {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
-	fakeResult1 := &vizierpb.ExecuteScriptResponse{
+	fakeResult1 := &public_vizierapipb.ExecuteScriptResponse{
 		QueryID: queryID.String(),
-		Result: &vizierpb.ExecuteScriptResponse_Data{
-			Data: &vizierpb.QueryData{
+		Result: &public_vizierapipb.ExecuteScriptResponse_Data{
+			Data: &public_vizierapipb.QueryData{
 				Batch: fakeBatch,
 			},
 		},
 	}
-	fakeResult2 := &vizierpb.ExecuteScriptResponse{
+	fakeResult2 := &public_vizierapipb.ExecuteScriptResponse{
 		QueryID: queryID.String(),
-		Result: &vizierpb.ExecuteScriptResponse_Data{
-			Data: &vizierpb.QueryData{
-				ExecutionStats: &vizierpb.QueryExecutionStats{
-					Timing: &vizierpb.QueryTimingInfo{
+		Result: &public_vizierapipb.ExecuteScriptResponse_Data{
+			Data: &public_vizierapipb.QueryData{
+				ExecutionStats: &public_vizierapipb.QueryExecutionStats{
+					Timing: &public_vizierapipb.QueryTimingInfo{
 						ExecutionTimeNs:   5010,
 						CompilationTimeNs: 350,
 					},
@@ -746,7 +746,7 @@ func TestExecuteScript_Success(t *testing.T) {
 	}
 
 	rf := &fakeResultForwarder{
-		ClientResultsToSend: []*vizierpb.ExecuteScriptResponse{
+		ClientResultsToSend: []*public_vizierapipb.ExecuteScriptResponse{
 			fakeResult1,
 			fakeResult2,
 		},
@@ -764,22 +764,22 @@ func TestExecuteScript_Success(t *testing.T) {
 
 	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
 
-	srv := mock_vizierpb.NewMockVizierService_ExecuteScriptServer(ctrl)
+	srv := mock_public_vizierapipb.NewMockVizierService_ExecuteScriptServer(ctrl)
 	auth := authcontext.New()
 	ctx := authcontext.NewContext(context.Background(), auth)
 
 	srv.EXPECT().Context().Return(ctx).AnyTimes()
 
-	var resps []*vizierpb.ExecuteScriptResponse
+	var resps []*public_vizierapipb.ExecuteScriptResponse
 	srv.EXPECT().
 		Send(gomock.Any()).
-		DoAndReturn(func(arg *vizierpb.ExecuteScriptResponse) error {
+		DoAndReturn(func(arg *public_vizierapipb.ExecuteScriptResponse) error {
 			resps = append(resps, arg)
 			return nil
 		}).
 		AnyTimes()
 
-	err = s.ExecuteScript(&vizierpb.ExecuteScriptRequest{
+	err = s.ExecuteScript(&public_vizierapipb.ExecuteScriptRequest{
 		QueryStr: testQuery,
 	}, srv)
 
@@ -791,7 +791,7 @@ func TestExecuteScript_Success(t *testing.T) {
 	assert.NotEqual(t, 0, len(rf.TableIDMap["agent2_table"]))
 
 	// Make sure the relation is sent with the metadata.
-	actualSchemaResults := make(map[string]*vizierpb.ExecuteScriptResponse)
+	actualSchemaResults := make(map[string]*public_vizierapipb.ExecuteScriptResponse)
 	actualSchemaResults[resps[0].GetMetaData().Name] = resps[0]
 	actualSchemaResults[resps[1].GetMetaData().Name] = resps[1]
 	assert.Equal(t, 2, len(actualSchemaResults))
@@ -847,21 +847,21 @@ func TestExecuteScript_PlannerErrorResult(t *testing.T) {
 
 	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
 
-	srv := mock_vizierpb.NewMockVizierService_ExecuteScriptServer(ctrl)
+	srv := mock_public_vizierapipb.NewMockVizierService_ExecuteScriptServer(ctrl)
 	auth := authcontext.New()
 	ctx := authcontext.NewContext(context.Background(), auth)
 
 	srv.EXPECT().Context().Return(ctx).AnyTimes()
 
-	var resp *vizierpb.ExecuteScriptResponse
+	var resp *public_vizierapipb.ExecuteScriptResponse
 	srv.EXPECT().
 		Send(gomock.Any()).
-		DoAndReturn(func(arg *vizierpb.ExecuteScriptResponse) error {
+		DoAndReturn(func(arg *public_vizierapipb.ExecuteScriptResponse) error {
 			resp = arg
 			return nil
 		})
 
-	err = s.ExecuteScript(&vizierpb.ExecuteScriptRequest{
+	err = s.ExecuteScript(&public_vizierapipb.ExecuteScriptRequest{
 		QueryStr: badQuery,
 	}, srv)
 
@@ -869,18 +869,18 @@ func TestExecuteScript_PlannerErrorResult(t *testing.T) {
 	assert.Equal(t, int32(3), resp.Status.Code)
 	assert.Equal(t, "", resp.Status.Message)
 	assert.Equal(t, 2, len(resp.Status.ErrorDetails))
-	assert.Equal(t, &vizierpb.ErrorDetails{
-		Error: &vizierpb.ErrorDetails_CompilerError{
-			CompilerError: &vizierpb.CompilerError{
+	assert.Equal(t, &public_vizierapipb.ErrorDetails{
+		Error: &public_vizierapipb.ErrorDetails_CompilerError{
+			CompilerError: &public_vizierapipb.CompilerError{
 				Line:    1,
 				Column:  2,
 				Message: "Error ova here.",
 			},
 		},
 	}, resp.Status.ErrorDetails[0])
-	assert.Equal(t, &vizierpb.ErrorDetails{
-		Error: &vizierpb.ErrorDetails_CompilerError{
-			CompilerError: &vizierpb.CompilerError{
+	assert.Equal(t, &public_vizierapipb.ErrorDetails{
+		Error: &public_vizierapipb.ErrorDetails_CompilerError{
+			CompilerError: &public_vizierapipb.CompilerError{
 				Line:    20,
 				Column:  19,
 				Message: "Error ova there.",
@@ -934,21 +934,21 @@ func TestExecuteScript_ErrorInStatusResult(t *testing.T) {
 
 	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
 
-	srv := mock_vizierpb.NewMockVizierService_ExecuteScriptServer(ctrl)
+	srv := mock_public_vizierapipb.NewMockVizierService_ExecuteScriptServer(ctrl)
 	auth := authcontext.New()
 	ctx := authcontext.NewContext(context.Background(), auth)
 
 	srv.EXPECT().Context().Return(ctx).AnyTimes()
 
-	var resp *vizierpb.ExecuteScriptResponse
+	var resp *public_vizierapipb.ExecuteScriptResponse
 	srv.EXPECT().
 		Send(gomock.Any()).
-		DoAndReturn(func(arg *vizierpb.ExecuteScriptResponse) error {
+		DoAndReturn(func(arg *public_vizierapipb.ExecuteScriptResponse) error {
 			resp = arg
 			return nil
 		})
 
-	err = s.ExecuteScript(&vizierpb.ExecuteScriptRequest{
+	err = s.ExecuteScript(&public_vizierapipb.ExecuteScriptRequest{
 		QueryStr: badQuery,
 	}, srv)
 

@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/viper"
 	batchv1 "k8s.io/api/batch/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/utils"
@@ -448,7 +449,7 @@ func (s *Bridge) sendPTStatusMessage(reqID string, code codes.Code, message stri
 	resp := &cvmsgspb.V2CAPIStreamResponse{
 		RequestID: reqID,
 		Msg: &cvmsgspb.V2CAPIStreamResponse_Status{
-			Status: &vizierpb.Status{
+			Status: &public_vizierapipb.Status{
 				Code:    int32(code),
 				Message: message,
 			},

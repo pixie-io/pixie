@@ -10,6 +10,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
+	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
@@ -17,7 +18,6 @@ import (
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	pbutils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
-	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 func makeInitiateTableRequest(queryID uuid.UUID, tableName string) *carnotpb.TransferResultChunkRequest {
@@ -38,7 +38,7 @@ func makeInitiateTableRequest(queryID uuid.UUID, tableName string) *carnotpb.Tra
 }
 
 func makeRowBatchResult(t *testing.T, queryID uuid.UUID, tableName string, tableID string,
-	eos bool) (*vizierpb.RowBatchData, *carnotpb.TransferResultChunkRequest) {
+	eos bool) (*public_vizierapipb.RowBatchData, *carnotpb.TransferResultChunkRequest) {
 	rb := new(schemapb.RowBatchData)
 	if err := proto.UnmarshalText(rowBatchPb, rb); err != nil {
 		t.Fatalf("Cannot unmarshal proto %v", err)
@@ -66,7 +66,7 @@ func makeRowBatchResult(t *testing.T, queryID uuid.UUID, tableName string, table
 	}
 }
 
-func makeExecStatsResult(t *testing.T, queryID uuid.UUID) (*vizierpb.QueryExecutionStats,
+func makeExecStatsResult(t *testing.T, queryID uuid.UUID) (*public_vizierapipb.QueryExecutionStats,
 	*carnotpb.TransferResultChunkRequest) {
 	execStats := &queryresultspb.QueryExecutionStats{
 		Timing: &queryresultspb.QueryTimingInfo{
@@ -127,8 +127,8 @@ func TestStreamResultsSimple(t *testing.T) {
 	expectedTables["foo"] = "123"
 	expectedTables["bar"] = "456"
 
-	var results []*vizierpb.ExecuteScriptResponse
-	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
+	var results []*public_vizierapipb.ExecuteScriptResponse
+	resultCh := make(chan *public_vizierapipb.ExecuteScriptResponse)
 	doneCh := make(chan bool)
 
 	go func() {
@@ -188,8 +188,8 @@ func TestStreamResultsAgentCancel(t *testing.T) {
 	expectedTables["foo"] = "123"
 	expectedTables["bar"] = "456"
 
-	var results []*vizierpb.ExecuteScriptResponse
-	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
+	var results []*public_vizierapipb.ExecuteScriptResponse
+	resultCh := make(chan *public_vizierapipb.ExecuteScriptResponse)
 	doneCh := make(chan bool)
 
 	go func() {
@@ -248,8 +248,8 @@ func TestStreamResultsClientContextCancel(t *testing.T) {
 	expectedTables["foo"] = "123"
 	expectedTables["bar"] = "456"
 
-	var results []*vizierpb.ExecuteScriptResponse
-	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
+	var results []*public_vizierapipb.ExecuteScriptResponse
+	resultCh := make(chan *public_vizierapipb.ExecuteScriptResponse)
 	doneCh := make(chan bool)
 
 	go func() {
@@ -304,8 +304,8 @@ func TestStreamResultsQueryPlan(t *testing.T) {
 	expectedTables["foo"] = "123"
 	expectedTables["bar"] = "456"
 
-	var results []*vizierpb.ExecuteScriptResponse
-	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
+	var results []*public_vizierapipb.ExecuteScriptResponse
+	resultCh := make(chan *public_vizierapipb.ExecuteScriptResponse)
 	doneCh := make(chan bool)
 
 	go func() {
@@ -388,8 +388,8 @@ func TestStreamResultsWrongQueryID(t *testing.T) {
 	expectedTables["foo"] = "123"
 	expectedTables["bar"] = "456"
 
-	var results []*vizierpb.ExecuteScriptResponse
-	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
+	var results []*public_vizierapipb.ExecuteScriptResponse
+	resultCh := make(chan *public_vizierapipb.ExecuteScriptResponse)
 	doneCh := make(chan bool)
 
 	go func() {
@@ -440,8 +440,8 @@ func TestStreamResultsResultsBeforeInitialization(t *testing.T) {
 	expectedTables["foo"] = "123"
 	expectedTables["bar"] = "456"
 
-	var results []*vizierpb.ExecuteScriptResponse
-	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
+	var results []*public_vizierapipb.ExecuteScriptResponse
+	resultCh := make(chan *public_vizierapipb.ExecuteScriptResponse)
 	doneCh := make(chan bool)
 
 	go func() {
@@ -486,8 +486,8 @@ func TestStreamResultsNeverInitializedTable(t *testing.T) {
 	expectedTables["foo"] = "123"
 	expectedTables["bar"] = "456"
 
-	var results []*vizierpb.ExecuteScriptResponse
-	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
+	var results []*public_vizierapipb.ExecuteScriptResponse
+	resultCh := make(chan *public_vizierapipb.ExecuteScriptResponse)
 	doneCh := make(chan bool)
 
 	go func() {

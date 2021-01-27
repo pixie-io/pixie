@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+/**********************************************************************
+ * NOTICE: INTERNAL
+ * This file is meant as the external protobuf interface for the cloud.
+ * Please do not include dependencies that are outside of /src/common
+ * and only include protobufs that are useful to external-facing users.
+ **********************************************************************/
+
+package pl.public.cloudapi;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
+
+import "src/common/uuid/proto/uuid.proto";
+
+option go_package = "pixielabs.ai/pixielabs/src/api/public/cloudapipb;publiccloudapipb";
+
+service ClusterManager {
+    rpc GetCluster(GetClusterRequest) returns(GetClusterResponse) {}
+    rpc UpdateClusterConfig(UpdateClusterConfigRequest) returns(UpdateClusterConfigResponse) {}
+}
+
+message ClusterConfig {
+    bool passthrough_enabled = 1;
+}
+
+message ClusterConfigUpdate {
+    google.protobuf.BoolValue passthrough_enabled = 1;
+}
+
+message GetClusterRequest {
+    // Optional. If specified, get cluster info only for the specified cluster.
+    pl.uuidpb.UUID id = 1 [
+                          (gogoproto.customname) = "ID"
+                          ];
+}
+
+enum ClusterStatus {
+    CS_UNKNOWN = 0;
+    CS_HEALTHY = 1;
+    CS_UNHEALTHY = 2;
+    CS_DISCONNECTED = 3;
+    CS_UPDATING = 4;
+    CS_CONNECTED = 5;
+    CS_UPDATE_FAILED = 6;
+}
+
+message ClusterInfo {
+    pl.uuidpb.UUID id = 1 [
+                          (gogoproto.customname) = "ID"
+                          ];
+    ClusterStatus status = 2;
+    int64 lastHeartbeatNs = 3;
+    ClusterConfig config = 4;
+    // A unique ID for the cluster. This is typically the kube-system namespace UID.
+    string cluster_uid = 5 [
+      (gogoproto.customname) = "ClusterUID"
+      ];
+    // The name of the cluster. The return value of "kubectl config current-context".
+    // This could be empty if the user has not deployed through the CLI.
+    string cluster_name = 6;
+    // The version of the K8s cluster. For example: v1.14.10-gke.27. This could be empty if
+    // the user has not deployed through the CLI.
+    string cluster_version = 7;
+    // The version of the deployed Vizier.
+    string vizier_version = 8;
+    // The total number of nodes (instrumented & non-instrumented) on the cluster this Vizier is on.
+    int32 num_nodes = 9;
+    // The total number of  nodes on the cluster that have pems.
+    int32 num_instrumented_nodes = 10;
+}
+
+message GetClusterResponse {
+    repeated ClusterInfo clusters = 1;
+}
+
+message UpdateClusterConfigRequest {
+    pl.uuidpb.UUID id = 1 [
+                           (gogoproto.customname) = "ID"
+                           ];
+    ClusterConfigUpdate config_update = 2;
+}
+
+message UpdateClusterConfigResponse {}

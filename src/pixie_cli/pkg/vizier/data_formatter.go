@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
+	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 )
 
 // For p50, p99, etc.
@@ -119,26 +119,26 @@ type dataFormatterImpl struct {
 	cpuCols     map[int]bool
 	latencyCols map[int]bool
 
-	semanticTypeMap map[int]vizierpb.SemanticType
-	dataTypeMap     map[int]vizierpb.DataType
+	semanticTypeMap map[int]public_vizierapipb.SemanticType
+	dataTypeMap     map[int]public_vizierapipb.DataType
 }
 
 // NewDataFormatterForTable creates a new data formatter based on the input relation.
-func NewDataFormatterForTable(relation *vizierpb.Relation) DataFormatter {
+func NewDataFormatterForTable(relation *public_vizierapipb.Relation) DataFormatter {
 	alertCols := make(map[int]bool)
 	cpuCols := make(map[int]bool)
 	latencyCols := make(map[int]bool)
-	semanticTypeMap := make(map[int]vizierpb.SemanticType)
-	dataTypeMap := make(map[int]vizierpb.DataType)
+	semanticTypeMap := make(map[int]public_vizierapipb.SemanticType)
+	dataTypeMap := make(map[int]public_vizierapipb.DataType)
 
 	for idx, col := range relation.Columns {
 		if col.ColumnName == "alert" || strings.HasPrefix(col.ColumnName, "alert_") {
 			alertCols[idx] = true
 		}
-		if cpuRegex.Match([]byte(col.ColumnName)) && col.ColumnSemanticType == vizierpb.ST_PERCENT {
+		if cpuRegex.Match([]byte(col.ColumnName)) && col.ColumnSemanticType == public_vizierapipb.ST_PERCENT {
 			cpuCols[idx] = true
 		}
-		if latencyRegex.Match([]byte(col.ColumnName)) && col.ColumnSemanticType == vizierpb.ST_DURATION_NS {
+		if latencyRegex.Match([]byte(col.ColumnName)) && col.ColumnSemanticType == public_vizierapipb.ST_DURATION_NS {
 			latencyCols[idx] = true
 		}
 		semanticTypeMap[idx] = col.ColumnSemanticType
@@ -165,27 +165,27 @@ func toString(val interface{}) string {
 	return fmt.Sprintf("%v", val)
 }
 
-func (d *dataFormatterImpl) getStringForVal(dt vizierpb.DataType, st vizierpb.SemanticType, val interface{}) string {
+func (d *dataFormatterImpl) getStringForVal(dt public_vizierapipb.DataType, st public_vizierapipb.SemanticType, val interface{}) string {
 	switch st {
-	case vizierpb.ST_BYTES:
+	case public_vizierapipb.ST_BYTES:
 		return formatBytes(val)
-	case vizierpb.ST_DURATION_NS:
+	case public_vizierapipb.ST_DURATION_NS:
 		return formatDuration(val)
-	case vizierpb.ST_THROUGHPUT_PER_NS:
+	case public_vizierapipb.ST_THROUGHPUT_PER_NS:
 		return formatThroughput(val)
-	case vizierpb.ST_THROUGHPUT_BYTES_PER_NS:
+	case public_vizierapipb.ST_THROUGHPUT_BYTES_PER_NS:
 		return formatThroughputBytes(val)
-	case vizierpb.ST_HTTP_RESP_STATUS:
+	case public_vizierapipb.ST_HTTP_RESP_STATUS:
 		return d.formatRespStatus(val)
-	case vizierpb.ST_PERCENT:
+	case public_vizierapipb.ST_PERCENT:
 		return formatPercent(val)
-	case vizierpb.ST_DURATION_NS_QUANTILES:
-		return d.formatKV(vizierpb.FLOAT64, vizierpb.ST_DURATION_NS, val)
-	case vizierpb.ST_QUANTILES:
-		return d.formatKV(vizierpb.FLOAT64, vizierpb.ST_NONE, val)
+	case public_vizierapipb.ST_DURATION_NS_QUANTILES:
+		return d.formatKV(public_vizierapipb.FLOAT64, public_vizierapipb.ST_DURATION_NS, val)
+	case public_vizierapipb.ST_QUANTILES:
+		return d.formatKV(public_vizierapipb.FLOAT64, public_vizierapipb.ST_NONE, val)
 	}
 
-	if dt == vizierpb.FLOAT64 {
+	if dt == public_vizierapipb.FLOAT64 {
 		if floatVal, ok := val.(float64); ok {
 			return strconv.FormatFloat(floatVal, 'g', 6, 64)
 		}
@@ -275,7 +275,7 @@ func formatPercent(val interface{}) string {
 	return fmt.Sprintf("%.2f %s", floatVal*100, formatUnits("%"))
 }
 
-func (d *dataFormatterImpl) formatKV(valueDataType vizierpb.DataType, valueSemanticType vizierpb.SemanticType, val interface{}) string {
+func (d *dataFormatterImpl) formatKV(valueDataType public_vizierapipb.DataType, valueSemanticType public_vizierapipb.SemanticType, val interface{}) string {
 	strVal, ok := val.(string)
 	if !ok {
 		return toString(val)

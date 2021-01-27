@@ -13,6 +13,8 @@ import (
 	"github.com/gorilla/handlers"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
+	public_cloudapipb "pixielabs.ai/pixielabs/src/api/public/cloudapipb"
+	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/cloud/api/ptproxy"
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
@@ -145,6 +147,7 @@ func main() {
 
 	cis := &controller.VizierClusterInfo{VzMgr: vc, ArtifactTrackerClient: at}
 	cloudapipb.RegisterVizierClusterInfoServer(s.GRPCServer(), cis)
+	public_cloudapipb.RegisterClusterManagerServer(s.GRPCServer(), cis)
 
 	vdks := &controller.VizierDeploymentKeyServer{VzDeploymentKey: vk}
 	cloudapipb.RegisterVizierDeploymentKeyManagerServer(s.GRPCServer(), vdks)
@@ -153,7 +156,7 @@ func main() {
 	cloudapipb.RegisterAPIKeyManagerServer(s.GRPCServer(), aks)
 
 	vpt := ptproxy.NewVizierPassThroughProxy(nc, vc)
-	pl_api_vizierpb.RegisterVizierServiceServer(s.GRPCServer(), vpt)
+	public_vizierapipb.RegisterVizierServiceServer(s.GRPCServer(), vpt)
 	pl_api_vizierpb.RegisterVizierDebugServiceServer(s.GRPCServer(), vpt)
 
 	sm, err := apienv.NewScriptMgrServiceClient()

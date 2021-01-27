@@ -15,10 +15,10 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	"github.com/stretchr/testify/assert"
+	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/ptproxy"
-	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 const bufSize = 1024 * 1024
@@ -31,22 +31,22 @@ func NewMockVzServer(t *testing.T) *MockVzServer {
 	return &MockVzServer{t}
 }
 
-func (m *MockVzServer) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.VizierService_ExecuteScriptServer) error {
+func (m *MockVzServer) ExecuteScript(req *public_vizierapipb.ExecuteScriptRequest, srv public_vizierapipb.VizierService_ExecuteScriptServer) error {
 	if req.QueryStr == "should pass" {
-		resp := &vizierpb.ExecuteScriptResponse{
+		resp := &public_vizierapipb.ExecuteScriptResponse{
 			QueryID: "1",
 		}
 		srv.Send(resp)
 	}
 	if req.QueryStr == "error" {
-		resp := &vizierpb.ExecuteScriptResponse{
+		resp := &public_vizierapipb.ExecuteScriptResponse{
 			QueryID: "2",
 		}
 		srv.Send(resp)
 		return errors.New("Failed")
 	}
 	if req.QueryStr == "cancel" {
-		resp := &vizierpb.ExecuteScriptResponse{
+		resp := &public_vizierapipb.ExecuteScriptResponse{
 			QueryID: "3",
 		}
 		srv.Send(resp)
@@ -58,7 +58,7 @@ func (m *MockVzServer) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv viz
 	return nil
 }
 
-func (m *MockVzServer) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierpb.VizierService_HealthCheckServer) error {
+func (m *MockVzServer) HealthCheck(req *public_vizierapipb.HealthCheckRequest, srv public_vizierapipb.VizierService_HealthCheckServer) error {
 	return nil
 }
 
@@ -82,7 +82,7 @@ func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	}
 
 	vzServer := NewMockVzServer(t)
-	vizierpb.RegisterVizierServiceServer(s, vzServer)
+	public_vizierapipb.RegisterVizierServiceServer(s, vzServer)
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
@@ -120,21 +120,21 @@ func TestPassThroughProxy(t *testing.T) {
 	tests := []struct {
 		name          string
 		requestID     string
-		request       *vizierpb.ExecuteScriptRequest
+		request       *public_vizierapipb.ExecuteScriptRequest
 		expectedResps []*cvmsgspb.V2CAPIStreamResponse
 		sendCancel    bool
 	}{
 		{
 			name:      "complete",
 			requestID: "1",
-			request: &vizierpb.ExecuteScriptRequest{
+			request: &public_vizierapipb.ExecuteScriptRequest{
 				QueryStr: "should pass",
 			},
 			expectedResps: []*cvmsgspb.V2CAPIStreamResponse{
 				&cvmsgspb.V2CAPIStreamResponse{
 					RequestID: "1",
 					Msg: &cvmsgspb.V2CAPIStreamResponse_ExecResp{
-						ExecResp: &vizierpb.ExecuteScriptResponse{
+						ExecResp: &public_vizierapipb.ExecuteScriptResponse{
 							QueryID: "1",
 						},
 					},
@@ -142,7 +142,7 @@ func TestPassThroughProxy(t *testing.T) {
 				&cvmsgspb.V2CAPIStreamResponse{
 					RequestID: "1",
 					Msg: &cvmsgspb.V2CAPIStreamResponse_Status{
-						Status: &vizierpb.Status{
+						Status: &public_vizierapipb.Status{
 							Code: int32(codes.OK),
 						},
 					},
@@ -152,14 +152,14 @@ func TestPassThroughProxy(t *testing.T) {
 		{
 			name:      "error",
 			requestID: "2",
-			request: &vizierpb.ExecuteScriptRequest{
+			request: &public_vizierapipb.ExecuteScriptRequest{
 				QueryStr: "error",
 			},
 			expectedResps: []*cvmsgspb.V2CAPIStreamResponse{
 				&cvmsgspb.V2CAPIStreamResponse{
 					RequestID: "2",
 					Msg: &cvmsgspb.V2CAPIStreamResponse_ExecResp{
-						ExecResp: &vizierpb.ExecuteScriptResponse{
+						ExecResp: &public_vizierapipb.ExecuteScriptResponse{
 							QueryID: "2",
 						},
 					},
@@ -167,7 +167,7 @@ func TestPassThroughProxy(t *testing.T) {
 				&cvmsgspb.V2CAPIStreamResponse{
 					RequestID: "2",
 					Msg: &cvmsgspb.V2CAPIStreamResponse_Status{
-						Status: &vizierpb.Status{
+						Status: &public_vizierapipb.Status{
 							Code:    int32(codes.Internal),
 							Message: "stream read error",
 						},
@@ -179,14 +179,14 @@ func TestPassThroughProxy(t *testing.T) {
 			name:       "cancel",
 			requestID:  "3",
 			sendCancel: true,
-			request: &vizierpb.ExecuteScriptRequest{
+			request: &public_vizierapipb.ExecuteScriptRequest{
 				QueryStr: "cancel",
 			},
 			expectedResps: []*cvmsgspb.V2CAPIStreamResponse{
 				&cvmsgspb.V2CAPIStreamResponse{
 					RequestID: "3",
 					Msg: &cvmsgspb.V2CAPIStreamResponse_ExecResp{
-						ExecResp: &vizierpb.ExecuteScriptResponse{
+						ExecResp: &public_vizierapipb.ExecuteScriptResponse{
 							QueryID: "3",
 						},
 					},
@@ -200,7 +200,7 @@ func TestPassThroughProxy(t *testing.T) {
 			ts, cleanup := createTestState(t)
 			defer cleanup(t)
 
-			client := vizierpb.NewVizierServiceClient(ts.conn)
+			client := public_vizierapipb.NewVizierServiceClient(ts.conn)
 
 			s, err := ptproxy.NewPassThroughProxy(ts.nc, client)
 			assert.Nil(t, err)
@@ -272,7 +272,7 @@ func TestPassThroughProxy(t *testing.T) {
 			cancelResp := &cvmsgspb.V2CAPIStreamResponse{
 				RequestID: test.requestID,
 				Msg: &cvmsgspb.V2CAPIStreamResponse_Status{
-					Status: &vizierpb.Status{
+					Status: &public_vizierapipb.Status{
 						Code: int32(codes.Canceled),
 					},
 				},

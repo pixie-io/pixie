@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	public_cloudapipb "pixielabs.ai/pixielabs/src/api/public/cloudapipb"
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
@@ -338,6 +339,73 @@ func (v *VizierClusterInfo) UpdateClusterVizierConfig(ctx context.Context, req *
 	}
 
 	return &cloudapipb.UpdateClusterVizierConfigResponse{}, nil
+}
+
+// UpdateClusterConfig supports updates of config for a cluster
+func (v *VizierClusterInfo) UpdateClusterConfig(ctx context.Context, req *public_cloudapipb.UpdateClusterConfigRequest) (*public_cloudapipb.UpdateClusterConfigResponse, error) {
+	_, err := v.UpdateClusterVizierConfig(ctx, &cloudapipb.UpdateClusterVizierConfigRequest{
+		ID: req.ID,
+		ConfigUpdate: &cloudapipb.VizierConfigUpdate{
+			PassthroughEnabled: req.ConfigUpdate.PassthroughEnabled,
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &public_cloudapipb.UpdateClusterConfigResponse{}, nil
+}
+
+func vizierStatusToPublicVizierStatus(s cloudapipb.ClusterStatus) public_cloudapipb.ClusterStatus {
+	switch s {
+	case cloudapipb.CS_HEALTHY:
+		return public_cloudapipb.CS_HEALTHY
+	case cloudapipb.CS_UNHEALTHY:
+		return public_cloudapipb.CS_UNHEALTHY
+	case cloudapipb.CS_DISCONNECTED:
+		return public_cloudapipb.CS_DISCONNECTED
+	case cloudapipb.CS_UPDATING:
+		return public_cloudapipb.CS_UPDATING
+	case cloudapipb.CS_CONNECTED:
+		return public_cloudapipb.CS_CONNECTED
+	case cloudapipb.CS_UPDATE_FAILED:
+		return public_cloudapipb.CS_UPDATE_FAILED
+	default:
+		return public_cloudapipb.CS_UNKNOWN
+	}
+}
+
+// GetCluster gets status info about the specified vizier.
+func (v *VizierClusterInfo) GetCluster(ctx context.Context, req *public_cloudapipb.GetClusterRequest) (*public_cloudapipb.GetClusterResponse, error) {
+	resp, err := v.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{
+		ID: req.ID,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	clusters := make([]*public_cloudapipb.ClusterInfo, len(resp.Clusters))
+	for i, c := range resp.Clusters {
+		clusters[i] = &public_cloudapipb.ClusterInfo{
+			ID:              c.ID,
+			Status:          vizierStatusToPublicVizierStatus(c.Status),
+			LastHeartbeatNs: c.LastHeartbeatNs,
+			Config: &public_cloudapipb.ClusterConfig{
+				PassthroughEnabled: c.Config.PassthroughEnabled,
+			},
+			ClusterName:          c.ClusterName,
+			ClusterVersion:       c.ClusterVersion,
+			VizierVersion:        c.VizierVersion,
+			NumNodes:             c.NumNodes,
+			NumInstrumentedNodes: c.NumInstrumentedNodes,
+		}
+	}
+
+	return &public_cloudapipb.GetClusterResponse{
+		Clusters: clusters,
+	}, nil
 }
 
 // UpdateOrInstallCluster updates or installs the given vizier cluster to the specified version.

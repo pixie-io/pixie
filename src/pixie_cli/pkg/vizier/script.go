@@ -12,11 +12,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"gopkg.in/segmentio/analytics-go.v3"
 
+	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
-	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 type taskWrapper struct {
@@ -67,23 +67,23 @@ func RunScriptAndOutputResults(ctx context.Context, conns []*Connector, execScri
 	}
 
 	// Retry the mutation and use a jobrunner to show state.
-	taskChs := make([]chan pl_api_vizierpb.LifeCycleState, len(mutationInfo.States))
+	taskChs := make([]chan public_vizierapipb.LifeCycleState, len(mutationInfo.States))
 	tasks := make([]utils.Task, len(mutationInfo.States))
 	for i, mutation := range mutationInfo.States {
 		tasks[i] = newTaskWrapper(fmt.Sprintf("Deploying %s", mutation.Name), func() error {
 			for {
 				select {
 				case s, ok := <-taskChs[i]:
-					if !ok || s == pl_api_vizierpb.FAILED_STATE {
+					if !ok || s == public_vizierapipb.FAILED_STATE {
 						return errors.New("Could not deploy tracepoint")
 					}
-					if s == pl_api_vizierpb.RUNNING_STATE {
+					if s == public_vizierapipb.RUNNING_STATE {
 						return nil
 					}
 				}
 			}
 		})
-		taskChs[i] = make(chan pl_api_vizierpb.LifeCycleState, 10)
+		taskChs[i] = make(chan public_vizierapipb.LifeCycleState, 10)
 	}
 
 	schemaCh := make(chan bool, 10)
