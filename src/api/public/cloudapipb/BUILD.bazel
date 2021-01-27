@@ -29,7 +29,7 @@ pl_py_grpc_library(
     name = "cloudapi_pl_py_grpc",
     proto = ":cloudapi_pl_proto",
     visibility = ["//visibility:public"],
-    imports = ["../../../"],
+    imports = ["../../../../"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_py_proto",
     ],

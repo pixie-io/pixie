@@ -1,4 +1,4 @@
-from pxapi import cloudapi_pb2_grpc, cpb, vizier_pb2_grpc, vpb, test_utils as utils
+from pxapi import cloudapi_pb2_grpc, cpb, vizierapi_pb2_grpc, vpb, test_utils as utils
 import pxapi
 import unittest
 import grpc
@@ -74,14 +74,14 @@ def create_cluster_info(
     return cpb.ClusterInfo(
         id=utils.create_uuid_pb(cluster_id),
         status=status,
-        config=cpb.VizierConfig(
+        config=cpb.ClusterConfig(
             passthrough_enabled=passthrough_enabled,
         ),
-        pretty_cluster_name=cluster_name,
+        cluster_name=cluster_name,
     )
 
 
-class CloudServiceFake(cloudapi_pb2_grpc.VizierClusterInfoServicer):
+class CloudServiceFake(cloudapi_pb2_grpc.ClusterManagerServicer):
     def __init__(self) -> None:
         self.clusters = [
             create_cluster_info(
@@ -100,7 +100,7 @@ class CloudServiceFake(cloudapi_pb2_grpc.VizierClusterInfoServicer):
             ),
         ]
         self.direct_conn_info: Dict[str,
-                                    cpb.GetClusterConnectionInfoResponse] = {}
+                                    cpb.GetClusterConnectionResponse] = {}
 
     def add_direct_conn_cluster(
         self,
@@ -120,29 +120,29 @@ class CloudServiceFake(cloudapi_pb2_grpc.VizierClusterInfoServicer):
             passthrough_enabled=False,
         ))
 
-        self.direct_conn_info[cluster_id] = cpb.GetClusterConnectionInfoResponse(
+        self.direct_conn_info[cluster_id] = cpb.GetClusterConnectionResponse(
             ipAddress=url,
             token=token,
         )
 
-    def GetClusterInfo(
+    def GetCluster(
         self,
-        request: cpb.GetClusterInfoRequest,
+        request: cpb.GetClusterRequest,
         context: Any,
-    ) -> cpb.GetClusterInfoResponse:
+    ) -> cpb.GetClusterResponse:
         if request.id.data:
             for c in self.clusters:
                 if c.id == request.id:
-                    return cpb.GetClusterInfoResponse(clusters=[c])
-            return cpb.GetClusterInfoResponse(clusters=[])
+                    return cpb.GetClusterResponse(clusters=[c])
+            return cpb.GetClusterResponse(clusters=[])
 
-        return cpb.GetClusterInfoResponse(clusters=self.clusters)
+        return cpb.GetClusterResponse(clusters=self.clusters)
 
-    def GetClusterConnectionInfo(
+    def GetClusterConnection(
         self,
-        request: cpb.GetClusterConnectionInfoRequest,
+        request: cpb.GetClusterConnectionRequest,
         context: Any,
-    ) -> cpb.GetClusterConnectionInfoResponse:
+    ) -> cpb.GetClusterConnectionResponse:
         cluster_id = request.id.data.decode('utf-8')
         if cluster_id not in self.direct_conn_info:
             raise KeyError(
@@ -157,10 +157,10 @@ class TestClient(unittest.TestCase):
         self.fake_vizier_service = VizierServiceFake()
         self.fake_cloud_service = CloudServiceFake()
 
-        vizier_pb2_grpc.add_VizierServiceServicer_to_server(
+        vizierapi_pb2_grpc.add_VizierServiceServicer_to_server(
             self.fake_vizier_service, self.server)
 
-        cloudapi_pb2_grpc.add_VizierClusterInfoServicer_to_server(
+        cloudapi_pb2_grpc.add_ClusterManagerServicer_to_server(
             self.fake_cloud_service, self.server)
         self.port = self.server.add_insecure_port("[::]:0")
         self.server.start()
@@ -829,7 +829,7 @@ class TestClient(unittest.TestCase):
             http_table1.end(),
         ])
 
-        vizier_pb2_grpc.add_VizierServiceServicer_to_server(
+        vizierapi_pb2_grpc.add_VizierServiceServicer_to_server(
             fake_dc_service, dc_server)
         port = dc_server.add_insecure_port("[::]:0")
         dc_server.start()

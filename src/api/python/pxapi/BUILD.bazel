@@ -13,8 +13,8 @@ py_library(
     ),
     visibility = ["//visibility:public"],
     deps = [
-        "//src/cloud/cloudapipb:cloudapi_pl_py_grpc",
-        "//src/vizier/vizierpb:vizier_pl_py_grpc",
+        "//src/api/public/cloudapipb:cloudapi_pl_py_grpc",
+        "//src/api/public/vizierapipb:vizier_pl_py_grpc",
         requirement("gogo-python"),
         requirement("grpcio"),
         requirement("grpcio-tools"),

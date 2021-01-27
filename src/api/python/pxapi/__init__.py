@@ -4,7 +4,7 @@ from .client import (
     vpb,
     cpb,
     cloudapi_pb2_grpc,
-    vizier_pb2_grpc,
+    vizierapi_pb2_grpc,
     Client,
     ScriptExecutor,
     Conn,

@@ -5,7 +5,7 @@ from typing import Callable, Any, List, AsyncGenerator, Union
 
 from collections import OrderedDict
 
-from src.vizier.vizierpb import vizier_pb2 as vpb
+from src.api.public.vizierapipb import vizierapi_pb2 as vpb
 
 
 # Function that transforms a Column (a oneof field in the proto)

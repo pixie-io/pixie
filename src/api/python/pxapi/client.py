@@ -4,11 +4,11 @@ from urllib.parse import urlparse
 import asyncio
 from typing import Callable, List, Union, Awaitable, Dict, Set, AsyncGenerator, cast, Literal
 
-from src.vizier.vizierpb import vizier_pb2 as vpb
-from src.vizier.vizierpb import vizier_pb2_grpc
+from src.api.public.vizierapipb import vizierapi_pb2 as vpb
+from src.api.public.vizierapipb import vizierapi_pb2_grpc
 
-from src.cloud.cloudapipb import cloudapi_pb2 as cpb
-from src.cloud.cloudapipb import cloudapi_pb2_grpc
+from src.api.public.cloudapipb import cloudapi_pb2 as cpb
+from src.api.public.cloudapipb import cloudapi_pb2_grpc
 
 from src.api.public.uuidpb import uuid_pb2 as uuidpb
 from .data import (
@@ -119,7 +119,7 @@ class Conn:
         """ Get the name of the cluster for this connection. """
         if self.cluster_info is None:
             return self.cluster_id
-        return self.cluster_info.pretty_cluster_name
+        return self.cluster_info.cluster_name
 
 
 class ScriptExecutor:
@@ -392,7 +392,7 @@ class ScriptExecutor:
     async def _run_conn(self, conn: Conn) -> None:
         """ Executes the query on a single connection. """
         async with conn.create_grpc_channel() as channel:
-            stub = vizier_pb2_grpc.VizierServiceStub(channel)
+            stub = vizierapi_pb2_grpc.VizierServiceStub(channel)
 
             req = vpb.ExecuteScriptRequest()
             req.cluster_id = conn.cluster_id
@@ -436,7 +436,7 @@ class Cluster:
         """ Returns the name if that info exists, otherwise returns the id. """
         if self.info is None:
             return self.id
-        return self.info.pretty_cluster_name
+        return self.info.cluster_name
 
 
 class Client:
@@ -468,9 +468,9 @@ class Client:
 
     def _all_clusters(self) -> cpb.ClusterInfo:
         with self._get_cloud_channel() as channel:
-            stub = cloudapi_pb2_grpc.VizierClusterInfoStub(channel)
-            request = cpb.GetClusterInfoRequest()
-            response: cpb.GetClusterInfoResponse = stub.GetClusterInfo(request, metadata=[
+            stub = cloudapi_pb2_grpc.ClusterManagerStub(channel)
+            request = cpb.GetClusterRequest()
+            response: cpb.GetClusterResponse = stub.GetCluster(request, metadata=[
                 ("pixie-api-key", self._token),
                 ("pixie-api-client", "python")
             ])
@@ -493,12 +493,12 @@ class Client:
 
     def _get_cluster_info(self, cluster_id: ClusterID) -> cpb.ClusterInfo:
         with self._get_cloud_channel() as channel:
-            stub = cloudapi_pb2_grpc.VizierClusterInfoStub(channel)
-            request = cpb.GetClusterInfoRequest(
+            stub = cloudapi_pb2_grpc.ClusterManagerStub(channel)
+            request = cpb.GetClusterRequest(
                 id=uuidpb.UUID(
                     data=cluster_id.encode('utf-8'))
             )
-            response = stub.GetClusterInfo(request, metadata=[
+            response = stub.GetCluster(request, metadata=[
                 ("pixie-api-key", self._token),
                 ("pixie-api-client", "python")
             ])
@@ -507,14 +507,14 @@ class Client:
     def _get_cluster_connection_info(
             self,
             cluster_id: ClusterID
-    ) -> cpb.GetClusterConnectionInfoResponse:
+    ) -> cpb.GetClusterConnectionResponse:
         with self._get_cloud_channel() as channel:
-            stub = cloudapi_pb2_grpc.VizierClusterInfoStub(channel)
-            request = cpb.GetClusterConnectionInfoRequest(
+            stub = cloudapi_pb2_grpc.ClusterManagerStub(channel)
+            request = cpb.GetClusterConnectionRequest(
                 id=uuidpb.UUID(
                     data=cluster_id.encode('utf-8'))
             )
-            response = stub.GetClusterConnectionInfo(request, metadata=[
+            response = stub.GetClusterConnection(request, metadata=[
                 ("pixie-api-key", self._token),
                 ("pixie-api-client", "python")
             ])

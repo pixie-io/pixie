@@ -59,43 +59,25 @@ function prepare_src() {
   cp "${TOOLPATH}/setup.py" "${TMPDIR}"
   cp "${TOOLPATH}/requirements.txt" "${TMPDIR}"
 
-  # vizierpb subpackage setup.
+  # vizierapipb subpackage setup.
   cp -LR \
-    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/vizier/vizierpb" \
-    "${PIXIEPKG}"
+    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/api/public/vizierapipb" \
+    "${PIXIEPKG}/vizierapipb"
 
   # cloudapipb subpackage setup.
   cp -LR \
-    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/cloud/cloudapipb" \
-    "${PIXIEPKG}"
+    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/api/public/cloudapipb" \
+    "${PIXIEPKG}/cloudapipb"
 
   # uuidpb subpackage setup.
   cp -LR \
     "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/api/public/uuidpb" \
     "${PIXIEPKG}/uuidpb"
 
-  # metadatapb subpackage setup.
-  cp -LR \
-    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/shared/k8s/metadatapb" \
-    "${PIXIEPKG}"
-
-  # typespb subpackage setup.
-  cp -LR \
-    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/shared/types/proto" \
-    "${PIXIEPKG}/typespb"
-
-  # vispb subpackage setup.
-  cp -LR \
-    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/shared/vispb" \
-    "${PIXIEPKG}/vispb"
-
   # Each subpackage needs an __init__.py to be discovered by setuptools.
-  touch "${PIXIEPKG}/vizierpb/__init__.py"
+  touch "${PIXIEPKG}/vizierapipb/__init__.py"
   touch "${PIXIEPKG}/cloudapipb/__init__.py"
   touch "${PIXIEPKG}/uuidpb/__init__.py"
-  touch "${PIXIEPKG}/metadatapb/__init__.py"
-  touch "${PIXIEPKG}/typespb/__init__.py"
-  touch "${PIXIEPKG}/vispb/__init__.py"
 
   # Rewrite the pb package import paths to the new directory structure.
   replace_pb_paths "${PIXIEPKG}"/**/*.py
@@ -104,16 +86,14 @@ function prepare_src() {
 
 function replace_pb_paths() {
   # Replaces the import paths for protobufs into the new directory structure.
-  for var in "$@"; do
-    sed -i'.original' \
-        -e 's/^from src.cloud.cloudapipb/from pxapi.cloudapipb/g' \
-        -e 's/^from src.vizier.vizierpb/from pxapi.vizierpb/g' \
-        -e 's/^from src.api.public.uuidpb/from pxapi.uuidpb/g' \
-        -e 's/^from src.shared.k8s.metadatapb/from pxapi.metadatapb/g' \
-        -e 's/^from src.shared.types.proto/from pxapi.typespb/g' \
-        -e 's/^from src.shared.vispb/from pxapi.vispb/g' \
-        "${var}"
-      done
+  PROTO_NAMESPACE="pxapi"
+  for file in "$@"; do
+    sed -i \
+        -e "s/^from src.api.public.cloudapipb/from ${PROTO_NAMESPACE}.cloudapipb/g" \
+        -e "s/^from src.api.public.vizierapipb/from ${PROTO_NAMESPACE}.vizierapipb/g" \
+        -e "s/^from src.api.public.uuidpb/from ${PROTO_NAMESPACE}.uuidpb/g" \
+        "${file}"
+  done
 }
 
 function build_wheel() {

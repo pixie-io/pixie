@@ -7,8 +7,6 @@ sh_binary(
     srcs = ["build_pip_package.sh"],
     data = [
         "//src/api/python/pxapi:py_library",
-        "//src/cloud/cloudapipb:cloudapi_pl_py_grpc",
-        "//src/vizier/vizierpb:vizier_pl_py_grpc",
     ],
 )
 
