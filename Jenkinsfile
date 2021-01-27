@@ -117,8 +117,8 @@ isMainRun =  (env.JOB_NAME == 'pixie-main/build-and-test-all')
 isNightlyTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regression')
 isCLIBuildRun =  env.JOB_NAME.startsWith('pixie-release/cli/')
 isVizierBuildRun = env.JOB_NAME.startsWith('pixie-release/vizier/')
-isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-main/cloud-staging/')
-isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-main/cloud/')
+isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-staging/')
+isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud/')
 
 // Currently disabling TSAN on BPF builds because it runs too slow.
 // In particular, the uprobe deployment takes far too long. See issue:
