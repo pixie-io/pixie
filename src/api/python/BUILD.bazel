@@ -6,15 +6,18 @@ sh_binary(
     name = "build_pip_package",
     srcs = ["build_pip_package.sh"],
     data = [
-        "//src/vizier/vizierpb:vizier_pl_py_grpc",
+        "//src/api/python/pxapi:py_library",
         "//src/cloud/cloudapipb:cloudapi_pl_py_grpc",
-        "//src/api/python/pxapi:vizier_py_lib",
+        "//src/vizier/vizierpb:vizier_pl_py_grpc",
     ],
 )
 
 py_test(
     name = "api_test",
     srcs = ["api_test.py"],
-    deps = ["//src/api/python/pxapi:vizier_py_lib", "//src/api/python/pxapi:vizier_py_test_lib"],
     visibility = ["//visibility:public"],
+    deps = [
+        "//src/api/python/pxapi:py_library",
+        "//src/api/python/pxapi:py_test_library",
+    ],
 )

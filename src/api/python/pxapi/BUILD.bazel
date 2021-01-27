@@ -3,29 +3,36 @@ load("@rules_python//python:defs.bzl", "py_library", "py_test")
 load("@vizier_api_python_deps//:requirements.bzl", "requirement")
 
 py_library(
-    name = "vizier_py_lib",
-    srcs = glob(["*.py"], exclude = ["*_test.py", "test_utils.py"]),
+    name = "py_library",
+    srcs = glob(
+        ["*.py"],
+        exclude = [
+            "*_test.py",
+            "test_utils.py",
+        ],
+    ),
+    visibility = ["//visibility:public"],
     deps = [
-        "//src/vizier/vizierpb:vizier_pl_py_grpc",
         "//src/cloud/cloudapipb:cloudapi_pl_py_grpc",
+        "//src/vizier/vizierpb:vizier_pl_py_grpc",
         requirement("gogo-python"),
         requirement("grpcio"),
         requirement("grpcio-tools"),
         requirement("protobuf"),
     ],
-    visibility = ["//visibility:public"],
 )
 
 py_library(
-    name = "vizier_py_test_lib",
+    name = "py_test_library",
     srcs = ["test_utils.py"],
-    deps = [":vizier_py_lib"],
     visibility = ["//visibility:public"],
+    deps = [":py_library"],
+    testonly = True,
 )
 
 py_test(
     name = "data_test",
     srcs = ["data_test.py"],
-    deps = [":vizier_py_test_lib"],
     visibility = ["//visibility:public"],
+    deps = [":py_test_library"],
 )
