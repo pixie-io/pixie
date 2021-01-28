@@ -4,7 +4,6 @@ import (
 	"context"
 	cloudapipb "pixielabs.ai/pixielabs/src/api/public/cloudapipb"
 	vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-	"pixielabs.ai/pixielabs/src/utils"
 )
 
 // VizierStatus stores the enumeration of all vizier statuses.
@@ -55,10 +54,9 @@ func (c *Client) ListViziers(ctx context.Context) ([]VizierInfo, error) {
 
 	viziers := make([]VizierInfo, 0)
 	for _, v := range res.Clusters {
-
 		viziers = append(viziers, VizierInfo{
 			Name:         v.ClusterName,
-			ID:           utils.UUIDFromProtoOrNil(v.ID).String(),
+			ID:           string(v.ID.Data),
 			Version:      v.VizierVersion,
 			Status:       clusterStatusToVizierStatus(v.Status),
 			DirectAccess: !v.Config.PassthroughEnabled,
