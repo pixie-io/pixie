@@ -80,8 +80,11 @@ struct Frame : public FrameBase {
   bool consumed = false;
 
   size_t ByteSize() const override {
-    // TODO(oazizi): Update this.
-    return sizeof(Frame) + records.size() * sizeof(DNSRecord);
+    size_t byte_size = sizeof(Frame);
+    for (const auto& record : records) {
+      byte_size += record.name.size() + record.cname.size() + sizeof(record.addr);
+    }
+    return byte_size;
   }
 };
 
