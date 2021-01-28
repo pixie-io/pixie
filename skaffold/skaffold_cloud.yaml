@@ -95,6 +95,7 @@ profiles:
     path: /build/artifacts/context=./bazel/args
     value:
     - --compilation_mode=opt
+    - --stamp
   - op: replace
     path: /deploy/kustomize/paths
     value: [k8s/cloud/staging]
@@ -117,6 +118,7 @@ profiles:
     path: /build/artifacts/context=./bazel/args
     value:
     - --compilation_mode=opt
+    - --stamp
   - op: replace
     path: /deploy/kustomize/paths
     value: [k8s/cloud/prod]
