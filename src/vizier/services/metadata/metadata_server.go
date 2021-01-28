@@ -17,11 +17,12 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/election"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
-	"pixielabs.ai/pixielabs/src/shared/version/go"
+	version "pixielabs.ai/pixielabs/src/shared/version/go"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
+	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/etcd"
 )
 
 const (
@@ -165,17 +166,15 @@ func main() {
 		}
 	}()
 
-	// Initialize tracepoint handler.
-	tracepointMgr := controllers.NewTracepointManager(nc, mds)
-	err = tracepointMgr.SyncTracepoints()
-	if err != nil {
-		log.WithError(err).Error("Could not sync tracepoints upon startup")
-	}
-	tpQuitCh := make(chan bool)
-	defer func() { tpQuitCh <- true }()
-	go tracepointMgr.WatchTTLs(tpQuitCh)
+	newEtcdDataStore := etcd.New(etcdClient)
+	tds := controllers.NewTracepointDatastore(newEtcdDataStore)
 
 	agtMgr := controllers.NewAgentManager(mds, nc)
+
+	// Initialize tracepoint handler.
+	tracepointMgr := controllers.NewTracepointManager(tds, agtMgr, 30*time.Second)
+	defer tracepointMgr.Close()
+
 	keepAlive := true
 	go func() {
 		for keepAlive {

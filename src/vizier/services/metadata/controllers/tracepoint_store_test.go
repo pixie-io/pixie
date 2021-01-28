@@ -1,34 +1,43 @@
-package controllers_test
+package controllers
 
 import (
+	"os"
 	"testing"
 	"time"
 
+	"github.com/cockroachdb/pebble"
+	"github.com/cockroachdb/pebble/vfs"
 	"github.com/gogo/protobuf/proto"
-	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
 	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
-	mock_kvstore "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore/mock"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"
 )
 
-func TestKVMetadataStore_UpsertTracepoint(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+func setupTest(t *testing.T) (*pebbledb.DataStore, *TracepointDatastore, func() error) {
+	memFS := vfs.NewMem()
+	c, err := pebble.Open("test", &pebble.Options{
+		FS: memFS,
+	})
+	if err != nil {
+		t.Fatal("failed to initialize a pebbledb")
+		os.Exit(1)
+	}
 
-	clock := testingutils.NewTestClock(time.Unix(2, 0))
-	c := kvstore.NewCacheWithClock(mockDs, clock)
+	db := pebbledb.New(c, 3*time.Second)
+	ts := NewTracepointDatastore(db)
+	cleanup := db.Close
 
-	mds, err := controllers.NewKVMetadataStore(c)
-	assert.Nil(t, err)
+	return db, ts, cleanup
+}
+
+func TestTracepointStore_UpsertTracepoint(t *testing.T) {
+	db, ts, cleanup := setupTest(t)
+	defer cleanup()
 
 	tpID := uuid.NewV4()
 	// Create tracepoints.
@@ -36,26 +45,19 @@ func TestKVMetadataStore_UpsertTracepoint(t *testing.T) {
 		ID: utils.ProtoFromUUID(tpID),
 	}
 
-	err = mds.UpsertTracepoint(tpID, s1)
+	err := ts.UpsertTracepoint(tpID, s1)
 	assert.Nil(t, err)
 
-	savedTracepoint, err := c.Get("/tracepoint/" + tpID.String())
+	savedTracepoint, err := db.Get("/tracepoint/" + tpID.String())
 	savedTracepointPb := &storepb.TracepointInfo{}
 	err = proto.Unmarshal(savedTracepoint, savedTracepointPb)
 	assert.Nil(t, err)
 	assert.Equal(t, s1, savedTracepointPb)
 }
 
-func TestKVMetadataStore_GetTracepoint(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
-
-	clock := testingutils.NewTestClock(time.Unix(2, 0))
-	c := kvstore.NewCacheWithClock(mockDs, clock)
-
-	mds, err := controllers.NewKVMetadataStore(c)
-	assert.Nil(t, err)
+func TestTracepointStore_GetTracepoint(t *testing.T) {
+	db, ts, cleanup := setupTest(t)
+	defer cleanup()
 
 	tpID := uuid.NewV4()
 	// Create tracepoints.
@@ -67,30 +69,18 @@ func TestKVMetadataStore_GetTracepoint(t *testing.T) {
 		t.Fatal("Unable to marshal tracepoint pb")
 	}
 
-	c.Set("/tracepoint/"+tpID.String(), string(s1Text))
+	db.Set("/tracepoint/"+tpID.String(), string(s1Text))
 
-	tracepoint, err := mds.GetTracepoint(tpID)
+	tracepoint, err := ts.GetTracepoint(tpID)
 	assert.Nil(t, err)
 	assert.NotNil(t, tracepoint)
 
 	assert.Equal(t, s1.ID, tracepoint.ID)
 }
 
-func TestKVMetadataStore_GetTracepoints(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
-	mockDs.
-		EXPECT().
-		GetWithPrefix("/tracepoint/").
-		Return(nil, nil, nil).
-		Times(1)
-
-	clock := testingutils.NewTestClock(time.Unix(2, 0))
-	c := kvstore.NewCacheWithClock(mockDs, clock)
-
-	mds, err := controllers.NewKVMetadataStore(c)
-	assert.Nil(t, err)
+func TestTracepointStore_GetTracepoints(t *testing.T) {
+	db, ts, cleanup := setupTest(t)
+	defer cleanup()
 
 	// Create tracepoints.
 	s1ID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c8")
@@ -111,36 +101,25 @@ func TestKVMetadataStore_GetTracepoints(t *testing.T) {
 		t.Fatal("Unable to marshal tracepoint pb")
 	}
 
-	c.Set("/tracepoint/"+s1ID.String(), string(s1Text))
-	c.Set("/tracepoint/"+s2ID.String(), string(s2Text))
+	db.Set("/tracepoint/"+s1ID.String(), string(s1Text))
+	db.Set("/tracepoint/"+s2ID.String(), string(s2Text))
 
-	tracepoints, err := mds.GetTracepoints()
+	tracepoints, err := ts.GetTracepoints()
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(tracepoints))
 
-	assert.Equal(t, s1.ID, tracepoints[0].ID)
-	assert.Equal(t, s2.ID, tracepoints[1].ID)
+	ids := make([][]byte, len(tracepoints))
+	for i, tp := range tracepoints {
+		ids[i] = tp.ID.Data
+	}
+
+	assert.Contains(t, ids, s1.ID.Data)
+	assert.Contains(t, ids, s2.ID.Data)
 }
 
-func TestKVMetadataStore_GetTracepointsForIDs(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
-	mockDs.
-		EXPECT().
-		GetAll([]string{
-			"/tracepoint/8ba7b810-9dad-11d1-80b4-00c04fd430c8",
-			"/tracepoint/8ba7b810-9dad-11d1-80b4-00c04fd430c9",
-			"/tracepoint/8ba7b810-9dad-11d1-80b4-00c04fd430c7",
-		}).
-		Return(nil, nil).
-		Times(1)
-
-	clock := testingutils.NewTestClock(time.Unix(2, 0))
-	c := kvstore.NewCacheWithClock(mockDs, clock)
-
-	mds, err := controllers.NewKVMetadataStore(c)
-	assert.Nil(t, err)
+func TestTracepointStore_GetTracepointsForIDs(t *testing.T) {
+	db, ts, cleanup := setupTest(t)
+	defer cleanup()
 
 	// Create tracepoints.
 	s1ID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c8")
@@ -163,28 +142,31 @@ func TestKVMetadataStore_GetTracepointsForIDs(t *testing.T) {
 
 	s3ID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c7")
 
-	c.Set("/tracepoint/"+s1ID.String(), string(s1Text))
-	c.Set("/tracepoint/"+s2ID.String(), string(s2Text))
+	db.Set("/tracepoint/"+s1ID.String(), string(s1Text))
+	db.Set("/tracepoint/"+s2ID.String(), string(s2Text))
 
-	tracepoints, err := mds.GetTracepointsForIDs([]uuid.UUID{s1ID, s2ID, s3ID})
+	tracepoints, err := ts.GetTracepointsForIDs([]uuid.UUID{s1ID, s2ID, s3ID})
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(tracepoints))
 
-	assert.Equal(t, s1.ID, tracepoints[0].ID)
-	assert.Equal(t, s2.ID, tracepoints[1].ID)
-	assert.Nil(t, tracepoints[2])
+	ids := make([][]byte, len(tracepoints))
+	for i, tp := range tracepoints {
+		if tp == nil || tp.ID == nil || tp.ID.Data == nil {
+			continue
+		}
+		ids[i] = tp.ID.Data
+	}
+
+	var nilData []byte
+
+	assert.Contains(t, ids, s1.ID.Data)
+	assert.Contains(t, ids, s2.ID.Data)
+	assert.Contains(t, ids, nilData)
 }
 
-func TestKVMetadataStore_UpdateTracepointState(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
-
-	clock := testingutils.NewTestClock(time.Unix(2, 0))
-	c := kvstore.NewCacheWithClock(mockDs, clock)
-
-	mds, err := controllers.NewKVMetadataStore(c)
-	assert.Nil(t, err)
+func TestTracepointStore_UpdateTracepointState(t *testing.T) {
+	db, ts, cleanup := setupTest(t)
+	defer cleanup()
 
 	agentID := uuid.NewV4()
 	tpID := uuid.NewV4()
@@ -195,33 +177,21 @@ func TestKVMetadataStore_UpdateTracepointState(t *testing.T) {
 		State:   statuspb.RUNNING_STATE,
 	}
 
-	err = mds.UpdateTracepointState(s1)
+	err := ts.UpdateTracepointState(s1)
 	assert.Nil(t, err)
 
-	savedTracepoint, err := c.Get("/tracepointStates/" + tpID.String() + "/" + agentID.String())
+	savedTracepoint, err := db.Get("/tracepointStates/" + tpID.String() + "/" + agentID.String())
 	savedTracepointPb := &storepb.AgentTracepointStatus{}
 	err = proto.Unmarshal(savedTracepoint, savedTracepointPb)
 	assert.Nil(t, err)
 	assert.Equal(t, s1, savedTracepointPb)
 }
 
-func TestKVMetadataStore_GetTracepointStates(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+func TestTracepointStore_GetTracepointStates(t *testing.T) {
+	db, ts, cleanup := setupTest(t)
+	defer cleanup()
 
 	tpID := uuid.NewV4()
-	mockDs.
-		EXPECT().
-		GetWithPrefix("/tracepointStates/"+tpID.String()+"/").
-		Return(nil, nil, nil).
-		Times(1)
-
-	clock := testingutils.NewTestClock(time.Unix(2, 0))
-	c := kvstore.NewCacheWithClock(mockDs, clock)
-
-	mds, err := controllers.NewKVMetadataStore(c)
-	assert.Nil(t, err)
 
 	agentID1 := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	agentID2 := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
@@ -247,50 +217,41 @@ func TestKVMetadataStore_GetTracepointStates(t *testing.T) {
 		t.Fatal("Unable to marshal tracepoint pb")
 	}
 
-	c.Set("/tracepointStates/"+tpID.String()+"/"+agentID1.String(), string(s1Text))
-	c.Set("/tracepointStates/"+tpID.String()+"/"+agentID2.String(), string(s2Text))
+	db.Set("/tracepointStates/"+tpID.String()+"/"+agentID1.String(), string(s1Text))
+	db.Set("/tracepointStates/"+tpID.String()+"/"+agentID2.String(), string(s2Text))
 
-	tracepoints, err := mds.GetTracepointStates(tpID)
+	tracepoints, err := ts.GetTracepointStates(tpID)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(tracepoints))
 
-	assert.Equal(t, s1.AgentID, tracepoints[0].AgentID)
-	assert.Equal(t, s2.AgentID, tracepoints[1].AgentID)
+	agentIDs := make([][]byte, len(tracepoints))
+	for i, tp := range tracepoints {
+		agentIDs[i] = tp.AgentID.Data
+	}
+
+	assert.Contains(t, agentIDs, s1.AgentID.Data)
+	assert.Contains(t, agentIDs, s2.AgentID.Data)
 }
 
-func TestKVMetadataStore_SetTracepointWithName(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
-
-	clock := testingutils.NewTestClock(time.Unix(2, 0))
-	c := kvstore.NewCacheWithClock(mockDs, clock)
-
-	mds, err := controllers.NewKVMetadataStore(c)
-	assert.Nil(t, err)
+func TestTracepointStore_SetTracepointWithName(t *testing.T) {
+	db, ts, cleanup := setupTest(t)
+	defer cleanup()
 
 	tpID := uuid.NewV4()
 
-	err = mds.SetTracepointWithName("test", tpID)
+	err := ts.SetTracepointWithName("test", tpID)
 	assert.Nil(t, err)
 
-	savedTracepoint, err := c.Get("/tracepointName/test")
+	savedTracepoint, err := db.Get("/tracepointName/test")
 	savedTracepointPb := &uuidpb.UUID{}
 	err = proto.Unmarshal(savedTracepoint, savedTracepointPb)
 	assert.Nil(t, err)
 	assert.Equal(t, tpID, utils.UUIDFromProtoOrNil(savedTracepointPb))
 }
 
-func TestKVMetadataStore_GetTracepointsWithNames(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
-
-	clock := testingutils.NewTestClock(time.Unix(2, 0))
-	c := kvstore.NewCacheWithClock(mockDs, clock)
-
-	mds, err := controllers.NewKVMetadataStore(c)
-	assert.Nil(t, err)
+func TestTracepointStore_GetTracepointsWithNames(t *testing.T) {
+	db, ts, cleanup := setupTest(t)
+	defer cleanup()
 
 	tpID := uuid.NewV4()
 	tracepointIDpb := utils.ProtoFromUUID(tpID)
@@ -302,150 +263,65 @@ func TestKVMetadataStore_GetTracepointsWithNames(t *testing.T) {
 	val2, err := tracepointIDpb2.Marshal()
 	assert.Nil(t, err)
 
-	c.Set("/tracepointName/test", string(val))
-	c.Set("/tracepointName/test2", string(val2))
+	db.Set("/tracepointName/test", string(val))
+	db.Set("/tracepointName/test2", string(val2))
 
-	tracepoint, err := mds.GetTracepointsWithNames([]string{"test", "test2"})
+	tracepoints, err := ts.GetTracepointsWithNames([]string{"test", "test2"})
 	assert.Nil(t, err)
-	assert.NotNil(t, tracepoint)
+	assert.Equal(t, 2, len(tracepoints))
 
-	assert.Equal(t, tpID, *tracepoint[0])
-	assert.Equal(t, tpID2, *tracepoint[1])
-}
-
-func TestKVMetadataStore_DeleteTracepoint(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
-
-	clock := testingutils.NewTestClock(time.Unix(2, 0))
-	c := kvstore.NewCacheWithClock(mockDs, clock)
-
-	mds, err := controllers.NewKVMetadataStore(c)
-	assert.Nil(t, err)
-
-	tpID := uuid.NewV4()
-
-	mockDs.
-		EXPECT().
-		DeleteWithPrefix("/tracepointStates/" + tpID.String() + "/").
-		Times(1)
-
-	c.Set("/tracepoint/"+tpID.String(), "test")
-
-	err = mds.DeleteTracepoint(tpID)
-	assert.Nil(t, err)
-
-	val, err := c.Get("/tracepoint/" + tpID.String())
-	assert.Nil(t, err)
-	assert.Equal(t, []byte{}, val)
-}
-
-func TestKVMetadataStore_DeleteTracepointTTLs(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
-
-	clock := testingutils.NewTestClock(time.Unix(2, 0))
-	c := kvstore.NewCacheWithClock(mockDs, clock)
-
-	mds, err := controllers.NewKVMetadataStore(c)
-	assert.Nil(t, err)
-
-	tpID := uuid.NewV4()
-	tpID2 := uuid.NewV4()
-
-	mockDs.
-		EXPECT().
-		SetAll([]kvstore.TTLKeyValue{
-			kvstore.TTLKeyValue{
-				Expire: true,
-				TTL:    0,
-				Value:  []byte{},
-				Key:    "/tracepointTTL/" + tpID.String(),
-			},
-			kvstore.TTLKeyValue{
-				Expire: true,
-				TTL:    0,
-				Value:  []byte{},
-				Key:    "/tracepointTTL/" + tpID2.String(),
-			},
-		}).
-		Return(nil).
-		Times(1)
-
-	err = mds.DeleteTracepointTTLs([]uuid.UUID{tpID, tpID2})
-	assert.Nil(t, err)
-}
-
-func TestKVMetadataStore_WatchTracepointTTLs(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
-
-	clock := testingutils.NewTestClock(time.Unix(2, 0))
-	c := kvstore.NewCacheWithClock(mockDs, clock)
-
-	mds, err := controllers.NewKVMetadataStore(c)
-	assert.Nil(t, err)
-
-	fakeEvCh := make(chan kvstore.KeyEvent, 2)
-	quitCh := make(chan bool, 1)
-	defer func() { quitCh <- true }()
-	mockDs.
-		EXPECT().
-		WatchKeyEvents("/tracepointTTL/").
-		Return(fakeEvCh, quitCh)
-
-	tpID1 := uuid.NewV4()
-	tpID2 := uuid.NewV4()
-
-	go func() {
-		fakeEvCh <- kvstore.KeyEvent{EventType: kvstore.EventTypePut, Key: "/tracepointTTL/" + tpID1.String()}
-		fakeEvCh <- kvstore.KeyEvent{EventType: kvstore.EventTypeDelete, Key: "/tracepointTTL/" + tpID2.String()}
-	}()
-
-	idCh, _ := mds.WatchTracepointTTLs()
-
-	for {
-		select {
-		case id := <-idCh:
-			assert.Equal(t, tpID2, id)
-			return
-		case <-time.After(2 * time.Second):
-			t.Fatal("Timed out waiting for TTL deletion event")
-		}
+	tps := make([]string, len(tracepoints))
+	for i, tp := range tracepoints {
+		tps[i] = tp.String()
 	}
+
+	assert.Contains(t, tps, tpID.String())
+	assert.Contains(t, tps, tpID2.String())
 }
 
-func TestKVMetadataStore_GetTracepointTTLs(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
-	mockDs.
-		EXPECT().
-		GetWithPrefix("/tracepointTTL/").
-		Return(nil, nil, nil).
-		Times(1)
+func TestTracepointStore_DeleteTracepoint(t *testing.T) {
+	db, ts, cleanup := setupTest(t)
+	defer cleanup()
 
-	clock := testingutils.NewTestClock(time.Unix(2, 0))
-	c := kvstore.NewCacheWithClock(mockDs, clock)
+	tpID := uuid.NewV4()
 
-	mds, err := controllers.NewKVMetadataStore(c)
+	db.Set("/tracepoint/"+tpID.String(), "test")
+
+	err := ts.DeleteTracepoint(tpID)
 	assert.Nil(t, err)
+
+	val, err := db.Get("/tracepoint/" + tpID.String())
+	assert.Nil(t, err)
+	assert.Nil(t, val)
+}
+
+func TestTracepointStore_DeleteTracepointTTLs(t *testing.T) {
+	_, ts, cleanup := setupTest(t)
+	defer cleanup()
+
+	tpID := uuid.NewV4()
+	tpID2 := uuid.NewV4()
+
+	err := ts.DeleteTracepointTTLs([]uuid.UUID{tpID, tpID2})
+	assert.Nil(t, err)
+}
+
+func TestTracepointStore_GetTracepointTTLs(t *testing.T) {
+	db, ts, cleanup := setupTest(t)
+	defer cleanup()
 
 	// Create tracepoints.
 	s1ID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	s2ID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c9")
 
-	c.Set("/tracepointTTL/"+s1ID.String(), "")
-	c.Set("/tracepointTTL/"+s2ID.String(), "")
-	c.Set("/tracepointTTL/invalid", "")
+	db.Set("/tracepointTTL/"+s1ID.String(), "")
+	db.Set("/tracepointTTL/"+s2ID.String(), "")
+	db.Set("/tracepointTTL/invalid", "")
 
-	tracepoints, err := mds.GetTracepointTTLs()
+	tracepoints, _, err := ts.GetTracepointTTLs()
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(tracepoints))
 
-	assert.Equal(t, s1ID, tracepoints[0])
-	assert.Equal(t, s2ID, tracepoints[1])
+	assert.Contains(t, tracepoints, s1ID)
+	assert.Contains(t, tracepoints, s2ID)
 }

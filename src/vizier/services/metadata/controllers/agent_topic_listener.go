@@ -212,6 +212,7 @@ func (a *AgentTopicListener) forwardAgentHeartBeat(m *messages.Heartbeat, msg *n
 		// agent that is actually persisted in the metadataStore, but had not existed during
 		// Initialize. We should try to delete the agent from the metadataStore.
 		a.agentManager.DeleteAgent(agentID)
+		a.tracepointManager.DeleteAgent(agentID)
 	}
 }
 
@@ -476,6 +477,7 @@ func (ah *AgentHandler) stop() {
 	close(ah.MsgChannel)
 	ah.agentManager.DeleteAgent(ah.id)
 	ah.atl.DeleteAgent(ah.id)
+	ah.tracepointManager.DeleteAgent(ah.id)
 }
 
 // Stop immediately stops the agent handler from listening to any messages. It blocks until

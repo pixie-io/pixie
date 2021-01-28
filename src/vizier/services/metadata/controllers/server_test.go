@@ -251,7 +251,7 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
-	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
+	tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 
 	program := &logicalpb.TracepointDeployment{
 		Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
@@ -279,6 +279,11 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 			},
 		},
 	}
+
+	mockAgtMgr.
+		EXPECT().
+		MessageAgents([]uuid.UUID{}, gomock.Any()).
+		Return(nil)
 
 	mockAgtMgr.
 		EXPECT().
@@ -356,7 +361,7 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
-	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
+	tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 
 	program := &logicalpb.TracepointDeployment{
 		Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
@@ -375,6 +380,11 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 	}
 
 	oldTPID := uuid.NewV4()
+
+	mockAgtMgr.
+		EXPECT().
+		MessageAgents([]uuid.UUID{}, gomock.Any()).
+		Return(nil)
 
 	mockTracepointStore.
 		EXPECT().
@@ -587,7 +597,7 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 			mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
-			tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
+			tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 
 			program := &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
@@ -669,7 +679,7 @@ func Test_Server_RemoveTracepoint(t *testing.T) {
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
-	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
+	tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 
 	tpID1 := uuid.NewV4()
 	tpID2 := uuid.NewV4()
@@ -1022,7 +1032,7 @@ func Test_Server_UpdateConfig(t *testing.T) {
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
-	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
+	tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 
 	mockAgtMgr.
 		EXPECT().

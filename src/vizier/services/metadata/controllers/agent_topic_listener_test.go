@@ -54,12 +54,13 @@ func setup(t *testing.T, sendMsgFn func(topic string, b []byte) error) (*control
 		}, nil)
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
+	tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 	atl, _ := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, tracepointMgr, mockMdStore, sendMsgFn, nil, clock)
 
 	cleanup := func() {
 		ctrl.Finish()
+		tracepointMgr.Close()
 	}
 
 	return atl, mockAgtMgr, mockMdStore, mockTracepointStore, cleanup
@@ -581,16 +582,22 @@ func TestHeartbeatNonExisting(t *testing.T) {
 	reqPb, err := req.Marshal()
 
 	// Set up mock.
-	atl, mockAgtMgr, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, mockAgtMgr, _, mockTracepointStore, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "/agent/11285cdd-1de9-4ab1-ae6a-0ba08c8c676c", topic)
 		return nil
 	})
 	defer cleanup()
 
+	id := uuid.FromStringOrNil("11285cdd1de94ab1ae6a0ba08c8c676c")
 	mockAgtMgr.
 		EXPECT().
-		DeleteAgent(uuid.FromStringOrNil("11285cdd1de94ab1ae6a0ba08c8c676c")).
+		DeleteAgent(id).
+		Return(nil)
+
+	mockTracepointStore.
+		EXPECT().
+		DeleteTracepointsForAgent(id).
 		Return(nil)
 
 	// Send update.

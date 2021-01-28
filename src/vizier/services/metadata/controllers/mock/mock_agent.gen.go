@@ -110,6 +110,34 @@ func (mr *MockAgentManagerMockRecorder) GetActiveAgents() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveAgents", reflect.TypeOf((*MockAgentManager)(nil).GetActiveAgents))
 }
 
+// MessageAgents mocks base method
+func (m *MockAgentManager) MessageAgents(agentIDs []uuid.UUID, msg []byte) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MessageAgents", agentIDs, msg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MessageAgents indicates an expected call of MessageAgents
+func (mr *MockAgentManagerMockRecorder) MessageAgents(agentIDs, msg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MessageAgents", reflect.TypeOf((*MockAgentManager)(nil).MessageAgents), agentIDs, msg)
+}
+
+// MessageActiveAgents mocks base method
+func (m *MockAgentManager) MessageActiveAgents(msg []byte) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MessageActiveAgents", msg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MessageActiveAgents indicates an expected call of MessageActiveAgents
+func (mr *MockAgentManagerMockRecorder) MessageActiveAgents(msg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MessageActiveAgents", reflect.TypeOf((*MockAgentManager)(nil).MessageActiveAgents), msg)
+}
+
 // AddToFrontOfAgentQueue mocks base method
 func (m *MockAgentManager) AddToFrontOfAgentQueue(arg0 string, arg1 *pl_shared_k8s_metadatapb.ResourceUpdate) error {
 	m.ctrl.T.Helper()

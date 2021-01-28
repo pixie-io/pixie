@@ -10,7 +10,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	"pixielabs.ai/pixielabs/src/shared/types/go"
+	types "pixielabs.ai/pixielabs/src/shared/types/go"
 	"pixielabs.ai/pixielabs/src/utils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	metadata_servicepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
@@ -63,6 +63,9 @@ type AgentManager interface {
 
 	// GetActiveAgents gets all of the current active agents.
 	GetActiveAgents() ([]*agentpb.Agent, error)
+
+	MessageAgents(agentIDs []uuid.UUID, msg []byte) error
+	MessageActiveAgents(msg []byte) error
 
 	AddToFrontOfAgentQueue(string, *metadatapb.ResourceUpdate) error
 	GetFromAgentQueue(string) ([]*metadatapb.ResourceUpdate, error)
@@ -502,6 +505,42 @@ func (m *AgentManagerImpl) GetActiveAgents() ([]*agentpb.Agent, error) {
 	}
 
 	return agentPbs, nil
+}
+
+// MessageAgents sends the message to the given agentIDs.
+func (m *AgentManagerImpl) MessageAgents(agentIDs []uuid.UUID, msg []byte) error {
+	// Send request to all agents.
+	var errs []error
+	for _, agentID := range agentIDs {
+		topic := GetAgentTopicFromUUID(agentID)
+
+		err := m.conn.Publish(topic, msg)
+		if err != nil {
+			// Don't fail on first error, just collect all errors and keep sending.
+			errs = append(errs, err)
+		}
+	}
+
+	// Pick the first err if any to return.
+	if len(errs) > 0 {
+		return errs[0]
+	}
+	return nil
+}
+
+// MessageActiveAgents sends the message to all active agents.
+func (m *AgentManagerImpl) MessageActiveAgents(msg []byte) error {
+	agents, err := m.GetActiveAgents()
+	if err != nil {
+		return err
+	}
+
+	agentIDs := make([]uuid.UUID, len(agents))
+
+	for i, a := range agents {
+		agentIDs[i] = utils.UUIDFromProtoOrNil(a.Info.AgentID)
+	}
+	return m.MessageAgents(agentIDs, msg)
 }
 
 func (m *AgentManagerImpl) getOrCreateAgentQueue(agentID string) *AgentQueue {
