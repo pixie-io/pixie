@@ -1,11 +1,14 @@
 #include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
+#include <dlfcn.h>
 
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "src/common/base/base.h"
+#include "src/common/fs/fs_wrapper.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 
@@ -418,31 +421,91 @@ StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(ElfReader* elf_reader, DwarfRea
 
 namespace {
 
-// TODO(jps): Change the ElfReader approach to one that uses dlopen() and OpenSSL_version_num.
-StatusOr<int> OpenSSLVersionNum(const std::filesystem::path& openssl_lib) {
-  using ::pl::stirling::obj_tools::SymbolMatchType;
+// Returns a function pointer from a dlopen handle.
+template <class T>
+StatusOr<T*> DLSymbolToFptr(void* handle, const std::string& symbol_name) {
+  // The templated form compares nicely to c-style function pointer typedefs.
+  // Example usage:
+  // auto myFunction = DLSymbolToFptr<int (FooQux &, const Baz *)>( h, "somesymbol");
+  T* fptr = reinterpret_cast<T*>(dlsym(handle, symbol_name.c_str()));
 
-  StatusOr<std::unique_ptr<ElfReader>> elf_reader_status = ElfReader::Create(openssl_lib);
-  if (!elf_reader_status.ok()) {
-    return error::Internal(
-        "Cannot analyze library $0 for uprobe deployment. "
-        "If file is under /var/lib, container may have terminated. "
-        "Message = $1",
-        openssl_lib.string(), elf_reader_status.msg());
+  const char* dlsym_error = dlerror();
+  if (dlsym_error) {
+    return error::Internal("Failed to find symbol: $0, $1", symbol_name, dlsym_error);
   }
 
-  std::unique_ptr<ElfReader> elf_reader = elf_reader_status.ConsumeValueOrDie();
-
-  if (!elf_reader->SearchSymbols("OPENSSL_1_1_1", SymbolMatchType::kExact).ValueOr({}).empty()) {
-    return 1;
-  }
-
-  if (!elf_reader->SearchSymbols("OPENSSL_1_1_0", SymbolMatchType::kExact).ValueOr({}).empty()) {
-    return 0;
-  }
-
-  return error::Internal("Could not find matching OpenSSL symbol.");
+  return fptr;
 }
+
+StatusOr<uint64_t> GetOpenSSLVersionNumUsingDLOpen(const std::filesystem::path& lib_openssl_path) {
+  if (!fs::Exists(lib_openssl_path).ok()) {
+    return error::Internal("Path to OpenSSL so is not valid: $0", lib_openssl_path.string());
+  }
+
+  void* h = dlopen(lib_openssl_path.c_str(), RTLD_LAZY);
+
+  if (h == nullptr) {
+    return error::Internal("Failed to dlopen OpenSSL so file: $0, $1", lib_openssl_path.string(),
+                           dlerror());
+  }
+
+  const std::string version_num_symbol = "OpenSSL_version_num";
+
+  // NOLINTNEXTLINE(runtime/int): 'unsigned long' is from upstream, match that here (vs. uint64_t)
+  PL_ASSIGN_OR_RETURN(auto version_num_f, DLSymbolToFptr<unsigned long()>(h, version_num_symbol));
+
+  const uint64_t version_num = version_num_f();
+  dlclose(h);
+  return version_num;
+}
+
+// Returns the "fix" version number for OpenSSL.
+StatusOr<uint32_t> OpenSSLFixSubversionNum(const std::filesystem::path& lib_openssl_path) {
+  // Current use case:
+  // switch for the correct number of bytes offset for the socket fd.
+  //
+  // Basic version number format: "major.minor.fix".
+  // In more detail:
+  // MNNFFPPS: major minor fix patch status
+  // From https://www.openssl.org/docs/man1.1.1/man3/OPENSSL_VERSION_NUMBER.html.
+  union open_ssl_version_num_t {
+    struct __attribute__((packed)) {
+      uint32_t status : 4;
+      uint32_t patch : 8;
+      uint32_t fix : 8;
+      uint32_t minor : 8;
+      uint32_t major : 8;
+      uint32_t unused : 64 - (4 + 4 * 8);
+    };  // NOLINT(readability/braces) False claim that ';' is unnecessary.
+    uint64_t packed;
+  };
+  open_ssl_version_num_t version_num;
+
+  PL_ASSIGN_OR_RETURN(version_num.packed, GetOpenSSLVersionNumUsingDLOpen(lib_openssl_path));
+
+  const uint32_t major = version_num.major;
+  const uint32_t minor = version_num.minor;
+  const uint32_t fix = version_num.fix;
+
+  VLOG(1) << absl::StrFormat("Found OpenSSL version: 0x%016lx (%d.%d.%d:%x.%x), %s",
+                             version_num.packed, major, minor, fix, version_num.patch,
+                             version_num.status, lib_openssl_path.string());
+
+  constexpr uint32_t min_fix_version = 0;
+  constexpr uint32_t max_fix_version = 1;
+
+  if (major != 1) {
+    return error::Internal("Unsupported OpenSSL major version: $0.$1.$2", major, minor, fix);
+  }
+  if (minor != 1) {
+    return error::Internal("Unsupported OpenSSL minor version: $0.$1.$2", major, minor, fix);
+  }
+  if (fix != std::clamp(fix, min_fix_version, max_fix_version)) {
+    return error::Internal("Unsupported OpenSSL fix version: $0.$1.$2", major, minor, fix);
+  }
+  return fix;
+}
+
 }  // namespace
 
 StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path& openssl_lib) {
@@ -473,8 +536,8 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path&
   struct openssl_symaddrs_t symaddrs;
   symaddrs.SSL_rbio_offset = kSSL_RBIO_offset;
 
-  PL_ASSIGN_OR_RETURN(int openssl_minor_version, OpenSSLVersionNum(openssl_lib));
-  switch (openssl_minor_version) {
+  PL_ASSIGN_OR_RETURN(uint32_t openssl_fix_sub_version, OpenSSLFixSubversionNum(openssl_lib));
+  switch (openssl_fix_sub_version) {
     case 0:
       symaddrs.RBIO_num_offset = kOpenSSL_1_1_0_RBIO_num_offset;
       break;
@@ -482,8 +545,10 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path&
       symaddrs.RBIO_num_offset = kOpenSSL_1_1_1_RBIO_num_offset;
       break;
     default:
+      // Supported versions are checked in function OpenSSLFixSubversionNum(),
+      // should not fall through to here, ever.
       DCHECK(false);
-      return error::Internal("Unsupported openssl_minor_version: $0", openssl_minor_version);
+      return error::Internal("Unsupported openssl_fix_sub_version: $0", openssl_fix_sub_version);
   }
 
   return symaddrs;

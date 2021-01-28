@@ -480,56 +480,127 @@ StatusOr<int> SocketTraceConnector::AttachHTTP2Probes(
   return AttachUProbeTmpl(kHTTP2ProbeTmpls, binary, elf_reader);
 }
 
-StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(
-    const std::string& binary, const std::vector<int32_t>& pids,
-    ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>* openssl_symaddrs_map) {
-  constexpr std::string_view kLibSSL = "libssl.so.1.1";
+// Find the paths for some libraries, which may be inside of a container.
+// Return those paths as a vector, in the same order that they came in as function arguments.
+// e.g. input: lib_names = {"libssl.so.1.1", "libcrypto.so.1.1"}
+// output: {"/usr/lib/mount/abc...def/usr/lib/libssl.so.1.1",
+// "/usr/lib/mount/abc...def/usr/lib/libcrypto.so.1.1"}
+StatusOr<std::vector<std::filesystem::path>> SocketTraceConnector::FindLibraryPaths(
+    const std::vector<std::string_view>& lib_names, const std::string& binary,
+    const std::vector<int32_t>& pids) {
+  // TODO(jps): use a mutable map<string, path> as the function argument.
+  // i.e. mapping from lib_name to lib_path.
+  // This would relieve the caller of the burden of tracking which entry
+  // in the vector belonged to which library it wanted to find.
 
-  const system::Config& sysconfig = system::Config::GetInstance();
-  std::filesystem::path container_lib;
+  // container_libs: final function output.
+  // found_vector: tracks the found status of each lib.
+  // num_found: count of the number found.
+  // ... To allow this function to return as soon as everything is found.
+  std::vector<std::filesystem::path> container_libs;
+  std::vector<bool> found_vector;
+  uint32_t num_found = 0;
 
   PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create());
 
-  // Find the path to libssl for this binary, which may be inside a container.
+  std::filesystem::path empty_path;
+
+  for (uint64_t i = 0; i < lib_names.size(); ++i) {
+    // initialize the return vector with empty paths,
+    // and setup our state to "nothing found yet"
+    container_libs.push_back(empty_path);
+    found_vector.push_back(false);
+  }
+
   for (const auto& pid : pids) {
+    if (num_found == lib_names.size()) {
+      // we've already found all of the requested libs, break now.
+      break;
+    }
+
     StatusOr<absl::flat_hash_set<std::string>> libs_status = proc_parser_->GetMapPaths(pid);
     if (!libs_status.ok()) {
-      VLOG(1) << absl::Substitute("Unable to check for libssl.so for $0. Message: $1", binary,
+      VLOG(1) << absl::Substitute("Unable to read /proc/$0/maps for $1. Message: $2", pid, binary,
                                   libs_status.msg());
       continue;
     }
 
     Status s = fp_resolver->SetMountNamespace(pid);
     if (!s.ok()) {
-      VLOG(1) << absl::Substitute("Could not set pid namespace. Did the pid terminate?");
+      VLOG(1) << absl::Substitute("Could not set pid namespace. Did pid $0 terminate?", pid);
       continue;
     }
 
-    for (const auto& lib : libs_status.ValueOrDie()) {
-      if (absl::EndsWith(lib, kLibSSL)) {
-        StatusOr<std::filesystem::path> container_lib_status = fp_resolver->ResolvePath(lib);
+    const absl::flat_hash_set<std::string>& mapped_lib_paths = libs_status.ValueOrDie();
 
-        if (!container_lib_status.ok()) {
-          VLOG(1) << absl::Substitute("Unable to resolve libssl.so path for $0. Message: $1",
-                                      binary, container_lib_status.msg());
-          continue;
+    for (const auto& [lib_idx, lib_name] : Enumerate(lib_names)) {
+      if (found_vector[lib_idx]) {
+        // This lib has already been found,
+        // do not search through the mapped lib paths found by GetMapPaths.
+        continue;
+      }
+
+      for (const auto& mapped_lib_path : mapped_lib_paths) {
+        if (absl::EndsWith(mapped_lib_path, lib_name)) {
+          // We found a mapped_lib_path that matches to the desired lib_name.
+          // First, get the containerized file path using ResolvePath().
+          StatusOr<std::filesystem::path> container_lib_status =
+              fp_resolver->ResolvePath(mapped_lib_path);
+
+          if (!container_lib_status.ok()) {
+            VLOG(1) << absl::Substitute("Unable to resolve $0 path for $1. Message: $2", lib_name,
+                                        binary, container_lib_status.msg());
+            continue;
+          }
+
+          // Assign the resolved path into the output vector at the appropriate index.
+          // Update found status,
+          // and continue to search current set of mapped libs for next desired lib.
+          container_libs[lib_idx] = container_lib_status.ValueOrDie();
+          found_vector[lib_idx] = true;
+          ++num_found;
+          VLOG(1) << absl::Substitute("Resolved lib $0 to $1", lib_name,
+                                      container_libs[lib_idx].string());
+          break;
         }
-        container_lib = container_lib_status.ValueOrDie();
-        break;
       }
     }
   }
+  return container_libs;
+}
 
-  if (container_lib.empty()) {
-    // Looks like this binary doesn't use libssl (or we ran into an error).
-    return 0;
+StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(
+    const std::string& binary, const std::vector<int32_t>& pids,
+    ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>* openssl_symaddrs_map) {
+  constexpr std::string_view kLibSSL = "libssl.so.1.1";
+  constexpr std::string_view kLibCrypto = "libcrypto.so.1.1";
+  const std::vector<std::string_view> lib_names = {kLibSSL, kLibCrypto};
+
+  const system::Config& sysconfig = system::Config::GetInstance();
+
+  PL_ASSIGN_OR_RETURN(const std::vector<std::filesystem::path> container_lib_paths,
+                      FindLibraryPaths(lib_names, binary, pids));
+
+  for (const auto& path : container_lib_paths) {
+    if (path.empty()) {
+      // Looks like this binary doesn't use libssl, because it did not
+      // map both of libssl.so.x.x & libcrypto.so.x.x.
+      // Return "0" to indicaute zero probes were attached. This is not an error.
+      //
+      // Less likely, but possible, is that FindLibraryPaths() hit an error
+      // on every attempt to read /proc/pid/maps and resolve the path.
+      // TODO(jps): do we tighten this up?
+      return 0;
+    }
   }
 
   // Convert to host path, in case we're running inside a container ourselves.
-  container_lib = sysconfig.ToHostPath(container_lib);
-  PL_RETURN_IF_ERROR(fs::Exists(container_lib));
+  const std::filesystem::path container_libssl = sysconfig.ToHostPath(container_lib_paths[0]);
+  const std::filesystem::path container_libcrypto = sysconfig.ToHostPath(container_lib_paths[1]);
+  PL_RETURN_IF_ERROR(fs::Exists(container_libssl));
+  PL_RETURN_IF_ERROR(fs::Exists(container_libcrypto));
 
-  Status s = UpdateOpenSSLSymAddrs(container_lib, pids, openssl_symaddrs_map);
+  Status s = UpdateOpenSSLSymAddrs(container_libcrypto, pids, openssl_symaddrs_map);
   if (!s.ok()) {
     LOG(ERROR) << absl::Substitute("Could not set OpenSSL symbol addresses for binary = $0 [$1]",
                                    binary, s.ToString());
@@ -537,13 +608,13 @@ StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(
   }
 
   // Only try probing .so files that we haven't already set probes on.
-  auto result = openssl_probed_binaries_.insert(container_lib);
+  auto result = openssl_probed_binaries_.insert(container_libssl);
   if (!result.second) {
     return 0;
   }
 
   for (auto spec : kOpenSSLUProbes) {
-    spec.binary_path = container_lib.string();
+    spec.binary_path = container_libssl.string();
     PL_RETURN_IF_ERROR(AttachUProbe(spec));
   }
   return kOpenSSLUProbes.size();

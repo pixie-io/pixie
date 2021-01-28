@@ -42,6 +42,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_bpf_tables.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_tables.h"
+#include "src/stirling/utils/proc_path_tools.h"
 #include "src/stirling/utils/proc_tracker.h"
 
 DECLARE_bool(stirling_enable_parsing_protobufs);
@@ -327,6 +328,11 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       const std::string& binary, obj_tools::ElfReader* elf_reader,
       obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& new_pids,
       ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t>* http2_symaddrs_map);
+
+  // Find the paths for some libraries, which may be inside of a container.
+  StatusOr<std::vector<std::filesystem::path> > FindLibraryPaths(
+      const std::vector<std::string_view>& lib_names, const std::string& binary,
+      const std::vector<int32_t>& pids);
 
   // Attaches the required probes for SSL tracing to the specified binary.
   StatusOr<int> AttachOpenSSLUProbes(
