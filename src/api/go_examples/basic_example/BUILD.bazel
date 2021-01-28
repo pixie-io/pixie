@@ -2,7 +2,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["ex.go"],
+    srcs = ["example.go"],
     importpath = "pixielabs.ai/pixielabs/src/api/go_examples/basic_example",
     visibility = ["//visibility:private"],
     deps = [
