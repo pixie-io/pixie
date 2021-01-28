@@ -8,10 +8,12 @@
 #include <netinet/in.h>
 #include <sys/un.h>
 
+#include <map>
 #include <string>
 #include <utility>
 #include <variant>
 
+#include "src/common/base/enum_utils.h"
 #include "src/common/base/error.h"
 #include "src/common/base/hash_utils.h"
 #include "src/common/base/status.h"
@@ -84,6 +86,8 @@ struct CIDRBlock {
 };
 
 enum class SockAddrFamily { kUnspecified, kIPv4, kIPv6, kUnix, kOther };
+static const std::map<int64_t, std::string_view> kSockAddrFamilyDecoder =
+    pl::EnumDefToMap<SockAddrFamily>();
 
 struct SockAddrUnix {
   std::string path;

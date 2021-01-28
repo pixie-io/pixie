@@ -10,9 +10,6 @@ namespace pl {
 namespace stirling {
 namespace canonical_data_elements {
 
-static const std::map<int64_t, std::string_view> kTraceSideDecoder =
-    pl::EnumDefToMap<EndpointRole>();
-
 // clang-format off
 
 // TODO(PL-519): Use uint128 to represent IP addresses.
@@ -32,11 +29,11 @@ constexpr DataElement kRemotePort = {
 
 constexpr DataElement kTraceRole = {
     "trace_role",
-    "Side (client-or-server) where traffic was traced",
+    "The role (client-or-server) of the process that owns the connections.",
     types::DataType::INT64,
     types::SemanticType::ST_NONE,
     types::PatternType::GENERAL_ENUM,
-    &kTraceSideDecoder};
+    &kEndpointRoleDecoder};
 
 // clang-format on
 

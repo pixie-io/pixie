@@ -2,10 +2,13 @@
 
 #ifdef __cplusplus
 #include <algorithm>
+#include <map>
 #include <string>
 
 #include <absl/strings/substitute.h>
 #include <magic_enum.hpp>
+
+#include "src/common/base/enum_utils.h"
 #endif
 
 // This file contains definitions that are shared between various kprobes and uprobes.
@@ -30,6 +33,11 @@ enum TrafficProtocol {
   kProtocolRedis,
   kNumProtocols
 };
+
+#ifdef __cplusplus
+static const std::map<int64_t, std::string_view> kTrafficProtocolDecoder =
+    pl::EnumDefToMap<TrafficProtocol>();
+#endif
 
 struct protocol_message_t {
   enum TrafficProtocol protocol;
@@ -56,6 +64,11 @@ enum EndpointRole {
   kRoleServer = 1 << 1,
   kRoleUnknown = 1 << 2,
 };
+
+#ifdef __cplusplus
+static const std::map<int64_t, std::string_view> kEndpointRoleDecoder =
+    pl::EnumDefToMap<EndpointRole>();
+#endif
 
 struct traffic_class_t {
   // The protocol of traffic on the connection (HTTP, MySQL, etc.).
