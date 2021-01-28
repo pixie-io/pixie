@@ -64,7 +64,7 @@ struct SocketClose {
  *
  * Data is extracted from a connection tracker and pushed out, as the data becomes parseable.
  */
-class ConnectionTracker {
+class ConnectionTracker : NotCopyMoveable {
  public:
   struct Stats {
     enum class Key {
@@ -125,7 +125,6 @@ class ConnectionTracker {
   static constexpr int64_t kDeathCountdownIters = 3;
 
   ConnectionTracker() = default;
-  ConnectionTracker(ConnectionTracker&& other) = default;
 
   ~ConnectionTracker();
 

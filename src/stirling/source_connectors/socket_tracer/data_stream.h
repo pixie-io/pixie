@@ -24,7 +24,7 @@ namespace stirling {
  * Events stay in the raw container until whole messages are parsed out and placed in the
  * container of parsed messaged.
  */
-class DataStream {
+class DataStream : NotCopyMoveable {
  public:
   /**
    * Adds a raw (unparsed) chunk of data into the stream.
