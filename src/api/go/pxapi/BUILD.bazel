@@ -1,0 +1,24 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "client.go",
+        "doc.go",
+        "opts.go",
+        "results.go",
+        "vizier.go",
+    ],
+    importpath = "pixielabs.ai/pixielabs/src/api/go/pxapi",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/api/go/pxapi/errdefs:go_default_library",
+        "//src/api/go/pxapi/types:go_default_library",
+        "//src/api/public/cloudapipb:public_cloudapi_pl_go_proto",
+        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
+        "//src/utils:go_default_library",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//credentials:go_default_library",
+        "@org_golang_google_grpc//metadata:go_default_library",
+    ],
+)
