@@ -24,6 +24,7 @@ setuptools.setup(
     name="pxapi",
     version="0.1.0",
     author="Pixie Labs",
+    license='Apache-2.0',
     author_email="help@pixielabs.ai",
     description="The python client for the Pixie API",
     long_description=long_description,
