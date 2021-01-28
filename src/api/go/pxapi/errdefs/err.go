@@ -5,6 +5,8 @@ import "errors"
 var (
 	// ErrStreamAlreadyClosed is invoked when trying to read a stream that has been closed or cancelled.
 	ErrStreamAlreadyClosed = errors.New("stream has already been closed")
+	// ErrClusterNotFound is invoked when trying to fetch information for a nonexistent cluster ID.
+	ErrClusterNotFound = errors.New("cluster not found")
 	// ErrUnImplemented is used for unimplemented features.
 	ErrUnImplemented = errors.New("unimplemented")
 	// ErrInternalMissingTableMetadata specifies an internal error has occurred where the table metadata is missing.

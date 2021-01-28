@@ -4,15 +4,16 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net/url"
 	"strings"
+
+	"pixielabs.ai/pixielabs/src/api/go/pxapi/types"
+	cloudapipb "pixielabs.ai/pixielabs/src/api/public/cloudapipb"
+	vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs"
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/types"
-	cloudapipb "pixielabs.ai/pixielabs/src/api/public/cloudapipb"
-	vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 )
 
 const (
@@ -99,37 +100,39 @@ func (c *Client) cloudCtxWithMD(ctx context.Context) context.Context {
 
 // NewVizierClient creates a new vizier client, for the passed in vizierID.
 func (c *Client) NewVizierClient(ctx context.Context, vizierID string) (*VizierClient, error) {
-	// We need to make a request to find out if vizier is direct mode or not.
-	// TODO(zasgar): We can use the most restrictive API to request data for just one vizier.
-	viziers, err := c.ListViziers(ctx)
+	vizier, err := c.GetVizierInfo(ctx, vizierID)
 	if err != nil {
 		return nil, err
 	}
 
-	found := false
-	directAccess := false
-	for _, v := range viziers {
-		if v.ID == vizierID && v.DirectAccess == false {
-			found = true
-			directAccess = v.DirectAccess
+	vzConn := c.grpcConn
+	if vizier.DirectAccess {
+		connInfo, err := c.getConnectionInfo(ctx, vizierID)
+		if err != nil {
+			return nil, err
 		}
-	}
 
-	if !found {
-		return nil, errdefs.ErrUnImplemented
-	}
+		c.bearerAuth = connInfo.Token
+		parsedURL, err := url.Parse(connInfo.IPAddress)
+		if err != nil {
+			return nil, err
+		}
 
-	// TODO(zasgar): make call to grab the token if we are using direct mode access.
-	if directAccess {
+		tlsConfig := &tls.Config{InsecureSkipVerify: false}
+		creds := credentials.NewTLS(tlsConfig)
+
+		conn, err := grpc.Dial(parsedURL.Host, grpc.WithTransportCredentials(creds))
+		if err != nil {
+			return nil, err
+		}
+		vzConn = conn
 	}
 
 	// Now create the actual client.
 	vzClient := &VizierClient{
-		cloud:        c,
-		vizierID:     vizierID,
-		directAccess: directAccess,
-		accessToken:  "",
-		vzClient:     vizierapipb.NewVizierServiceClient(c.grpcConn),
+		cloud:    c,
+		vizierID: vizierID,
+		vzClient: vizierapipb.NewVizierServiceClient(vzConn),
 	}
 
 	return vzClient, nil

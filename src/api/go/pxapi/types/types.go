@@ -3,10 +3,11 @@ package types
 import (
 	"encoding/binary"
 	"fmt"
-	uuid "github.com/satori/go.uuid"
 	"time"
 
 	vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 // DataType referes to the underlying Pixie datatype.
