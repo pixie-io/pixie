@@ -134,18 +134,21 @@ func (s *ScriptResults) handleTableMetadata(ctx context.Context, md *vizierapipb
 	}
 
 	colInfo := make([]types.ColSchema, len(qmd.Relation.Columns))
+	colIdxByName := make(map[string]int64)
 	for idx, col := range qmd.Relation.Columns {
 		colInfo[idx] = types.ColSchema{
 			Name:         col.ColumnName,
 			Type:         col.ColumnType,
 			SemanticType: col.ColumnSemanticType,
 		}
+		colIdxByName[col.ColumnName] = int64(idx)
 	}
 
 	// Create the table schema.
 	tableMD := types.TableMetadata{
-		Name:    qmd.Name,
-		ColInfo: colInfo,
+		Name:         qmd.Name,
+		ColInfo:      colInfo,
+		ColIdxByName: colIdxByName,
 	}
 
 	// Check to see where to route the table, or if it should be dropped.

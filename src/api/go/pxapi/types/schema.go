@@ -6,17 +6,17 @@ type TableMetadata struct {
 	Name string
 	// ColInfo has the array index schemas of each column.
 	ColInfo []ColSchema
+	// ColIdxByName has the mapping from column names to column indices.
+	ColIdxByName map[string]int64
 }
 
 // IndexOf returns the index of a column by name. -1 is returned if the column does not exist.
 func (t *TableMetadata) IndexOf(colName string) int64 {
-	// TODO(zasgar): Optimize this function by precomputing the indices.
-	for idx, col := range t.ColInfo {
-		if col.Name == colName {
-			return int64(idx)
-		}
+	idx, ok := t.ColIdxByName[colName]
+	if !ok {
+		return -1
 	}
-	return -1
+	return idx
 }
 
 // ColSchema has the per column schema.
