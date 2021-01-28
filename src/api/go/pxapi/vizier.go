@@ -2,6 +2,7 @@ package pxapi
 
 import (
 	"context"
+
 	cloudapipb "pixielabs.ai/pixielabs/src/api/public/cloudapipb"
 	vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 )
@@ -86,6 +87,7 @@ func (v *VizierClient) ExecuteScript(ctx context.Context, pxl string, mux TableM
 	ctx, cancel := context.WithCancel(ctx)
 	res, err := v.vzClient.ExecuteScript(v.cloud.cloudCtxWithMD(ctx), req)
 	if err != nil {
+		cancel()
 		return nil, err
 	}
 
