@@ -13,5 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 // Package types tracks all the Pixie types used in the Go API.
 package types
