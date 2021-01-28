@@ -22,7 +22,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="pxapi",
-    version="0.0.7",
+    version="0.1.0",
     author="Pixie Labs",
     author_email="help@pixielabs.ai",
     description="The python client for the Pixie API",
