@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package pl.uuidpb;
+
+option go_package = "pixielabs.ai/pixielabs/src/public/api/uuidpb;uuidpb";
+
+message UUID {
+  // The UUID stored as bytes (no-hyphens).
+  bytes data = 1;
+}
