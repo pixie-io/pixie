@@ -88,7 +88,6 @@ class ConnectionStats {
                   const SockAddr& remote_endpoint, bool is_open);
 
   absl::flat_hash_map<AggKey, Stats> agg_stats_;
-  absl::flat_hash_set<struct conn_id_t> known_conns_;
 };
 
 }  // namespace stirling
