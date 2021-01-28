@@ -36,6 +36,8 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
         "Operating System :: OS Independent",
+        "License :: OSI Approved :: Apache Software License",
+        "Typing :: Typed",
     ],
     python_requires='>=3.8',
 )

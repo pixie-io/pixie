@@ -113,7 +113,7 @@ func NewInt64Value(schema *ColSchema) *Int64Value {
 
 // String returns the string representation.
 func (v Int64Value) String() string {
-	return fmt.Sprintf("%lld", v.val)
+	return fmt.Sprintf("%d", v.val)
 }
 
 // Value returns the data as an int64.
