@@ -140,33 +140,31 @@ class ScriptExecutor:
     ScriptExecutor encapsulates the connection logic to Pixie instances.
 
     If you want to get Pixie data, you will need to initialize `ScriptExecutor` with
-    the clusters and PxL script, `add_callback()` for the desired table,
-    and then `run()` the query.
+    the clusters and PxL script then call `results()` for the desired table name and
+    iterate the results.
 
-    Note: you can only invoke `run()` once on a ScriptExecutor object. If you need
-    to run a query multiple times, you must create a new ScriptExecutor object and
-    setup the data processing again. We rely on iterators that must close
-    when a query stops running and cannot allow multiple runs per object.
+    Note: you can only invoke `results()`, `run()`,and `run_async()` once on a
+    `ScriptExecutor` object. If you need to exeucte a script multiple times,
+    you must create a new `ScriptExecutor` object and setup any data processing
+    again. We rely on iterators that must close when a script stops running
+    and cannot allow multiple runs per object.
     """
 
     def __init__(self, conn: Conn, pxl: str):
         self._conn = conn
         self._pxl = pxl
 
-        # A mapping of the table ID to a table. The tables in the values aren't guaranteed to be
-        # unique for different table_ids when a query uses multiple conns, as each conn produces
-        # each named table, but each (connection, table_name) pair will have a corresponding
-        # unique TableID.
+        # A mapping of the table ID to a table. We use this to map incoming data which only
+        # has the table ID to the proper table.
         self._table_id_to_table_map: Dict[str, _TableStream] = {}
-        # A mapping of the table name to a table. This will contain fewer entries than
-        # `_table_id_to_table_map` because several ids will map to the same table.
+        # A mapping of the table name to a table.
         self._table_name_to_table_map: Dict[str, _TableStream] = {}
         self._tables_lock = asyncio.Lock()
 
-        # The exec stats per query per id.
+        # The execution stats for the script.
         self._exec_stats: vpb.QueryExecutionStats = None
 
-        # Tracks whether the query has been run or not.
+        # Tracks whether the script has been run or not.
         self._has_run = False
 
         # Tables that have been subbed.
@@ -209,15 +207,14 @@ class ScriptExecutor:
         Callbacks are not invoked until you call `run()` (or `run_async()`) on
         the object.
 
-        If you `add_callback` on a table not produced by the query, `run()`(or `run_async()`) will
+        If you `add_callback` on a table not produced by the script, `run()`(or `run_async()`) will
         raise a ValueError when the underlying gRPC channel closes.
-
 
         The internals of `ScriptExecutor` use the python async api and the callback `fn`
         will be called concurrently while the ScriptExecutor is running. Note that callbacks
         themselves should not be async functions.
 
-        Callbacks will block the rest of query execution so expensive and unending
+        Callbacks will block the rest of script execution so expensive and unending
         callbacks should not be used.
 
         Raises:
@@ -237,7 +234,7 @@ class ScriptExecutor:
         return self._subscribe_all_tables or table_name in self._subscribed_tables
 
     def _add_table_q_subscriber(self) -> asyncio.Queue:
-        """ Returns a queue that will receive new tables while the query runs. """
+        """ Returns a queue that will receive new tables while the script runs. """
         q: asyncio.Queue[TableType] = asyncio.Queue()
         self._table_q_subscribers.append(q)
         return q
@@ -246,9 +243,10 @@ class ScriptExecutor:
         """
         Returns an async generator that outputs table subscriptions as they arrive.
 
-        You can use this generator to call query PxL without knowing the tables
+        You can use this generator to call PxL scripts without knowing the tables
         that are output beforehand. If you do know the tables beforehand, you should
-        `subscribe` instead as you won't keep data for tables that you don't use.
+        `subscribe`, `add_callback` or even `results` instead to prevent your api from
+        keeping data for tables that you don't use.
 
         This generator will only start iterating after `run_async()` has been
         called. For the best performance, you will want to call the consumer of
@@ -297,7 +295,7 @@ class ScriptExecutor:
         return internal()
 
     def _add_table_to_q(self, table: Union[TableOrError, None]) -> None:
-        """ Add a table to notify subscribers when the table is first initiated in a query run. """
+        """ Add a table to notify subscribers when the table is first initiated in a script run. """
         for q in self._table_q_subscribers:
             q.put_nowait(table)
 
@@ -328,29 +326,29 @@ class ScriptExecutor:
 
     def _fail_on_multi_run(self) -> None:
         """
-        Raise an error if run() has been called on this object.
+        Raise an error if `run_async()` has been called on this object.
 
-        ScriptExecutor objects are not setup to be run more than once
-        due to the design of _TableStreams. _TableStreams belonging to a
-        query are closed when the query finishes executing. If users
-        could rerun a query users might expect _TableStreams to continue
-        returning data from the new query run.
+        `ScriptExecutor` objects are not setup to be run more than once
+        due to the design of `TableSub`. `TableSub`s belonging to a
+        `ScriptExecutor` are closed when the `ScriptExecutor` finishes executing. Otherwise
+        you might expect subsequent `ScriptExecutor` runs to continue yielding data
+        which does not work with the current architecture.
 
-        Instead, create a new query object and subscribe() to the original
-        _TableStreams if you wish to rerun queries.
+        If you need such functionality, create a new `ScriptExecutor` and
+        set up your data processing again.
         """
 
-        # Function raises an error if the query has ran before.
+        # Function raises an error if the script has ran before.
         if not self._has_run:
             return
 
         raise ValueError("Script already executed. Cannot perform action.")
 
     async def run_async(self) -> None:
-        """ Runs the query asynchronously using asyncio.
+        """ Runs the script asynchronously using asyncio.
 
         Same as `run()` except you can directly control whether other tasks
-        should be run concurrently while the query is running.
+        should be run concurrently while the script  is running.
 
         Raises:
             ValueError: If any callbacks are on tables that a `ScriptExecutor` never receives.
@@ -362,10 +360,10 @@ class ScriptExecutor:
         await asyncio.gather(self._run_conn(self._conn), *[t() for t in self._tasks])
 
     def run(self) -> None:
-        """ Executes the query synchronously.
+        """ Executes the script synchronously.
 
-        Executes the query across all clusters. If any errors occur over the lifetime of
-        any connection, this will raise an error.
+        Calls `run_async()` but hides the asyncio details from users.
+        If any errors occur over the lifetime of any connection, this will raise an error.
 
         Raises:
             ValueError: If any callbacks are on tables that a `ScriptExecutor` never receives.
@@ -384,12 +382,12 @@ class ScriptExecutor:
                 table.close()
 
     def results(self, table_name: str) -> List[Row]:
-        """ Runs query and return results for the table.
+        """ Runs script and return results for the table.
         Examples:
-            for row in query.results("http_table"):
+            for row in script.results("http_table"):
                 print(row)
         Raises:
-            ValueError: If `table_name` is never sent during lifetime of query.
+            ValueError: If `table_name` is never sent during lifetime of script.
             ValueError: If called after `run()` or `run_async()` for a particular
                 `ScriptExecutor`.
         """
@@ -403,7 +401,7 @@ class ScriptExecutor:
         return rows
 
     async def _run_conn(self, conn: Conn) -> None:
-        """ Executes the query on a single connection. """
+        """ Executes the script on a single connection. """
         channel = conn._get_grpc_channel()
         stub = vizierapi_pb2_grpc.VizierServiceStub(channel)
 
@@ -427,9 +425,6 @@ class ScriptExecutor:
             elif res.HasField("data") and res.data.HasField("execution_stats"):
                 await self._set_exec_stats(res.data.execution_stats)
 
-        # TODO(philkuz) will cause an error if this is
-        # sent in one conn before the other conn has sent its last table metadata.
-        # Bug is unlikely to happen, but should still be covered.
         self._close_table_q()
         await self._close_all_tables()
 
@@ -461,7 +456,7 @@ class Client:
 
     To setup the client, you need to generate an API token
     and pass it in as the first argument.
-    See: https://docs.pixielabs.ai/using-pixie/interfaces/using-api/
+    See: https://docs.pixielabs.ai/reference/api/quick-start/
     for more info.
     """
 
@@ -499,7 +494,7 @@ class Client:
         return response.clusters
 
     def list_healthy_clusters(self) -> List[Cluster]:
-        """ Lists all of the healthy clusters within the Pixie org. """
+        """ Lists all of the healthy clusters that you can access.  """
         healthy_clusters: List[Cluster] = []
         for c in self._get_cluster(cpb.GetClusterConnectionRequest()):
             if c.status != cpb.CS_HEALTHY:
@@ -570,8 +565,9 @@ class Client:
                            ) -> Conn:
         """ Connect to a cluster.
 
-        Returns a connection object that must be passed as an argument to `query()`
-        with the query you wish to send over.
+        Returns a connection object that you can use to create `ScriptExecutor`s.
+        You may pass in a `ClusterID` string or a `Cluster` object that comes
+        from `list_all_healthy_clusters()`.
         """
         cluster_info: cpb.ClusterInfo = None
         if isinstance(cluster, ClusterID):
