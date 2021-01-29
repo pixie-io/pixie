@@ -65,7 +65,7 @@
         "x": 0,
         "y": 0,
         "w": 10,
-        "h": 3
+        "h": 2
       }
     },
     {
@@ -89,9 +89,35 @@
       },
       "position": {
         "x": 0,
-        "y": 3,
+        "y": 2,
         "w": 10,
-        "h": 3
+        "h": 2
+      }
+    },
+    {
+      "name": "VM Size",
+      "globalFuncOutputName": "resource_timeseries",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "vsize",
+            "series": "pod",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "VM Size"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 0,
+        "y": 4,
+        "w": 10,
+        "h": 2
       }
     }
   ]
