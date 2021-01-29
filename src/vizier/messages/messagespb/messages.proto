@@ -62,6 +62,12 @@ message RegisterAgentRequest {
     pl.vizier.services.shared.agent.AgentInfo info = 1;
     // DEPRECATED: This was update info, which are now only included in Heartbeats.
     reserved 2;
+    // ASID is the agent short ID.
+    // This field is used only when reregistering an agent, because the same ID needs
+    // to be preserved.
+    uint32 asid = 3 [
+                    (gogoproto.customname) = "ASID"
+                    ];    
 }
 
 message RegisterAgentResponse {

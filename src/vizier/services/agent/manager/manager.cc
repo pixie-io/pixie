@@ -51,9 +51,7 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
 Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
                  int grpc_server_port, services::shared::agent::AgentCapabilities capabilities,
                  std::string_view mds_url, std::unique_ptr<VizierNATSConnector> nats_connector)
-    : pod_name_(std::string(pod_name)),
-      host_ip_(std::string(host_ip)),
-      grpc_channel_creds_(SSL::DefaultGRPCClientCreds()),
+    : grpc_channel_creds_(SSL::DefaultGRPCClientCreds()),
       time_system_(std::make_unique<pl::event::RealTimeSystem>()),
       api_(std::make_unique<pl::event::APIImpl>(time_system_.get())),
       dispatcher_(api_->AllocateDispatcher("manager")),
@@ -101,6 +99,8 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
 
   info_.agent_id = agent_id;
   info_.capabilities = std::move(capabilities);
+  info_.pod_name = std::string(pod_name);
+  info_.host_ip = std::string(host_ip);
 }
 
 Status Manager::RegisterAgent() {
@@ -111,8 +111,8 @@ Status Manager::RegisterAgent() {
   agent_info->set_ip_address(info_.address);
   auto host_info = agent_info->mutable_host_info();
   host_info->set_hostname(info_.hostname);
-  host_info->set_pod_name(pod_name_);
-  host_info->set_host_ip(host_ip_);
+  host_info->set_pod_name(info_.pod_name);
+  host_info->set_host_ip(info_.host_ip);
   *agent_info->mutable_capabilities() = info_.capabilities;
   PL_RETURN_IF_ERROR(nats_connector_->Publish(req));
   return Status::OK();
@@ -292,8 +292,9 @@ void Manager::HandleRegisterAgentResponse(std::unique_ptr<messages::VizierMessag
   info_.asid = msg->register_agent_response().asid();
 
   mds_manager_ = std::make_unique<pl::md::AgentMetadataStateManager>(
-      info_.hostname, info_.asid, pod_name_, info_.agent_id, info_.capabilities.collects_data(),
-      pl::system::Config::GetInstance(), agent_metadata_filter_.get());
+      info_.hostname, info_.asid, info_.pod_name, info_.agent_id,
+      info_.capabilities.collects_data(), pl::system::Config::GetInstance(),
+      agent_metadata_filter_.get());
   relation_info_manager_ = std::make_unique<RelationInfoManager>();
 
   PL_CHECK_OK(PostRegisterHook());

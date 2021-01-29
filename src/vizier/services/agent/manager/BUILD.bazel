@@ -73,3 +73,14 @@ pl_cc_test(
         "//src/common/testing/grpc_utils:cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "registration_test",
+    srcs = ["registration_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/event:cc_library",
+        "//src/common/system:cc_library_mock",
+        "//src/common/testing/event:cc_library",
+    ],
+)

@@ -53,6 +53,8 @@ struct Info {
   uint32_t asid = 0;
   std::string hostname;
   std::string address;
+  std::string pod_name;
+  std::string host_ip;
   services::shared::agent::AgentCapabilities capabilities;
 };
 
@@ -159,8 +161,6 @@ class Manager : public pl::NotCopyable {
   VizierNATSConnector* nats_connector() { return nats_connector_.get(); }
 
  protected:
-  std::string pod_name_;
-  std::string host_ip_;
   std::shared_ptr<grpc::ChannelCredentials> grpc_channel_creds_;
 
   // The time system to use (real or simulated).
