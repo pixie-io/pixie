@@ -102,10 +102,11 @@ class Manager : public pl::NotCopyable {
    * This function is called after registration of the agent is complete.
    * It's invoked on the event thread.
    */
-  virtual Status PostRegisterHook() { return Status::OK(); }
   const Info* info() const { return &info_; }
 
   const carnot::Carnot* carnot() const { return carnot_.get(); }
+  Status PostRegisterHook(uint32_t asid);
+  Status PostReregisterHook(uint32_t asid);
 
  protected:
   // Protect constructor since we need to use Init on this class.
@@ -118,7 +119,6 @@ class Manager : public pl::NotCopyable {
   Status Init();
 
   void NATSMessageHandler(VizierNATSConnector::MsgType msg);
-  Status RegisterAgent();
   Status RegisterMessageHandler(MsgCase c, std::shared_ptr<MessageHandler> handler,
                                 bool override = false);
   Status RegisterBackgroundHelpers();
@@ -149,6 +149,11 @@ class Manager : public pl::NotCopyable {
    * StopImpl is called after all the Stop function of this class is complete.
    */
   virtual Status StopImpl(std::chrono::milliseconds timeout) = 0;
+
+  /**
+   * PostRegisterHookImpl is called after agent registration.
+   */
+  virtual Status PostRegisterHookImpl() = 0;
 
   // APIs for the derived classes to reference the state of the agent.
   table_store::TableStore* table_store() { return table_store_.get(); }
@@ -187,15 +192,7 @@ class Manager : public pl::NotCopyable {
   // Message handlers are registered per type of Vizier message.
   // same message handler can be used for multiple different types of messages.
   absl::flat_hash_map<MsgCase, std::shared_ptr<MessageHandler>> message_handlers_;
-
-  // Only accessed from the event loop. So they don't need to be guarded by a mutex.
-  bool agent_registered_ = false;
-  pl::event::TimerUPtr registration_timeout_;
-  // The agent waits a random amount of time before sending a register request, to
-  // avoid bombarding the metadata service with too many requests upon startup.
-  pl::event::TimerUPtr registration_wait_;
   void HandleMessage(std::unique_ptr<messages::VizierMessage> msg);
-  void HandleRegisterAgentResponse(std::unique_ptr<messages::VizierMessage> msg);
 
   // The timer to manage metadata updates.
   pl::event::TimerUPtr metadata_update_timer_;
@@ -208,13 +205,6 @@ class Manager : public pl::NotCopyable {
   std::unique_ptr<ChanCache> chan_cache_;
   // The timer that runs the garbage collection routine.
   pl::event::TimerUPtr chan_cache_garbage_collect_timer_;
-
-  // ************************************************************
-  // Static constants used in this class
-  // ************************************************************
-
-  // Timeout for registration ACK.
-  static constexpr std::chrono::seconds kRegistrationPeriod{30};
 };
 
 /**

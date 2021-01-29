@@ -33,7 +33,7 @@ class KelvinManager : public Manager {
   }
 
   Status InitImpl() override;
-  Status PostRegisterHook() override;
+  Status PostRegisterHookImpl() override;
   Status StopImpl(std::chrono::milliseconds) override;
 
  private:

@@ -17,29 +17,7 @@ class RegistrationHandler : public Manager::MessageHandler {
   RegistrationHandler(pl::event::Dispatcher* dispatcher, Info* agent_info,
                       Manager::VizierNATSConnector* nats_conn,
                       RegistrationHook post_registration_hook,
-                      RegistrationHook post_reregistration_hook)
-      : MessageHandler(dispatcher, agent_info, nats_conn),
-        post_registration_hook_(post_registration_hook),
-        post_reregistration_hook_(post_reregistration_hook) {
-    registration_timeout_ = dispatcher->CreateTimer([this] {
-      absl::base_internal::SpinLockHolder lock(&registration_lock_);
-      registration_timeout_.release();
-      registration_wait_.release();
-
-      if (!registration_in_progress_) {
-        return;
-      }
-      LOG(FATAL) << "Timeout waiting for registration ack";
-    });
-
-    registration_wait_ = dispatcher->CreateTimer([this] {
-      registration_wait_->DisableTimer();
-      auto s = DispatchRegistration();
-      LOG_IF(FATAL, !s.ok()) << absl::Substitute("Failed to register agent: $0", s.msg());
-      registration_timeout_->EnableTimer(kRegistrationPeriod);
-    });
-  }
-
+                      RegistrationHook post_reregistration_hook);
   ~RegistrationHandler() override = default;
 
   Status HandleMessage(std::unique_ptr<messages::VizierMessage> msg) override;

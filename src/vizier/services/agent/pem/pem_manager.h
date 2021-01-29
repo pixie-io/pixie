@@ -38,7 +38,7 @@ class PEMManager : public Manager {
         stirling_(std::move(stirling)) {}
 
   Status InitImpl() override;
-  Status PostRegisterHook() override;
+  Status PostRegisterHookImpl() override;
   Status StopImpl(std::chrono::milliseconds) override;
 
  private:

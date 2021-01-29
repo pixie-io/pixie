@@ -19,6 +19,7 @@
 #include "src/vizier/services/agent/manager/config_manager.h"
 #include "src/vizier/services/agent/manager/exec.h"
 #include "src/vizier/services/agent/manager/heartbeat.h"
+#include "src/vizier/services/agent/manager/registration.h"
 #include "src/vizier/services/agent/manager/ssl.h"
 
 namespace {
@@ -103,21 +104,6 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
   info_.host_ip = std::string(host_ip);
 }
 
-Status Manager::RegisterAgent() {
-  // Send the registration request.
-  messages::VizierMessage req;
-  auto agent_info = req.mutable_register_agent_request()->mutable_info();
-  ToProto(info_.agent_id, agent_info->mutable_agent_id());
-  agent_info->set_ip_address(info_.address);
-  auto host_info = agent_info->mutable_host_info();
-  host_info->set_hostname(info_.hostname);
-  host_info->set_pod_name(info_.pod_name);
-  host_info->set_host_ip(info_.host_ip);
-  *agent_info->mutable_capabilities() = info_.capabilities;
-  PL_RETURN_IF_ERROR(nats_connector_->Publish(req));
-  return Status::OK();
-}
-
 Status Manager::Init() {
   PL_ASSIGN_OR_RETURN(
       agent_metadata_filter_,
@@ -146,34 +132,14 @@ Status Manager::Init() {
     nats_connector_->RegisterMessageHandler(
         std::bind(&Manager::NATSMessageHandler, this, std::placeholders::_1));
 
-    registration_timeout_ = dispatcher_->CreateTimer([this] {
-      if (agent_registered_) {
-        registration_timeout_.release();
-        return;
-      }
-      LOG(FATAL) << "Timeout waiting for registration ack";
-    });
+    auto registration_handler = std::make_shared<RegistrationHandler>(
+        dispatcher_.get(), &info_, nats_connector_.get(),
+        std::bind(&Manager::PostRegisterHook, this, std::placeholders::_1),
+        std::bind(&Manager::PostReregisterHook, this, std::placeholders::_1));
 
-    registration_wait_ = dispatcher_->CreateTimer([this] {
-      auto s = RegisterAgent();
-      if (!s.ok()) {
-        LOG(FATAL) << "Failed to register agent";
-      }
-
-      registration_timeout_->EnableTimer(kRegistrationPeriod);
-      registration_wait_.release();
-    });
-
-    // Send the agent info.
-
-    // Wait a random amount of time before registering. This is so the agents don't swarm the
-    // metadata service all at the same time when Vizier first starts up.
-    std::random_device rnd_device;
-    std::mt19937_64 eng{rnd_device()};
-    std::uniform_int_distribution<> dist{
-        10, 60000};  // Wait a random amount of time between 10ms to 1min.
-
-    registration_wait_->EnableTimer(std::chrono::milliseconds{dist(eng)});
+    PL_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kRegisterAgentResponse,
+                                       registration_handler));
+    registration_handler->RegisterAgent();
   }
 
   return InitImpl();
@@ -271,10 +237,6 @@ void Manager::NATSMessageHandler(Manager::VizierNATSConnector::MsgType msg) {
 void Manager::HandleMessage(std::unique_ptr<messages::VizierMessage> msg) {
   VLOG(1) << "Manager::Run::GotMessage " << msg->DebugString();
 
-  if (msg->msg_case() == messages::VizierMessage::MsgCase::kRegisterAgentResponse) {
-    HandleRegisterAgentResponse(std::move(msg));
-    return;
-  }
   auto c = msg->msg_case();
   auto it = message_handlers_.find(c);
   if (it != message_handlers_.end()) {
@@ -285,11 +247,9 @@ void Manager::HandleMessage(std::unique_ptr<messages::VizierMessage> msg) {
   }
 }
 
-void Manager::HandleRegisterAgentResponse(std::unique_ptr<messages::VizierMessage> msg) {
-  LOG_IF(FATAL, !msg->has_register_agent_response())
-      << "Did not get register agent response. Got: " << msg->DebugString();
-  CHECK(!agent_registered_) << "Agent already registered, but got another registration response.";
-  info_.asid = msg->register_agent_response().asid();
+Status Manager::PostRegisterHook(uint32_t asid) {
+  LOG_IF(FATAL, info_.asid != 0) << "Attempted to register existing agent with new ASID";
+  info_.asid = asid;
 
   mds_manager_ = std::make_unique<pl::md::AgentMetadataStateManager>(
       info_.hostname, info_.asid, info_.pod_name, info_.agent_id,
@@ -297,14 +257,18 @@ void Manager::HandleRegisterAgentResponse(std::unique_ptr<messages::VizierMessag
       agent_metadata_filter_.get());
   relation_info_manager_ = std::make_unique<RelationInfoManager>();
 
-  PL_CHECK_OK(PostRegisterHook());
+  // Call the derived class post-register hook.
+  PL_CHECK_OK(PostRegisterHookImpl());
 
   // Register the Carnot callback for metadata.
   carnot_->RegisterAgentMetadataCallback(
       std::bind(&pl::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager_.get()));
 
-  PL_CHECK_OK(RegisterBackgroundHelpers());
-  agent_registered_ = true;
+  return RegisterBackgroundHelpers();
+}
+
+Status Manager::PostReregisterHook(uint32_t) {
+  return error::Unimplemented("PostReregisterHook is unimplemented");
 }
 
 std::unique_ptr<Manager::VizierNATSConnector> Manager::CreateDefaultNATSConnector(

@@ -9,7 +9,7 @@ namespace agent {
 
 Status KelvinManager::InitImpl() { return Status::OK(); }
 
-Status KelvinManager::PostRegisterHook() {
+Status KelvinManager::PostRegisterHookImpl() {
   auto execute_query_handler = std::make_shared<ExecuteQueryMessageHandler>(
       dispatcher_.get(), info(), nats_connector(), carnot_.get());
   PL_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kExecuteQueryRequest,
