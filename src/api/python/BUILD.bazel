@@ -2,11 +2,20 @@
 load("@rules_python//python:defs.bzl", "py_library", "py_test")
 load("@vizier_api_python_deps//:requirements.bzl", "requirement")
 
+sh_library(
+    name = "copy_python_api_sh",
+    srcs = ["copy_python_srcs.sh"],
+    visibility = ["//visibility:public"],
+    data = [
+        "//src/api/python/pxapi:py_library",
+    ],
+)
+
 sh_binary(
     name = "build_pip_package",
     srcs = ["build_pip_package.sh"],
-    data = [
-        "//src/api/python/pxapi:py_library",
+    deps = [
+        ":copy_python_api_sh",
     ],
 )
 

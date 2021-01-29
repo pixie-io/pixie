@@ -18,11 +18,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-
-
 set -e
 
-function is_absolute {
+source src/api/python/copy_python_srcs.sh
+
+function is_absolute() {
   [[ "$1" = /* ]] || [[ "$1" =~ ^[a-zA-Z]:[/\\].* ]]
 }
 
@@ -30,74 +30,8 @@ function real_path() {
   is_absolute "$1" && echo "$1" || echo "$PWD/${1#./}"
 }
 
-function prepare_src() {
-  if [ $# -lt 1 ] ; then
-    echo "No destination dir provided"
-    exit 1
-  fi
-
-  TMPDIR="${1%/}"
-  mkdir -p "$TMPDIR"
-
-  echo "$(date) : === Preparing sources in dir: ${TMPDIR}"
-
-  if [ ! -d bazel-bin/src ]; then
-    echo "Could not find bazel-bin.  Did you run from the root of the build tree?"
-    exit 1
-  fi
-
-  TOOLPATH="src/api/python"
-
-  PIXIEPKG="${TMPDIR}/pxapi"
-  cp -LR \
-    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/${TOOLPATH}/pxapi" \
-    "${PIXIEPKG}"
-
-
-  # Add README and setup.py
-  cp "${TOOLPATH}/README.md" "${TMPDIR}"
-  cp "${TOOLPATH}/setup.py" "${TMPDIR}"
-  cp "${TOOLPATH}/requirements.txt" "${TMPDIR}"
-
-  # vizierapipb subpackage setup.
-  cp -LR \
-    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/api/public/vizierapipb" \
-    "${PIXIEPKG}/vizierapipb"
-
-  # cloudapipb subpackage setup.
-  cp -LR \
-    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/api/public/cloudapipb" \
-    "${PIXIEPKG}/cloudapipb"
-
-  # uuidpb subpackage setup.
-  cp -LR \
-    "bazel-bin/${TOOLPATH}/build_pip_package.runfiles/pl/src/api/public/uuidpb" \
-    "${PIXIEPKG}/uuidpb"
-
-  # Each subpackage needs an __init__.py to be discovered by setuptools.
-  touch "${PIXIEPKG}/vizierapipb/__init__.py"
-  touch "${PIXIEPKG}/cloudapipb/__init__.py"
-  touch "${PIXIEPKG}/uuidpb/__init__.py"
-
-  # Rewrite the pb package import paths to the new directory structure.
-  replace_pb_paths "${PIXIEPKG}"/**/*.py
-  replace_pb_paths "${PIXIEPKG}"/*.py
-}
-
-function replace_pb_paths() {
-  # Replaces the import paths for protobufs into the new directory structure.
-  PROTO_NAMESPACE="pxapi"
-  for file in "$@"; do
-    sed -i \
-        -e "s/^from src.api.public.cloudapipb/from ${PROTO_NAMESPACE}.cloudapipb/g" \
-        -e "s/^from src.api.public.vizierapipb/from ${PROTO_NAMESPACE}.vizierapipb/g" \
-        -e "s/^from src.api.public.uuidpb/from ${PROTO_NAMESPACE}.uuidpb/g" \
-        "${file}"
-  done
-}
-
 function build_wheel() {
-  if [ $# -lt 2 ] ; then
+  if [ $# -lt 2 ]; then
     echo "No src and dest dir provided"
     exit 1
   fi
@@ -111,14 +45,14 @@ function build_wheel() {
     source tools/python_bin_path.sh
   fi
 
-  pushd "${TMPDIR}" > /dev/null
+  pushd "${TMPDIR}" >/dev/null
 
   rm -f MANIFEST
   echo "$(date) : === Building wheel"
   "${PYTHON_BIN_PATH:-python}" setup.py sdist bdist_wheel >/dev/null
   mkdir -p "${DEST}"
   cp dist/* "${DEST}"
-  popd > /dev/null
+  popd >/dev/null
   echo "$(date) : === Output wheel file is in: ${DEST}"
 }
 
@@ -134,6 +68,51 @@ function usage() {
   echo "                              if dstdir is not set do not build, only prepare sources"
   echo ""
   exit 1
+}
+
+function prepare_python_src() {
+  if [ $# -lt 1 ]; then
+    echo "No destination dir provided"
+    exit 1
+  fi
+
+  TMPDIR="${1%/}"
+  mkdir -p "$TMPDIR"
+
+  PYTHONPKG="src/api/python"
+  TOOLPATH="src/api/python/build_pip_package"
+
+  # Call the prep python repo because we want this to match.
+  prepare_python_repo "${PYTHONPKG}" "${TOOLPATH}" "${TMPDIR}"
+
+  PIXIEPKG="${TMPDIR}/pxapi"
+
+  echo "$(date) : === Preparing protos in dir: ${TMPDIR}"
+  # vizierapipb subpackage setup.
+  cp -LR \
+    "bazel-bin/${TOOLPATH}.runfiles/pl/src/api/public/vizierapipb" \
+    "${PIXIEPKG}/vizierapipb"
+
+  # cloudapipb subpackage setup.
+  cp -LR \
+    "bazel-bin/${TOOLPATH}.runfiles/pl/src/api/public/cloudapipb" \
+    "${PIXIEPKG}/cloudapipb"
+
+  # uuidpb subpackage setup.
+  cp -LR \
+    "bazel-bin/${TOOLPATH}.runfiles/pl/src/api/public/uuidpb" \
+    "${PIXIEPKG}/uuidpb"
+
+  # Each subpackage needs an __init__.py to be discovered by setuptools.
+  touch "${PIXIEPKG}/vizierapipb/__init__.py"
+  touch "${PIXIEPKG}/cloudapipb/__init__.py"
+  touch "${PIXIEPKG}/uuidpb/__init__.py"
+
+  # Rewrite the pb package import paths to the new directory structure.
+  replace_pb_paths "${PIXIEPKG}"/**/*.py
+  replace_pb_paths "${PIXIEPKG}"/*.py
+
+  echo "$(date) : === Done preparing protos in dir: ${TMPDIR}"
 }
 
 function main() {
@@ -161,7 +140,6 @@ function main() {
     fi
   done
 
-
   if [[ -z "$DSTDIR" ]] && [[ -z "$SRCDIR" ]]; then
     echo "No destination dir provided"
     usage
@@ -173,11 +151,12 @@ function main() {
     SRCDIR="$(mktemp -d -t tmp.XXXXXXXXXX)"
   fi
 
-  prepare_src "$SRCDIR"
+  echo "$(date) : === Preparing sources in dir: ${TMPDIR}"
+  prepare_python_src "$SRCDIR"
 
   if [[ -z "$DSTDIR" ]]; then
-      # only want to prepare sources
-      exit
+    # only want to prepare sources
+    exit
   fi
 
   build_wheel "$SRCDIR" "$DSTDIR"

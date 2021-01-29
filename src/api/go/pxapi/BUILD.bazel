@@ -22,3 +22,16 @@ go_library(
         "@org_golang_google_grpc//metadata:go_default_library",
     ],
 )
+
+filegroup(
+    name = "pxapi_group",
+    srcs = glob(
+        [
+            "*.go",
+        ],
+    ) + [
+        "//src/api/go/pxapi/errdefs:errors_group",
+        "//src/api/go/pxapi/types:types_group",
+    ],
+    visibility = ["//visibility:public"],
+)

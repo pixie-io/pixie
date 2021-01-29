@@ -9,3 +9,13 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs",
     visibility = ["//visibility:public"],
 )
+
+filegroup(
+    name = "errors_group",
+    srcs = glob(
+        [
+            "*.go",
+        ],
+    ),
+    visibility = ["//visibility:public"],
+)

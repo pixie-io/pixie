@@ -1,0 +1,29 @@
+load("@rules_python//python:defs.bzl", "py_binary")
+
+filegroup(
+    name = "py_examples",
+    srcs = glob(["python_examples/*.py"]),
+    visibility = ["//visibility:public"],
+)
+
+py_binary(
+    name = "prepend_licenses",
+    srcs = ["prepend_licenses.py"],
+)
+
+sh_binary(
+    name = "copy_to_public_repo",
+    srcs = ["copy_to_public_repo.sh"],
+    data = [
+        ":prepend_licenses",
+        ":py_examples",
+        "//src/api/go/pxapi:pxapi_group",
+        "//src/api/go_examples/basic_example:basic_example_group",
+        "//src/api/public/cloudapipb:pbfiles",
+        "//src/api/public/uuidpb:pbfiles",
+        "//src/api/public/vizierapipb:pbfiles",
+        "//src/api/python:copy_python_api_sh",
+        "//src/api/python/pxapi:py_library",
+    ],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
+)

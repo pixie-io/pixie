@@ -28,3 +28,9 @@ pl_py_proto_library(
     visibility = ["//visibility:public"],
     imports = ["../../../"],
 )
+
+filegroup(
+    name = "pbfiles",
+    srcs = glob(["*.pb.go", "*.proto"]),
+    visibility = ["//visibility:public"],
+)

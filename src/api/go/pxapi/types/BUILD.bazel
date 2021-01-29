@@ -14,3 +14,13 @@ go_library(
         "@com_github_satori_go_uuid//:go_default_library",
     ],
 )
+
+filegroup(
+    name = "types_group",
+    srcs = glob(
+        [
+            "*.go",
+        ],
+    ),
+    visibility = ["//visibility:public"],
+)

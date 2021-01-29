@@ -16,3 +16,9 @@ go_binary(
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
 )
+
+filegroup(
+    name = "basic_example_group",
+    srcs = glob(["*.go"]),
+    visibility = ["//visibility:public"],
+)
