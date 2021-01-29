@@ -51,6 +51,7 @@ pl_cc_test_library(
     hdrs = glob(["*test_utils.h"]),
     deps = [
         "//src/common/event:cc_library",
+        "//src/shared/metadata:cc_library",
     ],
 )
 
@@ -68,6 +69,17 @@ pl_cc_test(
     deps = [
         ":cc_library",
         ":test_utils",
+        "//src/common/event:cc_library",
+        "//src/common/system:cc_library_mock",
+        "//src/common/testing/event:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "k8s_update_test",
+    srcs = ["k8s_update_test.cc"],
+    deps = [
+        ":cc_library",
         "//src/common/event:cc_library",
         "//src/common/system:cc_library_mock",
         "//src/common/testing/event:cc_library",
