@@ -6,34 +6,16 @@ import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
-import gql from 'graphql-tag';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { GaugeLevel } from 'utils/metric-thresholds';
+import { CLUSTER_QUERIES } from 'pixie-api';
 import {
   AdminTooltip, clusterStatusGroup, convertHeartbeatMS, getClusterDetailsURL,
   StyledTableCell, StyledTableHeaderCell, StyledLeftTableCell, StyledRightTableCell,
 } from './utils';
 
 const INACTIVE_AGENT_THRESHOLD_MS = 24 * 60 * 60 * 1000;
-
-const GET_CLUSTERS = gql`
-{
-  clusters {
-    id
-    clusterName
-    prettyClusterName
-    clusterVersion
-    status
-    lastHeartbeatMs
-    vizierVersion
-    vizierConfig {
-      passthroughEnabled
-    }
-    numNodes
-    numInstrumentedNodes
-  }
-}`;
 
 type VizierConnectionMode = 'Passthrough' | 'Direct';
 
@@ -135,7 +117,7 @@ export const ClustersTable = withStyles((theme: Theme) => ({
     padding: theme.spacing(1),
   },
 }))(({ classes }: any) => {
-  const { loading, error, data } = useQuery(GET_CLUSTERS, { pollInterval: CLUSTERS_POLL_INTERVAL });
+  const { loading, error, data } = useQuery(CLUSTER_QUERIES.LIST_CLUSTERS, { pollInterval: CLUSTERS_POLL_INTERVAL });
   if (loading) {
     return <div className={classes.error}>Loading...</div>;
   }

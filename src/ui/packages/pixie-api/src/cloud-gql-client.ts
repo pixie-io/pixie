@@ -6,7 +6,7 @@ import { setContext } from 'apollo-link-context';
 import { onError } from 'apollo-link-error';
 import { createHttpLink } from 'apollo-link-http';
 import { ServerError } from 'apollo-link-http-common';
-import gql from 'graphql-tag';
+import { CLUSTER_QUERIES } from 'gql-queries';
 import { fetch } from 'whatwg-fetch';
 
 // Apollo link that adds cookies in the request.
@@ -33,16 +33,8 @@ interface GetClusterConnResults {
   clusterConnection: ClusterConnection;
 }
 
-const GET_CLUSTER_CONN = gql`
-query GetClusterConnection($id: ID) {
-  clusterConnection(id: $id) {
-    ipAddress
-    token
-  }
-}`;
-
 export class CloudClient {
-  graphQl: ApolloClient<NormalizedCacheObject>;
+  graphQL: ApolloClient<NormalizedCacheObject>;
 
   private readonly persistPromise: Promise<void>;
 
@@ -50,13 +42,13 @@ export class CloudClient {
 
   private loaded = false;
 
-  constructor(private readonly on401: (errorMessage: string) => void) {
+  constructor(private readonly onUnauthorized: (errorMessage: string) => void) {
     this.cache = new InMemoryCache();
-    this.graphQl = new ApolloClient({
+    this.graphQL = new ApolloClient({
       cache: this.cache,
       link: ApolloLink.from([
         cloudAuthLink,
-        loginRedirectLink(on401),
+        loginRedirectLink(onUnauthorized),
         createHttpLink({ uri: '/api/graphql', fetch }),
       ]),
     });
@@ -69,16 +61,16 @@ export class CloudClient {
     });
   }
 
-  async getGraphQLPersist(): Promise<CloudClient['graphQl']> {
+  async getGraphQLPersist(): Promise<CloudClient['graphQL']> {
     if (!this.loaded) {
       await this.persistPromise;
     }
-    return this.graphQl;
+    return this.graphQL;
   }
 
   async getClusterConnection(id: string, noCache = false) {
-    const { data } = await this.graphQl.query<GetClusterConnResults>({
-      query: GET_CLUSTER_CONN,
+    const { data } = await this.graphQL.query<GetClusterConnResults>({
+      query: CLUSTER_QUERIES.GET_CLUSTER_CONN,
       variables: { id },
       fetchPolicy: noCache ? 'network-only' : 'cache-first',
     });

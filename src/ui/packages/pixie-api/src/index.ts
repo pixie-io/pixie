@@ -1,6 +1,21 @@
+export { PixieAPIClient } from './api';
+
+export {
+  USER_QUERIES,
+  API_KEY_QUERIES,
+  DEPLOYMENT_KEY_QUERIES,
+  CLUSTER_QUERIES,
+  AUTOCOMPLETE_QUERIES,
+} from './gql-queries';
+
+export { DEFAULT_USER_SETTINGS, UserSettings } from './user-settings';
+
 export { VizierQueryErrorType, VizierQueryError, GRPCStatusCode } from './vizier';
 
 export { CloudClient } from './cloud-gql-client';
+
+export { containsMutation, isStreaming } from './utils/pxl';
+
 export {
   Table as VizierTable,
   BatchDataUpdate,

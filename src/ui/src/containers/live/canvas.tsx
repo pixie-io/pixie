@@ -13,8 +13,7 @@ import { resizeEvent, triggerResize } from 'utils/resize';
 import { dataFromProto } from 'utils/result-data-utils';
 import { Alert, AlertTitle } from '@material-ui/lab';
 import { VizierErrorDetails } from 'common/errors';
-import { VizierQueryError } from 'pixie-api';
-import { ContainsMutation } from 'utils/pxl';
+import { VizierQueryError, containsMutation } from 'pixie-api';
 
 import {
   createStyles, fade, makeStyles, Theme, useTheme,
@@ -332,7 +331,7 @@ const Canvas = (props: CanvasProps) => {
   const [errorOpen, setErrorOpen] = React.useState(false);
 
   const emptyTableMsg = React.useMemo(() => {
-    if (ContainsMutation(pxl)) {
+    if (containsMutation(pxl)) {
       return 'Run to generate results';
     }
     return '';

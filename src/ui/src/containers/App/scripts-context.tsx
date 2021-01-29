@@ -1,17 +1,8 @@
-import gql from 'graphql-tag';
 import * as React from 'react';
 import { GetPxScripts, Script } from 'utils/script-bundle';
+import { USER_QUERIES } from 'pixie-api';
 
 import { useApolloClient } from '@apollo/react-hooks';
-
-const GET_USER_ORG = gql`
-{
-  user {
-    id
-    orgName
-  }
-}
-`;
 
 export interface ScriptsContextProps {
   scripts: Map<string, Script>;
@@ -36,7 +27,7 @@ export const ScriptsContextProvider = (props) => {
   const client = useApolloClient();
   const [scripts, setScripts] = React.useState<Map<string, Script>>(new Map([['initial', {} as Script]]));
 
-  const promise = React.useMemo(() => client.query({ query: GET_USER_ORG, fetchPolicy: 'network-only' })
+  const promise = React.useMemo(() => client.query({ query: USER_QUERIES.GET_USER_INFO, fetchPolicy: 'network-only' })
     .then((result) => {
       const orgName = result?.data?.user.orgName;
       return GetPxScripts(orgName);

@@ -3,7 +3,6 @@ import * as React from 'react';
 import {
   createStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
-import gql from 'graphql-tag';
 import { useQuery, useApolloClient } from '@apollo/react-hooks';
 
 import {
@@ -20,32 +19,10 @@ import { ScriptContext } from 'context/script-context';
 import { entityPageForScriptId, optionallyGetNamespace } from 'containers/live-widgets/utils/live-view-params';
 import { EntityType, pxTypetoEntityType, entityStatusGroup } from 'containers/command-input/autocomplete-utils';
 import { clusterStatusGroup } from 'containers/admin/utils';
-import { ContainsMutation } from 'utils/pxl';
+import { containsMutation, CLUSTER_QUERIES, AUTOCOMPLETE_QUERIES } from 'pixie-api';
 import { LayoutContext } from 'context/layout-context';
 import ExecuteScriptButton from './execute-button';
 import { Variable } from './vis';
-
-const LIST_CLUSTERS = gql`
-{
-  clusters {
-    id
-    clusterName
-    prettyClusterName
-    status
-  }
-}
-`;
-
-const AUTOCOMPLETE_FIELD_QUERY = gql`
-query getCompletions($input: String, $kind: AutocompleteEntityKind, $clusterUID: String) {
-  autocompleteField(input: $input, fieldType: $kind, clusterUID: $clusterUID) {
-    name
-    description
-    matchedIndexes
-    state
-  }
-}
-`;
 
 const styles = (({ shape, palette, spacing }: Theme) => createStyles({
   root: {
@@ -88,7 +65,7 @@ const styles = (({ shape, palette, spacing }: Theme) => createStyles({
 }));
 
 const LiveViewBreadcrumbs = ({ classes }) => {
-  const { loading, data } = useQuery(LIST_CLUSTERS);
+  const { loading, data } = useQuery(CLUSTER_QUERIES.LIST_CLUSTERS);
   const { selectedCluster, setCluster, selectedClusterUID } = React.useContext(ClusterContext);
   const { scripts } = React.useContext(ScriptsContext);
   const { setEditorPanelOpen } = React.useContext(LayoutContext);
@@ -99,7 +76,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
 
   const client = useApolloClient();
   const getCompletions = React.useCallback((newInput: string, kind: EntityType) => (client.query({
-    query: AUTOCOMPLETE_FIELD_QUERY,
+    query: AUTOCOMPLETE_QUERIES.FIELD,
     fetchPolicy: 'network-only',
     variables: {
       input: newInput,
@@ -258,7 +235,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
         // Skip executing the script, which starts empty. Executing empty scripts emits scary (harmless) error messages.
         return;
       }
-      if (!ContainsMutation(execArgs.pxl)) {
+      if (!containsMutation(execArgs.pxl)) {
         execute(execArgs);
       }
     },

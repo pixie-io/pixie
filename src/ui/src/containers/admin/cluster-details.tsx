@@ -5,7 +5,6 @@ import ClientContext, {
 } from 'common/vizier-grpc-client-context';
 import { Breadcrumbs, StatusCell, StatusGroup } from 'pixie-components';
 import { distanceInWords } from 'date-fns';
-import gql from 'graphql-tag';
 import { useHistory, useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { dataFromProto } from 'utils/result-data-utils';
@@ -24,7 +23,7 @@ import TableRow from '@material-ui/core/TableRow';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 
-import { ExecutionStateUpdate } from 'pixie-api';
+import { ExecutionStateUpdate, CLUSTER_QUERIES } from 'pixie-api';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
 import {
@@ -199,31 +198,6 @@ const AgentsTable = () => {
   return <AgentsTableContent agents={state.data} />;
 };
 
-// TODO(nserrino): Update this to a filtered lookup on clusterName once that graphql
-// endpoint has landed. PC-471.
-const GET_CLUSTER_CONTROL_PLANE_PODS = gql`
-{
-  clusters {
-    clusterName
-    controlPlanePodStatuses {
-      name
-      status
-      message
-      reason
-      containers {
-        name
-        state
-        reason
-        message
-      }
-      events {
-        message
-      }
-    }
-  }
-}
-`;
-
 const formatPodStatus = ({
   name, status, message, reason, containers, events,
 }) => ({
@@ -353,7 +327,7 @@ const ExpandablePodRow = withStyles((theme: Theme) => ({
 });
 
 const ControlPlanePodsTable = ({ selectedClusterName }) => {
-  const { loading, data } = useQuery(GET_CLUSTER_CONTROL_PLANE_PODS);
+  const { loading, data } = useQuery(CLUSTER_QUERIES.GET_CLUSTER_CONTROL_PLANE_PODS);
   if (loading) {
     return <div>Loading</div>;
   }
@@ -388,23 +362,9 @@ const ControlPlanePodsTable = ({ selectedClusterName }) => {
   );
 };
 
-const LIST_CLUSTERS = gql`
-{
-  clusters {
-    id
-    status
-    clusterName
-    prettyClusterName
-    vizierConfig {
-      passthroughEnabled
-    }
-  }
-}
-`;
-
 const ClusterDetailsNavigation = ({ selectedClusterName }) => {
   const history = useHistory();
-  const { loading, data } = useQuery(LIST_CLUSTERS);
+  const { loading, data } = useQuery(CLUSTER_QUERIES.LIST_CLUSTERS);
 
   if (loading) {
     return (<div>Loading...</div>);
@@ -458,7 +418,7 @@ export const ClusterDetails = withStyles((theme: Theme) => ({
   const clusterName = decodeURIComponent(name);
 
   const [tab, setTab] = React.useState('agents');
-  const { loading, error, data } = useQuery(LIST_CLUSTERS, { pollInterval: AGENTS_POLL_INTERVAL });
+  const { loading, error, data } = useQuery(CLUSTER_QUERIES.LIST_CLUSTERS, { pollInterval: AGENTS_POLL_INTERVAL });
 
   if (loading) {
     return <div className={classes.error}>Loading...</div>;

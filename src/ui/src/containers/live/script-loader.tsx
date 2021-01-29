@@ -1,7 +1,7 @@
 import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
 import urlParams from 'utils/url-params';
-import { ContainsMutation } from 'utils/pxl';
+import { containsMutation } from 'pixie-api';
 
 import { ScriptContext } from 'context/script-context';
 import { ResultsContext } from 'context/results-context';
@@ -104,7 +104,7 @@ export function ScriptLoader() {
         // The Scratch Pad script starts with just comments and no code. Running that would be an error.
         if (script.id === SCRATCH_SCRIPT.id) return;
 
-        if (!ContainsMutation(execArgs.pxl)) {
+        if (!containsMutation(execArgs.pxl)) {
           ref.current.execute(execArgs);
         }
         setLoadState((state) => {

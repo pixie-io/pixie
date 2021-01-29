@@ -11,11 +11,12 @@ import Button from '@material-ui/core/Button';
 import TableContainer from '@material-ui/core/TableContainer';
 import Add from '@material-ui/icons/Add';
 
-import { CREATE_DEPLOYMENT_KEY, DeploymentKeysTable } from 'containers/admin/deployment-keys';
-import { CREATE_API_KEY, APIKeysTable } from 'containers/admin/api-keys';
+import { DeploymentKeysTable } from 'containers/admin/deployment-keys';
+import { APIKeysTable } from 'containers/admin/api-keys';
 import { ClustersTable } from 'containers/admin/clusters-list';
 import { StyledTab, StyledTabs } from 'containers/admin/utils';
 import { scrollbarStyles } from 'pixie-components';
+import { API_KEY_QUERIES, DEPLOYMENT_KEY_QUERIES } from 'pixie-api';
 
 export const AdminOverview = withStyles((theme: Theme) => createStyles({
   createButton: {
@@ -41,8 +42,8 @@ export const AdminOverview = withStyles((theme: Theme) => createStyles({
     paddingBottom: '1px', // Prevent an incorrect height calculation that shows a second scrollbar
   },
 }))(({ classes }: WithStyles) => {
-  const [createDeployKey] = useMutation(CREATE_DEPLOYMENT_KEY);
-  const [createAPIKey] = useMutation(CREATE_API_KEY);
+  const [createDeployKey] = useMutation(DEPLOYMENT_KEY_QUERIES.CREATE_DEPLOYMENT_KEY);
+  const [createAPIKey] = useMutation(API_KEY_QUERIES.CREATE_API_KEY);
   const [tab, setTab] = React.useState('clusters');
 
   return (

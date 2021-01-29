@@ -4,7 +4,6 @@ import {
 } from 'pixie-components';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
-import gql from 'graphql-tag';
 import { useApolloClient } from '@apollo/react-hooks';
 import { ClusterContext } from 'common/cluster-context';
 
@@ -15,30 +14,10 @@ import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 
 import { ScriptContext, ExecuteArguments } from 'context/script-context';
-import { ContainsMutation } from 'utils/pxl';
+import { containsMutation, AUTOCOMPLETE_QUERIES } from 'pixie-api';
 import { entityPageForScriptId } from 'containers/live-widgets/utils/live-view-params';
 import { ParseFormatStringToTabStops } from './autocomplete-parser';
 import { entityTypeToString } from './autocomplete-utils';
-
-const AUTOCOMPLETE_QUERY = gql`
-query autocomplete($input: String, $cursor: Int, $action: AutocompleteActionType, $clusterUID: String) {
-  autocomplete(input: $input, cursorPos: $cursor, action: $action, clusterUID: $clusterUID) {
-    formattedInput
-    isExecutable
-    tabSuggestions {
-      tabIndex
-      executableAfterSelect
-      suggestions {
-        kind
-        name
-        description
-        matchedIndexes
-        state
-      }
-    }
-  }
-}
-`;
 
 interface NewCommandInputProps {
   open: boolean;
@@ -129,7 +108,7 @@ const CommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
     currentInput.text = input;
 
     return client.query({
-      query: AUTOCOMPLETE_QUERY,
+      query: AUTOCOMPLETE_QUERIES.AUTOCOMPLETE,
       fetchPolicy: 'network-only',
       variables: {
         input,
@@ -193,7 +172,7 @@ const CommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
         setTabStops([{ CursorPosition: 0, Index: 1, Value: '' }]);
         setIsValid(false);
         setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
-        if (!ContainsMutation(execArgs.pxl)) {
+        if (!containsMutation(execArgs.pxl)) {
           execute(execArgs);
         }
         onClose();

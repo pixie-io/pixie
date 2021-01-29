@@ -5,7 +5,6 @@ import {
 import KeyboardIcon from '@material-ui/icons/Keyboard';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { DOMAIN_NAME } from 'containers/constants';
-import gql from 'graphql-tag';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -18,18 +17,8 @@ import {
   createStyles, makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
 import { useContext } from 'react';
+import { USER_QUERIES } from 'pixie-api';
 import { LiveShortcutsContext } from '../live/shortcuts';
-
-export const GET_USER_INFO = gql`
-{
-  user {
-    id
-    email
-    name
-    picture
-  }
-}
-`;
 
 const useStyles = makeStyles((theme: Theme) => ({
   avatarSm: {
@@ -86,7 +75,7 @@ const ProfileMenu = (props: { className?: string }) => {
     setAnchorEl(null);
   }, []);
 
-  const { loading, error, data } = useQuery(GET_USER_INFO, { fetchPolicy: 'network-only' });
+  const { loading, error, data } = useQuery(USER_QUERIES.GET_USER_INFO, { fetchPolicy: 'network-only' });
 
   if (loading || error || !data.user) {
     return null;

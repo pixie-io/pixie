@@ -18,7 +18,7 @@ import MenuItem from '@material-ui/core/MenuItem';
 import Tooltip from '@material-ui/core/Tooltip';
 
 import { Link } from 'react-router-dom';
-import gql from 'graphql-tag';
+import { USER_QUERIES } from 'pixie-api';
 
 import { ClusterContext } from 'common/cluster-context';
 import UserContext from 'common/user-context';
@@ -30,7 +30,6 @@ import {
   PixieLogo,
 } from 'pixie-components';
 import { toEntityPathname, LiveViewPage } from 'containers/live-widgets/utils/live-view-params';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { DOMAIN_NAME } from 'containers/constants';
 import { LiveShortcutsContext } from 'containers/live/shortcuts';
 import { SidebarContext } from 'context/sidebar-context';
@@ -161,17 +160,6 @@ const styles = (
     width: '100%',
   },
 });
-
-export const GET_USER_INFO = gql`
-{
-  user {
-    id
-    email
-    name
-    picture
-  }
-}
-`;
 
 const SideBarInternalLinkItem = ({
   classes, icon, link, text,
@@ -369,7 +357,7 @@ const SideBar = ({ classes }) => {
 
   const { selectedClusterName } = React.useContext(ClusterContext);
   const { user } = React.useContext(UserContext);
-  const { data } = useQuery(GET_USER_INFO, { fetchPolicy: 'network-only' });
+  const { data } = useQuery(USER_QUERIES.GET_USER_INFO, { fetchPolicy: 'network-only' });
 
   const navItems = React.useMemo(() => (
     [{

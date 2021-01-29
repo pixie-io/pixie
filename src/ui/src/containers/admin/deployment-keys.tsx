@@ -11,9 +11,9 @@ import Copy from '@material-ui/icons/FileCopy';
 import Delete from '@material-ui/icons/DeleteForever';
 import Visibility from '@material-ui/icons/Visibility';
 import VisibilityOff from '@material-ui/icons/VisibilityOff';
-import gql from 'graphql-tag';
 import { distanceInWords } from 'date-fns';
 import * as React from 'react';
+import { DEPLOYMENT_KEY_QUERIES } from 'pixie-api';
 import {
   AdminTooltip, StyledTableCell, StyledTableHeaderCell,
   StyledLeftTableCell, StyledRightTableCell,
@@ -21,30 +21,6 @@ import {
 import {
   UseKeyListStyles, KeyListItemIcon, KeyListItemText, KeyListMenu,
 } from './key-list';
-
-const LIST_DEPLOYMENT_KEYS = gql`
-{
-  deploymentKeys {
-    id
-    key
-    desc
-    createdAtMs
-  }
-}`;
-
-const DELETE_DEPLOY_KEY = gql`
-  mutation deleteKey($id: ID!) {
-    DeleteDeploymentKey(id: $id)
-  }
-`;
-
-export const CREATE_DEPLOYMENT_KEY = gql`
-  mutation {
-    CreateDeploymentKey {
-      id
-    }
-  }
-`;
 
 interface DeploymentKeyDisplay {
   id: string;
@@ -72,7 +48,7 @@ export const DeploymentKeyRow = ({ deploymentKey }) => {
   const [open, setOpen] = React.useState<boolean>(false);
   const [anchorEl, setAnchorEl] = React.useState(null);
 
-  const [deleteDeployKey] = useMutation(DELETE_DEPLOY_KEY);
+  const [deleteDeployKey] = useMutation(DEPLOYMENT_KEY_QUERIES.DELETE_DEPLOY_KEY);
 
   const openMenu = React.useCallback((event) => {
     setOpen(true);
@@ -151,7 +127,7 @@ export const DeploymentKeyRow = ({ deploymentKey }) => {
 
 export const DeploymentKeysTable = () => {
   const classes = UseKeyListStyles();
-  const { loading, error, data } = useQuery(LIST_DEPLOYMENT_KEYS, { pollInterval: 2000 });
+  const { loading, error, data } = useQuery(DEPLOYMENT_KEY_QUERIES.LIST_DEPLOYMENT_KEYS, { pollInterval: 2000 });
   if (loading) {
     return <div className={classes.error}>Loading...</div>;
   }

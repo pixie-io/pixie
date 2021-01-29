@@ -7,39 +7,15 @@ import AdminView from 'pages/admin/admin';
 import CreditsView from 'pages/credits/credits';
 import { ScriptsContextProvider } from 'containers/App/scripts-context';
 import LiveView from 'pages/live/live';
-import gql from 'graphql-tag';
 import * as React from 'react';
 import { Redirect, Route, Switch } from 'react-router-dom';
 
 import { useQuery } from '@apollo/react-hooks';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
+import { CLUSTER_QUERIES, USER_QUERIES } from 'pixie-api';
 import { DeployInstructions } from './deploy-instructions';
 import { selectCluster } from './cluster-info';
-
-export const LIST_CLUSTERS = gql`
-{
-  clusters {
-    id
-    clusterName
-    prettyClusterName
-    status
-    clusterUID
-    vizierConfig {
-      passthroughEnabled
-    }
-  }
-}`;
-
-const GET_USER = gql`
-{
-  user {
-    id
-    email
-    orgName
-  }
-}
-`;
 
 const useStyles = makeStyles(() => createStyles({
   banner: {
@@ -55,7 +31,7 @@ const useStyles = makeStyles(() => createStyles({
 
 const ClusterBanner = () => {
   const classes = useStyles();
-  const { loading, error, data } = useQuery(GET_USER, { fetchPolicy: 'network-only' });
+  const { loading, error, data } = useQuery(USER_QUERIES.GET_USER_INFO, { fetchPolicy: 'network-only' });
 
   if (loading || error) {
     return null;
@@ -80,7 +56,10 @@ const Vizier = () => {
   const showSnackbar = useSnackbar();
 
   const { selectedCluster } = React.useContext(ClusterContext);
-  const { loading, error, data } = useQuery(LIST_CLUSTERS, { pollInterval: 2500, fetchPolicy: 'network-only' });
+  const { loading, error, data } = useQuery(
+    CLUSTER_QUERIES.LIST_CLUSTERS,
+    { pollInterval: 2500, fetchPolicy: 'network-only' },
+  );
   const clusters = data?.clusters || [];
   const cluster = clusters.find((c) => c.id === selectedCluster);
 
@@ -118,8 +97,11 @@ export default function WithClusterBanner() {
   const showSnackbar = useSnackbar();
 
   const [clusterId, setClusterId] = storage.useSessionStorage(storage.CLUSTER_ID_KEY, '');
-  const { loading, error, data } = useQuery(LIST_CLUSTERS, { pollInterval: 2500, fetchPolicy: 'network-only' });
-  const userQuery = useQuery(GET_USER, { fetchPolicy: 'network-only' });
+  const { loading, error, data } = useQuery(
+    CLUSTER_QUERIES.LIST_CLUSTERS,
+    { pollInterval: 2500, fetchPolicy: 'network-only' },
+  );
+  const userQuery = useQuery(USER_QUERIES.GET_USER_INFO, { fetchPolicy: 'network-only' });
   const ldClient = useLDClient();
 
   const clusters = data?.clusters || [];
@@ -136,7 +118,7 @@ export default function WithClusterBanner() {
       const newClusterId = foundId || clusterId;
       setClusterId(newClusterId);
     },
-  }), [clusterId, setClusterId, clusters, cluster?.clusterName]);
+  }), [clusterId, cluster?.clusterName, cluster?.prettyClusterName, cluster?.clusterUID, setClusterId, clusters]);
 
   const userEmail = userQuery.data?.user.email;
   const userOrg = userQuery.data?.user.orgName;

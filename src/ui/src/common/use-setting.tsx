@@ -1,34 +1,9 @@
 import * as React from 'react';
-import gql from 'graphql-tag';
 import { useMutation, useQuery } from '@apollo/react-hooks';
 import { SetStateFunc } from 'context/common';
-
-export interface UserSettings {
-  tourSeen: boolean;
-}
+import { UserSettings, DEFAULT_USER_SETTINGS, USER_QUERIES } from 'pixie-api';
 
 type TData = { userSettings: Array<{key: string; value: string}> };
-
-/** Default values for every user setting, which will be returned from useSetting if there is not a stored value. */
-export const DEFAULT_USER_SETTINGS: UserSettings = Object.freeze({
-  tourSeen: false,
-});
-
-/** Exported only for test mocks */
-export const GET_ALL_USER_SETTINGS = gql`
-{
-  userSettings(keys: [${Object.keys(DEFAULT_USER_SETTINGS).map((k) => JSON.stringify(k)).join(', ')}]) {
-    key
-    value
-  }
-}`;
-
-/** Exported only for test mocks */
-export const SAVE_USER_SETTING = gql`
-  mutation UpdateUserSetting($key: String!, $value: String!) {
-    UpdateUserSettings(keys: [$key], values: [$value])
-  }
-`;
 
 /**
  * Similar to useState, provides the value and a setter for a given (recognized) user setting.
@@ -46,8 +21,11 @@ export function useSetting(
   type ValueType = UserSettings[typeof key];
 
   const [setting, setSetting] = React.useState<ValueType>(DEFAULT_USER_SETTINGS[key]);
-  const [storeSetting] = useMutation(SAVE_USER_SETTING);
-  const { loading, data, error } = useQuery<TData>(GET_ALL_USER_SETTINGS, { fetchPolicy: 'cache-and-network' });
+  const [storeSetting] = useMutation(USER_QUERIES.SAVE_USER_SETTING);
+  const { loading, data, error } = useQuery<TData>(
+    USER_QUERIES.GET_ALL_USER_SETTINGS,
+    { fetchPolicy: 'cache-and-network' },
+  );
 
   // Upstream, settings are stored as strings no matter what they contain. Since the data type is not stored there, we
   // make some compromises at runtime when trying to parse them out.

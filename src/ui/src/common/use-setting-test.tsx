@@ -2,22 +2,21 @@ import * as React from 'react';
 import { mount } from 'enzyme';
 import { MockedProvider } from '@apollo/react-testing';
 import { act } from 'react-dom/test-utils';
-import {
-  DEFAULT_USER_SETTINGS, GET_ALL_USER_SETTINGS, SAVE_USER_SETTING, useSetting,
-} from './use-setting';
+import { USER_QUERIES, DEFAULT_USER_SETTINGS } from 'pixie-api';
+import { useSetting } from './use-setting';
 
 describe('useSetting hook for persistent user settings', () => {
   const getMocks = (tourSeen?: boolean|undefined, onMutate?: () => void) => [
     {
       request: {
-        query: GET_ALL_USER_SETTINGS,
+        query: USER_QUERIES.GET_ALL_USER_SETTINGS,
         variables: {},
       },
       result: { data: { userSettings: [{ key: 'tourSeen', value: tourSeen }] } },
     },
     {
       request: {
-        query: SAVE_USER_SETTING,
+        query: USER_QUERIES.SAVE_USER_SETTING,
         variables: { key: 'tourSeen', value: JSON.stringify(tourSeen) },
       },
       result: () => {
@@ -46,7 +45,7 @@ describe('useSetting hook for persistent user settings', () => {
 
   it('provides default values when an error has occurred in reading stored values', () => {
     const errMocks = [{
-      request: { query: GET_ALL_USER_SETTINGS },
+      request: { query: USER_QUERIES.GET_ALL_USER_SETTINGS },
       error: 'Something went up in a ball of glorious fire, and took your request with it. Sorry about that.',
     }];
     const consumer = getConsumer(errMocks);

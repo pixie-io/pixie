@@ -113,8 +113,6 @@
     "fetch": "^1.1.0",
     "google-protobuf": "^3.11.4",
     "graphlib-dot": "^0.6.4",
-    "graphql": "^14.5.8",
-    "graphql-tag": "^2.10.1",
     "grpc-web": "^1.0.7",
     "history": "^4.10.1",
     "immutable-tuple": "^0.4.8",

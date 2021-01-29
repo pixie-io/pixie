@@ -8,8 +8,8 @@ import {
 import ClientContext from 'common/vizier-grpc-client-context';
 import {
   VizierQueryError, GRPCStatusCode, BatchDataUpdate, VizierTable as Table,
+  containsMutation, isStreaming,
 } from 'pixie-api';
-import { ContainsMutation, IsStreaming } from 'utils/pxl';
 
 import * as React from 'react';
 import { withRouter } from 'react-router';
@@ -264,12 +264,12 @@ const ScriptContextProvider = (props) => {
     let queryId: string;
     let loaded = false;
 
-    const mutation = ContainsMutation(execArgs.pxl);
-    const isStreaming = IsStreaming(execArgs.pxl);
+    const mutation = containsMutation(execArgs.pxl);
+    const streaming = isStreaming(execArgs.pxl);
     // See the 'start' event handler in this file for why this is in a timeout
     setTimeout(() => {
       setLoading(true);
-      setStreaming(isStreaming);
+      setStreaming(streaming);
     });
 
     if (!execArgs.skipURLUpdate) {
@@ -311,7 +311,7 @@ const ScriptContextProvider = (props) => {
     };
 
     const onResults = (queryResults) => {
-      if (queryResults && (isStreaming || queryResults.executionStats)) {
+      if (queryResults && (streaming || queryResults.executionStats)) {
         ({ queryId } = queryResults);
         const newTables = {};
         queryResults.tables.forEach((table) => {
