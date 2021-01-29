@@ -70,7 +70,7 @@ export function parseVis(json: string): Vis {
       return parsed as Vis;
     }
   } catch (e) {
-    // noop. tslint doesn't allow empty blocks.
+    // Tslint doesn't allow empty blocks.
   }
   return null;
 }

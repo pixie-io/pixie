@@ -64,7 +64,7 @@ export class App extends React.Component {
       if (response.status === 200) {
         this.setState({ authenticated: true, loaded: true });
       }
-    }).catch((/* error */) => {
+    }).catch(() => {
       // TODO(malthus): Do something with this error.
       this.setState({ authenticated: false, loaded: true });
     });
