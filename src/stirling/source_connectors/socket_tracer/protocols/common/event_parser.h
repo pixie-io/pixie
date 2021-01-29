@@ -30,10 +30,18 @@ struct FrameBase {
   virtual ~FrameBase() = default;
 };
 
+// Represents a precise position in a sequence of data chunks.
 struct BufferPosition {
-  size_t seq_num;
-  size_t offset;
+  // Points to the index of the data chunk.
+  size_t seq_num = 0;
+
+  // Offset to the position in the above-specified data chunk.
+  size_t offset = 0;
 };
+
+inline bool operator==(const BufferPosition& lhs, const BufferPosition& rhs) {
+  return lhs.seq_num == rhs.seq_num && lhs.offset == rhs.offset;
+}
 
 template <typename PositionType>
 struct StartEndPos {
@@ -43,10 +51,6 @@ struct StartEndPos {
   // Unlike STL container end, this is not 1 byte passed the end.
   PositionType end;
 };
-
-inline bool operator==(const BufferPosition& lhs, const BufferPosition& rhs) {
-  return lhs.seq_num == rhs.seq_num && lhs.offset == rhs.offset;
-}
 
 template <typename TPosType>
 inline bool operator==(const StartEndPos<TPosType>& lhs, const StartEndPos<TPosType>& rhs) {
