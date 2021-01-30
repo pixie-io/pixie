@@ -9,7 +9,7 @@
 #include "src/common/testing/protobuf.h"
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/stirling_mock.h"
+#include "src/stirling/testing/stirling_mock.h"
 #include "src/vizier/services/agent/manager/test_utils.h"
 #include "src/vizier/services/agent/pem/tracepoint_manager.h"
 

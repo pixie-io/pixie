@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test_library")
 
 pl_cc_library(
     name = "cc_library",
@@ -17,4 +17,10 @@ pl_cc_library(
 filegroup(
     name = "tcpdrop_bpftrace_script",
     srcs = ["tcpdrop.bpftrace.pxl"],
+)
+
+pl_cc_test_library(
+    name = "stirling_mock",
+    srcs = ["stirling_mock.h"],
+    deps = ["//src/stirling:cc_library"],
 )
