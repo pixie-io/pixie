@@ -25,6 +25,9 @@ class API;
 class LibuvTimer : public Timer {
  public:
   LibuvTimer(TimerCB cb, uv_loop_t* loop);
+  // Ensure that DeferredDelete is called before the destructor is invoked.
+  // Otherwise, the event loop might still invoke the callback function
+  // of this timer.
   ~LibuvTimer() override;
 
   void DisableTimer() override;
