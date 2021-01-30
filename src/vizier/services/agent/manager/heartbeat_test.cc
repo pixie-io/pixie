@@ -8,12 +8,12 @@
 #include "src/common/event/nats.h"
 #include "src/common/system/config_mock.h"
 #include "src/common/testing/event/simulated_time_system.h"
+#include "src/common/testing/testing.h"
 #include "src/shared/metadatapb/metadata.pb.h"
 #include "src/vizier/messages/messagespb/messages.pb.h"
 #include "src/vizier/services/agent/manager/heartbeat.h"
 #include "src/vizier/services/agent/manager/manager.h"
-
-#include "src/common/testing/testing.h"
+#include "src/vizier/services/agent/manager/test_utils.h"
 
 namespace pl {
 namespace vizier {
@@ -52,22 +52,6 @@ schema {
   }
 }
 )proto";
-
-template <typename TMsg>
-class FakeNATSConnector : public event::NATSConnector<TMsg> {
- public:
-  FakeNATSConnector() : event::NATSConnector<TMsg>("", "", "", nullptr) {}
-  ~FakeNATSConnector() override {}
-
-  Status Connect(event::Dispatcher*) override { return Status::OK(); }
-
-  Status Publish(const TMsg& msg) override {
-    published_msgs_.push_back(msg);
-    return Status::OK();
-  }
-
-  std::vector<TMsg> published_msgs_;
-};
 
 class HeartbeatMessageHandlerTest : public ::testing::Test {
  protected:
@@ -131,17 +115,17 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
 
 TEST_F(HeartbeatMessageHandlerTest, InitialHeartbeatTimeout) {
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
-  EXPECT_EQ(1, nats_conn_->published_msgs_.size());
-  auto hb = nats_conn_->published_msgs_[0].mutable_heartbeat();
-  EXPECT_EQ(0, hb->sequence_number());
+  EXPECT_EQ(1, nats_conn_->published_msgs().size());
+  auto hb = nats_conn_->published_msgs()[0].heartbeat();
+  EXPECT_EQ(0, hb.sequence_number());
 
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(6));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   // If no ack received, hb manager should resend the same heartbeat.
-  EXPECT_EQ(2, nats_conn_->published_msgs_.size());
-  hb = nats_conn_->published_msgs_[1].mutable_heartbeat();
-  EXPECT_EQ(0, hb->sequence_number());
+  EXPECT_EQ(2, nats_conn_->published_msgs().size());
+  hb = nats_conn_->published_msgs()[1].heartbeat();
+  EXPECT_EQ(0, hb.sequence_number());
 
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 5000 + 1));
   ASSERT_DEATH(dispatcher_->Run(event::Dispatcher::RunType::NonBlock),
@@ -150,10 +134,10 @@ TEST_F(HeartbeatMessageHandlerTest, InitialHeartbeatTimeout) {
 
 TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeat) {
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
-  EXPECT_EQ(1, nats_conn_->published_msgs_.size());
-  auto hb = nats_conn_->published_msgs_[0].mutable_heartbeat();
-  EXPECT_EQ(0, hb->sequence_number());
-  EXPECT_THAT(*hb->mutable_update_info(), Partially(EqualsProto(kAgentUpdateInfoSchemaNoTablets)));
+  EXPECT_EQ(1, nats_conn_->published_msgs().size());
+  auto hb = nats_conn_->published_msgs()[0].heartbeat();
+  EXPECT_EQ(0, hb.sequence_number());
+  EXPECT_THAT(hb.update_info(), Partially(EqualsProto(kAgentUpdateInfoSchemaNoTablets)));
 
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 4000));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
@@ -167,11 +151,11 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeat) {
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 5000 + 1));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
-  EXPECT_EQ(3, nats_conn_->published_msgs_.size());
-  hb = nats_conn_->published_msgs_[2].mutable_heartbeat();
-  EXPECT_EQ(1, hb->sequence_number());
+  EXPECT_EQ(3, nats_conn_->published_msgs().size());
+  hb = nats_conn_->published_msgs()[2].heartbeat();
+  EXPECT_EQ(1, hb.sequence_number());
   // No schema should be included in subsequent heartbeats.
-  EXPECT_EQ(0, hb->mutable_update_info()->schema().size());
+  EXPECT_EQ(0, hb.update_info().schema().size());
 }
 
 TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatMetadata) {
@@ -187,13 +171,13 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatMetadata) {
 
   auto s = heartbeat_handler_->HandleMessage(std::move(hb_ack));
 
-  EXPECT_EQ(1, nats_conn_->published_msgs_.size());
-  auto hb = nats_conn_->published_msgs_[0].mutable_heartbeat();
-  EXPECT_EQ(0, hb->sequence_number());
-  EXPECT_TRUE(hb->update_info().data().has_metadata_info());
-  EXPECT_THAT(*hb->mutable_update_info(), Partially(EqualsProto(kAgentUpdateInfoSchemaNoTablets)));
+  EXPECT_EQ(1, nats_conn_->published_msgs().size());
+  auto hb = nats_conn_->published_msgs()[0].heartbeat();
+  EXPECT_EQ(0, hb.sequence_number());
+  EXPECT_TRUE(hb.update_info().data().has_metadata_info());
+  EXPECT_THAT(hb.update_info(), Partially(EqualsProto(kAgentUpdateInfoSchemaNoTablets)));
 
-  auto metadata_info = hb->update_info().data().metadata_info();
+  auto metadata_info = hb.update_info().data().metadata_info();
   std::vector<MetadataType> types;
   for (auto i = 0; i < metadata_info.metadata_fields_size(); ++i) {
     types.push_back(metadata_info.metadata_fields(i));
@@ -207,19 +191,19 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatMetadata) {
   // Don't update the metadata filter when the k8s epoch hasn't changed.
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 5000 + 1));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
-  EXPECT_EQ(2, nats_conn_->published_msgs_.size());
+  EXPECT_EQ(2, nats_conn_->published_msgs().size());
 
-  hb = nats_conn_->published_msgs_[1].mutable_heartbeat();
-  EXPECT_EQ(1, hb->sequence_number());
-  EXPECT_FALSE(hb->update_info().data().has_metadata_info());
+  hb = nats_conn_->published_msgs()[1].heartbeat();
+  EXPECT_EQ(1, hb.sequence_number());
+  EXPECT_FALSE(hb.update_info().data().has_metadata_info());
 }
 
 TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatRelationUpdates) {
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
-  EXPECT_EQ(1, nats_conn_->published_msgs_.size());
-  auto hb = nats_conn_->published_msgs_[0].mutable_heartbeat();
-  EXPECT_EQ(0, hb->sequence_number());
-  EXPECT_THAT(*hb->mutable_update_info(), Partially(EqualsProto(kAgentUpdateInfoSchemaNoTablets)));
+  EXPECT_EQ(1, nats_conn_->published_msgs().size());
+  auto hb = nats_conn_->published_msgs()[0].heartbeat();
+  EXPECT_EQ(0, hb.sequence_number());
+  EXPECT_THAT(hb.update_info(), Partially(EqualsProto(kAgentUpdateInfoSchemaNoTablets)));
 
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 4000));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
@@ -236,11 +220,11 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatRelationUpdates) {
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 5000 + 1));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
-  EXPECT_EQ(3, nats_conn_->published_msgs_.size());
-  hb = nats_conn_->published_msgs_[2].mutable_heartbeat();
-  EXPECT_EQ(1, hb->sequence_number());
+  EXPECT_EQ(3, nats_conn_->published_msgs().size());
+  hb = nats_conn_->published_msgs()[2].heartbeat();
+  EXPECT_EQ(1, hb.sequence_number());
   // Since relation info was updated it should publish the entire schema again.
-  EXPECT_EQ(3, hb->mutable_update_info()->schema().size());
+  EXPECT_EQ(3, hb.update_info().schema().size());
 }
 
 class HeartbeatNackMessageHandlerTest : public ::testing::Test {

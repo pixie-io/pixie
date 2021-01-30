@@ -12,6 +12,7 @@
 #include "src/vizier/messages/messagespb/messages.pb.h"
 #include "src/vizier/services/agent/manager/manager.h"
 #include "src/vizier/services/agent/manager/registration.h"
+#include "src/vizier/services/agent/manager/test_utils.h"
 
 #include "src/common/testing/testing.h"
 
@@ -26,22 +27,6 @@ using shared::metadatapb::MetadataType;
 using ::testing::Return;
 using ::testing::ReturnRef;
 using ::testing::UnorderedElementsAreArray;
-
-template <typename TMsg>
-class FakeNATSConnector : public event::NATSConnector<TMsg> {
- public:
-  FakeNATSConnector() : event::NATSConnector<TMsg>("", "", "", nullptr) {}
-  ~FakeNATSConnector() override {}
-
-  Status Connect(event::Dispatcher*) override { return Status::OK(); }
-
-  Status Publish(const TMsg& msg) override {
-    published_msgs_.push_back(msg);
-    return Status::OK();
-  }
-
-  std::vector<TMsg> published_msgs_;
-};
 
 class RegistrationHandlerTest : public ::testing::Test {
  protected:
@@ -102,10 +87,10 @@ TEST_F(RegistrationHandlerTest, RegisterAgent) {
   // Advance the clock to account for the random wait time.
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(60 * 1000));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
-  EXPECT_EQ(1, nats_conn_->published_msgs_.size());
+  EXPECT_EQ(1, nats_conn_->published_msgs().size());
 
   // Check contents of registration msg.
-  auto msg = nats_conn_->published_msgs_[0];
+  auto msg = nats_conn_->published_msgs()[0];
   EXPECT_TRUE(msg.has_register_agent_request());
   auto req = msg.register_agent_request();
   EXPECT_TRUE(req.info().capabilities().collects_data());
@@ -131,7 +116,7 @@ TEST_F(RegistrationHandlerTest, RegisterAndReregisterAgent) {
   registration_handler_->RegisterAgent();
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(60 * 1000 + 1));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
-  EXPECT_EQ(1, nats_conn_->published_msgs_.size());
+  EXPECT_EQ(1, nats_conn_->published_msgs().size());
   auto registration_ack = std::make_unique<messages::VizierMessage>();
   registration_ack->mutable_register_agent_response()->set_asid(10);
   EXPECT_OK(registration_handler_->HandleMessage(std::move(registration_ack)));
@@ -142,10 +127,10 @@ TEST_F(RegistrationHandlerTest, RegisterAndReregisterAgent) {
   registration_handler_->ReregisterAgent();
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(120 * 1000 + 1));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
-  EXPECT_EQ(2, nats_conn_->published_msgs_.size());
+  EXPECT_EQ(2, nats_conn_->published_msgs().size());
 
   // Check that the ASID got sent again.
-  auto msg = nats_conn_->published_msgs_[1];
+  auto msg = nats_conn_->published_msgs()[1];
   EXPECT_TRUE(msg.has_register_agent_request());
   EXPECT_EQ(10, msg.register_agent_request().asid());
 
@@ -164,7 +149,7 @@ TEST_F(RegistrationHandlerTest, RegisterAgentTimeout) {
   // Advance the clock to account for the random wait time.
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(60 * 1000));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
-  EXPECT_EQ(1, nats_conn_->published_msgs_.size());
+  EXPECT_EQ(1, nats_conn_->published_msgs().size());
 
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(120 * 1000));
   ASSERT_DEATH(dispatcher_->Run(event::Dispatcher::RunType::NonBlock),

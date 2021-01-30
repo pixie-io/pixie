@@ -1,12 +1,15 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_library")
 
 pl_cc_library(
     name = "cc_library",
     srcs = glob(
         ["*.cc"],
-        exclude = ["**/*_test.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "**/*test_utils.h",
+        ],
     ),
     hdrs = glob(["*.h"]),
     deps = [
@@ -43,6 +46,14 @@ pl_cc_library(
     ],
 )
 
+pl_cc_test_library(
+    name = "test_utils",
+    hdrs = glob(["*test_utils.h"]),
+    deps = [
+        "//src/common/event:cc_library",
+    ],
+)
+
 pl_cc_test(
     name = "relation_info_manager_test",
     srcs = ["relation_info_manager_test.cc"],
@@ -56,6 +67,7 @@ pl_cc_test(
     srcs = ["heartbeat_test.cc"],
     deps = [
         ":cc_library",
+        ":test_utils",
         "//src/common/event:cc_library",
         "//src/common/system:cc_library_mock",
         "//src/common/testing/event:cc_library",
@@ -79,6 +91,7 @@ pl_cc_test(
     srcs = ["registration_test.cc"],
     deps = [
         ":cc_library",
+        ":test_utils",
         "//src/common/event:cc_library",
         "//src/common/system:cc_library_mock",
         "//src/common/testing/event:cc_library",

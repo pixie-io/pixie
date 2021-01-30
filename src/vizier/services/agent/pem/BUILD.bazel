@@ -28,6 +28,7 @@ pl_cc_test(
         ":cc_library",
         "//src/common/testing/event:cc_library",
         "//src/stirling:stirling_mock",
+        "//src/vizier/services/agent/manager:test_utils",
     ],
 )
 

@@ -10,6 +10,7 @@
 
 #include "src/common/testing/testing.h"
 #include "src/stirling/stirling_mock.h"
+#include "src/vizier/services/agent/manager/test_utils.h"
 #include "src/vizier/services/agent/pem/tracepoint_manager.h"
 
 namespace pl {
@@ -21,22 +22,6 @@ using stirling::stirlingpb::InfoClass;
 using stirling::stirlingpb::Publish;
 using ::testing::_;
 using ::testing::Return;
-
-template <typename TMsg>
-class FakeNATSConnector : public event::NATSConnector<TMsg> {
- public:
-  FakeNATSConnector() : event::NATSConnector<TMsg>("", "", "", nullptr) {}
-  ~FakeNATSConnector() override {}
-
-  Status Connect(event::Dispatcher*) override { return Status::OK(); }
-
-  Status Publish(const TMsg& msg) override {
-    published_msgs.push_back(msg);
-    return Status::OK();
-  }
-
-  std::vector<TMsg> published_msgs;
-};
 
 const char* kInfoClass0 = R"(
   schema {
@@ -130,7 +115,7 @@ TEST_F(TracepointManagerTest, CreateTracepoint) {
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   // Check to make sure no updates were sent to MDS.
-  EXPECT_EQ(0, nats_conn_->published_msgs.size());
+  EXPECT_EQ(0, nats_conn_->published_msgs().size());
 
   // In the next step we will make Stirling return a valid proto.
   // This should cause the publications of the updated state.
@@ -142,8 +127,8 @@ TEST_F(TracepointManagerTest, CreateTracepoint) {
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(10));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
-  ASSERT_EQ(1, nats_conn_->published_msgs.size());
-  auto update = extractTracepointInfoUpdate(nats_conn_->published_msgs[0]);
+  ASSERT_EQ(1, nats_conn_->published_msgs().size());
+  auto update = extractTracepointInfoUpdate(nats_conn_->published_msgs()[0]);
   EXPECT_EQ(statuspb::RUNNING_STATE, update.state());
   EXPECT_TRUE(relation_info_manager_->HasRelation("cpu"));
 }
@@ -168,15 +153,15 @@ TEST_F(TracepointManagerTest, CreateTracepointFailed) {
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   // Check to make sure no updates were sent to MDS.
-  EXPECT_EQ(0, nats_conn_->published_msgs.size());
+  EXPECT_EQ(0, nats_conn_->published_msgs().size());
   EXPECT_CALL(stirling_, GetTracepointInfo(tracepoint_id))
       .WillRepeatedly(Return(error::Internal("Probe failed for unknown reasons")));
 
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(10));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
-  ASSERT_EQ(1, nats_conn_->published_msgs.size());
-  auto update = extractTracepointInfoUpdate(nats_conn_->published_msgs[0]);
+  ASSERT_EQ(1, nats_conn_->published_msgs().size());
+  auto update = extractTracepointInfoUpdate(nats_conn_->published_msgs()[0]);
   EXPECT_EQ(statuspb::FAILED_STATE, update.state());
 }
 
@@ -201,15 +186,15 @@ TEST_F(TracepointManagerTest, CreateTracepointPreconditionFailed) {
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   // Check to make sure no updates were sent to MDS.
-  EXPECT_EQ(0, nats_conn_->published_msgs.size());
+  EXPECT_EQ(0, nats_conn_->published_msgs().size());
   EXPECT_CALL(stirling_, GetTracepointInfo(tracepoint_id))
       .WillRepeatedly(Return(error::FailedPrecondition("nothing to see here")));
 
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(10));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
-  ASSERT_EQ(1, nats_conn_->published_msgs.size());
-  auto update = extractTracepointInfoUpdate(nats_conn_->published_msgs[0]);
+  ASSERT_EQ(1, nats_conn_->published_msgs().size());
+  auto update = extractTracepointInfoUpdate(nats_conn_->published_msgs()[0]);
   EXPECT_EQ(statuspb::FAILED_STATE, update.state());
 }
 
