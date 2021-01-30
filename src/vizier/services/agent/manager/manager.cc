@@ -108,7 +108,7 @@ Status Manager::Init() {
   PL_ASSIGN_OR_RETURN(
       agent_metadata_filter_,
       md::AgentMetadataFilter::Create(kMetadataFilterMaxEntries, kMetadataFilterMaxErrorRate,
-                                      md::AgentMetadataStateManager::MetadataFilterEntities()));
+                                      md::kMetadataFilterEntities));
   chan_cache_ = std::make_unique<ChanCache>(kChanIdleGracePeriod);
   auto hostname_or_s = GetHostname();
   if (!hostname_or_s.ok()) {
@@ -251,7 +251,7 @@ Status Manager::PostRegisterHook(uint32_t asid) {
   LOG_IF(FATAL, info_.asid != 0) << "Attempted to register existing agent with new ASID";
   info_.asid = asid;
 
-  mds_manager_ = std::make_unique<pl::md::AgentMetadataStateManager>(
+  mds_manager_ = std::make_unique<pl::md::AgentMetadataStateManagerImpl>(
       info_.hostname, info_.asid, info_.pod_name, info_.agent_id,
       info_.capabilities.collects_data(), pl::system::Config::GetInstance(),
       agent_metadata_filter_.get());

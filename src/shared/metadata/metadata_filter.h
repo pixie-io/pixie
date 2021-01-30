@@ -20,6 +20,10 @@ using carnot::planner::distributedpb::MetadataInfo;
 using shared::metadatapb::MetadataType;
 using shared::metadatapb::MetadataType_Name;
 
+const absl::flat_hash_set<MetadataType> kMetadataFilterEntities = {
+    MetadataType::SERVICE_ID, MetadataType::SERVICE_NAME, MetadataType::POD_ID,
+    MetadataType::POD_NAME, MetadataType::CONTAINER_ID};
+
 /**
  * An abstract class that keeps track of the various entities in this metadata state.
  * It will be extended by another class that backs it with a data structure such as

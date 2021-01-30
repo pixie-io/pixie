@@ -11,8 +11,7 @@ namespace md {
 
 class TestAgentMetadataFilter : public AgentMetadataFilter {
  public:
-  TestAgentMetadataFilter()
-      : AgentMetadataFilter(AgentMetadataStateManager::MetadataFilterEntities()) {}
+  TestAgentMetadataFilter() : AgentMetadataFilter(kMetadataFilterEntities) {}
   const std::vector<std::string>& inserted_entities() const { return inserted_entities_; }
 
  protected:

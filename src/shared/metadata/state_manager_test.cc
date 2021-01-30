@@ -180,8 +180,7 @@ TEST_F(AgentMetadataStateTest, initialize_md_state) {
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> updates;
   GenerateTestUpdateEvents(&updates);
 
-  EXPECT_OK(AgentMetadataStateManager::ApplyK8sUpdates(2000 /*ts*/, &metadata_state_, &md_filter_,
-                                                       &updates));
+  EXPECT_OK(ApplyK8sUpdates(2000 /*ts*/, &metadata_state_, &md_filter_, &updates));
   EXPECT_EQ(0, updates.size_approx());
 
   EXPECT_EQ("myhost", metadata_state_.hostname());
@@ -243,8 +242,7 @@ TEST_F(AgentMetadataStateTest, remove_dead_pods) {
   GenerateTestUpdateEvents(&updates);
   GenerateTestUpdateEventsForNonExistentPod(&updates);
 
-  ASSERT_OK(AgentMetadataStateManager::ApplyK8sUpdates(/*ts*/ 2000, &metadata_state_, &md_filter_,
-                                                       &updates));
+  ASSERT_OK(ApplyK8sUpdates(/*ts*/ 2000, &metadata_state_, &md_filter_, &updates));
   ASSERT_EQ(0, updates.size_approx());
 
   FakePIDData md_reader;
@@ -276,7 +274,7 @@ TEST_F(AgentMetadataStateTest, remove_dead_pods) {
   EXPECT_EQ("failed message", pod_info->phase_message());
   EXPECT_EQ("failed reason", pod_info->phase_reason());
 
-  AgentMetadataStateManager::RemoveDeadPods(/*ts*/ 100, &metadata_state_, &md_reader);
+  RemoveDeadPods(/*ts*/ 100, &metadata_state_, &md_reader);
 
   // Expected state after call to RemoveDeadPods().
   EXPECT_EQ(state->pods_by_name().size(), 3);
@@ -301,8 +299,7 @@ TEST_F(AgentMetadataStateTest, pid_created) {
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> updates;
   GenerateTestUpdateEvents(&updates);
 
-  EXPECT_OK(AgentMetadataStateManager::ApplyK8sUpdates(2000 /*ts*/, &metadata_state_, &md_filter_,
-                                                       &updates));
+  EXPECT_OK(ApplyK8sUpdates(2000 /*ts*/, &metadata_state_, &md_filter_, &updates));
 
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>> events;
   FakePIDData md_reader;
@@ -317,8 +314,7 @@ TEST_F(AgentMetadataStateTest, pid_created) {
   EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
   EXPECT_CALL(sysconfig, proc_path()).WillRepeatedly(ReturnRef(proc_path));
   system::ProcParser proc_parser(sysconfig);
-  EXPECT_OK(AgentMetadataStateManager::ProcessPIDUpdates(1000, proc_parser, &metadata_state_,
-                                                         &md_reader, &events));
+  EXPECT_OK(ProcessPIDUpdates(1000, proc_parser, &metadata_state_, &md_reader, &events));
 
   std::unique_ptr<PIDStatusEvent> event;
   std::vector<PIDStartedEvent> pids_started;
@@ -342,8 +338,7 @@ TEST_F(AgentMetadataStateTest, insert_into_filter) {
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> updates;
   GenerateTestUpdateEvents(&updates);
 
-  EXPECT_OK(AgentMetadataStateManager::ApplyK8sUpdates(2000 /*ts*/, &metadata_state_, &md_filter_,
-                                                       &updates));
+  EXPECT_OK(ApplyK8sUpdates(2000 /*ts*/, &metadata_state_, &md_filter_, &updates));
   EXPECT_EQ(0, updates.size_approx());
 
   EXPECT_THAT(md_filter_.metadata_types(),
@@ -357,9 +352,9 @@ TEST_F(AgentMetadataStateTest, insert_into_filter) {
 }
 
 TEST_F(AgentMetadataStateTest, cidr_test) {
-  AgentMetadataStateManager mgr("test_host", /*asid*/ 0, "test_pod", /*id*/ sole::uuid4(),
-                                /*collects_data*/ true, pl::system::Config::GetInstance(),
-                                &md_filter_);
+  AgentMetadataStateManagerImpl mgr("test_host", /*asid*/ 0, "test_pod", /*id*/ sole::uuid4(),
+                                    /*collects_data*/ true, pl::system::Config::GetInstance(),
+                                    &md_filter_);
 
   EXPECT_OK(mgr.PerformMetadataStateUpdate());
   // Should not be updated yet.

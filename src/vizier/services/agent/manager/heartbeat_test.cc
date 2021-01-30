@@ -71,10 +71,9 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
     EXPECT_CALL(sys_config, proc_path()).WillRepeatedly(ReturnRef(proc_path_));
     EXPECT_CALL(sys_config, sysfs_path()).WillRepeatedly(ReturnRef(sysfs_path_));
 
-    md_filter_ = md::AgentMetadataFilter::Create(
-                     100, 0.01, md::AgentMetadataStateManager::MetadataFilterEntities())
-                     .ConsumeValueOrDie();
-    mds_manager_ = std::make_unique<md::AgentMetadataStateManager>(
+    md_filter_ =
+        md::AgentMetadataFilter::Create(100, 0.01, md::kMetadataFilterEntities).ConsumeValueOrDie();
+    mds_manager_ = std::make_unique<md::AgentMetadataStateManagerImpl>(
         "host", 1, "pod", /* agent_id */ sole::uuid4(), true, sys_config, md_filter_.get());
 
     // Relation info with no tabletization.
@@ -103,6 +102,8 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
   std::unique_ptr<event::SimulatedTimeSystem> time_system_;
   std::unique_ptr<event::APIImpl> api_;
   std::unique_ptr<event::Dispatcher> dispatcher_;
+  // TODO(nserrino): update this to a fake so we don't test the metadata state manager
+  // as part of the heartbeat unit test.
   std::unique_ptr<md::AgentMetadataStateManager> mds_manager_;
   std::unique_ptr<RelationInfoManager> relation_info_manager_;
   std::unique_ptr<HeartbeatMessageHandler> heartbeat_handler_;
@@ -182,8 +183,7 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatMetadata) {
   for (auto i = 0; i < metadata_info.metadata_fields_size(); ++i) {
     types.push_back(metadata_info.metadata_fields(i));
   }
-  EXPECT_THAT(types,
-              UnorderedElementsAreArray(md::AgentMetadataStateManager::MetadataFilterEntities()));
+  EXPECT_THAT(types, UnorderedElementsAreArray(md::kMetadataFilterEntities));
   auto bf = md::AgentMetadataFilter::FromProto(metadata_info).ConsumeValueOrDie();
   EXPECT_TRUE(bf->ContainsEntity(MetadataType::POD_NAME, "foo"));
   EXPECT_FALSE(bf->ContainsEntity(MetadataType::SERVICE_NAME, "foo"));

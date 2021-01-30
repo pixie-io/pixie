@@ -20,25 +20,26 @@ constexpr uint64_t kEpochsBetweenObjectDeletion = 100;
  */
 constexpr uint64_t kMaxObjectRetentionAfterDeathNS = 24ULL * 3600ULL * 1'000'000'000ULL;
 
-std::shared_ptr<const AgentMetadataState> AgentMetadataStateManager::CurrentAgentMetadataState() {
+std::shared_ptr<const AgentMetadataState>
+AgentMetadataStateManagerImpl::CurrentAgentMetadataState() {
   absl::base_internal::SpinLockHolder lock(&agent_metadata_state_lock_);
   return std::const_pointer_cast<const AgentMetadataState>(agent_metadata_state_);
 }
 
-size_t AgentMetadataStateManager::NumPIDUpdates() const { return pid_updates_.size_approx(); }
+size_t AgentMetadataStateManagerImpl::NumPIDUpdates() const { return pid_updates_.size_approx(); }
 
-std::unique_ptr<PIDStatusEvent> AgentMetadataStateManager::GetNextPIDStatusEvent() {
+std::unique_ptr<PIDStatusEvent> AgentMetadataStateManagerImpl::GetNextPIDStatusEvent() {
   std::unique_ptr<PIDStatusEvent> event(nullptr);
   bool found = pid_updates_.try_dequeue(event);
   return found ? std::move(event) : nullptr;
 }
 
-Status AgentMetadataStateManager::AddK8sUpdate(std::unique_ptr<ResourceUpdate> update) {
+Status AgentMetadataStateManagerImpl::AddK8sUpdate(std::unique_ptr<ResourceUpdate> update) {
   incoming_k8s_updates_.enqueue(std::move(update));
   return Status::OK();
 }
 
-Status AgentMetadataStateManager::PerformMetadataStateUpdate() {
+Status AgentMetadataStateManagerImpl::PerformMetadataStateUpdate() {
   // There should never be more than one update, but this just here for safety.
   std::lock_guard<std::mutex> state_update_lock(metadata_state_update_lock_);
   /*
@@ -114,7 +115,7 @@ Status AgentMetadataStateManager::PerformMetadataStateUpdate() {
   return Status::OK();
 }
 
-Status AgentMetadataStateManager::ApplyK8sUpdates(
+Status ApplyK8sUpdates(
     int64_t ts, AgentMetadataState* state, AgentMetadataFilter* metadata_filter,
     moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>* updates) {
   std::unique_ptr<ResourceUpdate> update(nullptr);
@@ -147,8 +148,7 @@ Status AgentMetadataStateManager::ApplyK8sUpdates(
 
 // TODO(oazizi): This function should go away once the MDS only sends pods to the agents
 // that they belong to.
-void AgentMetadataStateManager::RemoveDeadPods(int64_t ts, AgentMetadataState* md,
-                                               CGroupMetadataReader* md_reader) {
+void RemoveDeadPods(int64_t ts, AgentMetadataState* md, CGroupMetadataReader* md_reader) {
   const auto& md_state = md->k8s_metadata_state();
   for (const auto& [name, uid] : md_state->pods_by_name()) {
     PL_UNUSED(name);
@@ -190,7 +190,7 @@ void AgentMetadataStateManager::RemoveDeadPods(int64_t ts, AgentMetadataState* m
   }
 }
 
-Status AgentMetadataStateManager::ProcessPIDUpdates(
+Status ProcessPIDUpdates(
     int64_t ts, const system::ProcParser& proc_parser, AgentMetadataState* md,
     CGroupMetadataReader* md_reader,
     moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>>* pid_updates) {
@@ -295,7 +295,7 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
   return Status::OK();
 }
 
-Status AgentMetadataStateManager::DeleteMetadataForDeadObjects(AgentMetadataState*, int64_t ttl) {
+Status DeleteMetadataForDeadObjects(AgentMetadataState*, int64_t ttl) {
   // TODO(zasgar/michelle): Implement this.
   PL_UNUSED(ttl);
   return Status::OK();
@@ -305,9 +305,8 @@ std::string PrependK8sNamespace(std::string_view ns, std::string_view name) {
   return absl::Substitute("$0/$1", ns, name);
 }
 
-Status AgentMetadataStateManager::HandlePodUpdate(const PodUpdate& update,
-                                                  AgentMetadataState* state,
-                                                  AgentMetadataFilter* md_filter) {
+Status HandlePodUpdate(const PodUpdate& update, AgentMetadataState* state,
+                       AgentMetadataFilter* md_filter) {
   VLOG(2) << "Pod Update: " << update.DebugString();
   PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::POD_ID, update.uid()));
   PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::POD_NAME, update.name()));
@@ -319,9 +318,8 @@ Status AgentMetadataStateManager::HandlePodUpdate(const PodUpdate& update,
   return state->k8s_metadata_state()->HandlePodUpdate(update);
 }
 
-Status AgentMetadataStateManager::HandleServiceUpdate(const ServiceUpdate& update,
-                                                      AgentMetadataState* state,
-                                                      AgentMetadataFilter* md_filter) {
+Status HandleServiceUpdate(const ServiceUpdate& update, AgentMetadataState* state,
+                           AgentMetadataFilter* md_filter) {
   VLOG(2) << "Service Update: " << update.DebugString();
   PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::SERVICE_ID, update.uid()));
   // TODO(nserrino): Remove this once k8s entities are referred to without namespace in the query
@@ -334,17 +332,15 @@ Status AgentMetadataStateManager::HandleServiceUpdate(const ServiceUpdate& updat
   return state->k8s_metadata_state()->HandleServiceUpdate(update);
 }
 
-Status AgentMetadataStateManager::HandleContainerUpdate(const ContainerUpdate& update,
-                                                        AgentMetadataState* state,
-                                                        AgentMetadataFilter* md_filter) {
+Status HandleContainerUpdate(const ContainerUpdate& update, AgentMetadataState* state,
+                             AgentMetadataFilter* md_filter) {
   VLOG(2) << "Container Update: " << update.DebugString();
   PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::CONTAINER_ID, update.cid()));
   return state->k8s_metadata_state()->HandleContainerUpdate(update);
 }
 
-Status AgentMetadataStateManager::HandleNamespaceUpdate(const NamespaceUpdate& update,
-                                                        AgentMetadataState* state,
-                                                        AgentMetadataFilter*) {
+Status HandleNamespaceUpdate(const NamespaceUpdate& update, AgentMetadataState* state,
+                             AgentMetadataFilter*) {
   VLOG(2) << "Namespace Update: " << update.DebugString();
 
   return state->k8s_metadata_state()->HandleNamespaceUpdate(update);
