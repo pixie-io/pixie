@@ -12,6 +12,7 @@ pl_cc_binary(
     ],
     deps = [
         "//src/carnot/planner/probes:tracepoint_generator_lib",
+        "//src/common/signal:cc_library",
         "//src/stirling:cc_library",
     ],
 )
@@ -22,6 +23,7 @@ pl_cc_binary(
     name = "stirling_wrapper_core",
     srcs = ["stirling_wrapper.cc"],
     deps = [
+        "//src/common/signal:cc_library",
         "//src/stirling:cc_library",
     ],
 )

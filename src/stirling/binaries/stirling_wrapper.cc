@@ -11,7 +11,9 @@
 #include <google/protobuf/text_format.h>
 
 #include "src/common/base/base.h"
+#include "src/common/base/utils.h"
 #include "src/common/perf/profiler.h"
+#include "src/common/signal/signal.h"
 #include "src/stirling/core/output.h"
 #include "src/stirling/core/pub_sub_manager.h"
 #include "src/stirling/core/source_registry.h"
@@ -50,11 +52,16 @@ DEFINE_int32(timeout_secs, 0,
              "If greater than 0, only runs for the specified amount of time and exits.");
 DEFINE_bool(enable_heap_profiler, false, "If true, heap profiling is enabled.");
 
-absl::flat_hash_set<std::string> g_table_print_enables;
-
 // Put this in global space, so we can kill it in the signal handler.
 Stirling* g_stirling = nullptr;
 pl::ProcessStatsMonitor* g_process_stats_monitor = nullptr;
+
+//-----------------------------------------------------------------------------
+// Callback/Printing Code
+//-----------------------------------------------------------------------------
+
+absl::flat_hash_set<std::string> g_table_print_enables;
+
 absl::flat_hash_map<uint64_t, ::pl::stirling::stirlingpb::InfoClass> g_table_info_map;
 absl::base_internal::SpinLock g_callback_state_lock;
 
@@ -77,7 +84,12 @@ Status StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
   return Status::OK();
 }
 
-void SignalHandler(int signum) {
+//-----------------------------------------------------------------------------
+// Signal Handling Code
+//-----------------------------------------------------------------------------
+
+// This signal handler is meant for graceful termination.
+void TerminationHandler(int signum) {
   std::cerr << "\n\nStopping, might take a few seconds ..." << std::endl;
   // Important to call Stop(), because it releases BPF resources,
   // which would otherwise leak.
@@ -95,6 +107,20 @@ void SignalHandler(int signum) {
   }
   exit(signum);
 }
+
+// DeathHandler is meant for fatal errors (like seg-faults),
+// where no graceful termination is performed.
+class DeathHandler : public pl::FatalErrorHandlerInterface {
+ public:
+  DeathHandler() = default;
+  void OnFatalError() const override {}
+};
+
+std::unique_ptr<pl::SignalAction> g_signal_action;
+
+//-----------------------------------------------------------------------------
+// DynamicTracing Specific Code
+//-----------------------------------------------------------------------------
 
 enum class TracepointFormat { kUnknown, kIR, kPXL };
 
@@ -197,15 +223,21 @@ StatusOr<Publish> DeployTrace(Stirling* stirling, TraceProgram trace_program_str
   return s;
 }
 
+//-----------------------------------------------------------------------------
+// Main
+//-----------------------------------------------------------------------------
+
 int main(int argc, char** argv) {
-  // Register signal handlers to clean-up on exit.
-  // TODO(oazizi): Create a separate signal handling thread.
-  // For now this is okay, because all these signals will be handled by the main thread,
-  // which is just waiting for the worker thread to return.
-  signal(SIGINT, SignalHandler);
-  signal(SIGQUIT, SignalHandler);
-  signal(SIGTERM, SignalHandler);
-  signal(SIGHUP, SignalHandler);
+  // Register signal handlers to gracefully clean-up on exit.
+  signal(SIGINT, TerminationHandler);
+  signal(SIGQUIT, TerminationHandler);
+  signal(SIGTERM, TerminationHandler);
+  signal(SIGHUP, TerminationHandler);
+
+  // This handles fatal (non-graceful) errors.
+  g_signal_action = std::make_unique<pl::SignalAction>();
+  DeathHandler err_handler;
+  g_signal_action->RegisterFatalErrorHandler(err_handler);
 
   pl::EnvironmentGuard env_guard(&argc, argv);
 

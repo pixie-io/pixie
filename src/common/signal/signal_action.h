@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <csignal>
 #include <list>
+#include <vector>
 
 #include "src/common/base/base.h"
 #include "src/common/signal/fatal_handler.h"
