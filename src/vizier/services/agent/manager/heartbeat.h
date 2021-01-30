@@ -19,6 +19,8 @@ class HeartbeatMessageHandler : public Manager::MessageHandler {
   ~HeartbeatMessageHandler() override = default;
 
   Status HandleMessage(std::unique_ptr<messages::VizierMessage> msg) override;
+  void DisableHeartbeats();
+  void EnableHeartbeats();
 
  private:
   void ConsumeAgentPIDUpdates(messages::AgentUpdateInfo* update_info);

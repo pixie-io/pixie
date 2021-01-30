@@ -64,6 +64,9 @@ std::string GenerateServiceToken();
 // Adds service token to a GPRC context for authentication.
 void AddServiceTokenToClientContext(grpc::ClientContext* ctx);
 
+// Forward-declare
+class HeartbeatMessageHandler;
+
 /**
  * Manager is the shared code and common interface for the entity responsible for managing the
  * sub-components of a pixie agent. The base version has a table store, carnot and metadata system.
@@ -106,6 +109,7 @@ class Manager : public pl::NotCopyable {
 
   const carnot::Carnot* carnot() const { return carnot_.get(); }
   Status PostRegisterHook(uint32_t asid);
+  Status PreReregisterHook();
   Status PostReregisterHook(uint32_t asid);
 
  protected:
@@ -205,6 +209,9 @@ class Manager : public pl::NotCopyable {
   std::unique_ptr<ChanCache> chan_cache_;
   // The timer that runs the garbage collection routine.
   pl::event::TimerUPtr chan_cache_garbage_collect_timer_;
+
+  // A pointer to the heartbeat handler for reregistration hooks.
+  std::shared_ptr<HeartbeatMessageHandler> heartbeat_handler_;
 };
 
 /**

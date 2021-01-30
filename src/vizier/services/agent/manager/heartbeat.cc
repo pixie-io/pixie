@@ -26,6 +26,15 @@ HeartbeatMessageHandler::HeartbeatMessageHandler(Dispatcher* d,
           dispatcher()->CreateTimer(std::bind(&HeartbeatMessageHandler::SendHeartbeat, this))),
       heartbeat_watchdog_timer_(
           dispatcher()->CreateTimer(std::bind(&HeartbeatMessageHandler::HeartbeatWatchdog, this))) {
+  EnableHeartbeats();
+}
+
+void HeartbeatMessageHandler::DisableHeartbeats() {
+  heartbeat_send_timer_->DisableTimer();
+  heartbeat_watchdog_timer_->DisableTimer();
+}
+
+void HeartbeatMessageHandler::EnableHeartbeats() {
   heartbeat_send_timer_->EnableTimer(std::chrono::milliseconds(0));
   heartbeat_watchdog_timer_->EnableTimer(kHeartbeatWaitMillis);
 }

@@ -191,16 +191,16 @@ Status Manager::RegisterBackgroundHelpers() {
   chan_cache_garbage_collect_timer_->EnableTimer(kChanCacheCleanupChansionPeriod);
 
   // Add Heartbeat and execute query handlers.
-  auto heartbeat_handler = std::make_shared<HeartbeatMessageHandler>(
+  heartbeat_handler_ = std::make_shared<HeartbeatMessageHandler>(
       dispatcher_.get(), mds_manager_.get(), relation_info_manager_.get(), &info_,
       nats_connector_.get());
 
   auto heartbeat_nack_handler = std::make_shared<HeartbeatNackMessageHandler>(
       dispatcher_.get(), &info_, nats_connector_.get(),
-      []() -> Status { return error::Unimplemented("Reregistration not yet implemented"); });
+      std::bind(&Manager::PreReregisterHook, this));
 
   PL_CHECK_OK(
-      RegisterMessageHandler(messages::VizierMessage::MsgCase::kHeartbeatAck, heartbeat_handler));
+      RegisterMessageHandler(messages::VizierMessage::MsgCase::kHeartbeatAck, heartbeat_handler_));
   PL_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kHeartbeatNack,
                                      heartbeat_nack_handler));
 
@@ -267,8 +267,17 @@ Status Manager::PostRegisterHook(uint32_t asid) {
   return RegisterBackgroundHelpers();
 }
 
-Status Manager::PostReregisterHook(uint32_t) {
-  return error::Unimplemented("PostReregisterHook is unimplemented");
+Status Manager::PreReregisterHook() {
+  LOG_IF(FATAL, heartbeat_handler_ == nullptr) << "Heartbeat handler is not set up";
+  heartbeat_handler_->DisableHeartbeats();
+  return Status::OK();
+}
+
+Status Manager::PostReregisterHook(uint32_t asid) {
+  LOG_IF(FATAL, heartbeat_handler_ == nullptr) << "Heartbeat handler is not set up";
+  LOG_IF(FATAL, asid != info_.asid) << "Received conflicting ASID after reregistration";
+  heartbeat_handler_->EnableHeartbeats();
+  return Status::OK();
 }
 
 std::unique_ptr<Manager::VizierNATSConnector> Manager::CreateDefaultNATSConnector(
