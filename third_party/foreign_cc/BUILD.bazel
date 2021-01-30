@@ -122,23 +122,3 @@ cmake_external(
         "libusdt-static.a",
     ],
 )
-
-cmake_external(
-    name = "nghttp2",
-    cache_entries = {
-        "WITH_JEMALLOC": "OFF",
-        "ENABLE_LIB_ONLY": "On",
-        "ENABLE_SHARED_LIB": "OFF",
-        "ENABLE_STATIC_LIB": "ON",
-        # This forces nghttp2 to link against boringssl instead of openssl.
-        # Since some of our services use both GRPC and nats, this lets
-        # us have a single SSL library.
-        "CMAKE_SYSTEM_PREFIX_PATH": "$EXT_BUILD_DEPS",
-        # For debugging, uncomment the following line to enable debug print of nghttp2.
-        # "DEBUGBUILD": "ON",
-    },
-    generate_crosstool_file = True,
-    lib_name = "libnghttp2",
-    lib_source = "@com_github_nghttp2_nghttp2//:all",
-    deps = ["@boringssl//:ssl"],
-)

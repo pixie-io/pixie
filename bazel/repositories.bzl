@@ -49,13 +49,6 @@ def _com_llvm_lib():
         path = "/opt/clang-11.0-libc++",
     )
 
-def _com_github_nghttp2_nghttp2():
-    _include_all_repo("com_github_nghttp2_nghttp2", patches = ["//third_party:nghttp2.patch"], patch_args = ["-p1"])
-    native.bind(
-        name = "nghttp2",
-        actual = "//third_party/foreign_cc:nghttp2",
-    )
-
 def _com_github_threadstacks():
     native.local_repository(
         name = "com_github_threadstacks",
@@ -96,7 +89,6 @@ def _cc_deps():
         patch_args = ["-p1"],
     )
 
-    _com_github_nghttp2_nghttp2()
     _com_github_threadstacks()
 
 def _go_deps():
