@@ -2,7 +2,6 @@ import time
 import logging
 import os
 import schedule
-
 import pxapi
 from slack.web.client import WebClient
 from slack.errors import SlackApiError
@@ -36,7 +35,7 @@ px.display(df, "status")
 logging.basicConfig(level=logging.DEBUG)
 
 
-def getPixieData(api_key, cluster_id):
+def get_pixie_data(api_key, cluster_id):
     # Get data from the Pixie API.
 
     # Create a Pixie client.
@@ -55,22 +54,20 @@ def getPixieData(api_key, cluster_id):
 
     # Process table output rows.
     for row in script.results("status"):
-        service_stats_msg.append(formatMessage(row["service"],
+        service_stats_msg.append(format_message(row["service"],
                                                row["total_requests"],
                                                row["error_count"]))
 
     return "\n\n".join(service_stats_msg)
 
 
-def formatMessage(service, request_count, error_count):
+def format_message(service, request_count, error_count):
     # Format Pixie API table row data.
-    print(service, " ---> ", error_count,
-          " errors out of ", request_count, " requests.")
     return (f"`{service}` \t ---> *has {error_count} (>4xx)"
             f" errors out of {request_count} requests.*")
 
 
-def sendMessage(slack_client, channel, msg):
+def send_message(slack_client, channel, msg):
     # Send a POST request through the Slack Python client.
     try:
         logging.info(f"Sending {msg!r} to {channel!r}")
@@ -90,7 +87,7 @@ if __name__ == "__main__":
     PIXIE_CLUSTER_ID = os.environ['PIXIE_CLUSTER_ID']
 
     # Get data from the Pixie API.
-    slack_msg = getPixieData(PIXIE_API_KEY, PIXIE_CLUSTER_ID)
+    slack_msg = get_pixie_data(PIXIE_API_KEY, PIXIE_CLUSTER_ID)
 
     # Get Slackbot access token.
     SLACK_BOT_TOKEN = os.environ['SLACK_BOT_TOKEN']
@@ -103,7 +100,7 @@ if __name__ == "__main__":
     SLACK_CHANNEL = "#pixie-alerts"
 
     # Schedule sending a Slack channel message every 5 minutes.
-    schedule.every(5).minutes.do(lambda: sendMessage(slack_client,
+    schedule.every(5).minutes.do(lambda: send_message(slack_client,
                                                      SLACK_CHANNEL,
                                                      slack_msg))
 
