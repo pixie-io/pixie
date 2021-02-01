@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"strings"
 
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
@@ -71,13 +70,6 @@ type MetadataStore interface {
 // MetadataSubscriber is a consumer of metadata updates.
 type MetadataSubscriber interface {
 	HandleUpdate(*UpdateMessage)
-}
-
-// K8sMessage is a message for K8s metadata events/updates.
-type K8sMessage struct {
-	Object     runtime.Object
-	ObjectType string
-	EventType  watch.EventType
 }
 
 // UpdateMessage is an update message for a specific hostname.
@@ -425,18 +417,6 @@ func (mh *MetadataHandler) updateNode(e *v1.Node, deleted bool) (*metadatapb.Nod
 		return nil, err
 	}
 	return pb, err
-}
-
-func formatContainerID(cid string) string {
-	// Strip prefixes like docker:// or containerd://
-	tokens := strings.SplitN(cid, "://", 2)
-	if len(tokens) != 2 {
-		if cid != "" {
-			log.Info("Container ID is not in the expected format: " + cid)
-		}
-		return cid
-	}
-	return tokens[1]
 }
 
 // GetResourceUpdateFromNamespace gets the update info from the given namespace proto.

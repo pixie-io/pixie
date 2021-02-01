@@ -7,6 +7,7 @@ go_library(
         "agent_topic_listener.go",
         "etcd_mgr.go",
         "k8s_metadata.go",
+        "k8s_metadata_handler.go",
         "k8s_metadata_utils.gen.go",
         "k8s_metadata_utils.go",
         "message_bus.go",
@@ -69,6 +70,7 @@ go_test(
     srcs = [
         "agent_test.go",
         "agent_topic_listener_test.go",
+        "k8s_metadata_handler_test.go",
         "metadata_handler_test.go",
         "metadata_store_test.go",
         "metadata_topic_listener_test.go",
@@ -112,6 +114,7 @@ go_test(
         "@com_github_stretchr_testify//assert:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/types:go_default_library",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//metadata:go_default_library",
         "@org_golang_google_grpc//test/bufconn:go_default_library",

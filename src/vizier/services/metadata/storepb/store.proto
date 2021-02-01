@@ -7,6 +7,7 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.proto";
 import "src/api/public/uuidpb/uuid.proto";
 import "src/shared/types/proto/types.proto";
+import "src/shared/k8s/metadatapb/metadata.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb;storepb";
 
@@ -79,4 +80,16 @@ message ComputedSchema {
   }
   map<string, AgentIDs> table_name_to_agent_ids = 2
       [ (gogoproto.customname) = "TableNameToAgentIDs" ];
+}
+
+// K8sResource contains an update for a K8s resource.
+message K8sResource {
+  oneof resource {
+    pl.shared.k8s.metadatapb.Pod pod = 1;
+    pl.shared.k8s.metadatapb.ContainerUpdate container = 2;
+    pl.shared.k8s.metadatapb.Service service = 3;
+    pl.shared.k8s.metadatapb.Endpoints endpoints = 4;
+    pl.shared.k8s.metadatapb.Namespace namespace = 5;
+    pl.shared.k8s.metadatapb.Node node = 6;
+  }
 }
