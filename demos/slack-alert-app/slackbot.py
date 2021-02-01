@@ -13,15 +13,15 @@ import px
 
 df = px.DataFrame(table='http_events', start_time='-5m')
 
-# Filter for px-sock-shop namespace only.
-df.namespace = df.ctx['namespace']
-df = df[df.namespace == 'px-sock-shop']
+# Add column for HTTP response status errors.
+df.error = df.http_resp_status >= 400
 
-# Add column for service name.
+# Add columns for service, namespace info
+df.namespace = df.ctx['namespace']
 df.service = df.ctx['service']
 
-# Add olumn for HTTP response status errors.
-df.error = df.http_resp_status >= 400
+# Filter for px-sock-shop namespace only.
+df = df[df.namespace == 'px-sock-shop']
 
 # Group HTTP events by service, counting errors and total HTTP events.
 df = df.groupby(['service']).agg(
@@ -44,7 +44,7 @@ def get_pixie_data(api_key, cluster_id):
 
     # Connect to cluster.
     conn = px_client.connect_to_cluster(cluster_id)
-    logging.debug("Pixie client connected to cluster.")
+    logging.debug("Pixie client connected to %s cluster.", conn.name())
 
     # Execute the PxL script.
     script = conn.prepare_script(PXL_SCRIPT)
@@ -63,8 +63,8 @@ def get_pixie_data(api_key, cluster_id):
 
 def format_message(service, request_count, error_count):
     # Format Pixie API table row data.
-    return (f"`{service}` \t ---> *has {error_count} (>4xx)"
-            f" errors out of {request_count} requests.*")
+    return (f"`{service}` \t ---> {error_count} (>4xx)"
+            f" errors out of {request_count} requests.")
 
 
 def send_message(slack_client, channel, msg):
