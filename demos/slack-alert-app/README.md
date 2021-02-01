@@ -2,4 +2,4 @@
 
 Code for the ["Slack Alerts using the Pixie API"](https://docs.pixielabs.ai/tutorials/slackbot-alert) tutorial.
 
-If you have any questions, please reach out via a GitHub issue or our [Pixie Community Slack](https://slackin.withpixie.ai/).
+If you have any questions, please reach out on our [Pixie Community Slack](https://slackin.withpixie.ai/) or via a GitHub issue.
