@@ -27,7 +27,8 @@ void DataStream::AddData(std::unique_ptr<SocketDataEvent> event) {
                           event->attr.msg_size, event->msg.size());
 
   if (pos < next_pos_) {
-    LOG(WARNING) << absl::Substitute(
+    // Observed this warning log for ~3k in ~30mins, LOG_EVERY_N(100) would lower this to 30.
+    LOG_EVERY_N(WARNING, 100) << absl::Substitute(
         "Ignoring event that has already been skipped [event pos=$0, current pos=$1].",
         event->attr.pos, next_pos_);
     return;
