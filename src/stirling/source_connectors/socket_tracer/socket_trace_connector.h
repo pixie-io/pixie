@@ -49,8 +49,11 @@ DECLARE_bool(stirling_enable_parsing_protobufs);
 DECLARE_uint32(stirling_socket_trace_sampling_period_millis);
 DECLARE_string(perf_buffer_events_output_path);
 DECLARE_bool(stirling_enable_http_tracing);
-DECLARE_bool(stirling_enable_grpc_tracing);
+DECLARE_bool(stirling_enable_http2_tracing);
 DECLARE_bool(stirling_enable_mysql_tracing);
+DECLARE_bool(stirling_enable_cass_tracing);
+DECLARE_bool(stirling_enable_dns_tracing);
+DECLARE_bool(stirling_enable_redis_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
 DECLARE_string(stirling_role_to_trace);
 

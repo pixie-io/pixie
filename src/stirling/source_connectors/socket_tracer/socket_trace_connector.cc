@@ -51,7 +51,7 @@ DEFINE_string(perf_buffer_events_output_path, "",
 // PROTOCOL_LIST: Requires update on new protocols.
 DEFINE_bool(stirling_enable_http_tracing, true,
             "If true, stirling will trace and process HTTP messages");
-DEFINE_bool(stirling_enable_grpc_tracing, true,
+DEFINE_bool(stirling_enable_http2_tracing, true,
             "If true, stirling will trace and process gRPC RPCs.");
 DEFINE_bool(stirling_enable_mysql_tracing, true,
             "If true, stirling will trace and process MySQL messages.");
@@ -102,7 +102,7 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                    kHTTPTableNum,
                                    {kRoleClient, kRoleServer},
                                    TRANSER_STREAM_PROTOCOL(http)}},
-      {kProtocolHTTP2, TransferSpec{FLAGS_stirling_enable_grpc_tracing,
+      {kProtocolHTTP2, TransferSpec{FLAGS_stirling_enable_http2_tracing,
                                     kHTTPTableNum,
                                     {kRoleClient, kRoleServer},
                                     TRANSER_STREAM_PROTOCOL(http2)}},
