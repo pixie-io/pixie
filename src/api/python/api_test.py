@@ -165,6 +165,13 @@ class TestClient(unittest.TestCase):
         self.port = self.server.add_insecure_port("[::]:0")
         self.server.start()
 
+        self.px_client = pxapi.Client(
+            token=ACCESS_TOKEN,
+            server_url=self.url(),
+            channel_fn=lambda url: grpc.insecure_channel(url),
+            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
+        )
+
         self.http_table_factory = utils.FakeTableFactory("http", vpb.Relation(columns=[
             utils.string_col("http_resp_body"),
             utils.int64_col("http_resp_status"),
@@ -182,24 +189,18 @@ class TestClient(unittest.TestCase):
     def tearDown(self) -> None:
         self.server.stop(None)
 
-    def test_list_healthy_clusters(self) -> None:
+    def test_list_and_run_healthy_clusters(self) -> None:
         # Tests that users can list healthy clusters and then
-        # script_executor those clusters.
-        px_client = pxapi.Client(
-            token=ACCESS_TOKEN,
-            server_url=self.url(),
-            channel_fn=lambda url: grpc.insecure_channel(url),
-            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
-        )
+        # execute a script on those clusters.
 
-        clusters = px_client.list_healthy_clusters()
+        clusters = self.px_client.list_healthy_clusters()
         self.assertSetEqual(
             set([c.name() for c in clusters]),
             {"cluster1", "cluster2"}
         )
 
         # Connect to a single fake cluster.
-        conn = px_client.connect_to_cluster(clusters[0])
+        conn = self.px_client.connect_to_cluster(clusters[0])
 
         # Create one http table.
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
@@ -212,7 +213,7 @@ class TestClient(unittest.TestCase):
             http_table1.end(),
         ])
 
-        script_executor = px_client.connect_to_cluster(
+        script_executor = self.px_client.connect_to_cluster(
             clusters[0]).prepare_script(pxl_script)
 
         script_executor.add_callback("http", lambda row: None)
@@ -221,16 +222,9 @@ class TestClient(unittest.TestCase):
         script_executor.run()
 
     def test_one_conn_one_table(self) -> None:
-        px_client = pxapi.Client(
-            token=ACCESS_TOKEN,
-            server_url=self.url(),
-            # Channel functions for testing.
-            channel_fn=lambda url: grpc.insecure_channel(url),
-            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
-        )
         # Connect to a single fake cluster.
-        conn = px_client.connect_to_cluster(
-            px_client.list_healthy_clusters()[0])
+        conn = self.px_client.connect_to_cluster(
+            self.px_client.list_healthy_clusters()[0])
 
         # Create table for cluster_uuid1.
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
@@ -265,15 +259,10 @@ class TestClient(unittest.TestCase):
             run_script_and_tasks(script_executor, [process_table(http_tb)]))
 
     def test_multiple_rows_and_rowbatches(self) -> None:
-        px_client = pxapi.Client(
-            token=ACCESS_TOKEN,
-            server_url=self.url(),
-            channel_fn=lambda url: grpc.insecure_channel(url),
-            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
-        )
+
         # Connect to a single fake cluster.
-        conn = px_client.connect_to_cluster(
-            px_client.list_healthy_clusters()[0])
+        conn = self.px_client.connect_to_cluster(
+            self.px_client.list_healthy_clusters()[0])
 
         # Create table for the first cluster.
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
@@ -316,15 +305,10 @@ class TestClient(unittest.TestCase):
             run_script_and_tasks(script_executor, [process_table(http_tb)]))
 
     def test_one_conn_two_tables(self) -> None:
-        px_client = pxapi.Client(
-            token=ACCESS_TOKEN,
-            server_url=self.url(),
-            channel_fn=lambda url: grpc.insecure_channel(url),
-            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
-        )
+
         # Connect to a single fake cluster.
-        conn = px_client.connect_to_cluster(
-            px_client.list_healthy_clusters()[0])
+        conn = self.px_client.connect_to_cluster(
+            self.px_client.list_healthy_clusters()[0])
 
         # We will send two tables for this test "http" and "stats".
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
@@ -384,15 +368,10 @@ class TestClient(unittest.TestCase):
         )
 
     def test_run_script_with_invalid_arg_error(self) -> None:
-        px_client = pxapi.Client(
-            token=ACCESS_TOKEN,
-            server_url=self.url(),
-            channel_fn=lambda url: grpc.insecure_channel(url),
-            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
-        )
+
         # Connect to a single fake cluster.
-        conn = px_client.connect_to_cluster(
-            px_client.list_healthy_clusters()[0])
+        conn = self.px_client.connect_to_cluster(
+            self.px_client.list_healthy_clusters()[0])
 
         # Send over an error in the Status field. This is the exact error you would
         # get if you sent over an empty pxl function in the ExecuteScriptRequest.
@@ -411,15 +390,10 @@ class TestClient(unittest.TestCase):
             script_executor.run()
 
     def test_run_script_with_line_col_error(self) -> None:
-        px_client = pxapi.Client(
-            token=ACCESS_TOKEN,
-            server_url=self.url(),
-            channel_fn=lambda url: grpc.insecure_channel(url),
-            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
-        )
+
         # Connect to a single fake cluster.
-        conn = px_client.connect_to_cluster(
-            px_client.list_healthy_clusters()[0])
+        conn = self.px_client.connect_to_cluster(
+            self.px_client.list_healthy_clusters()[0])
 
         # Send over an error a line, column error. These kinds of errors come
         # from the compiler pointing to a specific failure in the pxl script_executor.
@@ -440,15 +414,10 @@ class TestClient(unittest.TestCase):
             script_executor.run()
 
     def test_run_script_with_api_errors(self) -> None:
-        px_client = pxapi.Client(
-            token=ACCESS_TOKEN,
-            server_url=self.url(),
-            channel_fn=lambda url: grpc.insecure_channel(url),
-            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
-        )
+
         # Connect to a single fake cluster.
-        conn = px_client.connect_to_cluster(
-            px_client.list_healthy_clusters()[0])
+        conn = self.px_client.connect_to_cluster(
+            self.px_client.list_healthy_clusters()[0])
 
         # Only send data for "http".
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
@@ -474,16 +443,10 @@ class TestClient(unittest.TestCase):
         # Test the callback API. Callback API is a simpler alternative to the TableSub
         # API that allows you to designate a function that runs on individual rows. Users
         # can process data without worrying about async processing by using this API.
-        px_client = pxapi.Client(
-            token=ACCESS_TOKEN,
-            server_url=self.url(),
-            channel_fn=lambda url: grpc.insecure_channel(url),
-            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
-        )
 
         # Connect to a single fake cluster.
-        conn = px_client.connect_to_cluster(
-            px_client.list_healthy_clusters()[0])
+        conn = self.px_client.connect_to_cluster(
+            self.px_client.list_healthy_clusters()[0])
 
         # Create two tables: "http" and "stats"
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
@@ -538,16 +501,10 @@ class TestClient(unittest.TestCase):
 
     def test_run_script_callback_with_error(self) -> None:
         # Test to demonstrate how errors raised in callbacks can be handled.
-        px_client = pxapi.Client(
-            token=ACCESS_TOKEN,
-            server_url=self.url(),
-            channel_fn=lambda url: grpc.insecure_channel(url),
-            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
-        )
 
         # Connect to a single fake cluster.
-        conn = px_client.connect_to_cluster(
-            px_client.list_healthy_clusters()[0])
+        conn = self.px_client.connect_to_cluster(
+            self.px_client.list_healthy_clusters()[0])
 
         # Create HTTP table and add to the stream.
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
@@ -570,15 +527,10 @@ class TestClient(unittest.TestCase):
 
     def test_subscribe_all(self) -> None:
         # Tests `subscribe_all_tables()`.
-        px_client = pxapi.Client(
-            token=ACCESS_TOKEN,
-            server_url=self.url(),
-            channel_fn=lambda url: grpc.insecure_channel(url),
-            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
-        )
+
         # Connect to a single fake cluster.
-        conn = px_client.connect_to_cluster(
-            px_client.list_healthy_clusters()[0])
+        conn = self.px_client.connect_to_cluster(
+            self.px_client.list_healthy_clusters()[0])
 
         # Create two tables and simulate them sent over as part of the ExecuteScript call.
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
@@ -633,15 +585,10 @@ class TestClient(unittest.TestCase):
         # Only on subscription allowed per table. Users should handle data from
         # the single alloatted subscription to enable the logical equivalent
         # of multiple subscriptions to one table.
-        px_client = pxapi.Client(
-            token=ACCESS_TOKEN,
-            server_url=self.url(),
-            channel_fn=lambda url: grpc.insecure_channel(url),
-            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
-        )
+
         # Connect to a single fake cluster.
-        conn = px_client.connect_to_cluster(
-            px_client.list_healthy_clusters()[0])
+        conn = self.px_client.connect_to_cluster(
+            self.px_client.list_healthy_clusters()[0])
 
         script_executor = conn.prepare_script(pxl_script)
 
@@ -656,15 +603,10 @@ class TestClient(unittest.TestCase):
         # Tests to show that queries may only be run once. After a script_executor has been
         # run, calling data grabbing methods like subscribe, add_callback, etc. will
         # raise an error.
-        px_client = pxapi.Client(
-            token=ACCESS_TOKEN,
-            server_url=self.url(),
-            channel_fn=lambda url: grpc.insecure_channel(url),
-            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
-        )
+
         # Connect to a single fake cluster.
-        conn = px_client.connect_to_cluster(
-            px_client.list_healthy_clusters()[0])
+        conn = self.px_client.connect_to_cluster(
+            self.px_client.list_healthy_clusters()[0])
 
         stats_table1 = self.stats_table_factory.create_table(utils.table_id3)
         self.fake_vizier_service.add_fake_data(conn.cluster_id, [
@@ -707,16 +649,11 @@ class TestClient(unittest.TestCase):
 
     def test_send_error_id_table_prop(self) -> None:
         # Sending an error over the stream should cause the table sub to exit.
-        px_client = pxapi.Client(
-            token=ACCESS_TOKEN,
-            server_url=self.url(),
-            channel_fn=lambda url: grpc.insecure_channel(url),
-            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
-        )
+
         # Connect to a single fake cluster.
         # Connect to a single fake cluster.
-        conn = px_client.connect_to_cluster(
-            px_client.list_healthy_clusters()[0])
+        conn = self.px_client.connect_to_cluster(
+            self.px_client.list_healthy_clusters()[0])
 
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
         self.fake_vizier_service.add_fake_data(conn.cluster_id, [
@@ -741,16 +678,11 @@ class TestClient(unittest.TestCase):
 
     def test_stop_sending_data_before_eos(self) -> None:
         # If the stream stops before sending over an eos for each table that should be an error.
-        px_client = pxapi.Client(
-            token=ACCESS_TOKEN,
-            server_url=self.url(),
-            channel_fn=lambda url: grpc.insecure_channel(url),
-            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
-        )
+
         # Connect to a single fake cluster.
         # Connect to a single fake cluster.
-        conn = px_client.connect_to_cluster(
-            px_client.list_healthy_clusters()[0])
+        conn = self.px_client.connect_to_cluster(
+            self.px_client.list_healthy_clusters()[0])
 
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
         self.fake_vizier_service.add_fake_data(conn.cluster_id, [
@@ -773,15 +705,10 @@ class TestClient(unittest.TestCase):
 
     def test_handle_server_side_errors(self) -> None:
         # Test to make sure server side errors are handled somewhat.
-        px_client = pxapi.Client(
-            token=ACCESS_TOKEN,
-            server_url=self.url(),
-            channel_fn=lambda url: grpc.insecure_channel(url),
-            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
-        )
+
         # Connect to a single fake cluster.
-        conn = px_client.connect_to_cluster(
-            px_client.list_healthy_clusters()[0])
+        conn = self.px_client.connect_to_cluster(
+            self.px_client.list_healthy_clusters()[0])
 
         http_table1 = self.http_table_factory.create_table(utils.table_id1)
         self.fake_vizier_service.add_fake_data(conn.cluster_id, [
@@ -808,12 +735,7 @@ class TestClient(unittest.TestCase):
 
     def test_direct_conns(self) -> None:
         # Test the direct connections.
-        px_client = pxapi.Client(
-            token=ACCESS_TOKEN,
-            server_url=self.url(),
-            channel_fn=lambda url: grpc.insecure_channel(url),
-            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
-        )
+
         # Create the direct conn server.
         dc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
         fake_dc_service = VizierServiceFake()
@@ -839,14 +761,14 @@ class TestClient(unittest.TestCase):
         self.fake_cloud_service.add_direct_conn_cluster(
             cluster_id, "dc_cluster", url, token)
 
-        clusters = px_client.list_healthy_clusters()
+        clusters = self.px_client.list_healthy_clusters()
         self.assertSetEqual(
             set([c.name() for c in clusters]),
             {"cluster1", "cluster2", "dc_cluster"}
         )
 
         conns = [
-            px_client.connect_to_cluster(c) for c in clusters if c.name() == 'dc_cluster'
+            self.px_client.connect_to_cluster(c) for c in clusters if c.name() == 'dc_cluster'
         ]
 
         self.assertEqual(len(conns), 1)
@@ -865,16 +787,9 @@ class TestClient(unittest.TestCase):
 
     def test_ergo_api(self) -> None:
         # Create a new API where we can run and get results for a table simultaneously.
-        px_client = pxapi.Client(
-            token=ACCESS_TOKEN,
-            server_url=self.url(),
-            # Channel functions for testing.
-            channel_fn=lambda url: grpc.insecure_channel(url),
-            conn_channel_fn=lambda url: grpc.aio.insecure_channel(url),
-        )
         # Connect to a cluster.
-        conn = px_client.connect_to_cluster(
-            px_client.list_healthy_clusters()[0])
+        conn = self.px_client.connect_to_cluster(
+            self.px_client.list_healthy_clusters()[0])
 
         # Create the script_executor.
         script_executor = conn.prepare_script(pxl_script)
