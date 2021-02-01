@@ -30,6 +30,7 @@
 #include "src/stirling/source_connectors/socket_tracer/connection_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/proto/sock_event.pb.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/http/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/grpc.h"
 #include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
 #include "src/stirling/utils/linux_headers.h"
@@ -265,7 +266,7 @@ void SocketTraceConnector::UpdateCommonState(ConnectorContext* ctx) {
 
   // Can call this less frequently if it becomes a performance issue.
   // Trade-off is just how quickly we release memory and BPF map entries.
-  CleanupTrackers();
+  conn_trackers_.CleanupTrackers();
 }
 
 void SocketTraceConnector::CachedUpdateCommonState(ConnectorContext* ctx, uint32_t table_num) {
@@ -896,35 +897,6 @@ void SocketTraceConnector::HandleHTTP2DataLoss(void* /*cb_cookie*/, uint64_t los
 // Connection Tracker Events
 //-----------------------------------------------------------------------------
 
-namespace {
-
-uint64_t GetConnMapKey(uint32_t pid, uint32_t fd) {
-  return (static_cast<uint64_t>(pid) << 32) | fd;
-}
-
-void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEvent* pb) {
-  pb->mutable_attr()->set_timestamp_ns(event.attr.timestamp_ns);
-  pb->mutable_attr()->mutable_conn_id()->set_pid(event.attr.conn_id.upid.pid);
-  pb->mutable_attr()->mutable_conn_id()->set_start_time_ns(
-      event.attr.conn_id.upid.start_time_ticks);
-  pb->mutable_attr()->mutable_conn_id()->set_fd(event.attr.conn_id.fd);
-  pb->mutable_attr()->mutable_conn_id()->set_generation(event.attr.conn_id.tsid);
-  pb->mutable_attr()->mutable_traffic_class()->set_protocol(event.attr.traffic_class.protocol);
-  pb->mutable_attr()->mutable_traffic_class()->set_role(event.attr.traffic_class.role);
-  pb->mutable_attr()->set_direction(event.attr.direction);
-  pb->mutable_attr()->set_pos(event.attr.pos);
-  pb->mutable_attr()->set_msg_size(event.attr.msg_size);
-  pb->set_msg(event.msg);
-}
-
-}  // namespace
-
-void SocketTraceConnector::AddTrackerToProtocolList(ConnectionTracker* tracker) {
-  conn_trackers_by_protocol_[tracker->traffic_class().protocol].push_back(tracker);
-  // If this tracker was already part of another protocol list,
-  // we'll remove the tracker from the original protocols list during TransferStreams().
-}
-
 void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> event) {
   event->attr.timestamp_ns += ClockRealTimeOffset();
 
@@ -932,13 +904,14 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
     WriteDataEvent(*event);
   }
 
-  ConnectionTracker& tracker = GetMutableConnTracker(event->attr.conn_id);
+  ConnectionTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event->attr.conn_id);
+  tracker.set_conn_stats(&connection_stats_);
 
   TrafficProtocol orig_protocol = tracker.traffic_class().protocol;
   tracker.AddDataEvent(std::move(event));
 
   if (tracker.traffic_class().protocol != orig_protocol) {
-    AddTrackerToProtocolList(&tracker);
+    conn_trackers_.NotifyProtocolChange(&tracker);
   }
 }
 
@@ -947,105 +920,43 @@ void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
   event.open.timestamp_ns += ClockRealTimeOffset();
 
   // conn_id is a common field of open & close.
-  ConnectionTracker& tracker = GetMutableConnTracker(event.open.conn_id);
+  ConnectionTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event.open.conn_id);
+  tracker.set_conn_stats(&connection_stats_);
 
   TrafficProtocol orig_protocol = tracker.traffic_class().protocol;
   tracker.AddControlEvent(event);
 
   if (tracker.traffic_class().protocol != orig_protocol) {
-    AddTrackerToProtocolList(&tracker);
+    conn_trackers_.NotifyProtocolChange(&tracker);
   }
 }
 
 void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> event) {
   event->attr.timestamp_ns += ClockRealTimeOffset();
 
-  ConnectionTracker& tracker = GetMutableConnTracker(event->attr.conn_id);
+  ConnectionTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event->attr.conn_id);
+  tracker.set_conn_stats(&connection_stats_);
 
   TrafficProtocol orig_protocol = tracker.traffic_class().protocol;
   tracker.AddHTTP2Header(std::move(event));
 
   if (tracker.traffic_class().protocol != orig_protocol) {
-    AddTrackerToProtocolList(&tracker);
+    conn_trackers_.NotifyProtocolChange(&tracker);
   }
 }
 
 void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event) {
   event->attr.timestamp_ns += ClockRealTimeOffset();
 
-  ConnectionTracker& tracker = GetMutableConnTracker(event->attr.conn_id);
+  ConnectionTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event->attr.conn_id);
+  tracker.set_conn_stats(&connection_stats_);
 
   TrafficProtocol orig_protocol = tracker.traffic_class().protocol;
   tracker.AddHTTP2Data(std::move(event));
 
   if (tracker.traffic_class().protocol != orig_protocol) {
-    AddTrackerToProtocolList(&tracker);
+    conn_trackers_.NotifyProtocolChange(&tracker);
   }
-}
-
-ConnectionTracker& SocketTraceConnector::GetMutableConnTracker(struct conn_id_t conn_id) {
-  const uint64_t conn_map_key = GetConnMapKey(conn_id.upid.pid, conn_id.fd);
-  DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
-
-  auto& conn_trackers = connection_trackers_[conn_map_key];
-  ConnectionTracker& conn_tracker = conn_trackers[conn_id.tsid];
-
-  bool new_tracker = (conn_tracker.conn_id().tsid == 0);
-  if (new_tracker) {
-    conn_trackers_by_protocol_[kProtocolUnknown].push_back(&conn_tracker);
-
-    conn_tracker.set_conn_stats(&connection_stats_);
-
-    ++num_trackers_;
-
-    // If there is a another generation for this conn map key,
-    // one of them needs to be marked for death.
-    if (conn_trackers.size() > 1) {
-      auto last_tracker_iter = --conn_trackers.end();
-
-      // If the inserted conn_tracker is not the last generation, then mark it for death.
-      // This can happen because the events draining from the perf buffers are not ordered.
-      if (last_tracker_iter->second.conn_id().tsid != 0) {
-        VLOG(1) << "Marking for death because not last generation.";
-        conn_tracker.MarkForDeath();
-      } else {
-        // New tracker was the last, so the previous last should be marked for death.
-        --last_tracker_iter;
-        VLOG(1) << "Marking previous generation for death.";
-        last_tracker_iter->second.MarkForDeath();
-      }
-    }
-  }
-
-  return conn_tracker;
-}
-
-const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(uint32_t pid,
-                                                                    uint32_t fd) const {
-  const uint64_t conn_map_key = GetConnMapKey(pid, fd);
-
-  auto tracker_set_it = connection_trackers_.find(conn_map_key);
-  if (tracker_set_it == connection_trackers_.end()) {
-    return nullptr;
-  }
-
-  const auto& tracker_generations = tracker_set_it->second;
-
-  if (tracker_generations.empty()) {
-    DCHECK(false);
-    return nullptr;
-  }
-
-  // Return last connection.
-  auto tracker_it = tracker_generations.end();
-  --tracker_it;
-
-  // Don't return trackers that are about to be destroyed.
-  if (tracker_it->second.ReadyForDestruction()) {
-    return nullptr;
-  }
-
-  return &tracker_it->second;
 }
 
 //-----------------------------------------------------------------------------
@@ -1310,6 +1221,23 @@ void SocketTraceConnector::SetupOutput(const std::filesystem::path& path) {
   LOG(INFO) << absl::Substitute("Writing output to: $0 in $1 format.", abs_path.string(), format);
 }
 
+namespace {
+void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEvent* pb) {
+  pb->mutable_attr()->set_timestamp_ns(event.attr.timestamp_ns);
+  pb->mutable_attr()->mutable_conn_id()->set_pid(event.attr.conn_id.upid.pid);
+  pb->mutable_attr()->mutable_conn_id()->set_start_time_ns(
+      event.attr.conn_id.upid.start_time_ticks);
+  pb->mutable_attr()->mutable_conn_id()->set_fd(event.attr.conn_id.fd);
+  pb->mutable_attr()->mutable_conn_id()->set_generation(event.attr.conn_id.tsid);
+  pb->mutable_attr()->mutable_traffic_class()->set_protocol(event.attr.traffic_class.protocol);
+  pb->mutable_attr()->mutable_traffic_class()->set_role(event.attr.traffic_class.role);
+  pb->mutable_attr()->set_direction(event.attr.direction);
+  pb->mutable_attr()->set_pos(event.attr.pos);
+  pb->mutable_attr()->set_msg_size(event.attr.msg_size);
+  pb->set_msg(event.msg);
+}
+}  // namespace
+
 void SocketTraceConnector::WriteDataEvent(const SocketDataEvent& event) {
   DCHECK(perf_buffer_events_output_stream_ != nullptr);
 
@@ -1344,23 +1272,19 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
   // we can choose to only go through the relevant protocol tracker lists.
   for (size_t i = 0; i < protocol_transfer_specs_.size(); ++i) {
     const auto& transfer_spec = protocol_transfer_specs_[i];
-    auto protocol = magic_enum::enum_cast<TrafficProtocol>(i);
-    DCHECK(protocol.has_value());
-    auto& conn_trackers_list = conn_trackers_by_protocol_[protocol.value()];
 
     if (transfer_spec.table_num != table_num) {
       continue;
     }
 
-    for (auto iter = conn_trackers_list.begin(); iter != conn_trackers_list.end();) {
-      ConnectionTracker* tracker = *iter;
+    auto protocol = magic_enum::enum_cast<TrafficProtocol>(i);
+    DCHECK(protocol.has_value());
 
-      // Tracker has moved to another list.
-      if (tracker->traffic_class().protocol != protocol.value()) {
-        DCHECK_EQ(protocol.value(), kProtocolUnknown);
-        conn_trackers_list.erase(iter++);
-        continue;
-      }
+    ConnTrackersManager::TrackersList conn_trackers_list =
+        conn_trackers_.ConnTrackersForProtocol(protocol.value());
+
+    for (auto iter = conn_trackers_list.begin(); iter != conn_trackers_list.end(); ++iter) {
+      ConnectionTracker* tracker = *iter;
 
       VLOG(1) << absl::Substitute("Connection conn_id=$0 protocol=$1 state=$2\n",
                                   ToString(tracker->conn_id()),
@@ -1374,76 +1298,8 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
       }
 
       tracker->IterationPostTick();
-
-      if (tracker->ReadyForDestruction()) {
-        conn_trackers_list.erase(iter++);
-        ++num_trackers_ready_for_destruction_;
-        continue;
-      }
-
-      ++iter;
     }
   }
-}
-
-void SocketTraceConnector::DumpTrackerInfo(bool verbose) {
-  int count = 0;
-  for (size_t i = 0; i < protocol_transfer_specs_.size(); ++i) {
-    auto protocol = magic_enum::enum_cast<TrafficProtocol>(i);
-    DCHECK(protocol.has_value());
-    auto& conn_trackers_list = conn_trackers_by_protocol_[protocol.value()];
-
-    LOG(INFO) << absl::Substitute("protocol=$0 num_trackers=$1", protocol.value(),
-                                  conn_trackers_list.size());
-
-    count += conn_trackers_list.size();
-
-    if (verbose) {
-      for (auto iter = conn_trackers_list.begin(); iter != conn_trackers_list.end(); ++iter) {
-        ConnectionTracker* tracker = *iter;
-
-        if (verbose) {
-          LOG(INFO) << absl::Substitute("Connection conn_id=$0 protocol=$1 state=$2\n",
-                                        ToString(tracker->conn_id()),
-                                        magic_enum::enum_name(tracker->traffic_class().protocol),
-                                        magic_enum::enum_name(tracker->state()));
-        }
-      }
-    }
-  }
-
-  LOG(INFO) << absl::Substitute("num_trackers=$0 num_trackers_allocated=$1", count, num_trackers_);
-}
-
-void SocketTraceConnector::CleanupTrackers() {
-  // Outer loop iterates through tracker sets (keyed by PID+FD),
-  // while inner loop iterates through generations of trackers for that PID+FD pair.
-  auto tracker_set_it = connection_trackers_.begin();
-  while (tracker_set_it != connection_trackers_.end()) {
-    auto& tracker_generations = tracker_set_it->second;
-
-    auto generation_it = tracker_generations.begin();
-    while (generation_it != tracker_generations.end()) {
-      auto& tracker = generation_it->second;
-
-      // Remove any trackers that are no longer required.
-      if (tracker.ReadyForDestruction()) {
-        tracker_generations.erase(generation_it++);
-        --num_trackers_;
-        --num_trackers_ready_for_destruction_;
-      } else {
-        ++generation_it;
-      }
-    }
-
-    if (tracker_generations.empty()) {
-      connection_trackers_.erase(tracker_set_it++);
-    } else {
-      ++tracker_set_it;
-    }
-  }
-
-  DCHECK_EQ(num_trackers_ready_for_destruction_, 0);
 }
 
 template <typename TProtocolTraits>

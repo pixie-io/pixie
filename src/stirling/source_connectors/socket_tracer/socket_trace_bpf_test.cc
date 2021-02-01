@@ -632,13 +632,11 @@ TEST_F(SocketTraceServerSideBPFTest, ConnStatsUpdatedAfterConnectionTrackerDisab
   sleep(1);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  const ConnectionTracker* client_side_tracker =
-      socket_trace_connector->GetConnectionTracker(getpid(), client.sockfd());
-  const ConnectionTracker* server_side_tracker =
-      socket_trace_connector->GetConnectionTracker(getpid(), server_endpoint->sockfd());
-
-  ASSERT_NE(client_side_tracker, nullptr);
-  ASSERT_NE(server_side_tracker, nullptr);
+  ASSERT_OK_AND_ASSIGN(const ConnectionTracker* client_side_tracker,
+                       socket_trace_connector->GetConnectionTracker(getpid(), client.sockfd()));
+  ASSERT_OK_AND_ASSIGN(
+      const ConnectionTracker* server_side_tracker,
+      socket_trace_connector->GetConnectionTracker(getpid(), server_endpoint->sockfd()));
 
   EXPECT_EQ(GetBytesSent(*client_side_tracker), kHTTPReqMsg1.size());
   EXPECT_EQ(GetBytesSentTransferred(*client_side_tracker), kHTTPReqMsg1.size());

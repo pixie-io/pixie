@@ -438,7 +438,7 @@ TEST_F(SocketTraceConnectorTest, NoEvents) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   tablets = data_table.ConsumeRecords();
   ASSERT_TRUE(tablets.empty());
-  EXPECT_NE(nullptr, source_->GetConnectionTracker(kPID, kFD));
+  EXPECT_OK(source_->GetConnectionTracker(kPID, kFD));
 
   source_->AcceptControlEvent(close_event);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
@@ -510,7 +510,7 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;
   EXPECT_EQ(2, record_batch[0]->Size());
-  EXPECT_NE(nullptr, source_->GetConnectionTracker(kPID, kFD));
+  EXPECT_OK(source_->GetConnectionTracker(kPID, kFD));
 
   source_->AcceptDataEvent(std::move(req_event3));
   source_->AcceptDataEvent(std::move(resp_event3));
@@ -522,7 +522,7 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;
   EXPECT_EQ(1, record_batch[0]->Size());
-  EXPECT_NE(nullptr, source_->GetConnectionTracker(kPID, kFD));
+  EXPECT_OK(source_->GetConnectionTracker(kPID, kFD));
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
@@ -538,13 +538,13 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
 
   DataTable data_table(kHTTPTable);
 
-  EXPECT_EQ(nullptr, source_->GetConnectionTracker(kPID, kFD));
+  EXPECT_NOT_OK(source_->GetConnectionTracker(kPID, kFD));
 
   source_->AcceptControlEvent(conn);
 
-  EXPECT_NE(nullptr, source_->GetConnectionTracker(kPID, kFD));
+  EXPECT_OK(source_->GetConnectionTracker(kPID, kFD));
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  EXPECT_NE(nullptr, source_->GetConnectionTracker(kPID, kFD));
+  EXPECT_OK(source_->GetConnectionTracker(kPID, kFD));
 
   source_->AcceptDataEvent(std::move(req_event0));
   source_->AcceptDataEvent(std::move(req_event2));
@@ -553,22 +553,22 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
   source_->AcceptDataEvent(std::move(resp_event1));
   source_->AcceptDataEvent(std::move(resp_event2));
 
-  EXPECT_NE(nullptr, source_->GetConnectionTracker(kPID, kFD));
+  EXPECT_OK(source_->GetConnectionTracker(kPID, kFD));
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  EXPECT_NE(nullptr, source_->GetConnectionTracker(kPID, kFD));
+  EXPECT_OK(source_->GetConnectionTracker(kPID, kFD));
 
   source_->AcceptControlEvent(close_event);
   // CloseConnEvent results in countdown = kDeathCountdownIters.
 
   // Death countdown period: keep calling Transfer Data to increment iterations.
   for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
-    EXPECT_NE(nullptr, source_->GetConnectionTracker(kPID, kFD));
+    EXPECT_OK(source_->GetConnectionTracker(kPID, kFD));
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   }
 
-  EXPECT_NE(nullptr, source_->GetConnectionTracker(kPID, kFD));
+  EXPECT_OK(source_->GetConnectionTracker(kPID, kFD));
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  EXPECT_EQ(nullptr, source_->GetConnectionTracker(kPID, kFD));
+  EXPECT_NOT_OK(source_->GetConnectionTracker(kPID, kFD));
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
@@ -591,7 +591,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
   source_->AcceptDataEvent(std::move(resp_event0));
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  EXPECT_NE(nullptr, source_->GetConnectionTracker(kPID, kFD));
+  EXPECT_OK(source_->GetConnectionTracker(kPID, kFD));
 
   source_->AcceptControlEvent(close_event);
   source_->AcceptDataEvent(std::move(resp_event1));
@@ -602,11 +602,11 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
   // Death countdown period: keep calling Transfer Data to increment iterations.
   for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    EXPECT_NE(nullptr, source_->GetConnectionTracker(kPID, kFD));
+    EXPECT_OK(source_->GetConnectionTracker(kPID, kFD));
   }
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  EXPECT_EQ(nullptr, source_->GetConnectionTracker(kPID, kFD));
+  EXPECT_NOT_OK(source_->GetConnectionTracker(kPID, kFD));
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
@@ -638,11 +638,11 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
   // Death countdown period: keep calling Transfer Data to increment iterations.
   for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    EXPECT_NE(nullptr, source_->GetConnectionTracker(kPID, kFD));
+    EXPECT_OK(source_->GetConnectionTracker(kPID, kFD));
   }
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  EXPECT_EQ(nullptr, source_->GetConnectionTracker(kPID, kFD));
+  EXPECT_NOT_OK(source_->GetConnectionTracker(kPID, kFD));
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {
@@ -683,7 +683,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {
   PL_UNUSED(conn1_close);  // Missing close event.
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  EXPECT_NE(nullptr, source_->GetConnectionTracker(kPID, kFD));
+  EXPECT_OK(source_->GetConnectionTracker(kPID, kFD));
 
   // TransferData results in countdown = kDeathCountdownIters for old generations.
 
@@ -693,7 +693,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {
   }
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  EXPECT_EQ(nullptr, source_->GetConnectionTracker(kPID, kFD));
+  EXPECT_NOT_OK(source_->GetConnectionTracker(kPID, kFD));
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupNoProtocol) {
@@ -711,11 +711,11 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupNoProtocol) {
   // Death countdown period: keep calling Transfer Data to increment iterations.
   for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    EXPECT_NE(nullptr, source_->GetConnectionTracker(kPID, kFD));
+    EXPECT_OK(source_->GetConnectionTracker(kPID, kFD));
   }
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  EXPECT_EQ(nullptr, source_->GetConnectionTracker(kPID, kFD));
+  EXPECT_NOT_OK(source_->GetConnectionTracker(kPID, kFD));
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
@@ -744,7 +744,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
   // Note that close event was not recorded, so this connection remains open.
 
   // Start with an active connection.
-  EXPECT_NE(nullptr, source_->GetConnectionTracker(impossible_pid, 1));
+  EXPECT_OK(source_->GetConnectionTracker(impossible_pid, 1));
 
   // A bunch of iterations to trigger the idleness check.
   for (int i = 0; i < 100; ++i) {
@@ -754,7 +754,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
   // Connection should have been marked as idle by now,
   // and a check of /proc/<pid>/<fd> will trigger MarkForDeath().
 
-  EXPECT_EQ(nullptr, source_->GetConnectionTracker(impossible_pid, 1));
+  EXPECT_NOT_OK(source_->GetConnectionTracker(impossible_pid, 1));
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
@@ -785,20 +785,20 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
 
   for (int i = 0; i < 100; ++i) {
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    EXPECT_NE(nullptr, source_->GetConnectionTracker(real_pid, real_fd));
+    EXPECT_OK(source_->GetConnectionTracker(real_pid, real_fd));
   }
 
-  const ConnectionTracker* tracker = source_->GetConnectionTracker(real_pid, real_fd);
-  ASSERT_NE(nullptr, tracker);
+  ASSERT_OK_AND_ASSIGN(const ConnectionTracker* tracker,
+                       source_->GetConnectionTracker(real_pid, real_fd));
 
   sleep(2);
 
   // Connection should be timed out by next TransferData,
   // which should also cause events to be flushed, but the connection is still alive.
 
-  EXPECT_NE(nullptr, source_->GetConnectionTracker(real_pid, real_fd));
+  EXPECT_OK(source_->GetConnectionTracker(real_pid, real_fd));
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  EXPECT_NE(nullptr, source_->GetConnectionTracker(real_pid, real_fd));
+  EXPECT_OK(source_->GetConnectionTracker(real_pid, real_fd));
 
   // Should not have transferred any data.
   tablets = data_table.ConsumeRecords();

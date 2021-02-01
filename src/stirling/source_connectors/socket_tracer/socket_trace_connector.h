@@ -37,9 +37,9 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
+#include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
 #include "src/stirling/source_connectors/socket_tracer/connection_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/connection_tracker.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/http/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_bpf_tables.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_tables.h"
 #include "src/stirling/utils/proc_path_tools.h"
@@ -112,14 +112,14 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   Status TestOnlySetTargetPID(int64_t pid);
   Status DisableSelfTracing();
 
-  ConnectionTracker& GetMutableConnTracker(struct conn_id_t conn_id);
-
   /**
    * Gets a pointer to the most recent ConnectionTracker for the given pid and fd.
    *
-   * @return Pointer to the ConnectionTracker, or nullptr if it does not exist.
+   * @return Pointer to the ConnectionTracker, or error::NotFound if it does not exist.
    */
-  const ConnectionTracker* GetConnectionTracker(uint32_t pid, uint32_t fd) const;
+  StatusOr<const ConnectionTracker*> GetConnectionTracker(uint32_t pid, uint32_t fd) const {
+    return conn_trackers_.GetConnectionTracker(pid, fd);
+  }
 
  private:
   // ReadPerfBuffers poll callback functions (must be static).
@@ -367,16 +367,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   template <typename TProtocolTraits>
   void TransferStream(ConnectorContext* ctx, ConnectionTracker* tracker, DataTable* data_table);
 
-  // Deletes trackers that are ReadyForDestruction().
-  // We do this only after accumulating enough trackers to clean-up, to avoid the performance
-  // impact of scanning through all trackers every iteration.
-  void CleanupTrackers();
-
-  // Debug utility to dump information about connection trackers.
-  // If verbose is false, prints summary stats per protocol.
-  // If verbose is true, it also prints information per connection tracker.
-  void DumpTrackerInfo(bool verbose);
-
   template <typename TRecordType>
   static void AppendMessage(ConnectorContext* ctx, const ConnectionTracker& conn_tracker,
                             TRecordType record, DataTable* data_table);
@@ -389,22 +379,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Writes data event to the specified output file.
   void WriteDataEvent(const SocketDataEvent& event);
 
-  void AddTrackerToProtocolList(ConnectionTracker* tracker);
-
-  // Note that the inner map cannot be a vector, because there is no guaranteed order
-  // in which events are read from perf buffers.
-  // Inner map could be a priority_queue, but benchmarks showed better performance with a std::map.
-  // Key is {PID, FD} for outer map, and tsid for inner map.
-  absl::flat_hash_map<uint64_t, std::map<uint64_t, ConnectionTracker> > connection_trackers_;
-
-  // Key is protocol.
-  // TODO(jps): Convert to vector?
-  absl::flat_hash_map<TrafficProtocol, std::list<ConnectionTracker*> > conn_trackers_by_protocol_;
-
-  // Keep track of total number of trackers, and the number ready for destruction.
-  // This state is used to trigger clean-up.
-  int num_trackers_ = 0;
-  int num_trackers_ready_for_destruction_ = 0;
+  ConnTrackersManager conn_trackers_;
 
   ConnectionStats connection_stats_;
 

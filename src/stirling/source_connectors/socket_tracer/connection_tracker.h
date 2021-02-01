@@ -541,6 +541,7 @@ class ConnectionTracker : NotCopyMoveable {
   bool conn_resolution_failed_ = false;
 
   struct conn_id_t conn_id_ = {};
+
   // TODO(oazizi): Protocol and role are getting decoupled, as role now may come from conn event,
   //               and protocol comes from data.
   //               So flatten traffic_class_:
