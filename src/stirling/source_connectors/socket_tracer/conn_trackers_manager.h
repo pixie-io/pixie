@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <string>
 
 #include "src/stirling/source_connectors/socket_tracer/connection_tracker.h"
 
@@ -58,34 +59,27 @@ class ConnTrackersManager {
 
      private:
       TrackersListIterator(std::list<ConnectionTracker*>* trackers,
-                           std::list<ConnectionTracker*>::iterator iter, TrafficProtocol protocol,
+                           std::list<ConnectionTracker*>::iterator iter,
                            ConnTrackersManager* conn_trackers_manager);
-
-      void AdvanceToValidTracker();
 
       std::list<ConnectionTracker*>* trackers_;
       std::list<ConnectionTracker*>::iterator iter_;
-      TrafficProtocol protocol_;
       ConnTrackersManager* conn_trackers_manager_;
 
       friend class TrackersList;
     };
 
     TrackersListIterator begin() {
-      return TrackersListIterator(list_, list_->begin(), protocol_, conn_trackers_);
+      return TrackersListIterator(list_, list_->begin(), conn_trackers_);
     }
 
-    TrackersListIterator end() {
-      return TrackersListIterator(list_, list_->end(), protocol_, conn_trackers_);
-    }
+    TrackersListIterator end() { return TrackersListIterator(list_, list_->end(), conn_trackers_); }
 
    private:
-    TrackersList(std::list<ConnectionTracker*>* list, TrafficProtocol protocol,
-                 ConnTrackersManager* conn_trackers)
-        : list_(list), protocol_(protocol), conn_trackers_(conn_trackers) {}
+    TrackersList(std::list<ConnectionTracker*>* list, ConnTrackersManager* conn_trackers)
+        : list_(list), conn_trackers_(conn_trackers) {}
 
     std::list<ConnectionTracker*>* list_;
-    TrafficProtocol protocol_;
     ConnTrackersManager* conn_trackers_;
 
     friend class ConnTrackersManager;
@@ -95,7 +89,7 @@ class ConnTrackersManager {
    * Returns a list of all the trackers that belong to a particular protocol.
    */
   TrackersList ConnTrackersForProtocol(TrafficProtocol protocol) {
-    return TrackersList(&conn_trackers_by_protocol_[protocol], protocol, this);
+    return TrackersList(&conn_trackers_by_protocol_[protocol], this);
   }
 
   /**
@@ -108,7 +102,7 @@ class ConnTrackersManager {
    * If a connection tracker has its protocol changed, then one must manually call this function.
    * TODO(oazizi): Find a cleaner/more automatic way that can avoid this call altogether.
    */
-  void NotifyProtocolChange(ConnectionTracker* tracker);
+  void UpdateProtocol(ConnectionTracker* tracker, std::optional<TrafficProtocol> old_protocol);
 
   /**
    * Deletes trackers that are ReadyForDestruction().
@@ -118,15 +112,22 @@ class ConnTrackersManager {
   void CleanupTrackers();
 
   /**
-   * Runs checks for checking the consistency of the data structure.
-   * Useful for catching bugs.
+   * Checks the consistency of the data structures.
+   * Useful for catching bugs. Meant for use in testing.
+   * Could be expensive if called too regularly in production.
+   * See DebugChecks() for simpler checks that can be used in production.
    */
-  void CheckConsistency();
+  Status TestOnlyCheckConsistency() const;
 
   /**
-   * Debug utility to dump information about connection trackers.
+   * Simple consistency DCHECKs meant for enforcing invariants.
    */
-  void DebugInfo() const;
+  void DebugChecks() const;
+
+  /**
+   * Returns extensive debug information about the connection trackers.
+   */
+  std::string DebugInfo() const;
 
  private:
   // A map from conn_id (PID+FD+TSID) to tracker. This is for easy update on BPF events.
@@ -148,7 +149,6 @@ class ConnTrackersManager {
   size_t num_trackers_ = 0;
   size_t num_trackers_ready_for_destruction_ = 0;
   size_t num_trackers_in_lists_ = 0;
-  size_t num_tracker_dups_ = 0;
 };
 
 }  // namespace stirling

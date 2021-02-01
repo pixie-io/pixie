@@ -15,17 +15,45 @@ uint64_t GetConnMapKey(uint32_t pid, uint32_t fd) {
 
 }  // namespace
 
-void ConnTrackersManager::NotifyProtocolChange(ConnectionTracker* tracker) {
+void ConnTrackersManager::UpdateProtocol(pl::stirling::ConnectionTracker* tracker,
+                                         std::optional<TrafficProtocol> old_protocol) {
+  // If the tracker is ReadyForDestruction(), then it should not be a member of any protocol list.
+  if (tracker->ReadyForDestruction()) {
+    // Since it is not part of any protocol list, it should not have a back pointer to one.
+    DCHECK(!tracker->back_pointer_.has_value());
+    return;
+  }
+
+  if (old_protocol.has_value()) {
+    // If an old protocol is specified, then the tracker should also have been set up
+    // with a back pointer to its list.
+    DCHECK(tracker->back_pointer_.has_value());
+
+    if (old_protocol.value() == tracker->traffic_class().protocol) {
+      // Didn't really move, so nothing to update.
+      return;
+    }
+
+    // Remove tracker from previous list.
+    conn_trackers_by_protocol_[old_protocol.value()].erase(tracker->back_pointer_.value());
+    --num_trackers_in_lists_;
+  } else {
+    // If no old protocol is specified, the the tracker should not be in any list.
+    // Currently, this should only be possible on initialization of a new tracker.
+    DCHECK(!tracker->back_pointer_.has_value());
+  }
+
+  // Add tracker to new list based on its current protocol.
   conn_trackers_by_protocol_[tracker->traffic_class().protocol].push_back(tracker);
+  tracker->back_pointer_ = --conn_trackers_by_protocol_[tracker->traffic_class().protocol].end();
   ++num_trackers_in_lists_;
-  ++num_tracker_dups_;
-  // If this tracker was already part of another protocol list,
-  // we'll remove the tracker from the original protocols list during TransferStreams().
+
+  DebugChecks();
 }
 
 ConnectionTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_id) {
   const uint64_t conn_map_key = GetConnMapKey(conn_id.upid.pid, conn_id.fd);
-  DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
+  DCHECK_NE(conn_map_key, 0) << "Connection map key cannot be 0, pid must be wrong";
 
   auto& conn_trackers = connection_trackers_[conn_map_key];
   ConnectionTracker& conn_tracker = conn_trackers[conn_id.tsid];
@@ -36,10 +64,10 @@ ConnectionTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t 
   // TODO(oazizi): Find a more direct way of detecting new trackers.
   const bool new_tracker = (conn_tracker.conn_id().tsid == 0);
   if (new_tracker) {
-    conn_trackers_by_protocol_[kProtocolUnknown].push_back(&conn_tracker);
-
     ++num_trackers_;
-    ++num_trackers_in_lists_;
+
+    conn_tracker.manager_ = this;
+    UpdateProtocol(&conn_tracker, {});
 
     // If there is a another generation for this conn map key,
     // one of them needs to be marked for death.
@@ -60,6 +88,7 @@ ConnectionTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t 
     }
   }
 
+  DebugChecks();
   return conn_tracker;
 }
 
@@ -120,33 +149,75 @@ void ConnTrackersManager::CleanupTrackers() {
     }
   }
 
-  DCHECK_EQ(num_trackers_ready_for_destruction_, 0);
+  DebugChecks();
 }
 
-void ConnTrackersManager::CheckConsistency() {
-  DCHECK_EQ(num_trackers_,
-            num_trackers_in_lists_ + num_trackers_ready_for_destruction_ - num_tracker_dups_);
-}
+Status ConnTrackersManager::TestOnlyCheckConsistency() const {
+  // A set used for looking for duplicate trackers.
+  std::set<ConnectionTracker*> trackers_set;
 
-void ConnTrackersManager::DebugInfo() const {
-  int count = 0;
   for (const auto& [protocol, conn_trackers_list] : conn_trackers_by_protocol_) {
-    LOG(INFO) << absl::Substitute("protocol=$0 num_trackers=$1", protocol,
-                                  conn_trackers_list.size());
+    for (auto iter = conn_trackers_list.begin(); iter != conn_trackers_list.end(); ++iter) {
+      ConnectionTracker* tracker = *iter;
 
-    count += conn_trackers_list.size();
+      // Check that tracker exists in connection_trackers_ (i.e. that the pointer is valid).
+      // If the pointer is not valid, this will likely cause a crash or ASAN error.
+      const uint64_t conn_map_key =
+          GetConnMapKey(tracker->conn_id().upid.pid, tracker->conn_id().fd);
+      DCHECK_NE(conn_map_key, 0) << "Connection map key cannot be 0, pid must be wrong";
+      auto tracker_set_it = connection_trackers_.find(conn_map_key);
+      if (tracker_set_it == connection_trackers_.end()) {
+        return error::Internal(
+            "Tracker $0 in the protocol lists not found in connection_trackers_.",
+            ToString(tracker->conn_id()));
+      }
+
+      const auto& tracker_generations = tracker_set_it->second;
+      auto tracker_it = tracker_generations.find(tracker->conn_id().tsid);
+      if (tracker_it == tracker_generations.end()) {
+        return error::Internal(
+            "Tracker $0 in the protocol lists not found in connection_trackers_.",
+            ToString(tracker->conn_id()));
+      }
+
+      // Check that the pointer only shows up once across all lists.
+      // NOLINTNEXTLINE: whitespace/braces
+      auto [unused, inserted] = trackers_set.insert(tracker);
+      if (!inserted) {
+        return error::Internal("Tracker $0 found in two lists.", ToString(tracker->conn_id()));
+      }
+    }
+  }
+
+  return Status::OK();
+}
+
+void ConnTrackersManager::DebugChecks() const {
+  DCHECK_EQ(num_trackers_, num_trackers_in_lists_ + num_trackers_ready_for_destruction_);
+}
+
+std::string ConnTrackersManager::DebugInfo() const {
+  std::string out;
+
+  for (const auto& [protocol, conn_trackers_list] : conn_trackers_by_protocol_) {
+    absl::StrAppend(&out,
+                    absl::Substitute("protocol=$0 num_trackers=$1", magic_enum::enum_name(protocol),
+                                     conn_trackers_list.size()));
 
     for (auto iter = conn_trackers_list.begin(); iter != conn_trackers_list.end(); ++iter) {
       ConnectionTracker* tracker = *iter;
 
-      LOG(INFO) << absl::Substitute("Connection conn_id=$0 protocol=$1 state=$2\n",
-                                    ToString(tracker->conn_id()),
-                                    magic_enum::enum_name(tracker->traffic_class().protocol),
-                                    magic_enum::enum_name(tracker->state()));
+      absl::StrAppend(&out,
+                      absl::Substitute(
+                          "   conn_id=$0 protocol=$1 state=$2 zombie=$3 ready_for_destruction=$4\n",
+                          ToString(tracker->conn_id()),
+                          magic_enum::enum_name(tracker->traffic_class().protocol),
+                          magic_enum::enum_name(tracker->state()), tracker->IsZombie(),
+                          tracker->ReadyForDestruction()));
     }
   }
 
-  LOG(INFO) << absl::Substitute("num_trackers=$0 num_trackers_allocated=$1", count, num_trackers_);
+  return out;
 }
 
 //-----------------------------------------------------------------------------
@@ -155,17 +226,13 @@ void ConnTrackersManager::DebugInfo() const {
 
 ConnTrackersManager::TrackersList::TrackersListIterator::TrackersListIterator(
     std::list<ConnectionTracker*>* trackers, std::list<ConnectionTracker*>::iterator iter,
-    TrafficProtocol protocol, ConnTrackersManager* conn_trackers_manager)
-    : trackers_(trackers),
-      iter_(iter),
-      protocol_(protocol),
-      conn_trackers_manager_(conn_trackers_manager) {
-  AdvanceToValidTracker();
-}
+    ConnTrackersManager* conn_trackers_manager)
+    : trackers_(trackers), iter_(iter), conn_trackers_manager_(conn_trackers_manager) {}
 
 ConnTrackersManager::TrackersList::TrackersListIterator
 ConnTrackersManager::TrackersList::TrackersListIterator::operator++() {
   if ((*iter_)->ReadyForDestruction()) {
+    (*iter_)->back_pointer_.reset();
     trackers_->erase(iter_++);
     --conn_trackers_manager_->num_trackers_in_lists_;
     ++conn_trackers_manager_->num_trackers_ready_for_destruction_;
@@ -173,22 +240,7 @@ ConnTrackersManager::TrackersList::TrackersListIterator::operator++() {
     ++iter_;
   }
 
-  conn_trackers_manager_->CheckConsistency();
-
-  AdvanceToValidTracker();
-
   return *this;
-}
-
-void ConnTrackersManager::TrackersList::TrackersListIterator::AdvanceToValidTracker() {
-  while ((iter_ != trackers_->end()) && ((*iter_)->traffic_class().protocol != protocol_)) {
-    DCHECK_EQ(protocol_, kProtocolUnknown);
-    trackers_->erase(iter_++);
-    --conn_trackers_manager_->num_trackers_in_lists_;
-    --conn_trackers_manager_->num_tracker_dups_;
-  }
-
-  conn_trackers_manager_->CheckConsistency();
 }
 
 }  // namespace stirling

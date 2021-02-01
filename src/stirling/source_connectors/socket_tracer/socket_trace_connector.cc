@@ -907,12 +907,7 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
   ConnectionTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event->attr.conn_id);
   tracker.set_conn_stats(&connection_stats_);
 
-  TrafficProtocol orig_protocol = tracker.traffic_class().protocol;
   tracker.AddDataEvent(std::move(event));
-
-  if (tracker.traffic_class().protocol != orig_protocol) {
-    conn_trackers_.NotifyProtocolChange(&tracker);
-  }
 }
 
 void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
@@ -923,12 +918,7 @@ void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
   ConnectionTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event.open.conn_id);
   tracker.set_conn_stats(&connection_stats_);
 
-  TrafficProtocol orig_protocol = tracker.traffic_class().protocol;
   tracker.AddControlEvent(event);
-
-  if (tracker.traffic_class().protocol != orig_protocol) {
-    conn_trackers_.NotifyProtocolChange(&tracker);
-  }
 }
 
 void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> event) {
@@ -937,12 +927,7 @@ void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> e
   ConnectionTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event->attr.conn_id);
   tracker.set_conn_stats(&connection_stats_);
 
-  TrafficProtocol orig_protocol = tracker.traffic_class().protocol;
   tracker.AddHTTP2Header(std::move(event));
-
-  if (tracker.traffic_class().protocol != orig_protocol) {
-    conn_trackers_.NotifyProtocolChange(&tracker);
-  }
 }
 
 void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event) {
@@ -951,12 +936,7 @@ void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event
   ConnectionTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event->attr.conn_id);
   tracker.set_conn_stats(&connection_stats_);
 
-  TrafficProtocol orig_protocol = tracker.traffic_class().protocol;
   tracker.AddHTTP2Data(std::move(event));
-
-  if (tracker.traffic_class().protocol != orig_protocol) {
-    conn_trackers_.NotifyProtocolChange(&tracker);
-  }
 }
 
 //-----------------------------------------------------------------------------

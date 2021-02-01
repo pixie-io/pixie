@@ -67,6 +67,16 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "conn_trackers_manager_test",
+    timeout = "moderate",
+    srcs = ["conn_trackers_manager_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "connection_tracker_http2_test",
     srcs = ["connection_tracker_http2_test.cc"],
     deps = [

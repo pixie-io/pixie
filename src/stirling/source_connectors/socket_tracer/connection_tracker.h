@@ -2,6 +2,7 @@
 
 #include <any>
 #include <deque>
+#include <list>
 #include <map>
 #include <memory>
 #include <string>
@@ -19,6 +20,7 @@
 #include "src/stirling/source_connectors/socket_tracer/fd_resolver.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_bpf_tables.h"
+
 // Include all specializations of the StitchFrames() template specializations for all protocols.
 #include "src/stirling/source_connectors/socket_tracer/protocols/stitchers.h"
 
@@ -37,6 +39,7 @@ namespace stirling {
 
 // Forward declaration to avoid circular include of connection_stats.h and connection_tracker.h.
 class ConnectionStats;
+class ConnTrackersManager;
 
 /**
  * @brief Describes a connection from user space. This corresponds to struct conn_info_t in
@@ -624,6 +627,16 @@ class ConnectionTracker : NotCopyMoveable {
 
   template <typename TProtocolTraits>
   friend std::string DebugString(const ConnectionTracker& c, std::string_view prefix);
+
+  // A back pointer to the list in ConnTrackersManager where this tracker is stored.
+  // This member variable is managed completely by ConnTrackersManager.
+  std::optional<std::list<ConnectionTracker*>::iterator> back_pointer_;
+
+  // A pointer to the conn trackers manager, used for notifying a protocol change.
+  ConnTrackersManager* manager_ = nullptr;
+
+  friend class ConnTrackersManager;
+  friend class ConnTrackersManagerTest;
 };
 
 // Explicit template specialization must be declared in namespace scope.

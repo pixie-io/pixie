@@ -17,6 +17,7 @@
 #include "src/common/system/socket_info.h"
 #include "src/common/system/system.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"
+#include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
 #include "src/stirling/source_connectors/socket_tracer/connection_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/stitcher.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/types.h"
@@ -521,7 +522,11 @@ bool ConnectionTracker::SetProtocol(TrafficProtocol protocol) {
     return false;
   }
 
+  TrafficProtocol old_protocol = traffic_class_.protocol;
   traffic_class_.protocol = protocol;
+  if (manager_ != nullptr) {
+    manager_->UpdateProtocol(this, old_protocol);
+  }
   return true;
 }
 
@@ -564,6 +569,8 @@ DataStream* ConnectionTracker::resp_data() {
 }
 
 void ConnectionTracker::MarkForDeath(int32_t countdown) {
+  DCHECK_GE(countdown, 0);
+
   // Only send the first time MarkForDeath is called (death_countdown == -1).
   if (death_countdown_ == -1 && ShouldExportToConnStats()) {
     conn_stats_->AddConnCloseEvent(*this);
