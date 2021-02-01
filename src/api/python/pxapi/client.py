@@ -2,7 +2,8 @@ import grpc
 import grpc.aio
 from urllib.parse import urlparse
 import asyncio
-from typing import Callable, List, Union, Awaitable, Dict, Set, AsyncGenerator, cast, Literal
+from typing import AsyncGenerator, Awaitable, Callable, cast, \
+    Dict, Generator, List, Literal, Union, Set
 
 from src.api.public.vizierapipb import vizierapi_pb2 as vpb
 from src.api.public.vizierapipb import vizierapi_pb2_grpc
@@ -381,7 +382,7 @@ class ScriptExecutor:
             for name, table in self._table_name_to_table_map.items():
                 table.close()
 
-    def results(self, table_name: str) -> List[Row]:
+    def results(self, table_name: str) -> Generator[Row, None, None]:
         """ Runs script and return results for the table.
         Examples:
             for row in script.results("http_table"):
@@ -398,7 +399,10 @@ class ScriptExecutor:
 
         self.add_callback(table_name, _cb)
         self.run()
-        return rows
+        # TODO(philkuz) update the run call to be multi-threaded
+        # to avoid accumulating memory for rows.
+        for r in rows:
+            yield r
 
     async def _run_conn(self, conn: Conn) -> None:
         """ Executes the script on a single connection. """
