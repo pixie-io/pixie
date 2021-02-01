@@ -12,7 +12,7 @@ import {
 import { isProd, PIXIE_CLOUD_VERSION } from 'utils/env';
 import history from 'utils/pl-history';
 
-import { ApolloProvider } from '@apollo/react-hooks';
+import { ApolloProvider } from '@apollo/client';
 import {
   createStyles, ThemeProvider, withStyles,
 } from '@material-ui/core/styles';
@@ -22,8 +22,8 @@ import * as ReactDOM from 'react-dom';
 import { CssBaseline } from '@material-ui/core';
 import { withLDProvider } from 'launchdarkly-react-client-sdk';
 import { redirect } from 'utils/redirect-utils';
-import { CloudClientContext } from './context/app-context';
-import { AuthRouter } from './pages/auth/auth';
+import { CloudClientContext } from 'context/app-context';
+import { AuthRouter } from 'pages/auth/auth';
 import 'typeface-roboto';
 import 'typeface-roboto-mono';
 

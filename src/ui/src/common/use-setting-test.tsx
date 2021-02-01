@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { mount } from 'enzyme';
-import { MockedProvider } from '@apollo/react-testing';
+import { MockedProvider } from '@apollo/client/testing';
 import { act } from 'react-dom/test-utils';
 import { USER_QUERIES, DEFAULT_USER_SETTINGS } from 'pixie-api';
 import { useSetting } from './use-setting';

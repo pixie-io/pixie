@@ -1,7 +1,7 @@
 import AnnounceKit from 'announcekit-react';
 import * as React from 'react';
 
-import { useQuery } from '@apollo/react-hooks';
+import { useQuery } from '@apollo/client';
 import Drawer from '@material-ui/core/Drawer';
 import {
   createStyles, fade, withStyles, Theme,

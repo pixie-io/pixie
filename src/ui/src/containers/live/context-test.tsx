@@ -8,7 +8,7 @@ import { withLiveViewContext } from 'containers/live/context';
 import { render } from 'enzyme';
 import { Router } from 'react-router';
 import history from 'utils/pl-history';
-import { MockedProvider as MockApolloProvider } from '@apollo/react-testing';
+import { MockedProvider as MockApolloProvider } from '@apollo/client/testing';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import { ClusterContext } from 'common/cluster-context';
 import { LIVE_CONTEXT_DEFAULTS } from 'testing/mocks/live-context-mock';

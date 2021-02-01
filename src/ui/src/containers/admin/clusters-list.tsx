@@ -1,5 +1,5 @@
 import { StatusCell, StatusGroup } from 'pixie-components';
-import { useQuery } from '@apollo/react-hooks';
+import { useQuery } from '@apollo/client';
 import { Theme, withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import Table from '@material-ui/core/Table';

@@ -8,7 +8,7 @@ import { DOMAIN_NAME } from 'containers/constants';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 
-import { useQuery } from '@apollo/react-hooks';
+import { useQuery } from '@apollo/client';
 import IconButton from '@material-ui/core/IconButton';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';

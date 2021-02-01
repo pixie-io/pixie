@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { useMutation } from '@apollo/react-hooks';
+import { useMutation } from '@apollo/client';
 import {
   createStyles,
   withStyles,

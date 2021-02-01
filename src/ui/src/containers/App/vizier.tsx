@@ -10,7 +10,7 @@ import LiveView from 'pages/live/live';
 import * as React from 'react';
 import { Redirect, Route, Switch } from 'react-router-dom';
 
-import { useQuery } from '@apollo/react-hooks';
+import { useQuery } from '@apollo/client';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
 import { CLUSTER_QUERIES, USER_QUERIES } from 'pixie-api';

@@ -41,7 +41,7 @@ export default {
     // Apollo's cache implementation has a polyfill for both `await` and `function*` at the top. Both of them check if
     // the `this` scope exists and already defined them. Rollup doesn't notice the safety check and warns. It's safe.
     const isApolloCacheUndefinedThisWarning = warning.code === 'THIS_IS_UNDEFINED'
-        && warning.loc && warning.loc.file && warning.loc.file.includes('apollo-cache-persist');
+        && warning.loc && warning.loc.file && warning.loc.file.includes('apollo3-cache-persist');
     if (!isProtobufEvalWarning && !isApolloCacheUndefinedThisWarning) {
       warn(warning);
     }

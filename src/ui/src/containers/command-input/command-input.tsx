@@ -4,7 +4,7 @@ import {
 } from 'pixie-components';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
-import { useApolloClient } from '@apollo/react-hooks';
+import { useApolloClient } from '@apollo/client';
 import { ClusterContext } from 'common/cluster-context';
 
 import {

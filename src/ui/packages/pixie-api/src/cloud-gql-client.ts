@@ -1,11 +1,14 @@
-import { InMemoryCache, NormalizedCacheObject } from 'apollo-cache-inmemory';
-import { persistCache } from 'apollo-cache-persist';
-import { ApolloClient } from 'apollo-client';
-import { ApolloLink } from 'apollo-link';
-import { setContext } from 'apollo-link-context';
-import { onError } from 'apollo-link-error';
-import { createHttpLink } from 'apollo-link-http';
-import { ServerError } from 'apollo-link-http-common';
+import {
+  ApolloClient,
+  InMemoryCache,
+  NormalizedCacheObject,
+  ApolloLink,
+  createHttpLink,
+  ServerError,
+} from '@apollo/client';
+import { setContext } from '@apollo/client/link/context';
+import { onError } from '@apollo/client/link/error';
+import { persistCache } from 'apollo3-cache-persist';
 import { CLUSTER_QUERIES } from 'gql-queries';
 import { fetch } from 'whatwg-fetch';
 
@@ -43,7 +46,13 @@ export class CloudClient {
   private loaded = false;
 
   constructor(private readonly onUnauthorized: (errorMessage: string) => void) {
-    this.cache = new InMemoryCache();
+    this.cache = new InMemoryCache({
+      typePolicies: {
+        AutocompleteResult: {
+          keyFields: ['formattedInput'],
+        },
+      },
+    });
     this.graphQL = new ApolloClient({
       cache: this.cache,
       link: ApolloLink.from([

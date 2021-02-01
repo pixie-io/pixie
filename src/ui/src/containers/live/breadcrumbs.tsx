@@ -3,7 +3,7 @@ import * as React from 'react';
 import {
   createStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
-import { useQuery, useApolloClient } from '@apollo/react-hooks';
+import { useQuery, useApolloClient } from '@apollo/client';
 
 import {
   Breadcrumbs, BreadcrumbOptions,

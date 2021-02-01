@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/react-hooks';
+import { useMutation, useQuery } from '@apollo/client';
 import Table from '@material-ui/core/Table';
 import IconButton from '@material-ui/core/IconButton';
 import Input from '@material-ui/core/Input';

@@ -9,7 +9,7 @@ import { useHistory, useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { dataFromProto } from 'utils/result-data-utils';
 
-import { useQuery } from '@apollo/react-hooks';
+import { useQuery } from '@apollo/client';
 
 import { Theme, withStyles } from '@material-ui/core/styles';
 import MaterialBreadcrumbs from '@material-ui/core/Breadcrumbs';
