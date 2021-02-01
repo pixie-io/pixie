@@ -50,9 +50,9 @@ class ConnTrackersManager {
      */
     class TrackersListIterator {
      public:
-      bool operator!=(const TrackersListIterator& other) { return other.iter_ != this->iter_; }
+      bool operator!=(const TrackersListIterator& other);
 
-      ConnectionTracker* operator*() { return *iter_; }
+      ConnectionTracker* operator*();
 
       // Prefix increment operator.
       TrackersListIterator operator++();
@@ -120,16 +120,14 @@ class ConnTrackersManager {
   Status TestOnlyCheckConsistency() const;
 
   /**
-   * Simple consistency DCHECKs meant for enforcing invariants.
-   */
-  void DebugChecks() const;
-
-  /**
    * Returns extensive debug information about the connection trackers.
    */
   std::string DebugInfo() const;
 
  private:
+  // Simple consistency DCHECKs meant for enforcing invariants.
+  void DebugChecks() const;
+
   // A map from conn_id (PID+FD+TSID) to tracker. This is for easy update on BPF events.
   // Structured as two nested maps to be explicit about "generations" of trackers per PID+FD.
   // Key is {PID, FD} for outer map, and tsid for inner map.

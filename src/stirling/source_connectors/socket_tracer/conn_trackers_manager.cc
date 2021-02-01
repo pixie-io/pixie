@@ -229,6 +229,20 @@ ConnTrackersManager::TrackersList::TrackersListIterator::TrackersListIterator(
     ConnTrackersManager* conn_trackers_manager)
     : trackers_(trackers), iter_(iter), conn_trackers_manager_(conn_trackers_manager) {}
 
+bool ConnTrackersManager::TrackersList::TrackersListIterator::operator!=(
+    const TrackersListIterator& other) {
+  return other.iter_ != this->iter_;
+}
+
+ConnectionTracker* ConnTrackersManager::TrackersList::TrackersListIterator::operator*() {
+  ConnectionTracker* tracker = *iter_;
+  // Since a tracker can only become ready for destruction in a previous iteration via operator++,
+  // and because operator++ would remove such trackers,  we don't expect to see any trackers are
+  // ReadyForDestruction here.
+  DCHECK(!tracker->ReadyForDestruction());
+  return tracker;
+}
+
 ConnTrackersManager::TrackersList::TrackersListIterator
 ConnTrackersManager::TrackersList::TrackersListIterator::operator++() {
   if ((*iter_)->ReadyForDestruction()) {
