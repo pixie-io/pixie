@@ -45,7 +45,7 @@ class NginxOpenSSL_1_1_0_Container : public ContainerRunner {
   // Image is a modified nginx image created through bazel rules, and stored as a tar file.
   // It is not pushed to any repo.
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/testing/ssl/nginx_openssl_1_1_0_image.tar";
+      "src/stirling/source_connectors/socket_tracer/testing/ssl/nginx_openssl_1_1_0_image.tar";
   static constexpr std::string_view kInstanceNamePrefix = "nginx";
   static constexpr std::string_view kReadyMessage = "";
 };
@@ -59,7 +59,7 @@ class NginxOpenSSL_1_1_1_Container : public ContainerRunner {
   // Image is a modified nginx image created through bazel rules, and stored as a tar file.
   // It is not pushed to any repo.
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/testing/ssl/nginx_openssl_1_1_1_image.tar";
+      "src/stirling/source_connectors/socket_tracer/testing/ssl/nginx_openssl_1_1_1_image.tar";
   static constexpr std::string_view kInstanceNamePrefix = "nginx";
   static constexpr std::string_view kReadyMessage = "";
 };

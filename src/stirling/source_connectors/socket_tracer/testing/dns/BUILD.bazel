@@ -29,7 +29,7 @@ pkg_tar(
         "named.conf",
     ],
     mode = "0755",
-    strip_prefix = "/src/stirling/testing/dns2",
+    strip_prefix = "/src/stirling/source_connectors/socket_tracer/testing/dns",
 )
 
 container_layer(

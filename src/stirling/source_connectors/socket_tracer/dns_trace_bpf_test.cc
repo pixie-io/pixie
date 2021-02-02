@@ -29,7 +29,7 @@ class DNSServerContainer : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/testing/dns2/dns_server_image.tar";
+      "src/stirling/source_connectors/socket_tracer/testing/dns/dns_server_image.tar";
   static constexpr std::string_view kInstanceNamePrefix = "dns_server";
   static constexpr std::string_view kReadyMessage = "all zones loaded";
 };

@@ -298,7 +298,7 @@ pl_cc_test(
         "dns_trace_bpf_test.cc",
     ],
     data = [
-        "//src/stirling/testing/dns2:dns_server_image.tar",
+        "//src/stirling/source_connectors/socket_tracer/testing/dns:dns_server_image.tar",
     ],
     flaky = True,
     tags = [
@@ -333,8 +333,8 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["openssl_bpf_test.cc"],
     data = [
-        "//src/stirling/testing/ssl:nginx_openssl_1_1_0_image.tar",
-        "//src/stirling/testing/ssl:nginx_openssl_1_1_1_image.tar",
+        "//src/stirling/source_connectors/socket_tracer/testing/ssl:nginx_openssl_1_1_0_image.tar",
+        "//src/stirling/source_connectors/socket_tracer/testing/ssl:nginx_openssl_1_1_1_image.tar",
     ],
     flaky = True,
     tags = [
@@ -353,7 +353,7 @@ pl_cc_test(
     name = "dyn_lib_trace_bpf_test",
     timeout = "moderate",
     srcs = ["dyn_lib_trace_bpf_test.cc"],
-    data = ["//src/stirling/testing/ssl:nginx_openssl_1_1_0_image.tar"],
+    data = ["//src/stirling/source_connectors/socket_tracer/testing/ssl:nginx_openssl_1_1_0_image.tar"],
     flaky = True,
     tags = [
         "no_asan",

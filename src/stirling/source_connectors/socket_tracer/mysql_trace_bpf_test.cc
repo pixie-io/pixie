@@ -1,7 +1,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_data.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_utils.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/client_server_system.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
-#include "src/stirling/testing/client_server_system.h"
 #include "src/stirling/testing/common.h"
 
 namespace pl {

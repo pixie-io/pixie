@@ -17,8 +17,8 @@
 #include "src/stirling/core/output.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/client_server_system.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
-#include "src/stirling/testing/client_server_system.h"
 #include "src/stirling/testing/common.h"
 
 namespace pl {
