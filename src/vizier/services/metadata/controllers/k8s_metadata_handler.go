@@ -11,6 +11,7 @@ import (
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
@@ -39,6 +40,8 @@ type K8sMetadataStore interface {
 // An UpdateProcessor is responsible for processing an incoming update, such as determining what
 // updates should be persisted and sent to NATS.
 type UpdateProcessor interface {
+	// SetDeleted sets the deletion timestamp for the object, if there is none already set.
+	SetDeleted(runtime.Object)
 	// ValidateUpdate checks whether the update is valid and should be further processed.
 	ValidateUpdate(runtime.Object, *ProcessorState) bool
 	// GetStoredProtos gets the protos that should be persisted in the data store, derived from
@@ -109,13 +112,18 @@ func (m *K8sMetadataHandler) processUpdates() {
 			}
 			processor = p
 
+			update := msg.Object
+			if msg.EventType == watch.Deleted {
+				processor.SetDeleted(update)
+			}
+
 			// Check that the update is valid and should be handled.
-			valid := processor.ValidateUpdate(msg.Object, &m.state)
+			valid := processor.ValidateUpdate(update, &m.state)
 			if !valid {
 				continue
 			}
 			// Persist the update in the data store.
-			updates, rvs := processor.GetStoredProtos(msg.Object)
+			updates, rvs := processor.GetStoredProtos(update)
 			if updates == nil {
 				continue
 			}
@@ -130,8 +138,26 @@ func (m *K8sMetadataHandler) processUpdates() {
 	}
 }
 
+func setDeleted(objMeta *metav1.ObjectMeta) {
+	if objMeta.DeletionTimestamp != nil {
+		// Deletion timestamp already set.
+		return
+	}
+	now := metav1.Now()
+	objMeta.DeletionTimestamp = &now
+}
+
 // EndpointsUpdateProcessor is a processor for endpoints.
 type EndpointsUpdateProcessor struct{}
+
+// SetDeleted sets the deletion timestamp for the object, if there is none already set.
+func (p *EndpointsUpdateProcessor) SetDeleted(obj runtime.Object) {
+	e, ok := obj.(*v1.Endpoints)
+	if !ok {
+		return
+	}
+	setDeleted(&e.ObjectMeta)
+}
 
 // ValidateUpdate checks that the provided endpoints object is valid.
 func (p *EndpointsUpdateProcessor) ValidateUpdate(obj runtime.Object, state *ProcessorState) bool {
@@ -195,6 +221,15 @@ func (p *EndpointsUpdateProcessor) GetStoredProtos(obj runtime.Object) ([]*store
 // ServiceUpdateProcessor is a processor for services.
 type ServiceUpdateProcessor struct{}
 
+// SetDeleted sets the deletion timestamp for the object, if there is none already set.
+func (p *ServiceUpdateProcessor) SetDeleted(obj runtime.Object) {
+	e, ok := obj.(*v1.Service)
+	if !ok {
+		return
+	}
+	setDeleted(&e.ObjectMeta)
+}
+
 // ValidateUpdate checks that the provided service object is valid, and casts it to the correct type.
 func (p *ServiceUpdateProcessor) ValidateUpdate(obj runtime.Object, state *ProcessorState) bool {
 	e, ok := obj.(*v1.Service)
@@ -245,6 +280,15 @@ func (p *ServiceUpdateProcessor) updateServiceCIDR(svc *v1.Service, state *Proce
 
 // PodUpdateProcessor is a processor for pods.
 type PodUpdateProcessor struct{}
+
+// SetDeleted sets the deletion timestamp for the object, if there is none already set.
+func (p *PodUpdateProcessor) SetDeleted(obj runtime.Object) {
+	e, ok := obj.(*v1.Pod)
+	if !ok {
+		return
+	}
+	setDeleted(&e.ObjectMeta)
+}
 
 // ValidateUpdate checks that the provided pod object is valid, and casts it to the correct type.
 func (p *PodUpdateProcessor) ValidateUpdate(obj runtime.Object, state *ProcessorState) bool {
@@ -303,6 +347,15 @@ func (p *PodUpdateProcessor) updatePodCIDR(pod *v1.Pod, state *ProcessorState) {
 // NodeUpdateProcessor is a processor for nodes.
 type NodeUpdateProcessor struct{}
 
+// SetDeleted sets the deletion timestamp for the object, if there is none already set.
+func (p *NodeUpdateProcessor) SetDeleted(obj runtime.Object) {
+	e, ok := obj.(*v1.Node)
+	if !ok {
+		return
+	}
+	setDeleted(&e.ObjectMeta)
+}
+
 // ValidateUpdate checks that the provided service object is valid, and casts it to the correct type.
 func (p *NodeUpdateProcessor) ValidateUpdate(obj runtime.Object, state *ProcessorState) bool {
 	_, ok := obj.(*v1.Node)
@@ -332,6 +385,15 @@ func (p *NodeUpdateProcessor) GetStoredProtos(obj runtime.Object) ([]*storepb.K8
 
 // NamespaceUpdateProcessor is a processor for namespaces.
 type NamespaceUpdateProcessor struct{}
+
+// SetDeleted sets the deletion timestamp for the object, if there is none already set.
+func (p *NamespaceUpdateProcessor) SetDeleted(obj runtime.Object) {
+	e, ok := obj.(*v1.Namespace)
+	if !ok {
+		return
+	}
+	setDeleted(&e.ObjectMeta)
+}
 
 // ValidateUpdate checks that the provided namespace object is valid, and casts it to the correct type.
 func (p *NamespaceUpdateProcessor) ValidateUpdate(obj runtime.Object, state *ProcessorState) bool {

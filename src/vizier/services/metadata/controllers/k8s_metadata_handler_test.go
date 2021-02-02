@@ -289,6 +289,19 @@ func createNamespaceObject() *v1.Namespace {
 	}
 }
 
+func TestEndpointsUpdateProcessor_SetDeleted(t *testing.T) {
+	// Construct endpoints object.
+	o := createEndpointsObject()
+
+	p := controllers.EndpointsUpdateProcessor{}
+	p.SetDeleted(o)
+	assert.Equal(t, metav1.Unix(0, 6), *o.ObjectMeta.DeletionTimestamp)
+
+	o.ObjectMeta.DeletionTimestamp = nil
+	p.SetDeleted(o)
+	assert.NotNil(t, o.ObjectMeta.DeletionTimestamp)
+}
+
 func TestEndpointsUpdateProcessor_ValidateUpdate(t *testing.T) {
 	// Construct endpoints object.
 	o := createEndpointsObject()
@@ -328,6 +341,19 @@ func TestEndpointsUpdateProcessor_GetStoredProtos(t *testing.T) {
 			Endpoints: expectedPb,
 		},
 	}, updates[0])
+}
+
+func TestServiceUpdateProcessor(t *testing.T) {
+	// Construct service object.
+	o := createServiceObject()
+
+	p := controllers.ServiceUpdateProcessor{}
+	p.SetDeleted(o)
+	assert.Equal(t, metav1.Unix(0, 6), *o.ObjectMeta.DeletionTimestamp)
+
+	o.ObjectMeta.DeletionTimestamp = nil
+	p.SetDeleted(o)
+	assert.NotNil(t, o.ObjectMeta.DeletionTimestamp)
 }
 
 func TestServiceUpdateProcessor_ValidateUpdate(t *testing.T) {
@@ -400,6 +426,19 @@ func TestServiceUpdateProcessor_GetStoredProtos(t *testing.T) {
 	}, updates[0])
 }
 
+func TestPodUpdateProcessor_SetDeleted(t *testing.T) {
+	// Construct pod object.
+	o := createPodObject()
+
+	p := controllers.PodUpdateProcessor{}
+	p.SetDeleted(o)
+	assert.Equal(t, metav1.Unix(0, 6), *o.ObjectMeta.DeletionTimestamp)
+
+	o.ObjectMeta.DeletionTimestamp = nil
+	p.SetDeleted(o)
+	assert.NotNil(t, o.ObjectMeta.DeletionTimestamp)
+}
+
 func TestPodUpdateProcessor_ValidateUpdate(t *testing.T) {
 	// Construct pod object.
 	o := createPodObject()
@@ -449,6 +488,19 @@ func TestPodUpdateProcessor_GetStoredProtos(t *testing.T) {
 			},
 		},
 	}, updates[1])
+}
+
+func TestNodeUpdateProcessor_SetDeleted(t *testing.T) {
+	// Construct pod object.
+	o := createNodeObject()
+
+	p := controllers.NodeUpdateProcessor{}
+	p.SetDeleted(o)
+	assert.Equal(t, metav1.Unix(0, 6), *o.ObjectMeta.DeletionTimestamp)
+
+	o.ObjectMeta.DeletionTimestamp = nil
+	p.SetDeleted(o)
+	assert.NotNil(t, o.ObjectMeta.DeletionTimestamp)
 }
 
 func TestNodeUpdateProcessor_ValidateUpdate(t *testing.T) {
@@ -505,6 +557,19 @@ func TestNodeUpdateProcessor_GetStoredProtos(t *testing.T) {
 			},
 		},
 	}, updates[0])
+}
+
+func TestNamespaceUpdateProcessor_SetDeleted(t *testing.T) {
+	// Construct namespace object.
+	o := createNamespaceObject()
+
+	p := controllers.NamespaceUpdateProcessor{}
+	p.SetDeleted(o)
+	assert.Equal(t, metav1.Unix(0, 6), *o.ObjectMeta.DeletionTimestamp)
+
+	o.ObjectMeta.DeletionTimestamp = nil
+	p.SetDeleted(o)
+	assert.NotNil(t, o.ObjectMeta.DeletionTimestamp)
 }
 
 func TestNamespaceUpdateProcessor_ValidateUpdate(t *testing.T) {
