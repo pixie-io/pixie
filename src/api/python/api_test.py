@@ -36,7 +36,7 @@ async def run_script_and_tasks(
     await asyncio.gather(*tasks)
 
 
-class VizierServiceFake:
+class VizierServiceFake(vizierapi_pb2_grpc.VizierServiceServicer):
     def __init__(self) -> None:
         self.cluster_id_to_fake_data: Dict[str,
                                            List[vpb.ExecuteScriptResponse]] = {}
@@ -60,9 +60,6 @@ class VizierServiceFake:
         # Trigger an error for the cluster ID if the user added one.
         if cluster_id in self.cluster_id_to_error:
             raise self.cluster_id_to_error[cluster_id]
-
-    def HealthCheck(self, request: Any, context: Any) -> Any:
-        yield vpb.Status(code=1, message="fail")
 
 
 def create_cluster_info(
