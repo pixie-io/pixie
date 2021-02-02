@@ -6,9 +6,9 @@ package mock_controllers
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	go_uuid "github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
-	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
+	pl_vizier_services_shared_agent "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	reflect "reflect"
 	time "time"
 )
@@ -37,7 +37,8 @@ func (m *MockTracepointStore) EXPECT() *MockTracepointStoreMockRecorder {
 }
 
 // UpsertTracepoint mocks base method
-func (m *MockTracepointStore) UpsertTracepoint(arg0 go_uuid.UUID, arg1 *storepb.TracepointInfo) error {
+func (m *MockTracepointStore) UpsertTracepoint(arg0 uuid.UUID, arg1 *storepb.TracepointInfo) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpsertTracepoint", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -45,11 +46,13 @@ func (m *MockTracepointStore) UpsertTracepoint(arg0 go_uuid.UUID, arg1 *storepb.
 
 // UpsertTracepoint indicates an expected call of UpsertTracepoint
 func (mr *MockTracepointStoreMockRecorder) UpsertTracepoint(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertTracepoint", reflect.TypeOf((*MockTracepointStore)(nil).UpsertTracepoint), arg0, arg1)
 }
 
 // GetTracepoint mocks base method
-func (m *MockTracepointStore) GetTracepoint(arg0 go_uuid.UUID) (*storepb.TracepointInfo, error) {
+func (m *MockTracepointStore) GetTracepoint(arg0 uuid.UUID) (*storepb.TracepointInfo, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTracepoint", arg0)
 	ret0, _ := ret[0].(*storepb.TracepointInfo)
 	ret1, _ := ret[1].(error)
@@ -58,11 +61,13 @@ func (m *MockTracepointStore) GetTracepoint(arg0 go_uuid.UUID) (*storepb.Tracepo
 
 // GetTracepoint indicates an expected call of GetTracepoint
 func (mr *MockTracepointStoreMockRecorder) GetTracepoint(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTracepoint", reflect.TypeOf((*MockTracepointStore)(nil).GetTracepoint), arg0)
 }
 
 // GetTracepoints mocks base method
 func (m *MockTracepointStore) GetTracepoints() ([]*storepb.TracepointInfo, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTracepoints")
 	ret0, _ := ret[0].([]*storepb.TracepointInfo)
 	ret1, _ := ret[1].(error)
@@ -71,11 +76,13 @@ func (m *MockTracepointStore) GetTracepoints() ([]*storepb.TracepointInfo, error
 
 // GetTracepoints indicates an expected call of GetTracepoints
 func (mr *MockTracepointStoreMockRecorder) GetTracepoints() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTracepoints", reflect.TypeOf((*MockTracepointStore)(nil).GetTracepoints))
 }
 
 // UpdateTracepointState mocks base method
 func (m *MockTracepointStore) UpdateTracepointState(arg0 *storepb.AgentTracepointStatus) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateTracepointState", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -83,11 +90,13 @@ func (m *MockTracepointStore) UpdateTracepointState(arg0 *storepb.AgentTracepoin
 
 // UpdateTracepointState indicates an expected call of UpdateTracepointState
 func (mr *MockTracepointStoreMockRecorder) UpdateTracepointState(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTracepointState", reflect.TypeOf((*MockTracepointStore)(nil).UpdateTracepointState), arg0)
 }
 
 // GetTracepointStates mocks base method
-func (m *MockTracepointStore) GetTracepointStates(arg0 go_uuid.UUID) ([]*storepb.AgentTracepointStatus, error) {
+func (m *MockTracepointStore) GetTracepointStates(arg0 uuid.UUID) ([]*storepb.AgentTracepointStatus, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTracepointStates", arg0)
 	ret0, _ := ret[0].([]*storepb.AgentTracepointStatus)
 	ret1, _ := ret[1].(error)
@@ -96,11 +105,13 @@ func (m *MockTracepointStore) GetTracepointStates(arg0 go_uuid.UUID) ([]*storepb
 
 // GetTracepointStates indicates an expected call of GetTracepointStates
 func (mr *MockTracepointStoreMockRecorder) GetTracepointStates(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTracepointStates", reflect.TypeOf((*MockTracepointStore)(nil).GetTracepointStates), arg0)
 }
 
 // SetTracepointWithName mocks base method
-func (m *MockTracepointStore) SetTracepointWithName(arg0 string, arg1 go_uuid.UUID) error {
+func (m *MockTracepointStore) SetTracepointWithName(arg0 string, arg1 uuid.UUID) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetTracepointWithName", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -108,24 +119,28 @@ func (m *MockTracepointStore) SetTracepointWithName(arg0 string, arg1 go_uuid.UU
 
 // SetTracepointWithName indicates an expected call of SetTracepointWithName
 func (mr *MockTracepointStoreMockRecorder) SetTracepointWithName(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTracepointWithName", reflect.TypeOf((*MockTracepointStore)(nil).SetTracepointWithName), arg0, arg1)
 }
 
 // GetTracepointsWithNames mocks base method
-func (m *MockTracepointStore) GetTracepointsWithNames(arg0 []string) ([]*go_uuid.UUID, error) {
+func (m *MockTracepointStore) GetTracepointsWithNames(arg0 []string) ([]*uuid.UUID, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTracepointsWithNames", arg0)
-	ret0, _ := ret[0].([]*go_uuid.UUID)
+	ret0, _ := ret[0].([]*uuid.UUID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetTracepointsWithNames indicates an expected call of GetTracepointsWithNames
 func (mr *MockTracepointStoreMockRecorder) GetTracepointsWithNames(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTracepointsWithNames", reflect.TypeOf((*MockTracepointStore)(nil).GetTracepointsWithNames), arg0)
 }
 
 // GetTracepointsForIDs mocks base method
-func (m *MockTracepointStore) GetTracepointsForIDs(arg0 []go_uuid.UUID) ([]*storepb.TracepointInfo, error) {
+func (m *MockTracepointStore) GetTracepointsForIDs(arg0 []uuid.UUID) ([]*storepb.TracepointInfo, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTracepointsForIDs", arg0)
 	ret0, _ := ret[0].([]*storepb.TracepointInfo)
 	ret1, _ := ret[1].(error)
@@ -134,11 +149,13 @@ func (m *MockTracepointStore) GetTracepointsForIDs(arg0 []go_uuid.UUID) ([]*stor
 
 // GetTracepointsForIDs indicates an expected call of GetTracepointsForIDs
 func (mr *MockTracepointStoreMockRecorder) GetTracepointsForIDs(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTracepointsForIDs", reflect.TypeOf((*MockTracepointStore)(nil).GetTracepointsForIDs), arg0)
 }
 
 // SetTracepointTTL mocks base method
-func (m *MockTracepointStore) SetTracepointTTL(arg0 go_uuid.UUID, arg1 time.Duration) error {
+func (m *MockTracepointStore) SetTracepointTTL(arg0 uuid.UUID, arg1 time.Duration) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetTracepointTTL", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -146,11 +163,13 @@ func (m *MockTracepointStore) SetTracepointTTL(arg0 go_uuid.UUID, arg1 time.Dura
 
 // SetTracepointTTL indicates an expected call of SetTracepointTTL
 func (mr *MockTracepointStoreMockRecorder) SetTracepointTTL(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTracepointTTL", reflect.TypeOf((*MockTracepointStore)(nil).SetTracepointTTL), arg0, arg1)
 }
 
 // DeleteTracepointTTLs mocks base method
-func (m *MockTracepointStore) DeleteTracepointTTLs(arg0 []go_uuid.UUID) error {
+func (m *MockTracepointStore) DeleteTracepointTTLs(arg0 []uuid.UUID) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteTracepointTTLs", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -158,37 +177,43 @@ func (m *MockTracepointStore) DeleteTracepointTTLs(arg0 []go_uuid.UUID) error {
 
 // DeleteTracepointTTLs indicates an expected call of DeleteTracepointTTLs
 func (mr *MockTracepointStoreMockRecorder) DeleteTracepointTTLs(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTracepointTTLs", reflect.TypeOf((*MockTracepointStore)(nil).DeleteTracepointTTLs), arg0)
 }
 
 // WatchTracepointTTLs mocks base method
-func (m *MockTracepointStore) WatchTracepointTTLs() (chan go_uuid.UUID, chan bool) {
+func (m *MockTracepointStore) WatchTracepointTTLs() (chan uuid.UUID, chan bool) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WatchTracepointTTLs")
-	ret0, _ := ret[0].(chan go_uuid.UUID)
+	ret0, _ := ret[0].(chan uuid.UUID)
 	ret1, _ := ret[1].(chan bool)
 	return ret0, ret1
 }
 
 // WatchTracepointTTLs indicates an expected call of WatchTracepointTTLs
 func (mr *MockTracepointStoreMockRecorder) WatchTracepointTTLs() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchTracepointTTLs", reflect.TypeOf((*MockTracepointStore)(nil).WatchTracepointTTLs))
 }
 
 // GetAgents mocks base method
-func (m *MockTracepointStore) GetAgents() ([]*agentpb.Agent, error) {
+func (m *MockTracepointStore) GetAgents() ([]*pl_vizier_services_shared_agent.Agent, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAgents")
-	ret0, _ := ret[0].([]*agentpb.Agent)
+	ret0, _ := ret[0].([]*pl_vizier_services_shared_agent.Agent)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAgents indicates an expected call of GetAgents
 func (mr *MockTracepointStoreMockRecorder) GetAgents() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgents", reflect.TypeOf((*MockTracepointStore)(nil).GetAgents))
 }
 
 // DeleteTracepoint mocks base method
-func (m *MockTracepointStore) DeleteTracepoint(arg0 go_uuid.UUID) error {
+func (m *MockTracepointStore) DeleteTracepoint(arg0 uuid.UUID) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteTracepoint", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -196,18 +221,21 @@ func (m *MockTracepointStore) DeleteTracepoint(arg0 go_uuid.UUID) error {
 
 // DeleteTracepoint indicates an expected call of DeleteTracepoint
 func (mr *MockTracepointStoreMockRecorder) DeleteTracepoint(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTracepoint", reflect.TypeOf((*MockTracepointStore)(nil).DeleteTracepoint), arg0)
 }
 
 // GetTracepointTTLs mocks base method
-func (m *MockTracepointStore) GetTracepointTTLs() ([]go_uuid.UUID, error) {
+func (m *MockTracepointStore) GetTracepointTTLs() ([]uuid.UUID, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTracepointTTLs")
-	ret0, _ := ret[0].([]go_uuid.UUID)
+	ret0, _ := ret[0].([]uuid.UUID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetTracepointTTLs indicates an expected call of GetTracepointTTLs
 func (mr *MockTracepointStoreMockRecorder) GetTracepointTTLs() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTracepointTTLs", reflect.TypeOf((*MockTracepointStore)(nil).GetTracepointTTLs))
 }
