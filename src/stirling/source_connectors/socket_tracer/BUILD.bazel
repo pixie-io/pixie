@@ -116,6 +116,7 @@ pl_cc_test(
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -130,6 +131,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -149,6 +151,7 @@ pl_cc_test(
         ":cc_library",
         "//src/common/exec:cc_library",
         "//src/stirling/source_connectors/socket_tracer/protocols/http/testing:go_http_fixture",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -165,6 +168,7 @@ pl_cc_test(
     ],
     deps = [
         ":cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -186,6 +190,7 @@ pl_cc_test(
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",
         "//src/stirling/source_connectors/socket_tracer/protocols/test_output_generator:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -204,6 +209,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -226,6 +232,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -253,6 +260,7 @@ pl_cc_test(
         "//src/common/exec:cc_library",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing:cc_library",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto:greet_pl_cc_proto",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -278,6 +286,7 @@ pl_cc_test(
         ":cc_library",
         "//src/common/exec:cc_library",
         "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -299,6 +308,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -313,6 +323,7 @@ pl_cc_test(
         ":cc_library",
         "//src/common/exec:cc_library",
         "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -333,6 +344,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -350,6 +362,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
@@ -372,6 +385,7 @@ pl_cc_test(
         ":cc_library",
         "//src/common/exec:cc_library",
         "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )

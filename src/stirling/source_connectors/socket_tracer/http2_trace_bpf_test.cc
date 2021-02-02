@@ -6,8 +6,8 @@
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/core/output.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
-#include "src/stirling/testing/socket_trace_bpf_test_fixture.h"
 
 namespace pl {
 namespace stirling {
