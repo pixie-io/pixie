@@ -33,7 +33,7 @@ pl_cc_test(
     name = "java_test",
     srcs = ["java_test.cc"],
     data = [
-        "//src/stirling/testing/java:HelloWorld",
+        "//src/stirling/source_connectors/jvm_stats/testing:HelloWorld",
     ],
     tags = [
         "no_coverage",

@@ -157,13 +157,13 @@ sh_test(
     srcs = ["stirling_wrapper_jvm_stats_test.sh"],
     args = [
         "$(location //src/stirling/binaries:stirling_wrapper_image.tar)",
-        "$(location //src/stirling/testing/java:hello_world_image.tar)",
-        "$(location //src/stirling/testing/java:HelloWorld)",
+        "$(location //src/stirling/source_connectors/jvm_stats/testing:hello_world_image.tar)",
+        "$(location //src/stirling/source_connectors/jvm_stats/testing:HelloWorld)",
     ],
     data = [
         "//src/stirling/binaries:stirling_wrapper_image.tar",
-        "//src/stirling/testing/java:HelloWorld",
-        "//src/stirling/testing/java:hello_world_image.tar",
+        "//src/stirling/source_connectors/jvm_stats/testing:HelloWorld",
+        "//src/stirling/source_connectors/jvm_stats/testing:hello_world_image.tar",
     ],
     flaky = True,
     tags = [

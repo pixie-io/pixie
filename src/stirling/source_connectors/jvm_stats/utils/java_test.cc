@@ -42,7 +42,7 @@ TEST(StatsTest, CommonValues) {
 }
 
 TEST(HsperfdataPathTest, ResultIsAsExpected) {
-  const char kClassPath[] = "src/stirling/testing/java/HelloWorld.jar";
+  const char kClassPath[] = "src/stirling/source_connectors/jvm_stats/testing/HelloWorld.jar";
   const std::string class_path = testing::TestFilePath(kClassPath);
 
   SubProcess hello_world;

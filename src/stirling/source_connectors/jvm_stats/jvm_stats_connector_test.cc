@@ -23,7 +23,7 @@ using ::testing::SizeIs;
 
 struct JavaHelloWorld : SubProcess {
   inline static const std::string kClassPath =
-      TestFilePath("src/stirling/testing/java/HelloWorld.jar");
+      TestFilePath("src/stirling/source_connectors/jvm_stats/testing/HelloWorld.jar");
 
   ~JavaHelloWorld() {
     Kill();

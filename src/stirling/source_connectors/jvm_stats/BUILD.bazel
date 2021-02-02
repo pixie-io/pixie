@@ -21,7 +21,7 @@ pl_cc_test(
     name = "jvm_stats_connector_test",
     srcs = ["jvm_stats_connector_test.cc"],
     data = [
-        "//src/stirling/testing/java:HelloWorld",
+        "//src/stirling/source_connectors/jvm_stats/testing:HelloWorld",
     ],
     tags = [
         "exclusive",

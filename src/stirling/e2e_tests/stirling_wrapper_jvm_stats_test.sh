@@ -13,9 +13,9 @@ if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
     echo "Building stirling_wrapper_image ..."
     stirling_image=$pixie_root/$(bazel_build //src/stirling/binaries:stirling_wrapper_image.tar)
     echo "Building java_image ..."
-    java_image=$pixie_root/$(bazel_build //src/stirling/testing/java:hello_world_image.tar)
+    java_image=$pixie_root/$(bazel_build //src/stirling/source_connectors/jvm_stats/testing:hello_world_image.tar)
     echo "Building java_app ..."
-    java_app=$pixie_root/$(bazel_build //src/stirling/testing/java:HelloWorld)
+    java_app=$pixie_root/$(bazel_build //src/stirling/source_connectors/jvm_stats/testing:HelloWorld)
     java_app=${java_app%.jar}
 else
     # If the script was run through bazel, the locations are passed as arguments.
