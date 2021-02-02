@@ -460,7 +460,7 @@ class Client:
 
     To setup the client, you need to generate an API token
     and pass it in as the first argument.
-    See: https://docs.pixielabs.ai/reference/api/quick-start/
+    See: https://docs.pixielabs.ai/using-pixie/api-quick-start/
     for more info.
     """
 

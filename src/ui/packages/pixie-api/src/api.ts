@@ -46,7 +46,7 @@ export interface ClusterConfig {
 
 /**
  * API client library for [Pixie](https://pixielabs.ai).
- * See the [documentation](https://docs.pixielabs.ai/using-pixie/using-api/) for a complete reference.
+ * See the [documentation](https://docs.pixielabs.ai/reference/api/overview/) for a complete reference.
  */
 export class PixieAPIClient {
   /**

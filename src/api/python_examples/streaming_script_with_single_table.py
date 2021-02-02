@@ -2,7 +2,7 @@ import pxapi
 
 
 # You'll need to generate an API token.
-# For more info, see: https://docs.pixielabs.ai/reference/api/quick-start/
+# For more info, see: https://docs.pixielabs.ai/using-pixie/api-quick-start/
 API_TOKEN = "<YOUR_API_TOKEN>"
 
 # PxL script with single streaming output tables
