@@ -90,6 +90,7 @@ export class PixieAPIClient {
 
   private async init(): Promise<PixieAPIClient> {
     this.gqlClient = new CloudClient(this.options.onUnauthorized);
+    await this.gqlClient.getGraphQLPersist();
     this.clusterConnections = new Map();
 
     for (const cluster of this.clusters) {
@@ -148,7 +149,6 @@ export class PixieAPIClient {
 
   /*
    * TODO(nick): Future changes to pull code out to, and to polish, `pixie-api`. In order:
-   * - https://www.apollographql.com/docs/react/migrating/apollo-client-3-migration/
    * - Need to copy over src/cloud/api/controller/schema.d.ts and have Arcanist verify that happens, as with proto defs.
    * - Wrap all GQL endpoints can be wrapped directly in this class.
    * - Change all UI code that invokes the API to use `api.ts` to do it.

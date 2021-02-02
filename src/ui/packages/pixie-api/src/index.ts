@@ -1,4 +1,4 @@
-export { PixieAPIClient } from './api';
+export { PixieAPIClient, PixieAPIClientOptions, ClusterConfig } from './api';
 
 export {
   USER_QUERIES,
