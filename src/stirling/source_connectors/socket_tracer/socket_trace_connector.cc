@@ -772,6 +772,14 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
     }
     std::unique_ptr<ElfReader> elf_reader = elf_reader_status.ConsumeValueOrDie();
 
+    // Avoid going passed this point if not a golang program.
+    // The DwarfReader is memory intensive, and the remaining probes are Golang specific.
+    // TODO(oazizi): Consolidate with similar check in dynamic_tracing/autogen.cc.
+    bool is_golang_binary = elf_reader->SymbolAddress("runtime.buildVersion").has_value();
+    if (!is_golang_binary) {
+      continue;
+    }
+
     StatusOr<std::unique_ptr<DwarfReader>> dwarf_reader_status = DwarfReader::Create(binary);
     if (!dwarf_reader_status.ok()) {
       VLOG(1) << absl::Substitute(
@@ -785,9 +793,8 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
     Status s = UpdateGoCommonSymAddrs(elf_reader.get(), dwarf_reader.get(), pid_vec,
                                       go_common_symaddrs_map_.get());
     if (!s.ok()) {
-      // Doesn't appear to be a binary with the mandatory symbols (e.g. TCPConn).
-      // Might not even be a golang binary.
-      // Either way, not of interest to probe.
+      LOG(WARNING) << absl::Substitute(
+          "Golang binary $0 does not have the mandatory symbols (e.g. TCPConn).", binary);
       continue;
     }
 
