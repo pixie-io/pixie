@@ -63,10 +63,11 @@ def get_pixie_data(cluster_conn):
     # Process table output rows to construct slack message.
     for row in script.results("status"):
         service_stats_msg.append(format_message(row["service"],
-                                               row["total_requests"],
-                                               row["error_count"]))
+                                                row["total_requests"],
+                                                row["error_count"]))
 
     return "\n\n".join(service_stats_msg)
+
 
 # Format Pixie API table row data.
 def format_message(service, request_count, error_count):
@@ -124,8 +125,8 @@ if __name__ == "__main__":
 
     # Schedule sending a Slack channel message every 5 minutes.
     schedule.every(5).minutes.do(lambda: send_message(slack_client,
-                                                     SLACK_CHANNEL,
-                                                     cluster_conn))
+                                                      SLACK_CHANNEL,
+                                                      cluster_conn))
 
     logging.info("Message scheduled for %s Slack channel.", SLACK_CHANNEL)
 
