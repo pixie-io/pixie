@@ -25,7 +25,7 @@ from slack.errors import SlackApiError
 PXL_SCRIPT = """
 import px
 
-df = px.DataFrame(table='http_events', start_time='-15s')
+df = px.DataFrame(table='http_events', start_time='-5m')
 
 # Add column for HTTP response status errors.
 df.error = df.http_resp_status >= 400
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     SLACK_CHANNEL = "#pixie-alerts"
 
     # Schedule sending a Slack channel message every 5 minutes.
-    schedule.every(15).seconds.do(lambda: send_message(slack_client,
+    schedule.every(5).minutes.do(lambda: send_message(slack_client,
                                                      SLACK_CHANNEL,
                                                      cluster_conn))
 
@@ -125,4 +125,4 @@ if __name__ == "__main__":
         schedule.run_pending()
 
         # Sleep for 5 seconds between checks on the scheduler.
-        time.sleep(1)
+        time.sleep(5)
