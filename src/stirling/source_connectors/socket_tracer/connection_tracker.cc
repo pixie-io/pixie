@@ -172,76 +172,77 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
 
 protocols::http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id,
                                                                bool write_event) {
-  // Check for both client-initiated (odd stream_ids) and server-initiated (even stream_ids)
-  // streams.
-  std::deque<protocols::http2::Stream>* streams_deque_ptr;
-  uint32_t* oldest_active_stream_id_ptr;
+  // Client-initiated streams have odd stream IDs.
+  // Server-initiated streams have even stream IDs.
+  // https://tools.ietf.org/html/rfc7540#section-5.1.1
+  const bool client_stream = (stream_id % 2 == 1);
 
-  bool client_stream = (stream_id % 2 == 1);
+  std::deque<protocols::http2::Stream>& streams_deque =
+      client_stream ? client_streams_.http2_streams() : server_streams_.http2_streams();
+  uint32_t& oldest_active_stream_id =
+      client_stream ? oldest_active_client_stream_id_ : oldest_active_server_stream_id_;
 
-  if (client_stream) {
-    streams_deque_ptr = &(client_streams_.http2_streams());
-    oldest_active_stream_id_ptr = &oldest_active_client_stream_id_;
-  } else {
-    streams_deque_ptr = &(server_streams_.http2_streams());
-    oldest_active_stream_id_ptr = &oldest_active_server_stream_id_;
-  }
+  // Now we have to figure out where the stream_id is located in the streams_deque, as an index.
+  // This may also require growing the deque.
+  // There are 3 cases:
+  //  1) Deque is empty.
+  //      - Initialize the deque to size 1 and set index to 0.
+  //  2) StreamID precedes the oldest event in the deque.
+  //      - Grow the deque backwards.
+  //  3) StreamID follows the oldest event in the deque.
+  //      - Grow the deque forwards (if required).
 
-  // Update the head index.
-  if (streams_deque_ptr->empty()) {
-    *oldest_active_stream_id_ptr = stream_id;
-  }
-
-  size_t index;
-  if (stream_id < *oldest_active_stream_id_ptr) {
-    CONN_TRACE(1) << absl::Substitute(
-        "Stream ID ($0) is lower than the current head stream ID ($1). "
-        "Not expected, but will handle it anyways. If not a data race, "
-        "this could be indicative of a bug that could result in a memory leak.",
-        stream_id, *oldest_active_stream_id_ptr);
+  size_t index = 0;
+  if (streams_deque.empty()) {
+    streams_deque.resize(1);
+    index = 0;
+    oldest_active_stream_id = stream_id;
+  } else if (stream_id < oldest_active_stream_id) {
     // Need to grow the deque at the front.
-    size_t new_size = streams_deque_ptr->size() +
-                      ((*oldest_active_stream_id_ptr - stream_id) / kHTTP2StreamIDIncrement);
-    // Reset everything for now.
-    if (new_size - streams_deque_ptr->size() > FLAGS_stirling_http2_stream_id_gap_threshold) {
+    size_t new_entries_count = (oldest_active_stream_id - stream_id) / kHTTP2StreamIDIncrement;
+
+    // If going too far backwards, something is likely wrong. Reset everything for now.
+    if (new_entries_count > FLAGS_stirling_http2_stream_id_gap_threshold) {
       CONN_TRACE(1) << absl::Substitute(
           "Encountered a stream ID $0 that is too far from the last known stream ID $1. Resetting "
           "all streams on this connection.",
-          stream_id, *oldest_active_stream_id_ptr + streams_deque_ptr->size() * 2);
-      streams_deque_ptr->clear();
-      streams_deque_ptr->resize(1);
+          stream_id, oldest_active_stream_id + streams_deque.size() * 2);
+      streams_deque.clear();
+      streams_deque.resize(1);
       index = 0;
-      *oldest_active_stream_id_ptr = stream_id;
+      oldest_active_stream_id = stream_id;
     } else {
-      streams_deque_ptr->insert(streams_deque_ptr->begin(), new_size - streams_deque_ptr->size(),
-                                protocols::http2::Stream());
+      streams_deque.insert(streams_deque.begin(), new_entries_count, protocols::http2::Stream());
       index = 0;
-      *oldest_active_stream_id_ptr = stream_id;
+      oldest_active_stream_id = stream_id;
     }
   } else {
     // Stream ID is after the front. We may or may not need to grow the deque,
     // depending on its current size.
-    index = (stream_id - *oldest_active_stream_id_ptr) / kHTTP2StreamIDIncrement;
-    size_t new_size = std::max(streams_deque_ptr->size(), index + 1);
+    index = (stream_id - oldest_active_stream_id) / kHTTP2StreamIDIncrement;
+    size_t new_size = std::max(streams_deque.size(), index + 1);
+
     // If we are to grow by more than some threshold, then something appears wrong.
     // Reset everything for now.
-    if (new_size - streams_deque_ptr->size() > FLAGS_stirling_http2_stream_id_gap_threshold) {
+    if (new_size - streams_deque.size() > FLAGS_stirling_http2_stream_id_gap_threshold) {
       CONN_TRACE(1) << absl::Substitute(
           "Encountered a stream ID $0 that is too far from the last known stream ID $1. Resetting "
           "all streams on this connection",
-          stream_id, *oldest_active_stream_id_ptr + streams_deque_ptr->size() * 2);
-      streams_deque_ptr->clear();
-      streams_deque_ptr->resize(1);
+          stream_id, oldest_active_stream_id + streams_deque.size() * 2);
+      streams_deque.clear();
+      streams_deque.resize(1);
       index = 0;
-      *oldest_active_stream_id_ptr = stream_id;
+      oldest_active_stream_id = stream_id;
     } else {
-      streams_deque_ptr->resize(new_size);
+      streams_deque.resize(new_size);
     }
   }
 
-  auto& stream = (*streams_deque_ptr)[index];
+  auto& stream = streams_deque[index];
 
   if (stream.consumed) {
+    // Don't expect this to happen, but log it just in case.
+    // If http2/stitcher.cc uses std::move on consumption, this would indicate an issue.
     CONN_TRACE(1) << "Trying to access a consumed stream.";
   }
 
