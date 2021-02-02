@@ -1,5 +1,5 @@
 import ClientContext from 'common/vizier-grpc-client-context';
-import { PlayIcon } from 'pixie-components';
+import { PlayIcon, StopIcon } from 'pixie-components';
 import * as React from 'react';
 
 import Tooltip from '@material-ui/core/Tooltip';
@@ -73,7 +73,7 @@ const ExecuteScriptButtonBare = ({ classes }: ExecuteScriptButtonProps) => {
           disabled={!healthy || ((loading || streaming) && !cancellable)}
           onClick={cancellable ? cancelExecution : saveEditorAndExecute}
           size='small'
-          startIcon={<PlayIcon />}
+          startIcon={cancellable ? <StopIcon /> : <PlayIcon />}
         >
           <span className={classes.buttonText}>{cancellable ? 'Stop' : 'Run'}</span>
         </StyledButton>

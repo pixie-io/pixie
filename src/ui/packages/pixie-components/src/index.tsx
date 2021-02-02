@@ -94,6 +94,7 @@ export { LogoutIcon } from './components/icons/logout';
 export { MagicIcon } from './components/icons/magic';
 export { NamespaceIcon } from './components/icons/namespace';
 export { PlayIcon } from './components/icons/play';
+export { StopIcon } from './components/icons/stop';
 export { PodIcon } from './components/icons/pod';
 export { ServiceIcon } from './components/icons/service';
 export { SettingsIcon } from './components/icons/settings';
