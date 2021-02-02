@@ -21,7 +21,9 @@ from slack.web.client import WebClient
 from slack.errors import SlackApiError
 
 
-# Pixie PxL script.
+# Pixie PxL script:
+# This script ouputs a table of the HTTP requests count and
+# HTTP error (>4xxx) count for each service in the `px-sock-shop` namespace.
 PXL_SCRIPT = """
 import px
 
@@ -49,8 +51,8 @@ px.display(df, "status")
 logging.basicConfig(level=logging.DEBUG)
 
 
+# Get data from the Pixie API.
 def get_pixie_data(cluster_conn):
-    # Get data from the Pixie API.
 
     # Execute the PxL script.
     script = cluster_conn.prepare_script(PXL_SCRIPT)
@@ -66,19 +68,19 @@ def get_pixie_data(cluster_conn):
 
     return "\n\n".join(service_stats_msg)
 
-
+# Format Pixie API table row data.
 def format_message(service, request_count, error_count):
-    # Format Pixie API table row data.
     return (f"`{service}` \t ---> {error_count} (>4xx)"
             f" errors out of {request_count} requests.")
 
 
+# Send Slack message through the Slack client.
 def send_message(slack_client, channel, cluster_conn):
-    # Send a POST request through the Slack Python client.
 
     # Get data from the Pixie API.
     msg = get_pixie_data(cluster_conn)
 
+    # Send a POST request through the Slack client.
     try:
         logging.info(f"Sending {msg!r} to {channel!r}")
         slack_client.chat_postMessage(channel=channel, text=msg)
@@ -91,6 +93,8 @@ def send_message(slack_client, channel, cluster_conn):
 if __name__ == "__main__":
 
     # Get Pixie API key.
+    if "PIXIE_API_KEY" not in os.environ:
+        logging.error("Missing `PIXIE_API_KEY` environment variable.")
     PIXIE_API_KEY = os.environ['PIXIE_API_KEY']
 
     # Create a Pixie client.
@@ -98,6 +102,8 @@ if __name__ == "__main__":
     px_client = pxapi.Client(token=PIXIE_API_KEY)
 
     # Get Pixie cluster ID.
+    if "PIXIE_CLUSTER_ID" not in os.environ:
+        logging.error("Missing `PIXIE_CLUSTER_ID` environment variable.")
     PIXIE_CLUSTER_ID = os.environ['PIXIE_CLUSTER_ID']
 
     # Connect to cluster.
@@ -105,6 +111,8 @@ if __name__ == "__main__":
     logging.debug("Pixie client connected to %s cluster.", cluster_conn.name())
 
     # Get Slackbot access token.
+    if "SLACK_BOT_TOKEN" not in os.environ:
+        logging.error("Missing `SLACK_BOT_TOKEN` environment variable.")
     SLACK_BOT_TOKEN = os.environ['SLACK_BOT_TOKEN']
 
     # Create a Slack client.
