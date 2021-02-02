@@ -25,7 +25,7 @@ from slack.errors import SlackApiError
 PXL_SCRIPT = """
 import px
 
-df = px.DataFrame(table='http_events', start_time='-5m')
+df = px.DataFrame(table='http_events', start_time='-15s')
 
 # Add column for HTTP response status errors.
 df.error = df.http_resp_status >= 400
@@ -49,24 +49,16 @@ px.display(df, "status")
 logging.basicConfig(level=logging.DEBUG)
 
 
-def get_pixie_data(api_key, cluster_id):
+def get_pixie_data(cluster_conn):
     # Get data from the Pixie API.
 
-    # Create a Pixie client.
-    logging.debug("Authorizing Pixie client.")
-    px_client = pxapi.Client(token=api_key)
-
-    # Connect to cluster.
-    conn = px_client.connect_to_cluster(cluster_id)
-    logging.debug("Pixie client connected to %s cluster.", conn.name())
-
     # Execute the PxL script.
-    script = conn.prepare_script(PXL_SCRIPT)
+    script = cluster_conn.prepare_script(PXL_SCRIPT)
     logging.debug("Pixie cluster executed script.")
 
     service_stats_msg = ["*Recent 4xx+ Spikes in last 5 minutes:*"]
 
-    # Process table output rows.
+    # Process table output rows to construct slack message.
     for row in script.results("status"):
         service_stats_msg.append(format_message(row["service"],
                                                row["total_requests"],
@@ -81,8 +73,12 @@ def format_message(service, request_count, error_count):
             f" errors out of {request_count} requests.")
 
 
-def send_message(slack_client, channel, msg):
+def send_message(slack_client, channel, cluster_conn):
     # Send a POST request through the Slack Python client.
+
+    # Get data from the Pixie API.
+    msg = get_pixie_data(cluster_conn)
+
     try:
         logging.info(f"Sending {msg!r} to {channel!r}")
         slack_client.chat_postMessage(channel=channel, text=msg)
@@ -97,13 +93,21 @@ if __name__ == "__main__":
     # Get Pixie API key.
     PIXIE_API_KEY = os.environ['PIXIE_API_KEY']
 
+    # Create a Pixie client.
+    logging.debug("Authorizing Pixie client.")
+    px_client = pxapi.Client(token=PIXIE_API_KEY)
+
     # Get Pixie cluster ID.
     PIXIE_CLUSTER_ID = os.environ['PIXIE_CLUSTER_ID']
+
+    # Connect to cluster.
+    cluster_conn = px_client.connect_to_cluster(PIXIE_CLUSTER_ID)
+    logging.debug("Pixie client connected to %s cluster.", cluster_conn.name())
 
     # Get Slackbot access token.
     SLACK_BOT_TOKEN = os.environ['SLACK_BOT_TOKEN']
 
-    # Connect to the Slack client.
+    # Create a Slack client.
     logging.debug("Authorizing Slack client.")
     slack_client = WebClient(SLACK_BOT_TOKEN)
 
@@ -111,17 +115,14 @@ if __name__ == "__main__":
     SLACK_CHANNEL = "#pixie-alerts"
 
     # Schedule sending a Slack channel message every 5 minutes.
-    schedule.every(5).minutes.do(lambda: send_message(slack_client,
+    schedule.every(15).seconds.do(lambda: send_message(slack_client,
                                                      SLACK_CHANNEL,
-                                                     slack_msg))
+                                                     cluster_conn))
 
     logging.info("Message scheduled for %s Slack channel.", SLACK_CHANNEL)
 
     while True:
         schedule.run_pending()
 
-        # Get data from the Pixie API.
-        slack_msg = get_pixie_data(PIXIE_API_KEY, PIXIE_CLUSTER_ID)
-
-        # Sleep for 60 seconds between checks on the scheduler.
-        time.sleep(60)
+        # Sleep for 5 seconds between checks on the scheduler.
+        time.sleep(1)
