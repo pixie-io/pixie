@@ -100,9 +100,6 @@ if __name__ == "__main__":
     # Get Pixie cluster ID.
     PIXIE_CLUSTER_ID = os.environ['PIXIE_CLUSTER_ID']
 
-    # Get data from the Pixie API.
-    slack_msg = get_pixie_data(PIXIE_API_KEY, PIXIE_CLUSTER_ID)
-
     # Get Slackbot access token.
     SLACK_BOT_TOKEN = os.environ['SLACK_BOT_TOKEN']
 
@@ -122,6 +119,9 @@ if __name__ == "__main__":
 
     while True:
         schedule.run_pending()
+
+        # Get data from the Pixie API.
+        slack_msg = get_pixie_data(PIXIE_API_KEY, PIXIE_CLUSTER_ID)
 
         # Sleep for 60 seconds between checks on the scheduler.
         time.sleep(60)
