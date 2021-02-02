@@ -5,48 +5,94 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 package pl.api.vizierpb;
 option go_package = "pixielabs.ai/pixielabs/src/api/public/vizierapipb;publicvizierapipb";
 
-// The list of data types supported by our execution engine.
+// The list of data types supported by our execution engine. 
+// Each type corresponds to a Column type below. 
 enum DataType {
+  // Data has no specified type. Usually means there is an error.
   DATA_TYPE_UNKNOWN = 0;
+  // Data is a bool.
   BOOLEAN = 1;
+  // Data is a 64-bit integer.
   INT64 = 2;
+  // Data is an unsigned 128 bit integer.
   UINT128 = 3;
+  // Data is a 64-bit floating point.
   FLOAT64 = 4;
+  // Data is a string message.
   STRING = 5;
+  // Data is a 64-bit integer marking UNIX time in nanoseconds.
   TIME64NS = 6;
 }
 
+// The list of semantic types that can be output by the engine.
+// These semantic types are not used in the execution engine. Instead
+// they are created in the compiler and meant as clues to clients of Vizier how to format the
+// data they receive. Specific semantic types are not explicitly tied
+// to specific DataTypes but most are only used with a single DataType.
 enum SemanticType {
+  // Data has no specified Semantic Type. This usually is an error.
   ST_UNSPECIFIED = 0;
+  // Data has no semantic type.
   ST_NONE = 1;
+  // Data is UNIX time in nanoseconds.
   ST_TIME_NS = 2;
+  // Data is the Agent UUID.
   ST_AGENT_UID = 100;
+  // Data is the agent-specific ID, a Vizier specific numbering for Pixie Agents based on
+  // the order they registered to the rest of Vizier.
   ST_ASID = 101;
+  // Data is the unique ID for a process. Used to distinguish processes from other PIDs based on the
+  // time and Agent (ASID) that monitored that process.
   ST_UPID = 200;
+  // Data is the name of a service.
   ST_SERVICE_NAME = 300;
+  // Data is the name of a Kubernetes pod.
   ST_POD_NAME = 400;
+  // Data is the phase of a Kubernetes pod.
   ST_POD_PHASE = 401;
+  // Data is the status of a Kubernetes pod.
   ST_POD_STATUS = 402;
+  // Data is the name of the node.
   ST_NODE_NAME = 500;
+  // Data is the name of a container.
   ST_CONTAINER_NAME = 600;
+  // Data is the state of a container.
   ST_CONTAINER_STATE = 601;
+  // Data is the status of a container.
   ST_CONTAINER_STATUS = 602;
+  // Data is the name of a namespace.
   ST_NAMESPACE_NAME = 700;
+  // Data is in bytes.
   ST_BYTES = 800;
+  // Data is a percent value, but has not been scaled.
   ST_PERCENT = 900;
+  // Data is a duration in nanoseconds.
   ST_DURATION_NS = 901;
+  // Data is in throughput per nanosecond (1/ns). Typically used for metrics like requests per
+  // nanosecond.
   ST_THROUGHPUT_PER_NS = 902;
+  // Data is in throughput of bytes per nanosecond. (bytes/ns). Used for metrics like bytes per
+  // nanosecond.
   ST_THROUGHPUT_BYTES_PER_NS = 903;
+  // Data is a quantiles object.
   ST_QUANTILES = 1000;
+  // Data is a quantiles object over duration data (ST_DURATION_NS).
   ST_DURATION_NS_QUANTILES = 1001;
+  // Data is an IP Address.
   ST_IP_ADDRESS = 1100;
+  // Data is a network port.
   ST_PORT = 1200;
+  // Data is an HTTP request method. ie GET, POST.
   ST_HTTP_REQ_METHOD = 1300;
+  // Data is an HTTP response status. ie 200, 404, 500.
   ST_HTTP_RESP_STATUS = 1400;
+  // Data is an HTTP response message itself.
   ST_HTTP_RESP_MESSAGE = 1500;
+  // Data is a script reference. Mainly used in the UI.
   ST_SCRIPT_REFERENCE = 3000;
 }
 
+// The UInt128 data message.
 message UInt128 {
   uint64 low = 1;
   uint64 high = 2;
@@ -94,38 +140,54 @@ message Column {
   }
 }
 
-// RowBatchData is a temporary data type that will remove when proper serialization
-// is implemented.
+// RowBatchData contains the data for a particular row batch from the specified table.
 message RowBatchData {
-  string table_id = 5 [ (gogoproto.customname) = "TableID" ]; // The ID of the table which the row batch belongs to.
+  // The ID of the table which the row batch belongs to.
+  string table_id = 5 [ (gogoproto.customname) = "TableID" ];
+  // The columns in this row-batch.
   repeated Column cols = 1;
+  // The number of rows in this batch.
   int64 num_rows = 2;
+  // Whether the row-batch marks the end of a window.
   bool eow = 3;
+  // Whether the row-batch marks the end of a stream.
   bool eos = 4;
 }
 
+// Relation describes the structure of a table.
 message Relation {
   message ColumnInfo {
+    // The name of a column.
     string column_name = 1;
+    // The basic data type of the column.
     DataType column_type = 2;
+    // The description of the column.
     string column_desc = 3;
+    // The semantic type of the column.
     SemanticType column_semantic_type = 4;
   }
+  // The list of columns in this relation.
   repeated ColumnInfo columns = 1;
 }
 
+// A message for a single compiler error detail.
 message CompilerError {
+  // The line number in the pxl script where the compiler error occurred.
   uint64 line = 1;
+  // The column number in the pxl script where the compiler error occurred.
   uint64 column = 2;
+  // The message of this particular error.
   string message = 3;
 }
 
+// An individual error detail message.
 message ErrorDetails {
   oneof error {
     CompilerError compiler_error = 1;
   }
 }
 
+// Message describing if something worked (code == 0) or why not.
 message Status {
   // The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
   int32 code = 1;
@@ -138,6 +200,9 @@ message Status {
   // Reserved for deprecated Details.
   reserved 3;
 
+  // The details about the particular error. A Status can be an error status and have 0
+  // elements in the error_details. However, if the Status.code is OK (Status.code == 0),
+  // error_details should be empty as well.
   repeated ErrorDetails error_details = 4;
 }
 
@@ -171,7 +236,7 @@ message ScalarValue {
   }
 }
 
-// ExecuteScriptRequest is the request for ExecuteQuery(). This
+// Request for the ExecuteScript call. This
 // should contain all necessary information to successfully run
 // a script on Vizier.
 message ExecuteScriptRequest {
@@ -207,13 +272,13 @@ message ExecuteScriptRequest {
     //   3. the value in arg_value doesn't parse to the expected type.
     repeated ArgValue arg_values = 2;
     // output_table_prefix is the prefix of the name of the table that is returned in the response.
-    // If the function returns a dataframe, then the table name will be `format("%s", output_table_prefix)`.
-    // If the function returns a list of dataframes (even if the list is of length 1), then the table names will be
-    // `format("%s[%d]", output_table_prefix, index)`.
+    // If the function returns a dataframe, then the table name will be `format("%s",
+    // output_table_prefix)`. If the function returns a list of dataframes (even if the list is of
+    // length 1), then the table names will be `format("%s[%d]", output_table_prefix, index)`.
     string output_table_prefix = 3;
   }
   // exec_funcs is a list of functions to execute.
-  // If any functions specified cannot be found ExecuteScriptResponse will contain a compiler error
+  // If any functions specified cannot be found ExecuteScriptResponse will contain a compiler error.
   repeated FuncToExecute exec_funcs = 4;
 
   // If set to true, the execute script will run the mutations (probe installs, etc.).
@@ -233,28 +298,39 @@ message QueryTimingInfo {
 // QueryExecutionStats contains information about the time/data processed by the query.
 // These will be periodically streamed from the server as the query executes.
 message QueryExecutionStats {
-  QueryTimingInfo timing  = 1;
+  QueryTimingInfo timing = 1;
   // The number of input bytes.
   int64 bytes_processed = 2;
   // The number of input records.
   int64 records_processed = 3;
 }
 
+// The metadata describing a particular table that is sent over the stream.
+// Metadata for a table is only sent once per stream and will be sent before
+// data for that table is sent over the stream.
 message QueryMetadata {
+  // The relation for the table.
   Relation relation = 1;
+  // The name of the table.
   string name = 2;
+  // The UUID of the table. RowBatchData for this particular table will use
+  // the same ID.
   string id = 3 [ (gogoproto.customname) = "ID" ];
 }
-// The query results generated by carnot.
+
+// Data message containing either a row batch or execution stats.
 message QueryData {
+  // The batch of data to send over.
   RowBatchData batch = 1;
+  // The execution stats to send over.
   QueryExecutionStats execution_stats = 2;
 }
 
+// Response to ExecuteScript call.
 message ExecuteScriptResponse {
-  // The Status for executing the query. Empty status implies that execution was successful/is currently
-  // running/the mutation is still not ready. An non-empty status may indicate a compiler error,
-  // execution error, timeout, etc.
+  // The Status for executing the query. Empty status implies that execution was successful/is
+  // currently running/the mutation is still not ready. An non-empty status may indicate a compiler
+  // error, execution error, timeout, etc.
   Status status = 1;
   // The id for the query. UUID encoded as string.
   string query_id = 2 [ (gogoproto.customname) = "QueryID" ];
@@ -285,18 +361,24 @@ message MutationInfo {
   repeated MutationState states = 2;
 }
 
+// Request for the HealthCheck call.
 message HealthCheckRequest {
   // The UUID of the cluster encoded as a string with dashes.
-  string cluster_id = 1 [ (gogoproto.customname) = "ClusterID" ];;
+  string cluster_id = 1 [ (gogoproto.customname) = "ClusterID" ];
 }
 
+// Response for the HealthCheck call.
 message HealthCheckResponse {
+  // The status of the cluster.
   Status status = 1;
 }
 
 
+// The API that manages all communication with a particular Vizier cluster.
 service VizierService {
-  // This is an incoming request to Vizier to execute queries.
+  // Execute a script on the Vizier cluster and stream the results of that execution.
   rpc ExecuteScript(ExecuteScriptRequest) returns (stream ExecuteScriptResponse) {}
+  // Start a stream to receive health updates from the Vizier service. For most practical 
+  // purposes, users should only need `ExecuteScript()` and can safely ignore this call.
   rpc HealthCheck(HealthCheckRequest) returns (stream HealthCheckResponse) {}
 }
