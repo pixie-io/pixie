@@ -38,7 +38,9 @@ spec:
         image: gcr.io/pixie-prod/pixie-prod-artifacts/curl:1.0
         # yamllint disable
         command: ['sh', '-c', 'set -xe;
-          URL="${PL_MD_ETCD_SERVER}${HEALTH_PATH}";
+          ETCD_PATH="${PL_MD_ETCD_SERVER}";
+          if [ ! ${ETCD_PATH} ]; then ETCD_PATH="${DEFAULT_ETCD_PATH}"; fi;
+          URL="${ETCD_PATH}${HEALTH_PATH}";
           until [ $(curl --cacert /certs/ca.crt --key /certs/client.key --cert /certs/client.crt -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
             echo "waiting for ${URL}";
             sleep 2;
@@ -46,6 +48,8 @@ spec:
         env:
         - name: HEALTH_PATH
           value: "/health"
+        - name: DEFAULT_ETCD_PATH
+          value: "https://etcd.pl.svc:2379"
         envFrom:
         - configMapRef:
             name: pl-cluster-config
