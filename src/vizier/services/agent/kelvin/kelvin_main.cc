@@ -33,29 +33,53 @@ using ::pl::vizier::agent::Manager;
 class AgentDeathHandler : public pl::FatalErrorHandlerInterface {
  public:
   AgentDeathHandler() = default;
-  void set_manager(Manager* manager) { manager_ = manager; }
   void OnFatalError() const override {
+    // Stack trace will print automatically; any additional state dumps can be done here.
+    // Note that actions here must be async-signal-safe and must not allocate memory.
+  }
+};
+
+// Signal handlers for graceful termination.
+class AgentTerminationHandler {
+ public:
+  // This list covers signals that are handled gracefully.
+  static constexpr auto kSignals = ::pl::MakeArray(SIGINT, SIGQUIT, SIGTERM, SIGHUP);
+
+  static void InstallSignalHandlers() {
+    for (size_t i = 0; i < kSignals.size(); ++i) {
+      signal(kSignals[i], AgentTerminationHandler::OnTerminate);
+    }
+  }
+
+  static void set_manager(Manager* manager) { manager_ = manager; }
+
+  static void OnTerminate(int signum) {
     if (manager_ != nullptr) {
       LOG(INFO) << "Trying to gracefully stop agent manager";
       auto s = manager_->Stop(std::chrono::seconds{5});
       if (!s.ok()) {
-        LOG(ERROR) << "Failed to gracefull stop agent manager, it will terminate shortly.";
+        LOG(ERROR) << "Failed to gracefully stop agent manager, it will terminate shortly.";
       }
+      exit(signum);
     }
   }
 
  private:
-  Manager* manager_ = nullptr;
+  inline static Manager* manager_ = nullptr;
 };
-
-std::unique_ptr<pl::SignalAction> signal_action;
 
 int main(int argc, char** argv) {
   pl::EnvironmentGuard env_guard(&argc, argv);
 
-  signal_action = std::make_unique<pl::SignalAction>();
   AgentDeathHandler err_handler;
+
+  // This covers signals such as SIGSEGV and other fatal errors.
+  // We print the stack trace and die.
+  auto signal_action = std::make_unique<pl::SignalAction>();
   signal_action->RegisterFatalErrorHandler(err_handler);
+
+  // Install signal handlers where graceful exit is possible.
+  AgentTerminationHandler::InstallSignalHandlers();
 
   sole::uuid agent_id = sole::uuid4();
   LOG(INFO) << absl::Substitute("Pixie Kelvin. Version: $0, id: $1",
@@ -73,13 +97,13 @@ int main(int argc, char** argv) {
                                        FLAGS_rpc_port, FLAGS_nats_url, FLAGS_mds_addr)
                      .ConsumeValueOrDie();
 
-  err_handler.set_manager(manager.get());
+  AgentTerminationHandler::set_manager(manager.get());
 
   PL_CHECK_OK(manager->Run());
   PL_CHECK_OK(manager->Stop(std::chrono::seconds{1}));
 
   // Clear the manager, because it has been stopped.
-  err_handler.set_manager(nullptr);
+  AgentTerminationHandler::set_manager(nullptr);
 
   return 0;
 }

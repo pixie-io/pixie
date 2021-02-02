@@ -39,8 +39,6 @@ void SignalAction::RegisterFatalErrorHandler(const FatalErrorHandlerInterface& h
   fatal_error_handlers.store(list, std::memory_order_release);
 }
 
-constexpr int SignalAction::kFatalSignals[];
-
 void SignalAction::SigHandler(int sig, siginfo_t* info, void* ucontext) {
   // Don't dump stack trace for term signal.
   if (sig != SIGTERM) {
