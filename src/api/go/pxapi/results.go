@@ -90,6 +90,24 @@ func (s *ScriptResults) Stream() error {
 	return streamErr
 }
 
+func (s *ScriptResults) handleGRPCMsg(ctx context.Context, resp *vizierapipb.ExecuteScriptResponse) error {
+	switch v := resp.Result.(type) {
+	case *vizierapipb.ExecuteScriptResponse_MetaData:
+		return s.handleTableMetadata(ctx, v)
+	case *vizierapipb.ExecuteScriptResponse_Data:
+		if v.Data != nil {
+			if v.Data.Batch != nil {
+				return s.handleTableRowbatch(ctx, v.Data.Batch)
+			}
+			if v.Data.ExecutionStats != nil {
+				return s.handleStats(ctx, v.Data.ExecutionStats)
+			}
+		}
+	}
+
+	return errdefs.ErrInternalUnImplementedType
+}
+
 func (s *ScriptResults) run() error {
 	ctx := s.c.Context()
 	for {
@@ -106,20 +124,7 @@ func (s *ScriptResults) run() error {
 			return nil
 		}
 
-		switch v := resp.Result.(type) {
-		case *vizierapipb.ExecuteScriptResponse_MetaData:
-			err = s.handleTableMetadata(ctx, v)
-		case *vizierapipb.ExecuteScriptResponse_Data:
-			if v.Data != nil {
-				if v.Data.Batch != nil {
-					err = s.handleTableRowbatch(ctx, v.Data.Batch)
-				}
-				if v.Data.ExecutionStats != nil {
-					err = s.handleStats(ctx, v.Data.ExecutionStats)
-				}
-			}
-		}
-		if err != nil {
+		if err := s.handleGRPCMsg(ctx, resp); err != nil {
 			return err
 		}
 	}
