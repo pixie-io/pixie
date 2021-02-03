@@ -27,6 +27,14 @@ bool Heap::StartProfiler(const std::string& output_path) {
   return true;
 }
 
+bool Heap::Dump() {
+  if (IsHeapProfilerRunning() == 0) {
+    return false;
+  }
+  HeapProfilerDump("dump");
+  return true;
+}
+
 bool Heap::StopProfiler() {
   if (IsHeapProfilerRunning() == 0) {
     return false;

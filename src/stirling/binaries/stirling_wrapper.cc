@@ -11,6 +11,7 @@
 #include <google/protobuf/text_format.h>
 
 #include "src/common/base/base.h"
+#include "src/common/perf/profiler.h"
 #include "src/stirling/core/output.h"
 #include "src/stirling/core/pub_sub_manager.h"
 #include "src/stirling/core/source_registry.h"
@@ -47,6 +48,7 @@ DEFINE_string(print_record_batches, "http_events,mysql_events,cql_events,dns_eve
 DEFINE_bool(init_only, false, "If true, only runs the init phase and exits. For testing.");
 DEFINE_int32(timeout_secs, 0,
              "If greater than 0, only runs for the specified amount of time and exits.");
+DEFINE_bool(enable_heap_profiler, false, "If true, heap profiling is enabled.");
 
 absl::flat_hash_set<std::string> g_table_print_enables;
 
@@ -82,6 +84,12 @@ void SignalHandler(int signum) {
   if (g_stirling != nullptr) {
     g_stirling->Stop();
   }
+
+  if (FLAGS_enable_heap_profiler && ::pl::profiler::Heap::IsProfilerStarted()) {
+    LOG(INFO) << "===== Stopping heap profiler.";
+    ::pl::profiler::Heap::StopProfiler();
+  }
+
   if (g_process_stats_monitor != nullptr) {
     g_process_stats_monitor->PrintCPUTime();
   }
@@ -200,6 +208,12 @@ int main(int argc, char** argv) {
   signal(SIGHUP, SignalHandler);
 
   pl::EnvironmentGuard env_guard(&argc, argv);
+
+  if (FLAGS_enable_heap_profiler) {
+    CHECK(::pl::profiler::Heap::ProfilerAvailable());
+    LOG(INFO) << "===== Enabling heap profiler.";
+    ::pl::profiler::Heap::StartProfiler("stirling_heap");
+  }
 
   LOG(INFO) << "Stirling Wrapper PID: " << getpid() << " TID: " << gettid();
 

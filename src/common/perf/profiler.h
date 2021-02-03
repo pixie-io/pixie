@@ -32,6 +32,11 @@ class CPU {
   static void StopProfiler();
 };
 
+/**
+ * A memory utilization profiler.
+ * Can be configured with enviornment variables to dump heap profiles at different times.
+ * See: https://gperftools.github.io/gperftools/heapprofile.html
+ */
 class Heap {
  public:
   /**
@@ -53,7 +58,13 @@ class Heap {
   static bool StartProfiler(const std::string& output_path);
 
   /**
-   * Stop the profiler.
+   * Immediately dump the profiler results.
+   * @return bool whether the call to dump succeeded.
+   */
+  static bool Dump();
+
+  /**
+   * Dump the results and stop the profiler.
    * @return bool if the profiler was stopped and file written.
    */
   static bool StopProfiler();

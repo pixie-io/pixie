@@ -1,6 +1,8 @@
 # Profiling Stirling
 
-As a developer of Stirling, it is often useful to profile Stirling to find performance bottlenecks.
+As a developer of Stirling, it is often useful to profile Stirling to find performance or memory issues.
+
+## Performance Profiler
 
 ### Profiling Locally
 
@@ -86,3 +88,42 @@ flamegraph.pl profile.out > profile.svg
 rsvg-convert profile.svg -f pdf > profile.pdf  # create pdf
 rsvg-convert profile.svg -f eps > profile.eps  # create eps
 convert -density 600 -quality 100 profile.eps profile.jpg  # create jpg based on eps
+
+## Memory Profiler
+
+### Collecting profiles
+
+We use the gperftools heap profiler to examine the memory usage of Stirling.
+It is already included with stirling_wrapper, and can be enabled via `--enable_heap_profiler=true`.
+
+Once the profiler is enabled, it will periodically dump heap usage files. One can also add direct
+heap dumps at desired points in the code by calling `::pl::profiler::Heap::Dump()`.
+
+The conditions under which automatic heap dumps are produced are controlled by environment variables:
+```
+HEAP_PROFILE_ALLOCATION_INTERVAL 	default: 1073741824 (1 Gb) 	Dump heap profiling information each time the specified number of bytes has been allocated by the program.
+HEAP_PROFILE_INUSE_INTERVAL 	default: 104857600 (100 Mb) 	Dump heap profiling information whenever the high-water memory usage mark increases by the specified number of bytes.
+HEAP_PROFILE_TIME_INTERVAL 	default: 0 	Dump heap profiling information each time the specified number of seconds has elapsed.
+HEAPPROFILESIGNAL 	default: disabled 	Dump heap profiling information whenever the specified signal is sent to the process. 
+```
+More information can be found here: https://gperftools.github.io/gperftools/heapprofile.html
+
+### Viewing results
+
+`gperftools` is required for viewing the results.
+
+On Ubuntu, it can be installed via:
+```
+sudo apt install google-perftools
+```
+
+When the profiler is running, it will create files such as `<name>.0001.heap`.
+
+To create a visualization for one of these files, run the following command:
+
+```
+google-pprof --pdf <path-to-stirling_wrapper-binary> stirling_heap.0120.heap > output.pdf
+```
+
+The `--pdf` flag specifies that the output file should be a PDF. Refer to the pprof documentation for other output formats.
+
