@@ -21,11 +21,23 @@ import (
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 )
 
+// KelvinUpdateChannel is the channel that all kelvins updates are sent on.
+const KelvinUpdateChannel = "all"
+
 // K8sMessage is a message for K8s metadata events/updates.
 type K8sMessage struct {
 	Object     runtime.Object
 	ObjectType string
 	EventType  watch.EventType
+}
+
+// OutgoingUpdate is an outgoing resource message that should be sent to NATS on the provided channels.
+type OutgoingUpdate struct {
+	// Update is the ResourceUpdate that should be sent out.
+	Update *metadatapb.ResourceUpdate
+	// Topics are the channels that the update should be sent to. These are usually IPs, to be sent to specific
+	// agents.
+	Topics []string
 }
 
 // K8sMetadataStore handles storing and fetching any data related to K8s resources.
@@ -47,6 +59,10 @@ type UpdateProcessor interface {
 	// GetStoredProtos gets the protos that should be persisted in the data store, derived from
 	// the given update.
 	GetStoredProtos(runtime.Object) (updates []*storepb.K8SResource, resourceVersions []string)
+	// GetUpdatesToSend gets all of the updates that should be sent to the agents, along with the relevant IPs that
+	// the updates should be sent to. If the IP is empty, this means the update should be sent to all known IPs, including
+	// kelvin.
+	GetUpdatesToSend(runtime.Object, *ProcessorState) []*OutgoingUpdate
 }
 
 // ProcessorState is data that should be shared across update processors. It can contain that needs
@@ -57,6 +73,10 @@ type ProcessorState struct {
 	LeaderMsgs  map[k8stypes.UID]*v1.Endpoints
 	ServiceCIDR *net.IPNet // This is the service CIDR block; it is inferred from all observed service IPs.
 	PodCIDRs    []string   // The pod CIDRs in the cluster, inferred from each node's reported pod CIDR.
+	// A map from node name to its internal IP.
+	NodeToIP map[string]string
+	// A map from pod name to its IP.
+	PodToIP map[string]string
 }
 
 // K8sMetadataHandler handles any incoming k8s updates. It saves the update to the store for persistence, and
@@ -83,7 +103,7 @@ func NewK8sMetadataHandler(updateCh <-chan *K8sMessage, mds K8sMetadataStore, co
 	done := make(chan struct{})
 	leaderMsgs := make(map[k8stypes.UID]*v1.Endpoints)
 	handlerMap := make(map[string]UpdateProcessor)
-	state := ProcessorState{LeaderMsgs: leaderMsgs, PodCIDRs: make([]string, 0)}
+	state := ProcessorState{LeaderMsgs: leaderMsgs, PodCIDRs: make([]string, 0), NodeToIP: make(map[string]string), PodToIP: make(map[string]string)}
 	mh := &K8sMetadataHandler{updateCh: updateCh, mds: mds, conn: conn, done: done, processHandlerMap: handlerMap, state: state}
 
 	// Register update processors.
@@ -218,6 +238,56 @@ func (p *EndpointsUpdateProcessor) GetStoredProtos(obj runtime.Object) ([]*store
 	return []*storepb.K8SResource{storedUpdate}, []string{pb.Metadata.ResourceVersion}
 }
 
+// GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
+func (p *EndpointsUpdateProcessor) GetUpdatesToSend(obj runtime.Object, state *ProcessorState) []*OutgoingUpdate {
+	e := obj.(*v1.Endpoints)
+
+	pb, err := protoutils.EndpointsToProto(e)
+	if err != nil {
+		return nil
+	}
+
+	var updates []*OutgoingUpdate
+
+	// Track all pod name and pod UIDs for the update to Kelvin.
+	var allPodNames []string
+	var allPodUIDs []string
+
+	// Construct a map for each IP in the endpoints, to the associated pods.
+	ipToPodNames := make(map[string][]string)
+	ipToPodUIDs := make(map[string][]string)
+	for _, subset := range pb.Subsets {
+		for _, addr := range subset.Addresses {
+			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" {
+				allPodNames = append(allPodNames, addr.TargetRef.Name)
+				allPodUIDs = append(allPodUIDs, addr.TargetRef.UID)
+
+				ip, ok := state.PodToIP[fmt.Sprintf("%s/%s", addr.TargetRef.Namespace, addr.TargetRef.Name)]
+				if !ok {
+					continue
+				}
+
+				ipToPodNames[ip] = append(ipToPodNames[ip], addr.TargetRef.Name)
+				ipToPodUIDs[ip] = append(ipToPodUIDs[ip], addr.TargetRef.UID)
+			}
+		}
+	}
+
+	for ip := range ipToPodNames {
+		updates = append(updates, &OutgoingUpdate{
+			Update: getServiceResourceUpdateFromEndpoint(pb, ipToPodUIDs[ip], ipToPodNames[ip]),
+			Topics: []string{ip},
+		})
+	}
+	// Also send update to Kelvin.
+	updates = append(updates, &OutgoingUpdate{
+		Update: getServiceResourceUpdateFromEndpoint(pb, allPodUIDs, allPodNames),
+		Topics: []string{KelvinUpdateChannel},
+	})
+
+	return updates
+}
+
 // ServiceUpdateProcessor is a processor for services.
 type ServiceUpdateProcessor struct{}
 
@@ -278,6 +348,13 @@ func (p *ServiceUpdateProcessor) updateServiceCIDR(svc *v1.Service, state *Proce
 	}
 }
 
+// GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
+func (p *ServiceUpdateProcessor) GetUpdatesToSend(obj runtime.Object, state *ProcessorState) []*OutgoingUpdate {
+	// We don't send out service updates, they are encapsulated by endpoints updates where we have more information
+	// about which nodes the service is actually running on.
+	return nil
+}
+
 // PodUpdateProcessor is a processor for pods.
 type PodUpdateProcessor struct{}
 
@@ -299,6 +376,15 @@ func (p *PodUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Processor
 		return false
 	}
 	p.updatePodCIDR(e, state)
+
+	// Create a mapping from podName -> IP. This helps us filter endpoint updates down to the relevant IPs.
+	podName := fmt.Sprintf("%s/%s", e.ObjectMeta.Namespace, e.ObjectMeta.Name)
+	if e.ObjectMeta.DeletionTimestamp != nil {
+		delete(state.PodToIP, podName)
+	} else {
+		state.PodToIP[podName] = e.Status.HostIP
+	}
+
 	return true
 }
 
@@ -313,12 +399,6 @@ func (p *PodUpdateProcessor) GetStoredProtos(obj runtime.Object) ([]*storepb.K8S
 	if err != nil {
 		return updates, resourceVersions
 	}
-	updates = append(updates, &storepb.K8SResource{
-		Resource: &storepb.K8SResource_Pod{
-			Pod: pb,
-		},
-	})
-	resourceVersions = append(resourceVersions, pb.Metadata.ResourceVersion)
 
 	// Also store container updates. These are saved and sent as separate updates.
 	containerUpdates := GetContainerUpdatesFromPod(pb)
@@ -330,6 +410,14 @@ func (p *PodUpdateProcessor) GetStoredProtos(obj runtime.Object) ([]*storepb.K8S
 		})
 		resourceVersions = append(resourceVersions, fmt.Sprintf("%s_%d", pb.Metadata.ResourceVersion, i))
 	}
+
+	updates = append(updates, &storepb.K8SResource{
+		Resource: &storepb.K8SResource_Pod{
+			Pod: pb,
+		},
+	})
+	// The pod should have a later resource version than the containers, because the containers should be sent to an agent first.
+	resourceVersions = append(resourceVersions, fmt.Sprintf("%s_%d", pb.Metadata.ResourceVersion, len(containerUpdates)))
 	return updates, resourceVersions
 }
 
@@ -342,6 +430,44 @@ func (p *PodUpdateProcessor) updatePodCIDR(pod *v1.Pod, state *ProcessorState) {
 		return
 	}
 	state.PodCIDRs = mergedCIDRs
+}
+
+// GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
+func (p *PodUpdateProcessor) GetUpdatesToSend(obj runtime.Object, state *ProcessorState) []*OutgoingUpdate {
+	e := obj.(*v1.Pod)
+
+	pb, err := protoutils.PodToProto(e)
+	if err != nil {
+		return nil
+	}
+
+	var updates []*OutgoingUpdate
+
+	// Create the resource updates for the specific pod.
+	// Container updates should be sent first.
+	containerUpdates := GetContainerUpdatesFromPod(pb)
+	for i := range containerUpdates {
+		ru := &metadatapb.ResourceUpdate{
+			ResourceVersion: fmt.Sprintf("%s_%d", pb.Metadata.ResourceVersion, i),
+			Update: &metadatapb.ResourceUpdate_ContainerUpdate{
+				ContainerUpdate: containerUpdates[i],
+			},
+		}
+		// Send the update to the relevant agent and the Kelvin.
+		updates = append(updates, &OutgoingUpdate{
+			Update: ru,
+			Topics: []string{e.Status.HostIP, KelvinUpdateChannel},
+		})
+	}
+
+	// Send out the pod update to the relevant agent and Kelvin.
+	podUpdate := GetResourceUpdateFromPod(pb)
+	updates = append(updates, &OutgoingUpdate{
+		Update: podUpdate,
+		Topics: []string{e.Status.HostIP, KelvinUpdateChannel},
+	})
+
+	return updates
 }
 
 // NodeUpdateProcessor is a processor for nodes.
@@ -358,12 +484,27 @@ func (p *NodeUpdateProcessor) SetDeleted(obj runtime.Object) {
 
 // ValidateUpdate checks that the provided service object is valid, and casts it to the correct type.
 func (p *NodeUpdateProcessor) ValidateUpdate(obj runtime.Object, state *ProcessorState) bool {
-	_, ok := obj.(*v1.Node)
+	n, ok := obj.(*v1.Node)
 
 	if !ok {
 		log.WithField("object", obj).Trace("Received non-node object when handling node metadata.")
 		return false
 	}
+
+	// Create a mapping from node -> IP. This gives us a list of all IPs in the cluster that we need to
+	// send updates to.
+	if n.DeletionTimestamp != nil {
+		delete(state.NodeToIP, n.ObjectMeta.Name)
+		return true
+	}
+
+	for _, addr := range n.Status.Addresses {
+		if addr.Type == v1.NodeInternalIP {
+			state.NodeToIP[n.ObjectMeta.Name] = addr.Address
+			break
+		}
+	}
+
 	return true
 }
 
@@ -381,6 +522,12 @@ func (p *NodeUpdateProcessor) GetStoredProtos(obj runtime.Object) ([]*storepb.K8
 		},
 	}
 	return []*storepb.K8SResource{storedUpdate}, []string{pb.Metadata.ResourceVersion}
+}
+
+// GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
+func (p *NodeUpdateProcessor) GetUpdatesToSend(obj runtime.Object, state *ProcessorState) []*OutgoingUpdate {
+	// Currently we don't send node updates to the agents.
+	return nil
 }
 
 // NamespaceUpdateProcessor is a processor for namespaces.
@@ -422,6 +569,28 @@ func (p *NamespaceUpdateProcessor) GetStoredProtos(obj runtime.Object) ([]*store
 	return []*storepb.K8SResource{storedUpdate}, []string{pb.Metadata.ResourceVersion}
 }
 
+// GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
+func (p *NamespaceUpdateProcessor) GetUpdatesToSend(obj runtime.Object, state *ProcessorState) []*OutgoingUpdate {
+	e := obj.(*v1.Namespace)
+
+	pb, err := protoutils.NamespaceToProto(e)
+	if err != nil {
+		return nil
+	}
+
+	// Send the update to all agents.
+	agents := []string{KelvinUpdateChannel}
+	for _, ip := range state.NodeToIP {
+		agents = append(agents, ip)
+	}
+	return []*OutgoingUpdate{
+		&OutgoingUpdate{
+			Update: getResourceUpdateFromNamespace(pb),
+			Topics: agents,
+		},
+	}
+}
+
 func formatContainerID(cid string) string {
 	// Strip prefixes like docker:// or containerd://
 	tokens := strings.SplitN(cid, "://", 2)
@@ -453,6 +622,38 @@ func GetContainerUpdatesFromPod(pod *metadatapb.Pod) []*metadatapb.ContainerUpda
 		}
 	}
 	return updates
+}
+
+func getResourceUpdateFromNamespace(ns *metadatapb.Namespace) *metadatapb.ResourceUpdate {
+	return &metadatapb.ResourceUpdate{
+		ResourceVersion: ns.Metadata.ResourceVersion,
+		Update: &metadatapb.ResourceUpdate_NamespaceUpdate{
+			NamespaceUpdate: &metadatapb.NamespaceUpdate{
+				UID:              ns.Metadata.UID,
+				Name:             ns.Metadata.Name,
+				StartTimestampNS: ns.Metadata.CreationTimestampNS,
+				StopTimestampNS:  ns.Metadata.DeletionTimestampNS,
+			},
+		},
+	}
+}
+
+func getServiceResourceUpdateFromEndpoint(ep *metadatapb.Endpoints, podIDs []string, podNames []string) *metadatapb.ResourceUpdate {
+	update := &metadatapb.ResourceUpdate{
+		ResourceVersion: ep.Metadata.ResourceVersion,
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID:              ep.Metadata.UID,
+				Name:             ep.Metadata.Name,
+				Namespace:        ep.Metadata.Namespace,
+				StartTimestampNS: ep.Metadata.CreationTimestampNS,
+				StopTimestampNS:  ep.Metadata.DeletionTimestampNS,
+				PodIDs:           podIDs,
+				PodNames:         podNames,
+			},
+		},
+	}
+	return update
 }
 
 // Stop stops processing incoming k8s metadata updates.

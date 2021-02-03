@@ -246,7 +246,7 @@ func createNodeObject() *v1.Node {
 
 	nodeAddrs := []v1.NodeAddress{
 		v1.NodeAddress{
-			Type:    v1.NodeExternalIP,
+			Type:    v1.NodeInternalIP,
 			Address: "test_addr",
 		},
 	}
@@ -343,6 +343,85 @@ func TestEndpointsUpdateProcessor_GetStoredProtos(t *testing.T) {
 	}, updates[0])
 }
 
+func TestEndpointsUpdateProcessor_GetUpdatesToSend(t *testing.T) {
+	// Construct endpoints object.
+	o := createEndpointsObject()
+	o.Subsets[0].Addresses = append(o.Subsets[0].Addresses, v1.EndpointAddress{
+		Hostname: "host",
+		TargetRef: &v1.ObjectReference{
+			Kind:      "Pod",
+			Namespace: "pl",
+			UID:       "xyz",
+			Name:      "other-pod",
+		},
+	})
+
+	state := &controllers.ProcessorState{
+		PodToIP: map[string]string{
+			"pl/another-pod": "127.0.0.2",
+			"pl/pod-name":    "127.0.0.1",
+			"pl/other-pod":   "127.0.0.1",
+		},
+	}
+	p := controllers.EndpointsUpdateProcessor{}
+	updates := p.GetUpdatesToSend(o, state)
+	assert.Equal(t, 3, len(updates))
+
+	assert.Contains(t, updates, &controllers.OutgoingUpdate{
+		Update: &metadatapb.ResourceUpdate{
+			ResourceVersion: "1",
+			Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+				ServiceUpdate: &metadatapb.ServiceUpdate{
+					UID:              "ijkl",
+					Name:             "object_md",
+					Namespace:        "a_namespace",
+					StartTimestampNS: 4,
+					StopTimestampNS:  6,
+					PodIDs:           []string{"abcd", "xyz"},
+					PodNames:         []string{"pod-name", "other-pod"},
+				},
+			},
+		},
+		Topics: []string{"127.0.0.1"},
+	})
+
+	assert.Contains(t, updates, &controllers.OutgoingUpdate{
+		Update: &metadatapb.ResourceUpdate{
+			ResourceVersion: "1",
+			Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+				ServiceUpdate: &metadatapb.ServiceUpdate{
+					UID:              "ijkl",
+					Name:             "object_md",
+					Namespace:        "a_namespace",
+					StartTimestampNS: 4,
+					StopTimestampNS:  6,
+					PodIDs:           []string{"efgh"},
+					PodNames:         []string{"another-pod"},
+				},
+			},
+		},
+		Topics: []string{"127.0.0.2"},
+	})
+
+	assert.Contains(t, updates, &controllers.OutgoingUpdate{
+		Update: &metadatapb.ResourceUpdate{
+			ResourceVersion: "1",
+			Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+				ServiceUpdate: &metadatapb.ServiceUpdate{
+					UID:              "ijkl",
+					Name:             "object_md",
+					Namespace:        "a_namespace",
+					StartTimestampNS: 4,
+					StopTimestampNS:  6,
+					PodIDs:           []string{"abcd", "efgh", "xyz"},
+					PodNames:         []string{"pod-name", "another-pod", "other-pod"},
+				},
+			},
+		},
+		Topics: []string{controllers.KelvinUpdateChannel},
+	})
+}
+
 func TestServiceUpdateProcessor(t *testing.T) {
 	// Construct service object.
 	o := createServiceObject()
@@ -426,6 +505,16 @@ func TestServiceUpdateProcessor_GetStoredProtos(t *testing.T) {
 	}, updates[0])
 }
 
+func TestServiceUpdateProcessor_GetUpdatesToSend(t *testing.T) {
+	// Construct endpoints object.
+	o := createServiceObject()
+
+	state := &controllers.ProcessorState{}
+	p := controllers.ServiceUpdateProcessor{}
+	updates := p.GetUpdatesToSend(o, state)
+	assert.Equal(t, 0, len(updates))
+}
+
 func TestPodUpdateProcessor_SetDeleted(t *testing.T) {
 	// Construct pod object.
 	o := createPodObject()
@@ -444,12 +533,21 @@ func TestPodUpdateProcessor_ValidateUpdate(t *testing.T) {
 	o := createPodObject()
 	o.Status.PodIP = "127.0.0.1"
 
-	state := &controllers.ProcessorState{}
+	state := &controllers.ProcessorState{PodToIP: make(map[string]string)}
 	p := controllers.PodUpdateProcessor{}
 	resp := p.ValidateUpdate(o, state)
 	assert.True(t, resp)
 
 	assert.Equal(t, []string{"127.0.0.1/32"}, state.PodCIDRs)
+	assert.Equal(t, 0, len(state.PodToIP))
+
+	o.ObjectMeta.DeletionTimestamp = nil
+	resp = p.ValidateUpdate(o, state)
+	assert.True(t, resp)
+
+	assert.Equal(t, []string{"127.0.0.1/32"}, state.PodCIDRs)
+	assert.Equal(t, 1, len(state.PodToIP))
+	assert.Equal(t, "127.0.0.5", state.PodToIP["/object_md"])
 }
 
 func TestPodUpdateProcessor_GetStoredProtos(t *testing.T) {
@@ -468,13 +566,7 @@ func TestPodUpdateProcessor_GetStoredProtos(t *testing.T) {
 	assert.Equal(t, 2, len(updates))
 	assert.Equal(t, 2, len(rvs))
 
-	assert.Equal(t, "1", rvs[0])
-	assert.Equal(t, &storepb.K8SResource{
-		Resource: &storepb.K8SResource_Pod{
-			Pod: expectedPb,
-		},
-	}, updates[0])
-	assert.Equal(t, "1_0", rvs[1])
+	assert.Equal(t, "1_0", rvs[0])
 	assert.Equal(t, &storepb.K8SResource{
 		Resource: &storepb.K8SResource_Container{
 			Container: &metadatapb.ContainerUpdate{
@@ -487,7 +579,75 @@ func TestPodUpdateProcessor_GetStoredProtos(t *testing.T) {
 				Reason:         "container state reason",
 			},
 		},
+	}, updates[0])
+	assert.Equal(t, "1_1", rvs[1])
+	assert.Equal(t, &storepb.K8SResource{
+		Resource: &storepb.K8SResource_Pod{
+			Pod: expectedPb,
+		},
 	}, updates[1])
+}
+
+func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
+	// Construct endpoints object.
+	o := createPodObject()
+
+	state := &controllers.ProcessorState{}
+	p := controllers.PodUpdateProcessor{}
+	updates := p.GetUpdatesToSend(o, state)
+	assert.Equal(t, 2, len(updates))
+
+	containerUpdate := &controllers.OutgoingUpdate{
+		Update: &metadatapb.ResourceUpdate{
+			ResourceVersion: "1_0",
+			Update: &metadatapb.ResourceUpdate_ContainerUpdate{
+				ContainerUpdate: &metadatapb.ContainerUpdate{
+					CID:            "test",
+					Name:           "container1",
+					PodID:          "ijkl",
+					PodName:        "object_md",
+					ContainerState: metadatapb.CONTAINER_STATE_WAITING,
+					Message:        "container state message",
+					Reason:         "container state reason",
+				},
+			},
+		},
+		Topics: []string{"127.0.0.5", controllers.KelvinUpdateChannel},
+	}
+	assert.Contains(t, updates, containerUpdate)
+
+	podUpdate := &controllers.OutgoingUpdate{
+		Update: &metadatapb.ResourceUpdate{
+			ResourceVersion: "1_1",
+			Update: &metadatapb.ResourceUpdate_PodUpdate{
+				PodUpdate: &metadatapb.PodUpdate{
+					UID:              "ijkl",
+					Name:             "object_md",
+					Namespace:        "",
+					StartTimestampNS: 4,
+					StopTimestampNS:  6,
+					QOSClass:         metadatapb.QOS_CLASS_BURSTABLE,
+					ContainerIDs:     []string{"test"},
+					ContainerNames:   []string{"container1"},
+					Phase:            metadatapb.RUNNING,
+					Conditions: []*metadatapb.PodCondition{
+						&metadatapb.PodCondition{
+							Type:   metadatapb.READY,
+							Status: metadatapb.STATUS_TRUE,
+						},
+					},
+					NodeName: "test",
+					Hostname: "hostname",
+					PodIP:    "",
+					HostIP:   "127.0.0.5",
+					Message:  "this is message",
+					Reason:   "this is reason",
+				},
+			},
+		},
+		Topics: []string{"127.0.0.5", controllers.KelvinUpdateChannel},
+	}
+	assert.Contains(t, updates, podUpdate)
 }
 
 func TestNodeUpdateProcessor_SetDeleted(t *testing.T) {
@@ -507,10 +667,17 @@ func TestNodeUpdateProcessor_ValidateUpdate(t *testing.T) {
 	// Construct node object.
 	o := createNodeObject()
 
-	state := &controllers.ProcessorState{}
+	state := &controllers.ProcessorState{NodeToIP: make(map[string]string)}
 	p := controllers.NodeUpdateProcessor{}
 	resp := p.ValidateUpdate(o, state)
 	assert.True(t, resp)
+	assert.Equal(t, 0, len(state.NodeToIP))
+
+	o.ObjectMeta.DeletionTimestamp = nil
+	resp = p.ValidateUpdate(o, state)
+	assert.True(t, resp)
+	assert.Equal(t, 1, len(state.NodeToIP))
+	assert.Equal(t, "test_addr", state.NodeToIP["object_md"])
 }
 
 func TestNodeUpdateProcessor_GetStoredProtos(t *testing.T) {
@@ -549,7 +716,7 @@ func TestNodeUpdateProcessor_GetStoredProtos(t *testing.T) {
 					Phase: metadatapb.NODE_PHASE_RUNNING,
 					Addresses: []*metadatapb.NodeAddress{
 						&metadatapb.NodeAddress{
-							Type:    metadatapb.NODE_ADDR_TYPE_EXTERNAL_IP,
+							Type:    metadatapb.NODE_ADDR_TYPE_INTERNAL_IP,
 							Address: "test_addr",
 						},
 					},
@@ -557,6 +724,16 @@ func TestNodeUpdateProcessor_GetStoredProtos(t *testing.T) {
 			},
 		},
 	}, updates[0])
+}
+
+func TestNodeUpdateProcessor_GetUpdatesToSend(t *testing.T) {
+	// Construct node object.
+	o := createNodeObject()
+
+	state := &controllers.ProcessorState{}
+	p := controllers.NodeUpdateProcessor{}
+	updates := p.GetUpdatesToSend(o, state)
+	assert.Equal(t, 0, len(updates))
 }
 
 func TestNamespaceUpdateProcessor_SetDeleted(t *testing.T) {
@@ -615,4 +792,36 @@ func TestNamespaceUpdateProcessor_GetStoredProtos(t *testing.T) {
 			},
 		},
 	}, updates[0])
+}
+
+func TestNamespaceUpdateProcessor_GetUpdatesToSend(t *testing.T) {
+	// Construct namespace object.
+	o := createNamespaceObject()
+
+	state := &controllers.ProcessorState{NodeToIP: map[string]string{
+		"node-1": "127.0.0.1",
+		"node-2": "127.0.0.2",
+	}}
+	p := controllers.NamespaceUpdateProcessor{}
+	updates := p.GetUpdatesToSend(o, state)
+	assert.Equal(t, 1, len(updates))
+
+	nsUpdate := &controllers.OutgoingUpdate{
+		Update: &metadatapb.ResourceUpdate{
+			ResourceVersion: "1",
+			Update: &metadatapb.ResourceUpdate_NamespaceUpdate{
+				NamespaceUpdate: &metadatapb.NamespaceUpdate{
+					UID:              "ijkl",
+					Name:             "object_md",
+					StartTimestampNS: 4,
+					StopTimestampNS:  6,
+				},
+			},
+		},
+		Topics: []string{controllers.KelvinUpdateChannel, "127.0.0.1", "127.0.0.2"},
+	}
+	assert.Equal(t, nsUpdate.Update, updates[0].Update)
+	assert.Contains(t, updates[0].Topics, controllers.KelvinUpdateChannel)
+	assert.Contains(t, updates[0].Topics, "127.0.0.1")
+	assert.Contains(t, updates[0].Topics, "127.0.0.2")
 }
