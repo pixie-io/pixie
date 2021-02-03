@@ -20,6 +20,7 @@ pl_cc_library(
     ),
     deps = [
         "//src/stirling/source_connectors/socket_tracer/protocols/common:cc_library",
+        "//src/common/json:cc_library",
     ],
 )
 

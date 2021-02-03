@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "src/common/base/types.h"
 #include "src/common/base/utils.h"
 
 namespace pl {
@@ -106,6 +107,45 @@ std::string ToJSONString(const T& x) {
   obj.Accept(writer);
   return sb.GetString();
 }
+
+/*
+ * Exposes a limited set of APIs to build JSON string, with mixed data structures; which could not
+ * be processed by the above ToJSONString().
+ */
+class JSONObjectBuilder {
+ public:
+  JSONObjectBuilder() : object_ended_{false}, buffer_{}, writer_{buffer_} { writer_.StartObject(); }
+
+  // Closes JSON object and return the string.
+  std::string GetString() {
+    object_ended_ = true;
+    writer_.EndObject();
+    return buffer_.GetString();
+  }
+
+  // Writes a key-value pair.
+  void WriteKV(std::string_view key, std::string_view value) {
+    DCHECK(!object_ended_);
+    writer_.String(key.data(), key.size());
+    writer_.String(value.data(), value.size());
+  }
+
+  // Writes a key and array value pair.
+  void WriteKV(std::string_view key, VectorView<std::string_view> value) {
+    DCHECK(!object_ended_);
+    writer_.String(key.data(), key.size());
+    writer_.StartArray();
+    for (auto v : value) {
+      writer_.String(v.data(), v.size());
+    }
+    writer_.EndArray();
+  }
+
+ private:
+  bool object_ended_;
+  rapidjson::StringBuffer buffer_;
+  rapidjson::Writer<rapidjson::StringBuffer> writer_;
+};
 
 }  // namespace utils
 }  // namespace pl

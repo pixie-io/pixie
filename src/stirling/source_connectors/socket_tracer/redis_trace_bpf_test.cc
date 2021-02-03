@@ -94,11 +94,11 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
   redis_trace_records.erase(redis_trace_records.begin());
 
   EXPECT_THAT(redis_trace_records,
-              ElementsAre(RedisTraceRecord{"SET", R"(["foo", "100"])", R"("OK")"},
-                          RedisTraceRecord{"BITCOUNT", R"(["foo", "0", "0"])", "3"},
-                          RedisTraceRecord{"INCR", R"(["foo"])", "101"},
-                          RedisTraceRecord{"APPEND", R"(["foo", "xxx"])", "6"},
-                          RedisTraceRecord{"GET", R"(["foo"])", R"("101xxx")"}));
+              ElementsAre(RedisTraceRecord{"SET", R"(["foo","100"])", "OK"},
+                          RedisTraceRecord{"BITCOUNT", R"(["foo","0","0"])", "3"},
+                          RedisTraceRecord{"INCR", R"({"key":"foo"})", "101"},
+                          RedisTraceRecord{"APPEND", R"({"key":"foo","value":"xxx"})", "6"},
+                          RedisTraceRecord{"GET", R"({"key":"foo"})", "101xxx"}));
 }
 
 // Verifies that pub/sub commands can be traced correctly.
@@ -129,8 +129,8 @@ TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
   redis_trace_records.erase(redis_trace_records.begin());
 
   EXPECT_THAT(redis_trace_records,
-              ElementsAre(RedisTraceRecord{"PUBLISH", R"(["foo", "test"])", "1"},
-                          RedisTraceRecord{"PUSH PUB", "", R"(["message", "foo", "test"])"}));
+              ElementsAre(RedisTraceRecord{"PUBLISH", R"({"channel":"foo","message":"test"})", "1"},
+                          RedisTraceRecord{"PUSH PUB", "", R"(["message","foo","test"])"}));
   sub_proc.Kill();
   EXPECT_EQ(9, sub_proc.Wait()) << "Client should be killed";
 }
@@ -161,11 +161,11 @@ TEST_P(RedisTraceBPFTest, VerifyCommand) {
 INSTANTIATE_TEST_SUITE_P(
     Commands, RedisTraceBPFTest,
     // Add new commands here.
-    ::testing::Values(RedisTraceTestCase{"lpush ilist 100", "LPUSH", R"(["ilist", "100"])", "1"},
-                      RedisTraceTestCase{"rpush ilist 200", "RPUSH", R"(["ilist", "200"])", "1"},
-                      RedisTraceTestCase{"lrange ilist 0 1", "LRANGE", R"(["ilist", "0", "1"])",
-                                         "[]"},
-                      RedisTraceTestCase{"flushall", "FLUSHALL", R"([])", R"("OK")"}));
+    ::testing::Values(RedisTraceTestCase{"lpush ilist 100", "LPUSH", R"(["ilist","100"])", "1"},
+                      RedisTraceTestCase{"rpush ilist 200", "RPUSH", R"(["ilist","200"])", "1"},
+                      RedisTraceTestCase{"lrange ilist 0 1", "LRANGE",
+                                         R"({"key":"ilist","start":"0","stop":"1"})", "[]"},
+                      RedisTraceTestCase{"flushall", "FLUSHALL", "[]", "OK"}));
 
 }  // namespace stirling
 }  // namespace pl

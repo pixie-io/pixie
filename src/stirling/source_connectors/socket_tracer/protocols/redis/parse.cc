@@ -1,5 +1,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/redis/parse.h"
 
+#include <initializer_list>
+#include <map>
 #include <optional>
 #include <string>
 #include <utility>
@@ -8,6 +10,7 @@
 #include <absl/container/flat_hash_map.h>
 
 #include "src/common/base/base.h"
+#include "src/common/json/json.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/redis/types.h"
 #include "src/stirling/utils/binary_decoder.h"
 
@@ -18,6 +21,9 @@ namespace redis {
 
 namespace {
 
+using ::pl::utils::JSONObjectBuilder;
+using ::pl::utils::ToJSONString;
+
 constexpr char kSimpleStringMarker = '+';
 constexpr char kErrorMarker = '-';
 constexpr char kIntegerMarker = ':';
@@ -27,11 +33,110 @@ constexpr char kArrayMarker = '*';
 constexpr std::string_view kTerminalSequence = "\r\n";
 constexpr int kNullSize = -1;
 
+// Formats the input arguments as JSON array.
+static std::string FormatAsJSONArray(VectorView<std::string> args) {
+  std::vector<std::string_view> args_copy = {args.begin(), args.end()};
+  return ToJSONString(args_copy);
+}
+
+// Describes the arguments of a Redis command.
+class CmdArgs {
+ public:
+  // Allows convenient initialization of kCmdList below.
+  //
+  // TODO(yzhao): Let the :redis_cmds_format_generator and gen_redis_cmds.sh to statically produces
+  // the initialization code for kCmdList that fills in the command argument format as well.
+  CmdArgs(std::initializer_list<const char*> cmd_args) {
+    cmd_args_.insert(cmd_args_.end(), cmd_args.begin(), cmd_args.end());
+    // Uses ToJSONString() to produce [], instead of JSONObjectBuilder, which produces {} for empty
+    // list.
+    if (!cmd_args_.empty()) {
+      auto cmd_args_or = ParseArgDescs(cmd_args_);
+      if (cmd_args_or.ok()) {
+        cmd_arg_descs_ = cmd_args_or.ConsumeValueOrDie();
+      }
+    }
+  }
+
+  // Formats the input argument value based on this detected format of this command.
+  std::string FmtArgs(VectorView<std::string> args) const {
+    if (!cmd_arg_descs_.has_value()) {
+      return FormatAsJSONArray(args);
+    }
+    JSONObjectBuilder json_builder;
+    for (const auto& arg : cmd_arg_descs_.value()) {
+      if (!FmtArg(arg, &args, &json_builder).ok()) {
+        return FormatAsJSONArray(args);
+      }
+    }
+    return json_builder.GetString();
+  }
+
+ private:
+  // Describes the format of a single Redis command argument.
+  enum class Format {
+    // This argument value must be specified, therefore the simplest to format.
+    kFixed,
+  };
+
+  // Describes a single argument.
+  struct ArgDesc {
+    std::string_view name;
+    Format format;
+  };
+
+  // An argument name is composed of all lower-case letters.
+  static bool IsFixedArg(std::string_view arg_name) {
+    for (char c : arg_name) {
+      if (!islower(c)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Detects the arguments format of the input argument names specification.
+  // See https://redis.io/commands
+  static StatusOr<std::vector<ArgDesc>> ParseArgDescs(
+      const std::vector<std::string_view>& arg_descs) {
+    std::vector<ArgDesc> args;
+    for (auto arg : arg_descs) {
+      if (IsFixedArg(arg)) {
+        args.push_back({arg, Format::kFixed});
+      } else {
+        return error::InvalidArgument("Invalid arguments format: $0",
+                                      absl::StrJoin(arg_descs, " "));
+      }
+    }
+    return args;
+  }
+
+  // Extracts arguments from the input argument values, and formats them according to the argument
+  // format.
+  static Status FmtArg(const ArgDesc& arg_desc, VectorView<std::string>* args,
+                       JSONObjectBuilder* json_builder) {
+    if (args->empty()) {
+      return error::InvalidArgument("No values for argument: $0:$1", arg_desc.name,
+                                    magic_enum::enum_name(arg_desc.format));
+    }
+    switch (arg_desc.format) {
+      case Format::kFixed:
+        json_builder->WriteKV(arg_desc.name, args->front());
+        args->pop_front();
+        break;
+    }
+    return Status::OK();
+  }
+
+  std::vector<std::string_view> cmd_args_;
+  std::optional<std::vector<ArgDesc>> cmd_arg_descs_;
+};
+
 // This list is produced with by:
 //   //src/stirling/source_connectors/socket_tracer/protocols/redis:redis_cmds_format_generator
 //
 //   Read its help message to get the instructions.
-const absl::flat_hash_map<std::string_view, std::vector<std::string_view>> kCmdList = {
+const absl::flat_hash_map<std::string_view, CmdArgs> kCmdList = {
     {"ACL LOAD", {}},
     {"ACL SAVE", {}},
     {"ACL LIST", {}},
@@ -385,22 +490,6 @@ StatusOr<int> ParseSize(BinaryDecoder* decoder) {
   return size;
 }
 
-constexpr std::string_view kQuotationMark = "\"";
-
-std::string Quote(std::string_view text) {
-  return absl::StrCat(kQuotationMark, text, kQuotationMark);
-}
-
-std::string_view Unquote(std::string_view text) {
-  if (text.size() < 2) {
-    return text;
-  }
-  if (!absl::StartsWith(text, kQuotationMark) || !absl::EndsWith(text, kQuotationMark)) {
-    return text;
-  }
-  return text.substr(1, text.size() - 2);
-}
-
 // Bulk string is formatted as <length>\r\n<actual string, up to 512MB>\r\n
 Status ParseBulkString(BinaryDecoder* decoder, Message* msg) {
   PL_ASSIGN_OR_RETURN(int len, ParseSize(decoder));
@@ -412,6 +501,8 @@ Status ParseBulkString(BinaryDecoder* decoder, Message* msg) {
 
   if (len == kNullSize) {
     constexpr std::string_view kNullBulkString = "<NULL>";
+    // TODO(yzhao): This appears wrong, as Redis has NULL value, here "<NULL>" is presented as
+    // a string. ATM don't know how to output NULL value in Rapidjson. Research and update this.
     msg->payload = kNullBulkString;
     return Status::OK();
   }
@@ -422,38 +513,46 @@ Status ParseBulkString(BinaryDecoder* decoder, Message* msg) {
     return error::InvalidArgument("Bulk string should be terminated by '$0'", kTerminalSequence);
   }
   payload.remove_suffix(kTerminalSequence.size());
-  msg->payload = Quote(payload);
+  msg->payload = payload;
   return Status::OK();
 }
 
-std::optional<std::string_view> GetCommand(std::string_view payload) {
+// Holds the command name and the description of its arguments.
+struct CmdAndArgs {
+  const std::string_view name;
+  const CmdArgs* args;
+};
+
+using CmdAndArgsPair = absl::flat_hash_map<std::string_view, CmdArgs>::value_type;
+
+std::optional<CmdAndArgs> GetCmdAndArgs(std::string_view payload) {
   auto iter = kCmdList.find(payload);
   if (iter != kCmdList.end()) {
-    return iter->first;
+    return CmdAndArgs{iter->first, &iter->second};
   }
   return std::nullopt;
 }
 
-std::optional<std::string_view> GetCommand(VectorView<std::string>* payloads) {
+std::optional<CmdAndArgs> GetCmdAndArgs(VectorView<std::string>* payloads) {
   if (payloads->empty()) {
     return std::nullopt;
   }
   // Search the double-words command first.
   if (payloads->size() >= 2) {
     std::string candidate_cmd =
-        absl::AsciiStrToUpper(absl::StrCat(Unquote((*payloads)[0]), " ", Unquote((*payloads)[1])));
-    auto cmd_opt = GetCommand(candidate_cmd);
-    if (cmd_opt.has_value()) {
+        absl::AsciiStrToUpper(absl::StrCat((*payloads)[0], " ", (*payloads)[1]));
+    auto res_opt = GetCmdAndArgs(candidate_cmd);
+    if (res_opt.has_value()) {
       payloads->pop_front(2);
-      return cmd_opt.value();
+      return res_opt;
     }
   }
-  std::string candidate_cmd = absl::AsciiStrToUpper(Unquote(payloads->front()));
-  auto cmd_opt = GetCommand(candidate_cmd);
-  if (cmd_opt.has_value()) {
+  std::string candidate_cmd = absl::AsciiStrToUpper(payloads->front());
+  auto res_opt = GetCmdAndArgs(candidate_cmd);
+  if (res_opt.has_value()) {
     payloads->pop_front(1);
   }
-  return cmd_opt;
+  return res_opt;
 }
 
 bool IsPubMsg(const std::vector<std::string>& payloads) {
@@ -463,14 +562,14 @@ bool IsPubMsg(const std::vector<std::string>& payloads) {
     return false;
   }
   constexpr std::string_view kMessageStr = "MESSAGE";
-  if (absl::AsciiStrToUpper(Unquote(payloads.front())) != kMessageStr) {
+  if (absl::AsciiStrToUpper(payloads.front()) != kMessageStr) {
     return false;
   }
   return true;
 }
 
-// This calls ParseMessage(), which eventually calls ParseArray() and are both recursive functions.
-// This is because Array message can include nested array messages.
+// This calls ParseMessage(), which eventually calls ParseArray() and are both recursive
+// functions. This is because Array message can include nested array messages.
 Status ParseArray(MessageType type, BinaryDecoder* decoder, Message* msg);
 
 Status ParseMessage(MessageType type, BinaryDecoder* decoder, Message* msg) {
@@ -479,7 +578,7 @@ Status ParseMessage(MessageType type, BinaryDecoder* decoder, Message* msg) {
   switch (type_marker) {
     case kSimpleStringMarker: {
       PL_ASSIGN_OR_RETURN(std::string_view str, decoder->ExtractStringUntil(kTerminalSequence));
-      msg->payload = Quote(str);
+      msg->payload = str;
       break;
     }
     case kBulkStringsMarker: {
@@ -488,7 +587,7 @@ Status ParseMessage(MessageType type, BinaryDecoder* decoder, Message* msg) {
     }
     case kErrorMarker: {
       PL_ASSIGN_OR_RETURN(std::string_view str, decoder->ExtractStringUntil(kTerminalSequence));
-      msg->payload = Quote(str);
+      msg->payload = str;
       break;
     }
     case kIntegerMarker: {
@@ -529,10 +628,16 @@ Status ParseArray(MessageType type, BinaryDecoder* decoder, Message* msg) {
   // Redis wire protocol said requests are array consisting of bulk strings:
   // https://redis.io/topics/protocol#sending-commands-to-a-redis-server
   if (type == MessageType::kRequest) {
-    msg->command = GetCommand(&payloads_view).value_or(std::string_view{});
+    std::optional<CmdAndArgs> cmd_and_args_opt = GetCmdAndArgs(&payloads_view);
+    if (cmd_and_args_opt.has_value()) {
+      msg->command = cmd_and_args_opt.value().name;
+      msg->payload = cmd_and_args_opt.value().args->FmtArgs(payloads_view);
+    } else {
+      msg->payload = FormatAsJSONArray(payloads_view);
+    }
+  } else {
+    msg->payload = FormatAsJSONArray(payloads_view);
   }
-
-  msg->payload = absl::StrCat("[", absl::StrJoin(payloads_view, ", "), "]");
 
   if (type == MessageType::kResponse && IsPubMsg(payloads)) {
     msg->is_published_message = true;

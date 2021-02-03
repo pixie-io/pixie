@@ -1,6 +1,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/redis/parse.h"
 
 #include <string>
+#include <vector>
 
 #include "src/common/testing/testing.h"
 
@@ -15,14 +16,24 @@ using ::testing::StrEq;
 constexpr std::string_view kSimpleStringMsg = "+OK\r\n";
 constexpr std::string_view kErrorMsg = "-Error message\r\n";
 constexpr std::string_view kBulkStringMsg = "$11\r\nbulk string\r\n";
+constexpr std::string_view kEmptyBulkStringMsg = "$0\r\n\r\n";
+constexpr std::string_view kNullBulkStringMsg = "$-1\r\n";
 constexpr std::string_view kArrayMsg = "*3\r\n+OK\r\n-Error message\r\n$11\r\nbulk string\r\n";
+constexpr std::string_view kNullElemInArrayMsg = "*1\r\n$-1\r\n";
+constexpr std::string_view kNullArrayMsg = "*-1\r\n";
+constexpr std::string_view kEmptyArrayMsg = "*0\r\n";
 constexpr std::string_view kCmdMsg = "*2\r\n+ACL\r\n+LOAD\r\n";
 constexpr std::string_view kPubMsg = "*3\r\n$7\r\nmessage\r\n$3\r\nfoo\r\n$4\r\ntest\r\n";
+constexpr std::string_view kAppendMsg = "*3\r\n$6\r\nappend\r\n$3\r\nfoo\r\n$3\r\nbar\r\n";
+constexpr std::string_view kAclGetuserMsg = "*2\r\n$11\r\nacl getuser\r\n$4\r\nuser\r\n";
+constexpr std::string_view kBrpopLPushMsg =
+    "*4\r\n$10\r\nbrpoplpush\r\n$3\r\nsrc\r\n$4\r\ndest\r\n:10\r\n";
 
 struct WellFormedTestCase {
   std::string_view input;
   std::string_view expected_payload;
   std::string_view expected_command;
+  std::vector<MessageType> types_to_test = {MessageType::kRequest, MessageType::kResponse};
 };
 
 std::ostream& operator<<(std::ostream& os, const WellFormedTestCase& test_case) {
@@ -39,26 +50,40 @@ std::ostream& operator<<(std::ostream& os, ParseState state) {
 class ParseTest : public ::testing::TestWithParam<WellFormedTestCase> {};
 
 TEST_P(ParseTest, ResultsAreAsExpected) {
-  std::string_view req = GetParam().input;
-  Message msg;
+  for (MessageType type : GetParam().types_to_test) {
+    std::string_view req = GetParam().input;
+    Message msg;
 
-  EXPECT_EQ(ParseMessage(MessageType::kRequest, &req, &msg), ParseState::kSuccess);
-  EXPECT_THAT(req, IsEmpty());
-  EXPECT_THAT(msg.payload, StrEq(std::string(GetParam().expected_payload)));
-  EXPECT_THAT(std::string(msg.command), StrEq(std::string(GetParam().expected_command)));
+    EXPECT_EQ(ParseMessage(type, &req, &msg), ParseState::kSuccess);
+    EXPECT_THAT(req, IsEmpty());
+    EXPECT_THAT(msg.payload, StrEq(std::string(GetParam().expected_payload)));
+    EXPECT_THAT(std::string(msg.command), StrEq(std::string(GetParam().expected_command)));
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(
     AllDataTypes, ParseTest,
     ::testing::Values(
-        WellFormedTestCase{kSimpleStringMsg, R"("OK")", ""},
-        WellFormedTestCase{kErrorMsg, R"("Error message")", ""},
-        WellFormedTestCase{kBulkStringMsg, R"("bulk string")", ""},
-        WellFormedTestCase{"$0\r\n\r\n", R"("")", ""}, WellFormedTestCase{"$-1\r\n", "<NULL>", ""},
-        WellFormedTestCase{kArrayMsg, R"(["OK", "Error message", "bulk string"])", ""},
-        WellFormedTestCase{kCmdMsg, R"([])", "ACL LOAD"},
-        WellFormedTestCase{"*1\r\n$-1\r\n", "[<NULL>]", ""},
-        WellFormedTestCase{"*-1\r\n", "[NULL]", ""}, WellFormedTestCase{"*0\r\n", "[]", ""}));
+        // clang-format off
+        WellFormedTestCase{kSimpleStringMsg, "OK", ""},
+        WellFormedTestCase{kErrorMsg, "Error message", ""},
+        WellFormedTestCase{kBulkStringMsg, "bulk string", ""},
+        WellFormedTestCase{kEmptyBulkStringMsg, "", ""},
+        WellFormedTestCase{kNullBulkStringMsg, "<NULL>", ""},
+        WellFormedTestCase{kArrayMsg, R"(["OK","Error message","bulk string"])", ""},
+        WellFormedTestCase{kCmdMsg, R"([])", "ACL LOAD", {MessageType::kRequest}},
+        WellFormedTestCase{kNullElemInArrayMsg, R"(["<NULL>"])", ""},
+        WellFormedTestCase{kNullArrayMsg, "[NULL]", ""},
+        WellFormedTestCase{kEmptyArrayMsg, "[]", ""},
+        WellFormedTestCase{kAppendMsg, R"({"key":"foo","value":"bar"})", "APPEND",
+                           {MessageType::kRequest}},
+        WellFormedTestCase{kAclGetuserMsg, R"({"username":"user"})", "ACL GETUSER",
+                           {MessageType::kRequest}},
+        WellFormedTestCase{kBrpopLPushMsg,
+                           R"({"source":"src","destination":"dest","timeout":"10"})",
+                           "BRPOPLPUSH",
+                           {MessageType::kRequest}}));
+// clang-format on
 
 TEST(ParsePubMsgTest, DetectPublishedMessage) {
   std::string_view resp = kPubMsg;
@@ -66,7 +91,7 @@ TEST(ParsePubMsgTest, DetectPublishedMessage) {
 
   EXPECT_EQ(ParseMessage(MessageType::kResponse, &resp, &msg), ParseState::kSuccess);
   EXPECT_THAT(resp, IsEmpty());
-  EXPECT_THAT(msg.payload, StrEq(R"(["message", "foo", "test"])"));
+  EXPECT_THAT(msg.payload, StrEq(R"(["message","foo","test"])"));
   EXPECT_TRUE(msg.is_published_message);
 }
 

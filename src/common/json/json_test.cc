@@ -50,6 +50,20 @@ TEST(ToJSONStringTest, Nested) {
       StrEq(R"({"Canada":["Toronto","Montreal","Vancouver"],"USA":["New York","San Francisco"]})"));
 }
 
+// Tests that JSONObjectBuilder APIs work as expected.
+TEST(JSONBuilderTest, ResultsAreAsExpected) {
+  JSONObjectBuilder builder;
+
+  builder.WriteKV("year", "2013");
+  builder.WriteKV("league", "national");
+
+  std::vector<std::string_view> names = {"bob", "jack"};
+  builder.WriteKV("team", VectorView<std::string_view>(names));
+
+  EXPECT_THAT(builder.GetString(),
+              StrEq(R"({"year":"2013","league":"national","team":["bob","jack"]})"));
+}
+
 // Note: if making a test using std::unordered_map, ensure that the test is robust to ordering.
 
 }  // namespace utils
