@@ -331,16 +331,15 @@ func TestEndpointsUpdateProcessor_GetStoredProtos(t *testing.T) {
 	}
 
 	// Check that the generated store proto matches expected.
-	updates, rvs := p.GetStoredProtos(o)
+	updates := p.GetStoredProtos(o)
 	assert.Equal(t, 1, len(updates))
-	assert.Equal(t, 1, len(rvs))
 
-	assert.Equal(t, "1", rvs[0])
+	assert.Equal(t, "1", updates[0].ResourceVersion)
 	assert.Equal(t, &storepb.K8SResource{
 		Resource: &storepb.K8SResource_Endpoints{
 			Endpoints: expectedPb,
 		},
-	}, updates[0])
+	}, updates[0].Update)
 }
 
 func TestEndpointsUpdateProcessor_GetUpdatesToSend(t *testing.T) {
@@ -493,16 +492,15 @@ func TestServiceUpdateProcessor_GetStoredProtos(t *testing.T) {
 	}
 
 	// Check that the generated store proto matches expected.
-	updates, rvs := p.GetStoredProtos(o)
+	updates := p.GetStoredProtos(o)
 	assert.Equal(t, 1, len(updates))
-	assert.Equal(t, 1, len(rvs))
 
-	assert.Equal(t, "1", rvs[0])
+	assert.Equal(t, "1", updates[0].ResourceVersion)
 	assert.Equal(t, &storepb.K8SResource{
 		Resource: &storepb.K8SResource_Service{
 			Service: expectedPb,
 		},
-	}, updates[0])
+	}, updates[0].Update)
 }
 
 func TestServiceUpdateProcessor_GetUpdatesToSend(t *testing.T) {
@@ -562,30 +560,34 @@ func TestPodUpdateProcessor_GetStoredProtos(t *testing.T) {
 	}
 
 	// Check that the generated store proto matches expected.
-	updates, rvs := p.GetStoredProtos(o)
+	updates := p.GetStoredProtos(o)
 	assert.Equal(t, 2, len(updates))
-	assert.Equal(t, 2, len(rvs))
 
-	assert.Equal(t, "1_0", rvs[0])
-	assert.Equal(t, &storepb.K8SResource{
-		Resource: &storepb.K8SResource_Container{
-			Container: &metadatapb.ContainerUpdate{
-				CID:            "test",
-				Name:           "container1",
-				PodID:          "ijkl",
-				PodName:        "object_md",
-				ContainerState: metadatapb.CONTAINER_STATE_WAITING,
-				Message:        "container state message",
-				Reason:         "container state reason",
+	assert.Contains(t, updates, &controllers.StoredUpdate{
+		Update: &storepb.K8SResource{
+			Resource: &storepb.K8SResource_Container{
+				Container: &metadatapb.ContainerUpdate{
+					CID:            "test",
+					Name:           "container1",
+					PodID:          "ijkl",
+					PodName:        "object_md",
+					ContainerState: metadatapb.CONTAINER_STATE_WAITING,
+					Message:        "container state message",
+					Reason:         "container state reason",
+				},
 			},
 		},
-	}, updates[0])
-	assert.Equal(t, "1_1", rvs[1])
-	assert.Equal(t, &storepb.K8SResource{
-		Resource: &storepb.K8SResource_Pod{
-			Pod: expectedPb,
+		ResourceVersion: "1_0",
+	})
+
+	assert.Contains(t, updates, &controllers.StoredUpdate{
+		Update: &storepb.K8SResource{
+			Resource: &storepb.K8SResource_Pod{
+				Pod: expectedPb,
+			},
 		},
-	}, updates[1])
+		ResourceVersion: "1_1",
+	})
 }
 
 func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
@@ -686,11 +688,10 @@ func TestNodeUpdateProcessor_GetStoredProtos(t *testing.T) {
 
 	p := controllers.NodeUpdateProcessor{}
 	// Check that the generated store proto matches expected.
-	updates, rvs := p.GetStoredProtos(o)
+	updates := p.GetStoredProtos(o)
 	assert.Equal(t, 1, len(updates))
-	assert.Equal(t, 1, len(rvs))
 
-	assert.Equal(t, "1", rvs[0])
+	assert.Equal(t, "1", updates[0].ResourceVersion)
 	assert.Equal(t, &storepb.K8SResource{
 		Resource: &storepb.K8SResource_Node{
 			Node: &metadatapb.Node{
@@ -723,7 +724,7 @@ func TestNodeUpdateProcessor_GetStoredProtos(t *testing.T) {
 				},
 			},
 		},
-	}, updates[0])
+	}, updates[0].Update)
 }
 
 func TestNodeUpdateProcessor_GetUpdatesToSend(t *testing.T) {
@@ -766,11 +767,10 @@ func TestNamespaceUpdateProcessor_GetStoredProtos(t *testing.T) {
 	p := controllers.NamespaceUpdateProcessor{}
 
 	// Check that the generated store proto matches expected.
-	updates, rvs := p.GetStoredProtos(o)
+	updates := p.GetStoredProtos(o)
 	assert.Equal(t, 1, len(updates))
-	assert.Equal(t, 1, len(rvs))
 
-	assert.Equal(t, "1", rvs[0])
+	assert.Equal(t, "1", updates[0].ResourceVersion)
 	assert.Equal(t, &storepb.K8SResource{
 		Resource: &storepb.K8SResource_Namespace{
 			Namespace: &metadatapb.Namespace{
@@ -791,7 +791,7 @@ func TestNamespaceUpdateProcessor_GetStoredProtos(t *testing.T) {
 				},
 			},
 		},
-	}, updates[0])
+	}, updates[0].Update)
 }
 
 func TestNamespaceUpdateProcessor_GetUpdatesToSend(t *testing.T) {

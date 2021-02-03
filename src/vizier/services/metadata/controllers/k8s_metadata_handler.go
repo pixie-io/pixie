@@ -40,6 +40,14 @@ type OutgoingUpdate struct {
 	Topics []string
 }
 
+// StoredUpdate is a K8s resource update that should be persisted with its resource version.
+type StoredUpdate struct {
+	// Update is the resource update that should be stored.
+	Update *storepb.K8SResource
+	// ResourceVersion is the resource version of the update.
+	ResourceVersion string
+}
+
 // K8sMetadataStore handles storing and fetching any data related to K8s resources.
 type K8sMetadataStore interface {
 	// AddResourceUpdates stores the given resource with its associated resourceVersion for 24h.
@@ -58,7 +66,7 @@ type UpdateProcessor interface {
 	ValidateUpdate(runtime.Object, *ProcessorState) bool
 	// GetStoredProtos gets the protos that should be persisted in the data store, derived from
 	// the given update.
-	GetStoredProtos(runtime.Object) (updates []*storepb.K8SResource, resourceVersions []string)
+	GetStoredProtos(runtime.Object) (updates []*StoredUpdate)
 	// GetUpdatesToSend gets all of the updates that should be sent to the agents, along with the relevant IPs that
 	// the updates should be sent to. If the IP is empty, this means the update should be sent to all known IPs, including
 	// kelvin.
@@ -143,12 +151,12 @@ func (m *K8sMetadataHandler) processUpdates() {
 				continue
 			}
 			// Persist the update in the data store.
-			updates, rvs := processor.GetStoredProtos(update)
+			updates := processor.GetStoredProtos(update)
 			if updates == nil {
 				continue
 			}
-			for i, rv := range rvs {
-				err := m.mds.AddResourceUpdate(rv, updates[i])
+			for _, u := range updates {
+				err := m.mds.AddResourceUpdate(u.ResourceVersion, u.Update)
 				if err != nil {
 					log.WithError(err).Error("Failed to store resource update")
 					continue
@@ -223,19 +231,24 @@ func (p *EndpointsUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Pro
 }
 
 // GetStoredProtos gets the update protos that should be persisted.
-func (p *EndpointsUpdateProcessor) GetStoredProtos(obj runtime.Object) ([]*storepb.K8SResource, []string) {
+func (p *EndpointsUpdateProcessor) GetStoredProtos(obj runtime.Object) []*StoredUpdate {
 	e := obj.(*v1.Endpoints)
 
 	pb, err := protoutils.EndpointsToProto(e)
 	if err != nil {
-		return nil, nil
+		return nil
 	}
 	storedUpdate := &storepb.K8SResource{
 		Resource: &storepb.K8SResource_Endpoints{
 			Endpoints: pb,
 		},
 	}
-	return []*storepb.K8SResource{storedUpdate}, []string{pb.Metadata.ResourceVersion}
+	return []*StoredUpdate{
+		&StoredUpdate{
+			Update:          storedUpdate,
+			ResourceVersion: pb.Metadata.ResourceVersion,
+		},
+	}
 }
 
 // GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
@@ -314,19 +327,24 @@ func (p *ServiceUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Proce
 }
 
 // GetStoredProtos gets the update protos that should be persisted.
-func (p *ServiceUpdateProcessor) GetStoredProtos(obj runtime.Object) ([]*storepb.K8SResource, []string) {
+func (p *ServiceUpdateProcessor) GetStoredProtos(obj runtime.Object) []*StoredUpdate {
 	e := obj.(*v1.Service)
 
 	pb, err := protoutils.ServiceToProto(e)
 	if err != nil {
-		return nil, nil
+		return nil
 	}
 	storedUpdate := &storepb.K8SResource{
 		Resource: &storepb.K8SResource_Service{
 			Service: pb,
 		},
 	}
-	return []*storepb.K8SResource{storedUpdate}, []string{pb.Metadata.ResourceVersion}
+	return []*StoredUpdate{
+		&StoredUpdate{
+			Update:          storedUpdate,
+			ResourceVersion: pb.Metadata.ResourceVersion,
+		},
+	}
 }
 
 func (p *ServiceUpdateProcessor) updateServiceCIDR(svc *v1.Service, state *ProcessorState) {
@@ -389,36 +407,39 @@ func (p *PodUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Processor
 }
 
 // GetStoredProtos gets the update protos that should be persisted.
-func (p *PodUpdateProcessor) GetStoredProtos(obj runtime.Object) ([]*storepb.K8SResource, []string) {
+func (p *PodUpdateProcessor) GetStoredProtos(obj runtime.Object) []*StoredUpdate {
 	e := obj.(*v1.Pod)
 
-	var updates []*storepb.K8SResource
-	var resourceVersions []string
+	var updates []*StoredUpdate
 
 	pb, err := protoutils.PodToProto(e)
 	if err != nil {
-		return updates, resourceVersions
+		return updates
 	}
 
 	// Also store container updates. These are saved and sent as separate updates.
 	containerUpdates := GetContainerUpdatesFromPod(pb)
 	for i := range containerUpdates {
-		updates = append(updates, &storepb.K8SResource{
-			Resource: &storepb.K8SResource_Container{
-				Container: containerUpdates[i],
+		updates = append(updates, &StoredUpdate{
+			Update: &storepb.K8SResource{
+				Resource: &storepb.K8SResource_Container{
+					Container: containerUpdates[i],
+				},
 			},
+			ResourceVersion: fmt.Sprintf("%s_%d", pb.Metadata.ResourceVersion, i),
 		})
-		resourceVersions = append(resourceVersions, fmt.Sprintf("%s_%d", pb.Metadata.ResourceVersion, i))
 	}
 
-	updates = append(updates, &storepb.K8SResource{
-		Resource: &storepb.K8SResource_Pod{
-			Pod: pb,
-		},
-	})
 	// The pod should have a later resource version than the containers, because the containers should be sent to an agent first.
-	resourceVersions = append(resourceVersions, fmt.Sprintf("%s_%d", pb.Metadata.ResourceVersion, len(containerUpdates)))
-	return updates, resourceVersions
+	updates = append(updates, &StoredUpdate{
+		Update: &storepb.K8SResource{
+			Resource: &storepb.K8SResource_Pod{
+				Pod: pb,
+			},
+		},
+		ResourceVersion: fmt.Sprintf("%s_%d", pb.Metadata.ResourceVersion, len(containerUpdates)),
+	})
+	return updates
 }
 
 func (p *PodUpdateProcessor) updatePodCIDR(pod *v1.Pod, state *ProcessorState) {
@@ -509,19 +530,24 @@ func (p *NodeUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Processo
 }
 
 // GetStoredProtos gets the update protos that should be persisted.
-func (p *NodeUpdateProcessor) GetStoredProtos(obj runtime.Object) ([]*storepb.K8SResource, []string) {
+func (p *NodeUpdateProcessor) GetStoredProtos(obj runtime.Object) []*StoredUpdate {
 	e := obj.(*v1.Node)
 
 	pb, err := protoutils.NodeToProto(e)
 	if err != nil {
-		return nil, nil
+		return nil
 	}
 	storedUpdate := &storepb.K8SResource{
 		Resource: &storepb.K8SResource_Node{
 			Node: pb,
 		},
 	}
-	return []*storepb.K8SResource{storedUpdate}, []string{pb.Metadata.ResourceVersion}
+	return []*StoredUpdate{
+		&StoredUpdate{
+			Update:          storedUpdate,
+			ResourceVersion: pb.Metadata.ResourceVersion,
+		},
+	}
 }
 
 // GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
@@ -554,19 +580,24 @@ func (p *NamespaceUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Pro
 }
 
 // GetStoredProtos gets the update protos that should be persisted.
-func (p *NamespaceUpdateProcessor) GetStoredProtos(obj runtime.Object) ([]*storepb.K8SResource, []string) {
+func (p *NamespaceUpdateProcessor) GetStoredProtos(obj runtime.Object) []*StoredUpdate {
 	e := obj.(*v1.Namespace)
 
 	pb, err := protoutils.NamespaceToProto(e)
 	if err != nil {
-		return nil, nil
+		return nil
 	}
 	storedUpdate := &storepb.K8SResource{
 		Resource: &storepb.K8SResource_Namespace{
 			Namespace: pb,
 		},
 	}
-	return []*storepb.K8SResource{storedUpdate}, []string{pb.Metadata.ResourceVersion}
+	return []*StoredUpdate{
+		&StoredUpdate{
+			Update:          storedUpdate,
+			ResourceVersion: pb.Metadata.ResourceVersion,
+		},
+	}
 }
 
 // GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
