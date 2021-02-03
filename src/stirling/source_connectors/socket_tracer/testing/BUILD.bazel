@@ -1,8 +1,8 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_test_library")
 
-pl_cc_library(
+pl_cc_test_library(
     name = "cc_library",
     srcs = glob(
         ["*.cc"],
@@ -10,5 +10,9 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/common/system:cc_library",
+        "//src/shared/types:cc_library",
+        "//src/stirling/source_connectors/socket_tracer:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http:cc_library",
+        "//src/stirling/testing:cc_library",
     ],
 )

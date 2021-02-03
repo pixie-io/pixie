@@ -32,8 +32,8 @@ MATCHER_P(ColWrapperSizeIs, size, absl::Substitute("is a ColumnWrapper having $0
 
 MATCHER(ColWrapperIsEmpty, "is an empty ColumnWrapper") { return arg->Empty(); }
 
-std::vector<size_t> FindRecordIdxMatchesPID(const types::ColumnWrapperRecordBatch& record,
-                                            int upid_column_idx, int pid) {
+inline std::vector<size_t> FindRecordIdxMatchesPID(const types::ColumnWrapperRecordBatch& record,
+                                                   int upid_column_idx, int pid) {
   std::vector<size_t> res;
   for (size_t i = 0; i < record[upid_column_idx]->Size(); ++i) {
     md::UPID upid(record[upid_column_idx]->Get<types::UInt128Value>(i).val);
@@ -44,8 +44,8 @@ std::vector<size_t> FindRecordIdxMatchesPID(const types::ColumnWrapperRecordBatc
   return res;
 }
 
-std::shared_ptr<types::ColumnWrapper> SelectColumnWrapperRows(const types::ColumnWrapper& src,
-                                                              const std::vector<size_t>& indices) {
+inline std::shared_ptr<types::ColumnWrapper> SelectColumnWrapperRows(
+    const types::ColumnWrapper& src, const std::vector<size_t>& indices) {
   auto out = types::ColumnWrapper::Make(src.data_type(), 0);
   out->Reserve(indices.size());
 
@@ -59,8 +59,8 @@ std::shared_ptr<types::ColumnWrapper> SelectColumnWrapperRows(const types::Colum
   return out;
 }
 
-types::ColumnWrapperRecordBatch SelectRecordBatchRows(const types::ColumnWrapperRecordBatch& src,
-                                                      const std::vector<size_t>& indices) {
+inline types::ColumnWrapperRecordBatch SelectRecordBatchRows(
+    const types::ColumnWrapperRecordBatch& src, const std::vector<size_t>& indices) {
   types::ColumnWrapperRecordBatch out;
   for (const auto& col : src) {
     out.push_back(SelectColumnWrapperRows(*col, indices));
@@ -69,26 +69,26 @@ types::ColumnWrapperRecordBatch SelectRecordBatchRows(const types::ColumnWrapper
   return out;
 }
 
-types::ColumnWrapperRecordBatch FindRecordsMatchingPID(const types::ColumnWrapperRecordBatch& rb,
-                                                       int upid_column_idx, int pid) {
+inline types::ColumnWrapperRecordBatch FindRecordsMatchingPID(
+    const types::ColumnWrapperRecordBatch& rb, int upid_column_idx, int pid) {
   std::vector<size_t> indices = FindRecordIdxMatchesPID(rb, upid_column_idx, pid);
   return SelectRecordBatchRows(rb, indices);
 }
 
 // Note the index is column major, so it comes before row_idx.
 template <typename TValueType>
-const TValueType& AccessRecordBatch(const types::ColumnWrapperRecordBatch& record_batch,
-                                    int column_idx, int row_idx) {
+inline const TValueType& AccessRecordBatch(const types::ColumnWrapperRecordBatch& record_batch,
+                                           int column_idx, int row_idx) {
   return record_batch[column_idx]->Get<TValueType>(row_idx);
 }
 
 template <>
-const std::string& AccessRecordBatch<std::string>(
+inline const std::string& AccessRecordBatch<std::string>(
     const types::ColumnWrapperRecordBatch& record_batch, int column_idx, int row_idx) {
   return record_batch[column_idx]->Get<types::StringValue>(row_idx);
 }
 
-md::UPID PIDToUPID(pid_t pid) {
+inline md::UPID PIDToUPID(pid_t pid) {
   system::ProcParser proc_parser(system::Config::GetInstance());
   return md::UPID{/*asid*/ 0, static_cast<uint32_t>(pid),
                   proc_parser.GetPIDStartTimeTicks(pid).ValueOrDie()};

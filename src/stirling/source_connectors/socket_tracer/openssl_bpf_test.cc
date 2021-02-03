@@ -13,6 +13,7 @@
 #include "src/shared/types/types.h"
 #include "src/stirling/core/data_table.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
@@ -21,19 +22,15 @@ namespace stirling {
 
 namespace http = protocols::http;
 
-using ::pl::stirling::testing::FindRecordIdxMatchesPID;
-using ::pl::stirling::testing::SocketTraceBPFTest;
 using ::pl::testing::BazelBinTestFilePath;
 using ::pl::testing::TestFilePath;
-using ::pl::types::ColumnWrapper;
-using ::pl::types::ColumnWrapperRecordBatch;
 
-using ::testing::AllOf;
-using ::testing::Eq;
-using ::testing::Field;
-using ::testing::IsEmpty;
-using ::testing::SizeIs;
-using ::testing::StrEq;
+using ::pl::stirling::testing::EqHTTPRecord;
+using ::pl::stirling::testing::FindRecordIdxMatchesPID;
+using ::pl::stirling::testing::GetTargetRecords;
+using ::pl::stirling::testing::SocketTraceBPFTest;
+using ::pl::stirling::testing::ToRecordVector;
+
 using ::testing::UnorderedElementsAre;
 
 class NginxOpenSSL_1_1_0_Container : public ContainerRunner {
@@ -106,48 +103,31 @@ using OpenSSL_1_1_0_TraceTest = OpenSSLTraceTest<NginxOpenSSL_1_1_0_Container>;
 using OpenSSL_1_1_1_TraceTest = OpenSSLTraceTest<NginxOpenSSL_1_1_1_Container>;
 
 //-----------------------------------------------------------------------------
-// Utility Functions and Matchers
-//-----------------------------------------------------------------------------
-
-std::vector<http::Record> ToRecordVector(const types::ColumnWrapperRecordBatch& rb,
-                                         const std::vector<size_t>& indices) {
-  std::vector<http::Record> result;
-
-  for (const auto& idx : indices) {
-    http::Record r;
-    r.req.req_path = rb[kHTTPReqPathIdx]->Get<types::StringValue>(idx);
-    r.req.minor_version = rb[kHTTPMinorVersionIdx]->Get<types::Int64Value>(idx).val;
-    r.resp.resp_status = rb[kHTTPRespStatusIdx]->Get<types::Int64Value>(idx).val;
-    r.req.resp_message = rb[kHTTPRespMessageIdx]->Get<types::StringValue>(idx);
-    result.push_back(r);
-  }
-  return result;
-}
-
-auto EqHTTPReq(const http::Message& x) {
-  return AllOf(Field(&http::Message::req_path, Eq(x.req_path)),
-               Field(&http::Message::minor_version, Eq(x.minor_version)));
-}
-
-auto EqHTTPResp(const http::Message& x) {
-  return AllOf(Field(&http::Message::resp_status, Eq(x.resp_status)));
-}
-
-auto EqHTTPRecord(const http::Record& x) {
-  return AllOf(Field(&http::Record::req, EqHTTPReq(x.req)),
-               Field(&http::Record::resp, EqHTTPResp(x.resp)));
-}
-
-//-----------------------------------------------------------------------------
 // Test Scenarios
 //-----------------------------------------------------------------------------
 
-std::vector<http::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch& record_batch,
-                                           int32_t pid) {
-  std::vector<size_t> target_record_indices =
-      FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, pid);
-  return ToRecordVector(record_batch, target_record_indices);
-}
+// The is the response to `GET /index.html`.
+std::string_view kNginxRespBody = R"(<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+    body {
+        width: 35em;
+        margin: 0 auto;
+        font-family: Tahoma, Verdana, Arial, sans-serif;
+    }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href... [TRUNCATED])";
 
 typedef ::testing::Types<NginxOpenSSL_1_1_0_Container, NginxOpenSSL_1_1_1_Container>
     NginxImplementations;
@@ -181,6 +161,15 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
       VLOG(1) << absl::Substitute("$0 $1", pid, req_path);
     }
 
+    http::Record expected_record;
+    expected_record.req.minor_version = 1;
+    expected_record.req.req_method = "GET";
+    expected_record.req.req_path = "/index.html";
+    expected_record.req.body = "";
+    expected_record.resp.resp_status = 200;
+    expected_record.resp.resp_message = "OK";
+    expected_record.resp.body = kNginxRespBody;
+
     // Check server-side tracing results.
     {
       // Nginx has a master process and a worker process. We need the PID of the worker process.
@@ -191,11 +180,6 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
       LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
 
       std::vector<http::Record> records = GetTargetRecords(record_batch, worker_pid);
-
-      http::Record expected_record;
-      expected_record.req.minor_version = 1;
-      expected_record.req.req_path = "/index.html";
-      expected_record.resp.resp_status = 200;
 
       EXPECT_THAT(records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
     }
@@ -241,6 +225,15 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
+    http::Record expected_record;
+    expected_record.req.minor_version = 1;
+    expected_record.req.req_method = "GET";
+    expected_record.req.req_path = "/index.html";
+    expected_record.req.body = "";
+    expected_record.resp.resp_status = 200;
+    expected_record.resp.resp_message = "OK";
+    expected_record.resp.body = kNginxRespBody;
+
     // Check server-side tracing results.
     {
       // Nginx has a master process and a worker process. We need the PID of the worker process.
@@ -251,11 +244,6 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
       LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
 
       std::vector<http::Record> records = GetTargetRecords(record_batch, worker_pid);
-
-      http::Record expected_record;
-      expected_record.req.minor_version = 1;
-      expected_record.req.req_path = "/index.html";
-      expected_record.resp.resp_status = 200;
 
       EXPECT_THAT(records,
                   UnorderedElementsAre(EqHTTPRecord(expected_record), EqHTTPRecord(expected_record),

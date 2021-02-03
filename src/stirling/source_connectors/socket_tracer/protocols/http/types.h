@@ -11,6 +11,9 @@ namespace stirling {
 namespace protocols {
 namespace http {
 
+// Automatically converts ToString() to stream operator for gtest.
+using ::pl::operator<<;
+
 //-----------------------------------------------------------------------------
 // HTTP Message
 //-----------------------------------------------------------------------------

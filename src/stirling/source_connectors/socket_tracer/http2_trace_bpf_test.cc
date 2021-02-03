@@ -6,6 +6,7 @@
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/core/output.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
@@ -14,17 +15,16 @@ namespace stirling {
 
 namespace http = protocols::http;
 
-using ::pl::stirling::testing::AccessRecordBatch;
-using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::testing::BazelBinTestFilePath;
 
-using ::testing::AllOf;
-using ::testing::Eq;
-using ::testing::Field;
+using ::pl::stirling::testing::AccessRecordBatch;
+using ::pl::stirling::testing::EqHTTPRecord;
+using ::pl::stirling::testing::FindRecordIdxMatchesPID;
+using ::pl::stirling::testing::ToRecordVector;
+
 using ::testing::Gt;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
-using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
 //-----------------------------------------------------------------------------
@@ -54,46 +54,6 @@ class GRPCClientContainer : public ContainerRunner {
   static constexpr std::string_view kInstanceNamePrefix = "grpc_client";
   static constexpr std::string_view kReadyMessage = "";
 };
-
-//-----------------------------------------------------------------------------
-// Result Checking: Helper Functions and Matchers
-//-----------------------------------------------------------------------------
-
-std::vector<http::Record> ToRecordVector(const types::ColumnWrapperRecordBatch& rb,
-                                         const std::vector<size_t>& indices) {
-  std::vector<http::Record> result;
-
-  for (const auto& idx : indices) {
-    http::Record r;
-    r.req.req_path = rb[kHTTPReqPathIdx]->Get<types::StringValue>(idx);
-    r.req.req_method = rb[kHTTPReqMethodIdx]->Get<types::StringValue>(idx);
-    r.req.body = rb[kHTTPReqBodyIdx]->Get<types::StringValue>(idx);
-
-    r.resp.resp_status = rb[kHTTPRespStatusIdx]->Get<types::Int64Value>(idx).val;
-    r.resp.resp_message = rb[kHTTPRespMessageIdx]->Get<types::StringValue>(idx);
-    r.resp.body = rb[kHTTPRespBodyIdx]->Get<types::StringValue>(idx);
-
-    result.push_back(r);
-  }
-  return result;
-}
-
-auto EqHTTPReq(const http::Message& x) {
-  return AllOf(Field(&http::Message::req_path, Eq(x.req_path)),
-               Field(&http::Message::req_method, StrEq(x.req_method)),
-               Field(&http::Message::body, StrEq(x.body)));
-}
-
-auto EqHTTPResp(const http::Message& x) {
-  return AllOf(Field(&http::Message::resp_status, Eq(x.resp_status)),
-               Field(&http::Message::resp_message, StrEq(x.resp_message)),
-               Field(&http::Message::body, StrEq(x.body)));
-}
-
-auto EqHTTPRecord(const http::Record& x) {
-  return AllOf(Field(&http::Record::req, EqHTTPReq(x.req)),
-               Field(&http::Record::resp, EqHTTPResp(x.resp)));
-}
 
 //-----------------------------------------------------------------------------
 // Test Class and Test Cases

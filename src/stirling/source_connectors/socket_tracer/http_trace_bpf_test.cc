@@ -9,16 +9,17 @@
 namespace pl {
 namespace stirling {
 
-using ::pl::types::ColumnWrapperRecordBatch;
-using ::testing::AllOf;
-using ::testing::AnyOf;
+namespace http = protocols::http;
+
+using ::pl::stirling::testing::SocketTraceBPFTest;
+
 using ::testing::ContainsRegex;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
-class GoHTTPTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {
+class GoHTTPTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false> {
  protected:
   GoHTTPTraceTest() : SocketTraceBPFTest() {}
 
