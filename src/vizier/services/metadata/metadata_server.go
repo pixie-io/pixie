@@ -207,7 +207,7 @@ func main() {
 
 	mdHandler.ProcessSubscriberUpdates()
 
-	mc, err := controllers.NewMessageBusController(nc, "update_agent", agtMgr, tracepointMgr, mds,
+	mc, err := controllers.NewMessageBusController(nc, agtMgr, tracepointMgr, mds,
 		mdHandler, statsHandler, &isLeader)
 
 	if err != nil {

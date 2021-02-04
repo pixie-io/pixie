@@ -16,6 +16,9 @@ import (
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
+// AgentTopic is the NATS topic over which agent updates are sent.
+const AgentTopic = "update_agent"
+
 // AgentTopicListener is responsible for listening to and handling messages on the agent topic.
 type AgentTopicListener struct {
 	clock             utils.Clock
