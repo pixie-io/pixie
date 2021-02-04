@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/alecthomas/assert"
 	uuid "github.com/satori/go.uuid"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/deployment"
