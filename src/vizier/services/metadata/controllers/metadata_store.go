@@ -1009,7 +1009,7 @@ func (mds *KVMetadataStore) GetNodeEndpoints(hnPair *HostnameIPPair) ([]*metadat
 		proto.Unmarshal(val, pb)
 		for _, subset := range pb.Subsets {
 			for _, address := range subset.Addresses {
-				if address.TargetRef.Kind != "Pod" {
+				if address.TargetRef == nil || address.TargetRef.Kind != "Pod" {
 					continue
 				}
 				podPair, err := mds.GetHostnameIPPairFromPodName(address.TargetRef.Name, address.TargetRef.Namespace)
