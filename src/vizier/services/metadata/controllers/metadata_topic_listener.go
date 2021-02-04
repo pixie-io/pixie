@@ -5,6 +5,7 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -31,7 +32,9 @@ type MetadataTopicListener struct {
 	mds         MetadataStore
 	mh          *MetadataHandler
 	msgCh       chan *nats.Msg
-	quitCh      chan bool
+
+	once   sync.Once
+	quitCh chan struct{}
 }
 
 // NewMetadataTopicListener creates a new metadata topic listener.
@@ -41,7 +44,7 @@ func NewMetadataTopicListener(mdStore MetadataStore, mdHandler *MetadataHandler,
 		mds:         mdStore,
 		mh:          mdHandler,
 		msgCh:       make(chan *nats.Msg, 1000),
-		quitCh:      make(chan bool),
+		quitCh:      make(chan struct{}),
 	}
 
 	m.mds.UpdateSubscriberResourceVersion(subscriberName, "")
@@ -78,7 +81,9 @@ func (m *MetadataTopicListener) processMessages() {
 
 // Stop stops processing any metadata messages.
 func (m *MetadataTopicListener) Stop() {
-	m.quitCh <- true
+	m.once.Do(func() {
+		close(m.quitCh)
+	})
 }
 
 func sortResourceUpdates(arr []*metadatapb.ResourceUpdate) {
