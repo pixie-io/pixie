@@ -57,6 +57,11 @@ func NewMetadataTopicListener(mdStore MetadataStore, mdHandler *MetadataHandler,
 	return m, nil
 }
 
+// Initialize handles any setup that needs to be done.
+func (m *MetadataTopicListener) Initialize() error {
+	return nil
+}
+
 // HandleMessage handles a message on the agent topic.
 func (m *MetadataTopicListener) HandleMessage(msg *nats.Msg) error {
 	m.msgCh <- msg

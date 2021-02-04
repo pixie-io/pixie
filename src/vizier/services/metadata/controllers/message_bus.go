@@ -7,6 +7,7 @@ import (
 
 // TopicListener handles NATS messages for a specific topic.
 type TopicListener interface {
+	Initialize() error
 	HandleMessage(*nats.Msg) error
 	Stop()
 }
@@ -19,6 +20,7 @@ type MessageBusController struct {
 	conn *nats.Conn
 	ch   chan *nats.Msg
 
+	wasLeader     bool
 	isLeader      *bool
 	listeners     map[string]TopicListener // Map from topic to its listener.
 	subscriptions []*nats.Subscription
@@ -35,6 +37,7 @@ func NewMessageBusController(conn *nats.Conn, agentManager AgentManager,
 	subscriptions := make([]*nats.Subscription, 0)
 	mc := &MessageBusController{
 		conn:          conn,
+		wasLeader:     *isLeader,
 		isLeader:      isLeader,
 		ch:            ch,
 		listeners:     listeners,
@@ -56,6 +59,13 @@ func (mc *MessageBusController) handleMessages() {
 		if !more {
 			return
 		}
+
+		if !mc.wasLeader && *mc.isLeader {
+			// Gained leadership!
+			mc.listeners[AgentTopic].Initialize()
+		}
+
+		mc.wasLeader = *mc.isLeader
 
 		if !*mc.isLeader {
 			continue
