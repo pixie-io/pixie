@@ -1,6 +1,7 @@
 import { ExecutionStateUpdate, VizierGRPCClient, VizierQueryFunc } from 'vizier-grpc-client';
 import { CloudClient } from 'cloud-gql-client';
-import { Observable } from 'rxjs';
+import { Observable, from } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { Status } from 'types/generated/vizier_pb';
 import { containsMutation } from 'utils/pxl';
 
@@ -95,26 +96,42 @@ export class PixieAPIClient {
 
     for (const cluster of this.clusters) {
       // eslint-disable-next-line no-await-in-loop
-      this.clusterConnections.set(cluster.id, await this.createVizierClient(cluster));
+      await this.createVizierClient(cluster);
     }
 
     return this;
   }
 
+  // Note: this doesn't check if the client already exists, and clobbers any existing client.
   private async createVizierClient(cluster: ClusterConfig) {
     const { ipAddress, token } = await this.gqlClient.getClusterConnection(cluster.id, true);
-    return new VizierGRPCClient(
+    const client = new VizierGRPCClient(
       cluster.passthroughClusterAddress ?? ipAddress,
       token,
       cluster.id,
       cluster.attachCredentials ?? false,
     );
+    // Note that this doesn't currently clean up clients that haven't been used in a while, so a particularly long
+    // user session could hold onto a large number of stale connections. A simple page refresh drops them all.
+    // If this becomes a problem, limit the number of clients and rotate out those that haven't been used in a while.
+    this.clusterConnections.set(cluster.id, client);
+    return client;
   }
 
-  private checkForClusterClient(clusterID: string) {
-    if (!this.clusterConnections.has(clusterID)) {
-      throw new Error('Health checks can only run for clusters with an active API client');
+  private async getClusterClient(cluster: string|ClusterConfig) {
+    let id: string;
+    let passthroughClusterAddress: string;
+    let attachCredentials = false;
+
+    if (typeof cluster === 'string') {
+      id = cluster;
+    } else {
+      ({ id, passthroughClusterAddress, attachCredentials } = cluster);
     }
+
+    return this.clusterConnections.has(id)
+      ? Promise.resolve(this.clusterConnections.get(id))
+      : this.createVizierClient({ id, passthroughClusterAddress, attachCredentials });
   }
 
   /**
@@ -123,8 +140,8 @@ export class PixieAPIClient {
    * @param clusterID Which cluster to use - this must be one that was specified in PixieAPIClient.create().
    */
   health(clusterID: string): Observable<Status> {
-    this.checkForClusterClient(clusterID);
-    return this.clusterConnections.get(clusterID).health();
+    return from(this.getClusterClient(clusterID))
+      .pipe(switchMap((client) => client.health()));
   }
 
   /**
@@ -142,22 +159,19 @@ export class PixieAPIClient {
    * @param funcs Descriptions of which functions in the script to run, and what to do with their output.
    */
   executeScript(clusterID: string, script: string, funcs: VizierQueryFunc[] = []): Observable<ExecutionStateUpdate> {
-    this.checkForClusterClient(clusterID);
     const hasMutation = containsMutation(script);
-    return this.clusterConnections.get(clusterID).executeScript(script, funcs, hasMutation);
+    return from(this.getClusterClient(clusterID))
+      .pipe(switchMap((client) => client.executeScript(script, funcs, hasMutation)));
   }
 
   /*
    * TODO(nick): Future changes to pull code out to, and to polish, `pixie-api`. In order:
    * - Need to copy over src/cloud/api/controller/schema.d.ts and have Arcanist verify that happens, as with proto defs.
    * - Wrap all GQL endpoints can be wrapped directly in this class.
+   * - Do the same for `pixie-api-react`.
    * - Change all UI code that invokes the API to use `api.ts` to do it.
    * - Create test wrappers for the new API and move all existing tests to use that.
-   * - Clean up imports and package.json dependencies.
-   *   Double check everything is imported from `pixie-api`, not anything inside it.
-   *   There should remain only one Apollo dependency with two uses: `@apollo/client` in api.ts and the new test helper.
    * - Pull logic for some endpoints, like executeScript, up into the API code (anything that every consumer would need)
    * - Documentation, documentation, documentation!
-   *   This includes reviewing all code comments related to the API, as some details may have mutated.
    */
 }
