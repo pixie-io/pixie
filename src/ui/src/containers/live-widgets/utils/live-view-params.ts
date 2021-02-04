@@ -68,12 +68,8 @@ export const LiveViewPageScriptIds = new Map<LiveViewPage, string>([
 ]);
 
 export function entityPageForScriptId(id: string): LiveViewPage {
-  const reverseMap = new Map<string, LiveViewPage>();
-  LiveViewPageScriptIds.forEach((scriptId: string, page: LiveViewPage) => {
-    reverseMap.set(scriptId, page);
-  });
-  if (reverseMap.has(id)) {
-    return reverseMap.get(id);
+  for (const [page, scriptId] of LiveViewPageScriptIds) {
+    if (scriptId === id) return page;
   }
   return LiveViewPage.Default;
 }

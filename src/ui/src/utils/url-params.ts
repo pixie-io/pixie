@@ -1,8 +1,6 @@
 import * as QueryString from 'query-string';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { argsEquals } from 'utils/args-utils';
-
-type Args = { [key: string]: string };
+import { argsEquals, Arguments } from 'utils/args-utils';
 
 interface Location {
   search: string;
@@ -24,7 +22,7 @@ export interface Window {
 }
 
 interface Params {
-  args: Args;
+  args: Arguments;
   pathname: string;
   scriptId: string;
   scriptDiff: string;
@@ -33,7 +31,7 @@ interface Params {
 export class URLParams {
   pathname: string;
 
-  args: Args;
+  args: Arguments;
 
   scriptId: string;
 
@@ -59,7 +57,7 @@ export class URLParams {
     this.onChange = this.subject;
   }
 
-  private toURL(pathname: string, id: string, diff: string, args: Args) {
+  private toURL(pathname: string, id: string, diff: string, args: Arguments) {
     const params = {
       ...(id ? { script: id } : {}),
       ...(diff ? { diff } : {}),
@@ -130,7 +128,7 @@ export class URLParams {
     this.updateURL();
   }
 
-  setArgs(newArgs: Args) {
+  setArgs(newArgs: Arguments) {
     // Omit the script and diff fields of newArgs.
     const { script, diff, ...args } = newArgs;
     this.args = args;
@@ -143,7 +141,7 @@ export class URLParams {
     this.updateURL();
   }
 
-  commitAll(newId: string, newDiff: string, newArgs: Args) {
+  commitAll(newId: string, newDiff: string, newArgs: Arguments) {
     // Omit the script and diff fields of newArgs.
     const { script, diff, ...args } = newArgs;
     this.scriptId = newId;

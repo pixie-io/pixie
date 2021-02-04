@@ -5,15 +5,19 @@ import { ClusterStatus, VizierGRPCClientProvider, CLUSTER_STATUS_UNKNOWN } from 
 import { useSnackbar } from 'pixie-components';
 import AdminView from 'pages/admin/admin';
 import CreditsView from 'pages/credits/credits';
-import { ScriptsContextProvider } from 'containers/App/scripts-context';
+import { SCRATCH_SCRIPT, ScriptsContextProvider } from 'containers/App/scripts-context';
 import LiveView from 'pages/live/live';
 import * as React from 'react';
 import { Redirect, Route, Switch } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router';
+import * as QueryString from 'query-string';
 
 import { useQuery } from '@apollo/client';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
 import { CLUSTER_QUERIES, USER_QUERIES } from 'pixie-api';
+import { scriptToEntityURL } from 'containers/live-widgets/utils/live-view-params';
+import { LIVE_VIEW_SCRIPT_ID_KEY, useSessionStorage } from 'common/storage';
 import { DeployInstructions } from './deploy-instructions';
 import { selectCluster } from './cluster-info';
 
@@ -50,11 +54,7 @@ const ClusterBanner = () => {
   return null;
 };
 
-// Selects a default cluster if one hasn't already been selected by the user.
-
-const Vizier = () => {
-  const showSnackbar = useSnackbar();
-
+const useSelectedCluster = () => {
   const { selectedCluster } = React.useContext(ClusterContext);
   const { loading, error, data } = useQuery(
     CLUSTER_QUERIES.LIST_CLUSTERS,
@@ -62,6 +62,51 @@ const Vizier = () => {
   );
   const clusters = data?.clusters || [];
   const cluster = clusters.find((c) => c.id === selectedCluster);
+  return {
+    loading, cluster, numClusters: clusters.length, error,
+  };
+};
+
+// Convenience routes: sends `/scratch`, `/script/http_data`, and others to the appropriate Live url.
+// eslint-disable-next-line react/require-default-props
+const ScriptShortcut = ({ toNamespace = '', toScript = '' }: { toNamespace?: string; toScript?: string }) => {
+  const { namespace, scriptId } = useParams();
+  let fullId = `${toNamespace || namespace || 'px'}/`;
+  const normalized = scriptId.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  if (['scratch', 'scratchpad', 'scratch-pad', 'scratch-script'].includes(normalized)) {
+    fullId = SCRATCH_SCRIPT.id;
+  } else {
+    fullId += toScript || scriptId;
+  }
+
+  const { loading, cluster, error } = useSelectedCluster();
+
+  const queryParams = QueryString.parse(useLocation().search);
+
+  // The default /live route points to <Vizier /> where the actual error handling is.
+  const destination = error || !cluster
+    ? '/live'
+    : scriptToEntityURL(fullId, cluster?.clusterName, queryParams);
+
+  // ScriptContext reads session storage to find the currently selected script, and then redirects to it. This happens
+  // AFTER the page finishes loading and rendering routes, which is a bug (PC-537) with no currently clear solution.
+  // The workaround here, for now, is to simply overwrite that session storage before ScriptContext reads it.
+  const [id, setId] = useSessionStorage(LIVE_VIEW_SCRIPT_ID_KEY, fullId);
+  if (!error && !loading && cluster && fullId !== id) {
+    setId(fullId);
+  }
+
+  return loading ? null : <Redirect to={destination} />;
+};
+
+// Selects a default cluster if one hasn't already been selected by the user.
+
+const Vizier = () => {
+  const showSnackbar = useSnackbar();
+
+  const {
+    loading, error, cluster, numClusters,
+  } = useSelectedCluster();
 
   if (loading) { return <div>Loading...</div>; }
 
@@ -74,7 +119,7 @@ const Vizier = () => {
     console.error(errMsg);
   }
 
-  if (clusters.length === 0) {
+  if (numClusters === 0) {
     return <DeployInstructions />;
   }
 
@@ -82,7 +127,7 @@ const Vizier = () => {
 
   return (
     <VizierGRPCClientProvider
-      clusterID={selectedCluster}
+      clusterID={cluster.id}
       passthroughEnabled={cluster.vizierConfig.passthroughEnabled}
       clusterStatus={errMsg ? CLUSTER_STATUS_UNKNOWN : status}
     >
@@ -167,6 +212,18 @@ export default function WithClusterBanner() {
           <Route path='/admin' component={AdminView} />
           <Route path='/credits' component={CreditsView} />
           <Route path='/live' component={Vizier} />
+          <Route
+            path={[
+              '/script/:namespace/:scriptId',
+              '/scripts/:namespace/:scriptId',
+              '/s/:namespace/:scriptId',
+              '/script/:scriptId',
+              '/scripts/:scriptId',
+              '/s/:scriptId',
+            ]}
+            component={ScriptShortcut}
+          />
+          <Route path={['/scratch', '/scratchpad']} render={() => <ScriptShortcut toScript={SCRATCH_SCRIPT.id} />} />
           <Redirect from='/*' to='/live' />
         </Switch>
       </UserContext.Provider>

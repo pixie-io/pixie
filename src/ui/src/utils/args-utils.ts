@@ -1,9 +1,7 @@
 import { VizierQueryError } from 'pixie-api';
 import { Variable, Vis } from 'containers/live/vis';
 
-export interface Arguments {
-  [arg: string]: string;
-}
+export type Arguments = Record<string, string|string[]>;
 
 export function argsEquals(args1: Arguments, args2: Arguments): boolean {
   if (args1 === args2) {
@@ -90,12 +88,15 @@ export function validateArgValues(vis: Vis, args: Arguments): VizierQueryError {
   }
   const errors = [];
   for (const variable of vis.variables) {
-    const val = inArgs[variable.name] != null ? inArgs[variable.name] : variable.defaultValue;
+    const rawVal: string|string[] = inArgs[variable.name] != null ? inArgs[variable.name] : variable.defaultValue;
     if (variable.validValues && variable.validValues.length) {
-      const validValuesSet = new Set(variable.validValues);
-      if (!validValuesSet.has(val)) {
-        errors.push(`Value '${val}' passed in for '${variable.name}' is not in `
-          + `the set of valid values '${variable.validValues.join(', ')}'.`);
+      const vals: string[] = Array.isArray(rawVal) ? rawVal : [rawVal];
+      for (const val of vals) {
+        const validValuesSet = new Set(variable.validValues);
+        if (!validValuesSet.has(val)) {
+          errors.push(`Value '${val}' passed in for '${variable.name}' is not in `
+              + `the set of valid values '${variable.validValues.join(', ')}'.`);
+        }
       }
     }
   }

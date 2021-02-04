@@ -87,8 +87,8 @@ export function widgetTableName(widget: Widget, widgetIndex: number): string {
   return `widget_${widgetIndex}`;
 }
 
-function getFuncArgs(variableValues: { [key: string]: string }, func: Func): VizierQueryArg[] {
-  const args = [];
+function getFuncArgs(variableValues: VariableValues, func: Func): VizierQueryArg[] {
+  const args: VizierQueryArg[] = [];
   const errors = [];
   func.args.forEach((arg: FuncArg) => {
     if ((arg.value == null) === (arg.variable == null)) {
@@ -112,7 +112,7 @@ function getFuncArgs(variableValues: { [key: string]: string }, func: Func): Viz
     }
     args.push({
       name: arg.name,
-      value: variableValues[arg.variable],
+      value: variableValues[arg.variable].toString(),
     });
   });
   if (errors.length > 0) {
@@ -121,24 +121,23 @@ function getFuncArgs(variableValues: { [key: string]: string }, func: Func): Viz
   return args;
 }
 
-interface VariableValues {
-  [key: string]: string;
-}
+type VariableValues = Record<string, string|string[]>;
 
 function preprocessVariables(variableValues: VariableValues, argTypes: ArgTypeMap): VariableValues {
   const processedVariables: VariableValues = {};
 
-  Object.entries(variableValues).forEach(([argName, argVal]) => {
+  for (const [argName, argVal] of Object.entries(variableValues)) {
     // Special parsing for string lists.
     if (argTypes[argName] === 'PX_STRING_LIST') {
-      const elms = argVal.split(',');
+      const elms = argVal.toString().split(',');
       const listJoined = elms.map((elm) => `'${elm}'`).join(',');
       const listRepr = `[${listJoined}]\n`;
       processedVariables[argName] = listRepr;
-      return;
+      break;
+    } else {
+      processedVariables[argName] = argVal;
     }
-    processedVariables[argName] = argVal;
-  });
+  }
   return processedVariables;
 }
 
@@ -187,7 +186,7 @@ export function toJSON(vis: Vis) {
 }
 
 // Validate Vis makes sure vis is correctly specified or throws an error.
-export function validateVis(vis: Vis, variableValues: { [key: string]: string }): VizierQueryError {
+export function validateVis(vis: Vis, variableValues: VariableValues): VizierQueryError {
   if (!vis) {
     return new VizierQueryError('vis', 'null vis object unhandled');
   }

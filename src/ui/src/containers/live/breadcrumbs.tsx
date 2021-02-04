@@ -130,7 +130,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
 
     const argProps = {
       title: argName,
-      value: argVal,
+      value: argVal.toString(),
       selectable: true,
       allowTyping: true,
       onSelect: (newVal) => {
@@ -178,7 +178,6 @@ const LiveViewBreadcrumbs = ({ classes }) => {
   });
 
   // Add script at end of breadcrumbs.
-  // TODO(michelle): Make script editable.
   entityBreadcrumbs.push({
     title: 'script',
     value: id,
