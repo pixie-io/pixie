@@ -43,11 +43,10 @@ type AgentHandler struct {
 	atl               *AgentTopicListener
 
 	MsgChannel chan *nats.Msg
-	quitCh     chan bool
+	quitCh     chan struct{}
 
-	stoppedMu sync.Mutex
-	stopped   bool // Whether stop has been triggered for this agent handler.
-	wg        sync.WaitGroup
+	once sync.Once
+	wg   sync.WaitGroup
 }
 
 // NewAgentTopicListener creates a new agent topic listener.
@@ -164,8 +163,7 @@ func (a *AgentTopicListener) createAgentHandler(agentID uuid.UUID) *AgentHandler
 		mdStore:           a.mdStore,
 		atl:               a,
 		MsgChannel:        make(chan *nats.Msg, 10),
-		quitCh:            make(chan bool),
-		stopped:           false,
+		quitCh:            make(chan struct{}),
 	}
 	a.agentMap[agentID] = newAgentHandler
 	go newAgentHandler.ProcessMessages()
@@ -474,25 +472,18 @@ func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
 
 func (ah *AgentHandler) stop() {
 	defer ah.wg.Done()
-	close(ah.MsgChannel)
 	ah.agentManager.DeleteAgent(ah.id)
 	ah.atl.DeleteAgent(ah.id)
 	ah.tracepointManager.DeleteAgent(ah.id)
+	close(ah.MsgChannel)
 }
 
 // Stop immediately stops the agent handler from listening to any messages. It blocks until
 // the agent is cleaned up.
 func (ah *AgentHandler) Stop() {
-	ah.stoppedMu.Lock()
-	stopped := ah.stopped
-	if !stopped {
-		ah.stopped = true
-	}
-	ah.stoppedMu.Unlock()
-
-	if !stopped {
+	ah.once.Do(func() {
 		close(ah.quitCh)
-	}
+	})
 
 	ah.wg.Wait()
 }
