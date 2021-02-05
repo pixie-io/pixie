@@ -571,6 +571,8 @@ StatusOr<std::vector<std::filesystem::path>> SocketTraceConnector::FindLibraryPa
   return container_libs;
 }
 
+// Return error if something unexpected occurs.
+// Return 0 if nothing unexpected, but there is nothing to deploy (e.g. no OpenSSL detected).
 StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(
     const std::string& binary, const std::vector<int32_t>& pids,
     ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>* openssl_symaddrs_map) {
@@ -602,12 +604,7 @@ StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(
   PL_RETURN_IF_ERROR(fs::Exists(container_libssl));
   PL_RETURN_IF_ERROR(fs::Exists(container_libcrypto));
 
-  Status s = UpdateOpenSSLSymAddrs(container_libcrypto, pids, openssl_symaddrs_map);
-  if (!s.ok()) {
-    LOG(ERROR) << absl::Substitute("Could not set OpenSSL symbol addresses for binary = $0 [$1]",
-                                   binary, s.ToString());
-    return 0;
-  }
+  PL_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(container_libcrypto, pids, openssl_symaddrs_map));
 
   // Only try probing .so files that we haven't already set probes on.
   auto result = openssl_probed_binaries_.insert(container_libssl);
@@ -724,29 +721,10 @@ void SocketTraceConnector::CleanupSymaddrMaps(const absl::flat_hash_set<md::UPID
   }
 }
 
-void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
-  const std::lock_guard<std::mutex> lock(deploy_uprobes_mutex_);
-
-  proc_tracker_.Update(pids);
-
-  // Before deploying new probes, clean-up map entries for old processes that are now dead.
-  CleanupSymaddrMaps(proc_tracker_.deleted_upids());
-
-  absl::flat_hash_set<md::UPID> pids_to_scan = proc_tracker_.new_upids();
-
-  // Look for any previously scanned processes that have called an mmap,
-  // and add them to pids_to_scan. They may have loaded a shared library
-  // that we need to uprobe.
-  absl::flat_hash_set<uint32_t> mmap_event_pids = MMapEventPIDs();
-  for (const auto& pid : proc_tracker_.upids()) {
-    if (mmap_event_pids.contains(pid.pid())) {
-      VLOG(1) << absl::Substitute("Extra pid to scan: $0", pid.pid());
-      pids_to_scan.insert(pid);
-    }
-  }
-
+int SocketTraceConnector::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   int uprobe_count = 0;
-  for (auto& [binary, pid_vec] : ConvertPIDsListToMap(pids_to_scan)) {
+
+  for (const auto& [binary, pid_vec] : ConvertPIDsListToMap(pids)) {
     if (FLAGS_stirling_disable_self_tracing) {
       // Don't try to attach uprobes to self.
       // This speeds up stirling_wrapper initialization significantly.
@@ -755,15 +733,28 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
       }
     }
 
-    // OpenSSL Probes.
-    {
-      StatusOr<int> attach_status =
-          AttachOpenSSLUProbes(binary, pid_vec, openssl_symaddrs_map_.get());
-      if (!attach_status.ok()) {
-        LOG_FIRST_N(WARNING, 10) << absl::Substitute("Failed to attach SSL Uprobes to $0: $1",
-                                                     binary, attach_status.ToString());
-      } else {
-        uprobe_count += attach_status.ValueOrDie();
+    StatusOr<int> attach_status =
+        AttachOpenSSLUProbes(binary, pid_vec, openssl_symaddrs_map_.get());
+    if (!attach_status.ok()) {
+      LOG_FIRST_N(WARNING, 10) << absl::Substitute("AttachOpenSSLUProbes failed for binary $0: $1",
+                                                   binary, attach_status.ToString());
+    } else {
+      uprobe_count += attach_status.ValueOrDie();
+    }
+  }
+
+  return uprobe_count;
+}
+
+int SocketTraceConnector::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
+  int uprobe_count = 0;
+
+  for (const auto& [binary, pid_vec] : ConvertPIDsListToMap(pids)) {
+    if (FLAGS_stirling_disable_self_tracing) {
+      // Don't try to attach uprobes to self.
+      // This speeds up stirling_wrapper initialization significantly.
+      if (pid_vec.size() == 1 && pid_vec[0] == getpid()) {
+        continue;
       }
     }
 
@@ -828,9 +819,40 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
         uprobe_count += attach_status.ValueOrDie();
       }
     }
-
-    // Add other uprobes here.
   }
+
+  return uprobe_count;
+}
+
+// Look for any previously scanned processes that have called an mmap.
+// They may have loaded a shared library that we need to uprobe.
+// Return the set of such PIDs that need to be rescanned.
+absl::flat_hash_set<md::UPID> RescanList(const absl::flat_hash_set<uint32_t>& mmap_event_pids,
+                                         ProcTracker* proc_tracker) {
+  absl::flat_hash_set<md::UPID> pids_to_rescan;
+  for (const auto& pid : proc_tracker->upids()) {
+    if (mmap_event_pids.contains(pid.pid()) && !proc_tracker->new_upids().contains(pid)) {
+      VLOG(1) << absl::Substitute("Extra pid to scan: $0", pid.pid());
+      pids_to_rescan.insert(pid);
+    }
+  }
+
+  return pids_to_rescan;
+}
+
+void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
+  const std::lock_guard<std::mutex> lock(deploy_uprobes_mutex_);
+
+  proc_tracker_.Update(pids);
+
+  // Before deploying new probes, clean-up map entries for old processes that are now dead.
+  CleanupSymaddrMaps(proc_tracker_.deleted_upids());
+
+  int uprobe_count = 0;
+
+  uprobe_count += DeployOpenSSLUProbes(proc_tracker_.new_upids());
+  uprobe_count += DeployOpenSSLUProbes(RescanList(MMapEventPIDs(), &proc_tracker_));
+  uprobe_count += DeployGoUProbes(proc_tracker_.new_upids());
 
   LOG_FIRST_N(INFO, 1) << absl::Substitute("Number of uprobes deployed = $0", uprobe_count);
 }

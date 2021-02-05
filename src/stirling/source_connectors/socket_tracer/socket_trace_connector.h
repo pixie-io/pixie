@@ -359,6 +359,11 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Note that BPF maps can fill up if this is not done.
   void CleanupSymaddrMaps(const absl::flat_hash_set<md::UPID>& deleted_upids);
 
+  // Functions that deploy uprobes on the input PIDs.
+  // Return value is number of probes attached.
+  int DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pids);
+  int DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids);
+
   std::thread RunDeployUProbesThread(const absl::flat_hash_set<md::UPID>& pids);
 
   // Events from BPF.
