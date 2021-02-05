@@ -1,6 +1,5 @@
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_test")
 load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource")
 load("//bazel:pl_bpf_preprocess.bzl", "pl_bpf_preprocess")
 
@@ -12,21 +11,14 @@ load("//bazel:pl_bpf_preprocess.bzl", "pl_bpf_preprocess")
 # Leaving the bl_bpf_preprocess targets in here only for debug/observability, but keep
 # in mind that they are not actively used targets.
 
-socket_trace_hdrs = [
-    "go_http2_trace.c",
-    "go_tls_trace.c",
-    "go_trace_common.h",
-    "openssl_trace.c",
-    "protocol_inference.h",
-    "//src/stirling/bpf_tools/bcc_bpf:headers",
-    "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
-    "//src/stirling/source_connectors/socket_tracer/bcc_bpf_intf:headers",
-]
-
 pl_bpf_cc_resource(
-    name = "socket_trace",
-    src = "socket_trace.c",
-    hdrs = socket_trace_hdrs,
+    name = "profiler",
+    src = "profiler.c",
+    hdrs = [
+        "//src/stirling/bpf_tools/bcc_bpf:headers",
+        "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
+        "//src/stirling/source_connectors/perf_profiler/bcc_bpf_intf:headers",
+    ],
     syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
 )
 
@@ -34,21 +26,12 @@ pl_bpf_cc_resource(
 # Must keep in sync with :socket_trace.
 # Do not use as a dependency.
 pl_bpf_preprocess(
-    name = "socket_trace_preprocess_debug",
-    src = "socket_trace.c",
-    hdrs = socket_trace_hdrs,
-    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
-)
-
-pl_cc_test(
-    name = "protocol_inference_test",
-    srcs = [
-        "protocol_inference.h",
-        "protocol_inference_test.cc",
+    name = "profiler_preprocess_debug",
+    src = "profiler.c",
+    hdrs = [
         "//src/stirling/bpf_tools/bcc_bpf:headers",
-        "//src/stirling/source_connectors/socket_tracer/bcc_bpf_intf:headers",
+        "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
+        "//src/stirling/source_connectors/perf_profiler/bcc_bpf_intf:headers",
     ],
-    deps = [
-        "//src/stirling/utils:cc_library",
-    ],
+    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
 )

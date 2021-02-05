@@ -4,10 +4,7 @@ load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
 filegroup(
     name = "headers",
-    srcs = glob([
-        "*.h",
-        "*.hpp",
-    ]),
+    srcs = glob(["*.h"]),
 )
 
 pl_cc_library(
@@ -17,10 +14,4 @@ pl_cc_library(
         ":headers",
         "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
     ],
-)
-
-pl_cc_test(
-    name = "socket_trace_test",
-    srcs = ["socket_trace_test.cc"],
-    deps = [":cc_library"],
 )

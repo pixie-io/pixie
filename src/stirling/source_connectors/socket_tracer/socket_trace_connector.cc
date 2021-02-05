@@ -83,7 +83,7 @@ using ::pl::stirling::obj_tools::ElfReader;
 using ::pl::utils::ToJSONString;
 
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
-    : SourceConnector(source_name, kTables), bpf_tools::BCCWrapper() {
+    : SourceConnector(source_name, kTables) {
   proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
   InitProtocolTransferSpecs();
 }
