@@ -40,6 +40,7 @@ static std::string FormatAsJSONArray(VectorView<std::string> args) {
 }
 
 // Describes the arguments of a Redis command.
+// TODO(yzhao): Move to a separate file.
 class CmdArgs {
  public:
   // Allows convenient initialization of kCmdList below.
@@ -72,17 +73,39 @@ class CmdArgs {
     return json_builder.GetString();
   }
 
+  std::string ToString() const {
+    std::string cmd_arg_descs_str = "<null>";
+    if (cmd_arg_descs_.has_value()) {
+      cmd_arg_descs_str = absl::StrJoin(cmd_arg_descs_.value(), ", ",
+                                        [](std::string* buf, const ArgDesc& arg_desc) {
+                                          absl::StrAppend(buf, arg_desc.ToString());
+                                        });
+    }
+    return absl::Substitute("cmd_args: $0 formats: $1", absl::StrJoin(cmd_args_, ", "),
+                            cmd_arg_descs_str);
+  }
+
  private:
   // Describes the format of a single Redis command argument.
   enum class Format {
     // This argument value must be specified, therefore the simplest to format.
     kFixed,
+
+    // This argument value has 0 or more elements.
+    kList,
+
+    // This argument value can be omitted.
+    kOpt,
   };
 
   // Describes a single argument.
   struct ArgDesc {
     std::string_view name;
     Format format;
+
+    std::string ToString() const {
+      return absl::Substitute("[$0::$1]", name, magic_enum::enum_name(format));
+    }
   };
 
   // An argument name is composed of all lower-case letters.
@@ -95,14 +118,61 @@ class CmdArgs {
     return true;
   }
 
+  static constexpr std::string_view kListArgSuffix = " ...]";
+
+  // Returns true if all characters are one of a-z & 0-9.
+  static bool IsLowerAlphaNum(std::string_view name) {
+    for (char c : name) {
+      if (!std::islower(c) && !std::isdigit(c)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // An optional list argument is described as "<name> [<name> ...]".
+  static bool IsListArg(std::string_view arg_desc) {
+    if (!absl::EndsWith(arg_desc, kListArgSuffix)) {
+      return false;
+    }
+    if (!IsLowerAlphaNum(GetListArgName(arg_desc))) {
+      return false;
+    }
+    return true;
+  }
+
+  static std::string_view GetOptArgName(std::string_view arg_desc) {
+    arg_desc.remove_prefix(1);
+    arg_desc.remove_suffix(1);
+    return arg_desc;
+  }
+
+  static bool IsOptArg(std::string_view arg_desc) {
+    if (arg_desc.front() != '[' || arg_desc.back() != ']') {
+      return false;
+    }
+    if (!IsLowerAlphaNum(GetOptArgName(arg_desc))) {
+      return false;
+    }
+    return true;
+  }
+
+  static std::string_view GetListArgName(std::string_view arg_desc) {
+    return arg_desc.substr(0, arg_desc.find_first_of(' '));
+  }
+
   // Detects the arguments format of the input argument names specification.
   // See https://redis.io/commands
   static StatusOr<std::vector<ArgDesc>> ParseArgDescs(
       const std::vector<std::string_view>& arg_descs) {
     std::vector<ArgDesc> args;
-    for (auto arg : arg_descs) {
-      if (IsFixedArg(arg)) {
-        args.push_back({arg, Format::kFixed});
+    for (auto arg_desc : arg_descs) {
+      if (IsFixedArg(arg_desc)) {
+        args.push_back({arg_desc, Format::kFixed});
+      } else if (IsListArg(arg_desc)) {
+        args.push_back({GetListArgName(arg_desc), Format::kList});
+      } else if (IsOptArg(arg_desc)) {
+        args.push_back({GetOptArgName(arg_desc), Format::kOpt});
       } else {
         return error::InvalidArgument("Invalid arguments format: $0",
                                       absl::StrJoin(arg_descs, " "));
@@ -115,16 +185,31 @@ class CmdArgs {
   // format.
   static Status FmtArg(const ArgDesc& arg_desc, VectorView<std::string>* args,
                        JSONObjectBuilder* json_builder) {
-    if (args->empty()) {
-      return error::InvalidArgument("No values for argument: $0:$1", arg_desc.name,
-                                    magic_enum::enum_name(arg_desc.format));
-    }
+#define RETURN_ERROR_IF_EMPTY(arg_values, arg_desc)                               \
+  if (arg_values->empty()) {                                                      \
+    return error::InvalidArgument("No values for argument: $0:$1", arg_desc.name, \
+                                  magic_enum::enum_name(arg_desc.format));        \
+  }
     switch (arg_desc.format) {
       case Format::kFixed:
+        RETURN_ERROR_IF_EMPTY(args, arg_desc);
         json_builder->WriteKV(arg_desc.name, args->front());
         args->pop_front();
         break;
+      case Format::kList:
+        RETURN_ERROR_IF_EMPTY(args, arg_desc);
+        json_builder->WriteKV(arg_desc.name, *args);
+        // Consume all the rest of the argument values.
+        args->clear();
+        break;
+      case Format::kOpt:
+        if (!args->empty()) {
+          json_builder->WriteKV(arg_desc.name, args->front());
+          args->pop_front();
+        }
+        break;
     }
+#undef RETURN_ERROR_IF_EMPTY
     return Status::OK();
   }
 

@@ -109,6 +109,7 @@ class ContainerView {
     start_ += n;
     size_ -= n;
   }
+  void clear() { pop_front(size()); }
   bool empty() { return size_ == 0; }
 };
 

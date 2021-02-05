@@ -131,7 +131,7 @@ class JSONObjectBuilder {
   }
 
   // Writes a key and array value pair.
-  void WriteKV(std::string_view key, VectorView<std::string_view> value) {
+  void WriteKV(std::string_view key, VectorView<std::string> value) {
     DCHECK(!object_ended_);
     writer_.String(key.data(), key.size());
     writer_.StartArray();

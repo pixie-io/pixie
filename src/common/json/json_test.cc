@@ -57,8 +57,8 @@ TEST(JSONBuilderTest, ResultsAreAsExpected) {
   builder.WriteKV("year", "2013");
   builder.WriteKV("league", "national");
 
-  std::vector<std::string_view> names = {"bob", "jack"};
-  builder.WriteKV("team", VectorView<std::string_view>(names));
+  std::vector<std::string> names = {"bob", "jack"};
+  builder.WriteKV("team", VectorView<std::string>(names));
 
   EXPECT_THAT(builder.GetString(),
               StrEq(R"({"year":"2013","league":"national","team":["bob","jack"]})"));

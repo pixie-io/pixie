@@ -161,11 +161,12 @@ TEST_P(RedisTraceBPFTest, VerifyCommand) {
 INSTANTIATE_TEST_SUITE_P(
     Commands, RedisTraceBPFTest,
     // Add new commands here.
-    ::testing::Values(RedisTraceTestCase{"lpush ilist 100", "LPUSH", R"(["ilist","100"])", "1"},
-                      RedisTraceTestCase{"rpush ilist 200", "RPUSH", R"(["ilist","200"])", "1"},
-                      RedisTraceTestCase{"lrange ilist 0 1", "LRANGE",
-                                         R"({"key":"ilist","start":"0","stop":"1"})", "[]"},
-                      RedisTraceTestCase{"flushall", "FLUSHALL", "[]", "OK"}));
+    ::testing::Values(
+        RedisTraceTestCase{"lpush ilist 100", "LPUSH", R"({"key":"ilist","element":["100"]})", "1"},
+        RedisTraceTestCase{"rpush ilist 200", "RPUSH", R"({"key":"ilist","element":["200"]})", "1"},
+        RedisTraceTestCase{"lrange ilist 0 1", "LRANGE",
+                           R"({"key":"ilist","start":"0","stop":"1"})", "[]"},
+        RedisTraceTestCase{"flushall", "FLUSHALL", "[]", "OK"}));
 
 }  // namespace stirling
 }  // namespace pl

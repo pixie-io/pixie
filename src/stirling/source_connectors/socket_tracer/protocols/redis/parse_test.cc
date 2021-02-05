@@ -26,8 +26,14 @@ constexpr std::string_view kCmdMsg = "*2\r\n+ACL\r\n+LOAD\r\n";
 constexpr std::string_view kPubMsg = "*3\r\n$7\r\nmessage\r\n$3\r\nfoo\r\n$4\r\ntest\r\n";
 constexpr std::string_view kAppendMsg = "*3\r\n$6\r\nappend\r\n$3\r\nfoo\r\n$3\r\nbar\r\n";
 constexpr std::string_view kAclGetuserMsg = "*2\r\n$11\r\nacl getuser\r\n$4\r\nuser\r\n";
+constexpr std::string_view kAclDeluserMsg =
+    "*3\r\n$11\r\nacl deluser\r\n$3\r\nfoo\r\n$3\r\nbar\r\n";
 constexpr std::string_view kBrpopLPushMsg =
     "*4\r\n$10\r\nbrpoplpush\r\n$3\r\nsrc\r\n$4\r\ndest\r\n:10\r\n";
+constexpr std::string_view kLPushMsg =
+    "*4\r\n$5\r\nlpush\r\n$3\r\nfoo\r\n$4\r\nbar0\r\n$4\r\nbar1\r\n";
+constexpr std::string_view kZPopMaxMsg = "*3\r\n$7\r\nzpopmax\r\n$3\r\nfoo\r\n:10\r\n";
+constexpr std::string_view kZPopMaxNoOptArgMsg = "*2\r\n$7\r\nzpopmax\r\n$3\r\nfoo\r\n";
 
 struct WellFormedTestCase {
   std::string_view input;
@@ -79,9 +85,18 @@ INSTANTIATE_TEST_SUITE_P(
                            {MessageType::kRequest}},
         WellFormedTestCase{kAclGetuserMsg, R"({"username":"user"})", "ACL GETUSER",
                            {MessageType::kRequest}},
+        WellFormedTestCase{kAclDeluserMsg, R"({"username":["foo","bar"]})", "ACL DELUSER",
+                           {MessageType::kRequest}},
         WellFormedTestCase{kBrpopLPushMsg,
-                           R"({"source":"src","destination":"dest","timeout":"10"})",
-                           "BRPOPLPUSH",
+                           R"({"source":"src","destination":"dest","timeout":"10"})", "BRPOPLPUSH",
+                           {MessageType::kRequest}},
+        WellFormedTestCase{kLPushMsg,
+                           R"({"key":"foo","element":["bar0","bar1"]})", "LPUSH",
+                           {MessageType::kRequest}},
+        WellFormedTestCase{kZPopMaxMsg,
+                           R"({"key":"foo","count":"10"})", "ZPOPMAX",
+                           {MessageType::kRequest}},
+        WellFormedTestCase{kZPopMaxNoOptArgMsg, R"({"key":"foo"})", "ZPOPMAX",
                            {MessageType::kRequest}}));
 // clang-format on
 
