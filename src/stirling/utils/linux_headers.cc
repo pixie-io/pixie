@@ -157,14 +157,25 @@ Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
   return Status::OK();
 }
 
+// There is no standard place where Linux distributions place their kernel config files,
+// (assuming they even make it available at all). This function looks at a number of common places
+// where the config could be found:
+//  - /proc/config or /proc/config.gz: Available if the distro has enabled this kernel feature.
+//  - /boot/config-<uname>: Common place to store the config.
+//  - /lib/modules/<uname>/config: Used by RHEL8 CoreOS, and potentially other RHEL distros.
 StatusOr<std::filesystem::path> FindKernelConfig() {
   const system::Config& sysconfig = system::Config::GetInstance();
 
-  // Search for /boot/config-xxxx
   PL_ASSIGN_OR_RETURN(std::string uname, GetUname());
+
+  // Search for /boot/config-<uname>
   std::string boot_kconfig = absl::StrCat("/boot/config-", uname);
 
-  std::vector<std::string> search_paths = {"/proc/config", "/proc/config.gz", boot_kconfig};
+  // Search for /lib/modules/<uname>/config
+  std::string lib_modules_config = absl::StrCat("/lib/modules/", uname, "/config");
+
+  std::vector<std::string> search_paths = {"/proc/config", "/proc/config.gz", boot_kconfig,
+                                           lib_modules_config};
   for (const auto& path : search_paths) {
     std::filesystem::path config_path = path;
     std::filesystem::path host_path = sysconfig.ToHostPath(config_path);
