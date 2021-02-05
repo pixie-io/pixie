@@ -14,7 +14,7 @@ PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
 
 Status PerfProfileConnector::InitImpl() {
   PL_RETURN_IF_ERROR(InitBPFProgram(profile_bcc_script));
-  PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
+  PL_RETURN_IF_ERROR(AttachSamplingProbes(kSamplingProbeSpecs));
   LOG(INFO) << "PerfProfiler: Probes successfully deployed.";
 
   stacks_ = std::make_unique<ebpf::BPFStackTable>(bpf().get_stack_table("stack_traces"));

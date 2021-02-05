@@ -63,12 +63,10 @@ class PIDRuntimeConnector : public SourceConnector, public bpf_tools::BCCWrapper
       : SourceConnector(name, kTables), bpf_tools::BCCWrapper() {}
 
  private:
-  static constexpr perf_type_id kEventType = perf_type_id::PERF_TYPE_SOFTWARE;
-  static constexpr perf_sw_ids kEventConfig = perf_sw_ids::PERF_COUNT_SW_CPU_CLOCK;
-  static constexpr char kFunctionName[] = "trace_pid_runtime";
-  static constexpr uint64_t kSamplingFreq = 99;  // Freq. (in Hz) at which to trigger bpf func.
-  static constexpr auto kPerfEvents = MakeArray<bpf_tools::PerfEventSpec>(
-      {kEventType, kEventConfig, kFunctionName, 0, kSamplingFreq});
+  // Freq. (in Hz) at which to trigger bpf func.
+  static constexpr uint64_t kSamplingFreqHz = 99;
+  static constexpr auto kSamplingProbes =
+      MakeArray<bpf_tools::SamplingProbeSpec>({"trace_pid_runtime", kSamplingFreqHz});
 
   std::map<uint16_t, uint64_t> prev_run_time_map_;
 };

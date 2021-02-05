@@ -29,6 +29,10 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {"sample_call_stack", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_connect"},
   });
 
+  static constexpr int kSamplingFreqHz = 99;
+  static constexpr auto kSamplingProbeSpecs =
+      MakeArray<bpf_tools::SamplingProbeSpec>({"sample_call_stack", kSamplingFreqHz});
+
   explicit PerfProfileConnector(std::string_view source_name);
 
   std::unique_ptr<ebpf::BPFStackTable> stacks_;

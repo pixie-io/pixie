@@ -90,6 +90,19 @@ struct UProbeSpec {
 };
 
 /**
+ * Describes a sampling probe that triggers according to a time period.
+ * This is in contrast to KProbes and UProbes, which trigger based on
+ * a code event.
+ */
+struct SamplingProbeSpec {
+  // Name of user-provided BPF function to run when probe is triggered.
+  std::string_view probe_fn;
+
+  // Sampling period in milliseconds to trigger the probe.
+  uint64_t period_millis;
+};
+
+/**
  * Describes a BPF perf buffer, through which data is returned to user-space.
  */
 struct PerfBufferSpec {
@@ -144,28 +157,35 @@ class BCCWrapper {
   }
 
   /**
-   * @brief Compiles the BPF code.
+   * Compiles the BPF code.
    * @param cflags compiler flags.
    * @return error if no root access, or code could not be compiled.
    */
   Status InitBPFProgram(std::string_view bpf_program, const std::vector<std::string>& cflags = {});
 
   /**
-   * @brief Attach a single kprobe.
+   * Attach a single kprobe.
    * @param probe Specifications of the kprobe (attach point, trace function, etc.).
    * @return Error if probe fails to attach.
    */
   Status AttachKProbe(const KProbeSpec& probe);
 
   /**
-   * @brief Attach a single uprobe.
+   * Attach a single uprobe.
    * @param probe Specifications of the uprobe (attach point, trace function, etc.).
    * @return Error if probe fails to attach.
    */
   Status AttachUProbe(const UProbeSpec& probe);
 
   /**
-   * @brief Open a perf buffer for reading events.
+   * Attach a single sampling probe.
+   * @param probe Specifications of the probe (bpf function and sampling frequency).
+   * @return Error if probe fails to attach.
+   */
+  Status AttachSamplingProbe(const SamplingProbeSpec& probe);
+
+  /**
+   * Open a perf buffer for reading events.
    * @param perf_buff Specifications of the perf buffer (name, callback function, etc.).
    * @param cb_cookie A pointer that is sent to the callback function when triggered by
    * PollPerfBuffer().
@@ -174,7 +194,7 @@ class BCCWrapper {
   Status OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie = nullptr);
 
   /**
-   * @brief Attach a perf event, which runs a probe every time a perf counter reaches a threshold
+   * Attach a perf event, which runs a probe every time a perf counter reaches a threshold
    * condition.
    * @param perf_event Specification of the perf event and its sampling frequency.
    * @return Error if the perf event could not be attached.
@@ -182,21 +202,28 @@ class BCCWrapper {
   Status AttachPerfEvent(const PerfEventSpec& perf_event);
 
   /**
-   * @brief Convenience function that attaches multiple kprobes.
+   * Convenience function that attaches multiple kprobes.
    * @param probes Vector of probes.
    * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
    */
   Status AttachKProbes(const ArrayView<KProbeSpec>& probes);
 
   /**
-   * @brief Convenience function that attaches multiple uprobes.
+   * Convenience function that attaches multiple uprobes.
    * @param probes Vector of probes.
    * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
    */
   Status AttachUProbes(const ArrayView<UProbeSpec>& uprobes);
 
   /**
-   * @brief Convenience function that opens multiple perf buffers.
+   * Convenience function that attaches multiple uprobes.
+   * @param probes Vector of probes.
+   * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
+   */
+  Status AttachSamplingProbes(const ArrayView<SamplingProbeSpec>& probes);
+
+  /**
+   * Convenience function that opens multiple perf buffers.
    * @param probes Vector of perf buffer descriptors.
    * @param cb_cookie Raw pointer returned on callback, typically used for tracking context.
    * @return Error of first failure (remaining perf buffer opens are not attempted).
@@ -204,20 +231,20 @@ class BCCWrapper {
   Status OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffers, void* cb_cookie);
 
   /**
-   * @brief Convenience function that opens multiple perf events.
+   * Convenience function that opens multiple perf events.
    * @param probes Vector of perf event descriptors.
    * @return Error of first failure (remaining perf event attaches are not attempted).
    */
   Status AttachPerfEvents(const ArrayView<PerfEventSpec>& perf_events);
 
   /**
-   * @brief Drains all of the opened perf buffers, calling the handle function that was
+   * Drains all of the opened perf buffers, calling the handle function that was
    * specified in the PerfBufferSpec when OpenPerfBuffer was called.
    */
   void PollPerfBuffers(int timeout_ms = 1);
 
   /**
-   * @brief Detaches all probes, and closes all perf buffers that are open.
+   * Detaches all probes, and closes all perf buffers that are open.
    */
   void Stop();
 

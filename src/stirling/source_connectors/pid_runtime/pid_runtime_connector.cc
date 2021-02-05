@@ -14,7 +14,7 @@ namespace stirling {
 
 Status PIDRuntimeConnector::InitImpl() {
   PL_RETURN_IF_ERROR(InitBPFProgram(pidruntime_bcc_script));
-  PL_RETURN_IF_ERROR(AttachPerfEvents(kPerfEvents));
+  PL_RETURN_IF_ERROR(AttachSamplingProbes(kSamplingProbes));
   return Status::OK();
 }
 
