@@ -1,15 +1,20 @@
 package controllers_test
 
 import (
+	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
@@ -247,7 +252,7 @@ func createNodeObject() *v1.Node {
 	nodeAddrs := []v1.NodeAddress{
 		v1.NodeAddress{
 			Type:    v1.NodeInternalIP,
-			Address: "test_addr",
+			Address: "127.0.0.1",
 		},
 	}
 
@@ -287,6 +292,129 @@ func createNamespaceObject() *v1.Namespace {
 	return &v1.Namespace{
 		ObjectMeta: metadata,
 	}
+}
+
+type InMemoryStore struct {
+	ResourceStore map[string]*storepb.K8SResource
+	RVStore       map[string]string
+}
+
+func (s *InMemoryStore) AddResourceUpdate(rv string, r *storepb.K8SResource) error {
+	s.ResourceStore[rv] = r
+	return nil
+}
+
+func (s *InMemoryStore) FetchResourceUpdates(from string, to string) ([]*storepb.K8SResource, error) {
+	return nil, nil
+}
+
+func (s *InMemoryStore) GetResourceVersion(topic string) (string, error) {
+	return s.RVStore[topic], nil
+}
+
+func (s *InMemoryStore) SetResourceVersion(topic string, rv string) error {
+	s.RVStore[topic] = rv
+	return nil
+}
+
+func TestK8sMetadataHandler_ProcessUpdates(t *testing.T) {
+	updateCh := make(chan *controllers.K8sMessage)
+	mds := &InMemoryStore{
+		ResourceStore: make(map[string]*storepb.K8SResource),
+		RVStore: map[string]string{
+			"127.0.0.1": "0",
+		},
+	}
+
+	natsPort, natsCleanup := testingutils.StartNATS(t)
+	nc, err := nats.Connect(testingutils.GetNATSURL(natsPort))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer natsCleanup()
+
+	mdh := controllers.NewK8sMetadataHandler(updateCh, mds, nc)
+	defer mdh.Stop()
+
+	expectedMsg := &messages.VizierMessage{
+		Msg: &messages.VizierMessage_K8SMetadataMessage{
+			K8SMetadataMessage: &messages.K8SMetadataMessage{
+				Msg: &messages.K8SMetadataMessage_K8SMetadataUpdate{
+					K8SMetadataUpdate: &metadatapb.ResourceUpdate{
+						Update: &metadatapb.ResourceUpdate_NamespaceUpdate{
+							NamespaceUpdate: &metadatapb.NamespaceUpdate{
+								UID:              "ijkl",
+								Name:             "object_md",
+								StartTimestampNS: 4,
+								StopTimestampNS:  6,
+							},
+						},
+						ResourceVersion: "1",
+					},
+				},
+			},
+		},
+	}
+	// We should expect a message to be sent out to the kelvin topic and 127.0.0.1
+	var wg sync.WaitGroup
+	wg.Add(1)
+	nc.Subscribe(fmt.Sprintf("%s/%s", controllers.K8sMetadataUpdateChannel, controllers.KelvinUpdateTopic), func(msg *nats.Msg) {
+		m := &messages.VizierMessage{}
+		err := proto.Unmarshal(msg.Data, m)
+		assert.Nil(t, err)
+		assert.Equal(t, "1", m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevResourceVersion)
+		m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevResourceVersion = ""
+		assert.Equal(t, expectedMsg, m)
+		wg.Done()
+	})
+	wg.Add(1)
+	nc.Subscribe(fmt.Sprintf("%s/127.0.0.1", controllers.K8sMetadataUpdateChannel), func(msg *nats.Msg) {
+		m := &messages.VizierMessage{}
+		err := proto.Unmarshal(msg.Data, m)
+		assert.Nil(t, err)
+		assert.Equal(t, "0", m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevResourceVersion)
+		m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevResourceVersion = ""
+		assert.Equal(t, expectedMsg, m)
+		wg.Done()
+	})
+
+	// Process a node update, to populate the NodeIPs.
+	node := createNodeObject()
+	node.ObjectMeta.DeletionTimestamp = nil
+	updateCh <- &controllers.K8sMessage{
+		Object:     node,
+		ObjectType: "nodes",
+	}
+
+	o := createNamespaceObject()
+	updateCh <- &controllers.K8sMessage{
+		Object:     o,
+		ObjectType: "namespaces",
+	}
+	wg.Wait()
+	assert.Equal(t, "1", mds.RVStore[controllers.KelvinUpdateTopic])
+	assert.Equal(t,
+		&storepb.K8SResource{
+			Resource: &storepb.K8SResource_Namespace{
+				Namespace: &metadatapb.Namespace{
+					Metadata: &metadatapb.ObjectMetadata{
+						Name:            "object_md",
+						UID:             "ijkl",
+						ResourceVersion: "1",
+						ClusterName:     "a_cluster",
+						OwnerReferences: []*metadatapb.OwnerReference{
+							&metadatapb.OwnerReference{
+								Kind: "pod",
+								Name: "test",
+								UID:  "abcd",
+							},
+						},
+						CreationTimestampNS: 4,
+						DeletionTimestampNS: 6,
+					},
+				},
+			},
+		}, mds.ResourceStore["1"])
 }
 
 func TestEndpointsUpdateProcessor_SetDeleted(t *testing.T) {
@@ -417,7 +545,7 @@ func TestEndpointsUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 				},
 			},
 		},
-		Topics: []string{controllers.KelvinUpdateChannel},
+		Topics: []string{controllers.KelvinUpdateTopic},
 	})
 }
 
@@ -614,7 +742,7 @@ func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 				},
 			},
 		},
-		Topics: []string{"127.0.0.5", controllers.KelvinUpdateChannel},
+		Topics: []string{"127.0.0.5", controllers.KelvinUpdateTopic},
 	}
 	assert.Contains(t, updates, containerUpdate)
 
@@ -647,7 +775,7 @@ func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 				},
 			},
 		},
-		Topics: []string{"127.0.0.5", controllers.KelvinUpdateChannel},
+		Topics: []string{"127.0.0.5", controllers.KelvinUpdateTopic},
 	}
 	assert.Contains(t, updates, podUpdate)
 }
@@ -679,7 +807,7 @@ func TestNodeUpdateProcessor_ValidateUpdate(t *testing.T) {
 	resp = p.ValidateUpdate(o, state)
 	assert.True(t, resp)
 	assert.Equal(t, 1, len(state.NodeToIP))
-	assert.Equal(t, "test_addr", state.NodeToIP["object_md"])
+	assert.Equal(t, "127.0.0.1", state.NodeToIP["object_md"])
 }
 
 func TestNodeUpdateProcessor_GetStoredProtos(t *testing.T) {
@@ -718,7 +846,7 @@ func TestNodeUpdateProcessor_GetStoredProtos(t *testing.T) {
 					Addresses: []*metadatapb.NodeAddress{
 						&metadatapb.NodeAddress{
 							Type:    metadatapb.NODE_ADDR_TYPE_INTERNAL_IP,
-							Address: "test_addr",
+							Address: "127.0.0.1",
 						},
 					},
 				},
@@ -818,10 +946,10 @@ func TestNamespaceUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 				},
 			},
 		},
-		Topics: []string{controllers.KelvinUpdateChannel, "127.0.0.1", "127.0.0.2"},
+		Topics: []string{controllers.KelvinUpdateTopic, "127.0.0.1", "127.0.0.2"},
 	}
 	assert.Equal(t, nsUpdate.Update, updates[0].Update)
-	assert.Contains(t, updates[0].Topics, controllers.KelvinUpdateChannel)
+	assert.Contains(t, updates[0].Topics, controllers.KelvinUpdateTopic)
 	assert.Contains(t, updates[0].Topics, "127.0.0.1")
 	assert.Contains(t, updates[0].Topics, "127.0.0.2")
 }

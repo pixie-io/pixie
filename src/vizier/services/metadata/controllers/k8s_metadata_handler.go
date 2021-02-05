@@ -18,11 +18,15 @@ import (
 
 	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 )
 
-// KelvinUpdateChannel is the channel that all kelvins updates are sent on.
-const KelvinUpdateChannel = "all"
+// KelvinUpdateTopic is the topic that all kelvins updates are sent on.
+const KelvinUpdateTopic = "all"
+
+// K8sMetadataUpdateChannel is the channel where metadata updates are sent.
+const K8sMetadataUpdateChannel = "/k8supdates"
 
 // K8sMessage is a message for K8s metadata events/updates.
 type K8sMessage struct {
@@ -55,6 +59,11 @@ type K8sMetadataStore interface {
 	// FetchResourceUpdates gets the resource updates from the `from` resource version, to the `to`
 	// resource version (exclusive).
 	FetchResourceUpdates(from string, to string) ([]*storepb.K8SResource, error)
+
+	// GetResourceVersion gets the last resource version sent on a topic.
+	GetResourceVersion(topic string) (string, error)
+	// SetResourceVersion sets the last resource version sent on a topic.
+	SetResourceVersion(topic string, rv string) error
 }
 
 // An UpdateProcessor is responsible for processing an incoming update, such as determining what
@@ -162,8 +171,65 @@ func (m *K8sMetadataHandler) processUpdates() {
 					continue
 				}
 			}
+
+			// Send the update to the agents.
+			for _, u := range processor.GetUpdatesToSend(update, &m.state) {
+				for _, t := range u.Topics {
+					updateToSend := u.Update
+					// Set the previous resource version on the update.
+					prevRV, err := m.mds.GetResourceVersion(t)
+					if err != nil || prevRV == "" {
+						log.WithError(err).Trace("Failed to get resource version for topic")
+						// If we cannot get a prevRV from the db, the agent won't know what
+						// update came before this update. Setting the prevRV
+						// to the current resource version, which they definitely don't have yet,
+						// will force the agent to rerequest any possible missing updates, just to be safe.
+						prevRV = updateToSend.ResourceVersion
+					}
+					updateToSend.PrevResourceVersion = prevRV
+					// Set the new resource version.
+					err = m.mds.SetResourceVersion(t, updateToSend.ResourceVersion)
+					if err != nil {
+						log.WithError(err).Trace("Failed to set current resource version for topic")
+						// If we fail to set the current resource version, the topic may miss an update
+						// without realizing it.
+					}
+					err = m.sendUpdate(updateToSend, t)
+					if err != nil {
+						// If this happens, the agent will rerequest the update as a missing update when it
+						// receives the next update.
+						log.WithError(err).Trace("Failed to send update to agent")
+					}
+				}
+			}
 		}
 	}
+}
+
+func (m *K8sMetadataHandler) sendUpdate(update *metadatapb.ResourceUpdate, topic string) error {
+	channel := fmt.Sprintf("%s/%s", K8sMetadataUpdateChannel, topic)
+
+	msg := &messages.VizierMessage{
+		Msg: &messages.VizierMessage_K8SMetadataMessage{
+			K8SMetadataMessage: &messages.K8SMetadataMessage{
+				Msg: &messages.K8SMetadataMessage_K8SMetadataUpdate{
+					K8SMetadataUpdate: update,
+				},
+			},
+		},
+	}
+
+	b, err := msg.Marshal()
+	if err != nil {
+		return err
+	}
+
+	err = m.conn.Publish(channel, b)
+	if err != nil {
+		log.WithError(err).Trace("Could not publish message to NATS.")
+		return err
+	}
+	return nil
 }
 
 func setDeleted(objMeta *metav1.ObjectMeta) {
@@ -295,7 +361,7 @@ func (p *EndpointsUpdateProcessor) GetUpdatesToSend(obj runtime.Object, state *P
 	// Also send update to Kelvin.
 	updates = append(updates, &OutgoingUpdate{
 		Update: getServiceResourceUpdateFromEndpoint(pb, allPodUIDs, allPodNames),
-		Topics: []string{KelvinUpdateChannel},
+		Topics: []string{KelvinUpdateTopic},
 	})
 
 	return updates
@@ -477,7 +543,7 @@ func (p *PodUpdateProcessor) GetUpdatesToSend(obj runtime.Object, state *Process
 		// Send the update to the relevant agent and the Kelvin.
 		updates = append(updates, &OutgoingUpdate{
 			Update: ru,
-			Topics: []string{e.Status.HostIP, KelvinUpdateChannel},
+			Topics: []string{e.Status.HostIP, KelvinUpdateTopic},
 		})
 	}
 
@@ -485,7 +551,7 @@ func (p *PodUpdateProcessor) GetUpdatesToSend(obj runtime.Object, state *Process
 	podUpdate := GetResourceUpdateFromPod(pb)
 	updates = append(updates, &OutgoingUpdate{
 		Update: podUpdate,
-		Topics: []string{e.Status.HostIP, KelvinUpdateChannel},
+		Topics: []string{e.Status.HostIP, KelvinUpdateTopic},
 	})
 
 	return updates
@@ -610,7 +676,7 @@ func (p *NamespaceUpdateProcessor) GetUpdatesToSend(obj runtime.Object, state *P
 	}
 
 	// Send the update to all agents.
-	agents := []string{KelvinUpdateChannel}
+	agents := []string{KelvinUpdateTopic}
 	for _, ip := range state.NodeToIP {
 		agents = append(agents, ip)
 	}
