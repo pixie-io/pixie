@@ -401,15 +401,13 @@ StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(const ArrayView<UProbeTmpl>
 
 namespace {
 Status UpdateOpenSSLSymAddrs(
-    std::filesystem::path container_lib, const std::vector<int32_t>& pids,
+    std::filesystem::path libcrypto_path, uint32_t pid,
     ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>* openssl_symaddrs_map) {
-  PL_ASSIGN_OR_RETURN(struct openssl_symaddrs_t symaddrs, OpenSSLSymAddrs(container_lib));
+  PL_ASSIGN_OR_RETURN(struct openssl_symaddrs_t symaddrs, OpenSSLSymAddrs(libcrypto_path));
 
-  for (auto& pid : pids) {
-    ebpf::StatusTuple s = openssl_symaddrs_map->update_value(pid, symaddrs);
-    LOG_IF(WARNING, s.code() != 0)
-        << absl::StrCat("Could not update openssl_symaddrs_map. Message=", s.msg());
-  }
+  ebpf::StatusTuple s = openssl_symaddrs_map->update_value(pid, symaddrs);
+  LOG_IF(WARNING, s.code() != 0) << absl::StrCat("Could not update openssl_symaddrs_map. Message=",
+                                                 s.msg());
 
   return Status::OK();
 }
@@ -487,84 +485,53 @@ StatusOr<int> SocketTraceConnector::AttachGoHTTP2Probes(
 // e.g. input: lib_names = {"libssl.so.1.1", "libcrypto.so.1.1"}
 // output: {"/usr/lib/mount/abc...def/usr/lib/libssl.so.1.1",
 // "/usr/lib/mount/abc...def/usr/lib/libcrypto.so.1.1"}
-StatusOr<std::vector<std::filesystem::path>> SocketTraceConnector::FindLibraryPaths(
-    const std::vector<std::string_view>& lib_names, const std::string& binary,
-    const std::vector<int32_t>& pids) {
+StatusOr<std::vector<std::filesystem::path>> FindLibraryPaths(
+    const std::vector<std::string_view>& lib_names, uint32_t pid, system::ProcParser* proc_parser) {
   // TODO(jps): use a mutable map<string, path> as the function argument.
   // i.e. mapping from lib_name to lib_path.
   // This would relieve the caller of the burden of tracking which entry
   // in the vector belonged to which library it wanted to find.
 
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create(pid));
+
+  PL_ASSIGN_OR_RETURN(absl::flat_hash_set<std::string> mapped_lib_paths,
+                      proc_parser->GetMapPaths(pid));
+
   // container_libs: final function output.
   // found_vector: tracks the found status of each lib.
-  // num_found: count of the number found.
-  // ... To allow this function to return as soon as everything is found.
-  std::vector<std::filesystem::path> container_libs;
-  std::vector<bool> found_vector;
-  uint32_t num_found = 0;
+  // Initialize the return vector with empty paths,
+  // and setup our state to "nothing found yet"
+  std::vector<std::filesystem::path> container_libs(lib_names.size());
+  std::vector<bool> found_vector(lib_names.size(), false);
 
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create());
-
-  std::filesystem::path empty_path;
-
-  for (uint64_t i = 0; i < lib_names.size(); ++i) {
-    // initialize the return vector with empty paths,
-    // and setup our state to "nothing found yet"
-    container_libs.push_back(empty_path);
-    found_vector.push_back(false);
-  }
-
-  for (const auto& pid : pids) {
-    if (num_found == lib_names.size()) {
-      // we've already found all of the requested libs, break now.
-      break;
-    }
-
-    StatusOr<absl::flat_hash_set<std::string>> libs_status = proc_parser_->GetMapPaths(pid);
-    if (!libs_status.ok()) {
-      VLOG(1) << absl::Substitute("Unable to read /proc/$0/maps for $1. Message: $2", pid, binary,
-                                  libs_status.msg());
+  for (const auto& [lib_idx, lib_name] : Enumerate(lib_names)) {
+    if (found_vector[lib_idx]) {
+      // This lib has already been found,
+      // do not search through the mapped lib paths found by GetMapPaths.
       continue;
     }
 
-    Status s = fp_resolver->SetMountNamespace(pid);
-    if (!s.ok()) {
-      VLOG(1) << absl::Substitute("Could not set pid namespace. Did pid $0 terminate?", pid);
-      continue;
-    }
+    for (const auto& mapped_lib_path : mapped_lib_paths) {
+      if (absl::EndsWith(mapped_lib_path, lib_name)) {
+        // We found a mapped_lib_path that matches to the desired lib_name.
+        // First, get the containerized file path using ResolvePath().
+        StatusOr<std::filesystem::path> container_lib_status =
+            fp_resolver->ResolvePath(mapped_lib_path);
 
-    const absl::flat_hash_set<std::string>& mapped_lib_paths = libs_status.ValueOrDie();
-
-    for (const auto& [lib_idx, lib_name] : Enumerate(lib_names)) {
-      if (found_vector[lib_idx]) {
-        // This lib has already been found,
-        // do not search through the mapped lib paths found by GetMapPaths.
-        continue;
-      }
-
-      for (const auto& mapped_lib_path : mapped_lib_paths) {
-        if (absl::EndsWith(mapped_lib_path, lib_name)) {
-          // We found a mapped_lib_path that matches to the desired lib_name.
-          // First, get the containerized file path using ResolvePath().
-          StatusOr<std::filesystem::path> container_lib_status =
-              fp_resolver->ResolvePath(mapped_lib_path);
-
-          if (!container_lib_status.ok()) {
-            VLOG(1) << absl::Substitute("Unable to resolve $0 path for $1. Message: $2", lib_name,
-                                        binary, container_lib_status.msg());
-            continue;
-          }
-
-          // Assign the resolved path into the output vector at the appropriate index.
-          // Update found status,
-          // and continue to search current set of mapped libs for next desired lib.
-          container_libs[lib_idx] = container_lib_status.ValueOrDie();
-          found_vector[lib_idx] = true;
-          ++num_found;
-          VLOG(1) << absl::Substitute("Resolved lib $0 to $1", lib_name,
-                                      container_libs[lib_idx].string());
-          break;
+        if (!container_lib_status.ok()) {
+          VLOG(1) << absl::Substitute("Unable to resolve $0 path. Message: $1", lib_name,
+                                      container_lib_status.msg());
+          continue;
         }
+
+        // Assign the resolved path into the output vector at the appropriate index.
+        // Update found status,
+        // and continue to search current set of mapped libs for next desired lib.
+        container_libs[lib_idx] = container_lib_status.ValueOrDie();
+        found_vector[lib_idx] = true;
+        VLOG(1) << absl::Substitute("Resolved lib $0 to $1", lib_name,
+                                    container_libs[lib_idx].string());
+        break;
       }
     }
   }
@@ -574,37 +541,34 @@ StatusOr<std::vector<std::filesystem::path>> SocketTraceConnector::FindLibraryPa
 // Return error if something unexpected occurs.
 // Return 0 if nothing unexpected, but there is nothing to deploy (e.g. no OpenSSL detected).
 StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(
-    const std::string& binary, const std::vector<int32_t>& pids,
-    ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>* openssl_symaddrs_map) {
+    uint32_t pid, ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>* openssl_symaddrs_map) {
   constexpr std::string_view kLibSSL = "libssl.so.1.1";
   constexpr std::string_view kLibCrypto = "libcrypto.so.1.1";
   const std::vector<std::string_view> lib_names = {kLibSSL, kLibCrypto};
 
   const system::Config& sysconfig = system::Config::GetInstance();
 
+  // Find paths to libssl.so and libcrypto.so for the pid, if they are in use (i.e. mapped).
   PL_ASSIGN_OR_RETURN(const std::vector<std::filesystem::path> container_lib_paths,
-                      FindLibraryPaths(lib_names, binary, pids));
+                      FindLibraryPaths(lib_names, pid, proc_parser_.get()));
 
-  for (const auto& path : container_lib_paths) {
-    if (path.empty()) {
-      // Looks like this binary doesn't use libssl, because it did not
-      // map both of libssl.so.x.x & libcrypto.so.x.x.
-      // Return "0" to indicaute zero probes were attached. This is not an error.
-      //
-      // Less likely, but possible, is that FindLibraryPaths() hit an error
-      // on every attempt to read /proc/pid/maps and resolve the path.
-      // TODO(jps): do we tighten this up?
-      return 0;
-    }
+  std::filesystem::path container_libssl = container_lib_paths[0];
+  std::filesystem::path container_libcrypto = container_lib_paths[1];
+
+  if (container_libssl.empty() || container_libcrypto.empty()) {
+    // Looks like this process doesn't use OpenSSL, because it did not
+    // map both of libssl.so.x.x & libcrypto.so.x.x.
+    // Return "0" to indicate zero probes were attached. This is not an error.
+    return 0;
   }
 
   // Convert to host path, in case we're running inside a container ourselves.
-  const std::filesystem::path container_libssl = sysconfig.ToHostPath(container_lib_paths[0]);
-  const std::filesystem::path container_libcrypto = sysconfig.ToHostPath(container_lib_paths[1]);
+  container_libssl = sysconfig.ToHostPath(container_libssl);
+  container_libcrypto = sysconfig.ToHostPath(container_libcrypto);
   PL_RETURN_IF_ERROR(fs::Exists(container_libssl));
   PL_RETURN_IF_ERROR(fs::Exists(container_libcrypto));
 
-  PL_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(container_libcrypto, pids, openssl_symaddrs_map));
+  PL_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(container_libcrypto, pid, openssl_symaddrs_map));
 
   // Only try probing .so files that we haven't already set probes on.
   auto result = openssl_probed_binaries_.insert(container_libssl);
@@ -680,22 +644,6 @@ std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
 
 }  // namespace
 
-absl::flat_hash_set<uint32_t> SocketTraceConnector::MMapEventPIDs() {
-  // Get a snapshot of the events.
-  std::vector<std::pair<uint32_t, bool>> mmap_event_entries = mmap_events_->get_table_offline();
-
-  // Copy the snapshotted pids, and remove the corresponding pids from mmap_events_.
-  // We cannot simply clear mmap_events_ as it may be concurrently accessed from kernel-space.
-  absl::flat_hash_set<uint32_t> pids;
-  for (const auto& event : mmap_event_entries) {
-    const uint32_t& pid = event.first;
-    pids.insert(pid);
-    mmap_events_->remove_value(pid);
-  }
-
-  return pids;
-}
-
 std::thread SocketTraceConnector::RunDeployUProbesThread(
     const absl::flat_hash_set<md::UPID>& pids) {
   // The check that state is not uninitialized is required for socket_trace_connector_test,
@@ -724,20 +672,15 @@ void SocketTraceConnector::CleanupSymaddrMaps(const absl::flat_hash_set<md::UPID
 int SocketTraceConnector::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   int uprobe_count = 0;
 
-  for (const auto& [binary, pid_vec] : ConvertPIDsListToMap(pids)) {
-    if (FLAGS_stirling_disable_self_tracing) {
-      // Don't try to attach uprobes to self.
-      // This speeds up stirling_wrapper initialization significantly.
-      if (pid_vec.size() == 1 && pid_vec[0] == getpid()) {
-        continue;
-      }
+  for (const auto& pid : pids) {
+    if (FLAGS_stirling_disable_self_tracing && pid.pid() == static_cast<uint32_t>(getpid())) {
+      continue;
     }
 
-    StatusOr<int> attach_status =
-        AttachOpenSSLUProbes(binary, pid_vec, openssl_symaddrs_map_.get());
+    StatusOr<int> attach_status = AttachOpenSSLUProbes(pid.pid(), openssl_symaddrs_map_.get());
     if (!attach_status.ok()) {
-      LOG_FIRST_N(WARNING, 10) << absl::Substitute("AttachOpenSSLUProbes failed for binary $0: $1",
-                                                   binary, attach_status.ToString());
+      LOG_FIRST_N(WARNING, 10) << absl::Substitute("AttachOpenSSLUprobes failed for PID $0: $1",
+                                                   pid.pid(), attach_status.ToString());
     } else {
       uprobe_count += attach_status.ValueOrDie();
     }
@@ -822,6 +765,22 @@ int SocketTraceConnector::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& p
   }
 
   return uprobe_count;
+}
+
+absl::flat_hash_set<uint32_t> SocketTraceConnector::MMapEventPIDs() {
+  // Get a snapshot of the events.
+  std::vector<std::pair<uint32_t, bool>> mmap_event_entries = mmap_events_->get_table_offline();
+
+  // Copy the snapshotted pids, and remove the corresponding pids from mmap_events_.
+  // We cannot simply clear mmap_events_ as it may be concurrently accessed from kernel-space.
+  absl::flat_hash_set<uint32_t> pids;
+  for (const auto& event : mmap_event_entries) {
+    const uint32_t& pid = event.first;
+    pids.insert(pid);
+    mmap_events_->remove_value(pid);
+  }
+
+  return pids;
 }
 
 // Look for any previously scanned processes that have called an mmap.

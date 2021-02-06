@@ -338,15 +338,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& new_pids,
       ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t>* go_tls_symaddrs_map);
 
-  // Find the paths for some libraries, which may be inside of a container.
-  StatusOr<std::vector<std::filesystem::path> > FindLibraryPaths(
-      const std::vector<std::string_view>& lib_names, const std::string& binary,
-      const std::vector<int32_t>& pids);
-
-  // Attaches the required probes for SSL tracing to the specified binary.
+  // Attaches the required probes for SSL tracing to the specified PID.
   StatusOr<int> AttachOpenSSLUProbes(
-      const std::string& binary, const std::vector<int32_t>& new_pids,
-      ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>* openssl_symaddrs_map);
+      uint32_t pid, ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>* openssl_symaddrs_map);
 
   // Returns set of PIDs that have had mmap called on them since the last call.
   absl::flat_hash_set<uint32_t> MMapEventPIDs();
