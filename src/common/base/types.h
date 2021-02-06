@@ -109,6 +109,12 @@ class ContainerView {
     start_ += n;
     size_ -= n;
   }
+  void pop_back(size_t n = 1) {
+    if (n > size_) {
+      n = size_;
+    }
+    size_ -= n;
+  }
   void clear() { pop_front(size()); }
   bool empty() { return size_ == 0; }
 };

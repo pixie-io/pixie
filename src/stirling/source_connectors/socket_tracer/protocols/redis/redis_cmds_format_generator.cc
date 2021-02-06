@@ -4,16 +4,9 @@
 
 #include "src/common/base/base.h"
 
-DEFINE_string(
-    redis_cmdargs, "",
-    "A text file. Produced with:\n"
-    "curl https://redis.io/commands > redis_commands\n"
-    R"(xmllint --html --xpath '//span[@class="command"]/text() | //span[@class="args"]/text()' )"
-    R"(redis_commands | grep -o "\S.*\S")"
-    "\n\nThe above command produces a text file. It contains all of Redis commands. "
-    "Each command is followed by 0 or more lines of arguments description lines.");
-
 DEFINE_string(redis_cmds, "", "A text file lists all Redis command names on each line.");
+DEFINE_string(redis_cmdargs, "",
+              "A text file lists the names and descriptions of all Redis commands on each line.");
 
 using ::pl::ReadFileToString;
 using ::pl::Status;
@@ -26,9 +19,6 @@ Status Main(std::string_view redis_cmds, std::string_view redis_cmdargs,
   absl::flat_hash_set<std::string_view> redis_cmd_set =
       absl::StrSplit(redis_cmds, "\n", absl::SkipWhitespace());
 
-  for (auto e : redis_cmd_set) {
-    PL_LOG_VAR(e);
-  }
   std::vector<std::string_view> lines = absl::StrSplit(redis_cmdargs, "\n", absl::SkipWhitespace());
 
   std::vector<std::string_view> output_line;
@@ -50,10 +40,10 @@ Status Main(std::string_view redis_cmds, std::string_view redis_cmdargs,
   return Status::OK();
 }
 
-std::string FomatCommand(const std::vector<std::string_view>& command) {
+std::string FomatCommand(const std::vector<std::string_view>& cmd_and_arg_descs) {
   std::vector<std::string> args;
 
-  for (const auto c : VectorView<std::string_view>(command, 1, command.size() - 1)) {
+  for (const auto c : cmd_and_arg_descs) {
     if (absl::StrContains(c, "\"")) {
       args.push_back(absl::Substitute("R\"($0)\"", c));
     } else {
@@ -63,7 +53,7 @@ std::string FomatCommand(const std::vector<std::string_view>& command) {
 
   std::string args_string = absl::Substitute(R"({$0})", absl::StrJoin(args, ", "));
 
-  return absl::Substitute(R"({"$0", $1},)", command.front(), args_string);
+  return absl::Substitute(R"({"$0", $1},)", cmd_and_arg_descs.front(), args_string);
 }
 
 // Prints a map from redis command name to its arguments names.

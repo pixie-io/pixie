@@ -34,11 +34,14 @@ constexpr std::string_view kLPushMsg =
     "*4\r\n$5\r\nlpush\r\n$3\r\nfoo\r\n$4\r\nbar0\r\n$4\r\nbar1\r\n";
 constexpr std::string_view kZPopMaxMsg = "*3\r\n$7\r\nzpopmax\r\n$3\r\nfoo\r\n:10\r\n";
 constexpr std::string_view kZPopMaxNoOptArgMsg = "*2\r\n$7\r\nzpopmax\r\n$3\r\nfoo\r\n";
+constexpr std::string_view kSwapDBMsg = "*3\r\n$6\r\nswapdb\r\n$3\r\nfoo\r\n$3\r\nbar\r\n";
+constexpr std::string_view kEvalSHAMsg =
+    "*5\r\n$7\r\nevalsha\r\n$3\r\nsha\r\n:3\r\n$3\r\nfoo\r\n$3\r\nbar\r\n";
 
 struct WellFormedTestCase {
   std::string_view input;
-  std::string_view expected_payload;
   std::string_view expected_command;
+  std::string_view expected_payload;
   std::vector<MessageType> types_to_test = {MessageType::kRequest, MessageType::kResponse};
 };
 
@@ -71,32 +74,35 @@ INSTANTIATE_TEST_SUITE_P(
     AllDataTypes, ParseTest,
     ::testing::Values(
         // clang-format off
-        WellFormedTestCase{kSimpleStringMsg, "OK", ""},
-        WellFormedTestCase{kErrorMsg, "Error message", ""},
-        WellFormedTestCase{kBulkStringMsg, "bulk string", ""},
+        WellFormedTestCase{kSimpleStringMsg, "", "OK"},
+        WellFormedTestCase{kErrorMsg, "", "Error message"},
+        WellFormedTestCase{kBulkStringMsg, "", "bulk string"},
         WellFormedTestCase{kEmptyBulkStringMsg, "", ""},
-        WellFormedTestCase{kNullBulkStringMsg, "<NULL>", ""},
-        WellFormedTestCase{kArrayMsg, R"(["OK","Error message","bulk string"])", ""},
-        WellFormedTestCase{kCmdMsg, R"([])", "ACL LOAD", {MessageType::kRequest}},
-        WellFormedTestCase{kNullElemInArrayMsg, R"(["<NULL>"])", ""},
-        WellFormedTestCase{kNullArrayMsg, "[NULL]", ""},
-        WellFormedTestCase{kEmptyArrayMsg, "[]", ""},
-        WellFormedTestCase{kAppendMsg, R"({"key":"foo","value":"bar"})", "APPEND",
+        WellFormedTestCase{kNullBulkStringMsg, "", "<NULL>"},
+        WellFormedTestCase{kArrayMsg, "", R"(["OK","Error message","bulk string"])"},
+        WellFormedTestCase{kCmdMsg, "ACL LOAD", R"([])", {MessageType::kRequest}},
+        WellFormedTestCase{kNullElemInArrayMsg, "", R"(["<NULL>"])"},
+        WellFormedTestCase{kNullArrayMsg, "", "[NULL]"},
+        WellFormedTestCase{kEmptyArrayMsg, "", "[]"},
+        WellFormedTestCase{kAppendMsg, "APPEND", R"({"key":"foo","value":"bar"})",
                            {MessageType::kRequest}},
-        WellFormedTestCase{kAclGetuserMsg, R"({"username":"user"})", "ACL GETUSER",
+        WellFormedTestCase{kAclGetuserMsg,  "ACL GETUSER", R"({"username":"user"})",
                            {MessageType::kRequest}},
-        WellFormedTestCase{kAclDeluserMsg, R"({"username":["foo","bar"]})", "ACL DELUSER",
+        WellFormedTestCase{kAclDeluserMsg,  "ACL DELUSER", R"({"username":["foo","bar"]})",
                            {MessageType::kRequest}},
-        WellFormedTestCase{kBrpopLPushMsg,
-                           R"({"source":"src","destination":"dest","timeout":"10"})", "BRPOPLPUSH",
+        WellFormedTestCase{kBrpopLPushMsg, "BRPOPLPUSH",
+                           R"({"source":"src","destination":"dest","timeout":"10"})",
                            {MessageType::kRequest}},
-        WellFormedTestCase{kLPushMsg,
-                           R"({"key":"foo","element":["bar0","bar1"]})", "LPUSH",
+        WellFormedTestCase{kLPushMsg, "LPUSH", R"({"key":"foo","element":["bar0","bar1"]})",
                            {MessageType::kRequest}},
-        WellFormedTestCase{kZPopMaxMsg,
-                           R"({"key":"foo","count":"10"})", "ZPOPMAX",
+        WellFormedTestCase{kZPopMaxMsg, "ZPOPMAX", R"({"key":"foo","count":"10"})",
                            {MessageType::kRequest}},
-        WellFormedTestCase{kZPopMaxNoOptArgMsg, R"({"key":"foo"})", "ZPOPMAX",
+        WellFormedTestCase{kZPopMaxNoOptArgMsg,  "ZPOPMAX", R"({"key":"foo"})",
+                           {MessageType::kRequest}},
+        WellFormedTestCase{kSwapDBMsg, "SWAPDB", R"({"index1":"foo","index2":"bar"})",
+                           {MessageType::kRequest}},
+        WellFormedTestCase{kEvalSHAMsg, "EVALSHA",
+                           R"({"sha1":"sha","numkeys":"3","key":["foo"],"value":["bar"]})",
                            {MessageType::kRequest}}));
 // clang-format on
 

@@ -135,6 +135,45 @@ TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
   EXPECT_EQ(9, sub_proc.Wait()) << "Client should be killed";
 }
 
+// Verifies that script load and evalsha works as expected.
+//
+// We need to test this separately because we need the returned script sha from script load
+// to assemble the evalsha command.
+TEST_F(RedisTraceBPFTest, ScriptLoadAndEvalSHA) {
+  std::string script_load_cmd = absl::Substitute(
+      R"(docker run --rm --network=container:$0 redis redis-cli script load "return 1")",
+      container_.container_name());
+  ASSERT_OK_AND_ASSIGN(std::string sha, pl::Exec(script_load_cmd));
+  ASSERT_FALSE(sha.empty());
+  // The output ends with \n.
+  sha.pop_back();
+
+  std::string evalsha_cmd = absl::Substitute(
+      "docker run --rm --network=container:$0 redis redis-cli evalsha $1 2 1 1 2 2",
+      container_.container_name(), sha);
+  ASSERT_OK_AND_ASSIGN(const std::string output, pl::Exec(evalsha_cmd));
+  ASSERT_FALSE(output.empty());
+
+  DataTable data_table(kRedisTable);
+
+  source_->TransferData(ctx_.get(), SocketTraceConnector::kRedisTableNum, &data_table);
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+
+  ASSERT_FALSE(tablets.empty());
+
+  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  std::vector<RedisTraceRecord> redis_trace_records = GetRedisTraceRecords(record_batch);
+
+  EXPECT_THAT(
+      redis_trace_records,
+      ElementsAre(RedisTraceRecord{"SCRIPT LOAD", R"({"script":"return 1"})", sha},
+                  RedisTraceRecord{
+                      "EVALSHA",
+                      absl::Substitute(
+                          R"({"sha1":"$0","numkeys":"2","key":["1","1"],"value":["2","2"]})", sha),
+                      "1"}));
+}
+
 // Verifies individual commands.
 TEST_P(RedisTraceBPFTest, VerifyCommand) {
   std::string_view redis_cmd = GetParam().cmd;
