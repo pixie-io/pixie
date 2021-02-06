@@ -204,8 +204,9 @@ Status SocketTraceConnector::InitImpl() {
   go_common_symaddrs_map_ =
       std::make_unique<ebpf::BPFHashTable<uint32_t, struct go_common_symaddrs_t>>(
           bpf().get_hash_table<uint32_t, struct go_common_symaddrs_t>("go_common_symaddrs_map"));
-  http2_symaddrs_map_ = std::make_unique<ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t>>(
-      bpf().get_hash_table<uint32_t, struct go_http2_symaddrs_t>("http2_symaddrs_map"));
+  go_http2_symaddrs_map_ =
+      std::make_unique<ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t>>(
+          bpf().get_hash_table<uint32_t, struct go_http2_symaddrs_t>("http2_symaddrs_map"));
   go_tls_symaddrs_map_ = std::make_unique<ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t>>(
       bpf().get_hash_table<uint32_t, struct go_tls_symaddrs_t>("go_tls_symaddrs_map"));
 
@@ -462,7 +463,7 @@ Status UpdateGoTLSSymAddrs(
 // That allows the BPF code and companion user-space code for uprobe & kprobe be separated
 // cleanly. For example, right now, enabling uprobe & kprobe simultaneously can crash Stirling,
 // because of the mixed & duplicate data events from these 2 sources.
-StatusOr<int> SocketTraceConnector::AttachHTTP2Probes(
+StatusOr<int> SocketTraceConnector::AttachGoHTTP2Probes(
     const std::string& binary, obj_tools::ElfReader* elf_reader,
     obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
     ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t>* http2_symaddrs_map) {
@@ -713,10 +714,23 @@ std::thread SocketTraceConnector::RunDeployUProbesThread(
   return {};
 }
 
+void SocketTraceConnector::CleanupSymaddrMaps(const absl::flat_hash_set<md::UPID>& deleted_upids) {
+  for (const auto& pid : deleted_upids) {
+    // TODO(oazizi): Enable these once we have a filter. Otherwise, these are expensive.
+    // openssl_symaddrs_map_->remove_value(pid.pid());
+    // go_common_symaddrs_map_->remove_value(pid.pid());
+    // go_tls_symaddrs_map_->remove_value(pid.pid());
+    go_http2_symaddrs_map_->remove_value(pid.pid());
+  }
+}
+
 void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   const std::lock_guard<std::mutex> lock(deploy_uprobes_mutex_);
 
   proc_tracker_.Update(pids);
+
+  // Before deploying new probes, clean-up map entries for old processes that are now dead.
+  CleanupSymaddrMaps(proc_tracker_.deleted_upids());
 
   absl::flat_hash_set<md::UPID> pids_to_scan = proc_tracker_.new_upids();
 
@@ -729,13 +743,6 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
       VLOG(1) << absl::Substitute("Extra pid to scan: $0", pid.pid());
       pids_to_scan.insert(pid);
     }
-  }
-
-  // Before deploying new probes, clean-up map entries for old processes that are now dead.
-  for (const auto& pid : proc_tracker_.deleted_upids()) {
-    ebpf::StatusTuple s = http2_symaddrs_map_->remove_value(pid.pid());
-    VLOG_IF(1, s.code() != 0) << absl::StrCat(
-        "Could not remove entry from http2_symaddrs_map. Message=", s.msg());
   }
 
   int uprobe_count = 0;
@@ -812,8 +819,8 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
 
     // Go HTTP2 Probes.
     if (protocol_transfer_specs_[kProtocolHTTP2].enabled) {
-      StatusOr<int> attach_status = AttachHTTP2Probes(binary, elf_reader.get(), dwarf_reader.get(),
-                                                      pid_vec, http2_symaddrs_map_.get());
+      StatusOr<int> attach_status = AttachGoHTTP2Probes(
+          binary, elf_reader.get(), dwarf_reader.get(), pid_vec, go_http2_symaddrs_map_.get());
       if (!attach_status.ok()) {
         LOG_FIRST_N(WARNING, 10) << absl::Substitute("Failed to attach HTTP2 Uprobes to $0: $1",
                                                      binary, attach_status.ToString());

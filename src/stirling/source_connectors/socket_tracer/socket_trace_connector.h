@@ -326,11 +326,17 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   StatusOr<int> AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe_tmpls,
                                  const std::string& binary, obj_tools::ElfReader* elf_reader);
 
-  // Attaches the required probes for HTTP2 tracing to the specified binary.
-  StatusOr<int> AttachHTTP2Probes(
+  // Attaches the required probes for Go HTTP2 tracing to the specified binary.
+  StatusOr<int> AttachGoHTTP2Probes(
+      const std::string& binary, obj_tools::ElfReader* elf_reader,
+      obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
+      ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t>* http2_symaddrs_map);
+
+  // Attaches the required probes for GoTLS tracing to the specified binary.
+  StatusOr<int> AttachGoTLSUProbes(
       const std::string& binary, obj_tools::ElfReader* elf_reader,
       obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& new_pids,
-      ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t>* http2_symaddrs_map);
+      ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t>* go_tls_symaddrs_map);
 
   // Find the paths for some libraries, which may be inside of a container.
   StatusOr<std::vector<std::filesystem::path> > FindLibraryPaths(
@@ -342,16 +348,17 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       const std::string& binary, const std::vector<int32_t>& new_pids,
       ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>* openssl_symaddrs_map);
 
-  StatusOr<int> AttachGoTLSUProbes(
-      const std::string& binary, obj_tools::ElfReader* elf_reader,
-      obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& new_pids,
-      ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t>* go_tls_symaddrs_map);
-
   // Returns set of PIDs that have had mmap called on them since the last call.
   absl::flat_hash_set<uint32_t> MMapEventPIDs();
 
   // Deploys uprobes for all purposes (HTTP2, OpenSSL, etc.) on new processes.
   void DeployUProbes(const absl::flat_hash_set<md::UPID>& pids);
+
+  // Clean-up various BPF maps used to communicate symbol addresses per PID.
+  // Once the PID has terminated, the information is not required anymore.
+  // Note that BPF maps can fill up if this is not done.
+  void CleanupSymaddrMaps(const absl::flat_hash_set<md::UPID>& deleted_upids);
+
   std::thread RunDeployUProbesThread(const absl::flat_hash_set<md::UPID>& pids);
 
   // Events from BPF.
@@ -444,7 +451,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t> > openssl_symaddrs_map_;
   std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_common_symaddrs_t> >
       go_common_symaddrs_map_;
-  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t> > http2_symaddrs_map_;
+  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t> > go_http2_symaddrs_map_;
   std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t> > go_tls_symaddrs_map_;
 
   // BPF map through which PIDs that have had mmap calls are communicated.
