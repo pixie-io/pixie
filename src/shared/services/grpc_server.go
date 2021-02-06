@@ -17,6 +17,13 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+var logrusEntry *log.Entry
+
+func init() {
+	logrusEntry = log.NewEntry(log.StandardLogger())
+	grpc_logrus.ReplaceGrpcLogger(logrusEntry)
+}
+
 // GRPCServerOptions are configuration options that are passed to the GRPC server.
 type GRPCServerOptions struct {
 	DisableAuth    map[string]bool
@@ -78,13 +85,11 @@ func createGRPCAuthFunc(env env.Env, opts *GRPCServerOptions) func(context.Conte
 
 // CreateGRPCServer creates a GRPC server with default middleware for our services.
 func CreateGRPCServer(env env.Env, serverOpts *GRPCServerOptions) *grpc.Server {
-	logrusEntry := log.NewEntry(log.StandardLogger())
 	logrusOpts := []grpc_logrus.Option{
 		grpc_logrus.WithDurationField(func(duration time.Duration) (key string, value interface{}) {
 			return "time", duration
 		}),
 	}
-	grpc_logrus.ReplaceGrpcLogger(logrusEntry)
 	opts := []grpc.ServerOption{
 		grpc_middleware.WithUnaryServerChain(
 			grpc_ctxtags.UnaryServerInterceptor(),
