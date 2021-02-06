@@ -3,7 +3,6 @@
 
 package publiccloudapipb
 
-
 import (
 	context "context"
 	fmt "fmt"
