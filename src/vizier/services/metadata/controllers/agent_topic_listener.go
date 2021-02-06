@@ -19,6 +19,51 @@ import (
 // AgentTopic is the NATS topic over which agent updates are sent.
 const AgentTopic = "update_agent"
 
+// GetAgentTopicFromUUID gets the agent topic given the agent's ID in UUID format.
+func GetAgentTopicFromUUID(agentID uuid.UUID) string {
+	return GetAgentTopic(agentID.String())
+}
+
+// GetAgentTopic gets the agent topic given the agent's ID in string format.
+func GetAgentTopic(agentID string) string {
+	return fmt.Sprintf("/agent/%s", agentID)
+}
+
+type concurrentAgentMap struct {
+	unsafeMap map[uuid.UUID]*AgentHandler
+	mapMu     sync.RWMutex
+}
+
+func (c *concurrentAgentMap) read(agentID uuid.UUID) *AgentHandler {
+	c.mapMu.RLock()
+	defer c.mapMu.RUnlock()
+	return c.unsafeMap[agentID]
+}
+
+func (c *concurrentAgentMap) values() []*AgentHandler {
+	c.mapMu.RLock()
+	defer c.mapMu.RUnlock()
+	allHandlers := make([]*AgentHandler, len(c.unsafeMap))
+	i := 0
+	for _, ah := range c.unsafeMap {
+		allHandlers[i] = ah
+		i++
+	}
+	return allHandlers
+}
+
+func (c *concurrentAgentMap) write(agentID uuid.UUID, ah *AgentHandler) {
+	c.mapMu.Lock()
+	defer c.mapMu.Unlock()
+	c.unsafeMap[agentID] = ah
+}
+
+func (c *concurrentAgentMap) delete(agentID uuid.UUID) {
+	c.mapMu.Lock()
+	defer c.mapMu.Unlock()
+	delete(c.unsafeMap, agentID)
+}
+
 // AgentTopicListener is responsible for listening to and handling messages on the agent topic.
 type AgentTopicListener struct {
 	clock             utils.Clock
@@ -29,9 +74,8 @@ type AgentTopicListener struct {
 
 	// Map from agent ID -> the agentHandler that's responsible for handling that particular
 	// agent's messages.
-	agentMap map[uuid.UUID]*AgentHandler
-	// Mutex that should be locked when acessing or deleting from the agent map.
-	mapMu sync.Mutex
+	agentMap *concurrentAgentMap
+
 	// computes internal stats
 	statsHandler *StatsHandler
 }
@@ -68,7 +112,7 @@ func NewAgentTopicListenerWithClock(agentManager AgentManager, tracepointManager
 		tracepointManager: tracepointManager,
 		sendMessage:       sendMsgFn,
 		mdStore:           mdStore,
-		agentMap:          make(map[uuid.UUID]*AgentHandler),
+		agentMap:          &concurrentAgentMap{unsafeMap: make(map[uuid.UUID]*AgentHandler)},
 		statsHandler:      statsHandler,
 	}
 
@@ -87,8 +131,6 @@ func (a *AgentTopicListener) Initialize() error {
 	if err != nil {
 		return err
 	}
-	a.mapMu.Lock()
-	defer a.mapMu.Unlock()
 
 	for _, agent := range agents {
 		agentID, err := utils.UUIDFromProto(agent.Info.AgentID)
@@ -130,16 +172,6 @@ func (a *AgentTopicListener) HandleMessage(msg *nats.Msg) error {
 	return nil
 }
 
-// GetAgentTopicFromUUID gets the agent topic given the agent's ID in UUID format.
-func GetAgentTopicFromUUID(agentID uuid.UUID) string {
-	return GetAgentTopic(agentID.String())
-}
-
-// GetAgentTopic gets the agent topic given the agent's ID in string format.
-func GetAgentTopic(agentID string) string {
-	return fmt.Sprintf("/agent/%s", agentID)
-}
-
 // SendMessageToAgent sends the given message to the agent over the NATS agent channel.
 func (a *AgentTopicListener) SendMessageToAgent(agentID uuid.UUID, msg messages.VizierMessage) error {
 	topic := GetAgentTopicFromUUID(agentID)
@@ -153,7 +185,7 @@ func (a *AgentTopicListener) SendMessageToAgent(agentID uuid.UUID, msg messages.
 
 // This function should only be called when the mutex is already held. It creates a new agent handler for the given id.
 func (a *AgentTopicListener) createAgentHandler(agentID uuid.UUID) *AgentHandler {
-	if ah, ok := a.agentMap[agentID]; ok {
+	if ah := a.agentMap.read(agentID); ah != nil {
 		log.WithField("agentID", agentID.String()).Info("Trying to create agent handler that already exists")
 		return ah
 	}
@@ -168,8 +200,8 @@ func (a *AgentTopicListener) createAgentHandler(agentID uuid.UUID) *AgentHandler
 		MsgChannel:        make(chan *nats.Msg, 10),
 		quitCh:            make(chan struct{}),
 	}
-	a.agentMap[agentID] = newAgentHandler
-	go newAgentHandler.ProcessMessages()
+	a.agentMap.write(agentID, newAgentHandler)
+	go newAgentHandler.processMessages()
 
 	return newAgentHandler
 }
@@ -187,14 +219,7 @@ func (a *AgentTopicListener) forwardAgentHeartBeat(m *messages.Heartbeat, msg *n
 		return
 	}
 
-	var agentHandler *AgentHandler
-
-	a.mapMu.Lock()
-	if ah, ok := a.agentMap[agentID]; ok {
-		agentHandler = ah
-	}
-	a.mapMu.Unlock()
-
+	agentHandler := a.agentMap.read(agentID)
 	if agentHandler != nil {
 		// Add to agent handler to process.
 		agentHandler.MsgChannel <- msg
@@ -217,48 +242,25 @@ func (a *AgentTopicListener) forwardAgentRegisterRequest(m *messages.RegisterAge
 		return
 	}
 
-	var agentHandler *AgentHandler
-
-	a.mapMu.Lock()
-	if ah, ok := a.agentMap[agentID]; ok {
-		agentHandler = ah
+	agentHandler := a.agentMap.read(agentID)
+	if agentHandler == nil {
+		agentHandler = a.createAgentHandler(agentID)
 	}
-	a.mapMu.Unlock()
-
-	if agentHandler != nil {
-		// Add to agent handler to process.
-		agentHandler.MsgChannel <- msg
-	} else {
-		func() {
-			a.mapMu.Lock()
-			defer a.mapMu.Unlock()
-			agentHandler = a.createAgentHandler(agentID)
-		}()
-		agentHandler.MsgChannel <- msg
-	}
+	// Add to agent handler to process.
+	agentHandler.MsgChannel <- msg
 }
 
 // StopAgent should be called when an agent should be deleted and its message processing should be stopped.
 func (a *AgentTopicListener) StopAgent(agentID uuid.UUID) {
-	a.mapMu.Lock()
-
-	var ah *AgentHandler
-	if agentHandler, ok := a.agentMap[agentID]; ok {
-		ah = agentHandler
-	}
-	a.mapMu.Unlock()
-
-	if ah != nil {
-		ah.Stop()
+	agentHandler := a.agentMap.read(agentID)
+	if agentHandler != nil {
+		agentHandler.Stop()
 	}
 }
 
 // DeleteAgent deletes the agent from the map. The agent should already be deleted in the agent manager.
-func (a *AgentTopicListener) DeleteAgent(agentID uuid.UUID) {
-	a.mapMu.Lock()
-	defer a.mapMu.Unlock()
-
-	delete(a.agentMap, agentID)
+func (a *AgentTopicListener) deleteAgent(agentID uuid.UUID) {
+	a.agentMap.delete(agentID)
 }
 
 func (a *AgentTopicListener) onAgentTracepointMessage(pbMessage *messages.TracepointMessage) {
@@ -280,14 +282,17 @@ func (a *AgentTopicListener) onAgentTracepointInfoUpdate(m *messages.TracepointI
 
 // Stop stops processing any agent messages.
 func (a *AgentTopicListener) Stop() {
-	for _, ah := range a.agentMap {
+	// Grab all the handlers in one go since calling stop will modify the map and need
+	// the write mutex to be held.
+	handlers := a.agentMap.values()
+	for _, ah := range handlers {
 		ah.Stop()
 	}
 }
 
-// ProcessMessages handles all of the agent messages for this agent. If it does not receive a heartbeat from the agent
+// processMessages handles all of the agent messages for this agent. If it does not receive a heartbeat from the agent
 // after a certain amount of time, it will declare the agent dead and perform deletion.
-func (ah *AgentHandler) ProcessMessages() {
+func (ah *AgentHandler) processMessages() {
 	ah.wg.Add(1)
 
 	defer ah.stop()
@@ -469,7 +474,7 @@ func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
 func (ah *AgentHandler) stop() {
 	defer ah.wg.Done()
 	ah.agentManager.DeleteAgent(ah.id)
-	ah.atl.DeleteAgent(ah.id)
+	ah.atl.deleteAgent(ah.id)
 	ah.tracepointManager.DeleteAgent(ah.id)
 	close(ah.MsgChannel)
 }
