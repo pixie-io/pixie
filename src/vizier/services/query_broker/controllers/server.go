@@ -416,6 +416,7 @@ func (s *Server) ExecuteScript(req *public_vizierapipb.ExecuteScriptRequest, srv
 
 	var sendErr error
 	go func() {
+		var err error
 		for {
 			select {
 			case <-doneCh:

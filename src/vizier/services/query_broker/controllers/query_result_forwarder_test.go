@@ -420,9 +420,9 @@ func TestStreamResultsWrongQueryID(t *testing.T) {
 	assert.Nil(t, f.ForwardQueryResult(goodInput))
 	assert.NotNil(t, f.ForwardQueryResult(badInput))
 	f.OptionallyCancelClientStream(queryID)
-	assert.Nil(t, err)
 	wg.Wait()
 
+	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), fmt.Sprintf("Client stream cancelled for query %s", queryID.String()))
 	assert.Equal(t, 1, len(results))
 	assert.Equal(t, queryID.String(), results[0].QueryID)

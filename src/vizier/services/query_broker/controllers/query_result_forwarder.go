@@ -29,16 +29,57 @@ type QueryPlanOpts struct {
 // The deadline for all sinks in a given query to initialize.
 const defaultResultSinkInitializationTimeout = 5 * time.Second
 
+var void = struct{}{}
+
+type concurrentSet struct {
+	unsafeMap map[string]struct{}
+	mu        sync.RWMutex
+}
+
+func (s *concurrentSet) add(key string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.unsafeMap[key] = void
+}
+
+func (s *concurrentSet) exists(key string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	_, exists := s.unsafeMap[key]
+	return exists
+}
+
+func (s *concurrentSet) remove(key string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.unsafeMap, key)
+}
+
+func (s *concurrentSet) values() []string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	vals := make([]string, len(s.unsafeMap))
+	i := 0
+	for k := range s.unsafeMap {
+		vals[i] = k
+		i++
+	}
+	return vals
+}
+
+func (s *concurrentSet) size() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return len(s.unsafeMap)
+}
+
 // A struct to track state for an active query in the system.
 // It can be modified and accessed by multiple agent streams and a single client stream.
 type activeQuery struct {
 	// Signal to cancel the client stream for this query.
-	cancelClientStreamCh chan bool
-	// There are multiple agent streams per query, any of which can trigger cancellation
-	// in the client stream. These fields ensure that multiple agent streams calling
-	// cancel on the agent stream (aka closing the cancelClientStreamCh) is safe.
-	cancelClientStreamMutex sync.Mutex
-	clientStreamCancelled   bool
+	cancelClientStreamCh chan struct{}
+	cancelOnce           sync.Once
 
 	queryResultCh chan *carnotpb.TransferResultChunkRequest
 	tableIDMap    map[string]string
@@ -46,49 +87,47 @@ type activeQuery struct {
 	// The set of result tables that still need to open a connection to this
 	// result forwarder via TransferResultChunk. If they take too long to open the
 	// connection, the query will time out.
-	uninitializedTables map[string]bool
+	uninitializedTables *concurrentSet
+
 	// Signal for when all of the expected tables have established a connection.
-	allTablesConnectedCh chan bool
+	allTablesConnectedCh chan struct{}
 
 	// The tables left in the query for which to receive end of stream.
 	// These are deleted as end of stream signals come in.
 	// These two fields are only accessed by a single writer and reader.
-	remainingTableEos map[string]bool
+	remainingTableEos *concurrentSet
+
 	gotFinalExecStats bool
 	agentExecStats    *[]*queryresultspb.AgentExecutionStats
 }
 
 func newActiveQuery(tableIDMap map[string]string) *activeQuery {
-	eosTables := make(map[string]bool)
-	uninitializedTables := make(map[string]bool)
-	for tableName := range tableIDMap {
-		eosTables[tableName] = true
-		uninitializedTables[tableName] = true
+	aq := &activeQuery{
+		cancelClientStreamCh: make(chan struct{}),
+
+		queryResultCh: make(chan *carnotpb.TransferResultChunkRequest),
+		tableIDMap:    tableIDMap,
+
+		uninitializedTables: &concurrentSet{unsafeMap: make(map[string]struct{})},
+		remainingTableEos:   &concurrentSet{unsafeMap: make(map[string]struct{})},
+
+		allTablesConnectedCh: make(chan struct{}),
+
+		gotFinalExecStats: false,
 	}
 
-	return &activeQuery{
-		queryResultCh:         make(chan *carnotpb.TransferResultChunkRequest),
-		cancelClientStreamCh:  make(chan bool),
-		clientStreamCancelled: false,
-		remainingTableEos:     eosTables,
-		uninitializedTables:   uninitializedTables,
-		gotFinalExecStats:     false,
-		tableIDMap:            tableIDMap,
-		allTablesConnectedCh:  make(chan bool),
+	for tableName := range tableIDMap {
+		aq.remainingTableEos.add(tableName)
+		aq.uninitializedTables.add(tableName)
 	}
+
+	return aq
 }
 
 func (a *activeQuery) signalCancelClientStream() {
-	a.cancelClientStreamMutex.Lock()
-	defer a.cancelClientStreamMutex.Unlock()
-
-	// Cancel the client stream if it hasn't already been cancelled.
-	if a.clientStreamCancelled {
-		// Another agent stream has already cancelled this.
-		return
-	}
-	a.clientStreamCancelled = true
-	close(a.cancelClientStreamCh)
+	a.cancelOnce.Do(func() {
+		close(a.cancelClientStreamCh)
+	})
 }
 
 // This function and queryComplete() should only be called by the same single thread.
@@ -109,7 +148,7 @@ func (a *activeQuery) updateQueryState(msg *carnotpb.TransferResultChunkRequest)
 		tableName := queryResult.GetTableName()
 
 		if rb := queryResult.GetRowBatch(); rb != nil {
-			if _, present := a.uninitializedTables[tableName]; present {
+			if a.uninitializedTables.exists(tableName) {
 				return fmt.Errorf("Received RowBatch before initializing table %s for query %s",
 					tableName, queryIDStr)
 			}
@@ -118,22 +157,22 @@ func (a *activeQuery) updateQueryState(msg *carnotpb.TransferResultChunkRequest)
 				return nil
 			}
 
-			if _, present := a.remainingTableEos[tableName]; present {
-				delete(a.remainingTableEos, tableName)
-				return nil
+			if !a.remainingTableEos.exists(tableName) {
+				return fmt.Errorf("received multiple EOS for table name '%s' for query ID %s", tableName, queryIDStr)
 			}
-			return fmt.Errorf("unexpected table name '%s' for query ID %s", tableName, queryIDStr)
+			a.remainingTableEos.remove(tableName)
+			return nil
 		}
 
 		if queryResult.GetInitiateResultStream() {
-			if _, present := a.uninitializedTables[tableName]; !present {
+			if !a.uninitializedTables.exists(tableName) {
 				return fmt.Errorf("Did not expect stream to be (re)opened query result table %s for query %s",
 					tableName, queryIDStr)
 			}
-			delete(a.uninitializedTables, tableName)
+			a.uninitializedTables.remove(tableName)
 			// If we have initialized all of our tables, then signal to the goroutine waiting for all
 			// result sinks to be initialized that it can stop waiting.
-			if len(a.uninitializedTables) == 0 {
+			if a.uninitializedTables.size() == 0 {
 				close(a.allTablesConnectedCh)
 			}
 			return nil
@@ -144,7 +183,7 @@ func (a *activeQuery) updateQueryState(msg *carnotpb.TransferResultChunkRequest)
 }
 
 func (a *activeQuery) queryComplete() bool {
-	return len(a.uninitializedTables) == 0 && len(a.remainingTableEos) == 0 && a.gotFinalExecStats
+	return a.uninitializedTables.size() == 0 && a.remainingTableEos.size() == 0 && a.gotFinalExecStats
 }
 
 // QueryResultForwarder is responsible for receiving query results from the agent streams and forwarding
@@ -246,10 +285,7 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 			case <-activeQuery.allTablesConnectedCh:
 				return
 			case <-time.After(f.resultSinkInitializationTimeout):
-				var missingSinks []string
-				for table := range activeQuery.uninitializedTables {
-					missingSinks = append(missingSinks, table)
-				}
+				missingSinks := activeQuery.uninitializedTables.values()
 				log.Infof("Query %s failed to initialize all result tables within the deadline, missing: %s",
 					queryID.String(), strings.Join(missingSinks, ", "))
 				activeQuery.signalCancelClientStream()
@@ -332,7 +368,7 @@ func (f *QueryResultForwarderImpl) ForwardQueryResult(msg *carnotpb.TransferResu
 	case activeQuery.queryResultCh <- msg:
 		return nil
 	case <-activeQuery.cancelClientStreamCh:
-		return fmt.Errorf("query result not forwarded, query %d has been cancelled", queryID.String())
+		return fmt.Errorf("query result not forwarded, query %s has been cancelled", queryID.String())
 	}
 }
 
