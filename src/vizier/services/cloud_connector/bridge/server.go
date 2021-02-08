@@ -607,8 +607,17 @@ func (s *Bridge) StartStream(errCh chan error) error {
 			return err
 		}
 	}
-
 	log.Trace("Registration Complete.")
+
+	// Check to see if Stop was called while we waited for the
+	// registrationHandshake and if so, skip setting up NATS
+	// bridging.
+	select {
+	case <-s.quitCh:
+		return nil
+	default:
+	}
+
 	s.wg.Add(1)
 	err = s.HandleNATSBridging(stream, done, errCh)
 	return err
