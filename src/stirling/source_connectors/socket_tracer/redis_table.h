@@ -47,7 +47,8 @@ static constexpr DataElement kRedisElements[] = {
 // clang-format on
 
 static constexpr auto kRedisTable =
-    DataTableSchema("redis_events", "Redis request-response pair events", kRedisElements,
+    // TODO(yzhao): Remove .beta suffix after initial testing.
+    DataTableSchema("redis_events.beta", "Redis request-response pair events", kRedisElements,
                     std::chrono::milliseconds{100}, std::chrono::milliseconds{1000});
 
 constexpr int kRedisUPIDIdx = kRedisTable.ColIndex("upid");
