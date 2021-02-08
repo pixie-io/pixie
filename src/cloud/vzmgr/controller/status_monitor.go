@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -20,14 +21,15 @@ const (
 // It has a routine that is periodically invoked.
 type StatusMonitor struct {
 	db     *sqlx.DB
-	quitCh chan bool
+	quitCh chan struct{}
+	once   sync.Once
 }
 
 // NewStatusMonitor creates a new StatusMonitor operating on the passed in DB and starts it.
 func NewStatusMonitor(db *sqlx.DB) *StatusMonitor {
 	sm := &StatusMonitor{
 		db:     db,
-		quitCh: make(chan bool),
+		quitCh: make(chan struct{}),
 	}
 	sm.start()
 	return sm
@@ -51,10 +53,9 @@ func (s *StatusMonitor) start() {
 
 // Stop kills the status monitor.
 func (s *StatusMonitor) Stop() {
-	if s.quitCh != nil {
+	s.once.Do(func() {
 		close(s.quitCh)
-	}
-	s.quitCh = nil
+	})
 }
 
 // UpdateDBEntries updates the database status.
