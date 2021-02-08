@@ -14,14 +14,12 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 
 #else
 
-#include <deque>
 #include <fstream>
 #include <list>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -36,12 +34,12 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
-#include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
 #include "src/stirling/source_connectors/socket_tracer/connection_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/connection_tracker.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_bpf_tables.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_tables.h"
+#include "src/stirling/source_connectors/socket_tracer/uprobe_manager.h"
 #include "src/stirling/utils/proc_path_tools.h"
 #include "src/stirling/utils/proc_tracker.h"
 
@@ -59,16 +57,6 @@ DECLARE_string(stirling_role_to_trace);
 
 namespace pl {
 namespace stirling {
-
-/**
- * Describes a uprobe template.
- */
-struct UProbeTmpl {
-  std::string_view symbol;
-  obj_tools::SymbolMatchType match_type;
-  std::string_view probe_fn;
-  bpf_tools::BPFProbeAttachType attach_type = bpf_tools::BPFProbeAttachType::kEntry;
-};
 
 class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
@@ -175,122 +163,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {"mmap", bpf_tools::BPFProbeAttachType::kEntry, "syscall__probe_entry_mmap"},
   });
 
-  inline static constexpr auto kHTTP2ProbeTmpls = MakeArray<UProbeTmpl>({
-      // Probes on Golang net/http2 library.
-      UProbeTmpl{
-          .symbol = "google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders",
-          .match_type = obj_tools::SymbolMatchType::kSuffix,
-          .probe_fn = "probe_http2_client_operate_headers",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-      },
-      UProbeTmpl{
-          .symbol = "google.golang.org/grpc/internal/transport.(*http2Server).operateHeaders",
-          .match_type = obj_tools::SymbolMatchType::kSuffix,
-          .probe_fn = "probe_http2_server_operate_headers",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-      },
-      UProbeTmpl{
-          .symbol = "google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader",
-          .match_type = obj_tools::SymbolMatchType::kSuffix,
-          .probe_fn = "probe_loopy_writer_write_header",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-      },
-      UProbeTmpl{
-          .symbol = "golang.org/x/net/http2.(*Framer).WriteDataPadded",
-          .match_type = obj_tools::SymbolMatchType::kSuffix,
-          .probe_fn = "probe_http2_framer_write_data",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-      },
-      UProbeTmpl{
-          .symbol = "golang.org/x/net/http2.(*Framer).checkFrameOrder",
-          .match_type = obj_tools::SymbolMatchType::kSuffix,
-          .probe_fn = "probe_http2_framer_check_frame_order",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-      },
-
-      // Probes on Golang net/http's implementation of http2.
-      UProbeTmpl{
-          .symbol = "net/http.(*http2Framer).WriteDataPadded",
-          .match_type = obj_tools::SymbolMatchType::kSuffix,
-          .probe_fn = "probe_http_http2framer_write_data",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-      },
-      UProbeTmpl{
-          .symbol = "net/http.(*http2Framer).checkFrameOrder",
-          .match_type = obj_tools::SymbolMatchType::kSuffix,
-          .probe_fn = "probe_http_http2framer_check_frame_order",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-      },
-      UProbeTmpl{
-          .symbol = "net/http.(*http2writeResHeaders).writeFrame",
-          .match_type = obj_tools::SymbolMatchType::kSuffix,
-          .probe_fn = "probe_http_http2writeResHeaders_write_frame",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-      },
-      UProbeTmpl{
-          .symbol = "golang.org/x/net/http2/hpack.(*Encoder).WriteField",
-          .match_type = obj_tools::SymbolMatchType::kSuffix,
-          .probe_fn = "probe_hpack_header_encoder",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-      },
-      UProbeTmpl{
-          .symbol = "net/http.(*http2serverConn).processHeaders",
-          .match_type = obj_tools::SymbolMatchType::kSuffix,
-          .probe_fn = "probe_http_http2serverConn_processHeaders",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-      },
-  });
-
-  inline static const auto kGoTLSUProbeTmpls = MakeArray<UProbeTmpl>({
-      // Probes on Golang crypto/tls library.
-      UProbeTmpl{
-          .symbol = "crypto/tls.(*Conn).Write",
-          .match_type = obj_tools::SymbolMatchType::kSuffix,
-          .probe_fn = "probe_tls_conn_write",
-          .attach_type = bpf_tools::BPFProbeAttachType::kReturnInsts,
-      },
-      UProbeTmpl{
-          .symbol = "crypto/tls.(*Conn).Read",
-          .match_type = obj_tools::SymbolMatchType::kSuffix,
-          .probe_fn = "probe_tls_conn_read",
-          .attach_type = bpf_tools::BPFProbeAttachType::kReturnInsts,
-      },
-  });
-
-  inline static const auto kOpenSSLUProbes = MakeArray<bpf_tools::UProbeSpec>({
-      // A probe on entry of SSL_write
-      bpf_tools::UProbeSpec{
-          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
-          .symbol = "SSL_write",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-          .probe_fn = "probe_entry_SSL_write",
-      },
-
-      // A probe on return of SSL_write
-      bpf_tools::UProbeSpec{
-          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
-          .symbol = "SSL_write",
-          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
-          .probe_fn = "probe_ret_SSL_write",
-      },
-
-      // A probe on entry of SSL_read
-      bpf_tools::UProbeSpec{
-          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
-          .symbol = "SSL_read",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-          .probe_fn = "probe_entry_SSL_read",
-      },
-
-      // A probe on return of SSL_read
-      bpf_tools::UProbeSpec{
-          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
-          .symbol = "SSL_read",
-          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
-          .probe_fn = "probe_ret_SSL_read",
-      },
-  });
-
   // TODO(oazizi): Remove send and recv probes once we are confident that they don't trace anything.
   //               Note that send/recv are not in the syscall table
   //               (https://filippo.io/linux-syscall-table/), but are defined as SYSCALL_DEFINE4 in
@@ -321,45 +193,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Initialize protocol_transfer_specs_.
   void InitProtocolTransferSpecs();
 
-  // Helper functions for dynamically deploying uprobes:
-
-  StatusOr<int> AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe_tmpls,
-                                 const std::string& binary, obj_tools::ElfReader* elf_reader);
-
-  // Attaches the required probes for Go HTTP2 tracing to the specified binary.
-  StatusOr<int> AttachGoHTTP2Probes(
-      const std::string& binary, obj_tools::ElfReader* elf_reader,
-      obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
-      ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t>* http2_symaddrs_map);
-
-  // Attaches the required probes for GoTLS tracing to the specified binary.
-  StatusOr<int> AttachGoTLSUProbes(
-      const std::string& binary, obj_tools::ElfReader* elf_reader,
-      obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& new_pids,
-      ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t>* go_tls_symaddrs_map);
-
-  // Attaches the required probes for SSL tracing to the specified PID.
-  StatusOr<int> AttachOpenSSLUProbes(
-      uint32_t pid, ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>* openssl_symaddrs_map);
-
-  // Returns set of PIDs that have had mmap called on them since the last call.
-  absl::flat_hash_set<uint32_t> MMapEventPIDs();
-
-  // Deploys uprobes for all purposes (HTTP2, OpenSSL, etc.) on new processes.
-  void DeployUProbes(const absl::flat_hash_set<md::UPID>& pids);
-
-  // Clean-up various BPF maps used to communicate symbol addresses per PID.
-  // Once the PID has terminated, the information is not required anymore.
-  // Note that BPF maps can fill up if this is not done.
-  void CleanupSymaddrMaps(const absl::flat_hash_set<md::UPID>& deleted_upids);
-
-  // Functions that deploy uprobes on the input PIDs.
-  // Return value is number of probes attached.
-  int DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pids);
-  int DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids);
-
-  std::thread RunDeployUProbesThread(const absl::flat_hash_set<md::UPID>& pids);
-
   // Events from BPF.
   // TODO(oazizi/yzhao): These all operate based on pass-by-value, which copies.
   //                     The Handle* functions should call make_unique() of new corresponding
@@ -379,6 +212,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   template <typename TRecordType>
   static void AppendMessage(ConnectorContext* ctx, const ConnectionTracker& conn_tracker,
                             TRecordType record, DataTable* data_table);
+
+  std::thread RunDeployUProbesThread(const absl::flat_hash_set<md::UPID>& pids);
 
   // Returns vector representing currently known cluster (pod and service) CIDRs.
   std::vector<CIDRBlock> ClusterCIDRs(ConnectorContext* ctx);
@@ -432,29 +267,10 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   std::unique_ptr<system::ProcParser> proc_parser_;
 
-  // Ensures DeployUProbes threads run sequentially.
-  std::mutex deploy_uprobes_mutex_;
-  std::atomic<int> num_deploy_uprobes_threads_ = 0;
-
-  ProcTracker proc_tracker_;
-
-  // Records the binaries that have been attached uprobes.
-  // TODO(oazizi): How should these sets be cleaned up of old binaries?
-  absl::flat_hash_set<std::string> http2_probed_binaries_;
-  absl::flat_hash_set<std::string> openssl_probed_binaries_;
-  absl::flat_hash_set<std::string> go_tls_probed_binaries_;
-
   std::shared_ptr<ConnInfoMapManager> conn_info_map_mgr_;
 
-  // BPF maps through which the addresses of symbols for a given pid are communicated to uprobes.
-  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t> > openssl_symaddrs_map_;
-  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_common_symaddrs_t> >
-      go_common_symaddrs_map_;
-  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t> > go_http2_symaddrs_map_;
-  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t> > go_tls_symaddrs_map_;
-
-  // BPF map through which PIDs that have had mmap calls are communicated.
-  std::unique_ptr<ebpf::BPFHashTable<uint32_t, bool> > mmap_events_;
+  UProbeManager uprobe_mgr_;
+  std::atomic<int> num_deploy_uprobes_threads_ = 0;
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);

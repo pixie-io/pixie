@@ -2,6 +2,7 @@
 #include <functional>
 #include <iomanip>
 #include <thread>
+#include <unordered_map>
 #include <utility>
 
 #include <absl/strings/str_format.h>

@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <deque>
 #include <filesystem>
 #include <numeric>
 #include <vector>
