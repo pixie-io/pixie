@@ -261,7 +261,7 @@ class UProbeManager {
                                  const std::string& binary, obj_tools::ElfReader* elf_reader);
 
   // Returns set of PIDs that have had mmap called on them since the last call.
-  absl::flat_hash_set<uint32_t> MMapEventPIDs();
+  absl::flat_hash_set<md::UPID> PIDsToRescanForUProbes();
 
   // Clean-up various BPF maps used to communicate symbol addresses per PID.
   // Once the PID has terminated, the information is not required anymore.
@@ -298,7 +298,7 @@ class UProbeManager {
   std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t> > go_tls_symaddrs_map_;
 
   // BPF map through which PIDs that have had mmap calls are communicated.
-  std::unique_ptr<ebpf::BPFHashTable<uint32_t, bool> > mmap_events_;
+  std::unique_ptr<ebpf::BPFHashTable<upid_t, bool> > mmap_events_;
 };
 
 }  // namespace stirling

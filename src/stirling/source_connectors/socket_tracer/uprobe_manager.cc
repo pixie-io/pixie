@@ -42,8 +42,8 @@ void UProbeManager::Init(bool enable_http2_tracing, bool disable_self_probing) {
   go_tls_symaddrs_map_ = std::make_unique<ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t>>(
       bcc_->bpf().get_hash_table<uint32_t, struct go_tls_symaddrs_t>("go_tls_symaddrs_map"));
 
-  mmap_events_ = std::make_unique<ebpf::BPFHashTable<uint32_t, bool>>(
-      bcc_->bpf().get_hash_table<uint32_t, bool>("mmap_events"));
+  mmap_events_ = std::make_unique<ebpf::BPFHashTable<upid_t, bool>>(
+      bcc_->bpf().get_hash_table<upid_t, bool>("mmap_events"));
 }
 
 StatusOr<int> UProbeManager::AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe_tmpls,
@@ -471,36 +471,31 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   return uprobe_count;
 }
 
-absl::flat_hash_set<uint32_t> UProbeManager::MMapEventPIDs() {
-  // Get a snapshot of the events.
-  std::vector<std::pair<uint32_t, bool>> mmap_event_entries = mmap_events_->get_table_offline();
+absl::flat_hash_set<md::UPID> UProbeManager::PIDsToRescanForUProbes() {
+  // Copy the snapshotted pids.
+  // We later remove the corresponding pids from mmap_events_. We cannot simply clear mmap_events_
+  // as it may be concurrently accessed from kernel-space.
+  std::vector<std::pair<upid_t, bool>> mmap_event_entries = mmap_events_->get_table_offline();
 
-  // Copy the snapshotted pids, and remove the corresponding pids from mmap_events_.
-  // We cannot simply clear mmap_events_ as it may be concurrently accessed from kernel-space.
-  absl::flat_hash_set<uint32_t> pids;
+  // Get the ASID, using an entry from proc_tracker.
+  if (proc_tracker_.upids().empty()) {
+    return {};
+  }
+  uint32_t asid = proc_tracker_.upids().begin()->asid();
+
+  absl::flat_hash_set<md::UPID> upids_to_rescan;
   for (const auto& event : mmap_event_entries) {
-    const uint32_t& pid = event.first;
-    pids.insert(pid);
+    const upid_t& pid = event.first;
+    md::UPID upid(asid, pid.pid, pid.start_time_ticks);
+
+    if (proc_tracker_.upids().contains(upid) && !proc_tracker_.new_upids().contains(upid)) {
+      upids_to_rescan.insert(upid);
+    }
+
     mmap_events_->remove_value(pid);
   }
 
-  return pids;
-}
-
-// Look for any previously scanned processes that have called an mmap.
-// They may have loaded a shared library that we need to uprobe.
-// Return the set of such PIDs that need to be rescanned.
-absl::flat_hash_set<md::UPID> RescanList(const absl::flat_hash_set<uint32_t>& mmap_event_pids,
-                                         ProcTracker* proc_tracker) {
-  absl::flat_hash_set<md::UPID> pids_to_rescan;
-  for (const auto& pid : proc_tracker->upids()) {
-    if (mmap_event_pids.contains(pid.pid()) && !proc_tracker->new_upids().contains(pid)) {
-      VLOG(1) << absl::Substitute("Extra pid to scan: $0", pid.pid());
-      pids_to_rescan.insert(pid);
-    }
-  }
-
-  return pids_to_rescan;
+  return upids_to_rescan;
 }
 
 void UProbeManager::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
@@ -514,7 +509,7 @@ void UProbeManager::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   int uprobe_count = 0;
 
   uprobe_count += DeployOpenSSLUProbes(proc_tracker_.new_upids());
-  uprobe_count += DeployOpenSSLUProbes(RescanList(MMapEventPIDs(), &proc_tracker_));
+  uprobe_count += DeployOpenSSLUProbes(PIDsToRescanForUProbes());
   uprobe_count += DeployGoUProbes(proc_tracker_.new_upids());
 
   LOG_FIRST_N(INFO, 1) << absl::Substitute("Number of uprobes deployed = $0", uprobe_count);

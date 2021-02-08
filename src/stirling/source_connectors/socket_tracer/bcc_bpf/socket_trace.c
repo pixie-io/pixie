@@ -35,10 +35,10 @@ BPF_PERF_OUTPUT(socket_control_events);
 
 // This output is used to export notification of processes that have performed an mmap.
 // The mmap information is used to rescan the binary for certain uprobes, like libssl.
-// Key is TGID, Value is whether an mmap has been triggered.
+// Key is UPID, Value is whether an mmap has been triggered.
 // The value is essentially redundant, and we are using this as a set (instead of a map).
 // Using a BPF_HASH instead of BPF_PERF_OUTPUT to avoid lossy behavior.
-BPF_HASH(mmap_events, uint32_t, bool);
+BPF_HASH(mmap_events, struct upid_t, bool);
 
 /***********************************************************
  * Internal structs and definitions
@@ -1401,10 +1401,12 @@ int syscall__probe_ret_close(struct pt_regs* ctx) {
 // void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset)
 int syscall__probe_entry_mmap(struct pt_regs* ctx) {
   uint64_t id = bpf_get_current_pid_tgid();
-  uint32_t tgid = id >> 32;
+  struct upid_t upid = {};
+  upid.tgid = id >> 32;
+  upid.start_time_ticks = get_tgid_start_time();
 
   bool kTrue = 1;
-  mmap_events.update(&tgid, &kTrue);
+  mmap_events.update(&upid, &kTrue);
 
   return 0;
 }
