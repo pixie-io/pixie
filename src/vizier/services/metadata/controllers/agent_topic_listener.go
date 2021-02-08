@@ -225,10 +225,12 @@ func (a *AgentTopicListener) forwardAgentHeartBeat(m *messages.Heartbeat, msg *n
 		agentHandler.MsgChannel <- msg
 	} else {
 		log.WithField("agentID", agentID.String()).Info("Received heartbeat for agent whose agenthandler doesn't exist. Sending NACK.")
-		// Agent does not exist. Send NACK.
+		// Agent does not exist in handler map. Send NACK asking agent to reregister.
 		resp := messages.VizierMessage{
 			Msg: &messages.VizierMessage_HeartbeatNack{
-				HeartbeatNack: &messages.HeartbeatNack{},
+				HeartbeatNack: &messages.HeartbeatNack{
+					Reregister: true,
+				},
 			},
 		}
 		a.SendMessageToAgent(agentID, resp)
@@ -260,6 +262,20 @@ func (a *AgentTopicListener) StopAgent(agentID uuid.UUID) {
 
 // DeleteAgent deletes the agent from the map. The agent should already be deleted in the agent manager.
 func (a *AgentTopicListener) deleteAgent(agentID uuid.UUID) {
+	// Sends a NACK to the agent with reregister set to false.
+	// This handles the scenario where the agent missed a heartbeat
+	// timeout window, and so we assume the agent is likely in
+	// a bad state and probably needs to be recreated. This NACK
+	// will get the agent to kill itself.
+	resp := messages.VizierMessage{
+		Msg: &messages.VizierMessage_HeartbeatNack{
+			HeartbeatNack: &messages.HeartbeatNack{
+				Reregister: false,
+			},
+		},
+	}
+	a.SendMessageToAgent(agentID, resp)
+
 	a.agentMap.delete(agentID)
 }
 
@@ -431,7 +447,9 @@ func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
 		log.WithError(err).Error("Could not update agent heartbeat.")
 		resp := messages.VizierMessage{
 			Msg: &messages.VizierMessage_HeartbeatNack{
-				HeartbeatNack: &messages.HeartbeatNack{},
+				HeartbeatNack: &messages.HeartbeatNack{
+					Reregister: true,
+				},
 			},
 		}
 		ah.atl.SendMessageToAgent(agentID, resp)
@@ -473,6 +491,7 @@ func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
 
 func (ah *AgentHandler) stop() {
 	defer ah.wg.Done()
+
 	ah.agentManager.DeleteAgent(ah.id)
 	ah.atl.deleteAgent(ah.id)
 	ah.tracepointManager.DeleteAgent(ah.id)

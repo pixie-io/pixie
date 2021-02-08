@@ -529,7 +529,9 @@ func TestAgentHeartbeat_Failed(t *testing.T) {
 
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_HeartbeatNack{
-			HeartbeatNack: &messages.HeartbeatNack{},
+			HeartbeatNack: &messages.HeartbeatNack{
+				Reregister: true,
+			},
 		},
 	}
 	respPb, err := resp.Marshal()
@@ -570,7 +572,9 @@ func TestAgentHeartbeat_Failed(t *testing.T) {
 func TestHeartbeatNonExisting(t *testing.T) {
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_HeartbeatNack{
-			HeartbeatNack: &messages.HeartbeatNack{},
+			HeartbeatNack: &messages.HeartbeatNack{
+				Reregister: true,
+			},
 		},
 	}
 	respPb, err := resp.Marshal()
@@ -673,4 +677,28 @@ func TestAgentTracepointInfoUpdate(t *testing.T) {
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
 	assert.Nil(t, err)
+}
+
+func TestAgentStop(t *testing.T) {
+	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+	u, err := uuid.FromString(uuidStr)
+	assert.Nil(t, err)
+	resp := messages.VizierMessage{
+		Msg: &messages.VizierMessage_HeartbeatNack{
+			HeartbeatNack: &messages.HeartbeatNack{
+				Reregister: false,
+			},
+		},
+	}
+	respPb, err := resp.Marshal()
+
+	// Set up mock.
+	atl, _, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+		assert.Equal(t, respPb, b)
+		assert.Equal(t, "/agent/"+uuidStr, topic)
+		return nil
+	})
+	defer cleanup()
+
+	atl.StopAgent(u)
 }
