@@ -576,7 +576,8 @@ func GetAllResourceUpdatesFromEndpoints(ep *metadatapb.Endpoints, mds MetadataSt
 	return updates, hnPairs
 }
 
-// GetContainerResourceUpdatesFromPod gets the container updates for the given pod.
+// GetContainerResourceUpdatesFromPod gets the container updates for the given pod. This will be deleted once
+// the new metadata handler is used.
 func GetContainerResourceUpdatesFromPod(pod *metadatapb.Pod) []*metadatapb.ResourceUpdate {
 	updates := make([]*metadatapb.ResourceUpdate, len(pod.Status.ContainerStatuses))
 

@@ -6,8 +6,10 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/EvilSuperstars/go-cidrman"
+	"github.com/cenkalti/backoff"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -44,26 +46,26 @@ type OutgoingUpdate struct {
 	Topics []string
 }
 
-// StoredUpdate is a K8s resource update that should be persisted with its resource version.
+// StoredUpdate is a K8s resource update that should be persisted with its update version.
 type StoredUpdate struct {
 	// Update is the resource update that should be stored.
 	Update *storepb.K8SResource
-	// ResourceVersion is the resource version of the update.
-	ResourceVersion string
+	// UpdateVersion is the update version of the update.
+	UpdateVersion int64
 }
 
 // K8sMetadataStore handles storing and fetching any data related to K8s resources.
 type K8sMetadataStore interface {
-	// AddResourceUpdates stores the given resource with its associated resourceVersion for 24h.
-	AddResourceUpdate(resourceVersion string, resource *storepb.K8SResource) error
-	// FetchResourceUpdates gets the resource updates from the `from` resource version, to the `to`
-	// resource version (exclusive).
-	FetchResourceUpdates(from string, to string) ([]*storepb.K8SResource, error)
+	// AddResourceUpdates stores the given resource with its associated updateVersion for 24h.
+	AddResourceUpdate(updateVersion int64, resource *storepb.K8SResource) error
+	// FetchResourceUpdates gets the resource updates from the `from` update version, to the `to`
+	// update version (exclusive).
+	FetchResourceUpdates(from int64, to int64) ([]*storepb.K8SResource, error)
 
-	// GetResourceVersion gets the last resource version sent on a topic.
-	GetResourceVersion(topic string) (string, error)
-	// SetResourceVersion sets the last resource version sent on a topic.
-	SetResourceVersion(topic string, rv string) error
+	// GetUpdateVersion gets the last update version sent on a topic.
+	GetUpdateVersion(topic string) (int64, error)
+	// SetUpdateVersion sets the last update version sent on a topic.
+	SetUpdateVersion(topic string, uv int64) error
 }
 
 // An UpdateProcessor is responsible for processing an incoming update, such as determining what
@@ -75,11 +77,10 @@ type UpdateProcessor interface {
 	ValidateUpdate(runtime.Object, *ProcessorState) bool
 	// GetStoredProtos gets the protos that should be persisted in the data store, derived from
 	// the given update.
-	GetStoredProtos(runtime.Object) (updates []*StoredUpdate)
+	GetStoredProtos(runtime.Object) []*storepb.K8SResource
 	// GetUpdatesToSend gets all of the updates that should be sent to the agents, along with the relevant IPs that
-	// the updates should be sent to. If the IP is empty, this means the update should be sent to all known IPs, including
-	// kelvin.
-	GetUpdatesToSend(runtime.Object, *ProcessorState) []*OutgoingUpdate
+	// the updates should be sent to.
+	GetUpdatesToSend([]*StoredUpdate, *ProcessorState) []*OutgoingUpdate
 }
 
 // ProcessorState is data that should be shared across update processors. It can contain that needs
@@ -134,7 +135,29 @@ func NewK8sMetadataHandler(updateCh <-chan *K8sMessage, mds K8sMetadataStore, co
 	return mh
 }
 
+func (m *K8sMetadataHandler) mustGetCurrentUpdateVersion() int64 {
+	// Get the current update version. We can't send any updates until we have the current update version,
+	// so should keep retrying with an exponential backoff.
+	var currRV int64
+	var err error
+	getRV := func() error {
+		currRV, err = m.mds.GetUpdateVersion(KelvinUpdateTopic)
+		return err
+	}
+	backOffOpts := backoff.NewExponentialBackOff()
+	backOffOpts.InitialInterval = 30 * time.Second
+	backOffOpts.Multiplier = 2
+	backOffOpts.MaxElapsedTime = 10 * time.Minute
+	err = backoff.Retry(getRV, backOffOpts)
+	if err != nil {
+		log.WithError(err).Fatal("Could not get current update version")
+	}
+
+	return currRV
+}
+
 func (m *K8sMetadataHandler) processUpdates() {
+	currUV := m.mustGetCurrentUpdateVersion()
 	for {
 		select {
 		case <-m.done:
@@ -164,8 +187,14 @@ func (m *K8sMetadataHandler) processUpdates() {
 			if updates == nil {
 				continue
 			}
-			for _, u := range updates {
-				err := m.mds.AddResourceUpdate(u.ResourceVersion, u.Update)
+			storedProtos := make([]*StoredUpdate, len(updates))
+			for i, u := range updates {
+				currUV++
+				storedProtos[i] = &StoredUpdate{
+					Update:        updates[i],
+					UpdateVersion: currUV,
+				}
+				err := m.mds.AddResourceUpdate(currUV, u)
 				if err != nil {
 					log.WithError(err).Error("Failed to store resource update")
 					continue
@@ -173,25 +202,25 @@ func (m *K8sMetadataHandler) processUpdates() {
 			}
 
 			// Send the update to the agents.
-			for _, u := range processor.GetUpdatesToSend(update, &m.state) {
+			for _, u := range processor.GetUpdatesToSend(storedProtos, &m.state) {
 				for _, t := range u.Topics {
 					updateToSend := u.Update
-					// Set the previous resource version on the update.
-					prevRV, err := m.mds.GetResourceVersion(t)
-					if err != nil || prevRV == "" {
-						log.WithError(err).Trace("Failed to get resource version for topic")
+					// Set the previous update version on the update.
+					prevUV, err := m.mds.GetUpdateVersion(t)
+					if err != nil || prevUV == 0 {
+						log.WithError(err).Trace("Failed to get update version for topic")
 						// If we cannot get a prevRV from the db, the agent won't know what
 						// update came before this update. Setting the prevRV
-						// to the current resource version, which they definitely don't have yet,
+						// to the current update version, which they definitely don't have yet,
 						// will force the agent to rerequest any possible missing updates, just to be safe.
-						prevRV = updateToSend.ResourceVersion
+						prevUV = updateToSend.UpdateVersion
 					}
-					updateToSend.PrevResourceVersion = prevRV
-					// Set the new resource version.
-					err = m.mds.SetResourceVersion(t, updateToSend.ResourceVersion)
+					updateToSend.PrevUpdateVersion = prevUV
+					// Set the new update version.
+					err = m.mds.SetUpdateVersion(t, updateToSend.UpdateVersion)
 					if err != nil {
-						log.WithError(err).Trace("Failed to set current resource version for topic")
-						// If we fail to set the current resource version, the topic may miss an update
+						log.WithError(err).Trace("Failed to set current update version for topic")
+						// If we fail to set the current update version, the topic may miss an update
 						// without realizing it.
 					}
 					err = m.sendUpdate(updateToSend, t)
@@ -273,7 +302,7 @@ func (p *EndpointsUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Pro
 	_, exists := e.Annotations[leaderAnnotation]
 	if exists {
 		delete(e.Annotations, leaderAnnotation)
-		e.ResourceVersion = ""
+		e.ResourceVersion = "0"
 		storedMsg, exists := state.LeaderMsgs[e.UID]
 		if exists {
 			// Check if the message is the same as before except for the annotation.
@@ -297,7 +326,7 @@ func (p *EndpointsUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Pro
 }
 
 // GetStoredProtos gets the update protos that should be persisted.
-func (p *EndpointsUpdateProcessor) GetStoredProtos(obj runtime.Object) []*StoredUpdate {
+func (p *EndpointsUpdateProcessor) GetStoredProtos(obj runtime.Object) []*storepb.K8SResource {
 	e := obj.(*v1.Endpoints)
 
 	pb, err := protoutils.EndpointsToProto(e)
@@ -309,22 +338,17 @@ func (p *EndpointsUpdateProcessor) GetStoredProtos(obj runtime.Object) []*Stored
 			Endpoints: pb,
 		},
 	}
-	return []*StoredUpdate{
-		&StoredUpdate{
-			Update:          storedUpdate,
-			ResourceVersion: pb.Metadata.ResourceVersion,
-		},
-	}
+	return []*storepb.K8SResource{storedUpdate}
 }
 
 // GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
-func (p *EndpointsUpdateProcessor) GetUpdatesToSend(obj runtime.Object, state *ProcessorState) []*OutgoingUpdate {
-	e := obj.(*v1.Endpoints)
-
-	pb, err := protoutils.EndpointsToProto(e)
-	if err != nil {
+func (p *EndpointsUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdate, state *ProcessorState) []*OutgoingUpdate {
+	if len(storedUpdates) == 0 {
 		return nil
 	}
+
+	pb := storedUpdates[0].Update.GetEndpoints()
+	rv := storedUpdates[0].UpdateVersion
 
 	var updates []*OutgoingUpdate
 
@@ -354,13 +378,13 @@ func (p *EndpointsUpdateProcessor) GetUpdatesToSend(obj runtime.Object, state *P
 
 	for ip := range ipToPodNames {
 		updates = append(updates, &OutgoingUpdate{
-			Update: getServiceResourceUpdateFromEndpoint(pb, ipToPodUIDs[ip], ipToPodNames[ip]),
+			Update: getServiceResourceUpdateFromEndpoint(pb, rv, ipToPodUIDs[ip], ipToPodNames[ip]),
 			Topics: []string{ip},
 		})
 	}
 	// Also send update to Kelvin.
 	updates = append(updates, &OutgoingUpdate{
-		Update: getServiceResourceUpdateFromEndpoint(pb, allPodUIDs, allPodNames),
+		Update: getServiceResourceUpdateFromEndpoint(pb, rv, allPodUIDs, allPodNames),
 		Topics: []string{KelvinUpdateTopic},
 	})
 
@@ -393,7 +417,7 @@ func (p *ServiceUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Proce
 }
 
 // GetStoredProtos gets the update protos that should be persisted.
-func (p *ServiceUpdateProcessor) GetStoredProtos(obj runtime.Object) []*StoredUpdate {
+func (p *ServiceUpdateProcessor) GetStoredProtos(obj runtime.Object) []*storepb.K8SResource {
 	e := obj.(*v1.Service)
 
 	pb, err := protoutils.ServiceToProto(e)
@@ -405,12 +429,7 @@ func (p *ServiceUpdateProcessor) GetStoredProtos(obj runtime.Object) []*StoredUp
 			Service: pb,
 		},
 	}
-	return []*StoredUpdate{
-		&StoredUpdate{
-			Update:          storedUpdate,
-			ResourceVersion: pb.Metadata.ResourceVersion,
-		},
-	}
+	return []*storepb.K8SResource{storedUpdate}
 }
 
 func (p *ServiceUpdateProcessor) updateServiceCIDR(svc *v1.Service, state *ProcessorState) {
@@ -433,7 +452,7 @@ func (p *ServiceUpdateProcessor) updateServiceCIDR(svc *v1.Service, state *Proce
 }
 
 // GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
-func (p *ServiceUpdateProcessor) GetUpdatesToSend(obj runtime.Object, state *ProcessorState) []*OutgoingUpdate {
+func (p *ServiceUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdate, state *ProcessorState) []*OutgoingUpdate {
 	// We don't send out service updates, they are encapsulated by endpoints updates where we have more information
 	// about which nodes the service is actually running on.
 	return nil
@@ -473,10 +492,10 @@ func (p *PodUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Processor
 }
 
 // GetStoredProtos gets the update protos that should be persisted.
-func (p *PodUpdateProcessor) GetStoredProtos(obj runtime.Object) []*StoredUpdate {
+func (p *PodUpdateProcessor) GetStoredProtos(obj runtime.Object) []*storepb.K8SResource {
 	e := obj.(*v1.Pod)
 
-	var updates []*StoredUpdate
+	var updates []*storepb.K8SResource
 
 	pb, err := protoutils.PodToProto(e)
 	if err != nil {
@@ -486,24 +505,18 @@ func (p *PodUpdateProcessor) GetStoredProtos(obj runtime.Object) []*StoredUpdate
 	// Also store container updates. These are saved and sent as separate updates.
 	containerUpdates := GetContainerUpdatesFromPod(pb)
 	for i := range containerUpdates {
-		updates = append(updates, &StoredUpdate{
-			Update: &storepb.K8SResource{
-				Resource: &storepb.K8SResource_Container{
-					Container: containerUpdates[i],
-				},
+		updates = append(updates, &storepb.K8SResource{
+			Resource: &storepb.K8SResource_Container{
+				Container: containerUpdates[i],
 			},
-			ResourceVersion: fmt.Sprintf("%s_%d", pb.Metadata.ResourceVersion, i),
 		})
 	}
 
-	// The pod should have a later resource version than the containers, because the containers should be sent to an agent first.
-	updates = append(updates, &StoredUpdate{
-		Update: &storepb.K8SResource{
-			Resource: &storepb.K8SResource_Pod{
-				Pod: pb,
-			},
+	// The pod should have a later update version than the containers, because the containers should be sent to an agent first.
+	updates = append(updates, &storepb.K8SResource{
+		Resource: &storepb.K8SResource_Pod{
+			Pod: pb,
 		},
-		ResourceVersion: fmt.Sprintf("%s_%d", pb.Metadata.ResourceVersion, len(containerUpdates)),
 	})
 	return updates
 }
@@ -520,39 +533,41 @@ func (p *PodUpdateProcessor) updatePodCIDR(pod *v1.Pod, state *ProcessorState) {
 }
 
 // GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
-func (p *PodUpdateProcessor) GetUpdatesToSend(obj runtime.Object, state *ProcessorState) []*OutgoingUpdate {
-	e := obj.(*v1.Pod)
-
-	pb, err := protoutils.PodToProto(e)
-	if err != nil {
+func (p *PodUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdate, state *ProcessorState) []*OutgoingUpdate {
+	if len(storedUpdates) == 0 {
 		return nil
 	}
 
+	// Get pod update in stored updates, so we can get the hostIP. The pod update should always be the last
+	// stored update, since containers should be sent before their pod update.
+	pb := storedUpdates[len(storedUpdates)-1].Update.GetPod()
+
 	var updates []*OutgoingUpdate
 
-	// Create the resource updates for the specific pod.
-	// Container updates should be sent first.
-	containerUpdates := GetContainerUpdatesFromPod(pb)
-	for i := range containerUpdates {
-		ru := &metadatapb.ResourceUpdate{
-			ResourceVersion: fmt.Sprintf("%s_%d", pb.Metadata.ResourceVersion, i),
-			Update: &metadatapb.ResourceUpdate_ContainerUpdate{
-				ContainerUpdate: containerUpdates[i],
-			},
+	for _, u := range storedUpdates {
+		containerUpdate := u.Update.GetContainer()
+		if containerUpdate != nil {
+			ru := &metadatapb.ResourceUpdate{
+				UpdateVersion: u.UpdateVersion,
+				Update: &metadatapb.ResourceUpdate_ContainerUpdate{
+					ContainerUpdate: containerUpdate,
+				},
+			}
+			// Send the update to the relevant agent and the Kelvin.
+			updates = append(updates, &OutgoingUpdate{
+				Update: ru,
+				Topics: []string{pb.Status.HostIP, KelvinUpdateTopic},
+			})
+			continue
 		}
-		// Send the update to the relevant agent and the Kelvin.
-		updates = append(updates, &OutgoingUpdate{
-			Update: ru,
-			Topics: []string{e.Status.HostIP, KelvinUpdateTopic},
-		})
+		podUpdate := u.Update.GetPod()
+		if podUpdate != nil {
+			updates = append(updates, &OutgoingUpdate{
+				Update: getResourceUpdateFromPod(podUpdate, u.UpdateVersion),
+				Topics: []string{pb.Status.HostIP, KelvinUpdateTopic},
+			})
+		}
 	}
-
-	// Send out the pod update to the relevant agent and Kelvin.
-	podUpdate := GetResourceUpdateFromPod(pb)
-	updates = append(updates, &OutgoingUpdate{
-		Update: podUpdate,
-		Topics: []string{e.Status.HostIP, KelvinUpdateTopic},
-	})
 
 	return updates
 }
@@ -596,7 +611,7 @@ func (p *NodeUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Processo
 }
 
 // GetStoredProtos gets the update protos that should be persisted.
-func (p *NodeUpdateProcessor) GetStoredProtos(obj runtime.Object) []*StoredUpdate {
+func (p *NodeUpdateProcessor) GetStoredProtos(obj runtime.Object) []*storepb.K8SResource {
 	e := obj.(*v1.Node)
 
 	pb, err := protoutils.NodeToProto(e)
@@ -608,16 +623,11 @@ func (p *NodeUpdateProcessor) GetStoredProtos(obj runtime.Object) []*StoredUpdat
 			Node: pb,
 		},
 	}
-	return []*StoredUpdate{
-		&StoredUpdate{
-			Update:          storedUpdate,
-			ResourceVersion: pb.Metadata.ResourceVersion,
-		},
-	}
+	return []*storepb.K8SResource{storedUpdate}
 }
 
 // GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
-func (p *NodeUpdateProcessor) GetUpdatesToSend(obj runtime.Object, state *ProcessorState) []*OutgoingUpdate {
+func (p *NodeUpdateProcessor) GetUpdatesToSend(updates []*StoredUpdate, state *ProcessorState) []*OutgoingUpdate {
 	// Currently we don't send node updates to the agents.
 	return nil
 }
@@ -646,7 +656,7 @@ func (p *NamespaceUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Pro
 }
 
 // GetStoredProtos gets the update protos that should be persisted.
-func (p *NamespaceUpdateProcessor) GetStoredProtos(obj runtime.Object) []*StoredUpdate {
+func (p *NamespaceUpdateProcessor) GetStoredProtos(obj runtime.Object) []*storepb.K8SResource {
 	e := obj.(*v1.Namespace)
 
 	pb, err := protoutils.NamespaceToProto(e)
@@ -658,22 +668,17 @@ func (p *NamespaceUpdateProcessor) GetStoredProtos(obj runtime.Object) []*Stored
 			Namespace: pb,
 		},
 	}
-	return []*StoredUpdate{
-		&StoredUpdate{
-			Update:          storedUpdate,
-			ResourceVersion: pb.Metadata.ResourceVersion,
-		},
-	}
+	return []*storepb.K8SResource{storedUpdate}
 }
 
 // GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
-func (p *NamespaceUpdateProcessor) GetUpdatesToSend(obj runtime.Object, state *ProcessorState) []*OutgoingUpdate {
-	e := obj.(*v1.Namespace)
-
-	pb, err := protoutils.NamespaceToProto(e)
-	if err != nil {
+func (p *NamespaceUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdate, state *ProcessorState) []*OutgoingUpdate {
+	if len(storedUpdates) == 0 {
 		return nil
 	}
+
+	pb := storedUpdates[0].Update.GetNamespace()
+	rv := storedUpdates[0].UpdateVersion
 
 	// Send the update to all agents.
 	agents := []string{KelvinUpdateTopic}
@@ -682,7 +687,7 @@ func (p *NamespaceUpdateProcessor) GetUpdatesToSend(obj runtime.Object, state *P
 	}
 	return []*OutgoingUpdate{
 		&OutgoingUpdate{
-			Update: getResourceUpdateFromNamespace(pb),
+			Update: getResourceUpdateFromNamespace(pb, rv),
 			Topics: agents,
 		},
 	}
@@ -721,9 +726,9 @@ func GetContainerUpdatesFromPod(pod *metadatapb.Pod) []*metadatapb.ContainerUpda
 	return updates
 }
 
-func getResourceUpdateFromNamespace(ns *metadatapb.Namespace) *metadatapb.ResourceUpdate {
+func getResourceUpdateFromNamespace(ns *metadatapb.Namespace, uv int64) *metadatapb.ResourceUpdate {
 	return &metadatapb.ResourceUpdate{
-		ResourceVersion: ns.Metadata.ResourceVersion,
+		UpdateVersion: uv,
 		Update: &metadatapb.ResourceUpdate_NamespaceUpdate{
 			NamespaceUpdate: &metadatapb.NamespaceUpdate{
 				UID:              ns.Metadata.UID,
@@ -735,9 +740,9 @@ func getResourceUpdateFromNamespace(ns *metadatapb.Namespace) *metadatapb.Resour
 	}
 }
 
-func getServiceResourceUpdateFromEndpoint(ep *metadatapb.Endpoints, podIDs []string, podNames []string) *metadatapb.ResourceUpdate {
+func getServiceResourceUpdateFromEndpoint(ep *metadatapb.Endpoints, uv int64, podIDs []string, podNames []string) *metadatapb.ResourceUpdate {
 	update := &metadatapb.ResourceUpdate{
-		ResourceVersion: ep.Metadata.ResourceVersion,
+		UpdateVersion: uv,
 		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
 			ServiceUpdate: &metadatapb.ServiceUpdate{
 				UID:              ep.Metadata.UID,
@@ -750,6 +755,49 @@ func getServiceResourceUpdateFromEndpoint(ep *metadatapb.Endpoints, podIDs []str
 			},
 		},
 	}
+	return update
+}
+
+func getResourceUpdateFromPod(pod *metadatapb.Pod, uv int64) *metadatapb.ResourceUpdate {
+	var containerIDs []string
+	var containerNames []string
+	if pod.Status.ContainerStatuses != nil {
+		for _, s := range pod.Status.ContainerStatuses {
+			containerIDs = append(containerIDs, formatContainerID(s.ContainerID))
+			containerNames = append(containerNames, s.Name)
+		}
+	}
+
+	var podName, hostname string
+	if pod.Spec != nil {
+		podName = pod.Spec.NodeName
+		hostname = pod.Spec.Hostname
+	}
+
+	update := &metadatapb.ResourceUpdate{
+		UpdateVersion: uv,
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:              pod.Metadata.UID,
+				Name:             pod.Metadata.Name,
+				Namespace:        pod.Metadata.Namespace,
+				StartTimestampNS: pod.Metadata.CreationTimestampNS,
+				StopTimestampNS:  pod.Metadata.DeletionTimestampNS,
+				QOSClass:         pod.Status.QOSClass,
+				ContainerIDs:     containerIDs,
+				ContainerNames:   containerNames,
+				Phase:            pod.Status.Phase,
+				Conditions:       pod.Status.Conditions,
+				NodeName:         podName,
+				Hostname:         hostname,
+				PodIP:            pod.Status.PodIP,
+				HostIP:           pod.Status.HostIP,
+				Message:          pod.Status.Message,
+				Reason:           pod.Status.Reason,
+			},
+		},
+	}
+
 	return update
 }
 
