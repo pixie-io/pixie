@@ -1,0 +1,6 @@
+---
+short: Redis RPC messages
+long: >
+  Traces Redis RPC request and response messages.
+  WARNING: Redis tracing is a beta feature. Details may subject to further changes.
+org_name: pixielabs.ai
