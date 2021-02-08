@@ -132,6 +132,17 @@ func TestNATSGRPCBridgeHandshakeTest_CorrectRegistration(t *testing.T) {
 	ts, cleanup := createTestState(t, ctrl)
 	defer cleanup(t)
 
+	vizierID := uuid.NewV4()
+	regReq := &cvmsgspb.RegisterVizierRequest{
+		VizierID: utils.ProtoFromUUIDStrOrNil(vizierID.String()),
+		JwtKey:   "123",
+		Address:  "123:123",
+	}
+
+	ts.mockVZMgr.EXPECT().
+		VizierConnected(gomock.Any(), regReq).
+		Return(&cvmsgspb.RegisterVizierAck{Status: cvmsgspb.ST_OK}, nil)
+
 	// Make some GRPC Requests.
 	ctx := context.Background()
 	client := vzconnpb.NewVZConnServiceClient(ts.conn)
@@ -141,22 +152,12 @@ func TestNATSGRPCBridgeHandshakeTest_CorrectRegistration(t *testing.T) {
 	}
 
 	readCh := grpcReader(stream)
-	vizierID := uuid.NewV4()
-	regReq := &cvmsgspb.RegisterVizierRequest{
-		VizierID: utils.ProtoFromUUIDStrOrNil(vizierID.String()),
-		JwtKey:   "123",
-		Address:  "123:123",
-	}
 
 	err = stream.Send(&vzconnpb.V2CBridgeMessage{
 		Topic:     "register",
 		SessionId: 0,
 		Msg:       convertToAny(regReq),
 	})
-
-	ts.mockVZMgr.EXPECT().
-		VizierConnected(gomock.Any(), regReq).
-		Return(&cvmsgspb.RegisterVizierAck{Status: cvmsgspb.ST_OK}, nil)
 
 	// Should get the register ACK.
 	m := <-readCh
@@ -259,15 +260,15 @@ func registerVizier(ts *testState, vizierID uuid.UUID, stream vzconnpb.VZConnSer
 		Address:  "123:123",
 	}
 
+	ts.mockVZMgr.EXPECT().
+		VizierConnected(gomock.Any(), regReq).
+		Return(&cvmsgspb.RegisterVizierAck{Status: cvmsgspb.ST_OK}, nil)
+
 	err := stream.Send(&vzconnpb.V2CBridgeMessage{
 		Topic:     "register",
 		SessionId: 0,
 		Msg:       convertToAny(regReq),
 	})
-
-	ts.mockVZMgr.EXPECT().
-		VizierConnected(gomock.Any(), regReq).
-		Return(&cvmsgspb.RegisterVizierAck{Status: cvmsgspb.ST_OK}, nil)
 
 	// Should get the register ACK.
 	m := <-readCh
