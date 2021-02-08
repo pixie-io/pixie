@@ -225,7 +225,14 @@ std::thread SocketTraceConnector::RunDeployUProbesThread(
     const absl::flat_hash_set<md::UPID>& pids) {
   // The check that state is not uninitialized is required for socket_trace_connector_test,
   // which would otherwise try to deploy uprobes (for which it does not have permissions).
-  if (state() != State::kUninitialized) {
+  // Also, we check that there is no other previous thread still running.
+  // If an old thread is still running, then we don't deploy this one,
+  // we can let the next one cover the deployment of new uprobes.
+  // TODO(oazizi): Consider changing the model to a independently running thread that wakes up
+  //               periodically. If doing so, be careful of impact on tests, since the uprobe
+  //               deployment will become asynchronous to TransferData(), and this may
+  //               lead to non-determinism.
+  if (state() != State::kUninitialized && !uprobe_mgr_.ThreadsRunning()) {
     return uprobe_mgr_.RunDeployUProbesThread(pids);
   }
   return {};
