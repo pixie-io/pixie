@@ -79,7 +79,7 @@ func main() {
 		tm := &tableMux{tables: make(map[string]*tableCollector)}
 		log.Println("Executing PxL script.")
 		resultSet, err := vz.ExecuteScript(ctx, pxlScript, tm)
-		if err != nil && err != io.EOF {
+		if err != nil {
 			panic(err)
 		}
 
