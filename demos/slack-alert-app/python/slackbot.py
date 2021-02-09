@@ -42,36 +42,14 @@ slack_bot_token = os.environ['SLACK_BOT_TOKEN']
 # HTTP error (>4xxx) count for each service in the `px-sock-shop` namespace.
 # To deploy the px-sock-shop demo, see:
 # https://docs.pixielabs.ai/tutorials/slackbot-alert for how to
-PXL_SCRIPT = """
-import px
-
-df = px.DataFrame(table='http_events', start_time='-5m')
-
-# Add column for HTTP response status errors.
-df.error = df.http_resp_status >= 400
-
-# Add columns for service, namespace info
-df.namespace = df.ctx['namespace']
-df.service = df.ctx['service']
-
-# Filter for px-sock-shop namespace only.
-df = df[df.namespace == 'px-sock-shop']
-
-# Group HTTP events by service, counting errors and total HTTP events.
-df = df.groupby(['service']).agg(
-    error_count=('error', px.sum),
-    total_requests=('http_resp_status', px.count)
-)
-
-px.display(df, "http_table")
-"""
+pxl_script = open("http_errors.pxl", "r").read()
 
 
 def get_pixie_data(cluster_conn):
 
     msg = ["*Recent 4xx+ Spikes in last 5 minutes:*"]
 
-    script = cluster_conn.prepare_script(PXL_SCRIPT)
+    script = cluster_conn.prepare_script(pxl_script)
 
     # If you change the PxL script, you'll need to change the
     # columns this script looks for in the result table.
