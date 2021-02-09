@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -30,41 +31,18 @@ import (
 	"go.withpixie.dev/pixie/src/api/go/pxapi/types"
 )
 
-var (
+func main() {
+
 	// Slack channel for Slackbot to post in.
 	// Slack App must be a member of this channel.
-	slackChannel = "#pixie-alerts"
+	slackChannel := "#pixie-alerts"
 
 	// This PxL script ouputs a table of the HTTP total requests count and
 	// HTTP error (>4xxx) count for each service in the `px-sock-shop` namespace.
 	// To deploy the px-sock-shop demo, see:
 	// https://docs.pixielabs.ai/tutorials/slackbot-alert for how to
-	pxlScript = `
-import px
-
-df = px.DataFrame(table='http_events', start_time='-5m')
-
-# Add column for HTTP response status errors.
-df.error = df.http_resp_status >= 400
-
-# Add columns for service, namespace info
-df.namespace = df.ctx['namespace']
-df.service = df.ctx['service']
-
-# Filter for px-sock-shop namespace only.
-df = df[df.namespace == 'px-sock-shop']
-
-# Group HTTP events by service, counting errors and total HTTP events.
-df = df.groupby(['service']).agg(
-    error_count=('error', px.sum),
-    total_requests=('http_resp_status', px.count)
-)
-
-px.display(df, "http_table")
-`
-)
-
-func main() {
+	b, err := ioutil.ReadFile("http_errors.pxl")
+	pxlScript := string(b)
 
 	// The slackbot requires the following configs, which are specified
 	// using environment variables. For directions on how to find these
@@ -96,9 +74,6 @@ func main() {
 
 	slackClient := slack.New(slackToken)
 
-	// Using a ticker (rather than a for loop + sleep call) means that the slackbot
-	// will message every 5 minutes, regardless of how long it takes to call the 
-	// Pixie API (as long as it takes less than 5 minutes).
 	ticker := time.NewTicker(5 * time.Minute)
 	for {
 		tm := &tableMux{tables: make(map[string]*tableCollector)}
@@ -126,22 +101,22 @@ func main() {
 	}
 }
 
-// Implement the TableRecordHandler interface to processes the PxL script table record-wise.
+// Implement the TableRecordHandler interface to processes the PxL script output table record-wise.
 type tableCollector struct {
-	msg strings.Builder
-	// Channel to communicate to tableMux that tableCollector is done collecting table rows.
+	tableDataBuilder strings.Builder
+	// Channel used to block until all of the table data to be collected.
 	done chan struct{}
 }
 
 func (t *tableCollector) HandleInit(ctx context.Context, metadata types.TableMetadata) error {
-	t.msg.WriteString("*Recent 4xx+ Spikes in last 5 minutes:*\n")
+	t.tableDataBuilder.WriteString("*Recent 4xx+ Spikes in last 5 minutes:*\n")
 	return nil
 }
 
 func (t *tableCollector) HandleRecord(ctx context.Context, r *types.Record) error {
-	fmt.Fprintf(&t.msg, "%s \t ---> %s  (>4xx) errors out of %s requests.\n", r.GetDatum("service"),
-																			r.GetDatum("error_count"),
-																			r.GetDatum("total_requests"))
+	fmt.Fprintf(&t.tableDataBuilder, "%s \t ---> %s  (>4xx) errors out of %s requests.\n", r.GetDatum("service"),
+																							r.GetDatum("error_count"),
+																							r.GetDatum("total_requests"))
 	return nil
 }
 
@@ -153,7 +128,7 @@ func (t *tableCollector) HandleDone(ctx context.Context) error {
 func (t *tableCollector) GetTableDataSync() string {
 	// Wait until the `done` channel is closed, indicating table data has finished collecting.
 	<- t.done
-	return t.msg.String()
+	return t.tableDataBuilder.String()
 }
 
 // Implement the TableMuxer to route pxl script output tables to the correct handler.
