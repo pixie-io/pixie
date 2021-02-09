@@ -141,7 +141,7 @@ ${bazel_query} "kind(cc_binary, ${buildables_kind})" > bazel_buildables_clang_ti
 ${bazel_query} "kind(cc_test, ${tests_kind})" > bazel_tests_clang_tidy
 
 # Should we run golang race detection?
-${bazel_query} "kind(go_library, ${buildables_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_buildables_go_race
+${bazel_query} "kind(go_binary, ${buildables_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_buildables_go_race
 ${bazel_query} "kind(go_test, ${tests_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_tests_go_race
 
 # Should we run doxygen?
