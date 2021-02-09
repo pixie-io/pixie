@@ -17,6 +17,8 @@
 #include "src/stirling/utils/proc_path_tools.h"
 #include "src/stirling/utils/proc_tracker.h"
 
+DECLARE_bool(stirling_rescan_for_dlopen);
+
 namespace pl {
 namespace stirling {
 

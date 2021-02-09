@@ -90,6 +90,8 @@ Commercial support is available at
 <a href... [TRUNCATED])";
 
 TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
+  FLAGS_stirling_rescan_for_dlopen = true;
+
   // Note that stirling is deployed before starting this test.
 
   // Makes the test run much faster.

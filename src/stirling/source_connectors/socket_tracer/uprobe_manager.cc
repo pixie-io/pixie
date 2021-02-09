@@ -16,6 +16,10 @@
 #include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
+DEFINE_bool(stirling_rescan_for_dlopen, false,
+            "If enabled, Stirling will use mmap tracing information to rescan binaries for delay "
+            "loaded libraries like OpenSSL");
+
 namespace pl {
 namespace stirling {
 
@@ -509,7 +513,9 @@ void UProbeManager::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   int uprobe_count = 0;
 
   uprobe_count += DeployOpenSSLUProbes(proc_tracker_.new_upids());
-  uprobe_count += DeployOpenSSLUProbes(PIDsToRescanForUProbes());
+  if (FLAGS_stirling_rescan_for_dlopen) {
+    uprobe_count += DeployOpenSSLUProbes(PIDsToRescanForUProbes());
+  }
   uprobe_count += DeployGoUProbes(proc_tracker_.new_upids());
 
   LOG_FIRST_N(INFO, 1) << absl::Substitute("Number of uprobes deployed = $0", uprobe_count);
