@@ -116,9 +116,11 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // ReadPerfBuffers poll callback functions (must be static).
   // These are used by the static variables below, and have to be placed here.
   static void HandleDataEvent(void* cb_cookie, void* data, int data_size);
-  static void HandleDataEventsLoss(void* cb_cookie, uint64_t lost);
+  static void HandleDataEventLoss(void* cb_cookie, uint64_t lost);
   static void HandleControlEvent(void* cb_cookie, void* data, int data_size);
-  static void HandleControlEventsLoss(void* cb_cookie, uint64_t lost);
+  static void HandleControlEventLoss(void* cb_cookie, uint64_t lost);
+  static void HandleMMapEvent(void* cb_cookie, void* data, int data_size);
+  static void HandleMMapEventLoss(void* cb_cookie, uint64_t lost);
   static void HandleHTTP2HeaderEvent(void* cb_cookie, void* data, int data_size);
   static void HandleHTTP2HeaderEventLoss(void* cb_cookie, uint64_t lost);
   static void HandleHTTP2Data(void* cb_cookie, void* data, int data_size);
@@ -170,9 +172,10 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   inline static const auto kPerfBufferSpecs = MakeArray<bpf_tools::PerfBufferSpec>({
       // For data events. The order must be consistent with output tables.
-      {"socket_data_events", HandleDataEvent, HandleDataEventsLoss},
+      {"socket_data_events", HandleDataEvent, HandleDataEventLoss},
       // For non-data events. Must not mix with the above perf buffers for data events.
-      {"socket_control_events", HandleControlEvent, HandleControlEventsLoss},
+      {"socket_control_events", HandleControlEvent, HandleControlEventLoss},
+      {"mmap_events", HandleMMapEvent, HandleMMapEventLoss},
       {"go_grpc_header_events", HandleHTTP2HeaderEvent, HandleHTTP2HeaderEventLoss},
       {"go_grpc_data_events", HandleHTTP2Data, HandleHTTP2DataLoss},
   });

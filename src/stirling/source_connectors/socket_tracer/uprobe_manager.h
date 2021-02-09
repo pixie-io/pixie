@@ -89,6 +89,13 @@ class UProbeManager {
   void Init(bool enable_http2_tracing, bool disable_self_tracing = true);
 
   /**
+   * Notify uprobe manager of an mmap event. An mmap may be indicative of a dlopen,
+   * so this is used to determine when to rescan binaries for newly loaded shared libraries.
+   * @param upid UPID of the process that performed the mmap.
+   */
+  void NotifyMMapEvent(upid_t upid);
+
+  /**
    * Runs the uprobe deployment code on the provided set of pids, as a thread.
    * @param pids New PIDs to analyze deploy uprobes on. Old PIDs can also be provided,
    *             if they need to be rescanned.
@@ -325,6 +332,8 @@ class UProbeManager {
   std::unique_ptr<system::ProcParser> proc_parser_;
   ProcTracker proc_tracker_;
 
+  absl::flat_hash_set<upid_t, UPIDHashFn> upids_with_mmap_;
+
   // Records the binaries that have uprobes attached, so we don't try to probe them again.
   // TODO(oazizi): How should these sets be cleaned up of old binaries, once they are deleted?
   //               Without clean-up, these could consume more-and-more memory.
@@ -340,9 +349,6 @@ class UProbeManager {
   std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_http2_symaddrs_t> >
       go_http2_symaddrs_map_;
   std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_tls_symaddrs_t> > go_tls_symaddrs_map_;
-
-  // BPF map through which PIDs that have had mmap calls are communicated.
-  std::unique_ptr<ebpf::BPFHashTable<upid_t, bool> > mmap_events_;
 };
 
 }  // namespace stirling

@@ -75,6 +75,7 @@ class UPID {
   friend H AbslHashValue(H h, const UPID& c) {
     return H::combine(std::move(h), c.value_);
   }
+
   static StatusOr<UPID> ParseFromUUIDString(const std::string& str) {
     sole::uuid u = sole::rebuild(str);
     if (u.ab == 0 && u.cd == 0) {

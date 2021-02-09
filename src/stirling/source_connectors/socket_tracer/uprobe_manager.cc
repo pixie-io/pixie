@@ -42,10 +42,9 @@ void UProbeManager::Init(bool enable_http2_tracing, bool disable_self_probing) {
       &bcc_->bpf(), "http2_symaddrs_map");
   go_tls_symaddrs_map_ = UserSpaceManagedBPFMap<uint32_t, struct go_tls_symaddrs_t>::Create(
       &bcc_->bpf(), "go_tls_symaddrs_map");
-
-  mmap_events_ = std::make_unique<ebpf::BPFHashTable<upid_t, bool>>(
-      bcc_->bpf().get_hash_table<upid_t, bool>("mmap_events"));
 }
+
+void UProbeManager::NotifyMMapEvent(upid_t upid) { upids_with_mmap_.insert(upid); }
 
 StatusOr<int> UProbeManager::AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe_tmpls,
                                               const std::string& binary,
@@ -455,11 +454,6 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
 }
 
 absl::flat_hash_set<md::UPID> UProbeManager::PIDsToRescanForUProbes() {
-  // Copy the snapshotted pids.
-  // We later remove the corresponding pids from mmap_events_. We cannot simply clear mmap_events_
-  // as it may be concurrently accessed from kernel-space.
-  std::vector<std::pair<upid_t, bool>> mmap_event_entries = mmap_events_->get_table_offline();
-
   // Get the ASID, using an entry from proc_tracker.
   if (proc_tracker_.upids().empty()) {
     return {};
@@ -467,16 +461,15 @@ absl::flat_hash_set<md::UPID> UProbeManager::PIDsToRescanForUProbes() {
   uint32_t asid = proc_tracker_.upids().begin()->asid();
 
   absl::flat_hash_set<md::UPID> upids_to_rescan;
-  for (const auto& event : mmap_event_entries) {
-    const upid_t& pid = event.first;
+  for (const auto& pid : upids_with_mmap_) {
     md::UPID upid(asid, pid.pid, pid.start_time_ticks);
 
     if (proc_tracker_.upids().contains(upid) && !proc_tracker_.new_upids().contains(upid)) {
       upids_to_rescan.insert(upid);
     }
-
-    mmap_events_->remove_value(pid);
   }
+
+  upids_with_mmap_.clear();
 
   return upids_to_rescan;
 }

@@ -352,7 +352,7 @@ std::string ProbeLossMessage(std::string_view perf_buffer_name, uint64_t lost) {
 
 }  // namespace
 
-void SocketTraceConnector::HandleDataEventsLoss(void* /*cb_cookie*/, uint64_t lost) {
+void SocketTraceConnector::HandleDataEventLoss(void* /*cb_cookie*/, uint64_t lost) {
   VLOG(1) << ProbeLossMessage("socket_data_events", lost);
 }
 
@@ -362,8 +362,18 @@ void SocketTraceConnector::HandleControlEvent(void* cb_cookie, void* data, int /
   connector->AcceptControlEvent(*static_cast<const socket_control_event_t*>(data));
 }
 
-void SocketTraceConnector::HandleControlEventsLoss(void* /*cb_cookie*/, uint64_t lost) {
+void SocketTraceConnector::HandleControlEventLoss(void* /*cb_cookie*/, uint64_t lost) {
   VLOG(1) << ProbeLossMessage("socket_control_events", lost);
+}
+
+void SocketTraceConnector::HandleMMapEvent(void* cb_cookie, void* data, int /*data_size*/) {
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+  auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
+  connector->uprobe_mgr_.NotifyMMapEvent(*static_cast<upid_t*>(data));
+}
+
+void SocketTraceConnector::HandleMMapEventLoss(void* /*cb_cookie*/, uint64_t lost) {
+  VLOG(1) << ProbeLossMessage("mmap_events", lost);
 }
 
 void SocketTraceConnector::HandleHTTP2HeaderEvent(void* cb_cookie, void* data, int /*data_size*/) {
