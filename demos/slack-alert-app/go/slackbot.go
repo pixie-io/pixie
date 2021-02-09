@@ -114,9 +114,8 @@ func (t *tableCollector) HandleInit(ctx context.Context, metadata types.TableMet
 }
 
 func (t *tableCollector) HandleRecord(ctx context.Context, r *types.Record) error {
-	fmt.Fprintf(&t.tableDataBuilder, "%s \t ---> %s  (>4xx) errors out of %s requests.\n", r.GetDatum("service"),
-																							r.GetDatum("error_count"),
-																							r.GetDatum("total_requests"))
+	fmt.Fprintf(&t.tableDataBuilder, "%s \t ---> %s  (>4xx) errors out of %s requests.\n",
+		r.GetDatum("service"), r.GetDatum("error_count"), r.GetDatum("total_requests"))
 	return nil
 }
 
