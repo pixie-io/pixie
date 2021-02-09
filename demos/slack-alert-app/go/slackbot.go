@@ -24,6 +24,7 @@ import (
 	"os"
 	"strings"
 	"time"
+
 	"github.com/slack-go/slack"
 	"go.withpixie.dev/pixie/src/api/go/pxapi"
 	"go.withpixie.dev/pixie/src/api/go/pxapi/types"
@@ -76,7 +77,7 @@ func main() {
 		panic("Please set PIXIE_CLUSTER_ID environment variable.")
 	}
 
-    slackToken, ok := os.LookupEnv("SLACK_BOT_TOKEN")
+	slackToken, ok := os.LookupEnv("SLACK_BOT_TOKEN")
 	if !ok {
 		panic("Please set SLACK_BOT_TOKEN environment variable.")
 	}
