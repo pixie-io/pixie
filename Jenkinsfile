@@ -612,6 +612,14 @@ def buildDbg = {
   }
 }
 
+def buildGoRace = {
+  WithSourceCodeAndTargetsK8s('build-go-race') {
+    container('pxbuild') {
+      bazelCICmd('build-go-race', 'clang', 'opt', 'go_race', '--@io_bazel_rules_go//go/config:race')
+    }
+  }
+}
+
 def buildASAN = {
   WithSourceCodeAndTargetsK8s('build-san') {
     container('pxbuild') {
@@ -688,6 +696,10 @@ def generateTestTargets = {
 
   enableForTargets('gcc_opt') {
     builders['Build & Test (gcc:opt)'] = buildGCC
+  }
+
+  enableForTargets('go_race') {
+    builders['Build & Test (go race detector)'] = buildGoRace
   }
 
   enableForTargets('bpf') {
