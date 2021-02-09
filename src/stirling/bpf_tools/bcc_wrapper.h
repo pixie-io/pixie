@@ -240,8 +240,13 @@ class BCCWrapper {
   /**
    * Drains all of the opened perf buffers, calling the handle function that was
    * specified in the PerfBufferSpec when OpenPerfBuffer was called.
+   *
+   * @param timeout_ms If there's no event in the perf buffer, then timeout_ms specifies the
+   *                   amount of time to wait for an event to arrive before returning.
+   *                   Default is 0, because if nothing is ready, then we want to go back to sleep
+   *                   and catch new events in the next iteration.
    */
-  void PollPerfBuffers(int timeout_ms = 1);
+  void PollPerfBuffers(int timeout_ms = 0);
 
   /**
    * Detaches all probes, and closes all perf buffers that are open.
