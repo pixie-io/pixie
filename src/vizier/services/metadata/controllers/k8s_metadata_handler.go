@@ -64,7 +64,7 @@ type K8sMetadataStore interface {
 	AddFullResourceUpdate(updateversion int64, resource *storepb.K8SResource) error
 	// FetchResourceUpdates gets the resource updates from the `from` update version, to the `to`
 	// update version (exclusive).
-	FetchResourceUpdates(from int64, to int64) ([]*storepb.K8SResource, error)
+	FetchResourceUpdates(topic string, from int64, to int64) ([]*storepb.K8SResourceUpdate, error)
 
 	// GetUpdateVersion gets the last update version sent on a topic.
 	GetUpdateVersion(topic string) (int64, error)
@@ -283,6 +283,39 @@ func (m *K8sMetadataHandler) sendUpdate(update *metadatapb.ResourceUpdate, topic
 		return err
 	}
 	return nil
+}
+
+// GetUpdatesForIP gets all known resource updates for the IP in the given range.
+func (m *K8sMetadataHandler) GetUpdatesForIP(ip string, from int64, to int64) ([]*metadatapb.ResourceUpdate, error) {
+	if ip == "" { // If no IP is specified, caller is asking for all updates.
+		ip = KelvinUpdateTopic
+	}
+
+	if to == 0 { // Caller is requesting up to latest update. Get the number of the last update that was sent out.
+		lastUpdate, err := m.mds.GetUpdateVersion(KelvinUpdateTopic)
+		if err != nil {
+			return nil, err
+		}
+		to = lastUpdate + 1
+	}
+
+	// Get all updates within range for the given topic.
+	allUpdates, err := m.mds.FetchResourceUpdates(ip, from, to)
+	if err != nil {
+		return nil, err
+	}
+
+	updates := make([]*metadatapb.ResourceUpdate, len(allUpdates))
+	var currVersion int64
+
+	// For each resource update, get the update(s) that should be sent over NATS.
+	for i, u := range allUpdates {
+		u.Update.PrevUpdateVersion = currVersion
+		currVersion = u.Update.UpdateVersion
+		updates[i] = u.Update
+	}
+
+	return updates, nil
 }
 
 func setDeleted(objMeta *metav1.ObjectMeta) {
@@ -577,10 +610,6 @@ func (p *PodUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdate, sta
 		return nil
 	}
 
-	// Get pod update in stored updates, so we can get the hostIP. The pod update should always be the last
-	// stored update, since containers should be sent before their pod update.
-	pb := storedUpdates[len(storedUpdates)-1].Update.GetPod()
-
 	var updates []*OutgoingUpdate
 
 	for _, u := range storedUpdates {
@@ -593,9 +622,16 @@ func (p *PodUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdate, sta
 				},
 			}
 			// Send the update to the relevant agent and the Kelvin.
+			topics := []string{KelvinUpdateTopic}
+
+			podName := fmt.Sprintf("%s/%s", containerUpdate.Namespace, containerUpdate.PodName)
+			if hostIP, ok := state.PodToIP[podName]; ok {
+				topics = append(topics, hostIP)
+			}
+
 			updates = append(updates, &OutgoingUpdate{
 				Update: ru,
-				Topics: []string{pb.Status.HostIP, KelvinUpdateTopic},
+				Topics: topics,
 			})
 			continue
 		}
@@ -603,7 +639,7 @@ func (p *PodUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdate, sta
 		if podUpdate != nil {
 			updates = append(updates, &OutgoingUpdate{
 				Update: getResourceUpdateFromPod(podUpdate, u.UpdateVersion),
-				Topics: []string{pb.Status.HostIP, KelvinUpdateTopic},
+				Topics: []string{podUpdate.Status.HostIP, KelvinUpdateTopic},
 			})
 		}
 	}

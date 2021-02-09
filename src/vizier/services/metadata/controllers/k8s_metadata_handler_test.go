@@ -2,6 +2,7 @@ package controllers_test
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 	"testing"
 
@@ -322,8 +323,35 @@ func (s *InMemoryStore) AddFullResourceUpdate(uv int64, r *storepb.K8SResource) 
 	return nil
 }
 
-func (s *InMemoryStore) FetchResourceUpdates(from int64, to int64) ([]*storepb.K8SResource, error) {
-	return nil, nil
+func (s *InMemoryStore) FetchResourceUpdates(topic string, from int64, to int64) ([]*storepb.K8SResourceUpdate, error) {
+	updates := make([]*storepb.K8SResourceUpdate, 0)
+
+	keys := make([]int, len(s.ResourceStoreByTopic[topic]) + len(s.ResourceStoreByTopic["unscoped"]))
+	keyIdx := 0
+	for k := range s.ResourceStoreByTopic[topic] {
+		keys[keyIdx] = int(k)
+		keyIdx++
+	}
+
+	for k := range s.ResourceStoreByTopic["unscoped"] {
+		keys[keyIdx] = int(k)
+		keyIdx++
+	}
+	sort.Ints(keys)
+
+	for _, k := range keys {
+		if k >= int(from) && k < int(to) {
+			if val, ok := s.ResourceStoreByTopic[topic][int64(k)]; ok {
+				updates = append(updates, val)
+			} else {
+				if val, ok := s.ResourceStoreByTopic["unscoped"][int64(k)]; ok {
+					updates = append(updates, val)
+				}
+			}
+		}
+	}
+
+	return updates, nil
 }
 
 func (s *InMemoryStore) GetUpdateVersion(topic string) (int64, error) {
@@ -333,6 +361,175 @@ func (s *InMemoryStore) GetUpdateVersion(topic string) (int64, error) {
 func (s *InMemoryStore) SetUpdateVersion(topic string, uv int64) error {
 	s.RVStore[topic] = uv
 	return nil
+}
+
+func TestK8sMetadataHandler_GetUpdatesForIP(t *testing.T) {
+	mds := &InMemoryStore{
+		ResourceStoreByTopic: make(map[string]ResourceStore),
+		RVStore:       map[string]int64{},
+	}
+
+	// Populate resource store.
+	mds.RVStore[controllers.KelvinUpdateTopic] = 6
+
+	nsUpdate := &metadatapb.ResourceUpdate{
+		UpdateVersion: 2,
+		Update: &metadatapb.ResourceUpdate_NamespaceUpdate{
+			NamespaceUpdate: &metadatapb.NamespaceUpdate{
+				UID:              "ijkl",
+				Name:             "object_md",
+				StartTimestampNS: 4,
+				StopTimestampNS:  6,
+			},
+		},
+	}
+	mds.AddResourceUpdate(2, &storepb.K8SResourceUpdate{
+		Update: nsUpdate,
+	})
+
+	svcUpdateKelvin := &metadatapb.ResourceUpdate{
+		UpdateVersion: 4,
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID:              "ijkl",
+				Name:             "object_md",
+				Namespace:        "a_namespace",
+				StartTimestampNS: 4,
+				StopTimestampNS:  6,
+				PodIDs:           []string{"abcd", "xyz"},
+				PodNames:         []string{"pod-name", "other-pod"},
+			},
+		},
+	}
+	mds.AddResourceUpdateForTopic(4, controllers.KelvinUpdateTopic, &storepb.K8SResourceUpdate{
+		Update: svcUpdateKelvin,
+	})
+
+	svcUpdate1 := &metadatapb.ResourceUpdate{
+		UpdateVersion: 4,
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID:              "ijkl",
+				Name:             "object_md",
+				Namespace:        "a_namespace",
+				StartTimestampNS: 4,
+				StopTimestampNS:  6,
+				PodIDs:           []string{"abcd"},
+				PodNames:         []string{"pod-name"},
+			},
+		},
+	}
+	mds.AddResourceUpdateForTopic(4, "127.0.0.1", &storepb.K8SResourceUpdate{
+		Update: svcUpdate1,
+	})
+	svcUpdate2 := &metadatapb.ResourceUpdate{
+		UpdateVersion: 4,
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID:              "ijkl",
+				Name:             "object_md",
+				Namespace:        "a_namespace",
+				StartTimestampNS: 4,
+				StopTimestampNS:  6,
+				PodIDs:           []string{"xyz"},
+				PodNames:         []string{"other-pod"},
+			},
+		},
+	}
+	mds.AddResourceUpdateForTopic(4, "127.0.0.2", &storepb.K8SResourceUpdate{
+		Update: svcUpdate2,
+	})
+
+	containerUpdate := &metadatapb.ContainerUpdate{
+		CID:            "test",
+		Name:           "container1",
+		PodID:          "ijkl",
+		PodName:        "object_md",
+		ContainerState: metadatapb.CONTAINER_STATE_WAITING,
+		Message:        "container state message",
+		Reason:         "container state reason",
+	}
+	mds.AddResourceUpdateForTopic(5, controllers.KelvinUpdateTopic, &storepb.K8SResourceUpdate{
+		Update: &metadatapb.ResourceUpdate{
+			UpdateVersion: 5,
+			Update: &metadatapb.ResourceUpdate_ContainerUpdate{
+				ContainerUpdate: containerUpdate,
+			},
+		},
+	})
+
+	mds.AddResourceUpdateForTopic(5, "127.0.0.1", &storepb.K8SResourceUpdate{
+		Update: &metadatapb.ResourceUpdate{
+			UpdateVersion: 5,
+			Update: &metadatapb.ResourceUpdate_ContainerUpdate{
+				ContainerUpdate: containerUpdate,
+			},
+		},
+	})
+
+	pu := &storepb.K8SResourceUpdate{
+		Update: &metadatapb.ResourceUpdate{
+			UpdateVersion: 3,
+			Update: &metadatapb.ResourceUpdate_PodUpdate{
+				PodUpdate: &metadatapb.PodUpdate{
+					UID:              "ijkl",
+					Name:             "object_md",
+					Namespace:        "",
+					StartTimestampNS: 4,
+					StopTimestampNS:  6,
+					QOSClass:         metadatapb.QOS_CLASS_BURSTABLE,
+					ContainerIDs:     []string{"test"},
+					ContainerNames:   []string{"container1"},
+					Phase:            metadatapb.RUNNING,
+					Conditions: []*metadatapb.PodCondition{
+						&metadatapb.PodCondition{
+							Type:   metadatapb.READY,
+							Status: metadatapb.STATUS_TRUE,
+						},
+					},
+					NodeName: "test",
+					Hostname: "hostname",
+					PodIP:    "",
+					HostIP:   "127.0.0.5",
+					Message:  "this is message",
+					Reason:   "this is reason",
+				},
+			},
+		},
+	}
+	mds.AddResourceUpdateForTopic(6, controllers.KelvinUpdateTopic, pu)
+	mds.AddResourceUpdateForTopic(6, "127.0.0.1", pu)
+
+	updateCh := make(chan *controllers.K8sMessage)
+	mdh := controllers.NewK8sMetadataHandler(updateCh, mds, nil)
+	defer mdh.Stop()
+	updates, err := mdh.GetUpdatesForIP("", 0, 0)
+	assert.Nil(t, err)
+	assert.Equal(t, 4, len(updates))
+	assert.Equal(t, nsUpdate, updates[0])
+	svcUpdateKelvin.PrevUpdateVersion = 2
+	assert.Equal(t, svcUpdateKelvin, updates[1])
+	assert.Equal(t, &metadatapb.ResourceUpdate{
+		UpdateVersion:     5,
+		PrevUpdateVersion: 4,
+		Update: &metadatapb.ResourceUpdate_ContainerUpdate{
+			ContainerUpdate: containerUpdate,
+		},
+	}, updates[2])
+	pu.Update.PrevUpdateVersion = 5
+	assert.Equal(t, pu.Update, updates[3])
+
+	updates, err = mdh.GetUpdatesForIP("127.0.0.2", 0, 0)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(updates))
+	assert.Equal(t, nsUpdate, updates[0])
+	svcUpdate2.PrevUpdateVersion = 2
+	assert.Equal(t, svcUpdate2, updates[1])
+
+	updates, err = mdh.GetUpdatesForIP("127.0.0.1", 0, 3)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(updates))
+	assert.Equal(t, nsUpdate, updates[0])
 }
 
 func TestK8sMetadataHandler_ProcessUpdates(t *testing.T) {
@@ -843,7 +1040,9 @@ func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 		},
 	}
 
-	state := &controllers.ProcessorState{}
+	state := &controllers.ProcessorState{PodToIP: map[string]string{
+		"/object_md": "127.0.0.5",
+	}}
 	p := controllers.PodUpdateProcessor{}
 	updates := p.GetUpdatesToSend(storedProtos, state)
 	assert.Equal(t, 2, len(updates))
@@ -855,7 +1054,7 @@ func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 				ContainerUpdate: containerUpdate,
 			},
 		},
-		Topics: []string{"127.0.0.5", controllers.KelvinUpdateTopic},
+		Topics: []string{controllers.KelvinUpdateTopic, "127.0.0.5"},
 	}
 	assert.Contains(t, updates, cu)
 
