@@ -33,6 +33,42 @@ struct UProbeTmpl {
   bpf_tools::BPFProbeAttachType attach_type = bpf_tools::BPFProbeAttachType::kEntry;
 };
 
+// A wrapper around BPF maps that are exclusively written by user-space.
+// Provides an optimized RemoveValue() interface that avoids the BPF access
+// if the key doesn't exist.
+template <typename TKeyType, typename TValueType>
+class UserSpaceManagedBPFMap {
+ public:
+  static std::unique_ptr<UserSpaceManagedBPFMap> Create(ebpf::BPF* bpf,
+                                                        const std::string& map_name) {
+    return std::unique_ptr<UserSpaceManagedBPFMap>(new UserSpaceManagedBPFMap(bpf, map_name));
+  }
+
+  void UpdateValue(TKeyType key, TValueType value) {
+    ebpf::StatusTuple s = map_->update_value(key, value);
+    if (s.code() == 0) {
+      shadow_keys_.insert(key);
+    } else {
+      LOG(WARNING) << absl::StrCat("Could not update BPF map. Message=", s.msg());
+    }
+  }
+
+  void RemoveValue(TKeyType key) {
+    if (shadow_keys_.contains(key)) {
+      map_->remove_value(key);
+      shadow_keys_.erase(key);
+    }
+  }
+
+ private:
+  UserSpaceManagedBPFMap(ebpf::BPF* bpf, const std::string& map_name)
+      : map_(std::make_unique<ebpf::BPFHashTable<TKeyType, TValueType> >(
+            bpf->get_hash_table<TKeyType, TValueType>(map_name))) {}
+
+  std::unique_ptr<ebpf::BPFHashTable<TKeyType, TValueType> > map_;
+  absl::flat_hash_set<TKeyType> shadow_keys_;
+};
+
 /**
  * UProbeManager manages the deploying of all uprobes on behalf of the SocketTracer.
  * This includes: OpenSSL uprobes, GoTLS uprobes and Go HTTP2 uprobes.
@@ -204,16 +240,14 @@ class UProbeManager {
    * @param elf_reader ELF reader for the binary.
    * @param dwarf_reader DWARF reader for the binary.
    * @param pids The list of PIDs that are new instances of the binary. Used to populate symbol
-   * addresses.
-   * @param http2_symaddrs_map The symbol addresses map for Go HTTP2 symbols.
+   *             addresses.
    * @return The number of uprobes deployed, or error. It is not considered an error if the binary
    *         is not a Go binary or doesn't use a Go HTTP2 library; instead the return value will be
-   * zero.
+   *         zero.
    */
-  StatusOr<int> AttachGoHTTP2Probes(
-      const std::string& binary, obj_tools::ElfReader* elf_reader,
-      obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
-      ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t>* go_http2_symaddrs_map);
+  StatusOr<int> AttachGoHTTP2Probes(const std::string& binary, obj_tools::ElfReader* elf_reader,
+                                    obj_tools::DwarfReader* dwarf_reader,
+                                    const std::vector<int32_t>& pids);
 
   /**
    * Attaches the required probes for GoTLS tracing to the specified binary, if it is a compatible
@@ -223,15 +257,13 @@ class UProbeManager {
    * @param elf_reader ELF reader for the binary.
    * @param dwarf_reader DWARF reader for the binary.
    * @param pids The list of PIDs that are new instances of the binary. Used to populate symbol
-   * addresses.
-   * @param http2_symaddrs_map The symbol addresses map for Go HTTP2 symbols.
+   *             addresses.
    * @return The number of uprobes deployed, or error. It is not an error if the binary
    *         is not a Go binary or doesn't use Go TLS; instead the return value will be zero.
    */
-  StatusOr<int> AttachGoTLSUProbes(
-      const std::string& binary, obj_tools::ElfReader* elf_reader,
-      obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& new_pids,
-      ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t>* go_tls_symaddrs_map);
+  StatusOr<int> AttachGoTLSUProbes(const std::string& binary, obj_tools::ElfReader* elf_reader,
+                                   obj_tools::DwarfReader* dwarf_reader,
+                                   const std::vector<int32_t>& new_pids);
 
   /**
    * // Attaches the required probes for OpenSSL tracing to the specified PID, if it uses OpenSSL.
@@ -240,13 +272,11 @@ class UProbeManager {
    * @param elf_reader ELF reader for the binary.
    * @param dwarf_reader DWARF reader for the binary.
    * @param pids The list of PIDs that are new instances of the binary. Used to populate symbol
-   * addresses.
-   * @param http2_symaddrs_map The symbol addresses map for Go HTTP2 symbols.
+   *        addresses.
    * @return The number of uprobes deployed. It is not an error if the binary
    *         does not use OpenSSL; instead the return value will be zero.
    */
-  StatusOr<int> AttachOpenSSLUProbes(
-      uint32_t pid, ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>* openssl_symaddrs_map);
+  StatusOr<int> AttachOpenSSLUProbes(uint32_t pid);
 
   /**
    * Helper function that calls BCCWrapper.AttachUprobe() from a probe template.
@@ -257,13 +287,23 @@ class UProbeManager {
    * @param binary The binary to uprobe.
    * @param elf_reader Pointer to an elf reader for the binary. Used to find symbol matches.
    * @return Number of uprobes deployed, or error if uprobes failed to deploy. Zero uprobes
-   * deploying because there are no symbol matches is not considered an error.
+   *         deploying because there are no symbol matches is not considered an error.
    */
   StatusOr<int> AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe_tmpls,
                                  const std::string& binary, obj_tools::ElfReader* elf_reader);
 
   // Returns set of PIDs that have had mmap called on them since the last call.
   absl::flat_hash_set<md::UPID> PIDsToRescanForUProbes();
+
+  Status UpdateOpenSSLSymAddrs(std::filesystem::path container_lib, uint32_t pid);
+  Status UpdateGoCommonSymAddrs(obj_tools::ElfReader* elf_reader,
+                                obj_tools::DwarfReader* dwarf_reader,
+                                const std::vector<int32_t>& pids);
+  Status UpdateGoHTTP2SymAddrs(obj_tools::ElfReader* elf_reader,
+                               obj_tools::DwarfReader* dwarf_reader,
+                               const std::vector<int32_t>& pids);
+  Status UpdateGoTLSSymAddrs(obj_tools::ElfReader* elf_reader, obj_tools::DwarfReader* dwarf_reader,
+                             const std::vector<int32_t>& pids);
 
   // Clean-up various BPF maps used to communicate symbol addresses per PID.
   // Once the PID has terminated, the information is not required anymore.
@@ -293,11 +333,13 @@ class UProbeManager {
   absl::flat_hash_set<std::string> go_tls_probed_binaries_;
 
   // BPF maps through which the addresses of symbols for a given pid are communicated to uprobes.
-  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t> > openssl_symaddrs_map_;
-  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_common_symaddrs_t> >
+  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct openssl_symaddrs_t> >
+      openssl_symaddrs_map_;
+  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_common_symaddrs_t> >
       go_common_symaddrs_map_;
-  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t> > go_http2_symaddrs_map_;
-  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t> > go_tls_symaddrs_map_;
+  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_http2_symaddrs_t> >
+      go_http2_symaddrs_map_;
+  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_tls_symaddrs_t> > go_tls_symaddrs_map_;
 
   // BPF map through which PIDs that have had mmap calls are communicated.
   std::unique_ptr<ebpf::BPFHashTable<upid_t, bool> > mmap_events_;

@@ -34,17 +34,14 @@ void UProbeManager::Init(bool enable_http2_tracing, bool disable_self_probing) {
   cfg_enable_http2_tracing_ = enable_http2_tracing;
   cfg_disable_self_probing_ = disable_self_probing;
 
-  openssl_symaddrs_map_ = std::make_unique<ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>>(
-      bcc_->bpf().get_hash_table<uint32_t, struct openssl_symaddrs_t>("openssl_symaddrs_map"));
-  go_common_symaddrs_map_ =
-      std::make_unique<ebpf::BPFHashTable<uint32_t, struct go_common_symaddrs_t>>(
-          bcc_->bpf().get_hash_table<uint32_t, struct go_common_symaddrs_t>(
-              "go_common_symaddrs_map"));
-  go_http2_symaddrs_map_ =
-      std::make_unique<ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t>>(
-          bcc_->bpf().get_hash_table<uint32_t, struct go_http2_symaddrs_t>("http2_symaddrs_map"));
-  go_tls_symaddrs_map_ = std::make_unique<ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t>>(
-      bcc_->bpf().get_hash_table<uint32_t, struct go_tls_symaddrs_t>("go_tls_symaddrs_map"));
+  openssl_symaddrs_map_ = UserSpaceManagedBPFMap<uint32_t, struct openssl_symaddrs_t>::Create(
+      &bcc_->bpf(), "openssl_symaddrs_map");
+  go_common_symaddrs_map_ = UserSpaceManagedBPFMap<uint32_t, struct go_common_symaddrs_t>::Create(
+      &bcc_->bpf(), "go_common_symaddrs_map");
+  go_http2_symaddrs_map_ = UserSpaceManagedBPFMap<uint32_t, struct go_http2_symaddrs_t>::Create(
+      &bcc_->bpf(), "http2_symaddrs_map");
+  go_tls_symaddrs_map_ = UserSpaceManagedBPFMap<uint32_t, struct go_tls_symaddrs_t>::Create(
+      &bcc_->bpf(), "go_tls_symaddrs_map");
 
   mmap_events_ = std::make_unique<ebpf::BPFHashTable<upid_t, bool>>(
       bcc_->bpf().get_hash_table<upid_t, bool>("mmap_events"));
@@ -109,85 +106,47 @@ StatusOr<int> UProbeManager::AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe
   return uprobe_count;
 }
 
-namespace {
-Status UpdateOpenSSLSymAddrs(
-    std::filesystem::path libcrypto_path, uint32_t pid,
-    ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>* openssl_symaddrs_map) {
+Status UProbeManager::UpdateOpenSSLSymAddrs(std::filesystem::path libcrypto_path, uint32_t pid) {
   PL_ASSIGN_OR_RETURN(struct openssl_symaddrs_t symaddrs, OpenSSLSymAddrs(libcrypto_path));
 
-  ebpf::StatusTuple s = openssl_symaddrs_map->update_value(pid, symaddrs);
-  LOG_IF(WARNING, s.code() != 0) << absl::StrCat("Could not update openssl_symaddrs_map. Message=",
-                                                 s.msg());
+  openssl_symaddrs_map_->UpdateValue(pid, symaddrs);
 
   return Status::OK();
 }
 
-Status UpdateGoCommonSymAddrs(
-    ElfReader* elf_reader, DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
-    ebpf::BPFHashTable<uint32_t, struct go_common_symaddrs_t>* go_common_symaddrs_map) {
+Status UProbeManager::UpdateGoCommonSymAddrs(ElfReader* elf_reader, DwarfReader* dwarf_reader,
+                                             const std::vector<int32_t>& pids) {
   PL_ASSIGN_OR_RETURN(struct go_common_symaddrs_t symaddrs,
                       GoCommonSymAddrs(elf_reader, dwarf_reader));
 
   for (auto& pid : pids) {
-    ebpf::StatusTuple s = go_common_symaddrs_map->update_value(pid, symaddrs);
-    LOG_IF(WARNING, s.code() != 0)
-        << absl::StrCat("Could not update go_common_symaddrs_map. Message=", s.msg());
+    go_common_symaddrs_map_->UpdateValue(pid, symaddrs);
   }
 
   return Status::OK();
 }
 
-Status UpdateGoHTTP2SymAddrs(
-    ElfReader* elf_reader, DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
-    ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t>* http2_symaddrs_map) {
+Status UProbeManager::UpdateGoHTTP2SymAddrs(ElfReader* elf_reader, DwarfReader* dwarf_reader,
+                                            const std::vector<int32_t>& pids) {
   PL_ASSIGN_OR_RETURN(struct go_http2_symaddrs_t symaddrs,
                       GoHTTP2SymAddrs(elf_reader, dwarf_reader));
 
   for (auto& pid : pids) {
-    ebpf::StatusTuple s = http2_symaddrs_map->update_value(pid, symaddrs);
-    LOG_IF(WARNING, s.code() != 0)
-        << absl::StrCat("Could not update http2_symaddrs_map. Message=", s.msg());
+    go_http2_symaddrs_map_->UpdateValue(pid, symaddrs);
   }
 
   return Status::OK();
 }
 
-Status UpdateGoTLSSymAddrs(
-    ElfReader* elf_reader, DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
-    ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t>* go_tls_symaddrs_map) {
+Status UProbeManager::UpdateGoTLSSymAddrs(ElfReader* elf_reader, DwarfReader* dwarf_reader,
+                                          const std::vector<int32_t>& pids) {
   PL_ASSIGN_OR_RETURN(struct go_tls_symaddrs_t symaddrs, GoTLSSymAddrs(elf_reader, dwarf_reader));
 
   for (auto& pid : pids) {
-    ebpf::StatusTuple s = go_tls_symaddrs_map->update_value(pid, symaddrs);
-    LOG_IF(WARNING, s.code() != 0)
-        << absl::StrCat("Could not update go_tls_symaddrs_map. Message=", s.msg());
+    go_tls_symaddrs_map_->UpdateValue(pid, symaddrs);
   }
 
   return Status::OK();
-}
-}  // namespace
-
-// TODO(oazizi/yzhao): Should HTTP uprobes use a different set of perf buffers than the kprobes?
-// That allows the BPF code and companion user-space code for uprobe & kprobe be separated
-// cleanly. For example, right now, enabling uprobe & kprobe simultaneously can crash Stirling,
-// because of the mixed & duplicate data events from these 2 sources.
-StatusOr<int> UProbeManager::AttachGoHTTP2Probes(
-    const std::string& binary, obj_tools::ElfReader* elf_reader,
-    obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
-    ebpf::BPFHashTable<uint32_t, struct go_http2_symaddrs_t>* go_http2_symaddrs_map) {
-  // Step 1: Update BPF symaddrs for this binary.
-  Status s = UpdateGoHTTP2SymAddrs(elf_reader, dwarf_reader, pids, go_http2_symaddrs_map);
-  if (!s.ok()) {
-    return 0;
-  }
-
-  // Step 2: Deploy uprobes on all new binaries.
-  auto result = http2_probed_binaries_.insert(binary);
-  if (!result.second) {
-    // This is not a new binary, so nothing more to do.
-    return 0;
-  }
-  return AttachUProbeTmpl(kHTTP2ProbeTmpls, binary, elf_reader);
 }
 
 // Find the paths for some libraries, which may be inside of a container.
@@ -253,8 +212,7 @@ StatusOr<std::vector<std::filesystem::path>> FindLibraryPaths(
 
 // Return error if something unexpected occurs.
 // Return 0 if nothing unexpected, but there is nothing to deploy (e.g. no OpenSSL detected).
-StatusOr<int> UProbeManager::AttachOpenSSLUProbes(
-    uint32_t pid, ebpf::BPFHashTable<uint32_t, struct openssl_symaddrs_t>* openssl_symaddrs_map) {
+StatusOr<int> UProbeManager::AttachOpenSSLUProbes(uint32_t pid) {
   constexpr std::string_view kLibSSL = "libssl.so.1.1";
   constexpr std::string_view kLibCrypto = "libcrypto.so.1.1";
   const std::vector<std::string_view> lib_names = {kLibSSL, kLibCrypto};
@@ -281,7 +239,7 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbes(
   PL_RETURN_IF_ERROR(fs::Exists(container_libssl));
   PL_RETURN_IF_ERROR(fs::Exists(container_libcrypto));
 
-  PL_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(container_libcrypto, pid, openssl_symaddrs_map));
+  PL_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(container_libcrypto, pid));
 
   // Only try probing .so files that we haven't already set probes on.
   auto result = openssl_probed_binaries_.insert(container_libssl);
@@ -296,12 +254,12 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbes(
   return kOpenSSLUProbes.size();
 }
 
-StatusOr<int> UProbeManager::AttachGoTLSUProbes(
-    const std::string& binary, obj_tools::ElfReader* elf_reader,
-    obj_tools::DwarfReader* dwarf_reader, const std::vector<int32_t>& pids,
-    ebpf::BPFHashTable<uint32_t, struct go_tls_symaddrs_t>* go_tls_symaddrs_map) {
+StatusOr<int> UProbeManager::AttachGoTLSUProbes(const std::string& binary,
+                                                obj_tools::ElfReader* elf_reader,
+                                                obj_tools::DwarfReader* dwarf_reader,
+                                                const std::vector<int32_t>& pids) {
   // Step 1: Update BPF symbols_map on all new PIDs.
-  Status s = UpdateGoTLSSymAddrs(elf_reader, dwarf_reader, pids, go_tls_symaddrs_map);
+  Status s = UpdateGoTLSSymAddrs(elf_reader, dwarf_reader, pids);
   if (!s.ok()) {
     // Doesn't appear to be a binary with the mandatory symbols.
     // Might not even be a golang binary.
@@ -316,6 +274,29 @@ StatusOr<int> UProbeManager::AttachGoTLSUProbes(
     return 0;
   }
   return AttachUProbeTmpl(kGoTLSUProbeTmpls, binary, elf_reader);
+}
+
+// TODO(oazizi/yzhao): Should HTTP uprobes use a different set of perf buffers than the kprobes?
+// That allows the BPF code and companion user-space code for uprobe & kprobe be separated
+// cleanly. For example, right now, enabling uprobe & kprobe simultaneously can crash Stirling,
+// because of the mixed & duplicate data events from these 2 sources.
+StatusOr<int> UProbeManager::AttachGoHTTP2Probes(const std::string& binary,
+                                                 obj_tools::ElfReader* elf_reader,
+                                                 obj_tools::DwarfReader* dwarf_reader,
+                                                 const std::vector<int32_t>& pids) {
+  // Step 1: Update BPF symaddrs for this binary.
+  Status s = UpdateGoHTTP2SymAddrs(elf_reader, dwarf_reader, pids);
+  if (!s.ok()) {
+    return 0;
+  }
+
+  // Step 2: Deploy uprobes on all new binaries.
+  auto result = http2_probed_binaries_.insert(binary);
+  if (!result.second) {
+    // This is not a new binary, so nothing more to do.
+    return 0;
+  }
+  return AttachUProbeTmpl(kHTTP2ProbeTmpls, binary, elf_reader);
 }
 
 namespace {
@@ -369,11 +350,10 @@ std::thread UProbeManager::RunDeployUProbesThread(const absl::flat_hash_set<md::
 
 void UProbeManager::CleanupSymaddrMaps(const absl::flat_hash_set<md::UPID>& deleted_upids) {
   for (const auto& pid : deleted_upids) {
-    // TODO(oazizi): Enable these once we have a filter. Otherwise, these are expensive.
-    // openssl_symaddrs_map_->remove_value(pid.pid());
-    // go_common_symaddrs_map_->remove_value(pid.pid());
-    // go_tls_symaddrs_map_->remove_value(pid.pid());
-    go_http2_symaddrs_map_->remove_value(pid.pid());
+    openssl_symaddrs_map_->RemoveValue(pid.pid());
+    go_common_symaddrs_map_->RemoveValue(pid.pid());
+    go_tls_symaddrs_map_->RemoveValue(pid.pid());
+    go_http2_symaddrs_map_->RemoveValue(pid.pid());
   }
 }
 
@@ -385,7 +365,7 @@ int UProbeManager::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pid
       continue;
     }
 
-    StatusOr<int> attach_status = AttachOpenSSLUProbes(pid.pid(), openssl_symaddrs_map_.get());
+    StatusOr<int> attach_status = AttachOpenSSLUProbes(pid.pid());
     if (!attach_status.ok()) {
       LOG_FIRST_N(WARNING, 10) << absl::Substitute("AttachOpenSSLUprobes failed for PID $0: $1",
                                                    pid.pid(), attach_status.ToString());
@@ -439,8 +419,7 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
     }
     std::unique_ptr<DwarfReader> dwarf_reader = dwarf_reader_status.ConsumeValueOrDie();
 
-    Status s = UpdateGoCommonSymAddrs(elf_reader.get(), dwarf_reader.get(), pid_vec,
-                                      go_common_symaddrs_map_.get());
+    Status s = UpdateGoCommonSymAddrs(elf_reader.get(), dwarf_reader.get(), pid_vec);
     if (!s.ok()) {
       LOG(WARNING) << absl::Substitute(
           "Golang binary $0 does not have the mandatory symbols (e.g. TCPConn).", binary);
@@ -449,8 +428,8 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
 
     // GoTLS Probes.
     {
-      StatusOr<int> attach_status = AttachGoTLSUProbes(binary, elf_reader.get(), dwarf_reader.get(),
-                                                       pid_vec, go_tls_symaddrs_map_.get());
+      StatusOr<int> attach_status =
+          AttachGoTLSUProbes(binary, elf_reader.get(), dwarf_reader.get(), pid_vec);
       if (!attach_status.ok()) {
         LOG_FIRST_N(WARNING, 10) << absl::Substitute("Failed to attach GoTLS Uprobes to $0: $1",
                                                      binary, attach_status.ToString());
@@ -461,8 +440,8 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
 
     // Go HTTP2 Probes.
     if (cfg_enable_http2_tracing_) {
-      StatusOr<int> attach_status = AttachGoHTTP2Probes(
-          binary, elf_reader.get(), dwarf_reader.get(), pid_vec, go_http2_symaddrs_map_.get());
+      StatusOr<int> attach_status =
+          AttachGoHTTP2Probes(binary, elf_reader.get(), dwarf_reader.get(), pid_vec);
       if (!attach_status.ok()) {
         LOG_FIRST_N(WARNING, 10) << absl::Substitute("Failed to attach HTTP2 Uprobes to $0: $1",
                                                      binary, attach_status.ToString());
