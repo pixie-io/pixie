@@ -37,6 +37,8 @@ var (
 
 	// This PxL script ouputs a table of the HTTP total requests count and
 	// HTTP error (>4xxx) count for each service in the `px-sock-shop` namespace.
+	// To deploy the px-sock-shop demo, see:
+	// https://docs.pixielabs.ai/tutorials/slackbot-alert for how to
 	pxlScript = `
 import px
 
@@ -67,7 +69,7 @@ func main() {
 	// The slackbot requires the following configs, which are specified
 	// using environment variables. For directions on how to find these
 	// config values, see: https://docs.pixielabs.ai/tutorials/slackbot-alert
-	pixieApiKey, ok := os.LookupEnv("PIXIE_API_KEY")
+	pixieAPIKey, ok := os.LookupEnv("PIXIE_API_KEY")
 	if !ok {
 		panic("Please set PIXIE_API_KEY environment variable.")
 	}
@@ -83,7 +85,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	pixieClient, err := pxapi.NewClient(ctx, pxapi.WithAPIKey(pixieApiKey))
+	pixieClient, err := pxapi.NewClient(ctx, pxapi.WithAPIKey(pixieAPIKey))
 	if err != nil {
 		panic(err)
 	}
@@ -94,8 +96,10 @@ func main() {
 
 	slackClient := slack.New(slackToken)
 
-	// Send tick every 5 minutes.
-	ticker := time.NewTicker(5*time.Minute)
+	// Using a ticker (rather than a for loop + sleep call) means that the slackbot
+	// will message every 5 minutes, regardless of how long it takes to call the 
+	// Pixie API (as long as it takes less than 5 minutes).
+	ticker := time.NewTicker(5 * time.Minute)
 	for {
 		tm := &tableMux{tables: make(map[string]*tableCollector)}
 		log.Println("Executing PxL script.")
@@ -106,7 +110,7 @@ func main() {
 
 		log.Println("Stream PxL script results.")
 		if err := resultSet.Stream(); err != nil {
-			fmt.Printf("Got error : %+v, while streaming.\n", err)
+			log.Printf("Got error: %+v, while streaming.\n", err)
 		}
 
 		// Get slack message constructed from table data.
@@ -136,8 +140,8 @@ func (t *tableCollector) HandleInit(ctx context.Context, metadata types.TableMet
 
 func (t *tableCollector) HandleRecord(ctx context.Context, r *types.Record) error {
 	fmt.Fprintf(&t.msg, "%s \t ---> %s  (>4xx) errors out of %s requests.\n", r.GetDatum("service"),
-																			r.GetDatum("total_requests"),
-																			r.GetDatum("error_count"))
+																			r.GetDatum("error_count"),
+																			r.GetDatum("total_requests"))
 	return nil
 }
 

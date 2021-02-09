@@ -40,6 +40,8 @@ slack_bot_token = os.environ['SLACK_BOT_TOKEN']
 
 # This PxL script ouputs a table of the HTTP total requests count and
 # HTTP error (>4xxx) count for each service in the `px-sock-shop` namespace.
+# To deploy the px-sock-shop demo, see:
+# https://docs.pixielabs.ai/tutorials/slackbot-alert for how to
 PXL_SCRIPT = """
 import px
 
