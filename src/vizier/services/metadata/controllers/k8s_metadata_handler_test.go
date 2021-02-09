@@ -294,13 +294,31 @@ func createNamespaceObject() *v1.Namespace {
 	}
 }
 
+type ResourceStore map[int64]*storepb.K8SResourceUpdate
 type InMemoryStore struct {
-	ResourceStore map[int64]*storepb.K8SResource
-	RVStore       map[string]int64
+	ResourceStoreByTopic map[string]ResourceStore
+	RVStore              map[string]int64
+	FullResourceStore    map[int64]*storepb.K8SResource
 }
 
-func (s *InMemoryStore) AddResourceUpdate(uv int64, r *storepb.K8SResource) error {
-	s.ResourceStore[uv] = r
+func (s *InMemoryStore) AddResourceUpdateForTopic(uv int64, topic string, r *storepb.K8SResourceUpdate) error {
+	if _, ok := s.ResourceStoreByTopic[topic]; !ok {
+		s.ResourceStoreByTopic[topic] = make(map[int64]*storepb.K8SResourceUpdate)
+	}
+	s.ResourceStoreByTopic[topic][uv] = r
+	return nil
+}
+
+func (s *InMemoryStore) AddResourceUpdate(uv int64, r *storepb.K8SResourceUpdate) error {
+	if _, ok := s.ResourceStoreByTopic["unscoped"]; !ok {
+		s.ResourceStoreByTopic["unscoped"] = make(map[int64]*storepb.K8SResourceUpdate)
+	}
+	s.ResourceStoreByTopic["unscoped"][uv] = r
+	return nil
+}
+
+func (s *InMemoryStore) AddFullResourceUpdate(uv int64, r *storepb.K8SResource) error {
+	s.FullResourceStore[uv] = r
 	return nil
 }
 
@@ -319,9 +337,11 @@ func (s *InMemoryStore) SetUpdateVersion(topic string, uv int64) error {
 
 func TestK8sMetadataHandler_ProcessUpdates(t *testing.T) {
 	updateCh := make(chan *controllers.K8sMessage)
+
 	mds := &InMemoryStore{
-		ResourceStore: make(map[int64]*storepb.K8SResource),
-		RVStore:       map[string]int64{},
+		ResourceStoreByTopic: make(map[string]ResourceStore),
+		RVStore:              map[string]int64{},
+		FullResourceStore:    make(map[int64]*storepb.K8SResource),
 	}
 	mds.RVStore[controllers.KelvinUpdateTopic] = 3
 
@@ -392,29 +412,79 @@ func TestK8sMetadataHandler_ProcessUpdates(t *testing.T) {
 		ObjectType: "namespaces",
 	}
 	wg.Wait()
+
 	assert.Equal(t, int64(5), mds.RVStore[controllers.KelvinUpdateTopic])
-	assert.Equal(t,
-		&storepb.K8SResource{
-			Resource: &storepb.K8SResource_Namespace{
-				Namespace: &metadatapb.Namespace{
-					Metadata: &metadatapb.ObjectMetadata{
-						Name:            "object_md",
-						UID:             "ijkl",
-						ResourceVersion: "1",
-						ClusterName:     "a_cluster",
-						OwnerReferences: []*metadatapb.OwnerReference{
-							&metadatapb.OwnerReference{
-								Kind: "pod",
-								Name: "test",
-								UID:  "abcd",
-							},
+
+	// Full resource updates should be stored.
+	assert.Equal(t, &storepb.K8SResource{
+		Resource: &storepb.K8SResource_Namespace{
+			Namespace: &metadatapb.Namespace{
+				Metadata: &metadatapb.ObjectMetadata{
+					Name:            "object_md",
+					UID:             "ijkl",
+					ResourceVersion: "1",
+					ClusterName:     "a_cluster",
+					OwnerReferences: []*metadatapb.OwnerReference{
+						&metadatapb.OwnerReference{
+							Kind: "pod",
+							Name: "test",
+							UID:  "abcd",
 						},
-						CreationTimestampNS: 4,
-						DeletionTimestampNS: 6,
+					},
+					CreationTimestampNS: 4,
+					DeletionTimestampNS: 6,
+				},
+			},
+		},
+	}, mds.FullResourceStore[5])
+
+	assert.Equal(t, &storepb.K8SResource{
+		Resource: &storepb.K8SResource_Node{
+			Node: &metadatapb.Node{
+				Metadata: &metadatapb.ObjectMetadata{
+					Name:            "object_md",
+					UID:             "ijkl",
+					ResourceVersion: "1",
+					ClusterName:     "a_cluster",
+					OwnerReferences: []*metadatapb.OwnerReference{
+						&metadatapb.OwnerReference{
+							Kind: "pod",
+							Name: "test",
+							UID:  "abcd",
+						},
+					},
+					CreationTimestampNS: 4,
+				},
+				Spec: &metadatapb.NodeSpec{
+					PodCIDR: "pod_cidr",
+				},
+				Status: &metadatapb.NodeStatus{
+					Phase: metadatapb.NODE_PHASE_RUNNING,
+					Addresses: []*metadatapb.NodeAddress{
+						&metadatapb.NodeAddress{
+							Type:    metadatapb.NODE_ADDR_TYPE_INTERNAL_IP,
+							Address: "127.0.0.1",
+						},
 					},
 				},
 			},
-		}, mds.ResourceStore[5])
+		},
+	}, mds.FullResourceStore[4])
+
+	// Partial resource updates should be stored.
+	assert.Equal(t, &storepb.K8SResourceUpdate{
+		Update: &metadatapb.ResourceUpdate{
+			UpdateVersion: 5,
+			Update: &metadatapb.ResourceUpdate_NamespaceUpdate{
+				NamespaceUpdate: &metadatapb.NamespaceUpdate{
+					UID:              "ijkl",
+					Name:             "object_md",
+					StartTimestampNS: 4,
+					StopTimestampNS:  6,
+				},
+			},
+		},
+	}, mds.ResourceStoreByTopic["unscoped"][5])
 }
 
 func TestEndpointsUpdateProcessor_SetDeleted(t *testing.T) {

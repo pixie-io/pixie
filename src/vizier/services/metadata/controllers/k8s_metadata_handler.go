@@ -56,8 +56,12 @@ type StoredUpdate struct {
 
 // K8sMetadataStore handles storing and fetching any data related to K8s resources.
 type K8sMetadataStore interface {
-	// AddResourceUpdates stores the given resource with its associated updateVersion for 24h.
-	AddResourceUpdate(updateVersion int64, resource *storepb.K8SResource) error
+	// AddResourceUpdateForTopic stores the given resource with its associated updateVersion for 24h.
+	AddResourceUpdateForTopic(updateVersion int64, topic string, resource *storepb.K8SResourceUpdate) error
+	// AddResourceUpdate stores a resource update that is applicable to all topics.
+	AddResourceUpdate(updateVersion int64, resource *storepb.K8SResourceUpdate) error
+	// AddFullResourceUpdate stores full resource update with the given update version.
+	AddFullResourceUpdate(updateversion int64, resource *storepb.K8SResource) error
 	// FetchResourceUpdates gets the resource updates from the `from` update version, to the `to`
 	// update version (exclusive).
 	FetchResourceUpdates(from int64, to int64) ([]*storepb.K8SResource, error)
@@ -78,6 +82,8 @@ type UpdateProcessor interface {
 	// GetStoredProtos gets the protos that should be persisted in the data store, derived from
 	// the given update.
 	GetStoredProtos(runtime.Object) []*storepb.K8SResource
+	// IsNodeScoped returns whether this update is scoped to specific nodes, or should be sent to all nodes.
+	IsNodeScoped() bool
 	// GetUpdatesToSend gets all of the updates that should be sent to the agents, along with the relevant IPs that
 	// the updates should be sent to.
 	GetUpdatesToSend([]*StoredUpdate, *ProcessorState) []*OutgoingUpdate
@@ -194,10 +200,10 @@ func (m *K8sMetadataHandler) processUpdates() {
 					Update:        updates[i],
 					UpdateVersion: currUV,
 				}
-				err := m.mds.AddResourceUpdate(currUV, u)
+
+				err := m.mds.AddFullResourceUpdate(currUV, u)
 				if err != nil {
 					log.WithError(err).Error("Failed to store resource update")
-					continue
 				}
 			}
 
@@ -228,6 +234,24 @@ func (m *K8sMetadataHandler) processUpdates() {
 						// If this happens, the agent will rerequest the update as a missing update when it
 						// receives the next update.
 						log.WithError(err).Trace("Failed to send update to agent")
+					}
+				}
+
+				u.Update.PrevUpdateVersion = 0
+				storedUpdate := &storepb.K8SResourceUpdate{
+					Update: u.Update,
+				}
+				if processor.IsNodeScoped() {
+					for _, t := range u.Topics {
+						err := m.mds.AddResourceUpdateForTopic(u.Update.UpdateVersion, t, storedUpdate)
+						if err != nil {
+							log.WithError(err).Error("Failed to store resource update")
+						}
+					}
+				} else {
+					err := m.mds.AddResourceUpdate(u.Update.UpdateVersion, storedUpdate)
+					if err != nil {
+						log.WithError(err).Error("Failed to store resource update")
 					}
 				}
 			}
@@ -272,6 +296,11 @@ func setDeleted(objMeta *metav1.ObjectMeta) {
 
 // EndpointsUpdateProcessor is a processor for endpoints.
 type EndpointsUpdateProcessor struct{}
+
+// IsNodeScoped returns whether this update is scoped to specific nodes, or should be sent to all nodes.
+func (p *EndpointsUpdateProcessor) IsNodeScoped() bool {
+	return true
+}
 
 // SetDeleted sets the deletion timestamp for the object, if there is none already set.
 func (p *EndpointsUpdateProcessor) SetDeleted(obj runtime.Object) {
@@ -394,6 +423,11 @@ func (p *EndpointsUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdat
 // ServiceUpdateProcessor is a processor for services.
 type ServiceUpdateProcessor struct{}
 
+// IsNodeScoped returns whether this update is scoped to specific nodes, or should be sent to all nodes.
+func (p *ServiceUpdateProcessor) IsNodeScoped() bool {
+	return false
+}
+
 // SetDeleted sets the deletion timestamp for the object, if there is none already set.
 func (p *ServiceUpdateProcessor) SetDeleted(obj runtime.Object) {
 	e, ok := obj.(*v1.Service)
@@ -460,6 +494,11 @@ func (p *ServiceUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdate,
 
 // PodUpdateProcessor is a processor for pods.
 type PodUpdateProcessor struct{}
+
+// IsNodeScoped returns whether this update is scoped to specific nodes, or should be sent to all nodes.
+func (p *PodUpdateProcessor) IsNodeScoped() bool {
+	return true
+}
 
 // SetDeleted sets the deletion timestamp for the object, if there is none already set.
 func (p *PodUpdateProcessor) SetDeleted(obj runtime.Object) {
@@ -575,6 +614,11 @@ func (p *PodUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdate, sta
 // NodeUpdateProcessor is a processor for nodes.
 type NodeUpdateProcessor struct{}
 
+// IsNodeScoped returns whether this update is scoped to specific nodes, or should be sent to all nodes.
+func (p *NodeUpdateProcessor) IsNodeScoped() bool {
+	return true
+}
+
 // SetDeleted sets the deletion timestamp for the object, if there is none already set.
 func (p *NodeUpdateProcessor) SetDeleted(obj runtime.Object) {
 	e, ok := obj.(*v1.Node)
@@ -634,6 +678,11 @@ func (p *NodeUpdateProcessor) GetUpdatesToSend(updates []*StoredUpdate, state *P
 
 // NamespaceUpdateProcessor is a processor for namespaces.
 type NamespaceUpdateProcessor struct{}
+
+// IsNodeScoped returns whether this update is scoped to specific nodes, or should be sent to all nodes.
+func (p *NamespaceUpdateProcessor) IsNodeScoped() bool {
+	return false
+}
 
 // SetDeleted sets the deletion timestamp for the object, if there is none already set.
 func (p *NamespaceUpdateProcessor) SetDeleted(obj runtime.Object) {

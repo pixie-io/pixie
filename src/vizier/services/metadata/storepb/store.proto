@@ -82,7 +82,7 @@ message ComputedSchema {
       [ (gogoproto.customname) = "TableNameToAgentIDs" ];
 }
 
-// K8sResource contains an update for a K8s resource.
+// K8sResource contains a full update for a K8s resource.
 message K8sResource {
   oneof resource {
     pl.shared.k8s.metadatapb.Pod pod = 1;
@@ -92,4 +92,10 @@ message K8sResource {
     pl.shared.k8s.metadatapb.Namespace namespace = 5;
     pl.shared.k8s.metadatapb.Node node = 6;
   }
+}
+
+// K8sResourceUpdate contains an update for a K8s resource, scoped down to just 
+// the data that we need to send to our agents.
+message K8sResourceUpdate {
+  pl.shared.k8s.metadatapb.ResourceUpdate update = 1;
 }
