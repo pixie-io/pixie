@@ -25,6 +25,7 @@ resources:
 - ../base
 - ../overlays/exposed_services_gclb
 patchesStrategicMerge:
+- analytics_config.yaml
 - auth0_config.yaml
 - db_config.yaml
 - service_config.yaml

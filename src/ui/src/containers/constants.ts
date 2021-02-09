@@ -6,6 +6,7 @@ declare global {
       DOMAIN_NAME: string;
       SEGMENT_UI_WRITE_KEY: string;
       LD_CLIENT_ID: string;
+      ANALYTICS_ENABLED: boolean;
     };
   }
 }
@@ -20,3 +21,5 @@ export const { DOMAIN_NAME } = window.__PIXIE_FLAGS__;
 export const { SEGMENT_UI_WRITE_KEY } = window.__PIXIE_FLAGS__;
 // eslint-disable-next-line no-underscore-dangle
 export const { LD_CLIENT_ID } = window.__PIXIE_FLAGS__;
+// eslint-disable-next-line no-underscore-dangle
+export const { ANALYTICS_ENABLED } = window.__PIXIE_FLAGS__;

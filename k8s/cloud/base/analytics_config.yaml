@@ -1,0 +1,7 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pl-analytics-config
+data:
+  ANALYTICS_ENABLED: "false"

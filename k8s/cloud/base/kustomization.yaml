@@ -5,6 +5,7 @@ commonLabels:
   app: pl-cloud
 namespace: plc
 resources:
+- analytics_config.yaml
 - proxy_envoy.yaml
 - kuberesolver_role.yaml
 - dns_config.yaml

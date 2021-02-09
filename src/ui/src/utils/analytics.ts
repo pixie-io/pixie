@@ -1,6 +1,6 @@
 /// <reference types="@types/segment-analytics" />
 
-import { SEGMENT_UI_WRITE_KEY } from 'containers/constants';
+import { ANALYTICS_ENABLED, SEGMENT_UI_WRITE_KEY } from 'containers/constants';
 import { PIXIE_CLOUD_VERSION, isValidAnalytics } from 'utils/env';
 
 declare global {
@@ -13,7 +13,7 @@ declare global {
 class Analytics {
   constructor() {
     // If the key is not valid, we disable segment.
-    if (isValidAnalytics()) {
+    if (ANALYTICS_ENABLED && isValidAnalytics()) {
       this.load();
     }
   }

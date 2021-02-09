@@ -234,8 +234,15 @@ module.exports = (env, argv) => {
   const domainYamlReq = execSync(`cat ${domainYamlPath}`);
   const domainYAML = YAML.parse(domainYamlReq.toString());
 
+  // Get whether to enable analytics.
+  const analyticsYamlPath = join(topLevelDir, 'k8s', 'cloud', environment,
+    'analytics_config.yaml').replace(/\//g, '\\/');
+  const analyticsYamlReq = execSync(`cat ${analyticsYamlPath}`);
+  const analyticsYAML = YAML.parse(analyticsYamlReq.toString());
+
   webpackConfig.plugins.unshift(
     new webpack.DefinePlugin({
+      __ANALYTICS_ENABLED__: JSON.parse(analyticsYAML.data.ANALYTICS_ENABLED),
       __SEGMENT_UI_WRITE_KEY__: '""',
       __CONFIG_AUTH0_DOMAIN__: JSON.stringify('pixie-labs.auth0.com'),
       __CONFIG_AUTH0_CLIENT_ID__: JSON.stringify(auth0YAML.data.PL_AUTH0_CLIENT_ID),
