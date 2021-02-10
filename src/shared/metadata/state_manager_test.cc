@@ -12,7 +12,6 @@
 namespace pl {
 namespace md {
 
-using pl::shared::k8s::metadatapb::MetadataResourceType;
 using ResourceUpdate = pl::shared::k8s::metadatapb::ResourceUpdate;
 
 using ::testing::ElementsAre;
