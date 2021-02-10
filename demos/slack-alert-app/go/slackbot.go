@@ -41,6 +41,9 @@ func main() {
 	// To deploy the px-sock-shop demo, see:
 	// https://docs.pixielabs.ai/tutorials/slackbot-alert for how to
 	b, err := ioutil.ReadFile("http_errors.pxl")
+	if err != nil {
+		panic(err)
+	}
 	pxlScript := string(b)
 
 	// The slackbot requires the following configs, which are specified
@@ -74,6 +77,8 @@ func main() {
 	slackClient := slack.New(slackToken)
 
 	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
 	for {
 		tm := &tableMux{tables: make(map[string]*tableCollector)}
 		log.Println("Executing PxL script.")
