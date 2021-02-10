@@ -60,13 +60,10 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "googletest-release-1.10.0",
         urls = ["https://github.com/google/googletest/archive/release-1.10.0.tar.gz"],
     ),
-    # Point to local copy until this is landed and released:
-    # https://github.com/grpc/grpc/pull/23561
     com_github_grpc_grpc = dict(
-        sha256 = "39d9c14c44bdf97ceb30d1d3af44ab5a2f9982c2329e8a6018c6aa330017f56e",
-        strip_prefix = "grpc-f427e35d7a0163fd22be4a72aadb0d67fda0cd57",
-        urls = ["https://github.com/pixie-labs/grpc/archive/f427e35d7a0163fd22be4a72aadb0d67fda0cd57.zip"],
-        #https://github.com/pixie-labs/grpc/archive/PL_HEAD.zip"],
+        sha256 = "27dd2fc5c9809ddcde8eb6fa1fa278a3486566dfc28335fca13eb8df8bd3b958",
+        strip_prefix = "grpc-1.35.0",
+        urls = ["https://github.com/grpc/grpc/archive/v1.35.0.tar.gz"],
     ),
     com_google_boringssl = dict(
         sha256 = "781fa39693ec2984c71213cd633e9f6589eaaed75e3a9ac413237edec96fd3b9",
@@ -91,9 +88,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/r-lyeh-archived/sole/archive/653a25ad03775d7e0a2d50142160795723915ba6.tar.gz"],
     ),
     com_google_absl = dict(
-        sha256 = "84c9f1312d36546e07b8135143319f0f63f577ca4719286e9e0a0986bfc1b898",
-        strip_prefix = "abseil-cpp-c51510d1d87ebce8615ae1752fd5aca912f6cf4c",
-        urls = ["https://github.com/abseil/abseil-cpp/archive/c51510d1d87ebce8615ae1752fd5aca912f6cf4c.tar.gz"],
+        sha256 = "ebe2ad1480d27383e4bf4211e2ca2ef312d5e6a09eba869fd2e8a5c5d553ded2",
+        strip_prefix = "abseil-cpp-20200923.3",
+        urls = ["https://github.com/abseil/abseil-cpp/archive/20200923.3.tar.gz"],
     ),
     com_google_flatbuffers = dict(
         sha256 = "b2bb0311ca40b12ebe36671bdda350b10c7728caf0cfe2d432ea3b6e409016f3",
@@ -230,9 +227,9 @@ REPOSITORY_LOCATIONS = dict(
     ),
     # August 19, 2020.
     com_github_google_sentencepiece = dict(
-        sha256 = "6e9863851e6277862083518cc9f96211f334215d596fc8c65e074d564baeef0c",
-        strip_prefix = "sentencepiece-0.1.92",
-        urls = ["https://github.com/google/sentencepiece/archive/v0.1.92.tar.gz"],
+        sha256 = "1c0bd83e03f71a10fc934b7ce996e327488b838587f03159fd392c77c7701389",
+        strip_prefix = "sentencepiece-0.1.95",
+        urls = ["https://github.com/google/sentencepiece/archive/v0.1.95.tar.gz"],
     ),
     rules_python = dict(
         urls = ["https://github.com/bazelbuild/rules_python/releases/download/0.1.0/rules_python-0.1.0.tar.gz"],

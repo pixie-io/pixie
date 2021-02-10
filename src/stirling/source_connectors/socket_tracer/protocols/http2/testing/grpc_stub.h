@@ -51,14 +51,14 @@ class GRPCStub {
 
   // Based on https://grpc.io/docs/tutorials/basic/c/.
   template <typename GRPCReqType, typename GRPCRespType>
-  ::grpc::Status CallServerStreamingRPC(std::unique_ptr<::grpc_impl::ClientReader<GRPCRespType>> (
+  ::grpc::Status CallServerStreamingRPC(std::unique_ptr<::grpc::ClientReader<GRPCRespType>> (
                                             GRPCServiceType::Stub::*fn)(::grpc::ClientContext*,
                                                                         const GRPCReqType&),
                                         const GRPCReqType& req, std::vector<GRPCRespType>* resps) {
     ::grpc::ClientContext ctx;
     SetDeadline(&ctx, std::chrono::seconds(1));
 
-    std::unique_ptr<::grpc_impl::ClientReader<GRPCRespType>> reader(((*stub_).*fn)(&ctx, req));
+    std::unique_ptr<::grpc::ClientReader<GRPCRespType>> reader(((*stub_).*fn)(&ctx, req));
 
     GRPCRespType resp;
     while (reader->Read(&resp)) {
@@ -69,13 +69,13 @@ class GRPCStub {
 
   template <typename GRPCReqType, typename GRPCRespType>
   ::grpc::Status CallBidirStreamingRPC(
-      std::unique_ptr<::grpc_impl::ClientReaderWriter<GRPCReqType, GRPCRespType>> (
+      std::unique_ptr<::grpc::ClientReaderWriter<GRPCReqType, GRPCRespType>> (
           GRPCServiceType::Stub::*fn)(::grpc::ClientContext*),
       const std::vector<GRPCReqType>& reqs, std::vector<GRPCRespType>* resps) {
     ::grpc::ClientContext ctx;
     SetDeadline(&ctx, std::chrono::seconds(1));
 
-    std::shared_ptr<::grpc_impl::ClientReaderWriter<GRPCReqType, GRPCRespType>> stream(
+    std::shared_ptr<::grpc::ClientReaderWriter<GRPCReqType, GRPCRespType>> stream(
         ((*stub_).*fn)(&ctx));
 
     std::thread writer([stream, reqs]() {

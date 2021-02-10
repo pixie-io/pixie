@@ -47,7 +47,6 @@ cc_library(
       "src/char_model.cc",
       "src/error.cc",
       "src/filesystem.cc",
-      "src/init.cc",
       "src/model_factory.cc",
       "src/model_interface.cc",
       "src/normalizer.cc",
