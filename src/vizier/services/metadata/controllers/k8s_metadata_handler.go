@@ -209,6 +209,24 @@ func (m *K8sMetadataHandler) processUpdates() {
 
 			// Send the update to the agents.
 			for _, u := range processor.GetUpdatesToSend(storedProtos, &m.state) {
+				u.Update.PrevUpdateVersion = 0
+				storedUpdate := &storepb.K8SResourceUpdate{
+					Update: u.Update,
+				}
+				if processor.IsNodeScoped() {
+					for _, t := range u.Topics {
+						err := m.mds.AddResourceUpdateForTopic(u.Update.UpdateVersion, t, storedUpdate)
+						if err != nil {
+							log.WithError(err).Error("Failed to store resource update")
+						}
+					}
+				} else {
+					err := m.mds.AddResourceUpdate(u.Update.UpdateVersion, storedUpdate)
+					if err != nil {
+						log.WithError(err).Error("Failed to store resource update")
+					}
+				}
+
 				for _, t := range u.Topics {
 					updateToSend := u.Update
 					// Set the previous update version on the update.
@@ -234,24 +252,6 @@ func (m *K8sMetadataHandler) processUpdates() {
 						// If this happens, the agent will rerequest the update as a missing update when it
 						// receives the next update.
 						log.WithError(err).Trace("Failed to send update to agent")
-					}
-				}
-
-				u.Update.PrevUpdateVersion = 0
-				storedUpdate := &storepb.K8SResourceUpdate{
-					Update: u.Update,
-				}
-				if processor.IsNodeScoped() {
-					for _, t := range u.Topics {
-						err := m.mds.AddResourceUpdateForTopic(u.Update.UpdateVersion, t, storedUpdate)
-						if err != nil {
-							log.WithError(err).Error("Failed to store resource update")
-						}
-					}
-				} else {
-					err := m.mds.AddResourceUpdate(u.Update.UpdateVersion, storedUpdate)
-					if err != nil {
-						log.WithError(err).Error("Failed to store resource update")
 					}
 				}
 			}

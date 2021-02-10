@@ -326,7 +326,7 @@ func (s *InMemoryStore) AddFullResourceUpdate(uv int64, r *storepb.K8SResource) 
 func (s *InMemoryStore) FetchResourceUpdates(topic string, from int64, to int64) ([]*storepb.K8SResourceUpdate, error) {
 	updates := make([]*storepb.K8SResourceUpdate, 0)
 
-	keys := make([]int, len(s.ResourceStoreByTopic[topic]) + len(s.ResourceStoreByTopic["unscoped"]))
+	keys := make([]int, len(s.ResourceStoreByTopic[topic])+len(s.ResourceStoreByTopic["unscoped"]))
 	keyIdx := 0
 	for k := range s.ResourceStoreByTopic[topic] {
 		keys[keyIdx] = int(k)
@@ -366,7 +366,7 @@ func (s *InMemoryStore) SetUpdateVersion(topic string, uv int64) error {
 func TestK8sMetadataHandler_GetUpdatesForIP(t *testing.T) {
 	mds := &InMemoryStore{
 		ResourceStoreByTopic: make(map[string]ResourceStore),
-		RVStore:       map[string]int64{},
+		RVStore:              map[string]int64{},
 	}
 
 	// Populate resource store.
@@ -608,6 +608,7 @@ func TestK8sMetadataHandler_ProcessUpdates(t *testing.T) {
 		Object:     o,
 		ObjectType: "namespaces",
 	}
+
 	wg.Wait()
 
 	assert.Equal(t, int64(5), mds.RVStore[controllers.KelvinUpdateTopic])
@@ -671,7 +672,8 @@ func TestK8sMetadataHandler_ProcessUpdates(t *testing.T) {
 	// Partial resource updates should be stored.
 	assert.Equal(t, &storepb.K8SResourceUpdate{
 		Update: &metadatapb.ResourceUpdate{
-			UpdateVersion: 5,
+			UpdateVersion:     5,
+			PrevUpdateVersion: 5,
 			Update: &metadatapb.ResourceUpdate_NamespaceUpdate{
 				NamespaceUpdate: &metadatapb.NamespaceUpdate{
 					UID:              "ijkl",
