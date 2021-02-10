@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	"github.com/olivere/elastic/v7"
-	"github.com/ory/dockertest"
+	"github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v3/docker"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -37,6 +38,9 @@ func SetupElastic() (*elastic.Client, func(), error) {
 			"xpack.security.transport.ssl.enabled=false",
 			"indices.lifecycle.poll_interval=5s",
 		},
+	}, func(config *docker.HostConfig) {
+		config.AutoRemove = true
+		config.RestartPolicy = docker.RestartPolicy{Name: "no"}
 	})
 	if err != nil {
 		return nil, cleanup, err

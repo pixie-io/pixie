@@ -146,15 +146,15 @@ go_repository(
 go_repository(
     name = "org_golang_x_net",
     importpath = "golang.org/x/net",
-    sum = "h1:QsnDpLLOKwHBBDa8nDws4DYNc/ryVW2vCpxCs09d4PY=",
-    version = "v0.0.0-20201216054612-986b41b23924",
+    sum = "h1:003p0dJM77cxMSyCPFphvZf/Y5/NXf5fzg6ufd1/Oew=",
+    version = "v0.0.0-20210119194325-5f4716e94777",
 )
 
 go_repository(
     name = "org_golang_x_sys",
     importpath = "golang.org/x/sys",
-    sum = "h1:nxC68pudNYkKU6jWhgrqdreuFiOQWj1Fs7T3VrH4Pjw=",
-    version = "v0.0.0-20201119102817-f84b799fce68",
+    sum = "h1:VwygUrnw9jn88c4u8GD3rZQbqrP/tgas88tPUbBxQrk=",
+    version = "v0.0.0-20210124154548-22da62e12c0c",
 )
 
 go_repository(
@@ -307,8 +307,8 @@ go_repository(
 go_repository(
     name = "com_github_konsorten_go_windows_terminal_sequences",
     importpath = "github.com/konsorten/go-windows-terminal-sequences",
-    sum = "h1:mweAR1A6xJ3oS2pRaGiHgQ4OO8tzTaLawm8vnODuwDk=",
-    version = "v1.0.1",
+    sum = "h1:DB17ag19krx9CFsz4o3enTrPXyIXCl+2iCXH/aMAp9s=",
+    version = "v1.0.2",
 )
 
 go_repository(
@@ -837,22 +837,22 @@ go_repository(
 go_repository(
     name = "com_github_containerd_continuity",
     importpath = "github.com/containerd/continuity",
-    sum = "h1:TP+534wVlf61smEIq1nwLLAjQVEK2EADoW3CX9AuT+8=",
-    version = "v0.0.0-20190426062206-aaeac12a7ffc",
+    sum = "h1:6JKvHHt396/qabvMhnhUZvWaHZzfVfldxE60TK8YLhg=",
+    version = "v0.0.0-20210208174643-50096c924a4e",
 )
 
 go_repository(
     name = "com_github_docker_go_connections",
     importpath = "github.com/docker/go-connections",
-    sum = "h1:3lOnM9cSzgGwx8VfK/NGOW5fLQ0GjIlCkaktF+n1M6o=",
-    version = "v0.3.0",
+    sum = "h1:El9xVISelRB7BuFusrZozjnkIM5YnzCViNKohAFqRJQ=",
+    version = "v0.4.0",
 )
 
 go_repository(
     name = "com_github_docker_go_units",
     importpath = "github.com/docker/go-units",
-    sum = "h1:Xk8S3Xj5sLGlG5g67hJmYMmUgXv5N4PhkjJHHqrwnTk=",
-    version = "v0.3.3",
+    sum = "h1:3uh0PgVws3nIA0Q+MwDC8yjEPf9zjRfZZWXZYDct3Tw=",
+    version = "v0.4.0",
 )
 
 go_repository(
@@ -865,8 +865,8 @@ go_repository(
 go_repository(
     name = "com_github_microsoft_go_winio",
     importpath = "github.com/Microsoft/go-winio",
-    sum = "h1:+hMXMk01us9KgxGb7ftKQt2Xpf5hH/yky+TDA+qxleU=",
-    version = "v0.4.14",
+    sum = "h1:FtSW/jqD+l4ba5iPBj9CODVtgfYAD8w2wS923g/cFDk=",
+    version = "v0.4.16",
 )
 
 go_repository(
@@ -879,8 +879,8 @@ go_repository(
 go_repository(
     name = "com_github_opencontainers_go_digest",
     importpath = "github.com/opencontainers/go-digest",
-    sum = "h1:WzifXhOVOEOuFYOJAW6aQqW0TooG2iki3E3Ii+WN7gQ=",
-    version = "v1.0.0-rc1",
+    sum = "h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=",
+    version = "v1.0.0",
 )
 
 go_repository(
@@ -893,8 +893,8 @@ go_repository(
 go_repository(
     name = "com_github_opencontainers_runc",
     importpath = "github.com/opencontainers/runc",
-    sum = "h1:dDCFes8Hj1r/i5qnypONo5jdOme/8HWZC/aNDyhECt0=",
-    version = "v1.0.0-rc8",
+    sum = "h1:/k06BMULKF5hidyoZymkoDCzdJzltZpz/UU4LguQVtc=",
+    version = "v1.0.0-rc9",
 )
 
 go_repository(
@@ -1488,8 +1488,8 @@ go_repository(
 go_repository(
     name = "com_github_creack_pty",
     importpath = "github.com/creack/pty",
-    sum = "h1:6pwm8kMQKCmgUg0ZHTm5+/YvRK0s3THD/28+T6/kk4A=",
-    version = "v1.1.7",
+    sum = "h1:07n33Z8lZxZ2qwegKbObQohDhXDQxiMMz1NOUGYlesw=",
+    version = "v1.1.11",
 )
 
 go_repository(
@@ -3077,4 +3077,39 @@ go_repository(
     importpath = "github.com/yuin/goldmark",
     sum = "h1:ruQGxdhGHe7FWOJPT0mKs5+pD2Xs1Bm/kdGlHO04FmM=",
     version = "v1.2.1",
+)
+
+go_repository(
+    name = "com_github_cenkalti_backoff_v3",
+    importpath = "github.com/cenkalti/backoff/v3",
+    sum = "h1:cfUAAO3yvKMYKPrvhDuHSwQnhZNk/RMHKdZqKTxfm6M=",
+    version = "v3.2.2",
+)
+
+go_repository(
+    name = "com_github_moby_term",
+    importpath = "github.com/moby/term",
+    sum = "h1:rzf0wL0CHVc8CEsgyygG0Mn9CNCCPZqOPaz8RiiHYQk=",
+    version = "v0.0.0-20201216013528-df9cb8a40635",
+)
+
+go_repository(
+    name = "com_github_ory_dockertest_v3",
+    importpath = "github.com/ory/dockertest/v3",
+    sum = "h1:L8JWiGgR+fnj90AEOkTFIEp4j5uWAK72P3IUsYgn2cs=",
+    version = "v3.6.3",
+)
+
+go_repository(
+    name = "org_bazil_fuse",
+    importpath = "bazil.org/fuse",
+    sum = "h1:SC+c6A1qTFstO9qmB86mPV2IpYme/2ZoEQ0hrP+wo+Q=",
+    version = "v0.0.0-20160811212531-371fbbdaa898",
+)
+
+go_repository(
+    name = "tools_gotest_v3",
+    importpath = "gotest.tools/v3",
+    sum = "h1:kG1BFyqVHuQoVQiR1bWGnfz/fmHvvuiSPIV7rvl360E=",
+    version = "v3.0.2",
 )

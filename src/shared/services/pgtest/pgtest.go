@@ -9,7 +9,8 @@ import (
 	"github.com/golang-migrate/migrate/database/postgres"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/jmoiron/sqlx"
-	"github.com/ory/dockertest"
+	"github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v3/docker"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -26,7 +27,16 @@ func SetupTestDB(t *testing.T, schemaSource *bindata.AssetSource) (*sqlx.DB, fun
 	}
 
 	const dbName = "testdb"
-	resource, err := pool.Run("postgres", "11.1", []string{"POSTGRES_PASSWORD=secret", "POSTGRES_DB=" + dbName})
+	resource, err := pool.RunWithOptions(
+		&dockertest.RunOptions{
+			Repository: "postgres",
+			Tag:        "11.1",
+			Env:        []string{"POSTGRES_PASSWORD=secret", "POSTGRES_DB=" + dbName},
+		}, func(config *docker.HostConfig) {
+			config.AutoRemove = true
+			config.RestartPolicy = docker.RestartPolicy{Name: "no"}
+		},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

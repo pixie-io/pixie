@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
-	"github.com/ory/dockertest"
+	"github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v3/docker"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -28,6 +29,9 @@ func SetupEtcd() (*clientv3.Client, func()) {
 			"--listen-client-urls=http://0.0.0.0:2379",
 			"--initial-cluster=node1=http://0.0.0.0:2380",
 		},
+	}, func(config *docker.HostConfig) {
+		config.AutoRemove = true
+		config.RestartPolicy = docker.RestartPolicy{Name: "no"}
 	})
 	if err != nil {
 		log.Fatal(err)
