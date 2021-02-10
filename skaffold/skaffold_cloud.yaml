@@ -96,6 +96,7 @@ profiles:
     value:
     - --compilation_mode=opt
     - --stamp
+    - --action_env=GOOGLE_APPLICATION_CREDENTIALS
   - op: replace
     path: /deploy/kustomize/paths
     value: [k8s/cloud/staging]
@@ -119,6 +120,7 @@ profiles:
     value:
     - --compilation_mode=opt
     - --stamp
+    - --action_env=GOOGLE_APPLICATION_CREDENTIALS
   - op: replace
     path: /deploy/kustomize/paths
     value: [k8s/cloud/prod]

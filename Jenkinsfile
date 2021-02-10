@@ -1070,13 +1070,20 @@ def deployWithSkaffold(String profile, String namespace, String skaffoldFile) {
     container('pxbuild') {
       withKubeConfig([credentialsId: K8S_PROD_CREDS,
                     serverUrl: K8S_PROD_CLUSTER, namespace: namespace]) {
-        sh "skaffold build -q -o '{{json .}}' -p ${profile} -f ${skaffoldFile} --cache-artifacts=false > manifest.json"
-        sh "skaffold deploy -p ${profile} --build-artifacts=manifest.json -f ${skaffoldFile}"
-        sh 'bazel build //src/pixie_cli:px'
-        sh 'mv bazel-bin/src/pixie_cli/px_/px /usr/local/bin/'
-        dir ('src/pxl_scripts') {
-          if (profile == 'prod') {
-            sh 'make update_bundle'
+        withCredentials([
+          file(
+            credentialsId: 'pl-dev-infra-jenkins-sa-json',
+            variable: 'GOOGLE_APPLICATION_CREDENTIALS')
+        ]) {
+          sh "skaffold build -p ${profile} -f ${skaffoldFile} --cache-artifacts=false"
+          sh "skaffold build -q -o '{{json .}}' -p ${profile} -f ${skaffoldFile} --cache-artifacts=false > manifest.json"
+          sh "skaffold deploy -p ${profile} --build-artifacts=manifest.json -f ${skaffoldFile}"
+          sh 'bazel build //src/pixie_cli:px'
+          sh 'mv bazel-bin/src/pixie_cli/px_/px /usr/local/bin/'
+          dir ('src/pxl_scripts') {
+            if (profile == 'prod') {
+              sh 'make update_bundle'
+            }
           }
         }
       }
