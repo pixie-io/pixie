@@ -467,6 +467,7 @@ def postBuildActions = {
 
 def InitializeRepoState(String stashName = SRC_STASH_NAME) {
   sh './ci/save_version_info.sh'
+  sh './ci/save_diff_info.sh'
   writeBazelRCFile()
 
   // Get docker image tag.

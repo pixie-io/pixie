@@ -16,9 +16,3 @@ else
     sanitized_job_name=$(echo "${JOB_NAME}" | sed -r 's/-/\//g')
     echo "0.0.${BUILD_NUMBER}-${sanitized_job_name}-dev" > VERSION
 fi
-
-git diff -U0 origin/main > diff_origin_main
-git diff -U0 origin/main -- '***.cc' '***.h' '***.c' > diff_origin_main_cc
-
-git diff -U0 HEAD~10 > diff_head
-git diff -U0 HEAD~10 -- '***.cc' '***.h' '***.c' > diff_head_cc
