@@ -59,8 +59,6 @@ func createStanNatsConnection(clientID string) (nc *nats.Conn, sc stan.Conn, err
 }
 
 func main() {
-	log.WithField("service", "vzconn-service").Info("Starting service")
-
 	services.SetupService("vzconn-service", 51600)
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()

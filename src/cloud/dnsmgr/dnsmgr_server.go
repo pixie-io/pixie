@@ -27,8 +27,6 @@ func init() {
 }
 
 func main() {
-	log.WithField("service", "dnsmgr-service").Info("Starting service")
-
 	services.SetupService("dnsmgr-service", 51900)
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()

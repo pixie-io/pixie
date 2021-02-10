@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -12,6 +13,7 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	version "pixielabs.ai/pixielabs/src/shared/version/go"
 	"pixielabs.ai/pixielabs/third_party/kuberesolver"
 )
 
@@ -30,6 +32,8 @@ func setupCommonFlags() {
 	pflag.String("tls_ca_cert", "../certs/ca.crt", "The CA cert.")
 	pflag.String("jwt_signing_key", "", "The signing key used for JWTs")
 	pflag.String("pod_name", "<unknown>", "The pod name")
+	pflag.Bool("version", false, "Print the version and quit.")
+
 }
 
 // SetupCommonFlags sets flags that are used by every service, even non GRPC servers.
@@ -43,6 +47,10 @@ func SetupService(serviceName string, servicePortBase uint) {
 	pflag.Uint("http2_port", servicePortBase, fmt.Sprintf("The port to run the %s HTTP/2 server", serviceName))
 	pflag.String("server_tls_key", "../certs/server.key", "The TLS key to use.")
 	pflag.String("server_tls_cert", "../certs/server.crt", "The TLS certificate to use.")
+
+	log.WithField("service", serviceName).
+		WithField("version", version.GetVersion().ToString()).
+		Info("Starting service")
 }
 
 // PostFlagSetupAndParse does post setup flag config and parses them.
@@ -57,6 +65,12 @@ func PostFlagSetupAndParse() {
 
 // CheckServiceFlags checks to make sure flag values are valid.
 func CheckServiceFlags() {
+	if viper.GetBool("version") {
+		log.WithField("version", version.GetVersion().ToString()).
+			Info("Exiting")
+		os.Exit(0)
+	}
+
 	if len(viper.GetString("jwt_signing_key")) == 0 {
 		log.Panic("Flag --jwt_signing_key or ENV PL_JWT_SIGNING_KEY is required")
 	}

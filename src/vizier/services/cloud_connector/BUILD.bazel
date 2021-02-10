@@ -14,7 +14,6 @@ go_library(
         "//src/shared/services/env:go_default_library",
         "//src/shared/services/healthz:go_default_library",
         "//src/shared/services/httpmiddleware:go_default_library",
-        "//src/shared/version/go:go_default_library",
         "//src/vizier/services/cloud_connector/bridge:go_default_library",
         "//src/vizier/services/cloud_connector/vizhealth:go_default_library",
         "@com_github_satori_go_uuid//:go_default_library",

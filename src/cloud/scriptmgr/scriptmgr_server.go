@@ -23,8 +23,6 @@ func init() {
 }
 
 func main() {
-	log.WithField("service", "scriptmgr-service").Info("Starting service")
-
 	services.SetupService("scriptmgr-service", 52000)
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()

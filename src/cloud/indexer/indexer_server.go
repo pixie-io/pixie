@@ -108,8 +108,6 @@ func mustConnectElastic() *elastic.Client {
 }
 
 func main() {
-	log.WithField("service", "indexer-service").Info("Starting service")
-
 	services.SetupService("indexer-service", 51800)
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()

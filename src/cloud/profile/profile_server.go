@@ -19,8 +19,6 @@ import (
 )
 
 func main() {
-	log.WithField("service", "profile-service").Info("Starting service")
-
 	services.SetupService("profile-service", 51500)
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()

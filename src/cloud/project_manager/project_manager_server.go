@@ -19,8 +19,6 @@ import (
 )
 
 func main() {
-	log.WithField("service", "project-manager-service").Info("Starting service")
-
 	services.SetupService("project-manager-service", 50300)
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()

@@ -16,7 +16,6 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
-	"pixielabs.ai/pixielabs/src/shared/version/go"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/ptproxy"
@@ -52,10 +51,6 @@ func NewVizierServiceClient(port uint) (public_vizierapipb.VizierServiceClient, 
 }
 
 func main() {
-	log.WithField("service", "query-broker").
-		WithField("version", version.GetVersion().ToString()).
-		Info("Starting service")
-
 	servicePort := uint(50300)
 	services.SetupService("query-broker", servicePort)
 	services.SetupSSLClientFlags()

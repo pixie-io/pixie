@@ -63,8 +63,6 @@ func NewArtifactTrackerServiceClient() (artifacttrackerpb.ArtifactTrackerClient,
 }
 
 func main() {
-	log.WithField("service", "vzmgr-service").Info("Starting service")
-
 	services.SetupService("vzmgr-service", 51800)
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()

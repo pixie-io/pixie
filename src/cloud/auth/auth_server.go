@@ -55,8 +55,6 @@ func connectToPostgres() (*sqlx.DB, string) {
 }
 
 func main() {
-	log.WithField("service", "auth-service").Info("Starting service")
-
 	services.SetupService("auth-service", 50100)
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()

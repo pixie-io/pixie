@@ -78,8 +78,6 @@ func mustLoadDB() *sqlx.DB {
 }
 
 func main() {
-	log.WithField("service", "artifact-tracker-service").Info("Starting service")
-
 	services.SetupService("artifact-tracker-service", 50750)
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()

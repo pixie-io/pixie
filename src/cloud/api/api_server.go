@@ -46,8 +46,6 @@ func init() {
 }
 
 func main() {
-	log.WithField("service", "api-service(cloud)").Info("Starting service")
-
 	services.SetupService("api-service", 51200)
 	services.SetupSSLClientFlags()
 	vzshard.SetupFlags()

@@ -7,7 +7,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"pixielabs.ai/pixielabs/src/shared/version/go"
 	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrenv"
 	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
 	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/controller"
@@ -24,10 +23,6 @@ func init() {
 }
 
 func main() {
-	log.WithField("service", "certmgr-service").
-		WithField("version", version.GetVersion().ToString()).
-		Info("Starting service")
-
 	services.SetupService("certmgr-service", 50900)
 	services.SetupSSLClientFlags()
 	services.PostFlagSetupAndParse()
