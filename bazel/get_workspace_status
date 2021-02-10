@@ -18,15 +18,11 @@
 # Distributions would be expected to echo the commit/tag as BUILD_SCM_REVISION.
 if [[ -f "VERSION" && -f "GIT_COMMIT" ]];
 then
-    echo "BUILD_SCM_REVISION $(cat GIT_COMMIT)"
     echo "STABLE_BUILD_SCM_REVISION $(cat GIT_COMMIT)"
     echo "STABLE_BUILD_TAG $(cat VERSION)"
     echo "STABLE_BUILD_NUMBER ${BUILD_NUMBER}"
     echo "STABLE_BUILD_SCM_STATUS Distribution"
 
-    echo "BUILD_TAG $(cat VERSION)"
-    echo "BUILD_NUMBER ${BUILD_NUMBER}"
-    echo "BUILD_SCM_STATUS Distribution"
     exit 0
 fi
 
@@ -36,7 +32,6 @@ if [[ $? != 0 ]];
 then
     exit 1
 fi
-echo "BUILD_SCM_REVISION ${git_rev}"
 echo "STABLE_BUILD_SCM_REVISION ${git_rev}"
 
 

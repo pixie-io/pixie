@@ -31,10 +31,10 @@ const plugins = [
     filename: 'index.html',
   }),
   new webpack.EnvironmentPlugin({
-    BUILD_NUMBER: '0',
-    BUILD_SCM_REVISION: '0000000',
-    BUILD_SCM_STATUS: 'Modified',
-    BUILD_TIMESTAMP: '0',
+    STABLE_BUILD_NUMBER: '0',
+    STABLE_BUILD_SCM_REVISION: '0000000',
+    STABLE_BUILD_SCM_STATUS: 'Modified',
+    STABLE_BUILD_TIMESTAMP: '0',
   }),
   new webpack.ContextReplacementPlugin(
     /highlight.js[/\\]lib[/\\]languages$/, /javascript|bash|python/,

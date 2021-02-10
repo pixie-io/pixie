@@ -12,8 +12,11 @@ ui_shared_cmds_start = [
     # available, but does not apply it to the environment. We parse out the file
     # and apply it to the environment here. Hopefully,
     # no special characters/spaces/quotes in the results ...
+    'if [ -f "bazel-out/stable-status.txt" ]; then\n' +
+    "$(sed -E \"s/^([A-Za-z_]+)\\s*(.*)/export \\1=\\2/g\" bazel-out/stable-status.txt)\n" +
+    "fi",
     'if [ -f "bazel-out/volatile-status.txt" ]; then\n' +
-    '$(sed -E "s/^([A-Za-z_]+)\s*(.*)/export \\1=\\2/g" bazel-out/volatile-status.txt)\n' +
+    "$(sed -E \"s/^([A-Za-z_]+)\\s*(.*)/export \\1=\\2/g\" bazel-out/volatile-status.txt)\n" +
     "fi",
     "cp -aL ${BASE_PATH}/* ${TMPPATH}",
     "pushd ${TMPPATH}/${UILIB_PATH} &> /dev/null",

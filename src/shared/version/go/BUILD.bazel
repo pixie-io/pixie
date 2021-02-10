@@ -3,11 +3,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 package(default_visibility = ["//visibility:public"])
 
 stamped_xdefs = {
-    "buildSCMRevision": "{BUILD_SCM_REVISION}",
-    "buildSCMStatus": "{BUILD_SCM_STATUS}",
+    "buildSCMRevision": "{STABLE_BUILD_SCM_REVISION}",
+    "buildSCMStatus": "{STABLE_BUILD_SCM_STATUS}",
     "buildTimeStamp": "{BUILD_TIMESTAMP}",
-    "buildSemver": "{BUILD_TAG}",
-    "buildNumber": "{BUILD_NUMBER}",
+    "buildSemver": "{STABLE_BUILD_TAG}",
+    "buildNumber": "{STABLE_BUILD_NUMBER}",
 }
 
 unstamped_xdefs = {
