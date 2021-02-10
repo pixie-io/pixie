@@ -4,7 +4,6 @@ This directory contains the build files for a standalone DNS server in a contain
 
 The build of the DNS server is all managed by bazel. A description of the files is included below:
 
- - Dockerfile: Base container image dockerfile, which consists of Alpine + the bind9 DNS server package.
  - named.conf: A configuration file for the bind9 DNS server; gets added to the image by Bazel.
  - dnstest.com.zone: Name resolutions managed by this DNS server; gets added to the image by Bazel.
                      This file sets up two DNS entries:

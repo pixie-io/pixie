@@ -92,6 +92,14 @@ def _docker_images_setup():
         repository = "distroless/base",
     )
 
+    # Import Alpine image to use for DNS tests.
+    container_pull(
+        name = "alpine_dns_linux_amd64",
+        registry = "index.docker.io",
+        repository = "resystit/bind9",
+        digest = "sha256:b9d834c7ca1b3c0fb32faedc786f2cb96fa2ec00976827e3f0c44f647375e18c",
+    )
+
 def _artifacts_setup():
     http_file(
         name = "linux_headers_4_14_176_tar_gz",

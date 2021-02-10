@@ -2,25 +2,7 @@ package(default_visibility = ["//visibility:public"])
 
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_layer")
-
-# Create a custom Alpine image with DNS server & utilities.
-genrule(
-    name = "alpine_dns",
-    srcs = [
-        "Dockerfile",
-    ],
-    outs = ["alpine_dns.tar"],
-    cmd = """
-      docker build -t alpine_dns -f $(location :Dockerfile) .
-      docker save alpine_dns > $@
-    """,
-    # Disable sandbox for genrules that run docker to avoid a warning.
-    # See: https://github.com/bazelbuild/bazel/issues/11596
-    tags = [
-        "no-remote",
-        "no-sandbox",
-    ],
-)
+load("@package_bundle//file:packages.bzl", "packages")
 
 pkg_tar(
     name = "bind_conf_files",
@@ -40,16 +22,9 @@ container_layer(
 
 container_image(
     name = "dns_server_image",
-    base = ":alpine_dns",
-    cmd = [
-        "named",
-        "-c",
-        "/etc/bind/named.conf",
-        "-g",
-        "-u",
-        "named",
-    ],
+    base = "@alpine_dns_linux_amd64//image",
     layers = [
         ":bind_conf",
     ],
+    visibility = ["//visibility:public"],
 )
