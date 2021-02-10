@@ -75,7 +75,7 @@ As long as the node doesn't reboot (which GKE nodes don't), the value of __PAGE_
 To run the profiler:
 
 ```
-/usr/sbin/profile-bpfcc.pixie -p <target_pid> > profile.out
+sudo /usr/sbin/profile-bpfcc.pixie -p <target_pid> <duration> > profile.out
 ```
 
 #### Creating a flamegraph graphic
@@ -88,6 +88,7 @@ flamegraph.pl profile.out > profile.svg
 rsvg-convert profile.svg -f pdf > profile.pdf  # create pdf
 rsvg-convert profile.svg -f eps > profile.eps  # create eps
 convert -density 600 -quality 100 profile.eps profile.jpg  # create jpg based on eps
+```
 
 ## Memory Profiler
 
@@ -104,7 +105,7 @@ The conditions under which automatic heap dumps are produced are controlled by e
 HEAP_PROFILE_ALLOCATION_INTERVAL 	default: 1073741824 (1 Gb) 	Dump heap profiling information each time the specified number of bytes has been allocated by the program.
 HEAP_PROFILE_INUSE_INTERVAL 	default: 104857600 (100 Mb) 	Dump heap profiling information whenever the high-water memory usage mark increases by the specified number of bytes.
 HEAP_PROFILE_TIME_INTERVAL 	default: 0 	Dump heap profiling information each time the specified number of seconds has elapsed.
-HEAPPROFILESIGNAL 	default: disabled 	Dump heap profiling information whenever the specified signal is sent to the process. 
+HEAPPROFILESIGNAL 	default: disabled 	Dump heap profiling information whenever the specified signal is sent to the process.
 ```
 More information can be found here: https://gperftools.github.io/gperftools/heapprofile.html
 
