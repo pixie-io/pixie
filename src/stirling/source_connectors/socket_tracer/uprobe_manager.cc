@@ -154,16 +154,14 @@ Status UProbeManager::UpdateGoTLSSymAddrs(ElfReader* elf_reader, DwarfReader* dw
 // output: {"/usr/lib/mount/abc...def/usr/lib/libssl.so.1.1",
 // "/usr/lib/mount/abc...def/usr/lib/libcrypto.so.1.1"}
 StatusOr<std::vector<std::filesystem::path>> FindLibraryPaths(
-    const std::vector<std::string_view>& lib_names, uint32_t pid, system::ProcParser* proc_parser) {
+    const std::vector<std::string_view>& lib_names, uint32_t pid, system::ProcParser* proc_parser,
+    LazyLoadedFPResolver* fp_resolver) {
   // TODO(jps): use a mutable map<string, path> as the function argument.
   // i.e. mapping from lib_name to lib_path.
   // This would relieve the caller of the burden of tracking which entry
   // in the vector belonged to which library it wanted to find.
 
-  // TODO(jps/oazizi): Optimization could be to move the fp_resolver up in the call chain, so it is
-  // only created once.
-  //                   Would involve splitting to Create() and SetMountNamespace().
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create(pid));
+  PL_RETURN_IF_ERROR(fp_resolver->SetMountNamespace(pid));
 
   PL_ASSIGN_OR_RETURN(absl::flat_hash_set<std::string> mapped_lib_paths,
                       proc_parser->GetMapPaths(pid));
@@ -220,7 +218,7 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbes(uint32_t pid) {
 
   // Find paths to libssl.so and libcrypto.so for the pid, if they are in use (i.e. mapped).
   PL_ASSIGN_OR_RETURN(const std::vector<std::filesystem::path> container_lib_paths,
-                      FindLibraryPaths(lib_names, pid, proc_parser_.get()));
+                      FindLibraryPaths(lib_names, pid, proc_parser_.get(), &fp_resolver_));
 
   std::filesystem::path container_libssl = container_lib_paths[0];
   std::filesystem::path container_libcrypto = container_lib_paths[1];
@@ -302,16 +300,12 @@ namespace {
 
 // Convert PID list from list of UPIDs to a map with key=binary name, value=PIDs
 std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
-    const absl::flat_hash_set<md::UPID>& upids) {
+    const absl::flat_hash_set<md::UPID>& upids, LazyLoadedFPResolver* fp_resolver) {
   const system::Config& sysconfig = system::Config::GetInstance();
 
   // Convert to a map of binaries, with the upids that are instances of that binary.
   std::map<std::string, std::vector<int32_t>> pids;
 
-  PL_ASSIGN_OR(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create(),
-               return {});
-
-  // Consider new UPIDs only.
   for (const auto& upid : upids) {
     PL_ASSIGN_OR(std::filesystem::path proc_exe, ProcExe(upid.pid()), continue);
 
@@ -379,7 +373,7 @@ int UProbeManager::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pid
 int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   int uprobe_count = 0;
 
-  for (const auto& [binary, pid_vec] : ConvertPIDsListToMap(pids)) {
+  for (const auto& [binary, pid_vec] : ConvertPIDsListToMap(pids, &fp_resolver_)) {
     if (cfg_disable_self_probing_) {
       // Don't try to attach uprobes to self.
       // This speeds up stirling_wrapper initialization significantly.
@@ -481,6 +475,9 @@ void UProbeManager::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
 
   // Before deploying new probes, clean-up map entries for old processes that are now dead.
   CleanupSymaddrMaps(proc_tracker_.deleted_upids());
+
+  // Refresh our file path resolver so it is aware of all new mounts.
+  fp_resolver_.Refresh();
 
   int uprobe_count = 0;
 

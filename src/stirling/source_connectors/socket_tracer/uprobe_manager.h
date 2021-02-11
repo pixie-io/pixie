@@ -331,6 +331,7 @@ class UProbeManager {
 
   std::unique_ptr<system::ProcParser> proc_parser_;
   ProcTracker proc_tracker_;
+  LazyLoadedFPResolver fp_resolver_;
 
   absl::flat_hash_set<upid_t, UPIDHashFn> upids_with_mmap_;
 

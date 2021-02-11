@@ -86,5 +86,45 @@ class FilePathResolver {
   std::vector<system::ProcParser::MountInfo> root_mount_infos_;
 };
 
+/**
+ * A wrapper around FilePathResolver that manages a lazy-loaded instance of the resolver.
+ *
+ * FilePathResolver is a very expensive structure to make, and so this wrapper uses
+ * lazy-loading to minimize its cost.
+ *
+ * In particular, Create() is called just-in-time on the first use, and is
+ * cached from that point onwards, until the next call to Refresh().
+ *
+ * The SetMountNamespace and ResolvePath APIs match that of the FilePathResolver.
+ */
+class LazyLoadedFPResolver {
+ public:
+  Status SetMountNamespace(pid_t pid) {
+    PL_RETURN_IF_ERROR(LazyLoad());
+    return fp_resolver_->SetMountNamespace(pid);
+  }
+
+  StatusOr<std::filesystem::path> ResolvePath(const std::filesystem::path& path) {
+    PL_RETURN_IF_ERROR(LazyLoad());
+    return fp_resolver_->ResolvePath(path);
+  }
+
+  void Refresh() {
+    // This is lazy-loaded, so to refresh, we need only reset the pointer.
+    // The next call to SetMountNamespace/ResolvePath will refresh the state lazily.
+    fp_resolver_.reset();
+  }
+
+ private:
+  Status LazyLoad() {
+    if (fp_resolver_ == nullptr) {
+      PL_ASSIGN_OR_RETURN(fp_resolver_, FilePathResolver::Create());
+    }
+    return Status::OK();
+  }
+
+  std::unique_ptr<FilePathResolver> fp_resolver_;
+};
+
 }  // namespace stirling
 }  // namespace pl
