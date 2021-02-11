@@ -73,6 +73,11 @@ Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_st
   return Status::OK();
 }
 
+bool SubProcess::IsRunning() {
+  int status = -1;
+  return waitpid(child_pid_, &status, WNOHANG) == 0;
+}
+
 // TODO(oazizi/yzhao): This implementation has unexpected behavior if the child pid terminates
 // and is reused by the OS.
 void SubProcess::Signal(int signal) {

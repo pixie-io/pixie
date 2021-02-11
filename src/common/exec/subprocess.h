@@ -16,29 +16,34 @@ namespace pl {
 class SubProcess {
  public:
   /**
-   * @brief Start the command.
+   * Start the command.
    *
    * @return OK if succeed, otherwise an error status.
    */
   Status Start(const std::vector<std::string>& args, bool stderr_to_stdout = false);
 
   /**
-   * @brief Send a signal to the process.
+   * Returns true if the forked subprocess is still running.
+   */
+  bool IsRunning();
+
+  /**
+   * Send a signal to the process.
    */
   void Signal(int signal);
 
   /**
-   * @brief Kill the started process.
+   * Kill the started process.
    */
   void Kill() { Signal(SIGKILL); }
 
   /**
-   * @brief Wait for the subprocess to finish, and return its exit code.
+   * Wait for the subprocess to finish, and return its exit code.
    */
   int Wait();
 
   /**
-   * @brief Read the child process' stdout, and append to provided string pointer.
+   * Read the child process' stdout, and append to provided string pointer.
    * Returns whatever data is available, and does not block if there is no data.
    */
   Status Stdout(std::string* out);

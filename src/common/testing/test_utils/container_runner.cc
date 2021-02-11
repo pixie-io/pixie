@@ -88,6 +88,10 @@ StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::s
   for (; attempts_remaining > 0; --attempts_remaining) {
     sleep(kSleepSeconds);
 
+    // We check if the container process is running before running docker inspect
+    // to avoid races where the container stops running after the docker inspect.
+    bool container_is_running = container_.IsRunning();
+
     PL_ASSIGN_OR_RETURN(
         container_status,
         pl::Exec(absl::Substitute("docker inspect -f '{{.State.Status}}' $0", container_name_)));
@@ -103,6 +107,13 @@ StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::s
     // Delay before trying again.
     LOG(INFO) << absl::Substitute(
         "Container not yet running, will try again ($0 attempts remaining).", attempts_remaining);
+
+    if (!container_is_running) {
+      // If container is not running, fail early to save time.
+      std::string container_out;
+      PL_RETURN_IF_ERROR(container_.Stdout(&container_out));
+      return error::Internal("Docker run failed. Output:\n$0", container_out);
+    }
   }
 
   if (container_status != "running" && container_status != "exited") {
