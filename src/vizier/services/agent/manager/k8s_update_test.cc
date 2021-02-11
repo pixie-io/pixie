@@ -331,7 +331,51 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdatesMDSTruncated) {
   EXPECT_EQ(1, nats_conn_->published_msgs().size());
 
   // Check that the messages were sent in the right order.
-  std::vector<std::string> expected_updates = {updates_[0], updates_[2], updates_[3]};
+  std::vector<std::string> expected_updates = {updates_[0], updates_[2], updates_[3], updates_[4]};
+  for (const auto& [i, expected_update] : Enumerate(expected_updates)) {
+    EXPECT_THAT(*(fake_mds_manager_->k8s_update(i)), EqualsProto(expected_update));
+  }
+}
+
+TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdatesMDSTruncatedZeroResp) {
+  // Check that when the metadata service says it is missing a chunk of updates,
+  // (and doesn't send any updates in the requested range because they are too
+  // far back) the k8s update handler can tolerate that condition and proceed forward.
+
+  // Send update 0
+  auto sent_update = TestK8sUpdateMsg(updates_[0]);
+  ASSERT_OK(k8s_update_handler_->HandleMessage(std::move(sent_update)));
+  EXPECT_EQ(1, fake_mds_manager_->num_k8s_updates());
+
+  // Send update 4
+  sent_update = TestK8sUpdateMsg(updates_[4]);
+  ASSERT_OK(k8s_update_handler_->HandleMessage(std::move(sent_update)));
+  EXPECT_EQ(1, fake_mds_manager_->num_k8s_updates());
+
+  // Push forward the clock so that the request gets sent.
+  time_system_->SetMonotonicTime(start_monotonic_time_);
+  dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
+
+  // Check that NATS has received a missing metadata request.
+  EXPECT_EQ(1, nats_conn_->published_msgs().size());
+  auto req = nats_conn_->published_msgs()[0];
+  EXPECT_TRUE(req.k8s_metadata_message().has_missing_k8s_metadata_request());
+  auto missing_md = req.k8s_metadata_message().missing_k8s_metadata_request();
+  EXPECT_EQ(11, missing_md.from_update_version());
+  EXPECT_EQ(50, missing_md.to_update_version());
+
+  // Missing MD response part 1/1
+  auto sent_missing = TestMissingUpdateResp({}, 50, 50);
+  ASSERT_OK(k8s_update_handler_->HandleMessage(std::move(sent_missing)));
+  EXPECT_EQ(2, fake_mds_manager_->num_k8s_updates());
+
+  // Check that no more re-request messages were sent to NATS.
+  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(6));
+  dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
+  EXPECT_EQ(1, nats_conn_->published_msgs().size());
+
+  // Check that the messages were sent in the right order.
+  std::vector<std::string> expected_updates = {updates_[0], updates_[4]};
   for (const auto& [i, expected_update] : Enumerate(expected_updates)) {
     EXPECT_THAT(*(fake_mds_manager_->k8s_update(i)), EqualsProto(expected_update));
   }

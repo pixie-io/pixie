@@ -42,6 +42,15 @@ Status K8sUpdateHandler::HandleMissingK8sMetadataResponse(const MissingK8sMetada
     }
   }
 
+  if (resp.updates().size() == 0 && update_backlog_.size() > 0) {
+    // If our backlog now predates the earliest updates known by the metadata service,
+    // we need to write out the backlog, and stop trying to find missing updates that
+    // no longer exist in the metadata service.
+    if (resp.first_update_available() >= update_backlog_.top().update_version()) {
+      current_update_version_ = update_backlog_.top().prev_update_version();
+    }
+  }
+
   for (const auto& update : resp.updates()) {
     PL_RETURN_IF_ERROR(HandleK8sUpdate(update));
   }
