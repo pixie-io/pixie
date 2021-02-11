@@ -37,6 +37,10 @@ class PEMManager : public Manager {
                 /*mds_url*/ ""),
         stirling_(std::move(stirling)) {}
 
+  std::string k8s_update_sub_topic() const override {
+    return absl::Substitute(Manager::kK8sSubTopicPattern, info()->host_ip);
+  }
+
   Status InitImpl() override;
   Status PostRegisterHookImpl() override;
   Status StopImpl(std::chrono::milliseconds) override;

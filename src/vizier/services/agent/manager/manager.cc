@@ -19,6 +19,7 @@
 #include "src/vizier/services/agent/manager/config_manager.h"
 #include "src/vizier/services/agent/manager/exec.h"
 #include "src/vizier/services/agent/manager/heartbeat.h"
+#include "src/vizier/services/agent/manager/k8s_update.h"
 #include "src/vizier/services/agent/manager/registration.h"
 #include "src/vizier/services/agent/manager/ssl.h"
 
@@ -74,18 +75,13 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
       time_system_(std::make_unique<pl::event::RealTimeSystem>()),
       api_(std::make_unique<pl::event::APIImpl>(time_system_.get())),
       dispatcher_(api_->AllocateDispatcher("manager")),
+      nats_addr_(nats_url),
       table_store_(std::make_shared<table_store::TableStore>()),
       func_context_(this, CreateMDSStub(mds_url, grpc_channel_creds_),
                     CreateMDTPStub(mds_url, grpc_channel_creds_), table_store_,
                     [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); }) {
-  // Set up the NATS connector.
-  // TODO(nserrino): Add a NATS connector for k8s updates.
-  if (nats_url.empty()) {
+  if (!has_nats_connection()) {
     LOG(WARNING) << "--nats_url is empty, skip connecting to NATS.";
-  } else {
-    nats_connector_ = std::make_unique<Manager::VizierNATSConnector>(
-        nats_url, "update_agent" /*pub_topic*/, absl::StrFormat("/agent/%s", agent_id.str()),
-        SSL::DefaultNATSCreds());
   }
 
   // Register Vizier specific and carnot builtin functions.
@@ -122,21 +118,29 @@ Status Manager::Init() {
 
   LOG(INFO) << "Hostname: " << info_.hostname;
 
+  // Set up the agent NATS connector.
+  if (!has_nats_connection()) {
+    LOG(WARNING) << "NATS is not configured, skip connecting. Stirling and Carnot might not behave "
+                    "as expected because of this.";
+  } else {
+    agent_nats_connector_ = std::make_unique<Manager::VizierNATSConnector>(
+        nats_addr_, kAgentPubTopic /*pub_topic*/,
+        absl::Substitute(kAgentSubTopicPattern, info_.agent_id.str()) /*sub topic*/,
+        SSL::DefaultNATSCreds());
+  }
+
   // The first step is to connect to stats and register the agent.
   // Downstream dependencies like stirling/carnot depend on knowing
   // ASID and metadata state, which is only available after registration is
   // complete.
-  if (nats_connector_ == nullptr) {
-    LOG(WARNING) << "NATS is not configured, skip connecting. Stirling and Carnot might not behave "
-                    "as expected because of this.";
-  } else {
-    PL_RETURN_IF_ERROR(nats_connector_->Connect(dispatcher_.get()));
-    // Attach the message handler for nats:
-    nats_connector_->RegisterMessageHandler(
+  if (agent_nats_connector_ != nullptr) {
+    PL_RETURN_IF_ERROR(agent_nats_connector_->Connect(dispatcher_.get()));
+    // Attach the message handler for agent nats:
+    agent_nats_connector_->RegisterMessageHandler(
         std::bind(&Manager::NATSMessageHandler, this, std::placeholders::_1));
 
     auto registration_handler = std::make_shared<RegistrationHandler>(
-        dispatcher_.get(), &info_, nats_connector_.get(),
+        dispatcher_.get(), &info_, agent_nats_connector_.get(),
         std::bind(&Manager::PostRegisterHook, this, std::placeholders::_1),
         std::bind(&Manager::PostReregisterHook, this, std::placeholders::_1));
 
@@ -196,10 +200,10 @@ Status Manager::RegisterBackgroundHelpers() {
   // Add Heartbeat and execute query handlers.
   heartbeat_handler_ = std::make_shared<HeartbeatMessageHandler>(
       dispatcher_.get(), mds_manager_.get(), relation_info_manager_.get(), &info_,
-      nats_connector_.get());
+      agent_nats_connector_.get());
 
   auto heartbeat_nack_handler = std::make_shared<HeartbeatNackMessageHandler>(
-      dispatcher_.get(), &info_, nats_connector_.get(),
+      dispatcher_.get(), &info_, agent_nats_connector_.get(),
       std::bind(&Manager::PreReregisterHook, this));
 
   PL_CHECK_OK(
@@ -209,7 +213,7 @@ Status Manager::RegisterBackgroundHelpers() {
 
   // Attach message handler for config updates.
   auto config_manager =
-      std::make_shared<ConfigManager>(dispatcher_.get(), &info_, nats_connector_.get());
+      std::make_shared<ConfigManager>(dispatcher_.get(), &info_, agent_nats_connector_.get());
   PL_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kConfigUpdateMessage,
                                             config_manager));
 
@@ -258,6 +262,24 @@ Status Manager::PostRegisterHook(uint32_t asid) {
       info_.hostname, info_.asid, info_.pod_name, info_.agent_id,
       info_.capabilities.collects_data(), pl::system::Config::GetInstance(),
       agent_metadata_filter_.get());
+
+  if (has_nats_connection()) {
+    k8s_nats_connector_ = std::make_unique<Manager::VizierNATSConnector>(
+        nats_addr_, kK8sPubTopic /*pub_topic*/, k8s_update_sub_topic() /*sub topic*/,
+        SSL::DefaultNATSCreds());
+
+    PL_RETURN_IF_ERROR(k8s_nats_connector_->Connect(dispatcher_.get()));
+    // Attach the message handler for k8s nats:
+    k8s_nats_connector_->RegisterMessageHandler(
+        std::bind(&Manager::NATSMessageHandler, this, std::placeholders::_1));
+
+    auto k8s_update_handler = std::make_shared<K8sUpdateHandler>(
+        dispatcher_.get(), mds_manager_.get(), &info_, k8s_nats_connector_.get());
+
+    PL_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kK8SMetadataMessage,
+                                       k8s_update_handler));
+  }
+
   relation_info_manager_ = std::make_unique<RelationInfoManager>();
 
   // Call the derived class post-register hook.

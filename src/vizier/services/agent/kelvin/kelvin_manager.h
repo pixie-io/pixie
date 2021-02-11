@@ -35,6 +35,9 @@ class KelvinManager : public Manager {
   Status InitImpl() override;
   Status PostRegisterHookImpl() override;
   Status StopImpl(std::chrono::milliseconds) override;
+  std::string k8s_update_sub_topic() const override {
+    return absl::Substitute(Manager::kK8sSubTopicPattern, "all");
+  }
 
  private:
   static services::shared::agent::AgentCapabilities Capabilities() {

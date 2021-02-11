@@ -137,8 +137,18 @@ class Manager : public pl::NotCopyable {
   RelationInfoManager* relation_info_manager() { return relation_info_manager_.get(); }
   pl::event::Dispatcher* dispatcher() { return dispatcher_.get(); }
   carnot::Carnot* carnot() { return carnot_.get(); }
+  const Info* info() const { return &info_; }
   Info* info() { return &info_; }
-  VizierNATSConnector* nats_connector() { return nats_connector_.get(); }
+  VizierNATSConnector* agent_nats_connector() { return agent_nats_connector_.get(); }
+
+  // TODO(nserrino): Update this topic to to Agent/$0 for consistency.s
+  static constexpr char kAgentSubTopicPattern[] = "/agent/$0";
+  // TODO(nserrino): Update this topic to UpdateAgent.
+  static constexpr char kAgentPubTopic[] = "update_agent";
+  static constexpr char kK8sSubTopicPattern[] = "K8sUpdates/$0";
+  static constexpr char kK8sPubTopic[] = "MissingMetadataRequests";
+  // Kelvin and PEMs handle this differently.
+  virtual std::string k8s_update_sub_topic() const = 0;
 
  private:
   std::unique_ptr<ResultSinkStub> ResultSinkStubGenerator(const std::string& remote_addr,
@@ -148,6 +158,7 @@ class Manager : public pl::NotCopyable {
   Status PostRegisterHook(uint32_t asid);
   Status PreReregisterHook();
   Status PostReregisterHook(uint32_t asid);
+  bool has_nats_connection() const { return !nats_addr_.empty(); }
 
   // Message handlers are registered per type of Vizier message.
   // same message handler can be used for multiple different types of messages.
@@ -177,7 +188,11 @@ class Manager : public pl::NotCopyable {
 
   Info info_;
   pl::event::DispatcherUPtr dispatcher_;
-  std::unique_ptr<VizierNATSConnector> nats_connector_;
+  const std::string nats_addr_;
+  // NATS connector for subscribing to and publishing agent updates.
+  std::unique_ptr<VizierNATSConnector> agent_nats_connector_;
+  // NATS connector for subscribing to and requesting k8s updates.
+  std::unique_ptr<VizierNATSConnector> k8s_nats_connector_;
 
   // The controller is still running. Force stopping will cause un-graceful termination.
   std::atomic<bool> running_ = false;

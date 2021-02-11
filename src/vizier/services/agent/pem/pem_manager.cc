@@ -22,13 +22,13 @@ Status PEMManager::PostRegisterHookImpl() {
   PL_RETURN_IF_ERROR(stirling_->RunAsThread());
 
   auto execute_query_handler = std::make_shared<ExecuteQueryMessageHandler>(
-      dispatcher(), info(), nats_connector(), carnot());
+      dispatcher(), info(), agent_nats_connector(), carnot());
   PL_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kExecuteQueryRequest,
                                             execute_query_handler));
 
   tracepoint_manager_ =
-      std::make_shared<TracepointManager>(dispatcher(), info(), nats_connector(), stirling_.get(),
-                                          table_store(), relation_info_manager());
+      std::make_shared<TracepointManager>(dispatcher(), info(), agent_nats_connector(),
+                                          stirling_.get(), table_store(), relation_info_manager());
   PL_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kTracepointMessage,
                                             tracepoint_manager_));
   return Status::OK();
