@@ -62,6 +62,9 @@ type K8sMetadataStore interface {
 	AddResourceUpdate(updateVersion int64, resource *storepb.K8SResourceUpdate) error
 	// AddFullResourceUpdate stores full resource update with the given update version.
 	AddFullResourceUpdate(updateversion int64, resource *storepb.K8SResource) error
+	// FetchFullResourceUpdates gets the full resource updates from the `from` update version, to the `to`
+	// update version (exclusive).
+	FetchFullResourceUpdates(from int64, to int64) ([]*storepb.K8SResource, error)
 	// FetchResourceUpdates gets the resource updates from the `from` update version, to the `to`
 	// update version (exclusive).
 	FetchResourceUpdates(topic string, from int64, to int64) ([]*storepb.K8SResourceUpdate, error)

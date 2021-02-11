@@ -148,6 +148,28 @@ func (m *MetadataDatastore) FetchResourceUpdates(topic string, from int64, to in
 	return updates, nil
 }
 
+// FetchFullResourceUpdates gets the full resource updates from the `from` update version, to the `to`
+// update version (exclusive).
+func (m *MetadataDatastore) FetchFullResourceUpdates(from int64, to int64) ([]*storepb.K8SResource, error) {
+	// Fetch updates specific to the topic.
+	_, vals, err := m.ds.GetWithRange(getFullResourceUpdateKey(from), getFullResourceUpdateKey(to))
+	if err != nil {
+		return nil, err
+	}
+
+	updates := make([]*storepb.K8SResource, 0)
+	for _, u := range vals {
+		updatePb := &storepb.K8SResource{}
+		err = proto.Unmarshal(u, updatePb)
+		if err != nil {
+			continue
+		}
+		updates = append(updates, updatePb)
+	}
+
+	return updates, nil
+}
+
 // GetUpdateVersion gets the last update version sent on a topic.
 func (m *MetadataDatastore) GetUpdateVersion(topic string) (int64, error) {
 	val, err := m.ds.Get(getTopicVersionKey(topic))

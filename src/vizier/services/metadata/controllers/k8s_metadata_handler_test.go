@@ -323,6 +323,10 @@ func (s *InMemoryStore) AddFullResourceUpdate(uv int64, r *storepb.K8SResource) 
 	return nil
 }
 
+func (s *InMemoryStore) FetchFullResourceUpdates(from int64, to int64) ([]*storepb.K8SResource, error) {
+	return nil, nil
+}
+
 func (s *InMemoryStore) FetchResourceUpdates(topic string, from int64, to int64) ([]*storepb.K8SResourceUpdate, error) {
 	updates := make([]*storepb.K8SResourceUpdate, 0)
 

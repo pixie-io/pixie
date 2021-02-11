@@ -54,6 +54,10 @@ func (s *FakeStore) SetUpdateVersion(topic string, uv int64) error {
 	return nil
 }
 
+func (s *FakeStore) FetchFullResourceUpdates(from int64, to int64) ([]*storepb.K8SResource, error) {
+	return nil, nil
+}
+
 func TestMetadataTopicListener_GetUpdatesInBatches(t *testing.T) {
 	tests := []struct {
 		name               string

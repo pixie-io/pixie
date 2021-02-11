@@ -72,6 +72,68 @@ func TestMetadataDatastore_AddFullResourceUpdate(t *testing.T) {
 	assert.Equal(t, update, savedResourceUpdatePb)
 }
 
+func TestMetadataDatastore_FetchFullResourceUpdates(t *testing.T) {
+	db, mds, cleanup := setupMDSTest(t)
+	defer cleanup()
+
+	update1 := &storepb.K8SResource{
+		Resource: &storepb.K8SResource_Namespace{
+			Namespace: &metadatapb.Namespace{
+				Metadata: &metadatapb.ObjectMetadata{
+					Name:            "object_md",
+					UID:             "ijkl",
+					ResourceVersion: "1",
+					ClusterName:     "a_cluster",
+					OwnerReferences: []*metadatapb.OwnerReference{
+						&metadatapb.OwnerReference{
+							Kind: "pod",
+							Name: "test",
+							UID:  "abcd",
+						},
+					},
+					CreationTimestampNS: 4,
+					DeletionTimestampNS: 6,
+				},
+			},
+		},
+	}
+	val, err := update1.Marshal()
+	assert.Nil(t, err)
+	db.Set(path.Join(fullResourceUpdatePrefix, fmt.Sprintf("%020d", 1)), string(val))
+
+	update2 := &storepb.K8SResource{
+		Resource: &storepb.K8SResource_Namespace{
+			Namespace: &metadatapb.Namespace{
+				Metadata: &metadatapb.ObjectMetadata{
+					Name:            "object_md",
+					UID:             "abcd",
+					ResourceVersion: "2",
+					ClusterName:     "a_cluster",
+					OwnerReferences: []*metadatapb.OwnerReference{
+						&metadatapb.OwnerReference{
+							Kind: "pod",
+							Name: "test",
+							UID:  "abcd",
+						},
+					},
+					CreationTimestampNS: 4,
+					DeletionTimestampNS: 6,
+				},
+			},
+		},
+	}
+	val, err = update2.Marshal()
+	assert.Nil(t, err)
+
+	db.Set(path.Join(fullResourceUpdatePrefix, fmt.Sprintf("%020d", 2)), string(val))
+
+	updates, err := mds.FetchFullResourceUpdates(int64(1), int64(3))
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(updates))
+	assert.Equal(t, update1, updates[0])
+	assert.Equal(t, update2, updates[1])
+}
+
 func TestMetadataDatastore_AddResourceUpdateForTopic(t *testing.T) {
 	db, mds, cleanup := setupMDSTest(t)
 	defer cleanup()
