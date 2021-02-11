@@ -239,18 +239,14 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
-		} else if r.Method != http.MethodPost {
+		} else if r.Method != http.MethodGet {
 			results <- result{nil, errors.New("wrong method on HTTP request, assuming auth failed")}
 			close(results)
 			return
 		}
 
-		if err := r.ParseForm(); err != nil {
-			close(results)
-			return
-		}
-
-		accessToken := r.Form.Get("access_token")
+		q := r.URL.Query()
+		accessToken := q.Get("accessToken")
 		if accessToken == "" {
 			results <- result{nil, errors.New("missing code, assuming auth failed")}
 			close(results)
