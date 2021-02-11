@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	tracepointsPrefix      = "/tracepoint"
-	tracepointStatesPrefix = "/tracepointStates"
-	tracepointTTLsPrefix   = "/tracepointTTL"
-	tracepointNamesPrefix  = "/tracepointName"
+	tracepointsPrefix      = "/tracepoint/"
+	tracepointStatesPrefix = "/tracepointStates/"
+	tracepointTTLsPrefix   = "/tracepointTTL/"
+	tracepointNamesPrefix  = "/tracepointName/"
 )
 
 // TracepointDatastore implements the TracepointStore interface on a given Datastore.
