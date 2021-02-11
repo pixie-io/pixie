@@ -30,8 +30,7 @@ Status K8sUpdateHandler::AddK8sUpdate(const ResourceUpdate& update) {
   return mds_manager_->AddK8sUpdate(std::make_unique<ResourceUpdate>(update));
 }
 
-Status K8sUpdateHandler::HandleMissingK8sMetadataResponse(
-    const messages::MissingK8sMetadataResponse& resp) {
+Status K8sUpdateHandler::HandleMissingK8sMetadataResponse(const MissingK8sMetadataResponse& resp) {
   if (resp.updates().size() > 0) {
     auto first_update = resp.updates()[0];
     // If the metadata service tells us that update N is the earliest update it has,

@@ -731,3 +731,39 @@ message ResourceUpdate {
   int64 update_version = 8;
   int64 prev_update_version = 9;
 }
+
+// A request for all k8s updates relevant to the given IP, starting with the "from" update version,
+// to the "to" update version.
+message MissingK8sMetadataRequest {
+  // The IP to use to filter out k8s updates from other nodes. If empty, no updates should be
+  // filtered out.
+  string ip = 1 [ (gogoproto.customname) = "IP" ];
+  // The starting range of the update versions to fetch. Inclusive.
+  // If not specified, start fetching from the earliest known update version.
+  int64 from_update_version = 3;
+  // The ending range of the update versions to fetch. Exclusive.
+  int64 to_update_version = 2;
+}
+
+// The response to a request for missing k8s updates. The response to a single
+// MissingK8sMetadataRequest may be batched into multiple MissingK8sMetadataResponses.
+message MissingK8sMetadataResponse {
+  // The k8s updates with update versions that fall within the "from" and "to" range specified in
+  // the MissingK8sMetadataRequest. The updates within the update array are guaranteed to be in
+  // order.
+  repeated ResourceUpdate updates = 1;
+  // The update version of the first available update from the requested range.
+  // For example, when requesting updates 1-20, where updates 1-5 and 15-20 may be missing, the
+  // responses could look like: First Response: { FirstUpdateAvailable: 6, LastUpdateAvailable: 14,
+  // Updates: [update 6 ... update 10] } Second Response: { FirstUpdateAvailable: 6,
+  // LastUpdateAvailable: 14, Updates: [update 11 ... update 14] } In this case, the agent would
+  // know to stop listening for more responses, since the LastUpdateAvailable is 14 and they have
+  // received update 14.
+  // If the first response were to be dropped and the agent only received:
+  // { FirstUpdateAvailable: 6, LastUpdateAvailable: 14, Updates: [update 11 ... update 14] }
+  // It would know that it missed a response, since they never got the first available update. At
+  // this point, the agent should rerequest the missing data.
+  int64 first_update_available = 2;
+  // The update version of the last available update from the requested range.
+  int64 last_update_available = 3;
+}

@@ -12,6 +12,7 @@ namespace vizier {
 namespace agent {
 
 using ::pl::event::Dispatcher;
+using ::pl::shared::k8s::metadatapb::MissingK8sMetadataResponse;
 using ::pl::shared::k8s::metadatapb::ResourceUpdate;
 
 // K8sUpdateHandler is responsible for processing K8s updates.
@@ -33,7 +34,7 @@ class K8sUpdateHandler : public Manager::MessageHandler {
   Status HandleMessage(std::unique_ptr<messages::VizierMessage> msg) override;
 
  private:
-  Status HandleMissingK8sMetadataResponse(const messages::MissingK8sMetadataResponse& update);
+  Status HandleMissingK8sMetadataResponse(const MissingK8sMetadataResponse& update);
   Status HandleK8sUpdate(const ResourceUpdate& update);
   Status AddK8sUpdate(const ResourceUpdate& update);
   void RequestMissingMetadata();

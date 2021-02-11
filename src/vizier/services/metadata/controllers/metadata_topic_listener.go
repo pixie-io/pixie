@@ -144,7 +144,7 @@ func (m *MetadataTopicListener) processAgentMessage(msg *nats.Msg) error {
 			Msg: &messages.VizierMessage_K8SMetadataMessage{
 				K8SMetadataMessage: &messages.K8SMetadataMessage{
 					Msg: &messages.K8SMetadataMessage_MissingK8SMetadataResponse{
-						MissingK8SMetadataResponse: &messages.MissingK8SMetadataResponse{
+						MissingK8SMetadataResponse: &metadatapb.MissingK8SMetadataResponse{
 							Updates:              b,
 							FirstUpdateAvailable: firstAvailable,
 							LastUpdateAvailable:  lastAvailable,
