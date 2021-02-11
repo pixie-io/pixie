@@ -29,11 +29,12 @@ def resource_timeseries(start_time: str, namespace: px.Namespace, name_substr: s
     df = px.DataFrame(table='process_stats', start_time=start_time)
     df = df[df.ctx['namespace'] == namespace]
     df.pod = df.ctx['pod_name']
+    df.node = px.upid_to_node_name(df.upid)
     df = df[px.contains(df.pod, name_substr)]
     df.timestamp = px.bin(df.time_, window_ns)
 
     # First calculate CPU usage by process (UPID) in each k8s_object over all windows.
-    df = df.groupby(['upid', 'pod', 'timestamp']).agg(
+    df = df.groupby(['upid', 'pod', 'node', 'timestamp']).agg(
         rss=('rss_bytes', px.mean),
         vsize=('vsize_bytes', px.mean),
         # The fields below are counters, so we take the min and the max to subtract them.
@@ -54,7 +55,7 @@ def resource_timeseries(start_time: str, namespace: px.Namespace, name_substr: s
     df.cpu_ktime_ns = df.cpu_ktime_ns_max - df.cpu_ktime_ns_min
 
     # Then aggregate process individual process metrics.
-    df = df.groupby(['pod', 'timestamp']).agg(
+    df = df.groupby(['pod', 'node', 'timestamp']).agg(
         cpu_ktime_ns=('cpu_ktime_ns', px.sum),
         cpu_utime_ns=('cpu_utime_ns', px.sum),
         rss=('rss', px.sum),
