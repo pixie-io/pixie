@@ -140,10 +140,11 @@ func main() {
 	vzmgrpb.RegisterVZDeploymentKeyServiceServer(s.GRPCServer(), dks)
 	vzmgrpb.RegisterVZDeploymentServiceServer(s.GRPCServer(), ds)
 
-	_, err = controller.NewMetadataReader(db, stc, nc)
+	mdr, err := controller.NewMetadataReader(db, stc, nc)
 	if err != nil {
 		log.WithError(err).Fatal("Could not start metadata listener")
 	}
+	defer mdr.Stop()
 
 	s.Start()
 	s.StopOnInterrupt()

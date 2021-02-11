@@ -44,7 +44,19 @@ type VizierState struct {
 	liveSub stan.Subscription // The subcription for the live metadata updates.
 	liveCh  chan *stan.Msg
 
-	quitCh chan bool // Channel to sign a stop for a particular vizier
+	quitCh chan struct{} // Channel to sign a stop for a particular vizier
+	once   sync.Once
+}
+
+func (vz *VizierState) stop() {
+	vz.once.Do(func() {
+		close(vz.liveCh)
+		close(vz.quitCh)
+		if vz.liveSub != nil {
+			vz.liveSub.Unsubscribe()
+			vz.liveSub = nil
+		}
+	})
 }
 
 // MetadataReader reads updates from the NATS durable queue and sends updates to the indexer.
@@ -57,16 +69,18 @@ type MetadataReader struct {
 	viziers map[uuid.UUID]*VizierState // Map of Vizier ID to its state.
 	mu      sync.Mutex                 // Mutex for viziers map.
 
-	quitCh chan bool // Channel to signal a stop for all viziers
+	quitCh chan struct{} // Channel to signal a stop for all viziers
+	once   sync.Once
 }
 
 // NewMetadataReader creates a new MetadataReader.
 func NewMetadataReader(db *sqlx.DB, sc stan.Conn, nc *nats.Conn) (*MetadataReader, error) {
 	viziers := make(map[uuid.UUID]*VizierState)
 
-	m := &MetadataReader{db: db, sc: sc, nc: nc, viziers: viziers}
+	m := &MetadataReader{db: db, sc: sc, nc: nc, viziers: viziers, quitCh: make(chan struct{})}
 	err := m.loadState()
 	if err != nil {
+		m.Stop()
 		return nil, err
 	}
 
@@ -98,7 +112,7 @@ func (m *MetadataReader) listenForViziers() {
 			vzID := utils.UUIDFromProtoOrNil(vcMsg.VizierID)
 			log.WithField("VizierID", vzID.String()).Info("Listening to metadata updates for Vizier")
 
-			err = m.StartVizierUpdates(vzID, vcMsg.ResourceVersion, vcMsg.K8sUID)
+			err = m.startVizierUpdates(vzID, vcMsg.ResourceVersion, vcMsg.K8sUID)
 			if err != nil {
 				log.WithError(err).WithField("VizierID", vzID.String()).Error("Could not start listening to updates from Vizier")
 			}
@@ -144,7 +158,7 @@ func (m *MetadataReader) listenToConnectedViziers() error {
 		if err != nil {
 			return err
 		}
-		err = m.StartVizierUpdates(val.VizierID, val.ResourceVersion, val.K8sUID)
+		err = m.startVizierUpdates(val.VizierID, val.ResourceVersion, val.K8sUID)
 		if err != nil {
 			return err
 		}
@@ -153,8 +167,8 @@ func (m *MetadataReader) listenToConnectedViziers() error {
 	return nil
 }
 
-// StartVizierUpdates starts listening to the metadata update channel for a given vizier.
-func (m *MetadataReader) StartVizierUpdates(id uuid.UUID, rv string, k8sUID string) error {
+// startVizierUpdates starts listening to the metadata update channel for a given vizier.
+func (m *MetadataReader) startVizierUpdates(id uuid.UUID, rv string, k8sUID string) error {
 	// TODO(michelle): We currently don't have to signal when a Vizier has disconnected. When we have that
 	// functionality, we should clean up the Vizier map and stop its STAN subscriptions.
 
@@ -172,7 +186,7 @@ func (m *MetadataReader) StartVizierUpdates(id uuid.UUID, rv string, k8sUID stri
 		resourceVersion: rv,
 		k8sUID:          k8sUID,
 		liveCh:          make(chan *stan.Msg),
-		quitCh:          make(chan bool),
+		quitCh:          make(chan struct{}),
 	}
 
 	// Subscribe to STAN topic for streaming updates.
@@ -182,8 +196,7 @@ func (m *MetadataReader) StartVizierUpdates(id uuid.UUID, rv string, k8sUID stri
 		vzState.liveCh <- msg
 	}, stan.SetManualAckMode())
 	if err != nil {
-		close(vzState.liveCh)
-		close(vzState.quitCh)
+		vzState.stop()
 		return err
 	}
 
@@ -191,21 +204,18 @@ func (m *MetadataReader) StartVizierUpdates(id uuid.UUID, rv string, k8sUID stri
 
 	m.viziers[id] = &vzState
 
-	go m.ProcessVizierUpdates(&vzState)
+	go m.processVizierUpdates(&vzState)
 
 	return nil
 }
 
-// StopVizierUpdates stops listening to the metadata update channel for a given vizier.
-func (m *MetadataReader) StopVizierUpdates(id uuid.UUID) error {
+// stopVizierUpdates stops listening to the metadata update channel for a given vizier.
+func (m *MetadataReader) stopVizierUpdates(id uuid.UUID) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if vz, ok := m.viziers[id]; ok {
-		vz.liveSub.Unsubscribe()
-		close(vz.liveCh)
-		close(vz.quitCh)
-
+		vz.stop()
 		delete(m.viziers, id)
 		return nil
 	}
@@ -213,10 +223,10 @@ func (m *MetadataReader) StopVizierUpdates(id uuid.UUID) error {
 	return errors.New("Vizier doesn't exist")
 }
 
-// ProcessVizierUpdates reads from the metadata updates and sends them to the indexer in order.
-func (m *MetadataReader) ProcessVizierUpdates(vzState *VizierState) error {
+// processVizierUpdates reads from the metadata updates and sends them to the indexer in order.
+func (m *MetadataReader) processVizierUpdates(vzState *VizierState) error {
 	// Clean up if any error has occurred.
-	defer m.StopVizierUpdates(vzState.id)
+	defer m.stopVizierUpdates(vzState.id)
 
 	for {
 		select {
@@ -232,6 +242,13 @@ func (m *MetadataReader) ProcessVizierUpdates(vzState *VizierState) error {
 			}
 		}
 	}
+}
+
+// Stop shuts down the metadata reader and all relevant goroutines.
+func (m *MetadataReader) Stop() {
+	m.once.Do(func() {
+		close(m.quitCh)
+	})
 }
 
 func readMetadataUpdate(data []byte) (*cvmsgspb.MetadataUpdate, error) {

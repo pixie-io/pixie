@@ -209,7 +209,8 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 				defer mdSub.Unsubscribe()
 			}
 
-			_, err = controller.NewMetadataReader(db, sc, nc)
+			mdr, err := controller.NewMetadataReader(db, sc, nc)
+			defer mdr.Stop()
 
 			// Publish update to STAN channel.
 			initialUpdate := &cvmsgspb.MetadataUpdate{
