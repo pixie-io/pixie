@@ -59,6 +59,29 @@ func (vz *VizierState) stop() {
 	})
 }
 
+type concurrentViziersMap struct {
+	unsafeMap map[uuid.UUID]*VizierState
+	mapMu     sync.RWMutex
+}
+
+func (c *concurrentViziersMap) read(vizierID uuid.UUID) *VizierState {
+	c.mapMu.RLock()
+	defer c.mapMu.RUnlock()
+	return c.unsafeMap[vizierID]
+}
+
+func (c *concurrentViziersMap) write(vizierID uuid.UUID, vz *VizierState) {
+	c.mapMu.Lock()
+	defer c.mapMu.Unlock()
+	c.unsafeMap[vizierID] = vz
+}
+
+func (c *concurrentViziersMap) delete(vizierID uuid.UUID) {
+	c.mapMu.Lock()
+	defer c.mapMu.Unlock()
+	delete(c.unsafeMap, vizierID)
+}
+
 // MetadataReader reads updates from the NATS durable queue and sends updates to the indexer.
 type MetadataReader struct {
 	db *sqlx.DB
@@ -66,8 +89,7 @@ type MetadataReader struct {
 	sc stan.Conn
 	nc *nats.Conn
 
-	viziers map[uuid.UUID]*VizierState // Map of Vizier ID to its state.
-	mu      sync.Mutex                 // Mutex for viziers map.
+	viziers *concurrentViziersMap // Map of Vizier ID to its state.
 
 	quitCh chan struct{} // Channel to signal a stop for all viziers
 	once   sync.Once
@@ -75,7 +97,7 @@ type MetadataReader struct {
 
 // NewMetadataReader creates a new MetadataReader.
 func NewMetadataReader(db *sqlx.DB, sc stan.Conn, nc *nats.Conn) (*MetadataReader, error) {
-	viziers := make(map[uuid.UUID]*VizierState)
+	viziers := &concurrentViziersMap{unsafeMap: make(map[uuid.UUID]*VizierState)}
 
 	m := &MetadataReader{db: db, sc: sc, nc: nc, viziers: viziers, quitCh: make(chan struct{})}
 	err := m.loadState()
@@ -171,17 +193,14 @@ func (m *MetadataReader) listenToConnectedViziers() error {
 func (m *MetadataReader) startVizierUpdates(id uuid.UUID, rv string, k8sUID string) error {
 	// TODO(michelle): We currently don't have to signal when a Vizier has disconnected. When we have that
 	// functionality, we should clean up the Vizier map and stop its STAN subscriptions.
-
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	if val, ok := m.viziers[id]; ok {
+	vz := m.viziers.read(id)
+	if vz != nil {
 		log.WithField("vizier_id", id.String()).Info("Already listening to metadata updates from Vizier")
-		val.k8sUID = k8sUID // Update the K8s uid, in case it has changed with the newly connected Vizier.
+		vz.k8sUID = k8sUID // Update the K8s uid, in case it has changed with the newly connected Vizier.
 		return nil
 	}
 
-	vzState := VizierState{
+	vzState := &VizierState{
 		id:              id,
 		resourceVersion: rv,
 		k8sUID:          k8sUID,
@@ -199,24 +218,19 @@ func (m *MetadataReader) startVizierUpdates(id uuid.UUID, rv string, k8sUID stri
 		vzState.stop()
 		return err
 	}
-
 	vzState.liveSub = liveSub
 
-	m.viziers[id] = &vzState
-
-	go m.processVizierUpdates(&vzState)
-
+	m.viziers.write(id, vzState)
+	go m.processVizierUpdates(vzState)
 	return nil
 }
 
 // stopVizierUpdates stops listening to the metadata update channel for a given vizier.
 func (m *MetadataReader) stopVizierUpdates(id uuid.UUID) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	if vz, ok := m.viziers[id]; ok {
+	vz := m.viziers.read(id)
+	if vz != nil {
 		vz.stop()
-		delete(m.viziers, id)
+		m.viziers.delete(id)
 		return nil
 	}
 
