@@ -556,19 +556,6 @@ Status ParseMountInfo(std::string_view str, ProcParser::MountInfo* mount_info) {
   mount_info->root = fields[3];
   mount_info->mount_point = fields[4];
 
-  // Optional fields, if any, starts on this index, and ends with a separator '-'.
-  // What follows are filesystem type, mount source, and superblock options.
-  constexpr size_t kOptFieldsIdx = 6;
-  constexpr char kSeparator[] = "-";
-  auto iter = std::find(fields.begin() + kOptFieldsIdx, fields.end(), kSeparator);
-  if (iter == fields.end() || std::distance(iter, fields.end()) < 4) {
-    return error::InvalidArgument("Should have at least 4 fields after separator, got: $0", str);
-  }
-  std::advance(iter, 1);
-  mount_info->fs_type = *iter;
-  std::advance(iter, 2);
-  mount_info->options = *iter;
-
   return Status::OK();
 }
 
@@ -580,9 +567,8 @@ Status ProcParser::ReadMountInfos(pid_t pid,
   PL_ASSIGN_OR_RETURN(std::string content, pl::ReadFileToString(proc_pid_mount_info_path));
   std::vector<std::string_view> lines = absl::StrSplit(content, "\n", absl::SkipWhitespace());
   for (const auto line : lines) {
-    ProcParser::MountInfo mount_info = {};
+    ProcParser::MountInfo& mount_info = mount_infos->emplace_back();
     PL_RETURN_IF_ERROR(ParseMountInfo(line, &mount_info));
-    mount_infos->push_back(std::move(mount_info));
   }
   return Status::OK();
 }

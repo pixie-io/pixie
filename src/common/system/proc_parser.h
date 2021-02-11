@@ -217,14 +217,9 @@ class ProcParser {
     std::string root;
     // The pathname of the mount point relative to the process's root directory.
     std::string mount_point;
-    // The filesystem type in the form "type[.subtype]".
-    std::string fs_type;
-    // Per-superblock options (see mount(2)).
-    std::string options;
 
     std::string ToString() const {
-      return absl::Substitute("dev=$0 root=$1 mount_point=$2 fs_type=$3 options=$4", dev, root,
-                              mount_point, fs_type, options);
+      return absl::Substitute("dev=$0 root=$1 mount_point=$2", dev, root, mount_point);
     }
   };
 

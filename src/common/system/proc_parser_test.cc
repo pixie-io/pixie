@@ -191,20 +191,19 @@ TEST_F(ProcParserTest, ReadMountInfos) {
   {
     std::vector<ProcParser::MountInfo> mount_infos;
     EXPECT_OK(parser_->ReadMountInfos(123, &mount_infos));
-    EXPECT_THAT(mount_infos,
-                ElementsAre(ProcParser::MountInfo{"260:3", "/", "/", "devtmpfs",
-                                                  "rw,size=16251748k,nr_inodes=4062937,mode=755"},
-                            ProcParser::MountInfo{"259:3", "/test_foo", "/foo", "ext4",
-                                                  "rw,errors=remount-ro,data=ordered"},
-                            ProcParser::MountInfo{"260:3", "/test_bar", "/bar", "ext4",
-                                                  "rw,errors=remount-ro,data=ordered"}));
+    EXPECT_THAT(mount_infos, ElementsAre(
+                                 ProcParser::MountInfo{
+                                     "260:3",
+                                     "/",
+                                     "/",
+                                 },
+                                 ProcParser::MountInfo{"259:3", "/test_foo", "/foo"},
+                                 ProcParser::MountInfo{"260:3", "/test_bar", "/bar"}));
   }
   {
     std::vector<ProcParser::MountInfo> mount_infos;
     EXPECT_OK(parser_->ReadMountInfos(1, &mount_infos));
-    EXPECT_THAT(mount_infos,
-                ElementsAre(ProcParser::MountInfo{"259:3", "/", "/tmp", "ext4",
-                                                  "rw,errors=remount-ro,data=ordered"}));
+    EXPECT_THAT(mount_infos, ElementsAre(ProcParser::MountInfo{"259:3", "/", "/tmp"}));
   }
 }
 
