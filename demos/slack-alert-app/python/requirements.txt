@@ -1,0 +1,4 @@
+pxapi==0.0.4
+schedule==0.6.0
+slack==0.0.2
+slackclient==2.9.3
