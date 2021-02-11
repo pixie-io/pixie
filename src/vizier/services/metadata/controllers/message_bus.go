@@ -30,7 +30,7 @@ type MessageBusController struct {
 
 // NewMessageBusController creates a new controller for handling NATS messages.
 func NewMessageBusController(conn *nats.Conn, agentManager AgentManager,
-	tracepointManager *TracepointManager, mdStore MetadataStore, mdHandler *MetadataHandler,
+	tracepointManager *TracepointManager, mdStore MetadataStore, mdHandler *MetadataHandler, newMdHandler *K8sMetadataHandler,
 	statsHandler *StatsHandler, isLeader *bool) (*MessageBusController, error) {
 	ch := make(chan *nats.Msg, 8192)
 	listeners := make(map[string]TopicListener)
@@ -45,7 +45,7 @@ func NewMessageBusController(conn *nats.Conn, agentManager AgentManager,
 		statsHandler:  statsHandler,
 	}
 
-	mc.registerListeners(agentManager, tracepointManager, mdStore, mdHandler)
+	mc.registerListeners(agentManager, tracepointManager, mdStore, mdHandler, newMdHandler)
 
 	// Start listening to messages.
 	go mc.handleMessages()
@@ -82,7 +82,7 @@ func (mc *MessageBusController) handleMessages() {
 	}
 }
 
-func (mc *MessageBusController) registerListeners(agentManager AgentManager, tracepointManager *TracepointManager, mdStore MetadataStore, mdHandler *MetadataHandler) error {
+func (mc *MessageBusController) registerListeners(agentManager AgentManager, tracepointManager *TracepointManager, mdStore MetadataStore, mdHandler *MetadataHandler, newMdHandler *K8sMetadataHandler) error {
 	// Register AgentTopicListener.
 	atl, err := NewAgentTopicListener(agentManager, tracepointManager, mdStore, mc.sendMessage, mc.statsHandler)
 	if err != nil {
@@ -94,11 +94,15 @@ func (mc *MessageBusController) registerListeners(agentManager AgentManager, tra
 	}
 
 	// Register MetadataTopicListener.
-	ml, err := NewMetadataTopicListener(mdStore, mdHandler, mc.sendMessage)
+	ml, err := NewMetadataTopicListener(mdStore, mdHandler, newMdHandler, mc.sendMessage)
 	if err != nil {
 		return err
 	}
 	err = mc.registerListener(MetadataRequestSubscribeTopic, ml)
+	if err != nil {
+		return err
+	}
+	err = mc.registerListener(MissingMetadataRequestTopic, ml)
 	if err != nil {
 		return err
 	}

@@ -28,7 +28,7 @@ import (
 const KelvinUpdateTopic = "all"
 
 // K8sMetadataUpdateChannel is the channel where metadata updates are sent.
-const K8sMetadataUpdateChannel = "/k8supdates"
+const K8sMetadataUpdateChannel = "K8sUpdates"
 
 // K8sMessage is a message for K8s metadata events/updates.
 type K8sMessage struct {
@@ -259,8 +259,15 @@ func (m *K8sMetadataHandler) processUpdates() {
 	}
 }
 
+func getK8sUpdateChannel(topic string) string {
+	if topic == "" {
+		topic = KelvinUpdateTopic
+	}
+	return fmt.Sprintf("%s/%s", K8sMetadataUpdateChannel, topic)
+}
+
 func (m *K8sMetadataHandler) sendUpdate(update *metadatapb.ResourceUpdate, topic string) error {
-	channel := fmt.Sprintf("%s/%s", K8sMetadataUpdateChannel, topic)
+	channel := getK8sUpdateChannel(topic)
 
 	msg := &messages.VizierMessage{
 		Msg: &messages.VizierMessage_K8SMetadataMessage{

@@ -41,7 +41,7 @@ func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
 
 	updates := make([][]byte, 0)
 	// Create Metadata Service controller.
-	_, _ = controllers.NewMetadataTopicListener(mockMdStore, mdh, func(topic string, b []byte) error {
+	_, _ = controllers.NewMetadataTopicListener(mockMdStore, mdh, nil, func(topic string, b []byte) error {
 		assert.Equal(t, controllers.MetadataUpdatesTopic, topic)
 		updates = append(updates, b)
 		return nil
@@ -166,7 +166,7 @@ func TestMetadataTopicListener_ProcessMessage(t *testing.T) {
 	mdh, _ := controllers.NewMetadataHandler(mockMdStore, &isLeader, nil)
 	updates := make([][]byte, 0)
 	// Create Metadata Service controller.
-	mdl, err := controllers.NewMetadataTopicListener(mockMdStore, mdh, func(topic string, b []byte) error {
+	mdl, err := controllers.NewMetadataTopicListener(mockMdStore, mdh, nil, func(topic string, b []byte) error {
 		assert.Equal(t, messagebus.V2CTopic("1234"), topic)
 		updates = append(updates, b)
 		return nil
@@ -187,6 +187,7 @@ func TestMetadataTopicListener_ProcessMessage(t *testing.T) {
 
 	msg := nats.Msg{}
 	msg.Data = b
+	msg.Subject = controllers.MetadataRequestSubscribeTopic
 	err = mdl.ProcessMessage(&msg)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(updates))
@@ -255,7 +256,7 @@ func TestMetadataTopicListener_ProcessMessageBatch(t *testing.T) {
 			updates := make([]*metadatapb.ResourceUpdate, 0)
 			// Create Metadata Service controller.
 			numBatches := 0
-			mdl, err := controllers.NewMetadataTopicListener(mockMdStore, mdh, func(topic string, b []byte) error {
+			mdl, err := controllers.NewMetadataTopicListener(mockMdStore, mdh, nil, func(topic string, b []byte) error {
 				assert.Equal(t, messagebus.V2CTopic("1234"), topic)
 				// updates = append(updates, b)
 				wrapperPb := &cvmsgspb.V2CMessage{}
@@ -284,6 +285,7 @@ func TestMetadataTopicListener_ProcessMessageBatch(t *testing.T) {
 
 			msg := nats.Msg{}
 			msg.Data = b
+			msg.Subject = controllers.MetadataRequestSubscribeTopic
 			err = mdl.ProcessMessage(&msg)
 			assert.Nil(t, err)
 			assert.Equal(t, numBatches, test.expectedNumBatches)

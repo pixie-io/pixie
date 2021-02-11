@@ -78,6 +78,7 @@ go_test(
         "metadata_handler_test.go",
         "metadata_store_test.go",
         "metadata_topic_listener_test.go",
+        "new_metadata_topic_listener_test.go",
         "server_test.go",
         "tracepoint_store_test.go",
         "tracepoint_test.go",

@@ -13,6 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
 )
 
@@ -21,6 +22,8 @@ var (
 	MetadataRequestSubscribeTopic = messagebus.C2VTopic("MetadataRequest")
 	// MetadataUpdatesTopic is the channel which the listener publishes metadata updates to.
 	MetadataUpdatesTopic = messagebus.V2CTopic("DurableMetadataUpdates")
+	// MissingMetadataRequestTopic is the channel which the listener should listen to missing metadata update requests on.
+	MissingMetadataRequestTopic = "MissingMetadataRequests"
 )
 
 const subscriberName = "cloud"
@@ -31,6 +34,7 @@ type MetadataTopicListener struct {
 	sendMessage SendMessageFn
 	mds         MetadataStore
 	mh          *MetadataHandler
+	newMh       *K8sMetadataHandler
 	msgCh       chan *nats.Msg
 
 	once   sync.Once
@@ -38,19 +42,24 @@ type MetadataTopicListener struct {
 }
 
 // NewMetadataTopicListener creates a new metadata topic listener.
-func NewMetadataTopicListener(mdStore MetadataStore, mdHandler *MetadataHandler, sendMsgFn SendMessageFn) (*MetadataTopicListener, error) {
+func NewMetadataTopicListener(mdStore MetadataStore, mdHandler *MetadataHandler, newMdHandler *K8sMetadataHandler, sendMsgFn SendMessageFn) (*MetadataTopicListener, error) {
 	m := &MetadataTopicListener{
 		sendMessage: sendMsgFn,
 		mds:         mdStore,
 		mh:          mdHandler,
+		newMh:       newMdHandler,
 		msgCh:       make(chan *nats.Msg, 1000),
 		quitCh:      make(chan struct{}),
 	}
 
-	m.mds.UpdateSubscriberResourceVersion(subscriberName, "")
-
-	// Subscribe to metadata updates.
-	mdHandler.AddSubscriber(m)
+	// TODO(michelle, vihang): Remove the old metadatastore and handler.
+	if mdStore != nil {
+		m.mds.UpdateSubscriberResourceVersion(subscriberName, "")
+	}
+	if mdHandler != nil {
+		// Subscribe to metadata updates.
+		mdHandler.AddSubscriber(m)
+	}
 
 	go m.processMessages()
 
@@ -101,6 +110,94 @@ func sortResourceUpdates(arr []*metadatapb.ResourceUpdate) {
 
 // ProcessMessage processes a single message in the metadata topic.
 func (m *MetadataTopicListener) ProcessMessage(msg *nats.Msg) error {
+	switch sub := msg.Subject; sub {
+	case MissingMetadataRequestTopic:
+		return m.processAgentMessage(msg)
+	case MetadataRequestSubscribeTopic:
+		return m.processCloudMessage(msg)
+	default:
+	}
+	return nil
+}
+
+func (m *MetadataTopicListener) processAgentMessage(msg *nats.Msg) error {
+	vzMsg := &messages.VizierMessage{}
+	err := proto.Unmarshal(msg.Data, vzMsg)
+	if err != nil {
+		return err
+	}
+	if vzMsg.GetK8SMetadataMessage() == nil {
+		return nil
+	}
+	req := vzMsg.GetK8SMetadataMessage().GetMissingK8SMetadataRequest()
+	if req == nil {
+		return nil
+	}
+
+	batches, firstAvailable, lastAvailable, err := m.getUpdatesInBatches(req.FromUpdateVersion, req.ToUpdateVersion, req.IP)
+	if err != nil {
+		return err
+	}
+
+	for _, b := range batches {
+		resp := &messages.VizierMessage{
+			Msg: &messages.VizierMessage_K8SMetadataMessage{
+				K8SMetadataMessage: &messages.K8SMetadataMessage{
+					Msg: &messages.K8SMetadataMessage_MissingK8SMetadataResponse{
+						MissingK8SMetadataResponse: &messages.MissingK8SMetadataResponse{
+							Updates:              b,
+							FirstUpdateAvailable: firstAvailable,
+							LastUpdateAvailable:  lastAvailable,
+						},
+					},
+				},
+			},
+		}
+		b, err := resp.Marshal()
+		if err != nil {
+			return err
+		}
+		err = m.sendMessage(getK8sUpdateChannel(req.IP), b)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (m *MetadataTopicListener) getUpdatesInBatches(from int64, to int64, ip string) ([][]*metadatapb.ResourceUpdate, int64, int64, error) {
+	updates, err := m.newMh.GetUpdatesForIP(ip, from, to)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+
+	if len(updates) == 0 {
+		return nil, 0, 0, nil
+	}
+
+	// Send updates in batches.
+	batches := make([][]*metadatapb.ResourceUpdate, 0)
+	batch := 0
+	for batch*batchSize < len(updates) {
+		batchSlice := updates[batch*batchSize : int(math.Min(float64((batch+1)*batchSize), float64(len(updates))))]
+		batches = append(batches, batchSlice)
+		batch++
+	}
+
+	var firstAvailable int64
+	var lastAvailable int64
+
+	// We are guaranteed to have at least one batch, since we exited when len(updates) == 0.
+	firstAvailable = batches[0][0].UpdateVersion
+	lastBatch := batches[len(batches)-1]
+	lastAvailable = lastBatch[len(lastBatch)-1].UpdateVersion
+
+	return batches, firstAvailable, lastAvailable, nil
+}
+
+// TODO(michelle,vihang): This should be updated to use the new k8s metadata handler.
+func (m *MetadataTopicListener) processCloudMessage(msg *nats.Msg) error {
 	c2vMsg := &cvmsgspb.C2VMessage{}
 	err := proto.Unmarshal(msg.Data, c2vMsg)
 	if err != nil {

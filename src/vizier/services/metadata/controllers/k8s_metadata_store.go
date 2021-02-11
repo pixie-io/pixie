@@ -155,6 +155,10 @@ func (m *MetadataDatastore) GetUpdateVersion(topic string) (int64, error) {
 		return 0, err
 	}
 
+	if string(val) == "" {
+		return 0, nil
+	}
+
 	return strconv.ParseInt(string(val), 10, 64)
 }
 
