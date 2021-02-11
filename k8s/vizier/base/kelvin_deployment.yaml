@@ -62,7 +62,6 @@ spec:
           value: "1048576"
         ports:
         - containerPort: 59300
-          hostPort: 59300
         volumeMounts:
         - mountPath: /certs
           name: certs
