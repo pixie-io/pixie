@@ -66,6 +66,7 @@ void AddServiceTokenToClientContext(grpc::ClientContext* ctx);
 
 // Forward-declare
 class HeartbeatMessageHandler;
+class RegistrationHandler;
 
 /**
  * Manager is the shared code and common interface for the entity responsible for managing the
@@ -156,7 +157,7 @@ class Manager : public pl::NotCopyable {
   void NATSMessageHandler(VizierNATSConnector::MsgType msg);
   Status RegisterBackgroundHelpers();
   Status PostRegisterHook(uint32_t asid);
-  Status PreReregisterHook();
+  Status ReregisterHook();
   Status PostReregisterHook(uint32_t asid);
   bool has_nats_connection() const { return !nats_addr_.empty(); }
 
@@ -179,6 +180,7 @@ class Manager : public pl::NotCopyable {
 
   // A pointer to the heartbeat handler for reregistration hooks.
   std::shared_ptr<HeartbeatMessageHandler> heartbeat_handler_;
+  std::shared_ptr<RegistrationHandler> registration_handler_;
 
   std::shared_ptr<grpc::ChannelCredentials> grpc_channel_creds_;
 

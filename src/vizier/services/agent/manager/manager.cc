@@ -139,14 +139,14 @@ Status Manager::Init() {
     agent_nats_connector_->RegisterMessageHandler(
         std::bind(&Manager::NATSMessageHandler, this, std::placeholders::_1));
 
-    auto registration_handler = std::make_shared<RegistrationHandler>(
+    registration_handler_ = std::make_shared<RegistrationHandler>(
         dispatcher_.get(), &info_, agent_nats_connector_.get(),
         std::bind(&Manager::PostRegisterHook, this, std::placeholders::_1),
         std::bind(&Manager::PostReregisterHook, this, std::placeholders::_1));
 
     PL_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kRegisterAgentResponse,
-                                       registration_handler));
-    registration_handler->RegisterAgent();
+                                       registration_handler_));
+    registration_handler_->RegisterAgent();
   }
 
   return InitImpl();
@@ -204,7 +204,7 @@ Status Manager::RegisterBackgroundHelpers() {
 
   auto heartbeat_nack_handler = std::make_shared<HeartbeatNackMessageHandler>(
       dispatcher_.get(), &info_, agent_nats_connector_.get(),
-      std::bind(&Manager::PreReregisterHook, this));
+      std::bind(&Manager::ReregisterHook, this));
 
   PL_CHECK_OK(
       RegisterMessageHandler(messages::VizierMessage::MsgCase::kHeartbeatAck, heartbeat_handler_));
@@ -292,9 +292,10 @@ Status Manager::PostRegisterHook(uint32_t asid) {
   return RegisterBackgroundHelpers();
 }
 
-Status Manager::PreReregisterHook() {
+Status Manager::ReregisterHook() {
   LOG_IF(FATAL, heartbeat_handler_ == nullptr) << "Heartbeat handler is not set up";
   heartbeat_handler_->DisableHeartbeats();
+  registration_handler_->ReregisterAgent();
   return Status::OK();
 }
 
