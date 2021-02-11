@@ -74,13 +74,13 @@ class HeartbeatMessageHandler;
  */
 class Manager : public pl::NotCopyable {
  public:
-  using VizierNATSTLSConfig = pl::event::NATSTLSConfig;
   using VizierNATSConnector = pl::event::NATSConnector<pl::vizier::messages::VizierMessage>;
   using MsgCase = messages::VizierMessage::MsgCase;
   using MDSService = services::metadata::MetadataService;
   using MDSServiceSPtr = std::shared_ptr<Manager::MDSService::Stub>;
   using MDTPService = services::metadata::MetadataTracepointService;
   using MDTPServiceSPtr = std::shared_ptr<Manager::MDTPService::Stub>;
+  using ResultSinkStub = pl::carnotpb::ResultSinkService::StubInterface;
 
   Manager() = delete;
   virtual ~Manager() = default;
@@ -101,43 +101,15 @@ class Manager : public pl::NotCopyable {
    */
   Status Stop(std::chrono::milliseconds timeout);
 
-  /**
-   * This function is called after registration of the agent is complete.
-   * It's invoked on the event thread.
-   */
-  const Info* info() const { return &info_; }
-
-  const carnot::Carnot* carnot() const { return carnot_.get(); }
-  Status PostRegisterHook(uint32_t asid);
-  Status PreReregisterHook();
-  Status PostReregisterHook(uint32_t asid);
-
  protected:
   // Protect constructor since we need to use Init on this class.
   Manager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
           int grpc_server_port, services::shared::agent::AgentCapabilities capabilities,
           std::string_view nats_url, std::string_view mds_url);
-  Manager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
-          int grpc_server_port, services::shared::agent::AgentCapabilities capabilities,
-          std::string_view mds_url, std::unique_ptr<VizierNATSConnector> nats_connector);
   Status Init();
 
-  void NATSMessageHandler(VizierNATSConnector::MsgType msg);
   Status RegisterMessageHandler(MsgCase c, std::shared_ptr<MessageHandler> handler,
                                 bool override = false);
-  Status RegisterBackgroundHelpers();
-
-  // ************************************************************
-  // Static utility functions.
-  // ************************************************************
-  static std::unique_ptr<VizierNATSConnector> CreateDefaultNATSConnector(const sole::uuid& agent_id,
-                                                                         std::string_view nats_url);
-
-  static MDSServiceSPtr CreateDefaultMDSStub(
-      std::string_view mds_addr, std::shared_ptr<grpc::ChannelCredentials> channel_creds);
-
-  static MDTPServiceSPtr CreateDefaultMDTPStub(
-      std::string_view mds_addr, std::shared_ptr<grpc::ChannelCredentials> channel_creds);
 
   // ************************************************************
   // Interfaces that need to be implemented for the derived variants
@@ -163,36 +135,20 @@ class Manager : public pl::NotCopyable {
   table_store::TableStore* table_store() { return table_store_.get(); }
   pl::md::AgentMetadataStateManager* mds_manager() { return mds_manager_.get(); }
   RelationInfoManager* relation_info_manager() { return relation_info_manager_.get(); }
-  pl::event::TimeSystem* time_system() { return time_system_.get(); }
   pl::event::Dispatcher* dispatcher() { return dispatcher_.get(); }
-
+  carnot::Carnot* carnot() { return carnot_.get(); }
   Info* info() { return &info_; }
   VizierNATSConnector* nats_connector() { return nats_connector_.get(); }
 
- protected:
-  std::shared_ptr<grpc::ChannelCredentials> grpc_channel_creds_;
-
-  // The time system to use (real or simulated).
-  std::unique_ptr<pl::event::TimeSystem> time_system_;
-  pl::event::APIUPtr api_;
-  pl::event::DispatcherUPtr dispatcher_;
-
-  Info info_;
-  std::unique_ptr<VizierNATSConnector> nats_connector_;
-
-  // The controller is still running. Force stopping will cause un-graceful termination.
-  std::atomic<bool> running_ = false;
-
-  // The base agent contains the following components.
-  std::shared_ptr<table_store::TableStore> table_store_;
-  std::unique_ptr<carnot::Carnot> carnot_;
-  std::unique_ptr<pl::md::AgentMetadataStateManager> mds_manager_;
-  std::unique_ptr<RelationInfoManager> relation_info_manager_;
-
-  // Factory context for vizier functions.
-  funcs::VizierFuncFactoryContext func_context_;
-
  private:
+  std::unique_ptr<ResultSinkStub> ResultSinkStubGenerator(const std::string& remote_addr,
+                                                          const std::string& ssl_targetname);
+  void NATSMessageHandler(VizierNATSConnector::MsgType msg);
+  Status RegisterBackgroundHelpers();
+  Status PostRegisterHook(uint32_t asid);
+  Status PreReregisterHook();
+  Status PostReregisterHook(uint32_t asid);
+
   // Message handlers are registered per type of Vizier message.
   // same message handler can be used for multiple different types of messages.
   absl::flat_hash_map<MsgCase, std::shared_ptr<MessageHandler>> message_handlers_;
@@ -212,6 +168,28 @@ class Manager : public pl::NotCopyable {
 
   // A pointer to the heartbeat handler for reregistration hooks.
   std::shared_ptr<HeartbeatMessageHandler> heartbeat_handler_;
+
+  std::shared_ptr<grpc::ChannelCredentials> grpc_channel_creds_;
+
+  // The time system to use (real or simulated).
+  std::unique_ptr<pl::event::TimeSystem> time_system_;
+  pl::event::APIUPtr api_;
+
+  Info info_;
+  pl::event::DispatcherUPtr dispatcher_;
+  std::unique_ptr<VizierNATSConnector> nats_connector_;
+
+  // The controller is still running. Force stopping will cause un-graceful termination.
+  std::atomic<bool> running_ = false;
+
+  // The base agent contains the following components.
+  std::unique_ptr<carnot::Carnot> carnot_;
+  std::shared_ptr<table_store::TableStore> table_store_;
+  std::unique_ptr<pl::md::AgentMetadataStateManager> mds_manager_;
+  std::unique_ptr<RelationInfoManager> relation_info_manager_;
+
+  // Factory context for vizier functions.
+  funcs::VizierFuncFactoryContext func_context_;
 };
 
 /**

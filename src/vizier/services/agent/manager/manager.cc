@@ -43,57 +43,60 @@ namespace vizier {
 namespace agent {
 using ::pl::event::Dispatcher;
 
-Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
-                 int grpc_server_port, services::shared::agent::AgentCapabilities capabilities,
-                 std::string_view nats_url, std::string_view mds_url)
-    : Manager(agent_id, pod_name, host_ip, grpc_server_port, std::move(capabilities), mds_url,
-              Manager::CreateDefaultNATSConnector(agent_id, nats_url)) {}
+Manager::MDSServiceSPtr CreateMDSStub(std::string_view mds_addr,
+                                      std::shared_ptr<grpc::ChannelCredentials> channel_creds) {
+  // TODO(zasgar): Not constructing the MDS by checking the url being empty is a bit janky. Fix
+  // this.
+  if (mds_addr.size() == 0) {
+    return nullptr;
+  }
+  // We need to move the channel here since gRPC mocking is done by the stub.
+  auto chan = grpc::CreateChannel(std::string(mds_addr), channel_creds);
+  return std::make_shared<Manager::MDSService::Stub>(chan);
+}
+
+Manager::MDTPServiceSPtr CreateMDTPStub(std::string_view mds_addr,
+                                        std::shared_ptr<grpc::ChannelCredentials> channel_creds) {
+  // TODO(zasgar): Not constructing the MDS by checking the url being empty is a bit janky. Fix
+  // this.
+  if (mds_addr.size() == 0) {
+    return nullptr;
+  }
+  // We need to move the channel here since gRPC mocking is done by the stub.
+  auto chan = grpc::CreateChannel(std::string(mds_addr), channel_creds);
+  return std::make_shared<Manager::MDTPService::Stub>(chan);
+}
 
 Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
                  int grpc_server_port, services::shared::agent::AgentCapabilities capabilities,
-                 std::string_view mds_url, std::unique_ptr<VizierNATSConnector> nats_connector)
+                 std::string_view nats_url, std::string_view mds_url)
     : grpc_channel_creds_(SSL::DefaultGRPCClientCreds()),
       time_system_(std::make_unique<pl::event::RealTimeSystem>()),
       api_(std::make_unique<pl::event::APIImpl>(time_system_.get())),
       dispatcher_(api_->AllocateDispatcher("manager")),
-      nats_connector_(std::move(nats_connector)),
       table_store_(std::make_shared<table_store::TableStore>()),
-      // TODO(zasgar): Not constructing the MDS by checking the url being empty is a bit janky. Fix
-      // this.
-      func_context_(
-          this, mds_url.size() == 0 ? nullptr : CreateDefaultMDSStub(mds_url, grpc_channel_creds_),
-          mds_url.size() == 0 ? nullptr : CreateDefaultMDTPStub(mds_url, grpc_channel_creds_),
-          table_store_, [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); }) {
-  // Register Vizier specific and carnot builtin functions.
+      func_context_(this, CreateMDSStub(mds_url, grpc_channel_creds_),
+                    CreateMDTPStub(mds_url, grpc_channel_creds_), table_store_,
+                    [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); }) {
+  // Set up the NATS connector.
+  // TODO(nserrino): Add a NATS connector for k8s updates.
+  if (nats_url.empty()) {
+    LOG(WARNING) << "--nats_url is empty, skip connecting to NATS.";
+  } else {
+    nats_connector_ = std::make_unique<Manager::VizierNATSConnector>(
+        nats_url, "update_agent" /*pub_topic*/, absl::StrFormat("/agent/%s", agent_id.str()),
+        SSL::DefaultNATSCreds());
+  }
 
+  // Register Vizier specific and carnot builtin functions.
   auto func_registry = std::make_unique<pl::carnot::udf::Registry>("vizier_func_registry");
   ::pl::vizier::funcs::RegisterFuncsOrDie(func_context_, func_registry.get());
 
   // TODO(zasgar/nserrino): abstract away the stub generator.
   carnot_ = pl::carnot::Carnot::Create(
                 agent_id, std::move(func_registry), table_store_,
-                [&](const std::string& remote_addr, const std::string& ssl_targetname)
-                    -> std::unique_ptr<pl::carnotpb::ResultSinkService::StubInterface> {
-                  auto chan = chan_cache_->GetChan(remote_addr);
-                  if (chan != nullptr) {
-                    return pl::carnotpb::ResultSinkService::NewStub(chan);
-                  }
-
-                  grpc::ChannelArguments args;
-                  if (ssl_targetname.size()) {
-                    args.SetSslTargetNameOverride(ssl_targetname);
-                  }
-                  args.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, 100000);
-                  args.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, 100000);
-                  args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
-                  args.SetInt(GRPC_ARG_HTTP2_BDP_PROBE, 1);
-                  args.SetInt(GRPC_ARG_HTTP2_MIN_RECV_PING_INTERVAL_WITHOUT_DATA_MS, 50000);
-                  args.SetInt(GRPC_ARG_HTTP2_MIN_SENT_PING_INTERVAL_WITHOUT_DATA_MS, 100000);
-
-                  chan = grpc::CreateCustomChannel(remote_addr, grpc_channel_creds_, args);
-                  chan_cache_->Add(remote_addr, chan);
-                  return pl::carnotpb::ResultSinkService::NewStub(chan);
-                },
+                std::bind(&Manager::ResultSinkStubGenerator, this, std::placeholders::_1,
+                          std::placeholders::_2),
                 [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); },
                 grpc_server_port, SSL::DefaultGRPCServerCreds())
                 .ConsumeValueOrDie();
@@ -280,32 +283,27 @@ Status Manager::PostReregisterHook(uint32_t asid) {
   return Status::OK();
 }
 
-std::unique_ptr<Manager::VizierNATSConnector> Manager::CreateDefaultNATSConnector(
-    const sole::uuid& agent_id, std::string_view nats_url) {
-  if (nats_url.empty()) {
-    LOG(WARNING) << "--nats_url is empty, skip connecting to NATS.";
-    return nullptr;
+std::unique_ptr<Manager::ResultSinkStub> Manager::ResultSinkStubGenerator(
+    const std::string& remote_addr, const std::string& ssl_targetname) {
+  auto chan = chan_cache_->GetChan(remote_addr);
+  if (chan != nullptr) {
+    return pl::carnotpb::ResultSinkService::NewStub(chan);
   }
 
-  auto tls_config = SSL::DefaultNATSCreds();
-  std::string agent_sub_topic = absl::StrFormat("/agent/%s", agent_id.str());
+  grpc::ChannelArguments args;
+  if (ssl_targetname.size()) {
+    args.SetSslTargetNameOverride(ssl_targetname);
+  }
+  args.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, 100000);
+  args.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, 100000);
+  args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
+  args.SetInt(GRPC_ARG_HTTP2_BDP_PROBE, 1);
+  args.SetInt(GRPC_ARG_HTTP2_MIN_RECV_PING_INTERVAL_WITHOUT_DATA_MS, 50000);
+  args.SetInt(GRPC_ARG_HTTP2_MIN_SENT_PING_INTERVAL_WITHOUT_DATA_MS, 100000);
 
-  return std::make_unique<Manager::VizierNATSConnector>(nats_url, "update_agent" /*pub_topic*/,
-                                                        agent_sub_topic, std::move(tls_config));
-}
-
-Manager::MDSServiceSPtr Manager::CreateDefaultMDSStub(
-    std::string_view mds_addr, std::shared_ptr<grpc::ChannelCredentials> channel_creds) {
-  // We need to move the channel here since gRPC mocking is done by the stub.
-  auto chan = grpc::CreateChannel(std::string(mds_addr), channel_creds);
-  return std::make_shared<Manager::MDSService::Stub>(chan);
-}
-
-Manager::MDTPServiceSPtr Manager::CreateDefaultMDTPStub(
-    std::string_view mds_addr, std::shared_ptr<grpc::ChannelCredentials> channel_creds) {
-  // We need to move the channel here since gRPC mocking is done by the stub.
-  auto chan = grpc::CreateChannel(std::string(mds_addr), channel_creds);
-  return std::make_shared<Manager::MDTPService::Stub>(chan);
+  chan = grpc::CreateCustomChannel(remote_addr, grpc_channel_creds_, args);
+  chan_cache_->Add(remote_addr, chan);
+  return pl::carnotpb::ResultSinkService::NewStub(chan);
 }
 
 Manager::MessageHandler::MessageHandler(Dispatcher* dispatcher, Info* agent_info,

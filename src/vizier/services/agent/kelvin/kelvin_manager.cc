@@ -11,7 +11,7 @@ Status KelvinManager::InitImpl() { return Status::OK(); }
 
 Status KelvinManager::PostRegisterHookImpl() {
   auto execute_query_handler = std::make_shared<ExecuteQueryMessageHandler>(
-      dispatcher_.get(), info(), nats_connector(), carnot_.get());
+      dispatcher(), info(), nats_connector(), carnot());
   PL_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kExecuteQueryRequest,
                                             execute_query_handler));
 
