@@ -14,6 +14,8 @@ using ::pl::utils::ToJSONString;
 
 constexpr std::string_view kListArgSuffix = " ...]";
 constexpr std::string_view kEvalSHA = "EVALSHA";
+constexpr std::string_view kSet = "SET";
+constexpr std::string_view kSScan = "SSCAN";
 
 // Returns true if all characters are one of a-z & 0-9.
 bool IsLowerAlphaNum(std::string_view name) {
@@ -63,6 +65,7 @@ bool IsOptArg(std::string_view arg_desc) {
   }
   return true;
 }
+
 // Detects the arguments format of the input argument names specification.
 // See https://redis.io/commands
 StatusOr<std::vector<ArgDesc>> ParseArgDescs(const std::vector<std::string_view>& arg_descs) {
@@ -148,6 +151,91 @@ StatusOr<std::string> FormatEvalSHAArgs(VectorView<std::string> args) {
   return json_builder.GetString();
 }
 
+// SET is formatted as:
+// SET key value [EX seconds|PX milliseconds|EXAT timestamp|PXAT milliseconds-timestamp|KEEPTTL]
+// [NX|XX] [GET]
+//
+// The values after key & value is grouped into options field.
+StatusOr<std::string> FormatSet(VectorView<std::string> args) {
+  constexpr size_t kMinArgsCount = 2;
+  if (args.size() < kMinArgsCount) {
+    return error::InvalidArgument("SET expects at least 2 arguments, got $0", args.size());
+  }
+  JSONObjectBuilder builder;
+  builder.WriteKV("key", args[0]);
+  builder.WriteKV("value", args[1]);
+  args.pop_front(2);
+
+  constexpr std::string_view kExpireSecondsToken = "EX";
+  constexpr std::string_view kExpireMillisToken = "PX";
+  constexpr std::string_view kExpireAtSecondsToken = "EXAT";
+  constexpr std::string_view kExpireAtMillisToken = "PXAT";
+
+  std::vector<std::string> opts;
+
+  for (size_t i = 0; i < args.size(); ++i) {
+    std::string arg_upper = absl::AsciiStrToUpper(args[i]);
+
+    if (arg_upper == kExpireSecondsToken || arg_upper == kExpireMillisToken ||
+        arg_upper == kExpireAtSecondsToken || arg_upper == kExpireAtMillisToken) {
+      if (i + 1 >= args.size()) {
+        return error::InvalidArgument("Invalid format, expect argument after $0, got nothing.",
+                                      args[i]);
+      }
+      opts.push_back(absl::StrCat(args[i], " ", args[i + 1]));
+      // Skip the next argument.
+      ++i;
+    } else {
+      opts.push_back(args[i]);
+    }
+  }
+
+  builder.WriteKV("options", opts);
+
+  return builder.GetString();
+}
+
+// SSCAN is formatted as:
+// SSCAN key cursor [MATCH pattern] [COUNT count]
+StatusOr<std::string> FormatSScan(VectorView<std::string> args) {
+  constexpr size_t kMinArgsCount = 2;
+  if (args.size() < kMinArgsCount) {
+    return error::InvalidArgument("Redis SSCAN command expects at least 2 arguments, got $0",
+                                  args.size());
+  }
+  JSONObjectBuilder builder;
+  builder.WriteKV("key", args[0]);
+  builder.WriteKV("cursor", args[1]);
+  args.pop_front(2);
+
+  constexpr std::string_view kMatchToken = "MATCH";
+  constexpr std::string_view kCountToken = "COUNT";
+
+  std::vector<std::string> opts;
+
+  for (size_t i = 0; i < args.size(); ++i) {
+    std::string arg_upper = absl::AsciiStrToUpper(args[i]);
+    if (i + 1 >= args.size()) {
+      return error::InvalidArgument("Invalid format, expect argument after $0, got nothing.",
+                                    args[i]);
+    }
+    if (arg_upper == kMatchToken) {
+      builder.WriteKV("pattern", args[i + 1]);
+      ++i;
+    } else if (arg_upper == kCountToken) {
+      builder.WriteKV("count", args[i + 1]);
+      ++i;
+    } else {
+      return error::InvalidArgument(
+          "Invalid Redis SSCAN command arguments format, "
+          "expect MATCH or COUNT, got $0",
+          args[i]);
+    }
+  }
+
+  return builder.GetString();
+}
+
 }  // namespace
 
 CmdArgs::CmdArgs(std::initializer_list<const char*> cmd_args) {
@@ -166,6 +254,18 @@ CmdArgs::CmdArgs(std::initializer_list<const char*> cmd_args) {
 StatusOr<std::string> CmdArgs::FmtArgs(VectorView<std::string> args) const {
   if (cmd_name_ == kEvalSHA) {
     auto res_or = FormatEvalSHAArgs(args);
+    if (res_or.ok()) {
+      return res_or.ConsumeValueOrDie();
+    }
+  }
+  if (cmd_name_ == kSet) {
+    auto res_or = FormatSet(args);
+    if (res_or.ok()) {
+      return res_or.ConsumeValueOrDie();
+    }
+  }
+  if (cmd_name_ == kSScan) {
+    auto res_or = FormatSScan(args);
     if (res_or.ok()) {
       return res_or.ConsumeValueOrDie();
     }

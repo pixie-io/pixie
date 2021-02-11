@@ -69,11 +69,13 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
   constexpr std::string_view kRedisDockerCmdTmpl =
       R"(docker run --rm --network=container:$0 redis bash -c "echo '$1' | redis-cli")";
   constexpr std::string_view kRedisCmds = R"(
-    set foo 100
+    set foo 100 EX 10 NX
     bitcount foo 0 0
     incr foo
     append foo xxx
     get foo
+    sadd myset 1 2 3
+    sscan myset 0 MATCH [a-z]+ COUNT 10
   )";
   const std::string redis_cli_cmd =
       absl::Substitute(kRedisDockerCmdTmpl, container_.container_name(), kRedisCmds);
@@ -93,12 +95,18 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
   // The response is too long to test meaningfully, so we ignore them.
   redis_trace_records.erase(redis_trace_records.begin());
 
-  EXPECT_THAT(redis_trace_records,
-              ElementsAre(RedisTraceRecord{"SET", R"(["foo","100"])", "OK"},
-                          RedisTraceRecord{"BITCOUNT", R"(["foo","0","0"])", "3"},
-                          RedisTraceRecord{"INCR", R"({"key":"foo"})", "101"},
-                          RedisTraceRecord{"APPEND", R"({"key":"foo","value":"xxx"})", "6"},
-                          RedisTraceRecord{"GET", R"({"key":"foo"})", "101xxx"}));
+  EXPECT_THAT(
+      redis_trace_records,
+      ElementsAre(
+          RedisTraceRecord{"SET", R"({"key":"foo","value":"100","options":["EX 10","NX"]})", "OK"},
+          RedisTraceRecord{"BITCOUNT", R"(["foo","0","0"])", "3"},
+          RedisTraceRecord{"INCR", R"({"key":"foo"})", "101"},
+          RedisTraceRecord{"APPEND", R"({"key":"foo","value":"xxx"})", "6"},
+          RedisTraceRecord{"GET", R"({"key":"foo"})", "101xxx"},
+          RedisTraceRecord{"SADD", R"({"key":"myset","member":["1","2","3"]})", "3"},
+          RedisTraceRecord{"SSCAN",
+                           R"({"key":"myset","cursor":"0","pattern":"[a-z]+","count":"10"})",
+                           R"(["0","[]"])"}));
 }
 
 // Verifies that pub/sub commands can be traced correctly.
