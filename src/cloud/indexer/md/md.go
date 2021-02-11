@@ -82,7 +82,7 @@ func (v *VizierIndexer) nsUpdateToEMD(u *mdpb.ResourceUpdate, nsUpdate *mdpb.Nam
 		TimeStartedNS:      nsUpdate.StartTimestampNS,
 		TimeStoppedNS:      nsUpdate.StopTimestampNS,
 		RelatedEntityNames: []string{},
-		ResourceVersion:    u.ResourceVersion,
+		UpdateVersion:      u.UpdateVersion,
 		State:              getStateFromTimestamps(nsUpdate.StopTimestampNS),
 	}
 }
@@ -121,7 +121,7 @@ func (v *VizierIndexer) podUpdateToEMD(u *mdpb.ResourceUpdate, podUpdate *mdpb.P
 		TimeStartedNS:      podUpdate.StartTimestampNS,
 		TimeStoppedNS:      podUpdate.StopTimestampNS,
 		RelatedEntityNames: []string{},
-		ResourceVersion:    u.ResourceVersion,
+		UpdateVersion:      u.UpdateVersion,
 		State:              podPhaseToState(podUpdate),
 	}
 }
@@ -141,7 +141,7 @@ func (v *VizierIndexer) serviceUpdateToEMD(u *mdpb.ResourceUpdate, serviceUpdate
 		TimeStartedNS:      serviceUpdate.StartTimestampNS,
 		TimeStoppedNS:      serviceUpdate.StopTimestampNS,
 		RelatedEntityNames: serviceUpdate.PodIDs,
-		ResourceVersion:    u.ResourceVersion,
+		UpdateVersion:      u.UpdateVersion,
 		State:              getStateFromTimestamps(serviceUpdate.StopTimestampNS),
 	}
 }
@@ -161,13 +161,13 @@ func (v *VizierIndexer) resourceUpdateToEMD(update *mdpb.ResourceUpdate) *EsMDEn
 }
 
 const elasticUpdateScript = `
-if (params.resourceVersion.compareTo(ctx._source.resourceVersion) <= 0)  {
+if (params.updateVersion <= ctx._source.updateVersion)  {
   ctx.op = 'noop';
 }
 ctx._source.relatedEntityNames.addAll(params.entities);
 ctx._source.relatedEntityNames = ctx._source.relatedEntityNames.stream().distinct().sorted().collect(Collectors.toList());
 ctx._source.timeStoppedNS = params.timeStoppedNS;
-ctx._source.resourceVersion = params.resourceVersion;
+ctx._source.updateVersion = params.updateVersion;
 ctx._source.state = params.state;
 `
 
@@ -207,7 +207,7 @@ func (v *VizierIndexer) HandleResourceUpdate(update *mdpb.ResourceUpdate) error 
 			elastic.NewScript(elasticUpdateScript).
 				Param("entities", esEntity.RelatedEntityNames).
 				Param("timeStoppedNS", esEntity.TimeStoppedNS).
-				Param("resourceVersion", esEntity.ResourceVersion).
+				Param("updateVersion", esEntity.UpdateVersion).
 				Param("state", esEntity.State).
 				Lang("painless")).
 		Upsert(esEntity).

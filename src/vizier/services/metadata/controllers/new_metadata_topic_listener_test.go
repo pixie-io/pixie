@@ -96,7 +96,7 @@ func TestMetadataTopicListener_GetUpdatesInBatches(t *testing.T) {
 			mds := &FakeStore{}
 			updateCh := make(chan *K8sResourceMessage)
 			mdh := NewK8sMetadataHandler(updateCh, mds, nil)
-			mdTL, err := NewMetadataTopicListener(nil, nil, mdh, func(topic string, b []byte) error {
+			mdTL, err := NewMetadataTopicListener(mdh, func(topic string, b []byte) error {
 				return nil
 			})
 
@@ -137,7 +137,7 @@ func TestMetadataTopicListener_ProcessAgentMessage(t *testing.T) {
 	mdh := NewK8sMetadataHandler(updateCh, mds, nil)
 
 	sentUpdates := make([]*messages.VizierMessage, 0)
-	mdTL, err := NewMetadataTopicListener(nil, nil, mdh, func(topic string, b []byte) error {
+	mdTL, err := NewMetadataTopicListener(mdh, func(topic string, b []byte) error {
 		vzMsg := &messages.VizierMessage{}
 		err := proto.Unmarshal(b, vzMsg)
 		if err != nil {

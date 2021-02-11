@@ -197,28 +197,19 @@ func main() {
 	statsHandler := controllers.NewStatsHandler()
 
 	// Listen for K8s metadata updates.
-	// TODO(michelle): This old metadata handler should be removed once we've completely moved everything over to the new
-	// metadata handler.
-	mdHandler, err := controllers.NewMetadataHandler(mds, &isLeader, statsHandler)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to create metadata handler")
-	}
-	mdHandler.AddSubscriber(agtMgr)
-	mdHandler.ProcessSubscriberUpdates()
-
 	updateCh := make(chan *controllers.K8sResourceMessage)
 	mdh := controllers.NewK8sMetadataHandler(updateCh, k8sMds, nc)
 
 	mc, err := controllers.NewMessageBusController(nc, agtMgr, tracepointMgr, mds,
-		mdHandler, mdh, statsHandler, &isLeader)
+		mdh, statsHandler, &isLeader)
 
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to message bus")
 	}
 	defer mc.Close()
 
-	oldK8sMc, err := controllers.NewOldK8sMetadataController(mdHandler)
-	defer oldK8sMc.Stop()
+	k8sMc, err := controllers.NewK8sMetadataController(k8sMds, updateCh)
+	defer k8sMc.Stop()
 
 	// Set up server.
 	env, err := metadataenv.New()

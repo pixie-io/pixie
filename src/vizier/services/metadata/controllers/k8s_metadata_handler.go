@@ -10,13 +10,16 @@ import (
 
 	"github.com/EvilSuperstars/go-cidrman"
 	"github.com/cenkalti/backoff"
+	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/watch"
 
+	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
 )
 
 // KelvinUpdateTopic is the topic that all kelvins updates are sent on.
@@ -24,6 +27,9 @@ const KelvinUpdateTopic = "all"
 
 // K8sMetadataUpdateChannel is the channel where metadata updates are sent.
 const K8sMetadataUpdateChannel = "K8sUpdates"
+
+// MetadataUpdatesTopic is the channel which the listener publishes metadata updates to.
+var MetadataUpdatesTopic = messagebus.V2CTopic("DurableMetadataUpdates")
 
 // K8sResourceMessage is a message for K8s metadata events/updates.
 type K8sResourceMessage struct {
@@ -277,6 +283,7 @@ func (m *K8sMetadataHandler) sendUpdate(update *metadatapb.ResourceUpdate, topic
 		},
 	}
 
+	// Send message to agent.
 	b, err := msg.Marshal()
 	if err != nil {
 		return err
@@ -287,6 +294,27 @@ func (m *K8sMetadataHandler) sendUpdate(update *metadatapb.ResourceUpdate, topic
 		log.WithError(err).Trace("Could not publish message to NATS.")
 		return err
 	}
+
+	// Send message to cloud.
+	if topic == KelvinUpdateTopic {
+		reqAnyMessage, err := types.MarshalAny(update)
+		if err != nil {
+			return err
+		}
+		v2cMsg := cvmsgspb.V2CMessage{
+			Msg: reqAnyMessage,
+		}
+		b, err := v2cMsg.Marshal()
+		if err != nil {
+			return err
+		}
+		err = m.conn.Publish(MetadataUpdatesTopic, b)
+		if err != nil {
+			log.WithError(err).Trace("Could not publish message to NATS.")
+			return err
+		}
+	}
+
 	return nil
 }
 

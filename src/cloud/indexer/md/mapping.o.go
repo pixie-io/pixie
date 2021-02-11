@@ -37,7 +37,7 @@ type EsMDEntity struct {
 
 	RelatedEntityNames []string `json:"relatedEntityNames"`
 
-	ResourceVersion string `json:"resourceVersion"`
+	UpdateVersion int64 `json:"updateVersion"`
 
 	State ESMDEntityState `json:"state"`
 }
@@ -145,8 +145,8 @@ const IndexMapping = `
       "relatedEntityNames": {
         "type": "text"
       },
-      "ResourceVersion": {
-        "type": "text"
+      "updateVersion": {
+        "type": "long"
       },
       "state": {
         "type": "integer"
@@ -159,7 +159,7 @@ const IndexMapping = `
 // IndexName is the name of the ES index.
 // This can be incremented when we have breaking changes,
 // and are willing to lose data in the old index.
-const IndexName = "md_entities_4"
+const IndexName = "md_entities_5"
 
 // InitializeMapping creates the index in elastic.
 func InitializeMapping(es *elastic.Client) error {

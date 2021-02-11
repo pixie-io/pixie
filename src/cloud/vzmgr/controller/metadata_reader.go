@@ -3,7 +3,6 @@ package controller
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -37,9 +36,9 @@ const indexerMetadataTopic = "MetadataIndex"
 
 // VizierState contains all state necessary to process metadata updates for the given vizier.
 type VizierState struct {
-	id              uuid.UUID // The Vizier's ID.
-	resourceVersion string    // The Vizier's last applied resource version.
-	k8sUID          string    // The Vizier's K8s UID.
+	id            uuid.UUID // The Vizier's ID.
+	updateVersion int64     // The Vizier's last applied resource version.
+	k8sUID        string    // The Vizier's K8s UID.
 
 	liveSub stan.Subscription // The subcription for the live metadata updates.
 	liveCh  chan *stan.Msg
@@ -89,7 +88,7 @@ type MetadataReader struct {
 	sc stan.Conn
 	nc *nats.Conn
 
-	viziers *concurrentViziersMap // Map of Vizier ID to its state.
+	viziers *concurrentViziersMap // Map of Vizier ID to it's state.
 
 	quitCh chan struct{} // Channel to signal a stop for all viziers
 	once   sync.Once
@@ -134,7 +133,7 @@ func (m *MetadataReader) listenForViziers() {
 			vzID := utils.UUIDFromProtoOrNil(vcMsg.VizierID)
 			log.WithField("VizierID", vzID.String()).Info("Listening to metadata updates for Vizier")
 
-			err = m.startVizierUpdates(vzID, vcMsg.ResourceVersion, vcMsg.K8sUID)
+			err = m.startVizierUpdates(vzID, vcMsg.K8sUID)
 			if err != nil {
 				log.WithError(err).WithField("VizierID", vzID.String()).Error("Could not start listening to updates from Vizier")
 			}
@@ -157,17 +156,14 @@ func (m *MetadataReader) loadState() error {
 }
 
 func (m *MetadataReader) listenToConnectedViziers() error {
-	query := `SELECT vizier_cluster.id, vizier_cluster.cluster_uid, vizier_index_state.resource_version
-	    FROM vizier_cluster, vizier_cluster_info, vizier_index_state
+	query := `SELECT vizier_cluster.id, vizier_cluster.cluster_uid
+	    FROM vizier_cluster, vizier_cluster_info
 	    WHERE vizier_cluster_info.vizier_cluster_id=vizier_cluster.id
-	    	  AND vizier_cluster_info.vizier_cluster_id=vizier_index_state.cluster_id
-	    	  AND vizier_index_state.cluster_id=vizier_cluster.id
-	          AND vizier_cluster_info.status != 'DISCONNECTED'
-	          AND vizier_cluster_info.status != 'UNKNOWN'`
+				AND vizier_cluster_info.status != 'DISCONNECTED'
+				AND vizier_cluster_info.status != 'UNKNOWN'`
 	var val struct {
-		VizierID        uuid.UUID `db:"id"`
-		ResourceVersion string    `db:"resource_version"`
-		K8sUID          string    `db:"cluster_uid"`
+		VizierID uuid.UUID `db:"id"`
+		K8sUID   string    `db:"cluster_uid"`
 	}
 
 	rows, err := m.db.Queryx(query)
@@ -180,7 +176,7 @@ func (m *MetadataReader) listenToConnectedViziers() error {
 		if err != nil {
 			return err
 		}
-		err = m.startVizierUpdates(val.VizierID, val.ResourceVersion, val.K8sUID)
+		err = m.startVizierUpdates(val.VizierID, val.K8sUID)
 		if err != nil {
 			return err
 		}
@@ -190,7 +186,7 @@ func (m *MetadataReader) listenToConnectedViziers() error {
 }
 
 // startVizierUpdates starts listening to the metadata update channel for a given vizier.
-func (m *MetadataReader) startVizierUpdates(id uuid.UUID, rv string, k8sUID string) error {
+func (m *MetadataReader) startVizierUpdates(id uuid.UUID, k8sUID string) error {
 	// TODO(michelle): We currently don't have to signal when a Vizier has disconnected. When we have that
 	// functionality, we should clean up the Vizier map and stop its STAN subscriptions.
 	vz := m.viziers.read(id)
@@ -201,11 +197,10 @@ func (m *MetadataReader) startVizierUpdates(id uuid.UUID, rv string, k8sUID stri
 	}
 
 	vzState := &VizierState{
-		id:              id,
-		resourceVersion: rv,
-		k8sUID:          k8sUID,
-		liveCh:          make(chan *stan.Msg),
-		quitCh:          make(chan struct{}),
+		id:     id,
+		k8sUID: k8sUID,
+		liveCh: make(chan *stan.Msg),
+		quitCh: make(chan struct{}),
 	}
 
 	// Subscribe to STAN topic for streaming updates.
@@ -249,11 +244,20 @@ func (m *MetadataReader) processVizierUpdates(vzState *VizierState) error {
 		case <-vzState.quitCh:
 			return nil
 		case msg := <-vzState.liveCh:
-			err := m.processVizierUpdate(msg, vzState)
+			if msg == nil {
+				continue
+			}
+
+			update, err := readMetadataUpdate(msg.Data)
+			if err != nil {
+				return err
+			}
+			err = m.processVizierUpdate(update, vzState)
 			if err != nil {
 				log.WithError(err).Error("Error processing Vizier metadata updates")
 				return err
 			}
+			msg.Ack()
 		}
 	}
 }
@@ -265,13 +269,13 @@ func (m *MetadataReader) Stop() {
 	})
 }
 
-func readMetadataUpdate(data []byte) (*cvmsgspb.MetadataUpdate, error) {
+func readMetadataUpdate(data []byte) (*metadatapb.ResourceUpdate, error) {
 	v2cMsg := &cvmsgspb.V2CMessage{}
 	err := proto.Unmarshal(data, v2cMsg)
 	if err != nil {
 		return nil, err
 	}
-	updateMsg := &cvmsgspb.MetadataUpdate{}
+	updateMsg := &metadatapb.ResourceUpdate{}
 	err = types.UnmarshalAny(v2cMsg.Msg, updateMsg)
 	if err != nil {
 		log.WithError(err).Error("Could not unmarshal metadata update message")
@@ -280,22 +284,22 @@ func readMetadataUpdate(data []byte) (*cvmsgspb.MetadataUpdate, error) {
 	return updateMsg, nil
 }
 
-func readMetadataResponse(data []byte) (*cvmsgspb.MetadataResponse, error) {
+func readMetadataResponse(data []byte) (*metadatapb.MissingK8SMetadataResponse, error) {
 	v2cMsg := &cvmsgspb.V2CMessage{}
 	err := proto.Unmarshal(data, v2cMsg)
 	if err != nil {
 		return nil, err
 	}
-	reqUpdates := &cvmsgspb.MetadataResponse{}
-	err = types.UnmarshalAny(v2cMsg.Msg, reqUpdates)
+	updates := &metadatapb.MissingK8SMetadataResponse{}
+	err = types.UnmarshalAny(v2cMsg.Msg, updates)
 	if err != nil {
 		log.WithError(err).Error("Could not unmarshal metadata response message")
 		return nil, err
 	}
-	return reqUpdates, nil
+	return updates, nil
 }
 
-func wrapMetadataRequest(vizierID uuid.UUID, req *cvmsgspb.MetadataRequest) ([]byte, error) {
+func wrapMetadataRequest(vizierID uuid.UUID, req *metadatapb.MissingK8SMetadataRequest) ([]byte, error) {
 	reqAnyMsg, err := types.MarshalAny(req)
 	if err != nil {
 		return nil, err
@@ -311,70 +315,31 @@ func wrapMetadataRequest(vizierID uuid.UUID, req *cvmsgspb.MetadataRequest) ([]b
 	return b, nil
 }
 
-func compareResourceVersions(rv1 string, rv2 string) int {
-	// The rv may end in "_#", for containers which share the same rv as pods.
-	// This needs to be removed from the string that is about to be padded, and reappended after padding.
-	formatRV := func(rv string) string {
-		splitRV := strings.Split(rv, "_")
-		paddedRV := fmt.Sprintf("%020s", splitRV[0])
-		if len(splitRV) > 1 {
-			// Reappend the suffix, if any.
-			paddedRV = fmt.Sprintf("%s_%s", paddedRV, splitRV[1])
-		}
-		return paddedRV
-	}
-
-	fmtRV1 := formatRV(rv1)
-	fmtRV2 := formatRV(rv2)
-
-	if fmtRV1 == fmtRV2 {
-		return 0
-	}
-	if fmtRV1 < fmtRV2 {
-		return -1
-	}
-	return 1
-}
-
-func (m *MetadataReader) processVizierUpdate(msg *stan.Msg, vzState *VizierState) error {
-	if msg == nil {
+func (m *MetadataReader) processVizierUpdate(update *metadatapb.ResourceUpdate, vzState *VizierState) error {
+	if update.UpdateVersion < vzState.updateVersion {
+		// Old update, drop.
 		return nil
 	}
 
-	updateMsg, err := readMetadataUpdate(msg.Data)
-	if err != nil {
-		return err
-	}
-	update := updateMsg.Update
-	for compareResourceVersions(update.PrevResourceVersion, vzState.resourceVersion) > 0 {
-		err = m.getMissingUpdates(vzState.resourceVersion, update.ResourceVersion, update.PrevResourceVersion, vzState)
+	if update.PrevUpdateVersion != vzState.updateVersion {
+		err := m.getMissingUpdates(vzState.updateVersion, update.UpdateVersion, vzState)
 		if err != nil {
 			return err
 		}
 	}
-
-	if compareResourceVersions(update.PrevResourceVersion, vzState.resourceVersion) == 0 {
-		err := m.applyMetadataUpdates(vzState, []*metadatapb.ResourceUpdate{update})
-		if err != nil {
-			return err
-		}
-	}
-
-	// It's possible that we've missed the message's 30-second ACK timeline, if it took a while to receive
-	// missing metadata updates. This message will be sent back on STAN for reprocessing, but we will
-	// ignore it since the ResourceVersion will be less than the current resource
-	msg.Ack()
-	return nil
+	return m.applyMetadataUpdate(vzState, update)
 }
 
-func (m *MetadataReader) getMissingUpdates(from string, to string, expectedRV string, vzState *VizierState) error {
-	log.WithField("vizier", vzState.id.String()).WithField("from", from).WithField("to", to).WithField("expected", expectedRV).Info("Making request for missing metadata updates")
-	topicID := uuid.NewV4()
-	topic := fmt.Sprintf("%s_%s", metadataResponseTopic, topicID.String())
-	mdReq := &cvmsgspb.MetadataRequest{
-		From:  from,
-		To:    to,
-		Topic: topic,
+func (m *MetadataReader) getMissingUpdates(from, to int64, vzState *VizierState) error {
+	log.
+		WithField("vizier", vzState.id.String()).
+		WithField("from", from).
+		WithField("to", to).
+		Info("Making request for missing metadata updates")
+
+	mdReq := &metadatapb.MissingK8SMetadataRequest{
+		FromUpdateVersion: from,
+		ToUpdateVersion:   to,
 	}
 	reqBytes, err := wrapMetadataRequest(vzState.id, mdReq)
 	if err != nil {
@@ -383,7 +348,7 @@ func (m *MetadataReader) getMissingUpdates(from string, to string, expectedRV st
 
 	// Subscribe to topic that the response will be sent on.
 	subCh := make(chan *nats.Msg, 1024)
-	sub, err := m.nc.ChanSubscribe(vzshard.V2CTopic(topic, vzState.id), subCh)
+	sub, err := m.nc.ChanSubscribe(vzshard.V2CTopic(metadataResponseTopic, vzState.id), subCh)
 	defer sub.Unsubscribe()
 
 	pubTopic := vzshard.C2VTopic(metadataRequestTopic, vzState.id)
@@ -399,28 +364,39 @@ func (m *MetadataReader) getMissingUpdates(from string, to string, expectedRV st
 		case <-vzState.quitCh:
 			return errors.New("Vizier removed")
 		case msg := <-subCh:
-			reqUpdates, err := readMetadataResponse(msg.Data)
+			updatesResponse, err := readMetadataResponse(msg.Data)
 			if err != nil {
 				return err
 			}
 
-			updates := reqUpdates.Updates
+			updates := updatesResponse.Updates
 			if len(updates) == 0 {
+				if vzState.updateVersion < updatesResponse.FirstUpdateAvailable-1 {
+					vzState.updateVersion = updatesResponse.FirstUpdateAvailable - 1
+				}
 				return nil
 			}
 
-			if compareResourceVersions(updates[0].PrevResourceVersion, vzState.resourceVersion) > 0 {
-				// Received out of order update. Need to rerequest metadata.
-				log.WithField("prevRV", updates[0].PrevResourceVersion).WithField("RV", vzState.resourceVersion).Info("Received out of order update")
+			firstUpdate := updates[0]
+			if firstUpdate.UpdateVersion == updatesResponse.FirstUpdateAvailable {
+				if vzState.updateVersion < firstUpdate.PrevUpdateVersion {
+					vzState.updateVersion = firstUpdate.PrevUpdateVersion
+				}
+			}
+
+			for _, update := range updates {
+				err := m.processVizierUpdate(update, vzState)
+				if err != nil {
+					return err
+				}
+			}
+
+			// Check to see if this batch contains the last of the missing updates we expect.
+			lastUpdate := updates[len(updates)-1]
+			if lastUpdate.UpdateVersion == to {
 				return nil
 			}
-
-			err = m.applyMetadataUpdates(vzState, updates)
-			if err != nil {
-				return err
-			}
-
-			if compareResourceVersions(vzState.resourceVersion, expectedRV) >= 0 {
+			if lastUpdate.UpdateVersion == updatesResponse.LastUpdateAvailable {
 				return nil
 			}
 		case <-time.After(20 * time.Minute):
@@ -431,37 +407,23 @@ func (m *MetadataReader) getMissingUpdates(from string, to string, expectedRV st
 	}
 }
 
-func (m *MetadataReader) applyMetadataUpdates(vzState *VizierState, updates []*metadatapb.ResourceUpdate) error {
-	for i, u := range updates {
-		if compareResourceVersions(u.ResourceVersion, vzState.resourceVersion) <= 0 {
-			continue // Don't send the update.
-		}
-
-		// Publish update to the indexer.
-		b, err := updates[i].Marshal()
-		if err != nil {
-			return err
-		}
-
-		log.WithField("topic", fmt.Sprintf("%s.%s", indexerMetadataTopic, vzState.k8sUID)).WithField("rv", u.ResourceVersion).Info("Publishing metadata update to indexer")
-
-		err = m.sc.Publish(fmt.Sprintf("%s.%s", indexerMetadataTopic, vzState.k8sUID), b)
-		if err != nil {
-			return err
-		}
-
-		vzState.resourceVersion = u.ResourceVersion
-
-		// Update index state in Postgres.
-		query := `
-	    UPDATE vizier_index_state
-	    SET resource_version = $2
-	    WHERE cluster_id = $1`
-		row, err := m.db.Queryx(query, vzState.id, u.ResourceVersion)
-		if err != nil {
-			return err
-		}
-		row.Close()
+func (m *MetadataReader) applyMetadataUpdate(vzState *VizierState, update *metadatapb.ResourceUpdate) error {
+	// Publish update to the indexer.
+	b, err := update.Marshal()
+	if err != nil {
+		return err
 	}
+
+	log.
+		WithField("topic", fmt.Sprintf("%s.%s", indexerMetadataTopic, vzState.k8sUID)).
+		WithField("rv", update.UpdateVersion).
+		Info("Publishing metadata update to indexer")
+
+	err = m.sc.Publish(fmt.Sprintf("%s.%s", indexerMetadataTopic, vzState.k8sUID), b)
+	if err != nil {
+		return err
+	}
+
+	vzState.updateVersion = update.UpdateVersion
 	return nil
 }
