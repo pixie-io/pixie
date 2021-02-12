@@ -39,11 +39,13 @@ constexpr DataElement kConnStatsElements[] = {
 };
 // clang-format on
 
-constexpr auto kConnStatsTable = DataTableSchema(
+constexpr DataTableSchema kConnStatsTable(
     "conn_stats",
-    "Client-server pair connection metrics (client-side metrics use role==1; server-side metrics "
-    "use role==2)",
-    kConnStatsElements, /* default_sampling_period */ std::chrono::milliseconds{5000},
+    "Connection-level stats. This table contains statistics on the communications made between "
+    "client-server pairs. For network-level information such as RX/TX errors and drops, see the "
+    "Network-Layer Stats (network_stats) table.",
+    kConnStatsElements,
+    /* default_sampling_period */ std::chrono::milliseconds{5000},
     /* default_push_period */ std::chrono::milliseconds{5000});
 
 namespace conn_stats_idx {

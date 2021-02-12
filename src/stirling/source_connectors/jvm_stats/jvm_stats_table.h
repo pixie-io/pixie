@@ -38,11 +38,17 @@ constexpr DataElement kJVMStatsElements[] = {
          types::SemanticType::ST_NONE,
          types::PatternType::METRIC_GAUGE},
 };
-// clang-format on
 
-constexpr DataTableSchema kJVMStatsTable("jvm_stats", "JVM memory management metrics",
-                                         kJVMStatsElements, std::chrono::milliseconds{1000},
-                                         std::chrono::milliseconds{1000});
+constexpr DataTableSchema kJVMStatsTable(
+        "jvm_stats",
+        "Basic JVM memory management metrics for java processes. Includes information about "
+        "memory use and garbage collection.",
+        kJVMStatsElements,
+        std::chrono::milliseconds{1000},
+        std::chrono::milliseconds{1000}
+);
+
+// clang-format on
 
 #define DEFINE_IDX(col_name) constexpr int col_name##Idx = kJVMStatsTable.ColIndex(col_name)
 

@@ -56,10 +56,16 @@ static constexpr DataElement kProcessStatsElements[] = {
         {"write_bytes", "IO writes actually go to storage layer in bytes of the process",
          types::DataType::INT64, types::SemanticType::ST_BYTES, types::PatternType::METRIC_COUNTER},
 };
+
+constexpr DataTableSchema kProcessStatsTable(
+    "process_stats",
+    "CPU, memory and IO stats for all K8s processes in your cluster.",
+    kProcessStatsElements,
+    std::chrono::milliseconds{1000},
+    std::chrono::milliseconds{1000}
+);
 // clang-format on
-static constexpr auto kProcessStatsTable = DataTableSchema(
-    "process_stats", "CPU, memory and IO metrics for processes", kProcessStatsElements,
-    std::chrono::milliseconds{1000}, std::chrono::milliseconds{1000});
+
 // TODO(oazizi): Enable version below, once rest of the agent supports tabletization.
 //               Can't enable yet because it would result in time-scrambling.
 //  static constexpr std::string_view kProcessStatsTabletizationKey = "upid";
@@ -68,7 +74,7 @@ static constexpr auto kProcessStatsTable = DataTableSchema(
 //      kProcessStatsElements, kProcessStatsTabletizationKey);
 
 // clang-format off
-static constexpr DataElement kNetworkStatsElements[] = {
+constexpr DataElement kNetworkStatsElements[] = {
         canonical_data_elements::kTime,
         {"pod_id", "The ID of the pod",
          types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
@@ -89,10 +95,18 @@ static constexpr DataElement kNetworkStatsElements[] = {
         {"tx_drops", "Number of dropped network packets being transmitted of the pod",
          types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_COUNTER},
 };
+
+constexpr DataTableSchema kNetworkStatsTable(
+    "network_stats",
+    "Network-layer RX/TX stats, grouped by pod. This table contains aggregate statistics "
+    "measured at the network device interface. For connection-level information, including the "
+    "remote endpoints with which a pod is communicating, see the Connection-Level Stats "
+    "(conn_stats) table.",
+    kNetworkStatsElements,
+    std::chrono::milliseconds{1000},
+    std::chrono::milliseconds{1000}
+);
 // clang-format on
-static constexpr auto kNetworkStatsTable =
-    DataTableSchema("network_stats", "Network metrics for pods.", kNetworkStatsElements,
-                    std::chrono::milliseconds{1000}, std::chrono::milliseconds{1000});
 
 }  // namespace stirling
 }  // namespace pl
