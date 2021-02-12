@@ -767,6 +767,9 @@ func TestPodUpdateProcessor_SetDeleted(t *testing.T) {
 	o.GetPod().Metadata.DeletionTimestampNS = 0
 	p.SetDeleted(o)
 	assert.NotEqual(t, 0, o.GetPod().Metadata.DeletionTimestampNS)
+	for _, c := range o.GetPod().Status.ContainerStatuses {
+		assert.NotEqual(t, 0, c.StopTimestampNS)
+	}
 }
 
 func TestPodUpdateProcessor_ValidateUpdate(t *testing.T) {

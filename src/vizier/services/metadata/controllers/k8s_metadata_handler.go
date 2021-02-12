@@ -523,6 +523,12 @@ func (p *PodUpdateProcessor) SetDeleted(obj *storepb.K8SResource) {
 		return
 	}
 	setDeleted(e.Metadata)
+
+	now := time.Now().UnixNano()
+	// Also terminate any containers in the pod, if any.
+	for i := range e.Status.ContainerStatuses {
+		e.Status.ContainerStatuses[i].StopTimestampNS = now
+	}
 }
 
 // ValidateUpdate checks that the provided pod object is valid, and casts it to the correct type.
