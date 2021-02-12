@@ -2,7 +2,7 @@ import auth0 from 'auth0-js';
 import { AUTH0_CLIENT_ID, AUTH0_DOMAIN } from 'containers/constants';
 import * as QueryString from 'querystring';
 
-export type AuthCallbackMode = 'cli_post' | 'cli_token' | 'ui';
+export type AuthCallbackMode = 'cli_get' | 'cli_token' | 'ui';
 
 interface RedirectArgs {
   mode?: AuthCallbackMode;
@@ -20,7 +20,7 @@ const auth0Request = (isSignup: boolean) => {
 
   // Translate the old API parameters to new versions. In paricular:
   // local, (no redirect_url) -> cli_token
-  // local -> cli_post
+  // local -> cli_get
   // default: ui
   // We also translate the location parameters so redirects work as expected.
   // TODO(zasgar/michelle): When we finish porting everything to the new API this code
@@ -32,7 +32,7 @@ const auth0Request = (isSignup: boolean) => {
     if (parsed.redirect_uri) {
       // eslint-disable-next-line @typescript-eslint/camelcase
       redirectArgs.redirect_uri = typeof parsed.redirect_uri === 'string' && String(parsed.redirect_uri);
-      redirectArgs.mode = 'cli_post';
+      redirectArgs.mode = 'cli_get';
     } else {
       redirectArgs.mode = 'cli_token';
     }

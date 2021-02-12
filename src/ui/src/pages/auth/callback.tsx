@@ -1,7 +1,7 @@
 import * as React from 'react';
 import auth0 from 'auth0-js';
 import { AUTH0_CLIENT_ID, AUTH0_DOMAIN } from 'containers/constants';
-import * as QueryString from 'querystring';
+import * as QueryString from 'query-string';
 import Axios, { AxiosError } from 'axios';
 import * as RedirectUtils from 'utils/redirect-utils';
 import { isValidAnalytics } from 'utils/env';
@@ -13,19 +13,9 @@ import {
 import { BasePage } from './base';
 import { AuthCallbackMode } from './utils';
 
-const redirectPost = (url, data) => {
-  const form = document.createElement('form');
-  document.body.appendChild(form);
-  form.method = 'post';
-  form.action = url;
-  Object.entries(data).forEach(([name, val]: [string, string]) => {
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = name;
-    input.value = val;
-    form.appendChild(input);
-  });
-  form.submit();
+const redirectGet = async (url, data) => {
+  const fullURL = QueryString.stringifyUrl({ url, query: data });
+  return Axios.get(fullURL);
 };
 
 type ErrorType = 'internal' | 'auth';
@@ -144,8 +134,13 @@ export const AuthCallbackPage = () => {
     };
 
     const sendTokenToCLI = async (accessToken: string, redirectURI: string) => {
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      redirectPost(redirectURI, { access_token: accessToken });
+      try {
+        const response = await redirectGet(redirectURI, { accessToken });
+        return response.status === 200;
+      } catch (error) {
+        // If there's an error, we just return a failure.
+        return false;
+      }
     };
 
     const wa = new auth0.WebAuth({
@@ -161,7 +156,7 @@ export const AuthCallbackPage = () => {
       const params = QueryString.parse(window.location.search.substr(1));
       let mode: AuthCallbackMode;
       switch (params.mode) {
-        case 'cli_post':
+        case 'cli_get':
         case 'cli_token':
         case 'ui':
           ({ mode } = params);
@@ -195,9 +190,23 @@ export const AuthCallbackPage = () => {
         }
         // eslint-disable-next-line default-case
         switch (mode) {
-          case 'cli_post':
-            await sendTokenToCLI(token, redirectURI);
-            return;
+          case 'cli_get':
+            loginSuccess = await sendTokenToCLI(token, redirectURI);
+            if (loginSuccess) {
+              setConfig((c) => ({
+                ...c,
+                loading: false,
+              }));
+              RedirectUtils.redirect('/auth/cli-auth-complete', {});
+              return;
+            }
+            mode = 'cli_token';
+            // If it fails, switch to token auth.
+            setConfig((c) => ({
+              ...c,
+              mode,
+            }));
+            break;
           case 'cli_token':
             // Nothing to do, it will just render.
             break;
@@ -248,7 +257,7 @@ export const AuthCallbackPage = () => {
     const cta = (
       <div className={classes.ctaGutter}>
         <Link to={ctaDestination} component={CtaButton}>
-          { ctaMessage }
+          {ctaMessage}
         </Link>
       </div>
     );
@@ -287,7 +296,7 @@ export const AuthCallbackPage = () => {
   const loading = !config || config.loading;
   return (
     <BasePage>
-      { loading && renderLoadingMessage() }
+      { loading && renderLoadingMessage()}
       { !loading && (config.err ? renderError() : renderMessage())}
     </BasePage>
   );
