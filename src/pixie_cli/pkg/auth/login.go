@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -39,27 +38,6 @@ var errBrowserFailed = errors.New("browser failed to open")
 var errTokenUnauthorized = errors.New("failed to obtain token")
 var localServerRedirectURL = "http://localhost:8085/auth_complete"
 var localServerPort = int32(8085)
-
-const authCompletePage = `
-<!DOCTYPE HTML>
-<html lang="en-US">
-  <head>
-    <meta charset="UTF-8">
-    <script type="text/javascript">
-      window.location.href = "{{ .CloudAddr }}"
-    </script>
-    <title>Authentication Successful - Pixie</title>
-  </head>
-  <body>
-    <p><font face=roboto>
-      You may close this window.
-    </font></p>
-  </body>
-</html>
-`
-
-// Template of the page to render when auth succeeds.
-var authCompleteTmpl = template.Must(template.New("authCompletePage").Parse(authCompletePage))
 
 // EnsureDefaultAuthFilePath returns and creates the file path is missing.
 func EnsureDefaultAuthFilePath() (string, error) {
@@ -208,6 +186,11 @@ func addCORSHeaders(res http.ResponseWriter) {
 	headers.Add("Access-Control-Allow-Methods", "GET, POST,OPTIONS")
 }
 
+func sendError(w http.ResponseWriter, err error) {
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprintf(w, err.Error())
+}
+
 func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 	// Browser auth starts up a server on localhost to do the user challenge
 	// and get the authentication token.
@@ -240,7 +223,9 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 			w.WriteHeader(http.StatusOK)
 			return
 		} else if r.Method != http.MethodGet {
-			results <- result{nil, errors.New("wrong method on HTTP request, assuming auth failed")}
+			err := errors.New("wrong method on HTTP request, assuming auth failed")
+			sendError(w, err)
+			results <- result{nil, err}
 			close(results)
 			return
 		}
@@ -248,26 +233,23 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 		q := r.URL.Query()
 		accessToken := q.Get("accessToken")
 		if accessToken == "" {
-			results <- result{nil, errors.New("missing code, assuming auth failed")}
+			err := errors.New("missing code, assuming auth failed")
+			sendError(w, err)
+			results <- result{nil, err}
 			close(results)
 			return
 		}
 
 		refreshToken, err := p.getRefreshToken(accessToken)
 
-		// Fill out the template with the correct data.
-		templateParams := struct {
-			CloudAddr string
-		}{getAuthCompleteURL(fmt.Sprintf("work.%s", p.CloudAddr), err)}
-
-		// Write out the page to the handler.
-		authCompleteTmpl.Execute(w, templateParams)
-
 		if err != nil {
+			sendError(w, err)
 			results <- result{nil, err}
 			close(results)
 			return
 		}
+
+		fmt.Fprintf(w, "OK")
 
 		// Sucessful auth.
 		results <- result{refreshToken, nil}

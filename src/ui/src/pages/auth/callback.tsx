@@ -136,7 +136,7 @@ export const AuthCallbackPage = () => {
     const sendTokenToCLI = async (accessToken: string, redirectURI: string) => {
       try {
         const response = await redirectGet(redirectURI, { accessToken });
-        return response.status === 200;
+        return response.status === 200 && response.data === 'OK';
       } catch (error) {
         // If there's an error, we just return a failure.
         return false;
