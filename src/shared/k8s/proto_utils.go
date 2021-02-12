@@ -167,6 +167,7 @@ func ObjectMetadataToProto(o *metav1.ObjectMeta) (*metadatapb.ObjectMetadata, er
 		OwnerReferences:     ownerRefs,
 		Labels:              o.Labels,
 		CreationTimestampNS: o.CreationTimestamp.UnixNano(),
+		Annotations:         o.Annotations,
 	}
 
 	if o.DeletionTimestamp != nil {

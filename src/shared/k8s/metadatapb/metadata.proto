@@ -57,6 +57,10 @@ message ObjectMetadata {
 
   // The name of the cluster which the object belongs to.
   string cluster_name = 9;
+
+  // Annotations is an unstructured key value map stored with a resource that may be
+  // set by external tools to store and retrieve arbitrary metadata.
+  map<string, string> annotations = 10;
 }
 
 message OwnerReference {

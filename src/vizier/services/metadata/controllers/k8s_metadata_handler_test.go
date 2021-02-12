@@ -9,9 +9,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8stypes "k8s.io/apimachinery/pkg/types"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
@@ -21,277 +18,96 @@ import (
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 )
 
-func createEndpointsObject() *v1.Endpoints {
-	addrs := make([]v1.EndpointAddress, 2)
-	nodeName := "this-is-a-node"
-	addrs[0] = v1.EndpointAddress{
-		IP:       "127.0.0.1",
-		Hostname: "host",
-		NodeName: &nodeName,
-		TargetRef: &v1.ObjectReference{
-			Kind:      "Pod",
-			Namespace: "pl",
-			UID:       "abcd",
-			Name:      "pod-name",
-		},
-	}
+func createEndpointsObject() *storepb.K8SResource {
+	pb := &metadatapb.Endpoints{}
+	proto.UnmarshalText(testutils.EndpointsPb, pb)
 
-	nodeName2 := "node-a"
-	addrs[1] = v1.EndpointAddress{
-		IP:       "127.0.0.2",
-		Hostname: "host-2",
-		NodeName: &nodeName2,
-		TargetRef: &v1.ObjectReference{
-			Kind:      "Pod",
-			Namespace: "pl",
-			UID:       "efgh",
-			Name:      "another-pod",
+	return &storepb.K8SResource{
+		Resource: &storepb.K8SResource_Endpoints{
+			Endpoints: pb,
 		},
-	}
-
-	nodeName3 := "node-b"
-	notReadyAddrs := []v1.EndpointAddress{
-		v1.EndpointAddress{
-			IP:       "127.0.0.3",
-			Hostname: "host-3",
-			NodeName: &nodeName3,
-		},
-	}
-
-	ports := []v1.EndpointPort{
-		v1.EndpointPort{
-			Name:     "endpt",
-			Port:     10,
-			Protocol: v1.ProtocolTCP,
-		},
-		v1.EndpointPort{
-			Name:     "abcd",
-			Port:     500,
-			Protocol: v1.ProtocolTCP,
-		},
-	}
-
-	subsets := []v1.EndpointSubset{
-		v1.EndpointSubset{
-			Addresses:         addrs,
-			NotReadyAddresses: notReadyAddrs,
-			Ports:             ports,
-		},
-	}
-
-	delTime := metav1.Unix(0, 6)
-	creationTime := metav1.Unix(0, 4)
-	oRefs := []metav1.OwnerReference{
-		metav1.OwnerReference{
-			Kind: "pod",
-			Name: "test",
-			UID:  "abcd",
-		},
-	}
-
-	md := metav1.ObjectMeta{
-		Name:              "object_md",
-		Namespace:         "a_namespace",
-		UID:               "ijkl",
-		ResourceVersion:   "1",
-		CreationTimestamp: creationTime,
-		DeletionTimestamp: &delTime,
-		OwnerReferences:   oRefs,
-	}
-
-	return &v1.Endpoints{
-		ObjectMeta: md,
-		Subsets:    subsets,
 	}
 }
 
-func createServiceObject() *v1.Service {
-	// Create service object.
-	ports := []v1.ServicePort{
-		v1.ServicePort{
-			Name:     "endpt",
-			Port:     10,
-			Protocol: v1.ProtocolTCP,
-			NodePort: 20,
+func createServiceObject() *storepb.K8SResource {
+	pb := &metadatapb.Service{}
+	proto.UnmarshalText(testutils.ServicePb, pb)
+
+	return &storepb.K8SResource{
+		Resource: &storepb.K8SResource_Service{
+			Service: pb,
 		},
-		v1.ServicePort{
-			Name:     "another_port",
-			Port:     50,
-			Protocol: v1.ProtocolTCP,
-			NodePort: 60,
-		},
-	}
-
-	externalIPs := []string{"127.0.0.2", "127.0.0.3"}
-
-	spec := v1.ServiceSpec{
-		ClusterIP:             "127.0.0.1",
-		LoadBalancerIP:        "127.0.0.4",
-		ExternalName:          "hello",
-		ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeLocal,
-		Type:                  v1.ServiceTypeExternalName,
-		Ports:                 ports,
-		ExternalIPs:           externalIPs,
-	}
-
-	ownerRefs := []metav1.OwnerReference{
-		metav1.OwnerReference{
-			Kind: "pod",
-			Name: "test",
-			UID:  "abcd",
-		},
-	}
-
-	delTime := metav1.Unix(0, 6)
-	creationTime := metav1.Unix(0, 4)
-	metadata := metav1.ObjectMeta{
-		Name:              "object_md",
-		Namespace:         "a_namespace",
-		UID:               "ijkl",
-		ResourceVersion:   "1",
-		ClusterName:       "a_cluster",
-		OwnerReferences:   ownerRefs,
-		CreationTimestamp: creationTime,
-		DeletionTimestamp: &delTime,
-	}
-
-	return &v1.Service{
-		ObjectMeta: metadata,
-		Spec:       spec,
 	}
 }
 
-func createPodObject() *v1.Pod {
-	ownerRefs := []metav1.OwnerReference{
-		metav1.OwnerReference{
-			Kind: "pod",
-			Name: "test",
-			UID:  "abcd",
+func createPodObject() *storepb.K8SResource {
+	pb := &metadatapb.Pod{}
+	proto.UnmarshalText(testutils.PodPbWithContainers, pb)
+
+	return &storepb.K8SResource{
+		Resource: &storepb.K8SResource_Pod{
+			Pod: pb,
 		},
 	}
+}
 
-	delTime := metav1.Unix(0, 6)
-	creationTime := metav1.Unix(0, 4)
-	metadata := metav1.ObjectMeta{
-		Name:              "object_md",
-		UID:               "ijkl",
-		ResourceVersion:   "1",
-		ClusterName:       "a_cluster",
-		OwnerReferences:   ownerRefs,
-		CreationTimestamp: creationTime,
-		DeletionTimestamp: &delTime,
-	}
-
-	conditions := make([]v1.PodCondition, 1)
-	conditions[0] = v1.PodCondition{
-		Type:   v1.PodReady,
-		Status: v1.ConditionTrue,
-	}
-
-	waitingState := v1.ContainerStateWaiting{
-		Message: "container state message",
-		Reason:  "container state reason",
-	}
-	containers := []v1.ContainerStatus{
-		v1.ContainerStatus{
-			Name:        "container1",
-			ContainerID: "docker://test",
-			State: v1.ContainerState{
-				Waiting: &waitingState,
+func createNodeObject() *storepb.K8SResource {
+	return &storepb.K8SResource{
+		Resource: &storepb.K8SResource_Node{
+			Node: &metadatapb.Node{
+				Metadata: &metadatapb.ObjectMetadata{
+					Name:            "object_md",
+					UID:             "ijkl",
+					ResourceVersion: "1",
+					ClusterName:     "a_cluster",
+					OwnerReferences: []*metadatapb.OwnerReference{
+						&metadatapb.OwnerReference{
+							Kind: "pod",
+							Name: "test",
+							UID:  "abcd",
+						},
+					},
+					CreationTimestampNS: 4,
+					DeletionTimestampNS: 6,
+				},
+				Spec: &metadatapb.NodeSpec{
+					PodCIDR: "pod_cidr",
+				},
+				Status: &metadatapb.NodeStatus{
+					Phase: metadatapb.NODE_PHASE_RUNNING,
+					Addresses: []*metadatapb.NodeAddress{
+						&metadatapb.NodeAddress{
+							Type:    metadatapb.NODE_ADDR_TYPE_INTERNAL_IP,
+							Address: "127.0.0.1",
+						},
+					},
+				},
 			},
 		},
 	}
-
-	status := v1.PodStatus{
-		Message:           "this is message",
-		Reason:            "this is reason",
-		Phase:             v1.PodRunning,
-		Conditions:        conditions,
-		ContainerStatuses: containers,
-		QOSClass:          v1.PodQOSBurstable,
-		HostIP:            "127.0.0.5",
-	}
-
-	spec := v1.PodSpec{
-		NodeName:  "test",
-		Hostname:  "hostname",
-		DNSPolicy: v1.DNSClusterFirst,
-	}
-
-	return &v1.Pod{
-		ObjectMeta: metadata,
-		Status:     status,
-		Spec:       spec,
-	}
 }
 
-func createNodeObject() *v1.Node {
-	ownerRefs := []metav1.OwnerReference{
-		metav1.OwnerReference{
-			Kind: "pod",
-			Name: "test",
-			UID:  "abcd",
+func createNamespaceObject() *storepb.K8SResource {
+	return &storepb.K8SResource{
+		Resource: &storepb.K8SResource_Namespace{
+			Namespace: &metadatapb.Namespace{
+				Metadata: &metadatapb.ObjectMetadata{
+					Name:            "object_md",
+					UID:             "ijkl",
+					ResourceVersion: "1",
+					ClusterName:     "a_cluster",
+					OwnerReferences: []*metadatapb.OwnerReference{
+						&metadatapb.OwnerReference{
+							Kind: "pod",
+							Name: "test",
+							UID:  "abcd",
+						},
+					},
+					CreationTimestampNS: 4,
+					DeletionTimestampNS: 6,
+				},
+			},
 		},
-	}
-
-	delTime := metav1.Unix(0, 6)
-	creationTime := metav1.Unix(0, 4)
-	metadata := metav1.ObjectMeta{
-		Name:              "object_md",
-		UID:               "ijkl",
-		ResourceVersion:   "1",
-		ClusterName:       "a_cluster",
-		OwnerReferences:   ownerRefs,
-		CreationTimestamp: creationTime,
-		DeletionTimestamp: &delTime,
-	}
-
-	nodeSpec := v1.NodeSpec{
-		PodCIDR: "pod_cidr",
-	}
-
-	nodeAddrs := []v1.NodeAddress{
-		v1.NodeAddress{
-			Type:    v1.NodeInternalIP,
-			Address: "127.0.0.1",
-		},
-	}
-
-	nodeStatus := v1.NodeStatus{
-		Addresses: nodeAddrs,
-		Phase:     v1.NodeRunning,
-	}
-
-	return &v1.Node{
-		ObjectMeta: metadata,
-		Status:     nodeStatus,
-		Spec:       nodeSpec,
-	}
-}
-
-func createNamespaceObject() *v1.Namespace {
-	ownerRefs := []metav1.OwnerReference{
-		metav1.OwnerReference{
-			Kind: "pod",
-			Name: "test",
-			UID:  "abcd",
-		},
-	}
-
-	delTime := metav1.Unix(0, 6)
-	creationTime := metav1.Unix(0, 4)
-	metadata := metav1.ObjectMeta{
-		Name:              "object_md",
-		UID:               "ijkl",
-		ResourceVersion:   "1",
-		ClusterName:       "a_cluster",
-		OwnerReferences:   ownerRefs,
-		CreationTimestamp: creationTime,
-		DeletionTimestamp: &delTime,
-	}
-
-	return &v1.Namespace{
-		ObjectMeta: metadata,
 	}
 }
 
@@ -504,7 +320,7 @@ func TestK8sMetadataHandler_GetUpdatesForIP(t *testing.T) {
 	mds.AddResourceUpdateForTopic(6, controllers.KelvinUpdateTopic, pu)
 	mds.AddResourceUpdateForTopic(6, "127.0.0.1", pu)
 
-	updateCh := make(chan *controllers.K8sMessage)
+	updateCh := make(chan *controllers.K8sResourceMessage)
 	mdh := controllers.NewK8sMetadataHandler(updateCh, mds, nil)
 	defer mdh.Stop()
 	updates, err := mdh.GetUpdatesForIP("", 0, 0)
@@ -537,7 +353,7 @@ func TestK8sMetadataHandler_GetUpdatesForIP(t *testing.T) {
 }
 
 func TestK8sMetadataHandler_ProcessUpdates(t *testing.T) {
-	updateCh := make(chan *controllers.K8sMessage)
+	updateCh := make(chan *controllers.K8sResourceMessage)
 
 	mds := &InMemoryStore{
 		ResourceStoreByTopic: make(map[string]ResourceStore),
@@ -601,14 +417,14 @@ func TestK8sMetadataHandler_ProcessUpdates(t *testing.T) {
 	// Process a node update, to populate the NodeIPs.
 	// This will increment the current resource version to 4, so the next update should have a resource version of 5.
 	node := createNodeObject()
-	node.ObjectMeta.DeletionTimestamp = nil
-	updateCh <- &controllers.K8sMessage{
+	node.GetNode().Metadata.DeletionTimestampNS = 0
+	updateCh <- &controllers.K8sResourceMessage{
 		Object:     node,
 		ObjectType: "nodes",
 	}
 
 	o := createNamespaceObject()
-	updateCh <- &controllers.K8sMessage{
+	updateCh <- &controllers.K8sResourceMessage{
 		Object:     o,
 		ObjectType: "namespaces",
 	}
@@ -696,11 +512,11 @@ func TestEndpointsUpdateProcessor_SetDeleted(t *testing.T) {
 
 	p := controllers.EndpointsUpdateProcessor{}
 	p.SetDeleted(o)
-	assert.Equal(t, metav1.Unix(0, 6), *o.ObjectMeta.DeletionTimestamp)
+	assert.Equal(t, int64(6), o.GetEndpoints().Metadata.DeletionTimestampNS)
 
-	o.ObjectMeta.DeletionTimestamp = nil
+	o.GetEndpoints().Metadata.DeletionTimestampNS = 0
 	p.SetDeleted(o)
-	assert.NotNil(t, o.ObjectMeta.DeletionTimestamp)
+	assert.NotEqual(t, 0, o.GetEndpoints().Metadata.DeletionTimestampNS)
 }
 
 func TestEndpointsUpdateProcessor_ValidateUpdate(t *testing.T) {
@@ -708,14 +524,14 @@ func TestEndpointsUpdateProcessor_ValidateUpdate(t *testing.T) {
 	o := createEndpointsObject()
 
 	state := &controllers.ProcessorState{
-		LeaderMsgs: make(map[k8stypes.UID]*v1.Endpoints),
+		LeaderMsgs: make(map[string]*metadatapb.Endpoints),
 	}
 	p := controllers.EndpointsUpdateProcessor{}
 	resp := p.ValidateUpdate(o, state)
 	assert.True(t, resp)
 
 	// Validating endpoints with no nodename should fail.
-	o.Subsets[0].Addresses[0].NodeName = nil
+	o.GetEndpoints().Subsets[0].Addresses[0].NodeName = ""
 	resp = p.ValidateUpdate(o, state)
 	assert.False(t, resp)
 }
@@ -841,11 +657,11 @@ func TestServiceUpdateProcessor(t *testing.T) {
 
 	p := controllers.ServiceUpdateProcessor{}
 	p.SetDeleted(o)
-	assert.Equal(t, metav1.Unix(0, 6), *o.ObjectMeta.DeletionTimestamp)
+	assert.Equal(t, int64(6), o.GetService().Metadata.DeletionTimestampNS)
 
-	o.ObjectMeta.DeletionTimestamp = nil
+	o.GetService().Metadata.DeletionTimestampNS = 0
 	p.SetDeleted(o)
-	assert.NotNil(t, o.ObjectMeta.DeletionTimestamp)
+	assert.NotEqual(t, 0, o.GetService().Metadata.DeletionTimestampNS)
 }
 
 func TestServiceUpdateProcessor_ValidateUpdate(t *testing.T) {
@@ -861,7 +677,7 @@ func TestServiceUpdateProcessor_ValidateUpdate(t *testing.T) {
 func TestServiceUpdateProcessor_ServiceCIDRs(t *testing.T) {
 	// Construct service object.
 	o := createServiceObject()
-	o.Spec.ClusterIP = "10.64.3.1"
+	o.GetService().Spec.ClusterIP = "10.64.3.1"
 
 	state := &controllers.ProcessorState{}
 	p := controllers.ServiceUpdateProcessor{}
@@ -870,25 +686,25 @@ func TestServiceUpdateProcessor_ServiceCIDRs(t *testing.T) {
 	assert.Equal(t, "10.64.3.1/32", state.ServiceCIDR.String())
 
 	// Next service should expand the mask.
-	o.Spec.ClusterIP = "10.64.3.7"
+	o.GetService().Spec.ClusterIP = "10.64.3.7"
 	resp = p.ValidateUpdate(o, state)
 	assert.True(t, resp)
 	assert.Equal(t, "10.64.3.0/29", state.ServiceCIDR.String())
 
 	// This one shouldn't expand the mask, because it's already within the same range.
-	o.Spec.ClusterIP = "10.64.3.2"
+	o.GetService().Spec.ClusterIP = "10.64.3.2"
 	resp = p.ValidateUpdate(o, state)
 	assert.True(t, resp)
 	assert.Equal(t, "10.64.3.0/29", state.ServiceCIDR.String())
 
 	// Another range expansion.
-	o.Spec.ClusterIP = "10.64.4.1"
+	o.GetService().Spec.ClusterIP = "10.64.4.1"
 	resp = p.ValidateUpdate(o, state)
 	assert.True(t, resp)
 	assert.Equal(t, "10.64.0.0/21", state.ServiceCIDR.String())
 
 	// Test on Services that do not have ClusterIP.
-	o.Spec.ClusterIP = ""
+	o.GetService().Spec.ClusterIP = ""
 	resp = p.ValidateUpdate(o, state)
 	assert.True(t, resp)
 	assert.Equal(t, "10.64.0.0/21", state.ServiceCIDR.String())
@@ -946,17 +762,17 @@ func TestPodUpdateProcessor_SetDeleted(t *testing.T) {
 
 	p := controllers.PodUpdateProcessor{}
 	p.SetDeleted(o)
-	assert.Equal(t, metav1.Unix(0, 6), *o.ObjectMeta.DeletionTimestamp)
+	assert.Equal(t, int64(6), o.GetPod().Metadata.DeletionTimestampNS)
 
-	o.ObjectMeta.DeletionTimestamp = nil
+	o.GetPod().Metadata.DeletionTimestampNS = 0
 	p.SetDeleted(o)
-	assert.NotNil(t, o.ObjectMeta.DeletionTimestamp)
+	assert.NotEqual(t, 0, o.GetPod().Metadata.DeletionTimestampNS)
 }
 
 func TestPodUpdateProcessor_ValidateUpdate(t *testing.T) {
 	// Construct pod object.
 	o := createPodObject()
-	o.Status.PodIP = "127.0.0.1"
+	o.GetPod().Status.PodIP = "127.0.0.1"
 
 	state := &controllers.ProcessorState{PodToIP: make(map[string]string)}
 	p := controllers.PodUpdateProcessor{}
@@ -966,7 +782,7 @@ func TestPodUpdateProcessor_ValidateUpdate(t *testing.T) {
 	assert.Equal(t, []string{"127.0.0.1/32"}, state.PodCIDRs)
 	assert.Equal(t, 0, len(state.PodToIP))
 
-	o.ObjectMeta.DeletionTimestamp = nil
+	o.GetPod().Metadata.DeletionTimestampNS = 0
 	resp = p.ValidateUpdate(o, state)
 	assert.True(t, resp)
 
@@ -1104,11 +920,11 @@ func TestNodeUpdateProcessor_SetDeleted(t *testing.T) {
 
 	p := controllers.NodeUpdateProcessor{}
 	p.SetDeleted(o)
-	assert.Equal(t, metav1.Unix(0, 6), *o.ObjectMeta.DeletionTimestamp)
+	assert.Equal(t, int64(6), o.GetNode().Metadata.DeletionTimestampNS)
 
-	o.ObjectMeta.DeletionTimestamp = nil
+	o.GetNode().Metadata.DeletionTimestampNS = 0
 	p.SetDeleted(o)
-	assert.NotNil(t, o.ObjectMeta.DeletionTimestamp)
+	assert.NotEqual(t, 0, o.GetNode().Metadata.DeletionTimestampNS)
 }
 
 func TestNodeUpdateProcessor_ValidateUpdate(t *testing.T) {
@@ -1121,7 +937,7 @@ func TestNodeUpdateProcessor_ValidateUpdate(t *testing.T) {
 	assert.True(t, resp)
 	assert.Equal(t, 0, len(state.NodeToIP))
 
-	o.ObjectMeta.DeletionTimestamp = nil
+	o.GetNode().Metadata.DeletionTimestampNS = 0
 	resp = p.ValidateUpdate(o, state)
 	assert.True(t, resp)
 	assert.Equal(t, 1, len(state.NodeToIP))
@@ -1225,11 +1041,11 @@ func TestNamespaceUpdateProcessor_SetDeleted(t *testing.T) {
 
 	p := controllers.NamespaceUpdateProcessor{}
 	p.SetDeleted(o)
-	assert.Equal(t, metav1.Unix(0, 6), *o.ObjectMeta.DeletionTimestamp)
+	assert.Equal(t, int64(6), o.GetNamespace().Metadata.DeletionTimestampNS)
 
-	o.ObjectMeta.DeletionTimestamp = nil
+	o.GetNamespace().Metadata.DeletionTimestampNS = 0
 	p.SetDeleted(o)
-	assert.NotNil(t, o.ObjectMeta.DeletionTimestamp)
+	assert.NotEqual(t, 0, o.GetNamespace().Metadata.DeletionTimestampNS)
 }
 
 func TestNamespaceUpdateProcessor_ValidateUpdate(t *testing.T) {

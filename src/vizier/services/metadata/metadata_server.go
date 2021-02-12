@@ -205,7 +205,7 @@ func main() {
 	mdHandler.AddSubscriber(agtMgr)
 	mdHandler.ProcessSubscriberUpdates()
 
-	updateCh := make(chan *controllers.K8sMessage)
+	updateCh := make(chan *controllers.K8sResourceMessage)
 	mdh := controllers.NewK8sMetadataHandler(updateCh, k8sMds, nc)
 
 	mc, err := controllers.NewMessageBusController(nc, agtMgr, tracepointMgr, mds,

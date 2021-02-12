@@ -23,6 +23,13 @@ import (
 
 const maxSubscriberUpdates = 10000
 
+// K8sMessage is a message for K8s metadata events/updates.
+type K8sMessage struct {
+	Object     runtime.Object
+	ObjectType string
+	EventType  watch.EventType
+}
+
 // MetadataStore is the interface for our metadata store.
 type MetadataStore interface {
 	AddResourceVersion(string, *metadatapb.MetadataObject) error

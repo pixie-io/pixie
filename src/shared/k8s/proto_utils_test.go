@@ -43,6 +43,14 @@ labels {
   key: "label"
   value: "another_value"
 }
+annotations {
+	key: "annotation1"
+	value: "hello"
+}
+annotations {
+	key: "somethingElse"
+	value: "hello2"
+}
 creation_timestamp_ns: 4
 deletion_timestamp_ns: 6
 `
@@ -404,6 +412,11 @@ func TestObjectMetadataToProto(t *testing.T) {
 	labels["test"] = "value"
 	labels["label"] = "another_value"
 
+	annotations := map[string]string{
+		"annotation1":   "hello",
+		"somethingElse": "hello2",
+	}
+
 	ownerRefs := make([]metav1.OwnerReference, 2)
 	ownerRefs[0] = metav1.OwnerReference{
 		Kind: "pod",
@@ -429,6 +442,7 @@ func TestObjectMetadataToProto(t *testing.T) {
 		Labels:            labels,
 		CreationTimestamp: creationTime,
 		DeletionTimestamp: &delTime,
+		Annotations:       annotations,
 	}
 
 	oPb, err := k8s.ObjectMetadataToProto(&o)

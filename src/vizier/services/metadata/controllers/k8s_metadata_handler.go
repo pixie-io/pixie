@@ -12,13 +12,8 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 
-	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
@@ -30,9 +25,9 @@ const KelvinUpdateTopic = "all"
 // K8sMetadataUpdateChannel is the channel where metadata updates are sent.
 const K8sMetadataUpdateChannel = "K8sUpdates"
 
-// K8sMessage is a message for K8s metadata events/updates.
-type K8sMessage struct {
-	Object     runtime.Object
+// K8sResourceMessage is a message for K8s metadata events/updates.
+type K8sResourceMessage struct {
+	Object     *storepb.K8SResource
 	ObjectType string
 	EventType  watch.EventType
 }
@@ -79,12 +74,12 @@ type K8sMetadataStore interface {
 // updates should be persisted and sent to NATS.
 type UpdateProcessor interface {
 	// SetDeleted sets the deletion timestamp for the object, if there is none already set.
-	SetDeleted(runtime.Object)
+	SetDeleted(*storepb.K8SResource)
 	// ValidateUpdate checks whether the update is valid and should be further processed.
-	ValidateUpdate(runtime.Object, *ProcessorState) bool
+	ValidateUpdate(*storepb.K8SResource, *ProcessorState) bool
 	// GetStoredProtos gets the protos that should be persisted in the data store, derived from
 	// the given update.
-	GetStoredProtos(runtime.Object) []*storepb.K8SResource
+	GetStoredProtos(*storepb.K8SResource) []*storepb.K8SResource
 	// IsNodeScoped returns whether this update is scoped to specific nodes, or should be sent to all nodes.
 	IsNodeScoped() bool
 	// GetUpdatesToSend gets all of the updates that should be sent to the agents, along with the relevant IPs that
@@ -97,7 +92,7 @@ type UpdateProcessor interface {
 type ProcessorState struct {
 	// This is a cache of all the leader election message. This is used to avoid sending excessive
 	// endpoints updates.
-	LeaderMsgs  map[k8stypes.UID]*v1.Endpoints
+	LeaderMsgs  map[string]*metadatapb.Endpoints
 	ServiceCIDR *net.IPNet // This is the service CIDR block; it is inferred from all observed service IPs.
 	PodCIDRs    []string   // The pod CIDRs in the cluster, inferred from each node's reported pod CIDR.
 	// A map from node name to its internal IP.
@@ -110,7 +105,7 @@ type ProcessorState struct {
 // also sends the update to the relevant IP channel.
 type K8sMetadataHandler struct {
 	// The channel in which incoming k8s updates are sent to.
-	updateCh <-chan *K8sMessage
+	updateCh <-chan *K8sResourceMessage
 	// The store where k8s resources are stored.
 	mds K8sMetadataStore
 	// The NATS connection on which to send messages on.
@@ -126,9 +121,9 @@ type K8sMetadataHandler struct {
 }
 
 // NewK8sMetadataHandler creates a new K8sMetadataHandler.
-func NewK8sMetadataHandler(updateCh <-chan *K8sMessage, mds K8sMetadataStore, conn *nats.Conn) *K8sMetadataHandler {
+func NewK8sMetadataHandler(updateCh <-chan *K8sResourceMessage, mds K8sMetadataStore, conn *nats.Conn) *K8sMetadataHandler {
 	done := make(chan struct{})
-	leaderMsgs := make(map[k8stypes.UID]*v1.Endpoints)
+	leaderMsgs := make(map[string]*metadatapb.Endpoints)
 	handlerMap := make(map[string]UpdateProcessor)
 	state := ProcessorState{LeaderMsgs: leaderMsgs, PodCIDRs: make([]string, 0), NodeToIP: make(map[string]string), PodToIP: make(map[string]string)}
 	mh := &K8sMetadataHandler{updateCh: updateCh, mds: mds, conn: conn, done: done, processHandlerMap: handlerMap, state: state}
@@ -328,13 +323,12 @@ func (m *K8sMetadataHandler) GetUpdatesForIP(ip string, from int64, to int64) ([
 	return updates, nil
 }
 
-func setDeleted(objMeta *metav1.ObjectMeta) {
-	if objMeta.DeletionTimestamp != nil {
+func setDeleted(objMeta *metadatapb.ObjectMetadata) {
+	if objMeta.DeletionTimestampNS != 0 {
 		// Deletion timestamp already set.
 		return
 	}
-	now := metav1.Now()
-	objMeta.DeletionTimestamp = &now
+	objMeta.DeletionTimestampNS = time.Now().UnixNano()
 }
 
 // EndpointsUpdateProcessor is a processor for endpoints.
@@ -346,18 +340,18 @@ func (p *EndpointsUpdateProcessor) IsNodeScoped() bool {
 }
 
 // SetDeleted sets the deletion timestamp for the object, if there is none already set.
-func (p *EndpointsUpdateProcessor) SetDeleted(obj runtime.Object) {
-	e, ok := obj.(*v1.Endpoints)
-	if !ok {
+func (p *EndpointsUpdateProcessor) SetDeleted(obj *storepb.K8SResource) {
+	e := obj.GetEndpoints()
+	if e == nil {
 		return
 	}
-	setDeleted(&e.ObjectMeta)
+	setDeleted(e.Metadata)
 }
 
 // ValidateUpdate checks that the provided endpoints object is valid.
-func (p *EndpointsUpdateProcessor) ValidateUpdate(obj runtime.Object, state *ProcessorState) bool {
-	e, ok := obj.(*v1.Endpoints)
-	if !ok {
+func (p *EndpointsUpdateProcessor) ValidateUpdate(obj *storepb.K8SResource, state *ProcessorState) bool {
+	e := obj.GetEndpoints()
+	if e == nil {
 		log.WithField("object", obj).Trace("Received non-endpoints object when handling endpoint metadata.")
 		return false
 	}
@@ -371,26 +365,28 @@ func (p *EndpointsUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Pro
 	// https://github.com/kubernetes/kubernetes/issues/41635
 	// https://github.com/kubernetes/kubernetes/issues/34627
 	const leaderAnnotation = "control-plane.alpha.kubernetes.io/leader"
-	_, exists := e.Annotations[leaderAnnotation]
-	if exists {
-		delete(e.Annotations, leaderAnnotation)
-		e.ResourceVersion = "0"
-		storedMsg, exists := state.LeaderMsgs[e.UID]
+	if e.Metadata.Annotations != nil {
+		_, exists := e.Metadata.Annotations[leaderAnnotation]
 		if exists {
-			// Check if the message is the same as before except for the annotation.
-			if reflect.DeepEqual(e, storedMsg) {
-				log.
-					WithField("uid", e.UID).
-					Trace("Dropping message because it only mismatches on leader annotation")
-				return false
+			delete(e.Metadata.Annotations, leaderAnnotation)
+			e.Metadata.ResourceVersion = "0"
+			storedMsg, exists := state.LeaderMsgs[e.Metadata.UID]
+			if exists {
+				// Check if the message is the same as before except for the annotation.
+				if reflect.DeepEqual(e, storedMsg) {
+					log.
+						WithField("uid", e.Metadata.UID).
+						Trace("Dropping message because it only mismatches on leader annotation")
+					return false
+				}
+			} else {
+				state.LeaderMsgs[e.Metadata.UID] = e
 			}
-		} else {
-			state.LeaderMsgs[e.UID] = e
 		}
 	}
 
 	// Don't record the endpoint if there is no nodename.
-	if len(e.Subsets) == 0 || len(e.Subsets[0].Addresses) == 0 || e.Subsets[0].Addresses[0].NodeName == nil {
+	if len(e.Subsets) == 0 || len(e.Subsets[0].Addresses) == 0 || e.Subsets[0].Addresses[0].NodeName == "" {
 		return false
 	}
 
@@ -398,19 +394,8 @@ func (p *EndpointsUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Pro
 }
 
 // GetStoredProtos gets the update protos that should be persisted.
-func (p *EndpointsUpdateProcessor) GetStoredProtos(obj runtime.Object) []*storepb.K8SResource {
-	e := obj.(*v1.Endpoints)
-
-	pb, err := protoutils.EndpointsToProto(e)
-	if err != nil {
-		return nil
-	}
-	storedUpdate := &storepb.K8SResource{
-		Resource: &storepb.K8SResource_Endpoints{
-			Endpoints: pb,
-		},
-	}
-	return []*storepb.K8SResource{storedUpdate}
+func (p *EndpointsUpdateProcessor) GetStoredProtos(obj *storepb.K8SResource) []*storepb.K8SResource {
+	return []*storepb.K8SResource{obj}
 }
 
 // GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
@@ -472,19 +457,18 @@ func (p *ServiceUpdateProcessor) IsNodeScoped() bool {
 }
 
 // SetDeleted sets the deletion timestamp for the object, if there is none already set.
-func (p *ServiceUpdateProcessor) SetDeleted(obj runtime.Object) {
-	e, ok := obj.(*v1.Service)
-	if !ok {
+func (p *ServiceUpdateProcessor) SetDeleted(obj *storepb.K8SResource) {
+	e := obj.GetService()
+	if e == nil {
 		return
 	}
-	setDeleted(&e.ObjectMeta)
+	setDeleted(e.Metadata)
 }
 
 // ValidateUpdate checks that the provided service object is valid, and casts it to the correct type.
-func (p *ServiceUpdateProcessor) ValidateUpdate(obj runtime.Object, state *ProcessorState) bool {
-	e, ok := obj.(*v1.Service)
-
-	if !ok {
+func (p *ServiceUpdateProcessor) ValidateUpdate(obj *storepb.K8SResource, state *ProcessorState) bool {
+	e := obj.GetService()
+	if e == nil {
 		log.WithField("object", obj).Trace("Received non-service object when handling service metadata.")
 		return false
 	}
@@ -494,22 +478,11 @@ func (p *ServiceUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Proce
 }
 
 // GetStoredProtos gets the update protos that should be persisted.
-func (p *ServiceUpdateProcessor) GetStoredProtos(obj runtime.Object) []*storepb.K8SResource {
-	e := obj.(*v1.Service)
-
-	pb, err := protoutils.ServiceToProto(e)
-	if err != nil {
-		return nil
-	}
-	storedUpdate := &storepb.K8SResource{
-		Resource: &storepb.K8SResource_Service{
-			Service: pb,
-		},
-	}
-	return []*storepb.K8SResource{storedUpdate}
+func (p *ServiceUpdateProcessor) GetStoredProtos(obj *storepb.K8SResource) []*storepb.K8SResource {
+	return []*storepb.K8SResource{obj}
 }
 
-func (p *ServiceUpdateProcessor) updateServiceCIDR(svc *v1.Service, state *ProcessorState) {
+func (p *ServiceUpdateProcessor) updateServiceCIDR(svc *metadatapb.Service, state *ProcessorState) {
 	ip := net.ParseIP(svc.Spec.ClusterIP).To16()
 
 	// Some services don't have a ClusterIP.
@@ -544,27 +517,26 @@ func (p *PodUpdateProcessor) IsNodeScoped() bool {
 }
 
 // SetDeleted sets the deletion timestamp for the object, if there is none already set.
-func (p *PodUpdateProcessor) SetDeleted(obj runtime.Object) {
-	e, ok := obj.(*v1.Pod)
-	if !ok {
+func (p *PodUpdateProcessor) SetDeleted(obj *storepb.K8SResource) {
+	e := obj.GetPod()
+	if e == nil {
 		return
 	}
-	setDeleted(&e.ObjectMeta)
+	setDeleted(e.Metadata)
 }
 
 // ValidateUpdate checks that the provided pod object is valid, and casts it to the correct type.
-func (p *PodUpdateProcessor) ValidateUpdate(obj runtime.Object, state *ProcessorState) bool {
-	e, ok := obj.(*v1.Pod)
-
-	if !ok {
+func (p *PodUpdateProcessor) ValidateUpdate(obj *storepb.K8SResource, state *ProcessorState) bool {
+	e := obj.GetPod()
+	if e == nil {
 		log.WithField("object", obj).Trace("Received non-pod object when handling pod metadata.")
 		return false
 	}
 	p.updatePodCIDR(e, state)
 
 	// Create a mapping from podName -> IP. This helps us filter endpoint updates down to the relevant IPs.
-	podName := fmt.Sprintf("%s/%s", e.ObjectMeta.Namespace, e.ObjectMeta.Name)
-	if e.ObjectMeta.DeletionTimestamp != nil {
+	podName := fmt.Sprintf("%s/%s", e.Metadata.Namespace, e.Metadata.Name)
+	if e.Metadata.DeletionTimestampNS != 0 {
 		delete(state.PodToIP, podName)
 	} else {
 		state.PodToIP[podName] = e.Status.HostIP
@@ -574,15 +546,10 @@ func (p *PodUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Processor
 }
 
 // GetStoredProtos gets the update protos that should be persisted.
-func (p *PodUpdateProcessor) GetStoredProtos(obj runtime.Object) []*storepb.K8SResource {
-	e := obj.(*v1.Pod)
+func (p *PodUpdateProcessor) GetStoredProtos(obj *storepb.K8SResource) []*storepb.K8SResource {
+	pb := obj.GetPod()
 
 	var updates []*storepb.K8SResource
-
-	pb, err := protoutils.PodToProto(e)
-	if err != nil {
-		return updates
-	}
 
 	// Also store container updates. These are saved and sent as separate updates.
 	containerUpdates := GetContainerUpdatesFromPod(pb)
@@ -595,15 +562,11 @@ func (p *PodUpdateProcessor) GetStoredProtos(obj runtime.Object) []*storepb.K8SR
 	}
 
 	// The pod should have a later update version than the containers, because the containers should be sent to an agent first.
-	updates = append(updates, &storepb.K8SResource{
-		Resource: &storepb.K8SResource_Pod{
-			Pod: pb,
-		},
-	})
+	updates = append(updates, obj)
 	return updates
 }
 
-func (p *PodUpdateProcessor) updatePodCIDR(pod *v1.Pod, state *ProcessorState) {
+func (p *PodUpdateProcessor) updatePodCIDR(pod *metadatapb.Pod, state *ProcessorState) {
 	if pod.Status.PodIP == "" {
 		return
 	}
@@ -666,33 +629,32 @@ func (p *NodeUpdateProcessor) IsNodeScoped() bool {
 }
 
 // SetDeleted sets the deletion timestamp for the object, if there is none already set.
-func (p *NodeUpdateProcessor) SetDeleted(obj runtime.Object) {
-	e, ok := obj.(*v1.Node)
-	if !ok {
+func (p *NodeUpdateProcessor) SetDeleted(obj *storepb.K8SResource) {
+	e := obj.GetNode()
+	if e == nil {
 		return
 	}
-	setDeleted(&e.ObjectMeta)
+	setDeleted(e.Metadata)
 }
 
 // ValidateUpdate checks that the provided service object is valid, and casts it to the correct type.
-func (p *NodeUpdateProcessor) ValidateUpdate(obj runtime.Object, state *ProcessorState) bool {
-	n, ok := obj.(*v1.Node)
-
-	if !ok {
+func (p *NodeUpdateProcessor) ValidateUpdate(obj *storepb.K8SResource, state *ProcessorState) bool {
+	n := obj.GetNode()
+	if n == nil {
 		log.WithField("object", obj).Trace("Received non-node object when handling node metadata.")
 		return false
 	}
 
 	// Create a mapping from node -> IP. This gives us a list of all IPs in the cluster that we need to
 	// send updates to.
-	if n.DeletionTimestamp != nil {
-		delete(state.NodeToIP, n.ObjectMeta.Name)
+	if n.Metadata.DeletionTimestampNS != 0 {
+		delete(state.NodeToIP, n.Metadata.Name)
 		return true
 	}
 
 	for _, addr := range n.Status.Addresses {
-		if addr.Type == v1.NodeInternalIP {
-			state.NodeToIP[n.ObjectMeta.Name] = addr.Address
+		if addr.Type == metadatapb.NODE_ADDR_TYPE_INTERNAL_IP {
+			state.NodeToIP[n.Metadata.Name] = addr.Address
 			break
 		}
 	}
@@ -701,19 +663,8 @@ func (p *NodeUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Processo
 }
 
 // GetStoredProtos gets the update protos that should be persisted.
-func (p *NodeUpdateProcessor) GetStoredProtos(obj runtime.Object) []*storepb.K8SResource {
-	e := obj.(*v1.Node)
-
-	pb, err := protoutils.NodeToProto(e)
-	if err != nil {
-		return nil
-	}
-	storedUpdate := &storepb.K8SResource{
-		Resource: &storepb.K8SResource_Node{
-			Node: pb,
-		},
-	}
-	return []*storepb.K8SResource{storedUpdate}
+func (p *NodeUpdateProcessor) GetStoredProtos(obj *storepb.K8SResource) []*storepb.K8SResource {
+	return []*storepb.K8SResource{obj}
 }
 
 // GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
@@ -731,19 +682,18 @@ func (p *NamespaceUpdateProcessor) IsNodeScoped() bool {
 }
 
 // SetDeleted sets the deletion timestamp for the object, if there is none already set.
-func (p *NamespaceUpdateProcessor) SetDeleted(obj runtime.Object) {
-	e, ok := obj.(*v1.Namespace)
-	if !ok {
+func (p *NamespaceUpdateProcessor) SetDeleted(obj *storepb.K8SResource) {
+	e := obj.GetNamespace()
+	if e == nil {
 		return
 	}
-	setDeleted(&e.ObjectMeta)
+	setDeleted(e.Metadata)
 }
 
 // ValidateUpdate checks that the provided namespace object is valid, and casts it to the correct type.
-func (p *NamespaceUpdateProcessor) ValidateUpdate(obj runtime.Object, state *ProcessorState) bool {
-	_, ok := obj.(*v1.Namespace)
-
-	if !ok {
+func (p *NamespaceUpdateProcessor) ValidateUpdate(obj *storepb.K8SResource, state *ProcessorState) bool {
+	e := obj.GetNamespace()
+	if e == nil {
 		log.WithField("object", obj).Trace("Received non-namespace object when handling namespace metadata.")
 		return false
 	}
@@ -751,19 +701,8 @@ func (p *NamespaceUpdateProcessor) ValidateUpdate(obj runtime.Object, state *Pro
 }
 
 // GetStoredProtos gets the update protos that should be persisted.
-func (p *NamespaceUpdateProcessor) GetStoredProtos(obj runtime.Object) []*storepb.K8SResource {
-	e := obj.(*v1.Namespace)
-
-	pb, err := protoutils.NamespaceToProto(e)
-	if err != nil {
-		return nil
-	}
-	storedUpdate := &storepb.K8SResource{
-		Resource: &storepb.K8SResource_Namespace{
-			Namespace: pb,
-		},
-	}
-	return []*storepb.K8SResource{storedUpdate}
+func (p *NamespaceUpdateProcessor) GetStoredProtos(obj *storepb.K8SResource) []*storepb.K8SResource {
+	return []*storepb.K8SResource{obj}
 }
 
 // GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
