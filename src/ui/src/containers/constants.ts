@@ -7,6 +7,8 @@ declare global {
       SEGMENT_UI_WRITE_KEY: string;
       LD_CLIENT_ID: string;
       ANALYTICS_ENABLED: boolean;
+      ANNOUNCEMENT_ENABLED: boolean;
+      ANNOUNCE_WIDGET_URL: string;
     };
   }
 }
@@ -23,3 +25,7 @@ export const { SEGMENT_UI_WRITE_KEY } = window.__PIXIE_FLAGS__;
 export const { LD_CLIENT_ID } = window.__PIXIE_FLAGS__;
 // eslint-disable-next-line no-underscore-dangle
 export const { ANALYTICS_ENABLED } = window.__PIXIE_FLAGS__;
+// eslint-disable-next-line no-underscore-dangle
+export const { ANNOUNCEMENT_ENABLED } = window.__PIXIE_FLAGS__;
+// eslint-disable-next-line no-underscore-dangle
+export const { ANNOUNCE_WIDGET_URL } = window.__PIXIE_FLAGS__;

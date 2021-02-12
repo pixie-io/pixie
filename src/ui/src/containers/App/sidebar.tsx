@@ -30,7 +30,7 @@ import {
   PixieLogo,
 } from 'pixie-components';
 import { toEntityPathname, LiveViewPage } from 'containers/live-widgets/utils/live-view-params';
-import { DOMAIN_NAME } from 'containers/constants';
+import { DOMAIN_NAME, ANNOUNCEMENT_ENABLED, ANNOUNCE_WIDGET_URL } from 'containers/constants';
 import { LiveShortcutsContext } from 'containers/live/shortcuts';
 import { SidebarContext } from 'context/sidebar-context';
 import { LiveTourContext, LiveTourDialog } from 'containers/App/live-tour';
@@ -402,25 +402,29 @@ const SideBar = ({ classes }) => {
         <List>
           <Tooltip title='Announcements'>
             <div className={classes.announcekit}>
-              <AnnounceKit
-                widget='https://announcekit.app/widgets/v2/1okO1W'
-                user={
-                  {
-                    id: user.email,
-                    email: user.email,
-                  }
-                }
-                data={
-                  {
-                    org: user.orgName,
-                  }
-                }
-              >
-                <ListItem button key='announcements' className={classes.listIcon}>
-                  <ListItemIcon><AnnouncementIcon className={classes.icon} /></ListItemIcon>
-                  <ListItemText primary='Announcements' />
-                </ListItem>
-              </AnnounceKit>
+              {
+                ANNOUNCEMENT_ENABLED && (
+                <AnnounceKit
+                  widget={ANNOUNCE_WIDGET_URL}
+                  user={
+                        {
+                          id: user.email,
+                          email: user.email,
+                        }
+                 }
+                  data={
+                        {
+                          org: user.orgName,
+                        }
+                   }
+                >
+                  <ListItem button key='announcements' className={classes.listIcon}>
+                    <ListItemIcon><AnnouncementIcon className={classes.icon} /></ListItemIcon>
+                    <ListItemText primary='Announcements' />
+                  </ListItem>
+                </AnnounceKit>
+                )
+              }
             </div>
           </Tooltip>
           <SideBarExternalLinkItem

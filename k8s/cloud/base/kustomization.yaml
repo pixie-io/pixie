@@ -6,6 +6,7 @@ commonLabels:
 namespace: plc
 resources:
 - analytics_config.yaml
+- announce_config.yaml
 - proxy_envoy.yaml
 - kuberesolver_role.yaml
 - dns_config.yaml

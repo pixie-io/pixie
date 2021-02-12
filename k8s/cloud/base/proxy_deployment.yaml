@@ -36,6 +36,8 @@ spec:
             name: pl-ld-config
         - configMapRef:
             name: pl-analytics-config
+        - configMapRef:
+            name: pl-announcement-config
         env:
         - name: PL_JWT_SIGNING_KEY
           valueFrom:
