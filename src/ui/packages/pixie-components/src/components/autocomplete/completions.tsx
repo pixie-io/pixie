@@ -227,11 +227,29 @@ const CompletionInternal = (props: CompletionProps) => {
       <span key={`title-${remainingIdx}`}>{title.substring(remainingIdx)}</span>,
     );
   }
+
+  // Keep the hovered element in the scroll view. This is debounced to prevent two scenarios:
+  // 1) Bouncing back to a previous scroll position if scrolling and moving the cursor at the same time
+  // 2) Firing 'scrollIntoView` repeatedly while it's already running, causing user-visible performance problems
+  const [recentlyScrolled, setRecentlyScrolled] = React.useState(false);
   React.useEffect(() => {
-    if (active && !isInView(ref.current.parentElement, ref.current)) {
-      ref.current.scrollIntoView();
+    setRecentlyScrolled(true);
+    const delay = setTimeout(() => { setRecentlyScrolled(false); }, 100);
+    return () => {
+      clearTimeout(delay);
+      setRecentlyScrolled(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ref.current?.parentElement.scrollTop, ref.current?.parentElement.scrollHeight]);
+  React.useEffect(() => {
+    if (active
+        && !recentlyScrolled
+        && ref.current.matches(':hover')
+        && !isInView(ref.current.parentElement, ref.current)
+    ) {
+      ref.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
-  }, [active, ref]);
+  }, [active, ref, recentlyScrolled]);
 
   let stateClass = null;
   switch (state) {
