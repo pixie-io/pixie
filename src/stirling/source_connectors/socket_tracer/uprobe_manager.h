@@ -338,8 +338,9 @@ class UProbeManager {
   // Records the binaries that have uprobes attached, so we don't try to probe them again.
   // TODO(oazizi): How should these sets be cleaned up of old binaries, once they are deleted?
   //               Without clean-up, these could consume more-and-more memory.
-  absl::flat_hash_set<std::string> http2_probed_binaries_;
   absl::flat_hash_set<std::string> openssl_probed_binaries_;
+  absl::flat_hash_set<std::string> scanned_binaries_;
+  absl::flat_hash_set<std::string> go_http2_probed_binaries_;
   absl::flat_hash_set<std::string> go_tls_probed_binaries_;
 
   // BPF maps through which the addresses of symbols for a given pid are communicated to uprobes.

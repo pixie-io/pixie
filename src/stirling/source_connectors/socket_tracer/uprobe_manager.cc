@@ -288,7 +288,7 @@ StatusOr<int> UProbeManager::AttachGoHTTP2Probes(const std::string& binary,
   }
 
   // Step 2: Deploy uprobes on all new binaries.
-  auto result = http2_probed_binaries_.insert(binary);
+  auto result = go_http2_probed_binaries_.insert(binary);
   if (!result.second) {
     // This is not a new binary, so nothing more to do.
     return 0;
@@ -373,11 +373,18 @@ int UProbeManager::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pid
 int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   int uprobe_count = 0;
 
+  static int32_t kPID = getpid();
+
   for (const auto& [binary, pid_vec] : ConvertPIDsListToMap(pids, &fp_resolver_)) {
+    // Don't bother rescanning binaries that have been scanned before to avoid unnecessary work.
+    if (!scanned_binaries_.insert(binary).second) {
+      continue;
+    }
+
     if (cfg_disable_self_probing_) {
       // Don't try to attach uprobes to self.
       // This speeds up stirling_wrapper initialization significantly.
-      if (pid_vec.size() == 1 && pid_vec[0] == getpid()) {
+      if (pid_vec.size() == 1 && pid_vec[0] == kPID) {
         continue;
       }
     }
@@ -487,7 +494,9 @@ void UProbeManager::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   }
   uprobe_count += DeployGoUProbes(proc_tracker_.new_upids());
 
-  LOG_FIRST_N(INFO, 1) << absl::Substitute("Number of uprobes deployed = $0", uprobe_count);
+  if (uprobe_count != 0) {
+    LOG(INFO) << absl::Substitute("Number of uprobes deployed = $0", uprobe_count);
+  }
 }
 
 }  // namespace stirling
