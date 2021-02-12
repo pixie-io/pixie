@@ -31,8 +31,8 @@ export function selectCluster(clusters: ClusterInfo[]): ClusterInfo {
     [CLUSTER_STATUS_UPDATE_FAILED]: 2,
   };
   const defaultStatusValue = 3;
-
-  clusters.sort((cluster1, cluster2) => {
+  // Copy over in case clusters is read only.
+  return clusters.slice().sort((cluster1, cluster2) => {
     const status1 = clusterStatusMap[cluster1.status] === undefined
       ? defaultStatusValue : clusterStatusMap[cluster1.status];
     const status2 = clusterStatusMap[cluster2.status] === undefined
@@ -44,7 +44,5 @@ export function selectCluster(clusters: ClusterInfo[]): ClusterInfo {
       return 1;
     }
     return cluster1.clusterName < cluster2.clusterName ? -1 : 1;
-  });
-
-  return clusters[0];
+  })[0]
 }
