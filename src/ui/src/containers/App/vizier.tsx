@@ -72,7 +72,7 @@ const useSelectedCluster = () => {
 const ScriptShortcut = ({ toNamespace = '', toScript = '' }: { toNamespace?: string; toScript?: string }) => {
   const { namespace, scriptId } = useParams();
   let fullId = `${toNamespace || namespace || 'px'}/`;
-  const normalized = scriptId.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const normalized = (toScript || scriptId || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
   if (['scratch', 'scratchpad', 'scratch-pad', 'scratch-script'].includes(normalized)) {
     fullId = SCRATCH_SCRIPT.id;
   } else {

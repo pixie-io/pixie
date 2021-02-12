@@ -26,6 +26,7 @@ import LiveViewShortcutsProvider from 'containers/live/shortcuts';
 import LiveViewTitle from 'containers/live/title';
 import LiveViewBreadcrumbs from 'containers/live/breadcrumbs';
 import NavBars from 'containers/App/nav-bars';
+import { SCRATCH_SCRIPT } from 'containers/App/scripts-context';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -193,7 +194,10 @@ const LiveView = () => {
   const classes = useStyles();
 
   const {
-    saveEditorAndExecute, cancelExecution,
+    saveEditorAndExecute,
+    cancelExecution,
+    id: activeScriptId,
+    pxl: activeScriptCode,
   } = React.useContext(ScriptContext);
   const { loading, clusterStatus } = React.useContext(VizierGRPCClientContext);
   const {
@@ -215,6 +219,12 @@ const LiveView = () => {
     'toggle-data-drawer': () => setDataDrawerOpen((open) => !open),
     execute: () => saveEditorAndExecute(),
   };
+
+  React.useEffect(() => {
+    if (activeScriptId === SCRATCH_SCRIPT.id && activeScriptCode === SCRATCH_SCRIPT.code) {
+      setEditorPanelOpen(true);
+    }
+  }, [activeScriptId, activeScriptCode, setEditorPanelOpen]);
 
   React.useEffect(() => {
     const listener = () => {

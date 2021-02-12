@@ -20,7 +20,6 @@ import { entityPageForScriptId, optionallyGetNamespace } from 'containers/live-w
 import { EntityType, pxTypetoEntityType, entityStatusGroup } from 'containers/command-input/autocomplete-utils';
 import { clusterStatusGroup } from 'containers/admin/utils';
 import { containsMutation, CLUSTER_QUERIES, AUTOCOMPLETE_QUERIES } from 'pixie-api';
-import { LayoutContext } from 'context/layout-context';
 import ExecuteScriptButton from './execute-button';
 import { Variable } from './vis';
 
@@ -68,7 +67,6 @@ const LiveViewBreadcrumbs = ({ classes }) => {
   const { loading, data } = useQuery(CLUSTER_QUERIES.LIST_CLUSTERS);
   const { selectedCluster, setCluster, selectedClusterUID } = React.useContext(ClusterContext);
   const { scripts } = React.useContext(ScriptsContext);
-  const { setEditorPanelOpen } = React.useContext(LayoutContext);
 
   const {
     vis, pxl, args, id, liveViewPage, setArgs, execute, setScript, parseVisOrShowError, argsForVisOrShowError,
@@ -231,8 +229,6 @@ const LiveViewBreadcrumbs = ({ classes }) => {
         };
         setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
         if (newVal === SCRATCH_SCRIPT.id) {
-          // When selecting the scratch script, the user likely wants to write it right away. Open the editor for them.
-          setEditorPanelOpen(true);
           // Skip executing the script, which starts empty. Executing empty scripts emits scary (harmless) errors.
           return;
         }
