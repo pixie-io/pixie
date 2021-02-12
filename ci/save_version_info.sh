@@ -13,6 +13,6 @@ else
     
     # Semver tags can't contain extra "-"'s, so we need to remove them from the 
     # job name.
-    sanitized_job_name=$(echo "${JOB_NAME}" | sed -r 's/-/\//g')
+    sanitized_job_name=$(echo "${JOB_NAME}" | sed -r 's/[\/%]//g')
     echo "0.0.${BUILD_NUMBER}-${sanitized_job_name}-dev" > VERSION
 fi
