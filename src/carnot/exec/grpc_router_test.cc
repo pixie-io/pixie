@@ -46,25 +46,18 @@ class GRPCRouterTest : public ::testing::Test {
   void SetUp() override {
     // Setup server.
     ServerBuilder builder;
-    builder.AddListeningPort(GetServerAddress(), InsecureServerCredentials(), &port_);
+    builder.AddListeningPort("localhost:0", InsecureServerCredentials());
     builder.RegisterService(service_.get());
     server_ = builder.BuildAndStart();
+
+    grpc::ChannelArguments args;
+    stub_ = carnotpb::ResultSinkService::NewStub(server_->InProcessChannel(args));
   }
 
   void TearDown() override { server_->Shutdown(); }
 
-  void ResetStub() {
-    std::shared_ptr<Channel> channel =
-        grpc::CreateChannel(GetServerAddress(), InsecureChannelCredentials());
-    stub_ = carnotpb::ResultSinkService::NewStub(channel);
-  }
-
-  std::string GetServerAddress() { return absl::Substitute("$0:$1", hostname, port_); }
-
   std::unique_ptr<carnotpb::ResultSinkService::Stub> stub_;
   std::unique_ptr<Server> server_;
-  std::string hostname = "0.0.0.0";
-  int port_ = 0;
   std::unique_ptr<GRPCRouter> service_;
 };
 
@@ -81,13 +74,11 @@ class FakeGRPCSourceNode : public pl::carnot::exec::GRPCSourceNode {
 
 TEST_F(GRPCRouterTest, no_node_router_test) {
   int64_t grpc_source_node_id = 1;
-  ResetStub();
   auto query_id_str = "ea8aa095-697f-49f1-b127-d50e5b6e2645";
 
   carnotpb::TransferResultChunkRequest initiate_stream_req0;
   auto query_id = initiate_stream_req0.mutable_query_id();
   query_id->set_data(query_id_str);
-  initiate_stream_req0.set_address(hostname);
   initiate_stream_req0.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
   initiate_stream_req0.mutable_query_result()->set_initiate_result_stream(true);
 
@@ -98,7 +89,6 @@ TEST_F(GRPCRouterTest, no_node_router_test) {
                  .get();
   carnotpb::TransferResultChunkRequest rb_req1;
   EXPECT_OK(rb1.ToProto(rb_req1.mutable_query_result()->mutable_row_batch()));
-  rb_req1.set_address(hostname);
   rb_req1.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
   query_id = rb_req1.mutable_query_id();
   query_id->set_data(query_id_str);
@@ -108,7 +98,6 @@ TEST_F(GRPCRouterTest, no_node_router_test) {
                  .get();
   carnotpb::TransferResultChunkRequest rb_req2;
   EXPECT_OK(rb2.ToProto(rb_req2.mutable_query_result()->mutable_row_batch()));
-  rb_req2.set_address(hostname);
   rb_req2.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
   query_id = rb_req2.mutable_query_id();
   query_id->set_data(query_id_str);
@@ -145,7 +134,6 @@ TEST_F(GRPCRouterTest, no_node_router_test) {
 
 TEST_F(GRPCRouterTest, basic_router_test) {
   int64_t grpc_source_node_id = 1;
-  ResetStub();
   auto query_id_str = "ea8aa095-697f-49f1-b127-d50e5b6e2645";
 
   RowDescriptor input_rd({types::DataType::INT64});
@@ -170,7 +158,6 @@ TEST_F(GRPCRouterTest, basic_router_test) {
   carnotpb::TransferResultChunkRequest initiate_stream_req0;
   auto query_id = initiate_stream_req0.mutable_query_id();
   query_id->set_data(query_id_str);
-  initiate_stream_req0.set_address(hostname);
   initiate_stream_req0.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
   initiate_stream_req0.mutable_query_result()->set_initiate_result_stream(true);
 
@@ -180,7 +167,6 @@ TEST_F(GRPCRouterTest, basic_router_test) {
                  .get();
   carnotpb::TransferResultChunkRequest rb_req1;
   EXPECT_OK(rb1.ToProto(rb_req1.mutable_query_result()->mutable_row_batch()));
-  rb_req1.set_address(hostname);
   rb_req1.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
   query_id = rb_req1.mutable_query_id();
   query_id->set_data(query_id_str);
@@ -190,7 +176,6 @@ TEST_F(GRPCRouterTest, basic_router_test) {
                  .get();
   carnotpb::TransferResultChunkRequest rb_req2;
   EXPECT_OK(rb2.ToProto(rb_req2.mutable_query_result()->mutable_row_batch()));
-  rb_req2.set_address(hostname);
   rb_req2.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
   query_id = rb_req2.mutable_query_id();
   query_id->set_data(query_id_str);
@@ -217,7 +202,6 @@ TEST_F(GRPCRouterTest, basic_router_test) {
 
 TEST_F(GRPCRouterTest, router_and_stats_test) {
   int64_t grpc_source_node_id = 1;
-  ResetStub();
   auto query_id_str = "ea8aa095-697f-49f1-b127-d50e5b6e2645";
   auto query_uuid = sole::rebuild(query_id_str);
 
@@ -245,7 +229,6 @@ TEST_F(GRPCRouterTest, router_and_stats_test) {
   carnotpb::TransferResultChunkRequest initiate_stream_req0;
   auto query_id = initiate_stream_req0.mutable_query_id();
   query_id->set_data(query_id_str);
-  initiate_stream_req0.set_address(hostname);
   initiate_stream_req0.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
   initiate_stream_req0.mutable_query_result()->set_initiate_result_stream(true);
 
@@ -255,7 +238,6 @@ TEST_F(GRPCRouterTest, router_and_stats_test) {
                  .get();
   carnotpb::TransferResultChunkRequest rb_req1;
   EXPECT_OK(rb1.ToProto(rb_req1.mutable_query_result()->mutable_row_batch()));
-  rb_req1.set_address(hostname);
   rb_req1.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
   query_id = rb_req1.mutable_query_id();
   query_id->set_data(query_id_str);
@@ -313,7 +295,6 @@ TEST_F(GRPCRouterTest, router_and_stats_test) {
 
 TEST_F(GRPCRouterTest, delete_node_router_test) {
   int64_t grpc_source_node_id = 1;
-  ResetStub();
   RowDescriptor input_rd({types::DataType::INT64, types::DataType::BOOLEAN});
   auto query_uuid = sole::rebuild("ea8aa095-697f-49f1-b127-d50e5b6e2645");
 
@@ -331,7 +312,6 @@ TEST_F(GRPCRouterTest, delete_node_router_test) {
 
 TEST_F(GRPCRouterTest, done_query_test) {
   int64_t grpc_source_node_id = 1;
-  ResetStub();
   RowDescriptor input_rd({types::DataType::INT64, types::DataType::BOOLEAN});
   auto query_uuid = sole::rebuild("ea8aa095-697f-49f1-b127-d50e5b6e2645");
 
@@ -350,7 +330,6 @@ TEST_F(GRPCRouterTest, done_query_test) {
 // This test is a TSAN test. IT should be run enough times so that all possible
 // race conditions will be met.
 TEST_F(GRPCRouterTest, threaded_router_test) {
-  ResetStub();
   auto query_id_str = "ea8aa095-697f-49f1-b127-d50e5b6e2645";
   auto query_uuid = sole::rebuild(query_id_str);
 
@@ -387,7 +366,6 @@ TEST_F(GRPCRouterTest, threaded_router_test) {
   carnotpb::TransferResultChunkRequest initiate_stream_req0;
   auto query_id = initiate_stream_req0.mutable_query_id();
   query_id->set_data(query_id_str);
-  initiate_stream_req0.set_address(hostname);
   initiate_stream_req0.mutable_query_result()->set_grpc_source_id(0);
   initiate_stream_req0.mutable_query_result()->set_initiate_result_stream(true);
 
@@ -402,7 +380,6 @@ TEST_F(GRPCRouterTest, threaded_router_test) {
                     .get();
       carnotpb::TransferResultChunkRequest rb_req;
       EXPECT_OK(rb.ToProto(rb_req.mutable_query_result()->mutable_row_batch()));
-      rb_req.set_address(hostname);
       rb_req.mutable_query_result()->set_grpc_source_id(0);
       auto query_id = rb_req.mutable_query_id();
       query_id->set_data(query_id_str);

@@ -64,8 +64,7 @@ void BM_Query(benchmark::State& state, std::vector<types::DataType> types,
               int64_t num_batches, const datagen::DistributionParams* dist_vars,
               const datagen::DistributionParams* len_vars) {
   auto table_store = std::make_shared<table_store::TableStore>();
-  LocalGRPCResultSinkServer server(10015);
-  server.StartServerThread();
+  auto server = LocalGRPCResultSinkServer();
 
   auto carnot = SetUpCarnot(table_store, &server);
   auto table = table_store::CreateTable(types, distribution_types, state.range(0), num_batches,

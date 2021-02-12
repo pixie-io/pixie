@@ -225,8 +225,7 @@ int main(int argc, char* argv[]) {
 
   // Execute query.
   auto table_store = std::make_shared<pl::table_store::TableStore>();
-  pl::carnot::exec::LocalGRPCResultSinkServer result_server(10015);
-  result_server.StartServerThread();
+  auto result_server = pl::carnot::exec::LocalGRPCResultSinkServer();
   auto carnot_or_s = pl::carnot::Carnot::Create(
       sole::uuid4(), table_store,
       std::bind(&pl::carnot::exec::LocalGRPCResultSinkServer::StubGenerator, &result_server,

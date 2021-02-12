@@ -27,8 +27,7 @@ class CarnotTest : public ::testing::Test {
   void SetUp() override {
     Test::SetUp();
     table_store_ = std::make_shared<table_store::TableStore>();
-    result_server_ = std::make_unique<exec::LocalGRPCResultSinkServer>(10015);
-    result_server_->StartServerThread();
+    result_server_ = std::make_unique<exec::LocalGRPCResultSinkServer>();
     carnot_ = Carnot::Create(sole::uuid4(), table_store_,
                              std::bind(&exec::LocalGRPCResultSinkServer::StubGenerator,
                                        result_server_.get(), std::placeholders::_1))

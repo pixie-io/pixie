@@ -54,19 +54,18 @@ class LocalResultSinkServer final : public carnotpb::ResultSinkService::Service 
 
 class LocalGRPCResultSinkServer {
  public:
-  explicit LocalGRPCResultSinkServer(int32_t port) : port_(port) {}
+  LocalGRPCResultSinkServer() {
+    grpc::ServerBuilder builder;
 
-  void StartServerThread() {
-    SetupServer();
-    grpc_server_thread_ = std::make_unique<std::thread>(&LocalGRPCResultSinkServer::Wait, this);
+    builder.AddListeningPort("localhost:0", grpc::InsecureServerCredentials());
+    builder.RegisterService(&result_sink_server_);
+    grpc_server_ = builder.BuildAndStart();
+    CHECK(grpc_server_ != nullptr);
   }
 
   ~LocalGRPCResultSinkServer() {
     if (grpc_server_) {
       grpc_server_->Shutdown();
-    }
-    if (grpc_server_thread_ && grpc_server_thread_->joinable()) {
-      grpc_server_thread_->join();
     }
   }
 
@@ -119,20 +118,6 @@ class LocalGRPCResultSinkServer {
   }
 
  private:
-  void SetupServer() {
-    std::string server_address(absl::Substitute("0.0.0.0:$0", port_));
-    grpc::ServerBuilder builder;
-
-    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-    builder.RegisterService(&result_sink_server_);
-    grpc_server_ = builder.BuildAndStart();
-    CHECK(grpc_server_ != nullptr);
-  }
-
-  void Wait() { grpc_server_->Wait(); }
-
-  const int32_t port_;
-  std::unique_ptr<std::thread> grpc_server_thread_;
   std::unique_ptr<grpc::Server> grpc_server_;
   LocalResultSinkServer result_sink_server_;
 };
