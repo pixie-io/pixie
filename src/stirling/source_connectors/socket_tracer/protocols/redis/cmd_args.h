@@ -37,16 +37,12 @@ struct ArgDesc {
 };
 
 // Describes the arguments of a Redis command.
-class CmdArgs {
- public:
+struct CmdArgs {
   // Allows convenient initialization of kCmdList below.
   //
   // TODO(yzhao): Let the :redis_cmds_format_generator and gen_redis_cmds.sh to statically produces
   // the initialization code for kCmdList that fills in the command argument format as well.
   CmdArgs(std::initializer_list<const char*> cmd_args);
-
-  // Formats the input argument value based on this detected format of this command.
-  StatusOr<std::string> FmtArgs(VectorView<std::string> args) const;
 
   // Cannot move this out of class definition. Doing that gcc build fails because this is not used.
   std::string ToString() const {
@@ -61,11 +57,13 @@ class CmdArgs {
                             cmd_arg_descs_str);
   }
 
- private:
   std::string_view cmd_name_;
   std::vector<std::string_view> cmd_args_;
   std::optional<std::vector<ArgDesc>> cmd_arg_descs_;
 };
+
+// Returns the object that describes the command of the payloads, if there is a matching one.
+std::optional<const CmdArgs*> GetCmdAndArgs(VectorView<std::string>* payloads);
 
 }  // namespace redis
 }  // namespace protocols
