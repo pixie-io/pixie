@@ -5,10 +5,23 @@
 package controllers
 
 import (
-	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
-	internalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
-	"k8s.io/apimachinery/pkg/runtime"
+	"time"
+
+    log "github.com/sirupsen/logrus"
+    v1 "k8s.io/api/core/v1"
+    internalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
+    metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+    "k8s.io/apimachinery/pkg/fields"
+    "k8s.io/apimachinery/pkg/runtime"
+    // Blank import necessary for kubeConfig to work.
+    _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+    "k8s.io/client-go/tools/cache"
+    watchClient "k8s.io/client-go/tools/watch"
+    "k8s.io/client-go/kubernetes"
+    "k8s.io/apimachinery/pkg/watch"
+
+    protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
+    storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 )
 
 func runtimeObjToPodList(o runtime.Object) *v1.PodList {
@@ -34,6 +47,155 @@ func runtimeObjToPodList(o runtime.Object) *v1.PodList {
 	return &typedList
 }
 
+type PodWatcher struct {
+	resourceStr string
+	lastRV      string
+	updateCh    chan *K8sResourceMessage
+	quitCh      chan struct{}
+	clientset   *kubernetes.Clientset
+}
+
+func NewPodWatcher(resource string, quitCh chan struct{}, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *PodWatcher {
+	return &PodWatcher{resourceStr: resource, quitCh: quitCh, updateCh: updateCh, clientset: clientset}
+}
+
+func (mc *PodWatcher) Sync(storedUpdates []*storepb.K8SResource) error {
+	resources, err := listObject(mc.resourceStr, mc.clientset)
+	if err != nil {
+		return err
+	}
+	mc.syncPodImpl(storedUpdates, runtimeObjToPodList(resources))
+	return nil
+}
+
+func (mc *PodWatcher) syncPodImpl(storedUpdates []*storepb.K8SResource, currentState *v1.PodList) {
+	activeResources := make(map[string]bool)
+
+	// Send update for currently active resources. This will build our HostIP/PodIP maps.
+	for _, o := range currentState.Items {
+		pb, err := protoutils.PodToProto(&o)
+		if err != nil {
+			continue
+		}
+		activeResources[string(o.ObjectMeta.UID)] = true
+
+		r := &storepb.K8SResource{
+			Resource: &storepb.K8SResource_Pod{
+				Pod: pb,
+			},
+		}
+		msg := &K8sResourceMessage{
+			Object:     r,
+			ObjectType: mc.resourceStr,
+			EventType:  watch.Modified,
+		}
+		mc.updateCh <- msg
+	}
+	if len(currentState.Items) > 0 {
+		mc.lastRV = currentState.Items[len(currentState.Items)-1].ResourceVersion
+	}
+
+	// Make a map of resources that we have stored.
+	storedResources := make(map[string]*storepb.K8SResource)
+	for i := range storedUpdates {
+		update := storedUpdates[i].GetPod()
+		if update == nil {
+			continue
+		}
+
+		if update.Metadata.DeletionTimestampNS != 0 {
+			// This resource is already terminated, so we don't
+			// need to send another termination event.
+			delete(storedResources, update.Metadata.UID)
+			continue
+		}
+
+		storedResources[update.Metadata.UID] = storedUpdates[i]
+	}
+
+	// For each resource in our store, determine if it is still running. If not, send a termination update.
+	for uid, r := range storedResources {
+		if _, ok := activeResources[uid]; ok {
+			continue
+		}
+
+		msg := &K8sResourceMessage{
+			Object:     r,
+			ObjectType: mc.resourceStr,
+			EventType:  watch.Deleted,
+		}
+		mc.updateCh <- msg
+	}
+}
+
+func (mc *PodWatcher) StartWatcher() {
+	// Start up watcher for the given resource.
+	for {
+		watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), mc.resourceStr, v1.NamespaceAll, fields.Everything())
+		retryWatcher, err := watchClient.NewRetryWatcher(mc.lastRV, watcher)
+		if err != nil {
+			log.WithError(err).Fatal("Could not start watcher for k8s resource: " + mc.resourceStr)
+		}
+
+		resCh := retryWatcher.ResultChan()
+		runWatcher := true
+		for runWatcher {
+			select {
+			case <-mc.quitCh:
+				return
+			case c := <-resCh:
+				s, ok := c.Object.(*metav1.Status)
+				if ok && s.Status == metav1.StatusFailure {
+					if s.Reason == metav1.StatusReasonGone {
+						log.WithField("resource", mc.resourceStr).Info("Requested resource version too old, no longer stored in K8S API")
+						runWatcher = false
+						break
+					}
+					// Ignore and let the retry watcher retry.
+					log.WithField("resource", mc.resourceStr).WithField("object", c.Object).Info("Failed to read from k8s watcher")
+					continue
+				}
+
+				// Update the lastRV, so that if the watcher restarts, it starts at the correct resource version.
+				o, ok := c.Object.(*v1.Pod)
+				if !ok {
+					continue
+				}
+
+				mc.lastRV = o.ObjectMeta.ResourceVersion
+
+				pb, err := protoutils.PodToProto(o)
+				if err != nil {
+					continue
+				}
+				r := &storepb.K8SResource{
+					Resource: &storepb.K8SResource_Pod{
+						Pod: pb,
+					},
+				}
+
+				msg := &K8sResourceMessage{
+					Object:     r,
+					ObjectType: mc.resourceStr,
+					EventType:  c.Type,
+				}
+				mc.updateCh <- msg
+			}
+		}
+
+		log.WithField("resource", mc.resourceStr).Info("K8s watcher channel closed. Retrying")
+		runWatcher = true
+
+		// Wait 5 minutes before retrying, however if stop is called, just return.
+		select {
+		case <-mc.quitCh:
+			return
+		case <-time.After(5 * time.Minute):
+			continue
+		}
+	}
+}
+
 func runtimeObjToServiceList(o runtime.Object) *v1.ServiceList {
 	l, ok := o.(*v1.ServiceList)
 	if ok {
@@ -55,6 +217,155 @@ func runtimeObjToServiceList(o runtime.Object) *v1.ServiceList {
 	}
 
 	return &typedList
+}
+
+type ServiceWatcher struct {
+	resourceStr string
+	lastRV      string
+	updateCh    chan *K8sResourceMessage
+	quitCh      chan struct{}
+	clientset   *kubernetes.Clientset
+}
+
+func NewServiceWatcher(resource string, quitCh chan struct{}, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *ServiceWatcher {
+	return &ServiceWatcher{resourceStr: resource, quitCh: quitCh, updateCh: updateCh, clientset: clientset}
+}
+
+func (mc *ServiceWatcher) Sync(storedUpdates []*storepb.K8SResource) error {
+	resources, err := listObject(mc.resourceStr, mc.clientset)
+	if err != nil {
+		return err
+	}
+	mc.syncServiceImpl(storedUpdates, runtimeObjToServiceList(resources))
+	return nil
+}
+
+func (mc *ServiceWatcher) syncServiceImpl(storedUpdates []*storepb.K8SResource, currentState *v1.ServiceList) {
+	activeResources := make(map[string]bool)
+
+	// Send update for currently active resources. This will build our HostIP/PodIP maps.
+	for _, o := range currentState.Items {
+		pb, err := protoutils.ServiceToProto(&o)
+		if err != nil {
+			continue
+		}
+		activeResources[string(o.ObjectMeta.UID)] = true
+
+		r := &storepb.K8SResource{
+			Resource: &storepb.K8SResource_Service{
+				Service: pb,
+			},
+		}
+		msg := &K8sResourceMessage{
+			Object:     r,
+			ObjectType: mc.resourceStr,
+			EventType:  watch.Modified,
+		}
+		mc.updateCh <- msg
+	}
+	if len(currentState.Items) > 0 {
+		mc.lastRV = currentState.Items[len(currentState.Items)-1].ResourceVersion
+	}
+
+	// Make a map of resources that we have stored.
+	storedResources := make(map[string]*storepb.K8SResource)
+	for i := range storedUpdates {
+		update := storedUpdates[i].GetService()
+		if update == nil {
+			continue
+		}
+
+		if update.Metadata.DeletionTimestampNS != 0 {
+			// This resource is already terminated, so we don't
+			// need to send another termination event.
+			delete(storedResources, update.Metadata.UID)
+			continue
+		}
+
+		storedResources[update.Metadata.UID] = storedUpdates[i]
+	}
+
+	// For each resource in our store, determine if it is still running. If not, send a termination update.
+	for uid, r := range storedResources {
+		if _, ok := activeResources[uid]; ok {
+			continue
+		}
+
+		msg := &K8sResourceMessage{
+			Object:     r,
+			ObjectType: mc.resourceStr,
+			EventType:  watch.Deleted,
+		}
+		mc.updateCh <- msg
+	}
+}
+
+func (mc *ServiceWatcher) StartWatcher() {
+	// Start up watcher for the given resource.
+	for {
+		watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), mc.resourceStr, v1.NamespaceAll, fields.Everything())
+		retryWatcher, err := watchClient.NewRetryWatcher(mc.lastRV, watcher)
+		if err != nil {
+			log.WithError(err).Fatal("Could not start watcher for k8s resource: " + mc.resourceStr)
+		}
+
+		resCh := retryWatcher.ResultChan()
+		runWatcher := true
+		for runWatcher {
+			select {
+			case <-mc.quitCh:
+				return
+			case c := <-resCh:
+				s, ok := c.Object.(*metav1.Status)
+				if ok && s.Status == metav1.StatusFailure {
+					if s.Reason == metav1.StatusReasonGone {
+						log.WithField("resource", mc.resourceStr).Info("Requested resource version too old, no longer stored in K8S API")
+						runWatcher = false
+						break
+					}
+					// Ignore and let the retry watcher retry.
+					log.WithField("resource", mc.resourceStr).WithField("object", c.Object).Info("Failed to read from k8s watcher")
+					continue
+				}
+
+				// Update the lastRV, so that if the watcher restarts, it starts at the correct resource version.
+				o, ok := c.Object.(*v1.Service)
+				if !ok {
+					continue
+				}
+
+				mc.lastRV = o.ObjectMeta.ResourceVersion
+
+				pb, err := protoutils.ServiceToProto(o)
+				if err != nil {
+					continue
+				}
+				r := &storepb.K8SResource{
+					Resource: &storepb.K8SResource_Service{
+						Service: pb,
+					},
+				}
+
+				msg := &K8sResourceMessage{
+					Object:     r,
+					ObjectType: mc.resourceStr,
+					EventType:  c.Type,
+				}
+				mc.updateCh <- msg
+			}
+		}
+
+		log.WithField("resource", mc.resourceStr).Info("K8s watcher channel closed. Retrying")
+		runWatcher = true
+
+		// Wait 5 minutes before retrying, however if stop is called, just return.
+		select {
+		case <-mc.quitCh:
+			return
+		case <-time.After(5 * time.Minute):
+			continue
+		}
+	}
 }
 
 func runtimeObjToNamespaceList(o runtime.Object) *v1.NamespaceList {
@@ -80,6 +391,155 @@ func runtimeObjToNamespaceList(o runtime.Object) *v1.NamespaceList {
 	return &typedList
 }
 
+type NamespaceWatcher struct {
+	resourceStr string
+	lastRV      string
+	updateCh    chan *K8sResourceMessage
+	quitCh      chan struct{}
+	clientset   *kubernetes.Clientset
+}
+
+func NewNamespaceWatcher(resource string, quitCh chan struct{}, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *NamespaceWatcher {
+	return &NamespaceWatcher{resourceStr: resource, quitCh: quitCh, updateCh: updateCh, clientset: clientset}
+}
+
+func (mc *NamespaceWatcher) Sync(storedUpdates []*storepb.K8SResource) error {
+	resources, err := listObject(mc.resourceStr, mc.clientset)
+	if err != nil {
+		return err
+	}
+	mc.syncNamespaceImpl(storedUpdates, runtimeObjToNamespaceList(resources))
+	return nil
+}
+
+func (mc *NamespaceWatcher) syncNamespaceImpl(storedUpdates []*storepb.K8SResource, currentState *v1.NamespaceList) {
+	activeResources := make(map[string]bool)
+
+	// Send update for currently active resources. This will build our HostIP/PodIP maps.
+	for _, o := range currentState.Items {
+		pb, err := protoutils.NamespaceToProto(&o)
+		if err != nil {
+			continue
+		}
+		activeResources[string(o.ObjectMeta.UID)] = true
+
+		r := &storepb.K8SResource{
+			Resource: &storepb.K8SResource_Namespace{
+				Namespace: pb,
+			},
+		}
+		msg := &K8sResourceMessage{
+			Object:     r,
+			ObjectType: mc.resourceStr,
+			EventType:  watch.Modified,
+		}
+		mc.updateCh <- msg
+	}
+	if len(currentState.Items) > 0 {
+		mc.lastRV = currentState.Items[len(currentState.Items)-1].ResourceVersion
+	}
+
+	// Make a map of resources that we have stored.
+	storedResources := make(map[string]*storepb.K8SResource)
+	for i := range storedUpdates {
+		update := storedUpdates[i].GetNamespace()
+		if update == nil {
+			continue
+		}
+
+		if update.Metadata.DeletionTimestampNS != 0 {
+			// This resource is already terminated, so we don't
+			// need to send another termination event.
+			delete(storedResources, update.Metadata.UID)
+			continue
+		}
+
+		storedResources[update.Metadata.UID] = storedUpdates[i]
+	}
+
+	// For each resource in our store, determine if it is still running. If not, send a termination update.
+	for uid, r := range storedResources {
+		if _, ok := activeResources[uid]; ok {
+			continue
+		}
+
+		msg := &K8sResourceMessage{
+			Object:     r,
+			ObjectType: mc.resourceStr,
+			EventType:  watch.Deleted,
+		}
+		mc.updateCh <- msg
+	}
+}
+
+func (mc *NamespaceWatcher) StartWatcher() {
+	// Start up watcher for the given resource.
+	for {
+		watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), mc.resourceStr, v1.NamespaceAll, fields.Everything())
+		retryWatcher, err := watchClient.NewRetryWatcher(mc.lastRV, watcher)
+		if err != nil {
+			log.WithError(err).Fatal("Could not start watcher for k8s resource: " + mc.resourceStr)
+		}
+
+		resCh := retryWatcher.ResultChan()
+		runWatcher := true
+		for runWatcher {
+			select {
+			case <-mc.quitCh:
+				return
+			case c := <-resCh:
+				s, ok := c.Object.(*metav1.Status)
+				if ok && s.Status == metav1.StatusFailure {
+					if s.Reason == metav1.StatusReasonGone {
+						log.WithField("resource", mc.resourceStr).Info("Requested resource version too old, no longer stored in K8S API")
+						runWatcher = false
+						break
+					}
+					// Ignore and let the retry watcher retry.
+					log.WithField("resource", mc.resourceStr).WithField("object", c.Object).Info("Failed to read from k8s watcher")
+					continue
+				}
+
+				// Update the lastRV, so that if the watcher restarts, it starts at the correct resource version.
+				o, ok := c.Object.(*v1.Namespace)
+				if !ok {
+					continue
+				}
+
+				mc.lastRV = o.ObjectMeta.ResourceVersion
+
+				pb, err := protoutils.NamespaceToProto(o)
+				if err != nil {
+					continue
+				}
+				r := &storepb.K8SResource{
+					Resource: &storepb.K8SResource_Namespace{
+						Namespace: pb,
+					},
+				}
+
+				msg := &K8sResourceMessage{
+					Object:     r,
+					ObjectType: mc.resourceStr,
+					EventType:  c.Type,
+				}
+				mc.updateCh <- msg
+			}
+		}
+
+		log.WithField("resource", mc.resourceStr).Info("K8s watcher channel closed. Retrying")
+		runWatcher = true
+
+		// Wait 5 minutes before retrying, however if stop is called, just return.
+		select {
+		case <-mc.quitCh:
+			return
+		case <-time.After(5 * time.Minute):
+			continue
+		}
+	}
+}
+
 func runtimeObjToEndpointsList(o runtime.Object) *v1.EndpointsList {
 	l, ok := o.(*v1.EndpointsList)
 	if ok {
@@ -103,6 +563,155 @@ func runtimeObjToEndpointsList(o runtime.Object) *v1.EndpointsList {
 	return &typedList
 }
 
+type EndpointsWatcher struct {
+	resourceStr string
+	lastRV      string
+	updateCh    chan *K8sResourceMessage
+	quitCh      chan struct{}
+	clientset   *kubernetes.Clientset
+}
+
+func NewEndpointsWatcher(resource string, quitCh chan struct{}, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *EndpointsWatcher {
+	return &EndpointsWatcher{resourceStr: resource, quitCh: quitCh, updateCh: updateCh, clientset: clientset}
+}
+
+func (mc *EndpointsWatcher) Sync(storedUpdates []*storepb.K8SResource) error {
+	resources, err := listObject(mc.resourceStr, mc.clientset)
+	if err != nil {
+		return err
+	}
+	mc.syncEndpointsImpl(storedUpdates, runtimeObjToEndpointsList(resources))
+	return nil
+}
+
+func (mc *EndpointsWatcher) syncEndpointsImpl(storedUpdates []*storepb.K8SResource, currentState *v1.EndpointsList) {
+	activeResources := make(map[string]bool)
+
+	// Send update for currently active resources. This will build our HostIP/PodIP maps.
+	for _, o := range currentState.Items {
+		pb, err := protoutils.EndpointsToProto(&o)
+		if err != nil {
+			continue
+		}
+		activeResources[string(o.ObjectMeta.UID)] = true
+
+		r := &storepb.K8SResource{
+			Resource: &storepb.K8SResource_Endpoints{
+				Endpoints: pb,
+			},
+		}
+		msg := &K8sResourceMessage{
+			Object:     r,
+			ObjectType: mc.resourceStr,
+			EventType:  watch.Modified,
+		}
+		mc.updateCh <- msg
+	}
+	if len(currentState.Items) > 0 {
+		mc.lastRV = currentState.Items[len(currentState.Items)-1].ResourceVersion
+	}
+
+	// Make a map of resources that we have stored.
+	storedResources := make(map[string]*storepb.K8SResource)
+	for i := range storedUpdates {
+		update := storedUpdates[i].GetEndpoints()
+		if update == nil {
+			continue
+		}
+
+		if update.Metadata.DeletionTimestampNS != 0 {
+			// This resource is already terminated, so we don't
+			// need to send another termination event.
+			delete(storedResources, update.Metadata.UID)
+			continue
+		}
+
+		storedResources[update.Metadata.UID] = storedUpdates[i]
+	}
+
+	// For each resource in our store, determine if it is still running. If not, send a termination update.
+	for uid, r := range storedResources {
+		if _, ok := activeResources[uid]; ok {
+			continue
+		}
+
+		msg := &K8sResourceMessage{
+			Object:     r,
+			ObjectType: mc.resourceStr,
+			EventType:  watch.Deleted,
+		}
+		mc.updateCh <- msg
+	}
+}
+
+func (mc *EndpointsWatcher) StartWatcher() {
+	// Start up watcher for the given resource.
+	for {
+		watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), mc.resourceStr, v1.NamespaceAll, fields.Everything())
+		retryWatcher, err := watchClient.NewRetryWatcher(mc.lastRV, watcher)
+		if err != nil {
+			log.WithError(err).Fatal("Could not start watcher for k8s resource: " + mc.resourceStr)
+		}
+
+		resCh := retryWatcher.ResultChan()
+		runWatcher := true
+		for runWatcher {
+			select {
+			case <-mc.quitCh:
+				return
+			case c := <-resCh:
+				s, ok := c.Object.(*metav1.Status)
+				if ok && s.Status == metav1.StatusFailure {
+					if s.Reason == metav1.StatusReasonGone {
+						log.WithField("resource", mc.resourceStr).Info("Requested resource version too old, no longer stored in K8S API")
+						runWatcher = false
+						break
+					}
+					// Ignore and let the retry watcher retry.
+					log.WithField("resource", mc.resourceStr).WithField("object", c.Object).Info("Failed to read from k8s watcher")
+					continue
+				}
+
+				// Update the lastRV, so that if the watcher restarts, it starts at the correct resource version.
+				o, ok := c.Object.(*v1.Endpoints)
+				if !ok {
+					continue
+				}
+
+				mc.lastRV = o.ObjectMeta.ResourceVersion
+
+				pb, err := protoutils.EndpointsToProto(o)
+				if err != nil {
+					continue
+				}
+				r := &storepb.K8SResource{
+					Resource: &storepb.K8SResource_Endpoints{
+						Endpoints: pb,
+					},
+				}
+
+				msg := &K8sResourceMessage{
+					Object:     r,
+					ObjectType: mc.resourceStr,
+					EventType:  c.Type,
+				}
+				mc.updateCh <- msg
+			}
+		}
+
+		log.WithField("resource", mc.resourceStr).Info("K8s watcher channel closed. Retrying")
+		runWatcher = true
+
+		// Wait 5 minutes before retrying, however if stop is called, just return.
+		select {
+		case <-mc.quitCh:
+			return
+		case <-time.After(5 * time.Minute):
+			continue
+		}
+	}
+}
+
 func runtimeObjToNodeList(o runtime.Object) *v1.NodeList {
 	l, ok := o.(*v1.NodeList)
 	if ok {
@@ -124,4 +733,153 @@ func runtimeObjToNodeList(o runtime.Object) *v1.NodeList {
 	}
 
 	return &typedList
+}
+
+type NodeWatcher struct {
+	resourceStr string
+	lastRV      string
+	updateCh    chan *K8sResourceMessage
+	quitCh      chan struct{}
+	clientset   *kubernetes.Clientset
+}
+
+func NewNodeWatcher(resource string, quitCh chan struct{}, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *NodeWatcher {
+	return &NodeWatcher{resourceStr: resource, quitCh: quitCh, updateCh: updateCh, clientset: clientset}
+}
+
+func (mc *NodeWatcher) Sync(storedUpdates []*storepb.K8SResource) error {
+	resources, err := listObject(mc.resourceStr, mc.clientset)
+	if err != nil {
+		return err
+	}
+	mc.syncNodeImpl(storedUpdates, runtimeObjToNodeList(resources))
+	return nil
+}
+
+func (mc *NodeWatcher) syncNodeImpl(storedUpdates []*storepb.K8SResource, currentState *v1.NodeList) {
+	activeResources := make(map[string]bool)
+
+	// Send update for currently active resources. This will build our HostIP/PodIP maps.
+	for _, o := range currentState.Items {
+		pb, err := protoutils.NodeToProto(&o)
+		if err != nil {
+			continue
+		}
+		activeResources[string(o.ObjectMeta.UID)] = true
+
+		r := &storepb.K8SResource{
+			Resource: &storepb.K8SResource_Node{
+				Node: pb,
+			},
+		}
+		msg := &K8sResourceMessage{
+			Object:     r,
+			ObjectType: mc.resourceStr,
+			EventType:  watch.Modified,
+		}
+		mc.updateCh <- msg
+	}
+	if len(currentState.Items) > 0 {
+		mc.lastRV = currentState.Items[len(currentState.Items)-1].ResourceVersion
+	}
+
+	// Make a map of resources that we have stored.
+	storedResources := make(map[string]*storepb.K8SResource)
+	for i := range storedUpdates {
+		update := storedUpdates[i].GetNode()
+		if update == nil {
+			continue
+		}
+
+		if update.Metadata.DeletionTimestampNS != 0 {
+			// This resource is already terminated, so we don't
+			// need to send another termination event.
+			delete(storedResources, update.Metadata.UID)
+			continue
+		}
+
+		storedResources[update.Metadata.UID] = storedUpdates[i]
+	}
+
+	// For each resource in our store, determine if it is still running. If not, send a termination update.
+	for uid, r := range storedResources {
+		if _, ok := activeResources[uid]; ok {
+			continue
+		}
+
+		msg := &K8sResourceMessage{
+			Object:     r,
+			ObjectType: mc.resourceStr,
+			EventType:  watch.Deleted,
+		}
+		mc.updateCh <- msg
+	}
+}
+
+func (mc *NodeWatcher) StartWatcher() {
+	// Start up watcher for the given resource.
+	for {
+		watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), mc.resourceStr, v1.NamespaceAll, fields.Everything())
+		retryWatcher, err := watchClient.NewRetryWatcher(mc.lastRV, watcher)
+		if err != nil {
+			log.WithError(err).Fatal("Could not start watcher for k8s resource: " + mc.resourceStr)
+		}
+
+		resCh := retryWatcher.ResultChan()
+		runWatcher := true
+		for runWatcher {
+			select {
+			case <-mc.quitCh:
+				return
+			case c := <-resCh:
+				s, ok := c.Object.(*metav1.Status)
+				if ok && s.Status == metav1.StatusFailure {
+					if s.Reason == metav1.StatusReasonGone {
+						log.WithField("resource", mc.resourceStr).Info("Requested resource version too old, no longer stored in K8S API")
+						runWatcher = false
+						break
+					}
+					// Ignore and let the retry watcher retry.
+					log.WithField("resource", mc.resourceStr).WithField("object", c.Object).Info("Failed to read from k8s watcher")
+					continue
+				}
+
+				// Update the lastRV, so that if the watcher restarts, it starts at the correct resource version.
+				o, ok := c.Object.(*v1.Node)
+				if !ok {
+					continue
+				}
+
+				mc.lastRV = o.ObjectMeta.ResourceVersion
+
+				pb, err := protoutils.NodeToProto(o)
+				if err != nil {
+					continue
+				}
+				r := &storepb.K8SResource{
+					Resource: &storepb.K8SResource_Node{
+						Node: pb,
+					},
+				}
+
+				msg := &K8sResourceMessage{
+					Object:     r,
+					ObjectType: mc.resourceStr,
+					EventType:  c.Type,
+				}
+				mc.updateCh <- msg
+			}
+		}
+
+		log.WithField("resource", mc.resourceStr).Info("K8s watcher channel closed. Retrying")
+		runWatcher = true
+
+		// Wait 5 minutes before retrying, however if stop is called, just return.
+		select {
+		case <-mc.quitCh:
+			return
+		case <-time.After(5 * time.Minute):
+			continue
+		}
+	}
 }

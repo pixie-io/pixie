@@ -19,11 +19,8 @@ import (
 	"k8s.io/client-go/tools/watch"
 )
 
-const kubeSystemNs = "kube-system"
-const kubeProxyPodPrefix = "kube-proxy"
-
-// K8sMetadataController listens to any metadata updates from the K8s API.
-type K8sMetadataController struct {
+// OldK8sMetadataController listens to any metadata updates from the K8s API.
+type OldK8sMetadataController struct {
 	mdHandler *MetadataHandler
 	clientset *kubernetes.Clientset
 	quitCh    chan bool
@@ -32,7 +29,7 @@ type K8sMetadataController struct {
 }
 
 // NewK8sMetadataController creates a new K8sMetadataController.
-func NewK8sMetadataController(mdh *MetadataHandler) (*K8sMetadataController, error) {
+func NewOldK8sMetadataController(mdh *MetadataHandler) (*OldK8sMetadataController, error) {
 	// There is a specific config for services running in the cluster.
 	kubeConfig, err := rest.InClusterConfig()
 	if err != nil {
@@ -45,7 +42,7 @@ func NewK8sMetadataController(mdh *MetadataHandler) (*K8sMetadataController, err
 		return nil, err
 	}
 
-	mc := &K8sMetadataController{mdHandler: mdh, clientset: clientset}
+	mc := &OldK8sMetadataController{mdHandler: mdh, clientset: clientset}
 
 	// Clean up current metadata store state.
 	namespaces, err := mc.listObject("namespaces")
@@ -95,13 +92,13 @@ func NewK8sMetadataController(mdh *MetadataHandler) (*K8sMetadataController, err
 	return mc, nil
 }
 
-func (mc *K8sMetadataController) listObject(resource string) (runtime.Object, error) {
+func (mc *OldK8sMetadataController) listObject(resource string) (runtime.Object, error) {
 	watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), resource, v1.NamespaceAll, fields.Everything())
 	opts := metav1.ListOptions{}
 	return watcher.List(opts)
 }
 
-func (mc *K8sMetadataController) startWatcher(resource string, resourceVersion int) {
+func (mc *OldK8sMetadataController) startWatcher(resource string, resourceVersion int) {
 	watcherRV := fmt.Sprintf("%d", resourceVersion)
 	// Start up watcher for the given resource.
 	for {
@@ -154,6 +151,6 @@ func (mc *K8sMetadataController) startWatcher(resource string, resourceVersion i
 }
 
 // Stop stops all K8s watchers.
-func (mc *K8sMetadataController) Stop() {
+func (mc *OldK8sMetadataController) Stop() {
 	mc.quitCh <- true
 }
