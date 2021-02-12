@@ -71,7 +71,7 @@ class K8sUpdateHandlerTest : public ::testing::Test {
 
     fake_mds_manager_ = std::make_unique<FakeAgentMetadataStateManager>();
     k8s_update_handler_ = std::make_unique<K8sUpdateHandler>(
-        dispatcher_.get(), fake_mds_manager_.get(), &agent_info_, nats_conn_.get(), 2);
+        dispatcher_.get(), fake_mds_manager_.get(), &agent_info_, nats_conn_.get(), "all", 2);
 
     // Intentionally using nonconsecutive resource numbers.
     // 10, 20, 30, 40, 50, 60, 70
@@ -116,6 +116,7 @@ TEST_F(K8sUpdateHandlerTest, RequestInitialK8sUpdates) {
   auto req = nats_conn_->published_msgs()[0];
   EXPECT_TRUE(req.k8s_metadata_message().has_missing_k8s_metadata_request());
   auto missing_md = req.k8s_metadata_message().missing_k8s_metadata_request();
+  EXPECT_EQ("all", missing_md.selector());
   EXPECT_EQ(0, missing_md.from_update_version());
   EXPECT_EQ(0, missing_md.to_update_version());
 
@@ -142,6 +143,7 @@ TEST_F(K8sUpdateHandlerTest, RequestInitialK8sUpdatesTimeout) {
   auto req = nats_conn_->published_msgs()[0];
   EXPECT_TRUE(req.k8s_metadata_message().has_missing_k8s_metadata_request());
   auto missing_md = req.k8s_metadata_message().missing_k8s_metadata_request();
+  EXPECT_EQ("all", missing_md.selector());
   EXPECT_EQ(0, missing_md.from_update_version());
   EXPECT_EQ(0, missing_md.to_update_version());
 
@@ -153,6 +155,7 @@ TEST_F(K8sUpdateHandlerTest, RequestInitialK8sUpdatesTimeout) {
   req = nats_conn_->published_msgs()[1];
   EXPECT_TRUE(req.k8s_metadata_message().has_missing_k8s_metadata_request());
   missing_md = req.k8s_metadata_message().missing_k8s_metadata_request();
+  EXPECT_EQ("all", missing_md.selector());
   EXPECT_EQ(0, missing_md.from_update_version());
   EXPECT_EQ(0, missing_md.to_update_version());
 }
@@ -169,6 +172,7 @@ TEST_F(K8sUpdateHandlerTest, RequestInitialK8sUpdatesTimeoutMiddleMsg) {
   auto req = nats_conn_->published_msgs()[0];
   EXPECT_TRUE(req.k8s_metadata_message().has_missing_k8s_metadata_request());
   auto missing_md = req.k8s_metadata_message().missing_k8s_metadata_request();
+  EXPECT_EQ("all", missing_md.selector());
   EXPECT_EQ(0, missing_md.from_update_version());
   EXPECT_EQ(0, missing_md.to_update_version());
 
@@ -190,6 +194,7 @@ TEST_F(K8sUpdateHandlerTest, RequestInitialK8sUpdatesTimeoutMiddleMsg) {
   req = nats_conn_->published_msgs()[1];
   EXPECT_TRUE(req.k8s_metadata_message().has_missing_k8s_metadata_request());
   missing_md = req.k8s_metadata_message().missing_k8s_metadata_request();
+  EXPECT_EQ("all", missing_md.selector());
   EXPECT_EQ(11, missing_md.from_update_version());
   EXPECT_EQ(30, missing_md.to_update_version());
 }
@@ -221,6 +226,7 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdates) {
   auto req = nats_conn_->published_msgs()[0];
   EXPECT_TRUE(req.k8s_metadata_message().has_missing_k8s_metadata_request());
   auto missing_md = req.k8s_metadata_message().missing_k8s_metadata_request();
+  EXPECT_EQ("all", missing_md.selector());
   EXPECT_EQ(11, missing_md.from_update_version());
   EXPECT_EQ(50, missing_md.to_update_version());
 
@@ -278,6 +284,7 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdatesTimeoutRerequest) {
   auto req = nats_conn_->published_msgs()[0];
   EXPECT_TRUE(req.k8s_metadata_message().has_missing_k8s_metadata_request());
   auto missing_md = req.k8s_metadata_message().missing_k8s_metadata_request();
+  EXPECT_EQ("all", missing_md.selector());
   EXPECT_EQ(11, missing_md.from_update_version());
   EXPECT_EQ(50, missing_md.to_update_version());
 
@@ -290,6 +297,7 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdatesTimeoutRerequest) {
   req = nats_conn_->published_msgs()[1];
   EXPECT_TRUE(req.k8s_metadata_message().has_missing_k8s_metadata_request());
   missing_md = req.k8s_metadata_message().missing_k8s_metadata_request();
+  EXPECT_EQ("all", missing_md.selector());
   EXPECT_EQ(11, missing_md.from_update_version());
   EXPECT_EQ(50, missing_md.to_update_version());
 }
@@ -317,6 +325,7 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdatesMDSTruncated) {
   auto req = nats_conn_->published_msgs()[0];
   EXPECT_TRUE(req.k8s_metadata_message().has_missing_k8s_metadata_request());
   auto missing_md = req.k8s_metadata_message().missing_k8s_metadata_request();
+  EXPECT_EQ("all", missing_md.selector());
   EXPECT_EQ(11, missing_md.from_update_version());
   EXPECT_EQ(50, missing_md.to_update_version());
 
@@ -361,6 +370,7 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdatesMDSTruncatedZeroResp) {
   auto req = nats_conn_->published_msgs()[0];
   EXPECT_TRUE(req.k8s_metadata_message().has_missing_k8s_metadata_request());
   auto missing_md = req.k8s_metadata_message().missing_k8s_metadata_request();
+  EXPECT_EQ("all", missing_md.selector());
   EXPECT_EQ(11, missing_md.from_update_version());
   EXPECT_EQ(50, missing_md.to_update_version());
 
@@ -408,6 +418,7 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdatesDropBacklog) {
   auto req = nats_conn_->published_msgs()[0];
   EXPECT_TRUE(req.k8s_metadata_message().has_missing_k8s_metadata_request());
   auto missing_md = req.k8s_metadata_message().missing_k8s_metadata_request();
+  EXPECT_EQ("all", missing_md.selector());
   EXPECT_EQ(11, missing_md.from_update_version());
   EXPECT_EQ(30, missing_md.to_update_version());
 
@@ -434,6 +445,7 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdatesDropBacklog) {
   req = nats_conn_->published_msgs()[1];
   EXPECT_TRUE(req.k8s_metadata_message().has_missing_k8s_metadata_request());
   missing_md = req.k8s_metadata_message().missing_k8s_metadata_request();
+  EXPECT_EQ("all", missing_md.selector());
   EXPECT_EQ(21, missing_md.from_update_version());
   EXPECT_EQ(40, missing_md.to_update_version());
 

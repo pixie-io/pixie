@@ -12,9 +12,10 @@ namespace agent {
 
 K8sUpdateHandler::K8sUpdateHandler(Dispatcher* d, pl::md::AgentMetadataStateManager* mds_manager,
                                    Info* agent_info, Manager::VizierNATSConnector* nats_conn,
-                                   size_t max_update_queue_size)
+                                   const std::string& update_selector, size_t max_update_queue_size)
     : MessageHandler(d, agent_info, nats_conn),
       mds_manager_(mds_manager),
+      update_selector_(update_selector),
       missing_metadata_request_timer_(
           dispatcher()->CreateTimer(std::bind(&K8sUpdateHandler::RequestMissingMetadata, this))),
       update_backlog_([](const ResourceUpdate& left, const ResourceUpdate& right) {
@@ -106,6 +107,7 @@ void K8sUpdateHandler::RequestMissingMetadata() {
   // because we have to use our current resource version as the `from` value.
   messages::VizierMessage msg;
   auto req = msg.mutable_k8s_metadata_message()->mutable_missing_k8s_metadata_request();
+  req->set_selector(update_selector_);
 
   if (current_update_version_) {
     // We don't know the resource numbers, but we know they will always be greater by at

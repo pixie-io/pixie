@@ -265,7 +265,8 @@ Status Manager::PostRegisterHook(uint32_t asid) {
 
   if (has_nats_connection()) {
     k8s_nats_connector_ = std::make_unique<Manager::VizierNATSConnector>(
-        nats_addr_, kK8sPubTopic /*pub_topic*/, k8s_update_sub_topic() /*sub topic*/,
+        nats_addr_, kK8sPubTopic /*pub_topic*/,
+        absl::Substitute(kK8sSubTopicPattern, k8s_update_selector()) /*sub topic*/,
         SSL::DefaultNATSCreds());
 
     PL_RETURN_IF_ERROR(k8s_nats_connector_->Connect(dispatcher_.get()));
@@ -273,8 +274,9 @@ Status Manager::PostRegisterHook(uint32_t asid) {
     k8s_nats_connector_->RegisterMessageHandler(
         std::bind(&Manager::NATSMessageHandler, this, std::placeholders::_1));
 
-    auto k8s_update_handler = std::make_shared<K8sUpdateHandler>(
-        dispatcher_.get(), mds_manager_.get(), &info_, k8s_nats_connector_.get());
+    auto k8s_update_handler =
+        std::make_shared<K8sUpdateHandler>(dispatcher_.get(), mds_manager_.get(), &info_,
+                                           k8s_nats_connector_.get(), k8s_update_selector());
 
     PL_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kK8SMetadataMessage,
                                        k8s_update_handler));

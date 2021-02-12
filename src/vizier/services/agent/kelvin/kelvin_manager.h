@@ -35,11 +35,10 @@ class KelvinManager : public Manager {
   Status InitImpl() override;
   Status PostRegisterHookImpl() override;
   Status StopImpl(std::chrono::milliseconds) override;
-  std::string k8s_update_sub_topic() const override {
-    return absl::Substitute(Manager::kK8sSubTopicPattern, "all");
-  }
+  std::string k8s_update_selector() const override { return kKelvinUpdateSelector; }
 
  private:
+  static constexpr char kKelvinUpdateSelector[] = "all";
   static services::shared::agent::AgentCapabilities Capabilities() {
     services::shared::agent::AgentCapabilities capabilities;
     capabilities.set_collects_data(false);

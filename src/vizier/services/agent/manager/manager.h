@@ -142,14 +142,8 @@ class Manager : public pl::NotCopyable {
   Info* info() { return &info_; }
   VizierNATSConnector* agent_nats_connector() { return agent_nats_connector_.get(); }
 
-  // TODO(nserrino): Update this topic to to Agent/$0 for consistency.s
-  static constexpr char kAgentSubTopicPattern[] = "/agent/$0";
-  // TODO(nserrino): Update this topic to UpdateAgent.
-  static constexpr char kAgentPubTopic[] = "update_agent";
-  static constexpr char kK8sSubTopicPattern[] = "K8sUpdates/$0";
-  static constexpr char kK8sPubTopic[] = "MissingMetadataRequests";
-  // Kelvin and PEMs handle this differently.
-  virtual std::string k8s_update_sub_topic() const = 0;
+  // Kelvin and PEMs use different selectors to request k8s updates.
+  virtual std::string k8s_update_selector() const = 0;
 
  private:
   std::unique_ptr<ResultSinkStub> ResultSinkStubGenerator(const std::string& remote_addr,
@@ -160,6 +154,13 @@ class Manager : public pl::NotCopyable {
   Status ReregisterHook();
   Status PostReregisterHook(uint32_t asid);
   bool has_nats_connection() const { return !nats_addr_.empty(); }
+
+  // TODO(nserrino): Update this topic to to Agent/$0 for consistency.s
+  static constexpr char kAgentSubTopicPattern[] = "/agent/$0";
+  // TODO(nserrino): Update this topic to UpdateAgent.
+  static constexpr char kAgentPubTopic[] = "update_agent";
+  static constexpr char kK8sSubTopicPattern[] = "K8sUpdates/$0";
+  static constexpr char kK8sPubTopic[] = "MissingMetadataRequests";
 
   // Message handlers are registered per type of Vizier message.
   // same message handler can be used for multiple different types of messages.

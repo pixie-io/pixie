@@ -134,7 +134,7 @@ func (m *MetadataTopicListener) processAgentMessage(msg *nats.Msg) error {
 		return nil
 	}
 
-	batches, firstAvailable, lastAvailable, err := m.getUpdatesInBatches(req.FromUpdateVersion, req.ToUpdateVersion, req.IP)
+	batches, firstAvailable, lastAvailable, err := m.getUpdatesInBatches(req.FromUpdateVersion, req.ToUpdateVersion, req.Selector)
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ func (m *MetadataTopicListener) processAgentMessage(msg *nats.Msg) error {
 		if err != nil {
 			return err
 		}
-		err = m.sendMessage(getK8sUpdateChannel(req.IP), b)
+		err = m.sendMessage(getK8sUpdateChannel(req.Selector), b)
 		if err != nil {
 			return err
 		}
@@ -166,8 +166,8 @@ func (m *MetadataTopicListener) processAgentMessage(msg *nats.Msg) error {
 	return nil
 }
 
-func (m *MetadataTopicListener) getUpdatesInBatches(from int64, to int64, ip string) ([][]*metadatapb.ResourceUpdate, int64, int64, error) {
-	updates, err := m.newMh.GetUpdatesForIP(ip, from, to)
+func (m *MetadataTopicListener) getUpdatesInBatches(from int64, to int64, selector string) ([][]*metadatapb.ResourceUpdate, int64, int64, error) {
+	updates, err := m.newMh.GetUpdatesForIP(selector, from, to)
 	if err != nil {
 		return nil, 0, 0, err
 	}

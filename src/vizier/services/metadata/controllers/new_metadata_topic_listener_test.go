@@ -152,7 +152,7 @@ func TestMetadataTopicListener_ProcessAgentMessage(t *testing.T) {
 			K8SMetadataMessage: &messages.K8SMetadataMessage{
 				Msg: &messages.K8SMetadataMessage_MissingK8SMetadataRequest{
 					MissingK8SMetadataRequest: &metadatapb.MissingK8SMetadataRequest{
-						IP:                "127.0.0.1",
+						Selector:          "127.0.0.1",
 						FromUpdateVersion: 102,
 						ToUpdateVersion:   182,
 					},

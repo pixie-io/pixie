@@ -739,9 +739,10 @@ message ResourceUpdate {
 // A request for all k8s updates relevant to the given IP, starting with the "from" update version,
 // to the "to" update version.
 message MissingK8sMetadataRequest {
-  // The IP to use to filter out k8s updates from other nodes. If empty, no updates should be
-  // filtered out.
-  string ip = 1 [ (gogoproto.customname) = "IP" ];
+  // The selector to use to filter K8s updates to the subset needed by this agent.
+  // For PEMs, this will be their IP address, for Kelvin, it will be "all".
+  // If no selector is provided (or it is set to "all"), all updates will be returned.
+  string selector = 1;
   // The starting range of the update versions to fetch. Inclusive.
   // If not specified, start fetching from the earliest known update version.
   int64 from_update_version = 3;

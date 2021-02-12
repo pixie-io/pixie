@@ -22,12 +22,13 @@ class K8sUpdateHandler : public Manager::MessageHandler {
   K8sUpdateHandler() = delete;
 
   K8sUpdateHandler(Dispatcher* d, pl::md::AgentMetadataStateManager* mds_manager, Info* agent_info,
-                   Manager::VizierNATSConnector* nats_conn)
-      : K8sUpdateHandler(d, mds_manager, agent_info, nats_conn, kDefaultMaxUpdateBacklogQueueSize) {
-  }
+                   Manager::VizierNATSConnector* nats_conn, const std::string& update_selector)
+      : K8sUpdateHandler(d, mds_manager, agent_info, nats_conn, update_selector,
+                         kDefaultMaxUpdateBacklogQueueSize) {}
 
   K8sUpdateHandler(Dispatcher* d, pl::md::AgentMetadataStateManager* mds_manager, Info* agent_info,
-                   Manager::VizierNATSConnector* nats_conn, size_t max_update_queue_size);
+                   Manager::VizierNATSConnector* nats_conn, const std::string& update_selector,
+                   size_t max_update_queue_size);
 
   ~K8sUpdateHandler() override = default;
 
@@ -40,6 +41,9 @@ class K8sUpdateHandler : public Manager::MessageHandler {
   void RequestMissingMetadata();
 
   pl::md::AgentMetadataStateManager* mds_manager_;
+
+  // The selector to use when requested K8s updates. Varies based on manager type.
+  const std::string update_selector_;
 
   // The most recent update version passed to the state manager.
   // If there are resources in the backlog, this will be a lower version than those updates.
