@@ -30,4 +30,6 @@ if (( $(kubectl get pods -n pl --no-headers | wc -l) < 5 )); then
 fi
 
 echo "You must be upgrading an existing Vizier deployment. Launching skaffold ..."
-skaffold run -f skaffold/skaffold_vizier.yaml -p opt
+skaffold run --filename=skaffold/skaffold_vizier.yaml \
+  --profile=opt \
+  --label=commit="$(git rev-parse HEAD)"
