@@ -26,7 +26,8 @@ func init() {
 	RunCmd.Flags().StringP("file", "f", "", "Script file, specify - for STDIN")
 	RunCmd.Flags().BoolP("list", "l", false, "List available scripts")
 	RunCmd.Flags().BoolP("all-clusters", "d", false, "Run script across all clusters")
-	RunCmd.Flags().StringP("cluster", "c", "", "Run only on selected cluster")
+	RunCmd.Flags().StringP("cluster", "c", "", "ID of the cluster to run on. "+
+		"Use 'px get viziers', or visit Admin console: work.withpixie.ai/admin, to find the ID")
 	RunCmd.Flags().MarkHidden("all-clusters")
 
 	RunCmd.Flags().StringP("bundle", "b", "", "Path/URL to bundle file")
