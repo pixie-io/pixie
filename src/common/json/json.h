@@ -141,6 +141,27 @@ class JSONObjectBuilder {
     writer_.EndArray();
   }
 
+  // Writes all values that are assigned to the keys sequentially.
+  // The result is an array of objects, whose keys are specified by the input keys.
+  // For example:
+  // WriteRepeatedKVs("foo", {"a", "b"}, {"1", "2", "3", "4"});
+  //
+  // Returns: "foo": [{"a":"1","b":"2"}, {"a":"3","b":"4"}]
+  void WriteRepeatedKVs(std::string_view key, const std::vector<std::string_view>& keys,
+                        VectorView<std::string> values) {
+    DCHECK(!object_ended_);
+    DCHECK_EQ(values.size() % keys.size(), 0);
+
+    writer_.String(key.data(), key.size());
+    writer_.StartArray();
+    for (size_t i = 0; i < values.size(); ++i) {
+      writer_.StartObject();
+      WriteKV(keys[i % keys.size()], values[i]);
+      writer_.EndObject();
+    }
+    writer_.EndArray();
+  }
+
  private:
   bool object_ended_;
   rapidjson::StringBuffer buffer_;

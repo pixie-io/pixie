@@ -9,6 +9,7 @@ namespace stirling {
 
 using ::pl::SubProcess;
 using ::testing::ElementsAre;
+using ::testing::ElementsAreArray;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
@@ -68,14 +69,28 @@ std::vector<RedisTraceRecord> GetRedisTraceRecords(
 TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
   constexpr std::string_view kRedisDockerCmdTmpl =
       R"(docker run --rm --network=container:$0 redis bash -c "echo '$1' | redis-cli")";
+  // NOTE: select 0 must be the last one in order to avoid mess up with the key lookup in the
+  // storage index.
   constexpr std::string_view kRedisCmds = R"(
+    ping test
     set foo 100 EX 10 NX
+    expire foo 10000
     bitcount foo 0 0
     incr foo
     append foo xxx
     get foo
+    mget foo bar
     sadd myset 1 2 3
     sscan myset 0 MATCH [a-z]+ COUNT 10
+    scard myset
+    smembers myset
+    hmset fooset f1 100 f2 200
+    hmget fooset f1 f2
+    hget fooset f1
+    hgetall fooset
+    watch foo bar
+    unwatch
+    select 0
   )";
   const std::string redis_cli_cmd =
       absl::Substitute(kRedisDockerCmdTmpl, container_.container_name(), kRedisCmds);
@@ -97,16 +112,31 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
 
   EXPECT_THAT(
       redis_trace_records,
-      ElementsAre(
-          RedisTraceRecord{"SET", R"({"key":"foo","value":"100","options":["EX 10","NX"]})", "OK"},
-          RedisTraceRecord{"BITCOUNT", R"(["foo","0","0"])", "3"},
-          RedisTraceRecord{"INCR", R"({"key":"foo"})", "101"},
-          RedisTraceRecord{"APPEND", R"({"key":"foo","value":"xxx"})", "6"},
-          RedisTraceRecord{"GET", R"({"key":"foo"})", "101xxx"},
-          RedisTraceRecord{"SADD", R"({"key":"myset","member":["1","2","3"]})", "3"},
-          RedisTraceRecord{"SSCAN",
-                           R"({"key":"myset","cursor":"0","pattern":"[a-z]+","count":"10"})",
-                           R"(["0","[]"])"}));
+      ElementsAreArray(
+          {RedisTraceRecord{"PING", R"({"message":"test"})", "test"},
+           RedisTraceRecord{"SET", R"({"key":"foo","value":"100","options":["EX 10","NX"]})", "OK"},
+           RedisTraceRecord{"EXPIRE", R"({"key":"foo","seconds":"10000"})", "1"},
+           RedisTraceRecord{"BITCOUNT", R"(["foo","0","0"])", "3"},
+           RedisTraceRecord{"INCR", R"({"key":"foo"})", "101"},
+           RedisTraceRecord{"APPEND", R"({"key":"foo","value":"xxx"})", "6"},
+           RedisTraceRecord{"GET", R"({"key":"foo"})", "101xxx"},
+           RedisTraceRecord{"MGET", R"({"key":["foo","bar"]})", R"(["101xxx","<NULL>"])"},
+           RedisTraceRecord{"SADD", R"({"key":"myset","member":["1","2","3"]})", "3"},
+           RedisTraceRecord{"SSCAN",
+                            R"({"key":"myset","cursor":"0","pattern":"[a-z]+","count":"10"})",
+                            R"(["0","[]"])"},
+           RedisTraceRecord{"SCARD", R"({"key":"myset"})", "3"},
+           RedisTraceRecord{"SMEMBERS", R"({"key":"myset"})", R"(["1","2","3"])"},
+           RedisTraceRecord{"HMSET",
+                            R"({"key":"fooset","field value":[{"field":"f1"},)"
+                            R"({"value":"100"},{"field":"f2"},{"value":"200"}]})",
+                            "OK"},
+           RedisTraceRecord{"HMGET", R"({"key":"fooset","field":["f1","f2"]})", R"(["100","200"])"},
+           RedisTraceRecord{"HGET", R"({"key":"fooset","field":"f1"})", "100"},
+           RedisTraceRecord{"HGETALL", R"({"key":"fooset"})", R"(["f1","100","f2","200"])"},
+           RedisTraceRecord{"WATCH", R"({"key":["foo","bar"]})", "OK"},
+           RedisTraceRecord{"UNWATCH", "[]", "OK"},
+           RedisTraceRecord{"SELECT", R"({"index":"0"})", "OK"}}));
 }
 
 // Verifies that pub/sub commands can be traced correctly.

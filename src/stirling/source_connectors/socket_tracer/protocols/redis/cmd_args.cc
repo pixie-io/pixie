@@ -1,5 +1,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/redis/cmd_args.h"
 
+#include <utility>
+
 #include "src/common/json/json.h"
 
 namespace pl {
@@ -12,6 +14,7 @@ namespace {
 using ::pl::utils::JSONObjectBuilder;
 using ::pl::utils::ToJSONString;
 
+constexpr std::string_view kListArgSeparator = " [";
 constexpr std::string_view kListArgSuffix = " ...]";
 constexpr std::string_view kEvalSHA = "EVALSHA";
 constexpr std::string_view kSet = "SET";
@@ -35,17 +38,23 @@ bool IsFixedArg(std::string_view arg_name) {
   return true;
 }
 
-std::string_view GetListArgName(std::string_view arg_desc) {
-  return arg_desc.substr(0, arg_desc.find_first_of(' '));
-}
-
-// An optional list argument is described as "<name> [<name> ...]".
-bool IsListArg(std::string_view arg_desc) {
+// Returns true if the input argument description is for a list argument.
+// And writes the argument names into the input result argument.
+bool IsListArg(std::string_view arg_desc, std::string_view* name,
+               std::vector<std::string_view>* sub_fields) {
   if (!absl::EndsWith(arg_desc, kListArgSuffix)) {
     return false;
   }
-  if (!IsLowerAlphaNum(GetListArgName(arg_desc))) {
+  size_t pos = arg_desc.find(kListArgSeparator);
+  if (pos == std::string_view::npos) {
     return false;
+  }
+  *name = arg_desc.substr(0, pos);
+  *sub_fields = absl::StrSplit(*name, " ", absl::SkipEmpty());
+  for (auto name : *sub_fields) {
+    if (!IsLowerAlphaNum(name)) {
+      return false;
+    }
   }
   return true;
 }
@@ -70,13 +79,17 @@ bool IsOptArg(std::string_view arg_desc) {
 // See https://redis.io/commands
 StatusOr<std::vector<ArgDesc>> ParseArgDescs(const std::vector<std::string_view>& arg_descs) {
   std::vector<ArgDesc> args;
+
   for (auto arg_desc : arg_descs) {
+    std::string_view list_arg_name;
+    std::vector<std::string_view> list_arg_subfields;
+
     if (IsFixedArg(arg_desc)) {
-      args.push_back({arg_desc, Format::kFixed});
-    } else if (IsListArg(arg_desc)) {
-      args.push_back({GetListArgName(arg_desc), Format::kList});
+      args.push_back({arg_desc, {}, Format::kFixed});
+    } else if (IsListArg(arg_desc, &list_arg_name, &list_arg_subfields)) {
+      args.push_back({list_arg_name, std::move(list_arg_subfields), Format::kList});
     } else if (IsOptArg(arg_desc)) {
-      args.push_back({GetOptArgName(arg_desc), Format::kOpt});
+      args.push_back({{GetOptArgName(arg_desc)}, {}, Format::kOpt});
     } else {
       return error::InvalidArgument("Invalid arguments format: $0", absl::StrJoin(arg_descs, " "));
     }
@@ -88,10 +101,9 @@ StatusOr<std::vector<ArgDesc>> ParseArgDescs(const std::vector<std::string_view>
 // format.
 Status FmtArg(const ArgDesc& arg_desc, VectorView<std::string>* args,
               JSONObjectBuilder* json_builder) {
-#define RETURN_ERROR_IF_EMPTY(arg_values, arg_desc)                               \
-  if (arg_values->empty()) {                                                      \
-    return error::InvalidArgument("No values for argument: $0:$1", arg_desc.name, \
-                                  magic_enum::enum_name(arg_desc.format));        \
+#define RETURN_ERROR_IF_EMPTY(arg_values, arg_desc)                                   \
+  if (arg_values->empty()) {                                                          \
+    return error::InvalidArgument("No values for argument: $0", arg_desc.ToString()); \
   }
   switch (arg_desc.format) {
     case Format::kFixed:
@@ -101,7 +113,11 @@ Status FmtArg(const ArgDesc& arg_desc, VectorView<std::string>* args,
       break;
     case Format::kList:
       RETURN_ERROR_IF_EMPTY(args, arg_desc);
-      json_builder->WriteKV(arg_desc.name, *args);
+      if (arg_desc.sub_fields.size() == 1) {
+        json_builder->WriteKV(arg_desc.name, *args);
+      } else {
+        json_builder->WriteRepeatedKVs(arg_desc.name, arg_desc.sub_fields, *args);
+      }
       // Consume all the rest of the argument values.
       args->clear();
       break;

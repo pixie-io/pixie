@@ -27,10 +27,12 @@ enum class Format {
 // Describes a single argument.
 struct ArgDesc {
   std::string_view name;
+  std::vector<std::string_view> sub_fields;
   Format format;
 
   std::string ToString() const {
-    return absl::Substitute("[$0::$1]", name, magic_enum::enum_name(format));
+    return absl::Substitute("[$0[$1]::$2]", name.front(), absl::StrJoin(sub_fields, ","),
+                            magic_enum::enum_name(format));
   }
 };
 
