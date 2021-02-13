@@ -15,6 +15,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 )
 
 func init() {
@@ -31,20 +32,20 @@ func main() {
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
-	s := services.NewPLServer(env.New(), mux)
+	s := server.NewPLServer(env.New(), mux)
 
 	client, err := storage.NewClient(context.Background())
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GCS client.")
 	}
 
-	server := controller.NewServer(
+	svr := controller.NewServer(
 		viper.GetString("bundle_bucket"),
 		viper.GetString("bundle_path"),
 		stiface.AdaptClient(client))
-	server.Start()
+	svr.Start()
 
-	scriptmgrpb.RegisterScriptMgrServiceServer(s.GRPCServer(), server)
+	scriptmgrpb.RegisterScriptMgrServiceServer(s.GRPCServer(), svr)
 
 	s.Start()
 	s.StopOnInterrupt()

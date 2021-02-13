@@ -18,6 +18,7 @@ go_library(
         "//src/shared/services/env:go_default_library",
         "//src/shared/services/healthz:go_default_library",
         "//src/shared/services/pg:go_default_library",
+        "//src/shared/services/server:go_default_library",
         "@com_github_golang_migrate_migrate//:go_default_library",
         "@com_github_golang_migrate_migrate//database/postgres:go_default_library",
         "@com_github_golang_migrate_migrate//source/go_bindata:go_default_library",

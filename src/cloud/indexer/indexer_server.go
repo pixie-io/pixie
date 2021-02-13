@@ -21,6 +21,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 )
 
 func init() {
@@ -116,7 +117,7 @@ func main() {
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
-	s := services.NewPLServer(env.New(), mux)
+	s := server.NewPLServer(env.New(), mux)
 	nc, sc, err := createStanNatsConnection(uuid.NewV4().String())
 	if err != nil {
 		log.Fatal("Could not connect to NATS/STAN")

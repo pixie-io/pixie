@@ -17,6 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 )
 
 func init() {
@@ -68,10 +69,10 @@ func main() {
 		log.WithError(err).Fatal("Failed to connect to Cloud DNS service")
 	}
 
-	server := controller.NewServer(env, dnsService, db)
+	svr := controller.NewServer(env, dnsService, db)
 
-	s := services.NewPLServer(env, mux)
-	dnsmgrpb.RegisterDNSMgrServiceServer(s.GRPCServer(), server)
+	s := server.NewPLServer(env, mux)
+	dnsmgrpb.RegisterDNSMgrServiceServer(s.GRPCServer(), svr)
 	s.Start()
 	s.StopOnInterrupt()
 }

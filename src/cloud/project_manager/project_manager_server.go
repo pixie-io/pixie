@@ -16,6 +16,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/pg"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 )
 
 func main() {
@@ -51,9 +52,9 @@ func main() {
 		log.WithError(err).Fatalf("Failed to initialize datastore")
 	}
 
-	server := controllers.NewServer(datastore)
-	s := services.NewPLServer(env.New(), mux)
-	projectmanagerpb.RegisterProjectManagerServiceServer(s.GRPCServer(), server)
+	svr := controllers.NewServer(datastore)
+	s := server.NewPLServer(env.New(), mux)
+	projectmanagerpb.RegisterProjectManagerServiceServer(s.GRPCServer(), svr)
 
 	s.Start()
 	s.StopOnInterrupt()

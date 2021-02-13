@@ -24,8 +24,8 @@ import (
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	bloomfilterpb "pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
 	sharedmetadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
-	"pixielabs.ai/pixielabs/src/shared/services"
 	env2 "pixielabs.ai/pixielabs/src/shared/services/env"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	logicalpb "pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb"
 	utils "pixielabs.ai/pixielabs/src/utils"
@@ -889,11 +889,11 @@ func TestGetAgentUpdates(t *testing.T) {
 	}
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
-	server, err := controllers.NewServerWithClock(mdEnv, mockAgtMgr, nil, mockMds, clock)
+	svr, err := controllers.NewServerWithClock(mdEnv, mockAgtMgr, nil, mockMds, clock)
 
 	env := env2.New()
-	s := services.CreateGRPCServer(env, &services.GRPCServerOptions{})
-	metadatapb.RegisterMetadataServiceServer(s, server)
+	s := server.CreateGRPCServer(env, &server.GRPCServerOptions{})
+	metadatapb.RegisterMetadataServiceServer(s, svr)
 	lis := bufconn.Listen(1024 * 1024)
 
 	go func() {

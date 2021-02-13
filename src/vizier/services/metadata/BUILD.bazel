@@ -12,6 +12,7 @@ go_library(
         "//src/shared/services/election:go_default_library",
         "//src/shared/services/healthz:go_default_library",
         "//src/shared/services/httpmiddleware:go_default_library",
+        "//src/shared/services/server:go_default_library",
         "//src/shared/version/go:go_default_library",
         "//src/vizier/services/metadata/controllers:go_default_library",
         "//src/vizier/services/metadata/controllers/kvstore:go_default_library",

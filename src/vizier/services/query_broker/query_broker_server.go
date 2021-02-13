@@ -16,6 +16,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/ptproxy"
@@ -116,20 +117,20 @@ func main() {
 	agentTracker := tracker.NewAgents(mdsClient, viper.GetString("jwt_signing_key"))
 	agentTracker.Start()
 	defer agentTracker.Stop()
-	server, err := controllers.NewServer(env, agentTracker, mdtpClient, mdconfClient, natsConn)
+	svr, err := controllers.NewServer(env, agentTracker, mdtpClient, mdconfClient, natsConn)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs.")
 	}
-	defer server.Close()
+	defer svr.Close()
 
 	// For query broker we bump up the max message size since resuls might be larger than 4mb.
 	maxMsgSize := grpc.MaxRecvMsgSize(8 * 1024 * 1024)
 
-	s := services.NewPLServer(env,
+	s := server.NewPLServer(env,
 		httpmiddleware.WithBearerAuthMiddleware(env, mux), maxMsgSize)
 
-	carnotpb.RegisterResultSinkServiceServer(s.GRPCServer(), server)
-	public_vizierapipb.RegisterVizierServiceServer(s.GRPCServer(), server)
+	carnotpb.RegisterResultSinkServiceServer(s.GRPCServer(), svr)
+	public_vizierapipb.RegisterVizierServiceServer(s.GRPCServer(), svr)
 
 	// For the passthrough proxy we create a GRPC client to the current server. It appears really
 	// hard to emulate the streaming GRPC connection and this helps keep the API straightforward.

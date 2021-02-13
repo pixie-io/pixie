@@ -29,6 +29,7 @@ import (
 	svcEnv "pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/handler"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 )
 
 const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-core.json"
@@ -124,7 +125,7 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	// API service needs to convert any cookies into an augmented token in bearer auth.
-	serverOpts := &services.GRPCServerOptions{
+	serverOpts := &server.GRPCServerOptions{
 		AuthMiddleware: func(ctx context.Context, e svcEnv.Env) (string, error) {
 			apiEnv, ok := e.(apienv.APIEnv)
 			if !ok {
@@ -133,7 +134,7 @@ func main() {
 			return controller.GetAugmentedTokenGRPC(ctx, apiEnv)
 		},
 	}
-	s := services.NewPLServerWithOptions(env, handlers.CORS(services.DefaultCORSConfig()...)(mux), serverOpts)
+	s := server.NewPLServerWithOptions(env, handlers.CORS(services.DefaultCORSConfig()...)(mux), serverOpts)
 
 	imageAuthServer := &controller.VizierImageAuthServer{}
 	cloudapipb.RegisterVizierImageAuthorizationServer(s.GRPCServer(), imageAuthServer)

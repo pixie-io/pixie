@@ -17,6 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 )
 
 func init() {
@@ -70,14 +71,14 @@ func main() {
 	healthz.InstallPathHandler(mux, "/")
 
 	// Communication from Vizier to VZConn is not auth'd via GRPC auth.
-	serverOpts := &services.GRPCServerOptions{
+	serverOpts := &server.GRPCServerOptions{
 		DisableAuth: map[string]bool{
 			"/pl.services.VZConnService/NATSBridge":               true,
 			"/pl.services.VZConnService/RegisterVizierDeployment": true,
 		},
 	}
 
-	s := services.NewPLServerWithOptions(env.New(), mux, serverOpts)
+	s := server.NewPLServerWithOptions(env.New(), mux, serverOpts)
 	nc, sc, err := createStanNatsConnection(uuid.NewV4().String())
 	if err != nil {
 		log.Error("Could not connect to NATS/STAN")
@@ -94,8 +95,8 @@ func main() {
 		log.WithError(err).Fatal("failed to initialize vizer manager RPC client")
 		panic(err)
 	}
-	server := bridge.NewBridgeGRPCServer(vzmgrClient, vzdeployClient, nc, sc)
-	vzconnpb.RegisterVZConnServiceServer(s.GRPCServer(), server)
+	svr := bridge.NewBridgeGRPCServer(vzmgrClient, vzdeployClient, nc, sc)
+	vzconnpb.RegisterVZConnServiceServer(s.GRPCServer(), svr)
 
 	s.Start()
 	s.StopOnInterrupt()

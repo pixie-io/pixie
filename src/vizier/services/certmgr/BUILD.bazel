@@ -11,6 +11,7 @@ go_library(
     deps = [
         "//src/shared/services:go_default_library",
         "//src/shared/services/healthz:go_default_library",
+        "//src/shared/services/server:go_default_library",
         "//src/vizier/services/certmgr/certmgrenv:go_default_library",
         "//src/vizier/services/certmgr/certmgrpb:service_go_proto",
         "//src/vizier/services/certmgr/controller:go_default_library",

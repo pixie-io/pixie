@@ -25,6 +25,7 @@ import (
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 )
 
 func init() {
@@ -71,7 +72,7 @@ func main() {
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
-	s := services.NewPLServer(env.New(), mux)
+	s := server.NewPLServer(env.New(), mux)
 
 	dnsMgrClient, err := NewDNSMgrServiceClient()
 	if err != nil {

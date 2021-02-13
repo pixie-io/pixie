@@ -1,11 +1,11 @@
-package services_test
+package server_test
 
 import (
 	"fmt"
 	"net"
 	"testing"
 
-	"pixielabs.ai/pixielabs/src/shared/services"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 
 	env2 "pixielabs.ai/pixielabs/src/shared/services/env"
 	ping "pixielabs.ai/pixielabs/src/shared/services/testproto"
@@ -25,18 +25,18 @@ func init() {
 	viper.Set("disable_ssl", true)
 }
 
-type server struct{}
+type testserver struct{}
 
-func (s *server) Ping(ctx context.Context, in *ping.PingRequest) (*ping.PingReply, error) {
+func (s *testserver) Ping(ctx context.Context, in *ping.PingRequest) (*ping.PingReply, error) {
 	return &ping.PingReply{Reply: "test reply"}, nil
 }
 
-func (s *server) PingServerStream(in *ping.PingRequest, srv ping.PingService_PingServerStreamServer) error {
+func (s *testserver) PingServerStream(in *ping.PingRequest, srv ping.PingService_PingServerStreamServer) error {
 	srv.Send(&ping.PingReply{Reply: "test reply"})
 	return nil
 }
 
-func (s *server) PingClientStream(srv ping.PingService_PingClientStreamServer) error {
+func (s *testserver) PingClientStream(srv ping.PingService_PingClientStreamServer) error {
 	msg, err := srv.Recv()
 	if err != nil {
 		return err
@@ -48,17 +48,17 @@ func (s *server) PingClientStream(srv ping.PingService_PingClientStreamServer) e
 	return nil
 }
 
-func startTestGRPCServer(t *testing.T, opts *services.GRPCServerOptions) (int, func()) {
+func startTestGRPCServer(t *testing.T, opts *server.GRPCServerOptions) (int, func()) {
 	viper.Set("jwt_signing_key", "abc")
 	env := env2.New()
 	var s *grpc.Server
 	if opts == nil {
-		opts = &services.GRPCServerOptions{}
+		opts = &server.GRPCServerOptions{}
 	}
 
-	s = services.CreateGRPCServer(env, opts)
+	s = server.CreateGRPCServer(env, opts)
 
-	ping.RegisterPingServiceServer(s, &server{})
+	ping.RegisterPingServiceServer(s, &testserver{})
 	lis, err := net.Listen("tcp", ":0")
 
 	if err != nil {
@@ -130,7 +130,7 @@ func TestGrpcServerUnary(t *testing.T) {
 		clientStream bool
 		serverStream bool
 		expectError  bool
-		serverOpts   *services.GRPCServerOptions
+		serverOpts   *server.GRPCServerOptions
 	}{
 		{
 			name:        "success - unary",
@@ -188,7 +188,7 @@ func TestGrpcServerUnary(t *testing.T) {
 			token:        "",
 			expectError:  false,
 			clientStream: false,
-			serverOpts: &services.GRPCServerOptions{
+			serverOpts: &server.GRPCServerOptions{
 				DisableAuth: map[string]bool{
 					"/pl.common.PingService/Ping": true,
 				},
@@ -199,7 +199,7 @@ func TestGrpcServerUnary(t *testing.T) {
 			token:        "",
 			expectError:  false,
 			clientStream: false,
-			serverOpts: &services.GRPCServerOptions{
+			serverOpts: &server.GRPCServerOptions{
 				AuthMiddleware: func(context.Context, env2.Env) (string, error) {
 					return testingutils.GenerateTestJWTToken(t, "abc"), nil
 				},

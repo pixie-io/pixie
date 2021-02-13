@@ -1,4 +1,4 @@
-package services
+package server
 
 import (
 	"context"
@@ -16,6 +16,7 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
+	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 
 	log "github.com/sirupsen/logrus"
@@ -74,7 +75,7 @@ func (s *PLServer) serveHTTP2() {
 	var tlsConfig *tls.Config
 	if sslEnabled {
 		var err error
-		tlsConfig, err = DefaultServerTLSConfig()
+		tlsConfig, err = services.DefaultServerTLSConfig()
 		if err != nil {
 			log.WithError(err).Fatal("Failed to load default server TLS config")
 		}
@@ -88,7 +89,7 @@ func (s *PLServer) serveHTTP2() {
 		}
 		s.httpHandler.ServeHTTP(w, r)
 	})
-	wrappedHandler := HTTPLoggingMiddleware(muxHandler)
+	wrappedHandler := services.HTTPLoggingMiddleware(muxHandler)
 	s.httpServer = &http.Server{
 		Addr:           serverAddr,
 		Handler:        h2c.NewHandler(wrappedHandler, &http2.Server{}),

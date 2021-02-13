@@ -18,6 +18,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/bridge"
 	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/vizhealth"
 )
@@ -116,15 +117,15 @@ func main() {
 	// We just use the current time in nanoseconds to mark the session ID. This will let the cloud side know that
 	// the cloud connector restarted. Clock skew might make this incorrect, but we mostly want this for debugging.
 	sessionID := time.Now().UnixNano()
-	server := controllers.New(vizierID, viper.GetString("jwt_signing_key"), deployKey, sessionID, nil, vzInfo, nil, checker)
-	go server.RunStream()
-	defer server.Stop()
+	svr := controllers.New(vizierID, viper.GetString("jwt_signing_key"), deployKey, sessionID, nil, vzInfo, nil, checker)
+	go svr.RunStream()
+	defer svr.Stop()
 
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
 	e := env.New()
-	s := services.NewPLServer(e,
+	s := server.NewPLServer(e,
 		httpmiddleware.WithBearerAuthMiddleware(e, mux))
 
 	s.Start()

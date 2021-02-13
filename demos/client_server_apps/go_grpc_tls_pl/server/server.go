@@ -10,6 +10,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 )
 
 // Server is used to implement the Greeter.
@@ -33,7 +34,7 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	e := env.New()
-	s := services.NewPLServer(e, mux)
+	s := server.NewPLServer(e, mux)
 	greetpb.RegisterGreeterServer(s.GRPCServer(), &Server{})
 
 	s.Start()

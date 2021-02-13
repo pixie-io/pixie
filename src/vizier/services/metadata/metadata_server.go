@@ -17,6 +17,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/election"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 	version "pixielabs.ai/pixielabs/src/shared/version/go"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
@@ -227,7 +228,7 @@ func main() {
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
-	server, err := controllers.NewServer(env, agtMgr, tracepointMgr, mds)
+	svr, err := controllers.NewServer(env, agtMgr, tracepointMgr, mds)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}
@@ -238,11 +239,11 @@ func main() {
 	// temporary change. In the future, we would like to page the agent metadata.
 	maxMsgSize := grpc.MaxSendMsgSize(8 * 1024 * 1024)
 
-	s := services.NewPLServer(env,
+	s := server.NewPLServer(env,
 		httpmiddleware.WithBearerAuthMiddleware(env, mux), maxMsgSize)
-	metadatapb.RegisterMetadataServiceServer(s.GRPCServer(), server)
-	metadatapb.RegisterMetadataTracepointServiceServer(s.GRPCServer(), server)
-	metadatapb.RegisterMetadataConfigServiceServer(s.GRPCServer(), server)
+	metadatapb.RegisterMetadataServiceServer(s.GRPCServer(), svr)
+	metadatapb.RegisterMetadataTracepointServiceServer(s.GRPCServer(), svr)
+	metadatapb.RegisterMetadataConfigServiceServer(s.GRPCServer(), svr)
 
 	s.Start()
 	s.StopOnInterrupt()

@@ -28,6 +28,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/schema"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 )
 
 func init() {
@@ -97,9 +98,9 @@ func main() {
 	db := mustLoadDB()
 	saCfg := mustLoadServiceAccountConfig()
 	bucket := viper.GetString("artifact_bucket")
-	server := controller.NewServer(db, stiface.AdaptClient(client), bucket, saCfg)
-	s := services.NewPLServer(env, mux)
-	atpb.RegisterArtifactTrackerServer(s.GRPCServer(), server)
+	svr := controller.NewServer(db, stiface.AdaptClient(client), bucket, saCfg)
+	s := server.NewPLServer(env, mux)
+	atpb.RegisterArtifactTrackerServer(s.GRPCServer(), svr)
 	s.Start()
 	s.StopOnInterrupt()
 }

@@ -16,6 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 )
 
 func main() {
@@ -54,10 +55,10 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to set up profileenv")
 	}
-	server := controller.NewServer(env, datastore, datastore)
+	svr := controller.NewServer(env, datastore, datastore)
 
-	s := services.NewPLServer(env, mux)
-	profile.RegisterProfileServiceServer(s.GRPCServer(), server)
+	s := server.NewPLServer(env, mux)
+	profile.RegisterProfileServiceServer(s.GRPCServer(), svr)
 	s.Start()
 	s.StopOnInterrupt()
 }

@@ -14,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 )
 
 func init() {
@@ -54,12 +55,12 @@ func main() {
 	}
 
 	env := certmgrenv.New()
-	server := controller.NewServer(env, clusterID, nc, k8sAPI)
-	go server.CertRequester()
-	defer server.StopCertRequester()
+	svr := controller.NewServer(env, clusterID, nc, k8sAPI)
+	go svr.CertRequester()
+	defer svr.StopCertRequester()
 
-	s := services.NewPLServer(env, mux)
-	certmgrpb.RegisterCertMgrServiceServer(s.GRPCServer(), server)
+	s := server.NewPLServer(env, mux)
+	certmgrpb.RegisterCertMgrServiceServer(s.GRPCServer(), svr)
 	s.Start()
 	s.StopOnInterrupt()
 }

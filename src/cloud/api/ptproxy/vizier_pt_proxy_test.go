@@ -27,8 +27,8 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/ptproxy"
 	mock_vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb/mock"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	"pixielabs.ai/pixielabs/src/shared/services"
 	env2 "pixielabs.ai/pixielabs/src/shared/services/env"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
@@ -48,7 +48,7 @@ type testState struct {
 func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	lis := bufconn.Listen(bufSize)
 	env := env2.New()
-	s := services.CreateGRPCServer(env, &services.GRPCServerOptions{})
+	s := server.CreateGRPCServer(env, &server.GRPCServerOptions{})
 
 	natsPort, natsCleanup := testingutils.StartNATS(t)
 	nc, err := nats.Connect(testingutils.GetNATSURL(natsPort))

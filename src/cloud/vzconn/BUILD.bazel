@@ -16,6 +16,7 @@ go_library(
         "//src/shared/services:go_default_library",
         "//src/shared/services/env:go_default_library",
         "//src/shared/services/healthz:go_default_library",
+        "//src/shared/services/server:go_default_library",
         "@com_github_nats_io_nats_go//:go_default_library",
         "@com_github_nats_io_stan_go//:go_default_library",
         "@com_github_satori_go_uuid//:go_default_library",

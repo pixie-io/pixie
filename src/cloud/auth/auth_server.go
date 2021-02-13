@@ -19,6 +19,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/pg"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
 )
 
 func init() {
@@ -77,13 +78,13 @@ func main() {
 	db, dbKey := connectToPostgres()
 	apiKeyMgr := apikey.New(db, dbKey)
 
-	server, err := controllers.NewServer(env, a, apiKeyMgr)
+	svr, err := controllers.NewServer(env, a, apiKeyMgr)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}
 
-	s := services.NewPLServer(env, mux)
-	auth.RegisterAuthServiceServer(s.GRPCServer(), server)
+	s := server.NewPLServer(env, mux)
+	auth.RegisterAuthServiceServer(s.GRPCServer(), svr)
 	auth.RegisterAPIKeyServiceServer(s.GRPCServer(), apiKeyMgr)
 
 	s.Start()
