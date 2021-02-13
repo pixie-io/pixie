@@ -6,7 +6,6 @@ go_library(
         "agent.go",
         "agent_topic_listener.go",
         "etcd_mgr.go",
-        "k8s_metadata.go",
         "k8s_metadata_handler.go",
         "k8s_metadata_store.go",
         "k8s_metadata_utils.gen.go",
