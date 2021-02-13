@@ -1,0 +1,1 @@
+DROP INDEX vizier_cluster_shard_index;

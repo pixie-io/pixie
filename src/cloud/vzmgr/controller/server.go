@@ -577,14 +577,12 @@ func (s *Server) GetViziersByShard(ctx context.Context, req *vzmgrpb.GetViziersB
 	}
 
 	query := `
-    SELECT vizier_cluster.id, vizier_cluster.org_id, vizier_cluster.cluster_uid, vizier_index_state.resource_version
-    FROM vizier_cluster, vizier_cluster_info, vizier_index_state
+    SELECT vizier_cluster.id, vizier_cluster.org_id, vizier_cluster.cluster_uid
+    FROM vizier_cluster, vizier_cluster_info
     WHERE vizier_cluster_info.vizier_cluster_id=vizier_cluster.id
-    	  AND vizier_cluster_info.vizier_cluster_id=vizier_index_state.cluster_id
-    	  AND vizier_index_state.cluster_id=vizier_cluster.id
-          AND vizier_cluster_info.status != 'DISCONNECTED'
-          AND substring(vizier_cluster.id::text, 35)>=$1
-          AND substring(vizier_cluster.id::text, 35)<=$2;`
+			AND vizier_cluster_info.status != 'DISCONNECTED'
+			AND substring(vizier_cluster.id::text, 35)>=$1
+			AND substring(vizier_cluster.id::text, 35)<=$2;`
 
 	rows, err := s.db.Queryx(query, fromShardID, toShardID)
 	if err != nil {
@@ -593,10 +591,9 @@ func (s *Server) GetViziersByShard(ctx context.Context, req *vzmgrpb.GetViziersB
 	defer rows.Close()
 
 	type Result struct {
-		VizierID        uuid.UUID `db:"id"`
-		OrgID           uuid.UUID `db:"org_id"`
-		ResourceVersion string    `db:"resource_version"`
-		K8sUID          string    `db:"cluster_uid"`
+		VizierID uuid.UUID `db:"id"`
+		OrgID    uuid.UUID `db:"org_id"`
+		K8sUID   string    `db:"cluster_uid"`
 	}
 	results := make([]*vzmgrpb.GetViziersByShardResponse_VizierInfo, 0)
 	for rows.Next() {
@@ -607,10 +604,9 @@ func (s *Server) GetViziersByShard(ctx context.Context, req *vzmgrpb.GetViziersB
 			return nil, status.Error(codes.Internal, "failed to read vizier info")
 		}
 		results = append(results, &vzmgrpb.GetViziersByShardResponse_VizierInfo{
-			VizierID:        utils.ProtoFromUUID(result.VizierID),
-			OrgID:           utils.ProtoFromUUID(result.OrgID),
-			ResourceVersion: result.ResourceVersion,
-			K8sUID:          result.K8sUID,
+			VizierID: utils.ProtoFromUUID(result.VizierID),
+			OrgID:    utils.ProtoFromUUID(result.OrgID),
+			K8sUID:   result.K8sUID,
 		})
 	}
 
@@ -1096,14 +1092,5 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 		return uuid.Nil, err
 	}
 
-	// Create index state.
-	query = `
-		INSERT INTO vizier_index_state(cluster_id, resource_version) VALUES($1, '')
-	`
-	_, err = tx.ExecContext(ctx, query, &clusterID)
-	if err != nil {
-		log.WithError(err).Error("Failed to create vizier_index_state")
-		return uuid.Nil, vzerrors.ErrInternalDB
-	}
 	return assignNameAndCommit()
 }

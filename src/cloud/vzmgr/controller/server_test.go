@@ -105,12 +105,6 @@ func loadTestData(t *testing.T, db *sqlx.DB) {
 		false, "", "{}", 4, 2)
 
 	db.MustExec(`UPDATE vizier_cluster SET cluster_name=NULL WHERE id=$1`, testDisconnectedClusterEmptyUID)
-
-	insertVizierIndexQuery := `INSERT INTO vizier_index_state(cluster_id, resource_version) VALUES($1, $2)`
-	db.MustExec(insertVizierIndexQuery, "123e4567-e89b-12d3-a456-426655440001", "1234")
-	db.MustExec(insertVizierIndexQuery, "123e4567-e89b-12d3-a456-426655440000", "1")
-	db.MustExec(insertVizierIndexQuery, "323e4567-e89b-12d3-a456-426655440003", "2")
-	db.MustExec(insertVizierIndexQuery, "223e4567-e89b-12d3-a456-426655440003", "5")
 }
 
 func CreateTestContext() context.Context {
@@ -913,10 +907,9 @@ func TestServer_GetViziersByShard(t *testing.T) {
 			expectResponse: &vzmgrpb.GetViziersByShardResponse{
 				Viziers: []*vzmgrpb.GetViziersByShardResponse_VizierInfo{
 					{
-						VizierID:        utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
-						OrgID:           utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
-						ResourceVersion: "1",
-						K8sUID:          "k8sID",
+						VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+						K8sUID:   "k8sID",
 					},
 				},
 			},
@@ -929,14 +922,12 @@ func TestServer_GetViziersByShard(t *testing.T) {
 			expectResponse: &vzmgrpb.GetViziersByShardResponse{
 				Viziers: []*vzmgrpb.GetViziersByShardResponse_VizierInfo{
 					{
-						VizierID:        utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440003"),
-						OrgID:           utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-						ResourceVersion: "2",
+						VizierID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440003"),
+						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 					},
 					{
-						VizierID:        utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
-						OrgID:           utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-						ResourceVersion: "5",
+						VizierID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
+						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 					},
 				},
 			},
@@ -949,26 +940,26 @@ func TestServer_GetViziersByShard(t *testing.T) {
 			expectResponse: &vzmgrpb.GetViziersByShardResponse{
 				Viziers: []*vzmgrpb.GetViziersByShardResponse_VizierInfo{
 					{
-						VizierID:        utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
-						OrgID:           utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
-						ResourceVersion: "1",
-						K8sUID:          "k8sID",
+						VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+						K8sUID:   "k8sID",
 					},
 					{
-						VizierID:        utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
-						OrgID:           utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
-						ResourceVersion: "1234",
-						K8sUID:          "cUID",
+						VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+						K8sUID:   "cUID",
 					},
 					{
-						VizierID:        utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440003"),
-						OrgID:           utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-						ResourceVersion: "2",
+						VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440002"),
+						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 					},
 					{
-						VizierID:        utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
-						OrgID:           utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-						ResourceVersion: "5",
+						VizierID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440003"),
+						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+					},
+					{
+						VizierID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
+						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 					},
 				},
 			},
@@ -983,7 +974,7 @@ func TestServer_GetViziersByShard(t *testing.T) {
 			if test.expectGRPCError != nil {
 				assert.Equal(t, status.Code(test.expectGRPCError), status.Code(err))
 			} else {
-				assert.Equal(t, test.expectResponse, resp)
+				assert.ElementsMatch(t, test.expectResponse.Viziers, resp.Viziers)
 			}
 		})
 	}
