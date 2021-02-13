@@ -1,9 +1,9 @@
 import { Options } from 'vis-network/standalone';
 import { Theme } from '@material-ui/core/styles';
 
+import { DataType, Relation, SemanticType } from 'types/generated/vizierapi_pb';
 import * as podSVG from './pod.svg';
 import * as svcSVG from './svc.svg';
-import { DataType, Relation, SemanticType } from '../../../types/generated/vizier_pb';
 
 export const LABEL_OPTIONS = {
   label: {

@@ -1,6 +1,6 @@
 import { VizierTable as Table } from 'pixie-api';
 import * as React from 'react';
-import { QueryExecutionStats, MutationInfo } from 'types/generated/vizier_pb';
+import { QueryExecutionStats, MutationInfo } from 'types/generated/vizierapi_pb';
 
 import { SetStateFunc } from './common';
 

@@ -1,6 +1,6 @@
 import {
   Column, Float64Column, Int64Column, Relation, RowBatchData, Time64NSColumn,
-} from 'types/generated/vizier_pb';
+} from 'types/generated/vizierapi_pb';
 import { milliToNanoSeconds } from 'utils/time';
 
 import * as ResultDataUtils from './result-data-utils';

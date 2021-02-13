@@ -1,4 +1,4 @@
-import { SemanticType } from 'types/generated/vizier_pb';
+import { SemanticType } from 'types/generated/vizierapi_pb';
 
 export interface Quantile {
   p50: number;

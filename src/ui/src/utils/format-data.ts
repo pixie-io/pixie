@@ -1,5 +1,5 @@
 import * as numeral from 'numeral';
-import { DataType, SemanticType, UInt128 } from 'types/generated/vizier_pb';
+import { DataType, SemanticType, UInt128 } from 'types/generated/vizierapi_pb';
 
 export function formatInt64Data(val: string): string {
   return numeral(val).format('0,0');

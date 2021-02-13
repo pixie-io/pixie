@@ -1,6 +1,6 @@
 import { SortDirection, SortDirectionType } from 'react-virtualized';
 import { getDataSortFunc } from 'utils/format-data';
-import { DataType, SemanticType } from 'types/generated/vizier_pb';
+import { SemanticType } from 'types/generated/vizierapi_pb';
 import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info';
 
 // Sort funcs for semantic column types (when the pure data type alone doesn't produce

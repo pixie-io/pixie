@@ -1,12 +1,14 @@
-import * as jspb from "google-protobuf"
+import * as jspb from 'google-protobuf'
+
+
 
 
 export class UInt128 extends jspb.Message {
   getLow(): number;
-  setLow(value: number): void;
+  setLow(value: number): UInt128;
 
   getHigh(): number;
-  setHigh(value: number): void;
+  setHigh(value: number): UInt128;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): UInt128.AsObject;
@@ -25,9 +27,9 @@ export namespace UInt128 {
 
 export class BooleanColumn extends jspb.Message {
   getDataList(): Array<boolean>;
-  setDataList(value: Array<boolean>): void;
-  clearDataList(): void;
-  addData(value: boolean, index?: number): void;
+  setDataList(value: Array<boolean>): BooleanColumn;
+  clearDataList(): BooleanColumn;
+  addData(value: boolean, index?: number): BooleanColumn;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): BooleanColumn.AsObject;
@@ -45,9 +47,9 @@ export namespace BooleanColumn {
 
 export class Int64Column extends jspb.Message {
   getDataList(): Array<number>;
-  setDataList(value: Array<number>): void;
-  clearDataList(): void;
-  addData(value: number, index?: number): void;
+  setDataList(value: Array<number>): Int64Column;
+  clearDataList(): Int64Column;
+  addData(value: number, index?: number): Int64Column;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Int64Column.AsObject;
@@ -65,8 +67,8 @@ export namespace Int64Column {
 
 export class UInt128Column extends jspb.Message {
   getDataList(): Array<UInt128>;
-  setDataList(value: Array<UInt128>): void;
-  clearDataList(): void;
+  setDataList(value: Array<UInt128>): UInt128Column;
+  clearDataList(): UInt128Column;
   addData(value?: UInt128, index?: number): UInt128;
 
   serializeBinary(): Uint8Array;
@@ -85,9 +87,9 @@ export namespace UInt128Column {
 
 export class Float64Column extends jspb.Message {
   getDataList(): Array<number>;
-  setDataList(value: Array<number>): void;
-  clearDataList(): void;
-  addData(value: number, index?: number): void;
+  setDataList(value: Array<number>): Float64Column;
+  clearDataList(): Float64Column;
+  addData(value: number, index?: number): Float64Column;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Float64Column.AsObject;
@@ -105,9 +107,9 @@ export namespace Float64Column {
 
 export class Time64NSColumn extends jspb.Message {
   getDataList(): Array<number>;
-  setDataList(value: Array<number>): void;
-  clearDataList(): void;
-  addData(value: number, index?: number): void;
+  setDataList(value: Array<number>): Time64NSColumn;
+  clearDataList(): Time64NSColumn;
+  addData(value: number, index?: number): Time64NSColumn;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Time64NSColumn.AsObject;
@@ -125,9 +127,9 @@ export namespace Time64NSColumn {
 
 export class StringColumn extends jspb.Message {
   getDataList(): Array<string>;
-  setDataList(value: Array<string>): void;
-  clearDataList(): void;
-  addData(value: string, index?: number): void;
+  setDataList(value: Array<string>): StringColumn;
+  clearDataList(): StringColumn;
+  addData(value: string, index?: number): StringColumn;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): StringColumn.AsObject;
@@ -145,34 +147,34 @@ export namespace StringColumn {
 
 export class Column extends jspb.Message {
   getBooleanData(): BooleanColumn | undefined;
-  setBooleanData(value?: BooleanColumn): void;
+  setBooleanData(value?: BooleanColumn): Column;
   hasBooleanData(): boolean;
-  clearBooleanData(): void;
+  clearBooleanData(): Column;
 
   getInt64Data(): Int64Column | undefined;
-  setInt64Data(value?: Int64Column): void;
+  setInt64Data(value?: Int64Column): Column;
   hasInt64Data(): boolean;
-  clearInt64Data(): void;
+  clearInt64Data(): Column;
 
   getUint128Data(): UInt128Column | undefined;
-  setUint128Data(value?: UInt128Column): void;
+  setUint128Data(value?: UInt128Column): Column;
   hasUint128Data(): boolean;
-  clearUint128Data(): void;
+  clearUint128Data(): Column;
 
   getTime64nsData(): Time64NSColumn | undefined;
-  setTime64nsData(value?: Time64NSColumn): void;
+  setTime64nsData(value?: Time64NSColumn): Column;
   hasTime64nsData(): boolean;
-  clearTime64nsData(): void;
+  clearTime64nsData(): Column;
 
   getFloat64Data(): Float64Column | undefined;
-  setFloat64Data(value?: Float64Column): void;
+  setFloat64Data(value?: Float64Column): Column;
   hasFloat64Data(): boolean;
-  clearFloat64Data(): void;
+  clearFloat64Data(): Column;
 
   getStringData(): StringColumn | undefined;
-  setStringData(value?: StringColumn): void;
+  setStringData(value?: StringColumn): Column;
   hasStringData(): boolean;
-  clearStringData(): void;
+  clearStringData(): Column;
 
   getColDataCase(): Column.ColDataCase;
 
@@ -207,21 +209,21 @@ export namespace Column {
 
 export class RowBatchData extends jspb.Message {
   getTableId(): string;
-  setTableId(value: string): void;
+  setTableId(value: string): RowBatchData;
 
   getColsList(): Array<Column>;
-  setColsList(value: Array<Column>): void;
-  clearColsList(): void;
+  setColsList(value: Array<Column>): RowBatchData;
+  clearColsList(): RowBatchData;
   addCols(value?: Column, index?: number): Column;
 
   getNumRows(): number;
-  setNumRows(value: number): void;
+  setNumRows(value: number): RowBatchData;
 
   getEow(): boolean;
-  setEow(value: boolean): void;
+  setEow(value: boolean): RowBatchData;
 
   getEos(): boolean;
-  setEos(value: boolean): void;
+  setEos(value: boolean): RowBatchData;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): RowBatchData.AsObject;
@@ -243,8 +245,8 @@ export namespace RowBatchData {
 
 export class Relation extends jspb.Message {
   getColumnsList(): Array<Relation.ColumnInfo>;
-  setColumnsList(value: Array<Relation.ColumnInfo>): void;
-  clearColumnsList(): void;
+  setColumnsList(value: Array<Relation.ColumnInfo>): Relation;
+  clearColumnsList(): Relation;
   addColumns(value?: Relation.ColumnInfo, index?: number): Relation.ColumnInfo;
 
   serializeBinary(): Uint8Array;
@@ -262,16 +264,16 @@ export namespace Relation {
 
   export class ColumnInfo extends jspb.Message {
     getColumnName(): string;
-    setColumnName(value: string): void;
+    setColumnName(value: string): ColumnInfo;
 
     getColumnType(): DataType;
-    setColumnType(value: DataType): void;
+    setColumnType(value: DataType): ColumnInfo;
 
     getColumnDesc(): string;
-    setColumnDesc(value: string): void;
+    setColumnDesc(value: string): ColumnInfo;
 
     getColumnSemanticType(): SemanticType;
-    setColumnSemanticType(value: SemanticType): void;
+    setColumnSemanticType(value: SemanticType): ColumnInfo;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): ColumnInfo.AsObject;
@@ -294,13 +296,13 @@ export namespace Relation {
 
 export class CompilerError extends jspb.Message {
   getLine(): number;
-  setLine(value: number): void;
+  setLine(value: number): CompilerError;
 
   getColumn(): number;
-  setColumn(value: number): void;
+  setColumn(value: number): CompilerError;
 
   getMessage(): string;
-  setMessage(value: string): void;
+  setMessage(value: string): CompilerError;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): CompilerError.AsObject;
@@ -320,9 +322,9 @@ export namespace CompilerError {
 
 export class ErrorDetails extends jspb.Message {
   getCompilerError(): CompilerError | undefined;
-  setCompilerError(value?: CompilerError): void;
+  setCompilerError(value?: CompilerError): ErrorDetails;
   hasCompilerError(): boolean;
-  clearCompilerError(): void;
+  clearCompilerError(): ErrorDetails;
 
   getErrorCase(): ErrorDetails.ErrorCase;
 
@@ -347,14 +349,14 @@ export namespace ErrorDetails {
 
 export class Status extends jspb.Message {
   getCode(): number;
-  setCode(value: number): void;
+  setCode(value: number): Status;
 
   getMessage(): string;
-  setMessage(value: string): void;
+  setMessage(value: string): Status;
 
   getErrorDetailsList(): Array<ErrorDetails>;
-  setErrorDetailsList(value: Array<ErrorDetails>): void;
-  clearErrorDetailsList(): void;
+  setErrorDetailsList(value: Array<ErrorDetails>): Status;
+  clearErrorDetailsList(): Status;
   addErrorDetails(value?: ErrorDetails, index?: number): ErrorDetails;
 
   serializeBinary(): Uint8Array;
@@ -375,27 +377,27 @@ export namespace Status {
 
 export class ScalarValue extends jspb.Message {
   getDataType(): DataType;
-  setDataType(value: DataType): void;
+  setDataType(value: DataType): ScalarValue;
 
   getBoolValue(): boolean;
-  setBoolValue(value: boolean): void;
+  setBoolValue(value: boolean): ScalarValue;
 
   getInt64Value(): number;
-  setInt64Value(value: number): void;
+  setInt64Value(value: number): ScalarValue;
 
   getFloat64Value(): number;
-  setFloat64Value(value: number): void;
+  setFloat64Value(value: number): ScalarValue;
 
   getStringValue(): string;
-  setStringValue(value: string): void;
+  setStringValue(value: string): ScalarValue;
 
   getTime64NsValue(): number;
-  setTime64NsValue(value: number): void;
+  setTime64NsValue(value: number): ScalarValue;
 
   getUint128Value(): UInt128 | undefined;
-  setUint128Value(value?: UInt128): void;
+  setUint128Value(value?: UInt128): ScalarValue;
   hasUint128Value(): boolean;
-  clearUint128Value(): void;
+  clearUint128Value(): ScalarValue;
 
   getValueCase(): ScalarValue.ValueCase;
 
@@ -431,18 +433,18 @@ export namespace ScalarValue {
 
 export class ExecuteScriptRequest extends jspb.Message {
   getQueryStr(): string;
-  setQueryStr(value: string): void;
+  setQueryStr(value: string): ExecuteScriptRequest;
 
   getClusterId(): string;
-  setClusterId(value: string): void;
+  setClusterId(value: string): ExecuteScriptRequest;
 
   getExecFuncsList(): Array<ExecuteScriptRequest.FuncToExecute>;
-  setExecFuncsList(value: Array<ExecuteScriptRequest.FuncToExecute>): void;
-  clearExecFuncsList(): void;
+  setExecFuncsList(value: Array<ExecuteScriptRequest.FuncToExecute>): ExecuteScriptRequest;
+  clearExecFuncsList(): ExecuteScriptRequest;
   addExecFuncs(value?: ExecuteScriptRequest.FuncToExecute, index?: number): ExecuteScriptRequest.FuncToExecute;
 
   getMutation(): boolean;
-  setMutation(value: boolean): void;
+  setMutation(value: boolean): ExecuteScriptRequest;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ExecuteScriptRequest.AsObject;
@@ -462,15 +464,15 @@ export namespace ExecuteScriptRequest {
 
   export class FuncToExecute extends jspb.Message {
     getFuncName(): string;
-    setFuncName(value: string): void;
+    setFuncName(value: string): FuncToExecute;
 
     getArgValuesList(): Array<ExecuteScriptRequest.FuncToExecute.ArgValue>;
-    setArgValuesList(value: Array<ExecuteScriptRequest.FuncToExecute.ArgValue>): void;
-    clearArgValuesList(): void;
+    setArgValuesList(value: Array<ExecuteScriptRequest.FuncToExecute.ArgValue>): FuncToExecute;
+    clearArgValuesList(): FuncToExecute;
     addArgValues(value?: ExecuteScriptRequest.FuncToExecute.ArgValue, index?: number): ExecuteScriptRequest.FuncToExecute.ArgValue;
 
     getOutputTablePrefix(): string;
-    setOutputTablePrefix(value: string): void;
+    setOutputTablePrefix(value: string): FuncToExecute;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): FuncToExecute.AsObject;
@@ -489,10 +491,10 @@ export namespace ExecuteScriptRequest {
 
     export class ArgValue extends jspb.Message {
       getName(): string;
-      setName(value: string): void;
+      setName(value: string): ArgValue;
 
       getValue(): string;
-      setValue(value: string): void;
+      setValue(value: string): ArgValue;
 
       serializeBinary(): Uint8Array;
       toObject(includeInstance?: boolean): ArgValue.AsObject;
@@ -515,10 +517,10 @@ export namespace ExecuteScriptRequest {
 
 export class QueryTimingInfo extends jspb.Message {
   getExecutionTimeNs(): number;
-  setExecutionTimeNs(value: number): void;
+  setExecutionTimeNs(value: number): QueryTimingInfo;
 
   getCompilationTimeNs(): number;
-  setCompilationTimeNs(value: number): void;
+  setCompilationTimeNs(value: number): QueryTimingInfo;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): QueryTimingInfo.AsObject;
@@ -537,15 +539,15 @@ export namespace QueryTimingInfo {
 
 export class QueryExecutionStats extends jspb.Message {
   getTiming(): QueryTimingInfo | undefined;
-  setTiming(value?: QueryTimingInfo): void;
+  setTiming(value?: QueryTimingInfo): QueryExecutionStats;
   hasTiming(): boolean;
-  clearTiming(): void;
+  clearTiming(): QueryExecutionStats;
 
   getBytesProcessed(): number;
-  setBytesProcessed(value: number): void;
+  setBytesProcessed(value: number): QueryExecutionStats;
 
   getRecordsProcessed(): number;
-  setRecordsProcessed(value: number): void;
+  setRecordsProcessed(value: number): QueryExecutionStats;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): QueryExecutionStats.AsObject;
@@ -565,15 +567,15 @@ export namespace QueryExecutionStats {
 
 export class QueryMetadata extends jspb.Message {
   getRelation(): Relation | undefined;
-  setRelation(value?: Relation): void;
+  setRelation(value?: Relation): QueryMetadata;
   hasRelation(): boolean;
-  clearRelation(): void;
+  clearRelation(): QueryMetadata;
 
   getName(): string;
-  setName(value: string): void;
+  setName(value: string): QueryMetadata;
 
   getId(): string;
-  setId(value: string): void;
+  setId(value: string): QueryMetadata;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): QueryMetadata.AsObject;
@@ -593,14 +595,14 @@ export namespace QueryMetadata {
 
 export class QueryData extends jspb.Message {
   getBatch(): RowBatchData | undefined;
-  setBatch(value?: RowBatchData): void;
+  setBatch(value?: RowBatchData): QueryData;
   hasBatch(): boolean;
-  clearBatch(): void;
+  clearBatch(): QueryData;
 
   getExecutionStats(): QueryExecutionStats | undefined;
-  setExecutionStats(value?: QueryExecutionStats): void;
+  setExecutionStats(value?: QueryExecutionStats): QueryData;
   hasExecutionStats(): boolean;
-  clearExecutionStats(): void;
+  clearExecutionStats(): QueryData;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): QueryData.AsObject;
@@ -619,27 +621,27 @@ export namespace QueryData {
 
 export class ExecuteScriptResponse extends jspb.Message {
   getStatus(): Status | undefined;
-  setStatus(value?: Status): void;
+  setStatus(value?: Status): ExecuteScriptResponse;
   hasStatus(): boolean;
-  clearStatus(): void;
+  clearStatus(): ExecuteScriptResponse;
 
   getQueryId(): string;
-  setQueryId(value: string): void;
+  setQueryId(value: string): ExecuteScriptResponse;
 
   getData(): QueryData | undefined;
-  setData(value?: QueryData): void;
+  setData(value?: QueryData): ExecuteScriptResponse;
   hasData(): boolean;
-  clearData(): void;
+  clearData(): ExecuteScriptResponse;
 
   getMetaData(): QueryMetadata | undefined;
-  setMetaData(value?: QueryMetadata): void;
+  setMetaData(value?: QueryMetadata): ExecuteScriptResponse;
   hasMetaData(): boolean;
-  clearMetaData(): void;
+  clearMetaData(): ExecuteScriptResponse;
 
   getMutationInfo(): MutationInfo | undefined;
-  setMutationInfo(value?: MutationInfo): void;
+  setMutationInfo(value?: MutationInfo): ExecuteScriptResponse;
   hasMutationInfo(): boolean;
-  clearMutationInfo(): void;
+  clearMutationInfo(): ExecuteScriptResponse;
 
   getResultCase(): ExecuteScriptResponse.ResultCase;
 
@@ -669,13 +671,13 @@ export namespace ExecuteScriptResponse {
 
 export class MutationInfo extends jspb.Message {
   getStatus(): Status | undefined;
-  setStatus(value?: Status): void;
+  setStatus(value?: Status): MutationInfo;
   hasStatus(): boolean;
-  clearStatus(): void;
+  clearStatus(): MutationInfo;
 
   getStatesList(): Array<MutationInfo.MutationState>;
-  setStatesList(value: Array<MutationInfo.MutationState>): void;
-  clearStatesList(): void;
+  setStatesList(value: Array<MutationInfo.MutationState>): MutationInfo;
+  clearStatesList(): MutationInfo;
   addStates(value?: MutationInfo.MutationState, index?: number): MutationInfo.MutationState;
 
   serializeBinary(): Uint8Array;
@@ -694,13 +696,13 @@ export namespace MutationInfo {
 
   export class MutationState extends jspb.Message {
     getId(): string;
-    setId(value: string): void;
+    setId(value: string): MutationState;
 
     getState(): LifeCycleState;
-    setState(value: LifeCycleState): void;
+    setState(value: LifeCycleState): MutationState;
 
     getName(): string;
-    setName(value: string): void;
+    setName(value: string): MutationState;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): MutationState.AsObject;
@@ -722,7 +724,7 @@ export namespace MutationInfo {
 
 export class HealthCheckRequest extends jspb.Message {
   getClusterId(): string;
-  setClusterId(value: string): void;
+  setClusterId(value: string): HealthCheckRequest;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): HealthCheckRequest.AsObject;
@@ -740,9 +742,9 @@ export namespace HealthCheckRequest {
 
 export class HealthCheckResponse extends jspb.Message {
   getStatus(): Status | undefined;
-  setStatus(value?: Status): void;
+  setStatus(value?: Status): HealthCheckResponse;
   hasStatus(): boolean;
-  clearStatus(): void;
+  clearStatus(): HealthCheckResponse;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): HealthCheckResponse.AsObject;
@@ -755,54 +757,6 @@ export class HealthCheckResponse extends jspb.Message {
 export namespace HealthCheckResponse {
   export type AsObject = {
     status?: Status.AsObject,
-  }
-}
-
-export class DebugLogRequest extends jspb.Message {
-  getClusterId(): string;
-  setClusterId(value: string): void;
-
-  getPodName(): string;
-  setPodName(value: string): void;
-
-  getPrevious(): boolean;
-  setPrevious(value: boolean): void;
-
-  getContainer(): string;
-  setContainer(value: string): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): DebugLogRequest.AsObject;
-  static toObject(includeInstance: boolean, msg: DebugLogRequest): DebugLogRequest.AsObject;
-  static serializeBinaryToWriter(message: DebugLogRequest, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): DebugLogRequest;
-  static deserializeBinaryFromReader(message: DebugLogRequest, reader: jspb.BinaryReader): DebugLogRequest;
-}
-
-export namespace DebugLogRequest {
-  export type AsObject = {
-    clusterId: string,
-    podName: string,
-    previous: boolean,
-    container: string,
-  }
-}
-
-export class DebugLogResponse extends jspb.Message {
-  getData(): string;
-  setData(value: string): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): DebugLogResponse.AsObject;
-  static toObject(includeInstance: boolean, msg: DebugLogResponse): DebugLogResponse.AsObject;
-  static serializeBinaryToWriter(message: DebugLogResponse, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): DebugLogResponse;
-  static deserializeBinaryFromReader(message: DebugLogResponse, reader: jspb.BinaryReader): DebugLogResponse;
-}
-
-export namespace DebugLogResponse {
-  export type AsObject = {
-    data: string,
   }
 }
 

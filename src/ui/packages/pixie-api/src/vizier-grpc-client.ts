@@ -5,9 +5,9 @@ import { catchError, timeout } from 'rxjs/operators';
 import {
   ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation,
   RowBatchData, Status, MutationInfo,
-} from './types/generated/vizier_pb';
+} from './types/generated/vizierapi_pb';
 // noinspection ES6PreferShortImport
-import { VizierServiceClient } from './types/generated/VizierServiceClientPb';
+import { VizierServiceClient } from './types/generated/VizierapiServiceClientPb';
 
 const noop = () => {};
 

@@ -1,4 +1,4 @@
-import { Status } from 'types/generated/vizier_pb';
+import { Status } from 'types/generated/vizierapi_pb';
 
 interface CompilerError {
   line: number;

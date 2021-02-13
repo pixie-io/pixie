@@ -62,7 +62,7 @@ def _generate_grpc_web_srcs(
         # For each proto file we expect 3 files to get generated: the .d.ts, .js and
         # ServiceClientPb.ts. The naming of these files picks up the suffix from the proto file,
         # for example, vizier.proto will produce:
-        # vizier_pb.d.ts, vizier_pb.js VizierServiceClientPb.ts.
+        # vizierapi_pb.d.ts, vizierapi_pb.js VizierapiServiceClientPb.ts.
         prefix = src.path.split("/")[-1].split(".")[:-1][0]
         basepath = src.path[:src.path.rfind("/")]
         capitalized = prefix[:1].upper() + prefix[1:]

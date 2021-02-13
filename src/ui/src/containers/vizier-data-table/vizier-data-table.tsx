@@ -5,7 +5,7 @@ import {
 } from 'pixie-components';
 import { JSONData } from 'containers/format-data/format-data';
 import * as React from 'react';
-import { DataType, SemanticType } from 'types/generated/vizier_pb';
+import { DataType, SemanticType } from 'types/generated/vizierapi_pb';
 import noop from 'utils/noop';
 import { dataFromProto } from 'utils/result-data-utils';
 import {

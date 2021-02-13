@@ -1,4 +1,4 @@
-import { CompilerError, ErrorDetails, Status } from 'types/generated/vizier_pb';
+import { CompilerError, ErrorDetails, Status } from 'types/generated/vizierapi_pb';
 
 import { ParseCompilerErrors } from './parse-compiler-errors';
 

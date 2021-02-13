@@ -1,4 +1,4 @@
-import { SemanticType } from 'types/generated/vizier_pb';
+import { SemanticType } from 'types/generated/vizierapi_pb';
 import { parseRows } from './parsers';
 
 describe('parseRows', () => {

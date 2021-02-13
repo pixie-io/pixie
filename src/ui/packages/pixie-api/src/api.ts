@@ -2,7 +2,7 @@ import { ExecutionStateUpdate, VizierGRPCClient, VizierQueryFunc } from 'vizier-
 import { CloudClient } from 'cloud-gql-client';
 import { Observable, from } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { Status } from 'types/generated/vizier_pb';
+import { Status } from 'types/generated/vizierapi_pb';
 import { containsMutation } from 'utils/pxl';
 
 /**

@@ -48,8 +48,6 @@ export {
   Column,
   CompilerError,
   DataType,
-  DebugLogRequest,
-  DebugLogResponse,
   ErrorDetails,
   ExecuteScriptRequest,
   ExecuteScriptResponse,
@@ -72,11 +70,8 @@ export {
   Time64NSColumn,
   UInt128,
   UInt128Column,
-} from './types/generated/vizier_pb';
+} from './types/generated/vizierapi_pb';
 
-export {
-  VizierDebugServiceClient,
-  VizierServiceClient,
-} from './types/generated/VizierServiceClientPb';
+export { VizierServiceClient } from './types/generated/VizierapiServiceClientPb';
 
 /* Generated types end */

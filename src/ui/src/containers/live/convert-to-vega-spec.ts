@@ -3,7 +3,7 @@
 import { Theme } from '@material-ui/core/styles';
 import { getFormatFnMetadata, DataWithUnits, FormatFnMetadata } from 'containers/format-data/format-data';
 import { addPxTimeFormatExpression } from 'containers/live-widgets/vega/timeseries-axis';
-import { Relation, SemanticType } from 'types/generated/vizier_pb';
+import { Relation, SemanticType } from 'types/generated/vizierapi_pb';
 import {
   Axis,
   Data,

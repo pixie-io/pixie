@@ -14,7 +14,7 @@ import {
 } from 'containers/live/convert-to-vega-spec';
 import {
   Relation, SemanticType,
-} from 'types/generated/vizier_pb';
+} from 'types/generated/vizierapi_pb';
 import * as _ from 'lodash';
 import * as React from 'react';
 import { Vega as ReactVega } from 'react-vega';

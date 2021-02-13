@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <set>
 #include <string>
 
 using google::protobuf::Descriptor;
@@ -50,9 +51,8 @@ using std::string;
 
 enum Mode {
   OP = 0,          // first party google3 one platform services
-  GATEWAY = 1,     // open-source gRPC Gateway
-  OPJSPB = 2,      // first party google3 one platform services with JSPB
-  GRPCWEB = 3,     // client using the application/grpc-web wire format
+  OPJSPB = 1,      // first party google3 one platform services with JSPB
+  GRPCWEB = 2,     // client using the application/grpc-web wire format
 };
 
 enum ImportStyle {
@@ -60,6 +60,8 @@ enum ImportStyle {
   COMMONJS = 1,    // const grpcWeb = require("grpc-web")
   TYPESCRIPT = 2,  // import * as grpcWeb from 'grpc-web'
 };
+
+const char GRPC_PROMISE[] = "grpc.web.promise.GrpcWebPromise";
 
 const char* kKeyword[] = {
   "abstract",
@@ -135,8 +137,6 @@ string GetModeVar(const Mode mode) {
   switch (mode) {
     case OP:
       return "OP";
-    case GATEWAY:
-      return "Gateway";
     case OPJSPB:
       return "OPJspb";
     case GRPCWEB:
@@ -317,69 +317,75 @@ string ModuleAlias(const string& filename) {
 }
 
 string JSMessageType(const Descriptor *desc, const FileDescriptor *file) {
-  string result;
-  if (desc->file() != file) {
-    result = ModuleAlias(desc->file()->name());
+  string class_name;
+  class_name = StripPrefixString(desc->full_name(), desc->file()->package());
+  if (!class_name.empty() && class_name[0] == '.') {
+    class_name = class_name.substr(1);
   }
-  result += StripPrefixString(desc->full_name(), desc->file()->package());
-  if (!result.empty() && result[0] == '.') {
-    result = result.substr(1);
+  if (desc->file() == file) {
+    // [for protobuf .d.ts files only] Do not add the module prefix for local
+    // messages.
+    return class_name;
   }
-  return result;
+  return ModuleAlias(desc->file()->name()) + "." + class_name;
 }
 
-string JSElementType(const FieldDescriptor *desc, const FileDescriptor *file)
-{
-  string js_field_type;
-  switch (desc->type())
-  {
-  case FieldDescriptor::TYPE_DOUBLE:
-  case FieldDescriptor::TYPE_FLOAT:
-  case FieldDescriptor::TYPE_INT32:
-  case FieldDescriptor::TYPE_UINT32:
-  case FieldDescriptor::TYPE_SINT32:
-  case FieldDescriptor::TYPE_FIXED32:
-  case FieldDescriptor::TYPE_SFIXED32:
-    js_field_type = "number";
-    break;
-  case FieldDescriptor::TYPE_INT64:
-  case FieldDescriptor::TYPE_UINT64:
-  case FieldDescriptor::TYPE_SINT64:
-  case FieldDescriptor::TYPE_FIXED64:
-  case FieldDescriptor::TYPE_SFIXED64:
-    if (desc->options().jstype() == FieldOptions::JS_STRING) {
-      js_field_type = "string";
-    } else {
-      js_field_type = "number";
-    }
-    break;
-  case FieldDescriptor::TYPE_BOOL:
-    js_field_type = "boolean";
-    break;
-  case FieldDescriptor::TYPE_STRING:
-    js_field_type = "string";
-    break;
-  case FieldDescriptor::TYPE_BYTES:
-    js_field_type = "Uint8Array | string";
-    break;
-  case FieldDescriptor::TYPE_ENUM:
-    if (desc->enum_type()->file() != file) {
-      js_field_type = ModuleAlias(desc->enum_type()->file()->name());
-    }
-    js_field_type += StripPrefixString(desc->enum_type()->full_name(),
-                                       desc->enum_type()->file()->package());
-    if (!js_field_type.empty() && js_field_type[0] == '.') {
-      js_field_type = js_field_type.substr(1);
-    }
-    break;
-  case FieldDescriptor::TYPE_MESSAGE:
-    js_field_type = JSMessageType(desc->message_type(), file);
-    break;
-  default:
-    js_field_type = "{}";
-    break;
+string JSMessageType(const Descriptor *desc) {
+  return JSMessageType(desc, nullptr);
+}
+
+string JSElementType(const FieldDescriptor *desc, const FileDescriptor *file) {
+  switch (desc->type()) {
+    case FieldDescriptor::TYPE_DOUBLE:
+    case FieldDescriptor::TYPE_FLOAT:
+    case FieldDescriptor::TYPE_INT32:
+    case FieldDescriptor::TYPE_UINT32:
+    case FieldDescriptor::TYPE_SINT32:
+    case FieldDescriptor::TYPE_FIXED32:
+    case FieldDescriptor::TYPE_SFIXED32:
+      return "number";
+
+    case FieldDescriptor::TYPE_INT64:
+    case FieldDescriptor::TYPE_UINT64:
+    case FieldDescriptor::TYPE_SINT64:
+    case FieldDescriptor::TYPE_FIXED64:
+    case FieldDescriptor::TYPE_SFIXED64:
+      if (desc->options().jstype() == FieldOptions::JS_STRING) {
+        return "string";
+      } else {
+        return "number";
+      }
+
+    case FieldDescriptor::TYPE_BOOL:
+      return "boolean";
+
+    case FieldDescriptor::TYPE_STRING:
+      return "string";
+
+    case FieldDescriptor::TYPE_BYTES:
+      return "Uint8Array | string";
+
+    case FieldDescriptor::TYPE_ENUM:
+      if (desc->enum_type()->file() == file) {
+        // [for protobuf .d.ts files only] Do not add the module prefix for
+        // local messages.
+        string enum_name =
+            StripPrefixString(
+                desc->enum_type()->full_name(),
+                desc->enum_type()->file()->package());
+        return StripPrefixString(enum_name, ".");
+      }
+      return ModuleAlias(desc->enum_type()->file()->name())
+          + StripPrefixString(
+                desc->enum_type()->full_name(),
+                desc->enum_type()->file()->package());
+
+    case FieldDescriptor::TYPE_MESSAGE:
+      return JSMessageType(desc->message_type(), file);
+
+    default:
+      return "{}";
   }
-  return js_field_type;
 }
 
 string JSFieldType(const FieldDescriptor *desc, const FileDescriptor *file) {
@@ -396,8 +402,8 @@ string JSFieldType(const FieldDescriptor *desc, const FileDescriptor *file) {
   return js_field_type;
 }
 
-string AsObjectFieldType(const FieldDescriptor *desc,
-                         const FileDescriptor *file) {
+string AsObjectFieldType(
+    const FieldDescriptor *desc, const FileDescriptor *file) {
   if (desc->type() != FieldDescriptor::TYPE_MESSAGE) {
     return JSFieldType(desc, file);
   }
@@ -523,35 +529,26 @@ string GetBasename(string filename) {
   return basename;
 }
 
-/* Finds all message types used in all services in the file, and returns them
- * as a map of fully qualified message type name to message descriptor */
-std::map<string, const Descriptor*> GetAllMessages(const FileDescriptor* file) {
-  std::map<string, const Descriptor*> message_types;
-  for (int service_index = 0;
-       service_index < file->service_count();
-       ++service_index) {
-    const ServiceDescriptor* service = file->service(service_index);
-    for (int method_index = 0;
-         method_index < service->method_count();
-         ++method_index) {
-      const MethodDescriptor *method = service->method(method_index);
-      message_types[method->input_type()->full_name()] = method->input_type();
-      message_types[method->output_type()->full_name()] = method->output_type();
+// Finds all message types used in all services in the file.
+std::set<const Descriptor*> GetAllMessages(const FileDescriptor* file) {
+  std::set<const Descriptor*> messages;
+  for (int s = 0; s < file->service_count(); ++s) {
+    const ServiceDescriptor* service = file->service(s);
+    for (int m = 0; m < service->method_count(); ++m) {
+      const MethodDescriptor *method = service->method(m);
+      messages.insert(method->input_type());
+      messages.insert(method->output_type());
     }
   }
 
-  return message_types;
+  return messages;
 }
 
-void PrintMessagesDeps(Printer* printer, const FileDescriptor* file) {
-  std::map<string, const Descriptor*> messages = GetAllMessages(file);
-  std::map<string, string> vars;
-  for (std::map<string, const Descriptor*>::iterator it = messages.begin();
-       it != messages.end(); it++) {
-    vars["full_name"] = it->first;
+void PrintClosureDependencies(Printer* printer, const FileDescriptor* file) {
+  for (const Descriptor* message : GetAllMessages(file)) {
     printer->Print(
-        vars,
-        "goog.require('proto.$full_name$');\n");
+        "goog.require('proto.$full_name$');\n",
+        "full_name", message->full_name());
   }
   printer->Print("\n\n\n");
 }
@@ -561,11 +558,7 @@ void PrintCommonJsMessagesDeps(Printer* printer, const FileDescriptor* file) {
 
   for (int i = 0; i < file->dependency_count(); i++) {
     const string& name = file->dependency(i)->name();
-    const auto alias = ModuleAlias(name);
-    if (alias == "github_com_gogo_protobuf_gogoproto_gogo_pb") {
-      continue;
-    }
-    vars["alias"] = alias;
+    vars["alias"] = ModuleAlias(name);
     vars["dep_filename"] = GetRootPath(file->name(), name) + StripProto(name);
     // we need to give each cross-file import an alias
     printer->Print(
@@ -605,70 +598,26 @@ void PrintCommonJsMessagesDeps(Printer* printer, const FileDescriptor* file) {
   }
 }
 
-void PrintES6Dependencies(Printer* printer, const FileDescriptor *file) {
-  std::map<string, string> vars;
-
-  for (int i = 0; i < file->dependency_count(); i++) {
-    const string& name = file->dependency(i)->name();
-
-    // Gogo is not a legit dependency for Javascript, since it's only relevant to Go.
-    // We just exclude it from generating and import statement.
-    if (ModuleAlias(name) == "github_com_gogo_protobuf_gogoproto_gogo_pb") {
-      continue;
-    }
-    vars["alias"] = ModuleAlias(name);
-    vars["dep_filename"] = GetRootPath(file->name(), name) + StripProto(name);
-    // we need to give each cross-file import an alias
-    printer->Print(
-        vars,
-        "import * as $alias$ from '$dep_filename$_pb';\n");
-  }
-
-  if (file->dependency_count() != 0) {
-    printer->Print("\n");
-  }
-}
-
 void PrintES6Imports(Printer* printer, const FileDescriptor* file) {
   std::map<string, string> vars;
 
   printer->Print("import * as grpcWeb from 'grpc-web';\n\n");
-  PrintES6Dependencies(printer, file);
 
-  std::map<string, const Descriptor*> messages = GetAllMessages(file);
-  for (std::map<string, const Descriptor*>::iterator it = messages.begin();
-       it != messages.end();) {
-    if (it->second->file() != file) {
-      it = messages.erase(it);
-    } else {
-      it++;
+  std::set<string> imports;
+  for (const Descriptor* message : GetAllMessages(file)) {
+    const string& name = message->file()->name();
+    string dep_filename = GetRootPath(file->name(), name) + StripProto(name);
+    if (imports.find(dep_filename) != imports.end()) {
+      continue;
     }
+    imports.insert(dep_filename);
+    // We need to give each cross-file import an alias.
+    printer->Print(
+        "import * as $alias$ from '$dep_filename$_pb';\n",
+        "alias", ModuleAlias(name),
+        "dep_filename", dep_filename);
   }
-
-  if (messages.empty()) {
-    return;
-  }
-
-  std::map<string, const Descriptor*>::iterator it = messages.begin();
-  vars["base_name"] = GetBasename(StripProto(file->name()));
-  vars["class_name"] = it->second->name();
-
-  if (messages.size() == 1) {
-    printer->Print(vars, "import {$class_name$} from './$base_name$_pb';\n\n");
-    return;
-  }
-
-  printer->Print("import {\n");
-  printer->Indent();
-  printer->Print(vars, "$class_name$");
-
-  for (it++; it != messages.end(); it++) {
-    vars["class_name"] = it->second->name();
-    printer->Print(vars, ",\n$class_name$");
-  }
-
-  printer->Outdent();
-  printer->Print(vars, "} from './$base_name$_pb';\n\n");
+  printer->Print("\n\n");
 }
 
 void PrintTypescriptFile(Printer* printer, const FileDescriptor* file,
@@ -685,10 +634,10 @@ void PrintTypescriptFile(Printer* printer, const FileDescriptor* file,
         "client_: grpcWeb.AbstractClientBase;\n"
         "hostname_: string;\n"
         "credentials_: null | { [index: string]: string; };\n"
-        "options_: null | { [index: string]: string; };\n\n"
+        "options_: null | { [index: string]: any; };\n\n"
         "constructor (hostname: string,\n"
         "             credentials?: null | { [index: string]: string; },\n"
-        "             options?: null | { [index: string]: string; }) {\n");
+        "             options?: null | { [index: string]: any; }) {\n");
     printer->Indent();
     printer->Print("if (!options) options = {};\n");
     printer->Print("if (!credentials) credentials = {};\n");
@@ -708,8 +657,8 @@ void PrintTypescriptFile(Printer* printer, const FileDescriptor* file,
       const MethodDescriptor* method = service->method(method_index);
       vars["js_method_name"] = LowercaseFirstLetter(method->name());
       vars["method_name"] = method->name();
-      vars["input_type"] = JSMessageType(method->input_type(), file);
-      vars["output_type"] = JSMessageType(method->output_type(), file);
+      vars["input_type"] = JSMessageType(method->input_type());
+      vars["output_type"] = JSMessageType(method->output_type());
       vars["serialize_func_name"] = GetSerializeMethodName(vars["mode"]);
       vars["deserialize_func_name"] = GetDeserializeMethodName(vars["mode"]);
       if (!method->client_streaming()) {
@@ -734,12 +683,13 @@ void PrintTypescriptFile(Printer* printer, const FileDescriptor* file,
                          "metadata?: grpcWeb.Metadata) {\n");
           printer->Print(vars, "return this.client_.serverStreaming(\n");
           printer->Indent();
-          printer->Print(vars,
-                         "this.hostname_ +\n"
-                         "  '/$package_dot$$service_name$/$method_name$',\n"
-                         "request,\n"
-                         "metadata || {},\n"
-                         "this.methodInfo$method_name$);\n");
+          printer->Print(
+              vars,
+              "this.hostname_ +\n"
+              "  '/$package_dot$$service_name$/$method_name$',\n"
+              "request,\n"
+              "metadata || {},\n"
+              "this.methodInfo$method_name$);\n");
           printer->Outdent();
           printer->Outdent();
           printer->Print("}\n\n");
@@ -748,19 +698,50 @@ void PrintTypescriptFile(Printer* printer, const FileDescriptor* file,
           printer->Indent();
           printer->Print(vars,
                          "request: $input_type$,\n"
+                         "metadata: grpcWeb.Metadata | null): "
+                         "$promise$<$output_type$>;\n\n");
+          printer->Outdent();
+
+          printer->Print(vars, "$js_method_name$(\n");
+          printer->Indent();
+          printer->Print(vars,
+                         "request: $input_type$,\n"
                          "metadata: grpcWeb.Metadata | null,\n"
                          "callback: (err: grpcWeb.Error,\n"
+                         "           response: $output_type$) => void): "
+                         "grpcWeb.ClientReadableStream<$output_type$>;\n\n");
+          printer->Outdent();
+
+          printer->Print(vars, "$js_method_name$(\n");
+          printer->Indent();
+          printer->Print(vars,
+                         "request: $input_type$,\n"
+                         "metadata: grpcWeb.Metadata | null,\n"
+                         "callback?: (err: grpcWeb.Error,\n"
                          "           response: $output_type$) => void) {\n");
+          printer->Print(vars, "if (callback !== undefined) {\n");
+          printer->Indent();
           printer->Print(vars, "return this.client_.rpcCall(\n");
           printer->Indent();
+          printer->Print(
+              vars,
+              "this.hostname_ +\n"
+              "  '/$package_dot$$service_name$/$method_name$',\n"
+              "request,\n"
+              "metadata || {},\n"
+              "this.methodInfo$method_name$,\n"
+              "callback);\n");
+          printer->Outdent();
+          printer->Outdent();
+          printer->Print(vars,
+                         "}\n"
+                         "return this.client_.unaryCall(\n");
           printer->Print(vars,
                          "this.hostname_ +\n"
                          "  '/$package_dot$$service_name$/$method_name$',\n"
                          "request,\n"
                          "metadata || {},\n"
-                         "this.methodInfo$method_name$,\n"
-                         "callback);\n");
-          printer->Outdent();
+                         "this.methodInfo$method_name$);\n");
           printer->Outdent();
           printer->Print("}\n\n");
         }
@@ -775,6 +756,7 @@ void PrintGrpcWebDtsClientClass(Printer* printer, const FileDescriptor* file,
                                 const string &client_type) {
   std::map<string, string> vars;
   vars["client_type"] = client_type;
+  vars["promise"] = "Promise";
   for (int service_index = 0; service_index < file->service_count();
        ++service_index) {
     printer->Print("export class ");
@@ -785,13 +767,13 @@ void PrintGrpcWebDtsClientClass(Printer* printer, const FileDescriptor* file,
     printer->Print(
         "constructor (hostname: string,\n"
         "             credentials?: null | { [index: string]: string; },\n"
-        "             options?: null | { [index: string]: string; });\n\n");
+        "             options?: null | { [index: string]: any; });\n\n");
     for (int method_index = 0; method_index < service->method_count();
          ++method_index) {
       const MethodDescriptor* method = service->method(method_index);
       vars["js_method_name"] = LowercaseFirstLetter(method->name());
-      vars["input_type"] = JSMessageType(method->input_type(), file);
-      vars["output_type"] = JSMessageType(method->output_type(), file);
+      vars["input_type"] = JSMessageType(method->input_type());
+      vars["output_type"] = JSMessageType(method->output_type());
       if (!method->client_streaming()) {
         if (method->server_streaming()) {
           printer->Print(vars, "$js_method_name$(\n");
@@ -810,8 +792,7 @@ void PrintGrpcWebDtsClientClass(Printer* printer, const FileDescriptor* file,
                            "request: $input_type$,\n"
                            "metadata?: grpcWeb.Metadata\n");
             printer->Outdent();
-            printer->Print(vars,
-                           "): Promise<$output_type$>;\n\n");
+            printer->Print(vars, "): $promise$<$output_type$>;\n\n");
           } else {
             printer->Print(vars, "$js_method_name$(\n");
             printer->Indent();
@@ -903,10 +884,12 @@ void PrintProtoDtsMessage(Printer *printer, const Descriptor *desc,
     if (!field->is_map() && (field->type() != FieldDescriptor::TYPE_MESSAGE ||
                              field->is_repeated())) {
       printer->Print(vars,
-                     "set$js_field_name$(value: $js_field_type$): void;\n");
+                     "set$js_field_name$(value: $js_field_type$): "
+                     "$class_name$;\n");
     } else if (!field->is_map()) {
       printer->Print(vars,
-                     "set$js_field_name$(value?: $js_field_type$): void;\n");
+                     "set$js_field_name$(value?: $js_field_type$): "
+                     "$class_name$;\n");
     }
     if (field->type() == FieldDescriptor::TYPE_MESSAGE && !field->is_repeated()
         && !field->is_map()) {
@@ -914,7 +897,7 @@ void PrintProtoDtsMessage(Printer *printer, const Descriptor *desc,
     }
     if (field->type() == FieldDescriptor::TYPE_MESSAGE ||
         field->is_repeated() || field->is_map()) {
-      printer->Print(vars, "clear$js_field_name$(): void;\n");
+      printer->Print(vars, "clear$js_field_name$(): $class_name$;\n");
     }
     if (field->is_repeated() && !field->is_map()) {
       vars["js_field_name"] = JSElementName(field);
@@ -922,7 +905,7 @@ void PrintProtoDtsMessage(Printer *printer, const Descriptor *desc,
       if (field->type() != FieldDescriptor::TYPE_MESSAGE) {
         printer->Print(vars,
                        "add$js_field_name$(value: $js_field_type$, "
-                       "index?: number): void;\n");
+                       "index?: number): $class_name$;\n");
       } else {
         printer->Print(vars,
                        "add$js_field_name$(value?: $js_field_type$, "
@@ -1003,8 +986,17 @@ void PrintProtoDtsMessage(Printer *printer, const Descriptor *desc,
 
 void PrintProtoDtsFile(Printer *printer, const FileDescriptor *file)
 {
-  printer->Print("import * as jspb from \"google-protobuf\"\n\n");
-  PrintES6Dependencies(printer, file);
+  printer->Print("import * as jspb from 'google-protobuf'\n\n");
+
+  for (int i = 0; i < file->dependency_count(); i++) {
+    const string& name = file->dependency(i)->name();
+    // We need to give each cross-file import an alias.
+    printer->Print(
+        "import * as $alias$ from '$dep_filename$_pb';\n",
+        "alias", ModuleAlias(name),
+        "dep_filename", GetRootPath(file->name(), name) + StripProto(name));
+  }
+  printer->Print("\n\n");
 
   for (int i = 0; i < file->message_type_count(); i++) {
     PrintProtoDtsMessage(printer, file->message_type(i), file);
@@ -1023,7 +1015,9 @@ void PrintFileHeader(Printer* printer, const std::map<string, string>& vars) {
       " * @enhanceable\n"
       " * @public\n"
       " */\n\n"
-      "// GENERATED CODE -- DO NOT EDIT!\n\n\n");
+      "// GENERATED CODE -- DO NOT EDIT!\n\n\n"
+      "/* eslint-disable */\n"
+      "// @ts-nocheck\n\n\n");
 }
 
 void PrintMethodDescriptorFile(Printer* printer,
@@ -1035,7 +1029,9 @@ void PrintMethodDescriptorFile(Printer* printer,
       " * @enhanceable\n"
       " * @public\n"
       " */\n\n"
-      "// GENERATED CODE -- DO NOT EDIT!\n\n\n");
+      "// GENERATED CODE -- DO NOT EDIT!\n\n\n"
+      "/* eslint-disable */\n"
+      "// @ts-nocheck\n\n\n");
 
   printer->Print(vars,
                  "goog.provide('proto.$package_dot$$class_name$.$"
@@ -1043,7 +1039,9 @@ void PrintMethodDescriptorFile(Printer* printer,
   printer->Print(vars, "goog.require('grpc.web.MethodDescriptor');\n");
   printer->Print(vars, "goog.require('grpc.web.MethodType');\n");
   printer->Print(vars, "goog.require('$in_type$');\n");
-  printer->Print(vars, "goog.require('$out_type$');\n");
+  if (vars["out_type"] != vars["in_type"]) {
+    printer->Print(vars, "goog.require('$out_type$');\n");
+  }
   printer->Print(vars, "\n\ngoog.scope(function() {\n\n");
 
   printer->Print(
@@ -1152,7 +1150,6 @@ void PrintPromiseServiceConstructor(Printer* printer,
 
 void PrintMethodInfo(Printer* printer, std::map<string, string> vars) {
   // Print MethodDescriptor.
-  if (vars["gen_multiple_files"] == "false") {
     printer->Print(vars,
                    "/**\n"
                    " * @const\n"
@@ -1185,7 +1182,6 @@ void PrintMethodInfo(Printer* printer, std::map<string, string> vars) {
                   .c_str());
     printer->Outdent();
     printer->Print(vars, ");\n\n\n");
-  }
 
   // Print AbstractClientBase.MethodInfo, which will be deprecated.
   printer->Print(vars,
@@ -1265,8 +1261,8 @@ void PrintPromiseUnaryCall(Printer* printer, std::map<string, string> vars) {
                  " *     request proto\n"
                  " * @param {?Object<string, string>} metadata User defined\n"
                  " *     call metadata\n"
-                 " * @return {!Promise<!proto.$out$>}\n"
-                 " *     A native promise that resolves to the response\n"
+                 " * @return {!$promise$<!proto.$out$>}\n"
+                 " *     Promise that resolves to the response\n"
                  " */\n"
                  "proto.$package_dot$$service_name$PromiseClient.prototype"
                  ".$js_method_name$ =\n");
@@ -1328,43 +1324,291 @@ void PrintServerStreamingCall(Printer* printer, std::map<string, string> vars) {
   printer->Print("};\n\n\n");
 }
 
+void PrintMultipleFilesMode(const FileDescriptor* file, string file_name,
+                            GeneratorContext* context,
+                            std::map<string, string> vars) {
+  std::map<string, string> method_descriptors;
+
+  // Print MethodDescriptor files.
+  for (int i = 0; i < file->service_count(); ++i) {
+    const ServiceDescriptor* service = file->service(i);
+    vars["service_name"] = service->name();
+    vars["class_name"] = LowercaseFirstLetter(service->name());
+
+    for (int method_index = 0; method_index < service->method_count();
+         ++method_index) {
+      const MethodDescriptor* method = service->method(method_index);
+      string method_file_name = Lowercase(service->name()) + "_" +
+                                Lowercase(method->name()) +
+                                "_methoddescriptor.js";
+      std::unique_ptr<ZeroCopyOutputStream> output(
+          context->Open(method_file_name));
+      Printer printer(output.get(), '$');
+
+      vars["method_name"] = method->name();
+      vars["in"] = method->input_type()->full_name();
+      vars["in_type"] = "proto." + method->input_type()->full_name();
+      vars["out"] = method->output_type()->full_name();
+      vars["out_type"] = "proto." + method->output_type()->full_name();
+      vars["method_type"] = method->server_streaming()
+                                ? "grpc.web.MethodType.SERVER_STREAMING"
+                                : "grpc.web.MethodType.UNARY";
+
+      PrintMethodDescriptorFile(&printer, vars);
+      method_descriptors[service->name() + "." + method->name()] =
+          "proto." + vars["package_dot"] + vars["class_name"] + "." +
+          vars["method_name"] + "MethodDescriptor";
+    }
+  }
+
+  std::unique_ptr<ZeroCopyOutputStream> output1(
+      context->Open(file_name + "_client_pb.js"));
+  Printer printer1(output1.get(), '$');
+  std::unique_ptr<ZeroCopyOutputStream> output2(
+      context->Open(file_name + "_promise_client_pb.js"));
+  Printer printer2(output2.get(), '$');
+
+  PrintFileHeader(&printer1, vars);
+  PrintFileHeader(&printer2, vars);
+
+  // Print the Promise and callback client.
+  for (int i = 0; i < file->service_count(); ++i) {
+    const ServiceDescriptor* service = file->service(i);
+    vars["service_name"] = service->name();
+    printer1.Print(vars,
+                   "goog.provide('proto.$package_dot$$service_name$"
+                   "Client');\n\n");
+    printer2.Print(vars,
+                   "goog.provide('proto.$package_dot$$service_name$"
+                   "PromiseClient');\n\n");
+  }
+
+  if (vars["promise"] == GRPC_PROMISE) {
+    printer2.Print(vars, "goog.require('grpc.web.promise');\n");
+  }
+  std::map<string, string>::iterator it;
+  for (it = method_descriptors.begin(); it != method_descriptors.end(); it++) {
+    vars["import_mtd"] = it->second;
+    printer1.Print(vars, "goog.require('$import_mtd$');\n");
+    printer2.Print(vars, "goog.require('$import_mtd$');\n");
+  }
+  printer1.Print(vars, "goog.require('grpc.web.$mode$ClientBase');\n");
+  printer1.Print(vars, "goog.require('grpc.web.ClientReadableStream');\n");
+  printer1.Print(vars, "goog.require('grpc.web.Error');\n");
+  printer2.Print(vars, "goog.require('grpc.web.$mode$ClientBase');\n");
+  printer2.Print(vars, "goog.require('grpc.web.ClientReadableStream');\n");
+  printer2.Print(vars, "goog.require('grpc.web.Error');\n");
+
+  PrintClosureDependencies(&printer1, file);
+  PrintClosureDependencies(&printer2, file);
+
+  printer1.Print("goog.scope(function() {\n\n");
+  printer2.Print("goog.scope(function() {\n\n");
+
+  for (int service_index = 0; service_index < file->service_count();
+       ++service_index) {
+    const ServiceDescriptor* service = file->service(service_index);
+    vars["service_name"] = service->name();
+    PrintServiceConstructor(&printer1, vars);
+    PrintPromiseServiceConstructor(&printer2, vars);
+
+    for (int method_index = 0; method_index < service->method_count();
+         ++method_index) {
+      const MethodDescriptor* method = service->method(method_index);
+      const Descriptor* input_type = method->input_type();
+      const Descriptor* output_type = method->output_type();
+      vars["js_method_name"] = LowercaseFirstLetter(method->name());
+      vars["method_name"] = method->name();
+      vars["in"] = input_type->full_name();
+      vars["out"] = output_type->full_name();
+      vars["method_descriptor"] =
+          method_descriptors[service->name() + "." + method->name()];
+      vars["in_type"] = "proto." + input_type->full_name();
+      vars["out_type"] = "proto." + output_type->full_name();
+
+      // Client streaming is not supported yet
+      if (!method->client_streaming()) {
+        if (method->server_streaming()) {
+          vars["method_type"] = "grpc.web.MethodType.SERVER_STREAMING";
+          vars["client_type"] = "Client";
+          PrintServerStreamingCall(&printer1, vars);
+          vars["client_type"] = "PromiseClient";
+          PrintServerStreamingCall(&printer2, vars);
+        } else {
+          vars["method_type"] = "grpc.web.MethodType.UNARY";
+          PrintUnaryCall(&printer1, vars);
+          PrintPromiseUnaryCall(&printer2, vars);
+        }
+      }
+    }
+  }
+  printer1.Print("}); // goog.scope\n\n");
+  printer2.Print("}); // goog.scope\n\n");
+}
+
+void PrintClosureES6Imports(
+    Printer* printer, const FileDescriptor* file, string package_dot) {
+  for (int i = 0; i < file->service_count(); ++i) {
+    const ServiceDescriptor* service = file->service(i);
+
+    string service_namespace = "proto." + package_dot + service->name();
+    printer->Print(
+        "import $service_name$Client_import from 'goog:$namespace$';\n",
+        "service_name", service->name(),
+        "namespace", service_namespace + "Client");
+    printer->Print(
+        "import $service_name$PromiseClient_import from 'goog:$namespace$';\n",
+        "service_name", service->name(),
+        "namespace", service_namespace + "PromiseClient");
+  }
+
+  printer->Print("\n\n\n");
+}
+
+void PrintGrpcWebClosureES6File(Printer* printer, const FileDescriptor* file) {
+  string package_dot = file->package().empty() ? "" : file->package() + ".";
+
+  printer->Print(
+      "// GENERATED CODE -- DO NOT EDIT!\n"
+      "\n"
+      "/**\n"
+      " * @fileoverview gRPC-Web generated client stub for '$file$'\n"
+      " */\n"
+      "\n"
+      "\n",
+      "file", file->name());
+
+  PrintClosureES6Imports(printer, file, package_dot);
+
+  for (int i = 0; i < file->service_count(); ++i) {
+    const ServiceDescriptor* service = file->service(i);
+
+    string service_namespace = "proto." + package_dot + service->name();
+    printer->Print(
+        "export const $name$Client = $name$Client_import;\n",
+        "name", service->name());
+    printer->Print(
+        "export const $name$PromiseClient = $name$PromiseClient_import;\n",
+        "name", service->name());
+  }
+}
+
+class GeneratorOptions {
+ public:
+  GeneratorOptions();
+
+  bool ParseFromOptions(const string& parameter, string* error);
+  bool ParseFromOptions(const std::vector<std::pair<string, string>>& options,
+                        string* error);
+
+  // Returns the name of the output file for |proto_file|.
+  string OutputFile(const string& proto_file) const;
+
+  string mode() const { return mode_; }
+  ImportStyle import_style() const { return import_style_; }
+  bool generate_dts() const { return generate_dts_; }
+  bool generate_closure_es6() const { return generate_closure_es6_; }
+  bool multiple_files() const { return multiple_files_; }
+  bool goog_promise() const { return goog_promise_; }
+
+ private:
+  string file_name_;
+  string mode_;
+  ImportStyle import_style_;
+  bool generate_dts_;
+  bool generate_closure_es6_;
+  bool multiple_files_;
+  bool goog_promise_;
+};
+
+GeneratorOptions::GeneratorOptions()
+    : file_name_(""),
+      mode_(""),
+      import_style_(ImportStyle::CLOSURE),
+      generate_dts_(false),
+      generate_closure_es6_(false),
+      multiple_files_(false),
+      goog_promise_(false) {}
+
+bool GeneratorOptions::ParseFromOptions(const string& parameter,
+                                        string* error) {
+  std::vector<std::pair<string, string>> options;
+  ParseGeneratorParameter(parameter, &options);
+  return ParseFromOptions(options, error);
+}
+
+bool GeneratorOptions::ParseFromOptions(
+    const std::vector<std::pair<string, string>>& options, string* error) {
+  for (const std::pair<string, string>& option : options) {
+    if ("out" == option.first) {
+      file_name_ = option.second;
+    } else if ("mode" == option.first) {
+      mode_ = option.second;
+    } else if ("import_style" == option.first) {
+      if ("closure" == option.second) {
+        import_style_ = ImportStyle::CLOSURE;
+      } else if ("experimental_closure_es6" == option.second) {
+        import_style_ = ImportStyle::CLOSURE;
+        generate_closure_es6_ = true;
+      } else if ("commonjs" == option.second) {
+        import_style_ = ImportStyle::COMMONJS;
+      } else if ("commonjs+dts" == option.second) {
+        import_style_ = ImportStyle::COMMONJS;
+        generate_dts_ = true;
+      } else if ("typescript" == option.second) {
+        import_style_ = ImportStyle::TYPESCRIPT;
+        generate_dts_ = true;
+      } else {
+        *error = "options: invalid import_style - " + option.second;
+        return false;
+      }
+    } else if ("multiple_files" == option.first) {
+      multiple_files_ = "True" == option.second;
+    } else if ("goog_promise" == option.first) {
+      goog_promise_ = "True" == option.second;
+    } else {
+      *error = "unsupported option: " + option.first;
+      return false;
+    }
+  }
+
+  if (mode_.empty()) {
+    *error = "options: mode is required";
+    return false;
+  }
+
+  return true;
+}
+
+string GeneratorOptions::OutputFile(const string& proto_file) const {
+  if (ImportStyle::TYPESCRIPT == import_style()) {
+    // Never use the value from the 'out' option when generating TypeScript.
+    string directory;
+    string basename;
+    PathSplit(proto_file, &directory, &basename);
+    return directory + UppercaseFirstLetter(StripProto(basename)) +
+           "ServiceClientPb.ts";
+  }
+  if (!file_name_.empty()) {
+    return file_name_;
+  }
+  return StripProto(proto_file) + "_grpc_web_pb.js";
+}
+
 class GrpcCodeGenerator : public CodeGenerator {
  public:
   GrpcCodeGenerator() {}
   ~GrpcCodeGenerator() override {}
 
+  uint64_t GetSupportedFeatures() const override {
+    // Code generators must explicitly support proto3 optional.
+    return CodeGenerator::FEATURE_PROTO3_OPTIONAL;
+  }
+
   bool Generate(const FileDescriptor* file, const string& parameter,
                 GeneratorContext* context, string* error) const override {
-    std::vector<std::pair<string, string> > options;
-    ParseGeneratorParameter(parameter, &options);
-
-    string file_name;
-    string mode;
-    string import_style_str;
-    ImportStyle import_style;
-    bool generate_dts = false;
-    bool gen_multiple_files = false;
-
-    for (size_t i = 0; i < options.size(); ++i) {
-      if (options[i].first == "out") {
-        file_name = options[i].second;
-      } else if (options[i].first == "mode") {
-        mode = options[i].second;
-      } else if (options[i].first == "import_style") {
-        import_style_str = options[i].second;
-      } else if (options[i].first == "multiple_files") {
-        gen_multiple_files = options[i].second == "true";
-      } else {
-        *error = "unsupported options: " + options[i].first;
-        return false;
-      }
-    }
-
-    if (file_name.empty()) {
-      file_name = StripProto(file->name()) + "_grpc_web_pb.js";
-    }
-    if (mode.empty()) {
-      *error = "options: mode is required";
+    GeneratorOptions generator_options;
+    if (!generator_options.ParseFromOptions(parameter, error)) {
       return false;
     }
 
@@ -1373,43 +1617,27 @@ class GrpcCodeGenerator : public CodeGenerator {
     string package = file->package();
     vars["package"] = package;
     vars["package_dot"] = package.empty() ? "" : package + '.';
+    vars["promise"] = "Promise";
 
-    if (mode == "binary") {
+    if ("binary" == generator_options.mode()) {
       vars["mode"] = GetModeVar(Mode::OP);
-    } else if (mode == "base64") {
-      vars["mode"] = GetModeVar(Mode::GATEWAY);
-    } else if (mode == "grpcweb" || mode == "grpcwebtext") {
+    } else if ("grpcweb" == generator_options.mode()) {
       vars["mode"] = GetModeVar(Mode::GRPCWEB);
-      vars["format"] = (mode == "grpcweb") ? "binary" : "text";
-    } else if (mode == "jspb") {
+      vars["format"] = "binary";
+    } else if ("grpcwebtext" == generator_options.mode()) {
+      vars["mode"] = GetModeVar(Mode::GRPCWEB);
+      vars["format"] = "text";
+    } else if ("jspb" == generator_options.mode()) {
       vars["mode"] = GetModeVar(Mode::OPJSPB);
+      if (generator_options.goog_promise()) {
+        vars["promise"] = GRPC_PROMISE;
+      }
     } else {
-      *error = "options: invalid mode - " + mode;
+      *error = "options: invalid mode - " + generator_options.mode();
       return false;
     }
 
-    if (import_style_str == "closure" || import_style_str.empty()) {
-      import_style = ImportStyle::CLOSURE;
-    } else if (import_style_str == "commonjs") {
-      import_style = ImportStyle::COMMONJS;
-    } else if (import_style_str == "commonjs+dts") {
-      import_style = ImportStyle::COMMONJS;
-      generate_dts = true;
-    } else if (import_style_str == "typescript") {
-      import_style = ImportStyle::TYPESCRIPT;
-
-      string directory;
-      string basename;
-
-      PathSplit(file->name(), &directory, &basename);
-      file_name = directory + UppercaseFirstLetter(StripProto(basename)) +
-                  "ServiceClientPb.ts";
-    } else {
-      *error = "options: invalid import_style - " + import_style_str;
-      return false;
-    }
-
-    if (generate_dts || import_style == ImportStyle::TYPESCRIPT) {
+    if (generator_options.generate_dts()) {
       string proto_dts_file_name = StripProto(file->name()) + "_pb.d.ts";
       std::unique_ptr<ZeroCopyOutputStream> proto_dts_output(
           context->Open(proto_dts_file_name));
@@ -1422,45 +1650,18 @@ class GrpcCodeGenerator : public CodeGenerator {
       return true;
     }
 
-    // Only supports closure for now.
-    if (gen_multiple_files && import_style == ImportStyle::CLOSURE) {
-      for (int i = 0; i < file->service_count(); ++i) {
-        const ServiceDescriptor* service = file->service(i);
-        vars["service_name"] = service->name();
-        vars["class_name"] = LowercaseFirstLetter(service->name());
-
-        for (int method_index = 0; method_index < service->method_count();
-             ++method_index) {
-          const MethodDescriptor* method = service->method(method_index);
-          string method_file_name = Lowercase(service->name()) + "_" +
-                                    Lowercase(method->name()) +
-                                    "_methoddescriptor.js";
-          std::unique_ptr<ZeroCopyOutputStream> output(
-              context->Open(method_file_name));
-          Printer printer(output.get(), '$');
-
-          vars["method_name"] = method->name();
-          vars["in"] = method->input_type()->full_name();
-          vars["in_type"] = "proto." + method->input_type()->full_name();
-          vars["out"] = method->output_type()->full_name();
-          vars["out_type"] = "proto." + method->output_type()->full_name();
-          vars["method_type"] = method->server_streaming()
-                                    ? "grpc.web.MethodType.SERVER_STREAMING"
-                                    : "grpc.web.MethodType.UNARY";
-
-          PrintMethodDescriptorFile(&printer, vars);
-          method_descriptors[service->name() + "." + method->name()] =
-              "proto." + vars["package_dot"] + vars["class_name"] + "." +
-              vars["method_name"] + "MethodDescriptor";
-        }
-      }
+    string file_name = generator_options.OutputFile(file->name());
+    if (generator_options.multiple_files() &&
+        ImportStyle::CLOSURE == generator_options.import_style()) {
+      PrintMultipleFilesMode(file, file_name, context, vars);
+      return true;
     }
 
     std::unique_ptr<ZeroCopyOutputStream> output(context->Open(file_name));
     Printer printer(output.get(), '$');
     PrintFileHeader(&printer, vars);
 
-    if (import_style == ImportStyle::TYPESCRIPT) {
+    if (ImportStyle::TYPESCRIPT == generator_options.import_style()) {
       PrintTypescriptFile(&printer, file, vars);
       return true;
     }
@@ -1468,7 +1669,7 @@ class GrpcCodeGenerator : public CodeGenerator {
     for (int i = 0; i < file->service_count(); ++i) {
       const ServiceDescriptor* service = file->service(i);
       vars["service_name"] = service->name();
-      switch (import_style) {
+      switch (generator_options.import_style()) {
         case ImportStyle::CLOSURE:
           printer.Print(
               vars,
@@ -1485,25 +1686,20 @@ class GrpcCodeGenerator : public CodeGenerator {
     }
     printer.Print("\n");
 
-    switch (import_style) {
+    switch (generator_options.import_style()) {
       case ImportStyle::CLOSURE:
-        if (gen_multiple_files) {
-          std::map<string, string>::iterator it;
-          for (it = method_descriptors.begin(); it != method_descriptors.end();
-               it++) {
-            vars["import_mtd"] = it->second;
-            printer.Print(vars, "goog.require('$import_mtd$');\n");
-          }
-        } else {
-          printer.Print(vars, "goog.require('grpc.web.MethodDescriptor');\n");
-          printer.Print(vars, "goog.require('grpc.web.MethodType');\n");
+        if (vars["promise"] == GRPC_PROMISE) {
+          printer.Print(vars, "goog.require('grpc.web.promise');\n");
         }
+        printer.Print(vars, "goog.require('grpc.web.MethodDescriptor');\n");
+        printer.Print(vars, "goog.require('grpc.web.MethodType');\n");
         printer.Print(vars, "goog.require('grpc.web.$mode$ClientBase');\n");
         printer.Print(vars, "goog.require('grpc.web.AbstractClientBase');\n");
         printer.Print(vars, "goog.require('grpc.web.ClientReadableStream');\n");
         printer.Print(vars, "goog.require('grpc.web.Error');\n");
 
-        PrintMessagesDeps(&printer, file);
+        PrintClosureDependencies(&printer, file);
+
         printer.Print("goog.scope(function() {\n\n");
         break;
       case ImportStyle::COMMONJS:
@@ -1531,22 +1727,19 @@ class GrpcCodeGenerator : public CodeGenerator {
         vars["method_name"] = method->name();
         vars["in"] = input_type->full_name();
         vars["out"] = output_type->full_name();
-        vars["gen_multiple_files"] = gen_multiple_files ? "true" : "false";
         vars["method_descriptor"] =
-            gen_multiple_files
-                ? method_descriptors[service->name() + "." + method->name()]
-                : "methodDescriptor_" + service->name() + "_" + method->name();
+            "methodDescriptor_" + service->name() + "_" + method->name();
 
         // Cross-file ref in CommonJS needs to use the module alias instead
         // of the global name.
-        if (import_style == ImportStyle::COMMONJS &&
+        if (ImportStyle::COMMONJS == generator_options.import_style() &&
             input_type->file() != file) {
           vars["in_type"] = ModuleAlias(input_type->file()->name()) +
                             GetNestedMessageName(input_type);
         } else {
           vars["in_type"] = "proto." + input_type->full_name();
         }
-        if (import_style == ImportStyle::COMMONJS &&
+        if (ImportStyle::COMMONJS == generator_options.import_style() &&
             output_type->file() != file) {
           vars["out_type"] = ModuleAlias(output_type->file()->name()) +
                              GetNestedMessageName(output_type);
@@ -1573,7 +1766,7 @@ class GrpcCodeGenerator : public CodeGenerator {
       }
     }
 
-    switch (import_style) {
+    switch (generator_options.import_style()) {
       case ImportStyle::CLOSURE:
         printer.Print("}); // goog.scope\n\n");
         break;
@@ -1588,7 +1781,7 @@ class GrpcCodeGenerator : public CodeGenerator {
         break;
     }
 
-    if (generate_dts) {
+    if (generator_options.generate_dts()) {
       string grpcweb_dts_file_name =
           StripProto(file->name()) + "_grpc_web_pb.d.ts";
       string proto_dts_file_name = StripProto(file->name()) + "_pb.d.ts";
@@ -1598,6 +1791,16 @@ class GrpcCodeGenerator : public CodeGenerator {
       Printer grpcweb_dts_printer(grpcweb_dts_output.get(), '$');
 
       PrintGrpcWebDtsFile(&grpcweb_dts_printer, file);
+    }
+
+    if (generator_options.generate_closure_es6()) {
+      string es6_file_name = StripProto(file->name()) + ".pb.grpc-web.js";
+
+      std::unique_ptr<ZeroCopyOutputStream> es6_output(
+          context->Open(es6_file_name));
+      Printer es6_printer(es6_output.get(), '$');
+
+      PrintGrpcWebClosureES6File(&es6_printer, file);
     }
 
     return true;

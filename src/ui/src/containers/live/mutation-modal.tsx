@@ -7,13 +7,13 @@ import Grid from '@material-ui/core/Grid';
 import {
   createStyles, Theme, withStyles, WithStyles,
 } from '@material-ui/core/styles';
-import { MutationInfo, LifeCycleState } from 'types/generated/vizier_pb';
+import { MutationInfo, LifeCycleState } from 'types/generated/vizierapi_pb';
 import { StatusCell } from 'pixie-components';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 import { CircularProgress } from '@material-ui/core';
-import { ScriptContext } from '../../context/script-context';
+import { ScriptContext } from 'context/script-context';
 
 import * as moonwalkerSVG from '../../../assets/images/moonwalker.svg';
 

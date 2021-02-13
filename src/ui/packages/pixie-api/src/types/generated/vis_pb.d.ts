@@ -1,22 +1,23 @@
-import * as jspb from "google-protobuf"
+import * as jspb from 'google-protobuf'
 
 import * as google_protobuf_any_pb from 'google-protobuf/google/protobuf/any_pb';
 import * as google_protobuf_wrappers_pb from 'google-protobuf/google/protobuf/wrappers_pb';
 
+
 export class Vis extends jspb.Message {
   getVariablesList(): Array<Vis.Variable>;
-  setVariablesList(value: Array<Vis.Variable>): void;
-  clearVariablesList(): void;
+  setVariablesList(value: Array<Vis.Variable>): Vis;
+  clearVariablesList(): Vis;
   addVariables(value?: Vis.Variable, index?: number): Vis.Variable;
 
   getWidgetsList(): Array<Widget>;
-  setWidgetsList(value: Array<Widget>): void;
-  clearWidgetsList(): void;
+  setWidgetsList(value: Array<Widget>): Vis;
+  clearWidgetsList(): Vis;
   addWidgets(value?: Widget, index?: number): Widget;
 
   getGlobalFuncsList(): Array<Vis.GlobalFunc>;
-  setGlobalFuncsList(value: Array<Vis.GlobalFunc>): void;
-  clearGlobalFuncsList(): void;
+  setGlobalFuncsList(value: Array<Vis.GlobalFunc>): Vis;
+  clearGlobalFuncsList(): Vis;
   addGlobalFuncs(value?: Vis.GlobalFunc, index?: number): Vis.GlobalFunc;
 
   serializeBinary(): Uint8Array;
@@ -36,23 +37,23 @@ export namespace Vis {
 
   export class Variable extends jspb.Message {
     getName(): string;
-    setName(value: string): void;
+    setName(value: string): Variable;
 
     getType(): PXType;
-    setType(value: PXType): void;
+    setType(value: PXType): Variable;
 
     getDefaultValue(): google_protobuf_wrappers_pb.StringValue | undefined;
-    setDefaultValue(value?: google_protobuf_wrappers_pb.StringValue): void;
+    setDefaultValue(value?: google_protobuf_wrappers_pb.StringValue): Variable;
     hasDefaultValue(): boolean;
-    clearDefaultValue(): void;
+    clearDefaultValue(): Variable;
 
     getDescription(): string;
-    setDescription(value: string): void;
+    setDescription(value: string): Variable;
 
     getValidValuesList(): Array<string>;
-    setValidValuesList(value: Array<string>): void;
-    clearValidValuesList(): void;
-    addValidValues(value: string, index?: number): void;
+    setValidValuesList(value: Array<string>): Variable;
+    clearValidValuesList(): Variable;
+    addValidValues(value: string, index?: number): Variable;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Variable.AsObject;
@@ -75,12 +76,12 @@ export namespace Vis {
 
   export class GlobalFunc extends jspb.Message {
     getOutputName(): string;
-    setOutputName(value: string): void;
+    setOutputName(value: string): GlobalFunc;
 
     getFunc(): Widget.Func | undefined;
-    setFunc(value?: Widget.Func): void;
+    setFunc(value?: Widget.Func): GlobalFunc;
     hasFunc(): boolean;
-    clearFunc(): void;
+    clearFunc(): GlobalFunc;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): GlobalFunc.AsObject;
@@ -101,25 +102,25 @@ export namespace Vis {
 
 export class Widget extends jspb.Message {
   getName(): string;
-  setName(value: string): void;
+  setName(value: string): Widget;
 
   getPosition(): Widget.Position | undefined;
-  setPosition(value?: Widget.Position): void;
+  setPosition(value?: Widget.Position): Widget;
   hasPosition(): boolean;
-  clearPosition(): void;
+  clearPosition(): Widget;
 
   getFunc(): Widget.Func | undefined;
-  setFunc(value?: Widget.Func): void;
+  setFunc(value?: Widget.Func): Widget;
   hasFunc(): boolean;
-  clearFunc(): void;
+  clearFunc(): Widget;
 
   getGlobalFuncOutputName(): string;
-  setGlobalFuncOutputName(value: string): void;
+  setGlobalFuncOutputName(value: string): Widget;
 
   getDisplaySpec(): google_protobuf_any_pb.Any | undefined;
-  setDisplaySpec(value?: google_protobuf_any_pb.Any): void;
+  setDisplaySpec(value?: google_protobuf_any_pb.Any): Widget;
   hasDisplaySpec(): boolean;
-  clearDisplaySpec(): void;
+  clearDisplaySpec(): Widget;
 
   getFuncOrRefCase(): Widget.FuncOrRefCase;
 
@@ -142,16 +143,16 @@ export namespace Widget {
 
   export class Position extends jspb.Message {
     getX(): number;
-    setX(value: number): void;
+    setX(value: number): Position;
 
     getY(): number;
-    setY(value: number): void;
+    setY(value: number): Position;
 
     getW(): number;
-    setW(value: number): void;
+    setW(value: number): Position;
 
     getH(): number;
-    setH(value: number): void;
+    setH(value: number): Position;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Position.AsObject;
@@ -173,11 +174,11 @@ export namespace Widget {
 
   export class Func extends jspb.Message {
     getName(): string;
-    setName(value: string): void;
+    setName(value: string): Func;
 
     getArgsList(): Array<Widget.Func.FuncArg>;
-    setArgsList(value: Array<Widget.Func.FuncArg>): void;
-    clearArgsList(): void;
+    setArgsList(value: Array<Widget.Func.FuncArg>): Func;
+    clearArgsList(): Func;
     addArgs(value?: Widget.Func.FuncArg, index?: number): Widget.Func.FuncArg;
 
     serializeBinary(): Uint8Array;
@@ -196,13 +197,13 @@ export namespace Widget {
 
     export class FuncArg extends jspb.Message {
       getName(): string;
-      setName(value: string): void;
+      setName(value: string): FuncArg;
 
       getValue(): string;
-      setValue(value: string): void;
+      setValue(value: string): FuncArg;
 
       getVariable(): string;
-      setVariable(value: string): void;
+      setVariable(value: string): FuncArg;
 
       getInputCase(): FuncArg.InputCase;
 
@@ -240,7 +241,7 @@ export namespace Widget {
 
 export class Axis extends jspb.Message {
   getLabel(): string;
-  setLabel(value: string): void;
+  setLabel(value: string): Axis;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Axis.AsObject;
@@ -258,22 +259,22 @@ export namespace Axis {
 
 export class BarChart extends jspb.Message {
   getBar(): BarChart.Bar | undefined;
-  setBar(value?: BarChart.Bar): void;
+  setBar(value?: BarChart.Bar): BarChart;
   hasBar(): boolean;
-  clearBar(): void;
+  clearBar(): BarChart;
 
   getTitle(): string;
-  setTitle(value: string): void;
+  setTitle(value: string): BarChart;
 
   getXAxis(): Axis | undefined;
-  setXAxis(value?: Axis): void;
+  setXAxis(value?: Axis): BarChart;
   hasXAxis(): boolean;
-  clearXAxis(): void;
+  clearXAxis(): BarChart;
 
   getYAxis(): Axis | undefined;
-  setYAxis(value?: Axis): void;
+  setYAxis(value?: Axis): BarChart;
   hasYAxis(): boolean;
-  clearYAxis(): void;
+  clearYAxis(): BarChart;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): BarChart.AsObject;
@@ -293,19 +294,19 @@ export namespace BarChart {
 
   export class Bar extends jspb.Message {
     getValue(): string;
-    setValue(value: string): void;
+    setValue(value: string): Bar;
 
     getLabel(): string;
-    setLabel(value: string): void;
+    setLabel(value: string): Bar;
 
     getStackBy(): string;
-    setStackBy(value: string): void;
+    setStackBy(value: string): Bar;
 
     getGroupBy(): string;
-    setGroupBy(value: string): void;
+    setGroupBy(value: string): Bar;
 
     getHorizontal(): boolean;
-    setHorizontal(value: boolean): void;
+    setHorizontal(value: boolean): Bar;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Bar.AsObject;
@@ -329,22 +330,22 @@ export namespace BarChart {
 
 export class HistogramChart extends jspb.Message {
   getHistogram(): HistogramChart.Histogram | undefined;
-  setHistogram(value?: HistogramChart.Histogram): void;
+  setHistogram(value?: HistogramChart.Histogram): HistogramChart;
   hasHistogram(): boolean;
-  clearHistogram(): void;
+  clearHistogram(): HistogramChart;
 
   getTitle(): string;
-  setTitle(value: string): void;
+  setTitle(value: string): HistogramChart;
 
   getXAxis(): Axis | undefined;
-  setXAxis(value?: Axis): void;
+  setXAxis(value?: Axis): HistogramChart;
   hasXAxis(): boolean;
-  clearXAxis(): void;
+  clearXAxis(): HistogramChart;
 
   getYAxis(): Axis | undefined;
-  setYAxis(value?: Axis): void;
+  setYAxis(value?: Axis): HistogramChart;
   hasYAxis(): boolean;
-  clearYAxis(): void;
+  clearYAxis(): HistogramChart;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): HistogramChart.AsObject;
@@ -364,19 +365,19 @@ export namespace HistogramChart {
 
   export class Histogram extends jspb.Message {
     getValue(): string;
-    setValue(value: string): void;
+    setValue(value: string): Histogram;
 
     getMaxbins(): number;
-    setMaxbins(value: number): void;
+    setMaxbins(value: number): Histogram;
 
     getMinstep(): number;
-    setMinstep(value: number): void;
+    setMinstep(value: number): Histogram;
 
     getHorizontal(): boolean;
-    setHorizontal(value: boolean): void;
+    setHorizontal(value: boolean): Histogram;
 
     getPrebinCount(): string;
-    setPrebinCount(value: string): void;
+    setPrebinCount(value: string): Histogram;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Histogram.AsObject;
@@ -400,22 +401,22 @@ export namespace HistogramChart {
 
 export class TimeseriesChart extends jspb.Message {
   getTimeseriesList(): Array<TimeseriesChart.Timeseries>;
-  setTimeseriesList(value: Array<TimeseriesChart.Timeseries>): void;
-  clearTimeseriesList(): void;
+  setTimeseriesList(value: Array<TimeseriesChart.Timeseries>): TimeseriesChart;
+  clearTimeseriesList(): TimeseriesChart;
   addTimeseries(value?: TimeseriesChart.Timeseries, index?: number): TimeseriesChart.Timeseries;
 
   getTitle(): string;
-  setTitle(value: string): void;
+  setTitle(value: string): TimeseriesChart;
 
   getXAxis(): Axis | undefined;
-  setXAxis(value?: Axis): void;
+  setXAxis(value?: Axis): TimeseriesChart;
   hasXAxis(): boolean;
-  clearXAxis(): void;
+  clearXAxis(): TimeseriesChart;
 
   getYAxis(): Axis | undefined;
-  setYAxis(value?: Axis): void;
+  setYAxis(value?: Axis): TimeseriesChart;
   hasYAxis(): boolean;
-  clearYAxis(): void;
+  clearYAxis(): TimeseriesChart;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): TimeseriesChart.AsObject;
@@ -435,16 +436,16 @@ export namespace TimeseriesChart {
 
   export class Timeseries extends jspb.Message {
     getValue(): string;
-    setValue(value: string): void;
+    setValue(value: string): Timeseries;
 
     getSeries(): string;
-    setSeries(value: string): void;
+    setSeries(value: string): Timeseries;
 
     getStackBySeries(): boolean;
-    setStackBySeries(value: boolean): void;
+    setStackBySeries(value: boolean): Timeseries;
 
     getMode(): TimeseriesChart.Timeseries.Mode;
-    setMode(value: TimeseriesChart.Timeseries.Mode): void;
+    setMode(value: TimeseriesChart.Timeseries.Mode): Timeseries;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Timeseries.AsObject;
@@ -474,7 +475,7 @@ export namespace TimeseriesChart {
 
 export class VegaChart extends jspb.Message {
   getSpec(): string;
-  setSpec(value: string): void;
+  setSpec(value: string): VegaChart;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): VegaChart.AsObject;
@@ -492,8 +493,8 @@ export namespace VegaChart {
 
 export class Table extends jspb.Message {
   getDisplayColumnsList(): Array<Table.ColumnDisplay>;
-  setDisplayColumnsList(value: Array<Table.ColumnDisplay>): void;
-  clearDisplayColumnsList(): void;
+  setDisplayColumnsList(value: Array<Table.ColumnDisplay>): Table;
+  clearDisplayColumnsList(): Table;
   addDisplayColumns(value?: Table.ColumnDisplay, index?: number): Table.ColumnDisplay;
 
   serializeBinary(): Uint8Array;
@@ -511,10 +512,10 @@ export namespace Table {
 
   export class ColumnDisplay extends jspb.Message {
     getName(): string;
-    setName(value: string): void;
+    setName(value: string): ColumnDisplay;
 
     getDisplayTitle(): string;
-    setDisplayTitle(value: string): void;
+    setDisplayTitle(value: string): ColumnDisplay;
 
     getColumnCase(): ColumnDisplay.ColumnCase;
 
@@ -542,37 +543,37 @@ export namespace Table {
 
 export class Graph extends jspb.Message {
   getDotColumn(): string;
-  setDotColumn(value: string): void;
+  setDotColumn(value: string): Graph;
 
   getAdjacencyList(): Graph.AdjacencyList | undefined;
-  setAdjacencyList(value?: Graph.AdjacencyList): void;
+  setAdjacencyList(value?: Graph.AdjacencyList): Graph;
   hasAdjacencyList(): boolean;
-  clearAdjacencyList(): void;
+  clearAdjacencyList(): Graph;
 
   getEdgeWeightColumn(): string;
-  setEdgeWeightColumn(value: string): void;
+  setEdgeWeightColumn(value: string): Graph;
 
   getNodeWeightColumn(): string;
-  setNodeWeightColumn(value: string): void;
+  setNodeWeightColumn(value: string): Graph;
 
   getEdgeColorColumn(): string;
-  setEdgeColorColumn(value: string): void;
+  setEdgeColorColumn(value: string): Graph;
 
   getEdgeThresholds(): Graph.EdgeThresholds | undefined;
-  setEdgeThresholds(value?: Graph.EdgeThresholds): void;
+  setEdgeThresholds(value?: Graph.EdgeThresholds): Graph;
   hasEdgeThresholds(): boolean;
-  clearEdgeThresholds(): void;
+  clearEdgeThresholds(): Graph;
 
   getEdgeHoverInfoList(): Array<string>;
-  setEdgeHoverInfoList(value: Array<string>): void;
-  clearEdgeHoverInfoList(): void;
-  addEdgeHoverInfo(value: string, index?: number): void;
+  setEdgeHoverInfoList(value: Array<string>): Graph;
+  clearEdgeHoverInfoList(): Graph;
+  addEdgeHoverInfo(value: string, index?: number): Graph;
 
   getEdgeLength(): number;
-  setEdgeLength(value: number): void;
+  setEdgeLength(value: number): Graph;
 
   getEnableDefaultHierarchy(): boolean;
-  setEnableDefaultHierarchy(value: boolean): void;
+  setEnableDefaultHierarchy(value: boolean): Graph;
 
   getInputCase(): Graph.InputCase;
 
@@ -599,10 +600,10 @@ export namespace Graph {
 
   export class AdjacencyList extends jspb.Message {
     getFromColumn(): string;
-    setFromColumn(value: string): void;
+    setFromColumn(value: string): AdjacencyList;
 
     getToColumn(): string;
-    setToColumn(value: string): void;
+    setToColumn(value: string): AdjacencyList;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): AdjacencyList.AsObject;
@@ -622,10 +623,10 @@ export namespace Graph {
 
   export class EdgeThresholds extends jspb.Message {
     getMediumThreshold(): number;
-    setMediumThreshold(value: number): void;
+    setMediumThreshold(value: number): EdgeThresholds;
 
     getHighThreshold(): number;
-    setHighThreshold(value: number): void;
+    setHighThreshold(value: number): EdgeThresholds;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): EdgeThresholds.AsObject;
@@ -652,40 +653,40 @@ export namespace Graph {
 
 export class RequestGraph extends jspb.Message {
   getRequestorPodColumn(): string;
-  setRequestorPodColumn(value: string): void;
+  setRequestorPodColumn(value: string): RequestGraph;
 
   getResponderPodColumn(): string;
-  setResponderPodColumn(value: string): void;
+  setResponderPodColumn(value: string): RequestGraph;
 
   getRequestorServiceColumn(): string;
-  setRequestorServiceColumn(value: string): void;
+  setRequestorServiceColumn(value: string): RequestGraph;
 
   getResponderServiceColumn(): string;
-  setResponderServiceColumn(value: string): void;
+  setResponderServiceColumn(value: string): RequestGraph;
 
   getP50Column(): string;
-  setP50Column(value: string): void;
+  setP50Column(value: string): RequestGraph;
 
   getP90Column(): string;
-  setP90Column(value: string): void;
+  setP90Column(value: string): RequestGraph;
 
   getP99Column(): string;
-  setP99Column(value: string): void;
+  setP99Column(value: string): RequestGraph;
 
   getErrorRateColumn(): string;
-  setErrorRateColumn(value: string): void;
+  setErrorRateColumn(value: string): RequestGraph;
 
   getRequestsPerSecondColumn(): string;
-  setRequestsPerSecondColumn(value: string): void;
+  setRequestsPerSecondColumn(value: string): RequestGraph;
 
   getInboundBytesPerSecondColumn(): string;
-  setInboundBytesPerSecondColumn(value: string): void;
+  setInboundBytesPerSecondColumn(value: string): RequestGraph;
 
   getOutboundBytesPerSecondColumn(): string;
-  setOutboundBytesPerSecondColumn(value: string): void;
+  setOutboundBytesPerSecondColumn(value: string): RequestGraph;
 
   getTotalRequestCountColumn(): string;
-  setTotalRequestCountColumn(value: string): void;
+  setTotalRequestCountColumn(value: string): RequestGraph;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): RequestGraph.AsObject;

@@ -1,4 +1,4 @@
-import { SemanticType } from 'types/generated/vizier_pb';
+import { SemanticType } from 'types/generated/vizierapi_pb';
 import {
   entityPageForScriptId, getLiveViewTitle, LiveViewPage, matchLiveViewEntity,
   optionallyGetNamespace, scriptToEntityURL, toEntityPathname, toEntityURL,

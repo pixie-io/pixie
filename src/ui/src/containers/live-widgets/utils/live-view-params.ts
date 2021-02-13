@@ -1,7 +1,7 @@
 import * as QueryString from 'query-string';
 import { matchPath } from 'react-router';
 
-import { SemanticType } from 'types/generated/vizier_pb';
+import { SemanticType } from 'types/generated/vizierapi_pb';
 import { Arguments } from 'utils/args-utils';
 
 export enum LiveViewPage {

@@ -1,5 +1,5 @@
 import { SelectedPercentile } from 'pixie-components';
-import { DataType, Relation, SemanticType } from 'types/generated/vizier_pb';
+import { DataType, Relation, SemanticType } from 'types/generated/vizierapi_pb';
 
 export interface QuantilesDisplayState {
   selectedPercentile: SelectedPercentile;

@@ -12,7 +12,7 @@ import {
   getLatencyNSLevel,
 } from 'utils/metric-thresholds';
 import { buildClass } from 'pixie-components';
-import { DataType, SemanticType } from '../../types/generated/vizier_pb';
+import { DataType, SemanticType } from 'types/generated/vizierapi_pb';
 
 const JSON_INDENT_PX = 16;
 

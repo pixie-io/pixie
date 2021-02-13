@@ -1,4 +1,4 @@
-import { DataType, SemanticType, UInt128 } from 'types/generated/vizier_pb';
+import { DataType, SemanticType, UInt128 } from 'types/generated/vizierapi_pb';
 import * as FormatData from './format-data';
 
 describe('looksLikeLatencyCol test', () => {

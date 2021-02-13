@@ -2,7 +2,7 @@
 import * as React from 'react';
 import Tooltip from '@material-ui/core/Tooltip';
 import { StatusCell, StatusGroup } from 'pixie-components';
-import { SemanticType } from '../../../types/generated/vizier_pb';
+import { SemanticType } from 'types/generated/vizierapi_pb';
 
 export const STATUS_TYPES = new Set<SemanticType>([
   SemanticType.ST_CONTAINER_STATE,
