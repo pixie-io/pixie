@@ -79,7 +79,7 @@ go_test(
         "k8s_metadata_utils_test.go",
         "metadata_handler_test.go",
         "metadata_store_test.go",
-        "new_metadata_topic_listener_test.go",
+        "metadata_topic_listener_test.go",
         "server_test.go",
         "tracepoint_store_test.go",
         "tracepoint_test.go",
