@@ -43,7 +43,6 @@ func TestVzWatcher(t *testing.T) {
 			existingVzID := uuid.NewV4()
 			existingOrgID := uuid.NewV4()
 			existingK8sUID := "testUID"
-			existingResourceVersion := "1234"
 
 			mockVZMgr.
 				EXPECT().
@@ -54,10 +53,9 @@ func TestVzWatcher(t *testing.T) {
 				Return(&vzmgrpb.GetViziersByShardResponse{
 					Viziers: []*vzmgrpb.GetViziersByShardResponse_VizierInfo{
 						&vzmgrpb.GetViziersByShardResponse_VizierInfo{
-							VizierID:        utils.ProtoFromUUID(existingVzID),
-							OrgID:           utils.ProtoFromUUID(existingOrgID),
-							ResourceVersion: existingResourceVersion,
-							K8sUID:          existingK8sUID,
+							VizierID: utils.ProtoFromUUID(existingVzID),
+							OrgID:    utils.ProtoFromUUID(existingOrgID),
+							K8sUID:   existingK8sUID,
 						},
 					},
 				}, nil)
@@ -84,30 +82,26 @@ func TestVzWatcher(t *testing.T) {
 			newVzID := uuid.NewV4()
 			newOrgID := uuid.NewV4()
 			newK8sUID := "testUID"
-			newResourceVersion := "1234"
 
-			w.RegisterErrorHandler(func(id uuid.UUID, orgID uuid.UUID, uid string, rv string, err error) {
+			w.RegisterErrorHandler(func(id uuid.UUID, orgID uuid.UUID, uid string, err error) {
 				defer wg.Done()
 				assert.Equal(t, existingVzID, id)
 				assert.Equal(t, existingOrgID, orgID)
 				assert.Equal(t, existingK8sUID, uid)
-				assert.Equal(t, existingResourceVersion, rv)
 			})
 
-			w.RegisterVizierHandler(func(id uuid.UUID, orgID uuid.UUID, uid string, rv string) error {
+			w.RegisterVizierHandler(func(id uuid.UUID, orgID uuid.UUID, uid string) error {
 				defer wg.Done()
 
 				if id == existingVzID {
 					assert.Equal(t, existingOrgID, orgID)
 					assert.Equal(t, existingK8sUID, uid)
-					assert.Equal(t, existingResourceVersion, rv)
 					if test.expectError {
 						return errors.New("Some error")
 					}
 				} else if id == newVzID {
 					assert.Equal(t, newOrgID, orgID)
 					assert.Equal(t, newK8sUID, uid)
-					assert.Equal(t, newResourceVersion, rv)
 				} else {
 					t.Fatal("Called Vizier handler with unexpected vizier")
 				}
@@ -115,10 +109,9 @@ func TestVzWatcher(t *testing.T) {
 			})
 
 			msg := &messagespb.VizierConnected{
-				VizierID:        utils.ProtoFromUUID(newVzID),
-				OrgID:           utils.ProtoFromUUID(newOrgID),
-				ResourceVersion: newResourceVersion,
-				K8sUID:          newK8sUID,
+				VizierID: utils.ProtoFromUUID(newVzID),
+				OrgID:    utils.ProtoFromUUID(newOrgID),
+				K8sUID:   newK8sUID,
 			}
 			b, err := msg.Marshal()
 			assert.Nil(t, err)

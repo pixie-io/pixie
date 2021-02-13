@@ -68,7 +68,7 @@ func (i *Indexer) Stop() {
 	}
 }
 
-func (i *Indexer) handleVizier(id uuid.UUID, orgID uuid.UUID, uid string, resourceVersion string) error {
+func (i *Indexer) handleVizier(id uuid.UUID, orgID uuid.UUID, uid string) error {
 	i.clustersMu.Lock()
 	defer i.clustersMu.Unlock()
 

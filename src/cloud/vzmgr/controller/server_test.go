@@ -454,7 +454,6 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 		req := &messagespb.VizierConnected{}
 		err := proto.Unmarshal(msg.Data, req)
 		assert.Nil(t, err)
-		assert.Equal(t, "1234", req.ResourceVersion)
 		assert.Equal(t, "cUID", req.K8sUID)
 		assert.Equal(t, "223e4567-e89b-12d3-a456-426655440000", utils.UUIDFromProtoOrNil(req.OrgID).String())
 		assert.Equal(t, "123e4567-e89b-12d3-a456-426655440001", utils.UUIDFromProtoOrNil(req.VizierID).String())

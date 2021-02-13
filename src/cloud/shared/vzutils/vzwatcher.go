@@ -19,11 +19,11 @@ import (
 )
 
 // VizierHandlerFn is the function signature for the function that is run for active and newly connected Viziers.
-type VizierHandlerFn func(id uuid.UUID, orgID uuid.UUID, uid string, resourceVersion string) error
+type VizierHandlerFn func(id uuid.UUID, orgID uuid.UUID, uid string) error
 
 // ErrorHandlerFn is the function signature for the function that should be called when the VizierHandlerFn returns
 // an error.
-type ErrorHandlerFn func(id uuid.UUID, orgID uuid.UUID, uid string, resourceVersion string, err error)
+type ErrorHandlerFn func(id uuid.UUID, orgID uuid.UUID, uid string, err error)
 
 // Watcher tracks active Viziers and executes the registered task for each Vizier.
 type Watcher struct {
@@ -83,19 +83,19 @@ func (w *Watcher) runWatch() {
 			}
 			vzID := utils.UUIDFromProtoOrNil(vcMsg.VizierID)
 			orgID := utils.UUIDFromProtoOrNil(vcMsg.OrgID)
-			w.onVizier(vzID, orgID, vcMsg.K8sUID, vcMsg.ResourceVersion)
+			w.onVizier(vzID, orgID, vcMsg.K8sUID)
 		}
 	}
 }
 
-func (w *Watcher) onVizier(id uuid.UUID, orgID uuid.UUID, uid string, resourceVersion string) {
+func (w *Watcher) onVizier(id uuid.UUID, orgID uuid.UUID, uid string) {
 	if w.vizierHandlerFn == nil {
 		return
 	}
 
-	err := w.vizierHandlerFn(id, orgID, uid, resourceVersion)
+	err := w.vizierHandlerFn(id, orgID, uid)
 	if err != nil && w.errorHandlerFn != nil {
-		w.errorHandlerFn(id, orgID, uid, resourceVersion, err)
+		w.errorHandlerFn(id, orgID, uid, err)
 	}
 }
 
@@ -122,7 +122,7 @@ func (w *Watcher) RegisterVizierHandler(fn VizierHandlerFn) error {
 	for _, vz := range vzmgrResp.Viziers {
 		vzID := utils.UUIDFromProtoOrNil(vz.VizierID)
 		orgID := utils.UUIDFromProtoOrNil(vz.OrgID)
-		w.onVizier(vzID, orgID, vz.K8sUID, vz.ResourceVersion)
+		w.onVizier(vzID, orgID, vz.K8sUID)
 	}
 
 	return nil

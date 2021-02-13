@@ -660,10 +660,9 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 	}
 
 	// Send a message over NATS to signal that a Vizier has connected.
-	query = `SELECT org_id, resource_version from vizier_cluster AS c INNER JOIN vizier_index_state AS i ON c.id = i.cluster_id WHERE id=$1`
+	query = `SELECT org_id from vizier_cluster WHERE id=$1`
 	var val struct {
-		OrgID           uuid.UUID `db:"org_id"`
-		ResourceVersion string    `db:"resource_version"`
+		OrgID uuid.UUID `db:"org_id"`
 	}
 
 	rows, err := s.db.Queryx(query, vizierID)
@@ -679,10 +678,9 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 	}
 
 	connMsg := messagespb.VizierConnected{
-		VizierID:        utils.ProtoFromUUID(vizierID),
-		ResourceVersion: val.ResourceVersion,
-		OrgID:           utils.ProtoFromUUID(val.OrgID),
-		K8sUID:          clusterUID,
+		VizierID: utils.ProtoFromUUID(vizierID),
+		OrgID:    utils.ProtoFromUUID(val.OrgID),
+		K8sUID:   clusterUID,
 	}
 	b, err := connMsg.Marshal()
 	if err != nil {
