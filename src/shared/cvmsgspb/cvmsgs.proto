@@ -23,11 +23,6 @@ import "src/api/public/uuidpb/uuid.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/shared/cvmsgspb/messagespb;cvmsgspb";
 
-// MetadataUpdate carries streaming updates from Vizier to cloud.
-message MetadataUpdate {
-    pl.shared.k8s.metadatapb.ResourceUpdate update = 1;
-}
-
 // Message to register a new Vizier.
 message RegisterVizierRequest {
     // The ID for this Vizier.
@@ -269,24 +264,6 @@ message VizierSSLCertRequest {
 message VizierSSLCertResponse {
     string key = 1;
     string cert = 2;
-}
-
-// MetadataRequest is the message used by cloud to request a specific metadata from Vizier.
-message MetadataRequest {
-    // The earliest resource version to get. This can be left blank if requesting updates
-    // since the beginning of time.
-    string from = 1;
-
-    // The last resource version to get. This value is not inclusive and should not be left blank.
-    string to = 2;
-    // The channel which the response should be sent on.
-    string topic = 3;
-}
-
-// MetadataResponse happens in response to a MetadataRequest and is used by Vizier to respond to metadata
-// requests from cloud.
-message MetadataResponse {
-    repeated pl.shared.k8s.metadatapb.ResourceUpdate updates = 1;
 }
 
 // LogMessage carries log messages from Vizier to the cloud.
