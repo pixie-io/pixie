@@ -14,13 +14,13 @@
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
 #include "src/shared/k8s/metadatapb/metadata.pb.h"
-#include "src/shared/metadata/base_types.h"
 #include "src/shared/metadata/cgroup_metadata_reader.h"
 #include "src/shared/metadata/k8s_objects.h"
 #include "src/shared/metadata/metadata_filter.h"
 #include "src/shared/metadata/metadata_state.h"
 #include "src/shared/metadata/pids.h"
 #include "src/shared/metadatapb/metadata.pb.h"
+#include "src/shared/upid/upid.h"
 
 PL_SUPPRESS_WARNINGS_START()
 // TODO(michelle): Fix this so that we don't need to the NOLINT.

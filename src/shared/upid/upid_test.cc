@@ -3,7 +3,7 @@
 #include <set>
 
 #include "src/common/base/test_utils.h"
-#include "src/shared/metadata/base_types.h"
+#include "src/shared/upid/upid.h"
 
 namespace pl {
 namespace md {

@@ -1,6 +1,6 @@
 #include "src/stirling/core/output.h"
 
-#include "src/shared/metadata/base_types.h"
+#include "src/shared/upid/upid.h"
 
 namespace pl {
 namespace stirling {

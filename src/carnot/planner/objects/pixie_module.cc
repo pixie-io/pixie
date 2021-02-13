@@ -8,7 +8,7 @@
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/none_object.h"
 #include "src/carnot/planner/objects/viz_object.h"
-#include "src/shared/metadata/base_types.h"
+#include "src/shared/upid/upid.h"
 
 namespace pl {
 namespace carnot {

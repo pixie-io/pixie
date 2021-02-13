@@ -12,7 +12,7 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
-        "//src/shared/metadata:cc_library",
+        "//src/shared/upid:cc_library",
         "//src/stirling/core:cc_library",
     ],
 )

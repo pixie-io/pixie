@@ -21,7 +21,7 @@ DUMMY_SOURCE_CONNECTOR(JVMStatsConnector);
 
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
-#include "src/shared/metadata/base_types.h"
+#include "src/shared/upid/upid.h"
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/source_connectors/jvm_stats/jvm_stats_table.h"
 #include "src/stirling/source_connectors/jvm_stats/utils/java.h"

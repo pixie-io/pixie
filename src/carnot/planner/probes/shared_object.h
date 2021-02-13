@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "src/carnot/planner/objects/funcobject.h"
-#include "src/shared/metadata/base_types.h"
+#include "src/shared/upid/upid.h"
 
 namespace pl {
 namespace carnot {

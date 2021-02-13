@@ -8,8 +8,8 @@
 
 #include "src/common/system/proc_parser.h"
 #include "src/common/testing/testing.h"
-#include "src/shared/metadata/base_types.h"
 #include "src/shared/types/column_wrapper.h"
+#include "src/shared/upid/upid.h"
 
 namespace pl {
 

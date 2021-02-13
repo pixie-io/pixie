@@ -5,7 +5,7 @@
 #include <utility>
 
 #include "src/common/base/base.h"
-#include "src/shared/metadata/base_types.h"
+#include "src/shared/upid/upid.h"
 
 namespace pl {
 namespace md {

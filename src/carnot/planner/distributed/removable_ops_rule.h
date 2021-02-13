@@ -16,7 +16,7 @@
 #include "src/carnot/planner/rules/rules.h"
 #include "src/carnot/udfspb/udfs.pb.h"
 #include "src/common/uuid/uuid.h"
-#include "src/shared/metadata/base_types.h"
+#include "src/shared/upid/upid.h"
 
 namespace pl {
 namespace carnot {

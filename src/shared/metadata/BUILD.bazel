@@ -8,7 +8,6 @@ pl_cc_library(
         ["*.cc"],
         exclude = [
             "**/*_test.cc",
-            "**/*_benchmark.cc",
         ],
     ),
     hdrs = glob(
@@ -24,9 +23,9 @@ pl_cc_library(
         "//src/shared/bloomfilter:cc_library",
         "//src/shared/k8s/metadatapb:metadata_pl_cc_proto",
         "//src/shared/metadatapb:metadata_pl_cc_proto",
+        "//src/shared/upid:cc_library",
         "@com_github_cameron314_concurrentqueue//:concurrentqueue",
         "@com_github_rlyeh_sole//:sole",
-        "@com_google_absl//absl/numeric:int128",
         "@com_google_googletest//:gtest_prod",
     ],
 )
@@ -82,29 +81,9 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "base_types_test",
-    srcs = ["base_types_test.cc"],
-    deps = [
-        ":cc_library",
-        "@com_google_absl//absl/hash:hash_testing",
-    ],
-)
-
-pl_cc_test(
     name = "metadata_state_test",
     srcs = ["metadata_state_test.cc"],
     deps = [
         ":cc_library",
-    ],
-)
-
-pl_cc_binary(
-    name = "base_types_benchmark",
-    testonly = 1,
-    srcs = ["base_types_benchmark.cc"],
-    deps = [
-        ":cc_library",
-        "//src/common/benchmark:cc_library",
-        "@com_google_benchmark//:benchmark_main",
     ],
 )

@@ -16,7 +16,7 @@ pl_cc_library(
         "//src/common/minitar:cc_library",
         "//src/common/system:cc_library",
         "//src/common/zlib:cc_library",
-        "//src/shared/metadata:cc_library",
+        "//src/shared/upid:cc_library",
         "@com_github_tencent_rapidjson//:rapidjson",
     ],
 )

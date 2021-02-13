@@ -9,7 +9,7 @@
 #include "src/carnot/planner/probes/process_target.h"
 #include "src/carnot/planner/probes/shared_object.h"
 #include "src/common/uuid/uuid.h"
-#include "src/shared/metadata/base_types.h"
+#include "src/shared/upid/upid.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.pb.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb/shared.pb.h"
 

@@ -11,6 +11,7 @@
 #include "src/common/system/system.h"
 
 #include "src/shared/metadata/k8s_objects.h"
+#include "src/shared/upid/upid.h"
 
 #include "src/stirling/bpf_tools/utils.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"

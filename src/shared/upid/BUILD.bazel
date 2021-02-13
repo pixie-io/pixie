@@ -1,0 +1,41 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test", "pl_cc_test_library")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+        ],
+    ),
+    hdrs = glob(
+        ["*.h"],
+    ),
+    deps = [
+        "@com_github_rlyeh_sole//:sole",
+        "@com_google_absl//absl/numeric:int128",
+    ],
+)
+
+pl_cc_test(
+    name = "upid_test",
+    srcs = ["upid_test.cc"],
+    deps = [
+        ":cc_library",
+        "@com_google_absl//absl/hash:hash_testing",
+    ],
+)
+
+pl_cc_binary(
+    name = "upid_benchmark",
+    testonly = 1,
+    srcs = ["upid_benchmark.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/benchmark:cc_library",
+        "@com_google_benchmark//:benchmark_main",
+    ],
+)

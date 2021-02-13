@@ -10,9 +10,9 @@
 
 #include "src/common/base/base.h"
 #include "src/shared/k8s/metadatapb/metadata.pb.h"
-#include "src/shared/metadata/base_types.h"
 #include "src/shared/metadata/k8s_objects.h"
 #include "src/shared/metadata/pids.h"
+#include "src/shared/upid/upid.h"
 
 namespace pl {
 namespace md {
