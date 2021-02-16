@@ -1,6 +1,5 @@
 #pragma once
 
-#include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 
 #include "src/common/system/proc_parser.h"
@@ -8,14 +7,6 @@
 
 namespace pl {
 namespace stirling {
-
-/**
- * Returns the list of processes from the proc filesystem.
- */
-// TODO(yzhao): Consider moving this into src/common/system. Today that cannot be done because
-// md::UPID is from src/shared/metadata, which already depends on src/common/system. Having this
-// inside src/common/system would cause circular dependency.
-absl::flat_hash_set<md::UPID> ListUPIDs(const std::filesystem::path& proc_path, uint32_t asid = 0);
 
 /**
  * Keeps a list of UPIDs. Tracks newly-created and terminated processes each time an update is

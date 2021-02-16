@@ -8,10 +8,16 @@
 #include "src/common/base/base.h"
 #include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/types.h"
+#include "src/shared/upid/upid.h"
 #include "src/stirling/utils/proc_tracker.h"
 
 namespace pl {
 namespace stirling {
+
+/**
+ * Returns the list of processes from the proc filesystem. Used by StandaloneContext.
+ */
+absl::flat_hash_set<md::UPID> ListUPIDs(const std::filesystem::path& proc_path, uint32_t asid = 0);
 
 /**
  * ConnectorContext is the information passed on every Transfer call to source connectors.

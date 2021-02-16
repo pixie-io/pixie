@@ -70,6 +70,13 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "connector_context_test",
+    srcs = ["connector_context_test.cc"],
+    data = ["//src/common/system/testdata:proc_fs"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "output_test",
     srcs = ["output_test.cc"],
     deps = [
