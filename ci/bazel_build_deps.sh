@@ -7,7 +7,7 @@ cd "$(git rev-parse --show-toplevel)" || exit
 bazel_query="bazel query --keep_going --noshow_progress"
 
 # A list of patterns that will trigger a full build.
-poison_patterns=('^Jenkinsfile' '^ci\/' '^docker\.properties')
+poison_patterns=('^Jenkinsfile' '^ci\/' '^docker\.properties' '^.bazelrc')
 
 # Set the default values for the flags.
 all_targets=false

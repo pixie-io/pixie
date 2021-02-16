@@ -117,6 +117,7 @@ build:msan --build_tag_filters=-no_msan
 build:msan --test_tag_filters=-no_msan,-requires_root,-requires_bpf,-disabled
 build:msan --copt -fsanitize-memory-track-origins=2
 build:msan --define tcmalloc=disabled
+build:msan --copt -DMEMORY_SANITIZER=1
 
 # bazel build --config tsan
 build:tsan --define PL_CONFIG_TSAN=1
@@ -127,6 +128,10 @@ build:tsan --define tcmalloc=disabled
 build:tsan --build_tag_filters=-no_tsan
 build:tsan --test_tag_filters=-no_tsan,-requires_root,-requires_bpf,-disabled
 build:tsan --define tcmalloc=disabled
+build:tsan --copt -DTHREAD_SANITIZER=1
+# This is needed to address false positive problem with abseil.
+# https://github.com/google/sanitizers/issues/953
+build:tsan --test_env=TSAN_OPTIONS=report_atomic_races=0
 
 # Note that we are lumping tests that require root into the BPF tests below
 # to minimize number of configs.
