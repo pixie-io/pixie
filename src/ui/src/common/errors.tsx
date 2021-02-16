@@ -3,6 +3,7 @@ import * as React from 'react';
 import Link from '@material-ui/core/Link';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import { VizierQueryError } from 'pixie-api';
+import { CONTACT_ENABLED } from 'containers/constants';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   errorRow: {
@@ -39,11 +40,13 @@ export const VizierErrorDetails = (props: { error: Error }) => {
   return (
     <>
       {errorDetails}
-      <div className={classes.errorRow}>
-        Need help?&nbsp;
-        <Link className={classes.link} id='intercom-trigger'>Chat with us</Link>
-        .
-      </div>
+      {CONTACT_ENABLED && (
+        <div className={classes.errorRow}>
+          Need help?&nbsp;
+          <Link className={classes.link} id='intercom-trigger'>Chat with us</Link>
+          .
+        </div>
+      )}
     </>
   );
 };

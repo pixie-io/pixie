@@ -27,6 +27,7 @@ import LiveViewTitle from 'containers/live/title';
 import LiveViewBreadcrumbs from 'containers/live/breadcrumbs';
 import NavBars from 'containers/App/nav-bars';
 import { SCRATCH_SCRIPT } from 'containers/App/scripts-context';
+import { CONTACT_ENABLED } from 'containers/constants';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -149,19 +150,23 @@ const ClusterLoadingComponent = (props: ClusterLoadingProps) => {
     [props.clusterStatus]);
 
   const actionMsg = React.useMemo(
-    () => {
+    (): JSX.Element => {
       if (props.clusterStatus === CLUSTER_STATUS_DISCONNECTED) {
         return (<div>Please redeploy Pixie to the cluster or choose another cluster.</div>);
       }
-      return (
-        <div>
+
+      if (CONTACT_ENABLED) {
+        return (
           <div>
-            Need help?&nbsp;
-            <Link id='intercom-trigger'>Chat with us</Link>
-            .
+            <div>
+              Need help?&nbsp;
+              <Link id='intercom-trigger'>Chat with us</Link>
+              .
+            </div>
           </div>
-        </div>
-      );
+        );
+      }
+      return <div />;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [props.clusterStatus, props.clusterUID]);

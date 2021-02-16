@@ -30,7 +30,10 @@ import {
   PixieLogo,
 } from 'pixie-components';
 import { toEntityPathname, LiveViewPage } from 'containers/live-widgets/utils/live-view-params';
-import { DOMAIN_NAME, ANNOUNCEMENT_ENABLED, ANNOUNCE_WIDGET_URL } from 'containers/constants';
+import {
+  DOMAIN_NAME, ANNOUNCEMENT_ENABLED,
+  ANNOUNCE_WIDGET_URL, CONTACT_ENABLED,
+} from 'containers/constants';
 import { LiveShortcutsContext } from 'containers/live/shortcuts';
 import { SidebarContext } from 'context/sidebar-context';
 import { LiveTourContext, LiveTourDialog } from 'containers/App/live-tour';
@@ -434,12 +437,14 @@ const SideBar = ({ classes }) => {
             link={`https://docs.${DOMAIN_NAME}`}
             text='Docs'
           />
-          <Tooltip title='Help'>
-            <ListItem button id='intercom-trigger' className={classes.listIcon}>
-              <ListItemIcon><HelpIcon className={classes.icon} /></ListItemIcon>
-              <ListItemText primary='Help' />
-            </ListItem>
-          </Tooltip>
+          { CONTACT_ENABLED && (
+            <Tooltip title='Help'>
+              <ListItem button id='intercom-trigger' className={classes.listIcon}>
+                <ListItemIcon><HelpIcon className={classes.icon} /></ListItemIcon>
+                <ListItemText primary='Help' />
+              </ListItem>
+            </Tooltip>
+          )}
           <ProfileItem classes={classes} data={data} setSidebarOpen={setSidebarOpen} />
         </List>
       </Drawer>

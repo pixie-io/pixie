@@ -245,8 +245,15 @@ module.exports = (env, argv) => {
     'announce_config.yaml').replace(/\//g, '\\/');
   const announcementYamlReq = execSync(`cat ${anouncementYamlPath}`);
   const announcementYAML = YAML.parse(announcementYamlReq.toString());
+
+  // Get whether to enable chat contact.
+  const contactYamlPath = join(topLevelDir, 'k8s', 'cloud', environment,
+    'contact_config.yaml').replace(/\//g, '\\/');
+  const contactYamlReq = execSync(`cat ${contactYamlPath}`);
+  const contactYAML = YAML.parse(contactYamlReq.toString());
   webpackConfig.plugins.unshift(
     new webpack.DefinePlugin({
+      __CONTACT_ENABLED__: JSON.parse(contactYAML.data.CONTACT_ENABLED),
       __ANNOUNCEMENT_ENABLED__: JSON.parse(announcementYAML.data.ANNOUNCEMENT_ENABLED),
       __ANNOUNCE_WIDGET_URL__: JSON.stringify(announcementYAML.data.ANNOUNCE_WIDGET_URL),
       __ANALYTICS_ENABLED__: JSON.parse(analyticsYAML.data.ANALYTICS_ENABLED),

@@ -22,7 +22,7 @@ describe('<VizierErrorDetails/> test', () => {
       }
       />,
     );
-    expect(wrapper.find('div').length).toBe(4);
+    expect(wrapper.find('div').length).toBe(3);
   });
 
   it('renders the message for other errors', () => {

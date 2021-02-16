@@ -8,6 +8,7 @@ import IconButton from '@material-ui/core/IconButton';
 import 'typeface-walter-turncoat';
 import { Spacing } from '@material-ui/core/styles/createSpacing';
 import { SetStateFunc } from 'context/common';
+import { CONTACT_ENABLED } from 'containers/constants';
 
 export interface LiveTourContextProps {
   tourOpen: boolean;
@@ -139,7 +140,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     transform: 'translate(-100%, -100%)',
   },
   lowerSideBar: {
-    bottom: theme.spacing(10),
+    bottom: theme.spacing(12),
     left: theme.spacing(16),
   },
   lowerSideBarArrow: {
@@ -262,7 +263,8 @@ export const LiveTour = () => {
         />
         <h3>Pixie Info / Settings</h3>
         <div>Docs</div>
-        <div>Help</div>
+        { CONTACT_ENABLED
+          && <div>Help</div>}
         <div>Admin / Cluster Status</div>
       </div>
       <div className={classes.dataDrawer}>

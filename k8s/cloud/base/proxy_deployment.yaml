@@ -38,6 +38,8 @@ spec:
             name: pl-analytics-config
         - configMapRef:
             name: pl-announcement-config
+        - configMapRef:
+            name: pl-contact-config
         env:
         - name: PL_JWT_SIGNING_KEY
           valueFrom:
