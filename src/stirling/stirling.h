@@ -32,6 +32,9 @@ enum class SourceRegistrySpecifier {
 
   // All production sources that are tracers.
   kTracers,
+
+  // The stack trace profiler.
+  kProfiler,
 };
 
 /**

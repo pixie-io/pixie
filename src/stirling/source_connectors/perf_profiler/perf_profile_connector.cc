@@ -4,7 +4,7 @@
 
 #include "src/stirling/bpf_tools/macros.h"
 
-BPF_SRC_STRVIEW(profile_bcc_script, profile);
+BPF_SRC_STRVIEW(profiler_bcc_script, profiler);
 
 namespace pl {
 namespace stirling {
@@ -13,7 +13,7 @@ PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
     : SourceConnector(source_name, kTables) {}
 
 Status PerfProfileConnector::InitImpl() {
-  PL_RETURN_IF_ERROR(InitBPFProgram(profile_bcc_script));
+  PL_RETURN_IF_ERROR(InitBPFProgram(profiler_bcc_script));
   PL_RETURN_IF_ERROR(AttachSamplingProbes(kSamplingProbeSpecs));
   LOG(INFO) << "PerfProfiler: Probes successfully deployed.";
 

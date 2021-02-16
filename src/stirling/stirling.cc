@@ -26,6 +26,7 @@
 #include "src/stirling/source_connectors/dynamic_bpftrace/dynamic_bpftrace_connector.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_trace_connector.h"
 #include "src/stirling/source_connectors/jvm_stats/jvm_stats_connector.h"
+#include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
 #include "src/stirling/source_connectors/pid_runtime/pid_runtime_connector.h"
 #include "src/stirling/source_connectors/proc_stat/proc_stat_connector.h"
 #include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
@@ -48,6 +49,7 @@ std::unique_ptr<SourceRegistry> CreateAllSourceRegistry() {
   registry->RegisterOrDie<SeqGenConnector>("sequences");
   registry->RegisterOrDie<SocketTraceConnector>("socket_tracer");
   registry->RegisterOrDie<SystemStatsConnector>("system_stats");
+  registry->RegisterOrDie<PerfProfileConnector>("perf_profiler");
   return registry;
 }
 
@@ -74,6 +76,13 @@ std::unique_ptr<SourceRegistry> CreateMetricsSourceRegistry() {
   registry->RegisterOrDie<SystemStatsConnector>("system_stats");
   return registry;
 }
+
+// The stack trace profiler.
+std::unique_ptr<SourceRegistry> CreatePerfProfilerRegistry() {
+  auto registry = std::make_unique<SourceRegistry>();
+  registry->RegisterOrDie<PerfProfileConnector>("perf_profiler");
+  return registry;
+}
 }  // namespace
 
 std::unique_ptr<SourceRegistry> CreateSourceRegistry(SourceRegistrySpecifier sources) {
@@ -88,6 +97,8 @@ std::unique_ptr<SourceRegistry> CreateSourceRegistry(SourceRegistrySpecifier sou
       return pl::stirling::CreateProdSourceRegistry();
     case SourceRegistrySpecifier::kAll:
       return pl::stirling::CreateAllSourceRegistry();
+    case SourceRegistrySpecifier::kProfiler:
+      return pl::stirling::CreatePerfProfilerRegistry();
     default:
       // To keep GCC happy.
       DCHECK(false);

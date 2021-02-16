@@ -40,7 +40,8 @@ using DynamicTracepointDeployment =
 using pl::types::ColumnWrapperRecordBatch;
 using pl::types::TabletID;
 
-DEFINE_string(sources, "kProd", "[kAll|kProd|kMetrics|kTracers] Choose sources to enable.");
+DEFINE_string(sources, "kProd",
+              "[kAll|kProd|kMetrics|kTracers|kProfiler] Choose sources to enable.");
 DEFINE_string(trace, "",
               "Dynamic trace to deploy. Either (1) the path to a file containing PxL or IR trace "
               "spec, or (2) <path to object file>:<symbol_name> for full-function tracing.");
