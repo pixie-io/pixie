@@ -120,12 +120,20 @@ isVizierBuildRun = env.JOB_NAME.startsWith('pixie-release/vizier/')
 isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-staging/')
 isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud/')
 
+// Disable BPF runs on main because the flakiness makes it noisy.
+// Stirling team still gets coverage via dev runs for now.
+// TODO(oazizi): Re-enable BPF on main once it's more stable.
+runBPF = !isMainRun
+
 // Currently disabling TSAN on BPF builds because it runs too slow.
 // In particular, the uprobe deployment takes far too long. See issue:
 //    https://pixie-labs.atlassian.net/browse/PL-1329
 // The benefit of TSAN on such runs is marginal anyways, because the tests
 // are mostly single-threaded.
 runBPFWithTSAN = false
+
+// TODO(yzhao/oazizi): PP-2276 Fix the BPF ASAN tests.
+runBPFWithASAN = false
 
 def WithGCloud(Closure body) {
   if (env.KUBERNETES_SERVICE_HOST) {
@@ -646,24 +654,27 @@ def buildGCC = {
 }
 
 def dockerArgsForBPFTest = '--privileged --pid=host -v /:/host -v /sys:/sys --env PL_HOST_PATH=/host'
-buildAndTestBPFOpt = {
-  WithSourceCodeAndTargetsDocker {
-    dockerStep(dockerArgsForBPFTest, {
-      bazelCICmd('build-bpf', 'bpf', 'opt', 'bpf')
-    })
+
+if (runBPF) {
+  buildAndTestBPFOpt = {
+    WithSourceCodeAndTargetsDocker {
+      dockerStep(dockerArgsForBPFTest, {
+        bazelCICmd('build-bpf', 'bpf', 'opt', 'bpf')
+      })
+    }
   }
 }
 
-// TODO(oazizi): PP-2276 Fix the BPF asan tests.
-// builders['Build & Test (bpf tests - asan)'] = {
-//   WithSourceCode {
-//     dockerStep(dockerArgsForBPFTest, {
-//       bazelCCCICmd('build-bpf-asan', 'bpf_asan', 'dbg')
-//     })
-//   }
-// }
+if (runBPFWithASAN) {
+  builders['Build & Test (bpf tests - asan)'] = {
+    WithSourceCode {
+      dockerStep(dockerArgsForBPFTest, {
+        bazelCCCICmd('build-bpf-asan', 'bpf_asan', 'dbg')
+      })
+    }
+  }
+}
 
-// Disabling TSAN on bpf runs, but leaving code here for future reference.
 if (runBPFWithTSAN) {
   builders['Build & Test (bpf tests - tsan)'] = {
     WithSourceCodeAndTargetsDocker {
