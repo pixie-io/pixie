@@ -10,7 +10,7 @@ import px
 
 
 def redis_data(start: str, num_head: int):
-    # redis_events.beta is a beta table, may subject to changes.
+    # redis_events.beta is a beta table, which is subject to change.
     df = px.DataFrame(table='redis_events.beta', start_time=start)
 
     # Replace UPID with pod.
