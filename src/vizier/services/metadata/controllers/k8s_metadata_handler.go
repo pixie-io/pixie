@@ -589,6 +589,14 @@ func (p *PodUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdate, sta
 		return nil
 	}
 
+	topics := []string{KelvinUpdateTopic}
+
+	// The pod update is always the last in the list. Use it to find the correct host IP.
+	pod := storedUpdates[len(storedUpdates)-1].Update.GetPod()
+	if pod != nil {
+		topics = append(topics, pod.Status.HostIP)
+	}
+
 	var updates []*OutgoingUpdate
 
 	for _, u := range storedUpdates {
@@ -601,12 +609,6 @@ func (p *PodUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdate, sta
 				},
 			}
 			// Send the update to the relevant agent and the Kelvin.
-			topics := []string{KelvinUpdateTopic}
-
-			podName := fmt.Sprintf("%s/%s", containerUpdate.Namespace, containerUpdate.PodName)
-			if hostIP, ok := state.PodToIP[podName]; ok {
-				topics = append(topics, hostIP)
-			}
 
 			updates = append(updates, &OutgoingUpdate{
 				Update: ru,
@@ -618,7 +620,7 @@ func (p *PodUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdate, sta
 		if podUpdate != nil {
 			updates = append(updates, &OutgoingUpdate{
 				Update: getResourceUpdateFromPod(podUpdate, u.UpdateVersion),
-				Topics: []string{podUpdate.Status.HostIP, KelvinUpdateTopic},
+				Topics: topics,
 			})
 		}
 	}

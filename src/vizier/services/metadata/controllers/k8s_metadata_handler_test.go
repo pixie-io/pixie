@@ -865,9 +865,7 @@ func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 		},
 	}
 
-	state := &controllers.ProcessorState{PodToIP: map[string]string{
-		"/object_md": "127.0.0.5",
-	}}
+	state := &controllers.ProcessorState{}
 	p := controllers.PodUpdateProcessor{}
 	updates := p.GetUpdatesToSend(storedProtos, state)
 	assert.Equal(t, 2, len(updates))
@@ -912,7 +910,7 @@ func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 				},
 			},
 		},
-		Topics: []string{"127.0.0.5", controllers.KelvinUpdateTopic},
+		Topics: []string{controllers.KelvinUpdateTopic, "127.0.0.5"},
 	}
 	assert.Contains(t, updates, pu)
 }
