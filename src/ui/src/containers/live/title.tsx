@@ -1,4 +1,4 @@
-import { buildClass } from 'pixie-components';
+import { buildClass } from '@pixie/components';
 import * as React from 'react';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';

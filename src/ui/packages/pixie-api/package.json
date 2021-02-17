@@ -1,10 +1,10 @@
 {
-  "name": "pixie-api",
+  "name": "@pixie/api",
   "version": "1.0.0",
   "description": "A library to access Pixie's API in TypeScript (https://pixielabs.ai)",
   "author": "Pixie Labs",
   "license": "Apache-2.0",
-  "private": true,
+  "private": false,
   "main": "dist/index.js",
   "module": "dist/index.es.js",
   "files": [

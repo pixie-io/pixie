@@ -9,7 +9,7 @@ import ClientContext from 'common/vizier-grpc-client-context';
 import {
   VizierQueryError, GRPCStatusCode, BatchDataUpdate, VizierTable as Table,
   containsMutation, isStreaming,
-} from 'pixie-api';
+} from '@pixie/api';
 
 import * as React from 'react';
 import { withRouter } from 'react-router';
@@ -21,7 +21,7 @@ import {
   argsEquals, argsForVis, Arguments, validateArgValues,
 } from 'utils/args-utils';
 import urlParams from 'utils/url-params';
-import { useSnackbar } from 'pixie-components';
+import { useSnackbar } from '@pixie/components';
 
 import {
   getEntityParams, getLiveViewTitle, getNonEntityParams, LiveViewPage,

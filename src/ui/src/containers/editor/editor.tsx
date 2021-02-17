@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { CodeEditor, LazyPanel, ResizableDrawer } from 'pixie-components';
+import { CodeEditor, LazyPanel, ResizableDrawer } from '@pixie/components';
 
 import {
   createStyles, makeStyles, Theme, withStyles,

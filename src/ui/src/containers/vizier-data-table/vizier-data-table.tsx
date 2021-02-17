@@ -1,8 +1,8 @@
-import { VizierTable as Table } from 'pixie-api';
+import { VizierTable as Table } from '@pixie/api';
 import {
   CellAlignment, ColumnProps, DataTable, SortState,
   buildClass,
-} from 'pixie-components';
+} from '@pixie/components';
 import { JSONData } from 'containers/format-data/format-data';
 import * as React from 'react';
 import { DataType, SemanticType } from 'types/generated/vizierapi_pb';

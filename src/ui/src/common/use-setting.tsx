@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useMutation, useQuery } from '@apollo/client';
 import { SetStateFunc } from 'context/common';
-import { UserSettings, DEFAULT_USER_SETTINGS, USER_QUERIES } from 'pixie-api';
+import { UserSettings, DEFAULT_USER_SETTINGS, USER_QUERIES } from '@pixie/api';
 
 type TData = { userSettings: Array<{key: string; value: string}> };
 

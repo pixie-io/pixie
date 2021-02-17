@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { PropsWithChildren } from 'react';
 import { Theme, ThemeProvider } from '@material-ui/core/styles';
-import { DARK_THEME } from 'pixie-components';
+import { DARK_THEME } from '@pixie/components';
 import { MockedProvider as MockApolloProvider, MockedProviderProps as MockApolloProps } from '@apollo/client/testing';
 import { LayoutContext, LayoutContextProps } from 'context/layout-context';
 import { LiveTourContext, LiveTourContextProps } from 'containers/App/live-tour';

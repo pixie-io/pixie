@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { GetPxScripts, Script } from 'utils/script-bundle';
-import { USER_QUERIES } from 'pixie-api';
+import { USER_QUERIES } from '@pixie/api';
 
 import { useApolloClient } from '@apollo/client';
 

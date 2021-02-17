@@ -8,7 +8,7 @@ import { useQuery, useApolloClient } from '@apollo/client';
 import {
   Breadcrumbs, BreadcrumbOptions,
   PixieCommandIcon, StatusCell,
-} from 'pixie-components';
+} from '@pixie/components';
 import { ClusterContext } from 'common/cluster-context';
 import { CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
 import {
@@ -19,7 +19,7 @@ import { ScriptContext } from 'context/script-context';
 import { entityPageForScriptId, optionallyGetNamespace } from 'containers/live-widgets/utils/live-view-params';
 import { EntityType, pxTypetoEntityType, entityStatusGroup } from 'containers/command-input/autocomplete-utils';
 import { clusterStatusGroup } from 'containers/admin/utils';
-import { containsMutation, CLUSTER_QUERIES, AUTOCOMPLETE_QUERIES } from 'pixie-api';
+import { containsMutation, CLUSTER_QUERIES, AUTOCOMPLETE_QUERIES } from '@pixie/api';
 import ExecuteScriptButton from './execute-button';
 import { Variable } from './vis';
 

@@ -4,7 +4,7 @@ import * as React from 'react';
 import {
   createStyles, Theme, WithStyles, withStyles,
 } from '@material-ui/core';
-import { AuthFooter } from 'pixie-components';
+import { AuthFooter } from '@pixie/components';
 import * as pixieLogo from '../../../assets/images/pixie-logo.svg';
 import * as StarsPNG from './stars.png';
 

@@ -165,10 +165,10 @@ export class PixieAPIClient {
   }
 
   /*
-   * TODO(nick): Future changes to pull code out to, and to polish, `pixie-api`. In order:
+   * TODO(nick): Future changes to pull code out to, and to polish, `@pixie/api`. In order:
    * - Need to copy over src/cloud/api/controller/schema.d.ts and have Arcanist verify that happens, as with proto defs.
    * - Wrap all GQL endpoints can be wrapped directly in this class.
-   * - Do the same for `pixie-api-react`.
+   * - Do the same for `@pixie/api-react`.
    * - Change all UI code that invokes the API to use `api.ts` to do it.
    * - Create test wrappers for the new API and move all existing tests to use that.
    * - Pull logic for some endpoints, like executeScript, up into the API code (anything that every consumer would need)

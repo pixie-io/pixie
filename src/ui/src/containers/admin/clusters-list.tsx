@@ -1,4 +1,4 @@
-import { StatusCell, StatusGroup } from 'pixie-components';
+import { StatusCell, StatusGroup } from '@pixie/components';
 import { useQuery } from '@apollo/client';
 import { Theme, withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
@@ -9,7 +9,7 @@ import TableRow from '@material-ui/core/TableRow';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { GaugeLevel } from 'utils/metric-thresholds';
-import { CLUSTER_QUERIES } from 'pixie-api';
+import { CLUSTER_QUERIES } from '@pixie/api';
 import {
   AdminTooltip, clusterStatusGroup, convertHeartbeatMS, getClusterDetailsURL,
   StyledTableCell, StyledTableHeaderCell, StyledLeftTableCell, StyledRightTableCell,

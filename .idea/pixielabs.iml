@@ -19,6 +19,7 @@
       <excludeFolder url="file://$MODULE_DIR$/src/ui/packages/pixie-components/dist" />
       <excludeFolder url="file://$MODULE_DIR$/src/ui/packages/pixie-api/dist" />
       <excludeFolder url="file://$MODULE_DIR$/third_party" />
+      <excludeFolder url="file://$MODULE_DIR$/src/ui/packages/pixie-api-react/dist" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

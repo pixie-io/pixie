@@ -1,6 +1,6 @@
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
-import { PixieLogo } from 'pixie-components';
+import { PixieLogo } from '@pixie/components';
 import { ResultsContext } from 'context/results-context';
 import * as React from 'react';
 

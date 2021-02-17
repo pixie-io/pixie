@@ -1,4 +1,4 @@
-import { LazyPanel, ResizableDrawer, Spinner } from 'pixie-components';
+import { LazyPanel, ResizableDrawer, Spinner } from '@pixie/components';
 import { DataDrawerContext } from 'context/data-drawer-context';
 import { LayoutContext } from 'context/layout-context';
 import { ResultsContext } from 'context/results-context';

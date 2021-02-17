@@ -1,8 +1,8 @@
 import './wdyr';
 
 import Axios from 'axios';
-import { CloudClient } from 'pixie-api';
-import { DARK_THEME, SnackbarProvider, VersionInfo } from 'pixie-components';
+import { CloudClient } from '@pixie/api';
+import { DARK_THEME, SnackbarProvider, VersionInfo } from '@pixie/components';
 import Vizier from 'containers/App/vizier';
 import PixieCookieBanner from 'common/cookie-banner';
 import { LD_CLIENT_ID } from 'containers/constants';

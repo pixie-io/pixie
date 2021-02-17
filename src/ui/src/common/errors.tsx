@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import Link from '@material-ui/core/Link';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
-import { VizierQueryError } from 'pixie-api';
+import { VizierQueryError } from '@pixie/api';
 import { CONTACT_ENABLED } from 'containers/constants';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({

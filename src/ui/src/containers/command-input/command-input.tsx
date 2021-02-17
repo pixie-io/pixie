@@ -1,7 +1,7 @@
 import {
   CommandAutocomplete, TabSuggestion,
   TabStop, PixieCommandIcon, PixieCommandHint,
-} from 'pixie-components';
+} from '@pixie/components';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
 import { useApolloClient } from '@apollo/client';
@@ -14,7 +14,7 @@ import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 
 import { ScriptContext, ExecuteArguments } from 'context/script-context';
-import { containsMutation, AUTOCOMPLETE_QUERIES } from 'pixie-api';
+import { containsMutation, AUTOCOMPLETE_QUERIES } from '@pixie/api';
 import { entityPageForScriptId } from 'containers/live-widgets/utils/live-view-params';
 import { ParseFormatStringToTabStops } from './autocomplete-parser';
 import { entityTypeToString } from './autocomplete-utils';

@@ -14,7 +14,7 @@ import { ClusterContext } from 'common/cluster-context';
 import { LIVE_CONTEXT_DEFAULTS } from 'testing/mocks/live-context-mock';
 import { ThemeProvider } from '@material-ui/core/styles';
 import { VizierGRPCClientContext } from 'common/vizier-grpc-client-context';
-import { SnackbarContext } from 'pixie-components';
+import { SnackbarContext } from '@pixie/components';
 
 /**
  * Replaces all of the jest.fn() values with expect.any() in the mock defaults of a context.

@@ -1,4 +1,4 @@
-import { DARK_THEME } from 'pixie-components';
+import { DARK_THEME } from '@pixie/components';
 import { Relation, SemanticType } from 'types/generated/vizierapi_pb';
 import { Spec } from 'vega';
 import {

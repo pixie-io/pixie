@@ -1,6 +1,6 @@
 import auth0 from 'auth0-js';
 import { AUTH0_CLIENT_ID, AUTH0_DOMAIN } from 'containers/constants';
-import * as QueryString from 'querystring';
+import * as QueryString from 'query-string';
 
 export type AuthCallbackMode = 'cli_get' | 'cli_token' | 'ui';
 

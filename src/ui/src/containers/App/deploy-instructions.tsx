@@ -1,4 +1,4 @@
-import { CodeRenderer, Spinner } from 'pixie-components';
+import { CodeRenderer, Spinner } from '@pixie/components';
 import ProfileMenu from 'containers/profile-menu/profile-menu';
 import * as logoImage from 'images/pixie-logo.svg';
 import * as React from 'react';

@@ -1,6 +1,5 @@
 import { COLOR_SCALE } from 'containers/live/convert-to-vega-spec';
 import * as _ from 'lodash';
-import { isArray, isNumber } from 'util';
 import { View } from 'vega-typings';
 
 export interface LegendEntry {
@@ -129,20 +128,20 @@ const buildTimeHashMap = (hoverData: ValidHoverDatum[], sortBy: (key: string) =>
 };
 
 export const buildHoverDataCache = (hoverData): HoverDataCache => {
-  if (!isArray(hoverData)) {
+  if (!Array.isArray(hoverData)) {
     return null;
   }
   const validEntries = hoverData.map((entry) => {
     // eslint-disable-next-line @typescript-eslint/naming-convention
     const { time_, ...rest } = entry;
-    if (!time_ || !isNumber(time_)) {
+    if (!time_ || typeof time_ !== 'number') {
       return null;
     }
     const hoverDatum: ValidHoverDatum = {
       time: time_,
     };
     Object.entries(rest).forEach(([key, val]) => {
-      if (!isNumber(val)) {
+      if (typeof val !== 'number') {
         return;
       }
       hoverDatum[key] = val;

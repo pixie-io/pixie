@@ -1,4 +1,4 @@
-import { VizierQueryError } from 'pixie-api';
+import { VizierQueryError } from '@pixie/api';
 import { Variable, Vis } from 'containers/live/vis';
 
 export type Arguments = Record<string, string|string[]>;

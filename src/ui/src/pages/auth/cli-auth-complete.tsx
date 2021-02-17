@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Grid } from '@material-ui/core';
-import * as QueryString from 'querystring';
-import { AuthMessageBox } from 'pixie-components';
+import * as QueryString from 'query-string';
+import { AuthMessageBox } from '@pixie/components';
 import { BasePage } from './base';
 
 export const CLIAuthCompletePage = () => {

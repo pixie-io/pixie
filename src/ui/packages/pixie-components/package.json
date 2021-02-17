@@ -1,16 +1,10 @@
 {
-  "name": "pixie-components",
+  "name": "@pixie/components",
   "version": "1.0.0",
   "description": "Pixie shared UI components",
-  "private": true,
+  "private": false,
   "main": "dist/index.js",
   "module": "dist/index.es.js",
-  "workspaces": {
-    "nohoist": [
-      "@storybook/*",
-      "**/@storybook/*"
-    ]
-  },
   "files": [
     "dist"
   ],

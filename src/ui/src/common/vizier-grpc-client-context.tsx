@@ -3,7 +3,7 @@ import * as React from 'react';
 import { operation } from 'retry';
 import { isDev } from 'utils/env';
 
-import { VizierGRPCClient, CloudClient } from 'pixie-api';
+import { VizierGRPCClient, CloudClient } from '@pixie/api';
 
 export const CLUSTER_STATUS_UNKNOWN = 'CS_UNKNOWN';
 export const CLUSTER_STATUS_HEALTHY = 'CS_HEALTHY';

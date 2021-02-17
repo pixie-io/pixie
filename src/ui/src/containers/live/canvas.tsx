@@ -1,7 +1,7 @@
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
-import { buildClass, Spinner } from 'pixie-components';
+import { buildClass, Spinner } from '@pixie/components';
 import { GraphDisplay, GraphWidget } from 'containers/live-widgets/graph/graph';
 import { RequestGraphDisplay, RequestGraphWidget } from 'containers/live-widgets/graph/request-graph';
 
@@ -13,7 +13,7 @@ import { resizeEvent, triggerResize } from 'utils/resize';
 import { dataFromProto } from 'utils/result-data-utils';
 import { Alert, AlertTitle } from '@material-ui/lab';
 import { VizierErrorDetails } from 'common/errors';
-import { VizierQueryError, containsMutation } from 'pixie-api';
+import { VizierQueryError, containsMutation } from '@pixie/api';
 
 import {
   createStyles, fade, makeStyles, Theme, useTheme,

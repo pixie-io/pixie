@@ -1,4 +1,4 @@
-import { buildClass, scrollbarStyles } from 'pixie-components';
+import { buildClass, scrollbarStyles } from '@pixie/components';
 
 import { StyleRulesCallback, Theme, withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';

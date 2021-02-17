@@ -1,4 +1,4 @@
-import { VizierQueryError, VizierQueryArg, VizierQueryFunc } from 'pixie-api';
+import { VizierQueryError, VizierQueryArg, VizierQueryFunc } from '@pixie/api';
 import { ArgTypeMap, getArgTypesForVis } from 'utils/args-utils';
 
 import { ChartPosition } from './layout';

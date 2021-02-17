@@ -1,4 +1,4 @@
-import { scrollbarStyles } from 'pixie-components';
+import { scrollbarStyles } from '@pixie/components';
 import {
   withStyles,
   Theme,

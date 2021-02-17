@@ -3,7 +3,7 @@ import * as React from 'react';
 import ClientContext, {
   VizierGRPCClientProvider, CLUSTER_STATUS_DISCONNECTED,
 } from 'common/vizier-grpc-client-context';
-import { Breadcrumbs, StatusCell, StatusGroup } from 'pixie-components';
+import { Breadcrumbs, StatusCell, StatusGroup } from '@pixie/components';
 import { distanceInWords } from 'date-fns';
 import { useHistory, useParams } from 'react-router';
 import { Link } from 'react-router-dom';
@@ -23,7 +23,7 @@ import TableRow from '@material-ui/core/TableRow';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 
-import { ExecutionStateUpdate, CLUSTER_QUERIES } from 'pixie-api';
+import { ExecutionStateUpdate, CLUSTER_QUERIES } from '@pixie/api';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
 import {

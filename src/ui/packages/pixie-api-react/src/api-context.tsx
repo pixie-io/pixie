@@ -1,9 +1,9 @@
 import * as React from 'react';
-import { PixieAPIClient, PixieAPIClientOptions } from 'pixie-api';
+import { PixieAPIClient, PixieAPIClientOptions } from '@pixie/api';
 
 /*
  * TODO(nick): This entire package.
- *  Import `pixie-api` and `@apollo/client/react/{stuff}`, then export the following:
+ *  Import `@pixie/api` and `@apollo/client/react/{stuff}`, then export the following:
  *  - A context that provides direct access to PixieAPIClient, entirely configurable.
  *  - A context provider that can be passed configuration for PixieAPIClient as props
  *  - Hooks that wrap the GQL queries via useQuery, and have parameters like the ones

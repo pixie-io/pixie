@@ -18,7 +18,7 @@ import MenuItem from '@material-ui/core/MenuItem';
 import Tooltip from '@material-ui/core/Tooltip';
 
 import { Link } from 'react-router-dom';
-import { USER_QUERIES } from 'pixie-api';
+import { USER_QUERIES } from '@pixie/api';
 
 import { ClusterContext } from 'common/cluster-context';
 import UserContext from 'common/user-context';
@@ -28,7 +28,7 @@ import {
   ClusterIcon, CodeIcon, DocsIcon,
   LogoutIcon, NamespaceIcon, SettingsIcon,
   PixieLogo,
-} from 'pixie-components';
+} from '@pixie/components';
 import { toEntityPathname, LiveViewPage } from 'containers/live-widgets/utils/live-view-params';
 import {
   DOMAIN_NAME, ANNOUNCEMENT_ENABLED,
