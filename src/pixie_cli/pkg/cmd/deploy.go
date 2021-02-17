@@ -142,6 +142,9 @@ func init() {
 	DeployCmd.Flags().StringP("labels", "l", "", "Custom labels to apply to Pixie resources")
 	viper.BindPFlag("labels", DeployCmd.Flags().Lookup("labels"))
 
+	DeployCmd.Flags().StringP("annotations", "t", "", "Custom annotations to apply to Pixie resources")
+	viper.BindPFlag("annotations", DeployCmd.Flags().Lookup("annotations"))
+
 	// Super secret flags for Pixies.
 	DeployCmd.Flags().MarkHidden("namespace")
 	DeployCmd.Flags().MarkHidden("dev_cloud_namespace")
@@ -219,10 +222,11 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	deployKey, _ := cmd.Flags().GetString("deploy_key")
 	useEtcdOperator, _ := cmd.Flags().GetBool("use_etcd_operator")
 	customLabels, _ := cmd.Flags().GetString("labels")
+	customAnnotations, _ := cmd.Flags().GetString("annotations")
 
 	labelMap := make(map[string]string)
 	if customLabels != "" {
-		lm, err := k8s.LabelStringToMap(customLabels)
+		lm, err := k8s.KeyValueStringToMap(customLabels)
 		if err != nil {
 			utils.Error("--labels must be specified through the following format: label1=value1,label2=value2")
 			os.Exit(1)
@@ -236,6 +240,15 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			utils.Error(fmt.Sprintf("Custom labels must not be one of: %s.", joinedLabels))
 			os.Exit(1)
 		}
+	}
+	annotationMap := make(map[string]string)
+	if customAnnotations != "" {
+		am, err := k8s.KeyValueStringToMap(customAnnotations)
+		if err != nil {
+			utils.Error("--annotations must be specified through the following format: annotation1=value1,annotation2=value2")
+			os.Exit(1)
+		}
+		annotationMap = am
 	}
 
 	if deployKey == "" && extractPath != "" {
@@ -332,6 +345,8 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		UseEtcdOperator:     useEtcdOperator,
 		Labels:              customLabels,
 		LabelMap:            labelMap,
+		Annotations:         customAnnotations,
+		AnnotationMap:       annotationMap,
 	}
 
 	yamlArgs := &artifacts.YAMLTmplArguments{
@@ -402,7 +417,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		if err != nil {
 			return err
 		}
-		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(nsYAML), false, nil)
+		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(nsYAML), false, nil, nil)
 	})
 
 	clusterRoleJob := newTaskWrapper("Deleting stale Pixie objects, if any", func() error {
@@ -416,7 +431,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		if err != nil {
 			return err
 		}
-		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(sYAML), false, nil)
+		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(sYAML), false, nil, nil)
 	})
 
 	setupJobs := []utils.Task{
@@ -624,7 +639,7 @@ func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Cl
 	var clusterID uuid.UUID
 	deployJob := []utils.Task{
 		newTaskWrapper("Deploying Cloud Connector", func() error {
-			return k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents), false, nil)
+			return k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents), false, nil, nil)
 		}),
 		newTaskWrapper("Waiting for Cloud Connector to come online", func() error {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -665,7 +680,7 @@ func retryDeploy(clientset *kubernetes.Clientset, config *rest.Config, namespace
 	tries := 12
 	var err error
 	for tries > 0 {
-		err = k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents), false, nil)
+		err = k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents), false, nil, nil)
 		if err == nil {
 			return nil
 		}

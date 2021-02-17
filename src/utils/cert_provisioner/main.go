@@ -20,6 +20,7 @@ import (
 func init() {
 	pflag.String("namespace", "pl", "The namespace used by Pixie")
 	pflag.String("custom_labels", "", "Custom labels that should be attached to the vizier resources")
+	pflag.String("custom_annotations", "", "Custom annotations that should be attached to the vizier resources")
 }
 
 func main() {
@@ -72,12 +73,17 @@ func main() {
 		log.WithError(err).Fatal("Failed to generate cert YAMLs")
 	}
 
-	labels, err := k8s.LabelStringToMap(viper.GetString("custom_labels"))
+	labels, err := k8s.KeyValueStringToMap(viper.GetString("custom_labels"))
 	if err != nil {
 		log.WithError(err).Info("Could not apply custom labels")
 	}
 
-	err = k8s.ApplyYAML(clientset, kubeConfig, ns, strings.NewReader(certYAMLs), false, labels)
+	annotations, err := k8s.KeyValueStringToMap(viper.GetString("custom_annotations"))
+	if err != nil {
+		log.WithError(err).Info("Could not apply custom annotations")
+	}
+
+	err = k8s.ApplyYAML(clientset, kubeConfig, ns, strings.NewReader(certYAMLs), false, labels, annotations)
 	if err != nil {
 		log.WithError(err).Fatalf("Failed deploy cert YAMLs")
 	}

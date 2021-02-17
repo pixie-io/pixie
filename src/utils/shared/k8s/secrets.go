@@ -113,13 +113,14 @@ func CreateTLSSecret(namespace, name string, key string, cert string) (*v1.Secre
 // CreateDockerConfigJSONSecret creates a secret in the docker config format.
 // Currently the golang v1.Secret API doesn't perform the massaging of the credentials file that invoking
 // kubectl with a docker-registry secret (like below) does.
-func CreateDockerConfigJSONSecret(namespace, name, credsData string, labels map[string]string) (*v1.Secret, error) {
+func CreateDockerConfigJSONSecret(namespace, name, credsData string, labels map[string]string, annotations map[string]string) (*v1.Secret, error) {
 	secret := &v1.Secret{}
 	secret.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
 	secret.Name = name
 	secret.Type = v1.SecretTypeDockerConfigJson
 	secret.Data = map[string][]byte{}
 	secret.Labels = labels
+	secret.Annotations = annotations
 
 	type dockerSecret struct {
 		Username string `json:"username"`

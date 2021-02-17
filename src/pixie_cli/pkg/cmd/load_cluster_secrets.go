@@ -58,10 +58,19 @@ func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, deplo
 	_ = k8s.DeleteConfigMap(clientset, "pl-cloud-config", "pl")
 	k8s.DeleteSecret(clientset, namespace, "pl-cluster-secrets")
 
-	yamls, err := artifacts.GenerateClusterSecretYAMLs(cloudAddr, deployKey, namespace, devCloudNamespace, kubeConfig, sentryDSN, "", false, "")
+	yamlOpts := &artifacts.YAMLOptions{
+		NS:              namespace,
+		CloudAddr:       cloudAddr,
+		KubeConfig:      kubeConfig,
+		DevCloudNS:      devCloudNamespace,
+		UseEtcdOperator: false,
+		Labels:          "",
+		Annotations:     "",
+	}
+	yamls, err := artifacts.GenerateClusterSecretYAMLs(yamlOpts, deployKey, sentryDSN, "")
 	if err != nil {
 		return err
 	}
 
-	return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamls), false, nil)
+	return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamls), false, nil, nil)
 }

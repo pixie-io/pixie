@@ -120,6 +120,8 @@ type YAMLOptions struct {
 	UseEtcdOperator     bool
 	Labels              string
 	LabelMap            map[string]string
+	Annotations         string
+	AnnotationMap       map[string]string
 }
 
 // YAMLTmplValues are the values we can substitue into our YAMLs.
@@ -251,12 +253,13 @@ func (y *YAMLGenerator) generateNamespaceYAML() (string, error) {
 	ns.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Namespace"))
 	ns.Name = y.yamlOpts.NS
 	ns.Labels = y.yamlOpts.LabelMap
+	ns.Annotations = y.yamlOpts.AnnotationMap
 
 	return k8s.ConvertResourceToYAML(ns)
 }
 
 func (y *YAMLGenerator) generateSecretYAML(versionStr string, inputVersion string) (string, error) {
-	dockerSecret, err := k8s.CreateDockerConfigJSONSecret(y.yamlOpts.NS, y.yamlOpts.ImagePullSecretName, y.yamlOpts.ImagePullCreds, y.yamlOpts.LabelMap)
+	dockerSecret, err := k8s.CreateDockerConfigJSONSecret(y.yamlOpts.NS, y.yamlOpts.ImagePullSecretName, y.yamlOpts.ImagePullCreds, y.yamlOpts.LabelMap, y.yamlOpts.AnnotationMap)
 	if err != nil {
 		return "", err
 	}
@@ -265,8 +268,7 @@ func (y *YAMLGenerator) generateSecretYAML(versionStr string, inputVersion strin
 		return "", err
 	}
 
-	csYAMLs, err := GenerateClusterSecretYAMLs(y.yamlOpts.CloudAddr, "",
-		y.yamlOpts.NS, y.yamlOpts.DevCloudNS, y.yamlOpts.KubeConfig, getSentryDSN(versionStr), inputVersion, y.yamlOpts.UseEtcdOperator, y.yamlOpts.Labels)
+	csYAMLs, err := GenerateClusterSecretYAMLs(y.yamlOpts, "", getSentryDSN(versionStr), inputVersion)
 	if err != nil {
 		return "", err
 	}

@@ -300,7 +300,7 @@ func installCertsUsingClientset(certPath string, caCertPath string, caKeyPath st
 		return err
 	}
 
-	return k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamls), false, nil)
+	return k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamls), false, nil, nil)
 }
 
 // InstallCerts generates the necessary certs and installs them in kubernetes.

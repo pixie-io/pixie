@@ -25,12 +25,15 @@ metadata:
   namespace: pl
   labels:
     __PL_CUSTOM_LABEL_STRING__
+  annotations:
+    __PL_CUSTOM_ANNOTATION_STRING__
 ---
 apiVersion: v1
 data:
   PL_ETCD_OPERATOR_ENABLED: "__PL_ETCD_OPERATOR_ENABLED__"
   PL_MD_ETCD_SERVER: __PL_MD_ETCD_SERVER__
   PL_CUSTOM_LABELS: "__PL_CUSTOM_LABELS__"
+  PL_CUSTOM_ANNOTATIONS: "__PL_CUSTOM_ANNOTATIONS__"
 kind: ConfigMap
 metadata:
   creationTimestamp: null
@@ -38,6 +41,8 @@ metadata:
   namespace: pl
   labels:
     __PL_CUSTOM_LABEL_STRING__
+  annotations:
+    __PL_CUSTOM_ANNOTATION_STRING__
 ---
 apiVersion: v1
 stringData:
@@ -49,6 +54,8 @@ metadata:
   namespace: pl
   labels:
     __PL_CUSTOM_LABEL_STRING__
+  annotations:
+    __PL_CUSTOM_ANNOTATION_STRING__
 ---
 apiVersion: v1
 data:
@@ -60,6 +67,8 @@ metadata:
   labels:
     component: vizier
     __PL_CUSTOM_LABEL_STRING__
+  annotations:
+    __PL_CUSTOM_ANNOTATION_STRING__
   name: pl-cloud-connector-bootstrap-config
   namespace: pl
 ---
@@ -73,6 +82,8 @@ metadata:
   namespace: pl
   labels:
     __PL_CUSTOM_LABEL_STRING__
+  annotations:
+    __PL_CUSTOM_ANNOTATION_STRING__
 `
 
 func getK8sVersion(kubeConfig *rest.Config) (string, error) {
@@ -98,10 +109,13 @@ func getCurrentCluster() string {
 }
 
 // GenerateClusterSecretYAMLs generates YAMLs for the cluster secrets.
-func GenerateClusterSecretYAMLs(cloudAddr string, deployKey string, namespace string, devCloudNamespace string, kubeConfig *rest.Config, sentryDSN string, version string, useEtcdOperator bool, labels string) (string, error) {
+func GenerateClusterSecretYAMLs(yamlOpts *YAMLOptions, deployKey string, sentryDSN string, version string) (string, error) {
 	// devCloudNamespace implies we are running in a dev enivironment and we should attach to
 	// vzconn in that namespace.
-	updateCloudAddr := cloudAddr
+	cloudAddr := yamlOpts.CloudAddr
+	updateCloudAddr := yamlOpts.CloudAddr
+	devCloudNamespace := yamlOpts.DevCloudNS
+
 	if devCloudNamespace != "" {
 		cloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", devCloudNamespace)
 		updateCloudAddr = fmt.Sprintf("api-service.%s.svc.cluster.local:51200", devCloudNamespace)
@@ -109,20 +123,28 @@ func GenerateClusterSecretYAMLs(cloudAddr string, deployKey string, namespace st
 
 	clusterName := ""
 
-	if kubeConfig != nil { // Only record cluster name if we are deploying directly to the current cluster.
+	if yamlOpts.KubeConfig != nil { // Only record cluster name if we are deploying directly to the current cluster.
 		clusterName = getCurrentCluster()
 	}
 
 	etcdAddr := "https://etcd.pl.svc:2379"
-	if useEtcdOperator {
+	if yamlOpts.UseEtcdOperator {
 		etcdAddr = "https://pl-etcd-client.pl.svc:2379"
 	}
 
 	labelString := ""
-	lm, _ := k8s.LabelStringToMap(labels)
+	lm := yamlOpts.LabelMap
 	if lm != nil {
 		for k, v := range lm {
 			labelString += fmt.Sprintf("%s: \"%s\"\n    ", k, v)
+		}
+	}
+
+	annotationString := ""
+	am := yamlOpts.AnnotationMap
+	if am != nil {
+		for k, v := range am {
+			annotationString += fmt.Sprintf("%s: \"%s\"\n    ", k, v)
 		}
 	}
 
@@ -131,12 +153,14 @@ func GenerateClusterSecretYAMLs(cloudAddr string, deployKey string, namespace st
 		"__PL_CLOUD_ADDR__", cloudAddr,
 		"__PL_CLUSTER_NAME__", clusterName,
 		"__PL_UPDATE_CLOUD_ADDR__", updateCloudAddr,
-		"__PL_ETCD_OPERATOR_ENABLED__", strconv.FormatBool(useEtcdOperator),
+		"__PL_ETCD_OPERATOR_ENABLED__", strconv.FormatBool(yamlOpts.UseEtcdOperator),
 		"__PL_MD_ETCD_SERVER__", etcdAddr,
 		"__PL_SENTRY_DSN__", sentryDSN,
 		"__PL_BOOTSTRAP_VERSION__", version,
-		"__PL_CUSTOM_LABELS__", labels,
+		"__PL_CUSTOM_LABELS__", yamlOpts.Labels,
+		"__PL_CUSTOM_ANNOTATIONS__", yamlOpts.Annotations,
 		"__PL_CUSTOM_LABEL_STRING__", labelString,
+		"__PL_CUSTOM_ANNOTATION_STRING__", annotationString,
 	)
 	return r.Replace(secretsYAML), nil
 }
