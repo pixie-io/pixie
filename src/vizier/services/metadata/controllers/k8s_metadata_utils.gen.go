@@ -91,9 +91,7 @@ func (mc *PodWatcher) syncPodImpl(storedUpdates []*storepb.K8SResource, currentS
 		}
 		mc.updateCh <- msg
 	}
-	if len(currentState.Items) > 0 {
-		mc.lastRV = currentState.Items[len(currentState.Items)-1].ResourceVersion
-	}
+	mc.lastRV = currentState.ResourceVersion
 
 	// Make a map of resources that we have stored.
 	storedResources := make(map[string]*storepb.K8SResource)
@@ -263,9 +261,7 @@ func (mc *ServiceWatcher) syncServiceImpl(storedUpdates []*storepb.K8SResource, 
 		}
 		mc.updateCh <- msg
 	}
-	if len(currentState.Items) > 0 {
-		mc.lastRV = currentState.Items[len(currentState.Items)-1].ResourceVersion
-	}
+	mc.lastRV = currentState.ResourceVersion
 
 	// Make a map of resources that we have stored.
 	storedResources := make(map[string]*storepb.K8SResource)
@@ -435,9 +431,7 @@ func (mc *NamespaceWatcher) syncNamespaceImpl(storedUpdates []*storepb.K8SResour
 		}
 		mc.updateCh <- msg
 	}
-	if len(currentState.Items) > 0 {
-		mc.lastRV = currentState.Items[len(currentState.Items)-1].ResourceVersion
-	}
+	mc.lastRV = currentState.ResourceVersion
 
 	// Make a map of resources that we have stored.
 	storedResources := make(map[string]*storepb.K8SResource)
@@ -607,9 +601,7 @@ func (mc *EndpointsWatcher) syncEndpointsImpl(storedUpdates []*storepb.K8SResour
 		}
 		mc.updateCh <- msg
 	}
-	if len(currentState.Items) > 0 {
-		mc.lastRV = currentState.Items[len(currentState.Items)-1].ResourceVersion
-	}
+	mc.lastRV = currentState.ResourceVersion
 
 	// Make a map of resources that we have stored.
 	storedResources := make(map[string]*storepb.K8SResource)
@@ -779,9 +771,7 @@ func (mc *NodeWatcher) syncNodeImpl(storedUpdates []*storepb.K8SResource, curren
 		}
 		mc.updateCh <- msg
 	}
-	if len(currentState.Items) > 0 {
-		mc.lastRV = currentState.Items[len(currentState.Items)-1].ResourceVersion
-	}
+	mc.lastRV = currentState.ResourceVersion
 
 	// Make a map of resources that we have stored.
 	storedResources := make(map[string]*storepb.K8SResource)

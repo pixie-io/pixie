@@ -91,10 +91,8 @@ func (mc *ReplacedResourceWatcher) syncReplacedResourceImpl(storedUpdates []*sto
         }
         mc.updateCh <- msg
     }
-    if len(currentState.Items) > 0 {
-        mc.lastRV = currentState.Items[len(currentState.Items)-1].ResourceVersion
-    }
-
+    mc.lastRV = currentState.ResourceVersion
+    
     // Make a map of resources that we have stored.
     storedResources := make(map[string]*storepb.K8SResource)
     for i := range storedUpdates {
