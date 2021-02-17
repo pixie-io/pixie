@@ -180,6 +180,7 @@ pl_cc_test(
     data = [
         "//src/stirling/source_connectors/socket_tracer/protocols/mysql/testing:expected_outputs",
         "//src/stirling/source_connectors/socket_tracer/protocols/mysql/testing:scripts",
+        "//src/stirling/source_connectors/socket_tracer/testing/mysql:mysql_connector_image.tar",
     ],
     flaky = True,
     tags = [

@@ -19,6 +19,10 @@ namespace stirling {
 namespace protocols {
 namespace mysql {
 
+// This automatically provides an operator<< when ToString() is defined.
+// Particularly useful for gtest.
+using ::pl::operator<<;
+
 /**
  * The MySQL parsing structure has 3 different levels of abstraction. From low to high level:
  * 1. MySQL Packet (Output of MySQL Parser). The content of it is not parsed.
@@ -360,6 +364,11 @@ struct Request {
 
   // Timestamp of the request packet.
   uint64_t timestamp_ns;
+
+  std::string ToString() const {
+    return absl::Substitute("timestamp=$0 cmd=$1 msg=$2", timestamp_ns, magic_enum::enum_name(cmd),
+                            msg);
+  }
 };
 
 struct Response {
@@ -371,6 +380,11 @@ struct Response {
 
   // Timestamp of the last response packet.
   uint64_t timestamp_ns;
+
+  std::string ToString() const {
+    return absl::Substitute("timestamp=$0 status=$1 msg=$2", timestamp_ns,
+                            magic_enum::enum_name(status), msg);
+  }
 };
 
 /**
@@ -384,6 +398,10 @@ struct Record {
   // Used to record info/warnings.
   // Only pushed to table store on debug builds.
   std::string px_info = "";
+
+  std::string ToString() const {
+    return absl::Substitute("req=[$0] resp=[$1]", req.ToString(), resp.ToString());
+  }
 };
 
 struct ProtocolTraits {

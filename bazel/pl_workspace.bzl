@@ -42,6 +42,40 @@ def _package_manager_setup():
         sources = ["@debian_sid//file:Packages.json"],
     )
 
+# Set-up images used by Stirling BPF tests.
+def stirling_docker_images_setup():
+    # NGINX with OpenSSL 1.1.0, for OpenSSL tracing tests.
+    container_pull(
+        name = "nginx_openssl_1_1_0",
+        digest = "sha256:204a9a8e65061b10b92ad361dd6f406248404fe60efd5d6a8f2595f18bb37aad",
+        registry = "index.docker.io",
+        repository = "library/nginx",
+    )
+
+    # NGINX with OpenSSL 1.1.1, for OpenSSL tracing tests.
+    container_pull(
+        name = "nginx_openssl_1_1_1",
+        digest = "sha256:0b159cd1ee1203dad901967ac55eee18c24da84ba3be384690304be93538bea8",
+        registry = "index.docker.io",
+        repository = "library/nginx",
+    )
+
+    # DNS server image for DNS tests.
+    container_pull(
+        name = "alpine_dns_linux_amd64",
+        registry = "index.docker.io",
+        repository = "resystit/bind9",
+        digest = "sha256:b9d834c7ca1b3c0fb32faedc786f2cb96fa2ec00976827e3f0c44f647375e18c",
+    )
+
+    # Custom built container with python MySQL client, for MySQL tests.
+    container_pull(
+        name = "python_mysql_connector",
+        digest = "sha256:14f3013a1939c20184914e1afb17b9b2ed3c5ff1982d6a6cb3ba7d580c059653",
+        registry = "gcr.io",
+        repository = "pl-dev-infra/python_mysql_connector",
+    )
+
 def _docker_images_setup():
     _go_image_repos()
     _java_image_repos()
@@ -50,22 +84,6 @@ def _docker_images_setup():
     container_pull(
         name = "nginx_base",
         digest = "sha256:204a9a8e65061b10b92ad361dd6f406248404fe60efd5d6a8f2595f18bb37aad",
-        registry = "index.docker.io",
-        repository = "library/nginx",
-    )
-
-    # NGINX with OpenSSL 1.1.0, for Stirling tests of OpenSSL tracing.
-    container_pull(
-        name = "nginx_openssl_1_1_0",
-        digest = "sha256:204a9a8e65061b10b92ad361dd6f406248404fe60efd5d6a8f2595f18bb37aad",
-        registry = "index.docker.io",
-        repository = "library/nginx",
-    )
-
-    # NGINX with OpenSSL 1.1.1, for Stirling tests of OpenSSL tracing.
-    container_pull(
-        name = "nginx_openssl_1_1_1",
-        digest = "sha256:0b159cd1ee1203dad901967ac55eee18c24da84ba3be384690304be93538bea8",
         registry = "index.docker.io",
         repository = "library/nginx",
     )
@@ -92,13 +110,7 @@ def _docker_images_setup():
         repository = "distroless/base",
     )
 
-    # Import Alpine image to use for DNS tests.
-    container_pull(
-        name = "alpine_dns_linux_amd64",
-        registry = "index.docker.io",
-        repository = "resystit/bind9",
-        digest = "sha256:b9d834c7ca1b3c0fb32faedc786f2cb96fa2ec00976827e3f0c44f647375e18c",
-    )
+    stirling_docker_images_setup()
 
 def _artifacts_setup():
     http_file(

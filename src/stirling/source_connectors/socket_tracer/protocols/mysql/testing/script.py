@@ -1,4 +1,3 @@
-import os
 import mysql.connector
 
 # MySQL Python API: https://dev.mysql.com/doc/connector-python/en/connector-python-reference.html
@@ -6,7 +5,7 @@ import mysql.connector
 config = {
     "user": "root",
     "host": "0.0.0.0",
-    "port": "33060",
+    "port": "3306",
     "password": "",
     "ssl_disabled": "True"
 }
@@ -39,7 +38,6 @@ employee_data = [
 
 
 def main():
-    print(os.getpid())
     cnx = mysql.connector.connect(**config)
 
     # kStatistics 0x09

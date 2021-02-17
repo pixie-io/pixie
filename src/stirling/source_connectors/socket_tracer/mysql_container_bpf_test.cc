@@ -8,6 +8,7 @@
 #include "src/common/base/base.h"
 #include "src/common/base/test_utils.h"
 #include "src/common/exec/exec.h"
+#include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/types/column_wrapper.h"
@@ -26,6 +27,7 @@ namespace mysql = protocols::mysql;
 
 using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::stirling::testing::SocketTraceBPFTest;
+using ::pl::testing::BazelBinTestFilePath;
 using ::pl::testing::TestFilePath;
 using ::pl::types::ColumnWrapper;
 using ::pl::types::ColumnWrapperRecordBatch;
@@ -54,6 +56,18 @@ class MySQLContainer : public ContainerRunner {
       "'/var/lib/mysql/mysql.sock'  port: 3306";
 };
 
+class PythonMySQLConnectorContainer : public ContainerRunner {
+ public:
+  PythonMySQLConnectorContainer()
+      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/mysql/mysql_connector_image.tar";
+  static constexpr std::string_view kInstanceNamePrefix = "mysql_client";
+  static constexpr std::string_view kReadyMessage = "pid=";
+};
+
 class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
  protected:
   MySQLTraceTest() {
@@ -65,8 +79,8 @@ class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> 
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
     // Note that this step will make an access to docker hub to download the MySQL image.
-    StatusOr<std::string> run_result = container_.Run(
-        90, {"--env=MYSQL_ALLOW_EMPTY_PASSWORD=1", "--env=MYSQL_ROOT_HOST=%", "-p=33060:3306"});
+    StatusOr<std::string> run_result =
+        server_.Run(90, {"--env=MYSQL_ALLOW_EMPTY_PASSWORD=1", "--env=MYSQL_ROOT_HOST=%"});
     PL_CHECK_OK(run_result);
 
     // Sleep an additional second, just to be safe.
@@ -85,7 +99,7 @@ class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> 
     std::string cmd = absl::StrFormat(
         "docker exec %s bash -c 'echo \"%s\" | mysql --protocol=TCP --ssl-mode=DISABLED "
         "--host=localhost --port=3306 -uroot & echo $! && wait'",
-        container_.container_name(), script_content);
+        server_.container_name(), script_content);
     PL_ASSIGN_OR_RETURN(std::string out, pl::Exec(cmd));
 
     std::vector<std::string_view> lines = absl::StrSplit(out, "\n");
@@ -104,27 +118,43 @@ class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> 
   }
 
   StatusOr<int32_t> RunPythonScript(std::string_view script_path) {
-    std::string absl_script_path = TestFilePath(script_path);
+    std::filesystem::path script_file_path = TestFilePath(script_path);
+    PL_ASSIGN_OR_RETURN(script_file_path, fs::Canonical(script_file_path));
+    std::filesystem::path script_dir = script_file_path.parent_path();
+    std::filesystem::path script_filename = script_file_path.filename();
 
-    // TODO(chengruizhe): Pull out pip3 install into the environment.
-    std::string cmd =
-        absl::StrFormat("pip3 install -q mysql-connector-python && python3 %s", absl_script_path);
-    PL_ASSIGN_OR_RETURN(std::string out, pl::Exec(cmd));
+    PL_ASSIGN_OR_RETURN(
+        std::string out,
+        client_.Run(60, {absl::Substitute("--network=container:$0", server_.container_name())},
+                    {"/scripts/" + script_filename.string()}));
+    LOG(INFO) << "Script output\n" << out;
+    client_.Wait();
+
+    // The first line of the output should be pid=<pid> (the container's python init is set-up to
+    // print this automatically). Parse out the client PID from this line.
 
     std::vector<std::string_view> lines = absl::StrSplit(out, "\n");
     if (lines.empty()) {
-      return error::Internal("Exected output (pid) from command.");
+      return error::Internal("Expected output from command.");
+    }
+
+    std::vector<std::string_view> tokens = absl::StrSplit(lines[0], "=");
+    if (tokens.size() != 2) {
+      return error::Internal("Expected first line to be of format: pid=<pid>");
     }
 
     int32_t client_pid;
-    if (!absl::SimpleAtoi(lines[0], &client_pid)) {
+    if (!absl::SimpleAtoi(tokens[1], &client_pid)) {
       return error::Internal("Could not extract PID.");
     }
+
+    LOG(INFO) << absl::Substitute("Client PID: $0", client_pid);
 
     return client_pid;
   }
 
-  MySQLContainer container_;
+  MySQLContainer server_;
+  PythonMySQLConnectorContainer client_;
 };
 
 //-----------------------------------------------------------------------------

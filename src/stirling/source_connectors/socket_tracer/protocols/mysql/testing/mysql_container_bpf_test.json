@@ -9,15 +9,7 @@
     },
     {
         "req_cmd": "\u0003",
-        "req_msg": "SET NAMES utf8mb4",
-        "req_timestamp": 0,
-        "resp_status": "\u0002",
-        "resp_msg": "",
-        "resp_timestamp": 0
-    },
-    {
-        "req_cmd": "\u0003",
-        "req_msg": "set autocommit=0",
+        "req_msg": "SET @@session.autocommit = OFF",
         "req_timestamp": 0,
         "resp_status": "\u0002",
         "resp_msg": "",
@@ -42,6 +34,14 @@
     {
         "req_cmd": "\u0003",
         "req_msg": "CREATE TABLE `employees` (  `emp_no` int(11) NOT NULL AUTO_INCREMENT,  `first_name` varchar(14) NOT NULL,  `last_name` varchar(16) NOT NULL,  `gender` enum('M','F') NOT NULL,  PRIMARY KEY (`emp_no`)) ENGINE=InnoDB",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u000E",
+        "req_msg": "",
         "req_timestamp": 0,
         "resp_status": "\u0002",
         "resp_msg": "",
@@ -113,7 +113,7 @@
     },
     {
         "req_cmd": "\u0003",
-        "req_msg": "commit",
+        "req_msg": "COMMIT",
         "req_timestamp": 0,
         "resp_status": "\u0002",
         "resp_msg": "",
@@ -152,14 +152,6 @@
         "resp_timestamp": 0
     },
     {
-        "req_cmd": "\u001A",
-        "req_msg": "",
-        "req_timestamp": 0,
-        "resp_status": "\u0002",
-        "resp_msg": "",
-        "resp_timestamp": 0
-    },
-    {
         "req_cmd": "\u0019",
         "req_msg": "",
         "req_timestamp": 0,
@@ -185,15 +177,7 @@
     },
     {
         "req_cmd": "\u0003",
-        "req_msg": "SET NAMES utf8mb4",
-        "req_timestamp": 0,
-        "resp_status": "\u0002",
-        "resp_msg": "",
-        "resp_timestamp": 0
-    },
-    {
-        "req_cmd": "\u0003",
-        "req_msg": "set autocommit=0",
+        "req_msg": "SET @@session.autocommit = OFF",
         "req_timestamp": 0,
         "resp_status": "\u0002",
         "resp_msg": "",

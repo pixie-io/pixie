@@ -4,8 +4,10 @@ function usage() {
   echo "run_docker.sh [--extra_args=<DEV_DOCKER_EXTRA_ARGS>]"
 }
 
+script_dir="$(dirname "$0")"
+
 # Read variables from docker.properties file.
-dockerPropertiesFile="docker.properties"
+dockerPropertiesFile="$script_dir/../docker.properties"
 if [ -f "$dockerPropertiesFile" ]
 then
   while IFS='=' read -r key value
