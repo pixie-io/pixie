@@ -4,6 +4,7 @@ import (
 	"context"
 
 	v1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/watch"
@@ -26,4 +27,10 @@ func WatchK8sResource(clientset *kubernetes.Clientset, resource string, namespac
 func ListNodes(clientset *kubernetes.Clientset) (*v1.NodeList, error) {
 	opts := metav1.ListOptions{}
 	return clientset.CoreV1().Nodes().List(context.Background(), opts)
+}
+
+// ListStorageClasses lists the storage classes in this Kubernetes cluster.
+func ListStorageClasses(clientset *kubernetes.Clientset) (*storagev1.StorageClassList, error) {
+	opts := metav1.ListOptions{}
+	return clientset.StorageV1().StorageClasses().List(context.Background(), opts)
 }

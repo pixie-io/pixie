@@ -39,6 +39,12 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )
 
+const (
+	// DefaultClassAnnotationKey is the key in the annotation map which indicates
+	// a storage class is default.
+	DefaultClassAnnotationKey = "storageclass.kubernetes.io/is-default-class"
+)
+
 // BlockListedLabels are labels that we won't allow users to specify, since these are labels that we
 // specify ourselves. Changing these may break the vizier update job.
 var BlockListedLabels = []string{
@@ -384,6 +390,13 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	utils.Infof("Found %v nodes", numNodes)
 
+	// Validate correct number of default storage classes. TODO(vjain): use returned
+	// boolean to determine deployment.
+	_, err = validateNumDefaultStorageClasses(clientset)
+	if err != nil {
+		utils.Error("Error checking default storage classes: " + err.Error())
+	}
+
 	namespaceJob := newTaskWrapper("Creating namespace", func() error {
 		nsYAML, err := yamlGenerator.GetNamespaceYAML(yamlArgs)
 		if err != nil {
@@ -690,6 +703,27 @@ func pemCanScheduleWithTaint(t *v1.Taint) bool {
 		return false
 	}
 	return true
+}
+
+// validateNumDefaultStorageClasses returns a boolean whether there is exactly
+// 1 default storage class or not.
+func validateNumDefaultStorageClasses(clientset *kubernetes.Clientset) (bool, error) {
+	storageClasses, err := k8s.ListStorageClasses(clientset)
+	if err != nil {
+		return false, err
+	}
+
+	defaultClassCount := 0
+
+	// Check annotations map on each storage class to see if default is set to "true".
+	for _, storageClass := range storageClasses.Items {
+		annotationsMap := storageClass.GetAnnotations()
+		if annotationsMap[DefaultClassAnnotationKey] == "true" {
+			defaultClassCount++
+		}
+	}
+
+	return (defaultClassCount == 1), nil
 }
 
 func getNumNodes(clientset *kubernetes.Clientset) (int, error) {
