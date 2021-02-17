@@ -12,15 +12,29 @@ namespace stirling {
 static constexpr DataElement kElements[] = {
     canonical_data_elements::kTime,
     canonical_data_elements::kUPID,
-    {"a", "A",
-     types::DataType::FLOAT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_GAUGE},
-    {"b", "B",
-     types::DataType::FLOAT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_GAUGE}};
-// clang-format on
+    {"stack_trace_id",
+     "A unique identifier of the stack trace, for script-writing convenience. "
+     "String representation is in the `stack_trace` column.",
+     types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
+    {"stack_trace",
+     "A stack trace within the sampled process, in folded format. "
+     "The call stack symbols are separated by semicolons. "
+     "If symbols cannot be resolved, addresses are populated instead.",
+     types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
+    {"count",
+     "Number of times the stack trace has been sampled.",
+     types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_GAUGE}
+};
 
-constexpr auto kStackTraceTable =
-    DataTableSchema("stack_traces", "Stack Traces", kElements, std::chrono::milliseconds{100},
-                    std::chrono::milliseconds{1000});
+constexpr auto kStackTraceTable = DataTableSchema(
+        "stack_traces.beta",
+        "Sampled stack traces of applications that identify hot-spots in application code. "
+        "Executable symbols are required for human-readable function names to be displayed.",
+        kElements,
+        std::chrono::milliseconds{1000},
+        std::chrono::milliseconds{5000}
+);
+// clang-format on
 
 }  // namespace stirling
 }  // namespace pl
