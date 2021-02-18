@@ -34,7 +34,10 @@ class FakeNATSConnector : public event::NATSConnector<TMsg> {
 
 class FakeAgentMetadataStateManager : public md::AgentMetadataStateManager {
  public:
-  FakeAgentMetadataStateManager() {
+  FakeAgentMetadataStateManager() : FakeAgentMetadataStateManager(/*metadata filter*/ nullptr) {}
+
+  explicit FakeAgentMetadataStateManager(md::AgentMetadataFilter* metadata_filter)
+      : metadata_filter_(metadata_filter) {
     metadata_state_ =
         std::make_shared<pl::md::AgentMetadataState>("myhost", 1, sole::uuid4(), "mypod");
   }
@@ -64,8 +67,12 @@ class FakeAgentMetadataStateManager : public md::AgentMetadataStateManager {
 
   void SetPodCIDR(std::vector<CIDRBlock> cidrs) override { pod_cidr_ = cidrs; }
 
+  void AddPIDStatusEvent(std::unique_ptr<md::PIDStatusEvent> event) {
+    pid_status_events_.push(std::move(event));
+  }
+
   std::unique_ptr<md::PIDStatusEvent> GetNextPIDStatusEvent() override {
-    if (pid_status_events_.size()) {
+    if (!pid_status_events_.size()) {
       return nullptr;
     }
     auto event = std::move(pid_status_events_.front());

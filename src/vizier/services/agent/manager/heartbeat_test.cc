@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -53,6 +54,33 @@ schema {
 }
 )proto";
 
+const char* kAgentPIDStartedTemplate = R"proto(
+process_created {
+  upid {
+    low: $0
+    high: 4294967298
+  }
+  pid: 2
+  start_timestamp_ns: $0
+  cmdline: "./a_command"
+  cid: "example_container"
+}
+)proto";
+
+const char* kAgentPIDTerminatedTemplate = R"proto(
+process_terminated {
+  upid {
+    low: $0
+    high: 4294967298
+  }
+  stop_timestamp_ns: $1
+}
+)proto";
+
+int64_t time_to_nanos(event::MonotonicTimePoint time) {
+  return std::chrono::duration_cast<std::chrono::nanoseconds>(time.time_since_epoch()).count();
+}
+
 class HeartbeatMessageHandlerTest : public ::testing::Test {
  protected:
   void TearDown() override { dispatcher_->Exit(); }
@@ -71,10 +99,10 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
     EXPECT_CALL(sys_config, proc_path()).WillRepeatedly(ReturnRef(proc_path_));
     EXPECT_CALL(sys_config, sysfs_path()).WillRepeatedly(ReturnRef(sysfs_path_));
 
-    md_filter_ =
-        md::AgentMetadataFilter::Create(100, 0.01, md::kMetadataFilterEntities).ConsumeValueOrDie();
-    mds_manager_ = std::make_unique<md::AgentMetadataStateManagerImpl>(
-        "host", 1, "pod", /* agent_id */ sole::uuid4(), true, sys_config, md_filter_.get());
+    md_filter_ = md::AgentMetadataFilter::Create(10, 0.1, {md::MetadataType::SERVICE_NAME})
+                     .ConsumeValueOrDie();
+    EXPECT_OK(md_filter_->InsertEntity(md::MetadataType::SERVICE_NAME, "pl/service"));
+    mds_manager_ = std::make_unique<FakeAgentMetadataStateManager>(md_filter_.get());
 
     // Relation info with no tabletization.
     Relation relation0({types::TIME64NS, types::INT64}, {"time_", "count"});
@@ -97,14 +125,24 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
         nats_conn_.get());
   }
 
+  void CheckFilterElements(const messages::AgentDataInfo& data_info,
+                           absl::flat_hash_set<std::string> present,
+                           absl::flat_hash_set<std::string> not_present) {
+    auto filter = md::AgentMetadataFilter::FromProto(data_info.metadata_info()).ConsumeValueOrDie();
+    for (const auto& str : present) {
+      EXPECT_TRUE(filter->ContainsEntity(md::MetadataType::SERVICE_NAME, str));
+    }
+    for (const auto& str : not_present) {
+      EXPECT_FALSE(filter->ContainsEntity(md::MetadataType::SERVICE_NAME, str));
+    }
+  }
+
   event::MonotonicTimePoint start_monotonic_time_;
   event::SystemTimePoint start_system_time_;
   std::unique_ptr<event::SimulatedTimeSystem> time_system_;
   std::unique_ptr<event::APIImpl> api_;
   std::unique_ptr<event::Dispatcher> dispatcher_;
-  // TODO(nserrino): update this to a fake so we don't test the metadata state manager
-  // as part of the heartbeat unit test.
-  std::unique_ptr<md::AgentMetadataStateManager> mds_manager_;
+  std::unique_ptr<FakeAgentMetadataStateManager> mds_manager_;
   std::unique_ptr<RelationInfoManager> relation_info_manager_;
   std::unique_ptr<HeartbeatMessageHandler> heartbeat_handler_;
   std::unique_ptr<FakeNATSConnector<pl::vizier::messages::VizierMessage>> nats_conn_;
@@ -134,11 +172,21 @@ TEST_F(HeartbeatMessageHandlerTest, InitialHeartbeatTimeout) {
 }
 
 TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeat) {
+  auto start_time_nanos = time_to_nanos(start_monotonic_time_);
+  md::UPID upid(1, 2, start_time_nanos);
+  md::PIDInfo pid_info(upid, "./a_command", "example_container");
+  mds_manager_->AddPIDStatusEvent(std::make_unique<md::PIDStartedEvent>(pid_info));
+
+  // Publish pid updates.
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
   EXPECT_EQ(1, nats_conn_->published_msgs().size());
   auto hb = nats_conn_->published_msgs()[0].heartbeat();
   EXPECT_EQ(0, hb.sequence_number());
+  // Check that all of the information we expect is there.
   EXPECT_THAT(hb.update_info(), Partially(EqualsProto(kAgentUpdateInfoSchemaNoTablets)));
+  EXPECT_THAT(hb.update_info(),
+              Partially(EqualsProto(absl::Substitute(kAgentPIDStartedTemplate, start_time_nanos))));
+  CheckFilterElements(hb.update_info().data(), {"pl/service"}, {"pl/another_service"});
 
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 4000));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
@@ -149,21 +197,38 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeat) {
 
   auto s = heartbeat_handler_->HandleMessage(std::move(hb_ack));
 
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 5000 + 1));
+  auto new_time = start_monotonic_time_ + std::chrono::milliseconds(5 * 5000 + 1);
+  auto stop_time_nanos = time_to_nanos(new_time);
+
+  mds_manager_->AddPIDStatusEvent(
+      std::make_unique<md::PIDTerminatedEvent>(pid_info.upid(), stop_time_nanos));
+
+  time_system_->SetMonotonicTime(new_time);
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   EXPECT_EQ(3, nats_conn_->published_msgs().size());
   hb = nats_conn_->published_msgs()[2].heartbeat();
   EXPECT_EQ(1, hb.sequence_number());
-  // No schema should be included in subsequent heartbeats.
+  // No schema should be included in subsequent heartbeat.
   EXPECT_EQ(0, hb.update_info().schema().size());
+  // New PID updates should be included in subsequent heartbeat.
+  EXPECT_THAT(hb.update_info(),
+              Partially(EqualsProto(absl::Substitute(kAgentPIDTerminatedTemplate, start_time_nanos,
+                                                     stop_time_nanos))));
+  // No new metadata filter should be included in subsequent heartbeat.
+  EXPECT_FALSE(hb.update_info().data().has_metadata_info());
 }
 
-TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatMetadata) {
-  ASSERT_OK(mds_manager_->PerformMetadataStateUpdate());
+TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatMetadataChange) {
+  // Tthe metadata info should be resent when it changes.
+  dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
+  EXPECT_EQ(1, nats_conn_->published_msgs().size());
+  auto hb = nats_conn_->published_msgs()[0].heartbeat();
+  EXPECT_EQ(0, hb.sequence_number());
+  // Check that all of the information we expect is there.
+  CheckFilterElements(hb.update_info().data(), {"pl/service"}, {"pl/another_service"});
 
-  ASSERT_OK(mds_manager_->metadata_filter()->InsertEntity(MetadataType::POD_NAME, "foo"));
-
+  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 4000));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   auto hb_ack = std::make_unique<messages::VizierMessage>();
@@ -172,30 +237,49 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatMetadata) {
 
   auto s = heartbeat_handler_->HandleMessage(std::move(hb_ack));
 
+  EXPECT_OK(md_filter_->InsertEntity(md::MetadataType::SERVICE_NAME, "pl/another_service"));
+
+  auto new_time = start_monotonic_time_ + std::chrono::milliseconds(5 * 5000 + 1);
+  time_system_->SetMonotonicTime(new_time);
+  dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
+
+  EXPECT_EQ(3, nats_conn_->published_msgs().size());
+  hb = nats_conn_->published_msgs()[2].heartbeat();
+  EXPECT_EQ(1, hb.sequence_number());
+  CheckFilterElements(hb.update_info().data(), {"pl/service", "pl/another_service"},
+                      {"pl/another_service_2"});
+}
+
+TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatMetadataAfterDisable) {
+  // Even if the metadata info didn't change, if the heartbeat was disabled then re-enabled,
+  // the metadata info should be resent.
+  dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
   EXPECT_EQ(1, nats_conn_->published_msgs().size());
   auto hb = nats_conn_->published_msgs()[0].heartbeat();
   EXPECT_EQ(0, hb.sequence_number());
-  EXPECT_TRUE(hb.update_info().data().has_metadata_info());
-  EXPECT_THAT(hb.update_info(), Partially(EqualsProto(kAgentUpdateInfoSchemaNoTablets)));
+  // Check that all of the information we expect is there.
+  CheckFilterElements(hb.update_info().data(), {"pl/service"}, {"pl/another_service"});
 
-  auto metadata_info = hb.update_info().data().metadata_info();
-  std::vector<MetadataType> types;
-  for (auto i = 0; i < metadata_info.metadata_fields_size(); ++i) {
-    types.push_back(metadata_info.metadata_fields(i));
-  }
-  EXPECT_THAT(types, UnorderedElementsAreArray(md::kMetadataFilterEntities));
-  auto bf = md::AgentMetadataFilter::FromProto(metadata_info).ConsumeValueOrDie();
-  EXPECT_TRUE(bf->ContainsEntity(MetadataType::POD_NAME, "foo"));
-  EXPECT_FALSE(bf->ContainsEntity(MetadataType::SERVICE_NAME, "foo"));
-
-  // Don't update the metadata filter when the k8s epoch hasn't changed.
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 5000 + 1));
+  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 4000));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
-  EXPECT_EQ(2, nats_conn_->published_msgs().size());
 
-  hb = nats_conn_->published_msgs()[1].heartbeat();
+  auto hb_ack = std::make_unique<messages::VizierMessage>();
+  auto hb_ack_msg = hb_ack->mutable_heartbeat_ack();
+  hb_ack_msg->set_sequence_number(0);
+
+  auto s = heartbeat_handler_->HandleMessage(std::move(hb_ack));
+
+  heartbeat_handler_->DisableHeartbeats();
+  heartbeat_handler_->EnableHeartbeats();
+
+  auto new_time = start_monotonic_time_ + std::chrono::milliseconds(5 * 5000 + 1);
+  time_system_->SetMonotonicTime(new_time);
+  dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
+
+  EXPECT_EQ(3, nats_conn_->published_msgs().size());
+  hb = nats_conn_->published_msgs()[2].heartbeat();
   EXPECT_EQ(1, hb.sequence_number());
-  EXPECT_FALSE(hb.update_info().data().has_metadata_info());
+  CheckFilterElements(hb.update_info().data(), {"pl/service"}, {"pl/another_service"});
 }
 
 TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatRelationUpdates) {

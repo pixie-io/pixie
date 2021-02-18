@@ -44,7 +44,7 @@ class HeartbeatMessageHandler : public Manager::MessageHandler {
   };
 
   std::unique_ptr<pl::vizier::messages::VizierMessage> last_sent_hb_;
-  uint64_t last_metadata_epoch_id_ = 0;
+  int64_t last_metadata_epoch_id_ = 0;
 
   HeartbeatInfo heartbeat_info_;
   const pl::event::TimeSource& time_source_;

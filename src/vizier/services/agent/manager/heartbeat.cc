@@ -30,6 +30,7 @@ HeartbeatMessageHandler::HeartbeatMessageHandler(Dispatcher* d,
 }
 
 void HeartbeatMessageHandler::DisableHeartbeats() {
+  last_metadata_epoch_id_ = 0;
   heartbeat_send_timer_->DisableTimer();
   heartbeat_watchdog_timer_->DisableTimer();
 }
@@ -83,7 +84,7 @@ Status HeartbeatMessageHandler::SendHeartbeatInternal() {
   }
 
   // We skip sending the metadata update when there have been no changes.
-  auto current_epoch = mds_manager_->CurrentAgentMetadataState()->epoch_id();
+  auto current_epoch = mds_manager_->metadata_filter()->epoch_id();
   if (last_metadata_epoch_id_ == 0 || last_metadata_epoch_id_ != current_epoch) {
     auto metadata_filter = update_info->mutable_data()->mutable_metadata_info();
     *metadata_filter = mds_manager_->metadata_filter()->ToProto();

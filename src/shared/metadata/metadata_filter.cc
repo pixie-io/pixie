@@ -29,6 +29,7 @@ std::string ToEntityKeyPair(MetadataType type, std::string_view entity) {
 }
 
 Status AgentMetadataFilter::InsertEntity(MetadataType key, std::string_view value) {
+  epoch_id_++;
   if (!metadata_types_.contains(key)) {
     return error::Internal("Metadata type $0 is not registered in AgentMetadataFilter.", key);
   }

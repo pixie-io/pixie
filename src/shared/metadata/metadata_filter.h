@@ -65,6 +65,8 @@ class AgentMetadataFilter {
    * Get the registered metadata keys that are stored in this filter.
    */
   absl::flat_hash_set<MetadataType> metadata_types() const { return metadata_types_; }
+  // Used to track changes in the filter.
+  int64_t epoch_id() const { return epoch_id_; }
 
  protected:
   virtual void Insert(std::string_view value) = 0;
@@ -78,6 +80,7 @@ class AgentMetadataFilter {
 
  private:
   absl::flat_hash_set<MetadataType> metadata_types_;
+  int64_t epoch_id_ = 0;
 };
 
 /**
