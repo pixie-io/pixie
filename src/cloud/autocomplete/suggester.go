@@ -24,7 +24,6 @@ import (
 // ElasticSuggester provides suggestions based on the given index in Elastic.
 type ElasticSuggester struct {
 	client          *elastic.Client
-	mdIndexName     string
 	scriptIndexName string
 	pc              profilepb.ProfileServiceClient
 	// This is temporary, and will be removed once we start indexing scripts.
@@ -61,10 +60,9 @@ func getServiceCredentials(signingKey string) (string, error) {
 }
 
 // NewElasticSuggester creates a suggester based on an elastic index.
-func NewElasticSuggester(client *elastic.Client, mdIndex string, scriptIndex string, pc profilepb.ProfileServiceClient) (*ElasticSuggester, error) {
+func NewElasticSuggester(client *elastic.Client, scriptIndex string, pc profilepb.ProfileServiceClient) (*ElasticSuggester, error) {
 	return &ElasticSuggester{
 		client:          client,
-		mdIndexName:     mdIndex,
 		scriptIndexName: scriptIndex,
 		pc:              pc,
 		orgMapping:      make(map[uuid.UUID]string),
@@ -312,7 +310,7 @@ func (e *ElasticSuggester) getQueryForRequest(orgID uuid.UUID, clusterUID string
 
 func (e *ElasticSuggester) getMDEntityQuery(orgID uuid.UUID, clusterUID string, input string, allowedKinds []cloudapipb.AutocompleteEntityKind) *elastic.BoolQuery {
 	entityQuery := elastic.NewBoolQuery()
-	entityQuery.Must(elastic.NewTermQuery("_index", e.mdIndexName))
+	entityQuery.Must(elastic.NewTermQuery("_index", md.IndexName))
 
 	// Search by name + namespace.
 	splitInput := strings.Split(input, "/") // If contains "/", then everything preceding "/" is a namespace.

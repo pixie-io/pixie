@@ -201,7 +201,7 @@ func (v *VizierIndexer) HandleResourceUpdate(update *mdpb.ResourceUpdate) error 
 
 	id := fmt.Sprintf("%s-%s-%s", v.vizierID, v.k8sUID, esEntity.UID)
 	_, err := v.es.Update().
-		Index(indexName).
+		Index(IndexName).
 		Id(id).
 		Script(
 			elastic.NewScript(elasticUpdateScript).

@@ -165,7 +165,7 @@ func main() {
 	sms := &controller.ScriptMgrServer{ScriptMgr: sm}
 	cloudapipb.RegisterScriptMgrServer(s.GRPCServer(), sms)
 
-	esSuggester, err := autocomplete.NewElasticSuggester(es, "md_entities_4", "scripts", pc)
+	esSuggester, err := autocomplete.NewElasticSuggester(es, "scripts", pc)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to start elastic suggester")
 	}
