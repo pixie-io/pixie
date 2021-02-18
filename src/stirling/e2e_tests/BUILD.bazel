@@ -148,6 +148,8 @@ sh_test(
         # Can still run it with -c dbg, but on Jenkins, we only run opt version.
         "no_asan",
         "no_tsan",
+        # TODO(oazizi): Re-enable after investigating stirling_wrapper performance issues.
+        "manual",
     ],
     deps = ["//src/stirling/scripts:sh_library"],
 )
