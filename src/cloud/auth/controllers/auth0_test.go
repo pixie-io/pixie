@@ -118,7 +118,7 @@ func TestAuth0ConnectorImpl_GetUserInfoUnauthorizedToken(t *testing.T) {
 	callCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
-		// Return valid management token.
+		// Return an unauthorized error.
 		if r.URL.String() == "/oauth/token" {
 			w.Write([]byte(`{"error": "access_denied", "error_description": "Unauthorized"}`))
 			return
