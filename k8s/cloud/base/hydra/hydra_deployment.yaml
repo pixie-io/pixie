@@ -1,0 +1,97 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hydra
+  labels:
+    name: hydra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: hydra
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        name: hydra
+    spec:
+      containers:
+      - name: hydra
+        image: oryd/hydra:v1.9.2-sqlite
+        args:
+        - serve
+        - -c
+        - /etc/config/hydra/hydra.yml
+        - all
+        envFrom:
+        - configMapRef:
+            name: pl-db-config
+        - configMapRef:
+            name: pl-domain-config
+        env:
+        - name: PL_POSTGRES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_USERNAME
+        - name: PL_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_PASSWORD
+        - name: OIDC_SUBJECT_IDENTIFIERS_PAIRWISE_SALT
+          valueFrom:
+            secretKeyRef:
+              name: pl-hydra-secrets
+              key: OIDC_SUBJECT_IDENTIFIERS_PAIRWISE_SALT
+        - name: SECRETS_SYSTEM
+          valueFrom:
+            secretKeyRef:
+              name: pl-hydra-secrets
+              key: SECRETS_SYSTEM
+        - name: DSN
+          # yamllint disable-line rule:line-length
+          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
+        - name: SERVE_TLS_CERT_PATH
+          value: /certs/server.crt
+        - name: SERVE_TLS_KEY_PATH
+          value: /certs/server.key
+        - name: PL_OAUTH_DOMAIN
+          value: oauth.$(PL_DOMAIN_NAME)
+        - name: FRONTEND_URL
+          value: https://$(PL_OAUTH_DOMAIN)
+        - name: HYDRA_URL
+          value: https://$(PL_OAUTH_DOMAIN)/hydra
+        - name: URLS_CONSENT
+          value: $(FRONTEND_URL)/auth/hydra/consent
+        - name: URLS_LOGIN
+          value: $(FRONTEND_URL)/auth/hydra/login
+        - name: URLS_LOGOUT
+          value: $(FRONTEND_URL)/logout
+        - name: URLS_SELF_PUBLIC
+          value: $(HYDRA_URL)
+        - name: URLS_SELF_ISSUER
+          value: $(HYDRA_URL)
+        imagePullPolicy: ""
+        ports:
+        - containerPort: 4444
+        - containerPort: 4445
+        - containerPort: 5555
+        volumeMounts:
+        - name: config
+          mountPath: /etc/config/hydra
+        - name: certs
+          mountPath: /certs
+      restartPolicy: Always
+      volumes:
+      - name: config
+        configMap:
+          name: hydra-config
+          items:
+          - key: hydra.yml
+            path: hydra.yml
+      - name: certs
+        secret:
+          secretName: service-tls-certs

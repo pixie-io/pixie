@@ -1,0 +1,96 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kratos
+  labels:
+    name: kratos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: kratos
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        name: kratos
+    spec:
+      containers:
+      - args:
+        - serve
+        - -c
+        - /etc/config/kratos/kratos.yml
+        - --dev
+        envFrom:
+        - configMapRef:
+            name: pl-db-config
+        - configMapRef:
+            name: pl-domain-config
+        env:
+        - name: PL_POSTGRES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_USERNAME
+        - name: PL_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_PASSWORD
+        - name: DSN
+          # yamllint disable-line rule:line-length
+          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
+        - name: LOG_LEVEL
+          value: trace
+        - name: PL_OAUTH_DOMAIN
+          value: oauth.$(PL_DOMAIN_NAME)
+        - name: FRONTEND_URL
+          value: https://$(PL_OAUTH_DOMAIN)
+        - name: ADMIN_URL
+          value: http://kratos:4434
+        - name: AUTH_LOGIN_URL
+          value: $(FRONTEND_URL)/auth/login
+        - name: SERVE_PUBLIC_BASE_URL
+          value: $(FRONTEND_URL)/kratos/
+        - name: SERVE_ADMIN_BASE_URL
+          value: $(ADMIN_URL)/
+        - name: SELFSERVICE_DEFAULT_BROWSER_RETURN_URL
+          value: $(FRONTEND_URL)/
+        # TODO this might not work.
+        - name: SELFSERVICE_WHITELISTED_RETURN_URLS
+          value: $(FRONTEND_URL)/,$(FRONTEND_URL)/auth/hydra/login
+        - name: SELFSERVICE_FLOWS_SETTINGS_UI_URL
+          value: $(FRONTEND_URL)/settings
+        - name: SELFSERVICE_FLOWS_VERIFICATION_UI_URL
+          value: $(FRONTEND_URL)/verification
+        - name: SELFSERVICE_FLOWS_RECOVERY_UI_URL
+          value: $(FRONTEND_URL)/recovery
+        - name: SELFSERVICE_FLOWS_LOGOUT_AFTER_DEFAULT_BROWSER_RETURN_URL
+          value: $(AUTH_LOGIN_URL)
+        - name: SELFSERVICE_FLOWS_LOGIN_UI_URL
+          value: $(AUTH_LOGIN_URL)
+        - name: SELFSERVICE_FLOWS_REGISTRATION_UI_URL
+          value: $(FRONTEND_URL)/auth/registration
+        image: oryd/kratos:v0.5.5
+        imagePullPolicy: ""
+        name: kratos
+        ports:
+        - containerPort: 4433
+        - containerPort: 4434
+        resources: {}
+        volumeMounts:
+        - mountPath: /etc/config/kratos
+          name: config
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes:
+      - name: config
+        configMap:
+          name: kratos-config
+          items:
+          - key: kratos.yml
+            path: kratos.yml
+          - key: identity.schema.json
+            path: identity.schema.json
