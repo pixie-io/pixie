@@ -655,33 +655,27 @@ def buildGCC = {
 
 def dockerArgsForBPFTest = '--privileged --pid=host -v /:/host -v /sys:/sys --env PL_HOST_PATH=/host'
 
-if (runBPF) {
-  buildAndTestBPFOpt = {
-    WithSourceCodeAndTargetsDocker {
-      dockerStep(dockerArgsForBPFTest, {
-        bazelCICmd('build-bpf', 'bpf', 'opt', 'bpf')
-      })
-    }
+def buildAndTestBPFOpt = {
+  WithSourceCodeAndTargetsDocker {
+    dockerStep(dockerArgsForBPFTest, {
+      bazelCICmd('build-bpf', 'bpf', 'opt', 'bpf')
+    })
   }
 }
 
-if (runBPFWithASAN) {
-  builders['Build & Test (bpf tests - asan)'] = {
-    WithSourceCode {
-      dockerStep(dockerArgsForBPFTest, {
-        bazelCCCICmd('build-bpf-asan', 'bpf_asan', 'dbg')
-      })
-    }
+def buildAndTestBPFASAN = {
+  WithSourceCode {
+    dockerStep(dockerArgsForBPFTest, {
+      bazelCICmd('build-bpf-asan', 'bpf_asan', 'dbg', 'bpf_sanitizer')
+    })
   }
 }
 
-if (runBPFWithTSAN) {
-  builders['Build & Test (bpf tests - tsan)'] = {
-    WithSourceCodeAndTargetsDocker {
-      dockerStep(dockerArgsForBPFTest, {
-        bazelCICmd('build-bpf', 'bpf', 'bpf_tsan', 'dbg', 'bpf')
-      })
-    }
+def buildAndTestBPFTSAN = {
+  WithSourceCodeAndTargetsDocker {
+    dockerStep(dockerArgsForBPFTest, {
+      bazelCICmd('build-bpf-tsan', 'bpf_tsan', 'dbg', 'bpf_sanitizer')
+    })
   }
 }
 
@@ -714,8 +708,22 @@ def generateTestTargets = {
     builders['Build & Test (go race detector)'] = buildGoRace
   }
 
-  enableForTargets('bpf') {
-    builders['Build & Test (bpf tests - opt)'] = buildAndTestBPFOpt
+  if (runBPF) {
+    enableForTargets('bpf') {
+      builders['Build & Test (bpf tests - opt)'] = buildAndTestBPFOpt
+    }
+  }
+
+  if (runBPFWithASAN) {
+    enableForTargets('bpf_sanitizer') {
+      builders['Build & Test (bpf tests - asan)'] = buildAndTestBPFASAN
+    }
+  }
+
+  if (runBPFWithTSAN) {
+    enableForTargets('bpf_sanitizer') {
+      builders['Build & Test (bpf tests - tsan)'] = buildAndTestBPFTSAN
+    }
   }
 }
 
