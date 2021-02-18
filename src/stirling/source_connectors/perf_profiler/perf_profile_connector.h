@@ -35,6 +35,10 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   explicit PerfProfileConnector(std::string_view source_name);
 
+  // Given the main bpf data structures, build and push out records to the table.
+  void PushRecords(ebpf::BPFStackTable* stack_traces,
+                   ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo, DataTable* data_table);
+
   std::unique_ptr<ebpf::BPFStackTable> stacks_;
   std::unique_ptr<ebpf::BPFHashTable<stack_trace_key_t, uint64_t> > counts_;
 };

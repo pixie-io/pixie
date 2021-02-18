@@ -19,3 +19,9 @@ pl_cc_library(
         "//src/stirling/utils:cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "symbolizer_test",
+    srcs = ["symbolizer_test.cc"],
+    deps = [":cc_library"],
+)
