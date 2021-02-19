@@ -93,6 +93,11 @@ type AgentManager interface {
 
 	// UpdateConfig updates the config for the specified agent.
 	UpdateConfig(string, string, string, string) error
+
+	// GetServiceCIDR returns the service CIDR for the current cluster.
+	GetServiceCIDR() string
+	// GetPodCIDRs returns the PodCIDRs for the cluster.
+	GetPodCIDRs() []string
 }
 
 // AgentUpdateTracker stores the updates (in order) for agents for GetAgentUpdates.
@@ -121,6 +126,7 @@ func (a *AgentUpdateTracker) clearUpdates() {
 type AgentManagerImpl struct {
 	clock       utils.Clock
 	mds         MetadataStore
+	k8sMdh      *K8sMetadataHandler
 	agentQueues map[string]AgentQueue
 	queueMu     sync.Mutex
 	conn        *nats.Conn
@@ -133,10 +139,11 @@ type AgentManagerImpl struct {
 }
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
-func NewAgentManagerWithClock(mds MetadataStore, conn *nats.Conn, clock utils.Clock) *AgentManagerImpl {
+func NewAgentManagerWithClock(mds MetadataStore, k8sMdh *K8sMetadataHandler, conn *nats.Conn, clock utils.Clock) *AgentManagerImpl {
 	agentManager := &AgentManagerImpl{
 		clock:               clock,
 		mds:                 mds,
+		k8sMdh:              k8sMdh,
 		conn:                conn,
 		agentQueues:         make(map[string]AgentQueue),
 		agentUpdateTrackers: make(map[uuid.UUID]*AgentUpdateTracker),
@@ -403,9 +410,11 @@ func (m *AgentManagerImpl) handleTerminatedProcesses(processes []*metadatapb.Pro
 }
 
 // NewAgentManager creates a new agent manager.
-func NewAgentManager(mds MetadataStore, conn *nats.Conn) *AgentManagerImpl {
+// TODO (vihang/michelle): Figure out a better solution than passing in the k8s controller.
+// We need the k8sMDh to get CIDR info right now.
+func NewAgentManager(mds MetadataStore, k8sMdh *K8sMetadataHandler, conn *nats.Conn) *AgentManagerImpl {
 	clock := utils.SystemClock{}
-	return NewAgentManagerWithClock(mds, conn, clock)
+	return NewAgentManagerWithClock(mds, k8sMdh, conn, clock)
 }
 
 // RegisterAgent creates a new agent.
@@ -806,4 +815,14 @@ func (m *AgentManagerImpl) GetAgentUpdates(cursorID uuid.UUID) ([]*metadata_serv
 	}
 
 	return agentUpdates, computedSchema, nil
+}
+
+// GetServiceCIDR returns the service CIDR for the current cluster.
+func (m *AgentManagerImpl) GetServiceCIDR() string {
+	return m.k8sMdh.GetServiceCIDR()
+}
+
+// GetPodCIDRs returns the PodCIDRs for the cluster.
+func (m *AgentManagerImpl) GetPodCIDRs() []string {
+	return m.k8sMdh.GetPodCIDRs()
 }

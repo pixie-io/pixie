@@ -393,7 +393,7 @@ func TestRegisterTracepoint(t *testing.T) {
 	}
 	defer natsCleanup()
 
-	agtMgr := controllers.NewAgentManager(nil, nc)
+	agtMgr := controllers.NewAgentManager(nil, nil, nc)
 	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
 	tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, agtMgr, 5*time.Second)

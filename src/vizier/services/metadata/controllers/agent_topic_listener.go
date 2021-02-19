@@ -462,8 +462,8 @@ func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
 			HeartbeatAck: &messages.HeartbeatAck{
 				Time: ah.clock.Now().UnixNano(),
 				UpdateInfo: &messages.MetadataUpdateInfo{
-					ServiceCIDR: ah.mdStore.GetServiceCIDR(),
-					PodCIDRs:    ah.mdStore.GetPodCIDRs(),
+					ServiceCIDR: ah.agentManager.GetServiceCIDR(),
+					PodCIDRs:    ah.agentManager.GetPodCIDRs(),
 				},
 				SequenceNumber: m.SequenceNumber,
 			},

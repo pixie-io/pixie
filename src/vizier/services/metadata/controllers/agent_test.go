@@ -16,7 +16,7 @@ import (
 	bloomfilterpb "pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
 	k8s_metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
-	"pixielabs.ai/pixielabs/src/shared/types/go"
+	types "pixielabs.ai/pixielabs/src/shared/types/go"
 	utils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
@@ -70,7 +70,7 @@ func setupAgentManager(t *testing.T) (controllers.MetadataStore, controllers.Age
 	createAgentInMDS(t, testutils.UnhealthyAgentUUID, mds, testutils.UnhealthyAgentInfo)
 	createAgentInMDS(t, testutils.UnhealthyKelvinAgentUUID, mds, testutils.UnhealthyKelvinAgentInfo)
 
-	agtMgr := controllers.NewAgentManagerWithClock(mds, nc, clock)
+	agtMgr := controllers.NewAgentManagerWithClock(mds, nil, nc, clock)
 
 	return mds, agtMgr, nc, cleanupFn
 }

@@ -145,6 +145,7 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Could not create metadata store")
 	}
+
 	schemaQuitCh := make(chan bool)
 	defer func() { schemaQuitCh <- true }()
 	go func() {
@@ -162,16 +163,6 @@ func main() {
 			}
 		}
 	}()
-
-	newEtcdDataStore := etcd.New(etcdClient)
-	tds := controllers.NewTracepointDatastore(newEtcdDataStore)
-	k8sMds := controllers.NewMetadataDatastore(newEtcdDataStore)
-
-	agtMgr := controllers.NewAgentManager(mds, nc)
-
-	// Initialize tracepoint handler.
-	tracepointMgr := controllers.NewTracepointManager(tds, agtMgr, 30*time.Second)
-	defer tracepointMgr.Close()
 
 	keepAlive := true
 	go func() {
@@ -193,12 +184,25 @@ func main() {
 		keepAlive = false
 	}()
 
+	newEtcdDataStore := etcd.New(etcdClient)
+
 	// Create a stats handler to track internal metadata statistics.
 	statsHandler := controllers.NewStatsHandler()
 
+	k8sMds := controllers.NewMetadataDatastore(newEtcdDataStore)
 	// Listen for K8s metadata updates.
 	updateCh := make(chan *controllers.K8sResourceMessage)
 	mdh := controllers.NewK8sMetadataHandler(updateCh, k8sMds, nc)
+
+	k8sMc, err := controllers.NewK8sMetadataController(k8sMds, updateCh)
+	defer k8sMc.Stop()
+
+	agtMgr := controllers.NewAgentManager(mds, mdh, nc)
+
+	tds := controllers.NewTracepointDatastore(newEtcdDataStore)
+	// Initialize tracepoint handler.
+	tracepointMgr := controllers.NewTracepointManager(tds, agtMgr, 30*time.Second)
+	defer tracepointMgr.Close()
 
 	mc, err := controllers.NewMessageBusController(nc, agtMgr, tracepointMgr, mds,
 		mdh, statsHandler, &isLeader)
@@ -207,9 +211,6 @@ func main() {
 		log.WithError(err).Fatal("Failed to connect to message bus")
 	}
 	defer mc.Close()
-
-	k8sMc, err := controllers.NewK8sMetadataController(k8sMds, updateCh)
-	defer k8sMc.Stop()
 
 	// Set up server.
 	env, err := metadataenv.New()

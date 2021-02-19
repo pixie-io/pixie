@@ -351,6 +351,16 @@ func (m *K8sMetadataHandler) GetUpdatesForIP(ip string, from int64, to int64) ([
 	return updates, nil
 }
 
+// GetServiceCIDR returns the service CIDR for the current cluster.
+func (m *K8sMetadataHandler) GetServiceCIDR() string {
+	return m.state.ServiceCIDR.String()
+}
+
+// GetPodCIDRs returns the PodCIDRs for the cluster.
+func (m *K8sMetadataHandler) GetPodCIDRs() []string {
+	return m.state.PodCIDRs
+}
+
 func setDeleted(objMeta *metadatapb.ObjectMetadata) {
 	if objMeta.DeletionTimestampNS != 0 {
 		// Deletion timestamp already set.

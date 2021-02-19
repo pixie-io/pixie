@@ -449,7 +449,7 @@ func TestAgentHeartbeat(t *testing.T) {
 
 	// Set up mock.
 	var wg sync.WaitGroup
-	atl, mockAgtMgr, mockMdStore, _, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, mockAgtMgr, _, _, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "/agent/"+uuidStr, topic)
 		wg.Done()
@@ -457,12 +457,12 @@ func TestAgentHeartbeat(t *testing.T) {
 	})
 	defer cleanup()
 
-	mockMdStore.
+	mockAgtMgr.
 		EXPECT().
 		GetServiceCIDR().
 		Return("10.64.4.0/22")
 
-	mockMdStore.
+	mockAgtMgr.
 		EXPECT().
 		GetPodCIDRs().
 		Return([]string{"10.64.4.0/21"})
