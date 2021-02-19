@@ -74,19 +74,13 @@ func NewK8sMetadataController(mds K8sMetadataStore, updateCh chan *K8sResourceMe
 	mc := &K8sMetadataController{quitCh: quitCh, updateCh: updateCh, watchers: watchers}
 
 	// Sync current state.
-	err = mc.syncState(mds)
-	if err != nil {
-		return nil, err
-	}
-
-	// Start up Watchers.
-	mc.startWatchers()
+	go mc.SyncAndStart(mds)
 
 	return mc, nil
 }
 
 // SyncState syncs the state stored in the datastore with what is currently running in k8s.
-func (mc *K8sMetadataController) syncState(mds K8sMetadataStore) error {
+func (mc *K8sMetadataController) SyncAndStart(mds K8sMetadataStore) error {
 	storedUpdates, err := mds.FetchFullResourceUpdates(0, 0)
 	if err != nil {
 		return err
@@ -97,6 +91,8 @@ func (mc *K8sMetadataController) syncState(mds K8sMetadataStore) error {
 			return err
 		}
 	}
+	mc.startWatchers()
+
 	return nil
 }
 
