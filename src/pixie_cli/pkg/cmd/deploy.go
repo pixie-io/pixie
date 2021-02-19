@@ -354,18 +354,32 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			DeployKey: deployKey,
 		},
 	}
-	yamlGenerator, err := artifacts.NewYAMLGenerator(cloudConn, creds.Token, versionString, inputVersionStr, yamlOpts)
+
+	templatedYAMLs, err := artifacts.GenerateTemplatedDeployYAMLs(cloudConn, creds.Token, versionString, inputVersionStr, yamlOpts)
 	if err != nil {
 		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 		log.WithError(err).Fatal("failed to generate deployment YAMLs")
 	}
 
+	// TODO(michelle): Add a CLI option to write out just the templated Helm YAML files. This will be used in the Vizier release build.
+
+	yamls, err := artifacts.ExecuteTemplatedYAMLs(templatedYAMLs, yamlArgs)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to fill in templated deployment YAMLs")
+	}
+
 	// If extract_path is specified, write out yamls to file.
 	if extractPath != "" {
-		if err := yamlGenerator.ExtractYAMLs(extractPath, artifacts.MultiFileExtractYAMLFormat, yamlArgs); err != nil {
+		if err := artifacts.ExtractYAMLs(yamls, extractPath, "pixie_yamls", artifacts.MultiFileExtractYAMLFormat); err != nil {
 			log.WithError(err).Fatal("failed to extract deployment YAMLs")
 		}
 		return
+	}
+
+	// Map from the YAML name to the YAML contents.
+	yamlMap := make(map[string]string)
+	for _, y := range yamls {
+		yamlMap[y.Name] = y.YAML
 	}
 
 	_ = pxanalytics.Client().Enqueue(&analytics.Track{
@@ -413,11 +427,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	}
 
 	namespaceJob := newTaskWrapper("Creating namespace", func() error {
-		nsYAML, err := yamlGenerator.GetNamespaceYAML(yamlArgs)
-		if err != nil {
-			return err
-		}
-		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(nsYAML), false, nil, nil)
+		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamlMap["namespace"]), false, nil, nil)
 	})
 
 	clusterRoleJob := newTaskWrapper("Deleting stale Pixie objects, if any", func() error {
@@ -427,11 +437,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	})
 
 	certJob := newTaskWrapper("Deploying secrets and configmaps", func() error {
-		sYAML, err := yamlGenerator.GetSecretsYAML(yamlArgs)
-		if err != nil {
-			return err
-		}
-		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(sYAML), false, nil, nil)
+		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamlMap["secrets"]), false, nil, nil)
 	})
 
 	setupJobs := []utils.Task{
@@ -449,13 +455,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		log.Fatal("Failed to deploy Vizier")
 	}
 
-	bootstrapYAML, err := yamlGenerator.GetBootstrapYAML(yamlArgs)
-	if err != nil {
-		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
-		log.WithError(err).Fatal("Could not get bootstrap yaml")
-	}
-
-	clusterID := deploy(cloudConn, versionString, clientset, kubeConfig, bootstrapYAML, namespace)
+	clusterID := deploy(cloudConn, versionString, clientset, kubeConfig, yamlMap["bootstrap"], namespace)
 
 	waitForHealthCheck(cloudAddr, clusterID, clientset, namespace, numNodes)
 }

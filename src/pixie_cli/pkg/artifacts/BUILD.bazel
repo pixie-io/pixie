@@ -4,6 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "secrets.go",
+        "yaml_utils.go",
         "yamls.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/artifacts",
