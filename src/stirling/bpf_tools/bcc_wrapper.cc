@@ -129,8 +129,8 @@ Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
 }
 
 Status BCCWrapper::AttachSamplingProbe(const SamplingProbeSpec& probe) {
-  constexpr int kNanosPerMilli = 1000 * 1000;
-
+  constexpr uint64_t kNanosPerMilli = 1000 * 1000;
+  const uint64_t sample_period = probe.period_millis * kNanosPerMilli;
   // A sampling probe is just a PerfEventProbe, where the perf event is a clock counter.
   // When a requisite number of clock samples occur, the kernel will trigger the BPF code.
   // By specifying a frequency, the kernel will attempt to adjust the threshold to achieve
@@ -138,7 +138,7 @@ Status BCCWrapper::AttachSamplingProbe(const SamplingProbeSpec& probe) {
   PerfEventSpec perf_event_spec{.type = PERF_TYPE_SOFTWARE,
                                 .config = PERF_COUNT_SW_CPU_CLOCK,
                                 .probe_fn = probe.probe_fn,
-                                .sample_period = probe.period_millis * kNanosPerMilli,
+                                .sample_period = sample_period,
                                 .sample_freq = 0};
 
   return AttachPerfEvent(perf_event_spec);
