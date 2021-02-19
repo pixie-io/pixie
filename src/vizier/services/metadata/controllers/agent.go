@@ -22,29 +22,10 @@ import (
 // from an agent before marking it as unhealthy.
 const AgentExpirationTimeout time.Duration = 1 * time.Minute
 
-// MaxAgentUpdates is the total number of updates each agent can have on its queue.
-const MaxAgentUpdates int = 10000
-
-// MaxUpdatesToDequeue is the maximum number of updates we should dequeue at a time.
-const MaxUpdatesToDequeue int = 100
-
-// MaxBytesToDequeue is the maximum number of bytes we should dequeue at a time. We can dequeue .9MB.
-const MaxBytesToDequeue int = 900000
-
-// ErrAgentQueueFull is an error that occurs when the agent update queue is full and no more updates can be queued.
-var ErrAgentQueueFull = errors.New("Agent queue full, could not add to queue")
-
 // AgentUpdate describes the update info for a given agent.
 type AgentUpdate struct {
 	UpdateInfo *messagespb.AgentUpdateInfo
 	AgentID    uuid.UUID
-}
-
-// AgentQueue represents the queue of resource updates that should be sent to an agent.
-type AgentQueue struct {
-	FailedQueue chan *metadatapb.ResourceUpdate
-	Queue       chan *metadatapb.ResourceUpdate
-	Mu          sync.Mutex
 }
 
 // AgentManager handles any agent updates and requests.
@@ -67,15 +48,7 @@ type AgentManager interface {
 	MessageAgents(agentIDs []uuid.UUID, msg []byte) error
 	MessageActiveAgents(msg []byte) error
 
-	AddToFrontOfAgentQueue(string, *metadatapb.ResourceUpdate) error
-	GetFromAgentQueue(string) ([]*metadatapb.ResourceUpdate, error)
-
-	GetMetadataUpdates(hostname *HostnameIPPair) ([]*metadatapb.ResourceUpdate, error)
-
-	AddUpdatesToAgentQueue(string, []*metadatapb.ResourceUpdate) error
-
 	ApplyAgentUpdate(update *AgentUpdate) error
-	HandleUpdate(*UpdateMessage)
 
 	// NewAgentUpdateCursor creates a unique ID for an agent update tracking cursor.
 	// It, when used with GetAgentUpdates, can be used by clients of the agent manager
@@ -124,12 +97,10 @@ func (a *AgentUpdateTracker) clearUpdates() {
 
 // AgentManagerImpl is an implementation for AgentManager which talks to the metadata store.
 type AgentManagerImpl struct {
-	clock       utils.Clock
-	mds         MetadataStore
-	k8sMdh      *K8sMetadataHandler
-	agentQueues map[string]AgentQueue
-	queueMu     sync.Mutex
-	conn        *nats.Conn
+	clock  utils.Clock
+	mds    MetadataStore
+	k8sMdh *K8sMetadataHandler
+	conn   *nats.Conn
 
 	// The agent manager may have multiple clients requesting updates to the current agent state
 	// compared to the state they last saw. This map keeps all of the various trackers (per client)
@@ -145,7 +116,6 @@ func NewAgentManagerWithClock(mds MetadataStore, k8sMdh *K8sMetadataHandler, con
 		mds:                 mds,
 		k8sMdh:              k8sMdh,
 		conn:                conn,
-		agentQueues:         make(map[string]AgentQueue),
 		agentUpdateTrackers: make(map[uuid.UUID]*AgentUpdateTracker),
 	}
 
@@ -459,7 +429,6 @@ func (m *AgentManagerImpl) DeleteAgent(agentID uuid.UUID) error {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to delete agent from etcd")
 	}
-	m.closeAgentQueue(agentID)
 
 	return err
 }
@@ -491,17 +460,6 @@ func (m *AgentManagerImpl) UpdateAgent(info *agentpb.Agent) error {
 	// TODO(michelle): Implement once we figure out how the agent info (schemas, etc) looks.
 	// Make sure to add any updates to the agent updates list.
 	return nil
-}
-
-func (m *AgentManagerImpl) closeAgentQueue(uid uuid.UUID) {
-	m.queueMu.Lock()
-	defer m.queueMu.Unlock()
-
-	if queue, ok := m.agentQueues[uid.String()]; ok {
-		close(queue.Queue)
-		close(queue.FailedQueue)
-		delete(m.agentQueues, uid.String())
-	}
 }
 
 // GetActiveAgents gets all of the current active agents.
@@ -550,148 +508,6 @@ func (m *AgentManagerImpl) MessageActiveAgents(msg []byte) error {
 		agentIDs[i] = utils.UUIDFromProtoOrNil(a.Info.AgentID)
 	}
 	return m.MessageAgents(agentIDs, msg)
-}
-
-func (m *AgentManagerImpl) getOrCreateAgentQueue(agentID string) *AgentQueue {
-	m.queueMu.Lock()
-	defer m.queueMu.Unlock()
-
-	if currQueue, ok := m.agentQueues[agentID]; ok {
-		return &currQueue
-	}
-
-	// Create update queue for agent.
-	queue := AgentQueue{
-		FailedQueue: make(chan *metadatapb.ResourceUpdate, MaxAgentUpdates),
-		Queue:       make(chan *metadatapb.ResourceUpdate, MaxAgentUpdates),
-	}
-	m.agentQueues[agentID] = queue
-	return &queue
-}
-
-// AddToFrontOfAgentQueue adds the given value to the front of the agent's update queue.
-func (m *AgentManagerImpl) AddToFrontOfAgentQueue(agentID string, value *metadatapb.ResourceUpdate) error {
-	currQueue := m.getOrCreateAgentQueue(agentID)
-	currQueue.Mu.Lock()
-	defer currQueue.Mu.Unlock()
-
-	if len(currQueue.FailedQueue) >= MaxAgentUpdates {
-		return ErrAgentQueueFull
-	}
-	currQueue.FailedQueue <- value
-	return nil
-}
-
-// GetFromAgentQueue gets all items currently in the agent's update queue.
-func (m *AgentManagerImpl) GetFromAgentQueue(agentID string) ([]*metadatapb.ResourceUpdate, error) {
-	m.queueMu.Lock()
-	currQueue, ok := m.agentQueues[agentID]
-	m.queueMu.Unlock()
-
-	if !ok {
-		return nil, nil
-	}
-
-	currQueue.Mu.Lock()
-	defer currQueue.Mu.Unlock()
-
-	var updates []*metadatapb.ResourceUpdate
-	dequeuedSize := 0
-
-	fQLen := len(currQueue.FailedQueue)
-	qLen := len(currQueue.Queue)
-
-	for i := 0; i < fQLen; i++ {
-		update := <-currQueue.FailedQueue
-
-		if update.Size()+dequeuedSize > MaxBytesToDequeue {
-			// We've dequeued the max # of bytes. Put this back on the agent queue.
-			log.Info("Dequeued max number of bytes from agent queue")
-			if update.Size() > MaxBytesToDequeue {
-				log.WithField("update", update).Info("Single update larger than MaxBytesToDequeue... Dropping")
-				return updates, nil
-			}
-			currQueue.FailedQueue <- update
-			return updates, nil
-		}
-		updates = append(updates, update)
-		dequeuedSize += update.Size()
-	}
-
-	for i := 0; i < qLen; i++ {
-		update := <-currQueue.Queue
-
-		if update.Size()+dequeuedSize > MaxBytesToDequeue {
-			// We've dequeued the max # of bytes. Put this back on the agent queue.
-			log.Info("Dequeued max number of bytes from agent queue")
-			if update.Size() > MaxBytesToDequeue {
-				log.WithField("update", update).Info("Single update larger than MaxBytesToDequeue... Dropping")
-				return updates, nil
-			}
-			currQueue.FailedQueue <- update
-			return updates, nil
-		}
-		updates = append(updates, update)
-		dequeuedSize += update.Size()
-	}
-	return updates, nil
-}
-
-// HandleUpdate processes a metadata update and adds it to the appropriate agent queues.
-func (m *AgentManagerImpl) HandleUpdate(update *UpdateMessage) {
-	updatePb := update.Message
-	hostnames := update.Hostnames
-	nodeSpecific := update.NodeSpecific
-
-	agents, err := m.mds.GetAgentsForHostnamePairs(&hostnames)
-	if err != nil {
-		return
-	}
-
-	log.WithField("agents", agents).WithField("hostnames", hostnames).
-		WithField("update", updatePb).Trace("Adding update to agent queue for agents")
-
-	allAgents := make([]string, len(agents))
-	copy(allAgents, agents)
-
-	if !nodeSpecific {
-		// This update is not for a specific node. Send to Kelvins as well.
-		kelvinIDs, err := m.mds.GetKelvinIDs()
-		if err != nil {
-			log.WithError(err).Error("Could not get kelvin IDs")
-		} else {
-			allAgents = append(allAgents, kelvinIDs...)
-		}
-		log.WithField("kelvins", kelvinIDs).WithField("update", updatePb).Trace("Adding update to agent queue for kelvins")
-	}
-
-	for _, agent := range allAgents {
-		err = m.AddUpdatesToAgentQueue(agent, []*metadatapb.ResourceUpdate{updatePb})
-		if err != nil && err != ErrAgentQueueFull {
-			log.WithError(err).Error("Could not write service update to agent update queue.")
-		}
-	}
-}
-
-// AddUpdatesToAgentQueue adds the given updates in order to the agent's update queue.
-func (m *AgentManagerImpl) AddUpdatesToAgentQueue(agentID string, updates []*metadatapb.ResourceUpdate) error {
-	currQueue := m.getOrCreateAgentQueue(agentID)
-	currQueue.Mu.Lock()
-	defer currQueue.Mu.Unlock()
-
-	if len(currQueue.Queue)+len(updates) >= MaxAgentUpdates {
-		return ErrAgentQueueFull
-	}
-	for _, update := range updates {
-		currQueue.Queue <- update
-	}
-	return nil
-}
-
-// GetMetadataUpdates gets all updates from the metadata store. If no hostname is specified, it fetches all updates
-// regardless of hostname.
-func (m *AgentManagerImpl) GetMetadataUpdates(hostname *HostnameIPPair) ([]*metadatapb.ResourceUpdate, error) {
-	return m.mds.GetMetadataUpdates(hostname)
 }
 
 // UpdateConfig updates the config key and value for the specified agent.

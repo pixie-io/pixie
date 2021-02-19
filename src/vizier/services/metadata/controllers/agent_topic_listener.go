@@ -400,24 +400,6 @@ func (ah *AgentHandler) onAgentRegisterRequest(m *messages.RegisterAgentRequest)
 	}
 
 	go func() {
-		// Fetch metadata updates for this agent in a separate goroutine, since
-		// accessing etcd for all metadata updates may take a while.
-		hostname := &HostnameIPPair{m.Info.HostInfo.Hostname, m.Info.HostInfo.HostIP}
-		if m.Info.Capabilities != nil && !m.Info.Capabilities.CollectsData {
-			hostname = nil
-		}
-		updates, err := ah.agentManager.GetMetadataUpdates(hostname)
-		if err != nil {
-			log.WithError(err).Error("Could not get metadata updates.")
-			return
-		}
-
-		log.WithField("agent", agentID.String()).WithField("updates", updates).Trace("Queuing up initial updates for agent")
-		err = ah.agentManager.AddUpdatesToAgentQueue(agentID.String(), updates)
-		if err != nil {
-			log.WithError(err).Error("Could not add initial metadata updates to agent's queue")
-		}
-
 		// Register all tracepoints on new agent.
 		tracepoints, err := ah.tracepointManager.GetAllTracepoints()
 		if err != nil {

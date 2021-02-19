@@ -68,10 +68,6 @@ func setup(t *testing.T, sendMsgFn func(topic string, b []byte) error) (*control
 
 func TestAgentRegisterRequest(t *testing.T) {
 	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-	u, err := uuid.FromString(uuidStr)
-	if err != nil {
-		t.Fatal("Could not generate UUID.")
-	}
 
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_RegisterAgentResponse{
@@ -107,17 +103,6 @@ func TestAgentRegisterRequest(t *testing.T) {
 		CreateTimeNS:    10,
 	}
 
-	updatePb := metadatapb.ResourceUpdate{
-		Update: &metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &metadatapb.PodUpdate{
-				UID:  "podUid",
-				Name: "podName",
-			},
-		},
-	}
-
-	updates := []*metadatapb.ResourceUpdate{&updatePb}
-
 	mockMD.
 		EXPECT().
 		GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"", "127.0.0.1"}).
@@ -129,20 +114,6 @@ func TestAgentRegisterRequest(t *testing.T) {
 		DoAndReturn(func() ([]*storepb.TracepointInfo, error) {
 			wg.Done()
 			return nil, nil
-		})
-
-	mockAgtMgr.
-		EXPECT().
-		GetMetadataUpdates(&controllers.HostnameIPPair{"test-host", "127.0.0.1"}).
-		DoAndReturn(func(hostname *controllers.HostnameIPPair) ([]*metadatapb.ResourceUpdate, error) {
-			return updates, nil
-		})
-
-	mockAgtMgr.
-		EXPECT().
-		AddUpdatesToAgentQueue(u.String(), updates).
-		DoAndReturn(func(string, []*metadatapb.ResourceUpdate) error {
-			return nil
 		})
 
 	req := new(messages.VizierMessage)
@@ -171,10 +142,6 @@ func TestAgentRegisterRequest(t *testing.T) {
 
 func TestKelvinRegisterRequest(t *testing.T) {
 	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-	u, err := uuid.FromString(uuidStr)
-	if err != nil {
-		t.Fatal("Could not generate UUID.")
-	}
 
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_RegisterAgentResponse{
@@ -210,17 +177,6 @@ func TestKelvinRegisterRequest(t *testing.T) {
 		CreateTimeNS:    10,
 	}
 
-	updatePb := metadatapb.ResourceUpdate{
-		Update: &metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &metadatapb.PodUpdate{
-				UID:  "podUid",
-				Name: "podName",
-			},
-		},
-	}
-
-	updates := []*metadatapb.ResourceUpdate{&updatePb}
-
 	mockMD.
 		EXPECT().
 		GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"test-host", "127.0.0.1"}).
@@ -232,19 +188,6 @@ func TestKelvinRegisterRequest(t *testing.T) {
 		DoAndReturn(func() ([]*storepb.TracepointInfo, error) {
 			wg.Done()
 			return nil, nil
-		})
-	mockAgtMgr.
-		EXPECT().
-		GetMetadataUpdates(nil).
-		DoAndReturn(func(hostname *controllers.HostnameIPPair) ([]*metadatapb.ResourceUpdate, error) {
-			return updates, nil
-		})
-
-	mockAgtMgr.
-		EXPECT().
-		AddUpdatesToAgentQueue(u.String(), updates).
-		DoAndReturn(func(string, []*metadatapb.ResourceUpdate) error {
-			return nil
 		})
 
 	req := new(messages.VizierMessage)
@@ -259,92 +202,6 @@ func TestKelvinRegisterRequest(t *testing.T) {
 		DoAndReturn(func(info *agentpb.Agent) (uint32, error) {
 			return uint32(1), nil
 		})
-
-	msg := nats.Msg{}
-	msg.Data = reqPb
-	err = atl.HandleMessage(&msg)
-	assert.Nil(t, err)
-
-	defer wg.Wait()
-}
-
-func TestAgentMetadataUpdatesFailed(t *testing.T) {
-	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-
-	resp := messages.VizierMessage{
-		Msg: &messages.VizierMessage_RegisterAgentResponse{
-			RegisterAgentResponse: &messages.RegisterAgentResponse{
-				ASID: 1,
-			},
-		},
-	}
-	respPb, err := resp.Marshal()
-
-	// Set up mock.
-	atl, mockAgtMgr, mockMD, _, cleanup := setup(t, func(topic string, b []byte) error {
-		assert.Equal(t, respPb, b)
-		assert.Equal(t, "/agent/"+uuidStr, topic)
-		return nil
-	})
-	defer cleanup()
-
-	agentInfo := &agentpb.Agent{
-		Info: &agentpb.AgentInfo{
-			HostInfo: &agentpb.HostInfo{
-				Hostname: "test-host",
-				HostIP:   "127.0.0.1",
-			},
-			AgentID: &uuidpb.UUID{Data: []byte("11285cdd1de94ab1ae6a0ba08c8c676c")},
-			Capabilities: &agentpb.AgentCapabilities{
-				CollectsData: true,
-			},
-		},
-		LastHeartbeatNS: 10,
-		CreateTimeNS:    10,
-	}
-
-	mockAgtMgr.
-		EXPECT().
-		RegisterAgent(agentInfo).
-		DoAndReturn(func(info *agentpb.Agent) (uint32, error) {
-			return uint32(1), nil
-		})
-
-	updatePb := metadatapb.ResourceUpdate{
-		Update: &metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &metadatapb.PodUpdate{
-				UID:  "podUid",
-				Name: "podName",
-			},
-		},
-	}
-
-	updates := []*metadatapb.ResourceUpdate{&updatePb}
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	mockAgtMgr.
-		EXPECT().
-		GetMetadataUpdates(&controllers.HostnameIPPair{"test-host", "127.0.0.1"}).
-		DoAndReturn(func(hostname *controllers.HostnameIPPair) ([]*metadatapb.ResourceUpdate, error) {
-			wg.Done()
-			return updates, errors.New("Could not get metadata info")
-		})
-
-	req := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(testutils.RegisterAgentRequestPB, req); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	req.GetRegisterAgentRequest().Info.Capabilities = &agentpb.AgentCapabilities{
-		CollectsData: true,
-	}
-	reqPb, err := req.Marshal()
-
-	mockMD.
-		EXPECT().
-		GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"", "127.0.0.1"}).
-		Return("", nil)
 
 	msg := nats.Msg{}
 	msg.Data = reqPb

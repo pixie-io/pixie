@@ -372,7 +372,7 @@ func TestGetActiveAgents(t *testing.T) {
 	assert.Equal(t, agent2Info, agents[2])
 }
 
-func TestAddToUpdateQueue(t *testing.T) {
+func TestApplyUpdates(t *testing.T) {
 	mds, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
@@ -468,7 +468,7 @@ func TestAddToUpdateQueue(t *testing.T) {
 	assert.Equal(t, dataInfo, expectedDataInfo)
 }
 
-func TestAddToUpdateQueueDeleted(t *testing.T) {
+func TestApplyUpdatesDeleted(t *testing.T) {
 	mds, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
@@ -563,7 +563,7 @@ func TestAddToUpdateQueueDeleted(t *testing.T) {
 	assert.False(t, present)
 }
 
-func TestAgentQueueTerminatedProcesses(t *testing.T) {
+func TestAgentTerminatedProcesses(t *testing.T) {
 	mds, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
@@ -660,194 +660,6 @@ func TestAgentQueueTerminatedProcesses(t *testing.T) {
 
 	assert.Equal(t, updatedInfo[0], pInfos[0])
 	assert.Equal(t, updatedInfo[1], pInfos[1])
-}
-
-func TestAgent_AddToFrontOfAgentQueue(t *testing.T) {
-	_, agtMgr, _, cleanup := setupAgentManager(t)
-	defer cleanup()
-
-	u1 := uuid.NewV4()
-	upb := utils.ProtoFromUUID(u1)
-
-	agentInfo := &agentpb.Agent{
-		Info: &agentpb.AgentInfo{
-			HostInfo: &agentpb.HostInfo{
-				Hostname: "localhost",
-				HostIP:   "127.0.0.1",
-			},
-			AgentID: upb,
-			Capabilities: &agentpb.AgentCapabilities{
-				CollectsData: true,
-			},
-		},
-		LastHeartbeatNS: 1,
-		CreateTimeNS:    4,
-	}
-
-	_, err := agtMgr.RegisterAgent(agentInfo)
-	assert.Equal(t, nil, err)
-
-	updatePb1 := &k8s_metadatapb.ResourceUpdate{
-		Update: &k8s_metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &k8s_metadatapb.PodUpdate{
-				UID:  "podUid1",
-				Name: "podName",
-			},
-		},
-	}
-
-	err = agtMgr.AddUpdatesToAgentQueue(u1.String(), []*k8s_metadatapb.ResourceUpdate{updatePb1})
-	assert.Nil(t, err)
-
-	updatePb2 := &k8s_metadatapb.ResourceUpdate{
-		Update: &k8s_metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &k8s_metadatapb.PodUpdate{
-				UID:  "podUid2",
-				Name: "podName",
-			},
-		},
-	}
-
-	err = agtMgr.AddToFrontOfAgentQueue(u1.String(), updatePb2)
-	assert.Nil(t, err)
-
-	resp, err := agtMgr.GetFromAgentQueue(u1.String())
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(resp))
-	assert.Equal(t, "podUid2", resp[0].GetPodUpdate().UID)
-	assert.Equal(t, "podUid1", resp[1].GetPodUpdate().UID)
-
-}
-
-func TestAgent_AddUpdatesToAgentQueue(t *testing.T) {
-	_, agtMgr, _, cleanup := setupAgentManager(t)
-	defer cleanup()
-
-	updatePb1 := &k8s_metadatapb.ResourceUpdate{
-		Update: &k8s_metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &k8s_metadatapb.PodUpdate{
-				UID:  "podUid",
-				Name: "podName",
-			},
-		},
-	}
-
-	updatePb2 := &k8s_metadatapb.ResourceUpdate{
-		Update: &k8s_metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &k8s_metadatapb.PodUpdate{
-				UID:  "podUid2",
-				Name: "podName2",
-			},
-		},
-	}
-
-	u1 := uuid.NewV4()
-	upb := utils.ProtoFromUUID(u1)
-
-	agentInfo := &agentpb.Agent{
-		Info: &agentpb.AgentInfo{
-			HostInfo: &agentpb.HostInfo{
-				Hostname: "localhost",
-				HostIP:   "127.0.0.1",
-			},
-			AgentID: upb,
-			Capabilities: &agentpb.AgentCapabilities{
-				CollectsData: true,
-			},
-		},
-		LastHeartbeatNS: 1,
-		CreateTimeNS:    4,
-	}
-
-	_, err := agtMgr.RegisterAgent(agentInfo)
-	assert.Equal(t, nil, err)
-	err = agtMgr.AddUpdatesToAgentQueue(u1.String(), []*k8s_metadatapb.ResourceUpdate{updatePb1, updatePb2})
-	assert.Nil(t, err)
-
-	resp, err := agtMgr.GetFromAgentQueue(u1.String())
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(resp))
-	assert.Equal(t, "podUid", resp[0].GetPodUpdate().UID)
-	assert.Equal(t, "podUid2", resp[1].GetPodUpdate().UID)
-}
-
-func TestAgent_GetFromAgentQueue(t *testing.T) {
-	_, agtMgr, _, cleanup := setupAgentManager(t)
-	defer cleanup()
-
-	updatePb := &k8s_metadatapb.ResourceUpdate{
-		Update: &k8s_metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &k8s_metadatapb.PodUpdate{
-				UID:  "podUid",
-				Name: "podName",
-			},
-		},
-	}
-
-	u1 := uuid.NewV4()
-	upb := utils.ProtoFromUUID(u1)
-
-	agentInfo := &agentpb.Agent{
-		Info: &agentpb.AgentInfo{
-			HostInfo: &agentpb.HostInfo{
-				Hostname: "localhost",
-				HostIP:   "127.0.0.1",
-			},
-			AgentID: upb,
-			Capabilities: &agentpb.AgentCapabilities{
-				CollectsData: true,
-			},
-		},
-		LastHeartbeatNS: 1,
-		CreateTimeNS:    4,
-	}
-
-	_, err := agtMgr.RegisterAgent(agentInfo)
-	assert.Equal(t, nil, err)
-	err = agtMgr.AddUpdatesToAgentQueue(u1.String(), []*k8s_metadatapb.ResourceUpdate{updatePb})
-	assert.Nil(t, err)
-
-	resp, err := agtMgr.GetFromAgentQueue(u1.String())
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(resp))
-	assert.Equal(t, "podUid", resp[0].GetPodUpdate().UID)
-
-	resp, err = agtMgr.GetFromAgentQueue(u1.String())
-	assert.Nil(t, err)
-	assert.Equal(t, 0, len(resp))
-}
-
-func TestAgent_HandleUpdate(t *testing.T) {
-	_, agtMgr, _, cleanup := setupAgentManager(t)
-	defer cleanup()
-
-	update := &controllers.UpdateMessage{
-		Hostnames:    []*controllers.HostnameIPPair{&controllers.HostnameIPPair{"", "127.0.0.1"}},
-		NodeSpecific: false,
-		Message: &k8s_metadatapb.ResourceUpdate{
-			Update: &k8s_metadatapb.ResourceUpdate_PodUpdate{
-				PodUpdate: &k8s_metadatapb.PodUpdate{
-					UID:  "podUid1",
-					Name: "podName",
-				},
-			},
-		},
-	}
-	agtMgr.HandleUpdate(update)
-
-	resp, err := agtMgr.GetFromAgentQueue(testutils.ExistingAgentUUID)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(resp))
-	assert.Equal(t, "podUid1", resp[0].GetPodUpdate().UID)
-
-	resp, err = agtMgr.GetFromAgentQueue(testutils.UnhealthyKelvinAgentUUID)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(resp))
-	assert.Equal(t, "podUid1", resp[0].GetPodUpdate().UID)
-
-	resp, err = agtMgr.GetFromAgentQueue(testutils.UnhealthyAgentUUID)
-	assert.Nil(t, err)
-	assert.Equal(t, 0, len(resp))
 }
 
 func TestAgent_GetAgentUpdate(t *testing.T) {

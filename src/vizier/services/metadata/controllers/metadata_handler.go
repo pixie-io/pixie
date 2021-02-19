@@ -14,7 +14,7 @@ import (
 
 	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	"pixielabs.ai/pixielabs/src/shared/types/go"
+	types "pixielabs.ai/pixielabs/src/shared/types/go"
 	"pixielabs.ai/pixielabs/src/utils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
@@ -48,8 +48,6 @@ type MetadataStore interface {
 	GetEndpoints() ([]*metadatapb.Endpoints, error)
 	GetHostnameIPPairFromPodName(string, string) (*HostnameIPPair, error)
 	GetKelvinIDs() ([]string, error)
-	GetMetadataUpdates(hostname *HostnameIPPair) ([]*metadatapb.ResourceUpdate, error)
-	GetMetadataUpdatesForHostname(*HostnameIPPair, string, string) ([]*metadatapb.ResourceUpdate, error)
 	GetNamespaces() ([]*metadatapb.Namespace, error)
 	GetNodeEndpoints(hostname *HostnameIPPair) ([]*metadatapb.Endpoints, error)
 	GetNodePods(hostname *HostnameIPPair) ([]*metadatapb.Pod, error)
