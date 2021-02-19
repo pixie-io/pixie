@@ -456,16 +456,12 @@ func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
 		return
 	}
 
-	// Get any queued agent updates.
-	updates, err := ah.agentManager.GetFromAgentQueue(agentID.String())
-
 	// Create heartbeat ACK message.
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_HeartbeatAck{
 			HeartbeatAck: &messages.HeartbeatAck{
 				Time: ah.clock.Now().UnixNano(),
 				UpdateInfo: &messages.MetadataUpdateInfo{
-					Updates:     updates,
 					ServiceCIDR: ah.mdStore.GetServiceCIDR(),
 					PodCIDRs:    ah.mdStore.GetPodCIDRs(),
 				},
@@ -477,10 +473,6 @@ func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
 	err = ah.atl.SendMessageToAgent(agentID, resp)
 	if err != nil {
 		log.WithError(err).Error("Could not send heartbeat ack to agent.")
-		// Add updates back to the queue, so that they can be sent in the next ack.
-		for i := len(updates) - 1; i >= 0; i-- {
-			ah.agentManager.AddToFrontOfAgentQueue(agentID.String(), updates[i])
-		}
 	}
 
 	// Apply agent's container/schema updates.

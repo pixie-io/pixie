@@ -474,31 +474,6 @@ func TestAgentHeartbeat(t *testing.T) {
 			return nil
 		})
 
-	updatePb1 := metadatapb.ResourceUpdate{
-		Update: &metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &metadatapb.PodUpdate{
-				UID:  "podUid",
-				Name: "podName",
-			},
-		},
-	}
-	updatePb2 := metadatapb.ResourceUpdate{
-		Update: &metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &metadatapb.PodUpdate{
-				UID:  "podUid2",
-				Name: "podName2",
-			},
-		},
-	}
-	updates := []*metadatapb.ResourceUpdate{&updatePb1, &updatePb2}
-
-	mockAgtMgr.
-		EXPECT().
-		GetFromAgentQueue(uuidStr).
-		DoAndReturn(func(string) ([]*metadatapb.ResourceUpdate, error) {
-			return updates, nil
-		})
-
 	createdProcesses := make([]*metadatapb.ProcessCreated, 1)
 	createdProcesses[0] = &metadatapb.ProcessCreated{
 		PID: 1,

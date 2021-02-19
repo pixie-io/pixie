@@ -380,18 +380,6 @@ heartbeat_ack {
   update_info {
     service_cidr: "10.64.4.0/22"
     pod_cidrs: "10.64.4.0/21"
-    updates {
-      pod_update {
-        uid:  "podUid"
-        name: "podName"
-      }
-    }
-    updates {
-      pod_update {
-        uid:  "podUid2"
-        name: "podName2"
-      }
-    }
   }
 }
 `
