@@ -1,9 +1,9 @@
 # Copyright (c) Pixie Labs, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License")
 
-''' MySQL Data Tracer
+''' PostgreSQL Data Tracer
 
-This script traces all MySQL data on the cluster.
+This script traces all PostgreSQL data on the cluster.
 '''
 
 import px
