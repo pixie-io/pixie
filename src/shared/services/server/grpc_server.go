@@ -89,6 +89,7 @@ func CreateGRPCServer(env env.Env, serverOpts *GRPCServerOptions) *grpc.Server {
 		grpc_logrus.WithDurationField(func(duration time.Duration) (key string, value interface{}) {
 			return "time", duration
 		}),
+		grpc_logrus.WithLevels(grpc_logrus.DefaultClientCodeToLevel),
 	}
 	opts := []grpc.ServerOption{
 		grpc_middleware.WithUnaryServerChain(

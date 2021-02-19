@@ -44,7 +44,7 @@ func HTTPLoggingMiddleware(next http.Handler) http.Handler {
 		} else if r.URL.String() == "/healthz" {
 			log.WithTime(start).WithFields(logFields).Trace("HTTP Request")
 		} else {
-			log.WithTime(start).WithFields(logFields).Info("HTTP Request")
+			log.WithTime(start).WithFields(logFields).Debug("HTTP Request")
 		}
 	}
 	return http.HandlerFunc(f)
