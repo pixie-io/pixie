@@ -60,14 +60,14 @@ message K8sMetadataMessage {
 
 message RegisterAgentRequest {
     pl.vizier.services.shared.agent.AgentInfo info = 1;
-    // DEPRECATED: This was update info, which are now only included in Heartbeats.
-    reserved 2;
     // ASID is the agent short ID.
     // This field is used only when reregistering an agent, because the same ID needs
     // to be preserved.
     uint32 asid = 3 [
                     (gogoproto.customname) = "ASID"
                     ];
+    // DEPRECATED: This was update info, which are now only included in Heartbeats.
+    reserved 2;                    
 }
 
 message RegisterAgentResponse {
@@ -110,9 +110,11 @@ message Heartbeat {
 }
 
 message MetadataUpdateInfo {
-    repeated pl.shared.k8s.metadatapb.ResourceUpdate updates = 1;
+    // repeated pl.shared.k8s.metadatapb.ResourceUpdate updates = 1;
     string service_cidr = 2 [(gogoproto.customname) = "ServiceCIDR"];
     repeated string pod_cidrs = 3 [(gogoproto.customname) = "PodCIDRs"];
+    // Formerly used for K8s updates.
+    reserved 1;    
 }
 
 // Response sent for a successful heart beat.

@@ -127,11 +127,6 @@ Status HeartbeatMessageHandler::HandleMessage(std::unique_ptr<messages::VizierMe
       std::chrono::duration_cast<std::chrono::milliseconds>(heartbeat_latency_moving_average_)
           .count());
   if (ack.has_update_info()) {
-    for (const auto& update : ack.update_info().updates()) {
-      // TODO(zasgar/michelle): Move this to threadpool?
-      PL_RETURN_IF_ERROR(mds_manager_->AddK8sUpdate(std::make_unique<ResourceUpdate>(update)));
-    }
-
     CIDRBlock service_cidr;
     Status s = ParseCIDRBlock(ack.update_info().service_cidr(), &service_cidr);
     if (s.ok()) {
