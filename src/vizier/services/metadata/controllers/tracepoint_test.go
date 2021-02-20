@@ -415,7 +415,7 @@ func TestRegisterTracepoint(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	mdSub, err := nc.Subscribe("/agent/"+agentUUID.String(), func(msg *nats.Msg) {
+	mdSub, err := nc.Subscribe("Agent/"+agentUUID.String(), func(msg *nats.Msg) {
 		vzMsg := &messages.VizierMessage{}
 		proto.Unmarshal(msg.Data, vzMsg)
 		req := vzMsg.GetTracepointMessage().GetRegisterTracepointRequest()

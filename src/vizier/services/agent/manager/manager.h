@@ -155,10 +155,8 @@ class Manager : public pl::NotCopyable {
   Status PostReregisterHook(uint32_t asid);
   bool has_nats_connection() const { return !nats_addr_.empty(); }
 
-  // TODO(nserrino): Update this topic to to Agent/$0 for consistency.s
-  static constexpr char kAgentSubTopicPattern[] = "/agent/$0";
-  // TODO(nserrino): Update this topic to UpdateAgent.
-  static constexpr char kAgentPubTopic[] = "update_agent";
+  static constexpr char kAgentSubTopicPattern[] = "Agent/$0";
+  static constexpr char kAgentPubTopic[] = "UpdateAgent";
   static constexpr char kK8sSubTopicPattern[] = "K8sUpdates/$0";
   static constexpr char kK8sPubTopic[] = "MissingMetadataRequests";
 

@@ -69,12 +69,12 @@ func TestLaunchQuery(t *testing.T) {
 	}
 
 	// Subscribe to each agent channel.
-	sub1, err := nc.SubscribeSync(fmt.Sprintf("/agent/%s", agentUUIDStrs[0]))
+	sub1, err := nc.SubscribeSync(fmt.Sprintf("Agent/%s", agentUUIDStrs[0]))
 	if err != nil {
 		t.Fatal("Could not subscribe to NATS.")
 	}
 
-	sub2, err := nc.SubscribeSync(fmt.Sprintf("/agent/%s", agentUUIDStrs[1]))
+	sub2, err := nc.SubscribeSync(fmt.Sprintf("Agent/%s", agentUUIDStrs[1]))
 	if err != nil {
 		t.Fatal("Could not subscribe to NATS.")
 	}

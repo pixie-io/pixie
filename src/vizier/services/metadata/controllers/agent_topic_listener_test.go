@@ -83,7 +83,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 	wg.Add(1)
 	atl, mockAgtMgr, mockMD, mockTracepointStore, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
-		assert.Equal(t, "/agent/"+uuidStr, topic)
+		assert.Equal(t, "Agent/"+uuidStr, topic)
 		return nil
 	})
 	defer cleanup()
@@ -157,7 +157,7 @@ func TestKelvinRegisterRequest(t *testing.T) {
 	wg.Add(1)
 	atl, mockAgtMgr, mockMD, mockTracepointStore, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
-		assert.Equal(t, "/agent/"+uuidStr, topic)
+		assert.Equal(t, "Agent/"+uuidStr, topic)
 		return nil
 	})
 	defer cleanup()
@@ -308,7 +308,7 @@ func TestAgentHeartbeat(t *testing.T) {
 	var wg sync.WaitGroup
 	atl, mockAgtMgr, _, _, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
-		assert.Equal(t, "/agent/"+uuidStr, topic)
+		assert.Equal(t, "Agent/"+uuidStr, topic)
 		wg.Done()
 		return nil
 	})
@@ -379,7 +379,7 @@ func TestAgentHeartbeat_Failed(t *testing.T) {
 	var wg sync.WaitGroup
 	atl, mockAgtMgr, _, _, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
-		assert.Equal(t, "/agent/"+uuidStr, topic)
+		assert.Equal(t, "Agent/"+uuidStr, topic)
 		wg.Done()
 		return nil
 	})
@@ -420,7 +420,7 @@ func TestHeartbeatNonExisting(t *testing.T) {
 	// Set up mock.
 	atl, _, _, _, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
-		assert.Equal(t, "/agent/11285cdd-1de9-4ab1-ae6a-0ba08c8c676c", topic)
+		assert.Equal(t, "Agent/11285cdd-1de9-4ab1-ae6a-0ba08c8c676c", topic)
 		return nil
 	})
 	defer cleanup()
@@ -527,7 +527,7 @@ func TestAgentStop(t *testing.T) {
 	// Set up mock.
 	atl, _, _, _, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
-		assert.Equal(t, "/agent/"+uuidStr, topic)
+		assert.Equal(t, "Agent/"+uuidStr, topic)
 		return nil
 	})
 	defer cleanup()

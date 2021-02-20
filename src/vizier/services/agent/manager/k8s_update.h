@@ -16,7 +16,6 @@ using ::pl::shared::k8s::metadatapb::MissingK8sMetadataResponse;
 using ::pl::shared::k8s::metadatapb::ResourceUpdate;
 
 // K8sUpdateHandler is responsible for processing K8s updates.
-// TODO(nserrino): PP-2374 Add support for requesting old resource versions.
 class K8sUpdateHandler : public Manager::MessageHandler {
  public:
   K8sUpdateHandler() = delete;

@@ -784,7 +784,7 @@ func TestAgent_UpdateConfig(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	mdSub, err := nc.Subscribe("/agent/"+testutils.ExistingAgentUUID, func(msg *nats.Msg) {
+	mdSub, err := nc.Subscribe("Agent/"+testutils.ExistingAgentUUID, func(msg *nats.Msg) {
 		vzMsg := &messagespb.VizierMessage{}
 		proto.Unmarshal(msg.Data, vzMsg)
 		req := vzMsg.GetConfigUpdateMessage().GetConfigUpdateRequest()

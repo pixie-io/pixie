@@ -16,8 +16,9 @@ import (
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
-// AgentTopic is the NATS topic over which agent updates are sent.
-const AgentTopic = "update_agent"
+// UpdateAgentTopic is the NATS topic over which agent updates are sent.
+const UpdateAgentTopic = "UpdateAgent"
+const agentTopicPrefix = "Agent"
 
 // GetAgentTopicFromUUID gets the agent topic given the agent's ID in UUID format.
 func GetAgentTopicFromUUID(agentID uuid.UUID) string {
@@ -26,7 +27,7 @@ func GetAgentTopicFromUUID(agentID uuid.UUID) string {
 
 // GetAgentTopic gets the agent topic given the agent's ID in string format.
 func GetAgentTopic(agentID string) string {
-	return fmt.Sprintf("/agent/%s", agentID)
+	return fmt.Sprintf("%s/%s", agentTopicPrefix, agentID)
 }
 
 type concurrentAgentMap struct {

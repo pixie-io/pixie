@@ -62,7 +62,7 @@ func (mc *MessageBusController) handleMessages() {
 
 		if !mc.wasLeader && *mc.isLeader {
 			// Gained leadership!
-			mc.listeners[AgentTopic].Initialize()
+			mc.listeners[UpdateAgentTopic].Initialize()
 		}
 
 		mc.wasLeader = *mc.isLeader
@@ -88,7 +88,7 @@ func (mc *MessageBusController) registerListeners(agentManager AgentManager, tra
 	if err != nil {
 		return err
 	}
-	err = mc.registerListener(AgentTopic, atl)
+	err = mc.registerListener(UpdateAgentTopic, atl)
 	if err != nil {
 		return err
 	}
