@@ -34,7 +34,6 @@ type Server struct {
 	agentManager      AgentManager
 	tracepointManager *TracepointManager
 	clock             utils.Clock
-	mds               MetadataStore
 	// The current cursor that is actively running the GetAgentsUpdate stream. Only one GetAgentsUpdate
 	// stream should be running at a time.
 	getAgentsCursor uuid.UUID
@@ -44,20 +43,19 @@ type Server struct {
 // NewServerWithClock creates a new server with a clock and the ability to configure the chunk size and
 // update period of the GetAgentUpdates handler.
 func NewServerWithClock(env metadataenv.MetadataEnv, agtMgr AgentManager, tracepointManager *TracepointManager,
-	mds MetadataStore, clock utils.Clock) (*Server, error) {
+	clock utils.Clock) (*Server, error) {
 	return &Server{
 		env:               env,
 		agentManager:      agtMgr,
 		clock:             clock,
-		mds:               mds,
 		tracepointManager: tracepointManager,
 	}, nil
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(env metadataenv.MetadataEnv, agtMgr AgentManager, tracepointManager *TracepointManager, mds MetadataStore) (*Server, error) {
+func NewServer(env metadataenv.MetadataEnv, agtMgr AgentManager, tracepointManager *TracepointManager) (*Server, error) {
 	clock := utils.SystemClock{}
-	return NewServerWithClock(env, agtMgr, tracepointManager, mds, clock)
+	return NewServerWithClock(env, agtMgr, tracepointManager, clock)
 }
 
 func convertToRelationMap(computedSchema *storepb.ComputedSchema) (*schemapb.Schema, error) {
@@ -119,7 +117,7 @@ func convertToSchemaInfo(computedSchema *storepb.ComputedSchema) ([]*distributed
 
 // GetSchemas returns the schemas in the system.
 func (s *Server) GetSchemas(ctx context.Context, req *metadatapb.SchemaRequest) (*metadatapb.SchemaResponse, error) {
-	computedSchema, err := s.mds.GetComputedSchema()
+	computedSchema, err := s.agentManager.GetComputedSchema()
 	if err != nil {
 		return nil, err
 	}

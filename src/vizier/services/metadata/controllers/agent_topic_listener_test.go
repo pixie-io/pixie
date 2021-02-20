@@ -24,11 +24,10 @@ import (
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
-func setup(t *testing.T, sendMsgFn func(topic string, b []byte) error) (*controllers.AgentTopicListener, *mock_controllers.MockAgentManager, *mock_controllers.MockMetadataStore, *mock_controllers.MockTracepointStore, func()) {
+func setup(t *testing.T, sendMsgFn func(topic string, b []byte) error) (*controllers.AgentTopicListener, *mock_controllers.MockAgentManager, *mock_controllers.MockTracepointStore, func()) {
 	ctrl := gomock.NewController(t)
 
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
 	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
 	// Load some existing agents.
@@ -56,14 +55,14 @@ func setup(t *testing.T, sendMsgFn func(topic string, b []byte) error) (*control
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 
 	tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
-	atl, _ := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, tracepointMgr, mockMdStore, sendMsgFn, clock)
+	atl, _ := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, tracepointMgr, sendMsgFn, clock)
 
 	cleanup := func() {
 		ctrl.Finish()
 		tracepointMgr.Close()
 	}
 
-	return atl, mockAgtMgr, mockMdStore, mockTracepointStore, cleanup
+	return atl, mockAgtMgr, mockTracepointStore, cleanup
 }
 
 func TestAgentRegisterRequest(t *testing.T) {
@@ -81,7 +80,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 	// Set up mock.
 	var wg sync.WaitGroup
 	wg.Add(1)
-	atl, mockAgtMgr, mockMD, mockTracepointStore, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, mockAgtMgr, mockTracepointStore, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "Agent/"+uuidStr, topic)
 		return nil
@@ -103,7 +102,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 		CreateTimeNS:    10,
 	}
 
-	mockMD.
+	mockAgtMgr.
 		EXPECT().
 		GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"", "127.0.0.1"}).
 		Return("", nil)
@@ -155,7 +154,7 @@ func TestKelvinRegisterRequest(t *testing.T) {
 	// Set up mock.
 	var wg sync.WaitGroup
 	wg.Add(1)
-	atl, mockAgtMgr, mockMD, mockTracepointStore, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, mockAgtMgr, mockTracepointStore, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "Agent/"+uuidStr, topic)
 		return nil
@@ -177,7 +176,7 @@ func TestKelvinRegisterRequest(t *testing.T) {
 		CreateTimeNS:    10,
 	}
 
-	mockMD.
+	mockAgtMgr.
 		EXPECT().
 		GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"test-host", "127.0.0.1"}).
 		Return("", nil)
@@ -213,7 +212,7 @@ func TestKelvinRegisterRequest(t *testing.T) {
 
 func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
 	// Set up mock.
-	atl, _, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, _, _, cleanup := setup(t, func(topic string, b []byte) error {
 		// This function should never be called.
 		assert.Equal(t, true, false)
 		return nil
@@ -235,7 +234,7 @@ func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
 func TestAgentCreateFailed(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
-	atl, mockAgtMgr, mockMD, _, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, mockAgtMgr, _, cleanup := setup(t, func(topic string, b []byte) error {
 		// This function should never be called.
 		assert.Equal(t, true, false)
 		return nil
@@ -266,7 +265,7 @@ func TestAgentCreateFailed(t *testing.T) {
 	}
 	reqPb, err := req.Marshal()
 
-	mockMD.
+	mockAgtMgr.
 		EXPECT().
 		GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"test-host", "127.0.0.1"}).
 		Return("", nil)
@@ -306,7 +305,7 @@ func TestAgentHeartbeat(t *testing.T) {
 
 	// Set up mock.
 	var wg sync.WaitGroup
-	atl, mockAgtMgr, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, mockAgtMgr, _, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "Agent/"+uuidStr, topic)
 		wg.Done()
@@ -377,7 +376,7 @@ func TestAgentHeartbeat_Failed(t *testing.T) {
 
 	// Set up mock.
 	var wg sync.WaitGroup
-	atl, mockAgtMgr, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, mockAgtMgr, _, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "Agent/"+uuidStr, topic)
 		wg.Done()
@@ -418,7 +417,7 @@ func TestHeartbeatNonExisting(t *testing.T) {
 	reqPb, err := req.Marshal()
 
 	// Set up mock.
-	atl, _, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, _, _, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "Agent/11285cdd-1de9-4ab1-ae6a-0ba08c8c676c", topic)
 		return nil
@@ -434,7 +433,7 @@ func TestHeartbeatNonExisting(t *testing.T) {
 
 func TestEmptyMessage(t *testing.T) {
 	// Set up mock.
-	atl, _, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, _, _, cleanup := setup(t, func(topic string, b []byte) error {
 		// This function should never be called.
 		assert.Equal(t, true, false)
 		return nil
@@ -451,7 +450,7 @@ func TestEmptyMessage(t *testing.T) {
 
 func TestUnhandledMessage(t *testing.T) {
 	// Set up mock.
-	atl, _, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, _, _, cleanup := setup(t, func(topic string, b []byte) error {
 		// This function should never be called.
 		assert.Equal(t, true, false)
 		return nil
@@ -472,7 +471,7 @@ func TestUnhandledMessage(t *testing.T) {
 
 func TestAgentTracepointInfoUpdate(t *testing.T) {
 	// Set up mock.
-	atl, _, _, mockTracepointStore, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, _, mockTracepointStore, cleanup := setup(t, func(topic string, b []byte) error {
 		return nil
 	})
 	defer cleanup()
@@ -525,7 +524,7 @@ func TestAgentStop(t *testing.T) {
 	respPb, err := resp.Marshal()
 
 	// Set up mock.
-	atl, _, _, _, cleanup := setup(t, func(topic string, b []byte) error {
+	atl, _, _, cleanup := setup(t, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "Agent/"+uuidStr, topic)
 		return nil

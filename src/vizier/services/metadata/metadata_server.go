@@ -20,7 +20,6 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/server"
 	version "pixielabs.ai/pixielabs/src/shared/version/go"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/etcd"
@@ -139,51 +138,6 @@ func main() {
 		cancel()
 	}()
 
-	etcdDS := kvstore.NewEtcdStore(etcdClient)
-	cache := kvstore.NewCache(etcdDS)
-	mds, err := controllers.NewKVMetadataStore(cache)
-	if err != nil {
-		log.WithError(err).Fatal("Could not create metadata store")
-	}
-
-	schemaQuitCh := make(chan bool)
-	defer func() { schemaQuitCh <- true }()
-	go func() {
-		schemaTimer := time.NewTicker(1 * time.Minute)
-		defer schemaTimer.Stop()
-		for {
-			select {
-			case <-schemaQuitCh:
-				return
-			case <-schemaTimer.C:
-				schemaErr := mds.PruneComputedSchema()
-				if schemaErr != nil {
-					log.WithError(schemaErr).Info("Failed to prune computed schema")
-				}
-			}
-		}
-	}()
-
-	keepAlive := true
-	go func() {
-		for keepAlive {
-			if isLeader {
-				if !etcdMgr.IsDefragging() {
-					cache.FlushToDatastore()
-				}
-				time.Sleep(cacheFlushPeriod)
-			} else {
-				cache.Clear()
-				time.Sleep(cacheClearPeriod)
-			}
-
-		}
-	}()
-
-	defer func() {
-		keepAlive = false
-	}()
-
 	newEtcdDataStore := etcd.New(etcdClient)
 
 	k8sMds := controllers.NewMetadataDatastore(newEtcdDataStore)
@@ -194,14 +148,33 @@ func main() {
 	k8sMc, err := controllers.NewK8sMetadataController(k8sMds, updateCh)
 	defer k8sMc.Stop()
 
-	agtMgr := controllers.NewAgentManager(mds, mdh, nc)
+	ads := controllers.NewAgentDatastore(newEtcdDataStore, 24*time.Hour)
+	agtMgr := controllers.NewAgentManager(ads, mdh, nc)
+
+	schemaQuitCh := make(chan struct{})
+	defer close(schemaQuitCh)
+	go func() {
+		schemaTimer := time.NewTicker(1 * time.Minute)
+		defer schemaTimer.Stop()
+		for {
+			select {
+			case <-schemaQuitCh:
+				return
+			case <-schemaTimer.C:
+				schemaErr := ads.PruneComputedSchema()
+				if schemaErr != nil {
+					log.WithError(schemaErr).Info("Failed to prune computed schema")
+				}
+			}
+		}
+	}()
 
 	tds := controllers.NewTracepointDatastore(newEtcdDataStore)
 	// Initialize tracepoint handler.
 	tracepointMgr := controllers.NewTracepointManager(tds, agtMgr, 30*time.Second)
 	defer tracepointMgr.Close()
 
-	mc, err := controllers.NewMessageBusController(nc, agtMgr, tracepointMgr, mds,
+	mc, err := controllers.NewMessageBusController(nc, agtMgr, tracepointMgr,
 		mdh, &isLeader)
 
 	if err != nil {
@@ -217,7 +190,7 @@ func main() {
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
-	svr, err := controllers.NewServer(env, agtMgr, tracepointMgr, mds)
+	svr, err := controllers.NewServer(env, agtMgr, tracepointMgr)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}

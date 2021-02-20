@@ -22,6 +22,32 @@ import (
 // from an agent before marking it as unhealthy.
 const AgentExpirationTimeout time.Duration = 1 * time.Minute
 
+// AgentStore is the interface that a persistent datastore needs to implement for tracking
+// agent data.
+type AgentStore interface {
+	CreateAgent(agentID uuid.UUID, a *agentpb.Agent) error
+	GetAgent(agentID uuid.UUID) (*agentpb.Agent, error)
+	UpdateAgent(agentID uuid.UUID, a *agentpb.Agent) error
+	DeleteAgent(agentID uuid.UUID) error
+
+	GetAgents() ([]*agentpb.Agent, error)
+
+	GetASID() (uint32, error)
+	GetAgentIDFromPodName(podName string) (string, error)
+
+	GetAgentsDataInfo() (map[uuid.UUID]*messagespb.AgentDataInfo, error)
+	UpdateAgentDataInfo(agentID uuid.UUID, dataInfo *messagespb.AgentDataInfo) error
+
+	GetComputedSchema() (*storepb.ComputedSchema, error)
+	UpdateSchemas(agentID uuid.UUID, schemas []*storepb.TableInfo) error
+	PruneComputedSchema() error
+
+	GetProcesses(upids []*types.UInt128) ([]*metadatapb.ProcessInfo, error)
+	UpdateProcesses(processes []*metadatapb.ProcessInfo) error
+
+	GetAgentIDForHostnamePair(hnPair *HostnameIPPair) (string, error)
+}
+
 // AgentUpdate describes the update info for a given agent.
 type AgentUpdate struct {
 	UpdateInfo *messagespb.AgentUpdateInfo
@@ -67,6 +93,11 @@ type AgentManager interface {
 	// UpdateConfig updates the config for the specified agent.
 	UpdateConfig(string, string, string, string) error
 
+	// GetComputedSchema gets the computed schemas
+	GetComputedSchema() (*storepb.ComputedSchema, error)
+	// GetAgentIDForHostnamePair gets the agent for the given hostnamePair, if it exists.
+	GetAgentIDForHostnamePair(hnPair *HostnameIPPair) (string, error)
+
 	// GetServiceCIDR returns the service CIDR for the current cluster.
 	GetServiceCIDR() string
 	// GetPodCIDRs returns the PodCIDRs for the cluster.
@@ -97,10 +128,10 @@ func (a *AgentUpdateTracker) clearUpdates() {
 
 // AgentManagerImpl is an implementation for AgentManager which talks to the metadata store.
 type AgentManagerImpl struct {
-	clock  utils.Clock
-	mds    MetadataStore
-	k8sMdh *K8sMetadataHandler
-	conn   *nats.Conn
+	clock    utils.Clock
+	agtStore AgentStore
+	k8sMdh   *K8sMetadataHandler
+	conn     *nats.Conn
 
 	// The agent manager may have multiple clients requesting updates to the current agent state
 	// compared to the state they last saw. This map keeps all of the various trackers (per client)
@@ -110,10 +141,10 @@ type AgentManagerImpl struct {
 }
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
-func NewAgentManagerWithClock(mds MetadataStore, k8sMdh *K8sMetadataHandler, conn *nats.Conn, clock utils.Clock) *AgentManagerImpl {
+func NewAgentManagerWithClock(agtStore AgentStore, k8sMdh *K8sMetadataHandler, conn *nats.Conn, clock utils.Clock) *AgentManagerImpl {
 	agentManager := &AgentManagerImpl{
 		clock:               clock,
-		mds:                 mds,
+		agtStore:            agtStore,
 		k8sMdh:              k8sMdh,
 		conn:                conn,
 		agentUpdateTrackers: make(map[uuid.UUID]*AgentUpdateTracker),
@@ -139,15 +170,15 @@ func (m *AgentManagerImpl) DeleteAgentUpdateCursor(cursorID uuid.UUID) {
 	delete(m.agentUpdateTrackers, cursorID)
 }
 
-// A helper function for all cases where we call m.mds.UpdateSchemas
-// This should be called instead of m.mds.UpdateSchemas in order to make sure that the agent
+// A helper function for all cases where we call m.agtStore.UpdateSchemas
+// This should be called instead of m.agtStore.UpdateSchemas in order to make sure that the agent
 // schema update is tracked in the our agent state change tracker (updatedAgents).
 func (m *AgentManagerImpl) updateAgentSchemaWrapper(agentID uuid.UUID, schema []*storepb.TableInfo) error {
 	// Note: Metadata store state must be updated before the agent tracker state is updated, otherwise the
 	// update may be missed by the agent tracker when reading the initial agent state.
 	// We cannot lock the entire call to `updateAgentSchemaWrapper`, which would allow for perfect consistency,
 	// since the update to the metadata store may hit the network.
-	err := m.mds.UpdateSchemas(agentID, schema)
+	err := m.agtStore.UpdateSchemas(agentID, schema)
 	if err != nil {
 		log.WithError(err).Errorf("Failed to update agent schema for agent %s", agentID.String())
 		return err
@@ -164,15 +195,15 @@ func (m *AgentManagerImpl) updateAgentSchemaWrapper(agentID uuid.UUID, schema []
 	return nil
 }
 
-// A helper function for all cases where we call m.mds.DeleteAgent.
-// This should be called instead of mds.DeleteAgent in order to make sure that the agent
+// A helper function for all cases where we call m.agtStore.DeleteAgent.
+// This should be called instead of agtStore.DeleteAgent in order to make sure that the agent
 // deletion is tracked in the our agent state change tracker (updatedAgents).
 func (m *AgentManagerImpl) deleteAgentWrapper(agentID uuid.UUID) error {
 	// Note: Metadata store state must be updated before the agent tracker state is updated, otherwise the
 	// update may be missed by the agent tracker when reading the initial agent state.
 	// We cannot lock the entire call to `deleteAgentWrapper`, which would allow for perfect consistency,
 	// since the update to the metadata store may hit the network.
-	err := m.mds.DeleteAgent(agentID)
+	err := m.agtStore.DeleteAgent(agentID)
 
 	if err != nil {
 		log.WithError(err).Errorf("Failed to delete agent %s", agentID.String())
@@ -198,15 +229,15 @@ func (m *AgentManagerImpl) deleteAgentWrapper(agentID uuid.UUID) error {
 	return nil
 }
 
-// A helper function for all cases where we call m.mds.CreateAgent.
-// This should be called instead of mds.CreateAgent in order to make sure that the agent
+// A helper function for all cases where we call m.agtStore.CreateAgent.
+// This should be called instead of agtStore.CreateAgent in order to make sure that the agent
 // creation is tracked in the our agent state change tracker (updatedAgents).
 func (m *AgentManagerImpl) createAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.Agent) error {
 	// Note: Metadata store state must be updated before the agent tracker state is updated, otherwise the
 	// update may be missed by the agent tracker when reading the initial agent state.
 	// We cannot lock the entire call to `createAgentWrapper`, which would allow for perfect consistency,
 	// since the update to the metadata store may hit the network.
-	err := m.mds.CreateAgent(agentID, agentInfo)
+	err := m.agtStore.CreateAgent(agentID, agentInfo)
 
 	if err != nil {
 		log.WithError(err).Errorf("Failed to create agent %s", agentID.String())
@@ -232,15 +263,15 @@ func (m *AgentManagerImpl) createAgentWrapper(agentID uuid.UUID, agentInfo *agen
 	return nil
 }
 
-// A helper function for all cases where we call m.mds.CreateAgent.
-// This should be called instead of mds.CreateAgent in order to make sure that the agent
+// A helper function for all cases where we call m.agtStore.CreateAgent.
+// This should be called instead of agtStore.CreateAgent in order to make sure that the agent
 // update is tracked in the our agent state change tracker (updatedAgents).
 func (m *AgentManagerImpl) updateAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.Agent) error {
 	// Note: Metadata store state must be updated before the agent tracker state is updated, otherwise the
 	// update may be missed by the agent tracker when reading the initial agent state.
 	// We cannot lock the entire call to `updateAgentWrapper`, which would allow for perfect consistency,
 	// since the update to the metadata store may hit the network.
-	err := m.mds.UpdateAgent(agentID, agentInfo)
+	err := m.agtStore.UpdateAgent(agentID, agentInfo)
 
 	if err != nil {
 		log.WithError(err).Errorf("Failed to update agent %s", agentID.String())
@@ -266,15 +297,15 @@ func (m *AgentManagerImpl) updateAgentWrapper(agentID uuid.UUID, agentInfo *agen
 	return nil
 }
 
-// A helper function for all cases where we call m.mds.UpdateAgentDataInfo.
-// This should be called instead of mds.UpdateAgentDataInfo in order to make sure that the agent
+// A helper function for all cases where we call m.agtStore.UpdateAgentDataInfo.
+// This should be called instead of agtStore.UpdateAgentDataInfo in order to make sure that the agent
 // update is tracked in the our agent state change tracker (updatedAgents).
 func (m *AgentManagerImpl) updateAgentDataInfoWrapper(agentID uuid.UUID, agentDataInfo *messagespb.AgentDataInfo) error {
 	// Note: Metadata store state must be updated before the agent tracker state is updated, otherwise the
 	// update may be missed by the agent tracker when reading the initial agent state.
 	// We cannot lock the entire call to `updateAgentDataInfoWrapper`, which would allow for perfect consistency,
 	// since the update to the metadata store may hit the network.
-	err := m.mds.UpdateAgentDataInfo(agentID, agentDataInfo)
+	err := m.agtStore.UpdateAgentDataInfo(agentID, agentDataInfo)
 
 	if err != nil {
 		log.WithError(err).Errorf("Failed to update agent data info for agent %s", agentID.String())
@@ -302,7 +333,7 @@ func (m *AgentManagerImpl) updateAgentDataInfoWrapper(agentID uuid.UUID, agentDa
 
 // ApplyAgentUpdate updates the metadata store with the information from the agent update.
 func (m *AgentManagerImpl) ApplyAgentUpdate(update *AgentUpdate) error {
-	resp, err := m.mds.GetAgent(update.AgentID)
+	resp, err := m.agtStore.GetAgent(update.AgentID)
 	if err != nil {
 		log.WithError(err).Error("Failed to get agent")
 		return err
@@ -349,7 +380,7 @@ func (m *AgentManagerImpl) handleCreatedProcesses(processes []*metadatapb.Proces
 		processInfos[i] = pPb
 	}
 
-	return m.mds.UpdateProcesses(processInfos)
+	return m.agtStore.UpdateProcesses(processInfos)
 }
 
 func (m *AgentManagerImpl) handleTerminatedProcesses(processes []*metadatapb.ProcessTerminated) error {
@@ -362,7 +393,7 @@ func (m *AgentManagerImpl) handleTerminatedProcesses(processes []*metadatapb.Pro
 		upids[i] = types.UInt128FromProto(p.UPID)
 	}
 
-	pInfos, err := m.mds.GetProcesses(upids)
+	pInfos, err := m.agtStore.GetProcesses(upids)
 	if err != nil {
 		log.WithError(err).Error("Could not get processes when trying to update terminated processes")
 		return err
@@ -376,15 +407,15 @@ func (m *AgentManagerImpl) handleTerminatedProcesses(processes []*metadatapb.Pro
 		}
 	}
 
-	return m.mds.UpdateProcesses(updatedProcesses)
+	return m.agtStore.UpdateProcesses(updatedProcesses)
 }
 
 // NewAgentManager creates a new agent manager.
 // TODO (vihang/michelle): Figure out a better solution than passing in the k8s controller.
 // We need the k8sMDh to get CIDR info right now.
-func NewAgentManager(mds MetadataStore, k8sMdh *K8sMetadataHandler, conn *nats.Conn) *AgentManagerImpl {
+func NewAgentManager(agtStore AgentStore, k8sMdh *K8sMetadataHandler, conn *nats.Conn) *AgentManagerImpl {
 	clock := utils.SystemClock{}
-	return NewAgentManagerWithClock(mds, k8sMdh, conn, clock)
+	return NewAgentManagerWithClock(agtStore, k8sMdh, conn, clock)
 }
 
 // RegisterAgent creates a new agent.
@@ -394,7 +425,7 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 	// Check if agent already exists.
 	aUUID := utils.UUIDFromProtoOrNil(info.AgentID)
 
-	resp, err := m.mds.GetAgent(aUUID)
+	resp, err := m.agtStore.GetAgent(aUUID)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to get agent")
 	} else if resp != nil {
@@ -402,7 +433,7 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 	}
 
 	// Get ASID for the new agent.
-	asid, err = m.mds.GetASID()
+	asid, err = m.agtStore.GetASID()
 	if err != nil {
 		return 0, err
 	}
@@ -436,7 +467,7 @@ func (m *AgentManagerImpl) DeleteAgent(agentID uuid.UUID) error {
 // UpdateHeartbeat updates the agent heartbeat with the current time.
 func (m *AgentManagerImpl) UpdateHeartbeat(agentID uuid.UUID) error {
 	// Get current AgentData.
-	agent, err := m.mds.GetAgent(agentID)
+	agent, err := m.agtStore.GetAgent(agentID)
 	if err != nil {
 		return err
 	}
@@ -466,7 +497,7 @@ func (m *AgentManagerImpl) UpdateAgent(info *agentpb.Agent) error {
 func (m *AgentManagerImpl) GetActiveAgents() ([]*agentpb.Agent, error) {
 	var agents []*agentpb.Agent
 
-	agentPbs, err := m.mds.GetAgents()
+	agentPbs, err := m.agtStore.GetAgents()
 	if err != nil {
 		return agents, err
 	}
@@ -513,7 +544,7 @@ func (m *AgentManagerImpl) MessageActiveAgents(msg []byte) error {
 // UpdateConfig updates the config key and value for the specified agent.
 func (m *AgentManagerImpl) UpdateConfig(ns string, podName string, key string, value string) error {
 	// Find the agent ID for the agent with the given name.
-	agentID, err := m.mds.GetAgentIDFromPodName(podName)
+	agentID, err := m.agtStore.GetAgentIDFromPodName(podName)
 	if err != nil || agentID == "" {
 		return errors.New("Could not find agent with the given name")
 	}
@@ -595,7 +626,7 @@ func (m *AgentManagerImpl) GetAgentUpdates(cursorID uuid.UUID) ([]*metadata_serv
 	var computedSchema *storepb.ComputedSchema
 
 	if !hasReadInitialState || schemaUpdated {
-		computedSchema, err = m.mds.GetComputedSchema()
+		computedSchema, err = m.agtStore.GetComputedSchema()
 		if err != nil {
 			return nil, nil, err
 		}
@@ -604,7 +635,7 @@ func (m *AgentManagerImpl) GetAgentUpdates(cursorID uuid.UUID) ([]*metadata_serv
 	if hasReadInitialState {
 		agentUpdates = updatedAgentsUpdates
 	} else {
-		updatedAgents, err := m.mds.GetAgents()
+		updatedAgents, err := m.agtStore.GetAgents()
 		if err != nil {
 			return nil, nil, err
 		}
@@ -616,7 +647,7 @@ func (m *AgentManagerImpl) GetAgentUpdates(cursorID uuid.UUID) ([]*metadata_serv
 				},
 			})
 		}
-		updatedAgentsDataInfo, err := m.mds.GetAgentsDataInfo()
+		updatedAgentsDataInfo, err := m.agtStore.GetAgentsDataInfo()
 		if err != nil {
 			return nil, nil, err
 		}
@@ -631,6 +662,16 @@ func (m *AgentManagerImpl) GetAgentUpdates(cursorID uuid.UUID) ([]*metadata_serv
 	}
 
 	return agentUpdates, computedSchema, nil
+}
+
+// GetComputedSchema gets the computed schemas
+func (m *AgentManagerImpl) GetComputedSchema() (*storepb.ComputedSchema, error) {
+	return m.agtStore.GetComputedSchema()
+}
+
+// GetAgentIDForHostnamePair gets the agent for the given hostnamePair, if it exists.
+func (m *AgentManagerImpl) GetAgentIDForHostnamePair(hnPair *HostnameIPPair) (string, error) {
+	return m.agtStore.GetAgentIDForHostnamePair(hnPair)
 }
 
 // GetServiceCIDR returns the service CIDR for the current cluster.

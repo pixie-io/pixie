@@ -84,7 +84,6 @@ func TestGetAgentInfo(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 
 	agent1IDStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 	u1, err := uuid.FromString(agent1IDStr)
@@ -140,7 +139,7 @@ func TestGetAgentInfo(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(30, 11))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, nil, mockMds, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, nil, clock)
 
 	req := metadatapb.AgentInfoRequest{}
 
@@ -169,7 +168,6 @@ func TestGetAgentInfoGetActiveAgentsFailed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 
 	mockAgtMgr.
 		EXPECT().
@@ -184,7 +182,7 @@ func TestGetAgentInfoGetActiveAgentsFailed(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, nil, mockMds, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, nil, clock)
 
 	req := metadatapb.AgentInfoRequest{}
 
@@ -199,11 +197,10 @@ func TestGetSchemas(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 
 	tableInfos := testTableInfos()
 
-	mockMds.
+	mockAgtMgr.
 		EXPECT().
 		GetComputedSchema().
 		Return(&storepb.ComputedSchema{Tables: tableInfos}, nil)
@@ -216,7 +213,7 @@ func TestGetSchemas(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, nil, mockMds, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, nil, clock)
 
 	req := metadatapb.SchemaRequest{}
 
@@ -248,7 +245,6 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
 	tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
@@ -327,7 +323,7 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, mockMds, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, clock)
 
 	reqs := []*metadatapb.RegisterTracepointRequest_TracepointRequest{
 		&metadatapb.RegisterTracepointRequest_TracepointRequest{
@@ -358,7 +354,6 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
 	tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
@@ -455,7 +450,7 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, mockMds, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, clock)
 
 	reqs := []*metadatapb.RegisterTracepointRequest_TracepointRequest{
 		&metadatapb.RegisterTracepointRequest_TracepointRequest{
@@ -594,7 +589,6 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-			mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 			mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
 			tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
@@ -643,7 +637,7 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 
 			clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-			s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, mockMds, clock)
+			s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, clock)
 			req := metadatapb.GetTracepointInfoRequest{
 				IDs: []*uuidpb.UUID{utils.ProtoFromUUID(tID)},
 			}
@@ -676,7 +670,6 @@ func Test_Server_RemoveTracepoint(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
 	tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
@@ -704,7 +697,7 @@ func Test_Server_RemoveTracepoint(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, mockMds, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, clock)
 
 	req := metadatapb.RemoveTracepointRequest{
 		Names: []string{"test1", "test2"},
@@ -729,7 +722,6 @@ func TestGetAgentUpdates(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 
 	agent1IDStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 	u1, err := uuid.FromString(agent1IDStr)
@@ -889,7 +881,7 @@ func TestGetAgentUpdates(t *testing.T) {
 	}
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
-	svr, err := controllers.NewServerWithClock(mdEnv, mockAgtMgr, nil, mockMds, clock)
+	svr, err := controllers.NewServerWithClock(mdEnv, mockAgtMgr, nil, clock)
 
 	env := env2.New()
 	s := server.CreateGRPCServer(env, &server.GRPCServerOptions{})
@@ -1030,7 +1022,6 @@ func Test_Server_UpdateConfig(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 	tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 
@@ -1047,7 +1038,7 @@ func Test_Server_UpdateConfig(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, mockMds, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, clock)
 
 	req := metadatapb.UpdateConfigRequest{
 		AgentPodName: "pl/pem-1234",

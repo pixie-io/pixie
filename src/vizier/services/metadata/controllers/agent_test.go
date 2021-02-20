@@ -1,12 +1,14 @@
 package controllers_test
 
 import (
+	"os"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/cockroachdb/pebble"
+	"github.com/cockroachdb/pebble/vfs"
 	"github.com/gogo/protobuf/proto"
-	"github.com/golang/mock/gomock"
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
@@ -21,32 +23,13 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
-	mock_kvstore "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
+	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"
 )
 
-func setupAgentManager(t *testing.T) (controllers.MetadataStore, controllers.AgentManager, *nats.Conn, func()) {
-	ctrl := gomock.NewController(t)
-	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
-	mockDs.
-		EXPECT().
-		Get(gomock.Any()).
-		Return(nil, nil).
-		AnyTimes()
-	mockDs.
-		EXPECT().
-		DeleteWithPrefix(gomock.Any()).
-		Return(nil).
-		AnyTimes()
-	mockDs.
-		EXPECT().
-		GetWithPrefix(gomock.Any()).
-		Return(nil, nil, nil).
-		AnyTimes()
-
+func setupAgentManager(t *testing.T) (controllers.AgentStore, controllers.AgentManager, *nats.Conn, func()) {
 	// Setup NATS.
 	natsPort, natsCleanup := testingutils.StartNATS(t)
 	nc, err := nats.Connect(testingutils.GetNATSURL(natsPort))
@@ -54,28 +37,34 @@ func setupAgentManager(t *testing.T) (controllers.MetadataStore, controllers.Age
 		t.Fatal(err)
 	}
 
-	cleanupFn := func() {
-		ctrl.Finish()
-		natsCleanup()
+	memFS := vfs.NewMem()
+	c, err := pebble.Open("test", &pebble.Options{
+		FS: memFS,
+	})
+	if err != nil {
+		t.Fatal("failed to initialize a pebbledb")
+		os.Exit(1)
 	}
+
+	db := pebbledb.New(c, 3*time.Second)
+	ads := controllers.NewAgentDatastore(db, 1*time.Minute)
+
+	cleanupFn := func() {
+		natsCleanup()
+		db.Close()
+	}
+
+	createAgentInADS(t, testutils.ExistingAgentUUID, ads, testutils.ExistingAgentInfo)
+	createAgentInADS(t, testutils.UnhealthyAgentUUID, ads, testutils.UnhealthyAgentInfo)
+	createAgentInADS(t, testutils.UnhealthyKelvinAgentUUID, ads, testutils.UnhealthyKelvinAgentInfo)
 
 	clock := testingutils.NewTestClock(time.Unix(0, testutils.ClockNowNS))
-	c := kvstore.NewCache(mockDs)
-	mds, err := controllers.NewKVMetadataStore(c)
-	if err != nil {
-		t.Fatalf("Could not create metadata store")
-	}
+	agtMgr := controllers.NewAgentManagerWithClock(ads, nil, nc, clock)
 
-	createAgentInMDS(t, testutils.ExistingAgentUUID, mds, testutils.ExistingAgentInfo)
-	createAgentInMDS(t, testutils.UnhealthyAgentUUID, mds, testutils.UnhealthyAgentInfo)
-	createAgentInMDS(t, testutils.UnhealthyKelvinAgentUUID, mds, testutils.UnhealthyKelvinAgentInfo)
-
-	agtMgr := controllers.NewAgentManagerWithClock(mds, nil, nc, clock)
-
-	return mds, agtMgr, nc, cleanupFn
+	return ads, agtMgr, nc, cleanupFn
 }
 
-func createAgentInMDS(t *testing.T, agentID string, mds controllers.MetadataStore, agentPb string) {
+func createAgentInADS(t *testing.T, agentID string, ads controllers.AgentStore, agentPb string) {
 	info := new(agentpb.Agent)
 	if err := proto.UnmarshalText(agentPb, info); err != nil {
 		t.Fatalf("Cannot Unmarshal protobuf for %s", agentID)
@@ -84,22 +73,21 @@ func createAgentInMDS(t *testing.T, agentID string, mds controllers.MetadataStor
 	if err != nil {
 		t.Fatalf("Could not convert uuid from string")
 	}
-	_, _ = mds.GetASID()
-	err = mds.CreateAgent(agUUID, info)
+	err = ads.CreateAgent(agUUID, info)
 
 	// Add schema info.
 	schema := new(storepb.TableInfo)
 	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-	err = mds.UpdateSchemas(agUUID, []*storepb.TableInfo{schema})
+	err = ads.UpdateSchemas(agUUID, []*storepb.TableInfo{schema})
 	if err != nil {
 		t.Fatalf("Could not add schema for agent")
 	}
 }
 
 func TestRegisterAgent(t *testing.T) {
-	mds, agtMgr, _, cleanup := setupAgentManager(t)
+	ads, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
@@ -125,10 +113,10 @@ func TestRegisterAgent(t *testing.T) {
 
 	id, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, uint32(4), id)
+	assert.Equal(t, uint32(1), id)
 
 	// Check that agent exists now.
-	agent, err := mds.GetAgent(u)
+	agent, err := ads.GetAgent(u)
 	assert.Nil(t, err)
 	assert.NotNil(t, agent)
 
@@ -138,15 +126,15 @@ func TestRegisterAgent(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.Equal(t, testutils.NewAgentUUID, uid.String())
 	assert.Equal(t, "localhost", agent.Info.HostInfo.Hostname)
-	assert.Equal(t, uint32(4), agent.ASID)
+	assert.Equal(t, uint32(1), agent.ASID)
 
-	hostnameID, err := mds.GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"", "127.0.0.4"})
+	hostnameID, err := ads.GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"", "127.0.0.4"})
 	assert.Nil(t, err)
 	assert.Equal(t, testutils.NewAgentUUID, hostnameID)
 }
 
 func TestRegisterKelvinAgent(t *testing.T) {
-	mds, agtMgr, _, cleanup := setupAgentManager(t)
+	ads, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.KelvinAgentUUID)
@@ -170,16 +158,12 @@ func TestRegisterKelvinAgent(t *testing.T) {
 		CreateTimeNS:    4,
 	}
 
-	kelvins, err := mds.GetKelvinIDs()
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(kelvins))
-
 	id, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, uint32(4), id)
+	assert.Equal(t, uint32(1), id)
 
 	// Check that agent exists now.
-	agent, err := mds.GetAgent(u)
+	agent, err := ads.GetAgent(u)
 	assert.Nil(t, err)
 	assert.NotNil(t, agent)
 
@@ -189,19 +173,15 @@ func TestRegisterKelvinAgent(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.Equal(t, testutils.KelvinAgentUUID, uid.String())
 	assert.Equal(t, "test", agent.Info.HostInfo.Hostname)
-	assert.Equal(t, uint32(4), agent.ASID)
+	assert.Equal(t, uint32(1), agent.ASID)
 
-	hostnameID, err := mds.GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"test", "127.0.0.3"})
+	hostnameID, err := ads.GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"test", "127.0.0.3"})
 	assert.Nil(t, err)
 	assert.Equal(t, testutils.KelvinAgentUUID, hostnameID)
-
-	kelvins, err = mds.GetKelvinIDs()
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(kelvins))
 }
 
 func TestRegisterExistingAgent(t *testing.T) {
-	mds, agtMgr, _, cleanup := setupAgentManager(t)
+	ads, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.ExistingAgentUUID)
@@ -224,8 +204,8 @@ func TestRegisterExistingAgent(t *testing.T) {
 	_, err = agtMgr.RegisterAgent(agentInfo)
 	assert.NotNil(t, err)
 
-	// Check that correct agent info is in MDS.
-	agent, err := mds.GetAgent(u)
+	// Check that correct agent info is in ads.
+	agent, err := ads.GetAgent(u)
 	assert.Nil(t, err)
 	assert.NotNil(t, agent)
 	assert.Equal(t, int64(testutils.HealthyAgentLastHeartbeatNS), agent.LastHeartbeatNS) // 70 seconds in NS.
@@ -238,7 +218,7 @@ func TestRegisterExistingAgent(t *testing.T) {
 }
 
 func TestUpdateHeartbeat(t *testing.T) {
-	mds, agtMgr, _, cleanup := setupAgentManager(t)
+	ads, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.ExistingAgentUUID)
@@ -250,7 +230,7 @@ func TestUpdateHeartbeat(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Check that correct agent info is in etcd.
-	agent, err := mds.GetAgent(u)
+	agent, err := ads.GetAgent(u)
 	assert.Nil(t, err)
 	assert.NotNil(t, agent)
 
@@ -276,7 +256,7 @@ func TestUpdateHeartbeatForNonExistingAgent(t *testing.T) {
 }
 
 func TestUpdateAgentDelete(t *testing.T) {
-	mds, agtMgr, _, cleanup := setupAgentManager(t)
+	ads, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.UnhealthyAgentUUID)
@@ -293,21 +273,16 @@ func TestUpdateAgentDelete(t *testing.T) {
 	err = agtMgr.DeleteAgent(u2)
 	assert.Nil(t, err)
 
-	agents, err := mds.GetAgents()
+	agents, err := ads.GetAgents()
 	assert.Equal(t, 1, len(agents))
 
-	agent, err := mds.GetAgent(u)
+	agent, err := ads.GetAgent(u)
 	assert.Nil(t, err)
 	assert.Nil(t, agent)
 
-	hostnameID, err := mds.GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"", "127.0.0.2"})
+	hostnameID, err := ads.GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"", "127.0.0.2"})
 	assert.Nil(t, err)
 	assert.Equal(t, "", hostnameID)
-
-	// Should have no Kelvin entries.
-	kelvins, err := mds.GetKelvinIDs()
-	assert.Nil(t, err)
-	assert.Equal(t, 0, len(kelvins))
 }
 
 func TestGetActiveAgents(t *testing.T) {
@@ -373,7 +348,7 @@ func TestGetActiveAgents(t *testing.T) {
 }
 
 func TestApplyUpdates(t *testing.T) {
-	mds, agtMgr, _, cleanup := setupAgentManager(t)
+	ads, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.ExistingAgentUUID)
@@ -453,14 +428,14 @@ func TestApplyUpdates(t *testing.T) {
 		High: uint64(528280977975),
 	}
 
-	pInfos, err := mds.GetProcesses([]*types.UInt128{upid1, upid2})
+	pInfos, err := ads.GetProcesses([]*types.UInt128{upid1, upid2})
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(pInfos))
 
 	assert.Equal(t, cProcessInfo[0], pInfos[0])
 	assert.Equal(t, cProcessInfo[1], pInfos[1])
 
-	dataInfos, err := mds.GetAgentsDataInfo()
+	dataInfos, err := ads.GetAgentsDataInfo()
 	assert.Nil(t, err)
 	assert.NotNil(t, dataInfos)
 	dataInfo, present := dataInfos[u]
@@ -469,7 +444,7 @@ func TestApplyUpdates(t *testing.T) {
 }
 
 func TestApplyUpdatesDeleted(t *testing.T) {
-	mds, agtMgr, _, cleanup := setupAgentManager(t)
+	ads, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
@@ -549,14 +524,14 @@ func TestApplyUpdatesDeleted(t *testing.T) {
 		High: uint64(528280977975),
 	}
 
-	pInfos, err := mds.GetProcesses([]*types.UInt128{upid1, upid2})
+	pInfos, err := ads.GetProcesses([]*types.UInt128{upid1, upid2})
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(pInfos))
 
 	assert.Nil(t, pInfos[0])
 	assert.Nil(t, pInfos[1])
 
-	dataInfos, err := mds.GetAgentsDataInfo()
+	dataInfos, err := ads.GetAgentsDataInfo()
 	assert.Nil(t, err)
 	assert.NotNil(t, dataInfos)
 	_, present := dataInfos[u]
@@ -564,7 +539,7 @@ func TestApplyUpdatesDeleted(t *testing.T) {
 }
 
 func TestAgentTerminatedProcesses(t *testing.T) {
-	mds, agtMgr, _, cleanup := setupAgentManager(t)
+	ads, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.ExistingAgentUUID)
@@ -654,7 +629,7 @@ func TestAgentTerminatedProcesses(t *testing.T) {
 		High: uint64(528280977975),
 	}
 
-	pInfos, err := mds.GetProcesses([]*types.UInt128{upid1, upid2})
+	pInfos, err := ads.GetProcesses([]*types.UInt128{upid1, upid2})
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(pInfos))
 
@@ -784,7 +759,7 @@ func TestAgent_UpdateConfig(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	mdSub, err := nc.Subscribe("Agent/"+testutils.ExistingAgentUUID, func(msg *nats.Msg) {
+	adsub, err := nc.Subscribe("Agent/"+testutils.ExistingAgentUUID, func(msg *nats.Msg) {
 		vzMsg := &messagespb.VizierMessage{}
 		proto.Unmarshal(msg.Data, vzMsg)
 		req := vzMsg.GetConfigUpdateMessage().GetConfigUpdateRequest()
@@ -794,7 +769,7 @@ func TestAgent_UpdateConfig(t *testing.T) {
 		wg.Done()
 	})
 	assert.Nil(t, err)
-	defer mdSub.Unsubscribe()
+	defer adsub.Unsubscribe()
 
 	err = agtMgr.UpdateConfig("pl", "pem-existing", "gprof", "true")
 	assert.Nil(t, err)

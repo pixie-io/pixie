@@ -71,7 +71,6 @@ type AgentTopicListener struct {
 	agentManager      AgentManager
 	tracepointManager *TracepointManager
 	sendMessage       SendMessageFn
-	mdStore           MetadataStore
 
 	// Map from agent ID -> the agentHandler that's responsible for handling that particular
 	// agent's messages.
@@ -84,7 +83,6 @@ type AgentHandler struct {
 	clock             utils.Clock
 	agentManager      AgentManager
 	tracepointManager *TracepointManager
-	mdStore           MetadataStore
 	atl               *AgentTopicListener
 
 	MsgChannel chan *nats.Msg
@@ -95,21 +93,20 @@ type AgentHandler struct {
 }
 
 // NewAgentTopicListener creates a new agent topic listener.
-func NewAgentTopicListener(agentManager AgentManager, tracepointManager *TracepointManager, mdStore MetadataStore,
+func NewAgentTopicListener(agentManager AgentManager, tracepointManager *TracepointManager,
 	sendMsgFn SendMessageFn) (*AgentTopicListener, error) {
 	clock := utils.SystemClock{}
-	return NewAgentTopicListenerWithClock(agentManager, tracepointManager, mdStore, sendMsgFn, clock)
+	return NewAgentTopicListenerWithClock(agentManager, tracepointManager, sendMsgFn, clock)
 }
 
 // NewAgentTopicListenerWithClock creates a new agent topic listener with a clock.
-func NewAgentTopicListenerWithClock(agentManager AgentManager, tracepointManager *TracepointManager, mdStore MetadataStore,
+func NewAgentTopicListenerWithClock(agentManager AgentManager, tracepointManager *TracepointManager,
 	sendMsgFn SendMessageFn, clock utils.Clock) (*AgentTopicListener, error) {
 	atl := &AgentTopicListener{
 		clock:             clock,
 		agentManager:      agentManager,
 		tracepointManager: tracepointManager,
 		sendMessage:       sendMsgFn,
-		mdStore:           mdStore,
 		agentMap:          &concurrentAgentMap{unsafeMap: make(map[uuid.UUID]*AgentHandler)},
 	}
 
@@ -192,7 +189,6 @@ func (a *AgentTopicListener) createAgentHandler(agentID uuid.UUID) *AgentHandler
 		clock:             a.clock,
 		agentManager:      a.agentManager,
 		tracepointManager: a.tracepointManager,
-		mdStore:           a.mdStore,
 		atl:               a,
 		MsgChannel:        make(chan *nats.Msg, 10),
 		quitCh:            make(chan struct{}),
@@ -353,7 +349,7 @@ func (ah *AgentHandler) onAgentRegisterRequest(m *messages.RegisterAgentRequest)
 	if !m.Info.Capabilities.CollectsData {
 		hostname = m.Info.HostInfo.Hostname
 	}
-	hostnameAgID, err := ah.mdStore.GetAgentIDForHostnamePair(&HostnameIPPair{hostname, m.Info.HostInfo.HostIP})
+	hostnameAgID, err := ah.agentManager.GetAgentIDForHostnamePair(&HostnameIPPair{hostname, m.Info.HostInfo.HostIP})
 	if err != nil {
 		log.WithError(err).Error("Failed to get agent hostname")
 	}

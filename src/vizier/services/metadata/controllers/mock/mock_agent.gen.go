@@ -9,11 +9,255 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
+	pl_shared_k8s_metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	types "pixielabs.ai/pixielabs/src/shared/types/go"
+	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	metadatapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	pl_vizier_services_shared_agent "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
+
+// MockAgentStore is a mock of AgentStore interface.
+type MockAgentStore struct {
+	ctrl     *gomock.Controller
+	recorder *MockAgentStoreMockRecorder
+}
+
+// MockAgentStoreMockRecorder is the mock recorder for MockAgentStore.
+type MockAgentStoreMockRecorder struct {
+	mock *MockAgentStore
+}
+
+// NewMockAgentStore creates a new mock instance.
+func NewMockAgentStore(ctrl *gomock.Controller) *MockAgentStore {
+	mock := &MockAgentStore{ctrl: ctrl}
+	mock.recorder = &MockAgentStoreMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockAgentStore) EXPECT() *MockAgentStoreMockRecorder {
+	return m.recorder
+}
+
+// CreateAgent mocks base method.
+func (m *MockAgentStore) CreateAgent(agentID uuid.UUID, a *pl_vizier_services_shared_agent.Agent) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateAgent", agentID, a)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateAgent indicates an expected call of CreateAgent.
+func (mr *MockAgentStoreMockRecorder) CreateAgent(agentID, a interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAgent", reflect.TypeOf((*MockAgentStore)(nil).CreateAgent), agentID, a)
+}
+
+// DeleteAgent mocks base method.
+func (m *MockAgentStore) DeleteAgent(agentID uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteAgent", agentID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteAgent indicates an expected call of DeleteAgent.
+func (mr *MockAgentStoreMockRecorder) DeleteAgent(agentID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAgent", reflect.TypeOf((*MockAgentStore)(nil).DeleteAgent), agentID)
+}
+
+// GetASID mocks base method.
+func (m *MockAgentStore) GetASID() (uint32, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetASID")
+	ret0, _ := ret[0].(uint32)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetASID indicates an expected call of GetASID.
+func (mr *MockAgentStoreMockRecorder) GetASID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetASID", reflect.TypeOf((*MockAgentStore)(nil).GetASID))
+}
+
+// GetAgent mocks base method.
+func (m *MockAgentStore) GetAgent(agentID uuid.UUID) (*pl_vizier_services_shared_agent.Agent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAgent", agentID)
+	ret0, _ := ret[0].(*pl_vizier_services_shared_agent.Agent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgent indicates an expected call of GetAgent.
+func (mr *MockAgentStoreMockRecorder) GetAgent(agentID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgent", reflect.TypeOf((*MockAgentStore)(nil).GetAgent), agentID)
+}
+
+// GetAgentIDForHostnamePair mocks base method.
+func (m *MockAgentStore) GetAgentIDForHostnamePair(hnPair *controllers.HostnameIPPair) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAgentIDForHostnamePair", hnPair)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgentIDForHostnamePair indicates an expected call of GetAgentIDForHostnamePair.
+func (mr *MockAgentStoreMockRecorder) GetAgentIDForHostnamePair(hnPair interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentIDForHostnamePair", reflect.TypeOf((*MockAgentStore)(nil).GetAgentIDForHostnamePair), hnPair)
+}
+
+// GetAgentIDFromPodName mocks base method.
+func (m *MockAgentStore) GetAgentIDFromPodName(podName string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAgentIDFromPodName", podName)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgentIDFromPodName indicates an expected call of GetAgentIDFromPodName.
+func (mr *MockAgentStoreMockRecorder) GetAgentIDFromPodName(podName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentIDFromPodName", reflect.TypeOf((*MockAgentStore)(nil).GetAgentIDFromPodName), podName)
+}
+
+// GetAgents mocks base method.
+func (m *MockAgentStore) GetAgents() ([]*pl_vizier_services_shared_agent.Agent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAgents")
+	ret0, _ := ret[0].([]*pl_vizier_services_shared_agent.Agent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgents indicates an expected call of GetAgents.
+func (mr *MockAgentStoreMockRecorder) GetAgents() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgents", reflect.TypeOf((*MockAgentStore)(nil).GetAgents))
+}
+
+// GetAgentsDataInfo mocks base method.
+func (m *MockAgentStore) GetAgentsDataInfo() (map[uuid.UUID]*messages.AgentDataInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAgentsDataInfo")
+	ret0, _ := ret[0].(map[uuid.UUID]*messages.AgentDataInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgentsDataInfo indicates an expected call of GetAgentsDataInfo.
+func (mr *MockAgentStoreMockRecorder) GetAgentsDataInfo() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentsDataInfo", reflect.TypeOf((*MockAgentStore)(nil).GetAgentsDataInfo))
+}
+
+// GetComputedSchema mocks base method.
+func (m *MockAgentStore) GetComputedSchema() (*storepb.ComputedSchema, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetComputedSchema")
+	ret0, _ := ret[0].(*storepb.ComputedSchema)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetComputedSchema indicates an expected call of GetComputedSchema.
+func (mr *MockAgentStoreMockRecorder) GetComputedSchema() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComputedSchema", reflect.TypeOf((*MockAgentStore)(nil).GetComputedSchema))
+}
+
+// GetProcesses mocks base method.
+func (m *MockAgentStore) GetProcesses(upids []*types.UInt128) ([]*pl_shared_k8s_metadatapb.ProcessInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProcesses", upids)
+	ret0, _ := ret[0].([]*pl_shared_k8s_metadatapb.ProcessInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProcesses indicates an expected call of GetProcesses.
+func (mr *MockAgentStoreMockRecorder) GetProcesses(upids interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProcesses", reflect.TypeOf((*MockAgentStore)(nil).GetProcesses), upids)
+}
+
+// PruneComputedSchema mocks base method.
+func (m *MockAgentStore) PruneComputedSchema() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PruneComputedSchema")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PruneComputedSchema indicates an expected call of PruneComputedSchema.
+func (mr *MockAgentStoreMockRecorder) PruneComputedSchema() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneComputedSchema", reflect.TypeOf((*MockAgentStore)(nil).PruneComputedSchema))
+}
+
+// UpdateAgent mocks base method.
+func (m *MockAgentStore) UpdateAgent(agentID uuid.UUID, a *pl_vizier_services_shared_agent.Agent) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateAgent", agentID, a)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateAgent indicates an expected call of UpdateAgent.
+func (mr *MockAgentStoreMockRecorder) UpdateAgent(agentID, a interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAgent", reflect.TypeOf((*MockAgentStore)(nil).UpdateAgent), agentID, a)
+}
+
+// UpdateAgentDataInfo mocks base method.
+func (m *MockAgentStore) UpdateAgentDataInfo(agentID uuid.UUID, dataInfo *messages.AgentDataInfo) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateAgentDataInfo", agentID, dataInfo)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateAgentDataInfo indicates an expected call of UpdateAgentDataInfo.
+func (mr *MockAgentStoreMockRecorder) UpdateAgentDataInfo(agentID, dataInfo interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAgentDataInfo", reflect.TypeOf((*MockAgentStore)(nil).UpdateAgentDataInfo), agentID, dataInfo)
+}
+
+// UpdateProcesses mocks base method.
+func (m *MockAgentStore) UpdateProcesses(processes []*pl_shared_k8s_metadatapb.ProcessInfo) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateProcesses", processes)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateProcesses indicates an expected call of UpdateProcesses.
+func (mr *MockAgentStoreMockRecorder) UpdateProcesses(processes interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProcesses", reflect.TypeOf((*MockAgentStore)(nil).UpdateProcesses), processes)
+}
+
+// UpdateSchemas mocks base method.
+func (m *MockAgentStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.TableInfo) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSchemas", agentID, schemas)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateSchemas indicates an expected call of UpdateSchemas.
+func (mr *MockAgentStoreMockRecorder) UpdateSchemas(agentID, schemas interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSchemas", reflect.TypeOf((*MockAgentStore)(nil).UpdateSchemas), agentID, schemas)
+}
 
 // MockAgentManager is a mock of AgentManager interface.
 type MockAgentManager struct {
@@ -93,6 +337,21 @@ func (mr *MockAgentManagerMockRecorder) GetActiveAgents() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveAgents", reflect.TypeOf((*MockAgentManager)(nil).GetActiveAgents))
 }
 
+// GetAgentIDForHostnamePair mocks base method.
+func (m *MockAgentManager) GetAgentIDForHostnamePair(hnPair *controllers.HostnameIPPair) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAgentIDForHostnamePair", hnPair)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgentIDForHostnamePair indicates an expected call of GetAgentIDForHostnamePair.
+func (mr *MockAgentManagerMockRecorder) GetAgentIDForHostnamePair(hnPair interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentIDForHostnamePair", reflect.TypeOf((*MockAgentManager)(nil).GetAgentIDForHostnamePair), hnPair)
+}
+
 // GetAgentUpdates mocks base method.
 func (m *MockAgentManager) GetAgentUpdates(cursorID uuid.UUID) ([]*metadatapb.AgentUpdate, *storepb.ComputedSchema, error) {
 	m.ctrl.T.Helper()
@@ -107,6 +366,21 @@ func (m *MockAgentManager) GetAgentUpdates(cursorID uuid.UUID) ([]*metadatapb.Ag
 func (mr *MockAgentManagerMockRecorder) GetAgentUpdates(cursorID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentUpdates", reflect.TypeOf((*MockAgentManager)(nil).GetAgentUpdates), cursorID)
+}
+
+// GetComputedSchema mocks base method.
+func (m *MockAgentManager) GetComputedSchema() (*storepb.ComputedSchema, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetComputedSchema")
+	ret0, _ := ret[0].(*storepb.ComputedSchema)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetComputedSchema indicates an expected call of GetComputedSchema.
+func (mr *MockAgentManagerMockRecorder) GetComputedSchema() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComputedSchema", reflect.TypeOf((*MockAgentManager)(nil).GetComputedSchema))
 }
 
 // GetPodCIDRs mocks base method.
