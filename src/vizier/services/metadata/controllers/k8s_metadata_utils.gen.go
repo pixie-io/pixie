@@ -5,24 +5,25 @@
 package controllers
 
 import (
-    "time"
-    "sync"
+	"sync"
+	"time"
 
-    log "github.com/sirupsen/logrus"
-    v1 "k8s.io/api/core/v1"
-    internalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
-    metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-    "k8s.io/apimachinery/pkg/fields"
-    "k8s.io/apimachinery/pkg/runtime"
-    // Blank import necessary for kubeConfig to work.
-    _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-    "k8s.io/client-go/tools/cache"
-    watchClient "k8s.io/client-go/tools/watch"
-    "k8s.io/client-go/kubernetes"
-    "k8s.io/apimachinery/pkg/watch"
+	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
+	internalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+	watchClient "k8s.io/client-go/tools/watch"
 
-    protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
-    storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	// Blank import necessary for kubeConfig to work.
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
+	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
+	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 )
 
 func runtimeObjToPodList(o runtime.Object) *v1.PodList {
@@ -48,6 +49,7 @@ func runtimeObjToPodList(o runtime.Object) *v1.PodList {
 	return &typedList
 }
 
+// PodWatcher is a resource watcher for Pods.
 type PodWatcher struct {
 	resourceStr string
 	lastRV      string
@@ -55,10 +57,12 @@ type PodWatcher struct {
 	clientset   *kubernetes.Clientset
 }
 
+// NewPodWatcher creates a resource watcher for Pods.
 func NewPodWatcher(resource string, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *PodWatcher {
 	return &PodWatcher{resourceStr: resource, updateCh: updateCh, clientset: clientset}
 }
 
+// Sync syncs the watcher state with the stored updates for Pods.
 func (mc *PodWatcher) Sync(storedUpdates []*storepb.K8SResource) error {
 	resources, err := listObject(mc.resourceStr, mc.clientset)
 	if err != nil {
@@ -126,9 +130,9 @@ func (mc *PodWatcher) syncPodImpl(storedUpdates []*storepb.K8SResource, currentS
 	}
 }
 
+// StartWatcher starts a watcher for Pods.
 func (mc *PodWatcher) StartWatcher(quitCh chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done()
-	// Start up watcher for the given resource.
 	for {
 		watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), mc.resourceStr, v1.NamespaceAll, fields.Everything())
 		retryWatcher, err := watchClient.NewRetryWatcher(mc.lastRV, watcher)
@@ -218,6 +222,7 @@ func runtimeObjToServiceList(o runtime.Object) *v1.ServiceList {
 	return &typedList
 }
 
+// ServiceWatcher is a resource watcher for Services.
 type ServiceWatcher struct {
 	resourceStr string
 	lastRV      string
@@ -225,10 +230,12 @@ type ServiceWatcher struct {
 	clientset   *kubernetes.Clientset
 }
 
+// NewServiceWatcher creates a resource watcher for Services.
 func NewServiceWatcher(resource string, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *ServiceWatcher {
 	return &ServiceWatcher{resourceStr: resource, updateCh: updateCh, clientset: clientset}
 }
 
+// Sync syncs the watcher state with the stored updates for Services.
 func (mc *ServiceWatcher) Sync(storedUpdates []*storepb.K8SResource) error {
 	resources, err := listObject(mc.resourceStr, mc.clientset)
 	if err != nil {
@@ -296,9 +303,9 @@ func (mc *ServiceWatcher) syncServiceImpl(storedUpdates []*storepb.K8SResource, 
 	}
 }
 
+// StartWatcher starts a watcher for Services.
 func (mc *ServiceWatcher) StartWatcher(quitCh chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done()
-	// Start up watcher for the given resource.
 	for {
 		watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), mc.resourceStr, v1.NamespaceAll, fields.Everything())
 		retryWatcher, err := watchClient.NewRetryWatcher(mc.lastRV, watcher)
@@ -388,6 +395,7 @@ func runtimeObjToNamespaceList(o runtime.Object) *v1.NamespaceList {
 	return &typedList
 }
 
+// NamespaceWatcher is a resource watcher for Namespaces.
 type NamespaceWatcher struct {
 	resourceStr string
 	lastRV      string
@@ -395,10 +403,12 @@ type NamespaceWatcher struct {
 	clientset   *kubernetes.Clientset
 }
 
+// NewNamespaceWatcher creates a resource watcher for Namespaces.
 func NewNamespaceWatcher(resource string, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *NamespaceWatcher {
 	return &NamespaceWatcher{resourceStr: resource, updateCh: updateCh, clientset: clientset}
 }
 
+// Sync syncs the watcher state with the stored updates for Namespaces.
 func (mc *NamespaceWatcher) Sync(storedUpdates []*storepb.K8SResource) error {
 	resources, err := listObject(mc.resourceStr, mc.clientset)
 	if err != nil {
@@ -466,9 +476,9 @@ func (mc *NamespaceWatcher) syncNamespaceImpl(storedUpdates []*storepb.K8SResour
 	}
 }
 
+// StartWatcher starts a watcher for Namespaces.
 func (mc *NamespaceWatcher) StartWatcher(quitCh chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done()
-	// Start up watcher for the given resource.
 	for {
 		watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), mc.resourceStr, v1.NamespaceAll, fields.Everything())
 		retryWatcher, err := watchClient.NewRetryWatcher(mc.lastRV, watcher)
@@ -558,6 +568,7 @@ func runtimeObjToEndpointsList(o runtime.Object) *v1.EndpointsList {
 	return &typedList
 }
 
+// EndpointsWatcher is a resource watcher for Endpointss.
 type EndpointsWatcher struct {
 	resourceStr string
 	lastRV      string
@@ -565,10 +576,12 @@ type EndpointsWatcher struct {
 	clientset   *kubernetes.Clientset
 }
 
+// NewEndpointsWatcher creates a resource watcher for Endpointss.
 func NewEndpointsWatcher(resource string, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *EndpointsWatcher {
 	return &EndpointsWatcher{resourceStr: resource, updateCh: updateCh, clientset: clientset}
 }
 
+// Sync syncs the watcher state with the stored updates for Endpointss.
 func (mc *EndpointsWatcher) Sync(storedUpdates []*storepb.K8SResource) error {
 	resources, err := listObject(mc.resourceStr, mc.clientset)
 	if err != nil {
@@ -636,9 +649,9 @@ func (mc *EndpointsWatcher) syncEndpointsImpl(storedUpdates []*storepb.K8SResour
 	}
 }
 
+// StartWatcher starts a watcher for Endpointss.
 func (mc *EndpointsWatcher) StartWatcher(quitCh chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done()
-	// Start up watcher for the given resource.
 	for {
 		watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), mc.resourceStr, v1.NamespaceAll, fields.Everything())
 		retryWatcher, err := watchClient.NewRetryWatcher(mc.lastRV, watcher)
@@ -728,6 +741,7 @@ func runtimeObjToNodeList(o runtime.Object) *v1.NodeList {
 	return &typedList
 }
 
+// NodeWatcher is a resource watcher for Nodes.
 type NodeWatcher struct {
 	resourceStr string
 	lastRV      string
@@ -735,10 +749,12 @@ type NodeWatcher struct {
 	clientset   *kubernetes.Clientset
 }
 
+// NewNodeWatcher creates a resource watcher for Nodes.
 func NewNodeWatcher(resource string, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *NodeWatcher {
 	return &NodeWatcher{resourceStr: resource, updateCh: updateCh, clientset: clientset}
 }
 
+// Sync syncs the watcher state with the stored updates for Nodes.
 func (mc *NodeWatcher) Sync(storedUpdates []*storepb.K8SResource) error {
 	resources, err := listObject(mc.resourceStr, mc.clientset)
 	if err != nil {
@@ -806,9 +822,9 @@ func (mc *NodeWatcher) syncNodeImpl(storedUpdates []*storepb.K8SResource, curren
 	}
 }
 
+// StartWatcher starts a watcher for Nodes.
 func (mc *NodeWatcher) StartWatcher(quitCh chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done()
-	// Start up watcher for the given resource.
 	for {
 		watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), mc.resourceStr, v1.NamespaceAll, fields.Everything())
 		retryWatcher, err := watchClient.NewRetryWatcher(mc.lastRV, watcher)
