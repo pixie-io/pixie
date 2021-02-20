@@ -187,6 +187,8 @@ func main() {
 	newEtcdDataStore := etcd.New(etcdClient)
 
 	// Create a stats handler to track internal metadata statistics.
+	// TODO(PP-2458): pass the stats handler to the k8sMetadataHandler
+	// and make sure we gather stats.
 	statsHandler := controllers.NewStatsHandler()
 
 	k8sMds := controllers.NewMetadataDatastore(newEtcdDataStore)

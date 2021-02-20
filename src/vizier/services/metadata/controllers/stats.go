@@ -7,7 +7,6 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
@@ -161,51 +160,26 @@ func (s *StatsHandler) HandleAgentHeartbeat(m *messages.Heartbeat) {
 }
 
 // HandleK8sUpdate tracks the size and type of the k8s update, per entity type.
-func (s *StatsHandler) HandleK8sUpdate(msg *K8sMessage) {
-	var size int
+func (s *StatsHandler) HandleK8sUpdate(msg *K8sResourceMessage) {
 	var object *k8sEntityTypeStats
 
 	switch msg.ObjectType {
 	case "endpoints":
-		e, ok := msg.Object.(*v1.Endpoints)
-		if !ok {
-			return
-		}
-		size = proto.Size(e)
 		object = s.endpointStats
 	case "namespaces":
-		e, ok := msg.Object.(*v1.Namespace)
-		if !ok {
-			return
-		}
-		size = proto.Size(e)
 		object = s.namespaceStats
 	case "nodes":
-		e, ok := msg.Object.(*v1.Node)
-		if !ok {
-			return
-		}
-		size = proto.Size(e)
 		object = s.nodeStats
 	case "pods":
-		e, ok := msg.Object.(*v1.Pod)
-		if !ok {
-			return
-		}
-		size = proto.Size(e)
 		object = s.podStats
 	case "services":
-		e, ok := msg.Object.(*v1.Service)
-		if !ok {
-			return
-		}
-		size = proto.Size(e)
 		object = s.serviceStats
 	default:
 		log.Errorf("stats didn't get an expected type, received %s", msg.ObjectType)
 		return
 	}
 
+	size := proto.Size(msg.Object)
 	atomic.AddInt64(&object.numUpdates, 1)
 	atomic.AddInt64(&object.totalSize, int64(size))
 	switch msg.EventType {

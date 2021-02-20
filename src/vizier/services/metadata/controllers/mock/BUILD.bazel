@@ -4,7 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "mock_agent.gen.go",
-        "mock_metadata_handler.gen.go",
+        "mock_metadata_store.gen.go",
         "mock_tracepoint.gen.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock",
