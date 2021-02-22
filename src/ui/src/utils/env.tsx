@@ -1,10 +1,14 @@
 import { DOMAIN_NAME, SEGMENT_UI_WRITE_KEY } from 'containers/constants';
 import { format } from 'date-fns';
 
-const { STABLE_BUILD_NUMBER } = process.env;
-const { STABLE_BUILD_SCM_REVISION } = process.env;
-const { STABLE_BUILD_SCM_STATUS } = process.env;
-const { BUILD_TIMESTAMP } = process.env;
+// Webpack's EnvPlugin has trouble understanding destructuring when Babel gets to it first.
+// This is the case in our build (by necessity), so we must write this long-form.
+/* eslint-disable prefer-destructuring */
+const STABLE_BUILD_NUMBER = process.env.STABLE_BUILD_NUMBER;
+const STABLE_BUILD_SCM_REVISION = process.env.STABLE_BUILD_SCM_REVISION;
+const STABLE_BUILD_SCM_STATUS = process.env.STABLE_BUILD_SCM_STATUS;
+const BUILD_TIMESTAMP = process.env.BUILD_TIMESTAMP;
+/* eslint-enable prefer-destructuring */
 
 const timestampSec = Number.parseInt(BUILD_TIMESTAMP, 10);
 const date = Number.isNaN(timestampSec) ? new Date() : new Date(timestampSec * 1000);
