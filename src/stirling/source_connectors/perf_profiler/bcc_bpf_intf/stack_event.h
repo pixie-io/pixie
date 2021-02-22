@@ -2,12 +2,18 @@
 
 // TODO(jps): add a macro that wraps bpf_trace_printk for debug & no-ops for prod builds.
 
-// Indices into the profiler shared state vector:
-// e.g. state_vector[0] is the push count.
+// Indices into the profiler shared state vector "profiler_state":
+// profiler_state[0]: push count              # written on BPF side, read on user side
+// profiler_state[1]: read & clear count      # written on user side, read on BPF side
+// profiler_state[2]: sample count            # reset after each push, BPF side only
+// profiler_state[3]: timestamp of sample     # written on BPF side, read on user side
+// profiler_state[4]: error status bitfield   # written on BPF side, read on user side
 static const uint32_t kBPFPushCountIdx = 0;
 static const uint32_t kUserReadAndClearCountIdx = 1;
 static const uint32_t kSampleCountIdx = 2;
-static const uint32_t kErrorStatusIdx = 3;
+static const uint32_t kTimeStampIdx = 3;
+static const uint32_t kErrorStatusIdx = 4;
+static const uint32_t kProfilerStateVectorSize = 5;
 
 // stack_trace_key_t indexes into the stack-trace histogram.
 // By tying together the user & kernel stack-trace-ids [1],

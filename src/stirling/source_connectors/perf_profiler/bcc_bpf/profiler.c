@@ -69,16 +69,14 @@ BPF_STACK_TRACE(stack_traces_a, kNumMapEntries);
 BPF_STACK_TRACE(stack_traces_b, kNumMapEntries);
 
 // profiler_state: shared state vector between BPF & user space.
-// profiler_state[0]: push count              # written on BPF side
-// profiler_state[1]: read & clear count      # written on user side
-// profiler_state[2]: sample count            # reset after each push
-// profiler_state[3]: error status bitfield
-BPF_ARRAY(profiler_state, uint64_t, 4);
+// See comments in shared header file "stack_event.h".
+BPF_ARRAY(profiler_state, uint64_t, kProfilerStateVectorSize);
 
 int sample_call_stack(struct bpf_perf_event_data* ctx) {
   int bpf_push_count_idx = kBPFPushCountIdx;
   int user_read_and_clear_count_idx = kUserReadAndClearCountIdx;
   int sample_count_idx = kSampleCountIdx;
+  int timestamp_idx = kTimeStampIdx;
   int error_status_idx = kErrorStatusIdx;
 
   uint64_t* push_count_ptr = profiler_state.lookup(&bpf_push_count_idx);
@@ -104,35 +102,25 @@ int sample_call_stack(struct bpf_perf_event_data* ctx) {
   uint64_t read_and_clear_count = *read_and_clear_count_ptr;
   uint64_t sample_count = *sample_count_ptr;
 
-  // This condition (sample_count < kSampleThreshold) will be removed
-  // when we enable "always on" and ping-pong from map-set-a to mab-set-b, and back.
-  // Currently, with this condition required, the maps fill up to (about)
-  // the sample count threshold, and then we stop taking samples.
-  if (sample_count < kSampleThreshold) {
-    profiler_state.increment(sample_count_idx);
-    bpf_trace_printk("sample_call_stack(): sample_count=%lld, kSampleThreshold=%lld, ts_ms=%lld\n",
-                     sample_count, kSampleThreshold, ts_ms);
+  profiler_state.increment(sample_count_idx);
 
-    u32 pid = bpf_get_current_pid_tgid();
+  uint32_t pid = bpf_get_current_pid_tgid();
 
-    // create map key
-    struct stack_trace_key_t key = {.pid = pid};
+  // create map key
+  struct stack_trace_key_t key = {.pid = pid};
 
-    bpf_get_current_comm(&key.name, sizeof(key.name));
+  bpf_get_current_comm(&key.name, sizeof(key.name));
 
-    // TODO(jps): change this to "if (push_count % 2 == 0)"
-    if (push_count == 0) {
-      // map set A branch:
-      key.user_stack_id = stack_traces_a.get_stackid(&ctx->regs, BPF_F_USER_STACK);
-      key.kernel_stack_id = stack_traces_a.get_stackid(&ctx->regs, 0);
-      histogram_a.increment(key);
-    }
-    // else {
-    //   // map set B branch:
-    //   key.user_stack_id = stack_traces_b.get_stackid(&ctx->regs, BPF_F_USER_STACK);
-    //   key.kernel_stack_id = stack_traces_b.get_stackid(&ctx->regs, 0);
-    //   histogram_b.increment(key);
-    // }
+  if (push_count % 2 == 0) {
+    // map set A branch:
+    key.user_stack_id = stack_traces_a.get_stackid(&ctx->regs, BPF_F_USER_STACK);
+    key.kernel_stack_id = stack_traces_a.get_stackid(&ctx->regs, 0);
+    histogram_a.increment(key);
+  } else {
+    // map set B branch:
+    key.user_stack_id = stack_traces_b.get_stackid(&ctx->regs, BPF_F_USER_STACK);
+    key.kernel_stack_id = stack_traces_b.get_stackid(&ctx->regs, 0);
+    histogram_b.increment(key);
   }
 
   // sample_count >= kSampleThreshold: indicates the number of samples taken exceeds a threshold
@@ -172,18 +160,25 @@ int sample_call_stack(struct bpf_perf_event_data* ctx) {
     // By incrementing the push count, user space will know that a read & clear op. is required.
 
     uint64_t kZero = 0;
+    uint64_t ts_ns = bpf_ktime_get_ns();
 
-    profiler_state.increment(bpf_push_count_idx);
+    // TODO(jps): Do we need to be robust to even more sophisticated corner cases, e.g.:
+    // What happens if two CPUs are both going to enter this branch (nominally incrementing
+    // push_count), but the user-space code starts consuming after the first CPU moves the count and
+    // before the other CPU has updated the maps (stack-traces & histogram)?
+    // In this case, we risk losing some information... and worse maybe the non_atomic_clear()
+    // will not actually end up with an empty map.
+    // We could have an internal "map switchover count" and published "push count" to delay
+    // the "push" by one sample period.
+
+    // Cannot use map.increment() for push count because of data races:
+    // it is possible for two CPUs to arrive here for the same logical push.
+    // Here, we make sure that "both pushes" land in user space with the
+    // same push count. User space will filter the second one of these that it processes.
+    uint64_t next_push_count = 1 + push_count;
+    profiler_state.update(&bpf_push_count_idx, &next_push_count);
     profiler_state.update(&sample_count_idx, &kZero);
-
-    bpf_trace_printk(
-        "sample_call_stack(): [pushed!] sample_count=%lld, kSampleThreshold=%lld, ts_ms=%lld\n",
-        sample_count, kSampleThreshold, ts_ms);
-    bpf_trace_printk("sample_call_stack(): [pushed!] NCPUS=%lld\n", NCPUS);
-    bpf_trace_printk("sample_call_stack(): [pushed!] PUSH_PERIOD=%lld\n", PUSH_PERIOD);
-    bpf_trace_printk("sample_call_stack(): [pushed!] SAMPLE_PERIOD=%lld\n", SAMPLE_PERIOD);
-    bpf_trace_printk("sample_call_stack(): [pushed!] kNumMapEntries=%lld\n", kNumMapEntries);
-    bpf_trace_printk("sample_call_stack(): [pushed!] kSampleThreshold=%lld\n", kSampleThreshold);
+    profiler_state.update(&timestamp_idx, &ts_ns);
   }
 
   return 0;
