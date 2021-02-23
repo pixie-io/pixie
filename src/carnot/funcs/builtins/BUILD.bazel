@@ -22,6 +22,15 @@ pl_cc_library(
 )
 
 pl_cc_test(
+    name = "collections_test",
+    srcs = ["collections_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/udf:udf_testutils",
+    ],
+)
+
+pl_cc_test(
     name = "math_sketches_test",
     srcs = ["math_sketches_test.cc"],
     # TODO(zasgar): PL-440 Fix ASAN/TSAN issues with tdigest code.
