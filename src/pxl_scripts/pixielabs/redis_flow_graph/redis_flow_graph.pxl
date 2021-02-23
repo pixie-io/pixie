@@ -1,0 +1,60 @@
+# Copyright (c) Pixie Labs, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+
+''' Redis Overview Map
+Shows a summary of Redis requests in the cluster, with some latency information.
+'''
+
+import px
+
+ns_per_ms = 1000 * 1000
+ns_per_s = 1000 * ns_per_ms
+# Window size to use on time_ column for bucketing.
+window_ns = px.DurationNanos(10 * ns_per_s)
+
+
+def redis_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_entity_filter: str):
+
+    df = px.DataFrame('redis_events.beta', start_time=start)
+
+    # Add context.
+    df.pod = df.ctx['pod']
+    df.namespace = df.ctx['namespace']
+    df = df.drop(['upid'])
+
+    # Filter on namespace.
+    df = df[df.namespace == ns]
+
+    # Create debug table in data drawer.
+    px.debug(df, "redis_events")
+
+    df.timestamp = px.bin(df.time_, window_ns)
+
+    # Aggregate the connections.
+    df = df.groupby(['timestamp', 'remote_addr', 'pod']).agg(
+        latency_quantiles=('latency_ns', px.quantiles),
+        throughput_total=('latency_ns', px.count),
+    )
+    df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
+    df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
+    df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
+
+    # Specify to and from entities.
+    df = df[df.remote_addr != '']
+    df.from_entity = df.pod
+    df.to_entity_id = px.ip_to_pod_id(df.remote_addr)
+    df.to_entity = px.pod_id_to_pod_name(df.to_entity_id)
+    df.request_throughput = df.throughput_total / window_ns
+    df = df.groupby(['from_entity', 'to_entity']).agg(
+        latency_p50=('latency_p50', px.mean),
+        latency_p90=('latency_p90', px.mean),
+        latency_p99=('latency_p99', px.mean),
+        request_throughput=('request_throughput', px.mean),
+        throughput_total=('throughput_total', px.sum)
+    )
+
+    # Filter out entities as specified by the user.
+    df = df[px.contains(df.from_entity, from_entity_filter)]
+    df = df[px.contains(df.to_entity, to_entity_filter)]
+
+    return df

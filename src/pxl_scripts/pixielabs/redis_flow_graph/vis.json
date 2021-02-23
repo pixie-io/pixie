@@ -1,0 +1,95 @@
+{
+  "variables": [
+    {
+      "name": "start",
+      "type": "PX_STRING",
+      "description": "The start time of the window in time units before now.",
+      "defaultValue": "-5m"
+    },
+    {
+      "name": "namespace",
+      "type": "PX_NAMESPACE",
+      "description": "The namespace to filter on",
+      "defaultValue": ""
+    },
+    {
+      "name": "from_entity_filter",
+      "type": "PX_STRING",
+      "description": "The partial string to match the 'from_entity' (source pod).",
+      "defaultValue": ""
+    },
+    {
+      "name": "to_entity_filter",
+      "type": "PX_STRING",
+      "description": "The partial string to match the 'to_entity' (destination service).",
+      "defaultValue": ""
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "redis_flow",
+      "func": {
+        "name": "redis_flow_graph",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "ns",
+            "variable": "namespace"
+          },
+          {
+            "name": "from_entity_filter",
+            "variable": "from_entity_filter"
+          },
+          {
+            "name": "to_entity_filter",
+            "variable": "to_entity_filter"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Redis Flow Graph",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 5
+      },
+      "globalFuncOutputName": "redis_flow",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Graph",
+        "adjacencyList": {
+          "fromColumn": "from_entity",
+          "toColumn": "to_entity"
+        },
+        "edgeWeightColumn": "latency_p90",
+        "edgeHoverInfo": [
+          "latency_p50",
+          "latency_p90",
+          "latency_p99",
+          "request_throughput",
+          "throughput_total"
+        ],
+        "edgeLength": 500
+      }
+    },
+    {
+      "name": "Table",
+      "position": {
+        "x": 0,
+        "y": 5,
+        "w": 12,
+        "h": 4
+      },
+      "globalFuncOutputName": "redis_flow",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    }
+  ]
+}

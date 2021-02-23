@@ -1,0 +1,5 @@
+---
+short: DNS Flow Graph
+long: >
+  Overview of DNS requests in the cluster, with latency stats.
+org_name: pixielabs.ai
