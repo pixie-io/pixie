@@ -63,9 +63,6 @@ func TestUserInfoResolver(t *testing.T) {
 			mockProfile.EXPECT().
 				GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
 				Return(mockOrgInfo, nil)
-			mockProfile.EXPECT().
-				GetUser(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(userID)).
-				Return(test.mockUser, test.error)
 
 			gqlEnv := controller.GraphQLEnv{
 				ProfileServiceClient: mockProfile,
@@ -115,7 +112,7 @@ func TestUserSettingsResolver_GetUserSettings(t *testing.T) {
 			`,
 			ExpectedResult: `
 				{
-					"userSettings": 
+					"userSettings":
 						[
 						 {"key": "test", "value": "a"},
 						 {"key": "a_key", "value": "b"}
@@ -155,7 +152,7 @@ func TestUserSettingsResolver_UpdateUserSettings(t *testing.T) {
 			`,
 			ExpectedResult: `
 				{
-					"UpdateUserSettings": true 
+					"UpdateUserSettings": true
 				}
 			`,
 		},
