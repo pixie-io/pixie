@@ -2,6 +2,7 @@ package controllers
 
 import (
     "time"
+    "sync"
 
     log "github.com/sirupsen/logrus"
     v1 "k8s.io/api/core/v1"
@@ -51,12 +52,11 @@ type ReplacedResourceWatcher struct {
     resourceStr string
     lastRV string
     updateCh chan *K8sResourceMessage
-    quitCh chan struct{}
     clientset *kubernetes.Clientset
 }
 
-func NewReplacedResourceWatcher(resource string, quitCh chan struct{}, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *ReplacedResourceWatcher {
-    return &ReplacedResourceWatcher{resourceStr: resource, quitCh: quitCh, updateCh: updateCh, clientset: clientset}
+func NewReplacedResourceWatcher(resource string, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *ReplacedResourceWatcher {
+    return &ReplacedResourceWatcher{resourceStr: resource, updateCh: updateCh, clientset: clientset}
 }
 
 func (mc *ReplacedResourceWatcher) Sync(storedUpdates []*storepb.K8SResource) error {
@@ -126,7 +126,8 @@ func (mc *ReplacedResourceWatcher) syncReplacedResourceImpl(storedUpdates []*sto
     }
 }
 
-func (mc *ReplacedResourceWatcher) StartWatcher() {
+func (mc *ReplacedResourceWatcher) StartWatcher(quitCh chan struct{}, wg *sync.WaitGroup) {
+    defer wg.Done()
     // Start up watcher for the given resource.
     for {
         watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), mc.resourceStr, v1.NamespaceAll, fields.Everything())
@@ -139,7 +140,7 @@ func (mc *ReplacedResourceWatcher) StartWatcher() {
         runWatcher := true
         for runWatcher {
             select {
-            case <-mc.quitCh:
+            case <-quitCh:
                 return
             case c := <-resCh:
                 s, ok := c.Object.(*metav1.Status)
@@ -186,7 +187,7 @@ func (mc *ReplacedResourceWatcher) StartWatcher() {
 
         // Wait 5 minutes before retrying, however if stop is called, just return.
         select {
-        case <-mc.quitCh:
+        case <-quitCh:
             return
         case <-time.After(5 * time.Minute):
             continue

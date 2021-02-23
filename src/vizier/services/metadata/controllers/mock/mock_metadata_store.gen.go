@@ -5,6 +5,8 @@
 package mock_controllers
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
 	pl_shared_k8s_metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
@@ -13,33 +15,32 @@ import (
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	pl_vizier_services_shared_agent "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
-	reflect "reflect"
 )
 
-// MockMetadataStore is a mock of MetadataStore interface
+// MockMetadataStore is a mock of MetadataStore interface.
 type MockMetadataStore struct {
 	ctrl     *gomock.Controller
 	recorder *MockMetadataStoreMockRecorder
 }
 
-// MockMetadataStoreMockRecorder is the mock recorder for MockMetadataStore
+// MockMetadataStoreMockRecorder is the mock recorder for MockMetadataStore.
 type MockMetadataStoreMockRecorder struct {
 	mock *MockMetadataStore
 }
 
-// NewMockMetadataStore creates a new mock instance
+// NewMockMetadataStore creates a new mock instance.
 func NewMockMetadataStore(ctrl *gomock.Controller) *MockMetadataStore {
 	mock := &MockMetadataStore{ctrl: ctrl}
 	mock.recorder = &MockMetadataStoreMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockMetadataStore) EXPECT() *MockMetadataStoreMockRecorder {
 	return m.recorder
 }
 
-// AddResourceVersion mocks base method
+// AddResourceVersion mocks base method.
 func (m *MockMetadataStore) AddResourceVersion(arg0 string, arg1 *pl_shared_k8s_metadatapb.MetadataObject) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddResourceVersion", arg0, arg1)
@@ -47,13 +48,13 @@ func (m *MockMetadataStore) AddResourceVersion(arg0 string, arg1 *pl_shared_k8s_
 	return ret0
 }
 
-// AddResourceVersion indicates an expected call of AddResourceVersion
+// AddResourceVersion indicates an expected call of AddResourceVersion.
 func (mr *MockMetadataStoreMockRecorder) AddResourceVersion(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddResourceVersion", reflect.TypeOf((*MockMetadataStore)(nil).AddResourceVersion), arg0, arg1)
 }
 
-// CreateAgent mocks base method
+// CreateAgent mocks base method.
 func (m *MockMetadataStore) CreateAgent(agentID uuid.UUID, a *pl_vizier_services_shared_agent.Agent) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateAgent", agentID, a)
@@ -61,13 +62,13 @@ func (m *MockMetadataStore) CreateAgent(agentID uuid.UUID, a *pl_vizier_services
 	return ret0
 }
 
-// CreateAgent indicates an expected call of CreateAgent
+// CreateAgent indicates an expected call of CreateAgent.
 func (mr *MockMetadataStoreMockRecorder) CreateAgent(agentID, a interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAgent", reflect.TypeOf((*MockMetadataStore)(nil).CreateAgent), agentID, a)
 }
 
-// DeleteAgent mocks base method
+// DeleteAgent mocks base method.
 func (m *MockMetadataStore) DeleteAgent(agentID uuid.UUID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteAgent", agentID)
@@ -75,13 +76,13 @@ func (m *MockMetadataStore) DeleteAgent(agentID uuid.UUID) error {
 	return ret0
 }
 
-// DeleteAgent indicates an expected call of DeleteAgent
+// DeleteAgent indicates an expected call of DeleteAgent.
 func (mr *MockMetadataStoreMockRecorder) DeleteAgent(agentID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAgent", reflect.TypeOf((*MockMetadataStore)(nil).DeleteAgent), agentID)
 }
 
-// GetASID mocks base method
+// GetASID mocks base method.
 func (m *MockMetadataStore) GetASID() (uint32, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetASID")
@@ -90,13 +91,13 @@ func (m *MockMetadataStore) GetASID() (uint32, error) {
 	return ret0, ret1
 }
 
-// GetASID indicates an expected call of GetASID
+// GetASID indicates an expected call of GetASID.
 func (mr *MockMetadataStoreMockRecorder) GetASID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetASID", reflect.TypeOf((*MockMetadataStore)(nil).GetASID))
 }
 
-// GetAgent mocks base method
+// GetAgent mocks base method.
 func (m *MockMetadataStore) GetAgent(agentID uuid.UUID) (*pl_vizier_services_shared_agent.Agent, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAgent", agentID)
@@ -105,73 +106,13 @@ func (m *MockMetadataStore) GetAgent(agentID uuid.UUID) (*pl_vizier_services_sha
 	return ret0, ret1
 }
 
-// GetAgent indicates an expected call of GetAgent
+// GetAgent indicates an expected call of GetAgent.
 func (mr *MockMetadataStoreMockRecorder) GetAgent(agentID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgent", reflect.TypeOf((*MockMetadataStore)(nil).GetAgent), agentID)
 }
 
-// GetAgentIDForHostnamePair mocks base method
-func (m *MockMetadataStore) GetAgentIDForHostnamePair(hnPair *controllers.HostnameIPPair) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAgentIDForHostnamePair", hnPair)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAgentIDForHostnamePair indicates an expected call of GetAgentIDForHostnamePair
-func (mr *MockMetadataStoreMockRecorder) GetAgentIDForHostnamePair(hnPair interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentIDForHostnamePair", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentIDForHostnamePair), hnPair)
-}
-
-// GetAgentIDFromPodName mocks base method
-func (m *MockMetadataStore) GetAgentIDFromPodName(arg0 string) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAgentIDFromPodName", arg0)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAgentIDFromPodName indicates an expected call of GetAgentIDFromPodName
-func (mr *MockMetadataStoreMockRecorder) GetAgentIDFromPodName(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentIDFromPodName", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentIDFromPodName), arg0)
-}
-
-// GetAgents mocks base method
-func (m *MockMetadataStore) GetAgents() ([]*pl_vizier_services_shared_agent.Agent, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAgents")
-	ret0, _ := ret[0].([]*pl_vizier_services_shared_agent.Agent)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAgents indicates an expected call of GetAgents
-func (mr *MockMetadataStoreMockRecorder) GetAgents() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgents", reflect.TypeOf((*MockMetadataStore)(nil).GetAgents))
-}
-
-// GetAgentsDataInfo mocks base method
-func (m *MockMetadataStore) GetAgentsDataInfo() (map[uuid.UUID]*messages.AgentDataInfo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAgentsDataInfo")
-	ret0, _ := ret[0].(map[uuid.UUID]*messages.AgentDataInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAgentsDataInfo indicates an expected call of GetAgentsDataInfo
-func (mr *MockMetadataStoreMockRecorder) GetAgentsDataInfo() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentsDataInfo", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentsDataInfo))
-}
-
-// GetAgentDataInfo mocks base method
+// GetAgentDataInfo mocks base method.
 func (m *MockMetadataStore) GetAgentDataInfo(agentID uuid.UUID) (*messages.AgentDataInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAgentDataInfo", agentID)
@@ -180,13 +121,73 @@ func (m *MockMetadataStore) GetAgentDataInfo(agentID uuid.UUID) (*messages.Agent
 	return ret0, ret1
 }
 
-// GetAgentDataInfo indicates an expected call of GetAgentDataInfo
+// GetAgentDataInfo indicates an expected call of GetAgentDataInfo.
 func (mr *MockMetadataStoreMockRecorder) GetAgentDataInfo(agentID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentDataInfo", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentDataInfo), agentID)
 }
 
-// GetAgentsForHostnamePairs mocks base method
+// GetAgentIDForHostnamePair mocks base method.
+func (m *MockMetadataStore) GetAgentIDForHostnamePair(hnPair *controllers.HostnameIPPair) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAgentIDForHostnamePair", hnPair)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgentIDForHostnamePair indicates an expected call of GetAgentIDForHostnamePair.
+func (mr *MockMetadataStoreMockRecorder) GetAgentIDForHostnamePair(hnPair interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentIDForHostnamePair", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentIDForHostnamePair), hnPair)
+}
+
+// GetAgentIDFromPodName mocks base method.
+func (m *MockMetadataStore) GetAgentIDFromPodName(arg0 string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAgentIDFromPodName", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgentIDFromPodName indicates an expected call of GetAgentIDFromPodName.
+func (mr *MockMetadataStoreMockRecorder) GetAgentIDFromPodName(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentIDFromPodName", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentIDFromPodName), arg0)
+}
+
+// GetAgents mocks base method.
+func (m *MockMetadataStore) GetAgents() ([]*pl_vizier_services_shared_agent.Agent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAgents")
+	ret0, _ := ret[0].([]*pl_vizier_services_shared_agent.Agent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgents indicates an expected call of GetAgents.
+func (mr *MockMetadataStoreMockRecorder) GetAgents() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgents", reflect.TypeOf((*MockMetadataStore)(nil).GetAgents))
+}
+
+// GetAgentsDataInfo mocks base method.
+func (m *MockMetadataStore) GetAgentsDataInfo() (map[uuid.UUID]*messages.AgentDataInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAgentsDataInfo")
+	ret0, _ := ret[0].(map[uuid.UUID]*messages.AgentDataInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgentsDataInfo indicates an expected call of GetAgentsDataInfo.
+func (mr *MockMetadataStoreMockRecorder) GetAgentsDataInfo() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentsDataInfo", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentsDataInfo))
+}
+
+// GetAgentsForHostnamePairs mocks base method.
 func (m *MockMetadataStore) GetAgentsForHostnamePairs(arg0 *[]*controllers.HostnameIPPair) ([]string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAgentsForHostnamePairs", arg0)
@@ -195,13 +196,13 @@ func (m *MockMetadataStore) GetAgentsForHostnamePairs(arg0 *[]*controllers.Hostn
 	return ret0, ret1
 }
 
-// GetAgentsForHostnamePairs indicates an expected call of GetAgentsForHostnamePairs
+// GetAgentsForHostnamePairs indicates an expected call of GetAgentsForHostnamePairs.
 func (mr *MockMetadataStoreMockRecorder) GetAgentsForHostnamePairs(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentsForHostnamePairs", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentsForHostnamePairs), arg0)
 }
 
-// GetComputedSchema mocks base method
+// GetComputedSchema mocks base method.
 func (m *MockMetadataStore) GetComputedSchema() (*storepb.ComputedSchema, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetComputedSchema")
@@ -210,13 +211,13 @@ func (m *MockMetadataStore) GetComputedSchema() (*storepb.ComputedSchema, error)
 	return ret0, ret1
 }
 
-// GetComputedSchema indicates an expected call of GetComputedSchema
+// GetComputedSchema indicates an expected call of GetComputedSchema.
 func (mr *MockMetadataStoreMockRecorder) GetComputedSchema() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComputedSchema", reflect.TypeOf((*MockMetadataStore)(nil).GetComputedSchema))
 }
 
-// GetContainers mocks base method
+// GetContainers mocks base method.
 func (m *MockMetadataStore) GetContainers() ([]*pl_shared_k8s_metadatapb.ContainerInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetContainers")
@@ -225,13 +226,13 @@ func (m *MockMetadataStore) GetContainers() ([]*pl_shared_k8s_metadatapb.Contain
 	return ret0, ret1
 }
 
-// GetContainers indicates an expected call of GetContainers
+// GetContainers indicates an expected call of GetContainers.
 func (mr *MockMetadataStoreMockRecorder) GetContainers() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContainers", reflect.TypeOf((*MockMetadataStore)(nil).GetContainers))
 }
 
-// GetEndpoints mocks base method
+// GetEndpoints mocks base method.
 func (m *MockMetadataStore) GetEndpoints() ([]*pl_shared_k8s_metadatapb.Endpoints, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetEndpoints")
@@ -240,13 +241,13 @@ func (m *MockMetadataStore) GetEndpoints() ([]*pl_shared_k8s_metadatapb.Endpoint
 	return ret0, ret1
 }
 
-// GetEndpoints indicates an expected call of GetEndpoints
+// GetEndpoints indicates an expected call of GetEndpoints.
 func (mr *MockMetadataStoreMockRecorder) GetEndpoints() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEndpoints", reflect.TypeOf((*MockMetadataStore)(nil).GetEndpoints))
 }
 
-// GetHostnameIPPairFromPodName mocks base method
+// GetHostnameIPPairFromPodName mocks base method.
 func (m *MockMetadataStore) GetHostnameIPPairFromPodName(arg0, arg1 string) (*controllers.HostnameIPPair, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetHostnameIPPairFromPodName", arg0, arg1)
@@ -255,13 +256,13 @@ func (m *MockMetadataStore) GetHostnameIPPairFromPodName(arg0, arg1 string) (*co
 	return ret0, ret1
 }
 
-// GetHostnameIPPairFromPodName indicates an expected call of GetHostnameIPPairFromPodName
+// GetHostnameIPPairFromPodName indicates an expected call of GetHostnameIPPairFromPodName.
 func (mr *MockMetadataStoreMockRecorder) GetHostnameIPPairFromPodName(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHostnameIPPairFromPodName", reflect.TypeOf((*MockMetadataStore)(nil).GetHostnameIPPairFromPodName), arg0, arg1)
 }
 
-// GetKelvinIDs mocks base method
+// GetKelvinIDs mocks base method.
 func (m *MockMetadataStore) GetKelvinIDs() ([]string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetKelvinIDs")
@@ -270,13 +271,13 @@ func (m *MockMetadataStore) GetKelvinIDs() ([]string, error) {
 	return ret0, ret1
 }
 
-// GetKelvinIDs indicates an expected call of GetKelvinIDs
+// GetKelvinIDs indicates an expected call of GetKelvinIDs.
 func (mr *MockMetadataStoreMockRecorder) GetKelvinIDs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKelvinIDs", reflect.TypeOf((*MockMetadataStore)(nil).GetKelvinIDs))
 }
 
-// GetNamespaces mocks base method
+// GetNamespaces mocks base method.
 func (m *MockMetadataStore) GetNamespaces() ([]*pl_shared_k8s_metadatapb.Namespace, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNamespaces")
@@ -285,13 +286,13 @@ func (m *MockMetadataStore) GetNamespaces() ([]*pl_shared_k8s_metadatapb.Namespa
 	return ret0, ret1
 }
 
-// GetNamespaces indicates an expected call of GetNamespaces
+// GetNamespaces indicates an expected call of GetNamespaces.
 func (mr *MockMetadataStoreMockRecorder) GetNamespaces() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespaces", reflect.TypeOf((*MockMetadataStore)(nil).GetNamespaces))
 }
 
-// GetNodeEndpoints mocks base method
+// GetNodeEndpoints mocks base method.
 func (m *MockMetadataStore) GetNodeEndpoints(hostname *controllers.HostnameIPPair) ([]*pl_shared_k8s_metadatapb.Endpoints, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNodeEndpoints", hostname)
@@ -300,13 +301,13 @@ func (m *MockMetadataStore) GetNodeEndpoints(hostname *controllers.HostnameIPPai
 	return ret0, ret1
 }
 
-// GetNodeEndpoints indicates an expected call of GetNodeEndpoints
+// GetNodeEndpoints indicates an expected call of GetNodeEndpoints.
 func (mr *MockMetadataStoreMockRecorder) GetNodeEndpoints(hostname interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodeEndpoints", reflect.TypeOf((*MockMetadataStore)(nil).GetNodeEndpoints), hostname)
 }
 
-// GetNodePods mocks base method
+// GetNodePods mocks base method.
 func (m *MockMetadataStore) GetNodePods(hostname *controllers.HostnameIPPair) ([]*pl_shared_k8s_metadatapb.Pod, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNodePods", hostname)
@@ -315,13 +316,13 @@ func (m *MockMetadataStore) GetNodePods(hostname *controllers.HostnameIPPair) ([
 	return ret0, ret1
 }
 
-// GetNodePods indicates an expected call of GetNodePods
+// GetNodePods indicates an expected call of GetNodePods.
 func (mr *MockMetadataStoreMockRecorder) GetNodePods(hostname interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodePods", reflect.TypeOf((*MockMetadataStore)(nil).GetNodePods), hostname)
 }
 
-// GetNodes mocks base method
+// GetNodes mocks base method.
 func (m *MockMetadataStore) GetNodes() ([]*pl_shared_k8s_metadatapb.Node, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNodes")
@@ -330,13 +331,13 @@ func (m *MockMetadataStore) GetNodes() ([]*pl_shared_k8s_metadatapb.Node, error)
 	return ret0, ret1
 }
 
-// GetNodes indicates an expected call of GetNodes
+// GetNodes indicates an expected call of GetNodes.
 func (mr *MockMetadataStoreMockRecorder) GetNodes() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodes", reflect.TypeOf((*MockMetadataStore)(nil).GetNodes))
 }
 
-// GetPodCIDRs mocks base method
+// GetPodCIDRs mocks base method.
 func (m *MockMetadataStore) GetPodCIDRs() []string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPodCIDRs")
@@ -344,13 +345,13 @@ func (m *MockMetadataStore) GetPodCIDRs() []string {
 	return ret0
 }
 
-// GetPodCIDRs indicates an expected call of GetPodCIDRs
+// GetPodCIDRs indicates an expected call of GetPodCIDRs.
 func (mr *MockMetadataStoreMockRecorder) GetPodCIDRs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodCIDRs", reflect.TypeOf((*MockMetadataStore)(nil).GetPodCIDRs))
 }
 
-// GetPods mocks base method
+// GetPods mocks base method.
 func (m *MockMetadataStore) GetPods() ([]*pl_shared_k8s_metadatapb.Pod, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPods")
@@ -359,13 +360,13 @@ func (m *MockMetadataStore) GetPods() ([]*pl_shared_k8s_metadatapb.Pod, error) {
 	return ret0, ret1
 }
 
-// GetPods indicates an expected call of GetPods
+// GetPods indicates an expected call of GetPods.
 func (mr *MockMetadataStoreMockRecorder) GetPods() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPods", reflect.TypeOf((*MockMetadataStore)(nil).GetPods))
 }
 
-// GetProcesses mocks base method
+// GetProcesses mocks base method.
 func (m *MockMetadataStore) GetProcesses(upids []*types.UInt128) ([]*pl_shared_k8s_metadatapb.ProcessInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetProcesses", upids)
@@ -374,13 +375,13 @@ func (m *MockMetadataStore) GetProcesses(upids []*types.UInt128) ([]*pl_shared_k
 	return ret0, ret1
 }
 
-// GetProcesses indicates an expected call of GetProcesses
+// GetProcesses indicates an expected call of GetProcesses.
 func (mr *MockMetadataStoreMockRecorder) GetProcesses(upids interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProcesses", reflect.TypeOf((*MockMetadataStore)(nil).GetProcesses), upids)
 }
 
-// GetServiceCIDR mocks base method
+// GetServiceCIDR mocks base method.
 func (m *MockMetadataStore) GetServiceCIDR() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetServiceCIDR")
@@ -388,13 +389,13 @@ func (m *MockMetadataStore) GetServiceCIDR() string {
 	return ret0
 }
 
-// GetServiceCIDR indicates an expected call of GetServiceCIDR
+// GetServiceCIDR indicates an expected call of GetServiceCIDR.
 func (mr *MockMetadataStoreMockRecorder) GetServiceCIDR() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceCIDR", reflect.TypeOf((*MockMetadataStore)(nil).GetServiceCIDR))
 }
 
-// GetServices mocks base method
+// GetServices mocks base method.
 func (m *MockMetadataStore) GetServices() ([]*pl_shared_k8s_metadatapb.Service, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetServices")
@@ -403,13 +404,13 @@ func (m *MockMetadataStore) GetServices() ([]*pl_shared_k8s_metadatapb.Service, 
 	return ret0, ret1
 }
 
-// GetServices indicates an expected call of GetServices
+// GetServices indicates an expected call of GetServices.
 func (mr *MockMetadataStoreMockRecorder) GetServices() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServices", reflect.TypeOf((*MockMetadataStore)(nil).GetServices))
 }
 
-// GetSubscriberResourceVersion mocks base method
+// GetSubscriberResourceVersion mocks base method.
 func (m *MockMetadataStore) GetSubscriberResourceVersion(arg0 string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSubscriberResourceVersion", arg0)
@@ -418,13 +419,13 @@ func (m *MockMetadataStore) GetSubscriberResourceVersion(arg0 string) (string, e
 	return ret0, ret1
 }
 
-// GetSubscriberResourceVersion indicates an expected call of GetSubscriberResourceVersion
+// GetSubscriberResourceVersion indicates an expected call of GetSubscriberResourceVersion.
 func (mr *MockMetadataStoreMockRecorder) GetSubscriberResourceVersion(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubscriberResourceVersion", reflect.TypeOf((*MockMetadataStore)(nil).GetSubscriberResourceVersion), arg0)
 }
 
-// UpdateAgent mocks base method
+// UpdateAgent mocks base method.
 func (m *MockMetadataStore) UpdateAgent(agentID uuid.UUID, a *pl_vizier_services_shared_agent.Agent) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateAgent", agentID, a)
@@ -432,13 +433,13 @@ func (m *MockMetadataStore) UpdateAgent(agentID uuid.UUID, a *pl_vizier_services
 	return ret0
 }
 
-// UpdateAgent indicates an expected call of UpdateAgent
+// UpdateAgent indicates an expected call of UpdateAgent.
 func (mr *MockMetadataStoreMockRecorder) UpdateAgent(agentID, a interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAgent", reflect.TypeOf((*MockMetadataStore)(nil).UpdateAgent), agentID, a)
 }
 
-// UpdateAgentDataInfo mocks base method
+// UpdateAgentDataInfo mocks base method.
 func (m *MockMetadataStore) UpdateAgentDataInfo(agentID uuid.UUID, dataInfo *messages.AgentDataInfo) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateAgentDataInfo", agentID, dataInfo)
@@ -446,13 +447,13 @@ func (m *MockMetadataStore) UpdateAgentDataInfo(agentID uuid.UUID, dataInfo *mes
 	return ret0
 }
 
-// UpdateAgentDataInfo indicates an expected call of UpdateAgentDataInfo
+// UpdateAgentDataInfo indicates an expected call of UpdateAgentDataInfo.
 func (mr *MockMetadataStoreMockRecorder) UpdateAgentDataInfo(agentID, dataInfo interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAgentDataInfo", reflect.TypeOf((*MockMetadataStore)(nil).UpdateAgentDataInfo), agentID, dataInfo)
 }
 
-// UpdateContainer mocks base method
+// UpdateContainer mocks base method.
 func (m *MockMetadataStore) UpdateContainer(arg0 *pl_shared_k8s_metadatapb.ContainerInfo) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateContainer", arg0)
@@ -460,13 +461,13 @@ func (m *MockMetadataStore) UpdateContainer(arg0 *pl_shared_k8s_metadatapb.Conta
 	return ret0
 }
 
-// UpdateContainer indicates an expected call of UpdateContainer
+// UpdateContainer indicates an expected call of UpdateContainer.
 func (mr *MockMetadataStoreMockRecorder) UpdateContainer(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateContainer", reflect.TypeOf((*MockMetadataStore)(nil).UpdateContainer), arg0)
 }
 
-// UpdateContainersFromPod mocks base method
+// UpdateContainersFromPod mocks base method.
 func (m *MockMetadataStore) UpdateContainersFromPod(arg0 *pl_shared_k8s_metadatapb.Pod, arg1 bool) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateContainersFromPod", arg0, arg1)
@@ -474,13 +475,13 @@ func (m *MockMetadataStore) UpdateContainersFromPod(arg0 *pl_shared_k8s_metadata
 	return ret0
 }
 
-// UpdateContainersFromPod indicates an expected call of UpdateContainersFromPod
+// UpdateContainersFromPod indicates an expected call of UpdateContainersFromPod.
 func (mr *MockMetadataStoreMockRecorder) UpdateContainersFromPod(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateContainersFromPod", reflect.TypeOf((*MockMetadataStore)(nil).UpdateContainersFromPod), arg0, arg1)
 }
 
-// UpdateEndpoints mocks base method
+// UpdateEndpoints mocks base method.
 func (m *MockMetadataStore) UpdateEndpoints(arg0 *pl_shared_k8s_metadatapb.Endpoints, arg1 bool) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateEndpoints", arg0, arg1)
@@ -488,13 +489,13 @@ func (m *MockMetadataStore) UpdateEndpoints(arg0 *pl_shared_k8s_metadatapb.Endpo
 	return ret0
 }
 
-// UpdateEndpoints indicates an expected call of UpdateEndpoints
+// UpdateEndpoints indicates an expected call of UpdateEndpoints.
 func (mr *MockMetadataStoreMockRecorder) UpdateEndpoints(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEndpoints", reflect.TypeOf((*MockMetadataStore)(nil).UpdateEndpoints), arg0, arg1)
 }
 
-// UpdateNamespace mocks base method
+// UpdateNamespace mocks base method.
 func (m *MockMetadataStore) UpdateNamespace(arg0 *pl_shared_k8s_metadatapb.Namespace, arg1 bool) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateNamespace", arg0, arg1)
@@ -502,13 +503,13 @@ func (m *MockMetadataStore) UpdateNamespace(arg0 *pl_shared_k8s_metadatapb.Names
 	return ret0
 }
 
-// UpdateNamespace indicates an expected call of UpdateNamespace
+// UpdateNamespace indicates an expected call of UpdateNamespace.
 func (mr *MockMetadataStoreMockRecorder) UpdateNamespace(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateNamespace", reflect.TypeOf((*MockMetadataStore)(nil).UpdateNamespace), arg0, arg1)
 }
 
-// UpdateNode mocks base method
+// UpdateNode mocks base method.
 func (m *MockMetadataStore) UpdateNode(arg0 *pl_shared_k8s_metadatapb.Node, arg1 bool) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateNode", arg0, arg1)
@@ -516,13 +517,13 @@ func (m *MockMetadataStore) UpdateNode(arg0 *pl_shared_k8s_metadatapb.Node, arg1
 	return ret0
 }
 
-// UpdateNode indicates an expected call of UpdateNode
+// UpdateNode indicates an expected call of UpdateNode.
 func (mr *MockMetadataStoreMockRecorder) UpdateNode(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateNode", reflect.TypeOf((*MockMetadataStore)(nil).UpdateNode), arg0, arg1)
 }
 
-// UpdatePod mocks base method
+// UpdatePod mocks base method.
 func (m *MockMetadataStore) UpdatePod(arg0 *pl_shared_k8s_metadatapb.Pod, arg1 bool) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdatePod", arg0, arg1)
@@ -530,13 +531,13 @@ func (m *MockMetadataStore) UpdatePod(arg0 *pl_shared_k8s_metadatapb.Pod, arg1 b
 	return ret0
 }
 
-// UpdatePod indicates an expected call of UpdatePod
+// UpdatePod indicates an expected call of UpdatePod.
 func (mr *MockMetadataStoreMockRecorder) UpdatePod(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePod", reflect.TypeOf((*MockMetadataStore)(nil).UpdatePod), arg0, arg1)
 }
 
-// UpdateProcesses mocks base method
+// UpdateProcesses mocks base method.
 func (m *MockMetadataStore) UpdateProcesses(processes []*pl_shared_k8s_metadatapb.ProcessInfo) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateProcesses", processes)
@@ -544,13 +545,13 @@ func (m *MockMetadataStore) UpdateProcesses(processes []*pl_shared_k8s_metadatap
 	return ret0
 }
 
-// UpdateProcesses indicates an expected call of UpdateProcesses
+// UpdateProcesses indicates an expected call of UpdateProcesses.
 func (mr *MockMetadataStoreMockRecorder) UpdateProcesses(processes interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProcesses", reflect.TypeOf((*MockMetadataStore)(nil).UpdateProcesses), processes)
 }
 
-// UpdateSchemas mocks base method
+// UpdateSchemas mocks base method.
 func (m *MockMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.TableInfo) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSchemas", agentID, schemas)
@@ -558,13 +559,13 @@ func (m *MockMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.
 	return ret0
 }
 
-// UpdateSchemas indicates an expected call of UpdateSchemas
+// UpdateSchemas indicates an expected call of UpdateSchemas.
 func (mr *MockMetadataStoreMockRecorder) UpdateSchemas(agentID, schemas interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSchemas", reflect.TypeOf((*MockMetadataStore)(nil).UpdateSchemas), agentID, schemas)
 }
 
-// UpdateService mocks base method
+// UpdateService mocks base method.
 func (m *MockMetadataStore) UpdateService(arg0 *pl_shared_k8s_metadatapb.Service, arg1 bool) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateService", arg0, arg1)
@@ -572,13 +573,13 @@ func (m *MockMetadataStore) UpdateService(arg0 *pl_shared_k8s_metadatapb.Service
 	return ret0
 }
 
-// UpdateService indicates an expected call of UpdateService
+// UpdateService indicates an expected call of UpdateService.
 func (mr *MockMetadataStoreMockRecorder) UpdateService(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateService", reflect.TypeOf((*MockMetadataStore)(nil).UpdateService), arg0, arg1)
 }
 
-// UpdateSubscriberResourceVersion mocks base method
+// UpdateSubscriberResourceVersion mocks base method.
 func (m *MockMetadataStore) UpdateSubscriberResourceVersion(arg0, arg1 string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSubscriberResourceVersion", arg0, arg1)
@@ -586,7 +587,7 @@ func (m *MockMetadataStore) UpdateSubscriberResourceVersion(arg0, arg1 string) e
 	return ret0
 }
 
-// UpdateSubscriberResourceVersion indicates an expected call of UpdateSubscriberResourceVersion
+// UpdateSubscriberResourceVersion indicates an expected call of UpdateSubscriberResourceVersion.
 func (mr *MockMetadataStoreMockRecorder) UpdateSubscriberResourceVersion(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSubscriberResourceVersion", reflect.TypeOf((*MockMetadataStore)(nil).UpdateSubscriberResourceVersion), arg0, arg1)

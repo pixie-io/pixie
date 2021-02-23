@@ -5,7 +5,8 @@
 package controllers
 
 import (
-	"time"
+    "time"
+    "sync"
 
     log "github.com/sirupsen/logrus"
     v1 "k8s.io/api/core/v1"
@@ -51,12 +52,11 @@ type PodWatcher struct {
 	resourceStr string
 	lastRV      string
 	updateCh    chan *K8sResourceMessage
-	quitCh      chan struct{}
 	clientset   *kubernetes.Clientset
 }
 
-func NewPodWatcher(resource string, quitCh chan struct{}, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *PodWatcher {
-	return &PodWatcher{resourceStr: resource, quitCh: quitCh, updateCh: updateCh, clientset: clientset}
+func NewPodWatcher(resource string, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *PodWatcher {
+	return &PodWatcher{resourceStr: resource, updateCh: updateCh, clientset: clientset}
 }
 
 func (mc *PodWatcher) Sync(storedUpdates []*storepb.K8SResource) error {
@@ -126,7 +126,8 @@ func (mc *PodWatcher) syncPodImpl(storedUpdates []*storepb.K8SResource, currentS
 	}
 }
 
-func (mc *PodWatcher) StartWatcher() {
+func (mc *PodWatcher) StartWatcher(quitCh chan struct{}, wg *sync.WaitGroup) {
+	defer wg.Done()
 	// Start up watcher for the given resource.
 	for {
 		watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), mc.resourceStr, v1.NamespaceAll, fields.Everything())
@@ -139,7 +140,7 @@ func (mc *PodWatcher) StartWatcher() {
 		runWatcher := true
 		for runWatcher {
 			select {
-			case <-mc.quitCh:
+			case <-quitCh:
 				return
 			case c := <-resCh:
 				s, ok := c.Object.(*metav1.Status)
@@ -186,7 +187,7 @@ func (mc *PodWatcher) StartWatcher() {
 
 		// Wait 5 minutes before retrying, however if stop is called, just return.
 		select {
-		case <-mc.quitCh:
+		case <-quitCh:
 			return
 		case <-time.After(5 * time.Minute):
 			continue
@@ -221,12 +222,11 @@ type ServiceWatcher struct {
 	resourceStr string
 	lastRV      string
 	updateCh    chan *K8sResourceMessage
-	quitCh      chan struct{}
 	clientset   *kubernetes.Clientset
 }
 
-func NewServiceWatcher(resource string, quitCh chan struct{}, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *ServiceWatcher {
-	return &ServiceWatcher{resourceStr: resource, quitCh: quitCh, updateCh: updateCh, clientset: clientset}
+func NewServiceWatcher(resource string, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *ServiceWatcher {
+	return &ServiceWatcher{resourceStr: resource, updateCh: updateCh, clientset: clientset}
 }
 
 func (mc *ServiceWatcher) Sync(storedUpdates []*storepb.K8SResource) error {
@@ -296,7 +296,8 @@ func (mc *ServiceWatcher) syncServiceImpl(storedUpdates []*storepb.K8SResource, 
 	}
 }
 
-func (mc *ServiceWatcher) StartWatcher() {
+func (mc *ServiceWatcher) StartWatcher(quitCh chan struct{}, wg *sync.WaitGroup) {
+	defer wg.Done()
 	// Start up watcher for the given resource.
 	for {
 		watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), mc.resourceStr, v1.NamespaceAll, fields.Everything())
@@ -309,7 +310,7 @@ func (mc *ServiceWatcher) StartWatcher() {
 		runWatcher := true
 		for runWatcher {
 			select {
-			case <-mc.quitCh:
+			case <-quitCh:
 				return
 			case c := <-resCh:
 				s, ok := c.Object.(*metav1.Status)
@@ -356,7 +357,7 @@ func (mc *ServiceWatcher) StartWatcher() {
 
 		// Wait 5 minutes before retrying, however if stop is called, just return.
 		select {
-		case <-mc.quitCh:
+		case <-quitCh:
 			return
 		case <-time.After(5 * time.Minute):
 			continue
@@ -391,12 +392,11 @@ type NamespaceWatcher struct {
 	resourceStr string
 	lastRV      string
 	updateCh    chan *K8sResourceMessage
-	quitCh      chan struct{}
 	clientset   *kubernetes.Clientset
 }
 
-func NewNamespaceWatcher(resource string, quitCh chan struct{}, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *NamespaceWatcher {
-	return &NamespaceWatcher{resourceStr: resource, quitCh: quitCh, updateCh: updateCh, clientset: clientset}
+func NewNamespaceWatcher(resource string, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *NamespaceWatcher {
+	return &NamespaceWatcher{resourceStr: resource, updateCh: updateCh, clientset: clientset}
 }
 
 func (mc *NamespaceWatcher) Sync(storedUpdates []*storepb.K8SResource) error {
@@ -466,7 +466,8 @@ func (mc *NamespaceWatcher) syncNamespaceImpl(storedUpdates []*storepb.K8SResour
 	}
 }
 
-func (mc *NamespaceWatcher) StartWatcher() {
+func (mc *NamespaceWatcher) StartWatcher(quitCh chan struct{}, wg *sync.WaitGroup) {
+	defer wg.Done()
 	// Start up watcher for the given resource.
 	for {
 		watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), mc.resourceStr, v1.NamespaceAll, fields.Everything())
@@ -479,7 +480,7 @@ func (mc *NamespaceWatcher) StartWatcher() {
 		runWatcher := true
 		for runWatcher {
 			select {
-			case <-mc.quitCh:
+			case <-quitCh:
 				return
 			case c := <-resCh:
 				s, ok := c.Object.(*metav1.Status)
@@ -526,7 +527,7 @@ func (mc *NamespaceWatcher) StartWatcher() {
 
 		// Wait 5 minutes before retrying, however if stop is called, just return.
 		select {
-		case <-mc.quitCh:
+		case <-quitCh:
 			return
 		case <-time.After(5 * time.Minute):
 			continue
@@ -561,12 +562,11 @@ type EndpointsWatcher struct {
 	resourceStr string
 	lastRV      string
 	updateCh    chan *K8sResourceMessage
-	quitCh      chan struct{}
 	clientset   *kubernetes.Clientset
 }
 
-func NewEndpointsWatcher(resource string, quitCh chan struct{}, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *EndpointsWatcher {
-	return &EndpointsWatcher{resourceStr: resource, quitCh: quitCh, updateCh: updateCh, clientset: clientset}
+func NewEndpointsWatcher(resource string, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *EndpointsWatcher {
+	return &EndpointsWatcher{resourceStr: resource, updateCh: updateCh, clientset: clientset}
 }
 
 func (mc *EndpointsWatcher) Sync(storedUpdates []*storepb.K8SResource) error {
@@ -636,7 +636,8 @@ func (mc *EndpointsWatcher) syncEndpointsImpl(storedUpdates []*storepb.K8SResour
 	}
 }
 
-func (mc *EndpointsWatcher) StartWatcher() {
+func (mc *EndpointsWatcher) StartWatcher(quitCh chan struct{}, wg *sync.WaitGroup) {
+	defer wg.Done()
 	// Start up watcher for the given resource.
 	for {
 		watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), mc.resourceStr, v1.NamespaceAll, fields.Everything())
@@ -649,7 +650,7 @@ func (mc *EndpointsWatcher) StartWatcher() {
 		runWatcher := true
 		for runWatcher {
 			select {
-			case <-mc.quitCh:
+			case <-quitCh:
 				return
 			case c := <-resCh:
 				s, ok := c.Object.(*metav1.Status)
@@ -696,7 +697,7 @@ func (mc *EndpointsWatcher) StartWatcher() {
 
 		// Wait 5 minutes before retrying, however if stop is called, just return.
 		select {
-		case <-mc.quitCh:
+		case <-quitCh:
 			return
 		case <-time.After(5 * time.Minute):
 			continue
@@ -731,12 +732,11 @@ type NodeWatcher struct {
 	resourceStr string
 	lastRV      string
 	updateCh    chan *K8sResourceMessage
-	quitCh      chan struct{}
 	clientset   *kubernetes.Clientset
 }
 
-func NewNodeWatcher(resource string, quitCh chan struct{}, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *NodeWatcher {
-	return &NodeWatcher{resourceStr: resource, quitCh: quitCh, updateCh: updateCh, clientset: clientset}
+func NewNodeWatcher(resource string, updateCh chan *K8sResourceMessage, clientset *kubernetes.Clientset) *NodeWatcher {
+	return &NodeWatcher{resourceStr: resource, updateCh: updateCh, clientset: clientset}
 }
 
 func (mc *NodeWatcher) Sync(storedUpdates []*storepb.K8SResource) error {
@@ -806,7 +806,8 @@ func (mc *NodeWatcher) syncNodeImpl(storedUpdates []*storepb.K8SResource, curren
 	}
 }
 
-func (mc *NodeWatcher) StartWatcher() {
+func (mc *NodeWatcher) StartWatcher(quitCh chan struct{}, wg *sync.WaitGroup) {
+	defer wg.Done()
 	// Start up watcher for the given resource.
 	for {
 		watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), mc.resourceStr, v1.NamespaceAll, fields.Everything())
@@ -819,7 +820,7 @@ func (mc *NodeWatcher) StartWatcher() {
 		runWatcher := true
 		for runWatcher {
 			select {
-			case <-mc.quitCh:
+			case <-quitCh:
 				return
 			case c := <-resCh:
 				s, ok := c.Object.(*metav1.Status)
@@ -866,7 +867,7 @@ func (mc *NodeWatcher) StartWatcher() {
 
 		// Wait 5 minutes before retrying, however if stop is called, just return.
 		select {
-		case <-mc.quitCh:
+		case <-quitCh:
 			return
 		case <-time.After(5 * time.Minute):
 			continue

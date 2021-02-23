@@ -119,9 +119,8 @@ func TestPodWatcher_SyncPodImpl(t *testing.T) {
 		Items: []v1.Pod{newPod, existingPod},
 	}
 
-	quitCh := make(chan struct{})
 	updateCh := make(chan *K8sResourceMessage, 10)
-	watcher := NewPodWatcher("pods", quitCh, updateCh, nil)
+	watcher := NewPodWatcher("pods", updateCh, nil)
 
 	watcher.syncPodImpl(storedUpdates, currentState)
 
