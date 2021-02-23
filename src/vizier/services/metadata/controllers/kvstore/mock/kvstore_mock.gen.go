@@ -5,61 +5,96 @@
 package mock_kvstore
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	kvstore "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
-	reflect "reflect"
 )
 
-// MockKeyValueStore is a mock of KeyValueStore interface
+// MockKeyValueStore is a mock of KeyValueStore interface.
 type MockKeyValueStore struct {
 	ctrl     *gomock.Controller
 	recorder *MockKeyValueStoreMockRecorder
 }
 
-// MockKeyValueStoreMockRecorder is the mock recorder for MockKeyValueStore
+// MockKeyValueStoreMockRecorder is the mock recorder for MockKeyValueStore.
 type MockKeyValueStoreMockRecorder struct {
 	mock *MockKeyValueStore
 }
 
-// NewMockKeyValueStore creates a new mock instance
+// NewMockKeyValueStore creates a new mock instance.
 func NewMockKeyValueStore(ctrl *gomock.Controller) *MockKeyValueStore {
 	mock := &MockKeyValueStore{ctrl: ctrl}
 	mock.recorder = &MockKeyValueStoreMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockKeyValueStore) EXPECT() *MockKeyValueStoreMockRecorder {
 	return m.recorder
 }
 
-// Get mocks base method
+// Delete mocks base method.
+func (m *MockKeyValueStore) Delete(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockKeyValueStoreMockRecorder) Delete(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockKeyValueStore)(nil).Delete), arg0)
+}
+
+// DeleteWithPrefix mocks base method.
+func (m *MockKeyValueStore) DeleteWithPrefix(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteWithPrefix", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteWithPrefix indicates an expected call of DeleteWithPrefix.
+func (mr *MockKeyValueStoreMockRecorder) DeleteWithPrefix(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteWithPrefix", reflect.TypeOf((*MockKeyValueStore)(nil).DeleteWithPrefix), arg0)
+}
+
+// Get mocks base method.
 func (m *MockKeyValueStore) Get(arg0 string) ([]byte, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Get indicates an expected call of Get
+// Get indicates an expected call of Get.
 func (mr *MockKeyValueStoreMockRecorder) Get(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockKeyValueStore)(nil).Get), arg0)
 }
 
-// SetAll mocks base method
-func (m *MockKeyValueStore) SetAll(arg0 []kvstore.TTLKeyValue) error {
-	ret := m.ctrl.Call(m, "SetAll", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
+// GetAll mocks base method.
+func (m *MockKeyValueStore) GetAll(arg0 []string) ([][]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAll", arg0)
+	ret0, _ := ret[0].([][]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// SetAll indicates an expected call of SetAll
-func (mr *MockKeyValueStoreMockRecorder) SetAll(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAll", reflect.TypeOf((*MockKeyValueStore)(nil).SetAll), arg0)
+// GetAll indicates an expected call of GetAll.
+func (mr *MockKeyValueStoreMockRecorder) GetAll(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockKeyValueStore)(nil).GetAll), arg0)
 }
 
-// GetWithPrefix mocks base method
+// GetWithPrefix mocks base method.
 func (m *MockKeyValueStore) GetWithPrefix(arg0 string) ([]string, [][]byte, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetWithPrefix", arg0)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].([][]byte)
@@ -67,13 +102,15 @@ func (m *MockKeyValueStore) GetWithPrefix(arg0 string) ([]string, [][]byte, erro
 	return ret0, ret1, ret2
 }
 
-// GetWithPrefix indicates an expected call of GetWithPrefix
+// GetWithPrefix indicates an expected call of GetWithPrefix.
 func (mr *MockKeyValueStoreMockRecorder) GetWithPrefix(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWithPrefix", reflect.TypeOf((*MockKeyValueStore)(nil).GetWithPrefix), arg0)
 }
 
-// GetWithRange mocks base method
+// GetWithRange mocks base method.
 func (m *MockKeyValueStore) GetWithRange(arg0, arg1 string) ([]string, [][]byte, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetWithRange", arg0, arg1)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].([][]byte)
@@ -81,57 +118,37 @@ func (m *MockKeyValueStore) GetWithRange(arg0, arg1 string) ([]string, [][]byte,
 	return ret0, ret1, ret2
 }
 
-// GetWithRange indicates an expected call of GetWithRange
+// GetWithRange indicates an expected call of GetWithRange.
 func (mr *MockKeyValueStoreMockRecorder) GetWithRange(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWithRange", reflect.TypeOf((*MockKeyValueStore)(nil).GetWithRange), arg0, arg1)
 }
 
-// GetAll mocks base method
-func (m *MockKeyValueStore) GetAll(arg0 []string) ([][]byte, error) {
-	ret := m.ctrl.Call(m, "GetAll", arg0)
-	ret0, _ := ret[0].([][]byte)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAll indicates an expected call of GetAll
-func (mr *MockKeyValueStoreMockRecorder) GetAll(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockKeyValueStore)(nil).GetAll), arg0)
-}
-
-// DeleteWithPrefix mocks base method
-func (m *MockKeyValueStore) DeleteWithPrefix(arg0 string) error {
-	ret := m.ctrl.Call(m, "DeleteWithPrefix", arg0)
+// SetAll mocks base method.
+func (m *MockKeyValueStore) SetAll(arg0 []kvstore.TTLKeyValue) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetAll", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeleteWithPrefix indicates an expected call of DeleteWithPrefix
-func (mr *MockKeyValueStoreMockRecorder) DeleteWithPrefix(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteWithPrefix", reflect.TypeOf((*MockKeyValueStore)(nil).DeleteWithPrefix), arg0)
+// SetAll indicates an expected call of SetAll.
+func (mr *MockKeyValueStoreMockRecorder) SetAll(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAll", reflect.TypeOf((*MockKeyValueStore)(nil).SetAll), arg0)
 }
 
-// WatchKeyEvents mocks base method
+// WatchKeyEvents mocks base method.
 func (m *MockKeyValueStore) WatchKeyEvents(arg0 string) (chan kvstore.KeyEvent, chan bool) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WatchKeyEvents", arg0)
 	ret0, _ := ret[0].(chan kvstore.KeyEvent)
 	ret1, _ := ret[1].(chan bool)
 	return ret0, ret1
 }
 
-// WatchKeyEvents indicates an expected call of WatchKeyEvents
+// WatchKeyEvents indicates an expected call of WatchKeyEvents.
 func (mr *MockKeyValueStoreMockRecorder) WatchKeyEvents(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchKeyEvents", reflect.TypeOf((*MockKeyValueStore)(nil).WatchKeyEvents), arg0)
-}
-
-// Delete mocks base method
-func (m *MockKeyValueStore) Delete(arg0 string) error {
-	ret := m.ctrl.Call(m, "Delete", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Delete indicates an expected call of Delete
-func (mr *MockKeyValueStoreMockRecorder) Delete(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockKeyValueStore)(nil).Delete), arg0)
 }

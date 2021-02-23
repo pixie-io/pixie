@@ -5,92 +5,103 @@
 package mock_controllers
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	controllers "pixielabs.ai/pixielabs/src/cloud/auth/controllers"
-	reflect "reflect"
 )
 
-// MockAuth0Connector is a mock of Auth0Connector interface
+// MockAuth0Connector is a mock of Auth0Connector interface.
 type MockAuth0Connector struct {
 	ctrl     *gomock.Controller
 	recorder *MockAuth0ConnectorMockRecorder
 }
 
-// MockAuth0ConnectorMockRecorder is the mock recorder for MockAuth0Connector
+// MockAuth0ConnectorMockRecorder is the mock recorder for MockAuth0Connector.
 type MockAuth0ConnectorMockRecorder struct {
 	mock *MockAuth0Connector
 }
 
-// NewMockAuth0Connector creates a new mock instance
+// NewMockAuth0Connector creates a new mock instance.
 func NewMockAuth0Connector(ctrl *gomock.Controller) *MockAuth0Connector {
 	mock := &MockAuth0Connector{ctrl: ctrl}
 	mock.recorder = &MockAuth0ConnectorMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockAuth0Connector) EXPECT() *MockAuth0ConnectorMockRecorder {
 	return m.recorder
 }
 
-// Init mocks base method
-func (m *MockAuth0Connector) Init() error {
-	ret := m.ctrl.Call(m, "Init")
-	ret0, _ := ret[0].(error)
+// GetClientID mocks base method.
+func (m *MockAuth0Connector) GetClientID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClientID")
+	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// Init indicates an expected call of Init
-func (mr *MockAuth0ConnectorMockRecorder) Init() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockAuth0Connector)(nil).Init))
+// GetClientID indicates an expected call of GetClientID.
+func (mr *MockAuth0ConnectorMockRecorder) GetClientID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClientID", reflect.TypeOf((*MockAuth0Connector)(nil).GetClientID))
 }
 
-// GetUserIDFromToken mocks base method
+// GetUserIDFromToken mocks base method.
 func (m *MockAuth0Connector) GetUserIDFromToken(token string) (string, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserIDFromToken", token)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetUserIDFromToken indicates an expected call of GetUserIDFromToken
+// GetUserIDFromToken indicates an expected call of GetUserIDFromToken.
 func (mr *MockAuth0ConnectorMockRecorder) GetUserIDFromToken(token interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserIDFromToken", reflect.TypeOf((*MockAuth0Connector)(nil).GetUserIDFromToken), token)
 }
 
-// GetUserInfo mocks base method
+// GetUserInfo mocks base method.
 func (m *MockAuth0Connector) GetUserInfo(userID string) (*controllers.UserInfo, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserInfo", userID)
 	ret0, _ := ret[0].(*controllers.UserInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetUserInfo indicates an expected call of GetUserInfo
+// GetUserInfo indicates an expected call of GetUserInfo.
 func (mr *MockAuth0ConnectorMockRecorder) GetUserInfo(userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserInfo", reflect.TypeOf((*MockAuth0Connector)(nil).GetUserInfo), userID)
 }
 
-// SetPLMetadata mocks base method
+// Init mocks base method.
+func (m *MockAuth0Connector) Init() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Init")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Init indicates an expected call of Init.
+func (mr *MockAuth0ConnectorMockRecorder) Init() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockAuth0Connector)(nil).Init))
+}
+
+// SetPLMetadata mocks base method.
 func (m *MockAuth0Connector) SetPLMetadata(userID, plOrgID, plUserID string) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetPLMetadata", userID, plOrgID, plUserID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SetPLMetadata indicates an expected call of SetPLMetadata
+// SetPLMetadata indicates an expected call of SetPLMetadata.
 func (mr *MockAuth0ConnectorMockRecorder) SetPLMetadata(userID, plOrgID, plUserID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPLMetadata", reflect.TypeOf((*MockAuth0Connector)(nil).SetPLMetadata), userID, plOrgID, plUserID)
-}
-
-// GetClientID mocks base method
-func (m *MockAuth0Connector) GetClientID() string {
-	ret := m.ctrl.Call(m, "GetClientID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetClientID indicates an expected call of GetClientID
-func (mr *MockAuth0ConnectorMockRecorder) GetClientID() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClientID", reflect.TypeOf((*MockAuth0Connector)(nil).GetClientID))
 }

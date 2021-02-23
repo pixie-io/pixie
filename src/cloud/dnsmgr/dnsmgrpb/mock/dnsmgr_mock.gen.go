@@ -6,116 +6,125 @@ package mock_dnsmgr
 
 import (
 	context "context"
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
-	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
-	reflect "reflect"
+	dnsmgr "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
 )
 
-// MockDNSMgrServiceClient is a mock of DNSMgrServiceClient interface
+// MockDNSMgrServiceClient is a mock of DNSMgrServiceClient interface.
 type MockDNSMgrServiceClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockDNSMgrServiceClientMockRecorder
 }
 
-// MockDNSMgrServiceClientMockRecorder is the mock recorder for MockDNSMgrServiceClient
+// MockDNSMgrServiceClientMockRecorder is the mock recorder for MockDNSMgrServiceClient.
 type MockDNSMgrServiceClientMockRecorder struct {
 	mock *MockDNSMgrServiceClient
 }
 
-// NewMockDNSMgrServiceClient creates a new mock instance
+// NewMockDNSMgrServiceClient creates a new mock instance.
 func NewMockDNSMgrServiceClient(ctrl *gomock.Controller) *MockDNSMgrServiceClient {
 	mock := &MockDNSMgrServiceClient{ctrl: ctrl}
 	mock.recorder = &MockDNSMgrServiceClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockDNSMgrServiceClient) EXPECT() *MockDNSMgrServiceClientMockRecorder {
 	return m.recorder
 }
 
-// GetDNSAddress mocks base method
-func (m *MockDNSMgrServiceClient) GetDNSAddress(ctx context.Context, in *dnsmgrpb.GetDNSAddressRequest, opts ...grpc.CallOption) (*dnsmgrpb.GetDNSAddressResponse, error) {
+// GetDNSAddress mocks base method.
+func (m *MockDNSMgrServiceClient) GetDNSAddress(ctx context.Context, in *dnsmgr.GetDNSAddressRequest, opts ...grpc.CallOption) (*dnsmgr.GetDNSAddressResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetDNSAddress", varargs...)
-	ret0, _ := ret[0].(*dnsmgrpb.GetDNSAddressResponse)
+	ret0, _ := ret[0].(*dnsmgr.GetDNSAddressResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetDNSAddress indicates an expected call of GetDNSAddress
+// GetDNSAddress indicates an expected call of GetDNSAddress.
 func (mr *MockDNSMgrServiceClientMockRecorder) GetDNSAddress(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDNSAddress", reflect.TypeOf((*MockDNSMgrServiceClient)(nil).GetDNSAddress), varargs...)
 }
 
-// GetSSLCerts mocks base method
-func (m *MockDNSMgrServiceClient) GetSSLCerts(ctx context.Context, in *dnsmgrpb.GetSSLCertsRequest, opts ...grpc.CallOption) (*dnsmgrpb.GetSSLCertsResponse, error) {
+// GetSSLCerts mocks base method.
+func (m *MockDNSMgrServiceClient) GetSSLCerts(ctx context.Context, in *dnsmgr.GetSSLCertsRequest, opts ...grpc.CallOption) (*dnsmgr.GetSSLCertsResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetSSLCerts", varargs...)
-	ret0, _ := ret[0].(*dnsmgrpb.GetSSLCertsResponse)
+	ret0, _ := ret[0].(*dnsmgr.GetSSLCertsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetSSLCerts indicates an expected call of GetSSLCerts
+// GetSSLCerts indicates an expected call of GetSSLCerts.
 func (mr *MockDNSMgrServiceClientMockRecorder) GetSSLCerts(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSSLCerts", reflect.TypeOf((*MockDNSMgrServiceClient)(nil).GetSSLCerts), varargs...)
 }
 
-// MockDNSMgrServiceServer is a mock of DNSMgrServiceServer interface
+// MockDNSMgrServiceServer is a mock of DNSMgrServiceServer interface.
 type MockDNSMgrServiceServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockDNSMgrServiceServerMockRecorder
 }
 
-// MockDNSMgrServiceServerMockRecorder is the mock recorder for MockDNSMgrServiceServer
+// MockDNSMgrServiceServerMockRecorder is the mock recorder for MockDNSMgrServiceServer.
 type MockDNSMgrServiceServerMockRecorder struct {
 	mock *MockDNSMgrServiceServer
 }
 
-// NewMockDNSMgrServiceServer creates a new mock instance
+// NewMockDNSMgrServiceServer creates a new mock instance.
 func NewMockDNSMgrServiceServer(ctrl *gomock.Controller) *MockDNSMgrServiceServer {
 	mock := &MockDNSMgrServiceServer{ctrl: ctrl}
 	mock.recorder = &MockDNSMgrServiceServerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockDNSMgrServiceServer) EXPECT() *MockDNSMgrServiceServerMockRecorder {
 	return m.recorder
 }
 
-// GetDNSAddress mocks base method
-func (m *MockDNSMgrServiceServer) GetDNSAddress(arg0 context.Context, arg1 *dnsmgrpb.GetDNSAddressRequest) (*dnsmgrpb.GetDNSAddressResponse, error) {
+// GetDNSAddress mocks base method.
+func (m *MockDNSMgrServiceServer) GetDNSAddress(arg0 context.Context, arg1 *dnsmgr.GetDNSAddressRequest) (*dnsmgr.GetDNSAddressResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDNSAddress", arg0, arg1)
-	ret0, _ := ret[0].(*dnsmgrpb.GetDNSAddressResponse)
+	ret0, _ := ret[0].(*dnsmgr.GetDNSAddressResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetDNSAddress indicates an expected call of GetDNSAddress
+// GetDNSAddress indicates an expected call of GetDNSAddress.
 func (mr *MockDNSMgrServiceServerMockRecorder) GetDNSAddress(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDNSAddress", reflect.TypeOf((*MockDNSMgrServiceServer)(nil).GetDNSAddress), arg0, arg1)
 }
 
-// GetSSLCerts mocks base method
-func (m *MockDNSMgrServiceServer) GetSSLCerts(arg0 context.Context, arg1 *dnsmgrpb.GetSSLCertsRequest) (*dnsmgrpb.GetSSLCertsResponse, error) {
+// GetSSLCerts mocks base method.
+func (m *MockDNSMgrServiceServer) GetSSLCerts(arg0 context.Context, arg1 *dnsmgr.GetSSLCertsRequest) (*dnsmgr.GetSSLCertsResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSSLCerts", arg0, arg1)
-	ret0, _ := ret[0].(*dnsmgrpb.GetSSLCertsResponse)
+	ret0, _ := ret[0].(*dnsmgr.GetSSLCertsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetSSLCerts indicates an expected call of GetSSLCerts
+// GetSSLCerts indicates an expected call of GetSSLCerts.
 func (mr *MockDNSMgrServiceServerMockRecorder) GetSSLCerts(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSSLCerts", reflect.TypeOf((*MockDNSMgrServiceServer)(nil).GetSSLCerts), arg0, arg1)
 }

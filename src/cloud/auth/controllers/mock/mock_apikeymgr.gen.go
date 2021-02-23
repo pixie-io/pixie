@@ -6,44 +6,47 @@ package mock_controllers
 
 import (
 	context "context"
-	gomock "github.com/golang/mock/gomock"
-	go_uuid "github.com/satori/go.uuid"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
+	uuid "github.com/satori/go.uuid"
 )
 
-// MockAPIKeyMgr is a mock of APIKeyMgr interface
+// MockAPIKeyMgr is a mock of APIKeyMgr interface.
 type MockAPIKeyMgr struct {
 	ctrl     *gomock.Controller
 	recorder *MockAPIKeyMgrMockRecorder
 }
 
-// MockAPIKeyMgrMockRecorder is the mock recorder for MockAPIKeyMgr
+// MockAPIKeyMgrMockRecorder is the mock recorder for MockAPIKeyMgr.
 type MockAPIKeyMgrMockRecorder struct {
 	mock *MockAPIKeyMgr
 }
 
-// NewMockAPIKeyMgr creates a new mock instance
+// NewMockAPIKeyMgr creates a new mock instance.
 func NewMockAPIKeyMgr(ctrl *gomock.Controller) *MockAPIKeyMgr {
 	mock := &MockAPIKeyMgr{ctrl: ctrl}
 	mock.recorder = &MockAPIKeyMgrMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockAPIKeyMgr) EXPECT() *MockAPIKeyMgrMockRecorder {
 	return m.recorder
 }
 
-// FetchOrgUserIDUsingAPIKey mocks base method
-func (m *MockAPIKeyMgr) FetchOrgUserIDUsingAPIKey(ctx context.Context, key string) (go_uuid.UUID, go_uuid.UUID, error) {
+// FetchOrgUserIDUsingAPIKey mocks base method.
+func (m *MockAPIKeyMgr) FetchOrgUserIDUsingAPIKey(ctx context.Context, key string) (uuid.UUID, uuid.UUID, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FetchOrgUserIDUsingAPIKey", ctx, key)
-	ret0, _ := ret[0].(go_uuid.UUID)
-	ret1, _ := ret[1].(go_uuid.UUID)
+	ret0, _ := ret[0].(uuid.UUID)
+	ret1, _ := ret[1].(uuid.UUID)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
-// FetchOrgUserIDUsingAPIKey indicates an expected call of FetchOrgUserIDUsingAPIKey
+// FetchOrgUserIDUsingAPIKey indicates an expected call of FetchOrgUserIDUsingAPIKey.
 func (mr *MockAPIKeyMgrMockRecorder) FetchOrgUserIDUsingAPIKey(ctx, key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrgUserIDUsingAPIKey", reflect.TypeOf((*MockAPIKeyMgr)(nil).FetchOrgUserIDUsingAPIKey), ctx, key)
 }

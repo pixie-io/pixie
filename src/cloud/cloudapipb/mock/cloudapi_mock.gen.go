@@ -6,39 +6,41 @@ package mock_cloudapipb
 
 import (
 	context "context"
+	reflect "reflect"
+
 	types "github.com/gogo/protobuf/types"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
+	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	cloudapipb "pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	proto "pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	reflect "reflect"
 )
 
-// MockAuthServiceClient is a mock of AuthServiceClient interface
+// MockAuthServiceClient is a mock of AuthServiceClient interface.
 type MockAuthServiceClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockAuthServiceClientMockRecorder
 }
 
-// MockAuthServiceClientMockRecorder is the mock recorder for MockAuthServiceClient
+// MockAuthServiceClientMockRecorder is the mock recorder for MockAuthServiceClient.
 type MockAuthServiceClientMockRecorder struct {
 	mock *MockAuthServiceClient
 }
 
-// NewMockAuthServiceClient creates a new mock instance
+// NewMockAuthServiceClient creates a new mock instance.
 func NewMockAuthServiceClient(ctrl *gomock.Controller) *MockAuthServiceClient {
 	mock := &MockAuthServiceClient{ctrl: ctrl}
 	mock.recorder = &MockAuthServiceClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockAuthServiceClient) EXPECT() *MockAuthServiceClientMockRecorder {
 	return m.recorder
 }
 
-// Login mocks base method
+// Login mocks base method.
 func (m *MockAuthServiceClient) Login(ctx context.Context, in *cloudapipb.LoginRequest, opts ...grpc.CallOption) (*cloudapipb.LoginReply, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -49,73 +51,77 @@ func (m *MockAuthServiceClient) Login(ctx context.Context, in *cloudapipb.LoginR
 	return ret0, ret1
 }
 
-// Login indicates an expected call of Login
+// Login indicates an expected call of Login.
 func (mr *MockAuthServiceClientMockRecorder) Login(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockAuthServiceClient)(nil).Login), varargs...)
 }
 
-// MockAuthServiceServer is a mock of AuthServiceServer interface
+// MockAuthServiceServer is a mock of AuthServiceServer interface.
 type MockAuthServiceServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockAuthServiceServerMockRecorder
 }
 
-// MockAuthServiceServerMockRecorder is the mock recorder for MockAuthServiceServer
+// MockAuthServiceServerMockRecorder is the mock recorder for MockAuthServiceServer.
 type MockAuthServiceServerMockRecorder struct {
 	mock *MockAuthServiceServer
 }
 
-// NewMockAuthServiceServer creates a new mock instance
+// NewMockAuthServiceServer creates a new mock instance.
 func NewMockAuthServiceServer(ctrl *gomock.Controller) *MockAuthServiceServer {
 	mock := &MockAuthServiceServer{ctrl: ctrl}
 	mock.recorder = &MockAuthServiceServerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockAuthServiceServer) EXPECT() *MockAuthServiceServerMockRecorder {
 	return m.recorder
 }
 
-// Login mocks base method
+// Login mocks base method.
 func (m *MockAuthServiceServer) Login(arg0 context.Context, arg1 *cloudapipb.LoginRequest) (*cloudapipb.LoginReply, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Login", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.LoginReply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Login indicates an expected call of Login
+// Login indicates an expected call of Login.
 func (mr *MockAuthServiceServerMockRecorder) Login(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockAuthServiceServer)(nil).Login), arg0, arg1)
 }
 
-// MockVizierImageAuthorizationClient is a mock of VizierImageAuthorizationClient interface
+// MockVizierImageAuthorizationClient is a mock of VizierImageAuthorizationClient interface.
 type MockVizierImageAuthorizationClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockVizierImageAuthorizationClientMockRecorder
 }
 
-// MockVizierImageAuthorizationClientMockRecorder is the mock recorder for MockVizierImageAuthorizationClient
+// MockVizierImageAuthorizationClientMockRecorder is the mock recorder for MockVizierImageAuthorizationClient.
 type MockVizierImageAuthorizationClientMockRecorder struct {
 	mock *MockVizierImageAuthorizationClient
 }
 
-// NewMockVizierImageAuthorizationClient creates a new mock instance
+// NewMockVizierImageAuthorizationClient creates a new mock instance.
 func NewMockVizierImageAuthorizationClient(ctrl *gomock.Controller) *MockVizierImageAuthorizationClient {
 	mock := &MockVizierImageAuthorizationClient{ctrl: ctrl}
 	mock.recorder = &MockVizierImageAuthorizationClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockVizierImageAuthorizationClient) EXPECT() *MockVizierImageAuthorizationClientMockRecorder {
 	return m.recorder
 }
 
-// GetImageCredentials mocks base method
+// GetImageCredentials mocks base method.
 func (m *MockVizierImageAuthorizationClient) GetImageCredentials(ctx context.Context, in *cloudapipb.GetImageCredentialsRequest, opts ...grpc.CallOption) (*cloudapipb.GetImageCredentialsResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -126,73 +132,77 @@ func (m *MockVizierImageAuthorizationClient) GetImageCredentials(ctx context.Con
 	return ret0, ret1
 }
 
-// GetImageCredentials indicates an expected call of GetImageCredentials
+// GetImageCredentials indicates an expected call of GetImageCredentials.
 func (mr *MockVizierImageAuthorizationClientMockRecorder) GetImageCredentials(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageCredentials", reflect.TypeOf((*MockVizierImageAuthorizationClient)(nil).GetImageCredentials), varargs...)
 }
 
-// MockVizierImageAuthorizationServer is a mock of VizierImageAuthorizationServer interface
+// MockVizierImageAuthorizationServer is a mock of VizierImageAuthorizationServer interface.
 type MockVizierImageAuthorizationServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockVizierImageAuthorizationServerMockRecorder
 }
 
-// MockVizierImageAuthorizationServerMockRecorder is the mock recorder for MockVizierImageAuthorizationServer
+// MockVizierImageAuthorizationServerMockRecorder is the mock recorder for MockVizierImageAuthorizationServer.
 type MockVizierImageAuthorizationServerMockRecorder struct {
 	mock *MockVizierImageAuthorizationServer
 }
 
-// NewMockVizierImageAuthorizationServer creates a new mock instance
+// NewMockVizierImageAuthorizationServer creates a new mock instance.
 func NewMockVizierImageAuthorizationServer(ctrl *gomock.Controller) *MockVizierImageAuthorizationServer {
 	mock := &MockVizierImageAuthorizationServer{ctrl: ctrl}
 	mock.recorder = &MockVizierImageAuthorizationServerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockVizierImageAuthorizationServer) EXPECT() *MockVizierImageAuthorizationServerMockRecorder {
 	return m.recorder
 }
 
-// GetImageCredentials mocks base method
+// GetImageCredentials mocks base method.
 func (m *MockVizierImageAuthorizationServer) GetImageCredentials(arg0 context.Context, arg1 *cloudapipb.GetImageCredentialsRequest) (*cloudapipb.GetImageCredentialsResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetImageCredentials", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.GetImageCredentialsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetImageCredentials indicates an expected call of GetImageCredentials
+// GetImageCredentials indicates an expected call of GetImageCredentials.
 func (mr *MockVizierImageAuthorizationServerMockRecorder) GetImageCredentials(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageCredentials", reflect.TypeOf((*MockVizierImageAuthorizationServer)(nil).GetImageCredentials), arg0, arg1)
 }
 
-// MockArtifactTrackerClient is a mock of ArtifactTrackerClient interface
+// MockArtifactTrackerClient is a mock of ArtifactTrackerClient interface.
 type MockArtifactTrackerClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockArtifactTrackerClientMockRecorder
 }
 
-// MockArtifactTrackerClientMockRecorder is the mock recorder for MockArtifactTrackerClient
+// MockArtifactTrackerClientMockRecorder is the mock recorder for MockArtifactTrackerClient.
 type MockArtifactTrackerClientMockRecorder struct {
 	mock *MockArtifactTrackerClient
 }
 
-// NewMockArtifactTrackerClient creates a new mock instance
+// NewMockArtifactTrackerClient creates a new mock instance.
 func NewMockArtifactTrackerClient(ctrl *gomock.Controller) *MockArtifactTrackerClient {
 	mock := &MockArtifactTrackerClient{ctrl: ctrl}
 	mock.recorder = &MockArtifactTrackerClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockArtifactTrackerClient) EXPECT() *MockArtifactTrackerClientMockRecorder {
 	return m.recorder
 }
 
-// GetArtifactList mocks base method
+// GetArtifactList mocks base method.
 func (m *MockArtifactTrackerClient) GetArtifactList(ctx context.Context, in *cloudapipb.GetArtifactListRequest, opts ...grpc.CallOption) (*cloudapipb.ArtifactSet, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -203,14 +213,16 @@ func (m *MockArtifactTrackerClient) GetArtifactList(ctx context.Context, in *clo
 	return ret0, ret1
 }
 
-// GetArtifactList indicates an expected call of GetArtifactList
+// GetArtifactList indicates an expected call of GetArtifactList.
 func (mr *MockArtifactTrackerClientMockRecorder) GetArtifactList(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArtifactList", reflect.TypeOf((*MockArtifactTrackerClient)(nil).GetArtifactList), varargs...)
 }
 
-// GetDownloadLink mocks base method
+// GetDownloadLink mocks base method.
 func (m *MockArtifactTrackerClient) GetDownloadLink(ctx context.Context, in *cloudapipb.GetDownloadLinkRequest, opts ...grpc.CallOption) (*cloudapipb.GetDownloadLinkResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -221,86 +233,92 @@ func (m *MockArtifactTrackerClient) GetDownloadLink(ctx context.Context, in *clo
 	return ret0, ret1
 }
 
-// GetDownloadLink indicates an expected call of GetDownloadLink
+// GetDownloadLink indicates an expected call of GetDownloadLink.
 func (mr *MockArtifactTrackerClientMockRecorder) GetDownloadLink(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDownloadLink", reflect.TypeOf((*MockArtifactTrackerClient)(nil).GetDownloadLink), varargs...)
 }
 
-// MockArtifactTrackerServer is a mock of ArtifactTrackerServer interface
+// MockArtifactTrackerServer is a mock of ArtifactTrackerServer interface.
 type MockArtifactTrackerServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockArtifactTrackerServerMockRecorder
 }
 
-// MockArtifactTrackerServerMockRecorder is the mock recorder for MockArtifactTrackerServer
+// MockArtifactTrackerServerMockRecorder is the mock recorder for MockArtifactTrackerServer.
 type MockArtifactTrackerServerMockRecorder struct {
 	mock *MockArtifactTrackerServer
 }
 
-// NewMockArtifactTrackerServer creates a new mock instance
+// NewMockArtifactTrackerServer creates a new mock instance.
 func NewMockArtifactTrackerServer(ctrl *gomock.Controller) *MockArtifactTrackerServer {
 	mock := &MockArtifactTrackerServer{ctrl: ctrl}
 	mock.recorder = &MockArtifactTrackerServerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockArtifactTrackerServer) EXPECT() *MockArtifactTrackerServerMockRecorder {
 	return m.recorder
 }
 
-// GetArtifactList mocks base method
+// GetArtifactList mocks base method.
 func (m *MockArtifactTrackerServer) GetArtifactList(arg0 context.Context, arg1 *cloudapipb.GetArtifactListRequest) (*cloudapipb.ArtifactSet, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetArtifactList", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.ArtifactSet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetArtifactList indicates an expected call of GetArtifactList
+// GetArtifactList indicates an expected call of GetArtifactList.
 func (mr *MockArtifactTrackerServerMockRecorder) GetArtifactList(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArtifactList", reflect.TypeOf((*MockArtifactTrackerServer)(nil).GetArtifactList), arg0, arg1)
 }
 
-// GetDownloadLink mocks base method
+// GetDownloadLink mocks base method.
 func (m *MockArtifactTrackerServer) GetDownloadLink(arg0 context.Context, arg1 *cloudapipb.GetDownloadLinkRequest) (*cloudapipb.GetDownloadLinkResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDownloadLink", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.GetDownloadLinkResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetDownloadLink indicates an expected call of GetDownloadLink
+// GetDownloadLink indicates an expected call of GetDownloadLink.
 func (mr *MockArtifactTrackerServerMockRecorder) GetDownloadLink(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDownloadLink", reflect.TypeOf((*MockArtifactTrackerServer)(nil).GetDownloadLink), arg0, arg1)
 }
 
-// MockVizierClusterInfoClient is a mock of VizierClusterInfoClient interface
+// MockVizierClusterInfoClient is a mock of VizierClusterInfoClient interface.
 type MockVizierClusterInfoClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockVizierClusterInfoClientMockRecorder
 }
 
-// MockVizierClusterInfoClientMockRecorder is the mock recorder for MockVizierClusterInfoClient
+// MockVizierClusterInfoClientMockRecorder is the mock recorder for MockVizierClusterInfoClient.
 type MockVizierClusterInfoClientMockRecorder struct {
 	mock *MockVizierClusterInfoClient
 }
 
-// NewMockVizierClusterInfoClient creates a new mock instance
+// NewMockVizierClusterInfoClient creates a new mock instance.
 func NewMockVizierClusterInfoClient(ctrl *gomock.Controller) *MockVizierClusterInfoClient {
 	mock := &MockVizierClusterInfoClient{ctrl: ctrl}
 	mock.recorder = &MockVizierClusterInfoClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockVizierClusterInfoClient) EXPECT() *MockVizierClusterInfoClientMockRecorder {
 	return m.recorder
 }
 
-// CreateCluster mocks base method
+// CreateCluster mocks base method.
 func (m *MockVizierClusterInfoClient) CreateCluster(ctx context.Context, in *cloudapipb.CreateClusterRequest, opts ...grpc.CallOption) (*cloudapipb.CreateClusterResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -311,32 +329,16 @@ func (m *MockVizierClusterInfoClient) CreateCluster(ctx context.Context, in *clo
 	return ret0, ret1
 }
 
-// CreateCluster indicates an expected call of CreateCluster
+// CreateCluster indicates an expected call of CreateCluster.
 func (mr *MockVizierClusterInfoClientMockRecorder) CreateCluster(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCluster", reflect.TypeOf((*MockVizierClusterInfoClient)(nil).CreateCluster), varargs...)
 }
 
-// GetClusterInfo mocks base method
-func (m *MockVizierClusterInfoClient) GetClusterInfo(ctx context.Context, in *cloudapipb.GetClusterInfoRequest, opts ...grpc.CallOption) (*cloudapipb.GetClusterInfoResponse, error) {
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetClusterInfo", varargs...)
-	ret0, _ := ret[0].(*cloudapipb.GetClusterInfoResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetClusterInfo indicates an expected call of GetClusterInfo
-func (mr *MockVizierClusterInfoClientMockRecorder) GetClusterInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterInfo", reflect.TypeOf((*MockVizierClusterInfoClient)(nil).GetClusterInfo), varargs...)
-}
-
-// GetClusterConnectionInfo mocks base method
+// GetClusterConnectionInfo mocks base method.
 func (m *MockVizierClusterInfoClient) GetClusterConnectionInfo(ctx context.Context, in *cloudapipb.GetClusterConnectionInfoRequest, opts ...grpc.CallOption) (*cloudapipb.GetClusterConnectionInfoResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -347,14 +349,36 @@ func (m *MockVizierClusterInfoClient) GetClusterConnectionInfo(ctx context.Conte
 	return ret0, ret1
 }
 
-// GetClusterConnectionInfo indicates an expected call of GetClusterConnectionInfo
+// GetClusterConnectionInfo indicates an expected call of GetClusterConnectionInfo.
 func (mr *MockVizierClusterInfoClientMockRecorder) GetClusterConnectionInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterConnectionInfo", reflect.TypeOf((*MockVizierClusterInfoClient)(nil).GetClusterConnectionInfo), varargs...)
 }
 
-// UpdateClusterVizierConfig mocks base method
+// GetClusterInfo mocks base method.
+func (m *MockVizierClusterInfoClient) GetClusterInfo(ctx context.Context, in *cloudapipb.GetClusterInfoRequest, opts ...grpc.CallOption) (*cloudapipb.GetClusterInfoResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetClusterInfo", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.GetClusterInfoResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetClusterInfo indicates an expected call of GetClusterInfo.
+func (mr *MockVizierClusterInfoClientMockRecorder) GetClusterInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterInfo", reflect.TypeOf((*MockVizierClusterInfoClient)(nil).GetClusterInfo), varargs...)
+}
+
+// UpdateClusterVizierConfig mocks base method.
 func (m *MockVizierClusterInfoClient) UpdateClusterVizierConfig(ctx context.Context, in *cloudapipb.UpdateClusterVizierConfigRequest, opts ...grpc.CallOption) (*cloudapipb.UpdateClusterVizierConfigResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -365,14 +389,16 @@ func (m *MockVizierClusterInfoClient) UpdateClusterVizierConfig(ctx context.Cont
 	return ret0, ret1
 }
 
-// UpdateClusterVizierConfig indicates an expected call of UpdateClusterVizierConfig
+// UpdateClusterVizierConfig indicates an expected call of UpdateClusterVizierConfig.
 func (mr *MockVizierClusterInfoClientMockRecorder) UpdateClusterVizierConfig(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateClusterVizierConfig", reflect.TypeOf((*MockVizierClusterInfoClient)(nil).UpdateClusterVizierConfig), varargs...)
 }
 
-// UpdateOrInstallCluster mocks base method
+// UpdateOrInstallCluster mocks base method.
 func (m *MockVizierClusterInfoClient) UpdateOrInstallCluster(ctx context.Context, in *cloudapipb.UpdateOrInstallClusterRequest, opts ...grpc.CallOption) (*cloudapipb.UpdateOrInstallClusterResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -383,125 +409,137 @@ func (m *MockVizierClusterInfoClient) UpdateOrInstallCluster(ctx context.Context
 	return ret0, ret1
 }
 
-// UpdateOrInstallCluster indicates an expected call of UpdateOrInstallCluster
+// UpdateOrInstallCluster indicates an expected call of UpdateOrInstallCluster.
 func (mr *MockVizierClusterInfoClientMockRecorder) UpdateOrInstallCluster(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrInstallCluster", reflect.TypeOf((*MockVizierClusterInfoClient)(nil).UpdateOrInstallCluster), varargs...)
 }
 
-// MockVizierClusterInfoServer is a mock of VizierClusterInfoServer interface
+// MockVizierClusterInfoServer is a mock of VizierClusterInfoServer interface.
 type MockVizierClusterInfoServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockVizierClusterInfoServerMockRecorder
 }
 
-// MockVizierClusterInfoServerMockRecorder is the mock recorder for MockVizierClusterInfoServer
+// MockVizierClusterInfoServerMockRecorder is the mock recorder for MockVizierClusterInfoServer.
 type MockVizierClusterInfoServerMockRecorder struct {
 	mock *MockVizierClusterInfoServer
 }
 
-// NewMockVizierClusterInfoServer creates a new mock instance
+// NewMockVizierClusterInfoServer creates a new mock instance.
 func NewMockVizierClusterInfoServer(ctrl *gomock.Controller) *MockVizierClusterInfoServer {
 	mock := &MockVizierClusterInfoServer{ctrl: ctrl}
 	mock.recorder = &MockVizierClusterInfoServerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockVizierClusterInfoServer) EXPECT() *MockVizierClusterInfoServerMockRecorder {
 	return m.recorder
 }
 
-// CreateCluster mocks base method
+// CreateCluster mocks base method.
 func (m *MockVizierClusterInfoServer) CreateCluster(arg0 context.Context, arg1 *cloudapipb.CreateClusterRequest) (*cloudapipb.CreateClusterResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateCluster", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.CreateClusterResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateCluster indicates an expected call of CreateCluster
+// CreateCluster indicates an expected call of CreateCluster.
 func (mr *MockVizierClusterInfoServerMockRecorder) CreateCluster(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCluster", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).CreateCluster), arg0, arg1)
 }
 
-// GetClusterInfo mocks base method
-func (m *MockVizierClusterInfoServer) GetClusterInfo(arg0 context.Context, arg1 *cloudapipb.GetClusterInfoRequest) (*cloudapipb.GetClusterInfoResponse, error) {
-	ret := m.ctrl.Call(m, "GetClusterInfo", arg0, arg1)
-	ret0, _ := ret[0].(*cloudapipb.GetClusterInfoResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetClusterInfo indicates an expected call of GetClusterInfo
-func (mr *MockVizierClusterInfoServerMockRecorder) GetClusterInfo(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterInfo", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).GetClusterInfo), arg0, arg1)
-}
-
-// GetClusterConnectionInfo mocks base method
+// GetClusterConnectionInfo mocks base method.
 func (m *MockVizierClusterInfoServer) GetClusterConnectionInfo(arg0 context.Context, arg1 *cloudapipb.GetClusterConnectionInfoRequest) (*cloudapipb.GetClusterConnectionInfoResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetClusterConnectionInfo", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.GetClusterConnectionInfoResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetClusterConnectionInfo indicates an expected call of GetClusterConnectionInfo
+// GetClusterConnectionInfo indicates an expected call of GetClusterConnectionInfo.
 func (mr *MockVizierClusterInfoServerMockRecorder) GetClusterConnectionInfo(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterConnectionInfo", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).GetClusterConnectionInfo), arg0, arg1)
 }
 
-// UpdateClusterVizierConfig mocks base method
+// GetClusterInfo mocks base method.
+func (m *MockVizierClusterInfoServer) GetClusterInfo(arg0 context.Context, arg1 *cloudapipb.GetClusterInfoRequest) (*cloudapipb.GetClusterInfoResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClusterInfo", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.GetClusterInfoResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetClusterInfo indicates an expected call of GetClusterInfo.
+func (mr *MockVizierClusterInfoServerMockRecorder) GetClusterInfo(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterInfo", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).GetClusterInfo), arg0, arg1)
+}
+
+// UpdateClusterVizierConfig mocks base method.
 func (m *MockVizierClusterInfoServer) UpdateClusterVizierConfig(arg0 context.Context, arg1 *cloudapipb.UpdateClusterVizierConfigRequest) (*cloudapipb.UpdateClusterVizierConfigResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateClusterVizierConfig", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.UpdateClusterVizierConfigResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// UpdateClusterVizierConfig indicates an expected call of UpdateClusterVizierConfig
+// UpdateClusterVizierConfig indicates an expected call of UpdateClusterVizierConfig.
 func (mr *MockVizierClusterInfoServerMockRecorder) UpdateClusterVizierConfig(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateClusterVizierConfig", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).UpdateClusterVizierConfig), arg0, arg1)
 }
 
-// UpdateOrInstallCluster mocks base method
+// UpdateOrInstallCluster mocks base method.
 func (m *MockVizierClusterInfoServer) UpdateOrInstallCluster(arg0 context.Context, arg1 *cloudapipb.UpdateOrInstallClusterRequest) (*cloudapipb.UpdateOrInstallClusterResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateOrInstallCluster", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.UpdateOrInstallClusterResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// UpdateOrInstallCluster indicates an expected call of UpdateOrInstallCluster
+// UpdateOrInstallCluster indicates an expected call of UpdateOrInstallCluster.
 func (mr *MockVizierClusterInfoServerMockRecorder) UpdateOrInstallCluster(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrInstallCluster", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).UpdateOrInstallCluster), arg0, arg1)
 }
 
-// MockVizierDeploymentKeyManagerClient is a mock of VizierDeploymentKeyManagerClient interface
+// MockVizierDeploymentKeyManagerClient is a mock of VizierDeploymentKeyManagerClient interface.
 type MockVizierDeploymentKeyManagerClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockVizierDeploymentKeyManagerClientMockRecorder
 }
 
-// MockVizierDeploymentKeyManagerClientMockRecorder is the mock recorder for MockVizierDeploymentKeyManagerClient
+// MockVizierDeploymentKeyManagerClientMockRecorder is the mock recorder for MockVizierDeploymentKeyManagerClient.
 type MockVizierDeploymentKeyManagerClientMockRecorder struct {
 	mock *MockVizierDeploymentKeyManagerClient
 }
 
-// NewMockVizierDeploymentKeyManagerClient creates a new mock instance
+// NewMockVizierDeploymentKeyManagerClient creates a new mock instance.
 func NewMockVizierDeploymentKeyManagerClient(ctrl *gomock.Controller) *MockVizierDeploymentKeyManagerClient {
 	mock := &MockVizierDeploymentKeyManagerClient{ctrl: ctrl}
 	mock.recorder = &MockVizierDeploymentKeyManagerClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockVizierDeploymentKeyManagerClient) EXPECT() *MockVizierDeploymentKeyManagerClientMockRecorder {
 	return m.recorder
 }
 
-// Create mocks base method
+// Create mocks base method.
 func (m *MockVizierDeploymentKeyManagerClient) Create(ctx context.Context, in *cloudapipb.CreateDeploymentKeyRequest, opts ...grpc.CallOption) (*cloudapipb.DeploymentKey, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -512,50 +550,16 @@ func (m *MockVizierDeploymentKeyManagerClient) Create(ctx context.Context, in *c
 	return ret0, ret1
 }
 
-// Create indicates an expected call of Create
+// Create indicates an expected call of Create.
 func (mr *MockVizierDeploymentKeyManagerClientMockRecorder) Create(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockVizierDeploymentKeyManagerClient)(nil).Create), varargs...)
 }
 
-// List mocks base method
-func (m *MockVizierDeploymentKeyManagerClient) List(ctx context.Context, in *cloudapipb.ListDeploymentKeyRequest, opts ...grpc.CallOption) (*cloudapipb.ListDeploymentKeyResponse, error) {
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "List", varargs...)
-	ret0, _ := ret[0].(*cloudapipb.ListDeploymentKeyResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// List indicates an expected call of List
-func (mr *MockVizierDeploymentKeyManagerClientMockRecorder) List(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockVizierDeploymentKeyManagerClient)(nil).List), varargs...)
-}
-
-// Get mocks base method
-func (m *MockVizierDeploymentKeyManagerClient) Get(ctx context.Context, in *cloudapipb.GetDeploymentKeyRequest, opts ...grpc.CallOption) (*cloudapipb.GetDeploymentKeyResponse, error) {
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "Get", varargs...)
-	ret0, _ := ret[0].(*cloudapipb.GetDeploymentKeyResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Get indicates an expected call of Get
-func (mr *MockVizierDeploymentKeyManagerClientMockRecorder) Get(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockVizierDeploymentKeyManagerClient)(nil).Get), varargs...)
-}
-
-// Delete mocks base method
-func (m *MockVizierDeploymentKeyManagerClient) Delete(ctx context.Context, in *proto.UUID, opts ...grpc.CallOption) (*types.Empty, error) {
+// Delete mocks base method.
+func (m *MockVizierDeploymentKeyManagerClient) Delete(ctx context.Context, in *uuidpb.UUID, opts ...grpc.CallOption) (*types.Empty, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -566,112 +570,162 @@ func (m *MockVizierDeploymentKeyManagerClient) Delete(ctx context.Context, in *p
 	return ret0, ret1
 }
 
-// Delete indicates an expected call of Delete
+// Delete indicates an expected call of Delete.
 func (mr *MockVizierDeploymentKeyManagerClientMockRecorder) Delete(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockVizierDeploymentKeyManagerClient)(nil).Delete), varargs...)
 }
 
-// MockVizierDeploymentKeyManagerServer is a mock of VizierDeploymentKeyManagerServer interface
+// Get mocks base method.
+func (m *MockVizierDeploymentKeyManagerClient) Get(ctx context.Context, in *cloudapipb.GetDeploymentKeyRequest, opts ...grpc.CallOption) (*cloudapipb.GetDeploymentKeyResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Get", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.GetDeploymentKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockVizierDeploymentKeyManagerClientMockRecorder) Get(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockVizierDeploymentKeyManagerClient)(nil).Get), varargs...)
+}
+
+// List mocks base method.
+func (m *MockVizierDeploymentKeyManagerClient) List(ctx context.Context, in *cloudapipb.ListDeploymentKeyRequest, opts ...grpc.CallOption) (*cloudapipb.ListDeploymentKeyResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "List", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.ListDeploymentKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List.
+func (mr *MockVizierDeploymentKeyManagerClientMockRecorder) List(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockVizierDeploymentKeyManagerClient)(nil).List), varargs...)
+}
+
+// MockVizierDeploymentKeyManagerServer is a mock of VizierDeploymentKeyManagerServer interface.
 type MockVizierDeploymentKeyManagerServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockVizierDeploymentKeyManagerServerMockRecorder
 }
 
-// MockVizierDeploymentKeyManagerServerMockRecorder is the mock recorder for MockVizierDeploymentKeyManagerServer
+// MockVizierDeploymentKeyManagerServerMockRecorder is the mock recorder for MockVizierDeploymentKeyManagerServer.
 type MockVizierDeploymentKeyManagerServerMockRecorder struct {
 	mock *MockVizierDeploymentKeyManagerServer
 }
 
-// NewMockVizierDeploymentKeyManagerServer creates a new mock instance
+// NewMockVizierDeploymentKeyManagerServer creates a new mock instance.
 func NewMockVizierDeploymentKeyManagerServer(ctrl *gomock.Controller) *MockVizierDeploymentKeyManagerServer {
 	mock := &MockVizierDeploymentKeyManagerServer{ctrl: ctrl}
 	mock.recorder = &MockVizierDeploymentKeyManagerServerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockVizierDeploymentKeyManagerServer) EXPECT() *MockVizierDeploymentKeyManagerServerMockRecorder {
 	return m.recorder
 }
 
-// Create mocks base method
+// Create mocks base method.
 func (m *MockVizierDeploymentKeyManagerServer) Create(arg0 context.Context, arg1 *cloudapipb.CreateDeploymentKeyRequest) (*cloudapipb.DeploymentKey, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.DeploymentKey)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Create indicates an expected call of Create
+// Create indicates an expected call of Create.
 func (mr *MockVizierDeploymentKeyManagerServerMockRecorder) Create(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockVizierDeploymentKeyManagerServer)(nil).Create), arg0, arg1)
 }
 
-// List mocks base method
-func (m *MockVizierDeploymentKeyManagerServer) List(arg0 context.Context, arg1 *cloudapipb.ListDeploymentKeyRequest) (*cloudapipb.ListDeploymentKeyResponse, error) {
-	ret := m.ctrl.Call(m, "List", arg0, arg1)
-	ret0, _ := ret[0].(*cloudapipb.ListDeploymentKeyResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// List indicates an expected call of List
-func (mr *MockVizierDeploymentKeyManagerServerMockRecorder) List(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockVizierDeploymentKeyManagerServer)(nil).List), arg0, arg1)
-}
-
-// Get mocks base method
-func (m *MockVizierDeploymentKeyManagerServer) Get(arg0 context.Context, arg1 *cloudapipb.GetDeploymentKeyRequest) (*cloudapipb.GetDeploymentKeyResponse, error) {
-	ret := m.ctrl.Call(m, "Get", arg0, arg1)
-	ret0, _ := ret[0].(*cloudapipb.GetDeploymentKeyResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Get indicates an expected call of Get
-func (mr *MockVizierDeploymentKeyManagerServerMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockVizierDeploymentKeyManagerServer)(nil).Get), arg0, arg1)
-}
-
-// Delete mocks base method
-func (m *MockVizierDeploymentKeyManagerServer) Delete(arg0 context.Context, arg1 *proto.UUID) (*types.Empty, error) {
+// Delete mocks base method.
+func (m *MockVizierDeploymentKeyManagerServer) Delete(arg0 context.Context, arg1 *uuidpb.UUID) (*types.Empty, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", arg0, arg1)
 	ret0, _ := ret[0].(*types.Empty)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Delete indicates an expected call of Delete
+// Delete indicates an expected call of Delete.
 func (mr *MockVizierDeploymentKeyManagerServerMockRecorder) Delete(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockVizierDeploymentKeyManagerServer)(nil).Delete), arg0, arg1)
 }
 
-// MockAPIKeyManagerClient is a mock of APIKeyManagerClient interface
+// Get mocks base method.
+func (m *MockVizierDeploymentKeyManagerServer) Get(arg0 context.Context, arg1 *cloudapipb.GetDeploymentKeyRequest) (*cloudapipb.GetDeploymentKeyResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.GetDeploymentKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockVizierDeploymentKeyManagerServerMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockVizierDeploymentKeyManagerServer)(nil).Get), arg0, arg1)
+}
+
+// List mocks base method.
+func (m *MockVizierDeploymentKeyManagerServer) List(arg0 context.Context, arg1 *cloudapipb.ListDeploymentKeyRequest) (*cloudapipb.ListDeploymentKeyResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.ListDeploymentKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List.
+func (mr *MockVizierDeploymentKeyManagerServerMockRecorder) List(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockVizierDeploymentKeyManagerServer)(nil).List), arg0, arg1)
+}
+
+// MockAPIKeyManagerClient is a mock of APIKeyManagerClient interface.
 type MockAPIKeyManagerClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockAPIKeyManagerClientMockRecorder
 }
 
-// MockAPIKeyManagerClientMockRecorder is the mock recorder for MockAPIKeyManagerClient
+// MockAPIKeyManagerClientMockRecorder is the mock recorder for MockAPIKeyManagerClient.
 type MockAPIKeyManagerClientMockRecorder struct {
 	mock *MockAPIKeyManagerClient
 }
 
-// NewMockAPIKeyManagerClient creates a new mock instance
+// NewMockAPIKeyManagerClient creates a new mock instance.
 func NewMockAPIKeyManagerClient(ctrl *gomock.Controller) *MockAPIKeyManagerClient {
 	mock := &MockAPIKeyManagerClient{ctrl: ctrl}
 	mock.recorder = &MockAPIKeyManagerClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockAPIKeyManagerClient) EXPECT() *MockAPIKeyManagerClientMockRecorder {
 	return m.recorder
 }
 
-// Create mocks base method
+// Create mocks base method.
 func (m *MockAPIKeyManagerClient) Create(ctx context.Context, in *cloudapipb.CreateAPIKeyRequest, opts ...grpc.CallOption) (*cloudapipb.APIKey, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -682,50 +736,16 @@ func (m *MockAPIKeyManagerClient) Create(ctx context.Context, in *cloudapipb.Cre
 	return ret0, ret1
 }
 
-// Create indicates an expected call of Create
+// Create indicates an expected call of Create.
 func (mr *MockAPIKeyManagerClientMockRecorder) Create(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockAPIKeyManagerClient)(nil).Create), varargs...)
 }
 
-// List mocks base method
-func (m *MockAPIKeyManagerClient) List(ctx context.Context, in *cloudapipb.ListAPIKeyRequest, opts ...grpc.CallOption) (*cloudapipb.ListAPIKeyResponse, error) {
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "List", varargs...)
-	ret0, _ := ret[0].(*cloudapipb.ListAPIKeyResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// List indicates an expected call of List
-func (mr *MockAPIKeyManagerClientMockRecorder) List(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockAPIKeyManagerClient)(nil).List), varargs...)
-}
-
-// Get mocks base method
-func (m *MockAPIKeyManagerClient) Get(ctx context.Context, in *cloudapipb.GetAPIKeyRequest, opts ...grpc.CallOption) (*cloudapipb.GetAPIKeyResponse, error) {
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "Get", varargs...)
-	ret0, _ := ret[0].(*cloudapipb.GetAPIKeyResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Get indicates an expected call of Get
-func (mr *MockAPIKeyManagerClientMockRecorder) Get(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAPIKeyManagerClient)(nil).Get), varargs...)
-}
-
-// Delete mocks base method
-func (m *MockAPIKeyManagerClient) Delete(ctx context.Context, in *proto.UUID, opts ...grpc.CallOption) (*types.Empty, error) {
+// Delete mocks base method.
+func (m *MockAPIKeyManagerClient) Delete(ctx context.Context, in *uuidpb.UUID, opts ...grpc.CallOption) (*types.Empty, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -736,130 +756,162 @@ func (m *MockAPIKeyManagerClient) Delete(ctx context.Context, in *proto.UUID, op
 	return ret0, ret1
 }
 
-// Delete indicates an expected call of Delete
+// Delete indicates an expected call of Delete.
 func (mr *MockAPIKeyManagerClientMockRecorder) Delete(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockAPIKeyManagerClient)(nil).Delete), varargs...)
 }
 
-// MockAPIKeyManagerServer is a mock of APIKeyManagerServer interface
+// Get mocks base method.
+func (m *MockAPIKeyManagerClient) Get(ctx context.Context, in *cloudapipb.GetAPIKeyRequest, opts ...grpc.CallOption) (*cloudapipb.GetAPIKeyResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Get", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.GetAPIKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockAPIKeyManagerClientMockRecorder) Get(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAPIKeyManagerClient)(nil).Get), varargs...)
+}
+
+// List mocks base method.
+func (m *MockAPIKeyManagerClient) List(ctx context.Context, in *cloudapipb.ListAPIKeyRequest, opts ...grpc.CallOption) (*cloudapipb.ListAPIKeyResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "List", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.ListAPIKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List.
+func (mr *MockAPIKeyManagerClientMockRecorder) List(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockAPIKeyManagerClient)(nil).List), varargs...)
+}
+
+// MockAPIKeyManagerServer is a mock of APIKeyManagerServer interface.
 type MockAPIKeyManagerServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockAPIKeyManagerServerMockRecorder
 }
 
-// MockAPIKeyManagerServerMockRecorder is the mock recorder for MockAPIKeyManagerServer
+// MockAPIKeyManagerServerMockRecorder is the mock recorder for MockAPIKeyManagerServer.
 type MockAPIKeyManagerServerMockRecorder struct {
 	mock *MockAPIKeyManagerServer
 }
 
-// NewMockAPIKeyManagerServer creates a new mock instance
+// NewMockAPIKeyManagerServer creates a new mock instance.
 func NewMockAPIKeyManagerServer(ctrl *gomock.Controller) *MockAPIKeyManagerServer {
 	mock := &MockAPIKeyManagerServer{ctrl: ctrl}
 	mock.recorder = &MockAPIKeyManagerServerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockAPIKeyManagerServer) EXPECT() *MockAPIKeyManagerServerMockRecorder {
 	return m.recorder
 }
 
-// Create mocks base method
+// Create mocks base method.
 func (m *MockAPIKeyManagerServer) Create(arg0 context.Context, arg1 *cloudapipb.CreateAPIKeyRequest) (*cloudapipb.APIKey, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.APIKey)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Create indicates an expected call of Create
+// Create indicates an expected call of Create.
 func (mr *MockAPIKeyManagerServerMockRecorder) Create(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockAPIKeyManagerServer)(nil).Create), arg0, arg1)
 }
 
-// List mocks base method
-func (m *MockAPIKeyManagerServer) List(arg0 context.Context, arg1 *cloudapipb.ListAPIKeyRequest) (*cloudapipb.ListAPIKeyResponse, error) {
-	ret := m.ctrl.Call(m, "List", arg0, arg1)
-	ret0, _ := ret[0].(*cloudapipb.ListAPIKeyResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// List indicates an expected call of List
-func (mr *MockAPIKeyManagerServerMockRecorder) List(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockAPIKeyManagerServer)(nil).List), arg0, arg1)
-}
-
-// Get mocks base method
-func (m *MockAPIKeyManagerServer) Get(arg0 context.Context, arg1 *cloudapipb.GetAPIKeyRequest) (*cloudapipb.GetAPIKeyResponse, error) {
-	ret := m.ctrl.Call(m, "Get", arg0, arg1)
-	ret0, _ := ret[0].(*cloudapipb.GetAPIKeyResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Get indicates an expected call of Get
-func (mr *MockAPIKeyManagerServerMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAPIKeyManagerServer)(nil).Get), arg0, arg1)
-}
-
-// Delete mocks base method
-func (m *MockAPIKeyManagerServer) Delete(arg0 context.Context, arg1 *proto.UUID) (*types.Empty, error) {
+// Delete mocks base method.
+func (m *MockAPIKeyManagerServer) Delete(arg0 context.Context, arg1 *uuidpb.UUID) (*types.Empty, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", arg0, arg1)
 	ret0, _ := ret[0].(*types.Empty)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Delete indicates an expected call of Delete
+// Delete indicates an expected call of Delete.
 func (mr *MockAPIKeyManagerServerMockRecorder) Delete(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockAPIKeyManagerServer)(nil).Delete), arg0, arg1)
 }
 
-// MockScriptMgrClient is a mock of ScriptMgrClient interface
+// Get mocks base method.
+func (m *MockAPIKeyManagerServer) Get(arg0 context.Context, arg1 *cloudapipb.GetAPIKeyRequest) (*cloudapipb.GetAPIKeyResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.GetAPIKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockAPIKeyManagerServerMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockAPIKeyManagerServer)(nil).Get), arg0, arg1)
+}
+
+// List mocks base method.
+func (m *MockAPIKeyManagerServer) List(arg0 context.Context, arg1 *cloudapipb.ListAPIKeyRequest) (*cloudapipb.ListAPIKeyResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.ListAPIKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List.
+func (mr *MockAPIKeyManagerServerMockRecorder) List(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockAPIKeyManagerServer)(nil).List), arg0, arg1)
+}
+
+// MockScriptMgrClient is a mock of ScriptMgrClient interface.
 type MockScriptMgrClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockScriptMgrClientMockRecorder
 }
 
-// MockScriptMgrClientMockRecorder is the mock recorder for MockScriptMgrClient
+// MockScriptMgrClientMockRecorder is the mock recorder for MockScriptMgrClient.
 type MockScriptMgrClientMockRecorder struct {
 	mock *MockScriptMgrClient
 }
 
-// NewMockScriptMgrClient creates a new mock instance
+// NewMockScriptMgrClient creates a new mock instance.
 func NewMockScriptMgrClient(ctrl *gomock.Controller) *MockScriptMgrClient {
 	mock := &MockScriptMgrClient{ctrl: ctrl}
 	mock.recorder = &MockScriptMgrClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockScriptMgrClient) EXPECT() *MockScriptMgrClientMockRecorder {
 	return m.recorder
 }
 
-// GetLiveViews mocks base method
-func (m *MockScriptMgrClient) GetLiveViews(ctx context.Context, in *cloudapipb.GetLiveViewsReq, opts ...grpc.CallOption) (*cloudapipb.GetLiveViewsResp, error) {
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetLiveViews", varargs...)
-	ret0, _ := ret[0].(*cloudapipb.GetLiveViewsResp)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetLiveViews indicates an expected call of GetLiveViews
-func (mr *MockScriptMgrClientMockRecorder) GetLiveViews(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLiveViews", reflect.TypeOf((*MockScriptMgrClient)(nil).GetLiveViews), varargs...)
-}
-
-// GetLiveViewContents mocks base method
+// GetLiveViewContents mocks base method.
 func (m *MockScriptMgrClient) GetLiveViewContents(ctx context.Context, in *cloudapipb.GetLiveViewContentsReq, opts ...grpc.CallOption) (*cloudapipb.GetLiveViewContentsResp, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -870,32 +922,36 @@ func (m *MockScriptMgrClient) GetLiveViewContents(ctx context.Context, in *cloud
 	return ret0, ret1
 }
 
-// GetLiveViewContents indicates an expected call of GetLiveViewContents
+// GetLiveViewContents indicates an expected call of GetLiveViewContents.
 func (mr *MockScriptMgrClientMockRecorder) GetLiveViewContents(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLiveViewContents", reflect.TypeOf((*MockScriptMgrClient)(nil).GetLiveViewContents), varargs...)
 }
 
-// GetScripts mocks base method
-func (m *MockScriptMgrClient) GetScripts(ctx context.Context, in *cloudapipb.GetScriptsReq, opts ...grpc.CallOption) (*cloudapipb.GetScriptsResp, error) {
+// GetLiveViews mocks base method.
+func (m *MockScriptMgrClient) GetLiveViews(ctx context.Context, in *cloudapipb.GetLiveViewsReq, opts ...grpc.CallOption) (*cloudapipb.GetLiveViewsResp, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "GetScripts", varargs...)
-	ret0, _ := ret[0].(*cloudapipb.GetScriptsResp)
+	ret := m.ctrl.Call(m, "GetLiveViews", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.GetLiveViewsResp)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetScripts indicates an expected call of GetScripts
-func (mr *MockScriptMgrClientMockRecorder) GetScripts(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+// GetLiveViews indicates an expected call of GetLiveViews.
+func (mr *MockScriptMgrClientMockRecorder) GetLiveViews(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScripts", reflect.TypeOf((*MockScriptMgrClient)(nil).GetScripts), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLiveViews", reflect.TypeOf((*MockScriptMgrClient)(nil).GetLiveViews), varargs...)
 }
 
-// GetScriptContents mocks base method
+// GetScriptContents mocks base method.
 func (m *MockScriptMgrClient) GetScriptContents(ctx context.Context, in *cloudapipb.GetScriptContentsReq, opts ...grpc.CallOption) (*cloudapipb.GetScriptContentsResp, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -906,112 +962,142 @@ func (m *MockScriptMgrClient) GetScriptContents(ctx context.Context, in *cloudap
 	return ret0, ret1
 }
 
-// GetScriptContents indicates an expected call of GetScriptContents
+// GetScriptContents indicates an expected call of GetScriptContents.
 func (mr *MockScriptMgrClientMockRecorder) GetScriptContents(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScriptContents", reflect.TypeOf((*MockScriptMgrClient)(nil).GetScriptContents), varargs...)
 }
 
-// MockScriptMgrServer is a mock of ScriptMgrServer interface
+// GetScripts mocks base method.
+func (m *MockScriptMgrClient) GetScripts(ctx context.Context, in *cloudapipb.GetScriptsReq, opts ...grpc.CallOption) (*cloudapipb.GetScriptsResp, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetScripts", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.GetScriptsResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetScripts indicates an expected call of GetScripts.
+func (mr *MockScriptMgrClientMockRecorder) GetScripts(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScripts", reflect.TypeOf((*MockScriptMgrClient)(nil).GetScripts), varargs...)
+}
+
+// MockScriptMgrServer is a mock of ScriptMgrServer interface.
 type MockScriptMgrServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockScriptMgrServerMockRecorder
 }
 
-// MockScriptMgrServerMockRecorder is the mock recorder for MockScriptMgrServer
+// MockScriptMgrServerMockRecorder is the mock recorder for MockScriptMgrServer.
 type MockScriptMgrServerMockRecorder struct {
 	mock *MockScriptMgrServer
 }
 
-// NewMockScriptMgrServer creates a new mock instance
+// NewMockScriptMgrServer creates a new mock instance.
 func NewMockScriptMgrServer(ctrl *gomock.Controller) *MockScriptMgrServer {
 	mock := &MockScriptMgrServer{ctrl: ctrl}
 	mock.recorder = &MockScriptMgrServerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockScriptMgrServer) EXPECT() *MockScriptMgrServerMockRecorder {
 	return m.recorder
 }
 
-// GetLiveViews mocks base method
-func (m *MockScriptMgrServer) GetLiveViews(arg0 context.Context, arg1 *cloudapipb.GetLiveViewsReq) (*cloudapipb.GetLiveViewsResp, error) {
-	ret := m.ctrl.Call(m, "GetLiveViews", arg0, arg1)
-	ret0, _ := ret[0].(*cloudapipb.GetLiveViewsResp)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetLiveViews indicates an expected call of GetLiveViews
-func (mr *MockScriptMgrServerMockRecorder) GetLiveViews(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLiveViews", reflect.TypeOf((*MockScriptMgrServer)(nil).GetLiveViews), arg0, arg1)
-}
-
-// GetLiveViewContents mocks base method
+// GetLiveViewContents mocks base method.
 func (m *MockScriptMgrServer) GetLiveViewContents(arg0 context.Context, arg1 *cloudapipb.GetLiveViewContentsReq) (*cloudapipb.GetLiveViewContentsResp, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLiveViewContents", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.GetLiveViewContentsResp)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetLiveViewContents indicates an expected call of GetLiveViewContents
+// GetLiveViewContents indicates an expected call of GetLiveViewContents.
 func (mr *MockScriptMgrServerMockRecorder) GetLiveViewContents(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLiveViewContents", reflect.TypeOf((*MockScriptMgrServer)(nil).GetLiveViewContents), arg0, arg1)
 }
 
-// GetScripts mocks base method
-func (m *MockScriptMgrServer) GetScripts(arg0 context.Context, arg1 *cloudapipb.GetScriptsReq) (*cloudapipb.GetScriptsResp, error) {
-	ret := m.ctrl.Call(m, "GetScripts", arg0, arg1)
-	ret0, _ := ret[0].(*cloudapipb.GetScriptsResp)
+// GetLiveViews mocks base method.
+func (m *MockScriptMgrServer) GetLiveViews(arg0 context.Context, arg1 *cloudapipb.GetLiveViewsReq) (*cloudapipb.GetLiveViewsResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLiveViews", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.GetLiveViewsResp)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetScripts indicates an expected call of GetScripts
-func (mr *MockScriptMgrServerMockRecorder) GetScripts(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScripts", reflect.TypeOf((*MockScriptMgrServer)(nil).GetScripts), arg0, arg1)
+// GetLiveViews indicates an expected call of GetLiveViews.
+func (mr *MockScriptMgrServerMockRecorder) GetLiveViews(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLiveViews", reflect.TypeOf((*MockScriptMgrServer)(nil).GetLiveViews), arg0, arg1)
 }
 
-// GetScriptContents mocks base method
+// GetScriptContents mocks base method.
 func (m *MockScriptMgrServer) GetScriptContents(arg0 context.Context, arg1 *cloudapipb.GetScriptContentsReq) (*cloudapipb.GetScriptContentsResp, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetScriptContents", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.GetScriptContentsResp)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetScriptContents indicates an expected call of GetScriptContents
+// GetScriptContents indicates an expected call of GetScriptContents.
 func (mr *MockScriptMgrServerMockRecorder) GetScriptContents(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScriptContents", reflect.TypeOf((*MockScriptMgrServer)(nil).GetScriptContents), arg0, arg1)
 }
 
-// MockAutocompleteServiceClient is a mock of AutocompleteServiceClient interface
+// GetScripts mocks base method.
+func (m *MockScriptMgrServer) GetScripts(arg0 context.Context, arg1 *cloudapipb.GetScriptsReq) (*cloudapipb.GetScriptsResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetScripts", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.GetScriptsResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetScripts indicates an expected call of GetScripts.
+func (mr *MockScriptMgrServerMockRecorder) GetScripts(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScripts", reflect.TypeOf((*MockScriptMgrServer)(nil).GetScripts), arg0, arg1)
+}
+
+// MockAutocompleteServiceClient is a mock of AutocompleteServiceClient interface.
 type MockAutocompleteServiceClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockAutocompleteServiceClientMockRecorder
 }
 
-// MockAutocompleteServiceClientMockRecorder is the mock recorder for MockAutocompleteServiceClient
+// MockAutocompleteServiceClientMockRecorder is the mock recorder for MockAutocompleteServiceClient.
 type MockAutocompleteServiceClientMockRecorder struct {
 	mock *MockAutocompleteServiceClient
 }
 
-// NewMockAutocompleteServiceClient creates a new mock instance
+// NewMockAutocompleteServiceClient creates a new mock instance.
 func NewMockAutocompleteServiceClient(ctrl *gomock.Controller) *MockAutocompleteServiceClient {
 	mock := &MockAutocompleteServiceClient{ctrl: ctrl}
 	mock.recorder = &MockAutocompleteServiceClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockAutocompleteServiceClient) EXPECT() *MockAutocompleteServiceClientMockRecorder {
 	return m.recorder
 }
 
-// Autocomplete mocks base method
+// Autocomplete mocks base method.
 func (m *MockAutocompleteServiceClient) Autocomplete(ctx context.Context, in *cloudapipb.AutocompleteRequest, opts ...grpc.CallOption) (*cloudapipb.AutocompleteResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -1022,14 +1108,16 @@ func (m *MockAutocompleteServiceClient) Autocomplete(ctx context.Context, in *cl
 	return ret0, ret1
 }
 
-// Autocomplete indicates an expected call of Autocomplete
+// Autocomplete indicates an expected call of Autocomplete.
 func (mr *MockAutocompleteServiceClientMockRecorder) Autocomplete(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Autocomplete", reflect.TypeOf((*MockAutocompleteServiceClient)(nil).Autocomplete), varargs...)
 }
 
-// AutocompleteField mocks base method
+// AutocompleteField mocks base method.
 func (m *MockAutocompleteServiceClient) AutocompleteField(ctx context.Context, in *cloudapipb.AutocompleteFieldRequest, opts ...grpc.CallOption) (*cloudapipb.AutocompleteFieldResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -1040,86 +1128,92 @@ func (m *MockAutocompleteServiceClient) AutocompleteField(ctx context.Context, i
 	return ret0, ret1
 }
 
-// AutocompleteField indicates an expected call of AutocompleteField
+// AutocompleteField indicates an expected call of AutocompleteField.
 func (mr *MockAutocompleteServiceClientMockRecorder) AutocompleteField(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AutocompleteField", reflect.TypeOf((*MockAutocompleteServiceClient)(nil).AutocompleteField), varargs...)
 }
 
-// MockAutocompleteServiceServer is a mock of AutocompleteServiceServer interface
+// MockAutocompleteServiceServer is a mock of AutocompleteServiceServer interface.
 type MockAutocompleteServiceServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockAutocompleteServiceServerMockRecorder
 }
 
-// MockAutocompleteServiceServerMockRecorder is the mock recorder for MockAutocompleteServiceServer
+// MockAutocompleteServiceServerMockRecorder is the mock recorder for MockAutocompleteServiceServer.
 type MockAutocompleteServiceServerMockRecorder struct {
 	mock *MockAutocompleteServiceServer
 }
 
-// NewMockAutocompleteServiceServer creates a new mock instance
+// NewMockAutocompleteServiceServer creates a new mock instance.
 func NewMockAutocompleteServiceServer(ctrl *gomock.Controller) *MockAutocompleteServiceServer {
 	mock := &MockAutocompleteServiceServer{ctrl: ctrl}
 	mock.recorder = &MockAutocompleteServiceServerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockAutocompleteServiceServer) EXPECT() *MockAutocompleteServiceServerMockRecorder {
 	return m.recorder
 }
 
-// Autocomplete mocks base method
+// Autocomplete mocks base method.
 func (m *MockAutocompleteServiceServer) Autocomplete(arg0 context.Context, arg1 *cloudapipb.AutocompleteRequest) (*cloudapipb.AutocompleteResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Autocomplete", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.AutocompleteResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Autocomplete indicates an expected call of Autocomplete
+// Autocomplete indicates an expected call of Autocomplete.
 func (mr *MockAutocompleteServiceServerMockRecorder) Autocomplete(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Autocomplete", reflect.TypeOf((*MockAutocompleteServiceServer)(nil).Autocomplete), arg0, arg1)
 }
 
-// AutocompleteField mocks base method
+// AutocompleteField mocks base method.
 func (m *MockAutocompleteServiceServer) AutocompleteField(arg0 context.Context, arg1 *cloudapipb.AutocompleteFieldRequest) (*cloudapipb.AutocompleteFieldResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AutocompleteField", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.AutocompleteFieldResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// AutocompleteField indicates an expected call of AutocompleteField
+// AutocompleteField indicates an expected call of AutocompleteField.
 func (mr *MockAutocompleteServiceServerMockRecorder) AutocompleteField(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AutocompleteField", reflect.TypeOf((*MockAutocompleteServiceServer)(nil).AutocompleteField), arg0, arg1)
 }
 
-// MockProfileServiceClient is a mock of ProfileServiceClient interface
+// MockProfileServiceClient is a mock of ProfileServiceClient interface.
 type MockProfileServiceClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockProfileServiceClientMockRecorder
 }
 
-// MockProfileServiceClientMockRecorder is the mock recorder for MockProfileServiceClient
+// MockProfileServiceClientMockRecorder is the mock recorder for MockProfileServiceClient.
 type MockProfileServiceClientMockRecorder struct {
 	mock *MockProfileServiceClient
 }
 
-// NewMockProfileServiceClient creates a new mock instance
+// NewMockProfileServiceClient creates a new mock instance.
 func NewMockProfileServiceClient(ctrl *gomock.Controller) *MockProfileServiceClient {
 	mock := &MockProfileServiceClient{ctrl: ctrl}
 	mock.recorder = &MockProfileServiceClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockProfileServiceClient) EXPECT() *MockProfileServiceClientMockRecorder {
 	return m.recorder
 }
 
-// GetOrgInfo mocks base method
-func (m *MockProfileServiceClient) GetOrgInfo(ctx context.Context, in *proto.UUID, opts ...grpc.CallOption) (*cloudapipb.OrgInfo, error) {
+// GetOrgInfo mocks base method.
+func (m *MockProfileServiceClient) GetOrgInfo(ctx context.Context, in *uuidpb.UUID, opts ...grpc.CallOption) (*cloudapipb.OrgInfo, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -1130,44 +1224,47 @@ func (m *MockProfileServiceClient) GetOrgInfo(ctx context.Context, in *proto.UUI
 	return ret0, ret1
 }
 
-// GetOrgInfo indicates an expected call of GetOrgInfo
+// GetOrgInfo indicates an expected call of GetOrgInfo.
 func (mr *MockProfileServiceClientMockRecorder) GetOrgInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgInfo", reflect.TypeOf((*MockProfileServiceClient)(nil).GetOrgInfo), varargs...)
 }
 
-// MockProfileServiceServer is a mock of ProfileServiceServer interface
+// MockProfileServiceServer is a mock of ProfileServiceServer interface.
 type MockProfileServiceServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockProfileServiceServerMockRecorder
 }
 
-// MockProfileServiceServerMockRecorder is the mock recorder for MockProfileServiceServer
+// MockProfileServiceServerMockRecorder is the mock recorder for MockProfileServiceServer.
 type MockProfileServiceServerMockRecorder struct {
 	mock *MockProfileServiceServer
 }
 
-// NewMockProfileServiceServer creates a new mock instance
+// NewMockProfileServiceServer creates a new mock instance.
 func NewMockProfileServiceServer(ctrl *gomock.Controller) *MockProfileServiceServer {
 	mock := &MockProfileServiceServer{ctrl: ctrl}
 	mock.recorder = &MockProfileServiceServerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockProfileServiceServer) EXPECT() *MockProfileServiceServerMockRecorder {
 	return m.recorder
 }
 
-// GetOrgInfo mocks base method
-func (m *MockProfileServiceServer) GetOrgInfo(arg0 context.Context, arg1 *proto.UUID) (*cloudapipb.OrgInfo, error) {
+// GetOrgInfo mocks base method.
+func (m *MockProfileServiceServer) GetOrgInfo(arg0 context.Context, arg1 *uuidpb.UUID) (*cloudapipb.OrgInfo, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOrgInfo", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.OrgInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetOrgInfo indicates an expected call of GetOrgInfo
+// GetOrgInfo indicates an expected call of GetOrgInfo.
 func (mr *MockProfileServiceServerMockRecorder) GetOrgInfo(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgInfo", reflect.TypeOf((*MockProfileServiceServer)(nil).GetOrgInfo), arg0, arg1)
 }
