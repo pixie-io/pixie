@@ -1,10 +1,18 @@
 {
     "px-sock-shop": {
         "instructions": [
-            "Load testing has been automatically launched for sock-shop. If you want to visit the sock-shop site,",
-            "run 'kubectl -n px-sock-shop get svc front-end --watch' to get the external IP.",
-            "When using minikube, run 'minikube tunnel' in order to ensure the external IP is accessible.",
-            "sock-shop may take a few more minutes to fully finish starting up."
+            "Load testing has been automatically launched for px-sock-shop. If you want to visit the px-sock-shop site,",
+            " run 'kubectl -n px-sock-shop get svc front-end --watch' to get the external IP.",
+            " When using minikube, run 'minikube tunnel' in order to ensure the external IP is accessible.",
+            " px-sock-shop may take a few more minutes to fully finish starting up."
+        ]
+    },
+    "px-online-boutique": {
+        "instructions": [
+            "Load testing has been automatically launched for px-online-boutique. If you want to visit the",
+            " px-online-boutique site, run 'kubectl -n px-online-boutique get service frontend-external --watch'",
+            " to get the external IP. When using minikube, run 'minikube tunnel' in order to ensure the external",
+            " IP is accessible. px-online-boutique may take a few more minutes to fully finish starting up."
         ]
     }
 }
