@@ -10,7 +10,7 @@
       "name": "namespace",
       "type": "PX_NAMESPACE",
       "description": "The namespace to filter on",
-      "defaultValue": ""
+      "defaultValue": "default"
     },
     {
       "name": "from_entity_filter",
@@ -21,7 +21,7 @@
     {
       "name": "to_entity_filter",
       "type": "PX_STRING",
-      "description": "The partial string to match the 'to_entity' (destination service).",
+      "description": "The partial string to match the 'to_entity' (destination pod, service, IP address).",
       "defaultValue": ""
     }
   ],

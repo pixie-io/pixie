@@ -1,5 +1,5 @@
 ---
-short: DNS Flow Graph
+short: Redis Flow Graph
 long: >
-  Overview of DNS requests in the cluster, with latency stats.
+  Overview of Redis messages in the cluster, with latency stats.
 org_name: pixielabs.ai
