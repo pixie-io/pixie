@@ -9,7 +9,7 @@ namespace http2 {
 
 void ProcessHTTP2Streams(std::deque<http2::Stream>* http2_streams,
                          uint32_t* oldest_active_stream_id_ptr,
-                         std::vector<http2::Record>* trace_records) {
+                         RecordsWithErrorCount<http2::Record>* result) {
   int count_head_consumed = 0;
   bool skipped = false;
   for (auto& stream : *http2_streams) {
@@ -17,7 +17,7 @@ void ProcessHTTP2Streams(std::deque<http2::Stream>* http2_streams,
       // TODO(oazizi): Investigate ways of using std::move(stream) for performance.
       //               But be careful since the object may still be accessed after the move
       //               (see HalfStreamPtr in connection_tracker.cc).
-      trace_records->emplace_back(http2::Record{stream});
+      result->records.emplace_back(http2::Record{stream});
       stream.consumed = true;
     }
 

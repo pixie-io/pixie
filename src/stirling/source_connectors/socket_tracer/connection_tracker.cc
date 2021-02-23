@@ -425,16 +425,17 @@ std::vector<protocols::http2::Record>
 ConnectionTracker::ProcessToRecords<protocols::http2::ProtocolTraits>() {
   // TODO(oazizi): ECHECK that raw events are empty.
 
-  std::vector<protocols::http2::Record> records;
+  protocols::RecordsWithErrorCount<protocols::http2::Record> result;
 
   protocols::http2::ProcessHTTP2Streams(&client_streams_.http2_streams(),
-                                        &oldest_active_client_stream_id_, &records);
+                                        &oldest_active_client_stream_id_, &result);
   protocols::http2::ProcessHTTP2Streams(&server_streams_.http2_streams(),
-                                        &oldest_active_server_stream_id_, &records);
+                                        &oldest_active_server_stream_id_, &result);
 
+  UpdateResultStats(result);
   Cleanup<protocols::http2::ProtocolTraits>();
 
-  return records;
+  return std::move(result.records);
 }
 
 void ConnectionTracker::Reset() {

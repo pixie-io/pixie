@@ -205,9 +205,7 @@ class ConnectionTracker : NotCopyMoveable {
 
     CONN_TRACE(1) << absl::Substitute("records=$0", result.records.size());
 
-    stats_.Increment(Stats::Key::kInvalidRecords, result.error_count);
-    stats_.Increment(Stats::Key::kValidRecords, result.records.size());
-
+    UpdateResultStats(result);
     Cleanup<TProtocolTraits>();
 
     return result.records;
@@ -323,7 +321,7 @@ class ConnectionTracker : NotCopyMoveable {
   /**
    * If disabled, returns the reason the tracker was disabled.
    */
-  std::string_view disable_reason() const { return std::string_view(disable_reason_); }
+  std::string_view disable_reason() const { return disable_reason_; }
 
   /**
    * Returns a state that determine the operations performed on the traffic traced on the
@@ -469,11 +467,6 @@ class ConnectionTracker : NotCopyMoveable {
         state->recv = {};
       }
     }
-
-    // TODO(yzhao): For http2, it's likely the case that we'll want to preserve the inflater under
-    // situations where the HEADERS frames have not been lost. Detecting and responding to them
-    // probably will change the semantic of Reset(), such that it will means different thing for
-    // different protocols.
   }
 
   static void SetConnInfoMapManager(const std::shared_ptr<ConnInfoMapManager>& conn_info_map_mgr) {
@@ -535,6 +528,12 @@ class ConnectionTracker : NotCopyMoveable {
     DataStream* req_data_ptr = req_data();
     DCHECK(req_data_ptr != nullptr);
     req_data_ptr->template ProcessBytesToFrames<TFrameType>(MessageType::kRequest);
+  }
+
+  template <typename TRecordType>
+  void UpdateResultStats(const protocols::RecordsWithErrorCount<TRecordType>& result) {
+    stats_.Increment(Stats::Key::kInvalidRecords, result.error_count);
+    stats_.Increment(Stats::Key::kValidRecords, result.records.size());
   }
 
   int debug_trace_level_ = 0;
