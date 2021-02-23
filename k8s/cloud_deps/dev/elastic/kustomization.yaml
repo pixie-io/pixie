@@ -13,3 +13,9 @@ patchesJson6902:
     kind: Elasticsearch
     group: elasticsearch.k8s.elastic.co
     version: v1
+- path: elastic_replica_patch.yaml
+  target:
+    name: pl-elastic
+    kind: Elasticsearch
+    group: elasticsearch.k8s.elastic.co
+    version: v1

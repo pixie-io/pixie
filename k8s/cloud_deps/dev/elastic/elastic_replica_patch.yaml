@@ -1,0 +1,14 @@
+---
+# Master node
+- op: replace
+  path: /spec/nodeSets/0/count
+  value: 1
+
+- op: replace
+  path: /spec/nodeSets/0/config/node.data
+  value: true
+
+# Data node.
+- op: replace
+  path: /spec/nodeSets/1/count
+  value: 1
