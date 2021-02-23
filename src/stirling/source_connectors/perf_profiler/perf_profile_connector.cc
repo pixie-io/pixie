@@ -58,7 +58,7 @@ std::string FoldedStackTraceString(ebpf::BPFStackTable* stack_traces,
   SymbolsVec user_symbols = stack_traces->get_stack_symbol(key.user_stack_id, key.pid);
   SymbolsVec kernel_symbols = stack_traces->get_stack_symbol(key.kernel_stack_id, -1);
 
-  return stack_traces::FoldedStackTraceString(key.name, user_symbols, kernel_symbols);
+  return stack_traces::FoldedStackTraceString(user_symbols, kernel_symbols);
 }
 }  // namespace
 

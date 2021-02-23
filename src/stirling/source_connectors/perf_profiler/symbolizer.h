@@ -15,8 +15,7 @@ namespace stack_traces {
  * Example:
  * pem;[unknown];pl::stirling::StirlingImpl::RunCore();pl::stirling::InfoClassManager::SampleData(pl::stirling::ConnectorContext*)
  */
-std::string FoldedStackTraceString(std::string_view command_name,
-                                   const std::vector<std::string>& user_symbols,
+std::string FoldedStackTraceString(const std::vector<std::string>& user_symbols,
                                    const std::vector<std::string>& kernel_symbols);
 
 }  // namespace stack_traces

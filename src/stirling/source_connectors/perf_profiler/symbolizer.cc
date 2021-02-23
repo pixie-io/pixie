@@ -12,16 +12,11 @@ namespace pl {
 namespace stirling {
 namespace stack_traces {
 
-std::string FoldedStackTraceString(std::string_view command_name,
-                                   const std::vector<std::string>& user_symbols,
+std::string FoldedStackTraceString(const std::vector<std::string>& user_symbols,
                                    const std::vector<std::string>& kernel_symbols) {
   constexpr char kSeparator = ';';
 
   std::string out;
-
-  // Inject the "command name" as the first symbol in the symbolic stack trace.
-  absl::StrAppend(&out, command_name);
-  out += kSeparator;
 
   for (const auto& user_symbol : user_symbols) {
     absl::StrAppend(&out, user_symbol);
