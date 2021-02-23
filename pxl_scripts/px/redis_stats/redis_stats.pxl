@@ -1,0 +1,281 @@
+# Copyright (c) Pixie Labs, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+
+''' Redis Pod LET metrics
+
+This live view calculates the latency, error rate, and throughput
+of a pod's Redis requests.
+
+Notes:
+* We disable tracking close() responses because of the high rate of
+  false positives. If you are ok with false positives, set
+  @filter_responses_with_none_code to equal False
+'''
+import px
+
+# ----------------------------------------------------------------
+# Visualization Variables - No need to edit for basic configuration.
+# ----------------------------------------------------------------
+# K8s object is the abstraction to group on.
+# Options are ['pod', 'service'].
+k8s_object = 'pod'
+ns_per_ms = 1000 * 1000
+ns_per_s = 1000 * ns_per_ms
+# Window size to use on time_ column for bucketing.
+window_ns = px.DurationNanos(10 * ns_per_s)
+# Column name used to split data into separate time series.
+# k8s_object column is renamed to this and is used in
+# visualization spec.
+split_series_name = 'k8s'
+# This is the name of the column corresponding to the redis IP.
+ip_col_name = 'Redis IP'
+# Temporary way to ensure px.Pod works as expected.
+px.Pod = str
+# The bin size to use for the latency histogram.
+latency_bin_size_ns = px.DurationNanos(50 * ns_per_ms)
+# ----------------------------------------------------------------
+
+
+# ----------------------------------------------------------------
+# Visualization functions:
+#
+# These functions are formatted and ready for use in
+# the visualization specification, vis.json.
+# ----------------------------------------------------------------
+def pod_redis_let(start: str, pod: px.Pod):
+    ''' Calculate LET time-series for Redis traffic per Pod, database pair.
+
+    Calculates latency and throughput for each pod's
+    connection to Redis databases.
+
+    @start: The timestamp of data to start at.
+    @pod: the partial/full-name of the pod to monitor Redis LET.
+
+    Returns: Returns the DataFrame containing LET time-series for Redis
+        traffic for each database Pods talk to.
+    '''
+    df = redis_let_per_pod(start, pod, ['timestamp', k8s_object])
+    return df['time_', split_series_name, 'latency_p50',
+              'latency_p90', 'latency_p99', 'request_throughput']
+
+
+def summary_redis_let(start: str, pod: px.Pod):
+    ''' Calculate LET summary for redis traffic per Pod, database pair.
+
+    Calculates latency and throughput for each pod's
+    connection to redis databases.
+
+    @start: The timestamp of data to start at.
+    @pod: the partial/full-name of the pod to monitor redis LET.
+
+    Returns: Returns the DataFrame containing LET time-series for redis
+        traffic for each database Pods talk to.
+    '''
+    df = redis_let_per_pod(start, pod, ['timestamp', k8s_object, 'remote_addr'])
+    df[ip_col_name] = df.remote_addr
+    summary_df = summarize_LET(df, [k8s_object, ip_col_name])
+    return summary_df[[k8s_object, ip_col_name, 'request_throughput', 'latency', 'total_requests']]
+
+
+def latency_histogram(start: str, pod: px.Pod):
+    ''' Computes a histogram of HTTP request latency.
+
+    Args:
+    @start: The timestamp of data to start at.
+    @svc: the partial/full-name of the svc.
+
+    Returns: DataFrame of the HTTP latency histogram for svcs that
+        match @svc.
+    '''
+    # The data necessary to compute redis LET information is located in the
+    # redis_events.beta table. We filter and aggregate data from this table to compute the
+    # required metrics.
+    df = px.DataFrame(table='redis_events.beta', start_time=start)
+    df = format_redis_table(df)
+
+    # Calculate LET of pod(s) (k8s_object) connection to redis connections
+    # over the time window ('timestamp') after filtering for matching svcs.
+    matching_df = df[px.contains(df[k8s_object], pod)]
+
+    matching_df.request_latency = px.DurationNanos(px.bin(matching_df.latency,
+                                                          latency_bin_size_ns))
+    return matching_df.groupby('request_latency').agg(count=('time_', px.count))
+
+def cmd_timeseries(start: str, pod: px.Pod):
+    ''' Calculate Redis cmd timeseries for redis traffic per Pod, database pair.
+
+    @start: The timestamp of data to start at.
+    @pod: The partial/full-name of the pod to monitor.
+
+    Returns: Returns the DataFrame containing Redis cmd time-series for redis
+        traffic for each database Pods talk to.
+    '''
+    df = px.DataFrame(table='redis_events.beta', start_time=start)
+    df.pod = df.ctx['pod']
+    df = df[px.contains(df.pod, pod)]
+    df.timestamp = px.bin(df.time_, window_ns)
+    df = df.groupby(['timestamp', 'cmd']).agg(
+        throughput_total=('cmd', px.count),
+    )
+    df.time_ = df.timestamp
+
+    return df
+
+# ----------------------------------------------------------------
+# Utility functions:
+#
+# These are shared functions. We plan to support imports in v0.3,
+# which will allow these functions to be shared across multiple
+# scripts.
+# ----------------------------------------------------------------
+def redis_let_per_pod(start: str, pod: px.Pod, groups):
+    ''' Calculate LET time-series for redis traffic per Pod, database pair.
+
+    Calculates latency and throughput for each pod's
+    connection to predis databases.
+
+    @start: The timestamp of data to start at.
+    @pod: the partial/full-name of the pod to monitor redis LET.
+
+    Returns: Returns the DataFrame containing LET time-series for redis
+        traffic for each database Pods talk to.
+    '''
+    # The data necessary to compute redis LET information is located in the
+    # redis_events.beta table. We filter and aggregate data from this table to compute the
+    # required metrics.
+    df = px.DataFrame(table='redis_events.beta', start_time=start)
+    df = format_redis_table(df)
+
+    # Calculate LET of pod(s) (k8s_object) connection to redis connections
+    # over the time window ('timestamp') after filtering for matching svcs.
+    matching_df = df[px.contains(df[k8s_object], pod)]
+    let_df = calc_redis_LET(matching_df, groups)
+    let_df[split_series_name] = let_df[k8s_object]
+    return let_df
+
+
+def format_events_table(df, latency_col):
+    ''' Format data and add semantic columns in event tables
+
+    Unifies latency column to 'latency_ms', adds a binned
+    timestamp field to aggregate on, and adds the svc
+    (k8s_object) as a semantic column.
+
+    Works on 'redis_events.beta' and 'http_events'
+
+    Args:
+    @df: the input events table
+    @latency_col: the name of the latency column in @df.
+
+    Returns: formatted events DataFrame
+    '''
+    df.latency = df[latency_col]
+
+    df.timestamp = px.bin(df.time_, window_ns)
+    df[k8s_object] = df.ctx[k8s_object]
+    df = df[df[k8s_object] != '']
+    return df
+
+
+def format_redis_table(df):
+    ''' Formats redis_events.beta tables
+
+    Args:
+    @df: the input redis_events.beta table.
+
+    Returns: formatted redis_events.beta DataFrame.
+    '''
+    df = format_events_table(df, 'latency_ns')
+    df.resp_size = px.length(df.resp)
+    return df
+
+
+def format_LET_aggs(df):
+    ''' Converts the result of LET windowed aggregates into expected metrics.
+
+    Converts the result of aggregates on windows into well-formatted metrics that
+    can be visualized. Latency quantile values need to be extracted from the
+    quantiles struct, and then request_throughput and bytes_per_ns are calculated as
+    a function of window size.
+
+
+    This function represents logic shared by LET calculators for redis and
+    HTTP events.
+
+    Args:
+    @df: the input events table grouped into windows with aggregated
+        columns 'throughput_total' and 'request_throughput'
+
+    Returns: DataFrame with formatted LET metrics.
+    '''
+    df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
+    df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
+    df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
+    df['time_'] = df['timestamp']
+    df.request_throughput = df.throughput_total / window_ns
+    df.bytes_per_ns = df.bytes_total / window_ns
+
+    return df
+
+
+def calc_redis_LET(df, groups):
+    ''' Calculates Latency, Error Rate, and Throughput on redis events.
+
+    Calculates latency, error rate, and throughput aggregated over
+    @groups.
+
+    Args:
+    @df: the input redis_events.beta table.
+    @groups: the list of columns to group on. 'timestamp' must be a a group
+        or this will fail.
+
+    Returns: The LET DataFrame.
+    '''
+    # All requests for errors and throughput
+    df = df.groupby(groups).agg(
+        latency_quantiles=('latency', px.quantiles),
+        bytes_total=('resp_size', px.sum),
+        throughput_total=('latency', px.count)
+    )
+
+    # Format the result of LET aggregates into proper scalar formats and
+    # time series.
+    df = format_LET_aggs(df)
+    return df
+
+
+def ip_to_svc_name(df, ip_col, svc_col_name):
+    ''' Map IP to service name.
+
+    Maps IP values stored in @ip_col into svc names to store into
+    @svc_col_name.
+
+    Args:
+    @df: the input dataframe.
+    @ip_col: the IP column to map from.
+    @svc_col_name: the column name to assign the new svc values.
+
+    Returns: DataFrame with the svc_col added.
+    '''
+    pod_id = 'pod_id'
+    df[pod_id] = px.ip_to_pod_id(df[ip_col])
+    df[svc_col_name] = px.pod_id_to_service_name(df[pod_id])
+    return df.drop(pod_id)
+
+
+def summarize_LET(let_df, groups):
+    ''' Aggregate LET values across all windows.
+
+    Args:
+    @let_df: the DataFrame with LET values.
+    @groups: the columns to group over.
+
+    Returns: The summary DF.
+    '''
+    df = let_df.groupby(groups).agg(
+        request_throughput=('request_throughput', px.mean),
+        bytes_per_ns=('bytes_per_ns', px.mean),
+        total_requests=('throughput_total', px.sum),
+        latency=('latency_p50', px.mean),
+    )
+    return df
