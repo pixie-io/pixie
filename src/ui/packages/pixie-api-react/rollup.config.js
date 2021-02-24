@@ -32,4 +32,12 @@ export default {
     }),
     commonjs(),
   ],
+  onwarn(warning, warn) {
+    // In >=99.99% of cases, calling 'eval' is not a wise decision. JSPB apparently ran into one of the exceptions.
+    const isProtobufEvalWarning = warning.code === 'EVAL'
+        && warning.loc && warning.loc && warning.loc.file.includes('pixie-api');
+    if (!isProtobufEvalWarning) {
+      warn(warning);
+    }
+  },
 };

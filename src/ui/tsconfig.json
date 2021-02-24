@@ -5,7 +5,8 @@
       "*": [
         "*",
         "../packages/pixie-components/src/*",
-        "../packages/pixie-api/src/*"
+        "../packages/pixie-api/src/*",
+        "../packages/pixie-api-react/src/*"
       ]
     },
     "outDir": "./dist/",

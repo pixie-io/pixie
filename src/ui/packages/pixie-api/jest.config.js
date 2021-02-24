@@ -6,7 +6,8 @@ module.exports = {
   moduleDirectories: ['node_modules', '<rootDir>/src'],
   resolver: null,
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.jsx?$': 'babel-jest',
+    '^.+\\.tsx?$': 'ts-jest',
   },
   testRegex: '.*\\.test\\.(ts|js)$',
   reporters: ['default', 'jest-junit'],

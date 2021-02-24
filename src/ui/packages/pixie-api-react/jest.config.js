@@ -1,15 +1,13 @@
 module.exports = {
+  rootDir: '.',
   globals: {
     window: true,
   },
-  setupFiles: [
-    '<rootDir>/src/testing/enzyme-setup.ts',
-  ],
   setupFilesAfterEnv: [
     '<rootDir>/src/testing/jest-test-setup.js',
   ],
   moduleFileExtensions: ['ts', 'tsx', 'js'],
-  moduleDirectories: ['node_modules', '<rootDir>/src'],
+  moduleDirectories: ['node_modules', 'src'],
   resolver: null,
   transform: {
     '^.+\\.tsx?$': 'ts-jest',
