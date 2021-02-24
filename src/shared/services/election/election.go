@@ -114,8 +114,7 @@ func (le *K8sLeaderElectionMgr) runElection(ctx context.Context, callback func(s
 			},
 			OnStoppedLeading: func() {
 				// we can do cleanup here
-				log.WithField("id", id).Error("leadership lost")
-				panic(fmt.Errorf("leadership lost"))
+				log.Fatal(fmt.Sprintf("Leadership lost. This can occur when the K8s API has heavy resource utilization or high network latency and fails to respond within %dms. This usually resolves by itself after some time. Terminating to retry...", le.retryPeriod))
 			},
 			OnNewLeader: callback,
 		},
