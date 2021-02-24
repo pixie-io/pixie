@@ -131,6 +131,9 @@ enum ClusterStatus {
   # The state is healthy if heartbeats are received on regular intervals and the
   # cluster is responding to requests.
   CS_HEALTHY
+  # The state is unhealthy if the cluster is connected to Pixie Cloud and is providing
+  # heartbeats, but isn't queryable for some reason. This resembles HTTP's 500 status.
+  CS_UNHEALTHY
   # The state will go to disconnected if the GRPC connection breaks. The hope is that
   # the cluster will come back online and resume in HEALTHY state.
   CS_DISCONNECTED
