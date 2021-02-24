@@ -421,11 +421,6 @@ class ServiceInfo : public K8sMetadataObject {
   }
   virtual ~ServiceInfo() = default;
 
-  void AddPod(UIDView uid) { pods_.emplace(uid); }
-  void RmPod(UIDView uid) { pods_.erase(uid); }
-
-  const absl::flat_hash_set<std::string>& pods() const { return pods_; }
-
   std::unique_ptr<K8sMetadataObject> Clone() const override {
     return std::unique_ptr<ServiceInfo>(new ServiceInfo(*this));
   }
@@ -435,14 +430,6 @@ class ServiceInfo : public K8sMetadataObject {
  protected:
   ServiceInfo(const ServiceInfo& other) = default;
   ServiceInfo& operator=(const ServiceInfo& other) = delete;
-
- private:
-  /**
-   * Set of pods that are running on this pod.
-   *
-   * The PodInfo is located in pods in the K8s state.
-   */
-  absl::flat_hash_set<UID> pods_;
 };
 
 /**
@@ -455,11 +442,6 @@ class NamespaceInfo : public K8sMetadataObject {
                           std::move(name)) {}
   virtual ~NamespaceInfo() = default;
 
-  void AddPod(UIDView uid) { pods_.emplace(uid); }
-  void RmPod(UIDView uid) { pods_.erase(uid); }
-
-  const absl::flat_hash_set<std::string>& pods() const { return pods_; }
-
   std::unique_ptr<K8sMetadataObject> Clone() const override {
     return std::unique_ptr<NamespaceInfo>(new NamespaceInfo(*this));
   }
@@ -469,14 +451,6 @@ class NamespaceInfo : public K8sMetadataObject {
  protected:
   NamespaceInfo(const NamespaceInfo& other) = default;
   NamespaceInfo& operator=(const NamespaceInfo& other) = delete;
-
- private:
-  /**
-   * Set of pods that are running on this namespace.
-   *
-   * The PodInfo is located in pods in the K8s state.
-   */
-  absl::flat_hash_set<UID> pods_;
 };
 
 }  // namespace md

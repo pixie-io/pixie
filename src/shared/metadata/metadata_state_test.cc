@@ -190,7 +190,6 @@ TEST(K8sMetadataStateTest, HandleServiceUpdate) {
   EXPECT_EQ("ns0", service_info->ns());
   EXPECT_EQ(7, service_info->start_time_ns());
   EXPECT_EQ(8, service_info->stop_time_ns());
-  EXPECT_THAT(service_info->pods(), UnorderedElementsAre("pod0"));
 
   // Check that the pod info service got set.
   EXPECT_THAT(pod_info->services(), UnorderedElementsAre("3_uid"));

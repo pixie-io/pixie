@@ -232,66 +232,6 @@ TEST_F(AgentMetadataStateTest, initialize_md_state) {
   EXPECT_EQ("namespace_1", ns_info->uid());
   EXPECT_EQ("pl", ns_info->name());
   EXPECT_EQ("pl", ns_info->ns());
-
-  EXPECT_EQ(1, ns_info->pods().size());
-}
-
-TEST_F(AgentMetadataStateTest, remove_dead_pods) {
-  moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> updates;
-  GenerateTestUpdateEvents(&updates);
-  GenerateTestUpdateEventsForNonExistentPod(&updates);
-
-  ASSERT_OK(ApplyK8sUpdates(/*ts*/ 2000, &metadata_state_, &md_filter_, &updates));
-  ASSERT_EQ(0, updates.size_approx());
-
-  FakePIDData md_reader;
-  K8sMetadataState* state = metadata_state_.k8s_metadata_state();
-
-  const PodInfo* pod_info;
-
-  // Check state before call to RemoveDeadPods().
-  EXPECT_EQ(state->pods_by_name().size(), 3);
-
-  pod_info = state->PodInfoByID("pod_id1");
-  ASSERT_NE(nullptr, pod_info);
-  EXPECT_EQ(0, pod_info->stop_time_ns());
-  EXPECT_EQ(PodPhase::kRunning, pod_info->phase());
-  EXPECT_EQ("running message", pod_info->phase_message());
-  EXPECT_EQ("running reason", pod_info->phase_reason());
-
-  pod_info = state->PodInfoByID("pod_id2");
-  ASSERT_NE(nullptr, pod_info);
-  EXPECT_EQ(0, pod_info->stop_time_ns());
-  EXPECT_EQ(PodPhase::kRunning, pod_info->phase());
-  EXPECT_EQ("running message 2", pod_info->phase_message());
-  EXPECT_EQ("running reason 2", pod_info->phase_reason());
-
-  pod_info = state->PodInfoByID("pod_id3");
-  ASSERT_NE(nullptr, pod_info);
-  EXPECT_EQ(0, pod_info->stop_time_ns());
-  EXPECT_EQ(PodPhase::kFailed, pod_info->phase());
-  EXPECT_EQ("failed message", pod_info->phase_message());
-  EXPECT_EQ("failed reason", pod_info->phase_reason());
-
-  RemoveDeadPods(/*ts*/ 100, &metadata_state_, &md_reader);
-
-  // Expected state after call to RemoveDeadPods().
-  EXPECT_EQ(state->pods_by_name().size(), 3);
-
-  // This pod should still be alive, as indicated by stop_time_ns == 0.
-  pod_info = state->PodInfoByID("pod_id1");
-  ASSERT_NE(nullptr, pod_info);
-  EXPECT_EQ(0, pod_info->stop_time_ns());
-
-  // This pod should still be marked as dead, as indicated by stop_time_ns != 0.
-  pod_info = state->PodInfoByID("pod_id2");
-  ASSERT_NE(nullptr, pod_info);
-  EXPECT_NE(0, pod_info->stop_time_ns());
-
-  // This pod should still be alive.
-  pod_info = state->PodInfoByID("pod_id3");
-  ASSERT_NE(nullptr, pod_info);
-  EXPECT_EQ(0, pod_info->stop_time_ns());
 }
 
 TEST_F(AgentMetadataStateTest, pid_created) {

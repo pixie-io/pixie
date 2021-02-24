@@ -193,15 +193,6 @@ Status K8sMetadataState::HandlePodUpdate(const PodUpdate& update) {
     pods_by_ip_[update.pod_ip()] = object_uid;
   }
 
-  // Add pod to namespace, if namespace exists.
-  auto ns_it = namespaces_by_name_.find({ns, ns});
-
-  if (!(ns_it == namespaces_by_name_.end())) {
-    auto ns_uid = ns_it->second;
-    NamespaceInfo* ns_info = static_cast<NamespaceInfo*>(k8s_objects_[ns_uid].get());
-    ns_info->AddPod(object_uid);
-  }
-
   return Status::OK();
 }
 
@@ -248,7 +239,6 @@ Status K8sMetadataState::HandleServiceUpdate(const ServiceUpdate& update) {
       LOG(INFO) << absl::Substitute("Didn't find pod UID $0 for service $1/$2", uid, ns, name);
       continue;
     }
-    service_info->AddPod(uid);
     ECHECK(k8s_objects_[uid]->type() == K8sObjectType::kPod);
     // We add the service uid to the pod. Lifetime of service still handled by the service object.
     PodInfo* pod_info = static_cast<PodInfo*>(k8s_objects_[uid].get());

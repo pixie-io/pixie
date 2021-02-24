@@ -184,25 +184,10 @@ TEST(ServiceInfo, debug_string) {
   EXPECT_EQ("<Service:ns=pl:name=service1:uid=123:state=S>", service_info.DebugString());
 }
 
-TEST(ServiceInfo, add_delete_pods) {
-  ServiceInfo service_info("123", "pl", "service1");
-  service_info.AddPod("ABCD");
-  service_info.AddPod("ABCD2");
-  service_info.AddPod("ABCD3");
-  service_info.RmPod("ABCD");
-
-  EXPECT_THAT(service_info.pods(), testing::UnorderedElementsAre("ABCD2", "ABCD3"));
-
-  service_info.RmPod("ABCD3");
-  EXPECT_THAT(service_info.pods(), testing::UnorderedElementsAre("ABCD2"));
-}
-
 TEST(ServiceInfo, clone) {
   ServiceInfo service_info("123", "pl", "service1");
   service_info.set_start_time_ns(123);
   service_info.set_stop_time_ns(256);
-  service_info.AddPod("ABCD");
-  service_info.AddPod("ABCD2");
 
   std::unique_ptr<ServiceInfo> cloned(static_cast<ServiceInfo*>(service_info.Clone().release()));
   EXPECT_EQ(cloned->uid(), service_info.uid());
@@ -213,7 +198,6 @@ TEST(ServiceInfo, clone) {
   EXPECT_EQ(cloned->stop_time_ns(), service_info.stop_time_ns());
 
   EXPECT_EQ(cloned->type(), service_info.type());
-  EXPECT_EQ(cloned->pods(), service_info.pods());
 }
 
 }  // namespace md
