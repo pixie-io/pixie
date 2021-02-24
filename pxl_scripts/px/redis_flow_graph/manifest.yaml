@@ -1,0 +1,4 @@
+---
+short: Redis Flow Graph
+long: >
+  Graph of Redis messages in the cluster, with latency stats.
