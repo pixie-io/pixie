@@ -60,7 +60,7 @@ def summary_redis_let(start: str, pod: px.Pod):
     ''' Calculate LET summary for redis traffic per connection to
     a Redis database pod.
 
-    Calculates latency and throughput for each 
+    Calculates latency and throughput for each
     connection to a Redis database pod.
 
     @start: The timestamp of data to start at.
@@ -70,8 +70,7 @@ def summary_redis_let(start: str, pod: px.Pod):
     traffic to a Redis database pod.
     '''
     df = redis_let_per_pod(start, pod, ['timestamp', k8s_object, 'remote_addr'])
-    df.client_id = px.ip_to_pod_id(df.remote_addr)
-    df.client = px.pod_id_to_pod_name(df.client_id)
+    df.client = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
     summary_df = summarize_LET(df, ['pod', 'client'])
     summary_df.server = summary_df.pod
     return summary_df[['server', 'client', 'request_throughput', 'latency', 'total_requests']]
@@ -134,7 +133,7 @@ def redis_let_per_pod(start: str, pod: px.Pod, groups):
     ''' Calculate LET time-series for redis traffic per connection to
     a Redis database pod.
 
-    Calculates latency and throughput for each connection to a 
+    Calculates latency and throughput for each connection to a
     Redis database pod.
 
     @start: The timestamp of data to start at.
@@ -188,7 +187,7 @@ def format_redis_table(df):
 
     Returns: formatted redis_events.beta DataFrame.
     '''
-    # Filter for server-side tracing (Redis DB on cluster) 
+    # Filter for server-side tracing (Redis DB on cluster)
     df = df[df.trace_role == 2]
     df = format_events_table(df, 'latency_ns')
     df.resp_size = px.length(df.resp)
