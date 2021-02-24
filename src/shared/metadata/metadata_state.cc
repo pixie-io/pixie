@@ -165,11 +165,15 @@ Status K8sMetadataState::HandlePodUpdate(const PodUpdate& update) {
   // state might be periodically inconsistent.
   auto pod_info = static_cast<PodInfo*>(it->second.get());
   for (const auto& cid : update.container_ids()) {
+    if (containers_by_id_.find(cid) == containers_by_id_.end()) {
+      // We should be resilient to the case where we happened to miss a pod update
+      // in the stream of events. If we did miss a pod update, just skip adding the
+      // pod to this particular service to avoid dangling references.
+      LOG(INFO) << absl::Substitute("Didn't find container ID $0 for pod $1/$2", cid, ns, name);
+      continue;
+    }
+
     pod_info->AddContainer(cid);
-
-    // Check assumption that MDS does not send dangling reference.
-    DCHECK(containers_by_id_.find(cid) != containers_by_id_.end());
-
     containers_by_id_[cid]->set_pod_id(object_uid);
   }
 
@@ -238,8 +242,10 @@ Status K8sMetadataState::HandleServiceUpdate(const ServiceUpdate& update) {
   auto service_info = static_cast<ServiceInfo*>(it->second.get());
   for (const auto& uid : update.pod_ids()) {
     if (k8s_objects_.find(uid) == k8s_objects_.end()) {
-      // Check assumption that MDS does not send dangling reference.
-      LOG(DFATAL) << absl::Substitute("Could not find UID=$0", uid);
+      // We should be resilient to the case where we happened to miss a pod update
+      // in the stream of events. If we did miss a pod update, just skip adding the
+      // pod to this particular service to avoid dangling references.
+      LOG(INFO) << absl::Substitute("Didn't find pod UID $0 for service $1/$2", uid, ns, name);
       continue;
     }
     service_info->AddPod(uid);

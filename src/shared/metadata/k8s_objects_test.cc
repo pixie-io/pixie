@@ -184,7 +184,7 @@ TEST(ServiceInfo, debug_string) {
   EXPECT_EQ("<Service:ns=pl:name=service1:uid=123:state=S>", service_info.DebugString());
 }
 
-TEST(ServiceInfo, add_delete_containers) {
+TEST(ServiceInfo, add_delete_pods) {
   ServiceInfo service_info("123", "pl", "service1");
   service_info.AddPod("ABCD");
   service_info.AddPod("ABCD2");
