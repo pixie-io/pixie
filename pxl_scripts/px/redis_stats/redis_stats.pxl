@@ -102,6 +102,7 @@ def latency_histogram(start: str, pod: px.Pod):
                                                           latency_bin_size_ns))
     return matching_df.groupby('request_latency').agg(count=('time_', px.count))
 
+
 def cmd_timeseries(start: str, pod: px.Pod):
     ''' Calculate Redis cmd timeseries for redis traffic per Pod, database pair.
 
@@ -120,6 +121,7 @@ def cmd_timeseries(start: str, pod: px.Pod):
         throughput_total=('cmd', px.count),
     )
     return df
+
 
 # ----------------------------------------------------------------
 # Utility functions:
@@ -279,3 +281,4 @@ def summarize_LET(let_df, groups):
         latency=('latency_p50', px.mean),
     )
     return df
+    
