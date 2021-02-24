@@ -20,7 +20,8 @@
     "start": "rollup -c -w",
     "test": "jest",
     "install": "rollup -c",
-    "coverage": "jest --coverage"
+    "coverage": "jest --coverage",
+    "regenerate_graphql_schema": "node $(yarn bin graphql-schema-typescript) generate-ts ../../../cloud/api/controller/schema/schema.graphql --output src/types/schema.d.ts"
   },
   "dependencies": {
     "@apollo/client": "^3.3.7",
@@ -43,6 +44,7 @@
     "axios": "0.21.1",
     "babel-loader": "^8.2.1",
     "babel-preset-react-app": "^10.0.0",
+    "graphql-schema-typescript": "^1.5.2",
     "jest": "^26.6.3",
     "rollup": "^2.33.1",
     "rollup-plugin-peer-deps-external": "^2.2.4",

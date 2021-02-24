@@ -1,10 +1,8 @@
 # This file describes the schema from the API service.
 #
 # It's not ideal, but we need to manually generate types for the TypeScript UI
-# when this file is updated. This can be done by running:
-#  graphql-schema-typescript generate-ts schema.graphql --output schema.d.ts
-# which will generate the output type file that will be picked up by the UI.
-# This schema.d.ts files should exist in the same directory as the schema.graphql file.
+# when this file is updated. This can be done by running `update.sh` in this directory.
+# This generates a schema.d.ts file in this directory, and copies it to the @pixie/api package for use by TypeScript.
 
 schema {
   query: Query
@@ -129,20 +127,20 @@ type AutocompleteSuggestion {
 
 enum ClusterStatus {
   # The default state if nothing is known.
-  VZ_ST_UNKNOWN
+  CS_UNKNOWN
   # The state is healthy if heartbeats are received on regular intervals and the
   # cluster is responding to requests.
-  VZ_ST_HEALTHY
+  CS_HEALTHY
   # The state will go to disconnected if the GRPC connection breaks. The hope is that
   # the cluster will come back online and resume in HEALTHY state.
-  VZ_ST_DISCONNECTED
+  CS_DISCONNECTED
   # The state is updating when the cluster is in the process of updating.
-  VZ_ST_UPDATING
+  CS_UPDATING
   # The vizier has connected, but has not sent any other further status updates about
   # whether it is healthy or updating.
-  VZ_ST_CONNECTED
+  CS_CONNECTED
   # The vizier was trying to update, but failed and is now in a bad state.
-  VZ_ST_UPDATE_FAILED
+  CS_UPDATE_FAILED
 }
 
 type VizierConfig {

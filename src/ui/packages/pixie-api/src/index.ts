@@ -1,5 +1,9 @@
 export { PixieAPIClient, PixieAPIClientOptions, ClusterConfig } from './api';
 
+/**
+ * NOTE: Unless you are authoring a framework-specific library (such as @pixie/api-react), these should be ignored.
+ * They are an implementation detail from the consumer's view, but they are exposed for libraries like @pixie/api-react.
+ */
 export {
   USER_QUERIES,
   API_KEY_QUERIES,
@@ -8,6 +12,7 @@ export {
   AUTOCOMPLETE_QUERIES,
 } from './gql-queries';
 
+// Note: GQLUserSetting is not exposed because UserSettings is more specific.
 export { DEFAULT_USER_SETTINGS, UserSettings } from './user-settings';
 
 export { VizierQueryErrorType, VizierQueryError, GRPCStatusCode } from './vizier';
@@ -21,13 +26,67 @@ export {
   BatchDataUpdate,
   ExecutionStateUpdate,
   ExecutionEvent,
+  // TODO(nick): VizierGRPCClient shouldn't be exposed; remove this line once the UI code drops its direct dependency.
   VizierGRPCClient,
   VizierQueryArg,
   VizierQueryFunc,
   VizierQueryResult,
 } from './vizier-grpc-client';
 
-/* Generated types begin (these exports are manually updated) */
+/* Generated types begin (types are generated but these exports are manually updated) */
+
+export {
+  GQLQuery,
+  GQLUserInfo,
+  // Note: GQLUserSetting is not exposed because we already expose the more specific UserSettings from ./user-settings.
+  // GQLUserSetting,
+  GQLClusterInfo,
+  GQLVizierConfig,
+  GQLPodStatus,
+  GQLContainerStatus,
+  GQLK8sEvent,
+  GQLClusterConnectionInfo,
+  GQLClusterStatus,
+  GQLCLIArtifact,
+  GQLArtifactsInfo,
+  GQLArtifact,
+  GQLAutocompleteResult,
+  GQLAutocompleteEntityKind,
+  GQLAutocompleteEntityState,
+  GQLAutocompleteActionType,
+  GQLTabSuggestion,
+  GQLAutocompleteSuggestion,
+  GQLLiveViewMetadata,
+  GQLLiveViewContents,
+  GQLScriptMetadata,
+  GQLScriptContents,
+  GQLDeploymentKey,
+  GQLAPIKey,
+  GQLMutation,
+  GQLResolver,
+  GQLQueryTypeResolver,
+  GQLUserInfoTypeResolver,
+  GQLUserSettingTypeResolver,
+  GQLClusterInfoTypeResolver,
+  GQLVizierConfigTypeResolver,
+  GQLPodStatusTypeResolver,
+  GQLContainerStatusTypeResolver,
+  GQLK8sEventTypeResolver,
+  GQLClusterConnectionInfoTypeResolver,
+  GQLCLIArtifactTypeResolver,
+  GQLArtifactsInfoTypeResolver,
+  GQLArtifactTypeResolver,
+  GQLAutocompleteResultTypeResolver,
+  GQLTabSuggestionTypeResolver,
+  GQLAutocompleteSuggestionTypeResolver,
+  GQLLiveViewMetadataTypeResolver,
+  GQLLiveViewContentsTypeResolver,
+  GQLScriptMetadataTypeResolver,
+  GQLScriptContentsTypeResolver,
+  GQLDeploymentKeyTypeResolver,
+  GQLAPIKeyTypeResolver,
+  GQLMutationTypeResolver,
+} from './types/schema';
 
 export {
   Axis,

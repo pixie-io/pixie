@@ -134,8 +134,7 @@ final class FileCheckerTest {
 
         foreach ($gqlFiles as &$file) {
             $schemaFilename = substr($file,0,-8) . '.d.ts';
-            $test_results = $this->checkFile($file, $schemaFilename, $test_results, '.graphql', 'To regenerate, run this command in the directory:' .
-                    'graphql-schema-typescript generate-ts schema.graphql --output schema.d.ts');
+            $test_results = $this->checkFile($file, $schemaFilename, $test_results, '.graphql', 'To regenerate, run update.sh in //src/cloud/api/controller/schema');
         }
 
         # Check .go files that may need a .gen.go file.
