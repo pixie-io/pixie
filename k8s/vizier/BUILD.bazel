@@ -1,6 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load(":images.bzl", "generate_vizier_bootstrap_yamls", "generate_vizier_yamls", "image_map_with_bundle_version")
+load(":images.bzl", "generate_vizier_metadata_persist_yamls", "generate_vizier_yamls", "image_map_with_bundle_version")
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle", "container_image", "container_pull")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
@@ -48,6 +49,22 @@ generate_vizier_bootstrap_yamls(
     public = False,
 )
 
+generate_vizier_metadata_persist_yamls(
+    name = "public_vizier_metadata_persist_prod",
+    srcs = glob(["**/*.yaml"]),
+    out = "public_vizier_metadata_persist_prod.yaml",
+    image_map = VIZIER_IMAGE_MAP,
+    public = True,
+)
+
+generate_vizier_metadata_persist_yamls(
+    name = "private_vizier_metadata_persist_prod",
+    srcs = glob(["**/*.yaml"]),
+    out = "private_vizier_metadata_persist_prod.yaml",
+    image_map = VIZIER_IMAGE_MAP,
+    public = False,
+)
+
 container_bundle(
     name = "private_vizier_images_bundle",
     images = image_map_with_bundle_version(VIZIER_IMAGE_MAP, False),
@@ -82,6 +99,10 @@ pkg_tar(
         select({
             "//conditions:default": ["//k8s/vizier:private_vizier_prod.yaml"],
             ":public": ["//k8s/vizier:public_vizier_prod.yaml"],
+        }) +
+        select({
+            "//conditions:default": ["//k8s/vizier:private_vizier_metadata_persist_prod.yaml"],
+            ":public": ["//k8s/vizier:public_vizier_metadata_persist_prod.yaml"],
         }) + [
             "//k8s/vizier_deps:etcd_prod",
             "//k8s/vizier_deps:nats_prod",
@@ -93,6 +114,8 @@ pkg_tar(
         "/vizier/public_vizier_bootstrap_prod.yaml": "vizier/vizier_bootstrap_prod.yaml",
         "/vizier/private_vizier_prod.yaml": "vizier/vizier_prod.yaml",
         "/vizier/public_vizier_prod.yaml": "vizier/vizier_prod.yaml",
+        "/vizier/private_vizier_metadata_persist_prod.yaml": "vizier/vizier_metadata_persist_prod.yaml",
+        "/vizier/public_vizier_metadata_persist_prod.yaml": "vizier/vizier_metadata_persist_prod.yaml",
     },
     strip_prefix = "/k8s",
 )

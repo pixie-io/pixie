@@ -65,3 +65,29 @@ def generate_vizier_bootstrap_yamls(name, srcs, out, image_map, public, **kwargs
         kustomize build $$T/k8s/vizier/bootstrap/ -o $@
         """.format(merged_edits),
     )
+
+def generate_vizier_metadata_persist_yamls(name, srcs, out, image_map, public, **kwargs):
+    kustomize_edits = []
+    for k in image_map.keys():
+        image_path = k
+        if public:
+            image_path = image_path.replace(private_registry, public_registry)
+        kustomize_edits.append("kustomize edit set image {0}={1}:{2}".format(k, image_path, "$(BUNDLE_VERSION)"))
+
+    merged_edits = "\n".join(kustomize_edits)
+    native.genrule(
+        name = name,
+        srcs = srcs,
+        outs = [out],
+        cmd = """
+        T=`mktemp -d`
+        cp -aL k8s/vizier $$T
+
+        # Update the bundle versions.
+        pushd $$T/vizier/persistent_metadata
+        {0}
+        popd
+
+        kustomize build $$T/vizier/persistent_metadata -o $@
+        """.format(merged_edits),
+    )
