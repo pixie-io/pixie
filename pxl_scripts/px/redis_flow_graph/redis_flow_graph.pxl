@@ -23,6 +23,7 @@ def redis_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_e
     # Filter on namespace as specified by the user.
     df = df[df.namespace == ns]
 
+    # Create 10 ns bin for time_ column
     df.timestamp = px.bin(df.time_, window_ns)
 
     # Aggregate the connections by timestamp.
@@ -37,8 +38,7 @@ def redis_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_e
     # Specify to and from entities.
     df = df[df.remote_addr != '']
     df.to_entity = df.pod
-    df.from_entity_id = px.ip_to_pod_id(df.remote_addr)
-    df.from_entity = px.pod_id_to_pod_name(df.from_entity_id)
+    df.from_entity = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
 
     df.request_throughput = df.throughput_total / window_ns
     df = df.groupby(['from_entity', 'to_entity']).agg(
