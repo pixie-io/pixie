@@ -1,5 +1,0 @@
----
-short: Redis Flow Graph
-long: >
-  Overview of Redis messages in the cluster, with latency stats.
-org_name: pixielabs.ai
