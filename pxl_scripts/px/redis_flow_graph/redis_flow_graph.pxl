@@ -60,6 +60,7 @@ def redis_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_e
     })
 
     # Reorder table columns.
-    df = df['from_entity', 'to_entity', 'to_entity_stats', 'latency_p50', 'latency_p90', 'latency_p99', 'request_throughput', 'throughput_total']
+    df = df['from_entity', 'to_entity', 'to_entity_stats', 'latency_p50', 
+            'latency_p90', 'latency_p99', 'request_throughput', 'throughput_total']
 
     return df
