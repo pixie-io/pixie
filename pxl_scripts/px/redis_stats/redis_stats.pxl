@@ -70,11 +70,11 @@ def summary_redis_let(start: str, pod: px.Pod):
     traffic to a Redis database pod.
     '''
     df = redis_let_per_pod(start, pod, ['timestamp', k8s_object, 'remote_addr'])
-    df.source_id = px.ip_to_pod_id(df.remote_addr)
-    df.source = px.pod_id_to_pod_name(df.source_id)
-    summary_df = summarize_LET(df, ['pod', 'source'])
-    summary_df.redis_pod = summary_df.pod
-    return summary_df[['redis_pod', 'source', 'request_throughput', 'latency', 'total_requests']]
+    df.client_id = px.ip_to_pod_id(df.remote_addr)
+    df.client = px.pod_id_to_pod_name(df.client_id)
+    summary_df = summarize_LET(df, ['pod', 'client'])
+    summary_df.server = summary_df.pod
+    return summary_df[['server', 'client', 'request_throughput', 'latency', 'total_requests']]
 
 
 def latency_histogram(start: str, pod: px.Pod):
@@ -188,6 +188,8 @@ def format_redis_table(df):
 
     Returns: formatted redis_events.beta DataFrame.
     '''
+    # Filter for server-side tracing (Redis DB on cluster) 
+    df = df[df.trace_role == 2]
     df = format_events_table(df, 'latency_ns')
     df.resp_size = px.length(df.resp)
     return df
