@@ -72,9 +72,10 @@ def summary_redis_let(start: str, pod: px.Pod):
         traffic for each database Pods talk to.
     '''
     df = redis_let_per_pod(start, pod, ['timestamp', k8s_object, 'remote_addr'])
-    df[ip_col_name] = df.remote_addr
-    summary_df = summarize_LET(df, [k8s_object, ip_col_name])
-    return summary_df[[k8s_object, ip_col_name, 'request_throughput', 'latency', 'total_requests']]
+    df.requesting_entity_id = px.ip_to_pod_id(df.remote_addr)
+    df.requesting_entity = px.pod_id_to_pod_name(df.requesting_entity_id)
+    summary_df = summarize_LET(df, [k8s_object, 'requesting_entity'])
+    return summary_df[[k8s_object, 'requesting_entity', 'request_throughput', 'latency', 'total_requests']]
 
 
 def latency_histogram(start: str, pod: px.Pod):
@@ -114,11 +115,10 @@ def cmd_timeseries(start: str, pod: px.Pod):
     df.pod = df.ctx['pod']
     df = df[px.contains(df.pod, pod)]
     df.timestamp = px.bin(df.time_, window_ns)
-    df = df.groupby(['timestamp', 'cmd']).agg(
+    df.time_ = df.timestamp
+    df = df.groupby(['time_', 'cmd']).agg(
         throughput_total=('cmd', px.count),
     )
-    df.time_ = df.timestamp
-
     return df
 
 # ----------------------------------------------------------------
