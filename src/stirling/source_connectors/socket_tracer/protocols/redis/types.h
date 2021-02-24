@@ -23,6 +23,10 @@ struct Message : public FrameBase {
   bool is_published_message = false;
 
   size_t ByteSize() const override { return payload.size(); }
+
+  std::string ToString() const {
+    return absl::Substitute("payload=[$0] command=$1", payload, command);
+  }
 };
 
 // Represents a pair of request and response messages.

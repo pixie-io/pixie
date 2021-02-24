@@ -28,6 +28,8 @@ struct FrameBase {
   virtual size_t ByteSize() const = 0;
 
   virtual ~FrameBase() = default;
+
+  std::string ToString() const { return "FrameBase placeholder for subclasses"; }
 };
 
 // Represents a precise position in a sequence of data chunks.
