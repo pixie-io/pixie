@@ -57,11 +57,12 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
     }
   };
 
-  void ProcessBPFStackTraces(DataTable* data_table);
+  void ProcessBPFStackTraces(ConnectorContext* ctx, DataTable* data_table);
 
   // Read BPF data structures, build & incorporate records to the table.
   void CreateRecords(const uint64_t timestamp_ns, ebpf::BPFStackTable* stack_traces,
-                     ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo, DataTable* data_table);
+                     ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo, ConnectorContext* ctx,
+                     DataTable* data_table);
 
   // StackTraceHisto: SymbolicStackTrace => observation-count
   // StackTraceIDMap: SymbolicStackTrace => stack-trace-id
@@ -71,7 +72,8 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   uint64_t SymbolicStackTradeID(const SymbolicStackTrace& symbolic_stack_trace);
 
   StackTraceHisto AggregateStackTraces(ebpf::BPFStackTable* stack_traces,
-                                       ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo);
+                                       ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo,
+                                       ConnectorContext* ctx);
 
   explicit PerfProfileConnector(std::string_view source_name);
 

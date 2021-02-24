@@ -2,6 +2,7 @@
 
 #include <linux/bpf_perf_event.h>
 
+#include "src/stirling/bpf_tools/bcc_bpf/utils.h"
 #include "src/stirling/source_connectors/perf_profiler/bcc_bpf_intf/stack_event.h"
 
 // This BPF probe samples stack-traces using two fundamental data structures:
@@ -95,9 +96,6 @@ int sample_call_stack(struct bpf_perf_event_data* ctx) {
     return 0;
   }
 
-  uint64_t ts_ns = bpf_ktime_get_ns();
-  uint64_t ts_ms = ts_ns / 1000 / 1000;
-
   uint64_t push_count = *push_count_ptr;
   uint64_t read_and_clear_count = *read_and_clear_count_ptr;
   uint64_t sample_count = *sample_count_ptr;
@@ -105,11 +103,10 @@ int sample_call_stack(struct bpf_perf_event_data* ctx) {
   profiler_state.increment(sample_count_idx);
 
   uint32_t pid = bpf_get_current_pid_tgid();
+  uint64_t start_time_ticks = get_tgid_start_time();
 
   // create map key
-  struct stack_trace_key_t key = {.pid = pid};
-
-  bpf_get_current_comm(&key.name, sizeof(key.name));
+  struct stack_trace_key_t key = {.pid = pid, .start_time_ticks = start_time_ticks};
 
   if (push_count % 2 == 0) {
     // map set A branch:

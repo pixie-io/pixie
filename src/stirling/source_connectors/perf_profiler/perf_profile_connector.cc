@@ -62,7 +62,7 @@ std::string FoldedStackTraceString(ebpf::BPFStackTable* stack_traces,
 }
 }  // namespace
 
-void PerfProfileConnector::ProcessBPFStackTraces(DataTable* data_table) {
+void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTable* data_table) {
   auto& histo = read_and_clear_count_ % 2 == 0 ? histogram_a_ : histogram_b_;
   auto& stack_traces = read_and_clear_count_ % 2 == 0 ? stack_traces_a_ : stack_traces_b_;
 
@@ -74,7 +74,7 @@ void PerfProfileConnector::ProcessBPFStackTraces(DataTable* data_table) {
   LOG_IF(ERROR, rd_status.code() != 0) << "Error reading profiler_state_";
 
   // Read BPF stack traces & histogram, build records, incorporate records to data table.
-  CreateRecords(timestamp_ns, stack_traces.get(), histo.get(), data_table);
+  CreateRecords(timestamp_ns, stack_traces.get(), histo.get(), ctx, data_table);
 
   // Clear the map set that we have just now ingested.
   //
@@ -96,7 +96,7 @@ void PerfProfileConnector::ProcessBPFStackTraces(DataTable* data_table) {
   }
 }
 
-void PerfProfileConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t table_num,
+void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
                                             DataTable* data_table) {
   DCHECK_LT(table_num, kTables.size())
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
@@ -118,7 +118,7 @@ void PerfProfileConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_
     // After (and in steady state), we expect push_count==read_and_clear_count_.
     const uint64_t expected_push_count = 1 + read_and_clear_count_;
     DCHECK_EQ(push_count, expected_push_count) << "stack trace handshake protocol out of sync.";
-    ProcessBPFStackTraces(data_table);
+    ProcessBPFStackTraces(ctx, data_table);
   }
   DCHECK_EQ(push_count, read_and_clear_count_) << "stack trace handshake protocol out of sync.";
 }
@@ -137,7 +137,8 @@ uint64_t PerfProfileConnector::SymbolicStackTradeID(
 }
 
 PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces(
-    ebpf::BPFStackTable* stack_traces, ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo) {
+    ebpf::BPFStackTable* stack_traces, ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo,
+    ConnectorContext* ctx) {
   // TODO(jps): switch from using get_table_offline() to directly stepping through
   // the histogram data structure. Inline populating our own data structures with this.
   // Avoid an unnecessary copy of the information in local stack_trace_keys_and_counts.
@@ -146,8 +147,9 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
   for (const auto& [stack_trace_key, count] : histo->get_table_offline()) {
     cum_sum_count += count;
 
-    // TODO(oazizi/jps): Populate ASID and pid start-time timestamp.
-    const md::UPID upid(0, stack_trace_key.pid, 0);
+    // TODO(jps): use 'struct upid_t' as a field in SymbolicStackTrace
+    // refactor use of ctx->getASID() to CreateRecords().
+    const md::UPID upid(ctx->GetASID(), stack_trace_key.pid, stack_trace_key.start_time_ticks);
 
     std::string stack_trace_str = FoldedStackTraceString(stack_traces, stack_trace_key);
     SymbolicStackTrace symbolic_stack_trace = {upid, std::move(stack_trace_str)};
@@ -172,7 +174,7 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
 void PerfProfileConnector::CreateRecords(const uint64_t timestamp_ns,
                                          ebpf::BPFStackTable* stack_traces,
                                          ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo,
-                                         DataTable* data_table) {
+                                         ConnectorContext* ctx, DataTable* data_table) {
   constexpr size_t kMaxSymbolSize = 512;
   constexpr size_t kMaxStackDepth = 64;
   constexpr size_t kMaxStackTraceSize = kMaxStackDepth * kMaxSymbolSize;
@@ -183,7 +185,7 @@ void PerfProfileConnector::CreateRecords(const uint64_t timestamp_ns,
   // p0, p1, p2 => main;qux;baz   # both p2 & p3 point into baz.
   // p0, p1, p3 => main;qux;baz
 
-  StackTraceHisto symbolic_histogram = AggregateStackTraces(stack_traces, histo);
+  StackTraceHisto symbolic_histogram = AggregateStackTraces(stack_traces, histo, ctx);
 
   for (const auto& [symbolic_stack_trace, count] : symbolic_histogram) {
     DataTable::RecordBuilder<&kStackTraceTable> r(data_table, timestamp_ns);
