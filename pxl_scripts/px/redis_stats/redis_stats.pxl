@@ -4,13 +4,9 @@
 ''' Redis Pod LET metrics
 
 This live view calculates the latency, error rate, and throughput
-of a pod's Redis requests.
-
-Notes:
-* We disable tracking close() responses because of the high rate of
-  false positives. If you are ok with false positives, set
-  @filter_responses_with_none_code to equal False
+for each connection to a Redis database pod.
 '''
+
 import px
 
 # ----------------------------------------------------------------
@@ -43,16 +39,17 @@ latency_bin_size_ns = px.DurationNanos(50 * ns_per_ms)
 # the visualization specification, vis.json.
 # ----------------------------------------------------------------
 def pod_redis_let(start: str, pod: px.Pod):
-    ''' Calculate LET time-series for Redis traffic per Pod, database pair.
+    ''' Calculate LET time-series for Redis traffic per connection to
+    a Redis database pod.
 
     Calculates latency and throughput for each pod's
-    connection to Redis databases.
+    connection to a Redis database pod.
 
     @start: The timestamp of data to start at.
     @pod: the partial/full-name of the pod to monitor Redis LET.
 
     Returns: Returns the DataFrame containing LET time-series for Redis
-        traffic for each database Pods talk to.
+        traffic to a Redis database pod.
     '''
     df = redis_let_per_pod(start, pod, ['timestamp', k8s_object])
     return df['time_', split_series_name, 'latency_p50',
@@ -60,16 +57,17 @@ def pod_redis_let(start: str, pod: px.Pod):
 
 
 def summary_redis_let(start: str, pod: px.Pod):
-    ''' Calculate LET summary for redis traffic per Pod, database pair.
+    ''' Calculate LET summary for redis traffic per connection to
+    a Redis database pod.
 
-    Calculates latency and throughput for each pod's
-    connection to redis databases.
+    Calculates latency and throughput for each 
+    connection to a Redis database pod.
 
     @start: The timestamp of data to start at.
     @pod: the partial/full-name of the pod to monitor redis LET.
 
-    Returns: Returns the DataFrame containing LET time-series for redis
-        traffic for each database Pods talk to.
+    Returns: Returns the DataFrame containing LET time-series for Redis
+    traffic to a Redis database pod.
     '''
     df = redis_let_per_pod(start, pod, ['timestamp', k8s_object, 'remote_addr'])
     df.source_id = px.ip_to_pod_id(df.remote_addr)
@@ -80,13 +78,13 @@ def summary_redis_let(start: str, pod: px.Pod):
 
 
 def latency_histogram(start: str, pod: px.Pod):
-    ''' Computes a histogram of HTTP request latency.
+    ''' Computes a histogram of Redis request latency.
 
     Args:
     @start: The timestamp of data to start at.
     @svc: the partial/full-name of the svc.
 
-    Returns: DataFrame of the HTTP latency histogram for svcs that
+    Returns: DataFrame of the Redis latency histogram for svcs that
         match @svc.
     '''
     # The data necessary to compute redis LET information is located in the
@@ -105,19 +103,20 @@ def latency_histogram(start: str, pod: px.Pod):
 
 
 def cmd_timeseries(start: str, pod: px.Pod):
-    ''' Calculate Redis cmd timeseries for redis traffic per Pod, database pair.
+    ''' Calculate Redis cmd timeseries for redis traffic per connection to
+    a Redis database pod.
 
     @start: The timestamp of data to start at.
     @pod: The partial/full-name of the pod to monitor.
 
-    Returns: Returns the DataFrame containing Redis cmd time-series for redis
-        traffic for each database Pods talk to.
+    Returns: Returns the DataFrame containing Redis cmd time-series for Redis
+    traffic to a Redis database pod.
     '''
     df = px.DataFrame(table='redis_events.beta', start_time=start)
+    df = format_redis_table(df)
     df.pod = df.ctx['pod']
     df = df[px.contains(df.pod, pod)]
-    df.timestamp = px.bin(df.time_, window_ns)
-    df.time_ = df.timestamp
+    df.time_ = px.bin(df.time_, window_ns)
     df = df.groupby(['time_', 'cmd']).agg(
         throughput_total=('cmd', px.count),
     )
@@ -132,16 +131,17 @@ def cmd_timeseries(start: str, pod: px.Pod):
 # scripts.
 # ----------------------------------------------------------------
 def redis_let_per_pod(start: str, pod: px.Pod, groups):
-    ''' Calculate LET time-series for redis traffic per Pod, database pair.
+    ''' Calculate LET time-series for redis traffic per connection to
+    a Redis database pod.
 
-    Calculates latency and throughput for each pod's
-    connection to predis databases.
+    Calculates latency and throughput for each connection to a 
+    Redis database pod.
 
     @start: The timestamp of data to start at.
     @pod: the partial/full-name of the pod to monitor redis LET.
 
-    Returns: Returns the DataFrame containing LET time-series for redis
-        traffic for each database Pods talk to.
+    Returns: Returns the DataFrame containing LET time-series for Redis
+    traffic to a Redis database pod.
     '''
     # The data necessary to compute redis LET information is located in the
     # redis_events.beta table. We filter and aggregate data from this table to compute the
