@@ -1,0 +1,240 @@
+{
+  "variables": [
+    {
+      "name": "start",
+      "type": "PX_STRING",
+      "description": "The relative start time of the window. Current time is assumed to be now",
+      "defaultValue": "-5m"
+    },
+    {
+      "name": "pod",
+      "type": "PX_STRING",
+      "description": "The full/partial name of the pod to filter by for redis request. Format: ns/pod_name",
+      "defaultValue": ""
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "LET",
+      "func": {
+        "name": "pod_redis_let",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "P50 Latency",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "LET",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p50",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "P50 Latency"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "P90 Latency",
+      "position": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "LET",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p90",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "P90 Latency"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "P99 Latency",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "LET",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p99",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "P99 Latency"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Request Throughput",
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "LET",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "request_throughput",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Request throughput"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Request Throughput per Cmd",
+      "position": {
+        "x": 4,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "func": {
+        "name": "cmd_timeseries",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "throughput_total",
+            "series": "cmd",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Cmd throughput"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Request Latency Histogram",
+      "func": {
+        "name": "latency_histogram",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.HistogramChart",
+        "histogram": {
+          "value": "request_latency",
+          "prebinCount": "count",
+          "maxbins": 10,
+          "minstep": 50000000
+        },
+        "xAxis": {
+          "label": "Request Latency"
+        },
+        "yAxis": {
+          "label": "# of requests"
+        }
+      },
+      "position": {
+        "x": 8,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Summary",
+      "position": {
+        "x": 0,
+        "y": 6,
+        "w": 12,
+        "h": 3
+      },
+      "func": {
+        "name": "summary_redis_let",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    }
+  ]
+}
