@@ -110,6 +110,114 @@ class MultiplyUDF : public udf::ScalarUDF {
   }
 };
 
+template <typename TBase, typename TVal>
+class LogUDF : public udf::ScalarUDF {
+ public:
+  Float64Value Exec(FunctionContext*, TBase b, TVal v) {
+    return log(static_cast<double>(v.val)) / log(static_cast<double>(b.val));
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Computes the log base (b).")
+        .Details(
+            "The logarithm is the base-b logarithm: the inverse of the exponential function "
+            "(pow(b, v).")
+        .Arg("b", "The base of the the logarithm")
+        .Arg("v", "The value to take the logarithm of")
+        .Returns("The log base b of v");
+  }
+};
+
+template <typename TArg1>
+class LnUDF : public udf::ScalarUDF {
+ public:
+  Float64Value Exec(FunctionContext*, TArg1 v) { return log(static_cast<double>(v.val)); }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Computes the natural log.")
+        .Details(
+            "The natural logarithm is the base-e logarithm: the inverse of the natural exponential "
+            "function (exp).")
+        .Arg("v", "The value to take the logarithm of")
+        .Returns("The natural log of v");
+  }
+};
+
+template <typename TArg1>
+class Log2UDF : public udf::ScalarUDF {
+ public:
+  Float64Value Exec(FunctionContext*, TArg1 v) { return log2(static_cast<double>(v.val)); }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Computes the log base-2.")
+        .Details("The natural logarithm is the base-2 logarithm: the inverse of the 2^y")
+        .Arg("v", "The value to take the logarithm of")
+        .Returns("The log base-2 of v");
+  }
+};
+
+template <typename TArg1>
+class Log10UDF : public udf::ScalarUDF {
+ public:
+  Float64Value Exec(FunctionContext*, TArg1 v) { return log10(static_cast<double>(v.val)); }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Computes the log base-10.")
+        .Details("The natural logarithm is the base-10 logarithm: the inverse of the 10^y")
+        .Arg("v", "The value to take the logarithm of")
+        .Returns("The log base-10 of v");
+  }
+};
+template <typename TArg1, typename TArg2>
+class PowUDF : public udf::ScalarUDF {
+ public:
+  Float64Value Exec(FunctionContext*, TArg1 x, TArg2 y) {
+    return pow(static_cast<double>(x.val), static_cast<double>(y.val));
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Computes the power function.")
+        .Details("Computes the power function x^y")
+        .Arg("x", "The base of the exponent")
+        .Arg("y", "The exponent")
+        .Returns("The value x^y");
+  }
+};
+
+template <typename TArg1>
+class ExpUDF : public udf::ScalarUDF {
+ public:
+  Float64Value Exec(FunctionContext*, TArg1 y) { return exp(static_cast<double>(y.val)); }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Computes e^x")
+        .Details("Computes the power function x^y, with base = e")
+        .Arg("y", "The exponent")
+        .Returns("The value e^y");
+  }
+};
+
+template <typename TArg1>
+class AbsUDF : public udf::ScalarUDF {
+ public:
+  TArg1 Exec(FunctionContext*, TArg1 v) { return std::abs(v.val); }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Computes absolute value")
+        .Details("Computes the absolute value")
+        .Arg("v", "The value")
+        .Returns("The value abs(v)");
+  }
+};
+
+template <typename TArg1>
+class SqrtUDF : public udf::ScalarUDF {
+ public:
+  Float64Value Exec(FunctionContext*, TArg1 v) { return std::sqrt(static_cast<double>(v.val)); }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Compute the sqrt")
+        .Details("Computes the sqrt")
+        .Arg("v", "The value")
+        .Returns("The value sqrt(v)");
+  }
+};
+
 template <typename TReturn, typename TArg1, typename TArg2>
 class ModuloUDF : public udf::ScalarUDF {
  public:

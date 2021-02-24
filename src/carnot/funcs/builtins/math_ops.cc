@@ -89,7 +89,43 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
       ->RegisterOrDie<MultiplyUDF<types::Float64Value, types::Float64Value, types::Float64Value>>(
           "multiply");
 
-  // Modulo
+  // Log.
+  registry->RegisterOrDie<LogUDF<types::Float64Value, types::Float64Value>>("log");
+  registry->RegisterOrDie<LogUDF<types::Float64Value, types::Int64Value>>("log");
+  registry->RegisterOrDie<LogUDF<types::Int64Value, types::Float64Value>>("log");
+  registry->RegisterOrDie<LogUDF<types::Int64Value, types::Int64Value>>("log");
+
+  // Ln.
+  registry->RegisterOrDie<LnUDF<types::Float64Value>>("ln");
+  registry->RegisterOrDie<LnUDF<types::Int64Value>>("ln");
+
+  // Log2.
+  registry->RegisterOrDie<Log2UDF<types::Float64Value>>("log2");
+  registry->RegisterOrDie<Log2UDF<types::Int64Value>>("log2");
+
+  // Log10.
+  registry->RegisterOrDie<Log10UDF<types::Float64Value>>("log10");
+  registry->RegisterOrDie<Log10UDF<types::Int64Value>>("log10");
+
+  // Pow.
+  registry->RegisterOrDie<PowUDF<types::Float64Value, types::Float64Value>>("pow");
+  registry->RegisterOrDie<PowUDF<types::Float64Value, types::Int64Value>>("pow");
+  registry->RegisterOrDie<PowUDF<types::Int64Value, types::Float64Value>>("pow");
+  registry->RegisterOrDie<PowUDF<types::Int64Value, types::Int64Value>>("pow");
+
+  // Exp.
+  registry->RegisterOrDie<ExpUDF<types::Float64Value>>("exp");
+  registry->RegisterOrDie<ExpUDF<types::Int64Value>>("exp");
+
+  // Abs.
+  registry->RegisterOrDie<AbsUDF<types::Float64Value>>("abs");
+  registry->RegisterOrDie<AbsUDF<types::Int64Value>>("abs");
+
+  // sqrt.
+  registry->RegisterOrDie<SqrtUDF<types::Float64Value>>("sqrt");
+  registry->RegisterOrDie<SqrtUDF<types::Int64Value>>("sqrt");
+
+  // Modulo.
   registry->RegisterOrDie<ModuloUDF<types::Int64Value, types::Time64NSValue, types::Int64Value>>(
       "modulo");
   registry->RegisterOrDie<ModuloUDF<types::Int64Value, types::Time64NSValue, types::Time64NSValue>>(

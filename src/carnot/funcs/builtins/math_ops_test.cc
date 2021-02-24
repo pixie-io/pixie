@@ -84,6 +84,47 @@ TEST(MathOps, basic_float64_multiply_test) {
   udf_tester.ForInput(1.5, 5).Expect(7.5);
 }
 
+TEST(MathOps, log) {
+  auto udf_tester = udf::UDFTester<LogUDF<types::Int64Value, types::Int64Value>>();
+  udf_tester.ForInput(2, 4).Expect(2);
+}
+
+TEST(MathOps, ln) {
+  auto udf_tester = udf::UDFTester<LnUDF<types::Float64Value>>();
+  udf_tester.ForInput(std::exp(1.0)).Expect(1);
+}
+
+TEST(MathOps, log2) {
+  auto udf_tester = udf::UDFTester<Log2UDF<types::Float64Value>>();
+  udf_tester.ForInput(4.0).Expect(2);
+}
+
+TEST(MathOps, log10) {
+  auto udf_tester = udf::UDFTester<Log10UDF<types::Float64Value>>();
+  udf_tester.ForInput(100).Expect(2);
+}
+
+TEST(MathOps, pow) {
+  auto udf_tester = udf::UDFTester<PowUDF<types::Float64Value, types::Float64Value>>();
+  udf_tester.ForInput(2.0, 2.0).Expect(4);
+}
+
+TEST(MathOps, abs) {
+  auto udf_tester = udf::UDFTester<ExpUDF<types::Int64Value>>();
+  udf_tester.ForInput(1).Expect(std::exp(1.0));
+}
+
+TEST(MathOps, exp) {
+  auto udf_tester = udf::UDFTester<AbsUDF<types::Int64Value>>();
+  udf_tester.ForInput(-2).Expect(2);
+  udf_tester.ForInput(4).Expect(4);
+}
+
+TEST(MathOps, sqrt) {
+  auto udf_tester = udf::UDFTester<SqrtUDF<types::Float64Value>>();
+  udf_tester.ForInput(4).Expect(2);
+}
+
 TEST(MathOps, basic_mixed_multiply_test) {
   auto udf_tester =
       udf::UDFTester<MultiplyUDF<types::Float64Value, types::Float64Value, types::Int64Value>>();

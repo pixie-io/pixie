@@ -45,7 +45,7 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "math_ops",
+    name = "math_ops_test",
     srcs = ["math_ops_test.cc"],
     deps = [
         ":cc_library",
@@ -54,7 +54,7 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "json_ops",
+    name = "json_ops_test",
     srcs = ["json_ops_test.cc"],
     deps = [
         ":cc_library",
@@ -63,7 +63,7 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "string_ops",
+    name = "string_ops_test",
     srcs = ["string_ops_test.cc"],
     deps = [
         ":cc_library",
