@@ -281,4 +281,3 @@ def summarize_LET(let_df, groups):
         latency=('latency_p50', px.mean),
     )
     return df
-    
